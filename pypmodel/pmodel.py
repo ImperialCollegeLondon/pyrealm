@@ -1059,7 +1059,7 @@ class CalcLUEVcmax:
         >>> out.omega_star is None # doctest: +ELLIPSIS
         True
         """
-        
+
         # Include effect of Jmax limitation, modify mc accounting for the
         # co-limitation hypothesis after Prentice et al. (2014)
         mpi = (self.out_optchi.mj ** 2 - PARAM.wang17.c ** (2.0 / 3.0) *
@@ -1112,17 +1112,16 @@ class CalcLUEVcmax:
             else:
                 return -(1 - (2 * theta)) + numpy.sqrt((1 - theta) * v)
 
-        # constants
-        theta = 0.85  # should be calibratable?
-        c_cost = 0.05336251
-
         # factors derived as in Smith et al., 2019
-        self.omega = _calc_omega(theta=theta, c_cost=c_cost, m=self.out_optchi.mj)  # Eq. S4
-        self.omega_star = (1.0 + self.omega - numpy.sqrt((1.0 + self.omega) ** 2 -
-                                                         (4.0 * theta * self.omega)))  # Eq. 18
+        self.omega = _calc_omega(theta=PARAM.smith19.theta, # Eq. S4
+                                 c_cost=PARAM.smith19.c_cost,
+                                 m=self.out_optchi.mj)
+        self.omega_star = (1.0 + self.omega -  # Eq. 18
+                           numpy.sqrt((1.0 + self.omega) ** 2 -
+                                      (4.0 * PARAM.smith19.theta * self.omega)))
 
         # Effect of Jmax limitation
-        mprime = self.out_optchi.mj * self.omega_star / (8.0 * theta)
+        mprime = self.out_optchi.mj * self.omega_star / (8.0 * PARAM.smith19.theta)
 
         # Light use efficiency (gpp per unit absorbed light)
         self.lue = (self.kphio * self.ftemp_kphio * mprime *
@@ -1130,7 +1129,7 @@ class CalcLUEVcmax:
 
         # calculate Vcmax per unit aborbed light
         self.vcmax_unitiabs = (self.kphio * self.ftemp_kphio * self.out_optchi.mjoc *
-                               self.omega_star / (8.0 * theta) * self.soilmstress)  # Eq. 19
+                               self.omega_star / (8.0 * PARAM.smith19.theta) * self.soilmstress)  # Eq. 19
 
 
     def _none(self):

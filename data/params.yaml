@@ -75,5 +75,10 @@ wang17:
   # unit carbon cost for the maintenance of electron transport capacity
   c: 0.41
 
+smith19:
+  # Calculation of omega
+  theta: 0.85
+  c_cost: 0.05336251
+
 Atkin: # Atkin et al., 2015 for C3 herbaceous
   rd_to_vcmax: 0.015  # Ratio of Rdark to Vcmax25, number from
