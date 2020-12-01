@@ -288,53 +288,56 @@ def calc_ftemp_kphio(tc: float, c4: bool = False) -> float:
 
 
 def calc_gammastar(tc: float, patm: float) -> float:
-    """*CO2 compensation point*
+    r"""CO2 compensation point
 
     Calculates the photorespiratory CO2 compensation point in absence of dark
-    respiration, :math:`\Gamma^{*}` (Farquhar, 1980).
+    respiration (:math:`\Gamma^{*}`, Farquhar, 1980) as:
 
-    Details:
-        The temperature and pressure-dependent photorespiratory compensation
-        point in absence of dark respiration  :math:`\Gamma^{*}(T, p)` is
-        calculated from its value at standard temperature (\eqn{T0 = 25 }deg C) and
-        atmospheric pressure (\eqn{p0 = 101325} Pa), referred to as \eqn{\Gamma*0},
-        quantified by Bernacchi et al. (2001) to 4.332 Pa (their value in molar
-        concentration units is multiplied here with 101325 Pa to yield 4.332 Pa).
-        :math:`\Gamma^{*}_{0}` is modified by temperature following an Arrhenius-type temperature
-        response function \eqn{f(T, \Delta Ha)} (implemented by \link{calc_ftemp_arrh})
-        with activation energy \eqn{\Delta Ha = 37830} J mol-1  and is corrected for
-        atmospheric pressure \eqn{p(z)} (see \link{calc_patm}) at elevation \eqn{z}.
+    .. math::
 
-        .. math::
+        \Gamma^{*} = \Gamma^{*}_{0} \cdot \frac{p}{p_0} \cdot f(T, \Delta H_a)
 
-            \Gamma^{*} = \Gamma^{*}_{0} f(T, \Delta Ha) p(z) / p_0
+    where:
 
-        \eqn{p(z)} is given by argument \code{patm}.
+    - :math:`T_0` and :math:`T` are the standard temperature and the local
+      temperature set in ``tc``.
+    - :math:`p_0` and :math:`p` are the standard pressure and the local
+      pressure set in ``patm``.
+    - :math:`\Gamma^{*}_{0}` is the reference value at standard temperature
+      (:math:`T_0`) and pressure (:math:`P_0`), calculated by Bernacchi et al.
+      (2001) as :math:`42.75 \mu\text{mol}\ \text{mol}^{-1}` and here converted
+      using :math:`42.75 \cdot p_0 = 4.332 \text{Pa}`.
+    - :math:`\Delta H_a` is the activation energy of the system and
+      :math:`f(T, \Delta H_a)` modifies this to the the local temperature 
+      following an Arrhenius-type temperature response function implemented
+      in :func:`calc_ftemp_arrh`.
 
-    References:
-        Farquhar,  G.  D.,  von  Caemmerer,  S.,  and  Berry,  J.  A.:
-        A  biochemical  model  of photosynthetic CO2 assimilation in leaves of
-        C3 species, Planta, 149, 78–90, 1980.
+    References: 
+        Farquhar,  G.  D.,  von  Caemmerer,  S.,  and  Berry,  J.  A.: A
+        biochemical  model  of photosynthetic CO2 assimilation in leaves of C3
+        species, Planta, 149, 78–90, 1980.
 
         Bernacchi,  C.  J.,  Singsaas,  E.  L.,  Pimentel,  C.,  Portis,  A.
         R.  J.,  and  Long,  S.  P.:Improved temperature response functions
         for models of Rubisco-limited photosyn-thesis, Plant, Cell and
         Environment, 24, 253–259, 2001
 
-    >>> # CO2 compensation point at 20 degrees Celsius and standard atmosphere (in Pa)
-    >>> calc_gammastar(20, 101325) # doctest: +ELLIPSIS
-    3.33925...
+    Examples: 
+        >>> # CO2 compensation point at 20 degrees Celsius and standard 
+        >>> # atmosphere (in Pa) 
+        >>> calc_gammastar(20, 101325) # doctest: +ELLIPSIS
+        3.33925...
 
-    Args:
-        tc: Temperature, relevant for photosynthesis (°C)
+    Args: 
+        tc: Temperature, relevant for photosynthesis (°C) 
         patm: Atmospheric pressure (Pa)
 
-    Returns:
-        A numeric value for \eqn{\Gamma*} (in Pa)
+    Returns: 
+        A float value for :math:`\Gamma^{*}` (in Pa)
     """
 
-    return (PARAM.Bernacci.gs25_0 * patm / calc_patm(0.0) *
-            calc_ftemp_arrh((tc + 273.15), dha=PARAM.Bernacci.dha))
+    return (PARAM.Bernacci.gs25_0 * patm / PARAM.k.Po *
+            calc_ftemp_arrh((tc + PARAM.k.CtoK), dha=PARAM.Bernacci.dha))
 
 
 def calc_kmm(tc: float, patm: float):
