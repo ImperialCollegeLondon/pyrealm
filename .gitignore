@@ -1,0 +1,23 @@
+# Ignore test datasets for now
+SAFE_import_files*
+
+# ignore Excel backup files
+~*
+
+# PyCharm
+.idea/
+.vscode/
+
+# Mac DS files
+.DS_Store
+
+# compiled python
+*.pyc
+
+# build and dist
+build
+dist
+
+# Ignore local pyenv settings
+.python-version
+

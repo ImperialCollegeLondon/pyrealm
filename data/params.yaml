@@ -1,0 +1,79 @@
+# True constants
+k:
+  # Universal gas constant, J/mol/K
+  R: 8.3145
+  # O2 partial pressure, Standard Atmosphere (ppm)
+  co: 209476.0
+  # Molecular mass of carbon (g)
+  c_molmass: 12.0107
+  # standard atmosphere, Pa (Allen, 1973)
+  Po: 101325.0
+  # base temperature, deg C (Prentice, unpublished)
+  To: 25.0
+  # adiabiatic temperature lapse rate, K/m (Allen, 1973)
+  L: 0.0065
+  # gravitational acceleration, m/s^2
+  G: 9.80665
+  # molecular weight of dry air, kg/mol (Tsilingiris, 2008)
+  Ma: 0.028963
+  # Conversion from °C to K
+  CtoK: 273.15
+
+# Viscosity of water (Fisher and Dial 1975, Table 5)
+#  - note use of lambda_ to avoid lambda keyword in Python.
+FisherDial:
+  lambda_: [1788.316, 21.55053, -0.4695911, 3.096363e-3, -7.341182e-6]
+  po: [5918.499, 58.05267, -1.1253317, 6.6123869e-3, -1.4661625e-5]
+  vinf: [0.6980547, -7.435626e-4, 3.704258e-5, -6.315724e-7,
+         9.829576e-9, -1.197269e-10, 1.005461e-12, -5.437898e-15,
+         1.69946e-17, -2.295063e-20]
+
+# Temperature scaling of dark respiration (Heskel et al 2015)
+Heskel:
+  b: 0.1012
+  c: 0.0005
+
+# Kattge, J. and Knorr, W. (2007), Table 3. offset and slope of temperature
+# versus entropy of VCMax
+KattgeKnorr:
+  a_ent: 668.39  # offset of entropy vs. temperature relationship (J/mol/K)
+  b_ent: -1.07  # slope of entropy vs. temperature relationship (J/mol/K^2)
+
+# Unsourced TODO
+Rubisco:
+  Ha: 71513  # activation energy (J/mol)
+  Hd: 200000  # deactivation energy (J/mol)
+
+kphio:
+  C4: [-0.008, 0.00375, -0.58e-4]  # Unpublished, from Shirley
+  C3: [0.352, 0.022, -3.4e-4]   # Bernacchi et al. (2003) Table 2.
+
+# Bernacchi et al. (2001)
+Bernacci:
+  # Table 1:
+  dhac: 79430  # (J/mol) Activation energy (Kc)
+  dhao: 36380  # (J/mol) Activation energy (Ko)
+  dha: 37830  # (J/mol) Activation energy (gamma*)
+  # k25 parameters are not dependent on atmospheric pressure, value converted
+  # to Pa by T. Davis assuming elevation of 227.076 m.a.s.l.
+  kc25: 39.97  # Pa
+  ko25: 27480  # Pa
+  gs25_0: 4.332  # Pa
+
+# Stocker, B. et al. Geoscientific Model Development Discussions (in prep.)
+soilmstress:
+  theta0: 0.0
+  thetastar: 0.6
+  a: 0.0
+  b: 0.685
+
+stocker19:
+  #  Unit cost ratio. (see Stocker et al., 2019).
+  beta: 146.0
+
+wang17:
+  # unit carbon cost for the maintenance of electron transport capacity
+  c: 0.41
+
+Atkin: # Atkin et al., 2015 for C3 herbaceous
+  rd_to_vcmax: 0.015  # Ratio of Rdark to Vcmax25, number from
