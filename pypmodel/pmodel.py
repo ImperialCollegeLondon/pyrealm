@@ -340,44 +340,52 @@ def calc_gammastar(tc: float, patm: float) -> float:
             calc_ftemp_arrh((tc + PARAM.k.CtoK), dha=PARAM.Bernacci.dha))
 
 
-def calc_kmm(tc: float, patm: float):
-    """*Michaelis Menten coefficient for Rubisco-limited photosynthesis*
+def calc_kmm(tc: float, patm: float) -> float:
+    r"""**Michaelis Menten coefficient for Rubisco-limited photosynthesis**
     
     Calculates the Michaelis Menten coefficient of Rubisco-limited assimilation
-    as a function of temperature and atmospheric pressure.
-    
-    Details:
-        The Michaelis-Menten coefficient \eqn{K} of Rubisco-limited photosynthesis 
-        is determined by the Michalis-Menten constants for O2 and CO2 (Farquhar, 
-        1980) according to:
+    as a function of temperature (``tc``, :math:`T`) and atmospheric pressure
+    (``patm``, :math:`p`).
 
-        .. math::
+    - The partial pressure of oxygen at :math:`p` is 
+      :math:`p_{O_{2}} = 0.209476 \cdot p`.
+    - The function :math:`f(T, \Delta H)` is an Arrhenius-type temperature 
+      response function, implemented as :func:`pypmodel.pmodel.calc_ftemp_arrh`,
+      and used here to correct activation energies at standard temperature for
+      both carbon and oxygen to the local temperature:
 
-            K = Kc ( 1 + pO2 / Ko),
+      .. math::
+        :nowrap:
 
-        where :math:`Kc` is the Michaelis-Menten constant for CO2 (Pa),
-        :math:`Ko` is the Michaelis-Menten constant for O2 (Pa), and :math:`pO2`
-        is the partial pressure of oxygen (Pa), calculated as :math:`0.209476 p`,
-        where :math:`p` is given by argument `patm`. :math:`Kc` and :math:`Ko`
-        follow a temperature dependence, given by the Arrhenius Equation
-        :math:`f` (implemented in :func:`pypmodel.pmodel.calc_ftemp_arrh`):
+        \[ 
+            \begin{align*}
+                K_c &= K_{c25} \cdot f(T, \Delta H_{kc})\\
+                K_o &= K_{o25} \cdot f(T, \Delta H_{ko})
+            \end{align*}
+        \]
 
-        .. math::
-            Kc = Kc25 f(T, \Delta Hkc)
-            Ko = Ko25 f(T, \Delta Hko)
+    - And hence, the Michaelis-Menten coefficient :math:`K` of Rubisco-limited
+      photosynthesis (Farquhar, 1980) is calculated as:
 
-        The default values set in the parameterisation are taken from Bernacchi
-        et al. (2001) and have been converted from values given therein to units
-        of Pa by multiplication with the standard atmosphere (101325 Pa).
+      .. math::
+          K = K_c ( 1 + p_{O_{2}} / K_o),
 
-        - :math:`\Delta Hkc` (79430 J mol-1),
-        - :math:`\Delta Hko` (36380 J mol-1),
-        - :math:`Kc25` (39.97 Pa), and
-        - :math:`Ko25` (27480 Pa).
+    The default values set in the parameterisation are taken from Bernacchi
+    et al. (2001). :math:`K_{c25}` and :math:`K_{c25}` are converted from 
+    molar values using atmospheric pressure at a height of 227.076 metres:
+    ``calc_patm(227.076) = 98716.403 Pa``.
 
-        :math:`T` is given by the argument `tc`.
-        
-    References
+    .. TODO - why this height?
+
+    - :math:`\Delta H_{kc} = 79430 J mol-1`,
+    - :math:`\Delta H_{ko} = 36380 J mol-1`,
+    - :math:`K_{c25} = 404.9 \mu\text{mol}\ \text{mol}^{-1}` or 
+      :math:`404.9 \cdot 98716.403 = 39.97 \text{Pa}`, and
+    - :math:`K_{o25} = 278.4 \text{mmol}\ \text{mol}^{-1}` or 
+      :math:`278.4 \cdot 98716.403 = 27480 \text{Pa}`.
+ 
+    References:
+
         Farquhar,  G.  D.,  von  Caemmerer,  S.,  and  Berry,  J.  A. (1980) A
         biochemical  model  of photosynthetic CO2 assimilation in leaves of C3
         species, Planta, 149, 78–90
@@ -387,10 +395,12 @@ def calc_kmm(tc: float, patm: float):
         for models of Rubisco-limited photosynthesis, Plant, Cell and
         Environment, 24, 253–259
     
-    >>> # Michaelis-Menten coefficient at 20 degrees Celsius and standard 
-    >>> # atmosphere (in Pa):
-    >>> calc_kmm(20, 101325) # doctest: +ELLIPSIS
-    46.09927...
+    Examples:
+
+        >>> # Michaelis-Menten coefficient at 20 degrees Celsius and standard 
+        >>> # atmosphere (in Pa):
+        >>> calc_kmm(20, 101325) # doctest: +ELLIPSIS
+        46.09927...
     
     Args:
         tc: Temperature, relevant for photosynthesis (°C)
