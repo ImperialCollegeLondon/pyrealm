@@ -1059,9 +1059,13 @@ class CalcLUEVcmax:
         >>> out.omega_star is None # doctest: +ELLIPSIS
         True
         """
+        
+        # Include effect of Jmax limitation, modify mc accounting for the
+        # co-limitation hypothesis after Prentice et al. (2014)
+        mpi = (self.out_optchi.mj ** 2 - PARAM.wang17.c ** (2.0 / 3.0) *
+               (self.out_optchi.mj ** (4.0 / 3.0)))
 
-        # Include effect of Jmax limitation
-        mprime = self.calc_mprime(self.out_optchi.mj)
+        mprime = numpy.sqrt(mpi) if mpi > 0 else None
 
         # Light use efficiency (gpp per unit absorbed light)
         self.lue = (self.kphio * self.ftemp_kphio * mprime *
@@ -1176,25 +1180,6 @@ class CalcLUEVcmax:
         self.lue = self.kphio * self.ftemp_kphio * PARAM.k.c_molmass * self.soilmstress
         # Vcmax normalised per unit absorbed PPFD (assuming iabs=1), with Jmax limitation
         self.vcmax_unitiabs = self.kphio * self.ftemp_kphio * self.soilmstress
-
-    @staticmethod
-    def calc_mprime(mc: float) -> float:
-        """Modifies mc accounting for the co-limitation hypothesis after
-        Prentice et al. (2014)
-
-        Args:
-            mc: factor determining LUE (unitless)
-
-        Returns:
-            Modified mc (mpi, unitless)
-        """
-
-        mpi = mc ** 2 - PARAM.wang17.c ** (2.0 / 3.0) * (mc ** (4.0 / 3.0))
-
-        # Check for negatives:
-        mpi = numpy.sqrt(mpi) if mpi > 0 else None
-
-        return mpi
 
 
 def co2_to_ca(co2: float, patm: float) -> float:
