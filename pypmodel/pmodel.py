@@ -1052,80 +1052,132 @@ class CalcOptimalChi:
 
 
 class CalcLUEVcmax:
+    r"""**Calculate light use efficiency (LUE) and** :math:`V_{cmax}`
 
+    This class provides methods to estimate light use efficiency and
+    :math:`V_{cmax}`. Two of the provided methods (``wang17`` and ``smith19``)
+    account for :math:`J_{max}` limitation of light use efficiency, while the
+    remanining methods (``none`` and ``c4``) do not.
+
+    Light use efficiency (LUE) is calculated from the inputs as:
+
+    .. math::
+        \text{LUE} = \phi(T) \cdot \phi_0 \cdot m' \cdot M_C \cdot \beta
+
+    where:
+
+    - :math:`M_C` is the molecular mass of Carbon,
+    - :math:`m'` is a factor implementing :math:`J_{max}` limitation. When 
+      method is ``none`` or ``c4``, :math:`m'=1.0`, otherwise it is 
+      calculated using the selected method.
+
+    The chosen method is automatically used to populate :attr:`mprime`, 
+    :attr:`lue` and :attr:`vcmax_unitiabs` when an instance is created. For
+    method ``smith19``, values of :attr:`omega` and :attr:`omegastar` are
+    also populated.
+
+    Attributes:
+
+        optchi (:class:`CalcOptimalChi`): an instance of :class:`CalcOptimalChi`
+            providing :math:`\chi` and other variables.
+        kphio (float): The apparent quantum yield efficiency (:math:`\phi(0)`,
+            unitless).
+        ftemp_kphio (float): A factor to capture the temperature dependence of 
+            quantum yield efficiency (:math:`\phi(T)`), defaulting to 1.0 for 
+            no temperature dependence (see :func:`calc_ftemp_kphio`).
+        soilmstress (float): A factor to capture the soil moisture stress 
+            (:math:`\beta`), defaulting to 1.0 for no soil moisture stress 
+            (see :func:`calc_soilmstress`).
+        method (str): one of ``wang17``, ``smith19``, ``none`` or ``c4``, 
+            defaulting to ``wang17``.
+
+        mprime (float): :math:`J_{max}` limitation factor.
+        lue (float): light use efficiency per unit absolute irradiance. 
+        vcmax_unitiabs (float): maximum carboxylation rate per unit absolute 
+            irradiance.
+        omega (float): component of `J_{max}` calculation in Smith et al. 
+            2019.
+        omegastar (float):  component of `J_{max}` calculation in Smith et al. 
+            2019.
     """
 
+    # TODO - apparent inconsistency in structure of VCMax and meaning of mprime?
 
-    """
+    def __init__(self, optchi, kphio: float, ftemp_kphio: float = 1.0, 
+                 soilmstress: float = 1.0, method: str = 'wang17'):
 
-    def __init__(self, out_optchi, kphio, ftemp_kphio, soilmstress, method):
-
-        self.out_optchi = out_optchi
+        self.optchi = optchi
         self.kphio = kphio
         self.ftemp_kphio = ftemp_kphio
         self.soilmstress = soilmstress
+        self.method = method
+        self.mprime = None
         self.lue = None
         self.vcmax_unitiabs = None
         self.omega = None
         self.omega_star = None
 
-        all_methods = {'wang17': self._wang17, 'smith19': self._smith19,
-                       'none': self._none, 'c4': self._c4}
+        all_methods = {'wang17': self.wang17, 'smith19': self.smith19,
+                       'none': self.none, 'c4': self.c4}
 
-        if method in all_methods:
-            this_method = all_methods[method]
+        if self.method in all_methods:
+            this_method = all_methods[self.method]
             this_method()
         else:
             raise ValueError(f"CalcLUEVcmax: method argument '{method}' invalid.")
 
-    def _wang17(self):
-        """
-        >>> # Example taken from internals of example(rpmodel) in R implementation
-        >>> optchi = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925, ns_star = 1.12536,
-        ...                           ca = 40.53, vpd = 1000)
-        >>> out = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
-        ...                    soilmstress = 1, method='wang17')
-        >>> out.lue # doctest: +ELLIPSIS
-        0.25475...
-        >>> out.vcmax_unitiabs # doctest: +ELLIPSIS
-        0.063488...
-        >>> out.omega is None # doctest: +ELLIPSIS
-        True
-        >>> out.omega_star is None # doctest: +ELLIPSIS
-        True
+    def wang17(self):
+        """LUE and :math:`V_{cmax}` method of Wang et al. 2017
+
+        Examples:
+
+            >>> optchi = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925, ns_star = 1.12536,
+            ...                           ca = 40.53, vpd = 1000)
+            >>> out = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
+            ...                    soilmstress = 1, method='wang17')
+            >>> out.lue # doctest: +ELLIPSIS
+            0.25475...
+            >>> out.vcmax_unitiabs # doctest: +ELLIPSIS
+            0.063488...
+            >>> out.omega is None # doctest: +ELLIPSIS
+            True
+            >>> out.omega_star is None # doctest: +ELLIPSIS
+            True
         """
 
         # Include effect of Jmax limitation, modify mc accounting for the
         # co-limitation hypothesis after Prentice et al. (2014)
-        mpi = (self.out_optchi.mj ** 2 - PARAM.wang17.c ** (2.0 / 3.0) *
-               (self.out_optchi.mj ** (4.0 / 3.0)))
+        mpi = (self.optchi.mj ** 2 - PARAM.wang17.c ** (2.0 / 3.0) *
+               (self.optchi.mj ** (4.0 / 3.0)))
 
-        mprime = numpy.sqrt(mpi) if mpi > 0 else None
+        self.mprime = numpy.sqrt(mpi) if mpi > 0 else None
 
         # Light use efficiency (gpp per unit absorbed light)
-        self.lue = (self.kphio * self.ftemp_kphio * mprime *
+        self.lue = (self.kphio * self.ftemp_kphio * self.mprime *
                     PARAM.k.c_molmass * self.soilmstress)
 
         # Vcmax normalised per unit absorbed PPFD (assuming iabs=1), with Jmax limitation
-        self.vcmax_unitiabs = (self.kphio * self.ftemp_kphio * self.out_optchi.mjoc *
-                               mprime / self.out_optchi.mj * self.soilmstress)
+        self.vcmax_unitiabs = (self.kphio * self.ftemp_kphio * self.optchi.mjoc *
+                               self.mprime / self.optchi.mj * self.soilmstress)
 
-    def _smith19(self):
+    def smith19(self):
 
-        """
-        >>> # Example taken from internals of example(rpmodel) in R implementation
-        >>> optchi = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925, ns_star = 1.12536,
-        ...                           ca = 40.53, vpd = 1000)
-        >>> out = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
-        ...                    soilmstress = 1, method='smith19')
-        >>> out.lue # doctest: +ELLIPSIS
-        0.086568...
-        >>> out.vcmax_unitiabs # doctest: +ELLIPSIS
-        0.021574...
-        >>> out.omega # doctest: +ELLIPSIS
-        1.10204...
-        >>> out.omega_star # doctest: +ELLIPSIS
-        1.28250...
+        """LUE and :math:`V_{cmax}` method of Smith et al. 2019
+
+        Examples:
+
+            >>> optchi = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925, ns_star = 1.12536,
+            ...                           ca = 40.53, vpd = 1000)
+            >>> out = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
+            ...                    soilmstress = 1, method='smith19')
+            >>> out.lue # doctest: +ELLIPSIS
+            0.086568...
+            >>> out.vcmax_unitiabs # doctest: +ELLIPSIS
+            0.021574...
+            >>> out.omega # doctest: +ELLIPSIS
+            1.10204...
+            >>> out.omega_star # doctest: +ELLIPSIS
+            1.28250...
         """
 
         # Adopted from Nick Smith's code:
@@ -1150,66 +1202,72 @@ class CalcLUEVcmax:
         # factors derived as in Smith et al., 2019
         self.omega = _calc_omega(theta=PARAM.smith19.theta, # Eq. S4
                                  c_cost=PARAM.smith19.c_cost,
-                                 m=self.out_optchi.mj)
+                                 m=self.optchi.mj)
         self.omega_star = (1.0 + self.omega -  # Eq. 18
                            numpy.sqrt((1.0 + self.omega) ** 2 -
                                       (4.0 * PARAM.smith19.theta * self.omega)))
 
         # Effect of Jmax limitation
-        mprime = self.out_optchi.mj * self.omega_star / (8.0 * PARAM.smith19.theta)
+        self.mprime = self.optchi.mj * self.omega_star / (8.0 * PARAM.smith19.theta)
 
         # Light use efficiency (gpp per unit absorbed light)
-        self.lue = (self.kphio * self.ftemp_kphio * mprime *
+        self.lue = (self.kphio * self.ftemp_kphio * self.mprime *
                     PARAM.k.c_molmass * self.soilmstress)
 
         # calculate Vcmax per unit aborbed light
-        self.vcmax_unitiabs = (self.kphio * self.ftemp_kphio * self.out_optchi.mjoc *
+        self.vcmax_unitiabs = (self.kphio * self.ftemp_kphio * self.optchi.mjoc *
                                self.omega_star / (8.0 * PARAM.smith19.theta) * self.soilmstress)  # Eq. 19
 
 
-    def _none(self):
-        """
-        >>> # Example taken from internals of example(rpmodel) in R implementation
-        >>> optchi = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925, ns_star = 1.12536,
-        ...                           ca = 40.53, vpd = 1000)
-        >>> out = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
-        ...                    soilmstress = 1, method='none')
-        >>> out.lue # doctest: +ELLIPSIS
-        0.4589983...
-        >>> out.vcmax_unitiabs # doctest: +ELLIPSIS
-        0.1143898...
-        >>> out.omega is None
-        True
-        >>> out.omega_star is None
-        True
+    def none(self):
+        """LUE and :math:`V_{cmax}` with no :math:`J_{max}` limitation
+
+        Examples:
+
+            >>> optchi = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925, ns_star = 1.12536,
+            ...                           ca = 40.53, vpd = 1000)
+            >>> out = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
+            ...                    soilmstress = 1, method='none')
+            >>> out.lue # doctest: +ELLIPSIS
+            0.4589983...
+            >>> out.vcmax_unitiabs # doctest: +ELLIPSIS
+            0.1143898...
+            >>> out.omega is None
+            True
+            >>> out.omega_star is None
+            True
         """
 
         # Light use efficiency (gpp per unit absorbed light)
-        self.lue = (self.kphio * self.ftemp_kphio * self.out_optchi.mj *
+        self.lue = (self.kphio * self.ftemp_kphio * self.optchi.mj *
                     PARAM.k.c_molmass * self.soilmstress)
 
         # Vcmax normalised per unit absorbed PPFD (assuming iabs=1), with Jmax limitation
-        self.vcmax_unitiabs = (self.kphio * self.ftemp_kphio * self.out_optchi.mjoc *
+        self.vcmax_unitiabs = (self.kphio * self.ftemp_kphio * self.optchi.mjoc *
                                self.soilmstress)
 
-    def _c4(self):
+    def c4(self):
+        """A simple method for the C4 pathway. No JMax limitation is applied.
+
+        Examples:
+
+            >>> optchi = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925, ns_star = 1.12536,
+            ...                           ca = 40.53, vpd = 1000)
+            >>> out = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
+            ...                    soilmstress = 1, method='c4')
+            >>> out.lue # doctest: +ELLIPSIS
+            0.6443855...
+            >>> out.vcmax_unitiabs # doctest: +ELLIPSIS
+            0.05365096...
+            >>> out.omega is None
+            True
+            >>> out.omega_star is None
+            True
         """
-        TODO - CHECK IF C4 is needed or if this is just _none with the default
-               unity options from calc_optimal_chi for c4.
-        >>> # Example taken from internals of example(rpmodel) in R implementation
-        >>> optchi = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925, ns_star = 1.12536,
-        ...                           ca = 40.53, vpd = 1000)
-        >>> out = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
-        ...                    soilmstress = 1, method='c4')
-        >>> out.lue # doctest: +ELLIPSIS
-        0.6443855...
-        >>> out.vcmax_unitiabs # doctest: +ELLIPSIS
-        0.05365096...
-        >>> out.omega is None
-        True
-        >>> out.omega_star is None
-        True
-        """
+
+        # TODO - CHECK IF C4 is needed or if this is just _none with the default
+        #  unity options from calc_optimal_chi for c4.
+
         # Light use efficiency (gpp per unit absorbed light)
         self.lue = self.kphio * self.ftemp_kphio * PARAM.k.c_molmass * self.soilmstress
         # Vcmax normalised per unit absorbed PPFD (assuming iabs=1), with Jmax limitation
