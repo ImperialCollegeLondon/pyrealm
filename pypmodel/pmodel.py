@@ -6,24 +6,28 @@ from pypmodel.params import PARAM
 
 
 def calc_density_h2o(tc: float, p: float) -> float:
-    """*Density of water*
+    """**Density of water**
 
     Calculates the density of water as a function of temperature and atmospheric
     pressure, using the Tumlirz Equation.
 
-    Example:
+    Examples:
+
         >>> calc_density_h2o(20, 101325) # doctest: +ELLIPSIS
         998.2056...
 
     References:
+
         F.H. Fisher and O.E Dial, Jr. (1975) Equation of state of pure water and
         sea water, Tech. Rept., Marine Physical Laboratory, San Diego, CA.
 
     Parameters:
+
         tc: air temperature, °C
         p: atmospheric pressure, Pa
 
     Returns:
+
         Water density as a float in (g cm^-3)
     """
 
@@ -78,15 +82,18 @@ def calc_ftemp_arrh(tk: float, dha: float) -> float:
             \end{align*}
 
     Examples:
+
         >>> # Relative rate change from 25 to 10 degrees Celsius (percent change)
         >>> (1.0-calc_ftemp_arrh( 283.15, 100000)) * 100 # doctest: +ELLIPSIS
         88.19912...
 
     Args:
+
         tk: Temperature (Kelvin)
         dha: Activation energy (J mol-1)
 
     Returns:
+
         A float value for :math:`f`
     """
 
@@ -101,20 +108,20 @@ def calc_ftemp_arrh(tk: float, dha: float) -> float:
 
 
 def calc_ftemp_inst_rd(tc: float) -> float:
-    """*Temperature response of dark respiration*
+    """**Temperature response of dark respiration**
 
     This function calculates the temperature-scaling factor for dark respiration
-    at a given temperature :math:`T` in °C, relative to the standard reference
-    temperature :math:`T0`, following Heskel et al. 2016 (Table1, Eqn 2). The
-    default parameterisation uses the global means(:math:`b = 0.1012, c = 0.0005`)
+    at a given temperature (``tc``, :math:`T` in °C), relative to the standard
+    reference temperature :math:`T_o`, following Heskel et al. 2016 (Table1,
+    Eqn 2). The default parameterisation uses the global means
+    (:math:`b = 0.1012, c = 0.0005`).
 
     .. math::
 
-            fr = exp( b (T0 - T) -  c ( T0^2 - T^2 ))
-
-    The default parameters are
+            fr = exp( b (T_o - T) -  c ( T_o^2 - T^2 ))
 
     References:
+
          Heskel,  M.,  O’Sullivan,  O.,  Reich,  P.,  Tjoelker,  M.,
          Weerasinghe,  L.,  Penillard,  A.,Egerton, J., Creek, D.,
          Bloomfield, K., Xiang, J., Sinca, F., Stangl, Z.,
@@ -124,15 +131,19 @@ def calc_ftemp_inst_rd(tc: float) -> float:
          functional types, Proceedings of the National Academy of Sciences,
          113,  3832–3837,  doi:10.1073/pnas.1520282113
 
-    >>> # Relative percentage instantaneous change in Rd going from 10 to 25 degrees
-    >>> (calc_ftemp_inst_rd(25) / calc_ftemp_inst_rd(10) - 1) * 100 # doctest: +ELLIPSIS
-    250.95927...
+    Examples:
+
+        >>> # Relative percentage instantaneous change in Rd going from 10 to 25 degrees
+        >>> (calc_ftemp_inst_rd(25) / calc_ftemp_inst_rd(10) - 1) * 100 # doctest: +ELLIPSIS
+        250.95927...
 
     Args:
+
         tc: Temperature (degrees Celsius)
 
     Returns:
-        A float value for \eqn{fr}
+
+        A float value for :math:`fr`
     """
 
     return numpy.exp(PARAM.Heskel.b * (tc - PARAM.k.To) -
@@ -140,7 +151,7 @@ def calc_ftemp_inst_rd(tc: float) -> float:
 
 
 def calc_ftemp_inst_vcmax(tcleaf: float, tcgrowth: float = None) -> float:
-    """*Instantaneous temperature response of* :math:`V_{cmax}`
+    r"""**Instantaneous temperature response of** :math:`V_{cmax}`
 
     This function calculates the temperature-scaling factor of the instantaneous
     temperature response of :math:`V_{cmax}` relative to the standard reference
@@ -223,7 +234,7 @@ def calc_ftemp_inst_vcmax(tcleaf: float, tcgrowth: float = None) -> float:
 
 
 def calc_ftemp_kphio(tc: float, c4: bool = False) -> float:
-    """*Temperature dependence of the quantum yield efficiency*
+    r"""**Temperature dependence of the quantum yield efficiency**
 
     Calculates the temperature dependence of the quantum yield efficiency,
     using a quadratic function. The default parameterisations are below.
@@ -250,28 +261,32 @@ def calc_ftemp_kphio(tc: float, c4: bool = False) -> float:
     :func:`rpmodel`).
 
     References:
+
         Bernacchi, C. J., Pimentel, C., and Long, S. P.:  In vivo temperature
         response functions  of  parameters required  to  model  RuBP-limited
         photosynthesis,  Plant  Cell Environ., 26, 1419–1430, 2003
 
-    >>> # Relative change in the quantum yield efficiency between 5 and 25
-    >>> # degrees celsius (percent change):
-    >>> (calc_ftemp_kphio(25.0) / calc_ftemp_kphio(5.0) - 1) * 100 # doctest: +ELLIPSIS
-    52.03969...
-    >>> # Relative change in the quantum yield efficiency between 5 and 25
-    >>> # degrees celsius (percent change) for a C4 plant:
-    >>> (calc_ftemp_kphio(25.0, c4=True) /
-    ...  calc_ftemp_kphio(5.0, c4=True) - 1) * 100 # doctest: +ELLIPSIS
-    432.25806...
+    Examples:
 
+        >>> # Relative change in the quantum yield efficiency between 5 and 25
+        >>> # degrees celsius (percent change):
+        >>> (calc_ftemp_kphio(25.0) / calc_ftemp_kphio(5.0) - 1) * 100 # doctest: +ELLIPSIS
+        52.03969...
+        >>> # Relative change in the quantum yield efficiency between 5 and 25
+        >>> # degrees celsius (percent change) for a C4 plant:
+        >>> (calc_ftemp_kphio(25.0, c4=True) /
+        ...  calc_ftemp_kphio(5.0, c4=True) - 1) * 100 # doctest: +ELLIPSIS
+        432.25806...
 
     Args:
+
         tc: Temperature, relevant for photosynthesis (°C)
         c4: Boolean specifying whether fitted temperature response for C4 plants
             is used. Defaults to \code{FALSE}.
 
     Returns:
 
+        A float value for :math:`\phi(T)`
     """
 
     if c4:
@@ -283,7 +298,7 @@ def calc_ftemp_kphio(tc: float, c4: bool = False) -> float:
 
 
 def calc_gammastar(tc: float, patm: float) -> float:
-    r"""CO2 compensation point
+    r"""**CO2 compensation point**
 
     Calculates the photorespiratory CO2 compensation point in absence of dark
     respiration (:math:`\Gamma^{*}`, Farquhar, 1980) as:
@@ -307,7 +322,8 @@ def calc_gammastar(tc: float, patm: float) -> float:
       following an Arrhenius-type temperature response function implemented
       in :func:`calc_ftemp_arrh`.
 
-    References: 
+    References:
+
         Farquhar,  G.  D.,  von  Caemmerer,  S.,  and  Berry,  J.  A.: A
         biochemical  model  of photosynthetic CO2 assimilation in leaves of C3
         species, Planta, 149, 78–90, 1980.
@@ -317,17 +333,20 @@ def calc_gammastar(tc: float, patm: float) -> float:
         for models of Rubisco-limited photosyn-thesis, Plant, Cell and
         Environment, 24, 253–259, 2001
 
-    Examples: 
+    Examples:
+
         >>> # CO2 compensation point at 20 degrees Celsius and standard 
         >>> # atmosphere (in Pa) 
         >>> calc_gammastar(20, 101325) # doctest: +ELLIPSIS
         3.33925...
 
     Args: 
+
         tc: Temperature, relevant for photosynthesis (°C) 
         patm: Atmospheric pressure (Pa)
 
-    Returns: 
+    Returns:
+
         A float value for :math:`\Gamma^{*}` (in Pa)
     """
 
@@ -370,7 +389,8 @@ def calc_kmm(tc: float, patm: float) -> float:
     molar values using atmospheric pressure at a height of 227.076 metres:
     ``calc_patm(227.076) = 98716.403 Pa``.
 
-    .. TODO - why this height?
+    .. TODO - why this height? Inconsistent with calc_gammastar which
+              uses P_0 for the same conversion for a value in the same table.
 
     - :math:`\Delta H_{kc} = 79430 J mol-1`,
     - :math:`\Delta H_{ko} = 36380 J mol-1`,
@@ -418,7 +438,7 @@ def calc_kmm(tc: float, patm: float) -> float:
 
 
 def calc_soilmstress(soilm: float, meanalpha: float = 1.0):
-    r"""*Empirical soil moisture stress factor*
+    r"""**Empirical soil moisture stress factor**
 
     Calculates an empirical soil moisture stress factor  :math:`\beta` as a
     function of relative soil moisture (:math:`m_s`, fraction of field
@@ -445,20 +465,25 @@ def calc_soilmstress(soilm: float, meanalpha: float = 1.0):
     and :math:`a = 0.0` and :math:`b = 0.685` are empirically derived values.
 
     References:
+
          Stocker, B. et al. Geoscientific Model Development Discussions (in prep.)
 
-    >>> # Relative reduction (%) in GPP due to soil moisture stress at
-    >>> # relative soil water content ('soilm') of 0.2:
-    >>> (calc_soilmstress(0.2) - 1) * 100 # doctest: +ELLIPSIS
-    -13.99999...
+    Examples:
+        
+        >>> # Relative reduction (%) in GPP due to soil moisture stress at
+        >>> # relative soil water content ('soilm') of 0.2:
+        >>> (calc_soilmstress(0.2) - 1) * 100 # doctest: +ELLIPSIS
+        -13.99999...
 
     Args:
+
         soilm: Relative soil moisture as a fraction of field capacity
             (unitless). Defaults to 1.0 (no soil moisture stress).
         meanalpha: Local annual mean ratio of actual over potential
             evapotranspiration, measure for average aridity. Defaults to 1.0.
 
     Returns:
+
         A numeric value for \eqn{\beta}
     """
 
@@ -472,25 +497,30 @@ def calc_soilmstress(soilm: float, meanalpha: float = 1.0):
 
 
 def calc_viscosity_h2o(tc: float, p: float):
-    """Viscosity of water
+    """**Viscosity of water**
 
     Calculates the viscosity of water as a function of temperature and atmospheric
     pressure.
 
     References:
+
         Huber, M. L., R. A. Perkins, A. Laesecke, D. G. Friend, J. V. Sengers,
         M. J. Assael, ..., K. Miyagawa (2009) New international formulation for
         the viscosity of H2O, J. Phys. Chem. Ref. Data, Vol. 38(2), pp. 101-125.
 
-    >>> # Density of water at 20 degrees C and standard atmospheric pressure:
-    >>> calc_viscosity_h2o(20, 101325) # doctest: +ELLIPSIS
-    0.001001597...
+    Examples:
+        
+        >>> # Density of water at 20 degrees C and standard atmospheric pressure:
+        >>> calc_viscosity_h2o(20, 101325) # doctest: +ELLIPSIS
+        0.001001597...
 
     Args:
+
         tc: air temperature (°C)
         p: atmospheric pressure (Pa)
 
     Returns:
+
         A float giving the viscosity of water (mu, Pa s)
     """
 
@@ -522,7 +552,7 @@ def calc_viscosity_h2o(tc: float, p: float):
 
 
 def calc_patm(elv: float) -> float:
-    """*Atmospheric pressure*
+    """**Atmospheric pressure**
 
     Calculates atmospheric pressure as a function of elevation with reference to
     the standard atmosphere.  The elevation-dependence of atmospheric pressure
@@ -544,19 +574,24 @@ def calc_patm(elv: float) -> float:
     - :math:`T_0` is the standard temperature in Kelvin (298.15 K, corresponds to 25 °C).
 
     References:
+
         Berberan-Santos, M. N., Bodunov, E. N., & Pogliani, L. (2009). On the
         barometric formula inside the Earth. Journal of Mathematical Chemistry,
         47(3), 990–1004. http://doi.org/10.1007/s10910-009-9620-7
 
-    >>> # Standard atmospheric pressure, in Pa, corrected for 1000 m.a.s.l.
-    >>> calc_patm(1000) # doctest: +ELLIPSIS
-    90241.54...
+    Examples:
+        
+        >>> # Standard atmospheric pressure, in Pa, corrected for 1000 m.a.s.l.
+        >>> calc_patm(1000) # doctest: +ELLIPSIS
+        90241.54...
 
     Args:
+
         elv: Elevation above sea-level (m.a.s.l.)
 
     Returns:
-        A numeric value for \eqn{p}
+
+        A numeric value for :math:`p`
     """
 
     # Convert elevation to pressure, Pa. This equation uses the base temperature
@@ -591,6 +626,7 @@ def pmodel(tc: float,
     of the parameter options and calculation of the P-model.
 
     Args:
+
         tc: Temperature, relevant for photosynthesis (°C)
         vpd: Vapour pressure deficit (Pa)
         co2: Atmospheric CO2 concentration (ppm)
@@ -614,8 +650,8 @@ def pmodel(tc: float,
             of quantum yield efficiency after Bernacchi et al., 2003 is to be
             accounted for. Defaults to `TRUE`.
 
-
     Returns:
+
         A ``dotmap.DotMap`` object containing:
 
         - ``ca``: Ambient CO2 expressed as partial pressure (Pa)
@@ -623,8 +659,7 @@ def pmodel(tc: float,
         - ``kmm``: Michaelis-Menten coefficient :math:`K` for photosynthesis (Pa, see :func:`calc_kmm`).
         - ``ns_star``: Relative viscosity of water (unitless, see :ref:`ns_star`).
         - ``chi``: Optimal ratio of leaf internal to ambient CO2 (unitless, see :ref:`opt_chi`).
-        - ``ci``: Leaf-internal CO2 partial pressure (Pa), calculated as \eqn{(\chi ca)}.
-
+        - ``ci``: Leaf-internal CO2 partial pressure (Pa), calculated as \eqn{(\chi ca)}. 
         - ``lue``: Light use efficiency (g C / mol photons), (see :ref:`lue`) 
         - ``mj``: Factor in the light-limited assimilation rate function, given by
                                 \deqn{
@@ -708,6 +743,7 @@ def pmodel(tc: float,
         12.90735...
 
     References:
+
         Bernacchi, C. J., Pimentel, C., and Long, S. P.:  In vivo temperature response funtions  of  parameters
         required  to  model  RuBP-limited  photosynthesis,  Plant  Cell Environ., 26, 1419–1430, 2003
 
@@ -740,8 +776,8 @@ def pmodel(tc: float,
         Stocker, B. et al. Geoscientific Model Development Discussions (in prep.)
 
     Returns:
-        A named list of numeric values (including temperature and pressure dependent parameters of the
-        photosynthesis model, P-model predictions, including all its corollary).
+    
+        A :class:`dotmap.Dotmap` containing predictions of the P-model.
     """
 
     # Check arguments
@@ -924,7 +960,7 @@ class CalcOptimalChi:
         mj (float): factor in the light-limited assimilation rate function (:math:`\m_j`).
         mjoc (float): mj:mv ratio 
 
-        .. TODO more detail on mjoc
+    .. TODO more detail on mjoc
 
     Examples:
 
@@ -942,6 +978,7 @@ class CalcOptimalChi:
 
 
     Returns: 
+    
         An instance of :class:`CalcOptimalChi` where the :attr:`chi`,
         :attr:`mj`, :attr:`mc` and :attr:`mjoc` have been populated 
         using the chosen method.
@@ -1275,14 +1312,17 @@ class CalcLUEVcmax:
 
 
 def co2_to_ca(co2: float, patm: float) -> float:
-    """Converts ca (ambient CO2) from ppm to Pa.
+    """Converts ambient :math:`\ce{CO2}` (:math:`c_a`) in part per million to
+    Pascals.
 
     Args:
-        co2: annual atm. CO2, ppm
-        patm: monthly atm. pressure, Pa
+
+        co2 (float): annual atmospheric :math:`\ce{CO2}`, ppm
+        patm (float): monthly atmospheric pressure, Pa
 
     Returns:
-        Ambient CO2 in units of Pa
+    
+        Ambient :math:`\ce{CO2}` in units of Pa
     """
 
     return 1.0e-6 * co2 * patm  # Pa, atms. CO2
