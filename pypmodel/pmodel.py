@@ -52,40 +52,35 @@ def calc_density_h2o(tc: float, p: float) -> float:
 
 
 def calc_ftemp_arrh(tk: float, dha: float) -> float:
-    """*Temperature scaling of enzyme kinetics*
+    r"""**Temperature scaling of enzyme kinetics**
 
-    Calculates the temperature-scaling factor following Arrhenius kinetics
-    for a given temperature (`tk`) and activation energy (`dha`) relative to
-    the standard reference temperature.
+    Calculates the temperature-scaling factor :math:`f` for enzyme kinetics
+    following an Arrhenius response for a given temperature (``tk``, :math:`T`)
+    and activation energy (``dha``, :math:`\Delta H_a`) relative to the standard
+    reference temperature :math:`T_0` and given the universal gas constant
+    :math:`R`.
 
-    >>> # Relative rate change from 25 to 10 degrees Celsius (percent change)
-    >>> (1.0-calc_ftemp_arrh( 283.15, 100000)) * 100 # doctest: +ELLIPSIS
-    88.19912...
+    Arrhenius kinetics are described as:
 
-    .. TODO - Streamline details
+    .. math::
 
-    Details:
-        To correct for effects by temperature following Arrhenius kinetics,
-        and given a reference temperature :math:`T_0`, :math:`f` calculates the
-        temperature scaling. Arrhenius kinetics are described by an equation of
-        form :math:`x(T)= exp(c - \Delta H_a / (T R))`. The temperature-correction
-        function :math:`f(T, \Delta H_a)` is thus given by :math:`f=x(T)/x(T_0)`
-        which is:
+        x(T)= exp(c - \Delta H_a / (T R))
 
-        .. math::
+    The temperature-correction function :math:`f(T, \Delta H_a)` is therefore:
 
-            f = exp( \Delta H_a (T - T_0) / (T_0 R T_K) )
+    .. math::
+        :nowrap:
 
+            \begin{align*}
+                f &= \frac{x(T)}{x(T_0)} \\
+                  &= exp \left( \frac{\Delta H_a (T - T_0)}{T_0 R T}\right)\text{, or equivalently}\\
+                  &= exp \left( \frac{\Delta H_a}{R} \cdot \left(\frac{1}{T_0} - \frac{1}{T}\right)\right)
+            \end{align*}
 
-        :math:`\Delta H_a` is given by argument `dha`. :math:`T` is given
-        by argument `tk` and has to be provided in Kelvin. :math:`R` is the
-        universal gas constant and is 8.3145 J mol-1 K-1. Note that this is
-        equivalent to:
-
-        .. math::
-
-            f = exp( (\Delta H_a/R) (1/T_0 - 1/T) )
-
+    Examples:
+        >>> # Relative rate change from 25 to 10 degrees Celsius (percent change)
+        >>> (1.0-calc_ftemp_arrh( 283.15, 100000)) * 100 # doctest: +ELLIPSIS
+        88.19912...
 
     Args:
         tk: Temperature (Kelvin)
