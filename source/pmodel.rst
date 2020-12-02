@@ -3,7 +3,6 @@
 The P-Model
 ===========
 
-
 This module is used to provide a Python implementation of the P-model and its
 corollary predictions (Prentice et al., 2014; Han et al., 2017).
 
@@ -41,9 +40,13 @@ Description of the :func:`pmodel`
 The core function is :func:`pmodel` and the core arguments to the model are:
 
 - the temperature (``tc``),
-- vapor presssure deficit (``vpd``),
+- vapor pressure deficit (``vpd``),
 - atmospheric CO2 concentration (``co2``)
 - atmospheric pressure (``patm``)
+
+.. TODO Vectorisation: if all of these are arrays with identical shape (or are
+ scalars that can be broadcast to match an otherwise consistent array shape) then this could
+ generate a time series or spatial surface using numpy. 
 
 If atmospheric pressure is not available then elevation (``elv``) can be 
 provided instead and  will be used to calculate `patm` via :func:`calc_patm`.
@@ -59,7 +62,7 @@ Some calculations in the P-model are scaled to a relative measure of absorbed
 photosynthetically active radiation. To calculate absolute values, for ``gpp``,
 ``lue``, ``rd`` and ``vcmax`` values for both the fraction of absorbed
 photosynthetically active radiation (``fapar``) and the photosynthetic photon
-flux density (``ppfd``) must be provided to calculate the scaling factor
+flux density (``ppfd``) must be provided to calculate the absolute irradiance
 (:math:`I_{abs}`).
 
 .. math::
@@ -95,7 +98,7 @@ to the empirically fitted values presented for three setups in Stocker
 et al. (2019) Geosci. Model Dev.
 
 - If ``do_ftemp_kphio = False``, then ``kphio = 0.049977`` (ORG).
-- If ``do_ftemp_kphio = True`` and:
+- If ``do_ftemp_kphio = True`` and
     - soil moisture stress is being used ``kphio = 0.087182`` (FULL),
     - soil moisture stress is not being used ``kphio = 0.081785`` (BRC).
 
@@ -105,10 +108,7 @@ Photosynthetic pathway
 The P-model can switch between the C3 or C4 photosynthetic pathways
 using the argument ``c4``. By default, the C3 pathway is used
 (``c4=False``). If ``c4=True``, the leaf-internal CO2 concentration is
-assumed to be very large, :math:`m \to 1` (returned variable ``mj``)
-and :math:`m' \to 0.669` (with ``c = 0.41``).
-
-.. TODO c = 0.41?
+assumed to be very large (:math:`m \to 1`,  ``mj``). 
 
 Limitation of :math:`J_{max}`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -124,8 +124,11 @@ argument:
 - ``c4`` (a c4 appropriate calculation)
 
 .. TODO c4 may equal none with the appropriate optimal xi - not sure if
- wang17 or smith19 make sense with c4 optimal xi, in which case, don't need
- to have a c4 method at all, just c4 inputs.
+ wang17 or smith19 make sense with c4 optimal chi, in which case, don't need
+ to have a c4 method at all, just c4 inputs. It looks, from the original text
+ in rpmodel that it makes sense to feed c4 OptChi into wang17 (m' -> 0.669),
+ in which case it can be retired. But this would be a breaking change, since 
+ rpmodel forces c4 to use its own LUEVCmax 
 
 Predictions of the P-model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -135,13 +138,14 @@ The P-model calculates the following quantities:
 .. _ns_star:
 
 Relative viscosity of water (:math:`\eta^{*}`)
-"""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""
 
 The value :math:`\eta^{*}` (``ns_star``) is the viscosity of water in the
 modelled environment relative to the viscosity at standard temperature and
 pressure. 
 
 .. math::
+
     \eta^{*} = \frac{\eta(T, p)}{\eta(T_0, p_0)}
 
 This is used to scale the unit cost of transpiration and :math:`\eta(T, p)` is
@@ -157,27 +161,6 @@ Optimal chi
 
 Light use efficiency
 """"""""""""""""""""
-
-Light use efficiency (LUE) is calculated as:
-
-.. math::
-    \text{LUE} = \phi(T) \cdot \phi0 \cdot m' \cdot M_C
-
-Where:
-
-- :math:`\phi(T)` is the temperature-dependent quantum yield efficiency modifier
-  (see :ref:`kphio`). If ``do_ftemp_kphio=False`` then :math:`\phi(T) = 1`,
-- :math:`\phi 0}` is given by argument ``kphio``,
-- :math:`M_C` is the molecular mass of Carbon,
-                                \eqn{m'=m} if \code{method_jmaxlim=="none"}, otherwise
-                                \deqn{
-                                       m' = m \sqrt( 1 - (c/m)^(2/3) )
-                                }
-                                with \eqn{c=0.41} (Wang et al., 2017) if \code{method_jmaxlim=="wang17"}. \eqn{Mc} is
-                                the molecular mass of C (12.0107 g mol-1). \eqn{m} is given returned variable \code{mj}.
-                                If \code{do_soilmstress==TRUE}, \eqn{LUE} is multiplied with a soil moisture stress factor,
-                                calculated with \link{calc_soilmstress}.
-
 
 
 The :func:`pmodel` function
