@@ -150,84 +150,80 @@ def calc_ftemp_inst_rd(tc: float) -> float:
                      PARAM.Heskel.c * (tc ** 2 - PARAM.k.To ** 2))
 
 
-def calc_ftemp_inst_vcmax(tcleaf: float, tcgrowth: float = None) -> float:
+def calc_ftemp_inst_vcmax(tcleaf: float) -> float:
     r"""**Instantaneous temperature response of** :math:`V_{cmax}`
 
-    This function calculates the temperature-scaling factor of the instantaneous
-    temperature response of :math:`V_{cmax}` relative to the standard reference
-    temperature, following modified Arrhenius kinetics based on Kattge & Knorr
-    (2007). Calculates \eqn{f} for the conversion:
+    This function calculates the temperature-scaling factor :math:`f` of the
+    instantaneous temperature response of :math:`V_{cmax}` given the leaf
+    temperature (:math:`T`) relative to the standard reference temperature
+    (:math:`T_0`), following modified Arrhenius kinetics. 
 
     .. math::
 
        V = f V_{ref}
 
-    Details:
-        The function is given by Kattge & Knorr (2007) as
+    The value of :math:`f` is given by Kattge & Knorr (2007) as:
 
-        .. math::
+    .. math::
 
-            fv = f(T, \Delta Hv) A/B
+        f = g(T, \Delta H_a) \cdot 
+                \frac{1 + exp( (T_0 \Delta S - H_d) / (T_0 R))} 
+                     {1 + exp( (T \Delta S - H_d) / (T R))}
 
-        where :math:`f(T, \Delta Hv)` is a regular Arrhenius-type temperature
-        response function (see `calc_ftemp_arrh`) with :math:`Hv=71513` J mol-1,
+    where,
 
-        .. math::
+    - :math:`g(T, \Delta H_v)` is a regular Arrhenius-type temperature
+      response function (see :func:`calc_ftemp_arrh`)
+    - :math:`H_a` is the activation energy.
+    - :math:`H_d` is the activation energy.
+    - :math:`T` and :math:`T_0` are expressed in Kelvin, and
+    - :math:`R` is the universal gas constant.
 
-            A = 1 + exp( (T0 \Delta S - Hd) / (T0 R) )
+    The term :math:`\Delta S` is the entropy factor, calculated as a linear
+    function of :math:`T` in °C:
 
-        and
+    .. math::
 
-        .. math::
+        \Delta S = a + b T
 
-            B = 1 + exp( (T \Delta S - Hd) / (TK R) )
-
-        Here, :math:`T` is in Kelvin, :math:`T0=293.15` K, :math:`Hd = 200000` J mol-1
-        is the deactivation energy and :math:`R` is the universal gas constant and
-        is 8.3145 J mol-1 K-1, and
-
-        .. math::
-
-            \Delta S = aS - bS T
-
-        with :math:`aS = 668.39` J mol-1 K-1, and :math:`bS = 1.07` J mol-1 K-2,
-        and :math:`T` given in degrees Celsius (!)
-
+    where :math:`a = 668.39 \text{J} \text{mol}^{-1} \text{K}^{-1}` and 
+    :math:`b = 1.07 \text{J} \text{mol}^{-1} \text{K}^{-2}` (Table 3, 
+    Kattge & Knorr, 2007)
+    
     References:
+
         Kattge, J. and Knorr, W.:  Temperature acclimation in a biochemical model
         of photosynthesis: a reanalysis of data from 36 species, Plant, Cell
         and Environment, 30,1176–1190, 2007.
 
-    >>> # Relative change in Vcmax going (instantaneously, i.e. not
-    >>> # not acclimatedly) from 10 to 25 degrees (percent change):
-    >>> ((calc_ftemp_inst_vcmax(25)/calc_ftemp_inst_vcmax(10)-1) * 100 ) # doctest: +ELLIPSIS
-    283.17753...
+    Examples:
+
+        >>> # Relative change in Vcmax going (instantaneously, i.e. not
+        >>> # not acclimatedly) from 10 to 25 degrees (percent change):
+        >>> ((calc_ftemp_inst_vcmax(25)/calc_ftemp_inst_vcmax(10)-1) * 100 ) # doctest: +ELLIPSIS
+        283.17753...
 
     Args:
+
         tcleaf: Leaf temperature, or in general the temperature relevant for
             photosynthesis (°C)
-        tcgrowth: Growth temperature (°C). In the P-model, taken to be equal
-            to `tcleaf`, as in the defaults here.
 
     Returns:
-
+        A float value for :math:`f`
     """
 
-    if tcgrowth is None:
-        tcgrowth = tcleaf
-
     # Convert temperatures to Kelvin
-    tkref = PARAM.k.To + 273.15
-    tkleaf = tcleaf + 273.15
+    tkref = PARAM.k.To + PARAM.k.CtoK
+    tkleaf = tcleaf + PARAM.k.CtoK
 
     # Calculate entropy following Kattge & Knorr (2007): slope and intercept
     # are defined using temperature in °C, not K!!! 'tcgrowth' corresponds
     # to 'tmean' in Nicks, 'tc25' is 'to' in Nick's
-    dent = PARAM.KattgeKnorr.a_ent + PARAM.KattgeKnorr.b_ent * tcgrowth
-    fva = calc_ftemp_arrh(tkleaf, PARAM.Rubisco.Ha)
-    fvb = ((1 + numpy.exp((tkref * dent - PARAM.Rubisco.Hd) /
+    dent = PARAM.KattgeKnorr.a_ent + PARAM.KattgeKnorr.b_ent * tcleaf
+    fva = calc_ftemp_arrh(tkleaf, PARAM.KattgeKnorr.Ha)
+    fvb = ((1 + numpy.exp((tkref * dent - PARAM.KattgeKnorr.Hd) /
                           (PARAM.k.R * tkref))) /
-           (1 + numpy.exp((tkleaf * dent - PARAM.Rubisco.Hd) /
+           (1 + numpy.exp((tkleaf * dent - PARAM.KattgeKnorr.Hd) /
                           (PARAM.k.R * tkleaf))))
 
     return fva * fvb
@@ -1321,7 +1317,7 @@ def co2_to_ca(co2: float, patm: float) -> float:
         patm (float): monthly atmospheric pressure, Pa
 
     Returns:
-    
+
         Ambient :math:`\ce{CO2}` in units of Pa
     """
 
