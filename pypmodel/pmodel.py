@@ -898,26 +898,37 @@ def pmodel(tc: float,
 
 
 class CalcOptimalChi:
-    """Returns an estimate of leaf internal to ambient CO2 partial pressure
-    following the "simple formulation".
+    r"""**Calculate optimal ratios for** :math:`\chi` 
 
-    TODO - fix this text
+    This class provides methods to estimate the optimal ratio of leaf internal
+    to ambient :math:`\ce{CO2}` partial pressure (:math:`\chi = c_i/c_a`) and
+    other values. 
 
-    Derived following Prentice et al.
-                                 (2014) as:
-                                 \deqn{
-                                       \chi = \Gamma* / ca + (1- \Gamma* / ca) \\xi / (\\xi + \sqrt D )
-                                 }
-                                 with
-                                 \deqn{
-                                      \\xi = \sqrt (\beta (K+ \Gamma*) / (1.6 \eta*))
-                                 }
-                                 \eqn{\beta} is given by argument \code{beta}, \eqn{K} is \code{kmm} (see \link{calc_kmm}),
-                                 \eqn{\Gamma*} is \code{gammastar} (see \link{calc_gammastar}). \eqn{\eta*} is \code{ns_star}.
-                                 \eqn{D} is the vapour pressure deficit (argument \code{vpd}), \eqn{ca} is the
-                                 ambient CO2 partial pressure in Pa (\code{ca}).
+    The chosen method is automatically used to populate four key variables when
+    an instance is created.
 
-            >>> # Example taken from internals of example(rpmodel) in R implementation
+    Attributes:
+
+        kmm (float): the Michaelis-Menten coefficient (:math:`K`, see 
+            :func:`calc_kmm`).
+        gammastar (float): the photorespiratory :math:`\ce{CO2}` compensation point 
+            (:math:`\Gamma^{*}`, see :func:`calc_gammastar`).
+        ns_star (float): the viscosity correction factor (:math:`\eta^{*}`, 
+            see :func:`calc_viscosity_H20`)
+        ca (float): the ambient partial pressure of :math:`\ce{CO2}` (:math:`c_a`, see :func:`co2_to_ca`)
+        vpd (float): the vapor pressure deficit (:math:`D`)
+        method (str): one of ``c4`` or ``prentice14``
+        beta (float): unit cost ratio of carboxylation (see :obj:`PARAMS.stocker19.beta`)
+        chi (float): the ratio of leaf internal to ambient :math:`\ce{CO2}` partial pressure (:math:`\chi`).
+        mc (float): factor in the Rubisco-limited assimilation rate function (:math:`\m_c`).
+        mj (float): factor in the light-limited assimilation rate function (:math:`\m_j`).
+        mjoc (float): mj:mv ratio 
+
+        .. TODO more detail on mjoc
+
+    Examples:
+
+        >>> # Example taken from internals of example(rpmodel) in R implementation
         >>> vals = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925,
         ...                       ns_star = 1.12536, ca = 40.53, vpd = 1000)
         >>> vals.chi # doctest: +ELLIPSIS
@@ -929,17 +940,11 @@ class CalcOptimalChi:
         >>> vals.mjoc # doctest: +ELLIPSIS
         2.13211...
 
-        Args:
-            kmm: Michaelis-Menten coefficient (Pa)
-            gammastar:
-            ns_star: viscosity correction factor for water (unitless)
-            ca:
-            vpd:  vapor pressure deficit (Pa) ??? array?
-            c4: Use c4 representation.
 
-        Returns:
-            A dotmap containing values for ratio of ci/ca (chi, float), mc (float),
-             mj (float) and mjoc (float)
+    Returns: 
+        An instance of :class:`CalcOptimalChi` where the :attr:`chi`,
+        :attr:`mj`, :attr:`mc` and :attr:`mjoc` have been populated 
+        using the chosen method.
     """
 
     def __init__(self, kmm: float, gammastar: float, ns_star: float,
@@ -950,6 +955,7 @@ class CalcOptimalChi:
         self.ns_star = ns_star
         self.ca = ca
         self.vpd = vpd
+        self.method = method
         self.beta = PARAM.stocker19.beta
         # return values
         self.chi = None
@@ -957,51 +963,89 @@ class CalcOptimalChi:
         self.mj = None
         self.mjoc = None
 
-        all_methods = {'prentice14': self._prentice14, 'c4': self._c4}
+        all_methods = {'prentice14': self.prentice14, 'c4': self.c4}
 
-        if method in all_methods:
-            this_method = all_methods[method]
+        # Run the selected method.
+        if self.method in all_methods:
+            this_method = all_methods[self.method]
             this_method()
         else:
             raise ValueError(f"CalcOptimalChi: method argument '{method}' invalid.")
 
-    def _c4(self):
+    def c4(self):
+        r"""This method simply sets the following values to represent the C4
+        pathway:
+        
+        .. math::
+            :nowrap:
 
+            \begin{align*}
+                \chi &= 1\\
+                m_j &= 1\\
+                m_c &= 1\\
+                m_{joc} &= 1
+            \end{align*}
+
+        """
         # Dummy values to represent c4 pathway
         self.chi = 1.0
         self.mc = 1.0
         self.mj = 1.0
         self.mjoc = 1.0
 
-    def _prentice14(self):
+    def prentice14(self):
+        r"""This method calculates optimal :math:`\chi` following Prentice et
+        al. (2014):
+
+        .. math::
+            :nowrap:
+
+            \begin{align*}
+                \chi &= \Gamma^{*} / c_a + (1- \Gamma^{*} / c_a) \xi / (\xi + \sqrt D ), \text{where}\\
+                \xi &= \sqrt (\beta (K+ \Gamma^{*}) / (1.6 \eta^{*}))
+            \end{align*}
+
+        In addition, :math:`m_j`, :math:`m_c` and :math:`m_{joc}`, are
+        calculated as:
+
+        .. math::
+            :nowrap:
+
+            \begin{align*}
+                m_j &= (c_i - \Gamma^{*}) / (c_i + 2 \Gamma^{*})\\
+                m_c &= (c_i - \Gamma^{*}) / (c_i + K)\\
+                m_{joc} &= \text{TODO}
+            \end{align*}
+        """
 
         # TODO - original R code mentioned vectorisation but none of the inputs
         #    are obviously a vector, and the test case returns a list of scalars
         #    so it is not obvious that this is required.
-    
+
         # Avoid negative VPD (dew conditions)
-        vpd = 0 if self.vpd < 0 else self.vpd # ??? array
-    
+        vpd = 0 if self.vpd < 0 else self.vpd
+
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         xi = numpy.sqrt((self.beta * (self.kmm + self.gammastar)) / (1.6 * self.ns_star))
-        self.chi = self.gammastar / self.ca + (1.0 - self.gammastar / self.ca) * xi / (xi + numpy.sqrt(vpd))
-    
+        self.chi = (self.gammastar / self.ca + 
+                    (1.0 - self.gammastar / self.ca) * xi / (xi + numpy.sqrt(vpd)))
+
         # Define variable substitutes:
         vdcg = self.ca - self.gammastar
         vacg = self.ca + 2.0 * self.gammastar
         vbkg = self.beta * (self.kmm + self.gammastar)
-    
+
         # Calculate mj, based on the mc' formulation (see Regressing_LUE.pdf)
         if self.ns_star > 0 and vpd > 0 and vbkg > 0:
             vsr = numpy.sqrt(1.6 * self.ns_star * vpd / vbkg)
             self.mj = vdcg / (vacg + 3.0 * self.gammastar * vsr)
         else:
             self.mj = None
-    
+
         # alternative variables
         gamma = self.gammastar / self.ca
         kappa = self.kmm / self.ca
-    
+
         # mc and mj:mv
         self.mc = (self.chi - gamma) / (self.chi + kappa)
         self.mjoc = (self.chi + kappa) / (self.chi + 2 * gamma)
