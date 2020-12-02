@@ -753,15 +753,20 @@ def pmodel(tc: float,
                       "(elv), assuming standard atmosphere (101325 Pa at sea level).")
         patm = calc_patm(elv)
 
-    # Soil moisture stress
+    # -----------------------------------------------------------------------
+    # Calculate soil moisture stress as a function of soil moisture and mean alpha
+    # -----------------------------------------------------------------------
+
     if soilm is None and meanalpha is None:
         soilm = 1.0
         meanalpha = 1.0
+        soilmstress = 1.0
         do_soilmstress = False
     elif soilm is None or meanalpha is None:
         raise AttributeError('Provide both soilm and meanalpha to enable '
                              'soil moisture stress limitation.')
     else:
+        soilmstress = calc_soilmstress(soilm, meanalpha)
         do_soilmstress = True
 
     # kphio defaults:
@@ -783,14 +788,6 @@ def pmodel(tc: float,
         ftemp_kphio = calc_ftemp_kphio(tc, c4)
     else:
         ftemp_kphio = 1.0
-
-    # -----------------------------------------------------------------------
-    # Calculate soil moisture stress as a function of soil moisture and mean alpha
-    # -----------------------------------------------------------------------
-    if do_soilmstress:
-        soilmstress = calc_soilmstress(soilm, meanalpha)
-    else:
-        soilmstress = 1.0
 
     # -----------------------------------------------------------------------
     # Photosynthesis model parameters depending on temperature, pressure, and CO2.
