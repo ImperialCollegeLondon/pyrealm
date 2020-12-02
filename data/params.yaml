@@ -55,9 +55,6 @@ Heskel:
 KattgeKnorr:
   a_ent: 668.39  # offset of entropy vs. temperature relationship (J/mol/K)
   b_ent: -1.07  # slope of entropy vs. temperature relationship (J/mol/K^2)
-
-# Unsourced TODO
-Rubisco:
   Ha: 71513  # activation energy (J/mol)
   Hd: 200000  # deactivation energy (J/mol)
 
