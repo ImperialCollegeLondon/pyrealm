@@ -498,37 +498,23 @@ def calc_viscosity_h2o(tc: float, p: float):
     Returns:
         A float giving the viscosity of water (mu, Pa s)
     """
-    # Define reference temperature, density, and pressure values:
-    tk_ast = 647.096  # Kelvin
-    rho_ast = 322.0  # kg/m^3
-    mu_ast = 1e-6  # Pa s
+
 
     # Get the density of water, kg/m^3
     rho = calc_density_h2o(tc, p)
 
     # Calculate dimensionless parameters:
-    tbar = (tc + 273.15) / tk_ast
-    tbarx = tbar ** 0.5
-    tbar2 = tbar ** 2
-    tbar3 = tbar ** 3
-    rbar = rho / rho_ast
+    tbar = (tc + PARAM.k.CtoK) / PARAM.Huber.tk_ast
+    rbar = rho / PARAM.Huber.rho_ast
 
     # Calculate mu0 (Eq. 11 & Table 2, Huber et al., 2009):
-    mu0 = 1.67752 + 2.20462/tbar + 0.6366564/tbar2 - 0.241605/tbar3
-    mu0 = 1e2*tbarx/mu0
-
-    # Create Table 3, Huber et al. (2009):
-    h_array = numpy.array([[0.520094, 0.0850895, -1.08374, -0.289555, 0.0, 0.0],
-                          [0.222531, 0.999115, 1.88797, 1.26613, 0.0, 0.120573],
-                          [-0.281378, -0.906851, -0.772479, -0.489837, -0.257040, 0.0],
-                          [0.161913,  0.257399, 0.0, 0.0, 0.0, 0.0],
-                          [-0.0325372, 0.0, 0.0, 0.0698452, 0.0, 0.0],
-                          [0.0, 0.0, 0.0, 0.0, 0.00872102, 0.0],
-                          [0.0, 0.0, 0.0, -0.00435673, 0.0, -0.000593264]])
+    tbar_pow = tbar ** numpy.arange(0, 4)
+    mu0 = (1e2 * numpy.sqrt(tbar)) / numpy.sum(numpy.array(PARAM.Huber.H_i) / tbar_pow)
 
     # Calculate mu1 (Eq. 12 & Table 3, Huber et al., 2009):
+    h_array = numpy.array(PARAM.Huber.H_ij)
     ctbar = (1.0 / tbar) - 1.0
-    row_j, _ = numpy.indices(h_array.shape)
+    row_j, _ = numpy.indices(h_array.shape) 
     mu1 = h_array * numpy.power(rbar - 1.0, row_j)
     mu1 = numpy.power(ctbar, numpy.arange(0, 6)) * numpy.sum(mu1, axis=0)
     mu1 = numpy.exp(rbar * mu1.sum())
@@ -537,7 +523,7 @@ def calc_viscosity_h2o(tc: float, p: float):
     mu_bar = mu0 * mu1
 
     # Calculate mu (Eq. 1, Huber et al., 2009)
-    return mu_bar * mu_ast  # Pa s
+    return mu_bar * PARAM.Huber.mu_ast  # Pa s
 
 
 def calc_patm(elv: float) -> float:
