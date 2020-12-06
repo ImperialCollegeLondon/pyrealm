@@ -1,6 +1,6 @@
 import setuptools
 
-with open("README.md", "r") as fh:
+with open("README.rst", "r") as fh:
     long_description = fh.read()
 
 version = {}
@@ -14,13 +14,13 @@ setuptools.setup(
     author_email="d.orme@imperial.ac.uk",
     description="Implementation of the pmodel in Python",
     long_description=long_description,
-    long_description_content_type="text/markdown",
+    long_description_content_type="text/x-rst",
     url="",
-    packages=['pypmodel'],
+    packages=setuptools.find_packages(),
     package_data={
-        'pypmodel': ['data/params.yml'],
+        'pypmodel': ['data/*'],
     },
-    entry_points = {
+    entry_points={
             'console_scripts':
              ['']
     },
