@@ -657,64 +657,19 @@ def pmodel(tc: float,
         - ``chi``: Optimal ratio of leaf internal to ambient CO2 (unitless, see :ref:`opt_chi`).
         - ``ci``: Leaf-internal CO2 partial pressure (Pa), calculated as \eqn{(\chi ca)}. 
         - ``lue``: Light use efficiency (g C / mol photons), (see :ref:`lue`) 
-        - ``mj``: Factor in the light-limited assimilation rate function, given by
-                                \deqn{
-                                    m = (ci - \Gamma*) / (ci + 2 \Gamma*)
-                               }
-                               where \eqn{\Gamma*} is given by \code{gammastar}.
-        - ``mc``: Factor in the Rubisco-limited assimilation rate function, given by
-                                \deqn{
-                                    mc = (ci - \Gamma*) / (ci + K)
-                               }
-                               where \eqn{K} is given by \code{kmm}.
-        - ``gpp``: Gross primary production (g C m-2), calculated as
-                               \deqn{
-                                   GPP = Iabs LUE
-                               }
-                               where \eqn{Iabs} is given by \code{fapar*ppfd} (arguments), and is
-                               \code{NA} if \code{fapar==NA} or \code{ppfd==NA}. Note that \code{gpp} scales with
-                               absorbed light. Thus, its units depend on the units in which \code{ppfd} is given.
-        - ``iwue``: Intrinsic water use efficiency (iWUE, Pa), calculated as
-                               \deqn{
-                                     iWUE = ca (1-\chi)/(1.6)
-                               }
-        - ``gs``: Stomatal conductance (gs, in mol C m-2 Pa-1), calculated as
-                               \deqn{
-                                    gs = A / (ca (1-\chi))
-                               }
-                               where \eqn{A} is \code{gpp}\eqn{/Mc}.
-        - ``vcmax``: Maximum carboxylation capacity \eqn{Vcmax} (mol C m-2) at growth temperature (argument
-                              \code{tc}), calculated as
-                              \deqn{
-                                   Vcmax = \phi(T) \phi0 Iabs n
-                              }
-                              where \eqn{n} is given by \eqn{n=m'/mc}.
-        - ``vcmax25``: Maximum carboxylation capacity \eqn{Vcmax} (mol C m-2) normalised to 25 deg C
-                             following a modified Arrhenius equation, calculated as \eqn{Vcmax25 = Vcmax / fv},
-                             where \eqn{fv} is the instantaneous temperature response by Vcmax and is implemented
-                             by function \link{calc_ftemp_inst_vcmax}.
-        - ``jmax``: The maximum rate of RuBP regeneration () at growth temperature (argument
-                              \code{tc}), calculated using
-                              \deqn{
-                                   A_J = A_C
-                              }
-        - ``rd``: Dark respiration \eqn{Rd} (mol C m-2), calculated as
-                             \deqn{
-                                 Rd = b0 Vcmax (fr / fv)
-                             }
-                             where \eqn{b0} is a constant and set to 0.015 (Atkin et al., 2015), \eqn{fv} is the
-                             instantaneous temperature response by Vcmax and is implemented by function
-                             \link{calc_ftemp_inst_vcmax}, and \eqn{fr} is the instantaneous temperature response
-                             of dark respiration following Heskel et al. (2016) and is implemented by function
-                             \link{calc_ftemp_inst_rd}.
+        - ``mj``: Factor in the light-limited assimilation rate function (see :class:`CalcOptimalChi`)
+        - ``mc``: Factor in the Rubisco-limited assimilation rate function (see :class:`CalcOptimalChi`)
+        - ``gpp``: Gross primary production (g C m-2) (see :ref:`iabs_scaling`)
+        - ``iwue``: Intrinsic water use efficiency (iWUE, Pa)
+        - ``gs``: Stomatal conductance (gs, in mol C m-2 Pa-1)
+        - ``vcmax``: Maximum carboxylation capacity :math:`Vcmax` (mol C m-2).
+        - ``vcmax25``: Maximum carboxylation capacity \eqn{Vcmax} (mol C m-2) at standard temperature.
+        - ``jmax``: The maximum rate of RuBP regeneration.
+        - ``rd``: Dark respiration :math:`Rd` (mol C m-2).
 
-        The option ``method_jmaxlim=="smith19"`` adds the following:
+        The option ``method_jmaxlim="smith19"`` adds ``omega`` and ``omegastar``
+        (see :class:`CalcLUEVcmax`)
         
-        - ``omega``: Term corresponding to \eqn{\omega}, defined by Eq. 16 in Smith et al. (2019),
-          and Eq. E19 in Stocker et al. (2019).
-        - ``omega_star``: Term corresponding to \eqn{\omega^\ast}, defined by Eq. 18 in Smith et al.
-          (2019), and Eq. E21 in Stocker et al. (2019).
-
     Examples:
 
         >>> mod_c3 = pmodel(tc=20, vpd=1000, co2=400, fapar=1, ppfd=300, elv=0)
@@ -869,7 +824,7 @@ def pmodel(tc: float,
     # -----------------------------------------------------------------------
 
     # Vcmax25 (vcmax normalized to PARAM.k.To)
-    ftemp25_inst_vcmax = calc_ftemp_inst_vcmax(tc, tc)
+    ftemp25_inst_vcmax = calc_ftemp_inst_vcmax(tc)
     vcmax25_unitiabs = out_lue_vcmax.vcmax_unitiabs / ftemp25_inst_vcmax
 
     # Dark respiration at growth temperature
