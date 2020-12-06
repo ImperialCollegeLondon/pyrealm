@@ -4,7 +4,7 @@ The P-Model
 ===========
 
 This module is used to provide a Python implementation of the P-model and its
-corollary predictions (Prentice et al., 2014; Han et al., 2017).
+corollary predictions \citep{Prentice:2013bc,Wang:2017go} .
 
 The ``rpmodel`` package
 -----------------------
@@ -54,6 +54,8 @@ provided instead and  will be used to calculate `patm` via :func:`calc_patm`.
 In addition to those variables, there are several modifications to the P-model
 to allow for greater complexity and temperature dependency in the model
 predictions. These cover the following core areas:
+
+.. _iabs_scaling:
 
 Absorbed photosynthetically active radiation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -162,6 +164,41 @@ Optimal chi
 Light use efficiency
 """"""""""""""""""""
 
+        - ``iwue``: Intrinsic water use efficiency (iWUE, Pa), calculated as
+                               \deqn{
+                                     iWUE = ca (1-\chi)/(1.6)
+                               }
+        - ``gs``: Stomatal conductance (gs, in mol C m-2 Pa-1), calculated as
+                               \deqn{
+                                    gs = A / (ca (1-\chi))
+                               }
+                               where \eqn{A} is \code{gpp}\eqn{/Mc}.
+        - ``vcmax``: Maximum carboxylation capacity \eqn{Vcmax} (mol C m-2) at growth temperature (argument
+                              \code{tc}), calculated as
+                              \deqn{
+                                   Vcmax = \phi(T) \phi0 Iabs n
+                              }
+                              where \eqn{n} is given by \eqn{n=m'/mc}.
+        - ``vcmax25``: Maximum carboxylation capacity \eqn{Vcmax} (mol C m-2) normalised to 25 deg C
+                             following a modified Arrhenius equation, calculated as \eqn{Vcmax25 = Vcmax / fv},
+                             where \eqn{fv} is the instantaneous temperature response by Vcmax and is implemented
+                             by function \link{calc_ftemp_inst_vcmax}.
+        - ``jmax``: The maximum rate of RuBP regeneration () at growth temperature (argument
+                              \code{tc}), calculated using
+                              \deqn{
+                                   A_J = A_C
+                              }
+        - ``rd``: Dark respiration \eqn{Rd} (mol C m-2), calculated as
+                             \deqn{
+                                 Rd = b0 Vcmax (fr / fv)
+                             }
+                             where \eqn{b0} is a constant and set to 0.015 (Atkin et al., 2015), \eqn{fv} is the
+                             instantaneous temperature response by Vcmax and is implemented by function
+                             \link{calc_ftemp_inst_vcmax}, and \eqn{fr} is the instantaneous temperature response
+                             of dark respiration following Heskel et al. (2016) and is implemented by function
+                             \link{calc_ftemp_inst_rd}.
+
+
 
 The :func:`pmodel` function
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -186,8 +223,17 @@ described below.
     :exclude-members: pmodel
 
 
+Bibliography
+------------
 
+.. TODO get astrorefs working for less ugly style
+
+.. bibliography:: refs.bib
+    :style: unsrt 
 
 .. Including this here to get pymodel.version included in the docs
+
 .. automodule:: pypmodel.version
     :members:
+
+

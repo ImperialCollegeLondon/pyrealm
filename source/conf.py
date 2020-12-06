@@ -37,6 +37,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.mathjax',
               'sphinx.ext.autosummary',
               'sphinxcontrib.bibtex',
+              #'sphinx_astrorefs',  # Gives author year references
               'sphinx_rtd_theme',
               'recommonmark'
               ]
