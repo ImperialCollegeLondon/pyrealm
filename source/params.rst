@@ -32,7 +32,7 @@ and the contents of this are shown below:
 `data/params.yaml`
 ------------------
 
-.. include:: ../data/params.yaml
+.. include:: ../pypmodel/data/params.yaml
     :code: yaml
 
 
