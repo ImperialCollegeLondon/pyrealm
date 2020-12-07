@@ -5,7 +5,7 @@ import dotmap
 from pypmodel.params import PARAM
 
 
-def check_input_shape(*args):
+def check_input_shapes(*args):
     """Test compatibility of input dimensions
 
     This help function checks to see if a set of inputs can be broadcast
@@ -13,12 +13,12 @@ def check_input_shape(*args):
     inputs, otherwise it raises a Value Error.
 
     Examples:
-        >>> input_a, input_b = check_input_shape(numpy.array([1,2,3]), 5)
+        >>> input_a, input_b = check_input_shapes(numpy.array([1,2,3]), 5)
         >>> input_a
         array([1, 2, 3])
         >>> input_b
         5
-        >>> check_input_shape(numpy.array([1,2,3]), numpy.array([1,2])) # doctest: +ELLIPSIS
+        >>> check_input_shapes(numpy.array([1,2,3]), numpy.array([1,2])) # doctest: +ELLIPSIS
         Traceback (most recent call last):
             ...
         ValueError: operands could not be broadcast together ...
@@ -49,6 +49,11 @@ def calc_density_h2o(tc: float, p: float) -> float:
 
         >>> calc_density_h2o(20, 101325) # doctest: +ELLIPSIS
         998.2056...
+        >>> mat = calc_density_h2o(numpy.array([[15, 20], [25, 30]]),
+        ...                        numpy.array([[100325, 101325], [102325, 103325]]))  # doctest: +NORMALIZE_WHITESPACE
+        >>> numpy.round(mat, 4)
+        array([[999.1006, 998.2056],
+               [997.0475, 995.6515]])
 
     References:
 
@@ -65,17 +70,19 @@ def calc_density_h2o(tc: float, p: float) -> float:
         Water density as a float in (g cm^-3)
     """
 
+    tc, p = check_input_shapes(tc, p)
+
     # Get powers of tc, including tc^0 = 1 for constant terms
-    tc_pow = tc ** numpy.arange(0, 10)
+    tc_pow = numpy.power.outer(tc, numpy.arange(0, 10))
 
     # Calculate lambda, (bar cm^3)/g:
-    lambda_val = numpy.sum(numpy.array(PARAM.FisherDial.lambda_) * tc_pow[:5])
+    lambda_val = numpy.sum(numpy.array(PARAM.FisherDial.lambda_) * tc_pow[..., :5], axis=-1)
 
     # Calculate po, bar
-    po_val = numpy.sum(numpy.array(PARAM.FisherDial.po) * tc_pow[:5])
+    po_val = numpy.sum(numpy.array(PARAM.FisherDial.po) * tc_pow[..., :5], axis=-1)
 
     # Calculate vinf, cm^3/g
-    vinf_val = numpy.sum(numpy.array(PARAM.FisherDial.vinf) * tc_pow)
+    vinf_val = numpy.sum(numpy.array(PARAM.FisherDial.vinf) * tc_pow, axis=-1)
 
     # Convert pressure to bars (1 bar <- 100000 Pa)
     pbar = 1e-5 * p
