@@ -1,8 +1,11 @@
 import numpy as np
-from typing import Optional
+from typing import Optional, Union
 import warnings
 import dotmap
 from pypmodel.params import PARAM
+
+# TODO - Note that the typing currently does not enforce the dtype of ndarrays
+#        but it looks like the upcoming np.typing module might do this.
 
 
 def check_input_shapes(*args):
@@ -38,8 +41,7 @@ def check_input_shapes(*args):
     return args
 
 
-
-def calc_density_h2o(tc: float, p: float) -> float:
+def calc_density_h2o(tc: Union[float, np.ndarray], p: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """**Density of water**
 
     Calculates the density of water as a function of temperature and atmospheric
@@ -47,13 +49,8 @@ def calc_density_h2o(tc: float, p: float) -> float:
 
     Examples:
 
-        >>> calc_density_h2o(20, 101325) # doctest: +ELLIPSIS
-        998.2056...
-        >>> mat = calc_density_h2o(np.array([[15, 20], [25, 30]]),
-        ...                        np.array([[100325, 101325], [102325, 103325]]))  # doctest: +NORMALIZE_WHITESPACE
-        >>> np.round(mat, 4)
-        array([[999.1006, 998.2056],
-               [997.0475, 995.6515]])
+        >>> round(calc_density_h2o(20, 101325), 4)
+        998.2056
 
     References:
 
@@ -188,7 +185,7 @@ def calc_ftemp_inst_rd(tc: float) -> float:
     """
 
     return np.exp(PARAM.Heskel.b * (tc - PARAM.k.To) -
-                     PARAM.Heskel.c * (tc ** 2 - PARAM.k.To ** 2))
+                  PARAM.Heskel.c * (tc ** 2 - PARAM.k.To ** 2))
 
 
 def calc_ftemp_inst_vcmax(tcleaf: float) -> float:
@@ -263,9 +260,9 @@ def calc_ftemp_inst_vcmax(tcleaf: float) -> float:
     dent = PARAM.KattgeKnorr.a_ent + PARAM.KattgeKnorr.b_ent * tcleaf
     fva = calc_ftemp_arrh(tkleaf, PARAM.KattgeKnorr.Ha)
     fvb = ((1 + np.exp((tkref * dent - PARAM.KattgeKnorr.Hd) /
-                          (PARAM.k.R * tkref))) /
+                       (PARAM.k.R * tkref))) /
            (1 + np.exp((tkleaf * dent - PARAM.KattgeKnorr.Hd) /
-                          (PARAM.k.R * tkleaf))))
+                       (PARAM.k.R * tkleaf))))
 
     return fva * fvb
 

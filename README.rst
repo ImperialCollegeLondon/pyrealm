@@ -37,19 +37,34 @@ To build the documentation, use `make` in the package root, which will use the
 make html
 ```
 
+## Developer installation
+
+Use the local directory as an editable installation of the package
+
+```
+pip install -e .
+```
+
 ## Testing
 
 ### Using `doctest`
 
 The package docstrings contain `doctest` examples of code use. These are 
-intended to demonstrate use and to validate a reference set of inputs against
-the R implementation in `rpmodel`. They do not provide extensive unit testing!
+intended to demonstrate use and to validate simple scalar inputs against
+the R implementation in `rpmodel`.
+
 To run the docstring tests, use:
 
 ```bash
 python -m doctest pypmodel/pmodel.py
 
-``` 
+```
+
+### Using `pytest`
+
+The `test` directory contains `pytest` testing to provide greater testing of
+different input combinations (scalars and arrays) and to check errors are
+raised correctly.
 
 ## Bibliography
 
