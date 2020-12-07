@@ -520,7 +520,6 @@ def calc_viscosity_h2o(tc: float, p: float):
         A float giving the viscosity of water (mu, Pa s)
     """
 
-
     # Get the density of water, kg/m^3
     rho = calc_density_h2o(tc, p)
 
@@ -732,7 +731,7 @@ def pmodel(tc: float,
     """
 
     # Check arguments
-    if patm is None and elv is None :
+    if patm is None and elv is None:
         raise ValueError('Provide either elevation (elv) or atmospheric pressure (patm)')
 
     if patm is None:
@@ -745,8 +744,6 @@ def pmodel(tc: float,
     # -----------------------------------------------------------------------
 
     if soilm is None and meanalpha is None:
-        soilm = 1.0
-        meanalpha = 1.0
         soilmstress = 1.0
         do_soilmstress = False
     elif soilm is None or meanalpha is None:
@@ -788,7 +785,7 @@ def pmodel(tc: float,
     kmm = calc_kmm(tc, patm)
 
     # viscosity correction factor relative to standards
-    ns_star = calc_viscosity_h2o(tc, patm) / calc_viscosity_h2o(PARAM.k.To, PARAM.k.Po) # (unitless)
+    ns_star = calc_viscosity_h2o(tc, patm) / calc_viscosity_h2o(PARAM.k.To, PARAM.k.Po)  # (unitless)
 
     # -----------------------------------------------------------------------
     # Optimal ci
@@ -1085,9 +1082,13 @@ class CalcLUEVcmax:
             irradiance.
         omega (float): component of `J_{max}` calculation in Smith et al. 
             2019.
-        omegastar (float):  component of `J_{max}` calculation in Smith et al. 
+        omega_star (float):  component of `J_{max}` calculation in Smith et al.
             2019.
     """
+
+    # TODO - apparent incorrectness of these solutions with _ca_ variation,
+    #        work well with varying temperature but not _ca_ variation (or
+    #        e.g. elevation gradient David Sandoval, REALM meeting, Dec 2020)
 
     # TODO - apparent inconsistency in structure of VCMax and meaning of mprime?
 
@@ -1176,10 +1177,10 @@ class CalcLUEVcmax:
             v = 1 / (cm * (1 - theta * cm)) - 4 * theta  # simplification term for omega calculation
 
             # account for non-linearities at low m values
-            capP = (((1 / 1.4) - 0.7) ** 2 / (1 - theta)) + 3.4
+            cap_p = (((1 / 1.4) - 0.7) ** 2 / (1 - theta)) + 3.4
             aquad = -1
-            bquad = capP
-            cquad = -(capP * theta)
+            bquad = cap_p
+            cquad = -(cap_p * theta)
             m_star = (4 * c_cost) / numpy.polynomial.polynomial.polyroots([aquad, bquad, cquad])
 
             if m < m_star[0].real:
@@ -1188,7 +1189,7 @@ class CalcLUEVcmax:
                 return -(1 - (2 * theta)) + numpy.sqrt((1 - theta) * v)
 
         # factors derived as in Smith et al., 2019
-        self.omega = _calc_omega(theta=PARAM.smith19.theta, # Eq. S4
+        self.omega = _calc_omega(theta=PARAM.smith19.theta,  # Eq. S4
                                  c_cost=PARAM.smith19.c_cost,
                                  m=self.optchi.mj)
         self.omega_star = (1.0 + self.omega -  # Eq. 18
@@ -1205,7 +1206,6 @@ class CalcLUEVcmax:
         # calculate Vcmax per unit aborbed light
         self.vcmax_unitiabs = (self.kphio * self.ftemp_kphio * self.optchi.mjoc *
                                self.omega_star / (8.0 * PARAM.smith19.theta) * self.soilmstress)  # Eq. 19
-
 
     def none(self):
         """LUE and :math:`V_{cmax}` with no :math:`J_{max}` limitation
