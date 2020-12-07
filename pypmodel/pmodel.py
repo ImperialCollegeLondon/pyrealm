@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 from typing import Optional
 import warnings
 import dotmap
@@ -9,16 +9,16 @@ def check_input_shapes(*args):
     """Test compatibility of input dimensions
 
     This help function checks to see if a set of inputs can be broadcast
-    together by numpy. If the inputs can be broadcast, it simply returns the
+    together by np. If the inputs can be broadcast, it simply returns the
     inputs, otherwise it raises a Value Error.
 
     Examples:
-        >>> input_a, input_b = check_input_shapes(numpy.array([1,2,3]), 5)
+        >>> input_a, input_b = check_input_shapes(np.array([1,2,3]), 5)
         >>> input_a
         array([1, 2, 3])
         >>> input_b
         5
-        >>> check_input_shapes(numpy.array([1,2,3]), numpy.array([1,2])) # doctest: +ELLIPSIS
+        >>> check_input_shapes(np.array([1,2,3]), np.array([1,2])) # doctest: +ELLIPSIS
         Traceback (most recent call last):
             ...
         ValueError: operands could not be broadcast together ...
@@ -33,7 +33,7 @@ def check_input_shapes(*args):
         ValueError
     """
 
-    _ = numpy.nditer(args)
+    _ = np.nditer(args)
 
     return args
 
@@ -49,9 +49,9 @@ def calc_density_h2o(tc: float, p: float) -> float:
 
         >>> calc_density_h2o(20, 101325) # doctest: +ELLIPSIS
         998.2056...
-        >>> mat = calc_density_h2o(numpy.array([[15, 20], [25, 30]]),
-        ...                        numpy.array([[100325, 101325], [102325, 103325]]))  # doctest: +NORMALIZE_WHITESPACE
-        >>> numpy.round(mat, 4)
+        >>> mat = calc_density_h2o(np.array([[15, 20], [25, 30]]),
+        ...                        np.array([[100325, 101325], [102325, 103325]]))  # doctest: +NORMALIZE_WHITESPACE
+        >>> np.round(mat, 4)
         array([[999.1006, 998.2056],
                [997.0475, 995.6515]])
 
@@ -73,16 +73,16 @@ def calc_density_h2o(tc: float, p: float) -> float:
     tc, p = check_input_shapes(tc, p)
 
     # Get powers of tc, including tc^0 = 1 for constant terms
-    tc_pow = numpy.power.outer(tc, numpy.arange(0, 10))
+    tc_pow = np.power.outer(tc, np.arange(0, 10))
 
     # Calculate lambda, (bar cm^3)/g:
-    lambda_val = numpy.sum(numpy.array(PARAM.FisherDial.lambda_) * tc_pow[..., :5], axis=-1)
+    lambda_val = np.sum(np.array(PARAM.FisherDial.lambda_) * tc_pow[..., :5], axis=-1)
 
     # Calculate po, bar
-    po_val = numpy.sum(numpy.array(PARAM.FisherDial.po) * tc_pow[..., :5], axis=-1)
+    po_val = np.sum(np.array(PARAM.FisherDial.po) * tc_pow[..., :5], axis=-1)
 
     # Calculate vinf, cm^3/g
-    vinf_val = numpy.sum(numpy.array(PARAM.FisherDial.vinf) * tc_pow, axis=-1)
+    vinf_val = np.sum(np.array(PARAM.FisherDial.vinf) * tc_pow, axis=-1)
 
     # Convert pressure to bars (1 bar <- 100000 Pa)
     pbar = 1e-5 * p
@@ -145,7 +145,7 @@ def calc_ftemp_arrh(tk: float, dha: float) -> float:
 
     tkref = PARAM.k.To + PARAM.k.CtoK
 
-    return numpy.exp(dha * (tk - tkref) / (tkref * PARAM.k.R * tk))
+    return np.exp(dha * (tk - tkref) / (tkref * PARAM.k.R * tk))
 
 
 def calc_ftemp_inst_rd(tc: float) -> float:
@@ -187,7 +187,7 @@ def calc_ftemp_inst_rd(tc: float) -> float:
         A float value for :math:`fr`
     """
 
-    return numpy.exp(PARAM.Heskel.b * (tc - PARAM.k.To) -
+    return np.exp(PARAM.Heskel.b * (tc - PARAM.k.To) -
                      PARAM.Heskel.c * (tc ** 2 - PARAM.k.To ** 2))
 
 
@@ -262,9 +262,9 @@ def calc_ftemp_inst_vcmax(tcleaf: float) -> float:
     # to 'tmean' in Nicks, 'tc25' is 'to' in Nick's
     dent = PARAM.KattgeKnorr.a_ent + PARAM.KattgeKnorr.b_ent * tcleaf
     fva = calc_ftemp_arrh(tkleaf, PARAM.KattgeKnorr.Ha)
-    fvb = ((1 + numpy.exp((tkref * dent - PARAM.KattgeKnorr.Hd) /
+    fvb = ((1 + np.exp((tkref * dent - PARAM.KattgeKnorr.Hd) /
                           (PARAM.k.R * tkref))) /
-           (1 + numpy.exp((tkleaf * dent - PARAM.KattgeKnorr.Hd) /
+           (1 + np.exp((tkleaf * dent - PARAM.KattgeKnorr.Hd) /
                           (PARAM.k.R * tkleaf))))
 
     return fva * fvb
@@ -569,16 +569,16 @@ def calc_viscosity_h2o(tc: float, p: float):
     rbar = rho / PARAM.Huber.rho_ast
 
     # Calculate mu0 (Eq. 11 & Table 2, Huber et al., 2009):
-    tbar_pow = tbar ** numpy.arange(0, 4)
-    mu0 = (1e2 * numpy.sqrt(tbar)) / numpy.sum(numpy.array(PARAM.Huber.H_i) / tbar_pow)
+    tbar_pow = tbar ** np.arange(0, 4)
+    mu0 = (1e2 * np.sqrt(tbar)) / np.sum(np.array(PARAM.Huber.H_i) / tbar_pow)
 
     # Calculate mu1 (Eq. 12 & Table 3, Huber et al., 2009):
-    h_array = numpy.array(PARAM.Huber.H_ij)
+    h_array = np.array(PARAM.Huber.H_ij)
     ctbar = (1.0 / tbar) - 1.0
-    row_j, _ = numpy.indices(h_array.shape) 
-    mu1 = h_array * numpy.power(rbar - 1.0, row_j)
-    mu1 = numpy.power(ctbar, numpy.arange(0, 6)) * numpy.sum(mu1, axis=0)
-    mu1 = numpy.exp(rbar * mu1.sum())
+    row_j, _ = np.indices(h_array.shape) 
+    mu1 = h_array * np.power(rbar - 1.0, row_j)
+    mu1 = np.power(ctbar, np.arange(0, 6)) * np.sum(mu1, axis=0)
+    mu1 = np.exp(rbar * mu1.sum())
 
     # Calculate mu_bar (Eq. 2, Huber et al., 2009), assumes mu2 = 1
     mu_bar = mu0 * mu1
@@ -899,7 +899,7 @@ def pmodel(tc: float,
 
         # Jmax using again A_J = A_C
         fact_jmaxlim = vcmax * (ci + 2.0 * gammastar) / (kphio * iabs * (ci + kmm))
-        jmax = 4.0 * kphio * iabs / numpy.sqrt((1.0 / fact_jmaxlim) ** 2 - 1.0)
+        jmax = 4.0 * kphio * iabs / np.sqrt((1.0 / fact_jmaxlim) ** 2 - 1.0)
 
     # construct list for output
     out = dotmap.DotMap(ca=ca,
@@ -913,7 +913,7 @@ def pmodel(tc: float,
                         lue=out_lue_vcmax.lue,
                         gpp=gpp,
                         iwue=iwue,
-                        gs=numpy.infty if c4 else (gpp / PARAM.k.c_molmass) / (ca - ci),  # TODO - check with CP/BS
+                        gs=np.infty if c4 else (gpp / PARAM.k.c_molmass) / (ca - ci),  # TODO - check with CP/BS
                         vcmax=vcmax,
                         vcmax25=vcmax25,
                         jmax=jmax,
@@ -1052,9 +1052,9 @@ class CalcOptimalChi:
         vpd = 0 if self.vpd < 0 else self.vpd
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        xi = numpy.sqrt((self.beta * (self.kmm + self.gammastar)) / (1.6 * self.ns_star))
+        xi = np.sqrt((self.beta * (self.kmm + self.gammastar)) / (1.6 * self.ns_star))
         self.chi = (self.gammastar / self.ca + 
-                    (1.0 - self.gammastar / self.ca) * xi / (xi + numpy.sqrt(vpd)))
+                    (1.0 - self.gammastar / self.ca) * xi / (xi + np.sqrt(vpd)))
 
         # Define variable substitutes:
         vdcg = self.ca - self.gammastar
@@ -1063,7 +1063,7 @@ class CalcOptimalChi:
 
         # Calculate mj, based on the mc' formulation (see Regressing_LUE.pdf)
         if self.ns_star > 0 and vpd > 0 and vbkg > 0:
-            vsr = numpy.sqrt(1.6 * self.ns_star * vpd / vbkg)
+            vsr = np.sqrt(1.6 * self.ns_star * vpd / vbkg)
             self.mj = vdcg / (vacg + 3.0 * self.gammastar * vsr)
         else:
             self.mj = None
@@ -1180,7 +1180,7 @@ class CalcLUEVcmax:
         mpi = (self.optchi.mj ** 2 - PARAM.wang17.c ** (2.0 / 3.0) *
                (self.optchi.mj ** (4.0 / 3.0)))
 
-        self.mprime = numpy.sqrt(mpi) if mpi > 0 else None
+        self.mprime = np.sqrt(mpi) if mpi > 0 else None
 
         # Light use efficiency (gpp per unit absorbed light)
         self.lue = (self.kphio * self.ftemp_kphio * self.mprime *
@@ -1222,19 +1222,19 @@ class CalcLUEVcmax:
             aquad = -1
             bquad = cap_p
             cquad = -(cap_p * theta)
-            m_star = (4 * c_cost) / numpy.polynomial.polynomial.polyroots([aquad, bquad, cquad])
+            m_star = (4 * c_cost) / np.polynomial.polynomial.polyroots([aquad, bquad, cquad])
 
             if m < m_star[0].real:
-                return -(1 - (2 * theta)) - numpy.sqrt((1 - theta) * v)
+                return -(1 - (2 * theta)) - np.sqrt((1 - theta) * v)
             else:
-                return -(1 - (2 * theta)) + numpy.sqrt((1 - theta) * v)
+                return -(1 - (2 * theta)) + np.sqrt((1 - theta) * v)
 
         # factors derived as in Smith et al., 2019
         self.omega = _calc_omega(theta=PARAM.smith19.theta,  # Eq. S4
                                  c_cost=PARAM.smith19.c_cost,
                                  m=self.optchi.mj)
         self.omega_star = (1.0 + self.omega -  # Eq. 18
-                           numpy.sqrt((1.0 + self.omega) ** 2 -
+                           np.sqrt((1.0 + self.omega) ** 2 -
                                       (4.0 * PARAM.smith19.theta * self.omega)))
 
         # Effect of Jmax limitation
