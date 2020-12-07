@@ -5,6 +5,40 @@ import dotmap
 from pypmodel.params import PARAM
 
 
+def check_input_shape(*args):
+    """Test compatibility of input dimensions
+
+    This help function checks to see if a set of inputs can be broadcast
+    together by numpy. If the inputs can be broadcast, it simply returns the
+    inputs, otherwise it raises a Value Error.
+
+    Examples:
+        >>> input_a, input_b = check_input_shape(numpy.array([1,2,3]), 5)
+        >>> input_a
+        array([1, 2, 3])
+        >>> input_b
+        5
+        >>> check_input_shape(numpy.array([1,2,3]), numpy.array([1,2])) # doctest: +ELLIPSIS
+        Traceback (most recent call last):
+            ...
+        ValueError: operands could not be broadcast together ...
+
+    Args:
+
+        *args: A set of numpy arrays or scalar values
+
+    Returns:
+
+        The inputs, having tested for broadcast compatibility or raises
+        ValueError
+    """
+
+    _ = numpy.nditer(args)
+
+    return args
+
+
+
 def calc_density_h2o(tc: float, p: float) -> float:
     """**Density of water**
 
