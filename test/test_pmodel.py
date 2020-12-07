@@ -3,6 +3,7 @@ import numpy as np
 import dotmap
 
 from pypmodel import pmodel
+from pypmodel.params import PARAM
 
 # ------------------------------------------
 # Fixtures: shared input values
@@ -23,7 +24,7 @@ def common_inputs():
 
 
 # ------------------------------------------
-# Testing calc_density_h20
+# Testing calc_density_h20 - temp + patm
 # ------------------------------------------
 
 def test_calc_density_h20_broadcast_failure(common_inputs):
@@ -51,4 +52,42 @@ def test_calc_density_h20_arrays(common_inputs):
     ret = pmodel.calc_density_h2o(common_inputs.tc_mat, common_inputs.p_mat)
     assert np.allclose(ret, np.array([[999.1006, 998.2056],
                                       [997.0475, 995.6515]]))
+
+# ------------------------------------------
+# Testing calc_ftemp_inst_rd - temp only but in Kelvin!
+# ------------------------------------------
+
+
+def test_calc_ftemp_arrh_scalar(common_inputs):
+
+    ret = pmodel.calc_ftemp_arrh(common_inputs.tc + PARAM.k.CtoK,
+                                 PARAM.KattgeKnorr.Ha)
+    assert round(ret, 4) == 0.6114
+
+
+def test_calc_ftemp_arrh_array(common_inputs):
+
+    ret = pmodel.calc_ftemp_arrh(common_inputs.tc_mat+ PARAM.k.CtoK,
+                                 PARAM.KattgeKnorr.Ha)
+    assert np.allclose(ret, np.array([[0.367459, 0.611382],
+                                      [1.000, 1.609305]]))
+
+# ------------------------------------------
+# Testing calc_ftemp_inst_vcmax - temp only
+# ------------------------------------------
+
+
+def test_calc_ftemp_inst_vcmax_scalar(common_inputs):
+
+    ret = pmodel.calc_ftemp_inst_vcmax(common_inputs.tc)
+    assert round(ret, 4) == 0.6371
+
+
+def test_calc_ftemp_inst_vcmax_array(common_inputs):
+
+    ret = pmodel.calc_ftemp_inst_vcmax(common_inputs.tc_mat)
+    assert np.allclose(ret, np.array([[0.404673462, 0.6370757237],
+                                      [1.000, 1.5427221126]]))
+
+
 

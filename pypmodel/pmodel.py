@@ -93,7 +93,7 @@ def calc_density_h2o(tc: Union[float, np.ndarray], p: Union[float, np.ndarray]) 
     return rho
 
 
-def calc_ftemp_arrh(tk: float, dha: float) -> float:
+def calc_ftemp_arrh(tk: Union[float, np.ndarray], dha: float) -> Union[float, np.ndarray]:
     r"""**Temperature scaling of enzyme kinetics**
 
     Calculates the temperature-scaling factor :math:`f` for enzyme kinetics
@@ -122,8 +122,8 @@ def calc_ftemp_arrh(tk: float, dha: float) -> float:
     Examples:
 
         >>> # Relative rate change from 25 to 10 degrees Celsius (percent change)
-        >>> (1.0-calc_ftemp_arrh( 283.15, 100000)) * 100 # doctest: +ELLIPSIS
-        88.19912...
+        >>> round((1.0-calc_ftemp_arrh( 283.15, 100000)) * 100, 4)
+        88.1991
 
     Args:
 
@@ -145,7 +145,7 @@ def calc_ftemp_arrh(tk: float, dha: float) -> float:
     return np.exp(dha * (tk - tkref) / (tkref * PARAM.k.R * tk))
 
 
-def calc_ftemp_inst_rd(tc: float) -> float:
+def calc_ftemp_inst_rd(tc: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """**Temperature response of dark respiration**
 
     This function calculates the temperature-scaling factor for dark respiration
@@ -172,8 +172,9 @@ def calc_ftemp_inst_rd(tc: float) -> float:
     Examples:
 
         >>> # Relative percentage instantaneous change in Rd going from 10 to 25 degrees
-        >>> (calc_ftemp_inst_rd(25) / calc_ftemp_inst_rd(10) - 1) * 100 # doctest: +ELLIPSIS
-        250.95927...
+        >>> val = (calc_ftemp_inst_rd(25) / calc_ftemp_inst_rd(10) - 1) * 100
+        >>> round(val, 4)
+        250.9593
 
     Args:
 
@@ -188,7 +189,7 @@ def calc_ftemp_inst_rd(tc: float) -> float:
                   PARAM.Heskel.c * (tc ** 2 - PARAM.k.To ** 2))
 
 
-def calc_ftemp_inst_vcmax(tcleaf: float) -> float:
+def calc_ftemp_inst_vcmax(tcleaf: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     r"""**Instantaneous temperature response of** :math:`V_{cmax}`
 
     This function calculates the temperature-scaling factor :math:`f` of the
@@ -238,8 +239,9 @@ def calc_ftemp_inst_vcmax(tcleaf: float) -> float:
 
         >>> # Relative change in Vcmax going (instantaneously, i.e. not
         >>> # not acclimatedly) from 10 to 25 degrees (percent change):
-        >>> ((calc_ftemp_inst_vcmax(25)/calc_ftemp_inst_vcmax(10)-1) * 100 ) # doctest: +ELLIPSIS
-        283.17753...
+        >>> val = ((calc_ftemp_inst_vcmax(25)/calc_ftemp_inst_vcmax(10)-1) * 100)
+        >>> round(val, 4)
+        283.1775
 
     Args:
 
