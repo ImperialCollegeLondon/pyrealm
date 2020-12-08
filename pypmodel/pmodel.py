@@ -269,7 +269,7 @@ def calc_ftemp_inst_vcmax(tcleaf: Union[float, np.ndarray]) -> Union[float, np.n
     return fva * fvb
 
 
-def calc_ftemp_kphio(tc: float, c4: bool = False) -> float:
+def calc_ftemp_kphio(tc: Union[float, np.ndarray], c4: bool = False) -> Union[float, np.ndarray]:
     r"""**Temperature dependence of the quantum yield efficiency**
 
     Calculates the temperature dependence of the quantum yield efficiency,
@@ -306,13 +306,15 @@ def calc_ftemp_kphio(tc: float, c4: bool = False) -> float:
 
         >>> # Relative change in the quantum yield efficiency between 5 and 25
         >>> # degrees celsius (percent change):
-        >>> (calc_ftemp_kphio(25.0) / calc_ftemp_kphio(5.0) - 1) * 100 # doctest: +ELLIPSIS
-        52.03969...
+        >>> val = (calc_ftemp_kphio(25.0) / calc_ftemp_kphio(5.0) - 1) * 100
+        >>> round(val, 5)
+        52.03969
         >>> # Relative change in the quantum yield efficiency between 5 and 25
         >>> # degrees celsius (percent change) for a C4 plant:
-        >>> (calc_ftemp_kphio(25.0, c4=True) /
-        ...  calc_ftemp_kphio(5.0, c4=True) - 1) * 100 # doctest: +ELLIPSIS
-        432.25806...
+        >>> val = (calc_ftemp_kphio(25.0, c4=True) /
+        ...        calc_ftemp_kphio(5.0, c4=True) - 1) * 100
+        >>> round(val, 5)
+        432.25806
 
     Args:
 
@@ -333,7 +335,7 @@ def calc_ftemp_kphio(tc: float, c4: bool = False) -> float:
     return coef[0] + coef[1] * tc + coef[2] * tc ** 2
 
 
-def calc_gammastar(tc: float, patm: float) -> float:
+def calc_gammastar(tc: Union[float, np.ndarray], patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     r"""**CO2 compensation point**
 
     Calculates the photorespiratory CO2 compensation point in absence of dark
@@ -373,8 +375,8 @@ def calc_gammastar(tc: float, patm: float) -> float:
 
         >>> # CO2 compensation point at 20 degrees Celsius and standard 
         >>> # atmosphere (in Pa) 
-        >>> calc_gammastar(20, 101325) # doctest: +ELLIPSIS
-        3.33925...
+        >>> round(calc_gammastar(20, 101325), 5)
+        3.33925
 
     Args: 
 
@@ -386,11 +388,13 @@ def calc_gammastar(tc: float, patm: float) -> float:
         A float value for :math:`\Gamma^{*}` (in Pa)
     """
 
+    tc, patm = check_input_shapes(tc, patm)
+
     return (PARAM.Bernacci.gs25_0 * patm / PARAM.k.Po *
             calc_ftemp_arrh((tc + PARAM.k.CtoK), dha=PARAM.Bernacci.dha))
 
 
-def calc_kmm(tc: float, patm: float) -> float:
+def calc_kmm(tc: Union[float, np.ndarray], patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     r"""**Michaelis Menten coefficient for Rubisco-limited photosynthesis**
     
     Calculates the Michaelis Menten coefficient of Rubisco-limited assimilation
@@ -450,8 +454,8 @@ def calc_kmm(tc: float, patm: float) -> float:
 
         >>> # Michaelis-Menten coefficient at 20 degrees Celsius and standard 
         >>> # atmosphere (in Pa):
-        >>> calc_kmm(20, 101325) # doctest: +ELLIPSIS
-        46.09927...
+        >>> round(calc_kmm(20, 101325), 5)
+        46.09928
     
     Args:
         tc: Temperature, relevant for photosynthesis (°C)
@@ -460,7 +464,9 @@ def calc_kmm(tc: float, patm: float) -> float:
     Returns:
         A numeric value for \eqn{K} (in Pa)
     """
-    
+
+    tc, patm = check_input_shapes(tc, patm)
+
     # conversion to Kelvin
     tk = tc + PARAM.k.CtoK
 
@@ -473,7 +479,7 @@ def calc_kmm(tc: float, patm: float) -> float:
     return kc * (1.0 + po/ko)
 
 
-def calc_soilmstress(soilm: float, meanalpha: float = 1.0):
+def calc_soilmstress(soilm: Union[float, np.ndarray], meanalpha: Union[float, np.ndarray] = 1.0):
     r"""**Empirical soil moisture stress factor**
 
     Calculates an empirical soil moisture stress factor  :math:`\beta` as a
@@ -508,8 +514,8 @@ def calc_soilmstress(soilm: float, meanalpha: float = 1.0):
         
         >>> # Relative reduction (%) in GPP due to soil moisture stress at
         >>> # relative soil water content ('soilm') of 0.2:
-        >>> (calc_soilmstress(0.2) - 1) * 100 # doctest: +ELLIPSIS
-        -13.99999...
+        >>> round((calc_soilmstress(0.2) - 1) * 100, 5)
+        -14.0
 
     Args:
 
@@ -523,16 +529,23 @@ def calc_soilmstress(soilm: float, meanalpha: float = 1.0):
         A numeric value for \eqn{\beta}
     """
 
-    if soilm > PARAM.soilmstress.thetastar:
-        return 1.0
-    else:
-        y0 = (PARAM.soilmstress.a + PARAM.soilmstress.b * meanalpha)
-        beta = (1.0 - y0) / (PARAM.soilmstress.theta0 - PARAM.soilmstress.thetastar) ** 2
-        outstress = 1.0 - beta * (soilm - PARAM.soilmstress.thetastar) ** 2
-        return max(0.0, min(1.0, outstress))
+    soilm, meanalpha = check_input_shapes(soilm, meanalpha)
+
+    # Calculate outstress
+    y0 = (PARAM.soilmstress.a + PARAM.soilmstress.b * meanalpha)
+    beta = (1.0 - y0) / (PARAM.soilmstress.theta0 - PARAM.soilmstress.thetastar) ** 2
+    outstress = 1.0 - beta * (soilm - PARAM.soilmstress.thetastar) ** 2
+
+    # Filter wrt to thetastar
+    outstress = np.where(soilm <= PARAM.soilmstress.thetastar, outstress, 1.0)
+
+    # Clip
+    outstress = np.clip(0.0, 1.0, outstress)
+
+    return outstress
 
 
-def calc_viscosity_h2o(tc: float, p: float):
+def calc_viscosity_h2o(tc: Union[float, np.ndarray], patm: Union[float, np.ndarray]):
     """**Viscosity of water**
 
     Calculates the viscosity of water as a function of temperature and atmospheric
@@ -547,37 +560,39 @@ def calc_viscosity_h2o(tc: float, p: float):
     Examples:
         
         >>> # Density of water at 20 degrees C and standard atmospheric pressure:
-        >>> calc_viscosity_h2o(20, 101325) # doctest: +ELLIPSIS
-        0.001001597...
+        >>> round(calc_viscosity_h2o(20, 101325), 7)
+        0.0010016
 
     Args:
 
         tc: air temperature (°C)
-        p: atmospheric pressure (Pa)
+        patm: atmospheric pressure (Pa)
 
     Returns:
 
         A float giving the viscosity of water (mu, Pa s)
     """
 
+    tc, patm = check_input_shapes(tc, patm)
+
     # Get the density of water, kg/m^3
-    rho = calc_density_h2o(tc, p)
+    rho = calc_density_h2o(tc, patm)
 
     # Calculate dimensionless parameters:
     tbar = (tc + PARAM.k.CtoK) / PARAM.Huber.tk_ast
     rbar = rho / PARAM.Huber.rho_ast
 
     # Calculate mu0 (Eq. 11 & Table 2, Huber et al., 2009):
-    tbar_pow = tbar ** np.arange(0, 4)
-    mu0 = (1e2 * np.sqrt(tbar)) / np.sum(np.array(PARAM.Huber.H_i) / tbar_pow)
+    tbar_pow = np.power.outer(tbar, np.arange(0, 4))
+    mu0 = (1e2 * np.sqrt(tbar)) / np.sum(np.array(PARAM.Huber.H_i) / tbar_pow, axis=-1)
 
     # Calculate mu1 (Eq. 12 & Table 3, Huber et al., 2009):
     h_array = np.array(PARAM.Huber.H_ij)
     ctbar = (1.0 / tbar) - 1.0
     row_j, _ = np.indices(h_array.shape) 
-    mu1 = h_array * np.power(rbar - 1.0, row_j)
-    mu1 = np.power(ctbar, np.arange(0, 6)) * np.sum(mu1, axis=0)
-    mu1 = np.exp(rbar * mu1.sum())
+    mu1 = h_array * np.power.outer(rbar - 1.0, row_j)
+    mu1 = np.power.outer(ctbar, np.arange(0, 6)) * np.sum(mu1, axis=(-2))
+    mu1 = np.exp(rbar * mu1.sum(axis=-1))
 
     # Calculate mu_bar (Eq. 2, Huber et al., 2009), assumes mu2 = 1
     mu_bar = mu0 * mu1
@@ -586,8 +601,8 @@ def calc_viscosity_h2o(tc: float, p: float):
     return mu_bar * PARAM.Huber.mu_ast  # Pa s
 
 
-def calc_patm(elv: float) -> float:
-    """**Atmospheric pressure**
+def calc_patm(elv: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+    r"""**Atmospheric pressure**
 
     Calculates atmospheric pressure as a function of elevation with reference to
     the standard atmosphere.  The elevation-dependence of atmospheric pressure
@@ -617,8 +632,8 @@ def calc_patm(elv: float) -> float:
     Examples:
         
         >>> # Standard atmospheric pressure, in Pa, corrected for 1000 m.a.s.l.
-        >>> calc_patm(1000) # doctest: +ELLIPSIS
-        90241.54...
+        >>> round(calc_patm(1000), 2)
+        90241.54
 
     Args:
 
@@ -638,6 +653,28 @@ def calc_patm(elv: float) -> float:
     return (PARAM.k.Po * (1.0 - PARAM.k.L * elv / kto) **
             (PARAM.k.G * PARAM.k.Ma /
              (PARAM.k.R * PARAM.k.L)))
+
+
+def calc_co2_to_ca(co2: Union[float, np.ndarray], patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+    r"""Converts ambient :math:`\ce{CO2}` (:math:`c_a`) in part per million to
+    Pascals, accounting for atmospheric pressure.
+
+    Examples:
+
+        >>> round(calc_co2_to_ca(413.03, 101325), 6)
+        41.850265
+
+    Args:
+
+        co2 (float): atmospheric :math:`\ce{CO2}`, ppm
+        patm (float): atmospheric pressure, Pa
+
+    Returns:
+
+        Ambient :math:`\ce{CO2}` in units of Pa
+    """
+
+    return 1.0e-6 * co2 * patm  # Pa, atms. CO2
 
 
 def pmodel(tc: float,
@@ -775,8 +812,8 @@ def pmodel(tc: float,
         raise ValueError('Provide either elevation (elv) or atmospheric pressure (patm)')
 
     if patm is None:
-        warnings.warn("Atmospheric pressure (patm) not provided. Calculating it as a function of elevation "
-                      "(elv), assuming standard atmosphere (101325 Pa at sea level).")
+        warnings.warn("Calculating patm from elevation (elv) using the standard "
+                      "atmosphere (101325 Pa at sea level).")
         patm = calc_patm(elv)
 
     # -----------------------------------------------------------------------
@@ -818,7 +855,7 @@ def pmodel(tc: float,
     # -----------------------------------------------------------------------
 
     # ambient CO2 partial pressure (Pa)
-    ca = co2_to_ca(co2, patm)
+    ca = calc_co2_to_ca(co2, patm)
     # photorespiratory compensation point - Gamma-star (Pa)
     gammastar = calc_gammastar(tc, patm)
     # Michaelis-Menten coef. (Pa)
@@ -841,8 +878,9 @@ def pmodel(tc: float,
     ci = out_optchi.chi * ca
 
     # -----------------------------------------------------------------------
-    # Corrolary predictions
+    # Corollary predictions
     # -----------------------------------------------------------------------
+
     # intrinsic water use efficiency (in Pa)
     iwue = (ca - ci) / 1.6
 
@@ -939,7 +977,7 @@ class CalcOptimalChi:
             (:math:`\Gamma^{*}`, see :func:`calc_gammastar`).
         ns_star (float): the viscosity correction factor (:math:`\eta^{*}`, 
             see :func:`calc_viscosity_H20`)
-        ca (float): the ambient partial pressure of :math:`\ce{CO2}` (:math:`c_a`, see :func:`co2_to_ca`)
+        ca (float): the ambient partial pressure of :math:`\ce{CO2}` (:math:`c_a`, see :func:`calc_co2_to_ca`)
         vpd (float): the vapor pressure deficit (:math:`D`)
         method (str): one of ``c4`` or ``prentice14``
         beta (float): unit cost ratio of carboxylation (see :obj:`PARAMS.stocker19.beta`)
@@ -1234,7 +1272,7 @@ class CalcLUEVcmax:
                                  m=self.optchi.mj)
         self.omega_star = (1.0 + self.omega -  # Eq. 18
                            np.sqrt((1.0 + self.omega) ** 2 -
-                                      (4.0 * PARAM.smith19.theta * self.omega)))
+                                   (4.0 * PARAM.smith19.theta * self.omega)))
 
         # Effect of Jmax limitation
         self.mprime = self.optchi.mj * self.omega_star / (8.0 * PARAM.smith19.theta)
@@ -1301,19 +1339,3 @@ class CalcLUEVcmax:
         # Vcmax normalised per unit absorbed PPFD (assuming iabs=1), with Jmax limitation
         self.vcmax_unitiabs = self.kphio * self.ftemp_kphio * self.soilmstress
 
-
-def co2_to_ca(co2: float, patm: float) -> float:
-    """Converts ambient :math:`\ce{CO2}` (:math:`c_a`) in part per million to
-    Pascals.
-
-    Args:
-
-        co2 (float): annual atmospheric :math:`\ce{CO2}`, ppm
-        patm (float): monthly atmospheric pressure, Pa
-
-    Returns:
-
-        Ambient :math:`\ce{CO2}` in units of Pa
-    """
-
-    return 1.0e-6 * co2 * patm  # Pa, atms. CO2
