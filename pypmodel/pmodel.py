@@ -9,22 +9,21 @@ from pypmodel.params import PARAM
 
 
 def check_input_shapes(*args):
-    """Test compatibility of input dimensions
+    """Check dimensions of function inputs
 
-    This help function checks to see if a set of inputs can be broadcast
-    together by np. If the inputs can be broadcast, it simply returns the
-    inputs, otherwise it raises a Value Error.
+    This helper function checks if any non scalar inputs are arrays of the same
+    shape. It either raises an error or returns the common shape or 1 if all
+    arguments are scalar.
 
     Examples:
-        >>> input_a, input_b = check_input_shapes(np.array([1,2,3]), 5)
-        >>> input_a
-        array([1, 2, 3])
-        >>> input_b
-        5
-        >>> check_input_shapes(np.array([1,2,3]), np.array([1,2])) # doctest: +ELLIPSIS
+        >>> check_input_shapes(np.array([1,2,3]), 5)
+        (3,)
+        >>> check_input_shapes(4, 5)
+        1
+        >>> check_input_shapes(np.array([1,2,3]), np.array([1,2]))
         Traceback (most recent call last):
             ...
-        ValueError: operands could not be broadcast together ...
+        ValueError: Inputs contain arrays of different shapes.
 
     Args:
 
@@ -32,14 +31,28 @@ def check_input_shapes(*args):
 
     Returns:
 
-        The inputs, having tested for broadcast compatibility or raises
-        ValueError
+        The common shape of any array inputs or 1 if all inputs are scalar.
     """
 
-    _ = np.nditer(args)
+    # Collect the shapes of the inputs
+    shapes = set()
 
-    return args
+    for val in args:
+        if isinstance(val, np.ndarray):
+            shapes.add(val.shape)
+        elif isinstance(val, (float, int)):
+            pass  # No need to track scalars
+        else:
+            raise ValueError(f'Unexpected input to check_input_shapes: {type(val)}')
 
+    # shapes can be an empty set (all scalars) or contain one common shape
+    # otherwise raise an error
+    if len(shapes) > 1:
+        raise ValueError(f'Inputs contain arrays of different shapes.')
+    elif len(shapes):
+        return shapes.pop()
+    else:
+        return 1
 
 def calc_density_h2o(tc: Union[float, np.ndarray], p: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """**Density of water**
@@ -67,7 +80,8 @@ def calc_density_h2o(tc: Union[float, np.ndarray], p: Union[float, np.ndarray]) 
         Water density as a float in (g cm^-3)
     """
 
-    tc, p = check_input_shapes(tc, p)
+    # check inputs, shape not used
+    _ = check_input_shapes(tc, p)
 
     # Get powers of tc, including tc^0 = 1 for constant terms
     tc_pow = np.power.outer(tc, np.arange(0, 10))
@@ -388,7 +402,8 @@ def calc_gammastar(tc: Union[float, np.ndarray], patm: Union[float, np.ndarray])
         A float value for :math:`\Gamma^{*}` (in Pa)
     """
 
-    tc, patm = check_input_shapes(tc, patm)
+    # check inputs, return shape not used
+    _ = check_input_shapes(tc, patm)
 
     return (PARAM.Bernacci.gs25_0 * patm / PARAM.k.Po *
             calc_ftemp_arrh((tc + PARAM.k.CtoK), dha=PARAM.Bernacci.dha))
@@ -465,7 +480,8 @@ def calc_kmm(tc: Union[float, np.ndarray], patm: Union[float, np.ndarray]) -> Un
         A numeric value for \eqn{K} (in Pa)
     """
 
-    tc, patm = check_input_shapes(tc, patm)
+    # Check inputs, return shape not used
+    _ = check_input_shapes(tc, patm)
 
     # conversion to Kelvin
     tk = tc + PARAM.k.CtoK
@@ -529,7 +545,8 @@ def calc_soilmstress(soilm: Union[float, np.ndarray], meanalpha: Union[float, np
         A numeric value for \eqn{\beta}
     """
 
-    soilm, meanalpha = check_input_shapes(soilm, meanalpha)
+    # Check inputs, return shape not used
+    _ = check_input_shapes(soilm, meanalpha)
 
     # Calculate outstress
     y0 = (PARAM.soilmstress.a + PARAM.soilmstress.b * meanalpha)
@@ -573,7 +590,8 @@ def calc_viscosity_h2o(tc: Union[float, np.ndarray], patm: Union[float, np.ndarr
         A float giving the viscosity of water (mu, Pa s)
     """
 
-    tc, patm = check_input_shapes(tc, patm)
+    # Check inputs, return shape not used
+    _ = check_input_shapes(tc, patm)
 
     # Get the density of water, kg/m^3
     rho = calc_density_h2o(tc, patm)
@@ -1010,8 +1028,16 @@ class CalcOptimalChi:
         using the chosen method.
     """
 
-    def __init__(self, kmm: float, gammastar: float, ns_star: float,
-                 ca: float, vpd: float, method: str = 'prentice14'):
+    def __init__(self,
+                 kmm: Union[float, np.ndarray],
+                 gammastar: Union[float, np.ndarray],
+                 ns_star: Union[float, np.ndarray],
+                 ca: Union[float, np.ndarray],
+                 vpd: Union[float, np.ndarray],
+                 method: str = 'prentice14'):
+
+        # Check inputs are broadcastable - shape not used.
+        _ = check_input_shapes(kmm, gammastar, ns_star, ca, vpd)
 
         self.kmm = kmm
         self.gammastar = gammastar
@@ -1020,6 +1046,7 @@ class CalcOptimalChi:
         self.vpd = vpd
         self.method = method
         self.beta = PARAM.stocker19.beta
+
         # return values
         self.chi = None
         self.mc = None
@@ -1051,6 +1078,7 @@ class CalcOptimalChi:
 
         """
         # Dummy values to represent c4 pathway
+
         self.chi = 1.0
         self.mc = 1.0
         self.mj = 1.0
