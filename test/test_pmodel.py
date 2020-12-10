@@ -19,31 +19,17 @@ def does_not_raise():
 
 
 @pytest.fixture(scope='module')
-def inputs():
+def values():
     """Fixture to load test inputs from file.
     """
 
-    with open('test/test_inputs.yaml') as infile:
-        inputs = yaml.load(infile, Loader=yaml.SafeLoader)
-
-    inputs = {k: np.array(v) if isinstance(v, list) else v
-              for k, v in inputs.items()}
-
-    return inputs
-
-
-@pytest.fixture(scope='module')
-def expected():
-    """Fixture to load expectations from rpmodel from file
-    """
-
     with open('test/test_outputs_rpmodel.yaml') as infile:
-        expected = yaml.load(infile, Loader=yaml.SafeLoader)
+        values = yaml.load(infile, Loader=yaml.SafeLoader)
 
-    expected = {k: np.array(v) if isinstance(v, list) else v
-                for k, v in expected.items()}
+    values = {k: np.array(v) if isinstance(v, list) else v
+              for k, v in values.items()}
 
-    return expected
+    return values
 
 # ------------------------------------------
 # Test structure
@@ -65,25 +51,25 @@ def expected():
 
 @pytest.mark.parametrize(
     'ctrl',
-    [(dict(args=dict(tc='tc', patm='patm'),  # scalars
+    [(dict(args=dict(tc='tc_sc', patm='patm_sc'),  # scalars
            cmng=does_not_raise(),
            out='dens_h20_sc')),
-     (dict(args=dict(tc='tc', patm='patm_mat'),  # scalar + array
+     (dict(args=dict(tc='tc_sc', patm='patm_ar'),  # scalar + array
            cmng=does_not_raise(),
-           out='dens_h20_sc_ar')),
-     (dict(args=dict(tc='tc_mat', patm='patm_mat'),  # arrays
+           out='dens_h20_mx')),
+     (dict(args=dict(tc='tc_ar', patm='patm_ar'),  # arrays
            cmng=does_not_raise(),
            out='dens_h20_ar')),
-     (dict(args=dict(tc='tc_mat', patm='shape_error'),  # shape mismatch
+     (dict(args=dict(tc='tc_ar', patm='shape_error'),  # shape mismatch
            cmng=pytest.raises(ValueError),
            out=None))]
 )
-def test_calc_co2_to_ca(inputs, expected, ctrl):
+def test_calc_density_h2o(values, ctrl):
 
     with ctrl['cmng']:
-        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
         ret = pmodel.calc_density_h2o(**kwargs)
-        assert np.allclose(ret, expected[ctrl['out']])
+        assert np.allclose(ret, values[ctrl['out']])
 
 # ------------------------------------------
 # Testing calc_ftemp_inst_rd - temp only but in Kelvin!
@@ -92,19 +78,19 @@ def test_calc_co2_to_ca(inputs, expected, ctrl):
 
 @pytest.mark.parametrize(
     'ctrl',
-    [(dict(args=dict(tk='tk', dha='KattgeKnorr_ha'),  # scalar
+    [(dict(args=dict(tk='tk_sc', dha='KattgeKnorr_ha'),  # scalar
            cmng=does_not_raise(),
            out='ftemp_arrh_sc')),
-     (dict(args=dict(tk='tk_mat', dha='KattgeKnorr_ha'),  # array
+     (dict(args=dict(tk='tk_ar', dha='KattgeKnorr_ha'),  # array
            cmng=does_not_raise(),
            out='ftemp_arrh_ar'))]
 )
-def test_calc_ftemp_arrh(inputs, expected, ctrl):
+def test_calc_ftemp_arrh(values, ctrl):
 
     with ctrl['cmng']:
-        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
         ret = pmodel.calc_ftemp_arrh(**kwargs)
-        assert np.allclose(ret, expected[ctrl['out']])
+        assert np.allclose(ret, values[ctrl['out']])
 
 # ------------------------------------------
 # Testing calc_ftemp_inst_vcmax - temp only
@@ -113,19 +99,19 @@ def test_calc_ftemp_arrh(inputs, expected, ctrl):
 
 @pytest.mark.parametrize(
     'ctrl',
-    [(dict(args=dict(tc='tc'),  # scalar
+    [(dict(args=dict(tc='tc_sc'),  # scalar
            cmng=does_not_raise(),
            out='ftemp_inst_vcmax_sc')),
-     (dict(args=dict(tc='tc_mat'),  # array
+     (dict(args=dict(tc='tc_ar'),  # array
            cmng=does_not_raise(),
            out='ftemp_inst_vcmax_ar'))]
 )
-def test_calc_ftemp_inst_vcmax(inputs, expected, ctrl):
+def test_calc_ftemp_inst_vcmax(values, ctrl):
 
     with ctrl['cmng']:
-        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
         ret = pmodel.calc_ftemp_inst_vcmax(**kwargs)
-        assert np.allclose(ret, expected[ctrl['out']])
+        assert np.allclose(ret, values[ctrl['out']])
 
 # ------------------------------------------
 # Testing calc_ftemp_inst_vcmax - temp only
@@ -134,25 +120,25 @@ def test_calc_ftemp_inst_vcmax(inputs, expected, ctrl):
 
 @pytest.mark.parametrize(
     'ctrl',
-    [(dict(args=dict(tc='tc'), c4=False,  # scalar, C3
+    [(dict(args=dict(tc='tc_sc'), c4=False,  # scalar, C3
            cmng=does_not_raise(),
            out='ftemp_kphio_c3_sc')),
-     (dict(args=dict(tc='tc_mat'), c4=False,  # array, C3
+     (dict(args=dict(tc='tc_ar'), c4=False,  # array, C3
            cmng=does_not_raise(),
            out='ftemp_kphio_c3_ar')),
-     (dict(args=dict(tc='tc'), c4=True,  # scalar, C4
+     (dict(args=dict(tc='tc_sc'), c4=True,  # scalar, C4
            cmng=does_not_raise(),
            out='ftemp_kphio_c4_sc')),
-     (dict(args=dict(tc='tc_mat'), c4=True,  # array, C4
+     (dict(args=dict(tc='tc_ar'), c4=True,  # array, C4
            cmng=does_not_raise(),
            out='ftemp_kphio_c4_ar'))]
 )
-def test_calc_ftemp_kphio(inputs, expected, ctrl):
+def test_calc_ftemp_kphio(values, ctrl):
 
     with ctrl['cmng']:
-        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
         ret = pmodel.calc_ftemp_kphio(**kwargs, c4=ctrl['c4'])
-        assert np.allclose(ret, expected[ctrl['out']])
+        assert np.allclose(ret, values[ctrl['out']])
 
 # ------------------------------------------
 # Testing calc_gammastar - temp + patm
@@ -161,25 +147,25 @@ def test_calc_ftemp_kphio(inputs, expected, ctrl):
 
 @pytest.mark.parametrize(
     'ctrl',
-    [(dict(args=dict(tc='tc', patm='patm'),  # scalars
+    [(dict(args=dict(tc='tc_sc', patm='patm_sc'),  # scalars
            cmng=does_not_raise(),
            out='gammastar_sc')),
-     (dict(args=dict(tc='tc_mat', patm='patm'),  # scalar + array
+     (dict(args=dict(tc='tc_ar', patm='patm_sc'),  # scalar + array
            cmng=does_not_raise(),
-           out='gammastar_sc_ar')),
-     (dict(args=dict(tc='tc_mat', patm='patm_mat'),  # arrays
+           out='gammastar_mx')),
+     (dict(args=dict(tc='tc_ar', patm='patm_ar'),  # arrays
            cmng=does_not_raise(),
            out='gammastar_ar')),
-     (dict(args=dict(tc='tc_mat', patm='shape_error'),  # shape mismatch
+     (dict(args=dict(tc='tc_ar', patm='shape_error'),  # shape mismatch
            cmng=pytest.raises(ValueError),
            out=None))]
 )
-def test_calc_gammastar(inputs, expected, ctrl):
+def test_calc_gammastar(values, ctrl):
 
     with ctrl['cmng']:
-        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
         ret = pmodel.calc_gammastar(**kwargs)
-        assert np.allclose(ret, expected[ctrl['out']])
+        assert np.allclose(ret, values[ctrl['out']])
 
 # ------------------------------------------
 # Testing calc_kmm - temp + patm
@@ -188,25 +174,25 @@ def test_calc_gammastar(inputs, expected, ctrl):
 
 @pytest.mark.parametrize(
     'ctrl',
-    [(dict(args=dict(tc='tc', patm='patm'),  # scalars
+    [(dict(args=dict(tc='tc_sc', patm='patm_sc'),  # scalars
            cmng=does_not_raise(),
            out='kmm_sc')),
-     (dict(args=dict(tc='tc_mat', patm='patm'),  # scalar + array
+     (dict(args=dict(tc='tc_ar', patm='patm_sc'),  # scalar + array
            cmng=does_not_raise(),
-           out='kmm_sc_ar')),
-     (dict(args=dict(tc='tc_mat', patm='patm_mat'),  # arrays
+           out='kmm_mx')),
+     (dict(args=dict(tc='tc_ar', patm='patm_ar'),  # arrays
            cmng=does_not_raise(),
            out='kmm_ar')),
-     (dict(args=dict(tc='tc_mat', patm='shape_error'),  # shape mismatch
+     (dict(args=dict(tc='tc_ar', patm='shape_error'),  # shape mismatch
            cmng=pytest.raises(ValueError),
            out=None))]
 )
-def test_calc_kmm(inputs, expected, ctrl):
+def test_calc_kmm(values, ctrl):
 
     with ctrl['cmng']:
-        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
         ret = pmodel.calc_kmm(**kwargs)
-        assert np.allclose(ret, expected[ctrl['out']])
+        assert np.allclose(ret, values[ctrl['out']])
 
 # ------------------------------------------
 # Testing calc_soilmstress - soilm + meanalpha
@@ -215,25 +201,25 @@ def test_calc_kmm(inputs, expected, ctrl):
 
 @pytest.mark.parametrize(
     'ctrl',
-    [(dict(args=dict(soilm='soilm', meanalpha='meanalpha'),  # scalars
+    [(dict(args=dict(soilm='soilm_sc', meanalpha='meanalpha_sc'),  # scalars
            cmng=does_not_raise(),
            out='soilmstress_sc')),
-     (dict(args=dict(soilm='soilm_mat', meanalpha='meanalpha'),  # scalar + array
+     (dict(args=dict(soilm='soilm_ar', meanalpha='meanalpha_sc'),  # scalar + array
            cmng=does_not_raise(),
-           out='soilmstress_sc_ar')),
-     (dict(args=dict(soilm='soilm_mat', meanalpha='meanalpha_mat'),  # arrays
+           out='soilmstress_mx')),
+     (dict(args=dict(soilm='soilm_ar', meanalpha='meanalpha_ar'),  # arrays
            cmng=does_not_raise(),
            out='soilmstress_ar')),
-     (dict(args=dict(soilm='soilm_mat', meanalpha='shape_error'),  # shape mismatch
+     (dict(args=dict(soilm='soilm_ar', meanalpha='shape_error'),  # shape mismatch
            cmng=pytest.raises(ValueError),
            out=None))]
 )
-def test_calc_soilmstress(inputs, expected, ctrl):
+def test_calc_soilmstress(values, ctrl):
 
     with ctrl['cmng']:
-        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
         ret = pmodel.calc_soilmstress(**kwargs)
-        assert np.allclose(ret, expected[ctrl['out']])
+        assert np.allclose(ret, values[ctrl['out']])
 
 # ------------------------------------------
 # Testing calc_viscosity_h2o - temp + patm
@@ -242,25 +228,25 @@ def test_calc_soilmstress(inputs, expected, ctrl):
 
 @pytest.mark.parametrize(
     'ctrl',
-    [(dict(args=dict(tc='tc', patm='patm'),  # scalars
+    [(dict(args=dict(tc='tc_sc', patm='patm_sc'),  # scalars
            cmng=does_not_raise(),
            out='viscosity_h2o_sc')),
-     (dict(args=dict(tc='tc', patm='patm_mat'),  # scalar + array
+     (dict(args=dict(tc='tc_sc', patm='patm_ar'),  # scalar + array
            cmng=does_not_raise(),
-           out='viscosity_h2o_sc_ar')),
-     (dict(args=dict(tc='tc_mat', patm='patm_mat'),  # arrays
+           out='viscosity_h2o_mx')),
+     (dict(args=dict(tc='tc_ar', patm='patm_ar'),  # arrays
            cmng=does_not_raise(),
            out='viscosity_h2o_ar')),
-     (dict(args=dict(tc='tc_mat', patm='shape_error'),  # shape mismatch
+     (dict(args=dict(tc='tc_ar', patm='shape_error'),  # shape mismatch
            cmng=pytest.raises(ValueError),
            out=None))]
 )
-def test_calc_viscosity_h2o(inputs, expected, ctrl):
+def test_calc_viscosity_h2o(values, ctrl):
 
     with ctrl['cmng']:
-        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
         ret = pmodel.calc_viscosity_h2o(**kwargs)
-        assert np.allclose(ret, expected[ctrl['out']])
+        assert np.allclose(ret, values[ctrl['out']])
 
 # ------------------------------------------
 # Testing calc_patm - elev only
@@ -269,19 +255,19 @@ def test_calc_viscosity_h2o(inputs, expected, ctrl):
 
 @pytest.mark.parametrize(
     'ctrl',
-    [(dict(args=dict(elv='elev'),  # scalar
+    [(dict(args=dict(elv='elev_sc'),  # scalar
            cmng=does_not_raise(),
-           out='patm_sc')),
-     (dict(args=dict(elv='elev_mat'),  # array
+           out='patm_from_elev_sc')),
+     (dict(args=dict(elv='elev_ar'),  # array
            cmng=does_not_raise(),
-           out='patm_ar'))]
+           out='patm_from_elev_ar'))]
 )
-def test_calc_patm(inputs, expected, ctrl):
+def test_calc_patm(values, ctrl):
 
     with ctrl['cmng']:
-        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
         ret = pmodel.calc_patm(**kwargs)
-        assert np.allclose(ret, expected[ctrl['out']])
+        assert np.allclose(ret, values[ctrl['out']])
 
 # ------------------------------------------
 # Testing calc_co2_to_ca - co2 + patm
@@ -290,25 +276,25 @@ def test_calc_patm(inputs, expected, ctrl):
 
 @pytest.mark.parametrize(
     'ctrl',
-    [(dict(args=dict(co2='co2', patm='patm'),  # scalars
+    [(dict(args=dict(co2='co2_sc', patm='patm_sc'),  # scalars
            cmng=does_not_raise(),
-           out='co2_to_ca_sc')),
-     (dict(args=dict(co2='co2_mat', patm='patm'),  # scalar + array
+           out='ca_sc')),
+     (dict(args=dict(co2='co2_ar', patm='patm_sc'),  # scalar + array
            cmng=does_not_raise(),
-           out='co2_to_ca_sc_ar')),
-     (dict(args=dict(co2='co2_mat', patm='patm_mat'),  # arrays
+           out='ca_mx')),
+     (dict(args=dict(co2='co2_ar', patm='patm_ar'),  # arrays
            cmng=does_not_raise(),
-           out='co2_to_ca_ar')),
-     (dict(args=dict(co2='co2_mat', patm='shape_error'),  # shape mismatch
+           out='ca_ar')),
+     (dict(args=dict(co2='co2_ar', patm='shape_error'),  # shape mismatch
            cmng=pytest.raises(ValueError),
            out=None))]
 )
-def test_calc_co2_to_ca(inputs, expected, ctrl):
+def test_calc_co2_to_ca(values, ctrl):
 
     with ctrl['cmng']:
-        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
         ret = pmodel.calc_co2_to_ca(**kwargs)
-        assert np.allclose(ret, expected[ctrl['out']])
+        assert np.allclose(ret, values[ctrl['out']])
 
 
 # ------------------------------------------
@@ -321,47 +307,55 @@ def test_calc_co2_to_ca(inputs, expected, ctrl):
 
 @pytest.mark.parametrize(
     'ctrl',
-    [(dict(args=dict(kmm='kmm', gammastar='gammastar', ns_star='ns_star',
-                     ca='ca', vpd='vpd'), method='c4',  # scalar, C4
+    [(dict(args=dict(kmm='kmm_sc', gammastar='gammastar_sc',
+                     ns_star='ns_star_sc', ca='ca_sc', vpd='vpd_sc'),
+           method='c4',  # scalar, C4
            cmng=does_not_raise(),
            out='optchi_c4')),
-     (dict(args=dict(kmm='kmm_mat', gammastar='gammastar', ns_star='ns_star_mat',
-                     ca='ca', vpd='vpd'), method='c4',  # scalar + arrays, C4
+     (dict(args=dict(kmm='kmm_ar', gammastar='gammastar_sc',
+                     ns_star='ns_star_ar', ca='ca_sc', vpd='vpd_sc'),
+           method='c4',  # scalar + arrays, C4
            cmng=does_not_raise(),
            out='optchi_c4')),
-     (dict(args=dict(kmm='kmm_mat', gammastar='gammastar_mat', ns_star='ns_star_mat',
-                     ca='ca_mat', vpd='vpd_mat'), method='c4',  # scalar + arrays, C4
+     (dict(args=dict(kmm='kmm_ar', gammastar='gammastar_ar',
+                     ns_star='ns_star_ar', ca='ca_ar', vpd='vpd_ar'),
+           method='c4',  # scalar + arrays, C4
            cmng=does_not_raise(),
            out='optchi_c4')),
-     (dict(args=dict(kmm='kmm_mat', gammastar='shape_error', ns_star='ns_star_mat',
-                     ca='ca_mat', vpd='vpd_mat'), method='c4',  # scalar + arrays, C4
+     (dict(args=dict(kmm='kmm_ar', gammastar='shape_error',
+                     ns_star='ns_star_ar', ca='ca_ar', vpd='vpd_ar'),
+           method='c4',  # scalar + arrays, C4
            cmng=pytest.raises(ValueError),
            out=None)),
-     (dict(args=dict(kmm='kmm', gammastar='gammastar', ns_star='ns_star',
-                     ca='ca', vpd='vpd'), method='prentice14',  # scalar, c3
+     (dict(args=dict(kmm='kmm_sc', gammastar='gammastar_sc',
+                     ns_star='ns_star_sc', ca='ca_sc', vpd='vpd_sc'),
+           method='prentice14',  # scalar, c3
            cmng=does_not_raise(),
            out='optchi_p14_sc')),
-     (dict(args=dict(kmm='kmm_mat', gammastar='gammastar', ns_star='ns_star_mat',
-                     ca='ca', vpd='vpd'), method='prentice14',  # scalar + arrays, c3
+     (dict(args=dict(kmm='kmm_ar', gammastar='gammastar_sc',
+                     ns_star='ns_star_ar', ca='ca_sc', vpd='vpd_sc'),
+           method='prentice14',  # scalar + arrays, c3
            cmng=does_not_raise(),
-           out='optchi_p14_sc_ar')),
-     (dict(args=dict(kmm='kmm_mat', gammastar='gammastar_mat', ns_star='ns_star_mat',
-                     ca='ca_mat', vpd='vpd_mat'), method='prentice14',  # scalar + arrays, c3
+           out='optchi_p14_mx')),
+     (dict(args=dict(kmm='kmm_ar', gammastar='gammastar_ar',
+                     ns_star='ns_star_ar', ca='ca_ar', vpd='vpd_ar'),
+           method='prentice14',  # scalar + arrays, c3
            cmng=does_not_raise(),
            out='optchi_p14_ar')),
-     (dict(args=dict(kmm='kmm_mat', gammastar='shape_error', ns_star='ns_star_mat',
-                     ca='ca_mat', vpd='vpd_mat'), method='prentice14',  # scalar + arrays, c3
+     (dict(args=dict(kmm='kmm_ar', gammastar='shape_error',
+                     ns_star='ns_star_ar', ca='ca_ar', vpd='vpd_ar'),
+           method='prentice14',  # scalar + arrays, c3
            cmng=pytest.raises(ValueError),
            out=None))
      ]
 )
-def test_calc_optimal_chi(inputs, expected, ctrl):
+def test_calc_optimal_chi(values, ctrl):
 
     with ctrl['cmng']:
-        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
         ret = pmodel.CalcOptimalChi(**kwargs, method=ctrl['method'])
 
-        expected = expected[ctrl['out']]
+        expected = values[ctrl['out']]
         assert np.allclose(ret.chi, expected['chi'])
         assert np.allclose(ret.mj, expected['mj'])
         assert np.allclose(ret.mc, expected['mc'])
@@ -369,40 +363,60 @@ def test_calc_optimal_chi(inputs, expected, ctrl):
 
 
 # # ------------------------------------------
-# # Testing CalcLUEVcmax- output of CalcOptimalChi + optional kphio,
-# # ftemp_kphio and soilmstress. This has quite a few combinations,
-# # depending on options to do soil moisture stress or kphio temperature
-# # correction. The default kphio varies with settings but imposing a
-# # single value here to keep test simpler.
-# # - scalar vs array optchi inputs.
-# # - four methods.
+# # Testing CalcLUEVcmax -  This has quite a few combinations:
+# # - c4
+# # - soilmstress
+# # - ftemp_kphio
+# # - scalar vs array optchi
+# # - method
+# # - kphio also varies with input setup but imposing a single value
+# #   here (0.05) to simplify test suite.
 # # ------------------------------------------
 #
 #
-# def test_calc_lue_vcmax_broadcast_failure(common_inputs):
+# @pytest.mark.parametrize(
+#     'soilmstress',
+#     [dict(soilm=None, meanalpha=None),
+#      dict(soilm='soilm_sc', meanalpha='meanalpha_sc'),
+#      dict(soilm='soilm_ar', meanalpha='meanalpha_ar')]
+# )
+# @pytest.mark.parametrize(
+#     'ftemp_kphio',
+#     [True, False]
+# )
+# @pytest.mark.parametrize(
+#     'luevcmax_method',
+#     ['wang17', 'smith19', 'none']
+# )
+# @pytest.mark.parametrize(
+#     'optchi',
+#     [dict(args=dict(kmm='kmm_sc', gammastar='gammastar_sc',
+#                     ns_star='ns_star_sc', ca='ca_sc', vpd='vpd_sc'),
+#           type='sc'),
+#      dict(args=dict(kmm='kmm_ar', gammastar='gammastar_sc',
+#                     ns_star='ns_star_ar', ca='ca_sc', vpd='vpd_sc'),
+#           type='mx'),
+#      dict(args=dict(kmm='kmm_ar', gammastar='gammastar_ar',
+#                     ns_star='ns_star_ar', ca='ca_ar', vpd='vpd_ar'),
+#           type='ar')
+#      ]
+# )
+# def test_calc_lue_vcmax_c3(values, soilmstress,
+#                            ftemp_kphio, luevcmax_method, optchi):
 #
-#     with pytest.raises(ValueError):
-#         oc = pmodel.CalcOptimalChi(common_inputs.kmm_mat,
-#                                    common_inputs.gammastar_mat,
-#                                    common_inputs.ns_star,
-#                                    common_inputs.ca,
-#                                    common_inputs.vpd)
-#         _ = pmodel.CalcLUEVcmax(oc, common_inputs.kphio_broadcast_err)
 #
 #
+#     expected_key = (f"lue_vcmax_{soilmstress['soilm']}_{ftemp_kphio}_" +
+#                     f"{luevcmax_method}_{optchi['type']}_{optchi['method']}")
 #
+#     # Optimal Chi
+#     kwargs = {k: values[v] for k, v in optchi['args'].items()}
+#     optchi = pmodel.CalcOptimalChi(**kwargs, method=optchi['method'])
 #
-# def test_calc_optimal_chi_c4_scalars(common_inputs):
+#     ftemp_kphio = pmodel.calc_ftemp_kphio(tc=) if ftemp_kphio else 1.0
 #
-#     ret = pmodel.CalcOptimalChi(common_inputs.kmm,
-#                                 common_inputs.gammastar,
-#                                 common_inputs.ns_star,
-#                                 common_inputs.ca,
-#                                 common_inputs.vpd,
-#                                 method='c4')
+#     soilmstress = pmodel.calc_soilmstress(soilm, meanalpha=) if soilm is not None else 1.0
 #
-#     assert ret.chi == 1.0
-#     assert ret.mj == 1.0
-#     assert ret.mjoc == 1.0
-#     assert ret.mc == 1.0
-
+#     ret = pmodel.CalcLUEVcmax(optchi, kphio=0.05, ftemp_kphio=ftemp_kphio,
+#                               soilmstress=soilmstress,
+#                               )

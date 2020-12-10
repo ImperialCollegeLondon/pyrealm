@@ -54,7 +54,8 @@ def check_input_shapes(*args):
     else:
         return 1
 
-def calc_density_h2o(tc: Union[float, np.ndarray], p: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+
+def calc_density_h2o(tc: Union[float, np.ndarray], patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     """**Density of water**
 
     Calculates the density of water as a function of temperature and atmospheric
@@ -81,7 +82,7 @@ def calc_density_h2o(tc: Union[float, np.ndarray], p: Union[float, np.ndarray]) 
     """
 
     # check inputs, shape not used
-    _ = check_input_shapes(tc, p)
+    _ = check_input_shapes(tc, patm)
 
     # Get powers of tc, including tc^0 = 1 for constant terms
     tc_pow = np.power.outer(tc, np.arange(0, 10))
@@ -96,7 +97,7 @@ def calc_density_h2o(tc: Union[float, np.ndarray], p: Union[float, np.ndarray]) 
     vinf_val = np.sum(np.array(PARAM.FisherDial.vinf) * tc_pow, axis=-1)
 
     # Convert pressure to bars (1 bar <- 100000 Pa)
-    pbar = 1e-5 * p
+    pbar = 1e-5 * patm
 
     # Calculate the specific volume (cm^3 g^-1):
     spec_vol = vinf_val + lambda_val / (po_val + pbar)
@@ -203,11 +204,11 @@ def calc_ftemp_inst_rd(tc: Union[float, np.ndarray]) -> Union[float, np.ndarray]
                   PARAM.Heskel.c * (tc ** 2 - PARAM.k.To ** 2))
 
 
-def calc_ftemp_inst_vcmax(tcleaf: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def calc_ftemp_inst_vcmax(tc: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     r"""**Instantaneous temperature response of** :math:`V_{cmax}`
 
     This function calculates the temperature-scaling factor :math:`f` of the
-    instantaneous temperature response of :math:`V_{cmax}` given the leaf
+    instantaneous temperature response of :math:`V_{cmax}` given the 
     temperature (:math:`T`) relative to the standard reference temperature
     (:math:`T_0`), following modified Arrhenius kinetics. 
 
@@ -259,7 +260,7 @@ def calc_ftemp_inst_vcmax(tcleaf: Union[float, np.ndarray]) -> Union[float, np.n
 
     Args:
 
-        tcleaf: Leaf temperature, or in general the temperature relevant for
+        tc:  temperature, or in general the temperature relevant for
             photosynthesis (°C)
 
     Returns:
@@ -268,17 +269,17 @@ def calc_ftemp_inst_vcmax(tcleaf: Union[float, np.ndarray]) -> Union[float, np.n
 
     # Convert temperatures to Kelvin
     tkref = PARAM.k.To + PARAM.k.CtoK
-    tkleaf = tcleaf + PARAM.k.CtoK
+    tk = tc + PARAM.k.CtoK
 
     # Calculate entropy following Kattge & Knorr (2007): slope and intercept
     # are defined using temperature in °C, not K!!! 'tcgrowth' corresponds
     # to 'tmean' in Nicks, 'tc25' is 'to' in Nick's
-    dent = PARAM.KattgeKnorr.a_ent + PARAM.KattgeKnorr.b_ent * tcleaf
-    fva = calc_ftemp_arrh(tkleaf, PARAM.KattgeKnorr.Ha)
+    dent = PARAM.KattgeKnorr.a_ent + PARAM.KattgeKnorr.b_ent * tc
+    fva = calc_ftemp_arrh(tk, PARAM.KattgeKnorr.Ha)
     fvb = ((1 + np.exp((tkref * dent - PARAM.KattgeKnorr.Hd) /
                        (PARAM.k.R * tkref))) /
-           (1 + np.exp((tkleaf * dent - PARAM.KattgeKnorr.Hd) /
-                       (PARAM.k.R * tkleaf))))
+           (1 + np.exp((tk * dent - PARAM.KattgeKnorr.Hd) /
+                       (PARAM.k.R * tk))))
 
     return fva * fvb
 
@@ -1194,14 +1195,20 @@ class CalcLUEVcmax:
             2019.
     """
 
-    # TODO - apparent incorrectness of these solutions with _ca_ variation,
+    # TODO - apparent incorrectness of wang and smith methods with _ca_ variation,
     #        work well with varying temperature but not _ca_ variation (or
     #        e.g. elevation gradient David Sandoval, REALM meeting, Dec 2020)
 
     # TODO - apparent inconsistency in structure of VCMax and meaning of mprime?
 
-    def __init__(self, optchi, kphio: float, ftemp_kphio: float = 1.0, 
-                 soilmstress: float = 1.0, method: str = 'wang17'):
+    def __init__(self, optchi: CalcOptimalChi,
+                 kphio: Union[float, np.ndarray],
+                 ftemp_kphio: Union[float, np.ndarray] = 1.0,
+                 soilmstress: Union[float, np.ndarray] = 1.0,
+                 method: str = 'wang17'):
+
+        self.shape = check_input_shapes(optchi.mj, optchi.mjoc, kphio,
+                                        ftemp_kphio, soilmstress)
 
         self.optchi = optchi
         self.kphio = kphio

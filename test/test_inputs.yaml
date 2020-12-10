@@ -1,76 +1,50 @@
-
 # Scalar inputs
-tc: 20
-tk: 293.15
-patm: 101325
-soilm: 0.2
-meanalpha: 1
-elev: 1000
-co2: 413.03
-# Values taken from internals of example(rpmodel)
-kmm: 46.09928
-gammastar: 3.33925
-ns_star: 1.12536
-ca: 40.53
-vpd: 1000
+tc_sc: 20
+tk_sc: 293.15
+patm_sc: 101325
+soilm_sc: 0.2
+meanalpha_sc: 1
+elev_sc: 1000
+co2_sc: 413.03
+vpd_sc: 1000
 
 # Array inputs
-tc_mat:
+tc_ar:
   - 15
   - 20
   - 25
   - 30
-tk_mat:
+tk_ar:
   - 288.15
   - 293.15
   - 298.15
   - 303.15
-patm_mat:
+patm_ar:
   - 100325
   - 101325
   - 102325
   - 103325
-soilm_mat:
+soilm_ar:
   - 0.1
   - 0.2
   - 0.5
   - 0.7
-meanalpha_mat:
+meanalpha_ar:
   - 0.2
   - 1.0
   - 0.5
   - 0.7
-elev_mat:
+elev_ar:
   - 900
   - 1000
   - 1100
   - 1200
-co2_mat:
+co2_ar:
   - 373.03
   - 393.03
   - 413.03
   - 433.03
-kmm_mat:
-  - 43.09928
-  - 46.09928
-  - 49.09928
-  - 52.09928
-gammastar_mat:
-  - 3.03925
-  - 3.33925
-  - 3.36925
-  - 3.39925
-ns_star_mat:
-  - 1.02536
-  - 1.12536
-  - 1.22536
-  - 1.32536
-ca_mat:
-  - 37.53
-  - 40.53
-  - 43.53
-  - 46.53
-vpd_mat:
+vpd_ar:
   - 900
   - 1000
   - 1100
@@ -82,7 +56,7 @@ shape_error:
   - 1
   - 1
 
-
-
-# Other params
+# Other parameters 
 KattgeKnorr_ha: 71513
+kTo: 25.0
+kPo: 101325.0
