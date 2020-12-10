@@ -825,6 +825,8 @@ def pmodel(tc: float,
         A :class:`dotmap.Dotmap` containing predictions of the P-model.
     """
 
+    # TODO - add bounds sanity checks on inputs
+
     # Check arguments
     if patm is None and elv is None:
         raise ValueError('Provide either elevation (elv) or atmospheric pressure (patm)')
@@ -913,7 +915,7 @@ def pmodel(tc: float,
                                      soilmstress, method=method_jmaxlim)
 
     # -----------------------------------------------------------------------
-    # Corrolary predictions
+    # Vcmax25 and RD per unit absorbed irradiance
     # -----------------------------------------------------------------------
 
     # Vcmax25 (vcmax normalized to PARAM.k.To)
@@ -1008,17 +1010,22 @@ class CalcOptimalChi:
 
     Examples:
 
-        >>> # Example taken from internals of example(rpmodel) in R implementation
         >>> vals = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925,
         ...                       ns_star = 1.12536, ca = 40.53, vpd = 1000)
-        >>> vals.chi # doctest: +ELLIPSIS
-        0.69435...
-        >>> vals.mc # doctest: +ELLIPSIS
-        0.33408...
-        >>> vals.mj # doctest: +ELLIPSIS
-        0.71230...
-        >>> vals.mjoc # doctest: +ELLIPSIS
-        2.13211...
+        >>> round(vals.chi, 5)
+        0.69435
+        >>> round(vals.mc, 5)
+        0.33408
+        >>> round(vals.mj, 5)
+        0.7123
+        >>> round(vals.mjoc, 5)
+        2.13211
+        >>> # The c4 method just populates these values with 1.0
+        >>> c4_vals = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925,
+        ...                          ns_star = 1.12536, ca = 40.53, vpd = 1000,
+        ...                          method='c4')
+        >>> c4_vals.chi
+        1.0
 
 
     Returns: 
@@ -1036,8 +1043,8 @@ class CalcOptimalChi:
                  vpd: Union[float, np.ndarray],
                  method: str = 'prentice14'):
 
-        # Check inputs are broadcastable - shape not used.
-        _ = check_input_shapes(kmm, gammastar, ns_star, ca, vpd)
+        # Check inputs are broadcastable
+        self.shape = check_input_shapes(kmm, gammastar, ns_star, ca, vpd)
 
         self.kmm = kmm
         self.gammastar = gammastar
@@ -1063,20 +1070,15 @@ class CalcOptimalChi:
             raise ValueError(f"CalcOptimalChi: method argument '{method}' invalid.")
 
     def c4(self):
-        r"""This method simply sets the following values to represent the C4
-        pathway:
-        
-        .. math::
-            :nowrap:
+        r"""This method simply sets all the key variables
+        (:math:`\chi, m_j, m_c, m_{joc}`) to 1.0 to represent the C4
+        pathway.
 
-            \begin{align*}
-                \chi &= 1\\
-                m_j &= 1\\
-                m_c &= 1\\
-                m_{joc} &= 1
-            \end{align*}
-
+        Note that - because these values are constant regardless of inputs -
+        there is no need to represent the shape of those inputs and these values
+        can be collapsed to scalars.
         """
+
         # Dummy values to represent c4 pathway
 
         self.chi = 1.0
@@ -1109,12 +1111,8 @@ class CalcOptimalChi:
             \end{align*}
         """
 
-        # TODO - original R code mentioned vectorisation but none of the inputs
-        #    are obviously a vector, and the test case returns a list of scalars
-        #    so it is not obvious that this is required.
-
         # Avoid negative VPD (dew conditions)
-        vpd = 0 if self.vpd < 0 else self.vpd
+        vpd = np.clip(self.vpd, 0, None)
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         xi = np.sqrt((self.beta * (self.kmm + self.gammastar)) / (1.6 * self.ns_star))
@@ -1127,11 +1125,15 @@ class CalcOptimalChi:
         vbkg = self.beta * (self.kmm + self.gammastar)
 
         # Calculate mj, based on the mc' formulation (see Regressing_LUE.pdf)
-        if self.ns_star > 0 and vpd > 0 and vbkg > 0:
-            vsr = np.sqrt(1.6 * self.ns_star * vpd / vbkg)
-            self.mj = vdcg / (vacg + 3.0 * self.gammastar * vsr)
-        else:
-            self.mj = None
+        # NOTE: this differs from rpmodel, which uses length not dim here, so
+        # unwrapped matrix inputs. Also, rpmodel includes a check for vpd > 0,
+        # but this is guaranteed by clip above (also true in rpmodel).
+
+        vsr = np.sqrt(1.6 * self.ns_star * vpd / vbkg)
+        mj = vdcg / (vacg + 3.0 * self.gammastar * vsr)
+        mj = np.where(np.logical_and(self.ns_star > 0, vbkg > 0), mj, np.nan)
+        # np.where _always_ returns an array, so catch scalars.
+        self.mj = mj.item() if np.ndim(mj) == 0 else mj
 
         # alternative variables
         gamma = self.gammastar / self.ca
