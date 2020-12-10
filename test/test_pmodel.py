@@ -16,6 +16,13 @@ from pypmodel.params import PARAM
 def common_inputs():
     """Parameterised fixture to run tests using both the local and remote validator.
     """
+    
+    prop_mat = np.array([[0.95, 1.05], [1.0, 1.1]])
+    kmm = 46.09928
+    gammastar = 3.33925
+    ns_star = 1.12536
+    ca = 40.53
+    vpd = 1000
 
     return dotmap.DotMap(tc=20,
                          tc_mat=np.array([[15, 20], [25, 30]]),
@@ -32,12 +39,24 @@ def common_inputs():
                          elev=1000,
                          elev_mat=np.array([[900, 1000], [1100, 1200]]),
                          co2=413.03,
-                         co2_mat=np.array([[373.03, 393.03], [413.03, 433.03]])
+                         co2_mat=np.array([[373.03, 393.03], [413.03, 433.03]]),
+                         kmm=kmm,
+                         gammastar=gammastar,
+                         ns_star=ns_star,
+                         ca=ca,
+                         vpd=vpd,
+                         kmm_mat=kmm * prop_mat,
+                         gammastar_mat=gammastar * prop_mat,
+                         gammastar_broadcast_err=gammastar * np.array([0.95, 1.0, 1.05]),
+                         ns_star_mat=ns_star * prop_mat,
+                         ca_mat=ca * prop_mat,
+                         vpd_mat=vpd * prop_mat
                          )
 
 # ------------------------------------------
 # Testing calc_density_h20 - temp + patm
 # ------------------------------------------
+
 
 def test_calc_density_h2o_broadcast_failure(common_inputs):
 
@@ -79,7 +98,7 @@ def test_calc_ftemp_arrh_scalar(common_inputs):
 
 def test_calc_ftemp_arrh_array(common_inputs):
 
-    ret = pmodel.calc_ftemp_arrh(common_inputs.tc_mat+ PARAM.k.CtoK,
+    ret = pmodel.calc_ftemp_arrh(common_inputs.tc_mat + PARAM.k.CtoK,
                                  PARAM.KattgeKnorr.Ha)
     assert np.allclose(ret, np.array([[0.367459, 0.611382],
                                       [1.000, 1.609305]]))
@@ -140,7 +159,7 @@ def test_calc_gammastar_broadcast_failure(common_inputs):
 
     with pytest.raises(ValueError):
         _ = pmodel.calc_gammastar(common_inputs.tc_mat,
-                                    common_inputs.p_broadcast_err)
+                                  common_inputs.p_broadcast_err)
 
 
 def test_calc_gammastar_scalars(common_inputs):
@@ -203,7 +222,7 @@ def test_calc_soilmstress_broadcast_failure(common_inputs):
 
     with pytest.raises(ValueError):
         _ = pmodel.calc_soilmstress(common_inputs.soilm_mat,
-                            common_inputs.meanalpha_broadcast_err)
+                                    common_inputs.meanalpha_broadcast_err)
 
 
 def test_calc_soilmstress_scalars(common_inputs):
@@ -234,7 +253,7 @@ def test_calc_viscosity_h2o_broadcast_failure(common_inputs):
 
     with pytest.raises(ValueError):
         _ = pmodel.calc_viscosity_h2o(common_inputs.tc_mat,
-                            common_inputs.p_broadcast_err)
+                                      common_inputs.p_broadcast_err)
 
 
 def test_calc_viscosity_h2o_scalars(common_inputs):
@@ -255,8 +274,6 @@ def test_calc_viscosity_h2o_arrays(common_inputs):
     ret = pmodel.calc_viscosity_h2o(common_inputs.tc_mat, common_inputs.p_mat)
     assert np.allclose(ret, np.array([[0.00113756998, 0.00100159716],
                                       [0.00089002254, 0.00079722171]]))
-
-
 
 # ------------------------------------------
 # Testing calc_patm - elev only
@@ -306,4 +323,114 @@ def test_calc_co2_to_ca_arrays(common_inputs):
     ret = pmodel.calc_co2_to_ca(common_inputs.co2_mat, common_inputs.p_mat)
     assert np.allclose(ret, np.array([[37.424235, 39.823765],
                                       [42.263295, 44.742825]]))
+
+# ------------------------------------------
+# Testing CalcOptimalChi - vpd + internals kmm, gammastar, ns_star, ca
+# ------------------------------------------
+
+
+def test_calc_optimal_chi_broadcast_failure(common_inputs):
+
+    with pytest.raises(ValueError):
+        _ = pmodel.CalcOptimalChi(common_inputs.kmm_mat,
+                                  common_inputs.gammastar_broadcast_err,
+                                  common_inputs.ns_star,
+                                  common_inputs.ca,
+                                  common_inputs.vpd)
+
+
+# NOTE - the c4 method __INTENTIONALLY__ always returns scalars
+# regardless of input shape
+
+def test_calc_optimal_chi_c4_scalars(common_inputs):
+
+    ret = pmodel.CalcOptimalChi(common_inputs.kmm,
+                                common_inputs.gammastar,
+                                common_inputs.ns_star,
+                                common_inputs.ca,
+                                common_inputs.vpd,
+                                method='c4')
+
+    assert ret.chi == 1.0
+    assert ret.mj == 1.0
+    assert ret.mjoc == 1.0
+    assert ret.mc == 1.0
+
+
+def test_calc_optimal_chi_c4_scalars_arrays(common_inputs):
+    ret = pmodel.CalcOptimalChi(common_inputs.kmm_mat,
+                                common_inputs.gammastar,
+                                common_inputs.ns_star_mat,
+                                common_inputs.ca,
+                                common_inputs.vpd,
+                                method='c4')
+
+    assert ret.chi == 1.0
+    assert ret.mj == 1.0
+    assert ret.mjoc == 1.0
+    assert ret.mc == 1.0
+
+
+def test_calc_optimal_chi_c4_arrays(common_inputs):
+    ret = pmodel.CalcOptimalChi(common_inputs.kmm_mat,
+                                common_inputs.gammastar_mat,
+                                common_inputs.ns_star_mat,
+                                common_inputs.ca_mat,
+                                common_inputs.vpd_mat,
+                                method='c4')
+
+    assert ret.chi == 1.0
+    assert ret.mj == 1.0
+    assert ret.mjoc == 1.0
+    assert ret.mc == 1.0
+
+# Prentice 14
+
+
+def test_calc_optimal_chi_scalars(common_inputs):
+
+    ret = pmodel.CalcOptimalChi(common_inputs.kmm,
+                                common_inputs.gammastar,
+                                common_inputs.ns_star,
+                                common_inputs.ca,
+                                common_inputs.vpd)
+
+    assert round(ret.chi, 8) == 0.69435213
+    assert round(ret.mc, 8) == 0.33408383
+    assert round(ret.mj, 8) == 0.71230386
+    assert round(ret.mjoc, 8) == 2.13211114
+
+
+def test_calc_optimal_chi_scalars_arrays(common_inputs):
+    ret = pmodel.CalcOptimalChi(common_inputs.kmm_mat,
+                                common_inputs.gammastar,
+                                common_inputs.ns_star_mat,
+                                common_inputs.ca,
+                                common_inputs.vpd)
+
+    assert np.allclose(ret.chi, np.array([[0.69471370,  0.69402371],
+                                          [0.69435213,  0.69372406]]))
+    assert np.allclose(ret.mc, np.array([[0.34492189,  0.32390633],
+                                         [0.33408383,  0.31433074]]))
+    assert np.allclose(ret.mj, np.array([[0.71242488,  0.71219384],
+                                         [0.71230386,  0.71209338]]))
+    assert np.allclose(ret.mjoc, np.array([[2.0654673,  2.1987648],
+                                           [2.1321111,  2.2654271]]))
+
+
+def test_calc_optimal_chi_arrays(common_inputs):
+    ret = pmodel.CalcOptimalChi(common_inputs.kmm_mat,
+                                common_inputs.gammastar_mat,
+                                common_inputs.ns_star_mat,
+                                common_inputs.ca_mat,
+                                common_inputs.vpd_mat)
+
+    assert np.allclose(ret.chi, np.array([[0.69955736,  0.68935938],
+                                          [0.69435213,  0.68456214]]))
+    assert np.allclose(ret.mc, np.array([[0.33597077,  0.33226381],
+                                         [0.33408383,  0.33050567]]))
+    assert np.allclose(ret.mj, np.array([[0.71403643,  0.71062217],
+                                         [0.71230386,  0.70898771]]))
+    assert np.allclose(ret.mjoc, np.array([[2.1252933,  2.1387287],
+                                           [2.1321111,  2.1451605]]))
 

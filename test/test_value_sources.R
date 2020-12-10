@@ -16,6 +16,21 @@ elev_mat <- matrix(c(900, 1000, 1100, 1200), ncol=2, byrow=TRUE)
 co2_mat <- matrix(c(373.03, 393.03, 413.03, 433.03), nrow=2, byrow=TRUE)
 
 
+# Values taken from internals of example(rpmodel)
+kmm <- 46.09928
+gammastar <- 3.33925
+ns_star <- 1.12536
+ca <- 40.53
+vpd <- 1000
+
+prop_mat <- matrix(c(0.95, 1.0, 1.05, 1.1), ncol=2)
+kmm_mat <- kmm * prop_mat
+gammastar_mat <- gammastar * prop_mat
+ns_star_mat <- ns_star * prop_mat
+ca_mat <- ca * prop_mat
+vpd_mat <- vpd * prop_mat
+
+
 # calc_density_h20
 
 round(calc_density_h2o(tc, p), 4)
@@ -166,3 +181,76 @@ val = calc_ftemp_inst_rd(tc_mat)
 [1,] 37.424235 39.823765
 [2,] 42.263295 44.742825
 >
+
+# rpmodel:::calc_chi_c4()
+# NOTE: this function doesn't do anything but return 1.0 scalars, but it
+# doesn't need to do anything else. There is no need to capture the input shape.
+
+> rpmodel:::calc_chi_c4()
+$chi
+[1] 1
+
+$mc
+[1] 1
+
+$mj
+[1] 1
+
+$mjoc
+[1] 1
+
+> rpmodel:::calc_optimal_chi(kmm, gammastar, ns_star, ca, vpd, beta=146.0)
+$chi
+[1] 0.69435213
+
+$mc
+[1] 0.33408383
+
+$mj
+[1] 0.71230386
+
+$mjoc
+[1] 2.13211114
+
+> rpmodel:::calc_optimal_chi(kmm_mat, gammastar, ns_star_mat, ca, vpd, beta=146.0)
+$chi
+           [,1]       [,2]
+[1,] 0.69471370 0.69402371
+[2,] 0.69435213 0.69372406
+
+$mc
+           [,1]       [,2]
+[1,] 0.34492189 0.32390633
+[2,] 0.33408383 0.31433074
+
+$mj
+           [,1]       [,2]
+[1,] 0.71242488 0.71219384
+[2,] 0.71230386 0.71209338
+
+$mjoc
+          [,1]      [,2]
+[1,] 2.0654673 2.1987648
+[2,] 2.1321111 2.2654271
+
+
+> rpmodel:::calc_optimal_chi(kmm_mat, gammastar_mat, ns_star_mat, ca_mat, vpd_mat, beta=146.0)
+$chi
+           [,1]       [,2]
+[1,] 0.69955736 0.68935938
+[2,] 0.69435213 0.68456214
+
+$mc
+           [,1]       [,2]
+[1,] 0.33597077 0.33226381
+[2,] 0.33408383 0.33050567
+
+$mj
+           [,1]       [,2]
+[1,] 0.71403643 0.71062217
+[2,] 0.71230386 0.70898771
+
+$mjoc
+          [,1]      [,2]
+[1,] 2.1252933 2.1387287
+[2,] 2.1321111 2.1451605
