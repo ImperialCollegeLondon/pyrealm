@@ -1,436 +1,408 @@
 import pytest
 import numpy as np
-import dotmap
-
+import yaml
+from contextlib import contextmanager
 from pypmodel import pmodel
-from pypmodel.params import PARAM
 
 # ------------------------------------------
-# Fixtures: shared input values
-# TODO - this could be parameterised more - many use the same signatures
-#        of tc and patm as inputs.
+# Null context manager to include exception testing in test paramaterisation
+# ------------------------------------------
+
+
+@contextmanager
+def does_not_raise():
+    yield
+
+# ------------------------------------------
+# Fixtures: inputs and expected values
 # ------------------------------------------
 
 
 @pytest.fixture(scope='module')
-def common_inputs():
-    """Parameterised fixture to run tests using both the local and remote validator.
+def inputs():
+    """Fixture to load test inputs from file.
     """
-    
-    prop_mat = np.array([[0.95, 1.05], [1.0, 1.1]])
-    kmm = 46.09928
-    gammastar = 3.33925
-    ns_star = 1.12536
-    ca = 40.53
-    vpd = 1000
 
-    return dotmap.DotMap(tc=20,
-                         tc_mat=np.array([[15, 20], [25, 30]]),
-                         tc_broadcast_err=np.array([[15, 20, 25]]),
-                         p=101325,
-                         p_mat=np.array([[100325, 101325], [102325, 103325]]),
-                         p_broadcast_err=np.array([[100325, 101325, 103325]]),
-                         soilm=0.2,
-                         soilm_mat=np.array([[0.1, 0.2], [0.5, 0.7]]),
-                         soilm_broadcast_err=np.array([[0.1, 0.5, 0.7]]),
-                         meanalpha=1,
-                         meanalpha_mat=np.array([[0.2, 1.0], [0.5, 0.7]]),
-                         meanalpha_broadcast_err=np.array([[0.2, 1.0, 0.7]]),
-                         elev=1000,
-                         elev_mat=np.array([[900, 1000], [1100, 1200]]),
-                         co2=413.03,
-                         co2_mat=np.array([[373.03, 393.03], [413.03, 433.03]]),
-                         kmm=kmm,
-                         gammastar=gammastar,
-                         ns_star=ns_star,
-                         ca=ca,
-                         vpd=vpd,
-                         kmm_mat=kmm * prop_mat,
-                         gammastar_mat=gammastar * prop_mat,
-                         gammastar_broadcast_err=gammastar * np.array([0.95, 1.0, 1.05]),
-                         ns_star_mat=ns_star * prop_mat,
-                         ca_mat=ca * prop_mat,
-                         vpd_mat=vpd * prop_mat
-                         )
+    with open('test/test_inputs.yaml') as infile:
+        inputs = yaml.load(infile, Loader=yaml.SafeLoader)
+
+    inputs = {k: np.array(v) if isinstance(v, list) else v
+              for k, v in inputs.items()}
+
+    return inputs
+
+
+@pytest.fixture(scope='module')
+def expected():
+    """Fixture to load expectations from rpmodel from file
+    """
+
+    with open('test/test_outputs_rpmodel.yaml') as infile:
+        expected = yaml.load(infile, Loader=yaml.SafeLoader)
+
+    expected = {k: np.array(v) if isinstance(v, list) else v
+                for k, v in expected.items()}
+
+    return expected
+
+# ------------------------------------------
+# Test structure
+# The basic structure of these tests  is to use a pytest.mark.parameterise
+# to pass in a dictionary of the variables to be passed to the function and then
+# a dictionary identifying the expected values that have been read in from file.
+#
+# A separate R file is used to read in the same inputs to R and run them through
+# rpmodel to generate the output file.
+#
+# TODO - should be able to group shared inputs (e.g. tc + patm) to recycle
+#        parameterisation.
+# ------------------------------------------
 
 # ------------------------------------------
 # Testing calc_density_h20 - temp + patm
 # ------------------------------------------
 
 
-def test_calc_density_h2o_broadcast_failure(common_inputs):
+@pytest.mark.parametrize(
+    'ctrl',
+    [(dict(args=dict(tc='tc', patm='patm'),  # scalars
+           cmng=does_not_raise(),
+           out='dens_h20_sc')),
+     (dict(args=dict(tc='tc', patm='patm_mat'),  # scalar + array
+           cmng=does_not_raise(),
+           out='dens_h20_sc_ar')),
+     (dict(args=dict(tc='tc_mat', patm='patm_mat'),  # arrays
+           cmng=does_not_raise(),
+           out='dens_h20_ar')),
+     (dict(args=dict(tc='tc_mat', patm='shape_error'),  # shape mismatch
+           cmng=pytest.raises(ValueError),
+           out=None))]
+)
+def test_calc_co2_to_ca(inputs, expected, ctrl):
 
-    with pytest.raises(ValueError):
-        _ = pmodel.calc_density_h2o(common_inputs.tc_mat,
-                                    common_inputs.p_broadcast_err)
-
-
-def test_calc_density_h2o_scalars(common_inputs):
-
-    ret = pmodel.calc_density_h2o(common_inputs.tc, common_inputs.p)
-    assert round(ret, 4) == 998.2056
-
-
-def test_calc_density_h2o_scalar_array(common_inputs):
-
-    ret = pmodel.calc_density_h2o(common_inputs.tc, common_inputs.p_mat)
-    assert np.allclose(ret, np.array([[998.2052, 998.2056],
-                                      [998.2061, 998.2066]]))
-
-
-def test_calc_density_h2o_arrays(common_inputs):
-
-    ret = pmodel.calc_density_h2o(common_inputs.tc_mat, common_inputs.p_mat)
-    assert np.allclose(ret, np.array([[999.1006, 998.2056],
-                                      [997.0475, 995.6515]]))
+    with ctrl['cmng']:
+        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        ret = pmodel.calc_density_h2o(**kwargs)
+        assert np.allclose(ret, expected[ctrl['out']])
 
 # ------------------------------------------
 # Testing calc_ftemp_inst_rd - temp only but in Kelvin!
 # ------------------------------------------
 
 
-def test_calc_ftemp_arrh_scalar(common_inputs):
+@pytest.mark.parametrize(
+    'ctrl',
+    [(dict(args=dict(tk='tk', dha='KattgeKnorr_ha'),  # scalar
+           cmng=does_not_raise(),
+           out='ftemp_arrh_sc')),
+     (dict(args=dict(tk='tk_mat', dha='KattgeKnorr_ha'),  # array
+           cmng=does_not_raise(),
+           out='ftemp_arrh_ar'))]
+)
+def test_calc_ftemp_arrh(inputs, expected, ctrl):
 
-    ret = pmodel.calc_ftemp_arrh(common_inputs.tc + PARAM.k.CtoK,
-                                 PARAM.KattgeKnorr.Ha)
-    assert round(ret, 4) == 0.6114
-
-
-def test_calc_ftemp_arrh_array(common_inputs):
-
-    ret = pmodel.calc_ftemp_arrh(common_inputs.tc_mat + PARAM.k.CtoK,
-                                 PARAM.KattgeKnorr.Ha)
-    assert np.allclose(ret, np.array([[0.367459, 0.611382],
-                                      [1.000, 1.609305]]))
-
-# ------------------------------------------
-# Testing calc_ftemp_inst_vcmax - temp only
-# ------------------------------------------
-
-
-def test_calc_ftemp_inst_vcmax_scalar(common_inputs):
-
-    ret = pmodel.calc_ftemp_inst_vcmax(common_inputs.tc)
-    assert round(ret, 4) == 0.6371
-
-
-def test_calc_ftemp_inst_vcmax_array(common_inputs):
-
-    ret = pmodel.calc_ftemp_inst_vcmax(common_inputs.tc_mat)
-    assert np.allclose(ret, np.array([[0.404673462, 0.6370757237],
-                                      [1.000, 1.5427221126]]))
+    with ctrl['cmng']:
+        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        ret = pmodel.calc_ftemp_arrh(**kwargs)
+        assert np.allclose(ret, expected[ctrl['out']])
 
 # ------------------------------------------
 # Testing calc_ftemp_inst_vcmax - temp only
 # ------------------------------------------
 
 
-def test_calc_ftemp_kphio_scalar_c3(common_inputs):
+@pytest.mark.parametrize(
+    'ctrl',
+    [(dict(args=dict(tc='tc'),  # scalar
+           cmng=does_not_raise(),
+           out='ftemp_inst_vcmax_sc')),
+     (dict(args=dict(tc='tc_mat'),  # array
+           cmng=does_not_raise(),
+           out='ftemp_inst_vcmax_ar'))]
+)
+def test_calc_ftemp_inst_vcmax(inputs, expected, ctrl):
 
-    ret = pmodel.calc_ftemp_kphio(common_inputs.tc, c4=False)
-    assert round(ret, 4) == 0.656
+    with ctrl['cmng']:
+        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        ret = pmodel.calc_ftemp_inst_vcmax(**kwargs)
+        assert np.allclose(ret, expected[ctrl['out']])
+
+# ------------------------------------------
+# Testing calc_ftemp_inst_vcmax - temp only
+# ------------------------------------------
 
 
-def test_calc_ftemp_kphio_array_c3(common_inputs):
+@pytest.mark.parametrize(
+    'ctrl',
+    [(dict(args=dict(tc='tc'), c4=False,  # scalar, C3
+           cmng=does_not_raise(),
+           out='ftemp_kphio_c3_sc')),
+     (dict(args=dict(tc='tc_mat'), c4=False,  # array, C3
+           cmng=does_not_raise(),
+           out='ftemp_kphio_c3_ar')),
+     (dict(args=dict(tc='tc'), c4=True,  # scalar, C4
+           cmng=does_not_raise(),
+           out='ftemp_kphio_c4_sc')),
+     (dict(args=dict(tc='tc_mat'), c4=True,  # array, C4
+           cmng=does_not_raise(),
+           out='ftemp_kphio_c4_ar'))]
+)
+def test_calc_ftemp_kphio(inputs, expected, ctrl):
 
-    ret = pmodel.calc_ftemp_kphio(common_inputs.tc_mat, c4=False)
-    assert np.allclose(ret, np.array([[0.6055, 0.656],
-                                      [0.6895, 0.706]]))
-
-
-def test_calc_ftemp_kphio_scalar_c4(common_inputs):
-
-    ret = pmodel.calc_ftemp_kphio(common_inputs.tc, c4=True)
-    assert round(ret, 4) == 0.0438
-
-
-def test_calc_ftemp_kphio_array_c4(common_inputs):
-
-    ret = pmodel.calc_ftemp_kphio(common_inputs.tc_mat, c4=True)
-    assert np.allclose(ret, np.array([[0.0352, 0.0438],
-                                      [0.0495, 0.0523]]))
+    with ctrl['cmng']:
+        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        ret = pmodel.calc_ftemp_kphio(**kwargs, c4=ctrl['c4'])
+        assert np.allclose(ret, expected[ctrl['out']])
 
 # ------------------------------------------
 # Testing calc_gammastar - temp + patm
 # ------------------------------------------
 
 
-def test_calc_gammastar_broadcast_failure(common_inputs):
+@pytest.mark.parametrize(
+    'ctrl',
+    [(dict(args=dict(tc='tc', patm='patm'),  # scalars
+           cmng=does_not_raise(),
+           out='gammastar_sc')),
+     (dict(args=dict(tc='tc_mat', patm='patm'),  # scalar + array
+           cmng=does_not_raise(),
+           out='gammastar_sc_ar')),
+     (dict(args=dict(tc='tc_mat', patm='patm_mat'),  # arrays
+           cmng=does_not_raise(),
+           out='gammastar_ar')),
+     (dict(args=dict(tc='tc_mat', patm='shape_error'),  # shape mismatch
+           cmng=pytest.raises(ValueError),
+           out=None))]
+)
+def test_calc_gammastar(inputs, expected, ctrl):
 
-    with pytest.raises(ValueError):
-        _ = pmodel.calc_gammastar(common_inputs.tc_mat,
-                                  common_inputs.p_broadcast_err)
-
-
-def test_calc_gammastar_scalars(common_inputs):
-
-    ret = pmodel.calc_gammastar(common_inputs.tc, common_inputs.p)
-    assert round(ret, 4) == 3.3393
-
-
-def test_calc_gammastar_scalar_array(common_inputs):
-
-    ret = pmodel.calc_gammastar(common_inputs.tc_mat, common_inputs.p)
-    assert np.allclose(ret, np.array([[2.5508606, 3.3392509],
-                                      [4.3320000, 5.5718448]]))
-
-
-def test_calc_gammastar_arrays(common_inputs):
-
-    ret = pmodel.calc_gammastar(common_inputs.tc_mat, common_inputs.p_mat)
-    assert np.allclose(ret, np.array([[2.5256856, 3.3392509],
-                                      [4.3747535, 5.6818245]]))
+    with ctrl['cmng']:
+        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        ret = pmodel.calc_gammastar(**kwargs)
+        assert np.allclose(ret, expected[ctrl['out']])
 
 # ------------------------------------------
 # Testing calc_kmm - temp + patm
 # ------------------------------------------
 
 
-def test_calc_kmm_broadcast_failure(common_inputs):
+@pytest.mark.parametrize(
+    'ctrl',
+    [(dict(args=dict(tc='tc', patm='patm'),  # scalars
+           cmng=does_not_raise(),
+           out='kmm_sc')),
+     (dict(args=dict(tc='tc_mat', patm='patm'),  # scalar + array
+           cmng=does_not_raise(),
+           out='kmm_sc_ar')),
+     (dict(args=dict(tc='tc_mat', patm='patm_mat'),  # arrays
+           cmng=does_not_raise(),
+           out='kmm_ar')),
+     (dict(args=dict(tc='tc_mat', patm='shape_error'),  # shape mismatch
+           cmng=pytest.raises(ValueError),
+           out=None))]
+)
+def test_calc_kmm(inputs, expected, ctrl):
 
-    with pytest.raises(ValueError):
-        _ = pmodel.calc_kmm(common_inputs.tc_mat,
-                            common_inputs.p_broadcast_err)
-
-
-def test_calc_kmm_scalars(common_inputs):
-
-    ret = pmodel.calc_kmm(common_inputs.tc, common_inputs.p)
-    assert round(ret, 6) == 46.099278
-
-
-def test_calc_kmm_scalar_array(common_inputs):
-
-    ret = pmodel.calc_kmm(common_inputs.tc_mat, common_inputs.p)
-    assert np.allclose(ret, np.array([[30.044262,  46.099278],
-                                      [70.842252, 108.914368]]))
-
-
-def test_calc_kmm_arrays(common_inputs):
-
-    ret = pmodel.calc_kmm(common_inputs.tc_mat, common_inputs.p_mat)
-    assert np.allclose(ret, np.array([[29.877494,  46.099278],
-                                      [71.146937, 109.725844]]))
-
+    with ctrl['cmng']:
+        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        ret = pmodel.calc_kmm(**kwargs)
+        assert np.allclose(ret, expected[ctrl['out']])
 
 # ------------------------------------------
 # Testing calc_soilmstress - soilm + meanalpha
 # ------------------------------------------
 
 
-def test_calc_soilmstress_broadcast_failure(common_inputs):
+@pytest.mark.parametrize(
+    'ctrl',
+    [(dict(args=dict(soilm='soilm', meanalpha='meanalpha'),  # scalars
+           cmng=does_not_raise(),
+           out='soilmstress_sc')),
+     (dict(args=dict(soilm='soilm_mat', meanalpha='meanalpha'),  # scalar + array
+           cmng=does_not_raise(),
+           out='soilmstress_sc_ar')),
+     (dict(args=dict(soilm='soilm_mat', meanalpha='meanalpha_mat'),  # arrays
+           cmng=does_not_raise(),
+           out='soilmstress_ar')),
+     (dict(args=dict(soilm='soilm_mat', meanalpha='shape_error'),  # shape mismatch
+           cmng=pytest.raises(ValueError),
+           out=None))]
+)
+def test_calc_soilmstress(inputs, expected, ctrl):
 
-    with pytest.raises(ValueError):
-        _ = pmodel.calc_soilmstress(common_inputs.soilm_mat,
-                                    common_inputs.meanalpha_broadcast_err)
-
-
-def test_calc_soilmstress_scalars(common_inputs):
-
-    ret = pmodel.calc_soilmstress(common_inputs.soilm, common_inputs.meanalpha)
-    assert round(ret, 6) == 0.86
-
-
-def test_calc_soilmstress_scalar_array(common_inputs):
-
-    ret = pmodel.calc_soilmstress(common_inputs.soilm_mat, common_inputs.meanalpha)
-    assert np.allclose(ret, np.array([[0.78125, 0.86],
-                                      [0.99125, 1.00]]))
-
-
-def test_calc_soilmstress_arrays(common_inputs):
-
-    ret = pmodel.calc_soilmstress(common_inputs.soilm_mat, common_inputs.meanalpha_mat)
-    assert np.allclose(ret, np.array([[0.40069444, 0.86],
-                                      [0.98173611, 1.00]]))
+    with ctrl['cmng']:
+        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        ret = pmodel.calc_soilmstress(**kwargs)
+        assert np.allclose(ret, expected[ctrl['out']])
 
 # ------------------------------------------
 # Testing calc_viscosity_h2o - temp + patm
 # ------------------------------------------
 
 
-def test_calc_viscosity_h2o_broadcast_failure(common_inputs):
+@pytest.mark.parametrize(
+    'ctrl',
+    [(dict(args=dict(tc='tc', patm='patm'),  # scalars
+           cmng=does_not_raise(),
+           out='viscosity_h2o_sc')),
+     (dict(args=dict(tc='tc', patm='patm_mat'),  # scalar + array
+           cmng=does_not_raise(),
+           out='viscosity_h2o_sc_ar')),
+     (dict(args=dict(tc='tc_mat', patm='patm_mat'),  # arrays
+           cmng=does_not_raise(),
+           out='viscosity_h2o_ar')),
+     (dict(args=dict(tc='tc_mat', patm='shape_error'),  # shape mismatch
+           cmng=pytest.raises(ValueError),
+           out=None))]
+)
+def test_calc_viscosity_h2o(inputs, expected, ctrl):
 
-    with pytest.raises(ValueError):
-        _ = pmodel.calc_viscosity_h2o(common_inputs.tc_mat,
-                                      common_inputs.p_broadcast_err)
-
-
-def test_calc_viscosity_h2o_scalars(common_inputs):
-
-    ret = pmodel.calc_viscosity_h2o(common_inputs.tc, common_inputs.p)
-    assert round(ret, 7) == 0.00100160
-
-
-def test_calc_viscosity_h2o_scalar_array(common_inputs):
-
-    ret = pmodel.calc_viscosity_h2o(common_inputs.tc, common_inputs.p_mat)
-    assert np.allclose(ret, np.array([[0.0010015975, 0.0010015972],
-                                      [0.0010015968, 0.0010015965]]))
-
-
-def test_calc_viscosity_h2o_arrays(common_inputs):
-
-    ret = pmodel.calc_viscosity_h2o(common_inputs.tc_mat, common_inputs.p_mat)
-    assert np.allclose(ret, np.array([[0.00113756998, 0.00100159716],
-                                      [0.00089002254, 0.00079722171]]))
+    with ctrl['cmng']:
+        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        ret = pmodel.calc_viscosity_h2o(**kwargs)
+        assert np.allclose(ret, expected[ctrl['out']])
 
 # ------------------------------------------
 # Testing calc_patm - elev only
 # ------------------------------------------
 
 
-def test_calc_patm_scalar(common_inputs):
+@pytest.mark.parametrize(
+    'ctrl',
+    [(dict(args=dict(elv='elev'),  # scalar
+           cmng=does_not_raise(),
+           out='patm_sc')),
+     (dict(args=dict(elv='elev_mat'),  # array
+           cmng=does_not_raise(),
+           out='patm_ar'))]
+)
+def test_calc_patm(inputs, expected, ctrl):
 
-    ret = pmodel.calc_patm(common_inputs.elev)
-    assert round(ret, 3) == 90241.542
-
-
-def test_calc_patm_array(common_inputs):
-
-    ret = pmodel.calc_patm(common_inputs.elev_mat)
-    assert np.allclose(ret, np.array([[91303.561, 90241.542],
-                                      [89189.548, 88147.507]]))
-
+    with ctrl['cmng']:
+        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        ret = pmodel.calc_patm(**kwargs)
+        assert np.allclose(ret, expected[ctrl['out']])
 
 # ------------------------------------------
 # Testing calc_co2_to_ca - co2 + patm
 # ------------------------------------------
 
 
-def test_calc_co2_to_ca_broadcast_failure(common_inputs):
+@pytest.mark.parametrize(
+    'ctrl',
+    [(dict(args=dict(co2='co2', patm='patm'),  # scalars
+           cmng=does_not_raise(),
+           out='co2_to_ca_sc')),
+     (dict(args=dict(co2='co2_mat', patm='patm'),  # scalar + array
+           cmng=does_not_raise(),
+           out='co2_to_ca_sc_ar')),
+     (dict(args=dict(co2='co2_mat', patm='patm_mat'),  # arrays
+           cmng=does_not_raise(),
+           out='co2_to_ca_ar')),
+     (dict(args=dict(co2='co2_mat', patm='shape_error'),  # shape mismatch
+           cmng=pytest.raises(ValueError),
+           out=None))]
+)
+def test_calc_co2_to_ca(inputs, expected, ctrl):
 
-    with pytest.raises(ValueError):
-        _ = pmodel.calc_co2_to_ca(common_inputs.co2_mat,
-                                  common_inputs.p_broadcast_err)
+    with ctrl['cmng']:
+        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        ret = pmodel.calc_co2_to_ca(**kwargs)
+        assert np.allclose(ret, expected[ctrl['out']])
 
-
-def test_calc_co2_to_ca_scalars(common_inputs):
-
-    ret = pmodel.calc_co2_to_ca(common_inputs.co2, common_inputs.p)
-    assert round(ret, 6) == 41.850265
-
-
-def test_calc_co2_to_ca_scalar_array(common_inputs):
-
-    ret = pmodel.calc_co2_to_ca(common_inputs.co2_mat, common_inputs.p)
-    assert np.allclose(ret, np.array([[37.797265, 39.823765],
-                                      [41.850265, 43.876765]]))
-
-
-def test_calc_co2_to_ca_arrays(common_inputs):
-
-    ret = pmodel.calc_co2_to_ca(common_inputs.co2_mat, common_inputs.p_mat)
-    assert np.allclose(ret, np.array([[37.424235, 39.823765],
-                                      [42.263295, 44.742825]]))
 
 # ------------------------------------------
 # Testing CalcOptimalChi - vpd + internals kmm, gammastar, ns_star, ca
+#
+# NOTE - the c4 method __INTENTIONALLY__ always returns scalars
+#        regardless of input shape, so always uses the same expected values
 # ------------------------------------------
 
 
-def test_calc_optimal_chi_broadcast_failure(common_inputs):
+@pytest.mark.parametrize(
+    'ctrl',
+    [(dict(args=dict(kmm='kmm', gammastar='gammastar', ns_star='ns_star',
+                     ca='ca', vpd='vpd'), method='c4',  # scalar, C4
+           cmng=does_not_raise(),
+           out='optchi_c4')),
+     (dict(args=dict(kmm='kmm_mat', gammastar='gammastar', ns_star='ns_star_mat',
+                     ca='ca', vpd='vpd'), method='c4',  # scalar + arrays, C4
+           cmng=does_not_raise(),
+           out='optchi_c4')),
+     (dict(args=dict(kmm='kmm_mat', gammastar='gammastar_mat', ns_star='ns_star_mat',
+                     ca='ca_mat', vpd='vpd_mat'), method='c4',  # scalar + arrays, C4
+           cmng=does_not_raise(),
+           out='optchi_c4')),
+     (dict(args=dict(kmm='kmm_mat', gammastar='shape_error', ns_star='ns_star_mat',
+                     ca='ca_mat', vpd='vpd_mat'), method='c4',  # scalar + arrays, C4
+           cmng=pytest.raises(ValueError),
+           out=None)),
+     (dict(args=dict(kmm='kmm', gammastar='gammastar', ns_star='ns_star',
+                     ca='ca', vpd='vpd'), method='prentice14',  # scalar, c3
+           cmng=does_not_raise(),
+           out='optchi_p14_sc')),
+     (dict(args=dict(kmm='kmm_mat', gammastar='gammastar', ns_star='ns_star_mat',
+                     ca='ca', vpd='vpd'), method='prentice14',  # scalar + arrays, c3
+           cmng=does_not_raise(),
+           out='optchi_p14_sc_ar')),
+     (dict(args=dict(kmm='kmm_mat', gammastar='gammastar_mat', ns_star='ns_star_mat',
+                     ca='ca_mat', vpd='vpd_mat'), method='prentice14',  # scalar + arrays, c3
+           cmng=does_not_raise(),
+           out='optchi_p14_ar')),
+     (dict(args=dict(kmm='kmm_mat', gammastar='shape_error', ns_star='ns_star_mat',
+                     ca='ca_mat', vpd='vpd_mat'), method='prentice14',  # scalar + arrays, c3
+           cmng=pytest.raises(ValueError),
+           out=None))
+     ]
+)
+def test_calc_optimal_chi(inputs, expected, ctrl):
 
-    with pytest.raises(ValueError):
-        _ = pmodel.CalcOptimalChi(common_inputs.kmm_mat,
-                                  common_inputs.gammastar_broadcast_err,
-                                  common_inputs.ns_star,
-                                  common_inputs.ca,
-                                  common_inputs.vpd)
+    with ctrl['cmng']:
+        kwargs = {k: inputs[v] for k, v in ctrl['args'].items()}
+        ret = pmodel.CalcOptimalChi(**kwargs, method=ctrl['method'])
 
-
-# NOTE - the c4 method __INTENTIONALLY__ always returns scalars
-# regardless of input shape
-
-def test_calc_optimal_chi_c4_scalars(common_inputs):
-
-    ret = pmodel.CalcOptimalChi(common_inputs.kmm,
-                                common_inputs.gammastar,
-                                common_inputs.ns_star,
-                                common_inputs.ca,
-                                common_inputs.vpd,
-                                method='c4')
-
-    assert ret.chi == 1.0
-    assert ret.mj == 1.0
-    assert ret.mjoc == 1.0
-    assert ret.mc == 1.0
-
-
-def test_calc_optimal_chi_c4_scalars_arrays(common_inputs):
-    ret = pmodel.CalcOptimalChi(common_inputs.kmm_mat,
-                                common_inputs.gammastar,
-                                common_inputs.ns_star_mat,
-                                common_inputs.ca,
-                                common_inputs.vpd,
-                                method='c4')
-
-    assert ret.chi == 1.0
-    assert ret.mj == 1.0
-    assert ret.mjoc == 1.0
-    assert ret.mc == 1.0
-
-
-def test_calc_optimal_chi_c4_arrays(common_inputs):
-    ret = pmodel.CalcOptimalChi(common_inputs.kmm_mat,
-                                common_inputs.gammastar_mat,
-                                common_inputs.ns_star_mat,
-                                common_inputs.ca_mat,
-                                common_inputs.vpd_mat,
-                                method='c4')
-
-    assert ret.chi == 1.0
-    assert ret.mj == 1.0
-    assert ret.mjoc == 1.0
-    assert ret.mc == 1.0
-
-# Prentice 14
+        expected = expected[ctrl['out']]
+        assert np.allclose(ret.chi, expected['chi'])
+        assert np.allclose(ret.mj, expected['mj'])
+        assert np.allclose(ret.mc, expected['mc'])
+        assert np.allclose(ret.mjoc, expected['mjoc'])
 
 
-def test_calc_optimal_chi_scalars(common_inputs):
-
-    ret = pmodel.CalcOptimalChi(common_inputs.kmm,
-                                common_inputs.gammastar,
-                                common_inputs.ns_star,
-                                common_inputs.ca,
-                                common_inputs.vpd)
-
-    assert round(ret.chi, 8) == 0.69435213
-    assert round(ret.mc, 8) == 0.33408383
-    assert round(ret.mj, 8) == 0.71230386
-    assert round(ret.mjoc, 8) == 2.13211114
-
-
-def test_calc_optimal_chi_scalars_arrays(common_inputs):
-    ret = pmodel.CalcOptimalChi(common_inputs.kmm_mat,
-                                common_inputs.gammastar,
-                                common_inputs.ns_star_mat,
-                                common_inputs.ca,
-                                common_inputs.vpd)
-
-    assert np.allclose(ret.chi, np.array([[0.69471370,  0.69402371],
-                                          [0.69435213,  0.69372406]]))
-    assert np.allclose(ret.mc, np.array([[0.34492189,  0.32390633],
-                                         [0.33408383,  0.31433074]]))
-    assert np.allclose(ret.mj, np.array([[0.71242488,  0.71219384],
-                                         [0.71230386,  0.71209338]]))
-    assert np.allclose(ret.mjoc, np.array([[2.0654673,  2.1987648],
-                                           [2.1321111,  2.2654271]]))
-
-
-def test_calc_optimal_chi_arrays(common_inputs):
-    ret = pmodel.CalcOptimalChi(common_inputs.kmm_mat,
-                                common_inputs.gammastar_mat,
-                                common_inputs.ns_star_mat,
-                                common_inputs.ca_mat,
-                                common_inputs.vpd_mat)
-
-    assert np.allclose(ret.chi, np.array([[0.69955736,  0.68935938],
-                                          [0.69435213,  0.68456214]]))
-    assert np.allclose(ret.mc, np.array([[0.33597077,  0.33226381],
-                                         [0.33408383,  0.33050567]]))
-    assert np.allclose(ret.mj, np.array([[0.71403643,  0.71062217],
-                                         [0.71230386,  0.70898771]]))
-    assert np.allclose(ret.mjoc, np.array([[2.1252933,  2.1387287],
-                                           [2.1321111,  2.1451605]]))
+# # ------------------------------------------
+# # Testing CalcLUEVcmax- output of CalcOptimalChi + optional kphio,
+# # ftemp_kphio and soilmstress. This has quite a few combinations,
+# # depending on options to do soil moisture stress or kphio temperature
+# # correction. The default kphio varies with settings but imposing a
+# # single value here to keep test simpler.
+# # - scalar vs array optchi inputs.
+# # - four methods.
+# # ------------------------------------------
+#
+#
+# def test_calc_lue_vcmax_broadcast_failure(common_inputs):
+#
+#     with pytest.raises(ValueError):
+#         oc = pmodel.CalcOptimalChi(common_inputs.kmm_mat,
+#                                    common_inputs.gammastar_mat,
+#                                    common_inputs.ns_star,
+#                                    common_inputs.ca,
+#                                    common_inputs.vpd)
+#         _ = pmodel.CalcLUEVcmax(oc, common_inputs.kphio_broadcast_err)
+#
+#
+#
+#
+# def test_calc_optimal_chi_c4_scalars(common_inputs):
+#
+#     ret = pmodel.CalcOptimalChi(common_inputs.kmm,
+#                                 common_inputs.gammastar,
+#                                 common_inputs.ns_star,
+#                                 common_inputs.ca,
+#                                 common_inputs.vpd,
+#                                 method='c4')
+#
+#     assert ret.chi == 1.0
+#     assert ret.mj == 1.0
+#     assert ret.mjoc == 1.0
+#     assert ret.mc == 1.0
 
