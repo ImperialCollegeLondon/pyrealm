@@ -1254,7 +1254,11 @@ class CalcLUEVcmax:
         mpi = (self.optchi.mj ** 2 - PARAM.wang17.c ** (2.0 / 3.0) *
                (self.optchi.mj ** (4.0 / 3.0)))
 
-        self.mprime = np.sqrt(mpi) if mpi > 0 else None
+        mprime = np.where(mpi > 0, np.sqrt(mpi), np.nan)
+
+        # np.where _always_ returns an array, so catch scalars
+        self.mprime = mprime.item() if np.ndim(mprime) == 0 else mprime
+
 
         # Light use efficiency (gpp per unit absorbed light)
         self.lue = (self.kphio * self.ftemp_kphio * self.mprime *
