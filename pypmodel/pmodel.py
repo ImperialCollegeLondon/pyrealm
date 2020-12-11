@@ -1235,17 +1235,17 @@ class CalcLUEVcmax:
 
         Examples:
 
-            >>> optchi = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925, ns_star = 1.12536,
-            ...                           ca = 40.53, vpd = 1000)
+            >>> optchi = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925,
+            ...                         ns_star = 1.12536, ca = 40.53, vpd = 1000)
             >>> out = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
             ...                    soilmstress = 1, method='wang17')
-            >>> out.lue # doctest: +ELLIPSIS
-            0.25475...
-            >>> out.vcmax_unitiabs # doctest: +ELLIPSIS
-            0.063488...
-            >>> out.omega is None # doctest: +ELLIPSIS
+            >>> round(out.lue, 5)
+            0.25475
+            >>> round(out.vcmax_unitiabs, 6)
+            0.063488
+            >>> out.omega is None
             True
-            >>> out.omega_star is None # doctest: +ELLIPSIS
+            >>> out.omega_star is None
             True
         """
 
@@ -1274,45 +1274,51 @@ class CalcLUEVcmax:
             ...                           ca = 40.53, vpd = 1000)
             >>> out = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
             ...                    soilmstress = 1, method='smith19')
-            >>> out.lue # doctest: +ELLIPSIS
-            0.086568...
-            >>> out.vcmax_unitiabs # doctest: +ELLIPSIS
-            0.021574...
-            >>> out.omega # doctest: +ELLIPSIS
-            1.10204...
-            >>> out.omega_star # doctest: +ELLIPSIS
-            1.28250...
+            >>> round(out.lue, 6)
+            0.086569
+            >>> round(out.vcmax_unitiabs, 6)
+            0.021574
+            >>> round(out.omega, 5)
+            1.10204
+            >>> round(out.omega_star, 5)
+            1.28251
         """
 
         # Adopted from Nick Smith's code:
-        # Calculate omega, see Smith et al., 2019 Ecology Letters
+        # Calculate omega, see Smith et al., 2019 Ecology Letters  # Eq. S4
+        theta = PARAM.smith19.theta
+        c_cost = PARAM.smith19.c_cost
 
-        def _calc_omega(theta, c_cost, m):
-            cm = 4 * c_cost / m  # simplification term for omega calculation
-            v = 1 / (cm * (1 - theta * cm)) - 4 * theta  # simplification term for omega calculation
+        # simplification terms for omega calculation
+        cm = 4 * c_cost / self.optchi.mj
+        v = 1 / (cm * (1 - PARAM.smith19.theta * cm)) - 4 * theta
 
-            # account for non-linearities at low m values
-            cap_p = (((1 / 1.4) - 0.7) ** 2 / (1 - theta)) + 3.4
-            aquad = -1
-            bquad = cap_p
-            cquad = -(cap_p * theta)
-            m_star = (4 * c_cost) / np.polynomial.polynomial.polyroots([aquad, bquad, cquad])
+        # account for non-linearities at low m values. This code finds
+        # the roots of a quadratic function that is defined purely from
+        # the scalar theta, so will always be a scalar. The first root
+        # is then used to set a filter for calculating omega.
 
-            if m < m_star[0].real:
-                return -(1 - (2 * theta)) - np.sqrt((1 - theta) * v)
-            else:
-                return -(1 - (2 * theta)) + np.sqrt((1 - theta) * v)
+        cap_p = (((1 / 1.4) - 0.7) ** 2 / (1 - theta)) + 3.4
+        aquad = -1
+        bquad = cap_p
+        cquad = -(cap_p * theta)
+        roots = np.polynomial.polynomial.polyroots([aquad, bquad, cquad])
 
         # factors derived as in Smith et al., 2019
-        self.omega = _calc_omega(theta=PARAM.smith19.theta,  # Eq. S4
-                                 c_cost=PARAM.smith19.c_cost,
-                                 m=self.optchi.mj)
+        m_star = (4 * c_cost) / roots[0].real
+        omega = np.where(self.optchi.mj < m_star,
+                         -(1 - (2 * theta)) - np.sqrt((1 - theta) * v),
+                         -(1 - (2 * theta)) + np.sqrt((1 - theta) * v))
+
+        # np.where _always_ returns an array, so catch scalars
+        self.omega = omega.item() if np.ndim(omega) == 0 else omega
+
         self.omega_star = (1.0 + self.omega -  # Eq. 18
                            np.sqrt((1.0 + self.omega) ** 2 -
-                                   (4.0 * PARAM.smith19.theta * self.omega)))
+                                   (4.0 * theta * self.omega)))
 
         # Effect of Jmax limitation
-        self.mprime = self.optchi.mj * self.omega_star / (8.0 * PARAM.smith19.theta)
+        self.mprime = self.optchi.mj * self.omega_star / (8.0 * theta)
 
         # Light use efficiency (gpp per unit absorbed light)
         self.lue = (self.kphio * self.ftemp_kphio * self.mprime *
@@ -1320,7 +1326,7 @@ class CalcLUEVcmax:
 
         # calculate Vcmax per unit aborbed light
         self.vcmax_unitiabs = (self.kphio * self.ftemp_kphio * self.optchi.mjoc *
-                               self.omega_star / (8.0 * PARAM.smith19.theta) * self.soilmstress)  # Eq. 19
+                               self.omega_star / (8.0 * theta) * self.soilmstress)  # Eq. 19
 
     def none(self):
         """LUE and :math:`V_{cmax}` with no :math:`J_{max}` limitation
@@ -1331,10 +1337,10 @@ class CalcLUEVcmax:
             ...                           ca = 40.53, vpd = 1000)
             >>> out = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
             ...                    soilmstress = 1, method='none')
-            >>> out.lue # doctest: +ELLIPSIS
-            0.4589983...
-            >>> out.vcmax_unitiabs # doctest: +ELLIPSIS
-            0.1143898...
+            >>> round(out.lue, 6)
+            0.458998
+            >>> round(out.vcmax_unitiabs, 6)
+            0.11439
             >>> out.omega is None
             True
             >>> out.omega_star is None
@@ -1358,10 +1364,10 @@ class CalcLUEVcmax:
             ...                           ca = 40.53, vpd = 1000)
             >>> out = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
             ...                    soilmstress = 1, method='c4')
-            >>> out.lue # doctest: +ELLIPSIS
-            0.6443855...
-            >>> out.vcmax_unitiabs # doctest: +ELLIPSIS
-            0.05365096...
+            >>> round(out.lue, 6)
+            0.644386
+            >>> round(out.vcmax_unitiabs, 6)
+            0.053651
             >>> out.omega is None
             True
             >>> out.omega_star is None
