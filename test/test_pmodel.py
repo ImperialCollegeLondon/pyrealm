@@ -54,7 +54,7 @@ def values():
     [(dict(args=dict(tc='tc_sc', patm='patm_sc'),  # scalars
            cmng=does_not_raise(),
            out='dens_h20_sc')),
-     (dict(args=dict(tc='tc_sc', patm='patm_ar'),  # scalar + array
+     (dict(args=dict(tc='tc_ar', patm='patm_sc'),  # scalar + array
            cmng=does_not_raise(),
            out='dens_h20_mx')),
      (dict(args=dict(tc='tc_ar', patm='patm_ar'),  # arrays
@@ -231,7 +231,7 @@ def test_calc_soilmstress(values, ctrl):
     [(dict(args=dict(tc='tc_sc', patm='patm_sc'),  # scalars
            cmng=does_not_raise(),
            out='viscosity_h2o_sc')),
-     (dict(args=dict(tc='tc_sc', patm='patm_ar'),  # scalar + array
+     (dict(args=dict(tc='tc_ar', patm='patm_sc'),  # scalar + array
            cmng=does_not_raise(),
            out='viscosity_h2o_mx')),
      (dict(args=dict(tc='tc_ar', patm='patm_ar'),  # arrays
@@ -361,62 +361,214 @@ def test_calc_optimal_chi(values, ctrl):
         assert np.allclose(ret.mc, expected['mc'])
         assert np.allclose(ret.mjoc, expected['mjoc'])
 
+# ------------------------------------------
+# Testing CalcLUEVcmax -  This has quite a few combinations:
+# - c4
+# - optchi - using both scalar and array inputs.
+# - soilmstress - only considering a scalar input here (so a uniform soil stress
+#       across array optchi variants) rather than creating tests that have a
+#       scalar optchi applied across array of soil moistures.
+# - ftemp_kphio
+# - CalcLUEVcmax method
+# - kphio - normally this varies with the pmodel input setup but imposing a
+#       single value here (0.05) to simplify test suite.
+# ------------------------------------------
 
-# # ------------------------------------------
-# # Testing CalcLUEVcmax -  This has quite a few combinations:
-# # - c4
-# # - soilmstress
-# # - ftemp_kphio
-# # - scalar vs array optchi
-# # - method
-# # - kphio also varies with input setup but imposing a single value
-# #   here (0.05) to simplify test suite.
-# # ------------------------------------------
+@pytest.mark.parametrize(
+    'soilmstress',
+    [dict(soilm=None, meanalpha=None),
+     dict(soilm='soilm_sc', meanalpha='meanalpha_sc')],
+    ids=['sm-off', 'sm-on']
+)
+@pytest.mark.parametrize(
+    'ftemp_kphio',
+    [True, False],
+    ids=['fkphio-on', 'fkphio-off']
+)
+@pytest.mark.parametrize(
+    'luevcmax_method',
+    ['wang17', 'smith19', 'none'],
+    ids=['wang17', 'smith19', 'none']
+)
+@pytest.mark.parametrize(
+    'optchi',
+    [dict(args=dict(kmm='kmm_sc', gammastar='gammastar_sc',
+                    ns_star='ns_star_sc', ca='ca_sc', vpd='vpd_sc'),
+          type='sc'),
+     dict(args=dict(kmm='kmm_ar', gammastar='gammastar_ar',
+                    ns_star='ns_star_ar', ca='ca_ar', vpd='vpd_ar'),
+          type='ar')],
+    ids=['sc', 'ar']
+)
+def test_calc_lue_vcmax_c3(request, values, soilmstress, ftemp_kphio,
+                           luevcmax_method, optchi):
+
+    # ftemp_kphio needs to know the original tc inputs to optchi - these have
+    # all been synchronised so that anything with type 'mx' or 'ar' used the
+    # tc_ar input
+
+    if not ftemp_kphio:
+        ftemp_kphio = 1.0
+    elif optchi['type'] == 'sc':
+        ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values['tc_sc'], c4=False)
+    else:
+        ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values['tc_ar'], c4=False)
+
+    # Optimal Chi
+    kwargs = {k: values[v] for k, v in optchi['args'].items()}
+    optchi = pmodel.CalcOptimalChi(**kwargs, method='prentice14')
+
+    # Soilmstress
+    if soilmstress['soilm'] is None:
+        soilmstress = 1.0
+    else:
+        soilmstress = pmodel.calc_soilmstress(soilm=values[soilmstress['soilm']],
+                                              meanalpha=values[soilmstress['meanalpha']])
+
+    ret = pmodel.CalcLUEVcmax(optchi, kphio=0.05, ftemp_kphio=ftemp_kphio,
+                              soilmstress=soilmstress, method=luevcmax_method)
+
+    # Find the expected values, extracting the combination from the request
+    name = request.node.name
+    name = name[(name.find('[') + 1):-1]
+    expected = values['c3-' + name]
+
+    assert np.allclose(ret.lue, expected['lue'])
+    assert np.allclose(ret.vcmax_unitiabs, expected['vcmax_unitiabs'])
+
+
+
+@pytest.mark.parametrize(
+    'soilmstress',
+    [dict(soilm=None, meanalpha=None),
+     dict(soilm='soilm_sc', meanalpha='meanalpha_sc')],
+    ids=['sm-off', 'sm-on']
+)
+@pytest.mark.parametrize(
+    'ftemp_kphio',
+    [True, False],
+    ids=['fkphio-on', 'fkphio-off']
+)
+def test_calc_lue_vcmax_c4(request, values, soilmstress, ftemp_kphio):
+
+
+    # Only using scalar inputs for c4 testing.
+
+    if not ftemp_kphio:
+        ftemp_kphio = 1.0
+    else:
+        ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values['tc_sc'], c4=True)
+
+    # Optimal Chi - always scalar 1 values so inputs don't matter.
+    optchi = pmodel.CalcOptimalChi(kmm=1, gammastar=1, ns_star=1,
+                                   vpd=1, ca=1, method='c4')
+
+    # Soilmstress
+    if soilmstress['soilm'] is None:
+        soilmstress = 1.0
+    else:
+        soilmstress = pmodel.calc_soilmstress(soilm=values[soilmstress['soilm']],
+                                              meanalpha=values[soilmstress['meanalpha']])
+
+    ret = pmodel.CalcLUEVcmax(optchi, kphio=0.05, ftemp_kphio=ftemp_kphio,
+                              soilmstress=soilmstress, method='c4')
+
+    # Find the expected values, extracting the combination from the request
+    name = request.node.name
+    name = name[(name.find('[') + 1):-1]
+    expected = values['c4-' + name]
+
+    assert np.allclose(ret.lue, expected['lue'])
+    assert np.allclose(ret.vcmax_unitiabs, expected['vcmax_unitiabs'])
+
+
 #
 #
 # @pytest.mark.parametrize(
 #     'soilmstress',
 #     [dict(soilm=None, meanalpha=None),
-#      dict(soilm='soilm_sc', meanalpha='meanalpha_sc'),
-#      dict(soilm='soilm_ar', meanalpha='meanalpha_ar')]
+#      dict(soilm='soilm_sc', meanalpha='meanalpha_sc')],
+#     ids=['sm-off', 'sm-on']
 # )
 # @pytest.mark.parametrize(
 #     'ftemp_kphio',
-#     [True, False]
-# )
-# @pytest.mark.parametrize(
-#     'luevcmax_method',
-#     ['wang17', 'smith19', 'none']
+#     [True, False],
+#     ids=['fkphio-on', 'fkphio-off']
 # )
 # @pytest.mark.parametrize(
 #     'optchi',
 #     [dict(args=dict(kmm='kmm_sc', gammastar='gammastar_sc',
 #                     ns_star='ns_star_sc', ca='ca_sc', vpd='vpd_sc'),
 #           type='sc'),
-#      dict(args=dict(kmm='kmm_ar', gammastar='gammastar_sc',
-#                     ns_star='ns_star_ar', ca='ca_sc', vpd='vpd_sc'),
-#           type='mx'),
 #      dict(args=dict(kmm='kmm_ar', gammastar='gammastar_ar',
 #                     ns_star='ns_star_ar', ca='ca_ar', vpd='vpd_ar'),
-#           type='ar')
-#      ]
+#           type='ar')],
+#     ids=['sc', 'ar']
 # )
-# def test_calc_lue_vcmax_c3(values, soilmstress,
-#                            ftemp_kphio, luevcmax_method, optchi):
+# class TestCalcLUEVcmax():
+#     @pytest.mark.parametrize(
+#         'luevcmax_method',
+#         ['wang17', 'smith19', 'none'],
+#         ids=['wang17', 'smith19', 'none']
+#     )
+#     def test_calc_lue_vcmax_c3(request, values, soilmstress, ftemp_kphio,
+#                                luevcmax_method, optchi):
 #
+#         # ftemp_kphio needs to know the original tc inputs to optchi - these have
+#         # all been synchronised so that anything with type 'mx' or 'ar' used the
+#         # tc_ar input
 #
+#         if not ftemp_kphio:
+#             ftemp_kphio = 1.0
+#         elif optchi['type'] == 'sc':
+#             ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values['tc_sc'], c4=True)
+#         else:
+#             ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values['tc_ar'], c4=True)
 #
-#     expected_key = (f"lue_vcmax_{soilmstress['soilm']}_{ftemp_kphio}_" +
-#                     f"{luevcmax_method}_{optchi['type']}_{optchi['method']}")
+#         # Optimal Chi
+#         kwargs = {k: values[v] for k, v in optchi['args'].items()}
+#         optchi = pmodel.CalcOptimalChi(**kwargs, method='prentice14')
 #
-#     # Optimal Chi
-#     kwargs = {k: values[v] for k, v in optchi['args'].items()}
-#     optchi = pmodel.CalcOptimalChi(**kwargs, method=optchi['method'])
+#         # Soilmstress
+#         if soilmstress['soilm'] is None:
+#             soilmstress = 1.0
+#         else:
+#             soilmstress = pmodel.calc_soilmstress(soilm=values[soilmstress['soilm']],
+#                                                   meanalpha=values[soilmstress['meanalpha']])
 #
-#     ftemp_kphio = pmodel.calc_ftemp_kphio(tc=) if ftemp_kphio else 1.0
+#         ret = pmodel.CalcLUEVcmax(optchi, kphio=0.05, ftemp_kphio=ftemp_kphio,
+#                                   soilmstress=soilmstress, method=luevcmax_method)
 #
-#     soilmstress = pmodel.calc_soilmstress(soilm, meanalpha=) if soilm is not None else 1.0
+#         # Find the expected values
+#         expected_key = request.node.name
 #
-#     ret = pmodel.CalcLUEVcmax(optchi, kphio=0.05, ftemp_kphio=ftemp_kphio,
-#                               soilmstress=soilmstress,
-#                               )
+#     def test_calc_lue_vcmax_c4(request, values, soilmstress, ftemp_kphio, optchi):
+#
+#         # ftemp_kphio needs to know the original tc inputs to optchi - these have
+#         # all been synchronised so that anything with type 'mx' or 'ar' used the
+#         # tc_ar input
+#
+#         if not ftemp_kphio:
+#             ftemp_kphio = 1.0
+#         elif optchi['type'] == 'sc':
+#             ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values['tc_sc'], c4=True)
+#         else:
+#             ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values['tc_ar'], c4=True)
+#
+#         # Optimal Chi
+#         kwargs = {k: values[v] for k, v in optchi['args'].items()}
+#         optchi = pmodel.CalcOptimalChi(**kwargs, method='c4')
+#
+#         # Soilmstress
+#         if soilmstress['soilm'] is None:
+#             soilmstress = 1.0
+#         else:
+#             soilmstress = pmodel.calc_soilmstress(soilm=values[soilmstress['soilm']],
+#                                                   meanalpha=values[soilmstress['meanalpha']])
+#
+#         ret = pmodel.CalcLUEVcmax(optchi, kphio=0.05, ftemp_kphio=ftemp_kphio,
+#                                   soilmstress=soilmstress, method='c4')
+#
+#         # Find the expected values
+#         expected_key = request.node.name
+#

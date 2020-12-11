@@ -1,5 +1,5 @@
 # This script takes a simple set of inputs to the rpmodel function in
-# both scalar and vector form and extends that set to include the outputs
+# both scalar and array form and extends that set to include the outputs
 # of key functions and other intermediate variables to be validated using
 # the pytest suite for the pmodel module
 
@@ -11,7 +11,7 @@ values <- read_yaml('test_inputs.yaml')
 values <- within(values, {
        # calc_density_h2o
        dens_h20_sc <- calc_density_h2o(tc_sc, patm_sc)
-       dens_h20_mx <- calc_density_h2o(tc_sc, patm_ar)  # NOTE using p_ar here
+       dens_h20_mx <- calc_density_h2o(tc_ar, patm_sc)
        dens_h20_ar <- calc_density_h2o(tc_ar, patm_ar)
 
        # calc_ftemp_arrh (using KattgeKnorr ha value)
@@ -50,7 +50,7 @@ values <- within(values, {
 
        # calc_viscosity_h2o
        viscosity_h2o_sc <- calc_viscosity_h2o(tc_sc, patm_sc)
-       viscosity_h2o_mx <- calc_viscosity_h2o(tc_sc, patm_ar)  # NOTE using p_ar here
+       viscosity_h2o_mx <- calc_viscosity_h2o(tc_ar, patm_sc)
        viscosity_h2o_ar <- calc_viscosity_h2o(tc_ar, patm_ar)
 
        # ns_star
@@ -83,5 +83,105 @@ values <- within(values, {
                                                    ca_ar, vpd_ar, beta=146.0)
 })
 
+# CalcVUEVcmax tests
+
+sm <- c('sm-off', 'sm-on')
+
+ft <- c('fkphio-off', 'fkphio-on')
+
+lue_method <- c('wang17', 'smith19', 'none')
+
+optchi  <- list(sc = list(kmm=values$kmm_sc,
+                          gammastar=values$gammastar_sc,
+                          ns_star=values$ns_star_sc,
+                          ca=values$ca_sc,
+                          vpd=values$vpd_sc,
+                          beta=146.0),
+                ar = list(kmm=values$kmm_ar,
+                          gammastar=values$gammastar_ar,
+                          ns_star=values$ns_star_ar,
+                          ca=values$ca_ar,
+                          vpd=values$vpd_ar,
+                          beta=146.0))
+
+# Needs to match to (reverse) ordering of pytest.mark.parametrise
+# variables in pytesting.
+luevcmax_c3 <- expand.grid(oc=names(optchi),
+                           lm=lue_method,
+                           ft=ft,
+                           sm=sm,
+                           stringsAsFactors=FALSE)
+
+for (rw in seq(nrow(luevcmax_c3))){
+
+    inputs <- as.list(luevcmax_c3[rw,])
+
+    if (inputs$ft == 'fkphio-off'){
+        ftemp_kphio <- 1.0
+    } else if (inputs$oc == 'sc'){
+        ftemp_kphio <- calc_ftemp_kphio(tc=values$tc_sc, c4=FALSE)
+    } else {
+        ftemp_kphio <- calc_ftemp_kphio(tc=values$tc_ar, c4=FALSE)
+    }
+
+    # Optimal Chi
+    optchi_out <- do.call(rpmodel:::calc_optimal_chi, optchi[[inputs$oc]])
+
+    # Soilmstress
+    if (inputs$sm == 'sm-off'){
+        soilmstress <- 1.0
+    } else {
+        soilmstress <- calc_soilmstress(soilm=values$soilm_sc,
+                                        meanalpha=values$meanalpha_sc)
+    }
+
+    test_name <- paste('c3', paste(inputs, collapse='-'), sep='-')
+    values[[test_name]] <- switch(inputs$lm,
+                  'wang17' = rpmodel:::calc_lue_vcmax_wang17(optchi_out, kphio=0.05,
+                                ftemp_kphio=ftemp_kphio, soilmstress=soilmstress,
+                                c_molmass=12.0107),
+                  'smith19' = rpmodel:::calc_lue_vcmax_smith19(optchi_out, kphio=0.05,
+                                ftemp_kphio=ftemp_kphio, soilmstress=soilmstress,
+                                c_molmass=12.0107),
+                  'none' = rpmodel:::calc_lue_vcmax_none(optchi_out, kphio=0.05,
+                                ftemp_kphio=ftemp_kphio, soilmstress=soilmstress,
+                                c_molmass=12.0107))
+}
+
+
+# Needs to match to (reverse) ordering of pytest.mark.parametrise
+# variables in pytesting.
+luevcmax_c4 <- expand.grid(ft=ft,
+                           sm=sm,
+                           stringsAsFactors=FALSE)
+
+for (rw in seq(nrow(luevcmax_c4))){
+
+    inputs <- as.list(luevcmax_c4[rw,])
+
+    if (inputs$ft == 'fkphio-off'){
+        ftemp_kphio <- 1.0
+    } else {
+        ftemp_kphio <- calc_ftemp_kphio(tc=values$tc_sc, c4=TRUE)
+    }
+
+    # Optimal Chi
+    optchi_out <- rpmodel:::calc_chi_c4()
+
+    # Soilmstress
+    if (inputs$sm == 'sm-off'){
+        soilmstress <- 1.0
+    } else {
+        soilmstress <- calc_soilmstress(soilm=values$soilm_sc,
+                                        meanalpha=values$meanalpha_sc)
+    }
+
+    test_name <- paste('c4', paste(inputs, collapse='-'), sep='-')
+    values[[test_name]] <- rpmodel:::calc_lue_vcmax_c4(kphio=0.05,
+                                ftemp_kphio=ftemp_kphio, soilmstress=soilmstress,
+                                c_molmass=12.0107)
+}
+
+
 # Save values to YAML for use in python tests.
-write_yaml(values, 'test_values_rpmodel.yaml', precision=10)
+write_yaml(values, 'test_outputs_rpmodel.yaml', precision=10)
