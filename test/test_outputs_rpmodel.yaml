@@ -221,12 +221,17 @@ dens_h20_mx:
 - 997.047022077
 - 995.6505967764
 dens_h20_sc: 998.2056434539
-c3-sc-wang17-fkphio-off-sm-off:
+jmax-c3-sc-wang17-fkphio-off-sm-off:
   lue: 0.2415477797
   vcmax_unitiabs: 0.0588233425
   omega: .na
   omega_star: .na
-c3-ar-wang17-fkphio-off-sm-off:
+jmax-c4-sc-wang17-fkphio-off-sm-off:
+  lue: 0.4020023209
+  vcmax_unitiabs: 0.033470349
+  omega: .na
+  omega_star: .na
+jmax-c3-ar-wang17-fkphio-off-sm-off:
   lue:
   - 0.2531308235
   - 0.2351151095
@@ -247,12 +252,22 @@ c3-ar-wang17-fkphio-off-sm-off:
   - .na
   - .na
   - .na
-c3-sc-smith19-fkphio-off-sm-off:
+jmax-c4-ar-wang17-fkphio-off-sm-off:
+  lue: 0.4020023209
+  vcmax_unitiabs: 0.033470349
+  omega: .na
+  omega_star: .na
+jmax-c3-sc-smith19-fkphio-off-sm-off:
   lue: 0.0816570876
   vcmax_unitiabs: 0.0198856841
   omega: 1.1074937417
   omega_star: 1.2852704451
-c3-ar-smith19-fkphio-off-sm-off:
+jmax-c4-sc-smith19-fkphio-off-sm-off:
+  lue: 0.1204413815
+  vcmax_unitiabs: 0.0100278403
+  omega: 1.2903392866
+  omega_star: 1.3637862804
+jmax-c3-ar-smith19-fkphio-off-sm-off:
   lue:
   - 0.0844102071
   - 0.080133544
@@ -273,12 +288,22 @@ c3-ar-smith19-fkphio-off-sm-off:
   - 1.2809482122
   - 1.2663585343
   - 1.2481300544
-c3-sc-none-fkphio-off-sm-off:
+jmax-c4-ar-smith19-fkphio-off-sm-off:
+  lue: 0.1204413815
+  vcmax_unitiabs: 0.0100278403
+  omega: 1.2903392866
+  omega_star: 1.3637862804
+jmax-c3-sc-none-fkphio-off-sm-off:
   lue: 0.4320244021
   vcmax_unitiabs: 0.1052094927
   omega: .na
   omega_star: .na
-c3-ar-none-fkphio-off-sm-off:
+jmax-c4-sc-none-fkphio-off-sm-off:
+  lue: 0.600535
+  vcmax_unitiabs: 0.05
+  omega: .na
+  omega_star: .na
+jmax-c3-ar-none-fkphio-off-sm-off:
   lue:
   - 0.4440054337
   - 0.4253943242
@@ -299,12 +324,22 @@ c3-ar-none-fkphio-off-sm-off:
   - .na
   - .na
   - .na
-c3-sc-wang17-fkphio-on-sm-off:
+jmax-c4-ar-none-fkphio-off-sm-off:
+  lue: 0.600535
+  vcmax_unitiabs: 0.05
+  omega: .na
+  omega_star: .na
+jmax-c3-sc-wang17-fkphio-on-sm-off:
   lue: 0.1584553435
   vcmax_unitiabs: 0.0385881127
   omega: .na
   omega_star: .na
-c3-ar-wang17-fkphio-on-sm-off:
+jmax-c4-sc-wang17-fkphio-on-sm-off:
+  lue: 0.0176077017
+  vcmax_unitiabs: 0.0014660013
+  omega: .na
+  omega_star: .na
+jmax-c3-ar-wang17-fkphio-on-sm-off:
   lue:
   - 0.1532707136
   - 0.1542355119
@@ -325,12 +360,30 @@ c3-ar-wang17-fkphio-on-sm-off:
   - .na
   - .na
   - .na
-c3-sc-smith19-fkphio-on-sm-off:
+jmax-c4-ar-wang17-fkphio-on-sm-off:
+  lue:
+  - 0.0141504817
+  - 0.0176077017
+  - 0.0198991149
+  - 0.0210247214
+  vcmax_unitiabs:
+  - 0.0011781563
+  - 0.0014660013
+  - 0.0016567823
+  - 0.0017504993
+  omega: .na
+  omega_star: .na
+jmax-c3-sc-smith19-fkphio-on-sm-off:
   lue: 0.0535670495
   vcmax_unitiabs: 0.0130450087
   omega: 1.1074937417
   omega_star: 1.2852704451
-c3-ar-smith19-fkphio-on-sm-off:
+jmax-c4-sc-smith19-fkphio-on-sm-off:
+  lue: 0.0052753325
+  vcmax_unitiabs: 0.0004392194
+  omega: 1.2903392866
+  omega_star: 1.3637862804
+jmax-c3-ar-smith19-fkphio-on-sm-off:
   lue:
   - 0.0511103804
   - 0.0525676048
@@ -351,12 +404,30 @@ c3-ar-smith19-fkphio-on-sm-off:
   - 1.2809482122
   - 1.2663585343
   - 1.2481300544
-c3-sc-none-fkphio-on-sm-off:
+jmax-c4-ar-smith19-fkphio-on-sm-off:
+  lue:
+  - 0.0042395366
+  - 0.0052753325
+  - 0.0059618484
+  - 0.0062990843
+  vcmax_unitiabs:
+  - 0.00035298
+  - 0.0004392194
+  - 0.0004963781
+  - 0.000524456
+  omega: 1.2903392866
+  omega_star: 1.3637862804
+jmax-c3-sc-none-fkphio-on-sm-off:
   lue: 0.2834080078
   vcmax_unitiabs: 0.0690174272
   omega: .na
   omega_star: .na
-c3-ar-none-fkphio-on-sm-off:
+jmax-c4-sc-none-fkphio-on-sm-off:
+  lue: 0.026303433
+  vcmax_unitiabs: 0.00219
+  omega: .na
+  omega_star: .na
+jmax-c3-ar-none-fkphio-on-sm-off:
   lue:
   - 0.2688452901
   - 0.2790586766
@@ -377,12 +448,30 @@ c3-ar-none-fkphio-on-sm-off:
   - .na
   - .na
   - .na
-c3-sc-wang17-fkphio-off-sm-on:
+jmax-c4-ar-none-fkphio-on-sm-off:
+  lue:
+  - 0.021138832
+  - 0.026303433
+  - 0.0297264825
+  - 0.0314079805
+  vcmax_unitiabs:
+  - 0.00176
+  - 0.00219
+  - 0.002475
+  - 0.002615
+  omega: .na
+  omega_star: .na
+jmax-c3-sc-wang17-fkphio-off-sm-on:
   lue: 0.2077310905
   vcmax_unitiabs: 0.0505880746
   omega: .na
   omega_star: .na
-c3-ar-wang17-fkphio-off-sm-on:
+jmax-c4-sc-wang17-fkphio-off-sm-on:
+  lue: 0.345721996
+  vcmax_unitiabs: 0.0287845002
+  omega: .na
+  omega_star: .na
+jmax-c3-ar-wang17-fkphio-off-sm-on:
   lue:
   - 0.2176925082
   - 0.2021989942
@@ -403,12 +492,22 @@ c3-ar-wang17-fkphio-off-sm-on:
   - .na
   - .na
   - .na
-c3-sc-smith19-fkphio-off-sm-on:
+jmax-c4-ar-wang17-fkphio-off-sm-on:
+  lue: 0.345721996
+  vcmax_unitiabs: 0.0287845002
+  omega: .na
+  omega_star: .na
+jmax-c3-sc-smith19-fkphio-off-sm-on:
   lue: 0.0702250953
   vcmax_unitiabs: 0.0171016883
   omega: 1.1074937417
   omega_star: 1.2852704451
-c3-ar-smith19-fkphio-off-sm-on:
+jmax-c4-sc-smith19-fkphio-off-sm-on:
+  lue: 0.1035795881
+  vcmax_unitiabs: 0.0086239427
+  omega: 1.2903392866
+  omega_star: 1.3637862804
+jmax-c3-ar-smith19-fkphio-off-sm-on:
   lue:
   - 0.0725927781
   - 0.0689148478
@@ -429,12 +528,22 @@ c3-ar-smith19-fkphio-off-sm-on:
   - 1.2809482122
   - 1.2663585343
   - 1.2481300544
-c3-sc-none-fkphio-off-sm-on:
+jmax-c4-ar-smith19-fkphio-off-sm-on:
+  lue: 0.1035795881
+  vcmax_unitiabs: 0.0086239427
+  omega: 1.2903392866
+  omega_star: 1.3637862804
+jmax-c3-sc-none-fkphio-off-sm-on:
   lue: 0.3715409858
   vcmax_unitiabs: 0.0904801638
   omega: .na
   omega_star: .na
-c3-ar-none-fkphio-off-sm-on:
+jmax-c4-sc-none-fkphio-off-sm-on:
+  lue: 0.5164601
+  vcmax_unitiabs: 0.043
+  omega: .na
+  omega_star: .na
+jmax-c3-ar-none-fkphio-off-sm-on:
   lue:
   - 0.381844673
   - 0.3658391188
@@ -455,12 +564,22 @@ c3-ar-none-fkphio-off-sm-on:
   - .na
   - .na
   - .na
-c3-sc-wang17-fkphio-on-sm-on:
+jmax-c4-ar-none-fkphio-off-sm-on:
+  lue: 0.5164601
+  vcmax_unitiabs: 0.043
+  omega: .na
+  omega_star: .na
+jmax-c3-sc-wang17-fkphio-on-sm-on:
   lue: 0.1362715954
   vcmax_unitiabs: 0.0331857769
   omega: .na
   omega_star: .na
-c3-ar-wang17-fkphio-on-sm-on:
+jmax-c4-sc-wang17-fkphio-on-sm-on:
+  lue: 0.0151426234
+  vcmax_unitiabs: 0.0012607611
+  omega: .na
+  omega_star: .na
+jmax-c3-ar-wang17-fkphio-on-sm-on:
   lue:
   - 0.1318128137
   - 0.1326425402
@@ -481,12 +600,30 @@ c3-ar-wang17-fkphio-on-sm-on:
   - .na
   - .na
   - .na
-c3-sc-smith19-fkphio-on-sm-on:
+jmax-c4-ar-wang17-fkphio-on-sm-on:
+  lue:
+  - 0.0121694143
+  - 0.0151426234
+  - 0.0171132388
+  - 0.0180812604
+  vcmax_unitiabs:
+  - 0.0010132144
+  - 0.0012607611
+  - 0.0014248328
+  - 0.0015054294
+  omega: .na
+  omega_star: .na
+jmax-c3-sc-smith19-fkphio-on-sm-on:
   lue: 0.0460676625
   vcmax_unitiabs: 0.0112187075
   omega: 1.1074937417
   omega_star: 1.2852704451
-c3-ar-smith19-fkphio-on-sm-on:
+jmax-c4-sc-smith19-fkphio-on-sm-on:
+  lue: 0.004536786
+  vcmax_unitiabs: 0.0003777287
+  omega: 1.2903392866
+  omega_star: 1.3637862804
+jmax-c3-ar-smith19-fkphio-on-sm-on:
   lue:
   - 0.0439549271
   - 0.0452081402
@@ -507,12 +644,30 @@ c3-ar-smith19-fkphio-on-sm-on:
   - 1.2809482122
   - 1.2663585343
   - 1.2481300544
-c3-sc-none-fkphio-on-sm-on:
+jmax-c4-ar-smith19-fkphio-on-sm-on:
+  lue:
+  - 0.0036460015
+  - 0.004536786
+  - 0.0051271896
+  - 0.0054172125
+  vcmax_unitiabs:
+  - 0.0003035628
+  - 0.0003777287
+  - 0.0004268852
+  - 0.0004510322
+  omega: 1.2903392866
+  omega_star: 1.3637862804
+jmax-c3-sc-none-fkphio-on-sm-on:
   lue: 0.2437308867
   vcmax_unitiabs: 0.0593549874
   omega: .na
   omega_star: .na
-c3-ar-none-fkphio-on-sm-on:
+jmax-c4-sc-none-fkphio-on-sm-on:
+  lue: 0.0226209524
+  vcmax_unitiabs: 0.0018834
+  omega: .na
+  omega_star: .na
+jmax-c3-ar-none-fkphio-on-sm-on:
   lue:
   - 0.2312069495
   - 0.2399904619
@@ -533,24 +688,17 @@ c3-ar-none-fkphio-on-sm-on:
   - .na
   - .na
   - .na
-c4-fkphio-off-sm-off:
-  lue: 0.600535
-  vcmax_unitiabs: 0.05
-  omega: .na
-  omega_star: .na
-c4-fkphio-on-sm-off:
-  lue: 0.026303433
-  vcmax_unitiabs: 0.00219
-  omega: .na
-  omega_star: .na
-c4-fkphio-off-sm-on:
-  lue: 0.5164601
-  vcmax_unitiabs: 0.043
-  omega: .na
-  omega_star: .na
-c4-fkphio-on-sm-on:
-  lue: 0.0226209524
-  vcmax_unitiabs: 0.0018834
+jmax-c4-ar-none-fkphio-on-sm-on:
+  lue:
+  - 0.0181793955
+  - 0.0226209524
+  - 0.025564775
+  - 0.0270108632
+  vcmax_unitiabs:
+  - 0.0015136
+  - 0.0018834
+  - 0.0021285
+  - 0.0022489
   omega: .na
   omega_star: .na
 rpmodel-c3-sc-wang17-fkphio-off-sm-off:

@@ -85,6 +85,13 @@ values <- within(values, {
 
 # CalcVUEVcmax tests
 
+# NOTE that this testing feeds the optimal chi from both c3 and c4 into
+# the three Jmax methods. This isn't supported by the main rpmodel:pmodel
+# function, which currently (1.0.6) enforces a separate c4 jmax method that
+# is identical to using c4 optimal chi with the none Jmax method.
+
+c4 <- c('c3', 'c4')
+
 sm <- c('sm-off', 'sm-on')
 
 ft <- c('fkphio-off', 'fkphio-on')
@@ -106,26 +113,39 @@ optchi  <- list(sc = list(kmm=values$kmm_sc,
 
 # Needs to match to (reverse) ordering of pytest.mark.parametrise
 # variables in pytesting.
-luevcmax_c3 <- expand.grid(oc=names(optchi),
-                           lm=lue_method,
-                           ft=ft,
-                           sm=sm,
-                           stringsAsFactors=FALSE)
+luevcmax <- expand.grid(c4 = c4,
+                        oc=names(optchi),
+                        lm=lue_method,
+                        ft=ft,
+                        sm=sm,
+                        stringsAsFactors=FALSE)
 
-for (rw in seq(nrow(luevcmax_c3))){
+for (rw in seq(nrow(luevcmax))){
 
-    inputs <- as.list(luevcmax_c3[rw,])
+    inputs <- as.list(luevcmax[rw,])
+
+    oc_vars <- optchi[[inputs$oc]]
+
+    if (inputs$c4 == 'c4'){
+        c4 <- TRUE
+    } else {
+        c4 <- FALSE
+    }
 
     if (inputs$ft == 'fkphio-off'){
         ftemp_kphio <- 1.0
     } else if (inputs$oc == 'sc'){
-        ftemp_kphio <- calc_ftemp_kphio(tc=values$tc_sc, c4=FALSE)
+        ftemp_kphio <- calc_ftemp_kphio(tc=values$tc_sc, c4=c4)
     } else {
-        ftemp_kphio <- calc_ftemp_kphio(tc=values$tc_ar, c4=FALSE)
+        ftemp_kphio <- calc_ftemp_kphio(tc=values$tc_ar, c4=c4)
     }
 
     # Optimal Chi
-    optchi_out <- do.call(rpmodel:::calc_optimal_chi, optchi[[inputs$oc]])
+    if (c4){
+        optchi_out <- rpmodel:::calc_chi_c4()
+    } else {
+        optchi_out <- do.call(rpmodel:::calc_optimal_chi, optchi[[inputs$oc]])
+    }
 
     # Soilmstress
     if (inputs$sm == 'sm-off'){
@@ -135,7 +155,7 @@ for (rw in seq(nrow(luevcmax_c3))){
                                         meanalpha=values$meanalpha_sc)
     }
 
-    test_name <- paste('c3', paste(inputs, collapse='-'), sep='-')
+    test_name <- paste0('jmax-', paste(inputs, collapse='-'))
     values[[test_name]] <- switch(inputs$lm,
                   'wang17' = rpmodel:::calc_lue_vcmax_wang17(optchi_out, kphio=0.05,
                                 ftemp_kphio=ftemp_kphio, soilmstress=soilmstress,
@@ -149,42 +169,7 @@ for (rw in seq(nrow(luevcmax_c3))){
 }
 
 
-# Needs to match to (reverse) ordering of pytest.mark.parametrise
-# variables in pytesting.
-luevcmax_c4 <- expand.grid(ft=ft,
-                           sm=sm,
-                           stringsAsFactors=FALSE)
-
-for (rw in seq(nrow(luevcmax_c4))){
-
-    inputs <- as.list(luevcmax_c4[rw,])
-
-    if (inputs$ft == 'fkphio-off'){
-        ftemp_kphio <- 1.0
-    } else {
-        ftemp_kphio <- calc_ftemp_kphio(tc=values$tc_sc, c4=TRUE)
-    }
-
-    # Optimal Chi
-    optchi_out <- rpmodel:::calc_chi_c4()
-
-    # Soilmstress
-    if (inputs$sm == 'sm-off'){
-        soilmstress <- 1.0
-    } else {
-        soilmstress <- calc_soilmstress(soilm=values$soilm_sc,
-                                        meanalpha=values$meanalpha_sc)
-    }
-
-    test_name <- paste('c4', paste(inputs, collapse='-'), sep='-')
-    values[[test_name]] <- rpmodel:::calc_lue_vcmax_c4(kphio=0.05,
-                                ftemp_kphio=ftemp_kphio, soilmstress=soilmstress,
-                                c_molmass=12.0107)
-}
-
-
-# Rpmodel test
-
+# Rpmodel tests
 
 vars  <- list(sc = list(tc=values$tc_sc,
                         vpd=values$vpd_sc,

@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 import yaml
 from contextlib import contextmanager
+import pkg_resources
 from pypmodel import pmodel
 
 # ------------------------------------------
@@ -18,12 +19,14 @@ def does_not_raise():
 # ------------------------------------------
 
 
+VALUES_FILE = pkg_resources.resource_filename('pypmodel', '../test/test_outputs_rpmodel.yaml')
+
 @pytest.fixture(scope='module')
 def values():
     """Fixture to load test inputs from file.
     """
 
-    with open('test/test_outputs_rpmodel.yaml') as infile:
+    with open(VALUES_FILE) as infile:
         values = yaml.load(infile, Loader=yaml.SafeLoader)
 
     values = {k: np.array(v) if isinstance(v, list) else v
@@ -399,23 +402,33 @@ def test_calc_optimal_chi(values, ctrl):
           ns_star='ns_star_ar', ca='ca_ar', vpd='vpd_ar')],
     ids=['sc', 'ar']
 )
-def test_calc_lue_vcmax_c3(request, values, soilmstress, ftemp_kphio,
-                           luevcmax_method, optchi):
+@pytest.mark.parametrize(
+    'c4',
+    [True], #, False],
+    ids=['c4'] #, 'c3']
+)
+def test_calc_lue_vcmax(request, values, soilmstress, ftemp_kphio,
+                        luevcmax_method, optchi, c4):
 
     # ftemp_kphio needs to know the original tc inputs to optchi - these have
     # all been synchronised so that anything with type 'mx' or 'ar' used the
     # tc_ar input
 
+    if c4:
+        oc_method = 'c4'
+    else:
+        oc_method = 'prentice14'
+
     if not ftemp_kphio:
         ftemp_kphio = 1.0
     elif optchi['kmm'] == 'kmm_sc':
-        ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values['tc_sc'], c4=False)
+        ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values['tc_sc'], c4=c4)
     else:
-        ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values['tc_ar'], c4=False)
+        ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values['tc_ar'], c4=c4)
 
     # Optimal Chi
     kwargs = {k: values[v] for k, v in optchi.items()}
-    optchi = pmodel.CalcOptimalChi(**kwargs, method='prentice14')
+    optchi = pmodel.CalcOptimalChi(**kwargs, method=oc_method)
 
     # Soilmstress
     if soilmstress['soilm'] is None:
@@ -430,7 +443,7 @@ def test_calc_lue_vcmax_c3(request, values, soilmstress, ftemp_kphio,
     # Find the expected values, extracting the combination from the request
     name = request.node.name
     name = name[(name.find('[') + 1):-1]
-    expected = values['c3-' + name]
+    expected = values['jmax-' + name]
 
     assert np.allclose(ret.lue, expected['lue'])
     assert np.allclose(ret.vcmax_unitiabs, expected['vcmax_unitiabs'])
@@ -438,50 +451,6 @@ def test_calc_lue_vcmax_c3(request, values, soilmstress, ftemp_kphio,
     if luevcmax_method == 'smith19':
         assert np.allclose(ret.omega, expected['omega'])
         assert np.allclose(ret.omega_star, expected['omega_star'])
-
-
-@pytest.mark.parametrize(
-    'soilmstress',
-    [dict(soilm=None, meanalpha=None),
-     dict(soilm='soilm_sc', meanalpha='meanalpha_sc')],
-    ids=['sm-off', 'sm-on']
-)
-@pytest.mark.parametrize(
-    'ftemp_kphio',
-    [True, False],
-    ids=['fkphio-on', 'fkphio-off']
-)
-def test_calc_lue_vcmax_c4(request, values, soilmstress, ftemp_kphio):
-
-    # Only using scalar inputs for c4 testing.
-
-    if not ftemp_kphio:
-        ftemp_kphio = 1.0
-    else:
-        ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values['tc_sc'], c4=True)
-
-    # Optimal Chi - always scalar 1 values so inputs don't matter.
-    optchi = pmodel.CalcOptimalChi(kmm=1, gammastar=1, ns_star=1,
-                                   vpd=1, ca=1, method='c4')
-
-    # Soilmstress
-    if soilmstress['soilm'] is None:
-        soilmstress = 1.0
-    else:
-        soilmstress = pmodel.calc_soilmstress(soilm=values[soilmstress['soilm']],
-                                              meanalpha=values[soilmstress['meanalpha']])
-
-    ret = pmodel.CalcLUEVcmax(optchi, kphio=0.05, ftemp_kphio=ftemp_kphio,
-                              soilmstress=soilmstress, method='c4')
-
-    # Find the expected values, extracting the combination from the request
-    name = request.node.name
-    name = name[(name.find('[') + 1):-1]
-    expected = values['c4-' + name]
-
-    assert np.allclose(ret.lue, expected['lue'])
-    assert np.allclose(ret.vcmax_unitiabs, expected['vcmax_unitiabs'])
-
 
 # ------------------------------------------
 # Testing rpmodel - separate c3 and c4 tests
