@@ -183,5 +183,65 @@ for (rw in seq(nrow(luevcmax_c4))){
 }
 
 
+# Rpmodel test
+
+
+vars  <- list(sc = list(tc=values$tc_sc,
+                        vpd=values$vpd_sc,
+                        co2=values$co2_sc,
+                        patm=values$patm_sc),
+              ar = list(tc=values$tc_ar,
+                        vpd=values$vpd_ar,
+                        co2=values$co2_ar,
+                        patm=values$patm_ar))
+
+# Needs to match to (reverse) ordering of pytest.mark.parametrise
+# variables in pytesting.
+rpmodel_c3 <- expand.grid(vr=names(vars),
+                          lm=lue_method,
+                          ft=ft,
+                          sm=sm,
+                          stringsAsFactors=FALSE)
+
+
+for (rw in seq(nrow(rpmodel_c3))){
+
+    inputs <- as.list(rpmodel_c3[rw,])
+
+    if (inputs$ft == 'fkphio-off'){
+        do_ftemp_kphio <- FALSE
+    } else {
+        do_ftemp_kphio <- TRUE
+    }
+
+    # Soilmstress
+    if (inputs$sm == 'sm-off'){
+        do_soilmstress <- FALSE
+    } else {
+        do_soilmstress <- TRUE
+    }
+
+    v <- vars[[inputs$vr]]
+    v$kphio <- 0.05
+    v$soilm <- values$soilm_sc
+    v$meanalpha <- values$meanalpha_sc
+    v$do_ftemp_kphio <- do_ftemp_kphio
+    v$do_soilmstress <- do_soilmstress
+    v$method_jmaxlim <- inputs$lm
+    v$method_optci <- 'prentice14'
+    v$fapar <- values$fapar_sc
+    v$ppfd <- values$ppfd_sc
+    # NOTE - the default value of bpar_soilm passed into calc_soilmstress
+    # by rpmodel is different from the default value of bpar set in the
+    # function definition, so standardise that here
+    v$bpar_soilm <- 0.685
+
+    ret <- do.call(rpmodel, v)
+
+    test_name <- paste('rpmodel-c3', paste(inputs, collapse='-'), sep='-')
+    values[[test_name]] <- do.call(rpmodel, v)
+
+}
+
 # Save values to YAML for use in python tests.
 write_yaml(values, 'test_outputs_rpmodel.yaml', precision=10)

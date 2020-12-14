@@ -7,6 +7,8 @@ meanalpha_sc: 1
 elev_sc: 1000
 co2_sc: 413.03
 vpd_sc: 1000
+fapar_sc: 1
+ppfd_sc: 300
 
 # Array inputs
 tc_ar:
