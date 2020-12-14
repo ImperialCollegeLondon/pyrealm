@@ -936,8 +936,10 @@ def pmodel(tc: float,
     if fapar is None or ppfd is None:
         gpp = None
         vcmax = None
+        vcmax25 = None
         rd = None
         jmax = None
+        gs = None
     else:
         # Scaling factor
         iabs = fapar * ppfd
@@ -959,6 +961,8 @@ def pmodel(tc: float,
         fact_jmaxlim = vcmax * (ci + 2.0 * gammastar) / (kphio * iabs * (ci + kmm))
         jmax = 4.0 * kphio * iabs / np.sqrt((1.0 / fact_jmaxlim) ** 2 - 1.0)
 
+        gs = np.infty if c4 else (gpp / PARAM.k.c_molmass) / (ca - ci),  # TODO - check with CP/BS
+
     # construct list for output
     out = dotmap.DotMap(ca=ca,
                         gammastar=gammastar,
@@ -971,7 +975,7 @@ def pmodel(tc: float,
                         lue=out_lue_vcmax.lue,
                         gpp=gpp,
                         iwue=iwue,
-                        gs=np.infty if c4 else (gpp / PARAM.k.c_molmass) / (ca - ci),  # TODO - check with CP/BS
+                        gs=gs,
                         vcmax=vcmax,
                         vcmax25=vcmax25,
                         jmax=jmax,
