@@ -908,12 +908,8 @@ def pmodel(tc: float,
     # -----------------------------------------------------------------------
     # Vcmax and light use efficiency
     # -----------------------------------------------------------------------
-    if c4:
-        out_lue_vcmax = CalcLUEVcmax(out_optchi, kphio, ftemp_kphio,
-                                     soilmstress, method='c4')
-    else:
-        out_lue_vcmax = CalcLUEVcmax(out_optchi, kphio, ftemp_kphio,
-                                     soilmstress, method=method_jmaxlim)
+    out_lue_vcmax = CalcLUEVcmax(out_optchi, kphio, ftemp_kphio,
+                                 soilmstress, method=method_jmaxlim)
 
     # -----------------------------------------------------------------------
     # Vcmax25 and RD per unit absorbed irradiance
@@ -1225,8 +1221,14 @@ class CalcLUEVcmax:
         self.omega = None
         self.omega_star = None
 
-        all_methods = {'wang17': self.wang17, 'smith19': self.smith19,
-                       'none': self.none, 'c4': self.c4}
+        all_methods = {'wang17': self.wang17,
+                       'smith19': self.smith19,
+                       'none': self.none}
+
+        if self.method == 'c4':
+            raise ValueError('The c4 Jmax method provided in rpmoodel is not '
+                             'implemented, use none which yields identical '
+                             'results')
 
         if self.method in all_methods:
             this_method = all_methods[self.method]
@@ -1362,31 +1364,4 @@ class CalcLUEVcmax:
         # Vcmax normalised per unit absorbed PPFD (assuming iabs=1), with Jmax limitation
         self.vcmax_unitiabs = (self.kphio * self.ftemp_kphio * self.optchi.mjoc *
                                self.soilmstress)
-
-    def c4(self):
-        """A simple method for the C4 pathway. No JMax limitation is applied.
-
-        Examples:
-
-            >>> optchi = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925, ns_star = 1.12536,
-            ...                           ca = 40.53, vpd = 1000)
-            >>> out = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
-            ...                    soilmstress = 1, method='c4')
-            >>> round(out.lue, 6)
-            0.644386
-            >>> round(out.vcmax_unitiabs, 6)
-            0.053651
-            >>> out.omega is None
-            True
-            >>> out.omega_star is None
-            True
-        """
-
-        # TODO - CHECK IF C4 is needed or if this is just _none with the default
-        #  unity options from calc_optimal_chi for c4.
-
-        # Light use efficiency (gpp per unit absorbed light)
-        self.lue = self.kphio * self.ftemp_kphio * PARAM.k.c_molmass * self.soilmstress
-        # Vcmax normalised per unit absorbed PPFD (assuming iabs=1), with Jmax limitation
-        self.vcmax_unitiabs = self.kphio * self.ftemp_kphio * self.soilmstress
 
