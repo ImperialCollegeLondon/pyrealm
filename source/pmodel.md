@@ -1,55 +1,58 @@
-.. _pmodel:
+---
+jupytext:
+  formats: md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+kernelspec:
+  display_name: Python 3
+  language: python
+  name: python3
+---
 
-The P-Model
-===========
+# The P-Model
 
 This module is used to provide a Python implementation of the P-model and its
-corollary predictions \citep{Prentice:2013bc,Wang:2017go} .
+corollary predictions \citep{Prentice:2013bc,Wang:2017go}. It is based very 
+heavily on the `rpmodel` implementation of the model \cite{Stocker:2020dh} 
+but has some differences (see [here](rpmodel) for discussion).
+ 
+## Overview
 
-The ``rpmodel`` package
------------------------
+The P-model takes four core environmental variables and uses these to build a model of carbon capture under a range of scenarios. The four core variables are:
 
-This implementation is very heavily based on Benjamin Stocker's R implementation
-of the P-model:
+- temperature (`tc`),
+- vapor pressure deficit (`vpd`),
+- atmospheric CO2 concentration (`co2`)
+- atmospheric pressure (`patm`)
 
-https://github.com/stineb/rpmodel/tree/master/R
+If atmospheric pressure is not available then it can be calculated from elevation (`elv`). There are three broad steps in calculating the P-model, shown below with links to details of each step.
 
-The ``rpmodel`` package has been used to calculate the expected values used
-in the module docstrings and which are used to provide :mod:`doctest` tests of
-the basic operation of this implementation.
+1. Environmental determination of key photosynthetic parameters ([Details](chi_inputs)).
+2. Calculation of the optimal ratio of internal to ambient $\ce{CO2} partial pressure ([Details][optimal_chi]).
+3. Calculation of light use efficiency and maximum carboxylation capacity ([Details][jmax_limitation]).
 
-The main differences are:
+In addition to these core steps, the P-model can also include:
 
-- Many of hard-coded parameters within functions have been consolidated into
-  a global parameter list (:const:`pypmodel.params.PARAM`, see
-  :ref:`parameterisation`). This is used to provide values to all functions and
-  is also editable, to allow users to explore model responses to parameter
-  variation.
-- The ``rpmodel`` package has suites of functions for calculating
-  :math:`J_{max}` limitation and optimal :math:`\chi`. These have been combined
-  into classes :class:`CalcLUEVcmax` and :class:`CalcOptimalChi` that share
-  common parameters and outputs and which provide a ``method`` argument to
-  switch between approaches.
-- Some of the functions have shorter argument lists, either because the
-  parameter in question is now defined in :const:`pmodel.PARAM` or because code
-  reorganisation for Python has allowed for a simpler interface.
+1. Temperature sensitivity of the instrinsic quantum yield of photosynthesis ($\phi_0$).
+2. Inclusion of soil moisture stress, by providing relative soil moisture and local aridity ([Details][soil_moisture]).
+3. Imposition of a maximum rate of rubisco regeneration limitation ($J_{max}$).
+4. Calculation of absolute values of productivity, by providing the fraction of
+   absorbed photosynthetically active radiation ($fA_{PAR}$) and the
+   photosynthetic photon flux density (PPFD).
 
-Description of the :func:`pmodel` 
----------------------------------
+## Variable graph
 
-The core function is :func:`pmodel` and the core arguments to the model are:
+The graph below shows the model inputs (blue) and internal variables (red) used
+in the P-model. Optional inputs and internal variables are shown with a dashed
+edge.
 
-- the temperature (``tc``),
-- vapor pressure deficit (``vpd``),
-- atmospheric CO2 concentration (``co2``)
-- atmospheric pressure (``patm``)
+![pmodel.svg](pmodel.svg)
 
-.. TODO Vectorisation: if all of these are arrays with identical shape (or are
- scalars that can be broadcast to match an otherwise consistent array shape) then this could
- generate a time series or spatial surface using numpy. 
 
-If atmospheric pressure is not available then elevation (``elv``) can be 
-provided instead and  will be used to calculate `patm` via :func:`calc_patm`.
+
+
+
 
 In addition to those variables, there are several modifications to the P-model
 to allow for greater complexity and temperature dependency in the model
@@ -61,17 +64,17 @@ Absorbed photosynthetically active radiation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Some calculations in the P-model are scaled to a relative measure of absorbed
-photosynthetically active radiation. To calculate absolute values, for ``gpp``,
-``lue``, ``rd`` and ``vcmax`` values for both the fraction of absorbed
-photosynthetically active radiation (``fapar``) and the photosynthetic photon
-flux density (``ppfd``) must be provided to calculate the absolute irradiance
-(:math:`I_{abs}`).
+photosynthetically active radiation. To calculate absolute values, for `gpp`,
+`lue`, `rd` and `vcmax` values for both the fraction of absorbed
+photosynthetically active radiation (`fapar`) and the photosynthetic photon
+flux density (`ppfd`) must be provided to calculate the absolute irradiance
+($I_{abs}$).
 
 .. math::
 
     I_{abs} = \text{fapar} \cdot \text{ppfd}
 
-Note that the units of ``ppfd`` determine the units of outputs: if ``ppfd`` is
+Note that the units of `ppfd` determine the units of outputs: if `ppfd` is
 in mol m-2 month-1, then respective output variables are returned as per unit
 months.
 
@@ -79,8 +82,8 @@ Soil moisture stress
 ^^^^^^^^^^^^^^^^^^^^
 
 The function :func:`calc_soilmstress` provides an empirical estimate of
-a soil moisture stress factor based on soil moisture (``soilm``) and
-average annual aridity (``meanalpha``). If **both** these values are provided
+a soil moisture stress factor based on soil moisture (`soilm`) and
+average annual aridity (`meanalpha`). If **both** these values are provided
 to :func:`pmodel` then this soil moisture stress factor is calculated and
 applied to down-scale light use efficiency (and only light use efficiency),
 otherwise it will be set to unity.
@@ -91,39 +94,39 @@ Temperature dependence of quantum yield efficiency
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The P-model uses a single variable to capture apparent quantum yield
-efficiency  (``kphio``). By default, the P-model also incorporates
-temperature  dependence of ``kphio`` using :func:`calc_ftemp_kphio`., but
-this can be disabled by setting ``do_ftemp_kphio=False``.
+efficiency  (`kphio`). By default, the P-model also incorporates
+temperature  dependence of `kphio` using :func:`calc_ftemp_kphio`., but
+this can be disabled by setting `do_ftemp_kphio=False`.
 
-The default values of ``kphio`` vary with the model options, corresponding
+The default values of `kphio` vary with the model options, corresponding
 to the empirically fitted values presented for three setups in Stocker
 et al. (2019) Geosci. Model Dev.
 
-- If ``do_ftemp_kphio = False``, then ``kphio = 0.049977`` (ORG).
-- If ``do_ftemp_kphio = True`` and
-    - soil moisture stress is being used ``kphio = 0.087182`` (FULL),
-    - soil moisture stress is not being used ``kphio = 0.081785`` (BRC).
+- If `do_ftemp_kphio = False`, then `kphio = 0.049977` (ORG).
+- If `do_ftemp_kphio = True` and
+    - soil moisture stress is being used `kphio = 0.087182` (FULL),
+    - soil moisture stress is not being used `kphio = 0.081785` (BRC).
 
 Photosynthetic pathway
 ^^^^^^^^^^^^^^^^^^^^^^
 
 The P-model can switch between the C3 or C4 photosynthetic pathways
-using the argument ``c4``. By default, the C3 pathway is used
-(``c4=False``). If ``c4=True``, the leaf-internal CO2 concentration is
-assumed to be very large (:math:`m \to 1`,  ``mj``). 
+using the argument `c4`. By default, the C3 pathway is used
+(`c4=False`). If `c4=True`, the leaf-internal CO2 concentration is
+assumed to be very large (:math:`m \to 1`,  `mj`). 
 
 Limitation of :math:`J_{max}`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 :math:`J_{max}` limitation is used to capture temperature dependency in the
 maximum rate of RuBP regeneration. Four methods are implemented in
-the class :class:`CalcLUEVcmax` and set using the ``method_jmaxlim``
+the class :class:`CalcLUEVcmax` and set using the `method_jmaxlim`
 argument:
 
-- ``wang17`` (default, Wang Han et al. 2017)
-- ``smith19`` (Smith et al., 2019)
-- ``none`` (removes :math:`J_{max}` limitation)
-- ``c4`` (a c4 appropriate calculation)
+- `wang17` (default, Wang Han et al. 2017)
+- `smith19` (Smith et al., 2019)
+- `none` (removes :math:`J_{max}` limitation)
+- `c4` (a c4 appropriate calculation)
 
 .. TODO c4 may equal none with the appropriate optimal xi - not sure if
  wang17 or smith19 make sense with c4 optimal chi, in which case, don't need
@@ -142,7 +145,7 @@ The P-model calculates the following quantities:
 Relative viscosity of water (:math:`\eta^{*}`)
 """"""""""""""""""""""""""""""""""""""""""""""
 
-The value :math:`\eta^{*}` (``ns_star``) is the viscosity of water in the
+The value :math:`\eta^{*}` (`ns_star`) is the viscosity of water in the
 modelled environment relative to the viscosity at standard temperature and
 pressure. 
 
@@ -164,31 +167,31 @@ Optimal chi
 Light use efficiency
 """"""""""""""""""""
 
-        - ``iwue``: Intrinsic water use efficiency (iWUE, Pa), calculated as
+        - `iwue`: Intrinsic water use efficiency (iWUE, Pa), calculated as
                                \deqn{
                                      iWUE = ca (1-\chi)/(1.6)
                                }
-        - ``gs``: Stomatal conductance (gs, in mol C m-2 Pa-1), calculated as
+        - `gs`: Stomatal conductance (gs, in mol C m-2 Pa-1), calculated as
                                \deqn{
                                     gs = A / (ca (1-\chi))
                                }
                                where \eqn{A} is \code{gpp}\eqn{/Mc}.
-        - ``vcmax``: Maximum carboxylation capacity \eqn{Vcmax} (mol C m-2) at growth temperature (argument
+        - `vcmax`: Maximum carboxylation capacity \eqn{Vcmax} (mol C m-2) at growth temperature (argument
                               \code{tc}), calculated as
                               \deqn{
                                    Vcmax = \phi(T) \phi0 Iabs n
                               }
                               where \eqn{n} is given by \eqn{n=m'/mc}.
-        - ``vcmax25``: Maximum carboxylation capacity \eqn{Vcmax} (mol C m-2) normalised to 25 deg C
+        - `vcmax25`: Maximum carboxylation capacity \eqn{Vcmax} (mol C m-2) normalised to 25 deg C
                              following a modified Arrhenius equation, calculated as \eqn{Vcmax25 = Vcmax / fv},
                              where \eqn{fv} is the instantaneous temperature response by Vcmax and is implemented
                              by function \link{calc_ftemp_inst_vcmax}.
-        - ``jmax``: The maximum rate of RuBP regeneration () at growth temperature (argument
+        - `jmax`: The maximum rate of RuBP regeneration () at growth temperature (argument
                               \code{tc}), calculated using
                               \deqn{
                                    A_J = A_C
                               }
-        - ``rd``: Dark respiration \eqn{Rd} (mol C m-2), calculated as
+        - `rd`: Dark respiration \eqn{Rd} (mol C m-2), calculated as
                              \deqn{
                                  Rd = b0 Vcmax (fr / fv)
                              }
@@ -205,20 +208,20 @@ The :func:`pmodel` function
 
 .. Document the core function
 
-.. automodule:: pypmodel.pmodel
+.. automodule:: pyrealm.pmodel
     :members: pmodel
 
 
 Ancillary functions
 --------------------
 
-The remaining functions within the :mod:`pypmodel.pmodel` module are ancillary
+The remaining functions within the :mod:`pyrealm.pmodel` module are ancillary
 functions and classes to calculate various components of the P-model. They are
 described below.
 
 .. Document the remaining functions
 
-.. automodule:: pypmodel.pmodel
+.. automodule:: pyrealm.pmodel
     :members:
     :exclude-members: pmodel
 
@@ -233,7 +236,7 @@ Bibliography
 
 .. Including this here to get pymodel.version included in the docs
 
-.. automodule:: pypmodel.version
+.. automodule:: pyrealm.version
     :members:
 
 

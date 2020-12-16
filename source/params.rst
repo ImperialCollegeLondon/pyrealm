@@ -18,7 +18,7 @@ Parameterisation:
     a value or explore sensitivity to variation.
 
 For this reason, the package defines a set of parameters that are automatically
-loaded (:mod:`pypmodel.params`) into the global :mod:`pypmodel.params.PARAM`
+loaded (:mod:`pyrealm.params`) into the global :mod:`pyrealm.params.PARAM`
 variable. This can be edited by users to change these underlying values.
 
 Note that many of these variables are defined using a standard reference
@@ -32,9 +32,9 @@ and the contents of this are shown below:
 `data/params.yaml`
 ------------------
 
-.. include:: ../pypmodel/data/params.yaml
+.. include:: ../pyrealm/data/params.yaml
     :code: yaml
 
 
-.. automodule:: pypmodel.params
+.. automodule:: pyrealm.params
     :members:
