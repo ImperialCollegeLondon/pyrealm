@@ -3,5 +3,3 @@ dotmap
 pyyaml
 typing
 pytest
-contextlib
-pkg_resources
