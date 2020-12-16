@@ -1,9 +1,9 @@
-The pypmodel package
+The pyrealm package
 ====================
 
 These are development notes for the package, user documentation can be found at:
 
-https://pypmodel.readthedocs.io/en/develop/pmodel.html
+https://pyrealm.readthedocs.io/en/develop/pmodel.html
 
 ## Overview
 
@@ -15,7 +15,7 @@ related models of plant productivity, growth and demography.
 
 The codebase is developed in `git` with a repository at:
 
-https://github.com/davidorme/pypmodel
+https://github.com/davidorme/pyrealm
 
 It uses the `git flow` model for development and release. Briefly:
 
@@ -33,7 +33,7 @@ package is building correctly as changes are committed to Github
 
 ## Documentation
 
-The `pypmodel` package is documented using `sphinx`. In general, the
+The `pyrealm` package is documented using `sphinx`. In general, the
 documentation is written using  reStructuredText (`.rst`) format. The code is
 documented using [Google
 style](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
@@ -55,7 +55,7 @@ make html
 
 The documentation for the package is hosted at:
 
-https://pypmodel.readthedocs.io/en/develop/pmodel.html
+https://pyrealm.readthedocs.io/en/develop/pmodel.html
 
 This has been configured to build commits to the `master` branch, which should
 generate version specific sets of documentation.
@@ -81,7 +81,7 @@ expected outputs. They do not provide extensive unit testing! To run the
 docstring tests, use:
 
 ```bash
-python -m doctest pypmodel/pmodel.py
+python -m doctest pyrealm/pmodel.py
 
 ``` 
 

@@ -2,7 +2,7 @@ import numpy as np
 from typing import Optional, Union
 import warnings
 import dotmap
-from pypmodel.params import PARAM
+from pyrealm.params import PARAM
 
 # TODO - Note that the typing currently does not enforce the dtype of ndarrays
 #        but it looks like the upcoming np.typing module might do this.
@@ -40,8 +40,8 @@ def check_input_shapes(*args):
     for val in args:
         if isinstance(val, np.ndarray):
             shapes.add(val.shape)
-        elif isinstance(val, (float, int)):
-            pass  # No need to track scalars
+        elif val is None or isinstance(val, (float, int)):
+            pass  # No need to track scalars and optional values pass None
         else:
             raise ValueError(f'Unexpected input to check_input_shapes: {type(val)}')
 
@@ -420,7 +420,7 @@ def calc_kmm(tc: Union[float, np.ndarray], patm: Union[float, np.ndarray]) -> Un
     - The partial pressure of oxygen at :math:`p` is 
       :math:`p_{O_{2}} = 0.209476 \cdot p`.
     - The function :math:`f(T, \Delta H)` is an Arrhenius-type temperature 
-      response function, implemented as :func:`pypmodel.pmodel.calc_ftemp_arrh`,
+      response function, implemented as :func:`pyrealm.pmodel.calc_ftemp_arrh`,
       and used here to correct activation energies at standard temperature for
       both carbon and oxygen to the local temperature:
 
@@ -696,15 +696,15 @@ def calc_co2_to_ca(co2: Union[float, np.ndarray], patm: Union[float, np.ndarray]
     return 1.0e-6 * co2 * patm  # Pa, atms. CO2
 
 
-def pmodel(tc: float,
-           vpd: float,
-           co2: float,
-           patm: Optional[float] = None,
-           elv: Optional[float] = None,
-           fapar: Optional[float] = None,
-           ppfd: Optional[float] = None,
-           soilm: float = None,
-           meanalpha: float = None,
+def pmodel(tc: Union[float, np.ndarray],
+           vpd: Union[float, np.ndarray],
+           co2: Union[float, np.ndarray],
+           patm: Optional[Union[float, np.ndarray]] = None,
+           elv: Optional[Union[float, np.ndarray]] = None,
+           fapar: Optional[Union[float, np.ndarray]] = None,
+           ppfd: Optional[Union[float, np.ndarray]] = None,
+           soilm: Optional[Union[float, np.ndarray]] = None,
+           meanalpha: Optional[Union[float, np.ndarray]] = None,
            kphio: Optional[float] = None,
            do_ftemp_kphio: bool = True,
            c4: bool = False,
@@ -826,7 +826,8 @@ def pmodel(tc: float,
         A :class:`dotmap.Dotmap` containing predictions of the P-model.
     """
 
-    # TODO - add bounds sanity checks on inputs
+    _ = check_input_shapes(tc, vpd, co2, patm, elv, fapar,
+                           ppfd, soilm, meanalpha)
 
     # Check arguments
     if patm is None and elv is None:

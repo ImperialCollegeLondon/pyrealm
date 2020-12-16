@@ -4,11 +4,11 @@ with open("README.rst", "r") as fh:
     long_description = fh.read()
 
 version = {}
-with open("pypmodel/version.py") as fp:
+with open("pyrealm/version.py") as fp:
     exec(fp.read(), version)
 
 setuptools.setup(
-    name="pypmodel",
+    name="pyrealm",
     version=version['__version__'],
     author="David Orme",
     author_email="d.orme@imperial.ac.uk",
@@ -18,7 +18,7 @@ setuptools.setup(
     url="",
     packages=setuptools.find_packages(),
     package_data={
-        'pypmodel': ['data/*'],
+        'pyrealm': ['data/*'],
     },
     entry_points={
             'console_scripts':

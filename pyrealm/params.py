@@ -7,7 +7,7 @@ import yaml
 #        numpy and compile).
 
 
-PARAM_FILE = pkg_resources.resource_filename('pypmodel', 'data/params.yaml')
+PARAM_FILE = pkg_resources.resource_filename('pyrealm', 'data/params.yaml')
 
 with open(PARAM_FILE) as param:
     PARAM = dotmap.DotMap(yaml.load(param, Loader=yaml.SafeLoader))

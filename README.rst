@@ -1,9 +1,9 @@
-The pypmodel package
+The pyrealm package
 ====================
 
 These are development notes for the package, user documentation can be found at:
 
-https://pypmodel.readthedocs.io/en/develop/pmodel.html
+https://pyrealm.readthedocs.io/en/develop/pmodel.html
 
 
 ## Overview
@@ -14,7 +14,7 @@ related models of plant productivity, growth and demography.
 
 ## Documentation
 
-The `pypmodel` package is documented using `sphinx`. In general, the
+The `pyrealm` package is documented using `sphinx`. In general, the
 documentation is written using  reStructuredText (`.rst`) format. The code is
 documented using [Google
 style](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
@@ -56,7 +56,7 @@ the R implementation in `rpmodel`.
 To run the docstring tests, use:
 
 ```bash
-python -m doctest pypmodel/pmodel.py
+python -m doctest pyrealm/pmodel.py
 
 ```
 

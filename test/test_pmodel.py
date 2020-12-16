@@ -3,7 +3,7 @@ import numpy as np
 import yaml
 from contextlib import contextmanager
 import pkg_resources
-from pypmodel import pmodel
+from pyrealm import pmodel
 
 # ------------------------------------------
 # Null context manager to include exception testing in test paramaterisation
@@ -19,7 +19,7 @@ def does_not_raise():
 # ------------------------------------------
 
 
-VALUES_FILE = pkg_resources.resource_filename('pypmodel', '../test/test_outputs_rpmodel.yaml')
+VALUES_FILE = pkg_resources.resource_filename('pyrealm', '../test/test_outputs_rpmodel.yaml')
 
 @pytest.fixture(scope='module')
 def values():
