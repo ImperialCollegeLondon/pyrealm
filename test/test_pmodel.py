@@ -19,7 +19,7 @@ def does_not_raise():
 # ------------------------------------------
 
 
-VALUES_FILE = pkg_resources.resource_filename('pyrealm', '../test/test_outputs_rpmodel.yaml')
+VALUES_FILE = pkg_resources.resource_filename('pyrealm', 'test/test_outputs_rpmodel.yaml')
 
 @pytest.fixture(scope='module')
 def values():
