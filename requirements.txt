@@ -1,6 +1,6 @@
 numpy
 dotmap
-yaml
+pyyaml
 typing
 pytest
 contextlib
