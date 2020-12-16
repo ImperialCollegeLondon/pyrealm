@@ -1,2 +1,7 @@
 numpy
 dotmap
+yaml
+typing
+pytest
+contextlib
+pkg_resources

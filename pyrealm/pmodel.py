@@ -1268,7 +1268,6 @@ class CalcLUEVcmax:
         # np.where _always_ returns an array, so catch scalars
         self.mprime = mprime.item() if np.ndim(mprime) == 0 else mprime
 
-
         # Light use efficiency (gpp per unit absorbed light)
         self.lue = (self.kphio * self.ftemp_kphio * self.mprime *
                     PARAM.k.c_molmass * self.soilmstress)
@@ -1367,4 +1366,3 @@ class CalcLUEVcmax:
         # Vcmax normalised per unit absorbed PPFD (assuming iabs=1), with Jmax limitation
         self.vcmax_unitiabs = (self.kphio * self.ftemp_kphio * self.optchi.mjoc *
                                self.soilmstress)
-
