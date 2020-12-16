@@ -37,6 +37,20 @@ To build the documentation, use `make` in the package root, which will use the
 make html
 ```
 
+
+## Development
+
+Using gitflow 
+
+## Releases 
+
+Through gitflow and then upload to pypi using twine.
+
+
+## CI
+
+Using Travis
+
 ## Developer installation
 
 Use the local directory as an editable installation of the package
