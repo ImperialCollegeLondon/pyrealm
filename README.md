@@ -1,5 +1,4 @@
-The pyrealm package
-====================
+# The `pyrealm` package
 
 These are development notes for the package, user documentation can be found at:
 
@@ -26,24 +25,43 @@ It uses the `git flow` model for development and release. Briefly:
 * The `master` branch should only ever contain commits representing new release
   versions - do not work on the `master` branch.
 
-### Continuous integration
+## Continuous integration
 
 The project uses continuous integration on the Travis platform to check that the
-package is building correctly as changes are committed to Github
+package is building correctly as changes are committed to Github. The status of 
+builds can be seen at:
+
+[https://travis-ci.com/github/davidorme/pyrealm](https://travis-ci.com/github/davidorme/pyrealm)
 
 ## Documentation
 
-The `pyrealm` package is documented using `sphinx`. In general, the
-documentation is written using  reStructuredText (`.rst`) format. The code is
-documented using [Google
-style](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
+The `pyrealm` package is documented using `sphinx`, with source material in the
+`source` directory. 
 
-Equations in the documentation are supported using the `sphinx.ext.mathjax`
-extension and this has been configured load the `mhchem`, which supports
-chemical notation.
+The documentation in `source` uses [Myst Markdown](https://myst-parser.readthedocs.io/en/latest/)
+rather than the standard `sphinx` reStructuredText (`.rst`) format. This is 
+because the documentation uses the `myst_nb` extension to `sphinx` that supports
+running documentation as a Jupyter notebook: the built documentation includes
+examples of running code and output plots to demonstrate the use and behaviour 
+of the package.
 
-You will need to install the python packages given in `source/requirements.txt`
-to build the documentation. Then, to actually build the documentation, use
+The `sphinx` configuration includes the `sphinx.ext.mathjax`
+extension to support mathematical notation. This has been configured to also 
+load the `mhchem` extension, supporting the rendering of chemical notation.
+
+### Docstrings
+
+The module codes uses docstrings written in the 
+[Google style](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
+Unlike the main documentation pages, the docstrings in code are written using 
+reStructuredText because the `autodoc` functions in `sphinx` rely on `rst` 
+inputs. This allows the function documentation to be stored alongside the code
+and included simply into the documentation. 
+
+### Building the documentation
+
+Additional python packages given in `source/requirements.txt` are needed
+to build the documentation. To actually build the documentation, use
 `make` in the package root, which will use the `Makefile` created by
 `sphinx-quickstart`. 
 
@@ -52,6 +70,8 @@ make html
 ```
 
 ### Online documentation
+
+TODO - change this to github deployment?
 
 The documentation for the package is hosted at:
 
@@ -73,6 +93,14 @@ getting that package to load.
 
 ## Testing
 
+### Developer installation
+
+Use the local directory as an editable installation of the package
+
+```
+pip install -e .
+```
+
 ### Using `doctest`
 
 The package docstrings contain `doctest` examples of code use. These are
@@ -85,7 +113,25 @@ python -m doctest pyrealm/pmodel.py
 
 ``` 
 
+### Using `pytest`
+
+The `test` directory contains `pytest` modules to provide greater testing of
+different input combinations (scalars and arrays) and to check errors are
+raised correctly.
+
+```bash
+pytest
+```
+
+### Reference values for testing
+
 The sources of the reference inputs and outputs are:
 
-* `pmodel` module: Benjamin Stocker's `rpmodel` implementation of the P-model in R (https://github.com/stineb/rpmodel/tree/master/R)
+`pmodel` module: 
+    Benjamin Stocker's [`rpmodel`](https://github.com/stineb/rpmodel/tree/master/R)
+    implementation of the P-model in R. The `test` directory contains a YAML 
+    file of inputs (`test_inputs.yaml`) and an `R` script (`test_output_rpmodel.R`)
+    that are used to generate a larger YAML file (`test_outputs_rpmodel.R`) that
+    are loaded and validated against {mod}`pyrealm.pmodel` by `test_pmodel.py`.
+
 

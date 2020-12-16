@@ -1,6 +1,6 @@
 import setuptools
 
-with open("README.rst", "r") as fh:
+with open("README.md", "r") as fh:
     long_description = fh.read()
 
 version = {}
@@ -14,7 +14,7 @@ setuptools.setup(
     author_email="d.orme@imperial.ac.uk",
     description="Python implementations of REALM models",
     long_description=long_description,
-    long_description_content_type="text/x-rst",
+    long_description_content_type="text/markdown",
     url="",
     packages=setuptools.find_packages(),
     package_data={
