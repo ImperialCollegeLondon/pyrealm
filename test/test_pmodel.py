@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import yaml
 from contextlib import contextmanager
-import pkg_resources
+# import pkg_resources
 from pyrealm import pmodel
 
 # ------------------------------------------
@@ -19,14 +19,12 @@ def does_not_raise():
 # ------------------------------------------
 
 
-VALUES_FILE = pkg_resources.resource_filename('pyrealm', 'test/test_outputs_rpmodel.yaml')
-
 @pytest.fixture(scope='module')
 def values():
     """Fixture to load test inputs from file.
     """
 
-    with open(VALUES_FILE) as infile:
+    with open('test/test_outputs_rpmodel.yaml') as infile:
         values = yaml.load(infile, Loader=yaml.SafeLoader)
 
     values = {k: np.array(v) if isinstance(v, list) else v
