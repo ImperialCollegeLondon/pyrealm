@@ -952,9 +952,13 @@ def pmodel(tc: Union[float, np.ndarray],
         # Dark respiration
         rd = iabs * rd_unitiabs
 
-        # Jmax using again A_J = A_C
+        # Jmax using again A_J = A_C, handling edges cases
         fact_jmaxlim = vcmax * (ci + 2.0 * gammastar) / (kphio * iabs * (ci + kmm))
-        jmax = 4.0 * kphio * iabs / np.sqrt((1.0 / fact_jmaxlim) ** 2 - 1.0)
+        fact_jmaxlim = (1.0 / fact_jmaxlim) ** 2 - 1.0
+        jmax = np.empty_like(fact_jmaxlim)
+        mask = fact_jmaxlim > 0
+        jmax[mask] = 4.0 * kphio * iabs / np.sqrt(fact_jmaxlim[mask])
+        jmax[~ mask] = np.infty
 
         gs = np.infty if c4 else (gpp / PARAM.k.c_molmass) / (ca - ci),  # TODO - check with CP/BS
 

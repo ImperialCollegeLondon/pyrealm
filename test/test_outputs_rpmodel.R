@@ -223,8 +223,14 @@ for (rw in seq(nrow(rpmodel_c3))){
 
     ret <- do.call(rpmodel, v)
 
+    # The rpmodel implementation is sensitive to rounding error when
+    # using the simple method. fact_jmaxlim can be (just) > 1, leading to
+    # sqrt(-tinything) = NaN. This leads to differences in pmodel outputs,
+    # so trapping that here.
+    ret$jmax <- ifelse(is.nan(ret$jmax), Inf, ret$jmax)
+
     test_name <- paste('rpmodel-c3', paste(inputs, collapse='-'), sep='-')
-    values[[test_name]] <- do.call(rpmodel, v)
+    values[[test_name]] <-ret
 
 }
 

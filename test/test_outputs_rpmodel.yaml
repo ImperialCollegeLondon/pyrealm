@@ -1132,8 +1132,8 @@ rpmodel-c3-ar-none-fkphio-off-sm-off:
   jmax:
   - .inf
   - .inf
-  - .nan
-  - .nan
+  - .inf
+  - .inf
   rd:
   - 0.4576614591
   - 0.511748918
