@@ -12,7 +12,7 @@ setuptools.setup(
     version=version['__version__'],
     author="David Orme",
     author_email="d.orme@imperial.ac.uk",
-    description="Implementation of the pmodel in Python",
+    description="Python implementations of REALM models",
     long_description=long_description,
     long_description_content_type="text/x-rst",
     url="",
@@ -29,5 +29,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
+        "Topic :: Scientific/Engineering"
+        "Development Status :: 3 - Alpha"
     ],
 )
