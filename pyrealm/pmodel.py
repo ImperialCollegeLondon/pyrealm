@@ -1,6 +1,5 @@
 import numpy as np
 from typing import Optional, Union
-import warnings
 import dotmap
 from pyrealm.params import PARAM
 
@@ -769,24 +768,25 @@ def pmodel(tc: Union[float, np.ndarray],
 
         >>> mod_c3 = pmodel(tc=20, vpd=1000, co2=400, fapar=1, ppfd=300, elv=0)
         >>> # Key variables from pmodel
-        >>> mod_c3.ci # doctest: +ELLIPSIS
-        28.1420870...
-        >>> mod_c3.ca # doctest: +ELLIPSIS
-        40.52999...
-        >>> mod_c3.chi # doctest: +ELLIPSIS
-        0.694352...
-        >>> mod_c3.gpp # doctest: +ELLIPSIS
-        76.42544...
-        >>> mod_c4 = pmodel(tc=20, vpd=1000, co2=400, fapar=1, ppfd=300, elv=0, c4=True)
+        >>> round(mod_c3.ci, 5)
+        28.14209
+        >>> round(mod_c3.ca, 5)
+        40.53
+        >>> round(mod_c3.chi, 5)
+        0.69435
+        >>> round(mod_c3.gpp, 5)
+        76.42545
+        >>> mod_c4 = pmodel(tc=20, vpd=1000, co2=400, fapar=1, ppfd=300, elv=0, 
+        ...                 c4=True, method_jmaxlim='none')
         >>> # Key variables from pmodel
-        >>> mod_c4.ci # doctest: +ELLIPSIS
-        40.52999...
-        >>> mod_c4.ca # doctest: +ELLIPSIS
-        40.52999...
-        >>> mod_c4.chi # doctest: +ELLIPSIS
-        1.0...
-        >>> mod_c4.gpp # doctest: +ELLIPSIS
-        12.90735...
+        >>> round(mod_c4.ci, 5)
+        40.53
+        >>> round(mod_c4.ca, 5)
+        40.53
+        >>> round(mod_c4.chi, 5)
+        1.0
+        >>> round(mod_c4.gpp, 5)
+        12.90736
 
     References:
 
@@ -834,8 +834,6 @@ def pmodel(tc: Union[float, np.ndarray],
         raise ValueError('Provide either elevation (elv) or atmospheric pressure (patm)')
 
     if patm is None:
-        warnings.warn("Calculating patm from elevation (elv) using the standard "
-                      "atmosphere (101325 Pa at sea level).")
         patm = calc_patm(elv)
 
     # -----------------------------------------------------------------------
