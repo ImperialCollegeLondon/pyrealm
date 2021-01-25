@@ -79,10 +79,10 @@ def test_calc_density_h2o(values, ctrl):
 
 @pytest.mark.parametrize(
     'ctrl',
-    [(dict(args=dict(tk='tk_sc', dha='KattgeKnorr_ha'),  # scalar
+    [(dict(args=dict(tk='tk_sc', ha='KattgeKnorr_ha'),  # scalar
            cmng=does_not_raise(),
            out='ftemp_arrh_sc')),
-     (dict(args=dict(tk='tk_ar', dha='KattgeKnorr_ha'),  # array
+     (dict(args=dict(tk='tk_ar', ha='KattgeKnorr_ha'),  # array
            cmng=does_not_raise(),
            out='ftemp_arrh_ar'))]
 )

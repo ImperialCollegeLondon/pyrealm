@@ -8,29 +8,29 @@ from pyrealm.params import PARAM
 
 
 def check_input_shapes(*args):
-    """Check dimensions of function inputs
+    """This helper function validates inputs to check that they are either
+    scalars or arrays and then that any arrays of the same shape. It either
+    raises an error or returns the common shape or 1 if all arguments are
+    scalar.
 
-    This helper function checks if any non scalar inputs are arrays of the same
-    shape. It either raises an error or returns the common shape or 1 if all
-    arguments are scalar.
-
-    Examples:
-        >>> check_input_shapes(np.array([1,2,3]), 5)
-        (3,)
-        >>> check_input_shapes(4, 5)
-        1
-        >>> check_input_shapes(np.array([1,2,3]), np.array([1,2]))
-        Traceback (most recent call last):
-            ...
-        ValueError: Inputs contain arrays of different shapes.
-
-    Args:
+    Parameters:
 
         *args: A set of numpy arrays or scalar values
 
     Returns:
 
         The common shape of any array inputs or 1 if all inputs are scalar.
+    
+    Examples:
+
+        >>> check_input_shapes(np.array([1,2,3]), 5) 
+        (3,)
+        >>> check_input_shapes(4, 5) 
+        1
+        >>> check_input_shapes(np.array([1,2,3]), np.array([1,2])) 
+        Traceback (most recent call last):
+        ...
+        ValueError: Inputs contain arrays of different shapes.
     """
 
     # Collect the shapes of the inputs
@@ -54,30 +54,31 @@ def check_input_shapes(*args):
         return 1
 
 
-def calc_density_h2o(tc: Union[float, np.ndarray], patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-    """**Density of water**
-
-    Calculates the density of water as a function of temperature and atmospheric
-    pressure, using the Tumlirz Equation.
-
-    Examples:
-
-        >>> round(calc_density_h2o(20, 101325), 4)
-        998.2056
-
-    References:
-
-        F.H. Fisher and O.E Dial, Jr. (1975) Equation of state of pure water and
-        sea water, Tech. Rept., Marine Physical Laboratory, San Diego, CA.
+def calc_density_h2o(tc: Union[float, np.ndarray], 
+                     patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+    """Calculates the **density of water** as a function of temperature and
+    atmospheric pressure, using the Tumlirz Equation and coefficients calculated
+    by :cite:`Fisher:1975tm`.
 
     Parameters:
 
         tc: air temperature, °C
         p: atmospheric pressure, Pa
 
+    Other Parameters:
+
+        lambda_: polynomial coefficients of Tumlirz equation (`PARAM.FisherDial.lambda_`).
+        Po: polynomial coefficients of Tumlirz equation (`PARAM.FisherDial.Po`).
+        Vinf: polynomial coefficients of Tumlirz equation (`PARAM.FisherDial.Vinf`).
+
     Returns:
 
         Water density as a float in (g cm^-3)
+
+    Examples:
+
+        >>> round(calc_density_h2o(20, 101325), 4)
+        998.2056
     """
 
     # check inputs, shape not used
@@ -90,10 +91,10 @@ def calc_density_h2o(tc: Union[float, np.ndarray], patm: Union[float, np.ndarray
     lambda_val = np.sum(np.array(PARAM.FisherDial.lambda_) * tc_pow[..., :5], axis=-1)
 
     # Calculate po, bar
-    po_val = np.sum(np.array(PARAM.FisherDial.po) * tc_pow[..., :5], axis=-1)
+    po_val = np.sum(np.array(PARAM.FisherDial.Po) * tc_pow[..., :5], axis=-1)
 
     # Calculate vinf, cm^3/g
-    vinf_val = np.sum(np.array(PARAM.FisherDial.vinf) * tc_pow, axis=-1)
+    vinf_val = np.sum(np.array(PARAM.FisherDial.Vinf) * tc_pow, axis=-1)
 
     # Convert pressure to bars (1 bar <- 100000 Pa)
     pbar = 1e-5 * patm
@@ -107,96 +108,92 @@ def calc_density_h2o(tc: Union[float, np.ndarray], patm: Union[float, np.ndarray
     return rho
 
 
-def calc_ftemp_arrh(tk: Union[float, np.ndarray], dha: float) -> Union[float, np.ndarray]:
-    r"""**Temperature scaling of enzyme kinetics**
-
-    Calculates the temperature-scaling factor :math:`f` for enzyme kinetics
+def calc_ftemp_arrh(tk: Union[float, np.ndarray], 
+                    ha: float) -> Union[float, np.ndarray]:
+    r"""Calculates the temperature-scaling factor :math:`f` for enzyme kinetics
     following an Arrhenius response for a given temperature (``tk``, :math:`T`)
-    and activation energy (``dha``, :math:`\Delta H_a`) relative to the standard
-    reference temperature :math:`T_0` and given the universal gas constant
-    :math:`R`.
+    and activation energy (`ha`, :math:`H_a`).
 
     Arrhenius kinetics are described as:
 
     .. math::
 
-        x(T)= exp(c - \Delta H_a / (T R))
+        x(T)= exp(c - H_a / (T R))
 
-    The temperature-correction function :math:`f(T, \Delta H_a)` is therefore:
+    The temperature-correction function :math:`f(T, H_a)` is:
 
-    .. math::
+      .. math::
         :nowrap:
-
+        
+        \[
             \begin{align*}
                 f &= \frac{x(T)}{x(T_0)} \\
-                  &= exp \left( \frac{\Delta H_a (T - T_0)}{T_0 R T}\right)\text{, or equivalently}\\
-                  &= exp \left( \frac{\Delta H_a}{R} \cdot \left(\frac{1}{T_0} - \frac{1}{T}\right)\right)
+                  &= exp \left( \frac{ H_a (T - T_0)}{T_0 R T}\right)\text{, or equivalently}\\
+                  &= exp \left( \frac{ H_a}{R} \cdot \left(\frac{1}{T_0} - \frac{1}{T}\right)\right)
             \end{align*}
+        \]
+    
+    Parameters:
 
+        tk: Temperature (in Kelvin)
+        ha: Activation energy (in :math:`J \text{mol}^{-1}`)
+
+    Other Parameters:
+
+        To: a standard reference temperature (:math:`T_0`, `PARAM.k.To`)
+        R: the universal gas constant (:math:`R`, `PARAM.k.R`)
+
+    Returns:
+
+        A float value for :math:`f`
+    
     Examples:
 
         >>> # Relative rate change from 25 to 10 degrees Celsius (percent change)
         >>> round((1.0-calc_ftemp_arrh( 283.15, 100000)) * 100, 4)
         88.1991
-
-    Args:
-
-        tk: Temperature (Kelvin)
-        dha: Activation energy (J mol-1)
-
-    Returns:
-
-        A float value for :math:`f`
     """
 
     # Note that the following forms are equivalent:
-    # exp( dha * (tk - 298.15) / (298.15 * kR * tk) )
-    # exp( dha * (tc - 25.0)/(298.15 * kR * (tc + 273.15)) )
-    # exp( (dha/kR) * (1/298.15 - 1/tk) )
+    # exp( ha * (tk - 298.15) / (298.15 * kR * tk) )
+    # exp( ha * (tc - 25.0)/(298.15 * kR * (tc + 273.15)) )
+    # exp( (ha/kR) * (1/298.15 - 1/tk) )
 
     tkref = PARAM.k.To + PARAM.k.CtoK
 
-    return np.exp(dha * (tk - tkref) / (tkref * PARAM.k.R * tk))
+    return np.exp(ha * (tk - tkref) / (tkref * PARAM.k.R * tk))
 
 
 def calc_ftemp_inst_rd(tc: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-    """**Temperature response of dark respiration**
-
-    This function calculates the temperature-scaling factor for dark respiration
+    """Calculates the **temperature-scaling factor for dark respiration**
     at a given temperature (``tc``, :math:`T` in °C), relative to the standard
-    reference temperature :math:`T_o`, following Heskel et al. 2016 (Table1,
-    Eqn 2). The default parameterisation uses the global means
-    (:math:`b = 0.1012, c = 0.0005`).
+    reference temperature :math:`T_o` (:cite:`Heskel:2016fg`).
 
     .. math::
 
             fr = exp( b (T_o - T) -  c ( T_o^2 - T^2 ))
 
-    References:
+    Parameters:
 
-         Heskel,  M.,  O’Sullivan,  O.,  Reich,  P.,  Tjoelker,  M.,
-         Weerasinghe,  L.,  Penillard,  A.,Egerton, J., Creek, D.,
-         Bloomfield, K., Xiang, J., Sinca, F., Stangl, Z.,
-         Martinez-De La Torre, A., Griffin, K., Huntingford, C., Hurry, V.,
-         Meir, P., Turnbull, M.,and Atkin, O. (2016)  Convergence in the
-         temperature response of leaf respiration across biomes and plant
-         functional types, Proceedings of the National Academy of Sciences,
-         113,  3832–3837,  doi:10.1073/pnas.1520282113
+        tc: Temperature (degrees Celsius)
 
+    Other parameters:
+
+        To: standard reference temperature (:math:`T_o`, `PARAM.k.To`)
+        b: empirically derived global mean coefficient (:math:`b`, Table 1, ::cite:`Heskel:2016fg`)
+        c: empirically derived global mean coefficient (:math:`c`, Table 1, ::cite:`Heskel:2016fg`)
+
+
+    Returns:
+
+        A float value for :math:`fr`
+    
     Examples:
 
         >>> # Relative percentage instantaneous change in Rd going from 10 to 25 degrees
         >>> val = (calc_ftemp_inst_rd(25) / calc_ftemp_inst_rd(10) - 1) * 100
         >>> round(val, 4)
         250.9593
-
-    Args:
-
-        tc: Temperature (degrees Celsius)
-
-    Returns:
-
-        A float value for :math:`fr`
     """
 
     return np.exp(PARAM.Heskel.b * (tc - PARAM.k.To) -
@@ -204,10 +201,8 @@ def calc_ftemp_inst_rd(tc: Union[float, np.ndarray]) -> Union[float, np.ndarray]
 
 
 def calc_ftemp_inst_vcmax(tc: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-    r"""**Instantaneous temperature response of** :math:`V_{cmax}`
-
-    This function calculates the temperature-scaling factor :math:`f` of the
-    instantaneous temperature response of :math:`V_{cmax}` given the 
+    r"""This function calculates the **temperature-scaling factor :math:`f` of
+    the instantaneous temperature response of :math:`V_{cmax}`** given the
     temperature (:math:`T`) relative to the standard reference temperature
     (:math:`T_0`), following modified Arrhenius kinetics. 
 
@@ -215,39 +210,38 @@ def calc_ftemp_inst_vcmax(tc: Union[float, np.ndarray]) -> Union[float, np.ndarr
 
        V = f V_{ref}
 
-    The value of :math:`f` is given by Kattge & Knorr (2007) as:
+    The value of :math:`f` is given by :cite:`Kattge:2007db` (Eqn 1) as:
 
     .. math::
 
-        f = g(T, \Delta H_a) \cdot 
+        f = g(T, H_a) \cdot 
                 \frac{1 + exp( (T_0 \Delta S - H_d) / (T_0 R))} 
                      {1 + exp( (T \Delta S - H_d) / (T R))}
 
-    where,
-
-    - :math:`g(T, \Delta H_v)` is a regular Arrhenius-type temperature
-      response function (see :func:`calc_ftemp_arrh`)
-    - :math:`H_a` is the activation energy.
-    - :math:`H_d` is the activation energy.
-    - :math:`T` and :math:`T_0` are expressed in Kelvin, and
-    - :math:`R` is the universal gas constant.
-
-    The term :math:`\Delta S` is the entropy factor, calculated as a linear
-    function of :math:`T` in °C:
+    where :math:`g(T, H_a)` is a regular Arrhenius-type temperature response
+    function (see :func:`calc_ftemp_arrh`). The term :math:`\Delta S` is the
+    entropy factor, calculated as a linear function of :math:`T` in °C following
+    :cite:`Kattge:2007db` (Table 3, Eqn 4):
 
     .. math::
 
         \Delta S = a + b T
 
-    where :math:`a = 668.39 \text{J} \text{mol}^{-1} \text{K}^{-1}` and 
-    :math:`b = 1.07 \text{J} \text{mol}^{-1} \text{K}^{-2}` (Table 3, 
-    Kattge & Knorr, 2007)
-    
-    References:
+    Parameters:
 
-        Kattge, J. and Knorr, W.:  Temperature acclimation in a biochemical model
-        of photosynthesis: a reanalysis of data from 36 species, Plant, Cell
-        and Environment, 30,1176–1190, 2007.
+        tc:  temperature, or in general the temperature relevant for
+            photosynthesis (°C)
+
+    Other parameters:
+
+        Ha: activation energy (:math:`H_a`, `PARAM.KattgeKnorr.Ha`)
+        Hd: deactivation energy (:math:`H_d`, `PARAM.KattgeKnorr.Hd`)
+        To: standard reference temperature expressed in Kelvin (`T_0`, `PARAM.k.To`)
+        R: the universal gas constant (:math:`R`,`PARAM.k.R`)
+        a: intercept of the entropy factor(:math:`a`, `PARAM.KattgeKnorr.a_ent`)
+        b: slope of the entropy factor (:math:`b`, `PARAM.KattgeKnorr.b_ent`)
+
+    Returns: A float value for :math:`f`
 
     Examples:
 
@@ -257,13 +251,6 @@ def calc_ftemp_inst_vcmax(tc: Union[float, np.ndarray]) -> Union[float, np.ndarr
         >>> round(val, 4)
         283.1775
 
-    Args:
-
-        tc:  temperature, or in general the temperature relevant for
-            photosynthesis (°C)
-
-    Returns:
-        A float value for :math:`f`
     """
 
     # Convert temperatures to Kelvin
@@ -283,38 +270,39 @@ def calc_ftemp_inst_vcmax(tc: Union[float, np.ndarray]) -> Union[float, np.ndarr
     return fva * fvb
 
 
-def calc_ftemp_kphio(tc: Union[float, np.ndarray], c4: bool = False) -> Union[float, np.ndarray]:
-    r"""**Temperature dependence of the quantum yield efficiency**
+def calc_ftemp_kphio(tc: Union[float, np.ndarray], 
+                     c4: bool = False) -> Union[float, np.ndarray]:
+    r"""Calculates the **temperature dependence of the quantum yield
+    efficiency**, as a quadratic function of temperature (:math:`T`). The values
+    of the coefficients depend on whether C3 or C4 photosynthesis is being
+    modelled
 
-    Calculates the temperature dependence of the quantum yield efficiency,
-    using a quadratic function. The default parameterisations are below.
+    .. math::
 
-    C3 plants:
-        The temperature dependence of the maximum quantum yield of photosystem
-        II in light-adapted tobacco leaves, determined by Bernacchi et al.
-        (2003).
+        \phi(T) = a + b T - c T^2
 
-        .. math::
+    The factor :math:`\phi(T)` is to be multiplied with leaf absorptance and the
+    fraction of absorbed light that reaches photosystem II. In the P-model these
+    additional factors are lumped into a single apparent quantum yield
+    efficiency parameter (argument `kphio` to the function :func:`pmodel`).
 
-            \phi(T) = 0.352 + 0.022 T - 0.00034 T^2
+    Parameters:
 
-    C4 plants:
-         C4 photosynthesis is calculated based on unpublished work as:
+        tc: Temperature, relevant for photosynthesis (°C)
+        c4: Boolean specifying whether fitted temperature response for C4 plants
+            is used. Defaults to \code{FALSE}.
 
-         .. math::
-            \phi(T) = -0.008 + 0.00375 T - 0.000058 T^2
+    Other parameters:
 
-    The factor :math:`\phi(T)` is to be multiplied with leaf absorptance and
-    the fraction of absorbed light that reaches photosystem II. In the
-    P-model these additional factors are lumped into a single apparent
-    quantum yield efficiency parameter (argument `kphio` to function
-    :func:`rpmodel`).
+        C3: the parameters (:math:`a,b,c`, `PARAM.kphio.C3`) are taken from the
+            temperature dependence of the maximum quantum yield of photosystem
+            II in light-adapted tobacco leaves determined by :cite:`Bernacchi:2003dc`.
+        C4: the parameters (:math:`a,b,c`, `PARAM.kphio.C4`) are taken from unpublished 
+            work.
 
-    References:
+    Returns:
 
-        Bernacchi, C. J., Pimentel, C., and Long, S. P.:  In vivo temperature
-        response functions  of  parameters required  to  model  RuBP-limited
-        photosynthesis,  Plant  Cell Environ., 26, 1419–1430, 2003
+        A float value for :math:`\phi(T)`
 
     Examples:
 
@@ -330,15 +318,6 @@ def calc_ftemp_kphio(tc: Union[float, np.ndarray], c4: bool = False) -> Union[fl
         >>> round(val, 5)
         432.25806
 
-    Args:
-
-        tc: Temperature, relevant for photosynthesis (°C)
-        c4: Boolean specifying whether fitted temperature response for C4 plants
-            is used. Defaults to \code{FALSE}.
-
-    Returns:
-
-        A float value for :math:`\phi(T)`
     """
 
     if c4:
@@ -349,135 +328,102 @@ def calc_ftemp_kphio(tc: Union[float, np.ndarray], c4: bool = False) -> Union[fl
     return coef[0] + coef[1] * tc + coef[2] * tc ** 2
 
 
-def calc_gammastar(tc: Union[float, np.ndarray], patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-    r"""**CO2 compensation point**
-
-    Calculates the photorespiratory CO2 compensation point in absence of dark
-    respiration (:math:`\Gamma^{*}`, Farquhar, 1980) as:
+def calc_gammastar(tc: Union[float, np.ndarray],
+                   patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+    r"""Calculates the photorespiratory **CO2 compensation point** in absence of
+    dark respiration (:math:`\Gamma^{*}`, ::cite:`Farquhar:1980ft`) as:
 
     .. math::
 
-        \Gamma^{*} = \Gamma^{*}_{0} \cdot \frac{p}{p_0} \cdot f(T, \Delta H_a)
+        \Gamma^{*} = \Gamma^{*}_{0} \cdot \frac{p}{p_0} \cdot f(T, H_a)
 
-    where:
+    where :math:`f(T, H_a)` modifies the activation energy to the the local
+    temperature following an Arrhenius-type temperature response function
+    implemented in :func:`calc_ftemp_arrh`.
 
-    - :math:`T_0` and :math:`T` are the standard temperature and the local
-      temperature set in ``tc``.
-    - :math:`p_0` and :math:`p` are the standard pressure and the local
-      pressure set in ``patm``.
-    - :math:`\Gamma^{*}_{0}` is the reference value at standard temperature
-      (:math:`T_0`) and pressure (:math:`P_0`), calculated by Bernacchi et al.
-      (2001) as :math:`42.75 \mu\text{mol}\ \text{mol}^{-1}` and here converted
-      using :math:`42.75 \cdot p_0 = 4.332 \text{Pa}`.
-    - :math:`\Delta H_a` is the activation energy of the system and
-      :math:`f(T, \Delta H_a)` modifies this to the the local temperature 
-      following an Arrhenius-type temperature response function implemented
-      in :func:`calc_ftemp_arrh`.
+    Parameters:
 
-    References:
+        tc: Temperature relevant for photosynthesis (:math:`T`, °C)
+        patm: Atmospheric pressure (:math:`p`, Pascals)
 
-        Farquhar,  G.  D.,  von  Caemmerer,  S.,  and  Berry,  J.  A.: A
-        biochemical  model  of photosynthetic CO2 assimilation in leaves of C3
-        species, Planta, 149, 78–90, 1980.
+    Other Parameters:
 
-        Bernacchi,  C.  J.,  Singsaas,  E.  L.,  Pimentel,  C.,  Portis,  A.
-        R.  J.,  and  Long,  S.  P.:Improved temperature response functions
-        for models of Rubisco-limited photosyn-thesis, Plant, Cell and
-        Environment, 24, 253–259, 2001
+        To: the standard reference temperature (:math:`T_0` )
+        Po: the standard pressure (:math:`p_0` )
+        gs_0: the reference value of :math:`\Gamma^{*} at standard temperature 
+            (:math:`T_0`) and pressure (:math:`P_0`)  (:math:`\Gamma^{*}_{0}`, 
+            ::cite:`Bernacchi:2001kg`, `PARAM.Bernacchi.gs25_0`)
+        ha: the activation energy (:math:`\Delta H_a`, ::cite:`Bernacchi:2001kg`,
+            `PARAM.Bernacchi.dha`)
 
-    Examples:
-
-        >>> # CO2 compensation point at 20 degrees Celsius and standard 
-        >>> # atmosphere (in Pa) 
-        >>> round(calc_gammastar(20, 101325), 5)
-        3.33925
-
-    Args: 
-
-        tc: Temperature, relevant for photosynthesis (°C) 
-        patm: Atmospheric pressure (Pa)
-
-    Returns:
+    Returns: 
 
         A float value for :math:`\Gamma^{*}` (in Pa)
+
+    Examples: 
+
+        >>> # CO2 compensation point at 20 degrees Celsius and standard
+        >>> # atmosphere (in Pa) >>> round(calc_gammastar(20, 101325), 5)
+        3.33925
     """
 
     # check inputs, return shape not used
     _ = check_input_shapes(tc, patm)
 
-    return (PARAM.Bernacci.gs25_0 * patm / PARAM.k.Po *
-            calc_ftemp_arrh((tc + PARAM.k.CtoK), dha=PARAM.Bernacci.dha))
+    return (PARAM.Bernacchi.gs25_0 * patm / PARAM.k.Po *
+            calc_ftemp_arrh((tc + PARAM.k.CtoK), ha=PARAM.Bernacchi.dha))
 
 
-def calc_kmm(tc: Union[float, np.ndarray], patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-    r"""**Michaelis Menten coefficient for Rubisco-limited photosynthesis**
-    
-    Calculates the Michaelis Menten coefficient of Rubisco-limited assimilation
-    as a function of temperature (``tc``, :math:`T`) and atmospheric pressure
-    (``patm``, :math:`p`).
+def calc_kmm(tc: Union[float, np.ndarray], 
+             patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+    r"""Calculates the **Michaelis Menten coefficient of Rubisco-limited
+    assimilation** (:math:`K`, ::cite:`Farquhar:1980ft`) as a function of
+    temperature (:math:`T`) and atmospheric pressure (:math:`p`) as:
 
-    - The partial pressure of oxygen at :math:`p` is 
-      :math:`p_{O_{2}} = 0.209476 \cdot p`.
-    - The function :math:`f(T, \Delta H)` is an Arrhenius-type temperature 
-      response function, implemented as :func:`pyrealm.pmodel.calc_ftemp_arrh`,
-      and used here to correct activation energies at standard temperature for
-      both carbon and oxygen to the local temperature:
+      .. math:: K = K_c ( 1 + p_{\ce{O2}} / K_o),
 
-      .. math::
+    where, :math:`p_{\ce{O2}} = 0.209476 \cdot p` is the partial pressure of
+    oxygen. :math:`f(T, H_a)` is an Arrhenius-type temperature response of
+    activation energies (:func:`calc_ftemp_arrh`) used to correct
+    Michalis constants at standard temperature for both :math:`\ce{CO2}` and
+    :math:`\ce{O2}` to the local temperature (Table 1, ::cite:`Bernacchi:2001kg`):
+
+      .. math:: 
         :nowrap:
 
         \[ 
             \begin{align*}
-                K_c &= K_{c25} \cdot f(T, \Delta H_{kc})\\
-                K_o &= K_{o25} \cdot f(T, \Delta H_{ko})
+                K_c &= K_{c25} \cdot f(T, H_{kc})\\
+                K_o &= K_{o25} \cdot f(T, H_{ko})
             \end{align*}
         \]
 
-    - And hence, the Michaelis-Menten coefficient :math:`K` of Rubisco-limited
-      photosynthesis (Farquhar, 1980) is calculated as:
+    .. TODO - why this height? Inconsistent with calc_gammastar which uses P_0
+              for the same conversion for a value in the same table.
 
-      .. math::
-          K = K_c ( 1 + p_{O_{2}} / K_o),
+    Parameters:
 
-    The default values set in the parameterisation are taken from Bernacchi
-    et al. (2001). :math:`K_{c25}` and :math:`K_{c25}` are converted from 
-    molar values using atmospheric pressure at a height of 227.076 metres:
-    ``calc_patm(227.076) = 98716.403 Pa``.
+        tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
+        patm: Atmospheric pressure (:math:`p`, Pa)
 
-    .. TODO - why this height? Inconsistent with calc_gammastar which
-              uses P_0 for the same conversion for a value in the same table.
+    Other parameters:
 
-    - :math:`\Delta H_{kc} = 79430 J mol-1`,
-    - :math:`\Delta H_{ko} = 36380 J mol-1`,
-    - :math:`K_{c25} = 404.9 \mu\text{mol}\ \text{mol}^{-1}` or 
-      :math:`404.9 \cdot 98716.403 = 39.97 \text{Pa}`, and
-    - :math:`K_{o25} = 278.4 \text{mmol}\ \text{mol}^{-1}` or 
-      :math:`278.4 \cdot 98716.403 = 27480 \text{Pa}`.
- 
-    References:
+        hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`, `PARAM.Bernacchi.dhac`)
+        hao:  activation energy for :math:`\ce{O2}` (:math:`\Delta H_{ko}`, `PARAM.Bernacchi.dhao`)
+        kc25: Michelis constant for :math:`\ce{CO2}` at standard temperature (:math:`K_{c25}`, `PARAM.Bernacchi.kc25`)
+        ko25: Michelis constant for :math:`\ce{O2}` at standard temperature (:math:`K_{o25}`, `PARAM.Bernacchi.ko25`)
 
-        Farquhar,  G.  D.,  von  Caemmerer,  S.,  and  Berry,  J.  A. (1980) A
-        biochemical  model  of photosynthetic CO2 assimilation in leaves of C3
-        species, Planta, 149, 78–90
-    
-        Bernacchi,  C.  J.,  Singsaas,  E.  L.,  Pimentel,  C.,  Portis,  A.
-        R.  J.,  and  Long,  S.  P. (2001) Improved temperature response functions
-        for models of Rubisco-limited photosynthesis, Plant, Cell and
-        Environment, 24, 253–259
-    
+    Returns:
+
+        A numeric value for $K$ (in Pa)
+
     Examples:
 
         >>> # Michaelis-Menten coefficient at 20 degrees Celsius and standard 
         >>> # atmosphere (in Pa):
         >>> round(calc_kmm(20, 101325), 5)
         46.09928
-    
-    Args:
-        tc: Temperature, relevant for photosynthesis (°C)
-        patm: Atmospheric pressure (Pa)
 
-    Returns:
-        A numeric value for \eqn{K} (in Pa)
     """
 
     # Check inputs, return shape not used
@@ -486,8 +432,8 @@ def calc_kmm(tc: Union[float, np.ndarray], patm: Union[float, np.ndarray]) -> Un
     # conversion to Kelvin
     tk = tc + PARAM.k.CtoK
 
-    kc = PARAM.Bernacci.kc25 * calc_ftemp_arrh(tk, dha=PARAM.Bernacci.dhac)
-    ko = PARAM.Bernacci.ko25 * calc_ftemp_arrh(tk, dha=PARAM.Bernacci.dhao)
+    kc = PARAM.Bernacchi.kc25 * calc_ftemp_arrh(tk, ha=PARAM.Bernacchi.dhac)
+    ko = PARAM.Bernacchi.ko25 * calc_ftemp_arrh(tk, ha=PARAM.Bernacchi.dhao)
 
     # O2 partial pressure
     po = PARAM.k.co * 1e-6 * patm
@@ -495,54 +441,59 @@ def calc_kmm(tc: Union[float, np.ndarray], patm: Union[float, np.ndarray]) -> Un
     return kc * (1.0 + po/ko)
 
 
-def calc_soilmstress(soilm: Union[float, np.ndarray], meanalpha: Union[float, np.ndarray] = 1.0):
-    r"""**Empirical soil moisture stress factor**
-
-    Calculates an empirical soil moisture stress factor  :math:`\beta` as a
-    function of relative soil moisture (:math:`m_s`, fraction of field
-    capacity) and average aridity, quantified by the local annual mean ratio
-    of actual over potential evapotranspiration (:math:`\bar{\alpha}`).
+def calc_soilmstress(soilm: Union[float, np.ndarray], 
+                     meanalpha: Union[float, np.ndarray] = 1.0) -> Union[float, np.ndarray]:
+    r"""Calculates an **empirical soil moisture stress factor**  (:math:`\beta`,
+    ::cite:`Stocker:2020dh`) as a function of relative soil moisture
+    (:math:`m_s`, fraction of field capacity) and average aridity, quantified by
+    the local annual mean ratio of actual over potential evapotranspiration
+    (:math:`\bar{\alpha}`).
 
     The value of :math:`\beta` is defined relative to two soil moisture
-    thresholds: :math:`\theta_0 = 0, \theta^{*}=0.6` as:
+    thresholds (:math:`\theta_0, \theta^{*}`) as:
 
-    .. math::
+      .. math:: 
         :nowrap:
 
-        \[ \beta =
-          \begin{cases}
-            q(\theta_0 - \theta^{*})^2 + 1,  & \theta_0 < m_s <= \theta^{*} \\
-            1, &  \theta^{*} < m_s,
-          \end{cases}\]
+        \[ 
+            \beta =
+                \begin{cases}
+                    q(\theta_0 - \theta^{*})^2 + 1,  & \theta_0 < m_s <= \theta^{*} \\
+                    1, &  \theta^{*} < m_s,
+                \end{cases}
+        \]
 
     where :math:`q` is an aridity sensitivity parameter setting the stress
     factor at :math:`\theta_0`:
 
-    .. math:: q=(1 - (a + b \bar{\alpha}))/(\theta^{*} - \theta_{0})^2,
+    .. math:: q=(1 - (a + b \bar{\alpha}))/(\theta^{*} - \theta_{0})^2
 
-    and :math:`a = 0.0` and :math:`b = 0.685` are empirically derived values.
+    Default parameters are as described in :cite:`Stocker:2020dh`.
 
-    References:
-
-         Stocker, B. et al. Geoscientific Model Development Discussions (in prep.)
-
-    Examples:
-        
-        >>> # Relative reduction (%) in GPP due to soil moisture stress at
-        >>> # relative soil water content ('soilm') of 0.2:
-        >>> round((calc_soilmstress(0.2) - 1) * 100, 5)
-        -14.0
-
-    Args:
+    Parameters:
 
         soilm: Relative soil moisture as a fraction of field capacity
             (unitless). Defaults to 1.0 (no soil moisture stress).
         meanalpha: Local annual mean ratio of actual over potential
             evapotranspiration, measure for average aridity. Defaults to 1.0.
 
+    Other parameters:
+
+        theta0: lower bound of soil moisture (:math:`\theta_0`, `PARAM.soilmstress.theta0`).
+        thetastar: upper bound of soil moisture (:math:`\theta^{*}`, `PARAM.soilmstress.thetastar`).
+        a: aridity parameter (:math:`a`, `PARAM.soilmstress.a`).
+        b: aridity parameter (:math:`b`, `PARAM.soilmstress.b`).
+    
     Returns:
 
         A numeric value for \eqn{\beta}
+    
+    Examples:
+
+        >>> # Relative reduction (%) in GPP due to soil moisture stress at
+        >>> # relative soil water content ('soilm') of 0.2:
+        >>> round((calc_soilmstress(0.2) - 1) * 100, 5)
+        -14.0
     """
 
     # Check inputs, return shape not used
@@ -562,25 +513,12 @@ def calc_soilmstress(soilm: Union[float, np.ndarray], meanalpha: Union[float, np
     return outstress
 
 
-def calc_viscosity_h2o(tc: Union[float, np.ndarray], patm: Union[float, np.ndarray]):
-    """**Viscosity of water**
+def calc_viscosity_h2o(tc: Union[float, np.ndarray],
+                       patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+    """Calculates the **viscosity of water** as a function of temperature and
+    atmospheric pressure (::cite:`Huber:2009fy`).
 
-    Calculates the viscosity of water as a function of temperature and atmospheric
-    pressure.
-
-    References:
-
-        Huber, M. L., R. A. Perkins, A. Laesecke, D. G. Friend, J. V. Sengers,
-        M. J. Assael, ..., K. Miyagawa (2009) New international formulation for
-        the viscosity of H2O, J. Phys. Chem. Ref. Data, Vol. 38(2), pp. 101-125.
-
-    Examples:
-        
-        >>> # Density of water at 20 degrees C and standard atmospheric pressure:
-        >>> round(calc_viscosity_h2o(20, 101325), 7)
-        0.0010016
-
-    Args:
+    Parameters:
 
         tc: air temperature (°C)
         patm: atmospheric pressure (Pa)
@@ -588,6 +526,12 @@ def calc_viscosity_h2o(tc: Union[float, np.ndarray], patm: Union[float, np.ndarr
     Returns:
 
         A float giving the viscosity of water (mu, Pa s)
+
+    Examples:
+
+        >>> # Density of water at 20 degrees C and standard atmospheric pressure:
+        >>> round(calc_viscosity_h2o(20, 101325), 7)
+        0.0010016
     """
 
     # Check inputs, return shape not used
@@ -620,32 +564,31 @@ def calc_viscosity_h2o(tc: Union[float, np.ndarray], patm: Union[float, np.ndarr
 
 
 def calc_patm(elv: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-    r"""**Atmospheric pressure**
-
-    Calculates atmospheric pressure as a function of elevation with reference to
+    r"""Calculates **atmospheric pressure** as a function of elevation with reference to
     the standard atmosphere.  The elevation-dependence of atmospheric pressure
     is computed by assuming a linear decrease in temperature with elevation and
-    a mean adiabatic lapse rate (Berberan-Santos et al., 1997, Eqn 3):
+    a mean adiabatic lapse rate (Eqn 3, ::cite:`BerberanSantos:2009bk`):
 
     .. math::
 
-        p(z) = p_0 ( 1 - L z / T_0) ^{ g M / (R L) },
+        p(z) = p_0 ( 1 - L z / K_0) ^{ G M / (R L) },
 
-    where:
+    Parameters:
 
-    - :math:`z` is the elevation above mean sea level (m, argument \code{elv}),
-    - :math:`g` is the gravity constant (9.80665 m s-2),
-    - :math:`p_0` is the standard atmospheric pressure at sea level,
-    - :math:`L` is the mean adiabatic lapse rate (0.0065 K m-2),
-    - :math:`M` is the molecular weight for dry air (0.028963 kg mol-1),
-    - :math:`R` is the universal gas constant (8.3145 J mol-1 K-1), and
-    - :math:`T_0` is the standard temperature in Kelvin (298.15 K, corresponds to 25 °C).
+        elv: Elevation above sea-level (:math:`z`, metres above sea level.)
 
-    References:
+    Other parameters:
 
-        Berberan-Santos, M. N., Bodunov, E. N., & Pogliani, L. (2009). On the
-        barometric formula inside the Earth. Journal of Mathematical Chemistry,
-        47(3), 990–1004. http://doi.org/10.1007/s10910-009-9620-7
+        G: gravity constant (:math:`g`, `PARAM.k.G`)
+        Po: standard atmospheric pressure at sea level (:math:`p_0`, `PARAM.k.Po`)
+        L: adiabatic temperature lapse rate (:math:`L}`, `PARAM.k.L`),
+        M: molecular weight for dry air (:math:`M`, `PARAM.k.Ma`),
+        R: universal gas constant (:math:`R`, `PARAM.k.R`)
+        Ko: reference temperature in Kelvin (:math:`K_0`, `PARAM.k.To`).
+
+    Returns:
+
+        A numeric value for :math:`p` in Pascals.
 
     Examples:
         
@@ -653,13 +596,6 @@ def calc_patm(elv: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
         >>> round(calc_patm(1000), 2)
         90241.54
 
-    Args:
-
-        elv: Elevation above sea-level (m.a.s.l.)
-
-    Returns:
-
-        A numeric value for :math:`p`
     """
 
     # Convert elevation to pressure, Pa. This equation uses the base temperature
@@ -673,23 +609,21 @@ def calc_patm(elv: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
              (PARAM.k.R * PARAM.k.L)))
 
 
-def calc_co2_to_ca(co2: Union[float, np.ndarray], patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def calc_co2_to_ca(co2: Union[float, np.ndarray], 
+                   patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     r"""Converts ambient :math:`\ce{CO2}` (:math:`c_a`) in part per million to
     Pascals, accounting for atmospheric pressure.
 
-    Examples:
-
-        >>> round(calc_co2_to_ca(413.03, 101325), 6)
-        41.850265
-
-    Args:
-
+    Parameters:
         co2 (float): atmospheric :math:`\ce{CO2}`, ppm
         patm (float): atmospheric pressure, Pa
 
     Returns:
-
         Ambient :math:`\ce{CO2}` in units of Pa
+    
+    Examples:
+        >>> round(calc_co2_to_ca(413.03, 101325), 6)
+        41.850265
     """
 
     return 1.0e-6 * co2 * patm  # Pa, atms. CO2
@@ -710,8 +644,7 @@ def pmodel(tc: Union[float, np.ndarray],
            method_optci: str = "prentice14",
            method_jmaxlim: str = "wang17") -> dotmap.DotMap:
 
-    r"""*Fit the  P-model*
-
+    r"""Fits the P model to a given set of environmental parameters. 
     See the extended description in :ref:`pmodel` for detailed explanations
     of the parameter options and calculation of the P-model.
 
@@ -730,10 +663,6 @@ def pmodel(tc: Union[float, np.ndarray],
         meanalpha: (Optional) Local annual mean ratio of actual over potential
             evapotranspiration, measure for average aridity.
         c4: (Optional) By default (`c4=False`), the C3 photosynthetic pathway is used.
-        method_optci: (Optional) A character string specifying which method is to
-            be used for calculating optimal ci:ca. Defaults to \code{"prentice14"}.
-            Available also \code{"prentice14_num"} for a numerical solution to the
-            same optimization criterium as  used for \code{"prentice14"}.
         method_jmaxlim: (Optional) Method for :math:`J_{max}` limitation,
             defaulting to `wang_17`.
         do_ftemp_kphio: (Optional) A logical specifying whether temperature-dependence
@@ -891,7 +820,9 @@ def pmodel(tc: Union[float, np.ndarray],
 
     if c4:
         method_optci = "c4"
-
+    else:
+        method_optci = "prentice14"
+    
     out_optchi = CalcOptimalChi(kmm, gammastar, ns_star, ca, vpd, method=method_optci)
 
     # leaf-internal CO2 partial pressure (Pa)
@@ -926,6 +857,7 @@ def pmodel(tc: Union[float, np.ndarray],
     # -----------------------------------------------------------------------
     # Quantities that scale linearly with absorbed light
     # -----------------------------------------------------------------------
+
     # Both fapar and ppfd are needed to calculate gpp, vcmax, rd and jmax, so
     # return None if those are not provided.
     if fapar is None or ppfd is None:
@@ -940,7 +872,7 @@ def pmodel(tc: Union[float, np.ndarray],
         iabs = fapar * ppfd
 
         # Gross primary productivity
-        gpp = iabs * out_lue_vcmax.lue  # in g C m-2 s-1
+        gpp = iabs * out_lue_vcmax.lue  # in g C m-2 per unit time in iabs
 
         # Vcmax per unit ground area is the product of the intrinsic quantum
         # efficiency, the absorbed PAR, and 'n'
@@ -960,7 +892,7 @@ def pmodel(tc: Union[float, np.ndarray],
         jmax[mask] = 4.0 * kphio * iabs / np.sqrt(fact_jmaxlim[mask])
         jmax[~ mask] = np.infty
 
-        gs = np.infty if c4 else (gpp / PARAM.k.c_molmass) / (ca - ci),  # TODO - check with CP/BS
+        gs = np.infty if c4 else (gpp / PARAM.k.c_molmass) / (ca - ci),  # TODO - check np.infty with CP/BS
 
     # construct list for output
     out = dotmap.DotMap(ca=ca,
@@ -972,6 +904,7 @@ def pmodel(tc: Union[float, np.ndarray],
                         mc=out_optchi.mc,
                         ci=ci,
                         lue=out_lue_vcmax.lue,
+                        vcmax_unitiabs=out_lue_vcmax.vcmax_unitiabs,
                         gpp=gpp,
                         iwue=iwue,
                         gs=gs,
@@ -986,12 +919,15 @@ def pmodel(tc: Union[float, np.ndarray],
 class CalcOptimalChi:
     r"""**Calculate optimal ratios for** :math:`\chi` 
 
-    This class provides methods to estimate the optimal ratio of leaf internal
-    to ambient :math:`\ce{CO2}` partial pressure (:math:`\chi = c_i/c_a`) and
-    other values. 
+    This class provides methods to estimate: 
 
-    The chosen method is automatically used to populate four key variables when
-    an instance is created.
+    - The optimal ratio of leaf internal to ambient :math:`\ce{CO2}` partial
+      pressure (:math:`\chi = c_i/c_a`).
+    - The :math:`\ce{CO2}` limitation term for light-limited assimilation  (:math:`m_j`).
+    - The :math:`\ce{CO2}` limitation term for Rubisco-limited assimilation  (:math:`m_c`).
+
+    The chosen method is automatically used to estimate these values when an
+    instance is created.
 
     Attributes:
 
@@ -1006,11 +942,15 @@ class CalcOptimalChi:
         method (str): one of ``c4`` or ``prentice14``
         beta (float): unit cost ratio of carboxylation (see :obj:`PARAMS.stocker19.beta`)
         chi (float): the ratio of leaf internal to ambient :math:`\ce{CO2}` partial pressure (:math:`\chi`).
-        mc (float): factor in the Rubisco-limited assimilation rate function (:math:`\m_c`).
-        mj (float): factor in the light-limited assimilation rate function (:math:`\m_j`).
-        mjoc (float): mj:mv ratio 
+        mj (float): :math:`\ce{CO2}` limitation factor for light-limited assimilation (:math:`m_j`).
+        mc (float): :math:`\ce{CO2}` limitation factor for RuBisCO-limited assimilation (:math:`m_c`).
+        mjoc (float):  :math:`m_j/m_c` ratio 
 
-    .. TODO more detail on mjoc
+    Returns: 
+
+        An instance of :class:`CalcOptimalChi` where the :attr:`chi`,
+        :attr:`mj`, :attr:`mc` and :attr:`mjoc` have been populated 
+        using the chosen method.
 
     Examples:
 
@@ -1030,13 +970,6 @@ class CalcOptimalChi:
         ...                          method='c4')
         >>> c4_vals.chi
         1.0
-
-
-    Returns: 
-    
-        An instance of :class:`CalcOptimalChi` where the :attr:`chi`,
-        :attr:`mj`, :attr:`mc` and :attr:`mjoc` have been populated 
-        using the chosen method.
     """
 
     def __init__(self,
@@ -1074,16 +1007,14 @@ class CalcOptimalChi:
             raise ValueError(f"CalcOptimalChi: method argument '{method}' invalid.")
 
     def c4(self):
-        r"""This method simply sets all the key variables
-        (:math:`\chi, m_j, m_c, m_{joc}`) to 1.0 to represent the C4
-        pathway.
-
-        Note that - because these values are constant regardless of inputs -
-        there is no need to represent the shape of those inputs and these values
-        can be collapsed to scalars.
+        r"""This method simply sets :math:`\chi = m_j = m_c = m_{joc} = 1.0` to
+        capture the boosted :math:`\ce{CO2}` concentrations at the chloropolast in C4
+        photosynthesis.
         """
 
-        # Dummy values to represent c4 pathway
+        # Dummy values to represent c4 pathway. As these values are constant
+        # regardless of inputs - there is no need to represent the shape of
+        # those inputs and these values can be stored as scalars.
 
         self.chi = 1.0
         self.mc = 1.0
@@ -1091,28 +1022,38 @@ class CalcOptimalChi:
         self.mjoc = 1.0
 
     def prentice14(self):
-        r"""This method calculates optimal :math:`\chi` following Prentice et
-        al. (2014):
+        r"""This method calculates key variables as follows:
+
+        Optimal :math:`\chi` is calculated following Equation 8 in
+        :cite:`Prentice:2014bc`:
+
+          .. math:: :nowrap:
+
+            \[
+                \begin{align*}
+                    \chi &= \Gamma^{*} / c_a + (1- \Gamma^{*} / c_a) \xi / (\xi + \sqrt D ), \text{where}\\
+                    \xi &= \sqrt{(\beta (K+ \Gamma^{*}) / (1.6 \eta^{*}))}
+                \end{align*}
+            \]
+
+        The :math:`\ce{CO2}` limitation term of light use efficiency
+        (:math:`m_j`) is calculated following Equation 3 in :cite:`Wang:2017go`:
 
         .. math::
-            :nowrap:
 
-            \begin{align*}
-                \chi &= \Gamma^{*} / c_a + (1- \Gamma^{*} / c_a) \xi / (\xi + \sqrt D ), \text{where}\\
-                \xi &= \sqrt (\beta (K+ \Gamma^{*}) / (1.6 \eta^{*}))
-            \end{align*}
+            m_j = \frac{c_a - \Gamma^{*}}
+                       {c_a + 2 \Gamma^{*} + 3 \Gamma^{*} \sqrt{\frac{1.6 D \eta^{*}}
+                                                                     {\beta(K + \Gamma^{*})}}}
 
-        In addition, :math:`m_j`, :math:`m_c` and :math:`m_{joc}`, are
-        calculated as:
+        Finally,  :math:`m_c` is calculated, following Equation 7 in
+        :cite:`Stocker:2020dh`, as:
 
         .. math::
-            :nowrap:
 
-            \begin{align*}
-                m_j &= (c_i - \Gamma^{*}) / (c_i + 2 \Gamma^{*})\\
-                m_c &= (c_i - \Gamma^{*}) / (c_i + K)\\
-                m_{joc} &= \text{TODO}
-            \end{align*}
+            m_c = \frac{c_i - \Gamma^{*}}{c_i + K},
+
+        where :math:`K` is the Michaelis Menten coefficient of Rubisco-limited
+        assimilation.
         """
 
         # Avoid negative VPD (dew conditions)
@@ -1149,60 +1090,91 @@ class CalcOptimalChi:
 
 
 class CalcLUEVcmax:
-    r"""**Calculate light use efficiency (LUE) and** :math:`V_{cmax}`
+    r"""This class provides methods to estimate light use efficiency and
+    :math:`V_{cmax}`. The class implements:
 
-    This class provides methods to estimate light use efficiency and
-    :math:`V_{cmax}`. Two of the provided methods (``wang17`` and ``smith19``)
-    account for :math:`J_{max}` limitation of light use efficiency, while the
-    remanining methods (``none`` and ``c4``) do not.
+    - :math:`J_{max}` limitation of light use efficiency, providing two
+      approaches (``wang17`` and ``smith19``),
+    - soil moisture stress limitation, and
+    - temperature dependence of apparent quantum yield efficiency.
 
     Light use efficiency (LUE) is calculated from the inputs as:
 
     .. math::
-        \text{LUE} = \phi(T) \cdot \phi_0 \cdot m' \cdot M_C \cdot \beta
 
-    where:
+        \text{LUE} = \phi_0 \cdot \phi_0(T) \cdot  m_j \cdot m_{jlim} \cdot M_C \cdot \beta
 
-    - :math:`M_C` is the molecular mass of Carbon,
-    - :math:`m'` is a factor implementing :math:`J_{max}` limitation. When 
-      method is ``none`` or ``c4``, :math:`m'=1.0`, otherwise it is 
-      calculated using the selected method.
+    The Rubisco carboxylation capacity ($V_{cmax}$) of the system is then back
+    calculated from LUE as:
 
-    The chosen method is automatically used to populate :attr:`mprime`, 
-    :attr:`lue` and :attr:`vcmax_unitiabs` when an instance is created. For
-    method ``smith19``, values of :attr:`omega` and :attr:`omegastar` are
-    also populated.
+    .. math::
+
+          V_{cmax} = \frac{\text{LUE}}{m_c M_C}
 
     Attributes:
 
         optchi (:class:`CalcOptimalChi`): an instance of :class:`CalcOptimalChi`
-            providing :math:`\chi` and other variables.
-        kphio (float): The apparent quantum yield efficiency (:math:`\phi(0)`,
+            providing the :math:`\ce{CO2}` limitation term of light use efficiency 
+            (:math:`\m_j`) and the  the :math:`\ce{CO2}` limitation term for 
+            Rubisco assimilation (:math:`m_c`).
+        kphio (float): The apparent quantum yield efficiency (:math:`\phi_0`,
             unitless).
         ftemp_kphio (float): A factor to capture the temperature dependence of 
-            quantum yield efficiency (:math:`\phi(T)`), defaulting to 1.0 for 
+            quantum yield efficiency (:math:`\phi_0(T)`), defaulting to 1.0 for 
             no temperature dependence (see :func:`calc_ftemp_kphio`).
         soilmstress (float): A factor to capture the soil moisture stress 
             (:math:`\beta`), defaulting to 1.0 for no soil moisture stress 
             (see :func:`calc_soilmstress`).
-        method (str): one of ``wang17``, ``smith19``, ``none`` or ``c4``, 
-            defaulting to ``wang17``.
-
-        mprime (float): :math:`J_{max}` limitation factor.
-        lue (float): light use efficiency per unit absolute irradiance. 
-        vcmax_unitiabs (float): maximum carboxylation rate per unit absolute 
+        method (str): method to apply :math:`J_{max}` limitation (default: ``wang17``,
+            or ``smith19`` or ``none``)
+        m_jlim (float): :math:`J_{max}` limitation factor, calculated using the method.
+        lue (float): calculated light use efficiency per unit absolute irradiance. 
+        vcmax_unitiabs (float): calculated maximum carboxylation rate per unit absolute 
             irradiance.
-        omega (float): component of `J_{max}` calculation in Smith et al. 
-            2019.
-        omega_star (float):  component of `J_{max}` calculation in Smith et al.
-            2019.
+        omega (float): component of :math:`J_{max}` calculation (:cite:`Smith:2019dv`).
+        omega_star (float):  component of :math:`J_{max}` calculation (:cite:`Smith:2019dv`).
+
+    Other Parameters:
+
+        c_molmass: the molar mass of carbon (:math:`M_C`, `PARAM.k.c_molmass`)
+
+
+
+    Examples:
+
+        >>> optchi = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925,
+        ...                         ns_star = 1.12536, ca = 40.53, vpd = 1000)
+        >>> # Using Wang et al 2017
+        >>> out_wang = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
+        ...                         soilmstress = 1, method='wang17')
+        >>> round(out_wang.lue, 5)
+        0.25475
+        >>> round(out_wang.vcmax_unitiabs, 6)
+        0.063488
+        >>> # Using Smith et al 2019 
+        >>> out_smith = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
+        ...                          soilmstress = 1, method='smith19')
+        >>> round(out_smith.lue, 6)
+        0.086569
+        >>> round(out_smith.vcmax_unitiabs, 6)
+        0.021574
+        >>> round(out_smith.omega, 5)
+        1.10204
+        >>> round(out_smith.omega_star, 5)
+        1.28251
+        >>> # No Jmax limitation
+        >>> out_none = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
+        ...                    soilmstress = 1, method='none')
+        >>> round(out_none.lue, 6)
+        0.458998
+        >>> round(out_none.vcmax_unitiabs, 6)
+        0.11439
+
     """
 
     # TODO - apparent incorrectness of wang and smith methods with _ca_ variation,
     #        work well with varying temperature but not _ca_ variation (or
     #        e.g. elevation gradient David Sandoval, REALM meeting, Dec 2020)
-
-    # TODO - apparent inconsistency in structure of VCMax and meaning of mprime?
 
     def __init__(self, optchi: CalcOptimalChi,
                  kphio: Union[float, np.ndarray],
@@ -1218,7 +1190,7 @@ class CalcLUEVcmax:
         self.ftemp_kphio = ftemp_kphio
         self.soilmstress = soilmstress
         self.method = method
-        self.mprime = None
+        self.mjlim = None
         self.lue = None
         self.vcmax_unitiabs = None
         self.omega = None
@@ -1229,71 +1201,80 @@ class CalcLUEVcmax:
                        'none': self.none}
 
         if self.method == 'c4':
-            raise ValueError('The c4 Jmax method provided in rpmoodel is not '
-                             'implemented, use none which yields identical '
-                             'results')
+            raise ValueError('This class does not implement a fixed method for C4 '
+                             'photosynthesis. To replicate rpmodel choose c4=True and '
+                             'method="none"')
 
         if self.method in all_methods:
+
+            # Use the selected method to calculate limitation factors
             this_method = all_methods[self.method]
             this_method()
+
+            # Now calculate the LUE and V_cmax
+            # Light use efficiency (gpp per unit absorbed light)
+            self.lue = (self.kphio * self.ftemp_kphio * self.optchi.mj * self.mjlim *
+                        PARAM.k.c_molmass * self.soilmstress)
+
+            # Back calculate Vcmax normalised per unit absorbed PPFD (assuming iabs=1)
+            self.vcmax_unitiabs = self.lue / (self.optchi.mc * PARAM.k.c_molmass)
+
         else:
             raise ValueError(f"CalcLUEVcmax: method argument '{method}' invalid.")
 
     def wang17(self):
-        """LUE and :math:`V_{cmax}` method of Wang et al. 2017
+        r"""Calculate a :math:`J_{max}` limitation following
+        :cite:`Wang:2017go`. The factor is described in Equation 49 of
+        :cite:`Wang:2017go` and is the square root term at the end of that
+        equation: 
 
-        Examples:
+        .. math::
 
-            >>> optchi = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925,
-            ...                         ns_star = 1.12536, ca = 40.53, vpd = 1000)
-            >>> out = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
-            ...                    soilmstress = 1, method='wang17')
-            >>> round(out.lue, 5)
-            0.25475
-            >>> round(out.vcmax_unitiabs, 6)
-            0.063488
-            >>> out.omega is None
-            True
-            >>> out.omega_star is None
-            True
+            m_{jmax} = \sqrt{1- \left(\frac{c^*}{m_j}\right)^{\frac{2}{3}}}
+
+        Other parameters:
+
+            cstar: A cost parameter for maintaining :math:`J_{max}` 
+                (:math:`c^*`, `PARAM.wang.c`)
+
         """
 
-        # Include effect of Jmax limitation, modify mc accounting for the
-        # co-limitation hypothesis after Prentice et al. (2014)
-        mpi = (self.optchi.mj ** 2 - PARAM.wang17.c ** (2.0 / 3.0) *
-               (self.optchi.mj ** (4.0 / 3.0)))
+        # Calculate mjlim (square root term in Eqn 2 of Wang et al 2017)
+        vals = 1 - (PARAM.wang17.c / self.optchi.mj) ** (2.0 / 3.0)
 
-        mprime = np.where(mpi > 0, np.sqrt(mpi), np.nan)
+        # Convert to array if needed and handle negative and nan values
+        vals = np.array(vals) if np.ndim(vals) == 0 else vals
+        mask = vals >= 0  # Also traps np.nan
+        mjlim = np.empty_like(vals)
+        mjlim[mask] = np.sqrt(vals[mask])
+        mjlim[~ mask] = np.nan
 
-        # np.where _always_ returns an array, so catch scalars
-        self.mprime = mprime.item() if np.ndim(mprime) == 0 else mprime
-
-        # Light use efficiency (gpp per unit absorbed light)
-        self.lue = (self.kphio * self.ftemp_kphio * self.mprime *
-                    PARAM.k.c_molmass * self.soilmstress)
-
-        # Vcmax normalised per unit absorbed PPFD (assuming iabs=1), with Jmax limitation
-        self.vcmax_unitiabs = (self.kphio * self.ftemp_kphio * self.optchi.mjoc *
-                               self.mprime / self.optchi.mj * self.soilmstress)
+        # revert scalars back to a scalar value
+        self.mjlim = mjlim.item() if np.ndim(mjlim) == 0 else mjlim
 
     def smith19(self):
+        r"""Calculate a :math:`J_{max}` limitation following
+        :cite:`Smith:2019dv`. The value of :math:`m_{jlim}` is taken as the
+        final term of  Equation 18 of :cite:`Smith:2019dv`:
 
-        """LUE and :math:`V_{cmax}` method of Smith et al. 2019
+        .. math::
+            :nowrap:
 
-        Examples:
+            \[
+                \begin{align*}
+                m_{jlim} &= \frac{\omega^*}{8\theta}, \text{where} \\
+                \omega^* &= 1 + \omega - \sqrt{(1 + \omega) ^2 -4\theta\omega}, \text{and}\\
+                \omega &= (1 - 2\theta) + \sqrt{(1-\theta)\left(\frac{1}{\frac{4c}{m}(1 - \theta\frac{4c}{m})}-4\theta\right)}
+                \end{align*}
+            \]
 
-            >>> optchi = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925, ns_star = 1.12536,
-            ...                           ca = 40.53, vpd = 1000)
-            >>> out = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
-            ...                    soilmstress = 1, method='smith19')
-            >>> round(out.lue, 6)
-            0.086569
-            >>> round(out.vcmax_unitiabs, 6)
-            0.021574
-            >>> round(out.omega, 5)
-            1.10204
-            >>> round(out.omega_star, 5)
-            1.28251
+        Other parameters:
+
+            theta: A term to capture the curved relationship between light intensity
+                and photosynthetic capacity :math:`J_{max}` (:math:`\theta`, `PARAM.smith19.theta`)
+            c_cost: A cost parameter for maintaining :math:`J_{max}` 
+                (:math:`c`, `PARAM.smith19.c_cost`)
+
         """
 
         # Adopted from Nick Smith's code:
@@ -1330,39 +1311,12 @@ class CalcLUEVcmax:
                                    (4.0 * theta * self.omega)))
 
         # Effect of Jmax limitation
-        self.mprime = self.optchi.mj * self.omega_star / (8.0 * theta)
-
-        # Light use efficiency (gpp per unit absorbed light)
-        self.lue = (self.kphio * self.ftemp_kphio * self.mprime *
-                    PARAM.k.c_molmass * self.soilmstress)
-
-        # calculate Vcmax per unit aborbed light
-        self.vcmax_unitiabs = (self.kphio * self.ftemp_kphio * self.optchi.mjoc *
-                               self.omega_star / (8.0 * theta) * self.soilmstress)  # Eq. 19
+        self.mjlim = self.omega_star / (8.0 * theta)
 
     def none(self):
-        """LUE and :math:`V_{cmax}` with no :math:`J_{max}` limitation
-
-        Examples:
-
-            >>> optchi = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925, ns_star = 1.12536,
-            ...                           ca = 40.53, vpd = 1000)
-            >>> out = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
-            ...                    soilmstress = 1, method='none')
-            >>> round(out.lue, 6)
-            0.458998
-            >>> round(out.vcmax_unitiabs, 6)
-            0.11439
-            >>> out.omega is None
-            True
-            >>> out.omega_star is None
-            True
+        """No :math:`J_{max}` limitation (:math:`m_{jlim} = 1.0`)
         """
 
-        # Light use efficiency (gpp per unit absorbed light)
-        self.lue = (self.kphio * self.ftemp_kphio * self.optchi.mj *
-                    PARAM.k.c_molmass * self.soilmstress)
-
-        # Vcmax normalised per unit absorbed PPFD (assuming iabs=1), with Jmax limitation
-        self.vcmax_unitiabs = (self.kphio * self.ftemp_kphio * self.optchi.mjoc *
-                               self.soilmstress)
+        # Set Jmax limitation to unity - could define as 1.0 in __init__ and
+        # pass here, but setting explicitly within the method for clarity.
+        self.mjlim = 1.0
