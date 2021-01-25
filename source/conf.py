@@ -19,7 +19,7 @@ from pyrealm import version
 
 # -- Project information -----------------------------------------------------
 
-project = 'P-model in Python'
+project = 'pyrealm: Ecosystem Models in Python'
 copyright = '2020, David Orme'
 author = 'David Orme'
 
@@ -33,12 +33,13 @@ release = version
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx.ext.autodoc',
+              'autodocsumm',
               'sphinx.ext.napoleon',
               'sphinx.ext.mathjax',
               'sphinx.ext.autosummary',
               'sphinxcontrib.bibtex',
               'myst_nb',
-              #'sphinx_astrorefs',  # Gives author year references
+              'sphinx_astrorefs',  # Gives author year references
               'sphinx_rtd_theme'
               ]
 
@@ -63,8 +64,25 @@ exclude_patterns = []
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
-html_theme = 'sphinx_rtd_theme'  # 'sphinx_material'
+
+# html_theme = 'sphinx_material'
+html_theme = 'sphinx_rtd_theme'
+
+html_theme_options = {
+    'logo_only': False,
+    'display_version': True,
+    'prev_next_buttons_location': 'top',
+    'style_external_links': False,
+    'vcs_pageview_mode': '',
+    'style_nav_header_background': 'green',
+    # Toc options
+    'collapse_navigation': False,
+    'sticky_navigation': True,
+    'navigation_depth': 4,
+    'includehidden': True,
+    'titles_only': False
+}
+
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

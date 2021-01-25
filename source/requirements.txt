@@ -3,3 +3,4 @@ sphinxcontrib-bibtex
 sphinx-rtd-theme
 sphinx-astrorefs
 recommonmark
+autodocsumm

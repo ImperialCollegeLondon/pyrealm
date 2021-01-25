@@ -1,14 +1,13 @@
-# The `rpmodel` implementation
+## The `rpmodel` implementation
 
 
 The implementation and documentation in {mod}`pyrealm.pmodel` is very heavily
 based on Benjamin Stocker's R implementation of the P-model
-\cite{Stocker:2020dh}. The `rpmodel` package is developed here:
+({cite}`Stocker:2020dh`) in the `rpmodel` package:
+[https://github.com/stineb/rpmodel](https://github.com/stineb/rpmodel)
 
-[https://github.com/stineb/rpmodel]([https://github.com/stineb/rpmodel])
 
-
-## Testing reference
+### Testing reference
 
 The ``rpmodel`` package has been used to calculate the expected values that 
 have been used in testing `pyrealm.pmodel`. This includes:
@@ -17,7 +16,7 @@ have been used in testing `pyrealm.pmodel`. This includes:
 the basic operation of this implementation, and
 * the module unit testing, provided using {mod}`pytest` in `test/test_pmodel.py`.
 
-## Differences between `pyrealm` and `rpmodel`
+### Differences between `pyrealm` and `rpmodel`
 
 The implementations differ in a number of ways:
 
@@ -41,10 +40,11 @@ The implementations differ in a number of ways:
    different methods are provided via a ``method`` argument to each class.
 
 4. When simulating C4 plants, the `rpmodel` package, the {func}`pmodel` function
-   imposes the use of a separate $J_{max}$ method
-   (`rpmodel:::calc_lue_vcmax_c4`). This is equivalent to the simple model given
-   no $\ce{CO2}$ limitation. In the {mod}`pyrealm.pmodel` implementation, C4
-   plants are set to have no $\ce{CO2}$ limitation  and then will use whichever
-   $J_{max}$ method is selected.
+   enforces a separate $J_{max}$ method (`rpmodel:::calc_lue_vcmax_c4`). This is
+   equivalent to the `simple` model given no $\ce{CO2}$ limitation and it is not
+   possible to simulate $J_{max}$ limitation for C4 plants. In the
+   {mod}`pyrealm.pmodel` implementation, C4 plants are set to have no $\ce{CO2}$
+   limitation {class}`CalcOptimalChi` and are then free to use whichever
+   $J_{max}$ method is selected in {class}`CalcLUEVcmax`.
 
 
