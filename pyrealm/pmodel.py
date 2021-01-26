@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Optional, Union
+from dataclasses import dataclass
 import dotmap
 from pyrealm.params import PARAM
 
@@ -63,7 +64,7 @@ def calc_density_h2o(tc: Union[float, np.ndarray],
     Parameters:
 
         tc: air temperature, °C
-        p: atmospheric pressure, Pa
+        patm: atmospheric pressure, Pa
 
     Other Parameters:
 
@@ -641,7 +642,6 @@ def pmodel(tc: Union[float, np.ndarray],
            kphio: Optional[float] = None,
            do_ftemp_kphio: bool = True,
            c4: bool = False,
-           method_optci: str = "prentice14",
            method_jmaxlim: str = "wang17") -> dotmap.DotMap:
 
     r"""Fits the P model to a given set of environmental parameters. 
@@ -847,12 +847,12 @@ def pmodel(tc: Union[float, np.ndarray],
 
     # Vcmax25 (vcmax normalized to PARAM.k.To)
     ftemp25_inst_vcmax = calc_ftemp_inst_vcmax(tc)
-    vcmax25_unitiabs = out_lue_vcmax.vcmax_unitiabs / ftemp25_inst_vcmax
+    vcmax25_unitiabs = out_lue_vcmax.vcmax / ftemp25_inst_vcmax
 
     # Dark respiration at growth temperature
     ftemp_inst_rd = calc_ftemp_inst_rd(tc)
     rd_unitiabs = (PARAM.Atkin.rd_to_vcmax * (ftemp_inst_rd / ftemp25_inst_vcmax) *
-                   out_lue_vcmax.vcmax_unitiabs)
+                   out_lue_vcmax.vcmax)
 
     # -----------------------------------------------------------------------
     # Quantities that scale linearly with absorbed light
@@ -876,7 +876,7 @@ def pmodel(tc: Union[float, np.ndarray],
 
         # Vcmax per unit ground area is the product of the intrinsic quantum
         # efficiency, the absorbed PAR, and 'n'
-        vcmax = iabs * out_lue_vcmax.vcmax_unitiabs
+        vcmax = iabs * out_lue_vcmax.vcmax
 
         # (vcmax normalized to 25 deg C)
         vcmax25 = iabs * vcmax25_unitiabs
@@ -904,7 +904,7 @@ def pmodel(tc: Union[float, np.ndarray],
                         mc=out_optchi.mc,
                         ci=ci,
                         lue=out_lue_vcmax.lue,
-                        vcmax_unitiabs=out_lue_vcmax.vcmax_unitiabs,
+                        vcmax_unitiabs=out_lue_vcmax.vcmax,
                         gpp=gpp,
                         iwue=iwue,
                         gs=gs,
@@ -916,15 +916,290 @@ def pmodel(tc: Union[float, np.ndarray],
     return out
 
 
-class CalcOptimalChi:
-    r"""**Calculate optimal ratios for** :math:`\chi` 
+@dataclass
+class IabsScaled:
+    """
+    A data class holding variables that scale linearly with absorbed
+    irradiance (:math:`I_{abs}`). When a PModel instance is created, an
+    instance is created (`PModel.unit_iabs`) that contains values per unit
+    absorbed radiation. The PModel.scale_iabs method can then be used to
+    generate a scaled instance by providing estimates for PPFD and FAPAR.
 
-    This class provides methods to estimate: 
+    Attributes:
+
+        rd: Dark respiration
+        vcmax: Maximum rate of carboxylation
+        vcmax25: Maximum rate of carboxylation at standard temperature
+        lue: Light use efficiency
+        jmax: Maximum rate of electron transport.
+        gs: Stomatal conductance
+        gpp: Alias for light use efficiency
+    """
+
+    rd: Union[float, np.ndarray] = None
+    vcmax: Union[float, np.ndarray] = None
+    vcmax25: Union[float, np.ndarray] = None
+    lue: Union[float, np.ndarray] = None
+    jmax: Union[float, np.ndarray] = None
+    gs: Union[float, np.ndarray] = None
+
+    @property
+    def gpp(self) -> Union[float, np.ndarray]:
+        return self.lue
+
+
+class PModel:
+
+    r"""Fits the P model to a given set of environmental parameters. 
+    See the extended description in :ref:`pmodel` for detailed explanations
+    of the parameter options and calculation of the P-model.
+
+    Args:
+
+        tc: Temperature, relevant for photosynthesis (°C)
+        vpd: Vapour pressure deficit (Pa)
+        co2: Atmospheric CO2 concentration (ppm)
+        patm: Atmospheric pressure (Pa).
+        kphio: (Optional) Apparent quantum yield efficiency (unitless).
+        soilmstress: (Optional) Relative soil moisture as a fraction of field capacity (unitless).
+        c4: (Optional) By default (`c4=False`), the C3 photosynthetic pathway is used.
+        method_jmaxlim: (Optional) Method for :math:`J_{max}` limitation,
+            defaulting to `wang_17`.
+        do_ftemp_kphio: (Optional) A logical specifying whether temperature-dependence
+            of quantum yield efficiency after Bernacchi et al., 2003 is to be
+            accounted for. Defaults to `TRUE`.
+
+    Returns:
+
+        A ``dotmap.DotMap`` object containing:
+
+        - ``ca``: Ambient CO2 expressed as partial pressure (Pa)
+        - ``gammastar``: Photorespiratory compensation point \eqn{\Gamma*}, (Pa, see :func:`calc_gammastar`).
+        - ``kmm``: Michaelis-Menten coefficient :math:`K` for photosynthesis (Pa, see :func:`calc_kmm`).
+        - ``ns_star``: Relative viscosity of water (unitless, see :ref:`ns_star`).
+        - ``chi``: Optimal ratio of leaf internal to ambient CO2 (unitless, see :ref:`opt_chi`).
+        - ``ci``: Leaf-internal CO2 partial pressure (Pa), calculated as \eqn{(\chi ca)}. 
+        - ``lue``: Light use efficiency (g C / mol photons), (see :ref:`lue`) 
+        - ``mj``: Factor in the light-limited assimilation rate function (see :class:`CalcOptimalChi`)
+        - ``mc``: Factor in the Rubisco-limited assimilation rate function (see :class:`CalcOptimalChi`)
+        - ``gpp``: Gross primary production (g C m-2) (see :ref:`iabs_scaling`)
+        - ``iwue``: Intrinsic water use efficiency (iWUE, Pa)
+        - ``gs``: Stomatal conductance (gs, in mol C m-2 Pa-1)
+        - ``vcmax``: Maximum carboxylation capacity :math:`Vcmax` (mol C m-2).
+        - ``vcmax25``: Maximum carboxylation capacity \eqn{Vcmax} (mol C m-2) at standard temperature.
+        - ``jmax``: The maximum rate of RuBP regeneration.
+        - ``rd``: Dark respiration :math:`Rd` (mol C m-2).
+
+        The option ``method_jmaxlim="smith19"`` adds ``omega`` and ``omegastar``
+        (see :class:`CalcLUEVcmax`)
+        
+    Examples:
+
+        >>> mod_c3 = pmodel(tc=20, vpd=1000, co2=400, fapar=1, ppfd=300, elv=0)
+        >>> # Key variables from pmodel
+        >>> round(mod_c3.ci, 5)
+        28.14209
+        >>> round(mod_c3.ca, 5)
+        40.53
+        >>> round(mod_c3.chi, 5)
+        0.69435
+        >>> round(mod_c3.gpp, 5)
+        76.42545
+        >>> mod_c4 = pmodel(tc=20, vpd=1000, co2=400, fapar=1, ppfd=300, elv=0, 
+        ...                 c4=True, method_jmaxlim='none')
+        >>> # Key variables from pmodel
+        >>> round(mod_c4.ci, 5)
+        40.53
+        >>> round(mod_c4.ca, 5)
+        40.53
+        >>> round(mod_c4.chi, 5)
+        1.0
+        >>> round(mod_c4.gpp, 5)
+        12.90736
+
+    References:
+
+        Bernacchi, C. J., Pimentel, C., and Long, S. P.:  In vivo temperature response funtions  of  parameters
+        required  to  model  RuBP-limited  photosynthesis,  Plant  Cell Environ., 26, 1419–1430, 2003
+
+        Heskel,  M.,  O’Sullivan,  O.,  Reich,  P.,  Tjoelker,  M.,  Weerasinghe,  L.,  Penillard,  A.,
+        Egerton, J., Creek, D., Bloomfield, K., Xiang, J., Sinca, F., Stangl, Z., Martinez-De La Torre, A.,
+        Griffin, K., Huntingford, C., Hurry, V., Meir, P., Turnbull, M.,and Atkin, O.:  Convergence in the
+        temperature response of leaf respiration across biomes and plant functional types, Proceedings of
+        the National Academy of Sciences, 113,  3832–3837,  doi:10.1073/pnas.1520282113,2016.
+
+        Huber,  M.  L.,  Perkins,  R.  A.,  Laesecke,  A.,  Friend,  D.  G.,  Sengers,  J.  V.,  Assael, M. J.,
+        Metaxa, I. N., Vogel, E., Mares, R., and Miyagawa, K.:  New international formulation for the viscosity
+        of H2O, Journal of Physical and Chemical ReferenceData, 38, 101–125, 2009
+
+        Prentice,  I. C.,  Dong,  N.,  Gleason,  S. M.,  Maire,  V.,  and Wright,  I. J.:  Balancing the costs
+        of carbon gain and water transport:  testing a new theoretical framework for  plant  functional  ecology,
+        Ecology  Letters,  17,  82–91,  10.1111/ele.12211,http://dx.doi.org/10.1111/ele.12211, 2014.
+
+        Wang, H., Prentice, I. C., Keenan, T. F., Davis, T. W., Wright, I. J., Cornwell, W. K.,Evans, B. J.,
+        and Peng, C.:  Towards a universal model for carbon dioxide uptake by plants, Nat Plants, 3, 734–741, 2017.
+
+        Atkin, O. K., et al.:  Global variability in leaf respiration in relation to climate, plant functional
+        types and leaf traits, New Phytologist, 206, 614–636, doi:10.1111/nph.13253,
+
+        Smith, N. G., Keenan, T. F., Colin Prentice, I. , Wang, H. , Wright, I. J., Niinemets, U. , Crous, K. Y.,
+        Domingues, T. F., Guerrieri, R. , Yoko Ishida, F. , Kattge, J. , Kruger, E. L., Maire, V. , Rogers, A. ,
+        Serbin, S. P., Tarvainen, L. , Togashi, H. F., Townsend, P. A., Wang, M. , Weerasinghe, L. K. and Zhou, S.
+        (2019), Global photosynthetic capacity is optimized to the environment. Ecol Lett, 22: 506-517.
+        doi:10.1111/ele.13210
+
+        Stocker, B. et al. Geoscientific Model Development Discussions (in prep.)
+
+    """
+
+    def __init__(self, tc: Union[float, np.ndarray],
+                 vpd: Union[float, np.ndarray],
+                 co2: Union[float, np.ndarray],
+                 patm: Optional[Union[float, np.ndarray]],
+                 soilmstress: Optional[Union[float, np.ndarray]] = None,
+                 kphio: Optional[float] = None,
+                 do_ftemp_kphio: bool = True,
+                 c4: bool = False,
+                 method_jmaxlim: str = "wang17"):
+
+        self.shape = check_input_shapes(tc, vpd, co2, patm, soilmstress)
+
+        # -------------------------
+        # Set soil moisture default if needed
+        # -------------------------
+
+        if soilmstress is None:
+            soilmstress = 1.0
+            do_soilmstress = False
+        else:
+            do_soilmstress = True
+
+        # kphio defaults:
+        if kphio is None:
+            if not do_ftemp_kphio:
+                self.kphio = 0.049977
+            elif do_soilmstress:
+                self.kphio = 0.087182
+            else:
+                self.kphio = 0.081785
+        else:
+            self.kphio = kphio
+
+        # -----------------------------------------------------------------------
+        # Temperature dependence of quantum yield efficiency
+        # -----------------------------------------------------------------------
+        # 'do_ftemp_kphio' is not actually a stress function, but is the temperature-
+        # dependency of the quantum yield efficiency after Bernacchi et al., 2003
+
+        if do_ftemp_kphio:
+            self.ftemp_kphio = calc_ftemp_kphio(tc, c4)
+        else:
+            self.ftemp_kphio = 1.0
+
+        # -----------------------------------------------------------------------
+        # Photosynthesis model parameters depending on temperature, pressure, and CO2.
+        # -----------------------------------------------------------------------
+
+        # ambient CO2 partial pressure (Pa)
+        self.ca = calc_co2_to_ca(co2, patm)
+        # photorespiratory compensation point - Gamma-star (Pa)
+        self.gammastar = calc_gammastar(tc, patm)
+        # Michaelis-Menten coef. (Pa)
+        self.kmm = calc_kmm(tc, patm)
+
+        # viscosity correction factor relative to standards
+        visc_env = calc_viscosity_h2o(tc, patm)
+        visc_std = calc_viscosity_h2o(PARAM.k.To, PARAM.k.Po)
+        self.ns_star = visc_env / visc_std   # (unitless)
+
+        # -----------------------------------------------------------------------
+        # Optimal ci
+        # The heart of the P-model: calculate ci:ca ratio (chi) and additional terms
+        # -----------------------------------------------------------------------
+
+        if c4:
+            method_optci = "c4"
+        else:
+            method_optci = "prentice14"
+
+        self.optchi = CalcOptimalChi(self.kmm, self.gammastar, self.ns_star,
+                                     self.ca, vpd, method=method_optci)
+
+        # -----------------------------------------------------------------------
+        # Corollary predictions
+        # -----------------------------------------------------------------------
+
+        # intrinsic water use efficiency (in Pa)
+        self.iwue = (self.ca - self.optchi.ci) / 1.6
+
+        # -----------------------------------------------------------------------
+        # Vcmax and light use efficiency
+        # -----------------------------------------------------------------------
+        lue_vcmax = CalcLUEVcmax(self.optchi, self.kphio,
+                                 self.ftemp_kphio, soilmstress,
+                                 method=method_jmaxlim)
+
+        # -----------------------------------------------------------------------
+        # Populate an instance of IabsScaled at values per unit iabs
+        # -----------------------------------------------------------------------
+        self.unit_iabs = IabsScaled(lue=lue_vcmax.lue, vcmax=lue_vcmax.vcmax)
+
+        # Vcmax25 (vcmax normalized to PARAM.k.To)
+        ftemp25_inst_vcmax = calc_ftemp_inst_vcmax(tc)
+        self.unit_iabs.vcmax25 = self.unit_iabs.vcmax / ftemp25_inst_vcmax
+
+        # Dark respiration at growth temperature
+        ftemp_inst_rd = calc_ftemp_inst_rd(tc)
+        self.unit_iabs.rd = (PARAM.Atkin.rd_to_vcmax *
+                             (ftemp_inst_rd / ftemp25_inst_vcmax) *
+                             self.unit_iabs.vcmax)
+
+        # Jmax using again A_J = A_C, handling edges cases
+        fact_jmaxlim = (self.unit_iabs.vcmax * (self.optchi.ci + 2.0 * self.gammastar) /
+                        (self.kphio * (self.optchi.ci + self.kmm)))
+        fact_jmaxlim = (1.0 / fact_jmaxlim) ** 2 - 1.0
+        jmax = np.empty_like(fact_jmaxlim)
+        mask = fact_jmaxlim > 0
+        jmax[mask] = 4.0 * self.kphio / np.sqrt(fact_jmaxlim[mask])
+        jmax[~ mask] = np.infty
+
+        # Revert to scalar if needed and store
+        self.unit_iabs.jmax = jmax.item() if np.ndim(jmax) == 0 else jmax
+
+        # Stomatal conductance
+        if c4 and self.shape == 1:
+            self.unit_iabs.gs = np.infty
+        elif c4:
+            self.unit_iabs.gs = np.ones(self.shape) * np.infty
+        else:
+            self.unit_iabs.gs = (self.unit_iabs.lue / PARAM.k.c_molmass) / (self.ca - self.optchi.ci)
+
+    def scale_iabs(self, fapar, ppfd):
+
+        # Check input shapes against each other and an existing calculated value
+        _ = check_input_shapes(ppfd, fapar, self.unit_iabs.lue)
+
+        # Calcuate absorbed irradiance
+        iabs = fapar * ppfd
+
+        return IabsScaled(lue=iabs * self.unit_iabs.lue,
+                          vcmax=iabs * self.unit_iabs.vcmax,
+                          vcmax25=iabs * self.unit_iabs.vcmax25,
+                          rd=iabs * self.unit_iabs.rd,
+                          jmax=iabs * self.unit_iabs.jmax,
+                          gs=iabs * self.unit_iabs.gs)
+
+
+class CalcOptimalChi:
+    r"""Calculate the optimal :math:`\chi` and :math:`\ce{CO2}` limitation
+    factors. In more details, the values are:
 
     - The optimal ratio of leaf internal to ambient :math:`\ce{CO2}` partial
       pressure (:math:`\chi = c_i/c_a`).
-    - The :math:`\ce{CO2}` limitation term for light-limited assimilation  (:math:`m_j`).
-    - The :math:`\ce{CO2}` limitation term for Rubisco-limited assimilation  (:math:`m_c`).
+    - The :math:`\ce{CO2}` limitation term for light-limited
+      assimilation (:math:`m_j`).
+    - The :math:`\ce{CO2}` limitation term for Rubisco-limited
+      assimilation  (:math:`m_c`).
 
     The chosen method is automatically used to estimate these values when an
     instance is created.
@@ -983,45 +1258,55 @@ class CalcOptimalChi:
         # Check inputs are broadcastable
         self.shape = check_input_shapes(kmm, gammastar, ns_star, ca, vpd)
 
-        self.kmm = kmm
-        self.gammastar = gammastar
-        self.ns_star = ns_star
-        self.ca = ca
-        self.vpd = vpd
-        self.method = method
-        self.beta = PARAM.stocker19.beta
+        # Collect the input arguments to pass to methods - don't want
+        # to store them as instance attributes to avoid duplication
+        args = locals()
+        del args['self']
 
-        # return values
+        # set attribute defaults
         self.chi = None
+        self.ci = None
         self.mc = None
         self.mj = None
         self.mjoc = None
 
+        # Identify and run the selected method
+        self.method = method
         all_methods = {'prentice14': self.prentice14, 'c4': self.c4}
 
-        # Run the selected method.
         if self.method in all_methods:
             this_method = all_methods[self.method]
-            this_method()
+            this_method(**args)
         else:
             raise ValueError(f"CalcOptimalChi: method argument '{method}' invalid.")
 
-    def c4(self):
+        # Calculate internal CO2 partial pressure
+        self.ci = self.chi * ca
+
+    def c4(self, **kwargs):
         r"""This method simply sets :math:`\chi = m_j = m_c = m_{joc} = 1.0` to
         capture the boosted :math:`\ce{CO2}` concentrations at the chloropolast in C4
         photosynthesis.
         """
 
-        # Dummy values to represent c4 pathway. As these values are constant
-        # regardless of inputs - there is no need to represent the shape of
-        # those inputs and these values can be stored as scalars.
+        # Dummy values to represent c4 pathway. These need to retain any
+        # dimensions of the original inputs - if ftemp_kphio is set to 1.0
+        # (i.e. no temperature correction) then the dimensions of tc are lost
+        # and the input to soilmstress might be scalar, so enforce the shape.
+        # Note that rpmodel_1.0.6 collapses array inputs at this point.
 
-        self.chi = 1.0
-        self.mc = 1.0
-        self.mj = 1.0
-        self.mjoc = 1.0
+        if self.shape == 1:
+            self.chi = 1.0
+            self.mc = 1.0
+            self.mj = 1.0
+            self.mjoc = 1.0
+        else:
+            self.chi = np.ones(self.shape)
+            self.mc = np.ones(self.shape)
+            self.mj = np.ones(self.shape)
+            self.mjoc = np.ones(self.shape)
 
-    def prentice14(self):
+    def prentice14(self, **kwargs):
         r"""This method calculates key variables as follows:
 
         Optimal :math:`\chi` is calculated following Equation 8 in
@@ -1057,32 +1342,33 @@ class CalcOptimalChi:
         """
 
         # Avoid negative VPD (dew conditions)
-        vpd = np.clip(self.vpd, 0, None)
+        vpd = np.clip(kwargs['vpd'], 0, None)
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        xi = np.sqrt((self.beta * (self.kmm + self.gammastar)) / (1.6 * self.ns_star))
-        self.chi = (self.gammastar / self.ca + 
-                    (1.0 - self.gammastar / self.ca) * xi / (xi + np.sqrt(vpd)))
+        xi = np.sqrt((PARAM.stocker19.beta * (kwargs['kmm'] + kwargs['gammastar']))
+                     / (1.6 * kwargs['ns_star']))
+        self.chi = (kwargs['gammastar'] / kwargs['ca'] +
+                    (1.0 - kwargs['gammastar'] / kwargs['ca']) * xi / (xi + np.sqrt(vpd)))
 
         # Define variable substitutes:
-        vdcg = self.ca - self.gammastar
-        vacg = self.ca + 2.0 * self.gammastar
-        vbkg = self.beta * (self.kmm + self.gammastar)
+        vdcg = kwargs['ca'] - kwargs['gammastar']
+        vacg = kwargs['ca'] + 2.0 * kwargs['gammastar']
+        vbkg = PARAM.stocker19.beta * (kwargs['kmm'] + kwargs['gammastar'])
 
-        # Calculate mj, based on the mc' formulation (see Regressing_LUE.pdf)
+        # Calculate mj
         # NOTE: this differs from rpmodel, which uses length not dim here, so
         # unwrapped matrix inputs. Also, rpmodel includes a check for vpd > 0,
         # but this is guaranteed by clip above (also true in rpmodel).
 
-        vsr = np.sqrt(1.6 * self.ns_star * vpd / vbkg)
-        mj = vdcg / (vacg + 3.0 * self.gammastar * vsr)
-        mj = np.where(np.logical_and(self.ns_star > 0, vbkg > 0), mj, np.nan)
+        vsr = np.sqrt(1.6 * kwargs['ns_star'] * vpd / vbkg)
+        mj = vdcg / (vacg + 3.0 * kwargs['gammastar']* vsr)
+        mj = np.where(np.logical_and(kwargs['ns_star'] > 0, vbkg > 0), mj, np.nan)
         # np.where _always_ returns an array, so catch scalars.
         self.mj = mj.item() if np.ndim(mj) == 0 else mj
 
         # alternative variables
-        gamma = self.gammastar / self.ca
-        kappa = self.kmm / self.ca
+        gamma = kwargs['gammastar'] / kwargs['ca']
+        kappa = kwargs['kmm'] / kwargs['ca']
 
         # mc and mj:mv
         self.mc = (self.chi - gamma) / (self.chi + kappa)
@@ -1090,7 +1376,7 @@ class CalcOptimalChi:
 
 
 class CalcLUEVcmax:
-    r"""This class provides methods to estimate light use efficiency and
+    r"""Estimate light use efficiency and maximum carboxylation rate
     :math:`V_{cmax}`. The class implements:
 
     - :math:`J_{max}` limitation of light use efficiency, providing two
@@ -1127,9 +1413,9 @@ class CalcLUEVcmax:
             (see :func:`calc_soilmstress`).
         method (str): method to apply :math:`J_{max}` limitation (default: ``wang17``,
             or ``smith19`` or ``none``)
-        m_jlim (float): :math:`J_{max}` limitation factor, calculated using the method.
+        mjlim (float): :math:`J_{max}` limitation factor, calculated using the method.
         lue (float): calculated light use efficiency per unit absolute irradiance. 
-        vcmax_unitiabs (float): calculated maximum carboxylation rate per unit absolute 
+        vcmax (float): calculated maximum carboxylation rate per unit absolute
             irradiance.
         omega (float): component of :math:`J_{max}` calculation (:cite:`Smith:2019dv`).
         omega_star (float):  component of :math:`J_{max}` calculation (:cite:`Smith:2019dv`).
@@ -1149,14 +1435,14 @@ class CalcLUEVcmax:
         ...                         soilmstress = 1, method='wang17')
         >>> round(out_wang.lue, 5)
         0.25475
-        >>> round(out_wang.vcmax_unitiabs, 6)
+        >>> round(out_wang.vcmax, 6)
         0.063488
         >>> # Using Smith et al 2019 
         >>> out_smith = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
         ...                          soilmstress = 1, method='smith19')
         >>> round(out_smith.lue, 6)
         0.086569
-        >>> round(out_smith.vcmax_unitiabs, 6)
+        >>> round(out_smith.vcmax, 6)
         0.021574
         >>> round(out_smith.omega, 5)
         1.10204
@@ -1167,7 +1453,7 @@ class CalcLUEVcmax:
         ...                    soilmstress = 1, method='none')
         >>> round(out_none.lue, 6)
         0.458998
-        >>> round(out_none.vcmax_unitiabs, 6)
+        >>> round(out_none.vcmax, 6)
         0.11439
 
     """
@@ -1192,7 +1478,7 @@ class CalcLUEVcmax:
         self.method = method
         self.mjlim = None
         self.lue = None
-        self.vcmax_unitiabs = None
+        self.vcmax = None
         self.omega = None
         self.omega_star = None
 
@@ -1217,7 +1503,7 @@ class CalcLUEVcmax:
                         PARAM.k.c_molmass * self.soilmstress)
 
             # Back calculate Vcmax normalised per unit absorbed PPFD (assuming iabs=1)
-            self.vcmax_unitiabs = self.lue / (self.optchi.mc * PARAM.k.c_molmass)
+            self.vcmax = self.lue / (self.optchi.mc * PARAM.k.c_molmass)
 
         else:
             raise ValueError(f"CalcLUEVcmax: method argument '{method}' invalid.")
