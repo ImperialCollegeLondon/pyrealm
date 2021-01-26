@@ -2,4 +2,5 @@ numpy
 dotmap
 pyyaml
 typing
+dataclasses
 pytest
