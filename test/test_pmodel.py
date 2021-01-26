@@ -1,3 +1,4 @@
+import sys
 import pytest
 import numpy as np
 import yaml
@@ -444,7 +445,7 @@ def test_calc_lue_vcmax(request, values, soilmstress, ftemp_kphio,
     expected = values['jmax-' + name]
 
     assert np.allclose(ret.lue, expected['lue'])
-    assert np.allclose(ret.vcmax_unitiabs, expected['vcmax_unitiabs'])
+    assert np.allclose(ret.vcmax, expected['vcmax_unitiabs'])
 
     if luevcmax_method == 'smith19':
         assert np.allclose(ret.omega, expected['omega'])
@@ -499,14 +500,13 @@ def test_rpmodel_c3(request, values, soilmstress, ftemp_kphio, luevcmax_method, 
                         meanalpha=meanalpha,
                         do_ftemp_kphio=ftemp_kphio,
                         method_jmaxlim=luevcmax_method,
-                        method_optci='prentice14',
                         fapar=values['fapar_sc'],
                         ppfd=values['ppfd_sc'])
 
     # Find the expected values, extracting the combination from the request
     name = request.node.name
     name = name[(name.find('[') + 1):-1]
-    expected = values['rpmodel-c3-' + name]
+    expected = values['rpmodel-c3-' + name + '-iabs']
 
     assert np.allclose(ret.gpp, expected['gpp'])
     assert np.allclose(ret.vcmax, expected['vcmax'])
@@ -514,3 +514,163 @@ def test_rpmodel_c3(request, values, soilmstress, ftemp_kphio, luevcmax_method, 
     assert np.allclose(ret.rd, expected['rd'])
     assert np.allclose(ret.jmax, expected['jmax'])
     assert np.allclose(ret.iwue, expected['iwue'])
+
+
+## Testing PModel class
+
+@pytest.mark.parametrize(
+    'soilmstress',
+    [False, True],
+    ids=['sm-off', 'sm-on']
+)
+@pytest.mark.parametrize(
+    'ftemp_kphio',
+    [True, False],
+    ids=['fkphio-on', 'fkphio-off']
+)
+@pytest.mark.parametrize(
+    'luevcmax_method',
+    ['wang17', 'smith19', 'none'],
+    ids=['wang17', 'smith19', 'none']
+)
+@pytest.mark.parametrize(
+    'variables',
+    [dict(tc='tc_sc', vpd='vpd_sc', co2='co2_sc', patm='patm_sc'),
+     dict(tc='tc_ar', vpd='vpd_ar', co2='co2_ar', patm='patm_ar')],
+    ids=['sc', 'ar']
+)
+def test_pmodel_class_c3(request, values, soilmstress, ftemp_kphio, luevcmax_method, variables):
+
+    # Get the main vars
+    kwargs = {k: values[v] for k, v in variables.items()}
+
+    if soilmstress:
+        soilmstress = pmodel.calc_soilmstress(values['soilm_sc'], values['meanalpha_sc'])
+    else:
+        soilmstress = None
+
+    ret = pmodel.PModel(**kwargs,
+                        kphio=0.05,
+                        soilmstress=soilmstress,
+                        do_ftemp_kphio=ftemp_kphio,
+                        method_jmaxlim=luevcmax_method)
+
+    # Find the expected values, extracting the combination from the request
+    name = request.node.name
+    name = name[(name.find('[') + 1):-1]
+    expected = values['rpmodel-c3-' + name + '-unitiabs']
+
+    # Test values - two values calculated in main rpmodel function
+    # so can only test here - ci and iwue
+    assert np.allclose(ret.iwue, expected['iwue'])
+    assert np.allclose(ret.optchi.ci, expected['ci'])
+
+    # - and six values that are scaled by IABS - rpmodel enforces scaling
+    # where PModel can do it post hoc from unit_iabs values, so two
+    # rpmodel runs are used to test the unit values and scaled.
+    assert np.allclose(ret.unit_iabs.gpp, expected['gpp'])
+    assert np.allclose(ret.unit_iabs.vcmax, expected['vcmax'])
+    assert np.allclose(ret.unit_iabs.vcmax25, expected['vcmax25'])
+    assert np.allclose(ret.unit_iabs.rd, expected['rd'])
+    # assert np.allclose(ret.unit_iabs.jmax, expected['jmax'])
+    assert np.allclose(ret.unit_iabs.gs, expected['gs'])
+
+    # Check Iabs scaling
+    iabs = ret.scale_iabs(values['fapar_sc'], values['ppfd_sc'])
+
+    # Find the expected values, extracting the combination from the request
+    expected = values['rpmodel-c3-' + name + '-iabs']
+
+    assert np.allclose(iabs.gpp, expected['gpp'])
+    assert np.allclose(iabs.vcmax, expected['vcmax'])
+    assert np.allclose(iabs.vcmax25, expected['vcmax25'])
+    assert np.allclose(iabs.rd, expected['rd'])
+    # assert np.allclose(iabs.jmax, expected['jmax'])
+    assert np.allclose(iabs.gs, expected['gs'])
+
+
+
+## Testing PModel class with C4
+
+@pytest.mark.parametrize(
+    'soilmstress',
+    [False, True],
+    ids=['sm-off', 'sm-on']
+)
+@pytest.mark.parametrize(
+    'ftemp_kphio',
+    [True, False],
+    ids=['fkphio-on', 'fkphio-off']
+)
+@pytest.mark.parametrize(
+    'variables',
+    [dict(tc='tc_sc', vpd='vpd_sc', co2='co2_sc', patm='patm_sc'),
+     dict(tc='tc_ar', vpd='vpd_ar', co2='co2_ar', patm='patm_ar')],
+    ids=['sc', 'ar']
+)
+def test_pmodel_class_c4(request, values, soilmstress, ftemp_kphio, variables):
+
+    # Get the main vars
+    kwargs = {k: values[v] for k, v in variables.items()}
+
+    if soilmstress:
+        soilmstress = pmodel.calc_soilmstress(values['soilm_sc'], values['meanalpha_sc'])
+    else:
+        soilmstress = None
+
+    ret = pmodel.PModel(**kwargs,
+                        kphio=0.05,
+                        soilmstress=soilmstress,
+                        do_ftemp_kphio=ftemp_kphio,
+                        method_jmaxlim='none',  # enforced in rpmodel.
+                        c4=True)
+
+    # Find the expected values, extracting the combination from the request
+    name = request.node.name
+    name = name[(name.find('[') + 1):-1]
+    expected = values['rpmodel-c4-' + name + '-unitiabs']
+
+    # Test values - two values calculated in main rpmodel function
+    # so can only test here - ci and iwue
+    assert np.allclose(ret.iwue, expected['iwue'])
+    assert np.allclose(ret.optchi.ci, expected['ci'])
+
+    # - and six values that are scaled by IABS - rpmodel enforces scaling
+    # where PModel can do it post hoc from unit_iabs values, so two
+    # rpmodel runs are used to test the unit values and scaled.
+
+    # There is currently a bug in rpmodel.rpmodel that drops the
+    # dimensions of inputs for c4. If c4 is True, then  optchi returns
+    # scalar values, soilm might have dimensions but is scalar in this test
+    # and ftemp_kphio does have dimensions but not when do_kphio is False,
+    # so combinations with array inputs and kphio-off ('ar-fkphio-off') only
+    # return the first value of the array.
+
+    def bugfix(vals):
+
+        print(name, vals, file=sys.stderr)
+
+        if 'ar-fkphio-off' in name:
+            return vals[0]
+        else:
+            return vals
+
+    assert np.allclose(bugfix(ret.unit_iabs.gpp), expected['gpp'])  # == lue
+    assert np.allclose(bugfix(ret.unit_iabs.vcmax), expected['vcmax'])
+    assert np.allclose(bugfix(ret.unit_iabs.vcmax25), expected['vcmax25'])
+    assert np.allclose(bugfix(ret.unit_iabs.rd), expected['rd'])
+    assert np.allclose(bugfix(ret.unit_iabs.jmax), expected['jmax'])
+    assert np.allclose(ret.unit_iabs.gs, expected['gs'])
+
+    # Check Iabs scaling
+    iabs = ret.scale_iabs(values['fapar_sc'], values['ppfd_sc'])
+
+    # Find the expected values, extracting the combination from the request
+    expected = values['rpmodel-c4-' + name + '-iabs']
+
+    assert np.allclose(bugfix(iabs.gpp), expected['gpp'])
+    assert np.allclose(bugfix(iabs.vcmax), expected['vcmax'])
+    assert np.allclose(bugfix(iabs.vcmax25), expected['vcmax25'])
+    assert np.allclose(bugfix(iabs.rd), expected['rd'])
+    assert np.allclose(bugfix(iabs.jmax), expected['jmax'])
+    assert np.allclose(iabs.gs, expected['gs'])

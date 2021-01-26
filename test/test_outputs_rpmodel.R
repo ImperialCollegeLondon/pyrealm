@@ -214,13 +214,15 @@ for (rw in seq(nrow(rpmodel_c3))){
     v$do_soilmstress <- do_soilmstress
     v$method_jmaxlim <- inputs$lm
     v$method_optci <- 'prentice14'
-    v$fapar <- values$fapar_sc
-    v$ppfd <- values$ppfd_sc
+    v$fapar <- 1
+    v$ppfd <- 1
     # NOTE - the default value of bpar_soilm passed into calc_soilmstress
     # by rpmodel is different from the default value of bpar set in the
     # function definition, so standardise that here
     v$bpar_soilm <- 0.685
 
+    # Run the model with Iabs = 1 (FAPAR * PPFD = 1) to get
+    # values to compare to the unit_iabs values
     ret <- do.call(rpmodel, v)
 
     # The rpmodel implementation is sensitive to rounding error when
@@ -229,10 +231,97 @@ for (rw in seq(nrow(rpmodel_c3))){
     # so trapping that here.
     ret$jmax <- ifelse(is.nan(ret$jmax), Inf, ret$jmax)
 
-    test_name <- paste('rpmodel-c3', paste(inputs, collapse='-'), sep='-')
+    test_name <- paste('rpmodel-c3', paste(inputs, collapse='-'), 'unitiabs', sep='-')
     values[[test_name]] <-ret
 
+    # Rerun with some actual scalar PPFD and Iabs values to validate scaling
+    v$fapar <- values$fapar_sc
+    v$ppfd <- values$ppfd_sc
+    ret <- do.call(rpmodel, v)
+
+    # The rpmodel implementation is sensitive to rounding error when
+    # using the simple method. fact_jmaxlim can be (just) > 1, leading to
+    # sqrt(-tinything) = NaN. This leads to differences in pmodel outputs,
+    # so trapping that here.
+    ret$jmax <- ifelse(is.nan(ret$jmax), Inf, ret$jmax)
+
+    test_name <- paste('rpmodel-c3', paste(inputs, collapse='-'), 'iabs', sep='-')
+    values[[test_name]] <-ret
+
+
 }
+
+# Repeat for C4 - can't use different Jmax methods, so drop that
+
+rpmodel_c4 <- expand.grid(vr=names(vars),
+                          ft=ft,
+                          sm=sm,
+                          stringsAsFactors=FALSE)
+
+
+for (rw in seq(nrow(rpmodel_c4))){
+
+    inputs <- as.list(rpmodel_c4[rw,])
+
+    if (inputs$ft == 'fkphio-off'){
+        do_ftemp_kphio <- FALSE
+    } else {
+        do_ftemp_kphio <- TRUE
+    }
+
+    # Soilmstress
+    if (inputs$sm == 'sm-off'){
+        do_soilmstress <- FALSE
+    } else {
+        do_soilmstress <- TRUE
+    }
+
+    v <- vars[[inputs$vr]]
+    v$c4 <- TRUE
+    v$kphio <- 0.05
+    v$soilm <- values$soilm_sc
+    v$meanalpha <- values$meanalpha_sc
+    v$do_ftemp_kphio <- do_ftemp_kphio
+    v$do_soilmstress <- do_soilmstress
+    v$method_optci <- 'c4'
+    v$fapar <- 1
+    v$ppfd <- 1
+    # NOTE - the default value of bpar_soilm passed into calc_soilmstress
+    # by rpmodel is different from the default value of bpar set in the
+    # function definition, so standardise that here
+    v$bpar_soilm <- 0.685
+
+    # Run the model with Iabs = 1 (FAPAR * PPFD = 1) to get
+    # values to compare to the unit_iabs values
+    ret <- do.call(rpmodel, v)
+
+    # The rpmodel implementation is sensitive to rounding error when
+    # using the simple method. fact_jmaxlim can be (just) > 1, leading to
+    # sqrt(-tinything) = NaN. This leads to differences in pmodel outputs,
+    # so trapping that here.
+    ret$jmax <- ifelse(is.nan(ret$jmax), Inf, ret$jmax)
+
+    test_name <- paste('rpmodel-c4', paste(inputs, collapse='-'), 'unitiabs', sep='-')
+    values[[test_name]] <-ret
+
+    # Rerun with some actual scalar PPFD and Iabs values to validate scaling
+    v$fapar <- values$fapar_sc
+    v$ppfd <- values$ppfd_sc
+    ret <- do.call(rpmodel, v)
+
+    # The rpmodel implementation is sensitive to rounding error when
+    # using the simple method. fact_jmaxlim can be (just) > 1, leading to
+    # sqrt(-tinything) = NaN. This leads to differences in pmodel outputs,
+    # so trapping that here.
+    ret$jmax <- ifelse(is.nan(ret$jmax), Inf, ret$jmax)
+
+    test_name <- paste('rpmodel-c4', paste(inputs, collapse='-'), 'iabs', sep='-')
+    values[[test_name]] <-ret
+
+
+}
+
+
 
 # Save values to YAML for use in python tests.
 write_yaml(values, 'test_outputs_rpmodel.yaml', precision=10)
