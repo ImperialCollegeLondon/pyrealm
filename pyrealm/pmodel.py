@@ -1199,16 +1199,15 @@ class PModel:
         self.kmm = calc_kmm(tc, patm)
 
         # viscosity correction factor relative to standards
-        visc_env = calc_viscosity_h2o(tc, patm)
-        visc_std = calc_viscosity_h2o(PARAM.k.To, PARAM.k.Po)
-        self.ns_star = visc_env / visc_std   # (unitless)
+        self.ns_star = calc_ns_star(tc, patm) # (unitless)
 
         # -----------------------------------------------------------------------
         # Optimal ci
         # The heart of the P-model: calculate ci:ca ratio (chi) and additional terms
         # -----------------------------------------------------------------------
+        self.c4 = c4
 
-        if c4:
+        if self.c4:
             method_optci = "c4"
         else:
             method_optci = "prentice14"
@@ -1265,20 +1264,11 @@ class PModel:
         else:
             self.unit_iabs.gs = (self.unit_iabs.lue / PARAM.k.c_molmass) / (self.ca - self.optchi.ci)
 
-    def scale_iabs(self, fapar, ppfd):
+    def __repr__(self):
 
-        # Check input shapes against each other and an existing calculated value
-        _ = check_input_shapes(ppfd, fapar, self.unit_iabs.lue)
-
-        # Calcuate absorbed irradiance
-        iabs = fapar * ppfd
-
-        return IabsScaled(lue=iabs * self.unit_iabs.lue,
-                          vcmax=iabs * self.unit_iabs.vcmax,
-                          vcmax25=iabs * self.unit_iabs.vcmax25,
-                          rd=iabs * self.unit_iabs.rd,
-                          jmax=iabs * self.unit_iabs.jmax,
-                          gs=iabs * self.unit_iabs.gs)
+        return (f"PModel(kphio={self.kphio}, c4={self.c4}, gammastar={self.gammastar}, "
+                f"kmm={self.kmm}, ca={self.ca}, ns_star={self.ns_star}, "
+                f"ftemp_kphio={self.ftemp_kphio}, iwue={self.iwue})")
 
 
 class CalcOptimalChi:
@@ -1373,6 +1363,10 @@ class CalcOptimalChi:
 
         # Calculate internal CO2 partial pressure
         self.ci = self.chi * ca
+
+    def __repr__(self):
+
+        return f"CalcOptimalChi(chi={self.chi}, ci={self.ci}, mc={self.mc}, mj={self.mj})"
 
     def c4(self, **kwargs):
         r"""This method simply sets :math:`\chi = m_j = m_c = m_{joc} = 1.0` to
@@ -1599,11 +1593,16 @@ class CalcLUEVcmax:
         else:
             raise ValueError(f"CalcLUEVcmax: method argument '{method}' invalid.")
 
+    def __repr__(self):
+
+        return (f"CalcLUEVCmax(lue={self.lue}, vcmax={self.vcmax}, "
+                f"mjlim={self.mjlim}, omega={self.omega}, omega_star={self.omega_star})")
+
     def wang17(self):
         r"""Calculate a :math:`J_{max}` limitation following
         :cite:`Wang:2017go`. The factor is described in Equation 49 of
         :cite:`Wang:2017go` and is the square root term at the end of that
-        equation: 
+        equation:
 
         .. math::
 
