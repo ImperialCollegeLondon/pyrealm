@@ -10,4 +10,5 @@ import yaml
 PARAM_FILE = pkg_resources.resource_filename('pyrealm', 'data/params.yaml')
 
 with open(PARAM_FILE) as param:
+    #: A global dictionary to store default values of underlying model parameters.
     PARAM = dotmap.DotMap(yaml.load(param, Loader=yaml.SafeLoader))
