@@ -405,7 +405,7 @@ def calc_ns_star(tc: Union[float, np.ndarray],
         >>> # Realative viscosity at 20 degrees Celsius and standard
         >>> # atmosphere (in Pa):
         >>> round(calc_ns_star(20, 101325), 5)
-        46.09928
+        1.12536
     """
 
     visc_env = calc_viscosity_h2o(tc, patm)
