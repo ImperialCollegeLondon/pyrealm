@@ -759,7 +759,7 @@ class PModel:
     description with typical use cases is given in :ref:`pmodel/pmodel`
     but the basic flow of the model is:
 
-    1. Calculate photsynthetic variables from environmental conditions. See the
+    1. Calculate photosynthetic variables from environmental conditions. See the
        functions :func:`~pyrealm.pmodel.calc_gammastar`,
        :func:`~pyrealm.pmodel.calc_ns_star`,
        :func:`~pyrealm.pmodel.calc_c02_to_ca` and
@@ -1065,11 +1065,6 @@ class CalcOptimalChi:
         # Check inputs are broadcastable
         self.shape = check_input_shapes(kmm, gammastar, ns_star, ca, vpd)
 
-        # Collect the input arguments to pass to methods - don't want
-        # to store them as instance attributes to avoid duplication
-        args = locals()
-        del args['self']
-
         # set attribute defaults
         self.chi = None
         self.ci = None
@@ -1083,7 +1078,8 @@ class CalcOptimalChi:
 
         if self.method in all_methods:
             this_method = all_methods[self.method]
-            this_method(**args)
+            this_method(kmm=kmm, gammastar=gammastar, ca=ca,
+                        vpd=vpd, ns_star=ns_star)
         else:
             raise ValueError(f"CalcOptimalChi: method argument '{method}' invalid.")
 
