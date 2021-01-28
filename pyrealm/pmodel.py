@@ -287,7 +287,7 @@ def calc_ftemp_kphio(tc: Union[float, np.ndarray],
     The factor :math:`\phi(T)` is to be multiplied with leaf absorptance and the
     fraction of absorbed light that reaches photosystem II. In the P-model these
     additional factors are lumped into a single apparent quantum yield
-    efficiency parameter (argument `kphio` to the function :func:`pmodel`).
+    efficiency parameter (argument `kphio` to the class :class:`~pyrealm.pmodel.PModel`).
 
     Parameters:
 
@@ -827,26 +827,22 @@ class PModel:
 
     Examples:
 
-        >>> mod_c3 = pmodel(tc=20, vpd=1000, co2=400, fapar=1, ppfd=300, elv=0)
+        >>> mod_c3 = PModel(tc=20, vpd=1000, co2=400, patm=101325.0)
         >>> # Key variables from pmodel
-        >>> round(mod_c3.ci, 5)
+        >>> round(mod_c3.optchi.ci, 5)
         28.14209
-        >>> round(mod_c3.ca, 5)
-        40.53
-        >>> round(mod_c3.chi, 5)
+        >>> round(mod_c3.optchi.chi, 5)
         0.69435
-        >>> round(mod_c3.gpp, 5)
+        >>> round(mod_c3.unit_iabs.scale_iabs(fapar=1, ppfd=300).gpp, 5)
         76.42545
-        >>> mod_c4 = pmodel(tc=20, vpd=1000, co2=400, fapar=1, ppfd=300, elv=0,
+        >>> mod_c4 = PModel(tc=20, vpd=1000, co2=400, patm=101325.0,
         ...                 c4=True, method_jmaxlim='none')
-        >>> # Key variables from pmodel
-        >>> round(mod_c4.ci, 5)
+        >>> # Key variables from PModel
+        >>> round(mod_c4.optchi.ci, 5)
         40.53
-        >>> round(mod_c4.ca, 5)
-        40.53
-        >>> round(mod_c4.chi, 5)
+        >>> round(mod_c4.optchi.chi, 5)
         1.0
-        >>> round(mod_c4.gpp, 5)
+        >>> round(mod_c4.unit_iabs.scale_iabs(fapar=1, ppfd=300).gpp, 5)
         12.90736
     """
 
