@@ -14,18 +14,19 @@ kernelspec:
 
 # The `pyrealm` package
 
-```{toctree}
-:maxdepth: 3
-:caption: "The pyrealm package"
-pyrealm.md
-pmodel/pmodel.md
-pmodel/rpmodel.md
-pmodel/optimal_chi.md
-pmodel/lue_vcmax.md
-pmodel/iabs_scaling.md
-pmodel/pmodel_reference.md
-params.md
-z_bibliography.rst
+```{eval-rst}
+.. toctree:
+   :maxdepth: 3
+   :caption: "The pyrealm package"
+   pyrealm.md
+   pmodel/pmodel.md
+     pmodel/rpmodel.md
+     pmodel/optimal_chi.md
+     pmodel/lue_vcmax.md
+     pmodel/iabs_scaling.md
+     pmodel/pmodel_reference.md
+   params.md
+   z_bibliography.rst
 ```
 
 ```{eval-rst}

@@ -40,7 +40,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinxcontrib.bibtex',
               'myst_nb',
               'sphinx_astrorefs',  # Gives author year references
-              'sphinx_rtd_theme'
+              'sphinx_rtd_theme',
               ]
 
 autodoc_default_flags = ['members']

@@ -22,7 +22,6 @@ This page contains the detailed documentation of the functions and classes in th
 .. automodule:: pyrealm.pmodel
     :autosummary:
     :members:
-
-    .. :nosignatures:
+    :special-members: __init__
 
 ```

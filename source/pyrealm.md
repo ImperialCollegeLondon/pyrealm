@@ -14,11 +14,15 @@ kernelspec:
 # The `pyrealm` package
 
 
-## The `pmodel` module
+## Module overview
 
-See [here](pyrealm.pmodel).
+The package contains a number of different modules implementing different models:
 
-## Documentation
+1. The [P Model](pmodel/pmodel): a ecophysiological model of carbon dioxide
+   uptake by plants (:{cite}`Prentice:2014bc`, :{cite}`Wang:2017go`, :{cite}`Stocker:2020dh`)
+2. TODO
+
+## Package documentation
 
 The documentation for `pyrealm` is maintained using `sphinx`. The module code is
 documented using Google style docstrings in RST format. Much of the rest of the
@@ -33,3 +37,4 @@ clicking on the buttons like the one below.
 # the pyrealm documentation.
 ```
 
+## Development notes

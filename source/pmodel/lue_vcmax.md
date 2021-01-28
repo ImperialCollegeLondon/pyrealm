@@ -114,16 +114,17 @@ pyplot.show()
 
 The P model implements an empirically derived factor ($\beta \in [0,1]$,
 :{cite}`Stocker:2018be`, :{cite}`Stocker:2020dh`) that describes the response of
-LUE to soil moisture stress. To implement this, you need to provide the
-{func}`pyrealm.pmodel.pmodel` function with estimates of:
+LUE to soil moisture stress. To implement this, you can provide the
+{func}`~pyrealm.pmodel.PModel` class with values of $\beta$ estimated using
+the function {func}`pyrealm.pmodel.calc_soilmstress`. This requires estimates
+of:
 
 * relative soil moisture (`soilm`), as the fraction of field capacity, and
 * aridity (`meanalpha`), as the average annual ratio of AET to PET.
 
-These variables used to calculate $\beta$ using the function
-{func}`pyrealm.pmodel.calc_soilmstress`. The calculation includes an upper bound
-in relative soil moisture (`PARAM.soilmstress.thetastar`), above which $\beta$
-is always 1, corresponding to no loss of light use efficiency.
+The calculation includes an upper bound in relative soil moisture
+(`PARAM.soilmstress.thetastar`), above which $\beta$ is always 1, corresponding
+to no loss of light use efficiency.
 
 ```{code-cell} python
 :tags: [hide-input]

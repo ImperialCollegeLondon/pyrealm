@@ -21,3 +21,5 @@ dist
 # Ignore local pyenv settings
 .python-version
 
+# notebook caching
+.ipynb_checkpoints
