@@ -375,7 +375,46 @@ def calc_gammastar(tc: Union[float, np.ndarray],
             calc_ftemp_arrh((tc + PARAM.k.CtoK), ha=PARAM.Bernacchi.dha))
 
 
-def calc_kmm(tc: Union[float, np.ndarray], 
+def calc_ns_star(tc: Union[float, np.ndarray],
+                 patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+
+    r"""Calculates the relative viscosity of water (:math:`\eta^*`), given the
+    standard temperature and pressure, using :func:`~pyrealm.pmodel.calc_viscosity_h20`
+    (:math:`v(t,p)`) as:
+
+    .. math::
+
+        \eta^* = \frac{v(t,p)}{v(t_0,p_0)}
+
+    Parameters:
+
+        tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
+        patm: Atmospheric pressure (:math:`p`, Pa)
+
+    Other parameters:
+
+        To: standard temperature (:math:`t0`, `PARAM.k.To`)
+        Po: standard pressure (:math:`p_0`, `PARAM.k.Po`)
+
+    Returns:
+
+        A numeric value for :math:`K` (in Pa)
+
+    Examples:
+
+        >>> # Realative viscosity at 20 degrees Celsius and standard
+        >>> # atmosphere (in Pa):
+        >>> round(calc_ns_star(20, 101325), 5)
+        46.09928
+    """
+
+    visc_env = calc_viscosity_h2o(tc, patm)
+    visc_std = calc_viscosity_h2o(PARAM.k.To, PARAM.k.Po)
+
+    return visc_env / visc_std
+
+
+def calc_kmm(tc: Union[float, np.ndarray],
              patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     r"""Calculates the **Michaelis Menten coefficient of Rubisco-limited
     assimilation** (:math:`K`, ::cite:`Farquhar:1980ft`) as a function of
