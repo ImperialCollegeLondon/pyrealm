@@ -1,7 +1,8 @@
-import numpy as np
+# pylint: disable=C0103
 from typing import Optional, Union
 from dataclasses import dataclass
-import dotmap
+import numpy as np
+
 from pyrealm.params import PARAM
 
 # TODO - Note that the typing currently does not enforce the dtype of ndarrays
@@ -48,11 +49,12 @@ def check_input_shapes(*args):
     # shapes can be an empty set (all scalars) or contain one common shape
     # otherwise raise an error
     if len(shapes) > 1:
-        raise ValueError(f'Inputs contain arrays of different shapes.')
-    elif len(shapes):
+        raise ValueError('Inputs contain arrays of different shapes.')
+
+    if len(shapes) == 1:
         return shapes.pop()
-    else:
-        return 1
+
+    return 1
 
 
 def calc_density_h2o(tc: Union[float, np.ndarray],
@@ -450,8 +452,10 @@ def calc_kmm(tc: Union[float, np.ndarray],
 
         hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`, `PARAM.Bernacchi.dhac`)
         hao:  activation energy for :math:`\ce{O2}` (:math:`\Delta H_{ko}`, `PARAM.Bernacchi.dhao`)
-        kc25: Michelis constant for :math:`\ce{CO2}` at standard temperature (:math:`K_{c25}`, `PARAM.Bernacchi.kc25`)
-        ko25: Michelis constant for :math:`\ce{O2}` at standard temperature (:math:`K_{o25}`, `PARAM.Bernacchi.ko25`)
+        kc25: Michelis constant for :math:`\ce{CO2}` at standard temperature
+            (:math:`K_{c25}`, `PARAM.Bernacchi.kc25`)
+        ko25: Michelis constant for :math:`\ce{O2}` at standard temperature
+            (:math:`K_{o25}`, `PARAM.Bernacchi.ko25`)
 
     Returns:
 
@@ -699,6 +703,11 @@ class IabsScaled:
 
     @property
     def gpp(self) -> Union[float, np.ndarray]:
+        """Alias property for LUE when scaled"""
+        if not self.scaled:
+            raise RuntimeError('IabsScaled object has not been scaled - LUE '
+                               'is still expressed per unit irradiance.')
+
         return self.lue
 
     def scale_iabs(self, fapar, ppfd):
@@ -799,7 +808,9 @@ class PModel:
 
         .. math::
 
-            J_{max} = \frac{4 \phi_0 I_{abs}}{\sqrt{\left(\frac{1}{\left(\frac{V_{cmax}(c_i - 2 \Gamma^*)}{\phi_0 I_{abs}(c_i + k_{mm})}\right)}\right)^2 - 1}}
+            J_{max} = \frac{4 \phi_0 I_{abs}}{\sqrt{\left(\frac{1}
+            {\left(\frac{V_{cmax}(c_i - 2 \Gamma^*)}
+            {\phi_0 I_{abs}(c_i + k_{mm})}\right)}\right)^2 - 1}}
 
     Attributes:
 
@@ -976,7 +987,8 @@ class PModel:
         elif c4:
             self.unit_iabs.gs = np.ones(self.shape) * np.infty
         else:
-            self.unit_iabs.gs = (self.unit_iabs.lue / PARAM.k.c_molmass) / (self.ca - self.optchi.ci)
+            self.unit_iabs.gs = ((self.unit_iabs.lue / PARAM.k.c_molmass) /
+                                 (self.ca - self.optchi.ci))
 
     def __repr__(self):
 
@@ -1007,13 +1019,17 @@ class CalcOptimalChi:
             (:math:`\Gamma^{*}`, see :func:`calc_gammastar`).
         ns_star (float): the viscosity correction factor (:math:`\eta^{*}`,
             see :func:`calc_viscosity_H20`)
-        ca (float): the ambient partial pressure of :math:`\ce{CO2}` (:math:`c_a`, see :func:`calc_co2_to_ca`)
+        ca (float): the ambient partial pressure of :math:`\ce{CO2}` (:math:`c_a`,
+            see :func:`calc_co2_to_ca`)
         vpd (float): the vapor pressure deficit (:math:`D`)
         method (str): one of ``c4`` or ``prentice14``
         beta (float): unit cost ratio of carboxylation (see :obj:`PARAMS.stocker19.beta`)
-        chi (float): the ratio of leaf internal to ambient :math:`\ce{CO2}` partial pressure (:math:`\chi`).
-        mj (float): :math:`\ce{CO2}` limitation factor for light-limited assimilation (:math:`m_j`).
-        mc (float): :math:`\ce{CO2}` limitation factor for RuBisCO-limited assimilation (:math:`m_c`).
+        chi (float): the ratio of leaf internal to ambient :math:`\ce{CO2}`
+            partial pressure (:math:`\chi`).
+        mj (float): :math:`\ce{CO2}` limitation factor for light-limited
+            assimilation (:math:`m_j`).
+        mc (float): :math:`\ce{CO2}` limitation factor for RuBisCO-limited
+            assimilation (:math:`m_c`).
         mjoc (float):  :math:`m_j/m_c` ratio
 
     Returns:
@@ -1115,7 +1131,8 @@ class CalcOptimalChi:
 
             \[
                 \begin{align*}
-                    \chi &= \Gamma^{*} / c_a + (1- \Gamma^{*} / c_a) \xi / (\xi + \sqrt D ), \text{where}\\
+                    \chi &= \Gamma^{*} / c_a + (1- \Gamma^{*} / c_a)
+                        \xi / (\xi + \sqrt D ), \text{where}\\
                     \xi &= \sqrt{(\beta (K+ \Gamma^{*}) / (1.6 \eta^{*}))}
                 \end{align*}
             \]
@@ -1126,8 +1143,8 @@ class CalcOptimalChi:
         .. math::
 
             m_j = \frac{c_a - \Gamma^{*}}
-                       {c_a + 2 \Gamma^{*} + 3 \Gamma^{*} \sqrt{\frac{1.6 D \eta^{*}}
-                                                                     {\beta(K + \Gamma^{*})}}}
+                       {c_a + 2 \Gamma^{*} + 3 \Gamma^{*}
+                       \sqrt{\frac{1.6 D \eta^{*}}{\beta(K + \Gamma^{*})}}}
 
         Finally,  :math:`m_c` is calculated, following Equation 7 in
         :cite:`Stocker:2020dh`, as:
@@ -1354,7 +1371,8 @@ class CalcLUEVcmax:
                 \begin{align*}
                 m_{jlim} &= \frac{\omega^*}{8\theta}, \text{where} \\
                 \omega^* &= 1 + \omega - \sqrt{(1 + \omega) ^2 -4\theta\omega}, \text{and}\\
-                \omega &= (1 - 2\theta) + \sqrt{(1-\theta)\left(\frac{1}{\frac{4c}{m}(1 - \theta\frac{4c}{m})}-4\theta\right)}
+                \omega &= (1 - 2\theta) + \sqrt{(1-\theta)
+                    \left(\frac{1}{\frac{4c}{m}(1 - \theta\frac{4c}{m})}-4\theta\right)}
                 \end{align*}
             \]
 
