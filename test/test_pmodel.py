@@ -576,7 +576,7 @@ def test_pmodel_class_c3(request, values, soilmstress, ftemp_kphio, luevcmax_met
     assert np.allclose(ret.unit_iabs.gs, expected['gs'])
 
     # Check Iabs scaling
-    iabs = ret.scale_iabs(values['fapar_sc'], values['ppfd_sc'])
+    iabs = ret.unit_iabs.scale_iabs(values['fapar_sc'], values['ppfd_sc'])
 
     # Find the expected values, extracting the combination from the request
     expected = values['rpmodel-c3-' + name + '-iabs']
@@ -663,7 +663,7 @@ def test_pmodel_class_c4(request, values, soilmstress, ftemp_kphio, variables):
     assert np.allclose(ret.unit_iabs.gs, expected['gs'])
 
     # Check Iabs scaling
-    iabs = ret.scale_iabs(values['fapar_sc'], values['ppfd_sc'])
+    iabs = ret.unit_iabs.scale_iabs(values['fapar_sc'], values['ppfd_sc'])
 
     # Find the expected values, extracting the combination from the request
     expected = values['rpmodel-c4-' + name + '-iabs']
