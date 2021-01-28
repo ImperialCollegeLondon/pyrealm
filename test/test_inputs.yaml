@@ -5,7 +5,7 @@ patm_sc: 101325
 soilm_sc: 0.2
 meanalpha_sc: 1
 elev_sc: 1000
-co2_sc: 413.03
+co2_sc: 400
 vpd_sc: 1000
 fapar_sc: 1
 ppfd_sc: 300
@@ -42,10 +42,10 @@ elev_ar:
   - 1100
   - 1200
 co2_ar:
-  - 373.03
-  - 393.03
-  - 413.03
-  - 433.03
+  - 360
+  - 380
+  - 400
+  - 420
 vpd_ar:
   - 900
   - 1000
