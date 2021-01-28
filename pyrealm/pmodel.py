@@ -981,10 +981,51 @@ class IabsScaled:
     lue: Union[float, np.ndarray] = None
     jmax: Union[float, np.ndarray] = None
     gs: Union[float, np.ndarray] = None
+    scaled: bool = False
 
     @property
     def gpp(self) -> Union[float, np.ndarray]:
         return self.lue
+
+    def scale_iabs(self, fapar, ppfd):
+        r"""
+        This is a convenience function to scale from values per unit absorbed
+        irradiance to absolute values. It finds the total absorbed irradiance
+        (:math:`I_{abs}`) as the product of the photosynthetic photon flux
+        density (`ppfd`) and the fraction of absorbed photosynthetically active
+        radiation (`fapar`) and then uses this to scale the stored values: all
+        scale linearly with :math:`I_{abs}`.
+
+        Note that the units of PPFD determine the units of outputs: if PPFD is
+        in :math:`\text{mol} m^{-2} \text{month}^{-1}`, then output values are
+        scaled per square metre per month.
+
+        Args:
+            fapar: the fraction of absorbed photosynthetically active radiation
+            ppfd: photosynthetic photon flux density
+
+        Returns:
+            An object of class IabsScaled, with attribute `scaled` set to True.
+
+        """
+
+        # Do not double scale
+        if self.scaled:
+            raise RuntimeError('Values have already been scaled')
+
+        # Check input shapes against each other and an existing calculated value
+        _ = check_input_shapes(ppfd, fapar, self.lue)
+
+        # Calcuate absorbed irradiance
+        iabs = fapar * ppfd
+
+        return IabsScaled(lue=iabs * self.lue,
+                          vcmax=iabs * self.vcmax,
+                          vcmax25=iabs * self.vcmax25,
+                          rd=iabs * self.rd,
+                          jmax=iabs * self.jmax,
+                          gs=iabs * self.gs,
+                          scaled=True)
 
 
 class PModel:
