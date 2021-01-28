@@ -1030,49 +1030,76 @@ class IabsScaled:
 
 class PModel:
 
-    r"""Fits the P model to a given set of environmental parameters. 
-    See the extended description in :ref:`pmodel` for detailed explanations
-    of the parameter options and calculation of the P-model.
+    r"""Fits the P model to a given set of environmental parameters. See the
+    :meth:`~pyrealm.pmodel.PModel.__init__` documentation for the input variables.
+    The calculated attributes of the class are described below. An extended
+    description with typical use cases is given in :ref:`pmodel/pmodel`
+    but the basic flow of the model is:
 
-    Args:
+    1. Calculate photsynthetic variables from environmental conditions. See the
+       functions :func:`~pyrealm.pmodel.calc_gammastar`,
+       :func:`~pyrealm.pmodel.calc_ns_star`,
+       :func:`~pyrealm.pmodel.calc_c02_to_ca` and
+       :func:`~pyrealm.pmodel.calc_kmm` for details.
+    2. Estimate :math:`\ce{CO2}` limitation factors and optimal internal to
+       ambient :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using
+       :class:`~pyrealm.pmodel.CalcOptimalChi`.
+    3. Estimate light use efficiency (LUE) and maximum carboxylation rate
+       (:math:`V_{cmax}`) using :class:`~pyrealm.pmodel.CalcLUEVcmax`.
+    4. Calculate corollary predictions
 
-        tc: Temperature, relevant for photosynthesis (°C)
-        vpd: Vapour pressure deficit (Pa)
-        co2: Atmospheric CO2 concentration (ppm)
-        patm: Atmospheric pressure (Pa).
-        kphio: (Optional) Apparent quantum yield efficiency (unitless).
-        soilmstress: (Optional) Relative soil moisture as a fraction of field capacity (unitless).
-        c4: (Optional) By default (`c4=False`), the C3 photosynthetic pathway is used.
-        method_jmaxlim: (Optional) Method for :math:`J_{max}` limitation,
-            defaulting to `wang_17`.
-        do_ftemp_kphio: (Optional) A logical specifying whether temperature-dependence
-            of quantum yield efficiency after Bernacchi et al., 2003 is to be
-            accounted for. Defaults to `TRUE`.
+    **Corollary prediction details**
 
-    Returns:
+    These calculations use two additional functions:
 
-        A ``dotmap.DotMap`` object containing:
+    * the instantaneous temperature response of :math:`V_{cmax}` (:math:`fv(t)`),
+      implemented in :func:`~pyrealm.pmodel.calc_ftemp_inst_vcmax`, and
+    * the instantaneous temperature response of dark respiration :math:`V_{d}`
+      (:math:`fr(t)`), implemented in :func:`~pyrealm.pmodel.calc_ftemp_inst_rd`.
 
-        - ``ca``: Ambient CO2 expressed as partial pressure (Pa)
-        - ``gammastar``: Photorespiratory compensation point \eqn{\Gamma*}, (Pa, see :func:`calc_gammastar`).
-        - ``kmm``: Michaelis-Menten coefficient :math:`K` for photosynthesis (Pa, see :func:`calc_kmm`).
-        - ``ns_star``: Relative viscosity of water (unitless, see :ref:`ns_star`).
-        - ``chi``: Optimal ratio of leaf internal to ambient CO2 (unitless, see :ref:`opt_chi`).
-        - ``ci``: Leaf-internal CO2 partial pressure (Pa), calculated as \eqn{(\chi ca)}. 
-        - ``lue``: Light use efficiency (g C / mol photons), (see :ref:`lue`) 
-        - ``mj``: Factor in the light-limited assimilation rate function (see :class:`CalcOptimalChi`)
-        - ``mc``: Factor in the Rubisco-limited assimilation rate function (see :class:`CalcOptimalChi`)
-        - ``gpp``: Gross primary production (g C m-2) (see :ref:`iabs_scaling`)
-        - ``iwue``: Intrinsic water use efficiency (iWUE, Pa)
-        - ``gs``: Stomatal conductance (gs, in mol C m-2 Pa-1)
-        - ``vcmax``: Maximum carboxylation capacity :math:`Vcmax` (mol C m-2).
-        - ``vcmax25``: Maximum carboxylation capacity \eqn{Vcmax} (mol C m-2) at standard temperature.
-        - ``jmax``: The maximum rate of RuBP regeneration.
-        - ``rd``: Dark respiration :math:`Rd` (mol C m-2).
+    The predictions are then:
 
-        The option ``method_jmaxlim="smith19"`` adds ``omega`` and ``omegastar``
-        (see :class:`CalcLUEVcmax`)
-        
+    * Intrinsic water use efficiency (iWUE, Pa), calculated as :math:`(c_a - c_i)/1.6`
+
+    * Maximum carboxylation capacity (mol C m-2) normalised to the standard
+      temperature as: :math:`V_{cmax25} = V_{cmax}  / fv(t)`
+
+    * Dark respiration, calculated as:
+
+        .. math::
+
+            R_d = b_0 \frac{fr(t)}{fv(t)} V_{cmax}
+
+        following :cite:`Atkin:2015hk` (:math:`b_0` is set in `PARAM.Atkin.rd_to_vcmax`)
+
+    * Stomatal conductance (:math:`g_s`), calculated as:
+
+        .. math::
+
+            g_s = \frac{LUE}{M_C}\frac{1}{c_a - c_i}
+
+        When C4 photosynthesis is being used, :math:`g_s \to \infty`.
+
+    * The maximum rate of Rubsico regeneration at the growth temperature
+      (:math:`J_{max}`) per unit irradiance is calculated as:
+
+        .. math::
+
+            J_{max} = \frac{4 \phi_0 I_{abs}}{\sqrt{\left(\frac{1}{\left(\frac{V_{cmax}(c_i - 2 \Gamma^*)}{\phi_0 I_{abs}(c_i + k_{mm})}\right)}\right)^2 - 1}}
+
+    Attributes:
+
+        ca: Ambient CO2 expressed as partial pressure (Pa)
+        gammastar: Photorespiratory compensation point \eqn{\Gamma*}, (Pa, see
+            :func:`~pyrealm.pmodel.calc_gammastar`).
+        kmm: Michaelis-Menten coefficient :math:`K` for photosynthesis (Pa, see
+            :func:`~pyrealm.pmodel.calc_kmm`).
+        ns_star: Relative viscosity of water (unitless, see
+            :func:`~pyrealm.pmodel.calc_ns_star`).
+        optchi: An object of class :class:`~pyrealm.pmodel.CalcOptimalChi`
+        unit_iabs: An object of class :class:`~pyrealm.pmodel.IabsScaled`
+        iwue: Intrinsic water use efficiency (iWUE, Pa)
+
     Examples:
 
         >>> mod_c3 = pmodel(tc=20, vpd=1000, co2=400, fapar=1, ppfd=300, elv=0)
@@ -1096,40 +1123,6 @@ class PModel:
         1.0
         >>> round(mod_c4.gpp, 5)
         12.90736
-
-    References:
-
-        Bernacchi, C. J., Pimentel, C., and Long, S. P.:  In vivo temperature response funtions  of  parameters
-        required  to  model  RuBP-limited  photosynthesis,  Plant  Cell Environ., 26, 1419–1430, 2003
-
-        Heskel,  M.,  O’Sullivan,  O.,  Reich,  P.,  Tjoelker,  M.,  Weerasinghe,  L.,  Penillard,  A.,
-        Egerton, J., Creek, D., Bloomfield, K., Xiang, J., Sinca, F., Stangl, Z., Martinez-De La Torre, A.,
-        Griffin, K., Huntingford, C., Hurry, V., Meir, P., Turnbull, M.,and Atkin, O.:  Convergence in the
-        temperature response of leaf respiration across biomes and plant functional types, Proceedings of
-        the National Academy of Sciences, 113,  3832–3837,  doi:10.1073/pnas.1520282113,2016.
-
-        Huber,  M.  L.,  Perkins,  R.  A.,  Laesecke,  A.,  Friend,  D.  G.,  Sengers,  J.  V.,  Assael, M. J.,
-        Metaxa, I. N., Vogel, E., Mares, R., and Miyagawa, K.:  New international formulation for the viscosity
-        of H2O, Journal of Physical and Chemical ReferenceData, 38, 101–125, 2009
-
-        Prentice,  I. C.,  Dong,  N.,  Gleason,  S. M.,  Maire,  V.,  and Wright,  I. J.:  Balancing the costs
-        of carbon gain and water transport:  testing a new theoretical framework for  plant  functional  ecology,
-        Ecology  Letters,  17,  82–91,  10.1111/ele.12211,http://dx.doi.org/10.1111/ele.12211, 2014.
-
-        Wang, H., Prentice, I. C., Keenan, T. F., Davis, T. W., Wright, I. J., Cornwell, W. K.,Evans, B. J.,
-        and Peng, C.:  Towards a universal model for carbon dioxide uptake by plants, Nat Plants, 3, 734–741, 2017.
-
-        Atkin, O. K., et al.:  Global variability in leaf respiration in relation to climate, plant functional
-        types and leaf traits, New Phytologist, 206, 614–636, doi:10.1111/nph.13253,
-
-        Smith, N. G., Keenan, T. F., Colin Prentice, I. , Wang, H. , Wright, I. J., Niinemets, U. , Crous, K. Y.,
-        Domingues, T. F., Guerrieri, R. , Yoko Ishida, F. , Kattge, J. , Kruger, E. L., Maire, V. , Rogers, A. ,
-        Serbin, S. P., Tarvainen, L. , Togashi, H. F., Townsend, P. A., Wang, M. , Weerasinghe, L. K. and Zhou, S.
-        (2019), Global photosynthetic capacity is optimized to the environment. Ecol Lett, 22: 506-517.
-        doi:10.1111/ele.13210
-
-        Stocker, B. et al. Geoscientific Model Development Discussions (in prep.)
-
     """
 
     def __init__(self, tc: Union[float, np.ndarray],
@@ -1141,7 +1134,25 @@ class PModel:
                  do_ftemp_kphio: bool = True,
                  c4: bool = False,
                  method_jmaxlim: str = "wang17"):
+        r"""
+        Creates a PModel instance using the input parameters.
 
+        Parameters:
+
+            tc: Temperature, relevant for photosynthesis (°C)
+            vpd: Vapour pressure deficit (Pa)
+            co2: Atmospheric CO2 concentration (ppm)
+            patm: Atmospheric pressure (Pa).
+            kphio: (Optional) Apparent quantum yield efficiency (unitless).
+            soilmstress: (Optional, default=None) A soil moisture stress factor
+                calculated using :func:`~pyrealm.pmodel.calc_soilmstress`.
+            c4: (Optional, default=False) Selects the C3 or C4 photosynthetic pathway.
+            method_jmaxlim: (Optional, default=`wang17`) Method to use for
+                :math:`J_{max}` limitation
+            do_ftemp_kphio: (Optional, default=True) Include the temperature-
+                dependence of quantum yield efficiency (see
+                :func:`~pyrealm.pmodel.calc_ftemp_kphio`).
+       """
         self.shape = check_input_shapes(tc, vpd, co2, patm, soilmstress)
 
         # -------------------------
