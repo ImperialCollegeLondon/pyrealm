@@ -452,7 +452,7 @@ def test_calc_lue_vcmax(request, values, soilmstress, ftemp_kphio,
         assert np.allclose(ret.omega_star, expected['omega_star'])
 
 # ------------------------------------------
-# Testing rpmodel - separate c3 and c4 tests
+# Testing PModel class - separate c3 and c4 tests
 # - sc + ar inputs: tc, vpd, co2, patm (not testing elev)
 # - +- soilmstress: soilm, meanalpha (but again assuming constant across ar inputs)
 # - do_ftemp_kphio
@@ -462,61 +462,6 @@ def test_calc_lue_vcmax(request, values, soilmstress, ftemp_kphio,
 # - include fapar_sc and ppfd_sc (same irradiation everywhere)
 # - hold kphio static
 # ------------------------------------------
-
-
-@pytest.mark.parametrize(
-    'soilmstress',
-    [False, True],
-    ids=['sm-off', 'sm-on']
-)
-@pytest.mark.parametrize(
-    'ftemp_kphio',
-    [True, False],
-    ids=['fkphio-on', 'fkphio-off']
-)
-@pytest.mark.parametrize(
-    'luevcmax_method',
-    ['wang17', 'smith19', 'none'],
-    ids=['wang17', 'smith19', 'none']
-)
-@pytest.mark.parametrize(
-    'variables',
-    [dict(tc='tc_sc', vpd='vpd_sc', co2='co2_sc', patm='patm_sc'),
-     dict(tc='tc_ar', vpd='vpd_ar', co2='co2_ar', patm='patm_ar')],
-    ids=['sc', 'ar']
-)
-def test_rpmodel_c3(request, values, soilmstress, ftemp_kphio, luevcmax_method, variables):
-
-    # Get the main vars
-    kwargs = {k: values[v] for k, v in variables.items()}
-
-    soilm = values['soilm_sc'] if soilmstress else None
-    meanalpha = values['meanalpha_sc'] if soilmstress else None
-
-
-    ret = pmodel.pmodel(**kwargs,
-                        kphio=0.05,
-                        soilm=soilm,
-                        meanalpha=meanalpha,
-                        do_ftemp_kphio=ftemp_kphio,
-                        method_jmaxlim=luevcmax_method,
-                        fapar=values['fapar_sc'],
-                        ppfd=values['ppfd_sc'])
-
-    # Find the expected values, extracting the combination from the request
-    name = request.node.name
-    name = name[(name.find('[') + 1):-1]
-    expected = values['rpmodel-c3-' + name + '-iabs']
-
-    assert np.allclose(ret.gpp, expected['gpp'])
-    assert np.allclose(ret.vcmax, expected['vcmax'])
-    assert np.allclose(ret.vcmax25, expected['vcmax25'])
-    assert np.allclose(ret.rd, expected['rd'])
-    assert np.allclose(ret.jmax, expected['jmax'])
-    assert np.allclose(ret.iwue, expected['iwue'])
-
-
-## Testing PModel class
 
 @pytest.mark.parametrize(
     'soilmstress',
