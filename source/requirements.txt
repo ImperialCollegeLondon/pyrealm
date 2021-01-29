@@ -4,3 +4,4 @@ sphinx-rtd-theme
 sphinx-astrorefs
 recommonmark
 autodocsumm
+myst_nb
