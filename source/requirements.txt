@@ -1,0 +1,6 @@
+sphinx==3.2.1
+sphinxcontrib-bibtex
+sphinx-rtd-theme
+sphinx-astrorefs
+recommonmark
+autodocsumm
