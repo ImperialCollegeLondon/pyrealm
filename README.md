@@ -2,7 +2,7 @@
 
 These are development notes for the package, user documentation can be found at:
 
-https://pyrealm.readthedocs.io/en/develop/pmodel.html
+https://pyrealm.readthedocs.io/
 
 ## Overview
 
@@ -179,12 +179,8 @@ twine upload -r testpypi dist/*x.y.z*
 
 ### Check the documentation builds
 
-Go to RTD and select the branch in advanced admin and try and build.
-Need to check install project to run examples.
+Go to RTD and select the  release branch in advanced admin and try and build.
 
-Once all seems well,  finish the release, go to the master branch and push it to create the tagged version on github.
-
-Once that is done, switch back to `develop` and bump the version number to add `.post9000` to show the code is in development again.
 
 ## PyPi
 
@@ -197,11 +193,28 @@ python setup.py sdist bdist_wheel
 Remembering to change the version number, you can then create an account at pypi and testpypi and use `twine` to test:
 
 ```
-twine upload -r testpypi dist/*1.2.8*
+twine upload -r testpypi dist/*x.y.z*
 ```
 
-and then - once that seems to have gone ok - release the distribution for use via `pip`
+
+
+Once all seems well,  finish the release, go to the master branch and push it to create the tagged version on github.
+
+```bash
+git flow release finish x.y.z
+```
+
+## PyPi again
+
+To upload the new version to testpypi, checkout master and run
 
 ```
-twine upload dist/*1.2.7*
+python setup.py sdist bdist_wheel
 ```
+release the distribution for use via `pip`
+
+```
+twine upload dist/*x.y.z*
+```
+
+Once that is done, switch back to `develop` and bump the version number to add `.post9000` to show the code is in development again.
