@@ -1,4 +1,5 @@
 import sys
+import warnings
 import pytest
 import numpy as np
 import yaml
@@ -403,8 +404,8 @@ def test_calc_optimal_chi(values, ctrl):
 )
 @pytest.mark.parametrize(
     'c4',
-    [True], #, False],
-    ids=['c4'] #, 'c3']
+    [True],  # , False],
+    ids=['c4']  # , 'c3']
 )
 def test_calc_lue_vcmax(request, values, soilmstress, ftemp_kphio,
                         luevcmax_method, optchi, c4):
@@ -462,6 +463,7 @@ def test_calc_lue_vcmax(request, values, soilmstress, ftemp_kphio,
 # - include fapar_sc and ppfd_sc (same irradiation everywhere)
 # - hold kphio static
 # ------------------------------------------
+
 
 @pytest.mark.parametrize(
     'soilmstress',
@@ -522,9 +524,11 @@ def test_pmodel_class_c3(request, values, soilmstress, ftemp_kphio, luevcmax_met
     # TODO - Numerical instability in the Jmax calculation - as denominator
     #        approaches 1, results --> infinity unpredictably with rounding
     #        so currently excluding Jmax in combinations where this occurs.
-    
+
     if 'none-fkphio-off-sm-off' not in name:
         assert np.allclose(ret.unit_iabs.jmax, expected['jmax'])
+    else:
+        warnings.warn('Skipping Jmax test for cases with numerical instability')
 
     # Check Iabs scaling
     iabs = ret.unit_iabs.scale_iabs(values['fapar_sc'], values['ppfd_sc'])
@@ -540,9 +544,11 @@ def test_pmodel_class_c3(request, values, soilmstress, ftemp_kphio, luevcmax_met
 
     if 'none-fkphio-off-sm-off' not in name:
         assert np.allclose(iabs.jmax, expected['jmax'])
+    else:
+        warnings.warn('Skipping Jmax test for cases with numerical instability')
 
 
-## Testing PModel class with C4
+# Testing PModel class with C4
 
 @pytest.mark.parametrize(
     'soilmstress',
