@@ -73,8 +73,7 @@ html_theme_options = {
     'display_version': True,
     'prev_next_buttons_location': 'top',
     'style_external_links': False,
-    'vcs_pageview_mode': '',
-    'style_nav_header_background': 'green',
+    'style_nav_header_background': 'grey',
     # Toc options
     'collapse_navigation': False,
     'sticky_navigation': True,

@@ -14,19 +14,44 @@ kernelspec:
 
 # The `pyrealm` package
 
+
+## Module overview
+
+The package contains a number of different modules implementing different models:
+
+1. The [P Model](pmodel/pmodel): a ecophysiological model of carbon dioxide
+   uptake by plants (:{cite}`Prentice:2014bc`, :{cite}`Wang:2017go`, :{cite}`Stocker:2020dh`)
+2. TODO
+
+## Package documentation
+
+The documentation for `pyrealm` is maintained using `sphinx`. The module code is
+documented using Google style docstrings in RST format. Much of the rest of the
+documentation uses Jupyter notebooks written using `myst-nb` format in order to
+dynamically include Python code examples showing the behaviour of functions. In
+general, the code will be concealed but the underlying code can be seen by
+clicking on the buttons like the one below. 
+
+```{code-cell} python
+:tags: [hide-input]
+# This is just an example code cell to demonstrate how code is included in 
+# the pyrealm documentation.
+```
+
+## Development notes
+
 ```{eval-rst}
-.. toctree:
-   :maxdepth: 3
-   :caption: "The pyrealm package"
-   pyrealm.md
-   pmodel/pmodel.md
-     pmodel/rpmodel.md
-     pmodel/optimal_chi.md
-     pmodel/lue_vcmax.md
-     pmodel/iabs_scaling.md
-     pmodel/pmodel_reference.md
-   params.md
-   z_bibliography.rst
+.. toctree::
+  :maxdepth: 4
+  :hidden:
+
+  pmodel/pmodel.md
+  pmodel/rpmodel.md
+  pmodel/optimal_chi.md
+  pmodel/lue_vcmax.md
+  pmodel/pmodel_reference.md
+  params.md
+  z_bibliography.rst
 ```
 
 ```{eval-rst}
@@ -35,9 +60,9 @@ kernelspec:
 ```
 
 
-Indices and tables
-==================
+## Indices and tables
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+
+* {ref}`genindex`
+* {ref}`modindex`
+* {ref}`search`

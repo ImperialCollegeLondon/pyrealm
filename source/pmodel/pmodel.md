@@ -229,7 +229,7 @@ The {class}`~pyrealm.pmodel.PModel` automatically uses the method described by
 {cite}`Wang:2017go` to account for limitation of the maximum rate of electron
 transfer ($J_{max}$ limitation). Using the argument `method_jmaxlim`, this
 correction can either be omitted (`method_jmaxlim='none'`) or the alternative
-formulation of {cite}`Smith:2019dh` can be used (`method_jmaxlim='smith19'`).
+formulation of {cite}`Smith:2019dv` can be used (`method_jmaxlim='smith19'`).
 
 ```{code-cell} ipython3
 model_jmax_none = pmodel.PModel(tc=20, patm=patm, vpd=0.82, co2=400,

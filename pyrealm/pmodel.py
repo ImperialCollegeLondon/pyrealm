@@ -756,7 +756,7 @@ class PModel:
     r"""Fits the P model to a given set of environmental parameters. See the
     :meth:`~pyrealm.pmodel.PModel.__init__` documentation for the input variables.
     The calculated attributes of the class are described below. An extended
-    description with typical use cases is given in :ref:`pmodel/pmodel`
+    description with typical use cases is given in :ref:`pmodel/pmodel.html`
     but the basic flow of the model is:
 
     1. Calculate photosynthetic variables from environmental conditions. See the
