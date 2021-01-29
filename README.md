@@ -179,8 +179,8 @@ twine upload -r testpypi dist/*x.y.z*
 
 ### Check the documentation builds
 
-Go to RTD and select the branch in admin and try and build.
-
+Go to RTD and select the branch in advanced admin and try and build.
+Need to check install project to run examples.
 
 Once all seems well,  finish the release, go to the master branch and push it to create the tagged version on github.
 
