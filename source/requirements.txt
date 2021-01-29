@@ -5,3 +5,4 @@ sphinx-astrorefs
 recommonmark
 autodocsumm
 myst_nb
+matplotlib
