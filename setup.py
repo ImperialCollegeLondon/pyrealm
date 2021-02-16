@@ -15,7 +15,7 @@ setuptools.setup(
     description="Python implementations of REALM models",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="",
+    url="https://pyrealm.readthedocs.io/",
     packages=setuptools.find_packages(),
     package_data={
         'pyrealm': ['data/*'],
