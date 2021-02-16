@@ -597,27 +597,11 @@ def test_pmodel_class_c4(request, values, soilmstress, ftemp_kphio, variables):
     # where PModel can do it post hoc from unit_iabs values, so two
     # rpmodel runs are used to test the unit values and scaled.
 
-    # There is currently a bug in rpmodel.rpmodel that drops the
-    # dimensions of inputs for c4. If c4 is True, then  optchi returns
-    # scalar values, soilm might have dimensions but is scalar in this test
-    # and ftemp_kphio does have dimensions but not when do_kphio is False,
-    # so combinations with array inputs and kphio-off ('ar-fkphio-off') only
-    # return the first value of the array.
-
-    def bugfix(vals):
-
-        print(name, vals, file=sys.stderr)
-
-        if 'ar-fkphio-off' in name:
-            return vals[0]
-        else:
-            return vals
-
-    assert np.allclose(bugfix(ret.unit_iabs.lue), expected['lue'])
-    assert np.allclose(bugfix(ret.unit_iabs.vcmax), expected['vcmax'])
-    assert np.allclose(bugfix(ret.unit_iabs.vcmax25), expected['vcmax25'])
-    assert np.allclose(bugfix(ret.unit_iabs.rd), expected['rd'])
-    assert np.allclose(bugfix(ret.unit_iabs.jmax), expected['jmax'])
+    assert np.allclose(ret.unit_iabs.lue, expected['lue'])
+    assert np.allclose(ret.unit_iabs.vcmax, expected['vcmax'])
+    assert np.allclose(ret.unit_iabs.vcmax25, expected['vcmax25'])
+    assert np.allclose(ret.unit_iabs.rd, expected['rd'])
+    assert np.allclose(ret.unit_iabs.jmax, expected['jmax'])
     assert np.allclose(ret.unit_iabs.gs, expected['gs'])
 
     # Check Iabs scaling
@@ -626,9 +610,9 @@ def test_pmodel_class_c4(request, values, soilmstress, ftemp_kphio, variables):
     # Find the expected values, extracting the combination from the request
     expected = values['rpmodel-c4-' + name + '-iabs']
 
-    assert np.allclose(bugfix(iabs.gpp), expected['gpp'])
-    assert np.allclose(bugfix(iabs.vcmax), expected['vcmax'])
-    assert np.allclose(bugfix(iabs.vcmax25), expected['vcmax25'])
-    assert np.allclose(bugfix(iabs.rd), expected['rd'])
-    assert np.allclose(bugfix(iabs.jmax), expected['jmax'])
+    assert np.allclose(iabs.gpp, expected['gpp'])
+    assert np.allclose(iabs.vcmax, expected['vcmax'])
+    assert np.allclose(iabs.vcmax25, expected['vcmax25'])
+    assert np.allclose(iabs.rd, expected['rd'])
+    assert np.allclose(iabs.jmax, expected['jmax'])
     assert np.allclose(iabs.gs, expected['gs'])
