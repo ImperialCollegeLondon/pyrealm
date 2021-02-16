@@ -59,7 +59,10 @@ KattgeKnorr:
   Hd: 200000  # deactivation energy (J/mol)
 
 kphio:
-  C4: [-0.008, 0.00375, -0.58e-4]  # Unpublished, from Shirley
+  C4: [-0.008, 0.00375, -0.58e-4] #[-0.064,  0.03, -0.000464]
+    # Unpublished, from Shirley (Cai, Wenjia <w.cai17@imperial.ac.uk>)
+    # - note that this has been updated to account for an unintended double
+    #   8 fold downscaling to account for the fraction of light reaching PS2.
   C3: [0.352, 0.022, -3.4e-4]   # Bernacchi et al. (2003) Table 2.
 
 # Bernacchi et al. (2001)
