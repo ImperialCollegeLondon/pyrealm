@@ -846,7 +846,7 @@ class PModel:
         >>> round(mod_c4.optchi.chi, 5)
         1.0
         >>> round(mod_c4.unit_iabs.scale_iabs(fapar=1, ppfd=300).gpp, 5)
-        12.90736
+        103.25886
     """
 
     def __init__(self, tc: Union[float, np.ndarray],
