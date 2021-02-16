@@ -418,6 +418,7 @@ def test_calc_lue_vcmax(request, values, soilmstress, ftemp_kphio,
 
     if c4:
         oc_method = 'c4'
+        pytest.skip('Not currently testing C4 outputs because of param in rpmodel')
     else:
         oc_method = 'prentice14'
 
