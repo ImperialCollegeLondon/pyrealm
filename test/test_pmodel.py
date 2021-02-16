@@ -11,6 +11,7 @@ from pyrealm import pmodel
 # Null context manager to include exception testing in test paramaterisation
 # ------------------------------------------
 
+RPMODEL_C4_BUG = True
 
 @contextmanager
 def does_not_raise():
@@ -121,6 +122,7 @@ def test_calc_ftemp_inst_vcmax(values, ctrl):
 # ------------------------------------------
 
 
+@pytest.mark.skipif(RPMODEL_C4_BUG, reason='Benchmark incorrect')
 @pytest.mark.parametrize(
     'ctrl',
     [(dict(args=dict(tc='tc_sc'), c4=False,  # scalar, C3
@@ -550,6 +552,7 @@ def test_pmodel_class_c3(request, values, soilmstress, ftemp_kphio, luevcmax_met
 
 # Testing PModel class with C4
 
+@pytest.mark.skipif(RPMODEL_C4_BUG, reason='Benchmark incorrect')
 @pytest.mark.parametrize(
     'soilmstress',
     [False, True],
@@ -597,12 +600,14 @@ def test_pmodel_class_c4(request, values, soilmstress, ftemp_kphio, variables):
     # where PModel can do it post hoc from unit_iabs values, so two
     # rpmodel runs are used to test the unit values and scaled.
 
-    assert np.allclose(ret.unit_iabs.lue, expected['lue'])
-    assert np.allclose(ret.unit_iabs.vcmax, expected['vcmax'])
-    assert np.allclose(ret.unit_iabs.vcmax25, expected['vcmax25'])
-    assert np.allclose(ret.unit_iabs.rd, expected['rd'])
-    assert np.allclose(ret.unit_iabs.jmax, expected['jmax'])
-    assert np.allclose(ret.unit_iabs.gs, expected['gs'])
+    unit_iabs = ret.unit_iabs.scale_iabs(1, 1)
+
+    assert np.allclose(unit_iabs.lue, expected['lue'])
+    assert np.allclose(unit_iabs.vcmax, expected['vcmax'])
+    assert np.allclose(unit_iabs.vcmax25, expected['vcmax25'])
+    assert np.allclose(unit_iabs.rd, expected['rd'])
+    assert np.allclose(unit_iabs.jmax, expected['jmax'])
+    assert np.allclose(unit_iabs.gs, expected['gs'])
 
     # Check Iabs scaling
     iabs = ret.unit_iabs.scale_iabs(values['fapar_sc'], values['ppfd_sc'])
