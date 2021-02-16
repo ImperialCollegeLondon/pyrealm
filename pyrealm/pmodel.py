@@ -328,7 +328,10 @@ def calc_ftemp_kphio(tc: Union[float, np.ndarray],
     else:
         coef = PARAM.kphio.C3
 
-    return coef[0] + coef[1] * tc + coef[2] * tc ** 2
+    ftemp = coef[0] + coef[1] * tc + coef[2] * tc ** 2
+    ftemp = np.clip(ftemp, 0.0, None)
+    
+    return ftemp
 
 
 def calc_gammastar(tc: Union[float, np.ndarray],
@@ -552,7 +555,7 @@ def calc_soilmstress(soilm: Union[float, np.ndarray],
     outstress = np.where(soilm <= PARAM.soilmstress.thetastar, outstress, 1.0)
 
     # Clip
-    outstress = np.clip(0.0, 1.0, outstress)
+    outstress = np.clip(outstress, 0.0, 1.0)
 
     return outstress
 
