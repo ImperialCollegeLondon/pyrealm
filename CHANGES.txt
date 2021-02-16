@@ -1,4 +1,6 @@
 0.1.0 - First release of pyrealm. Implementation of P model
-'0.1.1' - (aka hotfix/bed_setup). Fixing problems in setup.py
+0.1.1 - (aka hotfix/bed_setup). Fixing problems in setup.py
 0.1.2 - Fixing problems with setup for PyPi publication.
 0.1.3 - Clipping negative values in calc_ftemp_kphio
+0.1.4 - Rescaled ftemp_kphio to remove double division error
+      - Disabled C4 pytests while rpmodel retains this issue.
