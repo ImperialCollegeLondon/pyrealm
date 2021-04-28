@@ -2,4 +2,5 @@ numpy
 typing
 dataclasses
 dacite
+enforce_typing
 pytest
