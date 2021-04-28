@@ -182,7 +182,7 @@ class Param(ParamClass):
 
 @enforce_typing.enforce_types
 @dataclass(frozen=True)
-class Traits:
+class Traits(ParamClass):
     """Trait data settings for a TTree instance
 
     This data class provides the value of the key traits used in the T model.
