@@ -64,15 +64,13 @@ class ParamConstant(ParamClass):
 @enforce_typing.enforce_types
 @dataclass(frozen=True)
 class ParamFisherDial(ParamClass):
-    lambda_: Tuple[Number, ...] = (1788.316, 21.55053, -0.4695911,
-                                  0.003096363, -7.341182e-06)
-    Po: Tuple[Number, ...] = (5918.499, 58.05267, -1.1253317,
-                             0.0066123869, -1.4661625e-05)
+    lambda_: Tuple[Number, ...] = (
+        1788.316, 21.55053, -0.4695911, 0.003096363, -7.341182e-06)
+    Po: Tuple[Number, ...] = (
+        5918.499, 58.05267, -1.1253317, 0.0066123869, -1.4661625e-05)
     Vinf: Tuple[Number, ...] = (
-        0.6980547, -0.0007435626, 3.704258e-05,
-        -6.315724e-07, 9.829576e-09, -1.197269e-10,
-        1.005461e-12, -5.437898e-15, 1.69946e-17,
-        -2.295063e-20)
+        0.6980547, -0.0007435626, 3.704258e-05, -6.315724e-07, 9.829576e-09,
+        -1.197269e-10, 1.005461e-12, -5.437898e-15, 1.69946e-17, -2.295063e-20)
 
 
 @enforce_typing.enforce_types
@@ -84,12 +82,12 @@ class ParamHuber(ParamClass):
     H_i: Tuple[Number,...] = (1.67752, 2.20462, 0.6366564, -0.241605)
     H_ij: Tuple[Tuple[Number, ...], ...] = (
         (0.520094, 0.0850895, -1.08374, -0.289555, 0.0, 0.0),
-         (0.222531, 0.999115, 1.88797, 1.26613, 0.0, 0.120573),
-         (-0.281378, -0.906851, -0.772479, -0.489837, -0.25704, 0.0),
-         (0.161913, 0.257399, 0.0, 0.0, 0.0, 0.0),
-         (-0.0325372, 0.0, 0.0, 0.0698452, 0.0, 0.0),
-         (0.0, 0.0, 0.0, 0.0, 0.00872102, 0.0),
-         (0.0, 0.0, 0.0, -0.00435673, 0.0, -0.000593264))
+        (0.222531, 0.999115, 1.88797, 1.26613, 0.0, 0.120573),
+        (-0.281378, -0.906851, -0.772479, -0.489837, -0.25704, 0.0),
+        (0.161913, 0.257399, 0.0, 0.0, 0.0, 0.0),
+        (-0.0325372, 0.0, 0.0, 0.0698452, 0.0, 0.0),
+        (0.0, 0.0, 0.0, 0.0, 0.00872102, 0.0),
+        (0.0, 0.0, 0.0, -0.00435673, 0.0, -0.000593264))
 
 
 @enforce_typing.enforce_types
@@ -162,7 +160,7 @@ class ParamAtkin(ParamClass):
 
 @enforce_typing.enforce_types
 @dataclass(frozen=True)
-class Param(ParamClass):
+class PModelParams(ParamClass):
 
     k: ParamConstant = ParamConstant()
     fisher_dial: ParamFisherDial = ParamFisherDial()
@@ -182,8 +180,8 @@ class Param(ParamClass):
 
 @enforce_typing.enforce_types
 @dataclass(frozen=True)
-class Traits(ParamClass):
-    """Trait data settings for a TTree instance
+class TModelTraits(ParamClass):
+    r"""Trait data settings for a TTree instance
 
     This data class provides the value of the key traits used in the T model.
     The default values are taken from Table 1 of :cite:`Li:2014bc`. The traits
