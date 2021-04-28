@@ -1,42 +1,26 @@
 from typing import Union, Tuple
-from dataclasses import dataclass
 import numpy as np
 
 from pyrealm.pmodel import check_input_shapes
-
-
-@dataclass(frozen=True)
-class Traits:
-    """Trait data settings for the Tree class
-
-    Defaults to values in Table 1 of Le ea
-    """
-
-    a_hd: float = 116.0        # a, Initial slope of height–diameter relationship (-)
-    ca_ratio: float = 390.43   # c, Initial ratio of crown area to stem cross-sectional area (-)
-    h_max: float = 25.33       # H_m, Maximum tree height (m)
-    rho_s: float = 200.0       # rho_s, Sapwood density (kgCm−3)
-    lai: float = 1.8           # L, Leaf area index within the crown (–)
-    sla: float = 14.0          # sigma, Specific leaf area (m2 kg−1C)
-    tau_f: float = 4.0         # tau_f, Foliage turnover time (years)
-    tau_r: float = 1.04        # tau_r, Fine-root turnover time (years)
-    par_ext: float = 0.5       # k, PAR extinction coefficient (–)
-    yld: float = 0.17          # y, Yield_factor (-)
-    zeta: float = 0.17         # zeta, Ratio of fine-root mass to foliage area (kgCm−2)
-    resp_r: float = 0.913      # r_r, Fine-root specific respiration rate (year−1)
-    resp_s: float = 0.044      # r_s, Sapwood-specific respiration rate (year−1)
-    resp_f: float = 0.1        # --- , Foliage maintenance respiration fraction (-)
-
-    # TODO load and save methods
-    # TODO include range + se, or make this another class TraitDistrib
-    #      that can yield a Traits instance drawing from that distribution
+from pyrealm.param_classes import Traits
 
 
 class TTree:
+    """Implementation of the T model
+
+    This class provides an implementation of the calculations of tree geometry,
+    mass and growth described by :cite:`Li:2014bc`. All of the properties of
+    the T model are derived from a set of traits (see :class:`~pyrealm.tmodel.Traits`),
+    stem diameter measurements and estimates of gross primary productivity.
+
+    See the details of :meth:`~pyrealm.tmodel.TTree.set_diameter` and
+    :meth:`~pyrealm.tmodel.TTree.calculate_growth` for details of the properties
+    and calculations.
+
+    Args:
+        traits: An object of class :class:`~pyrealm.tmodel.Traits`
     """
 
-
-    """
     def __init__(self, traits: Traits = Traits()):
 
         self.traits = traits
@@ -130,9 +114,17 @@ class TTree:
         return self._delta_mass_frt
 
     def set_diameter(self, values: Union[float, np.ndarray]):
-        """
-        The set_diameter method sets the diameter values and then triggers the
-        population of the purely diameter scaled variables.
+        """Set stem diameter for the T model
+
+        The set_diameter method sets the diameter values and then uses these
+        values to populate a geometric and mass properties that scale with
+        stem diameter.
+
+        * Height (m, ``height``, :math:`H`):
+
+        .. math::
+
+            H = H_{max} ( 1 - e^{a D/ H_{max}}
 
         Returns:
 
