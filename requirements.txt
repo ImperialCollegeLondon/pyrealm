@@ -3,4 +3,5 @@ dotmap
 pyyaml
 typing
 dataclasses
+dacite
 pytest
