@@ -4,6 +4,7 @@ import numpy as np
 from contextlib import contextmanager
 import csv
 from pyrealm import tmodel
+from pyrealm import param_classes
 
 # ------------------------------------------
 # Null context manager to include exception testing in test paramaterisation
@@ -39,7 +40,7 @@ def pyvalues():
 
     # Do the same simulation as the R implementation - a single stem of
     # diameter 0.1 exposed to 100 years of GPP of 7.
-    traits = tmodel.Traits()
+    traits = param_classes.TModelTraits()
     py_vars = ('delta_d', 'diameter', 'height', 'crown_area', 'mass_fol',
                'mass_stm', 'mass_swd', 'gpp_actual', 'resp_swd', 'resp_frt',
                'delta_mass_stm', 'delta_mass_frt')

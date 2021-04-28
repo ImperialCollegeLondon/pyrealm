@@ -2,7 +2,7 @@ from typing import Union, Tuple
 import numpy as np
 
 from pyrealm.pmodel import check_input_shapes
-from pyrealm.param_classes import Traits
+from pyrealm.param_classes import TModelTraits
 
 
 class TTree:
@@ -18,10 +18,10 @@ class TTree:
     and calculations.
 
     Args:
-        traits: An object of class :class:`~pyrealm.tmodel.Traits`
+        traits: An object of class :class:`~pyrealm.param_classes.TModelTraits`
     """
 
-    def __init__(self, traits: Traits = Traits()):
+    def __init__(self, traits: TModelTraits = TModelTraits()):
 
         self.traits = traits
 
@@ -213,7 +213,7 @@ class TTree:
 
 
 def grow_ttree(gpp: Union[float, np.ndarray], d_init: Union[float, np.ndarray],
-               time_axis: int, traits: Traits = Traits(),
+               time_axis: int, traits: TModelTraits = TModelTraits(),
                outvars: Tuple[str, ...] = ('diameter', 'height', 'crown_area', 'delta_d')):
 
     """Fits the T Model given a GPP
