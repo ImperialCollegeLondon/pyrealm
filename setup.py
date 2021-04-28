@@ -17,9 +17,6 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://pyrealm.readthedocs.io/",
     packages=setuptools.find_packages(),
-    package_data={
-        'pyrealm': ['data/*'],
-    },
     entry_points={
             'console_scripts':
              ['']
