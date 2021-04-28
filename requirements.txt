@@ -1,5 +1,6 @@
 numpy
 typing
+pyyaml
 dataclasses
 dacite
 enforce_typing
