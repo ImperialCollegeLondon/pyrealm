@@ -3,11 +3,13 @@ from typing import Optional, Union
 from dataclasses import dataclass
 import numpy as np
 
-from pyrealm.params import PARAM
+from pyrealm.param_classes import Param
 
 # TODO - Note that the typing currently does not enforce the dtype of ndarrays
 #        but it looks like the upcoming np.typing module might do this.
 
+
+PARAM = Param()
 
 def check_input_shapes(*args):
     """This helper function validates inputs to check that they are either
@@ -70,9 +72,9 @@ def calc_density_h2o(tc: Union[float, np.ndarray],
 
     Other Parameters:
 
-        lambda_: polynomial coefficients of Tumlirz equation (`PARAM.FisherDial.lambda_`).
-        Po: polynomial coefficients of Tumlirz equation (`PARAM.FisherDial.Po`).
-        Vinf: polynomial coefficients of Tumlirz equation (`PARAM.FisherDial.Vinf`).
+        lambda_: polynomial coefficients of Tumlirz equation (`PARAM.fisher_dial.lambda_`).
+        Po: polynomial coefficients of Tumlirz equation (`PARAM.fisher_dial.Po`).
+        Vinf: polynomial coefficients of Tumlirz equation (`PARAM.fisher_dial.Vinf`).
 
     Returns:
 
@@ -91,13 +93,13 @@ def calc_density_h2o(tc: Union[float, np.ndarray],
     tc_pow = np.power.outer(tc, np.arange(0, 10))
 
     # Calculate lambda, (bar cm^3)/g:
-    lambda_val = np.sum(np.array(PARAM.FisherDial.lambda_) * tc_pow[..., :5], axis=-1)
+    lambda_val = np.sum(np.array(PARAM.fisher_dial.lambda_) * tc_pow[..., :5], axis=-1)
 
     # Calculate po, bar
-    po_val = np.sum(np.array(PARAM.FisherDial.Po) * tc_pow[..., :5], axis=-1)
+    po_val = np.sum(np.array(PARAM.fisher_dial.Po) * tc_pow[..., :5], axis=-1)
 
     # Calculate vinf, cm^3/g
-    vinf_val = np.sum(np.array(PARAM.FisherDial.Vinf) * tc_pow, axis=-1)
+    vinf_val = np.sum(np.array(PARAM.fisher_dial.Vinf) * tc_pow, axis=-1)
 
     # Convert pressure to bars (1 bar <- 100000 Pa)
     pbar = 1e-5 * patm
@@ -199,8 +201,8 @@ def calc_ftemp_inst_rd(tc: Union[float, np.ndarray]) -> Union[float, np.ndarray]
         250.9593
     """
 
-    return np.exp(PARAM.Heskel.b * (tc - PARAM.k.To) -
-                  PARAM.Heskel.c * (tc ** 2 - PARAM.k.To ** 2))
+    return np.exp(PARAM.heskel.b * (tc - PARAM.k.To) -
+                  PARAM.heskel.c * (tc ** 2 - PARAM.k.To ** 2))
 
 
 def calc_ftemp_inst_vcmax(tc: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
@@ -237,12 +239,12 @@ def calc_ftemp_inst_vcmax(tc: Union[float, np.ndarray]) -> Union[float, np.ndarr
 
     Other parameters:
 
-        Ha: activation energy (:math:`H_a`, `PARAM.KattgeKnorr.Ha`)
-        Hd: deactivation energy (:math:`H_d`, `PARAM.KattgeKnorr.Hd`)
+        Ha: activation energy (:math:`H_a`, `PARAM.kattge_knorr.Ha`)
+        Hd: deactivation energy (:math:`H_d`, `PARAM.kattge_knorr.Hd`)
         To: standard reference temperature expressed in Kelvin (`T_0`, `PARAM.k.To`)
         R: the universal gas constant (:math:`R`,`PARAM.k.R`)
-        a: intercept of the entropy factor(:math:`a`, `PARAM.KattgeKnorr.a_ent`)
-        b: slope of the entropy factor (:math:`b`, `PARAM.KattgeKnorr.b_ent`)
+        a: intercept of the entropy factor(:math:`a`, `PARAM.kattge_knorr.a_ent`)
+        b: slope of the entropy factor (:math:`b`, `PARAM.kattge_knorr.b_ent`)
 
     Returns: A float value for :math:`f`
 
@@ -263,11 +265,11 @@ def calc_ftemp_inst_vcmax(tc: Union[float, np.ndarray]) -> Union[float, np.ndarr
     # Calculate entropy following Kattge & Knorr (2007): slope and intercept
     # are defined using temperature in °C, not K!!! 'tcgrowth' corresponds
     # to 'tmean' in Nicks, 'tc25' is 'to' in Nick's
-    dent = PARAM.KattgeKnorr.a_ent + PARAM.KattgeKnorr.b_ent * tc
-    fva = calc_ftemp_arrh(tk, PARAM.KattgeKnorr.Ha)
-    fvb = ((1 + np.exp((tkref * dent - PARAM.KattgeKnorr.Hd) /
+    dent = PARAM.kattge_knorr.a_ent + PARAM.kattge_knorr.b_ent * tc
+    fva = calc_ftemp_arrh(tk, PARAM.kattge_knorr.Ha)
+    fvb = ((1 + np.exp((tkref * dent - PARAM.kattge_knorr.Hd) /
                        (PARAM.k.R * tkref))) /
-           (1 + np.exp((tk * dent - PARAM.KattgeKnorr.Hd) /
+           (1 + np.exp((tk * dent - PARAM.kattge_knorr.Hd) /
                        (PARAM.k.R * tk))))
 
     return fva * fvb
@@ -358,9 +360,9 @@ def calc_gammastar(tc: Union[float, np.ndarray],
         Po: the standard pressure (:math:`p_0` )
         gs_0: the reference value of :math:`\Gamma^{*} at standard temperature
             (:math:`T_0`) and pressure (:math:`P_0`)  (:math:`\Gamma^{*}_{0}`,
-            ::cite:`Bernacchi:2001kg`, `PARAM.Bernacchi.gs25_0`)
+            ::cite:`Bernacchi:2001kg`, `PARAM.bernacchi.gs25_0`)
         ha: the activation energy (:math:`\Delta H_a`, ::cite:`Bernacchi:2001kg`,
-            `PARAM.Bernacchi.dha`)
+            `PARAM.bernacchi.dha`)
 
     Returns:
 
@@ -376,8 +378,8 @@ def calc_gammastar(tc: Union[float, np.ndarray],
     # check inputs, return shape not used
     _ = check_input_shapes(tc, patm)
 
-    return (PARAM.Bernacchi.gs25_0 * patm / PARAM.k.Po *
-            calc_ftemp_arrh((tc + PARAM.k.CtoK), ha=PARAM.Bernacchi.dha))
+    return (PARAM.bernacchi.gs25_0 * patm / PARAM.k.Po *
+            calc_ftemp_arrh((tc + PARAM.k.CtoK), ha=PARAM.bernacchi.dha))
 
 
 def calc_ns_star(tc: Union[float, np.ndarray],
@@ -453,12 +455,12 @@ def calc_kmm(tc: Union[float, np.ndarray],
 
     Other parameters:
 
-        hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`, `PARAM.Bernacchi.dhac`)
-        hao:  activation energy for :math:`\ce{O2}` (:math:`\Delta H_{ko}`, `PARAM.Bernacchi.dhao`)
+        hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`, `PARAM.bernacchi.dhac`)
+        hao:  activation energy for :math:`\ce{O2}` (:math:`\Delta H_{ko}`, `PARAM.bernacchi.dhao`)
         kc25: Michelis constant for :math:`\ce{CO2}` at standard temperature
-            (:math:`K_{c25}`, `PARAM.Bernacchi.kc25`)
+            (:math:`K_{c25}`, `PARAM.bernacchi.kc25`)
         ko25: Michelis constant for :math:`\ce{O2}` at standard temperature
-            (:math:`K_{o25}`, `PARAM.Bernacchi.ko25`)
+            (:math:`K_{o25}`, `PARAM.bernacchi.ko25`)
 
     Returns:
 
@@ -479,8 +481,8 @@ def calc_kmm(tc: Union[float, np.ndarray],
     # conversion to Kelvin
     tk = tc + PARAM.k.CtoK
 
-    kc = PARAM.Bernacchi.kc25 * calc_ftemp_arrh(tk, ha=PARAM.Bernacchi.dhac)
-    ko = PARAM.Bernacchi.ko25 * calc_ftemp_arrh(tk, ha=PARAM.Bernacchi.dhao)
+    kc = PARAM.bernacchi.kc25 * calc_ftemp_arrh(tk, ha=PARAM.bernacchi.dhac)
+    ko = PARAM.bernacchi.ko25 * calc_ftemp_arrh(tk, ha=PARAM.bernacchi.dhao)
 
     # O2 partial pressure
     po = PARAM.k.co * 1e-6 * patm
@@ -588,15 +590,15 @@ def calc_viscosity_h2o(tc: Union[float, np.ndarray],
     rho = calc_density_h2o(tc, patm)
 
     # Calculate dimensionless parameters:
-    tbar = (tc + PARAM.k.CtoK) / PARAM.Huber.tk_ast
-    rbar = rho / PARAM.Huber.rho_ast
+    tbar = (tc + PARAM.k.CtoK) / PARAM.huber.tk_ast
+    rbar = rho / PARAM.huber.rho_ast
 
     # Calculate mu0 (Eq. 11 & Table 2, Huber et al., 2009):
     tbar_pow = np.power.outer(tbar, np.arange(0, 4))
-    mu0 = (1e2 * np.sqrt(tbar)) / np.sum(np.array(PARAM.Huber.H_i) / tbar_pow, axis=-1)
+    mu0 = (1e2 * np.sqrt(tbar)) / np.sum(np.array(PARAM.huber.H_i) / tbar_pow, axis=-1)
 
     # Calculate mu1 (Eq. 12 & Table 3, Huber et al., 2009):
-    h_array = np.array(PARAM.Huber.H_ij)
+    h_array = np.array(PARAM.huber.H_ij)
     ctbar = (1.0 / tbar) - 1.0
     row_j, _ = np.indices(h_array.shape)
     mu1 = h_array * np.power.outer(rbar - 1.0, row_j)
@@ -607,7 +609,7 @@ def calc_viscosity_h2o(tc: Union[float, np.ndarray],
     mu_bar = mu0 * mu1
 
     # Calculate mu (Eq. 1, Huber et al., 2009)
-    return mu_bar * PARAM.Huber.mu_ast  # Pa s
+    return mu_bar * PARAM.huber.mu_ast  # Pa s
 
 
 def calc_patm(elv: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
@@ -796,7 +798,7 @@ class PModel:
 
             R_d = b_0 \frac{fr(t)}{fv(t)} V_{cmax}
 
-        following :cite:`Atkin:2015hk` (:math:`b_0` is set in `PARAM.Atkin.rd_to_vcmax`)
+        following :cite:`Atkin:2015hk` (:math:`b_0` is set in `PARAM.atkin.rd_to_vcmax`)
 
     * Stomatal conductance (:math:`g_s`), calculated as:
 
@@ -964,7 +966,7 @@ class PModel:
 
         # Dark respiration at growth temperature
         ftemp_inst_rd = calc_ftemp_inst_rd(tc)
-        self.unit_iabs.rd = (PARAM.Atkin.rd_to_vcmax *
+        self.unit_iabs.rd = (PARAM.atkin.rd_to_vcmax *
                              (ftemp_inst_rd / ftemp25_inst_vcmax) *
                              self.unit_iabs.vcmax)
 
