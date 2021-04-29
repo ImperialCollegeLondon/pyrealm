@@ -145,19 +145,25 @@ The sources of the reference inputs and outputs are:
 
 It is easier if `git` is configured to push new tags along with commits. This essentially just means that new releases can be sent with a single commit, which is simpler and saves Travis from building both the the code commit and then the tagged version. This only needs to be set once.
 
-```sh
+```bash
 set git config --global push.followTags true
 ```
 
 
 Using git-flow and travis
 
-Use git flow to create a release and then bump the version number in `version.py`.
+Use git flow to create a release 
+
+```bash
+git flow release start 0.3.0
+```
+
+and then bump the version number in `version.py`.
 
 Check the package builds and installs locally:
 
 
-```
+```bash
 python setup.py sdist bdist_wheel
 ```
 
