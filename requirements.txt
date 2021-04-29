@@ -1,6 +1,7 @@
 numpy
-dotmap
-pyyaml
 typing
+pyyaml
 dataclasses
+dacite
+enforce_typing
 pytest

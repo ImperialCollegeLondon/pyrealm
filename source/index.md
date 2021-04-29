@@ -43,6 +43,7 @@ clicking on the buttons like the one below.
 ```{eval-rst}
 .. toctree::
   :maxdepth: 4
+  :caption: The P Model
   :hidden:
 
   pmodel/pmodel.md
@@ -50,9 +51,28 @@ clicking on the buttons like the one below.
   pmodel/optimal_chi.md
   pmodel/lue_vcmax.md
   pmodel/pmodel_reference.md
+```
+
+```{eval-rst}
+.. toctree::
+  :maxdepth: 4
+  :caption: The T Model
+  :hidden:
+  
+  tmodel/tmodel.md
+  tmodel/tmodel_reference.md
+```
+
+```{eval-rst}
+.. toctree::
+  :maxdepth: 4
+  :caption: Additional detail
+  :hidden:
+  
   params.md
   z_bibliography.rst
 ```
+
 
 ```{eval-rst}
 .. automodule:: pyrealm.version

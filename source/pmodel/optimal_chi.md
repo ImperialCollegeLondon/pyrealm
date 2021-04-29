@@ -39,8 +39,10 @@ The descriptions below show the typical ranges of these values under common envi
 from matplotlib import pyplot
 import numpy as np
 from pyrealm import pmodel
-from pyrealm.params import PARAM
 %matplotlib inline
+
+# get the default set of P Model parameters
+pmodel_param = pmodel.PModelParams()
 
 # Set the resolution of examples
 n_pts = 101
@@ -116,7 +118,7 @@ The figure shows how $\eta^*$ varies with temperature and pressure.
 # Calculate the viscosity under the range of values and the standard 
 # temperature and pressure
 viscosity = pmodel.calc_viscosity_h2o(tc_2d, patm_2d.transpose())
-viscosity_std = pmodel.calc_viscosity_h2o(PARAM.k.To, PARAM.k.Po)
+viscosity_std = pmodel.calc_viscosity_h2o(pmodel_param.k_To, pmodel_param.k_Po)
 
 # Calculate the relative viscosity
 ns_star = viscosity / viscosity_std
@@ -187,7 +189,7 @@ patm_2d = np.broadcast_to(patm_1d, (n_pts, 2)).transpose()
 gammastar = pmodel.calc_gammastar(tc_2d, patm=patm_2d)
 kmm = pmodel.calc_kmm(tc_2d, patm=patm_2d)
 viscosity = pmodel.calc_viscosity_h2o(tc_2d, patm=patm_2d)
-viscosity_std = pmodel.calc_viscosity_h2o(PARAM.k.To, PARAM.k.Po)
+viscosity_std = pmodel.calc_viscosity_h2o(pmodel_param.k_To, pmodel_param.k_Po)
 ns_star = viscosity / viscosity_std
 
 # Compare four scenarios of differing CO2 and VPD

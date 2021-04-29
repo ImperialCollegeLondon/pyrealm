@@ -4,3 +4,7 @@
 0.1.3 - Clipping negative values in calc_ftemp_kphio
 0.1.4 - Rescaled ftemp_kphio to remove double division error
       - Disabled C4 pytests while rpmodel retains this issue.
+0.2.0 - Implementation of the T model
+0.3.0 - Refactor of parameter classes into param_classes module with
+        consistent ParamClass baseclass for import/export and dataclass
+        based interface.

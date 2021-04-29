@@ -2,8 +2,7 @@
 from typing import Optional, Union
 from dataclasses import dataclass
 import numpy as np
-
-from pyrealm.params import PARAM
+from pyrealm.param_classes import PModelParams
 
 # TODO - Note that the typing currently does not enforce the dtype of ndarrays
 #        but it looks like the upcoming np.typing module might do this.
@@ -58,7 +57,9 @@ def check_input_shapes(*args):
 
 
 def calc_density_h2o(tc: Union[float, np.ndarray],
-                     patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+                     patm: Union[float, np.ndarray],
+                     pmodel_params: PModelParams = PModelParams()
+                     ) -> Union[float, np.ndarray]:
     """Calculates the **density of water** as a function of temperature and
     atmospheric pressure, using the Tumlirz Equation and coefficients calculated
     by :cite:`Fisher:1975tm`.
@@ -67,12 +68,13 @@ def calc_density_h2o(tc: Union[float, np.ndarray],
 
         tc: air temperature, °C
         patm: atmospheric pressure, Pa
+        pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
     Other Parameters:
 
-        lambda_: polynomial coefficients of Tumlirz equation (`PARAM.FisherDial.lambda_`).
-        Po: polynomial coefficients of Tumlirz equation (`PARAM.FisherDial.Po`).
-        Vinf: polynomial coefficients of Tumlirz equation (`PARAM.FisherDial.Vinf`).
+        lambda_: polynomial coefficients of Tumlirz equation (`pmodel_params.fisher_dial_lambda`).
+        Po: polynomial coefficients of Tumlirz equation (`pmodel_params.fisher_dial_Po`).
+        Vinf: polynomial coefficients of Tumlirz equation (`pmodel_params.fisher_dial_Vinf`).
 
     Returns:
 
@@ -91,13 +93,13 @@ def calc_density_h2o(tc: Union[float, np.ndarray],
     tc_pow = np.power.outer(tc, np.arange(0, 10))
 
     # Calculate lambda, (bar cm^3)/g:
-    lambda_val = np.sum(np.array(PARAM.FisherDial.lambda_) * tc_pow[..., :5], axis=-1)
+    lambda_val = np.sum(np.array(pmodel_params.fisher_dial_lambda) * tc_pow[..., :5], axis=-1)
 
     # Calculate po, bar
-    po_val = np.sum(np.array(PARAM.FisherDial.Po) * tc_pow[..., :5], axis=-1)
+    po_val = np.sum(np.array(pmodel_params.fisher_dial_Po) * tc_pow[..., :5], axis=-1)
 
     # Calculate vinf, cm^3/g
-    vinf_val = np.sum(np.array(PARAM.FisherDial.Vinf) * tc_pow, axis=-1)
+    vinf_val = np.sum(np.array(pmodel_params.fisher_dial_Vinf) * tc_pow, axis=-1)
 
     # Convert pressure to bars (1 bar <- 100000 Pa)
     pbar = 1e-5 * patm
@@ -112,7 +114,9 @@ def calc_density_h2o(tc: Union[float, np.ndarray],
 
 
 def calc_ftemp_arrh(tk: Union[float, np.ndarray],
-                    ha: float) -> Union[float, np.ndarray]:
+                    ha: float,
+                    pmodel_params: PModelParams = PModelParams()
+                    ) -> Union[float, np.ndarray]:
     r"""Calculates the temperature-scaling factor :math:`f` for enzyme kinetics
     following an Arrhenius response for a given temperature (``tk``, :math:`T`)
     and activation energy (`ha`, :math:`H_a`).
@@ -140,11 +144,12 @@ def calc_ftemp_arrh(tk: Union[float, np.ndarray],
 
         tk: Temperature (in Kelvin)
         ha: Activation energy (in :math:`J \text{mol}^{-1}`)
+        pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
     Other Parameters:
 
-        To: a standard reference temperature (:math:`T_0`, `PARAM.k.To`)
-        R: the universal gas constant (:math:`R`, `PARAM.k.R`)
+        To: a standard reference temperature (:math:`T_0`, `pmodel_params.k_To`)
+        R: the universal gas constant (:math:`R`, `pmodel_params.k_R`)
 
     Returns:
 
@@ -162,12 +167,14 @@ def calc_ftemp_arrh(tk: Union[float, np.ndarray],
     # exp( ha * (tc - 25.0)/(298.15 * kR * (tc + 273.15)) )
     # exp( (ha/kR) * (1/298.15 - 1/tk) )
 
-    tkref = PARAM.k.To + PARAM.k.CtoK
+    tkref = pmodel_params.k_To + pmodel_params.k_CtoK
 
-    return np.exp(ha * (tk - tkref) / (tkref * PARAM.k.R * tk))
+    return np.exp(ha * (tk - tkref) / (tkref * pmodel_params.k_R * tk))
 
 
-def calc_ftemp_inst_rd(tc: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def calc_ftemp_inst_rd(tc: Union[float, np.ndarray],
+                       pmodel_params: PModelParams = PModelParams()
+                       ) -> Union[float, np.ndarray]:
     """Calculates the **temperature-scaling factor for dark respiration**
     at a given temperature (``tc``, :math:`T` in °C), relative to the standard
     reference temperature :math:`T_o` (:cite:`Heskel:2016fg`).
@@ -182,7 +189,7 @@ def calc_ftemp_inst_rd(tc: Union[float, np.ndarray]) -> Union[float, np.ndarray]
 
     Other parameters:
 
-        To: standard reference temperature (:math:`T_o`, `PARAM.k.To`)
+        To: standard reference temperature (:math:`T_o`, `pmodel_params.k_To`)
         b: empirically derived global mean coefficient (:math:`b`, Table 1, ::cite:`Heskel:2016fg`)
         c: empirically derived global mean coefficient (:math:`c`, Table 1, ::cite:`Heskel:2016fg`)
 
@@ -199,11 +206,13 @@ def calc_ftemp_inst_rd(tc: Union[float, np.ndarray]) -> Union[float, np.ndarray]
         250.9593
     """
 
-    return np.exp(PARAM.Heskel.b * (tc - PARAM.k.To) -
-                  PARAM.Heskel.c * (tc ** 2 - PARAM.k.To ** 2))
+    return np.exp(pmodel_params.heskel_b * (tc - pmodel_params.k_To) -
+                  pmodel_params.heskel_c * (tc ** 2 - pmodel_params.k_To ** 2))
 
 
-def calc_ftemp_inst_vcmax(tc: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def calc_ftemp_inst_vcmax(tc: Union[float, np.ndarray],
+                          pmodel_params: PModelParams = PModelParams()
+                          ) -> Union[float, np.ndarray]:
     r"""This function calculates the **temperature-scaling factor :math:`f` of
     the instantaneous temperature response of :math:`V_{cmax}`** given the
     temperature (:math:`T`) relative to the standard reference temperature
@@ -234,15 +243,16 @@ def calc_ftemp_inst_vcmax(tc: Union[float, np.ndarray]) -> Union[float, np.ndarr
 
         tc:  temperature, or in general the temperature relevant for
             photosynthesis (°C)
+        pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
     Other parameters:
 
-        Ha: activation energy (:math:`H_a`, `PARAM.KattgeKnorr.Ha`)
-        Hd: deactivation energy (:math:`H_d`, `PARAM.KattgeKnorr.Hd`)
-        To: standard reference temperature expressed in Kelvin (`T_0`, `PARAM.k.To`)
-        R: the universal gas constant (:math:`R`,`PARAM.k.R`)
-        a: intercept of the entropy factor(:math:`a`, `PARAM.KattgeKnorr.a_ent`)
-        b: slope of the entropy factor (:math:`b`, `PARAM.KattgeKnorr.b_ent`)
+        Ha: activation energy (:math:`H_a`, `pmodel_params.kattge_knorr_Ha`)
+        Hd: deactivation energy (:math:`H_d`, `pmodel_params.kattge_knorr_Hd`)
+        To: standard reference temperature expressed in Kelvin (`T_0`, `pmodel_params.k_To`)
+        R: the universal gas constant (:math:`R`,`pmodel_params.k_R`)
+        a: intercept of the entropy factor(:math:`a`, `pmodel_params.kattge_knorr_a_ent`)
+        b: slope of the entropy factor (:math:`b`, `pmodel_params.kattge_knorr_b_ent`)
 
     Returns: A float value for :math:`f`
 
@@ -257,24 +267,26 @@ def calc_ftemp_inst_vcmax(tc: Union[float, np.ndarray]) -> Union[float, np.ndarr
     """
 
     # Convert temperatures to Kelvin
-    tkref = PARAM.k.To + PARAM.k.CtoK
-    tk = tc + PARAM.k.CtoK
+    tkref = pmodel_params.k_To + pmodel_params.k_CtoK
+    tk = tc + pmodel_params.k_CtoK
 
     # Calculate entropy following Kattge & Knorr (2007): slope and intercept
     # are defined using temperature in °C, not K!!! 'tcgrowth' corresponds
     # to 'tmean' in Nicks, 'tc25' is 'to' in Nick's
-    dent = PARAM.KattgeKnorr.a_ent + PARAM.KattgeKnorr.b_ent * tc
-    fva = calc_ftemp_arrh(tk, PARAM.KattgeKnorr.Ha)
-    fvb = ((1 + np.exp((tkref * dent - PARAM.KattgeKnorr.Hd) /
-                       (PARAM.k.R * tkref))) /
-           (1 + np.exp((tk * dent - PARAM.KattgeKnorr.Hd) /
-                       (PARAM.k.R * tk))))
+    dent = pmodel_params.kattge_knorr_a_ent + pmodel_params.kattge_knorr_b_ent * tc
+    fva = calc_ftemp_arrh(tk, pmodel_params.kattge_knorr_Ha)
+    fvb = ((1 + np.exp((tkref * dent - pmodel_params.kattge_knorr_Hd) /
+                       (pmodel_params.k_R * tkref))) /
+           (1 + np.exp((tk * dent - pmodel_params.kattge_knorr_Hd) /
+                       (pmodel_params.k_R * tk))))
 
     return fva * fvb
 
 
 def calc_ftemp_kphio(tc: Union[float, np.ndarray],
-                     c4: bool = False) -> Union[float, np.ndarray]:
+                     c4: bool = False,
+                     pmodel_params: PModelParams = PModelParams()
+                     ) -> Union[float, np.ndarray]:
     r"""Calculates the **temperature dependence of the quantum yield
     efficiency**, as a quadratic function of temperature (:math:`T`). The values
     of the coefficients depend on whether C3 or C4 photosynthesis is being
@@ -297,10 +309,10 @@ def calc_ftemp_kphio(tc: Union[float, np.ndarray],
 
     Other parameters:
 
-        C3: the parameters (:math:`a,b,c`, `PARAM.kphio.C3`) are taken from the
+        C3: the parameters (:math:`a,b,c`, `pmodel_params.kphio_C3`) are taken from the
             temperature dependence of the maximum quantum yield of photosystem
             II in light-adapted tobacco leaves determined by :cite:`Bernacchi:2003dc`.
-        C4: the parameters (:math:`a,b,c`, `PARAM.kphio.C4`) are taken from unpublished
+        C4: the parameters (:math:`a,b,c`, `pmodel_params.kphio_C4`) are taken from unpublished
             work.
 
     Returns:
@@ -324,9 +336,9 @@ def calc_ftemp_kphio(tc: Union[float, np.ndarray],
     """
 
     if c4:
-        coef = PARAM.kphio.C4
+        coef = pmodel_params.kphio_C4
     else:
-        coef = PARAM.kphio.C3
+        coef = pmodel_params.kphio_C3
 
     ftemp = coef[0] + coef[1] * tc + coef[2] * tc ** 2
     ftemp = np.clip(ftemp, 0.0, None)
@@ -335,7 +347,9 @@ def calc_ftemp_kphio(tc: Union[float, np.ndarray],
 
 
 def calc_gammastar(tc: Union[float, np.ndarray],
-                   patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+                   patm: Union[float, np.ndarray],
+                   pmodel_params: PModelParams = PModelParams()
+                   ) -> Union[float, np.ndarray]:
     r"""Calculates the photorespiratory **CO2 compensation point** in absence of
     dark respiration (:math:`\Gamma^{*}`, ::cite:`Farquhar:1980ft`) as:
 
@@ -358,9 +372,9 @@ def calc_gammastar(tc: Union[float, np.ndarray],
         Po: the standard pressure (:math:`p_0` )
         gs_0: the reference value of :math:`\Gamma^{*} at standard temperature
             (:math:`T_0`) and pressure (:math:`P_0`)  (:math:`\Gamma^{*}_{0}`,
-            ::cite:`Bernacchi:2001kg`, `PARAM.Bernacchi.gs25_0`)
+            ::cite:`Bernacchi:2001kg`, `pmodel_params.bernacchi_gs25_0`)
         ha: the activation energy (:math:`\Delta H_a`, ::cite:`Bernacchi:2001kg`,
-            `PARAM.Bernacchi.dha`)
+            `pmodel_params.bernacchi_dha`)
 
     Returns:
 
@@ -376,12 +390,14 @@ def calc_gammastar(tc: Union[float, np.ndarray],
     # check inputs, return shape not used
     _ = check_input_shapes(tc, patm)
 
-    return (PARAM.Bernacchi.gs25_0 * patm / PARAM.k.Po *
-            calc_ftemp_arrh((tc + PARAM.k.CtoK), ha=PARAM.Bernacchi.dha))
+    return (pmodel_params.bernacchi_gs25_0 * patm / pmodel_params.k_Po *
+            calc_ftemp_arrh((tc + pmodel_params.k_CtoK), ha=pmodel_params.bernacchi_dha))
 
 
 def calc_ns_star(tc: Union[float, np.ndarray],
-                 patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+                 patm: Union[float, np.ndarray],
+                 pmodel_params: PModelParams = PModelParams()
+                 ) -> Union[float, np.ndarray]:
 
     r"""Calculates the relative viscosity of water (:math:`\eta^*`), given the
     standard temperature and pressure, using :func:`~pyrealm.pmodel.calc_viscosity_h20`
@@ -398,8 +414,8 @@ def calc_ns_star(tc: Union[float, np.ndarray],
 
     Other parameters:
 
-        To: standard temperature (:math:`t0`, `PARAM.k.To`)
-        Po: standard pressure (:math:`p_0`, `PARAM.k.Po`)
+        To: standard temperature (:math:`t0`, `pmodel_params.k_To`)
+        Po: standard pressure (:math:`p_0`, `pmodel_params.k_Po`)
 
     Returns:
 
@@ -414,13 +430,15 @@ def calc_ns_star(tc: Union[float, np.ndarray],
     """
 
     visc_env = calc_viscosity_h2o(tc, patm)
-    visc_std = calc_viscosity_h2o(PARAM.k.To, PARAM.k.Po)
+    visc_std = calc_viscosity_h2o(pmodel_params.k_To, pmodel_params.k_Po)
 
     return visc_env / visc_std
 
 
 def calc_kmm(tc: Union[float, np.ndarray],
-             patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+             patm: Union[float, np.ndarray],
+             pmodel_params: PModelParams = PModelParams()
+             ) -> Union[float, np.ndarray]:
     r"""Calculates the **Michaelis Menten coefficient of Rubisco-limited
     assimilation** (:math:`K`, ::cite:`Farquhar:1980ft`) as a function of
     temperature (:math:`T`) and atmospheric pressure (:math:`p`) as:
@@ -453,12 +471,12 @@ def calc_kmm(tc: Union[float, np.ndarray],
 
     Other parameters:
 
-        hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`, `PARAM.Bernacchi.dhac`)
-        hao:  activation energy for :math:`\ce{O2}` (:math:`\Delta H_{ko}`, `PARAM.Bernacchi.dhao`)
+        hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`, `pmodel_params.bernacchi_dhac`)
+        hao:  activation energy for :math:`\ce{O2}` (:math:`\Delta H_{ko}`, `pmodel_params.bernacchi_dhao`)
         kc25: Michelis constant for :math:`\ce{CO2}` at standard temperature
-            (:math:`K_{c25}`, `PARAM.Bernacchi.kc25`)
+            (:math:`K_{c25}`, `pmodel_params.bernacchi_kc25`)
         ko25: Michelis constant for :math:`\ce{O2}` at standard temperature
-            (:math:`K_{o25}`, `PARAM.Bernacchi.ko25`)
+            (:math:`K_{o25}`, `pmodel_params.bernacchi_ko25`)
 
     Returns:
 
@@ -477,19 +495,21 @@ def calc_kmm(tc: Union[float, np.ndarray],
     _ = check_input_shapes(tc, patm)
 
     # conversion to Kelvin
-    tk = tc + PARAM.k.CtoK
+    tk = tc + pmodel_params.k_CtoK
 
-    kc = PARAM.Bernacchi.kc25 * calc_ftemp_arrh(tk, ha=PARAM.Bernacchi.dhac)
-    ko = PARAM.Bernacchi.ko25 * calc_ftemp_arrh(tk, ha=PARAM.Bernacchi.dhao)
+    kc = pmodel_params.bernacchi_kc25 * calc_ftemp_arrh(tk, ha=pmodel_params.bernacchi_dhac)
+    ko = pmodel_params.bernacchi_ko25 * calc_ftemp_arrh(tk, ha=pmodel_params.bernacchi_dhao)
 
     # O2 partial pressure
-    po = PARAM.k.co * 1e-6 * patm
+    po = pmodel_params.k_co * 1e-6 * patm
 
     return kc * (1.0 + po/ko)
 
 
 def calc_soilmstress(soilm: Union[float, np.ndarray],
-                     meanalpha: Union[float, np.ndarray] = 1.0) -> Union[float, np.ndarray]:
+                     meanalpha: Union[float, np.ndarray] = 1.0,
+                     pmodel_params: PModelParams = PModelParams()
+                     ) -> Union[float, np.ndarray]:
     r"""Calculates an **empirical soil moisture stress factor**  (:math:`\beta`,
     ::cite:`Stocker:2020dh`) as a function of relative soil moisture
     (:math:`m_s`, fraction of field capacity) and average aridity, quantified by
@@ -526,10 +546,10 @@ def calc_soilmstress(soilm: Union[float, np.ndarray],
 
     Other parameters:
 
-        theta0: lower bound of soil moisture (:math:`\theta_0`, `PARAM.soilmstress.theta0`).
-        thetastar: upper bound of soil moisture (:math:`\theta^{*}`, `PARAM.soilmstress.thetastar`).
-        a: aridity parameter (:math:`a`, `PARAM.soilmstress.a`).
-        b: aridity parameter (:math:`b`, `PARAM.soilmstress.b`).
+        theta0: lower bound of soil moisture (:math:`\theta_0`, `pmodel_params.soilmstress_theta0`).
+        thetastar: upper bound of soil moisture (:math:`\theta^{*}`, `pmodel_params.soilmstress_thetastar`).
+        a: aridity parameter (:math:`a`, `pmodel_params.soilmstress_a`).
+        b: aridity parameter (:math:`b`, `pmodel_params.soilmstress_b`).
 
     Returns:
 
@@ -547,12 +567,12 @@ def calc_soilmstress(soilm: Union[float, np.ndarray],
     _ = check_input_shapes(soilm, meanalpha)
 
     # Calculate outstress
-    y0 = (PARAM.soilmstress.a + PARAM.soilmstress.b * meanalpha)
-    beta = (1.0 - y0) / (PARAM.soilmstress.theta0 - PARAM.soilmstress.thetastar) ** 2
-    outstress = 1.0 - beta * (soilm - PARAM.soilmstress.thetastar) ** 2
+    y0 = (pmodel_params.soilmstress_a + pmodel_params.soilmstress_b * meanalpha)
+    beta = (1.0 - y0) / (pmodel_params.soilmstress_theta0 - pmodel_params.soilmstress_thetastar) ** 2
+    outstress = 1.0 - beta * (soilm - pmodel_params.soilmstress_thetastar) ** 2
 
     # Filter wrt to thetastar
-    outstress = np.where(soilm <= PARAM.soilmstress.thetastar, outstress, 1.0)
+    outstress = np.where(soilm <= pmodel_params.soilmstress_thetastar, outstress, 1.0)
 
     # Clip
     outstress = np.clip(outstress, 0.0, 1.0)
@@ -561,7 +581,9 @@ def calc_soilmstress(soilm: Union[float, np.ndarray],
 
 
 def calc_viscosity_h2o(tc: Union[float, np.ndarray],
-                       patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+                       patm: Union[float, np.ndarray],
+                       pmodel_params: PModelParams = PModelParams()
+                       ) -> Union[float, np.ndarray]:
     r"""Calculates the **viscosity of water** (:math:`\eta`) as a function of
     temperature and atmospheric pressure (::cite:`Huber:2009fy`).
 
@@ -588,15 +610,15 @@ def calc_viscosity_h2o(tc: Union[float, np.ndarray],
     rho = calc_density_h2o(tc, patm)
 
     # Calculate dimensionless parameters:
-    tbar = (tc + PARAM.k.CtoK) / PARAM.Huber.tk_ast
-    rbar = rho / PARAM.Huber.rho_ast
+    tbar = (tc + pmodel_params.k_CtoK) / pmodel_params.huber_tk_ast
+    rbar = rho / pmodel_params.huber_rho_ast
 
     # Calculate mu0 (Eq. 11 & Table 2, Huber et al., 2009):
     tbar_pow = np.power.outer(tbar, np.arange(0, 4))
-    mu0 = (1e2 * np.sqrt(tbar)) / np.sum(np.array(PARAM.Huber.H_i) / tbar_pow, axis=-1)
+    mu0 = (1e2 * np.sqrt(tbar)) / np.sum(np.array(pmodel_params.huber_H_i) / tbar_pow, axis=-1)
 
     # Calculate mu1 (Eq. 12 & Table 3, Huber et al., 2009):
-    h_array = np.array(PARAM.Huber.H_ij)
+    h_array = np.array(pmodel_params.huber_H_ij)
     ctbar = (1.0 / tbar) - 1.0
     row_j, _ = np.indices(h_array.shape)
     mu1 = h_array * np.power.outer(rbar - 1.0, row_j)
@@ -607,10 +629,12 @@ def calc_viscosity_h2o(tc: Union[float, np.ndarray],
     mu_bar = mu0 * mu1
 
     # Calculate mu (Eq. 1, Huber et al., 2009)
-    return mu_bar * PARAM.Huber.mu_ast  # Pa s
+    return mu_bar * pmodel_params.huber_mu_ast  # Pa s
 
 
-def calc_patm(elv: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+def calc_patm(elv: Union[float, np.ndarray],
+              pmodel_params: PModelParams = PModelParams()
+              ) -> Union[float, np.ndarray]:
     r"""Calculates **atmospheric pressure** as a function of elevation with reference to
     the standard atmosphere.  The elevation-dependence of atmospheric pressure
     is computed by assuming a linear decrease in temperature with elevation and
@@ -623,15 +647,16 @@ def calc_patm(elv: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     Parameters:
 
         elv: Elevation above sea-level (:math:`z`, metres above sea level.)
+        pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
     Other parameters:
 
-        G: gravity constant (:math:`g`, `PARAM.k.G`)
-        Po: standard atmospheric pressure at sea level (:math:`p_0`, `PARAM.k.Po`)
-        L: adiabatic temperature lapse rate (:math:`L}`, `PARAM.k.L`),
-        M: molecular weight for dry air (:math:`M`, `PARAM.k.Ma`),
-        R: universal gas constant (:math:`R`, `PARAM.k.R`)
-        Ko: reference temperature in Kelvin (:math:`K_0`, `PARAM.k.To`).
+        G: gravity constant (:math:`g`, `pmodel_params.k_G`)
+        Po: standard atmospheric pressure at sea level (:math:`p_0`, `pmodel_params.k_Po`)
+        L: adiabatic temperature lapse rate (:math:`L}`, `pmodel_params.k_L`),
+        M: molecular weight for dry air (:math:`M`, `pmodel_params.k_Ma`),
+        R: universal gas constant (:math:`R`, `pmodel_params.k_R`)
+        Ko: reference temperature in Kelvin (:math:`K_0`, `pmodel_params.k_To`).
 
     Returns:
 
@@ -649,15 +674,16 @@ def calc_patm(elv: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     # in Kelvins, while other functions use this constant in the PARAM units of
     # °C.
 
-    kto = PARAM.k.To + PARAM.k.CtoK
+    kto = pmodel_params.k_To + pmodel_params.k_CtoK
 
-    return (PARAM.k.Po * (1.0 - PARAM.k.L * elv / kto) **
-            (PARAM.k.G * PARAM.k.Ma /
-             (PARAM.k.R * PARAM.k.L)))
+    return (pmodel_params.k_Po * (1.0 - pmodel_params.k_L * elv / kto) **
+            (pmodel_params.k_G * pmodel_params.k_Ma /
+             (pmodel_params.k_R * pmodel_params.k_L)))
 
 
 def calc_co2_to_ca(co2: Union[float, np.ndarray],
-                   patm: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+                   patm: Union[float, np.ndarray],
+                   ) -> Union[float, np.ndarray]:
     r"""Converts ambient :math:`\ce{CO2}` (:math:`c_a`) in part per million to
     Pascals, accounting for atmospheric pressure.
 
@@ -796,7 +822,7 @@ class PModel:
 
             R_d = b_0 \frac{fr(t)}{fv(t)} V_{cmax}
 
-        following :cite:`Atkin:2015hk` (:math:`b_0` is set in `PARAM.Atkin.rd_to_vcmax`)
+        following :cite:`Atkin:2015hk` (:math:`b_0` is set in `pmodel_params.atkin_rd_to_vcmax`)
 
     * Stomatal conductance (:math:`g_s`), calculated as:
 
@@ -857,7 +883,9 @@ class PModel:
                  kphio: Optional[float] = None,
                  do_ftemp_kphio: bool = True,
                  c4: bool = False,
-                 method_jmaxlim: str = "wang17"):
+                 method_jmaxlim: str = "wang17",
+                 pmodel_params: PModelParams = PModelParams()
+                 ):
         r"""
         Creates a PModel instance using the input parameters.
 
@@ -876,6 +904,8 @@ class PModel:
             do_ftemp_kphio: (Optional, default=True) Include the temperature-
                 dependence of quantum yield efficiency (see
                 :func:`~pyrealm.pmodel.calc_ftemp_kphio`).
+            pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
+
        """
         self.shape = check_input_shapes(tc, vpd, co2, patm, soilmstress)
 
@@ -907,7 +937,7 @@ class PModel:
         # dependency of the quantum yield efficiency after Bernacchi et al., 2003
 
         if do_ftemp_kphio:
-            self.ftemp_kphio = calc_ftemp_kphio(tc, c4)
+            self.ftemp_kphio = calc_ftemp_kphio(tc, c4, pmodel_params=pmodel_params)
         else:
             self.ftemp_kphio = 1.0
 
@@ -918,12 +948,12 @@ class PModel:
         # ambient CO2 partial pressure (Pa)
         self.ca = calc_co2_to_ca(co2, patm)
         # photorespiratory compensation point - Gamma-star (Pa)
-        self.gammastar = calc_gammastar(tc, patm)
+        self.gammastar = calc_gammastar(tc, patm, pmodel_params=pmodel_params)
         # Michaelis-Menten coef. (Pa)
-        self.kmm = calc_kmm(tc, patm)
+        self.kmm = calc_kmm(tc, patm, pmodel_params=pmodel_params)
 
         # viscosity correction factor relative to standards
-        self.ns_star = calc_ns_star(tc, patm) # (unitless)
+        self.ns_star = calc_ns_star(tc, patm, pmodel_params=pmodel_params)  # (unitless)
 
         # -----------------------------------------------------------------------
         # Optimal ci
@@ -937,7 +967,8 @@ class PModel:
             method_optci = "prentice14"
 
         self.optchi = CalcOptimalChi(self.kmm, self.gammastar, self.ns_star,
-                                     self.ca, vpd, method=method_optci)
+                                     self.ca, vpd, method=method_optci,
+                                     pmodel_params=pmodel_params)
 
         # -----------------------------------------------------------------------
         # Corollary predictions
@@ -951,20 +982,21 @@ class PModel:
         # -----------------------------------------------------------------------
         lue_vcmax = CalcLUEVcmax(self.optchi, self.kphio,
                                  self.ftemp_kphio, soilmstress,
-                                 method=method_jmaxlim)
+                                 method=method_jmaxlim,
+                                 pmodel_params=pmodel_params)
 
         # -----------------------------------------------------------------------
         # Populate an instance of IabsScaled at values per unit iabs
         # -----------------------------------------------------------------------
         self.unit_iabs = IabsScaled(lue=lue_vcmax.lue, vcmax=lue_vcmax.vcmax)
 
-        # Vcmax25 (vcmax normalized to PARAM.k.To)
-        ftemp25_inst_vcmax = calc_ftemp_inst_vcmax(tc)
+        # Vcmax25 (vcmax normalized to pmodel_params.k_To)
+        ftemp25_inst_vcmax = calc_ftemp_inst_vcmax(tc, pmodel_params=pmodel_params)
         self.unit_iabs.vcmax25 = self.unit_iabs.vcmax / ftemp25_inst_vcmax
 
         # Dark respiration at growth temperature
-        ftemp_inst_rd = calc_ftemp_inst_rd(tc)
-        self.unit_iabs.rd = (PARAM.Atkin.rd_to_vcmax *
+        ftemp_inst_rd = calc_ftemp_inst_rd(tc, pmodel_params=pmodel_params)
+        self.unit_iabs.rd = (pmodel_params.atkin_rd_to_vcmax *
                              (ftemp_inst_rd / ftemp25_inst_vcmax) *
                              self.unit_iabs.vcmax)
 
@@ -986,7 +1018,7 @@ class PModel:
         elif c4:
             self.unit_iabs.gs = np.ones(self.shape) * np.infty
         else:
-            self.unit_iabs.gs = ((self.unit_iabs.lue / PARAM.k.c_molmass) /
+            self.unit_iabs.gs = ((self.unit_iabs.lue / pmodel_params.k_c_molmass) /
                                  (self.ca - self.optchi.ci))
 
     def __repr__(self):
@@ -1063,7 +1095,9 @@ class CalcOptimalChi:
                  ns_star: Union[float, np.ndarray],
                  ca: Union[float, np.ndarray],
                  vpd: Union[float, np.ndarray],
-                 method: str = 'prentice14'):
+                 method: str = 'prentice14',
+                 pmodel_params: PModelParams = PModelParams()
+                 ):
 
         # Check inputs are broadcastable
         self.shape = check_input_shapes(kmm, gammastar, ns_star, ca, vpd)
@@ -1076,6 +1110,7 @@ class CalcOptimalChi:
         self.mjoc = None
 
         # Identify and run the selected method
+        self.pmodel_params = pmodel_params
         self.method = method
         all_methods = {'prentice14': self.prentice14, 'c4': self.c4}
 
@@ -1156,7 +1191,7 @@ class CalcOptimalChi:
         vpd = np.clip(kwargs['vpd'], 0, None)
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        xi = np.sqrt((PARAM.stocker19.beta * (kwargs['kmm'] + kwargs['gammastar']))
+        xi = np.sqrt((self.pmodel_params.stocker19_beta * (kwargs['kmm'] + kwargs['gammastar']))
                      / (1.6 * kwargs['ns_star']))
         self.chi = (kwargs['gammastar'] / kwargs['ca'] +
                     (1.0 - kwargs['gammastar'] / kwargs['ca']) * xi / (xi + np.sqrt(vpd)))
@@ -1164,7 +1199,7 @@ class CalcOptimalChi:
         # Define variable substitutes:
         vdcg = kwargs['ca'] - kwargs['gammastar']
         vacg = kwargs['ca'] + 2.0 * kwargs['gammastar']
-        vbkg = PARAM.stocker19.beta * (kwargs['kmm'] + kwargs['gammastar'])
+        vbkg = self.pmodel_params.stocker19_beta * (kwargs['kmm'] + kwargs['gammastar'])
 
         # Calculate mj
         # NOTE: this differs from rpmodel, which uses length not dim here, so
@@ -1233,7 +1268,7 @@ class CalcLUEVcmax:
 
     Other Parameters:
 
-        c_molmass: the molar mass of carbon (:math:`M_C`, `PARAM.k.c_molmass`)
+        c_molmass: the molar mass of carbon (:math:`M_C`, `pmodel_params.k_c_molmass`)
 
 
 
@@ -1277,7 +1312,9 @@ class CalcLUEVcmax:
                  kphio: Union[float, np.ndarray],
                  ftemp_kphio: Union[float, np.ndarray] = 1.0,
                  soilmstress: Union[float, np.ndarray] = 1.0,
-                 method: str = 'wang17'):
+                 method: str = 'wang17',
+                 pmodel_params: PModelParams = PModelParams()
+                 ):
 
         self.shape = check_input_shapes(optchi.mj, optchi.mjoc, kphio,
                                         ftemp_kphio, soilmstress)
@@ -1287,6 +1324,7 @@ class CalcLUEVcmax:
         self.ftemp_kphio = ftemp_kphio
         self.soilmstress = soilmstress
         self.method = method
+        self.pmodel_params = pmodel_params
         self.mjlim = None
         self.lue = None
         self.vcmax = None
@@ -1311,10 +1349,10 @@ class CalcLUEVcmax:
             # Now calculate the LUE and V_cmax
             # Light use efficiency (gpp per unit absorbed light)
             self.lue = (self.kphio * self.ftemp_kphio * self.optchi.mj * self.mjlim *
-                        PARAM.k.c_molmass * self.soilmstress)
+                        self.pmodel_params.k_c_molmass * self.soilmstress)
 
             # Back calculate Vcmax normalised per unit absorbed PPFD (assuming iabs=1)
-            self.vcmax = self.lue / (self.optchi.mc * PARAM.k.c_molmass)
+            self.vcmax = self.lue / (self.optchi.mc * self.pmodel_params.k_c_molmass)
 
         else:
             raise ValueError(f"CalcLUEVcmax: method argument '{method}' invalid.")
@@ -1337,12 +1375,12 @@ class CalcLUEVcmax:
         Other parameters:
 
             cstar: A cost parameter for maintaining :math:`J_{max}`
-                (:math:`c^*`, `PARAM.wang.c`)
+                (:math:`c^*`, `pmodel_params.wang_c`)
 
         """
 
         # Calculate mjlim (square root term in Eqn 2 of Wang et al 2017)
-        vals = 1 - (PARAM.wang17.c / self.optchi.mj) ** (2.0 / 3.0)
+        vals = 1 - (self.pmodel_params.wang17_c / self.optchi.mj) ** (2.0 / 3.0)
 
         # Convert to array if needed and handle negative and nan values
         vals = np.array(vals) if np.ndim(vals) == 0 else vals
@@ -1374,20 +1412,20 @@ class CalcLUEVcmax:
         Other parameters:
 
             theta: A term to capture the curved relationship between light intensity
-                and photosynthetic capacity :math:`J_{max}` (:math:`\theta`, `PARAM.smith19.theta`)
+                and photosynthetic capacity :math:`J_{max}` (:math:`\theta`, `pmodel_params.smith19_theta`)
             c_cost: A cost parameter for maintaining :math:`J_{max}`
-                (:math:`c`, `PARAM.smith19.c_cost`)
+                (:math:`c`, `pmodel_params.smith19_c_cost`)
 
         """
 
         # Adopted from Nick Smith's code:
         # Calculate omega, see Smith et al., 2019 Ecology Letters  # Eq. S4
-        theta = PARAM.smith19.theta
-        c_cost = PARAM.smith19.c_cost
+        theta = self.pmodel_params.smith19_theta
+        c_cost = self.pmodel_params.smith19_c_cost
 
         # simplification terms for omega calculation
         cm = 4 * c_cost / self.optchi.mj
-        v = 1 / (cm * (1 - PARAM.smith19.theta * cm)) - 4 * theta
+        v = 1 / (cm * (1 - self.pmodel_params.smith19_theta * cm)) - 4 * theta
 
         # account for non-linearities at low m values. This code finds
         # the roots of a quadratic function that is defined purely from

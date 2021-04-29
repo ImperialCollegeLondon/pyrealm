@@ -1,4 +1,4 @@
-import sys
+import os
 import warnings
 import pytest
 import numpy as np
@@ -27,7 +27,8 @@ def values():
     """Fixture to load test inputs from file.
     """
 
-    with open('test/test_outputs_rpmodel.yaml') as infile:
+    test_dir = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(test_dir, 'test_outputs_rpmodel.yaml')) as infile:
         values = yaml.load(infile, Loader=yaml.SafeLoader)
 
     values = {k: np.array(v) if isinstance(v, list) else v
