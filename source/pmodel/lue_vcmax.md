@@ -56,8 +56,10 @@ where $m_c$ is the  $\ce{CO2}$ limitation term for Rubisco assimilation.
 from matplotlib import pyplot
 import numpy as np
 from pyrealm import pmodel
-from pyrealm.params import PARAM
 %matplotlib inline
+
+# get the default set of P Model parameters
+pmodel_param = pmodel.PModelParams()
 
 # Set the resolution of examples
 n_pts = 101
@@ -123,7 +125,7 @@ of:
 * aridity (`meanalpha`), as the average annual ratio of AET to PET.
 
 The calculation includes an upper bound in relative soil moisture
-(`PARAM.soilmstress.thetastar`), above which $\beta$ is always 1, corresponding
+(`soilmstress_thetastar`), above which $\beta$ is always 1, corresponding
 to no loss of light use efficiency.
 
 ```{code-cell} python
@@ -163,12 +165,12 @@ example, only temperature varies ($P=101325.0 , \ce{CO2}= 410 \text{ppm},
 :tags: [hide-input]
 # Calculate variation in m_jlim with temperature
 # - calculate optimal chi under a temperature gradient
-gammastar = pmodel.calc_gammastar(tc_1d, patm=PARAM.k.Po)
-kmm = pmodel.calc_kmm(tc_1d, patm=PARAM.k.Po)
-viscosity = pmodel.calc_viscosity_h2o(tc_1d, patm=PARAM.k.Po)
-viscosity_std = pmodel.calc_viscosity_h2o(PARAM.k.To, PARAM.k.Po)
+gammastar = pmodel.calc_gammastar(tc_1d, patm=pmodel_param.k_Po)
+kmm = pmodel.calc_kmm(tc_1d, patm=pmodel_param.k_Po)
+viscosity = pmodel.calc_viscosity_h2o(tc_1d, patm=pmodel_param.k_Po)
+viscosity_std = pmodel.calc_viscosity_h2o(pmodel_param.k_To, pmodel_param.k_Po)
 ns_star = viscosity / viscosity_std
-ca = pmodel.calc_co2_to_ca(co2=410, patm=PARAM.k.Po)
+ca = pmodel.calc_co2_to_ca(co2=410, patm=pmodel_param.k_Po)
 
 # Compare Wang17 and Smith19
 optchi = pmodel.CalcOptimalChi(kmm=kmm, gammastar=gammastar, 
