@@ -1,9 +1,9 @@
 from dataclasses import dataclass, asdict
-from dacite import from_dict
-import enforce_typing
 from typing import Tuple
 from numbers import Number
 import json
+import enforce_typing
+from dacite import from_dict
 
 
 class ParamClass:

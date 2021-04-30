@@ -1,7 +1,7 @@
-numpy
-typing
+# Requirements from setup.py for minimal running installation.
+
+.
+
+# Additional packages for testing
 pyyaml
-dataclasses
-dacite
-enforce_typing
 pytest
