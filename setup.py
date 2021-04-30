@@ -22,6 +22,10 @@ setuptools.setup(
              ['']
     },
     license='MIT',
+    install_requires=['dacite',
+                      'numpy',
+                      'enforce_typing'],
+    python_requires='>=3.6',
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
