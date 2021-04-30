@@ -8,3 +8,5 @@
 0.3.0 - Refactor of parameter classes into param_classes module with
         consistent ParamClass baseclass for import/export and dataclass
         based interface.
+0.3.1 - Restructure of requirements and install_requires for better pip install
+
