@@ -1,6 +1,5 @@
 import os
-import pytest
-from pyrealm import get_data
+from pyrealm import get_data_path
 
 
 def test_get_data():
