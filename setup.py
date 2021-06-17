@@ -17,8 +17,8 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://pyrealm.readthedocs.io/",
     packages=setuptools.find_packages(),
-    include_package_data=True,
-    package_data={'': ['data/*.nc']},
+    # include_package_data=True,
+    # package_data={'': ['data/*.nc']},
     entry_points={
             'console_scripts': ['']
     },

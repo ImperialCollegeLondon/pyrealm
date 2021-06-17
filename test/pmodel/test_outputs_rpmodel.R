@@ -323,7 +323,5 @@ for (rw in seq(nrow(rpmodel_c4))){
 
 }
 
-
-
 # Save values to YAML for use in python tests.
 write_yaml(values, 'test_outputs_rpmodel.yaml', precision=10)
