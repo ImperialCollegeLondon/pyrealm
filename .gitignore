@@ -23,3 +23,7 @@ dist
 
 # notebook caching
 .ipynb_checkpoints
+
+# R hidden files
+.Rapp.history
+
