@@ -7,11 +7,17 @@ from contextlib import contextmanager
 # import pkg_resources
 from pyrealm import pmodel
 
+
+# RPMODEL bugs
+# rpmodel was using an incorrect parameterisation of the C4 ftemp kphio curve
+# that is fixed but currently (1.2.0) an implementation error in the output checking 
+# means this still have to be skipped.
+
+RPMODEL_C4_BUG = True
+
 # ------------------------------------------
 # Null context manager to include exception testing in test paramaterisation
 # ------------------------------------------
-
-RPMODEL_C4_BUG = True
 
 @contextmanager
 def does_not_raise():
@@ -457,6 +463,42 @@ def test_calc_lue_vcmax(request, values, soilmstress, ftemp_kphio,
         assert np.allclose(ret.omega_star, expected['omega_star'])
 
 # ------------------------------------------
+# Testing PModelEnvironment class
+# - double checking that the bundled calcs in here work as expected
+# - test that the constraint issues a warning as expected.
+# ------------------------------------------
+
+@pytest.mark.parametrize(
+    'variables',
+    [dict(tc='tc_sc', vpd='vpd_sc', co2='co2_sc', patm='patm_sc',
+          ca='ca_sc', kmm='kmm_sc', gammastar='gammastar_sc', ns_star='ns_star_sc'),
+     dict(tc='tc_ar', vpd='vpd_ar', co2='co2_ar', patm='patm_ar',
+          ca='ca_ar', kmm='kmm_ar', gammastar='gammastar_ar', ns_star='ns_star_ar')],
+    ids=['sc', 'ar']
+)
+def test_pmodelenvironment(values, variables):
+
+    ret = pmodel.PModelEnvironment(tc=values[variables['tc']],
+                                   patm=values[variables['patm']],
+                                   vpd=values[variables['vpd']],
+                                   co2=values[variables['co2']]
+                                   )
+
+    assert np.allclose(ret.gammastar, values[variables['gammastar']])
+    assert np.allclose(ret.ns_star, values[variables['ns_star']])
+    assert np.allclose(ret.kmm, values[variables['kmm']])
+    assert np.allclose(ret.ca, values[variables['ca']])
+
+
+def test_pmodelenvironment_constraint():
+
+    with pytest.warns(RuntimeWarning):
+        ret = pmodel.PModelEnvironment(tc=np.array([-15, 5, 10, 15, 20]),
+                                       vpd=-1000,
+                                       co2=400,
+                                       patm=101325)
+
+# ------------------------------------------
 # Testing PModel class - separate c3 and c4 tests
 # - sc + ar inputs: tc, vpd, co2, patm (not testing elev)
 # - +- soilmstress: soilm, meanalpha (but again assuming constant across ar inputs)
@@ -467,6 +509,24 @@ def test_calc_lue_vcmax(request, values, soilmstress, ftemp_kphio,
 # - include fapar_sc and ppfd_sc (same irradiation everywhere)
 # - hold kphio static
 # ------------------------------------------
+
+
+@pytest.fixture(scope='module')
+def pmodelenv(values):
+    """Fixture to create PModelEnvironments with scalar and array inputs
+    """
+
+    sc = pmodel.PModelEnvironment(tc=values['tc_sc'],
+                                  vpd=values['vpd_sc'],
+                                  co2=values['co2_sc'],
+                                  patm=values['patm_sc'])
+
+    ar = pmodel.PModelEnvironment(tc=values['tc_ar'],
+                                  vpd=values['vpd_ar'],
+                                  co2=values['co2_ar'],
+                                  patm=values['patm_ar'])
+
+    return {'sc': sc, 'ar': ar}
 
 
 @pytest.mark.parametrize(
@@ -485,22 +545,19 @@ def test_calc_lue_vcmax(request, values, soilmstress, ftemp_kphio,
     ids=['wang17', 'smith19', 'none']
 )
 @pytest.mark.parametrize(
-    'variables',
-    [dict(tc='tc_sc', vpd='vpd_sc', co2='co2_sc', patm='patm_sc'),
-     dict(tc='tc_ar', vpd='vpd_ar', co2='co2_ar', patm='patm_ar')],
+    'environ',
+    ['sc', 'ar'],
     ids=['sc', 'ar']
 )
-def test_pmodel_class_c3(request, values, soilmstress, ftemp_kphio, luevcmax_method, variables):
+def test_pmodel_class_c3(request, values, pmodelenv, soilmstress, ftemp_kphio, luevcmax_method, environ):
 
-    # Get the main vars
-    kwargs = {k: values[v] for k, v in variables.items()}
 
     if soilmstress:
         soilmstress = pmodel.calc_soilmstress(values['soilm_sc'], values['meanalpha_sc'])
     else:
         soilmstress = None
 
-    ret = pmodel.PModel(**kwargs,
+    ret = pmodel.PModel(pmodelenv[environ],
                         kphio=0.05,
                         soilmstress=soilmstress,
                         do_ftemp_kphio=ftemp_kphio,
@@ -566,22 +623,18 @@ def test_pmodel_class_c3(request, values, soilmstress, ftemp_kphio, luevcmax_met
     ids=['fkphio-on', 'fkphio-off']
 )
 @pytest.mark.parametrize(
-    'variables',
-    [dict(tc='tc_sc', vpd='vpd_sc', co2='co2_sc', patm='patm_sc'),
-     dict(tc='tc_ar', vpd='vpd_ar', co2='co2_ar', patm='patm_ar')],
+    'environ',
+    ['sc', 'ar'],
     ids=['sc', 'ar']
 )
-def test_pmodel_class_c4(request, values, soilmstress, ftemp_kphio, variables):
-
-    # Get the main vars
-    kwargs = {k: values[v] for k, v in variables.items()}
+def test_pmodel_class_c3(request, values, pmodelenv, soilmstress, ftemp_kphio, environ):
 
     if soilmstress:
         soilmstress = pmodel.calc_soilmstress(values['soilm_sc'], values['meanalpha_sc'])
     else:
         soilmstress = None
 
-    ret = pmodel.PModel(**kwargs,
+    ret = pmodel.PModel(pmodelenv[environ],
                         kphio=0.05,
                         soilmstress=soilmstress,
                         do_ftemp_kphio=ftemp_kphio,

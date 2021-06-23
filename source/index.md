@@ -48,8 +48,10 @@ clicking on the buttons like the one below.
 
   pmodel/pmodel.md
   pmodel/rpmodel.md
+  pmodel/photosynthetic_environment.md
   pmodel/optimal_chi.md
   pmodel/lue_vcmax.md
+  pmodel/global_example.md
   pmodel/pmodel_reference.md
 ```
 
@@ -69,6 +71,7 @@ clicking on the buttons like the one below.
   :caption: Additional detail
   :hidden:
   
+  constrained_arrays.md
   params.md
   z_bibliography.rst
 ```

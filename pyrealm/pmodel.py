@@ -3,9 +3,29 @@ from typing import Optional, Union
 from dataclasses import dataclass
 import numpy as np
 from pyrealm.param_classes import PModelParams
+from pyrealm.constrained_array import ConstrainedArray, constraint_factory
+
 
 # TODO - Note that the typing currently does not enforce the dtype of ndarrays
 #        but it looks like the upcoming np.typing module might do this.
+
+
+# Define environmental variable constraint functions. These are intended
+# primarily to keep inputs away from areas where the functions become
+# numerically unstable.
+
+# TODO - check the sanity of these limits
+
+_constrain_temp = constraint_factory(label='temperature (tc)',
+                                     lower=0, upper=100)
+_constrain_patm = constraint_factory(label='atmospheric pressure (patm)',
+                                     lower=30000, upper=110000)
+_constrain_vpd = constraint_factory(label='vapor pressure deficit (vpd)',
+                                    lower=0, upper=10000)
+_constrain_co2 = constraint_factory(label='carbon dioxide (co2)',
+                                    lower=100, upper=1000)
+_constrain_elev = constraint_factory(label='elevation (elv)',
+                                     lower=-500, upper=9000)
 
 
 def check_input_shapes(*args):
@@ -39,8 +59,10 @@ def check_input_shapes(*args):
 
     for val in args:
         if isinstance(val, np.ndarray):
-            shapes.add(val.shape)
-        elif val is None or isinstance(val, (float, int)):
+            # Note that 0-dim ndarrays (which are scalars) pass through
+            if val.ndim > 0:
+                shapes.add(val.shape)
+        elif val is None or isinstance(val, (float, int, np.generic)):
             pass  # No need to track scalars and optional values pass None
         else:
             raise ValueError(f'Unexpected input to check_input_shapes: {type(val)}')
@@ -86,8 +108,31 @@ def calc_density_h2o(tc: Union[float, np.ndarray],
         998.2056
     """
 
-    # check inputs, shape not used
+    # DESIGN NOTE:
+    # It doesn't make sense to use this function for tc < 0, but in particular
+    # the calculation shows wild numeric instability between -44 and -46 that
+    # leads to numerous downstream issues:
+    #
+    # from pyrealm import pmodel
+    # from matplotlib import pyplot as plt
+    # import numpy as np
+    #
+    # tc = np.arange(-88, 48, 0.1)
+    # r = np.arange(-1, 1, 0.01)
+    # sd = np.fromiter([np.std(pmodel.calc_density_h2o(t + r, 101350)) for t in tc], np.float)
+    #
+    # plt.plot(tc, sd)
+    # plt.show()
+
+    # Check input shapes, shape not used
     _ = check_input_shapes(tc, patm)
+
+    # Check input ranges
+    if not isinstance(tc, ConstrainedArray):
+        tc = _constrain_temp(tc)
+
+    if not isinstance(patm, ConstrainedArray):
+        patm = _constrain_patm(patm)
 
     # Get powers of tc, including tc^0 = 1 for constant terms
     tc_pow = np.power.outer(tc, np.arange(0, 10))
@@ -206,6 +251,10 @@ def calc_ftemp_inst_rd(tc: Union[float, np.ndarray],
         250.9593
     """
 
+    # Check input ranges
+    if not isinstance(tc, ConstrainedArray):
+        tc = _constrain_temp(tc)
+
     return np.exp(pmodel_params.heskel_b * (tc - pmodel_params.k_To) -
                   pmodel_params.heskel_c * (tc ** 2 - pmodel_params.k_To ** 2))
 
@@ -266,6 +315,10 @@ def calc_ftemp_inst_vcmax(tc: Union[float, np.ndarray],
 
     """
 
+    # Check input ranges
+    if not isinstance(tc, ConstrainedArray):
+        tc = _constrain_temp(tc)
+
     # Convert temperatures to Kelvin
     tkref = pmodel_params.k_To + pmodel_params.k_CtoK
     tk = tc + pmodel_params.k_CtoK
@@ -306,6 +359,7 @@ def calc_ftemp_kphio(tc: Union[float, np.ndarray],
         tc: Temperature, relevant for photosynthesis (°C)
         c4: Boolean specifying whether fitted temperature response for C4 plants
             is used. Defaults to \code{FALSE}.
+        pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
     Other parameters:
 
@@ -334,6 +388,10 @@ def calc_ftemp_kphio(tc: Union[float, np.ndarray],
         432.25806
 
     """
+
+    # Check input ranges
+    if not isinstance(tc, ConstrainedArray):
+        tc = _constrain_temp(tc)
 
     if c4:
         coef = pmodel_params.kphio_C4
@@ -365,6 +423,7 @@ def calc_gammastar(tc: Union[float, np.ndarray],
 
         tc: Temperature relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pascals)
+        pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
     Other Parameters:
 
@@ -390,6 +449,13 @@ def calc_gammastar(tc: Union[float, np.ndarray],
     # check inputs, return shape not used
     _ = check_input_shapes(tc, patm)
 
+    # Check input ranges
+    if not isinstance(tc, ConstrainedArray):
+        tc = _constrain_temp(tc)
+
+    if not isinstance(patm, ConstrainedArray):
+        patm = _constrain_patm(patm)
+
     return (pmodel_params.bernacchi_gs25_0 * patm / pmodel_params.k_Po *
             calc_ftemp_arrh((tc + pmodel_params.k_CtoK), ha=pmodel_params.bernacchi_dha))
 
@@ -411,6 +477,7 @@ def calc_ns_star(tc: Union[float, np.ndarray],
 
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pa)
+        pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
     Other parameters:
 
@@ -428,6 +495,13 @@ def calc_ns_star(tc: Union[float, np.ndarray],
         >>> round(calc_ns_star(20, 101325), 5)
         1.12536
     """
+
+    # Check input ranges
+    if not isinstance(tc, ConstrainedArray):
+        tc = _constrain_temp(tc)
+
+    if not isinstance(patm, ConstrainedArray):
+        patm = _constrain_patm(patm)
 
     visc_env = calc_viscosity_h2o(tc, patm)
     visc_std = calc_viscosity_h2o(pmodel_params.k_To, pmodel_params.k_Po)
@@ -468,6 +542,7 @@ def calc_kmm(tc: Union[float, np.ndarray],
 
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pa)
+        pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
     Other parameters:
 
@@ -493,6 +568,13 @@ def calc_kmm(tc: Union[float, np.ndarray],
 
     # Check inputs, return shape not used
     _ = check_input_shapes(tc, patm)
+
+    # Check input ranges
+    if not isinstance(tc, ConstrainedArray):
+        tc = _constrain_temp(tc)
+
+    if not isinstance(patm, ConstrainedArray):
+        patm = _constrain_patm(patm)
 
     # conversion to Kelvin
     tk = tc + pmodel_params.k_CtoK
@@ -543,6 +625,7 @@ def calc_soilmstress(soilm: Union[float, np.ndarray],
             (unitless). Defaults to 1.0 (no soil moisture stress).
         meanalpha: Local annual mean ratio of actual over potential
             evapotranspiration, measure for average aridity. Defaults to 1.0.
+        pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
     Other parameters:
 
@@ -591,6 +674,7 @@ def calc_viscosity_h2o(tc: Union[float, np.ndarray],
 
         tc: air temperature (°C)
         patm: atmospheric pressure (Pa)
+        pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
     Returns:
 
@@ -605,6 +689,13 @@ def calc_viscosity_h2o(tc: Union[float, np.ndarray],
 
     # Check inputs, return shape not used
     _ = check_input_shapes(tc, patm)
+
+    # Check input ranges
+    if not isinstance(tc, ConstrainedArray):
+        tc = _constrain_temp(tc)
+
+    if not isinstance(patm, ConstrainedArray):
+        patm = _constrain_patm(patm)
 
     # Get the density of water, kg/m^3
     rho = calc_density_h2o(tc, patm)
@@ -674,6 +765,10 @@ def calc_patm(elv: Union[float, np.ndarray],
     # in Kelvins, while other functions use this constant in the PARAM units of
     # °C.
 
+    # Check input ranges
+    if not isinstance(elv, ConstrainedArray):
+        elv = _constrain_elev(elv)
+
     kto = pmodel_params.k_To + pmodel_params.k_CtoK
 
     return (pmodel_params.k_Po * (1.0 - pmodel_params.k_L * elv / kto) **
@@ -695,9 +790,16 @@ def calc_co2_to_ca(co2: Union[float, np.ndarray],
         Ambient :math:`\ce{CO2}` in units of Pa
 
     Examples:
-        >>> round(calc_co2_to_ca(413.03, 101325), 6)
+        >>> np.round(calc_co2_to_ca(413.03, 101325), 6)
         41.850265
     """
+
+    # Check input ranges
+    if not isinstance(co2, ConstrainedArray):
+        co2 = _constrain_co2(co2)
+
+    if not isinstance(patm, ConstrainedArray):
+        patm = _constrain_patm(patm)
 
     return 1.0e-6 * co2 * patm  # Pa, atms. CO2
 
@@ -779,26 +881,96 @@ class IabsScaled:
                           gs=iabs * self.gs,
                           scaled=True)
 
+# Design notes on PModel (0.3.1 -> 0.4.0)
+# The PModel until 0.3.1 was a single class taking tc etc. as inputs. However
+# a common use case would be to look at how the PModel predictions change with
+# different options. I (DO) did consider retaining the single class and having
+# PModel __init__ create the environment and then have PModel.fit(), but
+# having two classes seemed to better separate the physiological model (PModel
+# class and attributes) from the environment the model is being fitted to.
+
+
+class PModelEnvironment:
+
+    """Create a PModelEnvironment instance using the input parameters.
+
+    This class takes the four key environmental inputs to the P Model and
+    calculates four photosynthetic variables for those environmental
+    conditions:
+
+    * the photorespiratory CO2 compensation point (:math:`\Gamma^{*}`,
+      :func:`~pyrealm.pmodel.calc_gammastar`),
+    * the relative viscosity of water (:math:`\eta^*`,
+      :func:`~pyrealm.pmodel.calc_ns_star`),
+    * the ambient partial pressure of :math:`\ce{CO2}` (:math:`c_a`,
+      :func:`~pyrealm.pmodel.calc_c02_to_ca`) and
+    * the Michaelis Menten coefficient of Rubisco-limited assimilation
+      (:math:`K`, :func:`~pyrealm.pmodel.calc_kmm`).
+
+    These variables can then be used to fit P models using different
+    configurations. Note that the underlying parameters of the P model
+    (:class:`~pyrealm.param_classes.PModelParams`) are set when creating
+    an instance of this class.
+
+    Parameters:
+
+        tc: Temperature, relevant for photosynthesis (°C)
+        vpd: Vapour pressure deficit (Pa)
+        co2: Atmospheric CO2 concentration (ppm)
+        patm: Atmospheric pressure (Pa).
+        pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
+    """
+
+    def __init__(self,
+                 tc: Union[float, np.ndarray],
+                 vpd: Union[float, np.ndarray],
+                 co2: Union[float, np.ndarray],
+                 patm: Union[float, np.ndarray],
+                 pmodel_params: PModelParams = PModelParams()):
+
+        self.shape = check_input_shapes(tc, vpd, co2, patm)
+
+        # Store input variables
+        self.tc = _constrain_temp(tc)
+        self.vpd = _constrain_vpd(vpd)
+        self.co2 = _constrain_co2(co2)
+        self.patm = _constrain_patm(patm)
+
+        # ambient CO2 partial pressure (Pa)
+        self.ca = calc_co2_to_ca(self.co2, self.patm)
+
+        # photorespiratory compensation point - Gamma-star (Pa)
+        self.gammastar = calc_gammastar(tc, patm, pmodel_params=pmodel_params)
+
+        # Michaelis-Menten coef. (Pa)
+        self.kmm = calc_kmm(tc, patm, pmodel_params=pmodel_params)
+
+        # viscosity correction factor relative to standards
+        self.ns_star = calc_ns_star(tc, patm, pmodel_params=pmodel_params)  # (unitless)
+
+        # Store parameters
+        self.pmodel_params = pmodel_params
+
+    def __repr__(self):
+
+        return (f"PModel(gammastar={self.gammastar}, "
+                f"kmm={self.kmm}, ca={self.ca}, ns_star={self.ns_star})")
+
 
 class PModel:
 
-    r"""Fits the P model to a given set of environmental parameters. See the
-    :meth:`~pyrealm.pmodel.PModel.__init__` documentation for the input variables.
-    The calculated attributes of the class are described below. An extended
-    description with typical use cases is given in :ref:`pmodel/pmodel.html`
-    but the basic flow of the model is:
+    r"""Fits the P model to a given set of environmental and photosynthetic
+    parameters. See the :meth:`~pyrealm.pmodel.PModel.__init__` documentation
+    for the input variables. The calculated attributes of the class are
+    described below. An extended description with typical use cases is given
+    in :ref:`pmodel/pmodel.html` but the basic flow of the model is:
 
-    1. Calculate photosynthetic variables from environmental conditions. See the
-       functions :func:`~pyrealm.pmodel.calc_gammastar`,
-       :func:`~pyrealm.pmodel.calc_ns_star`,
-       :func:`~pyrealm.pmodel.calc_c02_to_ca` and
-       :func:`~pyrealm.pmodel.calc_kmm` for details.
-    2. Estimate :math:`\ce{CO2}` limitation factors and optimal internal to
+    1. Estimate :math:`\ce{CO2}` limitation factors and optimal internal to
        ambient :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using
        :class:`~pyrealm.pmodel.CalcOptimalChi`.
-    3. Estimate light use efficiency (LUE) and maximum carboxylation rate
+    2. Estimate light use efficiency (LUE) and maximum carboxylation rate
        (:math:`V_{cmax}`) using :class:`~pyrealm.pmodel.CalcLUEVcmax`.
-    4. Calculate corollary predictions
+    3. Calculate corollary predictions
 
     **Corollary prediction details**
 
@@ -843,58 +1015,46 @@ class PModel:
 
     Attributes:
 
-        ca: Ambient CO2 expressed as partial pressure (Pa)
-        gammastar: Photorespiratory compensation point :math:`\Gamma^*`, (Pa, see
-            :func:`~pyrealm.pmodel.calc_gammastar`).
-        kmm: Michaelis-Menten coefficient :math:`K` for photosynthesis (Pa, see
-            :func:`~pyrealm.pmodel.calc_kmm`).
-        ns_star: Relative viscosity of water (unitless, see
-            :func:`~pyrealm.pmodel.calc_ns_star`).
         optchi: An object of class :class:`~pyrealm.pmodel.CalcOptimalChi`
         unit_iabs: An object of class :class:`~pyrealm.pmodel.IabsScaled`
         iwue: Intrinsic water use efficiency (iWUE, Pa)
 
     Examples:
 
-        >>> mod_c3 = PModel(tc=20, vpd=1000, co2=400, patm=101325.0)
+        >>> env = PModelEnvironment(tc=20, vpd=1000, co2=400, patm=101325.0)
+        >>> mod_c3 = PModel(env)
         >>> # Key variables from pmodel
-        >>> round(mod_c3.optchi.ci, 5)
+        >>> np.round(mod_c3.optchi.ci, 5)
         28.14209
-        >>> round(mod_c3.optchi.chi, 5)
+        >>> np.round(mod_c3.optchi.chi, 5)
         0.69435
-        >>> round(mod_c3.unit_iabs.scale_iabs(fapar=1, ppfd=300).gpp, 5)
+        >>> np.round(mod_c3.unit_iabs.scale_iabs(fapar=1, ppfd=300).gpp, 5)
         76.42545
-        >>> mod_c4 = PModel(tc=20, vpd=1000, co2=400, patm=101325.0,
-        ...                 c4=True, method_jmaxlim='none')
+        >>> mod_c4 = PModel(env, c4=True, method_jmaxlim='none')
         >>> # Key variables from PModel
-        >>> round(mod_c4.optchi.ci, 5)
+        >>> np.round(mod_c4.optchi.ci, 5)
         40.53
-        >>> round(mod_c4.optchi.chi, 5)
+        >>> np.round(mod_c4.optchi.chi, 5)
         1.0
-        >>> round(mod_c4.unit_iabs.scale_iabs(fapar=1, ppfd=300).gpp, 5)
+        >>> np.round(mod_c4.unit_iabs.scale_iabs(fapar=1, ppfd=300).gpp, 5)
         103.25886
     """
 
-    def __init__(self, tc: Union[float, np.ndarray],
-                 vpd: Union[float, np.ndarray],
-                 co2: Union[float, np.ndarray],
-                 patm: Optional[Union[float, np.ndarray]],
+    def __init__(self,
+                 env: PModelEnvironment,
+                 rootzonestress: Optional[Union[float, np.ndarray]] = None,
                  soilmstress: Optional[Union[float, np.ndarray]] = None,
                  kphio: Optional[float] = None,
                  do_ftemp_kphio: bool = True,
                  c4: bool = False,
                  method_jmaxlim: str = "wang17",
-                 pmodel_params: PModelParams = PModelParams()
                  ):
         r"""
         Creates a PModel instance using the input parameters.
 
         Parameters:
 
-            tc: Temperature, relevant for photosynthesis (°C)
-            vpd: Vapour pressure deficit (Pa)
-            co2: Atmospheric CO2 concentration (ppm)
-            patm: Atmospheric pressure (Pa).
+            env: An instance of PModelEnvironment.
             kphio: (Optional) Apparent quantum yield efficiency (unitless).
             soilmstress: (Optional, default=None) A soil moisture stress factor
                 calculated using :func:`~pyrealm.pmodel.calc_soilmstress`.
@@ -904,20 +1064,27 @@ class PModel:
             do_ftemp_kphio: (Optional, default=True) Include the temperature-
                 dependence of quantum yield efficiency (see
                 :func:`~pyrealm.pmodel.calc_ftemp_kphio`).
-            pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
+        """
 
-       """
-        self.shape = check_input_shapes(tc, vpd, co2, patm, soilmstress)
+        # Check possible array inputs
+        self.shape = check_input_shapes(soilmstress, rootzonestress)
 
-        # -------------------------
-        # Set soil moisture default if needed
-        # -------------------------
+        # ---------------------------------------------
+        # Soil moisture and root zone stress handling
+        # ---------------------------------------------
+
+        if not (soilmstress is None or rootzonestress is None):
+            raise AttributeError("Soilmstress and rootzonestress are alternative "
+                                 "approaches to soil moisture effects. Do not use both.")
 
         if soilmstress is None:
             soilmstress = 1.0
             do_soilmstress = False
         else:
             do_soilmstress = True
+
+        if rootzonestress is None:
+            rootzonestress = 1.0
 
         # kphio defaults:
         if kphio is None:
@@ -937,23 +1104,10 @@ class PModel:
         # dependency of the quantum yield efficiency after Bernacchi et al., 2003
 
         if do_ftemp_kphio:
-            self.ftemp_kphio = calc_ftemp_kphio(tc, c4, pmodel_params=pmodel_params)
+            self.ftemp_kphio = calc_ftemp_kphio(env.tc, c4,
+                                                pmodel_params=env.pmodel_params)
         else:
             self.ftemp_kphio = 1.0
-
-        # -----------------------------------------------------------------------
-        # Photosynthesis model parameters depending on temperature, pressure, and CO2.
-        # -----------------------------------------------------------------------
-
-        # ambient CO2 partial pressure (Pa)
-        self.ca = calc_co2_to_ca(co2, patm)
-        # photorespiratory compensation point - Gamma-star (Pa)
-        self.gammastar = calc_gammastar(tc, patm, pmodel_params=pmodel_params)
-        # Michaelis-Menten coef. (Pa)
-        self.kmm = calc_kmm(tc, patm, pmodel_params=pmodel_params)
-
-        # viscosity correction factor relative to standards
-        self.ns_star = calc_ns_star(tc, patm, pmodel_params=pmodel_params)  # (unitless)
 
         # -----------------------------------------------------------------------
         # Optimal ci
@@ -966,16 +1120,17 @@ class PModel:
         else:
             method_optci = "prentice14"
 
-        self.optchi = CalcOptimalChi(self.kmm, self.gammastar, self.ns_star,
-                                     self.ca, vpd, method=method_optci,
-                                     pmodel_params=pmodel_params)
+        self.optchi = CalcOptimalChi(env.kmm, env.gammastar, env.ns_star,
+                                     env.ca, env.vpd, method=method_optci,
+                                     rootzonestress=rootzonestress,
+                                     pmodel_params=env.pmodel_params)
 
         # -----------------------------------------------------------------------
         # Corollary predictions
         # -----------------------------------------------------------------------
 
         # intrinsic water use efficiency (in Pa)
-        self.iwue = (self.ca - self.optchi.ci) / 1.6
+        self.iwue = (env.ca - self.optchi.ci) / 1.6
 
         # -----------------------------------------------------------------------
         # Vcmax and light use efficiency
@@ -983,7 +1138,7 @@ class PModel:
         lue_vcmax = CalcLUEVcmax(self.optchi, self.kphio,
                                  self.ftemp_kphio, soilmstress,
                                  method=method_jmaxlim,
-                                 pmodel_params=pmodel_params)
+                                 pmodel_params=env.pmodel_params)
 
         # -----------------------------------------------------------------------
         # Populate an instance of IabsScaled at values per unit iabs
@@ -991,18 +1146,18 @@ class PModel:
         self.unit_iabs = IabsScaled(lue=lue_vcmax.lue, vcmax=lue_vcmax.vcmax)
 
         # Vcmax25 (vcmax normalized to pmodel_params.k_To)
-        ftemp25_inst_vcmax = calc_ftemp_inst_vcmax(tc, pmodel_params=pmodel_params)
+        ftemp25_inst_vcmax = calc_ftemp_inst_vcmax(env.tc, pmodel_params=env.pmodel_params)
         self.unit_iabs.vcmax25 = self.unit_iabs.vcmax / ftemp25_inst_vcmax
 
         # Dark respiration at growth temperature
-        ftemp_inst_rd = calc_ftemp_inst_rd(tc, pmodel_params=pmodel_params)
-        self.unit_iabs.rd = (pmodel_params.atkin_rd_to_vcmax *
+        ftemp_inst_rd = calc_ftemp_inst_rd(env.tc, pmodel_params=env.pmodel_params)
+        self.unit_iabs.rd = (env.pmodel_params.atkin_rd_to_vcmax *
                              (ftemp_inst_rd / ftemp25_inst_vcmax) *
                              self.unit_iabs.vcmax)
 
         # Jmax using again A_J = A_C, handling edges cases
-        fact_jmaxlim = (self.unit_iabs.vcmax * (self.optchi.ci + 2.0 * self.gammastar) /
-                        (self.kphio * (self.optchi.ci + self.kmm)))
+        fact_jmaxlim = (self.unit_iabs.vcmax * (self.optchi.ci + 2.0 * env.gammastar) /
+                        (self.kphio * (self.optchi.ci + env.kmm)))
         fact_jmaxlim = (1.0 / fact_jmaxlim) ** 2 - 1.0
         jmax = np.empty_like(fact_jmaxlim)
         mask = fact_jmaxlim > 0
@@ -1018,13 +1173,12 @@ class PModel:
         elif c4:
             self.unit_iabs.gs = np.ones(self.shape) * np.infty
         else:
-            self.unit_iabs.gs = ((self.unit_iabs.lue / pmodel_params.k_c_molmass) /
-                                 (self.ca - self.optchi.ci))
+            self.unit_iabs.gs = ((self.unit_iabs.lue / env.pmodel_params.k_c_molmass) /
+                                 (env.ca - self.optchi.ci))
 
     def __repr__(self):
 
-        return (f"PModel(kphio={self.kphio}, c4={self.c4}, gammastar={self.gammastar}, "
-                f"kmm={self.kmm}, ca={self.ca}, ns_star={self.ns_star}, "
+        return (f"PModel(kphio={self.kphio}, c4={self.c4}, "
                 f"ftemp_kphio={self.ftemp_kphio}, iwue={self.iwue})")
 
 
@@ -1054,7 +1208,6 @@ class CalcOptimalChi:
             see :func:`calc_co2_to_ca`)
         vpd (float): the vapor pressure deficit (:math:`D`)
         method (str): one of ``c4`` or ``prentice14``
-        beta (float): unit cost ratio of carboxylation (see :obj:`PARAMS.stocker19.beta`)
         chi (float): the ratio of leaf internal to ambient :math:`\ce{CO2}`
             partial pressure (:math:`\chi`).
         mj (float): :math:`\ce{CO2}` limitation factor for light-limited
@@ -1095,12 +1248,14 @@ class CalcOptimalChi:
                  ns_star: Union[float, np.ndarray],
                  ca: Union[float, np.ndarray],
                  vpd: Union[float, np.ndarray],
+                 rootzonestress: Union[float, np.ndarray] = 1.0,
                  method: str = 'prentice14',
                  pmodel_params: PModelParams = PModelParams()
                  ):
 
         # Check inputs are broadcastable
-        self.shape = check_input_shapes(kmm, gammastar, ns_star, ca, vpd)
+        self.shape = check_input_shapes(kmm, gammastar, ns_star,
+                                        ca, vpd, rootzonestress)
 
         # set attribute defaults
         self.chi = None
@@ -1117,7 +1272,8 @@ class CalcOptimalChi:
         if self.method in all_methods:
             this_method = all_methods[self.method]
             this_method(kmm=kmm, gammastar=gammastar, ca=ca,
-                        vpd=vpd, ns_star=ns_star)
+                        vpd=vpd, ns_star=ns_star,
+                        rootzonestress=rootzonestress)
         else:
             raise ValueError(f"CalcOptimalChi: method argument '{method}' invalid.")
 
@@ -1191,7 +1347,9 @@ class CalcOptimalChi:
         vpd = np.clip(kwargs['vpd'], 0, None)
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        xi = np.sqrt((self.pmodel_params.stocker19_beta * (kwargs['kmm'] + kwargs['gammastar']))
+        xi = np.sqrt((self.pmodel_params.stocker19_beta *
+                      kwargs['rootzonestress'] *
+                      (kwargs['kmm'] + kwargs['gammastar']))
                      / (1.6 * kwargs['ns_star']))
         self.chi = (kwargs['gammastar'] / kwargs['ca'] +
                     (1.0 - kwargs['gammastar'] / kwargs['ca']) * xi / (xi + np.sqrt(vpd)))
@@ -1199,7 +1357,9 @@ class CalcOptimalChi:
         # Define variable substitutes:
         vdcg = kwargs['ca'] - kwargs['gammastar']
         vacg = kwargs['ca'] + 2.0 * kwargs['gammastar']
-        vbkg = self.pmodel_params.stocker19_beta * (kwargs['kmm'] + kwargs['gammastar'])
+        vbkg = (self.pmodel_params.stocker19_beta *
+                kwargs['rootzonestress'] *
+                (kwargs['kmm'] + kwargs['gammastar']))
 
         # Calculate mj
         # NOTE: this differs from rpmodel, which uses length not dim here, so
