@@ -143,7 +143,10 @@ The sources of the reference inputs and outputs are:
 
 ### Configure `git`
 
-It is easier if `git` is configured to push new tags along with commits. This essentially just means that new releases can be sent with a single commit, which is simpler and saves Travis from building both the the code commit and then the tagged version. This only needs to be set once.
+It is easier if `git` is configured to push new tags along with commits. This 
+essentially just means that new releases can be sent with a single commit, 
+which is simpler and saves Travis from building both the the code commit and 
+then the tagged version. This only needs to be set once.
 
 ```bash
 set git config --global push.followTags true
@@ -196,7 +199,8 @@ To upload the new version to testpypi, checkout master and run
 python setup.py sdist bdist_wheel
 ```
 
-Remembering to change the version number, you can then create an account at pypi and testpypi and use `twine` to test:
+Remembering to change the version number, you can then create an account at 
+pypi and testpypi and use `twine` to test:
 
 ```
 twine upload -r testpypi dist/*x.y.z*
@@ -204,7 +208,8 @@ twine upload -r testpypi dist/*x.y.z*
 
 
 
-Once all seems well,  finish the release, go to the master branch and push it to create the tagged version on github.
+Once all seems well,  finish the release, go to the master branch and push it 
+to create the tagged version on github.
 
 ```bash
 git flow release finish x.y.z
@@ -223,4 +228,5 @@ release the distribution for use via `pip`
 twine upload dist/*x.y.z*
 ```
 
-Once that is done, switch back to `develop` and bump the version number to add `.post9000` to show the code is in development again.
+Once that is done, switch back to `develop` and bump the version number to 
+add `.post9000` to show the code is in development again.

@@ -9,4 +9,13 @@
         consistent ParamClass baseclass for import/export and dataclass
         based interface.
 0.3.1 - Restructure of requirements and install_requires for better pip install
-
+0.4.0 - Refactor of the PModel to separate calc of gammastar etc, from
+        the pmodel itself: PModelEnvironment and PModel classes.
+      - Implementation of ConstrainedArray class to clip inputs to
+        biologically meaningful ranges and to identify that clipping
+        has occurred. Particular issue with serious numerical instablility
+        in calc_density_h2o, but now adopted a general solution to clipping
+        inputs.
+      - Expansion of PModel testing to include a global array giving a wider
+        range of inputs including edge cases.
+	  - Created option for using a rootzonestress option (Rodolfo Nobrega)

@@ -28,25 +28,33 @@ but the Python implementation has some differences in the code structure (see
 
 ## Overview
 
-The P-model uses four core environmental variables to build a model of carbon
-capture and water use:
+The P-model is a model of carbon capture and water use by plants. Four 
+variables are used to define the environment that the plant experiences:
 
 - temperature (`tc`),
 - vapor pressure deficit (`vpd`),
 - atmospheric $\ce{CO2}$ concentration (`co2`), and
 - atmospheric pressure (`patm`)
 
-The model breaks down into four broad stages, each of which is described in more
-detail in the link for each stage
+These environmental variables can then be used to calculate a describe the 
+photosynthetic environment of a plant (see [details](photosynthetic_environment)) 
+by calculating:
 
-1. Conversion of environmental variables to photosynthetic parameters
-   (see [details](optimal_chi#photosynthetic-parameters)).
-2. Calculation $\ce{CO2}$ pressures and limitation factors
-   (see [details](optimal_chi#calculation-of-optimal-chi)) 
-3. Calculation of light use efficiency and maximum carboxylation capacity
+- the photorespiratory compensation point ($\Gamma^*$),
+- the Michaelis-Menten coefficient for photosynthesis ($K_{mm}$),
+- the relative viscosity of water ($\eta^*$), and
+- the partial pressure of $\ce{CO2}$ in ambient air ($c_a$).
+
+Once this set of environmental variables has been calculated, the P-model can
+then be fitted. The model breaks down into three broad stages, each of which 
+is described in more detail in the link for each stage
+
+1. Calculation $\ce{CO2}$ pressures and limitation factors
+   (see [details](optimal_chi)) 
+2. Calculation of light use efficiency and maximum carboxylation capacity
    (see [details](lue_vcmax)). 
-4. Optionally, scaling of key outputs to the total absorbed irradiance (see [below](#scaling-to-absorbed-irradiance)).
-
+3. Optionally, scaling of key outputs to the total absorbed irradiance 
+   (see [below](#scaling-to-absorbed-irradiance)).
 
 ### Variable graph
 
@@ -58,9 +66,10 @@ variables are shown with a dashed edge.
 
 ## Example use
 
-Running the P Model will typically just use the {class}`~pyrealm.pmodel.PModel`,
-possibly with some preprocessing of optional inputs. The code below illustrates
-different use cases.
+Running the P Model consists of using the environmental variables to calculate 
+the photosynthetic environment for the model ({class}`~pyrealm.pmodel.PModelEnvironment`) 
+and then fitting the P-model to that environment ({class}`~pyrealm.pmodel.PModel`). 
+The code below illustrates different use cases.
 
 
 ### Simple use
@@ -74,16 +83,21 @@ Fitting the model for:
 
 ```{code-cell} ipython3
 from pyrealm import pmodel
-model = pmodel.PModel(tc=20.0, patm=101325.0, vpd=0.82, co2=400)
+env  = pmodel.PModelEnvironment(tc=20.0, patm=101325.0, vpd=0.82, co2=400)
+model = pmodel.PModel(env)
 ```
 
-The returned model object holds a lot of information. The model object itself contains calculated values of photosynthetic parameters, model options and intrinsic water use efficiency:
+The returned model object holds a lot of information. The model object itself
+contains model options and intrinsic water use efficiency:
 
 ```{code-cell} ipython3
 model
 ```
 
-There is also a {class}`CalcOptimalChi` object, containing details of the calculation of optimal ratio of internal to ambient $\ce{CO2}$ pressure ($\chi$) calculations and $\ce{CO2}$ limitation factors to both light assimilation ($m_j$) and carboxylation ($m_c$).
+It also contains a {class}`CalcOptimalChi` object, recording the details of 
+the calculation of optimal ratio of internal to ambient $\ce{CO2}$ pressure
+($\chi$) calculations and $\ce{CO2}$ limitation factors to both light 
+assimilation ($m_j$) and carboxylation ($m_c$).
 
 ```{code-cell} ipython3
 model.optchi
@@ -135,7 +149,8 @@ import numpy as np
 
 # Create a sequence of temperatures and fit the model
 tc = np.linspace(20, 30, 101)
-model_array = pmodel.PModel(tc=tc, patm=101325.0, vpd=0.82, co2=400)
+env = pmodel.PModelEnvironment(tc=tc, patm=101325.0, vpd=0.82, co2=400)
+model_array = pmodel.PModel(env)
 
 # Plot TC against LUE
 pyplot.plot(tc, model_array.unit_iabs.lue)
@@ -153,7 +168,8 @@ compares the resulting light use efficiencies.
 
 ```{code-cell} ipython3
 patm = pmodel.calc_patm(3000)
-model_3000 = pmodel.PModel(tc=20, patm=patm, vpd=0.82, co2=400)
+env = pmodel.PModelEnvironment(tc=20, patm=patm, vpd=0.82, co2=400)
+model_3000 = pmodel.PModel(env)
 
 # Tiny change in LUE
 np.array([model.unit_iabs.lue, model_3000.unit_iabs.lue])
@@ -169,11 +185,12 @@ automatically. Following {cite}`Stocker:2020dh`, the default value depends on
 1. is the temperature dependency of $\phi_0$ being applied.
 
 The user can however specify their own value. This is used here and then below
-to faciliate comparisons across other optional settings.
+to faciliate comparisons across other optional settings. Note here that this
+model re-uses the photosynthetic environment, allowing different variants of 
+the model to be calculated without having to recalculate those inputs.
 
 ```{code-cell} ipython3
-model_fixkphio = pmodel.PModel(tc=20, patm=patm, vpd=0.82, 
-                               co2=400, kphio=0.08)
+model_fixkphio = pmodel.PModel(env, kphio=0.08)
 ```
 
 ### Soil moisture stress
@@ -195,8 +212,7 @@ soilmstress
 ```
 
 ```{code-cell} ipython3
-model_soil = pmodel.PModel(tc=20, patm=101325.0, vpd=0.82, 
-                           co2=400, kphio=0.08, soilmstress=soilmstress)
+model_soil = pmodel.PModel(env, kphio=0.08, soilmstress=soilmstress)
 
 # Compare LUE
 np.array([model_fixkphio.unit_iabs.lue, model_soil.unit_iabs.lue])
@@ -216,8 +232,7 @@ model_fixkphio.ftemp_kphio
 This correction can be removed using the argument `do_ftemp_kphio=False`:
 
 ```{code-cell} ipython3
-model_no_td_kphio = pmodel.PModel(tc=20, patm=patm, vpd=0.82, co2=400,
-                                  kphio=0.08, do_ftemp_kphio=False)
+model_no_td_kphio = pmodel.PModel(env, kphio=0.08, do_ftemp_kphio=False)
 
 # Compare LUE
 np.array([model_fixkphio.unit_iabs.lue, model_no_td_kphio.unit_iabs.lue])
@@ -232,10 +247,8 @@ correction can either be omitted (`method_jmaxlim='none'`) or the alternative
 formulation of {cite}`Smith:2019dv` can be used (`method_jmaxlim='smith19'`).
 
 ```{code-cell} ipython3
-model_jmax_none = pmodel.PModel(tc=20, patm=patm, vpd=0.82, co2=400,
-                                kphio=0.08, method_jmaxlim='none')
-model_jmax_smith19 = pmodel.PModel(tc=20, patm=patm, vpd=0.82, co2=400,
-                                   kphio=0.08, method_jmaxlim='smith19')
+model_jmax_none = pmodel.PModel(env, kphio=0.08, method_jmaxlim='none')
+model_jmax_smith19 = pmodel.PModel(env,  kphio=0.08, method_jmaxlim='smith19')
 
 # Compare LUE from the three methods
 np.array([model_fixkphio.unit_iabs.lue, 
