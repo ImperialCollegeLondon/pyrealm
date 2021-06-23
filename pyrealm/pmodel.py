@@ -1258,7 +1258,7 @@ class PModelOld:
 
     Examples:
 
-        >>> mod_c3 = PModel(tc=20, vpd=1000, co2=400, patm=101325.0)
+        >>> mod_c3 = PModelOld(tc=20, vpd=1000, co2=400, patm=101325.0)
         >>> # Key variables from pmodel
         >>> np.round(mod_c3.optchi.ci, 5)
         28.14209
@@ -1266,7 +1266,7 @@ class PModelOld:
         0.69435
         >>> np.round(mod_c3.unit_iabs.scale_iabs(fapar=1, ppfd=300).gpp, 5)
         76.42545
-        >>> mod_c4 = PModel(tc=20, vpd=1000, co2=400, patm=101325.0,
+        >>> mod_c4 = PModelOld(tc=20, vpd=1000, co2=400, patm=101325.0,
         ...                 c4=True, method_jmaxlim='none')
         >>> # Key variables from PModel
         >>> np.round(mod_c4.optchi.ci, 5)
