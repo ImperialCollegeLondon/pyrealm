@@ -3,7 +3,7 @@ from typing import Optional, Union
 from dataclasses import dataclass
 import numpy as np
 from pyrealm.param_classes import PModelParams
-from pyrealm.constrained_array import ConstrainedArray, constraint_factory
+from pyrealm.constrained_array import ConstrainedArray, ConstraintFactory
 
 
 # TODO - Note that the typing currently does not enforce the dtype of ndarrays
@@ -16,16 +16,16 @@ from pyrealm.constrained_array import ConstrainedArray, constraint_factory
 
 # TODO - check the sanity of these limits
 
-_constrain_temp = constraint_factory(label='temperature (tc)',
-                                     lower=0, upper=100)
-_constrain_patm = constraint_factory(label='atmospheric pressure (patm)',
-                                     lower=30000, upper=110000)
-_constrain_vpd = constraint_factory(label='vapor pressure deficit (vpd)',
-                                    lower=0, upper=10000)
-_constrain_co2 = constraint_factory(label='carbon dioxide (co2)',
-                                    lower=100, upper=1000)
-_constrain_elev = constraint_factory(label='elevation (elv)',
-                                     lower=-500, upper=9000)
+_constrain_temp = ConstraintFactory(label='temperature (°C)',
+                                    lower=0, upper=100)
+_constrain_patm = ConstraintFactory(label='atmospheric pressure (Pa)',
+                                    lower=30000, upper=110000)
+_constrain_vpd = ConstraintFactory(label='vapor pressure deficit (Pa)',
+                                   lower=0, upper=10000)
+_constrain_co2 = ConstraintFactory(label='carbon dioxide (ppm)',
+                                   lower=100, upper=1000)
+_constrain_elev = ConstraintFactory(label='elevation (m)',
+                                    lower=-500, upper=9000)
 
 
 def check_input_shapes(*args):
@@ -128,11 +128,8 @@ def calc_density_h2o(tc: Union[float, np.ndarray],
     _ = check_input_shapes(tc, patm)
 
     # Check input ranges
-    if not isinstance(tc, ConstrainedArray):
-        tc = _constrain_temp(tc)
-
-    if not isinstance(patm, ConstrainedArray):
-        patm = _constrain_patm(patm)
+    tc = _constrain_temp(tc)
+    patm = _constrain_patm(patm)
 
     # Get powers of tc, including tc^0 = 1 for constant terms
     tc_pow = np.power.outer(tc, np.arange(0, 10))
@@ -154,6 +151,35 @@ def calc_density_h2o(tc: Union[float, np.ndarray],
 
     # Convert to density (g cm^-3) -> 1000 g/kg; 1000000 cm^3/m^3 -> kg/m^3:
     rho = 1e3 / spec_vol
+
+    # CDLO: Method of Chen et al (1997) - I tested this to compare to the TerrA-P
+    # code base but I don't think we need it. Preserving the code in case it is
+    # needed in the future.
+    #
+    #     # Calculate density at 1 atm (kg/m^3):
+    #     chen_po = np.array([0.99983952, 6.788260e-5 , -9.08659e-6 , 1.022130e-7 ,
+    #                         -1.35439e-9 , 1.471150e-11, -1.11663e-13, 5.044070e-16,
+    #                         -1.00659e-18])
+    #     po = np.sum(np.array(chen_po) * tc_pow[..., :9], axis=-1)
+    #
+    #     # Calculate bulk modulus at 1 atm (bar):
+    #     chen_ko = np.array([19652.17, 148.1830, -2.29995, 0.01281,
+    #                         -4.91564e-5, 1.035530e-7])
+    #     ko = np.sum(np.array(chen_ko) * tc_pow[..., :6], axis=-1)
+    #
+    #     # Calculate temperature dependent coefficients:
+    #     chen_ca = np.array([3.26138, 5.223e-4, 1.324e-4, -7.655e-7, 8.584e-10])
+    #     ca = np.sum(np.array(chen_ca) * tc_pow[..., :5], axis=-1)
+    #
+    #     chen_cb = np.array([7.2061e-5, -5.8948e-6, 8.69900e-8, -1.0100e-9, 4.3220e-12])
+    #     cb = np.sum(np.array(chen_cb) * tc_pow[..., :5], axis=-1)
+    #
+    #     # Convert atmospheric pressure to bar (1 bar = 100000 Pa)
+    #     pbar = 1.0e-5 * patm
+    #
+    #     rho = (ko + ca * pbar + cb * pbar ** 2.0)
+    #     rho /= (ko + ca * pbar + cb * pbar ** 2.0 - pbar)
+    #     rho *= 1e3 * po
 
     return rho
 
@@ -252,8 +278,7 @@ def calc_ftemp_inst_rd(tc: Union[float, np.ndarray],
     """
 
     # Check input ranges
-    if not isinstance(tc, ConstrainedArray):
-        tc = _constrain_temp(tc)
+    tc = _constrain_temp(tc)
 
     return np.exp(pmodel_params.heskel_b * (tc - pmodel_params.k_To) -
                   pmodel_params.heskel_c * (tc ** 2 - pmodel_params.k_To ** 2))
@@ -316,8 +341,7 @@ def calc_ftemp_inst_vcmax(tc: Union[float, np.ndarray],
     """
 
     # Check input ranges
-    if not isinstance(tc, ConstrainedArray):
-        tc = _constrain_temp(tc)
+    tc = _constrain_temp(tc)
 
     # Convert temperatures to Kelvin
     tkref = pmodel_params.k_To + pmodel_params.k_CtoK
@@ -390,8 +414,7 @@ def calc_ftemp_kphio(tc: Union[float, np.ndarray],
     """
 
     # Check input ranges
-    if not isinstance(tc, ConstrainedArray):
-        tc = _constrain_temp(tc)
+    tc = _constrain_temp(tc)
 
     if c4:
         coef = pmodel_params.kphio_C4
@@ -450,11 +473,8 @@ def calc_gammastar(tc: Union[float, np.ndarray],
     _ = check_input_shapes(tc, patm)
 
     # Check input ranges
-    if not isinstance(tc, ConstrainedArray):
-        tc = _constrain_temp(tc)
-
-    if not isinstance(patm, ConstrainedArray):
-        patm = _constrain_patm(patm)
+    tc = _constrain_temp(tc)
+    patm = _constrain_patm(patm)
 
     return (pmodel_params.bernacchi_gs25_0 * patm / pmodel_params.k_Po *
             calc_ftemp_arrh((tc + pmodel_params.k_CtoK), ha=pmodel_params.bernacchi_dha))
@@ -497,11 +517,8 @@ def calc_ns_star(tc: Union[float, np.ndarray],
     """
 
     # Check input ranges
-    if not isinstance(tc, ConstrainedArray):
-        tc = _constrain_temp(tc)
-
-    if not isinstance(patm, ConstrainedArray):
-        patm = _constrain_patm(patm)
+    tc = _constrain_temp(tc)
+    patm = _constrain_patm(patm)
 
     visc_env = calc_viscosity_h2o(tc, patm)
     visc_std = calc_viscosity_h2o(pmodel_params.k_To, pmodel_params.k_Po)
@@ -570,11 +587,8 @@ def calc_kmm(tc: Union[float, np.ndarray],
     _ = check_input_shapes(tc, patm)
 
     # Check input ranges
-    if not isinstance(tc, ConstrainedArray):
-        tc = _constrain_temp(tc)
-
-    if not isinstance(patm, ConstrainedArray):
-        patm = _constrain_patm(patm)
+    tc = _constrain_temp(tc)
+    patm = _constrain_patm(patm)
 
     # conversion to Kelvin
     tk = tc + pmodel_params.k_CtoK
@@ -691,11 +705,8 @@ def calc_viscosity_h2o(tc: Union[float, np.ndarray],
     _ = check_input_shapes(tc, patm)
 
     # Check input ranges
-    if not isinstance(tc, ConstrainedArray):
-        tc = _constrain_temp(tc)
-
-    if not isinstance(patm, ConstrainedArray):
-        patm = _constrain_patm(patm)
+    tc = _constrain_temp(tc)
+    patm = _constrain_patm(patm)
 
     # Get the density of water, kg/m^3
     rho = calc_density_h2o(tc, patm, pmodel_params=pmodel_params)
@@ -766,8 +777,7 @@ def calc_patm(elv: Union[float, np.ndarray],
     # °C.
 
     # Check input ranges
-    if not isinstance(elv, ConstrainedArray):
-        elv = _constrain_elev(elv)
+    elv = _constrain_elev(elv)
 
     kto = pmodel_params.k_To + pmodel_params.k_CtoK
 
@@ -795,11 +805,8 @@ def calc_co2_to_ca(co2: Union[float, np.ndarray],
     """
 
     # Check input ranges
-    if not isinstance(co2, ConstrainedArray):
-        co2 = _constrain_co2(co2)
-
-    if not isinstance(patm, ConstrainedArray):
-        patm = _constrain_patm(patm)
+    co2 = _constrain_co2(co2)
+    patm = _constrain_patm(patm)
 
     return 1.0e-6 * co2 * patm  # Pa, atms. CO2
 
