@@ -1,5 +1,6 @@
 import numpy as np
 from pyrealm.param_classes import UtilParams
+from pyrealm.constrained_array import ConstraintFactory
 
 """
 This module provides utility functions shared by modules or providing
@@ -7,9 +8,12 @@ extra functions such as conversions for common forcing variable inputs,
 such as hygrometric and radiation conversions.
 """
 
+
 # Psychrometric conversions to VPD for vapour pressure, specific humidity and
 # relative humidity. Using the bigleaf R package as a checking reference from
 # which the doctest values are taken
+
+_constrain_rh = ConstraintFactory(lower=0, upper=1, label='relative humidity (-)',)
 
 
 def calc_vp_sat(ta, util_params=UtilParams()):
@@ -101,7 +105,11 @@ def convert_rh_to_vpd(rh, ta, util_params=UtilParams()):
         >>> allen = UtilParams(magnus_option='Allen1998')
         >>> round(convert_rh_to_vpd(0.7, 21, util_params=allen), 7)
         0.7461016
+        >>> convert_rh_to_vpd(71, 21)
+        masked
     """
+
+    rh = _constrain_rh(rh)
 
     vp_sat = calc_vp_sat(ta, util_params=util_params)
 
