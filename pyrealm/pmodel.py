@@ -698,7 +698,7 @@ def calc_viscosity_h2o(tc: Union[float, np.ndarray],
         patm = _constrain_patm(patm)
 
     # Get the density of water, kg/m^3
-    rho = calc_density_h2o(tc, patm)
+    rho = calc_density_h2o(tc, patm, pmodel_params=pmodel_params)
 
     # Calculate dimensionless parameters:
     tbar = (tc + pmodel_params.k_CtoK) / pmodel_params.huber_tk_ast
