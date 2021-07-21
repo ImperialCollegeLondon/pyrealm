@@ -1,5 +1,5 @@
 from dataclasses import dataclass, asdict
-from typing import Tuple
+from typing import Tuple, Union
 from numbers import Number
 import json
 import enforce_typing
@@ -297,3 +297,46 @@ class TModelTraits(ParamClass):
 
     # TODO include range + se, or make this another class TraitDistrib
     #      that can yield a Traits instance drawing from that distribution
+
+
+
+@enforce_typing.enforce_types
+@dataclass(frozen=True)
+class UtilParams(ParamClass):
+    r"""Settings for utility function
+
+    This data class provides parameters used :mod:`~pyrealm.utilities`, which
+    includes hygrometric conversions
+
+    * `mwr`: The ratio molecular weight of water vapour to dry air (:math:`MW_r`, 0.622, -)
+    * `magnus_params`: A three tuple of coefficients for the Magnus equation for
+      the calculation of saturated vapour pressure.
+    * `magnus_option`: Selects one of a set of published coefficients for the Magnus equation.
+
+    """
+
+    magnus_coef: Tuple[Number, ...] = None
+    mwr: Number = 0.622
+    magnus_option: str = 'Sonntag1990'
+
+    def __post_init__(self):
+        """
+        Checks the inputs and populates magnus_coef from the presets if no
+        magnus_coef is specified.
+
+        Returns:
+            Self
+        """
+        alts = dict(Allen1998=(610.8, 17.27, 237.3),
+                    Alduchov1996=(610.94, 17.625, 243.04),
+                    Sonntag1990=(611.2, 17.62, 243.12))
+
+        if self.magnus_coef is None:
+            if self.magnus_option not in alts:
+                raise (RuntimeError(f"magnus_option must be one of {list(alts.keys())}"))
+            else:
+                object.__setattr__(self, 'magnus_coef', alts[self.magnus_option])
+        elif self.magnus_coef is not None and len(self.magnus_coef) != 3:
+            raise (TypeError('magnus_coef must be a tuple of 3 numbers'))
+        else:
+            object.__setattr__(self, 'magnus_option', None)
