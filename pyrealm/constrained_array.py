@@ -123,7 +123,7 @@ class ConstraintFactory:
         >>> diff = temp_constraint(diff)
         Traceback (most recent call last):
         ...
-        RuntimeError: Existing input constraints do not match checking constraints
+        RuntimeError: Existing input constraints ([-50, 120], foo) do not match checking constraints ([0, 100], temperature (°C))
         """
 
     def __init__(self,
@@ -141,9 +141,10 @@ class ConstraintFactory:
     def __call__(self, arr: np.ndarray):
 
         if isinstance(arr, ConstrainedArray):
-            if not (arr.lower != self.lower and arr.upper != self.upper and
-                    arr.interval_type != self.interval_type and arr.label != self.label):
-                raise RuntimeError('Existing input constraints do not match checking constraints')
+            if not (arr.lower == self.lower and arr.upper == self.upper and
+                    arr.interval_type == self.interval_type and arr.label == self.label):
+                raise RuntimeError(f'Existing input constraints ({arr.interval_notation}, {arr.label}) '
+                                   f'do not match checking constraints ({self.interval_notation}, {self.label})')
             else:
                 return arr
 
