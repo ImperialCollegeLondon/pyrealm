@@ -13,18 +13,17 @@ kernelspec:
 # Constrained Arrays
 
 Many of the calculations in the `pyrealm` package only make sense for a limited
-range of inputs and some, such as  `~pyrealm.pmodel.calc_density_h2o`, show
+range of inputs and some, such as  {func}`~pyrealm.pmodel.calc_density_h2o`, show
 numerical instability outside of those ranges. The 
 {mod}`~pyrealm.constrained_array` module provides mechanisms to apply and detect 
 constraints.
 
 ## The {class}`~pyrealm.constrained_array.ConstrainedArray` class 
 
-The {class}`~pyrealm.constrained_array.ConstrainedArray` class provides a 
-mechanism to impose constraints on inputs and to make it easy to detect that
-a constraint has already been imposed. The approach uses masked arrays 
-({class}`~numpy.ma.core.MaskedArray`) from the `numpy` package to conceal out of 
-range data without deleting it.
+The {class}`~pyrealm.constrained_array.ConstrainedArray` class imposes 
+constraints on an array or numeric input and records that a constraint 
+has been imposed. The approach uses masked arrays ({class}`~numpy.ma.core.MaskedArray`) 
+from the `numpy` package to conceal out of range data without deleting it.
 
 The class of an input can then be easily checked to see if a constraint has
 already been imposed on the data.
@@ -50,21 +49,45 @@ if isinstance(vals_c, ConstrainedArray):
     print('Input data has been constrained')
 ```
 
-## The {func}`~pyrealm.constrained_array.constraint_factory` function
+The {attr}`interval_type` parameter to {class}`~pyrealm.constrained_array.ConstrainedArray`
+can be used to set with the constraint interval is open, closed or half-closed.
 
-This utility function makes it easy to generate functions to impose a specific 
-constraint. It takes a label and the constraint range and returns a function
-that imposes that constraint and reports when data have been constrained using 
-the label.
+```{code-cell} python
+# Constrain the data to [0, 125]
+vals_c = ConstrainedArray(vals, lower=0, upper=125, interval_type='[]')
+print(vals_c)
+```
+
+```{code-cell} python
+# Constrain the data to (0, 125)
+vals_c = ConstrainedArray(vals, lower=0, upper=125, interval_type='()')
+print(vals_c)
+```
+
+## The {class}`~pyrealm.constrained_array.ConstraintFactory` class
+
+This is a utility class which can be used to create ConstraintFactory instances
+with a particular set of constraints and label. The instances are callable and
+so can be used easily to impose the same set of constraints on different inputs. 
+
+{class}`~pyrealm.constrained_array.ConstraintFactory` instances can take 
+existing {class}`~pyrealm.constrained_array.ConstrainedArray` instances as an
+input. The class will check that the input constraints match the factory 
+constraints.     
 
 
 ```{code-cell} python
-from pyrealm.constrained_array import constraint_factory
+from pyrealm.constrained_array import ConstraintFactory
 
 # Create a constraint function for temperature in (0, 100) °C
-temp_constraint = constraint_factory('temperature', 0, 100)
+temp_constraint = ConstraintFactory(0, 100, label='temperature (°C)')
 
-# Apply the constraint
+# The resulting class instance has a human readable representation
+temp_constraint
+```
+
+```{code-cell} python
+# Apply the constraint - showing the warning about masking.
 vals_c = temp_constraint(vals)
 ```
 
@@ -76,5 +99,5 @@ print(vals_c)
 
 ```{eval-rst}
 .. automodule:: pyrealm.constrained_array
-    :members: ConstrainedArray, constraint_factory
+    :members: ConstrainedArray, ConstraintFactory
 ```

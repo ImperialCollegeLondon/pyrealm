@@ -21,7 +21,7 @@ The package contains a number of different modules implementing different models
 
 1. The [P Model](pmodel/pmodel): a ecophysiological model of carbon dioxide
    uptake by plants (:{cite}`Prentice:2014bc`, :{cite}`Wang:2017go`, :{cite}`Stocker:2020dh`)
-2. TODO
+2. The [T Model](tmodel/tmodel)
 
 ## Package documentation
 
@@ -71,6 +71,7 @@ clicking on the buttons like the one below.
   :caption: Additional detail
   :hidden:
   
+  utilities.md
   constrained_arrays.md
   params.md
   z_bibliography.rst
