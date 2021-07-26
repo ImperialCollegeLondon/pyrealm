@@ -1,4 +1,5 @@
 import numpy as np
+import tabulate
 from pyrealm.param_classes import UtilParams
 from pyrealm.constrained_array import ConstraintFactory
 
@@ -8,6 +9,39 @@ extra functions such as conversions for common forcing variable inputs,
 such as hygrometric and radiation conversions.
 """
 
+
+def summarize_attrs(obj, attrs, dp=2, repr_head=True):
+    """
+    Helper function to create a simple table of attribute mean, min, max and
+    nan count from an object for use in summarize function.
+
+    Args:
+        obj: An object with attributes to summarize
+        attrs: A list of strings of attribute names
+        dp: The number of decimal places used in rounding summary stats.
+        repr_head: A boolean indicating whether to show the object representation
+          before the summary table.
+
+    Returns:
+        None
+    """
+
+    ret = []
+
+    for attr in attrs:
+        data = getattr(obj, attr)
+        ret.append([attr,
+                    np.round(np.nanmean(data), dp),
+                    np.round(np.nanmin(data), dp),
+                    np.round(np.nanmax(data), dp),
+                    np.count_nonzero(np.isnan(data))])
+
+    hdrs = ['Attr', 'Mean', 'Min', 'Max', 'NaN']
+
+    if repr_head:
+        print(obj)
+
+    print(tabulate.tabulate(ret, headers=hdrs))
 
 # Psychrometric conversions to VPD for vapour pressure, specific humidity and
 # relative humidity. Using the bigleaf R package as a checking reference from
