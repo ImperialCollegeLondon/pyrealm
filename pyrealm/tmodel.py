@@ -1,7 +1,7 @@
 from typing import Union, Tuple
 import numpy as np
 
-from pyrealm.pmodel import check_input_shapes
+from pyrealm.utilities import check_input_shapes
 from pyrealm.param_classes import TModelTraits
 
 

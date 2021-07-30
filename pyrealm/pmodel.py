@@ -1,15 +1,13 @@
 # pylint: disable=C0103
 from typing import Optional, Union
-from dataclasses import dataclass
 import numpy as np
 from pyrealm.utilities import summarize_attrs
 from pyrealm.param_classes import PModelParams
 from pyrealm.constrained_array import ConstraintFactory
-
+from pyrealm.utilities import check_input_shapes
 
 # TODO - Note that the typing currently does not enforce the dtype of ndarrays
 #        but it looks like the upcoming np.typing module might do this.
-
 
 # Define environmental variable constraint functions. These are intended
 # primarily to keep inputs away from areas where the functions become
@@ -27,56 +25,6 @@ _constrain_co2 = ConstraintFactory(label='carbon dioxide (ppm)',
                                    lower=100, upper=1000)
 _constrain_elev = ConstraintFactory(label='elevation (m)',
                                     lower=-500, upper=9000)
-
-
-def check_input_shapes(*args):
-    """This helper function validates inputs to check that they are either
-    scalars or arrays and then that any arrays of the same shape. It either
-    raises an error or returns the common shape or 1 if all arguments are
-    scalar.
-
-    Parameters:
-
-        *args: A set of numpy arrays or scalar values
-
-    Returns:
-
-        The common shape of any array inputs or 1 if all inputs are scalar.
-
-    Examples:
-
-        >>> check_input_shapes(np.array([1,2,3]), 5)
-        (3,)
-        >>> check_input_shapes(4, 5)
-        1
-        >>> check_input_shapes(np.array([1,2,3]), np.array([1,2]))
-        Traceback (most recent call last):
-        ...
-        ValueError: Inputs contain arrays of different shapes.
-    """
-
-    # Collect the shapes of the inputs
-    shapes = set()
-
-    for val in args:
-        if isinstance(val, np.ndarray):
-            # Note that 0-dim ndarrays (which are scalars) pass through
-            if val.ndim > 0:
-                shapes.add(val.shape)
-        elif val is None or isinstance(val, (float, int, np.generic)):
-            pass  # No need to track scalars and optional values pass None
-        else:
-            raise ValueError(f'Unexpected input to check_input_shapes: {type(val)}')
-
-    # shapes can be an empty set (all scalars) or contain one common shape
-    # otherwise raise an error
-    if len(shapes) > 1:
-        raise ValueError('Inputs contain arrays of different shapes.')
-
-    if len(shapes) == 1:
-        return shapes.pop()
-
-    return 1
 
 
 def calc_density_h2o(tc: Union[float, np.ndarray],

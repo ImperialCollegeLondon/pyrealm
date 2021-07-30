@@ -1,13 +1,79 @@
 import numpy as np
 import tabulate
 from pyrealm.param_classes import UtilParams
-from pyrealm.constrained_array import ConstraintFactory
+from pyrealm.constrained_array import ConstraintFactory, ConstrainedArray
+from pandas.core.series import Series
 
 """
 This module provides utility functions shared by modules or providing
 extra functions such as conversions for common forcing variable inputs, 
 such as hygrometric and radiation conversions.
 """
+
+
+def check_input_shapes(*args):
+    """This helper function validates inputs to check that they are either
+    scalars or arrays and then that any arrays of the same shape. It either
+    raises an error or returns the common shape or 1 if all arguments are
+    scalar.
+
+    Parameters:
+
+        *args: A set of numpy arrays or scalar values
+
+    Returns:
+
+        The common shape of any array inputs or 1 if all inputs are scalar.
+
+    Examples:
+
+        >>> check_input_shapes(np.array([1,2,3]), 5)
+        (3,)
+        >>> check_input_shapes(4, 5)
+        1
+        >>> check_input_shapes(np.array([1,2,3]), np.array([1,2]))
+        Traceback (most recent call last):
+        ...
+        ValueError: Inputs contain arrays of different shapes.
+    """
+
+    # Collect the shapes of the inputs
+    shapes = set()
+
+    # DESIGN NOTES - currently allow:
+    #   - scalars,
+    #   - 0 dim ndarrays (also scalars but packaged differently)
+    #   - 1 dim ndarrays with only a single value
+    #   - pandas _Series_ for 1 dimensional data. I can't think that
+    #     including a DataFrame with possibly variable types is anything
+    #     other than confusing. 2D and above _requires_ an array
+    #   - ConstrainedArrays
+
+    for val in args:
+        if isinstance(val, (np.ndarray, ConstrainedArray)):
+            # Note that 0-dim ndarrays (which are scalars) pass through as do
+            # one dimensional arrays with a single value (also a scalar)
+            if val.ndim > 0 or val.shape != (1,):
+                shapes.add(val.shape)
+        if isinstance(val, Series):
+            # Note that 0-dim ndarrays (which are scalars) pass through
+            if val.ndim > 0:
+                shapes.add(val.shape)
+        elif val is None or isinstance(val, (float, int, np.generic)):
+            pass  # No need to track scalars and optional values pass None
+        else:
+            raise ValueError(f'Unexpected input to check_input_shapes: {type(val)}')
+
+    # shapes can be an empty set (all scalars) or contain one common shape
+    # otherwise raise an error
+    if len(shapes) > 1:
+        raise ValueError('Inputs contain arrays of different shapes.')
+
+    if len(shapes) == 1:
+        return shapes.pop()
+
+    return 1
+
 
 
 def summarize_attrs(obj, attrs, dp=2, repr_head=True):
