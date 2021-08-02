@@ -2,7 +2,7 @@ import numpy as np
 import tabulate
 from pyrealm.param_classes import UtilParams
 from pyrealm.constrained_array import ConstraintFactory, ConstrainedArray
-from pandas.core.series import Series
+# from pandas.core.series import Series
 
 """
 This module provides utility functions shared by modules or providing
@@ -55,10 +55,10 @@ def check_input_shapes(*args):
             # one dimensional arrays with a single value (also a scalar)
             if val.ndim > 0 or val.shape != (1,):
                 shapes.add(val.shape)
-        if isinstance(val, Series):
-            # Note that 0-dim ndarrays (which are scalars) pass through
-            if val.ndim > 0:
-                shapes.add(val.shape)
+        # elif isinstance(val, Series):
+        #    # Note that 0-dim ndarrays (which are scalars) pass through
+        #    if val.ndim > 0:
+        #        shapes.add(val.shape)
         elif val is None or isinstance(val, (float, int, np.generic)):
             pass  # No need to track scalars and optional values pass None
         else:
