@@ -1072,14 +1072,14 @@ class PModel:
         self.vcmax_unit_iabs = lue_vcmax.vcmax
 
         # -----------------------------------------------------------------------
-        # Define attributes populated by methods
+        # Define attributes populated by estimate_productivity method
         # -----------------------------------------------------------------------
-        self.vcmax = None
-        self.vcmax25 = None
-        self.rd = None
-        self.jmax = None
+        self._vcmax = None
+        self._vcmax25 = None
+        self._rd = None
+        self._jmax = None
         self._gpp = None
-        self.gs = None
+        self._gs = None
 
     @property
     def gpp(self) -> Union[float, np.ndarray]:
@@ -1089,6 +1089,51 @@ class PModel:
             raise RuntimeError('GPP not calculated: use estimate_productivity')
 
         return self._gpp
+
+    @property
+    def vcmax(self) -> Union[float, np.ndarray]:
+        """Cannot return V_cmax if estimate_productivity has not been run, do
+           not return None silently"""
+        if self._vcmax is None:
+            raise RuntimeError('vcmax not calculated: use estimate_productivity')
+
+        return self._vcmax
+
+    @property
+    def vcmax25(self) -> Union[float, np.ndarray]:
+        """Cannot return V_cmax25 if estimate_productivity has not been run, do
+           not return None silently"""
+        if self._vcmax25 is None:
+            raise RuntimeError('vcmax25 not calculated: use estimate_productivity')
+
+        return self._vcmax25
+
+    @property
+    def rd(self) -> Union[float, np.ndarray]:
+        """Cannot return RD if estimate_productivity has not been run, do
+           not return None silently"""
+        if self._rd is None:
+            raise RuntimeError('RD not calculated: use estimate_productivity')
+
+        return self._rd
+
+    @property
+    def jmax(self) -> Union[float, np.ndarray]:
+        """Cannot return Jmax if estimate_productivity has not been run, do
+           not return None silently"""
+        if self._jmax is None:
+            raise RuntimeError('Jmax not calculated: use estimate_productivity')
+
+        return self._jmax
+
+    @property
+    def gs(self) -> Union[float, np.ndarray]:
+        """Cannot return gs if estimate_productivity has not been run, do
+           not return None silently"""
+        if self._gs is None:
+            raise RuntimeError('GS not calculated: use estimate_productivity')
+
+        return self._gs
 
     def estimate_productivity(self,
                               fapar: Union[float, np.ndarray] = 1,
@@ -1132,18 +1177,18 @@ class PModel:
         self._gpp = self.lue * iabs
 
         # V_cmax
-        self.vcmax = self.vcmax_unit_iabs * iabs
+        self._vcmax = self.vcmax_unit_iabs * iabs
 
         # V_cmax25 (vcmax normalized to pmodel_params.k_To)
         ftemp25_inst_vcmax = calc_ftemp_inst_vcmax(self.env.tc,
                                                    pmodel_params=self.pmodel_params)
-        self.vcmax25 = self.vcmax / ftemp25_inst_vcmax
+        self._vcmax25 = self.vcmax / ftemp25_inst_vcmax
 
         # Dark respiration at growth temperature
         ftemp_inst_rd = calc_ftemp_inst_rd(self.env.tc,
                                            pmodel_params=self.pmodel_params)
-        self.rd = (self.pmodel_params.atkin_rd_to_vcmax *
-                   (ftemp_inst_rd / ftemp25_inst_vcmax) * self.vcmax)
+        self._rd = (self.pmodel_params.atkin_rd_to_vcmax *
+                    (ftemp_inst_rd / ftemp25_inst_vcmax) * self.vcmax)
 
         # Jmax using again A_J = A_C, handling edges cases
         fact_jmaxlim = (self.vcmax * (self.optchi.ci + 2.0 * self.env.gammastar) /
@@ -1155,16 +1200,16 @@ class PModel:
         jmax[~ mask] = np.infty
 
         # Revert to scalar if needed and store
-        self.jmax = jmax.item() if np.ndim(jmax) == 0 else jmax
+        self._jmax = jmax.item() if np.ndim(jmax) == 0 else jmax
 
         # Stomatal conductance
         if self.c4 and self.shape == 1:
-            self.gs = np.infty
+            self._gs = np.infty
         elif self.c4:
-            self.gs = np.ones(self.shape) * np.infty
+            self._gs = np.ones(self.shape) * np.infty
         else:
-            self.gs = ((self.lue / self.pmodel_params.k_c_molmass) /
-                       (self.env.ca - self.optchi.ci))
+            self._gs = ((self.lue / self.pmodel_params.k_c_molmass) /
+                        (self.env.ca - self.optchi.ci))
 
     def __repr__(self):
         if self.do_soilmstress:
