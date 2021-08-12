@@ -1,5 +1,5 @@
 0.1.0 - First release of pyrealm. Implementation of P model
-0.1.1 - (aka hotfix/bed_setup). Fixing problems in setup.py
+0.1.1 - (aka hotfix/bad_setup). Fixing problems in setup.py
 0.1.2 - Fixing problems with setup for PyPi publication.
 0.1.3 - Clipping negative values in calc_ftemp_kphio
 0.1.4 - Rescaled ftemp_kphio to remove double division error
@@ -13,9 +13,15 @@
         the pmodel itself: PModelEnvironment and PModel classes.
       - Implementation of ConstrainedArray class to clip inputs to
         biologically meaningful ranges and to identify that clipping
-        has occurred. Particular issue with serious numerical instablility
+        has occurred. Particular issue with serious numerical instability
         in calc_density_h2o, but now adopted a general solution to clipping
         inputs.
       - Expansion of PModel testing to include a global array giving a wider
         range of inputs including edge cases.
 	  - Created option for using a rootzonestress option (Rodolfo Nobrega)
+0.5.0 - Refactor of constrained_array modules to use a class factory that
+        acts as both a constraint and a check on existing constraint types.
+      - Implementation of the utilities module, currently including some
+        hygrometric conversions and shared utility functions.
+      - Refactor of PModel and Iabs scaling
+      - Better __repr__ and new summarize() functions in pmodel module.
