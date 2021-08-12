@@ -25,7 +25,8 @@ setuptools.setup(
     license='MIT',
     install_requires=['dacite',
                       'numpy',
-                      'enforce_typing'],
+                      'enforce_typing',
+                      'tabulate'],
     python_requires='>=3.6',
     classifiers=[
         "Programming Language :: Python :: 3",

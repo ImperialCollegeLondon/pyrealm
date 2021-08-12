@@ -1,9 +1,36 @@
 from dataclasses import dataclass, asdict
-from typing import Tuple
+from typing import Tuple, Union
 from numbers import Number
 import json
 import enforce_typing
 from dacite import from_dict
+
+# from box import Box
+
+# Design notes: pyrealm is going to have a bunch of 'deep' settings. Things
+# that aren't often tweaked by users but should be easy to tweak when needed.
+# The aim here is to have a standard interface to those as an object that maps
+# a setting name to a value.
+#
+# Desired features (in no order):
+# 1. Ability to use a obj.attr notation rather than obj['attr']. Not really
+#    pythonic but a bit cleaner to read.
+# 2. Ability to freeze values. Distinctly paranoid.
+# 3. Ability to set a default mapping with default values
+# 4. Typing to set expected types on default values.
+# 5. Simple export/import methods to go to from dict / JSON
+# 6. Is a class, to allow __repr__ and other methods.
+#
+# ... and then there is a tricky one:
+#
+# 7. Extensibility. This is the hard one and currently would only be needed
+#    to support a customisable version of the T Model. If the T Model could
+#    have overridden geometry methods, then these settings _have_ to be able
+#    to take extra parameters. And having to set a type on those is another
+#    thing that users aren't going to buy into? This makes using @dataclass
+#    tricky - because extending class attributes on the fly is really not
+#    something that comes naturally to a class. A dotted dict replacement,
+#    like Box or addict, is a fairly simpl functional swap.
 
 
 class ParamClass:
@@ -297,3 +324,46 @@ class TModelTraits(ParamClass):
 
     # TODO include range + se, or make this another class TraitDistrib
     #      that can yield a Traits instance drawing from that distribution
+
+
+
+@enforce_typing.enforce_types
+@dataclass(frozen=True)
+class UtilParams(ParamClass):
+    r"""Settings for utility function
+
+    This data class provides parameters used :mod:`~pyrealm.utilities`, which
+    includes hygrometric conversions
+
+    * `mwr`: The ratio molecular weight of water vapour to dry air (:math:`MW_r`, 0.622, -)
+    * `magnus_params`: A three tuple of coefficients for the Magnus equation for
+      the calculation of saturated vapour pressure.
+    * `magnus_option`: Selects one of a set of published coefficients for the Magnus equation.
+
+    """
+
+    magnus_coef: Tuple[Number, ...] = None
+    mwr: Number = 0.622
+    magnus_option: str = 'Sonntag1990'
+
+    def __post_init__(self):
+        """
+        Checks the inputs and populates magnus_coef from the presets if no
+        magnus_coef is specified.
+
+        Returns:
+            Self
+        """
+        alts = dict(Allen1998=(610.8, 17.27, 237.3),
+                    Alduchov1996=(610.94, 17.625, 243.04),
+                    Sonntag1990=(611.2, 17.62, 243.12))
+
+        if self.magnus_coef is None:
+            if self.magnus_option not in alts:
+                raise (RuntimeError(f"magnus_option must be one of {list(alts.keys())}"))
+            else:
+                object.__setattr__(self, 'magnus_coef', alts[self.magnus_option])
+        elif self.magnus_coef is not None and len(self.magnus_coef) != 3:
+            raise (TypeError('magnus_coef must be a tuple of 3 numbers'))
+        else:
+            object.__setattr__(self, 'magnus_option', None)

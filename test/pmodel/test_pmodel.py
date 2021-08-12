@@ -655,24 +655,25 @@ def test_pmodel_class_c3(request, values, pmodelenv, soilmstress, ftemp_kphio, e
     # where PModel can do it post hoc from unit_iabs values, so two
     # rpmodel runs are used to test the unit values and scaled.
 
-    unit_iabs = ret.unit_iabs.scale_iabs(1, 1)
+    ret.estimate_productivity()  # defaults of fapar=1, ppfd=1
 
-    assert np.allclose(unit_iabs.lue, expected['lue'])
-    assert np.allclose(unit_iabs.vcmax, expected['vcmax'])
-    assert np.allclose(unit_iabs.vcmax25, expected['vcmax25'])
-    assert np.allclose(unit_iabs.rd, expected['rd'])
-    assert np.allclose(unit_iabs.jmax, expected['jmax'])
-    assert np.allclose(unit_iabs.gs, expected['gs'])
+    assert np.allclose(ret.lue, expected['lue'])
+    assert np.allclose(ret.vcmax, expected['vcmax'])
+    assert np.allclose(ret.vcmax25, expected['vcmax25'])
+    assert np.allclose(ret.rd, expected['rd'])
+    assert np.allclose(ret.jmax, expected['jmax'])
+    assert np.allclose(ret.gs, expected['gs'])
 
     # Check Iabs scaling
-    iabs = ret.unit_iabs.scale_iabs(values['fapar_sc'], values['ppfd_sc'])
+    ret.estimate_productivity(fapar=values['fapar_sc'],
+                              ppfd=values['ppfd_sc'])
 
     # Find the expected values, extracting the combination from the request
     expected = values['rpmodel-c4-' + name + '-iabs']
 
-    assert np.allclose(iabs.gpp, expected['gpp'])
-    assert np.allclose(iabs.vcmax, expected['vcmax'])
-    assert np.allclose(iabs.vcmax25, expected['vcmax25'])
-    assert np.allclose(iabs.rd, expected['rd'])
-    assert np.allclose(iabs.jmax, expected['jmax'])
-    assert np.allclose(iabs.gs, expected['gs'])
+    assert np.allclose(ret.gpp, expected['gpp'])
+    assert np.allclose(ret.vcmax, expected['vcmax'])
+    assert np.allclose(ret.vcmax25, expected['vcmax25'])
+    assert np.allclose(ret.rd, expected['rd'])
+    assert np.allclose(ret.jmax, expected['jmax'])
+    assert np.allclose(ret.gs, expected['gs'])

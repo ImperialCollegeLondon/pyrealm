@@ -1,8 +1,14 @@
 language: python
 python:
-  - "3.6"
+  # - "3.6" # Retiring 3.6? Issue with enforce typing and dataclasses.
   - "3.7.7"
   - "3.8"
+  - "3.9"
+# upgrade pytest
+before_install:
+  - python --version
+  - pip install -U pip
+  - pip install -U pytest
 # command to install dependencies
 install:
   - pip install -r requirements.txt

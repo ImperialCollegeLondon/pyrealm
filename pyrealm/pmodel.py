@@ -1,14 +1,13 @@
 # pylint: disable=C0103
 from typing import Optional, Union
-from dataclasses import dataclass
 import numpy as np
+from pyrealm.utilities import summarize_attrs
 from pyrealm.param_classes import PModelParams
-from pyrealm.constrained_array import ConstrainedArray, constraint_factory
-
+from pyrealm.constrained_array import ConstraintFactory
+from pyrealm.utilities import check_input_shapes
 
 # TODO - Note that the typing currently does not enforce the dtype of ndarrays
 #        but it looks like the upcoming np.typing module might do this.
-
 
 # Define environmental variable constraint functions. These are intended
 # primarily to keep inputs away from areas where the functions become
@@ -16,66 +15,16 @@ from pyrealm.constrained_array import ConstrainedArray, constraint_factory
 
 # TODO - check the sanity of these limits
 
-_constrain_temp = constraint_factory(label='temperature (tc)',
-                                     lower=0, upper=100)
-_constrain_patm = constraint_factory(label='atmospheric pressure (patm)',
-                                     lower=30000, upper=110000)
-_constrain_vpd = constraint_factory(label='vapor pressure deficit (vpd)',
-                                    lower=0, upper=10000)
-_constrain_co2 = constraint_factory(label='carbon dioxide (co2)',
-                                    lower=100, upper=1000)
-_constrain_elev = constraint_factory(label='elevation (elv)',
-                                     lower=-500, upper=9000)
-
-
-def check_input_shapes(*args):
-    """This helper function validates inputs to check that they are either
-    scalars or arrays and then that any arrays of the same shape. It either
-    raises an error or returns the common shape or 1 if all arguments are
-    scalar.
-
-    Parameters:
-
-        *args: A set of numpy arrays or scalar values
-
-    Returns:
-
-        The common shape of any array inputs or 1 if all inputs are scalar.
-
-    Examples:
-
-        >>> check_input_shapes(np.array([1,2,3]), 5)
-        (3,)
-        >>> check_input_shapes(4, 5)
-        1
-        >>> check_input_shapes(np.array([1,2,3]), np.array([1,2]))
-        Traceback (most recent call last):
-        ...
-        ValueError: Inputs contain arrays of different shapes.
-    """
-
-    # Collect the shapes of the inputs
-    shapes = set()
-
-    for val in args:
-        if isinstance(val, np.ndarray):
-            # Note that 0-dim ndarrays (which are scalars) pass through
-            if val.ndim > 0:
-                shapes.add(val.shape)
-        elif val is None or isinstance(val, (float, int, np.generic)):
-            pass  # No need to track scalars and optional values pass None
-        else:
-            raise ValueError(f'Unexpected input to check_input_shapes: {type(val)}')
-
-    # shapes can be an empty set (all scalars) or contain one common shape
-    # otherwise raise an error
-    if len(shapes) > 1:
-        raise ValueError('Inputs contain arrays of different shapes.')
-
-    if len(shapes) == 1:
-        return shapes.pop()
-
-    return 1
+_constrain_temp = ConstraintFactory(label='temperature (°C)',
+                                    lower=0, upper=100)
+_constrain_patm = ConstraintFactory(label='atmospheric pressure (Pa)',
+                                    lower=30000, upper=110000)
+_constrain_vpd = ConstraintFactory(label='vapor pressure deficit (Pa)',
+                                   lower=0, upper=10000)
+_constrain_co2 = ConstraintFactory(label='carbon dioxide (ppm)',
+                                   lower=100, upper=1000)
+_constrain_elev = ConstraintFactory(label='elevation (m)',
+                                    lower=-500, upper=9000)
 
 
 def calc_density_h2o(tc: Union[float, np.ndarray],
@@ -128,11 +77,8 @@ def calc_density_h2o(tc: Union[float, np.ndarray],
     _ = check_input_shapes(tc, patm)
 
     # Check input ranges
-    if not isinstance(tc, ConstrainedArray):
-        tc = _constrain_temp(tc)
-
-    if not isinstance(patm, ConstrainedArray):
-        patm = _constrain_patm(patm)
+    tc = _constrain_temp(tc)
+    patm = _constrain_patm(patm)
 
     # Get powers of tc, including tc^0 = 1 for constant terms
     tc_pow = np.power.outer(tc, np.arange(0, 10))
@@ -154,6 +100,35 @@ def calc_density_h2o(tc: Union[float, np.ndarray],
 
     # Convert to density (g cm^-3) -> 1000 g/kg; 1000000 cm^3/m^3 -> kg/m^3:
     rho = 1e3 / spec_vol
+
+    # CDLO: Method of Chen et al (1997) - I tested this to compare to the TerrA-P
+    # code base but I don't think we need it. Preserving the code in case it is
+    # needed in the future.
+    #
+    #     # Calculate density at 1 atm (kg/m^3):
+    #     chen_po = np.array([0.99983952, 6.788260e-5 , -9.08659e-6 , 1.022130e-7 ,
+    #                         -1.35439e-9 , 1.471150e-11, -1.11663e-13, 5.044070e-16,
+    #                         -1.00659e-18])
+    #     po = np.sum(np.array(chen_po) * tc_pow[..., :9], axis=-1)
+    #
+    #     # Calculate bulk modulus at 1 atm (bar):
+    #     chen_ko = np.array([19652.17, 148.1830, -2.29995, 0.01281,
+    #                         -4.91564e-5, 1.035530e-7])
+    #     ko = np.sum(np.array(chen_ko) * tc_pow[..., :6], axis=-1)
+    #
+    #     # Calculate temperature dependent coefficients:
+    #     chen_ca = np.array([3.26138, 5.223e-4, 1.324e-4, -7.655e-7, 8.584e-10])
+    #     ca = np.sum(np.array(chen_ca) * tc_pow[..., :5], axis=-1)
+    #
+    #     chen_cb = np.array([7.2061e-5, -5.8948e-6, 8.69900e-8, -1.0100e-9, 4.3220e-12])
+    #     cb = np.sum(np.array(chen_cb) * tc_pow[..., :5], axis=-1)
+    #
+    #     # Convert atmospheric pressure to bar (1 bar = 100000 Pa)
+    #     pbar = 1.0e-5 * patm
+    #
+    #     rho = (ko + ca * pbar + cb * pbar ** 2.0)
+    #     rho /= (ko + ca * pbar + cb * pbar ** 2.0 - pbar)
+    #     rho *= 1e3 * po
 
     return rho
 
@@ -252,8 +227,7 @@ def calc_ftemp_inst_rd(tc: Union[float, np.ndarray],
     """
 
     # Check input ranges
-    if not isinstance(tc, ConstrainedArray):
-        tc = _constrain_temp(tc)
+    tc = _constrain_temp(tc)
 
     return np.exp(pmodel_params.heskel_b * (tc - pmodel_params.k_To) -
                   pmodel_params.heskel_c * (tc ** 2 - pmodel_params.k_To ** 2))
@@ -316,8 +290,7 @@ def calc_ftemp_inst_vcmax(tc: Union[float, np.ndarray],
     """
 
     # Check input ranges
-    if not isinstance(tc, ConstrainedArray):
-        tc = _constrain_temp(tc)
+    tc = _constrain_temp(tc)
 
     # Convert temperatures to Kelvin
     tkref = pmodel_params.k_To + pmodel_params.k_CtoK
@@ -390,8 +363,7 @@ def calc_ftemp_kphio(tc: Union[float, np.ndarray],
     """
 
     # Check input ranges
-    if not isinstance(tc, ConstrainedArray):
-        tc = _constrain_temp(tc)
+    tc = _constrain_temp(tc)
 
     if c4:
         coef = pmodel_params.kphio_C4
@@ -450,11 +422,8 @@ def calc_gammastar(tc: Union[float, np.ndarray],
     _ = check_input_shapes(tc, patm)
 
     # Check input ranges
-    if not isinstance(tc, ConstrainedArray):
-        tc = _constrain_temp(tc)
-
-    if not isinstance(patm, ConstrainedArray):
-        patm = _constrain_patm(patm)
+    tc = _constrain_temp(tc)
+    patm = _constrain_patm(patm)
 
     return (pmodel_params.bernacchi_gs25_0 * patm / pmodel_params.k_Po *
             calc_ftemp_arrh((tc + pmodel_params.k_CtoK), ha=pmodel_params.bernacchi_dha))
@@ -497,11 +466,8 @@ def calc_ns_star(tc: Union[float, np.ndarray],
     """
 
     # Check input ranges
-    if not isinstance(tc, ConstrainedArray):
-        tc = _constrain_temp(tc)
-
-    if not isinstance(patm, ConstrainedArray):
-        patm = _constrain_patm(patm)
+    tc = _constrain_temp(tc)
+    patm = _constrain_patm(patm)
 
     visc_env = calc_viscosity_h2o(tc, patm)
     visc_std = calc_viscosity_h2o(pmodel_params.k_To, pmodel_params.k_Po)
@@ -570,11 +536,8 @@ def calc_kmm(tc: Union[float, np.ndarray],
     _ = check_input_shapes(tc, patm)
 
     # Check input ranges
-    if not isinstance(tc, ConstrainedArray):
-        tc = _constrain_temp(tc)
-
-    if not isinstance(patm, ConstrainedArray):
-        patm = _constrain_patm(patm)
+    tc = _constrain_temp(tc)
+    patm = _constrain_patm(patm)
 
     # conversion to Kelvin
     tk = tc + pmodel_params.k_CtoK
@@ -691,14 +654,11 @@ def calc_viscosity_h2o(tc: Union[float, np.ndarray],
     _ = check_input_shapes(tc, patm)
 
     # Check input ranges
-    if not isinstance(tc, ConstrainedArray):
-        tc = _constrain_temp(tc)
-
-    if not isinstance(patm, ConstrainedArray):
-        patm = _constrain_patm(patm)
+    tc = _constrain_temp(tc)
+    patm = _constrain_patm(patm)
 
     # Get the density of water, kg/m^3
-    rho = calc_density_h2o(tc, patm)
+    rho = calc_density_h2o(tc, patm, pmodel_params=pmodel_params)
 
     # Calculate dimensionless parameters:
     tbar = (tc + pmodel_params.k_CtoK) / pmodel_params.huber_tk_ast
@@ -766,8 +726,7 @@ def calc_patm(elv: Union[float, np.ndarray],
     # °C.
 
     # Check input ranges
-    if not isinstance(elv, ConstrainedArray):
-        elv = _constrain_elev(elv)
+    elv = _constrain_elev(elv)
 
     kto = pmodel_params.k_To + pmodel_params.k_CtoK
 
@@ -795,91 +754,11 @@ def calc_co2_to_ca(co2: Union[float, np.ndarray],
     """
 
     # Check input ranges
-    if not isinstance(co2, ConstrainedArray):
-        co2 = _constrain_co2(co2)
-
-    if not isinstance(patm, ConstrainedArray):
-        patm = _constrain_patm(patm)
+    co2 = _constrain_co2(co2)
+    patm = _constrain_patm(patm)
 
     return 1.0e-6 * co2 * patm  # Pa, atms. CO2
 
-
-@dataclass
-class IabsScaled:
-    """
-    A data class holding variables that scale linearly with absorbed
-    irradiance (:math:`I_{abs}`). When a PModel instance is created, an
-    instance is created (`PModel.unit_iabs`) that contains values per unit
-    absorbed radiation. The PModel.scale_iabs method can then be used to
-    generate a scaled instance by providing estimates for PPFD and FAPAR.
-
-    Attributes:
-
-        rd: Dark respiration
-        vcmax: Maximum rate of carboxylation
-        vcmax25: Maximum rate of carboxylation at standard temperature
-        lue: Light use efficiency
-        jmax: Maximum rate of electron transport.
-        gs: Stomatal conductance
-        gpp: Alias for light use efficiency
-    """
-
-    rd: Union[float, np.ndarray] = None
-    vcmax: Union[float, np.ndarray] = None
-    vcmax25: Union[float, np.ndarray] = None
-    lue: Union[float, np.ndarray] = None
-    jmax: Union[float, np.ndarray] = None
-    gs: Union[float, np.ndarray] = None
-    scaled: bool = False
-
-    @property
-    def gpp(self) -> Union[float, np.ndarray]:
-        """Alias property for LUE when scaled"""
-        if not self.scaled:
-            raise RuntimeError('IabsScaled object has not been scaled - LUE '
-                               'is still expressed per unit irradiance.')
-
-        return self.lue
-
-    def scale_iabs(self, fapar, ppfd):
-        r"""
-        This is a convenience function to scale from values per unit absorbed
-        irradiance to absolute values. It finds the total absorbed irradiance
-        (:math:`I_{abs}`) as the product of the photosynthetic photon flux
-        density (`ppfd`) and the fraction of absorbed photosynthetically active
-        radiation (`fapar`) and then uses this to scale the stored values: all
-        scale linearly with :math:`I_{abs}`.
-
-        Note that the units of PPFD determine the units of outputs: if PPFD is
-        in :math:`\text{mol} m^{-2} \text{month}^{-1}`, then output values are
-        scaled per square metre per month.
-
-        Args:
-            fapar: the fraction of absorbed photosynthetically active radiation
-            ppfd: photosynthetic photon flux density
-
-        Returns:
-            An object of class IabsScaled, with attribute `scaled` set to True.
-
-        """
-
-        # Do not double scale
-        if self.scaled:
-            raise RuntimeError('Values have already been scaled')
-
-        # Check input shapes against each other and an existing calculated value
-        _ = check_input_shapes(ppfd, fapar, self.lue)
-
-        # Calcuate absorbed irradiance
-        iabs = fapar * ppfd
-
-        return IabsScaled(lue=iabs * self.lue,
-                          vcmax=iabs * self.vcmax,
-                          vcmax25=iabs * self.vcmax25,
-                          rd=iabs * self.rd,
-                          jmax=iabs * self.jmax,
-                          gs=iabs * self.gs,
-                          scaled=True)
 
 # Design notes on PModel (0.3.1 -> 0.4.0)
 # The PModel until 0.3.1 was a single class taking tc etc. as inputs. However
@@ -887,7 +766,18 @@ class IabsScaled:
 # different options. I (DO) did consider retaining the single class and having
 # PModel __init__ create the environment and then have PModel.fit(), but
 # having two classes seemed to better separate the physiological model (PModel
-# class and attributes) from the environment the model is being fitted to.
+# class and attributes) from the environment the model is being fitted to and
+# also creates _separate_ PModel objects.
+
+# Design notes on PModel (0.4.0 -> 0.5.0)
+# In separating PPFD and FAPAR into a second step, I had created the IabsScaled
+# class to store variables that scale linearly with Iabs. That class held and
+# exposed scaled and unscaled versions of several parameteres. For a start, that
+# was a bad class name since the values could be unscaled, but also most of the
+# unscaled versions are never really used. Really (hat tip, Keith Bloomfield),
+# there are two meaningful _efficiency_ variables (LUE, IWUE) and then a set of
+# productivity variables. The new structure reflects that, removing the
+# un-needed unscaled variables and simplifying the structure.
 
 
 class PModelEnvironment:
@@ -953,24 +843,45 @@ class PModelEnvironment:
 
     def __repr__(self):
 
-        return (f"PModel(gammastar={self.gammastar}, "
-                f"kmm={self.kmm}, ca={self.ca}, ns_star={self.ns_star})")
+        # DESIGN NOTE: This is deliberately extremely terse. It could contain
+        # a bunch of info on the environment but that would be quite spammy
+        # on screen. Having a specific summary method that provides that info
+        # is more user friendly.
+
+        return f"PModelEnvironment(shape={self.shape})"
+
+    def summarize(self, dp=2):
+        """Prints a summary of the input and photosynthetic attributes in a
+        instance of a PModelEnvironment including the mean, range and number
+        of nan values.
+
+        Args:
+            dp: The number of decimal places used in rounding summary stats.
+
+        Returns:
+            None
+        """
+
+        attrs = ['tc', 'vpd', 'co2', 'patm', 'ca', 'gammastar', 'kmm', 'ns_star']
+        summarize_attrs(self, attrs, dp=dp)
 
 
 class PModel:
 
-    r"""Fits the P model to a given set of environmental and photosynthetic
-    parameters. See the :meth:`~pyrealm.pmodel.PModel.__init__` documentation
-    for the input variables. The calculated attributes of the class are
+    r"""Fits the P Model to a given set of environmental and photosynthetic
+    parameters. The calculated attributes of the class are
     described below. An extended description with typical use cases is given
     in :ref:`pmodel/pmodel.html` but the basic flow of the model is:
 
     1. Estimate :math:`\ce{CO2}` limitation factors and optimal internal to
        ambient :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using
        :class:`~pyrealm.pmodel.CalcOptimalChi`.
-    2. Estimate light use efficiency (LUE) and maximum carboxylation rate
-       (:math:`V_{cmax}`) using :class:`~pyrealm.pmodel.CalcLUEVcmax`.
-    3. Calculate corollary predictions
+    2. Estimate photosynthetic efficiencies including water use efficiency,
+       light use efficiency (LUE) and maximum carboxylation rate (:math:`V_{cmax}`)
+       using :class:`~pyrealm.pmodel.CalcLUEVcmax`.
+    3. Optionally, estimate productivity measures including GPP by supplying
+       FAPAR and PPFD using the :meth:`~pyrealm.pmodel.PModel.estimate_productivity`
+       method.
 
     **Corollary prediction details**
 
@@ -1013,11 +924,32 @@ class PModel:
             {\left(\frac{V_{cmax}(c_i - 2 \Gamma^*)}
             {\phi_0 I_{abs}(c_i + k_{mm})}\right)}\right)^2 - 1}}
 
+    Parameters:
+
+        env: An instance of :class:`~pyrealm.pmodel.PModelEnvironment`.
+        kphio: (Optional) Apparent quantum yield efficiency (unitless).
+        rootzonestress: (Optional, default=None) An experimental option
+            for providing a root zone water stress factor. This is not
+            compatible with the soilmstress approach.
+        soilmstress: (Optional, default=None) A soil moisture stress factor
+            calculated using :func:`~pyrealm.pmodel.calc_soilmstress`.
+        c4: (Optional, default=False) Selects the C3 or C4 photosynthetic pathway.
+        method_jmaxlim: (Optional, default=`wang17`) Method to use for
+            :math:`J_{max}` limitation
+        do_ftemp_kphio: (Optional, default=True) Include the temperature-
+            dependence of quantum yield efficiency (see
+            :func:`~pyrealm.pmodel.calc_ftemp_kphio`).
+
     Attributes:
 
-        optchi: An object of class :class:`~pyrealm.pmodel.CalcOptimalChi`
-        unit_iabs: An object of class :class:`~pyrealm.pmodel.IabsScaled`
+        env: The photosynthetic environment to which the model is fitted
+            (:class:`~pyrealm.pmodel.PModelEnvironment`)
+        pmodel_params: The parameters used in the underlying calculations
+            (:class:`~pyrealm.param_classes.PModelParams`)
+        optchi: Details of the optimal chi calculation
+            (:class:`~pyrealm.pmodel.CalcOptimalChi`)
         iwue: Intrinsic water use efficiency (iWUE, Pa)
+        lue: Light use efficiency (LUE)
 
     Examples:
 
@@ -1028,7 +960,8 @@ class PModel:
         28.14209
         >>> np.round(mod_c3.optchi.chi, 5)
         0.69435
-        >>> np.round(mod_c3.unit_iabs.scale_iabs(fapar=1, ppfd=300).gpp, 5)
+        >>> mod_c3.estimate_productivity(fapar=1, ppfd=300)
+        >>> np.round(mod_c3.gpp, 5)
         76.42545
         >>> mod_c4 = PModel(env, c4=True, method_jmaxlim='none')
         >>> # Key variables from PModel
@@ -1036,7 +969,8 @@ class PModel:
         40.53
         >>> np.round(mod_c4.optchi.chi, 5)
         1.0
-        >>> np.round(mod_c4.unit_iabs.scale_iabs(fapar=1, ppfd=300).gpp, 5)
+        >>> mod_c4.estimate_productivity(fapar=1, ppfd=300)
+        >>> np.round(mod_c4.gpp, 5)
         103.25886
     """
 
@@ -1049,48 +983,41 @@ class PModel:
                  c4: bool = False,
                  method_jmaxlim: str = "wang17",
                  ):
-        r"""
-        Creates a PModel instance using the input parameters.
 
-        Parameters:
+        # Check possible array inputs against the photosynthetic environment
+        self.shape = check_input_shapes(env.gammastar, soilmstress, rootzonestress)
 
-            env: An instance of PModelEnvironment.
-            kphio: (Optional) Apparent quantum yield efficiency (unitless).
-            soilmstress: (Optional, default=None) A soil moisture stress factor
-                calculated using :func:`~pyrealm.pmodel.calc_soilmstress`.
-            c4: (Optional, default=False) Selects the C3 or C4 photosynthetic pathway.
-            method_jmaxlim: (Optional, default=`wang17`) Method to use for
-                :math:`J_{max}` limitation
-            do_ftemp_kphio: (Optional, default=True) Include the temperature-
-                dependence of quantum yield efficiency (see
-                :func:`~pyrealm.pmodel.calc_ftemp_kphio`).
-        """
-
-        # Check possible array inputs
-        self.shape = check_input_shapes(soilmstress, rootzonestress)
+        # Store a reference to the photosynthetic environment and a direct
+        # reference to the parameterisation
+        self.env = env
+        self.pmodel_params = env.pmodel_params
 
         # ---------------------------------------------
         # Soil moisture and root zone stress handling
         # ---------------------------------------------
 
-        if not (soilmstress is None or rootzonestress is None):
+        if soilmstress is not None and rootzonestress is not None:
             raise AttributeError("Soilmstress and rootzonestress are alternative "
                                  "approaches to soil moisture effects. Do not use both.")
 
         if soilmstress is None:
             soilmstress = 1.0
-            do_soilmstress = False
+            self.do_soilmstress = False
         else:
-            do_soilmstress = True
+            self.do_soilmstress = True
 
         if rootzonestress is None:
             rootzonestress = 1.0
+            self.do_rootzonestress = False
+        else:
+            self.do_rootzonestress = True
 
         # kphio defaults:
+        self.do_ftemp_kphio = do_ftemp_kphio
         if kphio is None:
-            if not do_ftemp_kphio:
+            if not self.do_ftemp_kphio:
                 self.kphio = 0.049977
-            elif do_soilmstress:
+            elif self.do_soilmstress:
                 self.kphio = 0.087182
             else:
                 self.kphio = 0.081785
@@ -1103,7 +1030,7 @@ class PModel:
         # 'do_ftemp_kphio' is not actually a stress function, but is the temperature-
         # dependency of the quantum yield efficiency after Bernacchi et al., 2003
 
-        if do_ftemp_kphio:
+        if self.do_ftemp_kphio:
             self.ftemp_kphio = calc_ftemp_kphio(env.tc, c4,
                                                 pmodel_params=env.pmodel_params)
         else:
@@ -1126,38 +1053,146 @@ class PModel:
                                      pmodel_params=env.pmodel_params)
 
         # -----------------------------------------------------------------------
-        # Corollary predictions
-        # -----------------------------------------------------------------------
-
-        # intrinsic water use efficiency (in Pa)
-        self.iwue = (env.ca - self.optchi.ci) / 1.6
-
-        # -----------------------------------------------------------------------
         # Vcmax and light use efficiency
         # -----------------------------------------------------------------------
+
+        self.method_jmaxlim = method_jmaxlim
         lue_vcmax = CalcLUEVcmax(self.optchi, self.kphio,
                                  self.ftemp_kphio, soilmstress,
                                  method=method_jmaxlim,
                                  pmodel_params=env.pmodel_params)
 
         # -----------------------------------------------------------------------
-        # Populate an instance of IabsScaled at values per unit iabs
+        # Store the two efficiency predictions
         # -----------------------------------------------------------------------
-        self.unit_iabs = IabsScaled(lue=lue_vcmax.lue, vcmax=lue_vcmax.vcmax)
 
-        # Vcmax25 (vcmax normalized to pmodel_params.k_To)
-        ftemp25_inst_vcmax = calc_ftemp_inst_vcmax(env.tc, pmodel_params=env.pmodel_params)
-        self.unit_iabs.vcmax25 = self.unit_iabs.vcmax / ftemp25_inst_vcmax
+        # intrinsic water use efficiency (in Pa)
+        self.iwue = (env.ca - self.optchi.ci) / 1.6
+        self.lue = lue_vcmax.lue
+        self.vcmax_unit_iabs = lue_vcmax.vcmax
+
+        # -----------------------------------------------------------------------
+        # Define attributes populated by estimate_productivity method
+        # -----------------------------------------------------------------------
+        self._vcmax = None
+        self._vcmax25 = None
+        self._rd = None
+        self._jmax = None
+        self._gpp = None
+        self._gs = None
+
+    @property
+    def gpp(self) -> Union[float, np.ndarray]:
+        """Cannot return GPP if estimate_productivity has not been run, do
+           not return None silently"""
+        if self._gpp is None:
+            raise RuntimeError('GPP not calculated: use estimate_productivity')
+
+        return self._gpp
+
+    @property
+    def vcmax(self) -> Union[float, np.ndarray]:
+        """Cannot return V_cmax if estimate_productivity has not been run, do
+           not return None silently"""
+        if self._vcmax is None:
+            raise RuntimeError('vcmax not calculated: use estimate_productivity')
+
+        return self._vcmax
+
+    @property
+    def vcmax25(self) -> Union[float, np.ndarray]:
+        """Cannot return V_cmax25 if estimate_productivity has not been run, do
+           not return None silently"""
+        if self._vcmax25 is None:
+            raise RuntimeError('vcmax25 not calculated: use estimate_productivity')
+
+        return self._vcmax25
+
+    @property
+    def rd(self) -> Union[float, np.ndarray]:
+        """Cannot return RD if estimate_productivity has not been run, do
+           not return None silently"""
+        if self._rd is None:
+            raise RuntimeError('RD not calculated: use estimate_productivity')
+
+        return self._rd
+
+    @property
+    def jmax(self) -> Union[float, np.ndarray]:
+        """Cannot return Jmax if estimate_productivity has not been run, do
+           not return None silently"""
+        if self._jmax is None:
+            raise RuntimeError('Jmax not calculated: use estimate_productivity')
+
+        return self._jmax
+
+    @property
+    def gs(self) -> Union[float, np.ndarray]:
+        """Cannot return gs if estimate_productivity has not been run, do
+           not return None silently"""
+        if self._gs is None:
+            raise RuntimeError('GS not calculated: use estimate_productivity')
+
+        return self._gs
+
+    def estimate_productivity(self,
+                              fapar: Union[float, np.ndarray] = 1,
+                              ppfd: Union[float, np.ndarray] = 1):
+        r""" This function takes the light use efficiency and Vcmax per unit
+        absorbed irradiance and populates the PModel instance with estimates
+        of the following:
+
+            * gpp: Gross primary productivity
+            * rd: Dark respiration
+            * vcmax: Maximum rate of carboxylation
+            * vcmax25: Maximum rate of carboxylation at standard temperature
+            * jmax: Maximum rate of electron transport.
+            * gs: Stomatal conductance
+
+        The functions finds the total absorbed irradiance (:math:`I_{abs}`) as
+        the product of the photosynthetic photon flux density (`ppfd`) and the
+        fraction of absorbed photosynthetically active radiation (`fapar`).
+
+        Note that the units of PPFD determine the units of outputs: if PPFD is
+        in :math:`\text{mol} m^{-2} \text{month}^{-1}`, then output values are
+        scaled per square metre per month.
+
+        The default values of ``ppfd`` and ``fapar`` provide estimates of the
+        variables above per unit absorbed irradiance.
+
+        Args:
+            fapar: the fraction of absorbed photosynthetically active radiation
+            ppfd: photosynthetic photon flux density
+
+        Returns:
+            None
+        """
+
+        # Check input shapes against each other and an existing calculated value
+        _ = check_input_shapes(ppfd, fapar, self.lue)
+
+        iabs = fapar * ppfd
+
+        # GPP
+        self._gpp = self.lue * iabs
+
+        # V_cmax
+        self._vcmax = self.vcmax_unit_iabs * iabs
+
+        # V_cmax25 (vcmax normalized to pmodel_params.k_To)
+        ftemp25_inst_vcmax = calc_ftemp_inst_vcmax(self.env.tc,
+                                                   pmodel_params=self.pmodel_params)
+        self._vcmax25 = self.vcmax / ftemp25_inst_vcmax
 
         # Dark respiration at growth temperature
-        ftemp_inst_rd = calc_ftemp_inst_rd(env.tc, pmodel_params=env.pmodel_params)
-        self.unit_iabs.rd = (env.pmodel_params.atkin_rd_to_vcmax *
-                             (ftemp_inst_rd / ftemp25_inst_vcmax) *
-                             self.unit_iabs.vcmax)
+        ftemp_inst_rd = calc_ftemp_inst_rd(self.env.tc,
+                                           pmodel_params=self.pmodel_params)
+        self._rd = (self.pmodel_params.atkin_rd_to_vcmax *
+                    (ftemp_inst_rd / ftemp25_inst_vcmax) * self.vcmax)
 
         # Jmax using again A_J = A_C, handling edges cases
-        fact_jmaxlim = (self.unit_iabs.vcmax * (self.optchi.ci + 2.0 * env.gammastar) /
-                        (self.kphio * (self.optchi.ci + env.kmm)))
+        fact_jmaxlim = (self.vcmax * (self.optchi.ci + 2.0 * self.env.gammastar) /
+                        (self.kphio * (self.optchi.ci + self.env.kmm)))
         fact_jmaxlim = (1.0 / fact_jmaxlim) ** 2 - 1.0
         jmax = np.empty_like(fact_jmaxlim)
         mask = fact_jmaxlim > 0
@@ -1165,21 +1200,53 @@ class PModel:
         jmax[~ mask] = np.infty
 
         # Revert to scalar if needed and store
-        self.unit_iabs.jmax = jmax.item() if np.ndim(jmax) == 0 else jmax
+        self._jmax = jmax.item() if np.ndim(jmax) == 0 else jmax
 
         # Stomatal conductance
-        if c4 and self.shape == 1:
-            self.unit_iabs.gs = np.infty
-        elif c4:
-            self.unit_iabs.gs = np.ones(self.shape) * np.infty
+        if self.c4 and self.shape == 1:
+            self._gs = np.infty
+        elif self.c4:
+            self._gs = np.ones(self.shape) * np.infty
         else:
-            self.unit_iabs.gs = ((self.unit_iabs.lue / env.pmodel_params.k_c_molmass) /
-                                 (env.ca - self.optchi.ci))
+            self._gs = ((self.lue / self.pmodel_params.k_c_molmass) /
+                        (self.env.ca - self.optchi.ci))
 
     def __repr__(self):
+        if self.do_soilmstress:
+            stress = 'Soil moisture'
+        elif self.do_rootzonestress:
+            stress = 'Root zone'
+        else:
+            stress = 'None'
+        return (f"PModel("
+                f"shape={self.shape}, "
+                f"kphio={self.kphio}, "
+                f"ftemp_kphio={self.do_ftemp_kphio}, "
+                f"c4={self.c4}, "
+                f"Jmax_method={self.method_jmaxlim}, "
+                f"Water stress={stress})")
 
-        return (f"PModel(kphio={self.kphio}, c4={self.c4}, "
-                f"ftemp_kphio={self.ftemp_kphio}, iwue={self.iwue})")
+    def summarize(self, dp=2):
+        """Prints a summary of the calculated values in a PModel instance
+        including the mean, range and number of nan values. This will always
+        show efficiency variables (LUE and IWUE) and productivity estimates are
+        shown if {meth}`~pyrealm.pmodel.PModel.calculate_productivity` has been
+        run.
+
+        Args:
+            dp: The number of decimal places used in rounding summary stats.
+
+        Returns:
+            None
+        """
+
+        if self._gpp is None:
+            attrs = ['lue', 'iwue']
+        else:
+            attrs = ['lue', 'iwue', 'gpp', 'vcmax',
+                     'vcmax25', 'rd', 'gs', 'jmax']
+
+        summarize_attrs(self, attrs, dp=dp)
 
 
 class CalcOptimalChi:
@@ -1379,6 +1446,21 @@ class CalcOptimalChi:
         # mc and mj:mv
         self.mc = (self.chi - gamma) / (self.chi + kappa)
         self.mjoc = (self.chi + kappa) / (self.chi + 2 * gamma)
+
+
+    def summarize(self, dp=2):
+        """Prints a summary of the variables calculated within an instance
+        of CalcOptimalChi including the mean, range and number of nan values.
+
+        Args:
+            dp: The number of decimal places used in rounding summary stats.
+
+        Returns:
+            None
+        """
+
+        attrs = ['chi', 'mc', 'mj', 'mjoc']
+        summarize_attrs(self, attrs, dp=dp)
 
 
 class CalcLUEVcmax:
