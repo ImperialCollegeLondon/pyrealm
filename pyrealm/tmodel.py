@@ -4,6 +4,16 @@ import numpy as np
 from pyrealm.utilities import check_input_shapes
 from pyrealm.param_classes import TModelTraits
 
+# Design Notes:
+#
+# One functionally easy thing to do the TTree object is to expose the geometry
+# methods (e.g. by having TTree.calculate_crown_area()) to allow users to
+# subclass the object and substitute their own geometry. Which is neat but the
+# geometry and growth are not separate and there is no guarantee that a
+# user-supplied geometry behaves as expected. So, easy to implement and a
+# natural solution to people wanting to tinker with the geometry but not going
+# there now.
+
 
 class TTree:
     """Implementation of the T model
@@ -37,13 +47,16 @@ class TTree:
         self._mass_swd = None
 
         # Growth is then applied by providing estimated gpp using the
-        # grow() method, which populates the following:
+        # calculate_growth() method, which populates the following:
+        self._gpp_raw= None
         self._gpp_actual = None
         self._npp = None
         self._resp_swd = None
         self._resp_frt = None
         self._resp_fol = None
         self._turnover = None
+        self._d_mass_s = None
+        self._d_mass_fr = None
         self._delta_d = None
         self._delta_mass_stm = None
         self._delta_mass_frt = None
@@ -78,6 +91,10 @@ class TTree:
         return self._mass_fol
 
     @property
+    def gpp_raw(self):
+        return self._gpp_raw
+
+    @property
     def gpp_actual(self):
         return self._gpp_actual
 
@@ -100,6 +117,14 @@ class TTree:
     @property
     def turnover(self):
         return self._turnover
+
+    @property
+    def d_mass_s(self):
+        return self._d_mass_s
+
+    @property
+    def d_mass_fr(self):
+        return self._d_mass_fr
 
     @property
     def delta_d(self):
@@ -153,12 +178,15 @@ class TTree:
                           (1 - self.crown_fraction / 2) / self.traits.ca_ratio)
 
         # Clear any calculated growth values
+        self._gpp_raw = None
         self._gpp_actual = None
         self._npp = None
         self._resp_swd = None
         self._resp_frt = None
         self._resp_fol = None
         self._turnover = None
+        self._d_mass_s = None
+        self._d_mass_fr = None
         self._delta_d = None
         self._delta_mass_stm = None
         self._delta_mass_frt = None
@@ -175,7 +203,8 @@ class TTree:
         """
 
         # GPP fixed per m2 of crown
-        gpp_unit_cr = gpp * (1 - np.exp(-(self.traits.par_ext * self.traits.lai)))
+        self._gpp_raw = gpp
+        gpp_unit_cr = self.gpp_raw * (1 - np.exp(-(self.traits.par_ext * self.traits.lai)))
         self._gpp_actual = self.crown_area * gpp_unit_cr
 
         # Respiration costs (Eqn 13 of Li ea)
@@ -196,20 +225,20 @@ class TTree:
 
         # relative increments - these are used to calculate delta_d and
         # then scaled by delta_d to give actual increments
-        d_mass_s = (np.pi / 8 * self.traits.rho_s * self.diameter *
-                    (self.traits.a_hd * self.diameter *
-                     (1 - (self.height / self.traits.h_max)) + 2 * self.height))
+        self._d_mass_s = (np.pi / 8 * self.traits.rho_s * self.diameter *
+                          (self.traits.a_hd * self.diameter *
+                           (1 - (self.height / self.traits.h_max)) + 2 * self.height))
 
-        d_mass_fr = (self.traits.lai *
-                     ((np.pi * self.traits.ca_ratio) / (4 * self.traits.a_hd)) *
-                     (self.traits.a_hd * self.diameter *
-                      (1 - self.height / self.traits.h_max) + self.height) *
-                     (1 / self.traits.sla + self.traits.zeta))
+        self._d_mass_fr = (self.traits.lai *
+                           ((np.pi * self.traits.ca_ratio) / (4 * self.traits.a_hd)) *
+                           (self.traits.a_hd * self.diameter *
+                            (1 - self.height / self.traits.h_max) + self.height) *
+                           (1 / self.traits.sla + self.traits.zeta))
 
         # Actual increments
-        self._delta_d = (self.npp - self.turnover) / (d_mass_s + d_mass_fr)
-        self._delta_mass_stm = d_mass_s * self.delta_d
-        self._delta_mass_frt = d_mass_fr * self.delta_d
+        self._delta_d = (self.npp - self.turnover) / (self.d_mass_s + self.d_mass_fr)
+        self._delta_mass_stm = self.d_mass_s * self.delta_d
+        self._delta_mass_frt = self.d_mass_fr * self.delta_d
 
 
 def grow_ttree(gpp: Union[float, np.ndarray], d_init: Union[float, np.ndarray],
@@ -296,3 +325,6 @@ def grow_ttree(gpp: Union[float, np.ndarray], d_init: Union[float, np.ndarray],
         tree.set_diameter(tree.diameter + getattr(tree, 'delta_d'))
 
     return output
+
+
+
