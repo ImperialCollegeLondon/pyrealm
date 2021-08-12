@@ -84,52 +84,93 @@ Fitting the model for:
 ```{code-cell} ipython3
 from pyrealm import pmodel
 env  = pmodel.PModelEnvironment(tc=20.0, patm=101325.0, vpd=0.82, co2=400)
+```
+
+The `env` object now holds the photosynthetic environment, which can be re-used 
+with different P Model settings. The representation of `env` is deliberately 
+terse - just the shape of the data - but the 
+{meth}`~pyrealm.pmodel.PModelEnvironment.summarize` method provides a 
+more detailed summary of the attributes.  
+
+```{code-cell} ipython3
+env
+```
+
+```{code-cell} ipython3
+env.summarize()
+```
+
+A P Model can now be fitted using that calculated photosynthetic environment:
+
+```{code-cell} ipython3
 model = pmodel.PModel(env)
 ```
 
-The returned model object holds a lot of information. The model object itself
-contains model options and intrinsic water use efficiency:
+The returned model object holds a lot of information. The representation of the
+model object shows a terse display of the settings used to run the model:
 
 ```{code-cell} ipython3
 model
 ```
 
-It also contains a {class}`CalcOptimalChi` object, recording the details of 
-the calculation of optimal ratio of internal to ambient $\ce{CO2}$ pressure
-($\chi$) calculations and $\ce{CO2}$ limitation factors to both light 
-assimilation ($m_j$) and carboxylation ($m_c$).
+A P model also has a {meth}`~pyrealm.pmodel.PModel.summarize` method 
+that summarizes settings and displays a summary of calculated predictions.
+Initially, this shows two measures of photosynthetic efficiency: the intrinsic 
+water use efficiency (``iwue``) and the light use efficiency (``lue``).
 
 ```{code-cell} ipython3
-model.optchi
+model.summarize()
 ```
 
-Last, the object contains `unit_iabs`,  an instance of class
-{class}`~pyrealm.pmodel.IabsScaled` that contains six variables that scale with
-absorbed irradiance, including the light use efficiency (LUE) and maximum
-carboxylation rate ($V_{cmax}$). The values in `unit_iabs` are reported as
-values **per unit absorbed irradiance**:
+### Calculating productivity
+
+Measures of photosynthetic productivity, such as gross primary productivty,
+are calculated by providing the P Model with estimates of the fraction of 
+absorbed photosynthetically active radiation (`fapar`) and the photosynthetic 
+photon flux density (`ppfd`). The product of these two variables is an estimate 
+of absorbed irradiance ($I_{abs}$).
+
+The {meth}`~pyrealm.pmodel.PModelEnvironment.estimate_productivity` method is 
+used to provide these estimates to the P Model instance. Once this has been run,
+the following additional variables are populated:
+
+* Gross primary productivity (``gpp``)
+* Dark respiration (``rd``)
+* Maximum rate of carboxylation (``vcmax``)
+* Maximum rate of carboxylation at standard temperature (``vcmax25``)
+* Maximum rate of electron transport. (``jmax``)
+* Stomatal conductance (``gs``)
+
+These variables are now also shown by the {meth}`~pyrealm.pmodel.PModel.summarize` 
+method. 
 
 ```{code-cell} ipython3
-model.unit_iabs
+model.estimate_productivity(fapar=0.91, ppfd=834)
+model.summarize()
 ```
 
-### Scaling to absorbed irradiance
-
-Since the values stored in class {class}`~pyrealm.pmodel.IabsScaled` scale
-linearly with absorbed irradiance ($I_{abs}$), it is  straightforward to convert
-them to absolute values. The {class}`~pyrealm.pmodel.IabsScaled` class contains
-a convenience method {meth}`~pyrealm.pmodel.IabsScaled.scale_iabs` that will
-automatically scale all six variables, given the fraction of absorbed
-photosynthetically active radiation (`fapar`) and the photosynthetic photon flux
-density (`ppfd`).
-
-Note that the units of PPFD determine the units of outputs. The example below
-uses representative values for tropical rainforest, with PPFD expressed as
-$\text{mol}\,m^{-2}\,\text{month}^{-1}$: GPP is therefore $g\,C\,m^{-2}
-\text{month}^{-1}$:
+Note that the units of PPFD determine the units of these additional predictions. 
+The example above uses representative values for tropical rainforest, with PPFD 
+expressed as $\text{mol}\,m^{-2}\,\text{month}^{-1}$: GPP is therefore $g\,C\,m^{-2}
+\text{month}^{-1}$. If required, productivity estimates per unit absorbed 
+irradiance can be simply calculated using ``fapar=1, ppfd=1``, which are the 
+default values to {meth}`~pyrealm.pmodel.PModelEnvironment.estimate_productivity`.
 
 ```{code-cell} ipython3
-model.unit_iabs.scale_iabs(fapar=0.91, ppfd=834)
+model.estimate_productivity() # Per unit I_abs
+model.summarize()
+```
+
+### $\chi$ estimates and $\ce{CO2}$ limitation
+
+A P model instance also contains a {class}`~pyrealm.pmodel.CalcOptimalChi` 
+object, recording the details of the calculation of optimal ratio of internal 
+to ambient $\ce{CO2}$ pressure ($\chi$) calculations and $\ce{CO2}$ limitation 
+factors to both light assimilation ($m_j$) and carboxylation ($m_c$). This 
+again has a {meth}`~pyrealm.pmodel.CalcOptimalChi.summarize` method:
+
+```{code-cell} ipython3
+model.optchi.summarize()
 ```
 
 ### Array inputs
@@ -153,7 +194,7 @@ env = pmodel.PModelEnvironment(tc=tc, patm=101325.0, vpd=0.82, co2=400)
 model_array = pmodel.PModel(env)
 
 # Plot TC against LUE
-pyplot.plot(tc, model_array.unit_iabs.lue)
+pyplot.plot(tc, model_array.lue)
 pyplot.xlabel('Temperature °C')
 pyplot.ylabel('Light use efficiency')
 pyplot.show()
@@ -172,7 +213,7 @@ env = pmodel.PModelEnvironment(tc=20, patm=patm, vpd=0.82, co2=400)
 model_3000 = pmodel.PModel(env)
 
 # Tiny change in LUE
-np.array([model.unit_iabs.lue, model_3000.unit_iabs.lue])
+np.array([model.lue, model_3000.lue])
 ```
 
 ### Apparent quantum yield efficiency
@@ -215,7 +256,7 @@ soilmstress
 model_soil = pmodel.PModel(env, kphio=0.08, soilmstress=soilmstress)
 
 # Compare LUE
-np.array([model_fixkphio.unit_iabs.lue, model_soil.unit_iabs.lue])
+np.array([model_fixkphio.lue, model_soil.lue])
 ```
 
 ### Temperature dependence of $\phi_0$
@@ -235,7 +276,7 @@ This correction can be removed using the argument `do_ftemp_kphio=False`:
 model_no_td_kphio = pmodel.PModel(env, kphio=0.08, do_ftemp_kphio=False)
 
 # Compare LUE
-np.array([model_fixkphio.unit_iabs.lue, model_no_td_kphio.unit_iabs.lue])
+np.array([model_fixkphio.lue, model_no_td_kphio.lue])
 ```
 
 ### Limitation of electron transfer rate ($J_{max}$)
@@ -251,8 +292,8 @@ model_jmax_none = pmodel.PModel(env, kphio=0.08, method_jmaxlim='none')
 model_jmax_smith19 = pmodel.PModel(env,  kphio=0.08, method_jmaxlim='smith19')
 
 # Compare LUE from the three methods
-np.array([model_fixkphio.unit_iabs.lue, 
-          model_jmax_none.unit_iabs.lue,
-          model_jmax_smith19.unit_iabs.lue])
+np.array([model_fixkphio.lue, 
+          model_jmax_none.lue,
+          model_jmax_smith19.lue])
 ```
 
