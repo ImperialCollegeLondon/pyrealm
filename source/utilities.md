@@ -4,6 +4,8 @@ jupytext:
   text_representation:
     extension: .md
     format_name: myst
+    format_version: 0.12
+    jupytext_version: 1.6.0
 kernelspec:
   display_name: Python 3
   language: python
@@ -16,16 +18,15 @@ The {mod}`~pyrealm.utilities` module contains a set of utility functions that
 are shared between modules, including:
 
 * conversion functions for common alternative inputs to models.
-* input checking   
+* input checking
 
-```{code-cell} python
-:tags: [hide-input]
+```{code-cell} ipython3
 # This code loads required packages and then creates a representative range of
 # values of the core variables to use in function plots.
 #
 # Note that the ranges are created (`_1d`) but are also cast to two dimensional
 # arrays of repeating values (`_2d`) to generate response surfaces for functions
-# with multuple inputs.
+# with multiple inputs.
 
 from matplotlib import pyplot
 import numpy as np
@@ -51,9 +52,15 @@ rh_2d = np.broadcast_to(rh_1d, (n_pts, n_pts))
 
 ### Hygrometric conversions
 
+The {class}`~pyrealm.pmodel.PModelEnvironment` class requires vapour pressure
+deficit (VPD) as an input, but forcing datasets often provide alternative 
+representations. The utilities provide functions to calculate saturated vapour 
+pressure for a given temperature and the conversions from vapour pressure, 
+relative humidity and specific humidity to vapour pressure deficit.  
+
+#### Saturated vapour pressure
 
 ```{code-cell} ipython3
-:tags: [hide-input]
 # Create a sequence of air temperatures and calculate the saturated vapour pressure   
 vp_sat = utilities.calc_vp_sat(ta_1d)
 
@@ -64,10 +71,9 @@ pyplot.ylabel('Saturated vapour pressure (kPa)')
 pyplot.show()
 ```
 
+#### Vapour pressure to VPD
 
-
-```{code-cell} python
-:tags: [hide-input]
+```{code-cell} ipython3
 vpd = utilities.convert_vp_to_vpd(vp_2d, ta_2d.transpose())
 
 # Plot vpd
@@ -80,13 +86,15 @@ ax.set_ylabel('Temperature (°C)')
 pyplot.show()
 ```
 
-```{code-cell} python
-:tags: [hide-input]
+#### Relative humidity to VPD
+
+```{code-cell} ipython3
 vpd = utilities.convert_rh_to_vpd(rh_2d, ta_2d.transpose())
 
 # Plot vpd
 fig, ax = pyplot.subplots()
-CS = ax.contour(rh_1d, ta_1d, vpd, colors='black')
+CS = ax.contour(rh_1d, ta_1d, vpd, colors='black', 
+                levels=[0,0.1,0.5,1,2.5,5,10,15])
 ax.clabel(CS, inline=1, fontsize=10)
 ax.set_title('Converting RH to VPD')
 ax.set_xlabel('Relative humidity (-)')
@@ -94,8 +102,9 @@ ax.set_ylabel('Temperature (°C)')
 pyplot.show()
 ```
 
-```{code-cell} python
-:tags: [hide-input]
+#### Specific humidity to VPD
+
+```{code-cell} ipython3
 # Create a sequence of air temperatures and calculate the saturated vapour pressure   
 vpd1 = utilities.convert_sh_to_vpd(sh_1d, ta=20, patm=101.325)
 vpd2 = utilities.convert_sh_to_vpd(sh_1d, ta=30, patm=101.325)
@@ -103,18 +112,22 @@ vpd3 = utilities.convert_sh_to_vpd(sh_1d, ta=20, patm=90)
 vpd4 = utilities.convert_sh_to_vpd(sh_1d, ta=30, patm=90)
 
 
-# Plot vpd against sh
-pyplot.plot(sh_1d, vpd1, sh_1d, vpd2, sh_1d, vpd3, sh_1d, vpd4)
+for yvals, lab in zip([vpd1, vpd2, vpd3, vpd4],
+                      ['20°C, 101.325 kPa', '30°C, 101.325 kPa',
+                       '20°C, 90 kPa', '20°C, 90 kPa']):
+    pyplot.plot(sh_1d, yvals, label=lab)
+
+pyplot.title('Converting SH to VPD')
+pyplot.legend(frameon=False)
 pyplot.xlabel('Specific humidity (kg kg-1)')
 pyplot.ylabel('Vapour pressure deficit (kPa)')
 pyplot.show()
 ```
 
-
-
 ## Module documentation
 
 ```{eval-rst}
 .. automodule:: pyrealm.utilities
+
 
 ```
