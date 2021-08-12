@@ -5,6 +5,33 @@ import json
 import enforce_typing
 from dacite import from_dict
 
+# from box import Box
+
+# Design notes: pyrealm is going to have a bunch of 'deep' settings. Things
+# that aren't often tweaked by users but should be easy to tweak when needed.
+# The aim here is to have a standard interface to those as an object that maps
+# a setting name to a value.
+#
+# Desired features (in no order):
+# 1. Ability to use a obj.attr notation rather than obj['attr']. Not really
+#    pythonic but a bit cleaner to read.
+# 2. Ability to freeze values. Distinctly paranoid.
+# 3. Ability to set a default mapping with default values
+# 4. Typing to set expected types on default values.
+# 5. Simple export/import methods to go to from dict / JSON
+# 6. Is a class, to allow __repr__ and other methods.
+#
+# ... and then there is a tricky one:
+#
+# 7. Extensibility. This is the hard one and currently would only be needed
+#    to support a customisable version of the T Model. If the T Model could
+#    have overridden geometry methods, then these settings _have_ to be able
+#    to take extra parameters. And having to set a type on those is another
+#    thing that users aren't going to buy into? This makes using @dataclass
+#    tricky - because extending class attributes on the fly is really not
+#    something that comes naturally to a class. A dotted dict replacement,
+#    like Box or addict, is a fairly simpl functional swap.
+
 
 class ParamClass:
     """Base class for model parameter classes
