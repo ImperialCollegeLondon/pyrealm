@@ -53,7 +53,7 @@ def check_input_shapes(*args):
         if isinstance(val, (np.ndarray, ConstrainedArray)):
             # Note that 0-dim ndarrays (which are scalars) pass through as do
             # one dimensional arrays with a single value (also a scalar)
-            if val.ndim > 0 or val.shape != (1,):
+            if not(val.ndim == 0 or val.shape == (1,)):
                 shapes.add(val.shape)
         # elif isinstance(val, Series):
         #    # Note that 0-dim ndarrays (which are scalars) pass through
