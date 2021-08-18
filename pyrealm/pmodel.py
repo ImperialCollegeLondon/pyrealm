@@ -1439,8 +1439,11 @@ class CalcOptimalChi:
         # but this is guaranteed by clip above (also true in rpmodel).
 
         vsr = np.sqrt(1.6 * kwargs['ns_star'] * vpd / vbkg)
-        mj = vdcg / (vacg + 3.0 * kwargs['gammastar']* vsr)
-        mj = np.where(np.logical_and(kwargs['ns_star'] > 0, vbkg > 0), mj, np.nan)
+        mj = vdcg / (vacg + 3.0 * kwargs['gammastar'] * vsr)
+
+        # Mask values with ns star <= 0 and vbkg <=0
+        # TODO - think about masking vs explicit np.nan values in data.
+        mj = np.ma.masked_where(np.logical_and(kwargs['ns_star'] <= 0, vbkg <= 0), mj)
         # np.where _always_ returns an array, so catch scalars.
         self.mj = mj.item() if np.ndim(mj) == 0 else mj
 
