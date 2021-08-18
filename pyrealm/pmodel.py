@@ -726,7 +726,12 @@ def calc_patm(elv: Union[float, np.ndarray],
     # °C.
 
     # Check input ranges
-    elv = _constrain_elev(elv)
+    # TODO - this leads to downstream issues. Using this in a calculation
+    #        results in constrained arrays without any of the attributes.
+    #        This is a wider implementation problem but currenly only impacts
+    #        here, where constrained arrays get passed into new calculations
+
+    # elv = _constrain_elev(elv)
 
     kto = pmodel_params.k_To + pmodel_params.k_CtoK
 
