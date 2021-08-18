@@ -28,3 +28,6 @@
 0.5.1 - Minor tweaks to utilities param classes
       - Backtrack on constrained_arrays - unexpected issues with chained use.
         Currently just turning off a single constraint.
+0.5.2 - Fix for critical bug in mj calculation - using masked arrays is fragile, need
+        to consider this - and the constraint approach which generates masked
+        inputs.
