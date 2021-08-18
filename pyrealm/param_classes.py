@@ -329,7 +329,7 @@ class TModelTraits(ParamClass):
 
 @enforce_typing.enforce_types
 @dataclass(frozen=True)
-class UtilParams(ParamClass):
+class HygroParams(ParamClass):
     r"""Settings for utility function
 
     This data class provides parameters used :mod:`~pyrealm.utilities`, which

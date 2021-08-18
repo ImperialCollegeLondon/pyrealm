@@ -1,6 +1,6 @@
 import numpy as np
 import tabulate
-from pyrealm.param_classes import UtilParams
+from pyrealm.param_classes import HygroParams
 from pyrealm.constrained_array import ConstraintFactory, ConstrainedArray
 # from pandas.core.series import Series
 
@@ -116,7 +116,7 @@ def summarize_attrs(obj, attrs, dp=2, repr_head=True):
 _constrain_rh = ConstraintFactory(lower=0, upper=1, label='relative humidity (-)',)
 
 
-def calc_vp_sat(ta, util_params=UtilParams()):
+def calc_vp_sat(ta, hygro_params=HygroParams()):
 
     """
     Calculates the vapour pressure of saturated air at a given temperature
@@ -135,7 +135,7 @@ def calc_vp_sat(ta, util_params=UtilParams()):
 
     Args:
         ta: The air temperature
-        util_params: An object of class ~`pyrealm.param_classes.UtilParams`
+        hygro_params: An object of class ~`pyrealm.param_classes.HygroParams`
             giving the settings to be used in conversions.
 
     Returns:
@@ -146,29 +146,29 @@ def calc_vp_sat(ta, util_params=UtilParams()):
         >>> # Saturated vapour pressure at 21°C
         >>> round(calc_vp_sat(21), 6)
         2.480904
-        >>> from pyrealm.param_classes import UtilParams
-        >>> allen = UtilParams(magnus_option='Allen1998')
-        >>> round(calc_vp_sat(21, util_params=allen), 6)
+        >>> from pyrealm.param_classes import HygroParams
+        >>> allen = HygroParams(magnus_option='Allen1998')
+        >>> round(calc_vp_sat(21, hygro_params=allen), 6)
         2.487005
-        >>> alduchov = UtilParams(magnus_option='Alduchov1996')
-        >>> round(calc_vp_sat(21, util_params=alduchov), 6)
+        >>> alduchov = HygroParams(magnus_option='Alduchov1996')
+        >>> round(calc_vp_sat(21, hygro_params=alduchov), 6)
         2.481888
     """
 
     # Magnus equation and conversion to kPa
-    cf = util_params.magnus_coef
+    cf = hygro_params.magnus_coef
     vp_sat = cf[0] * np.exp((cf[1] * ta) / (cf[2] + ta)) / 1000
 
     return vp_sat
 
 
-def convert_vp_to_vpd(vp, ta, util_params=UtilParams()):
+def convert_vp_to_vpd(vp, ta, hygro_params=HygroParams()):
     """Converts vapour pressure to vapour pressure deficit.
 
     Args:
         vp: The vapour pressure in kPa
         ta: The air temperature in °C
-        util_params: An object of class ~`pyrealm.param_classes.UtilParams`
+        hygro_params: An object of class ~`pyrealm.param_classes.HygroParams`
             giving the settings to be used in conversions.
     Returns:
         The vapour pressure deficit in kPa
@@ -176,24 +176,24 @@ def convert_vp_to_vpd(vp, ta, util_params=UtilParams()):
     Examples:
         >>> round(convert_vp_to_vpd(1.9, 21), 7)
         0.5809042
-        >>> from pyrealm.param_classes import UtilParams
-        >>> allen = UtilParams(magnus_option='Allen1998')
-        >>> round(convert_vp_to_vpd(1.9, 21, util_params=allen), 7)
+        >>> from pyrealm.param_classes import HygroParams
+        >>> allen = HygroParams(magnus_option='Allen1998')
+        >>> round(convert_vp_to_vpd(1.9, 21, hygro_params=allen), 7)
         0.5870054
     """
-    vp_sat = calc_vp_sat(ta, util_params=util_params)
+    vp_sat = calc_vp_sat(ta, hygro_params=hygro_params)
 
     return vp_sat - vp
 
 
-def convert_rh_to_vpd(rh, ta, util_params=UtilParams()):
+def convert_rh_to_vpd(rh, ta, hygro_params=HygroParams()):
 
     """Converts relative humidity to vapour pressure deficit
 
     Args:
         rh: The relative humidity (proportion in (0,1))
         ta: The air temperature in °C
-        util_params: An object of class ~`pyrealm.param_classes.UtilParams`
+        hygro_params: An object of class ~`pyrealm.param_classes.HygroParams`
             giving the settings to be used in conversions.
     Returns:
         The vapour pressure deficit in kPa
@@ -201,9 +201,9 @@ def convert_rh_to_vpd(rh, ta, util_params=UtilParams()):
     Examples:
         >>> round(convert_rh_to_vpd(0.7, 21), 7)
         0.7442712
-        >>> from pyrealm.param_classes import UtilParams
-        >>> allen = UtilParams(magnus_option='Allen1998')
-        >>> round(convert_rh_to_vpd(0.7, 21, util_params=allen), 7)
+        >>> from pyrealm.param_classes import HygroParams
+        >>> allen = HygroParams(magnus_option='Allen1998')
+        >>> round(convert_rh_to_vpd(0.7, 21, hygro_params=allen), 7)
         0.7461016
         >>> convert_rh_to_vpd(71, 21)
         masked
@@ -211,18 +211,18 @@ def convert_rh_to_vpd(rh, ta, util_params=UtilParams()):
 
     rh = _constrain_rh(rh)
 
-    vp_sat = calc_vp_sat(ta, util_params=util_params)
+    vp_sat = calc_vp_sat(ta, hygro_params=hygro_params)
 
     return vp_sat - (rh * vp_sat)
 
 
-def convert_sh_to_vp(sh, patm, util_params=UtilParams()):
+def convert_sh_to_vp(sh, patm, hygro_params=HygroParams()):
     """Convert specific humidity to vapour pressure
 
     Args:
         sh: The specific humidity in kg kg-1
         patm: The atmospheric pressure in kPa
-        util_params: An object of class ~`pyrealm.param_classes.UtilParams`
+        hygro_params: An object of class ~`pyrealm.param_classes.HygroParams`
             giving the settings to be used in conversions.
     Returns:
         The vapour pressure in kPa
@@ -231,17 +231,17 @@ def convert_sh_to_vp(sh, patm, util_params=UtilParams()):
         0.9517451
     """
 
-    return sh * patm / ((1.0 - util_params.mwr) * sh + util_params.mwr)
+    return sh * patm / ((1.0 - hygro_params.mwr) * sh + hygro_params.mwr)
 
 
-def convert_sh_to_vpd(sh, ta, patm, util_params=UtilParams()):
+def convert_sh_to_vpd(sh, ta, patm, hygro_params=HygroParams()):
     """Convert specific humidity to vapour pressure deficit
 
     Args:
         sh: The specific humidity in kg kg-1
         ta: The air temperature in °C
         patm: The atmospheric pressure in kPa
-        util_params: An object of class ~`pyrealm.param_classes.UtilParams`
+        hygro_params: An object of class ~`pyrealm.param_classes.HygroParams`
             giving the settings to be used in conversions.
 
     Returns:
@@ -250,14 +250,14 @@ def convert_sh_to_vpd(sh, ta, patm, util_params=UtilParams()):
     Examples:
         >>> round(convert_sh_to_vpd(0.006, 21, 99.024), 6)
         1.529159
-        >>> from pyrealm.param_classes import UtilParams
-        >>> allen = UtilParams(magnus_option='Allen1998')
-        >>> round(convert_sh_to_vpd(0.006, 21, 99.024, util_params=allen), 5)
+        >>> from pyrealm.param_classes import HygroParams
+        >>> allen = HygroParams(magnus_option='Allen1998')
+        >>> round(convert_sh_to_vpd(0.006, 21, 99.024, hygro_params=allen), 5)
         1.53526
     """
 
-    vp_sat = calc_vp_sat(ta, util_params=util_params)
-    vp = convert_sh_to_vp(sh, patm, util_params=util_params)
+    vp_sat = calc_vp_sat(ta, hygro_params=hygro_params)
+    vp = convert_sh_to_vp(sh, patm, hygro_params=hygro_params)
 
     return vp_sat - vp
 
