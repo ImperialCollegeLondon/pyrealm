@@ -14,7 +14,7 @@ related models of plant productivity, growth and demography.
 
 The codebase is developed in `git` with a repository at:
 
-https://github.com/davidorme/pyrealm
+[https://github.com/davidorme/pyrealm](https://github.com/davidorme/pyrealm)
 
 It uses the `git flow` model for development and release. Briefly:
 
@@ -54,7 +54,7 @@ load the `mhchem` extension, supporting the rendering of chemical notation.
 The module codes uses docstrings written in the 
 [Google style](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
 Unlike the main documentation pages, the docstrings in code are written using 
-reStructuredText because the `autodoc` functions in `sphinx` rely on `rst` 
+reStructuredText because the `autodoc` functions in `sphinx` currently rely on `rst` 
 inputs. This allows the function documentation to be stored alongside the code
 and included simply into the documentation. 
 
