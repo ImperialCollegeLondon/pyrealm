@@ -31,3 +31,5 @@
 0.5.2 - Fix for critical bug in mj calculation - using masked arrays is fragile, need
         to consider this - and the constraint approach which generates masked
         inputs.
+0.5.3 - Replaced ConstrainedArray and masked arrays with input_bounds_checker
+	and 'masking' using np.nan. See notes in pyrealm/bounds_checker.py
