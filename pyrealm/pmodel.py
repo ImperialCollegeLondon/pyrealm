@@ -3,28 +3,28 @@ from typing import Optional, Union
 import numpy as np
 from pyrealm.utilities import summarize_attrs
 from pyrealm.param_classes import PModelParams
-from pyrealm.constrained_array import ConstraintFactory
+from pyrealm.bounds_checker import InputBoundsCheckerFactory
 from pyrealm.utilities import check_input_shapes
 
 # TODO - Note that the typing currently does not enforce the dtype of ndarrays
 #        but it looks like the upcoming np.typing module might do this.
 
-# Define environmental variable constraint functions. These are intended
+# Define input variable constraint functions. These are intended
 # primarily to keep inputs away from areas where the functions become
 # numerically unstable.
 
 # TODO - check the sanity of these limits
 
-_constrain_temp = ConstraintFactory(label='temperature (°C)',
-                                    lower=0, upper=100)
-_constrain_patm = ConstraintFactory(label='atmospheric pressure (Pa)',
-                                    lower=30000, upper=110000)
-_constrain_vpd = ConstraintFactory(label='vapor pressure deficit (Pa)',
-                                   lower=0, upper=10000)
-_constrain_co2 = ConstraintFactory(label='carbon dioxide (ppm)',
-                                   lower=100, upper=1000)
-_constrain_elev = ConstraintFactory(label='elevation (m)',
-                                    lower=-500, upper=9000)
+_constrain_temp = InputBoundsCheckerFactory(label='temperature (°C)',
+                                            lower=0, upper=100)
+_constrain_patm = InputBoundsCheckerFactory(label='atmospheric pressure (Pa)',
+                                            lower=30000, upper=110000)
+_constrain_vpd = InputBoundsCheckerFactory(label='vapor pressure deficit (Pa)',
+                                           lower=0, upper=10000)
+_constrain_co2 = InputBoundsCheckerFactory(label='carbon dioxide (ppm)',
+                                           lower=100, upper=1000)
+_constrain_elev = InputBoundsCheckerFactory(label='elevation (m)',
+                                            lower=-500, upper=9000)
 
 
 def calc_density_h2o(tc: Union[float, np.ndarray],
@@ -726,12 +726,7 @@ def calc_patm(elv: Union[float, np.ndarray],
     # °C.
 
     # Check input ranges
-    # TODO - this leads to downstream issues. Using this in a calculation
-    #        results in constrained arrays without any of the attributes.
-    #        This is a wider implementation problem but currenly only impacts
-    #        here, where constrained arrays get passed into new calculations
-
-    # elv = _constrain_elev(elv)
+    elv = _constrain_elev(elv)
 
     kto = pmodel_params.k_To + pmodel_params.k_CtoK
 

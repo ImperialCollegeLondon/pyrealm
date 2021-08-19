@@ -1,7 +1,7 @@
 import numpy as np
 import tabulate
 from pyrealm.param_classes import HygroParams
-from pyrealm.constrained_array import ConstraintFactory, ConstrainedArray
+from pyrealm.bounds_checker import input_bounds_checker, InputBoundsCheckerFactory
 # from pandas.core.series import Series
 
 """
@@ -44,13 +44,9 @@ def check_input_shapes(*args):
     #   - scalars,
     #   - 0 dim ndarrays (also scalars but packaged differently)
     #   - 1 dim ndarrays with only a single value
-    #   - pandas _Series_ for 1 dimensional data. I can't think that
-    #     including a DataFrame with possibly variable types is anything
-    #     other than confusing. 2D and above _requires_ an array
-    #   - ConstrainedArrays
 
     for val in args:
-        if isinstance(val, (np.ndarray, ConstrainedArray)):
+        if isinstance(val, np.ndarray):
             # Note that 0-dim ndarrays (which are scalars) pass through as do
             # one dimensional arrays with a single value (also a scalar)
             if not(val.ndim == 0 or val.shape == (1,)):
@@ -73,7 +69,6 @@ def check_input_shapes(*args):
         return shapes.pop()
 
     return 1
-
 
 
 def summarize_attrs(obj, attrs, dp=2, repr_head=True):
@@ -113,7 +108,8 @@ def summarize_attrs(obj, attrs, dp=2, repr_head=True):
 # relative humidity. Using the bigleaf R package as a checking reference from
 # which the doctest values are taken
 
-_constrain_rh = ConstraintFactory(lower=0, upper=1, label='relative humidity (-)',)
+
+_constrain_rh = InputBoundsCheckerFactory(lower=0, upper=1, label='relative humidity (-)',)
 
 
 def calc_vp_sat(ta, hygro_params=HygroParams()):
@@ -205,8 +201,8 @@ def convert_rh_to_vpd(rh, ta, hygro_params=HygroParams()):
         >>> allen = HygroParams(magnus_option='Allen1998')
         >>> round(convert_rh_to_vpd(0.7, 21, hygro_params=allen), 7)
         0.7461016
-        >>> convert_rh_to_vpd(71, 21)
-        masked
+        >>> convert_rh_to_vpd(70, 21)
+        nan
     """
 
     rh = _constrain_rh(rh)
