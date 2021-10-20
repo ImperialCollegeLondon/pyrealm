@@ -52,12 +52,12 @@ from typing import Union
 # helping users sanitise inputs, but provide a simple routine to check whether
 # values are sane.
 
-def input_bounds_checker(values: Union[np.ndarray, Number],
-                         lower: Number = -np.infty,
-                         upper: Number = np.infty,
-                         interval_type: str = '[]',
-                         label: str = '',
-                         unit: str = ''):
+def bounds_checker(values: Union[np.ndarray, Number],
+                   lower: Number = -np.infty,
+                   upper: Number = np.infty,
+                   interval_type: str = '[]',
+                   label: str = '',
+                   unit: str = ''):
     r"""Check inputs fall within bounds
 
     This is a simple pass through function that tests whether the values fall within
@@ -77,7 +77,7 @@ def input_bounds_checker(values: Union[np.ndarray, Number],
     Examples:
 
         >>> vals = np.array([-15, 20, 30, 124], dtype=np.float)
-        >>> vals_c = input_bounds_checker(vals, 0, 100, label='temperature')
+        >>> vals_c = bounds_checker(vals, 0, 100, label='temperature', unit='°C')
     """
 
     # Implement the interval type
@@ -112,14 +112,13 @@ def input_mask(inputs: Union[np.ndarray, Number],
                upper: Number = np.infty,
                interval_type: str = '[]',
                label: str = ''):
-    r"""Check inputs fall within bounds
+    r"""Mask inputs that do not fall within bounds
 
     This function constrains the values in inputs, replacing values outside
     the provided interval with np.nan. Because np.nan is a float, when any data
     is out of bounds, the returned values are always float arrays or np.nan.
 
     Parameters:
-
         inputs: An np.ndarray object or number
         lower: The value of the lower constraint
         upper: The value of the upper constraint
@@ -138,13 +137,13 @@ def input_mask(inputs: Union[np.ndarray, Number],
         >>> vals = np.array([-15, 20, 30, 124], dtype=np.float)
         >>> np.nansum(vals)
         159.0
-        >>> vals_c = input_bounds_checker(vals, 0, 100, label='temperature')
+        >>> vals_c = input_mask(vals, 0, 100, label='temperature')
         >>> np.nansum(vals_c)
         50.0
-        >>> vals_c = input_bounds_checker(vals, 0, 124, interval_type='[]', label='temperature')
+        >>> vals_c = input_mask(vals, 0, 124, interval_type='[]', label='temperature')
         >>> np.nansum(vals_c)
         174.0
-        >>> vals_c = input_bounds_checker(vals, 0, 124, interval_type='[)', label='temperature')
+        >>> vals_c = input_mask(vals, 0, 124, interval_type='[)', label='temperature')
         >>> np.nansum(vals_c)
         50.0
     """
