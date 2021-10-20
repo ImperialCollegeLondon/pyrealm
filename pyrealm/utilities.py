@@ -1,6 +1,5 @@
 import numpy as np
 import tabulate
-from pyrealm import stderr_to_stdout
 from pyrealm.param_classes import HygroParams
 from pyrealm.bounds_checker import bounds_checker
 # from pandas.core.series import Series
