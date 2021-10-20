@@ -73,7 +73,7 @@ clicking on the buttons like the one below.
   :hidden:
   
   utilities.md
-  constrained_arrays.md
+  bounds_checking.md
   params.md
   z_bibliography.rst
 ```
