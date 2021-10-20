@@ -51,6 +51,7 @@ clicking on the buttons like the one below.
   pmodel/photosynthetic_environment.md
   pmodel/optimal_chi.md
   pmodel/lue_vcmax.md
+  pmodel/extreme_values.md
   pmodel/global_example.md
   pmodel/pmodel_reference.md
 ```
@@ -72,7 +73,7 @@ clicking on the buttons like the one below.
   :hidden:
   
   utilities.md
-  constrained_arrays.md
+  bounds_checking.md
   params.md
   z_bibliography.rst
 ```

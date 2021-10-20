@@ -3,34 +3,16 @@ from typing import Optional, Union
 import numpy as np
 from pyrealm.utilities import summarize_attrs
 from pyrealm.param_classes import PModelParams
-from pyrealm.constrained_array import ConstraintFactory
+from pyrealm.bounds_checker import bounds_checker
 from pyrealm.utilities import check_input_shapes
 
 # TODO - Note that the typing currently does not enforce the dtype of ndarrays
 #        but it looks like the upcoming np.typing module might do this.
 
-# Define environmental variable constraint functions. These are intended
-# primarily to keep inputs away from areas where the functions become
-# numerically unstable.
-
-# TODO - check the sanity of these limits
-
-_constrain_temp = ConstraintFactory(label='temperature (°C)',
-                                    lower=0, upper=100)
-_constrain_patm = ConstraintFactory(label='atmospheric pressure (Pa)',
-                                    lower=30000, upper=110000)
-_constrain_vpd = ConstraintFactory(label='vapor pressure deficit (Pa)',
-                                   lower=0, upper=10000)
-_constrain_co2 = ConstraintFactory(label='carbon dioxide (ppm)',
-                                   lower=100, upper=1000)
-_constrain_elev = ConstraintFactory(label='elevation (m)',
-                                    lower=-500, upper=9000)
-
-
 def calc_density_h2o(tc: Union[float, np.ndarray],
                      patm: Union[float, np.ndarray],
-                     pmodel_params: PModelParams = PModelParams()
-                     ) -> Union[float, np.ndarray]:
+                     pmodel_params: PModelParams = PModelParams(),
+                     safe: bool = True) -> Union[float, np.ndarray]:
     """Calculates the **density of water** as a function of temperature and
     atmospheric pressure, using the Tumlirz Equation and coefficients calculated
     by :cite:`Fisher:1975tm`.
@@ -40,6 +22,8 @@ def calc_density_h2o(tc: Union[float, np.ndarray],
         tc: air temperature, °C
         patm: atmospheric pressure, Pa
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
+        safe: Prevents the function from estimating density below -30°C, where the
+            function behaves poorly
 
     Other Parameters:
 
@@ -60,25 +44,13 @@ def calc_density_h2o(tc: Union[float, np.ndarray],
     # DESIGN NOTE:
     # It doesn't make sense to use this function for tc < 0, but in particular
     # the calculation shows wild numeric instability between -44 and -46 that
-    # leads to numerous downstream issues:
-    #
-    # from pyrealm import pmodel
-    # from matplotlib import pyplot as plt
-    # import numpy as np
-    #
-    # tc = np.arange(-88, 48, 0.1)
-    # r = np.arange(-1, 1, 0.01)
-    # sd = np.fromiter([np.std(pmodel.calc_density_h2o(t + r, 101350)) for t in tc], np.float)
-    #
-    # plt.plot(tc, sd)
-    # plt.show()
-
+    # leads to numerous downstream issues - see the extreme values documentation.
+    if safe and np.nanmin(tc) < -30:
+        raise RuntimeError('Water density calculations below about -30°C are '
+                           'unstable. See argument safe to calc_density_h2o')
+        
     # Check input shapes, shape not used
     _ = check_input_shapes(tc, patm)
-
-    # Check input ranges
-    tc = _constrain_temp(tc)
-    patm = _constrain_patm(patm)
 
     # Get powers of tc, including tc^0 = 1 for constant terms
     tc_pow = np.power.outer(tc, np.arange(0, 10))
@@ -226,9 +198,6 @@ def calc_ftemp_inst_rd(tc: Union[float, np.ndarray],
         250.9593
     """
 
-    # Check input ranges
-    tc = _constrain_temp(tc)
-
     return np.exp(pmodel_params.heskel_b * (tc - pmodel_params.k_To) -
                   pmodel_params.heskel_c * (tc ** 2 - pmodel_params.k_To ** 2))
 
@@ -288,9 +257,6 @@ def calc_ftemp_inst_vcmax(tc: Union[float, np.ndarray],
         283.1775
 
     """
-
-    # Check input ranges
-    tc = _constrain_temp(tc)
 
     # Convert temperatures to Kelvin
     tkref = pmodel_params.k_To + pmodel_params.k_CtoK
@@ -362,9 +328,6 @@ def calc_ftemp_kphio(tc: Union[float, np.ndarray],
 
     """
 
-    # Check input ranges
-    tc = _constrain_temp(tc)
-
     if c4:
         coef = pmodel_params.kphio_C4
     else:
@@ -421,10 +384,6 @@ def calc_gammastar(tc: Union[float, np.ndarray],
     # check inputs, return shape not used
     _ = check_input_shapes(tc, patm)
 
-    # Check input ranges
-    tc = _constrain_temp(tc)
-    patm = _constrain_patm(patm)
-
     return (pmodel_params.bernacchi_gs25_0 * patm / pmodel_params.k_Po *
             calc_ftemp_arrh((tc + pmodel_params.k_CtoK), ha=pmodel_params.bernacchi_dha))
 
@@ -459,15 +418,11 @@ def calc_ns_star(tc: Union[float, np.ndarray],
 
     Examples:
 
-        >>> # Realative viscosity at 20 degrees Celsius and standard
+        >>> # Relative viscosity at 20 degrees Celsius and standard
         >>> # atmosphere (in Pa):
         >>> round(calc_ns_star(20, 101325), 5)
         1.12536
     """
-
-    # Check input ranges
-    tc = _constrain_temp(tc)
-    patm = _constrain_patm(patm)
 
     visc_env = calc_viscosity_h2o(tc, patm)
     visc_std = calc_viscosity_h2o(pmodel_params.k_To, pmodel_params.k_Po)
@@ -534,10 +489,6 @@ def calc_kmm(tc: Union[float, np.ndarray],
 
     # Check inputs, return shape not used
     _ = check_input_shapes(tc, patm)
-
-    # Check input ranges
-    tc = _constrain_temp(tc)
-    patm = _constrain_patm(patm)
 
     # conversion to Kelvin
     tk = tc + pmodel_params.k_CtoK
@@ -653,10 +604,6 @@ def calc_viscosity_h2o(tc: Union[float, np.ndarray],
     # Check inputs, return shape not used
     _ = check_input_shapes(tc, patm)
 
-    # Check input ranges
-    tc = _constrain_temp(tc)
-    patm = _constrain_patm(patm)
-
     # Get the density of water, kg/m^3
     rho = calc_density_h2o(tc, patm, pmodel_params=pmodel_params)
 
@@ -725,14 +672,6 @@ def calc_patm(elv: Union[float, np.ndarray],
     # in Kelvins, while other functions use this constant in the PARAM units of
     # °C.
 
-    # Check input ranges
-    # TODO - this leads to downstream issues. Using this in a calculation
-    #        results in constrained arrays without any of the attributes.
-    #        This is a wider implementation problem but currenly only impacts
-    #        here, where constrained arrays get passed into new calculations
-
-    # elv = _constrain_elev(elv)
-
     kto = pmodel_params.k_To + pmodel_params.k_CtoK
 
     return (pmodel_params.k_Po * (1.0 - pmodel_params.k_L * elv / kto) **
@@ -758,9 +697,6 @@ def calc_co2_to_ca(co2: Union[float, np.ndarray],
         41.850265
     """
 
-    # Check input ranges
-    co2 = _constrain_co2(co2)
-    patm = _constrain_patm(patm)
 
     return 1.0e-6 * co2 * patm  # Pa, atms. CO2
 
@@ -825,11 +761,15 @@ class PModelEnvironment:
 
         self.shape = check_input_shapes(tc, vpd, co2, patm)
 
-        # Store input variables
-        self.tc = _constrain_temp(tc)
-        self.vpd = _constrain_vpd(vpd)
-        self.co2 = _constrain_co2(co2)
-        self.patm = _constrain_patm(patm)
+        # Validate and store the forcing variables
+        self.tc = bounds_checker(tc, -25, 80, '[]', 'tc', '°C')
+        self.vpd = bounds_checker(vpd, 0, 10000, '[]', 'vpd', 'Pa')
+        self.co2 = bounds_checker(co2, 0, 1000, '[]', 'co2', 'ppm')
+        self.patm = bounds_checker(patm, 30000, 110000, '[]', 'tc', '°C')
+
+        # Guard against calc_density issues
+        if np.nanmin(self.tc) < -25:
+            raise ValueError('Cannot calculate P Model predictions for values below -25°C. See calc_density_h2o.')
 
         # ambient CO2 partial pressure (Pa)
         self.ca = calc_co2_to_ca(self.co2, self.patm)

@@ -45,6 +45,7 @@ by calculating:
 - the relative viscosity of water ($\eta^*$), and
 - the partial pressure of $\ce{CO2}$ in ambient air ($c_a$).
 
+
 Once this set of environmental variables has been calculated, the P-model can
 then be fitted. The model breaks down into three broad stages, each of which 
 is described in more detail in the link for each stage
@@ -55,6 +56,16 @@ is described in more detail in the link for each stage
    (see [details](lue_vcmax)). 
 3. Optionally, scaling of key outputs to the total absorbed irradiance 
    (see [below](#scaling-to-absorbed-irradiance)).
+
+### Extreme values
+
+The four photosynthetic environment variables and the effect of temperature
+on the temperature dependence of quantum yield efficiency are all calculated
+directly from the input forcing variables. While the majority of those calculations
+behave smoothly with extreme values of temperature and atmospheric pressure, 
+the calculation of the relative viscosity of water ($\eta^*$) does not handle
+low temperatures well. The behaviour of these functions with extreme values
+is shown [here](extreme_values).
 
 ### Variable graph
 

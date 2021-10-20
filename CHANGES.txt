@@ -31,3 +31,8 @@
 0.5.2 - Fix for critical bug in mj calculation - using masked arrays is fragile, need
         to consider this - and the constraint approach which generates masked
         inputs.
+0.5.3 - Replaced ConstrainedArray and masked arrays with input_bounds_checker
+        and 'masking' using np.nan. See notes in pyrealm/bounds_checker.py. This
+        was revisited even before release to remove built in masking completely
+        and just provide some warnings on sane ranges. A hard limit for temps
+        < 25°C is imposed due to the behaviour of calc_density_h2o.

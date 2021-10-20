@@ -82,7 +82,7 @@ pyplot.show()
 
 Details: {func}`pyrealm.pmodel.calc_kmm`
 
-The Michaelis-Menten coefficient for photosynthesis ($K_{mm}$ )also varies with
+The Michaelis-Menten coefficient for photosynthesis ($K_{mm}$) also varies with
 temperature and atmospheric pressure:
 
 ```{code-cell} python

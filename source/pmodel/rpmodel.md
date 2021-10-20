@@ -53,7 +53,7 @@ The implementations differ in a number of ways:
 1. When simulating C4 plants, the ``rpmodel`` package, the ``rpmodel`` function
    enforces a separate $J_{max}$ method (``rpmodel:::calc_lue_vcmax_c4``). This
    is equivalent to the `simple` model with the $\ce{CO2}$ limitation factor
-   $m_j=1.0`. Only this method can be used with C4 plants and hence it is not
+   $m_j=1.0$. Only this method can be used with C4 plants and hence it is not
    possible to simulate $J_{max}$ limitation for C4 plants. In the
    implementation in {mod}`~pyrealm.pmodel`, C4 plants are set to have no
    $\ce{CO2}$ limitation {class}`~pyrealm.pmodel.CalcOptimalChi` and are then
