@@ -1,5 +1,6 @@
 import numpy as np
 import tabulate
+from pyrealm import stderr_to_stdout
 from pyrealm.param_classes import HygroParams
 from pyrealm.bounds_checker import bounds_checker
 # from pandas.core.series import Series
@@ -198,8 +199,10 @@ def convert_rh_to_vpd(rh, ta, hygro_params=HygroParams()):
         >>> allen = HygroParams(magnus_option='Allen1998')
         >>> round(convert_rh_to_vpd(0.7, 21, hygro_params=allen), 7)
         0.7461016
-        >>> convert_rh_to_vpd(70, 21)
-        nan
+        >>> import sys; sys.stderr = sys.stdout
+        >>> round(convert_rh_to_vpd(70, 21), 7)
+        pyrealm/bounds_checker.py:104: UserWarning: Variable rh (proportion) contains values outside the expected range (0,1). Check units?
+        -171.1823864
     """
 
     rh = bounds_checker(rh, 0, 1, '[]', 'rh', 'proportion')

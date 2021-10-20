@@ -1,7 +1,7 @@
 import numpy as np
-import warnings
 from numbers import Number
 from typing import Union
+from pyrealm import warnings
 
 # DESIGN NOTES: DO 18/08/21
 #

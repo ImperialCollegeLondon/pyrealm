@@ -112,8 +112,12 @@ docstring tests, use:
 
 ```bash
 python -m doctest pyrealm/pmodel.py
-
+python -m doctest pyrealm/*.py
 ``` 
+
+For `doctest` on warnings, see the example for `pyrealm.utilities.convert_rh_to_vpd`
+which redirects the stderr to stdout to allow for the warning text to be
+included in the doctest.
 
 ### Using `pytest`
 
