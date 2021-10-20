@@ -1,5 +1,5 @@
-sphinx==3.2.1
-sphinxcontrib-bibtex<2.0.0
+sphinx==4.2.0
+sphinxcontrib-bibtex
 sphinx-rtd-theme
 sphinx-astrorefs
 recommonmark

@@ -47,10 +47,16 @@ autodoc_default_flags = ['members']
 autosummary_generate = True
 
 # Enable mhchem for chemical formulae
-mathjax_config = {'TeX': {'extensions': ['mhchem.js']}}
+mathjax3_config = {'TeX': {'extensions': ['mhchem.js']}}
 
 # Turn off ugly rendering of class attributes
 napoleon_use_ivar = True
+
+# Suppress signature expansion of arguments
+autodoc_preserve_defaults = True
+
+bibtex_bibfiles = ['refs.bib']
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
