@@ -762,14 +762,14 @@ class PModelEnvironment:
         self.shape = check_input_shapes(tc, vpd, co2, patm)
 
         # Validate and store the forcing variables
-        self.tc = bounds_checker(tc, -25, 80, 'tc', '°C')
-        self.vpd = bounds_checker(vpd, 0, 10000, 'vpd', 'Pa')
-        self.co2 = bounds_checker(co2, 0, 1000, 'co2', 'ppm')
-        self.patm = bounds_checker(patm, 30000, 110000, 'tc', '°C')
+        self.tc = bounds_checker(tc, -25, 80, '[]', 'tc', '°C')
+        self.vpd = bounds_checker(vpd, 0, 10000, '[]', 'vpd', 'Pa')
+        self.co2 = bounds_checker(co2, 0, 1000, '[]', 'co2', 'ppm')
+        self.patm = bounds_checker(patm, 30000, 110000, '[]', 'tc', '°C')
 
         # Guard against calc_density issues
         if np.nanmin(self.tc) < -25:
-            raise RuntimeError('Cannot calculate P Model predictions for values below -25°C. See calc_density_h2o.')
+            raise ValueError('Cannot calculate P Model predictions for values below -25°C. See calc_density_h2o.')
 
         # ambient CO2 partial pressure (Pa)
         self.ca = calc_co2_to_ca(self.co2, self.patm)

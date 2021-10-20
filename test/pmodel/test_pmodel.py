@@ -492,11 +492,22 @@ def test_pmodelenvironment(values, variables):
 
 def test_pmodelenvironment_constraint():
 
-    with pytest.warns(RuntimeWarning):
+    with pytest.warns(UserWarning):
         ret = pmodel.PModelEnvironment(tc=np.array([-15, 5, 10, 15, 20]),
                                        vpd=-1000,
                                        co2=400,
                                        patm=101325)
+
+
+def test_pmodelenvironment_toocold():
+
+    with pytest.raises(ValueError):
+        ret = pmodel.PModelEnvironment(tc=np.array([-35, 5, 10, 15, 20]),
+                                       vpd=1000,
+                                       co2=400,
+                                       patm=101325)
+
+
 
 # ------------------------------------------
 # Testing PModel class - separate c3 and c4 tests
