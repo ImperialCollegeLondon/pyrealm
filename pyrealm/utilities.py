@@ -1,7 +1,7 @@
 import numpy as np
 import tabulate
 from pyrealm.param_classes import HygroParams
-from pyrealm.bounds_checker import input_bounds_checker, InputBoundsCheckerFactory
+from pyrealm.bounds_checker import bounds_checker
 # from pandas.core.series import Series
 
 """
@@ -109,9 +109,6 @@ def summarize_attrs(obj, attrs, dp=2, repr_head=True):
 # which the doctest values are taken
 
 
-_constrain_rh = InputBoundsCheckerFactory(lower=0, upper=1, label='relative humidity (-)',)
-
-
 def calc_vp_sat(ta, hygro_params=HygroParams()):
 
     """
@@ -205,7 +202,7 @@ def convert_rh_to_vpd(rh, ta, hygro_params=HygroParams()):
         nan
     """
 
-    rh = _constrain_rh(rh)
+    rh = bounds_checker(rh, 0, 1, '[]', 'rh', 'proportion')
 
     vp_sat = calc_vp_sat(ta, hygro_params=hygro_params)
 
