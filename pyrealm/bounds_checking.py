@@ -44,13 +44,74 @@ from typing import Union
 # 2) The ability to check for already checked data is lost from the previous
 #    implementation. This requires the array object to carry attributes, and
 #    that implies subclasses.
+#
+# NOTES: DO 20/11/2021
+#
+# Actually imposing constraints and enforcing masking is too heavy handed 
+# and causes user issues. So, instead retain some of this as a mechanism for
+# helping users sanitise inputs, but provide a simple routine to check whether
+# values are sane.
 
-
-def input_bounds_checker(inputs: Union[np.ndarray, Number],
+def input_bounds_checker(values: Union[np.ndarray, Number],
                          lower: Number = -np.infty,
                          upper: Number = np.infty,
                          interval_type: str = '[]',
-                         label: str = ''):
+                         label: str = '',
+                         unit: str = ''):
+    r"""Check inputs fall within bounds
+
+    This is a simple pass through function that tests whether the values fall within
+    the bounds specified and issues a warning when this is not the case
+
+    Parameters:
+        values: An np.ndarray object or number
+        lower: The value of the lower constraint
+        upper: The value of the upper constraint
+        interval_type: The interval type of the constraint ('[]', '()', '[)', '(]')
+        label: A string giving a descriptive label of the variable for use in warnings.
+        unit: A string specifying the expected units.
+
+    Returns:
+        The function returns the contents of values.
+
+    Examples:
+
+        >>> vals = np.array([-15, 20, 30, 124], dtype=np.float)
+        >>> vals_c = input_bounds_checker(vals, 0, 100, label='temperature')
+    """
+
+    # Implement the interval type
+    if interval_type not in ['[]', '()', '[)', '(]']:
+        raise RuntimeWarning(f'Unknown interval type: {interval_type}')
+
+    if interval_type[0] == '[':
+        lower_func = np.less
+    else:
+        lower_func = np.less_equal
+
+    if interval_type[1] == ']':
+        upper_func = np.greater
+    else:
+        upper_func = np.greater_equal
+
+    # Do the input values contain out of bound values? These tests are not
+    # sensitive to dtype, float or int inputs and return either numpy.bool_
+    # or np.ndarray with dtype 'bool', both of which support the sum() method
+    out_of_bounds = np.logical_or(lower_func(values, lower),
+                                  upper_func(values, upper))
+
+    if out_of_bounds.sum():
+        warnings.warn(f'Variable {label} ({unit}) contains values outside '
+                      f'the expected range ({lower},{upper}). Check units?')
+
+    return values
+
+
+def input_mask(inputs: Union[np.ndarray, Number],
+               lower: Number = -np.infty,
+               upper: Number = np.infty,
+               interval_type: str = '[]',
+               label: str = ''):
     r"""Check inputs fall within bounds
 
     This function constrains the values in inputs, replacing values outside
@@ -155,52 +216,52 @@ def input_bounds_checker(inputs: Union[np.ndarray, Number],
         return inputs
 
 
-class InputBoundsCheckerFactory:
-    r"""This is a factory used to generate functions to run input_bounds_checker
-    with preset limits and labels. The generated functions issue a warning when
-    the constraints are enforced using the provided label to aid reporting.
+# class InputBoundsCheckerFactory:
+#     r"""This is a factory used to generate functions to run input_masks
+#     with preset limits and labels. The generated functions issue a warning when
+#     the constraints are enforced using the provided label to aid reporting.
 
-    Parameters:
+#     Parameters:
 
-        lower: The value of the lower constraint
-        upper: The value of the upper constraint
-        interval_type: The interval type of the constraint ('[]', '()', '[)', '(]')
-        label: A string giving a descriptive label of the constrained contents
+#         lower: The value of the lower constraint
+#         upper: The value of the upper constraint
+#         interval_type: The interval type of the constraint ('[]', '()', '[)', '(]')
+#         label: A string giving a descriptive label of the constrained contents
 
-    Examples:
+#     Examples:
 
-        >>> temp_constraint = InputBoundsCheckerFactory(0, 100, label='temperature (°C)')
-        >>> temp_constraint
-        InputBoundsCheckerFactory: temperature (°C) constrained to [0, 100]
-        >>> vals = np.array([-15, 20, 30, 124], dtype=np.float)
-        >>> np.nansum(vals)
-        159.0
-        >>> vals_c = temp_constraint(vals)
-        >>> np.nansum(vals_c)
-        50.0
-     """
+#         >>> temp_constraint = InputBoundsCheckerFactory(0, 100, label='temperature (°C)')
+#         >>> temp_constraint
+#         InputBoundsCheckerFactory: temperature (°C) constrained to [0, 100]
+#         >>> vals = np.array([-15, 20, 30, 124], dtype=np.float)
+#         >>> np.nansum(vals)
+#         159.0
+#         >>> vals_c = temp_constraint(vals)
+#         >>> np.nansum(vals_c)
+#         50.0
+#      """
 
-    def __init__(self,
-                 lower: Number = -np.infty,
-                 upper: Number = np.infty,
-                 interval_type: str = '[]',
-                 label: str = ''):
+#     def __init__(self,
+#                  lower: Number = -np.infty,
+#                  upper: Number = np.infty,
+#                  interval_type: str = '[]',
+#                  label: str = ''):
 
-        self.label = label
-        self.lower = lower
-        self.upper = upper
-        self.interval_type = interval_type
-        self.interval_notation = f"{interval_type[0]}{lower}, {upper}{interval_type[1]}"
+#         self.label = label
+#         self.lower = lower
+#         self.upper = upper
+#         self.interval_type = interval_type
+#         self.interval_notation = f"{interval_type[0]}{lower}, {upper}{interval_type[1]}"
 
-    def __call__(self, inputs):
+#     def __call__(self, inputs):
 
-        return input_bounds_checker(inputs, lower=self.lower, upper=self.upper,
-                                    interval_type=self.interval_type,
-                                    label=self.label)
+#         return input_bounds_checker(inputs, lower=self.lower, upper=self.upper,
+#                                     interval_type=self.interval_type,
+#                                     label=self.label)
 
-    def __repr__(self):
+#     def __repr__(self):
 
-        return f"InputBoundsCheckerFactory: {self.label} constrained to {self.interval_notation}"
+#         return f"InputBoundsCheckerFactory: {self.label} constrained to {self.interval_notation}"
 
 
 # This code was retired in 0.5.3
