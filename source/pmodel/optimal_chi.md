@@ -37,12 +37,20 @@ parameters change with different environmental inputs.
 
 ```{code-cell} python
 :tags: [hide-input]
+from pyrealm import pmodel
+from pyrealm.param_classes import PModelParams
+import numpy as np
+from matplotlib import pyplot
+
 # Create inputs for a temperature curve at two atmospheric pressures
+n_pts = 101
 patm_1d = pmodel.calc_patm(np.array([0, 3000]))
+tc_1d = np.linspace(0, 30, n_pts)
 tc_2d = np.broadcast_to(tc_1d, (2, n_pts))
 patm_2d = np.broadcast_to(patm_1d, (n_pts, 2)).transpose()
 
 # Pass those through the intermediate steps to get inputs for CalcOptimalChi
+pmodel_param = PModelParams()
 gammastar = pmodel.calc_gammastar(tc_2d, patm=patm_2d)
 kmm = pmodel.calc_kmm(tc_2d, patm=patm_2d)
 viscosity = pmodel.calc_viscosity_h2o(tc_2d, patm=patm_2d)

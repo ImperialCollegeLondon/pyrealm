@@ -50,6 +50,9 @@ photosynthetic environment for the model:
 # Convert elevation to atmospheric pressure
 patm = pmodel.calc_patm(elev)
 
+# Mask out temperature values below -25°C
+temp[temp < -25] = np.nan
+
 # Calculate the photosynthetic environment
 env = pmodel.PModelEnvironment(tc=temp, co2=co2, patm=patm, vpd=vpd)
 ```
@@ -62,9 +65,9 @@ light use efficiency:
 # Run the P model
 model = pmodel.PModel(env)
 
-ax = plt.imshow(model.unit_iabs.lue[0, :, :], origin='lower', 
-                extent=[-180,180,-90,90])
+ax = plt.imshow(model.lue[0, :, :], origin='lower', extent=[-180,180,-90,90])
 plt.colorbar()
+plt.show()
 ```
 
 Finally, the light use efficiency can be used to calculate GPP given the
@@ -73,8 +76,9 @@ photosynthetic photon flux density and fAPAR.
 
 ```{code-cell} ipython3
 # Scale the outputs from values per unit iabs to realised values
-scaled = model.unit_iabs.scale_iabs(fapar, ppfd)
+model.estimate_productivity(fapar, ppfd)
 
-ax = plt.imshow(scaled.gpp[0, :, :], origin='lower', extent=[-180,180,-90,90])
+ax = plt.imshow(model.gpp[0, :, :], origin='lower', extent=[-180,180,-90,90])
 plt.colorbar()
+plt.show()
 ```
