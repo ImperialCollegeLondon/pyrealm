@@ -915,9 +915,9 @@ class PModel:
         >>> mod_c4 = PModel(env, c4=True, method_jmaxlim='none')
         >>> # Key variables from PModel
         >>> np.round(mod_c4.optchi.ci, 5)
-        40.53
+        18.22528
         >>> np.round(mod_c4.optchi.chi, 5)
-        1.0
+        0.44967
         >>> mod_c4.estimate_productivity(fapar=1, ppfd=300)
         >>> np.round(mod_c4.gpp, 5)
         103.25886
@@ -1250,12 +1250,12 @@ class CalcOptimalChi:
         0.7123
         >>> round(vals.mjoc, 5)
         2.13211
-        >>> # The c4 method just populates these values with 1.0
+        >>> # The c4 method estimates chi but sets the others at 1.
         >>> c4_vals = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925,
         ...                          ns_star = 1.12536, ca = 40.53, vpd = 1000,
         ...                          method='c4')
-        >>> c4_vals.chi
-        1.0
+        >>> round(c4_vals.chi, 5)
+        0.44967
     """
 
     # TODO - move chi calc into __init__? Shared between the two methods
