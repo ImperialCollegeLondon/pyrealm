@@ -1259,7 +1259,7 @@ class CalcOptimalChi:
     """
 
     # TODO - move chi calc into __init__? Shared between the two methods
-    
+
     def __init__(self,
                  kmm: Union[float, np.ndarray],
                  gammastar: Union[float, np.ndarray],

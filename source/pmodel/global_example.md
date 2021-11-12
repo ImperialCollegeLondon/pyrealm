@@ -53,8 +53,12 @@ patm = pmodel.calc_patm(elev)
 # Mask out temperature values below -25°C
 temp[temp < -25] = np.nan
 
+# Clip VPD to force negative VPD to be zero
+vpd = np.clip(vpd, 0, np.inf)
+
 # Calculate the photosynthetic environment
 env = pmodel.PModelEnvironment(tc=temp, co2=co2, patm=patm, vpd=vpd)
+env.summarize()
 ```
 
 That environment can then be run to calculate the P model predictions for
