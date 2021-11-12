@@ -266,8 +266,9 @@ class PModelParams(ParamClass):
     soilmstress_thetastar: Number = 0.6
     soilmstress_a: Number = 0.0
     soilmstress_b: Number = 0.685
-    # Stocker19
-    stocker19_beta: Number = 146.0
+    # Unit cost ratio (beta) (Stocker 2020 value and equivalent for C4).
+    beta_cost_ratio_c3: Number = 146.0
+    beta_cost_ratio_c4: Number = 16.222222
     # Wang17
     wang17_c: Number = 0.41
     # Smith19

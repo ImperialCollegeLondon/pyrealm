@@ -94,7 +94,7 @@ Fitting the model for:
 
 ```{code-cell} ipython3
 from pyrealm import pmodel
-env  = pmodel.PModelEnvironment(tc=20.0, patm=101325.0, vpd=0.82, co2=400)
+env  = pmodel.PModelEnvironment(tc=20.0, patm=101325.0, vpd=820, co2=400)
 ```
 
 The `env` object now holds the photosynthetic environment, which can be re-used 
@@ -201,7 +201,7 @@ import numpy as np
 
 # Create a sequence of temperatures and fit the model
 tc = np.linspace(20, 30, 101)
-env = pmodel.PModelEnvironment(tc=tc, patm=101325.0, vpd=0.82, co2=400)
+env = pmodel.PModelEnvironment(tc=tc, patm=101325.0, vpd=820, co2=400)
 model_array = pmodel.PModel(env)
 
 # Plot TC against LUE
@@ -220,7 +220,7 @@ compares the resulting light use efficiencies.
 
 ```{code-cell} ipython3
 patm = pmodel.calc_patm(3000)
-env = pmodel.PModelEnvironment(tc=20, patm=patm, vpd=0.82, co2=400)
+env = pmodel.PModelEnvironment(tc=20, patm=patm, vpd=820, co2=400)
 model_3000 = pmodel.PModel(env)
 
 # Tiny change in LUE

@@ -21,10 +21,14 @@ when given extreme inputs, to help guide when inputs should be filter or clipped
 ## Realistic input values.
 
 - Temperature (°C): the range of air temperatures in global datasets can easily include values
-  as extreme as -80 °C to 50 °C.
-- Atmospheric pressure (Pa): at sea-level, extremes of 87000 Pa to 108400 Pa have been observed
+  as extreme as -80 °C to 50 °C. However, the water density calculation is unstable below -25°C
+  and so {class}`~pyrealm.pmodel.PModelEnv` _will not_ accept values below -25°C. 
+- Atmospheric Pressure (Pa): at sea-level, extremes of 87000 Pa to 108400 Pa have been observed
   but with elevation can fall much lower, down to ~34000 Pa at the summit of Mt Everest.
-- 
+- Vapour Pressure Deficit (Pa): values between extremes of 0 and 10000 Pa are realistic but some 
+  datasets may contain negative values of VPD. The problem here is that VPD is included in a square 
+  root term, which results in missing data. You should explicitly clip negative VPD values to zero
+  or set them to `np.nan`.
 
 ## Temperature dependence of quantum yield efficiency
 

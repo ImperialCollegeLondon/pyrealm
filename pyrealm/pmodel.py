@@ -771,6 +771,10 @@ class PModelEnvironment:
         if np.nanmin(self.tc) < -25:
             raise ValueError('Cannot calculate P Model predictions for values below -25°C. See calc_density_h2o.')
 
+        # Guard against negative VPD issues
+        if np.nanmin(self.vpd) < 0:
+            raise ValueError('Negative VPD values will lead to missing data - clip to zero or explicitly set to np.nan')
+
         # ambient CO2 partial pressure (Pa)
         self.ca = calc_co2_to_ca(self.co2, self.patm)
 
@@ -911,9 +915,9 @@ class PModel:
         >>> mod_c4 = PModel(env, c4=True, method_jmaxlim='none')
         >>> # Key variables from PModel
         >>> np.round(mod_c4.optchi.ci, 5)
-        40.53
+        18.22528
         >>> np.round(mod_c4.optchi.chi, 5)
-        1.0
+        0.44967
         >>> mod_c4.estimate_productivity(fapar=1, ppfd=300)
         >>> np.round(mod_c4.gpp, 5)
         103.25886
@@ -1246,13 +1250,15 @@ class CalcOptimalChi:
         0.7123
         >>> round(vals.mjoc, 5)
         2.13211
-        >>> # The c4 method just populates these values with 1.0
+        >>> # The c4 method estimates chi but sets the others at 1.
         >>> c4_vals = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925,
         ...                          ns_star = 1.12536, ca = 40.53, vpd = 1000,
         ...                          method='c4')
-        >>> c4_vals.chi
-        1.0
+        >>> round(c4_vals.chi, 5)
+        0.44967
     """
+
+    # TODO - move chi calc into __init__? Shared between the two methods
 
     def __init__(self,
                  kmm: Union[float, np.ndarray],
@@ -1297,24 +1303,37 @@ class CalcOptimalChi:
         return f"CalcOptimalChi(chi={self.chi}, ci={self.ci}, mc={self.mc}, mj={self.mj})"
 
     def c4(self, **kwargs):
-        r"""This method simply sets :math:`\chi = m_j = m_c = m_{joc} = 1.0` to
-        capture the boosted :math:`\ce{CO2}` concentrations at the chloropolast in C4
+        r"""Optimal :math:`\chi` is calculated following Equation 8 in
+        :cite:`Prentice:2014bc` (see :meth:`~pyrealm.pmodel.CalcOptimalChi.prentice14`),
+        but using a C4 specific estimate of the unit cost ratio :math:`\beta`,
+        specified in :meth:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`.
+
+        This method then simply sets :math:`m_j = m_c = m_{joc} = 1.0` to capture the
+        boosted :math:`\ce{CO2}` concentrations at the chloropolast in C4
         photosynthesis.
         """
 
-        # Dummy values to represent c4 pathway. These need to retain any
+        # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
+        xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c4 *
+                      kwargs['rootzonestress'] *
+                      (kwargs['kmm'] + kwargs['gammastar']))
+                     / (1.6 * kwargs['ns_star']))
+
+        self.chi = (kwargs['gammastar'] / kwargs['ca'] +
+                    (1.0 - kwargs['gammastar'] / kwargs['ca']) * xi /
+                    (xi + np.sqrt(kwargs['vpd'])))
+
+        # These values need to retain any
         # dimensions of the original inputs - if ftemp_kphio is set to 1.0
         # (i.e. no temperature correction) then the dimensions of tc are lost
         # and the input to soilmstress might be scalar, so enforce the shape.
         # Note that rpmodel_1.0.6 collapses array inputs at this point.
 
         if self.shape == 1:
-            self.chi = 1.0
             self.mc = 1.0
             self.mj = 1.0
             self.mjoc = 1.0
         else:
-            self.chi = np.ones(self.shape)
             self.mc = np.ones(self.shape)
             self.mj = np.ones(self.shape)
             self.mjoc = np.ones(self.shape)
@@ -1355,21 +1374,20 @@ class CalcOptimalChi:
         assimilation.
         """
 
-        # Avoid negative VPD (dew conditions)
-        vpd = np.clip(kwargs['vpd'], 0, None)
-
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        xi = np.sqrt((self.pmodel_params.stocker19_beta *
+        xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c3 *
                       kwargs['rootzonestress'] *
                       (kwargs['kmm'] + kwargs['gammastar']))
                      / (1.6 * kwargs['ns_star']))
+
         self.chi = (kwargs['gammastar'] / kwargs['ca'] +
-                    (1.0 - kwargs['gammastar'] / kwargs['ca']) * xi / (xi + np.sqrt(vpd)))
+                    (1.0 - kwargs['gammastar'] / kwargs['ca']) * xi /
+                    (xi + np.sqrt(kwargs['vpd'])))
 
         # Define variable substitutes:
         vdcg = kwargs['ca'] - kwargs['gammastar']
         vacg = kwargs['ca'] + 2.0 * kwargs['gammastar']
-        vbkg = (self.pmodel_params.stocker19_beta *
+        vbkg = (self.pmodel_params.beta_cost_ratio_c3 *
                 kwargs['rootzonestress'] *
                 (kwargs['kmm'] + kwargs['gammastar']))
 
@@ -1378,7 +1396,7 @@ class CalcOptimalChi:
         # unwrapped matrix inputs. Also, rpmodel includes a check for vpd > 0,
         # but this is guaranteed by clip above (also true in rpmodel).
 
-        vsr = np.sqrt(1.6 * kwargs['ns_star'] * vpd / vbkg)
+        vsr = np.sqrt(1.6 * kwargs['ns_star'] * kwargs['vpd'] / vbkg)
         mj = vdcg / (vacg + 3.0 * kwargs['gammastar'] * vsr)
 
         # Mask values with ns star <= 0 and vbkg <=0
@@ -1394,7 +1412,6 @@ class CalcOptimalChi:
         # mc and mj:mv
         self.mc = (self.chi - gamma) / (self.chi + kappa)
         self.mjoc = (self.chi + kappa) / (self.chi + 2 * gamma)
-
 
     def summarize(self, dp=2):
         """Prints a summary of the variables calculated within an instance
