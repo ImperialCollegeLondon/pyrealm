@@ -36,3 +36,5 @@
         was revisited even before release to remove built in masking completely
         and just provide some warnings on sane ranges. A hard limit for temps
         < 25°C is imposed due to the behaviour of calc_density_h2o.
+0.5.4 - Updated CalcOptimalChi to return an actual estimate of chi for C4 
+        plants, not just 1.0. Updated documentation and examples to illustrate.
