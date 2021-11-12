@@ -174,13 +174,14 @@ Check the package builds and installs locally:
 python setup.py sdist bdist_wheel
 ```
 
-and use
+Commit the version number change and then publish the branch
 
 ```
+git commit -m "Version bump" pyrealm/version.py
 git flow release publish x.y.z
 ```
 
-to get the branch onto the origin and hence into Travis
+to get the branch onto the origin and hence into Travis.
 
 ### Use twine to check it passes onto testpypi
 
