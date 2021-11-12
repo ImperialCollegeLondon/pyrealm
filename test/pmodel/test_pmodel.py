@@ -363,6 +363,10 @@ def test_calc_co2_to_ca(values, ctrl):
 )
 def test_calc_optimal_chi(values, ctrl):
 
+    if ctrl['method'] == 'c4':
+        pytest.skip('Not currently testing C4 outputs - chi estimates for C4 need estimating as C3.')
+
+
     with ctrl['cmng']:
         kwargs = {k: values[v] for k, v in ctrl['args'].items()}
         ret = pmodel.CalcOptimalChi(**kwargs, method=ctrl['method'])
@@ -494,7 +498,7 @@ def test_pmodelenvironment_constraint():
 
     with pytest.warns(UserWarning):
         ret = pmodel.PModelEnvironment(tc=np.array([-15, 5, 10, 15, 20]),
-                                       vpd=-1000,
+                                       vpd=100000,
                                        co2=400,
                                        patm=101325)
 
@@ -507,6 +511,14 @@ def test_pmodelenvironment_toocold():
                                        co2=400,
                                        patm=101325)
 
+
+def test_pmodelenvironment_dewpoint():
+
+    with pytest.raises(ValueError):
+        ret = pmodel.PModelEnvironment(tc=np.array([-15, 5, 10, 15, 20]),
+                                       vpd=-1,
+                                       co2=400,
+                                       patm=101325)
 
 
 # ------------------------------------------
