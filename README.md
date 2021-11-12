@@ -174,18 +174,23 @@ Check the package builds and installs locally:
 python setup.py sdist bdist_wheel
 ```
 
-Commit the version number change and then publish the branch
+Commit the version number change and then publish the branch:
 
 ```
 git commit -m "Version bump" pyrealm/version.py
 git flow release publish x.y.z
 ```
 
-to get the branch onto the origin and hence into Travis.
+to get the branch onto the origin repository and hence into Travis.
 
 ### Use twine to check it passes onto testpypi
 
-Remembering to change the version number, use `twine` to test:
+We are using `twine` to publish versions to PyPi, and using the `testpypi`
+sandbox to check release candidates are accepted. This needs an account
+for both pypi and testpypi. 
+
+Remembering to change the version number, use `twine` to upload the built
+versions to the `testpypi` site:
 
 ```
 twine upload -r testpypi dist/*x.y.z*
@@ -193,45 +198,51 @@ twine upload -r testpypi dist/*x.y.z*
 
 ### Check the documentation builds
 
-Go to RTD and select the  release branch in advanced admin and try and build.
+Log in to:
+
+https://readthedocs.org
+
+which is the admin site controlling the build process. From the Versions
+tab, activate the `release/x.y.z` branch and wait for it to build. Check 
+the Builds tab to see that it has built successfully and maybe check 
+updates! If it has built succesfully, then go back to the Versions tab 
+and deactivate and hide the branch.
 
 
-## PyPi
+## Success
 
-To upload the new version to testpypi, checkout master and run
-
-```
-python setup.py sdist bdist_wheel
-```
-
-Remembering to change the version number, you can then create an account at 
-pypi and testpypi and use `twine` to test:
-
-```
-twine upload -r testpypi dist/*x.y.z*
-```
-
-
-
-Once all seems well,  finish the release, go to the master branch and push it 
-to create the tagged version on github.
+Once all seems well,  the next step is to finish the release, which merges
+changes into `develop` and into a tagged commit on `master`. You then need
+to checkout the master branch and push the new version and tag to GitHub.
 
 ```bash
 git flow release finish x.y.z
+git checkout master
+git push
 ```
 
-## PyPi again
+## PyPi upload
 
-To upload the new version to testpypi, checkout master and run
+To upload the new version to the main PyPi site, run the build process again
+in the `master` branch to get the release builds:
 
 ```
 python setup.py sdist bdist_wheel
 ```
-release the distribution for use via `pip`
+
+And then release the distribution using `twine` for use via `pip` - this time
+not using the `testpypi` sandbox.
 
 ```
 twine upload dist/*x.y.z*
 ```
 
-Once that is done, switch back to `develop` and bump the version number to 
-add `.post9000` to show the code is in development again.
+Now:
+
+* **switch back to `develop`!** 
+    
+```
+git checkout develop
+```
+
+* Bump the version number to add `.post9000` to show the code is in development again.
