@@ -1378,7 +1378,7 @@ class CalcOptimalChi:
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c3 *
-                      kwar['rootzonestress'] *
+                      kwargs['rootzonestress'] *
                       (kwargs['kmm'] + kwargs['gammastar']))
                      / (1.6 * kwargs['ns_star']))
 
