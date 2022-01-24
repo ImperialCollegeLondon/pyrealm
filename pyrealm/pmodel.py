@@ -818,32 +818,35 @@ class PModelEnvironment:
 class PModel:
 
     r"""Fits the P Model to a given set of environmental and photosynthetic
-    parameters. The calculated attributes of the class are
-    described below. An extended description with typical use cases is given
-    in :ref:`pmodel/pmodel.html` but the basic flow of the model is:
+    parameters. The calculated attributes of the class are described below. An
+    extended description with typical use cases is given in :any:`pmodel_overview`
+    but the basic flow of the model is:
 
     1. Estimate :math:`\ce{CO2}` limitation factors and optimal internal to
        ambient :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using
        :class:`~pyrealm.pmodel.CalcOptimalChi`.
     2. Estimate photosynthetic efficiencies including water use efficiency,
-       light use efficiency (LUE) and maximum carboxylation rate (:math:`V_{cmax}`)
-       using :class:`~pyrealm.pmodel.CalcLUEVcmax`.
+       light use efficiency (LUE) and maximum carboxylation rate
+       (:math:`V_{cmax}`) using :class:`~pyrealm.pmodel.CalcLUEVcmax`.
     3. Optionally, estimate productivity measures including GPP by supplying
-       FAPAR and PPFD using the :meth:`~pyrealm.pmodel.PModel.estimate_productivity`
-       method.
+       FAPAR and PPFD using the
+       :meth:`~pyrealm.pmodel.PModel.estimate_productivity` method.
 
     **Corollary prediction details**
 
     These calculations use two additional functions:
 
-    * the instantaneous temperature response of :math:`V_{cmax}` (:math:`fv(t)`),
-      implemented in :func:`~pyrealm.pmodel.calc_ftemp_inst_vcmax`, and
+    * the instantaneous temperature response of :math:`V_{cmax}`
+      (:math:`fv(t)`), implemented in
+      :func:`~pyrealm.pmodel.calc_ftemp_inst_vcmax`, and
     * the instantaneous temperature response of dark respiration :math:`V_{d}`
-      (:math:`fr(t)`), implemented in :func:`~pyrealm.pmodel.calc_ftemp_inst_rd`.
+      (:math:`fr(t)`), implemented in
+      :func:`~pyrealm.pmodel.calc_ftemp_inst_rd`.
 
     The predictions are then:
 
-    * Intrinsic water use efficiency (iWUE, Pa), calculated as :math:`(c_a - c_i)/1.6`
+    * Intrinsic water use efficiency (iWUE, Pa), calculated as :math:`(c_a -
+      c_i)/1.6`
 
     * Maximum carboxylation capacity (mol C m-2) normalised to the standard
       temperature as: :math:`V_{cmax25} = V_{cmax}  / fv(t)`
@@ -854,7 +857,8 @@ class PModel:
 
             R_d = b_0 \frac{fr(t)}{fv(t)} V_{cmax}
 
-        following :cite:`Atkin:2015hk` (:math:`b_0` is set in `pmodel_params.atkin_rd_to_vcmax`)
+        following :cite:`Atkin:2015hk` (:math:`b_0` is set in
+        :attr:`~pyrealm.pmodel_params.atkin_rd_to_vcmax`)
 
     * Stomatal conductance (:math:`g_s`), calculated as:
 
@@ -862,7 +866,10 @@ class PModel:
 
             g_s = \frac{LUE}{M_C}\frac{1}{c_a - c_i}
 
-        When C4 photosynthesis is being used, :math:`g_s \to \infty`.
+        When C4 photosynthesis is being used, the true partial pressure of CO2
+        in the substomatal cavities (:math:`c_i`) is used following the
+        calculation of :math:`\chi` using
+        :attr:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`
 
     * The maximum rate of Rubsico regeneration at the growth temperature
       (:math:`J_{max}`) per unit irradiance is calculated as:
@@ -870,19 +877,20 @@ class PModel:
         .. math::
 
             J_{max} = \frac{4 \phi_0 I_{abs}}{\sqrt{\left(\frac{1}
-            {\left(\frac{V_{cmax}(c_i - 2 \Gamma^*)}
-            {\phi_0 I_{abs}(c_i + k_{mm})}\right)}\right)^2 - 1}}
+            {\left(\frac{V_{cmax}(c_i - 2 \Gamma^*)} {\phi_0 I_{abs}(c_i +
+            k_{mm})}\right)}\right)^2 - 1}}
 
     Parameters:
 
-        env: An instance of :class:`~pyrealm.pmodel.PModelEnvironment`.
-        kphio: (Optional) Apparent quantum yield efficiency (unitless).
+        env: An instance of :class:`~pyrealm.pmodel.PModelEnvironment`. 
+        kphio: (Optional) Apparent quantum yield efficiency (unitless). 
         rootzonestress: (Optional, default=None) An experimental option
             for providing a root zone water stress factor. This is not
             compatible with the soilmstress approach.
         soilmstress: (Optional, default=None) A soil moisture stress factor
             calculated using :func:`~pyrealm.pmodel.calc_soilmstress`.
-        c4: (Optional, default=False) Selects the C3 or C4 photosynthetic pathway.
+        c4: (Optional, default=False) Selects the C3 or C4 photosynthetic
+            pathway. 
         method_jmaxlim: (Optional, default=`wang17`) Method to use for
             :math:`J_{max}` limitation
         do_ftemp_kphio: (Optional, default=True) Include the temperature-
@@ -897,7 +905,7 @@ class PModel:
             (:class:`~pyrealm.param_classes.PModelParams`)
         optchi: Details of the optimal chi calculation
             (:class:`~pyrealm.pmodel.CalcOptimalChi`)
-        iwue: Intrinsic water use efficiency (iWUE, Pa)
+        iwue: Intrinsic water use efficiency (iWUE, Pa) 
         lue: Light use efficiency (LUE)
 
     Examples:
@@ -1152,12 +1160,7 @@ class PModel:
         self._jmax = jmax.item() if np.ndim(jmax) == 0 else jmax
 
         # Stomatal conductance
-        if self.c4 and self.shape == 1:
-            self._gs = np.infty
-        elif self.c4:
-            self._gs = np.ones(self.shape) * np.infty
-        else:
-            self._gs = ((self.lue / self.pmodel_params.k_c_molmass) /
+        self._gs = ((self.lue / self.pmodel_params.k_c_molmass) /
                         (self.env.ca - self.optchi.ci))
 
     def __repr__(self):

@@ -203,8 +203,8 @@ involves:
 This iteration is the main part of the {func}`~pyrealm.tmodel.grow_ttree`. The
 user needs to provide initial stem diameters and then a time series of GPP
 values. The function will return a `numpy` array containing any property of the
-{class}`~pyrealm.tmodel.TTree` requested in the
-{py:param}`~pyrealm.tmodel.grow_ttree.outvars` argument.
+{class}`~pyrealm.tmodel.TTree` requested in the `outvars` argument of
+{py:func}`~pyrealm.tmodel.grow_ttree`.
 
 ```{code-cell} ipython3
 # Default traits

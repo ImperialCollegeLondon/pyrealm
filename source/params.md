@@ -21,7 +21,7 @@ between two kinds of variables.
 is likely to want to vary within a particular study, such as temperature or 
 primary productivity.   
 
-2 **Model Parameters**: These are the underlying values that are likely to be 
+2. **Model Parameters**: These are the underlying values that are likely to be 
 constant for a particular study. These may be true constants (such as the 
 universal gas constant $R$) but can also be experimental estimates of plant
 physiology or geometry, which a user might want to alter to update with a new
@@ -109,8 +109,7 @@ traits1 == traits2
 ## P Model parameters 
 
 ```{eval-rst}
-.. automodule:: pyrealm.param_classes
-    :members: PModelParams
+.. autoclass:: pyrealm.param_classes.PModelParams
 ```
 
 ### Dictionary of default values
@@ -123,8 +122,7 @@ pprint.pprint(params.to_dict())
 ## T Model traits 
 
 ```{eval-rst}
-.. automodule:: pyrealm.param_classes
-    :members: TModelTraits
+.. autoclass:: pyrealm.param_classes.TModelTraits
 ```
 
 ### Dictionary of default values
