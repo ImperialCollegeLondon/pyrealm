@@ -12,6 +12,7 @@ kernelspec:
   name: python3
 ---
 
+(pmodel_overview)=
 # The P-Model
 
 This module provides a Python implementation of the P-model

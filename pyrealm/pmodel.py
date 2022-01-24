@@ -819,8 +819,8 @@ class PModel:
 
     r"""Fits the P Model to a given set of environmental and photosynthetic
     parameters. The calculated attributes of the class are described below. An
-    extended description with typical use cases is given in
-    :ref:`pmodel/pmodel.html` but the basic flow of the model is:
+    extended description with typical use cases is given in :any:`pmodel_overview`
+    but the basic flow of the model is:
 
     1. Estimate :math:`\ce{CO2}` limitation factors and optimal internal to
        ambient :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using
@@ -858,7 +858,7 @@ class PModel:
             R_d = b_0 \frac{fr(t)}{fv(t)} V_{cmax}
 
         following :cite:`Atkin:2015hk` (:math:`b_0` is set in
-        `pmodel_params.atkin_rd_to_vcmax`)
+        :attr:`~pyrealm.pmodel_params.atkin_rd_to_vcmax`)
 
     * Stomatal conductance (:math:`g_s`), calculated as:
 
@@ -869,7 +869,7 @@ class PModel:
         When C4 photosynthesis is being used, the true partial pressure of CO2
         in the substomatal cavities (:math:`c_i`) is used following the
         calculation of :math:`\chi` using
-        :param:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`
+        :attr:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`
 
     * The maximum rate of Rubsico regeneration at the growth temperature
       (:math:`J_{max}`) per unit irradiance is calculated as:
@@ -882,15 +882,16 @@ class PModel:
 
     Parameters:
 
-        env: An instance of :class:`~pyrealm.pmodel.PModelEnvironment`. kphio:
-        (Optional) Apparent quantum yield efficiency (unitless). rootzonestress:
-        (Optional, default=None) An experimental option
+        env: An instance of :class:`~pyrealm.pmodel.PModelEnvironment`. 
+        kphio: (Optional) Apparent quantum yield efficiency (unitless). 
+        rootzonestress: (Optional, default=None) An experimental option
             for providing a root zone water stress factor. This is not
             compatible with the soilmstress approach.
         soilmstress: (Optional, default=None) A soil moisture stress factor
             calculated using :func:`~pyrealm.pmodel.calc_soilmstress`.
         c4: (Optional, default=False) Selects the C3 or C4 photosynthetic
-        pathway. method_jmaxlim: (Optional, default=`wang17`) Method to use for
+            pathway. 
+        method_jmaxlim: (Optional, default=`wang17`) Method to use for
             :math:`J_{max}` limitation
         do_ftemp_kphio: (Optional, default=True) Include the temperature-
             dependence of quantum yield efficiency (see
@@ -904,8 +905,8 @@ class PModel:
             (:class:`~pyrealm.param_classes.PModelParams`)
         optchi: Details of the optimal chi calculation
             (:class:`~pyrealm.pmodel.CalcOptimalChi`)
-        iwue: Intrinsic water use efficiency (iWUE, Pa) lue: Light use
-        efficiency (LUE)
+        iwue: Intrinsic water use efficiency (iWUE, Pa) 
+        lue: Light use efficiency (LUE)
 
     Examples:
 
