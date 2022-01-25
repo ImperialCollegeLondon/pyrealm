@@ -55,8 +55,9 @@ is described in more detail in the link for each stage
    (see [details](optimal_chi)) 
 2. Calculation of light use efficiency and maximum carboxylation capacity
    (see [details](lue_vcmax)). 
-3. Optionally, scaling of key outputs to the total absorbed irradiance 
-   (see [below](#scaling-to-absorbed-irradiance)).
+3. Optionally, estimating gross primary productivity (GPP) and other key outputs
+   that are calculated using the total absorbed irradiance (see
+   [details](estimating_productivity)).
 
 ### Extreme values
 
@@ -134,42 +135,14 @@ water use efficiency (``iwue``) and the light use efficiency (``lue``).
 model.summarize()
 ```
 
-### Calculating productivity
-
-Measures of photosynthetic productivity, such as gross primary productivty,
-are calculated by providing the P Model with estimates of the fraction of 
-absorbed photosynthetically active radiation (`fapar`) and the photosynthetic 
-photon flux density (`ppfd`). The product of these two variables is an estimate 
-of absorbed irradiance ($I_{abs}$).
-
-The {meth}`~pyrealm.pmodel.PModelEnvironment.estimate_productivity` method is 
-used to provide these estimates to the P Model instance. Once this has been run,
-the following additional variables are populated:
-
-* Gross primary productivity (``gpp``)
-* Dark respiration (``rd``)
-* Maximum rate of carboxylation (``vcmax``)
-* Maximum rate of carboxylation at standard temperature (``vcmax25``)
-* Maximum rate of electron transport. (``jmax``)
-* Stomatal conductance (``gs``)
-
-These variables are now also shown by the {meth}`~pyrealm.pmodel.PModel.summarize` 
-method. 
+The productivity of the model (and other variables, see
+[here](estimating_productivity)) can then be estimated by passing the fraction
+of absorbed photosynthetically active radiation (`fapar`) and the photosynthetic
+photon flux density (`ppfd`), for a given area and time period, to the
+{meth}`~pyrealm.pmodel.PModelEnvironment.estimate_productivity` method.
 
 ```{code-cell} ipython3
 model.estimate_productivity(fapar=0.91, ppfd=834)
-model.summarize()
-```
-
-Note that the units of PPFD determine the units of these additional predictions. 
-The example above uses representative values for tropical rainforest, with PPFD 
-expressed as $\text{mol}\,m^{-2}\,\text{month}^{-1}$: GPP is therefore $g\,C\,m^{-2}
-\text{month}^{-1}$. If required, productivity estimates per unit absorbed 
-irradiance can be simply calculated using ``fapar=1, ppfd=1``, which are the 
-default values to {meth}`~pyrealm.pmodel.PModelEnvironment.estimate_productivity`.
-
-```{code-cell} ipython3
-model.estimate_productivity() # Per unit I_abs
 model.summarize()
 ```
 
