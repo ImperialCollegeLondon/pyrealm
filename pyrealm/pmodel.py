@@ -1,6 +1,7 @@
 # pylint: disable=C0103
 from typing import Optional, Union
 import numpy as np
+from warnings import warn
 from pyrealm.utilities import summarize_attrs
 from pyrealm.param_classes import PModelParams
 from pyrealm.bounds_checker import bounds_checker
@@ -1127,9 +1128,10 @@ class PModel:
 
         # Check input shapes against each other and an existing calculated value
         _ = check_input_shapes(ppfd, fapar, self.lue)
-
+        
+        # Calculate Iabs 
         iabs = fapar * ppfd
-
+        
         # GPP
         self._gpp = self.lue * iabs
 
@@ -1147,21 +1149,34 @@ class PModel:
         self._rd = (self.pmodel_params.atkin_rd_to_vcmax *
                     (ftemp_inst_rd / ftemp25_inst_vcmax) * self.vcmax)
 
-        # Jmax using again A_J = A_C, handling edges cases
+        # Jmax using again A_J = A_C
         fact_jmaxlim = (self.vcmax * (self.optchi.ci + 2.0 * self.env.gammastar) /
-                        (self.kphio * (self.optchi.ci + self.env.kmm)))
-        fact_jmaxlim = (1.0 / fact_jmaxlim) ** 2 - 1.0
+                        (self.kphio * iabs * (self.optchi.ci + self.env.kmm)))
+        # Guard against negative values getting into sqrt
+        jmaxlim_step1 = (1.0 / fact_jmaxlim) ** 2 - 1.0
         jmax = np.empty_like(fact_jmaxlim)
-        mask = fact_jmaxlim > 0
-        jmax[mask] = 4.0 * self.kphio / np.sqrt(fact_jmaxlim[mask])
-        jmax[~ mask] = np.infty
+        mask = jmaxlim_step1 > 0
+        # Iabs might be a scalar or an array - if an array, it should be of the
+        # same shape as jmaxlim_step1 and can use the same mask
+        iabs_mask = iabs if isinstance(iabs, (float, int)) else iabs[mask]
+        jmax[mask] = 4.0 * self.kphio * iabs_mask / np.sqrt(jmaxlim_step1[mask])
+        jmax[~ mask] = np.nan
 
         # Revert to scalar if needed and store
         self._jmax = jmax.item() if np.ndim(jmax) == 0 else jmax
 
+        # AJ and AC
+        a_j = (self.kphio * iabs * (self.optchi.ci - self.env.gammastar) / 
+                (self.optchi.ci + 2 * self.env.gammastar) *  fact_jmaxlim)
+        a_c = (self.vcmax * (self.optchi.ci - self.env.gammastar)/ 
+                (self.optchi.ci + self.env.kmm))
+        assim = np.minimum(a_j, a_c)
+
+        if not np.allclose(assim, self._gpp / self.pmodel_params.k_c_molmass, equal_nan=True):
+            warn('Assimilation and GPP are not identical')
+
         # Stomatal conductance
-        self._gs = ((self.lue / self.pmodel_params.k_c_molmass) /
-                        (self.env.ca - self.optchi.ci))
+        self._gs = assim / (self.env.ca - self.optchi.ci)
 
     def __repr__(self):
         if self.do_soilmstress:

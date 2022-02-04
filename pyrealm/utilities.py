@@ -86,11 +86,18 @@ def summarize_attrs(obj, attrs, dp=2, repr_head=True):
     Returns:
         None
     """
-
+    
+    # Create a list to hold variables and summary stats
     ret = []
 
     for attr in attrs:
         data = getattr(obj, attr)
+        
+        # Avoid masked arrays - run into problems with edge cases with all NaN 
+        if isinstance(data, np.ma.core.MaskedArray):
+            data = data.filled(np.nan)
+        
+        # Add the variable and stats to the list to be displayed
         ret.append([attr,
                     np.round(np.nanmean(data), dp),
                     np.round(np.nanmin(data), dp),
