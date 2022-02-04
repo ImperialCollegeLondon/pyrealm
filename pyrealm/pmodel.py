@@ -1149,12 +1149,12 @@ class PModel:
 
         # Jmax using again A_J = A_C, handling edges cases
         fact_jmaxlim = (self.vcmax * (self.optchi.ci + 2.0 * self.env.gammastar) /
-                        (self.kphio * (self.optchi.ci + self.env.kmm)))
+                        (self.kphio * iabs * (self.optchi.ci + self.env.kmm)))
         fact_jmaxlim = (1.0 / fact_jmaxlim) ** 2 - 1.0
         jmax = np.empty_like(fact_jmaxlim)
         mask = fact_jmaxlim > 0
-        jmax[mask] = 4.0 * self.kphio / np.sqrt(fact_jmaxlim[mask])
-        jmax[~ mask] = np.infty
+        jmax[mask] = 4.0 * self.kphio * iabs / np.sqrt(fact_jmaxlim[mask])
+        jmax[~ mask] = np.nan
 
         # Revert to scalar if needed and store
         self._jmax = jmax.item() if np.ndim(jmax) == 0 else jmax
