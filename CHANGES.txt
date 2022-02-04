@@ -18,7 +18,7 @@
         inputs.
       - Expansion of PModel testing to include a global array giving a wider
         range of inputs including edge cases.
-	  - Created option for using a rootzonestress option (Rodolfo Nobrega)
+      - Created option for using a rootzonestress option (Rodolfo Nobrega)
 0.5.0 - Refactor of constrained_array modules to use a class factory that
         acts as both a constraint and a check on existing constraint types.
       - Implementation of the utilities module, currently including some
@@ -38,3 +38,9 @@
         < 25°C is imposed due to the behaviour of calc_density_h2o.
 0.5.4 - Updated CalcOptimalChi to return an actual estimate of chi for C4 
         plants, not just 1.0. Updated documentation and examples to illustrate.
+0.5.5 - Fixing the calculation of stomatal conductance for C4 plants - not infinite
+      - Added estimate_productivity.md in docs to show behaviour of those
+        variables for C3 and C4 - revealed some issues!
+0.5.6 - Bugs in calculation of Jmax and g_s fixed.
+      - Fixed issue with utilities.summarize_attr with masked arrays containing
+        all NaN values
