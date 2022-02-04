@@ -1128,9 +1128,10 @@ class PModel:
 
         # Check input shapes against each other and an existing calculated value
         _ = check_input_shapes(ppfd, fapar, self.lue)
-
+        
+        # Calculate Iabs 
         iabs = fapar * ppfd
-
+        
         # GPP
         self._gpp = self.lue * iabs
 
@@ -1155,7 +1156,10 @@ class PModel:
         jmaxlim_step1 = (1.0 / fact_jmaxlim) ** 2 - 1.0
         jmax = np.empty_like(fact_jmaxlim)
         mask = jmaxlim_step1 > 0
-        jmax[mask] = 4.0 * self.kphio * iabs / np.sqrt(jmaxlim_step1[mask])
+        # Iabs might be a scalar or an array - if an array, it should be of the
+        # same shape as jmaxlim_step1 and can use the same mask
+        iabs_mask = iabs if isinstance(iabs, (float, int)) else iabs[mask]
+        jmax[mask] = 4.0 * self.kphio * iabs_mask / np.sqrt(jmaxlim_step1[mask])
         jmax[~ mask] = np.nan
 
         # Revert to scalar if needed and store
