@@ -415,7 +415,7 @@ def calc_ns_star(tc: Union[float, np.ndarray],
 
     Returns:
 
-        A numeric value for :math:`K` (in Pa)
+        A numeric value for :math:`\eta^*` (a unitless ratio)
 
     Examples:
 
