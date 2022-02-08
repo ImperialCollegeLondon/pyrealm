@@ -53,7 +53,7 @@ idx_vals = {'vpd': zip([0, 1], vpd_1d),
             'patm': zip([0, 1], patm_1d), 
             'co2': zip([0, 1], co2_1d)}
 
-idx_combos = list(product(*idx_vals.values())) 
+idx_combos = list(product(*idx_vals.values()))
 line_formats = ['r-','r--','b-', 'b--'] * 2
 
 
@@ -209,3 +209,53 @@ plot_fun('gs', '$g_s$')
 ```
 
 
+## Scaling with absorbed irradiance
+
+All of the six variables scale linearly with absorbed irradiance. The plots
+below show how each variable changes, for a constant environment with `tc` of
+20°C, `patm` of 101325 Pa, `vpd` of 1000 Pa and $\ce{CO2}$ of 400 ppm, when
+absorbed irradiance changes from 0 to 2000 $\text{mol}\,m^{-2}\,\text{month}^{-1}$.
+
+```{code-cell} python
+:tags: [hide-input]
+
+# Calculate the photosynthetic environment 
+pmodel_env = pmodel.PModelEnvironment(tc=20, patm=101325, vpd=1000, co2=400)  
+
+# Run the P Models
+pmodel_c3 = pmodel.PModel(pmodel_env)
+pmodel_c4 = pmodel.PModel(pmodel_env, c4=True)
+
+# Estimate productivity for tropical forest conditions (monthly, m2)
+ppfd_vals = np.arange(2000)
+pmodel_c3.estimate_productivity(fapar=1, ppfd=ppfd_vals)
+pmodel_c4.estimate_productivity(fapar=1, ppfd=ppfd_vals)
+
+def plot_iabs(ax, estvar, estvarlab):
+    """Helper function to plot an estimated variable
+
+    Args:
+        estvar: String naming variable to be plotted
+        estvarlab: String to be used in axis labels
+    """
+
+    # Loop over the envnt combinations for c3 and c4 models
+    for this_mod, lfmt in zip((pmodel_c3, pmodel_c4), ('r-', 'b-')):
+
+            plotvar = getattr(this_mod, estvar)
+            ax.plot(ppfd_vals, plotvar, lfmt)
+            
+    # Set axis labels
+    ax.set_xlabel('Absorbed irradiance (mol m2 month)')
+    ax.set_ylabel(f'Estimated {estvarlab}')
+
+fig, axs = pyplot.subplots(2, 3, figsize=(12, 5), sharex=True)
+
+plot_iabs(axs[0,0], 'gpp', 'GPP')
+plot_iabs(axs[0,1], 'rd', '$r_d$')
+plot_iabs(axs[0,2], 'vcmax', '$v_{cmax}$')
+plot_iabs(axs[1,0], 'vcmax25', '$v_{cmax25}$')
+plot_iabs(axs[1,1], 'jmax', '$J_{max}$')
+plot_iabs(axs[1,2], 'gs', '$g_s$')
+
+```
