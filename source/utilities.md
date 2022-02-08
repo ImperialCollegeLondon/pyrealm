@@ -53,10 +53,30 @@ rh_2d = np.broadcast_to(rh_1d, (n_pts, n_pts))
 ### Hygrometric conversions
 
 The {class}`~pyrealm.pmodel.PModelEnvironment` class requires vapour pressure
-deficit (VPD) as an input, but forcing datasets often provide alternative 
+deficit (VPD, Pa) as an input, but forcing datasets often provide alternative 
 representations. The utilities provide functions to calculate saturated vapour 
 pressure for a given temperature and the conversions from vapour pressure, 
 relative humidity and specific humidity to vapour pressure deficit.  
+
+
+```{admonition} Vapour Pressure and units
+:class: warning
+
+It is common to use data on Vapour Pressure (VP) to calculate Vapour Pressure 
+Deficit (VPD).  It is now usual for VP to be provided in kilopascals (kPa) but 
+some older data sources use hectopascals (hPa), which are equivalent to millibars 
+(mb or mbar).
+
+The function {func}`~pyrealm.utilities.convert_vp_to_vpd` takes values in kPa 
+and returns kPa, so if you are using VP to prepare input data for
+{class}`~pyrealm.pmodel.PModelEnvironment`:
+
+* Make sure you are passing VP values to 
+  {func}`~pyrealm.utilities.convert_vp_to_vpd` in kPa and not hPa or mbar.
+* Rescale the output of {func}`~pyrealm.utilities.convert_vp_to_vpd` from
+  kPa to Pa, before using it in {class}`~pyrealm.pmodel.PModelEnvironment`.
+
+```
 
 #### Saturated vapour pressure
 
