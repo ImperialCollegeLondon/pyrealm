@@ -191,9 +191,10 @@ class PModelParams(ParamClass):
     * `soilmstress_a`: 0.0
     * `soilmstress_b`: 0.685
 
-    **Unit cost ratio**, value taken from :cite:`Stocker:2020dh`
+    **Unit cost ratios**, value taken from :cite:`Stocker:2020dh`
 
-    * `stocker19_beta`: Unit cost ratio. (:math:`\beta`, 146.0)
+    * `stocker19_beta_c3`: Unit cost ratio for C3 plants. (:math:`\beta`, 146.0)
+    * `stocker19_beta_c4`: Unit cost ratio for C4 plants. (:math:`\beta`, 146.0 / 9 = 16.2222)
 
     **Electron transport capacity maintenance cost**, value taken from :cite:`Wang:2017go`
 
@@ -268,7 +269,7 @@ class PModelParams(ParamClass):
     soilmstress_b: Number = 0.685
     # Unit cost ratio (beta) (Stocker 2020 value and equivalent for C4).
     beta_cost_ratio_c3: Number = 146.0
-    beta_cost_ratio_c4: Number = 16.222222
+    beta_cost_ratio_c4: Number = 146.0 / 9
     # Wang17
     wang17_c: Number = 0.41
     # Smith19

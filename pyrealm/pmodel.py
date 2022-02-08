@@ -1,11 +1,12 @@
 # pylint: disable=C0103
 from typing import Optional, Union
-import numpy as np
 from warnings import warn
-from pyrealm.utilities import summarize_attrs
-from pyrealm.param_classes import PModelParams
+
+import numpy as np
+
 from pyrealm.bounds_checker import bounds_checker
-from pyrealm.utilities import check_input_shapes
+from pyrealm.param_classes import PModelParams
+from pyrealm.utilities import check_input_shapes, summarize_attrs
 
 # TODO - Note that the typing currently does not enforce the dtype of ndarrays
 #        but it looks like the upcoming np.typing module might do this.
@@ -365,7 +366,7 @@ def calc_gammastar(tc: Union[float, np.ndarray],
 
         To: the standard reference temperature (:math:`T_0` )
         Po: the standard pressure (:math:`p_0` )
-        gs_0: the reference value of :math:`\Gamma^{*} at standard temperature
+        gs_0: the reference value of :math:`\Gamma^{*}` at standard temperature
             (:math:`T_0`) and pressure (:math:`P_0`)  (:math:`\Gamma^{*}_{0}`,
             ::cite:`Bernacchi:2001kg`, `pmodel_params.bernacchi_gs25_0`)
         ha: the activation energy (:math:`\Delta H_a`, ::cite:`Bernacchi:2001kg`,
@@ -812,7 +813,9 @@ class PModelEnvironment:
             None
         """
 
-        attrs = ['tc', 'vpd', 'co2', 'patm', 'ca', 'gammastar', 'kmm', 'ns_star']
+        attrs = [('tc', '°C'), ('vpd', 'Pa'), ('co2', 'ppm'), 
+                 ('patm', 'Pa'), ('ca', 'Pa'), ('gammastar', 'Pa'), 
+                 ('kmm', 'Pa'), ('ns_star', '-')]
         summarize_attrs(self, attrs, dp=dp)
 
 
@@ -1152,10 +1155,12 @@ class PModel:
         # Jmax using again A_J = A_C
         fact_jmaxlim = (self.vcmax * (self.optchi.ci + 2.0 * self.env.gammastar) /
                         (self.kphio * iabs * (self.optchi.ci + self.env.kmm)))
+        
         # Guard against negative values getting into sqrt
         jmaxlim_step1 = (1.0 / fact_jmaxlim) ** 2 - 1.0
         jmax = np.empty_like(fact_jmaxlim)
         mask = jmaxlim_step1 > 0
+        
         # Iabs might be a scalar or an array - if an array, it should be of the
         # same shape as jmaxlim_step1 and can use the same mask
         iabs_mask = iabs if isinstance(iabs, (float, int)) else iabs[mask]
@@ -1207,11 +1212,16 @@ class PModel:
             None
         """
 
-        if self._gpp is None:
-            attrs = ['lue', 'iwue']
-        else:
-            attrs = ['lue', 'iwue', 'gpp', 'vcmax',
-                     'vcmax25', 'rd', 'gs', 'jmax']
+        attrs = [('lue', 'g C mol-1'), 
+                 ('iwue', 'Pa')]
+
+        if self._gpp:
+            attrs.extend([('gpp', 'gC area time'),
+                          ('vcmax', 'mol C area time'),
+                          ('vcmax25', 'mol C area time'), 
+                          ('rd', 'mol C area time'),
+                          ('gs', 'mol C area time'),
+                          ('jmax', 'mol C area time')])
 
         summarize_attrs(self, attrs, dp=dp)
 
@@ -1226,6 +1236,13 @@ class CalcOptimalChi:
       assimilation (:math:`m_j`).
     - The :math:`\ce{CO2}` limitation term for Rubisco-limited
       assimilation  (:math:`m_c`).
+
+    The value for :math:`\chi` is calculated using the parameter :math:`\beta`,
+    which differs between C3 and C4 plants. :cite:`Stocker:2020dh` estimated
+    $\beta = 146$ for C3 plants, and this is defined as `beta_unit_cost_c3` in
+    :class:`~pyrealm.param_classes.PModelParams`. For C4 plants, the default
+    value used is $\beta = 146 /  9 \approx 16.222$, defined as
+    `beta_unit_cost_c4` in :class:`~pyrealm.param_classes.PModelParams`.
 
     The chosen method is automatically used to estimate these values when an
     instance is created.
