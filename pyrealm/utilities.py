@@ -78,7 +78,8 @@ def summarize_attrs(obj, attrs, dp=2, repr_head=True):
 
     Args:
         obj: An object with attributes to summarize
-        attrs: A list of strings of attribute names
+        attrs: A list of strings of attribute names, or a list of 2-tuples
+          giving attribute names and units.
         dp: The number of decimal places used in rounding summary stats.
         repr_head: A boolean indicating whether to show the object representation
           before the summary table.
@@ -87,24 +88,51 @@ def summarize_attrs(obj, attrs, dp=2, repr_head=True):
         None
     """
     
+    # Check inputs
+    if not isinstance(attrs, list):
+        raise RuntimeError('attrs input not a list')
+    
     # Create a list to hold variables and summary stats
     ret = []
 
-    for attr in attrs:
-        data = getattr(obj, attr)
-        
-        # Avoid masked arrays - run into problems with edge cases with all NaN 
-        if isinstance(data, np.ma.core.MaskedArray):
-            data = data.filled(np.nan)
-        
-        # Add the variable and stats to the list to be displayed
-        ret.append([attr,
-                    np.round(np.nanmean(data), dp),
-                    np.round(np.nanmin(data), dp),
-                    np.round(np.nanmax(data), dp),
-                    np.count_nonzero(np.isnan(data))])
+    if len(attrs):
 
-    hdrs = ['Attr', 'Mean', 'Min', 'Max', 'NaN']
+        first = attrs[0]
+
+        # TODO - not much checking for consistency here!
+        if isinstance(first, str):
+            has_units = False
+            attrs = [(vl, None) for vl in attrs]
+        else:
+            has_units = True
+
+        # Process the attributes
+        for attr_entry in attrs:
+            
+            attr = attr_entry[0]
+            unit = attr_entry[1]
+
+            data = getattr(obj, attr)
+            
+            # Avoid masked arrays - run into problems with edge cases with all NaN 
+            if isinstance(data, np.ma.core.MaskedArray):
+                data = data.filled(np.nan)
+            
+            # Add the variable and stats to the list to be displayed
+            attr_row = [attr,
+                        np.round(np.nanmean(data), dp),
+                        np.round(np.nanmin(data), dp),
+                        np.round(np.nanmax(data), dp),
+                        np.count_nonzero(np.isnan(data))]
+            if has_units:
+                attr_row.append(unit)
+            
+            ret.append(attr_row)
+
+    if has_units:
+        hdrs = ['Attr', 'Mean', 'Min', 'Max', 'NaN', 'Units']
+    else:
+        hdrs = ['Attr', 'Mean', 'Min', 'Max', 'NaN']
 
     if repr_head:
         print(obj)
