@@ -89,34 +89,82 @@ def plot_fun(estvar, estvarlab):
     ax1.set_title(f'C3 variation in estimated {estvarlab}')
     ax2.set_title(f'C4 variation in {estvarlab}')
 
-    # create a legend showing the combinations
-    blnk = Line2D([], [], color='none')
-    rd = Line2D([], [], linestyle='-', color='r')
-    bl = Line2D([], [], linestyle='-', color='b')
-    sld = Line2D([], [], linestyle='-', color='k')
-    dsh = Line2D([], [], linestyle='--', color='k')
-    circ = Line2D([], [], marker='o', linestyle='', markersize=10,
-                markeredgecolor='k', markerfacecolor='none')
-    trng = Line2D([], [], marker='^', linestyle='', markersize=10, 
-                markeredgecolor='k', markerfacecolor='none')
-
-    ax1.legend([blnk, blnk, blnk, rd, sld, circ, bl, dsh, trng ], 
-            ['patm', 'co2', 'vpd', 
-                f"{patm_1d[0]} Pa", f"{co2_1d[0]} ppm", f"{vpd_1d[0]} Pa",
-                f"{patm_1d[1]} Pa", f"{co2_1d[1]} ppm", f"{vpd_1d[1]} Pa"
-                ], 
-            ncol=3, loc='upper left', frameon=False)
     pyplot.show()
 
 ```
 
-# Estimating productivity
+# Environmental variation in P Model outputs
 
-Measures of photosynthetic productivity, such as GPP, are calculated by
-providing the P Model with estimates of the fraction of absorbed
-photosynthetically active radiation (`fapar`) and the photosynthetic photon flux
-density (`ppfd`). The product of these two variables is an estimate of absorbed
-irradiance ($I_{abs}$).
+This page shows how the main output variables from the P Model vary under
+differing environmental conditions. The paired plots below show how C3 and C4
+plants respond under a range of temperatures (-10°C to 60°C) and then pairs of
+values for the other environmental variables:
+
+* Atmospheric pressure: 101325 Pa and 80000 Pa
+* Vapour pressure deficit: 500 Pa and 2000 Pa
+* $\ce{CO2}$ concentration: 280 ppm and 410 ppm.
+
+All of the pairwise plots share the same legend:
+
+```{code-cell} python
+:tags: [hide-input]
+
+fig, ax = pyplot.subplots(1, 1, figsize=(6, 1.2))
+
+# create a legend showing the combinations
+blnk = Line2D([], [], color='none')
+rd = Line2D([], [], linestyle='-', color='r')
+bl = Line2D([], [], linestyle='-', color='b')
+sld = Line2D([], [], linestyle='-', color='k')
+dsh = Line2D([], [], linestyle='--', color='k')
+circ = Line2D([], [], marker='o', linestyle='', markersize=10,
+            markeredgecolor='k', markerfacecolor='none')
+trng = Line2D([], [], marker='^', linestyle='', markersize=10, 
+            markeredgecolor='k', markerfacecolor='none')
+
+ax.legend([blnk, blnk, blnk, rd, sld, circ, bl, dsh, trng ], 
+            ['patm', 'co2', 'vpd', 
+            f"{patm_1d[0]} Pa", f"{co2_1d[0]} ppm", f"{vpd_1d[0]} Pa",
+            f"{patm_1d[1]} Pa", f"{co2_1d[1]} ppm", f"{vpd_1d[1]} Pa"
+            ], 
+        ncol=3, loc='upper center', frameon=False, prop={'size': 12})
+
+ax.axis('off')
+
+pyplot.show()
+```
+
+## Efficiency outputs
+
+Two of the key outputs are measures of efficiency and are estimated simply by
+creating a {class}`~pyrealm.pmodel.PModel` instance without needing to provide
+estimates of absorbed irradiance.
+
+### Light use efficiency (``lue``, LUE)
+
+
+```{code-cell} python
+:tags: [hide-input]
+plot_fun('lue', 'LUE')
+```
+
+### Water use efficiency (``iwue``, IWUE)
+
+
+```{code-cell} python
+:tags: [hide-input]
+plot_fun('iwue', 'IWUE')
+```
+
+
+(estimating-productivity)=
+## Estimating productivity
+
+The remaining key outputs are measures of photosynthetic productivity, such as
+GPP, which are calculated by providing the P Model with estimates of the
+fraction of absorbed photosynthetically active radiation (`fapar`) and the
+photosynthetic photon flux density (`ppfd`). The product of these two variables
+is an estimate of absorbed irradiance ($I_{abs}$).
 
 The {meth}`~pyrealm.pmodel.PModelEnvironment.estimate_productivity` method is 
 used to provide these estimates to the P Model instance. Once this has been run,
@@ -129,39 +177,23 @@ the following additional variables are populated:
 * Maximum rate of electron transport. (``jmax``)
 * Stomatal conductance (``gs``)
 
-These variables are now also shown by the {meth}`~pyrealm.pmodel.PModel.summarize` 
-method. 
+For the plots below, these values have been estimated using typical values for
+tropical rainforest:
 
-```{code-cell} ipython3
-from pyrealm import pmodel
-env  = pmodel.PModelEnvironment(tc=20.0, patm=101325.0, vpd=820, co2=400)
-model = pmodel.PModel(env)
-model.estimate_productivity(fapar=0.91, ppfd=834)
-model.summarize()
+* $f_{APAR}$: 0.91 (unitless)
+* PPFD: 834 $\text{mol}\,m^{-2}\,\text{month}^{-1}$
+
+```{admonition} Units of PPFD
+:class: warning
+
+Note that the units of PPFD determine the units of these productivity measures. 
+The example here uses PPFD expressed as $\text{mol}\,m^{-2}\,\text{month}^{-1}$: 
+GPP is therefore $g\,C\,m^{-2}\text{month}^{-1}$. 
 ```
-
-## Units of PPFD
-
-Note that the units of PPFD determine the units of these additional predictions. 
-The example above uses representative values for tropical rainforest, with PPFD 
-expressed as $\text{mol}\,m^{-2}\,\text{month}^{-1}$: GPP is 
-therefore $g\,C\,m^{-2}\text{month}^{-1}$ . 
 
 If required, productivity estimates per unit absorbed irradiance can be simply
 calculated using ``fapar=1, ppfd=1``, which are the default values to
 {meth}`~pyrealm.pmodel.PModelEnvironment.estimate_productivity`.
-
-```{code-cell} ipython3
-model.estimate_productivity() # Per unit I_abs
-model.summarize()
-```
-
-## Environmental variation in estimated variables
-
-All of these variables scale linearly with $I_{abs}$, so the example plots below
-all show how these outputs respond to variation in temperature, atmospheric
-pressure, $\ce{CO2}$ concentration and vapour pressure deficit for $f_{APAR}$ = 0.91 
-and PPFD = 834 $\text{mol}\,m^{-2}\,\text{month}^{-1}$.
 
 ### Gross primary productivity (``gpp``, GPP)
 
@@ -211,10 +243,11 @@ plot_fun('gs', '$g_s$')
 
 ## Scaling with absorbed irradiance
 
-All of the six variables scale linearly with absorbed irradiance. The plots
-below show how each variable changes, for a constant environment with `tc` of
-20°C, `patm` of 101325 Pa, `vpd` of 1000 Pa and $\ce{CO2}$ of 400 ppm, when
-absorbed irradiance changes from 0 to 2000 $\text{mol}\,m^{-2}\,\text{month}^{-1}$.
+All of the six productivity variables scale linearly with absorbed irradiance.
+The plots below show how each variable changes, for a constant environment with
+`tc` of 20°C, `patm` of 101325 Pa, `vpd` of 1000 Pa and $\ce{CO2}$ of 400 ppm,
+when absorbed irradiance changes from 0 to 2000
+$\text{mol}\,m^{-2}\,\text{month}^{-1}$.
 
 ```{code-cell} python
 :tags: [hide-input]

@@ -32,19 +32,19 @@ but the Python implementation has some differences in the code structure (see
 The P-model is a model of carbon capture and water use by plants. Four 
 variables are used to define the environment that the plant experiences:
 
-- temperature (`tc`),
-- vapor pressure deficit (`vpd`),
-- atmospheric $\ce{CO2}$ concentration (`co2`), and
-- atmospheric pressure (`patm`)
+- temperature (`tc`, °C),
+- vapor pressure deficit (`vpd`, Pa),
+- atmospheric $\ce{CO2}$ concentration (`co2`, ppm), and
+- atmospheric pressure (`patm`, Pa).
 
 These environmental variables can then be used to calculate a describe the 
 photosynthetic environment of a plant (see [details](photosynthetic_environment)) 
 by calculating:
 
-- the photorespiratory compensation point ($\Gamma^*$),
-- the Michaelis-Menten coefficient for photosynthesis ($K_{mm}$),
-- the relative viscosity of water ($\eta^*$), and
-- the partial pressure of $\ce{CO2}$ in ambient air ($c_a$).
+- the photorespiratory compensation point ($\Gamma^*$, Pa),
+- the Michaelis-Menten coefficient for photosynthesis ($K_{mm}$, Pa),
+- the relative viscosity of water ($\eta^*$, unitless ratio), and
+- the partial pressure of $\ce{CO2}$ in ambient air ($c_a$, Pa).
 
 
 Once this set of environmental variables has been calculated, the P-model can
@@ -57,7 +57,7 @@ is described in more detail in the link for each stage
    (see [details](lue_vcmax)). 
 3. Optionally, estimating gross primary productivity (GPP) and other key outputs
    that are calculated using the total absorbed irradiance (see
-   [details](estimating_productivity)).
+   [details](estimating-productivity)).
 
 ### Extreme values
 
@@ -82,17 +82,18 @@ variables are shown with a dashed edge.
 Running the P Model consists of using the environmental variables to calculate 
 the photosynthetic environment for the model ({class}`~pyrealm.pmodel.PModelEnvironment`) 
 and then fitting the P-model to that environment ({class}`~pyrealm.pmodel.PModel`). 
-The code below illustrates different use cases.
 
-
-### Simple use
-
-Fitting the model for:
+The code below shows the steps required using a single site with:
 
    * a temperature of 20°C,
    * standard atmospheric at sea level (101325 Pa),
    * a vapour pressure deficit of 0.82 kPa (~ 65% relative humidity), and
    * an atmospheric $\ce{CO2}$ concentration of 400 ppm.
+
+The variation in model outputs under differing environmental conditions can be
+seen [here](envt_variation_outputs).
+
+### Estimate photosynthetic environment
 
 ```{code-cell} ipython3
 from pyrealm import pmodel
@@ -112,6 +113,8 @@ env
 ```{code-cell} ipython3
 env.summarize()
 ```
+
+### Fitting the P Model
 
 A P Model can now be fitted using that calculated photosynthetic environment:
 
@@ -135,8 +138,9 @@ water use efficiency (``iwue``) and the light use efficiency (``lue``).
 model.summarize()
 ```
 
-The productivity of the model (and other variables, see
-[here](estimating_productivity)) can then be estimated by passing the fraction
+### Estimating productivity outputs
+
+The productivity of the model can then be estimated by passing the fraction
 of absorbed photosynthetically active radiation (`fapar`) and the photosynthetic
 photon flux density (`ppfd`), for a given area and time period, to the
 {meth}`~pyrealm.pmodel.PModelEnvironment.estimate_productivity` method.

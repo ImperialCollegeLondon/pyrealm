@@ -15,8 +15,9 @@ kernelspec:
 
 The next step is to calculate the following factors:
 
-- The optimal ratio of leaf internal to ambient $\ce{CO2}$ partial
-  pressure ($\chi = c_i/c_a$).
+- The optimal ratio of leaf internal $\ce{CO2}$ partial pressure ($c_i$, Pa) to
+  ambient $\ce{CO2}$ partial pressure ($c_a$, Pa). This value $\chi = c_i/c_a$
+  is a unitless ratio.
 - The $\ce{CO2}$ limitation term of light use efficiency ($m_j$).
 - The limitation term for $V_{cmax}$ ($m_{joc}$). 
 
