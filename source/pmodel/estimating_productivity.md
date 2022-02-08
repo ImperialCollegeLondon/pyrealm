@@ -258,4 +258,9 @@ plot_iabs(axs[1,0], 'vcmax25', '$v_{cmax25}$')
 plot_iabs(axs[1,1], 'jmax', '$J_{max}$')
 plot_iabs(axs[1,2], 'gs', '$g_s$')
 
+axs[0,0].legend([Line2D([], [], linestyle='-', color='r'),
+                 Line2D([], [], linestyle='-', color='b')],
+                ['C3', 'C4'], loc='upper left', frameon=False)
+
+pyplot.show()
 ```
