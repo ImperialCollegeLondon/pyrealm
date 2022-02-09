@@ -849,7 +849,8 @@ class PModel:
 
     The predictions are then:
 
-    * Intrinsic water use efficiency (iWUE, Pa), calculated as :math:`(c_a -
+    * Intrinsic water use efficiency (iWUE,
+      :math:`\mu\mathrm{mol}\;\mathrm{mol}^{-1}`), calculated as :math:`(c_a -
       c_i)/1.6`
 
     * Maximum carboxylation capacity (mol C m-2) normalised to the standard
@@ -1213,17 +1214,21 @@ class PModel:
         """
 
         attrs = [('lue', 'g C mol-1'), 
-                 ('iwue', 'Pa')]
+                 ('iwue', 'µmol mol-1')]
 
         if self._gpp:
-            attrs.extend([('gpp', 'gC area time'),
-                          ('vcmax', 'mol C area time'),
-                          ('vcmax25', 'mol C area time'), 
-                          ('rd', 'mol C area time'),
-                          ('gs', 'mol C area time'),
-                          ('jmax', 'mol C area time')])
+            attrs.extend([('gpp', 'gC area time †'),
+                          ('vcmax', 'mol C area time †'),
+                          ('vcmax25', 'mol C area time †'), 
+                          ('rd', 'mol C area time †'),
+                          ('gs', 'mol C area time †'),
+                          ('jmax', 'mol C area time †')])
 
         summarize_attrs(self, attrs, dp=dp)
+
+        if self._gpp:
+            print('\n†: The units of all these variables follow the area and\n'
+                    '   time scaling of the PPFD data used.')
 
 
 class CalcOptimalChi:
