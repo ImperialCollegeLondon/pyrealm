@@ -1316,6 +1316,7 @@ class CalcOptimalChi:
                                         ca, vpd, rootzonestress)
 
         # set attribute defaults
+        self.xi = None
         self.chi = None
         self.ci = None
         self.mc = None
@@ -1340,7 +1341,7 @@ class CalcOptimalChi:
 
     def __repr__(self):
 
-        return f"CalcOptimalChi(chi={self.chi}, ci={self.ci}, mc={self.mc}, mj={self.mj})"
+        return f"CalcOptimalChi(shape={self.shape}, method={self.method})"
 
     def c4(self, **kwargs):
         r"""Optimal :math:`\chi` is calculated following Equation 8 in
@@ -1354,14 +1355,14 @@ class CalcOptimalChi:
         """
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c4 *
+        self.xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c4 *
                       kwargs['rootzonestress'] *
                       (kwargs['kmm'] + kwargs['gammastar']))
                      / (1.6 * kwargs['ns_star']))
 
         self.chi = (kwargs['gammastar'] / kwargs['ca'] +
-                    (1.0 - kwargs['gammastar'] / kwargs['ca']) * xi /
-                    (xi + np.sqrt(kwargs['vpd'])))
+                    (1.0 - kwargs['gammastar'] / kwargs['ca']) * self.xi /
+                    (self.xi + np.sqrt(kwargs['vpd'])))
 
         # These values need to retain any
         # dimensions of the original inputs - if ftemp_kphio is set to 1.0
@@ -1415,14 +1416,14 @@ class CalcOptimalChi:
         """
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c3 *
+        self.xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c3 *
                       kwargs['rootzonestress'] *
                       (kwargs['kmm'] + kwargs['gammastar']))
                      / (1.6 * kwargs['ns_star']))
 
         self.chi = (kwargs['gammastar'] / kwargs['ca'] +
-                    (1.0 - kwargs['gammastar'] / kwargs['ca']) * xi /
-                    (xi + np.sqrt(kwargs['vpd'])))
+                    (1.0 - kwargs['gammastar'] / kwargs['ca']) * self.xi /
+                    (self.xi + np.sqrt(kwargs['vpd'])))
 
         # Define variable substitutes:
         vdcg = kwargs['ca'] - kwargs['gammastar']
@@ -1464,7 +1465,11 @@ class CalcOptimalChi:
             None
         """
 
-        attrs = ['chi', 'mc', 'mj', 'mjoc']
+        attrs = [('xi', ' Pa ^ (1/2)'), 
+                 ('chi', '-'), 
+                 ('mc', '-'),
+                 ('mj', '-'),
+                 ('mjoc', '-')]
         summarize_attrs(self, attrs, dp=dp)
 
 
