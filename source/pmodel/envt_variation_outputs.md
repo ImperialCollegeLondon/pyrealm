@@ -77,7 +77,7 @@ def plot_fun(estvar, estvarlab):
             plotvar = getattr(this_mod, estvar)
 
             this_axs.plot(tc_1d, plotvar[pdx, :, vdx, cdx], lfmt)
-            max_idx = plotvar[pdx, :, vdx, cdx].argmax()
+            max_idx = np.nanargmax(plotvar[pdx, :, vdx, cdx])
             this_axs.scatter(tc_1d[max_idx], 
                               plotvar[pdx, :, vdx, cdx][max_idx],
                               marker=mrkr,  s=60, c='none', edgecolor='black')
@@ -142,18 +142,24 @@ estimates of absorbed irradiance.
 
 ### Light use efficiency (``lue``, LUE)
 
+Light use efficiency measures conversion efficiency of moles of absorbed
+irradiance into grams of Carbon ($\mathrm{g\,C}\; \mathrm{mol}^{-1}$ photons) 
 
 ```{code-cell} python
 :tags: [hide-input]
-plot_fun('lue', 'LUE')
+plot_fun('lue', r'LUE ($\mathrm{g\,C}\; \mathrm{mol}^{-1}$ photons).')
 ```
 
-### Water use efficiency (``iwue``, IWUE)
+### Intrinsic water use efficiency (``iwue``, IWUE)
 
+
+The intrinsic water-use efficiency is ratio of net photosynthetic CO2
+assimilation to stomatal conductance, and captures the cost of assimilation per
+unit of water, in units of $\mu\mathrm{mol}\;\mathrm{mol}^{-1}$.
 
 ```{code-cell} python
 :tags: [hide-input]
-plot_fun('iwue', 'IWUE')
+plot_fun('iwue', r'IWUE ($\mu\mathrm{mol}\;\mathrm{mol}^{-1}$)')
 ```
 
 
@@ -166,30 +172,37 @@ fraction of absorbed photosynthetically active radiation (`fapar`) and the
 photosynthetic photon flux density (`ppfd`). The product of these two variables
 is an estimate of absorbed irradiance ($I_{abs}$).
 
-The {meth}`~pyrealm.pmodel.PModelEnvironment.estimate_productivity` method is 
+
+
+The {meth}`~pyrealm.pmodel.PModelEnvironment.estimate_productivity` method is
 used to provide these estimates to the P Model instance. Once this has been run,
-the following additional variables are populated:
-
-* Gross primary productivity (``gpp``)
-* Dark respiration (``rd``)
-* Maximum rate of carboxylation (``vcmax``)
-* Maximum rate of carboxylation at standard temperature (``vcmax25``)
-* Maximum rate of electron transport. (``jmax``)
-* Stomatal conductance (``gs``)
-
-For the plots below, these values have been estimated using typical values for
-tropical rainforest:
-
-* $f_{APAR}$: 0.91 (unitless)
-* PPFD: 834 $\text{mol}\,m^{-2}\,\text{month}^{-1}$
+the following additional variables are populated. 
 
 ```{admonition} Units of PPFD
 :class: warning
+The units of these productivity outputs follow the area and time scaling of the
+provided PPFD data. For example, if PPFD is expressed in $\text{mol}\,m^{-2}\,\text{s}^{-1}$,
+then productivity variables will also be per metre squared per second: GPP would 
+be $\text{gC}\,m^{-2}\,\text{s}^{-1}$.
 
-Note that the units of PPFD determine the units of these productivity measures. 
-The example here uses PPFD expressed as $\text{mol}\,m^{-2}\,\text{month}^{-1}$: 
-GPP is therefore $g\,C\,m^{-2}\text{month}^{-1}$. 
+Users should **make sure that they know the units** of their PPFD data!
 ```
+
+The productivity variables and their units (assuming PPFD in
+$\text{mol}\,m^{-2}\,\text{s}^{-1}$) are:
+
+* Gross primary productivity (``gpp``, $\text{gC}\,m^{-2}\,\text{s}^{-1}$)
+* Dark respiration (``rd``, $\text{mol}\,m^{-2}\,\text{s}^{-1}$)
+* Maximum rate of carboxylation (``vcmax``, $\text{mol}\,m^{-2}\,\text{s}^{-1}$)
+* Maximum rate of carboxylation at standard temperature (``vcmax25``, $\text{mol}\,m^{-2}\,\text{s}^{-1}$)
+* Maximum rate of electron transport. (``jmax``, $\text{mol}\,m^{-2}\,\text{s}^{-1}$)
+* Stomatal conductance (``gs``, $\text{mol}\,m^{-2}\,\text{s}^{-1}$)
+
+For the plots below, productivity has been estimated using typical values for
+monthly irradiance in a tropical rainforest:
+
+* $f_{APAR}$: 0.91 (unitless)
+* PPFD: 834 $\text{mol}\,m^{-2}\,\text{month}^{-1}$
 
 If required, productivity estimates per unit absorbed irradiance can be simply
 calculated using ``fapar=1, ppfd=1``, which are the default values to
@@ -200,7 +213,7 @@ calculated using ``fapar=1, ppfd=1``, which are the default values to
 
 ```{code-cell} python
 :tags: [hide-input]
-plot_fun('gpp', 'GPP')
+plot_fun('gpp', r'GPP   ($\mathrm{g\,C}\,m^{-2}\,\mathrm{month}^{-1}$)')
 ```
 
 ### Dark respiration (``rd``)
@@ -208,7 +221,7 @@ plot_fun('gpp', 'GPP')
 
 ```{code-cell} python
 :tags: [hide-input]
-plot_fun('rd', '$r_d$')
+plot_fun('rd', r'$r_d$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)')
 ```
 
 ### Maximum rate of carboxylation (``vcmax``)
@@ -216,28 +229,28 @@ plot_fun('rd', '$r_d$')
 
 ```{code-cell} python
 :tags: [hide-input]
-plot_fun('vcmax', '$v_{cmax}$')
+plot_fun('vcmax', r'$v_{cmax}$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)')
 ```
 
 ### Maximum rate of carboxylation at standard temperature (``vcmax25``)
 
 ```{code-cell} python
 :tags: [hide-input]
-plot_fun('vcmax25', '$v_{cmax25}$')
+plot_fun('vcmax25', r'$v_{cmax25}$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)')
 ```
 
 ### Maximum rate of electron transport. (``jmax``)
 
 ```{code-cell} python
 :tags: [hide-input]
-plot_fun('jmax', '$J_{max}$')
+plot_fun('jmax', r'$J_{max}$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)')
 ```
 
 ### Stomatal conductance (``gs``, $g_s$)
 
 ```{code-cell} python
 :tags: [hide-input]
-plot_fun('gs', '$g_s$')
+plot_fun('gs', r'$g_s$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)')
 ```
 
 
@@ -279,21 +292,22 @@ def plot_iabs(ax, estvar, estvarlab):
             ax.plot(ppfd_vals, plotvar, lfmt)
             
     # Set axis labels
-    ax.set_xlabel('Absorbed irradiance (mol m2 month)')
+    ax.set_xlabel(r'Absorbed irradiance ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)')
     ax.set_ylabel(f'Estimated {estvarlab}')
 
-fig, axs = pyplot.subplots(2, 3, figsize=(12, 5), sharex=True)
+fig, axs = pyplot.subplots(2, 3, figsize=(12, 8), sharex=True)
 
-plot_iabs(axs[0,0], 'gpp', 'GPP')
-plot_iabs(axs[0,1], 'rd', '$r_d$')
-plot_iabs(axs[0,2], 'vcmax', '$v_{cmax}$')
-plot_iabs(axs[1,0], 'vcmax25', '$v_{cmax25}$')
-plot_iabs(axs[1,1], 'jmax', '$J_{max}$')
-plot_iabs(axs[1,2], 'gs', '$g_s$')
+plot_iabs(axs[0,0], 'gpp', r'GPP   ($\mathrm{g\,C}\,m^{-2}\,\mathrm{month}^{-1}$)')
+plot_iabs(axs[0,1], 'rd', r'$r_d$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)')
+plot_iabs(axs[0,2], 'vcmax', r'$v_{cmax}$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)')
+plot_iabs(axs[1,0], 'vcmax25', r'$v_{cmax25}$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)')
+plot_iabs(axs[1,1], 'jmax', r'$J_{max}$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)')
+plot_iabs(axs[1,2], 'gs', r'$g_s$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)')
 
 axs[0,0].legend([Line2D([], [], linestyle='-', color='r'),
                  Line2D([], [], linestyle='-', color='b')],
                 ['C3', 'C4'], loc='upper left', frameon=False)
 
+fig.tight_layout()
 pyplot.show()
 ```
