@@ -823,8 +823,8 @@ class PModel:
 
     r"""Fits the P Model to a given set of environmental and photosynthetic
     parameters. The calculated attributes of the class are described below. An
-    extended description with typical use cases is given in :any:`pmodel_overview`
-    but the basic flow of the model is:
+    extended description with typical use cases is given in
+    :any:`pmodel_overview` but the basic flow of the model is:
 
     1. Estimate :math:`\ce{CO2}` limitation factors and optimal internal to
        ambient :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using
@@ -850,8 +850,10 @@ class PModel:
     The predictions are then:
 
     * Intrinsic water use efficiency (iWUE,
-      :math:`\mu\mathrm{mol}\;\mathrm{mol}^{-1}`), calculated as :math:`(c_a -
-      c_i)/1.6`
+      :math:`\mu\mathrm{mol}\;\mathrm{mol}^{-1}`), calculated as :math:`( 5/8 *
+      (c_a - c_i)) / P`, where `c_a` and `c_i` are measured in Pa and :math:`P`
+      is atmospheric pressure in megapascals. This is equivalent to :math:`(c_a
+      - c_i)/1.6` when `c_a` and `c_i` are expressed as parts per million.
 
     * Maximum carboxylation capacity (mol C m-2) normalised to the standard
       temperature as: :math:`V_{cmax25} = V_{cmax}  / fv(t)`
@@ -887,9 +889,9 @@ class PModel:
 
     Parameters:
 
-        env: An instance of :class:`~pyrealm.pmodel.PModelEnvironment`. 
-        kphio: (Optional) Apparent quantum yield efficiency (unitless). 
-        rootzonestress: (Optional, default=None) An experimental option
+        env: An instance of :class:`~pyrealm.pmodel.PModelEnvironment`. kphio:
+        (Optional) Apparent quantum yield efficiency (unitless). rootzonestress:
+        (Optional, default=None) An experimental option
             for providing a root zone water stress factor. This is not
             compatible with the soilmstress approach.
         soilmstress: (Optional, default=None) A soil moisture stress factor
@@ -910,8 +912,20 @@ class PModel:
             (:class:`~pyrealm.param_classes.PModelParams`)
         optchi: Details of the optimal chi calculation
             (:class:`~pyrealm.pmodel.CalcOptimalChi`)
-        iwue: Intrinsic water use efficiency (iWUE, Pa) 
-        lue: Light use efficiency (LUE)
+        iwue: Intrinsic water use efficiency (iWUE, µmol mol-1) 
+        lue: Light use efficiency (LUE, g C mol-1)
+
+        After :meth:`~pyrealm.pmodel.estimate_productivity` has been run,
+        the following attributes are also populated. See the documentation
+        for :meth:`~pyrealm.pmodel.estimate_productivity` for notes on the 
+        units of these attributes
+
+        gpp: Gross primary productivity (gC area time)
+        rd: Dark respiration (mol C area time)
+        vcmax: Maximum rate of carboxylation (mol C area time)
+        vcmax25: Maximum rate of carboxylation at standard temperature (mol C area time)
+        jmax: Maximum rate of electron transport (mol C area time)
+        gs: Stomatal conductance (mol C area time)
 
     Examples:
 
@@ -1028,8 +1042,11 @@ class PModel:
         # Store the two efficiency predictions
         # -----------------------------------------------------------------------
 
-        # intrinsic water use efficiency (in Pa)
-        self.iwue = (env.ca - self.optchi.ci) / 1.6
+        # intrinsic water use efficiency (in µmol mol-1). The rpmodel reports this
+        # in Pascals, but more commonly reported in µmol mol-1. The standard equation
+        # (ca - ci) / 1.6 expects inputs in ppm, so the pascal versions are back
+        # converted here.
+        self.iwue = (5/8 * (env.ca - self.optchi.ci)) / (1e-6 * self.env.patm)
         self.lue = lue_vcmax.lue
         self.vcmax_unit_iabs = lue_vcmax.vcmax
 
@@ -1125,9 +1142,6 @@ class PModel:
         Args:
             fapar: the fraction of absorbed photosynthetically active radiation
             ppfd: photosynthetic photon flux density
-
-        Returns:
-            None
         """
 
         # Check input shapes against each other and an existing calculated value
@@ -1203,7 +1217,7 @@ class PModel:
         """Prints a summary of the calculated values in a PModel instance
         including the mean, range and number of nan values. This will always
         show efficiency variables (LUE and IWUE) and productivity estimates are
-        shown if {meth}`~pyrealm.pmodel.PModel.calculate_productivity` has been
+        shown if :meth:`~pyrealm.pmodel.PModel.calculate_productivity` has been
         run.
 
         Args:

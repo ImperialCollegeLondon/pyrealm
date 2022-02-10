@@ -93,7 +93,7 @@ def plot_fun(estvar, estvarlab):
 
 ```
 
-# Environmental variation in P Model outputs
+# P Model outputs
 
 This page shows how the main output variables from the P Model vary under
 differing environmental conditions. The paired plots below show how C3 and C4
