@@ -1023,8 +1023,7 @@ class PModel:
         else:
             method_optci = "prentice14"
 
-        self.optchi = CalcOptimalChi(env.kmm, env.gammastar, env.ns_star,
-                                     env.ca, env.vpd, method=method_optci,
+        self.optchi = CalcOptimalChi(env=env, method=method_optci,
                                      rootzonestress=rootzonestress,
                                      pmodel_params=env.pmodel_params)
 
@@ -1171,6 +1170,9 @@ class PModel:
         fact_jmaxlim = (self.vcmax * (self.optchi.ci + 2.0 * self.env.gammastar) /
                         (self.kphio * iabs * (self.optchi.ci + self.env.kmm)))
         
+        # The equation Jmax = 4 * phio * I_abs  / sqrt((1 / Jf) ^ 2 -1)
+        # has the domain [-1, 0) and (0, 1], so need to be careful about
+        # what values of fact_jmaxlim are allowed.
         # Guard against negative values getting into sqrt
         jmaxlim_step1 = (1.0 / fact_jmaxlim) ** 2 - 1.0
         jmax = np.empty_like(fact_jmaxlim)
@@ -1268,15 +1270,8 @@ class CalcOptimalChi:
 
     Attributes:
 
-        kmm (float): the Michaelis-Menten coefficient (:math:`K`, see
-            :func:`calc_kmm`).
-        gammastar (float): the photorespiratory :math:`\ce{CO2}` compensation point
-            (:math:`\Gamma^{*}`, see :func:`calc_gammastar`).
-        ns_star (float): the viscosity correction factor (:math:`\eta^{*}`,
-            see :func:`calc_viscosity_H20`)
-        ca (float): the ambient partial pressure of :math:`\ce{CO2}` (:math:`c_a`,
-            see :func:`calc_co2_to_ca`)
-        vpd (float): the vapor pressure deficit (:math:`D`)
+        env (PModelEnvironment): An instance of PModelEnvironment providing
+            the photosynthetic environment for the model.
         method (str): one of ``c4`` or ``prentice14``
         chi (float): the ratio of leaf internal to ambient :math:`\ce{CO2}`
             partial pressure (:math:`\chi`).
@@ -1294,8 +1289,8 @@ class CalcOptimalChi:
 
     Examples:
 
-        >>> vals = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925,
-        ...                       ns_star = 1.12536, ca = 40.53, vpd = 1000)
+        >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=0) 
+        >>> vals = CalcOptimalChi(env=env)
         >>> round(vals.chi, 5)
         0.69435
         >>> round(vals.mc, 5)
@@ -1305,9 +1300,7 @@ class CalcOptimalChi:
         >>> round(vals.mjoc, 5)
         2.13211
         >>> # The c4 method estimates chi but sets the others at 1.
-        >>> c4_vals = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925,
-        ...                          ns_star = 1.12536, ca = 40.53, vpd = 1000,
-        ...                          method='c4')
+        >>> c4_vals = CalcOptimalChi(env=env, method='c4')
         >>> round(c4_vals.chi, 5)
         0.44967
     """
@@ -1315,19 +1308,14 @@ class CalcOptimalChi:
     # TODO - move chi calc into __init__? Shared between the two methods
 
     def __init__(self,
-                 kmm: Union[float, np.ndarray],
-                 gammastar: Union[float, np.ndarray],
-                 ns_star: Union[float, np.ndarray],
-                 ca: Union[float, np.ndarray],
-                 vpd: Union[float, np.ndarray],
+                 env: PModelEnvironment,
                  rootzonestress: Union[float, np.ndarray] = 1.0,
                  method: str = 'prentice14',
                  pmodel_params: PModelParams = PModelParams()
                  ):
 
-        # Check inputs are broadcastable
-        self.shape = check_input_shapes(kmm, gammastar, ns_star,
-                                        ca, vpd, rootzonestress)
+        # Check rootzone stress is broadcastable to the environment
+        self.shape = check_input_shapes(env.ca, rootzonestress)
 
         # set attribute defaults
         self.xi = None
@@ -1344,20 +1332,18 @@ class CalcOptimalChi:
 
         if self.method in all_methods:
             this_method = all_methods[self.method]
-            this_method(kmm=kmm, gammastar=gammastar, ca=ca,
-                        vpd=vpd, ns_star=ns_star,
-                        rootzonestress=rootzonestress)
+            this_method(env = env, rootzonestress=rootzonestress)
         else:
             raise ValueError(f"CalcOptimalChi: method argument '{method}' invalid.")
 
         # Calculate internal CO2 partial pressure
-        self.ci = self.chi * ca
+        self.ci = self.chi * env.ca
 
     def __repr__(self):
 
         return f"CalcOptimalChi(shape={self.shape}, method={self.method})"
 
-    def c4(self, **kwargs):
+    def c4(self, env, rootzonestress):
         r"""Optimal :math:`\chi` is calculated following Equation 8 in
         :cite:`Prentice:2014bc` (see :meth:`~pyrealm.pmodel.CalcOptimalChi.prentice14`),
         but using a C4 specific estimate of the unit cost ratio :math:`\beta`,
@@ -1369,14 +1355,12 @@ class CalcOptimalChi:
         """
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c4 *
-                      kwargs['rootzonestress'] *
-                      (kwargs['kmm'] + kwargs['gammastar']))
-                     / (1.6 * kwargs['ns_star']))
+        self.xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c4 * rootzonestress *
+                            (env.kmm + env.gammastar))
+                          / (1.6 * env.ns_star))
 
-        self.chi = (kwargs['gammastar'] / kwargs['ca'] +
-                    (1.0 - kwargs['gammastar'] / kwargs['ca']) * self.xi /
-                    (self.xi + np.sqrt(kwargs['vpd'])))
+        self.chi = (env.gammastar / env.ca + (1.0 - env.gammastar / env.ca) * self.xi 
+                    / (self.xi + np.sqrt(env.vpd)))
 
         # These values need to retain any
         # dimensions of the original inputs - if ftemp_kphio is set to 1.0
@@ -1393,7 +1377,7 @@ class CalcOptimalChi:
             self.mj = np.ones(self.shape)
             self.mjoc = np.ones(self.shape)
 
-    def prentice14(self, **kwargs):
+    def prentice14(self, env, rootzonestress):
         r"""This method calculates key variables as follows:
 
         Optimal :math:`\chi` is calculated following Equation 8 in
@@ -1430,39 +1414,38 @@ class CalcOptimalChi:
         """
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c3 *
-                      kwargs['rootzonestress'] *
-                      (kwargs['kmm'] + kwargs['gammastar']))
-                     / (1.6 * kwargs['ns_star']))
+        self.xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c3 * rootzonestress *
+                           (env.kmm + env.gammastar))
+                          / (1.6 * env.ns_star))
 
-        self.chi = (kwargs['gammastar'] / kwargs['ca'] +
-                    (1.0 - kwargs['gammastar'] / kwargs['ca']) * self.xi /
-                    (self.xi + np.sqrt(kwargs['vpd'])))
+        self.chi = (env.gammastar / env.ca +
+                    (1.0 - env.gammastar / env.ca) * self.xi /
+                    (self.xi + np.sqrt(env.vpd)))
 
         # Define variable substitutes:
-        vdcg = kwargs['ca'] - kwargs['gammastar']
-        vacg = kwargs['ca'] + 2.0 * kwargs['gammastar']
+        vdcg = env.ca - env.gammastar
+        vacg = env.ca + 2.0 * env.gammastar
         vbkg = (self.pmodel_params.beta_cost_ratio_c3 *
-                kwargs['rootzonestress'] *
-                (kwargs['kmm'] + kwargs['gammastar']))
+                rootzonestress *
+                (env.kmm + env.gammastar))
 
         # Calculate mj
         # NOTE: this differs from rpmodel, which uses length not dim here, so
         # unwrapped matrix inputs. Also, rpmodel includes a check for vpd > 0,
         # but this is guaranteed by clip above (also true in rpmodel).
 
-        vsr = np.sqrt(1.6 * kwargs['ns_star'] * kwargs['vpd'] / vbkg)
-        mj = vdcg / (vacg + 3.0 * kwargs['gammastar'] * vsr)
+        vsr = np.sqrt(1.6 * env.ns_star * env.vpd / vbkg)
+        mj = vdcg / (vacg + 3.0 * env.gammastar * vsr)
 
         # Mask values with ns star <= 0 and vbkg <=0
         # TODO - think about masking vs explicit np.nan values in data.
-        mj = np.ma.masked_where(np.logical_and(kwargs['ns_star'] <= 0, vbkg <= 0), mj)
+        mj = np.ma.masked_where(np.logical_and(env.ns_star <= 0, vbkg <= 0), mj)
         # np.where _always_ returns an array, so catch scalars.
         self.mj = mj.item() if np.ndim(mj) == 0 else mj
 
         # alternative variables
-        gamma = kwargs['gammastar'] / kwargs['ca']
-        kappa = kwargs['kmm'] / kwargs['ca']
+        gamma = env.gammastar / env.ca
+        kappa = env.kmm / env.ca
 
         # mc and mj:mv
         self.mc = (self.chi - gamma) / (self.chi + kappa)
