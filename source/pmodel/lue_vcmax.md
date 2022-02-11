@@ -62,10 +62,10 @@ from pyrealm import pmodel
 pmodel_param = pmodel.PModelParams()
 
 # Set the resolution of examples
-n_pts = 101
+n_pts = 201
 
 # Create a range of representative values for key inputs.
-tc_1d = np.linspace(0, 50, n_pts)
+tc_1d = np.linspace(-25, 50, n_pts)
 soilm_1d = np.linspace(0, 1, n_pts)
 meanalpha_1d = np.linspace(0, 1, n_pts) 
 co2_1d = np.linspace(200, 500, n_pts)
