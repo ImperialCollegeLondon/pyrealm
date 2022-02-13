@@ -2,9 +2,8 @@ import os
 import warnings
 import pytest
 import numpy as np
-import yaml
+import json
 from contextlib import contextmanager
-# import pkg_resources
 from pyrealm import pmodel
 
 
@@ -27,26 +26,37 @@ def does_not_raise():
 # Fixtures: inputs and expected values
 # ------------------------------------------
 
-
 @pytest.fixture(scope='module')
 def values():
     """Fixture to load test inputs from file.
     """
 
     test_dir = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(test_dir, 'test_outputs_rpmodel.yaml')) as infile:
-        values = yaml.load(infile, Loader=yaml.SafeLoader)
+    with open(os.path.join(test_dir, 'test_outputs_rpmodel.json')) as infile:
+        values = json.load(infile)
 
-    values = {k: np.array(v) if isinstance(v, list) else v
-              for k, v in values.items()}
+    # JSON contains nested dictionary of scalars and lists - convert
+    # the lists to ndarrays, and use float to ensure that None --> np.nan
+    # rather than the default output of dtype object.
+
+    def lists_to_ndarray(d):
+        for k, v in d.items():
+            if isinstance(v, dict):
+                lists_to_ndarray(v) 
+            elif  isinstance(v, list):
+                d[k] = np.array(v, dtype=float)
+            else:
+                pass
+    
+    lists_to_ndarray(values)
 
     return values
 
 # ------------------------------------------
 # Test structure
 # The basic structure of these tests  is to use a pytest.mark.parameterise
-# to pass in a dictionary of the variables to be passed to the function and then
-# a dictionary identifying the expected values that have been read in from file.
+# to pass in the variables to be passed to the function along with the key
+# for sets of expected ouputs and any context managers.
 #
 # A separate R file is used to read in the same inputs to R and run them through
 # rpmodel to generate the output file.
@@ -59,179 +69,126 @@ def values():
 # Testing calc_density_h20 - temp + patm
 # ------------------------------------------
 
-
 @pytest.mark.parametrize(
-    'ctrl',
-    [(dict(args=dict(tc='tc_sc', patm='patm_sc'),  # scalars
-           cmng=does_not_raise(),
-           out='dens_h20_sc')),
-     (dict(args=dict(tc='tc_ar', patm='patm_sc'),  # scalar + array
-           cmng=does_not_raise(),
-           out='dens_h20_mx')),
-     (dict(args=dict(tc='tc_ar', patm='patm_ar'),  # arrays
-           cmng=does_not_raise(),
-           out='dens_h20_ar')),
-     (dict(args=dict(tc='tc_ar', patm='shape_error'),  # shape mismatch
-           cmng=pytest.raises(ValueError),
-           out=None))]
-)
-def test_calc_density_h2o(values, ctrl):
+    'tc, patm, context_manager, expvals',
+    [   ('tc_sc', 'patm_sc', does_not_raise(), 'dens_h20_sc'), # scalars
+        ('tc_ar', 'patm_sc', does_not_raise(), 'dens_h20_mx'), # mixed
+        ('tc_ar', 'patm_ar', does_not_raise(), 'dens_h20_ar'), # arrays
+        ('tc_ar', 'shape_error', pytest.raises(ValueError), None), # shape mismatch
+    ])
+def test_calc_density_h2o(values, tc, patm, context_manager, expvals):
 
-    with ctrl['cmng']:
-        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
-        ret = pmodel.calc_density_h2o(**kwargs)
-        assert np.allclose(ret, values[ctrl['out']])
+    with context_manager:
+
+        ret = pmodel.calc_density_h2o(tc=values[tc], patm=values[patm])
+        if expvals is not None:
+            assert np.allclose(ret, values[expvals])
 
 # ------------------------------------------
 # Testing calc_ftemp_inst_rd - temp only but in Kelvin!
 # ------------------------------------------
 
-
 @pytest.mark.parametrize(
-    'ctrl',
-    [(dict(args=dict(tk='tk_sc', ha='KattgeKnorr_ha'),  # scalar
-           cmng=does_not_raise(),
-           out='ftemp_arrh_sc')),
-     (dict(args=dict(tk='tk_ar', ha='KattgeKnorr_ha'),  # array
-           cmng=does_not_raise(),
-           out='ftemp_arrh_ar'))]
-)
-def test_calc_ftemp_arrh(values, ctrl):
+    'tk, expvars',
+    [   ('tk_sc', 'ftemp_arrh_sc'),  # scalar
+        ('tk_ar', 'ftemp_arrh_ar'),  # array
+    ])
+def test_calc_ftemp_arrh(values, tk, expvars):
 
-    with ctrl['cmng']:
-        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
-        ret = pmodel.calc_ftemp_arrh(**kwargs)
-        assert np.allclose(ret, values[ctrl['out']])
+    ret = pmodel.calc_ftemp_arrh(tk=values[tk], ha=values['KattgeKnorr_ha'])
+    assert np.allclose(ret, values[expvars])
 
 # ------------------------------------------
 # Testing calc_ftemp_inst_vcmax - temp only
 # ------------------------------------------
 
-
 @pytest.mark.parametrize(
-    'ctrl',
-    [(dict(args=dict(tc='tc_sc'),  # scalar
-           cmng=does_not_raise(),
-           out='ftemp_inst_vcmax_sc')),
-     (dict(args=dict(tc='tc_ar'),  # array
-           cmng=does_not_raise(),
-           out='ftemp_inst_vcmax_ar'))]
-)
-def test_calc_ftemp_inst_vcmax(values, ctrl):
+    'tc, expvars',
+    [   ('tc_sc', 'ftemp_inst_vcmax_sc'), # scalar
+        ('tc_ar', 'ftemp_inst_vcmax_ar'), # array
+    ])
+def test_calc_ftemp_inst_vcmax(values, tc, expvars):
 
-    with ctrl['cmng']:
-        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
-        ret = pmodel.calc_ftemp_inst_vcmax(**kwargs)
-        assert np.allclose(ret, values[ctrl['out']])
+    ret = pmodel.calc_ftemp_inst_vcmax(values[tc])
+    assert np.allclose(ret, values[expvars])
 
 # ------------------------------------------
 # Testing calc_ftemp_inst_vcmax - temp only
 # ------------------------------------------
 
+# TODO - submit pull request to rpmodel with fix for this
 
-@pytest.mark.skipif(RPMODEL_C4_BUG, reason='Benchmark incorrect')
 @pytest.mark.parametrize(
-    'ctrl',
-    [(dict(args=dict(tc='tc_sc'), c4=False,  # scalar, C3
-           cmng=does_not_raise(),
-           out='ftemp_kphio_c3_sc')),
-     (dict(args=dict(tc='tc_ar'), c4=False,  # array, C3
-           cmng=does_not_raise(),
-           out='ftemp_kphio_c3_ar')),
-     (dict(args=dict(tc='tc_sc'), c4=True,  # scalar, C4
-           cmng=does_not_raise(),
-           out='ftemp_kphio_c4_sc')),
-     (dict(args=dict(tc='tc_ar'), c4=True,  # array, C4
-           cmng=does_not_raise(),
-           out='ftemp_kphio_c4_ar'))]
+    'tc, c4, expvars',
+    [   ('tc_sc', False, 'ftemp_kphio_c3_sc'),  # scalar, C3
+        ('tc_ar', False, 'ftemp_kphio_c3_ar'),  # array, C3
+        ('tc_sc', True, 'ftemp_kphio_c4_sc'),  # scalar, C4
+        ('tc_ar', True, 'ftemp_kphio_c4_ar'),  # array, C4
+     ]
 )
-def test_calc_ftemp_kphio(values, ctrl):
+def test_calc_ftemp_kphio(values, tc, c4, expvars):
 
-    with ctrl['cmng']:
-        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
-        ret = pmodel.calc_ftemp_kphio(**kwargs, c4=ctrl['c4'])
-        assert np.allclose(ret, values[ctrl['out']])
+    ret = pmodel.calc_ftemp_kphio(tc=values[tc], c4=c4)
+    assert np.allclose(ret, values[expvars])
 
 # ------------------------------------------
 # Testing calc_gammastar - temp + patm
 # ------------------------------------------
 
-
 @pytest.mark.parametrize(
-    'ctrl',
-    [(dict(args=dict(tc='tc_sc', patm='patm_sc'),  # scalars
-           cmng=does_not_raise(),
-           out='gammastar_sc')),
-     (dict(args=dict(tc='tc_ar', patm='patm_sc'),  # scalar + array
-           cmng=does_not_raise(),
-           out='gammastar_mx')),
-     (dict(args=dict(tc='tc_ar', patm='patm_ar'),  # arrays
-           cmng=does_not_raise(),
-           out='gammastar_ar')),
-     (dict(args=dict(tc='tc_ar', patm='shape_error'),  # shape mismatch
-           cmng=pytest.raises(ValueError),
-           out=None))]
-)
-def test_calc_gammastar(values, ctrl):
+    'tc, patm, context_manager, expvals',
+    [   ('tc_sc', 'patm_sc', does_not_raise(), 'gammastar_sc'), # scalars
+        ('tc_ar', 'patm_sc', does_not_raise(), 'gammastar_mx'), # mixed
+        ('tc_ar', 'patm_ar', does_not_raise(), 'gammastar_ar'), # arrays
+        ('tc_ar', 'shape_error', pytest.raises(ValueError), None), # shape mismatch
+    ])
+def test_calc_gammastar(values, tc, patm, context_manager, expvals):
 
-    with ctrl['cmng']:
-        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
-        ret = pmodel.calc_gammastar(**kwargs)
-        assert np.allclose(ret, values[ctrl['out']])
+    with context_manager:
+        
+        ret = pmodel.calc_gammastar(tc=values[tc], patm=values[patm])
+        if expvals is not None:
+            assert np.allclose(ret, values[expvals])
 
 # ------------------------------------------
 # Testing calc_kmm - temp + patm
 # ------------------------------------------
 
-
 @pytest.mark.parametrize(
-    'ctrl',
-    [(dict(args=dict(tc='tc_sc', patm='patm_sc'),  # scalars
-           cmng=does_not_raise(),
-           out='kmm_sc')),
-     (dict(args=dict(tc='tc_ar', patm='patm_sc'),  # scalar + array
-           cmng=does_not_raise(),
-           out='kmm_mx')),
-     (dict(args=dict(tc='tc_ar', patm='patm_ar'),  # arrays
-           cmng=does_not_raise(),
-           out='kmm_ar')),
-     (dict(args=dict(tc='tc_ar', patm='shape_error'),  # shape mismatch
-           cmng=pytest.raises(ValueError),
-           out=None))]
+    'tc, patm, context_manager, expvals',
+    [   ('tc_sc', 'patm_sc', does_not_raise(), 'kmm_sc'), # scalars
+        ('tc_ar', 'patm_sc', does_not_raise(), 'kmm_mx'), # mixed
+        ('tc_ar', 'patm_ar', does_not_raise(), 'kmm_ar'), # arrays
+        ('tc_ar', 'shape_error', pytest.raises(ValueError), None), # shape mismatch
+    ]
 )
-def test_calc_kmm(values, ctrl):
+def test_calc_kmm(values, tc, patm, context_manager, expvals):
 
-    with ctrl['cmng']:
-        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
-        ret = pmodel.calc_kmm(**kwargs)
-        assert np.allclose(ret, values[ctrl['out']])
+    with context_manager:
+        
+        ret = pmodel.calc_kmm(tc=values[tc], patm=values[patm])
+        if expvals:
+            assert np.allclose(ret, values[expvals])
 
 # ------------------------------------------
 # Testing calc_soilmstress - soilm + meanalpha
 # ------------------------------------------
 
-
 @pytest.mark.parametrize(
-    'ctrl',
-    [(dict(args=dict(soilm='soilm_sc', meanalpha='meanalpha_sc'),  # scalars
-           cmng=does_not_raise(),
-           out='soilmstress_sc')),
-     (dict(args=dict(soilm='soilm_ar', meanalpha='meanalpha_sc'),  # scalar + array
-           cmng=does_not_raise(),
-           out='soilmstress_mx')),
-     (dict(args=dict(soilm='soilm_ar', meanalpha='meanalpha_ar'),  # arrays
-           cmng=does_not_raise(),
-           out='soilmstress_ar')),
-     (dict(args=dict(soilm='soilm_ar', meanalpha='shape_error'),  # shape mismatch
-           cmng=pytest.raises(ValueError),
-           out=None))]
+    'soilm, meanalpha, context_manager, expvals',
+    [   ('soilm_sc', 'meanalpha_sc', does_not_raise(), 'soilmstress_sc'), # scalars
+        ('soilm_ar', 'meanalpha_sc', does_not_raise(), 'soilmstress_mx'), # mixed
+        ('soilm_ar', 'meanalpha_ar', does_not_raise(), 'soilmstress_ar'), # arrays
+        ('soilm_ar', 'shape_error', pytest.raises(ValueError), None), # shape mismatch
+    ]
 )
-def test_calc_soilmstress(values, ctrl):
+def test_calc_soilmstress(values, soilm, meanalpha, context_manager, expvals):
 
-    with ctrl['cmng']:
-        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
-        ret = pmodel.calc_soilmstress(**kwargs)
-        assert np.allclose(ret, values[ctrl['out']])
+    with context_manager:
+        
+        ret = pmodel.calc_soilmstress(soilm=values[soilm], meanalpha=values[meanalpha])
+        if expvals:
+            assert np.allclose(ret, values[expvals])
 
 # ------------------------------------------
 # Testing calc_viscosity_h2o - temp + patm
@@ -239,143 +196,101 @@ def test_calc_soilmstress(values, ctrl):
 
 
 @pytest.mark.parametrize(
-    'ctrl',
-    [(dict(args=dict(tc='tc_sc', patm='patm_sc'),  # scalars
-           cmng=does_not_raise(),
-           out='viscosity_h2o_sc')),
-     (dict(args=dict(tc='tc_ar', patm='patm_sc'),  # scalar + array
-           cmng=does_not_raise(),
-           out='viscosity_h2o_mx')),
-     (dict(args=dict(tc='tc_ar', patm='patm_ar'),  # arrays
-           cmng=does_not_raise(),
-           out='viscosity_h2o_ar')),
-     (dict(args=dict(tc='tc_ar', patm='shape_error'),  # shape mismatch
-           cmng=pytest.raises(ValueError),
-           out=None))]
+    'tc, patm, context_manager, expvals',
+    [   ('tc_sc', 'patm_sc', does_not_raise(), 'viscosity_h2o_sc'), # scalars
+        ('tc_ar', 'patm_sc', does_not_raise(), 'viscosity_h2o_mx'), # mixed
+        ('tc_ar', 'patm_ar', does_not_raise(), 'viscosity_h2o_ar'), # arrays
+        ('tc_ar', 'shape_error', pytest.raises(ValueError), None), # shape mismatch
+    ]
 )
-def test_calc_viscosity_h2o(values, ctrl):
+def test_calc_viscosity_h2o(values, tc, patm, context_manager, expvals):
 
-    with ctrl['cmng']:
-        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
-        ret = pmodel.calc_viscosity_h2o(**kwargs)
-        assert np.allclose(ret, values[ctrl['out']])
+   with context_manager:
+        
+        ret = pmodel.calc_viscosity_h2o(tc=values[tc], patm=values[patm])
+        if expvals:
+            assert np.allclose(ret, values[expvals])
 
 # ------------------------------------------
 # Testing calc_patm - elev only
 # ------------------------------------------
 
-
 @pytest.mark.parametrize(
-    'ctrl',
-    [(dict(args=dict(elv='elev_sc'),  # scalar
-           cmng=does_not_raise(),
-           out='patm_from_elev_sc')),
-     (dict(args=dict(elv='elev_ar'),  # array
-           cmng=does_not_raise(),
-           out='patm_from_elev_ar'))]
+    'elev, expvals',
+    [   ('elev_sc', 'patm_from_elev_sc'),  # scalars
+        ('elev_ar', 'patm_from_elev_ar'),  # arrays
+    ]
 )
-def test_calc_patm(values, ctrl):
+def test_calc_patm(values, elev, expvals):
 
-    with ctrl['cmng']:
-        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
-        ret = pmodel.calc_patm(**kwargs)
-        assert np.allclose(ret, values[ctrl['out']])
+    ret = pmodel.calc_patm(elv=values[elev])
+    assert np.allclose(ret, values[expvals])
 
 # ------------------------------------------
 # Testing calc_co2_to_ca - co2 + patm
 # ------------------------------------------
 
-
 @pytest.mark.parametrize(
-    'ctrl',
-    [(dict(args=dict(co2='co2_sc', patm='patm_sc'),  # scalars
-           cmng=does_not_raise(),
-           out='ca_sc')),
-     (dict(args=dict(co2='co2_ar', patm='patm_sc'),  # scalar + array
-           cmng=does_not_raise(),
-           out='ca_mx')),
-     (dict(args=dict(co2='co2_ar', patm='patm_ar'),  # arrays
-           cmng=does_not_raise(),
-           out='ca_ar')),
-     (dict(args=dict(co2='co2_ar', patm='shape_error'),  # shape mismatch
-           cmng=pytest.raises(ValueError),
-           out=None))]
+    'co2, patm, context_manager, expvals',
+    [   ('co2_sc', 'patm_sc', does_not_raise(), 'ca_sc'), # scalars
+        ('co2_ar', 'patm_sc', does_not_raise(), 'ca_mx'), # mixed
+        ('co2_ar', 'patm_ar', does_not_raise(), 'ca_ar'), # arrays
+        ('co2_ar', 'shape_error', pytest.raises(ValueError), None), # shape mismatch
+    ]
 )
-def test_calc_co2_to_ca(values, ctrl):
+def test_calc_co2_to_ca(values, co2, patm, context_manager, expvals):
 
-    with ctrl['cmng']:
-        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
-        ret = pmodel.calc_co2_to_ca(**kwargs)
-        assert np.allclose(ret, values[ctrl['out']])
-
+    with context_manager:
+        
+        ret = pmodel.calc_co2_to_ca(co2=values[co2], patm=values[patm])
+        if expvals:
+            assert np.allclose(ret, values[expvals])
 
 # ------------------------------------------
 # Testing CalcOptimalChi - vpd + internals kmm, gammastar, ns_star, ca
-#
-# NOTE - the c4 method __INTENTIONALLY__ always returns scalars
-#        regardless of input shape, so always uses the same expected values
 # ------------------------------------------
 
-
 @pytest.mark.parametrize(
-    'ctrl',
-    [(dict(args=dict(kmm='kmm_sc', gammastar='gammastar_sc',
-                     ns_star='ns_star_sc', ca='ca_sc', vpd='vpd_sc'),
-           method='c4',  # scalar, C4
-           cmng=does_not_raise(),
-           out='optchi_c4')),
-     (dict(args=dict(kmm='kmm_ar', gammastar='gammastar_sc',
-                     ns_star='ns_star_ar', ca='ca_sc', vpd='vpd_sc'),
-           method='c4',  # scalar + arrays, C4
-           cmng=does_not_raise(),
-           out='optchi_c4')),
-     (dict(args=dict(kmm='kmm_ar', gammastar='gammastar_ar',
-                     ns_star='ns_star_ar', ca='ca_ar', vpd='vpd_ar'),
-           method='c4',  # scalar + arrays, C4
-           cmng=does_not_raise(),
-           out='optchi_c4')),
-     (dict(args=dict(kmm='kmm_ar', gammastar='shape_error',
-                     ns_star='ns_star_ar', ca='ca_ar', vpd='vpd_ar'),
-           method='c4',  # scalar + arrays, C4
-           cmng=pytest.raises(ValueError),
-           out=None)),
-     (dict(args=dict(kmm='kmm_sc', gammastar='gammastar_sc',
-                     ns_star='ns_star_sc', ca='ca_sc', vpd='vpd_sc'),
-           method='prentice14',  # scalar, c3
-           cmng=does_not_raise(),
-           out='optchi_p14_sc')),
-     (dict(args=dict(kmm='kmm_ar', gammastar='gammastar_sc',
-                     ns_star='ns_star_ar', ca='ca_sc', vpd='vpd_sc'),
-           method='prentice14',  # scalar + arrays, c3
-           cmng=does_not_raise(),
-           out='optchi_p14_mx')),
-     (dict(args=dict(kmm='kmm_ar', gammastar='gammastar_ar',
-                     ns_star='ns_star_ar', ca='ca_ar', vpd='vpd_ar'),
-           method='prentice14',  # scalar + arrays, c3
-           cmng=does_not_raise(),
-           out='optchi_p14_ar')),
-     (dict(args=dict(kmm='kmm_ar', gammastar='shape_error',
-                     ns_star='ns_star_ar', ca='ca_ar', vpd='vpd_ar'),
-           method='prentice14',  # scalar + arrays, c3
-           cmng=pytest.raises(ValueError),
-           out=None))
+    'tc, patm, co2, vpd, method, context_manager, expvalues',
+    [ 
+        ('tc_sc', 'patm_sc', 'co2_sc', 'vpd_sc',
+         'c4', does_not_raise(), 'optchi_c4'),  # scalar, c4
+        ('tc_ar', 'patm_sc', 'co2_sc', 'vpd_sc',
+         'c4', does_not_raise(), 'optchi_c4'),  # scalar + arrays, c4
+        ('tc_ar', 'patm_ar', 'co2_ar', 'vpd_ar',
+         'c4', does_not_raise(), 'optchi_c4'),  # arrays, c4
+        ('shape_error', 'patm_ar', 'co2_ar', 'vpd_ar',
+         'c4', pytest.raises(ValueError), None),  # shape error, c4
+        ('tc_sc', 'patm_sc', 'co2_sc', 'vpd_sc',
+         'prentice14', does_not_raise(), 'optchi_p14_sc'),  # scalar, c3
+        ('tc_ar', 'patm_sc', 'co2_sc', 'vpd_sc',
+         'prentice14', does_not_raise(), 'optchi_p14_mx'),  # scalar + arrays, c3
+        ('tc_ar', 'patm_ar', 'co2_ar', 'vpd_ar',
+         'prentice14', does_not_raise(), 'optchi_p14_ar'),  # arrays, c3
+        ('shape_error', 'patm_ar', 'co2_ar', 'vpd_ar',
+         'prentice14', pytest.raises(ValueError), None),  # shape error, c3
      ]
 )
-def test_calc_optimal_chi(values, ctrl):
+def test_calc_optimal_chi(values, tc, patm, co2, vpd, method, context_manager, expvalues ):
 
-    if ctrl['method'] == 'c4':
+    if method == 'c4':
         pytest.skip('Not currently testing C4 outputs - chi estimates for C4 need estimating as C3.')
 
+    with context_manager:
 
-    with ctrl['cmng']:
-        kwargs = {k: values[v] for k, v in ctrl['args'].items()}
-        ret = pmodel.CalcOptimalChi(**kwargs, method=ctrl['method'])
+        env = pmodel.PModelEnvironment(tc=values[tc],
+                                       patm=values[patm],
+                                       vpd=values[vpd],
+                                       co2=values[co2])
 
-        expected = values[ctrl['out']]
-        assert np.allclose(ret.chi, expected['chi'])
-        assert np.allclose(ret.mj, expected['mj'])
-        assert np.allclose(ret.mc, expected['mc'])
-        assert np.allclose(ret.mjoc, expected['mjoc'])
+        ret = pmodel.CalcOptimalChi(env, method=method)
+
+        if expvalues is not None:
+            expected = values[expvalues]
+            assert np.allclose(ret.chi, expected['chi'])
+            assert np.allclose(ret.mj, expected['mj'])
+            assert np.allclose(ret.mc, expected['mc'])
+            assert np.allclose(ret.mjoc, expected['mjoc'])
 
 # ------------------------------------------
 # Testing CalcLUEVcmax -  This has quite a few combinations:
@@ -392,9 +307,9 @@ def test_calc_optimal_chi(values, ctrl):
 
 
 @pytest.mark.parametrize(
-    'soilmstress',
-    [dict(soilm=None, meanalpha=None),
-     dict(soilm='soilm_sc', meanalpha='meanalpha_sc')],
+    'soilm, meanalpha',
+    [(None, None),
+     ('soilm_sc', 'meanalpha_sc')],
     ids=['sm-off', 'sm-on']
 )
 @pytest.mark.parametrize(
@@ -408,20 +323,20 @@ def test_calc_optimal_chi(values, ctrl):
     ids=['wang17', 'smith19', 'none']
 )
 @pytest.mark.parametrize(
-    'optchi',
-    [dict(kmm='kmm_sc', gammastar='gammastar_sc',
-          ns_star='ns_star_sc', ca='ca_sc', vpd='vpd_sc'),
-     dict(kmm='kmm_ar', gammastar='gammastar_ar',
-          ns_star='ns_star_ar', ca='ca_ar', vpd='vpd_ar')],
-    ids=['sc', 'ar']
+    'tc, patm, co2, vpd',
+    [ 
+        ('tc_sc', 'patm_sc', 'co2_sc', 'vpd_sc'),  # scalar
+        ('tc_ar', 'patm_ar', 'co2_ar', 'vpd_ar'),  # arrays
+     ],
+    ids = ['sc', 'ar']
 )
 @pytest.mark.parametrize(
     'c4',
-    [True],  # , False],
-    ids=['c4']  # , 'c3']
+    [True, False],
+    ids=['c4', 'c3']
 )
-def test_calc_lue_vcmax(request, values, soilmstress, ftemp_kphio,
-                        luevcmax_method, optchi, c4):
+def test_calc_lue_vcmax(request, values, soilm, meanalpha, ftemp_kphio,
+                        luevcmax_method, tc, patm, co2, vpd, c4):
 
     # ftemp_kphio needs to know the original tc inputs to optchi - these have
     # all been synchronised so that anything with type 'mx' or 'ar' used the
@@ -435,21 +350,25 @@ def test_calc_lue_vcmax(request, values, soilmstress, ftemp_kphio,
 
     if not ftemp_kphio:
         ftemp_kphio = 1.0
-    elif optchi['kmm'] == 'kmm_sc':
-        ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values['tc_sc'], c4=c4)
+    elif tc == 'tc_sc':
+        ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values[tc], c4=c4)
     else:
-        ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values['tc_ar'], c4=c4)
+        ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values[tc], c4=c4)
 
     # Optimal Chi
-    kwargs = {k: values[v] for k, v in optchi.items()}
-    optchi = pmodel.CalcOptimalChi(**kwargs, method=oc_method)
+    env = pmodel.PModelEnvironment(tc=values[tc],
+                                   patm=values[patm],
+                                   vpd=values[vpd],
+                                   co2=values[co2])
+
+    optchi = pmodel.CalcOptimalChi(env, method=oc_method)
 
     # Soilmstress
-    if soilmstress['soilm'] is None:
+    if soilm is None:
         soilmstress = 1.0
     else:
-        soilmstress = pmodel.calc_soilmstress(soilm=values[soilmstress['soilm']],
-                                              meanalpha=values[soilmstress['meanalpha']])
+        soilmstress = pmodel.calc_soilmstress(soilm=values[soilm],
+                                              meanalpha=values[meanalpha])
 
     ret = pmodel.CalcLUEVcmax(optchi, kphio=0.05, ftemp_kphio=ftemp_kphio,
                               soilmstress=soilmstress, method=luevcmax_method)
@@ -459,12 +378,12 @@ def test_calc_lue_vcmax(request, values, soilmstress, ftemp_kphio,
     name = name[(name.find('[') + 1):-1]
     expected = values['jmax-' + name]
 
-    assert np.allclose(ret.lue, expected['lue'])
-    assert np.allclose(ret.vcmax, expected['vcmax_unitiabs'])
+    assert np.allclose(ret.lue, expected['lue'], equal_nan=True)
+    assert np.allclose(ret.vcmax, expected['vcmax_unitiabs'], equal_nan=True)
 
     if luevcmax_method == 'smith19':
-        assert np.allclose(ret.omega, expected['omega'])
-        assert np.allclose(ret.omega_star, expected['omega_star'])
+        assert np.allclose(ret.omega, expected['omega'], equal_nan=True)
+        assert np.allclose(ret.omega_star, expected['omega_star'], equal_nan=True)
 
 # ------------------------------------------
 # Testing PModelEnvironment class
@@ -473,25 +392,23 @@ def test_calc_lue_vcmax(request, values, soilmstress, ftemp_kphio,
 # ------------------------------------------
 
 @pytest.mark.parametrize(
-    'variables',
-    [dict(tc='tc_sc', vpd='vpd_sc', co2='co2_sc', patm='patm_sc',
-          ca='ca_sc', kmm='kmm_sc', gammastar='gammastar_sc', ns_star='ns_star_sc'),
-     dict(tc='tc_ar', vpd='vpd_ar', co2='co2_ar', patm='patm_ar',
-          ca='ca_ar', kmm='kmm_ar', gammastar='gammastar_ar', ns_star='ns_star_ar')],
+    'tc, vpd, co2, patm, ca, kmm, gammastar, ns_star',
+    [('tc_sc', 'vpd_sc', 'co2_sc', 'patm_sc', 'ca_sc', 'kmm_sc', 'gammastar_sc', 'ns_star_sc'),
+     ('tc_ar', 'vpd_ar', 'co2_ar', 'patm_ar', 'ca_ar', 'kmm_ar', 'gammastar_ar', 'ns_star_ar')],
     ids=['sc', 'ar']
 )
-def test_pmodelenvironment(values, variables):
+def test_pmodelenvironment(values, tc, vpd, co2, patm, ca, kmm, gammastar, ns_star):
 
-    ret = pmodel.PModelEnvironment(tc=values[variables['tc']],
-                                   patm=values[variables['patm']],
-                                   vpd=values[variables['vpd']],
-                                   co2=values[variables['co2']]
+    ret = pmodel.PModelEnvironment(tc=values[tc],
+                                   patm=values[patm],
+                                   vpd=values[vpd],
+                                   co2=values[co2]
                                    )
 
-    assert np.allclose(ret.gammastar, values[variables['gammastar']])
-    assert np.allclose(ret.ns_star, values[variables['ns_star']])
-    assert np.allclose(ret.kmm, values[variables['kmm']])
-    assert np.allclose(ret.ca, values[variables['ca']])
+    assert np.allclose(ret.gammastar, values[gammastar])
+    assert np.allclose(ret.ns_star, values[ns_star])
+    assert np.allclose(ret.kmm, values[kmm])
+    assert np.allclose(ret.ca, values[ca])
 
 
 def test_pmodelenvironment_constraint():
