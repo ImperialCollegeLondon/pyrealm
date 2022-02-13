@@ -1293,7 +1293,7 @@ class CalcOptimalChi:
 
     Examples:
 
-        >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=0) 
+        >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000) 
         >>> vals = CalcOptimalChi(env=env)
         >>> round(vals.chi, 5)
         0.69435
@@ -1528,8 +1528,8 @@ class CalcLUEVcmax:
 
     Examples:
 
-        >>> optchi = CalcOptimalChi(kmm = 46.09928, gammastar = 3.33925,
-        ...                         ns_star = 1.12536, ca = 40.53, vpd = 1000)
+        >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000) 
+        >>> optchi = CalcOptimalChi(env)
         >>> # Using Wang et al 2017
         >>> out_wang = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
         ...                         soilmstress = 1, method='wang17')
