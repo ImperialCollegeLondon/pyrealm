@@ -276,6 +276,10 @@ def calc_ftemp_inst_vcmax(tc: Union[float, np.ndarray],
 
     return fva * fvb
 
+# TODO - update unpublished reference to:
+#  Cai, W., and Prentice, I. C.: Recent trends in gross primary production 
+#        and their drivers: analysis and modelling at flux-site and global scales,
+#        Environ. Res. Lett. 15 124050 https://doi.org/10.1088/1748-9326/abc64e, 2020
 
 def calc_ftemp_kphio(tc: Union[float, np.ndarray],
                      c4: bool = False,
@@ -1437,9 +1441,10 @@ class CalcOptimalChi:
         vsr = np.sqrt(1.6 * env.ns_star * env.vpd / vbkg)
         mj = vdcg / (vacg + 3.0 * env.gammastar * vsr)
 
-        # Mask values with ns star <= 0 and vbkg <=0
-        # TODO - think about masking vs explicit np.nan values in data.
-        mj = np.ma.masked_where(np.logical_and(env.ns_star <= 0, vbkg <= 0), mj)
+        # Mask values with ns star <= 0 and vbkg <=0 - need an array for this
+        mask = np.logical_and(env.ns_star <= 0, vbkg <= 0)
+        mj = np.array(mj)
+        mj[mask] = np.nan 
         # np.where _always_ returns an array, so catch scalars.
         self.mj = mj.item() if np.ndim(mj) == 0 else mj
 
