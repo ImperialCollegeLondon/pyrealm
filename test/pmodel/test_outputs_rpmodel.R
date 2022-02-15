@@ -70,24 +70,35 @@ values <- within(values, {
        ca_mx <- co2_to_ca(co2_ar, patm_sc)
        ca_ar <- co2_to_ca(co2_ar, patm_ar)
 
-       # NOTE: rpmodel:::chi_c4() doesn"t do anything but return 1.0 scalars,
-       # but it doesn"t need to do anything else. There is no need to capture
-       # the input shape.
-       optchi_c4 <- rpmodel:::chi_c4()
-
        # rpmodel:::optimal_chi
-       optchi_p14_sc <- rpmodel:::optimal_chi(kmm_sc, gammastar_sc,
-                                              ns_star_sc, ca_sc, vpd_sc,
-                                              beta = stocker_beta_c3)
+       optchi_p14_sc_c3 <- rpmodel:::optimal_chi(kmm_sc, gammastar_sc,
+                                                 ns_star_sc, ca_sc, vpd_sc,
+                                                 beta = stocker_beta_c3)
        # The mx version is odd - the pyrealm test uses tc_ar and then
        # scalars for the other inputs to PModelEnvironment, so gammastar
        # ns_star and kmm are the mx versions, but ca and vpd are sc.
-       optchi_p14_mx <- rpmodel:::optimal_chi(kmm_mx, gammastar_mx,
-                                              ns_star_mx, ca_sc, vpd_sc,
-                                              beta = stocker_beta_c3)
-       optchi_p14_ar <- rpmodel:::optimal_chi(kmm_ar, gammastar_ar,
-                                              ns_star_ar, ca_ar, vpd_ar,
-                                              beta = stocker_beta_c3)
+       optchi_p14_mx_c3 <- rpmodel:::optimal_chi(kmm_mx, gammastar_mx,
+                                                 ns_star_mx, ca_sc, vpd_sc,
+                                                 beta = stocker_beta_c3)
+       optchi_p14_ar_c3 <- rpmodel:::optimal_chi(kmm_ar, gammastar_ar,
+                                                 ns_star_ar, ca_ar, vpd_ar,
+                                                 beta = stocker_beta_c3)
+
+       # rpmodel:::optimal_chi for C4
+       optchi_p14_sc_c4 <- rpmodel:::optimal_chi_c4(kmm_sc, gammastar_sc,
+                                                    ns_star_sc, ca_sc, vpd_sc,
+                                                    beta = stocker_beta_c4)
+       # The mx version is odd - the pyrealm test uses tc_ar and then
+       # scalars for the other inputs to PModelEnvironment, so gammastar
+       # ns_star and kmm are the mx versions, but ca and vpd are sc.
+       optchi_p14_mx_c4 <- rpmodel:::optimal_chi_c4(kmm_mx, gammastar_mx,
+                                                    ns_star_mx, ca_sc, vpd_sc,
+                                                    beta = stocker_beta_c4)
+       optchi_p14_ar_c4 <- rpmodel:::optimal_chi_c4(kmm_ar, gammastar_ar,
+                                                    ns_star_ar, ca_ar, vpd_ar,
+                                                    beta = stocker_beta_c4)
+
+
 })
 
 # CalcVUEVcmax tests
@@ -109,14 +120,12 @@ optchi  <- list(sc = list(kmm = values$kmm_sc,
                           gammastar = values$gammastar_sc,
                           ns_star = values$ns_star_sc,
                           ca = values$ca_sc,
-                          vpd = values$vpd_sc,
-                          beta = values$stocker_beta_c3),
+                          vpd = values$vpd_sc),
                 ar = list(kmm = values$kmm_ar,
                           gammastar = values$gammastar_ar,
                           ns_star = values$ns_star_ar,
                           ca = values$ca_ar,
-                          vpd = values$vpd_ar,
-                          beta = values$stocker_beta_c3))
+                          vpd = values$vpd_ar))
 
 # Needs to match to (reverse) ordering of pytest.mark.parametrise
 # variables in pytesting.
@@ -148,10 +157,13 @@ for (rw in seq(nrow(luevcmax))) {
     }
 
     # Optimal Chi
+    this_optchi <- optchi[[inputs$oc]]
     if (c4) {
-        optchi_out <- rpmodel:::chi_c4()
+        this_optchi$beta <- values[['stocker_beta_c4']]
+        optchi_out <- do.call(rpmodel:::optimal_chi_c4, this_optchi)
     } else {
-        optchi_out <- do.call(rpmodel:::optimal_chi, optchi[[inputs$oc]])
+        this_optchi$beta <- values[['stocker_beta_c3']]
+        optchi_out <- do.call(rpmodel:::optimal_chi, this_optchi)
     }
 
     # Soilmstress

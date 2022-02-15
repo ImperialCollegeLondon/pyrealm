@@ -254,27 +254,24 @@ def test_calc_co2_to_ca(values, co2, patm, context_manager, expvals):
     'tc, patm, co2, vpd, method, context_manager, expvalues',
     [ 
         ('tc_sc', 'patm_sc', 'co2_sc', 'vpd_sc',
-         'c4', does_not_raise(), 'optchi_c4'),  # scalar, c4
+         'c4', does_not_raise(), 'optchi_p14_sc_c4'),  # scalar, c4
         ('tc_ar', 'patm_sc', 'co2_sc', 'vpd_sc',
-         'c4', does_not_raise(), 'optchi_c4'),  # scalar + arrays, c4
+         'c4', does_not_raise(), 'optchi_p14_mx_c4'),  # scalar + arrays, c4
         ('tc_ar', 'patm_ar', 'co2_ar', 'vpd_ar',
-         'c4', does_not_raise(), 'optchi_c4'),  # arrays, c4
+         'c4', does_not_raise(), 'optchi_p14_ar_c4'),  # arrays, c4
         ('shape_error', 'patm_ar', 'co2_ar', 'vpd_ar',
          'c4', pytest.raises(ValueError), None),  # shape error, c4
         ('tc_sc', 'patm_sc', 'co2_sc', 'vpd_sc',
-         'prentice14', does_not_raise(), 'optchi_p14_sc'),  # scalar, c3
+         'prentice14', does_not_raise(), 'optchi_p14_sc_c3'),  # scalar, c3
         ('tc_ar', 'patm_sc', 'co2_sc', 'vpd_sc',
-         'prentice14', does_not_raise(), 'optchi_p14_mx'),  # scalar + arrays, c3
+         'prentice14', does_not_raise(), 'optchi_p14_mx_c3'),  # scalar + arrays, c3
         ('tc_ar', 'patm_ar', 'co2_ar', 'vpd_ar',
-         'prentice14', does_not_raise(), 'optchi_p14_ar'),  # arrays, c3
+         'prentice14', does_not_raise(), 'optchi_p14_ar_c3'),  # arrays, c3
         ('shape_error', 'patm_ar', 'co2_ar', 'vpd_ar',
          'prentice14', pytest.raises(ValueError), None),  # shape error, c3
      ]
 )
-def test_calc_optimal_chi(values, tc, patm, co2, vpd, method, context_manager, expvalues ):
-
-    if method == 'c4':
-        pytest.skip('Not currently testing C4 outputs - chi estimates for C4 need estimating as C3.')
+def test_calc_optimal_chi(values, tc, patm, co2, vpd, method, context_manager, expvalues):
 
     with context_manager:
 
