@@ -291,25 +291,26 @@ def test_calc_optimal_chi(values, tc, patm, co2, vpd, method, context_manager, e
 
 
 
-def test_calc_optimal_chi_restruct(values):
-    """
-    At version 0.6.0, we revised some calculations ported over from the 
-    rpmodel, which had odd complications. This test was used to run a
-    comparison between the original code and more 'classic' descriptions of
-    the equations.
-    """
-    env = pmodel.PModelEnvironment(tc=values['tc_ar'],
-                                    patm=values['patm_ar'],
-                                    vpd=values['vpd_ar'],
-                                    co2=values['co2_ar'])
+# def test_calc_optimal_chi_restruct(values):
+#     """
+#     At version 0.6.0, we revised some calculations ported over from the 
+#     rpmodel, which had odd complications. This test was used to run a
+#     comparison between the original code and more 'classic' descriptions of
+#     the equations. The two versions were shown to be equivalent and the old
+#     version was removed in [develop 497cb15].
+#     """
+#     env = pmodel.PModelEnvironment(tc=values['tc_ar'],
+#                                     patm=values['patm_ar'],
+#                                     vpd=values['vpd_ar'],
+#                                     co2=values['co2_ar'])
 
-    reto = pmodel.CalcOptimalChi(env, method='prentice14')
-    retn = pmodel.CalcOptimalChi(env, method='prentice14_new')
+#     reto = pmodel.CalcOptimalChi(env, method='prentice14_old')
+#     retn = pmodel.CalcOptimalChi(env, method='prentice14')
 
-    assert np.allclose(reto.chi,retn.chi)
-    assert np.allclose(reto.mj,retn.mj)
-    assert np.allclose(reto.mc,retn.mc)
-    assert np.allclose(reto.mjoc,retn.mjoc)
+#     assert np.allclose(reto.chi,retn.chi)
+#     assert np.allclose(reto.mj,retn.mj)
+#     assert np.allclose(reto.mc,retn.mc)
+#     assert np.allclose(reto.mjoc,retn.mjoc)
 
 
 
