@@ -1560,10 +1560,9 @@ class CalcLUEVcmax:
             (:math:`\m_j`) and the  the :math:`\ce{CO2}` limitation term for
             Rubisco assimilation (:math:`m_c`).
         kphio (float): The apparent quantum yield efficiency (:math:`\phi_0`,
-            unitless).
-        ftemp_kphio (float): A factor to capture the temperature dependence of
-            quantum yield efficiency (:math:`\phi_0(T)`), defaulting to 1.0 for
-            no temperature dependence (see :func:`calc_ftemp_kphio`).
+            unitless), including any correction factor for the temperature
+            dependence of quantum yield efficiency (:math:`\phi_0(T)`, see
+            :func:`calc_ftemp_kphio`).
         soilmstress (float): A factor to capture the soil moisture stress
             (:math:`\beta`), defaulting to 1.0 for no soil moisture stress
             (see :func:`calc_soilmstress`).
@@ -1586,15 +1585,16 @@ class CalcLUEVcmax:
 
         >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000) 
         >>> optchi = CalcOptimalChi(env)
+        >>> kphio =  0.081785 * calc_ftemp_kphio(tc=20)
         >>> # Using Wang et al 2017
-        >>> out_wang = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
+        >>> out_wang = CalcLUEVcmax(optchi, kphio = kphio,
         ...                         soilmstress = 1, method='wang17')
         >>> round(out_wang.lue, 5)
         0.25475
         >>> round(out_wang.vcmax, 6)
         0.063488
         >>> # Using Smith et al 2019
-        >>> out_smith = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
+        >>> out_smith = CalcLUEVcmax(optchi, kphio = kphio,
         ...                          soilmstress = 1, method='smith19')
         >>> round(out_smith.lue, 6)
         0.086569
@@ -1605,7 +1605,7 @@ class CalcLUEVcmax:
         >>> round(out_smith.omega_star, 5)
         1.28251
         >>> # No Jmax limitation
-        >>> out_none = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
+        >>> out_none = CalcLUEVcmax(optchi, kphio = kphio,
         ...                    soilmstress = 1, method='none')
         >>> round(out_none.lue, 6)
         0.458998
