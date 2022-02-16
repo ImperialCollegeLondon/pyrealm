@@ -1,0 +1,4 @@
+dacite
+numpy
+enforce_typing
+tabulate

@@ -977,7 +977,7 @@ class PModel:
 
     Examples:
 
-        >>> env = PModelEnvironment(tc=20, vpd=1000, co2=400, patm=101325.0)
+        >>> env = PModelEnvironment(tc=20, vpd=1000, co2=400, patm=101325.0, theta=0.4)
         >>> mod_c3 = PModel(env)
         >>> # Key variables from pmodel
         >>> np.round(mod_c3.optchi.ci, 5)
@@ -1351,7 +1351,7 @@ class CalcOptimalChi:
 
     Examples:
 
-        >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000) 
+        >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000, theta=0.4)
         >>> vals = CalcOptimalChi(env=env)
         >>> round(vals.chi, 5)
         0.69435
@@ -1611,7 +1611,7 @@ class CalcLUEVcmax:
 
     Examples:
 
-        >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000) 
+        >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000, theta=0.4)
         >>> optchi = CalcOptimalChi(env)
         >>> # Using Wang et al 2017
         >>> out_wang = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
