@@ -1172,21 +1172,24 @@ class PModel:
 
         # Jmax using again A_J = A_C
         fact_jmaxlim = (self.vcmax * (self.optchi.ci + 2.0 * self.env.gammastar) /
-                        (self.kphio * iabs * (self.optchi.ci + self.env.kmm)))
+                        (self.kphio * self.ftemp_kphio *  iabs * (self.optchi.ci + self.env.kmm)))
         
         # The equation Jmax = 4 * phio * I_abs  / sqrt((1 / Jf) ^ 2 -1)
         # has the domain [-1, 0) and (0, 1], so need to be careful about
         # what values of fact_jmaxlim are allowed.
+
         # Guard against negative values getting into sqrt
         jmaxlim_step1 = (1.0 / fact_jmaxlim) ** 2 - 1.0
-        jmax = np.empty_like(fact_jmaxlim)
-        mask = jmaxlim_step1 > 0
-        
-        # Iabs might be a scalar or an array - if an array, it should be of the
-        # same shape as jmaxlim_step1 and can use the same mask
-        iabs_mask = iabs if isinstance(iabs, (float, int)) else iabs[mask]
-        jmax[mask] = 4.0 * self.kphio * iabs_mask / np.sqrt(jmaxlim_step1[mask])
-        jmax[~ mask] = np.nan
+
+        pos_jmaxlim_step1 = np.greater_equal(jmaxlim_step1, 0)
+        jmax  = (4.0 * self.kphio * self.ftemp_kphio * iabs 
+                 / np.sqrt(jmaxlim_step1, where=pos_jmaxlim_step1))
+
+        # Backfill invalid inputs.
+        if isinstance(jmax, np.ndarray):
+            jmax[np.logical_not(pos_jmaxlim_step1)] = np.nan
+        elif not pos_jmaxlim_step1:
+            jmax = np.nan
 
         # Revert to scalar if needed and store
         self._jmax = jmax.item() if np.ndim(jmax) == 0 else jmax
