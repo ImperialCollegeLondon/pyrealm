@@ -262,6 +262,16 @@ class PModelParams(ParamClass):
     bernacchi_kc25: Number = 39.97
     bernacchi_ko25: Number = 27480
     bernacchi_gs25_0: Number = 4.332
+        # Boyd
+    boyd_kp25_c4: Number = 16  ## Pa  from Boyd et al. (2015)
+    boyd_dhac_c4: Number = 36300  ## J mol-1
+    boyd_dhac_c4: Number = 79430
+    boyd_dhao_c4: Number = 36380
+    boyd_dha_c4: Number = 37830
+    boyd_kc25_c4: Number = 41.03
+    boyd_ko25_c4: Number = 28210
+    boyd_gs25_0_c4: Number = 2.6
+
     # Soilmstress
     soilmstress_theta0: Number = 0.0
     soilmstress_thetastar: Number = 0.6
@@ -277,7 +287,15 @@ class PModelParams(ParamClass):
     smith19_c_cost: Number = 0.05336251
     # Atkin
     atkin_rd_to_vcmax: Number = 0.015
-
+    # Farquhar et al. (1982)
+    farquhar_a: Number = 4.4
+    farquhar_b: Number = 29
+    farquhar_b2: Number = 28
+    farquhar_f: Number = 12
+    # vonCaemmerer et al. (2014)
+    vonCaemmerer_b4: Number = -7.4
+    vonCaemmerer_s: Number = 1.8
+    vonCaemmerer_phi: Number = 0.5
 
 # T model param class
 

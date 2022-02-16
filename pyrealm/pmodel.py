@@ -508,6 +508,44 @@ def calc_kmm(tc: Union[float, np.ndarray],
     return kc * (1.0 + po/ko)
 
 
+def calc_kp_c4(tc: Union[float, np.ndarray],
+             patm: Union[float, np.ndarray],
+             pmodel_params: PModelParams = PModelParams()
+             ) -> Union[float, np.ndarray]:
+    r"""Calculates the **Michaelis Menten coefficient of phosphoenolpyruvate
+    carboxylase (PEPc)** (:math:`K`, ::cite:`Boyd:2015ft`) as a function of
+    temperature (:math:`T`) and atmospheric pressure (:math:`p`) as:
+
+    Parameters:
+
+        tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
+        patm: Atmospheric pressure (:math:`p`, Pa)
+        pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
+
+    Other parameters:
+
+        hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`, `pmodel_params.boyd_dhac_c4`)
+        kc25: Michelis constant for :math:`\ce{CO2}` at standard temperature
+            (:math:`K_{c25}`, `pmodel_params.boyd_kp25_c4`)
+
+    Returns:
+
+        A numeric value for :math:`K` (in Pa)
+
+
+    """
+
+    # Check inputs, return shape not used
+    _ = check_input_shapes(tc, patm)
+
+    # conversion to Kelvin
+    tk = tc + pmodel_params.k_CtoK
+
+    kc = pmodel_params.boyd_kp25_c4 * calc_ftemp_arrh(tk, ha=pmodel_params.boyd_dhac_c4)
+
+    return kc
+    
+    
 def calc_soilmstress(soilm: Union[float, np.ndarray],
                      meanalpha: Union[float, np.ndarray] = 1.0,
                      pmodel_params: PModelParams = PModelParams()
@@ -753,6 +791,7 @@ class PModelEnvironment:
 
         tc: Temperature, relevant for photosynthesis (°C)
         vpd: Vapour pressure deficit (Pa)
+        theta: Volumetric soil moisture (m3/m3)
         co2: Atmospheric CO2 concentration (ppm)
         patm: Atmospheric pressure (Pa).
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
@@ -761,6 +800,7 @@ class PModelEnvironment:
     def __init__(self,
                  tc: Union[float, np.ndarray],
                  vpd: Union[float, np.ndarray],
+                 theta: Union[float, np.ndarray],
                  co2: Union[float, np.ndarray],
                  patm: Union[float, np.ndarray],
                  pmodel_params: PModelParams = PModelParams()):
@@ -770,6 +810,7 @@ class PModelEnvironment:
         # Validate and store the forcing variables
         self.tc = bounds_checker(tc, -25, 80, '[]', 'tc', '°C')
         self.vpd = bounds_checker(vpd, 0, 10000, '[]', 'vpd', 'Pa')
+        self.theta = bounds_checker(theta, 0, 0.8, '[]', 'theta', 'm3/m3')
         self.co2 = bounds_checker(co2, 0, 1000, '[]', 'co2', 'ppm')
         self.patm = bounds_checker(patm, 30000, 110000, '[]', 'tc', '°C')
 
@@ -790,6 +831,9 @@ class PModelEnvironment:
         # Michaelis-Menten coef. (Pa)
         self.kmm = calc_kmm(tc, patm, pmodel_params=pmodel_params)
 
+        # Michaelis-Menten coef. C4 plants (Pa)
+        self.kp_c4 = calc_kp_c4(tc, patm, pmodel_params=pmodel_params)
+        
         # viscosity correction factor relative to standards
         self.ns_star = calc_ns_star(tc, patm, pmodel_params=pmodel_params)  # (unitless)
 
@@ -817,9 +861,9 @@ class PModelEnvironment:
             None
         """
 
-        attrs = [('tc', '°C'), ('vpd', 'Pa'), ('co2', 'ppm'), 
+        attrs = [('tc', '°C'), ('vpd', 'Pa'), ('theta', 'm3/m3'), ('co2', 'ppm'),
                  ('patm', 'Pa'), ('ca', 'Pa'), ('gammastar', 'Pa'), 
-                 ('kmm', 'Pa'), ('ns_star', '-')]
+                 ('kmm', 'Pa'), ('kp_c4', 'Pa'), ('ns_star', '-')]
         summarize_attrs(self, attrs, dp=dp)
 
 
@@ -1030,6 +1074,20 @@ class PModel:
         self.optchi = CalcOptimalChi(env=env, method=method_optci,
                                      rootzonestress=rootzonestress,
                                      pmodel_params=env.pmodel_params)
+
+        # -----------------------------------------------------------------------
+        # Isotopic discrimination
+        # -----------------------------------------------------------------------
+        self.c4 = c4
+
+        if self.c4:
+            method_discr = "c4"
+        else:
+            method_discr = "prentice14"
+
+        self.delta = CalcDiscrimination(self.optchi, env.gammastar, env.ca, env.tc,
+                                        method=method_discr,
+                                        pmodel_params=env.pmodel_params)
 
         # -----------------------------------------------------------------------
         # Vcmax and light use efficiency
@@ -1359,12 +1417,24 @@ class CalcOptimalChi:
         """
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c4 * rootzonestress *
-                            (env.kmm + env.gammastar))
-                          / (1.6 * env.ns_star))
+        # version 1
+        self.xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c4 *env.kmm)
+                     / (1.6 * env.ns_star))
 
-        self.chi = (env.gammastar / env.ca + (1.0 - env.gammastar / env.ca) * self.xi 
-                    / (self.xi + np.sqrt(env.vpd)))
+        # version 2 as in Scott & Smith (2022)
+        #beta_c4 = 166
+        #self.xi = np.sqrt((beta_c4 *env.kp_c4) / (1.6 * env.ns_star))
+                     
+        self.chi = self.xi /(self.xi + np.sqrt(env.vpd))
+        
+        # version 3: old version
+        #self.xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c4 * rootzonestress *
+        #                    (env.kmm + env.gammastar))
+        #                  / (1.6 * env.ns_star))
+
+        #self.chi = (env.gammastar / env.ca + (1.0 - env.gammastar / env.ca) * self.xi
+        #            / (self.xi + np.sqrt(env.vpd)))
+                    
 
         # These values need to retain any
         # dimensions of the original inputs - if ftemp_kphio is set to 1.0
@@ -1416,23 +1486,36 @@ class CalcOptimalChi:
         where :math:`K` is the Michaelis Menten coefficient of Rubisco-limited
         assimilation.
         """
-
+        
+        ## Calculation beta as a function of theta following Lavergne et al. 2020 (Fig 6a, GCB)
+        beta_c3 = np.exp(1.73 * env.theta + 4.55)
+        
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c3 * rootzonestress *
+        self.xi = np.sqrt((beta_c3 *
                            (env.kmm + env.gammastar))
                           / (1.6 * env.ns_star))
 
         self.chi = (env.gammastar / env.ca +
                     (1.0 - env.gammastar / env.ca) * self.xi /
                     (self.xi + np.sqrt(env.vpd)))
+                    
+        #self.xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c3 * rootzonestress *
+        #                   (env.kmm + env.gammastar))
+        #                  / (1.6 * env.ns_star))
+
+        #self.chi = (env.gammastar / env.ca +
+        #            (1.0 - env.gammastar / env.ca) * self.xi /
+        #            (self.xi + np.sqrt(env.vpd)))
 
         # Define variable substitutes:
         vdcg = env.ca - env.gammastar
         vacg = env.ca + 2.0 * env.gammastar
-        vbkg = (self.pmodel_params.beta_cost_ratio_c3 *
-                rootzonestress *
+        vbkg = (beta_c3 *
                 (env.kmm + env.gammastar))
-
+        #vbkg = (self.pmodel_params.beta_cost_ratio_c3 *
+        #        rootzonestress *
+        #        (env.kmm + env.gammastar))
+                
         # Calculate mj
         # NOTE: this differs from rpmodel, which uses length not dim here, so
         # unwrapped matrix inputs. Also, rpmodel includes a check for vpd > 0,
@@ -1715,3 +1798,110 @@ class CalcLUEVcmax:
         # Set Jmax limitation to unity - could define as 1.0 in __init__ and
         # pass here, but setting explicitly within the method for clarity.
         self.mjlim = 1.0
+
+
+class CalcDiscrimination:
+    r"""Calculate the discrimination against 13C and 14C with photorespiratory effect for C3 and C4 plants.
+
+    The chosen method is automatically used to estimate these values when an
+    instance is created.
+
+    Attributes:
+
+        gammastar (float): the photorespiratory :math:`\ce{CO2}` compensation point
+            (:math:`\Gamma^{*}`, see :func:`calc_gammastar`).
+        ca (float): the ambient partial pressure of :math:`\ce{CO2}` (:math:`c_a`,
+            see :func:`calc_co2_to_ca`)
+        method (str): one of ``c4`` or ``prentice14``
+        chi (float): the ratio of leaf internal to ambient :math:`\ce{CO2}`
+            partial pressure (:math:`\chi`).
+
+
+    Returns:
+
+        An instance of :class:`CalcDiscrimination` where the :attr:`delta`,
+        have been populated using the chosen method.
+        
+    """
+
+    # TODO - move chi calc into __init__? Shared between the two methods
+
+    def __init__(self, optchi: CalcOptimalChi,
+                 gammastar: Union[float, np.ndarray],
+                 ca: Union[float, np.ndarray],
+                 tc: Union[float, np.ndarray],
+                 method: str = 'prentice14',
+                 pmodel_params: PModelParams = PModelParams()
+                 ):
+
+        # Check inputs are broadcastable
+        self.shape = check_input_shapes(gammastar, ca, tc, optchi.chi)
+
+        self.optchi = optchi
+        self.gammastar = gammastar
+        self.ca = ca
+        self.tc = tc
+        
+        # Identify and run the selected method
+        self.pmodel_params = pmodel_params
+        self.method = method
+        all_methods = {'prentice14': self.prentice14, 'c4': self.c4}
+
+        if self.method in all_methods:
+            this_method = all_methods[self.method]
+            this_method(gammastar=gammastar, ca=ca, tc=tc, chi=optchi)
+        else:
+            raise ValueError(f"CalcDiscrimination: method argument '{method}' invalid.")
+
+
+    def __repr__(self):
+
+        return f"CalcDiscrimination(delta={self.delta13C})"
+
+    def c4(self, **kwargs):
+        r""" :math:`\delta 13C` is calculated following simple model,
+        but using a C4 specific estimate of the unit cost ratio :math:`\beta`,
+        specified in :meth:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`.
+
+        """
+
+        # 13C discrimination (permil): von Caemmerer et al. (2014) Eq. 1
+        self.delta13C_simple = self.pmodel_params.farquhar_a + (self.pmodel_params.vonCaemmerer_b4 + (self.pmodel_params.farquhar_b - self.pmodel_params.vonCaemmerer_s)*self.pmodel_params.vonCaemmerer_phi - self.pmodel_params.farquhar_a)*self.optchi.chi
+        
+        ## Equation (A5)
+        #b4 = (-9.483*1000)/ (273 + self.tc) + 23.89 + 2.2
+        b4 = self.pmodel_params.vonCaemmerer_b4
+        
+        self.delta13C = self.pmodel_params.farquhar_a + (b4 + (self.pmodel_params.farquhar_b - self.pmodel_params.vonCaemmerer_s)*self.pmodel_params.vonCaemmerer_phi - self.pmodel_params.farquhar_a)*self.optchi.chi
+        
+        self.delta14C = self.delta13C*2
+        
+        
+    def prentice14(self, **kwargs):
+        r"""This method calculates key variables as follows:
+
+        :math:`\delta 13C` is calculated following simple model.
+        """
+
+        # 13C discrimination (permil): Farquhar et al. (1982)
+        ## Simple
+        self.delta13C_simple = self.pmodel_params.farquhar_a + (self.pmodel_params.farquhar_b - self.pmodel_params.farquhar_a)*self.optchi.chi
+        
+        ## with photorespiratory effect:
+        self.delta13C = self.pmodel_params.farquhar_a + (self.pmodel_params.farquhar_b2 - self.pmodel_params.farquhar_a)*self.optchi.chi - self.pmodel_params.farquhar_f*self.gammastar / self.ca
+
+        self.delta14C = self.delta13C*2
+        
+    def summarize(self, dp=2):
+        """Prints a summary of the variables calculated within an instance
+        of CalcDiscrimination including the mean, range and number of nan values.
+
+        Args:
+            dp: The number of decimal places used in rounding summary stats.
+
+        Returns:
+            None
+        """
+
+        attrs = ['delta13C_simple','delta13C','delta14C']
+        summarize_attrs(self, attrs, dp=dp)
