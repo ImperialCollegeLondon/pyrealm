@@ -390,7 +390,7 @@ def test_calc_lue_vcmax(request, values, soilm, meanalpha, ftemp_kphio,
         soilmstress = pmodel.calc_soilmstress(soilm=values[soilm],
                                               meanalpha=values[meanalpha])
 
-    ret = pmodel.CalcLUEVcmax(optchi, kphio=0.05, ftemp_kphio=ftemp_kphio,
+    ret = pmodel.CalcLUEVcmax(optchi, kphio=0.05 * ftemp_kphio,
                               soilmstress=soilmstress, method=luevcmax_method)
 
     # Find the expected values, extracting the combination from the request

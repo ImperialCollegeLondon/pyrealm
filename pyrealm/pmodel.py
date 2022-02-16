@@ -1011,11 +1011,12 @@ class PModel:
         # dependency of the quantum yield efficiency after Bernacchi et al., 2003
 
         if self.do_ftemp_kphio:
-            self.ftemp_kphio = calc_ftemp_kphio(env.tc, c4,
-                                                pmodel_params=env.pmodel_params)
+            ftemp_kphio = calc_ftemp_kphio(env.tc, c4,
+                                           pmodel_params=env.pmodel_params)
         else:
-            self.ftemp_kphio = 1.0
+            ftemp_kphio = 1.0
 
+        self.kphio *= ftemp_kphio 
         # -----------------------------------------------------------------------
         # Optimal ci
         # The heart of the P-model: calculate ci:ca ratio (chi) and additional terms
@@ -1036,8 +1037,7 @@ class PModel:
         # -----------------------------------------------------------------------
 
         self.method_jmaxlim = method_jmaxlim
-        lue_vcmax = CalcLUEVcmax(self.optchi, self.kphio,
-                                 self.ftemp_kphio, soilmstress,
+        lue_vcmax = CalcLUEVcmax(self.optchi, self.kphio, soilmstress,
                                  method=method_jmaxlim,
                                  pmodel_params=env.pmodel_params)
 
@@ -1172,7 +1172,7 @@ class PModel:
 
         # Jmax using again A_J = A_C
         fact_jmaxlim = (self.vcmax * (self.optchi.ci + 2.0 * self.env.gammastar) /
-                        (self.kphio * self.ftemp_kphio *  iabs * (self.optchi.ci + self.env.kmm)))
+                        (self.kphio *  iabs * (self.optchi.ci + self.env.kmm)))
         
         # The equation Jmax = 4 * phio * I_abs  / sqrt((1 / Jf) ^ 2 -1)
         # has the domain [-1, 0) and (0, 1], so need to be careful about
@@ -1182,7 +1182,7 @@ class PModel:
         jmaxlim_step1 = (1.0 / fact_jmaxlim) ** 2 - 1.0
 
         pos_jmaxlim_step1 = np.greater_equal(jmaxlim_step1, 0)
-        jmax  = (4.0 * self.kphio * self.ftemp_kphio * iabs 
+        jmax  = (4.0 * self.kphio  * iabs 
                  / np.sqrt(jmaxlim_step1, where=pos_jmaxlim_step1))
 
         # Backfill invalid inputs.
@@ -1335,7 +1335,9 @@ class CalcOptimalChi:
         # Identify and run the selected method
         self.pmodel_params = pmodel_params
         self.method = method
-        all_methods = {'prentice14': self.prentice14, 'c4': self.c4}
+        all_methods = {'prentice14_new': self.prentice14_new, 
+                       'prentice14': self.prentice14, 
+                       'c4': self.c4}
 
         if self.method in all_methods:
             this_method = all_methods[self.method]
@@ -1459,6 +1461,57 @@ class CalcOptimalChi:
         self.mc = (self.chi - gamma) / (self.chi + kappa)
         self.mjoc = (self.chi + kappa) / (self.chi + 2 * gamma)
 
+    def prentice14_new(self, env, rootzonestress):
+        r"""This method calculates key variables as follows:
+
+        Optimal :math:`\chi` is calculated following Equation 8 in
+        :cite:`Prentice:2014bc`:
+
+          .. math:: :nowrap:
+
+            \[
+                \begin{align*}
+                    \chi &= \Gamma^{*} / c_a + (1- \Gamma^{*} / c_a)
+                        \xi / (\xi + \sqrt D ), \text{where}\\
+                    \xi &= \sqrt{(\beta (K+ \Gamma^{*}) / (1.6 \eta^{*}))}
+                \end{align*}
+            \]
+
+        The :math:`\ce{CO2}` limitation term of light use efficiency
+        (:math:`m_j`) is calculated following Equation 3 in :cite:`Wang:2017go`:
+
+        .. math::
+
+            m_j = \frac{c_a - \Gamma^{*}}
+                       {c_a + 2 \Gamma^{*} + 3 \Gamma^{*}
+                       \sqrt{\frac{1.6 D \eta^{*}}{\beta(K + \Gamma^{*})}}}
+
+        Finally,  :math:`m_c` is calculated, following Equation 7 in
+        :cite:`Stocker:2020dh`, as:
+
+        .. math::
+
+            m_c = \frac{c_i - \Gamma^{*}}{c_i + K},
+
+        where :math:`K` is the Michaelis Menten coefficient of Rubisco-limited
+        assimilation.
+        """
+
+        # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
+        self.xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c3 * rootzonestress *
+                           (env.kmm + env.gammastar))
+                          / (1.6 * env.ns_star))
+
+        self.chi = (env.gammastar / env.ca +
+                    (1.0 - env.gammastar / env.ca) * self.xi /
+                    (self.xi + np.sqrt(env.vpd)))
+
+        # Calculate m and mc and m/mc
+        self.ci = self.chi * env.ca
+        self.mj = (self.ci - env.gammastar) / (self.ci + 2 * env.gammastar)
+        self.mc = (self.ci - env.gammastar) / (self.ci + env.kmm)
+        self.mjoc = self.mj/self.mc
+
     def summarize(self, dp=2):
         """Prints a summary of the variables calculated within an instance
         of CalcOptimalChi including the mean, range and number of nan values.
@@ -1567,18 +1620,16 @@ class CalcLUEVcmax:
 
     def __init__(self, optchi: CalcOptimalChi,
                  kphio: Union[float, np.ndarray],
-                 ftemp_kphio: Union[float, np.ndarray] = 1.0,
                  soilmstress: Union[float, np.ndarray] = 1.0,
                  method: str = 'wang17',
                  pmodel_params: PModelParams = PModelParams()
                  ):
 
-        self.shape = check_input_shapes(optchi.mj, optchi.mjoc, kphio,
-                                        ftemp_kphio, soilmstress)
+        self.shape = check_input_shapes(optchi.mj, optchi.mjoc, 
+                                        kphio, soilmstress)
 
         self.optchi = optchi
         self.kphio = kphio
-        self.ftemp_kphio = ftemp_kphio
         self.soilmstress = soilmstress
         self.method = method
         self.pmodel_params = pmodel_params
@@ -1605,7 +1656,7 @@ class CalcLUEVcmax:
 
             # Now calculate the LUE and V_cmax
             # Light use efficiency (gpp per unit absorbed light)
-            self.lue = (self.kphio * self.ftemp_kphio * self.optchi.mj * self.mjlim *
+            self.lue = (self.kphio * self.optchi.mj * self.mjlim *
                         self.pmodel_params.k_c_molmass * self.soilmstress)
 
             # Back calculate Vcmax normalised per unit absorbed PPFD (assuming iabs=1)

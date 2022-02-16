@@ -44,3 +44,11 @@
 0.5.6 - Bugs in calculation of Jmax and g_s fixed.
       - Fixed issue with utilities.summarize_attr with masked arrays containing
         all NaN values
+0.6.0 - Breaking change to inputs to CalcOptimalChi - now uses PModelEnvironment
+        object, not named args for kmm etc.
+      - PModel testing update: new set of input test values of 100 values across
+        envt space, not just 4 arbitrary values. Updated R outputs.
+      - Restructure of test_pmodel - much cleaner use of parameterisations args.
+      - Addition of units to utilities.summarize_attr and extensive addition
+        of units throughout docs.
+      - Bug in Jmax calculation - not carrying ftemp_kphio correctly into calculation.
