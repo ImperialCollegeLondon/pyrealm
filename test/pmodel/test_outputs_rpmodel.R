@@ -196,11 +196,15 @@ for (rw in seq(nrow(luevcmax))) {
 vars  <- list(sc = list(tc = values$tc_sc,
                         vpd = values$vpd_sc,
                         co2 = values$co2_sc,
-                        patm = values$patm_sc),
+                        patm = values$patm_sc,
+                        fapar = values$fapar_sc,
+                        ppfd = values$ppfd_sc),
               ar = list(tc = values$tc_ar,
                         vpd = values$vpd_ar,
                         co2 = values$co2_ar,
-                        patm = values$patm_ar))
+                        patm = values$patm_ar,
+                        fapar = values$fapar_ar,
+                        ppfd = values$ppfd_ar))
 
 # Needs to match to (reverse) ordering of pytest.mark.parametrise
 # variables in pytesting.
@@ -211,9 +215,7 @@ rpmodel_c3 <- expand.grid(vr = names(vars),
                           stringsAsFactors = FALSE)
 
 
-for (rw in seq(nrow(rpmodel_c3))) {
-
-    inputs <- as.list(rpmodel_c3[rw, ])
+run_row <- function(inputs) {
 
     if (inputs$ft == "fkphio-off") {
         do_ftemp_kphio <- FALSE
@@ -236,31 +238,13 @@ for (rw in seq(nrow(rpmodel_c3))) {
     v$do_soilmstress <- do_soilmstress
     v$method_jmaxlim <- inputs$lm
     v$method_optci <- "prentice14"
-    v$fapar <- 1
-    v$ppfd <- 1
+
     # NOTE - the default value of bpar_soilm passed into soilmstress
     # by rpmodel is different from the default value of bpar set in the
     # function definition, so standardise that here
     v$bpar_soilm <- 0.685
 
-    # Run the model with Iabs = 1 (FAPAR * PPFD = 1) to get
-    # values to compare to the unit_iabs values
-    ret <- do.call(rpmodel, v)
-
-
-    # The rpmodel implementation is sensitive to rounding error when
-    # using the simple method. fact_jmaxlim can be (just) > 1, leading to
-    # sqrt(-tinything) = NaN. This leads to differences in pmodel outputs,
-    # so trapping that here.
-    ret$jmax <- ifelse(is.nan(ret$jmax), Inf, ret$jmax)
-
-    test_name <- paste("rpmodel-c3",
-                       paste(inputs, collapse = "-"), "unitiabs", sep = "-")
-    values[[test_name]] <- ret
-
-    # Rerun with some actual scalar PPFD and Iabs values to validate scaling
-    v$fapar <- values$fapar_sc
-    v$ppfd <- values$ppfd_sc
+    # Run the P model
     ret <- do.call(rpmodel, v)
 
     # The rpmodel implementation is sensitive to rounding error when
@@ -269,10 +253,18 @@ for (rw in seq(nrow(rpmodel_c3))) {
     # so trapping that here.
     ret$jmax <- ifelse(is.nan(ret$jmax), Inf, ret$jmax)
 
-    test_name <- paste("rpmodel-c3",
-                       paste(inputs, collapse = "-"), "iabs", sep = "-")
-    values[[test_name]] <- ret
+    test_name <- paste("rpmodel-c3", paste(inputs, collapse = "-"), sep = "-")
 
+    return(list(name = test_name, val = ret))
+}
+
+browser()
+
+for (rw in seq(nrow(rpmodel_c3))) {
+
+    inputs <- as.list(rpmodel_c3[rw, ])
+    ret <- run_row(inputs)
+    values[[ret$name]] <- ret$val
 
 }
 

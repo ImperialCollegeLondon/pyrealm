@@ -289,6 +289,30 @@ def test_calc_optimal_chi(values, tc, patm, co2, vpd, method, context_manager, e
             assert np.allclose(ret.mc, expected['mc'])
             assert np.allclose(ret.mjoc, expected['mjoc'])
 
+
+
+def test_calc_optimal_chi_restruct(values):
+    """
+    At version 0.6.0, we revised some calculations ported over from the 
+    rpmodel, which had odd complications. This test was used to run a
+    comparison between the original code and more 'classic' descriptions of
+    the equations.
+    """
+    env = pmodel.PModelEnvironment(tc=values['tc_ar'],
+                                    patm=values['patm_ar'],
+                                    vpd=values['vpd_ar'],
+                                    co2=values['co2_ar'])
+
+    reto = pmodel.CalcOptimalChi(env, method='prentice14')
+    retn = pmodel.CalcOptimalChi(env, method='prentice14_new')
+
+    assert np.allclose(reto.chi,retn.chi)
+    assert np.allclose(reto.mj,retn.mj)
+    assert np.allclose(reto.mc,retn.mc)
+    assert np.allclose(reto.mjoc,retn.mjoc)
+
+
+
 # ------------------------------------------
 # Testing CalcLUEVcmax -  This has quite a few combinations:
 # - c4
@@ -341,7 +365,6 @@ def test_calc_lue_vcmax(request, values, soilm, meanalpha, ftemp_kphio,
 
     if c4:
         oc_method = 'c4'
-        pytest.skip('Not currently testing C4 outputs because of param in rpmodel')
     else:
         oc_method = 'prentice14'
 
@@ -500,50 +523,47 @@ def test_pmodel_class_c3(request, values, pmodelenv, soilmstress, ftemp_kphio, l
                         do_ftemp_kphio=ftemp_kphio,
                         method_jmaxlim=luevcmax_method)
 
+    # Estimate productivity
+    if environ == 'sc':
+        fapar = values['fapar_sc']
+        ppfd = values['ppfd_sc']
+    elif environ == 'ar':
+        fapar = values['fapar_ar']
+        ppfd = values['ppfd_ar']
+
+    ret.estimate_productivity(fapar = fapar, ppfd = ppfd)
+
     # Find the expected values, extracting the combination from the request
     name = request.node.name
     name = name[(name.find('[') + 1):-1]
-    expected = values['rpmodel-c3-' + name + '-unitiabs']
+    expected = values[f'rpmodel-c3-{name}']
 
-    # Test values - two values calculated in main rpmodel function
-    # so can only test here - ci and iwue
-    assert np.allclose(ret.iwue, expected['iwue'])
-    assert np.allclose(ret.optchi.ci, expected['ci'])
+    # Test chi and water use efficiency values
+    # IWUE reported as µmol mol in pyrealm and Pa in rpmodel
+    assert np.allclose(ret.optchi.chi, expected['chi'])
+    assert np.allclose(ret.iwue * (ret.env.patm * 1e-6) , expected['iwue'])
 
-    # - and six values that are scaled by IABS - rpmodel enforces scaling
-    # where PModel can do it post hoc from unit_iabs values, so two
-    # rpmodel runs are used to test the unit values and scaled.
-    assert np.allclose(ret.unit_iabs.lue, expected['lue'])
-    assert np.allclose(ret.unit_iabs.vcmax, expected['vcmax'])
-    assert np.allclose(ret.unit_iabs.vcmax25, expected['vcmax25'])
-    assert np.allclose(ret.unit_iabs.rd, expected['rd'])
-    assert np.allclose(ret.unit_iabs.gs, expected['gs'])
+    # Test productivity values
+    assert np.allclose(ret.gpp, expected['gpp'], equal_nan=True)
+    assert np.allclose(ret.vcmax, expected['vcmax'], equal_nan=True)
+    assert np.allclose(ret.vcmax25, expected['vcmax25'], equal_nan=True)
+    assert np.allclose(ret.rd, expected['rd'], equal_nan=True)
+
+    # Some algo issues with getting 0 and na in g_s
+    # Fill na values with 0 in both inputs
+    assert np.allclose(np.nan_to_num(ret.gs), 
+                       np.nan_to_num(expected['gs']))
 
     # TODO - Numerical instability in the Jmax calculation - as denominator
     #        approaches 1, results --> infinity unpredictably with rounding
-    #        so currently excluding Jmax in combinations where this occurs.
+    #        so currently excluding Jmax in combinations where this occurs
+    #        which is basically anything with no limitation factor.
 
-    if 'none-fkphio-off-sm-off' not in name:
-        assert np.allclose(ret.unit_iabs.jmax, expected['jmax'])
+    if 'none-fkphio-off-sm-off' not in name and 'none-fkphio-on-sm-off' not in name:
+        assert np.allclose(ret.jmax, expected['jmax'], equal_nan=True)
     else:
         warnings.warn('Skipping Jmax test for cases with numerical instability')
 
-    # Check Iabs scaling
-    iabs = ret.unit_iabs.scale_iabs(values['fapar_sc'], values['ppfd_sc'])
-
-    # Find the expected values, extracting the combination from the request
-    expected = values['rpmodel-c3-' + name + '-iabs']
-
-    assert np.allclose(iabs.gpp, expected['gpp'])
-    assert np.allclose(iabs.vcmax, expected['vcmax'])
-    assert np.allclose(iabs.vcmax25, expected['vcmax25'])
-    assert np.allclose(iabs.rd, expected['rd'])
-    assert np.allclose(iabs.gs, expected['gs'])
-
-    if 'none-fkphio-off-sm-off' not in name:
-        assert np.allclose(iabs.jmax, expected['jmax'])
-    else:
-        warnings.warn('Skipping Jmax test for cases with numerical instability')
 
 
 # Testing PModel class with C4
@@ -564,7 +584,7 @@ def test_pmodel_class_c3(request, values, pmodelenv, soilmstress, ftemp_kphio, l
     ['sc', 'ar'],
     ids=['sc', 'ar']
 )
-def test_pmodel_class_c3(request, values, pmodelenv, soilmstress, ftemp_kphio, environ):
+def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, environ):
 
     if soilmstress:
         soilmstress = pmodel.calc_soilmstress(values['soilm_sc'], values['meanalpha_sc'])

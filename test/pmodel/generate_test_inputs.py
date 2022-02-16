@@ -40,6 +40,8 @@ patm_ar = np.round(rng.uniform(50000, 108400, size=n_samples), 5).tolist()
 elev_ar = np.round(rng.uniform(0, 3000, size=n_samples), 5).tolist()
 vpd_ar = np.round(rng.uniform(0, 10000, size=n_samples), 5).tolist()
 co2_ar = np.round(rng.uniform(280, 500, size=n_samples), 5).tolist()
+fapar_ar = np.round(rng.uniform(0, 1, size=n_samples), 5).tolist()
+ppfd_ar = np.round(rng.uniform(200, 400, size=n_samples), 5).tolist()
 soilm_ar = np.round(rng.uniform(0.1, 0.7, size=n_samples), 5).tolist()
 meanalpha_ar = np.round(rng.uniform(0.2, 1.0, size=n_samples), 5).tolist()
 
@@ -73,6 +75,8 @@ out_dict = dict(
     vpd_ar = vpd_ar,
     soilm_ar = soilm_ar,
     meanalpha_ar = meanalpha_ar,
+    fapar_ar = fapar_ar,
+    ppfd_ar = ppfd_ar,
     # shape_error
     shape_error = [1,1,1]
 )
