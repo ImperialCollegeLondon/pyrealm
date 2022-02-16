@@ -1,10 +1,4 @@
-# Ignore test datasets for now
-SAFE_import_files*
-
-# ignore Excel backup files
-~*
-
-# PyCharm
+# PyCharm and vscode settings
 .idea/
 .vscode/
 
@@ -17,6 +11,7 @@ SAFE_import_files*
 # build and dist
 build
 dist
+pyrealm.egg-info
 
 # Ignore local pyenv settings
 .python-version
