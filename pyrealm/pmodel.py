@@ -1191,8 +1191,8 @@ class PModel:
         elif not pos_jmaxlim_step1:
             jmax = np.nan
 
-        # Revert to scalar if needed and store
-        self._jmax = jmax.item() if np.ndim(jmax) == 0 else jmax
+        # Store calculate value
+        self._jmax = jmax
 
         # AJ and AC
         a_j = (self.kphio * iabs * (self.optchi.ci - self.env.gammastar) / 
