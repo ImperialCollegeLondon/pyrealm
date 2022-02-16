@@ -1335,8 +1335,7 @@ class CalcOptimalChi:
         # Identify and run the selected method
         self.pmodel_params = pmodel_params
         self.method = method
-        all_methods = {'prentice14_new': self.prentice14_new, 
-                       'prentice14': self.prentice14, 
+        all_methods = {'prentice14': self.prentice14, 
                        'c4': self.c4}
 
         if self.method in all_methods:
@@ -1387,81 +1386,6 @@ class CalcOptimalChi:
             self.mjoc = np.ones(self.shape)
 
     def prentice14(self, env, rootzonestress):
-        r"""This method calculates key variables as follows:
-
-        Optimal :math:`\chi` is calculated following Equation 8 in
-        :cite:`Prentice:2014bc`:
-
-          .. math:: :nowrap:
-
-            \[
-                \begin{align*}
-                    \chi &= \Gamma^{*} / c_a + (1- \Gamma^{*} / c_a)
-                        \xi / (\xi + \sqrt D ), \text{where}\\
-                    \xi &= \sqrt{(\beta (K+ \Gamma^{*}) / (1.6 \eta^{*}))}
-                \end{align*}
-            \]
-
-        The :math:`\ce{CO2}` limitation term of light use efficiency
-        (:math:`m_j`) is calculated following Equation 3 in :cite:`Wang:2017go`:
-
-        .. math::
-
-            m_j = \frac{c_a - \Gamma^{*}}
-                       {c_a + 2 \Gamma^{*} + 3 \Gamma^{*}
-                       \sqrt{\frac{1.6 D \eta^{*}}{\beta(K + \Gamma^{*})}}}
-
-        Finally,  :math:`m_c` is calculated, following Equation 7 in
-        :cite:`Stocker:2020dh`, as:
-
-        .. math::
-
-            m_c = \frac{c_i - \Gamma^{*}}{c_i + K},
-
-        where :math:`K` is the Michaelis Menten coefficient of Rubisco-limited
-        assimilation.
-        """
-
-        # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c3 * rootzonestress *
-                           (env.kmm + env.gammastar))
-                          / (1.6 * env.ns_star))
-
-        self.chi = (env.gammastar / env.ca +
-                    (1.0 - env.gammastar / env.ca) * self.xi /
-                    (self.xi + np.sqrt(env.vpd)))
-
-        # Define variable substitutes:
-        vdcg = env.ca - env.gammastar
-        vacg = env.ca + 2.0 * env.gammastar
-        vbkg = (self.pmodel_params.beta_cost_ratio_c3 *
-                rootzonestress *
-                (env.kmm + env.gammastar))
-
-        # Calculate mj
-        # NOTE: this differs from rpmodel, which uses length not dim here, so
-        # unwrapped matrix inputs. Also, rpmodel includes a check for vpd > 0,
-        # but this is guaranteed by clip above (also true in rpmodel).
-
-        vsr = np.sqrt(1.6 * env.ns_star * env.vpd / vbkg)
-        mj = vdcg / (vacg + 3.0 * env.gammastar * vsr)
-
-        # Mask values with ns star <= 0 and vbkg <=0 - need an array for this
-        mask = np.logical_and(env.ns_star <= 0, vbkg <= 0)
-        mj = np.array(mj)
-        mj[mask] = np.nan 
-        # np.where _always_ returns an array, so catch scalars.
-        self.mj = mj.item() if np.ndim(mj) == 0 else mj
-
-        # alternative variables
-        gamma = env.gammastar / env.ca
-        kappa = env.kmm / env.ca
-
-        # mc and mj:mv
-        self.mc = (self.chi - gamma) / (self.chi + kappa)
-        self.mjoc = (self.chi + kappa) / (self.chi + 2 * gamma)
-
-    def prentice14_new(self, env, rootzonestress):
         r"""This method calculates key variables as follows:
 
         Optimal :math:`\chi` is calculated following Equation 8 in
