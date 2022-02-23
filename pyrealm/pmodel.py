@@ -803,6 +803,8 @@ class PModelEnvironment:
                  theta: Union[float, np.ndarray],
                  co2: Union[float, np.ndarray],
                  patm: Union[float, np.ndarray],
+                 d13CO2: Union[float, np.ndarray],
+                 D14CO2: Union[float, np.ndarray],
                  pmodel_params: PModelParams = PModelParams()):
 
         self.shape = check_input_shapes(tc, vpd, co2, patm)
@@ -812,7 +814,9 @@ class PModelEnvironment:
         self.vpd = bounds_checker(vpd, 0, 10000, '[]', 'vpd', 'Pa')
         self.theta = bounds_checker(theta, 0, 0.8, '[]', 'theta', 'm3/m3')
         self.co2 = bounds_checker(co2, 0, 1000, '[]', 'co2', 'ppm')
-        self.patm = bounds_checker(patm, 30000, 110000, '[]', 'tc', '°C')
+        self.patm = bounds_checker(patm, 30000, 110000, '[]', 'patm', 'Pa')
+        self.d13CO2 = bounds_checker(d13CO2, -10, -6, '[]', 'd13CO2', '‰')
+        self.D14CO2 = bounds_checker(D14CO2, 0, 250, '[]', 'D14CO2', '‰')
 
         # Guard against calc_density issues
         if np.nanmin(self.tc) < -25:
@@ -862,8 +866,8 @@ class PModelEnvironment:
         """
 
         attrs = [('tc', '°C'), ('vpd', 'Pa'), ('theta', 'm3/m3'), ('co2', 'ppm'),
-                 ('patm', 'Pa'), ('ca', 'Pa'), ('gammastar', 'Pa'), 
-                 ('kmm', 'Pa'), ('kp_c4', 'Pa'), ('ns_star', '-')]
+                 ('patm', 'Pa'), ('ca', 'Pa'), ('d13CO2', '‰'), ('D14CO2', '‰'),
+                 ('gammastar', 'Pa'), ('kmm', 'Pa'), ('kp_c4', 'Pa'), ('ns_star', '-')]
         summarize_attrs(self, attrs, dp=dp)
 
 
@@ -1069,24 +1073,24 @@ class PModel:
         if self.c4:
             method_optci = "c4"
         else:
-            method_optci = "prentice14"
+            method_optci = "c3"
 
         self.optchi = CalcOptimalChi(env=env, method=method_optci,
                                      rootzonestress=rootzonestress,
                                      pmodel_params=env.pmodel_params)
 
         # -----------------------------------------------------------------------
-        # Isotopic discrimination
+        # Carbon Isotopes
         # -----------------------------------------------------------------------
         self.c4 = c4
 
         if self.c4:
             method_discr = "c4"
         else:
-            method_discr = "prentice14"
+            method_discr = "c3"
 
-        self.delta = CalcDiscrimination(self.optchi, env.gammastar, env.ca, env.tc,
-                                        method=method_discr,
+        self.delta = CalcCarbonIsotopes(self.optchi, env.gammastar, env.ca, env.tc,
+                                        env.d13CO2,env.D14CO2,method=method_discr,
                                         pmodel_params=env.pmodel_params)
 
         # -----------------------------------------------------------------------
@@ -1334,7 +1338,7 @@ class CalcOptimalChi:
 
         env (PModelEnvironment): An instance of PModelEnvironment providing
             the photosynthetic environment for the model.
-        method (str): one of ``c4`` or ``prentice14``
+        method (str): one of ``c4`` or ``c3``
         chi (float): the ratio of leaf internal to ambient :math:`\ce{CO2}`
             partial pressure (:math:`\chi`).
         mj (float): :math:`\ce{CO2}` limitation factor for light-limited
@@ -1372,7 +1376,7 @@ class CalcOptimalChi:
     def __init__(self,
                  env: PModelEnvironment,
                  rootzonestress: Union[float, np.ndarray] = 1.0,
-                 method: str = 'prentice14',
+                 method: str = 'c3',
                  pmodel_params: PModelParams = PModelParams()
                  ):
 
@@ -1390,7 +1394,7 @@ class CalcOptimalChi:
         # Identify and run the selected method
         self.pmodel_params = pmodel_params
         self.method = method
-        all_methods = {'prentice14': self.prentice14, 'c4': self.c4}
+        all_methods = {'c3': self.c3, 'c4': self.c4}
 
         if self.method in all_methods:
             this_method = all_methods[self.method]
@@ -1407,7 +1411,7 @@ class CalcOptimalChi:
 
     def c4(self, env, rootzonestress):
         r"""Optimal :math:`\chi` is calculated following Equation 8 in
-        :cite:`Prentice:2014bc` (see :meth:`~pyrealm.pmodel.CalcOptimalChi.prentice14`),
+        :cite:`Prentice:2014bc` (see :meth:`~pyrealm.pmodel.CalcOptimalChi.c3`),
         but using a C4 specific estimate of the unit cost ratio :math:`\beta`,
         specified in :meth:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`.
 
@@ -1417,24 +1421,27 @@ class CalcOptimalChi:
         """
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        # version 1
-        self.xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c4 *env.kmm)
-                     / (1.6 * env.ns_star))
-
-        # version 2 as in Scott & Smith (2022)
-        #beta_c4 = 166
-        #self.xi = np.sqrt((beta_c4 *env.kp_c4) / (1.6 * env.ns_star))
-                     
-        self.chi = self.xi /(self.xi + np.sqrt(env.vpd))
-        
-        # version 3: old version
+        # version 1: main version
         #self.xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c4 * rootzonestress *
         #                    (env.kmm + env.gammastar))
         #                  / (1.6 * env.ns_star))
 
         #self.chi = (env.gammastar / env.ca + (1.0 - env.gammastar / env.ca) * self.xi
         #            / (self.xi + np.sqrt(env.vpd)))
-                    
+       
+       
+        # version 2: simple formula assuming that photorespiration is negligible
+        self.xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c4 * rootzonestress *env.kmm)
+                     / (1.6 * env.ns_star))
+        
+        self.chi = self.xi /(self.xi + np.sqrt(env.vpd))
+                
+        # version 3 as in Scott & Smith (2022)
+        #beta_c4 = 166
+        #self.xi = np.sqrt((beta_c4 *env.kp_c4) / (1.6 * env.ns_star))
+                     
+        #self.chi = self.xi /(self.xi + np.sqrt(env.vpd))
+        
 
         # These values need to retain any
         # dimensions of the original inputs - if ftemp_kphio is set to 1.0
@@ -1442,16 +1449,31 @@ class CalcOptimalChi:
         # and the input to soilmstress might be scalar, so enforce the shape.
         # Note that rpmodel_1.0.6 collapses array inputs at this point.
 
-        if self.shape == 1:
-            self.mc = 1.0
-            self.mj = 1.0
-            self.mjoc = 1.0
-        else:
-            self.mc = np.ones(self.shape)
-            self.mj = np.ones(self.shape)
-            self.mjoc = np.ones(self.shape)
+    #    if self.shape == 1:
+    #        self.mc = 1.0
+    #        self.mj = 1.0
+    #        self.mjoc = 1.0
+    #    else:
+    #        self.mc = np.ones(self.shape)
+    #        self.mj = np.ones(self.shape)
+    #        self.mjoc = np.ones(self.shape)
+            
+        # Calculate mj
+        # NOTE: this differs from rpmodel, which uses length not dim here, so
+        # unwrapped matrix inputs. Also, rpmodel includes a check for vpd > 0,
+        # but this is guaranteed by clip above (also true in rpmodel).
 
-    def prentice14(self, env, rootzonestress):
+        self.mj = 1.0
+
+        # alternative variables
+        kappa = env.kmm / env.ca
+
+        # mc and mj:mv
+        self.mc = (self.chi) / (self.chi + kappa)
+        self.mjoc = (self.chi + kappa) / (self.chi)
+        
+
+    def c3(self, env, rootzonestress):
         r"""This method calculates key variables as follows:
 
         Optimal :math:`\chi` is calculated following Equation 8 in
@@ -1487,9 +1509,10 @@ class CalcOptimalChi:
         assimilation.
         """
         
+        ## Modified version
         ## Calculation beta as a function of theta following Lavergne et al. 2020 (Fig 6a, GCB)
         beta_c3 = np.exp(1.73 * env.theta + 4.55)
-        
+        #beta_c3 = 146
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.xi = np.sqrt((beta_c3 *
                            (env.kmm + env.gammastar))
@@ -1498,7 +1521,9 @@ class CalcOptimalChi:
         self.chi = (env.gammastar / env.ca +
                     (1.0 - env.gammastar / env.ca) * self.xi /
                     (self.xi + np.sqrt(env.vpd)))
-                    
+         
+         
+        ## Original version
         #self.xi = np.sqrt((self.pmodel_params.beta_cost_ratio_c3 * rootzonestress *
         #                   (env.kmm + env.gammastar))
         #                  / (1.6 * env.ns_star))
@@ -1800,8 +1825,8 @@ class CalcLUEVcmax:
         self.mjlim = 1.0
 
 
-class CalcDiscrimination:
-    r"""Calculate the discrimination against 13C and 14C with photorespiratory effect for C3 and C4 plants.
+class CalcCarbonIsotopes:
+    r"""Calculate the discrimination against 13C and 14C for C3 and C4 plants and associated carbon isotopic composition (d13C) in permil
 
     The chosen method is automatically used to estimate these values when an
     instance is created.
@@ -1812,16 +1837,27 @@ class CalcDiscrimination:
             (:math:`\Gamma^{*}`, see :func:`calc_gammastar`).
         ca (float): the ambient partial pressure of :math:`\ce{CO2}` (:math:`c_a`,
             see :func:`calc_co2_to_ca`)
-        method (str): one of ``c4`` or ``prentice14``
+        method (str): one of ``c4`` or ``c3``
         chi (float): the ratio of leaf internal to ambient :math:`\ce{CO2}`
             partial pressure (:math:`\chi`).
 
 
     Returns:
 
-        An instance of :class:`CalcDiscrimination` where the :attr:`delta`,
+        An instance of :class:`CalcCarbonIsotopes` where the :attr:`delta13C`,
         have been populated using the chosen method.
-        
+          
+          
+    Examples:
+
+        >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000, theta=0.4, d13CO2= -8.4, D14CO2 = 19.2)
+        >>> Ciso = CalcCarbonIsotopes(env)
+        >>> out_none = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
+        ...                    soilmstress = 1, method='none')
+        >>> round(out_none.lue, 6)
+        0.458998
+        >>> round(out_none.vcmax, 6)
+        0.11439
     """
 
     # TODO - move chi calc into __init__? Shared between the two methods
@@ -1830,33 +1866,37 @@ class CalcDiscrimination:
                  gammastar: Union[float, np.ndarray],
                  ca: Union[float, np.ndarray],
                  tc: Union[float, np.ndarray],
-                 method: str = 'prentice14',
+                 d13CO2: Union[float, np.ndarray],
+                 D14CO2: Union[float, np.ndarray],
+                 method: str = 'c3',
                  pmodel_params: PModelParams = PModelParams()
                  ):
 
         # Check inputs are broadcastable
-        self.shape = check_input_shapes(gammastar, ca, tc, optchi.chi)
+        self.shape = check_input_shapes(gammastar, ca, tc, d13CO2, D14CO2, optchi.chi)
 
         self.optchi = optchi
         self.gammastar = gammastar
         self.ca = ca
         self.tc = tc
+        self.d13CO2 = d13CO2
+        self.D14CO2 = D14CO2
         
         # Identify and run the selected method
         self.pmodel_params = pmodel_params
         self.method = method
-        all_methods = {'prentice14': self.prentice14, 'c4': self.c4}
+        all_methods = {'c3': self.c3, 'c4': self.c4}
 
         if self.method in all_methods:
             this_method = all_methods[self.method]
-            this_method(gammastar=gammastar, ca=ca, tc=tc, chi=optchi)
+            this_method(gammastar=gammastar, ca=ca, tc=tc, d13CO2=d13CO2, D14CO2=D14CO2, chi=optchi)
         else:
-            raise ValueError(f"CalcDiscrimination: method argument '{method}' invalid.")
+            raise ValueError(f"CalcCarbonIsotopes: method argument '{method}' invalid.")
 
 
     def __repr__(self):
 
-        return f"CalcDiscrimination(delta={self.delta13C})"
+        return f"CalcCarbonIsotopes(delta={self.Delta13C})"
 
     def c4(self, **kwargs):
         r""" :math:`\delta 13C` is calculated following simple model,
@@ -1865,36 +1905,59 @@ class CalcDiscrimination:
 
         """
 
-        # 13C discrimination (permil): von Caemmerer et al. (2014) Eq. 1
-        self.delta13C_simple = self.pmodel_params.farquhar_a + (self.pmodel_params.vonCaemmerer_b4 + (self.pmodel_params.farquhar_b - self.pmodel_params.vonCaemmerer_s)*self.pmodel_params.vonCaemmerer_phi - self.pmodel_params.farquhar_a)*self.optchi.chi
+        # 13C discrimination (‰): von Caemmerer et al. (2014) Eq. 1
+        self.Delta13C_simple = self.pmodel_params.farquhar_a + (self.pmodel_params.vonCaemmerer_b4 + (self.pmodel_params.farquhar_b - self.pmodel_params.vonCaemmerer_s)*self.pmodel_params.vonCaemmerer_phi - self.pmodel_params.farquhar_a)*self.optchi.chi
         
-        ## Equation (A5)
+        ## Equation A5 from von Caemmerer et al. (2014)
         #b4 = (-9.483*1000)/ (273 + self.tc) + 23.89 + 2.2
         b4 = self.pmodel_params.vonCaemmerer_b4
         
-        self.delta13C = self.pmodel_params.farquhar_a + (b4 + (self.pmodel_params.farquhar_b - self.pmodel_params.vonCaemmerer_s)*self.pmodel_params.vonCaemmerer_phi - self.pmodel_params.farquhar_a)*self.optchi.chi
+        self.Delta13C = self.pmodel_params.farquhar_a + (b4 + (self.pmodel_params.farquhar_b - self.pmodel_params.vonCaemmerer_s)*self.pmodel_params.vonCaemmerer_phi - self.pmodel_params.farquhar_a)*self.optchi.chi
         
-        self.delta14C = self.delta13C*2
+        self.Delta14C = self.Delta13C*2
         
+        ## Isotopic composition of leaf
+        self.d13C_leaf = (self.d13CO2 - self.Delta13C)/(1 + self.Delta13C/1000)
         
-    def prentice14(self, **kwargs):
+        self.d14C_leaf = (self.D14CO2 - self.Delta14C)/(1 + self.Delta14C/1000)
+        
+        ## Isotopic composition of wood considering post-photosynthetic fractionation: estimated around 2.1‰ (Frank et al. 2015 NCC)
+        self.d13C_wood = self.d13C_leaf + self.pmodel_params.frank_postfrac
+                
+                
+    def c3(self, **kwargs):
         r"""This method calculates key variables as follows:
 
-        :math:`\delta 13C` is calculated following simple model.
+        :math:`\Delta 13C simple` is calculated following simple model.
+        :math:`\Delta 13C` is calculated following model with photorespiratory effect.
+        :math:`\Delta 14C` is calculated as twice the `\Delta 13C` .
+        :math:`\d13C` is calculated from `\Delta 13C` and `\d13CO2` (input).
+        :math:`\d14C` is calculated from `\Delta 14C` and `\D14CO2` (input).
         """
 
         # 13C discrimination (permil): Farquhar et al. (1982)
         ## Simple
-        self.delta13C_simple = self.pmodel_params.farquhar_a + (self.pmodel_params.farquhar_b - self.pmodel_params.farquhar_a)*self.optchi.chi
+        self.Delta13C_simple = self.pmodel_params.farquhar_a + (self.pmodel_params.farquhar_b - self.pmodel_params.farquhar_a)*self.optchi.chi
         
         ## with photorespiratory effect:
-        self.delta13C = self.pmodel_params.farquhar_a + (self.pmodel_params.farquhar_b2 - self.pmodel_params.farquhar_a)*self.optchi.chi - self.pmodel_params.farquhar_f*self.gammastar / self.ca
-
-        self.delta14C = self.delta13C*2
+        self.Delta13C = self.pmodel_params.farquhar_a + (self.pmodel_params.farquhar_b2 - self.pmodel_params.farquhar_a)*self.optchi.chi - self.pmodel_params.farquhar_f*self.gammastar / self.ca
         
+        ## 14C discrimination is twice the 13C discrimination (Graven et al. 2020)
+        self.Delta14C = self.Delta13C*2
+        
+        
+        ## Isotopic composition of leaf
+        self.d13C_leaf = (self.d13CO2 - self.Delta13C)/(1 + self.Delta13C/1000)
+                
+        self.d14C_leaf = (self.D14CO2 - self.Delta14C)/(1 + self.Delta14C/1000)
+        
+        ## Isotopic composition of wood considering post-photosynthetic fractionation: 
+        self.d13C_wood = self.d13C_leaf + self.pmodel_params.frank_postfrac
+        
+                
     def summarize(self, dp=2):
         """Prints a summary of the variables calculated within an instance
-        of CalcDiscrimination including the mean, range and number of nan values.
+        of CalcCarbonIsotopes including the mean, range and number of nan values.
 
         Args:
             dp: The number of decimal places used in rounding summary stats.
@@ -1903,5 +1966,5 @@ class CalcDiscrimination:
             None
         """
 
-        attrs = ['delta13C_simple','delta13C','delta14C']
+        attrs = ['Delta13C_simple','Delta13C','Delta14C','d13C_leaf','d14C_leaf','d13C_wood']
         summarize_attrs(self, attrs, dp=dp)

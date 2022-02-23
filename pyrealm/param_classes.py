@@ -262,7 +262,7 @@ class PModelParams(ParamClass):
     bernacchi_kc25: Number = 39.97
     bernacchi_ko25: Number = 27480
     bernacchi_gs25_0: Number = 4.332
-        # Boyd
+    # Boyd
     boyd_kp25_c4: Number = 16  ## Pa  from Boyd et al. (2015)
     boyd_dhac_c4: Number = 36300  ## J mol-1
     boyd_dhac_c4: Number = 79430
@@ -296,7 +296,13 @@ class PModelParams(ParamClass):
     vonCaemmerer_b4: Number = -7.4
     vonCaemmerer_s: Number = 1.8
     vonCaemmerer_phi: Number = 0.5
-
+    # Frank et al. (2015): post-photosynthetic fractionation
+    # between leaf organic matter and alpha-cellulose: 2.1 +/- 1.2 ‰
+    frank_postfrac: Number = 2.1
+    # Badeck et al. (2005): post-photosynthetic fractionation
+    # between leaf organic matter and bulk wood
+    badeck_postfrac: Number = 1.9
+    
 # T model param class
 
 @enforce_typing.enforce_types
