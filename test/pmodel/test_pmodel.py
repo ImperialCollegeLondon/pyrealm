@@ -541,6 +541,7 @@ def test_pmodel_class_c3(request, values, pmodelenv, soilmstress, ftemp_kphio, l
 
     # Test chi and water use efficiency values
     # IWUE reported as µmol mol in pyrealm and Pa in rpmodel
+    # rpmodel doesn't return LUE
     assert np.allclose(ret.optchi.chi, expected['chi'])
     assert np.allclose(ret.iwue * (ret.env.patm * 1e-6) , expected['iwue'])
 
@@ -561,8 +562,10 @@ def test_pmodel_class_c3(request, values, pmodelenv, soilmstress, ftemp_kphio, l
     #        which is basically anything with no limitation factor.
 
     if 'none-fkphio-off-sm-off' not in name and 'none-fkphio-on-sm-off' not in name:
-        assert np.allclose(ret.jmax, expected['jmax'], equal_nan=True)
+        assert np.allclose(np.nan_to_num(ret.jmax), 
+                           np.nan_to_num(expected['jmax']), equal_nan=True)
     else:
+        # assert False
         warnings.warn('Skipping Jmax test for cases with numerical instability')
 
 

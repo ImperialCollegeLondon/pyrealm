@@ -258,7 +258,6 @@ run_row <- function(inputs) {
     return(list(name = test_name, val = ret))
 }
 
-browser()
 
 for (rw in seq(nrow(rpmodel_c3))) {
 
