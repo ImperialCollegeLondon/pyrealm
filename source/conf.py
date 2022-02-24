@@ -46,6 +46,8 @@ extensions = ['sphinx.ext.autodoc',
 autodoc_default_flags = ['members']
 autosummary_generate = True
 
+myst_enable_extensions = ['amsmath']
+
 # Enable mhchem for chemical formulae
 mathjax3_config = {'TeX': {'extensions': ['mhchem.js']}}
 
