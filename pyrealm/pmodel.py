@@ -531,7 +531,13 @@ def calc_kp_c4(tc: Union[float, np.ndarray],
     Returns:
 
         A numeric value for :math:`K` (in Pa)
+    
+    Examples:
 
+        >>> # Michaelis-Menten coefficient at 20 degrees Celsius and standard
+        >>> # atmosphere (in Pa):
+        >>> round(calc_kp_c4(20, 101325), 5)
+        9.26352
 
     """
 
@@ -795,6 +801,8 @@ class PModelEnvironment:
         co2: Atmospheric CO2 concentration (ppm)
         patm: Atmospheric pressure (Pa).
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
+        d13CO2: Atmospheric d13CO2 (‰)
+        D14CO2: Atmospheric D14CO2 (‰)
     """
 
     def __init__(self,
@@ -816,7 +824,7 @@ class PModelEnvironment:
         self.co2 = bounds_checker(co2, 0, 1000, '[]', 'co2', 'ppm')
         self.patm = bounds_checker(patm, 30000, 110000, '[]', 'patm', 'Pa')
         self.d13CO2 = bounds_checker(d13CO2, -10, -6, '[]', 'd13CO2', '‰')
-        self.D14CO2 = bounds_checker(D14CO2, 0, 250, '[]', 'D14CO2', '‰')
+        self.D14CO2 = bounds_checker(D14CO2, -25, 800, '[]', 'D14CO2', '‰')
 
         # Guard against calc_density issues
         if np.nanmin(self.tc) < -25:
@@ -981,24 +989,24 @@ class PModel:
 
     Examples:
 
-        >>> env = PModelEnvironment(tc=20, vpd=1000, co2=400, patm=101325.0, theta=0.4)
+        >>> env = PModelEnvironment(tc=20, vpd=1000, co2=400, patm=101325.0, theta=0.4,d13CO2= -8.4, D14CO2 = 19.2)
         >>> mod_c3 = PModel(env)
         >>> # Key variables from pmodel
-        >>> np.round(mod_c3.optchi.ci, 5)
-        28.14209
-        >>> np.round(mod_c3.optchi.chi, 5)
-        0.69435
+        >>> round(mod_c3.optchi.ci, 5)
+        29.18551
+        >>> round(mod_c3.optchi.chi, 5)
+        0.7201
         >>> mod_c3.estimate_productivity(fapar=1, ppfd=300)
-        >>> np.round(mod_c3.gpp, 5)
-        76.42545
+        >>> round(mod_c3.gpp, 5)
+        77.99435
         >>> mod_c4 = PModel(env, c4=True, method_jmaxlim='none')
         >>> # Key variables from PModel
-        >>> np.round(mod_c4.optchi.ci, 5)
-        18.22528
-        >>> np.round(mod_c4.optchi.chi, 5)
-        0.44967
+        >>> round(mod_c4.optchi.ci, 5)
+        15.88362
+        >>> round(mod_c4.optchi.chi, 5)
+        0.3919
         >>> mod_c4.estimate_productivity(fapar=1, ppfd=300)
-        >>> np.round(mod_c4.gpp, 5)
+        >>> round(mod_c4.gpp, 5)
         103.25886
     """
 
@@ -1355,20 +1363,27 @@ class CalcOptimalChi:
 
     Examples:
 
-        >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000, theta=0.4)
+        >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000, theta=0.4,d13CO2= -8.4, D14CO2 = 19.2)
         >>> vals = CalcOptimalChi(env=env)
         >>> round(vals.chi, 5)
-        0.69435
+        0.7201
         >>> round(vals.mc, 5)
-        0.33408
+        0.34331
         >>> round(vals.mj, 5)
-        0.7123
+        0.72067
         >>> round(vals.mjoc, 5)
-        2.13211
-        >>> # The c4 method estimates chi but sets the others at 1.
-        >>> c4_vals = CalcOptimalChi(env=env, method='c4')
-        >>> round(c4_vals.chi, 5)
-        0.44967
+        2.09917
+        >>> # The first c4 method estimates chi but sets the others at 1.
+        >>> # The second c4 method estimates chi, assumed gammastar to be negligible so that mj equal to 1.
+        >>> vals = CalcOptimalChi(env=env, method='c4')
+        >>> round(vals.chi, 5)
+        0.3919
+        >>> round(vals.mc, 5)
+        0.25626
+        >>> round(vals.mj, 5)
+        1.0
+        >>> round(vals.mjoc, 5)
+        3.90232
     """
 
     # TODO - move chi calc into __init__? Shared between the two methods
@@ -1415,9 +1430,11 @@ class CalcOptimalChi:
         but using a C4 specific estimate of the unit cost ratio :math:`\beta`,
         specified in :meth:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`.
 
-        This method then simply sets :math:`m_j = m_c = m_{joc} = 1.0` to capture the
+        Method 1: This method then simply sets :math:`m_j = m_c = m_{joc} = 1.0` to capture the
         boosted :math:`\ce{CO2}` concentrations at the chloropolast in C4
         photosynthesis.
+        Method 2: This method sets :math:`m_j = 1.0` because gammastar is negligible (equal to 0)
+        in C4 photosynthesis.
         """
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
@@ -1458,10 +1475,7 @@ class CalcOptimalChi:
     #        self.mj = np.ones(self.shape)
     #        self.mjoc = np.ones(self.shape)
             
-        # Calculate mj
-        # NOTE: this differs from rpmodel, which uses length not dim here, so
-        # unwrapped matrix inputs. Also, rpmodel includes a check for vpd > 0,
-        # but this is guaranteed by clip above (also true in rpmodel).
+        # mj is equal to 1 as gammastar is null
 
         self.mj = 1.0
 
@@ -1636,33 +1650,33 @@ class CalcLUEVcmax:
 
     Examples:
 
-        >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000, theta=0.4)
+        >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000, theta=0.4, d13CO2= -8.4, D14CO2 = 19.2)
         >>> optchi = CalcOptimalChi(env)
         >>> # Using Wang et al 2017
         >>> out_wang = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
         ...                         soilmstress = 1, method='wang17')
         >>> round(out_wang.lue, 5)
-        0.25475
+        0.25998
         >>> round(out_wang.vcmax, 6)
-        0.063488
+        0.06305
         >>> # Using Smith et al 2019
         >>> out_smith = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
         ...                          soilmstress = 1, method='smith19')
         >>> round(out_smith.lue, 6)
-        0.086569
+        0.087808
         >>> round(out_smith.vcmax, 6)
-        0.021574
+        0.021295
         >>> round(out_smith.omega, 5)
-        1.10204
+        1.10847
         >>> round(out_smith.omega_star, 5)
-        1.28251
+        1.28576
         >>> # No Jmax limitation
         >>> out_none = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
         ...                    soilmstress = 1, method='none')
         >>> round(out_none.lue, 6)
-        0.458998
+        0.464392
         >>> round(out_none.vcmax, 6)
-        0.11439
+        0.112623
 
     """
 
@@ -1844,20 +1858,25 @@ class CalcCarbonIsotopes:
 
     Returns:
 
-        An instance of :class:`CalcCarbonIsotopes` where the :attr:`delta13C`,
+        An instance of :class:`CalcCarbonIsotopes` where the :attr:`Delta13C_simple`, :attr:`Delta13C`,
+        :attr:`Delta14C`,:attr:`d13C_leaf`,:attr:`d14C_leaf`,:attr:`d13C_wood`
         have been populated using the chosen method.
-          
           
     Examples:
 
         >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000, theta=0.4, d13CO2= -8.4, D14CO2 = 19.2)
-        >>> Ciso = CalcCarbonIsotopes(env)
-        >>> out_none = CalcLUEVcmax(optchi, kphio = 0.081785, ftemp_kphio = 0.656,
-        ...                    soilmstress = 1, method='none')
-        >>> round(out_none.lue, 6)
-        0.458998
-        >>> round(out_none.vcmax, 6)
-        0.11439
+        >>> mod_c3 = PModel(env,c4=False)
+        >>> mod_c4 = PModel(env,c4=True)
+        >>> Ciso_c3 = mod_c3.delta
+        >>> round(Ciso_c3.Delta13C, 2)
+        20.41
+        >>> round(Ciso_c3.d13C_leaf, 2)
+        -28.23
+        >>> Ciso_c4 = mod_c4.delta
+        >>> round(Ciso_c4.Delta13C, 2)
+        5.11
+        >>> round(Ciso_c4.d13C_leaf, 2)
+        -13.44
     """
 
     # TODO - move chi calc into __init__? Shared between the two methods
