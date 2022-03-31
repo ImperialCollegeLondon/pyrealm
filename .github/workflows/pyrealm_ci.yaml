@@ -1,0 +1,32 @@
+name: Build Checker
+'on':
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+jobs:
+  Build:
+    runs-on: '${{ matrix.os }}'
+    strategy:
+      matrix:
+        os:
+          - ubuntu-18.04
+        python-version:
+          - 3.7.7
+          - '3.8'
+          - '3.9'
+    steps:
+      - name: 'Set up Python ${{ matrix.python-version }}'
+        uses: actions/setup-python@v2
+        with:
+          python-version: '${{ matrix.python-version }}'
+      - uses: actions/checkout@v2
+      - run: python --version
+      - run: pip install -U pip
+      - run: pip install -U pytest
+      - run: pip install -r requirements.txt
+      - run: pip install .
+      - run: pytest
+      - run: python -m doctest pyrealm/*.py
