@@ -388,7 +388,13 @@ def test_jmax_limitation(request, values, ftemp_kphio, jmax_method,
     name = name[(name.find('[') + 1):-1]
     expected = values['jmax-' + name + '-sm-off']
 
-    expected_lue = (0.05 * ftemp_kphio) * optchi.mj * jmax.f_v  * env.pmodel_params.k_c_molmass
+    # TODO - bug in rpmodel with scaling of Smith
+    if jmax_method == 'smith19':
+        xf = 1 / 4
+    else:
+        xf = 1
+
+    expected_lue = (0.05 * ftemp_kphio) * optchi.mj * jmax.f_v * xf * env.pmodel_params.k_c_molmass
     assert np.allclose(expected_lue, expected['lue'], equal_nan=True)
 
     if jmax_method == 'smith19':
