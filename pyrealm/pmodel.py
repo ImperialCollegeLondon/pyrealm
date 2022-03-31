@@ -1040,25 +1040,33 @@ class PModel:
                                      pmodel_params=env.pmodel_params)
 
         # -----------------------------------------------------------------------
-        # Vcmax and light use efficiency
+        # Calculation of Jmax limitation terms
         # -----------------------------------------------------------------------
 
         self.method_jmaxlim = method_jmaxlim
-        lue_vcmax = CalcLUEVcmax(self.optchi, self.kphio, soilmstress,
-                                 method=method_jmaxlim,
-                                 pmodel_params=env.pmodel_params)
+
+        self.jmaxlim = JmaxLimitation(self.optchi,
+                                      method=self.method_jmaxlim,
+                                      pmodel_params=env.pmodel_params)
 
         # -----------------------------------------------------------------------
         # Store the two efficiency predictions
         # -----------------------------------------------------------------------
 
-        # intrinsic water use efficiency (in µmol mol-1). The rpmodel reports this
+        # Intrinsic water use efficiency (in µmol mol-1). The rpmodel reports this
         # in Pascals, but more commonly reported in µmol mol-1. The standard equation
         # (ca - ci) / 1.6 expects inputs in ppm, so the pascal versions are back
         # converted here.
         self.iwue = (5/8 * (env.ca - self.optchi.ci)) / (1e-6 * self.env.patm)
-        self.lue = lue_vcmax.lue
-        self.vcmax_unit_iabs = lue_vcmax.vcmax
+
+        # The basic calculation of LUE = phi0 * M_c * m but here we implement
+        # two penalty terms for jmax limitation and Stocker beta soil moisture
+        # stress 
+        # Note: the rpmodel implementation also estimates soilmstress effects on
+        #       jmax and vcmax but pyrealm.pmodel only applies the stress factor
+        #       to LUE and hence GPP
+        self.lue = (self.kphio * self.optchi.mj * self.jmaxlim.f_v 
+                     * self.pmodel_params.k_c_molmass * self.soilmstress)
 
         # -----------------------------------------------------------------------
         # Define attributes populated by estimate_productivity method
@@ -1164,48 +1172,27 @@ class PModel:
         self._gpp = self.lue * iabs
 
         # V_cmax
-        self._vcmax = self.vcmax_unit_iabs * iabs
+        self._vcmax = self.kphio * iabs * self.optchi.mjoc * self.jmaxlim.f_v
 
         # V_cmax25 (vcmax normalized to pmodel_params.k_To)
         ftemp25_inst_vcmax = calc_ftemp_inst_vcmax(self.env.tc,
                                                    pmodel_params=self.pmodel_params)
-        self._vcmax25 = self.vcmax / ftemp25_inst_vcmax
+        self._vcmax25 = self._vcmax / ftemp25_inst_vcmax
 
         # Dark respiration at growth temperature
         ftemp_inst_rd = calc_ftemp_inst_rd(self.env.tc,
                                            pmodel_params=self.pmodel_params)
         self._rd = (self.pmodel_params.atkin_rd_to_vcmax *
-                    (ftemp_inst_rd / ftemp25_inst_vcmax) * self.vcmax)
+                    (ftemp_inst_rd / ftemp25_inst_vcmax) * self._vcmax)
 
-        # Jmax using again A_J = A_C
-        fact_jmaxlim = (self.vcmax * (self.optchi.ci + 2.0 * self.env.gammastar) /
-                        (self.kphio *  iabs * (self.optchi.ci + self.env.kmm)))
-        
-        # The equation Jmax = 4 * phio * I_abs  / sqrt((1 / Jf) ^ 2 -1)
-        # has the domain [-1, 0) and (0, 1], so need to be careful about
-        # what values of fact_jmaxlim are allowed.
 
-        # Guard against negative values getting into sqrt
-        jmaxlim_step1 = (1.0 / fact_jmaxlim) ** 2 - 1.0
-
-        pos_jmaxlim_step1 = np.greater_equal(jmaxlim_step1, 0)
-        jmax  = (4.0 * self.kphio  * iabs 
-                 / np.sqrt(jmaxlim_step1, where=pos_jmaxlim_step1))
-
-        # Backfill invalid inputs.
-        if isinstance(jmax, np.ndarray):
-            jmax[np.logical_not(pos_jmaxlim_step1)] = np.nan
-        elif not pos_jmaxlim_step1:
-            jmax = np.nan
-
-        # Store calculate value
-        self._jmax = jmax
+        # Calculate Jmax
+        self._jmax = 4 * self.kphio * iabs * self.jmaxlim.f_j
 
         # AJ and AC
-        a_j = (self.kphio * iabs * (self.optchi.ci - self.env.gammastar) / 
-                (self.optchi.ci + 2 * self.env.gammastar) *  fact_jmaxlim)
-        a_c = (self.vcmax * (self.optchi.ci - self.env.gammastar)/ 
-                (self.optchi.ci + self.env.kmm))
+        a_j = (self.kphio * iabs * self.optchi.mj * self.jmaxlim.f_v)
+        a_c = (self.vcmax * self.optchi.mc)
+
         assim = np.minimum(a_j, a_c)
 
         if not np.allclose(assim, self._gpp / self.pmodel_params.k_c_molmass, equal_nan=True):
@@ -1462,28 +1449,56 @@ class CalcOptimalChi:
         summarize_attrs(self, attrs, dp=dp)
 
 
-class CalcLUEVcmax:
-    r"""Estimate light use efficiency and maximum carboxylation rate
-    :math:`V_{cmax}`. The class implements:
+class JmaxLimitation:
+    r"""This class calculates two factors (:math:`f_v` and :math:`f_j`) used to 
+    implement :math:`J_{max}` limitation of photosynthesis. These factors are 
+    used to adjust the 'simple' form of the P model equations to give the full
+    forms:
 
-    - :math:`J_{max}` limitation of light use efficiency, providing two
-      approaches (``wang17`` and ``smith19``),
-    - soil moisture stress limitation, and
-    - temperature dependence of apparent quantum yield efficiency.
+        .. math::
+            :nowrap:
 
-    Light use efficiency (LUE) is calculated from the inputs as:
+            \[
+                \begin{align*}
+                V_{cmax} &= \phi_{0} I_{abs} \frac{m}{m_c} f_{v} \\
+                J_{max} &= 4 \phi_{0} I_{abs} f_{j} \\
+                \end{align*}
+            \]
 
-    .. math::
+    Three methods are currently implemented:
 
-        \text{LUE} = \phi_0 \cdot \phi_0(T) \cdot  m_j \cdot m_{jlim} \cdot M_C \cdot \beta
+    `none`: This allows the 'simple' form of the equations to be calcualted 
+        (:math:`f_v = f_j = 1`)
 
-    The Rubisco carboxylation capacity (:math:`V_{cmax}`) of the system is then back
-    calculated from LUE as:
+    `wang17`: This implements the full form of the model defined by :cite:`wang`
+         where:
 
-    .. math::
+        .. math::
+            :nowrap:
 
-          V_{cmax} = \frac{\text{LUE}}{m_c M_C}
+            \[
+                \begin{align*}
+                f_v &=  \sqrt{ 1 - \frac{c^*}{m} ^{2/3}} \\
+                f_j &=  \sqrt{\frac{m}{c^*} ^{2/3} -1 } \\
+                \end{align*}
+            \]
 
+    `smith19`: This implements the alternative implementation provided by :cite:`smith`
+        where:
+
+        .. math::
+            :nowrap:
+
+            \[
+                \begin{align*}
+                f_v &=  \frac{\omega^*}{8\theta} \\
+                f_j &=  \frac{\omega}{4}\\
+                \end{align*}
+            \]
+
+        Note that Eqn 15 of :cite:`smith` has :math:`J_{max} = \phi \I \omega`, implemented 
+        here as :math:`J_{max} = 4 \phi \I \omega / 4`.
+    
     Attributes:
 
         optchi (:class:`CalcOptimalChi`): an instance of :class:`CalcOptimalChi`
@@ -1499,49 +1514,17 @@ class CalcLUEVcmax:
             (see :func:`calc_soilmstress`).
         method (str): method to apply :math:`J_{max}` limitation (default: ``wang17``,
             or ``smith19`` or ``none``)
-        mjlim (float): :math:`J_{max}` limitation factor, calculated using the method.
-        lue (float): calculated light use efficiency per unit absolute irradiance.
-        vcmax (float): calculated maximum carboxylation rate per unit absolute
-            irradiance.
+        f_j (float): :math:`J_{max}` limitation factor, calculated using the method.
+        f_v (float): :math:`V_{cmax}` limitation factor, calculated using the method.
         omega (float): component of :math:`J_{max}` calculation (:cite:`Smith:2019dv`).
         omega_star (float):  component of :math:`J_{max}` calculation (:cite:`Smith:2019dv`).
-
-    Other Parameters:
-
-        c_molmass: the molar mass of carbon (:math:`M_C`, `pmodel_params.k_c_molmass`)
-
-
 
     Examples:
 
         >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000) 
         >>> optchi = CalcOptimalChi(env)
         >>> kphio =  0.081785 * calc_ftemp_kphio(tc=20)
-        >>> # Using Wang et al 2017
-        >>> out_wang = CalcLUEVcmax(optchi, kphio = kphio,
-        ...                         soilmstress = 1, method='wang17')
-        >>> round(out_wang.lue, 5)
-        0.25475
-        >>> round(out_wang.vcmax, 6)
-        0.063488
-        >>> # Using Smith et al 2019
-        >>> out_smith = CalcLUEVcmax(optchi, kphio = kphio,
-        ...                          soilmstress = 1, method='smith19')
-        >>> round(out_smith.lue, 6)
-        0.086569
-        >>> round(out_smith.vcmax, 6)
-        0.021574
-        >>> round(out_smith.omega, 5)
-        1.10204
-        >>> round(out_smith.omega_star, 5)
-        1.28251
-        >>> # No Jmax limitation
-        >>> out_none = CalcLUEVcmax(optchi, kphio = kphio,
-        ...                    soilmstress = 1, method='none')
-        >>> round(out_none.lue, 6)
-        0.458998
-        >>> round(out_none.vcmax, 6)
-        0.11439
+        TODO
 
     """
 
@@ -1550,23 +1533,17 @@ class CalcLUEVcmax:
     #        e.g. elevation gradient David Sandoval, REALM meeting, Dec 2020)
 
     def __init__(self, optchi: CalcOptimalChi,
-                 kphio: Union[float, np.ndarray],
-                 soilmstress: Union[float, np.ndarray] = 1.0,
                  method: str = 'wang17',
                  pmodel_params: PModelParams = PModelParams()
                  ):
 
-        self.shape = check_input_shapes(optchi.mj, optchi.mjoc, 
-                                        kphio, soilmstress)
+        self.shape = check_input_shapes(optchi.mj)
 
         self.optchi = optchi
-        self.kphio = kphio
-        self.soilmstress = soilmstress
         self.method = method
         self.pmodel_params = pmodel_params
-        self.mjlim = None
-        self.lue = None
-        self.vcmax = None
+        self.f_j = None
+        self.f_m = None
         self.omega = None
         self.omega_star = None
 
@@ -1585,27 +1562,17 @@ class CalcLUEVcmax:
             this_method = all_methods[self.method]
             this_method()
 
-            # Now calculate the LUE and V_cmax
-            # Light use efficiency (gpp per unit absorbed light)
-            self.lue = (self.kphio * self.optchi.mj * self.mjlim *
-                        self.pmodel_params.k_c_molmass * self.soilmstress)
-
-            # Back calculate Vcmax normalised per unit absorbed PPFD (assuming iabs=1)
-            self.vcmax = self.lue / (self.optchi.mc * self.pmodel_params.k_c_molmass)
-
         else:
-            raise ValueError(f"CalcLUEVcmax: method argument '{method}' invalid.")
+            raise ValueError(f"JmaxLimitation: method argument '{method}' invalid.")
 
     def __repr__(self):
 
-        return (f"CalcLUEVCmax(lue={self.lue}, vcmax={self.vcmax}, "
-                f"mjlim={self.mjlim}, omega={self.omega}, omega_star={self.omega_star})")
+        return (f"JmaxLimitation(shape={self.shape})")
 
     def wang17(self):
-        r"""Calculate a :math:`J_{max}` limitation following
-        :cite:`Wang:2017go`. The factor is described in Equation 49 of
-        :cite:`Wang:2017go` and is the square root term at the end of that
-        equation:
+        r"""Calculate limitation factors following :cite:`Wang:2017go`. The factor
+        is described in Equation 49 of :cite:`Wang:2017go` and is the square root term
+        at the end of that equation:
 
         .. math::
 
@@ -1618,18 +1585,22 @@ class CalcLUEVcmax:
 
         """
 
-        # Calculate mjlim (square root term in Eqn 2 of Wang et al 2017)
-        vals = 1 - (self.pmodel_params.wang17_c / self.optchi.mj) ** (2.0 / 3.0)
+        # Calculate √ {1 – (c*/m)^(2/3)} (see Eqn 2 of Wang et al 2017) and 
+        # √ {(m/c*)^(2/3) - 1} safely, both are undefined where m <= c*.
+        vals_defined = np.greater(self.optchi.mj, self.pmodel_params.wang17_c)
 
-        # Convert to array if needed and handle negative and nan values
-        vals = np.array(vals) if np.ndim(vals) == 0 else vals
-        mask = vals >= 0  # Also traps np.nan
-        mjlim = np.empty_like(vals)
-        mjlim[mask] = np.sqrt(vals[mask])
-        mjlim[~ mask] = np.nan
-
-        # revert scalars back to a scalar value
-        self.mjlim = mjlim.item() if np.ndim(mjlim) == 0 else mjlim
+        self.f_v = np.sqrt(1 - (self.pmodel_params.wang17_c / self.optchi.mj) ** (2.0 / 3.0),
+                           where = vals_defined)
+        self.f_j = np.sqrt(( self.optchi.mj / self.pmodel_params.wang17_c) ** (2.0 / 3.0) - 1,
+                           where = vals_defined)
+        
+        # Backfill undefined values
+        if isinstance(self.f_v, np.ndarray):
+            self.f_j[np.logical_not(vals_defined)] = np.nan
+            self.f_v[np.logical_not(vals_defined)] = np.nan
+        elif not vals_defined:
+            self.f_j = np.nan
+            self.f_v = np.nan
 
     def smith19(self):
         r"""Calculate a :math:`J_{max}` limitation following
@@ -1690,8 +1661,12 @@ class CalcLUEVcmax:
                            np.sqrt((1.0 + self.omega) ** 2 -
                                    (4.0 * theta * self.omega)))
 
-        # Effect of Jmax limitation
-        self.mjlim = self.omega_star / (8.0 * theta)
+        # Effect of Jmax limitation - note scaling here. Smith et al use
+        # phi0 as as the quantum efficiency of electron transport, which is 
+        # 4 times our definition of phio0 as the quantum efficiency of photosynthesis.
+        # So omega*/8 theta and omega / 4 are scaled down here  by a factor of 4.
+        self.f_v = self.omega_star / (2.0 * theta)
+        self.f_j = self.omega 
 
     def none(self):
         """No :math:`J_{max}` limitation (:math:`m_{jlim} = 1.0`)
@@ -1699,4 +1674,6 @@ class CalcLUEVcmax:
 
         # Set Jmax limitation to unity - could define as 1.0 in __init__ and
         # pass here, but setting explicitly within the method for clarity.
-        self.mjlim = 1.0
+        self.f_v = 1.0
+        self.f_j = 1.0
+
