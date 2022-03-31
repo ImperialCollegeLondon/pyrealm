@@ -1165,19 +1165,19 @@ class PModel:
             * gs: Stomatal conductance
 
         The functions finds the total absorbed irradiance (:math:`I_{abs}`) as
-        the product of the photosynthetic photon flux density (`ppfd`) and the
-        fraction of absorbed photosynthetically active radiation (`fapar`).
-
-        Note that the units of PPFD determine the units of outputs: if PPFD is
-        in :math:`\text{mol} m^{-2} \text{month}^{-1}`, then output values are
-        scaled per square metre per month.
+        the product of the photosynthetic photon flux density (PPFD, `ppfd`) and
+        the fraction of absorbed photosynthetically active radiation (`fapar`).
 
         The default values of ``ppfd`` and ``fapar`` provide estimates of the
-        variables above per unit absorbed irradiance.
+        variables above per unit absorbed irradiance. 
+
+        PPFD _must_ be provided in units of micromols per metre square per 
+        second (µmol m-2 s-1). This is required to ensure that values of 
+        :math:`J_{max}` and :math:`V_{cmax}` are also in µmol m-2 s-1.
 
         Args:
-            fapar: the fraction of absorbed photosynthetically active radiation
-            ppfd: photosynthetic photon flux density
+            fapar: the fraction of absorbed photosynthetically active radiation (-)
+            ppfd: photosynthetic photon flux density (µmol m-2 s-1)
         """
 
         # Check input shapes against each other and an existing calculated value
@@ -1253,17 +1253,14 @@ class PModel:
 
         if self._gpp is not None:
             attrs.extend([('gpp', 'gC area time †'),
-                          ('vcmax', 'mol C area time †'),
-                          ('vcmax25', 'mol C area time †'), 
-                          ('rd', 'mol C area time †'),
-                          ('gs', 'mol C area time †'),
-                          ('jmax', 'mol C area time †')])
+                          ('vcmax', 'µmol m-2 s-1'),
+                          ('vcmax25', 'µmol m-2 s-1'), 
+                          ('rd', 'µmol m-2 s-1'),
+                          ('gs', 'µmol m-2 s-1'),
+                          ('jmax', 'µmol m-2 s-1')])
 
         summarize_attrs(self, attrs, dp=dp)
 
-        if self._gpp is not None:
-            print('\n†: The units of all these variables follow the area and\n'
-                    '   time scaling of the PPFD data used.')
 
 
 class CalcOptimalChi:
