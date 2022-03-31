@@ -1078,6 +1078,15 @@ class PModel:
         self._gpp = None
         self._gs = None
 
+    def _soilwarn(self, varname: str) -> None:
+        """The empirical soil moisture stress factor (Stocker et al. 2020) _can_
+        be used to back calculate realistic Jmax and Vcmax values. The pyrealm.PModel
+        implementation does not do so and this helper function is used to warn users
+        within property getter functions"""
+        
+        if self.do_soilmstress:
+            warn(f'pyrealm.PModel does not correct {varname} for empirical soil moisture effects on LUE.')
+
     @property
     def gpp(self) -> Union[float, np.ndarray]:
         """Cannot return GPP if estimate_productivity has not been run, do
@@ -1090,10 +1099,14 @@ class PModel:
     @property
     def vcmax(self) -> Union[float, np.ndarray]:
         """Cannot return V_cmax if estimate_productivity has not been run, do
-           not return None silently"""
+           not return None silently. Also screen for soilmoisture, which is
+           calculated differently in rpmodel.
+           """
+
         if self._vcmax is None:
             raise RuntimeError('vcmax not calculated: use estimate_productivity')
 
+        self._soilwarn('vcmax')
         return self._vcmax
 
     @property
@@ -1103,6 +1116,7 @@ class PModel:
         if self._vcmax25 is None:
             raise RuntimeError('vcmax25 not calculated: use estimate_productivity')
 
+        self._soilwarn('vcmax25')
         return self._vcmax25
 
     @property
@@ -1112,6 +1126,7 @@ class PModel:
         if self._rd is None:
             raise RuntimeError('RD not calculated: use estimate_productivity')
 
+        self._soilwarn('rd')
         return self._rd
 
     @property
@@ -1121,6 +1136,7 @@ class PModel:
         if self._jmax is None:
             raise RuntimeError('Jmax not calculated: use estimate_productivity')
 
+        self._soilwarn('jmax')
         return self._jmax
 
     @property
@@ -1130,6 +1146,7 @@ class PModel:
         if self._gs is None:
             raise RuntimeError('GS not calculated: use estimate_productivity')
 
+        self._soilwarn('gs')
         return self._gs
 
     def estimate_productivity(self,
