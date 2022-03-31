@@ -1509,29 +1509,26 @@ class JmaxLimitation:
 
             \[
                 \begin{align*}
-                f_v &=  \frac{\omega^*}{8\theta} \\
-                f_j &=  \frac{\omega}{4}\\
+                f_v &=  \frac{\omega^*}{2\theta} \\
+                f_j &=  \frac{\omega}\\
                 \end{align*}
             \]
 
-        Note that Eqn 15 of :cite:`smith` has :math:`J_{max} = \phi \I \omega`, implemented 
-        here as :math:`J_{max} = 4 \phi \I \omega / 4`.
+        Note that :cite:`smith` defines :math:`phi_0` as the quantum efficiency of electron 
+        transfer, whereas :mod:`pyrealm.PModel` defines :math:`phi_0` as the quantum 
+        efficiency of photosynthesis, which is 4 times smaller. This is why the equations
+        here are a factor of 4 greater than Eqn 15 and 17 in :cite:`smith`.
     
-    Attributes:
+    Arguments:
 
-        optchi (:class:`CalcOptimalChi`): an instance of :class:`CalcOptimalChi`
-            providing the :math:`\ce{CO2}` limitation term of light use efficiency
-            (:math:`\m_j`) and the  the :math:`\ce{CO2}` limitation term for
-            Rubisco assimilation (:math:`m_c`).
-        kphio (float): The apparent quantum yield efficiency (:math:`\phi_0`,
-            unitless), including any correction factor for the temperature
-            dependence of quantum yield efficiency (:math:`\phi_0(T)`, see
-            :func:`calc_ftemp_kphio`).
-        soilmstress (float): A factor to capture the soil moisture stress
-            (:math:`\beta`), defaulting to 1.0 for no soil moisture stress
-            (see :func:`calc_soilmstress`).
-        method (str): method to apply :math:`J_{max}` limitation (default: ``wang17``,
+        optchi: an instance of :class:`CalcOptimalChi` providing the :math:`\ce{CO2}` 
+            limitation term of light use efficiency (:math:`\m_j`) and the  :math:`\ce{CO2}`
+            limitation term for Rubisco assimilation (:math:`m_c`).
+        method: method to apply :math:`J_{max}` limitation (default: ``wang17``,
             or ``smith19`` or ``none``)
+        pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
+
+    Attributes:
         f_j (float): :math:`J_{max}` limitation factor, calculated using the method.
         f_v (float): :math:`V_{cmax}` limitation factor, calculated using the method.
         omega (float): component of :math:`J_{max}` calculation (:cite:`Smith:2019dv`).
@@ -1541,9 +1538,21 @@ class JmaxLimitation:
 
         >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000) 
         >>> optchi = CalcOptimalChi(env)
-        >>> kphio =  0.081785 * calc_ftemp_kphio(tc=20)
-        TODO
-
+        >>> none = JmaxLimitation(optchi, method='none')
+        >>> none.f_j
+        1.0
+        >>> none.f_v
+        1.0
+        >>> wang17 = JmaxLimitation(optchi, method='wang17')
+        >>> round(wang17.f_j, 5)
+        0.66722
+        >>> round(wang17.f_v, 5)
+        0.55502
+        >>> smith19 = JmaxLimitation(optchi, method='smith19')
+        >>> round(smith19.f_j, 5)
+        1.10204
+        >>> round(smith19.f_v, 5)
+        0.75442
     """
 
     # TODO - apparent incorrectness of wang and smith methods with _ca_ variation,
