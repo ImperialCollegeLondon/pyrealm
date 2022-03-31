@@ -138,7 +138,7 @@ class PModelParams(ParamClass):
       1.69946e-17, -2.295063e-20]
 
     **Viscosity of water**, values taken from :cite:`Huber:2009fy`
-
+    * `simple_viscosity`: Use a simple implementation of viscosity (boolean)
     * `huber_tk_ast`: Reference temperature (:math:`tk_{ast}`, 647.096, Kelvin)
     * `huber_rho_ast`: Reference density (:math:`\rho_{ast}`, 322.0, kg/m^3)
     * `huber_mu_ast`: Reference pressure (:math:`\mu_{ast}` 1.0e-6, Pa s)
@@ -229,6 +229,7 @@ class PModelParams(ParamClass):
         0.6980547, -0.0007435626, 3.704258e-05, -6.315724e-07, 9.829576e-09,
         -1.197269e-10, 1.005461e-12, -5.437898e-15, 1.69946e-17, -2.295063e-20)
     # Huber
+    simple_viscosity: bool = False
     huber_tk_ast: Number = 647.096
     huber_rho_ast: Number = 322.0
     huber_mu_ast: Number =1e-06
