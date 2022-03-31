@@ -1,7 +1,6 @@
 # This script takes a simple set of inputs to the rpmodel function in
 # both scalar and array form and extends that set to include the outputs
 # of key functions and other intermediate variables to be validated using
-
 # the pytest suite for the pmodel module
 
 library(rpmodel)
@@ -34,21 +33,21 @@ values <- within(values, {
        ftemp_kphio_c4_ar <- ftemp_kphio(tc_ar, c4 = TRUE)
 
        # gammastar
-       gammastar_sc <- gammastar(tc_sc, patm_sc)
-       gammastar_mx <- gammastar(tc_ar, patm_sc)
-       gammastar_ar <- gammastar(tc_ar, patm_ar)
+       gammastar_sc <- calc_gammastar(tc_sc, patm_sc)
+       gammastar_mx <- calc_gammastar(tc_ar, patm_sc)
+       gammastar_ar <- calc_gammastar(tc_ar, patm_ar)
 
        # kmm
-       kmm_sc <- kmm(tc_sc, patm_sc)
-       kmm_mx <- kmm(tc_ar, patm_sc)
-       kmm_ar <- kmm(tc_ar, patm_ar)
+       kmm_sc <- calc_kmm(tc_sc, patm_sc)
+       kmm_mx <- calc_kmm(tc_ar, patm_sc)
+       kmm_ar <- calc_kmm(tc_ar, patm_ar)
 
        # soilmstress
        # Bug for mixed inputs in rpmodel:
        # https://github.com/computationales/rpmodel/issues/16
-       soilmstress_sc <- soilmstress(soilm_sc, meanalpha_sc)
-       soilmstress_mx <- mapply(soilmstress, soilm_ar, meanalpha_sc)
-       soilmstress_ar <- soilmstress(soilm_ar, meanalpha_ar)
+       soilmstress_sc <- calc_soilmstress(soilm_sc, meanalpha_sc)
+       soilmstress_mx <- mapply(calc_soilmstress, soilm_ar, meanalpha_sc)
+       soilmstress_ar <- calc_soilmstress(soilm_ar, meanalpha_ar)
 
        # viscosity_h2o
        viscosity_h2o_sc <- viscosity_h2o(tc_sc, patm_sc)
@@ -62,8 +61,8 @@ values <- within(values, {
        ns_star_ar <- viscosity_h2o_ar / visc_25
 
        # patm
-       patm_from_elev_sc <- patm(elev_sc)
-       patm_from_elev_ar <- patm(elev_ar)
+       patm_from_elev_sc <- calc_patm(elev_sc)
+       patm_from_elev_ar <- calc_patm(elev_ar)
 
        # co2_to_ca
        ca_sc <- co2_to_ca(co2_sc, patm_sc)
@@ -73,30 +72,36 @@ values <- within(values, {
        # rpmodel:::optimal_chi
        optchi_p14_sc_c3 <- rpmodel:::optimal_chi(kmm_sc, gammastar_sc,
                                                  ns_star_sc, ca_sc, vpd_sc,
-                                                 beta = stocker_beta_c3)
+                                                 beta = stocker_beta_c3,
+                                                 c4 = FALSE)
        # The mx version is odd - the pyrealm test uses tc_ar and then
        # scalars for the other inputs to PModelEnvironment, so gammastar
        # ns_star and kmm are the mx versions, but ca and vpd are sc.
        optchi_p14_mx_c3 <- rpmodel:::optimal_chi(kmm_mx, gammastar_mx,
                                                  ns_star_mx, ca_sc, vpd_sc,
-                                                 beta = stocker_beta_c3)
+                                                 beta = stocker_beta_c3,
+                                                 c4 = FALSE)
        optchi_p14_ar_c3 <- rpmodel:::optimal_chi(kmm_ar, gammastar_ar,
                                                  ns_star_ar, ca_ar, vpd_ar,
-                                                 beta = stocker_beta_c3)
+                                                 beta = stocker_beta_c3,
+                                                 c4 = FALSE)
 
        # rpmodel:::optimal_chi for C4
-       optchi_p14_sc_c4 <- rpmodel:::optimal_chi_c4(kmm_sc, gammastar_sc,
-                                                    ns_star_sc, ca_sc, vpd_sc,
-                                                    beta = stocker_beta_c4)
+       optchi_p14_sc_c4 <- rpmodel:::optimal_chi(kmm_sc, gammastar_sc,
+                                                 ns_star_sc, ca_sc, vpd_sc,
+                                                 beta = stocker_beta_c4,
+                                                 c4 = TRUE)
        # The mx version is odd - the pyrealm test uses tc_ar and then
        # scalars for the other inputs to PModelEnvironment, so gammastar
        # ns_star and kmm are the mx versions, but ca and vpd are sc.
-       optchi_p14_mx_c4 <- rpmodel:::optimal_chi_c4(kmm_mx, gammastar_mx,
-                                                    ns_star_mx, ca_sc, vpd_sc,
-                                                    beta = stocker_beta_c4)
-       optchi_p14_ar_c4 <- rpmodel:::optimal_chi_c4(kmm_ar, gammastar_ar,
-                                                    ns_star_ar, ca_ar, vpd_ar,
-                                                    beta = stocker_beta_c4)
+       optchi_p14_mx_c4 <- rpmodel:::optimal_chi(kmm_mx, gammastar_mx,
+                                                 ns_star_mx, ca_sc, vpd_sc,
+                                                 beta = stocker_beta_c4,
+                                                 c4 = TRUE)
+       optchi_p14_ar_c4 <- rpmodel:::optimal_chi(kmm_ar, gammastar_ar,
+                                                 ns_star_ar, ca_ar, vpd_ar,
+                                                 beta = stocker_beta_c4,
+                                                 c4 = TRUE)
 
 
 })
@@ -160,9 +165,11 @@ for (rw in seq(nrow(luevcmax))) {
     this_optchi <- optchi[[inputs$oc]]
     if (c4) {
         this_optchi$beta <- values[['stocker_beta_c4']]
-        optchi_out <- do.call(rpmodel:::optimal_chi_c4, this_optchi)
+        this_optchi$c4 <- TRUE
+        optchi_out <- do.call(rpmodel:::optimal_chi, this_optchi)
     } else {
         this_optchi$beta <- values[['stocker_beta_c3']]
+        this_optchi$c4 <- FALSE
         optchi_out <- do.call(rpmodel:::optimal_chi, this_optchi)
     }
 
@@ -170,8 +177,8 @@ for (rw in seq(nrow(luevcmax))) {
     if (inputs$sm == "sm-off") {
         soilmstress <- 1.0
     } else {
-        soilmstress <- soilmstress(soilm = values$soilm_sc,
-                                   meanalpha = values$meanalpha_sc)
+        soilmstress <- calc_soilmstress(soilm = values$soilm_sc,
+                                        meanalpha = values$meanalpha_sc)
     }
 
     test_name <- paste0("jmax-", paste(inputs, collapse = "-"))
@@ -237,7 +244,7 @@ run_row <- function(inputs) {
     v$do_ftemp_kphio <- do_ftemp_kphio
     v$do_soilmstress <- do_soilmstress
     v$method_jmaxlim <- inputs$lm
-    v$method_optci <- "prentice14"
+    v$c4 <- FALSE
 
     # NOTE - the default value of bpar_soilm passed into soilmstress
     # by rpmodel is different from the default value of bpar set in the
@@ -299,16 +306,12 @@ for (rw in seq(nrow(rpmodel_c4))) {
     v$meanalpha <- values$meanalpha_sc
     v$do_ftemp_kphio <- do_ftemp_kphio
     v$do_soilmstress <- do_soilmstress
-    v$method_optci <- "c4"
-    v$fapar <- 1
-    v$ppfd <- 1
+    v$c4 <- TRUE
     # NOTE - the default value of bpar_soilm passed into soilmstress
     # by rpmodel is different from the default value of bpar set in the
     # function definition, so standardise that here
     v$bpar_soilm <- 0.685
 
-    # Run the model with Iabs = 1 (FAPAR * PPFD = 1) to get
-    # values to compare to the unit_iabs values
     ret <- do.call(rpmodel, v)
 
     # The rpmodel implementation is sensitive to rounding error when
@@ -318,22 +321,7 @@ for (rw in seq(nrow(rpmodel_c4))) {
     ret$jmax <- ifelse(is.nan(ret$jmax), Inf, ret$jmax)
 
     test_name <- paste("rpmodel-c4",
-                       paste(inputs, collapse = "-"), "unitiabs", sep = "-")
-    values[[test_name]] <- ret
-
-    # Rerun with some actual scalar PPFD and Iabs values to validate scaling
-    v$fapar <- values$fapar_sc
-    v$ppfd <- values$ppfd_sc
-    ret <- do.call(rpmodel, v)
-
-    # The rpmodel implementation is sensitive to rounding error when
-    # using the simple method. fact_jmaxlim can be (just) > 1, leading to
-    # sqrt(-tinything) = NaN. This leads to differences in pmodel outputs,
-    # so trapping that here.
-    ret$jmax <- ifelse(is.nan(ret$jmax), Inf, ret$jmax)
-
-    test_name <- paste("rpmodel-c4",
-                       paste(inputs, collapse = "-"), "iabs", sep = "-")
+                       paste(inputs, collapse = "-"), sep = "-")
 
     values[[test_name]] <- ret
 
