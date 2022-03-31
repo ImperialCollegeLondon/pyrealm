@@ -585,16 +585,17 @@ def calc_soilmstress(soilm: Union[float, np.ndarray],
 
 def calc_viscosity_h2o(tc: Union[float, np.ndarray],
                        patm: Union[float, np.ndarray],
-                       pmodel_params: PModelParams = PModelParams()
-                       ) -> Union[float, np.ndarray]:
+                       pmodel_params: PModelParams = PModelParams(),
+                       simple: bool = False) -> Union[float, np.ndarray]:
     r"""Calculates the **viscosity of water** (:math:`\eta`) as a function of
-    temperature and atmospheric pressure (::cite:`Huber:2009fy`).
+    temperature and atmospheric pressure (::cite:`Huber:2009fy`). 
 
     Parameters:
 
         tc: air temperature (°C)
         patm: atmospheric pressure (Pa)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
+        simple: Use the simple formulation.
 
     Returns:
 
@@ -609,6 +610,11 @@ def calc_viscosity_h2o(tc: Union[float, np.ndarray],
 
     # Check inputs, return shape not used
     _ = check_input_shapes(tc, patm)
+
+    if simple or pmodel_params.simple_viscosity:
+        # The reference for this is unknown, but is used in some implementations
+        # so is included here to allow intercomparison.
+        return np.exp(-3.719 + 580/((tc + 273) - 138))
 
     # Get the density of water, kg/m^3
     rho = calc_density_h2o(tc, patm, pmodel_params=pmodel_params)
