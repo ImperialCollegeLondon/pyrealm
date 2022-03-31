@@ -987,9 +987,10 @@ class PModel:
                                  "approaches to soil moisture effects. Do not use both.")
 
         if soilmstress is None:
-            soilmstress = 1.0
+            self.soilmstress = 1.0
             self.do_soilmstress = False
         else:
+            self.soilmstress = soilmstress
             self.do_soilmstress = True
 
         if rootzonestress is None:
@@ -1002,27 +1003,27 @@ class PModel:
         self.do_ftemp_kphio = do_ftemp_kphio
         if kphio is None:
             if not self.do_ftemp_kphio:
-                self.kphio = 0.049977
+                self.init_kphio = 0.049977
             elif self.do_soilmstress:
-                self.kphio = 0.087182
+                self.init_kphio = 0.087182
             else:
-                self.kphio = 0.081785
+                self.init_kphio = 0.081785
         else:
-            self.kphio = kphio
+            self.init_kphio = kphio
 
         # -----------------------------------------------------------------------
         # Temperature dependence of quantum yield efficiency
         # -----------------------------------------------------------------------
-        # 'do_ftemp_kphio' is not actually a stress function, but is the temperature-
-        # dependency of the quantum yield efficiency after Bernacchi et al., 2003
+        # 'calc_ftemp_kphio' is the temperature-dependency of the quantum yield
+        # efficiency after Bernacchi et al., 2003
 
         if self.do_ftemp_kphio:
             ftemp_kphio = calc_ftemp_kphio(env.tc, c4,
                                            pmodel_params=env.pmodel_params)
+            self.kphio = self.init_kphio * ftemp_kphio 
         else:
-            ftemp_kphio = 1.0
+            self.kphio = self.init_kphio 
 
-        self.kphio *= ftemp_kphio 
         # -----------------------------------------------------------------------
         # Optimal ci
         # The heart of the P-model: calculate ci:ca ratio (chi) and additional terms
