@@ -430,8 +430,9 @@ def calc_ns_star(tc: Union[float, np.ndarray],
         1.12536
     """
 
-    visc_env = calc_viscosity_h2o(tc, patm)
-    visc_std = calc_viscosity_h2o(pmodel_params.k_To, pmodel_params.k_Po)
+    visc_env = calc_viscosity_h2o(tc, patm, pmodel_params = pmodel_params)
+    visc_std = calc_viscosity_h2o(pmodel_params.k_To, pmodel_params.k_Po,
+                                  pmodel_params = pmodel_params)
 
     return visc_env / visc_std
 
@@ -735,7 +736,7 @@ def calc_co2_to_ca(co2: Union[float, np.ndarray],
 
 class PModelEnvironment:
 
-    """Create a PModelEnvironment instance using the input parameters.
+    r"""Create a PModelEnvironment instance using the input parameters.
 
     This class takes the four key environmental inputs to the P Model and
     calculates four photosynthetic variables for those environmental
@@ -1227,7 +1228,7 @@ class PModel:
             stress = 'None'
         return (f"PModel("
                 f"shape={self.shape}, "
-                f"kphio={self.kphio}, "
+                f"initial kphio={self.init_kphio}, "
                 f"ftemp_kphio={self.do_ftemp_kphio}, "
                 f"c4={self.c4}, "
                 f"Jmax_method={self.method_jmaxlim}, "
@@ -1250,7 +1251,7 @@ class PModel:
         attrs = [('lue', 'g C mol-1'), 
                  ('iwue', 'µmol mol-1')]
 
-        if self._gpp:
+        if self._gpp is not None:
             attrs.extend([('gpp', 'gC area time †'),
                           ('vcmax', 'mol C area time †'),
                           ('vcmax25', 'mol C area time †'), 
@@ -1260,14 +1261,14 @@ class PModel:
 
         summarize_attrs(self, attrs, dp=dp)
 
-        if self._gpp:
+        if self._gpp is not None:
             print('\n†: The units of all these variables follow the area and\n'
                     '   time scaling of the PPFD data used.')
 
 
 class CalcOptimalChi:
-    r"""Calculate the optimal :math:`\chi` and :math:`\ce{CO2}` limitation
-    factors. In more details, the values are:
+    r"""This class provides alternative approaches to calculating the optimal
+    :math:`\chi` and :math:`\ce{CO2}` limitation factors. These values are:
 
     - The optimal ratio of leaf internal to ambient :math:`\ce{CO2}` partial
       pressure (:math:`\chi = c_i/c_a`).
@@ -1291,6 +1292,9 @@ class CalcOptimalChi:
         env (PModelEnvironment): An instance of PModelEnvironment providing
             the photosynthetic environment for the model.
         method (str): one of ``c4`` or ``prentice14``
+        xi (float): defines the sensitivity of :math:`\chi` to the vapour 
+            pressure deficit and  is related to the carbon cost of water 
+            (Medlyn et al. 2011; Prentice et 2014) # TODO
         chi (float): the ratio of leaf internal to ambient :math:`\ce{CO2}`
             partial pressure (:math:`\chi`).
         mj (float): :math:`\ce{CO2}` limitation factor for light-limited
