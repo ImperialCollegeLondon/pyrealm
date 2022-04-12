@@ -1879,8 +1879,6 @@ class CalcCarbonIsotopes:
         -13.44
     """
 
-    # TODO - move chi calc into __init__? Shared between the two methods
-
     def __init__(self, optchi: CalcOptimalChi,
                  gammastar: Union[float, np.ndarray],
                  ca: Union[float, np.ndarray],
@@ -1924,14 +1922,18 @@ class CalcCarbonIsotopes:
 
         """
 
+        ## Equation from C3/C4 paper
+        self.Delta13C_simple = 13.95 - 17.04*self.optchi.chi
+        self.Delta13C = 13.95 - 17.04*self.optchi.chi
+        
         # 13C discrimination (‰): von Caemmerer et al. (2014) Eq. 1
-        self.Delta13C_simple = self.pmodel_params.farquhar_a + (self.pmodel_params.vonCaemmerer_b4 + (self.pmodel_params.farquhar_b - self.pmodel_params.vonCaemmerer_s)*self.pmodel_params.vonCaemmerer_phi - self.pmodel_params.farquhar_a)*self.optchi.chi
+        #self.Delta13C_simple = self.pmodel_params.farquhar_a + (self.pmodel_params.vonCaemmerer_b4 + (self.pmodel_params.farquhar_b - self.pmodel_params.vonCaemmerer_s)*self.pmodel_params.vonCaemmerer_phi - self.pmodel_params.farquhar_a)*self.optchi.chi
         
         ## Equation A5 from von Caemmerer et al. (2014)
         #b4 = (-9.483*1000)/ (273 + self.tc) + 23.89 + 2.2
-        b4 = self.pmodel_params.vonCaemmerer_b4
+        #b4 = self.pmodel_params.vonCaemmerer_b4
         
-        self.Delta13C = self.pmodel_params.farquhar_a + (b4 + (self.pmodel_params.farquhar_b - self.pmodel_params.vonCaemmerer_s)*self.pmodel_params.vonCaemmerer_phi - self.pmodel_params.farquhar_a)*self.optchi.chi
+        #self.Delta13C = self.pmodel_params.farquhar_a + (b4 + (self.pmodel_params.farquhar_b - self.pmodel_params.vonCaemmerer_s)*self.pmodel_params.vonCaemmerer_phi - self.pmodel_params.farquhar_a)*self.optchi.chi
         
         self.Delta14C = self.Delta13C*2
         

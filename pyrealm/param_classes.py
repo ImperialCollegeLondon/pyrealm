@@ -279,7 +279,8 @@ class PModelParams(ParamClass):
     soilmstress_b: Number = 0.685
     # Unit cost ratio (beta) (Stocker 2020 value and equivalent for C4).
     beta_cost_ratio_c3: Number = 146.0
-    beta_cost_ratio_c4: Number = 146.0 / 9
+    #beta_cost_ratio_c4: Number = 146.0 / 9
+    beta_cost_ratio_c4: Number = 35
     # Wang17
     wang17_c: Number = 0.41
     # Smith19
@@ -302,6 +303,7 @@ class PModelParams(ParamClass):
     # Badeck et al. (2005): post-photosynthetic fractionation
     # between leaf organic matter and bulk wood
     badeck_postfrac: Number = 1.9
+    
     
 # T model param class
 
@@ -393,3 +395,38 @@ class HygroParams(ParamClass):
             raise (TypeError('magnus_coef must be a tuple of 3 numbers'))
         else:
             object.__setattr__(self, 'magnus_option', None)
+
+
+# C3/C4 Model param class
+
+@enforce_typing.enforce_types
+@dataclass(frozen=True)
+class C3C4Params(ParamClass):
+
+    r"""Model parameters for the P Model
+
+    This dataclass provides a large set of underlying parameters used in
+    calculating the predictions of the P Model. The traits are shown below
+    with mathematical notation, default value and units shown in brackets:
+
+    **True constants**
+
+    * `k_R`: Universal gas constant (:math:`R` , 8.3145, J/mol/K)
+    * `k_co`: O2 partial pressure, Standard Atmosphere (:math:`co` , 209476.0, ppm)
+    * `k_c_molmass`: Molecular mass of carbon (:math:`c_molmass` , 12.0107, g)
+    * `k_Po`: Standard atmosphere (Allen, 1973)   (:math:`P_o` , 101325.0, Pa)
+    
+        """
+        
+        
+    # C3/C4 competition
+    # Non-linear regression with observed share of C4 plants
+    k = 6.48
+    q = 0.16
+    
+    # Trecover filter
+    a = 13.89532314
+    b = 1.45901922
+    c = -8.05150163
+    
+  
