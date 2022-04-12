@@ -53,8 +53,8 @@ def c4fraction(tc: Union[float, np.ndarray],
         Calculate C4 fraction given estimated gross primary productivity for C3 and C4 plants.
 
         Args:
-            gppc3: gross primary productivity for C3 plants (gC m-2 mth-1)
-            gppc4: gross primary productivity for C4 plants (gC m-2 mth-1)
+            gppc3: annual total gross primary productivity for C3 plants (gC m-2 yr-1)
+            gppc4: annual total gross primary productivity for C4 plants (gC m-2 yr-1)
             treecover: tree cover (%) from MODIS
             cropland: cropland fraction (%) from MODIS
 
@@ -88,8 +88,6 @@ def c4fraction(tc: Union[float, np.ndarray],
         F4[tc < -24] = 0
         
         # Step 5: remove cropland areas
-        #if cropland > 50:
-        #    F4 = np.nan
         F4[cropland >= 50] = np.nan
             
         return adv,F4
@@ -103,14 +101,14 @@ def gpp_tot(F4: Union[float, np.ndarray],
         Calculate total GPP given the C4 fraction
 
         Args:
-            gppc3: gross primary productivity for C3 plants (gC m-2 mth-1)
-            gppc4: gross primary productivity for C4 plants (gC m-2 mth-1)
+            gppc3: annual total gross primary productivity for C3 plants (gC m-2 yr-1)
+            gppc4: annual total gross primary productivity for C4 plants (gC m-2 yr-1)
             F4: fraction of C4 plants
 
         Returns:
-            gpp_tot: total GPP considering fraction of C4 and C3 plants
-            gpp_c3: GPP for C3 plants considering its fraction
-            gpp_c4: GPP for C3 plants considering its fraction
+            gpp_tot: annual total GPP considering fraction of C4 and C3 plants (gC m-2 yr-1)
+            gppc3: annual total gross primary productivity for C3 plants (gC m-2 yr-1)
+            gppc4: annual total gross primary productivity for C4 plants (gC m-2 yr-1)
         """
 
         gpp_tot = F4*gppc4 + (1-F4)*gppc3
