@@ -22,6 +22,8 @@ class C3C4competition:
                  tc: Union[float, np.ndarray],
                  gppc3: Union[float, np.ndarray],
                  gppc4: Union[float, np.ndarray],
+                 Delta13C3: Union[float, np.ndarray],
+                 Delta13C4: Union[float, np.ndarray],
                  treecover: Union[float, np.ndarray],
                  cropland: Union[float, np.ndarray],
                  C3C4_params: C3C4Params = C3C4Params()
@@ -31,6 +33,8 @@ class C3C4competition:
         self.shape = check_input_shapes(tc, gppc3,gppc4)
         self.gppc3 = gppc3
         self.gppc4 = gppc4
+        self.Delta13C3 = Delta13C3
+        self.Delta13C4 = Delta13C4
         self.treecover = treecover
         self.cropland = cropland
         
@@ -107,14 +111,41 @@ def gpp_tot(F4: Union[float, np.ndarray],
 
         Returns:
             gpp_tot: annual total GPP considering fraction of C4 and C3 plants (gC m-2 yr-1)
-            gppc3: annual total gross primary productivity for C3 plants (gC m-2 yr-1)
-            gppc4: annual total gross primary productivity for C4 plants (gC m-2 yr-1)
+            gpp_c3: annual total gross primary productivity for C3 plants (gC m-2 yr-1) considering its fraction (F3 = 1 - F4)
+            gpp_c4: annual total gross primary productivity for C4 plants (gC m-2 yr-1) considering its fraction (F4)
         """
-
-        gpp_tot = F4*gppc4 + (1-F4)*gppc3
         
         gpp_c3 = gppc3*(1-F4)
         gpp_c4 = gppc4*F4
         
+        gpp_tot = gpp_c4 + gpp_c3
+
+        
         return gpp_tot,gpp_c3,gpp_c4
 
+
+def D13C_tot(F4: Union[float, np.ndarray],
+               Delta13C3: Union[float, np.ndarray],
+               Delta13C4: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+ 
+        """
+        Calculate total GPP given the C4 fraction
+
+        Args:
+            Delta13C3: annual discrimination against 13C for C3 plants (permil)
+            Delta13C4: annual discrimination against 13C for C4 plants (permil)
+            F4: fraction of C4 plants
+
+        Returns:
+            Delta13C_tot: annual total GPP considering fraction of C4 and C3 plants (gC m-2 yr-1)
+            Delta13C_c3: annual discrimination against 13C for C3 plants (permil) considering its fraction (F3 = 1 - F4)
+            Delta13C_c4: annual discrimination against 13C for C4 plants (permil) considering its fraction (F4)
+        """
+        
+        Delta13C_c3 = Delta13C3*(1-F4)
+        Delta13C_c4 = Delta13C4*F4
+        
+        Delta13C_tot = Delta13C_c3 + Delta13C_c4
+
+        
+        return Delta13C_tot,Delta13C_c3,Delta13C_c4

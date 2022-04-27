@@ -420,13 +420,13 @@ class C3C4Params(ParamClass):
         
         
     # C3/C4 competition
-    # Non-linear regression with observed share of C4 plants
-    k = 6.48
+    # Non-linear regression with observed share of C4 plants modulated by C3 treecover
+    k = 6.64
     q = 0.16
     
-    # Trecover filter
-    a = 13.89532314
-    b = 1.45901922
-    c = -8.05150163
+    # Treecover filter
+    a = 15.55
+    b = 1.41
+    c = -7.73
     
   
