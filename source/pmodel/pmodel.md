@@ -13,19 +13,17 @@ kernelspec:
 ---
 
 (pmodel_overview)=
-# The P-Model
+# PModel overview and example use
 
 This module provides a Python implementation of the P-model
-(:{cite}`Prentice:2014bc`, :{cite}`Wang:2017go`). These summary documents give
-an overview of using the model and show typical code and outputs. Details of
-calculations are typically included in the function and class descriptions in
-the API documentation ([here](pmodel_reference)) and links to these are included
-in the summary descriptions.
+(:{cite}`Prentice:2014bc`, :{cite}`Wang:2017go`). This provides an overview of
+using the model, showing typical code and outputs, and the details of
+calculations are included in the [module reference documentation](pmodel_reference).
 
-The implementation in this module is based very heavily on the `rpmodel`
-implementation of the model ({cite}`Stocker:2020dh`) and gives identical outputs
-but the Python implementation has some differences in the code structure (see
-[here](rpmodel) for discussion).
+The implementation in this module draws from the `rpmodel` implementation of the
+model ({cite}`Stocker:2020dh`) and development matches the predictions of the
+two implementation for most - but not all use cases (see [here](rpmodel)
+for discussion).
 
 ## Overview
 
@@ -37,37 +35,28 @@ variables are used to define the environment that the plant experiences:
 - atmospheric $\ce{CO2}$ concentration (`co2`, ppm), and
 - atmospheric pressure (`patm`, Pa).
 
-These environmental variables can then be used to calculate a describe the 
-photosynthetic environment of a plant (see [details](photosynthetic_environment)) 
-by calculating:
+These environmental variables can then be used to calculate variables that
+capture the photosynthetic environment of a plant (see
+[details](photosynthetic_environment)) by calculating:
 
 - the photorespiratory compensation point ($\Gamma^*$, Pa),
 - the Michaelis-Menten coefficient for photosynthesis ($K_{mm}$, Pa),
 - the relative viscosity of water ($\eta^*$, unitless ratio), and
 - the partial pressure of $\ce{CO2}$ in ambient air ($c_a$, Pa).
 
-
-Once this set of environmental variables has been calculated, the P-model can
+Once this set of environmental variables has been calculated, the P model can
 then be fitted. The model breaks down into three broad stages, each of which 
 is described in more detail in the link for each stage
 
-1. Calculation $\ce{CO2}$ pressures and limitation factors
-   (see [details](optimal_chi)) 
-2. Calculation of light use efficiency and maximum carboxylation capacity
-   (see [details](lue_vcmax)). 
-3. Optionally, estimating gross primary productivity (GPP) and other key outputs
-   that are calculated using the total absorbed irradiance (see
-   [details](estimating-productivity)).
-
-### Extreme values
-
-The four photosynthetic environment variables and the effect of temperature
-on the temperature dependence of quantum yield efficiency are all calculated
-directly from the input forcing variables. While the majority of those calculations
-behave smoothly with extreme values of temperature and atmospheric pressure, 
-the calculation of the relative viscosity of water ($\eta^*$) does not handle
-low temperatures well. The behaviour of these functions with extreme values
-is shown [here](extreme_values).
+1. Calculation of $\ce{CO2}$ partial pressures and limitation factors
+   (see [details](optimal_chi)). This step also governs the main differences
+   between C3 and C4 photosynthesis.
+1. Calculation of limitation factors on the maximum rates of Rubsico
+   regeneration ($J_{max}$) and maximum carboxylation capacity ($V_{cmax}$)
+   (see [details](jmax_limitation)). 
+1. Estimation of gross primary productivity (GPP) using an estimate of 
+   absorbed photosynthetically active radiation, along with key rates 
+   within the leaf (see [details](estimating-productivity)).
 
 ### Variable graph
 
@@ -79,9 +68,8 @@ variables are shown with a dashed edge.
 
 ## Example use
 
-Running the P Model consists of using the environmental variables to calculate 
-the photosynthetic environment for the model ({class}`~pyrealm.pmodel.PModelEnvironment`) 
-and then fitting the P-model to that environment ({class}`~pyrealm.pmodel.PModel`). 
+The first step is to use estimates of environmental variables to calculate the
+photosynthetic environment for the model ({class}`~pyrealm.pmodel.PModelEnvironment`). 
 
 The code below shows the steps required using a single site with:
 
@@ -89,9 +77,6 @@ The code below shows the steps required using a single site with:
    * standard atmospheric at sea level (101325 Pa),
    * a vapour pressure deficit of 0.82 kPa (~ 65% relative humidity), and
    * an atmospheric $\ce{CO2}$ concentration of 400 ppm.
-
-The variation in model outputs under differing environmental conditions can be
-seen [here](envt_variation_outputs).
 
 ### Estimate photosynthetic environment
 
@@ -116,7 +101,8 @@ env.summarize()
 
 ### Fitting the P Model
 
-A P Model can now be fitted using that calculated photosynthetic environment:
+Next, the P Model can be fitted to the photosynthetic environment using the
+({class}`~pyrealm.pmodel.PModel`) class:
 
 ```{code-cell} ipython3
 model = pmodel.PModel(env)
@@ -138,44 +124,64 @@ water use efficiency (``iwue``) and the light use efficiency (``lue``).
 model.summarize()
 ```
 
+### $\chi$ estimates and $\ce{CO2}$ limitation
+
+The P Model also contains a {class}`~pyrealm.pmodel.CalcOptimalChi` object,
+which records:
+
+* a parameter ($\xi$) describing the sensitivity of $\chi$ to VPD, 
+* the optimal ratio of internal to ambient $\ce{CO2}$ pressure ($\chi$) and,
+* $\ce{CO2}$ limitation factors to both light assimilation ($m_j$) and
+  carboxylation ($m_c$) and their ratio ($m_{joc}). 
+
+This object also has a {meth}`~pyrealm.pmodel.CalcOptimalChi.summarize` method:
+
+```{code-cell} ipython3
+model.optchi.summarize()
+```
+
 ### Estimating productivity outputs
 
-The productivity of the model can then be estimated by passing the fraction
-of absorbed photosynthetically active radiation (`fapar`) and the photosynthetic
-photon flux density (`ppfd`), for a given area and time period, to the
-{meth}`~pyrealm.pmodel.PModelEnvironment.estimate_productivity` method.
+The productivity of the model can be calculated using estimates of the fraction
+of absorbed photosynthetically active radiation ($f_{APAR}$, `fapar`, unitless)
+and the photosynthetic photon flux density (PPFD,`ppfd`, µmol m-2 s-1), using the
+{meth}`~pyrealm.pmodel.PModel.estimate_productivity` method. 
+
+Here we are using:
+
+* An absorption fraction of 0.91 (-), and
+* a PPFD of 834 µmol m-2 s-1.
 
 ```{code-cell} ipython3
 model.estimate_productivity(fapar=0.91, ppfd=834)
 model.summarize()
 ```
 
-### $\chi$ estimates and $\ce{CO2}$ limitation
+```{warning}
 
-A P model instance also contains a {class}`~pyrealm.pmodel.CalcOptimalChi` 
-object, recording the details of the calculation of optimal ratio of internal 
-to ambient $\ce{CO2}$ pressure ($\chi$) calculations and $\ce{CO2}$ limitation 
-factors to both light assimilation ($m_j$) and carboxylation ($m_c$). This 
-again has a {meth}`~pyrealm.pmodel.CalcOptimalChi.summarize` method:
+To use {meth}`~pyrealm.pmodel.PModel.estimate_productivity`, the estimated PPFD
+must be expressed as **µmol m-2 s-1**.
 
-```{code-cell} ipython3
-model.optchi.summarize()
+Estimates of PPFD sometimes use different temporal or spatial scales - for
+example daily moles of photons per hectare. Although GPP can also be expressed
+with different units, many other predictions of the P Model ($J_{max}$,
+$V_{cmax}$, $g_s$ and $r_d$) _must_ be expressed as µmol m-2 s-1 and so this
+standard unit must also be used for PPFD.
 ```
 
-### Array inputs
+## Array inputs
 
-The `pyrealm` package uses the `numpy` package for most calculation, and arrays
+The `pyrealm` package uses the `numpy` package and arrays 
 of data can be passed to all inputs. If arrays are being used, then all inputs
 must either be scalars or **arrays with the same shape**: the PModel does not
 attempt to apply calculations across combinations of different dimensions.
 
 The example below repeats the model above for a range of temperature values and
-plots the resulting light use efficiency curve per unit absorbed irradiance.
+plots the resulting light use efficiency curve.
 
 ```{code-cell} ipython3
 from matplotlib import pyplot
 import numpy as np
-%matplotlib inline
 
 # Create a sequence of temperatures and fit the model
 tc = np.linspace(20, 30, 101)
@@ -189,12 +195,14 @@ pyplot.ylabel('Light use efficiency')
 pyplot.show()
 ```
 
-### Elevation data
+## Elevation data
 
 The {func}`~pyrealm.pmodel.calc_patm` function can be used to convert elevation
 data to atmospheric pressure, for use in the {class}`~pyrealm.pmodel.PModel`
 class. The example below repeats the model at an elevation of 3000 metres and
 compares the resulting light use efficiencies.
+
+
 
 ```{code-cell} ipython3
 patm = pmodel.calc_patm(3000)
@@ -205,84 +213,13 @@ model_3000 = pmodel.PModel(env)
 np.array([model.lue, model_3000.lue])
 ```
 
-### Apparent quantum yield efficiency
 
-A default value for apparent quantum yield efficiency (`kphio`, $\phi_0$) is set
-automatically. Following {cite}`Stocker:2020dh`, the default value depends on
-(see also {class}`~pyrealm.pmodel.PModel`):
+## Extreme values
 
-1. is a soil moisture stress factor being applied, and
-1. is the temperature dependency of $\phi_0$ being applied.
-
-The user can however specify their own value. This is used here and then below
-to faciliate comparisons across other optional settings. Note here that this
-model re-uses the photosynthetic environment, allowing different variants of 
-the model to be calculated without having to recalculate those inputs.
-
-```{code-cell} ipython3
-model_fixkphio = pmodel.PModel(env, kphio=0.08)
-```
-
-### Soil moisture stress
-
-{cite}`Stocker:2020dh` includes an optional soil moisture stress factor, used to
-modify the light use efficency and calculated from the relative soil moisture
-and an aridity index. In the {mod}`~pyrealm.pmodel` module, this factor is
-calculated by the use in advance with the function
-{func}`~pyrealm.pmodel.calc_soilmstress` and passed to
-{class}`~pyrealm.pmodel.PModel`. 
-
-See the documentation {func}`~pyrealm.pmodel.calc_soilmstress` and class
-{class}`~pyrealm.pmodel.CalcLUEVcmax` for the details.
-
-```{code-cell} ipython3
-# soil moisture stress factor
-soilmstress = pmodel.calc_soilmstress(soilm=0.4, meanalpha=0.9)
-soilmstress
-```
-
-```{code-cell} ipython3
-model_soil = pmodel.PModel(env, kphio=0.08, soilmstress=soilmstress)
-
-# Compare LUE
-np.array([model_fixkphio.lue, model_soil.lue])
-```
-
-### Temperature dependence of $\phi_0$
-
-By default, {class}`~pyrealm.pmodel.PModel` automatically calculates a
-correction factor for the temperature dependence of $\phi_0$ (see
-{func}`calc_ftemp_kphio`) and passes this factor to
-{class}`~pyrealm.pmodel.CalcLUEVcmax`. The factor is stored in the model object:
-
-```{code-cell} ipython3
-model_fixkphio.ftemp_kphio
-```
-
-This correction can be removed using the argument `do_ftemp_kphio=False`:
-
-```{code-cell} ipython3
-model_no_td_kphio = pmodel.PModel(env, kphio=0.08, do_ftemp_kphio=False)
-
-# Compare LUE
-np.array([model_fixkphio.lue, model_no_td_kphio.lue])
-```
-
-### Limitation of electron transfer rate ($J_{max}$)
-
-The {class}`~pyrealm.pmodel.PModel` automatically uses the method described by
-{cite}`Wang:2017go` to account for limitation of the maximum rate of electron
-transfer ($J_{max}$ limitation). Using the argument `method_jmaxlim`, this
-correction can either be omitted (`method_jmaxlim='none'`) or the alternative
-formulation of {cite}`Smith:2019dv` can be used (`method_jmaxlim='smith19'`).
-
-```{code-cell} ipython3
-model_jmax_none = pmodel.PModel(env, kphio=0.08, method_jmaxlim='none')
-model_jmax_smith19 = pmodel.PModel(env,  kphio=0.08, method_jmaxlim='smith19')
-
-# Compare LUE from the three methods
-np.array([model_fixkphio.lue, 
-          model_jmax_none.lue,
-          model_jmax_smith19.lue])
-```
-
+The four photosynthetic environment variables and the effect of temperature
+on the temperature dependence of quantum yield efficiency are all calculated
+directly from the input forcing variables. While the majority of those calculations
+behave smoothly with extreme values of temperature and atmospheric pressure, 
+the calculation of the relative viscosity of water ($\eta^*$) does not handle
+low temperatures well. The behaviour of these functions with extreme values
+is shown [here](extreme_values).
