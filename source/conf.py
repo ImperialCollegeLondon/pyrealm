@@ -46,10 +46,15 @@ extensions = ['sphinx.ext.autodoc',
 autodoc_default_flags = ['members']
 autosummary_generate = True
 
-myst_enable_extensions = ['amsmath']
+myst_enable_extensions = ['dollarmath']
 
 # Enable mhchem for chemical formulae
-mathjax3_config = {'TeX': {'extensions': ['mhchem.js']}}
+mathjax3_config = {
+    'tex': {
+            'extensions': ['mhchem.js'],
+            # 'inlineMath': [['$', '$']]
+            }
+    }
 
 # Turn off ugly rendering of class attributes
 napoleon_use_ivar = True
