@@ -528,7 +528,8 @@ def calc_soilmstress(soilm: Union[float, np.ndarray],
         \[
             \beta =
                 \begin{cases}
-                    q(\theta_0 - \theta^{*})^2 + 1,  & \theta_0 < m_s <= \theta^{*} \\
+                    0
+                    q(m_s - \theta^{*})^2 + 1,  & \theta_0 < m_s <= \theta^{*} \\
                     1, &  \theta^{*} < m_s,
                 \end{cases}
         \]
@@ -566,7 +567,11 @@ def calc_soilmstress(soilm: Union[float, np.ndarray],
         >>> round((calc_soilmstress(0.2) - 1) * 100, 5)
         -14.0
     """
-
+    
+    # TODO - presumably this should also have beta(theta) = 0 when m_s <=
+    #        theta_0. Actually, no - these limits aren't correct. This is only
+    #        true when meanalpha=0, otherwise beta > 0 when m_s < theta_0.
+    
     # Check inputs, return shape not used
     _ = check_input_shapes(soilm, meanalpha)
 
@@ -840,25 +845,13 @@ class PModel:
     1. Estimate :math:`\ce{CO2}` limitation factors and optimal internal to
        ambient :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using
        :class:`~pyrealm.pmodel.CalcOptimalChi`.
-    2. Estimate photosynthetic efficiencies including water use efficiency,
-       light use efficiency (LUE) and maximum carboxylation rate
-       (:math:`V_{cmax}`) using :class:`~pyrealm.pmodel.CalcLUEVcmax`.
+    2. Estimate limitation factors to :math:`V_{cmax}` and :math:`J_{max}` 
+       using :class:`~pyrealm.pmodel.JmaxLimitation`.
     3. Optionally, estimate productivity measures including GPP by supplying
        FAPAR and PPFD using the
        :meth:`~pyrealm.pmodel.PModel.estimate_productivity` method.
 
-    **Corollary prediction details**
-
-    These calculations use two additional functions:
-
-    * the instantaneous temperature response of :math:`V_{cmax}`
-      (:math:`fv(t)`), implemented in
-      :func:`~pyrealm.pmodel.calc_ftemp_inst_vcmax`, and
-    * the instantaneous temperature response of dark respiration :math:`V_{d}`
-      (:math:`fr(t)`), implemented in
-      :func:`~pyrealm.pmodel.calc_ftemp_inst_rd`.
-
-    The predictions are then:
+    The model predictions from step 1 and 2 are then:
 
     * Intrinsic water use efficiency (iWUE,
       :math:`\mu\mathrm{mol}\;\mathrm{mol}^{-1}`), calculated as :math:`( 5/8 *
@@ -866,8 +859,49 @@ class PModel:
       is atmospheric pressure in megapascals. This is equivalent to :math:`(c_a
       - c_i)/1.6` when `c_a` and `c_i` are expressed as parts per million.
 
-    * Maximum carboxylation capacity (mol C m-2) normalised to the standard
-      temperature as: :math:`V_{cmax25} = V_{cmax}  / fv(t)`
+    * The light use efficienciy (LUE, gC mol-1), calculated as:
+    
+        .. math::
+
+            \text{LUE} = \phi_0 \cdot m_j \cdot f_v \cdot M_C \cdot \beta(\theta),
+
+      where :math:`f_v` is a limitation factor defined in 
+      :class:`~pyrealm.pmodel.JmaxLimitation`, :math:`M_C` is the molar mass of
+      carbon and :math:`\beta(\theta)` is an empirical soil moisture factor 
+      (see :func:`~pyrealm.pmodel.calc_soilmstress`,  :cite:`Stocker:2020dh`).
+
+    After running :meth:`~pyrealm.pmodel.PModel.estimate_productivity`, the following
+    predictions are also populated:
+
+    * Gross primary productivity, calculated as 
+      :math:`\text{GPP} = \text{LUE} \cdot I_{abs}`, where :math:`I_{abs}` is the 
+      absorbed photosynthetic radiation 
+
+    * The maximum rate of Rubisco regeneration at the growth temperature
+      (:math:`J_{max}`)
+
+    * The maximum carboxylation capacity (mol C m-2) at the growth temperature
+      (:math:`V_{cmax}`).
+
+    These two predictions are calculated as follows: 
+
+        .. math::
+            :nowrap:
+
+            \[
+                \begin{align*}
+                V_{cmax} &= \phi_{0} I_{abs} \frac{m}{m_c} f_{v} \\
+                J_{max} &= 4 \phi_{0} I_{abs} f_{j} \\
+                \end{align*}
+            \]
+
+    where  :math:`f_v, f_j` are limitation terms described in
+    :class:`~pyrealm.pmodel.JmaxLimitation`
+
+    * The maximum carboxylation capacity (mol C m-2) normalised to the standard
+      temperature as: :math:`V_{cmax25} = V_{cmax}  / fv(t)`, where :math:`fv(t)` is
+      the instantaneous temperature response of :math:`V_{cmax}` implemented in
+      :func:`~pyrealm.pmodel.calc_ftemp_inst_vcmax`
 
     * Dark respiration, calculated as:
 
@@ -875,8 +909,10 @@ class PModel:
 
             R_d = b_0 \frac{fr(t)}{fv(t)} V_{cmax}
 
-        following :cite:`Atkin:2015hk` (:math:`b_0` is set in
-        :attr:`~pyrealm.pmodel_params.atkin_rd_to_vcmax`)
+      following :cite:`Atkin:2015hk`, where :math:`fr(t)` is the instantaneous 
+      temperature response of dark respiration implemented in
+      :func:`~pyrealm.pmodel.calc_ftemp_inst_rd`, and :math:`b_0` is set 
+      in :attr:`~pyrealm.pmodel_params.atkin_rd_to_vcmax`.
 
     * Stomatal conductance (:math:`g_s`), calculated as:
 
@@ -884,25 +920,20 @@ class PModel:
 
             g_s = \frac{LUE}{M_C}\frac{1}{c_a - c_i}
 
-        When C4 photosynthesis is being used, the true partial pressure of CO2
-        in the substomatal cavities (:math:`c_i`) is used following the
-        calculation of :math:`\chi` using
-        :attr:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`
+      When C4 photosynthesis is being used, the true partial pressure of CO2
+      in the substomatal cavities (:math:`c_i`) is used following the
+      calculation of :math:`\chi` using
+      :attr:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`
 
-    * The maximum rate of Rubsico regeneration at the growth temperature
-      (:math:`J_{max}`) per unit irradiance is calculated as:
-
-        .. math::
-
-            J_{max} = \frac{4 \phi_0 I_{abs}}{\sqrt{\left(\frac{1}
-            {\left(\frac{V_{cmax}(c_i - 2 \Gamma^*)} {\phi_0 I_{abs}(c_i +
-            k_{mm})}\right)}\right)^2 - 1}}
 
     Parameters:
 
-        env: An instance of :class:`~pyrealm.pmodel.PModelEnvironment`. kphio:
-        (Optional) Apparent quantum yield efficiency (unitless). rootzonestress:
-        (Optional, default=None) An experimental option
+        env: An instance of :class:`~pyrealm.pmodel.PModelEnvironment`. 
+        kphio: (Optional) The quantum yield efficiency of photosynthesis
+            (:math:`\phi_0`, unitless). Note that :math:`\phi_0` is 
+            sometimes used to refer to the quantum yield of electron transfer,
+            which is exactly four times larger, so check definitions here.
+        rootzonestress: (Optional, default=None) An experimental option
             for providing a root zone water stress factor. This is not
             compatible with the soilmstress approach.
         soilmstress: (Optional, default=None) A soil moisture stress factor
@@ -923,20 +954,24 @@ class PModel:
             (:class:`~pyrealm.param_classes.PModelParams`)
         optchi: Details of the optimal chi calculation
             (:class:`~pyrealm.pmodel.CalcOptimalChi`)
+        init_kphio: The initial value of :math:`\phi_0`.
+        kphio: The value of :math:`\phi_0` used in calculations with 
+            any temperature correction applied.
         iwue: Intrinsic water use efficiency (iWUE, µmol mol-1) 
         lue: Light use efficiency (LUE, g C mol-1)
 
-        After :meth:`~pyrealm.pmodel.estimate_productivity` has been run,
-        the following attributes are also populated. See the documentation
-        for :meth:`~pyrealm.pmodel.estimate_productivity` for notes on the 
-        units of these attributes
+    After :meth:`~pyrealm.pmodel.estimate_productivity` has been run,
+    the following attributes are also populated. See the documentation
+    for :meth:`~pyrealm.pmodel.estimate_productivity` for details.
 
-        gpp: Gross primary productivity (gC area time)
-        rd: Dark respiration (mol C area time)
-        vcmax: Maximum rate of carboxylation (mol C area time)
-        vcmax25: Maximum rate of carboxylation at standard temperature (mol C area time)
-        jmax: Maximum rate of electron transport (mol C area time)
-        gs: Stomatal conductance (mol C area time)
+    Attributes:
+
+        gpp: Gross primary productivity (µg C m-2 s-1)
+        rd: Dark respiration (µmol m-2 s-1)
+        vcmax: Maximum rate of carboxylation (µmol m-2 s-1)
+        vcmax25: Maximum rate of carboxylation at standard temperature (µmol m-2 s-1)
+        jmax: Maximum rate of electron transport (µmol m-2 s-1)
+        gs: Stomatal conductance (µmol m-2 s-1)
 
     Examples:
 
@@ -1209,11 +1244,11 @@ class PModel:
 
         # AJ and AC
         a_j = (self.kphio * iabs * self.optchi.mj * self.jmaxlim.f_v)
-        a_c = (self.vcmax * self.optchi.mc)
+        a_c = (self._vcmax * self.optchi.mc)
 
         assim = np.minimum(a_j, a_c)
 
-        if not np.allclose(assim, self._gpp / self.pmodel_params.k_c_molmass, equal_nan=True):
+        if not self.do_soilmstress and not np.allclose(assim, self._gpp / self.pmodel_params.k_c_molmass, equal_nan=True):
             warn('Assimilation and GPP are not identical')
 
         # Stomatal conductance
@@ -1252,7 +1287,7 @@ class PModel:
                  ('iwue', 'µmol mol-1')]
 
         if self._gpp is not None:
-            attrs.extend([('gpp', 'gC area time †'),
+            attrs.extend([('gpp', 'µg C m-2 s-1'),
                           ('vcmax', 'µmol m-2 s-1'),
                           ('vcmax25', 'µmol m-2 s-1'), 
                           ('rd', 'µmol m-2 s-1'),
@@ -1384,9 +1419,7 @@ class CalcOptimalChi:
 
         # These values need to retain any
         # dimensions of the original inputs - if ftemp_kphio is set to 1.0
-        # (i.e. no temperature correction) then the dimensions of tc are lost
-        # and the input to soilmstress might be scalar, so enforce the shape.
-        # Note that rpmodel_1.0.6 collapses array inputs at this point.
+        # (i.e. no temperature correction) then the dimensions of tc are lost.
 
         if self.shape == 1:
             self.mc = 1.0
@@ -1469,60 +1502,22 @@ class CalcOptimalChi:
 
 class JmaxLimitation:
     r"""This class calculates two factors (:math:`f_v` and :math:`f_j`) used to 
-    implement :math:`J_{max}` limitation of photosynthesis. These factors are 
-    used to adjust the 'simple' form of the P model equations to give the full
-    forms:
-
-        .. math::
-            :nowrap:
-
-            \[
-                \begin{align*}
-                V_{cmax} &= \phi_{0} I_{abs} \frac{m}{m_c} f_{v} \\
-                J_{max} &= 4 \phi_{0} I_{abs} f_{j} \\
-                \end{align*}
-            \]
-
+    implement :math:`V_{cmax}` and :math:`J_{max}` limitation of photosynthesis. 
     Three methods are currently implemented:
 
-    `none`: This allows the 'simple' form of the equations to be calcualted 
-        (:math:`f_v = f_j = 1`)
+        * ``none``: applies the 'simple' equations with no limitation
+        * ``wang17``: applies the framework of :cite:`Wang:2017go`.
+        * ``smith19``: applies the framework of :cite:`Smith:2019dv`
 
-    `wang17`: This implements the full form of the model defined by :cite:`wang`
-         where:
-
-        .. math::
-            :nowrap:
-
-            \[
-                \begin{align*}
-                f_v &=  \sqrt{ 1 - \frac{c^*}{m} ^{2/3}} \\
-                f_j &=  \sqrt{\frac{m}{c^*} ^{2/3} -1 } \\
-                \end{align*}
-            \]
-
-    `smith19`: This implements the alternative implementation provided by :cite:`smith`
-        where:
-
-        .. math::
-            :nowrap:
-
-            \[
-                \begin{align*}
-                f_v &=  \frac{\omega^*}{2\theta} \\
-                f_j &=  \frac{\omega}\\
-                \end{align*}
-            \]
-
-        Note that :cite:`smith` defines :math:`phi_0` as the quantum efficiency of electron 
-        transfer, whereas :mod:`pyrealm.PModel` defines :math:`phi_0` as the quantum 
-        efficiency of photosynthesis, which is 4 times smaller. This is why the equations
-        here are a factor of 4 greater than Eqn 15 and 17 in :cite:`smith`.
+    Note that :cite:`Smith:2019dv` defines :math:`phi_0` as the quantum efficiency of 
+    electron transfer, whereas :mod:`pyrealm.PModel` defines :math:`phi_0` as the quantum 
+    efficiency of photosynthesis, which is 4 times smaller. This is why the factors 
+    here are a factor of 4 greater than Eqn 15 and 17 in :cite:`Smith:2019dv`.
     
     Arguments:
 
         optchi: an instance of :class:`CalcOptimalChi` providing the :math:`\ce{CO2}` 
-            limitation term of light use efficiency (:math:`\m_j`) and the  :math:`\ce{CO2}`
+            limitation term of light use efficiency (:math:`m_j`) and the  :math:`\ce{CO2}`
             limitation term for Rubisco assimilation (:math:`m_c`).
         method: method to apply :math:`J_{max}` limitation (default: ``wang17``,
             or ``smith19`` or ``none``)
@@ -1597,18 +1592,22 @@ class JmaxLimitation:
         return (f"JmaxLimitation(shape={self.shape})")
 
     def wang17(self):
-        r"""Calculate limitation factors following :cite:`Wang:2017go`. The factor
+        r"""Calculate limitation factors following :cite:`Wang:2017go` The factor
         is described in Equation 49 of :cite:`Wang:2017go` and is the square root term
         at the end of that equation:
 
-        .. math::
+            .. math::
+                :nowrap:
 
-            m_{jmax} = \sqrt{1- \left(\frac{c^*}{m_j}\right)^{\frac{2}{3}}}
+                \[
+                    \begin{align*}
+                    f_v &=  \sqrt{ 1 - \frac{c^*}{m} ^{2/3}} \\
+                    f_j &=  \sqrt{\frac{m}{c^*} ^{2/3} -1 } \\
+                    \end{align*}
+                \]
 
-        Other parameters:
-
-            cstar: A cost parameter for maintaining :math:`J_{max}`
-                (:math:`c^*`, `pmodel_params.wang_c`)
+        The variable :math:`c^*` is a cost parameter for maintaining :math:`J_{max}`
+        and is set in `pmodel_params.wang_c`.
 
         """
 
@@ -1630,29 +1629,38 @@ class JmaxLimitation:
             self.f_v = np.nan
 
     def smith19(self):
-        r"""Calculate a :math:`J_{max}` limitation following
-        :cite:`Smith:2019dv`. The value of :math:`m_{jlim}` is taken as the
-        final term of  Equation 18 of :cite:`Smith:2019dv`:
+        r"""Calculate limitation factors following :cite:`Smith:2019dv`:
 
         .. math::
             :nowrap:
 
             \[
                 \begin{align*}
-                m_{jlim} &= \frac{\omega^*}{8\theta}, \text{where} \\
-                \omega^* &= 1 + \omega - \sqrt{(1 + \omega) ^2 -4\theta\omega}, \text{and}\\
-                \omega &= (1 - 2\theta) + \sqrt{(1-\theta)
-                    \left(\frac{1}{\frac{4c}{m}(1 - \theta\frac{4c}{m})}-4\theta\right)}
+                f_v &=  \frac{\omega^*}{2\theta} \\
+                f_j &=  \omega\\
                 \end{align*}
             \]
 
-        Other parameters:
+        where, 
 
-            theta: A term to capture the curved relationship between light intensity
-                and photosynthetic capacity :math:`J_{max}` (:math:`\theta`, `pmodel_params.smith19_theta`)
-            c_cost: A cost parameter for maintaining :math:`J_{max}`
-                (:math:`c`, `pmodel_params.smith19_c_cost`)
+        .. math::
+            :nowrap:
 
+            \[
+                \begin{align*}
+                \omega &= (1 - 2\theta) + \sqrt{(1-\theta)
+                    \left(\frac{1}{\frac{4c}{m}(1 - \theta\frac{4c}{m})}-4\theta\right)}\\
+                \omega^* &= 1 + \omega - \sqrt{(1 + \omega) ^2 -4\theta\omega}
+                \end{align*}
+            \]
+
+        given,
+
+            * :math:`\theta`, (`pmodel_params.smith19_theta`) captures the curved relationship 
+              between light intensity and photosynthetic capacity, and 
+            * :math:`c`, (`pmodel_params.smith19_c_cost`) as a cost parameter for maintaining
+              :math:`J_{max}`, equivalent to :math:`c^\ast = 4c` in the 
+              :meth:`~pyrealm.pmodel.JmaxLimitation.wang17` method.
         """
 
         # Adopted from Nick Smith's code:
@@ -1696,7 +1704,8 @@ class JmaxLimitation:
         self.f_j = self.omega 
 
     def none(self):
-        """No :math:`J_{max}` limitation (:math:`m_{jlim} = 1.0`)
+        """This method allows the 'simple' form of the equations to be calculated 
+        (:math:`f_v = f_j = 1`)
         """
 
         # Set Jmax limitation to unity - could define as 1.0 in __init__ and
