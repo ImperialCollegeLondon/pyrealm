@@ -39,4 +39,4 @@ jobs:
         shell: bash
         run: |
           python -m doctest pyrealm/*.py
-        if: ${{ matrix.os }} != 'windows-latest'
+        if: runner.os != 'Windows'
