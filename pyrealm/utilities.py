@@ -1,14 +1,16 @@
-import numpy as np
-import tabulate
-from pyrealm.param_classes import HygroParams
-from pyrealm.bounds_checker import bounds_checker
-# from pandas.core.series import Series
-
 """
 This module provides utility functions shared by modules or providing
 extra functions such as conversions for common forcing variable inputs, 
 such as hygrometric and radiation conversions.
 """
+
+import numpy as np
+import tabulate
+from pyrealm.param_classes import HygroParams
+from pyrealm.bounds_checker import bounds_checker
+from scipy.interpolate import interp1d
+
+# from pandas.core.series import Series
 
 
 def check_input_shapes(*args):
@@ -291,5 +293,212 @@ def convert_sh_to_vpd(sh, ta, patm, hygro_params=HygroParams()):
 
     return vp_sat - vp
 
+
+
+## New additions for subdaily Pmodel
+
+
+class TemporalInterpolator:
+
+    def __init__(self, input_datetimes: np.ndarray, interpolation_datetimes: np.ndarray, 
+                 method = 'daily_constant') -> None:
+        
+        """
+        This class provides temporal interpolation between a coarser set of
+        datetimes and a finer set of date times. Both these need to be provided
+        as np.datetime64 arrays.
+        
+        Interpolation uses :func:`scipy.interpolate.interp1d`. This provides
+        a range of interpolation kinds available, but this class adds a
+        method `daily_constant`, which is basically the `previous` kind but
+        offset so that a single value in day is used for _all_ interpolated
+        values in the day, including extrapolation backwards and forwards to
+        midnight.
+
+        Creating an instance sets up the interpolation time scales, and the
+        instance can be called directly to interpolate a specific set of values.
+
+        Args:
+            input_datetimes: A numpy array giving the datetimes of the
+                observations 
+            interpolation_datetimes: A numpy array giving the points at which to
+                interpolate the observations.
+        """
+
+        # There are some fussy things here with what is acceptable input to
+        # interp1d: although the interpolation function can be created with 
+        # datetime.datetime or np.datetime64 values, the interpolation call
+        # _must_ use float inputs (see https://github.com/scipy/scipy/issues/11093), 
+        # so this class uses floats from the inputs for interpolation.
+
+        # Inputs must be datetime64 arrays and have the same temporal resolution
+        # or the interpolation blows up.
+        if not (np.issubdtype(input_datetimes.dtype, np.datetime64) and
+                np.issubdtype(interpolation_datetimes.dtype, np.datetime64)):
+            raise ValueError('Interpolation times must be np.datetime64 arrays.')
+
+        if input_datetimes.dtype != interpolation_datetimes.dtype:
+            raise ValueError('Interpolation times must have the same temporal resolution.')
+
+        self._method = method
+        self._interpolation_x = interpolation_datetimes.astype('float')
+
+        if method == 'daily_constant':
+            # This approach repeats the daily value for all subdaily times _on that
+            # day_ and so should extrapolate beyond the last ref_datetime to the
+            # end of that day and before the first ref_datetime to the beginning
+            # of that day
+
+            # Round observation times down to midnight on the day and append midnight
+            # on the following day
+
+            midnight = input_datetimes.astype('datetime64[D]').astype(input_datetimes.dtype)
+            midnight = np.append(midnight, midnight[-1] + np.timedelta64(1, 'D'))
+            self._input_x = np.array(midnight).astype('float')
+            
+        else:
+            self._input_x = input_datetimes.astype('float')
+
+    def __call__(self, values):
+        
+        # TODO - extend to 2 and 3d values, need to specify which axis is time.
+
+        if self._method == 'daily_constant':
+            # Append the last value to match the appended day
+            values = np.array(values)
+            values = np.append(values, values[-1])
+            method = 'previous'
+        else:
+            method = self._method
+
+        interp_fun = interp1d(self._input_x, values, kind=method, bounds_error=False) 
+
+        return interp_fun(self._interpolation_x)
+
+
+
+
+class DailyRepresentativeValues:
+    
+    """
+    This class is used to take data at a subdaily scale and extract a daily
+    representative value. Creating an instance establishes the indices to be 
+    in extracting representative values and returns a callable instance that
+    can be used to apply the calculation to different data arrays.
+
+    The class implements three subsetting approaches 
+        - a time window within each day with a given central time and width,
+        - a window around the time of the maximum in a variable, and
+        - using an existing boolean index, such as a predefined vector of night
+          and day.
+    
+    
+    The class provides the following public attributes:
+    """
+    
+    def __init__(self, datetimes: np.ndarray, window_center: float = None, 
+                 window_width: float = None, include: np.ndarray = None, 
+                 around_max: np.ndarray = None, 
+                 reference_time: float = None) -> None:
+        """
+        
+        
+        """
+
+        # TODO - if the datetimes _are_ increasing and evenly spaced then
+        # this could be coerced into a 2d array - which might speed up 
+        # the calculation of the reference_datetime_index?
+
+        # Check the datetimes are strictly increasing and evenly spaced
+        datetime_deltas = np.diff(datetimes)
+
+        if not np.all(datetime_deltas == datetime_deltas[0]):
+            raise ValueError('Datetime sequence must be evenly spaced')
+        
+        if datetime_deltas[0] < (datetimes[0] - datetimes[0]):
+            raise ValueError('Datetime sequence must be increasing')
+
+        # Get date sequence and unique dates (guaranteeing order of occurrence)
+        self.datetime_shape = datetimes.shape
+        self._date = datetimes.astype('datetime64[D]')
+        _, idx =  np.unique(self._date, return_index=True)
+        self._date_sequence = self._date[np.sort(idx)]
+        
+        # Different methods
+        if window_center is not None and window_width is not None:
+            
+            # Find which datetimes fall within that window, using second resolution
+            win_center = np.timedelta64(int(window_center * 60 * 60), 's') 
+            win_start = np.timedelta64(int((window_center - window_width) * 60 * 60), 's')
+            win_end = np.timedelta64(int((window_center + window_width) * 60 * 60), 's')
+            
+            # Does that include more than one day?
+            # NOTE - this might actually be needed at some point!
+            if win_start < np.timedelta64(0, 's') or win_end > np.timedelta64(86400, 's'):
+                raise NotImplementedError('window_center and window_width cover more than one day')
+
+            # Now find which datetimes fall within that time window, given the extracted dates
+            self._include = np.logical_and(datetimes >= self._date + win_start,
+                                           datetimes <= self._date + win_end)
+            
+            default_reference_datetime = self._date_sequence + win_center
+
+        elif include is not None:
+            
+            if datetimes.shape != include.shape:
+                raise RuntimeError('Datetimes and include do not have the same shape')
+            
+            if include.dtype != np.bool:
+                raise RuntimeError('Include must be a boolean array.')
+                
+            self._include = include
+
+            # Noon default reference time
+            default_reference_datetime = self._date_sequence + np.timedelta64(43200, 's')
+
+        elif around_max is not None and window_width is not None:
+            
+            if datetimes.shape != around_max.shape:
+                raise RuntimeError('Datetimes and around_max do not have the same shape')
+            
+            raise NotImplementedError('around_max not yet implemented')
+
+        else:
+
+            raise RuntimeError('Unknown option combination')
+        
+        # Override the reference time from the default if provided
+        if reference_time is not None:
+            reference_time = np.timedelta64(int(reference_time * 60 * 60), 's')
+            default_reference_datetime = self._date_sequence + reference_time
+
+        # Store the reference_datetime
+        self.reference_datetime = default_reference_datetime
+
+        # Provide an index used to pull out daily reference values - it is possible
+        # that the user might provide settings that don't match exactly to a datetime,
+        # so use proximity.
+        self.reference_datetime_idx = np.array([np.argmin(np.abs(np.array(datetimes) - d)) 
+                                                for d in self.reference_datetime])
+
+    def __call__(self, values: np.ndarray, with_reference_values=False):
+        
+        # https://vladfeinberg.com/2021/01/07/vectorizing-ragged-arrays.html
+
+        if values.shape != self._date.shape:
+            raise RuntimeError('Values are not of the same shape as the datetime sequence')
+
+        average_values = np.empty_like(self._date_sequence, dtype=np.float)
+
+        for idx, this_date in enumerate(self._date_sequence):
+            # Get the mean of the values from this date that are included
+            average_values[idx] = np.mean(values[np.logical_and(self._date == this_date, self._include)])
+        
+        if with_reference_values:
+            # Get the reference value and return that as well as daily value
+            reference_values = values[self.reference_datetime_idx]
+            return average_values, reference_values
+        else:
+            return average_values
 
 
