@@ -32,4 +32,11 @@ jobs:
         shell: bash
         run: |
           pytest
+      - name: Test with doctest (but not on Windows)
+        # The path names in doctest warnings are OS specific so fail on Windows.
+        # "Fixing" this requires editing __init__.py so that
+        # warnings.formatwarning returns OS insensitive pathnames. Nope.
+        shell: bash
+        run: |
           python -m doctest pyrealm/*.py
+        if: ${{ matrix.os }} != 'windows-latest'
