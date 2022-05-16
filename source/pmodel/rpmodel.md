@@ -40,15 +40,14 @@ The implementations differ in a number of ways:
    variation (see [here](/params)).
 
    In some cases, ``rpmodel`` sets these constants in function arguments. These
-   parameters have also been moved to {const}`~pyrealm.params.PARAM` to simplify
-   function arguments.
+   parameters have also been moved to {const}`~pyrealm.params.PModel_Params` 
+   to simplify function arguments.
 
 1. The ``rpmodel`` package has suites of functions for calculating $J_{max}$
    limitation and optimal $\chi$. These have been combined into classes
-   {class}`~pyrealm.pmodel.CalcLUEVcmax` and
-   {class}`~pyrealm.pmodel.CalcOptimalChi`. This allows the common parameters
-   and outputs of these functions to be standardised and the different methods
-   are provided via a ``method`` argument to each class.
+   {class}`~pyrealm.pmodel.JmaxLimitation` and {class}`~pyrealm.pmodel.CalcOptimalChi`. 
+   This allows the common parameters and outputs of these functions to be standardised
+   and the different methods are provided via a ``method`` argument to each class.
 
 1. When simulating C4 plants, the ``rpmodel`` package, the ``rpmodel`` function
    enforces a separate $J_{max}$ method (``rpmodel:::calc_lue_vcmax_c4``). This
@@ -56,7 +55,8 @@ The implementations differ in a number of ways:
    $m_j=1.0$. Only this method can be used with C4 plants and hence it is not
    possible to simulate $J_{max}$ limitation for C4 plants. In the
    implementation in {mod}`~pyrealm.pmodel`, C4 plants are set to have no
-   $\ce{CO2}$ limitation {class}`~pyrealm.pmodel.CalcOptimalChi` and are then
+   $\ce{CO2}$ limitation in {class}`~pyrealm.pmodel.CalcOptimalChi`, although the
+   correct internal $\ce{CO2}$ partial pressure is calculated, and are then
    free to use whichever $J_{max}$ method is preferred in
    {class}`~pyrealm.pmodel.CalcLUEVcmax`.
 
@@ -70,3 +70,9 @@ The implementations differ in a number of ways:
    core of inputs and methods and functions reproduce the rest of the
    functionality in the P Model.
 
+1. The ``rpmodel`` function has extended the implementation of the empirical
+   soil moisture factor $\beta(\theta)$ from a simple factor on light use
+   efficiency (LUE) to estimate the underlying values of $J_{max}$ and $V_{cmax}$.
+   {class}`~pyrealm.pmodel.PModel` only applies $\beta(\theta)$ limitation
+   factor to LUE and reports $J_{max}$ and $V_{cmax}$ estimates as if there was
+   no limitation.

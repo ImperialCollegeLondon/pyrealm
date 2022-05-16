@@ -5,7 +5,6 @@ import json
 import enforce_typing
 from dacite import from_dict
 
-# from box import Box
 
 # Design notes: pyrealm is going to have a bunch of 'deep' settings. Things
 # that aren't often tweaked by users but should be easy to tweak when needed.
@@ -138,7 +137,7 @@ class PModelParams(ParamClass):
       1.69946e-17, -2.295063e-20]
 
     **Viscosity of water**, values taken from :cite:`Huber:2009fy`
-
+    * `simple_viscosity`: Use a simple implementation of viscosity (boolean)
     * `huber_tk_ast`: Reference temperature (:math:`tk_{ast}`, 647.096, Kelvin)
     * `huber_rho_ast`: Reference density (:math:`\rho_{ast}`, 322.0, kg/m^3)
     * `huber_mu_ast`: Reference pressure (:math:`\mu_{ast}` 1.0e-6, Pa s)
@@ -166,8 +165,7 @@ class PModelParams(ParamClass):
 
     **Scaling of Kphio with temperature**, parameters of quadratic functions
 
-    * `kphio_C4`: Scaling of Kphio in C4 plants, unpublished estimates
-      from Shirley (Cai, Wenjia <w.cai17@imperial.ac.uk>) ([-0.064,  0.03, -0.000464])
+    * `kphio_C4`: Scaling of Kphio in C4 plants, Eqn 5 of :cite:`cai:2020a`
     * `kphio_C3`: Scaling of Kphio in C3 plants, taken from Table 2 of
       :cite:`Bernacchi:2003dc` ([0.352, 0.022, -3.4e-4])
 
@@ -189,11 +187,12 @@ class PModelParams(ParamClass):
     * `soilmstress_theta0`: 0.0
     * `soilmstress_thetastar`: 0.6
     * `soilmstress_a`: 0.0
-    * `soilmstress_b`: 0.685
+    * `soilmstress_b`: 0.733
 
-    **Unit cost ratio**, value taken from :cite:`Stocker:2020dh`
+    **Unit cost ratios**, value taken from :cite:`Stocker:2020dh`
 
-    * `stocker19_beta`: Unit cost ratio. (:math:`\beta`, 146.0)
+    * `stocker19_beta_c3`: Unit cost ratio for C3 plants. (:math:`\beta`, 146.0)
+    * `stocker19_beta_c4`: Unit cost ratio for C4 plants. (:math:`\beta`, 146.0 / 9 = 16.2222)
 
     **Electron transport capacity maintenance cost**, value taken from :cite:`Wang:2017go`
 
@@ -228,6 +227,7 @@ class PModelParams(ParamClass):
         0.6980547, -0.0007435626, 3.704258e-05, -6.315724e-07, 9.829576e-09,
         -1.197269e-10, 1.005461e-12, -5.437898e-15, 1.69946e-17, -2.295063e-20)
     # Huber
+    simple_viscosity: bool = False
     huber_tk_ast: Number = 647.096
     huber_rho_ast: Number = 322.0
     huber_mu_ast: Number =1e-06
@@ -265,10 +265,10 @@ class PModelParams(ParamClass):
     soilmstress_theta0: Number = 0.0
     soilmstress_thetastar: Number = 0.6
     soilmstress_a: Number = 0.0
-    soilmstress_b: Number = 0.685
+    soilmstress_b: Number = 0.733
     # Unit cost ratio (beta) (Stocker 2020 value and equivalent for C4).
     beta_cost_ratio_c3: Number = 146.0
-    beta_cost_ratio_c4: Number = 16.222222
+    beta_cost_ratio_c4: Number = 146.0 / 9
     # Wang17
     wang17_c: Number = 0.41
     # Smith19

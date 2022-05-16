@@ -10,15 +10,17 @@ kernelspec:
   name: python3
 ---
 
-# Leaf $\ce{CO2}$ and C3 / C4 photosynthesis 
+# Step 2: Optimal $\chi$ and leaf $\ce{CO2}$ 
 
+The next step is to estimate the following parameters:
 
-The next step is to calculate the following factors:
-
-- The optimal ratio of leaf internal to ambient $\ce{CO2}$ partial
-  pressure ($\chi = c_i/c_a$).
-- The $\ce{CO2}$ limitation term of light use efficiency ($m_j$).
-- The limitation term for $V_{cmax}$ ($m_{joc}$). 
+* The value $\chi = c_i/c_a$, which is the unitless ratio of leaf internal
+  $\ce{CO2}$ partial pressure ($c_i$, Pa) to ambient $\ce{CO2}$ partial pressure
+  ($c_a$, Pa).
+* A parameter ($\xi$) describing the sensitivity of $\chi$ to vapour pressure
+  deficit (VPD). 
+* $\ce{CO2}$ limitation factors to both light assimilation ($m_j$) and
+  carboxylation ($m_c$) along with their ratio ($m_{joc} = m_j / m_c$). 
 
 The details of these calculations are in {class}`~pyrealm.pmodel.CalcOptimalChi`,
 which supports two methods: `prentice14` and `c4`.
@@ -29,15 +31,15 @@ Both methods (`prentice14` and `c4`) calculate $\chi$ following Equation 8 in
 ({cite}`Prentice:2014bc`), but differ in the value used for the unit cost 
 ratio parameter ($\beta$).
 
-*  {cite}`Stocker:2020dh` estimated $\beta = 146$ for C3 plants, and this is 
-defined as `beta_unit_cost_c3` in {class}`~pyrealm.param_classes.PModelParams`. 
+*  {cite}`Stocker:2020dh` estimated $\beta = 146$ for C3 plants, and this is
+   defined as `beta_unit_cost_c3` in {class}`~pyrealm.param_classes.PModelParams`. 
 
-*  Both {cite}`Lin:2015wh` and {cite}`DeKauwe:2015im` provide estimates for the $g_1$ 
-parameter for C3 and C4 plants, with a ratio of C3/C4 values of around 3. The
-$g_1$ parameter is equivalent to $\xi$ in the P model. Given that 
-$\xi \propto \surd\beta$, a reasonable default for C4 plants is that 
-$\beta = 146 /  9 \approx 16.222$, defined as  `beta_unit_cost_c4` in 
-{class}`~pyrealm.param_classes.PModelParams`.
+*  Both {cite}`Lin:2015wh` and {cite}`DeKauwe:2015im` provide estimates for the
+    $g_1$ parameter for C3 and C4 plants, with a ratio of C3/C4 values of around
+    3. The $g_1$ parameter is equivalent to $\xi$ in the P model. Given that
+    $\xi \propto \surd\beta$, a reasonable default for C4 plants is that $\beta
+    = 146 / 9 \approx 16.222$, defined as  `beta_unit_cost_c4` in
+    {class}`~pyrealm.param_classes.PModelParams`.
 
 
 ```{code-cell} python
