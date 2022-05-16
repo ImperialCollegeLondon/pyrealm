@@ -5,7 +5,6 @@ import json
 import enforce_typing
 from dacite import from_dict
 
-# from box import Box
 
 # Design notes: pyrealm is going to have a bunch of 'deep' settings. Things
 # that aren't often tweaked by users but should be easy to tweak when needed.
@@ -189,7 +188,7 @@ class PModelParams(ParamClass):
     * `soilmstress_theta0`: 0.0
     * `soilmstress_thetastar`: 0.6
     * `soilmstress_a`: 0.0
-    * `soilmstress_b`: 0.685
+    * `soilmstress_b`: 0.733
 
     **Unit cost ratios**, value taken from :cite:`Stocker:2020dh`
 
@@ -267,7 +266,7 @@ class PModelParams(ParamClass):
     soilmstress_theta0: Number = 0.0
     soilmstress_thetastar: Number = 0.6
     soilmstress_a: Number = 0.0
-    soilmstress_b: Number = 0.685
+    soilmstress_b: Number = 0.733
     # Unit cost ratio (beta) (Stocker 2020 value and equivalent for C4).
     beta_cost_ratio_c3: Number = 146.0
     beta_cost_ratio_c4: Number = 146.0 / 9

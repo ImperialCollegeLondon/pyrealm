@@ -539,7 +539,10 @@ def calc_soilmstress(soilm: Union[float, np.ndarray],
 
     .. math:: q=(1 - (a + b \bar{\alpha}))/(\theta^{*} - \theta_{0})^2
 
-    Default parameters are as described in :cite:`Stocker:2020dh`.
+    Default parameters of :math:`a=0` and :math:`b=0.7330` are as described in
+    Table 1 of :cite:`Stocker:2020dh` specifically for the 'FULL' use case, with
+    ``method_jmaxlim="wang17"``, ``do_ftemp_kphio=TRUE``.
+
 
     Parameters:
 
@@ -1509,8 +1512,8 @@ class JmaxLimitation:
         * ``wang17``: applies the framework of :cite:`Wang:2017go`.
         * ``smith19``: applies the framework of :cite:`Smith:2019dv`
 
-    Note that :cite:`Smith:2019dv` defines :math:`phi_0` as the quantum efficiency of 
-    electron transfer, whereas :mod:`pyrealm.PModel` defines :math:`phi_0` as the quantum 
+    Note that :cite:`Smith:2019dv` defines :math:`\phi_0` as the quantum efficiency of 
+    electron transfer, whereas :mod:`pyrealm.PModel` defines :math:`\phi_0` as the quantum 
     efficiency of photosynthesis, which is 4 times smaller. This is why the factors 
     here are a factor of 4 greater than Eqn 15 and 17 in :cite:`Smith:2019dv`.
     
@@ -1571,7 +1574,7 @@ class JmaxLimitation:
 
         all_methods = {'wang17': self.wang17,
                        'smith19': self.smith19,
-                       'none': self.none}
+                       'simple': self.simple}
 
         if self.method == 'c4':
             raise ValueError('This class does not implement a fixed method for C4 '
@@ -1703,7 +1706,7 @@ class JmaxLimitation:
         self.f_v = self.omega_star / (2.0 * theta)
         self.f_j = self.omega 
 
-    def none(self):
+    def simple(self):
         """This method allows the 'simple' form of the equations to be calculated 
         (:math:`f_v = f_j = 1`)
         """
