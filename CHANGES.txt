@@ -45,25 +45,27 @@
       - Fixed issue with utilities.summarize_attr with masked arrays containing
         all NaN values
 0.6.0 - Breaking change to inputs to CalcOptimalChi - now uses PModelEnvironment
-        object, not named args for kmm etc.
+        object directly, not named args for kmm etc.
       - PModel testing update: new set of input test values of 100 values across
         envt space, not just 4 arbitrary values. Updated R outputs.
       - Restructure of test_pmodel - much cleaner use of parameterisations args.
       - Addition of units to utilities.summarize_attr and extensive addition
         of units throughout docs.
+      - Flexibility in the units of PPFD - previous versions were agnostic about
+        However, that leads to nonsensical values of Jmax and Vcmax, which must
+        the units of PPFD - so that the scaling of GPP could be set by the user.
+        be in µmol m-2 s-1. So, PPFD now must also be in µmol m-2 s-1.
       - Bug in Jmax calculation - not carrying ftemp_kphio correctly into calculation -
         corrected by baking ftemp_kphio correction to kphio early.
       - Breaking change to calculation of Jmax and Vcmax. Previous versions 
-        followed rpmodel in using a more complex calculation for Jmax and 
-        Vcmax that allowed Stocker's empirical soil moisture effects (beta(theta))
-        to be worked back into Vcmax then Jmax, rd and gs. pyrealm no longer does 
-        this: the soil moisture correction is applied _only_ to LUE and the getter
-        function for vcmax, jmax, gs and rd issue a warning that they are 
+        followed rpmodel in using a more complex calculation for Jmax and Vcmax
+        that allowed Stocker's empirical soil moisture effects (beta(theta)) to
+        be worked back into Vcmax then Jmax, rd and gs. pyrealm no longer does
+        this: the soil moisture correction is applied _only_ to LUE and the
+        getter function for vcmax, jmax, gs and rd issue a warning that they are
         uncorrected when soil moisture effects are applied.
       - Internal changes - the CalcLUEVcmax class has been retired. This structuring
-        was integral to the soil moisture correction approach, but with that 
+        was integral to the soil moisture correction approach, but with that
         change, a simple JmaxLimitation class replaces it.
-      - Flexibility in the units of PPFD - previous versions were agnostic about
-        the units of PPFD - so that the scaling of GPP could be set by the user.
-        However, that leads to nonsensical values of Jmax and Vcmax, which must
-        be in µmol m-2 s-1. So, PPFD now must also be in µmol m-2 s-1.
+      - Updated value of param_classes.PModelParam.soilmstress_b to published
+        default

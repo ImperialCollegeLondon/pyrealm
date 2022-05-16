@@ -568,13 +568,15 @@ def calc_soilmstress(soilm: Union[float, np.ndarray],
         >>> # Relative reduction (%) in GPP due to soil moisture stress at
         >>> # relative soil water content ('soilm') of 0.2:
         >>> round((calc_soilmstress(0.2) - 1) * 100, 5)
-        -14.0
+        -11.86667
     """
     
     # TODO - presumably this should also have beta(theta) = 0 when m_s <=
     #        theta_0. Actually, no - these limits aren't correct. This is only
     #        true when meanalpha=0, otherwise beta > 0 when m_s < theta_0.
-    
+    # TODO - move soilm params into standalone param class for this function -
+    #        keep the PModelParams cleaner?
+        
     # Check inputs, return shape not used
     _ = check_input_shapes(soilm, meanalpha)
 
@@ -1508,7 +1510,8 @@ class JmaxLimitation:
     implement :math:`V_{cmax}` and :math:`J_{max}` limitation of photosynthesis. 
     Three methods are currently implemented:
 
-        * ``none``: applies the 'simple' equations with no limitation
+        * ``simple``: applies the 'simple' equations with no limitation. The
+          alias ``none`` is also accepted.
         * ``wang17``: applies the framework of :cite:`Wang:2017go`.
         * ``smith19``: applies the framework of :cite:`Smith:2019dv`
 
@@ -1536,10 +1539,10 @@ class JmaxLimitation:
 
         >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000) 
         >>> optchi = CalcOptimalChi(env)
-        >>> none = JmaxLimitation(optchi, method='none')
-        >>> none.f_j
+        >>> simple = JmaxLimitation(optchi, method='simple')
+        >>> simple.f_j
         1.0
-        >>> none.f_v
+        >>> simple.f_v
         1.0
         >>> wang17 = JmaxLimitation(optchi, method='wang17')
         >>> round(wang17.f_j, 5)
@@ -1574,21 +1577,20 @@ class JmaxLimitation:
 
         all_methods = {'wang17': self.wang17,
                        'smith19': self.smith19,
-                       'simple': self.simple}
+                       'simple': self.simple,
+                       'none': self.simple}
 
+        # Catch method errors.
         if self.method == 'c4':
             raise ValueError('This class does not implement a fixed method for C4 '
                              'photosynthesis. To replicate rpmodel choose c4=True and '
-                             'method="none"')
-
-        if self.method in all_methods:
-
-            # Use the selected method to calculate limitation factors
-            this_method = all_methods[self.method]
-            this_method()
-
-        else:
+                             'method="simple"')
+        elif self.method not in all_methods:
             raise ValueError(f"JmaxLimitation: method argument '{method}' invalid.")
+
+        # Use the selected method to calculate limitation factors
+        this_method = all_methods[self.method]
+        this_method()
 
     def __repr__(self):
 

@@ -8,6 +8,19 @@ library(jsonlite)
 
 values <- fromJSON(file("test_inputs.json"))
 
+# Record the version details of rpmodel
+pkg_desc <-  packageDescription('rpmodel')
+
+if (is.null(pkg_desc$Repository)) {
+    # Github install
+    pkg_desc <- pkg_desc[c('Version', 'GithubSHA1')]
+} else {
+    # CRAN install
+    pkg_desc <- pkg_desc[c('Version', 'Repository')]
+}
+
+values$rpmodel_version <- pkg_desc
+
 values <- within(values, {
        # density_h2o
        dens_h20_sc <- density_h2o(tc_sc, patm_sc)
@@ -45,9 +58,14 @@ values <- within(values, {
        # soilmstress
        # Bug for mixed inputs in rpmodel:
        # https://github.com/computationales/rpmodel/issues/16
-       soilmstress_sc <- calc_soilmstress(soilm_sc, meanalpha_sc)
-       soilmstress_mx <- mapply(calc_soilmstress, soilm_ar, meanalpha_sc)
-       soilmstress_ar <- calc_soilmstress(soilm_ar, meanalpha_ar)
+       # Note that calc_soilmstress retains the outdated default b=0.685
+       bpar_soilm <- 0.733
+       soilmstress_sc <- calc_soilmstress(soilm_sc, meanalpha_sc,
+                                          bpar_soilm = bpar_soilm)
+       soilmstress_mx <- mapply(calc_soilmstress, soilm_ar, meanalpha_sc,
+                                bpar_soilm = bpar_soilm)
+       soilmstress_ar <- calc_soilmstress(soilm_ar, meanalpha_ar,
+                                          bpar_soilm = bpar_soilm)
 
        # viscosity_h2o
        viscosity_h2o_sc <- viscosity_h2o(tc_sc, patm_sc)
@@ -245,11 +263,7 @@ run_row <- function(inputs) {
     v$do_soilmstress <- do_soilmstress
     v$method_jmaxlim <- inputs$lm
     v$c4 <- FALSE
-
-    # NOTE - the default value of bpar_soilm passed into soilmstress
-    # by rpmodel is different from the default value of bpar set in the
-    # function definition, so standardise that here
-    v$bpar_soilm <- 0.685
+    v$bpar_soilm <- 0.733
 
     # Run the P model
     ret <- do.call(rpmodel, v)
@@ -306,11 +320,11 @@ for (rw in seq(nrow(rpmodel_c4))) {
     v$meanalpha <- values$meanalpha_sc
     v$do_ftemp_kphio <- do_ftemp_kphio
     v$do_soilmstress <- do_soilmstress
-    v$c4 <- TRUE
+
     # NOTE - the default value of bpar_soilm passed into soilmstress
     # by rpmodel is different from the default value of bpar set in the
     # function definition, so standardise that here
-    v$bpar_soilm <- 0.685
+    v$bpar_soilm <- 0.733
 
     ret <- do.call(rpmodel, v)
 
