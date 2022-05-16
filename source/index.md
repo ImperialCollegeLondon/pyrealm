@@ -47,14 +47,15 @@ clicking on the buttons like the one below.
   :hidden:
 
   pmodel/pmodel.md
-  pmodel/rpmodel.md
   pmodel/photosynthetic_environment.md
   pmodel/optimal_chi.md
-  pmodel/lue_vcmax.md
+  pmodel/lue_limitation.md
   pmodel/envt_variation_outputs.md
+  pmodel/soil_moisture.md
   pmodel/extreme_values.md
   pmodel/global_example.md
   pmodel/pmodel_reference.md
+  pmodel/rpmodel.md
 ```
 
 ```{eval-rst}

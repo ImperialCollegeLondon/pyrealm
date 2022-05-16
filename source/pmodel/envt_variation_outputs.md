@@ -40,9 +40,10 @@ pmodel_env = pmodel.PModelEnvironment(tc=tc_4d, patm=patm_4d,vpd=vpd_4d, co2=co2
 pmodel_c3 = pmodel.PModel(pmodel_env)
 pmodel_c4 = pmodel.PModel(pmodel_env, c4=True)
 
-# Estimate productivity for tropical forest conditions (monthly, m2)
-pmodel_c3.estimate_productivity(fapar=0.91, ppfd=834)
-pmodel_c4.estimate_productivity(fapar=0.91, ppfd=834)
+# Estimate productivity for tropical forest conditions 
+# PPFD https://doi.org/10.2307/2260066 rough average canopy top in dry season.
+pmodel_c3.estimate_productivity(fapar=0.91, ppfd=600)
+pmodel_c4.estimate_productivity(fapar=0.91, ppfd=600)
 
 # Create line plots of optimal chi
 
@@ -93,7 +94,7 @@ def plot_fun(estvar, estvarlab):
 
 ```
 
-# P Model outputs
+# Step 4: Estimating productivity
 
 This page shows how the main output variables from the P Model vary under
 differing environmental conditions. The paired plots below show how C3 and C4
@@ -172,37 +173,37 @@ fraction of absorbed photosynthetically active radiation (`fapar`) and the
 photosynthetic photon flux density (`ppfd`). The product of these two variables
 is an estimate of absorbed irradiance ($I_{abs}$).
 
-
-
 The {meth}`~pyrealm.pmodel.PModelEnvironment.estimate_productivity` method is
 used to provide these estimates to the P Model instance. Once this has been run,
 the following additional variables are populated. 
 
-```{admonition} Units of PPFD
-:class: warning
-The units of these productivity outputs follow the area and time scaling of the
-provided PPFD data. For example, if PPFD is expressed in $\text{mol}\,m^{-2}\,\text{s}^{-1}$,
-then productivity variables will also be per metre squared per second: GPP would 
-be $\text{gC}\,m^{-2}\,\text{s}^{-1}$.
 
-Users should **make sure that they know the units** of their PPFD data!
+```{warning}
+
+To use {meth}`~pyrealm.pmodel.PModel.estimate_productivity`, the estimated PPFD
+must be expressed as **µmol m-2 s-1**.
+
+Estimates of PPFD sometimes use different temporal or spatial scales - for
+example daily moles of photons per hectare. Although GPP can also be expressed
+with different units, many other predictions of the P Model ($J_{max}$,
+$V_{cmax}$, $g_s$ and $r_d$) _must_ be expressed as µmol m-2 s-1 and so this
+standard unit must also be used for PPFD.
 ```
 
-The productivity variables and their units (assuming PPFD in
-$\text{mol}\,m^{-2}\,\text{s}^{-1}$) are:
+The productivity variables and their units are:
 
-* Gross primary productivity (``gpp``, $\text{gC}\,m^{-2}\,\text{s}^{-1}$)
-* Dark respiration (``rd``, $\text{mol}\,m^{-2}\,\text{s}^{-1}$)
-* Maximum rate of carboxylation (``vcmax``, $\text{mol}\,m^{-2}\,\text{s}^{-1}$)
-* Maximum rate of carboxylation at standard temperature (``vcmax25``, $\text{mol}\,m^{-2}\,\text{s}^{-1}$)
-* Maximum rate of electron transport. (``jmax``, $\text{mol}\,m^{-2}\,\text{s}^{-1}$)
-* Stomatal conductance (``gs``, $\text{mol}\,m^{-2}\,\text{s}^{-1}$)
+* Gross primary productivity (``gpp``, $\micro\text{gC}\,m^{-2}\,\text{s}^{-1}$)
+* Dark respiration (``rd``, $\text{mol}\,\microm^{-2}\,\text{s}^{-1}$)
+* Maximum rate of carboxylation (``vcmax``, $\micro\text{mol}\,m^{-2}\,\text{s}^{-1}$)
+* Maximum rate of carboxylation at standard temperature (``vcmax25``, $\micro\text{mol}\,m^{-2}\,\text{s}^{-1}$)
+* Maximum rate of electron transport. (``jmax``, $\micro\text{mol}\,m^{-2}\,\text{s}^{-1}$)
+* Stomatal conductance (``gs``, $\micro\text{mol}\,m^{-2}\,\text{s}^{-1}$)
 
-For the plots below, productivity has been estimated using typical values for
-monthly irradiance in a tropical rainforest:
+For the plots below, productivity has been estimated using a representative
+irradiance values at the top of a tropical rainforest canopy:
 
 * $f_{APAR}$: 0.91 (unitless)
-* PPFD: 834 $\text{mol}\,m^{-2}\,\text{month}^{-1}$
+* PPFD: 600 $\micro\text{mol}\,m^{-2}\,\text{month}^{-1}$
 
 If required, productivity estimates per unit absorbed irradiance can be simply
 calculated using ``fapar=1, ppfd=1``, which are the default values to

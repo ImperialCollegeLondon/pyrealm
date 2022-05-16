@@ -10,10 +10,10 @@ kernelspec:
   name: python3
 ---
 
-# Photosynthetic environment
+# Step 1: Photosynthetic environment
 
-The provided values of temperature, pressure, $\ce{CO2}$ concentration are used
-to calculate values for four key environmentally determined photosynthetic 
+The provided values of temperature, pressure and $\ce{CO2}$ concentration are
+used to calculate values for four key environmentally determined photosynthetic
 variables:
 
 1. photorespiratory compensation point ($\Gamma^*$),

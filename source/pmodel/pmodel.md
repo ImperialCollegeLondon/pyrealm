@@ -35,28 +35,42 @@ variables are used to define the environment that the plant experiences:
 - atmospheric $\ce{CO2}$ concentration (`co2`, ppm), and
 - atmospheric pressure (`patm`, Pa).
 
-These environmental variables can then be used to calculate variables that
-capture the photosynthetic environment of a plant (see
-[details](photosynthetic_environment)) by calculating:
-
-- the photorespiratory compensation point ($\Gamma^*$, Pa),
-- the Michaelis-Menten coefficient for photosynthesis ($K_{mm}$, Pa),
-- the relative viscosity of water ($\eta^*$, unitless ratio), and
-- the partial pressure of $\ce{CO2}$ in ambient air ($c_a$, Pa).
-
-Once this set of environmental variables has been calculated, the P model can
-then be fitted. The model breaks down into three broad stages, each of which 
+From thes inputs, the model breaks down into four broad stages, each of which 
 is described in more detail in the link for each stage
 
-1. Calculation of $\ce{CO2}$ partial pressures and limitation factors
-   (see [details](optimal_chi)). This step also governs the main differences
-   between C3 and C4 photosynthesis.
-1. Calculation of limitation factors on the maximum rates of Rubsico
-   regeneration ($J_{max}$) and maximum carboxylation capacity ($V_{cmax}$)
-   (see [details](jmax_limitation)). 
-1. Estimation of gross primary productivity (GPP) using an estimate of 
-   absorbed photosynthetically active radiation, along with key rates 
-   within the leaf (see [details](estimating-productivity)).
+
+### Step 1. Photosynthetic environment
+
+The environmental variables are used to calculate variables describing the
+photosynthetic environment of a plant (see
+[details](photosynthetic_environment)).
+
+### Step 2. Calculation of leaf $\ce{CO2}$ variables
+
+The photosynthetic environment is then used to calculate the optimal ratio of
+internal to external CO2 concentration ($chi$), along with $\ce{CO2}$ partial
+pressures and limitation factors (see [details](optimal_chi)). 
+   
+This step also governs the main differences between C3 and C4 photosynthesis.
+
+### Step 3. Limitation of light use efficiency (LUE)
+
+The calculation of light use efficiency can be subjected to a number of
+constraints. (see [details](lue_limitation)). 
+
+* Theoretical limitations to the maximum rates of Rubsico regeneration
+   ($J_{max}$) and maximum carboxylation capacity ($V_{cmax}$)
+
+* Temperature sensitivity of the quantum yield efficiency of photosynthesis
+(`kphio`, $\phi_0$). 
+
+* Soil moisture stress. 
+
+### Step 4. Estimation of GPP
+
+Once LUE has been calculated, estimates of absorbed photosynthetically active
+radiation, can be used to predict gross primary productivity (GPP) and other key
+rates within the leaf (see [details](estimating-productivity)).
 
 ### Variable graph
 
@@ -127,14 +141,8 @@ model.summarize()
 ### $\chi$ estimates and $\ce{CO2}$ limitation
 
 The P Model also contains a {class}`~pyrealm.pmodel.CalcOptimalChi` object,
-which records:
-
-* a parameter ($\xi$) describing the sensitivity of $\chi$ to VPD, 
-* the optimal ratio of internal to ambient $\ce{CO2}$ pressure ($\chi$) and,
-* $\ce{CO2}$ limitation factors to both light assimilation ($m_j$) and
-  carboxylation ($m_c$) and their ratio ($m_{joc}). 
-
-This object also has a {meth}`~pyrealm.pmodel.CalcOptimalChi.summarize` method:
+recording key parameters from the [calculation of $\chi$](optimal_chi). This
+object also has a {meth}`~pyrealm.pmodel.CalcOptimalChi.summarize` method:
 
 ```{code-cell} ipython3
 model.optchi.summarize()

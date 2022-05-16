@@ -10,40 +10,6 @@ kernelspec:
   name: python3
 ---
 
-# Calculation of Light Use Efficiency
-
-Once key photosynthetic parameters have been calculated
-([Details](optimal_chi)), the P model then calculates the light use efficiency
-(LUE). In its simplest form, this is:
-
-$$
-  \text{LUE} = \phi_0 m_j M_C
-$$
-
-where $\phi_0$ is the quantum yield efficiency, $M_C$ is the molar mass of
-carbon and $m_j$ is the $\ce{CO2}$ limitation term of light use efficiency from
-the calculation of optimal $\chi$.
-
-However, the implementation in {mod}`pyrealm.pmodel` also incorporates three
-optional limiting factors: 
-
-- a factor ($\phi_0(T)$) to capture the temperature dependence of $\phi_0$, 
-- soil moisture stress ($\beta$) and
-- a term ($m_{jlim}$) to capture $J_{max}$ limitation of $m_j$.
-
-$$
-  \text{LUE} = \phi_0 \phi_0(T) m_j m_{jlim} M_C \beta
-$$
-
-The Rubisco carboxylation capacity ($V_{cmax}$) of the system can be back
-calculated from LUE as:
-
-$$
-  V_{cmax} = \frac{\text{LUE}}{m_c M_C},
-$$
-
-where $m_c$ is the  $\ce{CO2}$ limitation term for Rubisco assimilation.
-
 ```{code-cell} python
 :tags: [hide-input]
 # This code loads required packages and then creates a representative range of
@@ -77,23 +43,89 @@ meanalpha_2d = np.broadcast_to(meanalpha_1d, (n_pts, n_pts))
 co2_2d = np.broadcast_to(co2_1d, (n_pts, n_pts))
 ```
 
-## Temperature dependence of quantum yield efficiency
+# Step 3: LUE Limitation
 
-The P-model uses a single variable to capture apparent quantum yield efficiency
-(`kphio`). The default values of `kphio` vary with the model options, corresponding
+Once key [photosynthetic parameters](photosynthetic_environment) and [optimal
+chi](optimal_chi) have been calculated, the {class}`~pyrealm.pmodel.PModel`
+class can report estimates of:
+
+* the light use efficiency (LUE), as grams of carbon per mole of photons, and
+* the intrinsic water use efficiency (IWUE), as micromoles per mole of photons.
+
+
+## Light use efficiency
+
+In its simplest form:
+
+$$
+  \text{LUE} = \phi_0 \cdot M_C \cdot m_j 
+$$
+
+where $\phi_0$ is the quantum yield efficiency of photosynthesis, $M_C$ is the
+molar mass of carbon and $m_j$ is the $\ce{CO2}$ limitation term of light use
+efficiency from the calculation of optimal $\chi$.
+
+However, the {mod}`pyrealm.pmodel` module also incorporates three further
+factors: 
+
+* temperature (t) dependence of $\phi_0$, 
+* $J_{max}$ limitation of $m_j$ by a factor $f_v$ and
+* an empirical soil moisture stress penalty on LUE.
+
+$$
+  \text{LUE} = \phi_0(t) \cdot M_C \cdot m_j \cdot f_v \cdot \beta(\theta)$
+$$
+
+
+### $\phi_0$ and temperature dependency
+
+The {class}`~pyrealm.pmodel.PModel` uses a single variable to capture the
+apparent quantum yield efficiency of photosynthesis (`kphio`, $\phi_0$). 
+
+```{warning}
+
+Note that $\phi_0$ is sometimes used to refer to the quantum yield of electron
+transfer, which is exactly four times larger than the quantum yield of
+photosynthesis. 
+
+```
+
+The value of $\phi_0$ shows temperature dependence, which is modelled
+following {cite}`Bernacchi:2003dc` for C3 plants and {cite}`Shirley` for C4
+plants (see {func}`calc_ftemp_kphio`). The temperature dependency is applied by
+default but can be turned off using the {class}`~pyrealm.pmodel.PModel` argument
+`do_ftemp_kphio=False`.
+
+The default values of `kphio` vary with the model options, corresponding
 to the empirically fitted values presented for three setups in {cite}`Stocker:2020dh`.
 
-- If `do_ftemp_kphio = False`, then $\phi_0 = 0.049977$.
-- If `do_ftemp_kphio = True` and
-    - soil moisture stress is being used `kphio = 0.087182` (FULL),
-    - soil moisture stress is not being used `kphio = 0.081785` (BRC).
+1. If the temperature dependence of $\phi_0$ is **not** applied,
+    $\phi_0 = 0.049977$,
+1. otherwise, if an [empirical soil moisture stress factor](soil_moisture) 
+   is being applied, $\phi_0 = 0.87182$
+1. otherwise, with no soil moisture stress and temperature dependence
+   $\phi_0 = 0.081785$
 
-The P-model also incorporates temperature dependence of `kphio` ($\phi_0(T)$),
-determined by {cite}`Bernacchi:2003dc` and implemented in the function
-{func}`pyrealm.pmodel.calc_ftemp_kphio`. This can be disabled by setting
-`do_ftemp_kphio=False`. The scaling of this temperature dependence uses
-different scalings for C3 and C4 plants.
 
+The initial value of $\phi_0$ and the values used in calculations are stored in
+the `init_kphio` and  `kphio` attributes of the {class}`~pyrealm.pmodel.PModel`
+object.  The code examples compare models with and without temperature
+dependency of $\phi_0$.
+
+```{code-cell} ipython3
+env = pmodel.PModelEnvironment(tc=30, patm=101325, vpd=820, co2=400)
+model_fixkphio = pmodel.PModel(env, kphio=0.08, do_ftemp_kphio=False)
+np.array([model_fixkphio.init_kphio, model_fixkphio.kphio])
+```
+
+```{code-cell} ipython3
+model_tempkphio = pmodel.PModel(env, kphio=0.08, do_ftemp_kphio=True)
+np.array([model_tempkphio.init_kphio, model_tempkphio.kphio])
+```
+
+The scaling of temperature dependence varies for C3 and C4 plants and the
+function {func}`calc_ftemp_kphio` is used to calculate a limitation factor that
+is applied to $\phi_0$.
 
 ```{code-cell} python
 :tags: [hide-input]
@@ -112,84 +144,62 @@ pyplot.legend()
 pyplot.show()
 ```
 
-## Soil moisture stress factor
+### Limitation of electron transfer rate ($J_{max}$) and carboxylation capacity ($V_{cmax}$)
 
-The P model implements an empirically derived factor ($\beta \in [0,1]$,
-:{cite}`Stocker:2018be`, :{cite}`Stocker:2020dh`) that describes the response of
-LUE to soil moisture stress. To implement this, you can provide the
-{func}`~pyrealm.pmodel.PModel` class with values of $\beta$ estimated using
-the function {func}`pyrealm.pmodel.calc_soilmstress`. This requires estimates
-of:
 
-* relative soil moisture (`soilm`), as the fraction of field capacity, and
-* aridity (`meanalpha`), as the average annual ratio of AET to PET.
+The {class}`~pyrealm.pmodel.PModel` implements three alternative approaches to
+the calculation of $J_{max}$ and $V_{cmax}$, using the argument
+`method_jmaxlim`. These options set the calculation of two factor ($f_j$ and
+$f_v$) which are applied to the calculation of $J_{max}$ and $V_{cmax}$. The
+options for this setting are: 
 
-The calculation includes an upper bound in relative soil moisture
-(`soilmstress_thetastar`), above which $\beta$ is always 1, corresponding
-to no loss of light use efficiency.
+* `simple`: These are the 'simple' formulations of the P Model, with $f_j = f_v
+  = 1$.
+* `wang17`: This is the default setting for `method_jmaxlim` and applies the
+  calculations describe in  {cite}`Wang:2017go`. The calculation details can be
+  seen in the {meth}`~pyrealm.pmodel.JmaxLimitation.wang17` method.
 
-```{code-cell} python
-:tags: [hide-input]
-# Calculate soil moisture stress factor
-soilm = pmodel.calc_soilmstress(soilm_2d, meanalpha_2d.transpose())
+* `smith19`: This is an alternate calculation for optimal values of $J_{max}$
+  and $V_{cmax}$ described in {cite}`Smith:2019dv`. The calculation details can be
+  seen in the {meth}`~pyrealm.pmodel.JmaxLimitation.smith19` method.
 
-# Create a contour plot of gamma
-fig, ax = pyplot.subplots()
-CS = ax.contour(soilm_1d, meanalpha_1d, soilm, colors='black',
-                levels=np.append(np.linspace(0, 0.9, 10), [0.99, 0.999]))
-ax.clabel(CS, inline=1, fontsize=10)
-ax.set_title('Soil moisture stress factor')
-ax.set_xlabel('Soil moisture fraction')
-ax.set_ylabel('AET/PET')
-pyplot.show()
+```{code-cell} ipython3
+model_jmax_simple = pmodel.PModel(env, kphio=0.08, method_jmaxlim='simple')
+model_jmax_wang17 = pmodel.PModel(env, kphio=0.08, method_jmaxlim='wang17')
+model_jmax_smith19 = pmodel.PModel(env,  kphio=0.08, method_jmaxlim='smith19')
+
+# Compare LUE from the three methods
+np.array([model_jmax_simple.lue,
+          model_jmax_wang17.lue,
+          model_jmax_smith19.lue])
 ```
 
-## $J_{max}$ limitation
-
-$J_{max}$ limitation is used to capture temperature dependency in the maximum
-rate of RuBP regeneration. Three methods are implemented in the class
-{class}`pyrealm.pmodel.CalcLUEVcmax` and set using the `method_jmaxlim`
-argument:
-
-- `wang17` (default, Wang Han et al. 2017, {meth}`pyrealm.pmodel.CalcLUEVcmax.wang17`)
-- `smith19` (Smith et al., 2019, {meth}`pyrealm.pmodel.CalcLUEVcmax.smith19`)
-- `none` (removes $J_{max}$ limitation, {meth}`pyrealm.pmodel.CalcLUEVcmax.none`)
-
-Each method calculates a value for $m_{jlim}$, with $m_{jlim} = 1.0$ for the method
-`none`. The plot below shows the effects of each method on the overall combined
-impacts of light-limitation on assimilation: $m_j \cdot m_{jlim}$. In this
-example, only temperature varies ($P=101325.0 , \ce{CO2}= 410 \text{ppm},
-\text{VPD}=1.0$) and $\phi_0=0.05$.
+The plot below shows the effects of each method on the LUE across a temperature
+gradient ($P=101325.0 , \ce{CO2}= 400 \text{ppm}, \text{VPD}=820$) and $\phi_0=0.05$).
 
 ```{code-cell} python
 :tags: [hide-input]
 # Calculate variation in m_jlim with temperature
-# - calculate optimal chi under a temperature gradient
-gammastar = pmodel.calc_gammastar(tc_1d, patm=pmodel_param.k_Po)
-kmm = pmodel.calc_kmm(tc_1d, patm=pmodel_param.k_Po)
-viscosity = pmodel.calc_viscosity_h2o(tc_1d, patm=pmodel_param.k_Po)
-viscosity_std = pmodel.calc_viscosity_h2o(pmodel_param.k_To, pmodel_param.k_Po)
-ns_star = viscosity / viscosity_std
-ca = pmodel.calc_co2_to_ca(co2=410, patm=pmodel_param.k_Po)
-
-# Compare Wang17 and Smith19
-optchi = pmodel.CalcOptimalChi(kmm=kmm, gammastar=gammastar, 
-                               ns_star=ns_star, ca=ca, vpd = 1)
-
-lue_wang17 = pmodel.CalcLUEVcmax(optchi, kphio=0.05, method='wang17')
-lue_smith19 = pmodel.CalcLUEVcmax(optchi, kphio=0.05, method='smith19')
+env = pmodel.PModelEnvironment(tc = tc_1d, patm=101325, vpd=820, co2=400)
+model_tc_wang17 = pmodel.PModel(env, kphio=0.08, do_ftemp_kphio=False)
+model_tc_simple = pmodel.PModel(env, kphio=0.08, do_ftemp_kphio=False, method_jmaxlim='simple')
+model_tc_smith19 = pmodel.PModel(env, kphio=0.08, do_ftemp_kphio=False, method_jmaxlim='smith19')
 
 # Create a line plot of the resulting values of m_j
-pyplot.plot(tc_1d, optchi.mj, label='None')
-pyplot.plot(tc_1d, optchi.mj * lue_wang17.mjlim, label='wang17')
-pyplot.plot(tc_1d, optchi.mj * lue_smith19.mjlim, label='smith19')
+pyplot.plot(tc_1d, model_tc_simple.lue, label='simple')
+pyplot.plot(tc_1d, model_tc_wang17.lue, label='wang17')
+pyplot.plot(tc_1d, model_tc_smith19.lue, label='smith19')
 
 pyplot.title('Effects of J_max limitation')
 pyplot.xlabel('Temperature °C')
-pyplot.ylabel('Light-assimilated limitation (m_j) factor')
+pyplot.ylabel('Light Use Efficiency (g C mol-1)')
 pyplot.legend()
 pyplot.show()
 ```
 
 
+### Soil moisture stress
+
+This approach to handling soil moisture effects is presented
+[here](soil_moisture.md).
 
