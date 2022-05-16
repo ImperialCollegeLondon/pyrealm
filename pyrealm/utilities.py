@@ -8,7 +8,7 @@ import numpy as np
 import tabulate
 from pyrealm.param_classes import HygroParams
 from pyrealm.bounds_checker import bounds_checker
-from scipy.interpolate import interp1d
+# from scipy.interpolate import interp1d
 
 # from pandas.core.series import Series
 
