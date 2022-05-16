@@ -165,8 +165,7 @@ class PModelParams(ParamClass):
 
     **Scaling of Kphio with temperature**, parameters of quadratic functions
 
-    * `kphio_C4`: Scaling of Kphio in C4 plants, unpublished estimates
-      from Shirley (Cai, Wenjia <w.cai17@imperial.ac.uk>) ([-0.064,  0.03, -0.000464])
+    * `kphio_C4`: Scaling of Kphio in C4 plants, Eqn 5 of :cite:`cai:2020a`
     * `kphio_C3`: Scaling of Kphio in C3 plants, taken from Table 2 of
       :cite:`Bernacchi:2003dc` ([0.352, 0.022, -3.4e-4])
 

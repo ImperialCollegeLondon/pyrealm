@@ -91,7 +91,7 @@ photosynthesis.
 ```
 
 The value of $\phi_0$ shows temperature dependence, which is modelled
-following {cite}`Bernacchi:2003dc` for C3 plants and {cite}`Shirley` for C4
+following {cite}`Bernacchi:2003dc` for C3 plants and {cite}`cai:2020a` for C4
 plants (see {func}`calc_ftemp_kphio`). The temperature dependency is applied by
 default but can be turned off using the {class}`~pyrealm.pmodel.PModel` argument
 `do_ftemp_kphio=False`.
