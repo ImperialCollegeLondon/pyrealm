@@ -608,24 +608,25 @@ def test_pmodel_class_c3(request, values, pmodelenv, soilmstress, ftemp_kphio, l
 def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, environ):
 
     if soilmstress:
-        soilmstress = pmodel.calc_soilmstress(values['soilm_sc'], values['meanalpha_sc'])
+        soilmstress = pmodel.calc_soilmstress(values['soilm_sc'],
+                                              values['meanalpha_sc'])
     else:
         soilmstress = None
 
     # TODO bug in rpmodel 1.2.2 forces an odd downscaling of kphio when
-    # do_ftemp_kphio is False
+    # do_ftemp_kphio is False, so this is scaling back up to match.
     if ftemp_kphio:
         kf = 1
     else:
         kf = pmodel.calc_ftemp_kphio(15, c4=True)
 
     ret = pmodel.PModel(pmodelenv[environ],
-                        kphio=0.05 * kf, # TODO bug in rpmodel 1.2.2 forces this downscaling 
+                        kphio=0.05 * kf,  # See note above
                         soilmstress=soilmstress,
                         do_ftemp_kphio=ftemp_kphio,
-                        method_jmaxlim='none',  # enforced in rpmodel.
+                        method_jmaxlim='simple',  # enforced in rpmodel.
                         c4=True)
-    
+
     # Estimate productivity
     if environ == 'sc':
         fapar = values['fapar_sc']
@@ -634,7 +635,7 @@ def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, e
         fapar = values['fapar_ar']
         ppfd = values['ppfd_ar']
 
-    ret.estimate_productivity(fapar = fapar, ppfd = ppfd)
+    ret.estimate_productivity(fapar=fapar, ppfd=ppfd)
 
     # Find the expected values, extracting the combination from the request
     name = request.node.name
@@ -645,14 +646,14 @@ def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, e
     # IWUE reported as µmol mol in pyrealm and Pa in rpmodel
     # rpmodel doesn't return LUE
     assert np.allclose(ret.optchi.chi, expected['chi'])
-    assert np.allclose(ret.iwue * (ret.env.patm * 1e-6) , expected['iwue'])
+    assert np.allclose(ret.iwue * (ret.env.patm * 1e-6), expected['iwue'])
 
     # Test productivity values
     assert np.allclose(ret.gpp, expected['gpp'], equal_nan=True)
 
     # Test exclusions:
     # - rpmodel adjusts vcmax and jmax when Stocker empirical soil moisture
-    #   stress β(θ) is used and hence the predictions of g_s and rd. 
+    #   stress β(θ) is used and hence the predictions of g_s and rd.
     #   pyrealm.PModel _only_ adjusts the resulting LUE so skip tests of
     #   jmax, vcmax, rd and gs when sm is used.
     # - Also skip tests of jmax when no Jmax limitation is applied (none-) as the
