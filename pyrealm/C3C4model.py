@@ -137,7 +137,7 @@ def D13C_tot(F4: Union[float, np.ndarray],
             F4: fraction of C4 plants
 
         Returns:
-            Delta13C_tot: annual total GPP considering fraction of C4 and C3 plants (gC m-2 yr-1)
+            Delta13C_tot: annual discrimination against 13C considering fraction of C4 and C3 plants (gC m-2 yr-1)
             Delta13C_c3: annual discrimination against 13C for C3 plants (permil) considering its fraction (F3 = 1 - F4)
             Delta13C_c4: annual discrimination against 13C for C4 plants (permil) considering its fraction (F4)
         """
@@ -149,3 +149,39 @@ def D13C_tot(F4: Union[float, np.ndarray],
 
         
         return Delta13C_tot,Delta13C_c3,Delta13C_c4
+
+
+def d13C_tot(F4: Union[float, np.ndarray],
+             d13CO2: Union[float, np.ndarray],
+             Delta13C3: Union[float, np.ndarray],
+             Delta13C4: Union[float, np.ndarray],
+             ) -> Union[float, np.ndarray]:
+ 
+        """
+        Calculate total GPP given the C4 fraction
+
+        Args:
+            Delta13C3: annual discrimination against 13C for C3 plants (permil)
+            Delta13C4: annual discrimination against 13C for C4 plants (permil)
+            F4: fraction of C4 plants
+            d13CO2: stable carbon isotopic composition of atmospheric CO2 (permil)
+
+        Returns:
+            d13C_tot: annual stable carbon isotopic composition considering fraction of C4 and C3 plants (gC m-2 yr-1)
+            d13C_c3: annual stable carbon isotopic composition of C3 plants (permil) considering its fraction (F3 = 1 - F4)
+            d13C_c4: annual stable carbon isotopic composition of C4 plants (permil) considering its fraction (F4)
+        """
+        
+        Delta13C_c3 = Delta13C3*(1-F4)
+        Delta13C_c4 = Delta13C4*F4
+        
+        Delta13C_tot = Delta13C_c3 + Delta13C_c4
+
+        
+        d13C_c3 = (d13CO2 - Delta13C_c3)/(1 + Delta13C_c3/1000)
+        d13C_c4 = (d13CO2 - Delta13C_c4)/(1 + Delta13C_c4/1000)
+        
+        d13C_tot = (d13CO2 - Delta13C_tot)/(1 + Delta13C_tot/1000)
+        
+        
+        return d13C_tot,d13C_c3,d13C_c4
