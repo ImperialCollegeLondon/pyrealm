@@ -1486,7 +1486,7 @@ class CalcOptimalChi:
             "c4_no_gamma": True,
         }
 
-        is_c4 = map.get("method")
+        is_c4 = map.get(method)
 
         if is_c4 is None:
             raise ValueError(f"CalcOptimalChi: method argument '{method}' invalid.")
@@ -1572,7 +1572,7 @@ class CalcOptimalChi:
         self.mc = (self.ci - self.env.gammastar) / (self.ci + self.env.kmm)
         self.mjoc = self.mj / self.mc
 
-    def lavergne_2020(self) -> None:
+    def lavergne20(self) -> None:
         r"""Calculate soil moisture corrected :math:`\chi` for C3 plants.
 
         This method calculates the unit cost ratio $\beta$ as a function of soil
@@ -1612,11 +1612,11 @@ class CalcOptimalChi:
         # an error
 
         if self.rootzonestress is not None:
-            raise RuntimeError("Do not use rootzonestress with method `lavergne_2020`")
+            raise RuntimeError("Do not use rootzonestress with method `lavergne20`")
 
         if self.env.theta is None:
             raise RuntimeError(
-                "Method `lavergne_2020` requires soil moisture in the PModelEnvironment"
+                "Method `lavergne20` requires soil moisture in the PModelEnvironment"
             )
 
         # Calculate beta as a function of theta
@@ -1664,7 +1664,7 @@ class CalcOptimalChi:
         specific estimate of the unit cost ratio :math:`\beta`, specified in
         :meth:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`.
         The default value :math:`\beta = 146 /  9 \approx 16.222`. This is
-        derived from estimates of the $g_1$ parameter for C3 and C4 plants in
+        derived from estimates of the :math:`g_1` parameter for C3 and C4 plants in
         :cite:`Lin:2015wh`  and :cite:`DeKauwe:2015im`, which have a C3/C4
         ratio of around 3. Given that :math:`g_1 \equiv \xi \propto \surd\beta`,
         a reasonable default for C4 plants is that :math:`\beta_{C4} \approx
