@@ -69,3 +69,10 @@
         change, a simple JmaxLimitation class replaces it.
       - Updated value of param_classes.PModelParam.soilmstress_b to published
         default
+0.6.1 - Implementation of alternative methods for CalcOptimalChi, including
+        Lavergne et al 2020 soil theta estimation of beta, c4 with negigible
+        photorespiration.
+      - Addition of optional soil theta to PModelParameters.
+      - Alteration of PModel arguments. Since there are now different options
+        for simulating C3/C4, the c4 argument is replaced with method_optchi,
+        which sets C3/C4 status internally from the method selected.
