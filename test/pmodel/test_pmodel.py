@@ -625,7 +625,7 @@ def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, e
                         soilmstress=soilmstress,
                         do_ftemp_kphio=ftemp_kphio,
                         method_jmaxlim='simple',  # enforced in rpmodel.
-                        c4=True)
+                        method_optchi='c4')
 
     # Estimate productivity
     if environ == 'sc':
