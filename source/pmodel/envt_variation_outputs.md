@@ -38,7 +38,7 @@ pmodel_env = pmodel.PModelEnvironment(tc=tc_4d, patm=patm_4d,vpd=vpd_4d, co2=co2
 
 # Run the P Models
 pmodel_c3 = pmodel.PModel(pmodel_env)
-pmodel_c4 = pmodel.PModel(pmodel_env, c4=True)
+pmodel_c4 = pmodel.PModel(pmodel_env, method_optchi='c4')
 
 # Estimate productivity for tropical forest conditions 
 # PPFD https://doi.org/10.2307/2260066 rough average canopy top in dry season.
@@ -271,7 +271,7 @@ pmodel_env = pmodel.PModelEnvironment(tc=20, patm=101325, vpd=1000, co2=400)
 
 # Run the P Models
 pmodel_c3 = pmodel.PModel(pmodel_env)
-pmodel_c4 = pmodel.PModel(pmodel_env, c4=True)
+pmodel_c4 = pmodel.PModel(pmodel_env, method_optchi='c4')
 
 # Estimate productivity for tropical forest conditions (monthly, m2)
 ppfd_vals = np.arange(2000)
