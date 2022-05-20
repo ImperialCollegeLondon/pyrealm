@@ -7,7 +7,7 @@ forcings to key parameters used within the model.
 The module also provides code for...  TODO: Update this.
 """
 
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 from warnings import warn
 
 import bottleneck as bn
@@ -303,12 +303,6 @@ def calc_ftemp_inst_vcmax(
     return fva * fvb
 
 
-# TODO - update unpublished reference to:
-#  Cai, W., and Prentice, I. C.: Recent trends in gross primary production
-#        and their drivers: analysis and modelling at flux-site and global scales,
-#        Environ. Res. Lett. 15 124050 https://doi.org/10.1088/1748-9326/abc64e, 2020
-
-
 def calc_ftemp_kphio(
     tc: Union[float, np.ndarray],
     c4: bool = False,
@@ -342,7 +336,7 @@ def calc_ftemp_kphio(
             temperature dependence of the maximum quantum yield of photosystem
             II in light-adapted tobacco leaves determined by :cite:`Bernacchi:2003dc`.
         C4: the parameters (:math:`a,b,c`, `pmodel_params.kphio_C4`) are taken
-            from :cite:`Cai:2020a`.
+            from :cite:`cai:2020a`.
 
     Returns:
         A float value or values for :math:`\phi(T)`
@@ -803,11 +797,18 @@ class PModelEnvironment:
     (:class:`~pyrealm.param_classes.PModelParams`) are set when creating
     an instance of this class.
 
-    Parameters:
+    In addition to the four key variables above, the PModelEnvironment class
+    is used to provide additional variables used by some methods.
+
+    * the volumetric soil moisture content, required to calculate optimal
+      :math:`\chi` in :meth:`~pyrealm.pmodel.CalcOptimalChi.laverge2020`.
+
+    Args:
         tc: Temperature, relevant for photosynthesis (°C)
         vpd: Vapour pressure deficit (Pa)
         co2: Atmospheric CO2 concentration (ppm)
-        patm: Atmospheric pressure (Pa).
+        patm: Atmospheric pressure (Pa)
+        theta: Volumetric soil moisture (m3/m3)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
     """
 
@@ -817,6 +818,7 @@ class PModelEnvironment:
         vpd: Union[float, np.ndarray],
         co2: Union[float, np.ndarray],
         patm: Union[float, np.ndarray],
+        theta: Optional[Union[float, np.ndarray]] = None,
         pmodel_params: PModelParams = PModelParams(),
     ):
 
@@ -853,6 +855,14 @@ class PModelEnvironment:
 
         # viscosity correction factor relative to standards
         self.ns_star = calc_ns_star(tc, patm, pmodel_params=pmodel_params)  # (unitless)
+
+        # Optional variables
+        if theta is None:
+            self.theta = None
+        else:
+            # Is the input congruent with the other variables and in bounds.
+            _ = check_input_shapes(tc, theta)
+            self.theta = bounds_checker(theta, 0, 0.8, "[]", "theta", "m3/m3")
 
         # Store parameters
         self.pmodel_params = pmodel_params
@@ -993,8 +1003,10 @@ class PModel:
             compatible with the soilmstress approach.
         soilmstress: (Optional, default=None) A soil moisture stress factor
             calculated using :func:`~pyrealm.pmodel.calc_soilmstress`.
-        c4: (Optional, default=False) Selects the C3 or C4 photosynthetic
-            pathway.
+        method_optchi: (Optional, default=`prentice14`) Selects the method to be
+            used for calculating optimal :math:`chi`. The choice of method also
+            sets the choice of  C3 or C4 photosynthetic pathway (see
+            :class:`~pyrealm.pmodel.CalcOptimalChi`).
         method_jmaxlim: (Optional, default=`wang17`) Method to use for
             :math:`J_{max}` limitation
         do_ftemp_kphio: (Optional, default=True) Include the temperature-
@@ -1037,7 +1049,7 @@ class PModel:
         >>> mod_c3.estimate_productivity(fapar=1, ppfd=300)
         >>> np.round(mod_c3.gpp, 5)
         76.42545
-        >>> mod_c4 = PModel(env, c4=True, method_jmaxlim='none')
+        >>> mod_c4 = PModel(env, method_optchi='c4', method_jmaxlim='none')
         >>> # Key variables from PModel
         >>> np.round(mod_c4.optchi.ci, 5)
         18.22528
@@ -1055,7 +1067,7 @@ class PModel:
         soilmstress: Optional[Union[float, np.ndarray]] = None,
         kphio: Optional[float] = None,
         do_ftemp_kphio: bool = True,
-        c4: bool = False,
+        method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
     ):
 
@@ -1085,7 +1097,6 @@ class PModel:
             self.do_soilmstress = True
 
         if rootzonestress is None:
-            rootzonestress = 1.0
             self.do_rootzonestress = False
         else:
             self.do_rootzonestress = True
@@ -1102,14 +1113,17 @@ class PModel:
         else:
             self.init_kphio = kphio
 
+        # Check method_optchi and set c3/c4
+        self.c4 = CalcOptimalChi._method_lookup(method_optchi)
+        self.method_optchi = method_optchi
+
         # -----------------------------------------------------------------------
         # Temperature dependence of quantum yield efficiency
         # -----------------------------------------------------------------------
-        # 'calc_ftemp_kphio' is the temperature-dependency of the quantum yield
-        # efficiency after Bernacchi et al., 2003
-
         if self.do_ftemp_kphio:
-            ftemp_kphio = calc_ftemp_kphio(env.tc, c4, pmodel_params=env.pmodel_params)
+            ftemp_kphio = calc_ftemp_kphio(
+                env.tc, self.c4, pmodel_params=env.pmodel_params
+            )
             self.kphio = self.init_kphio * ftemp_kphio
         else:
             self.kphio = self.init_kphio
@@ -1118,16 +1132,9 @@ class PModel:
         # Optimal ci
         # The heart of the P-model: calculate ci:ca ratio (chi) and additional terms
         # -----------------------------------------------------------------------
-        self.c4 = c4
-
-        if self.c4:
-            method_optci = "c4"
-        else:
-            method_optci = "prentice14"
-
         self.optchi = CalcOptimalChi(
             env=env,
-            method=method_optci,
+            method=method_optchi,
             rootzonestress=rootzonestress,
             pmodel_params=env.pmodel_params,
         )
@@ -1135,7 +1142,6 @@ class PModel:
         # -----------------------------------------------------------------------
         # Calculation of Jmax limitation terms
         # -----------------------------------------------------------------------
-
         self.method_jmaxlim = method_jmaxlim
 
         self.jmaxlim = JmaxLimitation(
@@ -1331,8 +1337,9 @@ class PModel:
             f"shape={self.shape}, "
             f"initial kphio={self.init_kphio}, "
             f"ftemp_kphio={self.do_ftemp_kphio}, "
+            f"method_optchi={self.method_optchi}, "
             f"c4={self.c4}, "
-            f"Jmax_method={self.method_jmaxlim}, "
+            f"method_jmaxlim={self.method_jmaxlim}, "
             f"Water stress={stress})"
         )
 
@@ -1379,23 +1386,28 @@ class CalcOptimalChi:
     - The :math:`\ce{CO2}` limitation term for Rubisco-limited
       assimilation  (:math:`m_c`).
 
-    The value for :math:`\chi` is calculated using the parameter :math:`\beta`,
-    which differs between C3 and C4 plants. :cite:`Stocker:2020dh` estimated
-    $\beta = 146$ for C3 plants, and this is defined as `beta_unit_cost_c3` in
-    :class:`~pyrealm.param_classes.PModelParams`. For C4 plants, the default
-    value used is $\beta = 146 /  9 \approx 16.222$, defined as
-    `beta_unit_cost_c4` in :class:`~pyrealm.param_classes.PModelParams`.
-
     The chosen method is automatically used to estimate these values when an
-    instance is created.
+    instance is created - see the method documentation for individual details.
+
+    Args:
+        env: An instance of PModelEnvironment providing the photosynthetic
+            environment for the model.
+        method: The method to use for estimating optimal :math:`\chi`, one
+            of ``prentice14`` (default), ``lavergne2020``, ``c4``,
+            ``c4_no_gamma`` or ``scottsmith2020``.
+        rootzonestress: This is an experimental feature to supply a root zone
+            stress factor used as a direct penalty to :math:`\beta`.
+        pmodel_params: An instance of
+            :class:`~pyrealm.param_classes.PModelParams`.
 
     Attributes:
         env (PModelEnvironment): An instance of PModelEnvironment providing
             the photosynthetic environment for the model.
-        method (str): one of ``c4`` or ``prentice14``
+        method (str): one of ``prentice14``, ``lavergne2020``, ``c4``,
+            ``c4_no_gamma`` or ``scottsmith2020``.
         xi (float): defines the sensitivity of :math:`\chi` to the vapour
             pressure deficit and  is related to the carbon cost of water
-            (Medlyn et al. 2011; Prentice et 2014) # TODO
+            (Medlyn et al. 2011; Prentice et 2014)
         chi (float): the ratio of leaf internal to ambient :math:`\ce{CO2}`
             partial pressure (:math:`\chi`).
         mj (float): :math:`\ce{CO2}` limitation factor for light-limited
@@ -1409,35 +1421,26 @@ class CalcOptimalChi:
         :attr:`mj`, :attr:`mc` and :attr:`mjoc` have been populated
         using the chosen method.
 
-    Examples:
-        >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000)
-        >>> vals = CalcOptimalChi(env=env)
-        >>> round(vals.chi, 5)
-        0.69435
-        >>> round(vals.mc, 5)
-        0.33408
-        >>> round(vals.mj, 5)
-        0.7123
-        >>> round(vals.mjoc, 5)
-        2.13211
-        >>> # The c4 method estimates chi but sets the others at 1.
-        >>> c4_vals = CalcOptimalChi(env=env, method='c4')
-        >>> round(c4_vals.chi, 5)
-        0.44967
     """
-
-    # TODO: - move chi calc into __init__? Shared between the two methods
 
     def __init__(
         self,
         env: PModelEnvironment,
-        rootzonestress: Union[float, np.ndarray] = 1.0,
+        rootzonestress: Optional[Union[float, np.ndarray]] = None,
         method: str = "prentice14",
         pmodel_params: PModelParams = PModelParams(),
     ):
+        # Store the PModelEnvironment
+        self.env = env
 
-        # Check rootzone stress is broadcastable to the environment
-        self.shape = check_input_shapes(env.ca, rootzonestress)
+        # Check rootzonestress conforms to the environment data
+        if rootzonestress is not None:
+            self.shape = check_input_shapes(env.ca, rootzonestress)
+            self.rootzonestress = rootzonestress
+            warn("The rootzonestress option is an experimental feature.")
+        else:
+            self.shape = env.shape
+            self.rootzonestress = None
 
         # set attribute defaults
         self.xi = None
@@ -1447,66 +1450,55 @@ class CalcOptimalChi:
         self.mj = None
         self.mjoc = None
 
+        # TODO: considerable overlap between methods here - could maybe bring
+        #       more into init but probably clearer and easier to debug to keep
+        #       complete method code within methods.
+
         # Identify and run the selected method
         self.pmodel_params = pmodel_params
         self.method = method
-        all_methods = {"prentice14": self.prentice14, "c4": self.c4}
 
-        if self.method in all_methods:
-            this_method = all_methods[self.method]
-            this_method(env=env, rootzonestress=rootzonestress)
-        else:
+        # Check the method - return value shows C3/C4 but not needed here - and
+        # then run that method to populate the instance
+        _ = self._method_lookup(method)
+        method_func = getattr(self, method)
+        method_func()
+
+    @staticmethod
+    def _method_lookup(method: str) -> bool:
+        """Check a CalcOptimalChi method.
+
+        This function validates a provided string, identifying a method of
+        CalcOptimalChi, and also reports if the method is C4 or not.
+
+        Args:
+            method: A provided method name for
+                :class:`~pyrealm.pmodel.CalcOptimalChi`.
+
+        Returns:
+            A boolean indicating showing if the method uses the C3 pathway.
+        """
+
+        map = {
+            "prentice14": False,
+            "lavergne20": False,
+            "c4": True,
+            "c4_no_gamma": True,
+        }
+
+        is_c4 = map.get("method")
+
+        if is_c4 is None:
             raise ValueError(f"CalcOptimalChi: method argument '{method}' invalid.")
 
-        # Calculate internal CO2 partial pressure
-        self.ci = self.chi * env.ca
+        return is_c4
 
     def __repr__(self):
 
         return f"CalcOptimalChi(shape={self.shape}, method={self.method})"
 
-    def c4(self, env, rootzonestress):
-        r"""Estimate :math:`\chi` for C4 plants following :cite:`Prentice:2014bc`.
-
-        Optimal :math:`\chi` is calculated following Equation 8 in
-        :cite:`Prentice:2014bc` (see :meth:`~pyrealm.pmodel.CalcOptimalChi.prentice14`),
-        but using a C4 specific estimate of the unit cost ratio :math:`\beta`,
-        specified in :meth:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`.
-
-        This method then simply sets :math:`m_j = m_c = m_{joc} = 1.0` to capture the
-        boosted :math:`\ce{CO2}` concentrations at the chloropolast in C4
-        photosynthesis.
-        """
-
-        # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.xi = np.sqrt(
-            (
-                self.pmodel_params.beta_cost_ratio_c4
-                * rootzonestress
-                * (env.kmm + env.gammastar)
-            )
-            / (1.6 * env.ns_star)
-        )
-
-        self.chi = env.gammastar / env.ca + (1.0 - env.gammastar / env.ca) * self.xi / (
-            self.xi + np.sqrt(env.vpd)
-        )
-
-        # These values need to retain any
-        # dimensions of the original inputs - if ftemp_kphio is set to 1.0
-        # (i.e. no temperature correction) then the dimensions of tc are lost.
-
-        if self.shape == 1:
-            self.mc = 1.0
-            self.mj = 1.0
-            self.mjoc = 1.0
-        else:
-            self.mc = np.ones(self.shape)
-            self.mj = np.ones(self.shape)
-            self.mjoc = np.ones(self.shape)
-
-    def prentice14(self, env, rootzonestress):
-        r"""Estimate :math:`\chi` for C3 plants following :cite:`Prentice:2014bc`.
+    def prentice14(self) -> None:
+        r"""Calculate :math:`\chi` for C3 plants following :cite:`Prentice:2014bc`.
 
         Optimal :math:`\chi` is calculated following Equation 8 in
         :cite:`Prentice:2014bc`:
@@ -1527,8 +1519,7 @@ class CalcOptimalChi:
         .. math::
 
             m_j = \frac{c_a - \Gamma^{*}}
-                       {c_a + 2 \Gamma^{*} + 3 \Gamma^{*}
-                       \sqrt{\frac{1.6 D \eta^{*}}{\beta(K + \Gamma^{*})}}}
+                       {c_a + 2 \Gamma^{*}}
 
         Finally,  :math:`m_c` is calculated, following Equation 7 in
         :cite:`Stocker:2020dh`, as:
@@ -1539,26 +1530,259 @@ class CalcOptimalChi:
 
         where :math:`K` is the Michaelis Menten coefficient of Rubisco-limited
         assimilation.
+
+        Examples:
+            >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000)
+            >>> vals = CalcOptimalChi(env=env)
+            >>> round(vals.chi, 5)
+            0.69435
+            >>> round(vals.mc, 5)
+            0.33408
+            >>> round(vals.mj, 5)
+            0.7123
+            >>> round(vals.mjoc, 5)
+            2.13211
         """
+
+        # TODO: Docstring - equation for m_j previously included term now
+        # removed from code:
+        #     + 3 \Gamma^{*}
+        #               \sqrt{\frac{1.6 D \eta^{*}}{\beta(K + \Gamma^{*})}}
+
+        # Replace missing rootzonestress with 1
+        self.rootzonestress = self.rootzonestress or 1.0
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.xi = np.sqrt(
             (
-                self.pmodel_params.beta_cost_ratio_c3
-                * rootzonestress
-                * (env.kmm + env.gammastar)
+                self.pmodel_params.beta_cost_ratio_prentice14
+                * self.rootzonestress
+                * (self.env.kmm + self.env.gammastar)
             )
-            / (1.6 * env.ns_star)
+            / (1.6 * self.env.ns_star)
         )
 
-        self.chi = env.gammastar / env.ca + (1.0 - env.gammastar / env.ca) * self.xi / (
-            self.xi + np.sqrt(env.vpd)
-        )
+        self.chi = self.env.gammastar / self.env.ca + (
+            1.0 - self.env.gammastar / self.env.ca
+        ) * self.xi / (self.xi + np.sqrt(self.env.vpd))
 
         # Calculate m and mc and m/mc
-        self.ci = self.chi * env.ca
-        self.mj = (self.ci - env.gammastar) / (self.ci + 2 * env.gammastar)
-        self.mc = (self.ci - env.gammastar) / (self.ci + env.kmm)
+        self.ci = self.chi * self.env.ca
+        self.mj = (self.ci - self.env.gammastar) / (self.ci + 2 * self.env.gammastar)
+        self.mc = (self.ci - self.env.gammastar) / (self.ci + self.env.kmm)
+        self.mjoc = self.mj / self.mc
+
+    def lavergne_2020(self) -> None:
+        r"""Calculate soil moisture corrected :math:`\chi` for C3 plants.
+
+        This method calculates the unit cost ratio $\beta$ as a function of soil
+        moisture ($\theta$, m3 m-3), following :cite:`lavergne:2020a`:
+
+          .. math:: :nowrap:
+
+            \[
+                \beta = e ^ {b\theta + a},
+            \]
+
+        The coefficients are experimentally derived values with defaults taken
+        from Figure 6a of :cite:`lavergne:2020a` (:math:`a`,
+        :meth:`~pyrealm.param_classes.PModelParams.lavergne_2020_a`; :math:`b`,
+        :meth:`~pyrealm.param_classes.PModelParams.lavergne_2020_b`).
+
+        Values of :math:`\chi` and other predictions are then calculated as in
+        :meth:`~pyrealm.pmodel.CalcOptimalChi.prentice14`. This method requires
+        that `env` includes estimates of :math:`\theta` and  is incompatible with
+        the `rootzonestress` approach.
+
+        Examples:
+            >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
+            ...                         vpd=1000, theta=0.5)
+            >>> vals = CalcOptimalChi(env=env, method='lavergne2020')
+            >>> round(vals.chi, 5)
+            0.73663
+            >>> round(vals.mc, 5)
+            0.34911
+            >>> round(vals.mj, 5)
+            0.7258
+            >>> round(vals.mjoc, 5)
+            2.07901
+        """
+
+        # This method has requirements - needs theta, use of rootzonestress is
+        # an error
+
+        if self.rootzonestress is not None:
+            raise RuntimeError("Do not use rootzonestress with method `lavergne_2020`")
+
+        if self.env.theta is None:
+            raise RuntimeError(
+                "Method `lavergne_2020` requires soil moisture in the PModelEnvironment"
+            )
+
+        # Calculate beta as a function of theta
+        beta = np.exp(
+            self.pmodel_params.lavergne_2020_b * self.env.theta
+            + self.pmodel_params.lavergne_2020_a
+        )
+
+        # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
+        self.xi = np.sqrt(
+            (beta * (self.env.kmm + self.env.gammastar)) / (1.6 * self.env.ns_star)
+        )
+
+        self.chi = self.env.gammastar / self.env.ca + (
+            1.0 - self.env.gammastar / self.env.ca
+        ) * self.xi / (self.xi + np.sqrt(self.env.vpd))
+
+        # Define variable substitutes:
+        vdcg = self.env.ca - self.env.gammastar
+        vacg = self.env.ca + 2.0 * self.env.gammastar
+        vbkg = beta * (self.env.kmm + self.env.gammastar)
+
+        # Calculate mj
+        vsr = np.sqrt(1.6 * self.env.ns_star * self.env.vpd / vbkg)
+        mj = vdcg / (vacg + 3.0 * self.env.gammastar * vsr)
+
+        # Mask values with ns star <= 0 and vbkg <=0 - need an array for this
+        mask = np.logical_and(self.env.ns_star <= 0, vbkg <= 0)
+        mj = np.array(mj)
+        mj[mask] = np.nan
+        # np.where _always_ returns an array, so catch scalars.
+        self.mj = mj.item() if np.ndim(mj) == 0 else mj
+
+        # Calculate m and mc and m/mc
+        self.ci = self.chi * self.env.ca
+        self.mj = (self.ci - self.env.gammastar) / (self.ci + 2 * self.env.gammastar)
+        self.mc = (self.ci - self.env.gammastar) / (self.ci + self.env.kmm)
+        self.mjoc = self.mj / self.mc
+
+    def c4(self) -> None:
+        r"""Estimate :math:`\chi` for C4 plants following :cite:`Prentice:2014bc`.
+
+        Optimal :math:`\chi` is calculated as in
+        :meth:`~pyrealm.pmodel.CalcOptimalChi.prentice14`, but using a C4
+        specific estimate of the unit cost ratio :math:`\beta`, specified in
+        :meth:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`.
+        The default value :math:`\beta = 146 /  9 \approx 16.222`. This is
+        derived from estimates of the $g_1$ parameter for C3 and C4 plants in
+        :cite:`Lin:2015wh`  and :cite:`DeKauwe:2015im`, which have a C3/C4
+        ratio of around 3. Given that :math:`g_1 \equiv \xi \propto \surd\beta`,
+        a reasonable default for C4 plants is that :math:`\beta_{C4} \approx
+        \beta_{C3} / 9`.
+
+        This method  sets :math:`m_j = m_c = m_{joc} = 1.0` to capture the
+        boosted :math:`\ce{CO2}` concentrations at the chloropolast in C4
+        photosynthesis.
+
+        Examples:
+            >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000)
+            >>> vals = CalcOptimalChi(env=env, method='c4')
+            >>> round(vals.chi, 5)
+            0.44967
+            >>> round(vals.mj, 1)
+            1.0
+            >>> round(vals.mc, 1)
+            1.0
+        """
+
+        # Replace missing rootzonestress with 1
+        self.rootzonestress = self.rootzonestress or 1.0
+
+        # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
+        self.xi = np.sqrt(
+            (
+                self.pmodel_params.beta_cost_ratio_c4
+                * self.rootzonestress
+                * (self.env.kmm + self.env.gammastar)
+            )
+            / (1.6 * self.env.ns_star)
+        )
+
+        self.chi = self.env.gammastar / self.env.ca + (
+            1.0 - self.env.gammastar / self.env.ca
+        ) * self.xi / (self.xi + np.sqrt(self.env.vpd))
+
+        self.ci = self.chi * self.env.ca
+
+        # These values need to retain any
+        # dimensions of the original inputs - if ftemp_kphio is set to 1.0
+        # (i.e. no temperature correction) then the dimensions of tc are lost.
+        if self.shape == 1:
+            self.mc = 1.0
+            self.mj = 1.0
+            self.mjoc = 1.0
+        else:
+            self.mc = np.ones(self.shape)
+            self.mj = np.ones(self.shape)
+            self.mjoc = np.ones(self.shape)
+
+    def c4_no_gamma(self) -> None:
+        r"""Calculate optimal chi assuming negligible photorespiration.
+
+        This method assumes that photorespiration (:math:`\Gamma^\ast`) is
+        negible for C4 plants. This simplifies the calculation of :math:`\xi`
+        and :math:`\chi` compared to :meth:`~pyrealm.pmodel.CalcOptimalChi.c4`,
+        but uses the same C4 specific estimate of the unit cost ratio
+        :math:`\beta`,
+        :meth:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`.
+
+          .. math:: :nowrap:
+
+            \[
+                \begin{align*}
+                    \chi &= \xi / (\xi + \sqrt D ), \text{where}\\ \xi &=
+                    \sqrt{(\beta  K) / (1.6 \eta^{*}))}
+                \end{align*}
+            \]
+
+        In addition, :math:`m_j = 1.0`  because photorespiration is negligible
+        in C4 photosynthesis, but :math:`m_c` and hence :math:`m_{joc}` are
+        calculated, not set to one.
+
+          .. math:: :nowrap:
+
+            \[
+                \begin{align*}
+                    m_c &= \dfrac{\chi}{\chi + \frac{K}{c_a}}
+                \end{align*}
+            \]
+
+        Examples:
+            >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000)
+            >>> vals = CalcOptimalChi(env=env, method='c4_no_gamma')
+            >>> round(vals.chi, 5)
+            0.3919
+            >>> round(vals.mj, 1)
+            1.0
+            >>> round(vals.mc, 1)
+            0.3
+        """
+
+        # Replace missing rootzonestress with 1
+        self.rootzonestress = self.rootzonestress or 1.0
+
+        # Calculate chi and xi as in Prentice 14 but removing gamma terms.
+        self.xi = np.sqrt(
+            (self.pmodel_params.beta_cost_ratio_c4 * self.rootzonestress * self.env.kmm)
+            / (1.6 * self.env.ns_star)
+        )
+
+        self.chi = self.xi / (self.xi + np.sqrt(self.env.vpd))
+
+        # version 3 as in Scott & Smith (2022)
+        # beta_c4 = 166
+        # self.xi = np.sqrt((beta_c4 *self.env.kp_c4) / (1.6 * self.env.ns_star))
+        # self.chi = self.xi /(self.xi + np.sqrt(self.env.vpd))
+
+        # mj is equal to 1 as gammastar is null
+        if self.shape == 1:
+            self.mj = 1.0
+        else:
+            self.mj = np.ones(self.shape)
+
+        # Calculate m and mc and m/mc
+        self.ci = self.chi * self.env.ca
+        self.mc = (self.ci) / (self.ci + self.env.kmm)
         self.mjoc = self.mj / self.mc
 
     def summarize(self, dp: int = 2) -> None:
@@ -1665,9 +1889,8 @@ class JmaxLimitation:
         # Catch method errors.
         if self.method == "c4":
             raise ValueError(
-                "This class does not implement a fixed method for C4 "
-                "photosynthesis. To replicate rpmodel choose c4=True and "
-                'method="simple"'
+                "This class does not implement a fixed method for C4 photosynthesis."
+                "To replicate rpmodel choose method_optchi='c4' and method='simple'"
             )
         elif self.method not in all_methods:
             raise ValueError(f"JmaxLimitation: method argument '{method}' invalid.")

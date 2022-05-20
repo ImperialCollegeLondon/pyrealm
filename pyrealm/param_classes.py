@@ -243,6 +243,9 @@ class PModelParams(ParamClass):
     * `atkin_rd_to_vcmax`:  Ratio of Rdark to Vcmax25 (0.015)
     """
 
+    # TODO: - look how to autodoc the descriptions from the code?
+    # https://github.com/tox-dev/sphinx-autodoc-typehints/issues/44
+
     # Constants
     k_R: Number = 8.3145
     k_co: Number = 209476.0
@@ -253,6 +256,7 @@ class PModelParams(ParamClass):
     k_G: Number = 9.80665
     k_Ma: Number = 0.028963
     k_CtoK: Number = 273.15
+
     # Fisher Dial
     fisher_dial_lambda: Tuple[Number, ...] = (
         1788.316,
@@ -309,6 +313,7 @@ class PModelParams(ParamClass):
     #   from original values of [-0.008, 0.00375, -0.58e-4]
     kphio_C4: Tuple[Number, ...] = (-0.064, 0.03, -0.000464)
     kphio_C3: Tuple[Number, ...] = (0.352, 0.022, -0.00034)
+
     # Bernachhi
     bernacchi_dhac: Number = 79430
     bernacchi_dhao: Number = 36380
@@ -316,19 +321,26 @@ class PModelParams(ParamClass):
     bernacchi_kc25: Number = 39.97
     bernacchi_ko25: Number = 27480
     bernacchi_gs25_0: Number = 4.332
+
     # Soilmstress
     soilmstress_theta0: Number = 0.0
     soilmstress_thetastar: Number = 0.6
     soilmstress_a: Number = 0.0
     soilmstress_b: Number = 0.733
-    # Unit cost ratio (beta) (Stocker 2020 value and equivalent for C4).
-    beta_cost_ratio_c3: Number = 146.0
+
+    # Unit cost ratio (beta) values for different CalcOptimalChi methods
+    beta_cost_ratio_prentice14: Number = 146.0
     beta_cost_ratio_c4: Number = 146.0 / 9
+    lavergne_2020_b: Number = 1.73
+    lavergne_2020_a: Number = 4.55
+
     # Wang17
     wang17_c: Number = 0.41
+
     # Smith19
     smith19_theta: Number = 0.85
     smith19_c_cost: Number = 0.05336251
+
     # Atkin
     atkin_rd_to_vcmax: Number = 0.015
 
