@@ -13,7 +13,13 @@ and save methods and then individual parameter classes define the parameter sets
 and default values for each class.
 """
 
-from __future__ import annotations
+# TODO: using annotations to try and type the return values of
+#       ParamClass.from_xyz methods breaks @enforce_types: types get converted
+#       to strings somewhere along the way. Oddly enforce_types is picky about
+#       float != int where mypy is supposed not to be, so continuing to use
+#       Number here.
+
+# from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass
@@ -23,7 +29,7 @@ from typing import Tuple
 import enforce_typing
 from dacite import from_dict
 
-# Design notes: pyrealm is going to have a bunch of 'deep' settings. Things
+# Design notes: pyrealm has a bunch of 'deep' settings. Things
 # that aren't often tweaked by users but should be easy to tweak when needed.
 # The aim here is to have a standard interface to those as an object that maps
 # a setting name to a value.
@@ -91,7 +97,7 @@ class ParamClass:
             json.dump(self.to_dict(), outfile, indent=4)
 
     @classmethod
-    def from_dict(cls, data: dict) -> ParamClass:
+    def from_dict(cls, data: dict):
         """Create a ParamClass instance from a dictionary.
 
         Generates a parameter class object using the data provided in a
@@ -107,7 +113,7 @@ class ParamClass:
         return from_dict(cls, data)
 
     @classmethod
-    def from_json(cls, filename: str) -> ParamClass:
+    def from_json(cls, filename: str):
         """Create a ParamClass instance from a JSON file.
 
         Generates a parameter class object using the data provided in a
@@ -398,7 +404,7 @@ class TModelTraits(ParamClass):
     #       that can yield a Traits instance drawing from that distribution
 
 
-# @enforce_typing.enforce_types
+@enforce_typing.enforce_types
 @dataclass(frozen=True)
 class HygroParams(ParamClass):
     r"""Parameters for hygrometric functions.
