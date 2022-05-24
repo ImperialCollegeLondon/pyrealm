@@ -5,11 +5,13 @@ name: Build Checker
       - master
       - develop
       - release/*
+      - feature/*
   pull_request:
     branches:
       - master
       - develop
       - release/*
+      - feature/*
 jobs:
   Build:
     runs-on: '${{ matrix.os }}'
