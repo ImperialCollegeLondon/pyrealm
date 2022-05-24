@@ -2096,11 +2096,11 @@ class CalcCarbonIsotopes:
 
     Discrimination against carbon 13 (:math:`\Delta\ce{^{13}C}`)  is calculated
     using C3 and C4 pathways specific methods, and then discrimination against
-    carbon 14 :math:`\Delta\ce{^{14}C} \approx 2 \times \Delta\ce{^{13}C}`
-    (:cite:`graven:2020a`). For C3 plants, :math:`\Delta\ce{^{13}C}` is
-    calculated both including and excluding photorespiration, but these are
-    assumed to be equal for C4 plants. The class also reports the isotopic
-    composition of leaves and wood.
+    carbon 14 is estimated as :math:`\Delta\ce{^{14}C} \approx 2 \times
+    \Delta\ce{^{13}C}` (:cite:`graven:2020a`). For C3 plants,
+    :math:`\Delta\ce{^{13}C}` is calculated both including and excluding
+    photorespiration, but these are assumed to be equal for C4 plants. The class
+    also reports the isotopic composition of leaves and wood.
 
     Args:
         pmodel: A :class:`~pyrealm.pmodel.PModel` instance providing the
@@ -2202,10 +2202,10 @@ class CalcCarbonIsotopes:
     def calc_c4_discrimination_vonC(self, pmodel):
         r"""Calculate C4 isotopic discrimination.
 
-         In this method, :math:`\delta\ce{^{13}C}` is calculated from optimal
+        In this method, :math:`\delta\ce{^{13}C}` is calculated from optimal
         :math:`\chi` following Equation 1 in :cite:`voncaemmerer:2014a`.
 
-        This method is not yet reachable - needs a method selection argument to
+        This method is not yet reachable - it needs a method selection argument to
         switch approaches and check C4 methods are used with C4 pmodels. The
         method is preserving experimental code provided by Alienor Lavergne. A
         temperature sensitive correction term is provided in commented code but
@@ -2309,7 +2309,7 @@ class C3C4Competition:
     the following steps:
 
     1. The proportion advantage in GPP for C4 plants is calculated as
-       :math:`A_4 = (GPP_{C4} - GPP_{C3}) / GPP_{C3}`.
+       :math:`A_4 = (\text{GPP}_{C4} - \text{GPP}_{C3}) / \text{GPP}_{C3}`.
 
     2. The proportion GPP advantage :math:`A_4` is converted to an expected
        fraction of C4 :math:`F_4` plants using a logistic equation of
@@ -2319,7 +2319,7 @@ class C3C4Competition:
             :nowrap:
 
             \[
-                F_4 = \frac{1}{1 + e^{k * \frac{A_4}{e^ frac{1}{1 + \text{TC}}}} - q}
+                F_4 = \frac{1}{1 + e^{k \frac{A_4}{e^ \frac{1}{1 + \text{TC}}}} - q}
             \]
 
         The parameters are set in the `params` instance and are the slope of the
@@ -2334,13 +2334,13 @@ class C3C4Competition:
             :nowrap:
 
                 \[
-                    TC(\text{GPP}_{C3}) = a \cdot :math:`\text{GPP}_{C3}` ^ b - c
+                    TC(\text{GPP}_{C3}) = a \cdot \text{GPP}_{C3} ^ b - c
                 \]
 
        with parameters set in the `params` instance (:math:`a`, `gpp_to_tc_a`;
        :math:`b`, `gpp_to_tc_b`; :math:`c`, `gpp_to_tc_c`). The proportion of
        GPP from C3 trees (:math:`h`) is then estimated using the predicted tree
-       cover in locations relative to a threshold GPP value (\text{GPP}_{CLO},
+       cover in locations relative to a threshold GPP value (:math:`\text{GPP}_{CLO}`,
        `c3_forest_closure_gpp`) above which canopy closure occurs. The value of
        :math:`h` is clamped in :math:`[0, 1]`:
 
@@ -2348,15 +2348,17 @@ class C3C4Competition:
             :nowrap:
 
                 \[
-                    h = \max(0, \min(
-                        \frac{TC(\text{GPP}_{C3}}{TC(\text{GPP}_{C3}}, 1)
+                    h = \max\left(0, \min\left(
+                        \frac{TC(\text{GPP}_{C3})}{TC(\text{GPP}_{C3})}\right),
+                        1 \right)
                 \]
 
        The C4 fraction is then discounted as :math:`F_4 = F_4 (1 - h)`.
 
     4. Two masks are applied. First, :math:`F_4 = 0` in locations where the
        mean  air temperature of the coldest month is too low for C4 plants.
-       Second, $F_4$ is set as unknown for croplands.
+       Second, :math:`F_4` is set as unknown for croplands, where the fraction
+       is set by agricultural management, not competition.
 
     Args:
         gpp_c3: Total annual GPP (gC m-2 yr-1) from C3 plants alone.
