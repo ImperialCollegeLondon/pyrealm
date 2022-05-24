@@ -13,8 +13,8 @@ and save methods and then individual parameter classes define the parameter sets
 and default values for each class.
 """
 
-# TODO: using annotations to try and type the return values of
-#       ParamClass.from_xyz methods breaks @enforce_types: types get converted
+# TODO: using annotations to try and type the return values of
+#       ParamClass.from_xyz methods breaks @enforce_types: types get converted
 #       to strings somewhere along the way. Oddly enforce_types is picky about
 #       float != int where mypy is supposed not to be, so continuing to use
 #       Number here.
@@ -328,8 +328,8 @@ class PModelParams(ParamClass):
     bernacchi_gs25_0: Number = 4.332
 
     # Boyd
-    boyd_kp25_c4: Number = 16  ## Pa  from Boyd et al. (2015)
-    boyd_dhac_c4: Number = 36300  ## J mol-1
+    boyd_kp25_c4: Number = 16  # Pa  from Boyd et al. (2015)
+    boyd_dhac_c4: Number = 36300  # J mol-1
     boyd_dhac_c4: Number = 79430
     boyd_dhao_c4: Number = 36380
     boyd_dha_c4: Number = 37830
@@ -403,7 +403,8 @@ class C3C4Params(ParamClass):
 
     This data class holds statistical estimates used to calculate the fraction
     of C4 plants based on the relative GPP of C3 and C4 plants for given
-    conditions and estimated treecover."""
+    conditions and estimated treecover.
+    """
 
     # Non-linear regression of fraction C4 plants from proportion GPP advantage
     # of C4 over C3 plants
@@ -415,6 +416,7 @@ class C3C4Params(ParamClass):
     gpp_to_tc_b = 1.41
     gpp_to_tc_c = -7.72
     c3_forest_closure_gpp = 2.8
+
 
 @enforce_typing.enforce_types
 @dataclass(frozen=True)
