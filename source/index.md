@@ -54,6 +54,8 @@ clicking on the buttons like the one below.
   pmodel/soil_moisture.md
   pmodel/extreme_values.md
   pmodel/global_example.md
+  pmodel/isotopic_discrimination.md
+  pmodel/c3c4model.md
   pmodel/pmodel_reference.md
   pmodel/rpmodel.md
 ```
