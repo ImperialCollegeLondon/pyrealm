@@ -7,14 +7,14 @@ forcings to key parameters used within the model.
 The module also provides code for...  TODO: Update this.
 """
 
-from typing import Optional, Union, Tuple
+from typing import Optional, Union
 from warnings import warn
 
 import bottleneck as bn
 import numpy as np
 
 from pyrealm.bounds_checker import bounds_checker
-from pyrealm.param_classes import PModelParams
+from pyrealm.param_classes import C3C4Params, IsotopesParams, PModelParams
 from pyrealm.utilities import check_input_shapes, summarize_attrs
 
 # TODO - Note that the typing currently does not enforce the dtype of ndarrays
@@ -536,6 +536,48 @@ def calc_kmm(
     return kc * (1.0 + po / ko)
 
 
+def calc_kp_c4(
+    tc: Union[float, np.ndarray],
+    patm: Union[float, np.ndarray],
+    pmodel_params: PModelParams = PModelParams(),
+) -> Union[float, np.ndarray]:
+    r"""Calculate the Michaelis Menten coefficient of PEPc.
+
+    Calculates the Michaelis Menten coefficient of phosphoenolpyruvate
+    carboxylase (PEPc) (:math:`K`, :cite:`boyd:2015a`) as a function of
+    temperature (:math:`T`) and atmospheric pressure (:math:`p`) as:
+
+    Parameters:
+        tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
+        patm: Atmospheric pressure (:math:`p`, Pa)
+        pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
+
+    Other parameters:
+        hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`,
+             `pmodel_params.boyd_dhac_c4`)
+        kc25: Michelis constant for :math:`\ce{CO2}` at standard temperature
+            (:math:`K_{c25}`, `pmodel_params.boyd_kp25_c4`)
+
+    Returns:
+        A numeric value for :math:`K` (in Pa)
+
+    Examples:
+        >>> # Michaelis-Menten coefficient at 20 degrees Celsius and standard
+        >>> # atmosphere (in Pa):
+        >>> round(calc_kp_c4(20, 101325), 5)
+        9.26352
+    """
+
+    # Check inputs, return shape not used
+    _ = check_input_shapes(tc, patm)
+
+    # conversion to Kelvin
+    tk = tc + pmodel_params.k_CtoK
+    return pmodel_params.boyd_kp25_c4 * calc_ftemp_arrh(
+        tk, ha=pmodel_params.boyd_dhac_c4
+    )
+
+
 def calc_soilmstress(
     soilm: Union[float, np.ndarray],
     meanalpha: Union[float, np.ndarray] = 1.0,
@@ -852,6 +894,12 @@ class PModelEnvironment:
 
         # Michaelis-Menten coef. (Pa)
         self.kmm = calc_kmm(tc, patm, pmodel_params=pmodel_params)
+
+        # # Michaelis-Menten coef. C4 plants (Pa) NOT CHECKED. Need to think
+        # # about how many optional variables stack up in PModelEnvironment
+        # # and this is only required by C4 optimal chi Scott and Smith, which
+        # # has not yet been implemented.
+        # self.kp_c4 = calc_kp_c4(tc, patm, pmodel_params=pmodel_params)
 
         # viscosity correction factor relative to standards
         self.ns_star = calc_ns_star(tc, patm, pmodel_params=pmodel_params)  # (unitless)
@@ -1393,8 +1441,8 @@ class CalcOptimalChi:
         env: An instance of PModelEnvironment providing the photosynthetic
             environment for the model.
         method: The method to use for estimating optimal :math:`\chi`, one
-            of ``prentice14`` (default), ``lavergne2020``, ``c4``,
-            ``c4_no_gamma`` or ``scottsmith2020``.
+            of ``prentice14`` (default), ``lavergne20``, ``c4``,
+            ``c4_no_gamma`` or ``scottsmith20``.
         rootzonestress: This is an experimental feature to supply a root zone
             stress factor used as a direct penalty to :math:`\beta`.
         pmodel_params: An instance of
@@ -1403,7 +1451,7 @@ class CalcOptimalChi:
     Attributes:
         env (PModelEnvironment): An instance of PModelEnvironment providing
             the photosynthetic environment for the model.
-        method (str): one of ``prentice14``, ``lavergne2020``, ``c4``,
+        method (str): one of ``prentice14``, ``lavergne20``, ``c4``,
             ``c4_no_gamma`` or ``scottsmith2020``.
         xi (float): defines the sensitivity of :math:`\chi` to the vapour
             pressure deficit and  is related to the carbon cost of water
@@ -1597,7 +1645,7 @@ class CalcOptimalChi:
         Examples:
             >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
             ...                         vpd=1000, theta=0.5)
-            >>> vals = CalcOptimalChi(env=env, method='lavergne2020')
+            >>> vals = CalcOptimalChi(env=env, method='lavergne20')
             >>> round(vals.chi, 5)
             0.73663
             >>> round(vals.mc, 5)
@@ -2037,6 +2085,492 @@ class JmaxLimitation:
         # pass here, but setting explicitly within the method for clarity.
         self.f_v = 1.0
         self.f_j = 1.0
+
+
+class CalcCarbonIsotopes:
+    r"""Calculate :math:`\ce{CO2}` isotopic discrimination.
+
+    This class estimates the fractionation of atmospheric CO2 by photosynthetic
+    pathways to calculate the isotopic compositions and discrimination given the
+    predicted optimal chi from a :class:`~pyrealm.pmodel.PModel` instance.
+
+    Discrimination against carbon 13 (:math:`\Delta\ce{^{13}C}`)  is calculated
+    using C3 and C4 pathways specific methods, and then discrimination against
+    carbon 14 :math:`\Delta\ce{^{14}C} \approx 2 \times \Delta\ce{^{13}C}`
+    (:cite:`graven:2020a`). For C3 plants, :math:`\Delta\ce{^{13}C}` is
+    calculated both including and excluding photorespiration, but these are
+    assumed to be equal for C4 plants. The class also reports the isotopic
+    composition of leaves and wood.
+
+    Args:
+        pmodel: A :class:`~pyrealm.pmodel.PModel` instance providing the
+            photosynthetic pathway and estimated optimal chi.
+        d13CO2: Atmospheric isotopic ratio for Carbon 13
+            (:math:`\delta\ce{^{13}C}`, permil).
+        D14CO2: Atmospheric isotopic ratio for Carbon 14
+            (:math:`\Delta\ce{^{14}C}`, permil).
+        params: An instance of :class:`~pyrealm.param_classes.IsotopesParams`,
+            parameterizing the calculations.
+
+    Attrs:
+        Delta13C_simple: discrimination against carbon 13
+            (:math:`\Delta\ce{^{13}C}`, permil) excluding photorespiration.
+        Delta13C: discrimination against carbon 13
+            (:math:`\Delta\ce{^{13}C}`, permil) including photorespiration.
+        Delta14C: discrimination against carbon 14
+            (:math:`\Delta\ce{^{14}C}`, permil) including photorespiration.
+        d13C_leaf: isotopic ratio of carbon 13 in leaves
+            (:math:`\delta\ce{^{13}C}`, permil).
+        d14C_leaf: isotopic ratio of carbon 14 in leaves
+            (:math:`\delta\ce{^{14}C}`, permil).
+        d13C_wood: isotopic ratio of carbon 13 in wood
+            (:math:`\delta\ce{^{13}C}`, permil), given a parameterized
+            post-photosynthetic fractionation.
+    """
+
+    def __init__(
+        self,
+        pmodel: PModel,
+        d13CO2: Union[float, np.ndarray],
+        D14CO2: Union[float, np.ndarray],
+        params: IsotopesParams = IsotopesParams(),
+    ):
+
+        # Check inputs are congruent
+        _ = check_input_shapes(pmodel.env.tc, d13CO2, D14CO2)
+
+        self.params = params
+        self.shape = pmodel.shape
+        self.c4 = pmodel.c4
+
+        self.Delta13C_simple = None
+        self.Delta13C = None
+        self.Delta14C = None
+        self.d13C_leaf = None
+        self.d14C_leaf = None
+        self.d13C_wood = None
+
+        # Could store pmodel, d13CO2, D14CO2 in instance, but really not needed
+        # so try and keep this class simple with a minimum of attributes.
+        # TODO: map methods for delta13C to C3 and C4.
+
+        if self.c4:
+            self.calc_c4_discrimination(pmodel)
+        else:
+            self.calc_c3_discrimination(pmodel)
+
+        # 14C discrimination is twice the 13C discrimination (Graven et al. 2020)
+        self.Delta14C = self.Delta13C * 2
+
+        # Isotopic composition of leaf
+        self.d13C_leaf = (d13CO2 - self.Delta13C) / (1 + self.Delta13C / 1000)
+        self.d14C_leaf = (D14CO2 - self.Delta14C) / (1 + self.Delta14C / 1000)
+
+        # Isotopic composition of wood considering post-photosynthetic fractionation:
+        self.d13C_wood = self.d13C_leaf + self.params.frank_postfrac
+
+    def __repr__(self):
+
+        return f"CalcCarbonIsotopes(shape={self.shape}, method={self.c4})"
+
+    def calc_c4_discrimination(self, pmodel):
+        r"""Calculate C4 isotopic discrimination.
+
+        In this method, :math:`\delta\ce{^{13}C}` is calculated from optimal
+        :math:`\chi` using an empirical relationship estimated by
+        :cite:`lavergne:inprep`.
+
+        Examples:
+            >>> ppar = PModelParams(beta_cost_ratio_c4=35)
+            >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
+            ...                         vpd=1000, pmodel_params=ppar)
+            >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
+            >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
+            >>> round(mod_c4_delta.Delta13C, 4) # NOT CORRECT: 5.6636
+            5.11
+            >>> round(mod_c4_delta.d13C_leaf, 4)  # NOT CORRECT: -13.9844
+            -13.44
+        """
+
+        # Equation from C3/C4 paper
+        self.Delta13C_simple = (
+            self.params.lavergne_delta13_a
+            + self.params.lavergne_delta13_b * pmodel.optchi.chi
+        )
+        self.Delta13C = self.Delta13C_simple
+
+    def calc_c4_discrimination_vonC(self, pmodel):
+        r"""Calculate C4 isotopic discrimination.
+
+         In this method, :math:`\delta\ce{^{13}C}` is calculated from optimal
+        :math:`\chi` following Equation 1 in :cite:`voncaemmerer:2014a`.
+
+        This method is not yet reachable - needs a method selection argument to
+        switch approaches and check C4 methods are used with C4 pmodels. The
+        method is preserving experimental code provided by Alienor Lavergne. A
+        temperature sensitive correction term is provided in commented code but
+        not used.
+
+        Examples:
+            >>> ppar = PModelParams(beta_cost_ratio_c4=35)
+            >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
+            ...                         vpd=1000, pmodel_params=ppar)
+            >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
+            >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
+            >>> round(mod_c4_delta.Delta13C, 4)  # NOT CHECKED
+            5.2753
+            >>> round(mod_c4_delta.d13C_leaf, 4)  # NOT CHECKED
+            -13.6036
+        """
+
+        warn("This method is experimental code from Alienor Lavergne")
+
+        # 13C discrimination (‰): von Caemmerer et al. (2014) Eq. 1
+        self.Delta13C_simple = (
+            self.params.farquhar_a
+            + (
+                self.params.vonCaemmerer_b4
+                + (self.params.farquhar_b - self.params.vonCaemmerer_s)
+                * self.params.vonCaemmerer_phi
+                - self.params.farquhar_a
+            )
+            * pmodel.optchi.chi
+        )
+
+        # Equation A5 from von Caemmerer et al. (2014)
+        # b4 = (-9.483 * 1000) / (273 + self.tc) + 23.89 + 2.2
+        # b4 = self.pmodel_params.vonCaemmerer_b4
+
+        self.Delta13C = self.Delta13C_simple
+
+    def calc_c3_discrimination(self, pmodel):
+        r"""Calculate C3 isotopic discrimination.
+
+        This method calculates the isotopic discrimination for
+        :math:`\Delta\ce{^{13}C}` both with and without the photorespiratory
+        effect following :cite:`farquhar:1982a`.
+
+        Examples:
+            >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
+            ...                         vpd=1000, theta=0.4)
+            >>> mod_c3 = PModel(env, method_optchi='lavergne20')
+            >>> mod_c3_delta = CalcCarbonIsotopes(mod_c3, d13CO2= -8.4, D14CO2 = 19.2)
+            >>> round(mod_c3_delta.Delta13C, 4)
+            20.4056
+            >>> round(mod_c3_delta.d13C_leaf, 4)
+            -28.2296
+        """
+
+        # 13C discrimination (permil): Farquhar et al. (1982)
+        # Simple
+        self.Delta13C_simple = (
+            self.params.farquhar_a
+            + (self.params.farquhar_b - self.params.farquhar_a) * pmodel.optchi.chi
+        )
+
+        # with photorespiratory effect:
+        self.Delta13C = (
+            self.params.farquhar_a
+            + (self.params.farquhar_b2 - self.params.farquhar_a) * pmodel.optchi.chi
+            - self.params.farquhar_f * pmodel.env.gammastar / pmodel.env.ca
+        )
+
+    def summarize(self, dp=2) -> None:
+        """Print CalcCarbonIsotopes summary.
+
+        Prints a summary of the variables calculated within an instance
+        of CalcCarbonIsotopes including the mean, range and number of nan
+        values.
+
+        Args:
+            dp: The number of decimal places used in rounding summary stats.
+        """
+
+        attrs = [
+            ("Delta13C_simple", "permil"),
+            ("Delta13C", "permil"),
+            ("Delta14C", "permil"),
+            ("d13C_leaf", "permil"),
+            ("d14C_leaf", "permil"),
+            ("d13C_wood", "permil"),
+        ]
+
+        summarize_attrs(self, attrs, dp=dp)
+
+
+class C3C4Competition:
+    r"""Implementation of the C3/C4 competition model.
+
+    This class provides an implementation of the calculations of C3/C4
+    competition, described by :cite:`lavergne:inprep`. The key inputs `ggp_c3`
+    and `gpp_c4` are gross primary productivity (GPP) estimates for C3 or C4
+    pathways _alone_  using the :class:`~pyrealm.pmodel.PModel`
+
+    These estimates are used to calculate the relative advantage of C4 over C3
+    photosynthesis and then the community fraction of GPP from C4 plants using
+    the following steps:
+
+    1. The proportion advantage in GPP for C4 plants is calculated as
+       :math:`A_4 = (GPP_{C4} - GPP_{C3}) / GPP_{C3}`.
+
+    2. The proportion GPP advantage :math:`A_4` is converted to an expected
+       fraction of C4 :math:`F_4` plants using a logistic equation of
+       :math:`A_4`, modulated by percentage tree cover (TC):
+
+        .. math::
+            :nowrap:
+
+            \[
+                F_4 = \frac{1}{1 + e^{k * \frac{A_4}{e^ frac{1}{1 + \text{TC}}}} - q}
+            \]
+
+        The parameters are set in the `params` instance and are the slope of the
+        equation (:math:`k`, `adv_to_frac_k`) and :math:`A_4` value at the
+        midpoint of the curve (:math:`q`, `adv_to_frac_q`).
+
+    3. A model of tree cover from C3 trees is then used to correct for shading
+       of C4 plants due to canopy closure, even when C4 photosynthesis is
+       advantagious. The estimated tree cover function is:
+
+        .. math::
+            :nowrap:
+
+                \[
+                    TC(\text{GPP}_{C3}) = a \cdot :math:`\text{GPP}_{C3}` ^ b - c
+                \]
+
+       with parameters set in the `params` instance (:math:`a`, `gpp_to_tc_a`;
+       :math:`b`, `gpp_to_tc_b`; :math:`c`, `gpp_to_tc_c`). The proportion of
+       GPP from C3 trees (:math:`h`) is then estimated using the predicted tree
+       cover in locations relative to a threshold GPP value (\text{GPP}_{CLO},
+       `c3_forest_closure_gpp`) above which canopy closure occurs. The value of
+       :math:`h` is clamped in :math:`[0, 1]`:
+
+        .. math::
+            :nowrap:
+
+                \[
+                    h = \max(0, \min(
+                        \frac{TC(\text{GPP}_{C3}}{TC(\text{GPP}_{C3}}, 1)
+                \]
+
+       The C4 fraction is then discounted as :math:`F_4 = F_4 (1 - h)`.
+
+    4. Two masks are applied. First, :math:`F_4 = 0` in locations where the
+       mean  air temperature of the coldest month is too low for C4 plants.
+       Second, $F_4$ is set as unknown for croplands.
+
+    Args:
+        gpp_c3: Total annual GPP (gC m-2 yr-1) from C3 plants alone.
+        gpp_c4: Total annual GPP (gC m-2 yr-1) from C4 plants alone.
+        treecover: Percentage tree cover (%).
+        below_t_min: A boolean mask, temperatures too low for C4 plants.
+        cropland: A boolean mask indicating cropland locations.
+        params: An instance of :class:`~pyrealm.param_classes.C3C4Params`
+            providing parameterisation for the competition model.
+
+    Attributes:
+        gpp_adv_c4: The proportional advantage in GPP of C4 over C3 plants
+        frac_c4: The estimated fraction of C4 plants.
+        gpp_c3_contrib: The estimated contribution of C3 plants to GPP (gC m-2 yr-1)
+        gpp_c4_contrib: The estimated contribution of C4 plants to GPP (gC m-2 yr-1)
+    """
+
+    # Design Notes: see paper Lavergne et al. (submitted).
+    #
+    # DO (24/05/2022): I have separated out the functions for different steps
+    # into private methods, partly to keep the code cleaner, partly with a
+    # slightly hopeful idea that future users could substitute these functions
+    # via subclassing, but _mostly_ because being able to access these functions
+    # independently makes it much easier to document the steps.
+
+    def __init__(
+        self,
+        gpp_c3: Union[float, np.ndarray],
+        gpp_c4: Union[float, np.ndarray],
+        treecover: Union[float, np.ndarray],
+        below_t_min: Union[float, np.ndarray],
+        cropland: Union[float, np.ndarray],
+        params: C3C4Params = C3C4Params(),
+    ):
+
+        # Check inputs are congruent
+        self.shape = check_input_shapes(
+            gpp_c3, gpp_c4, treecover, cropland, below_t_min
+        )
+        self.params = params
+
+        # Step 1: calculate the percentage advantage in GPP of C4 plants from
+        # annual total GPP estimates for C3 and C4 plants. This uses use
+        # np.full to handle division by zero without raising warnings
+        gpp_adv_c4 = np.full(self.shape, np.nan)
+        self.gpp_adv_c4 = np.divide(
+            gpp_c4 - gpp_c3, gpp_c3, out=gpp_adv_c4, where=gpp_c3 > 0
+        )
+
+        # Step 2: calculate the initial C4 fraction based on advantage modulated
+        # by treecover.
+        frac_c4 = self._convert_advantage_to_c4_fraction(treecover=treecover)
+
+        # Step 3: calculate the proportion of trees shading C4 plants, scaling
+        # the predicted GPP to kilograms.
+        prop_trees = self._calculate_tree_proportion(gppc3=gpp_c3 / 1000)
+        frac_c4 = frac_c4 * (1 - prop_trees)
+
+        # Step 4: remove areas below minimum temperature
+        frac_c4[below_t_min] = 0
+
+        # Step 5: remove cropland areas
+        frac_c4[cropland] = np.nan
+
+        self.frac_c4 = frac_c4
+
+        self.gpp_c3_contrib = gpp_c3 * (1 - self.frac_c4)
+        self.gpp_c4_contrib = gpp_c4 * self.frac_c4
+
+        # Define attributes used elsewhere
+        self.Delta13C_C3 = None
+        self.Delta13C_C4 = None
+        self.d13C_C3 = None
+        self.d13C_C4 = None
+
+    def __repr__(self):
+
+        return f"C3C4competition(shape={self.shape})"
+
+    def _convert_advantage_to_c4_fraction(
+        self, treecover: Union[float, np.ndarray]
+    ) -> Union[float, np.ndarray]:
+        """Convert C4 GPP advantage to C4 fraction.
+
+        This method calculates an initial estimate of the fraction of C4 plants
+        based on the proportional GPP advantage from C4 photosynthesis. The
+        conversion is modulated by the proportion treecover.
+
+        Args:
+            treecover: The proportion tree cover at modelled locations.
+
+        Returns:
+            The estimated C4 fraction given the estimated C4 GPP advantage and
+            tree cover.
+        """
+
+        frac_c4 = 1.0 / (
+            1.0
+            + np.exp(
+                -self.params.adv_to_frac_k
+                * (
+                    (self.gpp_adv_c4 / np.exp(1 / (1 + treecover)))
+                    - self.params.adv_to_frac_q
+                )
+            )
+        )
+
+        return frac_c4
+
+    def _calculate_tree_proportion(self, gppc3) -> Union[float, np.ndarray]:
+        """Calculate the proportion of GPP from C3 trees.
+
+        This method calculates the proportional impact of forest closure by C3
+        trees on the fraction of C4 plants in the community. A statistical model
+        is used to predict both forest cover from the GPP for C3 plants and for
+        a threshold value indicating closed canopy forest. The ratio of these
+        two values is used to indicate the proportion of GPP from trees.
+
+        Note that the GPP units here are in **kilograms** per metre squared per year.
+
+        Args:
+            gppc3: The estimated GPP for C3 plants (kg m-2 yr-1).
+        """
+
+        prop_trees = (
+            self.params.gpp_to_tc_a * np.power(gppc3, self.params.gpp_to_tc_b)
+            + self.params.gpp_to_tc_c
+        ) / (
+            self.params.gpp_to_tc_a
+            * np.power(self.params.c3_forest_closure_gpp, self.params.gpp_to_tc_b)
+            + self.params.gpp_to_tc_c
+        )
+        prop_trees = np.clip(prop_trees, 0, 1)
+
+        return prop_trees
+
+    def estimate_isotopic_discrimination(
+        self,
+        d13CO2: Union[float, np.ndarray],
+        Delta13C_C3_alone: Union[float, np.ndarray],
+        Delta13C_C4_alone: Union[float, np.ndarray],
+    ) -> None:
+        r"""Estimate CO2 isotopic discrimination values.
+
+        This method takes estimates of total annual descrimination against
+        Carbon 13 (:math:`\Delta\ce{^13C}`) from model outputs that assume that
+        C3 or C4 plants _alone_ are present in a location and calculates the
+        contribution from C3 and C4 plants given the estimated fraction of C4
+        plants given competition. It also calculates the contributions to
+        annual stable carbon isotopic composition  (:math:`d\ce{^13C}`).
+
+        Four attributes are populated:
+
+        * `Delta13C_C3`: contribution from C3 plants to
+          (:math:`\Delta\ce{^13C}`, permil).
+        * `Delta13C_C4`: contribution from C4 plants to
+          (:math:`\Delta\ce{^13C}`, permil).
+        * `d13C_C4`: contribution from C4 plants to (:math:`d\ce{^13C}`,
+          permil).
+        * `d13C_C3`: contribution from C3 plants to (:math:`d\ce{^13C}`,
+          permil).
+
+        Args:
+            d13CO2: stable carbon isotopic composition of atmospheric CO2
+                (permil)
+            Delta13C_C3_alone: annual discrimination against 13C for C3
+                plants (permil)
+            Delta13C_C4_alone: annual discrimination against 13C for C4
+                plants (permil)
+        """
+
+        _ = check_input_shapes(
+            self.gpp_adv_c4, d13CO2, Delta13C_C3_alone, Delta13C_C4_alone
+        )
+
+        self.Delta13C_C3 = Delta13C_C3_alone * (1 - self.frac_c4)
+        self.Delta13C_C4 = Delta13C_C4_alone * self.frac_c4
+
+        self.d13C_C3 = (d13CO2 - self.Delta13C_C3) / (1 + self.Delta13C_C3 / 1000)
+        self.d13C_C4 = (d13CO2 - self.Delta13C_C4) / (1 + self.Delta13C_C4 / 1000)
+
+    def summarize(self, dp: int = 2) -> None:
+        """Print C3C4Competition summary.
+
+        Prints a summary of the calculated values in a C3C4Competition instance
+        including the mean, range and number of nan values. This will always
+        show fraction of C4 and GPP estaimates and isotopic estimates are shown
+        if
+        :meth:`~pyrealm.pmodel.C3C4Competition.estimate_isotopic_discrimination`
+        has been run.
+
+        Args:
+            dp: The number of decimal places used in rounding summary stats.
+        """
+
+        attrs = [
+            ("frac_c4", "-"),
+            ("gpp_c3_contrib", "gC m-2 yr-1"),
+            ("gpp_c4_contrib", "gC m-2 yr-1"),
+        ]
+
+        if self.d13C_C3 is not None:
+            attrs.extend(
+                [
+                    ("Delta13C_C3", "permil"),
+                    ("Delta13C_C4", "permil"),
+                    ("d13C_C3", "permil"),
+                    ("d13C_C4", "permil"),
+                ]
+            )
+
+        summarize_attrs(self, attrs, dp=dp)
 
 
 # subdaily Pmodel
