@@ -133,9 +133,6 @@ class ParamClass:
         return cls.from_dict(json_data)
 
 
-# P Model param class
-
-
 @enforce_typing.enforce_types
 @dataclass(frozen=True)
 class PModelParams(ParamClass):
@@ -308,11 +305,13 @@ class PModelParams(ParamClass):
     # Heskel
     heskel_b: Number = 0.1012
     heskel_c: Number = 0.0005
+
     # KattgeKnorr
     kattge_knorr_a_ent: Number = 668.39
     kattge_knorr_b_ent: Number = -1.07
     kattge_knorr_Ha: Number = 71513
     kattge_knorr_Hd: Number = 200000
+
     # Kphio:
     # - note that kphio_C4 has been updated to account for an unintended double
     #   8 fold downscaling to account for the fraction of light reaching PS2.
@@ -327,6 +326,16 @@ class PModelParams(ParamClass):
     bernacchi_kc25: Number = 39.97
     bernacchi_ko25: Number = 27480
     bernacchi_gs25_0: Number = 4.332
+
+    # Boyd
+    boyd_kp25_c4: Number = 16  ## Pa  from Boyd et al. (2015)
+    boyd_dhac_c4: Number = 36300  ## J mol-1
+    boyd_dhac_c4: Number = 79430
+    boyd_dhao_c4: Number = 36380
+    boyd_dha_c4: Number = 37830
+    boyd_kc25_c4: Number = 41.03
+    boyd_ko25_c4: Number = 28210
+    boyd_gs25_0_c4: Number = 2.6
 
     # Soilmstress
     soilmstress_theta0: Number = 0.0
@@ -351,8 +360,61 @@ class PModelParams(ParamClass):
     atkin_rd_to_vcmax: Number = 0.015
 
 
-# T model param class
+@enforce_typing.enforce_types
+@dataclass(frozen=True)
+class IsotopesParams(ParamClass):
+    """Settings for calculate carbon isotope discrimination.
 
+    This data class provides values for underlying parameters used in the
+    calculation of carbon isotope discrimination from P Model instances.
+
+    The parameters are:
+
+    """
+
+    # Lavergne (2020)
+    lavergne_delta13_a = 13.95
+    lavergne_delta13_b = -17.04
+
+    # Farquhar et al. (1982)
+    farquhar_a: Number = 4.4
+    farquhar_b: Number = 29
+    farquhar_b2: Number = 28
+    farquhar_f: Number = 12
+
+    # vonCaemmerer et al. (2014)
+    vonCaemmerer_b4: Number = -7.4
+    vonCaemmerer_s: Number = 1.8
+    vonCaemmerer_phi: Number = 0.5
+
+    # Frank et al. (2015): post-photosynthetic fractionation
+    # between leaf organic matter and alpha-cellulose: 2.1 +/- 1.2 ‰
+    frank_postfrac: Number = 2.1
+
+    # Badeck et al. (2005): post-photosynthetic fractionation
+    # between leaf organic matter and bulk wood
+    badeck_postfrac: Number = 1.9
+
+
+@enforce_typing.enforce_types
+@dataclass(frozen=True)
+class C3C4Params(ParamClass):
+    r"""Model parameters for the C3C4Competition class.
+
+    This data class holds statistical estimates used to calculate the fraction
+    of C4 plants based on the relative GPP of C3 and C4 plants for given
+    conditions and estimated treecover."""
+
+    # Non-linear regression of fraction C4 plants from proportion GPP advantage
+    # of C4 over C3 plants
+    adv_to_frac_k = 6.63
+    adv_to_frac_q = 0.16
+
+    # Conversion parameters to estimate tree cover from  C3 GPP
+    gpp_to_tc_a = 15.60
+    gpp_to_tc_b = 1.41
+    gpp_to_tc_c = -7.72
+    c3_forest_closure_gpp = 2.8
 
 @enforce_typing.enforce_types
 @dataclass(frozen=True)
