@@ -307,24 +307,27 @@ class TemporalInterpolator:
     """Create a temporal interpolation of a variable.
 
     Instances of this class set a mapping from a coarser set of datetimes to a
-    finer set of datetimes, both of which need to be provided as np.datetime64
-    arrays. Once an instance has been created, it can be called to interpolate a
-    provided variable from the coarser to the finer timescale.
+    finer set of datetimes. Creating an instance sets up the interpolation time
+    scales, and the instance can be called directly to interpolate a specific
+    set of values.
 
     Interpolation uses :func:`scipy.interpolate.interp1d`. This provides a range
-    of interpolation kinds available, but this class adds a method
-    `daily_constant`, which is basically the existing `previous` kind but offset
-    so that a single value in a day is used for _all_ interpolated values in the
-    day, including extrapolation backwards and forwards to midnight.
+    of interpolation kinds available, with 'linear' probably the most
+    appropriate, but this class adds a method `daily_constant`, which is
+    basically the existing `previous` kind but offset so that a single value in
+    a day is used for _all_ interpolated values in the day, including
+    extrapolation backwards and forwards to midnight.
 
-    Creating an instance sets up the interpolation time scales, and the instance
-    can be called directly to interpolate a specific set of values.
+    Both inputs must be provided as arrays of type np.datetime64. This type has
+    a range of subtypes with varying precision (e.g. 'datetime64[D]' for days
+    and 'datetime64[s]' for seconds): the two input arrays _must_ use the same
+    temporal resolution type.
 
     Args:
-        input_datetimes: A numpy array giving the datetimes of the
+        input_datetimes: A numpy np.datetime64 array giving the datetimes of the
             observations
-        interpolation_datetimes: A numpy array giving the points at which to
-            interpolate the observations.
+        interpolation_datetimes: A numpy np.datetime64 array giving the points
+            at which to interpolate the observations.
     """
 
     def __init__(
@@ -334,24 +337,29 @@ class TemporalInterpolator:
         method: str = "daily_constant",
     ) -> None:
 
+        # This might be better as a straightforward function - there isn't a
+        # huge amount of setup in __init__, so not saving a lot of processing by
+        # saving that setup in class attributes for re-use.
+
         # There are some fussy things here with what is acceptable input to
         # interp1d: although the interpolation function can be created with
         # datetime.datetime or np.datetime64 values, the interpolation call
         # _must_ use float inputs (see https://github.com/scipy/scipy/issues/11093),
-        # so this class uses floats from the inputs for interpolation.
+        # so internally this class uses floats from the inputs for
+        # interpolation. Because the same datetime with different np.datetime64
+        # subtypes gives different float values, the two arrays must use the
+        # same subtype.
 
-        # Inputs must be datetime64 arrays and have the same temporal resolution
-        # or the interpolation blows up.
+        # Inputs must be datetime64 arrays and have the same np.datetime64
+        # subtype
         if not (
             np.issubdtype(input_datetimes.dtype, np.datetime64)
             and np.issubdtype(interpolation_datetimes.dtype, np.datetime64)
         ):
-            raise ValueError("Interpolation times must be np.datetime64 arrays.")
+            raise TypeError("Interpolation times must be np.datetime64 arrays")
 
         if input_datetimes.dtype != interpolation_datetimes.dtype:
-            raise ValueError(
-                "Interpolation times must have the same temporal resolution."
-            )
+            raise TypeError("Inputs must use the same np.datetime64 precision subtype")
 
         self._method = method
         self._interpolation_x = interpolation_datetimes.astype("float")
@@ -369,10 +377,10 @@ class TemporalInterpolator:
                 input_datetimes.dtype
             )
             midnight = np.append(midnight, midnight[-1] + np.timedelta64(1, "D"))
-            self._input_x = np.array(midnight).astype("float")
+            self._input_x = np.array(midnight).astype(float)
 
         else:
-            self._input_x = input_datetimes.astype("float")
+            self._input_x = input_datetimes.astype(float)
 
     def __call__(self, values: np.ndarray):
         """Apply temporal interpolation to a variable.
@@ -390,7 +398,6 @@ class TemporalInterpolator:
             A numpy array of values interpolated to the timepoints in the
             `interpolation_datetimes` values used to create the instance.
         """
-        # TODO - extend to 2 and 3d values, need to specify which axis is time.
 
         if self._method == "daily_constant":
             # Append the last value to match the appended day
@@ -400,7 +407,16 @@ class TemporalInterpolator:
         else:
             method = self._method
 
-        interp_fun = interp1d(self._input_x, values, kind=method, bounds_error=False)
+        # Check the first axis of the values has the same length as the input
+        # datetimes.
+        if len(self._input_x) != values.shape[0]:
+            raise ValueError(
+                "The first axis of values does not match the length of input_datetimes"
+            )
+
+        interp_fun = interp1d(
+            self._input_x, values, axis=0, kind=method, bounds_error=False
+        )
 
         return interp_fun(self._interpolation_x)
 
@@ -413,14 +429,14 @@ class DailyRepresentativeValues:
     distinguish between a representative value, calculated over a time span, and
     a specific single value closest to a  _reference time_ (e.g. noon).
 
-    The class implements three subsetting approaches:
+    The class provides three subsetting approaches:
 
     * A time window within each day, given the time of the window centre and its
       width. The default reference time is the window centre.
     * A boolean index of values to include, such as a predefined vector of night
       and day. The default reference time is noon.
     * A window around the time of the daily maximum in a variable. The default
-      reference time is the daily maximum.
+      reference time is the daily maximum. This is not yet implemented
 
     An instance is created using a 1 dimensional numpy array of dtype
     numpy.datetime64, which must be strictly increasing and evenly spaced. Once
