@@ -341,6 +341,9 @@ class TemporalInterpolator:
         # huge amount of setup in __init__, so not saving a lot of processing by
         # saving that setup in class attributes for re-use.
 
+        # TODO - this might be much more efficient with time as the _last_ axis
+        # due to the organisation of contiguous memory in arrays.
+
         # There are some fussy things here with what is acceptable input to
         # interp1d: although the interpolation function can be created with
         # datetime.datetime or np.datetime64 values, the interpolation call
