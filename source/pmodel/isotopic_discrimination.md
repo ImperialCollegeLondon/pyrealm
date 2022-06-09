@@ -18,15 +18,15 @@ Photosynthetic pathways fractionate the carbon isotopes found in atmospheric
 CO2, leading to discrimination against carbon 13 and carbon 14 and alteration of
 the resulting isotopic composition of plant tissues. The {mod}`~pyrealm.pmodel`
 module provides the {class}`~pyrealm.pmodel.CalcCarbonIsotopes` class, which
-takes the predicted optimal chi and photosynthetic pathway from a fitted
-{class}`~pyrealm.pmodel.PModel` instance and predictions various isotopic
+takes the predicted optimal chi ($\chi$) and photosynthetic pathway from a
+fitted {class}`~pyrealm.pmodel.PModel` instance and predicts various isotopic
 discrimination and composition values.
 
 The predictions from the {class}`~pyrealm.pmodel.CalcCarbonIsotopes` class are
-driven by variation in optimal chi ($\chi$). The examples below show predictions
-across a range of values, created by estimating $\chi$ across a temperature
-gradient. The input temperatures and predicted optimal $\chi$ values for C3 and
-C4 plants are shown below.
+driven by variation in $\chi$. The examples below show predictions across a
+range of values of $\chi$. The sequence of $\chi$ values used is created by
+using the P Model to estimate $\chi$ across a temperature gradient, giving the
+range of $\chi$ values shown below for C3 and C4 plants.
 
 ```{code-cell} python
 :tags: [hide-input]
@@ -55,11 +55,11 @@ pyplot.legend();
 
 ## Calculation of values
 
-The code below shows the code required to calculate isotopic profiles instances
-of the {class}`~pyrealm.pmodel.PModel` class, fitted using C3 and C4 pathways,
-along with the calculated attributes of the
-{class}`~pyrealm.pmodel.CalcCarbonIsotopes` class. The calculated attributes
-are:
+
+The {class}`~pyrealm.pmodel.CalcCarbonIsotopes` class takes a
+{class}`~pyrealm.pmodel.PModel` instance, along with estimates of the
+atmospheric isotopic ratios for Carbon 13 ($\delta13C$, permil) and Carbon 14
+($\Delta14C$, permil) and calculates the following predictions:
 
 * `Delta13C_simple`: discrimination against carbon 13 ($\Delta\ce{^{13}C}$,
   permil) excluding photorespiration. 
@@ -74,6 +74,11 @@ are:
 * `d13C_wood`: isotopic ratio of carbon 13 in wood ($\delta\ce{^{13}C}$,
   permil), given a parameterized post-photosynthetic fractionation. 
 
+
+The calculations differ between C3 and C4 plants, and this is set be the
+selection of {arg}`~pyrealm.pmodel.PModel.method_optchi` argument to the 
+{class}`~pyrealm.pmodel.PModel` used.
+
 ```{code-cell} python
 carb_c3 = CalcCarbonIsotopes(mod_c3, d13CO2 = -8.4, D14CO2 = 19.2)
 carb_c3.summarize()
@@ -86,7 +91,8 @@ carb_c4.summarize()
 
 The plots below show how the calculated values alter with $\chi$. The
 differences in the direction of these relationships between C3 and C4 pathways
-provides a mechanism to assess competition between the two pathways.
+creates a predictable isotopic signature of relative contributions of the two
+pathways.
 
 ```{code-cell} python
 :tags: [hide-input]

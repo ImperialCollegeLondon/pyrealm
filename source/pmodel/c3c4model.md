@@ -17,17 +17,17 @@ kernelspec:
 Compared to C3 plants, plants using the C4 photosynthetic pathway:
 
 * cope well in arid areas, operating with lower stomatal conductance
-  and lower leaf internal CO2 than C3 plants.
-* are strongly selected in lower atmospheric CO2 concentrations.
+  and lower leaf internal CO2 than C3 plants,
+* are strongly selected in lower atmospheric CO2 concentrations, and
 * do not experience significant photorespiration costs.
 
 This gives C4 plants a substantial competitive advantage in some environments.
-The {mod}`~pyrealm.pmodel` module provides a recent implementation of a model
-which estimates the expected fraction of GPP from C4 plants, given predictions
-of GPP for C3 or C4 plants alone for the same locations using the
-{class}`~pyrealm.pmodel.PModel` class.
-
-The model implements a number of steps to predict the C4 fraction.
+The {class}`~pyrealm.pmodel.C3C3Competition` class provides an implementation of
+a model that estimates the expected fraction of GPP from C4 plants. It uses
+predictions of GPP from the {class}`~pyrealm.pmodel.PModel` assuming communities
+consisting solely of C3 or C4 plants and calculates the expected fraction of C4
+plants in the community and the contributions to GPP from C3 and C4 plants at
+each site.
 
 ## Step 1: Proportional GPP advantage
 
@@ -36,11 +36,11 @@ productivity (GPP) of C4 over C3 plants ($A_4$) in the study locations.
 
 ## Step 2: Convert GPP advantage to fraction C4
 
-In this step, a statistical model is used to convert the proportional C4 GPP
-advantage to the expected C4 fraction ($F_4$) in the community for a location
-(see {class}`~pyrealm.pmodel.C3C3Competition` for details). The plot below shows
-how $F_4$ changes with $A_4$ and how that relationship changes with differing
-percentage tree cover. 
+A statistical model is then used to convert the proportional C4 GPP advantage to
+the expected C4 fraction ($F_4$) in a community (see
+{class}`~pyrealm.pmodel.C3C3Competition` for details). This model includes a
+correction term for the estimated percentage tree cover and the plot below shows
+how $F_4$ changes with $A_4$, given differing estimates of tree cover.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
@@ -72,7 +72,8 @@ for idx, lev in enumerate(treecover_1d):
     pyplot.plot(comp_temp.gpp_adv_c4[idx,:], frac_c4[idx, :], label=f'{int(lev)}%')
 
 pyplot.legend(title='Forest cover')
-pyplot.title(r"Initial C4 fraction prediction from $A_4$ and tree cover")
+pyplot.title(r"Initial C4 fraction prediction from $A_4$ and tree cover",
+             frameon=False)
 pyplot.xlabel("Proportion C4 GPP advantage $A_4$")
 pyplot.ylabel("Expected C4 fraction ($F_4$)")
 pyplot.axvline(0, ls='--', c='grey');
@@ -80,10 +81,10 @@ pyplot.axvline(0, ls='--', c='grey');
 
 ## Step 3: Account for shading by C3 trees
 
-The fraction of C4 plants can be reduced below expectations from GPP by shading
-from C3 trees. In this step, a statistical model is used to predict the
-proportion of GPP expected from C3 trees ($h$) and this is used to discount $F_4
-= F_4 (1-h)$.
+The fraction of C4 plants can be reduced below expectations simply from relative
+GPP advantage by shading from C3 trees. A statistical model is used to predict
+the proportion of GPP expected from C3 trees ($h$) and this is used to discount
+$F_4 = F_4 (1-h)$.
 
 The plot below shows how $h$ varies with the expected GPP from C3 plants alone.
 The dashed line shows the C3 GPP estimate above which canopy closure leads to
@@ -173,23 +174,31 @@ comp.summarize()
 The plots below then show the various stages of the model prediction.
 
 Panel A
-: GPP predictions from the P model across a temperature gradient for C3 or C4 plants alone. The horizontal dashed line shows the canopy closure
+: GPP predictions from the P model across a temperature gradient for C3 or 
+  C4 plants alone. The horizontal dashed line shows the canopy closure
   threshold for C3 plants (see Step 3).
 
 Panel B
-: The relative GPP advantage of C4 over C3 photosynthesis across the temperature gradient.
+: The relative GPP advantage of C4 over C3 photosynthesis across the 
+  temperature gradient.
 
 Panel C
-: The proportion of GPP from C3 trees across the temperature gradient. Between roughly 5°C and 30°C, canopy closure is predicted to exclude C4 plants, even where they have a GPP advantage above about 22°C.
+: The proportion of GPP from C3 trees across the temperature gradient. 
+  Between roughly 5°C and 30°C, canopy closure is predicted to exclude 
+  C4 plants, even where they have a GPP advantage (Panel B, > 22°C).
 
 Panel D
-: Predicted fraction of C4 plants across the temperature gradient. One line shows the prediction of $F_4$ purely from relative advantage and treecover (Step 2) and the second line shows the impact of C3 canopy closure on the prediction (Step 3),
+: Predicted $F_4$ across the temperature gradient, showing the prediction 
+  purely from relative advantage and treecover (Step 2) and then accounting 
+  for the impact of C3 tree canopy closure (Step 3),
 
 Panel E:
-: The predicted contributions of plants using the C3 and C4 pathways to the total expected GPP.
+: The predicted contributions of plants using the C3 and C4 pathways to the 
+  total expected GPP.
 
 Panel F
-: The predicted contributions of plants using the C3 and C4 pathways to the predicted $\delta\ce{^{13}C}$ .
+: The contributions of plants using the C3 and C4 pathways to predicted 
+  $\delta\ce{^{13}C}$ .
 
 ```{code-cell} ipython3
 :tags: [hide-input]
@@ -203,7 +212,7 @@ ax1.plot(tc_1d, gpp_c4_annual, label='C4 alone')
 ax1.set_xlabel('Temperature (°C)')
 ax1.set_ylabel(r'Annual total GPP (gC m2 yr)')
 ax1.axhline(2800, ls='--', c='grey')  # canopy closure
-ax1.legend()
+ax1.legend(frameon=False)
 
 # C4 Advantage predictions
 ax2.plot(tc_1d, comp.gpp_adv_c4)
@@ -224,7 +233,7 @@ ax4.plot(tc_1d, frac_c4_step3, label='Step 3')
 # ax4.set_title(r'C4 fraction across the temperature gradient')
 ax4.set_xlabel('Temperature (°C)')
 ax4.set_ylabel(r'C4 fraction')
-ax4.legend();
+ax4.legend(frameon=False);
 
 # GPP contributions of C4 and C4
 ax5.plot(tc_1d, comp.gpp_c3_contrib, label='C3 only')
@@ -233,7 +242,7 @@ ax5.plot(tc_1d, comp.gpp_c3_contrib + comp.gpp_c4_contrib, label='Total')
 # ax4.set_title(r'C4 fraction across the temperature gradient')
 ax5.set_xlabel('Temperature (°C)')
 ax5.set_ylabel(r'GPP (gC m-2 yr-1)')
-ax5.legend();
+ax5.legend(frameon=False);
 
 # d13C contributions of C4 and C4
 ax6.plot(tc_1d, comp.d13C_C3, label='C3 only')
@@ -242,10 +251,9 @@ ax6.plot(tc_1d, comp.d13C_C3 + comp.d13C_C4, label='Total')
 # ax4.set_title(r'C4 fraction across the temperature gradient')
 ax6.set_xlabel('Temperature (°C)')
 ax6.set_ylabel(r'$\delta^{13}C$ (permil)')
-ax6.legend();
+ax6.legend(frameon=False);
 
-
-
+# Add plot letters.
 for letter, ax in zip(('A', 'B', 'C', 'D', 'E', 'F'), 
                       (ax1, ax2, ax3, ax4, ax5, ax6)):
     
