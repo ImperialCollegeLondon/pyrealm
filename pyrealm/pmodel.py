@@ -2112,7 +2112,7 @@ class CalcCarbonIsotopes:
         params: An instance of :class:`~pyrealm.param_classes.IsotopesParams`,
             parameterizing the calculations.
 
-    Attrs:
+    Attributes:
         Delta13C_simple: discrimination against carbon 13
             (:math:`\Delta\ce{^{13}C}`, permil) excluding photorespiration.
         Delta13C: discrimination against carbon 13
@@ -2300,31 +2300,40 @@ class C3C4Competition:
     r"""Implementation of the C3/C4 competition model.
 
     This class provides an implementation of the calculations of C3/C4
-    competition, described by :cite:`lavergne:inprep`. The key inputs `ggp_c3`
-    and `gpp_c4` are gross primary productivity (GPP) estimates for C3 or C4
-    pathways _alone_  using the :class:`~pyrealm.pmodel.PModel`
+    competition, described by :cite:`lavergne:2020a`. The key inputs ``ggp_c3``
+    and ``gpp_c4`` are gross primary productivity (GPP) estimates for C3 or C4
+    pathways `alone`  using the :class:`~pyrealm.pmodel.PModel`
 
     These estimates are used to calculate the relative advantage of C4 over C3
-    photosynthesis and then the community fraction of GPP from C4 plants using
-    the following steps:
+    photosynthesis (:math:`A_4`), the expected fraction of C4 plants in the
+    community (:math:`F_4`) and hence fraction of GPP from C4 plants as follows:
 
-    1. The proportion advantage in GPP for C4 plants is calculated as
-       :math:`A_4 = (\text{GPP}_{C4} - \text{GPP}_{C3}) / \text{GPP}_{C3}`.
-
-    2. The proportion GPP advantage :math:`A_4` is converted to an expected
-       fraction of C4 :math:`F_4` plants using a logistic equation of
-       :math:`A_4`, modulated by percentage tree cover (TC):
+    1. The proportion advantage in GPP for C4 plants is calculated as:
 
         .. math::
             :nowrap:
 
             \[
-                F_4 = \frac{1}{1 + e^{k \frac{A_4}{e^ \frac{1}{1 + \text{TC}}}} - q}
+            A_4 = \frac{\text{GPP}_{C4} - \text{GPP}_{C3}}{\text{GPP}_{C3}}
             \]
+        
+    2. The proportion GPP advantage :math:`A_4` is converted to an expected
+       fraction of C4 :math:`F_4` plants using a logistic equation of
+       :math:`A_4`, where :math:`A_4`is first modulated by percentage tree 
+       cover (TC):
 
-        The parameters are set in the `params` instance and are the slope of the
-        equation (:math:`k`, `adv_to_frac_k`) and :math:`A_4` value at the
-        midpoint of the curve (:math:`q`, `adv_to_frac_q`).
+        .. math::
+            :nowrap:
+
+            \begin{align}
+
+                A_4^' &= \frac{A_4}{e^ {1 / 1 + \text{TC}} \\
+                F_4 &= \frac{1}{1 + e^{k A_4^'} - q}
+            \end{align}
+
+        The parameters are set in the ``params`` instance and are the slope of the
+        equation (:math:`k`, ``adv_to_frac_k``) and :math:`A_4` value at the
+        midpoint of the curve (:math:`q`, ``adv_to_frac_q``).
 
     3. A model of tree cover from C3 trees is then used to correct for shading
        of C4 plants due to canopy closure, even when C4 photosynthesis is
@@ -2337,8 +2346,8 @@ class C3C4Competition:
                     TC(\text{GPP}_{C3}) = a \cdot \text{GPP}_{C3} ^ b - c
                 \]
 
-       with parameters set in the `params` instance (:math:`a`, `gpp_to_tc_a`;
-       :math:`b`, `gpp_to_tc_b`; :math:`c`, `gpp_to_tc_c`). The proportion of
+       with parameters set in the `params` instance (:math:`a`, ``gpp_to_tc_a``;
+       :math:`b`, ``gpp_to_tc_b``; :math:`c`, ``gpp_to_tc_c``). The proportion of
        GPP from C3 trees (:math:`h`) is then estimated using the predicted tree
        cover in locations relative to a threshold GPP value (:math:`\text{GPP}_{CLO}`,
        `c3_forest_closure_gpp`) above which canopy closure occurs. The value of
@@ -2349,7 +2358,7 @@ class C3C4Competition:
 
                 \[
                     h = \max\left(0, \min\left(
-                        \frac{TC(\text{GPP}_{C3})}{TC(\text{GPP}_{C3})}\right),
+                        \frac{TC(\text{GPP}_{C3})}{TC(\text{GPP}_{CLO})}\right),
                         1 \right)
                 \]
 
@@ -2503,12 +2512,15 @@ class C3C4Competition:
     ) -> None:
         r"""Estimate CO2 isotopic discrimination values.
 
-        This method takes estimates of total annual descrimination against
-        Carbon 13 (:math:`\Delta\ce{^13C}`) from model outputs that assume that
-        C3 or C4 plants _alone_ are present in a location and calculates the
-        contribution from C3 and C4 plants given the estimated fraction of C4
-        plants given competition. It also calculates the contributions to
-        annual stable carbon isotopic composition  (:math:`d\ce{^13C}`).
+        Creating an instance of {class}`~pyrealm.pmodel.CalcCarbonIsotopes` from
+        a {class}`~pyrealm.pmodel.PModel` instance provides estimated total
+        annual descrimination against Carbon 13 (:math:`\Delta\ce{^13C}`) for a
+        single photosynthetic pathway. 
+        
+        This method allows predictions from C3 and C4 pathways to be combined to
+        calculate the contribution from C3 and C4 plants given the estimated
+        fraction of C4 plants. It also calculates the contributions to annual
+        stable carbon isotopic composition (:math:`d\ce{^13C}`).
 
         Four attributes are populated:
 

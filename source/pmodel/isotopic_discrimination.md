@@ -14,12 +14,17 @@ kernelspec:
 
 # Isotopic discrimination
 
-Photosynthetic pathways fractionate the carbon isotopes found in atmospheric
-CO2, leading to discrimination against carbon 13 and carbon 14 and alteration of
-the resulting isotopic composition of plant tissues. The {mod}`~pyrealm.pmodel`
-module provides the {class}`~pyrealm.pmodel.CalcCarbonIsotopes` class, which
-takes the predicted optimal chi ($\chi$) and photosynthetic pathway from a
-fitted {class}`~pyrealm.pmodel.PModel` instance and predicts various isotopic
+C3 and C4 plants assimilate the heavier atmospheric $\ce{^{13}CO2}$ and
+$\ce{^{14}CO2}$ molecules less easily than $\ce{^{12}CO2}$, leading to a
+discrimination against carbon 13 and carbon 14 and alteration of the resulting
+isotopic composition of plant tissues. The isotopic discrimination and
+associated isotopic composition of a plant material depends on the
+photosynthetic pathway.
+
+The {mod}`~pyrealm.pmodel` module provides the
+{class}`~pyrealm.pmodel.CalcCarbonIsotopes` class, which takes the predicted
+optimal chi ($\chi$) and photosynthetic pathway from a fitted
+{class}`~pyrealm.pmodel.PModel` instance and predicts various isotopic
 discrimination and composition values.
 
 The predictions from the {class}`~pyrealm.pmodel.CalcCarbonIsotopes` class are

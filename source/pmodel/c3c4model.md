@@ -18,16 +18,16 @@ Compared to C3 plants, plants using the C4 photosynthetic pathway:
 
 * cope well in arid areas, operating with lower stomatal conductance
   and lower leaf internal CO2 than C3 plants,
-* are strongly selected in lower atmospheric CO2 concentrations, and
+* are strongly favoured in lower atmospheric CO2 concentrations, and
 * do not experience significant photorespiration costs.
 
-This gives C4 plants a substantial competitive advantage in some environments.
-The {class}`~pyrealm.pmodel.C3C3Competition` class provides an implementation of
-a model that estimates the expected fraction of GPP from C4 plants. It uses
-predictions of GPP from the {class}`~pyrealm.pmodel.PModel` assuming communities
-consisting solely of C3 or C4 plants and calculates the expected fraction of C4
-plants in the community and the contributions to GPP from C3 and C4 plants at
-each site.
+This gives C4 plants a substantial competitive advantage in warm, dry and low
+CO2 environments. The {class}`~pyrealm.pmodel.C3C3Competition` class provides an
+implementation of a model {cite}`lavergne:2020a` that estimates the expected
+fraction of GPP from C4 plants. It uses predictions of GPP from the
+{class}`~pyrealm.pmodel.PModel` assuming communities consisting solely of C3 or
+C4 plants to calculate the expected fraction of C4 plants in the community and
+the contributions to GPP from C3 and C4 plants at each site.
 
 ## Step 1: Proportional GPP advantage
 
