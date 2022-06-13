@@ -2186,9 +2186,9 @@ class CalcCarbonIsotopes:
             ...                         vpd=1000, pmodel_params=ppar)
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
             >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
-            >>> round(mod_c4_delta.Delta13C, 4) # NOT CORRECT: 5.6636 replaces AL's value of 5.11
+            >>> round(mod_c4_delta.Delta13C, 4)
             5.6636
-            >>> round(mod_c4_delta.d13C_leaf, 4)  # NOT CORRECT: -13.9844 replaces AL's value of -13.44
+            >>> round(mod_c4_delta.d13C_leaf, 4)
             -13.9844
         """
 
