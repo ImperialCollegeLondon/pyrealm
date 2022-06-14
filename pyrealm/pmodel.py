@@ -2178,7 +2178,7 @@ class CalcCarbonIsotopes:
 
         In this method, :math:`\delta\ce{^{13}C}` is calculated from optimal
         :math:`\chi` using an empirical relationship estimated by
-        :cite:`lavergne:inprep`.
+        :cite:`lavergne:2022a`.
 
         Examples:
             >>> ppar = PModelParams(beta_cost_ratio_c4=35)
@@ -2316,20 +2316,21 @@ class C3C4Competition:
             \[
             A_4 = \frac{\text{GPP}_{C4} - \text{GPP}_{C3}}{\text{GPP}_{C3}}
             \]
-        
+
     2. The proportion GPP advantage :math:`A_4` is converted to an expected
        fraction of C4 :math:`F_4` plants using a logistic equation of
-       :math:`A_4`, where :math:`A_4`is first modulated by percentage tree 
+       :math:`A_4`, where :math:`A_4` is first modulated by percentage tree
        cover (TC):
 
         .. math::
             :nowrap:
 
-            \begin{align}
-
-                A_4^' &= \frac{A_4}{e^ {1 / 1 + \text{TC}} \\
-                F_4 &= \frac{1}{1 + e^{k A_4^'} - q}
-            \end{align}
+            \[
+                \begin{align*}
+                    A_4^\prime &= \frac{A_4}{e^ {1 / 1 + \text{TC}}} \\
+                    F_4 &= \frac{1}{1 + e^{k A_4^\prime} - q}
+                \end{align*}
+            \]
 
         The parameters are set in the ``params`` instance and are the slope of the
         equation (:math:`k`, ``adv_to_frac_k``) and :math:`A_4` value at the
