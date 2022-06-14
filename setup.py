@@ -26,6 +26,7 @@ setuptools.setup(
     install_requires=['dacite',
                       'numpy',
                       'scipy',
+                      'bottleneck',
                       'enforce_typing',
                       'tabulate'],
     python_requires='>=3.6',

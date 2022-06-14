@@ -13,7 +13,13 @@ and save methods and then individual parameter classes define the parameter sets
 and default values for each class.
 """
 
-from __future__ import annotations
+# TODO: using annotations to try and type the return values of
+#       ParamClass.from_xyz methods breaks @enforce_types: types get converted
+#       to strings somewhere along the way. Oddly enforce_types is picky about
+#       float != int where mypy is supposed not to be, so continuing to use
+#       Number here.
+
+# from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass
@@ -23,7 +29,7 @@ from typing import Tuple
 import enforce_typing
 from dacite import from_dict
 
-# Design notes: pyrealm is going to have a bunch of 'deep' settings. Things
+# Design notes: pyrealm has a bunch of 'deep' settings. Things
 # that aren't often tweaked by users but should be easy to tweak when needed.
 # The aim here is to have a standard interface to those as an object that maps
 # a setting name to a value.
@@ -91,7 +97,7 @@ class ParamClass:
             json.dump(self.to_dict(), outfile, indent=4)
 
     @classmethod
-    def from_dict(cls, data: dict) -> ParamClass:
+    def from_dict(cls, data: dict):
         """Create a ParamClass instance from a dictionary.
 
         Generates a parameter class object using the data provided in a
@@ -107,7 +113,7 @@ class ParamClass:
         return from_dict(cls, data)
 
     @classmethod
-    def from_json(cls, filename: str) -> ParamClass:
+    def from_json(cls, filename: str):
         """Create a ParamClass instance from a JSON file.
 
         Generates a parameter class object using the data provided in a
@@ -125,9 +131,6 @@ class ParamClass:
             json_data = json.load(infile)
 
         return cls.from_dict(json_data)
-
-
-# P Model param class
 
 
 @enforce_typing.enforce_types
@@ -243,6 +246,9 @@ class PModelParams(ParamClass):
     * `atkin_rd_to_vcmax`:  Ratio of Rdark to Vcmax25 (0.015)
     """
 
+    # TODO: - look how to autodoc the descriptions from the code?
+    # https://github.com/tox-dev/sphinx-autodoc-typehints/issues/44
+
     # Constants
     k_R: Number = 8.3145
     k_co: Number = 209476.0
@@ -253,6 +259,7 @@ class PModelParams(ParamClass):
     k_G: Number = 9.80665
     k_Ma: Number = 0.028963
     k_CtoK: Number = 273.15
+
     # Fisher Dial
     fisher_dial_lambda: Tuple[Number, ...] = (
         1788.316,
@@ -298,17 +305,20 @@ class PModelParams(ParamClass):
     # Heskel
     heskel_b: Number = 0.1012
     heskel_c: Number = 0.0005
+
     # KattgeKnorr
     kattge_knorr_a_ent: Number = 668.39
     kattge_knorr_b_ent: Number = -1.07
     kattge_knorr_Ha: Number = 71513
     kattge_knorr_Hd: Number = 200000
+
     # Kphio:
     # - note that kphio_C4 has been updated to account for an unintended double
     #   8 fold downscaling to account for the fraction of light reaching PS2.
     #   from original values of [-0.008, 0.00375, -0.58e-4]
     kphio_C4: Tuple[Number, ...] = (-0.064, 0.03, -0.000464)
     kphio_C3: Tuple[Number, ...] = (0.352, 0.022, -0.00034)
+
     # Bernachhi
     bernacchi_dhac: Number = 79430
     bernacchi_dhao: Number = 36380
@@ -316,24 +326,96 @@ class PModelParams(ParamClass):
     bernacchi_kc25: Number = 39.97
     bernacchi_ko25: Number = 27480
     bernacchi_gs25_0: Number = 4.332
+
+    # Boyd
+    boyd_kp25_c4: Number = 16  # Pa  from Boyd et al. (2015)
+    boyd_dhac_c4: Number = 36300  # J mol-1
+    boyd_dhac_c4: Number = 79430
+    boyd_dhao_c4: Number = 36380
+    boyd_dha_c4: Number = 37830
+    boyd_kc25_c4: Number = 41.03
+    boyd_ko25_c4: Number = 28210
+    boyd_gs25_0_c4: Number = 2.6
+
     # Soilmstress
     soilmstress_theta0: Number = 0.0
     soilmstress_thetastar: Number = 0.6
     soilmstress_a: Number = 0.0
     soilmstress_b: Number = 0.733
-    # Unit cost ratio (beta) (Stocker 2020 value and equivalent for C4).
-    beta_cost_ratio_c3: Number = 146.0
+
+    # Unit cost ratio (beta) values for different CalcOptimalChi methods
+    beta_cost_ratio_prentice14: Number = 146.0
     beta_cost_ratio_c4: Number = 146.0 / 9
+    lavergne_2020_b: Number = 1.73
+    lavergne_2020_a: Number = 4.55
+
     # Wang17
     wang17_c: Number = 0.41
+
     # Smith19
     smith19_theta: Number = 0.85
     smith19_c_cost: Number = 0.05336251
+
     # Atkin
     atkin_rd_to_vcmax: Number = 0.015
 
 
-# T model param class
+@enforce_typing.enforce_types
+@dataclass(frozen=True)
+class IsotopesParams(ParamClass):
+    """Settings for calculate carbon isotope discrimination.
+
+    This data class provides values for underlying parameters used in the
+    calculation of carbon isotope discrimination from P Model instances.
+
+    The parameters are:
+
+    """
+
+    # Lavergne (2020)
+    lavergne_delta13_a = 13.95
+    lavergne_delta13_b = -17.04
+
+    # Farquhar et al. (1982)
+    farquhar_a: Number = 4.4
+    farquhar_b: Number = 29
+    farquhar_b2: Number = 28
+    farquhar_f: Number = 12
+
+    # vonCaemmerer et al. (2014)
+    vonCaemmerer_b4: Number = -7.4
+    vonCaemmerer_s: Number = 1.8
+    vonCaemmerer_phi: Number = 0.5
+
+    # Frank et al. (2015): post-photosynthetic fractionation
+    # between leaf organic matter and alpha-cellulose: 2.1 +/- 1.2 ‰
+    frank_postfrac: Number = 2.1
+
+    # Badeck et al. (2005): post-photosynthetic fractionation
+    # between leaf organic matter and bulk wood
+    badeck_postfrac: Number = 1.9
+
+
+@enforce_typing.enforce_types
+@dataclass(frozen=True)
+class C3C4Params(ParamClass):
+    r"""Model parameters for the C3C4Competition class.
+
+    This data class holds statistical estimates used to calculate the fraction
+    of C4 plants based on the relative GPP of C3 and C4 plants for given
+    conditions and estimated treecover.
+    """
+
+    # Non-linear regression of fraction C4 plants from proportion GPP advantage
+    # of C4 over C3 plants
+    adv_to_frac_k = 6.63
+    adv_to_frac_q = 0.16
+
+    # Conversion parameters to estimate tree cover from  C3 GPP
+    gpp_to_tc_a = 15.60
+    gpp_to_tc_b = 1.41
+    gpp_to_tc_c = -7.72
+    c3_forest_closure_gpp = 2.8
 
 
 @enforce_typing.enforce_types
@@ -386,7 +468,7 @@ class TModelTraits(ParamClass):
     #       that can yield a Traits instance drawing from that distribution
 
 
-# @enforce_typing.enforce_types
+@enforce_typing.enforce_types
 @dataclass(frozen=True)
 class HygroParams(ParamClass):
     r"""Parameters for hygrometric functions.

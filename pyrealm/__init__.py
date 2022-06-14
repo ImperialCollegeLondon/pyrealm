@@ -15,6 +15,7 @@ import warnings
 
 # Setup warnings to simpler one line warning
 
+
 def warning_on_one_line(
     message: str, category: str, filename: str, lineno: int, file=None, line=None
 ):
