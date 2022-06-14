@@ -69,10 +69,18 @@
         change, a simple JmaxLimitation class replaces it.
       - Updated value of param_classes.PModelParam.soilmstress_b to published
         default
-0.6.1 - Implementation of alternative methods for CalcOptimalChi, including
+0.7.0 - Implementation of alternative methods for CalcOptimalChi, including
         Lavergne et al 2020 soil theta estimation of beta, c4 with negigible
         photorespiration.
-      - Addition of optional soil theta to PModelParameters.
+      - Addition of optional soil theta to PModelEnvironment.
       - Alteration of PModel arguments. Since there are now different options
         for simulating C3/C4, the c4 argument is replaced with method_optchi,
         which sets C3/C4 status internally from the method selected.
+      - Refactor and integration of Alienor's CalcCarbonIsotopes and 
+        C3C4Competition models, from:
+            https://github.com/Alielav/pyrealm/tree/alienorlavergne
+      - Refactor of utilities TemporalInterpolator and DailyRepresentativeValues
+        to handle multiple dimensions and ragged arrays of indices.
+      - Extended pytest framework to include TemporalInterpolator, 
+        DailyRepresentativeValues, CalcCarbonIsotopes and
+        C3C4Competition.

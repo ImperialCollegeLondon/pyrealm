@@ -71,9 +71,8 @@ frac_c4 = comp_temp._convert_advantage_to_c4_fraction(treecover_2d)
 for idx, lev in enumerate(treecover_1d):
     pyplot.plot(comp_temp.gpp_adv_c4[idx,:], frac_c4[idx, :], label=f'{int(lev)}%')
 
-pyplot.legend(title='Forest cover')
-pyplot.title(r"Initial C4 fraction prediction from $A_4$ and tree cover",
-             frameon=False)
+pyplot.legend(title='Forest cover', frameon=False)
+pyplot.title(r"Initial C4 fraction prediction from $A_4$ and tree cover")
 pyplot.xlabel("Proportion C4 GPP advantage $A_4$")
 pyplot.ylabel("Expected C4 fraction ($F_4$)")
 pyplot.axvline(0, ls='--', c='grey');

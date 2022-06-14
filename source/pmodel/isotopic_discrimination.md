@@ -80,9 +80,9 @@ atmospheric isotopic ratios for Carbon 13 ($\delta13C$, permil) and Carbon 14
   permil), given a parameterized post-photosynthetic fractionation. 
 
 
-The calculations differ between C3 and C4 plants, and this is set be the
-selection of {arg}`~pyrealm.pmodel.PModel.method_optchi` argument to the 
-{class}`~pyrealm.pmodel.PModel` used.
+The calculations differ between C3 and C4 plants, and this is set by the
+selection of the `method_optchi` argument used for the
+{class}`~pyrealm.pmodel.PModel` instance.
 
 ```{code-cell} python
 carb_c3 = CalcCarbonIsotopes(mod_c3, d13CO2 = -8.4, D14CO2 = 19.2)
