@@ -2395,9 +2395,9 @@ class C3C4Competition:
     # independently makes it much easier to document the steps.
 
     # TODO - could accept PModel instances for gpp_c3 and gpp_c4 and auto-scale
-    #        gpp and check that they are c3 and c4 models. 
+    #        gpp and check that they are c3 and c4 models.
     #      - Would also allow the estimate isotopic discrimination to work
-    #        automatically. 
+    #        automatically.
     #      - Axis argument to aggregate values along a time axis?
     #        nansum for gpp  and nanmean for  DeltaC13/4_alone.
 
@@ -2523,8 +2523,8 @@ class C3C4Competition:
         Creating an instance of {class}`~pyrealm.pmodel.CalcCarbonIsotopes` from
         a {class}`~pyrealm.pmodel.PModel` instance provides estimated total
         annual descrimination against Carbon 13 (:math:`\Delta\ce{^13C}`) for a
-        single photosynthetic pathway. 
-        
+        single photosynthetic pathway.
+
         This method allows predictions from C3 and C4 pathways to be combined to
         calculate the contribution from C3 and C4 plants given the estimated
         fraction of C4 plants. It also calculates the contributions to annual
