@@ -1,11 +1,6 @@
 # flake8: noqa D103 - docstrings on unit tests
 
 from datetime import datetime, timedelta
-import json
-import os
-import sys
-import time
-import warnings
 from contextlib import contextmanager
 
 import numpy as np
