@@ -2393,6 +2393,13 @@ class C3C4Competition:
     # via subclassing, but _mostly_ because being able to access these functions
     # independently makes it much easier to document the steps.
 
+    # TODO - could accept PModel instances for gpp_c3 and gpp_c4 and auto-scale
+    #        gpp and check that they are c3 and c4 models. 
+    #      - Would also allow the estimate isotopic discrimination to work
+    #        automatically. 
+    #      - Axis argument to aggregate values along a time axis?
+    #        nansum for gpp  and nanmean for  DeltaC13/4_alone.
+
     def __init__(
         self,
         gpp_c3: Union[float, np.ndarray],
