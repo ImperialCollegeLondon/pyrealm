@@ -13,8 +13,12 @@ Runs a simple scalar test for each of the different optchi methods.
 import numpy as np
 import pytest
 
-from pyrealm.pmodel import (C3C4Competition, CalcCarbonIsotopes, PModel,
-                            PModelEnvironment)
+from pyrealm.pmodel import (
+    C3C4Competition,
+    CalcCarbonIsotopes,
+    PModel,
+    PModelEnvironment,
+)
 
 
 @pytest.mark.parametrize(
