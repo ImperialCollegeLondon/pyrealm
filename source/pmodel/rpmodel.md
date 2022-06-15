@@ -19,11 +19,11 @@ package:
 
 ## Testing reference
 
-The ``rpmodel`` package has been used to calculate the expected values that 
+The ``rpmodel`` package has been used to calculate the expected values that
 have been used in testing {mod}`~pyrealm.pmodel`. This includes:
 
 * the module docstrings, which are used to provide {mod}`doctest` tests of
-the basic operation of this implementation, and
+  the basic operation of this implementation, and
 * the module unit testing, provided using {mod}`pytest` in `test/test_pmodel.py`.
 
 ## Differences between `pyrealm` and `rpmodel`
@@ -40,12 +40,12 @@ The implementations differ in a number of ways:
    variation (see [here](/params)).
 
    In some cases, ``rpmodel`` sets these constants in function arguments. These
-   parameters have also been moved to {const}`~pyrealm.params.PModel_Params` 
+   parameters have also been moved to {const}`~pyrealm.params.PModel_Params`
    to simplify function arguments.
 
 1. The ``rpmodel`` package has suites of functions for calculating $J_{max}$
    limitation and optimal $\chi$. These have been combined into classes
-   {class}`~pyrealm.pmodel.JmaxLimitation` and {class}`~pyrealm.pmodel.CalcOptimalChi`. 
+   {class}`~pyrealm.pmodel.JmaxLimitation` and {class}`~pyrealm.pmodel.CalcOptimalChi`.
    This allows the common parameters and outputs of these functions to be standardised
    and the different methods are provided via a ``method`` argument to each class.
 

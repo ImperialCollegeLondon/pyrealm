@@ -1,12 +1,35 @@
-from dataclasses import dataclass, asdict
-from typing import Tuple, Union
-from numbers import Number
+"""The param_classes module.
+
+Many of the functions and classes in `pyrealm` have an underlying set of
+parameters that will typically be held constant. This includes true universal
+constants, such as the molar mass of Carbon, but also a large number of
+calculated parameters from the literature.
+
+These underlying parameters are not hardcoded, but rather parameter classes are
+defined for different models within `pyrealm`. These parameter configurations
+can be altered and can also be loaded and saved to configuration files. The
+{class}`~pyrealm.param_classes.ParamClass` base class provides the basic load
+and save methods and then individual parameter classes define the parameter sets
+and default values for each class.
+"""
+
+# TODO: using annotations to try and type the return values of
+#       ParamClass.from_xyz methods breaks @enforce_types: types get converted
+#       to strings somewhere along the way. Oddly enforce_types is picky about
+#       float != int where mypy is supposed not to be, so continuing to use
+#       Number here.
+
+# from __future__ import annotations
+
 import json
+from dataclasses import asdict, dataclass
+from numbers import Number
+from typing import Tuple
+
 import enforce_typing
 from dacite import from_dict
 
-
-# Design notes: pyrealm is going to have a bunch of 'deep' settings. Things
+# Design notes: pyrealm has a bunch of 'deep' settings. Things
 # that aren't often tweaked by users but should be easy to tweak when needed.
 # The aim here is to have a standard interface to those as an object that maps
 # a setting name to a value.
@@ -33,7 +56,7 @@ from dacite import from_dict
 
 
 class ParamClass:
-    """Base class for model parameter classes
+    """Base class for model parameter classes.
 
     This base class provides a consistent interface for creating and exporting
     data from model parameter classes. It defines methods to create parameter
@@ -47,18 +70,22 @@ class ParamClass:
     of alternative values.
     """
 
-    def to_dict(self):
-        """Returns a dictionary of the attributes and values used in an instance
-        of a parameter class object.
+    def to_dict(self) -> dict:
+        """Return a parameter dictionary.
+
+        This method returns the attributes and values used in an instance of a parameter
+        class object as a dictionary.
 
         Returns:
             A dictionary
         """
         return asdict(self)
 
-    def to_json(self, filename):
-        """Writes the attributes and values used in an instance of a parameter
-        class object to a JSON file.
+    def to_json(self, filename: str) -> None:
+        """Export a parameter set to JSON.
+
+        This method writes the attributes and values used in an instance of a
+        parameter class object to a JSON file.
 
         Args:
             filename: A path to the JSON file to be created.
@@ -66,14 +93,14 @@ class ParamClass:
         Returns:
             None
         """
-        with open(filename, 'w') as outfile:
+        with open(filename, "w") as outfile:
             json.dump(self.to_dict(), outfile, indent=4)
 
-        return None
-
     @classmethod
-    def from_dict(cls, data):
-        """Generates a parameter class object using the data provided in a
+    def from_dict(cls, data: dict):
+        """Create a ParamClass instance from a dictionary.
+
+        Generates a parameter class object using the data provided in a
         dictionary to override default values
 
         Args:
@@ -86,8 +113,10 @@ class ParamClass:
         return from_dict(cls, data)
 
     @classmethod
-    def from_json(cls, filename):
-        """Generates a parameter class object using the data provided in a
+    def from_json(cls, filename: str):
+        """Create a ParamClass instance from a JSON file.
+
+        Generates a parameter class object using the data provided in a
         JSON file.
 
         Args:
@@ -98,19 +127,16 @@ class ParamClass:
         Returns:
             An instance of the parameter class.
         """
-        with open(filename, 'r') as infile:
+        with open(filename, "r") as infile:
             json_data = json.load(infile)
 
         return cls.from_dict(json_data)
 
 
-# P Model param class
-
 @enforce_typing.enforce_types
 @dataclass(frozen=True)
 class PModelParams(ParamClass):
-
-    r"""Model parameters for the P Model
+    r"""Model parameters for the P Model.
 
     This dataclass provides a large set of underlying parameters used in
     calculating the predictions of the P Model. The traits are shown below
@@ -125,10 +151,11 @@ class PModelParams(ParamClass):
     * `k_To`: Reference temperature (Prentice, unpublished)   (:math:`T_o` , 25.0, °C)
     * `k_L`: Adiabiatic temperature lapse rate (Allen, 1973)   (:math:`L` , 0.0065, K/m)
     * `k_G`: Gravitational acceleration (:math:`G` , 9.80665, m/s^2)
-    * `k_Ma`: Molecular weight of dry air (Tsilingiris, 2008)  (:math:`M_a`, 0.028963, kg/mol)
+    * `k_Ma`: Molecular weight of dry air (Tsilingiris, 2008)  (:math:`M_a`,
+       0.028963, kg/mol)
     * `l_CtoK`: Conversion from °C to K   (:math:`CtoK` , 273.15, -)
 
-    **Density of water**, values taken from Table 5 of :cite:`Fisher:1975tm`.
+    ** Density of water**, values taken from Table 5 of :cite:`Fisher:1975tm`.
 
     * `fisher_dial_lambda`: [1788.316, 21.55053, -0.4695911, 3.096363e-3, -7.341182e-6]
     * `fisher_dial_Po`: [5918.499, 58.05267, -1.1253317, 6.613869e-3, -1.4661625e-5]
@@ -136,77 +163,91 @@ class PModelParams(ParamClass):
       9.829576e-9, -1.197269e-10, 1.005461e-12, -5.437898e-15,
       1.69946e-17, -2.295063e-20]
 
-    **Viscosity of water**, values taken from :cite:`Huber:2009fy`
+    ** Viscosity of water**, values taken from :cite:`Huber:2009fy`
+
     * `simple_viscosity`: Use a simple implementation of viscosity (boolean)
     * `huber_tk_ast`: Reference temperature (:math:`tk_{ast}`, 647.096, Kelvin)
     * `huber_rho_ast`: Reference density (:math:`\rho_{ast}`, 322.0, kg/m^3)
     * `huber_mu_ast`: Reference pressure (:math:`\mu_{ast}` 1.0e-6, Pa s)
-    * `huber_H_i`: Values of H_i (Table 2): (:math:`H_i`, [1.67752, 2.20462, 0.6366564, -0.241605])
-    * `huber_H_ij`: Values of H_ij (Table 3): (:math:`H_ij`,
-      [[0.520094, 0.0850895, -1.08374, -0.289555, 0.0, 0.0],
-      [0.222531, 0.999115, 1.88797, 1.26613, 0.0, 0.120573],
-      [-0.281378, -0.906851, -0.772479, -0.489837, -0.257040, 0.0],
-      [0.161913,  0.257399, 0.0, 0.0, 0.0, 0.0],
-      [-0.0325372, 0.0, 0.0, 0.0698452, 0.0, 0.0],
-      [0.0, 0.0, 0.0, 0.0, 0.00872102, 0.0],
-      [0.0, 0.0, 0.0, -0.00435673, 0.0, -0.000593264]])
+    * `huber_H_i`: Values of H_i (Table 2):
+        (:math:`H_i`, [1.67752, 2.20462, 0.6366564, -0.241605])
+    * `huber_H_ij`: Values of H_ij (Table 3):
+        (:math:`H_ij`, [[0.520094, 0.0850895, -1.08374, -0.289555, 0.0, 0.0],
+        [0.222531, 0.999115, 1.88797, 1.26613, 0.0, 0.120573],
+        [-0.281378, -0.906851, -0.772479, -0.489837, -0.257040, 0.0],
+        [0.161913,  0.257399, 0.0, 0.0, 0.0, 0.0],
+        [-0.0325372, 0.0, 0.0, 0.0698452, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.00872102, 0.0],
+        [0.0, 0.0, 0.0, -0.00435673, 0.0, -0.000593264]])
 
-    **Temperature scaling of dark respiration**, values taken from :cite:`Heskel:2016fg`
+    ** Temperature scaling of dark respiration**, values taken from
+    :cite:`Heskel:2016fg`
 
     * `heskel_b`: Linear factor in scaling (:math:`b`, 0.1012)
     * `heskel_c`: Quadratic factor in scaling (:math:`c`, 0.0005)
 
-    **Temperature and entropy of VCMax**, values taken from Table 3 of :cite:`Kattge:2007db`
+    ** Temperature and entropy of VCMax**, values taken from Table 3 of
+    :cite:`Kattge:2007db`
 
-    * `kattge_knorr_a_ent`: Offset of entropy vs. temperature relationship (:math:`a_{ent}`, 668.39, J/mol/K)
-    * `kattge_knorr_b_ent`: Slope of entropy vs. temperature relationship (:math:`b_{ent}`, -1.07, J/mol/K^2)
+    * `kattge_knorr_a_ent`: Offset of entropy vs. temperature relationship
+        (:math:`a_{ent}`, 668.39, J/mol/K)
+    * `kattge_knorr_b_ent`: Slope of entropy vs. temperature relationship
+        (:math:`b_{ent}`, -1.07, J/mol/K^2)
     * `kattge_knorr_Ha`: Activation energy (:math:`H_a`, 71513, J/mol)
     * `kattge_knorr_Hd`: Deactivation energy (:math:`H_d`, 200000, J/mol)
 
-    **Scaling of Kphio with temperature**, parameters of quadratic functions
+    ** Scaling of Kphio with temperature**, parameters of quadratic functions
 
     * `kphio_C4`: Scaling of Kphio in C4 plants, Eqn 5 of :cite:`cai:2020a`
     * `kphio_C3`: Scaling of Kphio in C3 plants, taken from Table 2 of
       :cite:`Bernacchi:2003dc` ([0.352, 0.022, -3.4e-4])
 
-    **Temperature responses of photosynthetic enzymes**, values taken from Table 1
-    of :cite:`Bernacchi:2003dc`
+    ** Temperature responses of photosynthetic enzymes**, values taken from Table 1
+    of :cite:`Bernacchi:2003dc`. `kc_25` and `ko_25` are converted from µmol
+    mol-1 and mmol mol-1, assuming a measurement at and elevation of 227.076
+    metres and standard atmospheric pressure (98716.403 Pa).
 
     * dhac: 79430  # (J/mol) Activation energy (Kc)
     * dhao: 36380  # (J/mol) Activation energy (Ko)
     * dha: 37830  # (J/mol) Activation energy (gamma*)
-    * # k25 parameters are not dependent on atmospheric pressure, value converted
-    * # to Pa by T. Davis assuming elevation of 227.076 m.a.s.l. = 98716.403 Pa
-    * kc25: 39.97  # Reported as 404.9 µmol mol-1, converted as 0.0004049 x 98716.403 = 39.97 Pa
-    * ko25: 27480  # Reported as 278.4 mmol mol-1, converted as 0.2784 x 98716.403 = 27480 Pa
-    * # Reported as 42.75 µmol mol-1,  converted using 42.75 p_0 = 4.332 Pa`
-    * gs25_0: 4.332  # Pa
+    * kc25: 39.97  # Reported as 404.9 µmol mol-1
+    * ko25: 27480  # Reported as 278.4 mmol mol-1
+    * gs25_0: 4.332  # Reported as 42.75 µmol mol-1
 
-    **Soil moisture stress**, parameterisation from :cite:`Stocker:2020dh`
+    ** Soil moisture stress**, parameterisation from :cite:`Stocker:2020dh`
 
     * `soilmstress_theta0`: 0.0
     * `soilmstress_thetastar`: 0.6
     * `soilmstress_a`: 0.0
     * `soilmstress_b`: 0.733
 
-    **Unit cost ratios**, value taken from :cite:`Stocker:2020dh`
+    ** Unit cost ratios**, value taken from :cite:`Stocker:2020dh`
 
-    * `stocker19_beta_c3`: Unit cost ratio for C3 plants. (:math:`\beta`, 146.0)
-    * `stocker19_beta_c4`: Unit cost ratio for C4 plants. (:math:`\beta`, 146.0 / 9 = 16.2222)
+    * `stocker19_beta_c3`: Unit cost ratio for C3 plants.
+        (:math:`\beta`, 146.0)
+    * `stocker19_beta_c4`: Unit cost ratio for C4 plants.
+        (:math:`\beta`, 146.0 / 9 = 16.2222)
 
-    **Electron transport capacity maintenance cost**, value taken from :cite:`Wang:2017go`
+    ** Electron transport capacity maintenance cost**, value taken from
+    :cite:`Wang:2017go`
 
-    *  `wang_c`: unit carbon cost for the maintenance of electron transport capacity (:math:`c`, 0.41, )
+    *  `wang_c`: unit carbon cost for the maintenance of electron transport
+        capacity (:math:`c`, 0.41, )
 
-    **Calculation of omega**, scaling factor in J max limitation method of :cite:`Smith:2019dv`:
+    ** Calculation of omega**, scaling factor in J max limitation method
+    of :cite:`Smith:2019dv`:
 
-    * `smith19_theta`: (0.85)
-    * `smith19_c_cost`: (0.05336251)
+    * `smith19_theta`: (:math:`\theta`, 0.85)
+    * `smith19_c_cost`: (:math:`\c`, 0.05336251)
 
-    **Dark respiration**, values taken from :cite:`Atkin:2015hk` for C3 herbaceous plants:
+    ** Dark respiration**, values taken from :cite:`Atkin:2015hk` for
+    C3 herbaceous plants:
 
     * `atkin_rd_to_vcmax`:  Ratio of Rdark to Vcmax25 (0.015)
     """
+
+    # TODO: - look how to autodoc the descriptions from the code?
+    # https://github.com/tox-dev/sphinx-autodoc-typehints/issues/44
 
     # Constants
     k_R: Number = 8.3145
@@ -218,20 +259,40 @@ class PModelParams(ParamClass):
     k_G: Number = 9.80665
     k_Ma: Number = 0.028963
     k_CtoK: Number = 273.15
+
     # Fisher Dial
     fisher_dial_lambda: Tuple[Number, ...] = (
-        1788.316, 21.55053, -0.4695911, 0.003096363, -7.341182e-06)
+        1788.316,
+        21.55053,
+        -0.4695911,
+        0.003096363,
+        -7.341182e-06,
+    )
     fisher_dial_Po: Tuple[Number, ...] = (
-        5918.499, 58.05267, -1.1253317, 0.0066123869, -1.4661625e-05)
+        5918.499,
+        58.05267,
+        -1.1253317,
+        0.0066123869,
+        -1.4661625e-05,
+    )
     fisher_dial_Vinf: Tuple[Number, ...] = (
-        0.6980547, -0.0007435626, 3.704258e-05, -6.315724e-07, 9.829576e-09,
-        -1.197269e-10, 1.005461e-12, -5.437898e-15, 1.69946e-17, -2.295063e-20)
+        0.6980547,
+        -0.0007435626,
+        3.704258e-05,
+        -6.315724e-07,
+        9.829576e-09,
+        -1.197269e-10,
+        1.005461e-12,
+        -5.437898e-15,
+        1.69946e-17,
+        -2.295063e-20,
+    )
     # Huber
     simple_viscosity: bool = False
     huber_tk_ast: Number = 647.096
     huber_rho_ast: Number = 322.0
-    huber_mu_ast: Number =1e-06
-    huber_H_i: Tuple[Number,...] = (1.67752, 2.20462, 0.6366564, -0.241605)
+    huber_mu_ast: Number = 1e-06
+    huber_H_i: Tuple[Number, ...] = (1.67752, 2.20462, 0.6366564, -0.241605)
     huber_H_ij: Tuple[Tuple[Number, ...], ...] = (
         (0.520094, 0.0850895, -1.08374, -0.289555, 0.0, 0.0),
         (0.222531, 0.999115, 1.88797, 1.26613, 0.0, 0.120573),
@@ -239,21 +300,25 @@ class PModelParams(ParamClass):
         (0.161913, 0.257399, 0.0, 0.0, 0.0, 0.0),
         (-0.0325372, 0.0, 0.0, 0.0698452, 0.0, 0.0),
         (0.0, 0.0, 0.0, 0.0, 0.00872102, 0.0),
-        (0.0, 0.0, 0.0, -0.00435673, 0.0, -0.000593264))
+        (0.0, 0.0, 0.0, -0.00435673, 0.0, -0.000593264),
+    )
     # Heskel
     heskel_b: Number = 0.1012
     heskel_c: Number = 0.0005
+
     # KattgeKnorr
     kattge_knorr_a_ent: Number = 668.39
     kattge_knorr_b_ent: Number = -1.07
     kattge_knorr_Ha: Number = 71513
     kattge_knorr_Hd: Number = 200000
+
     # Kphio:
     # - note that kphio_C4 has been updated to account for an unintended double
     #   8 fold downscaling to account for the fraction of light reaching PS2.
     #   from original values of [-0.008, 0.00375, -0.58e-4]
     kphio_C4: Tuple[Number, ...] = (-0.064, 0.03, -0.000464)
     kphio_C3: Tuple[Number, ...] = (0.352, 0.022, -0.00034)
+
     # Bernachhi
     bernacchi_dhac: Number = 79430
     bernacchi_dhao: Number = 36380
@@ -261,29 +326,102 @@ class PModelParams(ParamClass):
     bernacchi_kc25: Number = 39.97
     bernacchi_ko25: Number = 27480
     bernacchi_gs25_0: Number = 4.332
+
+    # Boyd
+    boyd_kp25_c4: Number = 16  # Pa  from Boyd et al. (2015)
+    boyd_dhac_c4: Number = 36300  # J mol-1
+    boyd_dhac_c4: Number = 79430
+    boyd_dhao_c4: Number = 36380
+    boyd_dha_c4: Number = 37830
+    boyd_kc25_c4: Number = 41.03
+    boyd_ko25_c4: Number = 28210
+    boyd_gs25_0_c4: Number = 2.6
+
     # Soilmstress
     soilmstress_theta0: Number = 0.0
     soilmstress_thetastar: Number = 0.6
     soilmstress_a: Number = 0.0
     soilmstress_b: Number = 0.733
-    # Unit cost ratio (beta) (Stocker 2020 value and equivalent for C4).
-    beta_cost_ratio_c3: Number = 146.0
+
+    # Unit cost ratio (beta) values for different CalcOptimalChi methods
+    beta_cost_ratio_prentice14: Number = 146.0
     beta_cost_ratio_c4: Number = 146.0 / 9
+    lavergne_2020_b: Number = 1.73
+    lavergne_2020_a: Number = 4.55
+
     # Wang17
     wang17_c: Number = 0.41
+
     # Smith19
     smith19_theta: Number = 0.85
     smith19_c_cost: Number = 0.05336251
+
     # Atkin
     atkin_rd_to_vcmax: Number = 0.015
 
 
-# T model param class
+@enforce_typing.enforce_types
+@dataclass(frozen=True)
+class IsotopesParams(ParamClass):
+    """Settings for calculate carbon isotope discrimination.
+
+    This data class provides values for underlying parameters used in the
+    calculation of carbon isotope discrimination from P Model instances.
+
+    The parameters are:
+
+    """
+
+    # Lavergne (2020)
+    lavergne_delta13_a = 13.95
+    lavergne_delta13_b = -17.04
+
+    # Farquhar et al. (1982)
+    farquhar_a: Number = 4.4
+    farquhar_b: Number = 29
+    farquhar_b2: Number = 28
+    farquhar_f: Number = 12
+
+    # vonCaemmerer et al. (2014)
+    vonCaemmerer_b4: Number = -7.4
+    vonCaemmerer_s: Number = 1.8
+    vonCaemmerer_phi: Number = 0.5
+
+    # Frank et al. (2015): post-photosynthetic fractionation
+    # between leaf organic matter and alpha-cellulose: 2.1 +/- 1.2 ‰
+    frank_postfrac: Number = 2.1
+
+    # Badeck et al. (2005): post-photosynthetic fractionation
+    # between leaf organic matter and bulk wood
+    badeck_postfrac: Number = 1.9
+
+
+@enforce_typing.enforce_types
+@dataclass(frozen=True)
+class C3C4Params(ParamClass):
+    r"""Model parameters for the C3C4Competition class.
+
+    This data class holds statistical estimates used to calculate the fraction
+    of C4 plants based on the relative GPP of C3 and C4 plants for given
+    conditions and estimated treecover.
+    """
+
+    # Non-linear regression of fraction C4 plants from proportion GPP advantage
+    # of C4 over C3 plants
+    adv_to_frac_k = 6.63
+    adv_to_frac_q = 0.16
+
+    # Conversion parameters to estimate tree cover from  C3 GPP
+    gpp_to_tc_a = 15.60
+    gpp_to_tc_b = 1.41
+    gpp_to_tc_c = -7.72
+    c3_forest_closure_gpp = 2.8
+
 
 @enforce_typing.enforce_types
 @dataclass(frozen=True)
 class TModelTraits(ParamClass):
-    r"""Trait data settings for a TTree instance
+    r"""Trait data settings for a TTree instance.
 
     This data class provides the value of the key traits used in the T model.
     The default values are taken from Table 1 of :cite:`Li:2014bc`. Note that
@@ -293,7 +431,8 @@ class TModelTraits(ParamClass):
     default value and units shown in brackets:
 
     * `a_hd`: Initial slope of height–diameter relationship (:math:`a`, 116.0, -)
-    * `ca_ratio`: Initial ratio of crown area to stem cross-sectional area (:math:`c`, 390.43, -)
+    * `ca_ratio`: Initial ratio of crown area to stem cross-sectional area
+        (:math:`c`, 390.43, -)
     * `h_max`: Maximum tree height (:math:`H_m`, 25.33, m)
     * `rho_s`: Sapwood density (:math:`\rho_s`, 200.0, kg Cm−3)
     * `lai`: Leaf area index within the crown (:math:`L`, 1.8, -)
@@ -308,63 +447,70 @@ class TModelTraits(ParamClass):
     * `resp_f`: Foliage maintenance respiration fraction (:math:`r_f`,  0.1, -)
     """
 
-    a_hd: Number = 116.0        # a, Initial slope of height–diameter relationship (-)
-    ca_ratio: Number = 390.43   # c, Initial ratio of crown area to stem cross-sectional area (-)
-    h_max: Number = 25.33       # H_m, Maximum tree height (m)
-    rho_s: Number = 200.0       # rho_s, Sapwood density (kgCm−3)
-    lai: Number = 1.8           # L, Leaf area index within the crown (–)
-    sla: Number = 14.0          # sigma, Specific leaf area (m2 kg−1C)
-    tau_f: Number = 4.0         # tau_f, Foliage turnover time (years)
-    tau_r: Number = 1.04        # tau_r, Fine-root turnover time (years)
-    par_ext: Number = 0.5       # k, PAR extinction coefficient (–)
-    yld: Number = 0.17          # y, Yield_factor (-)
-    zeta: Number = 0.17         # zeta, Ratio of fine-root mass to foliage area (kgCm−2)
-    resp_r: Number = 0.913      # r_r, Fine-root specific respiration rate (year−1)
-    resp_s: Number = 0.044      # r_s, Sapwood-specific respiration rate (year−1)
-    resp_f: Number = 0.1        # --- , Foliage maintenance respiration fraction (-)
+    a_hd: Number = 116.0  # a, Initial slope of height–diameter relationship (-)
+    ca_ratio: Number = (
+        390.43  # c, Initial ratio of crown area to stem cross-sectional area (-)
+    )
+    h_max: Number = 25.33  # H_m, Maximum tree height (m)
+    rho_s: Number = 200.0  # rho_s, Sapwood density (kgCm−3)
+    lai: Number = 1.8  # L, Leaf area index within the crown (–)
+    sla: Number = 14.0  # sigma, Specific leaf area (m2 kg−1C)
+    tau_f: Number = 4.0  # tau_f, Foliage turnover time (years)
+    tau_r: Number = 1.04  # tau_r, Fine-root turnover time (years)
+    par_ext: Number = 0.5  # k, PAR extinction coefficient (–)
+    yld: Number = 0.17  # y, Yield_factor (-)
+    zeta: Number = 0.17  # zeta, Ratio of fine-root mass to foliage area (kgCm−2)
+    resp_r: Number = 0.913  # r_r, Fine-root specific respiration rate (year−1)
+    resp_s: Number = 0.044  # r_s, Sapwood-specific respiration rate (year−1)
+    resp_f: Number = 0.1  # --- , Foliage maintenance respiration fraction (-)
 
-    # TODO include range + se, or make this another class TraitDistrib
-    #      that can yield a Traits instance drawing from that distribution
-
+    # TODO: include range + se, or make this another class TraitDistrib
+    #       that can yield a Traits instance drawing from that distribution
 
 
 @enforce_typing.enforce_types
 @dataclass(frozen=True)
 class HygroParams(ParamClass):
-    r"""Settings for utility function
+    r"""Parameters for hygrometric functions.
 
     This data class provides parameters used :mod:`~pyrealm.utilities`, which
     includes hygrometric conversions
 
-    * `mwr`: The ratio molecular weight of water vapour to dry air (:math:`MW_r`, 0.622, -)
+    * `mwr`: The ratio molecular weight of water vapour to dry air
+        (:math:`MW_r`, 0.622, -)
     * `magnus_params`: A three tuple of coefficients for the Magnus equation for
       the calculation of saturated vapour pressure.
-    * `magnus_option`: Selects one of a set of published coefficients for the Magnus equation.
-
+    * `magnus_option`: Selects one of a set of published coefficients for the
+        Magnus equation.
     """
 
     magnus_coef: Tuple[Number, ...] = None
     mwr: Number = 0.622
-    magnus_option: str = 'Sonntag1990'
+    magnus_option: str = "Sonntag1990"
 
-    def __post_init__(self):
-        """
-        Checks the inputs and populates magnus_coef from the presets if no
-        magnus_coef is specified.
+    def __post_init__(self) -> None:
+        """Populate parameters from init settings.
+
+        This checks the init inputs and populates magnus_coef from the presets
+        if no magnus_coef is specified.
 
         Returns:
-            Self
+            None
         """
-        alts = dict(Allen1998=(610.8, 17.27, 237.3),
-                    Alduchov1996=(610.94, 17.625, 243.04),
-                    Sonntag1990=(611.2, 17.62, 243.12))
+        alts = dict(
+            Allen1998=(610.8, 17.27, 237.3),
+            Alduchov1996=(610.94, 17.625, 243.04),
+            Sonntag1990=(611.2, 17.62, 243.12),
+        )
 
         if self.magnus_coef is None:
             if self.magnus_option not in alts:
-                raise (RuntimeError(f"magnus_option must be one of {list(alts.keys())}"))
+                raise (
+                    RuntimeError(f"magnus_option must be one of {list(alts.keys())}")
+                )
             else:
-                object.__setattr__(self, 'magnus_coef', alts[self.magnus_option])
+                object.__setattr__(self, "magnus_coef", alts[self.magnus_option])
         elif self.magnus_coef is not None and len(self.magnus_coef) != 3:
-            raise (TypeError('magnus_coef must be a tuple of 3 numbers'))
+            raise TypeError("magnus_coef must be a tuple of 3 numbers")
         else:
-            object.__setattr__(self, 'magnus_option', None)
+            object.__setattr__(self, "magnus_option", None)
