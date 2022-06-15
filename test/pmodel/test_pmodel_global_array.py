@@ -1,20 +1,25 @@
 import os
+
 import netCDF4
-from pyrealm import pmodel
 import numpy as np
 import pytest
 
+from pyrealm import pmodel
 
-@pytest.fixture(scope='module')
+# flake8: noqa D103 - docstrings on unit tests
+
+
+@pytest.fixture(scope="module")
 def dataset():
-    """Fixture to load test inputs from file from data folder in package root
-    """
-    
+    """Fixture to load test inputs from file from data folder in package root"""
+
     test_dir = os.path.dirname(os.path.abspath(__file__))
-    data_file_path = os.path.normpath(os.path.join(test_dir, os.pardir, os.pardir, 'data', 'pmodel_inputs.nc'))
+    data_file_path = os.path.normpath(
+        os.path.join(test_dir, os.pardir, os.pardir, "data", "pmodel_inputs.nc")
+    )
 
     dataset = netCDF4.Dataset(data_file_path)
-    
+
     # TODO - masked arrays should be handled (it is basically the same as
     #        NA values in the R implementation) but for current validation
     #        this is just going to convert them to filled arrays
@@ -22,12 +27,12 @@ def dataset():
     dataset.set_auto_mask(False)
 
     # Extract the six variables for all months
-    temp = dataset['temp'][:]
-    co2 = dataset['CO2'][:]         # Note - spatially constant but mapped.
-    elev = dataset['elevation'][:]  # Note - temporally constant but repeated
-    vpd = dataset['VPD'][:]
-    fapar = dataset['fAPAR'][:]
-    ppfd = dataset['ppfd'][:]
+    temp = dataset["temp"][:]
+    co2 = dataset["CO2"][:]  # Note - spatially constant but mapped.
+    elev = dataset["elevation"][:]  # Note - temporally constant but repeated
+    vpd = dataset["VPD"][:]
+    fapar = dataset["fAPAR"][:]
+    ppfd = dataset["ppfd"][:]
 
     dataset.close()
 
@@ -39,13 +44,14 @@ def dataset():
 
     return env, fapar, ppfd
 
-@pytest.mark.skipif(True, reason='Broken implementation in rpmodel 1.2.0')
+
+@pytest.mark.skipif(True, reason="Broken implementation in rpmodel 1.2.0")
 @pytest.mark.parametrize(
-    'ctrl',
-    [(dict(rfile='rpmodel_global_gpp_no_ftkphio.nc',
-           do_ftemp_kphio=False)),
-     (dict(rfile='rpmodel_global_gpp_do_ftkphio.nc',
-           do_ftemp_kphio=True))]
+    "ctrl",
+    [
+        (dict(rfile="rpmodel_global_gpp_no_ftkphio.nc", do_ftemp_kphio=False)),
+        (dict(rfile="rpmodel_global_gpp_do_ftkphio.nc", do_ftemp_kphio=True)),
+    ],
 )
 def test_pmodel_global_array(dataset, ctrl):
     """This test runs a comparison between the rpmodel outputs and
@@ -59,11 +65,13 @@ def test_pmodel_global_array(dataset, ctrl):
     env, fapar, ppfd = dataset
 
     # Skip ftemp kphio is false
-    if ctrl['do_ftemp_kphio']:
-        pytest.skip('Not currently testing global array against rpmodel with ftemp_kphio due to bug pre 1.2.0')
+    if ctrl["do_ftemp_kphio"]:
+        pytest.skip(
+            "Not currently testing global array against rpmodel with ftemp_kphio due to bug pre 1.2.0"
+        )
 
     # Run the P model
-    model = pmodel.PModel(env, kphio=0.05, do_ftemp_kphio=ctrl['do_ftemp_kphio'])
+    model = pmodel.PModel(env, kphio=0.05, do_ftemp_kphio=ctrl["do_ftemp_kphio"])
 
     # Scale the outputs from values per unit iabs to realised values
     scaled = model.unit_iabs.scale_iabs(fapar, ppfd)
@@ -71,8 +79,8 @@ def test_pmodel_global_array(dataset, ctrl):
     # Load the R outputs
     test_dir = os.path.dirname(os.path.abspath(__file__))
 
-    ds = netCDF4.Dataset(os.path.join(test_dir, ctrl['rfile']))
-    gpp_r = ds['gpp'][:]
+    ds = netCDF4.Dataset(os.path.join(test_dir, ctrl["rfile"]))
+    gpp_r = ds["gpp"][:]
 
     # # Debugging code:
     # # Export the pyrealm values to a new netcdf file using the R one as a template
@@ -115,4 +123,3 @@ def test_pmodel_global_array(dataset, ctrl):
     # model = pmodel.PModel(tc=temp[idx], co2=co2[idx], patm=patm, vpd=vpd[idx],
     #                       kphio=0.05, do_ftemp_kphio=False)
     # scaled = model.unit_iabs.scale_iabs(fapar=fapar[idx], ppfd=ppfd[idx])
-

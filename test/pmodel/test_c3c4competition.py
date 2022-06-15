@@ -1,5 +1,4 @@
-"""
-Testing C3C4Competition
+"""Test C3C4Competition class.
 
 This is slightly dubious as the test values are those predicted by the first
 implementation of the code. That _has_ been checked against an initial reference
@@ -14,12 +13,8 @@ Runs a simple scalar test for each of the different optchi methods.
 import numpy as np
 import pytest
 
-from pyrealm.pmodel import (
-    C3C4Competition,
-    CalcCarbonIsotopes,
-    PModel,
-    PModelEnvironment,
-)
+from pyrealm.pmodel import (C3C4Competition, CalcCarbonIsotopes, PModel,
+                            PModelEnvironment)
 
 
 @pytest.mark.parametrize(
@@ -33,8 +28,8 @@ from pyrealm.pmodel import (
                 gpp_adv_c4=np.array([-0.09556041, 0.62461349]),
                 gpp_c3_contrib=np.array([159.94368483, 52.24199629]),
                 gpp_c4_contrib=np.array([39.66647181, 134.80298791]),
-                Delta13C_C3 = np.array([15.53754463,  8.62221759]),
-                Delta13C_C4 = np.array([1.3530672 , 1.58157481]),
+                Delta13C_C3=np.array([15.53754463, 8.62221759]),
+                Delta13C_C4=np.array([1.3530672, 1.58157481]),
             ),
         ),
         (  # Single site, C3 lavergne20
@@ -45,8 +40,8 @@ from pyrealm.pmodel import (
                 gpp_adv_c4=np.array([-0.1245185, 0.5644134]),
                 gpp_c3_contrib=np.array([167.69503628, 59.21443208]),
                 gpp_c4_contrib=np.array([37.51197117, 127.04018886]),
-                Delta13C_C3 = np.array([16.56372732,  9.65862887]),
-                Delta13C_C4 = np.array([1.27957481, 1.49049784]),
+                Delta13C_C3=np.array([16.56372732, 9.65862887]),
+                Delta13C_C4=np.array([1.27957481, 1.49049784]),
             ),
         ),
         (  # Single site, C4
@@ -57,8 +52,8 @@ from pyrealm.pmodel import (
                 gpp_adv_c4=np.array([-0.09556041, 0.62461349]),
                 gpp_c3_contrib=np.array([159.94368483, 52.24199629]),
                 gpp_c4_contrib=np.array([39.66647181, 134.80298791]),
-                Delta13C_C3 = np.array([15.53754463,  8.62221759]),
-                Delta13C_C4 = np.array([1.56492967, 2.37368763]),
+                Delta13C_C3=np.array([15.53754463, 8.62221759]),
+                Delta13C_C4=np.array([1.56492967, 2.37368763]),
             ),
         ),
         (  # Single site, C4 no gamma
@@ -69,8 +64,8 @@ from pyrealm.pmodel import (
                 gpp_adv_c4=np.array([-0.1245185, 0.5644134]),
                 gpp_c3_contrib=np.array([167.69503628, 59.21443208]),
                 gpp_c4_contrib=np.array([37.51197117, 127.04018886]),
-                Delta13C_C3 = np.array([16.56372732,  9.65862887]),
-                Delta13C_C4 = np.array([1.47992987, 2.23699586]),
+                Delta13C_C3=np.array([16.56372732, 9.65862887]),
+                Delta13C_C4=np.array([1.47992987, 2.23699586]),
             ),
         ),
     ],

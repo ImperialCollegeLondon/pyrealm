@@ -1,4 +1,6 @@
-"""This file is used to generate a set of inputs to be fed into rpmodel to
+"""Generate PModel test input values.
+
+This file is used to generate a set of inputs to be fed into rpmodel to
 create a test set of outputs for validation between the two implementations.
 
 For validation, a mix of scalar and array inputs are created to check that
@@ -17,7 +19,7 @@ stocker_beta_c4 = 146 / 9
 kphio = 0.05
 c_molmass = 12.0107
 
-## scalar versions
+# scalar versions
 tc_sc = 20
 tk_sc = tc_sc + 273.15
 patm_sc = 101325
@@ -48,40 +50,38 @@ meanalpha_ar = np.round(rng.uniform(0.2, 1.0, size=n_samples), 5).tolist()
 
 out_dict = dict(
     # constants
-    KattgeKnorr_ha = KattgeKnorr_ha,
-    kTo = kTo,
-    kPo = kPo,
-    stocker_beta_c3 = stocker_beta_c3,
-    stocker_beta_c4 = stocker_beta_c4,
-    kphio = kphio,
-    c_molmass = c_molmass,
+    KattgeKnorr_ha=KattgeKnorr_ha,
+    kTo=kTo,
+    kPo=kPo,
+    stocker_beta_c3=stocker_beta_c3,
+    stocker_beta_c4=stocker_beta_c4,
+    kphio=kphio,
+    c_molmass=c_molmass,
     # scalar forcings
-    tc_sc = tc_sc,
-    tk_sc = tk_sc,
-    patm_sc = patm_sc,
-    elev_sc = elev_sc,
-    co2_sc = co2_sc,
-    vpd_sc = vpd_sc,
-    fapar_sc = fapar_sc,
-    ppfd_sc = ppfd_sc,
-    soilm_sc = soilm_sc,
-    meanalpha_sc = meanalpha_sc,
+    tc_sc=tc_sc,
+    tk_sc=tk_sc,
+    patm_sc=patm_sc,
+    elev_sc=elev_sc,
+    co2_sc=co2_sc,
+    vpd_sc=vpd_sc,
+    fapar_sc=fapar_sc,
+    ppfd_sc=ppfd_sc,
+    soilm_sc=soilm_sc,
+    meanalpha_sc=meanalpha_sc,
     # array forcings
-    tc_ar = tc_ar,
-    tk_ar = tk_ar,
-    patm_ar = patm_ar,
-    elev_ar = elev_ar,
-    co2_ar = co2_ar,
-    vpd_ar = vpd_ar,
-    soilm_ar = soilm_ar,
-    meanalpha_ar = meanalpha_ar,
-    fapar_ar = fapar_ar,
-    ppfd_ar = ppfd_ar,
+    tc_ar=tc_ar,
+    tk_ar=tk_ar,
+    patm_ar=patm_ar,
+    elev_ar=elev_ar,
+    co2_ar=co2_ar,
+    vpd_ar=vpd_ar,
+    soilm_ar=soilm_ar,
+    meanalpha_ar=meanalpha_ar,
+    fapar_ar=fapar_ar,
+    ppfd_ar=ppfd_ar,
     # shape_error
-    shape_error = [1,1,1]
+    shape_error=[1, 1, 1],
 )
 
-with open('test_inputs.json', 'w') as outf:
-    simplejson.dump(out_dict, outf,  indent='  ')
-
-
+with open("test_inputs.json", "w") as outf:
+    simplejson.dump(out_dict, outf, indent="  ")

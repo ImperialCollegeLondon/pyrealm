@@ -1,7 +1,7 @@
 # flake8: noqa D103 - docstrings on unit tests
 
-from datetime import datetime, timedelta
 from contextlib import contextmanager
+from datetime import datetime, timedelta
 
 import numpy as np
 import pytest
@@ -13,9 +13,11 @@ from pyrealm.utilities import DailyRepresentativeValues, TemporalInterpolator
 def does_not_raise():
     yield
 
+
 # ----------------------------------------
-# Testing TemporalInterpolator 
+# Testing TemporalInterpolator
 # ----------------------------------------
+
 
 @pytest.mark.parametrize(
     argnames=["ctext_mngr", "msg", "input", "interp"],
@@ -73,7 +75,6 @@ def test_temporal_interpolator_init_errors(ctext_mngr, msg, input, interp):
             pytest.raises(ValueError),
             "The first axis of values does not match the length of input_datetimes",
             np.arange(0, 144),
-
         ),
     ],
 )
@@ -84,14 +85,14 @@ def test_temporal_interpolator_call_errors(ctext_mngr, msg, values):
             datetime(2014, 6, 1, 0, 0),
             datetime(2014, 6, 7, 0, 0),
             timedelta(days=1),
-            dtype="datetime64[m]"),
-        interpolation_datetimes=
-            np.arange(
+            dtype="datetime64[m]",
+        ),
+        interpolation_datetimes=np.arange(
             datetime(2014, 6, 1, 0, 0),
             datetime(2014, 6, 7, 0, 0),
             timedelta(minutes=30),
             dtype="datetime64[m]",
-        )
+        ),
     )
 
     with ctext_mngr as cman:
@@ -104,28 +105,28 @@ def test_temporal_interpolator_call_errors(ctext_mngr, msg, values):
     argnames=["method", "values", "expected"],
     argvalues=[
         (  # Simple 1D linear - shape
-            'linear',
+            "linear",
             np.ones((4)),
             np.ones((145)),
         ),
         (  # 1D linear - values
-            'linear',
+            "linear",
             np.arange(1, 5),
             np.linspace(1, 4, 145),
         ),
         (  # 2D linear - values
-            'linear',
+            "linear",
             np.broadcast_to(np.arange(1, 5), (5, 4)).T,
             np.broadcast_to(np.linspace(1, 4, 145), (5, 145)).T,
         ),
         (  # 3D linear - values
-            'linear',
+            "linear",
             np.broadcast_to(np.arange(1, 5), (5, 5, 4)).T,
             np.broadcast_to(np.linspace(1, 4, 145), (5, 5, 145)).T,
         ),
         (  # 3D - values are correct with spatial variation
-            'linear',
-            np.arange(1, 5*5*4+1).reshape(5, 5, 4).T,
+            "linear",
+            np.arange(1, 5 * 5 * 4 + 1).reshape(5, 5, 4).T,
             (
                 np.broadcast_to(np.linspace(1, 4, 145), (5, 5, 145)).T
                 + 20 * np.indices((145, 5, 5))[2]
@@ -154,16 +155,18 @@ def test_temporal_interpolator_call(method, values, expected):
             timedelta(minutes=30),
             dtype="datetime64[m]",
         ),
-        method = method
+        method=method,
     )
 
     calculated = tint(values)
 
     assert np.allclose(calculated, expected)
 
+
 # ----------------------------------------
-# Testing DailyRepresentativeValues 
+# Testing DailyRepresentativeValues
 # ----------------------------------------
+
 
 @pytest.mark.parametrize(
     argnames=["ctext_mngr", "msg", "datetimes", "kwargs"],

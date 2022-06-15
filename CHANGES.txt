@@ -72,7 +72,8 @@
 0.7.0 - Implementation of alternative methods for CalcOptimalChi, including
         Lavergne et al 2020 soil theta estimation of beta, c4 with negigible
         photorespiration.
-      - Addition of optional soil theta to PModelEnvironment.
+      - Addition of optional soil theta to PModelEnvironment, underpinning
+        the lavergne2020 CalcOptimalChi method.
       - Alteration of PModel arguments. Since there are now different options
         for simulating C3/C4, the c4 argument is replaced with method_optchi,
         which sets C3/C4 status internally from the method selected.
