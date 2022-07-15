@@ -1040,6 +1040,10 @@ class PModel:
       calculation of :math:`\chi` using
       :attr:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`
 
+    Soil moisture effects:
+        The `soilmstress`, `rootzonestress` arguments and the `lavergne20_c3` and
+        `lavergne20_c4` all implement different approaches to soil moisture effects on
+        photosynthesis and are incompatible.
 
     Parameters:
         env: An instance of :class:`~pyrealm.pmodel.PModelEnvironment`.
@@ -1048,8 +1052,8 @@ class PModel:
             sometimes used to refer to the quantum yield of electron transfer,
             which is exactly four times larger, so check definitions here.
         rootzonestress: (Optional, default=None) An experimental option
-            for providing a root zone water stress factor. This is not
-            compatible with the soilmstress approach.
+            for providing a root zone water stress penalty to the :math:`beta` parameter
+            in :class:`~pyrealm.pmodel.CalcOptimalChi`.
         soilmstress: (Optional, default=None) A soil moisture stress factor
             calculated using :func:`~pyrealm.pmodel.calc_soilmstress`.
         method_optchi: (Optional, default=`prentice14`) Selects the method to be
@@ -1132,10 +1136,15 @@ class PModel:
         # Soil moisture and root zone stress handling
         # ---------------------------------------------
 
-        if soilmstress is not None and rootzonestress is not None:
+        if (
+            (soilmstress is not None)
+            + (rootzonestress is not None)
+            + (method_optchi in ("lavergne20_c3", "lavergne20_c4"))
+        ) > 1:
             raise AttributeError(
-                "Soilmstress and rootzonestress are alternative "
-                "approaches to soil moisture effects. Do not use both."
+                "Soilmstress, rootzonestress and the lavergne20 method_optchi options "
+                "are parallel approaches to soil moisture effects and cannot be "
+                "combined."
             )
 
         if soilmstress is None:
@@ -1148,6 +1157,10 @@ class PModel:
         if rootzonestress is None:
             self.do_rootzonestress = False
         else:
+            warn(
+                "The rootzonestress option is an experimental penalty factor to beta",
+                ExperimentalFeatureWarning,
+            )
             self.do_rootzonestress = True
 
         # kphio defaults:
