@@ -186,7 +186,7 @@ pyplot.xlabel(r"Soil moisture ($\theta$, m3/m3)")
 pyplot.ylabel(r"Unit cost ratio ($\beta$, -)");
 ```
 
-The plots below show the impacts on $\chi$, $\m_j$ and $\m_c$ for two example $\theta$
+The plots below show the impacts on $\chi$, $m_j$ and $m_c$ for two example $\theta$
 values.
 
 ### High soil moisture
@@ -240,7 +240,7 @@ pyplot.xlabel(r"Soil moisture ($\theta$, m3/m3)")
 pyplot.ylabel(r"Unit cost ratio ($\beta$, -)");
 ```
 
-The plots below show the impacts on $\chi$, $\m_j$ and $\m_c$ for two example $\theta$
+The plots below show the impacts on $\chi$, $m_j$ and $m_c$ for two example $\theta$
 values.
 
 ### High soil moisture
