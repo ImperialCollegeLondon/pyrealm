@@ -27,6 +27,7 @@ from numbers import Number
 from typing import Tuple
 
 import enforce_typing
+import numpy as np
 from dacite import from_dict
 
 # Design notes: pyrealm has a bunch of 'deep' settings. Things
@@ -346,8 +347,10 @@ class PModelParams(ParamClass):
     # Unit cost ratio (beta) values for different CalcOptimalChi methods
     beta_cost_ratio_prentice14: Number = 146.0
     beta_cost_ratio_c4: Number = 146.0 / 9
-    lavergne_2020_b: Number = 1.73
-    lavergne_2020_a: Number = 4.55
+    lavergne_2020_b_c3: Number = 1.73
+    lavergne_2020_a_c3: Number = 4.55
+    lavergne_2020_b_c4: Number = 1.73
+    lavergne_2020_a_c4: Number = 4.55 - np.log(9)
 
     # Wang17
     wang17_c: Number = 0.41
