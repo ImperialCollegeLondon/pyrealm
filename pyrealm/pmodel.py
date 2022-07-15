@@ -13,6 +13,7 @@ from warnings import warn
 import bottleneck as bn
 import numpy as np
 
+from pyrealm import ExperimentalFeatureWarning
 from pyrealm.bounds_checker import bounds_checker
 from pyrealm.param_classes import C3C4Params, IsotopesParams, PModelParams
 from pyrealm.utilities import check_input_shapes, summarize_attrs
@@ -1437,12 +1438,18 @@ class CalcOptimalChi:
     The chosen method is automatically used to estimate these values when an
     instance is created - see the method documentation for individual details.
 
+    The ratio of carboxylation to transpiration cost factors (``beta``, :math:`\beta`)
+    is a key parameter in these methods. It is often held constant across cells but some
+    methods (``lavergne20_c3`` and ``lavergne20_c4``) calculate :math:`beta` from
+    environmental conditions. For this reason, the ``beta`` attribute records the values
+    used in calculations.
+
     Args:
         env: An instance of PModelEnvironment providing the photosynthetic
             environment for the model.
         method: The method to use for estimating optimal :math:`\chi`, one
-            of ``prentice14`` (default), ``lavergne20``, ``c4``,
-            ``c4_no_gamma`` or ``scottsmith20``.
+            of ``prentice14`` (default), ``lavergne20_c3``, ``c4``,
+            ``c4_no_gamma`` or ``lavergne20_c4``.
         rootzonestress: This is an experimental feature to supply a root zone
             stress factor used as a direct penalty to :math:`\beta`.
         pmodel_params: An instance of
@@ -1452,7 +1459,8 @@ class CalcOptimalChi:
         env (PModelEnvironment): An instance of PModelEnvironment providing
             the photosynthetic environment for the model.
         method (str): one of ``prentice14``, ``lavergne20``, ``c4``,
-            ``c4_no_gamma`` or ``scottsmith2020``.
+            ``c4_no_gamma`` or ``lavergne20_c4``.
+        beta (float): the ratio of carboxylation to transpiration cost factors.
         xi (float): defines the sensitivity of :math:`\chi` to the vapour
             pressure deficit and  is related to the carbon cost of water
             (Medlyn et al. 2011; Prentice et 2014)
@@ -1491,6 +1499,7 @@ class CalcOptimalChi:
             self.rootzonestress = None
 
         # set attribute defaults
+        self.beta = None
         self.xi = None
         self.chi = None
         self.ci = None
@@ -1529,9 +1538,10 @@ class CalcOptimalChi:
 
         map = {
             "prentice14": False,
-            "lavergne20": False,
+            "lavergne20_c3": False,
             "c4": True,
             "c4_no_gamma": True,
+            "lavergne20_c4": True,
         }
 
         is_c4 = map.get(method)
@@ -1601,12 +1611,9 @@ class CalcOptimalChi:
         self.rootzonestress = self.rootzonestress or 1.0
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
+        self.beta = self.pmodel_params.beta_cost_ratio_prentice14
         self.xi = np.sqrt(
-            (
-                self.pmodel_params.beta_cost_ratio_prentice14
-                * self.rootzonestress
-                * (self.env.kmm + self.env.gammastar)
-            )
+            (self.beta * self.rootzonestress * (self.env.kmm + self.env.gammastar))
             / (1.6 * self.env.ns_star)
         )
 
@@ -1620,7 +1627,7 @@ class CalcOptimalChi:
         self.mc = (self.ci - self.env.gammastar) / (self.ci + self.env.kmm)
         self.mjoc = self.mj / self.mc
 
-    def lavergne20(self) -> None:
+    def lavergne20_c3(self) -> None:
         r"""Calculate soil moisture corrected :math:`\chi` for C3 plants.
 
         This method calculates the unit cost ratio $\beta$ as a function of soil
@@ -1645,7 +1652,9 @@ class CalcOptimalChi:
         Examples:
             >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
             ...                         vpd=1000, theta=0.5)
-            >>> vals = CalcOptimalChi(env=env, method='lavergne20')
+            >>> vals = CalcOptimalChi(env=env, method='lavergne20_c3')
+            >>> round(vals.beta, 5)
+            224.75255
             >>> round(vals.chi, 5)
             0.73663
             >>> round(vals.mc, 5)
@@ -1656,26 +1665,21 @@ class CalcOptimalChi:
             2.07901
         """
 
-        # This method has requirements - needs theta, use of rootzonestress is
-        # an error
-
-        if self.rootzonestress is not None:
-            raise RuntimeError("Do not use rootzonestress with method `lavergne20`")
-
+        # This method needs theta
         if self.env.theta is None:
             raise RuntimeError(
-                "Method `lavergne20` requires soil moisture in the PModelEnvironment"
+                "Method `lavergne20_c3` requires soil moisture in the PModelEnvironment"
             )
 
         # Calculate beta as a function of theta
-        beta = np.exp(
-            self.pmodel_params.lavergne_2020_b * self.env.theta
-            + self.pmodel_params.lavergne_2020_a
+        self.beta = np.exp(
+            self.pmodel_params.lavergne_2020_b_c3 * self.env.theta
+            + self.pmodel_params.lavergne_2020_a_c3
         )
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.xi = np.sqrt(
-            (beta * (self.env.kmm + self.env.gammastar)) / (1.6 * self.env.ns_star)
+            (self.beta * (self.env.kmm + self.env.gammastar)) / (1.6 * self.env.ns_star)
         )
 
         self.chi = self.env.gammastar / self.env.ca + (
@@ -1685,7 +1689,95 @@ class CalcOptimalChi:
         # Define variable substitutes:
         vdcg = self.env.ca - self.env.gammastar
         vacg = self.env.ca + 2.0 * self.env.gammastar
-        vbkg = beta * (self.env.kmm + self.env.gammastar)
+        vbkg = self.beta * (self.env.kmm + self.env.gammastar)
+
+        # Calculate mj
+        vsr = np.sqrt(1.6 * self.env.ns_star * self.env.vpd / vbkg)
+        mj = vdcg / (vacg + 3.0 * self.env.gammastar * vsr)
+
+        # Mask values with ns star <= 0 and vbkg <=0 - need an array for this
+        mask = np.logical_and(self.env.ns_star <= 0, vbkg <= 0)
+        mj = np.array(mj)
+        mj[mask] = np.nan
+        # np.where _always_ returns an array, so catch scalars.
+        self.mj = mj.item() if np.ndim(mj) == 0 else mj
+
+        # Calculate m and mc and m/mc
+        self.ci = self.chi * self.env.ca
+        self.mj = (self.ci - self.env.gammastar) / (self.ci + 2 * self.env.gammastar)
+        self.mc = (self.ci - self.env.gammastar) / (self.ci + self.env.kmm)
+        self.mjoc = self.mj / self.mc
+
+    def lavergne20_c4(self) -> None:
+        r"""Calculate soil moisture corrected :math:`\chi` for C4 plants.
+
+        This method applies the same calculations described in the
+        :meth:`~pyrealm.pmodel.CalcOptimalChi.lavergne20` method but using parameter
+        values for C4 plants. See that method for the calculation details.
+
+        Note:
+
+        This is an **experimental approach**. The research underlying
+        :cite:`lavergne:2020a`, found **no relationship** between C4 :math:`\beta`
+        values and soil moisture in leaf gas exchange measurements.
+
+        However, the :meth:`~pyrealm.pmodel.CalcOptimalChi.c4` method describes a
+        theoretical expectation that :math:`\beta` for C4 plants is nine times smaller
+        than :math:`\beta` for C3 plants. This method therefore provides soil moisture
+        dependent estimates of :math:`\beta` for C4 plants that follow that
+        expectation.
+
+        The default coefficients of the moisture scaling from :cite:`lavergne:2020a` for
+        C3 plants are simply adjusted to maintain that scaling: :math:`b` is unchanged
+        but :math:`a_{C4} = a_{C3} - log(9)`.
+
+        Examples:
+            >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
+            ...                         vpd=1000, theta=0.5)
+            >>> vals = CalcOptimalChi(env=env, method='lavergne20_c4')
+            >>> round(vals.beta, 5)
+            24.97251
+            >>> round(vals.chi, 5)
+            0.49804
+            >>> round(vals.mc, 5)
+            0.34911
+            >>> round(vals.mj, 5)
+            0.7258
+            >>> round(vals.mjoc, 5)
+            2.07901
+        """
+
+        # Warn that this is experimental
+        warn(
+            "The lavergne20_c4 method is experimental, see the method documentation",
+            ExperimentalFeatureWarning,
+        )
+
+        # This method needs theta
+        if self.env.theta is None:
+            raise RuntimeError(
+                "Method `lavergne20_c4` requires soil moisture in the PModelEnvironment"
+            )
+
+        # Calculate beta as a function of theta
+        self.beta = np.exp(
+            self.pmodel_params.lavergne_2020_b_c4 * self.env.theta
+            + self.pmodel_params.lavergne_2020_a_c4
+        )
+
+        # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
+        self.xi = np.sqrt(
+            (self.beta * (self.env.kmm + self.env.gammastar)) / (1.6 * self.env.ns_star)
+        )
+
+        self.chi = self.env.gammastar / self.env.ca + (
+            1.0 - self.env.gammastar / self.env.ca
+        ) * self.xi / (self.xi + np.sqrt(self.env.vpd))
+
+        # Define variable substitutes:
+        vdcg = self.env.ca - self.env.gammastar
+        vacg = self.env.ca + 2.0 * self.env.gammastar
+        vbkg = self.beta * (self.env.kmm + self.env.gammastar)
 
         # Calculate mj
         vsr = np.sqrt(1.6 * self.env.ns_star * self.env.vpd / vbkg)
@@ -1737,12 +1829,9 @@ class CalcOptimalChi:
         self.rootzonestress = self.rootzonestress or 1.0
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
+        self.beta = self.pmodel_params.beta_cost_ratio_c4
         self.xi = np.sqrt(
-            (
-                self.pmodel_params.beta_cost_ratio_c4
-                * self.rootzonestress
-                * (self.env.kmm + self.env.gammastar)
-            )
+            (self.beta * self.rootzonestress * (self.env.kmm + self.env.gammastar))
             / (1.6 * self.env.ns_star)
         )
 
@@ -1810,9 +1899,9 @@ class CalcOptimalChi:
         self.rootzonestress = self.rootzonestress or 1.0
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
+        self.beta = self.pmodel_params.beta_cost_ratio_c4
         self.xi = np.sqrt(
-            (self.pmodel_params.beta_cost_ratio_c4 * self.rootzonestress * self.env.kmm)
-            / (1.6 * self.env.ns_star)
+            (self.beta * self.rootzonestress * self.env.kmm) / (1.6 * self.env.ns_star)
         )
 
         self.chi = self.xi / (self.xi + np.sqrt(self.env.vpd))
