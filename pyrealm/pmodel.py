@@ -2325,7 +2325,7 @@ class CalcCarbonIsotopes:
         Examples:
             >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
             ...                         vpd=1000, theta=0.4)
-            >>> mod_c3 = PModel(env, method_optchi='lavergne20')
+            >>> mod_c3 = PModel(env, method_optchi='lavergne20_c3')
             >>> mod_c3_delta = CalcCarbonIsotopes(mod_c3, d13CO2= -8.4, D14CO2 = 19.2)
             >>> round(mod_c3_delta.Delta13C, 4)
             20.4056
