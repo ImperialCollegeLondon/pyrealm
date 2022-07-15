@@ -37,7 +37,7 @@ from pyrealm.pmodel import (
             ),
         ),
         (  # Single site, C3 lavergne20
-            dict(method_optchi="lavergne20"),
+            dict(method_optchi="lavergne20_c3"),
             dict(method_optchi="c4"),
             dict(
                 frac_c4=np.array([0.20350898, 0.57830699]),
@@ -61,7 +61,7 @@ from pyrealm.pmodel import (
             ),
         ),
         (  # Single site, C4 no gamma
-            dict(method_optchi="lavergne20"),
+            dict(method_optchi="lavergne20_c3"),
             dict(method_optchi="c4_no_gamma"),
             dict(
                 frac_c4=np.array([0.20350898, 0.57830699]),
