@@ -13,9 +13,21 @@ import warnings
 #     return os.path.join(_ROOT, 'data', path)
 
 
+class ExperimentalFeatureWarning(Warning):
+    """Warn about experimental features.
+
+    This is just a simple wrapper on the base Warning to issue clearer warnings about
+    experimental features in the code.
+    """
+
+    def __init__(self, message) -> None:
+        self.message = message
+
+    def __str__(self) -> str:
+        return repr(self.message)
+
+
 # Setup warnings to simpler one line warning
-
-
 def warning_on_one_line(
     message: str, category: str, filename: str, lineno: int, file=None, line=None
 ):
