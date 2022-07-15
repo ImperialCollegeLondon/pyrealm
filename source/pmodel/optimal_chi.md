@@ -12,7 +12,7 @@ kernelspec:
   name: python3
 ---
 
-# Step 2: Optimal $\chi$ and leaf $\ce{CO2}$ 
+# Step 2: Optimal $\chi$ and leaf $\ce{CO2}$
 
 The next step is to estimate the following parameters:
 
@@ -20,14 +20,14 @@ The next step is to estimate the following parameters:
   $\ce{CO2}$ partial pressure ($c_i$, Pa) to ambient $\ce{CO2}$ partial pressure
   ($c_a$, Pa).
 * A parameter ($\xi$) describing the sensitivity of $\chi$ to vapour pressure
-  deficit (VPD). 
+  deficit (VPD).
 * $\ce{CO2}$ limitation factors to both light assimilation ($m_j$) and
-  carboxylation ($m_c$) along with their ratio ($m_{joc} = m_j / m_c$). 
+  carboxylation ($m_c$) along with their ratio ($m_{joc} = m_j / m_c$).
 
 The details of these calculations are in {class}`~pyrealm.pmodel.CalcOptimalChi`,
 which implement a number of approaches to calculating these values:
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 from itertools import product
@@ -46,74 +46,109 @@ n_pts = 31
 tc_1d = np.linspace(-10, 40, n_pts)
 patm_1d = np.array([101325, 80000])
 vpd_1d = np.array([500, 2000])
-co2_1d = np.array([280, 410]) 
+co2_1d = np.array([280, 410])
 
 tc_4d, patm_4d, vpd_4d, co2_4d = np.meshgrid(tc_1d, patm_1d, vpd_1d, co2_1d)
 
-# Calculate the photosynthetic environment 
-pmodel_env = pmodel.PModelEnvironment(tc=tc_4d, patm=patm_4d,vpd=vpd_4d, co2=co2_4d)  
+# Calculate the photosynthetic environment
+pmodel_env = pmodel.PModelEnvironment(tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d)
 
 # A plotter function for a model
 def plot_opt_chi(mod):
 
-    # Create a list of combinations and line formats 
+    # Create a list of combinations and line formats
     # (line col: PATM, style: CO2, marker used for VPD)
 
-    idx_vals = {'vpd': zip([0, 1], vpd_1d), 
-                'patm': zip([0, 1], patm_1d), 
-                'co2': zip([0, 1], co2_1d)}
+    idx_vals = {
+        "vpd": zip([0, 1], vpd_1d),
+        "patm": zip([0, 1], patm_1d),
+        "co2": zip([0, 1], co2_1d),
+    }
 
-    idx_combos = list(product(*idx_vals.values())) 
-    line_formats = ['r-','r--','b-', 'b--'] * 2
+    idx_combos = list(product(*idx_vals.values()))
+    line_formats = ["r-", "r--", "b-", "b--"] * 2
 
     # Create side by side subplots
     fig, (ax1, ax2, ax3) = pyplot.subplots(1, 3, figsize=(16, 5))
 
     # Loop over the variables
-    for ax, var, label in ((ax1, 'chi', 'Optimal $\chi$'),
-                           (ax2, 'mj', '$m_j$'),
-                           (ax3, 'mc', '$m_c$')):
-        
+    for ax, var, label in (
+        (ax1, "chi", "Optimal $\chi$"),
+        (ax2, "mj", "$m_j$"),
+        (ax3, "mc", "$m_c$"),
+    ):
+
         # Get the variable to be plotted
         var_values = getattr(mod.optchi, var)
-        
+
         # Plot line combinations
-        for ((vdx, vvl), (pdx,pvl), (cdx, cvl)), lfmt in zip(idx_combos, line_formats):
-            
+        for ((vdx, vvl), (pdx, pvl), (cdx, cvl)), lfmt in zip(idx_combos, line_formats):
+
             ax.plot(tc_1d, var_values[pdx, :, vdx, cdx], lfmt)
-        
+
         # Annotate graph and force common y limits
-        ax.set_title(f'Variation in {label}')
-        ax.set_xlabel('Temperature °C')
+        ax.set_title(f"Variation in {label}")
+        ax.set_xlabel("Temperature °C")
         ax.set_ylabel(label)
-        ax.set_ylim([-0.02,1.02])
-        
+        ax.set_ylim([-0.02, 1.02])
+
         # Add markers to note the two VPD inputs
-        for vdx, mrkr in zip([0, 1], ['o', '^']):
+        for vdx, mrkr in zip([0, 1], ["o", "^"]):
 
             mean_at_min_temp = var_values[:, 0, vdx, :].mean()
-            ax.scatter(tc_1d[0] - 2, mean_at_min_temp, marker=mrkr, 
-                       s=60, c='none', edgecolor='black') 
+            ax.scatter(
+                tc_1d[0] - 2,
+                mean_at_min_temp,
+                marker=mrkr,
+                s=60,
+                c="none",
+                edgecolor="black",
+            )
 
     # create a legend showing the combinations
-    blnk = Line2D([], [], color='none')
-    rd = Line2D([], [], linestyle='-', color='r')
-    bl = Line2D([], [], linestyle='-', color='b')
-    sld = Line2D([], [], linestyle='-', color='k')
-    dsh = Line2D([], [], linestyle='--', color='k')
-    circ = Line2D([], [], marker='o', linestyle='', markersize=10,
-                  markeredgecolor='k', markerfacecolor='none')
-    trng = Line2D([], [], marker='^', linestyle='', markersize=10, 
-                  markeredgecolor='k', markerfacecolor='none')
+    blnk = Line2D([], [], color="none")
+    rd = Line2D([], [], linestyle="-", color="r")
+    bl = Line2D([], [], linestyle="-", color="b")
+    sld = Line2D([], [], linestyle="-", color="k")
+    dsh = Line2D([], [], linestyle="--", color="k")
+    circ = Line2D(
+        [],
+        [],
+        marker="o",
+        linestyle="",
+        markersize=10,
+        markeredgecolor="k",
+        markerfacecolor="none",
+    )
+    trng = Line2D(
+        [],
+        [],
+        marker="^",
+        linestyle="",
+        markersize=10,
+        markeredgecolor="k",
+        markerfacecolor="none",
+    )
 
-    ax1.legend([blnk, blnk, blnk, rd, sld, circ, bl, dsh, trng ], 
-              ['patm', 'co2', 'vpd', 
-                f"{patm_1d[0]} Pa", f"{co2_1d[0]} ppm", f"{vpd_1d[0]} Pa",
-                f"{patm_1d[1]} Pa", f"{co2_1d[1]} ppm", f"{vpd_1d[1]} Pa"
-                ], 
-              ncol=3, loc='upper left', frameon=False);
-              
-    #pyplot.tight_layout();
+    ax1.legend(
+        [blnk, blnk, blnk, rd, sld, circ, bl, dsh, trng],
+        [
+            "patm",
+            "co2",
+            "vpd",
+            f"{patm_1d[0]} Pa",
+            f"{co2_1d[0]} ppm",
+            f"{vpd_1d[0]} Pa",
+            f"{patm_1d[1]} Pa",
+            f"{co2_1d[1]} ppm",
+            f"{vpd_1d[1]} Pa",
+        ],
+        ncol=3,
+        loc="upper left",
+        frameon=False,
+    )
+
+    # pyplot.tight_layout();
 ```
 
 ## Method {meth}`~pyrealm.pmodel.CalcOptimalChi.prentice14`
@@ -121,30 +156,50 @@ def plot_opt_chi(mod):
 This **C3 method** follows the approach detailed in {cite}`Prentice:2014bc`, see
 {meth}`~pyrealm.pmodel.CalcOptimalChi.prentice14` for details.
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
+
 # Run the P Model and plot predictions
-pmodel_c3 = pmodel.PModel(pmodel_env, method_optchi='prentice14')
+pmodel_c3 = pmodel.PModel(pmodel_env, method_optchi="prentice14")
 plot_opt_chi(pmodel_c3)
 ```
 
-## Method {meth}`~pyrealm.pmodel.CalcOptimalChi.lavergne20`
+## Method {meth}`~pyrealm.pmodel.CalcOptimalChi.lavergne20_c3`
 
-This **C3 method** follows the approach detailed in {cite}`lavergne:2020a`,
-which uses an empirical model of $\beta$ as a function of volumetric soil
-moisture ($\theta$, m3/m3). See
-{meth}`~pyrealm.pmodel.CalcOptimalChi.lavergne20` for details. 
+This **C3 method** follows the approach detailed in {cite}`lavergne:2020a`, which uses
+an empirical model of $\beta$ as a function of volumetric soil moisture ($\theta$,
+m3/m3). The calculation details are provided in the description of the
+{meth}`~pyrealm.pmodel.CalcOptimalChi.lavergne20_c3` method, but the variation in
+$\beta$ with $\theta$ is shown below.
+
+```{code-cell}
+# Only theta is used in the calculation of beta
+pmodel_env_theta_range = pmodel.PModelEnvironment(
+    tc=25, patm=101325, vpd=0, co2=400, theta=np.linspace(0, 0.8, 81)
+)
+opt_chi_lavergne20_c3 = pmodel.CalcOptimalChi(
+    pmodel_env_theta_range, method="lavergne20_c3"
+)
+
+pyplot.plot(pmodel_env_theta_range.theta, opt_chi_lavergne20_c3.beta)
+pyplot.xlabel(r"Soil moisture ($\theta$, m3/m3)")
+pyplot.ylabel(r"Unit cost ratio ($\beta$, -)");
+```
+
+The plots below show the impacts on $\chi$, $\m_j$ and $\m_c$ for two example $\theta$
+values.
 
 ### High soil moisture
 
 This example uses $\theta = 0.6$:
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
-pmodel_env_th06 = pmodel.PModelEnvironment(tc=tc_4d, patm=patm_4d,vpd=vpd_4d, 
-                                            co2=co2_4d, theta=0.6)  
+pmodel_env_th06 = pmodel.PModelEnvironment(
+    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, theta=0.6
+)
 # Run the P Model and plot predictions
-pmodel_lav_th06 = pmodel.PModel(pmodel_env_th06, method_optchi='lavergne20')
+pmodel_lav_th06 = pmodel.PModel(pmodel_env_th06, method_optchi="lavergne20_c3")
 plot_opt_chi(pmodel_lav_th06)
 ```
 
@@ -152,27 +207,83 @@ plot_opt_chi(pmodel_lav_th06)
 
 This example uses $\theta = 0.2$:
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
-pmodel_env_th02 = pmodel.PModelEnvironment(tc=tc_4d, patm=patm_4d,vpd=vpd_4d, 
-                                            co2=co2_4d, theta=0.2)  
+pmodel_env_th02 = pmodel.PModelEnvironment(
+    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, theta=0.2
+)
 # Run the P Model and plot predictions
-pmodel_lav_th02 = pmodel.PModel(pmodel_env_th02, method_optchi='lavergne20')
+pmodel_lav_th02 = pmodel.PModel(pmodel_env_th02, method_optchi="lavergne20_c3")
+plot_opt_chi(pmodel_lav_th02)
+```
+
+## Method {meth}`~pyrealm.pmodel.CalcOptimalChi.lavergne20_c4`
+
+This **C4 method** follows the approach detailed in {cite}`lavergne:2020a`, but with an
+alternate parameterisation that gives $\beta$ estimates that follow a theoretical
+expectation that $\beta$ for C4 plants is approximately one ninth of $\beta$ for C3
+plants.
+
+```{warning}
+This method is **an experimental feature** - see 
+{meth}`~pyrealm.pmodel.CalcOptimalChi.lavergne20_c4` for the theoretical rationale for
+this method.
+```
+
+```{code-cell}
+opt_chi_lavergne20_c4 = pmodel.CalcOptimalChi(
+    pmodel_env_theta_range, method="lavergne20_c4"
+)
+
+pyplot.plot(pmodel_env_theta_range.theta, opt_chi_lavergne20_c4.beta)
+pyplot.xlabel(r"Soil moisture ($\theta$, m3/m3)")
+pyplot.ylabel(r"Unit cost ratio ($\beta$, -)");
+```
+
+The plots below show the impacts on $\chi$, $\m_j$ and $\m_c$ for two example $\theta$
+values.
+
+### High soil moisture
+
+This example uses $\theta = 0.6$:
+
+```{code-cell}
+:tags: [hide-input]
+pmodel_env_th06 = pmodel.PModelEnvironment(
+    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, theta=0.6
+)
+# Run the P Model and plot predictions
+pmodel_lav_th06 = pmodel.PModel(pmodel_env_th06, method_optchi="lavergne20_c4")
+plot_opt_chi(pmodel_lav_th06)
+```
+
+### Low soil moisture
+
+This example uses $\theta = 0.2$:
+
+```{code-cell}
+:tags: [hide-input]
+pmodel_env_th02 = pmodel.PModelEnvironment(
+    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, theta=0.2
+)
+# Run the P Model and plot predictions
+pmodel_lav_th02 = pmodel.PModel(pmodel_env_th02, method_optchi="lavergne20_c4")
 plot_opt_chi(pmodel_lav_th02)
 ```
 
 ## Method {meth}`~pyrealm.pmodel.CalcOptimalChi.c4`
 
 This **C4_method** follows the approach detailed in {cite}`Prentice:2014bc`, but
-uses a C4 specific version of the unit cost ratio ($\beta$). It also sets 
+uses a C4 specific version of the unit cost ratio ($\beta$). It also sets
 $m_j = m_c = 1$.
 
-See {meth}`~pyrealm.pmodel.CalcOptimalChi.c4` for details. 
+See {meth}`~pyrealm.pmodel.CalcOptimalChi.c4` for details.
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
+
 # Run the P Model and plot predictions
-pmodel_c4 = pmodel.PModel(pmodel_env, method_optchi='c4')
+pmodel_c4 = pmodel.PModel(pmodel_env, method_optchi="c4")
 plot_opt_chi(pmodel_c4)
 ```
 
@@ -180,16 +291,16 @@ plot_opt_chi(pmodel_c4)
 
 This method drops terms from the {cite}`Prentice:2014bc` to reflect the
 assumption that photorespirations ($\Gamma^\ast$) is negligible in C4
-photosynthesis. It uses the same $\beta$ estimate as  
+photosynthesis. It uses the same $\beta$ estimate as
 {meth}`~pyrealm.pmodel.CalcOptimalChi.c4` and also also sets $m_j = 1$, but
 $m_c$ is calculated.
 
-See {meth}`~pyrealm.pmodel.CalcOptimalChi.c4_no_gamma` for details.  
+See {meth}`~pyrealm.pmodel.CalcOptimalChi.c4_no_gamma` for details.
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
+
 # Run the P Model and plot predictions
-pmodel_c4 = pmodel.PModel(pmodel_env, method_optchi='c4_no_gamma')
+pmodel_c4 = pmodel.PModel(pmodel_env, method_optchi="c4_no_gamma")
 plot_opt_chi(pmodel_c4)
 ```
-

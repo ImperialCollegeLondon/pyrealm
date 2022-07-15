@@ -4,19 +4,22 @@ jupytext:
   text_representation:
     extension: .md
     format_name: myst
-    format_version: 0.12
-    jupytext_version: 1.6.0
+    format_version: 0.13
+    jupytext_version: 1.11.5
 kernelspec:
   display_name: Python 3
   language: python
   name: python3
 ---
 
-
 # Soil moisture stress
 
-At present, only one approach is implemented to incorporate soil moisture 
-effects on photosynthesis
+At present, there are three approaches for incorporating soil moisture 
+effects on photosynthesis:
+
+* The Stocker $\beta(\theta)$ factor applied to light use efficiency, described below.
+* The experimental `rootzonestress` argument to {class}`~pyrealm.pmodel.PModel`, see below.
+* The `lavergne20_c3` and `lavergne20_c4` methods for {class}`~pyrealm.params.CalcOptimalChi`, which use an empirical model of the change in $\beta$ with soil moisture. See [here](optimal_chi) for details.
 
 ## Stocker $\beta(\theta)$
 
@@ -65,6 +68,7 @@ the examples below, the default $\theta_0 = 0$ has been changed to $\theta_0 =
 
 ```{code-cell} ipython3
 :tags: [hide-input]
+
 from matplotlib import pyplot as plt
 import numpy as np
 from pyrealm import pmodel
@@ -150,7 +154,6 @@ plt.ylabel(r'Light use efficiency, gC mol-1')
 plt.show()
 ```
 
-
 ```{warning}
 In the `rpmodel` implementation, the soil moisture factor is also used
 to modify $V_{cmax}$ and $J_{max}$, so that these values are congruent
@@ -162,7 +165,6 @@ when accessing $V_{cmax}$, $J_{max}$ and predictions deriving from those
 values if this soil moisture stress factor has been applied.
 ```
 
-
 ```{code-cell} ipython3
 # Jmax warns that it has not been corrected for soil moisture 
 print(model_stress.jmax[0])
@@ -171,4 +173,14 @@ print(model_stress.jmax[0])
 ```{code-cell} ipython3
 # Vcmax warns that it has not been corrected for soil moisture 
 print(model_stress.vcmax[0])
+```
+
+## The `rootzonestress` factor
+
+```{warning}
+This approach is **an experimental feature** - see the
+[PModel class description]({meth}`~pyrealm.pmodel.PModel). Essentially, the values for 
+`rootzonestress` apply a penalty factor directly to $\beta$ in the calculation of 
+optimal $\chi$. This factor is currently calculated externally to the `pyrealm` package 
+and is not documented here.
 ```
