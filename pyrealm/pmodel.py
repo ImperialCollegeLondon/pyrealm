@@ -1699,22 +1699,6 @@ class CalcOptimalChi:
             1.0 - self.env.gammastar / self.env.ca
         ) * self.xi / (self.xi + np.sqrt(self.env.vpd))
 
-        # Define variable substitutes:
-        vdcg = self.env.ca - self.env.gammastar
-        vacg = self.env.ca + 2.0 * self.env.gammastar
-        vbkg = self.beta * (self.env.kmm + self.env.gammastar)
-
-        # Calculate mj
-        vsr = np.sqrt(1.6 * self.env.ns_star * self.env.vpd / vbkg)
-        mj = vdcg / (vacg + 3.0 * self.env.gammastar * vsr)
-
-        # Mask values with ns star <= 0 and vbkg <=0 - need an array for this
-        mask = np.logical_and(self.env.ns_star <= 0, vbkg <= 0)
-        mj = np.array(mj)
-        mj[mask] = np.nan
-        # np.where _always_ returns an array, so catch scalars.
-        self.mj = mj.item() if np.ndim(mj) == 0 else mj
-
         # Calculate m and mc and m/mc
         self.ci = self.chi * self.env.ca
         self.mj = (self.ci - self.env.gammastar) / (self.ci + 2 * self.env.gammastar)
@@ -1753,11 +1737,11 @@ class CalcOptimalChi:
             >>> round(vals.chi, 5)
             0.49804
             >>> round(vals.mc, 5)
-            0.34911
+            1.0
             >>> round(vals.mj, 5)
-            0.7258
+            1.0
             >>> round(vals.mjoc, 5)
-            2.07901
+            1.0
         """
 
         # Warn that this is experimental
@@ -1787,27 +1771,15 @@ class CalcOptimalChi:
             1.0 - self.env.gammastar / self.env.ca
         ) * self.xi / (self.xi + np.sqrt(self.env.vpd))
 
-        # Define variable substitutes:
-        vdcg = self.env.ca - self.env.gammastar
-        vacg = self.env.ca + 2.0 * self.env.gammastar
-        vbkg = self.beta * (self.env.kmm + self.env.gammastar)
-
-        # Calculate mj
-        vsr = np.sqrt(1.6 * self.env.ns_star * self.env.vpd / vbkg)
-        mj = vdcg / (vacg + 3.0 * self.env.gammastar * vsr)
-
-        # Mask values with ns star <= 0 and vbkg <=0 - need an array for this
-        mask = np.logical_and(self.env.ns_star <= 0, vbkg <= 0)
-        mj = np.array(mj)
-        mj[mask] = np.nan
-        # np.where _always_ returns an array, so catch scalars.
-        self.mj = mj.item() if np.ndim(mj) == 0 else mj
-
-        # Calculate m and mc and m/mc
-        self.ci = self.chi * self.env.ca
-        self.mj = (self.ci - self.env.gammastar) / (self.ci + 2 * self.env.gammastar)
-        self.mc = (self.ci - self.env.gammastar) / (self.ci + self.env.kmm)
-        self.mjoc = self.mj / self.mc
+        # Set mj, mc, mjoc to 1
+        if self.shape == 1:
+            self.mc = 1.0
+            self.mj = 1.0
+            self.mjoc = 1.0
+        else:
+            self.mc = np.ones(self.shape)
+            self.mj = np.ones(self.shape)
+            self.mjoc = np.ones(self.shape)
 
     def c4(self) -> None:
         r"""Estimate :math:`\chi` for C4 plants following :cite:`Prentice:2014bc`.
