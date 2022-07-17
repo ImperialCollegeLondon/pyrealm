@@ -164,112 +164,6 @@ pmodel_c3 = pmodel.PModel(pmodel_env, method_optchi="prentice14")
 plot_opt_chi(pmodel_c3)
 ```
 
-## Method {meth}`~pyrealm.pmodel.CalcOptimalChi.lavergne20_c3`
-
-This **C3 method** follows the approach detailed in {cite}`lavergne:2020a`, which uses
-an empirical model of $\beta$ as a function of volumetric soil moisture ($\theta$,
-m3/m3). The calculation details are provided in the description of the
-{meth}`~pyrealm.pmodel.CalcOptimalChi.lavergne20_c3` method, but the variation in
-$\beta$ with $\theta$ is shown below.
-
-```{code-cell}
-# Only theta is used in the calculation of beta
-pmodel_env_theta_range = pmodel.PModelEnvironment(
-    tc=25, patm=101325, vpd=0, co2=400, theta=np.linspace(0, 0.8, 81)
-)
-opt_chi_lavergne20_c3 = pmodel.CalcOptimalChi(
-    pmodel_env_theta_range, method="lavergne20_c3"
-)
-
-pyplot.plot(pmodel_env_theta_range.theta, opt_chi_lavergne20_c3.beta)
-pyplot.xlabel(r"Soil moisture ($\theta$, m3/m3)")
-pyplot.ylabel(r"Unit cost ratio ($\beta$, -)");
-```
-
-The plots below show the impacts on $\chi$, $m_j$ and $m_c$ for two example $\theta$
-values.
-
-### High soil moisture
-
-This example uses $\theta = 0.6$:
-
-```{code-cell}
-:tags: [hide-input]
-pmodel_env_th06 = pmodel.PModelEnvironment(
-    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, theta=0.6
-)
-# Run the P Model and plot predictions
-pmodel_lav_th06 = pmodel.PModel(pmodel_env_th06, method_optchi="lavergne20_c3")
-plot_opt_chi(pmodel_lav_th06)
-```
-
-### Low soil moisture
-
-This example uses $\theta = 0.2$:
-
-```{code-cell}
-:tags: [hide-input]
-pmodel_env_th02 = pmodel.PModelEnvironment(
-    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, theta=0.2
-)
-# Run the P Model and plot predictions
-pmodel_lav_th02 = pmodel.PModel(pmodel_env_th02, method_optchi="lavergne20_c3")
-plot_opt_chi(pmodel_lav_th02)
-```
-
-## Method {meth}`~pyrealm.pmodel.CalcOptimalChi.lavergne20_c4`
-
-This **C4 method** follows the approach detailed in {cite}`lavergne:2020a`, but with an
-alternate parameterisation that gives $\beta$ estimates that follow a theoretical
-expectation that $\beta$ for C4 plants is approximately one ninth of $\beta$ for C3
-plants.
-
-```{warning}
-This method is **an experimental feature** - see 
-{meth}`~pyrealm.pmodel.CalcOptimalChi.lavergne20_c4` for the theoretical rationale for
-this method.
-```
-
-```{code-cell}
-opt_chi_lavergne20_c4 = pmodel.CalcOptimalChi(
-    pmodel_env_theta_range, method="lavergne20_c4"
-)
-
-pyplot.plot(pmodel_env_theta_range.theta, opt_chi_lavergne20_c4.beta)
-pyplot.xlabel(r"Soil moisture ($\theta$, m3/m3)")
-pyplot.ylabel(r"Unit cost ratio ($\beta$, -)");
-```
-
-The plots below show the impacts on $\chi$, $m_j$ and $m_c$ for two example $\theta$
-values.
-
-### High soil moisture
-
-This example uses $\theta = 0.6$:
-
-```{code-cell}
-:tags: [hide-input]
-pmodel_env_th06 = pmodel.PModelEnvironment(
-    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, theta=0.6
-)
-# Run the P Model and plot predictions
-pmodel_lav_th06 = pmodel.PModel(pmodel_env_th06, method_optchi="lavergne20_c4")
-plot_opt_chi(pmodel_lav_th06)
-```
-
-### Low soil moisture
-
-This example uses $\theta = 0.2$:
-
-```{code-cell}
-:tags: [hide-input]
-pmodel_env_th02 = pmodel.PModelEnvironment(
-    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, theta=0.2
-)
-# Run the P Model and plot predictions
-pmodel_lav_th02 = pmodel.PModel(pmodel_env_th02, method_optchi="lavergne20_c4")
-plot_opt_chi(pmodel_lav_th02)
-```
 
 ## Method {meth}`~pyrealm.pmodel.CalcOptimalChi.c4`
 
@@ -293,7 +187,7 @@ This method drops terms from the {cite}`Prentice:2014bc` to reflect the
 assumption that photorespirations ($\Gamma^\ast$) is negligible in C4
 photosynthesis. It uses the same $\beta$ estimate as
 {meth}`~pyrealm.pmodel.CalcOptimalChi.c4` and also also sets $m_j = 1$, but
-$m_c$ is calculated.
+$m_c$ is calculated as in {meth}`~pyrealm.pmodel.CalcOptimalChi.prentice14`.
 
 See {meth}`~pyrealm.pmodel.CalcOptimalChi.c4_no_gamma` for details.
 
@@ -303,4 +197,168 @@ See {meth}`~pyrealm.pmodel.CalcOptimalChi.c4_no_gamma` for details.
 # Run the P Model and plot predictions
 pmodel_c4 = pmodel.PModel(pmodel_env, method_optchi="c4_no_gamma")
 plot_opt_chi(pmodel_c4)
+```
+
+## Methods {meth}`~pyrealm.pmodel.CalcOptimalChi.lavergne20_c3` and {meth}`~pyrealm.pmodel.CalcOptimalChi.lavergne20_c4`
+
+These methods follow the approach detailed in {cite}`lavergne:2020a`, which fitted
+an empirical model of $\beta$ for C3 plants as a function of volumetric soil moisture
+($\theta$, m3/m3), using data from leaf gas exchange measurements. The C4 method takes
+the same approach but with modified empirical parameters giving predictions of
+$\beta_{C3} = 9 \times \beta_{C4}$, as in the {meth}`~pyrealm.pmodel.CalcOptimalChi.c4`
+method. 
+
+```{warning}
+Note that {cite}`lavergne:2020a` found **no relationship** between C4 $\beta$
+values and soil moisture in leaf gas exchange data  The
+{meth}`~pyrealm.pmodel.CalcOptimalChi.lavergne20_c4` method is **an experimental
+feature** - see the documentation for the
+{meth}`~pyrealm.pmodel.CalcOptimalChi.lavergne20_c4` and
+{meth}`~pyrealm.pmodel.CalcOptimalChi.c4` methods for the theoretical rationale.
+```
+
+The calculation details are provided in the description of the
+{meth}`~pyrealm.pmodel.CalcOptimalChi.lavergne20_c3` method, but the variation in
+$\beta$ with $\theta$ is shown below.
+
+```{code-cell}
+:tags: [hide-input]
+
+# Only theta is used in the calculation of beta
+pmodel_env_theta_range = pmodel.PModelEnvironment(
+    tc=25, patm=101325, vpd=0, co2=400, theta=np.linspace(0, 0.8, 81)
+)
+opt_chi_lavergne20_c3 = pmodel.CalcOptimalChi(
+    pmodel_env_theta_range, method="lavergne20_c3"
+)
+opt_chi_lavergne20_c4 = pmodel.CalcOptimalChi(
+    pmodel_env_theta_range, method="lavergne20_c4"
+)
+# Plot the predictions
+fig, ax1 = pyplot.subplots(1, 1, figsize=(6, 4))
+ax1.plot(pmodel_env_theta_range.theta, opt_chi_lavergne20_c4.beta, label="C3")
+ax1.plot(pmodel_env_theta_range.theta, opt_chi_lavergne20_c3.beta, label="C4")
+ax1.set_xlabel(r"Soil moisture ($\theta$, m3/m3)")
+ax1.set_ylabel(r"Unit cost ratio ($\beta$, -)")
+ax1.legend()
+pyplot.tight_layout()
+```
+
+### Optimal $\chi$
+
+The plots below show the impacts on optimal $\chi$ across a temperature gradient for two
+values of VPD and soil moisture, with constant atmospheric pressure (101325 Pa) and CO2
+(280 ppm).
+
+```{code-cell}
+:tags: [hide-input]
+
+# Environments with high and low soil moisture
+theta_hi = 0.6
+theta_lo = 0.1
+pmodel_env_hi = pmodel.PModelEnvironment(
+    tc=tc_4d, patm=101325, vpd=vpd_4d, co2=co2_4d, theta=theta_hi
+)
+pmodel_env_lo = pmodel.PModelEnvironment(
+    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, theta=theta_lo
+)
+
+# Run the P Model and plot predictions
+chi_lavc3_hi = pmodel.CalcOptimalChi(pmodel_env_hi, method="lavergne20_c3")
+chi_lavc4_hi = pmodel.CalcOptimalChi(pmodel_env_hi, method="lavergne20_c4")
+chi_lavc3_lo = pmodel.CalcOptimalChi(pmodel_env_lo, method="lavergne20_c3")
+chi_lavc4_lo = pmodel.CalcOptimalChi(pmodel_env_lo, method="lavergne20_c4")
+
+fig, (ax1, ax2) = pyplot.subplots(1, 2, figsize=(10, 5), sharey=True)
+
+ax1.plot(
+    tc_1d,
+    chi_lavc3_hi.chi[0, :, 0, 0],
+    "b-",
+    label=f"VPD = {vpd_1d[0]}, theta={theta_hi}",
+)
+ax1.plot(
+    tc_1d,
+    chi_lavc3_hi.chi[0, :, 1, 0],
+    "b--",
+    label=f"VPD = {vpd_1d[1]}, theta={theta_hi}",
+)
+ax1.plot(
+    tc_1d,
+    chi_lavc3_lo.chi[0, :, 0, 0],
+    "r-",
+    label=f"VPD = {vpd_1d[0]}, theta={theta_lo}",
+)
+ax1.plot(
+    tc_1d,
+    chi_lavc3_lo.chi[0, :, 1, 0],
+    "r--",
+    label=f"VPD = {vpd_1d[1]}, theta={theta_lo}",
+)
+ax1.set_title(f"C3 plants (`lavergne20_c3`)")
+ax1.set_ylabel(r"Optimal $\chi$")
+ax1.set_xlabel("Temperature (°C)")
+ax1.legend(frameon=False)
+
+ax2.plot(tc_1d, chi_lavc4_hi.chi[0, :, 0, 0], "b-")
+ax2.plot(tc_1d, chi_lavc4_hi.chi[0, :, 1, 0], "b--")
+ax2.plot(tc_1d, chi_lavc4_lo.chi[0, :, 0, 0], "r-")
+ax2.plot(tc_1d, chi_lavc4_lo.chi[0, :, 1, 0], "r--")
+ax2.set_title(f"C4 plants (`lavergne20_c4`)")
+ax2.set_xlabel("Temperature (°C)")
+
+pyplot.tight_layout()
+```
+
+### $m_j$ and $m_c$
+
+As with the {meth}`~pyrealm.pmodel.CalcOptimalChi.c4` method, the
+{meth}`~pyrealm.pmodel.CalcOptimalChi.lavergne20_c4` method set $m_j=m_c=1$, but the
+plots below illustrate the impact of temperature and  $\theta$ on  $m_j$ and $m_c$ for
+C3 plants, again with constant atmospheric pressure (101325 Pa) and CO2
+(280 ppm).
+
+```{code-cell}
+:tags: [hide-input]
+
+fig, (ax1, ax2) = pyplot.subplots(1, 2, figsize=(10, 5), sharey=False)
+
+ax1.plot(
+    tc_1d,
+    chi_lavc3_hi.mj[0, :, 0, 0],
+    "b-",
+    label=f"VPD = {vpd_1d[0]}, theta={theta_hi}",
+)
+ax1.plot(
+    tc_1d,
+    chi_lavc3_hi.mj[0, :, 1, 0],
+    "b--",
+    label=f"VPD = {vpd_1d[1]}, theta={theta_hi}",
+)
+ax1.plot(
+    tc_1d,
+    chi_lavc3_lo.mj[0, :, 0, 0],
+    "r-",
+    label=f"VPD = {vpd_1d[0]}, theta={theta_lo}",
+)
+ax1.plot(
+    tc_1d,
+    chi_lavc3_lo.mj[0, :, 1, 0],
+    "r--",
+    label=f"VPD = {vpd_1d[1]}, theta={theta_lo}",
+)
+ax1.set_title(f"Variation in $m_j$ for C3 plants (`lavergne20_c3`)")
+ax1.set_ylabel(r"$m_j$")
+ax1.set_xlabel("Temperature (°C)")
+ax1.legend(frameon=False)
+
+ax2.plot(tc_1d, chi_lavc3_hi.mc[0, :, 0, 0], "b-")
+ax2.plot(tc_1d, chi_lavc3_hi.mc[0, :, 1, 0], "b--")
+ax2.plot(tc_1d, chi_lavc3_lo.mc[0, :, 0, 0], "r-")
+ax2.plot(tc_1d, chi_lavc3_lo.mc[0, :, 1, 0], "r--")
+ax2.set_title(f"Variation in $m_c$ for C3 plants (`lavergne20_c3`)")
+ax2.set_ylabel(r"$m_c$")
+ax2.set_xlabel("Temperature (°C)")
+
+pyplot.tight_layout()
 ```
