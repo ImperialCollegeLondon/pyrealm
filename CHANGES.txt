@@ -85,3 +85,12 @@
       - Extended pytest framework to include TemporalInterpolator, 
         DailyRepresentativeValues, CalcCarbonIsotopes and
         C3C4Competition.
+0.8.0 - Addition of a parallel C4 method for the `lavergne20` CalcOptimalChi method. The
+        methods are now called `lavergne20_c3` and `lavergne20_c4`.
+      - Addition of default theta model parameters for `lavergne20_c4` giving
+        beta predictions as 1/9 of those for C3. 
+      - Update of soil moisture option handling in PModel to avoid conflicting
+        approaches (rootzonestress, soilmstress, lavergne20_cX).
+      - Updated docs for the CalcOptimalChi methods and soil moisture page.
+      - Addition of an explicit ExperimentalFeatureWarning - currently rootzonestress
+        and lavergne20_c4.

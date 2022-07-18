@@ -35,7 +35,7 @@ from pyrealm.pmodel import CalcCarbonIsotopes, PModel, PModelEnvironment
         ),
         (  # Single site, C3 lavergne20
             dict(tc=20, patm=101325, co2=400, vpd=1000, theta=0.5),
-            dict(method_optchi="lavergne20"),
+            dict(method_optchi="lavergne20_c3"),
             dict(
                 Delta13C_simple=22.521,
                 Delta13C=20.796,
