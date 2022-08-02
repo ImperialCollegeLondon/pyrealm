@@ -1762,26 +1762,22 @@ class CalcOptimalChi:
             + self.pmodel_params.lavergne_2020_a_c4
         )
 
-        # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.xi = np.sqrt(
-            (self.beta * (self.env.kmm + self.env.gammastar)) / (1.6 * self.env.ns_star)
-        )
+        # Calculate chi and xi as in Prentice 14 but removing gamma terms.
+        self.beta = self.pmodel_params.beta_cost_ratio_c4
+        self.xi = np.sqrt((self.beta * self.env.kmm) / (1.6 * self.env.ns_star))
 
-        self.chi = self.env.gammastar / self.env.ca + (
-            1.0 - self.env.gammastar / self.env.ca
-        ) * self.xi / (self.xi + np.sqrt(self.env.vpd))
+        self.chi = self.xi / (self.xi + np.sqrt(self.env.vpd))
 
-        self.ci = self.chi * self.env.ca
-
-        # Set mj, mc, mjoc to 1
+        # mj is equal to 1 as gammastar is null
         if self.shape == 1:
-            self.mc = 1.0
             self.mj = 1.0
-            self.mjoc = 1.0
         else:
-            self.mc = np.ones(self.shape)
             self.mj = np.ones(self.shape)
-            self.mjoc = np.ones(self.shape)
+
+        # Calculate m and mc and m/mc
+        self.ci = self.chi * self.env.ca
+        self.mc = (self.ci) / (self.ci + self.env.kmm)
+        self.mjoc = self.mj / self.mc
 
     def c4(self) -> None:
         r"""Estimate :math:`\chi` for C4 plants following :cite:`Prentice:2014bc`.

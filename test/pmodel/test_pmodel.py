@@ -793,7 +793,7 @@ def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, e
 @pytest.mark.parametrize("theta", np.linspace(0, 0.8, 9))
 @pytest.mark.parametrize(
     "variable_method, fixed_method, is_C4",
-    [("lavergne20_c3", "prentice14", False), ("lavergne20_c4", "c4", True)],
+    [("lavergne20_c3", "prentice14", False), ("lavergne20_c4", "c4_no_gamma", True)],
 )
 def test_lavergne_equivalence(tc, theta, variable_method, fixed_method, is_C4):
 
