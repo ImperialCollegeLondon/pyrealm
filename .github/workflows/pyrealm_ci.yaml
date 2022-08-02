@@ -1,18 +1,15 @@
-name: Build Checker
-'on':
-  push:
-    branches:
-      - master
-      - develop
-      - release/*
-      - feature/*
-  pull_request:
-    branches:
-      - master
-      - develop
-      - release/*
-      - feature/*
+name: QA and Build
+
+on: [push, pull_request, release]
+
 jobs:
+
+  qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: pre-commit/action@v2.0.2
+
   Build:
     runs-on: '${{ matrix.os }}'
     strategy:
