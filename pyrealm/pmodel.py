@@ -1771,6 +1771,8 @@ class CalcOptimalChi:
             1.0 - self.env.gammastar / self.env.ca
         ) * self.xi / (self.xi + np.sqrt(self.env.vpd))
 
+        self.ci = self.chi * self.env.ca
+
         # Set mj, mc, mjoc to 1
         if self.shape == 1:
             self.mc = 1.0
