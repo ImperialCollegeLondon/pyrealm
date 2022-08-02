@@ -314,7 +314,7 @@ again with constant atmospheric pressure (101325 Pa) and CO2 (280 ppm).
 ```{code-cell}
 :tags: [hide-input]
 
-fig, ((ax1, ax2), (ax3, ax4)) = pyplot.subplots(2, 2, figsize=(10, 5), sharey=False)
+fig, ((ax1, ax3), (ax2, ax4)) = pyplot.subplots(2, 2, figsize=(10, 10), sharey=True)
 
 ax1.plot(
     tc_1d,
@@ -377,15 +377,15 @@ ax3.plot(
     "r--",
     label=f"VPD = {vpd_1d[1]}, theta={theta_lo}",
 )
-ax1.set_title(f"Variation in $m_j$ for C4 plants (`lavergne20_c4`)")
-ax1.set_ylabel(r"$m_j$")
-ax1.set_xlabel("Temperature (°C)")
+ax3.set_title(f"Variation in $m_j$ for C4 plants (`lavergne20_c4`)")
+ax3.set_ylabel(r"$m_j$")
+ax3.set_xlabel("Temperature (°C)")
 
 ax4.plot(tc_1d, chi_lavc4_hi.mc[0, :, 0, 0], "b-")
 ax4.plot(tc_1d, chi_lavc4_hi.mc[0, :, 1, 0], "b--")
 ax4.plot(tc_1d, chi_lavc4_lo.mc[0, :, 0, 0], "r-")
 ax4.plot(tc_1d, chi_lavc4_lo.mc[0, :, 1, 0], "r--")
-ax4.set_title(f"Variation in $m_c$ for C3 plants (`lavergne20_c3`)")
+ax4.set_title(f"Variation in $m_c$ for C4 plants (`lavergne20_c4`)")
 ax4.set_ylabel(r"$m_c$")
 ax4.set_xlabel("Temperature (°C)")
 
