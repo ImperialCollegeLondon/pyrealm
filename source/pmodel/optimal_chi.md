@@ -165,9 +165,8 @@ plot_opt_chi(pmodel_c3)
 
 ## Method {meth}`~pyrealm.pmodel.CalcOptimalChi.c4`
 
-This **C4_method** follows the approach detailed in {cite}`Prentice:2014bc`, but
-uses a C4 specific version of the unit cost ratio ($\beta$). It also sets
-$m_j = m_c = 1$.
+This **C4_method** follows the approach detailed in {cite}`Prentice:2014bc`, but uses a
+C4 specific version of the unit cost ratio ($\beta$). It also sets $m_j = m_c = 1$.
 
 See {meth}`~pyrealm.pmodel.CalcOptimalChi.c4` for details.
 
@@ -181,11 +180,10 @@ plot_opt_chi(pmodel_c4)
 
 ## Method {meth}`~pyrealm.pmodel.CalcOptimalChi.c4_no_gamma`
 
-This method drops terms from the {cite}`Prentice:2014bc` to reflect the
-assumption that photorespirations ($\Gamma^\ast$) is negligible in C4
-photosynthesis. It uses the same $\beta$ estimate as
-{meth}`~pyrealm.pmodel.CalcOptimalChi.c4` and also also sets $m_j = 1$, but
-$m_c$ is calculated as in {meth}`~pyrealm.pmodel.CalcOptimalChi.prentice14`.
+This method drops terms from the {cite}`Prentice:2014bc` to reflect the assumption that
+photorespiration ($\Gamma^\ast$) is negligible in C4 photosynthesis. It uses the same
+$\beta$ estimate as {meth}`~pyrealm.pmodel.CalcOptimalChi.c4` and also also sets $m_j =
+1$, but $m_c$ is calculated as in {meth}`~pyrealm.pmodel.CalcOptimalChi.prentice14`.
 
 See {meth}`~pyrealm.pmodel.CalcOptimalChi.c4_no_gamma` for details.
 
@@ -203,8 +201,8 @@ These methods follow the approach detailed in {cite}`lavergne:2020a`, which fitt
 an empirical model of $\beta$ for C3 plants as a function of volumetric soil moisture
 ($\theta$, m3/m3), using data from leaf gas exchange measurements. The C4 method takes
 the same approach but with modified empirical parameters giving predictions of
-$\beta_{C3} = 9 \times \beta_{C4}$, as in the {meth}`~pyrealm.pmodel.CalcOptimalChi.c4`
-method.
+$\beta_{C3} = 9 \times \beta_{C4}$. Following the approach of
+{meth}`~pyrealm.pmodel.CalcOptimalChi.c4_no_gamma`, $m_c$ is calculated but $m_j=1$.
 
 ```{warning}
 Note that {cite}`lavergne:2020a` found **no relationship** between C4 $\beta$
@@ -310,16 +308,13 @@ pyplot.tight_layout()
 
 ### $m_j$ and $m_c$
 
-As with the {meth}`~pyrealm.pmodel.CalcOptimalChi.c4` method, the
-{meth}`~pyrealm.pmodel.CalcOptimalChi.lavergne20_c4` method set $m_j=m_c=1$, but the
-plots below illustrate the impact of temperature and  $\theta$ on  $m_j$ and $m_c$ for
-C3 plants, again with constant atmospheric pressure (101325 Pa) and CO2
-(280 ppm).
+The plots below illustrate the impact of temperature and  $\theta$ on  $m_j$ and $m_c$,
+again with constant atmospheric pressure (101325 Pa) and CO2 (280 ppm).
 
 ```{code-cell}
 :tags: [hide-input]
 
-fig, (ax1, ax2) = pyplot.subplots(1, 2, figsize=(10, 5), sharey=False)
+fig, ((ax1, ax2), (ax3, ax4)) = pyplot.subplots(2, 2, figsize=(10, 5), sharey=False)
 
 ax1.plot(
     tc_1d,
@@ -357,6 +352,42 @@ ax2.plot(tc_1d, chi_lavc3_lo.mc[0, :, 1, 0], "r--")
 ax2.set_title(f"Variation in $m_c$ for C3 plants (`lavergne20_c3`)")
 ax2.set_ylabel(r"$m_c$")
 ax2.set_xlabel("Temperature (°C)")
+
+ax3.plot(
+    tc_1d,
+    chi_lavc4_hi.mj[0, :, 0, 0],
+    "b-",
+    label=f"VPD = {vpd_1d[0]}, theta={theta_hi}",
+)
+ax3.plot(
+    tc_1d,
+    chi_lavc4_hi.mj[0, :, 1, 0],
+    "b--",
+    label=f"VPD = {vpd_1d[1]}, theta={theta_hi}",
+)
+ax3.plot(
+    tc_1d,
+    chi_lavc4_lo.mj[0, :, 0, 0],
+    "r-",
+    label=f"VPD = {vpd_1d[0]}, theta={theta_lo}",
+)
+ax3.plot(
+    tc_1d,
+    chi_lavc4_lo.mj[0, :, 1, 0],
+    "r--",
+    label=f"VPD = {vpd_1d[1]}, theta={theta_lo}",
+)
+ax1.set_title(f"Variation in $m_j$ for C4 plants (`lavergne20_c4`)")
+ax1.set_ylabel(r"$m_j$")
+ax1.set_xlabel("Temperature (°C)")
+
+ax4.plot(tc_1d, chi_lavc4_hi.mc[0, :, 0, 0], "b-")
+ax4.plot(tc_1d, chi_lavc4_hi.mc[0, :, 1, 0], "b--")
+ax4.plot(tc_1d, chi_lavc4_lo.mc[0, :, 0, 0], "r-")
+ax4.plot(tc_1d, chi_lavc4_lo.mc[0, :, 1, 0], "r--")
+ax4.set_title(f"Variation in $m_c$ for C3 plants (`lavergne20_c3`)")
+ax4.set_ylabel(r"$m_c$")
+ax4.set_xlabel("Temperature (°C)")
 
 pyplot.tight_layout()
 ```
