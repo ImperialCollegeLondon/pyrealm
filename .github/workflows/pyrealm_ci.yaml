@@ -11,6 +11,7 @@ jobs:
       - uses: pre-commit/action@v2.0.2
 
   Build:
+    needs: qa
     runs-on: '${{ matrix.os }}'
     strategy:
       fail-fast: false

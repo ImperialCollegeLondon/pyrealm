@@ -231,6 +231,7 @@ def convert_rh_to_vpd(rh, ta, hygro_params=HygroParams()):
         ta: The air temperature in °C
         hygro_params: An object of class ~`pyrealm.param_classes.HygroParams`
             giving the settings to be used in conversions.
+
     Returns:
         The vapour pressure deficit in kPa
 
@@ -262,8 +263,10 @@ def convert_sh_to_vp(sh, patm, hygro_params=HygroParams()):
         patm: The atmospheric pressure in kPa
         hygro_params: An object of class ~`pyrealm.param_classes.HygroParams`
             giving the settings to be used in conversions.
+
     Returns:
         The vapour pressure in kPa
+
     Examples:
         >>> round(convert_sh_to_vp(0.006, 99.024), 7)
         0.9517451
