@@ -616,14 +616,14 @@ def calc_soilmstress(
     Table 1 of :cite:`Stocker:2020dh` specifically for the 'FULL' use case, with
     ``method_jmaxlim="wang17"``, ``do_ftemp_kphio=TRUE``.
 
-    Args
+    Args:
         soilm: Relative soil moisture as a fraction of field capacity
             (unitless). Defaults to 1.0 (no soil moisture stress).
         meanalpha: Local annual mean ratio of actual over potential
             evapotranspiration, measure for average aridity. Defaults to 1.0.
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other Parameters
+    Other Parameters:
         theta0: lower bound of soil moisture
             (:math:`\theta_0`, `pmodel_params.soilmstress_theta0`).
         thetastar: upper bound of soil moisture
@@ -742,11 +742,11 @@ def calc_patm(
 
         p(z) = p_0 ( 1 - L z / K_0) ^{ G M / (R L) },
 
-    Args
+    Args:
         elv: Elevation above sea-level (:math:`z`, metres above sea level.)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other Parameters
+    Other Parameters:
         G: gravity constant (:math:`g`, `pmodel_params.k_G`)
         Po: standard atmospheric pressure at sea level
             (:math:`p_0`, `pmodel_params.k_Po`)
