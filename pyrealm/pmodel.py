@@ -1708,25 +1708,24 @@ class CalcOptimalChi:
     def lavergne20_c4(self) -> None:
         r"""Calculate soil moisture corrected :math:`\chi` for C4 plants.
 
-        This method applies the same calculations described in the
-        :meth:`~pyrealm.pmodel.CalcOptimalChi.lavergne20` method but using parameter
-        values for C4 plants. See that method for the calculation details.
+        This method calculates :math:`\beta` as a function of soil moisture following
+        the equation described in the :meth:`~pyrealm.pmodel.CalcOptimalChi.lavergne20`
+        method.  However, the default coefficients of the moisture scaling from
+        :cite:`lavergne:2020a` for C3 plants are adjusted to match the theoretical
+        expectation that :math:`\beta` for C4 plants is nine times smaller than
+        :math:`\beta` for C3 plants (see :meth:`~pyrealm.pmodel.CalcOptimalChi.c4`):
+        :math:`b` is unchanged but :math:`a_{C4} = a_{C3} - log(9)`.
+
+        Following the calculation of :math:`\beta`, this method then follows the
+        calculations described in :meth:`~pyrealm.pmodel.CalcOptimalChi.c4_no_gamma`:
+        :math:`m_j = 1.0`  because photorespiration is negligible, but :math:`m_c` and
+        hence :math:`m_{joc}` are calculated.
 
         Note:
 
         This is an **experimental approach**. The research underlying
         :cite:`lavergne:2020a`, found **no relationship** between C4 :math:`\beta`
         values and soil moisture in leaf gas exchange measurements.
-
-        However, the :meth:`~pyrealm.pmodel.CalcOptimalChi.c4` method describes a
-        theoretical expectation that :math:`\beta` for C4 plants is nine times smaller
-        than :math:`\beta` for C3 plants. This method therefore provides soil moisture
-        dependent estimates of :math:`\beta` for C4 plants that follow that
-        expectation.
-
-        The default coefficients of the moisture scaling from :cite:`lavergne:2020a` for
-        C3 plants are simply adjusted to maintain that scaling: :math:`b` is unchanged
-        but :math:`a_{C4} = a_{C3} - log(9)`.
 
         Examples:
             >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
@@ -1735,13 +1734,13 @@ class CalcOptimalChi:
             >>> round(vals.beta, 5)
             24.97251
             >>> round(vals.chi, 5)
-            0.49804
+            0.44432
             >>> round(vals.mc, 5)
-            1.0
+            0.28091
             >>> round(vals.mj, 5)
             1.0
             >>> round(vals.mjoc, 5)
-            1.0
+            3.55989
         """
 
         # Warn that this is experimental
@@ -1763,9 +1762,7 @@ class CalcOptimalChi:
         )
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
-        self.beta = self.pmodel_params.beta_cost_ratio_c4
         self.xi = np.sqrt((self.beta * self.env.kmm) / (1.6 * self.env.ns_star))
-
         self.chi = self.xi / (self.xi + np.sqrt(self.env.vpd))
 
         # mj is equal to 1 as gammastar is null
