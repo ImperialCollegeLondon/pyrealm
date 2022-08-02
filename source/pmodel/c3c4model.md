@@ -32,7 +32,7 @@ the contributions to GPP from C3 and C4 plants at each site.
 ## Step 1: Proportional GPP advantage
 
 The first step is to calculate the proportional advantage in gross primary
-productivity (GPP) of C4 over C3 plants ($A_4$) in the study locations. 
+productivity (GPP) of C4 over C3 plants ($A_4$) in the study locations.
 
 ## Step 2: Convert GPP advantage to fraction C4
 
@@ -173,30 +173,30 @@ comp.summarize()
 The plots below then show the various stages of the model prediction.
 
 Panel A
-: GPP predictions from the P model across a temperature gradient for C3 or 
+: GPP predictions from the P model across a temperature gradient for C3 or
   C4 plants alone. The horizontal dashed line shows the canopy closure
   threshold for C3 plants (see Step 3).
 
 Panel B
-: The relative GPP advantage of C4 over C3 photosynthesis across the 
+: The relative GPP advantage of C4 over C3 photosynthesis across the
   temperature gradient.
 
 Panel C
-: The proportion of GPP from C3 trees across the temperature gradient. 
-  Between roughly 5°C and 30°C, canopy closure is predicted to exclude 
+: The proportion of GPP from C3 trees across the temperature gradient.
+  Between roughly 5°C and 30°C, canopy closure is predicted to exclude
   C4 plants, even where they have a GPP advantage (Panel B, > 22°C).
 
 Panel D
-: Predicted $F_4$ across the temperature gradient, showing the prediction 
-  purely from relative advantage and treecover (Step 2) and then accounting 
+: Predicted $F_4$ across the temperature gradient, showing the prediction
+  purely from relative advantage and treecover (Step 2) and then accounting
   for the impact of C3 tree canopy closure (Step 3),
 
-Panel E:
-: The predicted contributions of plants using the C3 and C4 pathways to the 
-  total expected GPP.
+Panel E
+: The predicted contributions of plants using the C3 and C4 pathways to the
+  total expected GPP
 
 Panel F
-: The contributions of plants using the C3 and C4 pathways to predicted 
+: The contributions of plants using the C3 and C4 pathways to predicted
   $\delta\ce{^{13}C}$ .
 
 ```{code-cell} ipython3

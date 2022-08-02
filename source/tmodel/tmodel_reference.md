@@ -12,7 +12,8 @@ kernelspec:
 
 # Module reference for `tmodel`
 
-This page contains the detailed documentation of the functions and classes in the {mod}`~pyrealm.tmodel` module. 
+This page contains the detailed documentation of the functions and classes in the
+{mod}`~pyrealm.tmodel` module.
 
 ```{eval-rst}
 .. automodule:: pyrealm.tmodel

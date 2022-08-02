@@ -10,10 +10,7 @@ kernelspec:
   name: python3
 ---
 
-
-
 # The `pyrealm` package
-
 
 ## Module overview
 
@@ -30,7 +27,7 @@ documented using Google style docstrings in RST format. Much of the rest of the
 documentation uses Jupyter notebooks written using `myst-nb` format in order to
 dynamically include Python code examples showing the behaviour of functions. In
 general, the code will be concealed but the underlying code can be seen by
-clicking on the buttons like the one below. 
+clicking on the buttons like the one below.
 
 ```{code-cell} python
 :tags: [hide-input]
@@ -82,15 +79,12 @@ clicking on the buttons like the one below.
   z_bibliography.rst
 ```
 
-
 ```{eval-rst}
 .. automodule:: pyrealm.version
     :members:
 ```
 
-
 ## Indices and tables
-
 
 * {ref}`genindex`
 * {ref}`modindex`

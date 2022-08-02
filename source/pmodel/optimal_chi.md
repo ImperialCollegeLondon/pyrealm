@@ -16,16 +16,15 @@ kernelspec:
 
 The next step is to estimate the following parameters:
 
-* The value $\chi = c_i/c_a$, which is the unitless ratio of leaf internal
-  $\ce{CO2}$ partial pressure ($c_i$, Pa) to ambient $\ce{CO2}$ partial pressure
-  ($c_a$, Pa).
-* A parameter ($\xi$) describing the sensitivity of $\chi$ to vapour pressure
-  deficit (VPD).
-* $\ce{CO2}$ limitation factors to both light assimilation ($m_j$) and
-  carboxylation ($m_c$) along with their ratio ($m_{joc} = m_j / m_c$).
+* The value $\chi = c_i/c_a$, which is the unitless ratio of leaf internal $\ce{CO2}$
+  partial pressure ($c_i$, Pa) to ambient $\ce{CO2}$ partial pressure ($c_a$, Pa).
+* A parameter ($\xi$) describing the sensitivity of $\chi$ to vapour pressure deficit
+  (VPD).
+* $\ce{CO2}$ limitation factors to both light assimilation ($m_j$) and carboxylation
+  ($m_c$) along with their ratio ($m_{joc} = m_j / m_c$).
 
-The details of these calculations are in {class}`~pyrealm.pmodel.CalcOptimalChi`,
-which implement a number of approaches to calculating these values:
+The details of these calculations are in {class}`~pyrealm.pmodel.CalcOptimalChi`, which
+implements a number of approaches to calculating these values:
 
 ```{code-cell}
 :tags: [hide-input]
@@ -164,7 +163,6 @@ pmodel_c3 = pmodel.PModel(pmodel_env, method_optchi="prentice14")
 plot_opt_chi(pmodel_c3)
 ```
 
-
 ## Method {meth}`~pyrealm.pmodel.CalcOptimalChi.c4`
 
 This **C4_method** follows the approach detailed in {cite}`Prentice:2014bc`, but
@@ -206,7 +204,7 @@ an empirical model of $\beta$ for C3 plants as a function of volumetric soil moi
 ($\theta$, m3/m3), using data from leaf gas exchange measurements. The C4 method takes
 the same approach but with modified empirical parameters giving predictions of
 $\beta_{C3} = 9 \times \beta_{C4}$, as in the {meth}`~pyrealm.pmodel.CalcOptimalChi.c4`
-method. 
+method.
 
 ```{warning}
 Note that {cite}`lavergne:2020a` found **no relationship** between C4 $\beta$

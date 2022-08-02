@@ -10,6 +10,7 @@ kernelspec:
   name: python3
 ---
 
+# Step 4: Estimating productivity
 
 ```{code-cell} python
 :tags: [hide-input]
@@ -94,12 +95,10 @@ def plot_fun(estvar, estvarlab):
 
 ```
 
-# Step 4: Estimating productivity
-
-This page shows how the main output variables from the P Model vary under
-differing environmental conditions. The paired plots below show how C3 and C4
-plants respond under a range of temperatures (-10°C to 60°C) and then pairs of
-values for the other environmental variables:
+This page shows how the main output variables from the P Model vary under differing
+environmental conditions. The paired plots below show how C3 and C4 plants respond under
+a range of temperatures (-10°C to 60°C) and then pairs of values for the other
+environmental variables:
 
 * Atmospheric pressure: 101325 Pa and 80000 Pa
 * Vapour pressure deficit: 500 Pa and 2000 Pa
@@ -137,14 +136,14 @@ pyplot.show()
 
 ## Efficiency outputs
 
-Two of the key outputs are measures of efficiency and are estimated simply by
-creating a {class}`~pyrealm.pmodel.PModel` instance without needing to provide
-estimates of absorbed irradiance.
+Two of the key outputs are measures of efficiency and are estimated simply by creating a
+{class}`~pyrealm.pmodel.PModel` instance without needing to provide estimates of
+absorbed irradiance.
 
 ### Light use efficiency (``lue``, LUE)
 
-Light use efficiency measures conversion efficiency of moles of absorbed
-irradiance into grams of Carbon ($\mathrm{g\,C}\; \mathrm{mol}^{-1}$ photons) 
+Light use efficiency measures conversion efficiency of moles of absorbed irradiance into
+grams of Carbon ($\mathrm{g\,C}\; \mathrm{mol}^{-1}$ photons).
 
 ```{code-cell} python
 :tags: [hide-input]
@@ -152,7 +151,6 @@ plot_fun('lue', r'LUE ($\mathrm{g\,C}\; \mathrm{mol}^{-1}$ photons).')
 ```
 
 ### Intrinsic water use efficiency (``iwue``, IWUE)
-
 
 The intrinsic water-use efficiency is ratio of net photosynthetic CO2
 assimilation to stomatal conductance, and captures the cost of assimilation per
@@ -163,8 +161,8 @@ unit of water, in units of $\mu\mathrm{mol}\;\mathrm{mol}^{-1}$.
 plot_fun('iwue', r'IWUE ($\mu\mathrm{mol}\;\mathrm{mol}^{-1}$)')
 ```
 
-
 (estimating-productivity)=
+
 ## Estimating productivity
 
 The remaining key outputs are measures of photosynthetic productivity, such as
@@ -175,8 +173,7 @@ is an estimate of absorbed irradiance ($I_{abs}$).
 
 The {meth}`~pyrealm.pmodel.PModelEnvironment.estimate_productivity` method is
 used to provide these estimates to the P Model instance. Once this has been run,
-the following additional variables are populated. 
-
+the following additional variables are populated.
 
 ```{warning}
 
@@ -211,7 +208,6 @@ calculated using ``fapar=1, ppfd=1``, which are the default values to
 
 ### Gross primary productivity (``gpp``, GPP)
 
-
 ```{code-cell} python
 :tags: [hide-input]
 plot_fun('gpp', r'GPP   ($\mathrm{g\,C}\,m^{-2}\,\mathrm{month}^{-1}$)')
@@ -219,14 +215,12 @@ plot_fun('gpp', r'GPP   ($\mathrm{g\,C}\,m^{-2}\,\mathrm{month}^{-1}$)')
 
 ### Dark respiration (``rd``)
 
-
 ```{code-cell} python
 :tags: [hide-input]
 plot_fun('rd', r'$r_d$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)')
 ```
 
 ### Maximum rate of carboxylation (``vcmax``)
-
 
 ```{code-cell} python
 :tags: [hide-input]
@@ -254,14 +248,12 @@ plot_fun('jmax', r'$J_{max}$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)')
 plot_fun('gs', r'$g_s$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)')
 ```
 
-
 ## Scaling with absorbed irradiance
 
-All of the six productivity variables scale linearly with absorbed irradiance.
-The plots below show how each variable changes, for a constant environment with
-`tc` of 20°C, `patm` of 101325 Pa, `vpd` of 1000 Pa and $\ce{CO2}$ of 400 ppm,
-when absorbed irradiance changes from 0 to 2000
-$\text{mol}\,m^{-2}\,\text{month}^{-1}$.
+All of the six productivity variables scale linearly with absorbed irradiance. The plots
+below show how each variable changes, for a constant environment with `tc` of 20°C,
+`patm` of 101325 Pa, `vpd` of 1000 Pa and $\ce{CO2}$ of 400 ppm, when absorbed
+irradiance changes from 0 to 2000 $\text{mol}\,m^{-2}\,\text{month}^{-1}$.
 
 ```{code-cell} python
 :tags: [hide-input]

@@ -10,6 +10,8 @@ kernelspec:
   name: python3
 ---
 
+# Step 3: LUE Limitation
+
 ```{code-cell} python
 :tags: [hide-input]
 # This code loads required packages and then creates a representative range of
@@ -43,8 +45,6 @@ meanalpha_2d = np.broadcast_to(meanalpha_1d, (n_pts, n_pts))
 co2_2d = np.broadcast_to(co2_1d, (n_pts, n_pts))
 ```
 
-# Step 3: LUE Limitation
-
 Once key [photosynthetic parameters](photosynthetic_environment) and [optimal
 chi](optimal_chi) have been calculated, the {class}`~pyrealm.pmodel.PModel`
 class can report estimates of:
@@ -52,13 +52,12 @@ class can report estimates of:
 * the light use efficiency (LUE), as grams of carbon per mole of photons, and
 * the intrinsic water use efficiency (IWUE), as micromoles per mole of photons.
 
-
 ## Light use efficiency
 
 In its simplest form:
 
 $$
-  \text{LUE} = \phi_0 \cdot M_C \cdot m_j 
+  \text{LUE} = \phi_0 \cdot M_C \cdot m_j
 $$
 
 where $\phi_0$ is the quantum yield efficiency of photosynthesis, $M_C$ is the
@@ -66,9 +65,9 @@ molar mass of carbon and $m_j$ is the $\ce{CO2}$ limitation term of light use
 efficiency from the calculation of optimal $\chi$.
 
 However, the {mod}`pyrealm.pmodel` module also incorporates three further
-factors: 
+factors:
 
-* temperature (t) dependence of $\phi_0$, 
+* temperature (t) dependence of $\phi_0$,
 * $J_{max}$ limitation of $m_j$ by a factor $f_v$ and
 * an empirical soil moisture stress penalty on LUE.
 
@@ -76,11 +75,10 @@ $$
   \text{LUE} = \phi_0(t) \cdot M_C \cdot m_j \cdot f_v \cdot \beta(\theta)$
 $$
 
-
 ### $\phi_0$ and temperature dependency
 
 The {class}`~pyrealm.pmodel.PModel` uses a single variable to capture the
-apparent quantum yield efficiency of photosynthesis (`kphio`, $\phi_0$). 
+apparent quantum yield efficiency of photosynthesis (`kphio`, $\phi_0$).
 
 ```{warning}
 
@@ -101,11 +99,10 @@ to the empirically fitted values presented for three setups in {cite}`Stocker:20
 
 1. If the temperature dependence of $\phi_0$ is **not** applied,
     $\phi_0 = 0.049977$,
-1. otherwise, if an [empirical soil moisture stress factor](soil_moisture) 
+1. otherwise, if an [empirical soil moisture stress factor](soil_moisture)
    is being applied, $\phi_0 = 0.87182$
 1. otherwise, with no soil moisture stress and temperature dependence
    $\phi_0 = 0.081785$
-
 
 The initial value of $\phi_0$ and the values used in calculations are stored in
 the `init_kphio` and  `kphio` attributes of the {class}`~pyrealm.pmodel.PModel`
@@ -146,12 +143,11 @@ pyplot.show()
 
 ### Limitation of electron transfer rate ($J_{max}$) and carboxylation capacity ($V_{cmax}$)
 
-
 The {class}`~pyrealm.pmodel.PModel` implements three alternative approaches to
 the calculation of $J_{max}$ and $V_{cmax}$, using the argument
 `method_jmaxlim`. These options set the calculation of two factor ($f_j$ and
 $f_v$) which are applied to the calculation of $J_{max}$ and $V_{cmax}$. The
-options for this setting are: 
+options for this setting are:
 
 * `simple`: These are the 'simple' formulations of the P Model, with $f_j = f_v
   = 1$.
@@ -197,9 +193,7 @@ pyplot.legend()
 pyplot.show()
 ```
 
-
 ### Soil moisture stress
 
 This approach to handling soil moisture effects is presented
 [here](soil_moisture.md).
-

@@ -14,10 +14,9 @@ kernelspec:
 
 # Worked example
 
-This page shows the use of the {mod}`~pyrealm.pmodel` module to go from raw
-data to a global map of gross primary productivity (GPP). The first section 
-of code loads some example data from a NetCDF format file.
-
+This page shows the use of the {mod}`~pyrealm.pmodel` module to go from raw data to a
+global map of gross primary productivity (GPP). The first section of code loads some
+example data from a NetCDF format file.
 
 ```{code-cell} ipython3
 from matplotlib import pyplot as plt
@@ -42,9 +41,9 @@ ppfd = ds['ppfd'][:]
 ds.close()
 ```
 
-The model can now be run using that data. The first step is to convert the 
-elevation data to atmospheric pressure, and then this is used to set the
-photosynthetic environment for the model:  
+The model can now be run using that data. The first step is to convert the elevation
+data to atmospheric pressure, and then this is used to set the photosynthetic
+environment for the model:
 
 ```{code-cell} ipython3
 # Convert elevation to atmospheric pressure
@@ -61,9 +60,8 @@ env = pmodel.PModelEnvironment(tc=temp, co2=co2, patm=patm, vpd=vpd)
 env.summarize()
 ```
 
-That environment can then be run to calculate the P model predictions for
-light use efficiency:
-
+That environment can then be run to calculate the P model predictions for light use
+efficiency:
 
 ```{code-cell} ipython3
 # Run the P model
@@ -76,7 +74,6 @@ plt.show()
 
 Finally, the light use efficiency can be used to calculate GPP given the
 photosynthetic photon flux density and fAPAR.
-
 
 ```{code-cell} ipython3
 # Scale the outputs from values per unit iabs to realised values
