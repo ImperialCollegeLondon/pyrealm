@@ -43,5 +43,5 @@ jobs:
         # warnings.formatwarning returns OS insensitive pathnames. Nope.
         shell: bash
         run: |
-          python -m doctest pyrealm/*.py
+          poetry run python -m doctest pyrealm/*.py
         if: runner.os != 'Windows'
