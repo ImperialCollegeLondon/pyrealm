@@ -76,7 +76,7 @@ def bounds_checker(
     This is a simple pass through function that tests whether the values fall within
     the bounds specified and issues a warning when this is not the case
 
-    Parameters:
+    Args:
         values: An np.ndarray object or number
         lower: The value of the lower constraint
         upper: The value of the upper constraint
@@ -133,7 +133,7 @@ def input_mask(
     the provided interval with np.nan. Because np.nan is a float, when any data
     is out of bounds, the returned values are always float arrays or np.nan.
 
-    Parameters:
+    Args:
         inputs: An np.ndarray object or number
         lower: The value of the lower constraint
         upper: The value of the upper constraint
