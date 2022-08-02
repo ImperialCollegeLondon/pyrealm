@@ -1,3 +1,5 @@
+# noqa: D100
+
 import setuptools
 
 with open("README.md", "r") as fh:
