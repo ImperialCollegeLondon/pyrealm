@@ -157,16 +157,19 @@ Using `git flow` commands as an example to create a new release:
 git flow release start new_release
 ```
 
+Obviously, use something specific, not `new_release`! Ideally, you would do a dry run of
+the next step and use the version - but it should be fairly obvious what this will be!
+
 The `poetry version` command can then be used to bump the version number. Note that the
 command needs a 'bump rule', which sets which part of the semantic version number to
-increment (`major`, `minor` or `patch`).
+increment (`major`, `minor` or `patch`). For example:
 
 ```sh
 poetry version patch
 ```
 
-This updates `pyproject.toml` and - at present - the version number in
-`pyrealm/version.py` then needs to be updated to match.
+This updates `pyproject.toml`. At present, the package is set up so that you also *have
+to update the version number in `pyrealm/version.py`* to match manually.
 
 ### Publish and test the release branch
 
@@ -189,7 +192,9 @@ poetry build
 ```
 
 The first time this is run, `poetry` needs to be configured to add the Test PyPi
-repository and an API token.
+repository and an API token from that site. Note that accounts are not shared between
+the Test and main PyPi sites: the API token for `test-pypi` is different from
+`pypi` and you have to log in to each system separately and generate a token on each.
 
 ```sh
 poetry config repositories.test-pypi https://test.pypi.org/legacy/
@@ -210,64 +215,45 @@ Log in to:
 
 which is the admin site controlling the build process. From the Versions tab, activate
 the `release/new_release` branch and wait for it to build. Check the Builds tab to see
-that it has built successfully and maybe check updates! If it has built succesfully,
-then go back to the Versions tab and deactivate and hide the branch.
+that it has built successfully and maybe check updates! If it has built succesfully, do
+check pages to make sure that page code has executed successfully, and then go back to
+the Versions tab and deactivate and hide the branch.
 
-### Success
+### Create pull requests into `master` and `develop`
 
-Once all seems well,  the next step is to finish the release, which merges
-changes into `develop` and into a tagged commit on `master`. You then need
-to checkout the master branch and push the new version and tag to GitHub.
+If all is well, then two PRs need to be made on GitHub:
 
-```bash
-git flow release finish x.y.z
+* The `release` branch into `master`, to bring all commits since the last release and
+  any fixes on release into `master`.
+* The `release` branch into `develop`, to bring any `release` fixes back into `develop`.
+
+Once both of those have been merged, the `feature` branch can be deleted.
+
+### Tag, build and publish
+
+Once the `origin` repository is merged, then use `git pull` to bring `develop` and
+`master` up to date on a local repo. Then, create a tag using the release version.
+
+```sh
 git checkout master
-git push
+git tag <version>
+git push --tags
 ```
 
-## PyPi upload
+The final commit on `master` is now tagged with the release version. You can add tags on
+the GitHub website, but only by using the GitHub release system and we are using PyPi to
+distribute package releases.
 
-To upload the new version to the main PyPi site, run the build process again
-in the `master` branch to get the release builds:
+Before publishing a package to the main PyPi site for the first time, you need to set an
+API token for PyPi.
 
 ```sh
-python setup.py sdist bdist_wheel
+poetry config pypi-token.pypi <your-token>
 ```
 
-And then release the distribution using `twine` for use via `pip` - this time
-not using the `testpypi` sandbox.
-
-```sh
-twine upload dist/*x.y.z*
-```
-
-Now:
-
-* **switch back to `develop`!**
-
-```sh
-git checkout develop
-```
-
-* Bump the version number to add `.post9000` to show the code is in development again.
-
-## Poetry
-
-### Configure poetry for publication
-
-```sh
-poetry version patch
-```
-
-```sh
-poetry config repositories.test-pypi https://test.pypi.org/legacy/
-poetry config pypi-token.test-pypi <your-token>
-```
+And now you can build the packages from `master` and publish.
 
 ```sh
 poetry build
-```
-
-```sh
-poetry publish -r test-pypi
+poetry publish
 ```
