@@ -616,14 +616,14 @@ def calc_soilmstress(
     Table 1 of :cite:`Stocker:2020dh` specifically for the 'FULL' use case, with
     ``method_jmaxlim="wang17"``, ``do_ftemp_kphio=TRUE``.
 
-    Args
+    Args:
         soilm: Relative soil moisture as a fraction of field capacity
             (unitless). Defaults to 1.0 (no soil moisture stress).
         meanalpha: Local annual mean ratio of actual over potential
             evapotranspiration, measure for average aridity. Defaults to 1.0.
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other Parameters
+    Other Parameters:
         theta0: lower bound of soil moisture
             (:math:`\theta_0`, `pmodel_params.soilmstress_theta0`).
         thetastar: upper bound of soil moisture
@@ -742,11 +742,11 @@ def calc_patm(
 
         p(z) = p_0 ( 1 - L z / K_0) ^{ G M / (R L) },
 
-    Args
+    Args:
         elv: Elevation above sea-level (:math:`z`, metres above sea level.)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other Parameters
+    Other Parameters:
         G: gravity constant (:math:`g`, `pmodel_params.k_G`)
         Po: standard atmospheric pressure at sea level
             (:math:`p_0`, `pmodel_params.k_Po`)
@@ -1708,25 +1708,24 @@ class CalcOptimalChi:
     def lavergne20_c4(self) -> None:
         r"""Calculate soil moisture corrected :math:`\chi` for C4 plants.
 
-        This method applies the same calculations described in the
-        :meth:`~pyrealm.pmodel.CalcOptimalChi.lavergne20` method but using parameter
-        values for C4 plants. See that method for the calculation details.
+        This method calculates :math:`\beta` as a function of soil moisture following
+        the equation described in the :meth:`~pyrealm.pmodel.CalcOptimalChi.lavergne20`
+        method.  However, the default coefficients of the moisture scaling from
+        :cite:`lavergne:2020a` for C3 plants are adjusted to match the theoretical
+        expectation that :math:`\beta` for C4 plants is nine times smaller than
+        :math:`\beta` for C3 plants (see :meth:`~pyrealm.pmodel.CalcOptimalChi.c4`):
+        :math:`b` is unchanged but :math:`a_{C4} = a_{C3} - log(9)`.
+
+        Following the calculation of :math:`\beta`, this method then follows the
+        calculations described in :meth:`~pyrealm.pmodel.CalcOptimalChi.c4_no_gamma`:
+        :math:`m_j = 1.0`  because photorespiration is negligible, but :math:`m_c` and
+        hence :math:`m_{joc}` are calculated.
 
         Note:
 
         This is an **experimental approach**. The research underlying
         :cite:`lavergne:2020a`, found **no relationship** between C4 :math:`\beta`
         values and soil moisture in leaf gas exchange measurements.
-
-        However, the :meth:`~pyrealm.pmodel.CalcOptimalChi.c4` method describes a
-        theoretical expectation that :math:`\beta` for C4 plants is nine times smaller
-        than :math:`\beta` for C3 plants. This method therefore provides soil moisture
-        dependent estimates of :math:`\beta` for C4 plants that follow that
-        expectation.
-
-        The default coefficients of the moisture scaling from :cite:`lavergne:2020a` for
-        C3 plants are simply adjusted to maintain that scaling: :math:`b` is unchanged
-        but :math:`a_{C4} = a_{C3} - log(9)`.
 
         Examples:
             >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
@@ -1735,13 +1734,13 @@ class CalcOptimalChi:
             >>> round(vals.beta, 5)
             24.97251
             >>> round(vals.chi, 5)
-            0.49804
+            0.44432
             >>> round(vals.mc, 5)
-            1.0
+            0.28091
             >>> round(vals.mj, 5)
             1.0
             >>> round(vals.mjoc, 5)
-            1.0
+            3.55989
         """
 
         # Warn that this is experimental
@@ -1762,24 +1761,20 @@ class CalcOptimalChi:
             + self.pmodel_params.lavergne_2020_a_c4
         )
 
-        # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.xi = np.sqrt(
-            (self.beta * (self.env.kmm + self.env.gammastar)) / (1.6 * self.env.ns_star)
-        )
+        # Calculate chi and xi as in Prentice 14 but removing gamma terms.
+        self.xi = np.sqrt((self.beta * self.env.kmm) / (1.6 * self.env.ns_star))
+        self.chi = self.xi / (self.xi + np.sqrt(self.env.vpd))
 
-        self.chi = self.env.gammastar / self.env.ca + (
-            1.0 - self.env.gammastar / self.env.ca
-        ) * self.xi / (self.xi + np.sqrt(self.env.vpd))
-
-        # Set mj, mc, mjoc to 1
+        # mj is equal to 1 as gammastar is null
         if self.shape == 1:
-            self.mc = 1.0
             self.mj = 1.0
-            self.mjoc = 1.0
         else:
-            self.mc = np.ones(self.shape)
             self.mj = np.ones(self.shape)
-            self.mjoc = np.ones(self.shape)
+
+        # Calculate m and mc and m/mc
+        self.ci = self.chi * self.env.ca
+        self.mc = (self.ci) / (self.ci + self.env.kmm)
+        self.mjoc = self.mj / self.mc
 
     def c4(self) -> None:
         r"""Estimate :math:`\chi` for C4 plants following :cite:`Prentice:2014bc`.

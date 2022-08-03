@@ -778,3 +778,47 @@ def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, e
     warnings.warn("Skipping gs test for cases with numerical instability")
     # assert np.allclose(np.nan_to_num(ret.gs),
     #                 np.nan_to_num(expected['gs']))
+
+
+# Internal testing of functions
+
+
+# ------------------------------------------
+# Testing equivalence and functionality of lavergne methods for soil moisture impacts on
+# the beta cost parameter
+# ------------------------------------------
+
+
+@pytest.mark.parametrize("tc", np.linspace(-5, 45, 5))
+@pytest.mark.parametrize("theta", np.linspace(0, 0.8, 9))
+@pytest.mark.parametrize(
+    "variable_method, fixed_method, is_C4",
+    [("lavergne20_c3", "prentice14", False), ("lavergne20_c4", "c4_no_gamma", True)],
+)
+def test_lavergne_equivalence(tc, theta, variable_method, fixed_method, is_C4):
+
+    # Cannot do this test using N-D inputs because the PModelParams expect scalar values
+    # for paramaterizing beta - you can't set an array of values. So, test combinations
+    # of temperature and soil moisture.
+
+    env = pmodel.PModelEnvironment(tc=tc, patm=101325, vpd=100, co2=400, theta=theta)
+
+    # lavergne method
+    mod_theta = pmodel.PModel(env, method_optchi=variable_method)
+
+    # get equivalent model for fixed beta
+    if is_C4:
+        params = pmodel.PModelParams(beta_cost_ratio_c4=mod_theta.optchi.beta)
+    else:
+        params = pmodel.PModelParams(beta_cost_ratio_prentice14=mod_theta.optchi.beta)
+
+    env = pmodel.PModelEnvironment(
+        tc=tc, patm=101325, vpd=100, co2=400, theta=theta, pmodel_params=params
+    )
+
+    mod_fixed = pmodel.PModel(env, method_optchi=fixed_method)
+
+    assert np.allclose(mod_theta.optchi.chi, mod_fixed.optchi.chi)
+    assert np.allclose(mod_theta.optchi.mj, mod_fixed.optchi.mj)
+    assert np.allclose(mod_theta.optchi.mc, mod_fixed.optchi.mc)
+    assert np.allclose(mod_theta.optchi.mjoc, mod_fixed.optchi.mjoc)

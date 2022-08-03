@@ -23,7 +23,7 @@ Compared to C3 plants, plants using the C4 photosynthetic pathway:
 
 This gives C4 plants a substantial competitive advantage in warm, dry and low
 CO2 environments. The {class}`~pyrealm.pmodel.C3C3Competition` class provides an
-implementation of a model {cite}`lavergne:2020a` that estimates the expected
+implementation of a model {cite}`lavergne:2022a` that estimates the expected
 fraction of GPP from C4 plants. It uses predictions of GPP from the
 {class}`~pyrealm.pmodel.PModel` assuming communities consisting solely of C3 or
 C4 plants to calculate the expected fraction of C4 plants in the community and
