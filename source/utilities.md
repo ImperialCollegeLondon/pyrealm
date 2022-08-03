@@ -53,25 +53,24 @@ rh_2d = np.broadcast_to(rh_1d, (n_pts, n_pts))
 ### Hygrometric conversions
 
 The {class}`~pyrealm.pmodel.PModelEnvironment` class requires vapour pressure
-deficit (VPD, Pa) as an input, but forcing datasets often provide alternative 
-representations. The utilities provide functions to calculate saturated vapour 
-pressure for a given temperature and the conversions from vapour pressure, 
-relative humidity and specific humidity to vapour pressure deficit.  
-
+deficit (VPD, Pa) as an input, but forcing datasets often provide alternative
+representations. The utilities provide functions to calculate saturated vapour
+pressure for a given temperature and the conversions from vapour pressure,
+relative humidity and specific humidity to vapour pressure deficit.
 
 ```{admonition} Vapour Pressure and units
 :class: warning
 
-It is common to use data on Vapour Pressure (VP) to calculate Vapour Pressure 
-Deficit (VPD).  It is now usual for VP to be provided in kilopascals (kPa) but 
-some older data sources use hectopascals (hPa), which are equivalent to millibars 
+It is common to use data on Vapour Pressure (VP) to calculate Vapour Pressure
+Deficit (VPD).  It is now usual for VP to be provided in kilopascals (kPa) but
+some older data sources use hectopascals (hPa), which are equivalent to millibars
 (mb or mbar).
 
-The function {func}`~pyrealm.utilities.convert_vp_to_vpd` takes values in kPa 
+The function {func}`~pyrealm.utilities.convert_vp_to_vpd` takes values in kPa
 and returns kPa, so if you are using VP to prepare input data for
 {class}`~pyrealm.pmodel.PModelEnvironment`:
 
-* Make sure you are passing VP values to 
+* Make sure you are passing VP values to
   {func}`~pyrealm.utilities.convert_vp_to_vpd` in kPa and not hPa or mbar.
 * Rescale the output of {func}`~pyrealm.utilities.convert_vp_to_vpd` from
   kPa to Pa, before using it in {class}`~pyrealm.pmodel.PModelEnvironment`.
@@ -81,7 +80,7 @@ and returns kPa, so if you are using VP to prepare input data for
 #### Saturated vapour pressure
 
 ```{code-cell} ipython3
-# Create a sequence of air temperatures and calculate the saturated vapour pressure   
+# Create a sequence of air temperatures and calculate the saturated vapour pressure
 vp_sat = utilities.calc_vp_sat(ta_1d)
 
 # Plot ta against vp_sat
@@ -113,7 +112,7 @@ vpd = utilities.convert_rh_to_vpd(rh_2d, ta_2d.transpose())
 
 # Plot vpd
 fig, ax = pyplot.subplots()
-CS = ax.contour(rh_1d, ta_1d, vpd, colors='black', 
+CS = ax.contour(rh_1d, ta_1d, vpd, colors='black',
                 levels=[0,0.1,0.5,1,2.5,5,10,15])
 ax.clabel(CS, inline=1, fontsize=10)
 ax.set_title('Converting RH to VPD')
@@ -125,7 +124,7 @@ pyplot.show()
 #### Specific humidity to VPD
 
 ```{code-cell} ipython3
-# Create a sequence of air temperatures and calculate the saturated vapour pressure   
+# Create a sequence of air temperatures and calculate the saturated vapour pressure
 vpd1 = utilities.convert_sh_to_vpd(sh_1d, ta=20, patm=101.325)
 vpd2 = utilities.convert_sh_to_vpd(sh_1d, ta=30, patm=101.325)
 vpd3 = utilities.convert_sh_to_vpd(sh_1d, ta=20, patm=90)

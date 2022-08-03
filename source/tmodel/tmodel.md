@@ -14,9 +14,9 @@ kernelspec:
 
 # The T-Model
 
-This module provides a Python implementation of the T-Model
-(:{cite}`Li:2014bc`), which provides a physiological model of tree growth given
-a set of traits on tree growth scalings and allocation of primary production.
+This module provides a Python implementation of the T-Model (:{cite}`Li:2014bc`), which
+provides a physiological model of tree growth given a set of traits on tree growth
+scalings and allocation of primary production.
 
 The module uses three key components of the T Model:
 
@@ -24,12 +24,11 @@ The module uses three key components of the T Model:
 2. the {class}`~pyrealm.tmodel.TTree` class, and
 3. the {func}`~pyrealm.tmodel.grow_ttree` function.
 
-
 ## The {class}`~pyrealm.param_classes.TModelTraits` class
 
-The T Model depends on a set of 14 traits that are used to describe the geometry
-of a tree and the allocation of carbon within the tree and which are listed
-in the linked class description. 
+The T Model depends on a set of 14 traits that are used to describe the geometry of a
+tree and the allocation of carbon within the tree and which are listed in the linked
+class description.
 
 The class can be used to create a default T Model trait set:
 
@@ -50,8 +49,7 @@ print(traits2)
 
 ## The {class}`~pyrealm.tmodel.TTree` class
 
-This class implements the mathematical description of tree growth under the T
-Model. 
+This class implements the mathematical description of tree growth under the T Model.
 
 There are three stages to generating predictions:
 
@@ -59,11 +57,11 @@ There are three stages to generating predictions:
 2. setting the stem diameters to calculate tree geometry and mass, and
 3. calculating growth predictions for a given estimate of gross primary productivity (GPP).
 
-Note that the {class}`~pyrealm.tmodel.TTree` is not used to model tree growth
-through time (see below and {func}`~pyrealm.tmodel.grow_ttree`). It simply
-calculates the predictions of the T Model for trees with a given diameter and
-GPP. Because  it accepts **arrays** of data, it can be used to very quickly
-visualise the behaviour of the TModel for a given set of traits and diameters.
+Note that the {class}`~pyrealm.tmodel.TTree` is not used to model tree growth through
+time (see below and {func}`~pyrealm.tmodel.grow_ttree`). It simply calculates the
+predictions of the T Model for trees with a given diameter and GPP. Because  it accepts
+**arrays** of data, it can be used to very quickly visualise the behaviour of the TModel
+for a given set of traits and diameters.
 
 ### Initialising a {class}`~pyrealm.tmodel.TTree` object
 
@@ -78,10 +76,10 @@ tree2 = tmodel.TTree(traits=traits2)
 
 ### Setting stem diameters
 
-The {meth}`~pyrealm.tmodel.TTree.set_diameter` method is used to provide a
-diameter or array of diameters to the {class}`~pyrealm.tmodel.TTree` object.
-These values are then immediately used to calculate all properties of the 
-{class}`~pyrealm.tmodel.TTree` that scale simply with tree diameter:
+The {meth}`~pyrealm.tmodel.TTree.set_diameter` method is used to provide a diameter or
+array of diameters to the {class}`~pyrealm.tmodel.TTree` object. These values are then
+immediately used to calculate all properties of the {class}`~pyrealm.tmodel.TTree` that
+scale simply with tree diameter:
 
 * Stem diameter (`diameter`)
 * Stem height (`height`)
@@ -91,14 +89,13 @@ These values are then immediately used to calculate all properties of the
 * Mass of foliage and fine roots (`mass_fol`)
 * Mass of sapwood (`mass_swd`)
 
-
 ```{code-cell} ipython3
 tree1.set_diameter(0.5)
 print(tree1.height)
 ```
 
-Providing an array of diameter values calculates the predicted values for each
-value, providing a quick way to visualise how settings alter the scaling of a
+Providing an array of diameter values calculates the predicted values for each value,
+providing a quick way to visualise how settings alter the scaling of a
 {class}`~pyrealm.tmodel.TTree` instance.
 
 ```{code-cell} ipython3
@@ -140,10 +137,10 @@ pyplot.show()
 
 ### Calculating growth
 
-In exactly the same way, the {meth}`~pyrealm.tmodel.TTree.calculate_growth`
-method can now be used to provide a scalar or array estimate of GPP to a
-{class}`~pyrealm.tmodel.TTree` instance. This calculate estimates of tree
-growth parameters:
+In exactly the same way, the {meth}`~pyrealm.tmodel.TTree.calculate_growth` method can
+now be used to provide a scalar or array estimate of GPP to a
+{class}`~pyrealm.tmodel.TTree` instance. This calculate estimates of tree growth
+parameters:
 
 * Gross primary productivity (`gpp_actual`)
 * Net primary productivity (`npp`)
@@ -155,14 +152,14 @@ growth parameters:
 * Stem mass increment (`delta_mass_stm`)
 * Fine root mass increment (`delta_mass_frt`)
 
-The code below calculates growth estimates at each diameter under a constant GPP of 7 TODO - UNITS!.
+The code below calculates growth estimates at each diameter under a constant GPP of 7
+TODO - UNITS!.
 
 ```{code-cell} ipython3
 # Set diameters 0.02, 0.04, ..., 2.00
 tree1.calculate_growth(7)
 tree2.calculate_growth(7)
 ```
-
 
 ```{code-cell} ipython3
 :tags: [hide-input]
@@ -189,20 +186,19 @@ ax3.legend()
 pyplot.show()
 ```
 
-## The {func}`~pyrealm.tmodel.grow_ttree` function.
+## The {func}`~pyrealm.tmodel.grow_ttree` function
 
-The  {class}`~pyrealm.tmodel.TTree` class implements the calculation of the T
-Model given diameter and GPP data. Using this calculate a time series just 
-involves:
+The  {class}`~pyrealm.tmodel.TTree` class implements the calculation of the T Model
+given diameter and GPP data. Using this calculate a time series just involves:
 
 * Setting the diameter ({meth}`~pyrealm.tmodel.TTree.set_diameter`),
 * calculating the annual growth ({meth}`~pyrealm.tmodel.TTree.calculate_growth`),
-* adding the calculated {py:attr}`~pyrealm.tmodel.TTree.delta_d` to the current
-  diameter and repeating.
+* adding the calculated {py:attr}`~pyrealm.tmodel.TTree.delta_d` to the current diameter
+  and repeating.
 
-This iteration is the main part of the {func}`~pyrealm.tmodel.grow_ttree`. The
-user needs to provide initial stem diameters and then a time series of GPP
-values. The function will return a `numpy` array containing any property of the
+This iteration is the main part of the {func}`~pyrealm.tmodel.grow_ttree`. The user
+needs to provide initial stem diameters and then a time series of GPP values. The
+function will return a `numpy` array containing any property of the
 {class}`~pyrealm.tmodel.TTree` requested in the `outvars` argument of
 {py:func}`~pyrealm.tmodel.grow_ttree`.
 
@@ -217,7 +213,6 @@ gpp = np.array([[7] * 4] * 100)
 years = np.arange(100)
 values = tmodel.grow_ttree(gpp, diams, time_axis=0, traits=traits)
 ```
-
 
 ```{code-cell} ipython3
 :tags: [hide-input]

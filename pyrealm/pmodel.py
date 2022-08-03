@@ -34,7 +34,7 @@ def calc_density_h2o(
     atmospheric pressure, using the Tumlirz Equation and coefficients calculated
     by :cite:`Fisher:1975tm`.
 
-    Parameters:
+    Args:
         tc: air temperature, °C
         patm: atmospheric pressure, Pa
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
@@ -157,7 +157,7 @@ def calc_ftemp_arrh(
             \end{align*}
         \]
 
-    Parameters:
+    Args:
         tk: Temperature (in Kelvin)
         ha: Activation energy (in :math:`J \text{mol}^{-1}`)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
@@ -198,10 +198,10 @@ def calc_ftemp_inst_rd(
 
             fr = exp( b (T_o - T) -  c ( T_o^2 - T^2 ))
 
-    Parameters:
+    Args:
         tc: Temperature (degrees Celsius)
 
-    Other parameters:
+    Other Parameters:
         To: standard reference temperature (:math:`T_o`, `pmodel_params.k_To`)
         b: empirically derived global mean coefficient
             (:math:`b`, Table 1, ::cite:`Heskel:2016fg`)
@@ -256,12 +256,12 @@ def calc_ftemp_inst_vcmax(
 
         \Delta S = a + b T
 
-    Parameters:
+    Args:
         tc:  temperature, or in general the temperature relevant for
             photosynthesis (°C)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other parameters:
+    Other Parameters:
         Ha: activation energy (:math:`H_a`, `pmodel_params.kattge_knorr_Ha`)
         Hd: deactivation energy (:math:`H_d`, `pmodel_params.kattge_knorr_Hd`)
         To: standard reference temperature expressed in Kelvin
@@ -326,13 +326,13 @@ def calc_ftemp_kphio(
     efficiency parameter (argument `kphio` to the class
     :class:`~pyrealm.pmodel.PModel`).
 
-    Parameters:
+    Args:
         tc: Temperature, relevant for photosynthesis (°C)
         c4: Boolean specifying whether fitted temperature response for C4 plants
             is used. Defaults to \code{FALSE}.
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other parameters:
+    Other Parameters:
         C3: the parameters (:math:`a,b,c`, `pmodel_params.kphio_C3`) are taken from the
             temperature dependence of the maximum quantum yield of photosystem
             II in light-adapted tobacco leaves determined by :cite:`Bernacchi:2003dc`.
@@ -385,7 +385,7 @@ def calc_gammastar(
     temperature following an Arrhenius-type temperature response function
     implemented in :func:`calc_ftemp_arrh`.
 
-    Parameters:
+    Args:
         tc: Temperature relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pascals)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
@@ -434,12 +434,12 @@ def calc_ns_star(
 
         \eta^* = \frac{v(t,p)}{v(t_0,p_0)}
 
-    Parameters:
+    Args:
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pa)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other parameters:
+    Other Parameters:
         To: standard temperature (:math:`t0`, `pmodel_params.k_To`)
         Po: standard pressure (:math:`p_0`, `pmodel_params.k_Po`)
 
@@ -493,12 +493,12 @@ def calc_kmm(
     .. TODO - why this height? Inconsistent with calc_gammastar which uses P_0
               for the same conversion for a value in the same table.
 
-    Parameters:
+    Args:
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pa)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other parameters:
+    Other Parameters:
         hac: activation energy for :math:`\ce{CO2}`
             (:math:`H_{kc}`, `pmodel_params.bernacchi_dhac`)
         hao:  activation energy for :math:`\ce{O2}`
@@ -548,12 +548,12 @@ def calc_kp_c4(
     carboxylase (PEPc) (:math:`K`, :cite:`boyd:2015a`) as a function of
     temperature (:math:`T`) and atmospheric pressure (:math:`p`) as:
 
-    Parameters:
+    Args:
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pa)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other parameters:
+    Other Parameters:
         hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`,
              `pmodel_params.boyd_dhac_c4`)
         kc25: Michelis constant for :math:`\ce{CO2}` at standard temperature
@@ -616,14 +616,14 @@ def calc_soilmstress(
     Table 1 of :cite:`Stocker:2020dh` specifically for the 'FULL' use case, with
     ``method_jmaxlim="wang17"``, ``do_ftemp_kphio=TRUE``.
 
-    Parameters:
+    Args:
         soilm: Relative soil moisture as a fraction of field capacity
             (unitless). Defaults to 1.0 (no soil moisture stress).
         meanalpha: Local annual mean ratio of actual over potential
             evapotranspiration, measure for average aridity. Defaults to 1.0.
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other parameters:
+    Other Parameters:
         theta0: lower bound of soil moisture
             (:math:`\theta_0`, `pmodel_params.soilmstress_theta0`).
         thetastar: upper bound of soil moisture
@@ -677,7 +677,7 @@ def calc_viscosity_h2o(
     Calculates the viscosity of water (:math:`\eta`) as a function of
     temperature and atmospheric pressure (::cite:`Huber:2009fy`).
 
-    Parameters:
+    Args:
         tc: air temperature (°C)
         patm: atmospheric pressure (Pa)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
@@ -742,11 +742,11 @@ def calc_patm(
 
         p(z) = p_0 ( 1 - L z / K_0) ^{ G M / (R L) },
 
-    Parameters:
+    Args:
         elv: Elevation above sea-level (:math:`z`, metres above sea level.)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other parameters:
+    Other Parameters:
         G: gravity constant (:math:`g`, `pmodel_params.k_G`)
         Po: standard atmospheric pressure at sea level
             (:math:`p_0`, `pmodel_params.k_Po`)
@@ -784,7 +784,7 @@ def calc_co2_to_ca(
     Converts ambient :math:`\ce{CO2}` (:math:`c_a`) in part per million to
     Pascals, accounting for atmospheric pressure.
 
-    Parameters:
+    Args
         co2 (float): atmospheric :math:`\ce{CO2}`, ppm
         patm (float): atmospheric pressure, Pa
 
@@ -1708,25 +1708,24 @@ class CalcOptimalChi:
     def lavergne20_c4(self) -> None:
         r"""Calculate soil moisture corrected :math:`\chi` for C4 plants.
 
-        This method applies the same calculations described in the
-        :meth:`~pyrealm.pmodel.CalcOptimalChi.lavergne20` method but using parameter
-        values for C4 plants. See that method for the calculation details.
+        This method calculates :math:`\beta` as a function of soil moisture following
+        the equation described in the :meth:`~pyrealm.pmodel.CalcOptimalChi.lavergne20`
+        method.  However, the default coefficients of the moisture scaling from
+        :cite:`lavergne:2020a` for C3 plants are adjusted to match the theoretical
+        expectation that :math:`\beta` for C4 plants is nine times smaller than
+        :math:`\beta` for C3 plants (see :meth:`~pyrealm.pmodel.CalcOptimalChi.c4`):
+        :math:`b` is unchanged but :math:`a_{C4} = a_{C3} - log(9)`.
+
+        Following the calculation of :math:`\beta`, this method then follows the
+        calculations described in :meth:`~pyrealm.pmodel.CalcOptimalChi.c4_no_gamma`:
+        :math:`m_j = 1.0`  because photorespiration is negligible, but :math:`m_c` and
+        hence :math:`m_{joc}` are calculated.
 
         Note:
 
         This is an **experimental approach**. The research underlying
         :cite:`lavergne:2020a`, found **no relationship** between C4 :math:`\beta`
         values and soil moisture in leaf gas exchange measurements.
-
-        However, the :meth:`~pyrealm.pmodel.CalcOptimalChi.c4` method describes a
-        theoretical expectation that :math:`\beta` for C4 plants is nine times smaller
-        than :math:`\beta` for C3 plants. This method therefore provides soil moisture
-        dependent estimates of :math:`\beta` for C4 plants that follow that
-        expectation.
-
-        The default coefficients of the moisture scaling from :cite:`lavergne:2020a` for
-        C3 plants are simply adjusted to maintain that scaling: :math:`b` is unchanged
-        but :math:`a_{C4} = a_{C3} - log(9)`.
 
         Examples:
             >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
@@ -1735,13 +1734,13 @@ class CalcOptimalChi:
             >>> round(vals.beta, 5)
             24.97251
             >>> round(vals.chi, 5)
-            0.49804
+            0.44432
             >>> round(vals.mc, 5)
-            1.0
+            0.28091
             >>> round(vals.mj, 5)
             1.0
             >>> round(vals.mjoc, 5)
-            1.0
+            3.55989
         """
 
         # Warn that this is experimental
@@ -1762,24 +1761,20 @@ class CalcOptimalChi:
             + self.pmodel_params.lavergne_2020_a_c4
         )
 
-        # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.xi = np.sqrt(
-            (self.beta * (self.env.kmm + self.env.gammastar)) / (1.6 * self.env.ns_star)
-        )
+        # Calculate chi and xi as in Prentice 14 but removing gamma terms.
+        self.xi = np.sqrt((self.beta * self.env.kmm) / (1.6 * self.env.ns_star))
+        self.chi = self.xi / (self.xi + np.sqrt(self.env.vpd))
 
-        self.chi = self.env.gammastar / self.env.ca + (
-            1.0 - self.env.gammastar / self.env.ca
-        ) * self.xi / (self.xi + np.sqrt(self.env.vpd))
-
-        # Set mj, mc, mjoc to 1
+        # mj is equal to 1 as gammastar is null
         if self.shape == 1:
-            self.mc = 1.0
             self.mj = 1.0
-            self.mjoc = 1.0
         else:
-            self.mc = np.ones(self.shape)
             self.mj = np.ones(self.shape)
-            self.mjoc = np.ones(self.shape)
+
+        # Calculate m and mc and m/mc
+        self.ci = self.chi * self.env.ca
+        self.mc = (self.ci) / (self.ci + self.env.kmm)
+        self.mjoc = self.mj / self.mc
 
     def c4(self) -> None:
         r"""Estimate :math:`\chi` for C4 plants following :cite:`Prentice:2014bc`.
@@ -2688,7 +2683,7 @@ def memory_effect(values: np.ndarray, alpha: float = 0.067) -> np.ndarray:
     For :math:`t_{0}`, the first value in the optimal values is used so
     :math:`E_{0} = O_{0}`.
 
-    Parameters:
+    Args
         values: An equally spaced time series of values
         alpha: The relative weight applied to the most recent observation
 

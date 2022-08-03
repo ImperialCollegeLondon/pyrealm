@@ -22,3 +22,5 @@ pyrealm.egg-info
 # R hidden files
 .Rapp.history
 
+# Coverage
+.coverage

@@ -14,21 +14,24 @@ kernelspec:
 
 # P Model behaviour with extreme values of forcing variables
 
-Forcing datasets for the input to the P Model - particularly remotely sensed datasets - can contain extreme values. 
-This page provides an overview of the behaviour of the initial functions calculating the photosynthetic environment 
-when given extreme inputs, to help guide when inputs should be filter or clipped to remove problem values.
+Forcing datasets for the input to the P Model - particularly remotely sensed datasets -
+can contain extreme values. This page provides an overview of the behaviour of the
+initial functions calculating the photosynthetic environment when given extreme inputs,
+to help guide when inputs should be filter or clipped to remove problem values.
 
-## Realistic input values.
+## Realistic input values
 
-- Temperature (°C): the range of air temperatures in global datasets can easily include values
-  as extreme as -80 °C to 50 °C. However, the water density calculation is unstable below -25°C
-  and so {class}`~pyrealm.pmodel.PModelEnv` _will not_ accept values below -25°C. 
-- Atmospheric Pressure (Pa): at sea-level, extremes of 87000 Pa to 108400 Pa have been observed
-  but with elevation can fall much lower, down to ~34000 Pa at the summit of Mt Everest.
-- Vapour Pressure Deficit (Pa): values between extremes of 0 and 10000 Pa are realistic but some 
-  datasets may contain negative values of VPD. The problem here is that VPD is included in a square 
-  root term, which results in missing data. You should explicitly clip negative VPD values to zero
-  or set them to `np.nan`.
+- Temperature (°C): the range of air temperatures in global datasets can easily include
+  values as extreme as -80 °C to 50 °C. However, the water density calculation is
+  unstable below -25°C and so {class}`~pyrealm.pmodel.PModelEnv` _will not_ accept
+  values below -25°C.
+- Atmospheric Pressure (Pa): at sea-level, extremes of 87000 Pa to 108400 Pa have been
+  observed but with elevation can fall much lower, down to ~34000 Pa at the summit of Mt
+  Everest.
+- Vapour Pressure Deficit (Pa): values between extremes of 0 and 10000 Pa are realistic
+  but some datasets may contain negative values of VPD. The problem here is that VPD is
+  included in a square root term, which results in missing data. You should explicitly
+  clip negative VPD values to zero or set them to `np.nan`.
 
 ## Temperature dependence of quantum yield efficiency
 
@@ -73,9 +76,10 @@ pyplot.show()
 
 ## Photorespiratory compensation point ($\Gamma^*$)
 
-The photorespiratory compensation point ($\Gamma^*$) varies with as a function
-of temperature and atmospheric pressure, and behaves smoothly with extreme inputs.
-Note that again, $\Gamma^*$ has non-zero values for sub-zero temperatures.
+<!-- markdownlint-disable-next-line MD049 -->
+The photorespiratory compensation point ($\Gamma^*$) varies with as a function of
+temperature and atmospheric pressure, and behaves smoothly with extreme inputs. Note
+that again, $\Gamma^*$ has non-zero values for sub-zero temperatures.
 
 ```{code-cell} python
 :tags: [hide-input]
@@ -116,10 +120,9 @@ pyplot.show()
 
 ## Relative viscosity of water ($\eta^*$)
 
-The density ($\rho$) and viscosity ($\mu$) of water both vary with temperature
-and atmospheric pressure. Looking at the density of water, there is a serious
-numerical issue with low temperatures arising from the equations for the density
-of water. 
+The density ($\rho$) and viscosity ($\mu$) of water both vary with temperature and
+atmospheric pressure. Looking at the density of water, there is a serious numerical
+issue with low temperatures arising from the equations for the density of water.
 
 ```{code-cell} python
 :tags: [hide-input]
@@ -128,7 +131,11 @@ ax = pyplot.gca()
 
 # Calculate rho
 for patm in [3, 7, 9, 11, 13]:
-    ax.plot(tc_1d, pmodel.calc_density_h2o(tc_1d, patm * 1000, safe=False), label=f'{patm} kPa')
+    ax.plot(
+      tc_1d, 
+      pmodel.calc_density_h2o(tc_1d, patm * 1000, safe=False), 
+      label=f'{patm} kPa'
+    )
 
 # Create a contour plot of gamma
 ax.set_title(r'Temperature and pressure dependence of $\rho$')
@@ -140,7 +147,7 @@ pyplot.show()
 ```
 
 Zooming in, the behaviour of this function is not reliable at extreme low temperatures
-leading to unstable estimates of $\eta^*$ and the P Model should not be used to make 
+leading to unstable estimates of $\eta^*$ and the P Model should not be used to make
 predictions below about -30 °C.
 
 ```{code-cell} python
@@ -152,7 +159,11 @@ tc_1d = np.linspace(-40, 20, n_pts)
 
 # Calculate K_mm
 for patm in [3, 7, 9, 11, 13]:
-    ax.plot(tc_1d, pmodel.calc_density_h2o(tc_1d, patm * 1000, safe=False), label=f'{patm} kPa')
+    ax.plot(
+      tc_1d,
+      pmodel.calc_density_h2o(tc_1d, patm * 1000, safe=False), 
+      label=f'{patm} kPa'
+    )
 
 # Create a contour plot of gamma
 ax.set_title(r'Temperature and pressure dependence of $\rho$')

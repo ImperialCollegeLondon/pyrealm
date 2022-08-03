@@ -135,7 +135,8 @@ pyplot.show()
 
 Details: {func}`pyrealm.pmodel.calc_co2_to_ca`
 
-The partial pressure of $\ce{CO2}$ is a function of the atmospheric concentration of $\ce{CO2}$ in parts per million and the atmospheric pressure: 
+The partial pressure of $\ce{CO2}$ is a function of the atmospheric concentration of
+$\ce{CO2}$ in parts per million and the atmospheric pressure:
 
 ```{code-cell} python
 :tags: [hide-input]

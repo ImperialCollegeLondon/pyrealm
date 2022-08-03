@@ -14,41 +14,43 @@ kernelspec:
 
 # Soil moisture stress
 
-At present, there are three approaches for incorporating soil moisture 
-effects on photosynthesis:
+At present, there are three approaches for incorporating soil moisture effects on
+photosynthesis:
 
 * The Stocker $\beta(\theta)$ factor applied to light use efficiency, described below.
-* The experimental `rootzonestress` argument to {class}`~pyrealm.pmodel.PModel`, see below.
-* The `lavergne20_c3` and `lavergne20_c4` methods for {class}`~pyrealm.params.CalcOptimalChi`, which use an empirical model of the change in $\beta$ with soil moisture. See [here](optimal_chi) for details.
+* The experimental `rootzonestress` argument to {class}`~pyrealm.pmodel.PModel`, see
+  below.
+* The `lavergne20_c3` and `lavergne20_c4` methods for
+  {class}`~pyrealm.params.CalcOptimalChi`, which use an empirical model of the change in
+  $\beta$ with soil moisture. See [here](optimal_chi) for details.
 
 ## Stocker $\beta(\theta)$
 
 This is an empirically derived factor ($\beta(\theta) \in [0,1]$,
-:{cite}`Stocker:2018be`, :{cite}`Stocker:2020dh`) that captures the response of
-light use efficiency (LUE) and hence gross primary productivity (GPP)  to soil
-moisture stress. The calculated value of $\beta(\theta)$ is applied directly as
-a penalty factor to LUE and hence to estimates of GPP.
+:{cite}`Stocker:2018be`, :{cite}`Stocker:2020dh`) that captures the response of light
+use efficiency (LUE) and hence gross primary productivity (GPP)  to soil moisture
+stress. The calculated value of $\beta(\theta)$ is applied directly as a penalty factor
+to LUE and hence to estimates of GPP.
 
 The factor requires estimates of:
 
 * relative soil moisture ($m_s$, `soilm`), as the fraction of field capacity, and
-* a measure of local mean aridity ($\bar{\alpha}$, `meanalpha`), as the average
-  annual ratio of AET to PET.
+* a measure of local mean aridity ($\bar{\alpha}$, `meanalpha`), as the average annual
+  ratio of AET to PET.
 
-The functions to calculate $\beta(\theta)$ are based on four parameters, derived
-from experimental data and set in {class}`~pyrealm.params.PModelParams`:
+The functions to calculate $\beta(\theta)$ are based on four parameters, derived from
+experimental data and set in {class}`~pyrealm.params.PModelParams`:
 
-* An upper bound in relative soil moisture ($\theta^\ast$,
-  `soilmstress_thetastar`), above which $\beta$ is always 1, corresponding to no
-  loss of light use efficiency.
+* An upper bound in relative soil moisture ($\theta^\ast$, `soilmstress_thetastar`),
+  above which $\beta$ is always 1, corresponding to no loss of light use efficiency.
 * An lower bound in relative soil moisture ($\theta_0$, `soilmstress_theta0`),
   below which LUE is always zero.
 * An intercept (a, `soilmstress_a`) for the aridity sensitivity parameter $q$.
 * A slope (b, `soilmstress_b`) for the aridity sensitivity parameter $q$.
 
-The aridity measure (($\bar{\alpha}$) is first used to set an aridity
-sensitivity parameter ($q$), which sets the speed with which $\beta(\theta) \to
-0$ as $m_s$ decreases. 
+The aridity measure (($\bar{\alpha}$) is first used to set an aridity sensitivity
+parameter ($q$), which sets the speed with which $\beta(\theta) \to 0$ as $m_s$
+decreases.
 
 $$
     q = (1 - (a + b \bar{\alpha}))/(\theta^\ast - \theta_{0})^2
@@ -80,7 +82,7 @@ par_def = PModelParams(soilmstress_theta0 = 0.1)
 # Calculate q
 mean_alpha_seq = np.linspace(0, 1, 101)
 
-q = ((1 - (par_def.soilmstress_a + par_def.soilmstress_b *  mean_alpha_seq)) 
+q = ((1 - (par_def.soilmstress_a + par_def.soilmstress_b *  mean_alpha_seq))
      / (par_def.soilmstress_thetastar - par_def.soilmstress_theta0) ** 2)
 
 # Create a 1x2 plot
@@ -96,7 +98,7 @@ soilm = np.linspace(0, 0.7, 101)
 
 for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
 
-    soilmstress = pmodel.calc_soilmstress(soilm=soilm, meanalpha=mean_alpha, 
+    soilmstress = pmodel.calc_soilmstress(soilm=soilm, meanalpha=mean_alpha,
                                         pmodel_params=par_def)
     ax2.plot(soilm, soilmstress, label=r'$\bar{{\alpha}}$ = {}'.format(mean_alpha))
 
@@ -159,19 +161,19 @@ In the `rpmodel` implementation, the soil moisture factor is also used
 to modify $V_{cmax}$ and $J_{max}$, so that these values are congruent
 with the resulting penalised LUE and GPP.
 
-This is **not implemented in {class}`~pyrealm.pmodel.PModel`**. The 
+This is **not implemented in {class}`~pyrealm.pmodel.PModel`**. The
 empirical correction is applied only to LUE and hence GPP. A warning is generated
 when accessing $V_{cmax}$, $J_{max}$ and predictions deriving from those
 values if this soil moisture stress factor has been applied.
 ```
 
 ```{code-cell} ipython3
-# Jmax warns that it has not been corrected for soil moisture 
+# Jmax warns that it has not been corrected for soil moisture
 print(model_stress.jmax[0])
 ```
 
 ```{code-cell} ipython3
-# Vcmax warns that it has not been corrected for soil moisture 
+# Vcmax warns that it has not been corrected for soil moisture
 print(model_stress.vcmax[0])
 ```
 
@@ -179,8 +181,8 @@ print(model_stress.vcmax[0])
 
 ```{warning}
 This approach is **an experimental feature** - see the
-[PModel class description]({meth}`~pyrealm.pmodel.PModel). Essentially, the values for 
-`rootzonestress` apply a penalty factor directly to $\beta$ in the calculation of 
-optimal $\chi$. This factor is currently calculated externally to the `pyrealm` package 
+{class}`~pyrealm.pmodel.PModel` documentation. Essentially, the values for
+`rootzonestress` apply a penalty factor directly to $\beta$ in the calculation of
+optimal $\chi$. This factor is currently calculated externally to the `pyrealm` package
 and is not documented here.
 ```
