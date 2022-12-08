@@ -13,20 +13,11 @@ and save methods and then individual parameter classes define the parameter sets
 and default values for each class.
 """
 
-# TODO: using annotations to try and type the return values of
-#       ParamClass.from_xyz methods breaks @enforce_types: types get converted
-#       to strings somewhere along the way. Oddly enforce_types is picky about
-#       float != int where mypy is supposed not to be, so continuing to use
-#       Number here.
-
-# from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass
-from numbers import Number
 from typing import Tuple
 
-import enforce_typing
 import numpy as np
 from dacite import from_dict
 
@@ -98,7 +89,7 @@ class ParamClass:
             json.dump(self.to_dict(), outfile, indent=4)
 
     @classmethod
-    def from_dict(cls, data: dict):
+    def from_dict(cls, data: dict) -> "ParamClass":
         """Create a ParamClass instance from a dictionary.
 
         Generates a parameter class object using the data provided in a
@@ -114,7 +105,7 @@ class ParamClass:
         return from_dict(cls, data)
 
     @classmethod
-    def from_json(cls, filename: str):
+    def from_json(cls, filename: str) -> "ParamClass":
         """Create a ParamClass instance from a JSON file.
 
         Generates a parameter class object using the data provided in a
@@ -134,7 +125,6 @@ class ParamClass:
         return cls.from_dict(json_data)
 
 
-@enforce_typing.enforce_types
 @dataclass(frozen=True)
 class PModelParams(ParamClass):
     r"""Model parameters for the P Model.
@@ -251,32 +241,32 @@ class PModelParams(ParamClass):
     # https://github.com/tox-dev/sphinx-autodoc-typehints/issues/44
 
     # Constants
-    k_R: Number = 8.3145
-    k_co: Number = 209476.0
-    k_c_molmass: Number = 12.0107
-    k_Po: Number = 101325.0
-    k_To: Number = 25.0
-    k_L: Number = 0.0065
-    k_G: Number = 9.80665
-    k_Ma: Number = 0.028963
-    k_CtoK: Number = 273.15
+    k_R: float = 8.3145
+    k_co: float = 209476.0
+    k_c_molmass: float = 12.0107
+    k_Po: float = 101325.0
+    k_To: float = 25.0
+    k_L: float = 0.0065
+    k_G: float = 9.80665
+    k_Ma: float = 0.028963
+    k_CtoK: float = 273.15
 
     # Fisher Dial
-    fisher_dial_lambda: Tuple[Number, ...] = (
+    fisher_dial_lambda: Tuple[float, ...] = (
         1788.316,
         21.55053,
         -0.4695911,
         0.003096363,
         -7.341182e-06,
     )
-    fisher_dial_Po: Tuple[Number, ...] = (
+    fisher_dial_Po: Tuple[float, ...] = (
         5918.499,
         58.05267,
         -1.1253317,
         0.0066123869,
         -1.4661625e-05,
     )
-    fisher_dial_Vinf: Tuple[Number, ...] = (
+    fisher_dial_Vinf: Tuple[float, ...] = (
         0.6980547,
         -0.0007435626,
         3.704258e-05,
@@ -290,11 +280,11 @@ class PModelParams(ParamClass):
     )
     # Huber
     simple_viscosity: bool = False
-    huber_tk_ast: Number = 647.096
-    huber_rho_ast: Number = 322.0
-    huber_mu_ast: Number = 1e-06
-    huber_H_i: Tuple[Number, ...] = (1.67752, 2.20462, 0.6366564, -0.241605)
-    huber_H_ij: Tuple[Tuple[Number, ...], ...] = (
+    huber_tk_ast: float = 647.096
+    huber_rho_ast: float = 322.0
+    huber_mu_ast: float = 1e-06
+    huber_H_i: Tuple[float, ...] = (1.67752, 2.20462, 0.6366564, -0.241605)
+    huber_H_ij: Tuple[Tuple[float, ...], ...] = (
         (0.520094, 0.0850895, -1.08374, -0.289555, 0.0, 0.0),
         (0.222531, 0.999115, 1.88797, 1.26613, 0.0, 0.120573),
         (-0.281378, -0.906851, -0.772479, -0.489837, -0.25704, 0.0),
@@ -304,66 +294,65 @@ class PModelParams(ParamClass):
         (0.0, 0.0, 0.0, -0.00435673, 0.0, -0.000593264),
     )
     # Heskel
-    heskel_b: Number = 0.1012
-    heskel_c: Number = 0.0005
+    heskel_b: float = 0.1012
+    heskel_c: float = 0.0005
 
     # KattgeKnorr
-    kattge_knorr_a_ent: Number = 668.39
-    kattge_knorr_b_ent: Number = -1.07
-    kattge_knorr_Ha: Number = 71513
-    kattge_knorr_Hd: Number = 200000
+    kattge_knorr_a_ent: float = 668.39
+    kattge_knorr_b_ent: float = -1.07
+    kattge_knorr_Ha: float = 71513
+    kattge_knorr_Hd: float = 200000
 
     # Kphio:
     # - note that kphio_C4 has been updated to account for an unintended double
     #   8 fold downscaling to account for the fraction of light reaching PS2.
     #   from original values of [-0.008, 0.00375, -0.58e-4]
-    kphio_C4: Tuple[Number, ...] = (-0.064, 0.03, -0.000464)
-    kphio_C3: Tuple[Number, ...] = (0.352, 0.022, -0.00034)
+    kphio_C4: Tuple[float, ...] = (-0.064, 0.03, -0.000464)
+    kphio_C3: Tuple[float, ...] = (0.352, 0.022, -0.00034)
 
     # Bernachhi
-    bernacchi_dhac: Number = 79430
-    bernacchi_dhao: Number = 36380
-    bernacchi_dha: Number = 37830
-    bernacchi_kc25: Number = 39.97
-    bernacchi_ko25: Number = 27480
-    bernacchi_gs25_0: Number = 4.332
+    bernacchi_dhac: float = 79430
+    bernacchi_dhao: float = 36380
+    bernacchi_dha: float = 37830
+    bernacchi_kc25: float = 39.97
+    bernacchi_ko25: float = 27480
+    bernacchi_gs25_0: float = 4.332
 
     # Boyd
-    boyd_kp25_c4: Number = 16  # Pa  from Boyd et al. (2015)
-    boyd_dhac_c4: Number = 36300  # J mol-1
-    boyd_dhac_c4: Number = 79430
-    boyd_dhao_c4: Number = 36380
-    boyd_dha_c4: Number = 37830
-    boyd_kc25_c4: Number = 41.03
-    boyd_ko25_c4: Number = 28210
-    boyd_gs25_0_c4: Number = 2.6
+    boyd_kp25_c4: float = 16  # Pa  from Boyd et al. (2015)
+    boyd_dhac_c4: float = 36300  # J mol-1
+    # boyd_dhac_c4: float = 79430
+    # boyd_dhao_c4: float = 36380
+    # boyd_dha_c4: float = 37830
+    # boyd_kc25_c4: float = 41.03
+    # boyd_ko25_c4: float = 28210
+    # boyd_gs25_0_c4: float = 2.6
 
     # Soilmstress
-    soilmstress_theta0: Number = 0.0
-    soilmstress_thetastar: Number = 0.6
-    soilmstress_a: Number = 0.0
-    soilmstress_b: Number = 0.733
+    soilmstress_theta0: float = 0.0
+    soilmstress_thetastar: float = 0.6
+    soilmstress_a: float = 0.0
+    soilmstress_b: float = 0.733
 
     # Unit cost ratio (beta) values for different CalcOptimalChi methods
-    beta_cost_ratio_prentice14: Number = 146.0
-    beta_cost_ratio_c4: Number = 146.0 / 9
-    lavergne_2020_b_c3: Number = 1.73
-    lavergne_2020_a_c3: Number = 4.55
-    lavergne_2020_b_c4: Number = 1.73
-    lavergne_2020_a_c4: Number = 4.55 - np.log(9)
+    beta_cost_ratio_prentice14: float = 146.0
+    beta_cost_ratio_c4: float = 146.0 / 9
+    lavergne_2020_b_c3: float = 1.73
+    lavergne_2020_a_c3: float = 4.55
+    lavergne_2020_b_c4: float = 1.73
+    lavergne_2020_a_c4: float = 4.55 - np.log(9)
 
     # Wang17
-    wang17_c: Number = 0.41
+    wang17_c: float = 0.41
 
     # Smith19
-    smith19_theta: Number = 0.85
-    smith19_c_cost: Number = 0.05336251
+    smith19_theta: float = 0.85
+    smith19_c_cost: float = 0.05336251
 
     # Atkin
-    atkin_rd_to_vcmax: Number = 0.015
+    atkin_rd_to_vcmax: float = 0.015
 
 
-@enforce_typing.enforce_types
 @dataclass(frozen=True)
 class IsotopesParams(ParamClass):
     """Settings for calculate carbon isotope discrimination.
@@ -380,26 +369,25 @@ class IsotopesParams(ParamClass):
     lavergne_delta13_b = -17.04
 
     # Farquhar et al. (1982)
-    farquhar_a: Number = 4.4
-    farquhar_b: Number = 29
-    farquhar_b2: Number = 28
-    farquhar_f: Number = 12
+    farquhar_a: float = 4.4
+    farquhar_b: float = 29
+    farquhar_b2: float = 28
+    farquhar_f: float = 12
 
     # vonCaemmerer et al. (2014)
-    vonCaemmerer_b4: Number = -7.4
-    vonCaemmerer_s: Number = 1.8
-    vonCaemmerer_phi: Number = 0.5
+    vonCaemmerer_b4: float = -7.4
+    vonCaemmerer_s: float = 1.8
+    vonCaemmerer_phi: float = 0.5
 
     # Frank et al. (2015): post-photosynthetic fractionation
     # between leaf organic matter and alpha-cellulose: 2.1 +/- 1.2 ‰
-    frank_postfrac: Number = 2.1
+    frank_postfrac: float = 2.1
 
     # Badeck et al. (2005): post-photosynthetic fractionation
     # between leaf organic matter and bulk wood
-    badeck_postfrac: Number = 1.9
+    badeck_postfrac: float = 1.9
 
 
-@enforce_typing.enforce_types
 @dataclass(frozen=True)
 class C3C4Params(ParamClass):
     r"""Model parameters for the C3C4Competition class.
@@ -421,7 +409,6 @@ class C3C4Params(ParamClass):
     c3_forest_closure_gpp = 2.8
 
 
-@enforce_typing.enforce_types
 @dataclass(frozen=True)
 class TModelTraits(ParamClass):
     r"""Trait data settings for a TTree instance.
@@ -450,28 +437,27 @@ class TModelTraits(ParamClass):
     * `resp_f`: Foliage maintenance respiration fraction (:math:`r_f`,  0.1, -)
     """
 
-    a_hd: Number = 116.0  # a, Initial slope of height–diameter relationship (-)
-    ca_ratio: Number = (
+    a_hd: float = 116.0  # a, Initial slope of height–diameter relationship (-)
+    ca_ratio: float = (
         390.43  # c, Initial ratio of crown area to stem cross-sectional area (-)
     )
-    h_max: Number = 25.33  # H_m, Maximum tree height (m)
-    rho_s: Number = 200.0  # rho_s, Sapwood density (kgCm−3)
-    lai: Number = 1.8  # L, Leaf area index within the crown (–)
-    sla: Number = 14.0  # sigma, Specific leaf area (m2 kg−1C)
-    tau_f: Number = 4.0  # tau_f, Foliage turnover time (years)
-    tau_r: Number = 1.04  # tau_r, Fine-root turnover time (years)
-    par_ext: Number = 0.5  # k, PAR extinction coefficient (–)
-    yld: Number = 0.17  # y, Yield_factor (-)
-    zeta: Number = 0.17  # zeta, Ratio of fine-root mass to foliage area (kgCm−2)
-    resp_r: Number = 0.913  # r_r, Fine-root specific respiration rate (year−1)
-    resp_s: Number = 0.044  # r_s, Sapwood-specific respiration rate (year−1)
-    resp_f: Number = 0.1  # --- , Foliage maintenance respiration fraction (-)
+    h_max: float = 25.33  # H_m, Maximum tree height (m)
+    rho_s: float = 200.0  # rho_s, Sapwood density (kgCm−3)
+    lai: float = 1.8  # L, Leaf area index within the crown (–)
+    sla: float = 14.0  # sigma, Specific leaf area (m2 kg−1C)
+    tau_f: float = 4.0  # tau_f, Foliage turnover time (years)
+    tau_r: float = 1.04  # tau_r, Fine-root turnover time (years)
+    par_ext: float = 0.5  # k, PAR extinction coefficient (–)
+    yld: float = 0.17  # y, Yield_factor (-)
+    zeta: float = 0.17  # zeta, Ratio of fine-root mass to foliage area (kgCm−2)
+    resp_r: float = 0.913  # r_r, Fine-root specific respiration rate (year−1)
+    resp_s: float = 0.044  # r_s, Sapwood-specific respiration rate (year−1)
+    resp_f: float = 0.1  # --- , Foliage maintenance respiration fraction (-)
 
     # TODO: include range + se, or make this another class TraitDistrib
     #       that can yield a Traits instance drawing from that distribution
 
 
-@enforce_typing.enforce_types
 @dataclass(frozen=True)
 class HygroParams(ParamClass):
     r"""Parameters for hygrometric functions.
@@ -487,8 +473,8 @@ class HygroParams(ParamClass):
         Magnus equation.
     """
 
-    magnus_coef: Tuple[Number, ...] = None
-    mwr: Number = 0.622
+    magnus_coef: Tuple[float, ...] = (611.2, 17.62, 243.12)
+    mwr: float = 0.622
     magnus_option: str = "Sonntag1990"
 
     def __post_init__(self) -> None:

@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "pyrealm"
-version = "0.8.0"
+version = "0.8.0post9000"
 description = "Python implementations of REALM models"
 authors = ["David Orme <d.orme@imperial.ac.uk>"]
 homepage = "https://pyrealm.readthedocs.io/"
 repository = "https://github.com/davidorme/pyrealm"
 readme = "README.md"
-classifiers=[
+classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
@@ -28,7 +28,6 @@ pre-commit = "^2.20.0"
 PyYAML = "^6.0"
 pytest = "^7.1.2"
 netCDF4 = "^1.6.0"
-enforce-typing = "^1.0.0"
 pytest-flake8 = "^1.1.1"
 flake8 = "^4.0.1"
 pytest-cov = "^3.0.0"
