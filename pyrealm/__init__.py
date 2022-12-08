@@ -3,9 +3,12 @@
 TODO: complete this documentation
 """
 
+import importlib.metadata
 import os
 import warnings
 from typing import Optional, Type, Union
+
+__version__ = importlib.metadata.version("pyrealm")
 
 
 class ExperimentalFeatureWarning(Warning):
