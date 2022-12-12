@@ -1,6 +1,6 @@
 import os
 
-import netCDF4
+import netCDF4  # type: ignore
 import numpy as np
 import pytest
 

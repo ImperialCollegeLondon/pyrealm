@@ -17,7 +17,7 @@ from pyrealm.param_classes import HygroParams
 # from pandas.core.series import Series
 
 
-def check_input_shapes(*args: Union[np.ndarray, int]) -> tuple:
+def check_input_shapes(*args: Union[float, int, np.generic, np.ndarray, None]) -> tuple:
     """Check sets of input variables have congruent shapes.
 
     This helper function validates inputs to check that they are either scalars or
