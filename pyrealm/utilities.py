@@ -5,11 +5,11 @@ functions for common forcing variable inputs, such as hygrometric and radiation
 conversions.
 """
 
-from typing import List, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 import tabulate
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d  # type: ignore
 
 from pyrealm.bounds_checker import bounds_checker
 from pyrealm.param_classes import HygroParams
@@ -17,19 +17,21 @@ from pyrealm.param_classes import HygroParams
 # from pandas.core.series import Series
 
 
-def check_input_shapes(*args) -> Union[np.ndarray, int]:
+def check_input_shapes(*args: Union[float, int, np.generic, np.ndarray, None]) -> tuple:
     """Check sets of input variables have congruent shapes.
 
-    This helper function validates inputs to check that they are either
-    scalars or arrays and then that any arrays of the same shape. It either
-    raises an error or returns the common shape or 1 if all arguments are
-    scalar.
+    This helper function validates inputs to check that they are either scalars or
+    arrays and then that any arrays of the same shape. It returns a tuple of the common
+    shape of the arguments, which is (1,) if all the arguments are scalar.
 
     Parameters:
         *args: A set of numpy arrays or scalar values
 
     Returns:
         The common shape of any array inputs or 1 if all inputs are scalar.
+
+    Raises:
+        A ValueError if the inputs contain arrays of differing shapes.
 
     Examples:
         >>> check_input_shapes(np.array([1,2,3]), 5)
@@ -73,11 +75,11 @@ def check_input_shapes(*args) -> Union[np.ndarray, int]:
     if len(shapes) == 1:
         return shapes.pop()
 
-    return 1
+    return (1,)
 
 
 def summarize_attrs(
-    obj: object, attrs: List, dp: int = 2, repr_head: bool = True
+    obj: object, attrs: list, dp: int = 2, repr_head: bool = True
 ) -> None:
     """Print a summary table of object attributes.
 
@@ -122,7 +124,8 @@ def summarize_attrs(
 
             # Avoid masked arrays - run into problems with edge cases with all NaN
             if isinstance(data, np.ma.core.MaskedArray):
-                data = data.filled(np.nan)
+                # Mypy complains about filled being untyped?
+                data = data.filled(np.nan)  # type: ignore
 
             # Add the variable and stats to the list to be displayed
             attr_row = [
@@ -153,7 +156,9 @@ def summarize_attrs(
 # which the doctest values are taken
 
 
-def calc_vp_sat(ta, hygro_params=HygroParams()):
+def calc_vp_sat(
+    ta: Union[float, np.ndarray], hygro_params: HygroParams = HygroParams()
+) -> Union[float, np.ndarray]:
     r"""Calculate vapour pressure of saturated air.
 
     This function calculates the vapour pressure of saturated air at a given
@@ -198,7 +203,11 @@ def calc_vp_sat(ta, hygro_params=HygroParams()):
     return vp_sat
 
 
-def convert_vp_to_vpd(vp, ta, hygro_params=HygroParams()):
+def convert_vp_to_vpd(
+    vp: Union[float, np.ndarray],
+    ta: Union[float, np.ndarray],
+    hygro_params: HygroParams = HygroParams(),
+) -> Union[float, np.ndarray]:
     """Convert vapour pressure to vapour pressure deficit.
 
     Args:
@@ -223,7 +232,11 @@ def convert_vp_to_vpd(vp, ta, hygro_params=HygroParams()):
     return vp_sat - vp
 
 
-def convert_rh_to_vpd(rh, ta, hygro_params=HygroParams()):
+def convert_rh_to_vpd(
+    rh: Union[float, np.ndarray],
+    ta: Union[float, np.ndarray],
+    hygro_params: HygroParams = HygroParams(),
+) -> Union[float, np.ndarray]:
     """Convert relative humidity to vapour pressure deficit.
 
     Args:
@@ -255,7 +268,11 @@ def convert_rh_to_vpd(rh, ta, hygro_params=HygroParams()):
     return vp_sat - (rh * vp_sat)
 
 
-def convert_sh_to_vp(sh, patm, hygro_params=HygroParams()):
+def convert_sh_to_vp(
+    sh: Union[float, np.ndarray],
+    patm: Union[float, np.ndarray],
+    hygro_params: HygroParams = HygroParams(),
+) -> Union[float, np.ndarray]:
     """Convert specific humidity to vapour pressure.
 
     Args:
@@ -275,7 +292,12 @@ def convert_sh_to_vp(sh, patm, hygro_params=HygroParams()):
     return sh * patm / ((1.0 - hygro_params.mwr) * sh + hygro_params.mwr)
 
 
-def convert_sh_to_vpd(sh, ta, patm, hygro_params=HygroParams()):
+def convert_sh_to_vpd(
+    sh: Union[float, np.ndarray],
+    ta: Union[float, np.ndarray],
+    patm: Union[float, np.ndarray],
+    hygro_params: HygroParams = HygroParams(),
+) -> Union[float, np.ndarray]:
     """Convert specific humidity to vapour pressure deficit.
 
     Args:
@@ -388,7 +410,7 @@ class TemporalInterpolator:
         else:
             self._input_x = input_datetimes.astype(float)
 
-    def __call__(self, values: np.ndarray):
+    def __call__(self, values: np.ndarray) -> np.ndarray:
         """Apply temporal interpolation to a variable.
 
         Calling an instance of :class:`~pyrealm.utilties.TemporalInterpolator`
@@ -469,11 +491,11 @@ class DailyRepresentativeValues:
     def __init__(  # noqa C901
         self,
         datetimes: np.ndarray,
-        window_center: float = None,
-        window_width: float = None,
-        include: np.ndarray = None,
-        around_max: bool = None,
-        reference_time: float = None,
+        window_center: Optional[float] = None,
+        window_width: Optional[float] = None,
+        include: Optional[np.ndarray] = None,
+        around_max: Optional[bool] = None,
+        reference_time: Optional[float] = None,
     ) -> None:
 
         # Datetime validation. The inputs must be:
@@ -593,8 +615,8 @@ class DailyRepresentativeValues:
 
         # Override the reference time from the default if provided
         if reference_time is not None:
-            reference_time = np.timedelta64(int(reference_time * 60 * 60), "s")
-            default_reference_datetime = self.dates + reference_time
+            _reference_time = np.timedelta64(int(reference_time * 60 * 60), "s")
+            default_reference_datetime = self.dates + _reference_time
 
         # Store the reference_datetime
         self._reference_datetime = default_reference_datetime
@@ -611,7 +633,7 @@ class DailyRepresentativeValues:
 
     def __call__(
         self, values: np.ndarray, with_reference_values: bool = False
-    ) -> Union[np.ndarray, Tuple[np.ndarray]]:
+    ) -> Union[tuple[np.ndarray, np.ndarray], np.ndarray]:
         """Calculate representative values for a variable.
 
         Instances of :class:`~pyrealm.utilities.DailyRepresentativeValues` can
@@ -654,7 +676,7 @@ class DailyRepresentativeValues:
 
         if with_reference_values:
             # Get the reference value and return that as well as daily value
-            reference_values = values[self.reference_datetime_idx]
+            reference_values = values[self._reference_datetime_idx]
             return average_values, reference_values
         else:
             return average_values

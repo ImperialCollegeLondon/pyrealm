@@ -10,7 +10,7 @@ The module also provides code for...  TODO: Update this.
 from typing import Optional, Union
 from warnings import warn
 
-import bottleneck as bn
+import bottleneck as bn  # type: ignore
 import numpy as np
 
 from pyrealm import ExperimentalFeatureWarning
@@ -916,7 +916,7 @@ class PModelEnvironment:
         # Store parameters
         self.pmodel_params = pmodel_params
 
-    def __repr__(self):
+    def __repr__(self) -> str:
 
         # DESIGN NOTE: This is deliberately extremely terse. It could contain
         # a bunch of info on the environment but that would be quite spammy
@@ -1148,7 +1148,7 @@ class PModel:
             )
 
         if soilmstress is None:
-            self.soilmstress = 1.0
+            self.soilmstress: Union[float, np.ndarray] = 1.0
             self.do_soilmstress = False
         else:
             self.soilmstress = soilmstress
@@ -1235,14 +1235,16 @@ class PModel:
         )
 
         # -----------------------------------------------------------------------
-        # Define attributes populated by estimate_productivity method
+        # Define attributes populated by estimate_productivity method - these have
+        # no defaults and are only populated by estimate_productivity. Their getter
+        # methods have a check to raise an informative error
         # -----------------------------------------------------------------------
-        self._vcmax = None
-        self._vcmax25 = None
-        self._rd = None
-        self._jmax = None
-        self._gpp = None
-        self._gs = None
+        self._vcmax: Union[float, np.ndarray]
+        self._vcmax25: Union[float, np.ndarray]
+        self._rd: Union[float, np.ndarray]
+        self._jmax: Union[float, np.ndarray]
+        self._gpp: Union[float, np.ndarray]
+        self._gs: Union[float, np.ndarray]
 
     def _soilwarn(self, varname: str) -> None:
         """Emit warning about soil moisture stress factor.
@@ -1312,7 +1314,7 @@ class PModel:
 
     def estimate_productivity(
         self, fapar: Union[float, np.ndarray] = 1, ppfd: Union[float, np.ndarray] = 1
-    ):
+    ) -> None:
         r"""Estimate productivity of P Model from absorbed irradiance.
 
         This method takes the light use efficiency and Vcmax per unit
@@ -1387,7 +1389,7 @@ class PModel:
         # Stomatal conductance
         self._gs = assim / (self.env.ca - self.optchi.ci)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.do_soilmstress:
             stress = "Soil moisture"
         elif self.do_rootzonestress:
@@ -1420,7 +1422,7 @@ class PModel:
 
         attrs = [("lue", "g C mol-1"), ("iwue", "µmol mol-1")]
 
-        if self._gpp is not None:
+        if getattr(self, "_gpp", False):
             attrs.extend(
                 [
                     ("gpp", "µg C m-2 s-1"),
@@ -1505,24 +1507,27 @@ class CalcOptimalChi:
         # Check rootzonestress conforms to the environment data
         if rootzonestress is not None:
             self.shape = check_input_shapes(env.ca, rootzonestress)
-            self.rootzonestress = rootzonestress
+            self.rootzonestress: Optional[Union[float, np.ndarray]] = rootzonestress
             warn("The rootzonestress option is an experimental feature.")
         else:
             self.shape = env.shape
             self.rootzonestress = None
 
-        # set attribute defaults
-        self.beta = None
-        self.xi = None
-        self.chi = None
-        self.ci = None
-        self.mc = None
-        self.mj = None
-        self.mjoc = None
+        # Declare attributes populated by methods - these attributes should never be
+        # exposed without being populated as the method lookup below populates them
+        # before leaving __init__, so they are not defined with a default value.
+        self.beta: Union[float, np.ndarray]
+        self.xi: Union[float, np.ndarray]
+        self.chi: Union[float, np.ndarray]
+        self.ci: Union[float, np.ndarray]
+        self.mc: Union[float, np.ndarray]
+        self.mj: Union[float, np.ndarray]
+        self.mjoc: Union[float, np.ndarray]
 
         # TODO: considerable overlap between methods here - could maybe bring
         #       more into init but probably clearer and easier to debug to keep
         #       complete method code within methods.
+        # TODO: Could convert this to use a registry?
 
         # Identify and run the selected method
         self.pmodel_params = pmodel_params
@@ -1564,7 +1569,7 @@ class CalcOptimalChi:
 
         return is_c4
 
-    def __repr__(self):
+    def __repr__(self) -> str:
 
         return f"CalcOptimalChi(shape={self.shape}, method={self.method})"
 
@@ -1991,10 +1996,13 @@ class JmaxLimitation:
         self.optchi = optchi
         self.method = method
         self.pmodel_params = pmodel_params
-        self.f_j = None
-        self.f_m = None
-        self.omega = None
-        self.omega_star = None
+
+        # Attributes populated by alternative method - two should always be populated by
+        # the methods used below, but omega and omega_star only apply to smith19
+        self.f_j: Union[float, np.ndarray]
+        self.f_v: Union[float, np.ndarray]
+        self.omega: Optional[Union[float, np.ndarray]] = None
+        self.omega_star: Optional[Union[float, np.ndarray]] = None
 
         all_methods = {
             "wang17": self.wang17,
@@ -2016,11 +2024,11 @@ class JmaxLimitation:
         this_method = all_methods[self.method]
         this_method()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
 
         return f"JmaxLimitation(shape={self.shape})"
 
-    def wang17(self):
+    def wang17(self) -> None:
         r"""Calculate limitation factors following :cite:`Wang:2017go`.
 
         These factors are described in Equation 49 of :cite:`Wang:2017go` as the
@@ -2053,15 +2061,15 @@ class JmaxLimitation:
             where=vals_defined,
         )
 
-        # Backfill undefined values
+        # Backfill undefined values - tackling float vs np.ndarray types
         if isinstance(self.f_v, np.ndarray):
-            self.f_j[np.logical_not(vals_defined)] = np.nan
-            self.f_v[np.logical_not(vals_defined)] = np.nan
+            self.f_j[np.logical_not(vals_defined)] = np.nan  # type: ignore
+            self.f_v[np.logical_not(vals_defined)] = np.nan  # type: ignore
         elif not vals_defined:
             self.f_j = np.nan
             self.f_v = np.nan
 
-    def smith19(self):
+    def smith19(self) -> None:
         r"""Calculate limitation factors following :cite:`Smith:2019dv`.
 
         The values are calculated as:
@@ -2117,7 +2125,7 @@ class JmaxLimitation:
         aquad = -1
         bquad = cap_p
         cquad = -(cap_p * theta)
-        roots = np.polynomial.polynomial.polyroots([aquad, bquad, cquad])
+        roots = np.polynomial.polynomial.polyroots([aquad, bquad, cquad])  # type:ignore
 
         # factors derived as in Smith et al., 2019
         m_star = (4 * c_cost) / roots[0].real
@@ -2140,10 +2148,11 @@ class JmaxLimitation:
         # phi0 as as the quantum efficiency of electron transport, which is
         # 4 times our definition of phio0 as the quantum efficiency of photosynthesis.
         # So omega*/8 theta and omega / 4 are scaled down here  by a factor of 4.
-        self.f_v = self.omega_star / (2.0 * theta)
+        # Ignore `mypy` here as omega_star is explicitly not None.
+        self.f_v = self.omega_star / (2.0 * theta)  # type: ignore
         self.f_j = self.omega
 
-    def simple(self):
+    def simple(self) -> None:
         """Apply the 'simple' form of the equations.
 
         This method allows the 'simple' form of the equations to be calculated
@@ -2212,12 +2221,13 @@ class CalcCarbonIsotopes:
         self.shape = pmodel.shape
         self.c4 = pmodel.c4
 
-        self.Delta13C_simple = None
-        self.Delta13C = None
-        self.Delta14C = None
-        self.d13C_leaf = None
-        self.d14C_leaf = None
-        self.d13C_wood = None
+        # Attributes defined by methods below
+        self.Delta13C_simple: Union[np.ndarray, float]
+        self.Delta13C: Union[np.ndarray, float]
+        self.Delta14C: Union[np.ndarray, float]
+        self.d13C_leaf: Union[np.ndarray, float]
+        self.d14C_leaf: Union[np.ndarray, float]
+        self.d13C_wood: Union[np.ndarray, float]
 
         # Could store pmodel, d13CO2, D14CO2 in instance, but really not needed
         # so try and keep this class simple with a minimum of attributes.
@@ -2238,11 +2248,11 @@ class CalcCarbonIsotopes:
         # Isotopic composition of wood considering post-photosynthetic fractionation:
         self.d13C_wood = self.d13C_leaf + self.params.frank_postfrac
 
-    def __repr__(self):
+    def __repr__(self) -> str:
 
         return f"CalcCarbonIsotopes(shape={self.shape}, method={self.c4})"
 
-    def calc_c4_discrimination(self, pmodel):
+    def calc_c4_discrimination(self, pmodel: PModel) -> None:
         r"""Calculate C4 isotopic discrimination.
 
         In this method, :math:`\delta\ce{^{13}C}` is calculated from optimal
@@ -2268,7 +2278,7 @@ class CalcCarbonIsotopes:
         )
         self.Delta13C = self.Delta13C_simple
 
-    def calc_c4_discrimination_vonC(self, pmodel):
+    def calc_c4_discrimination_vonC(self, pmodel: PModel) -> None:
         r"""Calculate C4 isotopic discrimination.
 
         In this method, :math:`\delta\ce{^{13}C}` is calculated from optimal
@@ -2310,7 +2320,7 @@ class CalcCarbonIsotopes:
 
         self.Delta13C = self.Delta13C_simple
 
-    def calc_c3_discrimination(self, pmodel):
+    def calc_c3_discrimination(self, pmodel: PModel) -> None:
         r"""Calculate C3 isotopic discrimination.
 
         This method calculates the isotopic discrimination for
@@ -2342,7 +2352,7 @@ class CalcCarbonIsotopes:
             - self.params.farquhar_f * pmodel.env.gammastar / pmodel.env.ca
         )
 
-    def summarize(self, dp=2) -> None:
+    def summarize(self, dp: int = 2) -> None:
         """Print CalcCarbonIsotopes summary.
 
         Prints a summary of the variables calculated within an instance
@@ -2504,10 +2514,12 @@ class C3C4Competition:
         frac_c4 = frac_c4 * (1 - prop_trees)
 
         # Step 4: remove areas below minimum temperature
-        frac_c4[below_t_min] = 0
+        # mypy - this is a short term fix awaiting better resolution of mixed scalar and
+        #        array inputs.
+        frac_c4[below_t_min] = 0  # type: ignore
 
         # Step 5: remove cropland areas
-        frac_c4[cropland] = np.nan
+        frac_c4[cropland] = np.nan  # type: ignore
 
         self.frac_c4 = frac_c4
 
@@ -2515,12 +2527,12 @@ class C3C4Competition:
         self.gpp_c4_contrib = gpp_c4 * self.frac_c4
 
         # Define attributes used elsewhere
-        self.Delta13C_C3 = None
-        self.Delta13C_C4 = None
-        self.d13C_C3 = None
-        self.d13C_C4 = None
+        self.Delta13C_C3: Union[np.ndarray, float]
+        self.Delta13C_C4: Union[np.ndarray, float]
+        self.d13C_C3: Union[np.ndarray, float]
+        self.d13C_C4: Union[np.ndarray, float]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
 
         return f"C3C4competition(shape={self.shape})"
 
@@ -2554,7 +2566,9 @@ class C3C4Competition:
 
         return frac_c4
 
-    def _calculate_tree_proportion(self, gppc3) -> Union[float, np.ndarray]:
+    def _calculate_tree_proportion(
+        self, gppc3: Union[np.ndarray, float]
+    ) -> Union[float, np.ndarray]:
         """Calculate the proportion of GPP from C3 trees.
 
         This method calculates the proportional impact of forest closure by C3
@@ -2698,7 +2712,7 @@ def memory_effect(values: np.ndarray, alpha: float = 0.067) -> np.ndarray:
     # TODO - need a version that handles time slices for low memory looping
     #        over arrays.
 
-    memory_values = np.empty_like(values, dtype=np.float)
+    memory_values = np.empty_like(values, dtype=np.float32)
     memory_values[0] = values[0]
 
     for idx in range(1, len(memory_values)):

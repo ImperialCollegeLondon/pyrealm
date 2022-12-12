@@ -6,7 +6,6 @@ well-behaved with given bounds and bounds checking also provides a (partial)
 check on the units being provided.
 """
 
-from numbers import Number
 from typing import Union
 
 import numpy as np
@@ -63,14 +62,43 @@ from pyrealm import warnings
 # values are sane.
 
 
+def _get_interval_functions(interval_type: str = "[]") -> tuple[np.ufunc, np.ufunc]:
+    """Converts interval notation type to appropriate functions.
+
+    The interval type should be one of ``[]``, ``()``, ``[)`` or ``(]``. The function
+    returns a two tuple of ``numpy.ufunc`` functions that implement the appropriate
+    lower and upper boundaries given the interval type.
+
+    Args:
+        interval_type: A string describing the interval bounds
+    """
+
+    # Implement the interval type
+    if interval_type not in ["[]", "()", "[)", "(]"]:
+        raise ValueError(f"Unknown interval type: {interval_type}")
+
+    # Default open interval traps values less or greater than
+    lower_func: np.ufunc = np.less
+    upper_func: np.ufunc = np.greater
+
+    # Closed intervals replace functions with less_eq/greater_wq
+    if interval_type[0] == "(":
+        lower_func = np.less_equal
+
+    if interval_type[1] == ")":
+        upper_func = np.greater_equal
+
+    return lower_func, upper_func
+
+
 def bounds_checker(
-    values: Union[np.ndarray, Number],
-    lower: Number = -np.infty,
-    upper: Number = np.infty,
+    values: Union[np.ndarray, float],
+    lower: float = -np.infty,
+    upper: float = np.infty,
     interval_type: str = "[]",
     label: str = "",
     unit: str = "",
-):
+) -> Union[np.ndarray, float]:
     r"""Check inputs fall within bounds.
 
     This is a simple pass through function that tests whether the values fall within
@@ -92,19 +120,8 @@ def bounds_checker(
         >>> vals_c = bounds_checker(vals, 0, 100, label='temperature', unit='°C')
     """
 
-    # Implement the interval type
-    if interval_type not in ["[]", "()", "[)", "(]"]:
-        raise RuntimeWarning(f"Unknown interval type: {interval_type}")
-
-    if interval_type[0] == "[":
-        lower_func = np.less
-    else:
-        lower_func = np.less_equal
-
-    if interval_type[1] == "]":
-        upper_func = np.greater
-    else:
-        upper_func = np.greater_equal
+    # Get the interval functions
+    lower_func, upper_func = _get_interval_functions(interval_type)
 
     # Do the input values contain out of bound values? These tests are not
     # sensitive to dtype, float or int inputs and return either numpy.bool_
@@ -121,17 +138,18 @@ def bounds_checker(
 
 
 def input_mask(
-    inputs: Union[np.ndarray, Number],
-    lower: Number = -np.infty,
-    upper: Number = np.infty,
+    inputs: Union[np.ndarray, float, int],
+    lower: float = -np.infty,
+    upper: float = np.infty,
     interval_type: str = "[]",
     label: str = "",
-):
+) -> np.ndarray:
     r"""Mask inputs that do not fall within bounds.
 
-    This function constrains the values in inputs, replacing values outside
-    the provided interval with np.nan. Because np.nan is a float, when any data
-    is out of bounds, the returned values are always float arrays or np.nan.
+    This function constrains the values in inputs, replacing values outside the provided
+    interval with np.nan. If ``inputs`` is a float value, it is converted to an
+    np.ndarray. Because np.nan is a float, when any data is out of bounds, the returned
+    values are always float arrays or np.nan.
 
     Args:
         inputs: An np.ndarray object or number
@@ -143,8 +161,7 @@ def input_mask(
 
     Returns:
         If no data is out of bounds, the original inputs are returned, otherwise
-        a float np.ndarray object with out of bounds values replaced with np.nan
-        or np.nan for number or zero dimension ndarrays.
+        a float np.ndarray object with out of bounds values replaced with np.nan.
 
     Examples:
         >>> vals = np.array([-15, 20, 30, 124], dtype=np.float)
@@ -161,19 +178,14 @@ def input_mask(
         50.0
     """
 
-    # Implement the interval type
-    if interval_type not in ["[]", "()", "[)", "(]"]:
-        raise RuntimeWarning(f"Unknown interval type: {interval_type}")
+    # Get the interval functions
+    lower_func, upper_func = _get_interval_functions(interval_type)
 
-    if interval_type[0] == "[":
-        lower_func = np.less
-    else:
-        lower_func = np.less_equal
-
-    if interval_type[1] == "]":
-        upper_func = np.greater
-    else:
-        upper_func = np.greater_equal
+    # Coerce scalar inputs to np.ndarray and raise errors for other inputs
+    if isinstance(inputs, (float, int)):
+        inputs = np.array(inputs)
+    elif not isinstance(inputs, np.ndarray):
+        raise TypeError(f"Cannot set bounds on {type(inputs)}")
 
     # Do the input values contain out of bound values? These tests are not
     # sensitive to dtype, float or int inputs and return either numpy.bool_
@@ -181,49 +193,33 @@ def input_mask(
     mask = np.logical_or(lower_func(inputs, lower), upper_func(inputs, upper))
 
     # Check if any masking needs to be done
-    if mask.sum():
+    if not mask.sum():
+        return inputs
 
-        if isinstance(mask, np.bool_):
-            # If mask is np.bool_ then a scalar or zero dimension ndarray was passed,
-            # so return np.nan, implicitly converting the input to a float.
+    # If an ndarray, then we need a float version to set np.nan and we
+    # copy to avoid modifying the original input.
+    # Using type
+    if not np.issubdtype(inputs.dtype, np.floating):
+        # Copies implicitly
+        outputs = inputs.astype(np.float64)
+    else:
+        outputs = inputs.copy()
 
-            warnings.warn(
-                f"Scalar value {inputs} set to NaN "
-                f"using {interval_type[0]}{lower}, {upper}{interval_type[1]} "
-                f"bounds on {label}",
-                category=RuntimeWarning,
-            )
+    # Count the existing number of NaN values - impossible to have nan
+    # in an integer input but isnan works with any input.
+    initial_na_count = np.isnan(inputs).sum()
 
-            return np.nan
+    # Fill in np.nan where values around outside constraints
+    outputs[mask] = np.nan
 
-        if isinstance(mask, np.ndarray):
-            # If an ndarray, then we need a float version to set np.nan and we
-            # copy to avoid modifying the original input
-            if not np.issubdtype(inputs.dtype, np.floating):
-                # Copies implicitly
-                outputs = inputs.astype(np.float)
-            else:
-                outputs = inputs.copy()
+    final_na_count = np.isnan(outputs).sum()
 
-            # Count the existing number of NaN values - impossible to have nan
-            # in an integer input but isnan works with any input.
-            initial_na_count = np.isnan(inputs).sum()
+    # Report
+    warnings.warn(
+        f"{final_na_count - initial_na_count} values set to NaN "
+        f"using {interval_type[0]}{lower}, {upper}{interval_type[1]} "
+        f"bounds on {label}",
+        category=RuntimeWarning,
+    )
 
-            # Fill in np.nan where values around outside constraints
-            outputs[mask] = np.nan
-
-            final_na_count = np.isnan(outputs).sum()
-
-            # Report
-            warnings.warn(
-                f"{final_na_count - initial_na_count} values set to NaN "
-                f"using {interval_type[0]}{lower}, {upper}{interval_type[1]} "
-                f"bounds on {label}",
-                category=RuntimeWarning,
-            )
-
-            return outputs
-
-        raise NotImplementedError(f"Cannot set bounds on {type(inputs)}")
-
-    return inputs
+    return outputs

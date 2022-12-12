@@ -6,7 +6,7 @@ authors = ["David Orme <d.orme@imperial.ac.uk>"]
 homepage = "https://pyrealm.readthedocs.io/"
 repository = "https://github.com/davidorme/pyrealm"
 readme = "README.md"
-classifiers=[
+classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
@@ -19,7 +19,6 @@ license = "MIT"
 python = ">=3.9,<3.11"
 numpy = "^1.16.5"
 scipy = "^1.7.3"
-enforce-typing = "^1.0.0"
 Bottleneck = "^1.3.5"
 tabulate = "^0.8.10"
 dacite = "^1.6.0"

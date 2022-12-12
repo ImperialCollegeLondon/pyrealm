@@ -79,11 +79,6 @@ clicking on the buttons like the one below.
   z_bibliography.rst
 ```
 
-```{eval-rst}
-.. automodule:: pyrealm.version
-    :members:
-```
-
 ## Indices and tables
 
 * {ref}`genindex`
