@@ -6,9 +6,9 @@ create a test set of outputs for validation between the two implementations.
 For validation, a mix of scalar and array inputs are created to check that
 broadcasting works as intended.
 """
+import json
 
 import numpy as np
-import simplejson
 
 # constants
 KattgeKnorr_ha = 71513
@@ -84,4 +84,4 @@ out_dict = dict(
 )
 
 with open("test_inputs.json", "w") as outf:
-    simplejson.dump(out_dict, outf, indent="  ")
+    json.dump(out_dict, outf, indent="  ")
