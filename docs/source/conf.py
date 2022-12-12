@@ -10,7 +10,7 @@ documentation root, use os.path.abspath to make it absolute, like shown here.
 import os
 import sys
 
-from pyrealm import version
+from pyrealm import __version__ as pyrealm_version
 
 sys.path.insert(0, os.path.abspath("../"))
 
@@ -22,8 +22,8 @@ copyright = "2020, David Orme"
 author = "David Orme"
 
 # The full version, including alpha/beta/rc tags
-version = version.__version__
-release = version
+version = pyrealm_version
+release = pyrealm_version
 
 # -- General configuration ---------------------------------------------------
 
@@ -38,7 +38,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinxcontrib.bibtex",
     "myst_nb",
-    "sphinx_astrorefs",  # Gives author year references
+    # "sphinx_astrorefs",  # Gives author year references
     "sphinx_rtd_theme",
 ]
 
@@ -69,7 +69,7 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["maxime*"]
+exclude_patterns = ["maxime*", "**.ipynb_checkpoints"]
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -100,7 +100,7 @@ html_theme_options = {
 html_static_path = ["_static"]
 
 
-def setup(app):
+def setup(app):  # type: ignore
     """Use setup to remove .ipynb from sources.
 
     Note that this assumes that all ipynb files are paired with Myst Markdown
