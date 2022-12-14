@@ -358,8 +358,8 @@ class TemporalInterpolator:
 
     def __init__(
         self,
-        input_datetimes: np.ndarray,
-        interpolation_datetimes: np.ndarray,
+        input_datetimes: NDArray[np.datetime64],
+        interpolation_datetimes: NDArray[np.datetime64],
         method: str = "daily_constant",
     ) -> None:
 
@@ -411,7 +411,7 @@ class TemporalInterpolator:
         else:
             self._input_x = input_datetimes.astype(float)
 
-    def __call__(self, values: np.ndarray) -> np.ndarray:
+    def __call__(self, values: NDArray) -> NDArray:
         """Apply temporal interpolation to a variable.
 
         Calling an instance of :class:`~pyrealm.utilties.TemporalInterpolator`
@@ -489,9 +489,9 @@ class DailyRepresentativeValues:
         method str: Summary of the method being used
     """
 
-    def __init__(  # noqa C901
+    def __init__(  # noqa C901 - Function is too complex
         self,
-        datetimes: np.ndarray,
+        datetimes: NDArray,
         window_center: Optional[float] = None,
         window_width: Optional[float] = None,
         include: Optional[np.ndarray] = None,
@@ -633,8 +633,8 @@ class DailyRepresentativeValues:
         )
 
     def __call__(
-        self, values: np.ndarray, with_reference_values: bool = False
-    ) -> Union[tuple[np.ndarray, np.ndarray], np.ndarray]:
+        self, values: NDArray, with_reference_values: bool = False
+    ) -> Union[tuple[NDArray, NDArray], NDArray]:
         """Calculate representative values for a variable.
 
         Instances of :class:`~pyrealm.utilities.DailyRepresentativeValues` can
