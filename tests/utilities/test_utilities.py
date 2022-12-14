@@ -1,18 +1,11 @@
 # flake8: noqa D103 - docstrings on unit tests
 
-from contextlib import contextmanager
 from datetime import datetime, timedelta
 
 import numpy as np
 import pytest
 
 from pyrealm.utilities import DailyRepresentativeValues, TemporalInterpolator
-
-
-@contextmanager
-def does_not_raise():
-    yield
-
 
 # ----------------------------------------
 # Testing TemporalInterpolator

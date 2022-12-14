@@ -38,6 +38,7 @@ This implementation has the following desired features:
 
 import json
 from dataclasses import asdict, dataclass
+from typing import Optional
 
 import numpy as np
 from dacite import from_dict
@@ -468,7 +469,7 @@ class HygroParams(ParamClass):
 
     magnus_coef: NDArray[np.float32] = np.array((611.2, 17.62, 243.12))
     mwr: float = 0.622
-    magnus_option: str = "Sonntag1990"
+    magnus_option: Optional[str] = None
 
     def __post_init__(self) -> None:
         """Populate parameters from init settings.
@@ -485,7 +486,7 @@ class HygroParams(ParamClass):
             Sonntag1990=np.array((611.2, 17.62, 243.12)),
         )
 
-        if self.magnus_coef is None:
+        if self.magnus_option is not None:
             if self.magnus_option not in alts:
                 raise (
                     RuntimeError(f"magnus_option must be one of {list(alts.keys())}")
