@@ -13,9 +13,8 @@ an estimate of gross primary productivity (GPP).
   time given a time series of GPP.
 """
 
-from typing import Union
-
 import numpy as np
+from numpy.typing import NDArray
 
 from pyrealm.param_classes import TModelTraits
 
@@ -28,10 +27,6 @@ from pyrealm.param_classes import TModelTraits
 # user-supplied geometry behaves as expected. So, easy to implement and a
 # natural solution to people wanting to tinker with the geometry but not going
 # there now.
-
-
-TRAIT_TYPE = Union[float, np.ndarray]
-"""Type to handle scalar floats and numpy arrays and initial None"""
 
 
 class TTree:
@@ -53,8 +48,8 @@ class TTree:
 
     def __init__(
         self,
+        diameters: NDArray,
         traits: TModelTraits = TModelTraits(),
-        diameters: Union[float, np.ndarray] = 0.1,
     ) -> None:
 
         self.traits: TModelTraits = traits
@@ -63,142 +58,142 @@ class TTree:
         # based on the trait parameters. It is set by the set_diameter()
         # method, which then populates the other geometric variables
 
-        self._diameter: TRAIT_TYPE = 0
-        self._height: TRAIT_TYPE = 0
-        self._crown_fraction: TRAIT_TYPE = 0
-        self._crown_area: TRAIT_TYPE = 0
-        self._mass_stm: TRAIT_TYPE = 0
-        self._mass_fol: TRAIT_TYPE = 0
-        self._mass_swd: TRAIT_TYPE = 0
+        self._diameter: NDArray
+        self._height: NDArray
+        self._crown_fraction: NDArray
+        self._crown_area: NDArray
+        self._mass_stm: NDArray
+        self._mass_fol: NDArray
+        self._mass_swd: NDArray
 
-        self.set_diameter(diameters)
+        self.reset_diameters(diameters)
 
         # Growth is then applied by providing estimated gpp using the
         # calculate_growth() method, which populates the following:
         self.growth_calculated: bool = False
-        self._gpp_raw: TRAIT_TYPE = 0
-        self._gpp_actual: TRAIT_TYPE = 0
-        self._npp: TRAIT_TYPE = 0
-        self._resp_swd: TRAIT_TYPE = 0
-        self._resp_frt: TRAIT_TYPE = 0
-        self._resp_fol: TRAIT_TYPE = 0
-        self._turnover: TRAIT_TYPE = 0
-        self._d_mass_s: TRAIT_TYPE = 0
-        self._d_mass_fr: TRAIT_TYPE = 0
-        self._delta_d: TRAIT_TYPE = 0
-        self._delta_mass_stm: TRAIT_TYPE = 0
-        self._delta_mass_frt: TRAIT_TYPE = 0
+        self._gpp_raw: NDArray
+        self._gpp_actual: NDArray
+        self._npp: NDArray
+        self._resp_swd: NDArray
+        self._resp_frt: NDArray
+        self._resp_fol: NDArray
+        self._turnover: NDArray
+        self._d_mass_s: NDArray
+        self._d_mass_fr: NDArray
+        self._delta_d: NDArray
+        self._delta_mass_stm: NDArray
+        self._delta_mass_frt: NDArray
 
-    def _check_growth_calculated(self, value: TRAIT_TYPE) -> TRAIT_TYPE:
+    def _check_growth_calculated(self, property: str) -> NDArray:
         """Helper function to return growth values if calculated.
 
         This acts as a gatekeeper to make sure that a growth property is not returned
         before calculate_growth() has been run on the current diameters.
 
         Args:
-            value: The property value to return if valid.
+            property: The property value to return if available.
         """
         if not self.growth_calculated:
             raise RuntimeError("Growth estimates not calculated: use calculate_growth")
 
-        return value
+        return getattr(self, property)
 
     @property
-    def diameter(self) -> TRAIT_TYPE:
+    def diameter(self) -> NDArray:
         """Fetch the plant diameter."""
         return self._diameter
 
     @property
-    def height(self) -> TRAIT_TYPE:
+    def height(self) -> NDArray:
         """Fetch the plant height."""
         return self._height
 
     @property
-    def crown_fraction(self) -> TRAIT_TYPE:
+    def crown_fraction(self) -> NDArray:
         """Fetch the plant crown fraction."""
         return self._crown_fraction
 
     @property
-    def crown_area(self) -> TRAIT_TYPE:
+    def crown_area(self) -> NDArray:
         """Fetch the plant crown area."""
         return self._crown_area
 
     @property
-    def mass_swd(self) -> TRAIT_TYPE:
+    def mass_swd(self) -> NDArray:
         """Fetch the plant softwood mass."""
         return self._mass_swd
 
     @property
-    def mass_stm(self) -> TRAIT_TYPE:
+    def mass_stm(self) -> NDArray:
         """Fetch the plant stem mass."""
         return self._mass_stm
 
     @property
-    def mass_fol(self) -> TRAIT_TYPE:
+    def mass_fol(self) -> NDArray:
         """Fetch the plant foliage mass."""
         return self._mass_fol
 
     @property
-    def gpp_raw(self) -> TRAIT_TYPE:
+    def gpp_raw(self) -> NDArray:
         """Fetch the raw gross primary productivity."""
-        return self._check_growth_calculated(self._gpp_raw)
+        return self._check_growth_calculated("_gpp_raw")
 
     @property
-    def gpp_actual(self) -> TRAIT_TYPE:
+    def gpp_actual(self) -> NDArray:
         """Fetch the actual gross primary productivity."""
-        return self._check_growth_calculated(self._gpp_actual)
+        return self._check_growth_calculated("_gpp_actual")
 
     @property
-    def resp_swd(self) -> TRAIT_TYPE:
+    def resp_swd(self) -> NDArray:
         """Fetch the plant softwood respiration."""
-        return self._check_growth_calculated(self._resp_swd)
+        return self._check_growth_calculated("_resp_swd")
 
     @property
-    def resp_frt(self) -> TRAIT_TYPE:
+    def resp_frt(self) -> NDArray:
         """Fetch the plant fine root respiration."""
-        return self._check_growth_calculated(self._resp_frt)
+        return self._check_growth_calculated("_resp_frt")
 
     @property
-    def resp_fol(self) -> TRAIT_TYPE:
+    def resp_fol(self) -> NDArray:
         """Fetch the plant foliar respiration."""
-        return self._check_growth_calculated(self._resp_fol)
+        return self._check_growth_calculated("_resp_fol")
 
     @property
-    def npp(self) -> TRAIT_TYPE:
+    def npp(self) -> NDArray:
         """Fetch the net primary productivity."""
-        return self._check_growth_calculated(self._npp)
+        return self._check_growth_calculated("_npp")
 
     @property
-    def turnover(self) -> TRAIT_TYPE:
+    def turnover(self) -> NDArray:
         """Fetch the plant turnover."""
-        return self._check_growth_calculated(self._turnover)
+        return self._check_growth_calculated("_turnover")
 
     @property
-    def d_mass_s(self) -> TRAIT_TYPE:
+    def d_mass_s(self) -> NDArray:
         """Fetch the plant change in mass."""
-        return self._check_growth_calculated(self._d_mass_s)
+        return self._check_growth_calculated("_d_mass_s")
 
     @property
-    def d_mass_fr(self) -> TRAIT_TYPE:
+    def d_mass_fr(self) -> NDArray:
         """Fetch the plant change in fine root mass."""
-        return self._check_growth_calculated(self._d_mass_fr)
+        return self._check_growth_calculated("_d_mass_fr")
 
     @property
-    def delta_d(self) -> TRAIT_TYPE:
+    def delta_d(self) -> NDArray:
         """Fetch the plant change in diameter."""
-        return self._check_growth_calculated(self._delta_d)
+        return self._check_growth_calculated("_delta_d")
 
     @property
-    def delta_mass_stm(self) -> TRAIT_TYPE:
+    def delta_mass_stm(self) -> NDArray:
         """Fetch the plant change in stem mass."""
-        return self._check_growth_calculated(self._delta_mass_stm)
+        return self._check_growth_calculated("_delta_mass_stm")
 
     @property
-    def delta_mass_frt(self) -> TRAIT_TYPE:
+    def delta_mass_frt(self) -> NDArray:
         """Fetch the plant change in fine root mass."""
-        return self._check_growth_calculated(self._delta_mass_frt)
+        return self._check_growth_calculated("_delta_mass_frt")
 
-    def set_diameter(self, values: Union[float, np.ndarray]) -> None:
+    def reset_diameters(self, values: NDArray) -> None:
         """Reset the stem diameters for the T model.
 
         The set_diameter method can be used to reset the diameter values and then uses
@@ -247,7 +242,7 @@ class TTree:
         # Flag any calculated growth values as outdated
         self.growth_calculated = False
 
-    def calculate_growth(self, gpp: Union[float, np.ndarray]) -> None:
+    def calculate_growth(self, gpp: NDArray) -> None:
         """Calculate growth predictions given a GPP estimate.
 
         This method updates the instance with predicted changes in tree
