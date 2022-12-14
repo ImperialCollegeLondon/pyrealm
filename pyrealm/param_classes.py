@@ -11,40 +11,37 @@ can be altered and can also be loaded and saved to configuration files. The
 {class}`~pyrealm.param_classes.ParamClass` base class provides the basic load
 and save methods and then individual parameter classes define the parameter sets
 and default values for each class.
+
+
+This implementation has the following desired features:
+
+1. Ability to use a obj.attr notation rather than obj['attr'].
+2. Ability to freeze values to avoid them being edited in use - distinctly paranoid!
+3. Ability to set a default mapping with default values/
+4. Typing to set expected types on default values.
+5. Simple export/import methods to go to from dict / JSON
+6. Is a class, to allow __repr__ and other methods.
+
+... and then there is a tricky one:
+
+7. Extensibility. This is the hard one and currently would only be needed
+   to support a customisable version of the T Model. If the T Model could
+   have overridden geometry methods, then these settings _have_ to be able
+   to take extra parameters. And having to set a type on those is another
+   thing that users aren't going to buy into? This makes using @dataclass
+   tricky - because extending class attributes on the fly is really not
+   something that comes naturally to a class. A dotted dict replacement,
+   like Box or addict, is a fairly simpl functional swap.
+
 """
 
 
 import json
 from dataclasses import asdict, dataclass
-from typing import Tuple
 
 import numpy as np
 from dacite import from_dict
-
-# Design notes: pyrealm has a bunch of 'deep' settings. Things
-# that aren't often tweaked by users but should be easy to tweak when needed.
-# The aim here is to have a standard interface to those as an object that maps
-# a setting name to a value.
-#
-# Desired features (in no order):
-# 1. Ability to use a obj.attr notation rather than obj['attr']. Not really
-#    pythonic but a bit cleaner to read.
-# 2. Ability to freeze values. Distinctly paranoid.
-# 3. Ability to set a default mapping with default values
-# 4. Typing to set expected types on default values.
-# 5. Simple export/import methods to go to from dict / JSON
-# 6. Is a class, to allow __repr__ and other methods.
-#
-# ... and then there is a tricky one:
-#
-# 7. Extensibility. This is the hard one and currently would only be needed
-#    to support a customisable version of the T Model. If the T Model could
-#    have overridden geometry methods, then these settings _have_ to be able
-#    to take extra parameters. And having to set a type on those is another
-#    thing that users aren't going to buy into? This makes using @dataclass
-#    tricky - because extending class attributes on the fly is really not
-#    something that comes naturally to a class. A dotted dict replacement,
-#    like Box or addict, is a fairly simpl functional swap.
+from numpy.typing import NDArray
 
 
 class ParamClass:
@@ -252,46 +249,42 @@ class PModelParams(ParamClass):
     k_CtoK: float = 273.15
 
     # Fisher Dial
-    fisher_dial_lambda: Tuple[float, ...] = (
-        1788.316,
-        21.55053,
-        -0.4695911,
-        0.003096363,
-        -7.341182e-06,
+    fisher_dial_lambda: NDArray[np.float32] = np.array(
+        [1788.316, 21.55053, -0.4695911, 0.003096363, -7.341182e-06]
     )
-    fisher_dial_Po: Tuple[float, ...] = (
-        5918.499,
-        58.05267,
-        -1.1253317,
-        0.0066123869,
-        -1.4661625e-05,
+    fisher_dial_Po: NDArray[np.float32] = np.array(
+        [5918.499, 58.05267, -1.1253317, 0.0066123869, -1.4661625e-05]
     )
-    fisher_dial_Vinf: Tuple[float, ...] = (
-        0.6980547,
-        -0.0007435626,
-        3.704258e-05,
-        -6.315724e-07,
-        9.829576e-09,
-        -1.197269e-10,
-        1.005461e-12,
-        -5.437898e-15,
-        1.69946e-17,
-        -2.295063e-20,
+    fisher_dial_Vinf: NDArray[np.float32] = np.array(
+        [
+            0.6980547,
+            -0.0007435626,
+            3.704258e-05,
+            -6.315724e-07,
+            9.829576e-09,
+            -1.197269e-10,
+            1.005461e-12,
+            -5.437898e-15,
+            1.69946e-17,
+            -2.295063e-20,
+        ]
     )
     # Huber
     simple_viscosity: bool = False
     huber_tk_ast: float = 647.096
     huber_rho_ast: float = 322.0
     huber_mu_ast: float = 1e-06
-    huber_H_i: Tuple[float, ...] = (1.67752, 2.20462, 0.6366564, -0.241605)
-    huber_H_ij: Tuple[Tuple[float, ...], ...] = (
-        (0.520094, 0.0850895, -1.08374, -0.289555, 0.0, 0.0),
-        (0.222531, 0.999115, 1.88797, 1.26613, 0.0, 0.120573),
-        (-0.281378, -0.906851, -0.772479, -0.489837, -0.25704, 0.0),
-        (0.161913, 0.257399, 0.0, 0.0, 0.0, 0.0),
-        (-0.0325372, 0.0, 0.0, 0.0698452, 0.0, 0.0),
-        (0.0, 0.0, 0.0, 0.0, 0.00872102, 0.0),
-        (0.0, 0.0, 0.0, -0.00435673, 0.0, -0.000593264),
+    huber_H_i: NDArray[np.float32] = np.array([1.67752, 2.20462, 0.6366564, -0.241605])
+    huber_H_ij: NDArray[np.float32] = np.array(
+        [
+            [0.520094, 0.0850895, -1.08374, -0.289555, 0.0, 0.0],
+            [0.222531, 0.999115, 1.88797, 1.26613, 0.0, 0.120573],
+            [-0.281378, -0.906851, -0.772479, -0.489837, -0.25704, 0.0],
+            [0.161913, 0.257399, 0.0, 0.0, 0.0, 0.0],
+            [-0.0325372, 0.0, 0.0, 0.0698452, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.00872102, 0.0],
+            [0.0, 0.0, 0.0, -0.00435673, 0.0, -0.000593264],
+        ],
     )
     # Heskel
     heskel_b: float = 0.1012
@@ -307,8 +300,8 @@ class PModelParams(ParamClass):
     # - note that kphio_C4 has been updated to account for an unintended double
     #   8 fold downscaling to account for the fraction of light reaching PS2.
     #   from original values of [-0.008, 0.00375, -0.58e-4]
-    kphio_C4: Tuple[float, ...] = (-0.064, 0.03, -0.000464)
-    kphio_C3: Tuple[float, ...] = (0.352, 0.022, -0.00034)
+    kphio_C4: NDArray[np.float32] = np.array((-0.064, 0.03, -0.000464))
+    kphio_C3: NDArray[np.float32] = np.array((0.352, 0.022, -0.00034))
 
     # Bernachhi
     bernacchi_dhac: float = 79430
@@ -473,7 +466,7 @@ class HygroParams(ParamClass):
         Magnus equation.
     """
 
-    magnus_coef: Tuple[float, ...] = (611.2, 17.62, 243.12)
+    magnus_coef: NDArray[np.float32] = np.array((611.2, 17.62, 243.12))
     mwr: float = 0.622
     magnus_option: str = "Sonntag1990"
 
@@ -487,9 +480,9 @@ class HygroParams(ParamClass):
             None
         """
         alts = dict(
-            Allen1998=(610.8, 17.27, 237.3),
-            Alduchov1996=(610.94, 17.625, 243.04),
-            Sonntag1990=(611.2, 17.62, 243.12),
+            Allen1998=np.array((610.8, 17.27, 237.3)),
+            Alduchov1996=np.array((610.94, 17.625, 243.04)),
+            Sonntag1990=np.array((611.2, 17.62, 243.12)),
         )
 
         if self.magnus_coef is None:
