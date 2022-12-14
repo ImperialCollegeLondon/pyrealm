@@ -12,6 +12,7 @@ from warnings import warn
 
 import bottleneck as bn  # type: ignore
 import numpy as np
+from numpy.typing import NDArray
 
 from pyrealm import ExperimentalFeatureWarning
 from pyrealm.bounds_checker import bounds_checker
@@ -23,11 +24,11 @@ from pyrealm.utilities import check_input_shapes, summarize_attrs
 
 
 def calc_density_h2o(
-    tc: Union[float, np.ndarray],
-    patm: Union[float, np.ndarray],
+    tc: NDArray,
+    patm: NDArray,
     pmodel_params: PModelParams = PModelParams(),
     safe: bool = True,
-) -> Union[float, np.ndarray]:
+) -> NDArray:
     """Calculate water density.
 
     Calculates the **density of water** as a function of temperature and
@@ -57,7 +58,6 @@ def calc_density_h2o(
         998.206
     """
 
-    # DESIGN NOTE:
     # It doesn't make sense to use this function for tc < 0, but in particular
     # the calculation shows wild numeric instability between -44 and -46 that
     # leads to numerous downstream issues - see the extreme values documentation.
@@ -74,15 +74,13 @@ def calc_density_h2o(
     tc_pow = np.power.outer(tc, np.arange(0, 10))
 
     # Calculate lambda, (bar cm^3)/g:
-    lambda_val = np.sum(
-        np.array(pmodel_params.fisher_dial_lambda) * tc_pow[..., :5], axis=-1
-    )
+    lambda_val = np.sum(pmodel_params.fisher_dial_lambda * tc_pow[..., :5], axis=-1)
 
     # Calculate po, bar
-    po_val = np.sum(np.array(pmodel_params.fisher_dial_Po) * tc_pow[..., :5], axis=-1)
+    po_val = np.sum(pmodel_params.fisher_dial_Po * tc_pow[..., :5], axis=-1)
 
     # Calculate vinf, cm^3/g
-    vinf_val = np.sum(np.array(pmodel_params.fisher_dial_Vinf) * tc_pow, axis=-1)
+    vinf_val = np.sum(pmodel_params.fisher_dial_Vinf * tc_pow, axis=-1)
 
     # Convert pressure to bars (1 bar <- 100000 Pa)
     pbar = 1e-5 * patm
@@ -93,43 +91,14 @@ def calc_density_h2o(
     # Convert to density (g cm^-3) -> 1000 g/kg; 1000000 cm^3/m^3 -> kg/m^3:
     rho = 1e3 / spec_vol
 
-    # CDLO: Method of Chen et al (1997) - I tested this to compare to the TerrA-P
-    # code base but I don't think we need it. Preserving the code in case it is
-    # needed in the future.
-    #
-    #  # Calculate density at 1 atm (kg/m^3):
-    #  chen_po = np.array([0.99983952, 6.788260e-5 , -9.08659e-6 , 1.022130e-7 ,
-    #                      -1.35439e-9 , 1.471150e-11, -1.11663e-13, 5.044070e-16,
-    #                      -1.00659e-18])
-    #  po = np.sum(np.array(chen_po) * tc_pow[..., :9], axis=-1)
-    #
-    #  # Calculate bulk modulus at 1 atm (bar):
-    #  chen_ko = np.array([19652.17, 148.1830, -2.29995, 0.01281,
-    #                      -4.91564e-5, 1.035530e-7])
-    #  ko = np.sum(np.array(chen_ko) * tc_pow[..., :6], axis=-1)
-    #
-    #  # Calculate temperature dependent coefficients:
-    #  chen_ca = np.array([3.26138, 5.223e-4, 1.324e-4, -7.655e-7, 8.584e-10])
-    #  ca = np.sum(np.array(chen_ca) * tc_pow[..., :5], axis=-1)
-    #
-    #  chen_cb = np.array([7.2061e-5, -5.8948e-6, 8.69900e-8, -1.0100e-9, 4.3220e-12])
-    #  cb = np.sum(np.array(chen_cb) * tc_pow[..., :5], axis=-1)
-    #
-    #  # Convert atmospheric pressure to bar (1 bar = 100000 Pa)
-    #  pbar = 1.0e-5 * patm
-    #
-    #  rho = (ko + ca * pbar + cb * pbar ** 2.0)
-    #  rho /= (ko + ca * pbar + cb * pbar ** 2.0 - pbar)
-    #  rho *= 1e3 * po
-
     return rho
 
 
 def calc_ftemp_arrh(
-    tk: Union[float, np.ndarray],
+    tk: NDArray,
     ha: float,
     pmodel_params: PModelParams = PModelParams(),
-) -> Union[float, np.ndarray]:
+) -> NDArray:
     r"""Calculate enzyme kinetics scaling factor.
 
     Calculates the temperature-scaling factor :math:`f` for enzyme kinetics
@@ -186,8 +155,8 @@ def calc_ftemp_arrh(
 
 
 def calc_ftemp_inst_rd(
-    tc: Union[float, np.ndarray], pmodel_params: PModelParams = PModelParams()
-) -> Union[float, np.ndarray]:
+    tc: NDArray, pmodel_params: PModelParams = PModelParams()
+) -> NDArray:
     """Calculate temperature scaling of dark respiration.
 
     Calculates the temperature-scaling factor for dark respiration at a given
@@ -226,8 +195,8 @@ def calc_ftemp_inst_rd(
 
 
 def calc_ftemp_inst_vcmax(
-    tc: Union[float, np.ndarray], pmodel_params: PModelParams = PModelParams()
-) -> Union[float, np.ndarray]:
+    tc: NDArray, pmodel_params: PModelParams = PModelParams()
+) -> NDArray:
     r"""Calculate temperature scaling of :math:`V_{cmax}`.
 
     This function calculates the temperature-scaling factor :math:`f` of
@@ -305,10 +274,8 @@ def calc_ftemp_inst_vcmax(
 
 
 def calc_ftemp_kphio(
-    tc: Union[float, np.ndarray],
-    c4: bool = False,
-    pmodel_params: PModelParams = PModelParams(),
-) -> Union[float, np.ndarray]:
+    tc: NDArray, c4: bool = False, pmodel_params: PModelParams = PModelParams()
+) -> NDArray:
     r"""Calculate temperature dependence of quantum yield efficiency.
 
     Calculates the **temperature dependence of the quantum yield efficiency**,
@@ -368,10 +335,8 @@ def calc_ftemp_kphio(
 
 
 def calc_gammastar(
-    tc: Union[float, np.ndarray],
-    patm: Union[float, np.ndarray],
-    pmodel_params: PModelParams = PModelParams(),
-) -> Union[float, np.ndarray]:
+    tc: NDArray, patm: NDArray, pmodel_params: PModelParams = PModelParams()
+) -> NDArray:
     r"""Calculate the photorespiratory CO2 compensation point.
 
     Calculates the photorespiratory **CO2 compensation point** in absence of
@@ -420,10 +385,8 @@ def calc_gammastar(
 
 
 def calc_ns_star(
-    tc: Union[float, np.ndarray],
-    patm: Union[float, np.ndarray],
-    pmodel_params: PModelParams = PModelParams(),
-) -> Union[float, np.ndarray]:
+    tc: NDArray, patm: NDArray, pmodel_params: PModelParams = PModelParams()
+) -> NDArray:
     r"""Calculate the relative viscosity of water.
 
     Calculates the relative viscosity of water (:math:`\eta^*`), given the
@@ -455,17 +418,17 @@ def calc_ns_star(
 
     visc_env = calc_viscosity_h2o(tc, patm, pmodel_params=pmodel_params)
     visc_std = calc_viscosity_h2o(
-        pmodel_params.k_To, pmodel_params.k_Po, pmodel_params=pmodel_params
+        np.array(pmodel_params.k_To),
+        np.array(pmodel_params.k_Po),
+        pmodel_params=pmodel_params,
     )
 
     return visc_env / visc_std
 
 
 def calc_kmm(
-    tc: Union[float, np.ndarray],
-    patm: Union[float, np.ndarray],
-    pmodel_params: PModelParams = PModelParams(),
-) -> Union[float, np.ndarray]:
+    tc: NDArray, patm: NDArray, pmodel_params: PModelParams = PModelParams()
+) -> NDArray:
     r"""Calculate the Michaelis Menten coefficient of Rubisco-limited assimilation.
 
     Calculates the **Michaelis Menten coefficient of Rubisco-limited
@@ -538,10 +501,8 @@ def calc_kmm(
 
 
 def calc_kp_c4(
-    tc: Union[float, np.ndarray],
-    patm: Union[float, np.ndarray],
-    pmodel_params: PModelParams = PModelParams(),
-) -> Union[float, np.ndarray]:
+    tc: NDArray, patm: NDArray, pmodel_params: PModelParams = PModelParams()
+) -> NDArray:
     r"""Calculate the Michaelis Menten coefficient of PEPc.
 
     Calculates the Michaelis Menten coefficient of phosphoenolpyruvate
@@ -580,10 +541,10 @@ def calc_kp_c4(
 
 
 def calc_soilmstress(
-    soilm: Union[float, np.ndarray],
-    meanalpha: Union[float, np.ndarray] = 1.0,
+    soilm: NDArray,
+    meanalpha: NDArray = np.array(1.0),
     pmodel_params: PModelParams = PModelParams(),
-) -> Union[float, np.ndarray]:
+) -> NDArray:
     r"""Calculate Stocker's empirical soil moisture stress factor.
 
     Calculates an **empirical soil moisture stress factor**  (:math:`\beta`,
@@ -667,11 +628,11 @@ def calc_soilmstress(
 
 
 def calc_viscosity_h2o(
-    tc: Union[float, np.ndarray],
-    patm: Union[float, np.ndarray],
+    tc: NDArray,
+    patm: NDArray,
     pmodel_params: PModelParams = PModelParams(),
     simple: bool = False,
-) -> Union[float, np.ndarray]:
+) -> NDArray:
     r"""Calculate the viscosity of water.
 
     Calculates the viscosity of water (:math:`\eta`) as a function of
@@ -728,9 +689,7 @@ def calc_viscosity_h2o(
     return mu_bar * pmodel_params.huber_mu_ast  # Pa s
 
 
-def calc_patm(
-    elv: Union[float, np.ndarray], pmodel_params: PModelParams = PModelParams()
-) -> Union[float, np.ndarray]:
+def calc_patm(elv: NDArray, pmodel_params: PModelParams = PModelParams()) -> NDArray:
     r"""Calculate atmospheric pressure from elevation.
 
     Calculates atmospheric pressure as a function of elevation with reference to
@@ -775,10 +734,7 @@ def calc_patm(
     )
 
 
-def calc_co2_to_ca(
-    co2: Union[float, np.ndarray],
-    patm: Union[float, np.ndarray],
-) -> Union[float, np.ndarray]:
+def calc_co2_to_ca(co2: NDArray, patm: NDArray) -> NDArray:
     r"""Convert :math:`\ce{CO2}` ppm to Pa.
 
     Converts ambient :math:`\ce{CO2}` (:math:`c_a`) in part per million to
@@ -857,11 +813,11 @@ class PModelEnvironment:
 
     def __init__(
         self,
-        tc: Union[float, np.ndarray],
-        vpd: Union[float, np.ndarray],
-        co2: Union[float, np.ndarray],
-        patm: Union[float, np.ndarray],
-        theta: Optional[Union[float, np.ndarray]] = None,
+        tc: NDArray,
+        vpd: NDArray,
+        co2: NDArray,
+        patm: NDArray,
+        theta: Optional[NDArray] = None,
         pmodel_params: PModelParams = PModelParams(),
     ):
 
@@ -1116,8 +1072,8 @@ class PModel:
     def __init__(
         self,
         env: PModelEnvironment,
-        rootzonestress: Optional[Union[float, np.ndarray]] = None,
-        soilmstress: Optional[Union[float, np.ndarray]] = None,
+        rootzonestress: Optional[NDArray] = None,
+        soilmstress: Optional[NDArray] = None,
         kphio: Optional[float] = None,
         do_ftemp_kphio: bool = True,
         method_optchi: str = "prentice14",
@@ -1188,7 +1144,7 @@ class PModel:
             )
             self.kphio = self.init_kphio * ftemp_kphio
         else:
-            self.kphio = self.init_kphio
+            self.kphio = np.array([self.init_kphio])
 
         # -----------------------------------------------------------------------
         # Optimal ci
