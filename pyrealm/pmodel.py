@@ -1195,12 +1195,12 @@ class PModel:
         # no defaults and are only populated by estimate_productivity. Their getter
         # methods have a check to raise an informative error
         # -----------------------------------------------------------------------
-        self._vcmax: Union[float, np.ndarray]
-        self._vcmax25: Union[float, np.ndarray]
-        self._rd: Union[float, np.ndarray]
-        self._jmax: Union[float, np.ndarray]
-        self._gpp: Union[float, np.ndarray]
-        self._gs: Union[float, np.ndarray]
+        self._vcmax: NDArray
+        self._vcmax25: NDArray
+        self._rd: NDArray
+        self._jmax: NDArray
+        self._gpp: NDArray
+        self._gs: NDArray
 
     def _soilwarn(self, varname: str) -> None:
         """Emit warning about soil moisture stress factor.
@@ -1453,7 +1453,7 @@ class CalcOptimalChi:
     def __init__(
         self,
         env: PModelEnvironment,
-        rootzonestress: Optional[Union[float, np.ndarray]] = None,
+        rootzonestress: Optional[NDArray] = None,
         method: str = "prentice14",
         pmodel_params: PModelParams = PModelParams(),
     ):
@@ -1463,7 +1463,7 @@ class CalcOptimalChi:
         # Check rootzonestress conforms to the environment data
         if rootzonestress is not None:
             self.shape = check_input_shapes(env.ca, rootzonestress)
-            self.rootzonestress: Optional[Union[float, np.ndarray]] = rootzonestress
+            self.rootzonestress: Optional[NDArray] = rootzonestress
             warn("The rootzonestress option is an experimental feature.")
         else:
             self.shape = env.shape
@@ -1472,13 +1472,13 @@ class CalcOptimalChi:
         # Declare attributes populated by methods - these attributes should never be
         # exposed without being populated as the method lookup below populates them
         # before leaving __init__, so they are not defined with a default value.
-        self.beta: Union[float, np.ndarray]
-        self.xi: Union[float, np.ndarray]
-        self.chi: Union[float, np.ndarray]
-        self.ci: Union[float, np.ndarray]
-        self.mc: Union[float, np.ndarray]
-        self.mj: Union[float, np.ndarray]
-        self.mjoc: Union[float, np.ndarray]
+        self.beta: float
+        self.xi: NDArray
+        self.chi: NDArray
+        self.ci: NDArray
+        self.mc: NDArray
+        self.mj: NDArray
+        self.mjoc: NDArray
 
         # TODO: considerable overlap between methods here - could maybe bring
         #       more into init but probably clearer and easier to debug to keep
@@ -1582,7 +1582,7 @@ class CalcOptimalChi:
         #               \sqrt{\frac{1.6 D \eta^{*}}{\beta(K + \Gamma^{*})}}
 
         # Replace missing rootzonestress with 1
-        self.rootzonestress = self.rootzonestress or 1.0
+        self.rootzonestress = self.rootzonestress or np.array([1.0])
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.beta = self.pmodel_params.beta_cost_ratio_prentice14
@@ -1727,10 +1727,7 @@ class CalcOptimalChi:
         self.chi = self.xi / (self.xi + np.sqrt(self.env.vpd))
 
         # mj is equal to 1 as gammastar is null
-        if self.shape == 1:
-            self.mj = 1.0
-        else:
-            self.mj = np.ones(self.shape)
+        self.mj = np.ones(self.shape)
 
         # Calculate m and mc and m/mc
         self.ci = self.chi * self.env.ca
@@ -1767,7 +1764,7 @@ class CalcOptimalChi:
         """
 
         # Replace missing rootzonestress with 1
-        self.rootzonestress = self.rootzonestress or 1.0
+        self.rootzonestress = self.rootzonestress or np.array([1.0])
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.beta = self.pmodel_params.beta_cost_ratio_c4
@@ -1782,17 +1779,12 @@ class CalcOptimalChi:
 
         self.ci = self.chi * self.env.ca
 
-        # These values need to retain any
-        # dimensions of the original inputs - if ftemp_kphio is set to 1.0
-        # (i.e. no temperature correction) then the dimensions of tc are lost.
-        if self.shape == 1:
-            self.mc = 1.0
-            self.mj = 1.0
-            self.mjoc = 1.0
-        else:
-            self.mc = np.ones(self.shape)
-            self.mj = np.ones(self.shape)
-            self.mjoc = np.ones(self.shape)
+        # These values need to retain any dimensions of the original inputs - if
+        # ftemp_kphio is set to 1.0 (i.e. no temperature correction) then the dimensions
+        # of tc are lost.
+        self.mc = np.ones(self.shape)
+        self.mj = np.ones(self.shape)
+        self.mjoc = np.ones(self.shape)
 
     def c4_no_gamma(self) -> None:
         r"""Calculate optimal chi assuming negligible photorespiration.
@@ -1837,7 +1829,7 @@ class CalcOptimalChi:
         """
 
         # Replace missing rootzonestress with 1
-        self.rootzonestress = self.rootzonestress or 1.0
+        self.rootzonestress = self.rootzonestress or np.array([1.0])
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
         self.beta = self.pmodel_params.beta_cost_ratio_c4
@@ -1853,10 +1845,7 @@ class CalcOptimalChi:
         # self.chi = self.xi /(self.xi + np.sqrt(self.env.vpd))
 
         # mj is equal to 1 as gammastar is null
-        if self.shape == 1:
-            self.mj = 1.0
-        else:
-            self.mj = np.ones(self.shape)
+        self.mj = np.ones(self.shape)
 
         # Calculate m and mc and m/mc
         self.ci = self.chi * self.env.ca
@@ -1955,10 +1944,10 @@ class JmaxLimitation:
 
         # Attributes populated by alternative method - two should always be populated by
         # the methods used below, but omega and omega_star only apply to smith19
-        self.f_j: Union[float, np.ndarray]
-        self.f_v: Union[float, np.ndarray]
-        self.omega: Optional[Union[float, np.ndarray]] = None
-        self.omega_star: Optional[Union[float, np.ndarray]] = None
+        self.f_j: NDArray
+        self.f_v: NDArray
+        self.omega: Optional[NDArray] = None
+        self.omega_star: Optional[NDArray] = None
 
         all_methods = {
             "wang17": self.wang17,
@@ -2117,8 +2106,8 @@ class JmaxLimitation:
 
         # Set Jmax limitation to unity - could define as 1.0 in __init__ and
         # pass here, but setting explicitly within the method for clarity.
-        self.f_v = 1.0
-        self.f_j = 1.0
+        self.f_v = np.array([1.0])
+        self.f_j = np.array([1.0])
 
 
 class CalcCarbonIsotopes:
