@@ -2154,8 +2154,8 @@ class CalcCarbonIsotopes:
     def __init__(
         self,
         pmodel: PModel,
-        d13CO2: Union[float, np.ndarray],
-        D14CO2: Union[float, np.ndarray],
+        D14CO2: NDArray,
+        d13CO2: NDArray,
         params: IsotopesParams = IsotopesParams(),
     ):
 
@@ -2167,12 +2167,12 @@ class CalcCarbonIsotopes:
         self.c4 = pmodel.c4
 
         # Attributes defined by methods below
-        self.Delta13C_simple: Union[np.ndarray, float]
-        self.Delta13C: Union[np.ndarray, float]
-        self.Delta14C: Union[np.ndarray, float]
-        self.d13C_leaf: Union[np.ndarray, float]
-        self.d14C_leaf: Union[np.ndarray, float]
-        self.d13C_wood: Union[np.ndarray, float]
+        self.Delta13C_simple: NDArray
+        self.Delta14C: NDArray
+        self.Delta13C: NDArray
+        self.d13C_leaf: NDArray
+        self.d14C_leaf: NDArray
+        self.d13C_wood: NDArray
 
         # Could store pmodel, d13CO2, D14CO2 in instance, but really not needed
         # so try and keep this class simple with a minimum of attributes.
@@ -2309,7 +2309,7 @@ class CalcCarbonIsotopes:
         """
 
         attrs = [
-            ("Delta13C_simple", "permil"),
+            ("Delta13C_simple", "permil"),  # ‰
             ("Delta13C", "permil"),
             ("Delta14C", "permil"),
             ("d13C_leaf", "permil"),
@@ -2427,11 +2427,11 @@ class C3C4Competition:
 
     def __init__(
         self,
-        gpp_c3: Union[float, np.ndarray],
-        gpp_c4: Union[float, np.ndarray],
-        treecover: Union[float, np.ndarray],
-        below_t_min: Union[float, np.ndarray],
-        cropland: Union[float, np.ndarray],
+        gpp_c3: NDArray,
+        gpp_c4: NDArray,
+        treecover: NDArray,
+        below_t_min: NDArray,
+        cropland: NDArray,
         params: C3C4Params = C3C4Params(),
     ):
 
@@ -2472,30 +2472,28 @@ class C3C4Competition:
         self.gpp_c4_contrib = gpp_c4 * self.frac_c4
 
         # Define attributes used elsewhere
-        self.Delta13C_C3: Union[np.ndarray, float]
-        self.Delta13C_C4: Union[np.ndarray, float]
-        self.d13C_C3: Union[np.ndarray, float]
-        self.d13C_C4: Union[np.ndarray, float]
+        self.Delta13C_C3: NDArray
+        self.Delta13C_C4: NDArray
+        self.d13C_C3: NDArray
+        self.d13C_C4: NDArray
 
     def __repr__(self) -> str:
 
         return f"C3C4competition(shape={self.shape})"
 
-    def _convert_advantage_to_c4_fraction(
-        self, treecover: Union[float, np.ndarray]
-    ) -> Union[float, np.ndarray]:
+    def _convert_advantage_to_c4_fraction(self, treecover: NDArray) -> NDArray:
         """Convert C4 GPP advantage to C4 fraction.
 
-        This method calculates an initial estimate of the fraction of C4 plants
-        based on the proportional GPP advantage from C4 photosynthesis. The
-        conversion is modulated by the proportion treecover.
+        This method calculates an initial estimate of the fraction of C4 plants based on
+        the proportional GPP advantage from C4 photosynthesis. The conversion is
+        modulated by the proportion treecover.
 
         Args:
             treecover: The proportion tree cover at modelled locations.
 
         Returns:
-            The estimated C4 fraction given the estimated C4 GPP advantage and
-            tree cover.
+            The estimated C4 fraction given the estimated C4 GPP advantage and tree
+            cover.
         """
 
         frac_c4 = 1.0 / (
@@ -2511,16 +2509,14 @@ class C3C4Competition:
 
         return frac_c4
 
-    def _calculate_tree_proportion(
-        self, gppc3: Union[np.ndarray, float]
-    ) -> Union[float, np.ndarray]:
+    def _calculate_tree_proportion(self, gppc3: NDArray) -> NDArray:
         """Calculate the proportion of GPP from C3 trees.
 
-        This method calculates the proportional impact of forest closure by C3
-        trees on the fraction of C4 plants in the community. A statistical model
-        is used to predict both forest cover from the GPP for C3 plants and for
-        a threshold value indicating closed canopy forest. The ratio of these
-        two values is used to indicate the proportion of GPP from trees.
+        This method calculates the proportional impact of forest closure by C3 trees on
+        the fraction of C4 plants in the community. A statistical model is used to
+        predict both forest cover from the GPP for C3 plants and for a threshold value
+        indicating closed canopy forest. The ratio of these two values is used to
+        indicate the proportion of GPP from trees.
 
         Note that the GPP units here are in **kilograms** per metre squared per year.
 
@@ -2541,33 +2537,28 @@ class C3C4Competition:
         return prop_trees
 
     def estimate_isotopic_discrimination(
-        self,
-        d13CO2: Union[float, np.ndarray],
-        Delta13C_C3_alone: Union[float, np.ndarray],
-        Delta13C_C4_alone: Union[float, np.ndarray],
+        self, d13CO2: NDArray, Delta13C_C3_alone: NDArray, Delta13C_C4_alone: NDArray
     ) -> None:
         r"""Estimate CO2 isotopic discrimination values.
 
-        Creating an instance of {class}`~pyrealm.pmodel.CalcCarbonIsotopes` from
-        a {class}`~pyrealm.pmodel.PModel` instance provides estimated total
-        annual descrimination against Carbon 13 (:math:`\Delta\ce{^13C}`) for a
-        single photosynthetic pathway.
+        Creating an instance of {class}`~pyrealm.pmodel.CalcCarbonIsotopes` from a
+        {class}`~pyrealm.pmodel.PModel` instance provides estimated total annual
+        descrimination against Carbon 13 (:math:`\Delta\ce{^13C}`) for a single
+        photosynthetic pathway.
 
         This method allows predictions from C3 and C4 pathways to be combined to
-        calculate the contribution from C3 and C4 plants given the estimated
-        fraction of C4 plants. It also calculates the contributions to annual
-        stable carbon isotopic composition (:math:`d\ce{^13C}`).
+        calculate the contribution from C3 and C4 plants given the estimated fraction of
+        C4 plants. It also calculates the contributions to annual stable carbon isotopic
+        composition (:math:`d\ce{^13C}`).
 
         Four attributes are populated:
 
-        * `Delta13C_C3`: contribution from C3 plants to
-          (:math:`\Delta\ce{^13C}`, permil).
-        * `Delta13C_C4`: contribution from C4 plants to
-          (:math:`\Delta\ce{^13C}`, permil).
-        * `d13C_C4`: contribution from C4 plants to (:math:`d\ce{^13C}`,
+        * `Delta13C_C3`: contribution from C3 plants to (:math:`\Delta\ce{^13C}`,
           permil).
-        * `d13C_C3`: contribution from C3 plants to (:math:`d\ce{^13C}`,
+        * `Delta13C_C4`: contribution from C4 plants to (:math:`\Delta\ce{^13C}`,
           permil).
+        * `d13C_C4`: contribution from C4 plants to (:math:`d\ce{^13C}`, permil).
+        * `d13C_C3`: contribution from C3 plants to (:math:`d\ce{^13C}`, permil).
 
         Args:
             d13CO2: stable carbon isotopic composition of atmospheric CO2
@@ -2592,11 +2583,10 @@ class C3C4Competition:
         """Print C3C4Competition summary.
 
         Prints a summary of the calculated values in a C3C4Competition instance
-        including the mean, range and number of nan values. This will always
-        show fraction of C4 and GPP estaimates and isotopic estimates are shown
-        if
-        :meth:`~pyrealm.pmodel.C3C4Competition.estimate_isotopic_discrimination`
-        has been run.
+        including the mean, range and number of nan values. This will always show
+        fraction of C4 and GPP estaimates and isotopic estimates are shown if
+        :meth:`~pyrealm.pmodel.C3C4Competition.estimate_isotopic_discrimination` has
+        been run.
 
         Args:
             dp: The number of decimal places used in rounding summary stats.
@@ -2624,31 +2614,30 @@ class C3C4Competition:
 # subdaily Pmodel
 
 
-def memory_effect(values: np.ndarray, alpha: float = 0.067) -> np.ndarray:
+def memory_effect(values: NDArray, alpha: float = 0.067) -> NDArray:
     r"""Apply a memory effect to a time series.
 
-    Vcmax and Jmax do not converge instantaneously to acclimated optimal
-    values. This function estimates how the actual Vcmax and Jmax track
-    a time series of calculated optimal values assuming instant acclimation.
+    Vcmax and Jmax do not converge instantaneously to acclimated optimal values. This
+    function estimates how the actual Vcmax and Jmax track a time series of calculated
+    optimal values assuming instant acclimation.
 
-    The estimation uses the paramater `alpha` (:math:`\alpha`) to control
-    the speed of convergence of the estimated values (:math:`E`) to the
-    calculated optimal values (:math:`O`):
+    The estimation uses the paramater `alpha` (:math:`\alpha`) to control the speed of
+    convergence of the estimated values (:math:`E`) to the calculated optimal values
+    (:math:`O`):
 
     ::math
 
         E_{t} = E_{t-1}(1 - \alpha) + O_{t} \alpha
 
-    For :math:`t_{0}`, the first value in the optimal values is used so
-    :math:`E_{0} = O_{0}`.
+    For :math:`t_{0}`, the first value in the optimal values is used so :math:`E_{0} =
+    O_{0}`.
 
     Args
-        values: An equally spaced time series of values
-        alpha: The relative weight applied to the most recent observation
+        values: An equally spaced time series of values alpha: The relative weight
+        applied to the most recent observation
 
     Returns
-        An np.ndarray of the same length as `values` with the memory effect
-        applied.
+        An np.ndarray of the same length as `values` with the memory effect applied.
     """
 
     # TODO - NA handling
@@ -2667,25 +2656,23 @@ def memory_effect(values: np.ndarray, alpha: float = 0.067) -> np.ndarray:
 
 
 def interpolate_rates_forward(
-    tk: np.ndarray, ha: float, values: np.ndarray, values_idx: np.ndarray
-) -> np.ndarray:
+    tk: NDArray, ha: float, values: NDArray, values_idx: NDArray
+) -> NDArray:
     """Interpolate Jmax and Vcmax forward in time.
 
-    This is a specialised interpolation function used for Jmax and Vcmax. Given
-    a time series of temperatures in Kelvin (`tk`) and a set of Jmax25 or
-    Vcmax25 values observed at indices (`values_idx`) along that time series,
-    this pushes those values along the time series and then rescales to the
-    observed temperatures.
+    This is a specialised interpolation function used for Jmax and Vcmax. Given a time
+    series of temperatures in Kelvin (`tk`) and a set of Jmax25 or Vcmax25 values
+    observed at indices (`values_idx`) along that time series, this pushes those values
+    along the time series and then rescales to the observed temperatures.
 
-    The effect is that the plant 'sets' its response at a given point of the day
-    and then maintains that same behaviour until a similar reference time the
-    following day.
+    The effect is that the plant 'sets' its response at a given point of the day and
+    then maintains that same behaviour until a similar reference time the following day.
 
-    Note that the beginning of the sequence will be filled with np.nan values
-    unless values_idx[0] = 0.
+    Note that the beginning of the sequence will be filled with np.nan values unless
+    values_idx[0] = 0.
 
     Arguments:
-        tk: A time series of temperature values (Kelvin)
+        tk: A time series of temperature values (Kelvin).
         ha: An Arrhenius constant.
         values: An array of rates at standard temperature predicted at points along tk.
         values_idx: The indices of tk at which values are predicted.
