@@ -57,6 +57,7 @@ mathjax3_config = {
 
 # Turn off ugly rendering of class attributes
 napoleon_use_ivar = True
+napoleon_custom_sections = [("PModel Parameters", "params_style")]
 
 # Suppress signature expansion of arguments
 autodoc_preserve_defaults = True

@@ -31,9 +31,9 @@ def calc_density_h2o(
 ) -> NDArray:
     """Calculate water density.
 
-    Calculates the **density of water** as a function of temperature and
-    atmospheric pressure, using the Tumlirz Equation and coefficients calculated
-    by :cite:`Fisher:1975tm`.
+    Calculates the density of water as a function of temperature and atmospheric
+    pressure, using the Tumlirz Equation and coefficients calculated by
+    :cite:`Fisher:1975tm`.
 
     Args:
         tc: air temperature, °C
@@ -42,13 +42,10 @@ def calc_density_h2o(
         safe: Prevents the function from estimating density below -30°C, where the
             function behaves poorly
 
-    Other Parameters:
-        lambda_: polynomial coefficients of Tumlirz equation
-            (`pmodel_params.fisher_dial_lambda`).
-        Po: polynomial coefficients of Tumlirz equation
-            (`pmodel_params.fisher_dial_Po`).
-        Vinf: polynomial coefficients of Tumlirz equation
-            (`pmodel_params.fisher_dial_Vinf`).
+    PModel Parameters:
+        lambda_: polynomial coefficients of Tumlirz equation (``fisher_dial_lambda``).
+        Po: polynomial coefficients of Tumlirz equation (``fisher_dial_Po``).
+        Vinf: polynomial coefficients of Tumlirz equation (``fisher_dial_Vinf``).
 
     Returns:
         Water density as a float in (g cm^-3)
