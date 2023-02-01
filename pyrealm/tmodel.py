@@ -18,6 +18,8 @@ from numpy.typing import NDArray
 
 from pyrealm.param_classes import TModelTraits
 
+# from pyrealm.utilities import check_input_shapes
+
 # Design Notes:
 #
 # One functionally easy thing to do the TTree object is to expose the geometry
@@ -321,12 +323,12 @@ class TTree:
 
 
 # def grow_ttree(
-#     gpp: Union[float, np.ndarray],
-#     d_init: Union[float, np.ndarray],
+#     gpp: NDArray,
+#     d_init: NDArray,
 #     time_axis: int,
 #     traits: TModelTraits = TModelTraits(),
-#     outvars: Tuple[str, ...] = ("diameter", "height", "crown_area", "delta_d"),
-# ) -> dict:
+#     outvars: tuple[str, ...] = ("diameter", "height", "crown_area", "delta_d"),
+# ) -> dict[str, NDArray]:
 #     """Fit a growth time series using the T Model.
 
 #     This function fits the T Model incrementally to a set of modelled plants,
@@ -360,7 +362,7 @@ class TTree:
 #     # TODO: - handle 1D GPP time series applied to more than one diameter
 
 #     # Initialise the Tree object
-#     tree = TTree(traits, d_init)
+#     tree = TTree(d_init, traits)
 
 #     # Check the requested outvars
 #     if "diameter" not in outvars:
@@ -374,22 +376,21 @@ class TTree:
 #         except AttributeError:
 #             badvars.append(var)
 
-#     if badvars:
-#         raise RuntimeError(
-#           f"Unknown tree properties in outvars: {', '.join(badvars)}"
-#           )
+# if badvars:
+#     raise RuntimeError(
+#         f"Unknown tree properties in outvars: {', '.join(badvars)}"
+#         )
 
 #     # Create an array to store the requested variables by adding a dimension
 #     # to the gpp input with length set to the number of variables
-#     output_shape = gpp_shape + tuple([len(outvars)])
-#     output = np.zeros(output_shape)
+#     output = {v: np.zeros(gpp.shape) for v in outvars}
 
 #     # Create an indexing object to insert values into the output. This is
 #     # a bit obscure: the inputs have a time axis and an arbitrary number
 #     # of other dimensions and the output adds another dimension for the
 #     # output variables. So this object creates a slice (:) on _all_ dimensions
 #     # and the loop then replaces the time axis and variable axis with integers.
-#     output_index = [slice(None)] * output.ndim
+#     output_index = [slice(None)] * gpp.ndim
 
 #     # Loop over the gpp time axis
 #     for year in np.arange(gpp_shape[time_axis]):
@@ -397,16 +398,15 @@ class TTree:
 #         # Calculate the growth based on the current year of gpp
 #         tree.calculate_growth(np.take(gpp, indices=year, axis=time_axis))
 
-#         # Store the requested variables into the output array
-#         for var_idx, each_var in enumerate(outvars):
+#         # Store the requested variables into the output arrays
+#         for each_var in outvars:
 
 #             # Extract variable values from tree into output - set the last index
 #             # (variable dimension) to the variable index and the time axis to the year
-#             output_index[-1] = var_idx
 #             output_index[time_axis] = year
-#             output[tuple(output_index)] = getattr(tree, each_var)
+#             output[each_var][tuple(output_index)] = getattr(tree, each_var)
 
 #         # Now update the tree object
-#         tree.set_diameter(tree.diameter + getattr(tree, "delta_d"))
+#         tree.reset_diameters(tree.diameter + getattr(tree, "delta_d"))
 
 #     return output

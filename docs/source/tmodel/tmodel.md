@@ -4,8 +4,8 @@ jupytext:
   text_representation:
     extension: .md
     format_name: myst
-    format_version: 0.12
-    jupytext_version: 1.6.0
+    format_version: 0.13
+    jupytext_version: 1.13.8
 kernelspec:
   display_name: Python 3
   language: python
@@ -33,6 +33,7 @@ class description.
 The class can be used to create a default T Model trait set:
 
 ```{code-cell} ipython3
+import numpy as np
 from pyrealm import tmodel
 # A tree using the default parameterisation
 traits1 = tmodel.TModelTraits()
@@ -65,21 +66,19 @@ for a given set of traits and diameters.
 
 ### Initialising a {class}`~pyrealm.tmodel.TTree` object
 
-A {class}`~pyrealm.tmodel.TTree` object is created using a
-{class}`~pyrealm.tmodel.Traits` object. By default, it will use a {class}`~pyrealm.tmodel.Traits`
-object with the default settings.
+A {class}`~pyrealm.tmodel.TTree` object is created by providing an array of initial stem
+diameters and an optional set of traits as a {class}`~pyrealm.tmodel.Traits` object. If
+no traits are provided, the default {class}`~pyrealm.tmodel.Traits` settings are used.
 
 ```{code-cell} ipython3
-tree1 = tmodel.TTree() # This uses the settings shown in traits1
-tree2 = tmodel.TTree(traits=traits2)
+# Use a sequence of diameters from sapling to large tree
+diameters = np.linspace(0.02, 2, 100)
+tree1 = tmodel.TTree(diameters=diameters)  # Using default traits 
+tree2 = tmodel.TTree(diameters=diameters, traits=traits2)
 ```
 
-### Setting stem diameters
-
-The {meth}`~pyrealm.tmodel.TTree.set_diameter` method is used to provide a diameter or
-array of diameters to the {class}`~pyrealm.tmodel.TTree` object. These values are then
-immediately used to calculate all properties of the {class}`~pyrealm.tmodel.TTree` that
-scale simply with tree diameter:
+These inputs are then immediately used to calculate the following properties of the
+{class}`~pyrealm.tmodel.TTree` that scale simply with tree diameter:
 
 * Stem diameter (`diameter`)
 * Stem height (`height`)
@@ -89,27 +88,12 @@ scale simply with tree diameter:
 * Mass of foliage and fine roots (`mass_fol`)
 * Mass of sapwood (`mass_swd`)
 
-```{code-cell} ipython3
-tree1.set_diameter(0.5)
-print(tree1.height)
-```
-
-Providing an array of diameter values calculates the predicted values for each value,
-providing a quick way to visualise how settings alter the scaling of a
-{class}`~pyrealm.tmodel.TTree` instance.
-
-```{code-cell} ipython3
-# Set diameters 0.02, 0.04, ..., 2.00
-import numpy as np
-diams = np.linspace(0.02, 2, 100)
-tree1.set_diameter(diams)
-tree2.set_diameter(diams)
-```
-
-All of the geometry and mass variables are now populated and can be plotted.
+Using an array of diameter values provides an immediate way to visualise the geometric
+scaling resulting from a particular set of plant traits:
 
 ```{code-cell} ipython3
 :tags: [hide-input]
+
 from matplotlib import pyplot
 fig, (ax1, ax2, ax3) = pyplot.subplots(1,3, figsize=(12, 4))
 ax1.plot(tree1.diameter, tree1.height, label='traits1')
@@ -137,10 +121,13 @@ pyplot.show()
 
 ### Calculating growth
 
-In exactly the same way, the {meth}`~pyrealm.tmodel.TTree.calculate_growth` method can
-now be used to provide a scalar or array estimate of GPP to a
-{class}`~pyrealm.tmodel.TTree` instance. This calculate estimates of tree growth
-parameters:
+The {meth}`~pyrealm.tmodel.TTree.calculate_growth` method is used to provide estimates
+of gross primary productivity (GPP) to a {class}`~pyrealm.tmodel.TTree` instance in
+order to apply the T Model predictions of GPP allocation to plant respiration and
+growth.
+
+Running the method populates properties of the {class}`~pyrealm.tmodel.TTree` that
+provide estimates of the following growth parameters:
 
 * Gross primary productivity (`gpp_actual`)
 * Net primary productivity (`npp`)
@@ -156,13 +143,13 @@ The code below calculates growth estimates at each diameter under a constant GPP
 TODO - UNITS!.
 
 ```{code-cell} ipython3
-# Set diameters 0.02, 0.04, ..., 2.00
-tree1.calculate_growth(7)
-tree2.calculate_growth(7)
+tree1.calculate_growth(np.array([7]))
+tree2.calculate_growth(np.array([7]))
 ```
 
 ```{code-cell} ipython3
 :tags: [hide-input]
+
 fig, (ax1, ax2, ax3) = pyplot.subplots(1,3, figsize=(12, 4))
 ax1.plot(tree1.diameter, tree1.npp, label='traits1')
 ax1.plot(tree2.diameter, tree2.npp, label='traits2')
@@ -186,6 +173,20 @@ ax3.legend()
 pyplot.show()
 ```
 
+### Resetting stem diameters
+
+The {meth}`~pyrealm.tmodel.TTree.reset_diameters` can be used to update an existing
+{class}`~pyrealm.tmodel.TTree` object with a new set of diameters using the same
+{class}`~pyrealm.tmodel.Traits` definition. Using
+{meth}`~pyrealm.tmodel.TTree.reset_diameters` automatically resets any calculated growth
+parameters: they will need to be recalculated for the new diameters.
+
+```{code-cell} ipython3
+tree1.reset_diameters(np.array([0.0001]))
+print(tree1.height)
+```
+
+<!-- 
 ## The {func}`~pyrealm.tmodel.grow_ttree` function
 
 The  {class}`~pyrealm.tmodel.TTree` class implements the calculation of the T Model
@@ -216,6 +217,7 @@ values = tmodel.grow_ttree(gpp, diams, time_axis=0, traits=traits)
 
 ```{code-cell} ipython3
 :tags: [hide-input]
+
 fig, (ax1, ax2) = pyplot.subplots(1, 2, figsize=(10, 4))
 ax1.plot(years, values[:, 0, 0], label='stem 0')
 ax1.plot(years, values[:, 1, 0], label='stem 1')
@@ -234,4 +236,4 @@ ax2.set_xlabel('Years')
 ax2.set_ylabel('Height (m)')
 ax2.legend()
 pyplot.show()
-```
+``` -->
