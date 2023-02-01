@@ -820,7 +820,6 @@ class PModelEnvironment:
         theta: Optional[NDArray] = None,
         pmodel_params: PModelParams = PModelParams(),
     ):
-
         self.shape = check_input_shapes(tc, vpd, co2, patm)
 
         # Validate and store the forcing variables
@@ -873,7 +872,6 @@ class PModelEnvironment:
         self.pmodel_params = pmodel_params
 
     def __repr__(self) -> str:
-
         # DESIGN NOTE: This is deliberately extremely terse. It could contain
         # a bunch of info on the environment but that would be quite spammy
         # on screen. Having a specific summary method that provides that info
@@ -1079,7 +1077,6 @@ class PModel:
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
     ):
-
         # Check possible array inputs against the photosynthetic environment
         self.shape = check_input_shapes(env.gammastar, soilmstress, rootzonestress)
 
@@ -1526,7 +1523,6 @@ class CalcOptimalChi:
         return is_c4
 
     def __repr__(self) -> str:
-
         return f"CalcOptimalChi(shape={self.shape}, method={self.method})"
 
     def prentice14(self) -> None:
@@ -1935,7 +1931,6 @@ class JmaxLimitation:
         method: str = "wang17",
         pmodel_params: PModelParams = PModelParams(),
     ):
-
         self.shape = check_input_shapes(optchi.mj)
 
         self.optchi = optchi
@@ -1970,7 +1965,6 @@ class JmaxLimitation:
         this_method()
 
     def __repr__(self) -> str:
-
         return f"JmaxLimitation(shape={self.shape})"
 
     def wang17(self) -> None:
@@ -2158,7 +2152,6 @@ class CalcCarbonIsotopes:
         d13CO2: NDArray,
         params: IsotopesParams = IsotopesParams(),
     ):
-
         # Check inputs are congruent
         _ = check_input_shapes(pmodel.env.tc, d13CO2, D14CO2)
 
@@ -2194,7 +2187,6 @@ class CalcCarbonIsotopes:
         self.d13C_wood = self.d13C_leaf + self.params.frank_postfrac
 
     def __repr__(self) -> str:
-
         return f"CalcCarbonIsotopes(shape={self.shape}, method={self.c4})"
 
     def calc_c4_discrimination(self, pmodel: PModel) -> None:
@@ -2434,7 +2426,6 @@ class C3C4Competition:
         cropland: NDArray,
         params: C3C4Params = C3C4Params(),
     ):
-
         # Check inputs are congruent
         self.shape = check_input_shapes(
             gpp_c3, gpp_c4, treecover, cropland, below_t_min
@@ -2478,7 +2469,6 @@ class C3C4Competition:
         self.d13C_C4: NDArray
 
     def __repr__(self) -> str:
-
         return f"C3C4competition(shape={self.shape})"
 
     def _convert_advantage_to_c4_fraction(self, treecover: NDArray) -> NDArray:

@@ -51,9 +51,7 @@ from pyrealm.utilities import DailyRepresentativeValues, TemporalInterpolator
     ],
 )
 def test_temporal_interpolator_init_errors(ctext_mngr, msg, input, interp):
-
     with ctext_mngr as cman:
-
         tint = TemporalInterpolator(
             input_datetimes=input, interpolation_datetimes=interp
         )
@@ -72,7 +70,6 @@ def test_temporal_interpolator_init_errors(ctext_mngr, msg, input, interp):
     ],
 )
 def test_temporal_interpolator_call_errors(ctext_mngr, msg, values):
-
     tint = TemporalInterpolator(
         input_datetimes=np.arange(
             datetime(2014, 6, 1, 0, 0),
@@ -134,7 +131,6 @@ def test_temporal_interpolator_call_errors(ctext_mngr, msg, values):
     ],
 )
 def test_temporal_interpolator_call(method, values, expected):
-
     tint = TemporalInterpolator(
         input_datetimes=np.arange(
             datetime(2014, 6, 1, 0, 0),
@@ -251,9 +247,7 @@ def test_temporal_interpolator_call(method, values, expected):
     ],
 )
 def test_daily_representative_values_init_errors(ctext_mngr, msg, datetimes, kwargs):
-
     with ctext_mngr as cman:
-
         drep = DailyRepresentativeValues(datetimes=datetimes, **kwargs)
 
     assert str(cman.value) == msg
@@ -271,7 +265,6 @@ def test_daily_representative_values_init_errors(ctext_mngr, msg, datetimes, kwa
     ],
 )
 def test_daily_representative_values_call_errors(ctext_mngr, msg, values):
-
     drep = DailyRepresentativeValues(
         datetimes=np.arange(
             datetime(2014, 6, 1, 0, 0),
@@ -284,7 +277,6 @@ def test_daily_representative_values_call_errors(ctext_mngr, msg, values):
     )
 
     with ctext_mngr as cman:
-
         res = drep(values)
 
     assert str(cman.value) == msg
@@ -360,7 +352,6 @@ def test_daily_representative_values_call_errors(ctext_mngr, msg, values):
     ],
 )
 def test_daily_representative_values_call(kwargs, values, expected):
-
     drep = DailyRepresentativeValues(
         datetimes=np.arange(
             datetime(2014, 6, 1, 0, 0),

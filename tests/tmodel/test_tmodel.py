@@ -48,7 +48,6 @@ def rvalues():
 
     for row in values:
         for rnm, pynm in name_map:
-
             # Fix some scaling differences:
             if pynm == "delta_d":
                 # The R tmodel implementation rescales reported delta_d as

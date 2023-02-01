@@ -105,7 +105,6 @@ def summarize_attrs(
     ret = []
 
     if len(attrs):
-
         first = attrs[0]
 
         # TODO: - not much checking for consistency here!
@@ -117,7 +116,6 @@ def summarize_attrs(
 
         # Process the attributes
         for attr_entry in attrs:
-
             attr = attr_entry[0]
             unit = attr_entry[1]
 
@@ -362,7 +360,6 @@ class TemporalInterpolator:
         interpolation_datetimes: NDArray[np.datetime64],
         method: str = "daily_constant",
     ) -> None:
-
         # This might be better as a straightforward function - there isn't a
         # huge amount of setup in __init__, so not saving a lot of processing by
         # saving that setup in class attributes for re-use.
@@ -498,7 +495,6 @@ class DailyRepresentativeValues:
         around_max: Optional[bool] = None,
         reference_time: Optional[float] = None,
     ) -> None:
-
         # Datetime validation. The inputs must be:
         # - one dimensional datetime64
         # - with strictly increasing and evenly spaced time deltas
@@ -539,7 +535,6 @@ class DailyRepresentativeValues:
 
         # Different methods
         if window_center is not None and window_width is not None:
-
             # Find which datetimes fall within that window, using second resolution
             win_center = np.timedelta64(int(window_center * 60 * 60), "s")
             win_start = np.timedelta64(
@@ -570,7 +565,6 @@ class DailyRepresentativeValues:
             self.method = f"Window ({window_center}, {window_width})"
 
         elif include is not None:
-
             if datetimes.shape != include.shape:
                 raise ValueError("Datetimes and include do not have the same shape")
 
@@ -583,7 +577,6 @@ class DailyRepresentativeValues:
             self.method = "Include array"
 
         elif around_max is not None and window_width is not None:
-
             # This would have to be implemented _per_ value set, so in __call__
             # but can use date_change set up in init.
             raise NotImplementedError("around_max not yet implemented")
@@ -591,7 +584,6 @@ class DailyRepresentativeValues:
             self.method = "Around max"
 
         else:
-
             raise RuntimeError("Unknown option combination")
 
         # The approach implemented here uses cumsum and then divide by n_obs to

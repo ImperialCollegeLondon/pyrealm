@@ -53,7 +53,6 @@ class TTree:
         diameters: NDArray,
         traits: TModelTraits = TModelTraits(),
     ) -> None:
-
         self.traits: TModelTraits = traits
 
         # The diameter is used to define all of the geometric scaling

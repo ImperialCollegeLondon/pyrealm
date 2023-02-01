@@ -7,7 +7,6 @@ import pytest
 
 @pytest.fixture
 def bigleaf():
-
     path = Path(__file__).parent
     with open(path / "bigleaf_test_values.json") as tvals:
         return json.load(tvals)
@@ -24,7 +23,6 @@ PATM = np.linspace(60, 110, 31)
     argnames="formula", argvalues=["Allen1998", "Alduchov1996", "Sonntag1990"]
 )
 def test_calc_vp_sat(bigleaf, formula):
-
     from pyrealm.param_classes import HygroParams
     from pyrealm.utilities import calc_vp_sat
 
@@ -39,7 +37,6 @@ def test_calc_vp_sat(bigleaf, formula):
     argnames="formula", argvalues=["Allen1998", "Alduchov1996", "Sonntag1990"]
 )
 def test_convert_vp_to_vpd(bigleaf, formula):
-
     from pyrealm.param_classes import HygroParams
     from pyrealm.utilities import convert_vp_to_vpd
 
@@ -54,7 +51,6 @@ def test_convert_vp_to_vpd(bigleaf, formula):
     argnames="formula", argvalues=["Allen1998", "Alduchov1996", "Sonntag1990"]
 )
 def test_convert_rh_to_vpd(bigleaf, formula):
-
     from pyrealm.param_classes import HygroParams
     from pyrealm.utilities import convert_rh_to_vpd
 
@@ -66,7 +62,6 @@ def test_convert_rh_to_vpd(bigleaf, formula):
 
 
 def test_convert_sh_to_vp(bigleaf):
-
     from pyrealm.utilities import convert_sh_to_vp
 
     results = convert_sh_to_vp(SH, PATM)
@@ -79,7 +74,6 @@ def test_convert_sh_to_vp(bigleaf):
     argnames="formula", argvalues=["Allen1998", "Alduchov1996", "Sonntag1990"]
 )
 def test_convert_sh_to_vpd(bigleaf, formula):
-
     from pyrealm.param_classes import HygroParams
     from pyrealm.utilities import convert_sh_to_vpd
 

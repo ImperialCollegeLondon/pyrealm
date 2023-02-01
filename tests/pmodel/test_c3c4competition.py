@@ -75,7 +75,6 @@ from pyrealm.pmodel import (
     ],
 )
 def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
-
     env = PModelEnvironment(
         tc=np.array([20, 35]), patm=101325, co2=400, vpd=1000, theta=0.5
     )
