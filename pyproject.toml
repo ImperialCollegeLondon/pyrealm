@@ -42,8 +42,9 @@ netCDF4 = "^1.6.0"                                         # Why?
 flake8 = "^4.0.1"
 flake8-docstrings = "^1.6.0"
 mypy = "^0.991"
-isort = "^5.10.1"
+isort = "^5.12.0"
 matplotlib = "^3.5.2"
+ipython = "^8.9.0"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^5.0.0"

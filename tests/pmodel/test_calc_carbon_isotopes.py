@@ -72,7 +72,6 @@ from pyrealm.pmodel import CalcCarbonIsotopes, PModel, PModelEnvironment
     ],
 )
 def test_temporal_interpolator_init_errors(pmodelenv_args, pmodel_args, expected):
-
     env = PModelEnvironment(**pmodelenv_args)
     pmodel = PModel(env, **pmodel_args)
     cci = CalcCarbonIsotopes(pmodel, d13CO2=-8.4, D14CO2=19.2)

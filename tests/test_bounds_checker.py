@@ -30,93 +30,89 @@ def test__get_interval_functions(input, raises, lowfn, hifun):
 
 
 @pytest.mark.parametrize(
-    argnames="input, interval_type, lower, upper, context",
+    argnames="input, interval_args, context",
     argvalues=[
-        (np.array([1, 2, 3, 4]), "()", 1, 4, pytest.warns(UserWarning)),
-        (np.array([1, 2, 3, 4]), "()", 0.9, 4.1, does_not_raise()),
-        (np.array([1, 2, 3, 4]), "[]", 1.1, 3.9, pytest.warns(UserWarning)),
-        (np.array([1, 2, 3, 4]), "[]", 1, 4, does_not_raise()),
-        (np.array([1, 2, 3, 4]), "[)", 1, 4, pytest.warns(UserWarning)),
-        (np.array([1, 2, 3, 4]), "[)", 1, 4.1, does_not_raise()),
-        (np.array([1, 2, 3, 4]), "(]", 1, 4, pytest.warns(UserWarning)),
-        (np.array([1, 2, 3, 4]), "(]", 0.9, 4, does_not_raise()),
+        (3, (1, 4, "()"), does_not_raise()),
+        (np.array([1, 2, 3, 4]), (1.0, 4.0, "()"), pytest.warns(UserWarning)),
+        (np.array([1, 2, 3, 4]), (0.9, 4.1, "()"), does_not_raise()),
+        (np.array([1, 2, 3, 4]), (1.1, 3.9, "[]"), pytest.warns(UserWarning)),
+        (np.array([1, 2, 3, 4]), (1.0, 4.0, "[]"), does_not_raise()),
+        (np.array([1, 2, 3, 4]), (1.0, 4.0, "[)"), pytest.warns(UserWarning)),
+        (np.array([1, 2, 3, 4]), (1.0, 4.1, "[)"), does_not_raise()),
+        (np.array([1, 2, 3, 4]), (1.0, 4.0, "(]"), pytest.warns(UserWarning)),
+        (np.array([1, 2, 3, 4]), (0.9, 4.0, "(]"), does_not_raise()),
     ],
 )
-def test_bounds_checker(input, interval_type, lower, upper, context):
-
+def test_bounds_checker(input, interval_args, context):
     from pyrealm.bounds_checker import bounds_checker
 
     with context:
-        out = bounds_checker(input, lower, upper, interval_type)
+        out = bounds_checker(input, *interval_args)
 
 
 @pytest.mark.parametrize(
-    argnames="input, interval_type, lower, upper, context, exp",
+    argnames="input, interval_args, context, exp",
     argvalues=[
         (
+            3,
+            (1, 4, "()"),
+            pytest.raises(TypeError),
+            None,
+        ),
+        (
             np.array([1, 2, 3, 4]),
-            "()",
-            1,
-            4,
+            (1, 4, "()"),
             pytest.warns(RuntimeWarning),
             np.array([np.nan, 2, 3, np.nan]),
         ),
         (
             np.array([1, 2, 3, 4]),
-            "()",
-            0.9,
-            4.1,
+            (0.9, 4.1, "()"),
             does_not_raise(),
             np.array([1, 2, 3, 4]),
         ),
         (
             np.array([1, 2, 3, 4]),
-            "[]",
-            1.1,
-            3.9,
+            (1.1, 3.9, "[]"),
             pytest.warns(RuntimeWarning),
             np.array([np.nan, 2, 3, np.nan]),
         ),
-        (np.array([1, 2, 3, 4]), "[]", 1, 4, does_not_raise(), np.array([1, 2, 3, 4])),
         (
             np.array([1, 2, 3, 4]),
-            "[)",
-            1,
-            4,
+            (1, 4, "[]"),
+            does_not_raise(),
+            np.array([1, 2, 3, 4]),
+        ),
+        (
+            np.array([1, 2, 3, 4]),
+            (1, 4, "[)"),
             pytest.warns(RuntimeWarning),
             np.array([1, 2, 3, np.nan]),
         ),
         (
             np.array([1, 2, 3, 4]),
-            "[)",
-            1,
-            4.1,
+            (1, 4.1, "[)"),
             does_not_raise(),
             np.array([1, 2, 3, 4]),
         ),
         (
             np.array([1, 2, 3, 4]),
-            "(]",
-            1,
-            4,
+            (1, 4, "(]"),
             pytest.warns(RuntimeWarning),
             np.array([np.nan, 2, 3, 4]),
         ),
         (
             np.array([1, 2, 3, 4]),
-            "(]",
-            0.9,
-            4,
+            (0.9, 4, "(]"),
             does_not_raise(),
             np.array([1, 2, 3, 4]),
         ),
     ],
 )
-def test_input_mask(input, interval_type, lower, upper, context, exp):
-
-    from pyrealm.bounds_checker import input_mask
+def test_input_mask(input, interval_args, context, exp):
+    from pyrealm.bounds_checker import bounds_mask
 
     with context:
-        out = input_mask(input, lower, upper, interval_type)
+        out = bounds_mask(input, *interval_args)
 
-    assert np.allclose(out, exp, equal_nan=True)
+        assert np.allclose(out, exp, equal_nan=True)

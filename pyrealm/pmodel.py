@@ -12,6 +12,7 @@ from warnings import warn
 
 import bottleneck as bn  # type: ignore
 import numpy as np
+from numpy.typing import NDArray
 
 from pyrealm import ExperimentalFeatureWarning
 from pyrealm.bounds_checker import bounds_checker
@@ -23,11 +24,11 @@ from pyrealm.utilities import check_input_shapes, summarize_attrs
 
 
 def calc_density_h2o(
-    tc: Union[float, np.ndarray],
-    patm: Union[float, np.ndarray],
+    tc: NDArray,
+    patm: NDArray,
     pmodel_params: PModelParams = PModelParams(),
     safe: bool = True,
-) -> Union[float, np.ndarray]:
+) -> NDArray:
     """Calculate water density.
 
     Calculates the **density of water** as a function of temperature and
@@ -57,7 +58,6 @@ def calc_density_h2o(
         998.206
     """
 
-    # DESIGN NOTE:
     # It doesn't make sense to use this function for tc < 0, but in particular
     # the calculation shows wild numeric instability between -44 and -46 that
     # leads to numerous downstream issues - see the extreme values documentation.
@@ -74,15 +74,13 @@ def calc_density_h2o(
     tc_pow = np.power.outer(tc, np.arange(0, 10))
 
     # Calculate lambda, (bar cm^3)/g:
-    lambda_val = np.sum(
-        np.array(pmodel_params.fisher_dial_lambda) * tc_pow[..., :5], axis=-1
-    )
+    lambda_val = np.sum(pmodel_params.fisher_dial_lambda * tc_pow[..., :5], axis=-1)
 
     # Calculate po, bar
-    po_val = np.sum(np.array(pmodel_params.fisher_dial_Po) * tc_pow[..., :5], axis=-1)
+    po_val = np.sum(pmodel_params.fisher_dial_Po * tc_pow[..., :5], axis=-1)
 
     # Calculate vinf, cm^3/g
-    vinf_val = np.sum(np.array(pmodel_params.fisher_dial_Vinf) * tc_pow, axis=-1)
+    vinf_val = np.sum(pmodel_params.fisher_dial_Vinf * tc_pow, axis=-1)
 
     # Convert pressure to bars (1 bar <- 100000 Pa)
     pbar = 1e-5 * patm
@@ -93,43 +91,14 @@ def calc_density_h2o(
     # Convert to density (g cm^-3) -> 1000 g/kg; 1000000 cm^3/m^3 -> kg/m^3:
     rho = 1e3 / spec_vol
 
-    # CDLO: Method of Chen et al (1997) - I tested this to compare to the TerrA-P
-    # code base but I don't think we need it. Preserving the code in case it is
-    # needed in the future.
-    #
-    #  # Calculate density at 1 atm (kg/m^3):
-    #  chen_po = np.array([0.99983952, 6.788260e-5 , -9.08659e-6 , 1.022130e-7 ,
-    #                      -1.35439e-9 , 1.471150e-11, -1.11663e-13, 5.044070e-16,
-    #                      -1.00659e-18])
-    #  po = np.sum(np.array(chen_po) * tc_pow[..., :9], axis=-1)
-    #
-    #  # Calculate bulk modulus at 1 atm (bar):
-    #  chen_ko = np.array([19652.17, 148.1830, -2.29995, 0.01281,
-    #                      -4.91564e-5, 1.035530e-7])
-    #  ko = np.sum(np.array(chen_ko) * tc_pow[..., :6], axis=-1)
-    #
-    #  # Calculate temperature dependent coefficients:
-    #  chen_ca = np.array([3.26138, 5.223e-4, 1.324e-4, -7.655e-7, 8.584e-10])
-    #  ca = np.sum(np.array(chen_ca) * tc_pow[..., :5], axis=-1)
-    #
-    #  chen_cb = np.array([7.2061e-5, -5.8948e-6, 8.69900e-8, -1.0100e-9, 4.3220e-12])
-    #  cb = np.sum(np.array(chen_cb) * tc_pow[..., :5], axis=-1)
-    #
-    #  # Convert atmospheric pressure to bar (1 bar = 100000 Pa)
-    #  pbar = 1.0e-5 * patm
-    #
-    #  rho = (ko + ca * pbar + cb * pbar ** 2.0)
-    #  rho /= (ko + ca * pbar + cb * pbar ** 2.0 - pbar)
-    #  rho *= 1e3 * po
-
     return rho
 
 
 def calc_ftemp_arrh(
-    tk: Union[float, np.ndarray],
+    tk: NDArray,
     ha: float,
     pmodel_params: PModelParams = PModelParams(),
-) -> Union[float, np.ndarray]:
+) -> NDArray:
     r"""Calculate enzyme kinetics scaling factor.
 
     Calculates the temperature-scaling factor :math:`f` for enzyme kinetics
@@ -186,8 +155,8 @@ def calc_ftemp_arrh(
 
 
 def calc_ftemp_inst_rd(
-    tc: Union[float, np.ndarray], pmodel_params: PModelParams = PModelParams()
-) -> Union[float, np.ndarray]:
+    tc: NDArray, pmodel_params: PModelParams = PModelParams()
+) -> NDArray:
     """Calculate temperature scaling of dark respiration.
 
     Calculates the temperature-scaling factor for dark respiration at a given
@@ -226,8 +195,8 @@ def calc_ftemp_inst_rd(
 
 
 def calc_ftemp_inst_vcmax(
-    tc: Union[float, np.ndarray], pmodel_params: PModelParams = PModelParams()
-) -> Union[float, np.ndarray]:
+    tc: NDArray, pmodel_params: PModelParams = PModelParams()
+) -> NDArray:
     r"""Calculate temperature scaling of :math:`V_{cmax}`.
 
     This function calculates the temperature-scaling factor :math:`f` of
@@ -305,10 +274,8 @@ def calc_ftemp_inst_vcmax(
 
 
 def calc_ftemp_kphio(
-    tc: Union[float, np.ndarray],
-    c4: bool = False,
-    pmodel_params: PModelParams = PModelParams(),
-) -> Union[float, np.ndarray]:
+    tc: NDArray, c4: bool = False, pmodel_params: PModelParams = PModelParams()
+) -> NDArray:
     r"""Calculate temperature dependence of quantum yield efficiency.
 
     Calculates the **temperature dependence of the quantum yield efficiency**,
@@ -368,10 +335,8 @@ def calc_ftemp_kphio(
 
 
 def calc_gammastar(
-    tc: Union[float, np.ndarray],
-    patm: Union[float, np.ndarray],
-    pmodel_params: PModelParams = PModelParams(),
-) -> Union[float, np.ndarray]:
+    tc: NDArray, patm: NDArray, pmodel_params: PModelParams = PModelParams()
+) -> NDArray:
     r"""Calculate the photorespiratory CO2 compensation point.
 
     Calculates the photorespiratory **CO2 compensation point** in absence of
@@ -420,10 +385,8 @@ def calc_gammastar(
 
 
 def calc_ns_star(
-    tc: Union[float, np.ndarray],
-    patm: Union[float, np.ndarray],
-    pmodel_params: PModelParams = PModelParams(),
-) -> Union[float, np.ndarray]:
+    tc: NDArray, patm: NDArray, pmodel_params: PModelParams = PModelParams()
+) -> NDArray:
     r"""Calculate the relative viscosity of water.
 
     Calculates the relative viscosity of water (:math:`\eta^*`), given the
@@ -455,17 +418,17 @@ def calc_ns_star(
 
     visc_env = calc_viscosity_h2o(tc, patm, pmodel_params=pmodel_params)
     visc_std = calc_viscosity_h2o(
-        pmodel_params.k_To, pmodel_params.k_Po, pmodel_params=pmodel_params
+        np.array(pmodel_params.k_To),
+        np.array(pmodel_params.k_Po),
+        pmodel_params=pmodel_params,
     )
 
     return visc_env / visc_std
 
 
 def calc_kmm(
-    tc: Union[float, np.ndarray],
-    patm: Union[float, np.ndarray],
-    pmodel_params: PModelParams = PModelParams(),
-) -> Union[float, np.ndarray]:
+    tc: NDArray, patm: NDArray, pmodel_params: PModelParams = PModelParams()
+) -> NDArray:
     r"""Calculate the Michaelis Menten coefficient of Rubisco-limited assimilation.
 
     Calculates the **Michaelis Menten coefficient of Rubisco-limited
@@ -538,10 +501,8 @@ def calc_kmm(
 
 
 def calc_kp_c4(
-    tc: Union[float, np.ndarray],
-    patm: Union[float, np.ndarray],
-    pmodel_params: PModelParams = PModelParams(),
-) -> Union[float, np.ndarray]:
+    tc: NDArray, patm: NDArray, pmodel_params: PModelParams = PModelParams()
+) -> NDArray:
     r"""Calculate the Michaelis Menten coefficient of PEPc.
 
     Calculates the Michaelis Menten coefficient of phosphoenolpyruvate
@@ -580,10 +541,10 @@ def calc_kp_c4(
 
 
 def calc_soilmstress(
-    soilm: Union[float, np.ndarray],
-    meanalpha: Union[float, np.ndarray] = 1.0,
+    soilm: NDArray,
+    meanalpha: NDArray = np.array(1.0),
     pmodel_params: PModelParams = PModelParams(),
-) -> Union[float, np.ndarray]:
+) -> NDArray:
     r"""Calculate Stocker's empirical soil moisture stress factor.
 
     Calculates an **empirical soil moisture stress factor**  (:math:`\beta`,
@@ -667,11 +628,11 @@ def calc_soilmstress(
 
 
 def calc_viscosity_h2o(
-    tc: Union[float, np.ndarray],
-    patm: Union[float, np.ndarray],
+    tc: NDArray,
+    patm: NDArray,
     pmodel_params: PModelParams = PModelParams(),
     simple: bool = False,
-) -> Union[float, np.ndarray]:
+) -> NDArray:
     r"""Calculate the viscosity of water.
 
     Calculates the viscosity of water (:math:`\eta`) as a function of
@@ -728,9 +689,7 @@ def calc_viscosity_h2o(
     return mu_bar * pmodel_params.huber_mu_ast  # Pa s
 
 
-def calc_patm(
-    elv: Union[float, np.ndarray], pmodel_params: PModelParams = PModelParams()
-) -> Union[float, np.ndarray]:
+def calc_patm(elv: NDArray, pmodel_params: PModelParams = PModelParams()) -> NDArray:
     r"""Calculate atmospheric pressure from elevation.
 
     Calculates atmospheric pressure as a function of elevation with reference to
@@ -775,10 +734,7 @@ def calc_patm(
     )
 
 
-def calc_co2_to_ca(
-    co2: Union[float, np.ndarray],
-    patm: Union[float, np.ndarray],
-) -> Union[float, np.ndarray]:
+def calc_co2_to_ca(co2: NDArray, patm: NDArray) -> NDArray:
     r"""Convert :math:`\ce{CO2}` ppm to Pa.
 
     Converts ambient :math:`\ce{CO2}` (:math:`c_a`) in part per million to
@@ -857,14 +813,13 @@ class PModelEnvironment:
 
     def __init__(
         self,
-        tc: Union[float, np.ndarray],
-        vpd: Union[float, np.ndarray],
-        co2: Union[float, np.ndarray],
-        patm: Union[float, np.ndarray],
-        theta: Optional[Union[float, np.ndarray]] = None,
+        tc: NDArray,
+        vpd: NDArray,
+        co2: NDArray,
+        patm: NDArray,
+        theta: Optional[NDArray] = None,
         pmodel_params: PModelParams = PModelParams(),
     ):
-
         self.shape = check_input_shapes(tc, vpd, co2, patm)
 
         # Validate and store the forcing variables
@@ -917,7 +872,6 @@ class PModelEnvironment:
         self.pmodel_params = pmodel_params
 
     def __repr__(self) -> str:
-
         # DESIGN NOTE: This is deliberately extremely terse. It could contain
         # a bunch of info on the environment but that would be quite spammy
         # on screen. Having a specific summary method that provides that info
@@ -1116,14 +1070,13 @@ class PModel:
     def __init__(
         self,
         env: PModelEnvironment,
-        rootzonestress: Optional[Union[float, np.ndarray]] = None,
-        soilmstress: Optional[Union[float, np.ndarray]] = None,
+        rootzonestress: Optional[NDArray] = None,
+        soilmstress: Optional[NDArray] = None,
         kphio: Optional[float] = None,
         do_ftemp_kphio: bool = True,
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
     ):
-
         # Check possible array inputs against the photosynthetic environment
         self.shape = check_input_shapes(env.gammastar, soilmstress, rootzonestress)
 
@@ -1188,7 +1141,7 @@ class PModel:
             )
             self.kphio = self.init_kphio * ftemp_kphio
         else:
-            self.kphio = self.init_kphio
+            self.kphio = np.array([self.init_kphio])
 
         # -----------------------------------------------------------------------
         # Optimal ci
@@ -1239,12 +1192,12 @@ class PModel:
         # no defaults and are only populated by estimate_productivity. Their getter
         # methods have a check to raise an informative error
         # -----------------------------------------------------------------------
-        self._vcmax: Union[float, np.ndarray]
-        self._vcmax25: Union[float, np.ndarray]
-        self._rd: Union[float, np.ndarray]
-        self._jmax: Union[float, np.ndarray]
-        self._gpp: Union[float, np.ndarray]
-        self._gs: Union[float, np.ndarray]
+        self._vcmax: NDArray
+        self._vcmax25: NDArray
+        self._rd: NDArray
+        self._jmax: NDArray
+        self._gpp: NDArray
+        self._gs: NDArray
 
     def _soilwarn(self, varname: str) -> None:
         """Emit warning about soil moisture stress factor.
@@ -1497,7 +1450,7 @@ class CalcOptimalChi:
     def __init__(
         self,
         env: PModelEnvironment,
-        rootzonestress: Optional[Union[float, np.ndarray]] = None,
+        rootzonestress: Optional[NDArray] = None,
         method: str = "prentice14",
         pmodel_params: PModelParams = PModelParams(),
     ):
@@ -1507,7 +1460,7 @@ class CalcOptimalChi:
         # Check rootzonestress conforms to the environment data
         if rootzonestress is not None:
             self.shape = check_input_shapes(env.ca, rootzonestress)
-            self.rootzonestress: Optional[Union[float, np.ndarray]] = rootzonestress
+            self.rootzonestress: Optional[NDArray] = rootzonestress
             warn("The rootzonestress option is an experimental feature.")
         else:
             self.shape = env.shape
@@ -1516,13 +1469,13 @@ class CalcOptimalChi:
         # Declare attributes populated by methods - these attributes should never be
         # exposed without being populated as the method lookup below populates them
         # before leaving __init__, so they are not defined with a default value.
-        self.beta: Union[float, np.ndarray]
-        self.xi: Union[float, np.ndarray]
-        self.chi: Union[float, np.ndarray]
-        self.ci: Union[float, np.ndarray]
-        self.mc: Union[float, np.ndarray]
-        self.mj: Union[float, np.ndarray]
-        self.mjoc: Union[float, np.ndarray]
+        self.beta: float
+        self.xi: NDArray
+        self.chi: NDArray
+        self.ci: NDArray
+        self.mc: NDArray
+        self.mj: NDArray
+        self.mjoc: NDArray
 
         # TODO: considerable overlap between methods here - could maybe bring
         #       more into init but probably clearer and easier to debug to keep
@@ -1570,7 +1523,6 @@ class CalcOptimalChi:
         return is_c4
 
     def __repr__(self) -> str:
-
         return f"CalcOptimalChi(shape={self.shape}, method={self.method})"
 
     def prentice14(self) -> None:
@@ -1626,7 +1578,7 @@ class CalcOptimalChi:
         #               \sqrt{\frac{1.6 D \eta^{*}}{\beta(K + \Gamma^{*})}}
 
         # Replace missing rootzonestress with 1
-        self.rootzonestress = self.rootzonestress or 1.0
+        self.rootzonestress = self.rootzonestress or np.array([1.0])
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.beta = self.pmodel_params.beta_cost_ratio_prentice14
@@ -1771,10 +1723,7 @@ class CalcOptimalChi:
         self.chi = self.xi / (self.xi + np.sqrt(self.env.vpd))
 
         # mj is equal to 1 as gammastar is null
-        if self.shape == 1:
-            self.mj = 1.0
-        else:
-            self.mj = np.ones(self.shape)
+        self.mj = np.ones(self.shape)
 
         # Calculate m and mc and m/mc
         self.ci = self.chi * self.env.ca
@@ -1811,7 +1760,7 @@ class CalcOptimalChi:
         """
 
         # Replace missing rootzonestress with 1
-        self.rootzonestress = self.rootzonestress or 1.0
+        self.rootzonestress = self.rootzonestress or np.array([1.0])
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.beta = self.pmodel_params.beta_cost_ratio_c4
@@ -1826,17 +1775,12 @@ class CalcOptimalChi:
 
         self.ci = self.chi * self.env.ca
 
-        # These values need to retain any
-        # dimensions of the original inputs - if ftemp_kphio is set to 1.0
-        # (i.e. no temperature correction) then the dimensions of tc are lost.
-        if self.shape == 1:
-            self.mc = 1.0
-            self.mj = 1.0
-            self.mjoc = 1.0
-        else:
-            self.mc = np.ones(self.shape)
-            self.mj = np.ones(self.shape)
-            self.mjoc = np.ones(self.shape)
+        # These values need to retain any dimensions of the original inputs - if
+        # ftemp_kphio is set to 1.0 (i.e. no temperature correction) then the dimensions
+        # of tc are lost.
+        self.mc = np.ones(self.shape)
+        self.mj = np.ones(self.shape)
+        self.mjoc = np.ones(self.shape)
 
     def c4_no_gamma(self) -> None:
         r"""Calculate optimal chi assuming negligible photorespiration.
@@ -1881,7 +1825,7 @@ class CalcOptimalChi:
         """
 
         # Replace missing rootzonestress with 1
-        self.rootzonestress = self.rootzonestress or 1.0
+        self.rootzonestress = self.rootzonestress or np.array([1.0])
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
         self.beta = self.pmodel_params.beta_cost_ratio_c4
@@ -1897,10 +1841,7 @@ class CalcOptimalChi:
         # self.chi = self.xi /(self.xi + np.sqrt(self.env.vpd))
 
         # mj is equal to 1 as gammastar is null
-        if self.shape == 1:
-            self.mj = 1.0
-        else:
-            self.mj = np.ones(self.shape)
+        self.mj = np.ones(self.shape)
 
         # Calculate m and mc and m/mc
         self.ci = self.chi * self.env.ca
@@ -1990,7 +1931,6 @@ class JmaxLimitation:
         method: str = "wang17",
         pmodel_params: PModelParams = PModelParams(),
     ):
-
         self.shape = check_input_shapes(optchi.mj)
 
         self.optchi = optchi
@@ -1999,10 +1939,10 @@ class JmaxLimitation:
 
         # Attributes populated by alternative method - two should always be populated by
         # the methods used below, but omega and omega_star only apply to smith19
-        self.f_j: Union[float, np.ndarray]
-        self.f_v: Union[float, np.ndarray]
-        self.omega: Optional[Union[float, np.ndarray]] = None
-        self.omega_star: Optional[Union[float, np.ndarray]] = None
+        self.f_j: NDArray
+        self.f_v: NDArray
+        self.omega: Optional[NDArray] = None
+        self.omega_star: Optional[NDArray] = None
 
         all_methods = {
             "wang17": self.wang17,
@@ -2025,7 +1965,6 @@ class JmaxLimitation:
         this_method()
 
     def __repr__(self) -> str:
-
         return f"JmaxLimitation(shape={self.shape})"
 
     def wang17(self) -> None:
@@ -2161,8 +2100,8 @@ class JmaxLimitation:
 
         # Set Jmax limitation to unity - could define as 1.0 in __init__ and
         # pass here, but setting explicitly within the method for clarity.
-        self.f_v = 1.0
-        self.f_j = 1.0
+        self.f_v = np.array([1.0])
+        self.f_j = np.array([1.0])
 
 
 class CalcCarbonIsotopes:
@@ -2209,11 +2148,10 @@ class CalcCarbonIsotopes:
     def __init__(
         self,
         pmodel: PModel,
-        d13CO2: Union[float, np.ndarray],
-        D14CO2: Union[float, np.ndarray],
+        D14CO2: NDArray,
+        d13CO2: NDArray,
         params: IsotopesParams = IsotopesParams(),
     ):
-
         # Check inputs are congruent
         _ = check_input_shapes(pmodel.env.tc, d13CO2, D14CO2)
 
@@ -2222,12 +2160,12 @@ class CalcCarbonIsotopes:
         self.c4 = pmodel.c4
 
         # Attributes defined by methods below
-        self.Delta13C_simple: Union[np.ndarray, float]
-        self.Delta13C: Union[np.ndarray, float]
-        self.Delta14C: Union[np.ndarray, float]
-        self.d13C_leaf: Union[np.ndarray, float]
-        self.d14C_leaf: Union[np.ndarray, float]
-        self.d13C_wood: Union[np.ndarray, float]
+        self.Delta13C_simple: NDArray
+        self.Delta14C: NDArray
+        self.Delta13C: NDArray
+        self.d13C_leaf: NDArray
+        self.d14C_leaf: NDArray
+        self.d13C_wood: NDArray
 
         # Could store pmodel, d13CO2, D14CO2 in instance, but really not needed
         # so try and keep this class simple with a minimum of attributes.
@@ -2249,7 +2187,6 @@ class CalcCarbonIsotopes:
         self.d13C_wood = self.d13C_leaf + self.params.frank_postfrac
 
     def __repr__(self) -> str:
-
         return f"CalcCarbonIsotopes(shape={self.shape}, method={self.c4})"
 
     def calc_c4_discrimination(self, pmodel: PModel) -> None:
@@ -2364,7 +2301,7 @@ class CalcCarbonIsotopes:
         """
 
         attrs = [
-            ("Delta13C_simple", "permil"),
+            ("Delta13C_simple", "permil"),  # ‰
             ("Delta13C", "permil"),
             ("Delta14C", "permil"),
             ("d13C_leaf", "permil"),
@@ -2482,14 +2419,13 @@ class C3C4Competition:
 
     def __init__(
         self,
-        gpp_c3: Union[float, np.ndarray],
-        gpp_c4: Union[float, np.ndarray],
-        treecover: Union[float, np.ndarray],
-        below_t_min: Union[float, np.ndarray],
-        cropland: Union[float, np.ndarray],
+        gpp_c3: NDArray,
+        gpp_c4: NDArray,
+        treecover: NDArray,
+        below_t_min: NDArray,
+        cropland: NDArray,
         params: C3C4Params = C3C4Params(),
     ):
-
         # Check inputs are congruent
         self.shape = check_input_shapes(
             gpp_c3, gpp_c4, treecover, cropland, below_t_min
@@ -2527,30 +2463,27 @@ class C3C4Competition:
         self.gpp_c4_contrib = gpp_c4 * self.frac_c4
 
         # Define attributes used elsewhere
-        self.Delta13C_C3: Union[np.ndarray, float]
-        self.Delta13C_C4: Union[np.ndarray, float]
-        self.d13C_C3: Union[np.ndarray, float]
-        self.d13C_C4: Union[np.ndarray, float]
+        self.Delta13C_C3: NDArray
+        self.Delta13C_C4: NDArray
+        self.d13C_C3: NDArray
+        self.d13C_C4: NDArray
 
     def __repr__(self) -> str:
-
         return f"C3C4competition(shape={self.shape})"
 
-    def _convert_advantage_to_c4_fraction(
-        self, treecover: Union[float, np.ndarray]
-    ) -> Union[float, np.ndarray]:
+    def _convert_advantage_to_c4_fraction(self, treecover: NDArray) -> NDArray:
         """Convert C4 GPP advantage to C4 fraction.
 
-        This method calculates an initial estimate of the fraction of C4 plants
-        based on the proportional GPP advantage from C4 photosynthesis. The
-        conversion is modulated by the proportion treecover.
+        This method calculates an initial estimate of the fraction of C4 plants based on
+        the proportional GPP advantage from C4 photosynthesis. The conversion is
+        modulated by the proportion treecover.
 
         Args:
             treecover: The proportion tree cover at modelled locations.
 
         Returns:
-            The estimated C4 fraction given the estimated C4 GPP advantage and
-            tree cover.
+            The estimated C4 fraction given the estimated C4 GPP advantage and tree
+            cover.
         """
 
         frac_c4 = 1.0 / (
@@ -2566,16 +2499,14 @@ class C3C4Competition:
 
         return frac_c4
 
-    def _calculate_tree_proportion(
-        self, gppc3: Union[np.ndarray, float]
-    ) -> Union[float, np.ndarray]:
+    def _calculate_tree_proportion(self, gppc3: NDArray) -> NDArray:
         """Calculate the proportion of GPP from C3 trees.
 
-        This method calculates the proportional impact of forest closure by C3
-        trees on the fraction of C4 plants in the community. A statistical model
-        is used to predict both forest cover from the GPP for C3 plants and for
-        a threshold value indicating closed canopy forest. The ratio of these
-        two values is used to indicate the proportion of GPP from trees.
+        This method calculates the proportional impact of forest closure by C3 trees on
+        the fraction of C4 plants in the community. A statistical model is used to
+        predict both forest cover from the GPP for C3 plants and for a threshold value
+        indicating closed canopy forest. The ratio of these two values is used to
+        indicate the proportion of GPP from trees.
 
         Note that the GPP units here are in **kilograms** per metre squared per year.
 
@@ -2596,33 +2527,28 @@ class C3C4Competition:
         return prop_trees
 
     def estimate_isotopic_discrimination(
-        self,
-        d13CO2: Union[float, np.ndarray],
-        Delta13C_C3_alone: Union[float, np.ndarray],
-        Delta13C_C4_alone: Union[float, np.ndarray],
+        self, d13CO2: NDArray, Delta13C_C3_alone: NDArray, Delta13C_C4_alone: NDArray
     ) -> None:
         r"""Estimate CO2 isotopic discrimination values.
 
-        Creating an instance of {class}`~pyrealm.pmodel.CalcCarbonIsotopes` from
-        a {class}`~pyrealm.pmodel.PModel` instance provides estimated total
-        annual descrimination against Carbon 13 (:math:`\Delta\ce{^13C}`) for a
-        single photosynthetic pathway.
+        Creating an instance of {class}`~pyrealm.pmodel.CalcCarbonIsotopes` from a
+        {class}`~pyrealm.pmodel.PModel` instance provides estimated total annual
+        descrimination against Carbon 13 (:math:`\Delta\ce{^13C}`) for a single
+        photosynthetic pathway.
 
         This method allows predictions from C3 and C4 pathways to be combined to
-        calculate the contribution from C3 and C4 plants given the estimated
-        fraction of C4 plants. It also calculates the contributions to annual
-        stable carbon isotopic composition (:math:`d\ce{^13C}`).
+        calculate the contribution from C3 and C4 plants given the estimated fraction of
+        C4 plants. It also calculates the contributions to annual stable carbon isotopic
+        composition (:math:`d\ce{^13C}`).
 
         Four attributes are populated:
 
-        * `Delta13C_C3`: contribution from C3 plants to
-          (:math:`\Delta\ce{^13C}`, permil).
-        * `Delta13C_C4`: contribution from C4 plants to
-          (:math:`\Delta\ce{^13C}`, permil).
-        * `d13C_C4`: contribution from C4 plants to (:math:`d\ce{^13C}`,
+        * `Delta13C_C3`: contribution from C3 plants to (:math:`\Delta\ce{^13C}`,
           permil).
-        * `d13C_C3`: contribution from C3 plants to (:math:`d\ce{^13C}`,
+        * `Delta13C_C4`: contribution from C4 plants to (:math:`\Delta\ce{^13C}`,
           permil).
+        * `d13C_C4`: contribution from C4 plants to (:math:`d\ce{^13C}`, permil).
+        * `d13C_C3`: contribution from C3 plants to (:math:`d\ce{^13C}`, permil).
 
         Args:
             d13CO2: stable carbon isotopic composition of atmospheric CO2
@@ -2647,11 +2573,10 @@ class C3C4Competition:
         """Print C3C4Competition summary.
 
         Prints a summary of the calculated values in a C3C4Competition instance
-        including the mean, range and number of nan values. This will always
-        show fraction of C4 and GPP estaimates and isotopic estimates are shown
-        if
-        :meth:`~pyrealm.pmodel.C3C4Competition.estimate_isotopic_discrimination`
-        has been run.
+        including the mean, range and number of nan values. This will always show
+        fraction of C4 and GPP estaimates and isotopic estimates are shown if
+        :meth:`~pyrealm.pmodel.C3C4Competition.estimate_isotopic_discrimination` has
+        been run.
 
         Args:
             dp: The number of decimal places used in rounding summary stats.
@@ -2679,31 +2604,30 @@ class C3C4Competition:
 # subdaily Pmodel
 
 
-def memory_effect(values: np.ndarray, alpha: float = 0.067) -> np.ndarray:
+def memory_effect(values: NDArray, alpha: float = 0.067) -> NDArray:
     r"""Apply a memory effect to a time series.
 
-    Vcmax and Jmax do not converge instantaneously to acclimated optimal
-    values. This function estimates how the actual Vcmax and Jmax track
-    a time series of calculated optimal values assuming instant acclimation.
+    Vcmax and Jmax do not converge instantaneously to acclimated optimal values. This
+    function estimates how the actual Vcmax and Jmax track a time series of calculated
+    optimal values assuming instant acclimation.
 
-    The estimation uses the paramater `alpha` (:math:`\alpha`) to control
-    the speed of convergence of the estimated values (:math:`E`) to the
-    calculated optimal values (:math:`O`):
+    The estimation uses the paramater `alpha` (:math:`\alpha`) to control the speed of
+    convergence of the estimated values (:math:`E`) to the calculated optimal values
+    (:math:`O`):
 
     ::math
 
         E_{t} = E_{t-1}(1 - \alpha) + O_{t} \alpha
 
-    For :math:`t_{0}`, the first value in the optimal values is used so
-    :math:`E_{0} = O_{0}`.
+    For :math:`t_{0}`, the first value in the optimal values is used so :math:`E_{0} =
+    O_{0}`.
 
     Args
-        values: An equally spaced time series of values
-        alpha: The relative weight applied to the most recent observation
+        values: An equally spaced time series of values alpha: The relative weight
+        applied to the most recent observation
 
     Returns
-        An np.ndarray of the same length as `values` with the memory effect
-        applied.
+        An np.ndarray of the same length as `values` with the memory effect applied.
     """
 
     # TODO - NA handling
@@ -2722,25 +2646,23 @@ def memory_effect(values: np.ndarray, alpha: float = 0.067) -> np.ndarray:
 
 
 def interpolate_rates_forward(
-    tk: np.ndarray, ha: float, values: np.ndarray, values_idx: np.ndarray
-) -> np.ndarray:
+    tk: NDArray, ha: float, values: NDArray, values_idx: NDArray
+) -> NDArray:
     """Interpolate Jmax and Vcmax forward in time.
 
-    This is a specialised interpolation function used for Jmax and Vcmax. Given
-    a time series of temperatures in Kelvin (`tk`) and a set of Jmax25 or
-    Vcmax25 values observed at indices (`values_idx`) along that time series,
-    this pushes those values along the time series and then rescales to the
-    observed temperatures.
+    This is a specialised interpolation function used for Jmax and Vcmax. Given a time
+    series of temperatures in Kelvin (`tk`) and a set of Jmax25 or Vcmax25 values
+    observed at indices (`values_idx`) along that time series, this pushes those values
+    along the time series and then rescales to the observed temperatures.
 
-    The effect is that the plant 'sets' its response at a given point of the day
-    and then maintains that same behaviour until a similar reference time the
-    following day.
+    The effect is that the plant 'sets' its response at a given point of the day and
+    then maintains that same behaviour until a similar reference time the following day.
 
-    Note that the beginning of the sequence will be filled with np.nan values
-    unless values_idx[0] = 0.
+    Note that the beginning of the sequence will be filled with np.nan values unless
+    values_idx[0] = 0.
 
     Arguments:
-        tk: A time series of temperature values (Kelvin)
+        tk: A time series of temperature values (Kelvin).
         ha: An Arrhenius constant.
         values: An array of rates at standard temperature predicted at points along tk.
         values_idx: The indices of tk at which values are predicted.

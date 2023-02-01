@@ -48,7 +48,6 @@ def rvalues():
 
     for row in values:
         for rnm, pynm in name_map:
-
             # Fix some scaling differences:
             if pynm == "delta_d":
                 # The R tmodel implementation rescales reported delta_d as
@@ -79,14 +78,14 @@ def test_tmodel_init(rvalues, row):
 
 
 @pytest.mark.parametrize(argnames="row", argvalues=np.arange(0, 100, 10))
-def test_tmodel_set_diameter(rvalues, row):
-    """Test the geometry calculation using set_diameter using the exemplar R data."""
+def test_tmodel_reset_diameters(rvalues, row):
+    """Test the geometry calculation using reset_diameters using the exemplar R data."""
 
     from pyrealm.param_classes import TModelTraits
     from pyrealm.tmodel import TTree
 
-    ttree = TTree(traits=TModelTraits, diameters=0.001)
-    ttree.set_diameter(rvalues[row]["diameter"])
+    ttree = TTree(diameters=0.001, traits=TModelTraits())
+    ttree.reset_diameters(rvalues[row]["diameter"])
 
     for geom_est in ("height", "crown_area", "mass_fol", "mass_stm", "mass_swd"):
         assert np.allclose(getattr(ttree, geom_est), rvalues[row][geom_est])
@@ -99,7 +98,7 @@ def test_tmodel_init_array(rvalues):
     from pyrealm.tmodel import TTree
 
     diams = np.array([rw["diameter"] for rw in rvalues])
-    ttree = TTree(traits=TModelTraits, diameters=diams)
+    ttree = TTree(diameters=diams, traits=TModelTraits)
 
     for geom_est in ("height", "crown_area", "mass_fol", "mass_stm", "mass_swd"):
         vals = [rw[geom_est] for rw in rvalues]
@@ -125,20 +124,20 @@ def test_tmodel_growth_access(sequence, raises):
     from pyrealm.param_classes import TModelTraits
     from pyrealm.tmodel import TTree
 
-    ttree = TTree(traits=TModelTraits(), diameters=0.1)
+    ttree = TTree(diameters=0.1, traits=TModelTraits())
 
     if sequence == "init_only":
         pass
     elif sequence == "init_grow":
         ttree.calculate_growth(7)
     elif sequence == "init_set":
-        ttree.set_diameter(0.2)
+        ttree.reset_diameters(0.2)
     elif sequence == "init_grow_set":
         ttree.calculate_growth(7)
-        ttree.set_diameter(0.2)
+        ttree.reset_diameters(0.2)
     elif sequence == "init_grow_set_grow":
         ttree.calculate_growth(7)
-        ttree.set_diameter(0.2)
+        ttree.reset_diameters(0.2)
         ttree.calculate_growth(7)
 
     with raises:
@@ -160,7 +159,7 @@ def test_tmodel_calculate_growth(rvalues, row):
     from pyrealm.tmodel import TTree
 
     # create a tree with the initial diameter given in the row
-    ttree = TTree(TModelTraits(), diameters=rvalues[row]["diameter"])
+    ttree = TTree(diameters=rvalues[row]["diameter"], traits=TModelTraits())
     ttree.calculate_growth(7)
 
     for growth_est in (
@@ -182,7 +181,7 @@ def test_tmodel_calculate_growth_array(rvalues):
 
     # create a tree with the initial diameter given in the row
     diams = np.array([rw["diameter"] for rw in rvalues])
-    ttree = TTree(traits=TModelTraits, diameters=diams)
+    ttree = TTree(diameters=diams, traits=TModelTraits)
     ttree.calculate_growth(7)
 
     for growth_est in (

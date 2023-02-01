@@ -9,6 +9,7 @@ from typing import Optional, Union
 
 import numpy as np
 import tabulate
+from numpy.typing import NDArray
 from scipy.interpolate import interp1d  # type: ignore
 
 from pyrealm.bounds_checker import bounds_checker
@@ -104,7 +105,6 @@ def summarize_attrs(
     ret = []
 
     if len(attrs):
-
         first = attrs[0]
 
         # TODO: - not much checking for consistency here!
@@ -116,7 +116,6 @@ def summarize_attrs(
 
         # Process the attributes
         for attr_entry in attrs:
-
             attr = attr_entry[0]
             unit = attr_entry[1]
 
@@ -153,12 +152,10 @@ def summarize_attrs(
 
 # Psychrometric conversions to VPD for vapour pressure, specific humidity and
 # relative humidity. Using the bigleaf R package as a checking reference from
-# which the doctest values are taken
+# which the doctest and pytest values are taken
 
 
-def calc_vp_sat(
-    ta: Union[float, np.ndarray], hygro_params: HygroParams = HygroParams()
-) -> Union[float, np.ndarray]:
+def calc_vp_sat(ta: NDArray, hygro_params: HygroParams = HygroParams()) -> NDArray:
     r"""Calculate vapour pressure of saturated air.
 
     This function calculates the vapour pressure of saturated air at a given
@@ -166,33 +163,30 @@ def calc_vp_sat(
 
     .. math::
 
-        P = a \exp\(\frac{b - T}{T + c}\)
+        P = a \exp\(\frac{b - T}{T + c}\),
 
-    The parameters :math:`a,b,c` can provided as a tuple, but three built-in
-    options can be selected using a string.
-
-    * ``Allen1998``: (610.8, 17.27, 237.3)
-    * ``Alduchov1996``: (610.94, 17.625, 243.04)
-    * ``Sonntag1990``: (611.2, 17.62, 243.12)
+    where :math:`a,b,c` are defined in :class:`~pyrealm.param_classes.HygroParams`.
 
     Args:
         ta: The air temperature
-        hygro_params: An object of class ~`pyrealm.param_classes.HygroParams`
-            giving the settings to be used in conversions.
+        hygro_params: An object of :class:`~pyrealm.param_classes.HygroParams`
+            giving the parameters for conversions.
 
     Returns:
         Saturated air vapour pressure in kPa.
 
     Examples:
         >>> # Saturated vapour pressure at 21°C
-        >>> round(calc_vp_sat(21), 6)
+        >>> import numpy as np
+        >>> temp = np.array([21])
+        >>> round(calc_vp_sat(temp), 6)
         2.480904
         >>> from pyrealm.param_classes import HygroParams
         >>> allen = HygroParams(magnus_option='Allen1998')
-        >>> round(calc_vp_sat(21, hygro_params=allen), 6)
+        >>> round(calc_vp_sat(temp, hygro_params=allen), 6)
         2.487005
         >>> alduchov = HygroParams(magnus_option='Alduchov1996')
-        >>> round(calc_vp_sat(21, hygro_params=alduchov), 6)
+        >>> round(calc_vp_sat(temp, hygro_params=alduchov), 6)
         2.481888
     """
 
@@ -204,10 +198,8 @@ def calc_vp_sat(
 
 
 def convert_vp_to_vpd(
-    vp: Union[float, np.ndarray],
-    ta: Union[float, np.ndarray],
-    hygro_params: HygroParams = HygroParams(),
-) -> Union[float, np.ndarray]:
+    vp: NDArray, ta: NDArray, hygro_params: HygroParams = HygroParams()
+) -> NDArray:
     """Convert vapour pressure to vapour pressure deficit.
 
     Args:
@@ -220,11 +212,14 @@ def convert_vp_to_vpd(
         The vapour pressure deficit in kPa
 
     Examples:
-        >>> round(convert_vp_to_vpd(1.9, 21), 7)
+        >>> import numpy as np
+        >>> vp = np.array([1.9])
+        >>> temp = np.array([21])
+        >>> round(convert_vp_to_vpd(vp, temp), 7)
         0.5809042
         >>> from pyrealm.param_classes import HygroParams
         >>> allen = HygroParams(magnus_option='Allen1998')
-        >>> round(convert_vp_to_vpd(1.9, 21, hygro_params=allen), 7)
+        >>> round(convert_vp_to_vpd(vp, temp, hygro_params=allen), 7)
         0.5870054
     """
     vp_sat = calc_vp_sat(ta, hygro_params=hygro_params)
@@ -233,10 +228,8 @@ def convert_vp_to_vpd(
 
 
 def convert_rh_to_vpd(
-    rh: Union[float, np.ndarray],
-    ta: Union[float, np.ndarray],
-    hygro_params: HygroParams = HygroParams(),
-) -> Union[float, np.ndarray]:
+    rh: NDArray, ta: NDArray, hygro_params: HygroParams = HygroParams()
+) -> NDArray:
     """Convert relative humidity to vapour pressure deficit.
 
     Args:
@@ -249,14 +242,18 @@ def convert_rh_to_vpd(
         The vapour pressure deficit in kPa
 
     Examples:
-        >>> round(convert_rh_to_vpd(0.7, 21), 7)
+        >>> import numpy as np
+        >>> rh = np.array([0.7])
+        >>> temp = np.array([21])
+        >>> round(convert_rh_to_vpd(rh, temp), 7)
         0.7442712
         >>> from pyrealm.param_classes import HygroParams
         >>> allen = HygroParams(magnus_option='Allen1998')
-        >>> round(convert_rh_to_vpd(0.7, 21, hygro_params=allen), 7)
+        >>> round(convert_rh_to_vpd(rh, temp, hygro_params=allen), 7)
         0.7461016
         >>> import sys; sys.stderr = sys.stdout
-        >>> round(convert_rh_to_vpd(70, 21), 7) #doctest: +ELLIPSIS
+        >>> rh_percent = np.array([70])
+        >>> round(convert_rh_to_vpd(rh_percent, temp), 7) #doctest: +ELLIPSIS
         pyrealm... contains values outside the expected range (0,1). Check units?
         -171.1823864
     """
@@ -269,9 +266,7 @@ def convert_rh_to_vpd(
 
 
 def convert_sh_to_vp(
-    sh: Union[float, np.ndarray],
-    patm: Union[float, np.ndarray],
-    hygro_params: HygroParams = HygroParams(),
+    sh: NDArray, patm: NDArray, hygro_params: HygroParams = HygroParams()
 ) -> Union[float, np.ndarray]:
     """Convert specific humidity to vapour pressure.
 
@@ -285,7 +280,10 @@ def convert_sh_to_vp(
         The vapour pressure in kPa
 
     Examples:
-        >>> round(convert_sh_to_vp(0.006, 99.024), 7)
+        >>> import numpy as np
+        >>> sh = np.array([0.006])
+        >>> patm = np.array([99.024])
+        >>> round(convert_sh_to_vp(sh, patm), 7)
         0.9517451
     """
 
@@ -293,10 +291,7 @@ def convert_sh_to_vp(
 
 
 def convert_sh_to_vpd(
-    sh: Union[float, np.ndarray],
-    ta: Union[float, np.ndarray],
-    patm: Union[float, np.ndarray],
-    hygro_params: HygroParams = HygroParams(),
+    sh: NDArray, ta: NDArray, patm: NDArray, hygro_params: HygroParams = HygroParams()
 ) -> Union[float, np.ndarray]:
     """Convert specific humidity to vapour pressure deficit.
 
@@ -311,11 +306,15 @@ def convert_sh_to_vpd(
         The vapour pressure deficit in kPa
 
     Examples:
-        >>> round(convert_sh_to_vpd(0.006, 21, 99.024), 6)
+        >>> import numpy as np
+        >>> sh = np.array([0.006])
+        >>> temp = np.array([21])
+        >>> patm = np.array([99.024])
+        >>> round(convert_sh_to_vpd(sh, temp, patm), 6)
         1.529159
         >>> from pyrealm.param_classes import HygroParams
         >>> allen = HygroParams(magnus_option='Allen1998')
-        >>> round(convert_sh_to_vpd(0.006, 21, 99.024, hygro_params=allen), 5)
+        >>> round(convert_sh_to_vpd(sh, temp, patm, hygro_params=allen), 5)
         1.53526
     """
 
@@ -357,11 +356,10 @@ class TemporalInterpolator:
 
     def __init__(
         self,
-        input_datetimes: np.ndarray,
-        interpolation_datetimes: np.ndarray,
+        input_datetimes: NDArray[np.datetime64],
+        interpolation_datetimes: NDArray[np.datetime64],
         method: str = "daily_constant",
     ) -> None:
-
         # This might be better as a straightforward function - there isn't a
         # huge amount of setup in __init__, so not saving a lot of processing by
         # saving that setup in class attributes for re-use.
@@ -410,7 +408,7 @@ class TemporalInterpolator:
         else:
             self._input_x = input_datetimes.astype(float)
 
-    def __call__(self, values: np.ndarray) -> np.ndarray:
+    def __call__(self, values: NDArray) -> NDArray:
         """Apply temporal interpolation to a variable.
 
         Calling an instance of :class:`~pyrealm.utilties.TemporalInterpolator`
@@ -488,16 +486,15 @@ class DailyRepresentativeValues:
         method str: Summary of the method being used
     """
 
-    def __init__(  # noqa C901
+    def __init__(  # noqa C901 - Function is too complex
         self,
-        datetimes: np.ndarray,
+        datetimes: NDArray,
         window_center: Optional[float] = None,
         window_width: Optional[float] = None,
         include: Optional[np.ndarray] = None,
         around_max: Optional[bool] = None,
         reference_time: Optional[float] = None,
     ) -> None:
-
         # Datetime validation. The inputs must be:
         # - one dimensional datetime64
         # - with strictly increasing and evenly spaced time deltas
@@ -538,7 +535,6 @@ class DailyRepresentativeValues:
 
         # Different methods
         if window_center is not None and window_width is not None:
-
             # Find which datetimes fall within that window, using second resolution
             win_center = np.timedelta64(int(window_center * 60 * 60), "s")
             win_start = np.timedelta64(
@@ -569,7 +565,6 @@ class DailyRepresentativeValues:
             self.method = f"Window ({window_center}, {window_width})"
 
         elif include is not None:
-
             if datetimes.shape != include.shape:
                 raise ValueError("Datetimes and include do not have the same shape")
 
@@ -582,7 +577,6 @@ class DailyRepresentativeValues:
             self.method = "Include array"
 
         elif around_max is not None and window_width is not None:
-
             # This would have to be implemented _per_ value set, so in __call__
             # but can use date_change set up in init.
             raise NotImplementedError("around_max not yet implemented")
@@ -590,7 +584,6 @@ class DailyRepresentativeValues:
             self.method = "Around max"
 
         else:
-
             raise RuntimeError("Unknown option combination")
 
         # The approach implemented here uses cumsum and then divide by n_obs to
@@ -632,8 +625,8 @@ class DailyRepresentativeValues:
         )
 
     def __call__(
-        self, values: np.ndarray, with_reference_values: bool = False
-    ) -> Union[tuple[np.ndarray, np.ndarray], np.ndarray]:
+        self, values: NDArray, with_reference_values: bool = False
+    ) -> Union[tuple[NDArray, NDArray], NDArray]:
         """Calculate representative values for a variable.
 
         Instances of :class:`~pyrealm.utilities.DailyRepresentativeValues` can

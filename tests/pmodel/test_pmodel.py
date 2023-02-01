@@ -86,9 +86,7 @@ def values():
     ],
 )
 def test_calc_density_h2o(values, tc, patm, context_manager, expvals):
-
     with context_manager:
-
         ret = pmodel.calc_density_h2o(tc=values[tc], patm=values[patm])
         if expvals is not None:
             assert np.allclose(ret, values[expvals])
@@ -107,7 +105,6 @@ def test_calc_density_h2o(values, tc, patm, context_manager, expvals):
     ],
 )
 def test_calc_ftemp_arrh(values, tk, expvars):
-
     ret = pmodel.calc_ftemp_arrh(tk=values[tk], ha=values["KattgeKnorr_ha"])
     assert np.allclose(ret, values[expvars])
 
@@ -125,7 +122,6 @@ def test_calc_ftemp_arrh(values, tk, expvars):
     ],
 )
 def test_calc_ftemp_inst_vcmax(values, tc, expvars):
-
     ret = pmodel.calc_ftemp_inst_vcmax(values[tc])
     assert np.allclose(ret, values[expvars])
 
@@ -147,7 +143,6 @@ def test_calc_ftemp_inst_vcmax(values, tc, expvars):
     ],
 )
 def test_calc_ftemp_kphio(values, tc, c4, expvars):
-
     ret = pmodel.calc_ftemp_kphio(tc=values[tc], c4=c4)
     assert np.allclose(ret, values[expvars])
 
@@ -167,9 +162,7 @@ def test_calc_ftemp_kphio(values, tc, c4, expvars):
     ],
 )
 def test_calc_gammastar(values, tc, patm, context_manager, expvals):
-
     with context_manager:
-
         ret = pmodel.calc_gammastar(tc=values[tc], patm=values[patm])
         if expvals is not None:
             assert np.allclose(ret, values[expvals])
@@ -190,9 +183,7 @@ def test_calc_gammastar(values, tc, patm, context_manager, expvals):
     ],
 )
 def test_calc_kmm(values, tc, patm, context_manager, expvals):
-
     with context_manager:
-
         ret = pmodel.calc_kmm(tc=values[tc], patm=values[patm])
         if expvals:
             assert np.allclose(ret, values[expvals])
@@ -213,9 +204,7 @@ def test_calc_kmm(values, tc, patm, context_manager, expvals):
     ],
 )
 def test_calc_soilmstress(values, soilm, meanalpha, context_manager, expvals):
-
     with context_manager:
-
         ret = pmodel.calc_soilmstress(soilm=values[soilm], meanalpha=values[meanalpha])
         if expvals:
             assert np.allclose(ret, values[expvals])
@@ -236,9 +225,7 @@ def test_calc_soilmstress(values, soilm, meanalpha, context_manager, expvals):
     ],
 )
 def test_calc_viscosity_h2o(values, tc, patm, context_manager, expvals):
-
     with context_manager:
-
         ret = pmodel.calc_viscosity_h2o(tc=values[tc], patm=values[patm])
         if expvals:
             assert np.allclose(ret, values[expvals])
@@ -257,7 +244,6 @@ def test_calc_viscosity_h2o(values, tc, patm, context_manager, expvals):
     ],
 )
 def test_calc_patm(values, elev, expvals):
-
     ret = pmodel.calc_patm(elv=values[elev])
     assert np.allclose(ret, values[expvals])
 
@@ -277,9 +263,7 @@ def test_calc_patm(values, elev, expvals):
     ],
 )
 def test_calc_co2_to_ca(values, co2, patm, context_manager, expvals):
-
     with context_manager:
-
         ret = pmodel.calc_co2_to_ca(co2=values[co2], patm=values[patm])
         if expvals:
             assert np.allclose(ret, values[expvals])
@@ -370,9 +354,7 @@ def test_calc_co2_to_ca(values, co2, patm, context_manager, expvals):
 def test_calc_optimal_chi(
     values, tc, patm, co2, vpd, method, context_manager, expvalues
 ):
-
     with context_manager:
-
         env = pmodel.PModelEnvironment(
             tc=values[tc], patm=values[patm], vpd=values[vpd], co2=values[co2]
         )
@@ -524,7 +506,6 @@ def test_jmax_limitation(
     ids=["sc", "ar"],
 )
 def test_pmodelenvironment(values, tc, vpd, co2, patm, ca, kmm, gammastar, ns_star):
-
     ret = pmodel.PModelEnvironment(
         tc=values[tc], patm=values[patm], vpd=values[vpd], co2=values[co2]
     )
@@ -536,7 +517,6 @@ def test_pmodelenvironment(values, tc, vpd, co2, patm, ca, kmm, gammastar, ns_st
 
 
 def test_pmodelenvironment_constraint():
-
     with pytest.warns(UserWarning):
         ret = pmodel.PModelEnvironment(
             tc=np.array([-15, 5, 10, 15, 20]), vpd=100000, co2=400, patm=101325
@@ -544,7 +524,6 @@ def test_pmodelenvironment_constraint():
 
 
 def test_pmodelenvironment_toocold():
-
     with pytest.raises(ValueError):
         ret = pmodel.PModelEnvironment(
             tc=np.array([-35, 5, 10, 15, 20]), vpd=1000, co2=400, patm=101325
@@ -552,7 +531,6 @@ def test_pmodelenvironment_toocold():
 
 
 def test_pmodelenvironment_dewpoint():
-
     with pytest.raises(ValueError):
         ret = pmodel.PModelEnvironment(
             tc=np.array([-15, 5, 10, 15, 20]), vpd=-1, co2=400, patm=101325
@@ -602,7 +580,6 @@ def pmodelenv(values):
 def test_pmodel_class_c3(
     request, values, pmodelenv, soilmstress, ftemp_kphio, luevcmax_method, environ
 ):
-
     if soilmstress:
         soilmstress = pmodel.calc_soilmstress(
             values["soilm_sc"], values["meanalpha_sc"]
@@ -697,7 +674,6 @@ def test_pmodel_class_c3(
 @pytest.mark.parametrize("ftemp_kphio", [True, False], ids=["fkphio-on", "fkphio-off"])
 @pytest.mark.parametrize("environ", ["sc", "ar"], ids=["sc", "ar"])
 def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, environ):
-
     if soilmstress:
         soilmstress = pmodel.calc_soilmstress(
             values["soilm_sc"], values["meanalpha_sc"]
@@ -796,7 +772,6 @@ def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, e
     [("lavergne20_c3", "prentice14", False), ("lavergne20_c4", "c4_no_gamma", True)],
 )
 def test_lavergne_equivalence(tc, theta, variable_method, fixed_method, is_C4):
-
     # Cannot do this test using N-D inputs because the PModelParams expect scalar values
     # for paramaterizing beta - you can't set an array of values. So, test combinations
     # of temperature and soil moisture.
