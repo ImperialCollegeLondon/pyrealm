@@ -1422,7 +1422,7 @@ class CalcOptimalChi:
 
     The ratio of carboxylation to transpiration cost factors (``beta``, :math:`\beta`)
     is a key parameter in these methods. It is often held constant across cells but some
-    methods (``lavergne20_c3`` and ``lavergne20_c4``) calculate :math:`beta` from
+    methods (``lavergne20_c3`` and ``lavergne20_c4``) calculate :math:`\beta` from
     environmental conditions. For this reason, the ``beta`` attribute records the values
     used in calculations as an array.
 
@@ -1475,10 +1475,10 @@ class CalcOptimalChi:
         r"""Defines the sensitivity of :math:`\chi` to the vapour pressure deficit,
         related to the carbon cost of water (Medlyn et al. 2011; Prentice et 2014)."""
         self.chi: NDArray
-        r"""The ratio of leaf internal to ambient :math:`\ce{CO2}`partial pressure
+        r"""The ratio of leaf internal to ambient :math:`\ce{CO2}` partial pressure
         (:math:`\chi`)."""
         self.ci: NDArray
-        r"""The leaf internal :math:`\ce{CO2}`partial pressure (:math:`\c_i`)."""
+        r"""The leaf internal :math:`\ce{CO2}` partial pressure (:math:`c_i`)."""
         self.mc: NDArray
         r""":math:`\ce{CO2}` limitation factor for RuBisCO-limited assimilation
         (:math:`m_c`)."""
