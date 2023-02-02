@@ -961,14 +961,14 @@ class PModel:
     predictions are also populated:
 
     * Gross primary productivity, calculated as
-        :math:`\text{GPP} = \text{LUE} \cdot I_{abs}`, where :math:`I_{abs}` is
-        the absorbed photosynthetic radiation
+      :math:`\text{GPP} = \text{LUE} \cdot I_{abs}`, where :math:`I_{abs}` is
+      the absorbed photosynthetic radiation
 
     * The maximum rate of Rubisco regeneration at the growth temperature
-        (:math:`J_{max}`)
+      (:math:`J_{max}`)
 
     * The maximum carboxylation capacity (mol C m-2) at the growth temperature
-        (:math:`V_{cmax}`).
+      (:math:`V_{cmax}`).
 
     These two predictions are calculated as follows:
 
