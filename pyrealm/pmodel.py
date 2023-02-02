@@ -2144,21 +2144,6 @@ class CalcCarbonIsotopes:
             (:math:`\Delta\ce{^{14}C}`, permil).
         params: An instance of :class:`~pyrealm.param_classes.IsotopesParams`,
             parameterizing the calculations.
-
-    Attributes:
-        Delta13C_simple: discrimination against carbon 13
-            (:math:`\Delta\ce{^{13}C}`, permil) excluding photorespiration.
-        Delta13C: discrimination against carbon 13
-            (:math:`\Delta\ce{^{13}C}`, permil) including photorespiration.
-        Delta14C: discrimination against carbon 14
-            (:math:`\Delta\ce{^{14}C}`, permil) including photorespiration.
-        d13C_leaf: isotopic ratio of carbon 13 in leaves
-            (:math:`\delta\ce{^{13}C}`, permil).
-        d14C_leaf: isotopic ratio of carbon 14 in leaves
-            (:math:`\delta\ce{^{14}C}`, permil).
-        d13C_wood: isotopic ratio of carbon 13 in wood
-            (:math:`\delta\ce{^{13}C}`, permil), given a parameterized
-            post-photosynthetic fractionation.
     """
 
     def __init__(
@@ -2171,17 +2156,32 @@ class CalcCarbonIsotopes:
         # Check inputs are congruent
         _ = check_input_shapes(pmodel.env.tc, d13CO2, D14CO2)
 
-        self.params = params
-        self.shape = pmodel.shape
-        self.c4 = pmodel.c4
+        self.params: IsotopesParams = params
+        """The IsotopesParams instance used to calculate estimates."""
+        self.shape: tuple = pmodel.shape
+        """Records the common numpy array shape of array inputs."""
+        self.c4: bool = pmodel.c4
+        """Indicates if estimates calculated for C3 or C4 photosynthesis."""
 
         # Attributes defined by methods below
         self.Delta13C_simple: NDArray
+        r"""Discrimination against carbon 13 (:math:`\Delta\ce{^{13}C}`, permil)
+        excluding photorespiration."""
         self.Delta14C: NDArray
+        r"""Discrimination against carbon 13 (:math:`\Delta\ce{^{13}C}`, permil)
+        including photorespiration."""
         self.Delta13C: NDArray
+        r"""Discrimination against carbon 14 (:math:`\Delta\ce{^{14}C}`, permil)
+        including photorespiration."""
         self.d13C_leaf: NDArray
+        r"""Isotopic ratio of carbon 13 in leaves
+        (:math:`\delta\ce{^{13}C}`, permil)."""
         self.d14C_leaf: NDArray
+        r"""Isotopic ratio of carbon 14 in leaves
+        (:math:`\delta\ce{^{14}C}`, permil)."""
         self.d13C_wood: NDArray
+        r"""Isotopic ratio of carbon 13 in wood (:math:`\delta\ce{^{13}C}`, permil),
+        given a parameterized post-photosynthetic fractionation."""
 
         # Could store pmodel, d13CO2, D14CO2 in instance, but really not needed
         # so try and keep this class simple with a minimum of attributes.
@@ -2203,6 +2203,7 @@ class CalcCarbonIsotopes:
         self.d13C_wood = self.d13C_leaf + self.params.frank_postfrac
 
     def __repr__(self) -> str:
+        """Generates a string representation of a CalcCarbonIsotopes instance."""
         return f"CalcCarbonIsotopes(shape={self.shape}, method={self.c4})"
 
     def calc_c4_discrimination(self, pmodel: PModel) -> None:
@@ -2238,10 +2239,9 @@ class CalcCarbonIsotopes:
         :math:`\chi` following Equation 1 in :cite:`voncaemmerer:2014a`.
 
         This method is not yet reachable - it needs a method selection argument to
-        switch approaches and check C4 methods are used with C4 pmodels. The
-        method is preserving experimental code provided by Alienor Lavergne. A
-        temperature sensitive correction term is provided in commented code but
-        not used.
+        switch approaches and check C4 methods are used with C4 pmodels. The method is
+        preserving experimental code provided by Alienor Lavergne. A temperature
+        sensitive correction term is provided in commented code but not used.
 
         Examples:
             >>> ppar = PModelParams(beta_cost_ratio_c4=35)
@@ -2306,11 +2306,10 @@ class CalcCarbonIsotopes:
         )
 
     def summarize(self, dp: int = 2) -> None:
-        """Print CalcCarbonIsotopes summary.
+        """Print summary of values estimated in CalcCarbonIsotopes.
 
-        Prints a summary of the variables calculated within an instance
-        of CalcCarbonIsotopes including the mean, range and number of nan
-        values.
+        Prints a summary of the variables calculated within an instance of
+        CalcCarbonIsotopes including the mean, range and number of nan values.
 
         Args:
             dp: The number of decimal places used in rounding summary stats.
@@ -2410,12 +2409,6 @@ class C3C4Competition:
         cropland: A boolean mask indicating cropland locations.
         params: An instance of :class:`~pyrealm.param_classes.C3C4Params`
             providing parameterisation for the competition model.
-
-    Attributes:
-        gpp_adv_c4: The proportional advantage in GPP of C4 over C3 plants
-        frac_c4: The estimated fraction of C4 plants.
-        gpp_c3_contrib: The estimated contribution of C3 plants to GPP (gC m-2 yr-1)
-        gpp_c4_contrib: The estimated contribution of C4 plants to GPP (gC m-2 yr-1)
     """
 
     # Design Notes: see paper Lavergne et al. (submitted).
@@ -2443,18 +2436,19 @@ class C3C4Competition:
         params: C3C4Params = C3C4Params(),
     ):
         # Check inputs are congruent
-        self.shape = check_input_shapes(
+        self.shape: tuple = check_input_shapes(
             gpp_c3, gpp_c4, treecover, cropland, below_t_min
         )
-        self.params = params
+        self.params: C3C4Params = params
 
         # Step 1: calculate the percentage advantage in GPP of C4 plants from
         # annual total GPP estimates for C3 and C4 plants. This uses use
         # np.full to handle division by zero without raising warnings
         gpp_adv_c4 = np.full(self.shape, np.nan)
-        self.gpp_adv_c4 = np.divide(
+        self.gpp_adv_c4: NDArray = np.divide(
             gpp_c4 - gpp_c3, gpp_c3, out=gpp_adv_c4, where=gpp_c3 > 0
         )
+        """The proportional advantage in GPP of C4 over C3 plants"""
 
         # Step 2: calculate the initial C4 fraction based on advantage modulated
         # by treecover.
@@ -2473,19 +2467,27 @@ class C3C4Competition:
         # Step 5: remove cropland areas
         frac_c4[cropland] = np.nan  # type: ignore
 
-        self.frac_c4 = frac_c4
+        self.frac_c4: NDArray = frac_c4
+        """The estimated fraction of C4 plants."""
 
-        self.gpp_c3_contrib = gpp_c3 * (1 - self.frac_c4)
+        self.gpp_c3_contrib: NDArray = gpp_c3 * (1 - self.frac_c4)
+        """The estimated contribution of C3 plants to GPP (gC m-2 yr-1)"""
         self.gpp_c4_contrib = gpp_c4 * self.frac_c4
+        """The estimated contribution of C4 plants to GPP (gC m-2 yr-1)"""
 
         # Define attributes used elsewhere
         self.Delta13C_C3: NDArray
+        r"""Contribution from C3 plants to (:math:`\Delta\ce{^13C}`, permil)."""
         self.Delta13C_C4: NDArray
+        r"""Contribution from C4 plants to (:math:`\Delta\ce{^13C}`, permil)."""
         self.d13C_C3: NDArray
+        r"""Contribution from C3 plants to (:math:`d\ce{^13C}`, permil)."""
         self.d13C_C4: NDArray
+        r"""Contribution from C3 plants to (:math:`d\ce{^13C}`, permil)."""
 
     def __repr__(self) -> str:
-        return f"C3C4competition(shape={self.shape})"
+        """Generates a string representation of a C3C4Competition instance."""
+        return f"C3C4Competition(shape={self.shape})"
 
     def _convert_advantage_to_c4_fraction(self, treecover: NDArray) -> NDArray:
         """Convert C4 GPP advantage to C4 fraction.
@@ -2557,14 +2559,11 @@ class C3C4Competition:
         C4 plants. It also calculates the contributions to annual stable carbon isotopic
         composition (:math:`d\ce{^13C}`).
 
-        Four attributes are populated:
-
-        * `Delta13C_C3`: contribution from C3 plants to (:math:`\Delta\ce{^13C}`,
-          permil).
-        * `Delta13C_C4`: contribution from C4 plants to (:math:`\Delta\ce{^13C}`,
-          permil).
-        * `d13C_C4`: contribution from C4 plants to (:math:`d\ce{^13C}`, permil).
-        * `d13C_C3`: contribution from C3 plants to (:math:`d\ce{^13C}`, permil).
+        Calling this method populates the attributes
+        :attr:`~pyrealm.C3C4Competition.Delta13C_C3`,
+        :attr:`~pyrealm.C3C4Competition.Delta13C_C4`,
+        :attr:`~pyrealm.C3C4Competition.d13C_C3`, and
+        :attr:`~pyrealm.C3C4Competition.d13C_C4`.
 
         Args:
             d13CO2: stable carbon isotopic composition of atmospheric CO2
@@ -2586,7 +2585,7 @@ class C3C4Competition:
         self.d13C_C4 = (d13CO2 - self.Delta13C_C4) / (1 + self.Delta13C_C4 / 1000)
 
     def summarize(self, dp: int = 2) -> None:
-        """Print C3C4Competition summary.
+        """Print summary of estimates of C3/C4 competition.
 
         Prints a summary of the calculated values in a C3C4Competition instance
         including the mean, range and number of nan values. This will always show
