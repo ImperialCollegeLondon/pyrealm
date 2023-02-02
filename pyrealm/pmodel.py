@@ -63,6 +63,10 @@ def calc_density_h2o(
     Returns:
         Water density as a float in (g cm^-3)
 
+    Raises:
+        ValueError: if ``tc`` is less than -30°C and ``safe`` is True, or if the inputs
+            have incompatible shapes.
+
     Examples:
         >>> round(calc_density_h2o(20, 101325), 3)
         998.206
@@ -72,7 +76,7 @@ def calc_density_h2o(
     # the calculation shows wild numeric instability between -44 and -46 that
     # leads to numerous downstream issues - see the extreme values documentation.
     if safe and np.nanmin(tc) < -30:
-        raise RuntimeError(
+        raise ValueError(
             "Water density calculations below about -30°C are "
             "unstable. See argument safe to calc_density_h2o"
         )
@@ -111,15 +115,15 @@ def calc_ftemp_arrh(
 ) -> NDArray:
     r"""Calculate enzyme kinetics scaling factor.
 
-    Calculates the temperature-scaling factor :math:`f` for enzyme kinetics
-    following an Arrhenius response for a given temperature (``tk``, :math:`T`)
-    and activation energy (`ha`, :math:`H_a`).
+    Calculates the temperature-scaling factor :math:`f` for enzyme kinetics following an
+    Arrhenius response for a given temperature (``tk``, :math:`T`) and activation energy
+    (``ha``, :math:`H_a`).
 
     Arrhenius kinetics are described as:
 
     .. math::
 
-        x(T)= exp(c - H_a / (T R))
+        x(T) = \exp(c - H_a / (T R))
 
     The temperature-correction function :math:`f(T, H_a)` is:
 
@@ -129,9 +133,9 @@ def calc_ftemp_arrh(
         \[
             \begin{align*}
                 f &= \frac{x(T)}{x(T_0)} \\
-                  &= exp \left( \frac{ H_a (T - T_0)}{T_0 R T}\right)
+                  &= \exp \left( \frac{ H_a (T - T_0)}{T_0 R T}\right)
                         \text{, or equivalently}\\
-                  &= exp \left( \frac{ H_a}{R} \cdot
+                  &= \exp \left( \frac{ H_a}{R} \cdot
                         \left(\frac{1}{T_0} - \frac{1}{T}\right)\right)
             \end{align*}
         \]
@@ -141,12 +145,12 @@ def calc_ftemp_arrh(
         ha: Activation energy (in :math:`J \text{mol}^{-1}`)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other Parameters:
-        To: a standard reference temperature (:math:`T_0`, `pmodel_params.k_To`)
-        R: the universal gas constant (:math:`R`, `pmodel_params.k_R`)
+    PModel Parameters:
+        To: a standard reference temperature (:math:`T_0`, ``k_To``)
+        R: the universal gas constant (:math:`R`, ``k_R``)
 
     Returns:
-        A float value or values for :math:`f`
+        Estimated float values for :math:`f`
 
     Examples:
         >>> # Relative rate change from 25 to 10 degrees Celsius (percent change)
@@ -167,29 +171,28 @@ def calc_ftemp_arrh(
 def calc_ftemp_inst_rd(
     tc: NDArray, pmodel_params: PModelParams = PModelParams()
 ) -> NDArray:
-    """Calculate temperature scaling of dark respiration.
+    r"""Calculate temperature scaling of dark respiration.
 
     Calculates the temperature-scaling factor for dark respiration at a given
     temperature (``tc``, :math:`T` in °C), relative to the standard reference
-    temperature :math:`T_o` (:cite:`Heskel:2016fg`).
+    temperature :math:`T_o`, given the parameterisation in :cite:`Heskel:2016fg`.
 
     .. math::
 
-            fr = exp( b (T_o - T) -  c ( T_o^2 - T^2 ))
+            fr = \exp( b (T_o - T) -  c ( T_o^2 - T^2 ))
 
     Args:
         tc: Temperature (degrees Celsius)
 
-    Other Parameters:
-        To: standard reference temperature (:math:`T_o`, `pmodel_params.k_To`)
+    PModel Parameters:
+        To: standard reference temperature (:math:`T_o`, ``k_To``)
         b: empirically derived global mean coefficient
-            (:math:`b`, Table 1, ::cite:`Heskel:2016fg`)
+            (:math:`b`, ``heskel_b``)
         c: empirically derived global mean coefficient
-            (:math:`c`, Table 1, ::cite:`Heskel:2016fg`)
-
+            (:math:`c`, ``heskel_c``)
 
     Returns:
-        A float value for :math:`fr`
+        Values for :math:`fr`
 
     Examples:
         >>> # Relative percentage instantaneous change in Rd going from 10 to 25 degrees
@@ -209,10 +212,10 @@ def calc_ftemp_inst_vcmax(
 ) -> NDArray:
     r"""Calculate temperature scaling of :math:`V_{cmax}`.
 
-    This function calculates the temperature-scaling factor :math:`f` of
-    the instantaneous temperature response of :math:`V_{cmax}`, given the
-    temperature (:math:`T`) relative to the standard reference temperature
-    (:math:`T_0`), following modified Arrhenius kinetics.
+    This function calculates the temperature-scaling factor :math:`f` of the
+    instantaneous temperature response of :math:`V_{cmax}`, given the temperature
+    (:math:`T`) relative to the standard reference temperature (:math:`T_0`), following
+    modified Arrhenius kinetics.
 
     .. math::
 
@@ -223,11 +226,11 @@ def calc_ftemp_inst_vcmax(
     .. math::
 
         f = g(T, H_a) \cdot
-                \frac{1 + exp( (T_0 \Delta S - H_d) / (T_0 R))}
-                     {1 + exp( (T \Delta S - H_d) / (T R))}
+                \frac{1 + \exp( (T_0 \Delta S - H_d) / (T_0 R))}
+                     {1 + \exp( (T \Delta S - H_d) / (T R))}
 
-    where :math:`g(T, H_a)` is a regular Arrhenius-type temperature response
-    function (see :func:`calc_ftemp_arrh`). The term :math:`\Delta S` is the
+    where :math:`g(T, H_a)` is a regular Arrhenius-type temperature response function
+    (see :func:`~pyrealm.pmodel.calc_ftemp_arrh`). The term :math:`\Delta S` is the
     entropy factor, calculated as a linear function of :math:`T` in °C following
     :cite:`Kattge:2007db` (Table 3, Eqn 4):
 
@@ -240,18 +243,16 @@ def calc_ftemp_inst_vcmax(
             photosynthesis (°C)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other Parameters:
-        Ha: activation energy (:math:`H_a`, `pmodel_params.kattge_knorr_Ha`)
-        Hd: deactivation energy (:math:`H_d`, `pmodel_params.kattge_knorr_Hd`)
-        To: standard reference temperature expressed in Kelvin
-            (`T_0`, `pmodel_params.k_To`)
-        R: the universal gas constant (:math:`R`,`pmodel_params.k_R`)
-        a: intercept of the entropy factor
-            (:math:`a`, `pmodel_params.kattge_knorr_a_ent`)
-        b: slope of the entropy factor (:math:`b`, `pmodel_params.kattge_knorr_b_ent`)
+    PModel Parameters:
+        Ha: activation energy (:math:`H_a`, ``kattge_knorr_Ha``)
+        Hd: deactivation energy (:math:`H_d`, ``kattge_knorr_Hd``)
+        To: standard reference temperature expressed in Kelvin (`T_0`, ``k_To``)
+        R: the universal gas constant (:math:`R`, ``k_R``)
+        a: intercept of the entropy factor (:math:`a`, ``kattge_knorr_a_ent``)
+        b: slope of the entropy factor (:math:`b`, ``kattge_knorr_b_ent``)
 
     Returns:
-        A float value or values for :math:`f`
+        Values for :math:`f`
 
     Examples:
         >>> # Relative change in Vcmax going (instantaneously, i.e. not
@@ -288,10 +289,9 @@ def calc_ftemp_kphio(
 ) -> NDArray:
     r"""Calculate temperature dependence of quantum yield efficiency.
 
-    Calculates the **temperature dependence of the quantum yield efficiency**,
-    as a quadratic function of temperature (:math:`T`). The values of the
-    coefficients depend on whether C3 or C4 photosynthesis is being
-    modelled
+    Calculates the temperature dependence of the quantum yield efficiency, as a
+    quadratic function of temperature (:math:`T`). The values of the coefficients depend
+    on whether C3 or C4 photosynthesis is being modelled
 
     .. math::
 
@@ -299,25 +299,24 @@ def calc_ftemp_kphio(
 
     The factor :math:`\phi(T)` is to be multiplied with leaf absorptance and the
     fraction of absorbed light that reaches photosystem II. In the P-model these
-    additional factors are lumped into a single apparent quantum yield
-    efficiency parameter (argument `kphio` to the class
-    :class:`~pyrealm.pmodel.PModel`).
+    additional factors are lumped into a single apparent quantum yield efficiency
+    parameter (argument `kphio` to the class :class:`~pyrealm.pmodel.PModel`).
 
     Args:
         tc: Temperature, relevant for photosynthesis (°C)
         c4: Boolean specifying whether fitted temperature response for C4 plants
-            is used. Defaults to \code{FALSE}.
+            is used. Defaults to ``False`` to estimate :math:`\phi(T)` for C3 plants.
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other Parameters:
-        C3: the parameters (:math:`a,b,c`, `pmodel_params.kphio_C3`) are taken from the
+    PModel Parameters:
+        C3: the parameters (:math:`a,b,c`, ``kphio_C3``) are taken from the
             temperature dependence of the maximum quantum yield of photosystem
             II in light-adapted tobacco leaves determined by :cite:`Bernacchi:2003dc`.
-        C4: the parameters (:math:`a,b,c`, `pmodel_params.kphio_C4`) are taken
-            from :cite:`cai:2020a`.
+        C4: the parameters (:math:`a,b,c`, ``kphio_C4``) are taken from
+            :cite:`cai:2020a`.
 
     Returns:
-        A float value or values for :math:`\phi(T)`
+        Values for :math:`\phi(T)`
 
     Examples:
         >>> # Relative change in the quantum yield efficiency between 5 and 25
@@ -349,30 +348,30 @@ def calc_gammastar(
 ) -> NDArray:
     r"""Calculate the photorespiratory CO2 compensation point.
 
-    Calculates the photorespiratory **CO2 compensation point** in absence of
-    dark respiration (:math:`\Gamma^{*}`, ::cite:`Farquhar:1980ft`) as:
+    Calculates the photorespiratory **CO2 compensation point** in absence of dark
+    respiration (:math:`\Gamma^{*}`, ::cite:`Farquhar:1980ft`) as:
 
     .. math::
 
         \Gamma^{*} = \Gamma^{*}_{0} \cdot \frac{p}{p_0} \cdot f(T, H_a)
 
-    where :math:`f(T, H_a)` modifies the activation energy to the the local
-    temperature following an Arrhenius-type temperature response function
-    implemented in :func:`calc_ftemp_arrh`.
+    where :math:`f(T, H_a)` modifies the activation energy to the the local temperature
+    following an Arrhenius-type temperature response function implemented in
+    :func:`calc_ftemp_arrh`. Estimates of :math:`\Gamma^{*}_{0}` and :math:`H_a` are
+    taken from :cite:`Bernacchi:2001kg`.
 
     Args:
         tc: Temperature relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pascals)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other Parameters:
-        To: the standard reference temperature (:math:`T_0` )
-        Po: the standard pressure (:math:`p_0` )
+    PModel Parameters:
+        To: the standard reference temperature (:math:`T_0`. ``k_To``)
+        Po: the standard pressure (:math:`p_0`, ``k_Po`` )
         gs_0: the reference value of :math:`\Gamma^{*}` at standard temperature
             (:math:`T_0`) and pressure (:math:`P_0`)  (:math:`\Gamma^{*}_{0}`,
-            ::cite:`Bernacchi:2001kg`, `pmodel_params.bernacchi_gs25_0`)
-        ha: the activation energy (:math:`\Delta H_a`, ::cite:`Bernacchi:2001kg`,
-            `pmodel_params.bernacchi_dha`)
+            ``bernacchi_gs25_0``)
+        ha: the activation energy (:math:`\Delta H_a`, ``bernacchi_dha``)
 
     Returns:
         A float value or values for :math:`\Gamma^{*}` (in Pa)
@@ -399,8 +398,8 @@ def calc_ns_star(
 ) -> NDArray:
     r"""Calculate the relative viscosity of water.
 
-    Calculates the relative viscosity of water (:math:`\eta^*`), given the
-    standard temperature and pressure, using :func:`~pyrealm.pmodel.calc_viscosity_h20`
+    Calculates the relative viscosity of water (:math:`\eta^*`), given the standard
+    temperature and pressure, using :func:`~pyrealm.pmodel.calc_viscosity_h20`
     (:math:`v(t,p)`) as:
 
     .. math::
@@ -412,9 +411,9 @@ def calc_ns_star(
         patm: Atmospheric pressure (:math:`p`, Pa)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other Parameters:
-        To: standard temperature (:math:`t0`, `pmodel_params.k_To`)
-        Po: standard pressure (:math:`p_0`, `pmodel_params.k_Po`)
+    PModel Parameters:
+        To: standard temperature (:math:`t0`, ``k_To``)
+        Po: standard pressure (:math:`p_0`, ``k_Po``)
 
     Returns:
         A numeric value for :math:`\eta^*` (a unitless ratio)
@@ -441,17 +440,17 @@ def calc_kmm(
 ) -> NDArray:
     r"""Calculate the Michaelis Menten coefficient of Rubisco-limited assimilation.
 
-    Calculates the **Michaelis Menten coefficient of Rubisco-limited
-    assimilation** (:math:`K`, ::cite:`Farquhar:1980ft`) as a function of
-    temperature (:math:`T`) and atmospheric pressure (:math:`p`) as:
+    Calculates the Michaelis Menten coefficient of Rubisco-limited assimilation
+    (:math:`K`, ::cite:`Farquhar:1980ft`) as a function of temperature (:math:`T`) and
+    atmospheric pressure (:math:`p`) as:
 
       .. math:: K = K_c ( 1 + p_{\ce{O2}} / K_o),
 
-    where, :math:`p_{\ce{O2}} = 0.209476 \cdot p` is the partial pressure of
-    oxygen. :math:`f(T, H_a)` is an Arrhenius-type temperature response of
-    activation energies (:func:`calc_ftemp_arrh`) used to correct
-    Michalis constants at standard temperature for both :math:`\ce{CO2}` and
-    :math:`\ce{O2}` to the local temperature (Table 1, ::cite:`Bernacchi:2001kg`):
+    where, :math:`p_{\ce{O2}} = 0.209476 \cdot p` is the partial pressure of oxygen.
+    :math:`f(T, H_a)` is an Arrhenius-type temperature response of activation energies
+    (:func:`calc_ftemp_arrh`) used to correct Michalis constants at standard temperature
+    for both :math:`\ce{CO2}` and :math:`\ce{O2}` to the local temperature (Table 1,
+    ::cite:`Bernacchi:2001kg`):
 
       .. math::
         :nowrap:
@@ -471,15 +470,14 @@ def calc_kmm(
         patm: Atmospheric pressure (:math:`p`, Pa)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other Parameters:
-        hac: activation energy for :math:`\ce{CO2}`
-            (:math:`H_{kc}`, `pmodel_params.bernacchi_dhac`)
-        hao:  activation energy for :math:`\ce{O2}`
-            (:math:`\Delta H_{ko}`, `pmodel_params.bernacchi_dhao`)
+    PModel Parameters:
+        hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`, ``bernacchi_dhac``)
+        hao:  activation energy for :math:`\ce{O2}` (:math:`\Delta H_{ko}`,
+            ``bernacchi_dhao``)
         kc25: Michelis constant for :math:`\ce{CO2}` at standard temperature
-            (:math:`K_{c25}`, `pmodel_params.bernacchi_kc25`)
+            (:math:`K_{c25}`, ``bernacchi_kc25``)
         ko25: Michelis constant for :math:`\ce{O2}` at standard temperature
-            (:math:`K_{o25}`, `pmodel_params.bernacchi_ko25`)
+            (:math:`K_{o25}`, ``bernacchi_ko25``)
 
     Returns:
         A numeric value for :math:`K` (in Pa)
@@ -515,20 +513,20 @@ def calc_kp_c4(
 ) -> NDArray:
     r"""Calculate the Michaelis Menten coefficient of PEPc.
 
-    Calculates the Michaelis Menten coefficient of phosphoenolpyruvate
-    carboxylase (PEPc) (:math:`K`, :cite:`boyd:2015a`) as a function of
-    temperature (:math:`T`) and atmospheric pressure (:math:`p`) as:
+    Calculates the Michaelis Menten coefficient of phosphoenolpyruvate carboxylase
+    (PEPc) (:math:`K`, :cite:`boyd:2015a`) as a function of temperature (:math:`T`) and
+    atmospheric pressure (:math:`p`) as:
 
     Args:
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pa)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other Parameters:
+    PModel Parameters:
         hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`,
-             `pmodel_params.boyd_dhac_c4`)
+             ``boyd_dhac_c4``)
         kc25: Michelis constant for :math:`\ce{CO2}` at standard temperature
-            (:math:`K_{c25}`, `pmodel_params.boyd_kp25_c4`)
+            (:math:`K_{c25}`, ``boyd_kp25_c4``)
 
     Returns:
         A numeric value for :math:`K` (in Pa)
@@ -558,13 +556,12 @@ def calc_soilmstress(
     r"""Calculate Stocker's empirical soil moisture stress factor.
 
     Calculates an **empirical soil moisture stress factor**  (:math:`\beta`,
-    ::cite:`Stocker:2020dh`) as a function of relative soil moisture
-    (:math:`m_s`, fraction of field capacity) and average aridity, quantified by
-    the local annual mean ratio of actual over potential evapotranspiration
-    (:math:`\bar{\alpha}`).
+    ::cite:`Stocker:2020dh`) as a function of relative soil moisture (:math:`m_s`,
+    fraction of field capacity) and average aridity, quantified by the local annual mean
+    ratio of actual over potential evapotranspiration (:math:`\bar{\alpha}`).
 
-    The value of :math:`\beta` is defined relative to two soil moisture
-    thresholds (:math:`\theta_0, \theta^{*}`) as:
+    The value of :math:`\beta` is defined relative to two soil moisture thresholds
+    (:math:`\theta_0, \theta^{*}`) as:
 
       .. math::
         :nowrap:
@@ -578,13 +575,13 @@ def calc_soilmstress(
                 \end{cases}
         \]
 
-    where :math:`q` is an aridity sensitivity parameter setting the stress
-    factor at :math:`\theta_0`:
+    where :math:`q` is an aridity sensitivity parameter setting the stress factor at
+    :math:`\theta_0`:
 
     .. math:: q=(1 - (a + b \bar{\alpha}))/(\theta^{*} - \theta_{0})^2
 
-    Default parameters of :math:`a=0` and :math:`b=0.7330` are as described in
-    Table 1 of :cite:`Stocker:2020dh` specifically for the 'FULL' use case, with
+    Default parameters of :math:`a=0` and :math:`b=0.7330` are as described in Table 1
+    of :cite:`Stocker:2020dh` specifically for the 'FULL' use case, with
     ``method_jmaxlim="wang17"``, ``do_ftemp_kphio=TRUE``.
 
     Args:
@@ -594,13 +591,13 @@ def calc_soilmstress(
             evapotranspiration, measure for average aridity. Defaults to 1.0.
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other Parameters:
+    PModel Parameters:
         theta0: lower bound of soil moisture
-            (:math:`\theta_0`, `pmodel_params.soilmstress_theta0`).
+            (:math:`\theta_0`, ``soilmstress_theta0``).
         thetastar: upper bound of soil moisture
-            (:math:`\theta^{*}`, `pmodel_params.soilmstress_thetastar`).
-        a: aridity parameter (:math:`a`, `pmodel_params.soilmstress_a`).
-        b: aridity parameter (:math:`b`, `pmodel_params.soilmstress_b`).
+            (:math:`\theta^{*}`, ``soilmstress_thetastar``).
+        a: aridity parameter (:math:`a`, ``soilmstress_a``).
+        b: aridity parameter (:math:`b`, ``soilmstress_b``).
 
     Returns:
         A numeric value or values for :math:`\beta`
@@ -645,8 +642,8 @@ def calc_viscosity_h2o(
 ) -> NDArray:
     r"""Calculate the viscosity of water.
 
-    Calculates the viscosity of water (:math:`\eta`) as a function of
-    temperature and atmospheric pressure (::cite:`Huber:2009fy`).
+    Calculates the viscosity of water (:math:`\eta`) as a function of temperature and
+    atmospheric pressure (::cite:`Huber:2009fy`).
 
     Args:
         tc: air temperature (°C)
@@ -702,10 +699,10 @@ def calc_viscosity_h2o(
 def calc_patm(elv: NDArray, pmodel_params: PModelParams = PModelParams()) -> NDArray:
     r"""Calculate atmospheric pressure from elevation.
 
-    Calculates atmospheric pressure as a function of elevation with reference to
-    the standard atmosphere.  The elevation-dependence of atmospheric pressure
-    is computed by assuming a linear decrease in temperature with elevation and
-    a mean adiabatic lapse rate (Eqn 3, ::cite:`BerberanSantos:2009bk`):
+    Calculates atmospheric pressure as a function of elevation with reference to the
+    standard atmosphere.  The elevation-dependence of atmospheric pressure is computed
+    by assuming a linear decrease in temperature with elevation and a mean adiabatic
+    lapse rate (Eqn 3, ::cite:`BerberanSantos:2009bk`):
 
     .. math::
 
@@ -715,14 +712,13 @@ def calc_patm(elv: NDArray, pmodel_params: PModelParams = PModelParams()) -> NDA
         elv: Elevation above sea-level (:math:`z`, metres above sea level.)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Other Parameters:
-        G: gravity constant (:math:`g`, `pmodel_params.k_G`)
-        Po: standard atmospheric pressure at sea level
-            (:math:`p_0`, `pmodel_params.k_Po`)
-        L: adiabatic temperature lapse rate (:math:`L}`, `pmodel_params.k_L`),
-        M: molecular weight for dry air (:math:`M`, `pmodel_params.k_Ma`),
-        R: universal gas constant (:math:`R`, `pmodel_params.k_R`)
-        Ko: reference temperature in Kelvin (:math:`K_0`, `pmodel_params.k_To`).
+    PModel Parameters:
+        G: gravity constant (:math:`g`, ``k_G``)
+        Po: standard atmospheric pressure at sea level (:math:`p_0`, ``k_Po``)
+        L: adiabatic temperature lapse rate (:math:`L`, ``k_L``),
+        M: molecular weight for dry air (:math:`M`, ``k_Ma``),
+        R: universal gas constant (:math:`R`, `k_R``)
+        Ko: reference temperature in Kelvin (:math:`K_0`, ``k_To``).
 
     Returns:
         A numeric value for :math:`p` in Pascals.
@@ -747,8 +743,8 @@ def calc_patm(elv: NDArray, pmodel_params: PModelParams = PModelParams()) -> NDA
 def calc_co2_to_ca(co2: NDArray, patm: NDArray) -> NDArray:
     r"""Convert :math:`\ce{CO2}` ppm to Pa.
 
-    Converts ambient :math:`\ce{CO2}` (:math:`c_a`) in part per million to
-    Pascals, accounting for atmospheric pressure.
+    Converts ambient :math:`\ce{CO2}` (:math:`c_a`) in part per million to Pascals,
+    accounting for atmospheric pressure.
 
     Args
         co2 (float): atmospheric :math:`\ce{CO2}`, ppm
