@@ -1098,7 +1098,7 @@ class PModel:
             )
 
         if soilmstress is None:
-            self.soilmstress: Union[float, np.ndarray] = 1.0
+            self.soilmstress: NDArray = np.array(1.0)
             """The soil moisture stress factor applied to model.
 
             This value will be 1.0 if no soil moisture stress was provided in the
@@ -1140,7 +1140,7 @@ class PModel:
         """Indicates if estimates calculated using C3 or C4 photosynthesis."""
 
         self.method_optchi: str = method_optchi
-        """Indicates method used to calculate optimal chi."""
+        """Records the method used to calculate optimal chi."""
 
         # -----------------------------------------------------------------------
         # Temperature dependence of quantum yield efficiency
@@ -1169,7 +1169,7 @@ class PModel:
         # Calculation of Jmax limitation terms
         # -----------------------------------------------------------------------
         self.method_jmaxlim: str = method_jmaxlim
-        """Method used to calculate Jmax limitation."""
+        """Records the method used to calculate Jmax limitation."""
 
         self.jmaxlim: JmaxLimitation = JmaxLimitation(
             self.optchi, method=self.method_jmaxlim, pmodel_params=env.pmodel_params
