@@ -789,13 +789,13 @@ class PModelEnvironment:
     conditions:
 
     * the photorespiratory CO2 compensation point (:math:`\Gamma^{*}`,
-      :func:`~pyrealm.pmodel.calc_gammastar`),
+      using :func:`~pyrealm.pmodel.calc_gammastar`),
     * the relative viscosity of water (:math:`\eta^*`,
-      :func:`~pyrealm.pmodel.calc_ns_star`),
+      using :func:`~pyrealm.pmodel.calc_ns_star`),
     * the ambient partial pressure of :math:`\ce{CO2}` (:math:`c_a`,
-      :func:`~pyrealm.pmodel.calc_c02_to_ca`) and
+      using :func:`~pyrealm.pmodel.calc_c02_to_ca`) and
     * the Michaelis Menten coefficient of Rubisco-limited assimilation
-      (:math:`K`, :func:`~pyrealm.pmodel.calc_kmm`).
+      (:math:`K`, using :func:`~pyrealm.pmodel.calc_kmm`).
 
     These variables can then be used to fit P models using different
     configurations. Note that the underlying parameters of the P model
@@ -806,7 +806,7 @@ class PModelEnvironment:
     is used to provide additional variables used by some methods.
 
     * the volumetric soil moisture content, required to calculate optimal
-      :math:`\chi` in :meth:`~pyrealm.pmodel.CalcOptimalChi.laverge2020`.
+      :math:`\chi` in :meth:`~pyrealm.pmodel.CalcOptimalChi.lavergne2020`.
 
     Args:
         tc: Temperature, relevant for photosynthesis (°C)
@@ -826,13 +826,17 @@ class PModelEnvironment:
         theta: Optional[NDArray] = None,
         pmodel_params: PModelParams = PModelParams(),
     ):
-        self.shape = check_input_shapes(tc, vpd, co2, patm)
+        self.shape: tuple = check_input_shapes(tc, vpd, co2, patm)
 
         # Validate and store the forcing variables
-        self.tc = bounds_checker(tc, -25, 80, "[]", "tc", "°C")
-        self.vpd = bounds_checker(vpd, 0, 10000, "[]", "vpd", "Pa")
-        self.co2 = bounds_checker(co2, 0, 1000, "[]", "co2", "ppm")
-        self.patm = bounds_checker(patm, 30000, 110000, "[]", "patm", "Pa")
+        self.tc: NDArray = bounds_checker(tc, -25, 80, "[]", "tc", "°C")
+        """The temperature at which to estimate photosynthesis, °C"""
+        self.vpd: NDArray = bounds_checker(vpd, 0, 10000, "[]", "vpd", "Pa")
+        """Vapour pressure deficit, Pa"""
+        self.co2: NDArray = bounds_checker(co2, 0, 1000, "[]", "co2", "ppm")
+        """CO2 concentration, ppm"""
+        self.patm: NDArray = bounds_checker(patm, 30000, 110000, "[]", "patm", "Pa")
+        """Atmospheric pressure, Pa"""
 
         # Guard against calc_density issues
         if np.nanmin(self.tc) < -25:
@@ -848,14 +852,14 @@ class PModelEnvironment:
                 "zero or explicitly set to np.nan"
             )
 
-        # ambient CO2 partial pressure (Pa)
-        self.ca = calc_co2_to_ca(self.co2, self.patm)
+        self.ca: NDArray = calc_co2_to_ca(self.co2, self.patm)
+        """Ambient CO2 partial pressure, Pa"""
 
-        # photorespiratory compensation point - Gamma-star (Pa)
         self.gammastar = calc_gammastar(tc, patm, pmodel_params=pmodel_params)
+        r"""Photorespiratory compensation point (:math:`\Gamma^\ast`, Pa)"""
 
-        # Michaelis-Menten coef. (Pa)
         self.kmm = calc_kmm(tc, patm, pmodel_params=pmodel_params)
+        """Michaelis Menten coefficient, Pa"""
 
         # # Michaelis-Menten coef. C4 plants (Pa) NOT CHECKED. Need to think
         # # about how many optional variables stack up in PModelEnvironment
@@ -863,10 +867,14 @@ class PModelEnvironment:
         # # has not yet been implemented.
         # self.kp_c4 = calc_kp_c4(tc, patm, pmodel_params=pmodel_params)
 
-        # viscosity correction factor relative to standards
-        self.ns_star = calc_ns_star(tc, patm, pmodel_params=pmodel_params)  # (unitless)
+        self.ns_star = calc_ns_star(tc, patm, pmodel_params=pmodel_params)
+        """Viscosity correction factor realtive to standard
+        temperature and pressure, unitless"""
 
         # Optional variables
+        self.theta: Optional[NDArray]
+        """Volumetric soil moisture (m3/m3)"""
+
         if theta is None:
             self.theta = None
         else:
@@ -876,8 +884,10 @@ class PModelEnvironment:
 
         # Store parameters
         self.pmodel_params = pmodel_params
+        """PModel Parameters used from calculation"""
 
     def __repr__(self) -> str:
+        """Generates a string representation of PModelEnvironment instance."""
         # DESIGN NOTE: This is deliberately extremely terse. It could contain
         # a bunch of info on the environment but that would be quite spammy
         # on screen. Having a specific summary method that provides that info
@@ -888,9 +898,8 @@ class PModelEnvironment:
     def summarize(self, dp: int = 2) -> None:
         """Print PModelEnvironment summary.
 
-        Prints a summary of the input and photosynthetic attributes in a
-        instance of a PModelEnvironment including the mean, range and number
-        of nan values.
+        Prints a summary of the input and photosynthetic attributes in a instance of a
+        PModelEnvironment including the mean, range and number of nan values.
 
         Args:
             dp: The number of decimal places used in rounding summary stats.
@@ -906,6 +915,10 @@ class PModelEnvironment:
             ("kmm", "Pa"),
             ("ns_star", "-"),
         ]
+
+        if self.theta is not None:
+            attrs += [("theta", "m3/m3")]
+
         summarize_attrs(self, attrs, dp=dp)
 
 
