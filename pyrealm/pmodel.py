@@ -896,7 +896,7 @@ class PModelEnvironment:
         return f"PModelEnvironment(shape={self.shape})"
 
     def summarize(self, dp: int = 2) -> None:
-        """Print PModelEnvironment summary.
+        """Prints a summary of PModelEnvironment variables.
 
         Prints a summary of the input and photosynthetic attributes in a instance of a
         PModelEnvironment including the mean, range and number of nan values.
@@ -1137,10 +1137,10 @@ class PModel:
 
         # Check method_optchi and set c3/c4
         self.c4: bool = CalcOptimalChi._method_lookup(method_optchi)
-        """Boolean flag indicating C3 or C4 photosynthesis."""
+        """Indicates if estimates calculated using C3 or C4 photosynthesis."""
 
-        self.method_optchi = method_optchi
-        """Method used to calculate optimal chi."""
+        self.method_optchi: str = method_optchi
+        """Indicates method used to calculate optimal chi."""
 
         # -----------------------------------------------------------------------
         # Temperature dependence of quantum yield efficiency
@@ -1168,12 +1168,13 @@ class PModel:
         # -----------------------------------------------------------------------
         # Calculation of Jmax limitation terms
         # -----------------------------------------------------------------------
-        self.method_jmaxlim = method_jmaxlim
+        self.method_jmaxlim: str = method_jmaxlim
+        """Method used to calculate Jmax limitation."""
 
         self.jmaxlim: JmaxLimitation = JmaxLimitation(
             self.optchi, method=self.method_jmaxlim, pmodel_params=env.pmodel_params
         )
-        """Details of the JmaxLimitation calculation for the model"""
+        """Details of the Jmax limitation calculation for the model"""
         # -----------------------------------------------------------------------
         # Store the two efficiency predictions
         # -----------------------------------------------------------------------
@@ -1182,7 +1183,9 @@ class PModel:
         # in Pascals, but more commonly reported in µmol mol-1. The standard equation
         # (ca - ci) / 1.6 expects inputs in ppm, so the pascal versions are back
         # converted here.
-        self.iwue = (5 / 8 * (env.ca - self.optchi.ci)) / (1e-6 * self.env.patm)
+        self.iwue: NDArray = (5 / 8 * (env.ca - self.optchi.ci)) / (
+            1e-6 * self.env.patm
+        )
         """Intrinsic water use efficiency (iWUE, µmol mol-1)"""
 
         # The basic calculation of LUE = phi0 * M_c * m but here we implement
@@ -1191,7 +1194,7 @@ class PModel:
         # Note: the rpmodel implementation also estimates soilmstress effects on
         #       jmax and vcmax but pyrealm.pmodel only applies the stress factor
         #       to LUE and hence GPP
-        self.lue = (
+        self.lue: NDArray = (
             self.kphio
             * self.optchi.mj
             * self.jmaxlim.f_v
@@ -1237,42 +1240,42 @@ class PModel:
             raise RuntimeError(f"{varname} not calculated: use estimate_productivity")
 
     @property
-    def gpp(self) -> Union[float, np.ndarray]:
+    def gpp(self) -> NDArray:
         """Gross primary productivity (µg C m-2 s-1)."""
         self._check_estimated("gpp")
 
         return self._gpp
 
     @property
-    def vcmax(self) -> Union[float, np.ndarray]:
+    def vcmax(self) -> NDArray:
         """Maximum rate of carboxylation (µmol m-2 s-1)."""
         self._check_estimated("vcmax")
         self._soilwarn("vcmax")
         return self._vcmax
 
     @property
-    def vcmax25(self) -> Union[float, np.ndarray]:
+    def vcmax25(self) -> NDArray:
         """Maximum rate of carboxylation at standard temperature (µmol m-2 s-1)."""
         self._check_estimated("vcmax25")
         self._soilwarn("vcmax25")
         return self._vcmax25
 
     @property
-    def rd(self) -> Union[float, np.ndarray]:
+    def rd(self) -> NDArray:
         """Dark respiration (µmol m-2 s-1)."""
         self._check_estimated("rd")
         self._soilwarn("rd")
         return self._rd
 
     @property
-    def jmax(self) -> Union[float, np.ndarray]:
+    def jmax(self) -> NDArray:
         """Maximum rate of electron transport (µmol m-2 s-1)."""
         self._check_estimated("jmax")
         self._soilwarn("jmax")
         return self._jmax
 
     @property
-    def gs(self) -> Union[float, np.ndarray]:
+    def gs(self) -> NDArray:
         """Stomatal conductance (µmol m-2 s-1)."""
         self._check_estimated("gs")
         self._soilwarn("gs")
@@ -1350,6 +1353,7 @@ class PModel:
         self._gs = assim / (self.env.ca - self.optchi.ci)
 
     def __repr__(self) -> str:
+        """Generates a string representation of PModel instance."""
         if self.do_soilmstress:
             stress = "Soil moisture"
         elif self.do_rootzonestress:
@@ -1368,13 +1372,12 @@ class PModel:
         )
 
     def summarize(self, dp: int = 2) -> None:
-        """Print PModel summary.
+        """Prints a summary of PModel estimates.
 
-        Prints a summary of the calculated values in a PModel instance
-        including the mean, range and number of nan values. This will always
-        show efficiency variables (LUE and IWUE) and productivity estimates are
-        shown if :meth:`~pyrealm.pmodel.PModel.calculate_productivity` has been
-        run.
+        Prints a summary of the calculated values in a PModel instance including the
+        mean, range and number of nan values. This will always show efficiency variables
+        (LUE and IWUE) and productivity estimates are shown if
+        :meth:`~pyrealm.pmodel.PModel.calculate_productivity` has been run.
 
         Args:
             dp: The number of decimal places used in rounding summary stats.
