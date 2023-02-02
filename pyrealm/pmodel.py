@@ -1074,6 +1074,7 @@ class PModel:
         self.shape: tuple = check_input_shapes(
             env.gammastar, soilmstress, rootzonestress
         )
+        """Records the common numpy array shape of array inputs."""
 
         # Store a reference to the photosynthetic environment and a direct
         # reference to the parameterisation
@@ -1104,13 +1105,15 @@ class PModel:
             This value will be 1.0 if no soil moisture stress was provided in the
             arguments to the class.
             """
-            self.do_soilmstress: bool = False
+            self._do_soilmstress: bool = False
+            """Private flag indicating user provided soilmstress factor"""
         else:
             self.soilmstress = soilmstress
-            self.do_soilmstress = True
+            self._do_soilmstress = True
 
         if rootzonestress is None:
-            self.do_rootzonestress = False
+            self._do_rootzonestress = False
+            """Private flag indicating user provided rootzonestress factor"""
         else:
             warn(
                 "The rootzonestress option is an experimental penalty factor to beta",
@@ -1123,12 +1126,14 @@ class PModel:
         r"""The initial value of :math:`\phi_0` (``kphio``)"""
         self.kphio: NDArray
         r"""The value of :math:`\phi_0` used with any temperature correction applied."""
+        self.do_ftemp_kphio: bool = do_ftemp_kphio
+        r"""Records if :math:`\phi_0` (``kphio``) is temperature corrected."""
 
-        self.do_ftemp_kphio = do_ftemp_kphio
+        # Set context specific defaults for kphio to match Stocker paper
         if kphio is None:
             if not self.do_ftemp_kphio:
                 self.init_kphio = 0.049977
-            elif self.do_soilmstress:
+            elif self._do_soilmstress:
                 self.init_kphio = 0.087182
             else:
                 self.init_kphio = 0.081785
@@ -1224,7 +1229,7 @@ class PModel:
         used to warn users within property getter functions
         """
 
-        if self.do_soilmstress:
+        if self._do_soilmstress:
             warn(
                 f"pyrealm.PModel does not correct {varname} for empirical soil "
                 "moisture effects on LUE."
@@ -1344,7 +1349,7 @@ class PModel:
 
         assim = np.minimum(a_j, a_c)
 
-        if not self.do_soilmstress and not np.allclose(
+        if not self._do_soilmstress and not np.allclose(
             assim, self._gpp / self.pmodel_params.k_c_molmass, equal_nan=True
         ):
             warn("Assimilation and GPP are not identical")
@@ -1354,9 +1359,9 @@ class PModel:
 
     def __repr__(self) -> str:
         """Generates a string representation of PModel instance."""
-        if self.do_soilmstress:
+        if self._do_soilmstress:
             stress = "Soil moisture"
-        elif self.do_rootzonestress:
+        elif self._do_rootzonestress:
             stress = "Root zone"
         else:
             stress = "None"
