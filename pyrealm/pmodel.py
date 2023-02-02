@@ -1459,6 +1459,7 @@ class CalcOptimalChi:
         # rootzonestress conforms to the environment data
         if np.allclose(rootzonestress, 1.0):
             self.shape: tuple = env.shape
+            """Records the common numpy array shape of array inputs."""
         else:
             self.shape = check_input_shapes(env.ca, rootzonestress)
             warn("The rootzonestress option is an experimental feature.")
@@ -1903,13 +1904,6 @@ class JmaxLimitation:
             or ``smith19`` or ``none``)
         pmodel_params: An instance of :class:`~pyrealm.param_classes.PModelParams`.
 
-    Attributes:
-        f_j (float): :math:`J_{max}` limitation factor, calculated using the method.
-        f_v (float): :math:`V_{cmax}` limitation factor, calculated using the method.
-        omega (float): component of :math:`J_{max}` calculation (:cite:`Smith:2019dv`).
-        omega_star (float):  component of :math:`J_{max}` calculation
-            (:cite:`Smith:2019dv`).
-
     Examples:
         >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000)
         >>> optchi = CalcOptimalChi(env)
@@ -1940,18 +1934,27 @@ class JmaxLimitation:
         method: str = "wang17",
         pmodel_params: PModelParams = PModelParams(),
     ):
-        self.shape = check_input_shapes(optchi.mj)
-
-        self.optchi = optchi
-        self.method = method
-        self.pmodel_params = pmodel_params
+        self.shape: tuple = check_input_shapes(optchi.mj)
+        """Records the common numpy array shape of array inputs."""
+        self.optchi: CalcOptimalChi = optchi
+        """Details of the optimal chi calculation for the model"""
+        self.method: str = method
+        """Records the method used to calculate Jmax limitation."""
+        self.pmodel_params: PModelParams = pmodel_params
+        """The PModelParams instance used for the calculation."""
 
         # Attributes populated by alternative method - two should always be populated by
         # the methods used below, but omega and omega_star only apply to smith19
         self.f_j: NDArray
+        """:math:`J_{max}` limitation factor, calculated using the method."""
         self.f_v: NDArray
+        """:math:`V_{cmax}` limitation factor, calculated using the method."""
         self.omega: Optional[NDArray] = None
+        """Component of :math:`J_{max}` calculation for method ``smith19``
+        (:cite:`Smith:2019dv`)."""
         self.omega_star: Optional[NDArray] = None
+        """Component of :math:`J_{max}` calculation for method ``smith19``
+        (:cite:`Smith:2019dv`)."""
 
         all_methods = {
             "wang17": self.wang17,
@@ -1974,6 +1977,7 @@ class JmaxLimitation:
         this_method()
 
     def __repr__(self) -> str:
+        """Generates a string representation of a JmaxLimitation instance."""
         return f"JmaxLimitation(shape={self.shape})"
 
     def wang17(self) -> None:
@@ -2047,12 +2051,13 @@ class JmaxLimitation:
             \]
 
         given,
-            * :math:`\theta`, (`pmodel_params.smith19_theta`) captures the
-              curved relationship between light intensity and photosynthetic
-              capacity, and
-            * :math:`c`, (`pmodel_params.smith19_c_cost`) as a cost parameter
-              for maintaining :math:`J_{max}`, equivalent to :math:`c^\ast = 4c`
-              in the :meth:`~pyrealm.pmodel.JmaxLimitation.wang17` method.
+
+        * :math:`\theta`, (``pmodel_params.smith19_theta``) captures the
+          curved relationship between light intensity and photosynthetic
+          capacity, and
+        * :math:`c`, (``pmodel_params.smith19_c_cost``) as a cost parameter
+          for maintaining :math:`J_{max}`, equivalent to :math:`c^\ast = 4c`
+          in the :meth:`~pyrealm.pmodel.JmaxLimitation.wang17` method.
         """
 
         # Adopted from Nick Smith's code:
@@ -2073,7 +2078,9 @@ class JmaxLimitation:
         aquad = -1
         bquad = cap_p
         cquad = -(cap_p * theta)
-        roots = np.polynomial.polynomial.polyroots([aquad, bquad, cquad])  # type:ignore
+        roots = np.polynomial.polynomial.polyroots(
+            [aquad, bquad, cquad]
+        )  # type: ignore [no-untyped-call]
 
         # factors derived as in Smith et al., 2019
         m_star = (4 * c_cost) / roots[0].real
