@@ -930,14 +930,13 @@ class PModel:
     described below. An extended description with typical use cases is given in
     :any:`pmodel_overview` but the basic flow of the model is:
 
-    1. Estimate :math:`\ce{CO2}` limitation factors and optimal internal to
-       ambient :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using
+    1. Estimate :math:`\ce{CO2}` limitation factors and optimal internal to ambient
+       :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using
        :class:`~pyrealm.pmodel.CalcOptimalChi`.
-    2. Estimate limitation factors to :math:`V_{cmax}` and :math:`J_{max}`
-       using :class:`~pyrealm.pmodel.JmaxLimitation`.
-    3. Optionally, estimate productivity measures including GPP by supplying
-       FAPAR and PPFD using the
-       :meth:`~pyrealm.pmodel.PModel.estimate_productivity` method.
+    2. Estimate limitation factors to :math:`V_{cmax}` and :math:`J_{max}` using
+       :class:`~pyrealm.pmodel.JmaxLimitation`.
+    3. Optionally, estimate productivity measures including GPP by supplying FAPAR and
+       PPFD using the :meth:`~pyrealm.pmodel.PModel.estimate_productivity` method.
 
     The model predictions from step 1 and 2 are then:
 
@@ -1018,7 +1017,7 @@ class PModel:
         `lavergne20_c4` all implement different approaches to soil moisture effects on
         photosynthesis and are incompatible.
 
-    Parameters:
+    Args:
         env: An instance of :class:`~pyrealm.pmodel.PModelEnvironment`.
         kphio: (Optional) The quantum yield efficiency of photosynthesis
             (:math:`\phi_0`, unitless). Note that :math:`\phi_0` is
@@ -1038,31 +1037,6 @@ class PModel:
         do_ftemp_kphio: (Optional, default=True) Include the temperature-
             dependence of quantum yield efficiency (see
             :func:`~pyrealm.pmodel.calc_ftemp_kphio`).
-
-    Attributes:
-        env: The photosynthetic environment to which the model is fitted
-            (:class:`~pyrealm.pmodel.PModelEnvironment`)
-        pmodel_params: The parameters used in the underlying calculations
-            (:class:`~pyrealm.param_classes.PModelParams`)
-        optchi: Details of the optimal chi calculation
-            (:class:`~pyrealm.pmodel.CalcOptimalChi`)
-        init_kphio: The initial value of :math:`\phi_0`.
-        kphio: The value of :math:`\phi_0` used in calculations with
-            any temperature correction applied.
-        iwue: Intrinsic water use efficiency (iWUE, µmol mol-1)
-        lue: Light use efficiency (LUE, g C mol-1)
-
-    After :meth:`~pyrealm.pmodel.estimate_productivity` has been run,
-    the following attributes are also populated. See the documentation
-    for :meth:`~pyrealm.pmodel.estimate_productivity` for details.
-
-    Attributes:
-        gpp: Gross primary productivity (µg C m-2 s-1)
-        rd: Dark respiration (µmol m-2 s-1)
-        vcmax: Maximum rate of carboxylation (µmol m-2 s-1)
-        vcmax25: Maximum rate of carboxylation at standard temperature (µmol m-2 s-1)
-        jmax: Maximum rate of electron transport (µmol m-2 s-1)
-        gs: Stomatal conductance (µmol m-2 s-1)
 
     Examples:
         >>> env = PModelEnvironment(tc=20, vpd=1000, co2=400, patm=101325.0)
@@ -1097,13 +1071,17 @@ class PModel:
         method_jmaxlim: str = "wang17",
     ):
         # Check possible array inputs against the photosynthetic environment
-        self.shape = check_input_shapes(env.gammastar, soilmstress, rootzonestress)
+        self.shape: tuple = check_input_shapes(
+            env.gammastar, soilmstress, rootzonestress
+        )
 
         # Store a reference to the photosynthetic environment and a direct
         # reference to the parameterisation
-        self.env = env
-        self.pmodel_params = env.pmodel_params
+        self.env: PModelEnvironment = env
+        """The PModelEnvironment used to fit the P Model."""
 
+        self.pmodel_params: PModelParams = env.pmodel_params
+        """The PModelParams instance used to create the model environment."""
         # ---------------------------------------------
         # Soil moisture and root zone stress handling
         # ---------------------------------------------
@@ -1121,7 +1099,12 @@ class PModel:
 
         if soilmstress is None:
             self.soilmstress: Union[float, np.ndarray] = 1.0
-            self.do_soilmstress = False
+            """The soil moisture stress factor applied to model.
+
+            This value will be 1.0 if no soil moisture stress was provided in the
+            arguments to the class.
+            """
+            self.do_soilmstress: bool = False
         else:
             self.soilmstress = soilmstress
             self.do_soilmstress = True
@@ -1135,7 +1118,12 @@ class PModel:
             )
             self.do_rootzonestress = True
 
-        # kphio defaults:
+        # kphio calculation:
+        self.init_kphio: float
+        r"""The initial value of :math:`\phi_0` (``kphio``)"""
+        self.kphio: NDArray
+        r"""The value of :math:`\phi_0` used with any temperature correction applied."""
+
         self.do_ftemp_kphio = do_ftemp_kphio
         if kphio is None:
             if not self.do_ftemp_kphio:
@@ -1148,8 +1136,11 @@ class PModel:
             self.init_kphio = kphio
 
         # Check method_optchi and set c3/c4
-        self.c4 = CalcOptimalChi._method_lookup(method_optchi)
+        self.c4: bool = CalcOptimalChi._method_lookup(method_optchi)
+        """Boolean flag indicating C3 or C4 photosynthesis."""
+
         self.method_optchi = method_optchi
+        """Method used to calculate optimal chi."""
 
         # -----------------------------------------------------------------------
         # Temperature dependence of quantum yield efficiency
@@ -1166,22 +1157,23 @@ class PModel:
         # Optimal ci
         # The heart of the P-model: calculate ci:ca ratio (chi) and additional terms
         # -----------------------------------------------------------------------
-        self.optchi = CalcOptimalChi(
+        self.optchi: CalcOptimalChi = CalcOptimalChi(
             env=env,
             method=method_optchi,
             rootzonestress=rootzonestress,
             pmodel_params=env.pmodel_params,
         )
+        """Details of the optimal chi calculation for the model"""
 
         # -----------------------------------------------------------------------
         # Calculation of Jmax limitation terms
         # -----------------------------------------------------------------------
         self.method_jmaxlim = method_jmaxlim
 
-        self.jmaxlim = JmaxLimitation(
+        self.jmaxlim: JmaxLimitation = JmaxLimitation(
             self.optchi, method=self.method_jmaxlim, pmodel_params=env.pmodel_params
         )
-
+        """Details of the JmaxLimitation calculation for the model"""
         # -----------------------------------------------------------------------
         # Store the two efficiency predictions
         # -----------------------------------------------------------------------
@@ -1191,6 +1183,7 @@ class PModel:
         # (ca - ci) / 1.6 expects inputs in ppm, so the pascal versions are back
         # converted here.
         self.iwue = (5 / 8 * (env.ca - self.optchi.ci)) / (1e-6 * self.env.patm)
+        """Intrinsic water use efficiency (iWUE, µmol mol-1)"""
 
         # The basic calculation of LUE = phi0 * M_c * m but here we implement
         # two penalty terms for jmax limitation and Stocker beta soil moisture
@@ -1205,6 +1198,7 @@ class PModel:
             * self.pmodel_params.k_c_molmass
             * self.soilmstress
         )
+        """Light use efficiency (LUE, g C mol-1)"""
 
         # -----------------------------------------------------------------------
         # Define attributes populated by estimate_productivity method - these have
@@ -1244,42 +1238,42 @@ class PModel:
 
     @property
     def gpp(self) -> Union[float, np.ndarray]:
-        """Fetch GPP if estimated."""
+        """Gross primary productivity (µg C m-2 s-1)."""
         self._check_estimated("gpp")
 
         return self._gpp
 
     @property
     def vcmax(self) -> Union[float, np.ndarray]:
-        """Fetch V_cmax if estimated."""
+        """Maximum rate of carboxylation (µmol m-2 s-1)."""
         self._check_estimated("vcmax")
         self._soilwarn("vcmax")
         return self._vcmax
 
     @property
     def vcmax25(self) -> Union[float, np.ndarray]:
-        """Fetch V_cmax25 if estimated."""
+        """Maximum rate of carboxylation at standard temperature (µmol m-2 s-1)."""
         self._check_estimated("vcmax25")
         self._soilwarn("vcmax25")
         return self._vcmax25
 
     @property
     def rd(self) -> Union[float, np.ndarray]:
-        """Fetch dark respiration if estimated."""
+        """Dark respiration (µmol m-2 s-1)."""
         self._check_estimated("rd")
         self._soilwarn("rd")
         return self._rd
 
     @property
     def jmax(self) -> Union[float, np.ndarray]:
-        """Fetch Jmax if estimated."""
+        """Maximum rate of electron transport (µmol m-2 s-1)."""
         self._check_estimated("jmax")
         self._soilwarn("jmax")
         return self._jmax
 
     @property
     def gs(self) -> Union[float, np.ndarray]:
-        """Fetch gs if estimated."""
+        """Stomatal conductance (µmol m-2 s-1)."""
         self._check_estimated("gs")
         self._soilwarn("gs")
         return self._gs
@@ -1289,27 +1283,21 @@ class PModel:
     ) -> None:
         r"""Estimate productivity of P Model from absorbed irradiance.
 
-        This method takes the light use efficiency and Vcmax per unit
-        absorbed irradiance and populates the PModel instance with estimates
-        of the following:
+        This method takes the light use efficiency and Vcmax per unit absorbed
+        irradiance and populates the following PModel attributes:
+        :attr:`~pyrealm.pmodel.PModel.gpp`, :attr:`~pyrealm.pmodel.PModel.rd`,
+        :attr:`~pyrealm.pmodel.PModel.vcmax`,  :attr:`~pyrealm.pmodel.PModel.vcmax25`,
+        :attr:`~pyrealm.pmodel.PModel.jmax` and :attr:`~pyrealm.pmodel.PModel.gs`.
 
-            * gpp: Gross primary productivity
-            * rd: Dark respiration
-            * vcmax: Maximum rate of carboxylation
-            * vcmax25: Maximum rate of carboxylation at standard temperature
-            * jmax: Maximum rate of electron transport.
-            * gs: Stomatal conductance
+        The functions finds the total absorbed irradiance (:math:`I_{abs}`) as the
+        product of the photosynthetic photon flux density (PPFD, `ppfd`) and the
+        fraction of absorbed photosynthetically active radiation (`fapar`). The default
+        values of ``ppfd`` and ``fapar`` provide estimates of the variables above per
+        unit absorbed irradiance.
 
-        The functions finds the total absorbed irradiance (:math:`I_{abs}`) as
-        the product of the photosynthetic photon flux density (PPFD, `ppfd`) and
-        the fraction of absorbed photosynthetically active radiation (`fapar`).
-
-        The default values of ``ppfd`` and ``fapar`` provide estimates of the
-        variables above per unit absorbed irradiance.
-
-        PPFD _must_ be provided in units of micromols per metre square per
-        second (µmol m-2 s-1). This is required to ensure that values of
-        :math:`J_{max}` and :math:`V_{cmax}` are also in µmol m-2 s-1.
+        PPFD _must_ be provided in units of micromols per metre square per second (µmol
+        m-2 s-1). This is required to ensure that values of :math:`J_{max}` and
+        :math:`V_{cmax}` are also in µmol m-2 s-1.
 
         Args:
             fapar: the fraction of absorbed photosynthetically active radiation (-)
