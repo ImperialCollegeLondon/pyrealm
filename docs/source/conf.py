@@ -62,6 +62,9 @@ napoleon_custom_sections = [("PModel Parameters", "params_style")]
 # Suppress signature expansion of arguments
 autodoc_preserve_defaults = True
 
+# Have funcname not pyrealm.pmodel.funcname in autodoc
+add_module_names = False
+
 bibtex_bibfiles = ["refs.bib"]
 
 # Add any paths that contain templates here, relative to this directory.
