@@ -1099,7 +1099,7 @@ class PModel:
             )
 
         if soilmstress is None:
-            self.soilmstress: NDArray = np.array(1.0)
+            self.soilmstress: NDArray = np.array([1.0])
             """The soil moisture stress factor applied to model.
 
             This value will be 1.0 if no soil moisture stress was provided in the
@@ -1165,7 +1165,7 @@ class PModel:
         self.optchi: CalcOptimalChi = CalcOptimalChi(
             env=env,
             method=method_optchi,
-            rootzonestress=rootzonestress,
+            rootzonestress=rootzonestress or np.array([1.0]),
             pmodel_params=env.pmodel_params,
         )
         """Details of the optimal chi calculation for the model"""
@@ -1408,89 +1408,85 @@ class PModel:
 class CalcOptimalChi:
     r"""Estimate optimal leaf internal CO2 concentration.
 
-    This class provides alternative approaches to calculating the optimal
-    :math:`\chi` and :math:`\ce{CO2}` limitation factors. These values are:
+    This class provides alternative approaches to calculating the optimal :math:`\chi`
+    and :math:`\ce{CO2}` limitation factors. These values are:
 
-    - The optimal ratio of leaf internal to ambient :math:`\ce{CO2}` partial
-      pressure (:math:`\chi = c_i/c_a`).
-    - The :math:`\ce{CO2}` limitation term for light-limited
-      assimilation (:math:`m_j`).
-    - The :math:`\ce{CO2}` limitation term for Rubisco-limited
-      assimilation  (:math:`m_c`).
+    - The optimal ratio of leaf internal to ambient :math:`\ce{CO2}` partial pressure
+      (:math:`\chi = c_i/c_a`).
+    - The :math:`\ce{CO2}` limitation term for light-limited assimilation (:math:`m_j`).
+    - The :math:`\ce{CO2}` limitation term for Rubisco-limited assimilation
+      (:math:`m_c`).
 
-    The chosen method is automatically used to estimate these values when an
-    instance is created - see the method documentation for individual details.
+    The chosen method is automatically used to estimate these values when an instance is
+    created - see the method documentation for individual details.
 
     The ratio of carboxylation to transpiration cost factors (``beta``, :math:`\beta`)
     is a key parameter in these methods. It is often held constant across cells but some
     methods (``lavergne20_c3`` and ``lavergne20_c4``) calculate :math:`beta` from
     environmental conditions. For this reason, the ``beta`` attribute records the values
-    used in calculations.
+    used in calculations as an array.
 
     Args:
         env: An instance of PModelEnvironment providing the photosynthetic
-            environment for the model.
+          environment for the model.
         method: The method to use for estimating optimal :math:`\chi`, one
-            of ``prentice14`` (default), ``lavergne20_c3``, ``c4``,
-            ``c4_no_gamma`` or ``lavergne20_c4``.
-        rootzonestress: This is an experimental feature to supply a root zone
-            stress factor used as a direct penalty to :math:`\beta`.
+          of ``prentice14`` (default), ``lavergne20_c3``, ``c4``, ``c4_no_gamma`` or
+          ``lavergne20_c4``.
+        rootzonestress: This is an experimental feature to supply a root zone stress
+          factor used as a direct penalty to :math:`\beta`, unitless. The default is
+          1.0, with no root zone stress applied.
         pmodel_params: An instance of
-            :class:`~pyrealm.param_classes.PModelParams`.
-
-    Attributes:
-        env (PModelEnvironment): An instance of PModelEnvironment providing
-            the photosynthetic environment for the model.
-        method (str): one of ``prentice14``, ``lavergne20``, ``c4``,
-            ``c4_no_gamma`` or ``lavergne20_c4``.
-        beta (float): the ratio of carboxylation to transpiration cost factors.
-        xi (float): defines the sensitivity of :math:`\chi` to the vapour
-            pressure deficit and  is related to the carbon cost of water
-            (Medlyn et al. 2011; Prentice et 2014)
-        chi (float): the ratio of leaf internal to ambient :math:`\ce{CO2}`
-            partial pressure (:math:`\chi`).
-        mj (float): :math:`\ce{CO2}` limitation factor for light-limited
-            assimilation (:math:`m_j`).
-        mc (float): :math:`\ce{CO2}` limitation factor for RuBisCO-limited
-            assimilation (:math:`m_c`).
-        mjoc (float):  :math:`m_j/m_c` ratio
+          :class:`~pyrealm.param_classes.PModelParams`.
 
     Returns:
-        An instance of :class:`CalcOptimalChi` where the :attr:`chi`,
-        :attr:`mj`, :attr:`mc` and :attr:`mjoc` have been populated
-        using the chosen method.
+        An instance of :class:`CalcOptimalChi` with the class attributes populated using
+        the chosen methods and options.
 
     """
 
     def __init__(
         self,
         env: PModelEnvironment,
-        rootzonestress: Optional[NDArray] = None,
+        rootzonestress: NDArray = np.array([1.0]),
         method: str = "prentice14",
         pmodel_params: PModelParams = PModelParams(),
     ):
-        # Store the PModelEnvironment
-        self.env = env
+        self.env: PModelEnvironment = env
+        """The PModelEnvironment containing the photosynthetic environment for the
+        model."""
 
-        # Check rootzonestress conforms to the environment data
-        if rootzonestress is not None:
-            self.shape = check_input_shapes(env.ca, rootzonestress)
-            self.rootzonestress: Optional[NDArray] = rootzonestress
-            warn("The rootzonestress option is an experimental feature.")
+        # If rootzonestress is not simply equal to 1 (or an equivalent ndarray), check
+        # rootzonestress conforms to the environment data
+        if np.allclose(rootzonestress, 1.0):
+            self.shape: tuple = env.shape
         else:
-            self.shape = env.shape
-            self.rootzonestress = None
+            self.shape = check_input_shapes(env.ca, rootzonestress)
+            warn("The rootzonestress option is an experimental feature.")
+
+        self.rootzonestress: NDArray = rootzonestress
+        """Experimental rootzonestress factor, unitless."""
 
         # Declare attributes populated by methods - these attributes should never be
         # exposed without being populated as the method lookup below populates them
         # before leaving __init__, so they are not defined with a default value.
-        self.beta: float
+        self.beta: NDArray
+        """The ratio of carboxylation to transpiration cost factors."""
         self.xi: NDArray
+        r"""Defines the sensitivity of :math:`\chi` to the vapour pressure deficit,
+        related to the carbon cost of water (Medlyn et al. 2011; Prentice et 2014)."""
         self.chi: NDArray
+        r"""The ratio of leaf internal to ambient :math:`\ce{CO2}`partial pressure
+        (:math:`\chi`)."""
         self.ci: NDArray
+        r"""The leaf internal :math:`\ce{CO2}`partial pressure (:math:`\c_i`)."""
         self.mc: NDArray
+        r""":math:`\ce{CO2}` limitation factor for RuBisCO-limited assimilation
+        (:math:`m_c`)."""
         self.mj: NDArray
+        r""":math:`\ce{CO2}` limitation factor for light-limited assimilation
+        (:math:`m_j`)."""
         self.mjoc: NDArray
+        r"""Ratio of :math:`m_j/m_c`."""
 
         # TODO: considerable overlap between methods here - could maybe bring
         #       more into init but probably clearer and easier to debug to keep
@@ -1498,8 +1494,10 @@ class CalcOptimalChi:
         # TODO: Could convert this to use a registry?
 
         # Identify and run the selected method
-        self.pmodel_params = pmodel_params
-        self.method = method
+        self.pmodel_params: PModelParams = pmodel_params
+        """The PModelParams used for optimal chi estimation"""
+        self.method: str = method
+        """Records the method used for optimal chi estimation"""
 
         # Check the method - return value shows C3/C4 but not needed here - and
         # then run that method to populate the instance
@@ -1515,11 +1513,10 @@ class CalcOptimalChi:
         CalcOptimalChi, and also reports if the method is C4 or not.
 
         Args:
-            method: A provided method name for
-                :class:`~pyrealm.pmodel.CalcOptimalChi`.
+            method: A provided method name for :class:`~pyrealm.pmodel.CalcOptimalChi`.
 
         Returns:
-            A boolean indicating showing if the method uses the C3 pathway.
+            A boolean showing if the method uses the C4 pathway.
         """
 
         map = {
@@ -1538,6 +1535,7 @@ class CalcOptimalChi:
         return is_c4
 
     def __repr__(self) -> str:
+        """Generates a string representation of a CalcOptimalChi instance."""
         return f"CalcOptimalChi(shape={self.shape}, method={self.method})"
 
     def prentice14(self) -> None:
@@ -1556,8 +1554,8 @@ class CalcOptimalChi:
                 \end{align*}
             \]
 
-        The :math:`\ce{CO2}` limitation term of light use efficiency
-        (:math:`m_j`) is calculated following Equation 3 in :cite:`Wang:2017go`:
+        The :math:`\ce{CO2}` limitation term of light use efficiency (:math:`m_j`) is
+        calculated following Equation 3 in :cite:`Wang:2017go`:
 
         .. math::
 
@@ -1592,9 +1590,6 @@ class CalcOptimalChi:
         #     + 3 \Gamma^{*}
         #               \sqrt{\frac{1.6 D \eta^{*}}{\beta(K + \Gamma^{*})}}
 
-        # Replace missing rootzonestress with 1
-        self.rootzonestress = self.rootzonestress or np.array([1.0])
-
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.beta = self.pmodel_params.beta_cost_ratio_prentice14
         self.xi = np.sqrt(
@@ -1624,15 +1619,15 @@ class CalcOptimalChi:
                 \beta = e ^ {b\theta + a},
             \]
 
-        The coefficients are experimentally derived values with defaults taken
-        from Figure 6a of :cite:`lavergne:2020a` (:math:`a`,
+        The coefficients are experimentally derived values with defaults taken from
+        Figure 6a of :cite:`lavergne:2020a` (:math:`a`,
         :meth:`~pyrealm.param_classes.PModelParams.lavergne_2020_a`; :math:`b`,
         :meth:`~pyrealm.param_classes.PModelParams.lavergne_2020_b`).
 
         Values of :math:`\chi` and other predictions are then calculated as in
-        :meth:`~pyrealm.pmodel.CalcOptimalChi.prentice14`. This method requires
-        that `env` includes estimates of :math:`\theta` and  is incompatible with
-        the `rootzonestress` approach.
+        :meth:`~pyrealm.pmodel.CalcOptimalChi.prentice14`. This method requires that
+        `env` includes estimates of :math:`\theta` and  is incompatible with the
+        `rootzonestress` approach.
 
         Examples:
             >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
@@ -1800,25 +1795,24 @@ class CalcOptimalChi:
     def c4_no_gamma(self) -> None:
         r"""Calculate optimal chi assuming negligible photorespiration.
 
-        This method assumes that photorespiration (:math:`\Gamma^\ast`) is
-        negible for C4 plants. This simplifies the calculation of :math:`\xi`
-        and :math:`\chi` compared to :meth:`~pyrealm.pmodel.CalcOptimalChi.c4`,
-        but uses the same C4 specific estimate of the unit cost ratio
-        :math:`\beta`,
+        This method assumes that photorespiration (:math:`\Gamma^\ast`) is negligible
+        for C4 plants. This simplifies the calculation of :math:`\xi` and :math:`\chi`
+        compared to :meth:`~pyrealm.pmodel.CalcOptimalChi.c4`, but uses the same C4
+        specific estimate of the unit cost ratio :math:`\beta`,
         :meth:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`.
 
           .. math:: :nowrap:
 
             \[
                 \begin{align*}
-                    \chi &= \xi / (\xi + \sqrt D ), \text{where}\\ \xi &=
-                    \sqrt{(\beta  K) / (1.6 \eta^{*}))}
+                    \chi &= \xi / (\xi + \sqrt D ), \text{where}\\ \xi &= \sqrt{(\beta
+                    K) / (1.6 \eta^{*}))}
                 \end{align*}
             \]
 
-        In addition, :math:`m_j = 1.0`  because photorespiration is negligible
-        in C4 photosynthesis, but :math:`m_c` and hence :math:`m_{joc}` are
-        calculated, not set to one.
+        In addition, :math:`m_j = 1.0`  because photorespiration is negligible in C4
+        photosynthesis, but :math:`m_c` and hence :math:`m_{joc}` are calculated, not
+        set to one.
 
           .. math:: :nowrap:
 
