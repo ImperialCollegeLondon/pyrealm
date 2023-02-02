@@ -1,11 +1,24 @@
-"""The pmodel Module.
+"""This page contains the detailed documentation of the functions and classes in the
+:mod:`~pyrealm.pmodel` module. The documentation describes the key equations used in
+each member. In particular, note that the documentation of functions and methods
+includes two lists of parameters:
 
-This module provides the P Model class, implementing an optimality based model
-of photosynthesis, along with a set of functions to convert environmental
-forcings to key parameters used within the model.
+Parameters
+  These are the arguments specific to the class, method or function signature.
+
+PModel Parameters
+  These are shared parameters of the PModel used by this function, which are taken from
+  a :mod:`~pyrealm.params.PModelParams` instance. These can be changed by the user but 
+  are typically used to configure an entire analysis rather than a single function.
+
+This module provides:
+
+* The :mod:`~pyrealm.pmodel.PModel` class, implementing an optimality based model of
+  photosynthesis, along with a set of functions to convert environmental forcings to key
+  parameters used within the model.
 
 The module also provides code for...  TODO: Update this.
-"""
+"""  # noqa D210, D415
 
 from typing import Optional, Union
 from warnings import warn
