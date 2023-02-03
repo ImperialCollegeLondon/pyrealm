@@ -39,7 +39,7 @@ So the general approach here is now:
 Note that this means that the codebase then needs to systematically use nan-aware
 functions and possibly using bottleneck for speed. Part of the problem here is that
 Numpy lacks a general solution to missing data:
-  - https://numpy.org/neps/nep-0026-missing-data-summary
+https://numpy.org/neps/nep-0026-missing-data-summary
 """  # noqa: D205, D415
 
 from typing import Optional, Union
