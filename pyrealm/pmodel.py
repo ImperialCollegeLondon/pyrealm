@@ -2549,8 +2549,8 @@ class C3C4Competition:
     ) -> None:
         r"""Estimate CO2 isotopic discrimination values.
 
-        Creating an instance of {class}`~pyrealm.pmodel.CalcCarbonIsotopes` from a
-        {class}`~pyrealm.pmodel.PModel` instance provides estimated total annual
+        Creating an instance of :class:`~pyrealm.pmodel.CalcCarbonIsotopes` from a
+        :class:`~pyrealm.pmodel.PModel` instance provides estimated total annual
         descrimination against Carbon 13 (:math:`\Delta\ce{^13C}`) for a single
         photosynthetic pathway.
 
@@ -2603,7 +2603,7 @@ class C3C4Competition:
             ("gpp_c4_contrib", "gC m-2 yr-1"),
         ]
 
-        if self.d13C_C3 is not None:
+        if hasattr(self, "d13C_C3"):
             attrs.extend(
                 [
                     ("Delta13C_C3", "permil"),
