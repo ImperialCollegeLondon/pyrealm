@@ -99,7 +99,7 @@
         including pre-commit suite.
       - Moving docs out of root and into docs/source, docs/build etc.
 0.9.0 - Substantial maintenance review
-      - Breaking changes:
+      - User facing breaking changes:
         - Support for scalar inputs removed - numpy arrays now expected as inputs.
         - Python minimum version is now 3.9
         - Hygrometric functions moved from utilities to new hygro module
@@ -117,3 +117,4 @@
         - Better definition and handling of class attributes to avoid unnecessary
           Optional types in __init__ methods.
         - Updated docstrings, particularly class attributes now docstringed in place.
+        - bounds_checker module merged into utilities module
