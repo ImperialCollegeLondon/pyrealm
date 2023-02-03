@@ -12,13 +12,7 @@ kernelspec:
   name: python3
 ---
 
-# Utilities
-
-The {mod}`~pyrealm.utilities` module contains a set of utility functions that
-are shared between modules, including:
-
-* conversion functions for common alternative inputs to models.
-* input checking
+# Hygrometric functions
 
 ```{code-cell} ipython3
 # This code loads required packages and then creates a representative range of
@@ -30,7 +24,7 @@ are shared between modules, including:
 
 from matplotlib import pyplot
 import numpy as np
-from pyrealm import utilities
+from pyrealm import hygro
 %matplotlib inline
 
 # Set the resolution of examples
@@ -48,15 +42,11 @@ vp_2d = np.broadcast_to(vp_1d, (n_pts, n_pts))
 rh_2d = np.broadcast_to(rh_1d, (n_pts, n_pts))
 ```
 
-## Conversion functions
-
-### Hygrometric conversions
-
-The {class}`~pyrealm.pmodel.PModelEnvironment` class requires vapour pressure
-deficit (VPD, Pa) as an input, but forcing datasets often provide alternative
-representations. The utilities provide functions to calculate saturated vapour
-pressure for a given temperature and the conversions from vapour pressure,
-relative humidity and specific humidity to vapour pressure deficit.
+The {class}`~pyrealm.pmodel.PModelEnvironment` class requires vapour pressure deficit
+(VPD, Pa) as an input, but forcing datasets often provide alternative representations.
+The {mod}`~pyrealm.hygro`  provide functions to calculate saturated vapour pressure for
+a given temperature and the conversions from vapour pressure, relative humidity and
+specific humidity to vapour pressure deficit.
 
 ```{admonition} Vapour Pressure and units
 :class: warning
@@ -66,22 +56,22 @@ Deficit (VPD).  It is now usual for VP to be provided in kilopascals (kPa) but
 some older data sources use hectopascals (hPa), which are equivalent to millibars
 (mb or mbar).
 
-The function {func}`~pyrealm.utilities.convert_vp_to_vpd` takes values in kPa
+The function {func}`~pyrealm.hygro.convert_vp_to_vpd` takes values in kPa
 and returns kPa, so if you are using VP to prepare input data for
 {class}`~pyrealm.pmodel.PModelEnvironment`:
 
 * Make sure you are passing VP values to
-  {func}`~pyrealm.utilities.convert_vp_to_vpd` in kPa and not hPa or mbar.
-* Rescale the output of {func}`~pyrealm.utilities.convert_vp_to_vpd` from
+  {func}`~pyrealm.hygro.convert_vp_to_vpd` in kPa and not hPa or mbar.
+* Rescale the output of {func}`~pyrealm.hygro.convert_vp_to_vpd` from
   kPa to Pa, before using it in {class}`~pyrealm.pmodel.PModelEnvironment`.
 
 ```
 
-#### Saturated vapour pressure
+## Saturated vapour pressure
 
 ```{code-cell} ipython3
 # Create a sequence of air temperatures and calculate the saturated vapour pressure
-vp_sat = utilities.calc_vp_sat(ta_1d)
+vp_sat = hygro.calc_vp_sat(ta_1d)
 
 # Plot ta against vp_sat
 pyplot.plot(ta_1d, vp_sat)
@@ -90,10 +80,10 @@ pyplot.ylabel('Saturated vapour pressure (kPa)')
 pyplot.show()
 ```
 
-#### Vapour pressure to VPD
+## Vapour pressure to VPD
 
 ```{code-cell} ipython3
-vpd = utilities.convert_vp_to_vpd(vp_2d, ta_2d.transpose())
+vpd = hygro.convert_vp_to_vpd(vp_2d, ta_2d.transpose())
 
 # Plot vpd
 fig, ax = pyplot.subplots()
@@ -105,10 +95,10 @@ ax.set_ylabel('Temperature (°C)')
 pyplot.show()
 ```
 
-#### Relative humidity to VPD
+## Relative humidity to VPD
 
 ```{code-cell} ipython3
-vpd = utilities.convert_rh_to_vpd(rh_2d, ta_2d.transpose())
+vpd = hygro.convert_rh_to_vpd(rh_2d, ta_2d.transpose())
 
 # Plot vpd
 fig, ax = pyplot.subplots()
@@ -121,14 +111,14 @@ ax.set_ylabel('Temperature (°C)')
 pyplot.show()
 ```
 
-#### Specific humidity to VPD
+## Specific humidity to VPD
 
 ```{code-cell} ipython3
 # Create a sequence of air temperatures and calculate the saturated vapour pressure
-vpd1 = utilities.convert_sh_to_vpd(sh_1d, ta=20, patm=101.325)
-vpd2 = utilities.convert_sh_to_vpd(sh_1d, ta=30, patm=101.325)
-vpd3 = utilities.convert_sh_to_vpd(sh_1d, ta=20, patm=90)
-vpd4 = utilities.convert_sh_to_vpd(sh_1d, ta=30, patm=90)
+vpd1 = hygro.convert_sh_to_vpd(sh_1d, ta=20, patm=101.325)
+vpd2 = hygro.convert_sh_to_vpd(sh_1d, ta=30, patm=101.325)
+vpd3 = hygro.convert_sh_to_vpd(sh_1d, ta=20, patm=90)
+vpd4 = hygro.convert_sh_to_vpd(sh_1d, ta=30, patm=90)
 
 
 for yvals, lab in zip([vpd1, vpd2, vpd3, vpd4],
@@ -146,7 +136,7 @@ pyplot.show()
 ## Module documentation
 
 ```{eval-rst}
-.. automodule:: pyrealm.utilities
+.. automodule:: pyrealm.hygro
 
 
 ```

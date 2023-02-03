@@ -73,7 +73,7 @@ clicking on the buttons like the one below.
   :caption: Additional detail
   :hidden:
   
-  utilities.md
+  hygro.md
   bounds_checking.md
   params.md
   z_bibliography.rst
