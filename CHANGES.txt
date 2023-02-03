@@ -102,6 +102,7 @@
       - Breaking changes:
         - Support for scalar inputs removed - numpy arrays now expected as inputs.
         - Python minimum version is now 3.9
+        - Hygrometric functions moved from utilities to new hygro module
       - Detailed changes:
         - Moved support python versions to >=3.9, <3.11
         - Update to poetry 1.2+
