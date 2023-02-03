@@ -19,7 +19,7 @@ import pytest
 def test__get_interval_functions(input, raises, lowfn, hifun):
     """Tests _get_interval_functions"""
 
-    from pyrealm.bounds_checker import _get_interval_functions
+    from pyrealm.utilities import _get_interval_functions
 
     with raises as err:
         low, hi = _get_interval_functions(input)
@@ -44,7 +44,7 @@ def test__get_interval_functions(input, raises, lowfn, hifun):
     ],
 )
 def test_bounds_checker(input, interval_args, context):
-    from pyrealm.bounds_checker import bounds_checker
+    from pyrealm.utilities import bounds_checker
 
     with context:
         out = bounds_checker(input, *interval_args)
@@ -110,7 +110,7 @@ def test_bounds_checker(input, interval_args, context):
     ],
 )
 def test_input_mask(input, interval_args, context, exp):
-    from pyrealm.bounds_checker import bounds_mask
+    from pyrealm.utilities import bounds_mask
 
     with context:
         out = bounds_mask(input, *interval_args)
