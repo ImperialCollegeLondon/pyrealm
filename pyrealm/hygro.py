@@ -8,8 +8,8 @@ against the ``bigleaf`` R package.
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.bounds_checker import bounds_checker
 from pyrealm.param_classes import HygroParams
+from pyrealm.utilities import bounds_checker
 
 
 def calc_vp_sat(ta: NDArray, hygro_params: HygroParams = HygroParams()) -> NDArray:

@@ -28,9 +28,8 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm import ExperimentalFeatureWarning
-from pyrealm.bounds_checker import bounds_checker
 from pyrealm.param_classes import C3C4Params, IsotopesParams, PModelParams
-from pyrealm.utilities import check_input_shapes, summarize_attrs
+from pyrealm.utilities import bounds_checker, check_input_shapes, summarize_attrs
 
 # TODO - Note that the typing currently does not enforce the dtype of ndarrays
 #        but it looks like the upcoming np.typing module might do this.

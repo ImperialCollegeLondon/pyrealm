@@ -74,7 +74,7 @@ clicking on the buttons like the one below.
   :hidden:
   
   hygro.md
-  bounds_checking.md
+  utilities.md
   params.md
   z_bibliography.rst
 ```
