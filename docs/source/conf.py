@@ -57,9 +57,15 @@ mathjax3_config = {
 
 # Turn off ugly rendering of class attributes
 napoleon_use_ivar = True
+napoleon_custom_sections = [("PModel Parameters", "params_style")]
 
-# Suppress signature expansion of arguments
+# Autodoc configuration:
+# - Suppress signature expansion of arguments
 autodoc_preserve_defaults = True
+# - Have funcname not pyrealm.pmodel.funcname in autodoc
+add_module_names = False
+# - Group members by type not alphabetically
+autodoc_member_order = "groupwise"
 
 bibtex_bibfiles = ["refs.bib"]
 

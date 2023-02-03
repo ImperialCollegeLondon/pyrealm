@@ -101,97 +101,97 @@ class TTree:
 
     @property
     def diameter(self) -> NDArray:
-        """Fetch the plant diameter."""
+        """Individual diameter (m)."""  # noqa: D402
         return self._diameter
 
     @property
     def height(self) -> NDArray:
-        """Fetch the plant height."""
+        """Individual height (m)."""  # noqa: D402
         return self._height
 
     @property
     def crown_fraction(self) -> NDArray:
-        """Fetch the plant crown fraction."""
+        """Individual crown fraction (unitless)."""
         return self._crown_fraction
 
     @property
     def crown_area(self) -> NDArray:
-        """Fetch the plant crown area."""
+        """Individual crown area (m2)."""
         return self._crown_area
 
     @property
     def mass_swd(self) -> NDArray:
-        """Fetch the plant softwood mass."""
+        """Individual softwood mass (kg)."""
         return self._mass_swd
 
     @property
     def mass_stm(self) -> NDArray:
-        """Fetch the plant stem mass."""
+        """Individual stem mass (kg)."""
         return self._mass_stm
 
     @property
     def mass_fol(self) -> NDArray:
-        """Fetch the plant foliage mass."""
+        """Individual foliage mass (kg)."""
         return self._mass_fol
 
     @property
     def gpp_raw(self) -> NDArray:
-        """Fetch the raw gross primary productivity."""
+        """Raw gross primary productivity."""
         return self._check_growth_calculated("_gpp_raw")
 
     @property
     def gpp_actual(self) -> NDArray:
-        """Fetch the actual gross primary productivity."""
+        """Actual gross primary productivity."""
         return self._check_growth_calculated("_gpp_actual")
 
     @property
     def resp_swd(self) -> NDArray:
-        """Fetch the plant softwood respiration."""
+        """Individual softwood respiration costs."""
         return self._check_growth_calculated("_resp_swd")
 
     @property
     def resp_frt(self) -> NDArray:
-        """Fetch the plant fine root respiration."""
+        """Individual fine root respiration costs."""
         return self._check_growth_calculated("_resp_frt")
 
     @property
     def resp_fol(self) -> NDArray:
-        """Fetch the plant foliar respiration."""
+        """Individual foliar respiration costs."""
         return self._check_growth_calculated("_resp_fol")
 
     @property
     def npp(self) -> NDArray:
-        """Fetch the net primary productivity."""
+        """Net primary productivity."""
         return self._check_growth_calculated("_npp")
 
     @property
     def turnover(self) -> NDArray:
-        """Fetch the plant turnover."""
+        """Plant turnover."""
         return self._check_growth_calculated("_turnover")
 
     @property
     def d_mass_s(self) -> NDArray:
-        """Fetch the plant change in mass."""
+        """Individual relative change in mass."""
         return self._check_growth_calculated("_d_mass_s")
 
     @property
     def d_mass_fr(self) -> NDArray:
-        """Fetch the plant change in fine root mass."""
+        """Individual relative change in fine root mass."""
         return self._check_growth_calculated("_d_mass_fr")
 
     @property
     def delta_d(self) -> NDArray:
-        """Fetch the plant change in diameter."""
+        """Individual change in diameter."""
         return self._check_growth_calculated("_delta_d")
 
     @property
     def delta_mass_stm(self) -> NDArray:
-        """Fetch the plant change in stem mass."""
+        """Individual total change in stem mass."""
         return self._check_growth_calculated("_delta_mass_stm")
 
     @property
     def delta_mass_frt(self) -> NDArray:
-        """Fetch the plant change in fine root mass."""
+        """Individual total change in fine root mass."""
         return self._check_growth_calculated("_delta_mass_frt")
 
     def reset_diameters(self, values: NDArray) -> None:
@@ -246,9 +246,9 @@ class TTree:
     def calculate_growth(self, gpp: NDArray) -> None:
         """Calculate growth predictions given a GPP estimate.
 
-        This method updates the instance with predicted changes in tree
-        geometry, mass and respiration costs from the initial state given an
-        estimate of gross primary productivity (GPP).
+        This method updates the instance with predicted changes in tree geometry, mass
+        and respiration costs from the initial state given an estimate of gross primary
+        productivity (GPP).
 
         Args:
             gpp: Primary productivity

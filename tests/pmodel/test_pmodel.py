@@ -585,7 +585,7 @@ def test_pmodel_class_c3(
             values["soilm_sc"], values["meanalpha_sc"]
         )
     else:
-        soilmstress = None
+        soilmstress = np.array([1.0])
 
     ret = pmodel.PModel(
         pmodelenv[environ],

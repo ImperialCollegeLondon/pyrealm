@@ -329,8 +329,8 @@ class PModelParams(ParamClass):
     soilmstress_b: float = 0.733
 
     # Unit cost ratio (beta) values for different CalcOptimalChi methods
-    beta_cost_ratio_prentice14: float = 146.0
-    beta_cost_ratio_c4: float = 146.0 / 9
+    beta_cost_ratio_prentice14: NDArray[np.float32] = np.array([146.0])
+    beta_cost_ratio_c4: NDArray[np.float32] = np.array([146.0 / 9])
     lavergne_2020_b_c3: float = 1.73
     lavergne_2020_a_c3: float = 4.55
     lavergne_2020_b_c4: float = 1.73
