@@ -18,11 +18,11 @@ At present, there are three approaches for incorporating soil moisture effects o
 photosynthesis:
 
 * The Stocker $\beta(\theta)$ factor applied to light use efficiency, described below.
-* The experimental `rootzonestress` argument to {class}`~pyrealm.pmodel.PModel`, see
-  below.
+* The experimental `rootzonestress` argument to {class}`~pyrealm.pmodel.pmodel.PModel`,
+  see below.
 * The `lavergne20_c3` and `lavergne20_c4` methods for
-  {class}`~pyrealm.params.CalcOptimalChi`, which use an empirical model of the change in
-  $\beta$ with soil moisture. See [here](optimal_chi) for details.
+  {class}`~pyrealm.params.pmodel.CalcOptimalChi`, which use an empirical model of the
+  change in $\beta$ with soil moisture. See [here](optimal_chi) for details.
 
 ## Stocker $\beta(\theta)$
 
@@ -125,7 +125,7 @@ plt.show()
 
 The factor can be applied to the P Model by using
 {func}`~pyrealm.pmodel.calc_soilmstress` to calculate the factor values and then
-passing them into {class}`~pyrealm.pmodel.PModel` using the `soilmstress`
+passing them into {class}`~pyrealm.pmodel.pmodel.PModel` using the `soilmstress`
 argument. The example below shows how the predicted light use efficiency from
 the P Model changes across an aridity gradient both with and without the
 soil moisture factor.
@@ -165,7 +165,7 @@ In the `rpmodel` implementation, the soil moisture factor is also used
 to modify $V_{cmax}$ and $J_{max}$, so that these values are congruent
 with the resulting penalised LUE and GPP.
 
-This is **not implemented in {class}`~pyrealm.pmodel.PModel`**. The
+This is **not implemented in {class}`~pyrealm.pmodel.pmodel.PModel`**. The
 empirical correction is applied only to LUE and hence GPP. A warning is generated
 when accessing $V_{cmax}$, $J_{max}$ and predictions deriving from those
 values if this soil moisture stress factor has been applied.
@@ -185,7 +185,7 @@ print(model_stress.vcmax[0])
 
 ```{warning}
 This approach is **an experimental feature** - see the
-{class}`~pyrealm.pmodel.PModel` documentation. Essentially, the values for
+{class}`~pyrealm.pmodel.pmodel.PModel` documentation. Essentially, the values for
 `rootzonestress` apply a penalty factor directly to $\beta$ in the calculation of
 optimal $\chi$. This factor is currently calculated externally to the `pyrealm` package
 and is not documented here.

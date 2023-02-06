@@ -18,7 +18,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm import ExperimentalFeatureWarning
-from pyrealm.param_classes import C3C4Params, PModelParams
+from pyrealm.param_classes import PModelParams
 from pyrealm.pmodel.functions import (
     calc_co2_to_ca,
     calc_ftemp_inst_rd,
@@ -75,7 +75,7 @@ class PModelEnvironment:
     is used to provide additional variables used by some methods.
 
     * the volumetric soil moisture content, required to calculate optimal
-      :math:`\chi` in :meth:`~pyrealm.pmodel.CalcOptimalChi.lavergne2020`.
+      :math:`\chi` in :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne2020`.
 
     Args:
         tc: Temperature, relevant for photosynthesis (°C)
@@ -194,26 +194,26 @@ class PModelEnvironment:
 class PModel:
     r"""Fit the P Model.
 
-    This class fits the P Model to a given set of environmental and
-    photosynthetic parameters. The calculated attributes of the class are
-    described below. An extended description with typical use cases is given in
-    :any:`pmodel_overview` but the basic flow of the model is:
+    This class fits the P Model to a given set of environmental and photosynthetic
+    parameters. The calculated attributes of the class are described below. An extended
+    description with typical use cases is given in :any:`pmodel_overview` but the basic
+    flow of the model is:
 
     1. Estimate :math:`\ce{CO2}` limitation factors and optimal internal to ambient
        :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using
-       :class:`~pyrealm.pmodel.CalcOptimalChi`.
+       :class:`~pyrealm.pmodel.pmodel.CalcOptimalChi`.
     2. Estimate limitation factors to :math:`V_{cmax}` and :math:`J_{max}` using
-       :class:`~pyrealm.pmodel.JmaxLimitation`.
+       :class:`~pyrealm.pmodel.pmodel.JmaxLimitation`.
     3. Optionally, estimate productivity measures including GPP by supplying FAPAR and
-       PPFD using the :meth:`~pyrealm.pmodel.PModel.estimate_productivity` method.
+       PPFD using the :meth:`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`
+       method.
 
     The model predictions from step 1 and 2 are then:
 
-    * Intrinsic water use efficiency (iWUE,
-      :math:`\mu\mathrm{mol}\;\mathrm{mol}^{-1}`), calculated as :math:`( 5/8 *
-      (c_a - c_i)) / P`, where `c_a` and `c_i` are measured in Pa and :math:`P`
-      is atmospheric pressure in megapascals. This is equivalent to :math:`(c_a
-      - c_i)/1.6` when `c_a` and `c_i` are expressed as parts per million.
+    * Intrinsic water use efficiency (iWUE, :math:`\mu\mathrm{mol}\;\mathrm{mol}^{-1}`),
+      calculated as :math:`( 5/8 * (c_a - c_i)) / P`, where `c_a` and `c_i` are measured
+      in Pa and :math:`P` is atmospheric pressure in megapascals. This is equivalent to
+      :math:`(c_a - c_i)/1.6` when `c_a` and `c_i` are expressed as parts per million.
 
     * The light use efficienciy (LUE, gC mol-1), calculated as:
 
@@ -222,16 +222,15 @@ class PModel:
             \text{LUE} = \phi_0 \cdot m_j \cdot f_v \cdot M_C \cdot \beta(\theta),
 
       where :math:`f_v` is a limitation factor defined in
-      :class:`~pyrealm.pmodel.JmaxLimitation`, :math:`M_C` is the molar mass of
-      carbon and :math:`\beta(\theta)` is an empirical soil moisture factor
-      (see :func:`~pyrealm.pmodel.calc_soilmstress`,  :cite:`Stocker:2020dh`).
+      :class:`~pyrealm.pmodel.pmodel.JmaxLimitation`, :math:`M_C` is the molar mass of
+      carbon and :math:`\beta(\theta)` is an empirical soil moisture factor (see
+      :func:`~pyrealm.pmodel.calc_soilmstress`,  :cite:`Stocker:2020dh`).
 
-    After running :meth:`~pyrealm.pmodel.PModel.estimate_productivity`, the following
-    predictions are also populated:
+    After running :meth:`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`, the
+    following predictions are also populated:
 
-    * Gross primary productivity, calculated as
-      :math:`\text{GPP} = \text{LUE} \cdot I_{abs}`, where :math:`I_{abs}` is
-      the absorbed photosynthetic radiation
+    * Gross primary productivity, calculated as :math:`\text{GPP} = \text{LUE} \cdot
+      I_{abs}`, where :math:`I_{abs}` is the absorbed photosynthetic radiation
 
     * The maximum rate of Rubisco regeneration at the growth temperature
       (:math:`J_{max}`)
@@ -245,18 +244,16 @@ class PModel:
             :nowrap:
 
             \[
-                \begin{align*}
-                V_{cmax} &= \phi_{0} I_{abs} \frac{m}{m_c} f_{v} \\
-                J_{max} &= 4 \phi_{0} I_{abs} f_{j} \\
-                \end{align*}
+                \begin{align*} V_{cmax} &= \phi_{0} I_{abs} \frac{m}{m_c} f_{v} \\
+                J_{max} &= 4 \phi_{0} I_{abs} f_{j} \\ \end{align*}
             \]
 
     where  :math:`f_v, f_j` are limitation terms described in
-    :class:`~pyrealm.pmodel.JmaxLimitation`
+    :class:`~pyrealm.pmodel.pmodel.JmaxLimitation`
 
     * The maximum carboxylation capacity (mol C m-2) normalised to the standard
-      temperature as: :math:`V_{cmax25} = V_{cmax}  / fv(t)`, where :math:`fv(t)` is
-      the instantaneous temperature response of :math:`V_{cmax}` implemented in
+      temperature as: :math:`V_{cmax25} = V_{cmax}  / fv(t)`, where :math:`fv(t)` is the
+      instantaneous temperature response of :math:`V_{cmax}` implemented in
       :func:`~pyrealm.pmodel.calc_ftemp_inst_vcmax`
 
     * Dark respiration, calculated as:
@@ -267,8 +264,8 @@ class PModel:
 
       following :cite:`Atkin:2015hk`, where :math:`fr(t)` is the instantaneous
       temperature response of dark respiration implemented in
-      :func:`~pyrealm.pmodel.calc_ftemp_inst_rd`, and :math:`b_0` is set
-      in :attr:`~pyrealm.pmodel_params.atkin_rd_to_vcmax`.
+      :func:`~pyrealm.pmodel.calc_ftemp_inst_rd`, and :math:`b_0` is set in
+      :attr:`~pyrealm.pmodel_params.atkin_rd_to_vcmax`.
 
     * Stomatal conductance (:math:`g_s`), calculated as:
 
@@ -276,10 +273,9 @@ class PModel:
 
             g_s = \frac{LUE}{M_C}\frac{1}{c_a - c_i}
 
-      When C4 photosynthesis is being used, the true partial pressure of CO2
-      in the substomatal cavities (:math:`c_i`) is used following the
-      calculation of :math:`\chi` using
-      :attr:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`
+      When C4 photosynthesis is being used, the true partial pressure of CO2 in the
+      substomatal cavities (:math:`c_i`) is used following the calculation of
+      :math:`\chi` using :attr:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`
 
     Soil moisture effects:
         The `soilmstress`, `rootzonestress` arguments and the `lavergne20_c3` and
@@ -287,20 +283,20 @@ class PModel:
         photosynthesis and are incompatible.
 
     Args:
-        env: An instance of :class:`~pyrealm.pmodel.PModelEnvironment`.
+        env: An instance of :class:`~pyrealm.pmodel.pmodel.PModelEnvironment`.
         kphio: (Optional) The quantum yield efficiency of photosynthesis
-            (:math:`\phi_0`, unitless). Note that :math:`\phi_0` is
-            sometimes used to refer to the quantum yield of electron transfer,
-            which is exactly four times larger, so check definitions here.
+            (:math:`\phi_0`, unitless). Note that :math:`\phi_0` is sometimes used to
+            refer to the quantum yield of electron transfer, which is exactly four times
+            larger, so check definitions here.
         rootzonestress: (Optional, default=None) An experimental option
             for providing a root zone water stress penalty to the :math:`beta` parameter
-            in :class:`~pyrealm.pmodel.CalcOptimalChi`.
+            in :class:`~pyrealm.pmodel.pmodel.CalcOptimalChi`.
         soilmstress: (Optional, default=None) A soil moisture stress factor
             calculated using :func:`~pyrealm.pmodel.calc_soilmstress`.
         method_optchi: (Optional, default=`prentice14`) Selects the method to be
-            used for calculating optimal :math:`chi`. The choice of method also
-            sets the choice of  C3 or C4 photosynthetic pathway (see
-            :class:`~pyrealm.pmodel.CalcOptimalChi`).
+            used for calculating optimal :math:`chi`. The choice of method also sets the
+            choice of  C3 or C4 photosynthetic pathway (see
+            :class:`~pyrealm.pmodel.pmodel.CalcOptimalChi`).
         method_jmaxlim: (Optional, default=`wang17`) Method to use for
             :math:`J_{max}` limitation
         do_ftemp_kphio: (Optional, default=True) Include the temperature-
@@ -562,9 +558,12 @@ class PModel:
 
         This method takes the light use efficiency and Vcmax per unit absorbed
         irradiance and populates the following PModel attributes:
-        :attr:`~pyrealm.pmodel.PModel.gpp`, :attr:`~pyrealm.pmodel.PModel.rd`,
-        :attr:`~pyrealm.pmodel.PModel.vcmax`,  :attr:`~pyrealm.pmodel.PModel.vcmax25`,
-        :attr:`~pyrealm.pmodel.PModel.jmax` and :attr:`~pyrealm.pmodel.PModel.gs`.
+        :attr:`~pyrealm.pmodel.pmodel.PModel.gpp`,
+        :attr:`~pyrealm.pmodel.pmodel.PModel.rd`,
+        :attr:`~pyrealm.pmodel.pmodel.PModel.vcmax`,
+        :attr:`~pyrealm.pmodel.pmodel.PModel.vcmax25`,
+        :attr:`~pyrealm.pmodel.pmodel.PModel.jmax` and
+        :attr:`~pyrealm.pmodel.pmodel.PModel.gs`.
 
         The functions finds the total absorbed irradiance (:math:`I_{abs}`) as the
         product of the photosynthetic photon flux density (PPFD, `ppfd`) and the
@@ -651,7 +650,7 @@ class PModel:
         Prints a summary of the calculated values in a PModel instance including the
         mean, range and number of nan values. This will always show efficiency variables
         (LUE and IWUE) and productivity estimates are shown if
-        :meth:`~pyrealm.pmodel.PModel.calculate_productivity` has been run.
+        :meth:`~pyrealm.pmodel.pmodel.PModel.calculate_productivity` has been run.
 
         Args:
             dp: The number of decimal places used in rounding summary stats.
@@ -783,7 +782,8 @@ class CalcOptimalChi:
         CalcOptimalChi, and also reports if the method is C4 or not.
 
         Args:
-            method: A provided method name for :class:`~pyrealm.pmodel.CalcOptimalChi`.
+            method: A provided method name for
+                :class:`~pyrealm.pmodel.pmodel.CalcOptimalChi`.
 
         Returns:
             A boolean showing if the method uses the C4 pathway.
@@ -895,8 +895,8 @@ class CalcOptimalChi:
         :meth:`~pyrealm.param_classes.PModelParams.lavergne_2020_b`).
 
         Values of :math:`\chi` and other predictions are then calculated as in
-        :meth:`~pyrealm.pmodel.CalcOptimalChi.prentice14`. This method requires that
-        `env` includes estimates of :math:`\theta` and  is incompatible with the
+        :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.prentice14`. This method requires
+        that `env` includes estimates of :math:`\theta` and  is incompatible with the
         `rootzonestress` approach.
 
         Examples:
@@ -946,17 +946,19 @@ class CalcOptimalChi:
         r"""Calculate soil moisture corrected :math:`\chi` for C4 plants.
 
         This method calculates :math:`\beta` as a function of soil moisture following
-        the equation described in the :meth:`~pyrealm.pmodel.CalcOptimalChi.lavergne20`
-        method.  However, the default coefficients of the moisture scaling from
-        :cite:`lavergne:2020a` for C3 plants are adjusted to match the theoretical
-        expectation that :math:`\beta` for C4 plants is nine times smaller than
-        :math:`\beta` for C3 plants (see :meth:`~pyrealm.pmodel.CalcOptimalChi.c4`):
-        :math:`b` is unchanged but :math:`a_{C4} = a_{C3} - log(9)`.
+        the equation described in the
+        :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20` method.  However, the
+        default coefficients of the moisture scaling from :cite:`lavergne:2020a` for C3
+        plants are adjusted to match the theoretical expectation that :math:`\beta` for
+        C4 plants is nine times smaller than :math:`\beta` for C3 plants (see
+        :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.c4`): :math:`b` is unchanged but
+        :math:`a_{C4} = a_{C3} - log(9)`.
 
         Following the calculation of :math:`\beta`, this method then follows the
-        calculations described in :meth:`~pyrealm.pmodel.CalcOptimalChi.c4_no_gamma`:
-        :math:`m_j = 1.0`  because photorespiration is negligible, but :math:`m_c` and
-        hence :math:`m_{joc}` are calculated.
+        calculations described in
+        :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.c4_no_gamma`: :math:`m_j = 1.0`
+        because photorespiration is negligible, but :math:`m_c` and hence
+        :math:`m_{joc}` are calculated.
 
         Note:
 
@@ -1014,7 +1016,7 @@ class CalcOptimalChi:
         r"""Estimate :math:`\chi` for C4 plants following :cite:`Prentice:2014bc`.
 
         Optimal :math:`\chi` is calculated as in
-        :meth:`~pyrealm.pmodel.CalcOptimalChi.prentice14`, but using a C4
+        :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.prentice14`, but using a C4
         specific estimate of the unit cost ratio :math:`\beta`, specified in
         :meth:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`.
         The default value :math:`\beta = 146 /  9 \approx 16.222`. This is
@@ -1067,8 +1069,8 @@ class CalcOptimalChi:
 
         This method assumes that photorespiration (:math:`\Gamma^\ast`) is negligible
         for C4 plants. This simplifies the calculation of :math:`\xi` and :math:`\chi`
-        compared to :meth:`~pyrealm.pmodel.CalcOptimalChi.c4`, but uses the same C4
-        specific estimate of the unit cost ratio :math:`\beta`,
+        compared to :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.c4`, but uses the same
+        C4 specific estimate of the unit cost ratio :math:`\beta`,
         :meth:`~pyrealm.param_classes.PModelParams.beta_cost_ratio_c4`.
 
           .. math:: :nowrap:
@@ -1326,7 +1328,7 @@ class JmaxLimitation:
           capacity, and
         * :math:`c`, (``pmodel_params.smith19_c_cost``) as a cost parameter
           for maintaining :math:`J_{max}`, equivalent to :math:`c^\ast = 4c`
-          in the :meth:`~pyrealm.pmodel.JmaxLimitation.wang17` method.
+          in the :meth:`~pyrealm.pmodel.pmodel.JmaxLimitation.wang17` method.
         """
 
         # Adopted from Nick Smith's code:
@@ -1387,292 +1389,3 @@ class JmaxLimitation:
         # pass here, but setting explicitly within the method for clarity.
         self.f_v = np.array([1.0])
         self.f_j = np.array([1.0])
-
-
-class C3C4Competition:
-    r"""Implementation of the C3/C4 competition model.
-
-    This class provides an implementation of the calculations of C3/C4
-    competition, described by :cite:`lavergne:2020a`. The key inputs ``ggp_c3``
-    and ``gpp_c4`` are gross primary productivity (GPP) estimates for C3 or C4
-    pathways `alone`  using the :class:`~pyrealm.pmodel.PModel`
-
-    These estimates are used to calculate the relative advantage of C4 over C3
-    photosynthesis (:math:`A_4`), the expected fraction of C4 plants in the
-    community (:math:`F_4`) and hence fraction of GPP from C4 plants as follows:
-
-    1. The proportion advantage in GPP for C4 plants is calculated as:
-
-        .. math::
-            :nowrap:
-
-            \[
-            A_4 = \frac{\text{GPP}_{C4} - \text{GPP}_{C3}}{\text{GPP}_{C3}}
-            \]
-
-    2. The proportion GPP advantage :math:`A_4` is converted to an expected
-       fraction of C4 :math:`F_4` plants using a logistic equation of
-       :math:`A_4`, where :math:`A_4` is first modulated by percentage tree
-       cover (TC):
-
-        .. math::
-            :nowrap:
-
-            \[
-                \begin{align*}
-                    A_4^\prime &= \frac{A_4}{e^ {1 / 1 + \text{TC}}} \\
-                    F_4 &= \frac{1}{1 + e^{k A_4^\prime} - q}
-                \end{align*}
-            \]
-
-        The parameters are set in the ``params`` instance and are the slope of the
-        equation (:math:`k`, ``adv_to_frac_k``) and :math:`A_4` value at the
-        midpoint of the curve (:math:`q`, ``adv_to_frac_q``).
-
-    3. A model of tree cover from C3 trees is then used to correct for shading
-       of C4 plants due to canopy closure, even when C4 photosynthesis is
-       advantagious. The estimated tree cover function is:
-
-        .. math::
-            :nowrap:
-
-                \[
-                    TC(\text{GPP}_{C3}) = a \cdot \text{GPP}_{C3} ^ b - c
-                \]
-
-       with parameters set in the `params` instance (:math:`a`, ``gpp_to_tc_a``;
-       :math:`b`, ``gpp_to_tc_b``; :math:`c`, ``gpp_to_tc_c``). The proportion of
-       GPP from C3 trees (:math:`h`) is then estimated using the predicted tree
-       cover in locations relative to a threshold GPP value (:math:`\text{GPP}_{CLO}`,
-       `c3_forest_closure_gpp`) above which canopy closure occurs. The value of
-       :math:`h` is clamped in :math:`[0, 1]`:
-
-        .. math::
-            :nowrap:
-
-                \[
-                    h = \max\left(0, \min\left(
-                        \frac{TC(\text{GPP}_{C3})}{TC(\text{GPP}_{CLO})}\right),
-                        1 \right)
-                \]
-
-       The C4 fraction is then discounted as :math:`F_4 = F_4 (1 - h)`.
-
-    4. Two masks are applied. First, :math:`F_4 = 0` in locations where the
-       mean  air temperature of the coldest month is too low for C4 plants.
-       Second, :math:`F_4` is set as unknown for croplands, where the fraction
-       is set by agricultural management, not competition.
-
-    Args:
-        gpp_c3: Total annual GPP (gC m-2 yr-1) from C3 plants alone.
-        gpp_c4: Total annual GPP (gC m-2 yr-1) from C4 plants alone.
-        treecover: Percentage tree cover (%).
-        below_t_min: A boolean mask, temperatures too low for C4 plants.
-        cropland: A boolean mask indicating cropland locations.
-        params: An instance of :class:`~pyrealm.param_classes.C3C4Params`
-            providing parameterisation for the competition model.
-    """
-
-    # Design Notes: see paper Lavergne et al. (submitted).
-    #
-    # DO (24/05/2022): I have separated out the functions for different steps
-    # into private methods, partly to keep the code cleaner, partly with a
-    # slightly hopeful idea that future users could substitute these functions
-    # via subclassing, but _mostly_ because being able to access these functions
-    # independently makes it much easier to document the steps.
-
-    # TODO - could accept PModel instances for gpp_c3 and gpp_c4 and auto-scale
-    #        gpp and check that they are c3 and c4 models.
-    #      - Would also allow the estimate isotopic discrimination to work
-    #        automatically.
-    #      - Axis argument to aggregate values along a time axis?
-    #        nansum for gpp  and nanmean for  DeltaC13/4_alone.
-
-    def __init__(
-        self,
-        gpp_c3: NDArray,
-        gpp_c4: NDArray,
-        treecover: NDArray,
-        below_t_min: NDArray,
-        cropland: NDArray,
-        params: C3C4Params = C3C4Params(),
-    ):
-        # Check inputs are congruent
-        self.shape: tuple = check_input_shapes(
-            gpp_c3, gpp_c4, treecover, cropland, below_t_min
-        )
-        self.params: C3C4Params = params
-
-        # Step 1: calculate the percentage advantage in GPP of C4 plants from
-        # annual total GPP estimates for C3 and C4 plants. This uses use
-        # np.full to handle division by zero without raising warnings
-        gpp_adv_c4 = np.full(self.shape, np.nan)
-        self.gpp_adv_c4: NDArray = np.divide(
-            gpp_c4 - gpp_c3, gpp_c3, out=gpp_adv_c4, where=gpp_c3 > 0
-        )
-        """The proportional advantage in GPP of C4 over C3 plants"""
-
-        # Step 2: calculate the initial C4 fraction based on advantage modulated
-        # by treecover.
-        frac_c4 = self._convert_advantage_to_c4_fraction(treecover=treecover)
-
-        # Step 3: calculate the proportion of trees shading C4 plants, scaling
-        # the predicted GPP to kilograms.
-        prop_trees = self._calculate_tree_proportion(gppc3=gpp_c3 / 1000)
-        frac_c4 = frac_c4 * (1 - prop_trees)
-
-        # Step 4: remove areas below minimum temperature
-        # mypy - this is a short term fix awaiting better resolution of mixed scalar and
-        #        array inputs.
-        frac_c4[below_t_min] = 0  # type: ignore
-
-        # Step 5: remove cropland areas
-        frac_c4[cropland] = np.nan  # type: ignore
-
-        self.frac_c4: NDArray = frac_c4
-        """The estimated fraction of C4 plants."""
-
-        self.gpp_c3_contrib: NDArray = gpp_c3 * (1 - self.frac_c4)
-        """The estimated contribution of C3 plants to GPP (gC m-2 yr-1)"""
-        self.gpp_c4_contrib = gpp_c4 * self.frac_c4
-        """The estimated contribution of C4 plants to GPP (gC m-2 yr-1)"""
-
-        # Define attributes used elsewhere
-        self.Delta13C_C3: NDArray
-        r"""Contribution from C3 plants to (:math:`\Delta\ce{^13C}`, permil)."""
-        self.Delta13C_C4: NDArray
-        r"""Contribution from C4 plants to (:math:`\Delta\ce{^13C}`, permil)."""
-        self.d13C_C3: NDArray
-        r"""Contribution from C3 plants to (:math:`d\ce{^13C}`, permil)."""
-        self.d13C_C4: NDArray
-        r"""Contribution from C3 plants to (:math:`d\ce{^13C}`, permil)."""
-
-    def __repr__(self) -> str:
-        """Generates a string representation of a C3C4Competition instance."""
-        return f"C3C4Competition(shape={self.shape})"
-
-    def _convert_advantage_to_c4_fraction(self, treecover: NDArray) -> NDArray:
-        """Convert C4 GPP advantage to C4 fraction.
-
-        This method calculates an initial estimate of the fraction of C4 plants based on
-        the proportional GPP advantage from C4 photosynthesis. The conversion is
-        modulated by the proportion treecover.
-
-        Args:
-            treecover: The proportion tree cover at modelled locations.
-
-        Returns:
-            The estimated C4 fraction given the estimated C4 GPP advantage and tree
-            cover.
-        """
-
-        frac_c4 = 1.0 / (
-            1.0
-            + np.exp(
-                -self.params.adv_to_frac_k
-                * (
-                    (self.gpp_adv_c4 / np.exp(1 / (1 + treecover)))
-                    - self.params.adv_to_frac_q
-                )
-            )
-        )
-
-        return frac_c4
-
-    def _calculate_tree_proportion(self, gppc3: NDArray) -> NDArray:
-        """Calculate the proportion of GPP from C3 trees.
-
-        This method calculates the proportional impact of forest closure by C3 trees on
-        the fraction of C4 plants in the community. A statistical model is used to
-        predict both forest cover from the GPP for C3 plants and for a threshold value
-        indicating closed canopy forest. The ratio of these two values is used to
-        indicate the proportion of GPP from trees.
-
-        Note that the GPP units here are in **kilograms** per metre squared per year.
-
-        Args:
-            gppc3: The estimated GPP for C3 plants (kg m-2 yr-1).
-        """
-
-        prop_trees = (
-            self.params.gpp_to_tc_a * np.power(gppc3, self.params.gpp_to_tc_b)
-            + self.params.gpp_to_tc_c
-        ) / (
-            self.params.gpp_to_tc_a
-            * np.power(self.params.c3_forest_closure_gpp, self.params.gpp_to_tc_b)
-            + self.params.gpp_to_tc_c
-        )
-        prop_trees = np.clip(prop_trees, 0, 1)
-
-        return prop_trees
-
-    def estimate_isotopic_discrimination(
-        self, d13CO2: NDArray, Delta13C_C3_alone: NDArray, Delta13C_C4_alone: NDArray
-    ) -> None:
-        r"""Estimate CO2 isotopic discrimination values.
-
-        Creating an instance of :class:`~pyrealm.pmodel.CalcCarbonIsotopes` from a
-        :class:`~pyrealm.pmodel.PModel` instance provides estimated total annual
-        descrimination against Carbon 13 (:math:`\Delta\ce{^13C}`) for a single
-        photosynthetic pathway.
-
-        This method allows predictions from C3 and C4 pathways to be combined to
-        calculate the contribution from C3 and C4 plants given the estimated fraction of
-        C4 plants. It also calculates the contributions to annual stable carbon isotopic
-        composition (:math:`d\ce{^13C}`).
-
-        Calling this method populates the attributes
-        :attr:`~pyrealm.C3C4Competition.Delta13C_C3`,
-        :attr:`~pyrealm.C3C4Competition.Delta13C_C4`,
-        :attr:`~pyrealm.C3C4Competition.d13C_C3`, and
-        :attr:`~pyrealm.C3C4Competition.d13C_C4`.
-
-        Args:
-            d13CO2: stable carbon isotopic composition of atmospheric CO2
-                (permil)
-            Delta13C_C3_alone: annual discrimination against 13C for C3
-                plants (permil)
-            Delta13C_C4_alone: annual discrimination against 13C for C4
-                plants (permil)
-        """
-
-        _ = check_input_shapes(
-            self.gpp_adv_c4, d13CO2, Delta13C_C3_alone, Delta13C_C4_alone
-        )
-
-        self.Delta13C_C3 = Delta13C_C3_alone * (1 - self.frac_c4)
-        self.Delta13C_C4 = Delta13C_C4_alone * self.frac_c4
-
-        self.d13C_C3 = (d13CO2 - self.Delta13C_C3) / (1 + self.Delta13C_C3 / 1000)
-        self.d13C_C4 = (d13CO2 - self.Delta13C_C4) / (1 + self.Delta13C_C4 / 1000)
-
-    def summarize(self, dp: int = 2) -> None:
-        """Print summary of estimates of C3/C4 competition.
-
-        Prints a summary of the calculated values in a C3C4Competition instance
-        including the mean, range and number of nan values. This will always show
-        fraction of C4 and GPP estaimates and isotopic estimates are shown if
-        :meth:`~pyrealm.pmodel.C3C4Competition.estimate_isotopic_discrimination` has
-        been run.
-
-        Args:
-            dp: The number of decimal places used in rounding summary stats.
-        """
-
-        attrs = [
-            ("frac_c4", "-"),
-            ("gpp_c3_contrib", "gC m-2 yr-1"),
-            ("gpp_c4_contrib", "gC m-2 yr-1"),
-        ]
-
-        if hasattr(self, "d13C_C3"):
-            attrs.extend(
-                [
-                    ("Delta13C_C3", "permil"),
-                    ("Delta13C_C4", "permil"),
-                    ("d13C_C3", "permil"),
-                    ("d13C_C4", "permil"),
-                ]
-            )
-
-        summarize_attrs(self, attrs, dp=dp)

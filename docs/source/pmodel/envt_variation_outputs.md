@@ -172,7 +172,7 @@ pyplot.show()
 ## Efficiency outputs
 
 Two of the key outputs are measures of efficiency and are estimated simply by creating a
-{class}`~pyrealm.pmodel.PModel` instance without needing to provide estimates of
+{class}`~pyrealm.pmodel.pmodel.PModel` instance without needing to provide estimates of
 absorbed irradiance.
 
 ### Light use efficiency (``lue``, LUE)
@@ -208,13 +208,13 @@ fraction of absorbed photosynthetically active radiation (`fapar`) and the
 photosynthetic photon flux density (`ppfd`). The product of these two variables
 is an estimate of absorbed irradiance ($I_{abs}$).
 
-The {meth}`~pyrealm.pmodel.PModelEnvironment.estimate_productivity` method is
+The {meth}`~pyrealm.pmodel.pmodel.PModelEnvironment.estimate_productivity` method is
 used to provide these estimates to the P Model instance. Once this has been run,
 the following additional variables are populated.
 
 ```{warning}
 
-To use {meth}`~pyrealm.pmodel.PModel.estimate_productivity`, the estimated PPFD
+To use {meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`, the estimated PPFD
 must be expressed as **µmol m-2 s-1**.
 
 Estimates of PPFD sometimes use different temporal or spatial scales - for
@@ -241,7 +241,7 @@ irradiance values at the top of a tropical rainforest canopy:
 
 If required, productivity estimates per unit absorbed irradiance can be simply
 calculated using ``fapar=1, ppfd=1``, which are the default values to
-{meth}`~pyrealm.pmodel.PModelEnvironment.estimate_productivity`.
+{meth}`~pyrealm.pmodel.pmodel.PModelEnvironment.estimate_productivity`.
 
 ### Gross primary productivity (``gpp``, GPP)
 

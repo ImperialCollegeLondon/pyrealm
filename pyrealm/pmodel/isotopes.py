@@ -1,6 +1,6 @@
 """The :mod:`~pyrealm.pmodel.isotopes` submodule provides the
-:class:`~pyrealm.pmodel.CalcCarbonIsotopes` class, which is used to calculate isotopic
-discrimination within the PModel
+:class:`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes` class, which is used to calculate
+isotopic discrimination within the PModel
 """  # noqa D210, D415
 
 from warnings import warn
@@ -17,7 +17,7 @@ class CalcCarbonIsotopes:
 
     This class estimates the fractionation of atmospheric CO2 by photosynthetic
     pathways to calculate the isotopic compositions and discrimination given the
-    predicted optimal chi from a :class:`~pyrealm.pmodel.PModel` instance.
+    predicted optimal chi from a :class:`~pyrealm.pmodel.pmodel.PModel` instance.
 
     Discrimination against carbon 13 (:math:`\Delta\ce{^{13}C}`)  is calculated
     using C3 and C4 pathways specific methods, and then discrimination against
@@ -28,7 +28,7 @@ class CalcCarbonIsotopes:
     also reports the isotopic composition of leaves and wood.
 
     Args:
-        pmodel: A :class:`~pyrealm.pmodel.PModel` instance providing the
+        pmodel: A :class:`~pyrealm.pmodel.pmodel.PModel` instance providing the
             photosynthetic pathway and estimated optimal chi.
         d13CO2: Atmospheric isotopic ratio for Carbon 13
             (:math:`\delta\ce{^{13}C}`, permil).
