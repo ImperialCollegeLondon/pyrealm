@@ -23,8 +23,8 @@ to help guide when inputs should be filter or clipped to remove problem values.
 
 - Temperature (°C): the range of air temperatures in global datasets can easily include
   values as extreme as -80 °C to 50 °C. However, the water density calculation is
-  unstable below -25°C and so {class}`~pyrealm.pmodel.PModelEnv` _will not_ accept
-  values below -25°C.
+  unstable below -25°C and so {class}`~pyrealm.pmodel.pmodel.PModelEnvironment` _will
+  not_ accept values below -25°C.
 - Atmospheric Pressure (Pa): at sea-level, extremes of 87000 Pa to 108400 Pa have been
   observed but with elevation can fall much lower, down to ~34000 Pa at the summit of Mt
   Everest.
@@ -162,7 +162,7 @@ tc_1d = np.linspace(-40, 20, n_pts)
 for patm in [3, 7, 9, 11, 13]:
     ax.plot(
       tc_1d,
-      pmodel.calc_density_h2o(tc_1d, patm * 1000, safe=False), 
+      calc_density_h2o(tc_1d, patm * 1000, safe=False), 
       label=f'{patm} kPa'
     )
 

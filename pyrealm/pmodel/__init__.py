@@ -40,4 +40,9 @@ from pyrealm.pmodel.functions import (
     calc_viscosity_h2o,
 )
 from pyrealm.pmodel.isotopes import CalcCarbonIsotopes
-from pyrealm.pmodel.pmodel import PModel, PModelEnvironment
+from pyrealm.pmodel.pmodel import (
+    CalcOptimalChi,
+    JmaxLimitation,
+    PModel,
+    PModelEnvironment,
+)
