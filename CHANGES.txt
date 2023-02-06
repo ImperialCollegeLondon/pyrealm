@@ -114,7 +114,7 @@
         - Using importlib to single source package version from pyproject.toml
         - Moved test/ to tests/ and added __init__.py - module paths in testing.
         - Partial restructure of TModel code and extended test suite
-        - Extended test suite for hygrometric functions, bug fix in HygroParams.
+        - Extended test suite for hygrometric functions, bug fix in HygroConst.
         - Better definition and handling of class attributes to avoid unnecessary
           Optional types in __init__ methods.
         - Updated docstrings, particularly class attributes now docstringed in place.

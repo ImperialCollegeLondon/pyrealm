@@ -23,7 +23,7 @@ def calc_vp_sat(ta: NDArray, const: HygroConst = HygroConst()) -> NDArray:
         P = a \exp\(\frac{b - T}{T + c}\),
 
     where :math:`a,b,c` are defined in
-    :class:`~pyrealm.constants.hygro_const.HygroParams`.
+    :class:`~pyrealm.constants.hygro_const.HygroConst`.
 
     Args:
         ta: The air temperature const: An object of
@@ -39,12 +39,12 @@ def calc_vp_sat(ta: NDArray, const: HygroConst = HygroConst()) -> NDArray:
         >>> temp = np.array([21])
         >>> round(calc_vp_sat(temp), 6)
         2.480904
-        >>> from pyrealm.constants import HygroParams
-        >>> allen = HygroParams(magnus_option='Allen1998')
-        >>> round(calc_vp_sat(temp, hygro_params=allen), 6)
+        >>> from pyrealm.constants import HygroConst
+        >>> allen = HygroConst(magnus_option='Allen1998')
+        >>> round(calc_vp_sat(temp, const=allen), 6)
         2.487005
-        >>> alduchov = HygroParams(magnus_option='Alduchov1996')
-        >>> round(calc_vp_sat(temp, hygro_params=alduchov), 6)
+        >>> alduchov = HygroConst(magnus_option='Alduchov1996')
+        >>> round(calc_vp_sat(temp, const=alduchov), 6)
         2.481888
     """
 
@@ -63,7 +63,7 @@ def convert_vp_to_vpd(
     Args:
         vp: The vapour pressure in kPa
         ta: The air temperature in °C
-        hygro_params: An object of class ~`pyrealm.constants.hygro_const.HygroParams`
+        const: An object of class ~`pyrealm.constants.hygro_const.HygroConst`
             giving the settings to be used in conversions.
 
     Returns:
@@ -75,9 +75,9 @@ def convert_vp_to_vpd(
         >>> temp = np.array([21])
         >>> round(convert_vp_to_vpd(vp, temp), 7)
         0.5809042
-        >>> from pyrealm.constants import HygroParams
-        >>> allen = HygroParams(magnus_option='Allen1998')
-        >>> round(convert_vp_to_vpd(vp, temp, hygro_params=allen), 7)
+        >>> from pyrealm.constants import HygroConst
+        >>> allen = HygroConst(magnus_option='Allen1998')
+        >>> round(convert_vp_to_vpd(vp, temp, const=allen), 7)
         0.5870054
     """
     vp_sat = calc_vp_sat(ta, const=const)
@@ -93,7 +93,7 @@ def convert_rh_to_vpd(
     Args:
         rh: The relative humidity (proportion in (0,1))
         ta: The air temperature in °C
-        hygro_params: An object of class ~`pyrealm.constants.hygro_const.HygroParams`
+        const: An object of class ~`pyrealm.constants.hygro_const.HygroConst`
             giving the settings to be used in conversions.
 
     Returns:
@@ -105,8 +105,8 @@ def convert_rh_to_vpd(
         >>> temp = np.array([21])
         >>> round(convert_rh_to_vpd(rh, temp), 7)
         0.7442712
-        >>> from pyrealm.constants import HygroParams
-        >>> allen = HygroParams(magnus_option='Allen1998')
+        >>> from pyrealm.constants import HygroConst
+        >>> allen = HygroConst(magnus_option='Allen1998')
         >>> round(convert_rh_to_vpd(rh, temp, hygro_params=allen), 7)
         0.7461016
         >>> import sys; sys.stderr = sys.stdout
@@ -131,7 +131,7 @@ def convert_sh_to_vp(
     Args:
         sh: The specific humidity in kg kg-1
         patm: The atmospheric pressure in kPa
-        hygro_params: An object of class ~`pyrealm.constants.hygro_const.HygroParams`
+        const: An object of class ~`pyrealm.constants.hygro_const.HygroConst`
             giving the settings to be used in conversions.
 
     Returns:
@@ -157,7 +157,7 @@ def convert_sh_to_vpd(
         sh: The specific humidity in kg kg-1
         ta: The air temperature in °C
         patm: The atmospheric pressure in kPa
-        hygro_params: An object of class ~`pyrealm.constants.hygro_const.HygroParams`
+        hygro_params: An object of class ~`pyrealm.constants.hygro_const.HygroConst`
             giving the settings to be used in conversions.
 
     Returns:
@@ -170,8 +170,8 @@ def convert_sh_to_vpd(
         >>> patm = np.array([99.024])
         >>> round(convert_sh_to_vpd(sh, temp, patm), 6)
         1.529159
-        >>> from pyrealm.constants import HygroParams
-        >>> allen = HygroParams(magnus_option='Allen1998')
+        >>> from pyrealm.constants import HygroConst
+        >>> allen = HygroConst(magnus_option='Allen1998')
         >>> round(convert_sh_to_vpd(sh, temp, patm, hygro_params=allen), 5)
         1.53526
     """

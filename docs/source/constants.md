@@ -134,6 +134,6 @@ pprint.pprint(traits.to_dict())
 ## Hygro parameters
 
 ```{eval-rst}
-.. autoclass:: pyrealm.constants.hygro_const.HygroParams
+.. autoclass:: pyrealm.constants.hygro_const.HygroConst
     :members:
 ```
