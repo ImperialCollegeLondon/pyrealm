@@ -113,8 +113,11 @@
         - Using importlib to single source package version from pyproject.toml
         - Moved test/ to tests/ and added __init__.py - module paths in testing.
         - Partial restructure of TModel code and extended test suite
-        - Extended test suite for psychrometric functions, bug fix in HygroParams.
+        - Extended test suite for hygrometric functions, bug fix in HygroParams.
         - Better definition and handling of class attributes to avoid unnecessary
           Optional types in __init__ methods.
         - Updated docstrings, particularly class attributes now docstringed in place.
         - bounds_checker module merged into utilities module
+        - Huge pmodel.py file split into a pmodel module and pmodel, functions, isotopes
+          and competition submodules. All members still exposed via pyrealm.pmodel for
+          ease of use/backwards compatibility. References to API links updated.
