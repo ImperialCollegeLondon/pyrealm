@@ -48,11 +48,12 @@ Note that the default values for C3 photosynthesis give **non-zero values below 
 :tags: [hide-input]
 from matplotlib import pyplot
 import numpy as np
-from pyrealm import pmodel
+from pyrealm.pmodel import calc_ftemp_kphio, calc_gammastar, calc_kmm, calc_density_h2o
+from pyrealm.param_classes import PModelParams
 %matplotlib inline
 
 # get the default set of P Model parameters
-pmodel_param = pmodel.PModelParams()
+pmodel_param = PModelParams()
 
 # Set the resolution of examples
 n_pts = 101
@@ -60,8 +61,8 @@ n_pts = 101
 tc_1d = np.linspace(-80, 100, n_pts)
 
 # Calculate temperature dependence of quantum yield efficiency
-fkphio_c3 = pmodel.calc_ftemp_kphio(tc_1d, c4=False)
-fkphio_c4 = pmodel.calc_ftemp_kphio(tc_1d, c4=True)
+fkphio_c3 = calc_ftemp_kphio(tc_1d, c4=False)
+fkphio_c4 = calc_ftemp_kphio(tc_1d, c4=True)
 
 # Create a line plot of ftemp kphio
 pyplot.plot(tc_1d, fkphio_c3, label='C3')
@@ -85,7 +86,7 @@ that again, $\Gamma^*$ has non-zero values for sub-zero temperatures.
 :tags: [hide-input]
 # Calculate gammastar at different pressures
 for patm in [3, 7, 9, 11, 13]:
-    pyplot.plot(tc_1d, pmodel.calc_gammastar(tc_1d, patm * 1000), label=f'{patm} kPa')
+    pyplot.plot(tc_1d, calc_gammastar(tc_1d, patm * 1000), label=f'{patm} kPa')
 
 # Create a contour plot of gamma
 pyplot.title('Temperature and pressure dependence of $\Gamma^*$')
@@ -107,7 +108,7 @@ ax = pyplot.gca()
 
 # Calculate K_mm
 for patm in [3, 7, 9, 11, 13]:
-    ax.plot(tc_1d, pmodel.calc_kmm(tc_1d, patm * 1000), label=f'{patm} kPa')
+    ax.plot(tc_1d, calc_kmm(tc_1d, patm * 1000), label=f'{patm} kPa')
 
 # Create a contour plot of gamma
 ax.set_title('Temperature and pressure dependence of KMM')
@@ -133,7 +134,7 @@ ax = pyplot.gca()
 for patm in [3, 7, 9, 11, 13]:
     ax.plot(
       tc_1d, 
-      pmodel.calc_density_h2o(tc_1d, patm * 1000, safe=False), 
+      calc_density_h2o(tc_1d, patm * 1000, safe=False), 
       label=f'{patm} kPa'
     )
 

@@ -23,11 +23,11 @@ kernelspec:
 
 from matplotlib import pyplot
 import numpy as np
-from pyrealm import pmodel
+from pyrealm.param_classes import PModelParams
 %matplotlib inline
 
 # get the default set of P Model parameters
-pmodel_param = pmodel.PModelParams()
+pmodel_param = PModelParams()
 
 # Set the resolution of examples
 n_pts = 201
