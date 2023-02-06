@@ -100,7 +100,7 @@ soilm = np.linspace(0, 0.7, 101)
 for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
 
     soilmstress = pmodel.calc_soilmstress(
-        soilm=soilm, meanalpha=mean_alpha, pmodel_params=const
+        soilm=soilm, meanalpha=mean_alpha, const=const
     )
     ax2.plot(soilm, soilmstress, label=r"$\bar{{\alpha}}$ = {}".format(mean_alpha))
 

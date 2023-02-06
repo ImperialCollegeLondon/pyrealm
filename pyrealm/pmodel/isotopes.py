@@ -108,7 +108,7 @@ class CalcCarbonIsotopes:
         Examples:
             >>> ppar = PModelParams(beta_cost_ratio_c4=35)
             >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
-            ...                         vpd=1000, pmodel_params=ppar)
+            ...                         vpd=1000, const=ppar)
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
             >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
             >>> round(mod_c4_delta.Delta13C, 4)
@@ -138,7 +138,7 @@ class CalcCarbonIsotopes:
         Examples:
             >>> ppar = PModelParams(beta_cost_ratio_c4=35)
             >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
-            ...                         vpd=1000, pmodel_params=ppar)
+            ...                         vpd=1000, const=ppar)
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
             >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
             >>> # round(mod_c4_delta.Delta13C, 4)  # NOT CHECKED 5.2753

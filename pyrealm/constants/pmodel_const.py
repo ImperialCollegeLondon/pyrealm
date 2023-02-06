@@ -20,16 +20,16 @@ class PModelConst(ConstantsClass):
     Density of water:
         Values for the Tumlirz equation taken from Table 5 of :cite:`Fisher:1975tm`:
         (:attr:`~pyrealm.constants.PModelConst.fisher_dial_lambda`,
-         :attr:`~pyrealm.constants.PModelConst.fisher_dial_Po`,
-         :attr:`~pyrealm.constants.PModelConst.fisher_dial_Vinf`)
+        :attr:`~pyrealm.constants.PModelConst.fisher_dial_Po`,
+        :attr:`~pyrealm.constants.PModelConst.fisher_dial_Vinf`)
 
     Viscosity of water:
         Values for the parameterisation taken from Table 2 and 3 of
         :cite:`Huber:2009fy`: (:attr:`~pyrealm.constants.PModelConst.huber_tk_ast`,
-         :attr:`~pyrealm.constants.PModelConst.huber_rho_ast`,
-         :attr:`~pyrealm.constants.PModelConst.huber_mu_ast`,
-         :attr:`~pyrealm.constants.PModelConst.huber_H_i`,
-         :attr:`~pyrealm.constants.PModelConst.huber_H_ij`)
+        :attr:`~pyrealm.constants.PModelConst.huber_rho_ast`,
+        :attr:`~pyrealm.constants.PModelConst.huber_mu_ast`,
+        :attr:`~pyrealm.constants.PModelConst.huber_H_i`,
+        :attr:`~pyrealm.constants.PModelConst.huber_H_ij`)
 
     Temperature scaling of dark respiration:
         Values taken from :cite:`Heskel:2016fg`:
@@ -76,8 +76,8 @@ class PModelConst(ConstantsClass):
         math:`\beta_{C4} \approx \beta_{C3} / 9 \approx 146 /  9 \approx 16.222`.
 
         Additional constants here set the response of beta to soil moisture for the
-        :method:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c3` method and for
-        :method:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c4`.
+        :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c3` method and for
+        :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c4`.
 
         (:attr:`~pyrealm.constants.PModelConst.beta_cost_ratio_prentice14`,
         :attr:`~pyrealm.constants.PModelConst.beta_cost_ratio_c4`,

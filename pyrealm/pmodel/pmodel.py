@@ -266,7 +266,7 @@ class PModel:
       following :cite:`Atkin:2015hk`, where :math:`fr(t)` is the instantaneous
       temperature response of dark respiration implemented in
       :func:`~pyrealm.pmodel.calc_ftemp_inst_rd`, and :math:`b_0` is set in
-      :attr:`~pyrealm.pmodel_params.atkin_rd_to_vcmax`.
+      :attr:`~pyrealm.constants.pmodel_const.PModelConst.atkin_rd_to_vcmax`.
 
     * Stomatal conductance (:math:`g_s`), calculated as:
 

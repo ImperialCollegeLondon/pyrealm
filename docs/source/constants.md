@@ -76,7 +76,7 @@ All parameter classes inherit methods from the base
 parameter settings to dictionaries and to JSON formatted files.
 
 ```{eval-rst}
-.. autoclass:: pyrealm.constants.base.ConstantClass
+.. autoclass:: pyrealm.constants.base.ConstantsClass
     :members: from_dict, to_dict, from_json, to_json
 ```
 
