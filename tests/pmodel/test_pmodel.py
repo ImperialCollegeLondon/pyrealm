@@ -6,8 +6,6 @@ from contextlib import contextmanager
 import numpy as np
 import pytest
 
-from pyrealm import pmodel
-
 # flake8: noqa D103 - docstrings on unit tests
 
 # RPMODEL bugs
@@ -86,8 +84,10 @@ def values():
     ],
 )
 def test_calc_density_h2o(values, tc, patm, context_manager, expvals):
+    from pyrealm.pmodel import calc_density_h2o
+
     with context_manager:
-        ret = pmodel.calc_density_h2o(tc=values[tc], patm=values[patm])
+        ret = calc_density_h2o(tc=values[tc], patm=values[patm])
         if expvals is not None:
             assert np.allclose(ret, values[expvals])
 
@@ -105,7 +105,9 @@ def test_calc_density_h2o(values, tc, patm, context_manager, expvals):
     ],
 )
 def test_calc_ftemp_arrh(values, tk, expvars):
-    ret = pmodel.calc_ftemp_arrh(tk=values[tk], ha=values["KattgeKnorr_ha"])
+    from pyrealm.pmodel import calc_ftemp_arrh
+
+    ret = calc_ftemp_arrh(tk=values[tk], ha=values["KattgeKnorr_ha"])
     assert np.allclose(ret, values[expvars])
 
 
@@ -122,7 +124,9 @@ def test_calc_ftemp_arrh(values, tk, expvars):
     ],
 )
 def test_calc_ftemp_inst_vcmax(values, tc, expvars):
-    ret = pmodel.calc_ftemp_inst_vcmax(values[tc])
+    from pyrealm.pmodel import calc_ftemp_inst_vcmax
+
+    ret = calc_ftemp_inst_vcmax(values[tc])
     assert np.allclose(ret, values[expvars])
 
 
@@ -143,7 +147,9 @@ def test_calc_ftemp_inst_vcmax(values, tc, expvars):
     ],
 )
 def test_calc_ftemp_kphio(values, tc, c4, expvars):
-    ret = pmodel.calc_ftemp_kphio(tc=values[tc], c4=c4)
+    from pyrealm.pmodel import calc_ftemp_kphio
+
+    ret = calc_ftemp_kphio(tc=values[tc], c4=c4)
     assert np.allclose(ret, values[expvars])
 
 
@@ -162,8 +168,10 @@ def test_calc_ftemp_kphio(values, tc, c4, expvars):
     ],
 )
 def test_calc_gammastar(values, tc, patm, context_manager, expvals):
+    from pyrealm.pmodel import calc_gammastar
+
     with context_manager:
-        ret = pmodel.calc_gammastar(tc=values[tc], patm=values[patm])
+        ret = calc_gammastar(tc=values[tc], patm=values[patm])
         if expvals is not None:
             assert np.allclose(ret, values[expvals])
 
@@ -183,8 +191,10 @@ def test_calc_gammastar(values, tc, patm, context_manager, expvals):
     ],
 )
 def test_calc_kmm(values, tc, patm, context_manager, expvals):
+    from pyrealm.pmodel import calc_kmm
+
     with context_manager:
-        ret = pmodel.calc_kmm(tc=values[tc], patm=values[patm])
+        ret = calc_kmm(tc=values[tc], patm=values[patm])
         if expvals:
             assert np.allclose(ret, values[expvals])
 
@@ -204,8 +214,10 @@ def test_calc_kmm(values, tc, patm, context_manager, expvals):
     ],
 )
 def test_calc_soilmstress(values, soilm, meanalpha, context_manager, expvals):
+    from pyrealm.pmodel import calc_soilmstress
+
     with context_manager:
-        ret = pmodel.calc_soilmstress(soilm=values[soilm], meanalpha=values[meanalpha])
+        ret = calc_soilmstress(soilm=values[soilm], meanalpha=values[meanalpha])
         if expvals:
             assert np.allclose(ret, values[expvals])
 
@@ -225,8 +237,10 @@ def test_calc_soilmstress(values, soilm, meanalpha, context_manager, expvals):
     ],
 )
 def test_calc_viscosity_h2o(values, tc, patm, context_manager, expvals):
+    from pyrealm.pmodel import calc_viscosity_h2o
+
     with context_manager:
-        ret = pmodel.calc_viscosity_h2o(tc=values[tc], patm=values[patm])
+        ret = calc_viscosity_h2o(tc=values[tc], patm=values[patm])
         if expvals:
             assert np.allclose(ret, values[expvals])
 
@@ -244,7 +258,9 @@ def test_calc_viscosity_h2o(values, tc, patm, context_manager, expvals):
     ],
 )
 def test_calc_patm(values, elev, expvals):
-    ret = pmodel.calc_patm(elv=values[elev])
+    from pyrealm.pmodel import calc_patm
+
+    ret = calc_patm(elv=values[elev])
     assert np.allclose(ret, values[expvals])
 
 
@@ -263,8 +279,10 @@ def test_calc_patm(values, elev, expvals):
     ],
 )
 def test_calc_co2_to_ca(values, co2, patm, context_manager, expvals):
+    from pyrealm.pmodel import calc_co2_to_ca
+
     with context_manager:
-        ret = pmodel.calc_co2_to_ca(co2=values[co2], patm=values[patm])
+        ret = calc_co2_to_ca(co2=values[co2], patm=values[patm])
         if expvals:
             assert np.allclose(ret, values[expvals])
 
@@ -354,12 +372,14 @@ def test_calc_co2_to_ca(values, co2, patm, context_manager, expvals):
 def test_calc_optimal_chi(
     values, tc, patm, co2, vpd, method, context_manager, expvalues
 ):
+    from pyrealm.pmodel import CalcOptimalChi, PModelEnvironment
+
     with context_manager:
-        env = pmodel.PModelEnvironment(
+        env = PModelEnvironment(
             tc=values[tc], patm=values[patm], vpd=values[vpd], co2=values[co2]
         )
 
-        ret = pmodel.CalcOptimalChi(env, method=method)
+        ret = CalcOptimalChi(env, method=method)
 
         if expvalues is not None:
             expected = values[expvalues]
@@ -367,28 +387,6 @@ def test_calc_optimal_chi(
             assert np.allclose(ret.mj, expected["mj"])
             assert np.allclose(ret.mc, expected["mc"])
             assert np.allclose(ret.mjoc, expected["mjoc"])
-
-
-# def test_calc_optimal_chi_restruct(values):
-#     """
-#     At version 0.6.0, we revised some calculations ported over from the
-#     rpmodel, which had odd complications. This test was used to run a
-#     comparison between the original code and more 'classic' descriptions of
-#     the equations. The two versions were shown to be equivalent and the old
-#     version was removed in [develop 497cb15].
-#     """
-#     env = pmodel.PModelEnvironment(tc=values['tc_ar'],
-#                                     patm=values['patm_ar'],
-#                                     vpd=values['vpd_ar'],
-#                                     co2=values['co2_ar'])
-
-#     reto = pmodel.CalcOptimalChi(env, method='prentice14_old')
-#     retn = pmodel.CalcOptimalChi(env, method='prentice14')
-
-#     assert np.allclose(reto.chi,retn.chi)
-#     assert np.allclose(reto.mj,retn.mj)
-#     assert np.allclose(reto.mc,retn.mc)
-#     assert np.allclose(reto.mjoc,retn.mjoc)
 
 
 # ------------------------------------------
@@ -430,6 +428,13 @@ def test_jmax_limitation(
     # - these have all been synchronised so that anything with type 'mx' or 'ar'
     #   used the tc_ar input
 
+    from pyrealm.pmodel import (
+        CalcOptimalChi,
+        JmaxLimitation,
+        PModelEnvironment,
+        calc_ftemp_kphio,
+    )
+
     if c4:
         oc_method = "c4"
     else:
@@ -438,18 +443,18 @@ def test_jmax_limitation(
     if not ftemp_kphio:
         ftemp_kphio = 1.0
     elif tc == "tc_sc":
-        ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values[tc], c4=c4)
+        ftemp_kphio = calc_ftemp_kphio(tc=values[tc], c4=c4)
     else:
-        ftemp_kphio = pmodel.calc_ftemp_kphio(tc=values[tc], c4=c4)
+        ftemp_kphio = calc_ftemp_kphio(tc=values[tc], c4=c4)
 
     # Optimal Chi
-    env = pmodel.PModelEnvironment(
+    env = PModelEnvironment(
         tc=values[tc], patm=values[patm], vpd=values[vpd], co2=values[co2]
     )
 
-    optchi = pmodel.CalcOptimalChi(env, method=oc_method)
+    optchi = CalcOptimalChi(env, method=oc_method)
 
-    jmax = pmodel.JmaxLimitation(optchi, method=jmax_method)
+    jmax = JmaxLimitation(optchi, method=jmax_method)
 
     # Find the expected values, extracting the combination from the request
     name = request.node.name
@@ -506,7 +511,9 @@ def test_jmax_limitation(
     ids=["sc", "ar"],
 )
 def test_pmodelenvironment(values, tc, vpd, co2, patm, ca, kmm, gammastar, ns_star):
-    ret = pmodel.PModelEnvironment(
+    from pyrealm.pmodel import PModelEnvironment
+
+    ret = PModelEnvironment(
         tc=values[tc], patm=values[patm], vpd=values[vpd], co2=values[co2]
     )
 
@@ -516,25 +523,31 @@ def test_pmodelenvironment(values, tc, vpd, co2, patm, ca, kmm, gammastar, ns_st
     assert np.allclose(ret.ca, values[ca])
 
 
-def test_pmodelenvironment_constraint():
-    with pytest.warns(UserWarning):
-        ret = pmodel.PModelEnvironment(
-            tc=np.array([-15, 5, 10, 15, 20]), vpd=100000, co2=400, patm=101325
-        )
+@pytest.mark.parametrize(
+    argnames="inputs,context_manager",
+    argvalues=[
+        pytest.param(
+            dict(tc=np.array([-15, 5, 10, 15, 20]), vpd=100000, co2=400, patm=101325),
+            pytest.warns(UserWarning),
+            id="warning",
+        ),
+        pytest.param(
+            dict(tc=np.array([-15, 5, 10, 15, 20]), vpd=-1, co2=400, patm=101325),
+            pytest.raises(ValueError),
+            id="dewpoint_issues",
+        ),
+        pytest.param(
+            dict(tc=np.array([-35, 5, 10, 15, 20]), vpd=1000, co2=400, patm=101325),
+            pytest.raises(ValueError),
+            id="too_cold",
+        ),
+    ],
+)
+def test_pmodelenvironment_exception(inputs, context_manager):
+    from pyrealm.pmodel import PModelEnvironment
 
-
-def test_pmodelenvironment_toocold():
-    with pytest.raises(ValueError):
-        ret = pmodel.PModelEnvironment(
-            tc=np.array([-35, 5, 10, 15, 20]), vpd=1000, co2=400, patm=101325
-        )
-
-
-def test_pmodelenvironment_dewpoint():
-    with pytest.raises(ValueError):
-        ret = pmodel.PModelEnvironment(
-            tc=np.array([-15, 5, 10, 15, 20]), vpd=-1, co2=400, patm=101325
-        )
+    with context_manager:
+        ret = PModelEnvironment(**inputs)
 
 
 # ------------------------------------------
@@ -554,14 +567,16 @@ def test_pmodelenvironment_dewpoint():
 def pmodelenv(values):
     """Fixture to create PModelEnvironments with scalar and array inputs"""
 
-    sc = pmodel.PModelEnvironment(
+    from pyrealm.pmodel import PModelEnvironment
+
+    sc = PModelEnvironment(
         tc=values["tc_sc"],
         vpd=values["vpd_sc"],
         co2=values["co2_sc"],
         patm=values["patm_sc"],
     )
 
-    ar = pmodel.PModelEnvironment(
+    ar = PModelEnvironment(
         tc=values["tc_ar"],
         vpd=values["vpd_ar"],
         co2=values["co2_ar"],
@@ -580,14 +595,14 @@ def pmodelenv(values):
 def test_pmodel_class_c3(
     request, values, pmodelenv, soilmstress, ftemp_kphio, luevcmax_method, environ
 ):
+    from pyrealm.pmodel import PModel, calc_soilmstress
+
     if soilmstress:
-        soilmstress = pmodel.calc_soilmstress(
-            values["soilm_sc"], values["meanalpha_sc"]
-        )
+        soilmstress = calc_soilmstress(values["soilm_sc"], values["meanalpha_sc"])
     else:
         soilmstress = np.array([1.0])
 
-    ret = pmodel.PModel(
+    ret = PModel(
         pmodelenv[environ],
         kphio=0.05,
         soilmstress=soilmstress,
@@ -674,10 +689,10 @@ def test_pmodel_class_c3(
 @pytest.mark.parametrize("ftemp_kphio", [True, False], ids=["fkphio-on", "fkphio-off"])
 @pytest.mark.parametrize("environ", ["sc", "ar"], ids=["sc", "ar"])
 def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, environ):
+    from pyrealm.pmodel import PModel, calc_ftemp_kphio, calc_soilmstress
+
     if soilmstress:
-        soilmstress = pmodel.calc_soilmstress(
-            values["soilm_sc"], values["meanalpha_sc"]
-        )
+        soilmstress = calc_soilmstress(values["soilm_sc"], values["meanalpha_sc"])
     else:
         soilmstress = None
 
@@ -686,9 +701,9 @@ def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, e
     if ftemp_kphio:
         kf = 1
     else:
-        kf = pmodel.calc_ftemp_kphio(15, c4=True)
+        kf = calc_ftemp_kphio(15, c4=True)
 
-    ret = pmodel.PModel(
+    ret = PModel(
         pmodelenv[environ],
         kphio=0.05 * kf,  # See note above
         soilmstress=soilmstress,
@@ -776,22 +791,25 @@ def test_lavergne_equivalence(tc, theta, variable_method, fixed_method, is_C4):
     # for paramaterizing beta - you can't set an array of values. So, test combinations
     # of temperature and soil moisture.
 
-    env = pmodel.PModelEnvironment(tc=tc, patm=101325, vpd=100, co2=400, theta=theta)
+    from pyrealm.param_classes import PModelParams
+    from pyrealm.pmodel import PModel, PModelEnvironment
+
+    env = PModelEnvironment(tc=tc, patm=101325, vpd=100, co2=400, theta=theta)
 
     # lavergne method
-    mod_theta = pmodel.PModel(env, method_optchi=variable_method)
+    mod_theta = PModel(env, method_optchi=variable_method)
 
     # get equivalent model for fixed beta
     if is_C4:
-        params = pmodel.PModelParams(beta_cost_ratio_c4=mod_theta.optchi.beta)
+        params = PModelParams(beta_cost_ratio_c4=mod_theta.optchi.beta)
     else:
-        params = pmodel.PModelParams(beta_cost_ratio_prentice14=mod_theta.optchi.beta)
+        params = PModelParams(beta_cost_ratio_prentice14=mod_theta.optchi.beta)
 
-    env = pmodel.PModelEnvironment(
+    env = PModelEnvironment(
         tc=tc, patm=101325, vpd=100, co2=400, theta=theta, pmodel_params=params
     )
 
-    mod_fixed = pmodel.PModel(env, method_optchi=fixed_method)
+    mod_fixed = PModel(env, method_optchi=fixed_method)
 
     assert np.allclose(mod_theta.optchi.chi, mod_fixed.optchi.chi)
     assert np.allclose(mod_theta.optchi.mj, mod_fixed.optchi.mj)
