@@ -30,7 +30,8 @@ estimate or explore sensitivity to variation.
 For this reason, the `pyrealm` package provides data classes that contain sets
 of default model parameter values:
 
-* {class}`~pyrealm.param_classes.PModelParams` for the {class}`~pyrealm.pmodel.PModel`
+* {class}`~pyrealm.param_classes.PModelParams` for the
+  {class}`~pyrealm.pmodel.pmodel.PModel`
 * {class}`~pyrealm.param_classes.TModelTraits` for the {class}`~pyrealm.tmodel.TModel`
 
 ## Creating parameter class instances
