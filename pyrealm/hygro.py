@@ -8,11 +8,11 @@ validated against the ``bigleaf`` R package.
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.param_classes import HygroParams
+from pyrealm.constants import HygroConst
 from pyrealm.utilities import bounds_checker
 
 
-def calc_vp_sat(ta: NDArray, hygro_params: HygroParams = HygroParams()) -> NDArray:
+def calc_vp_sat(ta: NDArray, const: HygroConst = HygroConst()) -> NDArray:
     r"""Calculate vapour pressure of saturated air.
 
     This function calculates the vapour pressure of saturated air at a given
@@ -26,7 +26,7 @@ def calc_vp_sat(ta: NDArray, hygro_params: HygroParams = HygroParams()) -> NDArr
 
     Args:
         ta: The air temperature
-        hygro_params: An object of :class:`~pyrealm.param_classes.HygroParams`
+        const: An object of :class:`~pyrealm.constants.hygro_const.HygroConst`
             giving the parameters for conversions.
 
     Returns:
@@ -48,14 +48,14 @@ def calc_vp_sat(ta: NDArray, hygro_params: HygroParams = HygroParams()) -> NDArr
     """
 
     # Magnus equation and conversion to kPa
-    cf = hygro_params.magnus_coef
+    cf = const.magnus_coef
     vp_sat = cf[0] * np.exp((cf[1] * ta) / (cf[2] + ta)) / 1000
 
     return vp_sat
 
 
 def convert_vp_to_vpd(
-    vp: NDArray, ta: NDArray, hygro_params: HygroParams = HygroParams()
+    vp: NDArray, ta: NDArray, const: HygroConst = HygroConst()
 ) -> NDArray:
     """Convert vapour pressure to vapour pressure deficit.
 
@@ -79,13 +79,13 @@ def convert_vp_to_vpd(
         >>> round(convert_vp_to_vpd(vp, temp, hygro_params=allen), 7)
         0.5870054
     """
-    vp_sat = calc_vp_sat(ta, hygro_params=hygro_params)
+    vp_sat = calc_vp_sat(ta, const=const)
 
     return vp_sat - vp
 
 
 def convert_rh_to_vpd(
-    rh: NDArray, ta: NDArray, hygro_params: HygroParams = HygroParams()
+    rh: NDArray, ta: NDArray, const: HygroConst = HygroConst()
 ) -> NDArray:
     """Convert relative humidity to vapour pressure deficit.
 
@@ -117,13 +117,13 @@ def convert_rh_to_vpd(
 
     rh = bounds_checker(rh, 0, 1, "[]", "rh", "proportion")
 
-    vp_sat = calc_vp_sat(ta, hygro_params=hygro_params)
+    vp_sat = calc_vp_sat(ta, const=const)
 
     return vp_sat - (rh * vp_sat)
 
 
 def convert_sh_to_vp(
-    sh: NDArray, patm: NDArray, hygro_params: HygroParams = HygroParams()
+    sh: NDArray, patm: NDArray, const: HygroConst = HygroConst()
 ) -> NDArray:
     """Convert specific humidity to vapour pressure.
 
@@ -144,11 +144,11 @@ def convert_sh_to_vp(
         0.9517451
     """
 
-    return sh * patm / ((1.0 - hygro_params.mwr) * sh + hygro_params.mwr)
+    return sh * patm / ((1.0 - const.mwr) * sh + const.mwr)
 
 
 def convert_sh_to_vpd(
-    sh: NDArray, ta: NDArray, patm: NDArray, hygro_params: HygroParams = HygroParams()
+    sh: NDArray, ta: NDArray, patm: NDArray, const: HygroConst = HygroConst()
 ) -> NDArray:
     """Convert specific humidity to vapour pressure deficit.
 
@@ -175,7 +175,7 @@ def convert_sh_to_vpd(
         1.53526
     """
 
-    vp_sat = calc_vp_sat(ta, hygro_params=hygro_params)
-    vp = convert_sh_to_vp(sh, patm, hygro_params=hygro_params)
+    vp_sat = calc_vp_sat(ta, const=const)
+    vp = convert_sh_to_vp(sh, patm, const=const)
 
     return vp_sat - vp

@@ -21,7 +21,7 @@ class HygroConst(ConstantsClass):
 
     """
 
-    magnus_coef: NDArray[np.float32]
+    magnus_coef: NDArray[np.float32] = np.array((611.2, 17.62, 243.12))
     """Three coefficients of the Magnus equation for saturated vapour pressure."""
     mwr: float = 0.622
     """The ratio molecular weight of water vapour to dry air (:math:`MW_r`, -)"""
@@ -44,11 +44,6 @@ class HygroConst(ConstantsClass):
         )
 
         # Note that object is being used here to update a frozen dataclass
-
-        # Set default to Sonntag1990
-        if not hasattr(self, "magnus_coef") and self.magnus_option is None:
-            object.__setattr__(self, "magnus_coef", alts["Sonntag1990"])
-            return
 
         # Parse other options
         if self.magnus_option is not None:

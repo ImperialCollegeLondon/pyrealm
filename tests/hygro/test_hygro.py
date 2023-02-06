@@ -23,11 +23,11 @@ PATM = np.linspace(60, 110, 31)
     argnames="formula", argvalues=["Allen1998", "Alduchov1996", "Sonntag1990"]
 )
 def test_calc_vp_sat(bigleaf, formula):
+    from pyrealm.constants import HygroConst
     from pyrealm.hygro import calc_vp_sat
-    from pyrealm.param_classes import HygroParams
 
-    params = HygroParams(magnus_option=formula)
-    results = calc_vp_sat(TEMP, params)
+    const = HygroConst(magnus_option=formula)
+    results = calc_vp_sat(TEMP, const)
     expected = np.array(bigleaf["calc_vp_sat"][formula])
 
     assert np.allclose(results, expected)
@@ -37,11 +37,11 @@ def test_calc_vp_sat(bigleaf, formula):
     argnames="formula", argvalues=["Allen1998", "Alduchov1996", "Sonntag1990"]
 )
 def test_convert_vp_to_vpd(bigleaf, formula):
+    from pyrealm.constants import HygroConst
     from pyrealm.hygro import convert_vp_to_vpd
-    from pyrealm.param_classes import HygroParams
 
-    params = HygroParams(magnus_option=formula)
-    results = convert_vp_to_vpd(VP, TEMP, params)
+    const = HygroConst(magnus_option=formula)
+    results = convert_vp_to_vpd(VP, TEMP, const)
     expected = np.array(bigleaf["convert_vp_to_vpd"][formula])
 
     assert np.allclose(results, expected)
@@ -51,11 +51,11 @@ def test_convert_vp_to_vpd(bigleaf, formula):
     argnames="formula", argvalues=["Allen1998", "Alduchov1996", "Sonntag1990"]
 )
 def test_convert_rh_to_vpd(bigleaf, formula):
+    from pyrealm.constants import HygroConst
     from pyrealm.hygro import convert_rh_to_vpd
-    from pyrealm.param_classes import HygroParams
 
-    params = HygroParams(magnus_option=formula)
-    results = convert_rh_to_vpd(RH, TEMP, params)
+    const = HygroConst(magnus_option=formula)
+    results = convert_rh_to_vpd(RH, TEMP, const)
     expected = np.array(bigleaf["convert_rh_to_vpd"][formula])
 
     assert np.allclose(results, expected)
@@ -74,11 +74,11 @@ def test_convert_sh_to_vp(bigleaf):
     argnames="formula", argvalues=["Allen1998", "Alduchov1996", "Sonntag1990"]
 )
 def test_convert_sh_to_vpd(bigleaf, formula):
+    from pyrealm.constants import HygroConst
     from pyrealm.hygro import convert_sh_to_vpd
-    from pyrealm.param_classes import HygroParams
 
-    params = HygroParams(magnus_option=formula)
-    results = convert_sh_to_vpd(SH, TEMP, PATM, params)
+    const = HygroConst(magnus_option=formula)
+    results = convert_sh_to_vpd(SH, TEMP, PATM, const)
     expected = np.array(bigleaf["convert_sh_to_vpd"][formula])
 
     assert np.allclose(results, expected)
