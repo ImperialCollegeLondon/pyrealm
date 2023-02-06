@@ -468,7 +468,7 @@ def test_jmax_limitation(
         xf = 1
 
     expected_lue = (
-        (0.05 * ftemp_kphio) * optchi.mj * jmax.f_v * xf * env.pmodel_params.k_c_molmass
+        (0.05 * ftemp_kphio) * optchi.mj * jmax.f_v * xf * env.const.k_c_molmass
     )
     assert np.allclose(expected_lue, expected["lue"], equal_nan=True)
 
@@ -787,11 +787,11 @@ def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, e
     [("lavergne20_c3", "prentice14", False), ("lavergne20_c4", "c4_no_gamma", True)],
 )
 def test_lavergne_equivalence(tc, theta, variable_method, fixed_method, is_C4):
-    # Cannot do this test using N-D inputs because the PModelParams expect scalar values
+    # Cannot do this test using N-D inputs because the PModelConst expect scalar values
     # for paramaterizing beta - you can't set an array of values. So, test combinations
     # of temperature and soil moisture.
 
-    from pyrealm.param_classes import PModelParams
+    from pyrealm.constants import PModelConst
     from pyrealm.pmodel import PModel, PModelEnvironment
 
     env = PModelEnvironment(tc=tc, patm=101325, vpd=100, co2=400, theta=theta)
@@ -801,12 +801,12 @@ def test_lavergne_equivalence(tc, theta, variable_method, fixed_method, is_C4):
 
     # get equivalent model for fixed beta
     if is_C4:
-        params = PModelParams(beta_cost_ratio_c4=mod_theta.optchi.beta)
+        const = PModelConst(beta_cost_ratio_c4=mod_theta.optchi.beta)
     else:
-        params = PModelParams(beta_cost_ratio_prentice14=mod_theta.optchi.beta)
+        const = PModelConst(beta_cost_ratio_prentice14=mod_theta.optchi.beta)
 
     env = PModelEnvironment(
-        tc=tc, patm=101325, vpd=100, co2=400, theta=theta, pmodel_params=params
+        tc=tc, patm=101325, vpd=100, co2=400, theta=theta, const=const
     )
 
     mod_fixed = PModel(env, method_optchi=fixed_method)
