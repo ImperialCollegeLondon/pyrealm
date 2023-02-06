@@ -4,6 +4,8 @@ jupytext:
   text_representation:
     extension: .md
     format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.13.8
 kernelspec:
   display_name: Python 3
   language: python
@@ -25,8 +27,9 @@ The descriptions below show the typical ranges of these values under common
 environmental inputs along with links to the more detailed documentation of
 the key functions.
 
-```{code-cell} python
+```{code-cell}
 :tags: [hide-input]
+
 # This code loads required packages and then creates a representative range of
 # values of the core variables to use in function plots.
 #
@@ -38,6 +41,7 @@ from matplotlib import pyplot
 import numpy as np
 from pyrealm.param_classes import PModelParams
 from pyrealm.pmodel import calc_gammastar, calc_kmm, calc_viscosity_h2o, calc_co2_to_ca
+
 %matplotlib inline
 
 # get the default set of P Model parameters
@@ -48,7 +52,7 @@ n_pts = 101
 
 # Create a range of representative values for key inputs.
 tc_1d = np.linspace(0, 50, n_pts)
-patm_1d = np.linspace(60000, 106000, n_pts) # ~ tropical tree line
+patm_1d = np.linspace(60000, 106000, n_pts)  # ~ tropical tree line
 co2_1d = np.linspace(200, 500, n_pts)
 
 # Broadcast the range into arrays with repeated values.
@@ -64,18 +68,19 @@ Details: {func}`pyrealm.pmodel.functions.calc_gammastar`
 The photorespiratory compensation point ($\Gamma^*$) varies with as a function
 of temperature and atmospheric pressure:
 
-```{code-cell} python
+```{code-cell}
 :tags: [hide-input]
+
 # Calculate gammastar
 gammastar = calc_gammastar(tc_2d, patm_2d.transpose())
 
 # Create a contour plot of gamma
 fig, ax = pyplot.subplots()
-CS = ax.contour(tc_1d, patm_1d, gammastar, levels=10, colors='black')
+CS = ax.contour(tc_1d, patm_1d, gammastar, levels=10, colors="black")
 ax.clabel(CS, inline=1, fontsize=10)
-ax.set_title('Gamma star')
-ax.set_xlabel('Temperature (°C)')
-ax.set_ylabel('Atmospheric pressure (Pa)')
+ax.set_title("Gamma star")
+ax.set_xlabel("Temperature (°C)")
+ax.set_ylabel("Atmospheric pressure (Pa)")
 pyplot.show()
 ```
 
@@ -86,18 +91,19 @@ Details: {func}`pyrealm.pmodel.functions.calc_kmm`
 The Michaelis-Menten coefficient for photosynthesis ($K_{mm}$) also varies with
 temperature and atmospheric pressure:
 
-```{code-cell} python
+```{code-cell}
 :tags: [hide-input]
+
 # Calculate K_mm
 kmm = calc_kmm(tc_2d, patm_2d.transpose())
 
 # Contour plot of calculated values
 fig, ax = pyplot.subplots()
-CS = ax.contour(tc_1d, patm_1d, kmm, levels=[10,25,50,100,200,400], colors='black')
+CS = ax.contour(tc_1d, patm_1d, kmm, levels=[10, 25, 50, 100, 200, 400], colors="black")
 ax.clabel(CS, inline=1, fontsize=10)
-ax.set_title('KMM')
-ax.set_xlabel('Temperature (°C)')
-ax.set_ylabel('Atmospheric pressure (Pa)')
+ax.set_title("KMM")
+ax.set_xlabel("Temperature (°C)")
+ax.set_ylabel("Atmospheric pressure (Pa)")
 pyplot.show()
 ```
 
@@ -112,9 +118,10 @@ pressure ($\eta^*$).
 
 The figure shows how $\eta^*$ varies with temperature and pressure.
 
-```{code-cell} python
+```{code-cell}
 :tags: [hide-input]
-# Calculate the viscosity under the range of values and the standard 
+
+# Calculate the viscosity under the range of values and the standard
 # temperature and pressure
 viscosity = calc_viscosity_h2o(tc_2d, patm_2d.transpose())
 viscosity_std = calc_viscosity_h2o(pmodel_param.k_To, pmodel_param.k_Po)
@@ -124,11 +131,11 @@ ns_star = viscosity / viscosity_std
 
 # Plot ns_star
 fig, ax = pyplot.subplots()
-CS = ax.contour(tc_1d, patm_1d, ns_star, colors='black')
+CS = ax.contour(tc_1d, patm_1d, ns_star, colors="black")
 ax.clabel(CS, inline=1, fontsize=10)
-ax.set_title('NS star')
-ax.set_xlabel('Temperature (°C)')
-ax.set_ylabel('Atmospheric pressure (Pa)')
+ax.set_title("NS star")
+ax.set_xlabel("Temperature (°C)")
+ax.set_ylabel("Atmospheric pressure (Pa)")
 pyplot.show()
 ```
 
@@ -139,16 +146,17 @@ Details: {func}`pyrealm.pmodel.functions.calc_co2_to_ca`
 The partial pressure of $\ce{CO2}$ is a function of the atmospheric concentration of
 $\ce{CO2}$ in parts per million and the atmospheric pressure:
 
-```{code-cell} python
+```{code-cell}
 :tags: [hide-input]
+
 # Variation in partial pressure
 ca = calc_co2_to_ca(co2_2d, patm_2d.transpose())
 # Plot contour plot of values
 fig, ax = pyplot.subplots()
-CS = ax.contour(co2_1d, patm_1d, ca, colors='black')
+CS = ax.contour(co2_1d, patm_1d, ca, colors="black")
 ax.clabel(CS, inline=1, fontsize=10)
-ax.set_title('CO2')
-ax.set_xlabel('Atmospheric CO2 (ppm)')
-ax.set_ylabel('Atmospheric pressure (Pa)')
+ax.set_title("CO2")
+ax.set_xlabel("Atmospheric CO2 (ppm)")
+ax.set_ylabel("Atmospheric pressure (Pa)")
 pyplot.show()
 ```

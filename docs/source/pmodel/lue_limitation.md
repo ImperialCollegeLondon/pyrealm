@@ -4,6 +4,8 @@ jupytext:
   text_representation:
     extension: .md
     format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.13.8
 kernelspec:
   display_name: Python 3
   language: python
@@ -12,8 +14,9 @@ kernelspec:
 
 # Step 3: LUE Limitation
 
-```{code-cell} python
+```{code-cell}
 :tags: [hide-input]
+
 # This code loads required packages and then creates a representative range of
 # values of the core variables to use in function plots.
 #
@@ -25,6 +28,7 @@ from matplotlib import pyplot
 import numpy as np
 from pyrealm.param_classes import PModelParams
 from pyrealm.pmodel import PModel, PModelEnvironment, calc_ftemp_kphio
+
 %matplotlib inline
 
 # get the default set of P Model parameters
@@ -36,7 +40,7 @@ n_pts = 201
 # Create a range of representative values for key inputs.
 tc_1d = np.linspace(-25, 50, n_pts)
 soilm_1d = np.linspace(0, 1, n_pts)
-meanalpha_1d = np.linspace(0, 1, n_pts) 
+meanalpha_1d = np.linspace(0, 1, n_pts)
 co2_1d = np.linspace(200, 500, n_pts)
 
 # Broadcast the range into arrays with repeated values.
@@ -85,7 +89,7 @@ apparent quantum yield efficiency of photosynthesis (`kphio`, $\phi_0$).
 
 Note that $\phi_0$ is sometimes used to refer to the quantum yield of electron
 transfer, which is exactly four times larger than the quantum yield of
-photosynthesis. 
+photosynthesis.
 
 ```
 
@@ -110,13 +114,13 @@ the `init_kphio` and  `kphio` attributes of the {class}`~pyrealm.pmodel.pmodel.P
 object.  The code examples compare models with and without temperature
 dependency of $\phi_0$.
 
-```{code-cell} ipython3
+```{code-cell}
 env = PModelEnvironment(tc=30, patm=101325, vpd=820, co2=400)
 model_fixkphio = PModel(env, kphio=0.08, do_ftemp_kphio=False)
 np.array([model_fixkphio.init_kphio, model_fixkphio.kphio])
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 model_tempkphio = PModel(env, kphio=0.08, do_ftemp_kphio=True)
 np.array([model_tempkphio.init_kphio, model_tempkphio.kphio])
 ```
@@ -125,19 +129,20 @@ The scaling of temperature dependence varies for C3 and C4 plants and the
 function {func}`calc_ftemp_kphio` is used to calculate a limitation factor that
 is applied to $\phi_0$.
 
-```{code-cell} python
+```{code-cell}
 :tags: [hide-input]
+
 # Calculate temperature dependence of quantum yield efficiency
 fkphio_c3 = calc_ftemp_kphio(tc_1d, c4=False)
 fkphio_c4 = calc_ftemp_kphio(tc_1d, c4=True)
 
 # Create a line plot of ftemp kphio
-pyplot.plot(tc_1d, fkphio_c3, label='C3')
-pyplot.plot(tc_1d, fkphio_c4, label='C4')
+pyplot.plot(tc_1d, fkphio_c3, label="C3")
+pyplot.plot(tc_1d, fkphio_c4, label="C4")
 
-pyplot.title('Temperature dependence of quantum yield efficiency')
-pyplot.xlabel('Temperature °C')
-pyplot.ylabel('Limitation factor')
+pyplot.title("Temperature dependence of quantum yield efficiency")
+pyplot.xlabel("Temperature °C")
+pyplot.ylabel("Limitation factor")
 pyplot.legend()
 pyplot.show()
 ```
@@ -160,36 +165,37 @@ options for this setting are:
   and $V_{cmax}$ described in {cite}`Smith:2019dv`. The calculation details can be
   seen in the {meth}`~pyrealm.pmodel.pmodel.JmaxLimitation.smith19` method.
 
-```{code-cell} ipython3
-model_jmax_simple = PModel(env, kphio=0.08, method_jmaxlim='simple')
-model_jmax_wang17 = PModel(env, kphio=0.08, method_jmaxlim='wang17')
-model_jmax_smith19 = PModel(env,  kphio=0.08, method_jmaxlim='smith19')
+```{code-cell}
+model_jmax_simple = PModel(env, kphio=0.08, method_jmaxlim="simple")
+model_jmax_wang17 = PModel(env, kphio=0.08, method_jmaxlim="wang17")
+model_jmax_smith19 = PModel(env, kphio=0.08, method_jmaxlim="smith19")
 
 # Compare LUE from the three methods
-np.array([model_jmax_simple.lue,
-          model_jmax_wang17.lue,
-          model_jmax_smith19.lue])
+np.array([model_jmax_simple.lue, model_jmax_wang17.lue, model_jmax_smith19.lue])
 ```
 
 The plot below shows the effects of each method on the LUE across a temperature
 gradient ($P=101325.0 , \ce{CO2}= 400 \text{ppm}, \text{VPD}=820$) and $\phi_0=0.05$).
 
-```{code-cell} python
+```{code-cell}
 :tags: [hide-input]
+
 # Calculate variation in m_jlim with temperature
-env = PModelEnvironment(tc = tc_1d, patm=101325, vpd=820, co2=400)
+env = PModelEnvironment(tc=tc_1d, patm=101325, vpd=820, co2=400)
 model_tc_wang17 = PModel(env, kphio=0.08, do_ftemp_kphio=False)
-model_tc_simple = PModel(env, kphio=0.08, do_ftemp_kphio=False, method_jmaxlim='simple')
-model_tc_smith19 = PModel(env, kphio=0.08, do_ftemp_kphio=False, method_jmaxlim='smith19')
+model_tc_simple = PModel(env, kphio=0.08, do_ftemp_kphio=False, method_jmaxlim="simple")
+model_tc_smith19 = PModel(
+    env, kphio=0.08, do_ftemp_kphio=False, method_jmaxlim="smith19"
+)
 
-Create a line plot of the resulting values of m_j
-pyplot.plot(tc_1d, model_tc_simple.lue, label='simple')
-pyplot.plot(tc_1d, model_tc_wang17.lue, label='wang17')
-pyplot.plot(tc_1d, model_tc_smith19.lue, label='smith19')
+# Create a line plot of the resulting values of m_j
+pyplot.plot(tc_1d, model_tc_simple.lue, label="simple")
+pyplot.plot(tc_1d, model_tc_wang17.lue, label="wang17")
+pyplot.plot(tc_1d, model_tc_smith19.lue, label="smith19")
 
-pyplot.title('Effects of J_max limitation')
-pyplot.xlabel('Temperature °C')
-pyplot.ylabel('Light Use Efficiency (g C mol-1)')
+pyplot.title("Effects of J_max limitation")
+pyplot.xlabel("Temperature °C")
+pyplot.ylabel("Light Use Efficiency (g C mol-1)")
 pyplot.legend()
 pyplot.show()
 ```

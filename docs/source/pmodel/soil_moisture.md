@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.11.5
+    jupytext_version: 1.13.8
 kernelspec:
   display_name: Python 3
   language: python
@@ -68,7 +68,7 @@ varies with changing soil moisture for some different values of mean aridity. In
 the examples below, the default $\theta_0 = 0$ has been changed to $\theta_0 =
 0.1$ to make the lower bound more obvious.
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 from matplotlib import pyplot as plt
@@ -77,41 +77,45 @@ from pyrealm import pmodel
 from pyrealm.param_classes import PModelParams
 
 # change default theta0 parameter
-par_def = PModelParams(soilmstress_theta0 = 0.1)
+par_def = PModelParams(soilmstress_theta0=0.1)
 
 # Calculate q
 mean_alpha_seq = np.linspace(0, 1, 101)
 
-q = ((1 - (par_def.soilmstress_a + par_def.soilmstress_b *  mean_alpha_seq))
-     / (par_def.soilmstress_thetastar - par_def.soilmstress_theta0) ** 2)
+q = (1 - (par_def.soilmstress_a + par_def.soilmstress_b * mean_alpha_seq)) / (
+    par_def.soilmstress_thetastar - par_def.soilmstress_theta0
+) ** 2
 
 # Create a 1x2 plot
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
 # Plot q ~ mean_alpha
 ax1.plot(mean_alpha_seq, q)
-ax1.set_xlabel(r'Mean aridity, $\bar{\alpha}$')
-ax1.set_ylabel(r'Aridity sensitivity parameter, $q$')
+ax1.set_xlabel(r"Mean aridity, $\bar{\alpha}$")
+ax1.set_ylabel(r"Aridity sensitivity parameter, $q$")
 
 # Plot beta(theta) ~ m_s for 5 values of mean alpha
 soilm = np.linspace(0, 0.7, 101)
 
 for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
 
-    soilmstress = pmodel.calc_soilmstress(soilm=soilm, meanalpha=mean_alpha,
-                                        pmodel_params=par_def)
-    ax2.plot(soilm, soilmstress, label=r'$\bar{{\alpha}}$ = {}'.format(mean_alpha))
+    soilmstress = pmodel.calc_soilmstress(
+        soilm=soilm, meanalpha=mean_alpha, pmodel_params=par_def
+    )
+    ax2.plot(soilm, soilmstress, label=r"$\bar{{\alpha}}$ = {}".format(mean_alpha))
 
-ax2.axvline(x= par_def.soilmstress_thetastar, linestyle='--', color='black')
-ax2.axvline(x= par_def.soilmstress_theta0, linestyle='--', color='black')
+ax2.axvline(x=par_def.soilmstress_thetastar, linestyle="--", color="black")
+ax2.axvline(x=par_def.soilmstress_theta0, linestyle="--", color="black")
 
-secax = ax2.secondary_xaxis('top')
-secax.set_xticks(ticks=[par_def.soilmstress_thetastar, par_def.soilmstress_theta0],
-                 labels=[r'$\theta^\ast$', r'$\theta_0$'])
+secax = ax2.secondary_xaxis("top")
+secax.set_xticks(
+    ticks=[par_def.soilmstress_thetastar, par_def.soilmstress_theta0],
+    labels=[r"$\theta^\ast$", r"$\theta_0$"],
+)
 
 ax2.legend()
-ax2.set_xlabel(r'Relative soil moisture, $m_s$')
-ax2.set_ylabel(r'Empirical soil moisture factor, $\beta(\theta)$')
+ax2.set_xlabel(r"Relative soil moisture, $m_s$")
+ax2.set_ylabel(r"Empirical soil moisture factor, $\beta(\theta)$")
 
 
 plt.show()
@@ -126,7 +130,7 @@ argument. The example below shows how the predicted light use efficiency from
 the P Model changes across an aridity gradient both with and without the
 soil moisture factor.
 
-```{code-cell} ipython3
+```{code-cell}
 # Calculate a model without water stress in a constant environment
 # and across an soil moisture gradient.
 
@@ -134,7 +138,7 @@ tc = np.array([20] * 101)
 sm_gradient = np.linspace(0, 0.7, 101)
 sm_stress = pmodel.calc_soilmstress(soilm=sm_gradient, meanalpha=0.5)
 
-env  = pmodel.PModelEnvironment(tc=tc, patm=101325.0, vpd=820, co2=400)
+env = pmodel.PModelEnvironment(tc=tc, patm=101325.0, vpd=820, co2=400)
 
 # Fix the kphio as the defaults change when soilmstress is used
 model = pmodel.PModel(env, kphio=0.08)
@@ -144,14 +148,14 @@ model_stress = pmodel.PModel(env, soilmstress=sm_stress, kphio=0.08)
 model_stress.estimate_productivity(fapar=1, ppfd=1000)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 plt.plot(sm_gradient, model.lue, label="No soil moisture stress")
 plt.plot(sm_gradient, model_stress.lue, label="Soil moisture stress applied")
 
-plt.xlabel(r'Relative soil moisture, $m_s$, -')
-plt.ylabel(r'Light use efficiency, gC mol-1')
+plt.xlabel(r"Relative soil moisture, $m_s$, -")
+plt.ylabel(r"Light use efficiency, gC mol-1")
 
 plt.show()
 ```
@@ -167,12 +171,12 @@ when accessing $V_{cmax}$, $J_{max}$ and predictions deriving from those
 values if this soil moisture stress factor has been applied.
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 # Jmax warns that it has not been corrected for soil moisture
 print(model_stress.jmax[0])
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 # Vcmax warns that it has not been corrected for soil moisture
 print(model_stress.vcmax[0])
 ```

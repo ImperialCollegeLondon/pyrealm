@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.11.5
+    jupytext_version: 1.13.8
 kernelspec:
   display_name: Python 3
   language: python
@@ -225,12 +225,8 @@ $\beta$ with $\theta$ is shown below.
 pmodel_env_theta_range = PModelEnvironment(
     tc=25, patm=101325, vpd=0, co2=400, theta=np.linspace(0, 0.8, 81)
 )
-opt_chi_lavergne20_c3 = CalcOptimalChi(
-    pmodel_env_theta_range, method="lavergne20_c3"
-)
-opt_chi_lavergne20_c4 = CalcOptimalChi(
-    pmodel_env_theta_range, method="lavergne20_c4"
-)
+opt_chi_lavergne20_c3 = CalcOptimalChi(pmodel_env_theta_range, method="lavergne20_c3")
+opt_chi_lavergne20_c4 = CalcOptimalChi(pmodel_env_theta_range, method="lavergne20_c4")
 # Plot the predictions
 fig, ax1 = pyplot.subplots(1, 1, figsize=(6, 4))
 ax1.plot(pmodel_env_theta_range.theta, opt_chi_lavergne20_c4.beta, label="C3")
