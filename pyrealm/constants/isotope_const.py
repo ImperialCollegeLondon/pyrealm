@@ -5,7 +5,7 @@ from pyrealm.constants import ConstantsClass
 
 
 @dataclass(frozen=True)
-class IsotopesParams(ConstantsClass):
+class IsotopesConst(ConstantsClass):
     """Settings for calculate carbon isotope discrimination.
 
     This data class provides values for underlying constants used in the calculation of

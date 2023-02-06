@@ -1,12 +1,12 @@
-"""The compeition_const module TODO."""
+"""The competition_const module TODO."""
 from dataclasses import dataclass
 
 from pyrealm.constants import ConstantsClass
 
 
 @dataclass(frozen=True)
-class C3C4Params(ConstantsClass):
-    r"""Model parameters for the C3C4Competition class.
+class C3C4Const(ConstantsClass):
+    r"""Model constants for the C3C4Competition class.
 
     This data class holds statistically estimated coefficients used to calculate the
     fraction of C4 plants based on the relative GPP of C3 and C4 plants for given
