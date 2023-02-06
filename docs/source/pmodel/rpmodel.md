@@ -32,18 +32,18 @@ have been used in testing {mod}`~pyrealm.pmodel`. This includes:
 
 The implementations differ in a number of ways:
 
-1. The functions in ``rpmodel`` contains a large number of hard-coded parameters. These
+1. The functions in ``rpmodel`` contains a large number of hard-coded constants. These
    include both global constants and experimentally derived estimates for different
-   processes. In the {mod}`~pyrealm.pmodel` module, these hard-coded parameters have
-   been replaced within references to a global parameter dictionary
-   ({const}`~pyrealm.param_classes.PModelParams`). This is used to share a set of
-   constants and values across all functions. However, can also be altered, allowing
+   processes. In the {mod}`~pyrealm.pmodel` module, these hard-coded values have been
+   replaced with references to a global constants object
+   ({const}`~pyrealm.constants.pmodel_consts.PModelConst`). This is used to share a set
+   of constants and values across all functions. However, can also be altered, allowing
    users to explore model responses to underlying parameter variation (see
-   [here](/params)).
+   [here](/constants)).
 
-   In some cases, ``rpmodel`` sets these constants in function arguments. These
-   parameters have also been moved to {const}`~pyrealm.param_classes.PModel_Params`
-   to simplify function arguments.
+   In some cases, ``rpmodel`` sets these constants in function arguments. These have
+   also been moved to {class}`~pyrealm.constants.pmodel_consts.PModelConst` to simplify
+   function arguments.
 
 1. The ``rpmodel`` package has suites of functions for calculating $J_{max}$ limitation
    and optimal $\chi$. These have been combined into classes

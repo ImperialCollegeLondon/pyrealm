@@ -74,16 +74,16 @@ the examples below, the default $\theta_0 = 0$ has been changed to $\theta_0 =
 from matplotlib import pyplot as plt
 import numpy as np
 from pyrealm import pmodel
-from pyrealm.param_classes import PModelParams
+from pyrealm.constants import PModelConst
 
 # change default theta0 parameter
-par_def = PModelParams(soilmstress_theta0=0.1)
+const = PModelConst(soilmstress_theta0=0.1)
 
 # Calculate q
 mean_alpha_seq = np.linspace(0, 1, 101)
 
-q = (1 - (par_def.soilmstress_a + par_def.soilmstress_b * mean_alpha_seq)) / (
-    par_def.soilmstress_thetastar - par_def.soilmstress_theta0
+q = (1 - (const.soilmstress_a + const.soilmstress_b * mean_alpha_seq)) / (
+    const.soilmstress_thetastar - const.soilmstress_theta0
 ) ** 2
 
 # Create a 1x2 plot
@@ -100,16 +100,16 @@ soilm = np.linspace(0, 0.7, 101)
 for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
 
     soilmstress = pmodel.calc_soilmstress(
-        soilm=soilm, meanalpha=mean_alpha, pmodel_params=par_def
+        soilm=soilm, meanalpha=mean_alpha, pmodel_params=const
     )
     ax2.plot(soilm, soilmstress, label=r"$\bar{{\alpha}}$ = {}".format(mean_alpha))
 
-ax2.axvline(x=par_def.soilmstress_thetastar, linestyle="--", color="black")
-ax2.axvline(x=par_def.soilmstress_theta0, linestyle="--", color="black")
+ax2.axvline(x=const.soilmstress_thetastar, linestyle="--", color="black")
+ax2.axvline(x=const.soilmstress_theta0, linestyle="--", color="black")
 
 secax = ax2.secondary_xaxis("top")
 secax.set_xticks(
-    ticks=[par_def.soilmstress_thetastar, par_def.soilmstress_theta0],
+    ticks=[const.soilmstress_thetastar, const.soilmstress_theta0],
     labels=[r"$\theta^\ast$", r"$\theta_0$"],
 )
 

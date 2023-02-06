@@ -39,13 +39,13 @@ the key functions.
 
 from matplotlib import pyplot
 import numpy as np
-from pyrealm.param_classes import PModelParams
+from pyrealm.constants import PModelConst
 from pyrealm.pmodel import calc_gammastar, calc_kmm, calc_viscosity_h2o, calc_co2_to_ca
 
 %matplotlib inline
 
 # get the default set of P Model parameters
-pmodel_param = PModelParams()
+const = PModelConst()
 
 # Set the resolution of examples
 n_pts = 101
@@ -124,7 +124,7 @@ The figure shows how $\eta^*$ varies with temperature and pressure.
 # Calculate the viscosity under the range of values and the standard
 # temperature and pressure
 viscosity = calc_viscosity_h2o(tc_2d, patm_2d.transpose())
-viscosity_std = calc_viscosity_h2o(pmodel_param.k_To, pmodel_param.k_Po)
+viscosity_std = calc_viscosity_h2o(const.k_To, const.k_Po)
 
 # Calculate the relative viscosity
 ns_star = viscosity / viscosity_std

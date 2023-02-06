@@ -68,7 +68,7 @@ def rvalues():
 def test_tmodel_init(rvalues, row):
     """Test the geometry calculation of __init__ using the exemplar R data."""
 
-    from pyrealm.param_classes import TModelTraits
+    from pyrealm.constants.tmodel_const import TModelTraits
     from pyrealm.tmodel import TTree
 
     ttree = TTree(traits=TModelTraits, diameters=rvalues[row]["diameter"])
@@ -81,7 +81,7 @@ def test_tmodel_init(rvalues, row):
 def test_tmodel_reset_diameters(rvalues, row):
     """Test the geometry calculation using reset_diameters using the exemplar R data."""
 
-    from pyrealm.param_classes import TModelTraits
+    from pyrealm.constants.tmodel_const import TModelTraits
     from pyrealm.tmodel import TTree
 
     ttree = TTree(diameters=0.001, traits=TModelTraits())
@@ -94,7 +94,7 @@ def test_tmodel_reset_diameters(rvalues, row):
 def test_tmodel_init_array(rvalues):
     """Test the geometry calculation using an __init__array using the exemplar R data."""
 
-    from pyrealm.param_classes import TModelTraits
+    from pyrealm.constants.tmodel_const import TModelTraits
     from pyrealm.tmodel import TTree
 
     diams = np.array([rw["diameter"] for rw in rvalues])
@@ -121,7 +121,7 @@ def test_tmodel_growth_access(sequence, raises):
     Tests that the accessors for growth properties are properly masked when not set
     or outdated.
     """
-    from pyrealm.param_classes import TModelTraits
+    from pyrealm.constants.tmodel_const import TModelTraits
     from pyrealm.tmodel import TTree
 
     ttree = TTree(diameters=0.1, traits=TModelTraits())
@@ -155,7 +155,7 @@ def test_tmodel_calculate_growth(rvalues, row):
     sequence.
     """
 
-    from pyrealm.param_classes import TModelTraits
+    from pyrealm.constants.tmodel_const import TModelTraits
     from pyrealm.tmodel import TTree
 
     # create a tree with the initial diameter given in the row
@@ -176,7 +176,7 @@ def test_tmodel_calculate_growth(rvalues, row):
 def test_tmodel_calculate_growth_array(rvalues):
     """Test calculate_growth with an array."""
 
-    from pyrealm.param_classes import TModelTraits
+    from pyrealm.constants.tmodel_const import TModelTraits
     from pyrealm.tmodel import TTree
 
     # create a tree with the initial diameter given in the row
