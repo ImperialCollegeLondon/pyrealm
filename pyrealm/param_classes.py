@@ -142,7 +142,7 @@ class PModelParams(ParamClass):
     * `k_G`: Gravitational acceleration (:math:`G` , 9.80665, m/s^2)
     * `k_Ma`: Molecular weight of dry air (Tsilingiris, 2008)  (:math:`M_a`,
        0.028963, kg/mol)
-    * `l_CtoK`: Conversion from °C to K   (:math:`CtoK` , 273.15, -)
+    * `k_CtoK`: Conversion from °C to K   (:math:`CtoK` , 273.15, -)
 
     ** Density of water**, values taken from Table 5 of :cite:`Fisher:1975tm`.
 
@@ -456,25 +456,26 @@ class TModelTraits(ParamClass):
 class HygroParams(ParamClass):
     r"""Parameters for hygrometric functions.
 
-    This data class provides parameters used :mod:`~pyrealm.utilities`, which
-    includes hygrometric conversions
+    This data class provides parameters used :mod:`~pyrealm.hygro`, which
+    includes hygrometric conversions. The values for
+    :attr:`~pyrealm.param_classes.HygroParams.magnus_coef`` be set directly or by
+    selecting one of ``Allen1998``, ``Alduchov1996`` or ``Sonntag1990`` as
+    :attr:`~pyrealm.param_classes.HygroParams.magnus_option``. The default setting is to
+    use the ``Sonntag1990`` parameters.
 
-    * `mwr`: The ratio molecular weight of water vapour to dry air
-        (:math:`MW_r`, 0.622, -)
-    * `magnus_params`: A three tuple of coefficients for the Magnus equation for
-      the calculation of saturated vapour pressure.
-    * `magnus_option`: Selects one of a set of published coefficients for the
-        Magnus equation.
     """
 
-    magnus_coef: NDArray[np.float32] = np.array((611.2, 17.62, 243.12))
+    magnus_coef: NDArray[np.float32]
+    """Three coefficients of the Magnus equation for saturated vapour pressure."""
     mwr: float = 0.622
+    """The ratio molecular weight of water vapour to dry air (:math:`MW_r`, -)"""
     magnus_option: Optional[str] = None
+    """Choice of Magnus equation parameterisation."""
 
     def __post_init__(self) -> None:
         """Populate parameters from init settings.
 
-        This checks the init inputs and populates magnus_coef from the presets
+        This checks the init inputs and populates ``magnus_coef`` from the presets
         if no magnus_coef is specified.
 
         Returns:
@@ -486,14 +487,20 @@ class HygroParams(ParamClass):
             Sonntag1990=np.array((611.2, 17.62, 243.12)),
         )
 
+        # Note that object is being used here to update a frozen dataclass
+
+        # Set default to Sonntag1990
+        if not hasattr(self, "magnus_coef") and self.magnus_option is None:
+            object.__setattr__(self, "magnus_coef", alts["Sonntag1990"])
+            return
+
+        # Parse other options
         if self.magnus_option is not None:
             if self.magnus_option not in alts:
-                raise (
-                    RuntimeError(f"magnus_option must be one of {list(alts.keys())}")
-                )
-            else:
-                object.__setattr__(self, "magnus_coef", alts[self.magnus_option])
-        elif self.magnus_coef is not None and len(self.magnus_coef) != 3:
+                raise (ValueError(f"magnus_option must be one of {list(alts.keys())}"))
+
+            object.__setattr__(self, "magnus_coef", alts[self.magnus_option])
+            return
+
+        if self.magnus_coef is not None and len(self.magnus_coef) != 3:
             raise TypeError("magnus_coef must be a tuple of 3 numbers")
-        else:
-            object.__setattr__(self, "magnus_option", None)

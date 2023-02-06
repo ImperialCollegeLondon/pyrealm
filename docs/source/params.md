@@ -130,3 +130,10 @@ pprint.pprint(params.to_dict())
 traits = TModelTraits()
 pprint.pprint(traits.to_dict())
 ```
+
+## Hygro parameters
+
+```{eval-rst}
+.. autoclass:: pyrealm.param_classes.HygroParams
+    :members:
+```
