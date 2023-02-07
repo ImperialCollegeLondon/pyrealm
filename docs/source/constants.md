@@ -105,35 +105,37 @@ print(traits2)
 traits1 == traits2
 ```
 
-## P Model parameters
+## P Model constants
 
 ```{eval-rst}
 .. autoclass:: pyrealm.constants.pmodel_const.PModelConst
-```
-
-### Dictionary of default values for PModel parameters
-
-```{code-cell} python
-const = PModelConst()
-pprint.pprint(const.to_dict())
+    :members:
 ```
 
 ## T Model traits
 
 ```{eval-rst}
 .. autoclass:: pyrealm.constants.tmodel_const.TModelTraits
+    :members:
 ```
 
-### Dictionary of default values for TModel traits
-
-```{code-cell} python
-traits = TModelTraits()
-pprint.pprint(traits.to_dict())
-```
-
-## Hygro parameters
+## Hygrometry constants
 
 ```{eval-rst}
 .. autoclass:: pyrealm.constants.hygro_const.HygroConst
+    :members:
+```
+
+## Isotopic discrimination constants
+
+```{eval-rst}
+.. autoclass:: pyrealm.constants.isotope_const.IsotopesConst
+    :members:
+```
+
+## C3/C4 competition constants
+
+```{eval-rst}
+.. autoclass:: pyrealm.constants.competition_const.C3C4Const
     :members:
 ```

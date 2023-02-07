@@ -17,87 +17,77 @@ class PModelConst(ConstantsClass):
     value and units shown in brackets and the sources for default parameterisations are
     given below:
 
-    Density of water:
-        Values for the Tumlirz equation taken from Table 5 of :cite:`Fisher:1975tm`:
-        (:attr:`~pyrealm.constants.PModelConst.fisher_dial_lambda`,
-        :attr:`~pyrealm.constants.PModelConst.fisher_dial_Po`,
-        :attr:`~pyrealm.constants.PModelConst.fisher_dial_Vinf`)
+    * **Density of water**. Values for the Tumlirz equation taken from Table 5 of
+      :cite:`Fisher:1975tm`: (:attr:`~pyrealm.constants.PModelConst.fisher_dial_lambda`,
+      :attr:`~pyrealm.constants.PModelConst.fisher_dial_Po`,
+      :attr:`~pyrealm.constants.PModelConst.fisher_dial_Vinf`)
 
-    Viscosity of water:
-        Values for the parameterisation taken from Table 2 and 3 of
-        :cite:`Huber:2009fy`: (:attr:`~pyrealm.constants.PModelConst.huber_tk_ast`,
-        :attr:`~pyrealm.constants.PModelConst.huber_rho_ast`,
-        :attr:`~pyrealm.constants.PModelConst.huber_mu_ast`,
-        :attr:`~pyrealm.constants.PModelConst.huber_H_i`,
-        :attr:`~pyrealm.constants.PModelConst.huber_H_ij`)
+    * **Viscosity of water**. Values for the parameterisation taken from Table 2 and 3
+      of :cite:`Huber:2009fy`: (:attr:`~pyrealm.constants.PModelConst.huber_tk_ast`,
+      :attr:`~pyrealm.constants.PModelConst.huber_rho_ast`,
+      :attr:`~pyrealm.constants.PModelConst.huber_mu_ast`,
+      :attr:`~pyrealm.constants.PModelConst.huber_H_i`,
+      :attr:`~pyrealm.constants.PModelConst.huber_H_ij`)
 
-    Temperature scaling of dark respiration:
-        Values taken from :cite:`Heskel:2016fg`:
-        (:attr:`~pyrealm.constants.PModelConst.heskel_b`,
-        :attr:`~pyrealm.constants.PModelConst.heskel_c`)
+    * **Temperature scaling of dark respiration**. Values taken from
+      :cite:`Heskel:2016fg`: (:attr:`~pyrealm.constants.PModelConst.heskel_b`,
+      :attr:`~pyrealm.constants.PModelConst.heskel_c`)
 
-    Temperature and entropy of VCMax:
-       Values taken from Table 3 of :cite:`Kattge:2007db`
-        (:attr:`~pyrealm.constants.PModelConst.kattge_knorr_a_ent`,
-        :attr:`~pyrealm.constants.PModelConst.kattge_knorr_b_ent`,
-        :attr:`~pyrealm.constants.PModelConst.kattge_knorr_Ha`,
-        :attr:`~pyrealm.constants.PModelConst.kattge_knorr_Hd`)
+    * **Temperature and entropy of VCMax**. Values taken from Table 3 of
+      :cite:`Kattge:2007db` (:attr:`~pyrealm.constants.PModelConst.kattge_knorr_a_ent`,
+      :attr:`~pyrealm.constants.PModelConst.kattge_knorr_b_ent`,
+      :attr:`~pyrealm.constants.PModelConst.kattge_knorr_Ha`,
+      :attr:`~pyrealm.constants.PModelConst.kattge_knorr_Hd`)
 
-    Scaling of Kphio with temperature:
-        The parameters of quadratic functions for the temperature dependence of Kphio
-        are:  :attr:`~pyrealm.constants.PModelConst.kphio_C4`, C4 plants, Eqn 5 of
-        :cite:`cai:2020a`; and :attr:`~pyrealm.constants.PModelConst.kphio_C3`, C3
-        plants,  Table 2 of :cite:`Bernacchi:2003dc`.
+    * **Scaling of Kphio with temperature**. The parameters of quadratic functions for
+      the temperature dependence of Kphio are:
+      :attr:`~pyrealm.constants.PModelConst.kphio_C4`, C4 plants, Eqn 5 of
+      :cite:`cai:2020a`; and :attr:`~pyrealm.constants.PModelConst.kphio_C3`, C3 plants,
+      Table 2 of :cite:`Bernacchi:2003dc`.
 
-    Temperature responses of photosynthetic enzymes:
-        Values taken from Table 1 of :cite:`Bernacchi:2001kg`. `kc_25` and `ko_25` are
-        converted from µmol mol-1 and mmol mol-1, assuming a measurement at an elevation
-        of 227.076 metres and standard atmospheric pressure for that elevation
-        (98716.403 Pa). (:attr:`~pyrealm.constants.PModelConst.dhac`,
-        :attr:`~pyrealm.constants.PModelConst.dhao`,
-        :attr:`~pyrealm.constants.PModelConst.dha`,
-        :attr:`~pyrealm.constants.PModelConst.kc25`,
-        :attr:`~pyrealm.constants.PModelConst.ko25`,
-        :attr:`~pyrealm.constants.PModelConst.gs25_0`)
+    * **Temperature responses of photosynthetic enzymes**. Values taken from Table 1 of
+      :cite:`Bernacchi:2001kg`. `kc_25` and `ko_25` are converted from µmol mol-1 and
+      mmol mol-1, assuming a measurement at an elevation of 227.076 metres and standard
+      atmospheric pressure for that elevation (98716.403 Pa).
+      (:attr:`~pyrealm.constants.PModelConst.dhac`,
+      :attr:`~pyrealm.constants.PModelConst.dhao`,
+      :attr:`~pyrealm.constants.PModelConst.dha`,
+      :attr:`~pyrealm.constants.PModelConst.kc25`,
+      :attr:`~pyrealm.constants.PModelConst.ko25`,
+      :attr:`~pyrealm.constants.PModelConst.gs25_0`)
 
-    Soil moisture stress:
-        Parameterisation from :cite:`Stocker:2020dh`
-        (:attr:`~pyrealm.constants.PModelConst.soilmstress_theta0`,
-        :attr:`~pyrealm.constants.PModelConst.soilmstress_thetastar`,
-        :attr:`~pyrealm.constants.PModelConst.soilmstress_a`,
-        :attr:`~pyrealm.constants.PModelConst.soilmstress_b`)
+    * **Soil moisture stress**. Parameterisation from :cite:`Stocker:2020dh`
+      (:attr:`~pyrealm.constants.PModelConst.soilmstress_theta0`,
+      :attr:`~pyrealm.constants.PModelConst.soilmstress_thetastar`,
+      :attr:`~pyrealm.constants.PModelConst.soilmstress_a`,
+      :attr:`~pyrealm.constants.PModelConst.soilmstress_b`)
 
-    Unit cost ratios (beta):
-        The value for C3 plants is taken from :cite:`Stocker:2020dh`. For C4 plants, we
-        follow the estimates of the :math:`g_1` parameter for C3 and C4 plants in
-        :cite:`Lin:2015wh`  and :cite:`DeKauwe:2015im`, which have a C3/C4 ratio of
-        around 3. Given that :math:`g_1 \equiv \xi \propto \surd\beta`, a reasonable
-        default for C4 plants is that :
-        math:`\beta_{C4} \approx \beta_{C3} / 9 \approx 146 /  9 \approx 16.222`.
+    * **Unit cost ratios (beta)**. The value for C3 plants is taken from
+      :cite:`Stocker:2020dh`. For C4 plants, we follow the estimates of the :math:`g_1`
+      parameter for C3 and C4 plants in :cite:`Lin:2015wh`  and :cite:`DeKauwe:2015im`,
+      which have a C3/C4 ratio of around 3. Given that :math:`g_1 \equiv \xi \propto
+      \surd\beta`, a reasonable default for C4 plants is that : math:`\beta_{C4} \approx
+      \beta_{C3} / 9 \approx 146 /  9 \approx 16.222`.
+      (:attr:`~pyrealm.constants.PModelConst.beta_cost_ratio_prentice14`,
+      :attr:`~pyrealm.constants.PModelConst.beta_cost_ratio_c4`)
 
-        Additional constants here set the response of beta to soil moisture for the
-        :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c3` method and for
-        :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c4`.
+    * **Unit cost ratios (beta) response to soil moisture**. These constants set the
+      response of beta to soil moisture for the
+      :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c3` method and for
+      :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c4`.
+      (:attr:`~pyrealm.constants.PModelConst.lavergne_2020_b_c3`,
+      :attr:`~pyrealm.constants.PModelConst.lavergne_2020_a_c3`,
+      :attr:`~pyrealm.constants.PModelConst.lavergne_2020_b_c4`,
+      :attr:`~pyrealm.constants.PModelConst.lavergne_2020_a_c4`)
 
-        (:attr:`~pyrealm.constants.PModelConst.beta_cost_ratio_prentice14`,
-        :attr:`~pyrealm.constants.PModelConst.beta_cost_ratio_c4`,
-        :attr:`~pyrealm.constants.PModelConst.lavergne_2020_b_c3`,
-        :attr:`~pyrealm.constants.PModelConst.lavergne_2020_a_c3`,
-        :attr:`~pyrealm.constants.PModelConst.lavergne_2020_b_c4`,
-        :attr:`~pyrealm.constants.PModelConst.lavergne_2020_a_c4`)
+    * **Electron transport capacity maintenance cost** Value taken from
+      :cite:`Wang:2017go`
 
-    Electron transport capacity maintenance cost:
-        Value taken from :cite:`Wang:2017go`
+    * **Calculation of omega**. Values for estimating the scaling factor in J max
+      limitation method of :cite:`Smith:2019dv`)
 
-    Calculation of omega:
-        Values for estimating the scaling factor in J max limitation method of
-        :cite:`Smith:2019dv`:
-
-    * `smith19_theta`: (:math:`\theta`, 0.85)
-    * `smith19_c_cost`: (:math:`\c`, 0.05336251)
-
-    Dark respiration:
-        Value taken from :cite:`Atkin:2015hk` for C3 herbaceous plants
+    * **Dark respiration**. Value taken from :cite:`Atkin:2015hk` for C3 herbaceous
+      plants
 
     """
 
