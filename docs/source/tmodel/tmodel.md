@@ -20,11 +20,11 @@ scalings and allocation of primary production.
 
 The module uses three key components of the T Model:
 
-1. the {class}`~pyrealm.param_classes.TModelTraits` class,
+1. the {class}`~pyrealm.constants.tmodel_const.TModelTraits` class,
 2. the {class}`~pyrealm.tmodel.TTree` class, and
 3. the {func}`~pyrealm.tmodel.grow_ttree` function.
 
-## The {class}`~pyrealm.param_classes.TModelTraits` class
+## The {class}`~pyrealm.constants.tmodel_const.TModelTraits` class
 
 The T Model depends on a set of 14 traits that are used to describe the geometry of a
 tree and the allocation of carbon within the tree and which are listed in the linked

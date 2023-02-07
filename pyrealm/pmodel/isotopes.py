@@ -7,7 +7,7 @@ from warnings import warn
 
 from numpy.typing import NDArray
 
-from pyrealm.param_classes import IsotopesParams
+from pyrealm.constants import IsotopesConst
 from pyrealm.pmodel.pmodel import PModel
 from pyrealm.utilities import check_input_shapes, summarize_attrs
 
@@ -34,7 +34,7 @@ class CalcCarbonIsotopes:
             (:math:`\delta\ce{^{13}C}`, permil).
         D14CO2: Atmospheric isotopic ratio for Carbon 14
             (:math:`\Delta\ce{^{14}C}`, permil).
-        params: An instance of :class:`~pyrealm.param_classes.IsotopesParams`,
+        const: An instance of :class:`~pyrealm.constants.isotopes_const.IsotopesConst`,
             parameterizing the calculations.
     """
 
@@ -43,12 +43,12 @@ class CalcCarbonIsotopes:
         pmodel: PModel,
         D14CO2: NDArray,
         d13CO2: NDArray,
-        params: IsotopesParams = IsotopesParams(),
+        const: IsotopesConst = IsotopesConst(),
     ):
         # Check inputs are congruent
         _ = check_input_shapes(pmodel.env.tc, d13CO2, D14CO2)
 
-        self.params: IsotopesParams = params
+        self.const: IsotopesConst = const
         """The IsotopesParams instance used to calculate estimates."""
         self.shape: tuple = pmodel.shape
         """Records the common numpy array shape of array inputs."""
@@ -92,7 +92,7 @@ class CalcCarbonIsotopes:
         self.d14C_leaf = (D14CO2 - self.Delta14C) / (1 + self.Delta14C / 1000)
 
         # Isotopic composition of wood considering post-photosynthetic fractionation:
-        self.d13C_wood = self.d13C_leaf + self.params.frank_postfrac
+        self.d13C_wood = self.d13C_leaf + self.const.frank_postfrac
 
     def __repr__(self) -> str:
         """Generates a string representation of a CalcCarbonIsotopes instance."""
@@ -108,7 +108,7 @@ class CalcCarbonIsotopes:
         Examples:
             >>> ppar = PModelParams(beta_cost_ratio_c4=35)
             >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
-            ...                         vpd=1000, pmodel_params=ppar)
+            ...                         vpd=1000, const=ppar)
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
             >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
             >>> round(mod_c4_delta.Delta13C, 4)
@@ -119,8 +119,8 @@ class CalcCarbonIsotopes:
 
         # Equation from C3/C4 paper
         self.Delta13C_simple = (
-            self.params.lavergne_delta13_a
-            + self.params.lavergne_delta13_b * pmodel.optchi.chi
+            self.const.lavergne_delta13_a
+            + self.const.lavergne_delta13_b * pmodel.optchi.chi
         )
         self.Delta13C = self.Delta13C_simple
 
@@ -138,7 +138,7 @@ class CalcCarbonIsotopes:
         Examples:
             >>> ppar = PModelParams(beta_cost_ratio_c4=35)
             >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
-            ...                         vpd=1000, pmodel_params=ppar)
+            ...                         vpd=1000, const=ppar)
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
             >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
             >>> # round(mod_c4_delta.Delta13C, 4)  # NOT CHECKED 5.2753
@@ -147,21 +147,21 @@ class CalcCarbonIsotopes:
 
         warn("This method is experimental code from Alienor Lavergne")
 
+        # Equation A5 from von Caemmerer et al. (2014)
+        # b4 = (-9.483 * 1000) / (273 + self.tc) + 23.89 + 2.2
+        # b4 = self.const.vonCaemmerer_b4
+
         # 13C discrimination (‰): von Caemmerer et al. (2014) Eq. 1
         self.Delta13C_simple = (
-            self.params.farquhar_a
+            self.const.farquhar_a
             + (
-                self.params.vonCaemmerer_b4
-                + (self.params.farquhar_b - self.params.vonCaemmerer_s)
-                * self.params.vonCaemmerer_phi
-                - self.params.farquhar_a
+                self.const.vonCaemmerer_b4
+                + (self.const.farquhar_b - self.const.vonCaemmerer_s)
+                * self.const.vonCaemmerer_phi
+                - self.const.farquhar_a
             )
             * pmodel.optchi.chi
         )
-
-        # Equation A5 from von Caemmerer et al. (2014)
-        # b4 = (-9.483 * 1000) / (273 + self.tc) + 23.89 + 2.2
-        # b4 = self.pmodel_params.vonCaemmerer_b4
 
         self.Delta13C = self.Delta13C_simple
 
@@ -186,15 +186,15 @@ class CalcCarbonIsotopes:
         # 13C discrimination (permil): Farquhar et al. (1982)
         # Simple
         self.Delta13C_simple = (
-            self.params.farquhar_a
-            + (self.params.farquhar_b - self.params.farquhar_a) * pmodel.optchi.chi
+            self.const.farquhar_a
+            + (self.const.farquhar_b - self.const.farquhar_a) * pmodel.optchi.chi
         )
 
         # with photorespiratory effect:
         self.Delta13C = (
-            self.params.farquhar_a
-            + (self.params.farquhar_b2 - self.params.farquhar_a) * pmodel.optchi.chi
-            - self.params.farquhar_f * pmodel.env.gammastar / pmodel.env.ca
+            self.const.farquhar_a
+            + (self.const.farquhar_b2 - self.const.farquhar_a) * pmodel.optchi.chi
+            - self.const.farquhar_f * pmodel.env.gammastar / pmodel.env.ca
         )
 
     def summarize(self, dp: int = 2) -> None:

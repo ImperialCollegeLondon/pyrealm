@@ -36,7 +36,7 @@ to help guide when inputs should be filter or clipped to remove problem values.
 ## Temperature dependence of quantum yield efficiency
 
 The quadratic equations describing the temperature dependence of quantum yield efficiency
-are automatically clipped to convert negative values to zero. With the default parameter
+are automatically clipped to convert negative values to zero. With the default constant
 settings, the roots of these quadratics are:
 
 - C4: $-0.064 + 0.03  x - 0.000464 x^2$ has roots at 2.21 °C and 62.4 °C
@@ -50,12 +50,8 @@ Note that the default values for C3 photosynthesis give **non-zero values below 
 from matplotlib import pyplot
 import numpy as np
 from pyrealm.pmodel import calc_ftemp_kphio, calc_gammastar, calc_kmm, calc_density_h2o
-from pyrealm.param_classes import PModelParams
 
 %matplotlib inline
-
-# get the default set of P Model parameters
-pmodel_param = PModelParams()
 
 # Set the resolution of examples
 n_pts = 101

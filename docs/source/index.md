@@ -75,7 +75,7 @@ clicking on the buttons like the one below.
   
   hygro.md
   utilities.md
-  params.md
+  constants.md
   z_bibliography.rst
 ```
 

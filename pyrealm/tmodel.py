@@ -4,7 +4,7 @@ This module provides an implementation of the T Model of plant growth given
 an estimate of gross primary productivity (GPP).
 
 * The growth form and productivity allocation model of a plant is set using
-    :class:`~pyrealm.param_classes.TModelTraits`.
+    :class:`~pyrealm.constants.tmodel_const.TModelTraits`.
 * The class :class:`~pyrealm.tmodel.TTree` is used to generate an instance of a
   plant to be simulated, with methods :meth:`~pyrealm.tmodel.TTree.set_diameter`
   and :meth:`~pyrealm.tmodel.TTree.calculate_growth` to calculate the plant
@@ -16,9 +16,7 @@ an estimate of gross primary productivity (GPP).
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.param_classes import TModelTraits
-
-# from pyrealm.utilities import check_input_shapes
+from pyrealm.constants.tmodel_const import TModelTraits
 
 # Design Notes:
 #
@@ -44,7 +42,7 @@ class TTree:
     and calculations.
 
     Args:
-        traits: An object of class :class:`~pyrealm.param_classes.TModelTraits`
+        traits: An object of class :class:`~pyrealm.constants.tmodel_const.TModelTraits`
         diameters: A float or np.array of stem diameters.
     """
 

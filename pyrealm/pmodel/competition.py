@@ -7,7 +7,7 @@ pathways in locations.
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.param_classes import C3C4Params
+from pyrealm.constants import C3C4Const
 from pyrealm.utilities import check_input_shapes, summarize_attrs
 
 
@@ -91,7 +91,7 @@ class C3C4Competition:
         treecover: Percentage tree cover (%).
         below_t_min: A boolean mask, temperatures too low for C4 plants.
         cropland: A boolean mask indicating cropland locations.
-        params: An instance of :class:`~pyrealm.param_classes.C3C4Params`
+        const: An instance of :class:`~pyrealm.constants.competition_const.C3C4Const`
             providing parameterisation for the competition model.
     """
 
@@ -117,13 +117,13 @@ class C3C4Competition:
         treecover: NDArray,
         below_t_min: NDArray,
         cropland: NDArray,
-        params: C3C4Params = C3C4Params(),
+        const: C3C4Const = C3C4Const(),
     ):
         # Check inputs are congruent
         self.shape: tuple = check_input_shapes(
             gpp_c3, gpp_c4, treecover, cropland, below_t_min
         )
-        self.params: C3C4Params = params
+        self.const: C3C4Const = const
 
         # Step 1: calculate the percentage advantage in GPP of C4 plants from
         # annual total GPP estimates for C3 and C4 plants. This uses use
@@ -191,10 +191,10 @@ class C3C4Competition:
         frac_c4 = 1.0 / (
             1.0
             + np.exp(
-                -self.params.adv_to_frac_k
+                -self.const.adv_to_frac_k
                 * (
                     (self.gpp_adv_c4 / np.exp(1 / (1 + treecover)))
-                    - self.params.adv_to_frac_q
+                    - self.const.adv_to_frac_q
                 )
             )
         )
@@ -217,12 +217,12 @@ class C3C4Competition:
         """
 
         prop_trees = (
-            self.params.gpp_to_tc_a * np.power(gppc3, self.params.gpp_to_tc_b)
-            + self.params.gpp_to_tc_c
+            self.const.gpp_to_tc_a * np.power(gppc3, self.const.gpp_to_tc_b)
+            + self.const.gpp_to_tc_c
         ) / (
-            self.params.gpp_to_tc_a
-            * np.power(self.params.c3_forest_closure_gpp, self.params.gpp_to_tc_b)
-            + self.params.gpp_to_tc_c
+            self.const.gpp_to_tc_a
+            * np.power(self.const.c3_forest_closure_gpp, self.const.gpp_to_tc_b)
+            + self.const.gpp_to_tc_c
         )
         prop_trees = np.clip(prop_trees, 0, 1)
 

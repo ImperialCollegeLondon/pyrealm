@@ -8,26 +8,27 @@ validated against the ``bigleaf`` R package.
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.param_classes import HygroParams
+from pyrealm.constants import HygroConst
 from pyrealm.utilities import bounds_checker
 
 
-def calc_vp_sat(ta: NDArray, hygro_params: HygroParams = HygroParams()) -> NDArray:
+def calc_vp_sat(ta: NDArray, const: HygroConst = HygroConst()) -> NDArray:
     r"""Calculate vapour pressure of saturated air.
 
-    This function calculates the vapour pressure of saturated air at a given
-    temperature in kPa, using the Magnus equation:
+    This function calculates the vapour pressure of saturated air at a given temperature
+    in kPa, using the Magnus equation:
 
     .. math::
 
         P = a \exp\(\frac{b - T}{T + c}\),
 
-    where :math:`a,b,c` are defined in :class:`~pyrealm.param_classes.HygroParams`.
+    where :math:`a,b,c` are defined in
+    :class:`~pyrealm.constants.hygro_const.HygroConst`.
 
     Args:
-        ta: The air temperature
-        hygro_params: An object of :class:`~pyrealm.param_classes.HygroParams`
-            giving the parameters for conversions.
+        ta: The air temperature const: An object of
+            :class:`~pyrealm.constants.hygro_const.HygroConst` giving the parameters for
+            conversions.
 
     Returns:
         Saturated air vapour pressure in kPa.
@@ -38,31 +39,31 @@ def calc_vp_sat(ta: NDArray, hygro_params: HygroParams = HygroParams()) -> NDArr
         >>> temp = np.array([21])
         >>> round(calc_vp_sat(temp), 6)
         2.480904
-        >>> from pyrealm.param_classes import HygroParams
-        >>> allen = HygroParams(magnus_option='Allen1998')
-        >>> round(calc_vp_sat(temp, hygro_params=allen), 6)
+        >>> from pyrealm.constants import HygroConst
+        >>> allen = HygroConst(magnus_option='Allen1998')
+        >>> round(calc_vp_sat(temp, const=allen), 6)
         2.487005
-        >>> alduchov = HygroParams(magnus_option='Alduchov1996')
-        >>> round(calc_vp_sat(temp, hygro_params=alduchov), 6)
+        >>> alduchov = HygroConst(magnus_option='Alduchov1996')
+        >>> round(calc_vp_sat(temp, const=alduchov), 6)
         2.481888
     """
 
     # Magnus equation and conversion to kPa
-    cf = hygro_params.magnus_coef
+    cf = const.magnus_coef
     vp_sat = cf[0] * np.exp((cf[1] * ta) / (cf[2] + ta)) / 1000
 
     return vp_sat
 
 
 def convert_vp_to_vpd(
-    vp: NDArray, ta: NDArray, hygro_params: HygroParams = HygroParams()
+    vp: NDArray, ta: NDArray, const: HygroConst = HygroConst()
 ) -> NDArray:
     """Convert vapour pressure to vapour pressure deficit.
 
     Args:
         vp: The vapour pressure in kPa
         ta: The air temperature in °C
-        hygro_params: An object of class ~`pyrealm.param_classes.HygroParams`
+        const: An object of class ~`pyrealm.constants.hygro_const.HygroConst`
             giving the settings to be used in conversions.
 
     Returns:
@@ -74,25 +75,25 @@ def convert_vp_to_vpd(
         >>> temp = np.array([21])
         >>> round(convert_vp_to_vpd(vp, temp), 7)
         0.5809042
-        >>> from pyrealm.param_classes import HygroParams
-        >>> allen = HygroParams(magnus_option='Allen1998')
-        >>> round(convert_vp_to_vpd(vp, temp, hygro_params=allen), 7)
+        >>> from pyrealm.constants import HygroConst
+        >>> allen = HygroConst(magnus_option='Allen1998')
+        >>> round(convert_vp_to_vpd(vp, temp, const=allen), 7)
         0.5870054
     """
-    vp_sat = calc_vp_sat(ta, hygro_params=hygro_params)
+    vp_sat = calc_vp_sat(ta, const=const)
 
     return vp_sat - vp
 
 
 def convert_rh_to_vpd(
-    rh: NDArray, ta: NDArray, hygro_params: HygroParams = HygroParams()
+    rh: NDArray, ta: NDArray, const: HygroConst = HygroConst()
 ) -> NDArray:
     """Convert relative humidity to vapour pressure deficit.
 
     Args:
         rh: The relative humidity (proportion in (0,1))
         ta: The air temperature in °C
-        hygro_params: An object of class ~`pyrealm.param_classes.HygroParams`
+        const: An object of class ~`pyrealm.constants.hygro_const.HygroConst`
             giving the settings to be used in conversions.
 
     Returns:
@@ -104,8 +105,8 @@ def convert_rh_to_vpd(
         >>> temp = np.array([21])
         >>> round(convert_rh_to_vpd(rh, temp), 7)
         0.7442712
-        >>> from pyrealm.param_classes import HygroParams
-        >>> allen = HygroParams(magnus_option='Allen1998')
+        >>> from pyrealm.constants import HygroConst
+        >>> allen = HygroConst(magnus_option='Allen1998')
         >>> round(convert_rh_to_vpd(rh, temp, hygro_params=allen), 7)
         0.7461016
         >>> import sys; sys.stderr = sys.stdout
@@ -117,20 +118,20 @@ def convert_rh_to_vpd(
 
     rh = bounds_checker(rh, 0, 1, "[]", "rh", "proportion")
 
-    vp_sat = calc_vp_sat(ta, hygro_params=hygro_params)
+    vp_sat = calc_vp_sat(ta, const=const)
 
     return vp_sat - (rh * vp_sat)
 
 
 def convert_sh_to_vp(
-    sh: NDArray, patm: NDArray, hygro_params: HygroParams = HygroParams()
+    sh: NDArray, patm: NDArray, const: HygroConst = HygroConst()
 ) -> NDArray:
     """Convert specific humidity to vapour pressure.
 
     Args:
         sh: The specific humidity in kg kg-1
         patm: The atmospheric pressure in kPa
-        hygro_params: An object of class ~`pyrealm.param_classes.HygroParams`
+        const: An object of class ~`pyrealm.constants.hygro_const.HygroConst`
             giving the settings to be used in conversions.
 
     Returns:
@@ -144,11 +145,11 @@ def convert_sh_to_vp(
         0.9517451
     """
 
-    return sh * patm / ((1.0 - hygro_params.mwr) * sh + hygro_params.mwr)
+    return sh * patm / ((1.0 - const.mwr) * sh + const.mwr)
 
 
 def convert_sh_to_vpd(
-    sh: NDArray, ta: NDArray, patm: NDArray, hygro_params: HygroParams = HygroParams()
+    sh: NDArray, ta: NDArray, patm: NDArray, const: HygroConst = HygroConst()
 ) -> NDArray:
     """Convert specific humidity to vapour pressure deficit.
 
@@ -156,7 +157,7 @@ def convert_sh_to_vpd(
         sh: The specific humidity in kg kg-1
         ta: The air temperature in °C
         patm: The atmospheric pressure in kPa
-        hygro_params: An object of class ~`pyrealm.param_classes.HygroParams`
+        hygro_params: An object of class ~`pyrealm.constants.hygro_const.HygroConst`
             giving the settings to be used in conversions.
 
     Returns:
@@ -169,13 +170,13 @@ def convert_sh_to_vpd(
         >>> patm = np.array([99.024])
         >>> round(convert_sh_to_vpd(sh, temp, patm), 6)
         1.529159
-        >>> from pyrealm.param_classes import HygroParams
-        >>> allen = HygroParams(magnus_option='Allen1998')
+        >>> from pyrealm.constants import HygroConst
+        >>> allen = HygroConst(magnus_option='Allen1998')
         >>> round(convert_sh_to_vpd(sh, temp, patm, hygro_params=allen), 5)
         1.53526
     """
 
-    vp_sat = calc_vp_sat(ta, hygro_params=hygro_params)
-    vp = convert_sh_to_vp(sh, patm, hygro_params=hygro_params)
+    vp_sat = calc_vp_sat(ta, const=const)
+    vp = convert_sh_to_vp(sh, patm, const=const)
 
     return vp_sat - vp
