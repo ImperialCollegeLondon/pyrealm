@@ -14,9 +14,9 @@ class HygroConst(ConstantsClass):
 
     This data class provides constants used in :mod:`~pyrealm.hygro`, which includes
     hygrometric conversions. The values for
-    :attr:`~pyrealm.constants.hygro_const.HygroParams.magnus_coef`` be set directly or
+    :attr:`~pyrealm.constants.hygro_const.HygroConst.magnus_coef`` be set directly or
     by selecting one of ``Allen1998``, ``Alduchov1996`` or ``Sonntag1990`` as
-    :attr:`~pyrealm.constants.hygro_const.HygroParams.magnus_option``. The default
+    :attr:`~pyrealm.constants.hygro_const.HygroConst.magnus_option``. The default
     setting is to use the ``Sonntag1990`` parameters.
 
     """

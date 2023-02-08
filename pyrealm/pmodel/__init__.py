@@ -24,7 +24,11 @@ PModel Parameters
 # flatten the namespace for the main public components and setup.cfg applies
 # # noqa: F401 to the whole file.
 
-from pyrealm.pmodel.competition import C3C4Competition
+from pyrealm.pmodel.competition import (
+    C3C4Competition,
+    calculate_tree_proportion,
+    convert_gpp_advantage_to_c4_fraction,
+)
 from pyrealm.pmodel.functions import (
     calc_co2_to_ca,
     calc_density_h2o,

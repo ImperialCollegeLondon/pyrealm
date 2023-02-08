@@ -11,49 +11,61 @@ from pyrealm.constants import C3C4Const
 from pyrealm.utilities import check_input_shapes, summarize_attrs
 
 
-class C3C4Competition:
-    r"""Implementation of the C3/C4 competition model.
+def convert_gpp_advantage_to_c4_fraction(
+    gpp_adv_c4: NDArray, treecover: NDArray, const: C3C4Const = C3C4Const()
+) -> NDArray:
+    r"""Convert C4 GPP advantage to C4 fraction.
 
-    This class provides an implementation of the calculations of C3/C4
-    competition, described by :cite:`lavergne:2020a`. The key inputs ``ggp_c3``
-    and ``gpp_c4`` are gross primary productivity (GPP) estimates for C3 or C4
-    pathways `alone`  using the :class:`~pyrealm.pmodel.pmodel.PModel`
+    This function calculates an initial estimate of the fraction of C4 plants based on
+    the proportional GPP advantage from C4 photosynthesis. The proportion GPP advantage
+    :math:`A_4` is converted to an expected fraction of C4 :math:`F_4` plants using a
+    logistic equation of :math:`A_4`, where :math:`A_4` is first modulated by percentage
+    tree cover (TC):
 
-    These estimates are used to calculate the relative advantage of C4 over C3
-    photosynthesis (:math:`A_4`), the expected fraction of C4 plants in the
-    community (:math:`F_4`) and hence fraction of GPP from C4 plants as follows:
+    .. math::
+        :nowrap:
 
-    1. The proportion advantage in GPP for C4 plants is calculated as:
+        \[
+            \begin{align*}
+                A_4^\prime &= \frac{A_4}{e^ {1 / 1 + \text{TC}}} \\
+                F_4 &= \frac{1}{1 + e^{k A_4^\prime} - q}
+            \end{align*}
+        \]
 
-        .. math::
-            :nowrap:
+    The parameters are set in the ``params`` instance and are the slope of the equation
+    (:math:`k`, :attr:`~pyrealm.constants.competition_const.C3C4Const.adv_to_frac_k`)
+    and :math:`A_4` value at the midpoint of the curve
+    (:math:`q`, :attr:`~pyrealm.constants.competition_const.C3C4Const.adv_to_frac_q`).
 
-            \[
-            A_4 = \frac{\text{GPP}_{C4} - \text{GPP}_{C3}}{\text{GPP}_{C3}}
-            \]
+    Args:
+        gpp_adv_c4: The proportional GPP advantage of C4 photosynthesis.
+        treecover: The proportion tree cover.
 
-    2. The proportion GPP advantage :math:`A_4` is converted to an expected
-       fraction of C4 :math:`F_4` plants using a logistic equation of
-       :math:`A_4`, where :math:`A_4` is first modulated by percentage tree
-       cover (TC):
+    Returns:
+        The estimated fraction of C4 plants given the estimated C4 GPP advantage and
+        tree cover.
+    """
 
-        .. math::
-            :nowrap:
+    frac_c4 = 1.0 / (
+        1.0
+        + np.exp(
+            -const.adv_to_frac_k
+            * ((gpp_adv_c4 / np.exp(1 / (1 + treecover))) - const.adv_to_frac_q)
+        )
+    )
 
-            \[
-                \begin{align*}
-                    A_4^\prime &= \frac{A_4}{e^ {1 / 1 + \text{TC}}} \\
-                    F_4 &= \frac{1}{1 + e^{k A_4^\prime} - q}
-                \end{align*}
-            \]
+    return frac_c4
 
-        The parameters are set in the ``params`` instance and are the slope of the
-        equation (:math:`k`, ``adv_to_frac_k``) and :math:`A_4` value at the
-        midpoint of the curve (:math:`q`, ``adv_to_frac_q``).
 
-    3. A model of tree cover from C3 trees is then used to correct for shading
-       of C4 plants due to canopy closure, even when C4 photosynthesis is
-       advantagious. The estimated tree cover function is:
+def calculate_tree_proportion(
+    gppc3: NDArray, const: C3C4Const = C3C4Const()
+) -> NDArray:
+    r"""Calculate the proportion of GPP from C3 trees.
+
+    This function estimates the proportion of C3 trees in the community, which can then
+    be used to penalise the fraction of C4 plants due to shading of C4 plants by canopy
+    closure, even when C4 photosynthesis is advantagious. The estimated tree cover
+    function is:
 
         .. math::
             :nowrap:
@@ -62,12 +74,14 @@ class C3C4Competition:
                     TC(\text{GPP}_{C3}) = a \cdot \text{GPP}_{C3} ^ b - c
                 \]
 
-       with parameters set in the `params` instance (:math:`a`, ``gpp_to_tc_a``;
-       :math:`b`, ``gpp_to_tc_b``; :math:`c`, ``gpp_to_tc_c``). The proportion of
-       GPP from C3 trees (:math:`h`) is then estimated using the predicted tree
-       cover in locations relative to a threshold GPP value (:math:`\text{GPP}_{CLO}`,
-       `c3_forest_closure_gpp`) above which canopy closure occurs. The value of
-       :math:`h` is clamped in :math:`[0, 1]`:
+    with parameters set in the `const` instance (:math:`a`,
+    :attr:`~pyrealm.constants.competition_const.C3C4Const.gpp_to_tc_a`; :math:`b`,
+    :attr:`~pyrealm.constants.competition_const.C3C4Const.gpp_to_tc_b`; :math:`c`,
+    :attr:`~pyrealm.constants.competition_const.C3C4Const.gpp_to_tc_c`). The proportion
+    of GPP from C3 trees (:math:`h`) is then estimated using the predicted tree cover in
+    locations relative to a threshold GPP value (:math:`\text{GPP}_{CLO}`,
+    :attr:`~pyrealm.constants.competition_const.C3C4Const.c3_forest_closure_gpp`) above
+    which canopy closure occurs. The value of :math:`h` is clamped in :math:`[0, 1]`:
 
         .. math::
             :nowrap:
@@ -78,12 +92,60 @@ class C3C4Competition:
                         1 \right)
                 \]
 
-       The C4 fraction is then discounted as :math:`F_4 = F_4 (1 - h)`.
+    Args:
+        gppc3: The estimated GPP for C3 plants. The input values here must be
+          expressed  as **kilograms** per metre squared per year (kg m-2 yr-1).
 
-    4. Two masks are applied. First, :math:`F_4 = 0` in locations where the
-       mean  air temperature of the coldest month is too low for C4 plants.
-       Second, :math:`F_4` is set as unknown for croplands, where the fraction
-       is set by agricultural management, not competition.
+    Returns:
+        The estimated proportion of GPP resulting from C3 trees.
+    """
+
+    prop_trees = (
+        const.gpp_to_tc_a * np.power(gppc3, const.gpp_to_tc_b) + const.gpp_to_tc_c
+    ) / (
+        const.gpp_to_tc_a * np.power(const.c3_forest_closure_gpp, const.gpp_to_tc_b)
+        + const.gpp_to_tc_c
+    )
+    prop_trees = np.clip(prop_trees, 0, 1)
+
+    return prop_trees
+
+
+class C3C4Competition:
+    r"""Implementation of the C3/C4 competition model.
+
+    This class provides an implementation of the calculations of C3/C4 competition,
+    described by :cite:`lavergne:2020a`. The key inputs ``ggp_c3`` and ``gpp_c4`` are
+    gross primary productivity (GPP) estimates for C3 or C4 pathways `alone`  using the
+    :class:`~pyrealm.pmodel.pmodel.PModel`
+
+    These estimates are used to calculate the relative advantage of C4 over C3
+    photosynthesis (:math:`A_4`), the expected fraction of C4 plants in the community
+    (:math:`F_4`) and hence fraction of GPP from C4 plants as follows:
+
+    1. The proportion advantage in GPP for C4 plants is calculated as:
+
+        .. math::
+            :nowrap:
+
+            \[
+            A_4 = \frac{\text{GPP}_{C4} - \text{GPP}_{C3}}{\text{GPP}_{C3}}
+            \]
+
+    2. The proportion GPP advantage :math:`A_4` is converted to an expected fraction of
+       C4 :math:`F_4` plants using the function
+       :func:`~pyrealm.pmodel.competition.convert_gpp_advantage_to_c4_fraction`.
+
+    3. A model of tree cover from C3 trees is then used to penalise the fraction of C4
+       plants due to shading. The function
+       :func:`~pyrealm.pmodel.competition.calculate_tree_proportion` is used to estimate
+       the proportion (:math:`h`) and the C4 fraction is then discounted as :math:`F_4 =
+       F_4 (1 - h)`.
+
+    4. Two masks are applied. First, :math:`F_4 = 0` in locations where the mean  air
+       temperature of the coldest month is too low for C4 plants. Second, :math:`F_4` is
+       set as unknown for croplands, where the fraction is set by agricultural
+       management, not competition.
 
     Args:
         gpp_c3: Total annual GPP (gC m-2 yr-1) from C3 plants alone.
@@ -136,11 +198,13 @@ class C3C4Competition:
 
         # Step 2: calculate the initial C4 fraction based on advantage modulated
         # by treecover.
-        frac_c4 = self._convert_advantage_to_c4_fraction(treecover=treecover)
+        frac_c4 = convert_gpp_advantage_to_c4_fraction(
+            self.gpp_adv_c4, treecover=treecover, const=const
+        )
 
         # Step 3: calculate the proportion of trees shading C4 plants, scaling
         # the predicted GPP to kilograms.
-        prop_trees = self._calculate_tree_proportion(gppc3=gpp_c3 / 1000)
+        prop_trees = calculate_tree_proportion(gppc3=gpp_c3 / 1000, const=const)
         frac_c4 = frac_c4 * (1 - prop_trees)
 
         # Step 4: remove areas below minimum temperature
@@ -172,61 +236,6 @@ class C3C4Competition:
     def __repr__(self) -> str:
         """Generates a string representation of a C3C4Competition instance."""
         return f"C3C4Competition(shape={self.shape})"
-
-    def _convert_advantage_to_c4_fraction(self, treecover: NDArray) -> NDArray:
-        """Convert C4 GPP advantage to C4 fraction.
-
-        This method calculates an initial estimate of the fraction of C4 plants based on
-        the proportional GPP advantage from C4 photosynthesis. The conversion is
-        modulated by the proportion treecover.
-
-        Args:
-            treecover: The proportion tree cover at modelled locations.
-
-        Returns:
-            The estimated C4 fraction given the estimated C4 GPP advantage and tree
-            cover.
-        """
-
-        frac_c4 = 1.0 / (
-            1.0
-            + np.exp(
-                -self.const.adv_to_frac_k
-                * (
-                    (self.gpp_adv_c4 / np.exp(1 / (1 + treecover)))
-                    - self.const.adv_to_frac_q
-                )
-            )
-        )
-
-        return frac_c4
-
-    def _calculate_tree_proportion(self, gppc3: NDArray) -> NDArray:
-        """Calculate the proportion of GPP from C3 trees.
-
-        This method calculates the proportional impact of forest closure by C3 trees on
-        the fraction of C4 plants in the community. A statistical model is used to
-        predict both forest cover from the GPP for C3 plants and for a threshold value
-        indicating closed canopy forest. The ratio of these two values is used to
-        indicate the proportion of GPP from trees.
-
-        Note that the GPP units here are in **kilograms** per metre squared per year.
-
-        Args:
-            gppc3: The estimated GPP for C3 plants (kg m-2 yr-1).
-        """
-
-        prop_trees = (
-            self.const.gpp_to_tc_a * np.power(gppc3, self.const.gpp_to_tc_b)
-            + self.const.gpp_to_tc_c
-        ) / (
-            self.const.gpp_to_tc_a
-            * np.power(self.const.c3_forest_closure_gpp, self.const.gpp_to_tc_b)
-            + self.const.gpp_to_tc_c
-        )
-        prop_trees = np.clip(prop_trees, 0, 1)
-
-        return prop_trees
 
     def estimate_isotopic_discrimination(
         self, d13CO2: NDArray, Delta13C_C3_alone: NDArray, Delta13C_C4_alone: NDArray

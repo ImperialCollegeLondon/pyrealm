@@ -125,3 +125,5 @@
         - param_classes.py used as the basis for a new constants module with smaller
           better documented files and XYZConst naming scheme.
         - '(pmodel)_params' style arguments updated to 'const', docs updated to match.
+        - C3C4 competition private functions now exposed as stand-alone functions with
+          cleaner docs and demo usage.
