@@ -14,11 +14,25 @@ kernelspec:
 
 ## Module overview
 
-The package contains a number of different modules implementing different models:
+The package implements several modelling approaches to estimating the optimal
+photosynthetic behaviour of plants and then using the resulting estimates of
+productivity to model plant growth and the demography of plant communities.
 
-1. The [P Model](pmodel/pmodel): a ecophysiological model of carbon dioxide
-   uptake by plants (:{cite}`Prentice:2014bc`, :{cite}`Wang:2017go`, :{cite}`Stocker:2020dh`)
-2. The [T Model](tmodel/tmodel)
+The package is in active development and currently provides the following functionality:
+
+* Fitting [P Model](pmodel/pmodel), which is a ecophysiological model of optimal carbon
+  dioxide uptake by plants (:{cite}`Prentice:2014bc`, :{cite}`Wang:2017go`,
+  :{cite}`Stocker:2020dh`). Extensions to this model include:
+
+  * Estimation of [isotopic discrimination of
+    carbon](pmodel/isotopic_discrimination.md) resulting from photosynthesis.
+  * A model of [C3 / C4 plant competition](pmodel/c3c4model), giving an estimate of
+    the expected fraction of C4 plants in a community.
+
+* Estimating plant allocation of gross primary productivity to growth and respiration,
+  using [T Model](tmodel/tmodel) (:{cite}`Li:2014bc`).
+* Functions for [converting common hygrometric variables](./hygro) to vapour pressure
+  deficit for use in the P Model.
 
 ## Package documentation
 
@@ -70,11 +84,12 @@ clicking on the buttons like the one below.
   :maxdepth: 4
   :caption: API
   :hidden:
-  
+
   ``tmodel`` module <api/tmodel_api.md>
   ``pmodel`` module <api/pmodel_api.md>
   ``hygro`` module <api/hygro_api.md>
   ``utilities`` module <api/utilities_api.md>
+  ``constants`` module <api/constants_api.md>
 ```
 
 ```{eval-rst}
