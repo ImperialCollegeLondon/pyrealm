@@ -132,11 +132,3 @@ pyplot.xlabel('Specific humidity (kg kg-1)')
 pyplot.ylabel('Vapour pressure deficit (kPa)')
 pyplot.show()
 ```
-
-## Module documentation
-
-```{eval-rst}
-.. automodule:: pyrealm.hygro
-
-
-```

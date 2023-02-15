@@ -73,6 +73,8 @@ clicking on the buttons like the one below.
   
   api/tmodel_api.md
   api/pmodel_api.md
+  api/hygro_api.md
+  api/utilities_api.md
 ```
 
 ```{eval-rst}
