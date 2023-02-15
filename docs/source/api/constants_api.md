@@ -15,6 +15,10 @@ kernelspec:
 
 # The {mod}`~pyrealm.constants` module
 
+```{eval-rst}
+.. automodule:: pyrealm.constants
+```
+
 ## P Model constants
 
 ```{eval-rst}

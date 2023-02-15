@@ -36,13 +36,13 @@ The implementations differ in a number of ways:
    include both global constants and experimentally derived estimates for different
    processes. In the {mod}`~pyrealm.pmodel` module, these hard-coded values have been
    replaced with references to a global constants object
-   ({class}`~pyrealm.constants.pmodel_consts.PModelConst`). This is used to share a set
+   ({class}`~pyrealm.constants.pmodel_const.PModelConst`). This is used to share a set
    of constants and values across all functions. However, can also be altered, allowing
    users to explore model responses to underlying parameter variation (see
    [here](/constants)).
 
    In some cases, ``rpmodel`` sets these constants in function arguments. These have
-   also been moved to {class}`~pyrealm.constants.pmodel_consts.PModelConst` to simplify
+   also been moved to {class}`~pyrealm.constants.pmodel_const.PModelConst` to simplify
    function arguments.
 
 1. The ``rpmodel`` package has suites of functions for calculating $J_{max}$ limitation

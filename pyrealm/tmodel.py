@@ -4,7 +4,7 @@ growth given an estimate of gross primary productivity (GPP).
 * The growth form and productivity allocation model of a plant is set using
     :class:`~pyrealm.constants.tmodel_const.TModelTraits`.
 * The class :class:`~pyrealm.tmodel.TTree` is used to generate an instance of a
-  plant to be simulated, with methods :meth:`~pyrealm.tmodel.TTree.set_diameter`
+  plant to be simulated, with methods :meth:`~pyrealm.tmodel.TTree.reset_diameters`
   and :meth:`~pyrealm.tmodel.TTree.calculate_growth` to calculate the plant
   geometry for a given diameter or predict growth from estimated GPP.
 * The function :func:`~pyrealm.tmodel.grow_ttree` predicts plant growth through
@@ -32,8 +32,9 @@ class TTree:
 
     This class provides an implementation of the calculations of tree geometry, mass and
     growth described by :cite:`Li:2014bc`. All of the properties of the T model are
-    derived from a set of traits (see :class:`~pyrealm.constants.tmodel_const`), stem
-    diameter measurements and estimates of gross primary productivity.
+    derived from a set of traits (see
+    :class:`~pyrealm.constants.tmodel_const.TModelTraits`), stem diameter measurements
+    and estimates of gross primary productivity.
 
     See the details of :meth:`~pyrealm.tmodel.TTree.reset_diameters` and
     :meth:`~pyrealm.tmodel.TTree.calculate_growth` for details of the properties and
@@ -52,8 +53,7 @@ class TTree:
         self.traits: TModelTraits = traits
 
         # The diameter is used to define all of the geometric scaling
-        # based on the trait parameters. It is set by the set_diameter()
-        # method, which then populates the other geometric variables
+        # based on the trait parameters.
 
         self._diameter: NDArray
         self._height: NDArray
