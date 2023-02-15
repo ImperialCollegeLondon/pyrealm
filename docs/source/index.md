@@ -20,7 +20,7 @@ productivity to model plant growth and the demography of plant communities.
 
 The package is in active development and currently provides the following functionality:
 
-* Fitting [P Model](pmodel/pmodel), which is a ecophysiological model of optimal carbon
+* Fitting the [P Model](pmodel/pmodel), which is a ecophysiological model of optimal carbon
   dioxide uptake by plants (:{cite}`Prentice:2014bc`, :{cite}`Wang:2017go`,
   :{cite}`Stocker:2020dh`). Extensions to this model include:
 
@@ -34,48 +34,17 @@ The package is in active development and currently provides the following functi
 * Functions for [converting common hygrometric variables](./hygro) to vapour pressure
   deficit for use in the P Model.
 
-## Package documentation
-
-The documentation for `pyrealm` is maintained using `sphinx`. The module code is
-documented using Google style docstrings in RST format. Much of the rest of the
-documentation uses Jupyter notebooks written using `myst-nb` format in order to
-dynamically include Python code examples showing the behaviour of functions. In
-general, the code will be concealed but the underlying code can be seen by
-clicking on the buttons like the one below.
-
-```{code-cell} python
-:tags: [hide-input]
-# This is just an example code cell to demonstrate how code is included in 
-# the pyrealm documentation.
-```
-
-## Development notes
-
 ```{eval-rst}
 .. toctree::
   :maxdepth: 4
-  :caption: The P Model
+  :caption: For Users
   :hidden:
 
   pmodel/pmodel.md
-  pmodel/photosynthetic_environment.md
-  pmodel/optimal_chi.md
-  pmodel/lue_limitation.md
-  pmodel/envt_variation_outputs.md
-  pmodel/soil_moisture.md
-  pmodel/extreme_values.md
-  pmodel/global_example.md
+  pmodel/pmodel_details/pmodel_details.md
   pmodel/isotopic_discrimination.md
   pmodel/c3c4model.md
   pmodel/rpmodel.md
-```
-
-```{eval-rst}
-.. toctree::
-  :maxdepth: 4
-  :caption: The T Model
-  :hidden:
-  
   tmodel/tmodel.md
 ```
 
@@ -109,6 +78,7 @@ clicking on the buttons like the one below.
   :caption: Developers
   :hidden:
 
+  development/developers.md
 
 ```
 

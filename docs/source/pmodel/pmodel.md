@@ -15,16 +15,17 @@ kernelspec:
 <!-- markdownlint-disable-next-line MD041 -->
 (pmodel_overview)=
 
-# PModel overview and example use
+# The P Model: overview
 
-This module provides a Python implementation of the P-model (:{cite}`Prentice:2014bc`,
-:{cite}`Wang:2017go`). This provides an overview of using the model, showing typical
-code and outputs, and the details of calculations are included in the [module reference
-documentation](../api/pmodel_api).
+This page provides an overview of the theory of the P Model (:{cite}`Prentice:2014bc`,
+:{cite}`Wang:2017go`), and how to use the implementation in the `pyrealm` package. The
+details of calculations and the API for the package code are shown in the [module
+reference documentation](../api/pmodel_api).
 
 The implementation in this module draws from the `rpmodel` implementation of the model
 ({cite}`Stocker:2020dh`) and development matches the predictions of the two
-implementation for most - but not all use cases (see [here](rpmodel) for discussion).
+implementation for most - but not all use cases (see [here](pmodel_details/rpmodel) for
+discussion).
 
 ## Overview
 
@@ -39,24 +40,24 @@ variables are used to define the environment that the plant experiences:
 From thes inputs, the model breaks down into four broad stages, each of which
 is described in more detail in the link for each stage
 
-### Step 1. Photosynthetic environment
+### Photosynthetic environment
 
 The environmental variables are used to calculate variables describing the
 photosynthetic environment of a plant (see
-[details](photosynthetic_environment)).
+[details](pmodel_details/photosynthetic_environment)).
 
-### Step 2. Calculation of leaf $\ce{CO2}$ variables
+### Calculation of leaf $\ce{CO2}$ variables
 
 The photosynthetic environment is then used to calculate the optimal ratio of
 internal to external CO2 concentration ($chi$), along with $\ce{CO2}$ partial
-pressures and limitation factors (see [details](optimal_chi)).
+pressures and limitation factors (see [details](pmodel_details/optimal_chi)).
 
 This step also governs the main differences between C3 and C4 photosynthesis.
 
-### Step 3. Limitation of light use efficiency (LUE)
+### Limitation of light use efficiency (LUE)
 
 The calculation of light use efficiency can be subjected to a number of
-constraints. (see [details](lue_limitation)).
+constraints. (see [details](pmodel_details/lue_limitation)).
 
 - Theoretical limitations to the maximum rates of Rubsico regeneration
    ($J_{max}$) and maximum carboxylation capacity ($V_{cmax}$)
@@ -66,11 +67,11 @@ constraints. (see [details](lue_limitation)).
 
 - Soil moisture stress.
 
-### Step 4. Estimation of GPP
+### Estimation of GPP
 
 Once LUE has been calculated, estimates of absorbed photosynthetically active
 radiation, can be used to predict gross primary productivity (GPP) and other key
-rates within the leaf (see [details](estimating-productivity)).
+rates within the leaf (see [details](pmodel_details/estimating-productivity)).
 
 ### Variable graph
 
@@ -143,8 +144,8 @@ model.summarize()
 ### $\chi$ estimates and $\ce{CO2}$ limitation
 
 The P Model also contains a {class}`~pyrealm.pmodel.pmodel.CalcOptimalChi` object,
-recording key parameters from the [calculation of $\chi$](optimal_chi). This
-object also has a {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.summarize` method:
+recording key parameters from the [calculation of $\chi$](pmodel_details/optimal_chi).
+This object also has a {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.summarize` method:
 
 ```{code-cell}
 model.optchi.summarize()
@@ -229,4 +230,4 @@ directly from the input forcing variables. While the majority of those calculati
 behave smoothly with extreme values of temperature and atmospheric pressure,
 the calculation of the relative viscosity of water ($\eta^*$) does not handle
 low temperatures well. The behaviour of these functions with extreme values
-is shown [here](extreme_values).
+is shown [here](pmodel_details/extreme_values).
