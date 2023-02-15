@@ -34,7 +34,7 @@ class CalcCarbonIsotopes:
             (:math:`\delta\ce{^{13}C}`, permil).
         D14CO2: Atmospheric isotopic ratio for Carbon 14
             (:math:`\Delta\ce{^{14}C}`, permil).
-        const: An instance of :class:`~pyrealm.constants.isotopes_const.IsotopesConst`,
+        const: An instance of :class:`~pyrealm.constants.isotope_const.IsotopesConst`,
             parameterizing the calculations.
     """
 

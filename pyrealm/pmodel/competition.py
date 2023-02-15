@@ -253,10 +253,10 @@ class C3C4Competition:
         composition (:math:`d\ce{^13C}`).
 
         Calling this method populates the attributes
-        :attr:`~pyrealm.C3C4Competition.Delta13C_C3`,
-        :attr:`~pyrealm.C3C4Competition.Delta13C_C4`,
-        :attr:`~pyrealm.C3C4Competition.d13C_C3`, and
-        :attr:`~pyrealm.C3C4Competition.d13C_C4`.
+        :attr:`~pyrealm.pmodel.competition.C3C4Competition.Delta13C_C3`,
+        :attr:`~pyrealm.pmodel.competition.C3C4Competition.Delta13C_C4`,
+        :attr:`~pyrealm.pmodel.competition.C3C4Competition.d13C_C3`, and
+        :attr:`~pyrealm.pmodel.competition.C3C4Competition.d13C_C4`.
 
         Args:
             d13CO2: stable carbon isotopic composition of atmospheric CO2
