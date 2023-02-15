@@ -19,6 +19,13 @@ kernelspec:
 .. automodule:: pyrealm.constants
 ```
 
+## The ConstantsClass base class
+
+```{eval-rst}
+.. autoclass:: pyrealm.constants.base.ConstantsClass
+    :members:
+```
+
 ## P Model constants
 
 ```{eval-rst}
