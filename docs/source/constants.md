@@ -27,12 +27,8 @@ plant physiology or geometry, which a user might want to alter to update with a 
 estimate or explore sensitivity to variation.
 
 For this reason, the `pyrealm` package provides data classes that contain sets
-of default model constants:
-
-* {class}`~pyrealm.constants.pmodel_const.PModelConst` for the
-  {class}`~pyrealm.pmodel.pmodel.PModel`
-* {class}`~pyrealm.constants.tmodel_const.TModelTraits` for the
-  {class}`~pyrealm.tmodel.TModel`
+of default model constants. The details for each class can be seen
+[here](api/constants_api).
 
 ## Creating constant class instances
 
@@ -103,39 +99,4 @@ print(traits1)
 print(traits2)
 
 traits1 == traits2
-```
-
-## P Model constants
-
-```{eval-rst}
-.. autoclass:: pyrealm.constants.pmodel_const.PModelConst
-    :members:
-```
-
-## T Model traits
-
-```{eval-rst}
-.. autoclass:: pyrealm.constants.tmodel_const.TModelTraits
-    :members:
-```
-
-## Hygrometry constants
-
-```{eval-rst}
-.. autoclass:: pyrealm.constants.hygro_const.HygroConst
-    :members:
-```
-
-## Isotopic discrimination constants
-
-```{eval-rst}
-.. autoclass:: pyrealm.constants.isotope_const.IsotopesConst
-    :members:
-```
-
-## C3/C4 competition constants
-
-```{eval-rst}
-.. autoclass:: pyrealm.constants.competition_const.C3C4Const
-    :members:
 ```
