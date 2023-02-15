@@ -10,10 +10,7 @@ kernelspec:
   name: python3
 ---
 
-# Module reference for `tmodel`
-
-This page contains the detailed documentation of the functions and classes in the
-{mod}`~pyrealm.tmodel` module.
+# API reference for the `tmodel` module
 
 ```{eval-rst}
 .. automodule:: pyrealm.tmodel

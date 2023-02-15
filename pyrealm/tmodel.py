@@ -1,7 +1,5 @@
-"""The tmodel Module.
-
-This module provides an implementation of the T Model of plant growth given
-an estimate of gross primary productivity (GPP).
+"""The :mod:`~pyrealm.tmodel` module provides an implementation of the T Model of plant
+growth given an estimate of gross primary productivity (GPP).
 
 * The growth form and productivity allocation model of a plant is set using
     :class:`~pyrealm.constants.tmodel_const.TModelTraits`.
@@ -11,7 +9,7 @@ an estimate of gross primary productivity (GPP).
   geometry for a given diameter or predict growth from estimated GPP.
 * The function :func:`~pyrealm.tmodel.grow_ttree` predicts plant growth through
   time given a time series of GPP.
-"""
+"""  # noqa: D205, D415
 
 import numpy as np
 from numpy.typing import NDArray

@@ -17,15 +17,14 @@ kernelspec:
 
 # PModel overview and example use
 
-This module provides a Python implementation of the P-model
-(:{cite}`Prentice:2014bc`, :{cite}`Wang:2017go`). This provides an overview of
-using the model, showing typical code and outputs, and the details of
-calculations are included in the [module reference documentation](pmodel_reference).
+This module provides a Python implementation of the P-model (:{cite}`Prentice:2014bc`,
+:{cite}`Wang:2017go`). This provides an overview of using the model, showing typical
+code and outputs, and the details of calculations are included in the [module reference
+documentation](../api/pmodel_api).
 
-The implementation in this module draws from the `rpmodel` implementation of the
-model ({cite}`Stocker:2020dh`) and development matches the predictions of the
-two implementation for most - but not all use cases (see [here](rpmodel)
-for discussion).
+The implementation in this module draws from the `rpmodel` implementation of the model
+({cite}`Stocker:2020dh`) and development matches the predictions of the two
+implementation for most - but not all use cases (see [here](rpmodel) for discussion).
 
 ## Overview
 

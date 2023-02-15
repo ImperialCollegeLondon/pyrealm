@@ -71,10 +71,10 @@ clicking on the buttons like the one below.
   :caption: API
   :hidden:
   
-  api/tmodel_api.md
-  api/pmodel_api.md
-  api/hygro_api.md
-  api/utilities_api.md
+  ``tmodel`` module <api/tmodel_api.md>
+  ``pmodel`` module <api/pmodel_api.md>
+  ``hygro`` module <api/hygro_api.md>
+  ``utilities`` module <api/utilities_api.md>
 ```
 
 ```{eval-rst}
@@ -84,7 +84,6 @@ clicking on the buttons like the one below.
   :hidden:
   
   hygro.md
-  utilities.md
   constants.md
   z_bibliography.rst
 ```
