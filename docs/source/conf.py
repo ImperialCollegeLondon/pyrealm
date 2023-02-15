@@ -36,11 +36,27 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.mathjax",
     "sphinx.ext.autosummary",
+    "sphinx.ext.intersphinx",
     "sphinxcontrib.bibtex",
     "myst_nb",
     # "sphinx_astrorefs",  # Gives author year references
     "sphinx_rtd_theme",
 ]
+
+# Reference checking
+nitpicky = True
+nitpick_ignore = [
+    ("py:class", "jsonschema.validators.Draft202012Validator"),
+    ("py:class", "numpy.float32"),
+    ("py:class", "numpy.int64"),
+]
+intersphinx_mapping = {
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "python": ("https://docs.python.org/3/", None),
+    "xarray": ("https://docs.xarray.dev/en/stable/", None),
+    "shapely": ("https://shapely.readthedocs.io/en/stable/", None),
+}
+
 
 autodoc_default_flags = ["members"]
 autosummary_generate = True
