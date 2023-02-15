@@ -27,7 +27,7 @@ from pyrealm import pmodel
 %matplotlib inline
 
 # Load an example dataset containing the main variables.
-ds = netCDF4.Dataset("../../../data/pmodel_inputs.nc")
+ds = netCDF4.Dataset("../../../../data/pmodel_inputs.nc")
 ds.set_auto_mask(False)
 
 # Extract the six variables for all months

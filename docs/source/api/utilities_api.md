@@ -13,7 +13,7 @@ kernelspec:
 ---
 
 
-# API reference for the {mod}`~pyrealm.utilities` submodule
+# The {mod}`~pyrealm.utilities` module
 
 ```{eval-rst}
 .. automodule:: pyrealm.utilities

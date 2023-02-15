@@ -12,13 +12,13 @@ kernelspec:
   name: python3
 ---
 
-# API reference for the {mod}`~pyrealm.pmodel` module
+# The {mod}`~pyrealm.pmodel` module
 
 ```{eval-rst}
 .. automodule:: pyrealm.pmodel
 ```
 
-## API reference for the {mod}`~pyrealm.pmodel.pmodel` submodule
+## The {mod}`~pyrealm.pmodel.pmodel` submodule
 
 ```{eval-rst}
 .. automodule:: pyrealm.pmodel.pmodel
@@ -26,7 +26,7 @@ kernelspec:
     :members:
 ```
 
-## API reference for the {mod}`~pyrealm.pmodel.functions` submodule
+## The {mod}`~pyrealm.pmodel.functions` submodule
 
 ```{eval-rst}
 .. automodule:: pyrealm.pmodel.functions
@@ -34,7 +34,7 @@ kernelspec:
     :members:
 ```
 
-## API reference for the {mod}`~pyrealm.pmodel.isotopes` submodule
+## The {mod}`~pyrealm.pmodel.isotopes` submodule
 
 ```{eval-rst}
 .. automodule:: pyrealm.pmodel.isotopes
@@ -42,7 +42,7 @@ kernelspec:
     :members:
 ```
 
-## API reference for the {mod}`~pyrealm.pmodel.competition` submodule
+## The {mod}`~pyrealm.pmodel.competition` submodule
 
 ```{eval-rst}
 .. automodule:: pyrealm.pmodel.competition

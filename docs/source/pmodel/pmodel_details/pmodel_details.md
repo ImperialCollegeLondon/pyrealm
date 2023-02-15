@@ -12,7 +12,7 @@ kernelspec:
   name: python3
 ---
 
-# P Model details
+# The P Model: details
 
 ```{eval-rst}
 .. toctree::

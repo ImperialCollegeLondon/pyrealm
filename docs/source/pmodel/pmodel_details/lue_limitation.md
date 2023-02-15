@@ -12,7 +12,7 @@ kernelspec:
   name: python3
 ---
 
-# Step 3: LUE Limitation
+# LUE Limitation
 
 ```{code-cell}
 :tags: [hide-input]

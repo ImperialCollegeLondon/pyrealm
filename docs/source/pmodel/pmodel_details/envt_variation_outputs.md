@@ -12,7 +12,7 @@ kernelspec:
   name: python3
 ---
 
-# Step 4: Estimating productivity
+# P Model predictions
 
 ```{code-cell}
 :tags: [hide-input]

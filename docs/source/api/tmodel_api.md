@@ -10,7 +10,7 @@ kernelspec:
   name: python3
 ---
 
-# API reference for the `tmodel` module
+# The {mod}`~pyrealm.tmodel` module
 
 ```{eval-rst}
 .. automodule:: pyrealm.tmodel

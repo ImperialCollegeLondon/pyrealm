@@ -42,10 +42,12 @@ The package is in active development and currently provides the following functi
 
   pmodel/pmodel.md
   pmodel/pmodel_details/pmodel_details.md
+  tmodel/tmodel.md
   pmodel/isotopic_discrimination.md
   pmodel/c3c4model.md
-  pmodel/rpmodel.md
-  tmodel/tmodel.md
+  hygro.md
+  constants.md
+  z_bibliography.rst
 ```
 
 ```{eval-rst}
@@ -54,22 +56,11 @@ The package is in active development and currently provides the following functi
   :caption: API
   :hidden:
 
-  ``tmodel`` module <api/tmodel_api.md>
-  ``pmodel`` module <api/pmodel_api.md>
-  ``hygro`` module <api/hygro_api.md>
-  ``utilities`` module <api/utilities_api.md>
-  ``constants`` module <api/constants_api.md>
-```
-
-```{eval-rst}
-.. toctree::
-  :maxdepth: 4
-  :caption: Additional detail
-  :hidden:
-  
-  hygro.md
-  constants.md
-  z_bibliography.rst
+  api/tmodel_api.md
+  api/pmodel_api.md
+  api/hygro_api.md
+  api/utilities_api.md
+  api/constants_api.md
 ```
 
 ```{eval-rst}

@@ -12,7 +12,7 @@ kernelspec:
   name: python3
 ---
 
-# The T-Model
+# The T Model
 
 This module provides a Python implementation of the T-Model (:{cite}`Li:2014bc`), which
 provides a physiological model of tree growth given a set of traits on tree growth

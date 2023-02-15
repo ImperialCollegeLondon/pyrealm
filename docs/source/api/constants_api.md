@@ -13,7 +13,7 @@ kernelspec:
 ---
 
 
-# API reference for the {mod}`~pyrealm.constants` module
+# The {mod}`~pyrealm.constants` module
 
 ## P Model constants
 

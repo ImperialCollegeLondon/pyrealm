@@ -13,7 +13,7 @@ kernelspec:
 ---
 
 
-# API reference for the {mod}`~pyrealm.hygro` submodule
+# The {mod}`~pyrealm.hygro` module
 
 ```{eval-rst}
 .. automodule:: pyrealm.hygro

@@ -71,7 +71,7 @@ constraints. (see [details](pmodel_details/lue_limitation)).
 
 Once LUE has been calculated, estimates of absorbed photosynthetically active
 radiation, can be used to predict gross primary productivity (GPP) and other key
-rates within the leaf (see [details](pmodel_details/estimating-productivity)).
+rates within the leaf (see [details](estimating-productivity)).
 
 ### Variable graph
 
