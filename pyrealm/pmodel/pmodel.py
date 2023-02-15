@@ -75,7 +75,7 @@ class PModelEnvironment:
     is used to provide additional variables used by some methods.
 
     * the volumetric soil moisture content, required to calculate optimal
-      :math:`\chi` in :attr:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne2020`.
+      :math:`\chi` in :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne2020_c3`.
 
     Args:
         tc: Temperature, relevant for photosynthesis (°C)

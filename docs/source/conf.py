@@ -46,9 +46,8 @@ extensions = [
 # Reference checking
 nitpicky = True
 nitpick_ignore = [
-    ("py:class", "jsonschema.validators.Draft202012Validator"),
+    ("py:class", "numpy._typing._generic_alias.ScalarType"),
     ("py:class", "numpy.float32"),
-    ("py:class", "numpy.int64"),
 ]
 intersphinx_mapping = {
     "numpy": ("https://numpy.org/doc/stable/", None),

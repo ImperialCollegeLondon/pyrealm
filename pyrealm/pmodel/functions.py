@@ -202,8 +202,8 @@ def calc_ftemp_inst_vcmax(tc: NDArray, const: PModelConst = PModelConst()) -> ND
                      {1 + \exp( (T \Delta S - H_d) / (T R))}
 
     where :math:`g(T, H_a)` is a regular Arrhenius-type temperature response function
-    (see :func:`~pyrealm.pmodel.calc_ftemp_arrh`). The term :math:`\Delta S` is the
-    entropy factor, calculated as a linear function of :math:`T` in °C following
+    (see :func:`~pyrealm.pmodel.functions.calc_ftemp_arrh`). The term :math:`\Delta S`
+    is the entropy factor, calculated as a linear function of :math:`T` in °C following
     :cite:`Kattge:2007db` (Table 3, Eqn 4):
 
     .. math::
@@ -216,12 +216,11 @@ def calc_ftemp_inst_vcmax(tc: NDArray, const: PModelConst = PModelConst()) -> ND
         const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
 
     PModel Parameters:
-        Ha: activation energy (:math:`H_a`, ``kattge_knorr_Ha``)
-        Hd: deactivation energy (:math:`H_d`, ``kattge_knorr_Hd``)
-        To: standard reference temperature expressed in Kelvin (`T_0`, ``k_To``)
-        R: the universal gas constant (:math:`R`, ``k_R``)
-        a: intercept of the entropy factor (:math:`a`, ``kattge_knorr_a_ent``)
-        b: slope of the entropy factor (:math:`b`, ``kattge_knorr_b_ent``)
+        Ha: activation energy (:math:`H_a`, ``kattge_knorr_Ha``) Hd: deactivation energy
+        (:math:`H_d`, ``kattge_knorr_Hd``) To: standard reference temperature expressed
+        in Kelvin (`T_0`, ``k_To``) R: the universal gas constant (:math:`R`, ``k_R``)
+        a: intercept of the entropy factor (:math:`a`, ``kattge_knorr_a_ent``) b: slope
+        of the entropy factor (:math:`b`, ``kattge_knorr_b_ent``)
 
     Returns:
         Values for :math:`f`
@@ -365,7 +364,7 @@ def calc_ns_star(
     r"""Calculate the relative viscosity of water.
 
     Calculates the relative viscosity of water (:math:`\eta^*`), given the standard
-    temperature and pressure, using :func:`~pyrealm.pmodel.calc_viscosity_h20`
+    temperature and pressure, using :func:`~pyrealm.pmodel.functions.calc_viscosity_h20`
     (:math:`v(t,p)`) as:
 
     .. math::

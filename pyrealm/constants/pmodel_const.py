@@ -54,12 +54,12 @@ class PModelConst(ConstantsClass):
       :cite:`Bernacchi:2001kg`. `kc_25` and `ko_25` are converted from µmol mol-1 and
       mmol mol-1, assuming a measurement at an elevation of 227.076 metres and standard
       atmospheric pressure for that elevation (98716.403 Pa).
-      (:attr:`~pyrealm.constants.pmodel_const.PModelConst.dhac`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.dhao`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.dha`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.kc25`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.ko25`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.gs25_0`)
+      (:attr:`~pyrealm.constants.pmodel_const.PModelConst.bernacchi_dhac`,
+      :attr:`~pyrealm.constants.pmodel_const.PModelConst.bernacchi_dhao`,
+      :attr:`~pyrealm.constants.pmodel_const.PModelConst.bernacchi_dha`,
+      :attr:`~pyrealm.constants.pmodel_const.PModelConst.bernacchi_kc25`,
+      :attr:`~pyrealm.constants.pmodel_const.PModelConst.bernacchi_ko25`,
+      :attr:`~pyrealm.constants.pmodel_const.PModelConst.bernacchi_gs25_0`)
 
     * **Soil moisture stress**. Parameterisation from :cite:`Stocker:2020dh`
       (:attr:`~pyrealm.constants.pmodel_const.PModelConst.soilmstress_theta0`,
@@ -257,7 +257,7 @@ class PModelConst(ConstantsClass):
     smith19_theta: float = 0.85
     r"""Scaling factor theta for Jmax limitation (:math:`\theta`, 0.85)"""
     smith19_c_cost: float = 0.05336251
-    r"""Scaling factor c for Jmax limitation (:math:`\c`, 0.05336251)"""
+    r"""Scaling factor c for Jmax limitation (:math:`c`, 0.05336251)"""
 
     # Atkin
     atkin_rd_to_vcmax: float = 0.015

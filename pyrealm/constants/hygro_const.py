@@ -1,4 +1,7 @@
-"""The hygro_const module TODO."""
+"""The :mod:`~pyrealm.constants.hygro_const` module provides a data class of constants
+used in the hygrometer conversion functions in the :mod:`~pyrealm.hygro` module.
+"""  # noqa: D205, D415
+
 from dataclasses import dataclass
 from typing import Optional
 
@@ -18,7 +21,6 @@ class HygroConst(ConstantsClass):
     by selecting one of ``Allen1998``, ``Alduchov1996`` or ``Sonntag1990`` as
     :attr:`~pyrealm.constants.hygro_const.HygroConst.magnus_option``. The default
     setting is to use the ``Sonntag1990`` parameters.
-
     """
 
     magnus_coef: NDArray[np.float32] = np.array((611.2, 17.62, 243.12))
