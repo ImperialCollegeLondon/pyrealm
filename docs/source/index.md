@@ -53,7 +53,6 @@ clicking on the buttons like the one below.
   pmodel/global_example.md
   pmodel/isotopic_discrimination.md
   pmodel/c3c4model.md
-  pmodel/pmodel_reference.md
   pmodel/rpmodel.md
 ```
 
@@ -64,7 +63,16 @@ clicking on the buttons like the one below.
   :hidden:
   
   tmodel/tmodel.md
-  tmodel/tmodel_reference.md
+```
+
+```{eval-rst}
+.. toctree::
+  :maxdepth: 4
+  :caption: API
+  :hidden:
+  
+  api/tmodel_api.md
+  api/pmodel_api.md
 ```
 
 ```{eval-rst}
@@ -77,6 +85,15 @@ clicking on the buttons like the one below.
   utilities.md
   constants.md
   z_bibliography.rst
+```
+
+```{eval-rst}
+.. toctree::
+  :maxdepth: 4
+  :caption: Developers
+  :hidden:
+
+
 ```
 
 ## Indices and tables
