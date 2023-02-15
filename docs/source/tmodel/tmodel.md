@@ -67,8 +67,9 @@ for a given set of traits and diameters.
 ### Initialising a {class}`~pyrealm.tmodel.TTree` object
 
 A {class}`~pyrealm.tmodel.TTree` object is created by providing an array of initial stem
-diameters and an optional set of traits as a {class}`~pyrealm.tmodel.Traits` object. If
-no traits are provided, the default {class}`~pyrealm.tmodel.Traits` settings are used.
+diameters and an optional set of traits as a
+{class}`~pyrealm.constants.tmodel_const.TModelTraits` object. If no traits are provided,
+the default {class}`~pyrealm.constants.tmodel_const.TModelTraits` settings are used.
 
 ```{code-cell} ipython3
 # Use a sequence of diameters from sapling to large tree
@@ -177,7 +178,7 @@ pyplot.show()
 
 The {meth}`~pyrealm.tmodel.TTree.reset_diameters` can be used to update an existing
 {class}`~pyrealm.tmodel.TTree` object with a new set of diameters using the same
-{class}`~pyrealm.tmodel.Traits` definition. Using
+{class}`~pyrealm.constants.tmodel_const.TModelTraits` definition. Using
 {meth}`~pyrealm.tmodel.TTree.reset_diameters` automatically resets any calculated growth
 parameters: they will need to be recalculated for the new diameters.
 

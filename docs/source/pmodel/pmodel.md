@@ -208,10 +208,10 @@ pyplot.show()
 
 ## Elevation data
 
-The {func}`~pyrealm.pmodel.calc_patm` function can be used to convert elevation
-data to atmospheric pressure, for use in the {class}`~pyrealm.pmodel.pmodel.PModel`
-class. The example below repeats the model at an elevation of 3000 metres and
-compares the resulting light use efficiencies.
+The {func}`~pyrealm.pmodel.functions.calc_patm` function can be used to convert
+elevation data to atmospheric pressure, for use in the
+{class}`~pyrealm.pmodel.pmodel.PModel` class. The example below repeats the model at an
+elevation of 3000 metres and compares the resulting light use efficiencies.
 
 ```{code-cell}
 patm = pmodel.calc_patm(3000)

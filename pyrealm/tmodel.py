@@ -30,14 +30,14 @@ from pyrealm.constants.tmodel_const import TModelTraits
 class TTree:
     """Model plant growth using the T model.
 
-    This class provides an implementation of the calculations of tree geometry,
-    mass and growth described by :cite:`Li:2014bc`. All of the properties of
-    the T model are derived from a set of traits (see :class:`~pyrealm.tmodel.Traits`),
-    stem diameter measurements and estimates of gross primary productivity.
+    This class provides an implementation of the calculations of tree geometry, mass and
+    growth described by :cite:`Li:2014bc`. All of the properties of the T model are
+    derived from a set of traits (see :class:`~pyrealm.constants.tmodel_const`), stem
+    diameter measurements and estimates of gross primary productivity.
 
-    See the details of :meth:`~pyrealm.tmodel.TTree.set_diameter` and
-    :meth:`~pyrealm.tmodel.TTree.calculate_growth` for details of the properties
-    and calculations.
+    See the details of :meth:`~pyrealm.tmodel.TTree.reset_diameters` and
+    :meth:`~pyrealm.tmodel.TTree.calculate_growth` for details of the properties and
+    calculations.
 
     Args:
         traits: An object of class :class:`~pyrealm.constants.tmodel_const.TModelTraits`
@@ -317,14 +317,16 @@ class TTree:
         self.growth_calculated = True
 
 
-# def grow_ttree(
-#     gpp: NDArray,
-#     d_init: NDArray,
-#     time_axis: int,
-#     traits: TModelTraits = TModelTraits(),
-#     outvars: tuple[str, ...] = ("diameter", "height", "crown_area", "delta_d"),
-# ) -> dict[str, NDArray]:
-#     """Fit a growth time series using the T Model.
+def grow_ttree(
+    gpp: NDArray,
+    d_init: NDArray,
+    time_axis: int,
+    traits: TModelTraits = TModelTraits(),
+    outvars: tuple[str, ...] = ("diameter", "height", "crown_area", "delta_d"),
+) -> dict[str, NDArray]:
+    """Fit a growth time series using the T Model."""
+    raise NotImplementedError()
+
 
 #     This function fits the T Model incrementally to a set of modelled plants,
 #     given a time series of GPP estimates.

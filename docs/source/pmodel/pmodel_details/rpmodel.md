@@ -36,7 +36,7 @@ The implementations differ in a number of ways:
    include both global constants and experimentally derived estimates for different
    processes. In the {mod}`~pyrealm.pmodel` module, these hard-coded values have been
    replaced with references to a global constants object
-   ({const}`~pyrealm.constants.pmodel_consts.PModelConst`). This is used to share a set
+   ({class}`~pyrealm.constants.pmodel_consts.PModelConst`). This is used to share a set
    of constants and values across all functions. However, can also be altered, allowing
    users to explore model responses to underlying parameter variation (see
    [here](/constants)).
@@ -60,7 +60,7 @@ The implementations differ in a number of ways:
    are set to have no $\ce{CO2}$ limitation in
    {class}`~pyrealm.pmodel.pmodel.CalcOptimalChi`, although the correct internal
    $\ce{CO2}$ partial pressure is calculated, and are then free to use whichever
-   $J_{max}$ method is preferred in {class}`~pyrealm.pmodel.pmodel.JMaxLimitation`.
+   $J_{max}$ method is preferred in {class}`~pyrealm.pmodel.pmodel.JmaxLimitation`.
 
 1. The ``rpmodel`` function has a large number of arguments. This is partly
    because of some redundancy in identifying the use case. For example, using

@@ -21,7 +21,7 @@ photosynthesis:
 * The experimental `rootzonestress` argument to {class}`~pyrealm.pmodel.pmodel.PModel`,
   see below.
 * The `lavergne20_c3` and `lavergne20_c4` methods for
-  {class}`~pyrealm.params.pmodel.CalcOptimalChi`, which use an empirical model of the
+  {class}`~pyrealm.pmodel.pmodel.CalcOptimalChi`, which use an empirical model of the
   change in $\beta$ with soil moisture. See [here](optimal_chi) for details.
 
 ## Stocker $\beta(\theta)$
@@ -39,7 +39,7 @@ The factor requires estimates of:
   ratio of AET to PET.
 
 The functions to calculate $\beta(\theta)$ are based on four parameters, derived from
-experimental data and set in {class}`~pyrealm.params.PModelParams`:
+experimental data and set in {class}`~pyrealm.constants.pmodel_const.PModelConst`:
 
 * An upper bound in relative soil moisture ($\theta^\ast$, `soilmstress_thetastar`),
   above which $\beta$ is always 1, corresponding to no loss of light use efficiency.
@@ -124,11 +124,10 @@ plt.show()
 ### Application of the factor
 
 The factor can be applied to the P Model by using
-{func}`~pyrealm.pmodel.calc_soilmstress` to calculate the factor values and then
-passing them into {class}`~pyrealm.pmodel.pmodel.PModel` using the `soilmstress`
-argument. The example below shows how the predicted light use efficiency from
-the P Model changes across an aridity gradient both with and without the
-soil moisture factor.
+{func}`~pyrealm.pmodel.functions.calc_soilmstress` to calculate the factor values and
+then passing them into {class}`~pyrealm.pmodel.pmodel.PModel` using the `soilmstress`
+argument. The example below shows how the predicted light use efficiency from the P
+Model changes across an aridity gradient both with and without the soil moisture factor.
 
 ```{code-cell}
 # Calculate a model without water stress in a constant environment

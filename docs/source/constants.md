@@ -68,8 +68,8 @@ ppar_moon.k_G = 9.80665
 ## Exporting and reloading parameter sets
 
 All parameter classes inherit methods from the base
-{class}`pyrealm.constants.ConstantsClass` that provide bulk import and export of
-parameter settings to dictionaries and to JSON formatted files.
+{class}`~pyrealm.constants.base.ConstantsClass` class that provides bulk import and
+export of parameter settings to dictionaries and to JSON formatted files.
 
 ```{eval-rst}
 .. autoclass:: pyrealm.constants.base.ConstantsClass

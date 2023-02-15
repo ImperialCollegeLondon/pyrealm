@@ -65,7 +65,7 @@ def check_input_shapes(*args: Union[float, int, np.generic, np.ndarray, None]) -
         The common shape of any array inputs or 1 if all inputs are scalar.
 
     Raises:
-        A ValueError if the inputs contain arrays of differing shapes.
+        ValueError: if the inputs contain arrays of differing shapes.
 
     Examples:
         >>> check_input_shapes(np.array([1,2,3]), 5)
