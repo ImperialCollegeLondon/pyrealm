@@ -35,7 +35,7 @@ class ConstantsClass:
     values and from a JSON file of values. It also defines methods to export an existing
     instance of a constants class to a dictionary or a JSON file.
 
-    All model constant classes use the :class:`~dataclasses.dataclass` class as the
+    All model constant classes use the :func:`~dataclasses.dataclass` decorator as the
     basic structure. All fields in these classes are defined with default values, so
     instances can be defined using partial dictionaries of alternative values.
     """

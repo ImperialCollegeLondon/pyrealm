@@ -16,7 +16,7 @@ Parameters
 
 Constants
   These are shared parameters of the PModel , which are taken from the
-  :class:`~pyrealm.constants.pmodel_consts.PModelConst` dataclass. These can be changed
+  :class:`~pyrealm.constants.pmodel_const.PModelConst` dataclass. These can be changed
   by the user but are typically used to configure an entire analysis rather than a
   single function.
 """  # noqa: D210, D415

@@ -1,5 +1,5 @@
-"""The :mod:`~pyrealm.constants module implements the base
-:class:`~pyrealm.constants.ConstantsClass` class and then implements the following
+"""The :mod:`~pyrealm.constants` module implements the base
+:class:`~pyrealm.constants.base.ConstantsClass` class and then implements the following
 constants classes for different modules:
 
 * :class:`~pyrealm.constants.competition_const.C3C4Const`

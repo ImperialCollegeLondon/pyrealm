@@ -7,7 +7,7 @@ following core classes:
     Applies the PModel to locations
 * :class:`~pyrealm.pmodel.pmodel.CalcOptimalChi`:
     Estimates the optimal chi for locations, given an estimation method and settings
-* :class:`~pyrealm.pmodel.pmodel.JMaxLimitation`:
+* :class:`~pyrealm.pmodel.pmodel.JmaxLimitation`:
     Estimates the Jmax limitation, given a method and settings
 """  # noqa D210, D415
 
@@ -62,7 +62,7 @@ class PModelEnvironment:
     * the relative viscosity of water (:math:`\eta^*`,
       using :func:`~pyrealm.pmodel.functions.calc_ns_star`),
     * the ambient partial pressure of :math:`\ce{CO2}` (:math:`c_a`,
-      using :func:`~pyrealm.pmodel.functions.calc_c02_to_ca`) and
+      using :func:`~pyrealm.pmodel.functions.calc_co2_to_ca`) and
     * the Michaelis Menten coefficient of Rubisco-limited assimilation
       (:math:`K`, using :func:`~pyrealm.pmodel.functions.calc_kmm`).
 
@@ -75,7 +75,7 @@ class PModelEnvironment:
     is used to provide additional variables used by some methods.
 
     * the volumetric soil moisture content, required to calculate optimal
-      :math:`\chi` in :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne2020_c3`.
+      :math:`\chi` in :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c3`.
 
     Args:
         tc: Temperature, relevant for photosynthesis (°C)
@@ -285,8 +285,8 @@ class PModel:
         photosynthesis and are incompatible.
 
     Args:
-        env: An instance of :class:`~pyrealm.pmodel.pmodel.PModelEnvironment`. kphio:
-        (Optional) The quantum yield efficiency of photosynthesis
+        env: An instance of :class:`~pyrealm.pmodel.pmodel.PModelEnvironment`.
+        kphio: (Optional) The quantum yield efficiency of photosynthesis
             (:math:`\phi_0`, unitless). Note that :math:`\phi_0` is sometimes used to
             refer to the quantum yield of electron transfer, which is exactly four times
             larger, so check definitions here.
@@ -646,7 +646,7 @@ class PModel:
         Prints a summary of the calculated values in a PModel instance including the
         mean, range and number of nan values. This will always show efficiency variables
         (LUE and IWUE) and productivity estimates are shown if
-        :meth:`~pyrealm.pmodel.pmodel.PModel.calculate_productivity` has been run.
+        :meth:`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` has been run.
 
         Args:
             dp: The number of decimal places used in rounding summary stats.
@@ -887,8 +887,9 @@ class CalcOptimalChi:
 
         The coefficients are experimentally derived values with defaults taken from
         Figure 6a of :cite:`lavergne:2020a` (:math:`a`,
-        :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_a`; :math:`b`,
-        :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b`).
+        :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_a_c3`;
+        :math:`b`,
+        :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c3`).
 
         Values of :math:`\chi` and other predictions are then calculated as in
         :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.prentice14`. This method requires
@@ -947,8 +948,11 @@ class CalcOptimalChi:
         the default coefficients of the moisture scaling from :cite:`lavergne:2020a` for
         C3 plants are adjusted to match the theoretical expectation that :math:`\beta`
         for C4 plants is nine times smaller than :math:`\beta` for C3 plants (see
-        :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.c4`): :math:`b` is unchanged but
-        :math:`a_{C4} = a_{C3} - log(9)`.
+        :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.c4`): :math:`b`
+        (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c4`) is
+        unchanged but
+        :math:`a_{C4} = a_{C3} - log(9)`
+        (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_a_c4`) .
 
         Following the calculation of :math:`\beta`, this method then follows the
         calculations described in
@@ -1140,22 +1144,22 @@ class CalcOptimalChi:
 
 
 class JmaxLimitation:
-    r"""Estimate JMax limitation.
+    r"""Estimate Jmax limitation.
 
-    This class calculates two factors (:math:`f_v` and :math:`f_j`) used to
-    implement :math:`V_{cmax}` and :math:`J_{max}` limitation of photosynthesis.
-    Three methods are currently implemented:
+    This class calculates two factors (:math:`f_v` and :math:`f_j`) used to implement
+    :math:`V_{cmax}` and :math:`J_{max}` limitation of photosynthesis. Three methods are
+    currently implemented:
 
-        * ``simple``: applies the 'simple' equations with no limitation. The
-          alias ``none`` is also accepted.
+        * ``simple``: applies the 'simple' equations with no limitation. The alias
+          ``none`` is also accepted.
         * ``wang17``: applies the framework of :cite:`Wang:2017go`.
         * ``smith19``: applies the framework of :cite:`Smith:2019dv`
 
-    Note that :cite:`Smith:2019dv` defines :math:`\phi_0` as the quantum
-    efficiency of electron transfer, whereas :mod:`pyrealm.pmodel.PModel` defines
+    Note that :cite:`Smith:2019dv` defines :math:`\phi_0` as the quantum efficiency of
+    electron transfer, whereas :class:`pyrealm.pmodel.pmodel.PModel` defines
     :math:`\phi_0` as the quantum efficiency of photosynthesis, which is 4 times
-    smaller. This is why the factors here are a factor of 4 greater than Eqn 15
-    and 17 in :cite:`Smith:2019dv`.
+    smaller. This is why the factors here are a factor of 4 greater than Eqn 15 and 17
+    in :cite:`Smith:2019dv`.
 
     Arguments:
         optchi: an instance of :class:`CalcOptimalChi` providing the :math:`\ce{CO2}`
