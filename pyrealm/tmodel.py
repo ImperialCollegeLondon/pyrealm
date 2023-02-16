@@ -1,24 +1,20 @@
-"""The tmodel Module.
-
-This module provides an implementation of the T Model of plant growth given
-an estimate of gross primary productivity (GPP).
+"""The :mod:`~pyrealm.tmodel` module provides an implementation of the T Model of plant
+growth given an estimate of gross primary productivity (GPP).
 
 * The growth form and productivity allocation model of a plant is set using
-    :class:`~pyrealm.param_classes.TModelTraits`.
+    :class:`~pyrealm.constants.tmodel_const.TModelTraits`.
 * The class :class:`~pyrealm.tmodel.TTree` is used to generate an instance of a
-  plant to be simulated, with methods :meth:`~pyrealm.tmodel.TTree.set_diameter`
+  plant to be simulated, with methods :meth:`~pyrealm.tmodel.TTree.reset_diameters`
   and :meth:`~pyrealm.tmodel.TTree.calculate_growth` to calculate the plant
   geometry for a given diameter or predict growth from estimated GPP.
 * The function :func:`~pyrealm.tmodel.grow_ttree` predicts plant growth through
   time given a time series of GPP.
-"""
+"""  # noqa: D205, D415
 
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.param_classes import TModelTraits
-
-# from pyrealm.utilities import check_input_shapes
+from pyrealm.constants.tmodel_const import TModelTraits
 
 # Design Notes:
 #
@@ -34,17 +30,18 @@ from pyrealm.param_classes import TModelTraits
 class TTree:
     """Model plant growth using the T model.
 
-    This class provides an implementation of the calculations of tree geometry,
-    mass and growth described by :cite:`Li:2014bc`. All of the properties of
-    the T model are derived from a set of traits (see :class:`~pyrealm.tmodel.Traits`),
-    stem diameter measurements and estimates of gross primary productivity.
+    This class provides an implementation of the calculations of tree geometry, mass and
+    growth described by :cite:`Li:2014bc`. All of the properties of the T model are
+    derived from a set of traits (see
+    :class:`~pyrealm.constants.tmodel_const.TModelTraits`), stem diameter measurements
+    and estimates of gross primary productivity.
 
-    See the details of :meth:`~pyrealm.tmodel.TTree.set_diameter` and
-    :meth:`~pyrealm.tmodel.TTree.calculate_growth` for details of the properties
-    and calculations.
+    See the details of :meth:`~pyrealm.tmodel.TTree.reset_diameters` and
+    :meth:`~pyrealm.tmodel.TTree.calculate_growth` for details of the properties and
+    calculations.
 
     Args:
-        traits: An object of class :class:`~pyrealm.param_classes.TModelTraits`
+        traits: An object of class :class:`~pyrealm.constants.tmodel_const.TModelTraits`
         diameters: A float or np.array of stem diameters.
     """
 
@@ -56,8 +53,7 @@ class TTree:
         self.traits: TModelTraits = traits
 
         # The diameter is used to define all of the geometric scaling
-        # based on the trait parameters. It is set by the set_diameter()
-        # method, which then populates the other geometric variables
+        # based on the trait parameters.
 
         self._diameter: NDArray
         self._height: NDArray
@@ -321,14 +317,16 @@ class TTree:
         self.growth_calculated = True
 
 
-# def grow_ttree(
-#     gpp: NDArray,
-#     d_init: NDArray,
-#     time_axis: int,
-#     traits: TModelTraits = TModelTraits(),
-#     outvars: tuple[str, ...] = ("diameter", "height", "crown_area", "delta_d"),
-# ) -> dict[str, NDArray]:
-#     """Fit a growth time series using the T Model.
+def grow_ttree(
+    gpp: NDArray,
+    d_init: NDArray,
+    time_axis: int,
+    traits: TModelTraits = TModelTraits(),
+    outvars: tuple[str, ...] = ("diameter", "height", "crown_area", "delta_d"),
+) -> dict[str, np.ndarray]:
+    """Fit a growth time series using the T Model."""
+    raise NotImplementedError()
+
 
 #     This function fits the T Model incrementally to a set of modelled plants,
 #     given a time series of GPP estimates.

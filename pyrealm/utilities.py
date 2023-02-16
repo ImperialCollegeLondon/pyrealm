@@ -2,16 +2,15 @@
 
 * check input arrays to functions have congruent shapes
 * summarize object attributes in a tabular format
-* apply bounds checking to inputs to functions and methods in the :mod:`pyrealm`
-  package.
+* apply bounds checking to inputs to functions and methods in the ``pyrealm`` package.
 
-Some functions in :mod:`pyrealm` are only well-behaved with given bounds and bounds
+Some functions in ``pyrealm`` are only well-behaved with given bounds and bounds
 checking also provides a (partial) check on the units being provided.
 
 An earlier implementation of bounds checking used a subclass of
-:class:`numpy.ma.core.MaskedArray` .
-The intention was that a checked array becomes a thing that carries with it a
-description of any applied constraint, which sounds appealing but...
+:class:`numpy.ma.MaskedArray` . The intention was that a checked array becomes a thing
+that carries with it a description of any applied constraint, which sounds appealing
+but...
 
 1) MaskedArrays have a performance hit.
 2) Subclasses are 'contagious': so x * subclass returns an object of class subclass.
@@ -65,7 +64,7 @@ def check_input_shapes(*args: Union[float, int, np.generic, np.ndarray, None]) -
         The common shape of any array inputs or 1 if all inputs are scalar.
 
     Raises:
-        A ValueError if the inputs contain arrays of differing shapes.
+        ValueError: if the inputs contain arrays of differing shapes.
 
     Examples:
         >>> check_input_shapes(np.array([1,2,3]), 5)

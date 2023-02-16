@@ -4,8 +4,8 @@ jupytext:
   text_representation:
     extension: .md
     format_name: myst
-    format_version: 0.12
-    jupytext_version: 1.6.0
+    format_version: 0.13
+    jupytext_version: 1.13.8
 kernelspec:
   display_name: Python 3
   language: python
@@ -15,17 +15,17 @@ kernelspec:
 <!-- markdownlint-disable-next-line MD041 -->
 (pmodel_overview)=
 
-# PModel overview and example use
+# The P Model: overview
 
-This module provides a Python implementation of the P-model
-(:{cite}`Prentice:2014bc`, :{cite}`Wang:2017go`). This provides an overview of
-using the model, showing typical code and outputs, and the details of
-calculations are included in the [module reference documentation](pmodel_reference).
+This page provides an overview of the theory of the P Model (:{cite}`Prentice:2014bc`,
+:{cite}`Wang:2017go`), and how to use the implementation in the `pyrealm` package. The
+details of calculations and the API for the package code are shown in the [module
+reference documentation](../api/pmodel_api).
 
-The implementation in this module draws from the `rpmodel` implementation of the
-model ({cite}`Stocker:2020dh`) and development matches the predictions of the
-two implementation for most - but not all use cases (see [here](rpmodel)
-for discussion).
+The implementation in this module draws from the `rpmodel` implementation of the model
+({cite}`Stocker:2020dh`) and development matches the predictions of the two
+implementation for most - but not all use cases (see [here](pmodel_details/rpmodel) for
+discussion).
 
 ## Overview
 
@@ -40,24 +40,24 @@ variables are used to define the environment that the plant experiences:
 From thes inputs, the model breaks down into four broad stages, each of which
 is described in more detail in the link for each stage
 
-### Step 1. Photosynthetic environment
+### Photosynthetic environment
 
 The environmental variables are used to calculate variables describing the
 photosynthetic environment of a plant (see
-[details](photosynthetic_environment)).
+[details](pmodel_details/photosynthetic_environment)).
 
-### Step 2. Calculation of leaf $\ce{CO2}$ variables
+### Calculation of leaf $\ce{CO2}$ variables
 
 The photosynthetic environment is then used to calculate the optimal ratio of
 internal to external CO2 concentration ($chi$), along with $\ce{CO2}$ partial
-pressures and limitation factors (see [details](optimal_chi)).
+pressures and limitation factors (see [details](pmodel_details/optimal_chi)).
 
 This step also governs the main differences between C3 and C4 photosynthesis.
 
-### Step 3. Limitation of light use efficiency (LUE)
+### Limitation of light use efficiency (LUE)
 
 The calculation of light use efficiency can be subjected to a number of
-constraints. (see [details](lue_limitation)).
+constraints. (see [details](pmodel_details/lue_limitation)).
 
 - Theoretical limitations to the maximum rates of Rubsico regeneration
    ($J_{max}$) and maximum carboxylation capacity ($V_{cmax}$)
@@ -67,7 +67,7 @@ constraints. (see [details](lue_limitation)).
 
 - Soil moisture stress.
 
-### Step 4. Estimation of GPP
+### Estimation of GPP
 
 Once LUE has been calculated, estimates of absorbed photosynthetically active
 radiation, can be used to predict gross primary productivity (GPP) and other key
@@ -84,7 +84,8 @@ variables are shown with a dashed edge.
 ## Example use
 
 The first step is to use estimates of environmental variables to calculate the
-photosynthetic environment for the model ({class}`~pyrealm.pmodel.PModelEnvironment`).
+photosynthetic environment for the model
+({class}`~pyrealm.pmodel.pmodel.PModelEnvironment`).
 
 The code below shows the steps required using a single site with:
 
@@ -95,57 +96,58 @@ The code below shows the steps required using a single site with:
 
 ### Estimate photosynthetic environment
 
-```{code-cell} ipython3
+```{code-cell}
 from pyrealm import pmodel
-env  = pmodel.PModelEnvironment(tc=20.0, patm=101325.0, vpd=820, co2=400)
+
+env = pmodel.PModelEnvironment(tc=20.0, patm=101325.0, vpd=820, co2=400)
 ```
 
 The `env` object now holds the photosynthetic environment, which can be re-used
 with different P Model settings. The representation of `env` is deliberately
 terse - just the shape of the data - but the
-{meth}`~pyrealm.pmodel.PModelEnvironment.summarize` method provides a
+{meth}`~pyrealm.pmodel.pmodel.PModelEnvironment.summarize` method provides a
 more detailed summary of the attributes.
 
-```{code-cell} ipython3
+```{code-cell}
 env
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 env.summarize()
 ```
 
 ### Fitting the P Model
 
 Next, the P Model can be fitted to the photosynthetic environment using the
-({class}`~pyrealm.pmodel.PModel`) class:
+({class}`~pyrealm.pmodel.pmodel.PModel`) class:
 
-```{code-cell} ipython3
+```{code-cell}
 model = pmodel.PModel(env)
 ```
 
 The returned model object holds a lot of information. The representation of the
 model object shows a terse display of the settings used to run the model:
 
-```{code-cell} ipython3
+```{code-cell}
 model
 ```
 
-A P model also has a {meth}`~pyrealm.pmodel.PModel.summarize` method
+A P model also has a {meth}`~pyrealm.pmodel.pmodel.PModel.summarize` method
 that summarizes settings and displays a summary of calculated predictions.
 Initially, this shows two measures of photosynthetic efficiency: the intrinsic
 water use efficiency (``iwue``) and the light use efficiency (``lue``).
 
-```{code-cell} ipython3
+```{code-cell}
 model.summarize()
 ```
 
 ### $\chi$ estimates and $\ce{CO2}$ limitation
 
-The P Model also contains a {class}`~pyrealm.pmodel.CalcOptimalChi` object,
-recording key parameters from the [calculation of $\chi$](optimal_chi). This
-object also has a {meth}`~pyrealm.pmodel.CalcOptimalChi.summarize` method:
+The P Model also contains a {class}`~pyrealm.pmodel.pmodel.CalcOptimalChi` object,
+recording key parameters from the [calculation of $\chi$](pmodel_details/optimal_chi).
+This object also has a {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.summarize` method:
 
-```{code-cell} ipython3
+```{code-cell}
 model.optchi.summarize()
 ```
 
@@ -154,21 +156,21 @@ model.optchi.summarize()
 The productivity of the model can be calculated using estimates of the fraction
 of absorbed photosynthetically active radiation ($f_{APAR}$, `fapar`, unitless)
 and the photosynthetic photon flux density (PPFD,`ppfd`, µmol m-2 s-1), using the
-{meth}`~pyrealm.pmodel.PModel.estimate_productivity` method.
+{meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` method.
 
 Here we are using:
 
 - An absorption fraction of 0.91 (-), and
 - a PPFD of 834 µmol m-2 s-1.
 
-```{code-cell} ipython3
+```{code-cell}
 model.estimate_productivity(fapar=0.91, ppfd=834)
 model.summarize()
 ```
 
 ```{warning}
 
-To use {meth}`~pyrealm.pmodel.PModel.estimate_productivity`, the estimated PPFD
+To use {meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`, the estimated PPFD
 must be expressed as **µmol m-2 s-1**.
 
 Estimates of PPFD sometimes use different temporal or spatial scales - for
@@ -188,7 +190,7 @@ attempt to apply calculations across combinations of different dimensions.
 The example below repeats the model above for a range of temperature values and
 plots the resulting light use efficiency curve.
 
-```{code-cell} ipython3
+```{code-cell}
 from matplotlib import pyplot
 import numpy as np
 
@@ -199,19 +201,19 @@ model_array = pmodel.PModel(env)
 
 # Plot TC against LUE
 pyplot.plot(tc, model_array.lue)
-pyplot.xlabel('Temperature °C')
-pyplot.ylabel('Light use efficiency')
+pyplot.xlabel("Temperature °C")
+pyplot.ylabel("Light use efficiency")
 pyplot.show()
 ```
 
 ## Elevation data
 
-The {func}`~pyrealm.pmodel.calc_patm` function can be used to convert elevation
-data to atmospheric pressure, for use in the {class}`~pyrealm.pmodel.PModel`
-class. The example below repeats the model at an elevation of 3000 metres and
-compares the resulting light use efficiencies.
+The {func}`~pyrealm.pmodel.functions.calc_patm` function can be used to convert
+elevation data to atmospheric pressure, for use in the
+{class}`~pyrealm.pmodel.pmodel.PModel` class. The example below repeats the model at an
+elevation of 3000 metres and compares the resulting light use efficiencies.
 
-```{code-cell} ipython3
+```{code-cell}
 patm = pmodel.calc_patm(3000)
 env = pmodel.PModelEnvironment(tc=20, patm=patm, vpd=820, co2=400)
 model_3000 = pmodel.PModel(env)
@@ -228,4 +230,4 @@ directly from the input forcing variables. While the majority of those calculati
 behave smoothly with extreme values of temperature and atmospheric pressure,
 the calculation of the relative viscosity of water ($\eta^*$) does not handle
 low temperatures well. The behaviour of these functions with extreme values
-is shown [here](extreme_values).
+is shown [here](pmodel_details/extreme_values).

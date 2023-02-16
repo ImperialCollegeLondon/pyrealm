@@ -103,6 +103,7 @@
         - Support for scalar inputs removed - numpy arrays now expected as inputs.
         - Python minimum version is now 3.9
         - Hygrometric functions moved from utilities to new hygro module
+        - Param classes are now Const classes.
       - Detailed changes:
         - Moved support python versions to >=3.9, <3.11
         - Update to poetry 1.2+
@@ -113,8 +114,18 @@
         - Using importlib to single source package version from pyproject.toml
         - Moved test/ to tests/ and added __init__.py - module paths in testing.
         - Partial restructure of TModel code and extended test suite
-        - Extended test suite for psychrometric functions, bug fix in HygroParams.
+        - Extended test suite for hygrometric functions, bug fix in HygroConst.
         - Better definition and handling of class attributes to avoid unnecessary
           Optional types in __init__ methods.
         - Updated docstrings, particularly class attributes now docstringed in place.
         - bounds_checker module merged into utilities module
+        - Huge pmodel.py file split into a pmodel module and pmodel, functions, isotopes
+          and competition submodules. All members still exposed via pyrealm.pmodel for
+          ease of use/backwards compatibility. References to API links updated.
+        - param_classes.py used as the basis for a new constants module with smaller
+          better documented files and XYZConst naming scheme.
+        - '(pmodel)_params' style arguments updated to 'const', docs updated to match.
+        - C3C4 competition private functions now exposed as stand-alone functions with
+          cleaner docs and demo usage.
+        - Reorganisation of website index and page structure, nitpicking of links turned
+          on and broken links fixed.

@@ -4,14 +4,14 @@ import netCDF4  # type: ignore
 import numpy as np
 import pytest
 
-from pyrealm import pmodel
-
 # flake8: noqa D103 - docstrings on unit tests
 
 
 @pytest.fixture(scope="module")
 def dataset():
     """Fixture to load test inputs from file from data folder in package root"""
+
+    from pyrealm.pmodel import PModelEnvironment, calc_patm
 
     test_dir = os.path.dirname(os.path.abspath(__file__))
     data_file_path = os.path.normpath(
@@ -37,10 +37,10 @@ def dataset():
     dataset.close()
 
     # Convert elevation to atmospheric pressure
-    patm = pmodel.calc_patm(elev)
+    patm = calc_patm(elev)
 
     # Calculate p model environment
-    env = pmodel.PModelEnvironment(tc=temp, vpd=vpd, co2=co2, patm=patm)
+    env = PModelEnvironment(tc=temp, vpd=vpd, co2=co2, patm=patm)
 
     return env, fapar, ppfd
 
@@ -62,6 +62,8 @@ def test_pmodel_global_array(dataset, ctrl):
     rpmodel_global_gpp.nc
     """
 
+    from pyrealm.pmodel import PModel
+
     env, fapar, ppfd = dataset
 
     # Skip ftemp kphio is false
@@ -71,7 +73,7 @@ def test_pmodel_global_array(dataset, ctrl):
         )
 
     # Run the P model
-    model = pmodel.PModel(env, kphio=0.05, do_ftemp_kphio=ctrl["do_ftemp_kphio"])
+    model = PModel(env, kphio=0.05, do_ftemp_kphio=ctrl["do_ftemp_kphio"])
 
     # Scale the outputs from values per unit iabs to realised values
     scaled = model.unit_iabs.scale_iabs(fapar, ppfd)
