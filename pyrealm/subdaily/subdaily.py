@@ -1,5 +1,4 @@
-"""Draft code for the subdaily PModel."""
-
+"""Draft code for the subdaily PModel."""  # noqa: D205, D415
 
 import bottleneck as bn  # type: ignore
 import numpy as np

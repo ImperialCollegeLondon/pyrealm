@@ -1,4 +1,4 @@
-"""Draft code for subdaily interpolators."""
+"""Draft code for subdaily interpolators."""  # noqa: D205, D415
 
 from typing import Optional, Union
 
