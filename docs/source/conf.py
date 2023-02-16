@@ -50,8 +50,7 @@ nitpick_ignore = [
     ("py:class", "numpy.float32"),
 ]
 intersphinx_mapping = {
-    # "pytest": (),
-    # "dataclasses": (),
+    "pytest": ("https://docs.pytest.org/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),

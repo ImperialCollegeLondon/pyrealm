@@ -27,7 +27,7 @@ plant physiology or geometry, which a user might want to alter to update with a 
 estimate or explore sensitivity to variation.
 
 For this reason, the `pyrealm` package provides data classes that contain sets
-of default model constants. The details for each class can be seen
+of default model constants. The core API and details for each class can be seen
 [here](api/constants_api).
 
 ## Creating constant class instances
@@ -69,15 +69,9 @@ ppar_moon.k_G = 9.80665
 
 All parameter classes inherit methods from the base
 {class}`~pyrealm.constants.base.ConstantsClass` class that provides bulk import and
-export of parameter settings to dictionaries and to JSON formatted files.
-
-```{eval-rst}
-.. autoclass:: pyrealm.constants.base.ConstantsClass
-    :members: from_dict, to_dict, from_json, to_json
-```
-
-The code below shows these methods working. First, a trait definition in a JSON
-file is read into a dictionary:
+export of parameter settings to dictionaries and to JSON formatted files. The code below
+shows these methods working. First, a trait definition in a JSON file is read into a
+dictionary:
 
 ```{code-cell} python
 import json

@@ -323,7 +323,7 @@ def grow_ttree(
     time_axis: int,
     traits: TModelTraits = TModelTraits(),
     outvars: tuple[str, ...] = ("diameter", "height", "crown_area", "delta_d"),
-) -> dict[str, NDArray]:
+) -> dict[str, np.ndarray]:
     """Fit a growth time series using the T Model."""
     raise NotImplementedError()
 
