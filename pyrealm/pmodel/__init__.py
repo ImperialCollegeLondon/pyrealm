@@ -14,10 +14,11 @@ Note that the documentation of functions and methods includes two lists of param
 Parameters
   These are the arguments specific to the class, method or function signature.
 
-PModel Parameters
-  These are shared parameters of the PModel used by this function, which are taken from
-  a :mod:`~pyrealm.params.PModelParams` instance. These can be changed by the user but
-  are typically used to configure an entire analysis rather than a single function.
+Constants
+  These are shared parameters of the PModel , which are taken from the
+  :class:`~pyrealm.constants.pmodel_const.PModelConst` dataclass. These can be changed
+  by the user but are typically used to configure an entire analysis rather than a
+  single function.
 """  # noqa: D210, D415
 
 # This __init__ file imports the following members from submodules in order to

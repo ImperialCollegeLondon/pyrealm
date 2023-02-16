@@ -12,7 +12,7 @@ kernelspec:
   name: python3
 ---
 
-# Step 4: Estimating productivity
+# P Model predictions
 
 ```{code-cell}
 :tags: [hide-input]
@@ -208,7 +208,7 @@ fraction of absorbed photosynthetically active radiation (`fapar`) and the
 photosynthetic photon flux density (`ppfd`). The product of these two variables
 is an estimate of absorbed irradiance ($I_{abs}$).
 
-The {meth}`~pyrealm.pmodel.pmodel.PModelEnvironment.estimate_productivity` method is
+The {meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` method is
 used to provide these estimates to the P Model instance. Once this has been run,
 the following additional variables are populated.
 
@@ -241,7 +241,7 @@ irradiance values at the top of a tropical rainforest canopy:
 
 If required, productivity estimates per unit absorbed irradiance can be simply
 calculated using ``fapar=1, ppfd=1``, which are the default values to
-{meth}`~pyrealm.pmodel.pmodel.PModelEnvironment.estimate_productivity`.
+{meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`.
 
 ### Gross primary productivity (``gpp``, GPP)
 

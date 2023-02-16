@@ -12,7 +12,7 @@ kernelspec:
   name: python3
 ---
 
-# Step 3: LUE Limitation
+# LUE Limitation
 
 ```{code-cell}
 :tags: [hide-input]
@@ -89,11 +89,11 @@ photosynthesis.
 
 ```
 
-The value of $\phi_0$ shows temperature dependence, which is modelled
-following {cite}`Bernacchi:2003dc` for C3 plants and {cite}`cai:2020a` for C4
-plants (see {func}`calc_ftemp_kphio`). The temperature dependency is applied by
-default but can be turned off using the {class}`~pyrealm.pmodel.pmodel.PModel` argument
-`do_ftemp_kphio=False`.
+The value of $\phi_0$ shows temperature dependence, which is modelled following
+{cite}`Bernacchi:2003dc` for C3 plants and {cite}`cai:2020a` for C4 plants (see
+{func}`~pyrealm.pmodel.functions.calc_ftemp_kphio`). The temperature dependency is
+applied by default but can be turned off using the
+{class}`~pyrealm.pmodel.pmodel.PModel` argument `do_ftemp_kphio=False`.
 
 The default values of `kphio` vary with the model options, corresponding
 to the empirically fitted values presented for three setups in {cite}`Stocker:2020dh`.
@@ -121,9 +121,9 @@ model_tempkphio = PModel(env, kphio=0.08, do_ftemp_kphio=True)
 np.array([model_tempkphio.init_kphio, model_tempkphio.kphio])
 ```
 
-The scaling of temperature dependence varies for C3 and C4 plants and the
-function {func}`calc_ftemp_kphio` is used to calculate a limitation factor that
-is applied to $\phi_0$.
+The scaling of temperature dependence varies for C3 and C4 plants and the function
+{func}`~pyrealm.pmodel.functions.calc_ftemp_kphio` is used to calculate a limitation
+factor that is applied to $\phi_0$.
 
 ```{code-cell}
 :tags: [hide-input]

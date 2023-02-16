@@ -12,7 +12,7 @@ kernelspec:
   name: python3
 ---
 
-# Step 2: Optimal $\chi$ and leaf $\ce{CO2}$
+# Optimal $\chi$ and leaf $\ce{CO2}$
 
 The next step is to estimate the following parameters:
 

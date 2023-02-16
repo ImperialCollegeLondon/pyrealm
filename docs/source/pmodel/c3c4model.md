@@ -22,7 +22,7 @@ Compared to C3 plants, plants using the C4 photosynthetic pathway:
 * do not experience significant photorespiration costs.
 
 This gives C4 plants a substantial competitive advantage in warm, dry and low CO2
-environments. The {class}`~pyrealm.pmodel.competition.C3C3Competition` class provides an
+environments. The {class}`~pyrealm.pmodel.competition.C3C4Competition` class provides an
 implementation of a model {cite}`lavergne:2022a` that estimates the expected fraction of
 GPP from C4 plants. It uses predictions of GPP from the
 {class}`~pyrealm.pmodel.pmodel.PModel` assuming communities consisting solely of C3 or
@@ -38,7 +38,7 @@ The first step is to calculate the proportional advantage in gross primary produ
 
 A statistical model is then used to convert the proportional C4 GPP advantage to the
 expected C4 fraction ($F_4$) in a community (see
-{class}`~pyrealm.pmodel.competition.C3C3Competition` for details). This model includes a
+{class}`~pyrealm.pmodel.competition.C3C4Competition` for details). This model includes a
 correction term for the estimated percentage tree cover and the plot below shows how
 $F_4$ changes with $A_4$, given differing estimates of tree cover.
 

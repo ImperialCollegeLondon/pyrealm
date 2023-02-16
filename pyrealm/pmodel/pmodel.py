@@ -1,13 +1,13 @@
 """The :mod:`~pyrealm.pmodel.pmodel` submodule provides the core implementation of the
 following core classes:
 
-* PModelEnvironment:
+* :class:`~pyrealm.pmodel.pmodel.PModelEnvironment`:
     Calculates the photosynthetic environment for locations.
-* PModel:
+* :class:`~pyrealm.pmodel.pmodel.PModel`:
     Applies the PModel to locations
-* CalcOptimalChi:
+* :class:`~pyrealm.pmodel.pmodel.CalcOptimalChi`:
     Estimates the optimal chi for locations, given an estimation method and settings
-* JMaxLimitation:
+* :class:`~pyrealm.pmodel.pmodel.JmaxLimitation`:
     Estimates the Jmax limitation, given a method and settings
 """  # noqa D210, D415
 
@@ -58,13 +58,13 @@ class PModelEnvironment:
     conditions:
 
     * the photorespiratory CO2 compensation point (:math:`\Gamma^{*}`,
-      using :func:`~pyrealm.pmodel.calc_gammastar`),
+      using :func:`~pyrealm.pmodel.functions.calc_gammastar`),
     * the relative viscosity of water (:math:`\eta^*`,
-      using :func:`~pyrealm.pmodel.calc_ns_star`),
+      using :func:`~pyrealm.pmodel.functions.calc_ns_star`),
     * the ambient partial pressure of :math:`\ce{CO2}` (:math:`c_a`,
-      using :func:`~pyrealm.pmodel.calc_c02_to_ca`) and
+      using :func:`~pyrealm.pmodel.functions.calc_co2_to_ca`) and
     * the Michaelis Menten coefficient of Rubisco-limited assimilation
-      (:math:`K`, using :func:`~pyrealm.pmodel.calc_kmm`).
+      (:math:`K`, using :func:`~pyrealm.pmodel.functions.calc_kmm`).
 
     These variables can then be used to fit P models using different
     configurations. Note that the underlying constants of the P Model
@@ -75,7 +75,7 @@ class PModelEnvironment:
     is used to provide additional variables used by some methods.
 
     * the volumetric soil moisture content, required to calculate optimal
-      :math:`\chi` in :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne2020`.
+      :math:`\chi` in :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c3`.
 
     Args:
         tc: Temperature, relevant for photosynthesis (°C)
@@ -225,7 +225,7 @@ class PModel:
       where :math:`f_v` is a limitation factor defined in
       :class:`~pyrealm.pmodel.pmodel.JmaxLimitation`, :math:`M_C` is the molar mass of
       carbon and :math:`\beta(\theta)` is an empirical soil moisture factor (see
-      :func:`~pyrealm.pmodel.calc_soilmstress`,  :cite:`Stocker:2020dh`).
+      :func:`~pyrealm.pmodel.functions.calc_soilmstress`,  :cite:`Stocker:2020dh`).
 
     After running :meth:`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`, the
     following predictions are also populated:
@@ -255,7 +255,7 @@ class PModel:
     * The maximum carboxylation capacity (mol C m-2) normalised to the standard
       temperature as: :math:`V_{cmax25} = V_{cmax}  / fv(t)`, where :math:`fv(t)` is the
       instantaneous temperature response of :math:`V_{cmax}` implemented in
-      :func:`~pyrealm.pmodel.calc_ftemp_inst_vcmax`
+      :func:`~pyrealm.pmodel.functions.calc_ftemp_inst_vcmax`
 
     * Dark respiration, calculated as:
 
@@ -265,7 +265,7 @@ class PModel:
 
       following :cite:`Atkin:2015hk`, where :math:`fr(t)` is the instantaneous
       temperature response of dark respiration implemented in
-      :func:`~pyrealm.pmodel.calc_ftemp_inst_rd`, and :math:`b_0` is set in
+      :func:`~pyrealm.pmodel.functions.calc_ftemp_inst_rd`, and :math:`b_0` is set in
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.atkin_rd_to_vcmax`.
 
     * Stomatal conductance (:math:`g_s`), calculated as:
@@ -285,8 +285,8 @@ class PModel:
         photosynthesis and are incompatible.
 
     Args:
-        env: An instance of :class:`~pyrealm.pmodel.pmodel.PModelEnvironment`. kphio:
-        (Optional) The quantum yield efficiency of photosynthesis
+        env: An instance of :class:`~pyrealm.pmodel.pmodel.PModelEnvironment`.
+        kphio: (Optional) The quantum yield efficiency of photosynthesis
             (:math:`\phi_0`, unitless). Note that :math:`\phi_0` is sometimes used to
             refer to the quantum yield of electron transfer, which is exactly four times
             larger, so check definitions here.
@@ -294,7 +294,7 @@ class PModel:
             for providing a root zone water stress penalty to the :math:`beta` parameter
             in :class:`~pyrealm.pmodel.pmodel.CalcOptimalChi`.
         soilmstress: (Optional, default=None) A soil moisture stress factor
-            calculated using :func:`~pyrealm.pmodel.calc_soilmstress`.
+            calculated using :func:`~pyrealm.pmodel.functions.calc_soilmstress`.
         method_optchi: (Optional, default=`prentice14`) Selects the method to be
             used for calculating optimal :math:`chi`. The choice of method also sets the
             choice of  C3 or C4 photosynthetic pathway (see
@@ -303,7 +303,7 @@ class PModel:
             :math:`J_{max}` limitation
         do_ftemp_kphio: (Optional, default=True) Include the temperature-
             dependence of quantum yield efficiency (see
-            :func:`~pyrealm.pmodel.calc_ftemp_kphio`).
+            :func:`~pyrealm.pmodel.functions.calc_ftemp_kphio`).
 
     Examples:
         >>> env = PModelEnvironment(tc=20, vpd=1000, co2=400, patm=101325.0)
@@ -646,7 +646,7 @@ class PModel:
         Prints a summary of the calculated values in a PModel instance including the
         mean, range and number of nan values. This will always show efficiency variables
         (LUE and IWUE) and productivity estimates are shown if
-        :meth:`~pyrealm.pmodel.pmodel.PModel.calculate_productivity` has been run.
+        :meth:`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` has been run.
 
         Args:
             dp: The number of decimal places used in rounding summary stats.
@@ -887,8 +887,9 @@ class CalcOptimalChi:
 
         The coefficients are experimentally derived values with defaults taken from
         Figure 6a of :cite:`lavergne:2020a` (:math:`a`,
-        :meth:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_a`; :math:`b`,
-        :meth:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b`).
+        :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_a_c3`;
+        :math:`b`,
+        :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c3`).
 
         Values of :math:`\chi` and other predictions are then calculated as in
         :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.prentice14`. This method requires
@@ -943,12 +944,15 @@ class CalcOptimalChi:
 
         This method calculates :math:`\beta` as a function of soil moisture following
         the equation described in the
-        :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20` method.  However, the
-        default coefficients of the moisture scaling from :cite:`lavergne:2020a` for C3
-        plants are adjusted to match the theoretical expectation that :math:`\beta` for
-        C4 plants is nine times smaller than :math:`\beta` for C3 plants (see
-        :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.c4`): :math:`b` is unchanged but
-        :math:`a_{C4} = a_{C3} - log(9)`.
+        :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c3` method.  However,
+        the default coefficients of the moisture scaling from :cite:`lavergne:2020a` for
+        C3 plants are adjusted to match the theoretical expectation that :math:`\beta`
+        for C4 plants is nine times smaller than :math:`\beta` for C3 plants (see
+        :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.c4`): :math:`b`
+        (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c4`) is
+        unchanged but
+        :math:`a_{C4} = a_{C3} - log(9)`
+        (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_a_c4`) .
 
         Following the calculation of :math:`\beta`, this method then follows the
         calculations described in
@@ -1014,7 +1018,7 @@ class CalcOptimalChi:
         Optimal :math:`\chi` is calculated as in
         :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.prentice14`, but using a C4
         specific estimate of the unit cost ratio :math:`\beta`, see
-        :meth:`~pyrealm.constants.pmodel_const.PModelConst.beta_cost_ratio_c4`.
+        :attr:`~pyrealm.constants.pmodel_const.PModelConst.beta_cost_ratio_c4`.
 
         This method  sets :math:`m_j = m_c = m_{joc} = 1.0` to capture the
         boosted :math:`\ce{CO2}` concentrations at the chloropolast in C4
@@ -1061,7 +1065,7 @@ class CalcOptimalChi:
         for C4 plants. This simplifies the calculation of :math:`\xi` and :math:`\chi`
         compared to :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.c4`, but uses the same
         C4 specific estimate of the unit cost ratio :math:`\beta`,
-        :meth:`~pyrealm.constants.pmodel_const.PModelConst.beta_cost_ratio_c4`.
+        :attr:`~pyrealm.constants.pmodel_const.PModelConst.beta_cost_ratio_c4`.
 
           .. math:: :nowrap:
 
@@ -1140,22 +1144,22 @@ class CalcOptimalChi:
 
 
 class JmaxLimitation:
-    r"""Estimate JMax limitation.
+    r"""Estimate Jmax limitation.
 
-    This class calculates two factors (:math:`f_v` and :math:`f_j`) used to
-    implement :math:`V_{cmax}` and :math:`J_{max}` limitation of photosynthesis.
-    Three methods are currently implemented:
+    This class calculates two factors (:math:`f_v` and :math:`f_j`) used to implement
+    :math:`V_{cmax}` and :math:`J_{max}` limitation of photosynthesis. Three methods are
+    currently implemented:
 
-        * ``simple``: applies the 'simple' equations with no limitation. The
-          alias ``none`` is also accepted.
+        * ``simple``: applies the 'simple' equations with no limitation. The alias
+          ``none`` is also accepted.
         * ``wang17``: applies the framework of :cite:`Wang:2017go`.
         * ``smith19``: applies the framework of :cite:`Smith:2019dv`
 
-    Note that :cite:`Smith:2019dv` defines :math:`\phi_0` as the quantum
-    efficiency of electron transfer, whereas :mod:`pyrealm.PModel` defines
+    Note that :cite:`Smith:2019dv` defines :math:`\phi_0` as the quantum efficiency of
+    electron transfer, whereas :class:`pyrealm.pmodel.pmodel.PModel` defines
     :math:`\phi_0` as the quantum efficiency of photosynthesis, which is 4 times
-    smaller. This is why the factors here are a factor of 4 greater than Eqn 15
-    and 17 in :cite:`Smith:2019dv`.
+    smaller. This is why the factors here are a factor of 4 greater than Eqn 15 and 17
+    in :cite:`Smith:2019dv`.
 
     Arguments:
         optchi: an instance of :class:`CalcOptimalChi` providing the :math:`\ce{CO2}`
