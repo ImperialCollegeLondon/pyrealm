@@ -1,5 +1,8 @@
 # flake8: noqa D103 - docstrings on unit tests
 
+"""This module tests the interpolator routines for the subdaily model.
+"""  # noqa: D205, D415
+
 from datetime import datetime, timedelta
 
 import numpy as np
