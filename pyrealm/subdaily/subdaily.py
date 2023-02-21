@@ -4,7 +4,7 @@ import bottleneck as bn  # type: ignore
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.pmodel import calc_ftemp_arrh
+from pyrealm.pmodel.functions import calc_ftemp_arrh
 
 
 def memory_effect(values: NDArray, alpha: float = 0.067) -> NDArray:
@@ -26,8 +26,8 @@ def memory_effect(values: NDArray, alpha: float = 0.067) -> NDArray:
     O_{0}`.
 
     Args
-        values: An equally spaced time series of values alpha: The relative weight
-        applied to the most recent observation
+        values: An equally spaced time series of values
+        alpha: The relative weight applied to the most recent observation
 
     Returns
         An np.ndarray of the same length as `values` with the memory effect applied.
