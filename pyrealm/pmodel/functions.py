@@ -429,9 +429,9 @@ def calc_kmm(tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()) -> 
               for the same conversion for a value in the same table.
 
     Args:
-        tc: Temperature, relevant for photosynthesis (:math:`T`, °C) patm: Atmospheric
-        pressure (:math:`p`, Pa) const: Instance of
-        :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
+        patm: Atmospheric pressure (:math:`p`, Pa)
+        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
 
     PModel Parameters:
         hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`, ``bernacchi_dhac``)
@@ -702,7 +702,7 @@ def calc_co2_to_ca(co2: NDArray, patm: NDArray) -> NDArray:
     accounting for atmospheric pressure.
 
     Args:
-        co2 (float): atmospheric :math:`\ce{CO2}`, ppm
+        co2: atmospheric :math:`\ce{CO2}`, ppm
         patm (float): atmospheric pressure, Pa
 
     Returns:
