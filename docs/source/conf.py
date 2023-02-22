@@ -39,9 +39,10 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinxcontrib.bibtex",
     "myst_nb",
-    # "sphinx_astrorefs",  # Gives author year references
     "sphinx_rtd_theme",
 ]
+
+bibtex_reference_style = "author_year"
 
 # Reference checking
 nitpicky = True
