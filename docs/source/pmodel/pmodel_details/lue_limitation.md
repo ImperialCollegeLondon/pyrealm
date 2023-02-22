@@ -90,13 +90,13 @@ photosynthesis.
 ```
 
 The value of $\phi_0$ shows temperature dependence, which is modelled following
-{cite}`Bernacchi:2003dc` for C3 plants and {cite}`cai:2020a` for C4 plants (see
+{cite:t}`Bernacchi:2003dc` for C3 plants and {cite:t}`cai:2020a` for C4 plants (see
 {func}`~pyrealm.pmodel.functions.calc_ftemp_kphio`). The temperature dependency is
 applied by default but can be turned off using the
 {class}`~pyrealm.pmodel.pmodel.PModel` argument `do_ftemp_kphio=False`.
 
 The default values of `kphio` vary with the model options, corresponding
-to the empirically fitted values presented for three setups in {cite}`Stocker:2020dh`.
+to the empirically fitted values presented for three setups in {cite:t}`Stocker:2020dh`.
 
 1. If the temperature dependence of $\phi_0$ is **not** applied,
     $\phi_0 = 0.049977$,
@@ -154,11 +154,11 @@ options for this setting are:
 * `simple`: These are the 'simple' formulations of the P Model, with $f_j = f_v
   = 1$.
 * `wang17`: This is the default setting for `method_jmaxlim` and applies the
-  calculations describe in  {cite}`Wang:2017go`. The calculation details can be
+  calculations describe in  {cite:t}`Wang:2017go`. The calculation details can be
   seen in the {meth}`~pyrealm.pmodel.pmodel.JmaxLimitation.wang17` method.
 
 * `smith19`: This is an alternate calculation for optimal values of $J_{max}$
-  and $V_{cmax}$ described in {cite}`Smith:2019dv`. The calculation details can be
+  and $V_{cmax}$ described in {cite:t}`Smith:2019dv`. The calculation details can be
   seen in the {meth}`~pyrealm.pmodel.pmodel.JmaxLimitation.smith19` method.
 
 ```{code-cell}

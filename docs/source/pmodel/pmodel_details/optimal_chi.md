@@ -152,7 +152,7 @@ def plot_opt_chi(mod):
 
 ## Method {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.prentice14`
 
-This **C3 method** follows the approach detailed in {cite}`Prentice:2014bc`, see
+This **C3 method** follows the approach detailed in {cite:t}`Prentice:2014bc`, see
 {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.prentice14` for details.
 
 ```{code-cell}
@@ -165,8 +165,8 @@ plot_opt_chi(pmodel_c3)
 
 ## Method {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.c4`
 
-This **C4_method** follows the approach detailed in {cite}`Prentice:2014bc`, but uses a
-C4 specific version of the unit cost ratio ($\beta$). It also sets $m_j = m_c = 1$.
+This **C4_method** follows the approach detailed in {cite:t}`Prentice:2014bc`, but uses
+a C4 specific version of the unit cost ratio ($\beta$). It also sets $m_j = m_c = 1$.
 
 See {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.c4` for details.
 
@@ -180,10 +180,10 @@ plot_opt_chi(pmodel_c4)
 
 ## Method {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.c4_no_gamma`
 
-This method drops terms from the {cite}`Prentice:2014bc` to reflect the assumption that
-photorespiration ($\Gamma^\ast$) is negligible in C4 photosynthesis. It uses the same
-$\beta$ estimate as {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.c4` and also also sets
-$m_j = 1$, but $m_c$ is calculated as in
+This method drops terms from the approach given in {cite:t}`Prentice:2014bc` to reflect
+the assumption that photorespiration ($\Gamma^\ast$) is negligible in C4 photosynthesis.
+It uses the same $\beta$ estimate as {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.c4`
+and also also sets $m_j = 1$, but $m_c$ is calculated as in
 {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.prentice14`.
 
 See {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.c4_no_gamma` for details.
@@ -198,7 +198,7 @@ plot_opt_chi(pmodel_c4)
 
 ## Methods {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c3` and {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c4`
 
-These methods follow the approach detailed in {cite}`lavergne:2020a`, which fitted
+These methods follow the approach detailed in {cite:t}`lavergne:2020a`, which fitted
 an empirical model of $\beta$ for C3 plants as a function of volumetric soil moisture
 ($\theta$, m3/m3), using data from leaf gas exchange measurements. The C4 method takes
 the same approach but with modified empirical parameters giving predictions of
@@ -206,7 +206,7 @@ $\beta_{C3} = 9 \times \beta_{C4}$. Following the approach of
 {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.c4_no_gamma`, $m_c$ is calculated but $m_j=1$.
 
 ```{warning}
-Note that {cite}`lavergne:2020a` found **no relationship** between C4 $\beta$
+Note that {cite:t}`lavergne:2020a` found **no relationship** between C4 $\beta$
 values and soil moisture in leaf gas exchange data  The
 {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c4` method is **an experimental
 feature** - see the documentation for the

@@ -20,9 +20,9 @@ productivity to model plant growth and the demography of plant communities.
 
 The package is in active development and currently provides the following functionality:
 
-* Fitting the [P Model](pmodel/pmodel), which is a ecophysiological model of optimal carbon
-  dioxide uptake by plants (:{cite}`Prentice:2014bc`, :{cite}`Wang:2017go`,
-  :{cite}`Stocker:2020dh`). Extensions to this model include:
+* Fitting the [P Model](pmodel/pmodel), which is a ecophysiological model of optimal
+  carbon dioxide uptake by plants {cite:p}`Prentice:2014bc, Wang:2017go,Stocker:2020dh`.
+  Extensions to this model include:
 
   * Estimation of [isotopic discrimination of
     carbon](pmodel/isotopic_discrimination.md) resulting from photosynthesis.
@@ -30,7 +30,7 @@ The package is in active development and currently provides the following functi
     the expected fraction of C4 plants in a community.
 
 * Estimating plant allocation of gross primary productivity to growth and respiration,
-  using [T Model](tmodel/tmodel) (:{cite}`Li:2014bc`).
+  using [T Model](tmodel/tmodel) {cite:p}`Li:2014bc`.
 * Functions for [converting common hygrometric variables](./hygro) to vapour pressure
   deficit for use in the P Model.
 

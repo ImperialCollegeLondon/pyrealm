@@ -22,7 +22,7 @@ class CalcCarbonIsotopes:
     Discrimination against carbon 13 (:math:`\Delta\ce{^{13}C}`)  is calculated
     using C3 and C4 pathways specific methods, and then discrimination against
     carbon 14 is estimated as :math:`\Delta\ce{^{14}C} \approx 2 \times
-    \Delta\ce{^{13}C}` (:cite:`graven:2020a`). For C3 plants,
+    \Delta\ce{^{13}C}` :cite:p:`graven:2020a`. For C3 plants,
     :math:`\Delta\ce{^{13}C}` is calculated both including and excluding
     photorespiration, but these are assumed to be equal for C4 plants. The class
     also reports the isotopic composition of leaves and wood.
@@ -103,7 +103,7 @@ class CalcCarbonIsotopes:
 
         In this method, :math:`\delta\ce{^{13}C}` is calculated from optimal
         :math:`\chi` using an empirical relationship estimated by
-        :cite:`lavergne:2022a`.
+        :cite:p:`lavergne:2022a`.
 
         Examples:
             >>> ppar = PModelParams(beta_cost_ratio_c4=35)
@@ -128,7 +128,7 @@ class CalcCarbonIsotopes:
         r"""Calculate C4 isotopic discrimination.
 
         In this method, :math:`\delta\ce{^{13}C}` is calculated from optimal
-        :math:`\chi` following Equation 1 in :cite:`voncaemmerer:2014a`.
+        :math:`\chi` following Equation 1 in :cite:p:`voncaemmerer:2014a`.
 
         This method is not yet reachable - it needs a method selection argument to
         switch approaches and check C4 methods are used with C4 pmodels. The method is
@@ -170,7 +170,7 @@ class CalcCarbonIsotopes:
 
         This method calculates the isotopic discrimination for
         :math:`\Delta\ce{^{13}C}` both with and without the photorespiratory
-        effect following :cite:`farquhar:1982a`.
+        effect following :cite:p:`farquhar:1982a`.
 
         Examples:
             >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,

@@ -115,7 +115,7 @@ class C3C4Competition:
     r"""Implementation of the C3/C4 competition model.
 
     This class provides an implementation of the calculations of C3/C4 competition,
-    described by :cite:`lavergne:2020a`. The key inputs ``ggp_c3`` and ``gpp_c4`` are
+    described by :cite:t:`lavergne:2020a`. The key inputs ``ggp_c3`` and ``gpp_c4`` are
     gross primary productivity (GPP) estimates for C3 or C4 pathways `alone`  using the
     :class:`~pyrealm.pmodel.pmodel.PModel`
 

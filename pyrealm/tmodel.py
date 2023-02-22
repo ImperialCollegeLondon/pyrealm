@@ -31,7 +31,7 @@ class TTree:
     """Model plant growth using the T model.
 
     This class provides an implementation of the calculations of tree geometry, mass and
-    growth described by :cite:`Li:2014bc`. All of the properties of the T model are
+    growth described by :cite:t:`Li:2014bc`. All of the properties of the T model are
     derived from a set of traits (see
     :class:`~pyrealm.constants.tmodel_const.TModelTraits`), stem diameter measurements
     and estimates of gross primary productivity.

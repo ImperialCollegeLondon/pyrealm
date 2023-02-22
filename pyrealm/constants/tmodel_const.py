@@ -9,7 +9,7 @@ class TModelTraits(ConstantsClass):
     r"""Trait data settings for a TTree instance.
 
     This data class provides the value of the key traits used in the T model. The
-    default values are taken from Table 1 of :cite:`Li:2014bc`. Note that the foliage
+    default values are taken from Table 1 of :cite:t:`Li:2014bc`. Note that the foliage
     maintenance respiration fraction is not named in the T Model description, but has
     been included as a modifiable trait in this implementation. The traits are shown
     below with mathematical notation, default value and units shown in brackets:
