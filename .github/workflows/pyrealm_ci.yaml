@@ -44,3 +44,28 @@ jobs:
       run: |
         pip install codecov
         codecov
+
+  docs_build:
+    needs: qa
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2.1.6
+        with:
+          poetry-version: 1.2.2
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Set ipython kernel
+        run: poetry run python -m ipykernel install --user --name=vr_python3
+      
+      - name: Build docs using sphinx
+        run: |
+          cd docs
+          poetry run sphinx-build -W --keep-going source build
