@@ -9,6 +9,11 @@ documentation root, use os.path.abspath to make it absolute, like shown here.
 
 import os
 import sys
+from dataclasses import dataclass, field
+
+import sphinxcontrib.bibtex.plugin
+from sphinxcontrib.bibtex.style.referencing import BracketStyle
+from sphinxcontrib.bibtex.style.referencing.author_year import AuthorYearReferenceStyle
 
 from pyrealm import __version__ as pyrealm_version
 
@@ -42,9 +47,36 @@ extensions = [
     "sphinx_rtd_theme",
 ]
 
-bibtex_reference_style = "author_year"
+# Citation styling
 
-# Reference checking
+
+def bracket_style() -> BracketStyle:
+    """Custom citation parenthesis style."""
+    return BracketStyle(
+        left="(",
+        right=")",
+    )
+
+
+@dataclass
+class MyReferenceStyle(AuthorYearReferenceStyle):
+    """Custom referencing style."""
+
+    bracket_parenthetical: BracketStyle = field(default_factory=bracket_style)
+    bracket_textual: BracketStyle = field(default_factory=bracket_style)
+    bracket_author: BracketStyle = field(default_factory=bracket_style)
+    bracket_label: BracketStyle = field(default_factory=bracket_style)
+    bracket_year: BracketStyle = field(default_factory=bracket_style)
+
+
+sphinxcontrib.bibtex.plugin.register_plugin(
+    "sphinxcontrib.bibtex.style.referencing", "author_year_round", MyReferenceStyle
+)
+
+bibtex_reference_style = "author_year_round"
+
+
+# Cross-reference checking
 nitpicky = True
 nitpick_ignore = [
     ("py:class", "numpy._typing._generic_alias.ScalarType"),
