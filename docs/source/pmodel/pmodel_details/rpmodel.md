@@ -14,10 +14,9 @@ kernelspec:
 
 # The `rpmodel` implementation
 
-The implementation and documentation of the {mod}`~pyrealm.pmodel` module is
-very heavily based on Benjamin Stocker's R implementation of the P-model
-({cite}`Stocker:2020dh`) in the [``rpmodel``](https://github.com/stineb/rpmodel)
-package:
+The implementation and documentation of the {mod}`~pyrealm.pmodel` module is very
+heavily based on the [``rpmodel``](https://github.com/stineb/rpmodel) package, which
+provides an implementation of the P-model in the R language {cite:p}`Stocker:2020dh`.
 
 ## Testing reference
 

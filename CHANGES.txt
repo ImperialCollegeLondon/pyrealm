@@ -129,3 +129,5 @@
           cleaner docs and demo usage.
         - Reorganisation of website index and page structure, nitpicking of links turned
           on and broken links fixed.
+        - Switch away from astrorefs to sphinxcontrib.bibtex, which now supports
+          author_year citation styling.

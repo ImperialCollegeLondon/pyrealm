@@ -17,13 +17,13 @@ kernelspec:
 
 # The P Model: overview
 
-This page provides an overview of the theory of the P Model (:{cite}`Prentice:2014bc`,
-:{cite}`Wang:2017go`), and how to use the implementation in the `pyrealm` package. The
-details of calculations and the API for the package code are shown in the [module
-reference documentation](../api/pmodel_api).
+This page provides an overview of the theory of the P Model
+{cite:p}`Prentice:2014bc,Wang:2017go`, and how to use the implementation in the
+`pyrealm` package. The details of calculations and the API for the package code are
+shown in the [module reference documentation](../api/pmodel_api).
 
 The implementation in this module draws from the `rpmodel` implementation of the model
-({cite}`Stocker:2020dh`) and development matches the predictions of the two
+{cite:p}`Stocker:2020dh` and development matches the predictions of the two
 implementation for most - but not all use cases (see [here](pmodel_details/rpmodel) for
 discussion).
 
