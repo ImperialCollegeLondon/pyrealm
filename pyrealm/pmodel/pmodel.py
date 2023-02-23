@@ -654,7 +654,7 @@ class PModel:
 
         attrs = [("lue", "g C mol-1"), ("iwue", "µmol mol-1")]
 
-        if getattr(self, "_gpp", False):
+        if hasattr(self, "_gpp"):
             attrs.extend(
                 [
                     ("gpp", "µg C m-2 s-1"),

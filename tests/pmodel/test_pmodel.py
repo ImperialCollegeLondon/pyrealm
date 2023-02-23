@@ -771,6 +771,39 @@ def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, e
     #                 np.nan_to_num(expected['gs']))
 
 
+def test_pmodel_summarise(capsys, values, pmodelenv):
+    from pyrealm.pmodel import PModel, calc_soilmstress
+
+    ret = PModel(pmodelenv["sc"], kphio=0.05)
+
+    # Test what comes back before estimate_productivity
+    ret.summarize()
+
+    out = capsys.readouterr().out
+
+    assert all(["\n" + var in out for var in ("lue", "iwue")])
+    assert not any(
+        ["\n" + var in out for var in ("gpp", "vcmax", "vcmax25", "rd", "gs", "jmax")]
+    )
+
+    fapar = values["fapar_sc"]
+    ppfd = values["ppfd_sc"]
+
+    ret.estimate_productivity(fapar=fapar, ppfd=ppfd)
+
+    # Test what comes back after estimate_productivity
+    ret.summarize()
+
+    out = capsys.readouterr().out
+
+    assert all(
+        [
+            "\n" + var in out
+            for var in ("lue", "iwue", "gpp", "vcmax", "vcmax25", "rd", "gs", "jmax")
+        ]
+    )
+
+
 # Internal testing of functions
 
 
