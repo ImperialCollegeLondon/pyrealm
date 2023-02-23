@@ -278,7 +278,7 @@ class PModel:
       substomatal cavities (:math:`c_i`) is used following the calculation of
       :math:`\chi` using
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.beta_cost_ratio_c4`. Note that
-      :math:`g_s \to \infty` as VPD :math:`\to 0` and hence :math:`(c_a - c_1) \to 0`
+      :math:`g_s \to \infty` as VPD :math:`\to 0` and hence :math:`(c_a - c_i) \to 0`
       and the reported values will be set to ``np.nan`` under these conditions.
 
     Soil moisture effects:
