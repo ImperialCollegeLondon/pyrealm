@@ -225,8 +225,7 @@ class PModel:
       where :math:`f_v` is a limitation factor defined in
       :class:`~pyrealm.pmodel.pmodel.JmaxLimitation`, :math:`M_C` is the molar mass of
       carbon and :math:`\beta(\theta)` is an empirical soil moisture factor (see
-      :func:`~pyrealm.pmodel.functions.calc_soilmstress`, :cite:author:`Stocker:2020dh`,
-      :cite:year:`Stocker:2020dh`).
+      :func:`~pyrealm.pmodel.functions.calc_soilmstress`,  :cite:`Stocker:2020dh`).
 
     After running :meth:`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`, the
     following predictions are also populated:
@@ -264,7 +263,7 @@ class PModel:
 
             R_d = b_0 \frac{fr(t)}{fv(t)} V_{cmax}
 
-      following :cite:t:`Atkin:2015hk`, where :math:`fr(t)` is the instantaneous
+      following :cite:`Atkin:2015hk`, where :math:`fr(t)` is the instantaneous
       temperature response of dark respiration implemented in
       :func:`~pyrealm.pmodel.functions.calc_ftemp_inst_rd`, and :math:`b_0` is set in
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.atkin_rd_to_vcmax`.
@@ -655,7 +654,7 @@ class PModel:
 
         attrs = [("lue", "g C mol-1"), ("iwue", "µmol mol-1")]
 
-        if getattr(self, "_gpp", False):
+        if hasattr(self, "_gpp"):
             attrs.extend(
                 [
                     ("gpp", "µg C m-2 s-1"),
@@ -806,10 +805,10 @@ class CalcOptimalChi:
         return f"CalcOptimalChi(shape={self.shape}, method={self.method})"
 
     def prentice14(self) -> None:
-        r"""Calculate :math:`\chi` for C3 plants following :cite:t:`Prentice:2014bc`.
+        r"""Calculate :math:`\chi` for C3 plants following :cite:`Prentice:2014bc`.
 
         Optimal :math:`\chi` is calculated following Equation 8 in
-        :cite:t:`Prentice:2014bc`:
+        :cite:`Prentice:2014bc`:
 
           .. math:: :nowrap:
 
@@ -822,7 +821,7 @@ class CalcOptimalChi:
             \]
 
         The :math:`\ce{CO2}` limitation term of light use efficiency (:math:`m_j`) is
-        calculated following Equation 3 in :cite:t:`Wang:2017go`:
+        calculated following Equation 3 in :cite:`Wang:2017go`:
 
         .. math::
 
@@ -830,7 +829,7 @@ class CalcOptimalChi:
                        {c_a + 2 \Gamma^{*}}
 
         Finally,  :math:`m_c` is calculated, following Equation 7 in
-        :cite:t:`Stocker:2020dh`, as:
+        :cite:`Stocker:2020dh`, as:
 
         .. math::
 
@@ -878,7 +877,7 @@ class CalcOptimalChi:
         r"""Calculate soil moisture corrected :math:`\chi` for C3 plants.
 
         This method calculates the unit cost ratio $\beta$ as a function of soil
-        moisture ($\theta$, m3 m-3), following :cite:t:`lavergne:2020a`:
+        moisture ($\theta$, m3 m-3), following :cite:`lavergne:2020a`:
 
           .. math:: :nowrap:
 
@@ -887,7 +886,7 @@ class CalcOptimalChi:
             \]
 
         The coefficients are experimentally derived values with defaults taken from
-        Figure 6a of :cite:t:`lavergne:2020a` (:math:`a`,
+        Figure 6a of :cite:`lavergne:2020a` (:math:`a`,
         :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_a_c3`;
         :math:`b`,
         :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c3`).
@@ -946,12 +945,13 @@ class CalcOptimalChi:
         This method calculates :math:`\beta` as a function of soil moisture following
         the equation described in the
         :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c3` method.  However,
-        the default coefficients of the moisture scaling from :cite:t:`lavergne:2020a`
-        for C3 plants are adjusted to match the theoretical expectation that
-        :math:`\beta` for C4 plants is nine times smaller than :math:`\beta` for C3
-        plants (see :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.c4`): :math:`b`
+        the default coefficients of the moisture scaling from :cite:`lavergne:2020a` for
+        C3 plants are adjusted to match the theoretical expectation that :math:`\beta`
+        for C4 plants is nine times smaller than :math:`\beta` for C3 plants (see
+        :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.c4`): :math:`b`
         (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c4`) is
-        unchanged but :math:`a_{C4} = a_{C3} - log(9)`
+        unchanged but
+        :math:`a_{C4} = a_{C3} - log(9)`
         (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_a_c4`) .
 
         Following the calculation of :math:`\beta`, this method then follows the
@@ -963,7 +963,7 @@ class CalcOptimalChi:
         Note:
 
         This is an **experimental approach**. The research underlying
-        :cite:t:`lavergne:2020a`, found **no relationship** between C4 :math:`\beta`
+        :cite:`lavergne:2020a`, found **no relationship** between C4 :math:`\beta`
         values and soil moisture in leaf gas exchange measurements.
 
         Examples:
@@ -1013,7 +1013,7 @@ class CalcOptimalChi:
         self.mjoc = self.mj / self.mc
 
     def c4(self) -> None:
-        r"""Estimate :math:`\chi` for C4 plants following :cite:t:`Prentice:2014bc`.
+        r"""Estimate :math:`\chi` for C4 plants following :cite:`Prentice:2014bc`.
 
         Optimal :math:`\chi` is calculated as in
         :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.prentice14`, but using a C4
@@ -1152,14 +1152,14 @@ class JmaxLimitation:
 
         * ``simple``: applies the 'simple' equations with no limitation. The alias
           ``none`` is also accepted.
-        * ``wang17``: applies the framework of :cite:t:`Wang:2017go`.
-        * ``smith19``: applies the framework of :cite:t:`Smith:2019dv`
+        * ``wang17``: applies the framework of :cite:`Wang:2017go`.
+        * ``smith19``: applies the framework of :cite:`Smith:2019dv`
 
-    Note that :cite:t:`Smith:2019dv` defines :math:`\phi_0` as the quantum efficiency of
+    Note that :cite:`Smith:2019dv` defines :math:`\phi_0` as the quantum efficiency of
     electron transfer, whereas :class:`pyrealm.pmodel.pmodel.PModel` defines
     :math:`\phi_0` as the quantum efficiency of photosynthesis, which is 4 times
     smaller. This is why the factors here are a factor of 4 greater than Eqn 15 and 17
-    in :cite:t:`Smith:2019dv`.
+    in :cite:`Smith:2019dv`.
 
     Arguments:
         optchi: an instance of :class:`CalcOptimalChi` providing the :math:`\ce{CO2}`
@@ -1216,10 +1216,10 @@ class JmaxLimitation:
         """:math:`V_{cmax}` limitation factor, calculated using the method."""
         self.omega: Optional[NDArray] = None
         """Component of :math:`J_{max}` calculation for method ``smith19``
-        :cite:p:`Smith:2019dv`."""
+        (:cite:`Smith:2019dv`)."""
         self.omega_star: Optional[NDArray] = None
         """Component of :math:`J_{max}` calculation for method ``smith19``
-        :cite:p:`Smith:2019dv`."""
+        (:cite:`Smith:2019dv`)."""
 
         all_methods = {
             "wang17": self.wang17,
@@ -1246,9 +1246,9 @@ class JmaxLimitation:
         return f"JmaxLimitation(shape={self.shape})"
 
     def wang17(self) -> None:
-        r"""Calculate limitation factors following :cite:t:`Wang:2017go`.
+        r"""Calculate limitation factors following :cite:`Wang:2017go`.
 
-        These factors are described in Equation 49 of :cite:t:`Wang:2017go` as the
+        These factors are described in Equation 49 of :cite:`Wang:2017go` as the
         square root term at the end of that equation:
 
             .. math::
@@ -1287,7 +1287,7 @@ class JmaxLimitation:
             self.f_v = np.nan
 
     def smith19(self) -> None:
-        r"""Calculate limitation factors following :cite:t:`Smith:2019dv`.
+        r"""Calculate limitation factors following :cite:`Smith:2019dv`.
 
         The values are calculated as:
 
