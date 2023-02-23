@@ -131,3 +131,5 @@
           on and broken links fixed.
         - Switch away from astrorefs to sphinxcontrib.bibtex, which now supports
           author_year citation styling.
+        - Constrain estimation of g_s to exclude VPD = 0 and ca - ci = 0, which give
+          values tending to limit of infinity.
