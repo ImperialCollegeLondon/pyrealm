@@ -277,7 +277,9 @@ class PModel:
       When C4 photosynthesis is being used, the true partial pressure of CO2 in the
       substomatal cavities (:math:`c_i`) is used following the calculation of
       :math:`\chi` using
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.beta_cost_ratio_c4`
+      :attr:`~pyrealm.constants.pmodel_const.PModelConst.beta_cost_ratio_c4`. Note that
+      :math:`g_s \to \infty` as VPD :math:`\to 0` and hence :math:`(c_a - c_1) \to 0`
+      and the reported values will be set to ``np.nan`` under these conditions.
 
     Soil moisture effects:
         The `soilmstress`, `rootzonestress` arguments and the `lavergne20_c3` and
@@ -618,8 +620,16 @@ class PModel:
         ):
             warn("Assimilation and GPP are not identical")
 
-        # Stomatal conductance
-        self._gs = assim / (self.env.ca - self.optchi.ci)
+        # Stomatal conductance - do not estimate when VPD = 0 or when floating point
+        # errors give rise to (ca - ci) < 0 and deliberately ignore the numpy divide by
+        # zero warnings in those cases.
+        ca_ci_diff = self.env.ca - self.optchi.ci
+        with np.errstate(divide="ignore", invalid="ignore"):
+            self._gs = np.where(
+                np.logical_and(self.env.vpd > 0, ca_ci_diff > 0),
+                assim / ca_ci_diff,
+                np.nan,
+            )
 
     def __repr__(self) -> str:
         """Generates a string representation of PModel instance."""
