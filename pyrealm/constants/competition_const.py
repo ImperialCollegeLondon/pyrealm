@@ -10,7 +10,7 @@ class C3C4Const(ConstantsClass):
 
     This data class holds statistically estimated coefficients used to calculate the
     fraction of C4 plants based on the relative GPP of C3 and C4 plants for given
-    conditions and estimated treecover :cite:`lavergne:2020a`.
+    conditions and estimated treecover :cite:p:`lavergne:2020a`.
     """
 
     # Non-linear regression of fraction C4 plants from proportion GPP advantage

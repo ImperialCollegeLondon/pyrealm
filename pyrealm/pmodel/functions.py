@@ -21,7 +21,7 @@ def calc_density_h2o(
 
     Calculates the density of water as a function of temperature and atmospheric
     pressure, using the Tumlirz Equation and coefficients calculated by
-    :cite:`Fisher:1975tm`.
+    :cite:t:`Fisher:1975tm`.
 
     Args:
         tc: air temperature, °C
@@ -148,7 +148,7 @@ def calc_ftemp_inst_rd(tc: NDArray, const: PModelConst = PModelConst()) -> NDArr
 
     Calculates the temperature-scaling factor for dark respiration at a given
     temperature (``tc``, :math:`T` in °C), relative to the standard reference
-    temperature :math:`T_o`, given the parameterisation in :cite:`Heskel:2016fg`.
+    temperature :math:`T_o`, given the parameterisation in :cite:t:`Heskel:2016fg`.
 
     .. math::
 
@@ -193,7 +193,7 @@ def calc_ftemp_inst_vcmax(tc: NDArray, const: PModelConst = PModelConst()) -> ND
 
        V = f V_{ref}
 
-    The value of :math:`f` is given by :cite:`Kattge:2007db` (Eqn 1) as:
+    The value of :math:`f` is given by :cite:t:`Kattge:2007db` (Eqn 1) as:
 
     .. math::
 
@@ -204,7 +204,7 @@ def calc_ftemp_inst_vcmax(tc: NDArray, const: PModelConst = PModelConst()) -> ND
     where :math:`g(T, H_a)` is a regular Arrhenius-type temperature response function
     (see :func:`~pyrealm.pmodel.functions.calc_ftemp_arrh`). The term :math:`\Delta S`
     is the entropy factor, calculated as a linear function of :math:`T` in °C following
-    :cite:`Kattge:2007db` (Table 3, Eqn 4):
+    :cite:t:`Kattge:2007db` (Table 3, Eqn 4):
 
     .. math::
 
@@ -276,9 +276,9 @@ def calc_ftemp_kphio(
     PModel Parameters:
         C3: the parameters (:math:`a,b,c`, ``kphio_C3``) are taken from the
             temperature dependence of the maximum quantum yield of photosystem
-            II in light-adapted tobacco leaves determined by :cite:`Bernacchi:2003dc`.
+            II in light-adapted tobacco leaves determined by :cite:t:`Bernacchi:2003dc`.
         C4: the parameters (:math:`a,b,c`, ``kphio_C4``) are taken from
-            :cite:`cai:2020a`.
+            :cite:t:`cai:2020a`.
 
     Returns:
         Values for :math:`\phi(T)`
@@ -314,7 +314,8 @@ def calc_gammastar(
     r"""Calculate the photorespiratory CO2 compensation point.
 
     Calculates the photorespiratory **CO2 compensation point** in absence of dark
-    respiration (:math:`\Gamma^{*}`, ::cite:`Farquhar:1980ft`) as:
+    respiration (:math:`\Gamma^{*}`, :cite:author:`Farquhar:1980ft`,
+    :cite:year:`Farquhar:1980ft`) as:
 
     .. math::
 
@@ -323,7 +324,7 @@ def calc_gammastar(
     where :math:`f(T, H_a)` modifies the activation energy to the the local temperature
     following an Arrhenius-type temperature response function implemented in
     :func:`calc_ftemp_arrh`. Estimates of :math:`\Gamma^{*}_{0}` and :math:`H_a` are
-    taken from :cite:`Bernacchi:2001kg`.
+    taken from :cite:t:`Bernacchi:2001kg`.
 
     Args:
         tc: Temperature relevant for photosynthesis (:math:`T`, °C)
@@ -404,8 +405,8 @@ def calc_kmm(tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()) -> 
     r"""Calculate the Michaelis Menten coefficient of Rubisco-limited assimilation.
 
     Calculates the Michaelis Menten coefficient of Rubisco-limited assimilation
-    (:math:`K`, ::cite:`Farquhar:1980ft`) as a function of temperature (:math:`T`) and
-    atmospheric pressure (:math:`p`) as:
+    (:math:`K`, :cite:author:`Farquhar:1980ft`, :cite:year:`Farquhar:1980ft`) as a
+    function of temperature (:math:`T`) and atmospheric pressure (:math:`p`) as:
 
       .. math:: K = K_c ( 1 + p_{\ce{O2}} / K_o),
 
@@ -413,15 +414,14 @@ def calc_kmm(tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()) -> 
     :math:`f(T, H_a)` is an Arrhenius-type temperature response of activation energies
     (:func:`calc_ftemp_arrh`) used to correct Michalis constants at standard temperature
     for both :math:`\ce{CO2}` and :math:`\ce{O2}` to the local temperature (Table 1,
-    ::cite:`Bernacchi:2001kg`):
+    :cite:author:`Bernacchi:2001kg`, :cite:year:`Bernacchi:2001kg`):
 
       .. math::
         :nowrap:
 
         \[
             \begin{align*}
-                K_c &= K_{c25} \cdot f(T, H_{kc})\\
-                K_o &= K_{o25} \cdot f(T, H_{ko})
+                K_c &= K_{c25} \cdot f(T, H_{kc})\\ K_o &= K_{o25} \cdot f(T, H_{ko})
             \end{align*}
         \]
 
@@ -473,8 +473,8 @@ def calc_kp_c4(
     r"""Calculate the Michaelis Menten coefficient of PEPc.
 
     Calculates the Michaelis Menten coefficient of phosphoenolpyruvate carboxylase
-    (PEPc) (:math:`K`, :cite:`boyd:2015a`) as a function of temperature (:math:`T`) and
-    atmospheric pressure (:math:`p`) as:
+    (PEPc) (:math:`K`, :cite:author:`boyd:2015a`, :cite:year:`boyd:2015a`) as a function
+    of temperature (:math:`T`) and atmospheric pressure (:math:`p`) as:
 
     Args:
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
@@ -513,9 +513,10 @@ def calc_soilmstress(
     r"""Calculate Stocker's empirical soil moisture stress factor.
 
     Calculates an **empirical soil moisture stress factor**  (:math:`\beta`,
-    ::cite:`Stocker:2020dh`) as a function of relative soil moisture (:math:`m_s`,
-    fraction of field capacity) and average aridity, quantified by the local annual mean
-    ratio of actual over potential evapotranspiration (:math:`\bar{\alpha}`).
+    :cite:author:`Stocker:2020dh`, :cite:year:`Stocker:2020dh`) as a function of
+    relative soil moisture (:math:`m_s`, fraction of field capacity) and average
+    aridity, quantified by the local annual mean ratio of actual over potential
+    evapotranspiration (:math:`\bar{\alpha}`).
 
     The value of :math:`\beta` is defined relative to two soil moisture thresholds
     (:math:`\theta_0, \theta^{*}`) as:
@@ -538,7 +539,7 @@ def calc_soilmstress(
     .. math:: q=(1 - (a + b \bar{\alpha}))/(\theta^{*} - \theta_{0})^2
 
     Default parameters of :math:`a=0` and :math:`b=0.7330` are as described in Table 1
-    of :cite:`Stocker:2020dh` specifically for the 'FULL' use case, with
+    of :cite:t:`Stocker:2020dh` specifically for the 'FULL' use case, with
     ``method_jmaxlim="wang17"``, ``do_ftemp_kphio=TRUE``.
 
     Args:
@@ -598,7 +599,7 @@ def calc_viscosity_h2o(
     r"""Calculate the viscosity of water.
 
     Calculates the viscosity of water (:math:`\eta`) as a function of temperature and
-    atmospheric pressure (::cite:`Huber:2009fy`).
+    atmospheric pressure :cite:p:`Huber:2009fy`.
 
     Args:
         tc: air temperature (°C)
@@ -655,7 +656,8 @@ def calc_patm(elv: NDArray, const: PModelConst = PModelConst()) -> NDArray:
     Calculates atmospheric pressure as a function of elevation with reference to the
     standard atmosphere.  The elevation-dependence of atmospheric pressure is computed
     by assuming a linear decrease in temperature with elevation and a mean adiabatic
-    lapse rate (Eqn 3, ::cite:`BerberanSantos:2009bk`):
+    lapse rate (Eqn 3, :cite:author:`BerberanSantos:2009bk`,
+    :cite:year:`BerberanSantos:2009bk`):
 
     .. math::
 
@@ -699,8 +701,8 @@ def calc_co2_to_ca(co2: NDArray, patm: NDArray) -> NDArray:
     Converts ambient :math:`\ce{CO2}` (:math:`c_a`) in part per million to Pascals,
     accounting for atmospheric pressure.
 
-    Args
-        co2 (float): atmospheric :math:`\ce{CO2}`, ppm
+    Args:
+        co2: atmospheric :math:`\ce{CO2}`, ppm
         patm (float): atmospheric pressure, Pa
 
     Returns:

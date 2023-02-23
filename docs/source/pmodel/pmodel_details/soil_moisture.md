@@ -27,7 +27,7 @@ photosynthesis:
 ## Stocker $\beta(\theta)$
 
 This is an empirically derived factor ($\beta(\theta) \in [0,1]$,
-:{cite}`Stocker:2018be`, :{cite}`Stocker:2020dh`) that captures the response of light
+{cite:p}`Stocker:2018be,Stocker:2020dh` that captures the response of light
 use efficiency (LUE) and hence gross primary productivity (GPP)  to soil moisture
 stress. The calculated value of $\beta(\theta)$ is applied directly as a penalty factor
 to LUE and hence to estimates of GPP.

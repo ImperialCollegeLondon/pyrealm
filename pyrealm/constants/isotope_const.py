@@ -12,14 +12,14 @@ class IsotopesConst(ConstantsClass):
     carbon isotope discrimination from P Model instances.
 
     * For C4 plants, the coefficients for calculating isotopic discrimination are taken
-      from :cite:`lavergne:2022a`. The class also provides an alternative, but currently
-      implemented, parameterisation using coefficients taken from
-      :cite:`voncaemmerer:2014a`.
-    * For Cw plants, the coefficients for calculating isotopic discrimination are taken
-      from :cite:`farquhar:1982a`.
+      from :cite:t:`lavergne:2022a`. The class also provides an alternative, but
+      currently implemented, parameterisation using coefficients taken from
+      :cite:t:`voncaemmerer:2014a`.
+    * For C3 plants, the coefficients for calculating isotopic discrimination are taken
+      from :cite:t:`farquhar:1982a`.
     * Post-photosynthetic fractionation values are also provided between leaf organic
-      matter and alpha-cellulose (:cite:`frank:2015a`) and bulk wood
-      (:cite:`badeck:2005a`).
+      matter and alpha-cellulose :cite:p:`frank:2015a` and bulk wood
+      :cite:p:`badeck:2005a`.
 
     """
 
