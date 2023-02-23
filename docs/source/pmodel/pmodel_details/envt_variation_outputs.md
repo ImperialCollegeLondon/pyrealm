@@ -289,7 +289,7 @@ Stomatal conductance is estimated using the difference between ambient and optim
 internal leaf $\ce{CO2}$ concentration. When vapour pressure deficit is zero, the
 difference between $c_a$ and $c_i$ will tend to zero, which leads to numerical
 instability in estimates of $g_s$. The
-{meth}`~pyrealm.pmodel..pmodel.PModel.estimate_productivity` method will set $g_s$ to be
+{meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` method will set $g_s$ to be
 undefined (`np.nan`) when VPD is zero or when $c_a - c_i = 0$.
 
 ```{code-cell}
