@@ -215,29 +215,32 @@ the following additional variables are populated.
 ```{warning}
 
 To use {meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`, the estimated PPFD
-must be expressed as **µmol m-2 s-1**.
+must be expressed as $\boldsymbol{\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}}$.
 
 Estimates of PPFD sometimes use different temporal or spatial scales - for
 example daily moles of photons per hectare. Although GPP can also be expressed
 with different units, many other predictions of the P Model ($J_{max}$,
-$V_{cmax}$, $g_s$ and $r_d$) _must_ be expressed as µmol m-2 s-1 and so this
+$V_{cmax}$, $g_s$ and $r_d$) _must_ be expressed as 
+$\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$ and so this
 standard unit must also be used for PPFD.
 ```
 
 The productivity variables and their units are:
 
-* Gross primary productivity (``gpp``, $\micro\text{gC}\,m^{-2}\,\text{s}^{-1}$)
-* Dark respiration (``rd``, $\text{mol}\,\microm^{-2}\,\text{s}^{-1}$)
-* Maximum rate of carboxylation (``vcmax``, $\micro\text{mol}\,m^{-2}\,\text{s}^{-1}$)
-* Maximum rate of carboxylation at standard temperature (``vcmax25``, $\micro\text{mol}\,m^{-2}\,\text{s}^{-1}$)
-* Maximum rate of electron transport. (``jmax``, $\micro\text{mol}\,m^{-2}\,\text{s}^{-1}$)
-* Stomatal conductance (``gs``, $\micro\text{mol}\,m^{-2}\,\text{s}^{-1}$)
+* Gross primary productivity (``gpp``, $\mu\text{gC}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
+* Dark respiration (``rd``, $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
+* Maximum rate of carboxylation (``vcmax``, $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
+* Maximum rate of carboxylation at standard temperature
+    (``vcmax25``, $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
+* Maximum rate of electron transport.
+    (``jmax``, $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
+* Stomatal conductance (``gs``, $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
 
 For the plots below, productivity has been estimated using a representative
 irradiance values at the top of a tropical rainforest canopy:
 
 * $f_{APAR}$: 0.91 (unitless)
-* PPFD: 600 $\micro\text{mol}\,m^{-2}\,\text{month}^{-1}$
+* PPFD: 600 $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$
 
 If required, productivity estimates per unit absorbed irradiance can be simply
 calculated using ``fapar=1, ppfd=1``, which are the default values to
@@ -248,7 +251,7 @@ calculated using ``fapar=1, ppfd=1``, which are the default values to
 ```{code-cell}
 :tags: [hide-input]
 
-plot_fun("gpp", r"GPP   ($\mathrm{g\,C}\,m^{-2}\,\mathrm{month}^{-1}$)")
+plot_fun("gpp", r"GPP   ($\mu\mathrm{g\,C}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
 ```
 
 ### Dark respiration (``rd``)
@@ -256,7 +259,7 @@ plot_fun("gpp", r"GPP   ($\mathrm{g\,C}\,m^{-2}\,\mathrm{month}^{-1}$)")
 ```{code-cell}
 :tags: [hide-input]
 
-plot_fun("rd", r"$r_d$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)")
+plot_fun("rd", r"$r_d$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
 ```
 
 ### Maximum rate of carboxylation (``vcmax``)
@@ -264,7 +267,7 @@ plot_fun("rd", r"$r_d$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)")
 ```{code-cell}
 :tags: [hide-input]
 
-plot_fun("vcmax", r"$v_{cmax}$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)")
+plot_fun("vcmax", r"$v_{cmax}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
 ```
 
 ### Maximum rate of carboxylation at standard temperature (``vcmax25``)
@@ -272,7 +275,7 @@ plot_fun("vcmax", r"$v_{cmax}$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)")
 ```{code-cell}
 :tags: [hide-input]
 
-plot_fun("vcmax25", r"$v_{cmax25}$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)")
+plot_fun("vcmax25", r"$v_{cmax25}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
 ```
 
 ### Maximum rate of electron transport. (``jmax``)
@@ -280,15 +283,22 @@ plot_fun("vcmax25", r"$v_{cmax25}$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}
 ```{code-cell}
 :tags: [hide-input]
 
-plot_fun("jmax", r"$J_{max}$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)")
+plot_fun("jmax", r"$J_{max}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
 ```
 
 ### Stomatal conductance (``gs``, $g_s$)
 
+Stomatal conductance is estimated using the difference between ambient and optimal
+internal leaf $\ce{CO2}$ concentration. When vapour pressure deficit is zero, the
+difference between $c_a$ and $c_i$ will tend to zero, which leads to numerical
+instability in estimates of $g_s$. The
+{meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` method will set $g_s$ to be
+undefined (`np.nan`) when VPD is zero or when $c_a - c_i = 0$.
+
 ```{code-cell}
 :tags: [hide-input]
 
-plot_fun("gs", r"$g_s$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)")
+plot_fun("gs", r"$g_s$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
 ```
 
 ## Scaling with absorbed irradiance
@@ -296,7 +306,7 @@ plot_fun("gs", r"$g_s$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)")
 All of the six productivity variables scale linearly with absorbed irradiance. The plots
 below show how each variable changes, for a constant environment with `tc` of 20°C,
 `patm` of 101325 Pa, `vpd` of 1000 Pa and $\ce{CO2}$ of 400 ppm, when absorbed
-irradiance changes from 0 to 2000 $\text{mol}\,m^{-2}\,\text{month}^{-1}$.
+irradiance changes from 0 to 2000 $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$.
 
 ```{code-cell}
 :tags: [hide-input]
@@ -308,7 +318,7 @@ pmodel_env = pmodel.PModelEnvironment(tc=20, patm=101325, vpd=1000, co2=400)
 pmodel_c3 = pmodel.PModel(pmodel_env)
 pmodel_c4 = pmodel.PModel(pmodel_env, method_optchi="c4")
 
-# Estimate productivity for tropical forest conditions (monthly, m2)
+# Estimate productivity for tropical forest conditions (micromols m2 s)
 ppfd_vals = np.arange(2000)
 pmodel_c3.estimate_productivity(fapar=1, ppfd=ppfd_vals)
 pmodel_c4.estimate_productivity(fapar=1, ppfd=ppfd_vals)
@@ -329,26 +339,26 @@ def plot_iabs(ax, estvar, estvarlab):
         ax.plot(ppfd_vals, plotvar, lfmt)
 
     # Set axis labels
-    ax.set_xlabel(r"Absorbed irradiance ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)")
+    ax.set_xlabel(r"Absorbed irradiance ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
     ax.set_ylabel(f"Estimated {estvarlab}")
 
 
 fig, axs = pyplot.subplots(2, 3, figsize=(12, 8), sharex=True)
 
-plot_iabs(axs[0, 0], "gpp", r"GPP   ($\mathrm{g\,C}\,m^{-2}\,\mathrm{month}^{-1}$)")
-plot_iabs(axs[0, 1], "rd", r"$r_d$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)")
+plot_iabs(axs[0, 0], "gpp", r"GPP   ($\mu\mathrm{g\,C}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
+plot_iabs(axs[0, 1], "rd", r"$r_d$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
 plot_iabs(
-    axs[0, 2], "vcmax", r"$v_{cmax}$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)"
+    axs[0, 2], "vcmax", r"$v_{cmax}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
 )
 plot_iabs(
     axs[1, 0],
     "vcmax25",
-    r"$v_{cmax25}$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)",
+    r"$v_{cmax25}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)",
 )
 plot_iabs(
-    axs[1, 1], "jmax", r"$J_{max}$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)"
+    axs[1, 1], "jmax", r"$J_{max}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
 )
-plot_iabs(axs[1, 2], "gs", r"$g_s$   ($\mathrm{mol}\,m^{-2}\,\mathrm{month}^{-1}$)")
+plot_iabs(axs[1, 2], "gs", r"$g_s$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
 
 axs[0, 0].legend(
     [

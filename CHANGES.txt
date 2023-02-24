@@ -104,6 +104,7 @@
         - Python minimum version is now 3.9
         - Hygrometric functions moved from utilities to new hygro module
         - Param classes are now Const classes.
+        - Stomatal conductance not estimated when VPD = 0.
       - Detailed changes:
         - Moved support python versions to >=3.9, <3.11
         - Update to poetry 1.2+
@@ -131,3 +132,5 @@
           on and broken links fixed.
         - Switch away from astrorefs to sphinxcontrib.bibtex, which now supports
           author_year citation styling.
+        - Constrain estimation of g_s to exclude VPD = 0 and ca - ci = 0, which give
+          values tending to limit of infinity.
