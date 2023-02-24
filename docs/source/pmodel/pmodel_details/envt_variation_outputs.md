@@ -306,7 +306,7 @@ plot_fun("gs", r"$g_s$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
 All of the six productivity variables scale linearly with absorbed irradiance. The plots
 below show how each variable changes, for a constant environment with `tc` of 20°C,
 `patm` of 101325 Pa, `vpd` of 1000 Pa and $\ce{CO2}$ of 400 ppm, when absorbed
-irradiance changes from 0 to 2000 $\text{mol}\,\mathrm{m}^{-2}\,\text{month}^{-1}$.
+irradiance changes from 0 to 2000 $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$.
 
 ```{code-cell}
 :tags: [hide-input]
@@ -318,7 +318,7 @@ pmodel_env = pmodel.PModelEnvironment(tc=20, patm=101325, vpd=1000, co2=400)
 pmodel_c3 = pmodel.PModel(pmodel_env)
 pmodel_c4 = pmodel.PModel(pmodel_env, method_optchi="c4")
 
-# Estimate productivity for tropical forest conditions (monthly, m2)
+# Estimate productivity for tropical forest conditions (micromols m2 s)
 ppfd_vals = np.arange(2000)
 pmodel_c3.estimate_productivity(fapar=1, ppfd=ppfd_vals)
 pmodel_c4.estimate_productivity(fapar=1, ppfd=ppfd_vals)
@@ -339,26 +339,26 @@ def plot_iabs(ax, estvar, estvarlab):
         ax.plot(ppfd_vals, plotvar, lfmt)
 
     # Set axis labels
-    ax.set_xlabel(r"Absorbed irradiance ($\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{month}^{-1}$)")
+    ax.set_xlabel(r"Absorbed irradiance ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
     ax.set_ylabel(f"Estimated {estvarlab}")
 
 
 fig, axs = pyplot.subplots(2, 3, figsize=(12, 8), sharex=True)
 
-plot_iabs(axs[0, 0], "gpp", r"GPP   ($\mathrm{g\,C}\,\mathrm{m}^{-2}\,\mathrm{month}^{-1}$)")
-plot_iabs(axs[0, 1], "rd", r"$r_d$   ($\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{month}^{-1}$)")
+plot_iabs(axs[0, 0], "gpp", r"GPP   ($\mu\mathrm{g\,C}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
+plot_iabs(axs[0, 1], "rd", r"$r_d$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
 plot_iabs(
-    axs[0, 2], "vcmax", r"$v_{cmax}$   ($\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{month}^{-1}$)"
+    axs[0, 2], "vcmax", r"$v_{cmax}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
 )
 plot_iabs(
     axs[1, 0],
     "vcmax25",
-    r"$v_{cmax25}$   ($\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{month}^{-1}$)",
+    r"$v_{cmax25}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)",
 )
 plot_iabs(
-    axs[1, 1], "jmax", r"$J_{max}$   ($\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{month}^{-1}$)"
+    axs[1, 1], "jmax", r"$J_{max}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
 )
-plot_iabs(axs[1, 2], "gs", r"$g_s$   ($\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{month}^{-1}$)")
+plot_iabs(axs[1, 2], "gs", r"$g_s$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
 
 axs[0, 0].legend(
     [
