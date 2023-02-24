@@ -104,6 +104,7 @@
         - Python minimum version is now 3.9
         - Hygrometric functions moved from utilities to new hygro module
         - Param classes are now Const classes.
+        - Stomatal conductance not estimated when VPD = 0.
       - Detailed changes:
         - Moved support python versions to >=3.9, <3.11
         - Update to poetry 1.2+
