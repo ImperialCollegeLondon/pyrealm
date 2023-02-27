@@ -1,7 +1,5 @@
 """Draft code for subdaily interpolators."""  # noqa: D205, D415
 
-from typing import Optional, Union
-
 import numpy as np
 from numpy.typing import NDArray
 from scipy.interpolate import interp1d  # type: ignore
@@ -130,226 +128,244 @@ class TemporalInterpolator:
 class DailyRepresentativeValues:
     """Calculate daily representative values.
 
-    This class is used to take data at a subdaily scale and calculate daily
-    representative mean values across daily subsets. Some use cases
-    distinguish between a representative value, calculated over a time span, and
-    a specific single value closest to a  _reference time_ (e.g. noon).
+    This class provides daily representative values from multiday datasets sampled at
+    subdaily resolutions. An instance is created using a 1 dimensional
+    :class:`numpy.datetime64` array providing the sampling times of observed data. These
+    datetimes must be strictly increasing and the observations must be at the same time
+    points during the day for a complete number of days.
+
+    The cl
+
+
+    aily subsets. Some use cases distinguish between a representative value, calculated
+    over a time span, and a specific single value closest to a  _reference time_ (e.g.
+    noon).
 
     The class provides three subsetting approaches:
 
-    * A time window within each day, given the time of the window centre and its
-      width. The default reference time is the window centre.
-    * A boolean index of values to include, such as a predefined vector of night
-      and day. The default reference time is noon.
-    * A window around the time of the daily maximum in a variable. The default
-      reference time is the daily maximum. This is not yet implemented
+    * A time window within each day, given the time of the window centre and its width.
+      The default reference time is the window centre.
+    * A boolean index of values to include, such as a predefined vector of night and
+      day. The default reference time is noon.
+    * A window around the time of the daily maximum in a variable. The default reference
+      time is the daily maximum. This is not yet implemented
 
-    An instance is created using a 1 dimensional numpy array of dtype
-    numpy.datetime64, which must be strictly increasing and evenly spaced. Once
-    the instance is created, it is callable and can be used to return
-    representative values using the initial settings for different variables.
+    An instance is created using a 1 dimensional numpy array of dtype numpy.datetime64,
+    which must be strictly increasing and evenly spaced. Once the instance is created,
+    it is callable and can be used to return representative values using the initial
+    settings for different variables.
 
     Args:
         datetimes: A sequence of datetimes for observations at a subdaily scale
-        window_center: The centre of the time window in hours
-        window_width: The width of the time window in hours
-        include: A boolean vector showing indicating which observed values to
-            include in calculating representative values
-        around_max: A boolean flag to use representative values around the daily
-            maximum
-        reference_time: A time to be used for reference values in decimal hours,
-            overriding the default time for the given method.
-
-    Attributes:
-        dates np.ndarray: The dates for calculated representative values.
-        n_datetimes int: The number of observed datetimes
-        method str: Summary of the method being used
     """
 
-    def __init__(  # noqa C901 - Function is too complex
+    def __init__(
         self,
         datetimes: NDArray,
-        window_center: Optional[float] = None,
-        window_width: Optional[float] = None,
-        include: Optional[np.ndarray] = None,
-        around_max: Optional[bool] = None,
-        reference_time: Optional[float] = None,
     ) -> None:
         # Datetime validation. The inputs must be:
         # - one dimensional datetime64
-        # - with strictly increasing and evenly spaced time deltas
-        # - covering a set of whole days
-        if not (
-            (len(datetimes.shape) == 1) & np.issubdtype(datetimes.dtype, np.datetime64)
-        ):
+        if (datetimes.ndim > 1) or not np.issubdtype(datetimes.dtype, np.datetime64):
             raise ValueError(
                 "Datetimes are not a 1 dimensional array with dtype datetime64"
             )
 
-        self.n_datetimes = datetimes.shape[0]
+        # - with strictly increasing time deltas that are both evenly spaced and evenly
+        #   divisible into a day
+        n_datetimes = datetimes.shape[0]
         datetime_deltas = np.diff(datetimes)
+        spacing = set(datetime_deltas)
 
-        if not np.all(datetime_deltas == datetime_deltas[0]):
-            raise ValueError("Datetime sequence must be evenly spaced")
+        if len(spacing) > 1:
+            raise ValueError("Datetime sequence not evenly spaced")
 
-        if datetime_deltas[0] < 0:
+        self.spacing: np.timedelta64 = spacing.pop()
+        """The time interval between observations"""
+
+        if self.spacing < 0:
             raise ValueError("Datetime sequence must be increasing")
 
-        # The sequence is now strictly increasing and evenly spaced, so get the
-        # indices of date changes to check whole days and get the date sequence
-        observation_dates = datetimes.astype("datetime64[D]")
-        date_change_idx = np.where(np.diff(observation_dates).astype(int) == 1)[0]
+        # Get the number of observations per day and check it is evenly divisible.
+        n_sec = 24 * 60 * 60
+        obs_per_date = n_sec // self.spacing.astype("timedelta64[s]").astype(int)
+        day_remainder = n_sec % self.spacing.astype("timedelta64[s]").astype(int)
 
-        # Get the count of observations per date - including last date change to
-        # end of sequence
-        obs_per_date = np.diff(
-            np.concatenate([date_change_idx, [self.n_datetimes - 1]])
+        if day_remainder:
+            raise ValueError("Datetime spacing is not evenly divisible into a day")
+
+        obs_remainder = n_datetimes % obs_per_date
+        if obs_remainder:
+            raise ValueError("Datetimes include incomplete days")
+
+        # Get a view of the datetimes wrapped on the number of observations per date
+        # and extract the observation dates and times
+        datetimes_by_date = datetimes.view()
+        datetimes_by_date.shape = (-1, obs_per_date)
+
+        # Data could still wrap onto obs x day view but having dates change mid row
+        first_row_dates = datetimes_by_date[0, :].astype("datetime64[D]")
+        if len(set(first_row_dates)) > 1:
+            raise ValueError("Datetimes include incomplete days")
+
+        self.observation_dates: NDArray = datetimes_by_date[:, 0].astype(
+            "datetime64[D]"
         )
+        """The dates covered by the observations"""
 
-        if not np.all(obs_per_date == obs_per_date[0]):
-            raise ValueError("Datetime sequence does not cover a whole number of days")
+        self.n_days = len(self.observation_dates)
+        """The number of days covered by the observations"""
 
-        self.dates = observation_dates[
-            np.concatenate([date_change_idx, [self.n_datetimes - 1]])
-        ]
+        self.observation_times: NDArray = (
+            datetimes_by_date[0, :] - self.observation_dates[0]
+        ).astype("timedelta64[s]")
+        """The times of observations through the day as timedelta64 values in seconds"""
 
-        # Different methods
-        if window_center is not None and window_width is not None:
-            # Find which datetimes fall within that window, using second resolution
-            win_center = np.timedelta64(int(window_center * 60 * 60), "s")
-            win_start = np.timedelta64(
-                int((window_center - window_width / 2) * 60 * 60), "s"
-            )
-            win_end = np.timedelta64(
-                int((window_center + window_width / 2) * 60 * 60), "s"
-            )
+        self.n_obs = len(self.observation_times)
+        """The number of daily observations"""
 
-            # Does that include more than one day?
-            # NOTE - this might actually be needed at some point!
-            if (win_start < np.timedelta64(0, "s")) or (
-                win_end > np.timedelta64(86400, "s")
-            ):
-                raise NotImplementedError(
-                    "window_center and window_width cover more than one day"
-                )
+        self.datetimes = datetimes
+        """The datetimes used to create the instance."""
 
-            # Now find which datetimes fall within that time window, given the
-            # extracted dates
-            include = np.logical_and(
-                datetimes >= observation_dates + win_start,
-                datetimes <= observation_dates + win_end,
-            )
+        self.include: NDArray[np.bool_]
+        """A logical array indicating which values to be included in daily summaries.
 
-            default_reference_datetime = self.dates + win_center
+        This attribute is only populated when one of the ``set_`` methods is called.
+        """
+        # Get the date change indices
+        # date_change_idx = np.arange(0, self.n_datetimes + 1, obs_per_date)
 
-            self.method = f"Window ({window_center}, {window_width})"
+        # self.dates = observation_dates[
+        #     np.concatenate([date_change_idx, [self.n_datetimes - 1]])
+        # ]
 
-        elif include is not None:
-            if datetimes.shape != include.shape:
-                raise ValueError("Datetimes and include do not have the same shape")
+        # self.observation_dates = observation_dates
+        # self.observation_times = observation_times.astype("timedelta64[s]")
 
-            if include.dtype != bool:
-                raise ValueError("The include argument must be a boolean array")
+    def set_window(self, window_center: float, window_width: float) -> None:
+        """Set a daily window to sample.
 
-            # Noon default reference time
-            default_reference_datetime = self.dates + np.timedelta64(12, "h")
-
-            self.method = "Include array"
-
-        elif around_max is not None and window_width is not None:
-            # This would have to be implemented _per_ value set, so in __call__
-            # but can use date_change set up in init.
-            raise NotImplementedError("around_max not yet implemented")
-
-            self.method = "Around max"
-
-        else:
-            raise RuntimeError("Unknown option combination")
-
-        # The approach implemented here uses cumsum and then divide by n_obs to
-        # quickly get mean values across ndarrays, even allowing for ragged
-        # arrays coming from the include option. The approach needs the indices
-        # of the values to include along the time axis (0), the index at which
-        # dates change those indices and the number of indices per group.
-        #
-        # See:
-        #    https://vladfeinberg.com/2021/01/07/vectorizing-ragged-arrays.html)
-
-        # Get a sequence of the indices of included values
-        self._include_idx = np.nonzero(include)[0]
-
-        # Find the last index for each date in that sequence, including the last
-        # value as the last index for the last date.
-        date_change = np.nonzero(np.diff(observation_dates[self._include_idx]))[0]
-        self._date_change = np.append(date_change, self._include_idx.shape[0] - 1)
-
-        # Count how many values included for each date
-        self._include_count = np.diff(self._date_change, prepend=-1)
-
-        # Override the reference time from the default if provided
-        if reference_time is not None:
-            _reference_time = np.timedelta64(int(reference_time * 60 * 60), "s")
-            default_reference_datetime = self.dates + _reference_time
-
-        # Store the reference_datetime
-        self._reference_datetime = default_reference_datetime
-
-        # Provide an index used to pull out daily reference values - it is possible
-        # that the user might provide settings that don't match exactly to a datetime,
-        # so use proximity.
-        self._reference_datetime_idx = np.array(
-            [
-                np.argmin(np.abs(np.array(datetimes) - d))
-                for d in self._reference_datetime
-            ]
-        )
-
-    def __call__(
-        self, values: NDArray, with_reference_values: bool = False
-    ) -> Union[tuple[NDArray, NDArray], NDArray]:
-        """Calculate representative values for a variable.
-
-        Instances of :class:`~pyrealm.utilities.DailyRepresentativeValues` can
-        be called to calcualte representative values for each day for a provided
-        array of values, given the methods configured in the instance.
+        This method defines a time window within each day, given the time of the window
+        centre and its width.
 
         Args:
-            with_reference_values: A flag to request that reference values
-                should be returned as well as the representative values.
-
-        Returns:
-            Either an np.ndarray of representative values or a 2-tuple of
-            np.ndarrays containing the representative and reference values.
+            window_center: The centre of the time window in decimal hours
+            window_width: The width of the time window in decimal hours
         """
 
+        # TODO - use datetime64 and timedelta64 as inputs?
+
+        # Find which datetimes fall within that window, using second resolution
+        win_center = np.timedelta64(int(window_center * 60 * 60), "s")
+        win_width = np.timedelta64(int(window_width * 60 * 60), "s")
+        win_start = win_center - win_width
+        win_end = win_center + win_width
+
+        # Does that include more than one day?
+        # NOTE - this might actually be needed at some point!
+        if (win_start < 0) or (win_end > 86400):
+            raise ValueError("window_center and window_width cover more than one day")
+
+        # Now find which observation fall inclusively within that time window
+        self.include = np.logical_and(
+            win_start <= self.observation_times,
+            win_end >= self.observation_times,
+        )
+        self.set_method = f"Window ({window_center}, {window_width})"
+
+    def set_include(self, include: NDArray[np.bool_]) -> None:
+        """TBD."""
+        if self.datetimes.shape != include.shape:
+            raise ValueError("Datetimes and include do not have the same shape")
+
+        if include.dtype != bool:
+            raise ValueError("The include argument must be a boolean array")
+
+        # Noon default reference time
+        self.include = include
+        self.method = "Include array"
+
+    def set_around_max(self, window_width: float) -> None:
+        """TBD."""
+        # This would have to be implemented _per_ value set, so in __call__
+        # but can use date_change set up in init.
+        raise NotImplementedError("around_max not yet implemented")
+
+        self.method = "Around max"
+
+        # # The approach implemented here uses cumsum and then divide by n_obs to
+        # # quickly get mean values across ndarrays, even allowing for ragged
+        # # arrays coming from the include option. The approach needs the indices
+        # # of the values to include along the time axis (0), the index at which
+        # # dates change those indices and the number of indices per group.
+        # #
+        # # See:
+        # #    https://vladfeinberg.com/2021/01/07/vectorizing-ragged-arrays.html)
+
+        # # Get a sequence of the indices of included values
+        # self._include_idx = np.nonzero(include)[0]
+
+        # # Find the last index for each date in that sequence, including the last
+        # # value as the last index for the last date.
+        # date_change = np.nonzero(np.diff(observation_dates[self._include_idx]))[0]
+        # self._date_change = np.append(date_change, self._include_idx.shape[0] - 1)
+
+        # # Count how many values included for each date
+        # self._include_count = np.diff(self._date_change, prepend=-1)
+
+        # # Override the reference time from the default if provided
+        # if reference_time is not None:
+        #     _reference_time = np.timedelta64(int(reference_time * 60 * 60), "s")
+        #     default_reference_datetime = self.dates + _reference_time
+
+        # # Store the reference_datetime
+        # self._reference_datetime = default_reference_datetime
+
+        # # Provide an index used to pull out daily reference values - it is possible
+        # # that the user might provide settings that don't match exactly to a datetime,
+        # # so use proximity.
+        # self._reference_datetime_idx = np.array(
+        #     [
+        #         np.argmin(np.abs(np.array(datetimes) - d))
+        #         for d in self._reference_datetime
+        #     ]
+        # )
+
+    def get_representative_values(self, values: NDArray) -> NDArray:
+        """Extract representative values for a variable.
+
+        This method takes an array of values which has the same shape alo
+
+        Args:
+            values: An array of values for each observation, to be used to calculate
+                representative daily values.
+
+        Returns:
+            An array of representative values
+        """
+
+        if not hasattr(self, "include"):
+            raise AttributeError(
+                "Use a set_ method to select which daily values are included"
+            )
         # Check that the first axis has the same shape as the number of
         # datetimes in the init
-        if values.shape[0] != self.n_datetimes:
+        if values.shape[0] != self.datetimes.shape[0]:
             raise ValueError(
                 "The first dimension of values is not the same length "
                 "as the datetime sequence"
             )
 
-        # Get the cumulative sum of the included values, then reduce to the
-        # sums at the indices where dates change
-        values_cumsum = np.cumsum(values[self._include_idx], axis=0)[
-            self._date_change, ...
-        ]
+        # Get a view of the values wrapped by date and then reshape along the first
+        # axis into daily subarrays, leaving any remaining dimensions untouched.
+        # Using a view and reshape should avoid copying the data.
+        values_by_day = values.view()
+        values_by_day.shape = tuple([self.n_days, self.n_obs] + list(values.shape[1:]))
 
-        # Now find the differences across days to reduce to the sum of values
-        # _within_ days and divide by the count to get averages. Need to take
-        # care here to ensure that the counts always align along the first axis.
-        count_shape = np.concatenate(
-            [self._include_count.shape, np.repeat([1], values.ndim - 1)]
-        )
+        # subset to the included daily values
+        return values_by_day[:, self.include, ...]
 
-        average_values = np.diff(
-            values_cumsum, prepend=0, axis=0
-        ) / self._include_count.reshape(count_shape)
+    def get_daily_means(self, values: NDArray) -> NDArray:
+        """TBD."""
+        daily_values = self.get_representative_values(values)
 
-        if with_reference_values:
-            # Get the reference value and return that as well as daily value
-            reference_values = values[self._reference_datetime_idx]
-            return average_values, reference_values
-        else:
-            return average_values
+        return daily_values.mean(axis=1)

@@ -3,15 +3,13 @@
 """This module tests the interpolator routines for the subdaily model.
 """  # noqa: D205, D415
 
+from contextlib import nullcontext as does_not_raise
 from datetime import datetime, timedelta
 
 import numpy as np
 import pytest
 
-from pyrealm.subdaily.interpolators import (
-    DailyRepresentativeValues,
-    TemporalInterpolator,
-)
+from pyrealm.subdaily.interpolators import TemporalInterpolator
 
 # ----------------------------------------
 # Testing TemporalInterpolator
@@ -164,99 +162,158 @@ def test_temporal_interpolator_call(method, values, expected):
 
 
 @pytest.mark.parametrize(
-    argnames=["ctext_mngr", "msg", "datetimes", "kwargs"],
+    argnames=["ctext_mngr", "msg", "datetimes"],
     argvalues=[
-        (  # Non-datetime64 datetimes
+        pytest.param(
             pytest.raises(ValueError),
             "Datetimes are not a 1 dimensional array with dtype datetime64",
             np.arange(0, 144),
-            dict(window_center=12, window_width=2),
+            id="Non-datetime64 datetimes",
         ),
-        (  # 2 dimensionsal datetimes
+        pytest.param(
             pytest.raises(ValueError),
             "Datetimes are not a 1 dimensional array with dtype datetime64",
             np.arange(
-                datetime(2014, 6, 1, 0, 0),
-                datetime(2014, 6, 7, 0, 0),
-                timedelta(minutes=30),
-                dtype="datetime64[m]",
+                np.datetime64("2014-06-01 00:00"),
+                np.datetime64("2014-06-07 00:00"),
+                np.timedelta64(30, "m"),
+                dtype="datetime64[s]",
             ).reshape((2, 144)),
-            dict(window_center=12, window_width=2),
+            id="Non-1D datetimes",
         ),
-        (  # Uneven temporal sampling
+        pytest.param(
             pytest.raises(ValueError),
-            "Datetime sequence must be evenly spaced",
-            np.array(
-                [
-                    datetime(2014, 6, 1, 0, 0) + timedelta(minutes=int(d))
-                    for d in np.cumsum(np.random.randint(25, 35, 144))
-                ],
-                dtype="datetime64[m]",
-            ),
-            dict(window_center=12, window_width=2),
+            "Datetime sequence not evenly spaced",
+            np.datetime64("2014-06-01 12:00")
+            + np.cumsum(np.random.randint(25, 35, 144)).astype("timedelta64[m]"),
+            id="Uneven sampling",
         ),
-        (  # Negative timedeltas
+        pytest.param(
             pytest.raises(ValueError),
             "Datetime sequence must be increasing",
             np.arange(
-                datetime(2014, 6, 7, 0, 0),
-                datetime(2014, 6, 1, 0, 0),
-                timedelta(minutes=-30),
-                dtype="datetime64[m]",
+                np.datetime64("2014-06-07 00:00"),
+                np.datetime64("2014-06-01 00:00"),
+                np.timedelta64(-30, "m"),
+                dtype="datetime64[s]",
             ),
-            dict(window_center=12, window_width=2),
+            id="Negative timedeltas",
         ),
-        (  # Negative timedeltas
+        pytest.param(
             pytest.raises(ValueError),
-            "Datetime sequence does not cover a whole number of days",
+            "Datetime spacing is not evenly divisible into a day",
             np.arange(
-                datetime(2014, 6, 1, 10, 1),
-                datetime(2014, 6, 7, 22, 46),
-                timedelta(minutes=30),
-                dtype="datetime64[m]",
+                np.datetime64("2014-06-01 00:00"),
+                np.datetime64("2014-06-07 00:00"),
+                np.timedelta64(21, "m"),
+                dtype="datetime64[s]",
             ),
-            dict(window_center=12, window_width=2),
+            id="Spacing not evenly divisible",
         ),
-        (  # Window greater than one day
-            pytest.raises(NotImplementedError),
-            "window_center and window_width cover more than one day",
-            np.arange(
-                datetime(2014, 6, 1, 0, 0),
-                datetime(2014, 6, 4, 0, 0),
-                timedelta(minutes=30),
-                dtype="datetime64[m]",
-            ),
-            dict(window_center=21, window_width=12),
-        ),
-        (  # Include is the wrong shape
+        pytest.param(
             pytest.raises(ValueError),
-            "Datetimes and include do not have the same shape",
+            "Datetimes include incomplete days",
             np.arange(
-                datetime(2014, 6, 1, 0, 0),
-                datetime(2014, 6, 4, 0, 0),
-                timedelta(minutes=30),
-                dtype="datetime64[m]",
+                np.datetime64("2014-06-01 12:00"),
+                np.datetime64("2014-06-07 00:00"),
+                np.timedelta64(30, "m"),
+                dtype="datetime64[s]",
             ),
-            dict(include=np.ones((288), dtype="bool")),
+            id="Not complete days by length",
         ),
-        (  # Include is the wrong type
+        pytest.param(
             pytest.raises(ValueError),
-            "The include argument must be a boolean array",
+            "Datetimes include incomplete days",
             np.arange(
-                datetime(2014, 6, 1, 0, 0),
-                datetime(2014, 6, 4, 0, 0),
-                timedelta(minutes=30),
-                dtype="datetime64[m]",
+                np.datetime64("2014-06-01 12:00"),
+                np.datetime64("2014-06-07 12:00"),
+                np.timedelta64(30, "m"),
+                dtype="datetime64[s]",
             ),
-            dict(include=np.ones((144))),
+            id="Not complete days by wrapping",
+        ),
+        pytest.param(
+            does_not_raise(),
+            None,
+            np.arange(
+                np.datetime64("2014-06-01 00:00"),
+                np.datetime64("2014-06-07 00:00"),
+                np.timedelta64(30, "m"),
+                dtype="datetime64[s]",
+            ),
+            id="Correct",
         ),
     ],
 )
-def test_daily_representative_values_init_errors(ctext_mngr, msg, datetimes, kwargs):
-    with ctext_mngr as cman:
-        drep = DailyRepresentativeValues(datetimes=datetimes, **kwargs)
+def test_DRV_init(ctext_mngr, msg, datetimes):
+    from pyrealm.subdaily.interpolators import DailyRepresentativeValues
 
-    assert str(cman.value) == msg
+    with ctext_mngr as cman:
+        drep = DailyRepresentativeValues(datetimes=datetimes)
+
+    if msg is not None:
+        assert str(cman.value) == msg
+
+
+@pytest.fixture
+def fixture_drv():
+    from pyrealm.subdaily.interpolators import DailyRepresentativeValues
+
+    return DailyRepresentativeValues(
+        datetimes=np.arange(
+            np.datetime64("2014-06-01 00:00"),
+            np.datetime64("2014-06-04 00:00"),
+            np.timedelta64(30, "m"),
+            dtype="datetime64[s]",
+        )
+    )
+
+
+@pytest.fixture
+def fixture_drv_with_window(fixture_drv):
+    fixture_drv.set_window(window_center=12, window_width=2)
+    return fixture_drv
+
+
+@pytest.mark.parametrize(
+    argnames=["ctext_mngr", "msg", "kwargs"],
+    argvalues=[
+        pytest.param(
+            pytest.raises(ValueError),
+            "window_center and window_width cover more than one day",
+            dict(window_center=21, window_width=12),
+            id="window > day",
+        ),
+        pytest.param(
+            does_not_raise(),
+            None,
+            dict(window_center=12, window_width=1),
+            id="correct",
+        ),
+        # (  # Include is the wrong shape
+        #     pytest.raises(ValueError),
+        #     "Datetimes and include do not have the same shape",
+        #     dict(include=np.ones((288), dtype="bool")),
+        # ),
+        # (  # Include is the wrong type
+        #     pytest.raises(ValueError),
+        #     "The include argument must be a boolean array",
+        #     np.arange(
+        #         datetime(2014, 6, 1, 0, 0),
+        #         datetime(2014, 6, 4, 0, 0),
+        #         timedelta(minutes=30),
+        #         dtype="datetime64[m]",
+        #     ),
+        #     dict(include=np.ones((144))),
+        # ),
+    ],
+)
+def test_DRV_set_window(fixture_drv, ctext_mngr, msg, kwargs):
+    with ctext_mngr as cman:
+        fixture_drv.set_window(**kwargs)
+
+    if msg is not None:
+        assert str(cman.value) == msg
 
 
 @pytest.mark.parametrize(
@@ -270,59 +327,43 @@ def test_daily_representative_values_init_errors(ctext_mngr, msg, datetimes, kwa
         ),
     ],
 )
-def test_daily_representative_values_call_errors(ctext_mngr, msg, values):
-    drep = DailyRepresentativeValues(
-        datetimes=np.arange(
-            datetime(2014, 6, 1, 0, 0),
-            datetime(2014, 6, 4, 0, 0),
-            timedelta(minutes=30),
-            dtype="datetime64[m]",
-        ),
-        window_center=12,
-        window_width=2,
-    )
-
+def test_daily_representative_values_call_errors(
+    fixture_drv_with_window, ctext_mngr, msg, values
+):
     with ctext_mngr as cman:
-        res = drep(values)
+        res = fixture_drv_with_window.get_representative_values(values)
 
     assert str(cman.value) == msg
 
 
 @pytest.mark.parametrize(
-    argnames=["kwargs", "values", "expected"],
+    argnames=["values", "expected"],
     argvalues=[
-        (  # Simple 1D - shape is correct
-            dict(window_center=12, window_width=2),
+        pytest.param(  # Simple 1D - shape is correct
             np.ones((3 * 48)),
             np.array([1, 1, 1]),
         ),
         (  # Simple 2D - shape is correct
-            dict(window_center=12, window_width=2),
             np.ones((3 * 48, 5)),
             np.ones((3, 5)),
         ),
         (  # Simple 3D - shape is correct
-            dict(window_center=12, window_width=2),
             np.ones((3 * 48, 5, 5)),
             np.ones((3, 5, 5)),
         ),
         (  # 1D - values are correct
-            dict(window_center=12, window_width=2),
             np.arange(144),
             np.array([24, 72, 120]),
         ),
         (  # 2D - values are correct
-            dict(window_center=12, window_width=2),
             np.broadcast_to(np.arange(144), (5, 144)).T,
             np.tile([24, 72, 120], (5, 1)).T,
         ),
         (  # 3D - values are correct
-            dict(window_center=12, window_width=2),
             np.broadcast_to(np.arange(144), (5, 5, 144)).T,
             np.tile([24, 72, 120], (5, 5, 1)).T,
         ),
         (  # 3D - values are correct with spatial variation
-            dict(window_center=12, window_width=2),
             np.arange(144 * 25).reshape(144, 5, 5),
             (
                 np.tile([600, 1800, 3000], (5, 5, 1)).T
@@ -330,44 +371,9 @@ def test_daily_representative_values_call_errors(ctext_mngr, msg, values):
                 + 5 * np.indices((3, 5, 5))[1]
             ),
         ),
-        (  # 1D - include - ragged array using exponential series to get more
-            # sensitive test than just one or unity increments and to test the
-            # division by count aligns correctly
-            dict(
-                include=np.concatenate(
-                    [
-                        [True] * 5,
-                        [False] * 43,
-                        [True] * 9,
-                        [False] * 39,
-                        [True] * 13,
-                        [False] * 35,
-                    ],
-                    dtype=bool,
-                )
-            ),
-            np.power(np.arange(1, 145), 0.2),
-            np.array(
-                [
-                    np.mean(np.power(np.arange(1, 1 + 5), 0.2)),
-                    np.mean(np.power(np.arange(49, 49 + 9), 0.2)),
-                    np.mean(np.power(np.arange(97, 97 + 13), 0.2)),
-                ]
-            ),
-        ),
     ],
 )
-def test_daily_representative_values_call(kwargs, values, expected):
-    drep = DailyRepresentativeValues(
-        datetimes=np.arange(
-            datetime(2014, 6, 1, 0, 0),
-            datetime(2014, 6, 4, 0, 0),
-            timedelta(minutes=30),
-            dtype="datetime64[m]",
-        ),
-        **kwargs
-    )
-
-    calculated = drep(values)
+def test_DRV_get_rv_and_daily_means(fixture_drv_with_window, values, expected):
+    calculated = fixture_drv_with_window.get_daily_means(values)
 
     assert np.allclose(calculated, expected)
