@@ -180,7 +180,7 @@ class DailyRepresentativeValues:
         """
 
         if not (isinstance(time, float) and time >= 0 and time < 24):
-            raise ValueError("The time argument must float in (0, 24].")
+            raise ValueError("The time argument must be a float in (0, 24].")
 
         # Calculate the observation time closest to the provided value
         time_td64 = np.timedelta64(int(time * 60 * 60), "s")

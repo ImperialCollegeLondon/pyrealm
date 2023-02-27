@@ -7,6 +7,21 @@ from datetime import datetime, timedelta
 import numpy as np
 import pytest
 
+
+@pytest.fixture
+def fixture_drv():
+    from pyrealm.subdaily import DailyRepresentativeValues
+
+    return DailyRepresentativeValues(
+        datetimes=np.arange(
+            np.datetime64("2014-06-01 00:00"),
+            np.datetime64("2014-06-04 00:00"),
+            np.timedelta64(30, "m"),
+            dtype="datetime64[s]",
+        )
+    )
+
+
 # ----------------------------------------
 # Testing DailyRepresentativeValues
 # ----------------------------------------
@@ -106,26 +121,6 @@ def test_DRV_init(ctext_mngr, msg, datetimes):
         assert str(cman.value) == msg
 
 
-@pytest.fixture
-def fixture_drv():
-    from pyrealm.subdaily import DailyRepresentativeValues
-
-    return DailyRepresentativeValues(
-        datetimes=np.arange(
-            np.datetime64("2014-06-01 00:00"),
-            np.datetime64("2014-06-04 00:00"),
-            np.timedelta64(30, "m"),
-            dtype="datetime64[s]",
-        )
-    )
-
-
-@pytest.fixture
-def fixture_drv_with_window(fixture_drv):
-    fixture_drv.set_window(window_center=12, window_width=2)
-    return fixture_drv
-
-
 @pytest.mark.parametrize(
     argnames=["ctext_mngr", "msg", "kwargs"],
     argvalues=[
@@ -141,27 +136,85 @@ def fixture_drv_with_window(fixture_drv):
             dict(window_center=12, window_width=1),
             id="correct",
         ),
-        # (  # Include is the wrong shape
-        #     pytest.raises(ValueError),
-        #     "Datetimes and include do not have the same shape",
-        #     dict(include=np.ones((288), dtype="bool")),
-        # ),
-        # (  # Include is the wrong type
-        #     pytest.raises(ValueError),
-        #     "The include argument must be a boolean array",
-        #     np.arange(
-        #         datetime(2014, 6, 1, 0, 0),
-        #         datetime(2014, 6, 4, 0, 0),
-        #         timedelta(minutes=30),
-        #         dtype="datetime64[m]",
-        #     ),
-        #     dict(include=np.ones((144))),
-        # ),
     ],
 )
 def test_DRV_set_window(fixture_drv, ctext_mngr, msg, kwargs):
     with ctext_mngr as cman:
         fixture_drv.set_window(**kwargs)
+
+    if msg is not None:
+        assert str(cman.value) == msg
+
+
+@pytest.mark.parametrize(
+    argnames=["ctext_mngr", "msg", "include"],
+    argvalues=[
+        pytest.param(
+            pytest.raises(ValueError),
+            "The include array length is of the wrong length",
+            np.ones(76, dtype=np.bool_),
+            id="wrong length",
+        ),
+        pytest.param(
+            pytest.raises(ValueError),
+            "The include argument must be a boolean array",
+            np.ones(48),
+            id="wrong dtype",
+        ),
+        pytest.param(
+            pytest.raises(ValueError),
+            "The include argument must be a boolean array",
+            "not an array at all",
+            id="wrong type",
+        ),
+        pytest.param(
+            does_not_raise(),
+            None,
+            np.ones(48, dtype=np.bool_),
+            id="correct",
+        ),
+    ],
+)
+def test_DRV_set_include(fixture_drv, ctext_mngr, msg, include):
+    with ctext_mngr as cman:
+        fixture_drv.set_include(include)
+
+    if msg is not None:
+        assert str(cman.value) == msg
+
+
+@pytest.mark.parametrize(
+    argnames=["ctext_mngr", "msg", "time"],
+    argvalues=[
+        pytest.param(
+            pytest.raises(ValueError),
+            "The time argument must be a float in (0, 24].",
+            "not a time",
+            id="not a float",
+        ),
+        pytest.param(
+            pytest.raises(ValueError),
+            "The time argument must be a float in (0, 24].",
+            -1,
+            id="time too low",
+        ),
+        pytest.param(
+            pytest.raises(ValueError),
+            "The time argument must be a float in (0, 24].",
+            24,
+            id="time too high",
+        ),
+        pytest.param(
+            does_not_raise(),
+            None,
+            12.0,
+            id="correct",
+        ),
+    ],
+)
+def test_DRV_set_nearest(fixture_drv, ctext_mngr, msg, time):
+    with ctext_mngr as cman:
+        fixture_drv.set_nearest(time)
 
     if msg is not None:
         assert str(cman.value) == msg
@@ -178,11 +231,11 @@ def test_DRV_set_window(fixture_drv, ctext_mngr, msg, kwargs):
         ),
     ],
 )
-def test_daily_representative_values_call_errors(
-    fixture_drv_with_window, ctext_mngr, msg, values
-):
+def test_DRV_get_rv_errors(fixture_drv, ctext_mngr, msg, values):
+    fixture_drv.set_window(window_center=12, window_width=2)
+
     with ctext_mngr as cman:
-        res = fixture_drv_with_window.get_representative_values(values)
+        res = fixture_drv.get_representative_values(values)
 
     assert str(cman.value) == msg
 
@@ -219,13 +272,37 @@ def test_daily_representative_values_call_errors(
         ),
     ],
 )
-def test_DRV_get_rv_and_daily_means(fixture_drv_with_window, values, expected_means):
+class Test_DRV_get_vals:
     """Test DRV get methods.
 
-    This test checks that the correct values are extracted from daily representative and
-    that the mean is correctly calculated.
+    This test checks that the correct values are extracted from daily representative
+    and that the mean is correctly calculated.
     """
 
-    calculated_means = fixture_drv_with_window.get_daily_means(values)
+    def test_DRV_get_vals_window(self, fixture_drv, values, expected_means):
+        """Test a window"""
+        fixture_drv.set_window(window_center=12, window_width=2)
+        calculated_means = fixture_drv.get_daily_means(values)
 
-    assert np.allclose(calculated_means, expected_means)
+        assert np.allclose(calculated_means, expected_means)
+
+    def test_DRV_get_vals_include(self, fixture_drv, values, expected_means):
+        """Test include"""
+
+        # This duplicates the selection of the window test but using direct include
+        inc = np.zeros(48, dtype=np.bool_)
+        inc[20:29] = True
+        fixture_drv.set_include(inc)
+        calculated_means = fixture_drv.get_daily_means(values)
+
+        assert np.allclose(calculated_means, expected_means)
+
+    def test_DRV_get_vals_nearest(self, fixture_drv, values, expected_means):
+        """Test nearest"""
+
+        # This assumes the data are symmetrical about the middle hour, which is bit of a
+        # reach
+        fixture_drv.set_nearest(11.8)
+        calculated_means = fixture_drv.get_daily_means(values)
+
+        assert np.allclose(calculated_means, expected_means)
