@@ -508,7 +508,7 @@ class PModel:
         A helper function to raise an error when a user accesses a P Model
         parameter that has not yet been estimated via `estimate_productivity`.
         """
-        if getattr(self, "_" + varname) is None:
+        if not hasattr(self, "_" + varname):
             raise RuntimeError(f"{varname} not calculated: use estimate_productivity")
 
     @property
