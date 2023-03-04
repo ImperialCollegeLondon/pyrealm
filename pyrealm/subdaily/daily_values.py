@@ -133,7 +133,7 @@ class FastSlowScaler:
         """
 
     def set_window(
-        self, window_center: np.timedelta64, window_width: np.timedelta64
+        self, window_center: np.timedelta64, half_width: np.timedelta64
     ) -> None:
         """Set a daily window to sample.
 
@@ -143,12 +143,20 @@ class FastSlowScaler:
 
         Args:
             window_center: A timedelta since midnight to use as the window center
-            window_width: A timedelta to use as the total window width.
+            half_width: A timedelta to use as a window width on each side of the center
         """
 
+        if not (
+            isinstance(window_center, np.timedelta64)
+            and isinstance(half_width, np.timedelta64)
+        ):
+            raise ValueError(
+                "window_center and window_width must be np.timedelta64 values"
+            )
+
         # Find the timedeltas of the window start and end, using second resolution
-        win_start = (window_center - window_width).astype("timedelta64[s]")
-        win_end = (window_center + window_width).astype("timedelta64[s]")
+        win_start = (window_center - half_width).astype("timedelta64[s]")
+        win_end = (window_center + half_width).astype("timedelta64[s]")
 
         # Does that include more than one day?
         # NOTE - this might actually be needed at some point!
@@ -160,7 +168,7 @@ class FastSlowScaler:
             win_start <= self.observation_times,
             win_end >= self.observation_times,
         )
-        self.set_method = f"Window ({window_center}, {window_width})"
+        self.set_method = f"Window ({window_center}, {half_width})"
 
     def set_include(self, include: NDArray[np.bool_]) -> None:
         """Set a sequence of daily values to sample.

@@ -9,10 +9,10 @@ import pytest
 
 
 @pytest.fixture
-def fixture_drv():
-    from pyrealm.subdaily import DailyRepresentativeValues
+def fixture_FSS():
+    from pyrealm.subdaily import FastSlowScaler
 
-    return DailyRepresentativeValues(
+    return FastSlowScaler(
         datetimes=np.arange(
             np.datetime64("2014-06-01 00:00"),
             np.datetime64("2014-06-04 00:00"),
@@ -23,7 +23,7 @@ def fixture_drv():
 
 
 # ----------------------------------------
-# Testing DailyRepresentativeValues
+# Testing FastSlowScaler
 # ----------------------------------------
 
 
@@ -111,11 +111,11 @@ def fixture_drv():
         ),
     ],
 )
-def test_DRV_init(ctext_mngr, msg, datetimes):
-    from pyrealm.subdaily import DailyRepresentativeValues
+def test_FSS_init(ctext_mngr, msg, datetimes):
+    from pyrealm.subdaily import FastSlowScaler
 
     with ctext_mngr as cman:
-        drep = DailyRepresentativeValues(datetimes=datetimes)
+        drep = FastSlowScaler(datetimes=datetimes)
 
     if msg is not None:
         assert str(cman.value) == msg
@@ -126,21 +126,33 @@ def test_DRV_init(ctext_mngr, msg, datetimes):
     argvalues=[
         pytest.param(
             pytest.raises(ValueError),
+            "window_center and window_width must be np.timedelta64 values",
+            dict(window_center=21, half_width=12),
+            id="not np.timedeltas",
+        ),
+        pytest.param(
+            pytest.raises(ValueError),
             "window_center and window_width cover more than one day",
-            dict(window_center=21, window_width=12),
+            dict(
+                window_center=np.timedelta64(21, "h"),
+                half_width=np.timedelta64(6, "h"),
+            ),
             id="window > day",
         ),
         pytest.param(
             does_not_raise(),
             None,
-            dict(window_center=12, window_width=1),
+            dict(
+                window_center=np.timedelta64(12, "h"),
+                half_width=np.timedelta64(1, "h"),
+            ),
             id="correct",
         ),
     ],
 )
-def test_DRV_set_window(fixture_drv, ctext_mngr, msg, kwargs):
+def test_FSS_set_window(fixture_FSS, ctext_mngr, msg, kwargs):
     with ctext_mngr as cman:
-        fixture_drv.set_window(**kwargs)
+        fixture_FSS.set_window(**kwargs)
 
     if msg is not None:
         assert str(cman.value) == msg
@@ -175,9 +187,9 @@ def test_DRV_set_window(fixture_drv, ctext_mngr, msg, kwargs):
         ),
     ],
 )
-def test_DRV_set_include(fixture_drv, ctext_mngr, msg, include):
+def test_FSS_set_include(fixture_FSS, ctext_mngr, msg, include):
     with ctext_mngr as cman:
-        fixture_drv.set_include(include)
+        fixture_FSS.set_include(include)
 
     if msg is not None:
         assert str(cman.value) == msg
@@ -212,9 +224,9 @@ def test_DRV_set_include(fixture_drv, ctext_mngr, msg, include):
         ),
     ],
 )
-def test_DRV_set_nearest(fixture_drv, ctext_mngr, msg, time):
+def test_FSS_set_nearest(fixture_FSS, ctext_mngr, msg, time):
     with ctext_mngr as cman:
-        fixture_drv.set_nearest(time)
+        fixture_FSS.set_nearest(time)
 
     if msg is not None:
         assert str(cman.value) == msg
@@ -231,11 +243,14 @@ def test_DRV_set_nearest(fixture_drv, ctext_mngr, msg, time):
         ),
     ],
 )
-def test_DRV_get_rv_errors(fixture_drv, ctext_mngr, msg, values):
-    fixture_drv.set_window(window_center=12, window_width=2)
+def test_FSS_get_rv_errors(fixture_FSS, ctext_mngr, msg, values):
+    fixture_FSS.set_window(
+        window_center=np.timedelta64(12, "h"),
+        half_width=np.timedelta64(2, "h"),
+    )
 
     with ctext_mngr as cman:
-        res = fixture_drv.get_representative_values(values)
+        res = fixture_FSS.get_representative_values(values)
 
     assert str(cman.value) == msg
 
@@ -272,37 +287,40 @@ def test_DRV_get_rv_errors(fixture_drv, ctext_mngr, msg, values):
         ),
     ],
 )
-class Test_DRV_get_vals:
-    """Test DRV get methods.
+class Test_FSS_get_vals:
+    """Test FSS get methods.
 
     This test checks that the correct values are extracted from daily representative
     and that the mean is correctly calculated.
     """
 
-    def test_DRV_get_vals_window(self, fixture_drv, values, expected_means):
+    def test_FSS_get_vals_window(self, fixture_FSS, values, expected_means):
         """Test a window"""
-        fixture_drv.set_window(window_center=12, window_width=2)
-        calculated_means = fixture_drv.get_daily_means(values)
+        fixture_FSS.set_window(
+            window_center=np.timedelta64(12, "h"),
+            half_width=np.timedelta64(2, "h"),
+        )
+        calculated_means = fixture_FSS.get_daily_means(values)
 
         assert np.allclose(calculated_means, expected_means)
 
-    def test_DRV_get_vals_include(self, fixture_drv, values, expected_means):
+    def test_FSS_get_vals_include(self, fixture_FSS, values, expected_means):
         """Test include"""
 
         # This duplicates the selection of the window test but using direct include
         inc = np.zeros(48, dtype=np.bool_)
         inc[20:29] = True
-        fixture_drv.set_include(inc)
-        calculated_means = fixture_drv.get_daily_means(values)
+        fixture_FSS.set_include(inc)
+        calculated_means = fixture_FSS.get_daily_means(values)
 
         assert np.allclose(calculated_means, expected_means)
 
-    def test_DRV_get_vals_nearest(self, fixture_drv, values, expected_means):
+    def test_FSS_get_vals_nearest(self, fixture_FSS, values, expected_means):
         """Test nearest"""
 
         # This assumes the data are symmetrical about the middle hour, which is bit of a
         # reach
-        fixture_drv.set_nearest(11.8)
-        calculated_means = fixture_drv.get_daily_means(values)
+        fixture_FSS.set_nearest(11.8)
+        calculated_means = fixture_FSS.get_daily_means(values)
 
         assert np.allclose(calculated_means, expected_means)

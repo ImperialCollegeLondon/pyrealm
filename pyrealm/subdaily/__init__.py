@@ -6,4 +6,4 @@ TODO.
 """  # noqa: D205, D415
 
 # Flatten submodule namespace
-from pyrealm.subdaily.daily_values import DailyRepresentativeValues  # noqa: F401
+from pyrealm.subdaily.daily_values import FastSlowScaler  # noqa: F401
