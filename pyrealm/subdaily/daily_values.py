@@ -26,21 +26,34 @@ extracted.
 
 import numpy as np
 from numpy.typing import NDArray
+from scipy.interpolate import interp1d  # type: ignore
 
 
-class DailyRepresentativeValues:
-    """Extracting daily representative values.
+class FastSlowScaler:
+    """Convert variables between photosynthetic fast and slow response scales.
+
+    This class provides methods that allow data to be converted between
+    photsynthetically 'fast' and 'slow' timescales. Data on fast timescales capture
+    subdaily variation in environmental conditions and slow timescales capture the
+    timescales over which plants will acclimate to changing conditions.
 
     An instance of this class is created using an array of :class:`numpy.datetime64`
-    values that provide the observation datetimes of data to be sample. These values
-    must:
+    values that provide the observation datetimes for a dataset sampled on a 'fast'
+    timescale. The datetimes must:
 
     * be strictly increasing,
     * be evenly spaced, using a spacing that evenly divides a day, and
     * completely cover a set of days.
 
+    Warning:
+        The values in ``datetimes`` are assumed to be the precise times of the
+        observations and are converted to second precision for internal calculations. If
+        the datetimes are at a _coarser_ precision and represent a sampling time span,
+        then they should first be converted to a reasonable choice of observation time,
+        such as the midpoint of the timespan.
+
     Args:
-        datetimes: A sequence of datetimes for observations at a subdaily scale
+        datetimes: A sequence of datetimes for observations at a subdaily scale.
     """
 
     def __init__(
@@ -53,6 +66,9 @@ class DailyRepresentativeValues:
             raise ValueError(
                 "Datetimes are not a 1 dimensional array with dtype datetime64"
             )
+
+        # Enforce data storage in second precision
+        datetimes = datetimes.astype("datetime64[s]")
 
         # - with strictly increasing time deltas that are both evenly spaced and evenly
         #   divisible into a day
@@ -91,49 +107,48 @@ class DailyRepresentativeValues:
         if len(set(first_row_dates)) > 1:
             raise ValueError("Datetimes include incomplete days")
 
-        self.observation_dates: NDArray = datetimes_by_date[:, 0].astype(
+        self.observation_dates: NDArray[np.datetime64] = datetimes_by_date[:, 0].astype(
             "datetime64[D]"
         )
         """The dates covered by the observations"""
 
-        self.n_days = len(self.observation_dates)
+        self.n_days: int = len(self.observation_dates)
         """The number of days covered by the observations"""
 
-        self.observation_times: NDArray = (
+        self.observation_times: NDArray[np.timedelta64] = (
             datetimes_by_date[0, :] - self.observation_dates[0]
         ).astype("timedelta64[s]")
         """The times of observations through the day as timedelta64 values in seconds"""
 
-        self.n_obs = len(self.observation_times)
+        self.n_obs: int = len(self.observation_times)
         """The number of daily observations"""
 
-        self.datetimes = datetimes
+        self.datetimes: NDArray[np.datetime64] = datetimes
         """The datetimes used to create the instance."""
 
         self.include: NDArray[np.bool_]
-        """A logical array indicating which values to be included in daily summaries.
+        """Indicates which daily observations are included in daily samples.
 
         This attribute is only populated when one of the ``set_`` methods is called.
         """
 
-    def set_window(self, window_center: float, window_width: float) -> None:
+    def set_window(
+        self, window_center: np.timedelta64, window_width: np.timedelta64
+    ) -> None:
         """Set a daily window to sample.
 
-        This method defines a time window within each day, given the time of the window
-        centre and its width, both in decimal hours.
+        This method sets the daily values to sample using a time window, given the time
+        of the window centre and its width. Both of these values must be provided as
+        :class:`~numpy.timedelta64` values.
 
         Args:
-            window_center: The centre of the time window in decimal hours
-            window_width: The width of the time window in decimal hours
+            window_center: A timedelta since midnight to use as the window center
+            window_width: A timedelta to use as the total window width.
         """
 
-        # TODO - use datetime64 and timedelta64 as inputs?
-
-        # Find which datetimes fall within that window, using second resolution
-        win_center = np.timedelta64(int(window_center * 60 * 60), "s")
-        win_width = np.timedelta64(int(window_width * 60 * 60), "s")
-        win_start = win_center - win_width
-        win_end = win_center + win_width
+        # Find the timedeltas of the window start and end, using second resolution
+        win_start = (window_center - window_width).astype("timedelta64[s]")
+        win_end = (window_center + window_width).astype("timedelta64[s]")
 
         # Does that include more than one day?
         # NOTE - this might actually be needed at some point!
@@ -204,7 +219,9 @@ class DailyRepresentativeValues:
     def get_representative_values(self, values: NDArray) -> NDArray:
         """Extract representative values for a variable.
 
-        This method takes an array of values which has the same shape alo
+        This method takes an array of values which has the same shape along the first
+        axis as the datetimes used to create the instance and extracts the values at the
+        indices set using one of the ``set_`` methods.
 
         Args:
             values: An array of values for each observation, to be used to calculate
@@ -236,7 +253,72 @@ class DailyRepresentativeValues:
         return values_by_day[:, self.include, ...]
 
     def get_daily_means(self, values: NDArray) -> NDArray:
-        """TBD."""
+        """Get mean daily values.
+
+        This method extracts the values at the daily observations set using one of the
+        ``set_`` methods, and then calculates the daily mean of those values.
+
+        Returns:
+            An array of representative values
+        """
         daily_values = self.get_representative_values(values)
 
         return daily_values.mean(axis=1)
+
+    def get_representative_times(self) -> NDArray:
+        """Set the times at which representative values are sampled.
+
+        This method returns the original datetimes at the indices set using one of the
+        ``set_`` methods.
+
+        Returns:
+            An array of :class:`~numpy.datetime64` values
+        """
+
+        if not hasattr(self, "include"):
+            raise AttributeError(
+                "Use a set_ method to select which daily values are included"
+            )
+
+        # Get a view of the times wrapped by date and then reshape along the first
+        # axis into daily subarrays.
+        times_by_day = self.datetimes.view()
+        times_by_day.shape = tuple([self.n_days, self.n_obs])
+
+        # subset to the included daily values
+        return times_by_day[:, self.include]
+
+    def get_daily_mean_times(self) -> NDArray:
+        """Get mean daily times.
+
+        This method extracts the datetimes of the daily observations set using one of
+        the ``set_`` methods, and then calculates the daily mean of those times.
+
+        Returns:
+            An array of representative values
+        """
+        daily_times = self.get_representative_times()
+
+        # Cannot use mean directly, so calculate the mean of the values expressed
+        # as seconds and then add the mean values back onto the epoch.
+        now = np.datetime64("now", "s")
+        epoch = now - np.timedelta64(now.astype(int), "s")
+        daily_times = daily_times.astype(int)
+        seconds_since_epoch = daily_times.mean(axis=1).round().astype(int)
+
+        return epoch + seconds_since_epoch.astype("timedelta64[s]")
+
+    def resample_subdaily(self, values: NDArray) -> NDArray:
+        """Resample daily variables onto the subdaily time scale.
+
+        This method returns
+        """
+        interp_fun = interp1d(
+            self.daily_ref_time,
+            values,
+            axis=0,
+            kind="previous",
+            fill_value="extrapolate",
+        )
+
+        return interp_fun(self.datetimes)
