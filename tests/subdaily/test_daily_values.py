@@ -237,40 +237,65 @@ def test_FSS_set_include(fixture_FSS, ctext_mngr, msg, include, samp_mean, samp_
 
 
 @pytest.mark.parametrize(
-    argnames=["ctext_mngr", "msg", "time"],
+    argnames=["ctext_mngr", "msg", "time", "samp_mean", "samp_max"],
     argvalues=[
         pytest.param(
             pytest.raises(ValueError),
-            "The time argument must be a float in (0, 24].",
+            "The time argument must be a timedelta64 value.",
             "not a time",
-            id="not a float",
+            None,
+            None,
+            id="string input",
         ),
         pytest.param(
             pytest.raises(ValueError),
-            "The time argument must be a float in (0, 24].",
-            -1,
+            "The time argument must be a timedelta64 value.",
+            12,
+            None,
+            None,
+            id="float input",
+        ),
+        pytest.param(
+            pytest.raises(ValueError),
+            "The time argument is not >= 0 and < 24 hours.",
+            np.timedelta64(-1, "h"),
+            None,
+            None,
             id="time too low",
         ),
         pytest.param(
             pytest.raises(ValueError),
-            "The time argument must be a float in (0, 24].",
-            24,
+            "The time argument is not >= 0 and < 24 hours.",
+            np.timedelta64(24, "h"),
+            None,
+            None,
             id="time too high",
         ),
         pytest.param(
             does_not_raise(),
             None,
-            12.0,
+            np.timedelta64(12, "h"),
+            np.datetime64("2014-06-01 12:00:00")
+            + np.array([0, 24, 48], dtype="timedelta64[h]"),
+            np.datetime64("2014-06-01 12:00:00")
+            + np.array([0, 24, 48], dtype="timedelta64[h]"),
             id="correct",
         ),
     ],
 )
-def test_FSS_set_nearest(fixture_FSS, ctext_mngr, msg, time):
+def test_FSS_set_nearest(fixture_FSS, ctext_mngr, msg, time, samp_mean, samp_max):
     with ctext_mngr as cman:
         fixture_FSS.set_nearest(time)
 
     if msg is not None:
         assert str(cman.value) == msg
+
+    else:
+        # Check that _set_times has run correctly. Can't use allclose directly on
+        # datetimes and since these are integers under the hood, don't need float
+        # testing
+        assert np.all(fixture_FSS.sample_datetimes_mean == samp_mean)
+        assert np.all(fixture_FSS.sample_datetimes_max == samp_max)
 
 
 @pytest.mark.parametrize(

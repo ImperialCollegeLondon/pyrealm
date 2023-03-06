@@ -205,24 +205,28 @@ class FastSlowScaler:
         self.method = "Include array"
         self._set_times()
 
-    def set_nearest(self, time: float) -> None:
+    def set_nearest(self, time: np.timedelta64) -> None:
         """Sets a single observation closest to a target time to be sampled.
 
-        This method finds the daily observation time closest to a value provided in
-        decimal hours. If the provided time is exactly between two observation times,
-        the earlier observation will be used. The resulting single observation will then
-        be used to extract representative values.
+        This method finds the daily observation time closest to a value provided as a
+        :class:`~numpy.timedelta64` value since midnight. If the provided time is
+        exactly between two observation times, the earlier observation will be used.
+        The resulting single observation will then as the daily sample.
 
         Args:
-            time: A float value in decimal hours.
+            time: A :class:`~numpy.timedelta64` value.
         """
 
-        if not (isinstance(time, float) and time >= 0 and time < 24):
-            raise ValueError("The time argument must be a float in (0, 24].")
+        if not isinstance(time, np.timedelta64):
+            raise ValueError("The time argument must be a timedelta64 value.")
+
+        # Convert to seconds and check it is in range
+        time = time.astype("timedelta64[s]")
+        if not (time >= 0 and time < 24 * 60 * 60):
+            raise ValueError("The time argument is not >= 0 and < 24 hours.")
 
         # Calculate the observation time closest to the provided value
-        time_td64 = np.timedelta64(int(time * 60 * 60), "s")
-        nearest = np.argmin(abs(self.observation_times - time_td64))
+        nearest = np.argmin(abs(self.observation_times - time))
         include = np.zeros(self.n_obs, dtype=np.bool_)
         include[nearest] = True
 
