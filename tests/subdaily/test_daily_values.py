@@ -122,12 +122,14 @@ def test_FSS_init(ctext_mngr, msg, datetimes):
 
 
 @pytest.mark.parametrize(
-    argnames=["ctext_mngr", "msg", "kwargs"],
+    argnames=["ctext_mngr", "msg", "kwargs", "samp_mean", "samp_max"],
     argvalues=[
         pytest.param(
             pytest.raises(ValueError),
             "window_center and window_width must be np.timedelta64 values",
             dict(window_center=21, half_width=12),
+            None,
+            None,
             id="not np.timedeltas",
         ),
         pytest.param(
@@ -137,6 +139,8 @@ def test_FSS_init(ctext_mngr, msg, datetimes):
                 window_center=np.timedelta64(21, "h"),
                 half_width=np.timedelta64(6, "h"),
             ),
+            None,
+            None,
             id="window > day",
         ),
         pytest.param(
@@ -146,53 +150,90 @@ def test_FSS_init(ctext_mngr, msg, datetimes):
                 window_center=np.timedelta64(12, "h"),
                 half_width=np.timedelta64(1, "h"),
             ),
+            np.datetime64("2014-06-01 12:00:00")
+            + np.array([0, 24, 48], dtype="timedelta64[h]"),
+            np.datetime64("2014-06-01 12:00:00")
+            + np.array([1, 25, 49], dtype="timedelta64[h]"),
             id="correct",
         ),
     ],
 )
-def test_FSS_set_window(fixture_FSS, ctext_mngr, msg, kwargs):
+def test_FSS_set_window(fixture_FSS, ctext_mngr, msg, kwargs, samp_mean, samp_max):
     with ctext_mngr as cman:
         fixture_FSS.set_window(**kwargs)
 
     if msg is not None:
         assert str(cman.value) == msg
+    else:
+        # Check that _set_times has run correctly. Can't use allclose directly on
+        # datetimes and since these are integers under the hood, don't need float
+        # testing
+        assert np.all(fixture_FSS.sample_datetimes_mean == samp_mean)
+        assert np.all(fixture_FSS.sample_datetimes_max == samp_max)
 
 
 @pytest.mark.parametrize(
-    argnames=["ctext_mngr", "msg", "include"],
+    argnames=["ctext_mngr", "msg", "include", "samp_mean", "samp_max"],
     argvalues=[
         pytest.param(
             pytest.raises(ValueError),
             "The include array length is of the wrong length",
             np.ones(76, dtype=np.bool_),
+            None,
+            None,
             id="wrong length",
         ),
         pytest.param(
             pytest.raises(ValueError),
             "The include argument must be a boolean array",
             np.ones(48),
+            None,
+            None,
             id="wrong dtype",
         ),
         pytest.param(
             pytest.raises(ValueError),
             "The include argument must be a boolean array",
             "not an array at all",
+            None,
+            None,
             id="wrong type",
         ),
         pytest.param(
             does_not_raise(),
             None,
+            np.repeat([False, True, False], (22, 5, 21)),
+            np.datetime64("2014-06-01 12:00:00")
+            + np.array([0, 24, 48], dtype="timedelta64[h]"),
+            np.datetime64("2014-06-01 12:00:00")
+            + np.array([1, 25, 49], dtype="timedelta64[h]"),
+            id="correct - noon window",
+        ),
+        pytest.param(
+            does_not_raise(),
+            None,
             np.ones(48, dtype=np.bool_),
-            id="correct",
+            np.datetime64("2014-06-01 11:45:00")
+            + np.array([0, 24, 48], dtype="timedelta64[h]"),
+            np.datetime64("2014-06-01 11:30:00")
+            + np.array([12, 36, 60], dtype="timedelta64[h]"),
+            id="correct - whole day",
         ),
     ],
 )
-def test_FSS_set_include(fixture_FSS, ctext_mngr, msg, include):
+def test_FSS_set_include(fixture_FSS, ctext_mngr, msg, include, samp_mean, samp_max):
     with ctext_mngr as cman:
         fixture_FSS.set_include(include)
 
     if msg is not None:
         assert str(cman.value) == msg
+
+    else:
+        # Check that _set_times has run correctly. Can't use allclose directly on
+        # datetimes and since these are integers under the hood, don't need float
+        # testing
+        assert np.all(fixture_FSS.sample_datetimes_mean == samp_mean)
+        assert np.all(fixture_FSS.sample_datetimes_max == samp_max)
 
 
 @pytest.mark.parametrize(

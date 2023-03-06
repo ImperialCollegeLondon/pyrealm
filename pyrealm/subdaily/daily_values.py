@@ -126,11 +126,24 @@ class FastSlowScaler:
         self.datetimes: NDArray[np.datetime64] = datetimes
         """The datetimes used to create the instance."""
 
-        self.include: NDArray[np.bool_]
-        """Indicates which daily observations are included in daily samples.
+        # The following attributes are only set when one of the set methods is called.
 
-        This attribute is only populated when one of the ``set_`` methods is called.
+        self.include: NDArray[np.bool_]
+        """Logical index of which daily observations are included in daily samples.
         """
+
+        self.sample_datetimes: NDArray[np.datetime64]
+        """Datetimes included in daily samples.
+
+        This array is two-dimensional: the first axis is of length n_days and the second
+        axis is of length n_samples.
+        """
+
+        self.sample_datetimes_mean: NDArray[np.datetime64]
+        """The mean datetime of for each daily sample."""
+
+        self.sample_datetimes_max: NDArray[np.datetime64]
+        """The maximum datetime of for each daily sample."""
 
     def set_window(
         self, window_center: np.timedelta64, half_width: np.timedelta64
@@ -169,6 +182,7 @@ class FastSlowScaler:
             win_end >= self.observation_times,
         )
         self.set_method = f"Window ({window_center}, {half_width})"
+        self._set_times()
 
     def set_include(self, include: NDArray[np.bool_]) -> None:
         """Set a sequence of daily values to sample.
@@ -189,6 +203,7 @@ class FastSlowScaler:
 
         self.include = include
         self.method = "Include array"
+        self._set_times()
 
     def set_nearest(self, time: float) -> None:
         """Sets a single observation closest to a target time to be sampled.
@@ -213,6 +228,7 @@ class FastSlowScaler:
 
         self.include = include
         self.method = f"Set nearest: {time}"
+        self._set_times()
 
     # def set_around_max(self, window_width: float) -> None:
     #     """
@@ -261,7 +277,7 @@ class FastSlowScaler:
         return values_by_day[:, self.include, ...]
 
     def get_daily_means(self, values: NDArray) -> NDArray:
-        """Get mean daily values.
+        """Get the daily means of representative values.
 
         This method extracts the values at the daily observations set using one of the
         ``set_`` methods, and then calculates the daily mean of those values.
@@ -273,20 +289,21 @@ class FastSlowScaler:
 
         return daily_values.mean(axis=1)
 
-    def get_representative_times(self) -> NDArray:
-        """Set the times at which representative values are sampled.
+    def _set_times(self) -> None:
+        """Sets the times at which representative values are sampled.
 
-        This method returns the original datetimes at the indices set using one of the
-        ``set_`` methods.
+        This private method should be called by all set_ methods. It is used to update
+        the instance to populate the following attributes:
 
-        Returns:
-            An array of :class:`~numpy.datetime64` values
+        *  :attr:`~pyrealm.pmodel.subdaily.FastSlowScaler.sample_datetimes``: An array
+           of the datetimes of observations included in daily samples of shape (n_day,
+           , n_sample).
+        *  :attr:`~pyrealm.pmodel.subdaily.FastSlowScaler.sample_datetimes_mean``: An
+           array of the mean daily datetime of observations included in daily samples.
+        *  :attr:`~pyrealm.pmodel.subdaily.FastSlowScaler.sample_datetimes_max``: An
+           array of the maximum daily datetime of observations included in daily
+           samples.
         """
-
-        if not hasattr(self, "include"):
-            raise AttributeError(
-                "Use a set_ method to select which daily values are included"
-            )
 
         # Get a view of the times wrapped by date and then reshape along the first
         # axis into daily subarrays.
@@ -294,35 +311,34 @@ class FastSlowScaler:
         times_by_day.shape = tuple([self.n_days, self.n_obs])
 
         # subset to the included daily values
-        return times_by_day[:, self.include]
-
-    def get_daily_mean_times(self) -> NDArray:
-        """Get mean daily times.
-
-        This method extracts the datetimes of the daily observations set using one of
-        the ``set_`` methods, and then calculates the daily mean of those times.
-
-        Returns:
-            An array of representative values
-        """
-        daily_times = self.get_representative_times()
+        self.sample_datetimes = times_by_day[:, self.include]
 
         # Cannot use mean directly, so calculate the mean of the values expressed
         # as seconds and then add the mean values back onto the epoch.
         now = np.datetime64("now", "s")
         epoch = now - np.timedelta64(now.astype(int), "s")
-        daily_times = daily_times.astype(int)
-        seconds_since_epoch = daily_times.mean(axis=1).round().astype(int)
+        datetimes_as_seconds = self.sample_datetimes.astype(int)
+        mean_since_epoch = datetimes_as_seconds.mean(axis=1).round().astype(int)
+        max_since_epoch = datetimes_as_seconds.max(axis=1).round().astype(int)
 
-        return epoch + seconds_since_epoch.astype("timedelta64[s]")
+        self.sample_datetimes_mean = epoch + mean_since_epoch.astype("timedelta64[s]")
+        self.sample_datetimes_max = epoch + max_since_epoch.astype("timedelta64[s]")
 
-    def resample_subdaily(self, values: NDArray) -> NDArray:
+    def resample_subdaily(self, values: NDArray, update_point: str = "max") -> NDArray:
         """Resample daily variables onto the subdaily time scale.
 
         This method returns
         """
+
+        if update_point == "max":
+            update_time = self.sample_datetimes_max
+        elif update_point == "mean":
+            update_time = self.sample_datetimes_mean
+        else:
+            raise ValueError("Unknown update point")
+
         interp_fun = interp1d(
-            self.daily_ref_time,
+            update_time,
             values,
             axis=0,
             kind="previous",
