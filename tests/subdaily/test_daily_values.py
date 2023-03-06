@@ -390,3 +390,123 @@ class Test_FSS_get_vals:
         calculated_means = fixture_FSS.get_daily_means(values)
 
         assert np.allclose(calculated_means, expected_means)
+
+
+@pytest.mark.parametrize(
+    argnames=["method_name", "kwargs", "update_point"],
+    argvalues=[
+        pytest.param(
+            "set_window",
+            dict(
+                window_center=np.timedelta64(12, "h"),
+                half_width=np.timedelta64(1, "h"),
+            ),
+            "max",
+            id="window_max",
+        ),
+        pytest.param(
+            "set_window",
+            dict(
+                window_center=np.timedelta64(13, "h"),
+                half_width=np.timedelta64(1, "h"),
+            ),
+            "mean",
+            id="window_mean",
+        ),
+        pytest.param(
+            "set_include",
+            dict(
+                include=np.repeat([False, True, False], (22, 5, 21)),
+            ),
+            "max",
+            id="include_max",
+        ),
+        pytest.param(
+            "set_include",
+            dict(
+                include=np.repeat([False, True, False], (24, 5, 19)),
+            ),
+            "mean",
+            id="include_mean",
+        ),
+        pytest.param(
+            "set_nearest",
+            dict(
+                time=np.timedelta64(13, "h"),
+            ),
+            "max",
+            id="nearest_max",
+        ),
+        pytest.param(
+            "set_nearest",
+            dict(
+                time=np.timedelta64(13, "h"),
+            ),
+            "mean",
+            id="nearest_mean",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    argnames=["ctext_mngr", "msg", "input_values", "exp_values"],
+    argvalues=[
+        pytest.param(
+            does_not_raise(),
+            None,
+            np.array([1, 2, 3]),
+            np.repeat([np.nan, 1, 2, 3], (26, 48, 48, 22)),
+            id="1D test",
+        ),
+        pytest.param(
+            does_not_raise(),
+            None,
+            np.array([[[1, 4], [7, 10]], [[2, 5], [8, 11]], [[3, 6], [9, 12]]]),
+            np.repeat(
+                a=[
+                    [[np.nan, np.nan], [np.nan, np.nan]],
+                    [[1, 4], [7, 10]],
+                    [[2, 5], [8, 11]],
+                    [[3, 6], [9, 12]],
+                ],
+                repeats=[26, 48, 48, 22],
+                axis=0,
+            ),
+            id="2D test",
+        ),
+        pytest.param(
+            does_not_raise(),
+            None,
+            np.array([[1, 4], [2, 5], [3, 6]]),
+            np.repeat(
+                a=[[np.nan, np.nan], [1, 4], [2, 5], [3, 6]],
+                repeats=[26, 48, 48, 22],
+                axis=0,
+            ),
+            id="3D test",
+        ),
+    ],
+)
+def test_FSS_resample_subdaily(
+    fixture_FSS,
+    method_name,
+    kwargs,
+    update_point,
+    ctext_mngr,
+    msg,
+    input_values,
+    exp_values,
+):
+    # Set the included observations - the different parameterisations here and for
+    # the update point should all select the same update point.
+    func = getattr(fixture_FSS, method_name)
+    func(**kwargs)
+
+    with ctext_mngr as cman:
+        res = fixture_FSS.fill_daily_to_subdaily(
+            input_values, update_point=update_point
+        )
+
+    if cman is not None:
+        assert str(cman.value) == msg
+    else:
+        assert np.allclose(res, exp_values, equal_nan=True)

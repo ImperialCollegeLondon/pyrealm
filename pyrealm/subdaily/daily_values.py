@@ -164,7 +164,7 @@ class FastSlowScaler:
             and isinstance(half_width, np.timedelta64)
         ):
             raise ValueError(
-                "window_center and window_width must be np.timedelta64 values"
+                "window_center and half_width must be np.timedelta64 values"
             )
 
         # Find the timedeltas of the window start and end, using second resolution
@@ -174,7 +174,7 @@ class FastSlowScaler:
         # Does that include more than one day?
         # NOTE - this might actually be needed at some point!
         if (win_start < 0) or (win_end > 86400):
-            raise ValueError("window_center and window_width cover more than one day")
+            raise ValueError("window_center and half_width cover more than one day")
 
         # Now find which observation fall inclusively within that time window
         self.include = np.logical_and(
@@ -328,11 +328,16 @@ class FastSlowScaler:
         self.sample_datetimes_mean = epoch + mean_since_epoch.astype("timedelta64[s]")
         self.sample_datetimes_max = epoch + max_since_epoch.astype("timedelta64[s]")
 
-    def resample_subdaily(self, values: NDArray, update_point: str = "max") -> NDArray:
+    def fill_daily_to_subdaily(
+        self, values: NDArray, update_point: str = "max"
+    ) -> NDArray:
         """Resample daily variables onto the subdaily time scale.
 
         This method returns
         """
+
+        if values.shape[0] != self.n_days:
+            raise ValueError("Values is not of length n_days on its first axis.")
 
         if update_point == "max":
             update_time = self.sample_datetimes_max
@@ -341,12 +346,16 @@ class FastSlowScaler:
         else:
             raise ValueError("Unknown update point")
 
+        # interp1d cannot handle datetime64 inputs, so need to interpolate using integer
+        # types and then cast back
+        # TODO - maybe store these castings as attributes?
+
         interp_fun = interp1d(
-            update_time,
+            update_time.astype("int"),
             values,
             axis=0,
             kind="previous",
             fill_value="extrapolate",
         )
 
-        return interp_fun(self.datetimes)
+        return interp_fun(self.datetimes.astype("int"))
