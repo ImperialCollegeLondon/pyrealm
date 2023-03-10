@@ -448,14 +448,23 @@ class Test_FSS_get_vals:
     ],
 )
 @pytest.mark.parametrize(
-    argnames=["ctext_mngr", "msg", "input_values", "exp_values"],
+    argnames=["ctext_mngr", "msg", "input_values", "exp_values", "fill_from"],
     argvalues=[
         pytest.param(
             does_not_raise(),
             None,
             np.array([1, 2, 3]),
             np.repeat([np.nan, 1, 2, 3], (26, 48, 48, 22)),
+            None,
             id="1D test",
+        ),
+        pytest.param(
+            does_not_raise(),
+            None,
+            np.array([1, 2, 3]),
+            np.repeat([1, 2, 3], (48, 48, 48)),
+            np.timedelta64(0, "h"),
+            id="1D test - fill from",
         ),
         pytest.param(
             does_not_raise(),
@@ -471,7 +480,25 @@ class Test_FSS_get_vals:
                 repeats=[26, 48, 48, 22],
                 axis=0,
             ),
+            None,
             id="2D test",
+        ),
+        pytest.param(
+            does_not_raise(),
+            None,
+            np.array([[[1, 4], [7, 10]], [[2, 5], [8, 11]], [[3, 6], [9, 12]]]),
+            np.repeat(
+                a=[
+                    [[np.nan, np.nan], [np.nan, np.nan]],
+                    [[1, 4], [7, 10]],
+                    [[2, 5], [8, 11]],
+                    [[3, 6], [9, 12]],
+                ],
+                repeats=[4, 48, 48, 44],
+                axis=0,
+            ),
+            np.timedelta64(2, "h"),
+            id="2D test - fill from",
         ),
         pytest.param(
             does_not_raise(),
@@ -482,6 +509,7 @@ class Test_FSS_get_vals:
                 repeats=[26, 48, 48, 22],
                 axis=0,
             ),
+            None,
             id="3D test",
         ),
     ],
@@ -495,6 +523,7 @@ def test_FSS_resample_subdaily(
     msg,
     input_values,
     exp_values,
+    fill_from,
 ):
     # Set the included observations - the different parameterisations here and for
     # the update point should all select the same update point.
@@ -503,7 +532,7 @@ def test_FSS_resample_subdaily(
 
     with ctext_mngr as cman:
         res = fixture_FSS.fill_daily_to_subdaily(
-            input_values, update_point=update_point
+            input_values, update_point=update_point, fill_from=fill_from
         )
 
     if cman is not None:

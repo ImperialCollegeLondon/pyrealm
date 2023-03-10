@@ -24,6 +24,8 @@ It is possible to use the different `set_` methods to change which values are be
 extracted.
 """  # noqa: D205, D415
 
+from typing import Optional
+
 import numpy as np
 from numpy.typing import NDArray
 from scipy.interpolate import interp1d  # type: ignore
@@ -329,7 +331,11 @@ class FastSlowScaler:
         self.sample_datetimes_max = epoch + max_since_epoch.astype("timedelta64[s]")
 
     def fill_daily_to_subdaily(
-        self, values: NDArray, update_point: str = "max"
+        self,
+        values: NDArray,
+        update_point: str = "max",
+        kind: str = "previous",
+        fill_from: Optional[np.timedelta64] = None,
     ) -> NDArray:
         """Resample daily variables onto the subdaily time scale.
 
@@ -339,7 +345,18 @@ class FastSlowScaler:
         if values.shape[0] != self.n_days:
             raise ValueError("Values is not of length n_days on its first axis.")
 
-        if update_point == "max":
+        if fill_from is not None:
+            if not isinstance(fill_from, np.timedelta64):
+                raise ValueError("The fill_from argument must be a timedelta64 value.")
+
+            # Convert to seconds and check it is in range
+            _fill_from = fill_from.astype("timedelta64[s]")
+            if not (_fill_from >= 0 and _fill_from < 24 * 60 * 60):
+                raise ValueError("The fill_from argument is not >= 0 and < 24 hours.")
+
+            update_time = self.observation_dates + _fill_from
+
+        elif update_point == "max":
             update_time = self.sample_datetimes_max
         elif update_point == "mean":
             update_time = self.sample_datetimes_mean
@@ -351,11 +368,15 @@ class FastSlowScaler:
         # TODO - maybe store these castings as attributes?
 
         interp_fun = interp1d(
-            update_time.astype("int"),
-            values,
-            axis=0,
-            kind="previous",
-            fill_value="extrapolate",
+            update_time.astype("int"), values, axis=0, kind=kind, bounds_error=False
         )
+
+        # TODO - The kind "previous" might be replaceable with bottleneck.push
+        #
+        # v = np.empty_like(tk)
+        # v[:] = np.nan
+
+        # v[values_idx] = values
+        # v = bn.push(v)
 
         return interp_fun(self.datetimes.astype("int"))
