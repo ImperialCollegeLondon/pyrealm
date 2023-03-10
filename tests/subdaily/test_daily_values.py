@@ -2,7 +2,6 @@
 """  # noqa: D205, D415
 
 from contextlib import nullcontext as does_not_raise
-from datetime import datetime, timedelta
 
 import numpy as np
 import pytest
@@ -539,3 +538,77 @@ def test_FSS_resample_subdaily(
         assert str(cman.value) == msg
     else:
         assert np.allclose(res, exp_values, equal_nan=True)
+
+
+@pytest.mark.parametrize(
+    argnames=["update_point", "input_values", "exp_values"],
+    argvalues=[
+        pytest.param(
+            "max",
+            np.array([0, 48, 0]),
+            np.concatenate(
+                [
+                    np.repeat([np.nan], 28),
+                    np.arange(0, 49),
+                    np.arange(47, -1, -1),
+                    np.repeat([np.nan], 19),
+                ]
+            ),
+            id="1D test max",
+        ),
+        pytest.param(
+            "mean",
+            np.array([0, 48, 0]),
+            np.concatenate(
+                [
+                    np.repeat([np.nan], 26),
+                    np.arange(0, 49),
+                    np.arange(47, -1, -1),
+                    np.repeat([np.nan], 21),
+                ]
+            ),
+            id="1D test mean",
+        ),
+        pytest.param(
+            "max",
+            np.array([[0, 0], [48, -48], [0, 0]]),
+            np.dstack(
+                [
+                    np.concatenate(
+                        [
+                            np.repeat([np.nan], 28),
+                            np.arange(0, 49),
+                            np.arange(47, -1, -1),
+                            np.repeat([np.nan], 19),
+                        ]
+                    ),
+                    np.concatenate(
+                        [
+                            np.repeat([np.nan], 28),
+                            np.arange(0, -49, -1),
+                            np.arange(-47, 1),
+                            np.repeat([np.nan], 19),
+                        ]
+                    ),
+                ]
+            ),
+            id="2D test max",
+        ),
+    ],
+)
+def test_FSS_resample_subdaily_linear(
+    fixture_FSS,
+    update_point,
+    input_values,
+    exp_values,
+):
+    # Set the included observations
+    fixture_FSS.set_window(
+        window_center=np.timedelta64(13, "h"), half_width=np.timedelta64(1, "h")
+    )
+
+    res = fixture_FSS.fill_daily_to_subdaily(
+        input_values, update_point=update_point, kind="linear"
+    )
+
+    assert np.allclose(res, exp_values, equal_nan=True)
