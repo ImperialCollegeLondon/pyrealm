@@ -1,27 +1,34 @@
-"""The :mod:`~pyrealm.subdaily.daily_values` module provides functionality to calculate
-daily representative values from multiday datasets sampled at subdaily resolutions. This
-is a crucial step in including photosynthetic acclimation and plant fast responses into
-the P Model, because a plant will likely acclimate to conditions at a particular time of
-day, such as around noon.
+"""The :mod:`~pyrealm.pmodel.fast_slow_scaler` module provides the
+:class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` class, which is a core
+component of fitting the P Model at subdaily time scales. The class is used as follows:
 
-The :class:`~pyrealm.subdaily.daily_values.DailyRepresentativeValues` class provides
-this functionality using the following workflow:
+* A :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance is created using
+  the time series of the observations for the subdaily data being used within a model.
 
-* A :class:`~pyrealm.subdaily.daily_values.DailyRepresentativeValues` instance is
-  created using the observation times for the subdaily data being used within a model.
-* One of a number of ``set_`` methods is used to set which observations within each day
-  should be used to calculate daily values.
-* The
-  `:meth:`~pyrealm.subdaily.daily_values.DailyRepresentativeValues.get_representative_values`
-  or  `:meth:`~pyrealm.subdaily.daily_values.DailyRepresentativeValues.get_daily_means`
-  methods can then be used to extract the values for a particular variable.
+* An acclimation window is then set, defining a period of the day representing the
+  environmental conditions that plants will acclimate to. This will typically by the
+  time of day with highest productivity - usually around noon - when the light use
+  efficiency of the plant can best make use of high levels of sunlight. The window can
+  be set using one of three methods:
 
-  The variable passed to either of these methods can have any number of dimensions, but
-  the first dimension must represent the time axis and must have the same length as the
-  original set of observation times.
+  * The :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.set_window` method sets a
+    window centred on a given time during the day with a fixed width.
+  * The :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.set_nearest` method sets
+    the acclimation window as the single observation closest to a given time of day.
+  * The :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.set_include` method
+    allows the user to set an arbitrary selection of observations during the day as the
+    acclimation window.
 
-It is possible to use the different `set_` methods to change which values are being
-extracted.
+* The :method:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_daily_means` method
+  can then be used to get the average value of a variable within the acclimation window
+  for each day. Alternatively, the
+  :method:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_window_values` method can
+  be used to get the actual values observed during each daily window.
+
+* The :method:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.fill_daily_to_subdaily`
+  reverses this process: it takes an array of daily values and fills those values back
+  onto the faster timescale used to create the
+  `~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance.
 """  # noqa: D205, D415
 
 from typing import Optional
@@ -246,19 +253,18 @@ class FastSlowScaler:
 
     #     self.method = "Around max"
 
-    def get_representative_values(self, values: NDArray) -> NDArray:
-        """Extract representative values for a variable.
+    def get_window_values(self, values: NDArray) -> NDArray:
+        """Extract acclimation window values for a variable.
 
         This method takes an array of values which has the same shape along the first
-        axis as the datetimes used to create the instance and extracts the values at the
-        indices set using one of the ``set_`` methods.
+        axis as the datetimes used to create the instance and extracts the values from
+        the acclimation window set using one of the ``set_`` methods.
 
         Args:
-            values: An array of values for each observation, to be used to calculate
-                representative daily values.
+            values: An array of values for each observation.
 
         Returns:
-            An array of representative values
+            An array of the values within the defined acclimation window
         """
 
         if not hasattr(self, "include"):
@@ -285,13 +291,18 @@ class FastSlowScaler:
     def get_daily_means(self, values: NDArray) -> NDArray:
         """Get the daily means of representative values.
 
-        This method extracts the values at the daily observations set using one of the
-        ``set_`` methods, and then calculates the daily mean of those values.
+        This method extracts values from a given variable during a defined acclimation
+        window set using one of the ``set_`` methods, and then calculates the daily mean
+        of those values.
+
+        The values can have any number of dimensions, but the first dimension must
+        represent the time axis and have the same length as the original set of
+        observation times.
 
         Returns:
-            An array of representative values
+            An array of mean daily values during the acclimation window
         """
-        daily_values = self.get_representative_values(values)
+        daily_values = self.get_window_values(values)
 
         return daily_values.mean(axis=1)
 

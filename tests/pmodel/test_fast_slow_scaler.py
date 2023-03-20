@@ -308,14 +308,14 @@ def test_FSS_set_nearest(fixture_FSS, ctext_mngr, msg, time, samp_mean, samp_max
         ),
     ],
 )
-def test_FSS_get_rv_errors(fixture_FSS, ctext_mngr, msg, values):
+def test_FSS_get_wv_errors(fixture_FSS, ctext_mngr, msg, values):
     fixture_FSS.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(2, "h"),
     )
 
     with ctext_mngr as cman:
-        res = fixture_FSS.get_representative_values(values)
+        res = fixture_FSS.get_window_values(values)
 
     assert str(cman.value) == msg
 
