@@ -356,9 +356,9 @@ class FastSlowScaler:
 
         This method takes an array representing daily values and interpolates those
         values back onto the subdaily timescale used to create the
-        :class:`pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance. The first axis
-        of the `values` must be the same length as the number of days used to create the
-        instance.
+        :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance. The first
+        axis of the `values` must be the same length as the number of days used to
+        create the instance.
 
         Two interpolation kinds are currently implemented:
 
@@ -374,6 +374,17 @@ class FastSlowScaler:
         that the plant predicts the daily values between the mean and max observation
         time. The ``fill_from`` argument can be used to set the update point to an
         arbitrary time of day.
+
+        Args:
+            values: An array with the first dimension matching the number of days in the
+              instances :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` object.
+            update_point: The point in the acclimation window at which the plant updates
+              to the new daily value: one of 'mean' or 'max'.
+            kind: The kind of interpolation to use to fill between daily values: one of
+              'previous' or 'linear',
+            fill_from: As an alternative to ``update_point``, an
+              :class:`numpy.timedelta64` value giving the time of day from which to fill
+              values forward.
         """
 
         if values.shape[0] != self.n_days:
