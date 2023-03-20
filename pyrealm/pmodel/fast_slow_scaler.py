@@ -367,8 +367,27 @@ class FastSlowScaler:
         # types and then cast back
         # TODO - maybe store these castings as attributes?
 
+        # kinds of interpolation
+        # TODO - checking
+        # - previous will fill forwards to the end of the time series, although this
+        #   will be bogus if for more than one day
+        # - linear has to stop at last observed value since the next value is unknown
+        #   although it _could_ keep the same slope as the previous time step?
+
+        if kind == "previous":
+            fill_value = (None, values[-1])
+        elif kind == "linear":
+            fill_value = (None, None)
+        else:
+            raise ValueError("Unsupported interpolation option")
+
         interp_fun = interp1d(
-            update_time.astype("int"), values, axis=0, kind=kind, bounds_error=False
+            update_time.astype("int"),
+            values,
+            axis=0,
+            kind=kind,
+            bounds_error=False,
+            fill_value=fill_value,
         )
 
         # TODO - The kind "previous" might be replaceable with bottleneck.push
