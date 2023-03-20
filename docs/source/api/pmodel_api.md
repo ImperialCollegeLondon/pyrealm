@@ -49,3 +49,12 @@ kernelspec:
     :autosummary:
     :members:
 ```
+
+## The {mod}`~pyrealm.pmodel.fast_slow_scaler` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.pmodel.fast_slow_scaler
+    :autosummary:
+    :members:
+    :private-members:
+```

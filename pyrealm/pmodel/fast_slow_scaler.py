@@ -19,16 +19,20 @@ component of fitting the P Model at subdaily time scales. The class is used as f
     allows the user to set an arbitrary selection of observations during the day as the
     acclimation window.
 
-* The :method:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_daily_means` method
+  If new ``set_`` functions are defined, then they will need to call the
+  :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler._set_times` method to update
+  the instance attributes used to set the acclimation window.
+
+* The :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_daily_means` method
   can then be used to get the average value of a variable within the acclimation window
   for each day. Alternatively, the
-  :method:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_window_values` method can
+  :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_window_values` method can
   be used to get the actual values observed during each daily window.
 
-* The :method:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.fill_daily_to_subdaily`
+* The :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.fill_daily_to_subdaily`
   reverses this process: it takes an array of daily values and fills those values back
   onto the faster timescale used to create the
-  `~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance.
+  :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance.
 """  # noqa: D205, D415
 
 from typing import Optional
@@ -153,6 +157,41 @@ class FastSlowScaler:
 
         self.sample_datetimes_max: NDArray[np.datetime64]
         """The maximum datetime of for each daily sample."""
+
+    def _set_times(self) -> None:
+        """Sets the times at which representative values are sampled.
+
+        This private method should be called by all ``set_`` methods. It is used to
+        update the instance to populate the following attributes:
+
+        * :attr:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.sample_datetimes`: An
+          array of the datetimes of observations included in daily samples of shape
+          (n_day, n_sample).
+        * :attr:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.sample_datetimes_mean`:
+          An array of the mean daily datetime of observations included in daily samples.
+        * :attr:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.sample_datetimes_max`:
+          An array of the maximum daily datetime of observations included in daily
+          samples.
+        """
+
+        # Get a view of the times wrapped by date and then reshape along the first
+        # axis into daily subarrays.
+        times_by_day = self.datetimes.view()
+        times_by_day.shape = tuple([self.n_days, self.n_obs])
+
+        # subset to the included daily values
+        self.sample_datetimes = times_by_day[:, self.include]
+
+        # Cannot use mean directly, so calculate the mean of the values expressed
+        # as seconds and then add the mean values back onto the epoch.
+        now = np.datetime64("now", "s")
+        epoch = now - np.timedelta64(now.astype(int), "s")
+        datetimes_as_seconds = self.sample_datetimes.astype(int)
+        mean_since_epoch = datetimes_as_seconds.mean(axis=1).round().astype(int)
+        max_since_epoch = datetimes_as_seconds.max(axis=1).round().astype(int)
+
+        self.sample_datetimes_mean = epoch + mean_since_epoch.astype("timedelta64[s]")
+        self.sample_datetimes_max = epoch + max_since_epoch.astype("timedelta64[s]")
 
     def set_window(
         self, window_center: np.timedelta64, half_width: np.timedelta64
@@ -289,7 +328,7 @@ class FastSlowScaler:
         return values_by_day[:, self.include, ...]
 
     def get_daily_means(self, values: NDArray) -> NDArray:
-        """Get the daily means of representative values.
+        """Get the daily means of a variable during the acclimation window.
 
         This method extracts values from a given variable during a defined acclimation
         window set using one of the ``set_`` methods, and then calculates the daily mean
@@ -306,41 +345,6 @@ class FastSlowScaler:
 
         return daily_values.mean(axis=1)
 
-    def _set_times(self) -> None:
-        """Sets the times at which representative values are sampled.
-
-        This private method should be called by all set_ methods. It is used to update
-        the instance to populate the following attributes:
-
-        *  :attr:`~pyrealm.pmodel.subdaily.FastSlowScaler.sample_datetimes``: An array
-           of the datetimes of observations included in daily samples of shape (n_day,
-           , n_sample).
-        *  :attr:`~pyrealm.pmodel.subdaily.FastSlowScaler.sample_datetimes_mean``: An
-           array of the mean daily datetime of observations included in daily samples.
-        *  :attr:`~pyrealm.pmodel.subdaily.FastSlowScaler.sample_datetimes_max``: An
-           array of the maximum daily datetime of observations included in daily
-           samples.
-        """
-
-        # Get a view of the times wrapped by date and then reshape along the first
-        # axis into daily subarrays.
-        times_by_day = self.datetimes.view()
-        times_by_day.shape = tuple([self.n_days, self.n_obs])
-
-        # subset to the included daily values
-        self.sample_datetimes = times_by_day[:, self.include]
-
-        # Cannot use mean directly, so calculate the mean of the values expressed
-        # as seconds and then add the mean values back onto the epoch.
-        now = np.datetime64("now", "s")
-        epoch = now - np.timedelta64(now.astype(int), "s")
-        datetimes_as_seconds = self.sample_datetimes.astype(int)
-        mean_since_epoch = datetimes_as_seconds.mean(axis=1).round().astype(int)
-        max_since_epoch = datetimes_as_seconds.max(axis=1).round().astype(int)
-
-        self.sample_datetimes_mean = epoch + mean_since_epoch.astype("timedelta64[s]")
-        self.sample_datetimes_max = epoch + max_since_epoch.astype("timedelta64[s]")
-
     def fill_daily_to_subdaily(
         self,
         values: NDArray,
@@ -350,7 +354,26 @@ class FastSlowScaler:
     ) -> NDArray:
         """Resample daily variables onto the subdaily time scale.
 
-        This method returns
+        This method takes an array representing daily values and interpolates those
+        values back onto the subdaily timescale used to create the
+        :class:`pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance. The first axis
+        of the `values` must be the same length as the number of days used to create the
+        instance.
+
+        Two interpolation kinds are currently implemented:
+
+        * ``previous`` interpolates the daily value as a constant, until updating to the
+          next daily value. This option will fill values until the end of the time
+          series.
+        * ``linear`` interpolates linearly between the update points of the daily
+          values. This option will leave ``np.nan`` values at the end because value to
+          interpolate towards after the end of the time series is unknown.
+
+        The update point defaults to the maximum time of day during the acclimation
+        window. It can also be set to the mean time of day, but note that this implies
+        that the plant predicts the daily values between the mean and max observation
+        time. The ``fill_from`` argument can be used to set the update point to an
+        arbitrary time of day.
         """
 
         if values.shape[0] != self.n_days:
