@@ -30,6 +30,7 @@ from pyrealm.pmodel.competition import (
     calculate_tree_proportion,
     convert_gpp_advantage_to_c4_fraction,
 )
+from pyrealm.pmodel.fast_slow_scaler import FastSlowScaler
 from pyrealm.pmodel.functions import (
     calc_co2_to_ca,
     calc_density_h2o,
@@ -51,3 +52,4 @@ from pyrealm.pmodel.pmodel import (
     PModel,
     PModelEnvironment,
 )
+from pyrealm.pmodel.subdaily import FastSlowPModel, memory_effect

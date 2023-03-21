@@ -36,8 +36,13 @@ from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.pmodel import PModel, PModelEnvironment, calc_ftemp_arrh, calc_ftemp_kphio
-from pyrealm.pmodel.fast_slow_scaler import FastSlowScaler
+from pyrealm.pmodel import (
+    FastSlowScaler,
+    PModel,
+    PModelEnvironment,
+    calc_ftemp_arrh,
+    calc_ftemp_kphio,
+)
 
 
 def memory_effect(values: NDArray, alpha: float = 0.067) -> NDArray:
