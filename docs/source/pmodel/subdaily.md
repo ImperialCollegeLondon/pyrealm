@@ -14,10 +14,10 @@ kernelspec:
 
 # The P Model with fast and slow responses
 
-The standard [P Model](pmodel) assumes that plants are able to instantaneously respond
-optimally to their environmental conditions. This is a reasonable approximation when
-using forcing variables that capture average conditions over longer time scales such as
-weekly, monthly or coarser time steps. However, at finer temporal scales - and
+The standard [P Model](pmodel.md) assumes that plants are able to instantaneously
+respond optimally to their environmental conditions. This is a reasonable approximation
+when using forcing variables that capture average conditions over longer time scales
+such as weekly, monthly or coarser time steps. However, at finer temporal scales - and
 particularly when trying to describe photosynthetic behaviour at subdaily timescales -
 it is essential to account for fast and slow responses to changing environmental
 conditions.

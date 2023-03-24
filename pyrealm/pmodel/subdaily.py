@@ -266,10 +266,9 @@ class FastSlowPModel_JAMES:
     The key difference is that :math:`\xi` does not have a slow response, with
     :math:`c_i` calculated using the daily optimal values during the acclimation window
     for :math:`\xi`, :math:`c_a` and :math:`\Gamma^{\ast}`  and subdaily variation in
-    VPD. The main implementation in
-    :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowPModel` instead uses fast subdaily
-    responses in :math:`c_a`, :math:`\Gamma^{\ast}` and VPD and realised slow responses
-    in :math:`\xi`.
+    VPD. The main implementation in :class:`~pyrealm.pmodel.subdaily.FastSlowPModel`
+    instead uses fast subdaily responses in :math:`c_a`, :math:`\Gamma^{\ast}` and VPD
+    and realised slow responses in :math:`\xi`.
 
     In addition, the original implementation included some subtle differences. The extra
     arguments to this function allow those differences to be recreated:
@@ -295,8 +294,8 @@ class FastSlowPModel_JAMES:
           :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance used to
           calculate daily acclimation conditions for VPD.
         fapar_acclim: An optional array providing daily acclimation values for fAPAR.
-        fill_from: An :class:`np.timedelta64` object giving the time since midnight used
-          for filling :math:`J_{max25}` and :math:`V_{cmax25}` to the subdaily
+        fill_from: A :class:`numpy.timedelta64` object giving the time since midnight
+          used for filling :math:`J_{max25}` and :math:`V_{cmax25}` to the subdaily
           timescale.
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.

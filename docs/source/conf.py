@@ -81,6 +81,7 @@ nitpicky = True
 nitpick_ignore = [
     ("py:class", "numpy._typing._generic_alias.ScalarType"),
     ("py:class", "numpy.float32"),
+    ("py:class", "numpy.timedelta64"),
 ]
 intersphinx_mapping = {
     "pytest": ("https://docs.pytest.org/en/stable/", None),

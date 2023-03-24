@@ -47,9 +47,10 @@ The package is in active development and currently provides the following functi
   pmodel/pmodel.md
   pmodel/pmodel_details/pmodel_details.md
   pmodel/subdaily.md
-  tmodel/tmodel.md
+  pmodel/memory_effect.md
   pmodel/isotopic_discrimination.md
   pmodel/c3c4model.md
+  tmodel/tmodel.md
   hygro.md
   constants.md
   z_bibliography.rst
