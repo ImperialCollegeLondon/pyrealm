@@ -98,7 +98,8 @@
       - Shifting package management to using poetry and implementing better QA toolchain
         including pre-commit suite.
       - Moving docs out of root and into docs/source, docs/build etc.
-0.9.0 - Substantial maintenance review
+0.9.0 - Draft implementation of slow reponses in P Model using weighted average approach
+      - Substantial maintenance review
       - User facing breaking changes:
         - Support for scalar inputs removed - numpy arrays now expected as inputs.
         - Python minimum version is now 3.9
