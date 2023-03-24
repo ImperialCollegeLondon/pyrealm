@@ -1,41 +1,14 @@
 r"""The :mod:`~pyrealm.pmodel.subdaily` module provides extensions to the P Model that
 incorporate modelling of the fast and slow responses of photosynthesis to changing
-conditions. The implementation is derived from the weighted-average approach presented
-in  {cite}`mengoli:2022a`.
-
-The core of the module is the :class:`~pyrealm.pmodel.subdaily.FastSlowPModel` class.
-This takes a standard :class:`~pyrealm.pmodel.pmodel.PModelEnvironment` object but
-additionally associates the first dimension of the data arrays in that object with a
-time series giving the sampling times of the observations. This time series is provided
-using a :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance, which is also
-used to set a daily acclimation window for the model. This acclimation window is set to
-capture the daily conditions under which the productivity of the plant will be
-optimised.
-
-The implementation uses the following workflow:
-
-* The daily acclimation window set in the
-  :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance is used to calculate
-  daily average values for forcing variables from within the acclimation window.
-* A standard P Model is then run on those daily forcing values to generate predicted
-  states for photosynthetic parameters that give rise to optimal productivity.
-* However, three key variables (:math:`\xi`, :math:`V_{cmax25}` and :math:`J_{max25}`)
-  do not respond instantaneously, but instead exhibit a slow response to changing
-  conditions, usually on a scale of around a fortnight. This lagged response is
-  implemented using a moving weighted average using the
-  :class:`~pyrealm.pmodel.subdaily.memory_effect` function.
-* These slowly responding variables are mapped back onto the original subdaily
-  timescale, with :math:`V_{cmax25}` and :math:`J_{max25}` also being corrected from
-  their values at a standard 25°C to the actual subdaily temperature.
-* Predictions of GPP are then made as in the standard P Model, but using the slowly
-  evolving values of :math:`\xi`, :math:`V_{cmax25}` and :math:`J_{max25}` and the
-  standard fast responses of other variables.
+conditions.
 """  # noqa: D205, D415
 from typing import Optional
+from warnings import warn
 
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm import ExperimentalFeatureWarning
 from pyrealm.pmodel import (
     FastSlowScaler,
     PModel,
@@ -57,7 +30,7 @@ def memory_effect(values: NDArray, alpha: float = 0.067) -> NDArray:
     convergence of the estimated values (:math:`E`) to the calculated optimal values
     (:math:`O`):
 
-    ::math
+    .. math::
 
         E_{t} = E_{t-1}(1 - \alpha) + O_{t} \alpha
 
@@ -68,11 +41,11 @@ def memory_effect(values: NDArray, alpha: float = 0.067) -> NDArray:
     assumed to represent time and the memory effect is calculated only along the first
     dimension.
 
-    Args
+    Args:
         values: The values to apply the memory effect to.
         alpha: The relative weight applied to the most recent observation
 
-    Returns
+    Returns:
         An array of the same shape as ``values`` with the memory effect applied.
     """
 
@@ -92,18 +65,51 @@ def memory_effect(values: NDArray, alpha: float = 0.067) -> NDArray:
 class FastSlowPModel:
     r"""Fit a P Model incorporating fast and slow photosynthetic responses.
 
-    TODO
+    The :class:`~pyrealm.pmodel.pmodel.PModel` implementation of the P Model assumes
+    that plants instantaneously adopt optimal behaviour, which is reasonable where the
+    data represents average conditions over longer timescales and the plants can be
+    assumed to have acclimated to optimal behaviour. Over shorter timescales, this
+    assumption is unwarranted and photosynthetic slow responses need to be included.
+    This class implements the weighted-average approach of {cite:t}`mengoli:2022a`, but
+    is extended to include the slow response of :math:`\xi` in addition to
+    :math:`V_{cmax25}` and :math:`J_{max25}`.
+
+    The first dimension of the data arrays use to create the
+    :class:`~pyrealm.pmodel.pmodel.PModelEnvironment` instance must represent the time
+    axis of the observations. The actual datetimes of those observations must then be
+    used to initialiase a :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler`
+    instance, and one of the ``set_`` methods of that class must be used to define an
+    acclimation window.
+
+    The workflow of the model is then:
+
+    * The daily acclimation window set in the
+      :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance is used to
+      calculate daily average values for forcing variables from within the acclimation
+      window.
+    * A standard P Model is then run on those daily forcing values to generate predicted
+      states for photosynthetic parameters that give rise to optimal productivity.
+    * The :meth:`~pyrealm.pmodel.subdaily.memory_effect` function is then used to
+      calculate realised slowly responding values for :math:`\xi`, :math:`V_{cmax25}`
+      and :math:`J_{max25}`, given a weight :math:`\alpha \in [0,1]` that sets the speed
+      of acclimation.
+    * The realised values are then filled back onto the original subdaily timescale,
+      with :math:`V_{cmax}` and :math:`J_{max}` then being calculated from the slowly
+      responding :math:`V_{cmax25}` and :math:`J_{max25}` and the actual subdaily
+      temperature observations and :math:`c_i` calculated using realised values of
+      :math:`\xi` but subdaily values in the other parameters.
+    * Predictions of GPP are then made as in the standard P Model.
 
     Args:
         env: An instance of :class:`~pyrealm.pmodel.pmodel.PModelEnvironment`.
-        fs_scaler: An instance of :class:`~pyrealm.pmodel.subdaily.FastSlowScaler`, with
-            an acclimation window set using one of the ``set_`` methods.
-        kphio: (Optional) The quantum yield efficiency of photosynthesis
-            (:math:`\phi_0`, unitless).
-
-
-    Examples:
-        >>> TODO
+        fs_scaler: An instance of
+          :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler`.
+        fapar: The :math:`f_{APAR}` for each observation.
+        ppfd: The PPDF for each observation.
+        alpha: The :math:`\alpha` weight.
+        kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -).
+        fill_kind: The approach used to fill daily realised values to the subdaily
+          timescale, currently one of 'previous' or 'linear'.
     """
 
     def __init__(
@@ -114,9 +120,13 @@ class FastSlowPModel:
         fapar: NDArray,
         alpha: float = 1 / 15,
         kphio: float = 1 / 8,
-        vpd_scaler: Optional[FastSlowScaler] = None,
         fill_kind: str = "previous",
     ) -> None:
+        warn(
+            "This is a draft implementation and the API and calculations may change",
+            ExperimentalFeatureWarning,
+        )
+
         # Check that the length of the fast slow scaler is congruent with the
         # first axis of the photosynthetic environment
         n_datetimes = fs_scaler.datetimes.shape[0]
@@ -134,14 +144,12 @@ class FastSlowPModel:
         temp_acclim = fs_scaler.get_daily_means(self.env.tc)
         co2_acclim = fs_scaler.get_daily_means(self.env.co2)
         patm_acclim = fs_scaler.get_daily_means(self.env.patm)
-
-        if vpd_scaler is not None:
-            vpd_acclim = vpd_scaler.get_daily_means(self.env.vpd)
-        else:
-            vpd_acclim = fs_scaler.get_daily_means(self.env.vpd)
+        vpd_acclim = fs_scaler.get_daily_means(self.env.vpd)
 
         # TODO - calculate the acclimated daily model using GPP per unit Iabs and then
-        #        scale up to subdaily variation in fapar and ppfd at the endrun
+        #        scale up to subdaily variation in fapar and ppfd at the end. This might
+        #        then allow this implementation to move inside PModel with an optional
+        #        fsscaler argument.
         self.ppfd_acclim = fs_scaler.get_daily_means(ppfd)
         self.fapar_acclim = fs_scaler.get_daily_means(fapar)
 
@@ -160,7 +168,7 @@ class FastSlowPModel:
         A :class:`~pyrealm.pmodel.pmodel.PModel` instance providing the predictions of
         the P Model for the daily acclimation conditions set for the FastSlowPModel. The
         model predicts instantaneous optimal estimates of :math:`V_{cmax}`,
-        :math:`J_max` and `:math:`\xi`, which are then used to estimate realised values
+        :math:`J_{max}` and :math:`\xi`, which are then used to estimate realised values
         of those parameters given slow responses to acclimation.
         """
 
@@ -249,24 +257,49 @@ class FastSlowPModel:
 
 
 class FastSlowPModel_JAMES:
-    r"""Fit a P Model incorporating fast and slow photosynthetic responses.
+    r"""Fits the JAMES P Model incorporating fast and slow photosynthetic responses.
 
-    * The optimal daily values are calculated using a different window for VPD, which
-      takes the exact noon value rather than the mean of the noon window.
-    * The daily fAPAR values are also not the same as the mean of the noon window
-    * The subdaily values of Jmax25 and Vcmax25 are filled forward from noon, rather
-      than the end of the noon window, which predicts the future.
+    This is alternative implementation of the P Model incorporating slow responses that
+    duplicates the original implementation of the weighted-average approach of
+    {cite:t}`mengoli:2022a`.
+
+    The key difference is that :math:`\xi` does not have a slow response, with
+    :math:`c_i` calculated using the daily optimal values during the acclimation window
+    for :math:`\xi`, :math:`c_a` and :math:`\Gamma^{\ast}`  and subdaily variation in
+    VPD. The main implementation in
+    :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowPModel` instead uses fast subdaily
+    responses in :math:`c_a`, :math:`\Gamma^{\ast}` and VPD and realised slow responses
+    in :math:`\xi`.
+
+    In addition, the original implementation included some subtle differences. The extra
+    arguments to this function allow those differences to be recreated:
+
+    * The optimal daily acclimation values were calculated using a different window for
+      VPD, using an exact noon value rather than the mean of the daily window. A
+      separate scaler can be provided using ``vpd_scaler`` to implement this.
+    * The daily fAPAR values are also not the same as the mean of the acclimation
+      window, so these can be set independently using ``fapar_acclim``.
+    * The subdaily values of :math:`J_{max25}` and :math:`V_{cmax25}` were not filled
+      foward from the end of the acclimation window. The ``fill_from`` argument can be
+      used to recreate this.
 
     Args:
         env: An instance of :class:`~pyrealm.pmodel.pmodel.PModelEnvironment`.
-        fs_scaler: An instance of :class:`~pyrealm.pmodel.subdaily.FastSlowScaler`.
-        kphio: (Optional) The quantum yield efficiency of photosynthesis
-            (:math:`\phi_0`, unitless). Note that :math:`\phi_0` is sometimes used to
-            refer to the quantum yield of electron transfer, which is exactly four times
-            larger, so check definitions here.
-
-    Examples:
-        >>> TODO
+        fs_scaler: An instance of
+          :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler`.
+        fapar: The :math:`f_{APAR}` for each observation.
+        ppfd: The PPDF for each observation.
+        alpha: The :math:`\alpha` weight.
+        kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -).
+        vpd_scaler: An alternate
+          :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance used to
+          calculate daily acclimation conditions for VPD.
+        fapar_acclim: An optional array providing daily acclimation values for fAPAR.
+        fill_from: An :class:`np.timedelta64` object giving the time since midnight used
+          for filling :math:`J_{max25}` and :math:`V_{cmax25}` to the subdaily
+          timescale.
+        fill_kind: The approach used to fill daily realised values to the subdaily
+          timescale, currently one of 'previous' or 'linear'.
     """
 
     def __init__(

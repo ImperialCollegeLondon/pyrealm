@@ -58,3 +58,11 @@ kernelspec:
     :members:
     :private-members:
 ```
+
+## The {mod}`~pyrealm.pmodel.subdaily` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.pmodel.subdaily
+    :autosummary:
+    :members:
+```

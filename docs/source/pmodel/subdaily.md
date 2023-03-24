@@ -45,7 +45,7 @@ The approach has the following steps:
   data is calculated as for the standard P Model. This estimates the fast responses of
   $\Gamma^*$, $K_{mm}$, $\eta^*$, and $c_a$.
 
-* A [daily window](memory_effect#the-acclimation-window) is then set to define the
+* A [daily window](memory_effect.md#the-acclimation-window) is then set to define the
   conditions towards which the slow responses will acclimate, typically noon conditions
   that optimise light use efficiency during the daily period of highest photosynthetic
   photon flux density (PPFD). This is used to calculate a daily time series of average
@@ -53,12 +53,12 @@ The approach has the following steps:
 
 * A standard P model is used to estimate *optimal* behaviour during the daily
   acclimation conditions. A [memory
-  effect](memory_effect#estimating-realised-responses) is then applied to the optimal
+  effect](memory_effect.md#estimating-realised-responses) is then applied to the optimal
   daily estimates of $\xi$, $V_{cmax25}$ using a rolling weighted mean to estimate the
   slow *realised* responses of these parameters.
 
 * The daily realised values are then
-  [interpolated](memory_effect#interpolation-of-realised-values-to-subdaily-timescales)
+  [interpolated](memory_effect.md#interpolation-of-realised-values-to-subdaily-timescales)
   back to the subdaily time scale and combined with the estimated fast responses of
   other variables to calculate GPP at subdaily timescales.
 
@@ -204,7 +204,7 @@ pmodel_acclim.estimate_productivity(fapar=fapar_acclim, ppfd=ppfd_acclim)
 
 Rather than being able to instantaneously adopt optimal values, the  $\xi$, $J_{max25}$
 and $V_{cmax25}$ parameters are assumed to acclimate towards optimal values with a
-lagged response using a [memory effect](memory_effect##estimating-realised-responses).
+lagged response using a [memory effect](memory_effect.md#estimating-realised-responses).
 
 #### Calculation of $J_{max}$ and $V_{cmax}$ at standard temperature
 

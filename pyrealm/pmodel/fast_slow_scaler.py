@@ -387,6 +387,9 @@ class FastSlowScaler:
               values forward.
         """
 
+        # BUG - linear is predicting the future - need to update the following day or
+        # maybe scrub this option.
+
         if values.shape[0] != self.n_days:
             raise ValueError("Values is not of length n_days on its first axis.")
 
