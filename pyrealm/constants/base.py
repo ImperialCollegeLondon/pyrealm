@@ -24,7 +24,7 @@ This implementation has the following desired features:
 import json
 from dataclasses import asdict
 
-from dacite import from_dict
+from dacite.core import from_dict
 
 
 class ConstantsClass:
