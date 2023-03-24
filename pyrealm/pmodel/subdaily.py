@@ -64,23 +64,25 @@ def memory_effect(values: NDArray, alpha: float = 0.067) -> NDArray:
     For :math:`t_{0}`, the first value in the optimal values is used so :math:`E_{0} =
     O_{0}`.
 
+    The ``values`` array can have multiple dimensions but the first dimension is always
+    assumed to represent time and the memory effect is calculated only along the first
+    dimension.
+
     Args
-        values: An equally spaced time series of values
+        values: The values to apply the memory effect to.
         alpha: The relative weight applied to the most recent observation
 
     Returns
-        An np.ndarray of the same length as `values` with the memory effect applied.
+        An array of the same shape as ``values`` with the memory effect applied.
     """
 
-    # TODO - NA handling
-    # TODO - think about filters here - I'm sure this is a filter which
-    #        could generalise to longer memory windows (convolve?)
-    # TODO - need a version that handles time slices for low memory looping
-    #        over arrays.
-
+    # Initialise the output storage and set the first values to be a slice along the
+    # first axis of the input values
     memory_values = np.empty_like(values, dtype=np.float32)
     memory_values[0] = values[0]
 
+    # Loop over the first axis, in each case taking slices through the first axis of the
+    # inputs. This handles arrays of any dimension.
     for idx in range(1, len(memory_values)):
         memory_values[idx] = memory_values[idx - 1] * (1 - alpha) + values[idx] * alpha
 
