@@ -122,6 +122,7 @@ class FastSlowPModel:
         kphio: float = 1 / 8,
         fill_kind: str = "previous",
     ) -> None:
+        # Warn about the API
         warn(
             "This is a draft implementation and the API and calculations may change",
             ExperimentalFeatureWarning,
@@ -293,7 +294,6 @@ class FastSlowPModel_JAMES:
         vpd_scaler: An alternate
           :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance used to
           calculate daily acclimation conditions for VPD.
-        fapar_acclim: An optional array providing daily acclimation values for fAPAR.
         fill_from: A :class:`numpy.timedelta64` object giving the time since midnight
           used for filling :math:`J_{max25}` and :math:`V_{cmax25}` to the subdaily
           timescale.
@@ -310,10 +310,16 @@ class FastSlowPModel_JAMES:
         alpha: float = 1 / 15,
         kphio: float = 1 / 8,
         vpd_scaler: Optional[FastSlowScaler] = None,
-        fapar_acclim: Optional[NDArray] = None,
         fill_from: Optional[np.timedelta64] = None,
         fill_kind: str = "previous",
     ) -> None:
+        # Really warn about the API
+        warn(
+            "FastSlowPModel_JAMES is for validation against an older implementation "
+            "and is not for production use.",
+            ExperimentalFeatureWarning,
+        )
+
         # Check that the length of the fast slow scaler is congruent with the
         # first axis of the photosynthetic environment
         n_datetimes = fs_scaler.datetimes.shape[0]
@@ -340,10 +346,7 @@ class FastSlowPModel_JAMES:
         # TODO - calculate the acclimated daily model using GPP per unit Iabs and then
         #        scale up to subdaily variation in fapar and ppfd at the endrun
         self.ppfd_acclim = fs_scaler.get_daily_means(ppfd)
-        if fapar_acclim is not None:
-            self.fapar_acclim = fapar_acclim
-        else:
-            self.fapar_acclim = fs_scaler.get_daily_means(fapar)
+        self.fapar_acclim = fs_scaler.get_daily_means(fapar)
 
         # Calculate the PModelEnvironment for those conditions and then the PModel
         # itself to obtain estimates of jmax and vcmax
