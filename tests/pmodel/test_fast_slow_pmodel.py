@@ -77,3 +77,37 @@ def test_FSPModel_JAMES(be_vie_data):
     # Test that non-NaN predictions are within 0.5% - slight differences in constants
     # and rounding of outputs prevent closer match
     assert np.allclose(fs_pmodel_james.gpp[valid], expected_gpp[valid], rtol=0.005)
+
+
+def test_FSPModel_corr(be_vie_data):
+    """This tests the pyrealm implementation correlates well with the legacy
+    calculations from the Mengoli et al JAMES paper without acclimating xi."""
+
+    from pyrealm.pmodel import FastSlowScaler
+    from pyrealm.pmodel.subdaily import FastSlowPModel
+
+    env, ppfd, fapar, datetime, expected_gpp = be_vie_data
+
+    # Get the fast slow scaler and set window
+    fsscaler = FastSlowScaler(datetime)
+    fsscaler.set_window(
+        window_center=np.timedelta64(12, "h"),
+        half_width=np.timedelta64(30, "m"),
+    )
+
+    # Fast slow model
+    fs_pmodel_james = FastSlowPModel(
+        env=env,
+        fs_scaler=fsscaler,
+        kphio=1 / 8,
+        fapar=fapar,
+        ppfd=ppfd,
+    )
+
+    valid = np.logical_not(
+        np.logical_or(np.isnan(expected_gpp), np.isnan(fs_pmodel_james.gpp))
+    )
+
+    # Test that non-NaN predictions correlate well
+    r_vals = np.corrcoef(fs_pmodel_james.gpp[valid], expected_gpp[valid])
+    assert np.alltrue(r_vals > 0.995)
