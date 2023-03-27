@@ -12,6 +12,8 @@ kernelspec:
   name: pyrealm_python3
 ---
 
+
+
 # The P Model with fast and slow responses
 
 The standard [P Model](pmodel.md) assumes that plants are able to instantaneously
@@ -65,8 +67,10 @@ The approach has the following steps:
 This implementation largely follows the weighted average method of
 {cite:t}`mengoli:2022a`, but is modified to include slow responses in $\xi$.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
+
+from importlib import resources
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -88,14 +92,16 @@ The code below uses half hourly data from 2014 for the [BE-Vie FluxNET
 site](https://fluxnet.org/doi/FLUXNET2015/BE-Vie), which was also used as a
 demonstration in {cite:t}`mengoli:2022a`.
 
-```{code-cell}
-data = np.genfromtxt(
-    "../../../data/subdaily_BE_Vie_2014.csv",
-    names=True,
-    delimiter=",",
-    dtype=None,
-    encoding="UTF8",
-)
+```{code-cell} ipython3
+with resources.path("data", "subdaily_BE_Vie_2014.csv") as data_path:
+    data = np.genfromtxt(
+        data_path,
+        names=True,
+        delimiter=",",
+        dtype=None,
+        encoding="UTF8",
+        missing_values = "NA",
+    )
 
 # Extract the key half hourly timestep variables
 temp_subdaily = data["ta"]
@@ -111,7 +117,7 @@ This dataset can then be used to calculate the photosynthetic environment at the
 subdaily timescale. The code below also estimates GPP under the standard P Model with no
 slow responses for comparison.
 
-```{code-cell}
+```{code-cell} ipython3
 # Calculate the photosynthetic environment
 subdaily_env = PModelEnvironment(
     tc=temp_subdaily,
@@ -137,7 +143,7 @@ best to sample those conditions. Typically those might be the observed environme
 conditions at the observation closest to noon, or the mean environmental conditions in a
 window around noon.
 
-```{code-cell}
+```{code-cell} ipython3
 # Create the fast slow scaler
 fsscaler = FastSlowScaler(datetime_subdaily)
 
@@ -156,7 +162,7 @@ pmodel_fastslow = FastSlowPModel(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 idx = np.arange(48 * 120, 48 * 130)
@@ -182,7 +188,7 @@ The daily average conditions during the acclimation window can be sampled and us
 inputs to the standard P Model to calculate the optimal behaviour of plants under those
 conditions.
 
-```{code-cell}
+```{code-cell} ipython3
 # Get the daily acclimation conditions for the forcing variables
 temp_acclim = fsscaler.get_daily_means(temp_subdaily)
 co2_acclim = fsscaler.get_daily_means(co2_subdaily)
@@ -213,7 +219,7 @@ temperatures so $J_{max}$ and $V_{cmax}$ must first be standardised to expected 
 at 25°C. This is acheived by multiplying by the reciprocal of the exponential part of
 the Arrhenius equation ($h^{-1}$ in {cite}`mengoli:2022a`).
 
-```{code-cell}
+```{code-cell} ipython3
 # Are these any of the existing values in the constants?
 ha_vcmax25 = 65330
 ha_jmax25 = 43900
@@ -228,7 +234,7 @@ jmax25_acclim = pmodel_acclim.jmax * (1 / calc_ftemp_arrh(tk_acclim, ha_jmax25))
 The memory effect can now be applied to the three parameters with slow
 responses to calculate realised values, here using the default 15 day window.
 
-```{code-cell}
+```{code-cell} ipython3
 # Calculation of memory effect in xi, vcmax25 and jmax25
 xi_real = memory_effect(pmodel_acclim.optchi.xi, alpha=1 / 15)
 vcmax25_real = memory_effect(vcmax25_acclim, alpha=1 / 15)
@@ -239,7 +245,7 @@ The plots below show the instantaneously acclimated values for  $J_{max25}$,
 $V_{cmax25}$ and $\xi$ in grey along with the realised slow reponses.
 applied.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 fig, axes = plt.subplots(1, 3, figsize=(16, 5))
@@ -273,7 +279,7 @@ temperature at fast scales:
 * These values are adjusted to the actual half hourly temperatures to give the fast responses
   of $J_{max}$ and $V_{cmax}$.
 
-```{code-cell}
+```{code-cell} ipython3
 tk_subdaily = subdaily_env.tc + pmodel_subdaily.const.k_CtoK
 
 # Fill the realised jmax and vcmax from subdaily to daily
@@ -293,7 +299,7 @@ $\Gamma^\ast$ with the realised slow responses of $\xi$. The original implementa
 $\Gamma^{\ast}$ and $c_a$, interpolated to the subdaily timescale and the actual
 subdaily variation in VPD.
 
-```{code-cell}
+```{code-cell} ipython3
 # Interpolate xi to subdaily scale
 xi_subdaily = fsscaler.fill_daily_to_subdaily(xi_real)
 
@@ -310,7 +316,7 @@ Model, where $c_i$ includes the slow responses of $\xi$ and $V_{cmax}$ and $J_{m
 include the slow responses of $V_{cmax25}$ and $J_{max25}$ and fast responses to
 temperature.
 
-```{code-cell}
+```{code-cell} ipython3
 # Calculate Ac
 Ac_subdaily = (
     vcmax_subdaily
@@ -336,4 +342,8 @@ GPP_subdaily = np.minimum(Ac_subdaily, Aj_subdaily)
 # Compare to the FastSlowPModel outputs
 diff = GPP_subdaily - pmodel_fastslow.gpp
 print(np.nanmin(diff), np.nanmax(diff))
+```
+
+```{code-cell} ipython3
+
 ```
