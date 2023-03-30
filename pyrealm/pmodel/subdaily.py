@@ -457,6 +457,8 @@ class FastSlowPModel_JAMES:
         )
         """Estimated subdaily :math:`A_j`."""
 
-        # Calculate light use efficiency
-        self.gpp: NDArray = np.minimum(self.subdaily_Aj, self.subdaily_Ac)
+        # Calculate GPP, converting from mol m2 s1 to grams carbon m2 s1
+        self.gpp: NDArray = (
+            np.minimum(self.subdaily_Aj, self.subdaily_Ac) * self.env.const.k_c_molmass
+        )
         """Estimated subdaily GPP."""
