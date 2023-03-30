@@ -12,8 +12,6 @@ kernelspec:
   name: pyrealm_python3
 ---
 
-
-
 # The P Model with fast and slow responses
 
 The standard [P Model](pmodel.md) assumes that plants are able to instantaneously
@@ -83,6 +81,7 @@ from pyrealm.pmodel import (
     PModelEnvironment,
     PModel,
 )
+from pyrealm.constants import PModelConst
 from pyrealm.pmodel.functions import calc_ftemp_arrh, calc_ftemp_kphio
 ```
 
@@ -168,7 +167,7 @@ pmodel_fastslow = FastSlowPModel(
 idx = np.arange(48 * 120, 48 * 130)
 plt.figure(figsize=(10, 4))
 plt.plot(
-    datetime_subdaily[idx], pmodel_subdaily.gpp[idx] / 12, label="Instantaneous model"
+    datetime_subdaily[idx], pmodel_subdaily.gpp[idx], label="Instantaneous model"
 )
 plt.plot(datetime_subdaily[idx], pmodel_fastslow.gpp[idx], "r-", label="Slow responses")
 plt.ylabel = "GPP"
@@ -336,8 +335,8 @@ Aj_subdaily = (
     / (ci_subdaily + 2 * subdaily_env.gammastar)
 )
 
-# Calculate GPP
-GPP_subdaily = np.minimum(Ac_subdaily, Aj_subdaily)
+# Calculate GPP and convert from micromols to micrograms
+GPP_subdaily = np.minimum(Ac_subdaily, Aj_subdaily) * PModelConst.k_c_molmass
 
 # Compare to the FastSlowPModel outputs
 diff = GPP_subdaily - pmodel_fastslow.gpp
