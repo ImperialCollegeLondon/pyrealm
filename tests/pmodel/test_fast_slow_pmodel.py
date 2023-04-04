@@ -82,7 +82,7 @@ def test_FSPModel_JAMES(be_vie_data_components):
     )
 
     # Test that non-NaN predictions are within 0.5% - slight differences in constants
-    # and rounding of outputs prevent closer match
+    # and rounding of outputs prevent a closer match between the implementations
     assert np.allclose(fs_pmodel_james.gpp[valid], expected_gpp[valid], rtol=0.005)
 
 
@@ -114,8 +114,10 @@ def test_FSPModel_corr(be_vie_data_components):
         np.logical_or(np.isnan(expected_gpp), np.isnan(fs_pmodel.gpp))
     )
 
-    # Test that non-NaN predictions correlate well
-    r_vals = np.corrcoef(fs_pmodel.gpp[valid], expected_gpp[valid])
+    # Test that non-NaN predictions correlate well and are approximately the same
+    gpp_in_micromols = fs_pmodel.gpp[valid] / env.const.k_c_molmass
+    assert np.allclose(gpp_in_micromols, expected_gpp[valid], rtol=0.2)
+    r_vals = np.corrcoef(gpp_in_micromols, expected_gpp[valid])
     assert np.alltrue(r_vals > 0.995)
 
 
