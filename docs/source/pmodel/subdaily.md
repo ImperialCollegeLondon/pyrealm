@@ -92,15 +92,16 @@ site](https://fluxnet.org/doi/FLUXNET2015/BE-Vie), which was also used as a
 demonstration in {cite:t}`mengoli:2022a`.
 
 ```{code-cell} ipython3
-with resources.path("data", "subdaily_BE_Vie_2014.csv") as data_path:
-    data = np.genfromtxt(
-        data_path,
-        names=True,
-        delimiter=",",
-        dtype=None,
-        encoding="UTF8",
-        missing_values = "NA",
-    )
+
+data_path = resources.files("pyrealm").parent / "data" / "subdaily_BE_Vie_2014.csv"
+data = np.genfromtxt(
+    data_path,
+    names=True,
+    delimiter=",",
+    dtype=None,
+    encoding="UTF8",
+    missing_values = "NA",
+)
 
 # Extract the key half hourly timestep variables
 temp_subdaily = data["ta"]
@@ -341,8 +342,4 @@ GPP_subdaily = np.minimum(Ac_subdaily, Aj_subdaily) * PModelConst.k_c_molmass
 # Compare to the FastSlowPModel outputs
 diff = GPP_subdaily - pmodel_fastslow.gpp
 print(np.nanmin(diff), np.nanmax(diff))
-```
-
-```{code-cell} ipython3
-
 ```

@@ -8,15 +8,19 @@ import pytest
 def be_vie_data():
     """Import the test data"""
 
-    with resources.path("data", "subdaily_BE_Vie_2014.csv") as data_path:
-        data = np.genfromtxt(
-            data_path,
-            names=True,
-            delimiter=",",
-            dtype=None,
-            encoding="UTF8",
-            missing_values="NA",
-        )
+    # This feels like a hack but it isn't obvious how to reference the data files
+    # included in the source distribution from the package path.
+    data_path = resources.files("pyrealm").parent / "data" / "subdaily_BE_Vie_2014.csv"
+
+    # with resources.path("data", "subdaily_BE_Vie_2014.csv") as data_path:
+    data = np.genfromtxt(
+        data_path,
+        names=True,
+        delimiter=",",
+        dtype=None,
+        encoding="UTF8",
+        missing_values="NA",
+    )
 
     return data
 

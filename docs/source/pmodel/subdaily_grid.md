@@ -39,8 +39,8 @@ spatial and temporal resolution from (SNU-Ryu source ref here).
 
 ```{code-cell}
 # Loading the example dataset:
-with resources.path("data", "UK_WFDE5_FAPAR_2018_JuneJuly.nc") as dpath:
-    ds = xarray.load_dataset(dpath)
+dpath = resources.files("pyrealm").parent / "data" / "UK_WFDE5_FAPAR_2018_JuneJuly.nc"
+ds = xarray.load_dataset(dpath)
 
 datetimes = ds["time"].to_numpy()
 
