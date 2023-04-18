@@ -366,8 +366,9 @@ class FastSlowScaler:
           next daily value. This option will fill values until the end of the time
           series.
         * ``linear`` interpolates linearly between the update points of the daily
-          values. This option will leave ``np.nan`` values at the end because value to
-          interpolate towards after the end of the time series is unknown.
+          values. The interpolated values are held constant for the first day and then
+          interpolated linearly: this is to avoid plants adapting optimally to future
+          conditions.
 
         The update point defaults to the maximum time of day during the acclimation
         window. It can also be set to the mean time of day, but note that this implies
@@ -386,9 +387,6 @@ class FastSlowScaler:
               :class:`numpy.timedelta64` value giving the time of day from which to fill
               values forward.
         """
-
-        # BUG - linear is predicting the future - need to update the following day or
-        # maybe scrub this option.
 
         if values.shape[0] != self.n_days:
             raise ValueError("Values is not of length n_days on its first axis.")
@@ -411,20 +409,23 @@ class FastSlowScaler:
         else:
             raise ValueError("Unknown update point")
 
-        # interp1d cannot handle datetime64 inputs, so need to interpolate using integer
-        # types and then cast back
-        # TODO - maybe store these castings as attributes?
+        # Note that interp1d cannot handle datetime64 inputs, so need to interpolate
+        # using datetimes cast to integer types
 
-        # kinds of interpolation
-        # TODO - checking
-        # - previous will fill forwards to the end of the time series, although this
-        #   will be bogus if for more than one day
-        # - linear has to stop at last observed value since the next value is unknown
-        #   although it _could_ keep the same slope as the previous time step?
+        # Use fill_value to handle extrapolation before or after update point:
+        # - previous will fill the last value forward to the end of the time series,
+        #   although this will be bogus if the interpolation time series extends beyond
+        #   the next update point
+        # - linear has a 1 day offset: the plant cannot adapt towards the next optimal
+        #   value until _after_ the update point.
 
         if kind == "previous":
             fill_value = (None, values[-1])
         elif kind == "linear":
+            values = np.insert(values, 0, values[0], axis=0)
+            update_time = np.append(
+                update_time, update_time[-1] + np.timedelta64(1, "D")
+            )
             fill_value = (None, None)
         else:
             raise ValueError("Unsupported interpolation option")
