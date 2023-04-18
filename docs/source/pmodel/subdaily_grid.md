@@ -31,7 +31,7 @@ from pyrealm.hygro import convert_sh_to_vpd
 This notebook shows an example analysis using the P Model including fast and slow
 photosynthetic responses. The dataset is taken from WFDE5 v2 and provides 1 hourly
 resolution data on a 0.5° spatial grid. The fAPAR data is interpolated to the same
-spatial and temporal resolution from (SNU-Ryu source ref here).
+spatial and temporal resolution from MODIS data.
 
 * time: 2018-06-01 00:00 to 2018-07-31 23:00 at 1 hour resolution.
 * longitude: 10°W to 4°E at 0.5° resolution.
@@ -63,7 +63,7 @@ focal_datetime = np.where(datetimes == np.datetime64("2018-06-12 12:00:00"))[0]
 # Plot the temperature data for an example timepoint and show the sites
 focal_temp = ds["Tair"][focal_datetime] - 273.15
 focal_temp.plot()
-plt.plot(sites["lon"], sites["lat"], "xr")
+plt.plot(sites["lon"], sites["lat"], "xr");
 ```
 
 The WFDE data need some conversion for use in the PModel, along with the definition of
@@ -132,12 +132,10 @@ the focal datetime, along with a scatterplot comparing the two predictions.
 # Extract the spatial grid for the focal datetime
 pmod_gpp_focal = pmod.gpp[focal_datetime].squeeze()
 fs_pmod_gpp_focal = fs_pmod.gpp[focal_datetime].squeeze()
-```
 
-```{code-cell}
 # Set up subfigures
 fig = plt.figure(layout="constrained", figsize=(10, 3))
-(subfig1, subfig2) = fig.subfigures(1, 2, width_ratios=[1, 2])
+(subfig1, subfig2) = fig.subfigures(1, 2, width_ratios=[0.8, 2])
 
 # Plot the GPP predictions of the two models
 ax = subfig1.subplots(1, 1)
@@ -145,6 +143,7 @@ ax.scatter(pmod_gpp_focal, fs_pmod_gpp_focal)
 ax.plot([100, 450], [100, 450], "r-", linewidth=0.5)
 ax.set_xlabel("Instantaneous GPP")
 ax.set_ylabel("FastSlow GPP")
+ax.set_title(" ")
 
 (ax1, ax2) = subfig2.subplots(1, 2, sharey=True, sharex=True)
 
@@ -162,7 +161,7 @@ ax2.set_title("Fast Slow")
 # Add a colour bar
 subfig2.colorbar(
     im, ax=[ax1, ax2], shrink=0.55, label=r"GPP ($\mu g C\,m^{-2}\,s^{-1}$)"
-)
+);
 ```
 
 ## Time series predictions
@@ -200,4 +199,8 @@ for ax, st in zip(axes, sites["stid"].values):
 
 axes[0].legend(loc="lower center", bbox_to_anchor=[0.5, 1], ncols=2, frameon=False)
 plt.tight_layout()
+```
+
+```{code-cell}
+
 ```
