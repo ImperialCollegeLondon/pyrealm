@@ -548,10 +548,10 @@ def test_FSS_resample_subdaily(
             np.array([0, 48, 0]),
             np.concatenate(
                 [
-                    np.repeat([np.nan], 28),
-                    np.arange(0, 49),
-                    np.arange(47, -1, -1),
-                    np.repeat([np.nan], 19),
+                    np.repeat([np.nan], 28),  # before first window
+                    np.repeat([0], 48),  # repeated first value of 0
+                    np.arange(0, 49),  # offset increase up to 48
+                    np.arange(47, 28, -1),  # truncated decrease back down to 0
                 ]
             ),
             id="1D test max",
@@ -562,9 +562,9 @@ def test_FSS_resample_subdaily(
             np.concatenate(
                 [
                     np.repeat([np.nan], 26),
+                    np.repeat([0], 48),
                     np.arange(0, 49),
-                    np.arange(47, -1, -1),
-                    np.repeat([np.nan], 21),
+                    np.arange(47, 26, -1),
                 ]
             ),
             id="1D test mean",
@@ -577,17 +577,17 @@ def test_FSS_resample_subdaily(
                     np.concatenate(
                         [
                             np.repeat([np.nan], 28),
+                            np.repeat([0], 48),
                             np.arange(0, 49),
-                            np.arange(47, -1, -1),
-                            np.repeat([np.nan], 19),
+                            np.arange(47, 28, -1),
                         ]
                     ),
                     np.concatenate(
                         [
                             np.repeat([np.nan], 28),
+                            np.repeat([0], 48),
                             np.arange(0, -49, -1),
-                            np.arange(-47, 1),
-                            np.repeat([np.nan], 19),
+                            np.arange(-47, -28, 1),
                         ]
                     ),
                 ]
