@@ -18,13 +18,9 @@ kernelspec:
 # The P Model
 
 This page provides an overview of the theory of the P Model
-{cite:p}`Prentice:2014bc,Wang:2017go`, and how to use the implementation in the
-`pyrealm` package. The details of calculations and the API for the package code are
-shown in the [module reference documentation](../../api/pmodel_api).
-
-* Approaches to incorporate [soil moisture effects](soil_moisture.md)
-* Model behaviour in [extreme environments](extreme_values.md)
-* Comparison to the [`rpmodel` implementation](rpmodel.md)
+{cite:p}`Prentice:2014bc,Wang:2017go`. The details of calculations and the API for the
+package code are shown in the [module reference documentation](../../api/pmodel_api) and
+a separate page shows [worked examples](worked_examples) of using the code.
 
 ## Overview
 
@@ -36,8 +32,8 @@ variables are used to define the environment that the plant experiences:
 * atmospheric $\ce{CO2}$ concentration (`co2`, ppm), and
 * atmospheric pressure (`patm`, Pa).
 
-From these inputs, the model breaks down into four broad stages, each of which
-is described in more detail in the link for each stage
+From these inputs, the model breaks down into four broad stages, each of which is
+described in more detail in the link for each stage
 
 The main steps are:
 
@@ -54,11 +50,10 @@ photosynthetic environment of a plant (see
 
 ### Calculation of leaf $\ce{CO2}$ variables
 
-The photosynthetic environment is then used to calculate the optimal ratio of
-internal to external CO2 concentration ($chi$), along with $\ce{CO2}$ partial
-pressures and limitation factors (see [details](optimal_chi)).
-
-This step also governs the main differences between C3 and C4 photosynthesis.
+The photosynthetic environment is then used to calculate the optimal ratio of internal
+to external CO2 concentration ($chi$), along with $\ce{CO2}$ partial pressures and
+limitation factors (see [details](optimal_chi)). This step also governs the main
+differences between C3 and C4 photosynthesis.
 
 ### Limitation of light use efficiency (LUE)
 
@@ -75,39 +70,36 @@ constraints. (see [details](lue_limitation)).
 
 ### Estimation of GPP
 
-Once LUE has been calculated, estimates of absorbed photosynthetically active
-radiation, can be used to predict gross primary productivity (GPP) and other key
-rates within the leaf (see [details](estimating-productivity)).
+Once LUE has been calculated, estimates of absorbed photosynthetically active radiation,
+can be used to predict gross primary productivity (GPP) and other key rates within the
+leaf (see [details](estimating-productivity)).
 
-### Worked code examples
+## Worked code examples
 
 Two examples of how to use the {mod}`~pyrealm` package to fit the P Model can be seen in
 the [worked examples](worked_examples) page.
 
-### Variable graph
+These examples also show how the package can be used with array data. The `pyrealm`
+package uses the `numpy` package and expects arrays of data to be be passed to all
+inputs. Input arrays can be a single scalar value, but all non-scalar inputs must be
+**arrays with the same shape**: the `pyrealm` packages does not attempt to resolve the
+broadcasting of array dimensions.
 
-The graph below shows these broad model areas in terms of model inputs (blue)
-and modelled outputs (red) used in the P-model. Optional inputs and internal
-variables are shown with a dashed edge.
+## Variable graph
+
+The graph below shows these broad model areas in terms of model inputs (blue) and
+modelled outputs (red) used in the P-model. Optional inputs and internal variables are
+shown with a dashed edge.
 
 ![pmodel.svg](pmodel.svg)
 
-## Array inputs
+## Further details
 
-The `pyrealm` package uses the `numpy` package and expects arrays of data to be be
-passed to all inputs. Input arrays can be a single scalar value, but all non-scalar
-inputs must be **arrays with the same shape**: the `pyrealm` packages does not attempt
-to resolve the broadcasting of array dimensions.
+The following links provide more detail on other aspects of using the P Model
 
-## Extreme values
-
-The four photosynthetic environment variables and the effect of temperature
-on the temperature dependence of quantum yield efficiency are all calculated
-directly from the input forcing variables. While the majority of those calculations
-behave smoothly with extreme values of temperature and atmospheric pressure,
-the calculation of the relative viscosity of water ($\eta^*$) does not handle
-low temperatures well. The behaviour of these functions with extreme values
-is shown [here](extreme_values).
+* Approaches to incorporating [soil moisture effects](soil_moisture.md)
+* Model behaviour in [extreme environments](extreme_values.md)
+* Comparison to the [`rpmodel` implementation](rpmodel.md)
 
 ```{eval-rst}
 .. toctree::

@@ -14,10 +14,17 @@ kernelspec:
 
 # Extreme forcing values
 
+The four photosynthetic environment variables and the effect of temperature on the
+temperature dependence of quantum yield efficiency are all calculated directly from the
+input forcing variables. While the majority of those calculations behave smoothly with
+extreme values of temperature and atmospheric pressure, the calculation of the relative
+viscosity of water ($\eta^*$) does not handle low temperatures well.
+
 Forcing datasets for the input to the P Model - particularly remotely sensed datasets -
-can contain extreme values. This page provides an overview of the behaviour of the
-initial functions calculating the photosynthetic environment when given extreme inputs,
-to help guide when inputs should be filter or clipped to remove problem values.
+often contain extreme values that may lead to unexpected model predictions. This page
+provides an overview of the behaviour of the initial functions calculating the
+photosynthetic environment when given extreme inputs, to help guide when inputs should
+be filter or clipped to remove problem values.
 
 ## Realistic input values
 
