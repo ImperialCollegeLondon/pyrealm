@@ -12,66 +12,24 @@ kernelspec:
 
 # The `pyrealm` package
 
+The `pyrealm` package provides Python implementations of models of plant productivity
+and demography. The package is in active development and currently provides the
+following modules:
+
 ## Module overview
 
-The package implements several modelling approaches to estimating the optimal
-photosynthetic behaviour of plants and then using the resulting estimates of
-productivity to model plant growth and the demography of plant communities.
+The `pmodel` module
+: Fitting the [P Model](users/pmodel/module_overview), which is an ecophysiological
+  model of optimal carbon dioxide uptake by plants {cite:p}`Prentice:2014bc,
+  Wang:2017go,Stocker:2020dh`, along with various extensions.
 
-The package is in active development and currently provides the following functionality:
+The `tmodel` module
+: Estimating plant allocation of gross primary productivity to growth and respiration,
+  using the [T Model](users/tmodel/tmodel) {cite:p}`Li:2014bc`.
 
-* Fitting the [P Model](pmodel/pmodel), which is a ecophysiological model of optimal
-  carbon dioxide uptake by plants {cite:p}`Prentice:2014bc, Wang:2017go,Stocker:2020dh`.
-  Extensions to this model include:
-
-  * Estimation of [isotopic discrimination of
-    carbon](pmodel/isotopic_discrimination.md) resulting from photosynthesis.
-  * A model of [C3 / C4 plant competition](pmodel/c3c4model), giving an estimate of
-    the expected fraction of C4 plants in a community.
-
-* Estimating plant allocation of gross primary productivity to growth and respiration,
-  using [T Model](tmodel/tmodel) {cite:p}`Li:2014bc`.
-* Functions for [converting common hygrometric variables](./hygro) to vapour pressure
-  deficit for use in the P Model.
-
-```{eval-rst}
-.. toctree::
-  :maxdepth: 4
-  :caption: For Users
-  :hidden:
-
-  pmodel/pmodel.md
-  pmodel/pmodel_details/pmodel_details.md
-  tmodel/tmodel.md
-  pmodel/isotopic_discrimination.md
-  pmodel/c3c4model.md
-  hygro.md
-  constants.md
-  z_bibliography.rst
-```
-
-```{eval-rst}
-.. toctree::
-  :maxdepth: 4
-  :caption: API
-  :hidden:
-
-  api/tmodel_api.md
-  api/pmodel_api.md
-  api/hygro_api.md
-  api/utilities_api.md
-  api/constants_api.md
-```
-
-```{eval-rst}
-.. toctree::
-  :maxdepth: 4
-  :caption: Developers
-  :hidden:
-
-  development/developers.md
-
-```
+The `hygro` module
+: Provides functions for [converting common hygrometric variables](users/hygro) to
+  vapour pressure deficit for use in the P Model.
 
 ## Indices and tables
 

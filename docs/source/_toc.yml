@@ -1,0 +1,42 @@
+root: index
+subtrees:
+
+- caption: Users
+  entries: 
+  - file: users/pmodel/module_overview.md
+    subtrees:
+      - entries:
+        - file: users/pmodel/pmodel_details/pmodel_overview.md
+          subtrees:
+            - entries:
+              - file: users/pmodel/pmodel_details/worked_examples.md
+              - file: users/pmodel/pmodel_details/photosynthetic_environment.md
+              - file: users/pmodel/pmodel_details/optimal_chi.md
+              - file: users/pmodel/pmodel_details/lue_limitation.md
+              - file: users/pmodel/pmodel_details/envt_variation_outputs.md
+              - file: users/pmodel/pmodel_details/soil_moisture.md
+              - file: users/pmodel/pmodel_details/extreme_values.md
+              - file: users/pmodel/pmodel_details/rpmodel.md
+        - file: users/pmodel/subdaily_details/subdaily_overview.md
+          subtrees:
+            - entries:
+              - file: users/pmodel/subdaily_details/subdaily_calculations.md
+              - file: users/pmodel/subdaily_details/acclimation.md
+              - file: users/pmodel/subdaily_details/worked_example.md
+        - file: users/pmodel/c3c4model.md
+        - file: users/pmodel/isotopic_discrimination.md
+  - file: users/tmodel/tmodel.md
+  - file: users/constants.md
+  - file: users/hygro.md 
+
+- caption: API
+  entries: 
+  - glob: api/*
+
+- caption: Development
+  entries:
+  - file: development/developers.md
+
+- caption: Bibliography
+  entries:
+  - file: z_bibliography.rst
