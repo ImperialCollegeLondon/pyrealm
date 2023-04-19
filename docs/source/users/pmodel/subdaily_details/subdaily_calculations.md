@@ -48,7 +48,7 @@ demonstration in {cite:t}`mengoli:2022a`.
 
 ```{code-cell} ipython3
 
-data_path = resources.files("pyrealm").parent / "data" / "subdaily_BE_Vie_2014.csv"
+data_path = resources.files("pyrealm_build_data") / "subdaily_BE_Vie_2014.csv"
 data = np.genfromtxt(
     data_path,
     names=True,

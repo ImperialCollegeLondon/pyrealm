@@ -11,13 +11,11 @@ import xarray as xr  # type: ignore
 def dataset():
     """Fixture to load test inputs from file from data folder in package root"""
 
+    from importlib import resources
+
     from pyrealm.pmodel import PModelEnvironment, calc_patm
 
-    test_dir = os.path.dirname(os.path.abspath(__file__))
-    data_file_path = os.path.normpath(
-        os.path.join(test_dir, os.pardir, os.pardir, "data", "pmodel_inputs.nc")
-    )
-
+    data_file_path = resources.files("pyrealm_build_data") / "pmodel_inputs.nc"
     dataset = xr.load_dataset(data_file_path)
 
     # Extract the six variables for all months
