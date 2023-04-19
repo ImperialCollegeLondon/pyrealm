@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyrealm"
-version = "0.8.1"
+version = "0.9.0"
 description = "Python implementations of REALM models"
 authors = ["David Orme <d.orme@imperial.ac.uk>"]
 homepage = "https://pyrealm.readthedocs.io/"
@@ -38,8 +38,6 @@ pytest-mock = "^3.8.1"
 [tool.poetry.group.dev.dependencies]
 black = { version = "^22.10.0", allow-prereleases = true }
 pre-commit = "^2.20.0"
-PyYAML = "^6.0"                                            # Why?
-netCDF4 = "^1.6.0"                                         # Why?
 flake8 = "^4.0.1"
 flake8-docstrings = "^1.6.0"
 mypy = "^0.991"
