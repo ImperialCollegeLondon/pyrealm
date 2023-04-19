@@ -20,8 +20,9 @@ subtrees:
         - file: users/pmodel/subdaily_details/subdaily_overview.md
           subtrees:
             - entries:
+              - file: users/pmodel/subdaily_details/subdaily_calculations.md
               - file: users/pmodel/subdaily_details/acclimation.md
-              - file: users/pmodel/subdaily_details/subdaily_grid.md
+              - file: users/pmodel/subdaily_details/worked_example.md
         - file: users/pmodel/c3c4model.md
         - file: users/pmodel/isotopic_discrimination.md
   - file: users/tmodel/tmodel.md

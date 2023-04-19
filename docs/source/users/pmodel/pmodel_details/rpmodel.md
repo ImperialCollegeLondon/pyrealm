@@ -38,7 +38,7 @@ The implementations differ in a number of ways:
    ({class}`~pyrealm.constants.pmodel_const.PModelConst`). This is used to share a set
    of constants and values across all functions. However, can also be altered, allowing
    users to explore model responses to underlying parameter variation (see
-   [here](/constants)).
+   [here](../../constants.md)).
 
    In some cases, ``rpmodel`` sets these constants in function arguments. These have
    also been moved to {class}`~pyrealm.constants.pmodel_const.PModelConst` to simplify

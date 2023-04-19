@@ -12,7 +12,7 @@ kernelspec:
   name: pyrealm_python3
 ---
 
-# Subdaily model
+# Worked example
 
 ```{code-cell}
 from importlib import resources

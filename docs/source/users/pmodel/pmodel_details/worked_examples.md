@@ -146,7 +146,7 @@ to be the same size so some of the variables have repeated data across dimension
 
 ```{code-cell} ipython3
 # Load an example dataset containing the main variables.
-ds = xarray.load_dataset("../../../../data/pmodel_inputs.nc")
+ds = xarray.load_dataset("../../../../../data/pmodel_inputs.nc")
 
 # Extract the six variables for the two months and convert from 
 # xarray DataArray objects to numpy arrays

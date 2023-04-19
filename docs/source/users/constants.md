@@ -28,7 +28,7 @@ estimate or explore sensitivity to variation.
 
 For this reason, the `pyrealm` package provides data classes that contain sets
 of default model constants. The core API and details for each class can be seen
-[here](api/constants_api).
+[here](../api/constants_api).
 
 ## Creating constant class instances
 
@@ -87,7 +87,7 @@ be done more directly and the resulting instances are identical.
 
 ```{code-cell} python
 traits1 = TModelTraits.from_dict(trt_dict)
-traits2 = TModelTraits.from_json('files/traits.json')
+traits2 = TModelTraits.from_json('../files/traits.json')
 
 print(traits1)
 print(traits2)

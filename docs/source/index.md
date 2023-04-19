@@ -19,17 +19,17 @@ following modules:
 ## Module overview
 
 The `pmodel` module
-: Fitting the [P Model](pmodel/module_overview), which is an ecophysiological model of
-  optimal carbon dioxide uptake by plants {cite:p}`Prentice:2014bc,
+: Fitting the [P Model](users/pmodel/module_overview), which is an ecophysiological
+  model of optimal carbon dioxide uptake by plants {cite:p}`Prentice:2014bc,
   Wang:2017go,Stocker:2020dh`, along with various extensions.
 
 The `tmodel` module
 : Estimating plant allocation of gross primary productivity to growth and respiration,
-  using the [T Model](tmodel/tmodel) {cite:p}`Li:2014bc`.
+  using the [T Model](users/tmodel/tmodel) {cite:p}`Li:2014bc`.
 
 The `hygro` module
-: Provides functions for [converting common hygrometric variables](./hygro) to vapour
-  pressure deficit for use in the P Model.
+: Provides functions for [converting common hygrometric variables](users/hygro) to
+  vapour pressure deficit for use in the P Model.
 
 ## Indices and tables
 

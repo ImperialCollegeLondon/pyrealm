@@ -21,7 +21,7 @@ This page provides an overview of the P Model {cite:p}`Prentice:2014bc,Wang:2017
 along with links to further details of the theory and the code implementation. See also:
 
 * The details of calculations and the API for the package code are shown in the [module
-reference documentation](../../api/pmodel_api)
+reference documentation](../../../api/pmodel_api)
 * The [worked examples](worked_examples) of using `pyrealm` to fitting the P Model.
 
 ## Overview
