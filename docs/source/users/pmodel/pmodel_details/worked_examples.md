@@ -17,6 +17,12 @@ kernelspec:
 This page shows two worked examples of how to use `pyrealm` to make predictions using
 the P Model.
 
+The first example uses a single point but the second shows howthe package can be used
+with array data. The `pyrealm` package uses the `numpy` package and expects arrays of
+data to be be passed to all inputs. Input arrays can be a single scalar value, but all
+non-scalar inputs must be **arrays with the same shape**: the `pyrealm` packages does
+not attempt to resolve the broadcasting of array dimensions.
+
 ## Simple point estimate
 
 This example calculates a single point estimate of GPP. The first step is to use
@@ -33,7 +39,7 @@ The example shows the steps required using a single site with:
 
 ### Estimate photosynthetic environment
 
-```{code-cell}
+```{code-cell} ipython3
 from matplotlib import pyplot as plt
 import numpy as np
 import xarray
@@ -50,11 +56,11 @@ terse - just the shape of the data - but the
 {meth}`~pyrealm.pmodel.pmodel.PModelEnvironment.summarize` method provides a
 more detailed summary of the attributes.
 
-```{code-cell}
+```{code-cell} ipython3
 env
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 env.summarize()
 ```
 
@@ -63,14 +69,14 @@ env.summarize()
 Next, the P Model can be fitted to the photosynthetic environment using the
 ({class}`~pyrealm.pmodel.pmodel.PModel`) class:
 
-```{code-cell}
+```{code-cell} ipython3
 model = PModel(env)
 ```
 
 The returned model object holds a lot of information. The representation of the
 model object shows a terse display of the settings used to run the model:
 
-```{code-cell}
+```{code-cell} ipython3
 model
 ```
 
@@ -80,7 +86,7 @@ displays a summary of calculated predictions. Initially, this shows two measures
 photosynthetic efficiency: the intrinsic water use efficiency (``iwue``) and the light
 use efficiency (``lue``).
 
-```{code-cell}
+```{code-cell} ipython3
 model.summarize()
 ```
 
@@ -90,7 +96,7 @@ The instance also contains a {class}`~pyrealm.pmodel.pmodel.CalcOptimalChi` obje
 recording key parameters from the [calculation of $\chi$](optimal_chi).
 This object also has a {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.summarize` method:
 
-```{code-cell}
+```{code-cell} ipython3
 model.optchi.summarize()
 ```
 
@@ -106,7 +112,7 @@ Here we are using:
 * An absorption fraction of 0.91 (-), and
 * a PPFD of 834 µmol m-2 s-1.
 
-```{code-cell}
+```{code-cell} ipython3
 model.estimate_productivity(fapar=0.91, ppfd=834)
 model.summarize()
 ```
@@ -138,7 +144,7 @@ to be the same size so some of the variables have repeated data across dimension
   cell.
 * Elevation is constant across months, so the data for each month is repeated.
 
-```{code-cell}
+```{code-cell} ipython3
 # Load an example dataset containing the main variables.
 ds = xarray.load_dataset("../../../../data/pmodel_inputs.nc")
 
@@ -156,7 +162,7 @@ The model can now be run using that data. The first step is to convert the eleva
 data to atmospheric pressure, and then this is used to set the photosynthetic
 environment for the model:
 
-```{code-cell}
+```{code-cell} ipython3
 # Convert elevation to atmospheric pressure
 patm = calc_patm(elev)
 
@@ -174,7 +180,7 @@ env.summarize()
 That environment can then be run to calculate the P model predictions for light use
 efficiency:
 
-```{code-cell}
+```{code-cell} ipython3
 # Run the P model
 model = PModel(env)
 
@@ -187,7 +193,7 @@ plt.title("Light use efficiency");
 Finally, the light use efficiency can be used to calculate GPP given the
 photosynthetic photon flux density and fAPAR.
 
-```{code-cell}
+```{code-cell} ipython3
 # Scale the outputs from values per unit iabs to realised values
 model.estimate_productivity(fapar, ppfd)
 

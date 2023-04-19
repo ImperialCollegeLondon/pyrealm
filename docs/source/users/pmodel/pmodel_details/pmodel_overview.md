@@ -15,13 +15,16 @@ kernelspec:
 <!-- markdownlint-disable-next-line MD041 -->
 (pmodel_overview)=
 
-# P Model overview
+# The P Model
 
 This page provides an overview of the P Model {cite:p}`Prentice:2014bc,Wang:2017go`
-along with links to further details of the theory and the code implementation. The
-details of calculations and the API for the package code are shown in the [module
-reference documentation](../../api/pmodel_api) and a separate page shows [worked
-examples](worked_examples) of using `pyrealm` to fitting the P Model.
+along with links to further details of the theory and the code implementation. See also:
+
+* The details of calculations and the API for the package code are shown in the [module
+reference documentation](../../api/pmodel_api)
+* The [worked examples](worked_examples) of using `pyrealm` to fitting the P Model.
+
+## Overview
 
 The P Model is a model of carbon capture and water use by plants. Four forcing variables
 are used to define the environment that the plant experiences:
@@ -68,14 +71,3 @@ modelled outputs (red) used in the P-model. Optional inputs and internal variabl
 shown with a dashed edge.
 
 ![pmodel.svg](pmodel.svg)
-
-## Worked code examples
-
-Two examples of how to use the `pyrealm` package to fit the P Model can be seen in
-the [worked examples](worked_examples) page.
-
-These examples also show how the package can be used with array data. The `pyrealm`
-package uses the `numpy` package and expects arrays of data to be be passed to all
-inputs. Input arrays can be a single scalar value, but all non-scalar inputs must be
-**arrays with the same shape**: the `pyrealm` packages does not attempt to resolve the
-broadcasting of array dimensions.

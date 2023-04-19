@@ -65,15 +65,6 @@ The implementation has the following steps:
 This implementation largely follows the weighted average method of
 {cite:t}`mengoli:2022a`, but is modified to include slow responses in $\xi$.
 
-```{eval-rst}
-.. toctree::
-  :maxdepth: 4
-  :hidden:
-
-  acclimation.md
-  subdaily_grid.md
-```
-
 ## Example calculation
 
 This section uses a time series to show in detail how the P Model including acclimation

@@ -10,7 +10,7 @@ kernelspec:
   name: pyrealm_python3
 ---
 
-# Constants
+# Package constants
 
 The models presented in this package rely on a relatively large number of underlying
 constants. In order to keep the argument lists of functions and classes as simple as
@@ -76,7 +76,7 @@ dictionary:
 ```{code-cell} python
 import json
 import pprint
-trt_dict = json.load(open('files/traits.json', 'r'))
+trt_dict = json.load(open('../files/traits.json', 'r'))
 pprint.pprint(trt_dict)
 ```
 
