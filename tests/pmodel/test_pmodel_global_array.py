@@ -1,8 +1,8 @@
 import os
 
-import netCDF4  # type: ignore
 import numpy as np
 import pytest
+import xarray as xr  # type: ignore
 
 # flake8: noqa D103 - docstrings on unit tests
 
@@ -18,23 +18,15 @@ def dataset():
         os.path.join(test_dir, os.pardir, os.pardir, "data", "pmodel_inputs.nc")
     )
 
-    dataset = netCDF4.Dataset(data_file_path)
-
-    # TODO - masked arrays should be handled (it is basically the same as
-    #        NA values in the R implementation) but for current validation
-    #        this is just going to convert them to filled arrays
-
-    dataset.set_auto_mask(False)
+    dataset = xr.load_dataset(data_file_path)
 
     # Extract the six variables for all months
-    temp = dataset["temp"][:]
-    co2 = dataset["CO2"][:]  # Note - spatially constant but mapped.
-    elev = dataset["elevation"][:]  # Note - temporally constant but repeated
-    vpd = dataset["VPD"][:]
-    fapar = dataset["fAPAR"][:]
-    ppfd = dataset["ppfd"][:]
-
-    dataset.close()
+    temp = dataset["temp"].to_numpy()
+    co2 = dataset["CO2"].to_numpy()  # Note - spatially constant but mapped.
+    elev = dataset["elevation"].to_numpy()  # Note - temporally constant but repeated
+    vpd = dataset["VPD"].to_numpy()
+    fapar = dataset["fAPAR"].to_numpy()
+    ppfd = dataset["ppfd"].to_numpy()
 
     # Convert elevation to atmospheric pressure
     patm = calc_patm(elev)
