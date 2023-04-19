@@ -37,7 +37,8 @@ The `hygro` module
   :caption: For Users
   :hidden:
 
-  pmodel/module_overview.md
+  module_overview.md
+  pmodel/pmodel.md
   tmodel/tmodel.md
   hygro.md
   constants.md

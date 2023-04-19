@@ -45,7 +45,12 @@ extensions = [
     "sphinxcontrib.bibtex",
     "myst_nb",
     "sphinx_rtd_theme",
+    "sphinx_external_toc",
 ]
+
+# External table of contents
+external_toc_path = "_toc.yml"  # optional, default: _toc.yml
+external_toc_exclude_missing = False  # optional, default: False
 
 # Citation styling
 

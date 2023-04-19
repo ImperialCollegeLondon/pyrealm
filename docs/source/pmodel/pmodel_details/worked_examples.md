@@ -181,7 +181,7 @@ model = PModel(env)
 # Plot LUE for first month
 im = plt.imshow(model.lue[0, :, :], origin="lower", extent=[-180, 180, -90, 90])
 plt.colorbar(im, fraction=0.022, pad=0.03)
-plt.title("Light use efficiency")
+plt.title("Light use efficiency");
 ```
 
 Finally, the light use efficiency can be used to calculate GPP given the
@@ -193,5 +193,5 @@ model.estimate_productivity(fapar, ppfd)
 
 im = plt.imshow(model.gpp[0, :, :], origin="lower", extent=[-180, 180, -90, 90])
 plt.colorbar(im, fraction=0.022, pad=0.03)
-plt.title("GPP")
+plt.title("GPP");
 ```

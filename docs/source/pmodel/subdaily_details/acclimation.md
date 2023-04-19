@@ -12,20 +12,20 @@ kernelspec:
   name: pyrealm_python3
 ---
 
-# Estimating slow photosynthetic responses in the P Model
+# Estimating acclimation
 
 Rather than being able to instantaneously adopt optimal values, three key photosynthetic
 $\xi$, $J_{max25}$ and $V_{cmax25}$  acclimate slowly towards daily optimal values. The
 modelling approach to representing slow responses within the P Model, following
 {cite}`mengoli:2022a`, has three components:
 
-* The identification of a daily acclimation window within a set of subdaily observations
-  that defines the optimal daily values for acclimation. This will typically be the
-  set of conditions that maximise daily productivity - the environmental conditions that
+* The identification of a daily window within a set of subdaily observations that
+  defines the optimal daily values for acclimation. This will typically be the set of
+  conditions that maximise daily productivity - the environmental conditions that
   coincide with peak sunlight.
 
-* The definition of a **memory effect** process that imposes a lagged response on
-  parameters such that the realised value on a given day reflects previous conditions.
+* The definition of an acclimation process that imposes a lagged response on parameters
+  such that the realised value on a given day reflects previous conditions.
 
 * The interpolation of realised daily values back onto the subdaily timescale.
 

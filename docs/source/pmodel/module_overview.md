@@ -21,11 +21,11 @@ The main components are:
   {cite:p}`Prentice:2014bc,Wang:2017go,Stocker:2020dh`, along with more recent updates
   to estimate soil moisture effects.
 
-* An extension to the standard model that incorporates fast and slow responses within
-  the photosynthetic pathway to changing environmental conditions. These different
-  responses need to be included to give realistic predictions from the P Model at fine
-  temporal resolutions, particularly when the P Model is applied to datasets with
-  [subdaily observations](subdaily_details/subdaily_overview.md).
+* An extension to the P Model that incorporates acclimation of the photosynthetic
+  pathway to changing environmental conditions. This extension allows slow responses to
+  changing conditions and gives better predictions from the P Model at fine temporal
+  resolutions, particularly when the P Model is applied to datasets with [subdaily
+  observations](subdaily_details/subdaily_overview.md).
 
 * The estimation of [isotopic discrimination of
   carbon](isotopic_discrimination.md) resulting from photosynthesis.

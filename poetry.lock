@@ -1406,6 +1406,24 @@ lint = ["docutils-stubs", "flake8 (>=3.5.0)", "flake8-bugbear", "flake8-comprehe
 test = ["cython", "html5lib", "pytest (>=4.6)", "typed_ast"]
 
 [[package]]
+name = "sphinx-external-toc"
+version = "0.3.1"
+description = "A sphinx extension that allows the site-map to be defined in a single YAML file."
+category = "dev"
+optional = false
+python-versions = "~=3.7"
+
+[package.dependencies]
+click = ">=7.1,<9"
+pyyaml = "*"
+sphinx = ">=4,<6"
+
+[package.extras]
+code-style = ["pre-commit (>=2.12,<3.0)"]
+rtd = ["myst-parser (>=0.17.0,<0.18.0)", "sphinx-book-theme (>=0.0.36)"]
+testing = ["coverage", "pytest (>=7.1,<8.0)", "pytest-cov", "pytest-regressions"]
+
+[[package]]
 name = "sphinx-rtd-theme"
 version = "1.1.1"
 description = "Read the Docs theme for Sphinx"
@@ -1729,7 +1747,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.11"
-content-hash = "ac670c6230d462a7c3b8c8b4fcb572a272fe0d65c47f8aaa38b1ab2c42d94868"
+content-hash = "97d8340c1e06863f1a112124282b9e90e141189c5131a0ebdf75a2e21c77b8cf"
 
 [metadata.files]
 alabaster = [
@@ -2954,6 +2972,10 @@ snowballstemmer = [
 sphinx = [
     {file = "Sphinx-5.3.0.tar.gz", hash = "sha256:51026de0a9ff9fc13c05d74913ad66047e104f56a129ff73e174eb5c3ee794b5"},
     {file = "sphinx-5.3.0-py3-none-any.whl", hash = "sha256:060ca5c9f7ba57a08a1219e547b269fadf125ae25b06b9fa7f66768efb652d6d"},
+]
+sphinx-external-toc = [
+    {file = "sphinx_external_toc-0.3.1-py3-none-any.whl", hash = "sha256:cd93c1e7599327b2a728db12d9819068ce719c4b037ffc62e47f20ffb6310fb3"},
+    {file = "sphinx_external_toc-0.3.1.tar.gz", hash = "sha256:9c8ea9980ea0e57bf3ce98f6a400f9b69eb1df808f7dd796c9c8cc1873d8b355"},
 ]
 sphinx-rtd-theme = [
     {file = "sphinx_rtd_theme-1.1.1-py2.py3-none-any.whl", hash = "sha256:31faa07d3e97c8955637fc3f1423a5ab2c44b74b8cc558a51498c202ce5cbda7"},

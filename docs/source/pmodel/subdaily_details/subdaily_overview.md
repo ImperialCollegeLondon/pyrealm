@@ -12,16 +12,7 @@ kernelspec:
   name: pyrealm_python3
 ---
 
-# The P Model with fast and slow responses
-
-```{eval-rst}
-.. toctree::
-  :maxdepth: 4
-  :hidden:
-
-  memory_effect.md
-  subdaily_grid.md
-```
+# The P Model with acclimation
 
 The standard [P Model](../pmodel_details/pmodel_overview.md) assumes that plants are
 able to instantaneously respond optimally to their environmental conditions. This is a
@@ -54,27 +45,41 @@ The implementation has the following steps:
   data is calculated as for the standard P Model. This estimates the fast responses of
   $\Gamma^*$, $K_{mm}$, $\eta^*$, and $c_a$.
 
-* A [daily window](memory_effect.md#the-acclimation-window) is then set to define the
+* A [daily window](acclimation.md#the-acclimation-window) is then set to define the
   conditions towards which the slow responses will acclimate, typically noon conditions
   that optimise light use efficiency during the daily period of highest photosynthetic
   photon flux density (PPFD). This is used to calculate a daily time series of average
   conditions during this acclimation window.
 
 * A standard P model is used to estimate *optimal* behaviour during the daily
-  acclimation conditions. A [memory
-  effect](memory_effect.md#estimating-realised-responses) is then applied to the optimal
+  acclimation conditions. An [acclimation
+  process](acclimation.md#estimating-realised-responses) is then applied to the optimal
   daily estimates of $\xi$, $V_{cmax25}$ using a rolling weighted mean to estimate the
   slow *realised* responses of these parameters.
 
 * The daily realised values are then
-  [interpolated](memory_effect.md#interpolation-of-realised-values-to-subdaily-timescales)
+  [interpolated](acclimation.md#interpolation-of-realised-values-to-subdaily-timescales)
   back to the subdaily time scale and combined with the estimated fast responses of
   other variables to calculate GPP at subdaily timescales.
 
 This implementation largely follows the weighted average method of
 {cite:t}`mengoli:2022a`, but is modified to include slow responses in $\xi$.
 
-## Demonstration dataset
+```{eval-rst}
+.. toctree::
+  :maxdepth: 4
+  :hidden:
+
+  acclimation.md
+  subdaily_grid.md
+```
+
+## Example calculation
+
+This section uses a time series to show in detail how the P Model including acclimation
+processes is calculated. This includes calculations that are automated by the normal
+fitting function in `pyrealm` and a seperate page provides a [worked
+example](subdaily_grid) of the standard process for fitting this model.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
@@ -95,6 +100,8 @@ from pyrealm.pmodel import (
 from pyrealm.constants import PModelConst
 from pyrealm.pmodel.functions import calc_ftemp_arrh, calc_ftemp_kphio
 ```
+
+### Example dataset
 
 The code below uses half hourly data from 2014 for the [BE-Vie FluxNET
 site](https://fluxnet.org/doi/FLUXNET2015/BE-Vie), which was also used as a
@@ -121,6 +128,8 @@ ppfd_subdaily = data["ppfd"]
 fapar_subdaily = data["fapar"]
 datetime_subdaily = data["time"].astype(np.datetime64)
 ```
+
+### Photosynthetic environment
 
 This dataset can then be used to calculate the photosynthetic environment at the
 subdaily timescale. The code below also estimates GPP under the standard P Model with no
@@ -219,7 +228,7 @@ pmodel_acclim.estimate_productivity(fapar=fapar_acclim, ppfd=ppfd_acclim)
 
 Rather than being able to instantaneously adopt optimal values, the  $\xi$, $J_{max25}$
 and $V_{cmax25}$ parameters are assumed to acclimate towards optimal values with a
-lagged response using a [memory effect](memory_effect.md#estimating-realised-responses).
+lagged response using a [memory effect](memory_effect#estimating-realised-responses).
 
 #### Calculation of $J_{max}$ and $V_{cmax}$ at standard temperature
 
