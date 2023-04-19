@@ -14,13 +14,22 @@ kernelspec:
 
 # The P Model with fast and slow responses
 
-The standard [P Model](pmodel.md) assumes that plants are able to instantaneously
-respond optimally to their environmental conditions. This is a reasonable approximation
-when using forcing variables that capture average conditions over longer time scales
-such as weekly, monthly or coarser time steps. However, at finer temporal scales - and
-particularly when trying to describe photosynthetic behaviour at subdaily timescales -
-it is essential to account for fast and slow responses to changing environmental
-conditions.
+```{eval-rst}
+.. toctree::
+  :maxdepth: 4
+  :hidden:
+
+  memory_effect.md
+  subdaily_grid.md
+```
+
+The standard [P Model](../pmodel_details/pmodel_overview.md) assumes that plants are
+able to instantaneously respond optimally to their environmental conditions. This is a
+reasonable approximation when using forcing variables that capture average conditions
+over longer time scales such as weekly, monthly or coarser time steps. However, at finer
+temporal scales - and particularly when trying to describe photosynthetic behaviour at
+subdaily timescales - it is essential to account for fast and slow responses to changing
+environmental conditions.
 
 Fast responses
 : At timescales of minutes,  include the opening and closing of stomata in response to
@@ -39,9 +48,9 @@ Slow responses
   $V_{cmax25}$ constrains the Rubisco-limited assimilation rate ($A_c$) and $J_{max25}$
   constrains the electron transport rate limited assimilation rate ($A_J$).
 
-The approach has the following steps:
+The implementation has the following steps:
 
-* The [photosynthetic environment](pmodel_details/photosynthetic_environment) for the
+* The [photosynthetic environment](../pmodel_details/photosynthetic_environment) for the
   data is calculated as for the standard P Model. This estimates the fast responses of
   $\Gamma^*$, $K_{mm}$, $\eta^*$, and $c_a$.
 
@@ -65,6 +74,8 @@ The approach has the following steps:
 This implementation largely follows the weighted average method of
 {cite:t}`mengoli:2022a`, but is modified to include slow responses in $\xi$.
 
+## Demonstration dataset
+
 ```{code-cell} ipython3
 :tags: [hide-input]
 
@@ -84,8 +95,6 @@ from pyrealm.pmodel import (
 from pyrealm.constants import PModelConst
 from pyrealm.pmodel.functions import calc_ftemp_arrh, calc_ftemp_kphio
 ```
-
-## Demonstration dataset
 
 The code below uses half hourly data from 2014 for the [BE-Vie FluxNET
 site](https://fluxnet.org/doi/FLUXNET2015/BE-Vie), which was also used as a
@@ -276,8 +285,8 @@ temperature at fast scales:
 
 * The realised daily values of $J_{max25}$ and $V_{cmax25}$ are interpolated from the
   acclimation window to the subdaily time scale.
-* These values are adjusted to the actual half hourly temperatures to give the fast responses
-  of $J_{max}$ and $V_{cmax}$.
+* These values are adjusted to the actual half hourly temperatures to give the fast
+  responses of $J_{max}$ and $V_{cmax}$.
 
 ```{code-cell} ipython3
 tk_subdaily = subdaily_env.tc + pmodel_subdaily.const.k_CtoK
