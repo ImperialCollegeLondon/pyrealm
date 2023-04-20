@@ -94,3 +94,44 @@
       - Updated docs for the CalcOptimalChi methods and soil moisture page.
       - Addition of an explicit ExperimentalFeatureWarning - currently rootzonestress
         and lavergne20_c4.
+0.8.1 - Updates and fixes and docs on soil moisture optimal chi methods (lavergne20_c4) 
+      - Shifting package management to using poetry and implementing better QA toolchain
+        including pre-commit suite.
+      - Moving docs out of root and into docs/source, docs/build etc.
+0.9.0 - Draft implementation of slow reponses in P Model using weighted average approach
+      - Substantial maintenance review
+      - User facing breaking changes:
+        - Support for scalar inputs removed - numpy arrays now expected as inputs.
+        - Python minimum version is now 3.9
+        - Hygrometric functions moved from utilities to new hygro module
+        - Param classes are now Const classes.
+        - Stomatal conductance not estimated when VPD = 0.
+      - Detailed changes:
+        - Moved support python versions to >=3.9, <3.11
+        - Update to poetry 1.2+
+        - Implementing mypy checking via pre-commit and package config
+        - Fixed mypy errors (missing types, clashes etc)
+        - Updated typing to use consistent NDArray and remove edge case code to handle
+          scalar inputs. Users now expected to provide arrays.
+        - Using importlib to single source package version from pyproject.toml
+        - Moved test/ to tests/ and added __init__.py - module paths in testing.
+        - Partial restructure of TModel code and extended test suite
+        - Extended test suite for hygrometric functions, bug fix in HygroConst.
+        - Better definition and handling of class attributes to avoid unnecessary
+          Optional types in __init__ methods.
+        - Updated docstrings, particularly class attributes now docstringed in place.
+        - bounds_checker module merged into utilities module
+        - Huge pmodel.py file split into a pmodel module and pmodel, functions, isotopes
+          and competition submodules. All members still exposed via pyrealm.pmodel for
+          ease of use/backwards compatibility. References to API links updated.
+        - param_classes.py used as the basis for a new constants module with smaller
+          better documented files and XYZConst naming scheme.
+        - '(pmodel)_params' style arguments updated to 'const', docs updated to match.
+        - C3C4 competition private functions now exposed as stand-alone functions with
+          cleaner docs and demo usage.
+        - Reorganisation of website index and page structure, nitpicking of links turned
+          on and broken links fixed.
+        - Switch away from astrorefs to sphinxcontrib.bibtex, which now supports
+          author_year citation styling.
+        - Constrain estimation of g_s to exclude VPD = 0 and ca - ci = 0, which give
+          values tending to limit of infinity.
