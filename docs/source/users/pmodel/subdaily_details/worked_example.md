@@ -39,7 +39,7 @@ spatial and temporal resolution from MODIS data.
 
 ```{code-cell}
 # Loading the example dataset:
-dpath = resources.files("pyrealm").parent / "data" / "UK_WFDE5_FAPAR_2018_JuneJuly.nc"
+dpath = resources.files("pyrealm_build_data") / "UK_WFDE5_FAPAR_2018_JuneJuly.nc"
 ds = xarray.load_dataset(dpath)
 
 datetimes = ds["time"].to_numpy()
