@@ -37,6 +37,7 @@ pytest-flake8 = "^1.1.1"
 pytest-cov = "^3.0.0"
 pytest-mypy = "^0.9.1"
 pytest-mock = "^3.8.1"
+pytest-datadir = "^1.4.1"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -59,6 +60,7 @@ pydocstyle = "^6.1.1"
 xarray = "^2023.4.0"
 sphinx-external-toc = "^0.3.1"
 netcdf4 = "^1.6.3"
+
 
 [build-system]
 requires = ["poetry-core>=1.2.0"]
