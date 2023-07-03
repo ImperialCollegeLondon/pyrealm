@@ -243,11 +243,11 @@ class PModelConst(ConstantsClass):
     # Mengoli 2023 soil moisture stress
     soilm_mengoli_y_a: float = 0.62
     """Coefficient of the maximal level function for Mengoli soil moisture"""
-    soilm_mengoli_y_exp: float = -0.45
+    soilm_mengoli_y_b: float = -0.45
     """Exponent of the maximal level function for Mengoli soil moisture"""
     soilm_mengoli_psi_a: float = 0.34
     """Coefficient of the threshold function for Mengoli soil moisture"""
-    soilm_mengoli_psi_exp: float = -0.60
+    soilm_mengoli_psi_b: float = -0.60
     """Exponent of the threshold function for Mengoli soil moisture"""
 
     # Unit cost ratio (beta) values for different CalcOptimalChi methods
