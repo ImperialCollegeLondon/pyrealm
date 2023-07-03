@@ -42,7 +42,8 @@ from pyrealm.pmodel.functions import (
     calc_kmm,
     calc_ns_star,
     calc_patm,
-    calc_soilmstress,
+    calc_soilmstress_mengoli,
+    calc_soilmstress_stocker,
     calc_viscosity_h2o,
 )
 from pyrealm.pmodel.isotopes import CalcCarbonIsotopes
