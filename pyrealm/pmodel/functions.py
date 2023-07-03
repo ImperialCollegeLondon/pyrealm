@@ -600,7 +600,7 @@ def calc_soilmstress_mengoli(
 ) -> NDArray:
     r"""Calculate the Mengoli et al. empirical soil moisture stress factor.
 
-    This function calculates a penalty factor :math:`f(\theta)` for well-watered GPP
+    This function calculates a penalty factor :math:`\beta(\theta)` for well-watered GPP
     estimates as an empirically derived stress factor :cite:p:`mengoli:2023a`. The
     factor is calculated from relative soil moisture as a fraction of field capacity
     (:math:`\theta`) and the long-run climatological aridity index for a site
@@ -608,19 +608,22 @@ def calc_soilmstress_mengoli(
     suitable time period.
 
     The factor is calculated using two constrained power functions for the maximal level
-    (:math:`y`) and threshold (:math:`psi`) of plant responses to soil moisture.
+    (:math:`y`) of productivity and the threshold (:math:`psi`) at which that maximal
+    level is reached.
 
       .. math::
         :nowrap:
 
         \[
-            y = \min( a * \textrm{AI} ^ {b}, 1)
-            \psi = \min( a * \textrm{AI} ^ {b}, 1)
-            f(\theta) =
+            \begin{align*}
+            y &= \min( a  \textrm{AI} ^ {b}, 1)\\
+            \psi &= \min( a  \textrm{AI} ^ {b}, 1)\\
+            \beta(\theta) &=
                 \begin{cases}
                     y, & \theta \ge \psi \\
-                    \frac{y}{\psi} \theta, \theta \lt \psi
-                \end{cases}
+                    \dfrac{y}{\psi} \theta, & \theta \lt \psi \\
+                \end{cases}\\
+            \end{align*}
         \]
 
     Args:
@@ -654,11 +657,11 @@ def calc_soilmstress_mengoli(
 
     # Calculate maximal level and threshold
     y = np.minimum(
-        const.soilm_mengoli_y_a + np.power(aridity_index, const.soilm_mengoli_y_b), 1
+        const.soilm_mengoli_y_a * np.power(aridity_index, const.soilm_mengoli_y_b), 1
     )
 
     psi = np.minimum(
-        const.soilm_mengoli_psi_a + np.power(aridity_index, const.soilm_mengoli_psi_b),
+        const.soilm_mengoli_psi_a * np.power(aridity_index, const.soilm_mengoli_psi_b),
         1,
     )
 
