@@ -67,11 +67,11 @@ class PModelConst(ConstantsClass):
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilmstress_a`,
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilmstress_b`)
 
-    * **Soil moisture stress**. Parameterisation from :cite:t:`Mengoli:2023xx`
+    * **Soil moisture stress**. Parameterisation from :cite:t:`mengoli:2023a`
       (:attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_y_a`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_y_exp`,
+      :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_y_b`,
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_psi_a`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_psi_exp`)
+      :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_psi_b`)
 
     * **Unit cost ratios (beta)**. The value for C3 plants is taken from
       :cite:t:`Stocker:2020dh`. For C4 plants, we follow the estimates of the
