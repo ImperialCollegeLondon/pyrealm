@@ -214,10 +214,10 @@ def test_calc_kmm(values, tc, patm, context_manager, expvals):
     ],
 )
 def test_calc_soilmstress(values, soilm, meanalpha, context_manager, expvals):
-    from pyrealm.pmodel import calc_soilmstress
+    from pyrealm.pmodel import calc_soilmstress_stocker
 
     with context_manager:
-        ret = calc_soilmstress(soilm=values[soilm], meanalpha=values[meanalpha])
+        ret = calc_soilmstress_stocker(soilm=values[soilm], meanalpha=values[meanalpha])
         if expvals:
             assert np.allclose(ret, values[expvals])
 
@@ -595,17 +595,20 @@ def pmodelenv(values):
 def test_pmodel_class_c3(
     request, values, pmodelenv, soilmstress, ftemp_kphio, luevcmax_method, environ
 ):
-    from pyrealm.pmodel import PModel, calc_soilmstress
+    from pyrealm.pmodel import PModel, calc_soilmstress_stocker
 
+    # TODO - this is a bit odd as rpmodel embeds stocker soilm in model where in pyrealm
+    #        it is only applied post-GPP calculation. Maybe disentangle these.
     if soilmstress:
-        soilmstress = calc_soilmstress(values["soilm_sc"], values["meanalpha_sc"])
+        soilmstress = calc_soilmstress_stocker(
+            values["soilm_sc"], values["meanalpha_sc"]
+        )
     else:
         soilmstress = np.array([1.0])
 
     ret = PModel(
         pmodelenv[environ],
         kphio=0.05,
-        soilmstress=soilmstress,
         do_ftemp_kphio=ftemp_kphio,
         method_jmaxlim=luevcmax_method,
     )
@@ -641,13 +644,11 @@ def test_pmodel_class_c3(
     else:
         sc = 1
 
-    assert np.allclose(ret.gpp, sc * expected["gpp"], equal_nan=True)
+    # Apply the soil moisture correction posthoc to pyrealm GPP, applied internally to
+    # the rpmodel benchmark calculations.
+    assert np.allclose(ret.gpp * soilmstress, sc * expected["gpp"], equal_nan=True)
 
     # Test exclusions:
-    # - rpmodel adjusts vcmax and jmax when Stocker empirical soil moisture
-    #   stress β(θ) is used and hence the predictions of g_s and rd.
-    #   pyrealm.PModel _only_ adjusts the resulting LUE so skip tests of
-    #   jmax, vcmax, rd and gs when sm is used.
     # - Also skip tests of jmax when no Jmax limitation is applied (none-) as the
     #   calculation in rpmodel leads to numerical instablity
     # - Also skip tests of Jmax for Smith et al - unresolved coding differences.
@@ -689,12 +690,14 @@ def test_pmodel_class_c3(
 @pytest.mark.parametrize("ftemp_kphio", [True, False], ids=["fkphio-on", "fkphio-off"])
 @pytest.mark.parametrize("environ", ["sc", "ar"], ids=["sc", "ar"])
 def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, environ):
-    from pyrealm.pmodel import PModel, calc_ftemp_kphio, calc_soilmstress
+    from pyrealm.pmodel import PModel, calc_ftemp_kphio, calc_soilmstress_stocker
 
     if soilmstress:
-        soilmstress = calc_soilmstress(values["soilm_sc"], values["meanalpha_sc"])
+        soilmstress = calc_soilmstress_stocker(
+            values["soilm_sc"], values["meanalpha_sc"]
+        )
     else:
-        soilmstress = None
+        soilmstress = np.array([1.0])
 
     # TODO bug in rpmodel 1.2.2 forces an odd downscaling of kphio when
     # do_ftemp_kphio is False, so this is scaling back up to match.
@@ -706,7 +709,6 @@ def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, e
     ret = PModel(
         pmodelenv[environ],
         kphio=0.05 * kf,  # See note above
-        soilmstress=soilmstress,
         do_ftemp_kphio=ftemp_kphio,
         method_jmaxlim="simple",  # enforced in rpmodel.
         method_optchi="c4",
@@ -734,7 +736,7 @@ def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, e
     assert np.allclose(ret.iwue * (ret.env.patm * 1e-6), expected["iwue"])
 
     # Test productivity values
-    assert np.allclose(ret.gpp, expected["gpp"], equal_nan=True)
+    assert np.allclose(ret.gpp * soilmstress, expected["gpp"], equal_nan=True)
 
     # Test exclusions:
     # - rpmodel adjusts vcmax and jmax when Stocker empirical soil moisture
