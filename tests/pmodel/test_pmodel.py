@@ -774,7 +774,7 @@ def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, e
 
 
 def test_pmodel_summarise(capsys, values, pmodelenv):
-    from pyrealm.pmodel import PModel, calc_soilmstress
+    from pyrealm.pmodel import PModel
 
     ret = PModel(pmodelenv["sc"], kphio=0.05)
 
