@@ -1,62 +1,43 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-#
-# utilities.py
-#
-# VERSION: 1.1-dev
-# LAST UPDATED: 2017-04-28
-#
-# ~~~~~~~~
-# license:
-# ~~~~~~~~
-# Copyright (C) 2016 Prentice Lab
-#
-# This file is part of the SPLASH model.
-#
-# SPLASH is free software: you can redistribute it and/or modify it under
-# the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 2.1 of the License, or
-# (at your option) any later version.
-#
-# SPLASH is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with SPLASH.  If not, see <http://www.gnu.org/licenses/>.
-#
-# ~~~~~~~~~
-# citation:
-# ~~~~~~~~~
-# T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
-# Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-
-# led algorithms for simulating habitats (SPLASH): Robust indices of radiation,
-# evapotranspiration and plant-available moisture, Geoscientific Model
-# Development, 2016 (in progress)
-
-###############################################################################
-# IMPORT MODULES:
-###############################################################################
-import glob
-import logging
-import os
-import sys
+"""Utilities for the SPLASH module."""
 from dataclasses import dataclass, field
+from typing import Any, Generator
 
 import numpy as np
 
-from pyrealm.splash.const import pir
+
+@dataclass
+class CalendarDay:
+    """The CalendarDay class.
+
+    This dataclass holds a np.datetime64 datetime representing a day and the
+    corresponding year, julian day and days in year.
+    """
+
+    date: np.datetime64
+    year: int
+    julian_day: int
+    days_in_year: int
 
 
 @dataclass
 class Calendar:
-    date: np.ndarray[np.datetime64]
-    year: np.ndarray[int] = field(init=False)
-    julian_day: np.ndarray[int] = field(init=False)
-    days_in_year: np.ndarray[int] = field(init=False)
+    """The Calendar class.
 
-    def __post_init__(self):
+    This utility class takes a numpy array of datetime64 values containing a time series
+    of individual days and calculates the date, year, julian day and days in the year
+    for each observation. The class object can be iterated over as a generator, yielding
+    each date in turn and indexed. In both cases, the returned object is a CalendarDay
+    instance.
+    """
+
+    # TODO - could be replaced with xarray dt accessors?
+    date: np.ndarray
+    year: np.ndarray = field(init=False)
+    julian_day: np.ndarray = field(init=False)
+    days_in_year: np.ndarray = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Calculate year, julian day and days in year from dates."""
         dateyear = self.date.astype("datetime64[Y]")
         startnext = (dateyear + 1).astype("datetime64[D]")
         dateday = self.date.astype("datetime64[D]")
@@ -64,7 +45,8 @@ class Calendar:
         self.julian_day = (dateday - dateyear + 1).astype("int")
         self.days_in_year = (startnext - dateyear).astype("int")
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[CalendarDay, Any, Any]:
+        """Yield each date in the Calendar in sequence."""
         for idx, dt in enumerate(self.date):
             yield CalendarDay(
                 date=dt,
@@ -73,18 +55,11 @@ class Calendar:
                 days_in_year=self.days_in_year[idx],
             )
 
-    def __getitem__(self, idx: int):
+    def __getitem__(self, idx: int) -> CalendarDay:
+        """Extract dates by index."""
         return CalendarDay(
             date=self.date[idx],
             year=self.year[idx],
             julian_day=self.julian_day[idx],
             days_in_year=self.days_in_year[idx],
         )
-
-
-@dataclass
-class CalendarDay:
-    date: np.datetime64
-    year: int
-    julian_day: int
-    days_in_year: int

@@ -1,9 +1,8 @@
-"""The ``solar`` submodule provides functions and classes to calculate daily solar 
-radiation fluxes and other radiative values. 
-"""
+"""The ``solar`` submodule provides functions and classes to calculate daily solar
+radiation fluxes and other radiative values.
+"""  # noqa D204,
 
 from dataclasses import InitVar, dataclass, field
-from typing import Union
 
 import numpy as np
 
@@ -21,10 +20,12 @@ from pyrealm.splash.const import (
     komega,
     pir,
 )
-from pyrealm.splash.utilities import Calendar, CalendarDay
+from pyrealm.splash.utilities import Calendar
 
 
-def calc_heliocentric_longitudes(julian_day: int, n_days: int) -> tuple[int]:
+def calc_heliocentric_longitudes(
+    julian_day: np.ndarray, n_days: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
     """Calculate heliocentric longitude and anomaly.
 
     This function calculates the heliocentric true anomaly (degrees) and true longitude
@@ -97,7 +98,8 @@ class DailySolarFluxes:
     """Latitude of observations, degrees"""
     elv: InitVar[np.ndarray]
     """Elevation of observations, metres"""
-    dates: Union[Calendar, CalendarDay]
+    dates: Calendar
+    """Dates of observations"""
     sf: InitVar[np.ndarray]
     """Daily sunshine fraction of observations, unitless"""
     tc: InitVar[np.ndarray]
@@ -134,7 +136,9 @@ class DailySolarFluxes:
     rnn_d: np.ndarray = field(init=False)
     """Nighttime net radiation (rnn_d), J/m^2"""
 
-    def __post_init__(self, lat, elv, sf, tc):
+    def __post_init__(
+        self, lat: np.ndarray, elv: np.ndarray, sf: np.ndarray, tc: np.ndarray
+    ) -> None:
         """Populates key fluxes from input variables."""
 
         # Calculate heliocentric longitudes (nu and lambda), Berger (1978)
