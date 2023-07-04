@@ -67,6 +67,12 @@ class PModelConst(ConstantsClass):
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilmstress_a`,
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilmstress_b`)
 
+    * **Soil moisture stress**. Parameterisation from :cite:t:`mengoli:2023a`
+      (:attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_y_a`,
+      :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_y_b`,
+      :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_psi_a`,
+      :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_psi_b`)
+
     * **Unit cost ratios (beta)**. The value for C3 plants is taken from
       :cite:t:`Stocker:2020dh`. For C4 plants, we follow the estimates of the
       :math:`g_1` parameter for C3 and C4 plants in :cite:t:`Lin:2015wh`  and
@@ -224,7 +230,7 @@ class PModelConst(ConstantsClass):
     # boyd_ko25_c4: float = 28210
     # boyd_gs25_0_c4: float = 2.6
 
-    # Soilmstress
+    # Stocker 2020 soil moisture stress
     soilmstress_theta0: float = 0.0
     """Lower bound in relative soil moisture"""
     soilmstress_thetastar: float = 0.6
@@ -233,6 +239,16 @@ class PModelConst(ConstantsClass):
     """Intercept of aridity sensitivity function for soil moisture"""
     soilmstress_b: float = 0.733
     """Slope of aridity sensitivity function for soil moisture"""
+
+    # Mengoli 2023 soil moisture stress
+    soilm_mengoli_y_a: float = 0.62
+    """Coefficient of the maximal level function for Mengoli soil moisture"""
+    soilm_mengoli_y_b: float = -0.45
+    """Exponent of the maximal level function for Mengoli soil moisture"""
+    soilm_mengoli_psi_a: float = 0.34
+    """Coefficient of the threshold function for Mengoli soil moisture"""
+    soilm_mengoli_psi_b: float = -0.60
+    """Exponent of the threshold function for Mengoli soil moisture"""
 
     # Unit cost ratio (beta) values for different CalcOptimalChi methods
     beta_cost_ratio_prentice14: NDArray[np.float32] = np.array([146.0])

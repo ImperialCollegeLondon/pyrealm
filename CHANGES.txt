@@ -135,3 +135,9 @@
           author_year citation styling.
         - Constrain estimation of g_s to exclude VPD = 0 and ca - ci = 0, which give
           values tending to limit of infinity.
+0.10.0  - Implementation of the Mengoli et al 2023 soil moisture penalty factor. The
+          existing calc_soilmstress function is now calc_soilmstress_stocker and the
+          new function is calc_soilmstress_mengoli.
+        - The soilmstress argument to PModel is removed and both the Mengoli and Stocker
+          approaches are now intended to be applied as penalties to GPP after P Model
+          fitting, allowing the two to be compared from the same P Model outputs.

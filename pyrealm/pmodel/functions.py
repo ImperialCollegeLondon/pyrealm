@@ -505,18 +505,18 @@ def calc_kp_c4(
     return const.boyd_kp25_c4 * calc_ftemp_arrh(tk, ha=const.boyd_dhac_c4)
 
 
-def calc_soilmstress(
+def calc_soilmstress_stocker(
     soilm: NDArray,
     meanalpha: NDArray = np.array(1.0),
     const: PModelConst = PModelConst(),
 ) -> NDArray:
     r"""Calculate Stocker's empirical soil moisture stress factor.
 
-    Calculates an **empirical soil moisture stress factor**  (:math:`\beta`,
-    :cite:author:`Stocker:2020dh`, :cite:year:`Stocker:2020dh`) as a function of
-    relative soil moisture (:math:`m_s`, fraction of field capacity) and average
-    aridity, quantified by the local annual mean ratio of actual over potential
-    evapotranspiration (:math:`\bar{\alpha}`).
+    This function calculates a penalty factor :math:`\beta(\theta)` for well-watered GPP
+    estimates as an empirically derived stress factor :cite:p:`Stocker:2020dh`. The
+    factor is calculated as a function of relative soil moisture (:math:`m_s`, fraction
+    of field capacity) and average aridity, quantified by the local annual mean ratio of
+    actual over potential evapotranspiration (:math:`\bar{\alpha}`).
 
     The value of :math:`\beta` is defined relative to two soil moisture thresholds
     (:math:`\theta_0, \theta^{*}`) as:
@@ -541,6 +541,12 @@ def calc_soilmstress(
     Default parameters of :math:`a=0` and :math:`b=0.7330` are as described in Table 1
     of :cite:t:`Stocker:2020dh` specifically for the 'FULL' use case, with
     ``method_jmaxlim="wang17"``, ``do_ftemp_kphio=TRUE``.
+
+    Note that it is possible to use the empirical soil moisture stress factor effect on
+    GPP to back calculate realistic Jmax and Vcmax values within the calculations of the
+    P Model. This is applied, for example, in the `rpmodel` implementation.
+    The :mod:`pyrealm.pmodel` module treats this factor purely as a penalty that can be
+    applied after the estimation of GPP.
 
     Args:
         soilm: Relative soil moisture as a fraction of field capacity
@@ -567,9 +573,6 @@ def calc_soilmstress(
         -11.86667
     """
 
-    # TODO - presumably this should also have beta(theta) = 0 when m_s <=
-    #        theta_0. Actually, no - these limits aren't correct. This is only
-    #        true when meanalpha=0, otherwise beta > 0 when m_s < theta_0.
     # TODO - move soilm params into standalone param class for this function -
     #        keep the PModelConst cleaner?
 
@@ -588,6 +591,82 @@ def calc_soilmstress(
     outstress = np.clip(outstress, 0.0, 1.0)
 
     return outstress
+
+
+def calc_soilmstress_mengoli(
+    soilm: NDArray = np.array(1.0),
+    aridity_index: NDArray = np.array(1.0),
+    const: PModelConst = PModelConst(),
+) -> NDArray:
+    r"""Calculate the Mengoli et al. empirical soil moisture stress factor.
+
+    This function calculates a penalty factor :math:`\beta(\theta)` for well-watered GPP
+    estimates as an empirically derived stress factor :cite:p:`mengoli:2023a`. The
+    factor is calculated from relative soil moisture as a fraction of field capacity
+    (:math:`\theta`) and the long-run climatological aridity index for a site
+    (:math:`\textrm{AI}`), calculated as (total PET)/(total precipitation) for a
+    suitable time period.
+
+    The factor is calculated using two constrained power functions for the maximal level
+    (:math:`y`) of productivity and the threshold (:math:`psi`) at which that maximal
+    level is reached.
+
+      .. math::
+        :nowrap:
+
+        \[
+            \begin{align*}
+            y &= \min( a  \textrm{AI} ^ {b}, 1)\\
+            \psi &= \min( a  \textrm{AI} ^ {b}, 1)\\
+            \beta(\theta) &=
+                \begin{cases}
+                    y, & \theta \ge \psi \\
+                    \dfrac{y}{\psi} \theta, & \theta \lt \psi \\
+                \end{cases}\\
+            \end{align*}
+        \]
+
+    Args:
+        soilm: Relative soil moisture (unitless).
+        aridity_index: The climatological aridity index.
+        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+
+    PModel Parameters:
+
+        y_a: Coefficient of the maximal level (:math:`y`,
+            :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_y_a`)
+        y_b: Exponent of the maximal level (:math:`y`,
+            :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_y_b`)
+        psi_a: Coefficient of the threshold (:math:`\psi`,
+            :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_psi_a`)
+        psi_b: Exponent of the threshold (:math:`\psi`,
+            :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_psi_b`)
+
+    Returns:
+        A numeric value or values for :math:`f(\theta)`
+
+    Examples:
+        >>> TODO
+    """
+
+    # TODO - move soilm params into standalone param class for this function -
+    #        keep the PModelConst cleaner?
+
+    # Check inputs, return shape not used
+    _ = check_input_shapes(soilm, aridity_index)
+
+    # Calculate maximal level and threshold
+    y = np.minimum(
+        const.soilm_mengoli_y_a * np.power(aridity_index, const.soilm_mengoli_y_b), 1
+    )
+
+    psi = np.minimum(
+        const.soilm_mengoli_psi_a * np.power(aridity_index, const.soilm_mengoli_psi_b),
+        1,
+    )
+
+    # Return factor
+    return np.where(soilm >= psi, y, (y / psi) * soilm)
 
 
 def calc_viscosity_h2o(
