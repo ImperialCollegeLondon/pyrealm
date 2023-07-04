@@ -52,9 +52,9 @@ def calc_heliocentric_longitudes(julian_day: int, n_days: int) -> tuple[int]:
     # Mean longitude for vernal equinox:
     xlam = (
         (
-            ((ke / 2.0 + xec / 8.0) * (1.0 + xse) * dsin(komega))
-            - (xee / 4.0 * (0.5 + xse) * dsin(2.0 * komega))
-            + (xec / 8.0 * (1.0 / 3.0 + xse) * dsin(3.0 * komega))
+            ((ke / 2.0 + xec / 8.0) * (1.0 + xse) * np.sin(np.deg2rad(komega)))
+            - (xee / 4.0 * (0.5 + xse) * np.sin(np.deg2rad(2.0 * komega)))
+            + (xec / 8.0 * (1.0 / 3.0 + xse) * np.sin(np.deg2rad(3.0 * komega)))
         )
         * 2.0
         / pir
@@ -148,7 +148,9 @@ class DailySolarFluxes:
         ) ** 2
 
         # Calculate declination angle (delta), Woolf (1968)
-        self.delta = np.arcsin(dsin(self.lambda_) * dsin(keps)) / pir
+        self.delta = (
+            np.arcsin(np.sin(np.deg2rad(self.lambda_)) * np.sin(np.deg2rad(keps))) / pir
+        )
 
         # Calculate variable substitutes (u and v), unitless
         self.ru = np.sin(np.deg2rad(self.delta)) * np.sin(np.deg2rad(lat))
@@ -163,7 +165,7 @@ class DailySolarFluxes:
             (86400.0 / np.pi)
             * kGsc
             * self.dr
-            * (self.ru * pir * self.hs + self.rv * dsin(self.hs))
+            * (self.ru * pir * self.hs + self.rv * np.sin(np.deg2rad(self.hs)))
         )
 
         # Calculate transmittivity (tau), unitless
@@ -191,12 +193,16 @@ class DailySolarFluxes:
         # Calculate daytime net radiation (rn_d), J/m^2
         self.rn_d = (86400.0 / np.pi) * (
             self.hn * pir * (self.rw * self.ru - self.rnl)
-            + self.rw * self.rv * dsin(self.hn)
+            + self.rw * self.rv * np.sin(np.deg2rad(self.hn))
         )
 
         # Calculate nighttime net radiation (rnn_d), J/m^2
         self.rnn_d = (
-            (self.rw * self.rv * (dsin(self.hs) - dsin(self.hn)))
+            (
+                self.rw
+                * self.rv
+                * (np.sin(np.deg2rad(self.hs)) - np.sin(np.deg2rad(self.hn)))
+            )
             + (self.rw * self.ru * pir * (self.hs - self.hn))
             - (self.rnl * (np.pi - pir * self.hn))
         ) * (86400.0 / np.pi)
