@@ -42,14 +42,14 @@ def test_solar_scalars():
     from pyrealm.splash.solar import DailySolarFluxes
     from pyrealm.splash.utilities import Calendar
 
-    cal = Calendar(np.array("2000-06-20", dtype="<M8[D]"))
+    cal = Calendar(np.array(["2000-06-20"], dtype="<M8[D]"))
 
     solar = DailySolarFluxes(
-        lat=np.array(37.7),
-        elv=np.array(142),
+        lat=np.array([37.7]),
+        elv=np.array([142]),
         dates=cal,
-        sf=np.array(1.0),
-        tc=np.array(23.0),
+        sf=np.array([1.0]),
+        tc=np.array([23.0]),
     )
 
     # Output of the __main__ code of original solar.py
@@ -83,13 +83,14 @@ def test_solar_iter(solar_benchmarks):
     from pyrealm.splash.utilities import Calendar
 
     inputs, expected = solar_benchmarks
-    cal = Calendar(inputs["dates"].astype("datetime64[D]"))
 
     exp_names = expected.dtype.names
 
-    for day, inp, exp in zip(cal, inputs, expected):
+    for day, inp, exp in zip(inputs["dates"], inputs, expected):
+        cal = Calendar(np.array([day]).astype("datetime64[D]"))
+
         solar = DailySolarFluxes(
-            lat=inp["lat"], elv=inp["elv"], dates=day, sf=inp["sf"], tc=inp["tc"]
+            lat=inp["lat"], elv=inp["elv"], dates=cal, sf=inp["sf"], tc=inp["tc"]
         )
 
         for ky in exp_names:

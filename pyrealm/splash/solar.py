@@ -1,6 +1,6 @@
 """The ``solar`` submodule provides functions and classes to calculate daily solar
 radiation fluxes and other radiative values.
-"""  # noqa D204,
+"""  # noqa D204
 
 from dataclasses import InitVar, dataclass, field
 
@@ -21,6 +21,7 @@ from pyrealm.splash.const import (
     pir,
 )
 from pyrealm.splash.utilities import Calendar
+from pyrealm.utilities import check_input_shapes
 
 
 def calc_heliocentric_longitudes(
@@ -141,20 +142,34 @@ class DailySolarFluxes:
     ) -> None:
         """Populates key fluxes from input variables."""
 
+        # Validate the inputs
+        shapes = check_input_shapes(lat, elv, sf, tc)
+        if len(self.dates.dates) != shapes[0]:
+            raise ValueError(
+                "The calendar is not the same length as the first axis of inputs "
+            )
+
         # Calculate heliocentric longitudes (nu and lambda), Berger (1978)
-        self.nu, self.lambda_ = calc_heliocentric_longitudes(
+        nu, lambda_ = calc_heliocentric_longitudes(
             self.dates.julian_day, self.dates.days_in_year
         )
 
         # Calculate distance factor (dr), Berger et al. (1993)
-        self.dr = (
-            1.0 / ((1.0 - ke**2) / (1.0 + ke * np.cos(np.deg2rad(self.nu))))
-        ) ** 2
+        dr = (1.0 / ((1.0 - ke**2) / (1.0 + ke * np.cos(np.deg2rad(nu))))) ** 2
 
         # Calculate declination angle (delta), Woolf (1968)
-        self.delta = (
-            np.arcsin(np.sin(np.deg2rad(self.lambda_)) * np.sin(np.deg2rad(keps))) / pir
-        )
+        delta = np.arcsin(np.sin(np.deg2rad(lambda_)) * np.sin(np.deg2rad(keps))) / pir
+
+        # The nu, lambda_, dr and delta attributes are all one dimensional arrays
+        # calcualted from the Calendar along the first axis of any inputs. These need to
+        # be broadcastable to the shape of the other inputs. The expand_dims variable
+        # gets a list of the axes to expand onto - which will be an empty list when
+        # ndim=1, leaving the targets unchanged.
+        expand_dims = list(np.arange(1, elv.ndim))
+        self.nu = np.expand_dims(nu, axis=expand_dims)
+        self.lambda_ = np.expand_dims(lambda_, axis=expand_dims)
+        self.dr = np.expand_dims(dr, axis=expand_dims)
+        self.delta = np.expand_dims(delta, axis=expand_dims)
 
         # Calculate variable substitutes (u and v), unitless
         self.ru = np.sin(np.deg2rad(self.delta)) * np.sin(np.deg2rad(lat))
