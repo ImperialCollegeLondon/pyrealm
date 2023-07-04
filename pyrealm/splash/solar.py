@@ -21,7 +21,7 @@ from pyrealm.splash.const import (
     komega,
     pir,
 )
-from pyrealm.splash.utilities import Calendar, CalendarDay, dcos, dsin
+from pyrealm.splash.utilities import Calendar, CalendarDay
 
 
 def calc_heliocentric_longitudes(julian_day: int, n_days: int) -> tuple[int]:
@@ -143,14 +143,16 @@ class DailySolarFluxes:
         )
 
         # Calculate distance factor (dr), Berger et al. (1993)
-        self.dr = (1.0 / ((1.0 - ke**2) / (1.0 + ke * dcos(self.nu)))) ** 2
+        self.dr = (
+            1.0 / ((1.0 - ke**2) / (1.0 + ke * np.cos(np.deg2rad(self.nu))))
+        ) ** 2
 
         # Calculate declination angle (delta), Woolf (1968)
         self.delta = np.arcsin(dsin(self.lambda_) * dsin(keps)) / pir
 
         # Calculate variable substitutes (u and v), unitless
-        self.ru = dsin(self.delta) * dsin(lat)
-        self.rv = dcos(self.delta) * dcos(lat)
+        self.ru = np.sin(np.deg2rad(self.delta)) * np.sin(np.deg2rad(lat))
+        self.rv = np.cos(np.deg2rad(self.delta)) * np.cos(np.deg2rad(lat))
 
         # Calculate the sunset hour angle (hs), Eq. 3.22, Stine & Geyer (2001)
         self.hs = np.arccos(-1.0 * np.clip(self.ru / self.rv, -1.0, 1.0)) / pir
