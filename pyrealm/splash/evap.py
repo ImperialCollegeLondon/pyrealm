@@ -188,8 +188,7 @@ def density_h2o(tc: np.ndarray, p: np.ndarray) -> np.ndarray:
     """
 
     # Calculate density at 1 atm (kg/m^3):
-    po = np.array(0.99983952)
-    po += (6.788260e-5) * tc
+    po = 0.99983952 + (6.788260e-5) * tc
     po += -(9.08659e-6) * tc * tc
     po += (1.022130e-7) * tc * tc * tc
     po += -(1.35439e-9) * tc * tc * tc * tc
@@ -199,22 +198,19 @@ def density_h2o(tc: np.ndarray, p: np.ndarray) -> np.ndarray:
     po += -(1.00659e-18) * tc * tc * tc * tc * tc * tc * tc * tc
 
     # Calculate bulk modulus at 1 atm (bar):
-    ko = np.array(19652.17)
-    ko += 148.1830 * tc
+    ko = 19652.17 + 148.1830 * tc
     ko += -2.29995 * tc * tc
     ko += 0.01281 * tc * tc * tc
     ko += -(4.91564e-5) * tc * tc * tc * tc
     ko += (1.035530e-7) * tc * tc * tc * tc * tc
 
     # Calculate temperature dependent coefficients:
-    ca = np.array(3.26138)
-    ca += (5.223e-4) * tc
+    ca = 3.26138 + (5.223e-4) * tc
     ca += (1.324e-4) * tc * tc
     ca += -(7.655e-7) * tc * tc * tc
     ca += (8.584e-10) * tc * tc * tc * tc
 
-    cb = np.array(7.2061e-5)
-    cb += -(5.8948e-6) * tc
+    cb = 7.2061e-5 + -(5.8948e-6) * tc
     cb += (8.69900e-8) * tc * tc
     cb += -(1.0100e-9) * tc * tc * tc
     cb += (4.3220e-12) * tc * tc * tc * tc
@@ -273,8 +269,7 @@ def specific_heat(tc: np.ndarray) -> np.ndarray:
     Ref:      Eq. 47, Tsilingiris (2008)
     """
     tc = np.clip(tc, 0, 100)
-    cp = np.array(1.0045714270)
-    cp += (2.050632750e-3) * tc
+    cp = 1.0045714270 + (2.050632750e-3) * tc
     cp += -(1.631537093e-4) * tc * tc
     cp += (6.212300300e-6) * tc * tc * tc
     cp += -(8.830478888e-8) * tc * tc * tc * tc
