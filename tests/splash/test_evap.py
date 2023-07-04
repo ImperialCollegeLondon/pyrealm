@@ -40,15 +40,15 @@ def test_evap_scalar():
 
     cal = Calendar(np.array("2000-06-20", dtype="<M8[D]"))
     solar = DailySolarFluxes(
-        lat=np.array(37.7),
-        elv=np.array(142),
+        lat=np.array([37.7]),
+        elv=np.array([142]),
         dates=cal,
-        sf=np.array(1.0),
-        tc=np.array(23.0),
+        sf=np.array([1.0]),
+        tc=np.array([23.0]),
     )
 
-    evap = DailyEvapFluxes(solar, pa=np.array(99630.833), tc=np.array(23.0))
-    evap.estimate_hi_and_aet(sw=np.array(0.9))
+    evap = DailyEvapFluxes(solar, pa=np.array([99630.833]), tc=np.array([23.0]))
+    aet, hi = evap.estimate_aet(sw=np.array([0.9]), return_hi=True)
 
     # Output of __main__ code in original evap.py
     expected = {
@@ -61,12 +61,13 @@ def test_evap_scalar():
         "eet_d": 6.405467536773751,
         "pet_d": 8.070889096334925,
         "rx": 0.0013343404749726541,
-        "hi": 20.95931970358043,
-        "aet_d": 7.972787573253663,
     }
 
     for ky, val in expected.items():
         assert np.allclose(getattr(evap, ky), val)
+
+    assert np.allclose(aet, 7.972787573253663)
+    assert np.allclose(hi, 20.95931970358043)
 
 
 def test_evap_iter(evap_benchmarks):
@@ -81,20 +82,27 @@ def test_evap_iter(evap_benchmarks):
     from pyrealm.splash.utilities import Calendar
 
     inputs, expected = evap_benchmarks
-    cal = Calendar(inputs["dates"].astype("datetime64[D]"))
 
     exp_names = expected.dtype.names
 
-    for day, inp, exp in zip(cal, inputs, expected):
+    for day, inp, exp in zip(inputs["dates"], inputs, expected):
+        # Convert the input row into a dictionary of 1D arrays
+        inp = {nm: np.array([inp[nm]]) for nm in inputs.dtype.names}
+
+        cal = Calendar(np.array([day]).astype("datetime64[D]"))
         solar = DailySolarFluxes(
-            lat=inp["lat"], elv=inp["elv"], dates=day, sf=inp["sf"], tc=inp["tc"]
+            lat=inp["lat"], elv=inp["elv"], dates=cal, sf=inp["sf"], tc=inp["tc"]
         )
 
         evap = DailyEvapFluxes(solar, pa=inp["pa"], tc=inp["tc"])
-        evap.estimate_hi_and_aet(sw=inp["sw"])
+        aet, hi = evap.estimate_aet(sw=inp["sw"], return_hi=True)
 
-        for ky in exp_names:
+        expected_attr = set(exp_names) - {"aet_d", "hi"}
+        for ky in expected_attr:
             assert np.allclose(getattr(evap, ky), exp[ky])
+
+        assert np.allclose(aet, exp["aet_d"])
+        assert np.allclose(hi, exp["hi"])
 
 
 def test_evap_array(evap_benchmarks):
@@ -122,7 +130,14 @@ def test_evap_array(evap_benchmarks):
     )
 
     evap = DailyEvapFluxes(solar, pa=inputs["pa"], tc=inputs["tc"])
-    evap.estimate_hi_and_aet(sw=inputs["sw"])
+    aet, hi = evap.estimate_aet(sw=inputs["sw"], return_hi=True)
 
-    for ky in exp_names:
+    expected_attr = set(exp_names) - {"aet_d", "hi"}
+    for ky in expected_attr:
         assert np.allclose(getattr(evap, ky), expected[ky])
+
+    assert np.allclose(aet, expected["aet_d"])
+    assert np.allclose(hi, expected["hi"])
+
+
+# TODO - test the day index approach.

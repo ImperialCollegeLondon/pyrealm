@@ -1,29 +1,29 @@
 """The evap submodule provides functions and classes to calculate evaporative fluxes."""
 
 from dataclasses import InitVar, dataclass, field
+from typing import Optional, Union
 
 import numpy as np
 
 from pyrealm.splash.const import kG, kL, kMa, kMv, kPo, kR, kTo, kw, pir
 from pyrealm.splash.solar import DailySolarFluxes
-from pyrealm.splash.utilities import dsin
+from pyrealm.utilities import check_input_shapes
 
 
 @dataclass
 class DailyEvapFluxes:
-    """
-    Name:     EVAP
-    Features: This class calculates daily radiation and evapotranspiration
-              quantities:
-              - PPFD (ppfd_d), mol/m^2/day
-              - EET (eet_d), mm/day
-              - PET (pet_d), mm/day
-              - AET (aet_d), mm/day
-              - condensation (cn), mm/day
-    Version:  1.0.0-dev
-              - replaced radiation methods with SOLAR class [15.12.29]
-              - implemented logging [15.12.29]
-              - created specific heat equation for Tc 0--100 deg C [16.09.09]
+    """Calculate daily evaporative fluxes.
+
+    This class calculates daily evapotranspiration fluxes given temperature and
+    atmospheric pressure for daily observations and the calculated solar fluxes for
+    those observations. The :meth:`~pyrealm.splash.evap.DailyEvapFluxes.estimate_aet`
+    method can then be used to estimate actual evapotranspiration for observations,
+    given estimates of the evaporative supply rate.
+
+    Args:
+        solar: The daily solar fluxes for the observations
+        tc: The air temperature of the observations (°C)
+        pa: The atmospheric pressure of the observations
     """
 
     solar: DailySolarFluxes
@@ -48,10 +48,6 @@ class DailyEvapFluxes:
     """Daily PET, mm"""
     rx: np.ndarray = field(init=False)
     """Variable substitute, (mm/hr)/(W/m^2)"""
-    hi: np.ndarray = field(init=False)
-    """Intersection hour angle (hi), degrees"""
-    aet_d: np.ndarray = field(init=False)
-    """Daily AET (aet_d), mm"""
 
     def __post_init__(self, pa: np.ndarray, tc: np.ndarray) -> None:
         """Calculate invariant components of evapotranspiration.
@@ -89,10 +85,36 @@ class DailyEvapFluxes:
         # Calculate variable substitute (rx), (mm/hr)/(W/m^2)
         self.rx = (3.6e6) * (1.0 + kw) * self.econ
 
-    def estimate_hi_and_aet(self, sw: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        """This method estimates the intersection hour angle
-        (hi), degrees and the estimated daily AET (aet_d), mm, given the estimated
-        evaporative supply rate for observations."""
+    def estimate_aet(
+        self, sw: np.ndarray, day_idx: Optional[int] = None, return_hi: bool = False
+    ) -> Union[np.ndarray, tuple[np.ndarray, np.ndarray]]:
+        """Estimate actual evapotranspiration.
+
+        This method estimates the estimated daily actual evapotranspiration (AET,
+        mm/day), given estimates of the evaporative supply rate (sw) for observations.
+        Optionally, the method can also return the the intersection hour angle (hi,
+        degrees).
+
+        By default, sw is expected to provide estimates for all observations across all
+        days in the model, but day_idx can be set to provide sw for only one particular
+        day of observations.
+
+        Args:
+            sw: The evaporative supply rate for observations.
+            day_idx: An integer giving the index of the sw values along the time axis.
+            return_hi: Should the function return the intersection hout angle.
+
+        Returns:
+            An array of AET values or a tuple of arrays for both AET and hi.
+        """
+
+        # Check day_idx inputs
+        if day_idx is None:
+            check_input_shapes(sw, self.sat)
+            didx: Union[int, slice] = slice(self.sat.shape[0])
+        else:
+            check_input_shapes(sw, self.sat[day_idx])
+            didx = day_idx
 
         # Validate evaporative supply rate
         if np.any(sw < 0):
@@ -103,89 +125,104 @@ class DailyEvapFluxes:
         # Calculate the intersection hour angle (hi), degrees, guarding against np.nan
         # values from np.arccos(v > 1), setting this directly to 1
         hi_pre = (
-            sw / (self.solar.rw * self.solar.rv * self.rx)
-            + self.solar.rnl / (self.solar.rw * self.solar.rv)
-            - self.solar.ru / self.solar.rv
+            sw / (self.solar.rw[didx] * self.solar.rv[didx] * self.rx[didx])
+            + self.solar.rnl[didx] / (self.solar.rw[didx] * self.solar.rv[didx])
+            - self.solar.ru[didx] / self.solar.rv[didx]
         )
-        self.hi = np.arccos(np.clip(hi_pre, -np.inf, 1)) / pir
+        hi = np.arccos(np.clip(hi_pre, -np.inf, 1)) / pir
 
         # Estimate daily AET (aet_d), mm
-        self.aet_d = (
-            (sw * self.hi * pir)
+        aet_d = (
+            (sw * np.deg2rad(hi))
             + (
-                self.rx
-                * self.solar.rw
-                * self.solar.rv
-                * (dsin(self.solar.hn) - dsin(self.hi))
+                self.rx[didx]
+                * self.solar.rw[didx]
+                * self.solar.rv[didx]
+                * (np.sin(np.deg2rad(self.solar.hn[didx])) - np.sin(np.deg2rad(hi)))
             )
             + (
-                (self.rx * self.solar.rw * self.solar.ru - self.rx * self.solar.rnl)
-                * (self.solar.hn - self.hi)
+                (
+                    self.rx[didx] * self.solar.rw[didx] * self.solar.ru[didx]
+                    - self.rx[didx] * self.solar.rnl[didx]
+                )
+                * (self.solar.hn[didx] - hi)
                 * pir
             )
         ) * (24.0 / np.pi)
 
+        if return_hi:
+            return aet_d, hi
+        else:
+            return aet_d
+
 
 def sat_slope(tc: np.ndarray) -> np.ndarray:
+    """Calculate the slope of the saturation vapour pressure curve.
+
+    Calculates the slope of the saturation pressure temperature curve (Pa/K) following
+    equation 13 of :cite:t:`allen:1998a`.
+
+    Args:
+        tc: The air temperature (°C)
+
+    Returns
+        The calculated slope.
     """
-    Name:     EVAP.sat_slope
-    Input:    float, air temperature (tc), degrees C
-    Output:   float, slope of sat vap press temp curve (s)
-    Features: Calculates the slope of the sat pressure temp curve, Pa/K
-    Ref:      Eq. 13, Allen et al. (1998)
-    """
-    s = (
+    return (
         (17.269)
         * (237.3)
         * (610.78)
         * (np.exp(tc * 17.269 / (tc + 237.3)) / ((tc + 237.3) ** 2))
     )
-    # logger.debug("calculating temperature dependency at %f degrees", tc)
-    return s
 
 
 def enthalpy_vap(tc: np.ndarray) -> np.ndarray:
+    """Calculate the enthalpy of vaporization.
+
+    Calculates the latent heat of vaporization of water (J/Kg) as a function of
+    temperature following :cite:t:`henderson-sellers:1984a`.
+
+    Args:
+        tc: Air temperature (°C)
+
+    Returns:
+        Calculated latent heat of vaporisation.
     """
-    Name:     EVAP.enthalpy_vap
-    Input:    float, air temperature (tc), degrees C
-    Output:   float, latent heat of vaporization
-    Features: Calculates the enthalpy of vaporization, J/kg
-    Ref:      Eq. 8, Henderson-Sellers (1984)
-    """
-    # logger.debug("calculating temperature dependency at %f degrees", tc)
+
     return 1.91846e6 * ((tc + 273.15) / (tc + 273.15 - 33.91)) ** 2
 
 
 def elv2pres(z: np.ndarray) -> np.ndarray:
+    """Calculate atmospheric pressure (Pa).
+
+    Follows :cite:t:`allen:1998a`.
+
+    Args:
+        z: Elevation (m)
+
+    Returns:
+        Atmospheric pressure.
     """
-    Name:     EVAP.elv2pres
-    Input:    float, elevation above sea level (z), m
-    Output:   float, atmospheric pressure, Pa
-    Features: Calculates atm. pressure for a given elevation
-    Depends:  Global constants
-                - kPo
-                - kTo
-                - kL
-                - kMa
-                - kG
-                - kR
-    Ref:      Allen et al. (1998)
-    """
-    # logger.debug("estimating atmospheric pressure at %f m", z)
-    p = kPo * (1.0 - kL * z / kTo) ** (kG * kMa / (kR * kL))
-    return p
+
+    # TODO - replace
+    return kPo * (1.0 - kL * z / kTo) ** (kG * kMa / (kR * kL))
 
 
 def density_h2o(tc: np.ndarray, p: np.ndarray) -> np.ndarray:
+    """Calculate the density of water.
+
+    This function calculates thedensity of water at a given temperature and pressure
+    (kg/m^3) following :cite:t:`chen:2008a`.
+
+    Args:
+        tc: Air temperature (°C)
+        p: Atmospheric pressure (Pa)
+
+    Returns:
+        The calculated density of water
     """
-    Name:     EVAP.density_h2o
-    Input:    - float, air temperature (tc), degrees C
-                - float, atmospheric pressure (p), Pa
-    Output:   float, density of water, kg/m^3
-    Features: Calculates density of water at a given temperature and
-                pressure
-    Ref:      Chen et al. (1977)
-    """
+
+    # TODO - merge
 
     # Calculate density at 1 atm (kg/m^3):
     po = 0.99983952 + (6.788260e-5) * tc
@@ -225,33 +262,25 @@ def density_h2o(tc: np.ndarray, p: np.ndarray) -> np.ndarray:
 
 
 def psychro(tc: np.ndarray, p: np.ndarray) -> np.ndarray:
+    r"""Calculate the psychrometric constant.
+
+    Calculates the psychrometric constant (:math:`\lambda`, Pa/K) given the temperature
+    and atmospheric pressure following :cite:t:`allen:1998a` and
+    :cite:t:`tsilingiris:2008a`.
+
+    Args:
+        tc: Air temperature (°C)
+        p: Atmospheric pressure (Pa)
+
+    Returns:
+        The calculated psychrometric constant
     """
-    Name:     EVAP.psychro
-    Input:    - float, air temperature (tc), degrees C
-                - float, atm. pressure (p), Pa
-    Output:   float, psychrometric constant, Pa/K
-    Features: Calculates the psychrometric constant for a given temperature
-                and pressure
-    Depends:  Global constants:
-                - kMa
-                - kMv
-    Refs:     Allen et al. (1998); Tsilingiris (2008)
-    """
-    # logger.debug(
-    #     (
-    #         "calculating psychrometric constant at temperature %f Celcius "
-    #         "and pressure %f Pa"
-    #     )
-    #     % (tc, p)
-    # )
 
     # Calculate the specific heat capacity of water, J/kg/K
     cp = specific_heat(tc)
-    # logger.info("specific heat capacity calculated as %f J/kg/K", cp)
 
     # Calculate latent heat of vaporization, J/kg
     lv = enthalpy_vap(tc)
-    # logger.info("enthalpy of vaporization calculated as %f MJ/kg", (1e-6) * lv)
 
     # Calculate psychrometric constant, Pa/K
     # Eq. 8, Allen et al. (1998)
@@ -259,14 +288,17 @@ def psychro(tc: np.ndarray, p: np.ndarray) -> np.ndarray:
 
 
 def specific_heat(tc: np.ndarray) -> np.ndarray:
-    """
-    Name:     EVAP.specific_heat
-    Inputs:   float, air tempearture, deg C (tc)
-    Outputs:  float, specific heat of air, J/kg/K
-    Features: Calculates the specific heat of air at a constant pressure;
-                NOTE: this equation is only valid for temperatures between 0
-                and 100 deg C
-    Ref:      Eq. 47, Tsilingiris (2008)
+    """Calculate the specific heat of air.
+
+    Calculates the specific heat of air at a constant pressure (:math:`c_{pm}`, J/kg/K)
+    following :cite:t:`tsilingiris:2008a`. This equation is only valid for temperatures
+    between 0 and 100 °C.
+
+    Args:
+        tc: Air temperature (°C)
+
+    Returns:
+        The specific heat of air values.
     """
     tc = np.clip(tc, 0, 100)
     cp = 1.0045714270 + (2.050632750e-3) * tc
