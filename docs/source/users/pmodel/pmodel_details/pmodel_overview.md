@@ -67,7 +67,7 @@ The main steps are:
 ## Variable graph
 
 The graph below shows these broad model areas in terms of model inputs (blue) and
-modelled outputs (red) used in the P-model. Optional inputs and internal variables are
+modelled outputs (red) used in the P Model. Optional inputs and internal variables are
 shown with a dashed edge.
 
 ![pmodel.svg](pmodel.svg)
