@@ -527,7 +527,6 @@ def calc_soilmstress_stocker(
         \[
             \beta =
                 \begin{cases}
-                    0
                     q(m_s - \theta^{*})^2 + 1,  & \theta_0 < m_s <= \theta^{*} \\
                     1, &  \theta^{*} < m_s,
                 \end{cases}
