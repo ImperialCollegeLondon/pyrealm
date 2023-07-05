@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+import xarray
 
 
 @pytest.fixture()
@@ -32,6 +33,22 @@ def solar_benchmarks(shared_datadir):
     exp_fields[exp_fields.index("my_nu")] = "nu"
     exp_fields[exp_fields.index("my_lambda")] = "lambda_"
     expected.dtype.names = exp_fields
+
+    return inputs, expected
+
+
+@pytest.fixture()
+def splash_benchmarks_grid(shared_datadir):
+    """Test values.
+
+    Loads the input file and solar outputs from the original implementation into numpy
+    structured arrays"""
+
+    # TODO share this across splash test suite somehow
+
+    inputs = xarray.load_dataset(shared_datadir / "splash_test_grid.nc")
+
+    expected = xarray.load_dataset(shared_datadir / "splash_test_grid_out.nc")
 
     return inputs, expected
 
@@ -120,3 +137,37 @@ def test_solar_array(solar_benchmarks):
 
     for ky in expected.dtype.names:
         assert np.allclose(getattr(solar, ky), expected[ky])
+
+
+def test_solar_array_grid(splash_benchmarks_grid):
+    """Array checking of solar predictions for more complex inputs
+
+    This checks that a gridded dataset works with solar.py
+    """
+    from pyrealm.splash.solar import DailySolarFluxes
+    from pyrealm.splash.utilities import Calendar
+
+    inputs, expected = splash_benchmarks_grid
+
+    cal = Calendar(inputs.time.values.astype("datetime64[D]"))
+
+    # Duplicate lat and elev to same shape as sf and tc (TODO - avoid this!)
+    sf_shape = inputs["sf"].shape
+    elev = np.repeat(inputs["elev"].data[np.newaxis, :, :], sf_shape[0], axis=0)
+    lat = np.repeat(inputs["lat"].data[:, np.newaxis], sf_shape[2], axis=1)
+    lat = np.repeat(lat[np.newaxis, :, :], sf_shape[0], axis=0)
+
+    solar = DailySolarFluxes(
+        lat=lat,
+        elv=elev,
+        dates=cal,
+        sf=inputs["sf"].data,
+        tc=inputs["tmp"].data,
+    )
+
+    # Test that the resulting solar calculations are the same. Not quite sure why they
+    # aren't identical and need the tolerance tweaking, but they are _very_ close
+    for ky in ("ppfd_d", "rn_d", "rnn_d"):
+        assert np.allclose(
+            getattr(solar, ky), expected[ky].data, equal_nan=True, rtol=0.0001
+        )

@@ -144,7 +144,7 @@ class DailySolarFluxes:
 
         # Validate the inputs
         shapes = check_input_shapes(lat, elv, sf, tc)
-        if len(self.dates.dates) != shapes[0]:
+        if len(self.dates) != shapes[0]:
             raise ValueError(
                 "The calendar is not the same length as the first axis of inputs "
             )
