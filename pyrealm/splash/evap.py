@@ -5,7 +5,7 @@ from typing import Optional, Union
 
 import numpy as np
 
-from pyrealm.splash.const import kG, kL, kMa, kMv, kPo, kR, kTo, kw, pir
+from pyrealm.splash.const import kCw, kG, kL, kMa, kMv, kPo, kR, kTo, kw, pir
 from pyrealm.splash.solar import DailySolarFluxes
 from pyrealm.utilities import check_input_shapes
 
@@ -22,6 +22,7 @@ class DailyEvapFluxes:
 
     Args:
         solar: The daily solar fluxes for the observations
+        kWm: The maximum soil water capacity (mm)
         tc: The air temperature of the observations (°C)
         pa: The atmospheric pressure of the observations
     """
@@ -29,6 +30,7 @@ class DailyEvapFluxes:
     solar: DailySolarFluxes
     pa: InitVar[np.ndarray]
     tc: InitVar[np.ndarray]
+    kWm: np.ndarray = np.array([150.0])
 
     sat: np.ndarray = field(init=False)
     """Slope of saturation vapour pressure temperature curve, Pa/K"""
@@ -86,35 +88,38 @@ class DailyEvapFluxes:
         self.rx = (3.6e6) * (1.0 + kw) * self.econ
 
     def estimate_aet(
-        self, sw: np.ndarray, day_idx: Optional[int] = None, return_hi: bool = False
-    ) -> Union[np.ndarray, tuple[np.ndarray, np.ndarray]]:
+        self, wn: np.ndarray, day_idx: Optional[int] = None, only_aet: bool = True
+    ) -> Union[np.ndarray, tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """Estimate actual evapotranspiration.
 
         This method estimates the estimated daily actual evapotranspiration (AET,
-        mm/day), given estimates of the evaporative supply rate (sw) for observations.
+        mm/day), given estimates of the soil moisture  (wn) for observations.
         Optionally, the method can also return the the intersection hour angle (hi,
-        degrees).
+        degrees) and evaporative supply rate (sw, mm/h).
 
         By default, sw is expected to provide estimates for all observations across all
         days in the model, but day_idx can be set to provide sw for only one particular
         day of observations.
 
         Args:
-            sw: The evaporative supply rate for observations.
+            sw: The soil moisture (mm).
             day_idx: An integer giving the index of the sw values along the time axis.
-            return_hi: Should the function return the intersection hout angle.
+            aet_only: Should the function only return AET or AET, hi and sw.
 
         Returns:
-            An array of AET values or a tuple of arrays for both AET and hi.
+            An array of AET values or a tuple of arrays containing AET, hi and sw.
         """
 
         # Check day_idx inputs
         if day_idx is None:
-            check_input_shapes(sw, self.sat)
+            check_input_shapes(wn, self.sat)
             didx: Union[int, slice] = slice(self.sat.shape[0])
         else:
-            check_input_shapes(sw, self.sat[day_idx])
+            check_input_shapes(wn, self.sat[day_idx])
             didx = day_idx
+
+        # Calculate evaporative supply rate (sw), mm/h
+        sw = kCw * wn / self.kWm
 
         # Validate evaporative supply rate
         if np.any(sw < 0):
@@ -150,10 +155,10 @@ class DailyEvapFluxes:
             )
         ) * (24.0 / np.pi)
 
-        if return_hi:
-            return aet_d, hi
-        else:
+        if only_aet:
             return aet_d
+        else:
+            return aet_d, hi, sw
 
 
 def sat_slope(tc: np.ndarray) -> np.ndarray:
