@@ -2,55 +2,28 @@
 
 import numpy as np
 import pytest
-import xarray
+
+from splash_fixtures import daily_flux_benchmarks, grid_benchmarks
 
 
-@pytest.fixture()
-def solar_benchmarks(shared_datadir):
-    """Test values.
+@pytest.fixture
+def expected_attr():
+    """Returns the names of the attributes of DailySolarFluxes to test."""
 
-    Loads the input file and solar outputs from the original implementation into numpy
-    structured arrays"""
-
-    inputs = np.genfromtxt(
-        shared_datadir / "inputs.csv",
-        dtype=None,
-        delimiter=",",
-        names=True,
-        encoding="UTF-8",
+    return (
+        "nu",
+        "lambda_",
+        "dr",
+        "delta",
+        "hs",
+        "ra_d",
+        "tau",
+        "ppfd_d",
+        "rnl",
+        "hn",
+        "rn_d",
+        "rnn_d",
     )
-
-    expected = np.genfromtxt(
-        shared_datadir / "solar_output.csv",
-        dtype=None,
-        delimiter=",",
-        names=True,
-        encoding="UTF-8",
-    )
-
-    # rename a couple of fields to match new implementation
-    exp_fields = list(expected.dtype.names)
-    exp_fields[exp_fields.index("my_nu")] = "nu"
-    exp_fields[exp_fields.index("my_lambda")] = "lambda_"
-    expected.dtype.names = exp_fields
-
-    return inputs, expected
-
-
-@pytest.fixture()
-def splash_benchmarks_grid(shared_datadir):
-    """Test values.
-
-    Loads the input file and solar outputs from the original implementation into numpy
-    structured arrays"""
-
-    # TODO share this across splash test suite somehow
-
-    inputs = xarray.load_dataset(shared_datadir / "splash_test_grid.nc")
-
-    expected = xarray.load_dataset(shared_datadir / "splash_test_grid_out.nc")
-
-    return inputs, expected
 
 
 def test_solar_scalars():
@@ -89,7 +62,7 @@ def test_solar_scalars():
         assert np.allclose(getattr(solar, ky), val)
 
 
-def test_solar_iter(solar_benchmarks):
+def test_solar_iter(daily_flux_benchmarks, expected_attr):
     """Robust test checking of solar predictions.
 
     This checks that the outcome of calculating each input row in a time series
@@ -99,9 +72,7 @@ def test_solar_iter(solar_benchmarks):
     from pyrealm.splash.solar import DailySolarFluxes
     from pyrealm.splash.utilities import Calendar
 
-    inputs, expected = solar_benchmarks
-
-    exp_names = expected.dtype.names
+    inputs, expected = daily_flux_benchmarks
 
     for day, inp, exp in zip(inputs["dates"], inputs, expected):
         cal = Calendar(np.array([day]).astype("datetime64[D]"))
@@ -110,11 +81,11 @@ def test_solar_iter(solar_benchmarks):
             lat=inp["lat"], elv=inp["elv"], dates=cal, sf=inp["sf"], tc=inp["tc"]
         )
 
-        for ky in exp_names:
+        for ky in expected_attr:
             assert np.allclose(getattr(solar, ky), exp[ky])
 
 
-def test_solar_array(solar_benchmarks):
+def test_solar_array(daily_flux_benchmarks, expected_attr):
     """Array checking of solar predictions.
 
     This checks that the outcome of calculating all the values in the test inputs
@@ -124,7 +95,7 @@ def test_solar_array(solar_benchmarks):
     from pyrealm.splash.solar import DailySolarFluxes
     from pyrealm.splash.utilities import Calendar
 
-    inputs, expected = solar_benchmarks
+    inputs, expected = daily_flux_benchmarks
     cal = Calendar(inputs["dates"].astype("datetime64[D]"))
 
     solar = DailySolarFluxes(
@@ -135,11 +106,11 @@ def test_solar_array(solar_benchmarks):
         tc=inputs["tc"],
     )
 
-    for ky in expected.dtype.names:
+    for ky in expected_attr:
         assert np.allclose(getattr(solar, ky), expected[ky])
 
 
-def test_solar_array_grid(splash_benchmarks_grid):
+def test_solar_array_grid(grid_benchmarks):
     """Array checking of solar predictions for more complex inputs
 
     This checks that a gridded dataset works with solar.py
@@ -147,7 +118,7 @@ def test_solar_array_grid(splash_benchmarks_grid):
     from pyrealm.splash.solar import DailySolarFluxes
     from pyrealm.splash.utilities import Calendar
 
-    inputs, expected = splash_benchmarks_grid
+    inputs, expected = grid_benchmarks
 
     cal = Calendar(inputs.time.values.astype("datetime64[D]"))
 
