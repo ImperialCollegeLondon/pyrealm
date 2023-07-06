@@ -3,8 +3,6 @@ SPLASH calculations"""
 
 import numpy as np
 import pytest
-
-
 from splash_fixtures import daily_flux_benchmarks, grid_benchmarks
 
 
@@ -146,13 +144,12 @@ def test_evap_array_stepping(grid_benchmarks):
     This checks that the outcome of calculating by iterating over days in the test
     inputs gives the same answers as the original iterated implementation.
     """
-    from pyrealm.splash.evap import DailyEvapFluxes
-    from pyrealm.splash.solar import DailySolarFluxes
-    from pyrealm.splash.utilities import Calendar
-    from pyrealm.splash.splash import elv2pres
-
     from pyrealm.constants import PModelConst
     from pyrealm.pmodel.functions import calc_patm
+    from pyrealm.splash.evap import DailyEvapFluxes
+    from pyrealm.splash.solar import DailySolarFluxes
+    from pyrealm.splash.splash import elv2pres
+    from pyrealm.splash.utilities import Calendar
 
     inputs, expected = splash_benchmarks_grid
 

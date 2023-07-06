@@ -2,7 +2,6 @@
 
 import numpy as np
 import pytest
-
 from splash_fixtures import daily_flux_benchmarks, grid_benchmarks
 
 
