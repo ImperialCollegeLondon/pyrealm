@@ -82,17 +82,10 @@ def test_evap_iter(daily_flux_benchmarks, expected_attr):
         for ky in expected_attr:
             assert np.allclose(getattr(evap, ky), exp[ky])
 
-        # Note that sw is calculated explicitly in the inputs for SPLASH, because it is
-        # used instead of wn in calculating daily fluxes, so this just validates that
-        # the wn input is converted correctly to the value fed into SPLASH.
-
-        # TODO - there is something odd here: all of the values are identical until here and
-        #        then something about feeding sw into SPLASH and wn here means that there
-        #        are small differences
-
-        assert np.allclose(aet, exp["aet_d"], atol=0.01)
-        assert np.allclose(hi, exp["hi"], atol=0.01)
-        assert np.allclose(sw, inp["sw"], atol=0.01)
+        # Check the values returned by estimate_aet
+        assert np.allclose(aet, exp["aet_d"])
+        assert np.allclose(hi, exp["hi"])
+        assert np.allclose(sw, exp["sw"])
 
 
 def test_evap_array(daily_flux_benchmarks, expected_attr):
@@ -123,16 +116,10 @@ def test_evap_array(daily_flux_benchmarks, expected_attr):
     for ky in expected_attr:
         assert np.allclose(getattr(evap, ky), expected[ky])
 
-    # Note that sw is calculated explicitly in the inputs for SPLASH, because it is
-    # used instead of wn in calculating daily fluxes, so this just validates that
-    # the wn input is converted correctly to the value fed into SPLASH.
-
-    # TODO - there is something odd here: all of the values are identical until here and
-    #        then something about feeding sw into SPLASH and wn here means that there
-    #        are small differences
-    assert np.allclose(aet, expected["aet_d"], atol=0.01)
-    assert np.allclose(hi, expected["hi"], atol=0.01)
-    assert np.allclose(sw, inputs["sw"], atol=0.01)
+    # Check the values returned by estimate_aet
+    assert np.allclose(aet, expected["aet_d"])
+    assert np.allclose(hi, expected["hi"])
+    assert np.allclose(sw, expected["sw"])
 
 
 # TODO - test the day index approach.

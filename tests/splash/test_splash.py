@@ -176,7 +176,7 @@ def test_calc_splash_daily_array(calc_splash_daily_benchmarks):
 # Testing the spin-up process
 
 
-def pending_test_run_spin_up_oned(calc_splash_one_d_benchmark):
+def test_run_spin_up_oned(calc_splash_one_d_benchmark):
     from pyrealm.splash.splash import SplashModel
     from pyrealm.splash.utilities import Calendar
 
