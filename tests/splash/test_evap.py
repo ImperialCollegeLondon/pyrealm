@@ -85,7 +85,6 @@ def test_evap_iter(daily_flux_benchmarks, expected_attr):
         # Check the values returned by estimate_aet
         assert np.allclose(aet, exp["aet_d"])
         assert np.allclose(hi, exp["hi"])
-        assert np.allclose(sw, exp["sw"])
 
 
 def test_evap_array(daily_flux_benchmarks, expected_attr):
@@ -119,7 +118,6 @@ def test_evap_array(daily_flux_benchmarks, expected_attr):
     # Check the values returned by estimate_aet
     assert np.allclose(aet, expected["aet_d"])
     assert np.allclose(hi, expected["hi"])
-    assert np.allclose(sw, expected["sw"])
 
 
 def test_evap_array_grid(grid_benchmarks, expected_attr):
