@@ -1,17 +1,26 @@
-"""The splash submodule implements the SPLASH model for calculating robust indices of
-radiation, evapotranspiration and plant-available moisture.
+"""The splash submodule implements the SPLASH model :cite:p:`davis:2017a` for
+calculating robust indices of radiation, evapotranspiration and plant-available
+moisture.
 
-It is based on the SPLASH v1.0 implementation but has been extensively refactored and
-restructured to make the functionality part of an installable package and to enable
-array inputs in calculations.
+It is based on the [SPLASH v1.0 implementation](https://doi.org/10.5281/zenodo.376293)
+published with the original description but has been extensively refactored and
+restructured. The main changes are:
 
-Davis, Tyler W., Prentice, I. Colin, Stocker, Benjamin D., Thomas, Rebecca T., Whitley,
-Rhys J., Wang, Han, Evans, Bradley J., Gallego-Sala, Angela V., Sykes, Martin T., &
-Cramer, Wolfgang. (2017). Simple process-led algorithms for simulating habitats (SPLASH
-v.1.0): robust indices of radiation, evapotranspiration and plant-available moisture. In
-Geoscientific Model Development 10, 689 - 708.
+* The implementation now provides a programmatic API to the main model components,
+  allowing the functionality to be imported and used within Python workflows. The
+  original code was implemented as command line scripts that required editing for
+  particular use cases.
 
-Zenodo: https://doi.org/10.5281/zenodo.376293
+* The code has been updated to accept numpy arrays and to calculate estimates
+  simulataneously across arrays. The original code predominantly expected scalar inputs
+  and required users to script iteratation over sites.
 
-Source: https://bitbucket.org/labprentice/splash
-"""  # noqa: D210, D415
+* The majority of solar and evaporative fluxes do not vary are invariant given the
+  initial data and so are now calculated when the model in instantiated. The previous
+  code recalculated many of these values during iteration, which reduces the memory
+  footprint but at a substantial runtime cost.
+
+* The hard-coded constants in the original code can now be modified by users. In
+  particular, the maximum soil moisture capacity (``kWn``) was fixed globally in SPLASH
+  v1.0 at 150mm: this can now be set by the user and can vary between sites.
+"""  # noqa: D205, D415

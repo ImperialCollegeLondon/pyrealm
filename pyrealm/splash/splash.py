@@ -64,28 +64,38 @@ class SplashModel:
         # TODO - check input sizes are congurent and maybe think about broadcasting lat
         #        and elv. xarray would be good here.
 
-        # Error handle and assign required public variables:
+        # Assign required public attributes
         self.elv = elv
+        """The elevation of sites."""
         self.lat = lat
+        """The latitude of sites."""
         self.sf = sf
+        """The sunshine fraction (0-1) of daily observations."""
         self.tc = tc
+        """The air temperature in °C of daily observations."""
         self.pn = pn
+        """The precipitation in mm of daily observations."""
         self.dates = dates
+        """The dates of observations along the first array axis."""
         self.kWm = kWm
+        """The maximum soil water capacity for sites."""
 
         # TODO - check and swap in pyrealm function - noting that this uses 15°C as the
         #        standard atmosphere, where pyrealm _currently_ uses 25°C for no good
         #        reason.
         #      - potentially allow _actual_ climatic pressure data.
         self.pa = elv2pres(elv)
+        """The atmospheric pressure at sites, derived from elevation"""
 
         # Calculate the daily solar fluxes - these are invariant across the simulation
         self.solar: DailySolarFluxes = DailySolarFluxes(
             lat=lat, elv=elv, dates=dates, sf=sf, tc=tc
         )
+        """Estimated solar fluxes for observations"""
 
         # Initialise the evaporative flux class
         self.evap: DailyEvapFluxes = DailyEvapFluxes(self.solar, pa=self.pa, tc=tc)
+        """Estimated evaporative fluxes for observations"""
 
     def estimate_initial_soil_moisture(
         self,
