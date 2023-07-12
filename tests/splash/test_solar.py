@@ -135,9 +135,10 @@ def test_solar_array_grid(grid_benchmarks):
         tc=inputs["tmp"].data,
     )
 
-    # Test that the resulting solar calculations are the same. Not quite sure why they
-    # aren't identical and need the tolerance tweaking, but they are _very_ close
+    # Test that the resulting solar calculations are the same.
     for ky in ("ppfd_d", "rn_d", "rnn_d"):
         assert np.allclose(
-            getattr(solar, ky), expected[ky].data, equal_nan=True, rtol=0.0001
+            getattr(solar, ky),
+            expected[ky].data,
+            equal_nan=True,
         )
