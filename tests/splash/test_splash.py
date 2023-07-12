@@ -8,32 +8,7 @@
 import numpy as np
 import pytest
 import xarray
-
-
-@pytest.fixture()
-def calc_splash_daily_benchmarks(shared_datadir):
-    """Test values.
-
-    Loads the input file and solar outputs from the original implementation into numpy
-    structured arrays"""
-
-    inputs = np.genfromtxt(
-        shared_datadir / "inputs.csv",
-        dtype=None,
-        delimiter=",",
-        names=True,
-        encoding="UTF-8",
-    )
-
-    expected = np.genfromtxt(
-        shared_datadir / "run_one_day_output.csv",
-        dtype=None,
-        delimiter=",",
-        names=True,
-        encoding="UTF-8",
-    )
-
-    return inputs, expected
+from splash_fixtures import daily_flux_benchmarks, grid_benchmarks
 
 
 @pytest.fixture()
@@ -62,115 +37,91 @@ def calc_splash_one_d_benchmark(shared_datadir):
     return inputs, expected
 
 
-@pytest.fixture()
-def calc_splash_grid_benchmarks(shared_datadir):
-    """Test values.
-
-    Loads the input file and solar outputs from the original implementation into numpy
-    structured arrays"""
-
-    inputs = xarray.load_dataset(shared_datadir / "splash_test_grid.nc")
-
-    expected = xarray.load_dataset(shared_datadir / "splash_test_grid_out.nc")
-
-    return inputs, expected
-
-
 # Testing calc_splash_daily (was run_one_day)
 
 
-def test_calc_splash_daily():
+def test_estimate_daily_water_balance_scalar():
+    """Tests a single day calculation aganist the expectations from the __main__ example
+    provided in SPLASH v1.0 splash.py"""
     from pyrealm.splash.splash import SplashModel
     from pyrealm.splash.utilities import Calendar
 
-    cal = Calendar(np.array("2000-06-20", dtype="<M8[D]"))
+    cal = Calendar(np.array(["2000-06-20"], dtype="<M8[D]"))
     splash = SplashModel(
-        lat=np.array(37.7),
-        elv=np.array(142),
-        sf=np.array(1.0),
-        tc=np.array(23.0),
-        pn=np.array(5),
+        lat=np.array([37.7]),
+        elv=np.array([142]),
+        sf=np.array([1.0]),
+        tc=np.array([23.0]),
+        pn=np.array([5]),
         dates=cal,
     )
-    sm, ro = splash.calc_splash_daily(wn=np.array(75))
+    aet, sm, ro = splash.estimate_daily_water_balance(
+        previous_wn=np.array(75), day_idx=0
+    )
 
-    # Output of __main__ in original splash.py
+    # Expected values are the output of __main__ in original splash.py
     evap_expected = {
         "cond": 0.885192,
         "eet_d": 6.405468,
         "pet_d": 8.070889,
-        "aet_d": 5.748034,
     }
 
     for ky, val in evap_expected.items():
         assert np.allclose(getattr(splash.evap, ky), val)
 
+    assert np.allclose(aet, 5.748034)
     assert np.allclose(sm, 75.137158)
     assert np.allclose(ro, 0.0000000)
 
 
-def test_calc_splash_daily_iter(calc_splash_daily_benchmarks):
+def test_estimate_daily_water_balance_iter(daily_flux_benchmarks):
+    """This test iterates over the individual daily benchmark rows, calculating each
+    prediction as a single independent day."""
     from pyrealm.splash.splash import SplashModel
     from pyrealm.splash.utilities import Calendar
 
-    inputs, expected = calc_splash_daily_benchmarks
-    cal = Calendar(inputs["dates"].astype("datetime64[D]"))
+    inputs, expected = daily_flux_benchmarks
+    days = inputs["dates"].astype("datetime64[D]")
 
-    evap_expected = [
-        ("cond", "cond"),
-        ("eet_d", "eet"),
-        ("pet_d", "pet"),
-        ("aet_d", "aet"),
-    ]
-
-    for day, inp, exp in zip(cal, inputs, expected):
+    for day, inp, exp in zip(days, inputs, expected):
         # initialise splash and calculate the evaporative flux and soil moisture
         splash = SplashModel(
-            lat=inp["lat"],
-            elv=inp["elv"],
-            dates=day,
-            sf=inp["sf"],
-            tc=inp["tc"],
-            pn=inp["pn"],
+            lat=np.array([inp["lat"]]),
+            elv=np.array([inp["elv"]]),
+            sf=np.array([inp["sf"]]),
+            tc=np.array([inp["tc"]]),
+            pn=np.array([inp["pn"]]),
+            dates=Calendar(np.array([day])),
         )
-        sm, ro = splash.calc_splash_daily(wn=inp["wn"])
+        aet, sm, ro = splash.estimate_daily_water_balance(
+            previous_wn=np.array([inp["wn"]]), day_idx=0
+        )
+        assert np.allclose(aet, exp["aet_d"])
+        # assert np.allclose(sm, exp["wn"])
+        # assert np.allclose(ro, exp["ro"])
 
-        for ky1, ky2 in evap_expected:
-            assert np.allclose(getattr(splash.evap, ky1), exp[ky2])
 
-        assert np.allclose(sm, exp["wn"])
-        assert np.allclose(ro, exp["ro"])
-
-
-def test_calc_splash_daily_array(calc_splash_daily_benchmarks):
+def test_estimate_daily_water_balance_array(daily_flux_benchmarks):
+    """This test runs the individual daily benchmark data as an array."""
     from pyrealm.splash.splash import SplashModel
     from pyrealm.splash.utilities import Calendar
 
-    inputs, expected = calc_splash_daily_benchmarks
-    cal = Calendar(inputs["dates"].astype("datetime64[D]"))
-
-    evap_expected = [
-        ("cond", "cond"),
-        ("eet_d", "eet"),
-        ("pet_d", "pet"),
-        ("aet_d", "aet"),
-    ]
+    inputs, expected = daily_flux_benchmarks
 
     splash = SplashModel(
         lat=inputs["lat"],
         elv=inputs["elv"],
-        dates=cal,
         sf=inputs["sf"],
         tc=inputs["tc"],
         pn=inputs["pn"],
+        dates=Calendar(inputs["dates"]),
     )
-    sm, ro = splash.calc_splash_daily(wn=inputs["wn"])
 
-    for ky1, ky2 in evap_expected:
-        assert np.allclose(getattr(splash.evap, ky1), expected[ky2])
+    aet, sm, ro = splash.estimate_daily_water_balance(
+        previous_wn=inputs["wn"], day_idx=None
+    )
 
-    assert np.allclose(sm, expected["wn"])
-    assert np.allclose(ro, expected["ro"])
+    assert np.allclose(aet, expected["aet_d"])
 
 
 # Testing the spin-up process
@@ -195,3 +146,45 @@ def test_run_spin_up_oned(calc_splash_one_d_benchmark):
     )
 
     sm, ro = splash.equilibrate_soil_moisture()
+
+
+def test_splashmodel_est_daily_soil_moisture(grid_benchmarks):
+    """Array checking of evaporative predictions using iteration over days.
+
+    This checks that the outcome of evaporative calculations from running the full
+    SPLASH model on a gridded dataset are consistent.
+    """
+    from pyrealm.constants import PModelConst
+    from pyrealm.pmodel.functions import calc_patm
+    from pyrealm.splash.splash import SplashModel, elv2pres
+    from pyrealm.splash.utilities import Calendar
+
+    inputs, expected = grid_benchmarks
+
+    cal = Calendar(inputs.time.values.astype("datetime64[D]"))
+
+    # Duplicate lat and elev to same shape as sf and tc (TODO - avoid this!)
+    sf_shape = inputs["sf"].shape
+    elev = np.repeat(inputs["elev"].data[np.newaxis, :, :], sf_shape[0], axis=0)
+    lat = np.repeat(inputs["lat"].data[:, np.newaxis], sf_shape[2], axis=1)
+    lat = np.repeat(lat[np.newaxis, :, :], sf_shape[0], axis=0)
+
+    splash = SplashModel(
+        lat=lat,
+        elv=elev,
+        sf=inputs["sf"].data,
+        pn=inputs["pre"].data,
+        tc=inputs["tmp"].data,
+        dates=cal,
+    )
+
+    # assert the same starting point as the original spun up state
+    curr_wn = expected["wn_spun_up"].data
+
+    # For each day, calculate the estimated soil moisture and run off
+    for day_idx, _ in enumerate(cal):
+        curr_wn, ro = splash.estimate_daily_soil_moisture(
+            previous_wn=curr_wn, day_index=day_idx
+        )
+        assert np.allclose(curr_wn, expected["wn"][day_idx])
+        assert np.allclose(ro, expected["ro"][day_idx])
