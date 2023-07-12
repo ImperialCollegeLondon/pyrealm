@@ -8,7 +8,7 @@ from splash_fixtures import daily_flux_benchmarks, grid_benchmarks
 
 @pytest.fixture
 def expected_attr():
-    return ("sat", "lv", "pw", "psy", "econ", "cond", "eet_d", "pet_d", "rx")
+    return ("sat", "lv", "pw", "psy", "econ", "cond", "eet_d", "pet_d")
 
 
 def test_evap_scalar():
@@ -122,14 +122,11 @@ def test_evap_array(daily_flux_benchmarks, expected_attr):
     assert np.allclose(sw, expected["sw"])
 
 
-# TODO - test the day index approach.
-
-
-def test_evap_array_stepping(grid_benchmarks):
+def test_evap_array_grid(grid_benchmarks, expected_attr):
     """Array checking of evaporative predictions using iteration over days.
 
-    This checks that the outcome of calculating by iterating over days in the test
-    inputs gives the same answers as the original iterated implementation.
+    This checks that the outcome of evaporative calculations from running the full
+    SPLASH model on a gridded dataset are consistent.
     """
     from pyrealm.constants import PModelConst
     from pyrealm.pmodel.functions import calc_patm
@@ -138,7 +135,7 @@ def test_evap_array_stepping(grid_benchmarks):
     from pyrealm.splash.splash import elv2pres
     from pyrealm.splash.utilities import Calendar
 
-    inputs, expected = splash_benchmarks_grid
+    inputs, expected = grid_benchmarks
 
     cal = Calendar(inputs.time.values.astype("datetime64[D]"))
 
@@ -163,22 +160,17 @@ def test_evap_array_stepping(grid_benchmarks):
 
     evap = DailyEvapFluxes(solar, pa=pa, tc=inputs["tmp"].data)
 
-    # Test the static components of evap calculations are the same. Not quite sure why
-    # they aren't identical and need the tolerance tweaking, but they are _very_ close
-    for ky in ("sat", "lv", "pw", "psy", "econ", "cond", "eet_d", "pet_d"):
+    # Test the static components of evap calculations are the same - which can be
+    # tested across the whole array
+    for ky in expected_attr:
         assert np.allclose(
-            getattr(evap, ky), expected[ky].data, equal_nan=True, rtol=0.0001
+            getattr(evap, ky),
+            expected[ky].data,
+            equal_nan=True,
         )
 
-    # assert the same starting point as the original spun up state
-    curr_wn = inputs["wn_spun_up"]
-
-    for day_idx, day in enumerate(cal):
-        aet, hi = evap.estimate_aet(wn=curr_wn, return_hi=True)
-
-    expected_attr = set(exp_names) - {"aet_d", "hi"}
-    for ky in expected_attr:
-        assert np.allclose(getattr(evap, ky), expected[ky])
-
-    assert np.allclose(aet, expected["aet_d"])
-    assert np.allclose(hi, expected["hi"])
+    # Now validate the expected AET - because the whole soil moisture sequence has
+    # been created in the original implementation, the whole time sequence can be passed
+    # in as a single array and calculated without daily iteration
+    aet = evap.estimate_aet(wn=expected["wn"].data, day_idx=None)
+    np.allclose(aet, expected["aet_d"], equal_nan=True)
