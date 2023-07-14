@@ -1,16 +1,17 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
 import xarray
 
 
 @pytest.fixture()
-def daily_flux_benchmarks(shared_datadir):
-    """Test values.
+def daily_flux_benchmarks(shared_datadir: Path) -> tuple[np.ndarray, np.ndarray]:
+    """Test daily values.
 
-    Loads the input file and solar outputs from the original implementation into numpy
-    structured arrays"""
-
-    # TODO share this across splash test suite somehow
+    Loads an input file and SPLASH outputs for 100 random locations with a wide range of
+    possible input values. Not intended for testing time series iteration, just the
+    daily predictions of all core variables."""
 
     inputs = np.genfromtxt(
         shared_datadir / "inputs.csv",
@@ -39,8 +40,8 @@ def daily_flux_benchmarks(shared_datadir):
 
 
 @pytest.fixture()
-def one_d_benchmark(shared_datadir):
-    """Test values.
+def one_d_benchmark(shared_datadir: Path) -> tuple[xarray.Dataset, xarray.Dataset]:
+    """Test one dimensional time series.
 
     Loads the input data and resulting soil moisture outputs from the single location
     San Francisco dataset provided with the original implementation. These were
@@ -57,13 +58,13 @@ def one_d_benchmark(shared_datadir):
 
 
 @pytest.fixture()
-def grid_benchmarks(shared_datadir):
-    """Test values.
+def grid_benchmarks(shared_datadir: Path) -> tuple[xarray.Dataset, xarray.Dataset]:
+    """Test 3D time series.
 
-    Loads the input file and solar outputs from the original implementation into numpy
-    structured arrays"""
-
-    # TODO share this across splash test suite somehow
+    This provides a 20 x 20 cell chunk of daily data from WFDE5 v2 and CRU for the west
+    coast of the US over two years. It provides a test of iterated calculations and
+    checking that applying functions across arrays, not iterating through individual
+    time series gives identical results."""
 
     inputs = xarray.load_dataset(shared_datadir / "splash_test_grid_nw_us.nc")
 
