@@ -39,6 +39,24 @@ def daily_flux_benchmarks(shared_datadir):
 
 
 @pytest.fixture()
+def one_d_benchmark(shared_datadir):
+    """Test values.
+
+    Loads the input data and resulting soil moisture outputs from the single location
+    San Francisco dataset provided with the original implementation. These were
+    originally calculated using the __main__ code in SPLASH main.py, but the data has
+    bee converted to netCDF and run using an alternative interface in order to retain
+    more validation data.
+    """
+
+    inputs = xarray.load_dataset(shared_datadir / "splash_test_example.nc")
+
+    expected = xarray.load_dataset(shared_datadir / "splash_test_example_out.nc")
+
+    return inputs, expected
+
+
+@pytest.fixture()
 def grid_benchmarks(shared_datadir):
     """Test values.
 
@@ -47,8 +65,8 @@ def grid_benchmarks(shared_datadir):
 
     # TODO share this across splash test suite somehow
 
-    inputs = xarray.load_dataset(shared_datadir / "splash_test_grid.nc")
+    inputs = xarray.load_dataset(shared_datadir / "splash_test_grid_nw_us.nc")
 
-    expected = xarray.load_dataset(shared_datadir / "splash_test_grid_out_r1.nc")
+    expected = xarray.load_dataset(shared_datadir / "splash_test_grid_nw_us_out.nc")
 
     return inputs, expected
