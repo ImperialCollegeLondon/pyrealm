@@ -9,7 +9,11 @@
 from itertools import product
 
 import numpy as np
-from splash_fixtures import daily_flux_benchmarks, grid_benchmarks, one_d_benchmark
+from splash_fixtures import (  # type: ignore
+    daily_flux_benchmarks,
+    grid_benchmarks,
+    one_d_benchmark,
+)
 
 # Testing estimate_daily_water_balance (was run_one_day)
 
