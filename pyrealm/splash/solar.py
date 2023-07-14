@@ -31,11 +31,7 @@ def calc_heliocentric_longitudes(
 
     This function calculates the heliocentric true anomaly (degrees) and true longitude
     (degrees), given the Julian day in the year and the number of days in the year,
-    following
-
-    Berger, A. L. (1978), Long term variations of daily
-            insolation and quaternary climatic changes, J. Atmos. Sci.,
-            35, 2362-2367.
+    following :cite:t:`berger:1978a`.
 
     Args:
         julian_day: day of year
