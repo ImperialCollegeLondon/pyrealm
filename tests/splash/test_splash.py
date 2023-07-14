@@ -1,43 +1,17 @@
-"""This module tests the main functions in the SplashModel:
- - calc_splash_daily, which estimates soil moisture and run off given preceeding soil
-   moisture 
- - equilibrate_soil_moisture, which assumes a stationary relationship over an annual
-   cycle to estimate a starting soil moisture.
+"""This module tests the main methods in the SplashModel:
+ - estimate_daily_water_balance, which estimates soil moisture and run off given
+   preceeding soil moisture 
+ - estimate_initial_soil_moisture, which assumes a stationary relationship over an
+   annual cycle to estimate a starting soil moisture.
+ - iterate_water_balance, which iterates an initial soil moisture forward over a time
+   series.
 """
+from itertools import product
 
 import numpy as np
-import pytest
-import xarray
-from splash_fixtures import daily_flux_benchmarks, grid_benchmarks
+from splash_fixtures import daily_flux_benchmarks, grid_benchmarks, one_d_benchmark
 
-
-@pytest.fixture()
-def calc_splash_one_d_benchmark(shared_datadir):
-    """Test values.
-
-    Loads the input file and resulting soil moisture vector from the original
-    implementation."""
-
-    inputs = np.genfromtxt(
-        shared_datadir / "example_data.csv",
-        dtype=None,
-        delimiter=",",
-        names=True,
-        encoding="UTF-8",
-    )
-
-    expected = np.genfromtxt(
-        shared_datadir / "example_data_out.csv",
-        dtype=None,
-        delimiter=",",
-        names=True,
-        encoding="UTF-8",
-    )
-
-    return inputs, expected
-
-
-# Testing calc_splash_daily (was run_one_day)
+# Testing estimate_daily_water_balance (was run_one_day)
 
 
 def test_estimate_daily_water_balance_scalar():
@@ -97,8 +71,8 @@ def test_estimate_daily_water_balance_iter(daily_flux_benchmarks):
             previous_wn=np.array([inp["wn"]]), day_idx=0
         )
         assert np.allclose(aet, exp["aet_d"])
-        # assert np.allclose(sm, exp["wn"])
-        # assert np.allclose(ro, exp["ro"])
+        assert np.allclose(sm, exp["wn"])
+        assert np.allclose(ro, exp["ro"])
 
 
 def test_estimate_daily_water_balance_array(daily_flux_benchmarks):
@@ -122,69 +96,167 @@ def test_estimate_daily_water_balance_array(daily_flux_benchmarks):
     )
 
     assert np.allclose(aet, expected["aet_d"])
+    assert np.allclose(sm, expected["wn"])
+    assert np.allclose(ro, expected["ro"])
 
 
 # Testing the spin-up process
 
 
-def test_run_spin_up_oned(calc_splash_one_d_benchmark):
+def test_run_spin_up_oned(one_d_benchmark):
+    "Test the spin up process using the original 1D test data from __main__.py."
     from pyrealm.splash.splash import SplashModel
     from pyrealm.splash.utilities import Calendar
 
-    inputs, expected = calc_splash_one_d_benchmark
+    inputs, expected = one_d_benchmark
 
-    dates = Calendar(
-        np.arange(np.datetime64("2000-01-01"), np.datetime64("2001-01-01"))
-    )
+    # Need to reshape the inputs so they have a time and 1 observation axis and
+    # duplicate lat and elev to same shape as sf, tc, pc (TODO - avoid this!)
+
     splash = SplashModel(
-        lat=np.array([37.7]),
-        elv=np.array([142.0]),
-        dates=dates,
-        sf=inputs["sf"],
-        tc=inputs["tair"],
-        pn=inputs["pn"],
+        lat=np.repeat(inputs.lat.data, 366)[:, np.newaxis, np.newaxis],
+        elv=np.repeat(inputs.elev.data, 366)[:, np.newaxis, np.newaxis],
+        dates=Calendar(inputs.time.data),
+        sf=inputs.sf.data,
+        tc=inputs.tmp.data,
+        pn=inputs.pre.data,
     )
 
-    sm, ro = splash.equilibrate_soil_moisture()
+    wn = splash.estimate_initial_soil_moisture()
+
+    # Check against the spun up value from the original implementation
+    assert np.allclose(wn, expected["wn_spun_up"])
 
 
-def test_splashmodel_est_daily_soil_moisture(grid_benchmarks):
-    """Array checking of evaporative predictions using iteration over days.
+def test_run_spin_up_iter(grid_benchmarks):
+    """Test the spin up process using the grid - this test iterates over cells,
+    following the cell by cell calculation in the original implementation.
 
-    This checks that the outcome of evaporative calculations from running the full
-    SPLASH model on a gridded dataset are consistent.
+    This is a slow test.
     """
-    from pyrealm.constants import PModelConst
-    from pyrealm.pmodel.functions import calc_patm
-    from pyrealm.splash.splash import SplashModel, elv2pres
+
+    from pyrealm.splash.logger import logger
+    from pyrealm.splash.splash import SplashModel
+    from pyrealm.splash.utilities import Calendar
+
+    # Mute logger
+    logger.setLevel("CRITICAL")
+
+    inputs, expected = grid_benchmarks
+
+    cal = Calendar(inputs.time.data)
+
+    for lat, lon in product(inputs.lat.data, inputs.lon.data):
+        # Subset Dataset to cell - note use of singleton lists to preserve the resulting
+        # singleton lat and lon dimensions
+        cell_inputs = inputs.sel(lat=[lat], lon=[lon])
+        cell_expected = expected.sel(lat=[lat], lon=[lon])
+
+        # Test for sea cells (elevation is nan) and skip
+        if np.isnan(cell_inputs.elev.data[0]):
+            continue
+
+        splash = SplashModel(
+            lat=np.repeat(cell_inputs.lat.data, inputs.sizes["time"])[:, None, None],
+            elv=np.repeat(cell_inputs.elev.data, inputs.sizes["time"])[:, None, None],
+            dates=cal,
+            sf=cell_inputs.sf.data,
+            tc=cell_inputs.tmp.data,
+            pn=cell_inputs.pre.data,
+        )
+
+        wn = splash.estimate_initial_soil_moisture()
+
+        # Check against the spun up value from the original implementation
+        assert np.allclose(wn, cell_expected.wn_spun_up)
+
+
+def test_run_spin_up_gridded(grid_benchmarks):
+    """Test the spin up process using the grid in a single pass across observations."""
+
+    from pyrealm.splash.logger import logger
+    from pyrealm.splash.splash import SplashModel
+    from pyrealm.splash.utilities import Calendar
+
+    # Mute logger
+    logger.setLevel("DEBUG")
+
+    inputs, expected = grid_benchmarks
+
+    splash = SplashModel(
+        lat=np.broadcast_to(inputs.lat.data[None, :, None], inputs.sf.data.shape),
+        elv=np.broadcast_to(inputs.elev.data[None, :, :], inputs.sf.data.shape),
+        dates=Calendar(inputs.time.data),
+        sf=inputs.sf.data,
+        tc=inputs.tmp.data,
+        pn=inputs.pre.data,
+    )
+
+    wn = splash.estimate_initial_soil_moisture()
+
+    # Check against the spun up value from the original implementation
+    assert np.allclose(wn, expected.wn_spun_up, equal_nan=True)
+
+
+# Testing the iterated water balance calculation
+
+
+def test_iterate_water_balance_oned(one_d_benchmark):
+    "Test the water balance iteration using the original 1D test data from __main__.py."
+    from pyrealm.splash.splash import SplashModel
+    from pyrealm.splash.utilities import Calendar
+
+    inputs, expected = one_d_benchmark
+
+    # Need to reshape the inputs so they have a time and 1 observation axis and
+    # duplicate lat and elev to same shape as sf, tc, pc (TODO - avoid this!)
+
+    splash = SplashModel(
+        lat=np.repeat(inputs.lat.data, 366)[:, np.newaxis, np.newaxis],
+        elv=np.repeat(inputs.elev.data, 366)[:, np.newaxis, np.newaxis],
+        dates=Calendar(inputs.time.data),
+        sf=inputs.sf.data,
+        tc=inputs.tmp.data,
+        pn=inputs.pre.data,
+    )
+
+    # Start from the existing spun up start point in the SPLASH outputs - creation of
+    # this input is tested above.
+    aet, wn, ro = splash.iterate_water_balance(expected["wn_spun_up"].data)
+
+    assert np.allclose(splash.evap.pet_d, expected["pet_d"].data)
+
+    # Check against the spun up value from the original implementation
+    assert np.allclose(aet, expected["aet_d"].data)
+    assert np.allclose(wn, expected["wn"].data)
+    assert np.allclose(ro, expected["ro"].data)
+
+
+def test_iterate_water_balance_grid(grid_benchmarks):
+    "Test the water balance iteration using the original 1D test data from __main__.py."
+    from pyrealm.splash.splash import SplashModel
     from pyrealm.splash.utilities import Calendar
 
     inputs, expected = grid_benchmarks
 
-    cal = Calendar(inputs.time.values.astype("datetime64[D]"))
-
-    # Duplicate lat and elev to same shape as sf and tc (TODO - avoid this!)
-    sf_shape = inputs["sf"].shape
-    elev = np.repeat(inputs["elev"].data[np.newaxis, :, :], sf_shape[0], axis=0)
-    lat = np.repeat(inputs["lat"].data[:, np.newaxis], sf_shape[2], axis=1)
-    lat = np.repeat(lat[np.newaxis, :, :], sf_shape[0], axis=0)
+    # Need to reshape the inputs so they have a time and 1 observation axis and
+    # duplicate lat and elev to same shape as sf, tc, pc (TODO - avoid this!)
 
     splash = SplashModel(
-        lat=lat,
-        elv=elev,
-        sf=inputs["sf"].data,
-        pn=inputs["pre"].data,
-        tc=inputs["tmp"].data,
-        dates=cal,
+        lat=np.broadcast_to(inputs.lat.data[None, :, None], inputs.sf.data.shape),
+        elv=np.broadcast_to(inputs.elev.data[None, :, :], inputs.sf.data.shape),
+        dates=Calendar(inputs.time.data),
+        sf=inputs.sf.data,
+        tc=inputs.tmp.data,
+        pn=inputs.pre.data,
     )
 
-    # assert the same starting point as the original spun up state
-    curr_wn = expected["wn_spun_up"].data
+    # Start from the existing spun up start point in the SPLASH outputs - creation of
+    # this input is tested above.
+    aet, wn, ro = splash.iterate_water_balance(expected["wn_spun_up"].data)
 
-    # For each day, calculate the estimated soil moisture and run off
-    for day_idx, _ in enumerate(cal):
-        curr_wn, ro = splash.estimate_daily_soil_moisture(
-            previous_wn=curr_wn, day_index=day_idx
-        )
-        assert np.allclose(curr_wn, expected["wn"][day_idx])
-        assert np.allclose(ro, expected["ro"][day_idx])
+    # Check against the spun up value from the original implementation
+    assert np.allclose(aet, expected["aet_d"].data, equal_nan=True)
+    assert np.allclose(wn, expected["wn"].data, equal_nan=True)
+    # Not entirely clear where the slight differences come from
+    assert np.allclose(ro, expected["ro"].data, equal_nan=True, atol=1e-05)
