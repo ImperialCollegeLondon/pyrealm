@@ -1,3 +1,6 @@
+"""TODO - think about general logger class for this kind of use."""  # noqa: D210, D415
+
+
 import logging
 
 logger = logging.getLogger(__name__)

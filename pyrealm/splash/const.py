@@ -1,6 +1,4 @@
-"""TODO - merge into existing constants classes
-
-"""  # noqa: D210, D415
+"""TODO - merge into existing constants classes."""  # noqa: D210, D415
 
 
 import numpy
