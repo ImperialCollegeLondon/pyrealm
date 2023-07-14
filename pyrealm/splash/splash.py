@@ -19,10 +19,13 @@ class SplashModel:
 
     The SplashModel class calculates the predictions of the SPLASH v1.0 model
     :cite:p:`davis:2017a`. The input variables of latitude, elevation, temperature,
-    precipitation and sunshine fraction are initially used to calculate radiative and
-    evaporative fluxes.
+    precipitation and sunshine fraction of observations are initially used to calculate
+    solar and evaporative fluxes, which are stored in the ``solar`` and ``evap``
+    attributes as instances of :class:`~pyrealm.splash.solar.DailySolarFluxes` and
+    :class:`~pyrealm.splash.evap.DailyEvapFluxes`.
 
-    The resulting SplashModel instance contains instances of
+
+
     From those initial calculations, the SPLASH model can then apply a simple
     calculation to iteratively track soil moisture and other evaporative fluxes through
     time.
@@ -139,7 +142,7 @@ class SplashModel:
                 raise ValueError("Incorrect shape in wn_init")
             wn_start = wn_init
         else:
-            wn_start = np.full_like(self.tc[0], np.nan)
+            wn_start = np.zeros_like(self.tc[0])
 
         # Find a date one year into the future from the first calendar date.
         # TODO - fix leap year handling and non Jan 1 starts
@@ -148,13 +151,13 @@ class SplashModel:
             raise ValueError("Cannot equilibrate - less than one year of data")
 
         # Run the equilibration loop
-        while (not equilibrated) or (n_iter < max_iter):
+        while (not equilibrated) and (n_iter < max_iter):
             # Track the iterations
             n_iter += 1
 
             # Loop over the calendar object, updating the soil_moisture array
             wn_day = wn_start
-            for day_idx in np.arange(367):
+            for day_idx in np.arange(366):
                 # Calculate aet, soil moisture and runoff:
                 _, wn_day, _ = self.estimate_daily_water_balance(
                     previous_wn=wn_day, day_idx=day_idx
@@ -169,7 +172,7 @@ class SplashModel:
             if verbose:
                 logger.info(f"Iteration: {n_iter}; maximum difference: {diff_sm.max()}")
 
-            if np.all(diff_sm <= max_diff):
+            if np.nanmax(diff_sm) <= max_diff:
                 equilibrated = True
 
         # Check for convergence failure.
@@ -187,8 +190,8 @@ class SplashModel:
         r"""Estimate the daily water balance.
 
         The daily soil moisture (wn) is estimated using the soil moisture from the
-        preceeding day, the precipitation for each day (pn) and the calculated
-        condensation (cn) and AET given the evaporative fluxes:
+        preceeding day, the precipitation for each day (``pn``) and the calculated
+        condensation (``cn``) and AET given the evaporative fluxes:
 
         ..math::
 
@@ -199,9 +202,9 @@ class SplashModel:
         surplus runoff, given the maximum soil capacity for each observation. Negative
         soil moisture values are replaced by zero.
 
-        By default, previous_wn is expected to provide estimates for all observations
-        across all days in the model, but day_idx can be set to provide an estimate for
-        only one particular day, for use in iterating over time series.
+        By default, ``previous_wn`` is expected to provide estimates for all
+        observations across all days in the model, but ``day_idx`` can be set to provide
+        an estimate for only one particular day, for use in iterating over time series.
 
         Args:
             day_idx: Optionally, the index of the date for which to calculate water
@@ -209,7 +212,8 @@ class SplashModel:
             previous_wn: Soil moisture estimates for the preceeding day (mm)
 
         Returns:
-            A tuple of numpy arrays containing predicted daily soil moisture and runoff.
+            A tuple of numpy arrays containing predicted AET, daily soil moisture and
+            runoff.
         """
 
         # Check day_idx inputs to map either the single time index given in day_idx or
@@ -235,3 +239,39 @@ class SplashModel:
         # Return values, ignoring the type clash that estimate_aet _can_ return
         # additional arrays. aet here is explicitly a single array not a tuple.
         return aet, wn, ro  # type: ignore
+
+    def iterate_water_balance(
+        self,
+        wn_init: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Iteratively apply daily water balance calculations along time axis.
+
+        Args:
+            wn_init: The initial state of the soil moisture for observations
+
+        Returns:
+            A tuple of numpy arrays containing predicted AET, soil moisture and runoff.
+
+        """
+
+        # TODO - check input shapes
+
+        # Create storage for outputs
+        aet_out = np.full_like(self.tc, np.nan)
+        wn_out = np.full_like(self.tc, np.nan)
+        ro_out = np.full_like(self.tc, np.nan)
+
+        curr_wn = wn_init
+        for day_idx in np.arange(self.pn.shape[0]):
+            # Calculate the balance for this date, updating the input for
+            # the following day
+            aet, curr_wn, ro = self.estimate_daily_water_balance(
+                curr_wn, day_idx=day_idx
+            )
+
+            # Store the outputs to return
+            aet_out[day_idx] = aet
+            wn_out[day_idx] = curr_wn
+            ro_out[day_idx] = ro
+
+        return aet_out, wn_out, ro_out
