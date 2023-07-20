@@ -87,7 +87,12 @@ nitpick_ignore = [
     ("py:class", "numpy._typing._generic_alias.ScalarType"),
     ("py:class", "numpy.float32"),
     ("py:class", "numpy.timedelta64"),
+    ("py:class", "numpy.ndarray"),
+    ("py:class", "numpy.dtype"),
+    ("py:class", "numpy.typing.NDArray"),
+    ("py:class", "dataclasses.InitVar"),
 ]
+
 intersphinx_mapping = {
     "pytest": ("https://docs.pytest.org/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),

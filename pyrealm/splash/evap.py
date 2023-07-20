@@ -4,6 +4,7 @@ from dataclasses import InitVar, dataclass, field
 from typing import Optional, Union
 
 import numpy as np
+from numpy.typing import NDArray
 
 from pyrealm.splash.const import kCw, kG, kL, kMa, kMv, kPo, kR, kTo, kw, pir
 from pyrealm.splash.solar import DailySolarFluxes
@@ -28,30 +29,30 @@ class DailyEvapFluxes:
     """
 
     solar: DailySolarFluxes
-    pa: InitVar[np.ndarray]
-    tc: InitVar[np.ndarray]
-    kWm: np.ndarray = np.array([150.0])
+    pa: InitVar[NDArray]
+    tc: InitVar[NDArray]
+    kWm: NDArray = np.array([150.0])
 
-    sat: np.ndarray = field(init=False)
+    sat: NDArray = field(init=False)
     """Slope of saturation vapour pressure temperature curve, Pa/K"""
-    lv: np.ndarray = field(init=False)
+    lv: NDArray = field(init=False)
     """Enthalpy of vaporization, J/kg"""
-    pw: np.ndarray = field(init=False)
+    pw: NDArray = field(init=False)
     """Density of water, kg/m^3"""
-    psy: np.ndarray = field(init=False)
+    psy: NDArray = field(init=False)
     """Psychrometric constant, Pa/K"""
-    econ: np.ndarray = field(init=False)
+    econ: NDArray = field(init=False)
     """Water-to-energy conversion factor"""
-    cond: np.ndarray = field(init=False)
+    cond: NDArray = field(init=False)
     """Daily condensation, mm"""
-    eet_d: np.ndarray = field(init=False)
+    eet_d: NDArray = field(init=False)
     """Daily EET, mm"""
-    pet_d: np.ndarray = field(init=False)
+    pet_d: NDArray = field(init=False)
     """Daily PET, mm"""
-    rx: np.ndarray = field(init=False)
+    rx: NDArray = field(init=False)
     """Variable substitute, (mm/hr)/(W/m^2)"""
 
-    def __post_init__(self, pa: np.ndarray, tc: np.ndarray) -> None:
+    def __post_init__(self, pa: NDArray, tc: NDArray) -> None:
         """Calculate invariant components of evapotranspiration.
 
         The post_init method calculates the invariant components of the
@@ -88,8 +89,8 @@ class DailyEvapFluxes:
         self.rx = (3.6e6) * (1.0 + kw) * self.econ
 
     def estimate_aet(
-        self, wn: np.ndarray, day_idx: Optional[int] = None, only_aet: bool = True
-    ) -> Union[np.ndarray, tuple[np.ndarray, np.ndarray, np.ndarray]]:
+        self, wn: NDArray, day_idx: Optional[int] = None, only_aet: bool = True
+    ) -> Union[NDArray, tuple[NDArray, NDArray, NDArray]]:
         """Estimate actual evapotranspiration.
 
         This method estimates the estimated daily actual evapotranspiration (AET,
@@ -161,7 +162,7 @@ class DailyEvapFluxes:
             return aet_d, hi, sw
 
 
-def sat_slope(tc: np.ndarray) -> np.ndarray:
+def sat_slope(tc: NDArray) -> NDArray:
     """Calculate the slope of the saturation vapour pressure curve.
 
     Calculates the slope of the saturation pressure temperature curve (Pa/K) following
@@ -181,7 +182,7 @@ def sat_slope(tc: np.ndarray) -> np.ndarray:
     )
 
 
-def enthalpy_vap(tc: np.ndarray) -> np.ndarray:
+def enthalpy_vap(tc: NDArray) -> NDArray:
     """Calculate the enthalpy of vaporization.
 
     Calculates the latent heat of vaporization of water (J/Kg) as a function of
@@ -197,7 +198,7 @@ def enthalpy_vap(tc: np.ndarray) -> np.ndarray:
     return 1.91846e6 * ((tc + 273.15) / (tc + 273.15 - 33.91)) ** 2
 
 
-def elv2pres(z: np.ndarray) -> np.ndarray:
+def elv2pres(z: NDArray) -> NDArray:
     """Calculate atmospheric pressure (Pa).
 
     Follows :cite:t:`allen:1998a`.
@@ -213,7 +214,7 @@ def elv2pres(z: np.ndarray) -> np.ndarray:
     return kPo * (1.0 - kL * z / kTo) ** (kG * kMa / (kR * kL))
 
 
-def density_h2o(tc: np.ndarray, p: np.ndarray) -> np.ndarray:
+def density_h2o(tc: NDArray, p: NDArray) -> NDArray:
     """Calculate the density of water.
 
     This function calculates thedensity of water at a given temperature and pressure
@@ -266,7 +267,7 @@ def density_h2o(tc: np.ndarray, p: np.ndarray) -> np.ndarray:
     return pw
 
 
-def psychro(tc: np.ndarray, p: np.ndarray) -> np.ndarray:
+def psychro(tc: NDArray, p: NDArray) -> NDArray:
     r"""Calculate the psychrometric constant.
 
     Calculates the psychrometric constant (:math:`\lambda`, Pa/K) given the temperature
@@ -292,7 +293,7 @@ def psychro(tc: np.ndarray, p: np.ndarray) -> np.ndarray:
     return cp * kMa * p / (kMv * lv)
 
 
-def specific_heat(tc: np.ndarray) -> np.ndarray:
+def specific_heat(tc: NDArray) -> NDArray:
     """Calculate the specific heat of air.
 
     Calculates the specific heat of air at a constant pressure (:math:`c_{pm}`, J/kg/K)

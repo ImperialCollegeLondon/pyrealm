@@ -5,6 +5,7 @@ radiation fluxes and other radiative values.
 from dataclasses import InitVar, dataclass, field
 
 import numpy as np
+from numpy.typing import NDArray
 
 from pyrealm.splash.const import (
     kA,
@@ -25,21 +26,20 @@ from pyrealm.utilities import check_input_shapes
 
 
 def calc_heliocentric_longitudes(
-    julian_day: np.ndarray, n_days: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
+    julian_day: NDArray, n_days: NDArray
+) -> tuple[NDArray, NDArray]:
     """Calculate heliocentric longitude and anomaly.
 
-    This function calculates the heliocentric true anomaly (degrees) and true longitude
-    (degrees), given the Julian day in the year and the number of days in the year,
-    following :cite:t:`berger:1978a`.
+    This function calculates the heliocentric true anomaly (``nu``, degrees) and true
+    longitude (``lambda_``, degrees), given the Julian day in the year and the number of
+    days in the year, following :cite:t:`berger:1978a`.
 
     Args:
         julian_day: day of year
         n_days: number of days in year
 
     Returns:
-        nu: the true anomaly, degrees
-        lambda_: true longitude, degrees
+        A tuple of arrays containing ``nu`` and ``lambda_``.
     """
 
     # Variable substitutes:
@@ -89,52 +89,54 @@ class DailySolarFluxes:
     and mean daily temperature for observations and then calculates key radiation fluxes
     given a Calendar object providing the Julian day of the observations and the year
     and number of days in the year.
+
+    Args:
+        lat: The Latitude of observations (degrees)
+        elv: Elevation of observations, metres
+        dates: Dates of observations
+        sf: Daily sunshine fraction of observations, unitless
+        tc: Daily temperature of observations, °C
     """
 
-    lat: InitVar[np.ndarray]
-    """Latitude of observations, degrees"""
-    elv: InitVar[np.ndarray]
-    """Elevation of observations, metres"""
+    lat: InitVar[NDArray]
+    elv: InitVar[NDArray]
     dates: Calendar
-    """Dates of observations"""
-    sf: InitVar[np.ndarray]
-    """Daily sunshine fraction of observations, unitless"""
-    tc: InitVar[np.ndarray]
-    """Daily temperature of observations, °C"""
+    sf: InitVar[NDArray]
+    tc: InitVar[NDArray]
 
-    nu: np.ndarray = field(init=False)
+    nu: NDArray = field(init=False)
     """True heliocentric anomaly, degrees"""
-    lambda_: np.ndarray = field(init=False)
+    lambda_: NDArray = field(init=False)
     """True heliocentric longitude, degrees"""
-    dr: np.ndarray = field(init=False)
+    dr: NDArray = field(init=False)
     """Distance factor, -"""
-    delta: np.ndarray = field(init=False)
+    delta: NDArray = field(init=False)
     """Declination angle, degrees"""
-    ru: np.ndarray = field(init=False)
+    ru: NDArray = field(init=False)
     """Intermediate variable, unitless"""
-    rv: np.ndarray = field(init=False)
+    rv: NDArray = field(init=False)
     """Intermediate variable, unitless"""
-    hs: np.ndarray = field(init=False)
+    hs: NDArray = field(init=False)
     """Sunset hour angle, degrees"""
-    ra_d: np.ndarray = field(init=False)
+    ra_d: NDArray = field(init=False)
     """Daily extraterrestrial solar radiation, J/m^2"""
-    tau: np.ndarray = field(init=False)
+    tau: NDArray = field(init=False)
     """Transmittivity, unitless"""
-    ppfd_d: np.ndarray = field(init=False)
+    ppfd_d: NDArray = field(init=False)
     """Daily PPFD, mol/m^2"""
-    rnl: np.ndarray = field(init=False)
+    rnl: NDArray = field(init=False)
     """Net longwave radiation, W/m^2"""
-    rw: np.ndarray = field(init=False)
+    rw: NDArray = field(init=False)
     """Intermediate variable,  W/m^2"""
-    hn: np.ndarray = field(init=False)
+    hn: NDArray = field(init=False)
     """Net radiation cross-over hour angle, degrees"""
-    rn_d: np.ndarray = field(init=False)
+    rn_d: NDArray = field(init=False)
     """Daytime net radiation, J/m^2"""
-    rnn_d: np.ndarray = field(init=False)
+    rnn_d: NDArray = field(init=False)
     """Nighttime net radiation (rnn_d), J/m^2"""
 
     def __post_init__(
-        self, lat: np.ndarray, elv: np.ndarray, sf: np.ndarray, tc: np.ndarray
+        self, lat: NDArray, elv: NDArray, sf: NDArray, tc: NDArray
     ) -> None:
         """Populates key fluxes from input variables."""
 

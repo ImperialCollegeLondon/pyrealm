@@ -5,6 +5,7 @@ under the SPLASH model.
 from typing import Optional, Union
 
 import numpy as np
+from numpy.typing import NDArray
 
 from pyrealm.splash.const import kWm
 from pyrealm.splash.evap import DailyEvapFluxes, elv2pres
@@ -34,9 +35,9 @@ class SplashModel:
 
     Where the resulting soil moisture exceeds the maximum capacity of the soil (kWm),
     the excess is allocated to run off, leaving the soil saturated. The
-    :meth:`~pyrealm.splash.splash.SplashModel.calc_splash_daily` method is used to
-    calculate soil moisture and runoff for a given day, given the soil moisture of the
-    preceeding day. The
+    :meth:`~pyrealm.splash.splash.SplashModel.estimate_daily_water_balance` method is
+    used to calculate soil moisture and runoff for a given day, given the soil moisture
+    of the preceeding day. The
     meth:`~pyrealm.splash.splash.SplashModel.equilibrate_soil_moisture` method can be
     used to estimate an initial soil moisture for a time series.
 
@@ -56,13 +57,13 @@ class SplashModel:
 
     def __init__(
         self,
-        lat: np.ndarray,
-        elv: np.ndarray,
-        sf: np.ndarray,
-        tc: np.ndarray,
-        pn: np.ndarray,
+        lat: NDArray,
+        elv: NDArray,
+        sf: NDArray,
+        tc: NDArray,
+        pn: NDArray,
         dates: Calendar,
-        kWm: np.ndarray = np.array([150.0]),
+        kWm: NDArray = np.array([150.0]),
     ):
         # TODO - check input sizes are congurent and maybe think about broadcasting lat
         #        and elv. xarray would be good here.
@@ -102,11 +103,11 @@ class SplashModel:
 
     def estimate_initial_soil_moisture(
         self,
-        wn_init: Optional[np.ndarray] = None,
+        wn_init: Optional[NDArray] = None,
         max_iter: int = 10,
         max_diff: float = 1.0,
         verbose: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArray:
         """Estimate initial soil moisture.
 
         This method uses the first year of data provided to a SplashModel instance to
@@ -185,8 +186,8 @@ class SplashModel:
         return wn_start
 
     def estimate_daily_water_balance(
-        self, previous_wn: np.ndarray, day_idx: Optional[int] = None
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        self, previous_wn: NDArray, day_idx: Optional[int] = None
+    ) -> tuple[NDArray, NDArray, NDArray]:
         r"""Estimate the daily water balance.
 
         The daily soil moisture (wn) is estimated using the soil moisture from the
@@ -242,8 +243,8 @@ class SplashModel:
 
     def iterate_water_balance(
         self,
-        wn_init: np.ndarray,
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        wn_init: NDArray,
+    ) -> tuple[NDArray, NDArray, NDArray]:
         """Iteratively apply daily water balance calculations along time axis.
 
         Args:
