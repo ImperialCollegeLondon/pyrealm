@@ -220,12 +220,11 @@ class PModel:
 
         .. math::
 
-            \text{LUE} = \phi_0 \cdot m_j \cdot f_v \cdot M_C \cdot \beta(\theta),
+            \text{LUE} = \phi_0 \cdot m_j \cdot f_v \cdot M_C
 
       where :math:`f_v` is a limitation factor defined in
-      :class:`~pyrealm.pmodel.pmodel.JmaxLimitation`, :math:`M_C` is the molar mass of
-      carbon and :math:`\beta(\theta)` is an empirical soil moisture factor (see
-      :func:`~pyrealm.pmodel.functions.calc_soilmstress`,  :cite:`Stocker:2020dh`).
+      :class:`~pyrealm.pmodel.pmodel.JmaxLimitation` and :math:`M_C` is the molar mass
+      of carbon.
 
     After running :meth:`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`, the
     following predictions are also populated:
@@ -282,9 +281,13 @@ class PModel:
       and the reported values will be set to ``np.nan`` under these conditions.
 
     Soil moisture effects:
-        The `soilmstress`, `rootzonestress` arguments and the `lavergne20_c3` and
-        `lavergne20_c4` all implement different approaches to soil moisture effects on
-        photosynthesis and are incompatible.
+        The `rootzonestress` arguments and the `lavergne20_c3` and `lavergne20_c4`
+        options to ``method_optchi`` implement different approaches to soil moisture
+        effects on photosynthesis and are incompatible.
+
+        See also the alternative GPP penalty factors that can be applied after fitting
+        the P Model (:func:`pyrealm.pmodel.functions.calc_soilmstress_stocker` and
+        :func:`pyrealm.pmodel.functions.calc_soilmstress_mengoli`).
 
     Args:
         env: An instance of :class:`~pyrealm.pmodel.pmodel.PModelEnvironment`.
@@ -295,8 +298,6 @@ class PModel:
         rootzonestress: (Optional, default=None) An experimental option
             for providing a root zone water stress penalty to the :math:`beta` parameter
             in :class:`~pyrealm.pmodel.pmodel.CalcOptimalChi`.
-        soilmstress: (Optional, default=None) A soil moisture stress factor
-            calculated using :func:`~pyrealm.pmodel.functions.calc_soilmstress`.
         method_optchi: (Optional, default=`prentice14`) Selects the method to be
             used for calculating optimal :math:`chi`. The choice of method also sets the
             choice of  C3 or C4 photosynthetic pathway (see
@@ -333,16 +334,13 @@ class PModel:
         self,
         env: PModelEnvironment,
         rootzonestress: Optional[NDArray] = None,
-        soilmstress: Optional[NDArray] = None,
         kphio: Optional[float] = None,
         do_ftemp_kphio: bool = True,
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
     ):
         # Check possible array inputs against the photosynthetic environment
-        self.shape: tuple = check_input_shapes(
-            env.gammastar, soilmstress, rootzonestress
-        )
+        self.shape: tuple = check_input_shapes(env.gammastar, rootzonestress)
         """Records the common numpy array shape of array inputs."""
 
         # Store a reference to the photosynthetic environment and a direct
@@ -352,33 +350,16 @@ class PModel:
 
         self.const: PModelConst = env.const
         """The PModelConst instance used to create the model environment."""
-        # ---------------------------------------------
+
         # Soil moisture and root zone stress handling
-        # ---------------------------------------------
 
-        if (
-            (soilmstress is not None)
-            + (rootzonestress is not None)
-            + (method_optchi in ("lavergne20_c3", "lavergne20_c4"))
-        ) > 1:
+        if (rootzonestress is not None) & (
+            method_optchi in ("lavergne20_c3", "lavergne20_c4")
+        ):
             raise AttributeError(
-                "Soilmstress, rootzonestress and the lavergne20 method_optchi options "
-                "are parallel approaches to soil moisture effects and cannot be "
-                "combined."
+                "rootzonestress and the lavergne20 method_optchi options are parallel "
+                "approaches to soil moisture effects and cannot be combined."
             )
-
-        if soilmstress is None:
-            self.soilmstress: NDArray = np.array([1.0])
-            """The soil moisture stress factor applied to model.
-
-            This value will be 1.0 if no soil moisture stress was provided in the
-            arguments to the class.
-            """
-            self._do_soilmstress: bool = False
-            """Private flag indicating user provided soilmstress factor"""
-        else:
-            self.soilmstress = soilmstress
-            self._do_soilmstress = True
 
         if rootzonestress is None:
             self._do_rootzonestress = False
@@ -402,8 +383,6 @@ class PModel:
         if kphio is None:
             if not self.do_ftemp_kphio:
                 self.init_kphio = 0.049977
-            elif self._do_soilmstress:
-                self.init_kphio = 0.087182
             else:
                 self.init_kphio = 0.081785
         else:
@@ -460,18 +439,10 @@ class PModel:
         )
         """Intrinsic water use efficiency (iWUE, µmol mol-1)"""
 
-        # The basic calculation of LUE = phi0 * M_c * m but here we implement
-        # two penalty terms for jmax limitation and Stocker beta soil moisture
-        # stress
-        # Note: the rpmodel implementation also estimates soilmstress effects on
-        #       jmax and vcmax but pyrealm.pmodel only applies the stress factor
-        #       to LUE and hence GPP
+        # The basic calculation of LUE = phi0 * M_c * m with an added penalty term
+        # for jmax limitation
         self.lue: NDArray = (
-            self.kphio
-            * self.optchi.mj
-            * self.jmaxlim.f_v
-            * self.const.k_c_molmass
-            * self.soilmstress
+            self.kphio * self.optchi.mj * self.jmaxlim.f_v * self.const.k_c_molmass
         )
         """Light use efficiency (LUE, g C mol-1)"""
 
@@ -486,21 +457,6 @@ class PModel:
         self._jmax: NDArray
         self._gpp: NDArray
         self._gs: NDArray
-
-    def _soilwarn(self, varname: str) -> None:
-        """Emit warning about soil moisture stress factor.
-
-        The empirical soil moisture stress factor (Stocker et al. 2020) _can_ be
-        used to back calculate realistic Jmax and Vcmax values. The
-        pyrealm.PModel implementation does not do so and this helper function is
-        used to warn users within property getter functions
-        """
-
-        if self._do_soilmstress:
-            warn(
-                f"pyrealm.PModel does not correct {varname} for empirical soil "
-                "moisture effects on LUE."
-            )
 
     def _check_estimated(self, varname: str) -> None:
         """Raise error when accessing unpopulated parameters.
@@ -522,35 +478,30 @@ class PModel:
     def vcmax(self) -> NDArray:
         """Maximum rate of carboxylation (µmol m-2 s-1)."""
         self._check_estimated("vcmax")
-        self._soilwarn("vcmax")
         return self._vcmax
 
     @property
     def vcmax25(self) -> NDArray:
         """Maximum rate of carboxylation at standard temperature (µmol m-2 s-1)."""
         self._check_estimated("vcmax25")
-        self._soilwarn("vcmax25")
         return self._vcmax25
 
     @property
     def rd(self) -> NDArray:
         """Dark respiration (µmol m-2 s-1)."""
         self._check_estimated("rd")
-        self._soilwarn("rd")
         return self._rd
 
     @property
     def jmax(self) -> NDArray:
         """Maximum rate of electron transport (µmol m-2 s-1)."""
         self._check_estimated("jmax")
-        self._soilwarn("jmax")
         return self._jmax
 
     @property
     def gs(self) -> NDArray:
         """Stomatal conductance (µmol m-2 s-1)."""
         self._check_estimated("gs")
-        self._soilwarn("gs")
         return self._gs
 
     def estimate_productivity(
@@ -615,9 +566,7 @@ class PModel:
 
         assim = np.minimum(a_j, a_c)
 
-        if not self._do_soilmstress and not np.allclose(
-            assim, self._gpp / self.const.k_c_molmass, equal_nan=True
-        ):
+        if not np.allclose(assim, self._gpp / self.const.k_c_molmass, equal_nan=True):
             warn("Assimilation and GPP are not identical")
 
         # Stomatal conductance - do not estimate when VPD = 0 or when floating point
@@ -633,9 +582,7 @@ class PModel:
 
     def __repr__(self) -> str:
         """Generates a string representation of PModel instance."""
-        if self._do_soilmstress:
-            stress = "Soil moisture"
-        elif self._do_rootzonestress:
+        if self._do_rootzonestress:
             stress = "Root zone"
         else:
             stress = "None"

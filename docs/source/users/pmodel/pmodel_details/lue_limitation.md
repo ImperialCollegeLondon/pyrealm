@@ -35,13 +35,11 @@ n_pts = 201
 
 # Create a range of representative values for key inputs.
 tc_1d = np.linspace(-25, 50, n_pts)
-soilm_1d = np.linspace(0, 1, n_pts)
 meanalpha_1d = np.linspace(0, 1, n_pts)
 co2_1d = np.linspace(200, 500, n_pts)
 
 # Broadcast the range into arrays with repeated values.
 tc_2d = np.broadcast_to(tc_1d, (n_pts, n_pts))
-soilm_2d = np.broadcast_to(soilm_1d, (n_pts, n_pts))
 meanalpha_2d = np.broadcast_to(meanalpha_1d, (n_pts, n_pts))
 co2_2d = np.broadcast_to(co2_1d, (n_pts, n_pts))
 ```
@@ -65,15 +63,14 @@ where $\phi_0$ is the quantum yield efficiency of photosynthesis, $M_C$ is the
 molar mass of carbon and $m_j$ is the $\ce{CO2}$ limitation term of light use
 efficiency from the calculation of optimal $\chi$.
 
-However, the {class}`pyrealm.pmodel.pmodel.PModel` class also incorporates three further
+However, the {class}`pyrealm.pmodel.pmodel.PModel` class also incorporates two further
 factors:
 
 * temperature (t) dependence of $\phi_0$,
 * $J_{max}$ limitation of $m_j$ by a factor $f_v$ and
-* an empirical soil moisture stress penalty on LUE.
 
 $$
-  \text{LUE} = \phi_0(t) \cdot M_C \cdot m_j \cdot f_v \cdot \beta(\theta)$
+  \text{LUE} = \phi_0(t) \cdot M_C \cdot m_j \cdot f_v$
 $$
 
 ### $\phi_0$ and temperature dependency
@@ -96,14 +93,8 @@ applied by default but can be turned off using the
 {class}`~pyrealm.pmodel.pmodel.PModel` argument `do_ftemp_kphio=False`.
 
 The default values of `kphio` vary with the model options, corresponding
-to the empirically fitted values presented for three setups in {cite:t}`Stocker:2020dh`.
-
-1. If the temperature dependence of $\phi_0$ is **not** applied,
-    $\phi_0 = 0.049977$,
-1. otherwise, if an [empirical soil moisture stress factor](soil_moisture)
-   is being applied, $\phi_0 = 0.87182$
-1. otherwise, with no soil moisture stress and temperature dependence
-   $\phi_0 = 0.081785$
+to the empirically fitted values from {cite:t}`Stocker:2020dh`. If the temperature
+dependence of $\phi_0$ is applied, $\phi_0 = 0.081785$, otherwise  $\phi_0 = 0.049977$.
 
 The initial value of $\phi_0$ and the values used in calculations are stored in
 the `init_kphio` and  `kphio` attributes of the {class}`~pyrealm.pmodel.pmodel.PModel`
@@ -195,8 +186,3 @@ pyplot.ylabel("Light Use Efficiency (g C mol-1)")
 pyplot.legend()
 pyplot.show()
 ```
-
-### Soil moisture stress
-
-This approach to handling soil moisture effects is presented
-[here](soil_moisture.md).

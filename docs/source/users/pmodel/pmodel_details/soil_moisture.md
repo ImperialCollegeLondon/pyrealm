@@ -7,36 +7,51 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.13.8
 kernelspec:
-  display_name: Python 3
+  display_name: pyrealm_python3
   language: python
   name: pyrealm_python3
 ---
 
-# Soil moisture stress
+# Soil moisture effects
 
-At present, there are three approaches for incorporating soil moisture effects on
+At present, there are four approaches for incorporating soil moisture effects on
 photosynthesis:
 
-* The Stocker $\beta(\theta)$ factor applied to light use efficiency, described below.
-* The experimental `rootzonestress` argument to {class}`~pyrealm.pmodel.pmodel.PModel`,
-  see below.
+* Two soil moisture stress functions, both of which estimate a penalty factor to
+  calculated GPP based on soil moisture conditions and aridity.
+  * {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` calculates  $\beta(\theta)$
+     {cite:p}`Stocker:2020dh`.
+  * {func}`~pyrealm.pmodel.functions.calc_soilmstress_mengoli` calculates  $\beta(\theta)$
+     {cite:p}`mengoli:2023a`.
+* The experimental `rootzonestress` argument to {class}`~pyrealm.pmodel.pmodel.PModel`.
 * The `lavergne20_c3` and `lavergne20_c4` methods for
   {class}`~pyrealm.pmodel.pmodel.CalcOptimalChi`, which use an empirical model of the
-  change in $\beta$ with soil moisture. See [here](optimal_chi) for details.
+  change in the ratio of the photosynthetic costs of carboxilation and transpiration.
+  Altering this cost ratio - inconveniently also called $\beta$ - for soil moisture
+  stress provides a more complete picture of plant responses than GPP penalty factors.
 
-## Stocker $\beta(\theta)$
+The first three of these approaches are described here, but see [here](optimal_chi) for
+details of the last method.
+
+## The {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` penalty factor
 
 This is an empirically derived factor ($\beta(\theta) \in [0,1]$,
-{cite:p}`Stocker:2018be,Stocker:2020dh` that captures the response of light
-use efficiency (LUE) and hence gross primary productivity (GPP)  to soil moisture
-stress. The calculated value of $\beta(\theta)$ is applied directly as a penalty factor
-to LUE and hence to estimates of GPP.
+{cite:p}`Stocker:2018be,Stocker:2020dh` that describes a penalty to gross primary
+productivity (GPP)  resulting from soil moisture stress.
 
 The factor requires estimates of:
 
 * relative soil moisture ($m_s$, `soilm`), as the fraction of field capacity, and
 * a measure of local mean aridity ($\bar{\alpha}$, `meanalpha`), as the average annual
   ratio of AET to PET.
+
+```{admonition} Soil moisture
+The parameters used in the calculation of this factor were estimated using the
+plant-available soil water expressed as a fraction of available water holding capacity.
+That capacity was calculated for the observed data on a site by site basis using the
+`SoilGrids` dataset {cite:p}`hengl:2017a`. Ideally, soil moisture calculated in the same
+way should be used with this approach.
+```
 
 The functions to calculate $\beta(\theta)$ are based on four parameters, derived from
 experimental data and set in {class}`~pyrealm.constants.pmodel_const.PModelConst`:
@@ -48,7 +63,7 @@ experimental data and set in {class}`~pyrealm.constants.pmodel_const.PModelConst
 * An intercept (a, `soilmstress_a`) for the aridity sensitivity parameter $q$.
 * A slope (b, `soilmstress_b`) for the aridity sensitivity parameter $q$.
 
-The aridity measure (($\bar{\alpha}$) is first used to set an aridity sensitivity
+The aridity measure ($\bar{\alpha}$) is first used to set an aridity sensitivity
 parameter ($q$), which sets the speed with which $\beta(\theta) \to 0$ as $m_s$
 decreases.
 
@@ -58,7 +73,7 @@ $$
 
 Then, relative soil moisture ($m_s$) is used to calculate the soil moisture factor:
 
-$$`
+$$
     \beta(\theta) = q ( m_s - \theta^\ast) ^ 2  + 1
 $$
 
@@ -99,7 +114,7 @@ soilm = np.linspace(0, 0.7, 101)
 
 for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
 
-    soilmstress = pmodel.calc_soilmstress(
+    soilmstress = pmodel.calc_soilmstress_stocker(
         soilm=soilm, meanalpha=mean_alpha, const=const
     )
     ax2.plot(soilm, soilmstress, label=r"$\bar{{\alpha}}$ = {}".format(mean_alpha))
@@ -121,63 +136,174 @@ ax2.set_ylabel(r"Empirical soil moisture factor, $\beta(\theta)$")
 plt.show()
 ```
 
-### Application of the factor
++++ {"user_expressions": []}
+
+### Application of the {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` factor
 
 The factor can be applied to the P Model by using
-{func}`~pyrealm.pmodel.functions.calc_soilmstress` to calculate the factor values and
-then passing them into {class}`~pyrealm.pmodel.pmodel.PModel` using the `soilmstress`
-argument. The example below shows how the predicted light use efficiency from the P
-Model changes across an aridity gradient both with and without the soil moisture factor.
+{func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` to calculate the factor
+values and then multiplying calculated GPP ({attr}`~pyrealm.pmodel.pmodel.PModel.gpp`)
+by the resulting factor. The example below shows how the predicted light use
+efficiency from the P Model changes across an aridity gradient both with and without the
+soil moisture factor.
 
 ```{code-cell}
-# Calculate a model without water stress in a constant environment
-# and across an soil moisture gradient.
-
+# Calculate the P Model in a constant environment
 tc = np.array([20] * 101)
-sm_gradient = np.linspace(0, 0.7, 101)
-sm_stress = pmodel.calc_soilmstress(soilm=sm_gradient, meanalpha=0.5)
+sm_gradient = np.linspace(0, 1.0, 101)
 
 env = pmodel.PModelEnvironment(tc=tc, patm=101325.0, vpd=820, co2=400)
-
-# Fix the kphio as the defaults change when soilmstress is used
-model = pmodel.PModel(env, kphio=0.08)
+model = pmodel.PModel(env)
 model.estimate_productivity(fapar=1, ppfd=1000)
 
-model_stress = pmodel.PModel(env, soilmstress=sm_stress, kphio=0.08)
-model_stress.estimate_productivity(fapar=1, ppfd=1000)
+# Calculate the soil moisture stress factor across a soil moisture gradient
+# at differing aridities
+
+gpp_stressed = {}
+
+for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
+    # Calculate the stress for this aridity
+    sm_stress = pmodel.calc_soilmstress_stocker(
+        soilm=soilm, meanalpha=mean_alpha, const=const
+    )
+    # Apply the penalty factor
+    gpp_stressed[mean_alpha] = model.gpp * sm_stress
 ```
 
 ```{code-cell}
 :tags: [hide-input]
 
-plt.plot(sm_gradient, model.lue, label="No soil moisture stress")
-plt.plot(sm_gradient, model_stress.lue, label="Soil moisture stress applied")
+plt.plot(sm_gradient, model.gpp, label="No soil moisture penalty")
+
+for ky, val in gpp_stressed.items():
+    plt.plot(soilm, val, label=r"$\bar{{\alpha}}$ = {}".format(ky))
 
 plt.xlabel(r"Relative soil moisture, $m_s$, -")
-plt.ylabel(r"Light use efficiency, gC mol-1")
-
+plt.ylabel(r"GPP")
+plt.legend()
 plt.show()
 ```
 
 ```{warning}
-In the `rpmodel` implementation, the soil moisture factor is also used
-to modify $V_{cmax}$ and $J_{max}$, so that these values are congruent
-with the resulting penalised LUE and GPP.
+In the `rpmodel` implementation, the soil moisture factor is applied within the
+calculation of the P Model and the penalised GPP is used to modify $V_{cmax}$ and
+$J_{max}$, so that these values are congruent with the resulting penalised LUE and GPP.
 
-This is **not implemented in {class}`~pyrealm.pmodel.pmodel.PModel`**. The
-empirical correction is applied only to LUE and hence GPP. A warning is generated
-when accessing $V_{cmax}$, $J_{max}$ and predictions deriving from those
-values if this soil moisture stress factor has been applied.
+This is **not** implemented in the {mod}`~pyrealm.pmodel` module. The empirical
+correction is only as a post-hoc penalty to GPP, which facilitates the comparison of
+different penalty factors applied to the same P Model instance.
+
 ```
 
-```{code-cell}
-# Jmax warns that it has not been corrected for soil moisture
-print(model_stress.jmax[0])
+## The {func}`~pyrealm.pmodel.functions.calc_soilmstress_mengoli` penalty factor
+
+This is an empirically derived factor ($\beta(\theta) \in [0,1]$,
+{cite:p}`mengoli:2023a` that describes a penalty to gross primary productivity (GPP)
+resulting from soil moisture stress.
+
+The factor requires estimates of:
+
+* relative soil moisture ($m_s$, `soilm`), as the fraction of field capacity, and
+* a climatological estimate of local aridity index, typically calculated as total PET
+  over total precipitation for an appropriate period, typically at least 20 years.
+
+```{admonition} Soil moisture
+
+The parameters used in the calculation of this factor were estimated using the
+plant-available soil water expressed as the ratio of millimeters of soil moisture over
+the total soil capacity. The soil water estimated using CRU data in SPLASH v1 model
+{cite:p}`davis:2017a`, which enforces a constant soil capacity of 150mm. Again, ideally,
+soil moisture calculated in the same way should be used with this approach.
 ```
 
+The calculation of $\beta(\theta)$ is based on two functions of the aridity index: both
+power laws, constrained to take a maximum of 1 (no soil moisture stress penalty). The
+first function describes the maximal attainable level ($y$) and the second function
+describes a threshold ($\psi$) at which that level is reached. The parameters of these
+power laws are derived from experimental data and set in
+{class}`~pyrealm.constants.pmodel_const.PModelConst`.
+
+$$
+\begin{align*}
+y &= \min( a  \textrm{AI} ^ {b}, 1)\\
+\psi &= \min( a  \textrm{AI} ^ {b}, 1)\\
+\end{align*}
+$$
+
 ```{code-cell}
-# Vcmax warns that it has not been corrected for soil moisture
-print(model_stress.vcmax[0])
+from pyrealm.constants import PModelConst
+
+const=PModelConst()
+aridity_index = np.arange(0.35, 7, 0.1)
+
+y = np.minimum(
+        const.soilm_mengoli_y_a * np.power(aridity_index, const.soilm_mengoli_y_b), 1
+    )
+
+
+psi = np.minimum(
+    const.soilm_mengoli_psi_a * np.power(aridity_index, const.soilm_mengoli_psi_b),
+    1,
+)
+
+plt.plot(aridity_index, y, label='Maximum level ($y$)')
+plt.plot(aridity_index, psi, label='Critical threshold ($\psi$)')
+plt.xlabel(r"Aridity Index (AI)")
+plt.ylabel(r"$\beta(\theta)$")
+plt.legend()
+plt.show()
+```
+
+The penalty factor $\beta(\theta)$ is then calculated given the relative soil moisture
+$\theta$, the threshold $\psi$ and the maximum level:
+
+$$
+
+\beta(\theta) &=
+    \begin{cases}
+        y, & \theta \ge \psi \\
+        \dfrac{y}{\psi} \cdot \theta, & \theta \lt \psi \\
+    \end{cases}
+$$
+
+```{code-cell}
+# Calculate the soil moisture stress factor across a soil moisture
+# gradient for different aridity index values
+beta = {}
+ai_vals = [0.3, 1, 3, 6]
+
+for ai in ai_vals:
+    beta[ai] = pmodel.calc_soilmstress_mengoli(
+        soilm=sm_gradient, aridity_index=np.array(ai)
+    )
+    plt.plot(sm_gradient, beta[ai], label= f"AI = {ai}")
+
+plt.xlabel(r"Relative soil moisture $\theta$")
+plt.ylabel(r"$\beta(\theta)$")
+plt.legend()
+plt.show()
+```
+
+As the plot above shows, plants in arid conditions have severely constrained maximum
+levels, but have lower critical thresholds, allowing them to maintain the maximum level
+under drier conditions.
+
+### Application of the {func}`~pyrealm.pmodel.functions.calc_soilmstress_mengoli` factor
+
+As with  {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker`, the factor is first
+calculated and then applied to the GPP calculated for a model
+({attr}`~pyrealm.pmodel.pmodel.PModel.gpp`). In the example below, the result is
+obviously just $\beta(\theta)$ from above scaled to the constant GPP.
+
+```{code-cell}
+for ai in ai_vals:
+
+    plt.plot(sm_gradient, model.gpp * beta[ai], label= f"AI = {ai}")
+
+plt.xlabel(r"Relative soil moisture $\theta$")
+plt.ylabel("GPP")
+plt.legend()
+plt.show()
 ```
 
 ## The `rootzonestress` factor
@@ -185,7 +311,7 @@ print(model_stress.vcmax[0])
 ```{warning}
 This approach is **an experimental feature** - see the
 {class}`~pyrealm.pmodel.pmodel.PModel` documentation. Essentially, the values for
-`rootzonestress` apply a penalty factor directly to $\beta$ in the calculation of
-optimal $\chi$. This factor is currently calculated externally to the `pyrealm` package
-and is not documented here.
+`rootzonestress` apply a penalty factor directly to the unit cost ratio $\beta$ in the
+calculation of optimal $\chi$. This factor is currently calculated externally to the
+`pyrealm` package and is not documented here.
 ```

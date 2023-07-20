@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyrealm"
-version = "0.9.0"
+version = "0.10.0"
 description = "Python implementations of REALM models"
 authors = ["David Orme <d.orme@imperial.ac.uk>"]
 homepage = "https://pyrealm.readthedocs.io/"
