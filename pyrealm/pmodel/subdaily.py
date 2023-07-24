@@ -148,7 +148,8 @@ class FastSlowPModel:
     * The :meth:`~pyrealm.pmodel.subdaily.memory_effect` function is then used to
       calculate realised slowly responding values for :math:`\xi`, :math:`V_{cmax25}`
       and :math:`J_{max25}`, given a weight :math:`\alpha \in [0,1]` that sets the speed
-      of acclimation.
+      of acclimation. The ``handle_nan`` argument is passed to this function to set
+      whether missing values in the optimal predictions are permitted and handled.
     * The realised values are then filled back onto the original subdaily timescale,
       with :math:`V_{cmax}` and :math:`J_{max}` then being calculated from the slowly
       responding :math:`V_{cmax25}` and :math:`J_{max25}` and the actual subdaily
@@ -163,6 +164,8 @@ class FastSlowPModel:
         fapar: The :math:`f_{APAR}` for each observation.
         ppfd: The PPDF for each observation.
         alpha: The :math:`\alpha` weight.
+        handle_nan: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect` function
+          be allowe to handle missing values.
         kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -).
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.
@@ -176,6 +179,7 @@ class FastSlowPModel:
         fapar: NDArray,
         alpha: float = 1 / 15,
         kphio: float = 1 / 8,
+        handle_nan: bool = False,
         fill_kind: str = "previous",
     ) -> None:
         # Warn about the API
@@ -248,11 +252,17 @@ class FastSlowPModel:
         )
 
         # Calculate the realised values from the instantaneous optimal values
-        self.xi_real: NDArray = memory_effect(self.pmodel_acclim.optchi.xi, alpha=alpha)
+        self.xi_real: NDArray = memory_effect(
+            self.pmodel_acclim.optchi.xi, alpha=alpha, handle_nan=handle_nan
+        )
         r"""Realised daily slow responses in :math:`\xi`"""
-        self.vcmax25_real: NDArray = memory_effect(self.vcmax25_opt, alpha=alpha)
+        self.vcmax25_real: NDArray = memory_effect(
+            self.vcmax25_opt, alpha=alpha, handle_nan=handle_nan
+        )
         r"""Realised daily slow responses in :math:`V_{cmax25}`"""
-        self.jmax25_real: NDArray = memory_effect(self.jmax25_opt, alpha=alpha)
+        self.jmax25_real: NDArray = memory_effect(
+            self.jmax25_opt, alpha=alpha, handle_nan=handle_nan
+        )
         r"""Realised daily slow responses in :math:`J_{max25}`"""
 
         # Fill the daily realised values onto the subdaily scale
@@ -348,6 +358,8 @@ class FastSlowPModel_JAMES:
         fapar: The :math:`f_{APAR}` for each observation.
         ppfd: The PPDF for each observation.
         alpha: The :math:`\alpha` weight.
+        handle_nan: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect` function
+          be allowe to handle missing values.
         kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -).
         vpd_scaler: An alternate
           :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance used to
@@ -366,6 +378,7 @@ class FastSlowPModel_JAMES:
         ppfd: NDArray,
         fapar: NDArray,
         alpha: float = 1 / 15,
+        handle_nan: bool = False,
         kphio: float = 1 / 8,
         vpd_scaler: Optional[FastSlowScaler] = None,
         fill_from: Optional[np.timedelta64] = None,
@@ -444,9 +457,13 @@ class FastSlowPModel_JAMES:
         )
 
         # Calculate the realised values from the instantaneous optimal values
-        self.vcmax25_real: NDArray = memory_effect(self.vcmax25_opt, alpha=alpha)
+        self.vcmax25_real: NDArray = memory_effect(
+            self.vcmax25_opt, alpha=alpha, handle_nan=handle_nan
+        )
         r"""Realised daily slow responses in :math:`V_{cmax25}`"""
-        self.jmax25_real: NDArray = memory_effect(self.jmax25_opt, alpha=alpha)
+        self.jmax25_real: NDArray = memory_effect(
+            self.jmax25_opt, alpha=alpha, handle_nan=handle_nan
+        )
         r"""Realised daily slow responses in :math:`J_{max25}`"""
 
         # Calculate the daily xi value, which does not have a slow reponse in this

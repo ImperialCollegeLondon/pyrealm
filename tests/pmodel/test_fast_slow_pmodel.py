@@ -73,6 +73,7 @@ def test_FSPModel_JAMES(be_vie_data_components):
     fs_pmodel_james = FastSlowPModel_JAMES(
         env=env,
         fs_scaler=fsscaler,
+        handle_nan=True,
         kphio=1 / 8,
         fapar=fapar,
         ppfd=ppfd,
@@ -112,6 +113,7 @@ def test_FSPModel_corr(be_vie_data_components):
     fs_pmodel = FastSlowPModel(
         env=env,
         fs_scaler=fsscaler,
+        handle_nan=True,
         kphio=1 / 8,
         fapar=fapar,
         ppfd=ppfd,
