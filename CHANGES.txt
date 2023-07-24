@@ -141,3 +141,5 @@
         - The soilmstress argument to PModel is removed and both the Mengoli and Stocker
           approaches are now intended to be applied as penalties to GPP after P Model
           fitting, allowing the two to be compared from the same P Model outputs.
+0.10.1  - Addition of draft extention of subdaily memory_effect function that allows for
+          missing data arising from non-estimable Jmax and Vcmax.
