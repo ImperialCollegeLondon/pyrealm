@@ -1,3 +1,5 @@
+from contextlib import nullcontext as does_not_raise
+
 import numpy as np
 import pytest
 
@@ -48,3 +50,51 @@ def test_memory_effect(inputs, alpha):
     expected = np.tensordot(coef, inputs, axes=1)
 
     assert np.allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    argnames="inputs,handle_nan,context_manager,expected",
+    argvalues=[
+        pytest.param(
+            np.arange(1, 8),
+            False,
+            does_not_raise(),
+            np.array([1.0, 1.1, 1.29, 1.561, 1.9049, 2.31441, 2.782969]),
+            id="no missing data",
+        ),
+        pytest.param(
+            np.array([1, 2, 3, 4, np.nan, np.nan, 7]),
+            False,
+            pytest.raises(ValueError),
+            None,
+            id="unhandled missing data",
+        ),
+        pytest.param(
+            np.array([1, 2, 3, 4, np.nan, np.nan, 7]),
+            True,
+            does_not_raise(),
+            np.array([1.0, 1.1, 1.29, 1.561, 1.561, 1.561, 2.1049]),
+            id="handled missing data",
+        ),
+    ],
+)
+@pytest.mark.parametrize(argnames="ndim", argvalues=(1, 2, 3))
+def test_memory_effect_inputs(inputs, handle_nan, context_manager, expected, ndim):
+    """Simple testing of nan handling and expected predictions across multiple
+    dimensions."""
+    from pyrealm.pmodel.subdaily import memory_effect
+
+    if ndim == 2:
+        inputs = np.broadcast_to(inputs[:, np.newaxis], (7, 2))
+        if expected is not None:
+            expected = np.broadcast_to(expected[:, np.newaxis], (7, 2))
+
+    if ndim == 3:
+        inputs = np.broadcast_to(inputs[:, np.newaxis, np.newaxis], (7, 2, 2))
+        if expected is not None:
+            expected = np.broadcast_to(expected[:, np.newaxis, np.newaxis], (7, 2, 2))
+
+    with context_manager:
+        results = memory_effect(inputs, handle_nan=handle_nan, alpha=0.1)
+
+        assert np.allclose(results, expected)
