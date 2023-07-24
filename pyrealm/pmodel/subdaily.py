@@ -18,7 +18,9 @@ from pyrealm.pmodel import (
 )
 
 
-def memory_effect(values: NDArray, alpha: float = 0.067) -> NDArray:
+def memory_effect(
+    values: NDArray, alpha: float = 0.067, handle_nan: bool = False
+) -> NDArray:
     r"""Apply a memory effect to a variable.
 
     Three key photosynthetic parameters (:math:`\xi`, :math:`V_{cmax25}` and
@@ -27,37 +29,91 @@ def memory_effect(values: NDArray, alpha: float = 0.067) -> NDArray:
     average to apply a lagged response to one of these parameters.
 
     The estimation uses the paramater `alpha` (:math:`\alpha`) to control the speed of
-    convergence of the estimated values (:math:`E`) to the calculated optimal values
+    convergence of the realised values (:math:`R`) to the calculated optimal values
     (:math:`O`):
 
     .. math::
 
-        E_{t} = E_{t-1}(1 - \alpha) + O_{t} \alpha
+        R_{t} = R_{t-1}(1 - \alpha) + O_{t} \alpha
 
-    For :math:`t_{0}`, the first value in the optimal values is used so :math:`E_{0} =
+    For :math:`t_{0}`, the first value in the optimal values is used so :math:`R_{0} =
     O_{0}`.
 
     The ``values`` array can have multiple dimensions but the first dimension is always
     assumed to represent time and the memory effect is calculated only along the first
     dimension.
 
+    By default, the ``values`` array must not contain missing values (`numpy.nan`).
+    However, :math:`V_{cmax}` and :math:`J_{max}` are not estimable in some conditions
+    (namely when :math:`m \le c^{\ast}`, see
+    :class:`~pyrealm.pmodel.pmodel.CalcOptimalChi`) and so missing values in P Model
+    predictions can arise even when the forcing data is complete, breaking the recursion
+    shown above. When ``handle_nan=True``, this function fills missing data as follow:
+
+    +-------------------+--------+-------------------------------------------------+
+    |                   |        |   Current optimal (:math:`O_{t}`)               |
+    +-------------------+--------+-----------------+-------------------------------+
+    |                   |        |     NA          |   not NA                      |
+    +-------------------+--------+-----------------+-------------------------------+
+    | Previous          |    NA  |     NA          |     O_{t}                     |
+    | realised          +--------+-----------------+-------------------------------+
+    | (:math:`R_{t-1}`) | not NA | :math:`R_{t-1}` | :math:`R_{t-1}(1-a) + O_{t}a` |
+    +-------------------+--------+-----------------+-------------------------------+
+
+    Initial missing values are kept, and the first observed optimal value is accepted as
+    the first realised value (as with the start of the recursion above). After this, if
+    the current optimal value is missing, then the previous estimate of the realised
+    value is held over until it can next be updated from observed data.
+
     Args:
         values: The values to apply the memory effect to.
-        alpha: The relative weight applied to the most recent observation
+        alpha: The relative weight applied to the most recent observation.
+        handle_nan: Allow missing values to be handled.
 
     Returns:
         An array of the same shape as ``values`` with the memory effect applied.
     """
+
+    # Check for nan and nan handling
+    nan_present = np.any(np.isnan(values))
+    if nan_present and not handle_nan:
+        raise ValueError("Missing values in data passed to memory_effect")
 
     # Initialise the output storage and set the first values to be a slice along the
     # first axis of the input values
     memory_values = np.empty_like(values, dtype=np.float32)
     memory_values[0] = values[0]
 
-    # Loop over the first axis, in each case taking slices through the first axis of the
-    # inputs. This handles arrays of any dimension.
+    # Handle the data if there are no missing data,
+    if not nan_present:
+        # Loop over the first axis, in each case taking slices through the first axis of
+        # the inputs. This handles arrays of any dimension.
+        for idx in range(1, len(memory_values)):
+            memory_values[idx] = (
+                memory_values[idx - 1] * (1 - alpha) + values[idx] * alpha
+            )
+
+        return memory_values
+
+    # Otherwise, do the same thing but handling missing data at each step.
     for idx in range(1, len(memory_values)):
-        memory_values[idx] = memory_values[idx - 1] * (1 - alpha) + values[idx] * alpha
+        # Need to check for nan conditions:
+        # - the previous value might be nan from an initial nan or sequence of nans, in
+        #   which case the current value is accepted without weighting - it could be nan
+        #   itself to extend a chain of initial nan values.
+        # - the current value might be nan, in which case the previous value gets
+        #   held over as the current value.
+        prev_nan = np.isnan(memory_values[idx - 1])
+        curr_nan = np.isnan(values[idx])
+        memory_values[idx] = np.where(
+            prev_nan,
+            values[idx],
+            np.where(
+                curr_nan,
+                memory_values[idx - 1],
+                memory_values[idx - 1] * (1 - alpha) + values[idx] * alpha,
+            ),
+        )
 
     return memory_values
 
@@ -92,7 +148,8 @@ class FastSlowPModel:
     * The :meth:`~pyrealm.pmodel.subdaily.memory_effect` function is then used to
       calculate realised slowly responding values for :math:`\xi`, :math:`V_{cmax25}`
       and :math:`J_{max25}`, given a weight :math:`\alpha \in [0,1]` that sets the speed
-      of acclimation.
+      of acclimation. The ``handle_nan`` argument is passed to this function to set
+      whether missing values in the optimal predictions are permitted and handled.
     * The realised values are then filled back onto the original subdaily timescale,
       with :math:`V_{cmax}` and :math:`J_{max}` then being calculated from the slowly
       responding :math:`V_{cmax25}` and :math:`J_{max25}` and the actual subdaily
@@ -107,6 +164,8 @@ class FastSlowPModel:
         fapar: The :math:`f_{APAR}` for each observation.
         ppfd: The PPDF for each observation.
         alpha: The :math:`\alpha` weight.
+        handle_nan: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect` function
+          be allowe to handle missing values.
         kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -).
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.
@@ -120,6 +179,7 @@ class FastSlowPModel:
         fapar: NDArray,
         alpha: float = 1 / 15,
         kphio: float = 1 / 8,
+        handle_nan: bool = False,
         fill_kind: str = "previous",
     ) -> None:
         # Warn about the API
@@ -192,11 +252,17 @@ class FastSlowPModel:
         )
 
         # Calculate the realised values from the instantaneous optimal values
-        self.xi_real: NDArray = memory_effect(self.pmodel_acclim.optchi.xi, alpha=alpha)
+        self.xi_real: NDArray = memory_effect(
+            self.pmodel_acclim.optchi.xi, alpha=alpha, handle_nan=handle_nan
+        )
         r"""Realised daily slow responses in :math:`\xi`"""
-        self.vcmax25_real: NDArray = memory_effect(self.vcmax25_opt, alpha=alpha)
+        self.vcmax25_real: NDArray = memory_effect(
+            self.vcmax25_opt, alpha=alpha, handle_nan=handle_nan
+        )
         r"""Realised daily slow responses in :math:`V_{cmax25}`"""
-        self.jmax25_real: NDArray = memory_effect(self.jmax25_opt, alpha=alpha)
+        self.jmax25_real: NDArray = memory_effect(
+            self.jmax25_opt, alpha=alpha, handle_nan=handle_nan
+        )
         r"""Realised daily slow responses in :math:`J_{max25}`"""
 
         # Fill the daily realised values onto the subdaily scale
@@ -292,6 +358,8 @@ class FastSlowPModel_JAMES:
         fapar: The :math:`f_{APAR}` for each observation.
         ppfd: The PPDF for each observation.
         alpha: The :math:`\alpha` weight.
+        handle_nan: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect` function
+          be allowe to handle missing values.
         kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -).
         vpd_scaler: An alternate
           :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance used to
@@ -310,6 +378,7 @@ class FastSlowPModel_JAMES:
         ppfd: NDArray,
         fapar: NDArray,
         alpha: float = 1 / 15,
+        handle_nan: bool = False,
         kphio: float = 1 / 8,
         vpd_scaler: Optional[FastSlowScaler] = None,
         fill_from: Optional[np.timedelta64] = None,
@@ -388,9 +457,13 @@ class FastSlowPModel_JAMES:
         )
 
         # Calculate the realised values from the instantaneous optimal values
-        self.vcmax25_real: NDArray = memory_effect(self.vcmax25_opt, alpha=alpha)
+        self.vcmax25_real: NDArray = memory_effect(
+            self.vcmax25_opt, alpha=alpha, handle_nan=handle_nan
+        )
         r"""Realised daily slow responses in :math:`V_{cmax25}`"""
-        self.jmax25_real: NDArray = memory_effect(self.jmax25_opt, alpha=alpha)
+        self.jmax25_real: NDArray = memory_effect(
+            self.jmax25_opt, alpha=alpha, handle_nan=handle_nan
+        )
         r"""Realised daily slow responses in :math:`J_{max25}`"""
 
         # Calculate the daily xi value, which does not have a slow reponse in this
