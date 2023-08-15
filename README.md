@@ -2,7 +2,7 @@
 
 These are development notes for the package, user documentation can be found at:
 
-[](https://pyrealm.readthedocs.io/)
+[https://pyrealm.readthedocs.io/](https://pyrealm.readthedocs.io/)
 
 ## Overview
 
@@ -21,7 +21,7 @@ development and then for package building and publication. You will need to inst
 
 The codebase is developed in `git` with a repository at:
 
-[](https://github.com/davidorme/pyrealm)
+[https://github.com/davidorme/pyrealm](https://github.com/davidorme/pyrealm)
 
 It uses the `git flow` model for development and release. Briefly:
 
@@ -74,7 +74,7 @@ The project uses continuous integration via GitHub Actions to check that the pac
 building correctly and that both `doctest` and `pytest` tests are passing. The status of
 builds can be seen at:
 
-[](https://github.com/davidorme/pyrealm/actions)
+[https://github.com/davidorme/pyrealm/actions](https://github.com/davidorme/pyrealm/actions)
 
 ## Documentation
 
@@ -116,7 +116,7 @@ make html
 
 The documentation for the package is hosted at:
 
-[](https://pyrealm.readthedocs.io/en/develop/pmodel.html)
+[https://pyrealm.readthedocs.io/en/develop/pmodel.html](https://pyrealm.readthedocs.io/en/develop/pmodel.html)
 
 This has been configured to build commits to the `master` branch, which should
 generate version specific sets of documentation.
@@ -211,7 +211,7 @@ poetry publish -r test-pypi
 
 Log in to:
 
-[](https://readthedocs.org)
+[https://readthedocs.org](https://readthedocs.org)
 
 which is the admin site controlling the build process. From the Versions tab, activate
 the `release/new_release` branch and wait for it to build. Check the Builds tab to see
