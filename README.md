@@ -20,12 +20,15 @@ With that, install the dependencies defined in [pyproject.toml](https://github.c
 ```bash
 poetry install
 ```
+
 Then you can run the tests
 
 ```bash
 poetry run pytest
 ```
+
 ***TODO**: Add minimum working example, i.e., how can I run a small thing myself?*
+
 ***TODO**: Add what the required inputs and expected outputs are.*
 
 ## Code development
