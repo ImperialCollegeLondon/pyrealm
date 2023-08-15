@@ -1,7 +1,6 @@
 # The `pyrealm` package
 
 These are development notes for the package, user documentation can be found at:
-
 [https://pyrealm.readthedocs.io/](https://pyrealm.readthedocs.io/)
 
 ## Overview
@@ -9,16 +8,16 @@ These are development notes for the package, user documentation can be found at:
 This a Python 3 package intended to provide a common framework for a number of
 related models of plant productivity, growth and demography.
 
-***TODO**:Add explanation what the code actually does, how it is run 
-(standalone? coupled? what are the inputs and outputs?), and, if applicable, 
+***TODO**:Add explanation what the code actually does, how it is run
+(standalone? coupled? what are the inputs and outputs?), and, if applicable,
 relevant papers*
 
 ## Quick Start
 
-The code needs Python 3, version 3.9 or newer, and [Poetry](https://python-poetry.org/) 
+The code needs Python 3, version 3.9 or newer, and [Poetry](https://python-poetry.org/)
 for dependency management.
 
-With that, install the dependencies defined in 
+With that, install the dependencies defined in
 [pyproject.toml](https://github.com/ImperialCollegeLondon/pyrealm/blob/develop/pyproject.toml)
 
 ```bash
@@ -131,8 +130,8 @@ included simply into the documentation.
 
 Additional python packages given in `docs/source/requirements.txt` are needed to build
 the documentation. To actually build the documentation, use `make` in the package root,
-which will use the `Makefile` created by `sphinx-quickstart`. 
-*TODO: Is this paragraph still true, i.e., is it replaced by the commands below or does 
+which will use the `Makefile` created by `sphinx-quickstart`.
+*TODO: Is this paragraph still true, i.e., is it replaced by the commands below or does
 it still hold?*
 
 ```bash
