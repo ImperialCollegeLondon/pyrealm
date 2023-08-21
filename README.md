@@ -37,7 +37,7 @@ There is another
 as well as a
 [worked example comparing C3 plants and C4 plants](https://pyrealm.readthedocs.io/en/latest/users/pmodel/c3c4model.html#worked-example).
 
-***TODO**: Add code for minimum working example, i.e., how can I run a small thing myself? 
+***TODO**: Add code for minimum working example, i.e., how can I run a small thing myself?
 -- Is the PModel example minimal?*
 
 ***TODO**: Add what the required inputs and expected outputs of a general pyrealm run are.*
