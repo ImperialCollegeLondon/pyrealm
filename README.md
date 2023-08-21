@@ -30,7 +30,12 @@ Then you can run the tests
 poetry run pytest
 ```
 
-A code example with explanations of how to pyrealm using the P Model can be found as [worked example in the documentation](https://pyrealm.readthedocs.io/en/latest/users/pmodel/pmodel_details/worked_examples.html). There is another [worked example of the P Model with acclimatisation](https://pyrealm.readthedocs.io/en/latest/users/pmodel/subdaily_details/worked_example.html), as well as a [worked example comparing C3 plants and C4 plants](https://pyrealm.readthedocs.io/en/latest/users/pmodel/c3c4model.html#worked-example). 
+A code example with explanations of how to pyrealm using the P Model can be found as
+[worked example in the documentation](https://pyrealm.readthedocs.io/en/latest/users/pmodel/pmodel_details/worked_examples.html).
+There is another
+[worked example of the P Model with acclimatisation](https://pyrealm.readthedocs.io/en/latest/users/pmodel/subdaily_details/worked_example.html),
+as well as a
+[worked example comparing C3 plants and C4 plants](https://pyrealm.readthedocs.io/en/latest/users/pmodel/c3c4model.html#worked-example).
 
 ***TODO**: Add code for minimum working example, i.e., how can I run a small thing myself? -- Is the PModel example minimal?*
 
