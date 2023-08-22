@@ -45,6 +45,11 @@ The package website provides worked examples of using `pyrealm`, for example to:
 * [estimate C3/C4
   competition](https://pyrealm.readthedocs.io/en/latest/users/pmodel/c3c4model.html#worked-example).
 
+## Developing `pyrealm`
+
+If you are interested in contributing to the development of `pyrealm`, please read the
+[guide for contributors](./CONTRIBUTING.md).
+
 ## Support and funding
 
 Development of the `prealm` package has been supported by the following grants and
