@@ -53,11 +53,11 @@ The package uses the `git flow` model for development and release:
 * All code development should happen specific `feature/feature_name` branches.
 * Pull requests (PR) should be made to merge feature branches into the `develop` branch.
 * Candidate release versions should be made on specific `release/x.y.z` branches
-  and these are then committed to the `master` branch only after final checking.
-* The `master` branch should only ever contain commits representing new release
-  versions - do not work on the `master` branch.
+  and these are then committed to the `main` branch only after final checking.
+* The `main` branch should only ever contain commits representing new release
+  versions - do not work on the `main` branch.
 
-Both the `develop` and `master` branches are protected on GitHub to avoid accidents!
+Both the `develop` and `main` branches are protected on GitHub to avoid accidents!
 
 ### Code quality
 
@@ -150,7 +150,7 @@ The documentation for the package is hosted at:
 
 [https://pyrealm.readthedocs.io/en/develop/pmodel.html](https://pyrealm.readthedocs.io/en/develop/pmodel.html)
 
-This has been configured to build commits to the `master` branch, which should
+This has been configured to build commits to the `main` branch, which should
 generate version specific sets of documentation.
 
 ### Referencing
@@ -169,7 +169,7 @@ Releasing a new version of the package follows the flow below:
 2. Check that this branch builds correctly, that the documentation builds correctly and
    that the package publishes to the `test-pypi` repository.
 3. When all is well, create pull requests on GitHub to merge the `release` branch into
-   both `develop` and `master`, along with a version tag for the release.
+   both `develop` and `main`, along with a version tag for the release.
 4. Once you have updated your local repository, then the tag can be used to build and
    publish the final version to the main PyPi site.
 
@@ -251,12 +251,12 @@ that it has built successfully and maybe check updates! If it has built succesfu
 check pages to make sure that page code has executed successfully, and then go back to
 the Versions tab and deactivate and hide the branch.
 
-### Create pull requests into `master` and `develop`
+### Create pull requests into `main` and `develop`
 
 If all is well, then two PRs need to be made on GitHub:
 
-* The `release` branch into `master`, to bring all commits since the last release and
-  any fixes on release into `master`.
+* The `release` branch into `main`, to bring all commits since the last release and
+  any fixes on release into `main`.
 * The `release` branch into `develop`, to bring any `release` fixes back into `develop`.
 
 Once both of those have been merged, the `feature` branch can be deleted.
@@ -264,15 +264,15 @@ Once both of those have been merged, the `feature` branch can be deleted.
 ### Tag, build and publish
 
 Once the `origin` repository is merged, then use `git pull` to bring `develop` and
-`master` up to date on a local repo. Then, create a tag using the release version.
+`main` up to date on a local repo. Then, create a tag using the release version.
 
 ```sh
-git checkout master
+git checkout main
 git tag <version>
 git push --tags
 ```
 
-The final commit on `master` is now tagged with the release version. You can add tags on
+The final commit on `main` is now tagged with the release version. You can add tags on
 the GitHub website, but only by using the GitHub release system and we are using PyPi to
 distribute package releases.
 
@@ -283,7 +283,7 @@ API token for PyPi.
 poetry config pypi-token.pypi <your-token>
 ```
 
-And now you can build the packages from `master` and publish.
+And now you can build the packages from `main` and publish.
 
 ```sh
 poetry build
