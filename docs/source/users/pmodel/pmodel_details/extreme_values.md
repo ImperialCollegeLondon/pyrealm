@@ -18,7 +18,7 @@ The four photosynthetic environment variables and the effect of temperature on t
 temperature dependence of quantum yield efficiency are all calculated directly from the
 input forcing variables. While the majority of those calculations behave smoothly with
 extreme values of temperature and atmospheric pressure, the calculation of the relative
-viscosity of water ($\eta^*$) does not handle low temperatures well.
+viscosity of water ($\eta^{\ast}$) does not handle low temperatures well.
 
 Forcing datasets for the input to the P Model - particularly remotely sensed datasets -
 often contain extreme values that may lead to unexpected model predictions. This page
@@ -85,7 +85,7 @@ pyplot.show()
 <!-- markdownlint-disable-next-line MD049 -->
 The photorespiratory compensation point ($\Gamma^*$) varies with as a function of
 temperature and atmospheric pressure, and behaves smoothly with extreme inputs. Note
-that again, $\Gamma^*$ has non-zero values for sub-zero temperatures.
+that again, $\Gamma^_$ has non-zero values for sub-zero temperatures.
 
 ```{code-cell}
 :tags: [hide-input]
