@@ -26,9 +26,9 @@ poetry run pytest
 ### Example package usage
 
 The package is designed to provide a set of tools to be used within a Python script or
-notebook. The package website provides some minimal examples of using the various
-modules within `pyrealm` - see the [README](README.md#using-pyrealm) for links to those
-pages - but typically a user will load input data, pass it into imported `pyrealm`
+notebook. The package documentation provides some minimal examples of using the various
+modules within `pyrealm` - see the [README](README.md#using-pyrealm) for links to these
+examples - but typically a user will load input data, pass it into imported `pyrealm`
 classes and functions and then use the outputs in further functions.
 
 Some of the package modules - such as the `pmodel` and `splash` modules - require input
