@@ -2,26 +2,28 @@
 
 ## Quick Start
 
-The code needs Python 3, version 3.9 or newer. The `pyrealm` package can be installed
+### Installation
+
+The package requires Python 3.9 or newer. The `pyrealm` package can be installed
 from [PyPi](https://pypi.org/project/pyrealm/) but to develop the package you will need
 to clone this repository and then install
 [Poetry](https://python-poetry.org/docs/#installation) for dependency management and to
 set up the development environment.
 
 From within the cloned repository, first install the dependencies defined in
-[pyproject.toml](https://github.com/ImperialCollegeLondon/pyrealm/blob/develop/pyproject.toml)
+[pyproject.toml](https://github.com/ImperialCollegeLondon/pyrealm/blob/develop/pyproject.toml):
 
 ```bash
 poetry install
 ```
 
-Then you can run the tests
+Then you can run the tests to check that the installation is working correctly:
 
 ```bash
 poetry run pytest
 ```
 
-## Example usage
+### Example package usage
 
 The package is designed to provide a set of tools to be used within a Python script or
 notebook. The package website provides some minimal examples of using the various
@@ -32,15 +34,16 @@ classes and functions and then use the outputs in further functions.
 Some of the package modules - such as the `pmodel` and `splash` modules - require input
 data in arrays, typically with spatial and temporal dimensions loaded from NetCDF files
 or similar formats. Other modules - such as the `tmodel` - work on a site by site basis
-and require the configuration of site-specific details.
+and require the configuration of site-specific details, such as the definition of plant
+functional types and plant community structures.
 
 ## Code development
 
-### Package managment
+### Package management
 
 The package uses `poetry` to manage dependencies, generate virtual environments for code
 development and then for package building and publication. You will need to install
-`poetry` to develop the code.
+`poetry>=1.2.0` to develop the code.
 
 ### Source code management
 
@@ -59,49 +62,18 @@ The package uses the `git flow` model for development and release:
 
 Both the `develop` and `main` branches are protected on GitHub to avoid accidents!
 
-### Code quality
+## Code documentation
 
-The project uses the `pre-commit` tool to enforce code quality. The configuration file
-`.pre-commit-config.yaml` shows the details of the tool chain, but `isort`, `black`,
-`flake8` and `markdownlint` are used to maintain code quality. You will need to install
-`pre-commit` to develop package code, and each PR must pass the same set of checks.
+### Docstrings
 
-### Code testing
+The module codes uses docstrings written in the [Google
+style](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
+Unlike the main documentation pages, the docstrings in code are written using
+reStructuredText because the `autodoc` functions in `sphinx` currently rely on `rst`
+inputs. This allows the function documentation to be stored alongside the code and
+included simply into the documentation.
 
-#### Using `doctest`
-
-The package docstrings contain `doctest` examples of code use. These are intended to
-demonstrate use and to validate a reference set of inputs against expected outputs. They
-do not provide extensive unit testing! To run the docstring tests, use:
-
-```bash
-python -m doctest pyrealm/pmodel.py
-python -m doctest pyrealm/*.py
-```
-
-For `doctest` on warnings, see the example for `pyrealm.utilities.convert_rh_to_vpd`
-which redirects the stderr to stdout to allow for the warning text to be included in the
-doctest.
-
-#### Using `pytest`
-
-The `test` directory contains `pytest` modules to provide greater testing of different
-input combinations and to check errors are raised correctly. These are the main tests
-that the package is behaving as expected.
-
-```bash
-pytest
-```
-
-### Continuous integration
-
-The project uses continuous integration via GitHub Actions to check that the package is
-building correctly and that both `doctest` and `pytest` tests are passing. The status of
-builds can be seen at:
-
-[https://github.com/davidorme/pyrealm/actions](https://github.com/davidorme/pyrealm/actions)
-
-## Documentation
+### Package website and documentation
 
 The `pyrealm` package is documented using `sphinx`, with source material in the
 `docs/source` directory.
@@ -117,28 +89,106 @@ The `sphinx` configuration includes the `sphinx.ext.mathjax` extension to suppor
 mathematical notation. This has been configured to also load the `mhchem` extension,
 supporting the rendering of chemical notation.
 
-### Docstrings
+## Code quality and continuous integration
 
-The module codes uses docstrings written in the [Google
-style](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
-Unlike the main documentation pages, the docstrings in code are written using
-reStructuredText because the `autodoc` functions in `sphinx` currently rely on `rst`
-inputs. This allows the function documentation to be stored alongside the code and
-included simply into the documentation.
+The project uses continuous integration (CI) via GitHub Actions to maintain code quality
+and check confirm that the package and website are building correctly. The
+[`pyrealm_ci.yaml`](.github/workflows/pyrealm_ci.yaml) currently defines three CI jobs:
+
+* code quality assurance (`qa`)
+* code testing (`test`)
+* documentation building (`docs_build`)
+
+The status of code checking for pushed commits can be seen at:
+
+[https://github.com/ImperialCollegeLondon/pyrealm/actions](https://github.com/ImperialCollegeLondon/pyrealm/actions)
+
+Although GitHub Actions automates these steps for any pushes, pull requests and releases
+on the repository, you should also perform the same steps locally before submitting code
+to ensure that your code passes testing.
+
+### Code quality assurance
+
+The project uses `pre-commit` to enforce code quality. The configuration file
+[`.pre-commit-config.yaml`](.pre-commit-config.yaml) shows the details of the tool
+chain, but `isort`, `black`, `flake8` and `markdownlint` are used to maintain code
+quality.
+
+You will need to [install `pre-commit`](https://pre-commit.com/#install) to develop
+package code. Once you have installed `pre-commit` you then need to install the
+configuration for the repository:
+
+```bash
+pre-commit install
+```
+
+After this step, all commits within the repository must then pass the suite of quality
+assurance checks. Note that the repository also uses a separate GitHub action to update
+the code quality assurance toolchain on a weekly basis, so you will periodically see
+updates to the checking.
+
+### Code testing
+
+The `pyrealm` package principally uses `pytest` to provide benchmark tests, unit tests
+and integration testing. In addition, `doctest` is used to maintain examples of code
+usage in the package docstrings and ensure that the documented return values are
+correct.
+
+#### Using `pytest`
+
+The `test` directory contains modules providing test suites for each of the different
+package modules. This includes:
+
+* benchmark testing the output of `pyrealm` code against previously existing
+  implementations of some functionality, such as the `rpmodel` and `SPLASH` packages.
+* unit testing of individual functions and methodsm and,
+* integration testing of using combinations of modules.
+
+These are the main tests that the package is behaving as expected and producing stable
+outputs and can be run from repository using:
+
+```bash
+poetry run pytest
+```
+
+#### Using `doctest`
+
+The package docstrings contain `doctest` examples of code use. These examples are
+intended to provide simple examples of method or function use and generate an output and
+the `doctest` process is used to validate that the provided values are correct.
+
+These tests are automatically run when `pytest` is run, but individual module files can
+be checked using, for example:
+
+```bash
+poetry run python -m doctest pyrealm/pmodel/pmodel.py
+```
+
+Normally, `doctest` is used to test a return value but can also be used to check that an
+error or warning is raised. See the example for `pyrealm.utilities.convert_rh_to_vpd`
+which redirects the stderr to stdout to allow for the warning text to be included in the
+doctest.
 
 ### Building the documentation
 
-Additional python packages given in `docs/source/requirements.txt` are needed to build
-the documentation. To actually build the documentation, use `make` in the package root,
-which will use the `Makefile` created by `sphinx-quickstart`.
-*TODO: Is this paragraph still true, i.e., is it replaced by the commands below or does
-it still hold?*
+`sphinx` is used to build an HTML version of the package documentation provided in
+`docs/source` and to build the API documentation provided in the code docstrings. The
+`sphinx` building process requires some extra packages, but these are included in the
+`docs` group in `pyproject.toml` and should be installed.
+
+In order to build the package documentation, Jupyter needs to be able to associate the
+documentation files with the Python environment managed by `poetry`. This is done by
+installing the `poetry` environment as a new Jupyter kernel with a fixed name. This
+allows all build systems to run notebooks using the correct build environment:
 
 ```bash
-# Install dependencies
-poetry install
 # Set ipython kernel
 poetry run python -m ipykernel install --user --name=pyrealm_python3
+```
+
+In order to build the package documentation, the following command can be used:
+
+```bash
 # Build docs using sphinx
 cd docs
 poetry run sphinx-build -W --keep-going source build
@@ -150,16 +200,16 @@ The documentation for the package is hosted at:
 
 [https://pyrealm.readthedocs.io/en/develop/pmodel.html](https://pyrealm.readthedocs.io/en/develop/pmodel.html)
 
-This has been configured to build commits to the `main` branch, which should
-generate version specific sets of documentation.
+This has been configured to automatically build commits to the `main` branch, which
+should generate version specific sets of documentation.
 
 ### Referencing
 
-The documentation uses the `sphinxcontrib-bibtex` package to support citations.
-This uses Latex like citation keys in the documentation to insert references and
-build a bibliography. The reference library in `source/refs.bib` needs to be
-kept up to date with the literature for the project. The `sphinx_astrorefs` package is
-used to provide an Author Date style citation format.
+The documentation uses the `sphinxcontrib-bibtex` package to support citations. This
+uses Latex like citation keys in the documentation to insert references and build a
+bibliography. The `sphinx` configuration in `docs/source/conf.py` provides a custom
+Author/Year citation style. The reference library in `source/refs.bib` needs to be kept
+up to date with the literature for the project.
 
 ## Release process
 
