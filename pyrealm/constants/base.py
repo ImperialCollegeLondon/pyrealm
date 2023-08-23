@@ -22,11 +22,12 @@ This implementation has the following desired features:
 
 
 import json
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 
 from dacite.core import from_dict
 
 
+@dataclass(frozen=True)
 class ConstantsClass:
     """Base class for model constants.
 
