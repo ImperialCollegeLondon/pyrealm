@@ -50,7 +50,7 @@ def calc_density_h2o(
     # It doesn't make sense to use this function for tc < 0, but in particular
     # the calculation shows wild numeric instability between -44 and -46 that
     # leads to numerous downstream issues - see the extreme values documentation.
-    if safe and np.nanmin(tc) < -30:
+    if safe and np.nanmin(tc) < np.array([-30]):
         raise ValueError(
             "Water density calculations below about -30°C are "
             "unstable. See argument safe to calc_density_h2o"
@@ -493,8 +493,9 @@ def calc_kp_c4(
     Examples:
         >>> # Michaelis-Menten coefficient at 20 degrees Celsius and standard
         >>> # atmosphere (in Pa):
-        >>> round(calc_kp_c4(20, 101325), 5)
-        9.26352
+        >>> import numpy as np
+        >>> calc_kp_c4(np.array([20]), np.array([101325])).round(5)
+        array([12.46385])
     """
 
     # Check inputs, return shape not used
@@ -566,10 +567,9 @@ def calc_soilmstress_stocker(
         A numeric value or values for :math:`\beta`
 
     Examples:
-        >>> # Relative reduction (%) in GPP due to soil moisture stress at
-        >>> # relative soil water content ('soilm') of 0.2:
-        >>> round((calc_soilmstress(0.2) - 1) * 100, 5)
-        -11.86667
+        >>> # Proportion of well-watered GPP available at soil moisture of 0.2
+        >>> calc_soilmstress_stocker(np.array([0.2])).round(5)
+        array([0.88133])
     """
 
     # TODO - move soilm params into standalone param class for this function -
@@ -645,7 +645,11 @@ def calc_soilmstress_mengoli(
         A numeric value or values for :math:`f(\theta)`
 
     Examples:
-        >>> TODO
+        >>> import numpy as np
+        >>> # Proportion of well-watered GPP available with soil moisture and aridity
+        >>> # index values of 0.6
+        >>> calc_soilmstress_mengoli(np.array([0.6]), np.array([0.6])).round(5)
+        array([0.78023])
     """
 
     # TODO - move soilm params into standalone param class for this function -
