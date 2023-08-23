@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+title: pyrealm
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: C. David L.
+    family-names: Orme
+    email: d.orme@imperial.ac.uk
+    affiliation: Imperial College London
+    orcid: 'https://orcid.org/0000-0002-7005-1394'
+repository-code: 'https://github.com/ImperialCollegeLondon/pyrealm'
+url: 'https://pyrealm.readthedocs.io'
+repository: 'https://pypi.org/project/pyrealm/'
+abstract: >-
+  The pyrealm package provides an integrated set of Python 3
+  modules for modelling plant productivity, growth and
+  demography and the estimation of growing conditions.
+license: MIT
+
