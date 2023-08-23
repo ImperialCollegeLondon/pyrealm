@@ -106,15 +106,18 @@ class CalcCarbonIsotopes:
         :cite:p:`lavergne:2022a`.
 
         Examples:
-            >>> ppar = PModelParams(beta_cost_ratio_c4=35)
-            >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
-            ...                         vpd=1000, const=ppar)
+            >>> import numpy as np
+            >>> from pyrealm.pmodel import PModel, PModelEnvironment
+            >>> from pyrealm.constants import PModelConst
+            >>> const = PModelConst(beta_cost_ratio_c4=35)
+            >>> env = PModelEnvironment(tc=np.array([20]), patm=np.array([101325]),
+            ...              co2=np.array([400]), vpd=np.array([1000]), const=const)
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
             >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
-            >>> round(mod_c4_delta.Delta13C, 4)
-            5.6636
-            >>> round(mod_c4_delta.d13C_leaf, 4)
-            -13.9844
+            >>> mod_c4_delta.Delta13C.round(4)
+            array([5.6636])
+            >>> mod_c4_delta.d13C_leaf.round(4)
+            array([-13.9844])
         """
 
         # Equation from C3/C4 paper
@@ -136,13 +139,18 @@ class CalcCarbonIsotopes:
         sensitive correction term is provided in commented code but not used.
 
         Examples:
-            >>> ppar = PModelParams(beta_cost_ratio_c4=35)
-            >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
-            ...                         vpd=1000, const=ppar)
+            >>> import numpy as np
+            >>> from pyrealm.pmodel import PModel, PModelEnvironment
+            >>> from pyrealm.constants import PModelConst
+            >>> const = PModelConst(beta_cost_ratio_c4=35)
+            >>> env = PModelEnvironment(tc=np.array([20]), patm=np.array([101325]),
+            ...              co2=np.array([400]), vpd=np.array([1000]), const=const)
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
             >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
-            >>> # round(mod_c4_delta.Delta13C, 4)  # NOT CHECKED 5.2753
-            >>> # round(mod_c4_delta.d13C_leaf, 4)  # NOT CHECKED -13.6036
+            >>> # mod_c4_delta.Delta13C.round(4)
+            >>> # array([5.2753])
+            >>> # mod_c4_delta.d13C_leaf.round(4)
+            >>> # array([-13.6036])
         """
 
         warn("This method is experimental code from Alienor Lavergne")
@@ -173,14 +181,19 @@ class CalcCarbonIsotopes:
         effect following :cite:p:`farquhar:1982a`.
 
         Examples:
-            >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
-            ...                         vpd=1000, theta=0.4)
+            >>> import numpy as np
+            >>> from pyrealm.pmodel import PModel, PModelEnvironment
+            >>> env = PModelEnvironment(
+            ...              tc=np.array([20]), patm=np.array([101325]),
+            ...              co2=np.array([400]), vpd=np.array([1000]),
+            ...              theta=np.array([0.4])
+            ... )
             >>> mod_c3 = PModel(env, method_optchi='lavergne20_c3')
             >>> mod_c3_delta = CalcCarbonIsotopes(mod_c3, d13CO2= -8.4, D14CO2 = 19.2)
-            >>> round(mod_c3_delta.Delta13C, 4)
-            20.4056
-            >>> round(mod_c3_delta.d13C_leaf, 4)
-            -28.2296
+            >>> mod_c3_delta.Delta13C.round(4)
+            array([20.4056])
+            >>> mod_c3_delta.d13C_leaf.round(4)
+            array([-28.2296])
         """
 
         # 13C discrimination (permil): Farquhar et al. (1982)
