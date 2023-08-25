@@ -70,7 +70,7 @@ def check_input_shapes(*args: Union[float, int, np.generic, np.ndarray, None]) -
         >>> check_input_shapes(np.array([1,2,3]), 5)
         (3,)
         >>> check_input_shapes(4, 5)
-        1
+        (1,)
         >>> check_input_shapes(np.array([1,2,3]), np.array([1,2]))
         Traceback (most recent call last):
         ...
@@ -284,13 +284,13 @@ def bounds_mask(
         >>> vals = np.array([-15, 20, 30, 124], dtype=np.float)
         >>> np.nansum(vals)
         159.0
-        >>> vals_c = input_mask(vals, 0, 100, label='temperature')
+        >>> vals_c = bounds_mask(vals, 0, 100, label='temperature')
         >>> np.nansum(vals_c)
         50.0
-        >>> vals_c = input_mask(vals, 0, 124, interval_type='[]', label='temperature')
+        >>> vals_c = bounds_mask(vals, 0, 124, interval_type='[]', label='temperature')
         >>> np.nansum(vals_c)
         174.0
-        >>> vals_c = input_mask(vals, 0, 124, interval_type='[)', label='temperature')
+        >>> vals_c = bounds_mask(vals, 0, 124, interval_type='[)', label='temperature')
         >>> np.nansum(vals_c)
         50.0
     """
