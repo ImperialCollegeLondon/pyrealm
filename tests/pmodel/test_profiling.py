@@ -72,8 +72,8 @@ def test_profiling_example():
         gpp_c3=gpp_c3_annual,
         gpp_c4=gpp_c4_annual,
         treecover=np.array([0.5]),
-        below_t_min=np.array([False]),
-        cropland=np.array([False]),
+        below_t_min=np.full_like(pm_env.tc, False, dtype="bool"),
+        cropland=np.full_like(pm_env.tc, False, dtype="bool"),
     )
 
     comp.summarize()
