@@ -7,7 +7,12 @@ def test_profiling_example():
     import numpy as np
     import xarray
 
-    from pyrealm.pmodel import CalcCarbonIsotopes, PModel, PModelEnvironment
+    from pyrealm.pmodel import (
+        C3C4Competition,
+        CalcCarbonIsotopes,
+        PModel,
+        PModelEnvironment,
+    )
 
     # Loading the dataset:
     dpath = resources.files("pyrealm_build_data") / "inputs_data_24.25.nc"
@@ -43,15 +48,45 @@ def test_profiling_example():
     pmod_c4.estimate_productivity(fapar=fapar, ppfd=ppfd)
     pmod_c4.summarize()
 
+    # Profiling the Competition submodule
+    # Competition, using annual GPP from µgC m2 s to g m2 yr
+    gpp_c3_annual = pmod_c3.gpp * (60 * 60 * 24 * 365) * 1e-6
+    gpp_c4_annual = pmod_c4.gpp * (60 * 60 * 24 * 365) * 1e-6
+
+    # Fit the competition model - making some extrenely poor judgements about what is
+    # cropland and what is below the minimum temperature that really should be fixed.
+    comp = C3C4Competition(
+        gpp_c3=gpp_c3_annual,
+        gpp_c4=gpp_c4_annual,
+        treecover=np.array([0.5]),
+        below_t_min=np.array([False]),
+        cropland=np.array([False]),
+    )
+
+    comp.summarize()
+
     # Profiling the isotopes submodule
     # Create some entirely constant atmospheric isotope ratios
-    d13CO2 = np.full_like(pm_env.tc, fill_value=-8.4)
-    D14CO2 = np.full_like(pm_env.tc, fill_value=19.2)
+    constant_d13CO2 = np.array([-8.4])
+    constant_D14CO2 = np.array([19.2])
 
     # Calculate for the C3 model
-    carb_c3 = CalcCarbonIsotopes(pmod_c3, d13CO2=d13CO2, D14CO2=D14CO2)
-    carb_c3.summarize()
+    isotope_c3 = CalcCarbonIsotopes(
+        pmod_c3, d13CO2=constant_d13CO2, D14CO2=constant_D14CO2
+    )
+    isotope_c3.summarize()
 
     # Calculate for the C4 model
-    carb_c4 = CalcCarbonIsotopes(pmod_c4, d13CO2=d13CO2, D14CO2=D14CO2)
-    carb_c4.summarize()
+    isotope_c4 = CalcCarbonIsotopes(
+        pmod_c4, d13CO2=constant_d13CO2, D14CO2=constant_D14CO2
+    )
+    isotope_c4.summarize()
+
+    # Calculate the expected isotopic patterns in locations given the competition model
+    comp.estimate_isotopic_discrimination(
+        d13CO2=constant_d13CO2,
+        Delta13C_C3_alone=isotope_c3.Delta13C,
+        Delta13C_C4_alone=isotope_c4.Delta13C,
+    )
+
+    comp.summarize()
