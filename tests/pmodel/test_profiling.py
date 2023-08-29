@@ -10,6 +10,8 @@ def test_profiling_example():
     from pyrealm.pmodel import (
         C3C4Competition,
         CalcCarbonIsotopes,
+        FastSlowPModel,
+        FastSlowScaler,
         PModel,
         PModelEnvironment,
     )
@@ -18,6 +20,17 @@ def test_profiling_example():
     dpath = resources.files("pyrealm_build_data") / "inputs_data_24.25.nc"
 
     ds = xarray.load_dataset(dpath)
+
+    # TODO - this is a bit of a hack because of the current unfriendly handling of data
+    #        that does not form neat blocks of daily data in the subdaily module. The
+    #        test data is a slice along longitude 24.25°E (Finland --> Crete -->
+    #        Botswana) so the actual local times needed for the subdaily module are
+    #        offset from the UTC times in the data. This step reduces the input data to
+    #        complete daily blocks of data using local time
+
+    ds = ds.sel(time=slice("2000-01-01T01:59", "2019-12-31T01:59"))
+    local_offset = np.timedelta64(int((24.25 * (24 / 360)) * 60 * 60), "s")
+    local_time = ds["time"].to_numpy() - local_offset
 
     # Variable set up
     # Air temperature in Kelvin
@@ -90,3 +103,20 @@ def test_profiling_example():
     )
 
     comp.summarize()
+
+    # Profiling the subdaily submodule
+
+    # FastSlowPModel with 1 hour noon acclimation window
+    fsscaler = FastSlowScaler(local_time)
+    fsscaler.set_window(
+        window_center=np.timedelta64(12, "h"),
+        half_width=np.timedelta64(1, "h"),
+    )
+    fs_pmod = FastSlowPModel(
+        env=pm_env,
+        fs_scaler=fsscaler,
+        handle_nan=True,
+        fapar=fapar,
+        ppfd=ppfd,
+        alpha=1 / 15,
+    )
