@@ -7,7 +7,7 @@ def test_profiling_example():
     import numpy as np
     import xarray
 
-    from pyrealm.pmodel import PModel, PModelEnvironment
+    from pyrealm.pmodel import CalcCarbonIsotopes, PModel, PModelEnvironment
 
     # Loading the dataset:
     dpath = resources.files("pyrealm_build_data") / "inputs_data_24.25.nc"
@@ -32,6 +32,7 @@ def test_profiling_example():
     # Generate and check the PModelEnvironment
     pm_env = PModelEnvironment(tc=tc, patm=patm, vpd=vpd, co2=co2)
 
+    # Profiling the PModel submodule
     # Standard C3 PModel
     pmod_c3 = PModel(env=pm_env, kphio=1 / 8)
     pmod_c3.estimate_productivity(fapar=fapar, ppfd=ppfd)
@@ -41,3 +42,16 @@ def test_profiling_example():
     pmod_c4 = PModel(env=pm_env, kphio=1 / 8, method_optchi="c4")
     pmod_c4.estimate_productivity(fapar=fapar, ppfd=ppfd)
     pmod_c4.summarize()
+
+    # Profiling the isotopes submodule
+    # Create some entirely constant atmospheric isotope ratios
+    d13CO2 = np.full_like(pm_env.tc, fill_value=-8.4)
+    D14CO2 = np.full_like(pm_env.tc, fill_value=19.2)
+
+    # Calculate for the C3 model
+    carb_c3 = CalcCarbonIsotopes(pmod_c3, d13CO2=d13CO2, D14CO2=D14CO2)
+    carb_c3.summarize()
+
+    # Calculate for the C4 model
+    carb_c4 = CalcCarbonIsotopes(pmod_c4, d13CO2=d13CO2, D14CO2=D14CO2)
+    carb_c4.summarize()
