@@ -30,10 +30,30 @@ The `pyrealm` package requires Python 3.9 or greater and can be installed from
 pip install pyrealm
 ```
 
-At present, the package is designed for use with Python scripts or Jupyter notebooks.
-Users will typically load data, using for example [`numpy`](https://numpy.org/) or
-[`xarray`](https://docs.xarray.dev/en/stable/), and then import and call `pyrealm`
-classes and functions.
+You can now get started using `pyrealm`. For example, to calculate the estimated gross
+primary productivity of a C3 plant in a location, start a Python interpreter, using
+`python`, `python3` or `ipython` depending on your installation, and run:
+
+```python
+import numpy as np
+from pyrealm.pmodel import PModelEnvironment, PModel
+
+# Calculate the photosynthetic environment given the conditions
+env = PModelEnvironment(
+    tc=np.array([20]), vpd=np.array([1000]),
+    co2=np.array([400]), patm=np.array([101325.0])
+)
+
+# Calculate the predictions of the P Model for a C3 plant
+pmodel_c3 = PModel(env)
+
+# Estimate the GPP from the model given the absorbed photosynthetically active light
+pmodel_c3.estimate_productivity(fapar=1, ppfd=300)
+
+# Report the GPP in micrograms of carbon per m2 per second.
+pmodel_c3.gpp
+array([76.42544948])
+```
 
 The package website provides worked examples of using `pyrealm`, for example to:
 
@@ -44,6 +64,11 @@ The package website provides worked examples of using `pyrealm`, for example to:
   , and
 * [estimate C3/C4
   competition](https://pyrealm.readthedocs.io/en/latest/users/pmodel/c3c4model.html#worked-example).
+
+These worked examples also show how `pyrealm` can be used within Python scripts or
+Jupyter notebooks and how to use `pyrealm` with large datasets loaded using
+[`numpy`](https://numpy.org/) or [`xarray`](https://docs.xarray.dev/en/stable/) with
+`pyrealm` classes and functions.
 
 ## Developing `pyrealm`
 
