@@ -26,6 +26,9 @@ jobs:
       with:
         lfs: true
 
+    - name: Pull LFS objects
+        run: git lfs pull
+
     - uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
