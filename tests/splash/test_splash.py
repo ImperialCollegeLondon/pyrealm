@@ -3,7 +3,7 @@
    preceeding soil moisture 
  - estimate_initial_soil_moisture, which assumes a stationary relationship over an
    annual cycle to estimate a starting soil moisture.
- - iterate_water_balance, which iterates an initial soil moisture forward over a time
+ - calculate_soil_moisture, which iterates an initial soil moisture forward over a time
    series.
 """
 from itertools import product
@@ -19,7 +19,7 @@ from splash_fixtures import (  # type: ignore
 
 
 def test_estimate_daily_water_balance_scalar():
-    """Tests a single day calculation aganist the expectations from the __main__ example
+    """Tests a single day calculation against the expectations from the __main__ example
     provided in SPLASH v1.0 splash.py"""
     from pyrealm.splash.splash import SplashModel
     from pyrealm.splash.utilities import Calendar
@@ -205,7 +205,7 @@ def test_run_spin_up_gridded(grid_benchmarks):
 # Testing the iterated water balance calculation
 
 
-def test_iterate_water_balance_oned(one_d_benchmark):
+def test_calculate_soil_moisture_oned(one_d_benchmark):
     "Test the water balance iteration using the original 1D test data from __main__.py."
     from pyrealm.splash.splash import SplashModel
     from pyrealm.splash.utilities import Calendar
@@ -226,7 +226,7 @@ def test_iterate_water_balance_oned(one_d_benchmark):
 
     # Start from the existing spun up start point in the SPLASH outputs - creation of
     # this input is tested above.
-    aet, wn, ro = splash.iterate_water_balance(expected["wn_spun_up"].data)
+    aet, wn, ro = splash.calculate_soil_moisture(expected["wn_spun_up"].data)
 
     assert np.allclose(splash.evap.pet_d, expected["pet_d"].data)
 
@@ -236,7 +236,7 @@ def test_iterate_water_balance_oned(one_d_benchmark):
     assert np.allclose(ro, expected["ro"].data)
 
 
-def test_iterate_water_balance_grid(grid_benchmarks):
+def test_calculate_soil_moisture_grid(grid_benchmarks):
     "Test the water balance iteration using the original 1D test data from __main__.py."
     from pyrealm.splash.splash import SplashModel
     from pyrealm.splash.utilities import Calendar
@@ -257,7 +257,7 @@ def test_iterate_water_balance_grid(grid_benchmarks):
 
     # Start from the existing spun up start point in the SPLASH outputs - creation of
     # this input is tested above.
-    aet, wn, ro = splash.iterate_water_balance(expected["wn_spun_up"].data)
+    aet, wn, ro = splash.calculate_soil_moisture(expected["wn_spun_up"].data)
 
     # Check against the spun up value from the original implementation
     assert np.allclose(aet, expected["aet_d"].data, equal_nan=True)

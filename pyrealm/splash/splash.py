@@ -1,5 +1,5 @@
-"""The splash submodule provides the main SplashModel class for calculating predictions
-under the SPLASH model.
+"""The ``splash`` submodule provides the main SplashModel class for calculating
+predictions under the SPLASH model.
 """  # noqa: D205, D415
 
 from typing import Optional, Union
@@ -16,7 +16,7 @@ from pyrealm.utilities import check_input_shapes
 
 
 class SplashModel:
-    """Fitting the SPLASH model.
+    r"""Fitting the SPLASH model.
 
     The SplashModel class calculates the predictions of the SPLASH v1.0 model
     :cite:p:`davis:2017a`. The input variables of latitude, elevation, temperature,
@@ -25,29 +25,28 @@ class SplashModel:
     attributes as instances of :class:`~pyrealm.splash.solar.DailySolarFluxes` and
     :class:`~pyrealm.splash.evap.DailyEvapFluxes`.
 
+    The inputs to a SplashModel are expected to be numpy arrays with time varying along
+    the first dimension. Other dimensions represent observations at sites on a
+    particular date.  The ``dates`` argument is expected to be a Calendar object with
+    the same length as the first dimension.
 
+    The main use of the SplashModel object is then to calculate the expected actual
+    evapotranspiration (AET), soil moisture and runoff across the time series:
 
-    From those initial calculations, the SPLASH model can then apply a simple
-    calculation to iteratively track soil moisture and other evaporative fluxes through
-    time.
+    * The :meth:`~pyrealm.splash.splash.SplashModel.calculate_soil_moisture` returns
+      these calculations, given an initial estimate of soil moisture in observed sites.
+      This method simply iterates over the days, applying the
+      :meth:`~pyrealm.splash.splash.SplashModel.estimate_daily_water_balance` method to
+      calculate the daily water balance, given the soil moisture of the preceeding day.
 
-        wn[t] = wn[t-1] + self.pn[t] + self.evap.cond[t] - self.evap.aet_d[t]
-
-    Where the resulting soil moisture exceeds the maximum capacity of the soil (kWm),
-    the excess is allocated to run off, leaving the soil saturated. The
-    :meth:`~pyrealm.splash.splash.SplashModel.estimate_daily_water_balance` method is
-    used to calculate soil moisture and runoff for a given day, given the soil moisture
-    of the preceeding day. The
-    meth:`~pyrealm.splash.splash.SplashModel.equilibrate_soil_moisture` method can be
-    used to estimate an initial soil moisture for a time series.
-
-    The inputs to SplashModel are expected to be  numpy arrays with time varying along
-    the first dimension. The dates argument is expected to be a Calendar object with the
-    same length as the first dimension.
+    * The :meth:`~pyrealm.splash.splash.SplashModel.estimate_initial_soil_moisture`
+      method can be used to estimate an initial soil moisture for a time series from the
+      first year of data in a time series.
 
     Args:
         lat: The latitude of observations
-        elv: The elevation of observations, also used to calculate atmospheric pressure.
+        elv: The elevation of observations (m), also used to calculate atmospheric
+            pressure.
         sf: The sunshine fraction (0-1, unitless)
         tc: Air temperature (°C)
         pn: Precipitation (mm/day)
@@ -190,18 +189,22 @@ class SplashModel:
     ) -> tuple[NDArray, NDArray, NDArray]:
         r"""Estimate the daily water balance.
 
-        The daily soil moisture (wn) is estimated using the soil moisture from the
-        preceeding day, the precipitation for each day (``pn``) and the calculated
-        condensation (``cn``) and AET given the evaporative fluxes:
+        This function estimates the daily water balance within observations. The
+        function first calculates the expected actual evapotranspiration (mm d-1,
+        :math:`\textrm{AET}_{[t]}`), given the soil moisture from the preceeding day
+        (mm, :math:`W_{n[t-1]}`). Those are then used, along with the precipitation (mm
+        d-1, :math:`P_{[t]}`) and condensation (mm d-1, :math:`C_{[t]}`) for the current
+        day, to calculate the current soil moisture (mm, :math:`W_{n[t]}`) as:
 
-        ..math::
+        .. math::
 
-            \textrm{wn}_{t} = \textrm{wn}_{t-1} + \textrm{pn} +
-                              \textrm{cn} - \textrm{aet}
+            W_{n[t]} = W_{n[t-1]} + P_{[t]} + C_{[t]} - \textrm{AET}_{[t]}.
 
-        The calculated soil moisture is then partitioned into soil moisture and any
-        surplus runoff, given the maximum soil capacity for each observation. Negative
-        soil moisture values are replaced by zero.
+        When the resulting soil moisture exceeds the maximum capacity of the soil
+        (``kWm``), the excess is allocated to run off, leaving the soil saturated. Note
+        that the soil moisture is not altered by subsurface flow: there is not vertical
+        or horizontal transfer of water from the soil, only losses through
+        evapotranspiration. Negative soil moisture values are replaced by zero.
 
         By default, ``previous_wn`` is expected to provide estimates for all
         observations across all days in the model, but ``day_idx`` can be set to provide
@@ -213,7 +216,7 @@ class SplashModel:
             previous_wn: Soil moisture estimates for the preceeding day (mm)
 
         Returns:
-            A tuple of numpy arrays containing predicted AET, daily soil moisture and
+            A tuple of numpy arrays containing estimated  AET, daily soil moisture and
             runoff.
         """
 
@@ -241,18 +244,24 @@ class SplashModel:
         # additional arrays. aet here is explicitly a single array not a tuple.
         return aet, wn, ro  # type: ignore
 
-    def iterate_water_balance(
+    def calculate_soil_moisture(
         self,
         wn_init: NDArray,
     ) -> tuple[NDArray, NDArray, NDArray]:
-        """Iteratively apply daily water balance calculations along time axis.
+        """Calculate the soil moisture, AET and runoff from a SplashModel.
+
+        This function takes an initial array of soil moisture values for the first
+        observations in a SplashModel time series and then iteratively applies the daily
+        water balance calculations along the time axis using the
+        :meth:`~pyrealm.splash.splash.SplashModel.estimate_daily_water_balance` method.
+        This produces the expected actual evapotranspiration (AET), soil moisture,
+        runoff and for all sites across the time series.
 
         Args:
             wn_init: The initial state of the soil moisture for observations
 
         Returns:
             A tuple of numpy arrays containing predicted AET, soil moisture and runoff.
-
         """
 
         # TODO - check input shapes

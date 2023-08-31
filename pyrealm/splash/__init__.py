@@ -1,5 +1,5 @@
 """The splash submodule implements the SPLASH model :cite:p:`davis:2017a` for
-calculating robust indices of radiation, evapotranspiration and plant-available
+calculating robust indices of radiation, evapotranspiration and plant-available soil
 moisture.
 
 It is based on the [SPLASH v1.0 implementation](https://doi.org/10.5281/zenodo.376293)
@@ -15,10 +15,12 @@ restructured. The main changes are:
   simulataneously across arrays. The original code predominantly expected scalar inputs
   and required users to script iteratation over sites.
 
-* The majority of solar and evaporative fluxes do not vary are invariant given the
-  initial data and so are now calculated when the model in instantiated. The previous
-  code recalculated many of these values during iteration, which reduces the memory
-  footprint but at a substantial runtime cost.
+* Solar fluxes and the majority of evaporative fluxes do not vary given the initial data
+  and so are now calculated once when a model instance is created. The original
+  implementation recalculated many of these values when iterating over daily
+  calculations, which reduces the memory footprint but at a substantial runtime cost.
+  Only actual evapotranspiration (AET), soil moisture and runoff need to be calculated
+  on a daily basis, because they depend on the soil moisture from the previous day.
 
 * The hard-coded constants in the original code can now be modified by users. In
   particular, the maximum soil moisture capacity (``kWn``) was fixed globally in SPLASH

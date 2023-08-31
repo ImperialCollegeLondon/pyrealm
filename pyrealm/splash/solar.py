@@ -1,6 +1,6 @@
 """The ``solar`` submodule provides functions and classes to calculate daily solar
 radiation fluxes and other radiative values.
-"""  # noqa D204
+"""  # noqa: D205, D415
 
 from dataclasses import InitVar, dataclass, field
 
@@ -159,10 +159,10 @@ class DailySolarFluxes:
         delta = np.arcsin(np.sin(np.deg2rad(lambda_)) * np.sin(np.deg2rad(keps))) / pir
 
         # The nu, lambda_, dr and delta attributes are all one dimensional arrays
-        # calcualted from the Calendar along the first axis of any inputs. These need to
-        # be broadcastable to the shape of the other inputs. The expand_dims variable
-        # gets a list of the axes to expand onto - which will be an empty list when
-        # ndim=1, leaving the targets unchanged.
+        # calculated from the Calendar along the first (time) axis of the other inputs.
+        # These need to be broadcastable to the shape of the other inputs. The
+        # expand_dims variable gets a list of the axes to expand onto - which will be an
+        # empty list when ndim=1, leaving the targets unchanged.
         expand_dims = list(np.arange(1, elv.ndim))
         self.nu = np.expand_dims(nu, axis=expand_dims)
         self.lambda_ = np.expand_dims(lambda_, axis=expand_dims)
