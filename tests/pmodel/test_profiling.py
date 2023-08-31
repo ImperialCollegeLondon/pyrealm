@@ -28,7 +28,7 @@ def test_profiling_example():
     #        offset from the UTC times in the data. This step reduces the input data to
     #        complete daily blocks of data using local time
 
-    ds = ds.sel(time=slice("2000-01-01T01:59", "2019-12-31T01:59"))
+    ds = ds.sel(time=slice("2000-01-01T01:59", "2009-12-31T01:59"))
     local_offset = np.timedelta64(int((24.25 * (24 / 360)) * 60 * 60), "s")
     local_time = ds["time"].to_numpy() - local_offset
 
