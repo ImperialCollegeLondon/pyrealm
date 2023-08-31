@@ -25,9 +25,9 @@ jobs:
     - uses: actions/checkout@v3
       with:
         lfs: true
-
+        
     - name: Pull LFS objects
-        run: git lfs pull
+      run: git lfs pull
 
     - uses: actions/setup-python@v4
       with:
