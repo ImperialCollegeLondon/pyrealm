@@ -85,6 +85,13 @@ class PModelEnvironment:
         theta: Volumetric soil moisture (m3/m3)
         const: An instance of
             :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+
+    Examples:
+        >>> import numpy as np
+        >>> env = PModelEnvironment(
+        ...     tc=np.array([20]), vpd=np.array([1000]),
+        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ... )
     """
 
     def __init__(
