@@ -52,6 +52,11 @@ pmodel_c3.estimate_productivity(fapar=1, ppfd=300)
 
 # Report the GPP in micrograms of carbon per m2 per second.
 pmodel_c3.gpp
+```
+
+This should give the following output:
+
+```python
 array([76.42544948])
 ```
 
