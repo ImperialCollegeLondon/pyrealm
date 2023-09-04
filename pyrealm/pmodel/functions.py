@@ -11,6 +11,104 @@ from pyrealm.constants import PModelConst
 from pyrealm.utilities import check_input_shapes
 
 
+def calc_density_h2o_chen(
+    tc: NDArray, p: NDArray, const: PModelConst = PModelConst()
+) -> NDArray:
+    """Calculate the density of water using Chen et al 2008.
+
+    This function calculates the density of water at a given temperature and pressure
+    (kg/m^3) following :cite:t:`chen:2008a`.
+
+    Args:
+        tc: Air temperature (°C)
+        p: Atmospheric pressure (Pa)
+
+    Returns:
+        The calculated density of water
+    """
+
+    # Calculate density at 1 atm (kg/m^3):
+    po_coef = const.chen_po
+    po = po_coef[0] + po_coef[1] * tc
+    po += po_coef[2] * tc * tc
+    po += po_coef[3] * tc * tc * tc
+    po += po_coef[4] * tc * tc * tc * tc
+    po += po_coef[5] * tc * tc * tc * tc * tc
+    po += po_coef[6] * tc * tc * tc * tc * tc * tc
+    po += po_coef[7] * tc * tc * tc * tc * tc * tc * tc
+    po += po_coef[8] * tc * tc * tc * tc * tc * tc * tc * tc
+
+    # Calculate bulk modulus at 1 atm (bar):
+    ko_coef = const.chen_ko
+    ko = ko_coef[0] + ko_coef[1] * tc
+    ko += ko_coef[2] * tc * tc
+    ko += ko_coef[3] * tc * tc * tc
+    ko += ko_coef[4] * tc * tc * tc * tc
+    ko += ko_coef[5] * tc * tc * tc * tc * tc
+
+    # Calculate temperature dependent coefficients:
+    ca_coef = const.chen_ca
+    ca = ca_coef[0] + ca_coef[1] * tc
+    ca += ca_coef[2] * tc * tc
+    ca += ca_coef[3] * tc * tc * tc
+    ca += ca_coef[4] * tc * tc * tc * tc
+
+    cb_coef = const.chen_cb
+    cb = cb_coef[0] + cb_coef[1] * tc
+    cb += cb_coef[2] * tc * tc
+    cb += cb_coef[3] * tc * tc * tc
+    cb += cb_coef[4] * tc * tc * tc * tc
+
+    # Convert atmospheric pressure to bar (1 bar = 100000 Pa)
+    pbar = (1.0e-5) * p
+
+    pw = ko + ca * pbar + cb * pbar**2.0
+    pw /= ko + ca * pbar + cb * pbar**2.0 - pbar
+    pw *= (1e3) * po
+    return pw
+
+
+def calc_density_h2o_chen_matrix(
+    tc: NDArray,
+    patm: NDArray,
+    const: PModelConst = PModelConst(),
+) -> NDArray:
+    """Calculate the density of water using Chen et al 2008.
+
+    This function calculates the density of water at a given temperature and pressure
+    (kg/m^3) following :cite:t:`chen:2008a`.
+
+    Args:
+        tc: Air temperature (°C)
+        p: Atmospheric pressure (Pa)
+
+    Returns:
+        The calculated density of water
+    """
+
+    # TODO - merge
+    tc_pow = np.power.outer(tc, np.arange(0, 9))
+
+    # Calculate density at 1 atm (kg/m^3):
+    rho_ref = np.sum(const.chen_po * tc_pow, axis=-1)
+
+    # Calculate bulk modulus at 1 atm (bar):
+    bulk_mod_ref = np.sum(const.chen_ko * tc_pow[..., :6], axis=-1)
+
+    # Calculate temperature dependent coefficients:
+    ca = np.sum(const.chen_ca * tc_pow[..., :5], axis=-1)
+    cb = np.sum(const.chen_cb * tc_pow[..., :5], axis=-1)
+
+    # Convert atmospheric pressure to bar (1 bar = 100000 Pa)
+    pbar = (1.0e-5) * patm
+
+    return (
+        (bulk_mod_ref + ca * pbar + cb * pbar**2.0)
+        / (bulk_mod_ref + ca * pbar + cb * pbar**2.0 - pbar)
+        * ((1e3) * rho_ref)
+    )
+
+
 def calc_density_h2o(
     tc: NDArray,
     patm: NDArray,
