@@ -165,41 +165,41 @@ def calc_density_h2o(
     tc: NDArray,
     patm: NDArray,
     const: PModelConst = PModelConst(),
+    method: str = "fisher",
     safe: bool = True,
 ) -> NDArray:
     """Calculate water density.
 
     Calculates the density of water as a function of temperature and atmospheric
-    pressure, using the Tumlirz Equation and coefficients calculated by
-    :cite:t:`Fisher:1975tm`.
+    pressure. This function uses either the method provided by :cite:t:`Fisher:1975tm`
+    (:func:`~pyrealm.pmodel.functions.calc_density_h20_fisher`) or :cite:t:`chen:2008a`
+    (:func:`~pyrealm.pmodel.functions.calc_density_h20_chen`).
+
+    The ``method`` argument can be used to switch between the ``fisher`` and ``chen``
+    methods. This can also be set via the `water_density_method` argument to
+    :class:`~pyrealm.constants.PModelConsts`, which takes priority over the ``method``
+    argument.
 
     Args:
         tc: air temperature, °C
         patm: atmospheric pressure, Pa
         const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         safe: Prevents the function from estimating density below -30°C, where the
-            function behaves poorly
-
-    PModel Parameters:
-        lambda_: polynomial coefficients of Tumlirz equation (``fisher_dial_lambda``).
-        Po: polynomial coefficients of Tumlirz equation (``fisher_dial_Po``).
-        Vinf: polynomial coefficients of Tumlirz equation (``fisher_dial_Vinf``).
+            functions are numerically unstable.
 
     Returns:
         Water density as a float in (g cm^-3)
 
     Raises:
-        ValueError: if ``tc`` is less than -30°C and ``safe`` is True, or if the inputs
-            have incompatible shapes.
+        ValueError: if ``tc`` contains values below -30°C and ``safe`` is True, or if
+            the inputs have incompatible shapes.
 
     Examples:
         >>> round(calc_density_h2o(20, 101325), 3)
         998.206
     """
 
-    # It doesn't make sense to use this function for tc < 0, but in particular
-    # the calculation shows wild numeric instability between -44 and -46 that
-    # leads to numerous downstream issues - see the extreme values documentation.
+    # Safe guard against instability in functions at low temperature.
     if safe and np.nanmin(tc) < np.array([-30]):
         raise ValueError(
             "Water density calculations below about -30°C are "
@@ -209,28 +209,13 @@ def calc_density_h2o(
     # Check input shapes, shape not used
     _ = check_input_shapes(tc, patm)
 
-    # Get powers of tc, including tc^0 = 1 for constant terms
-    tc_pow = np.power.outer(tc, np.arange(0, 10))
+    if method == "fisher":
+        return calc_density_h2o_fisher(tc, patm, const)
 
-    # Calculate lambda, (bar cm^3)/g:
-    lambda_val = np.sum(const.fisher_dial_lambda * tc_pow[..., :5], axis=-1)
+    if method == "chen":
+        return calc_density_h2o_chen(tc, patm, const)
 
-    # Calculate po, bar
-    po_val = np.sum(const.fisher_dial_Po * tc_pow[..., :5], axis=-1)
-
-    # Calculate vinf, cm^3/g
-    vinf_val = np.sum(const.fisher_dial_Vinf * tc_pow, axis=-1)
-
-    # Convert pressure to bars (1 bar <- 100000 Pa)
-    pbar = 1e-5 * patm
-
-    # Calculate the specific volume (cm^3 g^-1):
-    spec_vol = vinf_val + lambda_val / (po_val + pbar)
-
-    # Convert to density (g cm^-3) -> 1000 g/kg; 1000000 cm^3/m^3 -> kg/m^3:
-    rho = 1e3 / spec_vol
-
-    return rho
+    raise ValueError("Unknown method provided to calc_density_h2o")
 
 
 def calc_ftemp_arrh(
