@@ -109,6 +109,164 @@ def calc_density_h2o_chen_matrix(
     )
 
 
+def calc_density_h2o_fisher(
+    tc: NDArray,
+    patm: NDArray,
+    const: PModelConst = PModelConst(),
+    safe: bool = True,
+) -> NDArray:
+    """Calculate water density.
+
+    Calculates the density of water as a function of temperature and atmospheric
+    pressure, using the Tumlirz Equation and coefficients calculated by
+    :cite:t:`Fisher:1975tm`.
+
+    Args:
+        tc: air temperature, °C
+        patm: atmospheric pressure, Pa
+        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        safe: Prevents the function from estimating density below -30°C, where the
+            function behaves poorly
+
+    PModel Parameters:
+        lambda_: polynomial coefficients of Tumlirz equation (``fisher_dial_lambda``).
+        Po: polynomial coefficients of Tumlirz equation (``fisher_dial_Po``).
+        Vinf: polynomial coefficients of Tumlirz equation (``fisher_dial_Vinf``).
+
+    Returns:
+        Water density as a float in (g cm^-3)
+
+    Raises:
+        ValueError: if ``tc`` is less than -30°C and ``safe`` is True, or if the inputs
+            have incompatible shapes.
+
+    Examples:
+        >>> round(calc_density_h2o(20, 101325), 3)
+        998.206
+    """
+
+    # It doesn't make sense to use this function for tc < 0, but in particular
+    # the calculation shows wild numeric instability between -44 and -46 that
+    # leads to numerous downstream issues - see the extreme values documentation.
+    if safe and np.nanmin(tc) < -30:
+        raise ValueError(
+            "Water density calculations below about -30°C are "
+            "unstable. See argument safe to calc_density_h2o"
+        )
+
+    # Check input shapes, shape not used
+    _ = check_input_shapes(tc, patm)
+
+    # Calculate lambda, (bar cm^3)/g:
+    lambda_coef = const.fisher_dial_lambda
+    lambda_val = lambda_coef[0] + lambda_coef[1] * tc
+    lambda_val += lambda_coef[2] * tc * tc
+    lambda_val += lambda_coef[3] * tc * tc * tc
+    lambda_val += lambda_coef[4] * tc * tc * tc * tc
+
+    # Calculate po, bar
+    po_coef = const.fisher_dial_Po
+    po_val = po_coef[0] + po_coef[1] * tc
+    po_val += po_coef[2] * tc * tc
+    po_val += po_coef[3] * tc * tc * tc
+    po_val += po_coef[4] * tc * tc * tc * tc
+
+    # Calculate vinf, cm^3/g
+    vinf_coef = const.fisher_dial_Vinf
+    vinf_val = vinf_coef[0] + vinf_coef[1] * tc
+    vinf_val += vinf_coef[2] * tc * tc
+    vinf_val += vinf_coef[3] * tc * tc * tc
+    vinf_val += vinf_coef[4] * tc * tc * tc * tc
+    vinf_val += vinf_coef[5] * tc * tc * tc * tc * tc
+    vinf_val += vinf_coef[6] * tc * tc * tc * tc * tc * tc
+    vinf_val += vinf_coef[7] * tc * tc * tc * tc * tc * tc * tc
+    vinf_val += vinf_coef[8] * tc * tc * tc * tc * tc * tc * tc * tc
+    vinf_val += vinf_coef[9] * tc * tc * tc * tc * tc * tc * tc * tc * tc
+
+    # Convert pressure to bars (1 bar <- 100000 Pa)
+    pbar = 1e-5 * patm
+
+    # Calculate the specific volume (cm^3 g^-1):
+    spec_vol = vinf_val + lambda_val / (po_val + pbar)
+
+    # Convert to density (g cm^-3) -> 1000 g/kg; 1000000 cm^3/m^3 -> kg/m^3:
+    rho = 1e3 / spec_vol
+
+    return rho
+
+
+def calc_density_h2o_fisher_matrix(
+    tc: NDArray,
+    patm: NDArray,
+    const: PModelConst = PModelConst(),
+    safe: bool = True,
+) -> NDArray:
+    """Calculate water density.
+
+    Calculates the density of water as a function of temperature and atmospheric
+    pressure, using the Tumlirz Equation and coefficients calculated by
+    :cite:t:`Fisher:1975tm`.
+
+    Args:
+        tc: air temperature, °C
+        patm: atmospheric pressure, Pa
+        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        safe: Prevents the function from estimating density below -30°C, where the
+            function behaves poorly
+
+    PModel Parameters:
+        lambda_: polynomial coefficients of Tumlirz equation (``fisher_dial_lambda``).
+        Po: polynomial coefficients of Tumlirz equation (``fisher_dial_Po``).
+        Vinf: polynomial coefficients of Tumlirz equation (``fisher_dial_Vinf``).
+
+    Returns:
+        Water density as a float in (g cm^-3)
+
+    Raises:
+        ValueError: if ``tc`` is less than -30°C and ``safe`` is True, or if the inputs
+            have incompatible shapes.
+
+    Examples:
+        >>> round(calc_density_h2o(20, 101325), 3)
+        998.206
+    """
+
+    # It doesn't make sense to use this function for tc < 0, but in particular
+    # the calculation shows wild numeric instability between -44 and -46 that
+    # leads to numerous downstream issues - see the extreme values documentation.
+    if safe and np.nanmin(tc) < np.array([-30]):
+        raise ValueError(
+            "Water density calculations below about -30°C are "
+            "unstable. See argument safe to calc_density_h2o"
+        )
+
+    # Check input shapes, shape not used
+    _ = check_input_shapes(tc, patm)
+
+    # Get powers of tc, including tc^0 = 1 for constant terms
+    tc_pow = np.power.outer(tc, np.arange(0, 10))
+
+    # Calculate lambda, (bar cm^3)/g:
+    lambda_val = np.sum(const.fisher_dial_lambda * tc_pow[..., :5], axis=-1)
+
+    # Calculate po, bar
+    po_val = np.sum(const.fisher_dial_Po * tc_pow[..., :5], axis=-1)
+
+    # Calculate vinf, cm^3/g
+    vinf_val = np.sum(const.fisher_dial_Vinf * tc_pow, axis=-1)
+
+    # Convert pressure to bars (1 bar <- 100000 Pa)
+    pbar = 1e-5 * patm
+
+    # Calculate the specific volume (cm^3 g^-1):
+    spec_vol = vinf_val + lambda_val / (po_val + pbar)
+
+    # Convert to density (g cm^-3) -> 1000 g/kg; 1000000 cm^3/m^3 -> kg/m^3:
+    rho = 1e3 / spec_vol
+
+    return rho
+
+
 def calc_density_h2o(
     tc: NDArray,
     patm: NDArray,
