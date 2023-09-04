@@ -165,7 +165,6 @@ def calc_density_h2o(
     tc: NDArray,
     patm: NDArray,
     const: PModelConst = PModelConst(),
-    method: str = "fisher",
     safe: bool = True,
 ) -> NDArray:
     """Calculate water density.
@@ -175,10 +174,8 @@ def calc_density_h2o(
     (:func:`~pyrealm.pmodel.functions.calc_density_h20_fisher`) or :cite:t:`chen:2008a`
     (:func:`~pyrealm.pmodel.functions.calc_density_h20_chen`).
 
-    The ``method`` argument can be used to switch between the ``fisher`` and ``chen``
-    methods. This can also be set via the `water_density_method` argument to
-    :class:`~pyrealm.constants.PModelConsts`, which takes priority over the ``method``
-    argument.
+    The `water_density_method` argument to :class:`~pyrealm.constants.PModelConsts` is
+    used to set which of the ``fisher`` or ``chen`` methods is used.
 
     Args:
         tc: air temperature, °C
@@ -209,10 +206,10 @@ def calc_density_h2o(
     # Check input shapes, shape not used
     _ = check_input_shapes(tc, patm)
 
-    if method == "fisher":
+    if const.water_density_method == "fisher":
         return calc_density_h2o_fisher(tc, patm, const)
 
-    if method == "chen":
+    if const.water_density_method == "chen":
         return calc_density_h2o_chen(tc, patm, const)
 
     raise ValueError("Unknown method provided to calc_density_h2o")

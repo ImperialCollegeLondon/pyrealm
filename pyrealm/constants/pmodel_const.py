@@ -130,6 +130,9 @@ class PModelConst(ConstantsClass):
     k_CtoK: float = 273.15
     """Conversion from °C to K   (:math:`CtoK` , 273.15, -)"""
 
+    water_density_method: str = "fisher"
+    """Set the method used for calculating water density ('fisher' or 'chen'."""
+
     # Fisher Dial
     fisher_dial_lambda: NDArray[np.float32] = np.array(
         [1788.316, 21.55053, -0.4695911, 0.003096363, -7.341182e-06]
