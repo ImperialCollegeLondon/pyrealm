@@ -68,7 +68,8 @@ jobs:
           cd docs
           poetry run sphinx-build -W --keep-going source build
 
-      - name: Archive built docs for error checking
+      - name: Archive built docs for error checking on failure
+        if: failure()
         uses: actions/upload-artifact@v3
         with:
           name: built-docs
