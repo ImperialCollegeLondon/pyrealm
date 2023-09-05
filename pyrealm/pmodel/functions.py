@@ -846,6 +846,74 @@ def calc_viscosity_h2o(
     rbar = rho / const.huber_rho_ast
 
     # Calculate mu0 (Eq. 11 & Table 2, Huber et al., 2009):
+    mu0 = const.huber_H_i[0] + const.huber_H_i[1] / tbar
+    mu0 += const.huber_H_i[2] / (tbar * tbar)
+    mu0 += const.huber_H_i[3] / (tbar * tbar * tbar)
+    mu0 = (1e2 * np.sqrt(tbar)) / mu0
+
+    # Calculate mu1 (Eq. 12 & Table 3, Huber et al., 2009):
+    ctbar = (1.0 / tbar) - 1.0
+    mu1 = 0.0
+
+    # Iterate over the rows of the H_ij constants matrix
+    for row_idx in np.arange(const.huber_H_ij.shape[1]):
+        cf1 = ctbar**row_idx
+        cf2 = 0.0
+        for col_idx in np.arange(const.huber_H_ij.shape[0]):
+            cf2 += const.huber_H_ij[col_idx, row_idx] * (rbar - 1.0) ** col_idx
+        mu1 += cf1 * cf2
+
+    mu1 = np.exp(rbar * mu1)
+
+    # Calculate mu_bar (Eq. 2, Huber et al., 2009), assumes mu2 = 1
+    mu_bar = mu0 * mu1
+
+    # Calculate mu (Eq. 1, Huber et al., 2009)
+    return mu_bar * const.huber_mu_ast  # Pa s
+
+
+def calc_viscosity_h2o_matrix(
+    tc: NDArray,
+    patm: NDArray,
+    const: PModelConst = PModelConst(),
+    simple: bool = False,
+) -> NDArray:
+    r"""Calculate the viscosity of water.
+
+    Calculates the viscosity of water (:math:`\eta`) as a function of temperature and
+    atmospheric pressure :cite:p:`Huber:2009fy`.
+
+    Args:
+        tc: air temperature (°C)
+        patm: atmospheric pressure (Pa)
+        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        simple: Use the simple formulation.
+
+    Returns:
+        A float giving the viscosity of water (mu, Pa s)
+
+    Examples:
+        >>> # Density of water at 20 degrees C and standard atmospheric pressure:
+        >>> round(calc_viscosity_h2o(20, 101325), 7)
+        0.0010016
+    """
+
+    # Check inputs, return shape not used
+    _ = check_input_shapes(tc, patm)
+
+    if simple or const.simple_viscosity:
+        # The reference for this is unknown, but is used in some implementations
+        # so is included here to allow intercomparison.
+        return np.exp(-3.719 + 580 / ((tc + 273) - 138))
+
+    # Get the density of water, kg/m^3
+    rho = calc_density_h2o(tc, patm, const=const)
+
+    # Calculate dimensionless parameters:
+    tbar = (tc + const.k_CtoK) / const.huber_tk_ast
+    rbar = rho / const.huber_rho_ast
+
+    # Calculate mu0 (Eq. 11 & Table 2, Huber et al., 2009):
     tbar_pow = np.power.outer(tbar, np.arange(0, 4))
     mu0 = (1e2 * np.sqrt(tbar)) / np.sum(np.array(const.huber_H_i) / tbar_pow, axis=-1)
 
