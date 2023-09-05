@@ -67,3 +67,10 @@ jobs:
         run: |
           cd docs
           poetry run sphinx-build -W --keep-going source build
+
+      - name: Archive built docs for error checking
+        uses: actions/upload-artifact@v3
+        with:
+          name: built-docs
+          path: docs/build
+          retention-days: 2
