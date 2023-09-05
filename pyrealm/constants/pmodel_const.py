@@ -188,12 +188,12 @@ class PModelConst(ConstantsClass):
     chen_ca: NDArray[np.float32] = np.array(
         [3.26138, 5.223e-4, 1.324e-4, -7.655e-7, 8.584e-10]
     )
-    r"""Polynomial temperature dependent coefficient :math:`c_{a}."""
+    r"""Polynomial temperature dependent coefficient :math:`c_{a}`."""
 
     chen_cb: NDArray[np.float32] = np.array(
         [7.2061e-5, -5.8948e-6, 8.69900e-8, -1.0100e-9, 4.3220e-12]
     )
-    r"""Polynomial temperature dependent coefficient :math:`c_{b}."""
+    r"""Polynomial temperature dependent coefficient :math:`c_{b}`."""
 
     # Huber
     simple_viscosity: bool = False
