@@ -2,7 +2,7 @@
 used in the hygrometer conversion functions in the :mod:`~pyrealm.hygro` module.
 """  # noqa: D205, D415
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
@@ -23,7 +23,9 @@ class HygroConst(ConstantsClass):
     setting is to use the ``Sonntag1990`` parameters.
     """
 
-    magnus_coef: NDArray[np.float32] = np.array((611.2, 17.62, 243.12))
+    magnus_coef: NDArray[np.float32] = field(
+        default_factory=lambda: np.array((611.2, 17.62, 243.12))
+    )
     """Three coefficients of the Magnus equation for saturated vapour pressure."""
     mwr: float = 0.622
     """The ratio molecular weight of water vapour to dry air (:math:`MW_r`, -)"""

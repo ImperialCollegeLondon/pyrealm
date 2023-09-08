@@ -236,7 +236,7 @@ def bounds_checker(
         The function returns the contents of values.
 
     Examples:
-        >>> vals = np.array([-15, 20, 30, 124], dtype=np.float)
+        >>> vals = np.array([-15, 20, 30, 124], dtype=float)
         >>> vals_c = bounds_checker(vals, 0, 100, label='temperature', unit='°C')
     """
 
@@ -281,7 +281,7 @@ def bounds_mask(
         a float np.ndarray object with out of bounds values replaced with np.nan.
 
     Examples:
-        >>> vals = np.array([-15, 20, 30, 124], dtype=np.float)
+        >>> vals = np.array([-15, 20, 30, 124], dtype=float)
         >>> np.nansum(vals)
         159.0
         >>> vals_c = bounds_mask(vals, 0, 100, label='temperature')

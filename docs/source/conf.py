@@ -84,6 +84,7 @@ bibtex_reference_style = "author_year_round"
 # Cross-reference checking
 nitpicky = True
 nitpick_ignore = [
+    ("py:class", "numpy._typing._array_like._ScalarType_co"),
     ("py:class", "numpy._typing._generic_alias.ScalarType"),
     ("py:class", "numpy.float32"),
     ("py:class", "numpy.timedelta64"),
