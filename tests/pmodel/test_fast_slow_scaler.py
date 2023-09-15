@@ -1,4 +1,7 @@
-"""This module tests the interpolator routines for the subdaily model.
+"""This module tests the FastSlowScalar class.
+
+This class handles estimating daily reference values and then interpolating lagged
+responses back to subdaily time scales.
 """  # noqa: D205, D415
 
 from contextlib import nullcontext as does_not_raise
@@ -9,6 +12,7 @@ import pytest
 
 @pytest.fixture
 def fixture_FSS():
+    """A fixture providing a FastSlowScaler object."""
     from pyrealm.pmodel import FastSlowScaler
 
     return FastSlowScaler(
@@ -111,10 +115,11 @@ def fixture_FSS():
     ],
 )
 def test_FSS_init(ctext_mngr, msg, datetimes):
+    """Test the FastSlowScaler init handling of date ranges."""
     from pyrealm.pmodel import FastSlowScaler
 
     with ctext_mngr as cman:
-        drep = FastSlowScaler(datetimes=datetimes)
+        _ = FastSlowScaler(datetimes=datetimes)
 
     if msg is not None:
         assert str(cman.value) == msg
@@ -158,6 +163,8 @@ def test_FSS_init(ctext_mngr, msg, datetimes):
     ],
 )
 def test_FSS_set_window(fixture_FSS, ctext_mngr, msg, kwargs, samp_mean, samp_max):
+    """Test the FastSlowScalar set_window method."""
+
     with ctext_mngr as cman:
         fixture_FSS.set_window(**kwargs)
 
@@ -221,6 +228,7 @@ def test_FSS_set_window(fixture_FSS, ctext_mngr, msg, kwargs, samp_mean, samp_ma
     ],
 )
 def test_FSS_set_include(fixture_FSS, ctext_mngr, msg, include, samp_mean, samp_max):
+    """Test the FastSlowScalar set_include method."""
     with ctext_mngr as cman:
         fixture_FSS.set_include(include)
 
@@ -283,6 +291,7 @@ def test_FSS_set_include(fixture_FSS, ctext_mngr, msg, include, samp_mean, samp_
     ],
 )
 def test_FSS_set_nearest(fixture_FSS, ctext_mngr, msg, time, samp_mean, samp_max):
+    """Test the FastSlowScalar set_nearest method."""
     with ctext_mngr as cman:
         fixture_FSS.set_nearest(time)
 
@@ -309,13 +318,14 @@ def test_FSS_set_nearest(fixture_FSS, ctext_mngr, msg, time, samp_mean, samp_max
     ],
 )
 def test_FSS_get_wv_errors(fixture_FSS, ctext_mngr, msg, values):
+    """Test errors arising in the FastSlowScalar get_window_value method."""
     fixture_FSS.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(2, "h"),
     )
 
     with ctext_mngr as cman:
-        res = fixture_FSS.get_window_values(values)
+        _ = fixture_FSS.get_window_values(values)
 
     assert str(cman.value) == msg
 
@@ -360,7 +370,7 @@ class Test_FSS_get_vals:
     """
 
     def test_FSS_get_vals_window(self, fixture_FSS, values, expected_means):
-        """Test a window"""
+        """Test a window."""
         fixture_FSS.set_window(
             window_center=np.timedelta64(12, "h"),
             half_width=np.timedelta64(2, "h"),
@@ -370,7 +380,7 @@ class Test_FSS_get_vals:
         assert np.allclose(calculated_means, expected_means)
 
     def test_FSS_get_vals_include(self, fixture_FSS, values, expected_means):
-        """Test include"""
+        """Test include."""
 
         # This duplicates the selection of the window test but using direct include
         inc = np.zeros(48, dtype=np.bool_)
@@ -381,7 +391,7 @@ class Test_FSS_get_vals:
         assert np.allclose(calculated_means, expected_means)
 
     def test_FSS_get_vals_nearest(self, fixture_FSS, values, expected_means):
-        """Test nearest"""
+        """Test nearest."""
 
         # This assumes the data are symmetrical about the middle hour, which is bit of a
         # reach
@@ -524,6 +534,8 @@ def test_FSS_resample_subdaily(
     exp_values,
     fill_from,
 ):
+    """Test the calculation of subdaily samples using FastSlowScaler."""
+
     # Set the included observations - the different parameterisations here and for
     # the update point should all select the same update point.
     func = getattr(fixture_FSS, method_name)
@@ -602,6 +614,8 @@ def test_FSS_resample_subdaily_linear(
     input_values,
     exp_values,
 ):
+    """Test FastSlowScalar resampling to subdaily timescale by linear interpolation."""
+
     # Set the included observations
     fixture_FSS.set_window(
         window_center=np.timedelta64(13, "h"), half_width=np.timedelta64(1, "h")
