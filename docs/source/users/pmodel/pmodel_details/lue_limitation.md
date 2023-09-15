@@ -104,12 +104,20 @@ dependency of $\phi_0$.
 ```{code-cell}
 env = PModelEnvironment(tc=30, patm=101325, vpd=820, co2=400)
 model_fixkphio = PModel(env, kphio=0.08, do_ftemp_kphio=False)
-np.array([model_fixkphio.init_kphio, model_fixkphio.kphio])
+model_fixkphio.init_kphio
+```
+
+```{code-cell}
+model_fixkphio.kphio
 ```
 
 ```{code-cell}
 model_tempkphio = PModel(env, kphio=0.08, do_ftemp_kphio=True)
-np.array([model_tempkphio.init_kphio, model_tempkphio.kphio])
+model_fixkphio.init_kphio
+```
+
+```{code-cell}
+model_fixkphio.kphio
 ```
 
 The scaling of temperature dependence varies for C3 and C4 plants and the function

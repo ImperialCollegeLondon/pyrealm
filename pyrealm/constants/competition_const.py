@@ -15,17 +15,17 @@ class C3C4Const(ConstantsClass):
 
     # Non-linear regression of fraction C4 plants from proportion GPP advantage
     # of C4 over C3 plants
-    adv_to_frac_k = 6.63
+    adv_to_frac_k: float = 6.63
     """Coefficient k of C4 fraction estimation"""
-    adv_to_frac_q = 0.16
+    adv_to_frac_q: float = 0.16
     """Coefficient 1 of C4 fraction estimation"""
 
     # Conversion parameters to estimate tree cover from  C3 GPP
-    gpp_to_tc_a = 15.60
+    gpp_to_tc_a: float = 15.60
     """Coefficient a of tree cover estimation"""
-    gpp_to_tc_b = 1.41
+    gpp_to_tc_b: float = 1.41
     """Coefficient b of tree cover estimation"""
-    gpp_to_tc_c = -7.72
+    gpp_to_tc_c: float = -7.72
     """Coefficient c of tree cover estimation"""
-    c3_forest_closure_gpp = 2.8
+    c3_forest_closure_gpp: float = 2.8
     """GPP at which forest canopy closure occurs"""

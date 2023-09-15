@@ -85,6 +85,13 @@ class PModelEnvironment:
         theta: Volumetric soil moisture (m3/m3)
         const: An instance of
             :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+
+    Examples:
+        >>> import numpy as np
+        >>> env = PModelEnvironment(
+        ...     tc=np.array([20]), vpd=np.array([1000]),
+        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ... )
     """
 
     def __init__(
@@ -109,14 +116,14 @@ class PModelEnvironment:
         """Atmospheric pressure, Pa"""
 
         # Guard against calc_density issues
-        if np.nanmin(self.tc) < -25:
+        if np.nanmin(self.tc) < np.array([-25]):
             raise ValueError(
                 "Cannot calculate P Model predictions for values below"
                 " -25°C. See calc_density_h2o."
             )
 
         # Guard against negative VPD issues
-        if np.nanmin(self.vpd) < 0:
+        if np.nanmin(self.vpd) < np.array([0]):
             raise ValueError(
                 "Negative VPD values will lead to missing data - clip to "
                 "zero or explicitly set to np.nan"
@@ -309,25 +316,29 @@ class PModel:
             :func:`~pyrealm.pmodel.functions.calc_ftemp_kphio`).
 
     Examples:
-        >>> env = PModelEnvironment(tc=20, vpd=1000, co2=400, patm=101325.0)
+        >>> import numpy as np
+        >>> env = PModelEnvironment(
+        ...     tc=np.array([20]), vpd=np.array([1000]),
+        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ... )
+        >>> # Predictions from C3 P model
         >>> mod_c3 = PModel(env)
-        >>> # Key variables from pmodel
-        >>> np.round(mod_c3.optchi.ci, 5)
-        28.14209
-        >>> np.round(mod_c3.optchi.chi, 5)
-        0.69435
+        >>> mod_c3.optchi.ci.round(5)
+        array([28.14209])
+        >>> mod_c3.optchi.chi.round(5)
+        array([0.69435])
         >>> mod_c3.estimate_productivity(fapar=1, ppfd=300)
-        >>> np.round(mod_c3.gpp, 5)
-        76.42545
+        >>> mod_c3.gpp.round(5)
+        array([76.42545])
+        >>> # Predictions from C4 P model
         >>> mod_c4 = PModel(env, method_optchi='c4', method_jmaxlim='none')
-        >>> # Key variables from PModel
-        >>> np.round(mod_c4.optchi.ci, 5)
-        18.22528
-        >>> np.round(mod_c4.optchi.chi, 5)
-        0.44967
+        >>> mod_c4.optchi.ci.round(5)
+        array([18.22528])
+        >>> mod_c4.optchi.chi.round(5)
+        array([0.44967])
         >>> mod_c4.estimate_productivity(fapar=1, ppfd=300)
-        >>> np.round(mod_c4.gpp, 5)
-        103.25886
+        >>> mod_c4.gpp.round(5)
+        array([103.25886])
     """
 
     def __init__(
@@ -796,16 +807,20 @@ class CalcOptimalChi:
         assimilation.
 
         Examples:
-            >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000)
+            >>> import numpy as np
+            >>> env = PModelEnvironment(
+            ...     tc=np.array([20]), vpd=np.array([1000]),
+            ...     co2=np.array([400]), patm=np.array([101325.0])
+            ... )
             >>> vals = CalcOptimalChi(env=env)
-            >>> round(vals.chi, 5)
-            0.69435
-            >>> round(vals.mc, 5)
-            0.33408
-            >>> round(vals.mj, 5)
-            0.7123
-            >>> round(vals.mjoc, 5)
-            2.13211
+            >>> vals.chi.round(5)
+            array([0.69435])
+            >>> vals.mc.round(5)
+            array([0.33408])
+            >>> vals.mj.round(5)
+            array([0.7123])
+            >>> vals.mjoc.round(5)
+            array([2.13211])
         """
 
         # TODO: Docstring - equation for m_j previously included term now
@@ -854,19 +869,22 @@ class CalcOptimalChi:
         `rootzonestress` approach.
 
         Examples:
-            >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
-            ...                         vpd=1000, theta=0.5)
+            >>> import numpy as np
+            >>> env = PModelEnvironment(
+            ...     tc=np.array([20]), vpd=np.array([1000]), co2=np.array([400]),
+            ...     patm=np.array([101325.0]), theta=np.array([0.5])
+            ... )
             >>> vals = CalcOptimalChi(env=env, method='lavergne20_c3')
-            >>> round(vals.beta, 5)
-            224.75255
-            >>> round(vals.chi, 5)
-            0.73663
-            >>> round(vals.mc, 5)
-            0.34911
-            >>> round(vals.mj, 5)
-            0.7258
-            >>> round(vals.mjoc, 5)
-            2.07901
+            >>> vals.beta.round(5)
+            array([224.75255])
+            >>> vals.chi.round(5)
+            array([0.73663])
+            >>> vals.mc.round(5)
+            array([0.34911])
+            >>> vals.mj.round(5)
+            array([0.7258])
+            >>> vals.mjoc.round(5)
+            array([2.07901])
         """
 
         # This method needs theta
@@ -924,19 +942,22 @@ class CalcOptimalChi:
         values and soil moisture in leaf gas exchange measurements.
 
         Examples:
-            >>> env = PModelEnvironment(tc=20, patm=101325, co2=400,
-            ...                         vpd=1000, theta=0.5)
+            >>> import numpy as np
+            >>> env = PModelEnvironment(
+            ...     tc=np.array([20]), vpd=np.array([1000]), co2=np.array([400]),
+            ...     patm=np.array([101325.0]), theta=np.array([0.5])
+            ... )
             >>> vals = CalcOptimalChi(env=env, method='lavergne20_c4')
-            >>> round(vals.beta, 5)
-            24.97251
-            >>> round(vals.chi, 5)
-            0.44432
-            >>> round(vals.mc, 5)
-            0.28091
-            >>> round(vals.mj, 5)
-            1.0
-            >>> round(vals.mjoc, 5)
-            3.55989
+            >>> vals.beta.round(5)
+            array([24.97251])
+            >>> vals.chi.round(5)
+            array([0.44432])
+            >>> vals.mc.round(5)
+            array([0.28091])
+            >>> vals.mj.round(5)
+            array([1.])
+            >>> vals.mjoc.round(5)
+            array([3.55989])
         """
 
         # Warn that this is experimental
@@ -982,14 +1003,18 @@ class CalcOptimalChi:
         photosynthesis.
 
         Examples:
-            >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000)
+            >>> import numpy as np
+            >>> env = PModelEnvironment(
+            ...     tc=np.array([20]), vpd=np.array([1000]), co2=np.array([400]),
+            ...     patm=np.array([101325.0]), theta=np.array([0.5])
+            ... )
             >>> vals = CalcOptimalChi(env=env, method='c4')
-            >>> round(vals.chi, 5)
-            0.44967
-            >>> round(vals.mj, 1)
-            1.0
-            >>> round(vals.mc, 1)
-            1.0
+            >>> vals.chi.round(5)
+            array([0.44967])
+            >>> vals.mj.round(1)
+            array([1.])
+            >>> vals.mc.round(1)
+            array([1.])
         """
 
         # Replace missing rootzonestress with 1
@@ -1046,14 +1071,18 @@ class CalcOptimalChi:
             \]
 
         Examples:
-            >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000)
+            >>> import numpy as np
+            >>> env = PModelEnvironment(
+            ...     tc=np.array([20]), vpd=np.array([1000]),
+            ...     co2=np.array([400]), patm=np.array([101325.0])
+            ... )
             >>> vals = CalcOptimalChi(env=env, method='c4_no_gamma')
-            >>> round(vals.chi, 5)
-            0.3919
-            >>> round(vals.mj, 1)
-            1.0
-            >>> round(vals.mc, 1)
-            0.3
+            >>> vals.chi.round(5)
+            array([0.3919])
+            >>> vals.mj.round(1)
+            array([1.])
+            >>> vals.mc.round(1)
+            array([0.3])
         """
 
         # Replace missing rootzonestress with 1
@@ -1127,23 +1156,27 @@ class JmaxLimitation:
         const: An instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
 
     Examples:
-        >>> env = PModelEnvironment(tc= 20, patm=101325, co2=400, vpd=1000)
+        >>> import numpy as np
+        >>> env = PModelEnvironment(
+        ...     tc=np.array([20]), vpd=np.array([1000]),
+        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ... )
         >>> optchi = CalcOptimalChi(env)
         >>> simple = JmaxLimitation(optchi, method='simple')
         >>> simple.f_j
-        1.0
+        array([1.])
         >>> simple.f_v
-        1.0
+        array([1.])
         >>> wang17 = JmaxLimitation(optchi, method='wang17')
-        >>> round(wang17.f_j, 5)
-        0.66722
-        >>> round(wang17.f_v, 5)
-        0.55502
+        >>> wang17.f_j.round(5)
+        array([0.66722])
+        >>> wang17.f_v.round(5)
+        array([0.55502])
         >>> smith19 = JmaxLimitation(optchi, method='smith19')
-        >>> round(smith19.f_j, 5)
-        1.10204
-        >>> round(smith19.f_v, 5)
-        0.75442
+        >>> smith19.f_j.round(5)
+        array([1.10204])
+        >>> smith19.f_v.round(5)
+        array([0.75442])
     """
 
     # TODO - apparent incorrectness of wang and smith methods with _ca_ variation,
