@@ -1,5 +1,7 @@
 # The `pyrealm` package
 
+[![codecov](https://codecov.io/gh/ImperialCollegeLondon/pyrealm/branch/develop/graph/badge.svg)](https://codecov.io/gh/ImperialCollegeLondon/pyrealm)
+
 The `pyrealm` package provides a toolbox implementing some key models for estimating
 plant productivity, growth and demography in Python 3. The outputs of different models
 can be then easily fed into other models within `pyrealm` to allow productivity
