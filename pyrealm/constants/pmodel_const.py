@@ -185,19 +185,25 @@ class PModelConst(ConstantsClass):
     )
     r"""Polynomial relationship of water density at 1 atm (kg/m^3) with temperature."""
 
-    chen_ko: NDArray[np.float32] = np.array(
-        [19652.17, 148.1830, -2.29995, 0.01281, -4.91564e-5, 1.035530e-7]
+    chen_ko: NDArray[np.float32] = field(
+        default_factory=lambda: np.array(
+            [19652.17, 148.1830, -2.29995, 0.01281, -4.91564e-5, 1.035530e-7]
+        )
     )
     r"""Polynomial relationship of bulk modulus of water at 1 atm (kg/m^3) with
      temperature."""
 
-    chen_ca: NDArray[np.float32] = np.array(
-        [3.26138, 5.223e-4, 1.324e-4, -7.655e-7, 8.584e-10]
+    chen_ca: NDArray[np.float32] = field(
+        default_factory=lambda: np.array(
+            [3.26138, 5.223e-4, 1.324e-4, -7.655e-7, 8.584e-10]
+        )
     )
     r"""Polynomial temperature dependent coefficient :math:`c_{a}`."""
 
-    chen_cb: NDArray[np.float32] = np.array(
-        [7.2061e-5, -5.8948e-6, 8.69900e-8, -1.0100e-9, 4.3220e-12]
+    chen_cb: NDArray[np.float32] = field(
+        default_factory=lambda: np.array(
+            [7.2061e-5, -5.8948e-6, 8.69900e-8, -1.0100e-9, 4.3220e-12]
+        )
     )
     r"""Polynomial temperature dependent coefficient :math:`c_{b}`."""
 
