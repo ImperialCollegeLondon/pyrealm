@@ -1,4 +1,4 @@
-"""Test the pmodel functions
+"""Test the pmodel functions.
 
 TODO - note that there are parallel tests in test_pmodel that benchmark against the
 rpmodel outputs and test a wider range of inputs. Those could be moved here. These tests
@@ -10,7 +10,7 @@ import pytest
 
 @pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
 def test_calc_density_h20_fisher(shape):
-    """Test the fisher method"""
+    """Test the fisher method."""
     from pyrealm.pmodel.functions import calc_density_h2o_fisher
 
     rho = calc_density_h2o_fisher(
@@ -22,7 +22,7 @@ def test_calc_density_h20_fisher(shape):
 
 @pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
 def test_calc_density_h20_chen(shape):
-    """Test the chen method"""
+    """Test the chen method."""
     from pyrealm.pmodel.functions import calc_density_h2o_chen
 
     rho = calc_density_h2o_chen(
@@ -41,7 +41,7 @@ def test_calc_density_h20_chen(shape):
     ],
 )
 def test_calc_density_h20(const_args, exp):
-    """Test the wrapper method dispatches as expected"""
+    """Test the wrapper method dispatches as expected."""
     from pyrealm.constants import PModelConst
     from pyrealm.pmodel.functions import calc_density_h2o
 
@@ -57,7 +57,7 @@ def test_calc_density_h20(const_args, exp):
 
 @pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
 def test_calc_viscosity_h20(shape):
-    """Test the viscosity calculation"""
+    """Test the viscosity calculation."""
     from pyrealm.pmodel.functions import calc_viscosity_h2o
 
     eta = calc_viscosity_h2o(
@@ -69,7 +69,7 @@ def test_calc_viscosity_h20(shape):
 
 @pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
 def test_calc_viscosity_h20_matrix(shape):
-    """Test the viscosity calculation"""
+    """Test the viscosity calculation."""
     from pyrealm.pmodel.functions import calc_viscosity_h2o_matrix
 
     eta = calc_viscosity_h2o_matrix(
