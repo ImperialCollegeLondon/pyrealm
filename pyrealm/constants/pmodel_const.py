@@ -170,18 +170,20 @@ class PModelConst(ConstantsClass):
     (:math:`V_{\infty}`)."""
 
     # Chen water density
-    chen_po: NDArray[np.float32] = np.array(
-        [
-            0.99983952,
-            6.788260e-5,
-            -9.08659e-6,
-            1.022130e-7,
-            -1.35439e-9,
-            1.471150e-11,
-            -1.11663e-13,
-            5.044070e-16,
-            -1.00659e-18,
-        ]
+    chen_po: NDArray[np.float32] = field(
+        default_factory=lambda: np.array(
+            [
+                0.99983952,
+                6.788260e-5,
+                -9.08659e-6,
+                1.022130e-7,
+                -1.35439e-9,
+                1.471150e-11,
+                -1.11663e-13,
+                5.044070e-16,
+                -1.00659e-18,
+            ]
+        )
     )
     r"""Polynomial relationship of water density at 1 atm (kg/m^3) with temperature."""
 
