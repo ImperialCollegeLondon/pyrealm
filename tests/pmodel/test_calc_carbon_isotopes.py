@@ -71,10 +71,11 @@ from pyrealm.pmodel import CalcCarbonIsotopes, PModel, PModelEnvironment
         ),
     ],
 )
-def test_temporal_interpolator_init_errors(pmodelenv_args, pmodel_args, expected):
+def test_CalcCarbonIsotopes(pmodelenv_args, pmodel_args, expected):
+    """Tests the CalcCarbonIsotopes class."""
     env = PModelEnvironment(**pmodelenv_args)
     pmodel = PModel(env, **pmodel_args)
-    cci = CalcCarbonIsotopes(pmodel, d13CO2=-8.4, D14CO2=19.2)
+    cci = CalcCarbonIsotopes(pmodel, d13CO2=np.array([-8.4]), D14CO2=np.array([19.2]))
 
     for attr in expected:
         assert np.allclose(getattr(cci, attr), expected[attr], atol=0.001)

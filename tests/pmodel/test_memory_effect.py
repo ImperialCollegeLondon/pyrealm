@@ -1,3 +1,5 @@
+"""Tests the application of the memory effect in the subdaily model."""
+
 from contextlib import nullcontext as does_not_raise
 
 import numpy as np
@@ -80,8 +82,7 @@ def test_memory_effect(inputs, alpha):
 )
 @pytest.mark.parametrize(argnames="ndim", argvalues=(1, 2, 3))
 def test_memory_effect_inputs(inputs, handle_nan, context_manager, expected, ndim):
-    """Simple testing of nan handling and expected predictions across multiple
-    dimensions."""
+    """Simple testing of nan handling and predictions across multiple dimensions."""
     from pyrealm.pmodel.subdaily import memory_effect
 
     if ndim == 2:
