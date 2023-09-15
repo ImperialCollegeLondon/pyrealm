@@ -95,9 +95,9 @@ def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
     comp = C3C4Competition(
         pmodel_c3.gpp,
         pmodel_c4.gpp,
-        treecover=np.array([0]),
-        below_t_min=np.array([False]),
-        cropland=np.array([False]),
+        treecover=np.array([0, 0]),
+        below_t_min=np.array([False, False]),
+        cropland=np.array([False, False]),
     )
 
     d13CO2 = np.array([-8.4])
