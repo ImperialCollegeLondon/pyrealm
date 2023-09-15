@@ -1,7 +1,7 @@
 """Test the functionality of the pyrealm.hygro module."""
 
 import json
-from pathlib import Path
+from importlib import resources
 
 import numpy as np
 import pytest
@@ -10,9 +10,12 @@ import pytest
 @pytest.fixture
 def bigleaf():
     """A fixture to provide benchmark predictions from the bigleaf package."""
-    path = Path(__file__).parent
-    with open(path / "bigleaf_test_values.json") as tvals:
-        return json.load(tvals)
+
+    datapath = (
+        resources.files("pyrealm_build_data.bigleaf") / "bigleaf_test_values.json"
+    )
+    with open(str(datapath)) as test_vals:
+        return json.load(test_vals)
 
 
 TEMP = np.linspace(0, 30, 31)
