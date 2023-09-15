@@ -1,4 +1,4 @@
-"""This module tests the FastSlowScalar class.
+"""This module tests the FastSlowScaler class.
 
 This class handles estimating daily reference values and then interpolating lagged
 responses back to subdaily time scales.
@@ -163,7 +163,7 @@ def test_FSS_init(ctext_mngr, msg, datetimes):
     ],
 )
 def test_FSS_set_window(fixture_FSS, ctext_mngr, msg, kwargs, samp_mean, samp_max):
-    """Test the FastSlowScalar set_window method."""
+    """Test the FastSlowScaler set_window method."""
 
     with ctext_mngr as cman:
         fixture_FSS.set_window(**kwargs)
@@ -228,7 +228,7 @@ def test_FSS_set_window(fixture_FSS, ctext_mngr, msg, kwargs, samp_mean, samp_ma
     ],
 )
 def test_FSS_set_include(fixture_FSS, ctext_mngr, msg, include, samp_mean, samp_max):
-    """Test the FastSlowScalar set_include method."""
+    """Test the FastSlowScaler set_include method."""
     with ctext_mngr as cman:
         fixture_FSS.set_include(include)
 
@@ -291,7 +291,7 @@ def test_FSS_set_include(fixture_FSS, ctext_mngr, msg, include, samp_mean, samp_
     ],
 )
 def test_FSS_set_nearest(fixture_FSS, ctext_mngr, msg, time, samp_mean, samp_max):
-    """Test the FastSlowScalar set_nearest method."""
+    """Test the FastSlowScaler set_nearest method."""
     with ctext_mngr as cman:
         fixture_FSS.set_nearest(time)
 
@@ -318,7 +318,7 @@ def test_FSS_set_nearest(fixture_FSS, ctext_mngr, msg, time, samp_mean, samp_max
     ],
 )
 def test_FSS_get_wv_errors(fixture_FSS, ctext_mngr, msg, values):
-    """Test errors arising in the FastSlowScalar get_window_value method."""
+    """Test errors arising in the FastSlowScaler get_window_value method."""
     fixture_FSS.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(2, "h"),
@@ -614,7 +614,7 @@ def test_FSS_resample_subdaily_linear(
     input_values,
     exp_values,
 ):
-    """Test FastSlowScalar resampling to subdaily timescale by linear interpolation."""
+    """Test FastSlowScaler resampling to subdaily timescale by linear interpolation."""
 
     # Set the included observations
     fixture_FSS.set_window(
