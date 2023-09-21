@@ -11,7 +11,8 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
-    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Development Status :: 4 - Beta",
 ]
 license = "MIT"
 packages = [
