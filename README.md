@@ -1,6 +1,8 @@
 # The `pyrealm` package
 
 [![codecov](https://codecov.io/gh/ImperialCollegeLondon/pyrealm/branch/develop/graph/badge.svg)](https://codecov.io/gh/ImperialCollegeLondon/pyrealm)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8366847.svg)](https://doi.org/10.5281/zenodo.8366847)
+[![Test and build](https://github.com/ImperialCollegeLondon/pyrealm/actions/workflows/pyrealm_ci.yaml/badge.svg?branch=develop)](https://github.com/ImperialCollegeLondon/pyrealm/actions/workflows/pyrealm_ci.yaml)
 
 The `pyrealm` package provides a toolbox implementing some key models for estimating
 plant productivity, growth and demography in Python 3. The outputs of different models
@@ -25,8 +27,10 @@ roadmap along with the a feature set to aim for in version 1.0.0.
 
 ## Using `pyrealm`
 
-The `pyrealm` package requires Python 3.9 or greater and can be installed from
-[PyPi](https://pypi.org/project/pyrealm/):
+The `pyrealm` package requires Python 3.9 or greater. We make released versions
+available via [PyPi](https://pypi.org/project/pyrealm/) and also generate DOIs for each
+release via [Zenodo](https://doi.org/10.5281/zenodo.8366847). You can install the most
+recent release using `pip`:
 
 ```sh
 pip install pyrealm
@@ -77,10 +81,17 @@ Jupyter notebooks and how to use `pyrealm` with large datasets loaded using
 [`numpy`](https://numpy.org/) or [`xarray`](https://docs.xarray.dev/en/stable/) with
 `pyrealm` classes and functions.
 
+## Citing `pyrealm`
+
+The `pyrealm` repository can be cited following the information in the [citation
+file](./CITATION.cff). If you are using `pyrealm` in research, it is better to cite the
+DOI of the specific release from [Zenodo](https://doi.org/10.5281/zenodo.8366847).
+
 ## Developing `pyrealm`
 
 If you are interested in contributing to the development of `pyrealm`, please read the
-[guide for contributors](./CONTRIBUTING.md).
+[guide for contributors](./CONTRIBUTING.md). Please do also read the [code of
+conduct](./CODE_OF_CONDUCT.md) for contributing to this project.
 
 ## Support and funding
 
