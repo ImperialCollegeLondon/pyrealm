@@ -11,7 +11,9 @@ def be_vie_data():
 
     # This feels like a hack but it isn't obvious how to reference the data files
     # included in the source distribution from the package path.
-    data_path = resources.files("pyrealm_build_data") / "subdaily_BE_Vie_2014.csv"
+    data_path = (
+        resources.files("pyrealm_build_data.subdaily") / "subdaily_BE_Vie_2014.csv"
+    )
 
     data = np.genfromtxt(
         data_path,
