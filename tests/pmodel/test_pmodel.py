@@ -5,7 +5,6 @@ implementation.
 """
 
 import json
-import os
 import warnings
 from contextlib import nullcontext as does_not_raise
 from importlib import resources
