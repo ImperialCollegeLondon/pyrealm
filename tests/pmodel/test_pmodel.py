@@ -8,6 +8,7 @@ import json
 import os
 import warnings
 from contextlib import nullcontext as does_not_raise
+from importlib import resources
 
 import numpy as np
 import pytest
@@ -29,10 +30,13 @@ RPMODEL_C4_BUG = True
 
 @pytest.fixture(scope="module")
 def values():
-    """Fixture to load test inputs from file."""
+    """Fixture to load test inputs and expected rpmodel outputs from file."""
 
-    test_dir = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(test_dir, "test_outputs_rpmodel.json")) as infile:
+    datapath = (
+        resources.files("pyrealm_build_data.rpmodel") / "test_outputs_rpmodel.json"
+    )
+
+    with open(str(datapath)) as infile:
         values = json.load(infile)
 
     # JSON contains nested dictionary of scalars and lists - convert
