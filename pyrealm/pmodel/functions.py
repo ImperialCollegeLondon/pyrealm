@@ -447,8 +447,7 @@ def calc_gammastar(
     r"""Calculate the photorespiratory CO2 compensation point.
 
     Calculates the photorespiratory **CO2 compensation point** in absence of dark
-    respiration (:math:`\Gamma^{*}`, :cite:author:`Farquhar:1980ft`,
-    :cite:year:`Farquhar:1980ft`) as:
+    respiration (:math:`\Gamma^{*}`, :cite:alp:`Farquhar:1980ft`) as:
 
     .. math::
 
@@ -538,8 +537,8 @@ def calc_kmm(tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()) -> 
     r"""Calculate the Michaelis Menten coefficient of Rubisco-limited assimilation.
 
     Calculates the Michaelis Menten coefficient of Rubisco-limited assimilation
-    (:math:`K`, :cite:author:`Farquhar:1980ft`, :cite:year:`Farquhar:1980ft`) as a
-    function of temperature (:math:`T`) and atmospheric pressure (:math:`p`) as:
+    (:math:`K`, :cite:alp:`Farquhar:1980ft`) as a function of temperature (:math:`T`)
+    and atmospheric pressure (:math:`p`) as:
 
       .. math:: K = K_c ( 1 + p_{\ce{O2}} / K_o),
 
@@ -547,7 +546,7 @@ def calc_kmm(tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()) -> 
     :math:`f(T, H_a)` is an Arrhenius-type temperature response of activation energies
     (:func:`calc_ftemp_arrh`) used to correct Michalis constants at standard temperature
     for both :math:`\ce{CO2}` and :math:`\ce{O2}` to the local temperature (Table 1,
-    :cite:author:`Bernacchi:2001kg`, :cite:year:`Bernacchi:2001kg`):
+    :cite:alp:`Bernacchi:2001kg`):
 
       .. math::
         :nowrap:
@@ -606,8 +605,8 @@ def calc_kp_c4(
     r"""Calculate the Michaelis Menten coefficient of PEPc.
 
     Calculates the Michaelis Menten coefficient of phosphoenolpyruvate carboxylase
-    (PEPc) (:math:`K`, :cite:author:`boyd:2015a`, :cite:year:`boyd:2015a`) as a function
-    of temperature (:math:`T`) and atmospheric pressure (:math:`p`) as:
+    (PEPc) (:math:`K`, :cite:alp:`boyd:2015a`) as a function of temperature (:math:`T`)
+    and atmospheric pressure (:math:`p`) as:
 
     Args:
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
@@ -939,8 +938,7 @@ def calc_patm(elv: NDArray, const: PModelConst = PModelConst()) -> NDArray:
     Calculates atmospheric pressure as a function of elevation with reference to the
     standard atmosphere.  The elevation-dependence of atmospheric pressure is computed
     by assuming a linear decrease in temperature with elevation and a mean adiabatic
-    lapse rate (Eqn 3, :cite:author:`BerberanSantos:2009bk`,
-    :cite:year:`BerberanSantos:2009bk`):
+    lapse rate (Eqn 3, :cite:alp:`BerberanSantos:2009bk`):
 
     .. math::
 
