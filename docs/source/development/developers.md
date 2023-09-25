@@ -12,21 +12,8 @@ kernelspec:
   name: pyrealm_python3
 ---
 
-# Package documentation
-
-The documentation for `pyrealm` is maintained using `sphinx`. The module code is
-documented using Google style docstrings in RST format. Much of the rest of the
-documentation uses Jupyter notebooks written using `myst-nb` format in order to
-dynamically include Python code examples showing the behaviour of functions. In
-general, the code will be concealed but the underlying code can be seen by
-clicking on the buttons like the one below.
-
-```{code-cell} python
-:tags: [hide-input]
-# This is just an example code cell to demonstrate how code is included in 
-# the pyrealm documentation.
+<!-- This file simply acts as a container in the source tree for the 
+contents of the CONTRIBUTING markdown document in the project root.>
+<!-- markdownlint-disable-next-line MD041 -->
+```{include} ../../../CONTRIBUTING.md
 ```
-
-## Development notes
-
-TBD
