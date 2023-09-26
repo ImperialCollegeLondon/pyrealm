@@ -4,8 +4,8 @@ Tests the init, grow_ttree and other methods of TModel.
 """
 
 import csv
-import os
 from contextlib import nullcontext as does_not_raise
+from importlib import resources
 
 import numpy as np
 import pytest
@@ -22,9 +22,9 @@ def rvalues():
     """
     from pyrealm.tmodel import TModelTraits
 
-    test_dir = os.path.dirname(os.path.abspath(__file__))
+    datapath = resources.files("pyrealm_build_data.t_model") / "rtmodel_output.csv"
 
-    with open(os.path.join(test_dir, "rtmodel_output.csv")) as infile:
+    with open(str(datapath)) as infile:
         rdr = csv.DictReader(infile, quoting=csv.QUOTE_NONNUMERIC)
         values = [v for v in rdr]
 

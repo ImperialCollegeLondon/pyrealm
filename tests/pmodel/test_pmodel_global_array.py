@@ -1,6 +1,9 @@
 """Runs tests of the P Model using global arrays as inputs.
 
 This is used to benchmark the pyrealm predictions against the rpmodel implementation.
+
+TODO - this test is currently broken because there is an issue with calculating the
+predictions from rpmodel. The test code is now also outdated.
 """
 import os
 
@@ -17,7 +20,7 @@ def dataset():
 
     from pyrealm.pmodel import PModelEnvironment, calc_patm
 
-    data_file_path = resources.files("pyrealm_build_data") / "pmodel_inputs.nc"
+    data_file_path = resources.files("pyrealm_build_data.rpmodel") / "pmodel_global.nc"
     dataset = xarray.load_dataset(data_file_path)
 
     # Extract the six variables for all months

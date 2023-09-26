@@ -148,7 +148,7 @@ to be the same size so some of the variables have repeated data across dimension
 
 ```{code-cell} ipython3
 # Load an example dataset containing the forcing variables.
-data_path = resources.files('pyrealm_build_data') / "pmodel_inputs.nc"
+data_path = resources.files('pyrealm_build_data.rpmodel') / "pmodel_global.nc"
 ds = xarray.load_dataset(data_path)
 
 # Extract the six variables for the two months and convert from 
