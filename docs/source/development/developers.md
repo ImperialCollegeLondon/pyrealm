@@ -44,9 +44,8 @@ poetry run pytest
 
 The package is designed to provide a set of tools to be used within a Python script or
 notebook. The package documentation provides some minimal examples of using the various
-modules within `pyrealm` - see the [README](README.md#using-pyrealm) for links to these
-examples - but typically a user will load input data, pass it into imported `pyrealm`
-classes and functions and then use the outputs in further functions.
+modules within `pyrealm` but typically a user will load input data, pass it into
+imported `pyrealm` classes and functions and then use the outputs in further functions.
 
 Some of the package modules - such as the `pmodel` and `splash` modules - require input
 data in arrays, typically with spatial and temporal dimensions loaded from NetCDF files
@@ -144,8 +143,8 @@ supporting the rendering of chemical notation.
 ## Code quality and continuous integration
 
 The project uses continuous integration (CI) via GitHub Actions to maintain code quality
-and check confirm that the package and website are building correctly. The
-[`pyrealm_ci.yaml`](.github/workflows/pyrealm_ci.yaml) currently defines three CI jobs:
+and check confirm that the package and website are building correctly. The actions are
+defined in `.github/workflows/pyrealm_ci.yaml` and currently include three CI jobs:
 
 * code quality assurance (`qa`)
 * code testing (`test`)
@@ -162,9 +161,8 @@ to ensure that your code passes testing.
 ### Code quality assurance
 
 The project uses `pre-commit` to enforce code quality. The configuration file
-[`.pre-commit-config.yaml`](.pre-commit-config.yaml) shows the details of the tool
-chain, but `isort`, `black`, `flake8` and `markdownlint` are used to maintain code
-quality.
+`.pre-commit-config.yaml`` shows the details of the tool chain, but`isort`,`black`,
+`flake8` and `markdownlint` are used to maintain code quality.
 
 You will need to [install `pre-commit`](https://pre-commit.com/#install) to develop
 package code. Once you have installed `pre-commit` you then need to install the
