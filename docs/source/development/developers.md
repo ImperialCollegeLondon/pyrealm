@@ -161,7 +161,7 @@ to ensure that your code passes testing.
 ### Code quality assurance
 
 The project uses `pre-commit` to enforce code quality. The configuration file
-`.pre-commit-config.yaml`` shows the details of the tool chain, but`isort`,`black`,
+`.pre-commit-config.yaml` shows the details of the tool chain, but `isort`,`black`,
 `flake8` and `markdownlint` are used to maintain code quality.
 
 You will need to [install `pre-commit`](https://pre-commit.com/#install) to develop
