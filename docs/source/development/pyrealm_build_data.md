@@ -81,10 +81,11 @@ Rscript test_outputs_rpmodel.R
 ### Global array test
 
 The remaining files in the submodule are intended to provide a global test dataset for
-benchmarking the use of `rpmodel` on a global time-series - so using XYT data. It is
-currently not used in testing because of issues with the `rpmodel` package in version
-1.2.0. It may also be replaced in testing with the `uk_data` submodule, which is used as
-an example dataset in the documentation.
+benchmarking the use of `rpmodel` on a global time-series, so using 3 dimensional arrays
+with latitude, longitude and time coordinates. It is currently not used in testing
+because of issues with the `rpmodel` package in version 1.2.0. It may also be replaced
+in testing with the `uk_data` submodule, which is used as an example dataset in the
+documentation.
 
 The files are:
 
