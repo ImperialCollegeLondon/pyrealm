@@ -1,7 +1,9 @@
-import pytest
 from importlib import resources
+
 import numpy as np
+import pytest
 import xarray
+
 from pyrealm.pmodel import PModelEnvironment
 
 
@@ -47,11 +49,7 @@ class TestClass:
 
     def test_profiling_example(self, setup):
 
-        from pyrealm.pmodel import (
-            C3C4Competition,
-            CalcCarbonIsotopes,
-            PModel,
-        )
+        from pyrealm.pmodel import C3C4Competition, CalcCarbonIsotopes, PModel
 
         # Profiling the PModel submodule
         # Standard C3 PModel
@@ -112,7 +110,6 @@ class TestClass:
         from pyrealm.pmodel import FastSlowPModel, FastSlowScaler
 
         # Profiling the subdaily submodule
-
         # FastSlowPModel with 1 hour noon acclimation window
         fsscaler = FastSlowScaler(self.local_time)
         fsscaler.set_window(
