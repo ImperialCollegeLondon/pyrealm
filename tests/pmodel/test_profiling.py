@@ -4,8 +4,8 @@ import numpy as np
 import xarray
 from pyrealm.pmodel import PModelEnvironment
 
-class TestClass:
 
+class TestClass:
     @pytest.fixture()
     def setup(self):
 
@@ -40,10 +40,10 @@ class TestClass:
         # Define atmospheric CO2 concentration (ppm)
         self.co2 = np.ones_like(self.tc) * 400
 
-
         # Generate and check the PModelEnvironment
-        self.pm_env = PModelEnvironment(tc=self.tc, patm=self.patm, vpd=self.vpd, co2=self.co2)
-
+        self.pm_env = PModelEnvironment(
+            tc=self.tc, patm=self.patm, vpd=self.vpd, co2=self.co2
+        )
 
     def test_profiling_example(self, setup):
 
@@ -52,7 +52,6 @@ class TestClass:
             CalcCarbonIsotopes,
             PModel,
         )
-
 
         # Profiling the PModel submodule
         # Standard C3 PModel
@@ -108,14 +107,9 @@ class TestClass:
 
         comp.summarize()
 
-
-
     def test_profile_subdaily(self, setup):
-        
-        from pyrealm.pmodel import (
-            FastSlowPModel,
-            FastSlowScaler
-        )
+
+        from pyrealm.pmodel import FastSlowPModel, FastSlowScaler
 
         # Profiling the subdaily submodule
 
