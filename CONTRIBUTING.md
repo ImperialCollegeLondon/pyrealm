@@ -162,12 +162,11 @@ have been created for PyRealm. Please see the relevant testing directory.
 poetry run pytest <test_path> --profile
 ```
 
-to generate a report. You can run 
+to generate a report. You can run
 
 ```bash
 poetry run pytest <test_path> --profile-svg
 ```
-
 to generate a call graph.
 
 #### Using 'pytest-coverage'
@@ -178,10 +177,8 @@ coverage reports. You can run
 ```bash
 poetry run pytest --cov=<test_path>
 ```
-
 to perform coverage analysis. This can be used to determine if your contribution is adequately
 tested.
-
 
 #### Using `doctest`
 
@@ -195,7 +192,6 @@ be checked using, for example:
 ```bash
 poetry run python -m doctest pyrealm/pmodel/pmodel.py
 ```
-
 Normally, `doctest` is used to test a return value but can also be used to check that an
 error or warning is raised. See the example for `pyrealm.utilities.convert_rh_to_vpd`
 which redirects the stderr to stdout to allow for the warning text to be included in the
