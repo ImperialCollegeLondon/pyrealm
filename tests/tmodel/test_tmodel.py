@@ -1,11 +1,11 @@
 """Test TModel class.
 
-Tests the init, grow_ttree and other methods of TModel
+Tests the init, grow_ttree and other methods of TModel.
 """
 
 import csv
-import os
 from contextlib import nullcontext as does_not_raise
+from importlib import resources
 
 import numpy as np
 import pytest
@@ -22,9 +22,9 @@ def rvalues():
     """
     from pyrealm.tmodel import TModelTraits
 
-    test_dir = os.path.dirname(os.path.abspath(__file__))
+    datapath = resources.files("pyrealm_build_data.t_model") / "rtmodel_output.csv"
 
-    with open(os.path.join(test_dir, "rtmodel_output.csv")) as infile:
+    with open(str(datapath)) as infile:
         rdr = csv.DictReader(infile, quoting=csv.QUOTE_NONNUMERIC)
         values = [v for v in rdr]
 
@@ -92,7 +92,7 @@ def test_tmodel_reset_diameters(rvalues, row):
 
 
 def test_tmodel_init_array(rvalues):
-    """Test the geometry calculation using an __init__array using the exemplar R data."""
+    """Test geometry calculation using an __init__array using the exemplar R data."""
 
     from pyrealm.constants.tmodel_const import TModelTraits
     from pyrealm.tmodel import TTree
@@ -116,7 +116,7 @@ def test_tmodel_init_array(rvalues):
     ],
 )
 def test_tmodel_growth_access(sequence, raises):
-    """Check masking of growth estimates
+    """Check masking of growth estimates.
 
     Tests that the accessors for growth properties are properly masked when not set
     or outdated.
@@ -141,12 +141,12 @@ def test_tmodel_growth_access(sequence, raises):
         ttree.calculate_growth(7)
 
     with raises:
-        val = ttree.delta_d
+        _ = ttree.delta_d
 
 
 @pytest.mark.parametrize(argnames="row", argvalues=np.arange(0, 100, 10))
 def test_tmodel_calculate_growth(rvalues, row):
-    """Test calculate_growth with scalars
+    """Test calculate_growth with scalars.
 
     Runs a test of the tmodel.TTree against output from the R implementation.
     The values in the test come from simulating a 100 year run starting from

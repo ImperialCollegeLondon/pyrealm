@@ -1,3 +1,4 @@
+"""Tests the implementation of the FastSlowModel against the reference benchmark."""
 from importlib import resources
 
 import numpy as np
@@ -6,11 +7,13 @@ import pytest
 
 @pytest.fixture(scope="module")
 def be_vie_data():
-    """Import the test data"""
+    """Import the benchmark test data."""
 
     # This feels like a hack but it isn't obvious how to reference the data files
     # included in the source distribution from the package path.
-    data_path = resources.files("pyrealm_build_data") / "subdaily_BE_Vie_2014.csv"
+    data_path = (
+        resources.files("pyrealm_build_data.subdaily") / "subdaily_BE_Vie_2014.csv"
+    )
 
     data = np.genfromtxt(
         data_path,
@@ -26,7 +29,7 @@ def be_vie_data():
 
 @pytest.fixture(scope="module")
 def be_vie_data_components(be_vie_data):
-    """Convert the test data into a PModelEnv and arrays"""
+    """Convert the test data into a PModelEnv and arrays."""
 
     from pyrealm.pmodel import PModelEnvironment
 
@@ -48,8 +51,11 @@ def be_vie_data_components(be_vie_data):
 
 
 def test_FSPModel_JAMES(be_vie_data_components):
-    """This tests the legacy calculations from the Mengoli et al JAMES paper, using that
-    version of the weighted average calculations without acclimating xi."""
+    """Test FastSlowPModel_JAMES.
+
+    This tests the legacy calculations from the Mengoli et al JAMES paper, using that
+    version of the weighted average calculations without acclimating xi.
+    """
 
     from pyrealm.pmodel import FastSlowScaler
     from pyrealm.pmodel.subdaily import FastSlowPModel_JAMES
@@ -95,8 +101,12 @@ def test_FSPModel_JAMES(be_vie_data_components):
 
 
 def test_FSPModel_corr(be_vie_data_components):
-    """This tests the pyrealm implementation correlates well with the legacy
-    calculations from the Mengoli et al JAMES paper without acclimating xi."""
+    """Test FastSlowPModel.
+
+    This tests that the pyrealm implementation including acclimating xi at least
+    correlates well with the legacy calculations from the Mengoli et al JAMES paper
+    without acclimating xi.
+    """
 
     from pyrealm.pmodel import FastSlowPModel, FastSlowScaler
 
@@ -127,12 +137,12 @@ def test_FSPModel_corr(be_vie_data_components):
     gpp_in_micromols = fs_pmodel.gpp[valid] / env.const.k_c_molmass
     assert np.allclose(gpp_in_micromols, expected_gpp[valid], rtol=0.2)
     r_vals = np.corrcoef(gpp_in_micromols, expected_gpp[valid])
-    assert np.alltrue(r_vals > 0.995)
+    assert np.all(r_vals > 0.995)
 
 
 @pytest.mark.parametrize("ndims", [2, 3, 4])
 def test_FSPModel_dimensionality(be_vie_data, ndims):
-    """This tests that the FastSlowPModel handles dimensions correctly.
+    """Tests that the FastSlowPModel handles dimensions correctly.
 
     This broadcasts the BE-Vie onto more dimensions and checks that the code iterates
     over those dimensions correctly. fAPAR and PPFD are then fixed across the other

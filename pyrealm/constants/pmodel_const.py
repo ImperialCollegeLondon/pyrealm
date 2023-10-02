@@ -17,11 +17,17 @@ class PModelConst(ConstantsClass):
     value and units shown in brackets and the sources for default parameterisations are
     given below:
 
-    * **Density of water**. Values for the Tumlirz equation taken from Table 5 of
-      :cite:t:`Fisher:1975tm`:
+    * **Density of water using Fisher**. Values for the Tumlirz equation taken from
+      Table 5 of :cite:t:`Fisher:1975tm`:
       (:attr:`~pyrealm.constants.pmodel_const.PModelConst.fisher_dial_lambda`,
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.fisher_dial_Po`,
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.fisher_dial_Vinf`)
+
+    * **Density of water using Chen**. Values taken from  :cite:t:`chen:2008a`:
+      (:attr:`~pyrealm.constants.pmodel_const.PModelConst.chen_po`,
+      :attr:`~pyrealm.constants.pmodel_const.PModelConst.chen_ko`,
+      :attr:`~pyrealm.constants.pmodel_const.PModelConst.chen_ca`,
+      :attr:`~pyrealm.constants.pmodel_const.PModelConst.chen_cb`)
 
     * **Viscosity of water**. Values for the parameterisation taken from Table 2 and 3
       of :cite:t:`Huber:2009fy`:
@@ -124,6 +130,9 @@ class PModelConst(ConstantsClass):
     k_CtoK: float = 273.15
     """Conversion from °C to K   (:math:`CtoK` , 273.15, -)"""
 
+    water_density_method: str = "fisher"
+    """Set the method used for calculating water density ('fisher' or 'chen'."""
+
     # Fisher Dial
     fisher_dial_lambda: NDArray[np.float32] = field(
         default_factory=lambda: np.array(
@@ -159,6 +168,46 @@ class PModelConst(ConstantsClass):
     )
     r"""Temperature dependent Vinf parameterisation of the Tumlirz equation
     (:math:`V_{\infty}`)."""
+
+    # Chen water density
+    chen_po: NDArray[np.float32] = field(
+        default_factory=lambda: np.array(
+            [
+                0.99983952,
+                6.788260e-5,
+                -9.08659e-6,
+                1.022130e-7,
+                -1.35439e-9,
+                1.471150e-11,
+                -1.11663e-13,
+                5.044070e-16,
+                -1.00659e-18,
+            ]
+        )
+    )
+    r"""Polynomial relationship of water density at 1 atm (kg/m^3) with temperature."""
+
+    chen_ko: NDArray[np.float32] = field(
+        default_factory=lambda: np.array(
+            [19652.17, 148.1830, -2.29995, 0.01281, -4.91564e-5, 1.035530e-7]
+        )
+    )
+    r"""Polynomial relationship of bulk modulus of water at 1 atm (kg/m^3) with
+     temperature."""
+
+    chen_ca: NDArray[np.float32] = field(
+        default_factory=lambda: np.array(
+            [3.26138, 5.223e-4, 1.324e-4, -7.655e-7, 8.584e-10]
+        )
+    )
+    r"""Polynomial temperature dependent coefficient :math:`c_{a}`."""
+
+    chen_cb: NDArray[np.float32] = field(
+        default_factory=lambda: np.array(
+            [7.2061e-5, -5.8948e-6, 8.69900e-8, -1.0100e-9, 4.3220e-12]
+        )
+    )
+    r"""Polynomial temperature dependent coefficient :math:`c_{b}`."""
 
     # Huber
     simple_viscosity: bool = False

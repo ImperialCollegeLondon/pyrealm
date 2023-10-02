@@ -1,5 +1,7 @@
+"""Test the functionality of the pyrealm.hygro module."""
+
 import json
-from pathlib import Path
+from importlib import resources
 
 import numpy as np
 import pytest
@@ -7,9 +9,13 @@ import pytest
 
 @pytest.fixture
 def bigleaf():
-    path = Path(__file__).parent
-    with open(path / "bigleaf_test_values.json") as tvals:
-        return json.load(tvals)
+    """A fixture to provide benchmark predictions from the bigleaf package."""
+
+    datapath = (
+        resources.files("pyrealm_build_data.bigleaf") / "bigleaf_test_values.json"
+    )
+    with open(str(datapath)) as test_vals:
+        return json.load(test_vals)
 
 
 TEMP = np.linspace(0, 30, 31)
@@ -22,7 +28,9 @@ PATM = np.linspace(60, 110, 31)
 @pytest.mark.parametrize(
     argnames="formula", argvalues=["Allen1998", "Alduchov1996", "Sonntag1990"]
 )
-def test_calc_vp_sat(bigleaf, formula):
+def test_calc_vp_sat(bigleaf, formula) -> None:
+    """Test the calc_vp_sat function."""
+
     from pyrealm.constants import HygroConst
     from pyrealm.hygro import calc_vp_sat
 
@@ -37,6 +45,8 @@ def test_calc_vp_sat(bigleaf, formula):
     argnames="formula", argvalues=["Allen1998", "Alduchov1996", "Sonntag1990"]
 )
 def test_convert_vp_to_vpd(bigleaf, formula):
+    """Test the convert_vp_to_vpd function."""
+
     from pyrealm.constants import HygroConst
     from pyrealm.hygro import convert_vp_to_vpd
 
@@ -51,6 +61,8 @@ def test_convert_vp_to_vpd(bigleaf, formula):
     argnames="formula", argvalues=["Allen1998", "Alduchov1996", "Sonntag1990"]
 )
 def test_convert_rh_to_vpd(bigleaf, formula):
+    """Test the convert_rh_to_vpd function."""
+
     from pyrealm.constants import HygroConst
     from pyrealm.hygro import convert_rh_to_vpd
 
@@ -62,6 +74,8 @@ def test_convert_rh_to_vpd(bigleaf, formula):
 
 
 def test_convert_sh_to_vp(bigleaf):
+    """Test the convert_sh_to_vp function."""
+
     from pyrealm.hygro import convert_sh_to_vp
 
     results = convert_sh_to_vp(SH, PATM)
@@ -74,6 +88,8 @@ def test_convert_sh_to_vp(bigleaf):
     argnames="formula", argvalues=["Allen1998", "Alduchov1996", "Sonntag1990"]
 )
 def test_convert_sh_to_vpd(bigleaf, formula):
+    """Test the convert_sh_to_vpd function."""
+
     from pyrealm.constants import HygroConst
     from pyrealm.hygro import convert_sh_to_vpd
 

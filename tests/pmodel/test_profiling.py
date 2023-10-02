@@ -1,3 +1,9 @@
+"""Profiling test class.
+
+Runs a profiler on the pmodel implementation to identify runtime
+bottlenecks.
+"""
+
 from importlib import resources
 
 import numpy as np
@@ -6,21 +12,24 @@ import xarray
 
 from pyrealm.pmodel import PModelEnvironment
 
+
 class TestClass:
+    """Test class for the profiler running on the pmodel implementation."""
+
     @pytest.fixture()
     def setup(self):
-
+        """Setting up the pmodel and loading the test data set."""
         # Loading the dataset:
         dpath = resources.files("pyrealm_build_data") / "inputs_data_24.25.nc"
 
         ds = xarray.load_dataset(dpath)
 
-        # TODO - this is a bit of a hack because of the current unfriendly handling of data
-        #        that does not form neat blocks of daily data in the subdaily module. The
+        # TODO - this is a bit of a hack because of the current unfriendly handling of
+        #  data that does not form neat blocks of daily data in the subdaily module. The
         #        test data is a slice along longitude 24.25°E (Finland --> Crete -->
         #        Botswana) so the actual local times needed for the subdaily module are
-        #        offset from the UTC times in the data. This step reduces the input data to
-        #        complete daily blocks of data using local time
+        #        offset from the UTC times in the data. This step reduces the input data
+        #        to complete daily blocks of data using local time
 
         ds = ds.sel(time=slice("2000-01-01T01:59", "2001-12-31T01:59"))
         self.local_offset = np.timedelta64(int((24.25 * (24 / 360)) * 60 * 60), "s")
@@ -47,7 +56,7 @@ class TestClass:
         )
 
     def test_profiling_example(self, setup):
-
+        """Running the profiler on the pmodel."""
         from pyrealm.pmodel import C3C4Competition, CalcCarbonIsotopes, PModel
 
         # Profiling the PModel submodule
@@ -66,8 +75,9 @@ class TestClass:
         gpp_c3_annual = pmod_c3.gpp * (60 * 60 * 24 * 365) * 1e-6
         gpp_c4_annual = pmod_c4.gpp * (60 * 60 * 24 * 365) * 1e-6
 
-        # Fit the competition model - making some extrenely poor judgements about what is
-        # cropland and what is below the minimum temperature that really should be fixed.
+        # Fit the competition model - making some extrenely poor judgements about what
+        # is cropland and what is below the minimum temperature that really should be
+        # fixed.
         comp = C3C4Competition(
             gpp_c3=gpp_c3_annual,
             gpp_c4=gpp_c4_annual,
@@ -95,7 +105,8 @@ class TestClass:
         )
         isotope_c4.summarize()
 
-        # Calculate the expected isotopic patterns in locations given the competition model
+        # Calculate the expected isotopic patterns in locations given the competition
+        # model
         comp.estimate_isotopic_discrimination(
             d13CO2=constant_d13CO2,
             Delta13C_C3_alone=isotope_c3.Delta13C,
@@ -105,10 +116,9 @@ class TestClass:
         comp.summarize()
 
     def test_profile_subdaily(self, setup):
-
+        """Profiling the subdaily submodule."""
         from pyrealm.pmodel import FastSlowPModel, FastSlowScaler
 
-        # Profiling the subdaily submodule
         # FastSlowPModel with 1 hour noon acclimation window
         fsscaler = FastSlowScaler(self.local_time)
         fsscaler.set_window(
@@ -123,3 +133,4 @@ class TestClass:
             ppfd=self.ppfd,
             alpha=1 / 15,
         )
+        return fs_pmod

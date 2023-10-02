@@ -42,11 +42,13 @@ jobs:
       run: poetry install
 
     - name: Run tests
-      run: poetry run pytest
+      run: poetry run pytest --cov-report xml
 
-    - name: Run codecov
+    - name: Upload coverage reports to Codecov
       if: success() && (matrix.os == 'ubuntu-latest' && matrix.python-version == 3.9)
       uses: codecov/codecov-action@v3
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   docs_build:
     needs: qa

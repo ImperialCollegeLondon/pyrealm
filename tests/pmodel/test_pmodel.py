@@ -1,7 +1,13 @@
+"""Run tests of the PModel.
+
+These tests compare the pyrealm implementation to the outputs of the rpmodel
+implementation.
+"""
+
 import json
-import os
 import warnings
-from contextlib import contextmanager
+from contextlib import nullcontext as does_not_raise
+from importlib import resources
 
 import numpy as np
 import pytest
@@ -15,15 +21,6 @@ import pytest
 
 RPMODEL_C4_BUG = True
 
-# ------------------------------------------
-# Null context manager to include exception testing in test paramaterisation
-# ------------------------------------------
-
-
-@contextmanager
-def does_not_raise():
-    yield
-
 
 # ------------------------------------------
 # Fixtures: inputs and expected values
@@ -32,10 +29,13 @@ def does_not_raise():
 
 @pytest.fixture(scope="module")
 def values():
-    """Fixture to load test inputs from file."""
+    """Fixture to load test inputs and expected rpmodel outputs from file."""
 
-    test_dir = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(test_dir, "test_outputs_rpmodel.json")) as infile:
+    datapath = (
+        resources.files("pyrealm_build_data.rpmodel") / "test_outputs_rpmodel.json"
+    )
+
+    with open(str(datapath)) as infile:
         values = json.load(infile)
 
     # JSON contains nested dictionary of scalars and lists - convert
@@ -84,6 +84,7 @@ def values():
     ],
 )
 def test_calc_density_h2o(values, tc, patm, context_manager, expvals):
+    """Test the calc_density_h2o function."""
     from pyrealm.pmodel import calc_density_h2o
 
     with context_manager:
@@ -105,6 +106,7 @@ def test_calc_density_h2o(values, tc, patm, context_manager, expvals):
     ],
 )
 def test_calc_ftemp_arrh(values, tk, expvars):
+    """Test the calc_ftemp_arrh function."""
     from pyrealm.pmodel import calc_ftemp_arrh
 
     ret = calc_ftemp_arrh(tk=values[tk], ha=values["KattgeKnorr_ha"])
@@ -124,6 +126,7 @@ def test_calc_ftemp_arrh(values, tk, expvars):
     ],
 )
 def test_calc_ftemp_inst_vcmax(values, tc, expvars):
+    """Test the calc_ftemp_inst_vcmax function."""
     from pyrealm.pmodel import calc_ftemp_inst_vcmax
 
     ret = calc_ftemp_inst_vcmax(values[tc])
@@ -147,6 +150,7 @@ def test_calc_ftemp_inst_vcmax(values, tc, expvars):
     ],
 )
 def test_calc_ftemp_kphio(values, tc, c4, expvars):
+    """Test the calc_ftemp_kphio function."""
     from pyrealm.pmodel import calc_ftemp_kphio
 
     ret = calc_ftemp_kphio(tc=values[tc], c4=c4)
@@ -168,6 +172,7 @@ def test_calc_ftemp_kphio(values, tc, c4, expvars):
     ],
 )
 def test_calc_gammastar(values, tc, patm, context_manager, expvals):
+    """Test the calc_gammastar function."""
     from pyrealm.pmodel import calc_gammastar
 
     with context_manager:
@@ -191,6 +196,8 @@ def test_calc_gammastar(values, tc, patm, context_manager, expvals):
     ],
 )
 def test_calc_kmm(values, tc, patm, context_manager, expvals):
+    """Test the calc_kmm function."""
+
     from pyrealm.pmodel import calc_kmm
 
     with context_manager:
@@ -213,7 +220,9 @@ def test_calc_kmm(values, tc, patm, context_manager, expvals):
         ("soilm_ar", "shape_error", pytest.raises(ValueError), None),  # shape mismatch
     ],
 )
-def test_calc_soilmstress(values, soilm, meanalpha, context_manager, expvals):
+def test_calc_soilmstress_stocker(values, soilm, meanalpha, context_manager, expvals):
+    """Test the calc_soilmstress_stocker function."""
+
     from pyrealm.pmodel import calc_soilmstress_stocker
 
     with context_manager:
@@ -237,6 +246,8 @@ def test_calc_soilmstress(values, soilm, meanalpha, context_manager, expvals):
     ],
 )
 def test_calc_viscosity_h2o(values, tc, patm, context_manager, expvals):
+    """Test the calc_viscosity_h2o function."""
+
     from pyrealm.pmodel import calc_viscosity_h2o
 
     with context_manager:
@@ -258,6 +269,8 @@ def test_calc_viscosity_h2o(values, tc, patm, context_manager, expvals):
     ],
 )
 def test_calc_patm(values, elev, expvals):
+    """Test the calc_patm function."""
+
     from pyrealm.pmodel import calc_patm
 
     ret = calc_patm(elv=values[elev])
@@ -279,6 +292,8 @@ def test_calc_patm(values, elev, expvals):
     ],
 )
 def test_calc_co2_to_ca(values, co2, patm, context_manager, expvals):
+    """Test the calc_co2_to_ca function."""
+
     from pyrealm.pmodel import calc_co2_to_ca
 
     with context_manager:
@@ -372,6 +387,8 @@ def test_calc_co2_to_ca(values, co2, patm, context_manager, expvals):
 def test_calc_optimal_chi(
     values, tc, patm, co2, vpd, method, context_manager, expvalues
 ):
+    """Test the CalcOptimalChi class."""
+
     from pyrealm.pmodel import CalcOptimalChi, PModelEnvironment
 
     with context_manager:
@@ -416,6 +433,8 @@ def test_calc_optimal_chi(
 def test_jmax_limitation(
     request, values, ftemp_kphio, jmax_method, tc, patm, co2, vpd, c4
 ):
+    """Test the JMaxLimitation class."""
+
     # This test is tricky because the internals of rpmodel and pyrealm differ
     # - rpmodel has a set of functions lue_vcmax_xxx, which return LUE and
     #   vcmax_unitiabs. These are adjusted at this stage in order to incorporate
@@ -511,6 +530,8 @@ def test_jmax_limitation(
     ids=["sc", "ar"],
 )
 def test_pmodelenvironment(values, tc, vpd, co2, patm, ca, kmm, gammastar, ns_star):
+    """Test the PModelEnvironment class."""
+
     from pyrealm.pmodel import PModelEnvironment
 
     ret = PModelEnvironment(
@@ -544,6 +565,8 @@ def test_pmodelenvironment(values, tc, vpd, co2, patm, ca, kmm, gammastar, ns_st
     ],
 )
 def test_pmodelenvironment_exception(inputs, context_manager):
+    """Test exceptions in creating the PModelEnvironment class."""
+
     from pyrealm.pmodel import PModelEnvironment
 
     with context_manager:
@@ -595,6 +618,8 @@ def pmodelenv(values):
 def test_pmodel_class_c3(
     request, values, pmodelenv, soilmstress, ftemp_kphio, luevcmax_method, environ
 ):
+    """Test the PModel class for C3 plants."""
+
     from pyrealm.pmodel import PModel, calc_soilmstress_stocker
 
     # TODO - this is a bit odd as rpmodel embeds stocker soilm in model where in pyrealm
@@ -690,6 +715,8 @@ def test_pmodel_class_c3(
 @pytest.mark.parametrize("ftemp_kphio", [True, False], ids=["fkphio-on", "fkphio-off"])
 @pytest.mark.parametrize("environ", ["sc", "ar"], ids=["sc", "ar"])
 def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, environ):
+    """Test the PModel class for C4 plants."""
+
     from pyrealm.pmodel import PModel, calc_ftemp_kphio, calc_soilmstress_stocker
 
     if soilmstress:
@@ -774,6 +801,8 @@ def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, e
 
 
 def test_pmodel_summarise(capsys, values, pmodelenv):
+    """Test the PModel summarize method."""
+
     from pyrealm.pmodel import PModel
 
     ret = PModel(pmodelenv["sc"], kphio=0.05)
@@ -809,12 +838,6 @@ def test_pmodel_summarise(capsys, values, pmodelenv):
 # Internal testing of functions
 
 
-# ------------------------------------------
-# Testing equivalence and functionality of lavergne methods for soil moisture impacts on
-# the beta cost parameter
-# ------------------------------------------
-
-
 @pytest.mark.parametrize("tc", np.linspace(-5, 45, 5))
 @pytest.mark.parametrize("theta", np.linspace(0, 0.8, 9))
 @pytest.mark.parametrize(
@@ -822,6 +845,13 @@ def test_pmodel_summarise(capsys, values, pmodelenv):
     [("lavergne20_c3", "prentice14", False), ("lavergne20_c4", "c4_no_gamma", True)],
 )
 def test_lavergne_equivalence(tc, theta, variable_method, fixed_method, is_C4):
+    """Testing that the lavergne methods give equivalent predictions.
+
+    Testing equivalence and functionality of lavergne methods for soil moisture impacts
+    on the beta cost parameter - does taking the estimated beta from soil moisture
+    effects following the lavergne methods give the same results as setting that beta in
+    the equivalent non-soil moisture versions.
+    """
     # Cannot do this test using N-D inputs because the PModelConst expect scalar values
     # for paramaterizing beta - you can't set an array of values. So, test combinations
     # of temperature and soil moisture.
@@ -829,7 +859,13 @@ def test_lavergne_equivalence(tc, theta, variable_method, fixed_method, is_C4):
     from pyrealm.constants import PModelConst
     from pyrealm.pmodel import PModel, PModelEnvironment
 
-    env = PModelEnvironment(tc=tc, patm=101325, vpd=100, co2=400, theta=theta)
+    env = PModelEnvironment(
+        tc=tc,
+        theta=theta,
+        patm=np.array([101325]),
+        vpd=np.array([100]),
+        co2=np.array([400]),
+    )
 
     # lavergne method
     mod_theta = PModel(env, method_optchi=variable_method)
@@ -841,7 +877,12 @@ def test_lavergne_equivalence(tc, theta, variable_method, fixed_method, is_C4):
         const = PModelConst(beta_cost_ratio_prentice14=mod_theta.optchi.beta)
 
     env = PModelEnvironment(
-        tc=tc, patm=101325, vpd=100, co2=400, theta=theta, const=const
+        tc=tc,
+        theta=theta,
+        patm=np.array([101325]),
+        vpd=np.array([100]),
+        co2=np.array([400]),
+        const=const,
     )
 
     mod_fixed = PModel(env, method_optchi=fixed_method)

@@ -37,6 +37,22 @@ or similar formats. Other modules - such as the `tmodel` - work on a site by sit
 and require the configuration of site-specific details, such as the definition of plant
 functional types and plant community structures.
 
+## The `pyrealm_build_data` package
+
+The `pyrealm` repository includes both the `pyrealm` package and the
+`pyrealm_build_data` package. The `pyrealm_build_data` package contains datasets that
+are used in the `pyrealm` build process.
+
+* Example datasets that are used in the package documentation, such as simple spatial
+  datasets for showing the use of the P Model.
+* "Golden" datasets including a set of input data and output predictions from
+  previous implementations of `pyrealm` functionality. These are used to benchmark
+  `pyrealm` functionality within the testing framework (see below).
+
+Note that `pyrealm_build_data` is a source distribution only (`sdist`) component of
+`pyrealm`, so is not included in binary distributions (`wheel`), such as those available
+from PyPi.
+
 ## Code development
 
 ### Package management
@@ -80,10 +96,29 @@ The `pyrealm` package is documented using `sphinx`, with source material in the
 
 The documentation in `source` uses [Myst
 Markdown](https://myst-parser.readthedocs.io/en/latest/) rather than the standard
-`sphinx` reStructuredText (`.rst`) format. This is because the documentation uses the
-`myst_nb` extension to `sphinx` that supports running documentation as a Jupyter
-notebook: the built documentation includes examples of running code and output plots to
-demonstrate the use and behaviour of the package.
+`sphinx` reStructuredText (`.rst`) format. This is a literate programming format that
+can be used as a Jupyter notebook. The markdown format is more `git` friendly than the
+standard Jupyter `.ipynb` format, which uses a JSON format and is updated to contain
+non-essential code execution information.
+
+When the package documentation is built in `sphinx` the `myst_nb` extension is used
+automatically to execute the code in MyST markdown documents and render the resulting
+code and outputs. The documentation can therefore contain dynamically generated examples
+of running code and output plots to demonstrate the use and behaviour of the package.
+This build process also ensures that code in documentation is kept up to date with the
+package. The syntax for including code blocks in documents is shown below - this example
+includes a tag that causes the code to be concealed in the built documentation, but with
+a toggle button to allow it to be expanded.
+
+````{code-block}
+```{code-cell} python
+:tags: [hide-input]
+# This is just an example code cell to demonstrate how code is included in 
+# the pyrealm documentation.
+```
+````
+
+## Development notes
 
 The `sphinx` configuration includes the `sphinx.ext.mathjax` extension to support
 mathematical notation. This has been configured to also load the `mhchem` extension,

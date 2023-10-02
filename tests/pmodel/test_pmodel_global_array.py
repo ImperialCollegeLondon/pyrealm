@@ -1,22 +1,27 @@
+"""Runs tests of the P Model using global arrays as inputs.
+
+This is used to benchmark the pyrealm predictions against the rpmodel implementation.
+
+TODO - this test is currently broken because there is an issue with calculating the
+predictions from rpmodel. The test code is now also outdated.
+"""
 import os
 
 import numpy as np
 import pytest
-import xarray as xr  # type: ignore
-
-# flake8: noqa D103 - docstrings on unit tests
+import xarray
 
 
 @pytest.fixture(scope="module")
 def dataset():
-    """Fixture to load test inputs from file from data folder in package root"""
+    """Fixture to load test inputs from file from data folder in package root."""
 
     from importlib import resources
 
     from pyrealm.pmodel import PModelEnvironment, calc_patm
 
-    data_file_path = resources.files("pyrealm_build_data") / "pmodel_inputs.nc"
-    dataset = xr.load_dataset(data_file_path)
+    data_file_path = resources.files("pyrealm_build_data.rpmodel") / "pmodel_global.nc"
+    dataset = xarray.load_dataset(data_file_path)
 
     # Extract the six variables for all months
     temp = dataset["temp"].to_numpy()
@@ -44,11 +49,12 @@ def dataset():
     ],
 )
 def test_pmodel_global_array(dataset, ctrl):
-    """This test runs a comparison between the rpmodel outputs and
-    pyrealm.pmodel using global data at 0.5 degree resolution. The input
-    data file contains values of the key variables for 2 months, giving
-    three dimensional inputs. The same data have been run through rpmodel
-    using the file test_global_array.R and the resulting GPP stored in
+    """Test the PModel implementation using a global grid.
+
+    This test runs a comparison between the rpmodel outputs and pyrealm.pmodel using
+    global data at 0.5 degree resolution. The input data file contains values of the key
+    variables for 2 months, giving three dimensional inputs. The same data have been run
+    through rpmodel using the file test_global_array.R and the resulting GPP stored in
     rpmodel_global_gpp.nc
     """
 
@@ -59,7 +65,8 @@ def test_pmodel_global_array(dataset, ctrl):
     # Skip ftemp kphio is false
     if ctrl["do_ftemp_kphio"]:
         pytest.skip(
-            "Not currently testing global array against rpmodel with ftemp_kphio due to bug pre 1.2.0"
+            "Not currently testing global array against rpmodel with "
+            "ftemp_kphio due to bug pre 1.2.0"
         )
 
     # Run the P model
@@ -71,12 +78,16 @@ def test_pmodel_global_array(dataset, ctrl):
     # Load the R outputs
     test_dir = os.path.dirname(os.path.abspath(__file__))
 
-    ds = netCDF4.Dataset(os.path.join(test_dir, ctrl["rfile"]))
+    ds = xarray.load_dataarray(os.path.join(test_dir, ctrl["rfile"]))
     gpp_r = ds["gpp"][:]
 
     # # Debugging code:
     # # Export the pyrealm values to a new netcdf file using the R one as a template
-    # with netCDF4.Dataset("pyrealm_global_gpp.nc", "w", format="NETCDF3_CLASSIC") as gpp:
+    # with netCDF4.Dataset(
+    #   "pyrealm_global_gpp.nc",
+    #   "w",
+    #   format="NETCDF3_CLASSIC"
+    #  ) as gpp:
     #
     #     for name, dimension in ds.dimensions.items():
     #         gpp.createDimension(

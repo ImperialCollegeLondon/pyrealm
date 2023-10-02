@@ -11,11 +11,84 @@ from pyrealm.constants import PModelConst
 from pyrealm.utilities import check_input_shapes
 
 
-def calc_density_h2o(
+def calc_density_h2o_chen(
+    tc: NDArray, p: NDArray, const: PModelConst = PModelConst()
+) -> NDArray:
+    """Calculate the density of water using Chen et al 2008.
+
+    This function calculates the density of water at a given temperature and pressure
+    (kg/m^3) following :cite:t:`chen:2008a`.
+
+    Warning:
+        The predictions from this function are numerically unstable around -58°C.
+
+    Args:
+        tc: Air temperature (°C)
+        p: Atmospheric pressure (Pa)
+        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+
+    PModel Parameters:
+        chen_po: polynomial coefficients of water density equation at 1 atm.
+        chen_ko: polynomial coefficients of bulk modulus at 1 atm.
+        chen_ca: polynomial coefficients of temperature coefficient :math:`c_a`.
+        chen_cb: polynomial coefficients of temperature coefficient :math:`c_b`.
+
+    Returns:
+        Water density as a float in (g cm^-3)
+
+    Raises:
+        ValueError: if the inputs have incompatible shapes.
+
+    Examples:
+        >>> round(calc_density_h2o_chen(20, 101325), 3)
+        998.25
+    """
+
+    # Calculate density at 1 atm (kg/m^3):
+    po_coef = const.chen_po
+    po = po_coef[0] + po_coef[1] * tc
+    po += po_coef[2] * tc * tc
+    po += po_coef[3] * tc * tc * tc
+    po += po_coef[4] * tc * tc * tc * tc
+    po += po_coef[5] * tc * tc * tc * tc * tc
+    po += po_coef[6] * tc * tc * tc * tc * tc * tc
+    po += po_coef[7] * tc * tc * tc * tc * tc * tc * tc
+    po += po_coef[8] * tc * tc * tc * tc * tc * tc * tc * tc
+
+    # Calculate bulk modulus at 1 atm (bar):
+    ko_coef = const.chen_ko
+    ko = ko_coef[0] + ko_coef[1] * tc
+    ko += ko_coef[2] * tc * tc
+    ko += ko_coef[3] * tc * tc * tc
+    ko += ko_coef[4] * tc * tc * tc * tc
+    ko += ko_coef[5] * tc * tc * tc * tc * tc
+
+    # Calculate temperature dependent coefficients:
+    ca_coef = const.chen_ca
+    ca = ca_coef[0] + ca_coef[1] * tc
+    ca += ca_coef[2] * tc * tc
+    ca += ca_coef[3] * tc * tc * tc
+    ca += ca_coef[4] * tc * tc * tc * tc
+
+    cb_coef = const.chen_cb
+    cb = cb_coef[0] + cb_coef[1] * tc
+    cb += cb_coef[2] * tc * tc
+    cb += cb_coef[3] * tc * tc * tc
+    cb += cb_coef[4] * tc * tc * tc * tc
+
+    # Convert atmospheric pressure to bar (1 bar = 100000 Pa)
+    pbar = (1.0e-5) * p
+
+    pw = ko + ca * pbar + cb * pbar**2.0
+    pw /= ko + ca * pbar + cb * pbar**2.0 - pbar
+    pw *= (1e3) * po
+    return pw
+
+
+def calc_density_h2o_fisher(
     tc: NDArray,
     patm: NDArray,
     const: PModelConst = PModelConst(),
-    safe: bool = True,
 ) -> NDArray:
     """Calculate water density.
 
@@ -23,12 +96,13 @@ def calc_density_h2o(
     pressure, using the Tumlirz Equation and coefficients calculated by
     :cite:t:`Fisher:1975tm`.
 
+    Warning:
+        The predictions from this function are unstable around -45°C.
+
     Args:
         tc: air temperature, °C
         patm: atmospheric pressure, Pa
         const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-        safe: Prevents the function from estimating density below -30°C, where the
-            function behaves poorly
 
     PModel Parameters:
         lambda_: polynomial coefficients of Tumlirz equation (``fisher_dial_lambda``).
@@ -39,37 +113,41 @@ def calc_density_h2o(
         Water density as a float in (g cm^-3)
 
     Raises:
-        ValueError: if ``tc`` is less than -30°C and ``safe`` is True, or if the inputs
-            have incompatible shapes.
+        ValueError: if the inputs have incompatible shapes.
 
     Examples:
-        >>> round(calc_density_h2o(20, 101325), 3)
+        >>> round(calc_density_h2o_fisher(20, 101325), 3)
         998.206
     """
-
-    # It doesn't make sense to use this function for tc < 0, but in particular
-    # the calculation shows wild numeric instability between -44 and -46 that
-    # leads to numerous downstream issues - see the extreme values documentation.
-    if safe and np.nanmin(tc) < np.array([-30]):
-        raise ValueError(
-            "Water density calculations below about -30°C are "
-            "unstable. See argument safe to calc_density_h2o"
-        )
 
     # Check input shapes, shape not used
     _ = check_input_shapes(tc, patm)
 
-    # Get powers of tc, including tc^0 = 1 for constant terms
-    tc_pow = np.power.outer(tc, np.arange(0, 10))
-
     # Calculate lambda, (bar cm^3)/g:
-    lambda_val = np.sum(const.fisher_dial_lambda * tc_pow[..., :5], axis=-1)
+    lambda_coef = const.fisher_dial_lambda
+    lambda_val = lambda_coef[0] + lambda_coef[1] * tc
+    lambda_val += lambda_coef[2] * tc * tc
+    lambda_val += lambda_coef[3] * tc * tc * tc
+    lambda_val += lambda_coef[4] * tc * tc * tc * tc
 
     # Calculate po, bar
-    po_val = np.sum(const.fisher_dial_Po * tc_pow[..., :5], axis=-1)
+    po_coef = const.fisher_dial_Po
+    po_val = po_coef[0] + po_coef[1] * tc
+    po_val += po_coef[2] * tc * tc
+    po_val += po_coef[3] * tc * tc * tc
+    po_val += po_coef[4] * tc * tc * tc * tc
 
     # Calculate vinf, cm^3/g
-    vinf_val = np.sum(const.fisher_dial_Vinf * tc_pow, axis=-1)
+    vinf_coef = const.fisher_dial_Vinf
+    vinf_val = vinf_coef[0] + vinf_coef[1] * tc
+    vinf_val += vinf_coef[2] * tc * tc
+    vinf_val += vinf_coef[3] * tc * tc * tc
+    vinf_val += vinf_coef[4] * tc * tc * tc * tc
+    vinf_val += vinf_coef[5] * tc * tc * tc * tc * tc
+    vinf_val += vinf_coef[6] * tc * tc * tc * tc * tc * tc
+    vinf_val += vinf_coef[7] * tc * tc * tc * tc * tc * tc * tc
+    vinf_val += vinf_coef[8] * tc * tc * tc * tc * tc * tc * tc * tc
+    vinf_val += vinf_coef[9] * tc * tc * tc * tc * tc * tc * tc * tc * tc
 
     # Convert pressure to bars (1 bar <- 100000 Pa)
     pbar = 1e-5 * patm
@@ -81,6 +159,61 @@ def calc_density_h2o(
     rho = 1e3 / spec_vol
 
     return rho
+
+
+def calc_density_h2o(
+    tc: NDArray,
+    patm: NDArray,
+    const: PModelConst = PModelConst(),
+    safe: bool = True,
+) -> NDArray:
+    """Calculate water density.
+
+    Calculates the density of water as a function of temperature and atmospheric
+    pressure. This function uses either the method provided by :cite:t:`Fisher:1975tm`
+    (:func:`~pyrealm.pmodel.functions.calc_density_h2o_fisher`) or :cite:t:`chen:2008a`
+    (:func:`~pyrealm.pmodel.functions.calc_density_h2o_chen`).
+
+    The `water_density_method` argument to
+    :class:`~pyrealm.constants.pmodel_const.PModelConst` is used to set which of the
+    ``fisher`` or ``chen`` methods is used.
+
+    Args:
+        tc: air temperature, °C
+        patm: atmospheric pressure, Pa
+        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        safe: Prevents the function from estimating density below -30°C, where the
+            functions are numerically unstable.
+
+    Returns:
+        Water density as a float in (g cm^-3)
+
+    Raises:
+        ValueError: if ``tc`` contains values below -30°C and ``safe`` is True, or if
+            the inputs have incompatible shapes.
+
+    Examples:
+        >>> round(calc_density_h2o(20, 101325), 3)
+        998.206
+    """
+
+    # Safe guard against instability in functions at low temperature.
+    if safe and np.nanmin(tc) < np.array([-30]):
+        raise ValueError(
+            "Water density calculations below about -30°C are "
+            "unstable. See argument safe to calc_density_h2o"
+        )
+
+    # Check input shapes, shape not used
+    _ = check_input_shapes(tc, patm)
+
+    if const.water_density_method == "fisher":
+        return calc_density_h2o_fisher(tc, patm, const)
+
+    if const.water_density_method == "chen":
+        return calc_density_h2o_chen(tc, patm, const)
+
+    raise ValueError("Unknown method provided to calc_density_h2o")
 
 
 def calc_ftemp_arrh(
@@ -314,8 +447,7 @@ def calc_gammastar(
     r"""Calculate the photorespiratory CO2 compensation point.
 
     Calculates the photorespiratory **CO2 compensation point** in absence of dark
-    respiration (:math:`\Gamma^{*}`, :cite:author:`Farquhar:1980ft`,
-    :cite:year:`Farquhar:1980ft`) as:
+    respiration (:math:`\Gamma^{*}`, :cite:alp:`Farquhar:1980ft`) as:
 
     .. math::
 
@@ -405,8 +537,8 @@ def calc_kmm(tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()) -> 
     r"""Calculate the Michaelis Menten coefficient of Rubisco-limited assimilation.
 
     Calculates the Michaelis Menten coefficient of Rubisco-limited assimilation
-    (:math:`K`, :cite:author:`Farquhar:1980ft`, :cite:year:`Farquhar:1980ft`) as a
-    function of temperature (:math:`T`) and atmospheric pressure (:math:`p`) as:
+    (:math:`K`, :cite:alp:`Farquhar:1980ft`) as a function of temperature (:math:`T`)
+    and atmospheric pressure (:math:`p`) as:
 
       .. math:: K = K_c ( 1 + p_{\ce{O2}} / K_o),
 
@@ -414,7 +546,7 @@ def calc_kmm(tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()) -> 
     :math:`f(T, H_a)` is an Arrhenius-type temperature response of activation energies
     (:func:`calc_ftemp_arrh`) used to correct Michalis constants at standard temperature
     for both :math:`\ce{CO2}` and :math:`\ce{O2}` to the local temperature (Table 1,
-    :cite:author:`Bernacchi:2001kg`, :cite:year:`Bernacchi:2001kg`):
+    :cite:alp:`Bernacchi:2001kg`):
 
       .. math::
         :nowrap:
@@ -473,8 +605,8 @@ def calc_kp_c4(
     r"""Calculate the Michaelis Menten coefficient of PEPc.
 
     Calculates the Michaelis Menten coefficient of phosphoenolpyruvate carboxylase
-    (PEPc) (:math:`K`, :cite:author:`boyd:2015a`, :cite:year:`boyd:2015a`) as a function
-    of temperature (:math:`T`) and atmospheric pressure (:math:`p`) as:
+    (PEPc) (:math:`K`, :cite:alp:`boyd:2015a`) as a function of temperature (:math:`T`)
+    and atmospheric pressure (:math:`p`) as:
 
     Args:
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
@@ -714,6 +846,74 @@ def calc_viscosity_h2o(
     rbar = rho / const.huber_rho_ast
 
     # Calculate mu0 (Eq. 11 & Table 2, Huber et al., 2009):
+    mu0 = const.huber_H_i[0] + const.huber_H_i[1] / tbar
+    mu0 += const.huber_H_i[2] / (tbar * tbar)
+    mu0 += const.huber_H_i[3] / (tbar * tbar * tbar)
+    mu0 = (1e2 * np.sqrt(tbar)) / mu0
+
+    # Calculate mu1 (Eq. 12 & Table 3, Huber et al., 2009):
+    ctbar = (1.0 / tbar) - 1.0
+    mu1 = 0.0
+
+    # Iterate over the rows of the H_ij constants matrix
+    for row_idx in np.arange(const.huber_H_ij.shape[1]):
+        cf1 = ctbar**row_idx
+        cf2 = 0.0
+        for col_idx in np.arange(const.huber_H_ij.shape[0]):
+            cf2 += const.huber_H_ij[col_idx, row_idx] * (rbar - 1.0) ** col_idx
+        mu1 += cf1 * cf2
+
+    mu1 = np.exp(rbar * mu1)
+
+    # Calculate mu_bar (Eq. 2, Huber et al., 2009), assumes mu2 = 1
+    mu_bar = mu0 * mu1
+
+    # Calculate mu (Eq. 1, Huber et al., 2009)
+    return mu_bar * const.huber_mu_ast  # Pa s
+
+
+def calc_viscosity_h2o_matrix(
+    tc: NDArray,
+    patm: NDArray,
+    const: PModelConst = PModelConst(),
+    simple: bool = False,
+) -> NDArray:
+    r"""Calculate the viscosity of water.
+
+    Calculates the viscosity of water (:math:`\eta`) as a function of temperature and
+    atmospheric pressure :cite:p:`Huber:2009fy`.
+
+    Args:
+        tc: air temperature (°C)
+        patm: atmospheric pressure (Pa)
+        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        simple: Use the simple formulation.
+
+    Returns:
+        A float giving the viscosity of water (mu, Pa s)
+
+    Examples:
+        >>> # Density of water at 20 degrees C and standard atmospheric pressure:
+        >>> round(calc_viscosity_h2o(20, 101325), 7)
+        0.0010016
+    """
+
+    # Check inputs, return shape not used
+    _ = check_input_shapes(tc, patm)
+
+    if simple or const.simple_viscosity:
+        # The reference for this is unknown, but is used in some implementations
+        # so is included here to allow intercomparison.
+        return np.exp(-3.719 + 580 / ((tc + 273) - 138))
+
+    # Get the density of water, kg/m^3
+    rho = calc_density_h2o(tc, patm, const=const)
+
+    # Calculate dimensionless parameters:
+    tbar = (tc + const.k_CtoK) / const.huber_tk_ast
+    rbar = rho / const.huber_rho_ast
+
+    # Calculate mu0 (Eq. 11 & Table 2, Huber et al., 2009):
     tbar_pow = np.power.outer(tbar, np.arange(0, 4))
     mu0 = (1e2 * np.sqrt(tbar)) / np.sum(np.array(const.huber_H_i) / tbar_pow, axis=-1)
 
@@ -738,8 +938,7 @@ def calc_patm(elv: NDArray, const: PModelConst = PModelConst()) -> NDArray:
     Calculates atmospheric pressure as a function of elevation with reference to the
     standard atmosphere.  The elevation-dependence of atmospheric pressure is computed
     by assuming a linear decrease in temperature with elevation and a mean adiabatic
-    lapse rate (Eqn 3, :cite:author:`BerberanSantos:2009bk`,
-    :cite:year:`BerberanSantos:2009bk`):
+    lapse rate (Eqn 3, :cite:alp:`BerberanSantos:2009bk`):
 
     .. math::
 

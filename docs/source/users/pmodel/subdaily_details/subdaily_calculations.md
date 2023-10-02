@@ -47,7 +47,7 @@ site](https://fluxnet.org/doi/FLUXNET2015/BE-Vie), which was also used as a
 demonstration in {cite:t}`mengoli:2022a`.
 
 ```{code-cell}
-data_path = resources.files("pyrealm_build_data") / "subdaily_BE_Vie_2014.csv"
+data_path = resources.files("pyrealm_build_data.subdaily") / "subdaily_BE_Vie_2014.csv"
 data = np.genfromtxt(
     data_path,
     names=True,
