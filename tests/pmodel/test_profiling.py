@@ -6,7 +6,6 @@ import xarray
 
 from pyrealm.pmodel import PModelEnvironment
 
-
 class TestClass:
     @pytest.fixture()
     def setup(self):
