@@ -186,6 +186,37 @@ outputs and can be run from repository using:
 poetry run pytest
 ```
 
+#### Using 'pytest-profiling'
+
+[Pytest-profiling](https://pypi.org/project/pytest-profiling/) is a plugin to pytest that
+enables profiling of tests. It can be used to generate a call graph and to determine the
+number of hits and total time spent in each function or method. Dedicated profiling tests
+have been created for PyRealm. Please see the relevant testing directory.
+
+```bash
+poetry run pytest <test_path> --profile
+```
+
+to generate a report. You can run
+
+```bash
+poetry run pytest <test_path> --profile-svg
+```
+
+to generate a call graph.
+
+#### Using 'pytest-coverage'
+
+Using the plugin [pytest-coverage](https://pypi.org/project/pytest-cov/) you can generate
+coverage reports. You can run
+
+```bash
+poetry run pytest --cov=<test_path>
+```
+
+to perform coverage analysis. This can be used to determine if your contribution is adequately
+tested.
+
 #### Using `doctest`
 
 The package docstrings contain `doctest` examples of code use. These examples are
