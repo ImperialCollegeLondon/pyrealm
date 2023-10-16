@@ -9,13 +9,9 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm import ExperimentalFeatureWarning
-from pyrealm.pmodel import (
-    FastSlowScaler,
-    PModel,
-    PModelEnvironment,
-    calc_ftemp_arrh,
-    calc_ftemp_kphio,
-)
+from pyrealm.pmodel import FastSlowScaler, calc_ftemp_arrh, calc_ftemp_kphio
+from pyrealm.pmodel.PModel import PModel
+from pyrealm.pmodel.PModelEnvironment import PModelEnvironment
 
 
 def memory_effect(
@@ -46,7 +42,8 @@ def memory_effect(
     By default, the ``values`` array must not contain missing values (`numpy.nan`).
     However, :math:`V_{cmax}` and :math:`J_{max}` are not estimable in some conditions
     (namely when :math:`m \le c^{\ast}`, see
-    :class:`~pyrealm.pmodel.pmodel.CalcOptimalChi`) and so missing values in P Model
+    :class:`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi`) and so missing values in
+    P Model
     predictions can arise even when the forcing data is complete, breaking the recursion
     shown above. When ``handle_nan=True``, this function fills missing data as follow:
 
@@ -121,7 +118,7 @@ def memory_effect(
 class FastSlowPModel:
     r"""Fit a P Model incorporating fast and slow photosynthetic responses.
 
-    The :class:`~pyrealm.pmodel.pmodel.PModel` implementation of the P Model assumes
+    The :class:`~pyrealm.pmodel.PModel.PModel` implementation of the P Model assumes
     that plants instantaneously adopt optimal behaviour, which is reasonable where the
     data represents average conditions over longer timescales and the plants can be
     assumed to have acclimated to optimal behaviour. Over shorter timescales, this
@@ -131,7 +128,8 @@ class FastSlowPModel:
     :math:`V_{cmax25}` and :math:`J_{max25}`.
 
     The first dimension of the data arrays use to create the
-    :class:`~pyrealm.pmodel.pmodel.PModelEnvironment` instance must represent the time
+    :class:`~pyrealm.pmodel.PModelEnvironment.PModelEnvironment` instance must represent
+    the time
     axis of the observations. The actual datetimes of those observations must then be
     used to initialiase a :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler`
     instance, and one of the ``set_`` methods of that class must be used to define an
@@ -158,7 +156,7 @@ class FastSlowPModel:
     * Predictions of GPP are then made as in the standard P Model.
 
     Args:
-        env: An instance of :class:`~pyrealm.pmodel.pmodel.PModelEnvironment`.
+        env: An instance of :class:`~pyrealm.pmodel.PModelEnvironment.PModelEnvironment`
         fs_scaler: An instance of
           :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler`.
         fapar: The :math:`f_{APAR}` for each observation.
@@ -184,7 +182,7 @@ class FastSlowPModel:
     ) -> None:
         # Warn about the API
         warn(
-            "This is a draft implementation and the API and calculations may change",
+            "This is a draft implementation and the API and calculations may " "change",
             ExperimentalFeatureWarning,
         )
 
@@ -226,7 +224,7 @@ class FastSlowPModel:
         self.pmodel_acclim: PModel = PModel(pmodel_env_acclim, kphio=kphio)
         r"""P Model predictions for the daily acclimation conditions.
 
-        A :class:`~pyrealm.pmodel.pmodel.PModel` instance providing the predictions of
+        A :class:`~pyrealm.pmodel.PModel.PModel` instance providing the predictions of
         the P Model for the daily acclimation conditions set for the FastSlowPModel. The
         model predicts instantaneous optimal estimates of :math:`V_{cmax}`,
         :math:`J_{max}` and :math:`\xi`, which are then used to estimate realised values
@@ -352,7 +350,7 @@ class FastSlowPModel_JAMES:
       used to recreate this.
 
     Args:
-        env: An instance of :class:`~pyrealm.pmodel.pmodel.PModelEnvironment`.
+        env: An instance of :class:`~pyrealm.pmodel.PModelEnvironment.PModelEnvironment`
         fs_scaler: An instance of
           :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler`.
         fapar: The :math:`f_{APAR}` for each observation.
@@ -386,7 +384,8 @@ class FastSlowPModel_JAMES:
     ) -> None:
         # Really warn about the API
         warn(
-            "FastSlowPModel_JAMES is for validation against an older implementation "
+            "FastSlowPModel_JAMES is for validation against an older "
+            "implementation "
             "and is not for production use.",
             ExperimentalFeatureWarning,
         )
@@ -431,7 +430,7 @@ class FastSlowPModel_JAMES:
         self.pmodel_acclim: PModel = PModel(pmodel_env_acclim, kphio=kphio)
         r"""P Model predictions for the daily acclimation conditions.
 
-        A :class:`~pyrealm.pmodel.pmodel.PModel` instance providing the predictions of
+        A :class:`~pyrealm.pmodel.PModel.PModel` instance providing the predictions of
         the P Model for the daily acclimation conditions set for the FastSlowPModel. The
         model predicts instantaneous optimal estimates of :math:`V_{cmax}`,
         :math:`J_max` and `:math:`\xi`, which are then used to estimate realised values

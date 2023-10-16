@@ -25,6 +25,7 @@ Constants
 # flatten the namespace for the main public components and setup.cfg applies
 # # noqa: F401 to the whole file.
 
+from pyrealm.pmodel.CalcOptimalChi import CalcOptimalChi
 from pyrealm.pmodel.competition import (
     C3C4Competition,
     calculate_tree_proportion,
@@ -47,10 +48,7 @@ from pyrealm.pmodel.functions import (
     calc_viscosity_h2o,
 )
 from pyrealm.pmodel.isotopes import CalcCarbonIsotopes
-from pyrealm.pmodel.pmodel import (
-    CalcOptimalChi,
-    JmaxLimitation,
-    PModel,
-    PModelEnvironment,
-)
+from pyrealm.pmodel.JmaxLimitation import JmaxLimitation
+from pyrealm.pmodel.PModel import PModel
+from pyrealm.pmodel.PModelEnvironment import PModelEnvironment
 from pyrealm.pmodel.subdaily import FastSlowPModel, memory_effect

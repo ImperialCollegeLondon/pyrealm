@@ -8,7 +8,7 @@ from warnings import warn
 from numpy.typing import NDArray
 
 from pyrealm.constants import IsotopesConst
-from pyrealm.pmodel.pmodel import PModel
+from pyrealm.pmodel.PModel import PModel
 from pyrealm.utilities import check_input_shapes, summarize_attrs
 
 
@@ -17,7 +17,7 @@ class CalcCarbonIsotopes:
 
     This class estimates the fractionation of atmospheric CO2 by photosynthetic
     pathways to calculate the isotopic compositions and discrimination given the
-    predicted optimal chi from a :class:`~pyrealm.pmodel.pmodel.PModel` instance.
+    predicted optimal chi from a :class:`~pyrealm.pmodel.PModel.PModel` instance.
 
     Discrimination against carbon 13 (:math:`\Delta\ce{^{13}C}`)  is calculated
     using C3 and C4 pathways specific methods, and then discrimination against
@@ -28,7 +28,7 @@ class CalcCarbonIsotopes:
     also reports the isotopic composition of leaves and wood.
 
     Args:
-        pmodel: A :class:`~pyrealm.pmodel.pmodel.PModel` instance providing the
+        pmodel: A :class:`~pyrealm.pmodel.PModel.PModel` instance providing the
             photosynthetic pathway and estimated optimal chi.
         d13CO2: Atmospheric isotopic ratio for Carbon 13
             (:math:`\delta\ce{^{13}C}`, permil).
