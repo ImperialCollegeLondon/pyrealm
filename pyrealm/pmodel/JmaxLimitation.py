@@ -2,7 +2,8 @@
 the following pmodel core class:
 
 * :class:`~pyrealm.pmodel.JmaxLimitation.JmaxLimitation`:
-    Estimates the Jmax limitation, given a method and settings
+    Estimates the Jmax limitation, given a method and settings.
+
 """  # noqa D210, D415
 
 from typing import Optional
@@ -35,10 +36,9 @@ class JmaxLimitation:
 
     Arguments:
         optchi: an instance of :class:`pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi`
-        providing the :math:`\ce{
-        CO2}`
-            limitation term of light use efficiency (:math:`m_j`) and the
-            :math:`\ce{CO2}` limitation term for Rubisco assimilation (:math:`m_c`).
+            providing the :math:`\ce{CO2}` limitation term of light use efficiency
+            (:math:`m_j`) and the :math:`\ce{CO2}` limitation term for Rubisco
+            assimilation (:math:`m_c`).
         method: method to apply :math:`J_{max}` limitation (default: ``wang17``,
             or ``smith19`` or ``none``)
         const: An instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.

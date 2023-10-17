@@ -2,7 +2,7 @@
 the following pmodel core class:
 
 * :class:`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi`:
-    Estimates the optimal chi for locations, given an estimation method and settings
+    Estimates the optimal chi for locations, given an estimation method and settings.
 """  # noqa D210, D415
 
 from warnings import warn

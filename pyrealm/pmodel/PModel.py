@@ -2,7 +2,7 @@
 the following pmodel core class:
 
 * :class:`~pyrealm.pmodel.PModel.PModel`:
-    Applies the PModel to locations
+    Applies the PModel to locations.
 """  # noqa D210, D415
 
 from typing import Optional, Union
