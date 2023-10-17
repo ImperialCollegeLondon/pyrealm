@@ -1,7 +1,10 @@
-"""The :mod:`~pyrealm.pmodel` module includes four submodules:
+"""The :mod:`~pyrealm.pmodel` module includes the followoing submodules:
 
-* The :mod:`~pyrealm.pmodel.pmodel` submodule provides classes implementing the core
-  calculations of the P  Model.
+* :mod:`~pyrealm.pmodel.PModel`,
+* :mod:`~pyrealm.pmodel.PModelEnvironment`,
+* :mod:`~pyrealm.pmodel.CalcOptimalChi` and
+* :mod:`~pyrealm.pmodel.JmaxLimitation` provide classes implementing the core
+  calculations of the P Model.
 * The :mod:`~pyrealm.pmodel.functions` submodule provides key standalone functions for
   those calculations.
 * The :mod:`~pyrealm.pmodel.isotopes` submodule provides a class to estimate isotopic

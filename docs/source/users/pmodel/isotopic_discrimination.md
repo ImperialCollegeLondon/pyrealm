@@ -23,7 +23,7 @@ depends on the photosynthetic pathway.
 The {mod}`~pyrealm.pmodel` module provides the
 {class}`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes` class, which takes the predicted
 optimal chi ($\chi$) and photosynthetic pathway from a fitted
-{class}`~pyrealm.pmodel.pmodel.PModel` instance and predicts various isotopic
+{class}`~pyrealm.pmodel.PModel.PModel` instance and predicts various isotopic
 discrimination and composition values.
 
 The predictions from the {class}`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes` class are
@@ -61,7 +61,7 @@ pyplot.legend()
 ## Calculation of values
 
 The {class}`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes` class takes a
-{class}`~pyrealm.pmodel.pmodel.PModel` instance, along with estimates of the atmospheric
+{class}`~pyrealm.pmodel.PModel.PModel` instance, along with estimates of the atmospheric
 isotopic ratios for Carbon 13 ($\delta13C$, permil) and Carbon 14 ($\Delta14C$, permil)
 and calculates the following predictions:
 
@@ -79,7 +79,7 @@ and calculates the following predictions:
   permil), given a parameterized post-photosynthetic fractionation.
 
 The calculations differ between C3 and C4 plants, and this is set by the selection of
-the `method_optchi` argument used for the {class}`~pyrealm.pmodel.pmodel.PModel`
+the `method_optchi` argument used for the {class}`~pyrealm.pmodel.PModel.PModel`
 instance.
 
 ```{code-cell}

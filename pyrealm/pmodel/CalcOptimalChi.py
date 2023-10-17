@@ -1,4 +1,5 @@
-"""Core implementation of the following pmodel core class:
+"""The module :mod:`~pyrealm.pmodel.CalcOptimalChi` provides the implementation of 
+the following pmodel core class:
 
 * :class:`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi`:
     Estimates the optimal chi for locations, given an estimation method and settings

@@ -1,4 +1,5 @@
-"""Core implementation of the following pmodel core class:
+"""The module :mod:`~pyrealm.pmodel.PModelEnvironment` provides the implementation of 
+the following pmodel core class:
 
 * :class:`~pyrealm.pmodel.PModelEnvironment.PModelEnvironment`:
     Calculates the photosynthetic environment for locations.

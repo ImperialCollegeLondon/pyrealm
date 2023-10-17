@@ -38,11 +38,11 @@ co2_1d = np.array([280, 410])
 tc_4d, patm_4d, vpd_4d, co2_4d = np.meshgrid(tc_1d, patm_1d, vpd_1d, co2_1d)
 
 # Calculate the photosynthetic environment
-pmodel_env = pmodel.PModelEnvironment(tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d)
+pmodel_env = PModelEnvironment.PModelEnvironment(tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d)
 
 # Run the P Models
-pmodel_c3 = pmodel.PModel(pmodel_env)
-pmodel_c4 = pmodel.PModel(pmodel_env, method_optchi="c4")
+pmodel_c3 = PModel.PModel(pmodel_env)
+pmodel_c4 = PModel.PModel(pmodel_env, method_optchi="c4")
 
 # Estimate productivity for tropical forest conditions
 # PPFD https://doi.org/10.2307/2260066 rough average canopy top in dry season.
@@ -172,7 +172,7 @@ pyplot.show()
 ## Efficiency outputs
 
 Two of the key outputs are measures of efficiency and are estimated simply by creating a
-{class}`~pyrealm.pmodel.pmodel.PModel` instance without needing to provide estimates of
+{class}`~pyrealm.pmodel.PModel.PModel` instance without needing to provide estimates of
 absorbed irradiance.
 
 ### Light use efficiency (``lue``, LUE)
@@ -208,13 +208,13 @@ fraction of absorbed photosynthetically active radiation (`fapar`) and the
 photosynthetic photon flux density (`ppfd`). The product of these two variables
 is an estimate of absorbed irradiance ($I_{abs}$).
 
-The {meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` method is
+The {meth}`~pyrealm.pmodel.PModel.PModel.estimate_productivity` method is
 used to provide these estimates to the P Model instance. Once this has been run,
 the following additional variables are populated.
 
 ```{warning}
 
-To use {meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`, the estimated PPFD
+To use {meth}`~pyrealm.pmodel.PModel.PModel.estimate_productivity`, the estimated PPFD
 must be expressed as $\boldsymbol{\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}}$.
 
 Estimates of PPFD sometimes use different temporal or spatial scales - for
@@ -244,7 +244,7 @@ irradiance values at the top of a tropical rainforest canopy:
 
 If required, productivity estimates per unit absorbed irradiance can be simply
 calculated using ``fapar=1, ppfd=1``, which are the default values to
-{meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`.
+{meth}`~pyrealm.pmodel.PModel.PModel.estimate_productivity`.
 
 ### Gross primary productivity (``gpp``, GPP)
 
@@ -292,7 +292,7 @@ Stomatal conductance is estimated using the difference between ambient and optim
 internal leaf $\ce{CO2}$ concentration. When vapour pressure deficit is zero, the
 difference between $c_a$ and $c_i$ will tend to zero, which leads to numerical
 instability in estimates of $g_s$. The
-{meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` method will set $g_s$ to be
+{meth}`~pyrealm.pmodel.PModel.PModel.estimate_productivity` method will set $g_s$ to be
 undefined (`np.nan`) when VPD is zero or when $c_a - c_i = 0$.
 
 ```{code-cell}
@@ -312,11 +312,11 @@ irradiance changes from 0 to 2000 $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}
 :tags: [hide-input]
 
 # Calculate the photosynthetic environment
-pmodel_env = pmodel.PModelEnvironment(tc=20, patm=101325, vpd=1000, co2=400)
+pmodel_env = PModelEnvironment.PModelEnvironment(tc=20, patm=101325, vpd=1000, co2=400)
 
 # Run the P Models
-pmodel_c3 = pmodel.PModel(pmodel_env)
-pmodel_c4 = pmodel.PModel(pmodel_env, method_optchi="c4")
+pmodel_c3 = PModel.PModel(pmodel_env)
+pmodel_c4 = PModel.PModel(pmodel_env, method_optchi="c4")
 
 # Estimate productivity for tropical forest conditions (micromols m2 s)
 ppfd_vals = np.arange(2000)

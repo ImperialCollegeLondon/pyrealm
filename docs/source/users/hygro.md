@@ -42,7 +42,7 @@ vp_2d = np.broadcast_to(vp_1d, (n_pts, n_pts))
 rh_2d = np.broadcast_to(rh_1d, (n_pts, n_pts))
 ```
 
-The {class}`~pyrealm.pmodel.pmodel.PModelEnvironment` class requires vapour pressure
+The {class}`~pyrealm.pmodel.PModelEnvironment.PModelEnvironment` class requires vapour pressure
 deficit (VPD, Pa) as an input, but forcing datasets often provide alternative
 representations. The {mod}`~pyrealm.hygro`  provide functions to calculate saturated
 vapour pressure for a given temperature and the conversions from vapour pressure,
@@ -58,12 +58,12 @@ some older data sources use hectopascals (hPa), which are equivalent to millibar
 
 The function {func}`~pyrealm.hygro.convert_vp_to_vpd` takes values in kPa
 and returns kPa, so if you are using VP to prepare input data for
-{class}`~pyrealm.pmodel.pmodel.PModelEnvironment`:
+{class}`~pyrealm.pmodel.PModelEnvironment.PModelEnvironment`:
 
 * Make sure you are passing VP values to
   {func}`~pyrealm.hygro.convert_vp_to_vpd` in kPa and not hPa or mbar.
 * Rescale the output of {func}`~pyrealm.hygro.convert_vp_to_vpd` from
-  kPa to Pa, before using it in {class}`~pyrealm.pmodel.pmodel.PModelEnvironment`.
+  kPa to Pa, before using it in {class}`~pyrealm.pmodel.PModelEnvironment.PModelEnvironment`.
 
 ```
 

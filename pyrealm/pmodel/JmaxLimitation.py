@@ -1,6 +1,7 @@
-"""Core implementation of the following pmodel core class:
+"""The module :mod:`~pyrealm.pmodel.JmaxLimitation` provides the implementation of 
+the following pmodel core class:
 
-* :class:`~pyrealm.pmodel.PModel.JmaxLimitation`:
+* :class:`~pyrealm.pmodel.JmaxLimitation.JmaxLimitation`:
     Estimates the Jmax limitation, given a method and settings
 """  # noqa D210, D415
 
@@ -33,7 +34,9 @@ class JmaxLimitation:
     in :cite:`Smith:2019dv`.
 
     Arguments:
-        optchi: an instance of :class:`CalcOptimalChi` providing the :math:`\ce{CO2}`
+        optchi: an instance of :class:`pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi`
+        providing the :math:`\ce{
+        CO2}`
             limitation term of light use efficiency (:math:`m_j`) and the
             :math:`\ce{CO2}` limitation term for Rubisco assimilation (:math:`m_c`).
         method: method to apply :math:`J_{max}` limitation (default: ``wang17``,

@@ -1,4 +1,5 @@
-"""Core implementation of the following pmodel core class:
+"""The module :mod:`~pyrealm.pmodel.PModel` provides the implementation of 
+the following pmodel core class:
 
 * :class:`~pyrealm.pmodel.PModel.PModel`:
     Applies the PModel to locations

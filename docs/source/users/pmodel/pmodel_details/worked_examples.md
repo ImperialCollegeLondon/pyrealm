@@ -28,7 +28,7 @@ not attempt to resolve the broadcasting of array dimensions.
 This example calculates a single point estimate of GPP. The first step is to use
 estimates of environmental variables to calculate the
 photosynthetic environment for the model
-({class}`~pyrealm.pmodel.pmodel.PModelEnvironment`).
+({class}`~pyrealm.pmodel.PModelEnvironment.PModelEnvironment`).
 
 The example shows the steps required using a single site with:
 
@@ -55,7 +55,7 @@ env = PModelEnvironment(tc=20.0, patm=101325.0, vpd=820, co2=400)
 The `env` object now holds the photosynthetic environment, which can be re-used
 with different P Model settings. The representation of `env` is deliberately
 terse - just the shape of the data - but the
-{meth}`~pyrealm.pmodel.pmodel.PModelEnvironment.summarize` method provides a
+{meth}`~pyrealm.pmodel.PModelEnvironment.PModelEnvironment.summarize` method provides a
 more detailed summary of the attributes.
 
 ```{code-cell} ipython3
@@ -69,7 +69,7 @@ env.summarize()
 ### Fitting the P Model
 
 Next, the P Model can be fitted to the photosynthetic environment using the
-({class}`~pyrealm.pmodel.pmodel.PModel`) class:
+({class}`~pyrealm.pmodel.PModel.PModel`) class:
 
 ```{code-cell} ipython3
 model = PModel(env)
@@ -82,8 +82,8 @@ model object shows a terse display of the settings used to run the model:
 model
 ```
 
-A {class}`~pyrealm.pmodel.pmodel.PModel` instance also has a
-{meth}`~pyrealm.pmodel.pmodel.PModel.summarize` method that summarizes settings and
+A {class}`~pyrealm.pmodel.PModel.PModel` instance also has a
+{meth}`~pyrealm.pmodel.PModel.PModel.summarize` method that summarizes settings and
 displays a summary of calculated predictions. Initially, this shows two measures of
 photosynthetic efficiency: the intrinsic water use efficiency (``iwue``) and the light
 use efficiency (``lue``).
@@ -94,9 +94,9 @@ model.summarize()
 
 ### $\chi$ estimates and $\ce{CO2}$ limitation
 
-The instance also contains a {class}`~pyrealm.pmodel.pmodel.CalcOptimalChi` object,
+The instance also contains a {class}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi` object,
 recording key parameters from the [calculation of $\chi$](optimal_chi).
-This object also has a {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.summarize` method:
+This object also has a {meth}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.summarize` method:
 
 ```{code-cell} ipython3
 model.optchi.summarize()
@@ -107,7 +107,7 @@ model.optchi.summarize()
 The productivity of the model can be calculated using estimates of the fraction
 of absorbed photosynthetically active radiation ($f_{APAR}$, `fapar`, unitless)
 and the photosynthetic photon flux density (PPFD,`ppfd`, µmol m-2 s-1), using the
-{meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` method.
+{meth}`~pyrealm.pmodel.PModel.PModel.estimate_productivity` method.
 
 Here we are using:
 
@@ -121,7 +121,7 @@ model.summarize()
 
 ```{warning}
 
-To use {meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`, the estimated PPFD
+To use {meth}`~pyrealm.pmodel.PModel.PModel.estimate_productivity`, the estimated PPFD
 must be expressed as **µmol m-2 s-1**.
 
 Estimates of PPFD sometimes use different temporal or spatial scales - for
