@@ -90,6 +90,8 @@ the examples below, the default $\theta_0 = 0$ has been changed to $\theta_0 =
 from matplotlib import pyplot as plt
 import numpy as np
 from pyrealm import pmodel
+from pyrealm.pmodel.PModel import PModel
+from pyrealm.pmodel.PModelEnvironment import PModelEnvironment
 from pyrealm.constants import PModelConst
 
 # change default theta0 parameter
@@ -153,8 +155,8 @@ soil moisture factor.
 tc = np.array([20] * 101)
 sm_gradient = np.linspace(0, 1.0, 101)
 
-env = PModelEnvironment.PModelEnvironment(tc=tc, patm=101325.0, vpd=820, co2=400)
-model = PModel.PModel(env)
+env = PModelEnvironment(tc=tc, patm=101325.0, vpd=820, co2=400)
+model = PModel(env)
 model.estimate_productivity(fapar=1, ppfd=1000)
 
 # Calculate the soil moisture stress factor across a soil moisture gradient
