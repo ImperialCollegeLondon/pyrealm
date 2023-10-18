@@ -1,4 +1,4 @@
-"""The :mod:`~pyrealm.pmodel` module includes the followoing submodules:
+"""The :mod:`~pyrealm.pmodel` module includes the following submodules:
 
 * :mod:`~pyrealm.pmodel.PModel`,
 * :mod:`~pyrealm.pmodel.PModelEnvironment`,

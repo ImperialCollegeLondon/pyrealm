@@ -42,7 +42,7 @@ kernelspec:
     :members:
 ```
 
-## The {mod}`~pyrealm.pmodel.CalcOptimalChi submodule
+## The {mod}`~pyrealm.pmodel.CalcOptimalChi` submodule
 
 ```{eval-rst}
 .. automodule:: pyrealm.pmodel.CalcOptimalChi
