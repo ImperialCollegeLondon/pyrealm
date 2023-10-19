@@ -29,7 +29,7 @@ class JmaxLimitation:
         * ``smith19``: applies the framework of :cite:`Smith:2019dv`
 
     Note that :cite:`Smith:2019dv` defines :math:`\phi_0` as the quantum efficiency of
-    electron transfer, whereas :class:`pyrealm.pmodel.PModel.PModel` defines
+    electron transfer, whereas :class:`pyrealm.pmodel.pmodel.PModel` defines
     :math:`\phi_0` as the quantum efficiency of photosynthesis, which is 4 times
     smaller. This is why the factors here are a factor of 4 greater than Eqn 15 and 17
     in :cite:`Smith:2019dv`.

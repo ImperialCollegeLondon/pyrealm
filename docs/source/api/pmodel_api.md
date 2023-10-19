@@ -21,7 +21,7 @@ kernelspec:
 ## The {mod}`~pyrealm.pmodel.pmodel` submodule
 
 ```{eval-rst}
-.. automodule:: pyrealm.pmodel.PModel
+.. automodule:: pyrealm.pmodel.pmodel
     :autosummary:
     :members:
 ```

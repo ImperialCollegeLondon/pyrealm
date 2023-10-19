@@ -1,4 +1,4 @@
-"""The module :mod:`~pyrealm.pmodel.PModel` provides the implementation of 
+"""The module :mod:`~pyrealm.pmodel.pmodel` provides the implementation of 
 the following pmodel core class:
 
 * :class:`~pyrealm.pmodel.pmodel.PModel`:
@@ -150,7 +150,7 @@ class PModel:
             larger, so check definitions here.
         rootzonestress: (Optional, default=None) An experimental option
             for providing a root zone water stress penalty to the :math:`beta` parameter
-            in :class:`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi`.
+            in :class:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`.
         method_optchi: (Optional, default=`prentice14`) Selects the method to be
             used for calculating optimal :math:`chi`. The choice of method also sets the
             choice of  C3 or C4 photosynthetic pathway (see
@@ -370,12 +370,12 @@ class PModel:
 
         This method takes the light use efficiency and Vcmax per unit absorbed
         irradiance and populates the following PModel attributes:
-        :attr:`~pyrealm.pmodel.PModel.PModel.gpp`,
-        :attr:`~pyrealm.pmodel.PModel.PModel.rd`,
-        :attr:`~pyrealm.pmodel.PModel.PModel.vcmax`,
-        :attr:`~pyrealm.pmodel.PModel.PModel.vcmax25`,
-        :attr:`~pyrealm.pmodel.PModel.PModel.jmax` and
-        :attr:`~pyrealm.pmodel.PModel.PModel.gs`.
+        :attr:`~pyrealm.pmodel.pmodel.PModel.gpp`,
+        :attr:`~pyrealm.pmodel.pmodel.PModel.rd`,
+        :attr:`~pyrealm.pmodel.pmodel.PModel.vcmax`,
+        :attr:`~pyrealm.pmodel.pmodel.PModel.vcmax25`,
+        :attr:`~pyrealm.pmodel.pmodel.PModel.jmax` and
+        :attr:`~pyrealm.pmodel.pmodel.PModel.gs`.
 
         The function finds the total absorbed irradiance (:math:`I_{abs}`) as the
         product of the photosynthetic photon flux density (PPFD, `ppfd`) and the

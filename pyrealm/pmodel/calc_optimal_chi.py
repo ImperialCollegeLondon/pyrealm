@@ -127,7 +127,7 @@ class CalcOptimalChi:
 
         Args:
             method: A provided method name for
-                :class:`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi`.
+                :class:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`.
 
         Returns:
             A boolean showing if the method uses the C4 pathway.
@@ -244,7 +244,7 @@ class CalcOptimalChi:
         :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c3`).
 
         Values of :math:`\chi` and other predictions are then calculated as in
-        :meth:`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.prentice14`. This method
+        :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.prentice14`. This method
         requires that `env` includes estimates of :math:`\theta` and  is incompatible
         with the `rootzonestress` approach.
 
@@ -299,12 +299,12 @@ class CalcOptimalChi:
 
         This method calculates :math:`\beta` as a function of soil moisture following
         the equation described in the
-        :meth:`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.lavergne20_c3` method.
+        :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.lavergne20_c3` method.
         However,
         the default coefficients of the moisture scaling from :cite:`lavergne:2020a` for
         C3 plants are adjusted to match the theoretical expectation that :math:`\beta`
         for C4 plants is nine times smaller than :math:`\beta` for C3 plants (see
-        :meth:`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.c4`): :math:`b`
+        :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.c4`): :math:`b`
         (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c4`) is
         unchanged but
         :math:`a_{C4} = a_{C3} - log(9)`
@@ -312,7 +312,7 @@ class CalcOptimalChi:
 
         Following the calculation of :math:`\beta`, this method then follows the
         calculations described in
-        :meth:`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.c4_no_gamma`
+        :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.c4_no_gamma`
         ::math:`m_j = 1.0`
         because photorespiration is negligible, but :math:`m_c` and hence
         :math:`m_{joc}` are calculated.
@@ -376,7 +376,8 @@ class CalcOptimalChi:
         r"""Estimate :math:`\chi` for C4 plants following :cite:`Prentice:2014bc`.
 
         Optimal :math:`\chi` is calculated as in
-        :meth:`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.prentice14`, but using a C4
+        :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.prentice14`,
+         but using a C4
         specific estimate of the unit cost ratio :math:`\beta`, see
         :attr:`~pyrealm.constants.pmodel_const.PModelConst.beta_cost_ratio_c4`.
 
@@ -427,7 +428,7 @@ class CalcOptimalChi:
 
         This method assumes that photorespiration (:math:`\Gamma^\ast`) is negligible
         for C4 plants. This simplifies the calculation of :math:`\xi` and :math:`\chi`
-        compared to :meth:`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.c4`, but uses
+        compared to :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.c4`, but uses
         the same
         C4 specific estimate of the unit cost ratio :math:`\beta`,
         :attr:`~pyrealm.constants.pmodel_const.PModelConst.beta_cost_ratio_c4`.

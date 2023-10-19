@@ -352,8 +352,8 @@ class FastSlowPModel_JAMES:
       used to recreate this.
 
     Args:
-        env: An instance of :class:`~pyrealm.pmodel.pmodel_environment
-        .PModelEnvironment`
+        env: An instance of
+          :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
         fs_scaler: An instance of
           :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler`.
         fapar: The :math:`f_{APAR}` for each observation.
