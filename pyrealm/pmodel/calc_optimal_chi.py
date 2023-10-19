@@ -53,7 +53,6 @@ class CalcOptimalChi:
     Returns:
         An instance of :class:`CalcOptimalChi` with the class attributes populated using
         the chosen methods and options.
-
     """
 
     def __init__(
@@ -377,7 +376,7 @@ class CalcOptimalChi:
 
         Optimal :math:`\chi` is calculated as in
         :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.prentice14`,
-         but using a C4
+        but using a C4
         specific estimate of the unit cost ratio :math:`\beta`, see
         :attr:`~pyrealm.constants.pmodel_const.PModelConst.beta_cost_ratio_c4`.
 
