@@ -18,8 +18,8 @@ kernelspec:
 :tags: [hide-input]
 
 from itertools import product
-from pyrealm.pmodel.PModel import PModel
-from pyrealm.pmodel.PModelEnvironment import PModelEnvironment
+from pyrealm.pmodel.pmodel import PModel
+from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 import numpy as np
 from matplotlib import pyplot
 from matplotlib.lines import Line2D
@@ -211,13 +211,13 @@ fraction of absorbed photosynthetically active radiation (`fapar`) and the
 photosynthetic photon flux density (`ppfd`). The product of these two variables
 is an estimate of absorbed irradiance ($I_{abs}$).
 
-The {meth}`~pyrealm.pmodel.PModel.PModel.estimate_productivity` method is
+The {meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` method is
 used to provide these estimates to the P Model instance. Once this has been run,
 the following additional variables are populated.
 
 ```{warning}
 
-To use {meth}`~pyrealm.pmodel.PModel.PModel.estimate_productivity`, the estimated PPFD
+To use {meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`, the estimated PPFD
 must be expressed as $\boldsymbol{\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}}$.
 
 Estimates of PPFD sometimes use different temporal or spatial scales - for
@@ -248,7 +248,7 @@ irradiance values at the top of a tropical rainforest canopy:
 
 If required, productivity estimates per unit absorbed irradiance can be simply
 calculated using ``fapar=1, ppfd=1``, which are the default values to
-{meth}`~pyrealm.pmodel.PModel.PModel.estimate_productivity`.
+{meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`.
 
 ### Gross primary productivity (``gpp``, GPP)
 
@@ -296,7 +296,7 @@ Stomatal conductance is estimated using the difference between ambient and optim
 internal leaf $\ce{CO2}$ concentration. When vapour pressure deficit is zero, the
 difference between $c_a$ and $c_i$ will tend to zero, which leads to numerical
 instability in estimates of $g_s$. The
-{meth}`~pyrealm.pmodel.PModel.PModel.estimate_productivity` method will set $g_s$ to be
+{meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` method will set $g_s$ to be
 undefined (`np.nan`) when VPD is zero or when $c_a - c_i = 0$.
 
 ```{code-cell}

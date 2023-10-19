@@ -1,7 +1,7 @@
 """The module :mod:`~pyrealm.pmodel.PModel` provides the implementation of 
 the following pmodel core class:
 
-* :class:`~pyrealm.pmodel.PModel.PModel`:
+* :class:`~pyrealm.pmodel.pmodel.PModel`:
     Applies the PModel to locations.
 """  # noqa D210, D415
 
@@ -13,14 +13,14 @@ from numpy.typing import NDArray
 
 from pyrealm import ExperimentalFeatureWarning
 from pyrealm.constants import PModelConst
-from pyrealm.pmodel.CalcOptimalChi import CalcOptimalChi
+from pyrealm.pmodel.calc_optimal_chi import CalcOptimalChi
 from pyrealm.pmodel.functions import (
     calc_ftemp_inst_rd,
     calc_ftemp_inst_vcmax,
     calc_ftemp_kphio,
 )
-from pyrealm.pmodel.JmaxLimitation import JmaxLimitation
-from pyrealm.pmodel.PModelEnvironment import PModelEnvironment
+from pyrealm.pmodel.jmax_limitation import JmaxLimitation
+from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 from pyrealm.utilities import check_input_shapes, summarize_attrs
 
 # Design notes on PModel (0.3.1 -> 0.4.0)
@@ -53,11 +53,11 @@ class PModel:
 
     1. Estimate :math:`\ce{CO2}` limitation factors and optimal internal to ambient
        :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using
-       :class:`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi`.
+       :class:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`.
     2. Estimate limitation factors to :math:`V_{cmax}` and :math:`J_{max}` using
-       :class:`~pyrealm.pmodel.JmaxLimitation.JmaxLimitation`.
+       :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation`.
     3. Optionally, estimate productivity measures including GPP by supplying FAPAR and
-       PPFD using the :meth:`~pyrealm.pmodel.PModel.PModel.estimate_productivity`
+       PPFD using the :meth:`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`
        method.
 
     The model predictions from step 1 and 2 are then:
@@ -74,11 +74,11 @@ class PModel:
             \text{LUE} = \phi_0 \cdot m_j \cdot f_v \cdot M_C
 
       where :math:`f_v` is a limitation factor defined in
-      :class:`~pyrealm.pmodel.JmaxLimitation.JmaxLimitation` and :math:`M_C` is the
+      :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation` and :math:`M_C` is the
       molar mass
       of carbon.
 
-    After running :meth:`~pyrealm.pmodel.PModel.PModel.estimate_productivity`, the
+    After running :meth:`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`, the
     following predictions are also populated:
 
     * Gross primary productivity, calculated as :math:`\text{GPP} = \text{LUE} \cdot
@@ -101,7 +101,7 @@ class PModel:
             \]
 
     where  :math:`f_v, f_j` are limitation terms described in
-    :class:`~pyrealm.pmodel.JmaxLimitation.JmaxLimitation`
+    :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation`
 
     * The maximum carboxylation capacity (mol C m-2) normalised to the standard
       temperature as: :math:`V_{cmax25} = V_{cmax}  / fv(t)`, where :math:`fv(t)` is the
@@ -142,7 +142,8 @@ class PModel:
         :func:`pyrealm.pmodel.functions.calc_soilmstress_mengoli`).
 
     Args:
-        env: An instance of :class:`~pyrealm.pmodel.PModelEnvironment.PModelEnvironment`
+        env: An instance of
+         :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
         kphio: (Optional) The quantum yield efficiency of photosynthesis
             (:math:`\phi_0`, unitless). Note that :math:`\phi_0` is sometimes used to
             refer to the quantum yield of electron transfer, which is exactly four times
@@ -153,7 +154,7 @@ class PModel:
         method_optchi: (Optional, default=`prentice14`) Selects the method to be
             used for calculating optimal :math:`chi`. The choice of method also sets the
             choice of  C3 or C4 photosynthetic pathway (see
-            :class:`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi`).
+            :class:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`).
         method_jmaxlim: (Optional, default=`wang17`) Method to use for
             :math:`J_{max}` limitation
         do_ftemp_kphio: (Optional, default=True) Include the temperature-
@@ -162,7 +163,7 @@ class PModel:
 
     Examples:
         >>> import numpy as np
-        >>> from pyrealm.pmodel.PModelEnvironment import PModelEnvironment
+        >>> from pyrealm.pmodel.pmodel_environment import PModelEnvironment
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
         ...     co2=np.array([400]), patm=np.array([101325.0])
@@ -376,7 +377,7 @@ class PModel:
         :attr:`~pyrealm.pmodel.PModel.PModel.jmax` and
         :attr:`~pyrealm.pmodel.PModel.PModel.gs`.
 
-        The functions finds the total absorbed irradiance (:math:`I_{abs}`) as the
+        The function finds the total absorbed irradiance (:math:`I_{abs}`) as the
         product of the photosynthetic photon flux density (PPFD, `ppfd`) and the
         fraction of absorbed photosynthetically active radiation (`fapar`). The default
         values of ``ppfd`` and ``fapar`` provide estimates of the variables above per
@@ -461,7 +462,7 @@ class PModel:
         Prints a summary of the calculated values in a PModel instance including the
         mean, range and number of nan values. This will always show efficiency variables
         (LUE and IWUE) and productivity estimates are shown if
-        :meth:`~pyrealm.pmodel.PModel.PModel.estimate_productivity` has been run.
+        :meth:`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` has been run.
 
         Args:
             dp: The number of decimal places used in rounding summary stats.

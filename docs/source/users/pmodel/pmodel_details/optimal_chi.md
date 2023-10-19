@@ -23,7 +23,8 @@ The next step is to estimate the following parameters:
 * $\ce{CO2}$ limitation factors to both light assimilation ($m_j$) and carboxylation
   ($m_c$) along with their ratio ($m_{joc} = m_j / m_c$).
 
-The details of these calculations are in {class}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi`,
+The details of these calculations are in {class}`~pyrealm.pmodel.calc_optimal_chi.
+CalcOptimalChi`,
 which implements a number of approaches to calculating these values:
 
 ```{code-cell}
@@ -150,10 +151,10 @@ def plot_opt_chi(mod):
     # pyplot.tight_layout();
 ```
 
-## Method {meth}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.prentice14`
+## Method {meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.prentice14`
 
 This **C3 method** follows the approach detailed in {cite:t}`Prentice:2014bc`, see
-{meth}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.prentice14` for details.
+{meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.prentice14` for details.
 
 ```{code-cell}
 :tags: [hide-input]
@@ -163,12 +164,12 @@ pmodel_c3 = PModel(pmodel_env, method_optchi="prentice14")
 plot_opt_chi(pmodel_c3)
 ```
 
-## Method {meth}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.c4`
+## Method {meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.c4`
 
 This **C4_method** follows the approach detailed in {cite:t}`Prentice:2014bc`, but uses
 a C4 specific version of the unit cost ratio ($\beta$). It also sets $m_j = m_c = 1$.
 
-See {meth}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.c4` for details.
+See {meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.c4` for details.
 
 ```{code-cell}
 :tags: [hide-input]
@@ -178,15 +179,15 @@ pmodel_c4 = PModel(pmodel_env, method_optchi="c4")
 plot_opt_chi(pmodel_c4)
 ```
 
-## Method {meth}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.c4_no_gamma`
+## Method {meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.c4_no_gamma`
 
 This method drops terms from the approach given in {cite:t}`Prentice:2014bc` to reflect
 the assumption that photorespiration ($\Gamma^\ast$) is negligible in C4 photosynthesis.
 It uses the same $\beta$ estimate as {meth}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.c4`
 and also also sets $m_j = 1$, but $m_c$ is calculated as in
-{meth}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.prentice14`.
+{meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.prentice14`.
 
-See {meth}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.c4_no_gamma` for details.
+See {meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.c4_no_gamma` for details.
 
 ```{code-cell}
 :tags: [hide-input]
@@ -196,29 +197,29 @@ pmodel_c4 = PModel(pmodel_env, method_optchi="c4_no_gamma")
 plot_opt_chi(pmodel_c4)
 ```
 
-## Methods {meth}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.lavergne20_c3` and {meth}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.lavergne20_c4`
+## Methods {meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.lavergne20_c3` and {meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.lavergne20_c4`
 
 These methods follow the approach detailed in {cite:t}`lavergne:2020a`, which fitted
 an empirical model of $\beta$ for C3 plants as a function of volumetric soil moisture
 ($\theta$, m3/m3), using data from leaf gas exchange measurements. The C4 method takes
 the same approach but with modified empirical parameters giving predictions of
 $\beta_{C3} = 9 \times \beta_{C4}$. Following the approach of
-{meth}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.c4_no_gamma`, $m_c$ is calculated
+{meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.c4_no_gamma`, $m_c$ is calculated
 but $m_j=1$.
 
 ```{warning}
 Note that {cite:t}`lavergne:2020a` found **no relationship** between C4 $\beta$
 values and soil moisture in leaf gas exchange data  The
-{meth}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.lavergne20_c4` method is **an 
+{meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.lavergne20_c4` method is **an 
 experimental
 feature** - see the documentation for the
-{meth}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.lavergne20_c4` and
-{meth}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.c4` methods for the theoretical 
+{meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.lavergne20_c4` and
+{meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.c4` methods for the theoretical 
 rationale.
 ```
 
 The calculation details are provided in the description of the
-{meth}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.lavergne20_c3` method, but the
+{meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.lavergne20_c3` method, but the
 variation in
 $\beta$ with $\theta$ is shown below.
 

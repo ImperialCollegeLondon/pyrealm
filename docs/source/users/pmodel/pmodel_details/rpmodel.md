@@ -46,8 +46,8 @@ The implementations differ in a number of ways:
 
    The ``rpmodel`` package has suites of functions for calculating $J_{max}$ limitation
    and optimal $\chi$. These have been combined into classes
-   {class}`~pyrealm.pmodel.JmaxLimitation.JmaxLimitation` and
-   {class}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi`. This allows the common
+   {class}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation` and
+   {class}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`. This allows the common
    parameters and
    outputs of these functions to be standardised and the different methods are provided
    via a ``method`` argument to each class.
@@ -58,10 +58,10 @@ The implementations differ in a number of ways:
    can be used with C4 plants and hence it is not possible to simulate $J_{max}$
    limitation for C4 plants. In the implementation in {mod}`~pyrealm.pmodel`, C4 plants
    are set to have no $\ce{CO2}$ limitation in
-   {class}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi`, although the correct internal
+   {class}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`, although the correct internal
    $\ce{CO2}$ partial pressure is calculated, and are then free to use whichever
    $J_{max}$ method is preferred in
-   {class}`~pyrealm.pmodel.JmaxLimitation.JmaxLimitation`.
+   {class}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation`.
 
    The ``rpmodel`` function has a large number of arguments. This is partly
    because of some redundancy in identifying the use case. For example, using
@@ -69,7 +69,7 @@ The implementations differ in a number of ways:
    requiring the logical flag. However, the function also include steps that
    could be provided by the user. That means a user can put in all the variables
    in one function, but makes for a more confusing interface and is less
-   flexible. The {class}`~pyrealm.pmodel.PModel.PModel` class reduces this to a simpler
+   flexible. The {class}`~pyrealm.pmodel.pmodel.PModel` class reduces this to a simpler
    core of inputs and methods and functions reproduce the rest of the
    functionality in the P Model.
 
@@ -77,6 +77,6 @@ The implementations differ in a number of ways:
    implementation of the empirical soil moisture factor $\beta(\theta)$ from a simple
    factor on light use efficiency (LUE) to estimate the underlying values of $J_{max}$
    and $V_{cmax}$. In the {mod}`~pyrealm.pmodel` module, the $\beta(\theta)$ is _only_
-   applied as a post-hoc penalty factor to {attr}`~pyrealm.pmodel.PModel.PModel.gpp` and
+   applied as a post-hoc penalty factor to {attr}`~pyrealm.pmodel.pmodel.PModel.gpp` and
    so does not implement any correction of $J_{max}$ and $V_{cmax}$ for soil moisture
    effects.

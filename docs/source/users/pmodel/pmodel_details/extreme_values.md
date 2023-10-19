@@ -31,7 +31,7 @@ be filter or clipped to remove problem values.
 - Temperature (°C): the range of air temperatures in global datasets can easily include
   values as extreme as -80 °C to 50 °C. However, the water density calculation is
   unstable below -25°C and so
-  {class}`~pyrealm.pmodel.PModelEnvironment.PModelEnvironment` _will
+  {class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` _will
   not_ accept values below -25°C.
 - Atmospheric Pressure (Pa): at sea-level, extremes of 87000 Pa to 108400 Pa have been
   observed but with elevation can fall much lower, down to ~34000 Pa at the summit of Mt

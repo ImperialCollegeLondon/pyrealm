@@ -45,7 +45,7 @@ co2_2d = np.broadcast_to(co2_1d, (n_pts, n_pts))
 ```
 
 Once key [photosynthetic parameters](photosynthetic_environment) and [optimal
-chi](optimal_chi) have been calculated, the {class}`~pyrealm.pmodel.PModel.PModel`
+chi](optimal_chi) have been calculated, the {class}`~pyrealm.pmodel.pmodel.PModel`
 class can report estimates of:
 
 * the light use efficiency (LUE), as grams of carbon per mole of photons, and
@@ -63,7 +63,7 @@ where $\phi_0$ is the quantum yield efficiency of photosynthesis, $M_C$ is the
 molar mass of carbon and $m_j$ is the $\ce{CO2}$ limitation term of light use
 efficiency from the calculation of optimal $\chi$.
 
-However, the {class}`pyrealm.pmodel.PModel.PModel` class also incorporates two further
+However, the {class}`pyrealm.pmodel.pmodel.PModel` class also incorporates two further
 factors:
 
 * temperature (t) dependence of $\phi_0$,
@@ -75,7 +75,7 @@ $$
 
 ### $\phi_0$ and temperature dependency
 
-The {class}`~pyrealm.pmodel.PModel.PModel` uses a single variable to capture the
+The {class}`~pyrealm.pmodel.pmodel.PModel` uses a single variable to capture the
 apparent quantum yield efficiency of photosynthesis (`kphio`, $\phi_0$).
 
 ```{warning}
@@ -90,14 +90,14 @@ The value of $\phi_0$ shows temperature dependence, which is modelled following
 {cite:t}`Bernacchi:2003dc` for C3 plants and {cite:t}`cai:2020a` for C4 plants (see
 {func}`~pyrealm.pmodel.functions.calc_ftemp_kphio`). The temperature dependency is
 applied by default but can be turned off using the
-{class}`~pyrealm.pmodel.PModel.PModel` argument `do_ftemp_kphio=False`.
+{class}`~pyrealm.pmodel.pmodel.PModel` argument `do_ftemp_kphio=False`.
 
 The default values of `kphio` vary with the model options, corresponding
 to the empirically fitted values from {cite:t}`Stocker:2020dh`. If the temperature
 dependence of $\phi_0$ is applied, $\phi_0 = 0.081785$, otherwise  $\phi_0 = 0.049977$.
 
 The initial value of $\phi_0$ and the values used in calculations are stored in
-the `init_kphio` and  `kphio` attributes of the {class}`~pyrealm.pmodel.PModel.PModel`
+the `init_kphio` and  `kphio` attributes of the {class}`~pyrealm.pmodel.pmodel.PModel`
 object.  The code examples compare models with and without temperature
 dependency of $\phi_0$.
 
@@ -144,7 +144,7 @@ pyplot.show()
 
 ### Limitation of electron transfer rate ($J_{max}$) and carboxylation capacity ($V_{cmax}$)
 
-The {class}`~pyrealm.pmodel.PModel.PModel` implements three alternative approaches to
+The {class}`~pyrealm.pmodel.pmodel.PModel` implements three alternative approaches to
 the calculation of $J_{max}$ and $V_{cmax}$, using the argument
 `method_jmaxlim`. These options set the calculation of two factor ($f_j$ and
 $f_v$) which are applied to the calculation of $J_{max}$ and $V_{cmax}$. The
@@ -154,11 +154,11 @@ options for this setting are:
   = 1$.
 * `wang17`: This is the default setting for `method_jmaxlim` and applies the
   calculations describe in  {cite:t}`Wang:2017go`. The calculation details can be
-  seen in the {meth}`~pyrealm.pmodel.JmaxLimitation.JmaxLimitation.wang17` method.
+  seen in the {meth}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation.wang17` method.
 
 * `smith19`: This is an alternate calculation for optimal values of $J_{max}$
   and $V_{cmax}$ described in {cite:t}`Smith:2019dv`. The calculation details can be
-  seen in the {meth}`~pyrealm.pmodel.JmaxLimitation.JmaxLimitation.smith19` method.
+  seen in the {meth}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation.smith19` method.
 
 ```{code-cell}
 model_jmax_simple = PModel(env, kphio=0.08, method_jmaxlim="simple")

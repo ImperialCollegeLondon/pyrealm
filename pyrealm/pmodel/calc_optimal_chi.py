@@ -1,7 +1,7 @@
-"""The module :mod:`~pyrealm.pmodel.CalcOptimalChi` provides the implementation of 
+"""The module :mod:`~pyrealm.pmodel.calc_optimal_chi` provides the implementation of 
 the following pmodel core class:
 
-* :class:`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi`:
+* :class:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`:
     Estimates the optimal chi for locations, given an estimation method and settings.
 
 """  # noqa D210, D415
@@ -13,7 +13,7 @@ from numpy.typing import NDArray
 
 from pyrealm import ExperimentalFeatureWarning
 from pyrealm.constants import PModelConst
-from pyrealm.pmodel.PModelEnvironment import PModelEnvironment
+from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 from pyrealm.utilities import check_input_shapes, summarize_attrs
 
 

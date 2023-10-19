@@ -1,7 +1,7 @@
-"""The module :mod:`~pyrealm.pmodel.PModelEnvironment` provides the implementation of 
+"""The module :mod:`~pyrealm.pmodel.pmodel_environment` provides the implementation of 
 the following pmodel core class:
 
-* :class:`~pyrealm.pmodel.PModelEnvironment.PModelEnvironment`:
+* :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`:
     Calculates the photosynthetic environment for locations.
 """  # noqa D210, D415
 
@@ -46,7 +46,7 @@ class PModelEnvironment:
 
     * the volumetric soil moisture content, required to calculate optimal
       :math:`\chi` in
-      :meth:`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.lavergne20_c3`.
+      :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.lavergne20_c3`.
 
     Args:
         tc: Temperature, relevant for photosynthesis (°C)

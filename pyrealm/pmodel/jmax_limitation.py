@@ -1,7 +1,7 @@
-"""The module :mod:`~pyrealm.pmodel.JmaxLimitation` provides the implementation of 
+"""The module :mod:`~pyrealm.pmodel.jmax_limitation` provides the implementation of 
 the following pmodel core class:
 
-* :class:`~pyrealm.pmodel.JmaxLimitation.JmaxLimitation`:
+* :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation`:
     Estimates the Jmax limitation, given a method and settings.
 
 """  # noqa D210, D415
@@ -12,7 +12,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import PModelConst
-from pyrealm.pmodel.CalcOptimalChi import CalcOptimalChi
+from pyrealm.pmodel.calc_optimal_chi import CalcOptimalChi
 from pyrealm.utilities import check_input_shapes
 
 
@@ -35,7 +35,7 @@ class JmaxLimitation:
     in :cite:`Smith:2019dv`.
 
     Arguments:
-        optchi: an instance of :class:`pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi`
+        optchi: an instance of :class:`pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`
             providing the :math:`\ce{CO2}` limitation term of light use efficiency
             (:math:`m_j`) and the :math:`\ce{CO2}` limitation term for Rubisco
             assimilation (:math:`m_c`).
@@ -45,7 +45,7 @@ class JmaxLimitation:
 
     Examples:
         >>> import numpy as np
-        >>> from pyrealm.pmodel.PModelEnvironment import PModelEnvironment
+        >>> from pyrealm.pmodel.pmodel_environment import PModelEnvironment
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
         ...     co2=np.array([400]), patm=np.array([101325.0])
@@ -201,7 +201,7 @@ class JmaxLimitation:
           capacity, and
         * :math:`c`, (``const.smith19_c_cost``) as a cost parameter
           for maintaining :math:`J_{max}`, equivalent to :math:`c^\ast = 4c`
-          in the :meth:`~pyrealm.pmodel.JmaxLimitation.JmaxLimitation.wang17` method.
+          in the :meth:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation.wang17` method.
         """
 
         # Adopted from Nick Smith's code:
