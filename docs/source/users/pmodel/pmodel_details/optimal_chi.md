@@ -23,8 +23,8 @@ The next step is to estimate the following parameters:
 * $\ce{CO2}$ limitation factors to both light assimilation ($m_j$) and carboxylation
   ($m_c$) along with their ratio ($m_{joc} = m_j / m_c$).
 
-The details of these calculations are in {class}`~pyrealm.pmodel.calc_optimal_chi.
-CalcOptimalChi`,
+The details of these calculations are in
+{class}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`,
 which implements a number of approaches to calculating these values:
 
 ```{code-cell}
@@ -183,7 +183,8 @@ plot_opt_chi(pmodel_c4)
 
 This method drops terms from the approach given in {cite:t}`Prentice:2014bc` to reflect
 the assumption that photorespiration ($\Gamma^\ast$) is negligible in C4 photosynthesis.
-It uses the same $\beta$ estimate as {meth}`~pyrealm.pmodel.CalcOptimalChi.CalcOptimalChi.c4`
+It uses the same $\beta$ estimate as
+{meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.c4`
 and also also sets $m_j = 1$, but $m_c$ is calculated as in
 {meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.prentice14`.
 

@@ -64,8 +64,8 @@ and returns kPa, so if you are using VP to prepare input data for
 * Make sure you are passing VP values to
   {func}`~pyrealm.hygro.convert_vp_to_vpd` in kPa and not hPa or mbar.
 * Rescale the output of {func}`~pyrealm.hygro.convert_vp_to_vpd` from
-  kPa to Pa, before using it in {class}`~pyrealm.pmodel.pmodel_environment.
-  PModelEnvironment`.
+  kPa to Pa, before using it in
+  {class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`.
 
 ```
 
