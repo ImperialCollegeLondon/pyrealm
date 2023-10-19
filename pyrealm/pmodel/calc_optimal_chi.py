@@ -344,7 +344,7 @@ class CalcOptimalChi:
 
         # Warn that this is experimental
         warn(
-            "The lavergne20_c4 method is experimental, see the method " "documentation",
+            "The lavergne20_c4 method is experimental, see the method documentation",
             ExperimentalFeatureWarning,
         )
 
