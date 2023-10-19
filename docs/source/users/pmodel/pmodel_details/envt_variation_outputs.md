@@ -175,7 +175,7 @@ pyplot.show()
 ## Efficiency outputs
 
 Two of the key outputs are measures of efficiency and are estimated simply by creating a
-{class}`~pyrealm.pmodel.PModel.PModel` instance without needing to provide estimates of
+{class}`~pyrealm.pmodel.pmodel.PModel` instance without needing to provide estimates of
 absorbed irradiance.
 
 ### Light use efficiency (``lue``, LUE)
