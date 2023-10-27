@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 import xarray
 
-from pyrealm.pmodel.pmodel_environment import PModelEnvironment
+from pyrealm.pmodel import PModelEnvironment
 
 
 class TestClass:

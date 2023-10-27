@@ -18,8 +18,8 @@ kernelspec:
 :tags: [hide-input]
 
 from itertools import product
-from pyrealm.pmodel.pmodel import PModel
-from pyrealm.pmodel.pmodel_environment import PModelEnvironment
+from pyrealm.pmodel import PModel
+from pyrealm.pmodel import PModelEnvironment
 import numpy as np
 from matplotlib import pyplot
 from matplotlib.lines import Line2D

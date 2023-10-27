@@ -13,7 +13,7 @@ from numpy.typing import NDArray
 
 from pyrealm import ExperimentalFeatureWarning
 from pyrealm.constants import PModelConst
-from pyrealm.pmodel.calc_optimal_chi import CalcOptimalChi
+from pyrealm.pmodel import CalcOptimalChi
 from pyrealm.pmodel.functions import (
     calc_ftemp_inst_rd,
     calc_ftemp_inst_vcmax,

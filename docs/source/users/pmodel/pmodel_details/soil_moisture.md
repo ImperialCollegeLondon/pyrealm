@@ -90,8 +90,8 @@ the examples below, the default $\theta_0 = 0$ has been changed to $\theta_0 =
 from matplotlib import pyplot as plt
 import numpy as np
 from pyrealm import pmodel
-from pyrealm.pmodel.pmodel import PModel
-from pyrealm.pmodel.pmodel_environment import PModelEnvironment
+from pyrealm.pmodel import PModel
+from pyrealm.pmodel import PModelEnvironment
 from pyrealm.constants import PModelConst
 
 # change default theta0 parameter

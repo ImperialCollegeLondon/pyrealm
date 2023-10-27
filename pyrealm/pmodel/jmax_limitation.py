@@ -12,7 +12,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import PModelConst
-from pyrealm.pmodel.calc_optimal_chi import CalcOptimalChi
+from pyrealm.pmodel import CalcOptimalChi
 from pyrealm.utilities import check_input_shapes
 
 
