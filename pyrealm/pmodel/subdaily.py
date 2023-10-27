@@ -9,9 +9,13 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm import ExperimentalFeatureWarning
-from pyrealm.pmodel import FastSlowScaler, calc_ftemp_arrh, calc_ftemp_kphio
-from pyrealm.pmodel import PModel
-from pyrealm.pmodel import PModelEnvironment
+from pyrealm.pmodel import (
+    FastSlowScaler,
+    PModel,
+    PModelEnvironment,
+    calc_ftemp_arrh,
+    calc_ftemp_kphio,
+)
 
 
 def memory_effect(
