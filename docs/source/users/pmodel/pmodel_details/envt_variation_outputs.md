@@ -18,7 +18,8 @@ kernelspec:
 :tags: [hide-input]
 
 from itertools import product
-from pyrealm import pmodel
+from pyrealm.pmodel.pmodel import PModel
+from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 import numpy as np
 from matplotlib import pyplot
 from matplotlib.lines import Line2D
@@ -38,11 +39,13 @@ co2_1d = np.array([280, 410])
 tc_4d, patm_4d, vpd_4d, co2_4d = np.meshgrid(tc_1d, patm_1d, vpd_1d, co2_1d)
 
 # Calculate the photosynthetic environment
-pmodel_env = pmodel.PModelEnvironment(tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d)
+pmodel_env = PModelEnvironment(tc=tc_4d, patm=patm_4d, 
+vpd=vpd_4d, 
+    co2=co2_4d)
 
 # Run the P Models
-pmodel_c3 = pmodel.PModel(pmodel_env)
-pmodel_c4 = pmodel.PModel(pmodel_env, method_optchi="c4")
+pmodel_c3 = PModel(pmodel_env)
+pmodel_c4 = PModel(pmodel_env, method_optchi="c4")
 
 # Estimate productivity for tropical forest conditions
 # PPFD https://doi.org/10.2307/2260066 rough average canopy top in dry season.
@@ -229,7 +232,8 @@ The productivity variables and their units are:
 
 * Gross primary productivity (``gpp``, $\mu\text{gC}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
 * Dark respiration (``rd``, $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
-* Maximum rate of carboxylation (``vcmax``, $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
+* Maximum rate of carboxylation
+    (``vcmax``, $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
 * Maximum rate of carboxylation at standard temperature
     (``vcmax25``, $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
 * Maximum rate of electron transport.
@@ -275,7 +279,7 @@ plot_fun("vcmax", r"$v_{cmax}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^
 ```{code-cell}
 :tags: [hide-input]
 
-plot_fun("vcmax25", r"$v_{cmax25}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
+plot_fun("vcmax25", r"$v_{cmax25}$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
 ```
 
 ### Maximum rate of electron transport. (``jmax``)
@@ -312,11 +316,11 @@ irradiance changes from 0 to 2000 $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}
 :tags: [hide-input]
 
 # Calculate the photosynthetic environment
-pmodel_env = pmodel.PModelEnvironment(tc=20, patm=101325, vpd=1000, co2=400)
+pmodel_env = PModelEnvironment(tc=20, patm=101325, vpd=1000, co2=400)
 
 # Run the P Models
-pmodel_c3 = pmodel.PModel(pmodel_env)
-pmodel_c4 = pmodel.PModel(pmodel_env, method_optchi="c4")
+pmodel_c3 = PModel(pmodel_env)
+pmodel_c4 = PModel(pmodel_env, method_optchi="c4")
 
 # Estimate productivity for tropical forest conditions (micromols m2 s)
 ppfd_vals = np.arange(2000)
@@ -339,16 +343,24 @@ def plot_iabs(ax, estvar, estvarlab):
         ax.plot(ppfd_vals, plotvar, lfmt)
 
     # Set axis labels
-    ax.set_xlabel(r"Absorbed irradiance ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
+    ax.set_xlabel(
+        r"Absorbed irradiance ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
+    )
     ax.set_ylabel(f"Estimated {estvarlab}")
 
 
 fig, axs = pyplot.subplots(2, 3, figsize=(12, 8), sharex=True)
 
-plot_iabs(axs[0, 0], "gpp", r"GPP   ($\mu\mathrm{g\,C}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
-plot_iabs(axs[0, 1], "rd", r"$r_d$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
 plot_iabs(
-    axs[0, 2], "vcmax", r"$v_{cmax}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
+    axs[0, 0],
+    "gpp",
+     r"GPP ($\mu\mathrm{g\,C}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
+plot_iabs(axs[0, 1],
+    "rd",
+     r"$r_d$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
+plot_iabs(axs[0, 2],
+    "vcmax",
+     r"$v_{cmax}$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
 )
 plot_iabs(
     axs[1, 0],
@@ -356,9 +368,14 @@ plot_iabs(
     r"$v_{cmax25}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)",
 )
 plot_iabs(
-    axs[1, 1], "jmax", r"$J_{max}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
+    axs[1, 1], 
+    "jmax",
+    r"$J_{max}$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
 )
-plot_iabs(axs[1, 2], "gs", r"$g_s$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
+plot_iabs(axs[1, 2],
+    "gs",
+    r"$g_s$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
+    )
 
 axs[0, 0].legend(
     [

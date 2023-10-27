@@ -154,11 +154,11 @@ options for this setting are:
   = 1$.
 * `wang17`: This is the default setting for `method_jmaxlim` and applies the
   calculations describe in  {cite:t}`Wang:2017go`. The calculation details can be
-  seen in the {meth}`~pyrealm.pmodel.pmodel.JmaxLimitation.wang17` method.
+  seen in the {meth}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation.wang17` method.
 
 * `smith19`: This is an alternate calculation for optimal values of $J_{max}$
   and $V_{cmax}$ described in {cite:t}`Smith:2019dv`. The calculation details can be
-  seen in the {meth}`~pyrealm.pmodel.pmodel.JmaxLimitation.smith19` method.
+  seen in the {meth}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation.smith19` method.
 
 ```{code-cell}
 model_jmax_simple = PModel(env, kphio=0.08, method_jmaxlim="simple")

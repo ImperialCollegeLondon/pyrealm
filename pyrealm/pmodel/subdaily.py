@@ -28,7 +28,7 @@ def memory_effect(
     not instantaneously adopt optimal values. This function applies a rolling weighted
     average to apply a lagged response to one of these parameters.
 
-    The estimation uses the paramater `alpha` (:math:`\alpha`) to control the speed of
+    The estimation uses the parameter `alpha` (:math:`\alpha`) to control the speed of
     convergence of the realised values (:math:`R`) to the calculated optimal values
     (:math:`O`):
 
@@ -46,7 +46,8 @@ def memory_effect(
     By default, the ``values`` array must not contain missing values (`numpy.nan`).
     However, :math:`V_{cmax}` and :math:`J_{max}` are not estimable in some conditions
     (namely when :math:`m \le c^{\ast}`, see
-    :class:`~pyrealm.pmodel.pmodel.CalcOptimalChi`) and so missing values in P Model
+    :class:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`) and so missing values in
+    P Model
     predictions can arise even when the forcing data is complete, breaking the recursion
     shown above. When ``handle_nan=True``, this function fills missing data as follow:
 
@@ -131,7 +132,9 @@ class FastSlowPModel:
     :math:`V_{cmax25}` and :math:`J_{max25}`.
 
     The first dimension of the data arrays use to create the
-    :class:`~pyrealm.pmodel.pmodel.PModelEnvironment` instance must represent the time
+    :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance must
+    represent
+    the time
     axis of the observations. The actual datetimes of those observations must then be
     used to initialiase a :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler`
     instance, and one of the ``set_`` methods of that class must be used to define an
@@ -158,7 +161,8 @@ class FastSlowPModel:
     * Predictions of GPP are then made as in the standard P Model.
 
     Args:
-        env: An instance of :class:`~pyrealm.pmodel.pmodel.PModelEnvironment`.
+        env: An instance of
+          :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
         fs_scaler: An instance of
           :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler`.
         fapar: The :math:`f_{APAR}` for each observation.
@@ -352,7 +356,8 @@ class FastSlowPModel_JAMES:
       used to recreate this.
 
     Args:
-        env: An instance of :class:`~pyrealm.pmodel.pmodel.PModelEnvironment`.
+        env: An instance of
+          :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
         fs_scaler: An instance of
           :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler`.
         fapar: The :math:`f_{APAR}` for each observation.

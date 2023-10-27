@@ -349,11 +349,13 @@ def calc_ftemp_inst_vcmax(tc: NDArray, const: PModelConst = PModelConst()) -> ND
         const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
 
     PModel Parameters:
-        Ha: activation energy (:math:`H_a`, ``kattge_knorr_Ha``) Hd: deactivation energy
-        (:math:`H_d`, ``kattge_knorr_Hd``) To: standard reference temperature expressed
-        in Kelvin (`T_0`, ``k_To``) R: the universal gas constant (:math:`R`, ``k_R``)
-        a: intercept of the entropy factor (:math:`a`, ``kattge_knorr_a_ent``) b: slope
-        of the entropy factor (:math:`b`, ``kattge_knorr_b_ent``)
+        Ha: activation energy (:math:`H_a`, ``kattge_knorr_Ha``)
+        Hd: deactivation energy (:math:`H_d`, ``kattge_knorr_Hd``)
+        To: standard reference temperature expressed
+          in Kelvin (`T_0`, ``k_To``)
+        R: the universal gas constant (:math:`R`, ``k_R``)
+        a: intercept of the entropy factor (:math:`a`, ``kattge_knorr_a_ent``)
+        b: slope of the entropy factor (:math:`b`, ``kattge_knorr_b_ent``)
 
     Returns:
         Values for :math:`f`

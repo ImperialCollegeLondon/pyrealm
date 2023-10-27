@@ -28,7 +28,7 @@ not attempt to resolve the broadcasting of array dimensions.
 This example calculates a single point estimate of GPP. The first step is to use
 estimates of environmental variables to calculate the
 photosynthetic environment for the model
-({class}`~pyrealm.pmodel.pmodel.PModelEnvironment`).
+({class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`).
 
 The example shows the steps required using a single site with:
 
@@ -55,7 +55,7 @@ env = PModelEnvironment(tc=20.0, patm=101325.0, vpd=820, co2=400)
 The `env` object now holds the photosynthetic environment, which can be re-used
 with different P Model settings. The representation of `env` is deliberately
 terse - just the shape of the data - but the
-{meth}`~pyrealm.pmodel.pmodel.PModelEnvironment.summarize` method provides a
+{meth}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment.summarize` method provides a
 more detailed summary of the attributes.
 
 ```{code-cell} ipython3
@@ -94,9 +94,11 @@ model.summarize()
 
 ### $\chi$ estimates and $\ce{CO2}$ limitation
 
-The instance also contains a {class}`~pyrealm.pmodel.pmodel.CalcOptimalChi` object,
+The instance also contains a {class}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`
+object,
 recording key parameters from the [calculation of $\chi$](optimal_chi).
-This object also has a {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.summarize` method:
+This object also has a {meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.summarize`
+method:
 
 ```{code-cell} ipython3
 model.optchi.summarize()

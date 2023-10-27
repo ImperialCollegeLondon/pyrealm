@@ -90,8 +90,9 @@ class PModelConst(ConstantsClass):
 
     * **Unit cost ratios (beta) response to soil moisture**. These constants set the
       response of beta to soil moisture for the
-      :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c3` method and for
-      :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c4`.
+      :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.lavergne20_c3`
+      method and for
+      :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.lavergne20_c4`.
       (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c3`,
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_a_c3`,
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c4`,
