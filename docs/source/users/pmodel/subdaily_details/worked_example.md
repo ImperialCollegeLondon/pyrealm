@@ -25,7 +25,7 @@ import matplotlib.cm as cm
 import matplotlib.dates as mdates
 
 from pyrealm.pmodel import PModel, FastSlowPModel, PModelEnvironment, FastSlowScaler
-from pyrealm.hygro import convert_sh_to_vpd
+from pyrealm.core.hygro import convert_sh_to_vpd
 ```
 
 This notebook shows an example analysis using the P Model including fast and slow
