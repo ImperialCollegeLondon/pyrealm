@@ -18,13 +18,21 @@ kernelspec:
 ```{eval-rst}
 .. automodule:: pyrealm.core
     :autosummary:
-    :members:
+    :members:    
 ```
 
 ## The {mod}`~pyrealm.core.utilities` submodule
 
 ```{eval-rst}
 .. automodule:: pyrealm.core.utilities
+    :autosummary:
+    :members:
+```
+
+## The {mod}`~pyrealm.core.hygro` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.core.hygro
     :autosummary:
     :members:
 ```

@@ -1,5 +1,5 @@
 """The :mod:`~pyrealm.constants.hygro_const` module provides a data class of constants
-used in the hygrometer conversion functions in the :mod:`~pyrealm.hygro` module.
+used in the hygrometer conversion functions in the :mod:`~pyrealm.core.hygro` module.
 """  # noqa: D205, D415
 
 from dataclasses import dataclass, field
@@ -15,7 +15,8 @@ from pyrealm.constants import ConstantsClass
 class HygroConst(ConstantsClass):
     r"""Constants for hygrometric functions.
 
-    This data class provides constants used in :mod:`~pyrealm.hygro`, which includes
+    This data class provides constants used in :mod:`~pyrealm.core.hygro`,
+    which includes
     hygrometric conversions. The values for
     :attr:`~pyrealm.constants.hygro_const.HygroConst.magnus_coef` be set directly or
     by selecting one of ``Allen1998``, ``Alduchov1996`` or ``Sonntag1990`` as
