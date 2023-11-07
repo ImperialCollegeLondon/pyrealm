@@ -13,10 +13,18 @@ kernelspec:
 ---
 
 
-# The {mod}`~pyrealm.utilities` module
+# The {mod}`~pyrealm.core` module
 
 ```{eval-rst}
-.. automodule:: pyrealm.utilities
+.. automodule:: pyrealm.core
+    :autosummary:
+    :members:
+```
+
+## The {mod}`~pyrealm.core.utilities` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.core.utilities
     :autosummary:
     :members:
 ```

@@ -31,6 +31,10 @@ The `hygro` module
 : Provides functions for [converting common hygrometric variables](users/hygro) to
   vapour pressure deficit for use in the P Model.
 
+The `core` module
+: Contains fundamental utilities and physics functionality which is shared across the
+code base.
+
 ## Indices and tables
 
 * {ref}`genindex`

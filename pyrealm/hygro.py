@@ -9,7 +9,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import HygroConst
-from pyrealm.utilities import bounds_checker
+from pyrealm.core.utilities import bounds_checker
 
 
 def calc_vp_sat(ta: NDArray, const: HygroConst = HygroConst()) -> NDArray:

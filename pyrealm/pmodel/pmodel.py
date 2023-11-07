@@ -13,6 +13,7 @@ from numpy.typing import NDArray
 
 from pyrealm import ExperimentalFeatureWarning
 from pyrealm.constants import PModelConst
+from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.calc_optimal_chi import CalcOptimalChi
 from pyrealm.pmodel.functions import (
     calc_ftemp_inst_rd,
@@ -21,7 +22,6 @@ from pyrealm.pmodel.functions import (
 )
 from pyrealm.pmodel.jmax_limitation import JmaxLimitation
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
-from pyrealm.utilities import check_input_shapes, summarize_attrs
 
 # Design notes on PModel (0.3.1 -> 0.4.0)
 # The PModel until 0.3.1 was a single class taking tc etc. as inputs. However

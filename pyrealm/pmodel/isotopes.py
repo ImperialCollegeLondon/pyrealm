@@ -8,8 +8,8 @@ from warnings import warn
 from numpy.typing import NDArray
 
 from pyrealm.constants import IsotopesConst
+from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.pmodel import PModel
-from pyrealm.utilities import check_input_shapes, summarize_attrs
 
 
 class CalcCarbonIsotopes:

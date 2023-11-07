@@ -11,13 +11,13 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import PModelConst
+from pyrealm.core.utilities import bounds_checker, check_input_shapes, summarize_attrs
 from pyrealm.pmodel.functions import (
     calc_co2_to_ca,
     calc_gammastar,
     calc_kmm,
     calc_ns_star,
 )
-from pyrealm.utilities import bounds_checker, check_input_shapes, summarize_attrs
 
 
 class PModelEnvironment:

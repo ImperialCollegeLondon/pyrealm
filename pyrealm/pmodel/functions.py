@@ -8,7 +8,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import PModelConst
-from pyrealm.utilities import check_input_shapes
+from pyrealm.core.utilities import check_input_shapes
 
 
 def calc_density_h2o_chen(
