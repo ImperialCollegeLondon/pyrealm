@@ -53,6 +53,12 @@ Note that `pyrealm_build_data` is a source distribution only (`sdist`) component
 `pyrealm`, so is not included in binary distributions (`wheel`), such as those available
 from PyPi.
 
+### Fetching the datasets using Git LFS
+
+The datasets in `pyreal_build_data` are stored via Git LFS. After cloning the repository,
+only text pointers to these large files are downloaded. In order to actually fetch the data
+into the local working tree, you can run the command `git lfs pull`.
+
 ## Code development
 
 ### Package management
