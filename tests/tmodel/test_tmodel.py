@@ -173,6 +173,7 @@ def test_tmodel_calculate_growth(rvalues, row):
         assert np.allclose(getattr(ttree, growth_est), rvalues[row][growth_est])
 
 
+@pytest.mark.profiling
 def test_tmodel_calculate_growth_array(rvalues):
     """Test calculate_growth with an array."""
 
