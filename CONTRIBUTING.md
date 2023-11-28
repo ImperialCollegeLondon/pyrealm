@@ -195,10 +195,13 @@ poetry run pytest
 
 #### Using 'pytest-profiling'
 
-[Pytest-profiling](https://pypi.org/project/pytest-profiling/) is a plugin to pytest that
-enables profiling of tests. It can be used to generate a call graph and to determine the
-number of hits and total time spent in each function or method. Dedicated profiling tests
-have been created for PyRealm. Please see the relevant testing directory.
+[Pytest-profiling](https://pypi.org/project/pytest-profiling/) is a plugin to pytest
+that enables profiling of tests. It can be used to generate a call graph and to
+determine the number of hits and total time spent in each function or method.
+[Graphviz](https://pypi.org/project/graphviz/) is a package that uses `dot` command to
+facilitate the rendering of the call graph and a manual install of graphviz is required
+depending on the os. Dedicated profiling tests have been created for PyRealm.
+Please see the relevant testing directory.
 
 ```bash
 poetry run pytest <test_path> --profile
@@ -210,7 +213,7 @@ to generate a report. You can run
 poetry run pytest <test_path> --profile-svg
 ```
 
-to generate a call graph.
+to generate a call graph. The graph is stored with the name `combined.svg`.
 
 #### Using 'pytest-coverage'
 
@@ -221,8 +224,8 @@ coverage reports. You can run
 poetry run pytest --cov=<test_path>
 ```
 
-to perform coverage analysis. This can be used to determine if your contribution is adequately
-tested.
+to perform coverage analysis. The report is stored with the name `index.html`.
+It can be used to determine if your contribution is adequately tested.
 
 #### Using `doctest`
 
