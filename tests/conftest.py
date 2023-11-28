@@ -15,7 +15,7 @@ def pytest_configure(config):
 
 def pytest_collection_modifyitems(config, items):
     """Skip tests based on profiling markers."""
-    if config.getoption("--profile"):
+    if config.getoption("--profile") or config.getoption("--profile-svg"):
         skip_non_profile = pytest.mark.skip(reason="skip tests not for profiling")
         for item in items:
             if (
