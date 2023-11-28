@@ -21,6 +21,7 @@ def pytest_collection_modifyitems(config, items):
             if (
                 "profiling_only" not in item.keywords
                 and "profiling" not in item.keywords
+                and item.name.startswith("test_")
             ):
                 item.add_marker(skip_non_profile)
     else:
