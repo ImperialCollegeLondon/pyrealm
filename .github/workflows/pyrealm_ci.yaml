@@ -44,6 +44,14 @@ jobs:
     - name: Run tests
       run: poetry run pytest --cov-report xml
 
+    - name: Run tests without profiling
+      if: ${{ github.ref != 'refs/heads/main' }}
+      run: poetry run pytest -m "not profiling" --cov-report xml
+      
+    - name: Run tests with profiling
+      if: ${{ github.ref == 'refs/heads/main' }}
+      run: poetry run pytest -m "profiling" --profile --cov-report xml
+
     - name: Upload coverage reports to Codecov
       if: success() && (matrix.os == 'ubuntu-latest' && matrix.python-version == 3.9)
       uses: codecov/codecov-action@v3
