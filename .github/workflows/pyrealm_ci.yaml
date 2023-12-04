@@ -18,13 +18,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
-        python-version: [ "3.9" , "3.10", "3.11"]
+        # os: [ ubuntu-latest, macos-latest, windows-latest ]
+        # python-version: [ "3.9" , "3.10", "3.11"]
+        os: [ ubuntu-latest ]
+        python-version: [ "3.9" ]
 
     steps:
     - uses: actions/checkout@v3
       with:
-        lfs: true
+        ref: ${{ github.head_ref }}
 
     - uses: actions/setup-python@v4
       with:
@@ -40,31 +42,31 @@ jobs:
 
     # - name: Run tests
     #   run: poetry run pytest -m "not profiling" --cov-report xml
-      
+
+    # - name: Upload coverage reports to Codecov
+    #   id: codecov
+    #   if: success() && (matrix.os == 'ubuntu-latest' && matrix.python-version == 3.9)
+    #   uses: codecov/codecov-action@v3
+    #   env:
+    #     CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    
     - name: Run profiling
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.9
-      # && github.ref == 'refs/heads/main'
+      id: profiling
+      # if: steps.codecov.outcome == 'success' && github.ref == 'refs/heads/main'
       run: |
         git lfs pull
-        git update-index --assume-unchanged pyrealm_build_data/*.nc
+        git rm --cached pyrealm_build_data/*.nc
         poetry run pytest -m "profiling" --profile-svg
-        # mv prof/combined.svg profiling/profiling.svg
         mv prof/combined.prof profiling/profiling.prof
+        # mv prof/combined.svg profiling/profiling.svg
         poetry run python profiling/report.py
-        echo "REPORT=1" >> $GITHUB_ENV
 
     - name: Generate report
-      if: env.REPORT == 1
       uses: stefanzweifel/git-auto-commit-action@v5
+      if: steps.profiling.outcome == 'success'
       with:
-        commit_message: Automated report
-        file_pattern: '*.csv *.png *.svg'
-
-    - name: Upload coverage reports to Codecov
-      if: success() && (matrix.os == 'ubuntu-latest' && matrix.python-version == 3.9)
-      uses: codecov/codecov-action@v3
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        file_pattern: 'profiling/*'
+        commit_message: Auto-generated report
 
   docs_build:
     needs: qa
