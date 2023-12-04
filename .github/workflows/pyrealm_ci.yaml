@@ -48,23 +48,30 @@ jobs:
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     
-    - name: Run profiling
-      id: profiling
-      if: steps.codecov.outcome == 'success' #&& github.ref == 'refs/heads/main'
+    - name: Setup Git LFS
+      id: lfs
+      if: steps.codecov.outcome == 'success'
       run: |
         git lfs pull
-        git rm --cached pyrealm_build_data/*.nc
+        git lfs ls-files -n | xargs git lfs track
+        
+    - name: Run profiling
+      id: profiling
+      if: steps.lfs.outcome == 'success' #&& github.ref == 'refs/heads/main'
+      run: |
         poetry run pytest -m "profiling" --profile-svg
         mv prof/combined.prof profiling/profiling.prof
-        [ -f prof/combined.svg ] && mv prof/combined.svg profiling/profiling.svg
+        # mv prof/combined.svg profiling/profiling.svg
         poetry run python profiling/report.py
 
     - name: Generate report
-      uses: stefanzweifel/git-auto-commit-action@v5
       if: steps.profiling.outcome == 'success'
-      with:
-        file_pattern: 'profiling/*'
-        commit_message: Auto-generated report
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add profiling/
+        git commit -m "Auto-generated report"
+        git push origin HEAD
 
   docs_build:
     needs: qa
