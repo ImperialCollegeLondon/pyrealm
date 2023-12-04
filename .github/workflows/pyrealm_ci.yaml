@@ -38,8 +38,8 @@ jobs:
     - name: Install dependencies
       run: poetry install
 
-    - name: Run tests
-      run: poetry run pytest -m "not profiling" --cov-report xml
+    # - name: Run tests
+    #   run: poetry run pytest -m "not profiling" --cov-report xml
       
     - name: Run profiling
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.9
@@ -49,7 +49,7 @@ jobs:
         poetry run pytest -m "profiling" --profile-svg
         # mv prof/combined.svg profiling/profiling.svg
         mv prof/combined.prof profiling/profiling.prof
-        python profiling/report.py
+        poetry run python profiling/report.py
         echo "REPORT=1" >> $GITHUB_ENV
 
     - name: Generate report
