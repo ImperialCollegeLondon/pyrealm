@@ -39,6 +39,8 @@ pytest-cov = "^3.0.0"
 pytest-mypy = "^0.9.1"
 pytest-mock = "^3.8.1"
 pytest-profiling = "^1.7.0"
+pandas = "^2.0.0"
+matplotlib = "^3.5.2"
 
 [tool.poetry.group.dev.dependencies]
 black = { version = "^22.10.0", allow-prereleases = true }

@@ -26,9 +26,6 @@ jobs:
       with:
         lfs: true
 
-    - name: Pull LFS objects
-      run: git lfs pull
-
     - uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
@@ -46,8 +43,9 @@ jobs:
       
     - name: Run profiling
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.9
-      # if: ${{ github.ref == 'refs/heads/main' }}
+      # && github.ref == 'refs/heads/main'
       run: |
+        git lfs pull
         poetry run pytest -m "profiling" --profile-svg
         python profiling/report.py
         mv prof/combined.svg profiling/profiling.svg
