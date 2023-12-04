@@ -44,7 +44,7 @@ plt.tight_layout()
 plt.legend(loc="lower right")
 plt.savefig(root / "profiling/profiling.png")
 
-# plot benchmark results
+# Plot benchmark results
 df = pd.read_csv(report_path, index_col="label", parse_dates=["timestamp"])
 kpis = ["tottime_percall", "cumtime_percall", "tottime", "cumtime"]
 labels = df[kpis].idxmax()

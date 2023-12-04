@@ -50,14 +50,15 @@ jobs:
 
     - name: Setup Git LFS
       id: lfs
-      if: steps.codecov.outcome == 'success'
+      if: steps.codecov.outcome == 'success' && github.ref == 'refs/heads/main'
       run: |
         git lfs pull
         git lfs ls-files -n | xargs git lfs track
+        git add .gitattributes
 
     - name: Run profiling
       id: profiling
-      if: steps.lfs.outcome == 'success' #&& github.ref == 'refs/heads/main'
+      if: steps.lfs.outcome == 'success'
       run: |
         poetry run pytest -m "profiling" --profile-svg
         mv prof/combined.prof profiling/profiling.prof
