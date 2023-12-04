@@ -46,6 +46,7 @@ jobs:
       # && github.ref == 'refs/heads/main'
       run: |
         git lfs pull
+        git update-index --assume-unchanged pyrealm_build_data/*.nc
         poetry run pytest -m "profiling" --profile-svg
         # mv prof/combined.svg profiling/profiling.svg
         mv prof/combined.prof profiling/profiling.prof
