@@ -25,7 +25,7 @@ jobs:
     - uses: actions/checkout@v3
       with:
         lfs: true
-        
+
     - name: Pull LFS objects
       run: git lfs pull
 
@@ -42,15 +42,23 @@ jobs:
       run: poetry install
 
     - name: Run tests
-      run: poetry run pytest --cov-report xml
-
-    - name: Run tests without profiling
-      if: ${{ github.ref != 'refs/heads/main' }}
       run: poetry run pytest -m "not profiling" --cov-report xml
       
-    - name: Run tests with profiling
-      if: ${{ github.ref == 'refs/heads/main' }}
-      run: poetry run pytest -m "profiling" --profile --cov-report xml
+    - name: Run profiling
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.9
+      # if: ${{ github.ref == 'refs/heads/main' }}
+      run: |
+        poetry run pytest -m "profiling" --profile-svg
+        python profiling/report.py
+        mv prof/combined.svg profiling/profiling.svg
+        echo "REPORT=1" >> $GITHUB_ENV
+
+    - name: Generate report
+      if: env.REPORT == 1
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: Automated report
+        file_pattern: '*.csv *.png *.svg'
 
     - name: Upload coverage reports to Codecov
       if: success() && (matrix.os == 'ubuntu-latest' && matrix.python-version == 3.9)
