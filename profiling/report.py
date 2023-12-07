@@ -4,7 +4,6 @@ import datetime
 import os
 import pstats
 import re
-import sys
 from io import StringIO
 from pathlib import Path
 
@@ -77,6 +76,6 @@ plt.savefig(root / "profiling/benchmark.png")
 time_costs = bm.max(axis=1)
 t_ratio = time_costs / time_costs.shift(1) - 1
 latest_change = t_ratio.iloc[-1]
-os.environ["bad_perf"] = True  # for debugging
+os.environ["bad_perf"] = 'true'  # for debugging
 if latest_change > 1.02:
-    os.environ["bad_perf"] = True
+    os.environ["bad_perf"] = 'true'
