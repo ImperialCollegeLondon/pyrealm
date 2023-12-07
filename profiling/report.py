@@ -77,8 +77,6 @@ plt.savefig(root / "profiling/benchmark.png")
 time_costs = bm.max(axis=1)
 t_ratio = time_costs / time_costs.shift(1) - 1
 latest_change = t_ratio.iloc[-1]
+os.environ["bad_perf"] = True  # for debugging
 if latest_change > 1.02:
-    print(
-        f"Warning: the total time cost increased by {latest_change:.2%}!",
-        file=sys.stderr,
-    )
+    os.environ["bad_perf"] = True
