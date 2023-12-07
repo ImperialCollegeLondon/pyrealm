@@ -67,6 +67,8 @@ jobs:
         poetry run python profiling/report.py 2> bad-perf
         gh pr create --title "Auto-generated profiling report" --body "New profiling results available in the `profiling` folder."
         [ -d bad-perf ] && exit 1
+      env:
+        GH_TOKEN: ${{ github.token }}
 
   docs_build:
     needs: qa
