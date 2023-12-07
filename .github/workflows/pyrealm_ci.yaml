@@ -50,7 +50,7 @@ jobs:
 
     - name: Setup Git LFS
       id: lfs
-      if: steps.codecov.outcome == 'success' && github.ref == 'refs/heads/main'
+      if: steps.codecov.outcome == 'success' && github.ref == 'refs/heads/develop'
       run: |
         git lfs pull
         git lfs ls-files -n | xargs git lfs track
@@ -62,7 +62,7 @@ jobs:
       run: |
         poetry run pytest -m "profiling" --profile-svg
         mv prof/combined.prof profiling/profiling.prof
-        # mv prof/combined.svg profiling/profiling.svg
+        [ -f prof/combined.svg ] && mv prof/combined.svg profiling/profiling.svg
         poetry run python profiling/report.py
 
     - name: Generate report
