@@ -66,11 +66,12 @@ jobs:
         poetry run python profiling/report.py
 
     - name: Generate report
-      uses: stefanzweifel/git-auto-commit-action@v5
       if: steps.profiling.outcome == 'success'
-      with:
-        file_pattern: 'profiling/*'
-        commit_message: Auto-generated report
+      run: gh pr create --title "Auto-generated profiling report" --body "New profiling results available in the `profiling` folder."
+      # uses: stefanzweifel/git-auto-commit-action@v5
+      # with:
+      #   file_pattern: 'profiling/*'
+      #   commit_message: Auto-generated report
 
   docs_build:
     needs: qa
