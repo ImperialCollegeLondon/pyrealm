@@ -53,6 +53,7 @@ jobs:
       if: steps.codecov.outcome == 'success' && github.ref == 'refs/heads/develop' && \
         ${{ github.event_name != 'pull_request' }}
       run: |
+        echo ${{ github.event_name }}
         git lfs pull
         git lfs ls-files -n | xargs git lfs track
         git add .gitattributes
@@ -61,6 +62,7 @@ jobs:
       id: profiling
       if: steps.lfs.outcome == 'success'
       run: |
+        sudo apt-get install graphviz
         poetry run pytest -m "profiling" --profile-svg
         poetry run python profiling/report.py 2> bad-perf
         gh pr create --title "Auto-generated profiling report" --body "New profiling results available in the `profiling` folder."
