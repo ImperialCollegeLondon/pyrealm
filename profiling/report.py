@@ -1,6 +1,7 @@
 """Analyze and visualize profiling results."""
 
 import os
+import sys
 import datetime
 import pstats
 import re
@@ -71,3 +72,10 @@ bm.T.plot.barh(figsize=(20, 10))
 plt.tight_layout()
 plt.legend(loc="lower right")
 plt.savefig(root / "profiling/benchmark.png")
+
+# Check performance changes
+time_costs = bm.max(axis=1)
+t_ratio = time_costs / time_costs.shift(1) - 1
+latest_change = t_ratio.iloc[-1]
+if latest_change > 1.02:
+    print(f"Warning: the total time cost increased by {latest_change:.2%}!", file=sys.stderr)
