@@ -1,5 +1,6 @@
 """Analyze and visualize profiling results."""
 
+import os
 import datetime
 import pstats
 import re
@@ -9,18 +10,35 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# Read the profiling results
 root = Path.cwd()
-sio = StringIO()
+orig_prof_path = root / "prof/combined.prof"
 prof_path = root / "profiling/profiling.prof"
+orig_graph_path = root / "prof/combined.svg"
+graph_path = root / "profiling/call-graph.svg"
+
+# Copy the profiling results to the current folder
+if orig_prof_path.exists():
+    os.system(f"cp {orig_prof_path} {prof_path}")
+else:
+    print(f"Cannot find the profiling file at {orig_prof_path}.")
+    exit()
+if orig_graph_path.exists():
+    os.system(f"cp {orig_graph_path} {graph_path}")
+else:
+    print(f"Cannot find the call graph at {orig_graph_path}.")
+
+# Read the profiling results
+sio = StringIO()
 p = pstats.Stats(str(prof_path), stream=sio)
 p.print_stats(str(root))
 # p.print_callers(str(root))
 report = sio.getvalue()
+print(report)
 
 # Convert to a DataFrame and save to CSV
-report = re.sub(str(root) + r"[/\\]+", "", report)  # remove directory names
+report = report.replace(str(root/"*")[:-1], "")  # remove common path
 _, report = re.split(r"\n(?= +ncalls)", report, 1)  # remove header
+# print(report)
 df = (
     pd.read_csv(StringIO(report), sep=" +", engine="python")
     .rename(columns={"percall": "tottime_percall", "percall.1": "cumtime_percall"})
