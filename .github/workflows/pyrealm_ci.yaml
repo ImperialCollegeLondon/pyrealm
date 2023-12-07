@@ -67,17 +67,24 @@ jobs:
         poetry run pytest -m "profiling" --profile-svg
         poetry run python profiling/report.py
 
-    - name: Report profiling results
-      if: steps.profiling.outcome == 'success' && github.event.pull_request.merged
+    - uses: stefanzweifel/git-auto-commit-action@v5
+      id: commit
+      if: steps.profiling.outcome == 'success'
+      with:
+        commit_message: Auto-generated profiling results
+        file_pattern: 'profiling/*'
+
+    - name: Create a new PR adding profiling results
+      if: steps.commit.outcome == 'success' && github.event.action == 'closed'
       run: gh pr create --title "Auto-generated profiling report" --body "New profiling results available in the `profiling` folder."
       env:
         GH_TOKEN: ${{ github.token }}
-
+    
     - name: Check performance change
       if: steps.profiling.outcome == 'success'
       run: |
         [ $bad_perf ] && exit 1
-
+  
   docs_build:
     needs: qa
     runs-on: ubuntu-latest
