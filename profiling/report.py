@@ -1,10 +1,10 @@
 """Analyze and visualize profiling results."""
 
-import os
-import sys
 import datetime
+import os
 import pstats
 import re
+import sys
 from io import StringIO
 from pathlib import Path
 
@@ -31,12 +31,12 @@ else:
 # Read the profiling results
 sio = StringIO()
 p = pstats.Stats(str(prof_path), stream=sio)
-p.print_stats(str(root).replace('\\', '\\\\'))
+p.print_stats(str(root).replace("\\", "\\\\"))
 # p.print_callers(str(root))
 report = sio.getvalue()
 
 # Convert to a DataFrame and save to CSV
-report = report.replace(str(root/"*")[:-1], "")  # remove common path
+report = report.replace(str(root / "*")[:-1], "")  # remove common path
 _, report = re.split(r"\n(?= +ncalls)", report, 1)  # remove header
 df = (
     pd.read_csv(StringIO(report), sep=" +", engine="python")
@@ -78,4 +78,7 @@ time_costs = bm.max(axis=1)
 t_ratio = time_costs / time_costs.shift(1) - 1
 latest_change = t_ratio.iloc[-1]
 if latest_change > 1.02:
-    print(f"Warning: the total time cost increased by {latest_change:.2%}!", file=sys.stderr)
+    print(
+        f"Warning: the total time cost increased by {latest_change:.2%}!",
+        file=sys.stderr,
+    )

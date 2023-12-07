@@ -62,9 +62,9 @@ jobs:
       if: steps.lfs.outcome == 'success'
       run: |
         poetry run pytest -m "profiling" --profile-svg
-        poetry run python profiling/report.py 2> perf_failed
+        poetry run python profiling/report.py 2> bad-perf
         gh pr create --title "Auto-generated profiling report" --body "New profiling results available in the `profiling` folder."
-        [ -s perf_failed ] && exit 1
+        [ -d bad-perf ] && exit 1
 
   docs_build:
     needs: qa
