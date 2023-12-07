@@ -74,7 +74,8 @@ jobs:
 
     - name: Check performance change
       if: steps.profiling.outcome == 'success'
-      run: [ $bad_perf ] && exit 1
+      run: |
+        [ $bad_perf ] && exit 1
 
   docs_build:
     needs: qa
