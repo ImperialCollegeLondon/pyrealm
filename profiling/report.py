@@ -30,15 +30,13 @@ else:
 # Read the profiling results
 sio = StringIO()
 p = pstats.Stats(str(prof_path), stream=sio)
-p.print_stats(str(root))
+p.print_stats(str(root).replace('\\', '\\\\'))
 # p.print_callers(str(root))
 report = sio.getvalue()
-print(report)
 
 # Convert to a DataFrame and save to CSV
 report = report.replace(str(root/"*")[:-1], "")  # remove common path
 _, report = re.split(r"\n(?= +ncalls)", report, 1)  # remove header
-# print(report)
 df = (
     pd.read_csv(StringIO(report), sep=" +", engine="python")
     .rename(columns={"percall": "tottime_percall", "percall.1": "cumtime_percall"})
