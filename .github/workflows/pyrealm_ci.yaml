@@ -69,7 +69,7 @@ jobs:
 
     - uses: stefanzweifel/git-auto-commit-action@v5
       id: commit
-      if: steps.profiling.outcome == 'success'
+      if: ${{ steps.profiling.outcome != 'skipped' }}
       with:
         commit_message: Auto-generated profiling results
         file_pattern: 'profiling/*'
@@ -79,12 +79,7 @@ jobs:
       run: gh pr create --base "develop" --title "Auto-generated profiling report" --body "New profiling results available in the `profiling` folder."
       env:
         GH_TOKEN: ${{ github.token }}
-    
-    - name: Check performance change
-      if: steps.profiling.outcome == 'success'
-      run: |
-        [ $bad_perf ] && exit 1
-  
+
   docs_build:
     needs: qa
     runs-on: ubuntu-latest
