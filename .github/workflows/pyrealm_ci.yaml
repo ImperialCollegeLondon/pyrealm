@@ -65,11 +65,11 @@ jobs:
       run: |
         sudo apt-get install graphviz
         poetry run pytest -m "profiling" --profile-svg
-        poetry run python profiling/report.py
+        poetry run python profiling/report.py --event ${{ github.event_name }}
 
     - name: Report profiling results
       if: steps.profiling.outcome == 'success' && github.event.pull_request.merged
-      run: gh pr create --title "Auto-generated profiling report" --body "New profiling results available in the `profiling` folder."
+      run: gh pr create --base "develop" --title "Auto-generated profiling report" --body "New profiling results available in the `profiling` folder."
       env:
         GH_TOKEN: ${{ github.token }}
 
