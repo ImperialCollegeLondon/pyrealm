@@ -65,7 +65,10 @@ jobs:
       run: |
         sudo apt-get install graphviz
         poetry run pytest -m "profiling" --profile-svg
-        poetry run python profiling/report.py --event ${{ github.event_name }}
+
+    - name: Generate report
+      continue-on-error: true
+      run: poetry run python profiling/report.py --event ${{ github.event_name }}
 
     - uses: stefanzweifel/git-auto-commit-action@v5
       id: commit
