@@ -51,9 +51,9 @@ jobs:
     - name: Setup Git LFS
       id: lfs
       if: steps.codecov.outcome == 'success' && github.ref == 'refs/heads/develop' &&
-        github.event_name == 'pull_request' && (github.event.action == 'ready_for_review'
-        || github.event.action == 'closed' && github.event.pull_request.merged)
-        || github.event_name == 'push'
+        github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' ||
+        github.event.action == 'closed' && github.event.pull_request.merged) ||
+        github.event_name == 'push'
       run: |
         git lfs pull
         git lfs ls-files -n | xargs git lfs track

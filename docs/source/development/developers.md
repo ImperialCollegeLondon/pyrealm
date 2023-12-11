@@ -243,9 +243,9 @@ poetry run python profiling/report.py
 
 #### Latest profiling results
 
-![call graph](/profiling/call-graph.svg)
-![profiling plot](/profiling/profiling.png)
-![benchmark plot](/profiling/benchmark.png)
+![profiling plot](../../../profiling/profiling.png)
+![benchmark plot](../../../profiling/benchmark.png)
+![call graph](../../../profiling/call-graph.svg)
 
 ### Building the documentation
 
