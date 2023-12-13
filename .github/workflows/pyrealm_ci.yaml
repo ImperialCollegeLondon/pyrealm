@@ -51,7 +51,7 @@ jobs:
     - name: Setup Git LFS
       id: lfs
       if: steps.codecov.outcome == 'success' && github.ref == 'refs/heads/develop' &&
-        (github.event_name == 'pull_request' || github.event_name == 'push')
+        github.event_name == 'pull_request' || github.event_name == 'push'
       run: |
         git lfs pull
         git lfs ls-files -n | xargs git lfs track
@@ -70,7 +70,7 @@ jobs:
 
     - uses: stefanzweifel/git-auto-commit-action@v5
       id: commit
-      if: ${{ always() && steps.profiling.outcome != 'skipped' && github.event.action == 'ready_for_review' }}
+      if: ${{ always() && steps.profiling.outcome != 'skipped' }} #&& github.event.action == 'ready_for_review' }}
       with:
         commit_message: Auto-generated profiling results
         file_pattern: 'profiling/*'
