@@ -30,7 +30,7 @@ if orig_prof_path.exists():
     os.system(f"cp {orig_prof_path} {prof_path}")
 else:
     print(f"Cannot find the profiling file at {orig_prof_path}.")
-    exit()
+    exit(1)
 if orig_graph_path.exists():
     os.system(f"cp {orig_graph_path} {graph_path}")
 else:
