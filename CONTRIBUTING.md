@@ -204,18 +204,16 @@ depending on the os. Dedicated profiling tests have been created for PyRealm.
 Please see the relevant testing directory.
 
 ```bash
-poetry run pytest --profile
+poetry run pytest <test_path> --profile
 ```
 
 to generate a report. You can run
 
 ```bash
-poetry run pytest --profile-svg
+poetry run pytest <test_path> --profile-svg
 ```
 
-to generate a call graph. The graph is saved at `prof/combined.svg`.
-
-To enable profiling of a test function or class, decorate it with `@pytest.mark.profiling`.
+to generate a call graph. The graph is stored with the name `combined.svg`.
 
 #### Using 'pytest-coverage'
 
