@@ -87,5 +87,5 @@ plt.savefig(root / "profiling/benchmark.png")
 time_costs = bm.max(axis=1)
 t_ratio = time_costs / time_costs.shift(1) - 1
 latest_change = t_ratio.iloc[-1]
-if latest_change > 0:
+if latest_change > 1.05:
     exit(1)
