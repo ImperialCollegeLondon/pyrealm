@@ -1,6 +1,6 @@
 name: Test and build
 
-on: [push, pull_request, release]
+on: [push, pull_request, merge_group, release]
 
 jobs:
   qa:
@@ -50,11 +50,10 @@ jobs:
 
     - name: Setup Git LFS
       id: lfs
-      if: steps.codecov.outcome == 'success' && github.event_name == 'pull_request'
+      if: ${{ steps.codecov.outcome == 'success' && github.event_name != 'push' }}
       run: |
         git lfs pull
-        git lfs ls-files -n | xargs git lfs track
-        git add .gitattributes
+        git lfs ls-files -n | xargs git lfs track  # track all LFS files
 
     - name: Run profiling
       id: profiling
@@ -63,23 +62,16 @@ jobs:
         sudo apt-get install graphviz
         poetry run pytest -m "profiling" --profile-svg
 
-    - name: Generate report
+    - name: Report performance (this step will fail if performance degrades)
       if: steps.profiling.outcome == 'success'
       run: poetry run python profiling/report.py --event ${{ github.event_name }}
 
     - uses: stefanzweifel/git-auto-commit-action@v5
-      id: commit
       if: ${{ always() && steps.profiling.outcome != 'skipped' && 
-        github.event.action == 'ready_for_review' }}
+        (github.event.action == 'review_requested' || github.event_name == 'merge_group') }}
       with:
         commit_message: Auto-generated profiling results
-        file_pattern: 'profiling/*'
-
-    # - name: Create a new PR adding profiling results
-    #   if: steps.commit.outcome == 'success'
-    #   run: gh pr create --base "develop" --title "Auto-generated profiling report" --body "New profiling results available in the `profiling` folder."
-    #   env:
-    #     GH_TOKEN: ${{ github.token }}
+        file_pattern: 'profiling/* .gitattributes'
 
   docs_build:
     needs: qa
