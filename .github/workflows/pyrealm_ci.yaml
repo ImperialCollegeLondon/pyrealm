@@ -67,8 +67,7 @@ jobs:
       run: poetry run python profiling/report.py --event ${{ github.event_name }}
 
     - uses: stefanzweifel/git-auto-commit-action@v5
-      if: ${{ always() && steps.profiling.outcome != 'skipped' && 
-        (github.event.action == 'review_requested' || github.event_name == 'merge_group') }}
+      if: ${{ always() && steps.profiling.outcome != 'skipped' && github.event_name == 'merge_group' }}
       with:
         commit_message: Auto-generated profiling results
         file_pattern: 'profiling/* .gitattributes'
