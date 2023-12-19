@@ -11,7 +11,7 @@ jobs:
         with:
           python-version: "3.11"
       - uses: pre-commit/action@v3.0.0
-      - run: echo ${{ github.event_name }} ${{ github.event.action }} ${{ github.event.pull_request.head.ref}}
+      - run: echo ${{ github.event_name }} ${{ github.event.action }}
 
   test:
     needs: qa
@@ -51,7 +51,7 @@ jobs:
 
     - name: Setup Git LFS
       id: lfs
-      if: ${{ steps.codecov.outcome == 'success' && (github.event_name != 'push' || github.ref == 'refs/heads/develop') }}
+      if: ${{ steps.codecov.outcome == 'success' && github.event_name != 'push' }}
       run: |
         git lfs pull
         git lfs ls-files -n | xargs git lfs track  # track all LFS files
