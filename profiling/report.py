@@ -61,6 +61,7 @@ df["label"] = df["filename"].str.extract(r"(\w+).py").squeeze() + "." + df["func
 df["event"] = [args.event] * len(df)
 report_path = root / "profiling/prof-report.csv"
 df.to_csv(report_path, mode="a", header=not report_path.exists())
+print(df)
 
 # Filter and plot the results
 df.plot.barh(y=["tottime_percall", "cumtime_percall"], x="label", figsize=(20, 10))
@@ -82,6 +83,7 @@ bm.T.plot.barh(figsize=(20, 10))
 plt.tight_layout()
 plt.legend(loc="lower right")
 plt.savefig(root / "profiling/benchmark.png")
+print(bm)
 
 # Check performance changes
 time_costs = bm.max(axis=1)
