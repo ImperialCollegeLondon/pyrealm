@@ -25,6 +25,12 @@ pyrealm.egg-info
 # Coverage
 .coverage
 
-#Date
-pyrealm_build_data/inputs_data_24.25.nc
+# mypy
+.mypy_cache/
 
+# Data
+pyrealm_build_data/*.nc
+pyrealm_build_data/eda.py
+
+# Profiling
+prof/

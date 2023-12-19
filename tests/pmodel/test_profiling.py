@@ -33,8 +33,8 @@ class TestClass:
         #        to complete daily blocks of data using local time
 
         ds = ds.sel(time=slice("2000-01-01T01:59", "2001-12-31T01:59"))
-        self.local_offset = np.timedelta64(int((24.25 * (24 / 360)) * 60 * 60), "s")
-        self.local_time = ds["time"].to_numpy() - self.local_offset
+        ds['local_time_offset'] = (ds["lon"] // 15 * 3.6e12).astype("timedelta64[ns]")
+        ds['local_time'] = ds["time"] - ds['local_time_offset']
 
         # Variable set up
         # Air temperature in Kelvin
@@ -50,6 +50,8 @@ class TestClass:
         self.ppfd = ds["ppfd"].to_numpy()
         # Define atmospheric CO2 concentration (ppm)
         self.co2 = np.ones_like(self.tc) * 400
+        # Define the local time at different longitudes
+        self.local_time = ds["local_time"].to_numpy().squeeze()
 
         # Generate and check the PModelEnvironment
         self.pm_env = PModelEnvironment(
@@ -121,6 +123,7 @@ class TestClass:
         from pyrealm.pmodel import FastSlowPModel, FastSlowScaler
 
         # FastSlowPModel with 1 hour noon acclimation window
+        # TODO - make the code applicable to a dataset with multiple longitudes
         fsscaler = FastSlowScaler(self.local_time)
         fsscaler.set_window(
             window_center=np.timedelta64(12, "h"),
