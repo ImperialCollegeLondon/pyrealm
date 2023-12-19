@@ -11,7 +11,7 @@ jobs:
         with:
           python-version: "3.11"
       - uses: pre-commit/action@v3.0.0
-      - run: echo github.event_name github.event.action github.event.pull_request.base.ref
+      - run: echo ${{ github.event_name }} ${{ github.event.action }} ${{ github.event.pull_request.base.ref }}
 
   test:
     needs: qa
