@@ -50,9 +50,10 @@ class TestClass:
         # Gather PPFD µmole/m2/s1
         self.ppfd = ds["ppfd"].to_numpy()
         # Define atmospheric CO2 concentration (ppm)
-        self.co2 = np.ones_like(self.tc) * 400
+        self.co2 = ds["co2"].to_numpy()
         # Define the local time at different longitudes
         self.local_time = ds["local_time"].to_numpy().squeeze()
+        # TODO: make the code applicable to a dataset with multiple longitudes
 
         # Generate and check the PModelEnvironment
         self.pm_env = PModelEnvironment(
@@ -124,7 +125,6 @@ class TestClass:
         from pyrealm.pmodel import FastSlowPModel, FastSlowScaler
 
         # FastSlowPModel with 1 hour noon acclimation window
-        # TODO - make the code applicable to a dataset with multiple longitudes
         fsscaler = FastSlowScaler(self.local_time)
         fsscaler.set_window(
             window_center=np.timedelta64(12, "h"),
