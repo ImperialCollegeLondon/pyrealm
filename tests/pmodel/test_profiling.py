@@ -33,8 +33,9 @@ class TestClass:
         #        to complete daily blocks of data using local time
 
         ds = ds.sel(time=slice("2000-01-01T01:59", "2001-12-31T01:59"))
-        ds['local_time_offset'] = (ds["lon"] // 15 * 3.6e12).astype("timedelta64[ns]")
-        ds['local_time'] = ds["time"] - ds['local_time_offset']
+        ds["local_time_offset"] = (ds["lon"] / 15 * 3600).astype("timedelta64[s]")
+        # 15° per hour, 3600 seconds per hour
+        ds["local_time"] = ds["time"] - ds["local_time_offset"]
 
         # Variable set up
         # Air temperature in Kelvin
