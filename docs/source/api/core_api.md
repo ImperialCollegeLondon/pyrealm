@@ -18,7 +18,7 @@ kernelspec:
 ```{eval-rst}
 .. automodule:: pyrealm.core
     :autosummary:
-    :members:    
+    :members:
 ```
 
 ## The {mod}`~pyrealm.core.utilities` submodule
@@ -48,7 +48,7 @@ kernelspec:
 ## The {mod}`~pyrealm.core.water` submodule
 
 ```{eval-rst}
-.. automodule:: pyrealm.core.hygro
+.. automodule:: pyrealm.core.water
     :autosummary:
     :members:
 ```
