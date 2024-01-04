@@ -6,12 +6,14 @@ density and viscosity of water given the air temperature and atmospheric presssu
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.constants import PModelConst
+from pyrealm.constants import CoreConst
 from pyrealm.core.utilities import check_input_shapes
 
 
 def calc_density_h2o_chen(
-    tc: NDArray, p: NDArray, const: PModelConst = PModelConst()
+    tc: NDArray,
+    p: NDArray,
+    const: CoreConst = CoreConst(),
 ) -> NDArray:
     """Calculate the density of water using Chen et al 2008.
 
@@ -24,13 +26,8 @@ def calc_density_h2o_chen(
     Args:
         tc: Air temperature (°C)
         p: Atmospheric pressure (Pa)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-
-    PModel Parameters:
-        chen_po: polynomial coefficients of water density equation at 1 atm.
-        chen_ko: polynomial coefficients of bulk modulus at 1 atm.
-        chen_ca: polynomial coefficients of temperature coefficient :math:`c_a`.
-        chen_cb: polynomial coefficients of temperature coefficient :math:`c_b`.
+        const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`, providing
+            the polynomial coefficients for the  :cite:t:`chen:2008a` equations.
 
     Returns:
         Water density as a float in (g cm^-3)
@@ -87,7 +84,7 @@ def calc_density_h2o_chen(
 def calc_density_h2o_fisher(
     tc: NDArray,
     patm: NDArray,
-    const: PModelConst = PModelConst(),
+    const: CoreConst = CoreConst(),
 ) -> NDArray:
     """Calculate water density.
 
@@ -101,12 +98,8 @@ def calc_density_h2o_fisher(
     Args:
         tc: air temperature, °C
         patm: atmospheric pressure, Pa
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-
-    PModel Parameters:
-        lambda_: polynomial coefficients of Tumlirz equation (``fisher_dial_lambda``).
-        Po: polynomial coefficients of Tumlirz equation (``fisher_dial_Po``).
-        Vinf: polynomial coefficients of Tumlirz equation (``fisher_dial_Vinf``).
+        const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`, providing
+            the polynomial coefficients for the :cite:t:`Fisher:1975tm` equations.
 
     Returns:
         Water density as a float in (g cm^-3)
@@ -163,7 +156,7 @@ def calc_density_h2o_fisher(
 def calc_density_h2o(
     tc: NDArray,
     patm: NDArray,
-    const: PModelConst = PModelConst(),
+    const: CoreConst = CoreConst(),
     safe: bool = True,
 ) -> NDArray:
     """Calculate water density.
@@ -173,14 +166,14 @@ def calc_density_h2o(
     (:func:`~pyrealm.core.water.calc_density_h2o_fisher`) or :cite:t:`chen:2008a`
     (:func:`~pyrealm.core.water.calc_density_h2o_chen`).
 
-    The `water_density_method` argument to
-    :class:`~pyrealm.constants.pmodel_const.PModelConst` is used to set which of the
-    ``fisher`` or ``chen`` methods is used.
+    The constants attribute
+    :attr:`~pyrealm.constants.core.CoreConst.`water_density_method` can be used to set
+    which of the ``fisher`` or ``chen`` methods is used.
 
     Args:
         tc: air temperature, °C
         patm: atmospheric pressure, Pa
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`
         safe: Prevents the function from estimating density below -30°C, where the
             functions are numerically unstable.
 
@@ -218,7 +211,7 @@ def calc_density_h2o(
 def calc_viscosity_h2o(
     tc: NDArray,
     patm: NDArray,
-    const: PModelConst = PModelConst(),
+    const: CoreConst = CoreConst(),
     simple: bool = False,
 ) -> NDArray:
     r"""Calculate the viscosity of water.
@@ -229,7 +222,7 @@ def calc_viscosity_h2o(
     Args:
         tc: air temperature (°C)
         patm: atmospheric pressure (Pa)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`
         simple: Use the simple formulation.
 
     Returns:
@@ -286,7 +279,7 @@ def calc_viscosity_h2o(
 def calc_viscosity_h2o_matrix(
     tc: NDArray,
     patm: NDArray,
-    const: PModelConst = PModelConst(),
+    const: CoreConst = CoreConst(),
     simple: bool = False,
 ) -> NDArray:
     r"""Calculate the viscosity of water.
@@ -297,7 +290,7 @@ def calc_viscosity_h2o_matrix(
     Args:
         tc: air temperature (°C)
         patm: atmospheric pressure (Pa)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`
         simple: Use the simple formulation.
 
     Returns:

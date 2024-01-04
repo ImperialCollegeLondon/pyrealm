@@ -78,7 +78,7 @@ class CoreConst(ConstantsClass):
     """
 
     water_density_method: str = "fisher"
-    """Set the method used for calculating water density ('fisher' or 'chen'."""
+    """Set the method used for calculating water density ('fisher' or 'chen')."""
 
     # Fisher Dial
     fisher_dial_lambda: NDArray[np.float32] = field(

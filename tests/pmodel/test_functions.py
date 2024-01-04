@@ -42,13 +42,13 @@ def test_calc_density_h20_chen(shape):
 )
 def test_calc_density_h20(const_args, exp):
     """Test the wrapper method dispatches as expected."""
-    from pyrealm.constants import PModelConst
+    from pyrealm.constants import CoreConst
     from pyrealm.core.water import calc_density_h2o
 
     args = {}
 
     if const_args is not None:
-        args["const"] = PModelConst(water_density_method=const_args)
+        args["const"] = CoreConst(water_density_method=const_args)
 
     rho = calc_density_h2o(np.array([20]), np.array([101325]), **args)
 
