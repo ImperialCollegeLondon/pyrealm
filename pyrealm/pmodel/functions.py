@@ -295,7 +295,7 @@ def calc_ns_star(
     r"""Calculate the relative viscosity of water.
 
     Calculates the relative viscosity of water (:math:`\eta^*`), given the standard
-    temperature and pressure, using :func:`~pyrealm.pmodel.functions.calc_viscosity_h2o`
+    temperature and pressure, using :func:`~pyrealm.core.water.calc_viscosity_h2o`
     (:math:`v(t,p)`) as:
 
     .. math::
