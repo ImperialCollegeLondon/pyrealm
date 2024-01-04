@@ -271,7 +271,7 @@ def test_calc_viscosity_h2o(values, tc, patm, context_manager, expvals):
 def test_calc_patm(values, elev, expvals):
     """Test the calc_patm function."""
 
-    from pyrealm.pmodel import calc_patm
+    from pyrealm.core.pressure import calc_patm
 
     ret = calc_patm(elv=values[elev])
     assert np.allclose(ret, values[expvals])
