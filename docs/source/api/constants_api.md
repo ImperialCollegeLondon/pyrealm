@@ -44,7 +44,7 @@ kernelspec:
 ## Hygrometry constants
 
 ```{eval-rst}
-.. autoclass:: pyrealm.constants.hygro_const.HygroConst
+.. autoclass:: pyrealm.constants.core_const.CoreConst
     :members:
 ```
 

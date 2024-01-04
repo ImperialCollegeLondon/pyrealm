@@ -74,7 +74,7 @@ class CoreConst(ConstantsClass):
     magnus_option: Optional[str] = None
     """Pre-defined Magnus equation parameterisations: use one of  ``Allen1998``,
     ``Alduchov1996`` or ``Sonntag1990`` to set values for
-    :attr:`~pyrealm.constants.hygro_const.HygroConst.magnus_coef`.
+    :attr:`~pyrealm.constants.core_const.CoreConst.magnus_coef`.
     """
 
     water_density_method: str = "fisher"

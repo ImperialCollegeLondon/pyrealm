@@ -8,11 +8,11 @@ drawn from and validated against the ``bigleaf`` R package.
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.constants import HygroConst
+from pyrealm.constants import CoreConst
 from pyrealm.core.utilities import bounds_checker
 
 
-def calc_vp_sat(ta: NDArray, const: HygroConst = HygroConst()) -> NDArray:
+def calc_vp_sat(ta: NDArray, const: CoreConst = CoreConst()) -> NDArray:
     r"""Calculate vapour pressure of saturated air.
 
     This function calculates the vapour pressure of saturated air at a given temperature
@@ -23,12 +23,12 @@ def calc_vp_sat(ta: NDArray, const: HygroConst = HygroConst()) -> NDArray:
         P = a \exp\(\frac{b - T}{T + c}\),
 
     where :math:`a,b,c` are defined in
-    :class:`~pyrealm.constants.hygro_const.HygroConst`.
+    :attr:`~pyrealm.constants.core_const.CoreConst.magnus_coef`.
 
     Args:
-        ta: The air temperature const: An object of
-            :class:`~pyrealm.constants.hygro_const.HygroConst` giving the parameters for
-            conversions.
+        ta: The air temperature
+        const: An instance of :class:`~pyrealm.constants.core_const.CoreConst` giving
+            the parameters for conversions.
 
     Returns:
         Saturated air vapour pressure in kPa.
@@ -39,11 +39,11 @@ def calc_vp_sat(ta: NDArray, const: HygroConst = HygroConst()) -> NDArray:
         >>> temp = np.array([21])
         >>> calc_vp_sat(temp).round(6)
         array([2.480904])
-        >>> from pyrealm.constants import HygroConst
-        >>> allen = HygroConst(magnus_option='Allen1998')
+        >>> from pyrealm.constants import CoreConst
+        >>> allen = CoreConst(magnus_option='Allen1998')
         >>> calc_vp_sat(temp, const=allen).round(6)
         array([2.487005])
-        >>> alduchov = HygroConst(magnus_option='Alduchov1996')
+        >>> alduchov = CoreConst(magnus_option='Alduchov1996')
         >>> calc_vp_sat(temp, const=alduchov).round(6)
         array([2.481888])
     """
@@ -56,14 +56,14 @@ def calc_vp_sat(ta: NDArray, const: HygroConst = HygroConst()) -> NDArray:
 
 
 def convert_vp_to_vpd(
-    vp: NDArray, ta: NDArray, const: HygroConst = HygroConst()
+    vp: NDArray, ta: NDArray, const: CoreConst = CoreConst()
 ) -> NDArray:
     """Convert vapour pressure to vapour pressure deficit.
 
     Args:
         vp: The vapour pressure in kPa
         ta: The air temperature in °C
-        const: An object of class ~`pyrealm.constants.hygro_const.HygroConst`
+        const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the settings to be used in conversions.
 
     Returns:
@@ -71,12 +71,12 @@ def convert_vp_to_vpd(
 
     Examples:
         >>> import numpy as np
-        >>> from pyrealm.constants import HygroConst
+        >>> from pyrealm.constants import CoreConst
         >>> vp = np.array([1.9])
         >>> temp = np.array([21])
         >>> convert_vp_to_vpd(vp, temp).round(7)
         array([0.5809042])
-        >>> allen = HygroConst(magnus_option='Allen1998')
+        >>> allen = CoreConst(magnus_option='Allen1998')
         >>> convert_vp_to_vpd(vp, temp, const=allen).round(7)
         array([0.5870054])
     """
@@ -86,14 +86,14 @@ def convert_vp_to_vpd(
 
 
 def convert_rh_to_vpd(
-    rh: NDArray, ta: NDArray, const: HygroConst = HygroConst()
+    rh: NDArray, ta: NDArray, const: CoreConst = CoreConst()
 ) -> NDArray:
     """Convert relative humidity to vapour pressure deficit.
 
     Args:
         rh: The relative humidity (proportion in (0,1))
         ta: The air temperature in °C
-        const: An object of class ~`pyrealm.constants.hygro_const.HygroConst`
+        const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the settings to be used in conversions.
 
     Returns:
@@ -101,13 +101,13 @@ def convert_rh_to_vpd(
 
     Examples:
         >>> import numpy as np
-        >>> from pyrealm.constants import HygroConst
+        >>> from pyrealm.constants import CoreConst
         >>> import sys; sys.stderr = sys.stdout
         >>> rh = np.array([0.7])
         >>> temp = np.array([21])
         >>> convert_rh_to_vpd(rh, temp).round(7)
         array([0.7442712])
-        >>> allen = HygroConst(magnus_option='Allen1998')
+        >>> allen = CoreConst(magnus_option='Allen1998')
         >>> convert_rh_to_vpd(rh, temp, const=allen).round(7)
         array([0.7461016])
         >>> rh_percent = np.array([70])
@@ -124,14 +124,14 @@ def convert_rh_to_vpd(
 
 
 def convert_sh_to_vp(
-    sh: NDArray, patm: NDArray, const: HygroConst = HygroConst()
+    sh: NDArray, patm: NDArray, const: CoreConst = CoreConst()
 ) -> NDArray:
     """Convert specific humidity to vapour pressure.
 
     Args:
         sh: The specific humidity in kg kg-1
         patm: The atmospheric pressure in kPa
-        const: An object of class ~`pyrealm.constants.hygro_const.HygroConst`
+        const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the settings to be used in conversions.
 
     Returns:
@@ -149,7 +149,7 @@ def convert_sh_to_vp(
 
 
 def convert_sh_to_vpd(
-    sh: NDArray, ta: NDArray, patm: NDArray, const: HygroConst = HygroConst()
+    sh: NDArray, ta: NDArray, patm: NDArray, const: CoreConst = CoreConst()
 ) -> NDArray:
     """Convert specific humidity to vapour pressure deficit.
 
@@ -157,7 +157,7 @@ def convert_sh_to_vpd(
         sh: The specific humidity in kg kg-1
         ta: The air temperature in °C
         patm: The atmospheric pressure in kPa
-        hygro_params: An object of class ~`pyrealm.constants.hygro_const.HygroConst`
+        const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the settings to be used in conversions.
 
     Returns:
@@ -165,13 +165,13 @@ def convert_sh_to_vpd(
 
     Examples:
         >>> import numpy as np
-        >>> from pyrealm.constants import HygroConst
+        >>> from pyrealm.constants import CoreConst
         >>> sh = np.array([0.006])
         >>> temp = np.array([21])
         >>> patm = np.array([99.024])
         >>> convert_sh_to_vpd(sh, temp, patm).round(6)
         array([1.529159])
-        >>> allen = HygroConst(magnus_option='Allen1998')
+        >>> allen = CoreConst(magnus_option='Allen1998')
         >>> convert_sh_to_vpd(sh, temp, patm, const=allen).round(5)
         array([1.53526])
     """
