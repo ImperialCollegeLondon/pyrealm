@@ -40,7 +40,8 @@ the key functions.
 from matplotlib import pyplot
 import numpy as np
 from pyrealm.constants import PModelConst
-from pyrealm.pmodel import calc_gammastar, calc_kmm, calc_viscosity_h2o, calc_co2_to_ca
+from pyrealm.core.water import calc_viscosity_h2o
+from pyrealm.pmodel import calc_gammastar, calc_kmm, calc_co2_to_ca
 
 %matplotlib inline
 
@@ -109,7 +110,7 @@ pyplot.show()
 
 ## Relative viscosity of water ($\eta^*$)
 
-Details: {func}`pyrealm.pmodel.functions.calc_density_h2o`, {func}`pyrealm.pmodel.functions.calc_viscosity_h2o`
+Details: {func}`pyrealm.core.water.calc_density_h2o`, {func}`pyrealm.core.water.calc_viscosity_h2o`
 
 The density ($\rho$) and viscosity ($\mu$) of water both vary with temperature
 and atmospheric pressure. Together, these functions are used to calculate the

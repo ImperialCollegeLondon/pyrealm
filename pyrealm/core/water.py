@@ -170,8 +170,8 @@ def calc_density_h2o(
 
     Calculates the density of water as a function of temperature and atmospheric
     pressure. This function uses either the method provided by :cite:t:`Fisher:1975tm`
-    (:func:`~pyrealm.pmodel.functions.calc_density_h2o_fisher`) or :cite:t:`chen:2008a`
-    (:func:`~pyrealm.pmodel.functions.calc_density_h2o_chen`).
+    (:func:`~pyrealm.core.water.calc_density_h2o_fisher`) or :cite:t:`chen:2008a`
+    (:func:`~pyrealm.core.water.calc_density_h2o_chen`).
 
     The `water_density_method` argument to
     :class:`~pyrealm.constants.pmodel_const.PModelConst` is used to set which of the

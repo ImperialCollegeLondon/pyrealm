@@ -36,3 +36,19 @@ kernelspec:
     :autosummary:
     :members:
 ```
+
+## The {mod}`~pyrealm.core.pressure` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.core.pressure
+    :autosummary:
+    :members:
+```
+
+## The {mod}`~pyrealm.core.water` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.core.hygro
+    :autosummary:
+    :members:
+```
