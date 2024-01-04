@@ -21,7 +21,7 @@ class TestClass:
     def setup(self):
         """Setting up the pmodel and loading the test data set."""
         # Loading the dataset:
-        dpath = resources.files("pyrealm_build_data") / "inputs_data_24.25.nc"
+        dpath = resources.files("pyrealm_build_data") / "inputs_data_reduced_1y.nc"
 
         ds = xarray.load_dataset(dpath)
 
@@ -32,7 +32,7 @@ class TestClass:
         #        offset from the UTC times in the data. This step reduces the input data
         #        to complete daily blocks of data using local time
 
-        ds = ds.sel(time=slice("2000-01-01T01:59", "2001-12-31T01:59"))
+        ds = ds.sel(time=slice("2000-01-01T01:59", "2000-12-31T01:59"))
         ds["local_time_offset"] = (ds["lon"] / 15 * 3600).astype("timedelta64[s]")
         # 15° per hour, 3600 seconds per hour
         ds["local_time"] = ds["time"] - ds["local_time_offset"]

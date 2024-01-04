@@ -29,7 +29,7 @@ pyrealm.egg-info
 .mypy_cache/
 
 # Data
-pyrealm_build_data/*.nc
+pyrealm_build_data/inputs_data_24.25.nc
 pyrealm_build_data/eda.py
 
 # Profiling
