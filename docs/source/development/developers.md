@@ -129,7 +129,7 @@ a toggle button to allow it to be expanded.
 ````{code-block}
 ```{code-cell} python
 :tags: [hide-input]
-# This is just an example code cell to demonstrate how code is included in 
+# This is just an example code cell to demonstrate how code is included in
 # the pyrealm documentation.
 ```
 ````
@@ -218,6 +218,34 @@ Normally, `doctest` is used to test a return value but can also be used to check
 error or warning is raised. See the example for `pyrealm.utilities.convert_rh_to_vpd`
 which redirects the stderr to stdout to allow for the warning text to be included in the
 doctest.
+
+### Code profiling
+
+`pytest-profiling` is used for profiling the code with large datasets. Only functions or
+classes decorated by `@pytest.mark.profiling` will run during profiling.
+
+When a commit of the `develop` branch is pushed or released, the CI workflow will
+automatically run code profiling and save the profiling results in the `profiling/` folder.
+
+To run profiling manually, use
+
+```bash
+poetry run pytest --profile/--profile-svg
+```
+
+The results will be saved at `prof/`. However, the generate `.prof` files are not human
+readable. In order to append the new profiling results to the CSV report at
+`profiling/prof-report.csv`, and generate some benchmark plots, run
+
+```bash
+poetry run python profiling/report.py
+```
+
+#### Latest profiling results
+
+![profiling plot](../../../profiling/profiling.png)
+![benchmark plot](../../../profiling/benchmark.png)
+![call graph](../../../profiling/call-graph.svg)
 
 ### Building the documentation
 
