@@ -85,7 +85,7 @@ def values():
 )
 def test_calc_density_h2o(values, tc, patm, context_manager, expvals):
     """Test the calc_density_h2o function."""
-    from pyrealm.pmodel import calc_density_h2o
+    from pyrealm.core.water import calc_density_h2o
 
     with context_manager:
         ret = calc_density_h2o(tc=values[tc], patm=values[patm])
