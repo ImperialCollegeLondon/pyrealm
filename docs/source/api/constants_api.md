@@ -27,6 +27,13 @@ kernelspec:
     :members:
 ```
 
+## Core constants
+
+```{eval-rst}
+.. autoclass:: pyrealm.constants.core_const.CoreConst
+    :members:
+```
+
 ## P Model constants
 
 ```{eval-rst}
@@ -38,13 +45,6 @@ kernelspec:
 
 ```{eval-rst}
 .. autoclass:: pyrealm.constants.tmodel_const.TModelTraits
-    :members:
-```
-
-## Hygrometry constants
-
-```{eval-rst}
-.. autoclass:: pyrealm.constants.core_const.CoreConst
     :members:
 ```
 

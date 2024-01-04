@@ -35,25 +35,25 @@ of default model constants. The core API and details for each class can be seen
 These can be used to generate the default set of model parameters:
 
 ```{code-cell} python
-from pyrealm.constants import PModelConst, TModelTraits
+from pyrealm.constants import CoreConst, TModelTraits
 
-ppar = PModelConst()
-ttrt = TModelTraits()
+core_const = CoreConst()
+tmodel_const = TModelTraits()
 
-print(ppar)
-print(ttrt)
+print(core_const)
+print(tmodel_const)
 ```
 
 And individual values can be altered using the parameter arguments:
 
 ```{code-cell} python
-# Simulate the P Model under the moon's gravity...
-ppar_moon = PModelConst(k_G = 1.62)
+# Estimate processes under the moon's gravity...
+core_const_moon = CoreConst(k_G = 1.62)
 # ... allowing a much greater maximum height
-ttrt_moon = TModelTraits(h_max=200)
+tmodel_const_moon = TModelTraits(h_max=200)
 
-print(ppar_moon.k_G)
-print(ttrt_moon.h_max)
+print(core_const_moon.k_G)
+print(tmodel_const_moon.h_max)
 ```
 
 In order to ensure that a set of parameters cannot change while models are being run,
@@ -62,7 +62,7 @@ instance and will need to create a new instance to use different parameters.
 
 ```{code-cell} python
 :tags: ["raises-exception"]
-ppar_moon.k_G = 9.80665
+core_const_moon.k_G = 9.80665
 ```
 
 ## Exporting and reloading parameter sets

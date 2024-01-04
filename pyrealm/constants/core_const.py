@@ -19,26 +19,27 @@ class CoreConst(ConstantsClass):
     hygrometric conversions, the calculation of water density and viscosity and the
     calculation of atmospheric pressure.
 
+    Sources for some sets of parameters are shown below:
 
     * **Density of water using Fisher**. Values for the Tumlirz equation taken from
       Table 5 of :cite:t:`Fisher:1975tm`:
-      (:attr:`~pyrealm.constants.pmodel_const.PModelConst.fisher_dial_lambda`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.fisher_dial_Po`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.fisher_dial_Vinf`)
+      (:attr:`~pyrealm.constants.core_const.CoreConst.fisher_dial_lambda`,
+      :attr:`~pyrealm.constants.core_const.CoreConst.fisher_dial_Po`,
+      :attr:`~pyrealm.constants.core_const.CoreConst.fisher_dial_Vinf`)
 
     * **Density of water using Chen**. Values taken from  :cite:t:`chen:2008a`:
-      (:attr:`~pyrealm.constants.pmodel_const.PModelConst.chen_po`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.chen_ko`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.chen_ca`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.chen_cb`)
+      (:attr:`~pyrealm.constants.core_const.CoreConst.chen_po`,
+      :attr:`~pyrealm.constants.core_const.CoreConst.chen_ko`,
+      :attr:`~pyrealm.constants.core_const.CoreConst.chen_ca`,
+      :attr:`~pyrealm.constants.core_const.CoreConst.chen_cb`)
 
     * **Viscosity of water**. Values for the parameterisation taken from Table 2 and 3
       of :cite:t:`Huber:2009fy`:
-      (:attr:`~pyrealm.constants.pmodel_const.PModelConst.huber_tk_ast`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.huber_rho_ast`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.huber_mu_ast`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.huber_H_i`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.huber_H_ij`)
+      (:attr:`~pyrealm.constants.core_const.CoreConst.huber_tk_ast`,
+      :attr:`~pyrealm.constants.core_const.CoreConst.huber_rho_ast`,
+      :attr:`~pyrealm.constants.core_const.CoreConst.huber_mu_ast`,
+      :attr:`~pyrealm.constants.core_const.CoreConst.huber_H_i`,
+      :attr:`~pyrealm.constants.core_const.CoreConst.huber_H_ij`)
 
     """
 
@@ -72,7 +73,7 @@ class CoreConst(ConstantsClass):
     mwr: float = 0.622
     """The ratio molecular weight of water vapour to dry air (:math:`MW_r`, -)"""
     magnus_option: Optional[str] = None
-    """Pre-defined Magnus equation parameterisations: use one of  ``Allen1998``,
+    """Pre-defined Magnus equation parameterisations. Use one of ``Allen1998``,
     ``Alduchov1996`` or ``Sonntag1990`` to set values for
     :attr:`~pyrealm.constants.core_const.CoreConst.magnus_coef`.
     """

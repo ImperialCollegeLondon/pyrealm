@@ -167,8 +167,8 @@ def calc_density_h2o(
     (:func:`~pyrealm.core.water.calc_density_h2o_chen`).
 
     The constants attribute
-    :attr:`~pyrealm.constants.core.CoreConst.`water_density_method` can be used to set
-    which of the ``fisher`` or ``chen`` methods is used.
+    :attr:`~pyrealm.constants.core_const.CoreConst.water_density_method` can be used to
+    set which of the ``fisher`` or ``chen`` methods is used.
 
     Args:
         tc: air temperature, °C
