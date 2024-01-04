@@ -7,7 +7,7 @@ the key equations used in each function.
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.constants import PModelConst
+from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.core.water import calc_viscosity_h2o
 
@@ -15,7 +15,7 @@ from pyrealm.core.water import calc_viscosity_h2o
 def calc_ftemp_arrh(
     tk: NDArray,
     ha: float,
-    const: PModelConst = PModelConst(),
+    core_const: CoreConst = CoreConst(),
 ) -> NDArray:
     r"""Calculate enzyme kinetics scaling factor.
 
@@ -47,7 +47,7 @@ def calc_ftemp_arrh(
     Args:
         tk: Temperature (in Kelvin)
         ha: Activation energy (in :math:`J \text{mol}^{-1}`)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
         To: a standard reference temperature (:math:`T_0`, ``k_To``)
@@ -67,12 +67,16 @@ def calc_ftemp_arrh(
     # exp( ha * (tc - 25.0)/(298.15 * kR * (tc + 273.15)) )
     # exp( (ha/kR) * (1/298.15 - 1/tk) )
 
-    tkref = const.k_To + const.k_CtoK
+    tkref = core_const.k_To + core_const.k_CtoK
 
-    return np.exp(ha * (tk - tkref) / (tkref * const.k_R * tk))
+    return np.exp(ha * (tk - tkref) / (tkref * core_const.k_R * tk))
 
 
-def calc_ftemp_inst_rd(tc: NDArray, const: PModelConst = PModelConst()) -> NDArray:
+def calc_ftemp_inst_rd(
+    tc: NDArray,
+    pmodel_const: PModelConst = PModelConst(),
+    core_const: CoreConst = CoreConst(),
+) -> NDArray:
     r"""Calculate temperature scaling of dark respiration.
 
     Calculates the temperature-scaling factor for dark respiration at a given
@@ -85,7 +89,8 @@ def calc_ftemp_inst_rd(tc: NDArray, const: PModelConst = PModelConst()) -> NDArr
 
     Args:
         tc: Temperature (degrees Celsius)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
         To: standard reference temperature (:math:`T_o`, ``k_To``)
@@ -105,12 +110,16 @@ def calc_ftemp_inst_rd(tc: NDArray, const: PModelConst = PModelConst()) -> NDArr
     """
 
     return np.exp(
-        const.heskel_b * (tc - const.k_To)
-        - const.heskel_c * (tc**2 - const.k_To**2)
+        pmodel_const.heskel_b * (tc - core_const.k_To)
+        - pmodel_const.heskel_c * (tc**2 - core_const.k_To**2)
     )
 
 
-def calc_ftemp_inst_vcmax(tc: NDArray, const: PModelConst = PModelConst()) -> NDArray:
+def calc_ftemp_inst_vcmax(
+    tc: NDArray,
+    pmodel_const: PModelConst = PModelConst(),
+    core_const: CoreConst = CoreConst(),
+) -> NDArray:
     r"""Calculate temperature scaling of :math:`V_{cmax}`.
 
     This function calculates the temperature-scaling factor :math:`f` of the
@@ -142,7 +151,8 @@ def calc_ftemp_inst_vcmax(tc: NDArray, const: PModelConst = PModelConst()) -> ND
     Args:
         tc:  temperature, or in general the temperature relevant for
             photosynthesis (°C)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
         Ha: activation energy (:math:`H_a`, ``kattge_knorr_Ha``)
@@ -165,23 +175,26 @@ def calc_ftemp_inst_vcmax(tc: NDArray, const: PModelConst = PModelConst()) -> ND
     """
 
     # Convert temperatures to Kelvin
-    tkref = const.k_To + const.k_CtoK
-    tk = tc + const.k_CtoK
+    tkref = core_const.k_To + core_const.k_CtoK
+    tk = tc + core_const.k_CtoK
 
     # Calculate entropy following Kattge & Knorr (2007): slope and intercept
     # are defined using temperature in °C, not K!!! 'tcgrowth' corresponds
     # to 'tmean' in Nicks, 'tc25' is 'to' in Nick's
-    dent = const.kattge_knorr_a_ent + const.kattge_knorr_b_ent * tc
-    fva = calc_ftemp_arrh(tk, const.kattge_knorr_Ha)
-    fvb = (1 + np.exp((tkref * dent - const.kattge_knorr_Hd) / (const.k_R * tkref))) / (
-        1 + np.exp((tk * dent - const.kattge_knorr_Hd) / (const.k_R * tk))
-    )
+    dent = pmodel_const.kattge_knorr_a_ent + pmodel_const.kattge_knorr_b_ent * tc
+    fva = calc_ftemp_arrh(tk, pmodel_const.kattge_knorr_Ha)
+    fvb = (
+        1
+        + np.exp(
+            (tkref * dent - pmodel_const.kattge_knorr_Hd) / (core_const.k_R * tkref)
+        )
+    ) / (1 + np.exp((tk * dent - pmodel_const.kattge_knorr_Hd) / (core_const.k_R * tk)))
 
     return fva * fvb
 
 
 def calc_ftemp_kphio(
-    tc: NDArray, c4: bool = False, const: PModelConst = PModelConst()
+    tc: NDArray, c4: bool = False, pmodel_const: PModelConst = PModelConst()
 ) -> NDArray:
     r"""Calculate temperature dependence of quantum yield efficiency.
 
@@ -202,7 +215,7 @@ def calc_ftemp_kphio(
         tc: Temperature, relevant for photosynthesis (°C)
         c4: Boolean specifying whether fitted temperature response for C4 plants
             is used. Defaults to ``False`` to estimate :math:`\phi(T)` for C3 plants.
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
 
     PModel Parameters:
         C3: the parameters (:math:`a,b,c`, ``kphio_C3``) are taken from the
@@ -229,9 +242,9 @@ def calc_ftemp_kphio(
     """
 
     if c4:
-        coef = const.kphio_C4
+        coef = pmodel_const.kphio_C4
     else:
-        coef = const.kphio_C3
+        coef = pmodel_const.kphio_C3
 
     ftemp = coef[0] + coef[1] * tc + coef[2] * tc**2
     ftemp = np.clip(ftemp, 0.0, None)
@@ -240,7 +253,10 @@ def calc_ftemp_kphio(
 
 
 def calc_gammastar(
-    tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()
+    tc: NDArray,
+    patm: NDArray,
+    pmodel_const: PModelConst = PModelConst(),
+    core_const: CoreConst = CoreConst(),
 ) -> NDArray:
     r"""Calculate the photorespiratory CO2 compensation point.
 
@@ -259,7 +275,8 @@ def calc_gammastar(
     Args:
         tc: Temperature relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pascals)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
         To: the standard reference temperature (:math:`T_0`. ``k_To``)
@@ -282,15 +299,17 @@ def calc_gammastar(
     _ = check_input_shapes(tc, patm)
 
     return (
-        const.bernacchi_gs25_0
+        pmodel_const.bernacchi_gs25_0
         * patm
-        / const.k_Po
-        * calc_ftemp_arrh((tc + const.k_CtoK), ha=const.bernacchi_dha)
+        / core_const.k_Po
+        * calc_ftemp_arrh((tc + core_const.k_CtoK), ha=pmodel_const.bernacchi_dha)
     )
 
 
 def calc_ns_star(
-    tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()
+    tc: NDArray,
+    patm: NDArray,
+    core_const: CoreConst = CoreConst(),
 ) -> NDArray:
     r"""Calculate the relative viscosity of water.
 
@@ -305,7 +324,7 @@ def calc_ns_star(
     Args:
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pa)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
         To: standard temperature (:math:`t0`, ``k_To``)
@@ -321,17 +340,22 @@ def calc_ns_star(
         1.12536
     """
 
-    visc_env = calc_viscosity_h2o(tc, patm, const=const)
+    visc_env = calc_viscosity_h2o(tc, patm, const=core_const)
     visc_std = calc_viscosity_h2o(
-        np.array(const.k_To),
-        np.array(const.k_Po),
-        const=const,
+        np.array(core_const.k_To),
+        np.array(core_const.k_Po),
+        const=core_const,
     )
 
     return visc_env / visc_std
 
 
-def calc_kmm(tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()) -> NDArray:
+def calc_kmm(
+    tc: NDArray,
+    patm: NDArray,
+    pmodel_const: PModelConst = PModelConst(),
+    core_const: CoreConst = CoreConst(),
+) -> NDArray:
     r"""Calculate the Michaelis Menten coefficient of Rubisco-limited assimilation.
 
     Calculates the Michaelis Menten coefficient of Rubisco-limited assimilation
@@ -361,7 +385,8 @@ def calc_kmm(tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()) -> 
     Args:
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pa)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
         hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`, ``bernacchi_dhac``)
@@ -386,19 +411,26 @@ def calc_kmm(tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()) -> 
     _ = check_input_shapes(tc, patm)
 
     # conversion to Kelvin
-    tk = tc + const.k_CtoK
+    tk = tc + core_const.k_CtoK
 
-    kc = const.bernacchi_kc25 * calc_ftemp_arrh(tk, ha=const.bernacchi_dhac)
-    ko = const.bernacchi_ko25 * calc_ftemp_arrh(tk, ha=const.bernacchi_dhao)
+    kc = pmodel_const.bernacchi_kc25 * calc_ftemp_arrh(
+        tk, ha=pmodel_const.bernacchi_dhac
+    )
+    ko = pmodel_const.bernacchi_ko25 * calc_ftemp_arrh(
+        tk, ha=pmodel_const.bernacchi_dhao
+    )
 
     # O2 partial pressure
-    po = const.k_co * 1e-6 * patm
+    po = core_const.k_co * 1e-6 * patm
 
     return kc * (1.0 + po / ko)
 
 
 def calc_kp_c4(
-    tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()
+    tc: NDArray,
+    patm: NDArray,
+    pmodel_const: PModelConst = PModelConst(),
+    core_const: CoreConst = CoreConst(),
 ) -> NDArray:
     r"""Calculate the Michaelis Menten coefficient of PEPc.
 
@@ -409,7 +441,8 @@ def calc_kp_c4(
     Args:
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pa)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
         hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`,
@@ -432,14 +465,14 @@ def calc_kp_c4(
     _ = check_input_shapes(tc, patm)
 
     # conversion to Kelvin
-    tk = tc + const.k_CtoK
-    return const.boyd_kp25_c4 * calc_ftemp_arrh(tk, ha=const.boyd_dhac_c4)
+    tk = tc + core_const.k_CtoK
+    return pmodel_const.boyd_kp25_c4 * calc_ftemp_arrh(tk, ha=pmodel_const.boyd_dhac_c4)
 
 
 def calc_soilmstress_stocker(
     soilm: NDArray,
     meanalpha: NDArray = np.array(1.0),
-    const: PModelConst = PModelConst(),
+    pmodel_const: PModelConst = PModelConst(),
 ) -> NDArray:
     r"""Calculate Stocker's empirical soil moisture stress factor.
 
@@ -483,7 +516,7 @@ def calc_soilmstress_stocker(
             (unitless). Defaults to 1.0 (no soil moisture stress).
         meanalpha: Local annual mean ratio of actual over potential
             evapotranspiration, measure for average aridity. Defaults to 1.0.
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
 
     PModel Parameters:
         theta0: lower bound of soil moisture
@@ -509,12 +542,14 @@ def calc_soilmstress_stocker(
     _ = check_input_shapes(soilm, meanalpha)
 
     # Calculate outstress
-    y0 = const.soilmstress_a + const.soilmstress_b * meanalpha
-    beta = (1.0 - y0) / (const.soilmstress_theta0 - const.soilmstress_thetastar) ** 2
-    outstress = 1.0 - beta * (soilm - const.soilmstress_thetastar) ** 2
+    y0 = pmodel_const.soilmstress_a + pmodel_const.soilmstress_b * meanalpha
+    beta = (1.0 - y0) / (
+        pmodel_const.soilmstress_theta0 - pmodel_const.soilmstress_thetastar
+    ) ** 2
+    outstress = 1.0 - beta * (soilm - pmodel_const.soilmstress_thetastar) ** 2
 
     # Filter wrt to thetastar
-    outstress = np.where(soilm <= const.soilmstress_thetastar, outstress, 1.0)
+    outstress = np.where(soilm <= pmodel_const.soilmstress_thetastar, outstress, 1.0)
 
     # Clip
     outstress = np.clip(outstress, 0.0, 1.0)
@@ -525,7 +560,7 @@ def calc_soilmstress_stocker(
 def calc_soilmstress_mengoli(
     soilm: NDArray = np.array(1.0),
     aridity_index: NDArray = np.array(1.0),
-    const: PModelConst = PModelConst(),
+    pmodel_const: PModelConst = PModelConst(),
 ) -> NDArray:
     r"""Calculate the Mengoli et al. empirical soil moisture stress factor.
 
@@ -558,7 +593,7 @@ def calc_soilmstress_mengoli(
     Args:
         soilm: Relative soil moisture (unitless).
         aridity_index: The climatological aridity index.
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
 
     PModel Parameters:
 
@@ -590,11 +625,14 @@ def calc_soilmstress_mengoli(
 
     # Calculate maximal level and threshold
     y = np.minimum(
-        const.soilm_mengoli_y_a * np.power(aridity_index, const.soilm_mengoli_y_b), 1
+        pmodel_const.soilm_mengoli_y_a
+        * np.power(aridity_index, pmodel_const.soilm_mengoli_y_b),
+        1,
     )
 
     psi = np.minimum(
-        const.soilm_mengoli_psi_a * np.power(aridity_index, const.soilm_mengoli_psi_b),
+        pmodel_const.soilm_mengoli_psi_a
+        * np.power(aridity_index, pmodel_const.soilm_mengoli_psi_b),
         1,
     )
 

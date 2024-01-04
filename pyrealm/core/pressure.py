@@ -4,10 +4,10 @@ atmospheric presssure.
 
 from numpy.typing import NDArray
 
-from pyrealm.constants import PModelConst
+from pyrealm.constants import CoreConst
 
 
-def calc_patm(elv: NDArray, const: PModelConst = PModelConst()) -> NDArray:
+def calc_patm(elv: NDArray, const: CoreConst = CoreConst()) -> NDArray:
     r"""Calculate atmospheric pressure from elevation.
 
     Calculates atmospheric pressure as a function of elevation with reference to the
@@ -21,15 +21,7 @@ def calc_patm(elv: NDArray, const: PModelConst = PModelConst()) -> NDArray:
 
     Args:
         elv: Elevation above sea-level (:math:`z`, metres above sea level.)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-
-    PModel Parameters:
-        G: gravity constant (:math:`g`, ``k_G``)
-        Po: standard atmospheric pressure at sea level (:math:`p_0`, ``k_Po``)
-        L: adiabatic temperature lapse rate (:math:`L`, ``k_L``),
-        M: molecular weight for dry air (:math:`M`, ``k_Ma``),
-        R: universal gas constant (:math:`R`, `k_R``)
-        Ko: reference temperature in Kelvin (:math:`K_0`, ``k_To``).
+        const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     Returns:
         A numeric value for :math:`p` in Pascals.
