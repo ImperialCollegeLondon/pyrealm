@@ -7,6 +7,7 @@ from dataclasses import InitVar, dataclass, field
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm.core.solar import calc_heliocentric_longitudes
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.splash.const import (
     kA,
@@ -19,66 +20,9 @@ from pyrealm.splash.const import (
     keps,
     kfFEC,
     kGsc,
-    komega,
     pir,
 )
 from pyrealm.splash.utilities import Calendar
-
-
-def calc_heliocentric_longitudes(
-    julian_day: NDArray, n_days: NDArray
-) -> tuple[NDArray, NDArray]:
-    """Calculate heliocentric longitude and anomaly.
-
-    This function calculates the heliocentric true anomaly (``nu``, degrees) and true
-    longitude (``lambda_``, degrees), given the Julian day in the year and the number of
-    days in the year, following :cite:t:`berger:1978a`.
-
-    Args:
-        julian_day: day of year
-        n_days: number of days in year
-
-    Returns:
-        A tuple of arrays containing ``nu`` and ``lambda_``.
-    """
-
-    # Variable substitutes:
-    xee = ke**2
-    xec = ke**3
-    xse = np.sqrt(1.0 - xee)
-
-    # Mean longitude for vernal equinox:
-    xlam = (
-        (
-            ((ke / 2.0 + xec / 8.0) * (1.0 + xse) * np.sin(np.deg2rad(komega)))
-            - (xee / 4.0 * (0.5 + xse) * np.sin(np.deg2rad(2.0 * komega)))
-            + (xec / 8.0 * (1.0 / 3.0 + xse) * np.sin(np.deg2rad(3.0 * komega)))
-        )
-        * 2.0
-        / pir
-    )
-
-    # Mean longitude for day of year:
-    dlamm = xlam + (julian_day - 80.0) * (360.0 / n_days)
-
-    # Mean anomaly:
-    ranm = (dlamm - komega) * pir
-
-    # True anomaly:
-    ranv = (
-        ranm
-        + ((2.0 * ke - xec / 4.0) * np.sin(ranm))
-        + (5.0 / 4.0 * xee * np.sin(2.0 * ranm))
-        + (13.0 / 12.0 * xec * np.sin(3.0 * ranm))
-    )
-
-    # True longitude in degrees constrained to 0 - 360
-    lambda_ = ((ranv / pir) + komega) % 360
-
-    # True anomaly in degrees constrained to 0 - 360
-    nu = (lambda_ - komega) % 360
-
-    return (nu, lambda_)
 
 
 @dataclass
