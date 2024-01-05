@@ -1,19 +1,25 @@
-"""Testing the evaporative flux calculations against benchmark data from the original
-SPLASH calculations"""
+"""Regression test of SPLASH submodule.
+
+Testing the evaporative flux calculations against benchmark data from the original
+SPLASH calculations.
+"""
 
 import numpy as np
 import pytest
-from splash_fixtures import daily_flux_benchmarks, grid_benchmarks  # type: ignore
 
 
 @pytest.fixture
 def expected_attr():
+    """Define expected attributes returned in tests."""
     return ("sat", "lv", "pw", "psy", "econ", "cond", "eet_d", "pet_d")
 
 
 def test_evap_scalar():
-    """Test using array inputs with a single scalar value. The expected results are as
-    the original output from the SPLASH evap.py __main__ function"""
+    """Test using array inputs with a single scalar value.
+
+    The expected results are as the original output from the SPLASH evap.py __main__
+    function.
+    """
     from pyrealm.splash.evap import DailyEvapFluxes
     from pyrealm.splash.solar import DailySolarFluxes
     from pyrealm.splash.utilities import Calendar
@@ -126,8 +132,7 @@ def test_evap_array_grid(grid_benchmarks, expected_attr):
     This checks that the outcome of evaporative calculations from running the full
     SPLASH model on a gridded dataset are consistent.
     """
-    from pyrealm.constants import PModelConst
-    from pyrealm.pmodel.functions import calc_patm
+
     from pyrealm.splash.evap import DailyEvapFluxes
     from pyrealm.splash.solar import DailySolarFluxes
     from pyrealm.splash.splash import elv2pres

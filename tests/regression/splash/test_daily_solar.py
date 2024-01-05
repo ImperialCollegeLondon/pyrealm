@@ -1,8 +1,7 @@
-"""Tests the implementation of calculations of solar fluxes"""
+"""Tests the implementation of calculations of solar fluxes."""
 
 import numpy as np
 import pytest
-from splash_fixtures import daily_flux_benchmarks, grid_benchmarks  # type: ignore
 
 
 @pytest.fixture
@@ -26,8 +25,10 @@ def expected_attr():
 
 
 def test_solar_scalars():
-    """Tests the results found with a single observation, using inputs from the __main__
-    function of the original SPLASH solar.py"""
+    """Tests the results found with a single observation.
+
+    Uses using inputs from the __main__ function of the original SPLASH solar.py
+    """
     from pyrealm.splash.solar import DailySolarFluxes
     from pyrealm.splash.utilities import Calendar
 
@@ -110,7 +111,7 @@ def test_solar_array(daily_flux_benchmarks, expected_attr):
 
 
 def test_solar_array_grid(grid_benchmarks):
-    """Array checking of solar predictions for more complex inputs
+    """Array checking of solar predictions for more complex inputs.
 
     This checks that a gridded dataset works with solar.py
     """

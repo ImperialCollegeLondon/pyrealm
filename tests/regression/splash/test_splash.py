@@ -1,26 +1,24 @@
-"""This module tests the main methods in the SplashModel:
- - estimate_daily_water_balance, which estimates soil moisture and run off given
-   preceeding soil moisture 
- - estimate_initial_soil_moisture, which assumes a stationary relationship over an
-   annual cycle to estimate a starting soil moisture.
- - calculate_soil_moisture, which iterates an initial soil moisture forward over a time
-   series.
+"""This module tests the main methods in the SplashModel.
+
+- estimate_daily_water_balance, which estimates soil moisture and run off given
+  preceeding soil moisture
+- estimate_initial_soil_moisture, which assumes a stationary relationship over an
+  annual cycle to estimate a starting soil moisture.
+- calculate_soil_moisture, which iterates an initial soil moisture forward over a time
+  series.
 """
 from itertools import product
 
 import numpy as np
-from splash_fixtures import (  # type: ignore
-    daily_flux_benchmarks,
-    grid_benchmarks,
-    one_d_benchmark,
-)
 
 # Testing estimate_daily_water_balance (was run_one_day)
 
 
 def test_estimate_daily_water_balance_scalar():
-    """Tests a single day calculation against the expectations from the __main__ example
-    provided in SPLASH v1.0 splash.py"""
+    """Tests a single day calculation.
+
+    Uses the expectations from the __main__ example provided in SPLASH v1.0 splash.py.
+    """
     from pyrealm.splash.splash import SplashModel
     from pyrealm.splash.utilities import Calendar
 
@@ -53,8 +51,11 @@ def test_estimate_daily_water_balance_scalar():
 
 
 def test_estimate_daily_water_balance_iter(daily_flux_benchmarks):
-    """This test iterates over the individual daily benchmark rows, calculating each
-    prediction as a single independent day."""
+    """Test iterated water balance.
+
+    This test iterates over the individual daily benchmark rows, calculating each
+    prediction as a single independent day.
+    """
     from pyrealm.splash.splash import SplashModel
     from pyrealm.splash.utilities import Calendar
 
@@ -108,7 +109,7 @@ def test_estimate_daily_water_balance_array(daily_flux_benchmarks):
 
 
 def test_run_spin_up_oned(one_d_benchmark):
-    "Test the spin up process using the original 1D test data from __main__.py."
+    """Test the spin up process using the original 1D test data from __main__.py."""
     from pyrealm.splash.splash import SplashModel
     from pyrealm.splash.utilities import Calendar
 
@@ -133,8 +134,10 @@ def test_run_spin_up_oned(one_d_benchmark):
 
 
 def test_run_spin_up_iter(grid_benchmarks):
-    """Test the spin up process using the grid - this test iterates over cells,
-    following the cell by cell calculation in the original implementation.
+    """Test the spin up process using the grid.
+
+    This test iterates over cells, following the cell by cell calculation in the
+    original implementation.
 
     This is a slow test.
     """
@@ -206,7 +209,10 @@ def test_run_spin_up_gridded(grid_benchmarks):
 
 
 def test_calculate_soil_moisture_oned(one_d_benchmark):
-    "Test the water balance iteration using the original 1D test data from __main__.py."
+    """Test the water balance iteration.
+
+    Uses the original 1D test data from __main__.py.
+    """
     from pyrealm.splash.splash import SplashModel
     from pyrealm.splash.utilities import Calendar
 
@@ -237,7 +243,11 @@ def test_calculate_soil_moisture_oned(one_d_benchmark):
 
 
 def test_calculate_soil_moisture_grid(grid_benchmarks):
-    "Test the water balance iteration using the original 1D test data from __main__.py."
+    """Test the water balance iteration on a grid.
+
+    Uses the original 1D test data from __main__.py.
+    """
+
     from pyrealm.splash.splash import SplashModel
     from pyrealm.splash.utilities import Calendar
 

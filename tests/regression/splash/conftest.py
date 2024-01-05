@@ -1,4 +1,6 @@
-from pathlib import Path
+"""pytest configuration for the splash submodule."""
+
+from importlib import resources
 
 import numpy as np
 import pytest
@@ -6,15 +8,18 @@ import xarray
 
 
 @pytest.fixture()
-def daily_flux_benchmarks(shared_datadir: Path) -> tuple[np.ndarray, np.ndarray]:
+def daily_flux_benchmarks() -> tuple[np.ndarray, np.ndarray]:
     """Test daily values.
 
     Loads an input file and SPLASH outputs for 100 random locations with a wide range of
     possible input values. Not intended for testing time series iteration, just the
-    daily predictions of all core variables."""
+    daily predictions of all core variables.
+    """
+
+    dpath = resources.files("pyrealm_build_data.splash")
 
     inputs = np.genfromtxt(
-        shared_datadir / "inputs.csv",
+        (dpath / "inputs.csv").name,
         dtype=None,
         delimiter=",",
         names=True,
@@ -22,7 +27,7 @@ def daily_flux_benchmarks(shared_datadir: Path) -> tuple[np.ndarray, np.ndarray]
     )
 
     expected = np.genfromtxt(
-        shared_datadir / "benchmark_daily_fluxes.csv",
+        (dpath / "benchmark_daily_fluxes.csv").name,
         dtype=None,
         delimiter=",",
         names=True,
@@ -40,7 +45,7 @@ def daily_flux_benchmarks(shared_datadir: Path) -> tuple[np.ndarray, np.ndarray]
 
 
 @pytest.fixture()
-def one_d_benchmark(shared_datadir: Path) -> tuple[xarray.Dataset, xarray.Dataset]:
+def one_d_benchmark() -> tuple[xarray.Dataset, xarray.Dataset]:
     """Test one dimensional time series.
 
     Loads the input data and resulting soil moisture outputs from the single location
@@ -50,24 +55,29 @@ def one_d_benchmark(shared_datadir: Path) -> tuple[xarray.Dataset, xarray.Datase
     more validation data.
     """
 
-    inputs = xarray.load_dataset(shared_datadir / "splash_test_example.nc")
+    dpath = resources.files("pyrealm_build_data.splash")
 
-    expected = xarray.load_dataset(shared_datadir / "splash_test_example_out.nc")
+    inputs = xarray.load_dataset(dpath / "splash_test_example.nc")
+
+    expected = xarray.load_dataset(dpath / "splash_test_example_out.nc")
 
     return inputs, expected
 
 
 @pytest.fixture()
-def grid_benchmarks(shared_datadir: Path) -> tuple[xarray.Dataset, xarray.Dataset]:
+def grid_benchmarks() -> tuple[xarray.Dataset, xarray.Dataset]:
     """Test 3D time series.
 
     This provides a 20 x 20 cell chunk of daily data from WFDE5 v2 and CRU for the west
     coast of the US over two years. It provides a test of iterated calculations and
     checking that applying functions across arrays, not iterating through individual
-    time series gives identical results."""
+    time series gives identical results.
+    """
 
-    inputs = xarray.load_dataset(shared_datadir / "splash_test_grid_nw_us.nc")
+    dpath = resources.files("pyrealm_build_data.splash")
 
-    expected = xarray.load_dataset(shared_datadir / "splash_test_grid_nw_us_out.nc")
+    inputs = xarray.load_dataset(dpath / "splash_test_grid_nw_us.nc")
+
+    expected = xarray.load_dataset(dpath / "splash_test_grid_nw_us_out.nc")
 
     return inputs, expected
