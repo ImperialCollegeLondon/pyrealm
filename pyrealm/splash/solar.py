@@ -7,21 +7,9 @@ from dataclasses import InitVar, dataclass, field
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm.constants import CoreConst
 from pyrealm.core.solar import calc_heliocentric_longitudes
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.splash.const import (
-    kA,
-    kalb_sw,
-    kalb_vis,
-    kb,
-    kc,
-    kd,
-    ke,
-    keps,
-    kfFEC,
-    kGsc,
-    pir,
-)
 from pyrealm.splash.utilities import Calendar
 
 
@@ -47,6 +35,7 @@ class DailySolarFluxes:
     dates: Calendar
     sf: InitVar[NDArray]
     tc: InitVar[NDArray]
+    core_const: CoreConst = CoreConst()
 
     nu: NDArray = field(init=False)
     """True heliocentric anomaly, degrees"""
@@ -97,10 +86,21 @@ class DailySolarFluxes:
         )
 
         # Calculate distance factor (dr), Berger et al. (1993)
-        dr = (1.0 / ((1.0 - ke**2) / (1.0 + ke * np.cos(np.deg2rad(nu))))) ** 2
+        dr = (
+            1.0
+            / (
+                (1.0 - self.core_const.k_e**2)
+                / (1.0 + self.core_const.k_e * np.cos(np.deg2rad(nu)))
+            )
+        ) ** 2
 
         # Calculate declination angle (delta), Woolf (1968)
-        delta = np.arcsin(np.sin(np.deg2rad(lambda_)) * np.sin(np.deg2rad(keps))) / pir
+        delta = (
+            np.arcsin(
+                np.sin(np.deg2rad(lambda_)) * np.sin(np.deg2rad(self.core_const.k_eps))
+            )
+            / self.core_const.k_pir
+        )
 
         # The nu, lambda_, dr and delta attributes are all one dimensional arrays
         # calculated from the Calendar along the first (time) axis of the other inputs.
@@ -118,42 +118,63 @@ class DailySolarFluxes:
         self.rv = np.cos(np.deg2rad(self.delta)) * np.cos(np.deg2rad(lat))
 
         # Calculate the sunset hour angle (hs), Eq. 3.22, Stine & Geyer (2001)
-        self.hs = np.arccos(-1.0 * np.clip(self.ru / self.rv, -1.0, 1.0)) / pir
+        self.hs = (
+            np.arccos(-1.0 * np.clip(self.ru / self.rv, -1.0, 1.0))
+            / self.core_const.k_pir
+        )
 
         # Calculate daily extraterrestrial solar radiation (ra_d), J/m^2
         # Eq. 1.10.3, Duffy & Beckman (1993)
         self.ra_d = (
             (86400.0 / np.pi)
-            * kGsc
+            * self.core_const.k_Gsc
             * self.dr
-            * (self.ru * pir * self.hs + self.rv * np.sin(np.deg2rad(self.hs)))
+            * (
+                self.ru * self.core_const.k_pir * self.hs
+                + self.rv * np.sin(np.deg2rad(self.hs))
+            )
         )
 
         # Calculate transmittivity (tau), unitless
         # Eq. 11, Linacre (1968); Eq. 2, Allen (1996)
-        self.tau = (kc + kd * sf) * (1.0 + (2.67e-5) * elv)
+        self.tau = (self.core_const.k_c + self.core_const.k_d * sf) * (
+            1.0 + (2.67e-5) * elv
+        )
 
         # Calculate daily PPFD (ppfd_d), mol/m^2
-        self.ppfd_d = (1.0e-6) * kfFEC * (1.0 - kalb_vis) * self.tau * self.ra_d
+        self.ppfd_d = (
+            (1.0e-6)
+            * self.core_const.k_fFEC
+            * (1.0 - self.core_const.k_alb_vis)
+            * self.tau
+            * self.ra_d
+        )
 
         # Estimate net longwave radiation (rnl), W/m^2
         # Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
-        self.rnl = (kb + (1.0 - kb) * sf) * (kA - tc)
+        self.rnl = (self.core_const.k_b + (1.0 - self.core_const.k_b) * sf) * (
+            self.core_const.k_A - tc
+        )
 
         # Calculate variable substitute (rw), W/m^2
-        self.rw = (1.0 - kalb_sw) * self.tau * kGsc * self.dr
+        self.rw = (
+            (1.0 - self.core_const.k_alb_sw)
+            * self.tau
+            * self.core_const.k_Gsc
+            * self.dr
+        )
 
         # Calculate net radiation cross-over hour angle (hn), degrees
         self.hn = (
             np.arccos(
                 np.clip((self.rnl - self.rw * self.ru) / (self.rw * self.rv), -1.0, 1.0)
             )
-            / pir
+            / self.core_const.k_pir
         )
 
         # Calculate daytime net radiation (rn_d), J/m^2
         self.rn_d = (86400.0 / np.pi) * (
-            self.hn * pir * (self.rw * self.ru - self.rnl)
+            self.hn * self.core_const.k_pir * (self.rw * self.ru - self.rnl)
             + self.rw * self.rv * np.sin(np.deg2rad(self.hn))
         )
 
@@ -164,6 +185,6 @@ class DailySolarFluxes:
                 * self.rv
                 * (np.sin(np.deg2rad(self.hs)) - np.sin(np.deg2rad(self.hn)))
             )
-            + (self.rw * self.ru * pir * (self.hs - self.hn))
-            - (self.rnl * (np.pi - pir * self.hn))
+            + (self.rw * self.ru * self.core_const.k_pir * (self.hs - self.hn))
+            - (self.rnl * (np.pi - self.core_const.k_pir * self.hn))
         ) * (86400.0 / np.pi)
