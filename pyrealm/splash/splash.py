@@ -7,12 +7,12 @@ from typing import Optional, Union
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm.core.utilities import check_input_shapes
 from pyrealm.splash.const import kWm
 from pyrealm.splash.evap import DailyEvapFluxes, elv2pres
 from pyrealm.splash.logger import logger
 from pyrealm.splash.solar import DailySolarFluxes
 from pyrealm.splash.utilities import Calendar
-from pyrealm.utilities import check_input_shapes
 
 
 class SplashModel:

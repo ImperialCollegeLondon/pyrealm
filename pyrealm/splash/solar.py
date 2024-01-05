@@ -7,6 +7,7 @@ from dataclasses import InitVar, dataclass, field
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm.core.utilities import check_input_shapes
 from pyrealm.splash.const import (
     kA,
     kalb_sw,
@@ -22,7 +23,6 @@ from pyrealm.splash.const import (
     pir,
 )
 from pyrealm.splash.utilities import Calendar
-from pyrealm.utilities import check_input_shapes
 
 
 def calc_heliocentric_longitudes(

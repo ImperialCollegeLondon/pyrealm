@@ -8,9 +8,9 @@ from typing import Optional, Union
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm.core.utilities import check_input_shapes
 from pyrealm.splash.const import kCw, kG, kL, kMa, kMv, kPo, kR, kTo, kw, pir
 from pyrealm.splash.solar import DailySolarFluxes
-from pyrealm.utilities import check_input_shapes
 
 
 @dataclass
