@@ -89,6 +89,10 @@ class PModelConst(ConstantsClass):
 
     """
 
+    k_To: float = 25.0
+    """Standard reference temperature of photosynthetic processes (Prentice,
+    unpublished)  (:math:`T_o` , 25.0, °C)"""
+
     # Heskel
     heskel_b: float = 0.1012
     """Linear coefficient of scaling of dark respiration (:math:`b`, 0.1012)"""

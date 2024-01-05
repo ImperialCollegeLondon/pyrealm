@@ -7,9 +7,11 @@ from typing import Optional, Union
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm.constants import CoreConst
+from pyrealm.core.pressure import calc_patm
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.splash.const import kWm
-from pyrealm.splash.evap import DailyEvapFluxes, elv2pres
+from pyrealm.splash.evap import DailyEvapFluxes
 from pyrealm.splash.logger import logger
 from pyrealm.splash.solar import DailySolarFluxes
 from pyrealm.splash.utilities import Calendar
@@ -63,6 +65,7 @@ class SplashModel:
         pn: NDArray,
         dates: Calendar,
         kWm: NDArray = np.array([150.0]),
+        core_const: CoreConst = CoreConst(),
     ):
         # TODO - check input sizes are congurent and maybe think about broadcasting lat
         #        and elv. xarray would be good here.
@@ -83,11 +86,8 @@ class SplashModel:
         self.kWm = kWm
         """The maximum soil water capacity for sites."""
 
-        # TODO - check and swap in pyrealm function - noting that this uses 15°C as the
-        #        standard atmosphere, where pyrealm _currently_ uses 25°C for no good
-        #        reason.
-        #      - potentially allow _actual_ climatic pressure data.
-        self.pa = elv2pres(elv)
+        # TODO - potentially allow _actual_ climatic pressure data as an input
+        self.pa = calc_patm(elv, const=core_const)
         """The atmospheric pressure at sites, derived from elevation"""
 
         # Calculate the daily solar fluxes - these are invariant across the simulation

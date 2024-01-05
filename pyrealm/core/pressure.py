@@ -32,12 +32,7 @@ def calc_patm(elv: NDArray, const: CoreConst = CoreConst()) -> NDArray:
         90241.54
     """
 
-    # Convert elevation to pressure, Pa. This equation uses the base temperature
-    # in Kelvins, while other functions use this constant in the PARAM units of
-    # °C.
-
-    kto = const.k_To + const.k_CtoK
-
-    return const.k_Po * (1.0 - const.k_L * elv / kto) ** (
+    # Convert elevation to pressure, Pa.
+    return const.k_Po * (1.0 - const.k_L * elv / const.k_To) ** (
         const.k_G * const.k_Ma / (const.k_R * const.k_L)
     )

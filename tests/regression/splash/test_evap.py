@@ -132,10 +132,10 @@ def test_evap_array_grid(grid_benchmarks, expected_attr):
     This checks that the outcome of evaporative calculations from running the full
     SPLASH model on a gridded dataset are consistent.
     """
-
+    from pyrealm.constants import CoreConst
+    from pyrealm.core.pressure import calc_patm
     from pyrealm.splash.evap import DailyEvapFluxes
     from pyrealm.splash.solar import DailySolarFluxes
-    from pyrealm.splash.splash import elv2pres
     from pyrealm.splash.utilities import Calendar
 
     inputs, expected = grid_benchmarks
@@ -156,10 +156,8 @@ def test_evap_array_grid(grid_benchmarks, expected_attr):
         tc=inputs["tmp"].data,
     )
 
-    pa = elv2pres(inputs["elev"].data)
-
-    # SPLASH uses 15°C in the standard atmosphere definition
-    # pa = calc_patm(inputs["elev"].data, const=PModelConst(k_To=15.0))
+    # SPLASH uses 15°C / 288.15 K in the standard atmosphere definition
+    pa = calc_patm(inputs["elev"].data, const=CoreConst(k_To=288.15))
 
     evap = DailyEvapFluxes(solar, pa=pa, tc=inputs["tmp"].data)
 

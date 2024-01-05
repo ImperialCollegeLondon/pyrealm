@@ -51,10 +51,9 @@ class CoreConst(ConstantsClass):
     k_c_molmass: float = 12.0107
     """Molecular mass of carbon (:math:`c_molmass` , 12.0107, g)"""
     k_Po: float = 101325.0
-    """Standard reference atmosphere (Allen, 1973)   (:math:`P_o` , 101325.0, Pa)"""
-    k_To: float = 25.0
-    """Standard reference temperature (Prentice, unpublished) (:math:`T_o` , 25.0,
-    °C)"""
+    """Standard reference atmosphere (Allen, 1973) (:math:`P_o` , 101325.0, Pa)"""
+    k_To: float = 298.15
+    """Standard reference temperature (:math:`T_o` ,  298.15, K)"""
     k_L: float = 0.0065
     """Adiabiatic temperature lapse rate (Allen, 1973)   (:math:`L` , 0.0065, K/m)"""
     k_G: float = 9.80665

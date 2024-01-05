@@ -13,7 +13,7 @@ import xarray
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
 
-@pytest.mark.profiling
+# @pytest.mark.profiling
 class TestClass:
     """Test class for the profiler running on the pmodel implementation."""
 

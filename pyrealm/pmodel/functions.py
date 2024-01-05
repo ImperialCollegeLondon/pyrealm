@@ -16,6 +16,7 @@ def calc_ftemp_arrh(
     tk: NDArray,
     ha: float,
     core_const: CoreConst = CoreConst(),
+    pmodel_const: PModelConst = PModelConst(),
 ) -> NDArray:
     r"""Calculate enzyme kinetics scaling factor.
 
@@ -50,7 +51,8 @@ def calc_ftemp_arrh(
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
-        To: a standard reference temperature (:math:`T_0`, ``k_To``)
+        To: standard reference temperature for photosynthetic processes (:math:`T_0`,
+            ``k_To``)
         R: the universal gas constant (:math:`R`, ``k_R``)
 
     Returns:
@@ -67,7 +69,7 @@ def calc_ftemp_arrh(
     # exp( ha * (tc - 25.0)/(298.15 * kR * (tc + 273.15)) )
     # exp( (ha/kR) * (1/298.15 - 1/tk) )
 
-    tkref = core_const.k_To + core_const.k_CtoK
+    tkref = pmodel_const.k_To + core_const.k_CtoK
 
     return np.exp(ha * (tk - tkref) / (tkref * core_const.k_R * tk))
 
@@ -93,7 +95,8 @@ def calc_ftemp_inst_rd(
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
-        To: standard reference temperature (:math:`T_o`, ``k_To``)
+        To: standard reference temperature for photosynthetic processes (:math:`T_o`,
+            ``k_To``)
         b: empirically derived global mean coefficient
             (:math:`b`, ``heskel_b``)
         c: empirically derived global mean coefficient
@@ -110,8 +113,8 @@ def calc_ftemp_inst_rd(
     """
 
     return np.exp(
-        pmodel_const.heskel_b * (tc - core_const.k_To)
-        - pmodel_const.heskel_c * (tc**2 - core_const.k_To**2)
+        pmodel_const.heskel_b * (tc - pmodel_const.k_To)
+        - pmodel_const.heskel_c * (tc**2 - pmodel_const.k_To**2)
     )
 
 
@@ -175,7 +178,7 @@ def calc_ftemp_inst_vcmax(
     """
 
     # Convert temperatures to Kelvin
-    tkref = core_const.k_To + core_const.k_CtoK
+    tkref = pmodel_const.k_To + core_const.k_CtoK
     tk = tc + core_const.k_CtoK
 
     # Calculate entropy following Kattge & Knorr (2007): slope and intercept

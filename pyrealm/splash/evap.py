@@ -9,7 +9,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.splash.const import kCw, kG, kL, kMa, kMv, kPo, kR, kTo, kw, pir
+from pyrealm.splash.const import kCw, kMa, kMv, kw, pir
 from pyrealm.splash.solar import DailySolarFluxes
 
 
@@ -209,22 +209,6 @@ def enthalpy_vap(tc: NDArray) -> NDArray:
     """
 
     return 1.91846e6 * ((tc + 273.15) / (tc + 273.15 - 33.91)) ** 2
-
-
-def elv2pres(z: NDArray) -> NDArray:
-    """Calculate atmospheric pressure (Pa).
-
-    Follows :cite:t:`allen:1998a`.
-
-    Args:
-        z: Elevation (m)
-
-    Returns:
-        Atmospheric pressure (Pa).
-    """
-
-    # TODO - replace
-    return kPo * (1.0 - kL * z / kTo) ** (kG * kMa / (kR * kL))
 
 
 def density_h2o(tc: NDArray, p: NDArray) -> NDArray:
