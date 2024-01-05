@@ -43,7 +43,7 @@ class CoreConst(ConstantsClass):
 
     """
 
-    # Constants
+    # Universal constants
     k_R: float = 8.3145
     """Universal gas constant (:math:`R` , 8.3145, J/mol/K)"""
     k_co: float = 209476.0
@@ -65,6 +65,19 @@ class CoreConst(ConstantsClass):
     k_CtoK: float = 273.15
     """Conversion from °C to K   (:math:`CtoK` , 273.15, -)"""
 
+    # Solar constants
+    k_pir = np.pi / 180.0
+
+    # Paleoclimate variables:
+    k_e: float = 0.0167
+    """Solar eccentricity, using default value for 2000 CE :cite:t:`berger:1978a`."""
+    k_eps: float = 23.44
+    """Solar obliquity, using default value for 2000 CE :cite:t:`berger:1978a`."""
+    k_omega = 283.0
+    """Solar longitude of perihelion, using default value for 2000 CE
+    :cite:t:`berger:1978a`."""
+
+    # Hygro constants
     magnus_coef: NDArray[np.float32] = field(
         default_factory=lambda: np.array((611.2, 17.62, 243.12))
     )
@@ -78,6 +91,7 @@ class CoreConst(ConstantsClass):
     :attr:`~pyrealm.constants.core_const.CoreConst.magnus_coef`.
     """
 
+    # Water constants
     water_density_method: str = "fisher"
     """Set the method used for calculating water density ('fisher' or 'chen')."""
 
