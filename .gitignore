@@ -24,3 +24,9 @@ pyrealm.egg-info
 
 # Coverage
 .coverage
+
+# Data
+pyrealm_build_data/*.nc
+
+# Profiling
+prof/

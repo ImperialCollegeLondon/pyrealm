@@ -1,6 +1,6 @@
 """The pmodel_const module TODO."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from numpy.typing import NDArray
@@ -16,20 +16,6 @@ class PModelConst(ConstantsClass):
     predictions of the P Model. Values are shown with mathematical notation, default
     value and units shown in brackets and the sources for default parameterisations are
     given below:
-
-    * **Density of water**. Values for the Tumlirz equation taken from Table 5 of
-      :cite:t:`Fisher:1975tm`:
-      (:attr:`~pyrealm.constants.pmodel_const.PModelConst.fisher_dial_lambda`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.fisher_dial_Po`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.fisher_dial_Vinf`)
-
-    * **Viscosity of water**. Values for the parameterisation taken from Table 2 and 3
-      of :cite:t:`Huber:2009fy`:
-      (:attr:`~pyrealm.constants.pmodel_const.PModelConst.huber_tk_ast`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.huber_rho_ast`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.huber_mu_ast`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.huber_H_i`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.huber_H_ij`)
 
     * **Temperature scaling of dark respiration**. Values taken from
       :cite:t:`Heskel:2016fg`:
@@ -84,8 +70,9 @@ class PModelConst(ConstantsClass):
 
     * **Unit cost ratios (beta) response to soil moisture**. These constants set the
       response of beta to soil moisture for the
-      :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c3` method and for
-      :meth:`~pyrealm.pmodel.pmodel.CalcOptimalChi.lavergne20_c4`.
+      :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.lavergne20_c3`
+      method and for
+      :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.lavergne20_c4`.
       (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c3`,
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_a_c3`,
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c4`,
@@ -101,83 +88,6 @@ class PModelConst(ConstantsClass):
       plants
 
     """
-
-    # Constants
-    k_R: float = 8.3145
-    """Universal gas constant (:math:`R` , 8.3145, J/mol/K)"""
-    k_co: float = 209476.0
-    """O2 partial pressure, Standard Atmosphere (:math:`co` , 209476.0, ppm)"""
-    k_c_molmass: float = 12.0107
-    """Molecular mass of carbon (:math:`c_molmass` , 12.0107, g)"""
-    k_Po: float = 101325.0
-    """Standard reference atmosphere (Allen, 1973)   (:math:`P_o` , 101325.0, Pa)"""
-    k_To: float = 25.0
-    """Standard reference temperature (Prentice, unpublished) (:math:`T_o` , 25.0,
-    °C)"""
-    k_L: float = 0.0065
-    """Adiabiatic temperature lapse rate (Allen, 1973)   (:math:`L` , 0.0065, K/m)"""
-    k_G: float = 9.80665
-    """Gravitational acceleration (:math:`G` , 9.80665, m/s^2)"""
-    k_Ma: float = 0.028963
-    """Molecular weight of dry air (Tsilingiris, 2008)  (:math:`M_a`, 0.028963,
-    kg/mol)"""
-    k_CtoK: float = 273.15
-    """Conversion from °C to K   (:math:`CtoK` , 273.15, -)"""
-
-    # Fisher Dial
-    fisher_dial_lambda: NDArray[np.float32] = np.array(
-        [1788.316, 21.55053, -0.4695911, 0.003096363, -7.341182e-06]
-    )
-    r"""Temperature dependent lambda parameterisation of the Tumlirz equation.
-     (:math:`\lambda`)."""
-
-    fisher_dial_Po: NDArray[np.float32] = np.array(
-        [5918.499, 58.05267, -1.1253317, 0.0066123869, -1.4661625e-05]
-    )
-    """Temperature dependent P0 parameterisation of the Tumlirz equation
-    (:math:`P_0`)."""
-
-    fisher_dial_Vinf: NDArray[np.float32] = np.array(
-        [
-            0.6980547,
-            -0.0007435626,
-            3.704258e-05,
-            -6.315724e-07,
-            9.829576e-09,
-            -1.197269e-10,
-            1.005461e-12,
-            -5.437898e-15,
-            1.69946e-17,
-            -2.295063e-20,
-        ]
-    )
-    r"""Temperature dependent Vinf parameterisation of the Tumlirz equation
-    (:math:`V_{\infty}`)."""
-
-    # Huber
-    simple_viscosity: bool = False
-    """Boolean setting for use of simple viscosity calculations"""
-    huber_tk_ast: float = 647.096
-    """Huber reference temperature (:math:`tk_{ast}`, 647.096, Kelvin)"""
-    huber_rho_ast: float = 322.0
-    r"""Huber reference density (:math:`\rho_{ast}`, 322.0, kg/m^3)"""
-    huber_mu_ast: float = 1e-06
-    r"""Huber reference pressure (:math:`\mu_{ast}` 1.0e-6, Pa s)"""
-
-    huber_H_i: NDArray[np.float32] = np.array([1.67752, 2.20462, 0.6366564, -0.241605])
-    """Temperature dependent parameterisation of Hi in Huber."""
-    huber_H_ij: NDArray[np.float32] = np.array(
-        [
-            [0.520094, 0.0850895, -1.08374, -0.289555, 0.0, 0.0],
-            [0.222531, 0.999115, 1.88797, 1.26613, 0.0, 0.120573],
-            [-0.281378, -0.906851, -0.772479, -0.489837, -0.25704, 0.0],
-            [0.161913, 0.257399, 0.0, 0.0, 0.0, 0.0],
-            [-0.0325372, 0.0, 0.0, 0.0698452, 0.0, 0.0],
-            [0.0, 0.0, 0.0, 0.0, 0.00872102, 0.0],
-            [0.0, 0.0, 0.0, -0.00435673, 0.0, -0.000593264],
-        ],
-    )
-    """Temperature and mass density dependent parameterisation of Hij in Huber."""
 
     # Heskel
     heskel_b: float = 0.1012
@@ -201,9 +111,13 @@ class PModelConst(ConstantsClass):
     # - note that kphio_C4 has been updated to account for an unintended double
     #   8 fold downscaling to account for the fraction of light reaching PS2.
     #   from original values of [-0.008, 0.00375, -0.58e-4]
-    kphio_C4: NDArray[np.float32] = np.array((-0.064, 0.03, -0.000464))
+    kphio_C4: NDArray[np.float32] = field(
+        default_factory=lambda: np.array((-0.064, 0.03, -0.000464))
+    )
     """Quadratic scaling of Kphio with temperature for C4 plants"""
-    kphio_C3: NDArray[np.float32] = np.array((0.352, 0.022, -0.00034))
+    kphio_C3: NDArray[np.float32] = field(
+        default_factory=lambda: np.array((0.352, 0.022, -0.00034))
+    )
     """Quadratic scaling of Kphio with temperature for C3 plants"""
 
     # Bernachhi
@@ -251,9 +165,13 @@ class PModelConst(ConstantsClass):
     """Exponent of the threshold function for Mengoli soil moisture"""
 
     # Unit cost ratio (beta) values for different CalcOptimalChi methods
-    beta_cost_ratio_prentice14: NDArray[np.float32] = np.array([146.0])
+    beta_cost_ratio_prentice14: NDArray[np.float32] = field(
+        default_factory=lambda: np.array([146.0])
+    )
     r"""Unit cost ratio for C3 plants (:math:`\beta`, 146.0)."""
-    beta_cost_ratio_c4: NDArray[np.float32] = np.array([146.0 / 9])
+    beta_cost_ratio_c4: NDArray[np.float32] = field(
+        default_factory=lambda: np.array([146.0 / 9])
+    )
     r"""Unit cost ratio for C4 plants (:math:`\beta`, 16.222)."""
     lavergne_2020_b_c3: float = 1.73
     """Slope of soil moisture effects on beta for C3 plants"""

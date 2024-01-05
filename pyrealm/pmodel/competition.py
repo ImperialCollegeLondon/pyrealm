@@ -8,7 +8,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import C3C4Const
-from pyrealm.utilities import check_input_shapes, summarize_attrs
+from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 
 
 def convert_gpp_advantage_to_c4_fraction(

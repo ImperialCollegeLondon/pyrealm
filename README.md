@@ -1,259 +1,117 @@
 # The `pyrealm` package
 
-These are development notes for the package, user documentation can be found at:
+[![codecov](https://codecov.io/gh/ImperialCollegeLondon/pyrealm/branch/develop/graph/badge.svg)](https://codecov.io/gh/ImperialCollegeLondon/pyrealm)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8366847.svg)](https://doi.org/10.5281/zenodo.8366847)
+[![Test and build](https://github.com/ImperialCollegeLondon/pyrealm/actions/workflows/pyrealm_ci.yaml/badge.svg?branch=develop)](https://github.com/ImperialCollegeLondon/pyrealm/actions/workflows/pyrealm_ci.yaml)
 
-[](https://pyrealm.readthedocs.io/)
+The `pyrealm` package provides a toolbox implementing some key models for estimating
+plant productivity, growth and demography in Python 3. The outputs of different models
+can be then easily fed into other models within `pyrealm` to allow productivity
+estimates to be fed forward into estimation of net primary productivity, growth and
+ultimately plant community demography.
 
-## Overview
+The `pyrealm` package currently includes:
 
-This a Python 3 package intended to provide a common framework for a number of
-related models of plant productivity, growth and demography.
+* The P Model for estimating optimal rates of plant photosynthesis given the balance
+  between carbon capture and water loss. This includes recent extensions to incorporate
+  the effects of water stress, slow acclimation processes, models of C3/C4 competition
+  and carbon isotope fractionation.
+* The T Model of the allocation of gross primary productivity to estimate net primary
+  productivity and hence plant growth.
 
-## Code development
+For more details, see the package website:
+[https://pyrealm.readthedocs.io/](https://pyrealm.readthedocs.io/).
 
-### Package managment
+**TODO** Need to link here to a _roadmap_ for the package and therefore _create_ that
+roadmap along with the a feature set to aim for in version 1.0.0.
 
-The package uses `poetry` to manage dependencies, generate virtual environments for code
-development and then for package building and publication. You will need to install
-`poetry` to develop the code.
+## Using `pyrealm`
 
-### Source code management
-
-The codebase is developed in `git` with a repository at:
-
-[](https://github.com/davidorme/pyrealm)
-
-It uses the `git flow` model for development and release. Briefly:
-
-* All code development should happen specific `feature/feature_name` branches.
-* Pull requests (PR) should be made to merge feature branches into the `develop` branch.
-* Candidate release versions should be made on specific `release/x.y.z` branches
-  and these are then committed to the `master` branch only after final checking.
-* The `master` branch should only ever contain commits representing new release
-  versions - do not work on the `master` branch.
-
-Both the `develop` and `master` branches are protected on GitHub to avoid accidents!
-
-### Code quality
-
-The project uses the `pre-commit` tool to enforce code quality. The configuration file
-`.pre-commit-config.yaml` shows the details of the tool chain, but `isort`, `black`,
-`flake8` and `markdownlint` are used to maintain code quality. You will need to install
-`pre-commit` to develop package code, and each PR must pass the same set of checks.
-
-### Code testing
-
-#### Using `doctest`
-
-The package docstrings contain `doctest` examples of code use. These are intended to
-demonstrate use and to validate a reference set of inputs against expected outputs. They
-do not provide extensive unit testing! To run the docstring tests, use:
-
-```bash
-python -m doctest pyrealm/pmodel.py
-python -m doctest pyrealm/*.py
-```
-
-For `doctest` on warnings, see the example for `pyrealm.utilities.convert_rh_to_vpd`
-which redirects the stderr to stdout to allow for the warning text to be included in the
-doctest.
-
-#### Using `pytest`
-
-The `test` directory contains `pytest` modules to provide greater testing of different
-input combinations and to check errors are raised correctly. These are the main tests
-that the package is behaving as expected.
-
-```bash
-pytest
-```
-
-### Continuous integration
-
-The project uses continuous integration via GitHub Actions to check that the package is
-building correctly and that both `doctest` and `pytest` tests are passing. The status of
-builds can be seen at:
-
-[](https://github.com/davidorme/pyrealm/actions)
-
-## Documentation
-
-The `pyrealm` package is documented using `sphinx`, with source material in the
-`docs/source` directory.
-
-The documentation in `source` uses [Myst
-Markdown](https://myst-parser.readthedocs.io/en/latest/) rather than the standard
-`sphinx` reStructuredText (`.rst`) format. This is because the documentation uses the
-`myst_nb` extension to `sphinx` that supports running documentation as a Jupyter
-notebook: the built documentation includes examples of running code and output plots to
-demonstrate the use and behaviour of the package.
-
-The `sphinx` configuration includes the `sphinx.ext.mathjax` extension to support
-mathematical notation. This has been configured to also load the `mhchem` extension,
-supporting the rendering of chemical notation.
-
-### Docstrings
-
-The module codes uses docstrings written in the [Google
-style](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
-Unlike the main documentation pages, the docstrings in code are written using
-reStructuredText because the `autodoc` functions in `sphinx` currently rely on `rst`
-inputs. This allows the function documentation to be stored alongside the code and
-included simply into the documentation.
-
-### Building the documentation
-
-Additional python packages given in `docs/source/requirements.txt` are needed to build
-the documentation. To actually build the documentation, use `make` in the package root,
-which will use the `Makefile` created by `sphinx-quickstart`.
-
-```bash
-cd docs
-make html
-```
-
-### Online documentation
-
-The documentation for the package is hosted at:
-
-[](https://pyrealm.readthedocs.io/en/develop/pmodel.html)
-
-This has been configured to build commits to the `master` branch, which should
-generate version specific sets of documentation.
-
-### Referencing
-
-The documentation uses the `sphinxcontrib-bibtex` package to support citations.
-This uses Latex like citation keys in the documentation to insert references and
-build a bibliography. The reference library in `source/refs.bib` needs to be
-kept up to date with the literature for the project. The `sphinx_astrorefs` package is
-used to provide an Author Date style citation format.
-
-## Release process
-
-Releasing a new version of the package follows the flow below:
-
-1. Create a `release` branch from `develop` containing the new release code.
-2. Check that this branch builds correctly, that the documentation builds correctly and
-   that the package publishes to the `test-pypi` repository.
-3. When all is well, create pull requests on GitHub to merge the `release` branch into
-   both `develop` and `master`, along with a version tag for the release.
-4. Once you have updated your local repository, then the tag can be used to build and
-   publish the final version to the main PyPi site.
-
-It is easier if `git` is configured to push new tags along with commits. This
-essentially just means that new releases can be sent with a single commit. This only
-needs to be set once.
-
-```bash
-set git config --global push.followTags true
-```
-
-### Create the release branch
-
-Using `git flow` commands as an example to create a new release:
+The `pyrealm` package requires Python 3.9 or greater. We make released versions
+available via [PyPi](https://pypi.org/project/pyrealm/) and also generate DOIs for each
+release via [Zenodo](https://doi.org/10.5281/zenodo.8366847). You can install the most
+recent release using `pip`:
 
 ```sh
-git flow release start new_release
+pip install pyrealm
 ```
 
-Obviously, use something specific, not `new_release`! Ideally, you would do a dry run of
-the next step and use the version - but it should be fairly obvious what this will be!
+You can now get started using `pyrealm`. For example, to calculate the estimated gross
+primary productivity of a C3 plant in a location, start a Python interpreter, using
+`python`, `python3` or `ipython` depending on your installation, and run:
 
-The `poetry version` command can then be used to bump the version number. Note that the
-command needs a 'bump rule', which sets which part of the semantic version number to
-increment (`major`, `minor` or `patch`). For example:
+```python
+import numpy as np
+from pyrealm.pmodel import PModelEnvironment, PModel
 
-```sh
-poetry version patch
+# Calculate the photosynthetic environment given the conditions
+env = PModelEnvironment(
+    tc=np.array([20]), vpd=np.array([1000]),
+    co2=np.array([400]), patm=np.array([101325.0])
+)
+
+# Calculate the predictions of the P Model for a C3 plant
+pmodel_c3 = PModel(env)
+
+# Estimate the GPP from the model given the absorbed photosynthetically active light
+pmodel_c3.estimate_productivity(fapar=1, ppfd=300)
+
+# Report the GPP in micrograms of carbon per m2 per second.
+pmodel_c3.gpp
 ```
 
-This updates `pyproject.toml`. At present, the package is set up so that you also *have
-to update the version number in `pyrealm/version.py`* to match manually.
+This should give the following output:
 
-### Publish and test the release branch
-
-With those changes committed, publish the release branch:
-
-```sh
-git commit -m "Version bump" pyrealm/version.py
-git flow release publish new_release
+```python
+array([76.42544948])
 ```
 
-The GitHub Actions will then ensure that the code passes quality assurance and then runs
-the test suites on a range of Python versions and operating systems.
+The package website provides worked examples of using `pyrealm`, for example to:
 
-### Check package publication
+* [fit the P
+  Model](https://pyrealm.readthedocs.io/en/latest/users/pmodel/pmodel_details/worked_examples.html),
+* [include acclimation in estimating light use
+  efficiency](https://pyrealm.readthedocs.io/en/latest/users/pmodel/subdaily_details/worked_example.html)
+  , and
+* [estimate C3/C4
+  competition](https://pyrealm.readthedocs.io/en/latest/users/pmodel/c3c4model.html#worked-example).
 
-The `sdist` and `wheel` builds for the package can then be built locally using `poetry`
+These worked examples also show how `pyrealm` can be used within Python scripts or
+Jupyter notebooks and how to use `pyrealm` with large datasets loaded using
+[`numpy`](https://numpy.org/) or [`xarray`](https://docs.xarray.dev/en/stable/) with
+`pyrealm` classes and functions.
 
-```bash
-poetry build
-```
+## Citing `pyrealm`
 
-The first time this is run, `poetry` needs to be configured to add the Test PyPi
-repository and an API token from that site. Note that accounts are not shared between
-the Test and main PyPi sites: the API token for `test-pypi` is different from
-`pypi` and you have to log in to each system separately and generate a token on each.
+The `pyrealm` repository can be cited following the information in the [citation
+file](./CITATION.cff). If you are using `pyrealm` in research, it is better to cite the
+DOI of the specific release from [Zenodo](https://doi.org/10.5281/zenodo.8366847).
 
-```sh
-poetry config repositories.test-pypi https://test.pypi.org/legacy/
-poetry config pypi-token.test-pypi <your-token>
-```
+## Developing `pyrealm`
 
-The built packages can then be published to `test-pypi` using:
+If you are interested in contributing to the development of `pyrealm`, please read the
+[guide for contributors](./CONTRIBUTING.md). Please do also read the [code of
+conduct](./CODE_OF_CONDUCT.md) for contributing to this project.
 
-```sh
-poetry publish -r test-pypi
-```
+## Support and funding
 
-### Check the documentation builds
+Development of the `prealm` package has been supported by the following grants and
+institutions:
 
-Log in to:
-
-[](https://readthedocs.org)
-
-which is the admin site controlling the build process. From the Versions tab, activate
-the `release/new_release` branch and wait for it to build. Check the Builds tab to see
-that it has built successfully and maybe check updates! If it has built succesfully, do
-check pages to make sure that page code has executed successfully, and then go back to
-the Versions tab and deactivate and hide the branch.
-
-### Create pull requests into `master` and `develop`
-
-If all is well, then two PRs need to be made on GitHub:
-
-* The `release` branch into `master`, to bring all commits since the last release and
-  any fixes on release into `master`.
-* The `release` branch into `develop`, to bring any `release` fixes back into `develop`.
-
-Once both of those have been merged, the `feature` branch can be deleted.
-
-### Tag, build and publish
-
-Once the `origin` repository is merged, then use `git pull` to bring `develop` and
-`master` up to date on a local repo. Then, create a tag using the release version.
-
-```sh
-git checkout master
-git tag <version>
-git push --tags
-```
-
-The final commit on `master` is now tagged with the release version. You can add tags on
-the GitHub website, but only by using the GitHub release system and we are using PyPi to
-distribute package releases.
-
-Before publishing a package to the main PyPi site for the first time, you need to set an
-API token for PyPi.
-
-```sh
-poetry config pypi-token.pypi <your-token>
-```
-
-And now you can build the packages from `master` and publish.
-
-```sh
-poetry build
-poetry publish
-```
+* The [REALM project](https://prenticeclimategroup.wordpress.com/realm-team/), funded by
+  an [ERC grant](https://cordis.europa.eu/project/id/787203) to Prof. Colin Prentice
+  (Imperial College London).
+* The [LEMONTREE project](https://research.reading.ac.uk/lemontree/), funded by Schmidt
+  Futures through the [VESRI
+  programme](https://www.schmidtfutures.com/our-work/virtual-earth-system-research-institute-vesri/)
+  to support an international research team lead by Prof. Sandy Harrison (University of
+  Reading).
+* The [Virtual Rainforest project](https://pyrealm.readthedocs.io/), funded by a
+  Distinguished Scientist award from the [NOMIS
+  Foundation](https://nomisfoundation.ch/research-projects/a-virtual-rainforest-for-understanding-the-stability-resilience-and-sustainability-of-complex-ecosystems/)
+  to Prof. Robert Ewers (Imperial College London)
+* Research software engineering support from the [Institute of Computing for Climate
+  Science](https://iccs.cam.ac.uk/) at the University of Cambridge, through the [Virtual
+  Institute for Scientific
+  Software](https://www.schmidtfutures.com/our-work/virtual-institute-for-scientific-software/)
+  program funded by Schmidt Futures.

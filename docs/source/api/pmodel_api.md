@@ -26,6 +26,30 @@ kernelspec:
     :members:
 ```
 
+## The {mod}`~pyrealm.pmodel.pmodel_environment` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.pmodel.pmodel_environment
+    :autosummary:
+    :members:
+```
+
+## The {mod}`~pyrealm.pmodel.jmax_limitation` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.pmodel.jmax_limitation
+    :autosummary:
+    :members:
+```
+
+## The {mod}`~pyrealm.pmodel.calc_optimal_chi` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.pmodel.calc_optimal_chi
+    :autosummary:
+    :members:
+```
+
 ## The {mod}`~pyrealm.pmodel.functions` submodule
 
 ```{eval-rst}

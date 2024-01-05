@@ -25,7 +25,7 @@ import matplotlib.cm as cm
 import matplotlib.dates as mdates
 
 from pyrealm.pmodel import PModel, FastSlowPModel, PModelEnvironment, FastSlowScaler
-from pyrealm.hygro import convert_sh_to_vpd
+from pyrealm.core.hygro import convert_sh_to_vpd
 ```
 
 This notebook shows an example analysis using the P Model including fast and slow
@@ -39,7 +39,9 @@ spatial and temporal resolution from MODIS data.
 
 ```{code-cell}
 # Loading the example dataset:
-dpath = resources.files("pyrealm_build_data") / "UK_WFDE5_FAPAR_2018_JuneJuly.nc"
+dpath = (
+    resources.files("pyrealm_build_data.uk_data") / "UK_WFDE5_FAPAR_2018_JuneJuly.nc"
+)
 ds = xarray.load_dataset(dpath)
 
 datetimes = ds["time"].to_numpy()
@@ -63,7 +65,7 @@ focal_datetime = np.where(datetimes == np.datetime64("2018-06-12 12:00:00"))[0]
 # Plot the temperature data for an example timepoint and show the sites
 focal_temp = ds["Tair"][focal_datetime] - 273.15
 focal_temp.plot()
-plt.plot(sites["lon"], sites["lat"], "xr");
+plt.plot(sites["lon"], sites["lat"], "xr")
 ```
 
 The WFDE data need some conversion for use in the PModel, along with the definition of
@@ -119,7 +121,12 @@ fsscaler.set_window(
     half_width=np.timedelta64(1, "h"),
 )
 fs_pmod = FastSlowPModel(
-    env=pm_env, fs_scaler=fsscaler, fapar=fapar, ppfd=ppfd, alpha=1 / 15
+    env=pm_env,
+    fs_scaler=fsscaler,
+    handle_nan=True,
+    fapar=fapar,
+    ppfd=ppfd,
+    alpha=1 / 15,
 )
 ```
 
@@ -161,7 +168,7 @@ ax2.set_title("Fast Slow")
 # Add a colour bar
 subfig2.colorbar(
     im, ax=[ax1, ax2], shrink=0.55, label=r"GPP ($\mu g C\,m^{-2}\,s^{-1}$)"
-);
+)
 ```
 
 ## Time series predictions
@@ -199,8 +206,4 @@ for ax, st in zip(axes, sites["stid"].values):
 
 axes[0].legend(loc="lower center", bbox_to_anchor=[0.5, 1], ncols=2, frameon=False)
 plt.tight_layout()
-```
-
-```{code-cell}
-
 ```

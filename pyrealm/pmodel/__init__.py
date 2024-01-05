@@ -1,7 +1,10 @@
-"""The :mod:`~pyrealm.pmodel` module includes four submodules:
+"""The :mod:`~pyrealm.pmodel` module includes the following submodules:
 
-* The :mod:`~pyrealm.pmodel.pmodel` submodule provides classes implementing the core
-  calculations of the P  Model.
+* :mod:`~pyrealm.pmodel.pmodel`,
+* :mod:`~pyrealm.pmodel.pmodel_environment`,
+* :mod:`~pyrealm.pmodel.calc_optimal_chi` and
+* :mod:`~pyrealm.pmodel.jmax_limitation` provide classes implementing the core
+  calculations of the P Model.
 * The :mod:`~pyrealm.pmodel.functions` submodule provides key standalone functions for
   those calculations.
 * The :mod:`~pyrealm.pmodel.isotopes` submodule provides a class to estimate isotopic
@@ -25,6 +28,7 @@ Constants
 # flatten the namespace for the main public components and setup.cfg applies
 # # noqa: F401 to the whole file.
 
+from pyrealm.pmodel.calc_optimal_chi import CalcOptimalChi
 from pyrealm.pmodel.competition import (
     C3C4Competition,
     calculate_tree_proportion,
@@ -33,7 +37,6 @@ from pyrealm.pmodel.competition import (
 from pyrealm.pmodel.fast_slow_scaler import FastSlowScaler
 from pyrealm.pmodel.functions import (
     calc_co2_to_ca,
-    calc_density_h2o,
     calc_ftemp_arrh,
     calc_ftemp_inst_rd,
     calc_ftemp_inst_vcmax,
@@ -41,16 +44,12 @@ from pyrealm.pmodel.functions import (
     calc_gammastar,
     calc_kmm,
     calc_ns_star,
-    calc_patm,
     calc_soilmstress_mengoli,
     calc_soilmstress_stocker,
     calc_viscosity_h2o,
 )
 from pyrealm.pmodel.isotopes import CalcCarbonIsotopes
-from pyrealm.pmodel.pmodel import (
-    CalcOptimalChi,
-    JmaxLimitation,
-    PModel,
-    PModelEnvironment,
-)
+from pyrealm.pmodel.jmax_limitation import JmaxLimitation
+from pyrealm.pmodel.pmodel import PModel
+from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 from pyrealm.pmodel.subdaily import FastSlowPModel, memory_effect

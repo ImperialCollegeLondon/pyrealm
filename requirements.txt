@@ -1,9 +1,0 @@
-# Requirements from setup.py for minimal running installation.
-
-.
-
-# Additional packages for testing
-pre-commit
-pyyaml
-pytest
-netCDF4
