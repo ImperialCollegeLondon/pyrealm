@@ -97,7 +97,9 @@ class SplashModel:
         """Estimated solar fluxes for observations"""
 
         # Initialise the evaporative flux class
-        self.evap: DailyEvapFluxes = DailyEvapFluxes(self.solar, pa=self.pa, tc=tc)
+        self.evap: DailyEvapFluxes = DailyEvapFluxes(
+            self.solar, pa=self.pa, tc=tc, core_const=core_const
+        )
         """Estimated evaporative fluxes for observations"""
 
     def estimate_initial_soil_moisture(

@@ -11,12 +11,13 @@ import xarray
 def splash_core_constants():
     """Provide constants using SPLASH original defaults.
 
-    SPLASH uses 15°C / 288.1 5 K in the standard atmosphere definition
+    SPLASH v1 uses 15°C / 288.1 5 K in the standard atmosphere definition and uses the
+    Chen method for calculating water density.
     """
 
     from pyrealm.constants import CoreConst
 
-    return CoreConst(k_To=288.15)
+    return CoreConst(k_To=288.15, water_density_method="chen")
 
 
 @pytest.fixture()

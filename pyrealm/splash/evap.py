@@ -8,8 +8,14 @@ from typing import Optional, Union
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm.constants import CoreConst
+from pyrealm.core.hygro import (
+    calc_enthalpy_vaporisation,
+    calc_psychrometric_constant,
+    calc_saturation_vapour_pressure_slope,
+)
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.splash.const import kCw, kMa, kMv, kw, pir
+from pyrealm.core.water import calc_density_h2o
 from pyrealm.splash.solar import DailySolarFluxes
 
 
@@ -36,12 +42,14 @@ class DailyEvapFluxes:
         kWm: The maximum soil water capacity (mm).
         tc: The air temperature of the observations (°C).
         pa: The atmospheric pressure of the observations (Pa).
+        core_const: An instance of CoreConst.
     """
 
     solar: DailySolarFluxes
     pa: InitVar[NDArray]
     tc: InitVar[NDArray]
     kWm: NDArray = np.array([150.0])
+    core_const: CoreConst = CoreConst()
 
     sat: NDArray = field(init=False)
     """Slope of saturation vapour pressure temperature curve, Pa/K"""
@@ -71,16 +79,16 @@ class DailyEvapFluxes:
         """
 
         # Slope of saturation vap press temp curve, Pa/K
-        self.sat = sat_slope(tc)
+        self.sat = calc_saturation_vapour_pressure_slope(tc)
 
         # Enthalpy of vaporization, J/kg
-        self.lv = enthalpy_vap(tc)
+        self.lv = calc_enthalpy_vaporisation(tc)
 
         # Density of water, kg/m^3
-        self.pw = density_h2o(tc, pa)
+        self.pw = calc_density_h2o(tc, pa, const=self.core_const)
 
         # Psychrometric constant, Pa/K
-        self.psy = psychro(tc, pa)
+        self.psy = calc_psychrometric_constant(tc, pa, const=self.core_const)
 
         # Calculate water-to-energy conversion (econ), m^3/J
         self.econ = self.sat / (self.lv * self.pw * (self.sat + self.psy))
@@ -92,10 +100,10 @@ class DailyEvapFluxes:
         self.eet_d = (1e3) * self.econ * self.solar.rn_d
 
         # Estimate daily potential evapotranspiration (pet_d), mm
-        self.pet_d = (1.0 + kw) * self.eet_d
+        self.pet_d = (1.0 + self.core_const.k_w) * self.eet_d
 
         # Calculate variable substitute (rx), (mm/hr)/(W/m^2)
-        self.rx = (3.6e6) * (1.0 + kw) * self.econ
+        self.rx = (3.6e6) * (1.0 + self.core_const.k_w) * self.econ
 
     def estimate_aet(
         self, wn: NDArray, day_idx: Optional[int] = None, only_aet: bool = True
@@ -133,7 +141,7 @@ class DailyEvapFluxes:
             didx = day_idx
 
         # Calculate evaporative supply rate (sw), mm/h
-        sw = kCw * wn / self.kWm
+        sw = self.core_const.k_Cw * wn / self.kWm
 
         # Validate evaporative supply rate
         if np.any(sw < 0):
@@ -148,7 +156,7 @@ class DailyEvapFluxes:
             + self.solar.rnl[didx] / (self.solar.rw[didx] * self.solar.rv[didx])
             - self.solar.ru[didx] / self.solar.rv[didx]
         )
-        hi = np.arccos(np.clip(hi_pre, -np.inf, 1)) / pir
+        hi = np.arccos(np.clip(hi_pre, -np.inf, 1)) / self.core_const.k_pir
 
         # Estimate daily actual evapotranspiration (aet_d), mm
         aet_d = (
@@ -165,7 +173,7 @@ class DailyEvapFluxes:
                     - self.rx[didx] * self.solar.rnl[didx]
                 )
                 * (self.solar.hn[didx] - hi)
-                * pir
+                * self.core_const.k_pir
             )
         ) * (24.0 / np.pi)
 
@@ -173,142 +181,3 @@ class DailyEvapFluxes:
             return aet_d
         else:
             return aet_d, hi, sw
-
-
-def sat_slope(tc: NDArray) -> NDArray:
-    """Calculate the slope of the saturation vapour pressure curve.
-
-    Calculates the slope of the saturation pressure temperature curve (Pa/K) following
-    equation 13 of :cite:t:`allen:1998a`.
-
-    Args:
-        tc: The air temperature (°C)
-
-    Returns
-        The calculated slope.
-    """
-    return (
-        (17.269)
-        * (237.3)
-        * (610.78)
-        * (np.exp(tc * 17.269 / (tc + 237.3)) / ((tc + 237.3) ** 2))
-    )
-
-
-def enthalpy_vap(tc: NDArray) -> NDArray:
-    """Calculate the enthalpy of vaporization.
-
-    Calculates the latent heat of vaporization of water (J/Kg) as a function of
-    temperature following :cite:t:`henderson-sellers:1984a`.
-
-    Args:
-        tc: Air temperature (°C)
-
-    Returns:
-        Calculated latent heat of vaporisation (J/Kg).
-    """
-
-    return 1.91846e6 * ((tc + 273.15) / (tc + 273.15 - 33.91)) ** 2
-
-
-def density_h2o(tc: NDArray, p: NDArray) -> NDArray:
-    """Calculate the density of water.
-
-    This function calculates the density of water at a given temperature and pressure
-    (kg/m^3) following :cite:t:`chen:2008a`.
-
-    Args:
-        tc: Air temperature (°C)
-        p: Atmospheric pressure (Pa)
-
-    Returns:
-        The calculated density of water
-    """
-
-    # TODO - merge
-
-    # Calculate density at 1 atm (kg/m^3):
-    po = 0.99983952 + (6.788260e-5) * tc
-    po += -(9.08659e-6) * tc * tc
-    po += (1.022130e-7) * tc * tc * tc
-    po += -(1.35439e-9) * tc * tc * tc * tc
-    po += (1.471150e-11) * tc * tc * tc * tc * tc
-    po += -(1.11663e-13) * tc * tc * tc * tc * tc * tc
-    po += (5.044070e-16) * tc * tc * tc * tc * tc * tc * tc
-    po += -(1.00659e-18) * tc * tc * tc * tc * tc * tc * tc * tc
-
-    # Calculate bulk modulus at 1 atm (bar):
-    ko = 19652.17 + 148.1830 * tc
-    ko += -2.29995 * tc * tc
-    ko += 0.01281 * tc * tc * tc
-    ko += -(4.91564e-5) * tc * tc * tc * tc
-    ko += (1.035530e-7) * tc * tc * tc * tc * tc
-
-    # Calculate temperature dependent coefficients:
-    ca = 3.26138 + (5.223e-4) * tc
-    ca += (1.324e-4) * tc * tc
-    ca += -(7.655e-7) * tc * tc * tc
-    ca += (8.584e-10) * tc * tc * tc * tc
-
-    cb = 7.2061e-5 + -(5.8948e-6) * tc
-    cb += (8.69900e-8) * tc * tc
-    cb += -(1.0100e-9) * tc * tc * tc
-    cb += (4.3220e-12) * tc * tc * tc * tc
-
-    # Convert atmospheric pressure to bar (1 bar = 100000 Pa)
-    pbar = (1.0e-5) * p
-
-    pw = ko + ca * pbar + cb * pbar**2.0
-    pw /= ko + ca * pbar + cb * pbar**2.0 - pbar
-    pw *= (1e3) * po
-    return pw
-
-
-def psychro(tc: NDArray, p: NDArray) -> NDArray:
-    r"""Calculate the psychrometric constant.
-
-    Calculates the psychrometric constant (:math:`\lambda`, Pa/K) given the temperature
-    and atmospheric pressure following :cite:t:`allen:1998a` and
-    :cite:t:`tsilingiris:2008a`.
-
-    Args:
-        tc: Air temperature (°C)
-        p: Atmospheric pressure (Pa)
-
-    Returns:
-        The calculated psychrometric constant
-    """
-
-    # Calculate the specific heat capacity of water, J/kg/K
-    cp = specific_heat(tc)
-
-    # Calculate latent heat of vaporization, J/kg
-    lv = enthalpy_vap(tc)
-
-    # Calculate psychrometric constant, Pa/K
-    # Eq. 8, Allen et al. (1998)
-    return cp * kMa * p / (kMv * lv)
-
-
-def specific_heat(tc: NDArray) -> NDArray:
-    """Calculate the specific heat of air.
-
-    Calculates the specific heat of air at a constant pressure (:math:`c_{pm}`, J/kg/K)
-    following :cite:t:`tsilingiris:2008a`. This equation is only valid for temperatures
-    between 0 and 100 °C.
-
-    Args:
-        tc: Air temperature (°C)
-
-    Returns:
-        The specific heat of air values.
-    """
-    tc = np.clip(tc, 0, 100)
-    cp = 1.0045714270 + (2.050632750e-3) * tc
-    cp += -(1.631537093e-4) * tc * tc
-    cp += (6.212300300e-6) * tc * tc * tc
-    cp += -(8.830478888e-8) * tc * tc * tc * tc
-    cp += (5.071307038e-10) * tc * tc * tc * tc * tc
-    cp *= 1e3
-
-    return cp

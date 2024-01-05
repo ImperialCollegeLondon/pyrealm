@@ -61,8 +61,17 @@ class CoreConst(ConstantsClass):
     k_Ma: float = 0.028963
     """Molecular weight of dry air (Tsilingiris, 2008)  (:math:`M_a`, 0.028963,
     kg/mol)"""
+    k_Mv: float = 0.01802
+    """Molecular weight of water vapour (Tsilingiris, 2008)  (:math:`M_v`,0.01802,
+    kg/mol)"""
     k_CtoK: float = 273.15
     """Conversion from °C to K   (:math:`CtoK` , 273.15, -)"""
+
+    # TODO - these might be better in a separate SplashConst
+    k_w = 0.26
+    """Entrainment factor (Lhomme, 1997; Priestley & Taylor, 1972)"""
+    k_Cw = 1.05
+    """Supply constant, mm/hr (Federer, 1982)"""
 
     # Solar constants
     k_pir = np.pi / 180.0

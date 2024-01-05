@@ -14,7 +14,7 @@ def expected_attr():
     return ("sat", "lv", "pw", "psy", "econ", "cond", "eet_d", "pet_d")
 
 
-def test_evap_scalar():
+def test_evap_scalar(splash_core_constants):
     """Test using array inputs with a single scalar value.
 
     The expected results are as the original output from the SPLASH evap.py __main__
@@ -33,7 +33,12 @@ def test_evap_scalar():
         tc=np.array([23.0]),
     )
 
-    evap = DailyEvapFluxes(solar, pa=np.array([99630.833]), tc=np.array([23.0]))
+    evap = DailyEvapFluxes(
+        solar,
+        pa=np.array([99630.833]),
+        tc=np.array([23.0]),
+        core_const=splash_core_constants,
+    )
 
     # The original implementation provided sw=0.9 here, but that is now calculated
     # internally from the wn value. Check that it is recreated succesfully.
@@ -60,7 +65,7 @@ def test_evap_scalar():
     assert np.allclose(sw, 0.9)
 
 
-def test_evap_iter(daily_flux_benchmarks, expected_attr):
+def test_evap_iter(splash_core_constants, daily_flux_benchmarks, expected_attr):
     """Robust test checking of evap predictions.
 
     This checks that the outcome of calculating each input row in a time series
@@ -82,7 +87,9 @@ def test_evap_iter(daily_flux_benchmarks, expected_attr):
             lat=inp["lat"], elv=inp["elv"], dates=cal, sf=inp["sf"], tc=inp["tc"]
         )
 
-        evap = DailyEvapFluxes(solar, pa=inp["pa"], tc=inp["tc"])
+        evap = DailyEvapFluxes(
+            solar, pa=inp["pa"], tc=inp["tc"], core_const=splash_core_constants
+        )
         aet, hi, sw = evap.estimate_aet(wn=inp["wn"], only_aet=False)
 
         for ky in expected_attr:
@@ -93,7 +100,7 @@ def test_evap_iter(daily_flux_benchmarks, expected_attr):
         assert np.allclose(hi, exp["hi"])
 
 
-def test_evap_array(daily_flux_benchmarks, expected_attr):
+def test_evap_array(splash_core_constants, daily_flux_benchmarks, expected_attr):
     """Array checking of evaporative predictions.
 
     This checks that the outcome of calculating all the values in the test inputs
@@ -115,7 +122,9 @@ def test_evap_array(daily_flux_benchmarks, expected_attr):
         tc=inputs["tc"],
     )
 
-    evap = DailyEvapFluxes(solar, pa=inputs["pa"], tc=inputs["tc"])
+    evap = DailyEvapFluxes(
+        solar, pa=inputs["pa"], tc=inputs["tc"], core_const=splash_core_constants
+    )
     aet, hi, sw = evap.estimate_aet(wn=inputs["wn"], only_aet=False)
 
     for ky in expected_attr:
@@ -155,10 +164,11 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
         tc=inputs["tmp"].data,
     )
 
-    # SPLASH uses 15°C / 288.15 K in the standard atmosphere definition
     pa = calc_patm(inputs["elev"].data, const=splash_core_constants)
 
-    evap = DailyEvapFluxes(solar, pa=pa, tc=inputs["tmp"].data)
+    evap = DailyEvapFluxes(
+        solar, pa=pa, tc=inputs["tmp"].data, core_const=splash_core_constants
+    )
 
     # Test the static components of evap calculations are the same - which can be
     # tested across the whole array

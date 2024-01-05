@@ -180,3 +180,100 @@ def convert_sh_to_vpd(
     vp = convert_sh_to_vp(sh, patm, const=const)
 
     return vp_sat - vp
+
+
+# The following functions are integrated from the evap.py implementation of SPLASH v1.
+
+
+def calc_saturation_vapour_pressure_slope(tc: NDArray) -> NDArray:
+    """Calculate the slope of the saturation vapour pressure curve.
+
+    Calculates the slope of the saturation pressure temperature curve, following
+    equation 13 of :cite:t:`allen:1998a`.
+
+    Args:
+        tc: The air temperature (°C)
+
+    Returns
+        The calculated slope in kPa °C-1.
+    """
+
+    # TODO move these coefficients into constants?
+    return (
+        (17.269)
+        * (237.3)
+        * (610.78)
+        * (np.exp(tc * 17.269 / (tc + 237.3)) / ((tc + 237.3) ** 2))
+    )
+
+
+def calc_enthalpy_vaporisation(tc: NDArray) -> NDArray:
+    """Calculate the enthalpy of vaporization.
+
+    Calculates the latent heat of vaporization of water as a function of
+    temperature following :cite:t:`henderson-sellers:1984a`.
+
+    Args:
+        tc: Air temperature (°C)
+
+    Returns:
+        Calculated latent heat of vaporisation (J/Kg).
+    """
+
+    # TODO move these coefficients into constants?
+    return 1.91846e6 * ((tc + 273.15) / (tc + 273.15 - 33.91)) ** 2
+
+
+def calc_specific_heat(tc: NDArray) -> NDArray:
+    """Calculate the specific heat of air.
+
+    Calculates the specific heat of air at a constant pressure (:math:`c_{pm}`, J/kg/K)
+    following :cite:t:`tsilingiris:2008a`. This equation is only valid for temperatures
+    between 0 and 100 °C.
+
+    Args:
+        tc: Air temperature (°C)
+
+    Returns:
+        The specific heat of air values.
+    """
+
+    # TODO move these coefficients into constants?
+
+    tc = np.clip(tc, 0, 100)
+    cp = 1.0045714270 + (2.050632750e-3) * tc
+    cp += -(1.631537093e-4) * tc * tc
+    cp += (6.212300300e-6) * tc * tc * tc
+    cp += -(8.830478888e-8) * tc * tc * tc * tc
+    cp += (5.071307038e-10) * tc * tc * tc * tc * tc
+    cp *= 1e3
+
+    return cp
+
+
+def calc_psychrometric_constant(
+    tc: NDArray, p: NDArray, const: CoreConst = CoreConst()
+) -> NDArray:
+    r"""Calculate the psychrometric constant.
+
+    Calculates the psychrometric constant (:math:`\lambda`, Pa/K) given the temperature
+    and atmospheric pressure following :cite:t:`allen:1998a` and
+    :cite:t:`tsilingiris:2008a`.
+
+    Args:
+        tc: Air temperature (°C)
+        p: Atmospheric pressure (Pa)
+
+    Returns:
+        The calculated psychrometric constant
+    """
+
+    # Calculate the specific heat capacity of water, J/kg/K
+    cp = calc_specific_heat(tc)
+
+    # Calculate latent heat of vaporization, J/kg
+    lv = calc_enthalpy_vaporisation(tc)
+
+    # Calculate psychrometric constant, Pa/K
+    # Eq. 8, Allen et al. (1998)
+    return cp * const.k_Ma * p / (const.k_Mv * lv)
