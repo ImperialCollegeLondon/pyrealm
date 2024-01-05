@@ -7,6 +7,18 @@ import pytest
 import xarray
 
 
+@pytest.fixture
+def splash_core_constants():
+    """Provide constants using SPLASH original defaults.
+
+    SPLASH uses 15°C / 288.1 5 K in the standard atmosphere definition
+    """
+
+    from pyrealm.constants import CoreConst
+
+    return CoreConst(k_To=288.15)
+
+
 @pytest.fixture()
 def daily_flux_benchmarks() -> tuple[np.ndarray, np.ndarray]:
     """Test daily values.
