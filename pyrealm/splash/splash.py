@@ -11,7 +11,6 @@ from pyrealm.constants import CoreConst
 from pyrealm.core.pressure import calc_patm
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.splash.evap import DailyEvapFluxes
-from pyrealm.splash.logger import logger
 from pyrealm.splash.solar import DailySolarFluxes
 from pyrealm.splash.utilities import Calendar
 
@@ -171,7 +170,7 @@ class SplashModel:
 
             # Report if verbose
             if verbose:
-                logger.info(f"Iteration: {n_iter}; maximum difference: {diff_sm.max()}")
+                print(f"Iteration: {n_iter}; maximum difference: {diff_sm.max()}")
 
             if np.nanmax(diff_sm) <= max_diff:
                 equilibrated = True
