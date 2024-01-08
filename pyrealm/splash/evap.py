@@ -48,7 +48,7 @@ class DailyEvapFluxes:
     solar: DailySolarFluxes
     pa: InitVar[NDArray]
     tc: InitVar[NDArray]
-    kWm: NDArray = np.array([150.0])
+    kWm: NDArray = field(default_factory=lambda: np.array([150.0]))
     core_const: CoreConst = CoreConst()
 
     sat: NDArray = field(init=False)
