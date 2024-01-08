@@ -164,7 +164,7 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
         tc=inputs["tmp"].data,
     )
 
-    pa = calc_patm(inputs["elev"].data, const=splash_core_constants)
+    pa = calc_patm(elev, const=splash_core_constants)
 
     evap = DailyEvapFluxes(
         solar, pa=pa, tc=inputs["tmp"].data, core_const=splash_core_constants
