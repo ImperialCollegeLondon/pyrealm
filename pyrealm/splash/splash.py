@@ -10,7 +10,6 @@ from numpy.typing import NDArray
 from pyrealm.constants import CoreConst
 from pyrealm.core.pressure import calc_patm
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.splash.const import kWm
 from pyrealm.splash.evap import DailyEvapFluxes
 from pyrealm.splash.logger import logger
 from pyrealm.splash.solar import DailySolarFluxes
@@ -107,7 +106,7 @@ class SplashModel:
         wn_init: Optional[NDArray] = None,
         max_iter: int = 10,
         max_diff: float = 1.0,
-        verbose: bool = True,
+        verbose: bool = False,
     ) -> NDArray:
         """Estimate initial soil moisture.
 
@@ -239,8 +238,8 @@ class SplashModel:
 
         # Partition current_wn into soil moisture and runoff (ro), mm
         # - allocate excess sm to runoff and clip out negative sm
-        ro = np.clip(current_wn, kWm, np.inf) - kWm
-        wn = np.clip(current_wn, 0, kWm)
+        ro = np.clip(current_wn, self.kWm, np.inf) - self.kWm
+        wn = np.clip(current_wn, 0, self.kWm)
 
         # Return values, ignoring the type clash that estimate_aet _can_ return
         # additional arrays. aet here is explicitly a single array not a tuple.

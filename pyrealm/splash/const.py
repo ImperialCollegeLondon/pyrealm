@@ -21,7 +21,7 @@
 # # kPo = 101325  # standard atmosphere, Pa (Allen, 1973)
 # # kR = 8.31447  # universal gas constant, J/mol/K (Moldover et al., 1988)
 # # kTo = 288.15  # base temperature, K (Berberan-Santos et al., 1997)
-kWm = 150.0  # soil moisture capacity, mm (Cramer & Prentice, 1988)
+# kWm = 150.0  # soil moisture capacity, mm (Cramer & Prentice, 1988)
 # # kw = 0.26  # entrainment factor (Lhomme, 1997; Priestley & Taylor, 1972)
 # # kCw = 1.05  # supply constant, mm/hr (Federer, 1982)
 
