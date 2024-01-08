@@ -1,4 +1,13 @@
-"""Utilities for the SPLASH module."""
+"""Provides the Calendar utility class.
+
+The Calendar class is currently used to support the operation of the
+:mod:`~pyrealm.splash` submodule, which requires the Julian day, number of days in the
+year and year for solar calculations. The class provides iterable and indexable access
+to a date sequence for use in those calculations.
+
+It is possible that this could be replaced with xarray dt accessors if pyrealm adopts
+xarray data structures.
+"""
 from dataclasses import dataclass, field
 from typing import Any, Generator, Sized
 
@@ -30,7 +39,6 @@ class Calendar(Sized):
     instance.
     """
 
-    # TODO - could be replaced with xarray dt accessors?
     dates: np.ndarray
     year: np.ndarray = field(init=False)
     julian_day: np.ndarray = field(init=False)

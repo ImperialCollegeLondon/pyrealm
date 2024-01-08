@@ -8,11 +8,11 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
+from pyrealm.core.calendar import Calendar
 from pyrealm.core.pressure import calc_patm
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.splash.evap import DailyEvapFluxes
 from pyrealm.splash.solar import DailySolarFluxes
-from pyrealm.splash.utilities import Calendar
 
 
 class SplashModel:
