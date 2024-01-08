@@ -20,9 +20,9 @@ def test_evap_scalar(splash_core_constants):
     The expected results are as the original output from the SPLASH evap.py __main__
     function.
     """
+    from pyrealm.core.calendar import Calendar
     from pyrealm.splash.evap import DailyEvapFluxes
     from pyrealm.splash.solar import DailySolarFluxes
-    from pyrealm.splash.utilities import Calendar
 
     cal = Calendar(np.array(["2000-06-20"], dtype="<M8[D]"))
     solar = DailySolarFluxes(
@@ -72,9 +72,9 @@ def test_evap_iter(splash_core_constants, daily_flux_benchmarks, expected_attr):
     independently gives the same answers as the original implementation, which _has_ to
     iterate over the rows to calculate values.
     """
+    from pyrealm.core.calendar import Calendar
     from pyrealm.splash.evap import DailyEvapFluxes
     from pyrealm.splash.solar import DailySolarFluxes
-    from pyrealm.splash.utilities import Calendar
 
     inputs, expected = daily_flux_benchmarks
 
@@ -107,9 +107,9 @@ def test_evap_array(splash_core_constants, daily_flux_benchmarks, expected_attr)
     _simultaneously_ using array inputs gives the same answers as the original
     iterated implementation.
     """
+    from pyrealm.core.calendar import Calendar
     from pyrealm.splash.evap import DailyEvapFluxes
     from pyrealm.splash.solar import DailySolarFluxes
-    from pyrealm.splash.utilities import Calendar
 
     inputs, expected = daily_flux_benchmarks
     cal = Calendar(inputs["dates"].astype("datetime64[D]"))
@@ -141,10 +141,10 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
     This checks that the outcome of evaporative calculations from running the full
     SPLASH model on a gridded dataset are consistent.
     """
+    from pyrealm.core.calendar import Calendar
     from pyrealm.core.pressure import calc_patm
     from pyrealm.splash.evap import DailyEvapFluxes
     from pyrealm.splash.solar import DailySolarFluxes
-    from pyrealm.splash.utilities import Calendar
 
     inputs, expected = grid_benchmarks
 

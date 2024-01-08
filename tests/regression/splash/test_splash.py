@@ -19,8 +19,8 @@ def test_estimate_daily_water_balance_scalar(splash_core_constants):
 
     Uses the expectations from the __main__ example provided in SPLASH v1.0 splash.py.
     """
+    from pyrealm.core.calendar import Calendar
     from pyrealm.splash.splash import SplashModel
-    from pyrealm.splash.utilities import Calendar
 
     cal = Calendar(np.array(["2000-06-20"], dtype="<M8[D]"))
     splash = SplashModel(
@@ -59,8 +59,8 @@ def test_estimate_daily_water_balance_iter(
     This test iterates over the individual daily benchmark rows, calculating each
     prediction as a single independent day.
     """
+    from pyrealm.core.calendar import Calendar
     from pyrealm.splash.splash import SplashModel
-    from pyrealm.splash.utilities import Calendar
 
     inputs, expected = daily_flux_benchmarks
     days = inputs["dates"].astype("datetime64[D]")
@@ -88,8 +88,8 @@ def test_estimate_daily_water_balance_array(
     splash_core_constants, daily_flux_benchmarks
 ):
     """This test runs the individual daily benchmark data as an array."""
+    from pyrealm.core.calendar import Calendar
     from pyrealm.splash.splash import SplashModel
-    from pyrealm.splash.utilities import Calendar
 
     inputs, expected = daily_flux_benchmarks
 
@@ -117,8 +117,8 @@ def test_estimate_daily_water_balance_array(
 
 def test_run_spin_up_oned(splash_core_constants, one_d_benchmark):
     """Test the spin up process using the original 1D test data from __main__.py."""
+    from pyrealm.core.calendar import Calendar
     from pyrealm.splash.splash import SplashModel
-    from pyrealm.splash.utilities import Calendar
 
     inputs, expected = one_d_benchmark
 
@@ -150,9 +150,9 @@ def test_run_spin_up_iter(splash_core_constants, grid_benchmarks):
     This is a slow test.
     """
 
+    from pyrealm.core.calendar import Calendar
     from pyrealm.splash.logger import logger
     from pyrealm.splash.splash import SplashModel
-    from pyrealm.splash.utilities import Calendar
 
     # Mute logger
     logger.setLevel("CRITICAL")
@@ -190,9 +190,9 @@ def test_run_spin_up_iter(splash_core_constants, grid_benchmarks):
 def test_run_spin_up_gridded(splash_core_constants, grid_benchmarks):
     """Test the spin up process using the grid in a single pass across observations."""
 
+    from pyrealm.core.calendar import Calendar
     from pyrealm.splash.logger import logger
     from pyrealm.splash.splash import SplashModel
-    from pyrealm.splash.utilities import Calendar
 
     # Mute logger
     logger.setLevel("DEBUG")
@@ -223,8 +223,8 @@ def test_calculate_soil_moisture_oned(splash_core_constants, one_d_benchmark):
 
     Uses the original 1D test data from __main__.py.
     """
+    from pyrealm.core.calendar import Calendar
     from pyrealm.splash.splash import SplashModel
-    from pyrealm.splash.utilities import Calendar
 
     inputs, expected = one_d_benchmark
 
@@ -259,8 +259,8 @@ def test_calculate_soil_moisture_grid(splash_core_constants, grid_benchmarks):
     Uses the original 1D test data from __main__.py.
     """
 
+    from pyrealm.core.calendar import Calendar
     from pyrealm.splash.splash import SplashModel
-    from pyrealm.splash.utilities import Calendar
 
     inputs, expected = grid_benchmarks
 

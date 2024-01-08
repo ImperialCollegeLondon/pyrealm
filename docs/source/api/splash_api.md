@@ -40,10 +40,3 @@ kernelspec:
 .. automodule:: pyrealm.splash.splash
     :members:
 ```
-
-## The Utilities submodule
-
-```{eval-rst}
-.. automodule:: pyrealm.splash.utilities
-    :members:
-```

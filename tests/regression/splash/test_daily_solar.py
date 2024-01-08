@@ -29,8 +29,8 @@ def test_solar_scalars():
 
     Uses using inputs from the __main__ function of the original SPLASH solar.py
     """
+    from pyrealm.core.calendar import Calendar
     from pyrealm.splash.solar import DailySolarFluxes
-    from pyrealm.splash.utilities import Calendar
 
     cal = Calendar(np.array(["2000-06-20"], dtype="<M8[D]"))
 
@@ -69,8 +69,8 @@ def test_solar_iter(daily_flux_benchmarks, expected_attr):
     independently gives the same answers as the original implementation, which _has_ to
     iterate over the rows to calculate values.
     """
+    from pyrealm.core.calendar import Calendar
     from pyrealm.splash.solar import DailySolarFluxes
-    from pyrealm.splash.utilities import Calendar
 
     inputs, expected = daily_flux_benchmarks
 
@@ -92,8 +92,8 @@ def test_solar_array(daily_flux_benchmarks, expected_attr):
     simultaneously using array inputs gives the same answers as the original
     iterated implementation.
     """
+    from pyrealm.core.calendar import Calendar
     from pyrealm.splash.solar import DailySolarFluxes
-    from pyrealm.splash.utilities import Calendar
 
     inputs, expected = daily_flux_benchmarks
     cal = Calendar(inputs["dates"].astype("datetime64[D]"))
@@ -115,8 +115,8 @@ def test_solar_array_grid(grid_benchmarks):
 
     This checks that a gridded dataset works with solar.py
     """
+    from pyrealm.core.calendar import Calendar
     from pyrealm.splash.solar import DailySolarFluxes
-    from pyrealm.splash.utilities import Calendar
 
     inputs, expected = grid_benchmarks
 

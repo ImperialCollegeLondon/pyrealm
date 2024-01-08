@@ -8,9 +8,9 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
+from pyrealm.core.calendar import Calendar
 from pyrealm.core.solar import calc_heliocentric_longitudes
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.splash.utilities import Calendar
 
 
 @dataclass
