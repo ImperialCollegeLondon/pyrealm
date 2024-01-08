@@ -151,11 +151,7 @@ def test_run_spin_up_iter(splash_core_constants, grid_benchmarks):
     """
 
     from pyrealm.core.calendar import Calendar
-    from pyrealm.splash.logger import logger
     from pyrealm.splash.splash import SplashModel
-
-    # Mute logger
-    logger.setLevel("CRITICAL")
 
     inputs, expected = grid_benchmarks
 
@@ -191,11 +187,7 @@ def test_run_spin_up_gridded(splash_core_constants, grid_benchmarks):
     """Test the spin up process using the grid in a single pass across observations."""
 
     from pyrealm.core.calendar import Calendar
-    from pyrealm.splash.logger import logger
     from pyrealm.splash.splash import SplashModel
-
-    # Mute logger
-    logger.setLevel("DEBUG")
 
     inputs, expected = grid_benchmarks
 
