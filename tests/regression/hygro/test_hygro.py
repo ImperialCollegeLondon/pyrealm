@@ -31,10 +31,10 @@ PATM = np.linspace(60, 110, 31)
 def test_calc_vp_sat(bigleaf, formula) -> None:
     """Test the calc_vp_sat function."""
 
-    from pyrealm.constants import HygroConst
-    from pyrealm.hygro import calc_vp_sat
+    from pyrealm.constants import CoreConst
+    from pyrealm.core.hygro import calc_vp_sat
 
-    const = HygroConst(magnus_option=formula)
+    const = CoreConst(magnus_option=formula)
     results = calc_vp_sat(TEMP, const)
     expected = np.array(bigleaf["calc_vp_sat"][formula])
 
@@ -47,10 +47,10 @@ def test_calc_vp_sat(bigleaf, formula) -> None:
 def test_convert_vp_to_vpd(bigleaf, formula):
     """Test the convert_vp_to_vpd function."""
 
-    from pyrealm.constants import HygroConst
-    from pyrealm.hygro import convert_vp_to_vpd
+    from pyrealm.constants import CoreConst
+    from pyrealm.core.hygro import convert_vp_to_vpd
 
-    const = HygroConst(magnus_option=formula)
+    const = CoreConst(magnus_option=formula)
     results = convert_vp_to_vpd(VP, TEMP, const)
     expected = np.array(bigleaf["convert_vp_to_vpd"][formula])
 
@@ -63,10 +63,10 @@ def test_convert_vp_to_vpd(bigleaf, formula):
 def test_convert_rh_to_vpd(bigleaf, formula):
     """Test the convert_rh_to_vpd function."""
 
-    from pyrealm.constants import HygroConst
-    from pyrealm.hygro import convert_rh_to_vpd
+    from pyrealm.constants import CoreConst
+    from pyrealm.core.hygro import convert_rh_to_vpd
 
-    const = HygroConst(magnus_option=formula)
+    const = CoreConst(magnus_option=formula)
     results = convert_rh_to_vpd(RH, TEMP, const)
     expected = np.array(bigleaf["convert_rh_to_vpd"][formula])
 
@@ -76,7 +76,7 @@ def test_convert_rh_to_vpd(bigleaf, formula):
 def test_convert_sh_to_vp(bigleaf):
     """Test the convert_sh_to_vp function."""
 
-    from pyrealm.hygro import convert_sh_to_vp
+    from pyrealm.core.hygro import convert_sh_to_vp
 
     results = convert_sh_to_vp(SH, PATM)
     expected = np.array(bigleaf["convert_sh_to_vp"])
@@ -90,10 +90,10 @@ def test_convert_sh_to_vp(bigleaf):
 def test_convert_sh_to_vpd(bigleaf, formula):
     """Test the convert_sh_to_vpd function."""
 
-    from pyrealm.constants import HygroConst
-    from pyrealm.hygro import convert_sh_to_vpd
+    from pyrealm.constants import CoreConst
+    from pyrealm.core.hygro import convert_sh_to_vpd
 
-    const = HygroConst(magnus_option=formula)
+    const = CoreConst(magnus_option=formula)
     results = convert_sh_to_vpd(SH, TEMP, PATM, const)
     expected = np.array(bigleaf["convert_sh_to_vpd"][formula])
 

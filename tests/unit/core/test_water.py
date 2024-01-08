@@ -11,7 +11,7 @@ import pytest
 @pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
 def test_calc_density_h20_fisher(shape):
     """Test the fisher method."""
-    from pyrealm.pmodel.functions import calc_density_h2o_fisher
+    from pyrealm.core.water import calc_density_h2o_fisher
 
     rho = calc_density_h2o_fisher(
         np.full(shape, fill_value=20), np.full(shape, fill_value=101325)
@@ -23,7 +23,7 @@ def test_calc_density_h20_fisher(shape):
 @pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
 def test_calc_density_h20_chen(shape):
     """Test the chen method."""
-    from pyrealm.pmodel.functions import calc_density_h2o_chen
+    from pyrealm.core.water import calc_density_h2o_chen
 
     rho = calc_density_h2o_chen(
         np.full(shape, fill_value=20), np.full(shape, fill_value=101325)
@@ -42,13 +42,13 @@ def test_calc_density_h20_chen(shape):
 )
 def test_calc_density_h20(const_args, exp):
     """Test the wrapper method dispatches as expected."""
-    from pyrealm.constants import PModelConst
-    from pyrealm.pmodel.functions import calc_density_h2o
+    from pyrealm.constants import CoreConst
+    from pyrealm.core.water import calc_density_h2o
 
     args = {}
 
     if const_args is not None:
-        args["const"] = PModelConst(water_density_method=const_args)
+        args["const"] = CoreConst(water_density_method=const_args)
 
     rho = calc_density_h2o(np.array([20]), np.array([101325]), **args)
 
@@ -58,7 +58,7 @@ def test_calc_density_h20(const_args, exp):
 @pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
 def test_calc_viscosity_h20(shape):
     """Test the viscosity calculation."""
-    from pyrealm.pmodel.functions import calc_viscosity_h2o
+    from pyrealm.core.water import calc_viscosity_h2o
 
     eta = calc_viscosity_h2o(
         np.full(shape, fill_value=20), np.full(shape, fill_value=101325)
@@ -70,7 +70,7 @@ def test_calc_viscosity_h20(shape):
 @pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
 def test_calc_viscosity_h20_matrix(shape):
     """Test the viscosity calculation."""
-    from pyrealm.pmodel.functions import calc_viscosity_h2o_matrix
+    from pyrealm.core.water import calc_viscosity_h2o_matrix
 
     eta = calc_viscosity_h2o_matrix(
         np.full(shape, fill_value=20), np.full(shape, fill_value=101325)

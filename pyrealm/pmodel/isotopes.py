@@ -8,8 +8,8 @@ from warnings import warn
 from numpy.typing import NDArray
 
 from pyrealm.constants import IsotopesConst
+from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.pmodel import PModel
-from pyrealm.utilities import check_input_shapes, summarize_attrs
 
 
 class CalcCarbonIsotopes:
@@ -109,9 +109,14 @@ class CalcCarbonIsotopes:
             >>> import numpy as np
             >>> from pyrealm.pmodel import PModel, PModelEnvironment
             >>> from pyrealm.constants import PModelConst
-            >>> const = PModelConst(beta_cost_ratio_c4=35)
-            >>> env = PModelEnvironment(tc=np.array([20]), patm=np.array([101325]),
-            ...              co2=np.array([400]), vpd=np.array([1000]), const=const)
+            >>> pmodel_const = PModelConst(beta_cost_ratio_c4=35)
+            >>> env = PModelEnvironment(
+            ...     tc=np.array([20]),
+            ...     patm=np.array([101325]),
+            ...     co2=np.array([400]),
+            ...     vpd=np.array([1000]),
+            ...     pmodel_const=pmodel_const
+            ... )
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
             >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
             >>> mod_c4_delta.Delta13C.round(4)
@@ -142,9 +147,14 @@ class CalcCarbonIsotopes:
             >>> import numpy as np
             >>> from pyrealm.pmodel import PModel, PModelEnvironment
             >>> from pyrealm.constants import PModelConst
-            >>> const = PModelConst(beta_cost_ratio_c4=35)
-            >>> env = PModelEnvironment(tc=np.array([20]), patm=np.array([101325]),
-            ...              co2=np.array([400]), vpd=np.array([1000]), const=const)
+            >>> pmodel_const = PModelConst(beta_cost_ratio_c4=35)
+            >>> env = PModelEnvironment(
+            ...     tc=np.array([20]),
+            ...     patm=np.array([101325]),
+            ...     co2=np.array([400]),
+            ...     vpd=np.array([1000]),
+            ...     pmodel_const=pmodel_const
+            ... )
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
             >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
             >>> # mod_c4_delta.Delta13C.round(4)

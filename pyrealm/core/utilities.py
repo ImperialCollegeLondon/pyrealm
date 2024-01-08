@@ -1,4 +1,5 @@
-"""The :mod:`~pyrealm.utilities` module provides shared utility functions used to:
+"""The :mod:`~pyrealm.core.utilities` submodule provides shared utility functions
+used to:
 
 * check input arrays to functions have congruent shapes
 * summarize object attributes in a tabular format

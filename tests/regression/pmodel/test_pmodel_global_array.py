@@ -18,7 +18,8 @@ def dataset():
 
     from importlib import resources
 
-    from pyrealm.pmodel import PModelEnvironment, calc_patm
+    from pyrealm.core.pressure import calc_patm
+    from pyrealm.pmodel import PModelEnvironment
 
     data_file_path = resources.files("pyrealm_build_data.rpmodel") / "pmodel_global.nc"
     dataset = xarray.load_dataset(data_file_path)

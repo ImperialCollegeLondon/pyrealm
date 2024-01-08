@@ -27,7 +27,7 @@ The descriptions below show the typical ranges of these values under common
 environmental inputs along with links to the more detailed documentation of
 the key functions.
 
-```{code-cell}
+```{code-cell} python
 :tags: [hide-input]
 
 # This code loads required packages and then creates a representative range of
@@ -39,13 +39,14 @@ the key functions.
 
 from matplotlib import pyplot
 import numpy as np
-from pyrealm.constants import PModelConst
-from pyrealm.pmodel import calc_gammastar, calc_kmm, calc_viscosity_h2o, calc_co2_to_ca
+from pyrealm.constants import CoreConst
+from pyrealm.core.water import calc_viscosity_h2o
+from pyrealm.pmodel import calc_gammastar, calc_kmm, calc_co2_to_ca
 
 %matplotlib inline
 
-# get the default set of P Model parameters
-const = PModelConst()
+# Get the default set of core constants
+const = CoreConst()
 
 # Set the resolution of examples
 n_pts = 101
@@ -68,7 +69,7 @@ Details: {func}`pyrealm.pmodel.functions.calc_gammastar`
 The photorespiratory compensation point ($\Gamma^*$) varies with as a function
 of temperature and atmospheric pressure:
 
-```{code-cell}
+```{code-cell} python
 :tags: [hide-input]
 
 # Calculate gammastar
@@ -91,7 +92,7 @@ Details: {func}`pyrealm.pmodel.functions.calc_kmm`
 The Michaelis-Menten coefficient for photosynthesis ($K_{mm}$) also varies with
 temperature and atmospheric pressure:
 
-```{code-cell}
+```{code-cell} python
 :tags: [hide-input]
 
 # Calculate K_mm
@@ -109,7 +110,7 @@ pyplot.show()
 
 ## Relative viscosity of water ($\eta^*$)
 
-Details: {func}`pyrealm.pmodel.functions.calc_density_h2o`, {func}`pyrealm.pmodel.functions.calc_viscosity_h2o`
+Details: {func}`pyrealm.core.water.calc_density_h2o`, {func}`pyrealm.core.water.calc_viscosity_h2o`
 
 The density ($\rho$) and viscosity ($\mu$) of water both vary with temperature
 and atmospheric pressure. Together, these functions are used to calculate the
@@ -118,7 +119,7 @@ pressure ($\eta^*$).
 
 The figure shows how $\eta^*$ varies with temperature and pressure.
 
-```{code-cell}
+```{code-cell} python
 :tags: [hide-input]
 
 # Calculate the viscosity under the range of values and the standard
@@ -146,7 +147,7 @@ Details: {func}`pyrealm.pmodel.functions.calc_co2_to_ca`
 The partial pressure of $\ce{CO2}$ is a function of the atmospheric concentration of
 $\ce{CO2}$ in parts per million and the atmospheric pressure:
 
-```{code-cell}
+```{code-cell} python
 :tags: [hide-input]
 
 # Variation in partial pressure

@@ -84,7 +84,7 @@ varies with changing soil moisture for some different values of mean aridity. In
 the examples below, the default $\theta_0 = 0$ has been changed to $\theta_0 =
 0.1$ to make the lower bound more obvious.
 
-```{code-cell}
+```{code-cell} python
 :tags: [hide-input]
 
 from matplotlib import pyplot as plt
@@ -118,7 +118,7 @@ soilm = np.linspace(0, 0.7, 101)
 for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
 
     soilmstress = pmodel.calc_soilmstress_stocker(
-        soilm=soilm, meanalpha=mean_alpha, const=const
+        soilm=soilm, meanalpha=mean_alpha, pmodel_const=const
     )
     ax2.plot(soilm, soilmstress, label=r"$\bar{{\alpha}}$ = {}".format(mean_alpha))
 
@@ -150,7 +150,7 @@ by the resulting factor. The example below shows how the predicted light use
 efficiency from the P Model changes across an aridity gradient both with and without the
 soil moisture factor.
 
-```{code-cell}
+```{code-cell}python
 # Calculate the P Model in a constant environment
 tc = np.array([20] * 101)
 sm_gradient = np.linspace(0, 1.0, 101)
@@ -167,13 +167,13 @@ gpp_stressed = {}
 for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
     # Calculate the stress for this aridity
     sm_stress = pmodel.calc_soilmstress_stocker(
-        soilm=soilm, meanalpha=mean_alpha, const=const
+        soilm=soilm, meanalpha=mean_alpha, pmodel_const=const
     )
     # Apply the penalty factor
     gpp_stressed[mean_alpha] = model.gpp * sm_stress
 ```
 
-```{code-cell}
+```{code-cell} python
 :tags: [hide-input]
 
 plt.plot(sm_gradient, model.gpp, label="No soil moisture penalty")
@@ -233,7 +233,7 @@ y &= \min( a  \textrm{AI} ^ {b}, 1)\\
 \end{align*}
 $$
 
-```{code-cell}
+```{code-cell} python
 from pyrealm.constants import PModelConst
 
 const=PModelConst()
@@ -269,7 +269,7 @@ $$
     \end{cases}
 $$
 
-```{code-cell}
+```{code-cell} python
 # Calculate the soil moisture stress factor across a soil moisture
 # gradient for different aridity index values
 beta = {}
@@ -298,7 +298,7 @@ calculated and then applied to the GPP calculated for a model
 ({attr}`~pyrealm.pmodel.pmodel.PModel.gpp`). In the example below, the result is
 obviously just $\beta(\theta)$ from above scaled to the constant GPP.
 
-```{code-cell}
+```{code-cell} python
 for ai in ai_vals:
 
     plt.plot(sm_gradient, model.gpp * beta[ai], label= f"AI = {ai}")

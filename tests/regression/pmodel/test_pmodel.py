@@ -85,7 +85,7 @@ def values():
 )
 def test_calc_density_h2o(values, tc, patm, context_manager, expvals):
     """Test the calc_density_h2o function."""
-    from pyrealm.pmodel import calc_density_h2o
+    from pyrealm.core.water import calc_density_h2o
 
     with context_manager:
         ret = calc_density_h2o(tc=values[tc], patm=values[patm])
@@ -271,7 +271,7 @@ def test_calc_viscosity_h2o(values, tc, patm, context_manager, expvals):
 def test_calc_patm(values, elev, expvals):
     """Test the calc_patm function."""
 
-    from pyrealm.pmodel import calc_patm
+    from pyrealm.core.pressure import calc_patm
 
     ret = calc_patm(elv=values[elev])
     assert np.allclose(ret, values[expvals])
@@ -487,7 +487,7 @@ def test_jmax_limitation(
         xf = 1
 
     expected_lue = (
-        (0.05 * ftemp_kphio) * optchi.mj * jmax.f_v * xf * env.const.k_c_molmass
+        (0.05 * ftemp_kphio) * optchi.mj * jmax.f_v * xf * env.core_const.k_c_molmass
     )
     assert np.allclose(expected_lue, expected["lue"], equal_nan=True)
 
@@ -882,7 +882,7 @@ def test_lavergne_equivalence(tc, theta, variable_method, fixed_method, is_C4):
         patm=np.array([101325]),
         vpd=np.array([100]),
         co2=np.array([400]),
-        const=const,
+        pmodel_const=const,
     )
 
     mod_fixed = PModel(env, method_optchi=fixed_method)

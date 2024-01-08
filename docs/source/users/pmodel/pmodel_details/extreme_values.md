@@ -57,7 +57,8 @@ Note that the default values for C3 photosynthesis give **non-zero values below 
 
 from matplotlib import pyplot
 import numpy as np
-from pyrealm.pmodel import calc_ftemp_kphio, calc_gammastar, calc_kmm, calc_density_h2o
+from pyrealm.pmodel import calc_ftemp_kphio, calc_gammastar, calc_kmm
+from pyrealm.core.water import calc_density_h2o
 
 %matplotlib inline
 

@@ -13,8 +13,8 @@ from numpy.typing import NDArray
 
 from pyrealm import ExperimentalFeatureWarning
 from pyrealm.constants import PModelConst
+from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
-from pyrealm.utilities import check_input_shapes, summarize_attrs
 
 
 class CalcOptimalChi:
