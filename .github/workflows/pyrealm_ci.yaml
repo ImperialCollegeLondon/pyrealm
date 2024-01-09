@@ -48,13 +48,6 @@ jobs:
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-    # - name: Setup Git LFS
-    #   id: lfs
-    #   if: ${{ steps.codecov.outcome == 'success' && github.event_name != 'push' }}
-    #   run: |
-    #     git lfs pull
-    #     git lfs ls-files -n | xargs git lfs track  # track all LFS files
-
     - name: Run profiling
       id: profiling
       if: steps.lfs.outcome == 'success'
