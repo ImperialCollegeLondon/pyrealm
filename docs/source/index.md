@@ -28,8 +28,8 @@ The `tmodel` module
   using the [T Model](users/tmodel/tmodel) {cite:p}`Li:2014bc`.
 
 The `core` module
-: Contains fundamental utilities and physics functionality which is shared across the
-code base. Contains the [hygro](users/hygro) and the utilities submodules.
+: Contains fundamental utilities and physics functionality shared across the
+  package, including the [hygro](users/hygro) and the utilities submodules.
 
 ## Indices and tables
 
