@@ -1,5 +1,5 @@
 """The :mod:`~pyrealm.core.water` submodule contains core functions for calculating the
-density and viscosity of water given the air temperature and atmospheric presssure.
+density and viscosity of water given the air temperature and atmospheric pressure.
 """  # noqa D210, D415
 
 

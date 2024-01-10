@@ -415,9 +415,7 @@ class PModel:
         self._vcmax25 = self._vcmax / ftemp25_inst_vcmax
 
         # Dark respiration at growth temperature
-        ftemp_inst_rd = calc_ftemp_inst_rd(
-            self.env.tc, pmodel_const=self.pmodel_const, core_const=self.core_const
-        )
+        ftemp_inst_rd = calc_ftemp_inst_rd(self.env.tc, pmodel_const=self.pmodel_const)
         self._rd = (
             self.pmodel_const.atkin_rd_to_vcmax
             * (ftemp_inst_rd / ftemp25_inst_vcmax)

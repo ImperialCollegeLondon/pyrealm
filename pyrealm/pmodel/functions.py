@@ -15,8 +15,8 @@ from pyrealm.core.water import calc_viscosity_h2o
 def calc_ftemp_arrh(
     tk: NDArray,
     ha: float,
-    core_const: CoreConst = CoreConst(),
     pmodel_const: PModelConst = PModelConst(),
+    core_const: CoreConst = CoreConst(),
 ) -> NDArray:
     r"""Calculate enzyme kinetics scaling factor.
 
@@ -48,6 +48,7 @@ def calc_ftemp_arrh(
     Args:
         tk: Temperature (in Kelvin)
         ha: Activation energy (in :math:`J \text{mol}^{-1}`)
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
@@ -77,7 +78,6 @@ def calc_ftemp_arrh(
 def calc_ftemp_inst_rd(
     tc: NDArray,
     pmodel_const: PModelConst = PModelConst(),
-    core_const: CoreConst = CoreConst(),
 ) -> NDArray:
     r"""Calculate temperature scaling of dark respiration.
 
@@ -92,7 +92,6 @@ def calc_ftemp_inst_rd(
     Args:
         tc: Temperature (degrees Celsius)
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
         To: standard reference temperature for photosynthetic processes (:math:`T_o`,

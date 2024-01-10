@@ -2,7 +2,7 @@
 calculating robust indices of radiation, evapotranspiration and plant-available soil
 moisture.
 
-It is based on the [SPLASH v1.0 implementation](https://doi.org/10.5281/zenodo.376293)
+It is based on the (SPLASH v1.0 implementation)[https://doi.org/10.5281/zenodo.376293]
 published with the original description but has been extensively refactored and
 restructured. The main changes are:
 
@@ -12,7 +12,7 @@ restructured. The main changes are:
   particular use cases.
 
 * The code has been updated to accept numpy arrays and to calculate estimates
-  simulataneously across arrays. The original code predominantly expected scalar inputs
+  simultaneously across arrays. The original code predominantly expected scalar inputs
   and required users to script iteratation over sites.
 
 * Solar fluxes and the majority of evaporative fluxes do not vary given the initial data

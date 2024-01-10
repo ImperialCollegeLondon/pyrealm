@@ -15,7 +15,7 @@ kernelspec:
 # The `splash` submodule
 
 The {mod}`~pyrealm.splash` module provides the SPLASH v1.0 model for estimating **soil
-moisture, actual evapotranspiration (AET) and soil water runoff** for a site
+moisture, actual evapotranspiration (AET) and surface water runoff** for sites
 {cite:p}`davis:2017a`. The module in `pyrealm` completely reimplements the original
 SPLASH code (see [the api notes](../api/splash_api.md) for details) but the outputs are
 benchmarked against outputs from the original code in the `pyrealm` code testing.
@@ -35,13 +35,16 @@ Calculations of AET and condensation are affected by the soil moisture, temperat
 downwelling solar radiation at the site: this requires that the elevation and latitude
 of the site are known.
 
-The soil moisture at a site has a maximum value ($W_m$) that has a default value of
-150mm. If the calculation above exceeds $W_m$, the excess water is allocated to runoff.
+The calculated value of $W_{n[t]}$ is then capped at the maximum soil moisture capacity
+($W_m$) of the site, with excess water allocated to surface water runoff: if $W_{n[t]} >
+W_m$, then $W_{n[t]} = W_m, R_{[t]} = $W_{n[t]} - W_m$. The maximum soil moisture
+capacity defaults to the original SPLASH value of 150 mm, but this can be set on a per
+site basis.
 
 ## Example data
 
 The data below provides a 2 year daily time series of precipitation, temperature and
-solar fraction (1 - cloud cover) for 0.5° resolultion grid cells in a 10° by 10° block
+solar fraction (1 - cloud cover) for 0.5° resolution grid cells in a 10° by 10° block
 of the North Western USA. It also provides the mean elevation of those cells.
 
 ```{code-cell} python
@@ -139,13 +142,13 @@ Before calculating water balances, you need to create a
 the solar and evaporative calculations for the time series - none of these calculations
 rely on the soil moisture and so are calculated once when the `SplashModel` is created.
 
-::: {note}
+```{note}
 The `SplashModel` code currently requires that the latitude (`lat`) and elevation
 (`elv`) data have the same shape as the sunshine fraction (`sf`), temperature (`tc`) and
 precipitation (`pn`). These values are obviously constant through time - and latitude
 may well be constant across the longitude dimension for gridded data - but, at the
 moment, you need to broadcast these variables to match.
-:::
+```
 
 ```{code-cell} python
 splash = SplashModel(
@@ -166,13 +169,13 @@ This data is rarely available and so the
 to estimate those values.
 
 This method requires that the input data provides **at least one full year** of data. It
-works by assuming that soil moisture is a **stationary** process on an annual time
-scale: the initial soil moisture should be the same as the soil moisture at the end of
-the year, given the observed annual data. The method starts with an initial guess at the
-soil moisture, and then iterates the water balance calculations over the year to give
-the expected soil moisture at the end of the year. If this is sufficiently similar to
-the start values, the estimate is returned, otherwise the end of year expectations are
-used as a starting point to recalculate the annual water balances.
+works by assuming that **soil moisture change is a stationary process** on an annual
+time scale: the initial soil moisture should be the same as the soil moisture at the end
+of the year, given the observed annual data. The method starts with an initial guess at
+the soil moisture, and then iterates the water balance calculations over the year to
+give the expected soil moisture at the end of the year. If this is sufficiently similar
+to the start values, the estimate is returned, otherwise the end of year expectations
+are used as a starting point to recalculate the annual water balances.
 
 ```{code-cell} python
 init_soil_moisture = splash.estimate_initial_soil_moisture(verbose=False)
@@ -187,12 +190,12 @@ previous day and uses the equation above to calculate the new soil moisture. The
 below uses the method to calculate the soil moisture for the first day, given the
 initial soil moisture estimates.
 
-::: {note}
+```{note}
 The `estimate_daily_water_balance` method only calculates a single iteration of the
 water balance across sites. Usually you would use `calculate_soil_moisture` (see below)
 to run the calculations over the whole time series, but the method is used here to show
 how the process works for the first step.
-:::
+```
 
 The plots show the soil moisture for the first day, along with the changes in soil
 moisture from the initial estimates (the 'previous day'). Note the saturated soil
@@ -225,7 +228,7 @@ all sites.
 aet_out, wn_out, ro_out = splash.calculate_soil_moisture(init_soil_moisture)
 ```
 
-The plots below show the resulting soil moisture and Atime series for the three
+The plots below show the resulting soil moisture and a time series for the three
 
 ```{code-cell} python
 # Add the outputs to the xarray to select the three sites easily.

@@ -15,8 +15,8 @@ from pyrealm.core.utilities import bounds_checker
 def calc_vp_sat(ta: NDArray, const: CoreConst = CoreConst()) -> NDArray:
     r"""Calculate vapour pressure of saturated air.
 
-    This function calculates the vapour pressure of saturated air at a given temperature
-    in kPa, using the Magnus equation:
+    This function calculates the vapour pressure of saturated air in kPa at a given
+    temperature in °C, using the Magnus equation:
 
     .. math::
 
@@ -26,7 +26,7 @@ def calc_vp_sat(ta: NDArray, const: CoreConst = CoreConst()) -> NDArray:
     :attr:`~pyrealm.constants.core_const.CoreConst.magnus_coef`.
 
     Args:
-        ta: The air temperature
+        ta: The air temperature in °C.
         const: An instance of :class:`~pyrealm.constants.core_const.CoreConst` giving
             the parameters for conversions.
 

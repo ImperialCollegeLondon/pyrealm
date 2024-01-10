@@ -38,7 +38,9 @@ class DailyEvapFluxes:
     of soil moisture from the preceeding day.
 
     Args:
-        solar: The daily solar fluxes for the observations.
+        solar: A :class:`~pyrealm.splash.solar.DailySolarFluxes` instance from which to
+            calculate evaporative fluxes. See the class definition for the flux
+            variables and units provided.
         kWm: The maximum soil water capacity (mm).
         tc: The air temperature of the observations (°C).
         pa: The atmospheric pressure of the observations (Pa).

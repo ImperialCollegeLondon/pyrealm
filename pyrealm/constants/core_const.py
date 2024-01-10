@@ -23,15 +23,30 @@ class CoreConst(ConstantsClass):
 
     * **Density of water using Fisher**. Values for the Tumlirz equation taken from
       Table 5 of :cite:t:`Fisher:1975tm`:
-      (:attr:`~pyrealm.constants.core_const.CoreConst.fisher_dial_lambda`,
-      :attr:`~pyrealm.constants.core_const.CoreConst.fisher_dial_Po`,
-      :attr:`~pyrealm.constants.core_const.CoreConst.fisher_dial_Vinf`)
 
-    * **Density of water using Chen**. Values taken from  :cite:t:`chen:2008a`:
-      (:attr:`~pyrealm.constants.core_const.CoreConst.chen_po`,
-      :attr:`~pyrealm.constants.core_const.CoreConst.chen_ko`,
-      :attr:`~pyrealm.constants.core_const.CoreConst.chen_ca`,
-      :attr:`~pyrealm.constants.core_const.CoreConst.chen_cb`)
+      .. math::
+
+            V_p = V_\infty + \dfrac{\lambda}{P_o + P},
+
+      where :math:`\lambda`
+      (:attr:`~pyrealm.constants.core_const.CoreConst.fisher_dial_lambda`),
+      :math:`P_o` (:attr:`~pyrealm.constants.core_const.CoreConst.fisher_dial_Po`) and
+      :math:`V_\infty`
+      (:attr:`~pyrealm.constants.core_const.CoreConst.fisher_dial_Vinf`) are all
+      temperature dependent polynomial functions.
+
+    * **Density of water using Chen**. Values taken from :cite:t:`chen:2008a` and
+      calculated as the inverse of their equation for the specific volume of water
+      (:math:`V`):
+
+        .. math::
+            V = V^0 - V^0 P/(K^0 +AP+BP^2),
+
+      where :math:`V^0` (:attr:`~pyrealm.constants.core_const.CoreConst.chen_po`),
+      :math:`K^0` (:attr:`~pyrealm.constants.core_const.CoreConst.chen_ko`),
+      :math:`A` (:attr:`~pyrealm.constants.core_const.CoreConst.chen_ca`, and
+      :math:`B` (:attr:`~pyrealm.constants.core_const.CoreConst.chen_cb`) are all
+      temperature dependent polynomial functions.
 
     * **Viscosity of water**. Values for the parameterisation taken from Table 2 and 3
       of :cite:t:`Huber:2009fy`:
@@ -123,16 +138,16 @@ class CoreConst(ConstantsClass):
             [1788.316, 21.55053, -0.4695911, 0.003096363, -7.341182e-06]
         )
     )
-    r"""Temperature dependent lambda parameterisation of the Tumlirz equation.
-     (:math:`\lambda`)."""
+    r"""Coefficients of the temperature dependent polynomial for :math:`\lambda`
+     in the Tumlirz equation."""
 
     fisher_dial_Po: NDArray[np.float32] = field(
         default_factory=lambda: np.array(
             [5918.499, 58.05267, -1.1253317, 0.0066123869, -1.4661625e-05]
         )
     )
-    """Temperature dependent P0 parameterisation of the Tumlirz equation
-    (:math:`P_0`)."""
+    """Coefficients of the temperature dependent polynomial for :math:`P_0` in the
+    Tumlirz equation."""
 
     fisher_dial_Vinf: NDArray[np.float32] = field(
         default_factory=lambda: np.array(
@@ -150,8 +165,8 @@ class CoreConst(ConstantsClass):
             ]
         )
     )
-    r"""Temperature dependent Vinf parameterisation of the Tumlirz equation
-    (:math:`V_{\infty}`)."""
+    r"""Coefficients of the temperature dependent polynomial for :math:`V_{\infty}`
+    in the Tumlirz equation."""
 
     # Chen water density
     chen_po: NDArray[np.float32] = field(
@@ -169,29 +184,32 @@ class CoreConst(ConstantsClass):
             ]
         )
     )
-    r"""Polynomial relationship of water density at 1 atm (kg/m^3) with temperature."""
+    r"""Coefficients of the polynomial relationship of water density with temperature at
+    1 atm (:math:`P^0`, kg/m^3) from :cite:t:`chen:2008a`."""
 
     chen_ko: NDArray[np.float32] = field(
         default_factory=lambda: np.array(
             [19652.17, 148.1830, -2.29995, 0.01281, -4.91564e-5, 1.035530e-7]
         )
     )
-    r"""Polynomial relationship of bulk modulus of water at 1 atm (kg/m^3) with
-     temperature."""
+    r"""Polynomial relationship of bulk modulus of water with temperature at 1 atm
+     (:math:`K^0`, kg/m^3) from :cite:t:`chen:2008a`."""
 
     chen_ca: NDArray[np.float32] = field(
         default_factory=lambda: np.array(
             [3.26138, 5.223e-4, 1.324e-4, -7.655e-7, 8.584e-10]
         )
     )
-    r"""Polynomial temperature dependent coefficient :math:`c_{a}`."""
+    r"""Coefficients of the polynomial temperature dependent coefficient :math:`A` from
+     :cite:t:`chen:2008a`."""
 
     chen_cb: NDArray[np.float32] = field(
         default_factory=lambda: np.array(
             [7.2061e-5, -5.8948e-6, 8.69900e-8, -1.0100e-9, 4.3220e-12]
         )
     )
-    r"""Polynomial temperature dependent coefficient :math:`c_{b}`."""
+    r"""Coefficients of the polynomial temperature dependent coefficient :math:`B` from
+     :cite:t:`chen:2008a`."""
 
     # Huber
     simple_viscosity: bool = False

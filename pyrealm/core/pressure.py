@@ -1,5 +1,5 @@
 """The :mod:`~pyrealm.core.pressure` submodule contains core functions for calculating
-atmospheric presssure. 
+atmospheric pressure. 
 """  # noqa D210, D415
 
 from numpy.typing import NDArray
