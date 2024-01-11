@@ -12,7 +12,7 @@ from pyrealm.constants import CoreConst
 from pyrealm.core.utilities import bounds_checker
 
 
-def calc_vp_sat(ta: NDArray, const: CoreConst = CoreConst()) -> NDArray:
+def calc_vp_sat(ta: NDArray, core_const: CoreConst = CoreConst()) -> NDArray:
     r"""Calculate vapour pressure of saturated air.
 
     This function calculates the vapour pressure of saturated air in kPa at a given
@@ -27,8 +27,8 @@ def calc_vp_sat(ta: NDArray, const: CoreConst = CoreConst()) -> NDArray:
 
     Args:
         ta: The air temperature in °C.
-        const: An instance of :class:`~pyrealm.constants.core_const.CoreConst` giving
-            the parameters for conversions.
+        core_const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
+            giving the parameters for conversions.
 
     Returns:
         Saturated air vapour pressure in kPa.
@@ -41,29 +41,29 @@ def calc_vp_sat(ta: NDArray, const: CoreConst = CoreConst()) -> NDArray:
         array([2.480904])
         >>> from pyrealm.constants import CoreConst
         >>> allen = CoreConst(magnus_option='Allen1998')
-        >>> calc_vp_sat(temp, const=allen).round(6)
+        >>> calc_vp_sat(temp, core_const=allen).round(6)
         array([2.487005])
         >>> alduchov = CoreConst(magnus_option='Alduchov1996')
-        >>> calc_vp_sat(temp, const=alduchov).round(6)
+        >>> calc_vp_sat(temp, core_const=alduchov).round(6)
         array([2.481888])
     """
 
     # Magnus equation and conversion to kPa
-    cf = const.magnus_coef
+    cf = core_const.magnus_coef
     vp_sat = cf[0] * np.exp((cf[1] * ta) / (cf[2] + ta)) / 1000
 
     return vp_sat
 
 
 def convert_vp_to_vpd(
-    vp: NDArray, ta: NDArray, const: CoreConst = CoreConst()
+    vp: NDArray, ta: NDArray, core_const: CoreConst = CoreConst()
 ) -> NDArray:
     """Convert vapour pressure to vapour pressure deficit.
 
     Args:
         vp: The vapour pressure in kPa
         ta: The air temperature in °C
-        const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
+        core_const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the settings to be used in conversions.
 
     Returns:
@@ -77,23 +77,23 @@ def convert_vp_to_vpd(
         >>> convert_vp_to_vpd(vp, temp).round(7)
         array([0.5809042])
         >>> allen = CoreConst(magnus_option='Allen1998')
-        >>> convert_vp_to_vpd(vp, temp, const=allen).round(7)
+        >>> convert_vp_to_vpd(vp, temp, core_const=allen).round(7)
         array([0.5870054])
     """
-    vp_sat = calc_vp_sat(ta, const=const)
+    vp_sat = calc_vp_sat(ta, core_const=core_const)
 
     return vp_sat - vp
 
 
 def convert_rh_to_vpd(
-    rh: NDArray, ta: NDArray, const: CoreConst = CoreConst()
+    rh: NDArray, ta: NDArray, core_const: CoreConst = CoreConst()
 ) -> NDArray:
     """Convert relative humidity to vapour pressure deficit.
 
     Args:
         rh: The relative humidity (proportion in (0,1))
         ta: The air temperature in °C
-        const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
+        core_const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the settings to be used in conversions.
 
     Returns:
@@ -108,7 +108,7 @@ def convert_rh_to_vpd(
         >>> convert_rh_to_vpd(rh, temp).round(7)
         array([0.7442712])
         >>> allen = CoreConst(magnus_option='Allen1998')
-        >>> convert_rh_to_vpd(rh, temp, const=allen).round(7)
+        >>> convert_rh_to_vpd(rh, temp, core_const=allen).round(7)
         array([0.7461016])
         >>> rh_percent = np.array([70])
         >>> convert_rh_to_vpd(rh_percent, temp).round(7) #doctest: +ELLIPSIS
@@ -118,20 +118,20 @@ def convert_rh_to_vpd(
 
     rh = bounds_checker(rh, 0, 1, "[]", "rh", "proportion")
 
-    vp_sat = calc_vp_sat(ta, const=const)
+    vp_sat = calc_vp_sat(ta, core_const=core_const)
 
     return vp_sat - (rh * vp_sat)
 
 
 def convert_sh_to_vp(
-    sh: NDArray, patm: NDArray, const: CoreConst = CoreConst()
+    sh: NDArray, patm: NDArray, core_const: CoreConst = CoreConst()
 ) -> NDArray:
     """Convert specific humidity to vapour pressure.
 
     Args:
         sh: The specific humidity in kg kg-1
         patm: The atmospheric pressure in kPa
-        const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
+        core_const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the settings to be used in conversions.
 
     Returns:
@@ -145,11 +145,11 @@ def convert_sh_to_vp(
         array([0.9517451])
     """
 
-    return sh * patm / ((1.0 - const.mwr) * sh + const.mwr)
+    return sh * patm / ((1.0 - core_const.mwr) * sh + core_const.mwr)
 
 
 def convert_sh_to_vpd(
-    sh: NDArray, ta: NDArray, patm: NDArray, const: CoreConst = CoreConst()
+    sh: NDArray, ta: NDArray, patm: NDArray, core_const: CoreConst = CoreConst()
 ) -> NDArray:
     """Convert specific humidity to vapour pressure deficit.
 
@@ -157,7 +157,7 @@ def convert_sh_to_vpd(
         sh: The specific humidity in kg kg-1
         ta: The air temperature in °C
         patm: The atmospheric pressure in kPa
-        const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
+        core_const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the settings to be used in conversions.
 
     Returns:
@@ -172,12 +172,12 @@ def convert_sh_to_vpd(
         >>> convert_sh_to_vpd(sh, temp, patm).round(6)
         array([1.529159])
         >>> allen = CoreConst(magnus_option='Allen1998')
-        >>> convert_sh_to_vpd(sh, temp, patm, const=allen).round(5)
+        >>> convert_sh_to_vpd(sh, temp, patm, core_const=allen).round(5)
         array([1.53526])
     """
 
-    vp_sat = calc_vp_sat(ta, const=const)
-    vp = convert_sh_to_vp(sh, patm, const=const)
+    vp_sat = calc_vp_sat(ta, core_const=core_const)
+    vp = convert_sh_to_vp(sh, patm, core_const=core_const)
 
     return vp_sat - vp
 
@@ -200,9 +200,9 @@ def calc_saturation_vapour_pressure_slope(tc: NDArray) -> NDArray:
 
     # TODO move these coefficients into constants?
     return (
-        (17.269)
-        * (237.3)
-        * (610.78)
+        17.269
+        * 237.3
+        * 610.78
         * (np.exp(tc * 17.269 / (tc + 237.3)) / ((tc + 237.3) ** 2))
     )
 
@@ -252,7 +252,7 @@ def calc_specific_heat(tc: NDArray) -> NDArray:
 
 
 def calc_psychrometric_constant(
-    tc: NDArray, p: NDArray, const: CoreConst = CoreConst()
+    tc: NDArray, p: NDArray, core_const: CoreConst = CoreConst()
 ) -> NDArray:
     r"""Calculate the psychrometric constant.
 
@@ -263,6 +263,8 @@ def calc_psychrometric_constant(
     Args:
         tc: Air temperature (°C)
         p: Atmospheric pressure (Pa)
+        core_const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
+            giving the settings to be used in conversions.
 
     Returns:
         The calculated psychrometric constant
@@ -276,4 +278,4 @@ def calc_psychrometric_constant(
 
     # Calculate psychrometric constant, Pa/K
     # Eq. 8, Allen et al. (1998)
-    return cp * const.k_Ma * p / (const.k_Mv * lv)
+    return cp * core_const.k_Ma * p / (core_const.k_Mv * lv)

@@ -54,8 +54,10 @@ class PModelEnvironment:
         co2: Atmospheric CO2 concentration (ppm)
         patm: Atmospheric pressure (Pa)
         theta: Volumetric soil moisture (m3/m3)
-        const: An instance of
+        pmodel_const: An instance of
             :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        core_const: An instance of
+            :class:`~pyrealm.constants.core_const.CoreConst`.
 
     Examples:
         >>> import numpy as np

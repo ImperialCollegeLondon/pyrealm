@@ -47,7 +47,7 @@ class CalcOptimalChi:
         rootzonestress: This is an experimental feature to supply a root zone stress
           factor used as a direct penalty to :math:`\beta`, unitless. The default is
           1.0, with no root zone stress applied.
-        const: An instance of
+        pmodel_const: An instance of
           :class:`~pyrealm.constants.pmodel_const.PModelConst`.
 
     Returns:
@@ -60,7 +60,7 @@ class CalcOptimalChi:
         env: PModelEnvironment,
         rootzonestress: NDArray = np.array([1.0]),
         method: str = "prentice14",
-        const: PModelConst = PModelConst(),
+        pmodel_const: PModelConst = PModelConst(),
     ):
         self.env: PModelEnvironment = env
         """The PModelEnvironment containing the photosynthetic environment for the
@@ -106,7 +106,7 @@ class CalcOptimalChi:
         # TODO: Could convert this to use a registry?
 
         # Identify and run the selected method
-        self.const: PModelConst = const
+        self.pmodel_const: PModelConst = pmodel_const
         """The PModelParams used for optimal chi estimation"""
         self.method: str = method
         """Records the method used for optimal chi estimation"""
@@ -208,7 +208,7 @@ class CalcOptimalChi:
         #               \sqrt{\frac{1.6 D \eta^{*}}{\beta(K + \Gamma^{*})}}
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.beta = self.const.beta_cost_ratio_prentice14
+        self.beta = self.pmodel_const.beta_cost_ratio_prentice14
         self.xi = np.sqrt(
             (self.beta * self.rootzonestress * (self.env.kmm + self.env.gammastar))
             / (1.6 * self.env.ns_star)
@@ -274,8 +274,8 @@ class CalcOptimalChi:
 
         # Calculate beta as a function of theta
         self.beta = np.exp(
-            self.const.lavergne_2020_b_c3 * self.env.theta
-            + self.const.lavergne_2020_a_c3
+            self.pmodel_const.lavergne_2020_b_c3 * self.env.theta
+            + self.pmodel_const.lavergne_2020_a_c3
         )
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
@@ -355,8 +355,8 @@ class CalcOptimalChi:
 
         # Calculate beta as a function of theta
         self.beta = np.exp(
-            self.const.lavergne_2020_b_c4 * self.env.theta
-            + self.const.lavergne_2020_a_c4
+            self.pmodel_const.lavergne_2020_b_c4 * self.env.theta
+            + self.pmodel_const.lavergne_2020_a_c4
         )
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
@@ -403,7 +403,7 @@ class CalcOptimalChi:
         self.rootzonestress = self.rootzonestress or np.array([1.0])
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.beta = self.const.beta_cost_ratio_c4
+        self.beta = self.pmodel_const.beta_cost_ratio_c4
         self.xi = np.sqrt(
             (self.beta * self.rootzonestress * (self.env.kmm + self.env.gammastar))
             / (1.6 * self.env.ns_star)
@@ -472,7 +472,7 @@ class CalcOptimalChi:
         self.rootzonestress = self.rootzonestress or np.array([1.0])
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
-        self.beta = self.const.beta_cost_ratio_c4
+        self.beta = self.pmodel_const.beta_cost_ratio_c4
         self.xi = np.sqrt(
             (self.beta * self.rootzonestress * self.env.kmm) / (1.6 * self.env.ns_star)
         )

@@ -342,11 +342,11 @@ def calc_ns_star(
         1.12536
     """
 
-    visc_env = calc_viscosity_h2o(tc, patm, const=core_const)
+    visc_env = calc_viscosity_h2o(tc, patm, core_const=core_const)
     visc_std = calc_viscosity_h2o(
         np.array(core_const.k_To) - np.array(core_const.k_CtoK),
         np.array(core_const.k_Po),
-        const=core_const,
+        core_const=core_const,
     )
 
     return visc_env / visc_std

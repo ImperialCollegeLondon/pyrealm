@@ -275,7 +275,7 @@ class PModel:
             env=env,
             method=method_optchi,
             rootzonestress=rootzonestress or np.array([1.0]),
-            const=self.pmodel_const,
+            pmodel_const=self.pmodel_const,
         )
         """Details of the optimal chi calculation for the model"""
 
@@ -286,7 +286,7 @@ class PModel:
         """Records the method used to calculate Jmax limitation."""
 
         self.jmaxlim: JmaxLimitation = JmaxLimitation(
-            self.optchi, method=self.method_jmaxlim, const=self.pmodel_const
+            self.optchi, method=self.method_jmaxlim, pmodel_const=self.pmodel_const
         )
         """Details of the Jmax limitation calculation for the model"""
         # -----------------------------------------------------------------------
