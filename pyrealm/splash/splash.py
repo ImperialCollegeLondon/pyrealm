@@ -85,7 +85,7 @@ class SplashModel:
         """The maximum soil water capacity for sites."""
 
         # TODO - potentially allow _actual_ climatic pressure data as an input
-        self.pa = calc_patm(elv, const=core_const)
+        self.pa = calc_patm(elv, core_const=core_const)
         """The atmospheric pressure at sites, derived from elevation"""
 
         # Calculate the daily solar fluxes - these are invariant across the simulation

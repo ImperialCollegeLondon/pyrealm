@@ -87,10 +87,10 @@ class DailyEvapFluxes:
         self.lv = calc_enthalpy_vaporisation(tc)
 
         # Density of water, kg/m^3
-        self.pw = calc_density_h2o(tc, pa, const=self.core_const)
+        self.pw = calc_density_h2o(tc, pa, core_const=self.core_const)
 
         # Psychrometric constant, Pa/K
-        self.psy = calc_psychrometric_constant(tc, pa, const=self.core_const)
+        self.psy = calc_psychrometric_constant(tc, pa, core_const=self.core_const)
 
         # Calculate water-to-energy conversion (econ), m^3/J
         self.econ = self.sat / (self.lv * self.pw * (self.sat + self.psy))
