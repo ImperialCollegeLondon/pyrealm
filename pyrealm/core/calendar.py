@@ -52,16 +52,12 @@ class Calendar(Sized):
         self.year = dateyear.astype("int") + 1970
         self.julian_day = (dateday - dateyear + 1).astype("int")
         self.days_in_year = (startnext - dateyear).astype("int")
+        self.n_dates = len(self.dates)
 
     def __iter__(self) -> Generator[CalendarDay, Any, Any]:
         """Yield each date in the Calendar in sequence."""
-        for idx, dt in enumerate(self.dates):
-            yield CalendarDay(
-                date=dt,
-                year=self.year[idx],
-                julian_day=self.julian_day[idx],
-                days_in_year=self.days_in_year[idx],
-            )
+        for idx in range(self.n_dates):
+            yield self[idx]
 
     def __getitem__(self, idx: int) -> CalendarDay:
         """Extract dates by index."""
@@ -74,4 +70,4 @@ class Calendar(Sized):
 
     def __len__(self) -> int:
         """Length of a Calendar object."""
-        return len(self.dates)
+        return self.n_dates
