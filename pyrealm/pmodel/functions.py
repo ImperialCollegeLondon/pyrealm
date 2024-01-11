@@ -70,7 +70,7 @@ def calc_ftemp_arrh(
     # exp( ha * (tc - 25.0)/(298.15 * kR * (tc + 273.15)) )
     # exp( (ha/kR) * (1/298.15 - 1/tk) )
 
-    tkref = pmodel_const.k_To + core_const.k_CtoK
+    tkref = pmodel_const.plant_T_ref + core_const.k_CtoK
 
     return np.exp(ha * (tk - tkref) / (tkref * core_const.k_R * tk))
 
@@ -112,8 +112,8 @@ def calc_ftemp_inst_rd(
     """
 
     return np.exp(
-        pmodel_const.heskel_b * (tc - pmodel_const.k_To)
-        - pmodel_const.heskel_c * (tc**2 - pmodel_const.k_To**2)
+        pmodel_const.heskel_b * (tc - pmodel_const.plant_T_ref)
+        - pmodel_const.heskel_c * (tc**2 - pmodel_const.plant_T_ref**2)
     )
 
 
@@ -177,7 +177,7 @@ def calc_ftemp_inst_vcmax(
     """
 
     # Convert temperatures to Kelvin
-    tkref = pmodel_const.k_To + core_const.k_CtoK
+    tkref = pmodel_const.plant_T_ref + core_const.k_CtoK
     tk = tc + core_const.k_CtoK
 
     # Calculate entropy following Kattge & Knorr (2007): slope and intercept

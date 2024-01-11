@@ -89,8 +89,8 @@ class PModelConst(ConstantsClass):
 
     """
 
-    k_To: float = 25.0
-    """Standard reference temperature of photosynthetic processes (Prentice,
+    plant_T_ref: float = 25.0
+    """Standard baseline reference temperature of photosynthetic processes (Prentice,
     unpublished)  (:math:`T_o` , 25.0, °C)"""
 
     # Heskel
