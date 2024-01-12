@@ -65,8 +65,12 @@ class SplashModel:
         kWm: NDArray = np.array([150.0]),
         core_const: CoreConst = CoreConst(),
     ):
-        # TODO - check input sizes are congurent and maybe think about broadcasting lat
-        #        and elv. xarray would be good here.
+        # Check input sizes are congurent
+        # TODO - think about broadcasting lat and elv rather than forcing users to do
+        #        this in advance. xarray would be good here for identifying axes and
+        #        checking congruence more widely.
+        self.shape = check_input_shapes(elv, lat, sf, tc, pn)
+        """The array shape of the input variables"""
 
         # Assign required public attributes
         self.elv = elv
