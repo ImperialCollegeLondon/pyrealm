@@ -57,6 +57,7 @@ df[["filename", "lineno", "function"]] = df.pop(
 ).str.extract(r"(.*?):(.*?)\((.*)\)", expand=True)
 dt = datetime.datetime.fromtimestamp(prof_path.stat().st_mtime)
 df.index = pd.Series([dt.strftime("%Y-%m-%d %H:%M:%S")] * len(df), name="timestamp")
+print(df)
 df["label"] = df["filename"].str.extract(r"(\w+).py").squeeze() + "." + df["function"]
 df["event"] = [args.event] * len(df)
 report_path = root / "profiling/prof-report.csv"
