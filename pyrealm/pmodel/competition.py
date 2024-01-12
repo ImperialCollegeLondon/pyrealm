@@ -41,7 +41,7 @@ def convert_gpp_advantage_to_c4_fraction(
         gpp_adv_c4: The proportional GPP advantage of C4 photosynthesis.
         treecover: The proportion tree cover.
         c3c4_const: Instance of
-            :class:`~pyrealm.constants.competition_const.C3C4_Const`.
+            :class:`~pyrealm.constants.competition_const.C3C4Const`.
 
     Returns:
         The estimated fraction of C4 plants given the estimated C4 GPP advantage and
@@ -98,7 +98,7 @@ def calculate_tree_proportion(
         gppc3: The estimated GPP for C3 plants. The input values here must be
           expressed  as **kilograms** per metre squared per year (kg m-2 yr-1).
         c3c4_const: Instance of
-            :class:`~pyrealm.constants.competition_const.C3C4_Const`.
+            :class:`~pyrealm.constants.competition_const.C3C4Const`.
 
     Returns:
         The estimated proportion of GPP resulting from C3 trees.
