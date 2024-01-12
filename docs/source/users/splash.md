@@ -37,7 +37,7 @@ of the site are known.
 
 The calculated value of $W_{n[t]}$ is then capped at the maximum soil moisture capacity
 ($W_m$) of the site, with excess water allocated to surface water runoff: if $W_{n[t]} >
-W_m$, then $W_{n[t]} = W_m, R_{[t]} = $W_{n[t]} - W_m$. The maximum soil moisture
+W_m$, then $W_{n[t]} = W_m, R_{[t]} = W_{n[t]} - W_m$. The maximum soil moisture
 capacity defaults to the original SPLASH value of 150 mm, but this can be set on a per
 site basis.
 
