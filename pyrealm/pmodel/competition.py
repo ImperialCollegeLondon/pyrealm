@@ -12,7 +12,7 @@ from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 
 
 def convert_gpp_advantage_to_c4_fraction(
-    gpp_adv_c4: NDArray, treecover: NDArray, const: C3C4Const = C3C4Const()
+    gpp_adv_c4: NDArray, treecover: NDArray, c3c4_const: C3C4Const = C3C4Const()
 ) -> NDArray:
     r"""Convert C4 GPP advantage to C4 fraction.
 
@@ -40,6 +40,8 @@ def convert_gpp_advantage_to_c4_fraction(
     Args:
         gpp_adv_c4: The proportional GPP advantage of C4 photosynthesis.
         treecover: The proportion tree cover.
+        c3c4_const: Instance of
+            :class:`~pyrealm.constants.competition_const.C3C4Const`.
 
     Returns:
         The estimated fraction of C4 plants given the estimated C4 GPP advantage and
@@ -49,8 +51,8 @@ def convert_gpp_advantage_to_c4_fraction(
     frac_c4 = 1.0 / (
         1.0
         + np.exp(
-            -const.adv_to_frac_k
-            * ((gpp_adv_c4 / np.exp(1 / (1 + treecover))) - const.adv_to_frac_q)
+            -c3c4_const.adv_to_frac_k
+            * ((gpp_adv_c4 / np.exp(1 / (1 + treecover))) - c3c4_const.adv_to_frac_q)
         )
     )
 
@@ -58,7 +60,7 @@ def convert_gpp_advantage_to_c4_fraction(
 
 
 def calculate_tree_proportion(
-    gppc3: NDArray, const: C3C4Const = C3C4Const()
+    gppc3: NDArray, c3c4_const: C3C4Const = C3C4Const()
 ) -> NDArray:
     r"""Calculate the proportion of GPP from C3 trees.
 
@@ -95,16 +97,20 @@ def calculate_tree_proportion(
     Args:
         gppc3: The estimated GPP for C3 plants. The input values here must be
           expressed  as **kilograms** per metre squared per year (kg m-2 yr-1).
+        c3c4_const: Instance of
+            :class:`~pyrealm.constants.competition_const.C3C4Const`.
 
     Returns:
         The estimated proportion of GPP resulting from C3 trees.
     """
 
     prop_trees = (
-        const.gpp_to_tc_a * np.power(gppc3, const.gpp_to_tc_b) + const.gpp_to_tc_c
+        c3c4_const.gpp_to_tc_a * np.power(gppc3, c3c4_const.gpp_to_tc_b)
+        + c3c4_const.gpp_to_tc_c
     ) / (
-        const.gpp_to_tc_a * np.power(const.c3_forest_closure_gpp, const.gpp_to_tc_b)
-        + const.gpp_to_tc_c
+        c3c4_const.gpp_to_tc_a
+        * np.power(c3c4_const.c3_forest_closure_gpp, c3c4_const.gpp_to_tc_b)
+        + c3c4_const.gpp_to_tc_c
     )
     prop_trees = np.clip(prop_trees, 0, 1)
 
@@ -153,8 +159,9 @@ class C3C4Competition:
         treecover: Percentage tree cover (%).
         below_t_min: A boolean mask, temperatures too low for C4 plants.
         cropland: A boolean mask indicating cropland locations.
-        const: An instance of :class:`~pyrealm.constants.competition_const.C3C4Const`
-            providing parameterisation for the competition model.
+        c3c4_const: An instance of
+            :class:`~pyrealm.constants.competition_const.C3C4Const` providing
+            parameterisation for the competition model.
     """
 
     # Design Notes: see paper Lavergne et al. (submitted).
@@ -179,13 +186,13 @@ class C3C4Competition:
         treecover: NDArray,
         below_t_min: NDArray,
         cropland: NDArray,
-        const: C3C4Const = C3C4Const(),
+        c3c4_const: C3C4Const = C3C4Const(),
     ):
         # Check inputs are congruent
         self.shape: tuple = check_input_shapes(
             gpp_c3, gpp_c4, treecover, cropland, below_t_min
         )
-        self.const: C3C4Const = const
+        self.c3c4_const: C3C4Const = c3c4_const
 
         # Step 1: calculate the percentage advantage in GPP of C4 plants from
         # annual total GPP estimates for C3 and C4 plants. This uses use
@@ -199,12 +206,14 @@ class C3C4Competition:
         # Step 2: calculate the initial C4 fraction based on advantage modulated
         # by treecover.
         frac_c4 = convert_gpp_advantage_to_c4_fraction(
-            self.gpp_adv_c4, treecover=treecover, const=const
+            self.gpp_adv_c4, treecover=treecover, c3c4_const=c3c4_const
         )
 
         # Step 3: calculate the proportion of trees shading C4 plants, scaling
         # the predicted GPP to kilograms.
-        prop_trees = calculate_tree_proportion(gppc3=gpp_c3 / 1000, const=const)
+        prop_trees = calculate_tree_proportion(
+            gppc3=gpp_c3 / 1000, c3c4_const=c3c4_const
+        )
         frac_c4 = frac_c4 * (1 - prop_trees)
 
         # Step 4: remove areas below minimum temperature

@@ -15,6 +15,7 @@ from pyrealm.core.water import calc_viscosity_h2o
 def calc_ftemp_arrh(
     tk: NDArray,
     ha: float,
+    pmodel_const: PModelConst = PModelConst(),
     core_const: CoreConst = CoreConst(),
 ) -> NDArray:
     r"""Calculate enzyme kinetics scaling factor.
@@ -47,10 +48,12 @@ def calc_ftemp_arrh(
     Args:
         tk: Temperature (in Kelvin)
         ha: Activation energy (in :math:`J \text{mol}^{-1}`)
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
-        To: a standard reference temperature (:math:`T_0`, ``k_To``)
+        To: standard reference temperature for photosynthetic processes (:math:`T_0`,
+            ``k_To``)
         R: the universal gas constant (:math:`R`, ``k_R``)
 
     Returns:
@@ -67,7 +70,7 @@ def calc_ftemp_arrh(
     # exp( ha * (tc - 25.0)/(298.15 * kR * (tc + 273.15)) )
     # exp( (ha/kR) * (1/298.15 - 1/tk) )
 
-    tkref = core_const.k_To + core_const.k_CtoK
+    tkref = pmodel_const.plant_T_ref + core_const.k_CtoK
 
     return np.exp(ha * (tk - tkref) / (tkref * core_const.k_R * tk))
 
@@ -75,7 +78,6 @@ def calc_ftemp_arrh(
 def calc_ftemp_inst_rd(
     tc: NDArray,
     pmodel_const: PModelConst = PModelConst(),
-    core_const: CoreConst = CoreConst(),
 ) -> NDArray:
     r"""Calculate temperature scaling of dark respiration.
 
@@ -90,10 +92,10 @@ def calc_ftemp_inst_rd(
     Args:
         tc: Temperature (degrees Celsius)
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
-        To: standard reference temperature (:math:`T_o`, ``k_To``)
+        To: standard reference temperature for photosynthetic processes (:math:`T_o`,
+            ``k_To``)
         b: empirically derived global mean coefficient
             (:math:`b`, ``heskel_b``)
         c: empirically derived global mean coefficient
@@ -110,8 +112,8 @@ def calc_ftemp_inst_rd(
     """
 
     return np.exp(
-        pmodel_const.heskel_b * (tc - core_const.k_To)
-        - pmodel_const.heskel_c * (tc**2 - core_const.k_To**2)
+        pmodel_const.heskel_b * (tc - pmodel_const.plant_T_ref)
+        - pmodel_const.heskel_c * (tc**2 - pmodel_const.plant_T_ref**2)
     )
 
 
@@ -175,7 +177,7 @@ def calc_ftemp_inst_vcmax(
     """
 
     # Convert temperatures to Kelvin
-    tkref = core_const.k_To + core_const.k_CtoK
+    tkref = pmodel_const.plant_T_ref + core_const.k_CtoK
     tk = tc + core_const.k_CtoK
 
     # Calculate entropy following Kattge & Knorr (2007): slope and intercept
@@ -340,11 +342,11 @@ def calc_ns_star(
         1.12536
     """
 
-    visc_env = calc_viscosity_h2o(tc, patm, const=core_const)
+    visc_env = calc_viscosity_h2o(tc, patm, core_const=core_const)
     visc_std = calc_viscosity_h2o(
-        np.array(core_const.k_To),
+        np.array(core_const.k_To) - np.array(core_const.k_CtoK),
         np.array(core_const.k_Po),
-        const=core_const,
+        core_const=core_const,
     )
 
     return visc_env / visc_std

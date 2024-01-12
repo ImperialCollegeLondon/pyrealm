@@ -275,7 +275,7 @@ class PModel:
             env=env,
             method=method_optchi,
             rootzonestress=rootzonestress or np.array([1.0]),
-            const=self.pmodel_const,
+            pmodel_const=self.pmodel_const,
         )
         """Details of the optimal chi calculation for the model"""
 
@@ -286,7 +286,7 @@ class PModel:
         """Records the method used to calculate Jmax limitation."""
 
         self.jmaxlim: JmaxLimitation = JmaxLimitation(
-            self.optchi, method=self.method_jmaxlim, const=self.pmodel_const
+            self.optchi, method=self.method_jmaxlim, pmodel_const=self.pmodel_const
         )
         """Details of the Jmax limitation calculation for the model"""
         # -----------------------------------------------------------------------
@@ -415,9 +415,7 @@ class PModel:
         self._vcmax25 = self._vcmax / ftemp25_inst_vcmax
 
         # Dark respiration at growth temperature
-        ftemp_inst_rd = calc_ftemp_inst_rd(
-            self.env.tc, pmodel_const=self.pmodel_const, core_const=self.core_const
-        )
+        ftemp_inst_rd = calc_ftemp_inst_rd(self.env.tc, pmodel_const=self.pmodel_const)
         self._rd = (
             self.pmodel_const.atkin_rd_to_vcmax
             * (ftemp_inst_rd / ftemp25_inst_vcmax)

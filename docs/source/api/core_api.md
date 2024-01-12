@@ -21,10 +21,10 @@ kernelspec:
     :members:
 ```
 
-## The {mod}`~pyrealm.core.utilities` submodule
+## The {mod}`~pyrealm.core.calendar` submodule
 
 ```{eval-rst}
-.. automodule:: pyrealm.core.utilities
+.. automodule:: pyrealm.core.calendar
     :autosummary:
     :members:
 ```
@@ -41,6 +41,14 @@ kernelspec:
 
 ```{eval-rst}
 .. automodule:: pyrealm.core.pressure
+    :autosummary:
+    :members:
+```
+
+## The {mod}`~pyrealm.core.utilities` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.core.utilities
     :autosummary:
     :members:
 ```

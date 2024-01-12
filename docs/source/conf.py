@@ -82,13 +82,62 @@ bibtex_reference_style = "author_year_round"
 
 
 # Cross-reference checking
+# TODO - find some better solution than this to all of these bizarre cross reference
+#        problems.
 nitpicky = True
 nitpick_ignore = [
     ("py:class", "numpy._typing._array_like._ScalarType_co"),
     ("py:class", "numpy._typing._generic_alias.ScalarType"),
     ("py:class", "numpy.float32"),
     ("py:class", "numpy.timedelta64"),
+    ("py:class", "numpy.ndarray"),
+    ("py:class", "numpy.dtype"),
+    ("py:class", "numpy.dtype[+ScalarType]"),
+    ("py:class", "numpy.typing.NDArray"),
+    ("py:class", "dataclasses.InitVar"),
+    (
+        "py:class",
+        "dataclasses.InitVar[numpy.ndarray[typing.Any, numpy.dtype[+ScalarType]]]",
+    ),
+    (
+        "py:class",
+        "dataclasses.InitVar[numpy.ndarray[typing.Any, numpy.dtype[+_ScalarType_co]]]",
+    ),
+    (
+        "py:class",
+        (
+            "tuple[numpy.ndarray[typing.Any, numpy.dtype[+ScalarType]], "
+            "numpy.ndarray[typing.Any, numpy.dtype[+ScalarType]]]"
+        ),
+    ),
+    (
+        "py:obj",
+        (
+            "typing.Union[~numpy.ndarray[~typing.Any, "
+            "~numpy.dtype[~numpy._typing._generic_alias.ScalarType]], "
+            "tuple[numpy.ndarray[typing.Any, numpy.dtype[+ScalarType]], "
+            "numpy.ndarray[typing.Any, numpy.dtype[+ScalarType]], "
+            "numpy.ndarray[typing.Any, numpy.dtype[+ScalarType]]]]"
+        ),
+    ),
+    (
+        "py:class",
+        (
+            "tuple[numpy.ndarray[typing.Any, numpy.dtype[+ScalarType]], "
+            "numpy.ndarray[typing.Any, numpy.dtype[+ScalarType]], "
+            "numpy.ndarray[typing.Any, numpy.dtype[+ScalarType]]]"
+        ),
+    ),
+    (
+        "py:class",
+        (
+            "tuple[numpy.ndarray[typing.Any, numpy.dtype[+ScalarType]], "
+            "numpy.ndarray[typing.Any, numpy.dtype[+ScalarType]], "
+            "numpy.ndarray[typing.Any, numpy.dtype[+ScalarType]]]"
+        ),
+    ),
 ]
+
 intersphinx_mapping = {
     "pytest": ("https://docs.pytest.org/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),

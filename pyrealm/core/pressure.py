@@ -1,5 +1,5 @@
 """The :mod:`~pyrealm.core.pressure` submodule contains core functions for calculating
-atmospheric presssure. 
+atmospheric pressure. 
 """  # noqa D210, D415
 
 from numpy.typing import NDArray
@@ -7,7 +7,7 @@ from numpy.typing import NDArray
 from pyrealm.constants import CoreConst
 
 
-def calc_patm(elv: NDArray, const: CoreConst = CoreConst()) -> NDArray:
+def calc_patm(elv: NDArray, core_const: CoreConst = CoreConst()) -> NDArray:
     r"""Calculate atmospheric pressure from elevation.
 
     Calculates atmospheric pressure as a function of elevation with reference to the
@@ -21,7 +21,7 @@ def calc_patm(elv: NDArray, const: CoreConst = CoreConst()) -> NDArray:
 
     Args:
         elv: Elevation above sea-level (:math:`z`, metres above sea level.)
-        const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     Returns:
         A numeric value for :math:`p` in Pascals.
@@ -32,12 +32,7 @@ def calc_patm(elv: NDArray, const: CoreConst = CoreConst()) -> NDArray:
         90241.54
     """
 
-    # Convert elevation to pressure, Pa. This equation uses the base temperature
-    # in Kelvins, while other functions use this constant in the PARAM units of
-    # °C.
-
-    kto = const.k_To + const.k_CtoK
-
-    return const.k_Po * (1.0 - const.k_L * elv / kto) ** (
-        const.k_G * const.k_Ma / (const.k_R * const.k_L)
+    # Convert elevation to pressure, Pa.
+    return core_const.k_Po * (1.0 - core_const.k_L * elv / core_const.k_To) ** (
+        core_const.k_G * core_const.k_Ma / (core_const.k_R * core_const.k_L)
     )

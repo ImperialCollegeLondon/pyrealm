@@ -23,15 +23,30 @@ class CoreConst(ConstantsClass):
 
     * **Density of water using Fisher**. Values for the Tumlirz equation taken from
       Table 5 of :cite:t:`Fisher:1975tm`:
-      (:attr:`~pyrealm.constants.core_const.CoreConst.fisher_dial_lambda`,
-      :attr:`~pyrealm.constants.core_const.CoreConst.fisher_dial_Po`,
-      :attr:`~pyrealm.constants.core_const.CoreConst.fisher_dial_Vinf`)
 
-    * **Density of water using Chen**. Values taken from  :cite:t:`chen:2008a`:
-      (:attr:`~pyrealm.constants.core_const.CoreConst.chen_po`,
-      :attr:`~pyrealm.constants.core_const.CoreConst.chen_ko`,
-      :attr:`~pyrealm.constants.core_const.CoreConst.chen_ca`,
-      :attr:`~pyrealm.constants.core_const.CoreConst.chen_cb`)
+      .. math::
+
+            V_p = V_\infty + \dfrac{\lambda}{P_o + P},
+
+      where :math:`\lambda`
+      (:attr:`~pyrealm.constants.core_const.CoreConst.fisher_dial_lambda`),
+      :math:`P_o` (:attr:`~pyrealm.constants.core_const.CoreConst.fisher_dial_Po`) and
+      :math:`V_\infty`
+      (:attr:`~pyrealm.constants.core_const.CoreConst.fisher_dial_Vinf`) are all
+      temperature dependent polynomial functions.
+
+    * **Density of water using Chen**. Values taken from :cite:t:`chen:2008a` and
+      calculated as the inverse of their equation for the specific volume of water
+      (:math:`V`):
+
+        .. math::
+            V = V^0 - V^0 P/(K^0 +AP+BP^2),
+
+      where :math:`V^0` (:attr:`~pyrealm.constants.core_const.CoreConst.chen_po`),
+      :math:`K^0` (:attr:`~pyrealm.constants.core_const.CoreConst.chen_ko`),
+      :math:`A` (:attr:`~pyrealm.constants.core_const.CoreConst.chen_ca`, and
+      :math:`B` (:attr:`~pyrealm.constants.core_const.CoreConst.chen_cb`) are all
+      temperature dependent polynomial functions.
 
     * **Viscosity of water**. Values for the parameterisation taken from Table 2 and 3
       of :cite:t:`Huber:2009fy`:
@@ -43,7 +58,7 @@ class CoreConst(ConstantsClass):
 
     """
 
-    # Constants
+    # Universal constants
     k_R: float = 8.3145
     """Universal gas constant (:math:`R` , 8.3145, J/mol/K)"""
     k_co: float = 209476.0
@@ -51,10 +66,9 @@ class CoreConst(ConstantsClass):
     k_c_molmass: float = 12.0107
     """Molecular mass of carbon (:math:`c_molmass` , 12.0107, g)"""
     k_Po: float = 101325.0
-    """Standard reference atmosphere (Allen, 1973)   (:math:`P_o` , 101325.0, Pa)"""
-    k_To: float = 25.0
-    """Standard reference temperature (Prentice, unpublished) (:math:`T_o` , 25.0,
-    °C)"""
+    """Standard reference atmosphere (Allen, 1973) (:math:`P_o` , 101325.0, Pa)"""
+    k_To: float = 298.15
+    """Standard reference temperature (:math:`T_o` ,  298.15, K)"""
     k_L: float = 0.0065
     """Adiabiatic temperature lapse rate (Allen, 1973)   (:math:`L` , 0.0065, K/m)"""
     k_G: float = 9.80665
@@ -62,9 +76,45 @@ class CoreConst(ConstantsClass):
     k_Ma: float = 0.028963
     """Molecular weight of dry air (Tsilingiris, 2008)  (:math:`M_a`, 0.028963,
     kg/mol)"""
+    k_Mv: float = 0.01802
+    """Molecular weight of water vapour (Tsilingiris, 2008)  (:math:`M_v`,0.01802,
+    kg/mol)"""
     k_CtoK: float = 273.15
     """Conversion from °C to K   (:math:`CtoK` , 273.15, -)"""
+    k_pir = np.pi / 180.0
+    """Conversion factor from radians to degrees   (``pir`` , ~0.01745, -)"""
 
+    # TODO - these might be better in a separate SplashConst
+    k_w = 0.26
+    """Entrainment factor (Lhomme, 1997; Priestley & Taylor, 1972)"""
+    k_Cw = 1.05
+    """Supply constant, mm/hr (Federer, 1982)"""
+
+    # Solar constants
+    k_A = 107.0  # constant for Rnl (Monteith & Unsworth, 1990)
+    k_alb_sw = 0.17  # shortwave albedo (Federer, 1968)
+    k_alb_vis = 0.03  # visible light albedo (Sellers, 1985)
+    k_b = 0.20  # constant for Rnl (Linacre, 1968)
+    k_c = 0.25  # cloudy transmittivity (Linacre, 1968)
+    k_d = 0.50  # angular coefficient of transmittivity (Linacre, 1968)
+    k_fFEC = 2.04  # from flux to energy conversion, umol/J (Meek et al., 1984)
+    k_Gsc = 1360.8  # solar constant, W/m^2 (Kopp & Lean, 2011)
+
+    # Paleoclimate variables:
+    ke = 0.0167  # eccentricity for 2000 CE (Berger, 1978)
+    keps = 23.44  # obliquity for 2000 CE, degrees (Berger, 1978)
+    komega = 283.0  # longitude of perihelion for 2000 CE, degrees (Berger, 1978)
+
+    # Paleoclimate variables:
+    k_e: float = 0.0167
+    """Solar eccentricity, using default value for 2000 CE :cite:t:`berger:1978a`."""
+    k_eps: float = 23.44
+    """Solar obliquity, using default value for 2000 CE :cite:t:`berger:1978a`."""
+    k_omega = 283.0
+    """Solar longitude of perihelion, using default value for 2000 CE
+    :cite:t:`berger:1978a`."""
+
+    # Hygro constants
     magnus_coef: NDArray[np.float32] = field(
         default_factory=lambda: np.array((611.2, 17.62, 243.12))
     )
@@ -78,6 +128,7 @@ class CoreConst(ConstantsClass):
     :attr:`~pyrealm.constants.core_const.CoreConst.magnus_coef`.
     """
 
+    # Water constants
     water_density_method: str = "fisher"
     """Set the method used for calculating water density ('fisher' or 'chen')."""
 
@@ -87,16 +138,16 @@ class CoreConst(ConstantsClass):
             [1788.316, 21.55053, -0.4695911, 0.003096363, -7.341182e-06]
         )
     )
-    r"""Temperature dependent lambda parameterisation of the Tumlirz equation.
-     (:math:`\lambda`)."""
+    r"""Coefficients of the temperature dependent polynomial for :math:`\lambda`
+     in the Tumlirz equation."""
 
     fisher_dial_Po: NDArray[np.float32] = field(
         default_factory=lambda: np.array(
             [5918.499, 58.05267, -1.1253317, 0.0066123869, -1.4661625e-05]
         )
     )
-    """Temperature dependent P0 parameterisation of the Tumlirz equation
-    (:math:`P_0`)."""
+    """Coefficients of the temperature dependent polynomial for :math:`P_0` in the
+    Tumlirz equation."""
 
     fisher_dial_Vinf: NDArray[np.float32] = field(
         default_factory=lambda: np.array(
@@ -114,8 +165,8 @@ class CoreConst(ConstantsClass):
             ]
         )
     )
-    r"""Temperature dependent Vinf parameterisation of the Tumlirz equation
-    (:math:`V_{\infty}`)."""
+    r"""Coefficients of the temperature dependent polynomial for :math:`V_{\infty}`
+    in the Tumlirz equation."""
 
     # Chen water density
     chen_po: NDArray[np.float32] = field(
@@ -133,29 +184,32 @@ class CoreConst(ConstantsClass):
             ]
         )
     )
-    r"""Polynomial relationship of water density at 1 atm (kg/m^3) with temperature."""
+    r"""Coefficients of the polynomial relationship of water density with temperature at
+    1 atm (:math:`P^0`, kg/m^3) from :cite:t:`chen:2008a`."""
 
     chen_ko: NDArray[np.float32] = field(
         default_factory=lambda: np.array(
             [19652.17, 148.1830, -2.29995, 0.01281, -4.91564e-5, 1.035530e-7]
         )
     )
-    r"""Polynomial relationship of bulk modulus of water at 1 atm (kg/m^3) with
-     temperature."""
+    r"""Polynomial relationship of bulk modulus of water with temperature at 1 atm
+     (:math:`K^0`, kg/m^3) from :cite:t:`chen:2008a`."""
 
     chen_ca: NDArray[np.float32] = field(
         default_factory=lambda: np.array(
             [3.26138, 5.223e-4, 1.324e-4, -7.655e-7, 8.584e-10]
         )
     )
-    r"""Polynomial temperature dependent coefficient :math:`c_{a}`."""
+    r"""Coefficients of the polynomial temperature dependent coefficient :math:`A` from
+     :cite:t:`chen:2008a`."""
 
     chen_cb: NDArray[np.float32] = field(
         default_factory=lambda: np.array(
             [7.2061e-5, -5.8948e-6, 8.69900e-8, -1.0100e-9, 4.3220e-12]
         )
     )
-    r"""Polynomial temperature dependent coefficient :math:`c_{b}`."""
+    r"""Coefficients of the polynomial temperature dependent coefficient :math:`B` from
+     :cite:t:`chen:2008a`."""
 
     # Huber
     simple_viscosity: bool = False

@@ -48,7 +48,7 @@ def test_calc_density_h20(const_args, exp):
     args = {}
 
     if const_args is not None:
-        args["const"] = CoreConst(water_density_method=const_args)
+        args["core_const"] = CoreConst(water_density_method=const_args)
 
     rho = calc_density_h2o(np.array([20]), np.array([101325]), **args)
 

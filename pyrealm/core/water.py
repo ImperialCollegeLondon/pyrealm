@@ -1,5 +1,5 @@
 """The :mod:`~pyrealm.core.water` submodule contains core functions for calculating the
-density and viscosity of water given the air temperature and atmospheric presssure.
+density and viscosity of water given the air temperature and atmospheric pressure.
 """  # noqa D210, D415
 
 
@@ -13,7 +13,7 @@ from pyrealm.core.utilities import check_input_shapes
 def calc_density_h2o_chen(
     tc: NDArray,
     p: NDArray,
-    const: CoreConst = CoreConst(),
+    core_const: CoreConst = CoreConst(),
 ) -> NDArray:
     """Calculate the density of water using Chen et al 2008.
 
@@ -26,8 +26,9 @@ def calc_density_h2o_chen(
     Args:
         tc: Air temperature (°C)
         p: Atmospheric pressure (Pa)
-        const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`, providing
-            the polynomial coefficients for the  :cite:t:`chen:2008a` equations.
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`,
+            providing the polynomial coefficients for the  :cite:t:`chen:2008a`
+            equations.
 
     Returns:
         Water density as a float in (g cm^-3)
@@ -41,7 +42,7 @@ def calc_density_h2o_chen(
     """
 
     # Calculate density at 1 atm (kg/m^3):
-    po_coef = const.chen_po
+    po_coef = core_const.chen_po
     po = po_coef[0] + po_coef[1] * tc
     po += po_coef[2] * tc * tc
     po += po_coef[3] * tc * tc * tc
@@ -52,7 +53,7 @@ def calc_density_h2o_chen(
     po += po_coef[8] * tc * tc * tc * tc * tc * tc * tc * tc
 
     # Calculate bulk modulus at 1 atm (bar):
-    ko_coef = const.chen_ko
+    ko_coef = core_const.chen_ko
     ko = ko_coef[0] + ko_coef[1] * tc
     ko += ko_coef[2] * tc * tc
     ko += ko_coef[3] * tc * tc * tc
@@ -60,13 +61,13 @@ def calc_density_h2o_chen(
     ko += ko_coef[5] * tc * tc * tc * tc * tc
 
     # Calculate temperature dependent coefficients:
-    ca_coef = const.chen_ca
+    ca_coef = core_const.chen_ca
     ca = ca_coef[0] + ca_coef[1] * tc
     ca += ca_coef[2] * tc * tc
     ca += ca_coef[3] * tc * tc * tc
     ca += ca_coef[4] * tc * tc * tc * tc
 
-    cb_coef = const.chen_cb
+    cb_coef = core_const.chen_cb
     cb = cb_coef[0] + cb_coef[1] * tc
     cb += cb_coef[2] * tc * tc
     cb += cb_coef[3] * tc * tc * tc
@@ -84,7 +85,7 @@ def calc_density_h2o_chen(
 def calc_density_h2o_fisher(
     tc: NDArray,
     patm: NDArray,
-    const: CoreConst = CoreConst(),
+    core_const: CoreConst = CoreConst(),
 ) -> NDArray:
     """Calculate water density.
 
@@ -98,8 +99,9 @@ def calc_density_h2o_fisher(
     Args:
         tc: air temperature, °C
         patm: atmospheric pressure, Pa
-        const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`, providing
-            the polynomial coefficients for the :cite:t:`Fisher:1975tm` equations.
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`,
+            providing the polynomial coefficients for the :cite:t:`Fisher:1975tm`
+            equations.
 
     Returns:
         Water density as a float in (g cm^-3)
@@ -116,21 +118,21 @@ def calc_density_h2o_fisher(
     _ = check_input_shapes(tc, patm)
 
     # Calculate lambda, (bar cm^3)/g:
-    lambda_coef = const.fisher_dial_lambda
+    lambda_coef = core_const.fisher_dial_lambda
     lambda_val = lambda_coef[0] + lambda_coef[1] * tc
     lambda_val += lambda_coef[2] * tc * tc
     lambda_val += lambda_coef[3] * tc * tc * tc
     lambda_val += lambda_coef[4] * tc * tc * tc * tc
 
     # Calculate po, bar
-    po_coef = const.fisher_dial_Po
+    po_coef = core_const.fisher_dial_Po
     po_val = po_coef[0] + po_coef[1] * tc
     po_val += po_coef[2] * tc * tc
     po_val += po_coef[3] * tc * tc * tc
     po_val += po_coef[4] * tc * tc * tc * tc
 
     # Calculate vinf, cm^3/g
-    vinf_coef = const.fisher_dial_Vinf
+    vinf_coef = core_const.fisher_dial_Vinf
     vinf_val = vinf_coef[0] + vinf_coef[1] * tc
     vinf_val += vinf_coef[2] * tc * tc
     vinf_val += vinf_coef[3] * tc * tc * tc
@@ -156,7 +158,7 @@ def calc_density_h2o_fisher(
 def calc_density_h2o(
     tc: NDArray,
     patm: NDArray,
-    const: CoreConst = CoreConst(),
+    core_const: CoreConst = CoreConst(),
     safe: bool = True,
 ) -> NDArray:
     """Calculate water density.
@@ -173,7 +175,7 @@ def calc_density_h2o(
     Args:
         tc: air temperature, °C
         patm: atmospheric pressure, Pa
-        const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`
         safe: Prevents the function from estimating density below -30°C, where the
             functions are numerically unstable.
 
@@ -199,11 +201,11 @@ def calc_density_h2o(
     # Check input shapes, shape not used
     _ = check_input_shapes(tc, patm)
 
-    if const.water_density_method == "fisher":
-        return calc_density_h2o_fisher(tc, patm, const)
+    if core_const.water_density_method == "fisher":
+        return calc_density_h2o_fisher(tc, patm, core_const)
 
-    if const.water_density_method == "chen":
-        return calc_density_h2o_chen(tc, patm, const)
+    if core_const.water_density_method == "chen":
+        return calc_density_h2o_chen(tc, patm, core_const)
 
     raise ValueError("Unknown method provided to calc_density_h2o")
 
@@ -211,7 +213,7 @@ def calc_density_h2o(
 def calc_viscosity_h2o(
     tc: NDArray,
     patm: NDArray,
-    const: CoreConst = CoreConst(),
+    core_const: CoreConst = CoreConst(),
     simple: bool = False,
 ) -> NDArray:
     r"""Calculate the viscosity of water.
@@ -222,7 +224,7 @@ def calc_viscosity_h2o(
     Args:
         tc: air temperature (°C)
         patm: atmospheric pressure (Pa)
-        const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`
         simple: Use the simple formulation.
 
     Returns:
@@ -237,34 +239,34 @@ def calc_viscosity_h2o(
     # Check inputs, return shape not used
     _ = check_input_shapes(tc, patm)
 
-    if simple or const.simple_viscosity:
+    if simple or core_const.simple_viscosity:
         # The reference for this is unknown, but is used in some implementations
         # so is included here to allow intercomparison.
         return np.exp(-3.719 + 580 / ((tc + 273) - 138))
 
     # Get the density of water, kg/m^3
-    rho = calc_density_h2o(tc, patm, const=const)
+    rho = calc_density_h2o(tc, patm, core_const=core_const)
 
     # Calculate dimensionless parameters:
-    tbar = (tc + const.k_CtoK) / const.huber_tk_ast
-    rbar = rho / const.huber_rho_ast
+    tbar = (tc + core_const.k_CtoK) / core_const.huber_tk_ast
+    rbar = rho / core_const.huber_rho_ast
 
     # Calculate mu0 (Eq. 11 & Table 2, Huber et al., 2009):
-    mu0 = const.huber_H_i[0] + const.huber_H_i[1] / tbar
-    mu0 += const.huber_H_i[2] / (tbar * tbar)
-    mu0 += const.huber_H_i[3] / (tbar * tbar * tbar)
+    mu0 = core_const.huber_H_i[0] + core_const.huber_H_i[1] / tbar
+    mu0 += core_const.huber_H_i[2] / (tbar * tbar)
+    mu0 += core_const.huber_H_i[3] / (tbar * tbar * tbar)
     mu0 = (1e2 * np.sqrt(tbar)) / mu0
 
     # Calculate mu1 (Eq. 12 & Table 3, Huber et al., 2009):
     ctbar = (1.0 / tbar) - 1.0
     mu1 = 0.0
 
-    # Iterate over the rows of the H_ij constants matrix
-    for row_idx in np.arange(const.huber_H_ij.shape[1]):
+    # Iterate over the rows of the H_ij core_constants matrix
+    for row_idx in np.arange(core_const.huber_H_ij.shape[1]):
         cf1 = ctbar**row_idx
         cf2 = 0.0
-        for col_idx in np.arange(const.huber_H_ij.shape[0]):
-            cf2 += const.huber_H_ij[col_idx, row_idx] * (rbar - 1.0) ** col_idx
+        for col_idx in np.arange(core_const.huber_H_ij.shape[0]):
+            cf2 += core_const.huber_H_ij[col_idx, row_idx] * (rbar - 1.0) ** col_idx
         mu1 += cf1 * cf2
 
     mu1 = np.exp(rbar * mu1)
@@ -273,13 +275,13 @@ def calc_viscosity_h2o(
     mu_bar = mu0 * mu1
 
     # Calculate mu (Eq. 1, Huber et al., 2009)
-    return mu_bar * const.huber_mu_ast  # Pa s
+    return mu_bar * core_const.huber_mu_ast  # Pa s
 
 
 def calc_viscosity_h2o_matrix(
     tc: NDArray,
     patm: NDArray,
-    const: CoreConst = CoreConst(),
+    core_const: CoreConst = CoreConst(),
     simple: bool = False,
 ) -> NDArray:
     r"""Calculate the viscosity of water.
@@ -290,7 +292,7 @@ def calc_viscosity_h2o_matrix(
     Args:
         tc: air temperature (°C)
         patm: atmospheric pressure (Pa)
-        const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`
         simple: Use the simple formulation.
 
     Returns:
@@ -305,24 +307,26 @@ def calc_viscosity_h2o_matrix(
     # Check inputs, return shape not used
     _ = check_input_shapes(tc, patm)
 
-    if simple or const.simple_viscosity:
+    if simple or core_const.simple_viscosity:
         # The reference for this is unknown, but is used in some implementations
         # so is included here to allow intercomparison.
         return np.exp(-3.719 + 580 / ((tc + 273) - 138))
 
     # Get the density of water, kg/m^3
-    rho = calc_density_h2o(tc, patm, const=const)
+    rho = calc_density_h2o(tc, patm, core_const=core_const)
 
     # Calculate dimensionless parameters:
-    tbar = (tc + const.k_CtoK) / const.huber_tk_ast
-    rbar = rho / const.huber_rho_ast
+    tbar = (tc + core_const.k_CtoK) / core_const.huber_tk_ast
+    rbar = rho / core_const.huber_rho_ast
 
     # Calculate mu0 (Eq. 11 & Table 2, Huber et al., 2009):
     tbar_pow = np.power.outer(tbar, np.arange(0, 4))
-    mu0 = (1e2 * np.sqrt(tbar)) / np.sum(np.array(const.huber_H_i) / tbar_pow, axis=-1)
+    mu0 = (1e2 * np.sqrt(tbar)) / np.sum(
+        np.array(core_const.huber_H_i) / tbar_pow, axis=-1
+    )
 
     # Calculate mu1 (Eq. 12 & Table 3, Huber et al., 2009):
-    h_array = np.array(const.huber_H_ij)
+    h_array = np.array(core_const.huber_H_ij)
     ctbar = (1.0 / tbar) - 1.0
     row_j, _ = np.indices(h_array.shape)
     mu1 = h_array * np.power.outer(rbar - 1.0, row_j)
@@ -333,4 +337,4 @@ def calc_viscosity_h2o_matrix(
     mu_bar = mu0 * mu1
 
     # Calculate mu (Eq. 1, Huber et al., 2009)
-    return mu_bar * const.huber_mu_ast  # Pa s
+    return mu_bar * core_const.huber_mu_ast  # Pa s
