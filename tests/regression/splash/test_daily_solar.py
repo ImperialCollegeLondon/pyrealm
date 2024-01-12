@@ -123,10 +123,8 @@ def test_solar_array_grid(grid_benchmarks):
     cal = Calendar(inputs.time.values.astype("datetime64[D]"))
 
     # Duplicate lat and elev to same shape as sf and tc (TODO - avoid this!)
-    sf_shape = inputs["sf"].shape
-    elev = np.repeat(inputs["elev"].data[np.newaxis, :, :], sf_shape[0], axis=0)
-    lat = np.repeat(inputs["lat"].data[:, np.newaxis], sf_shape[2], axis=1)
-    lat = np.repeat(lat[np.newaxis, :, :], sf_shape[0], axis=0)
+    elev = np.broadcast_to(inputs.elev.data[None, :, :], inputs.sf.data.shape)
+    lat = np.broadcast_to(inputs.lat.data[None, :, None], inputs.sf.data.shape)
 
     solar = DailySolarFluxes(
         lat=lat,

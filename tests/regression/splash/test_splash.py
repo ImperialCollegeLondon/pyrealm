@@ -126,8 +126,8 @@ def test_run_spin_up_oned(splash_core_constants, one_d_benchmark):
     # duplicate lat and elev to same shape as sf, tc, pc (TODO - avoid this!)
 
     splash = SplashModel(
-        lat=np.repeat(inputs.lat.data, 366)[:, np.newaxis, np.newaxis],
-        elv=np.repeat(inputs.elev.data, 366)[:, np.newaxis, np.newaxis],
+        lat=np.broadcast_to(inputs.lat.data, inputs.sf.shape),
+        elv=np.broadcast_to(inputs.elev.data, inputs.sf.shape),
         dates=Calendar(inputs.time.data),
         sf=inputs.sf.data,
         tc=inputs.tmp.data,
@@ -168,8 +168,8 @@ def test_run_spin_up_iter(splash_core_constants, grid_benchmarks):
             continue
 
         splash = SplashModel(
-            lat=np.repeat(cell_inputs.lat.data, inputs.sizes["time"])[:, None, None],
-            elv=np.repeat(cell_inputs.elev.data, inputs.sizes["time"])[:, None, None],
+            lat=np.broadcast_to(cell_inputs.lat.data, cell_inputs.sf.shape),
+            elv=np.broadcast_to(cell_inputs.elev.data, cell_inputs.sf.shape),
             dates=cal,
             sf=cell_inputs.sf.data,
             tc=cell_inputs.tmp.data,
@@ -224,8 +224,8 @@ def test_calculate_soil_moisture_oned(splash_core_constants, one_d_benchmark):
     # duplicate lat and elev to same shape as sf, tc, pc (TODO - avoid this!)
 
     splash = SplashModel(
-        lat=np.repeat(inputs.lat.data, 366)[:, np.newaxis, np.newaxis],
-        elv=np.repeat(inputs.elev.data, 366)[:, np.newaxis, np.newaxis],
+        lat=np.broadcast_to(inputs.lat.data, inputs.sf.shape),
+        elv=np.broadcast_to(inputs.elev.data, inputs.sf.shape),
         dates=Calendar(inputs.time.data),
         sf=inputs.sf.data,
         tc=inputs.tmp.data,

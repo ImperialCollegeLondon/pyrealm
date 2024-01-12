@@ -151,10 +151,8 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
     cal = Calendar(inputs.time.values.astype("datetime64[D]"))
 
     # Duplicate lat and elev to same shape as sf and tc (TODO - avoid this!)
-    sf_shape = inputs["sf"].shape
-    elev = np.repeat(inputs["elev"].data[np.newaxis, :, :], sf_shape[0], axis=0)
-    lat = np.repeat(inputs["lat"].data[:, np.newaxis], sf_shape[2], axis=1)
-    lat = np.repeat(lat[np.newaxis, :, :], sf_shape[0], axis=0)
+    lat = np.broadcast_to(inputs.lat.data[None, :, None], inputs.sf.data.shape)
+    elev = np.broadcast_to(inputs.elev.data[None, :, :], inputs.sf.data.shape)
 
     solar = DailySolarFluxes(
         lat=lat,
