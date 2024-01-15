@@ -33,7 +33,7 @@ class TestClass:
 
         ds = ds.sel(time=slice("2000-01-01T01:59", "2001-12-31T01:59"))
         self.local_offset = np.timedelta64(int((24.25 * (24 / 360)) * 60 * 60), "s")
-        self.local_time = ds["time"].to_numpy() - self.local_offset
+        self.local_time = ds["time"].to_numpy() #- self.local_offset
 
         # Variable set up
         # Air temperature in Kelvin

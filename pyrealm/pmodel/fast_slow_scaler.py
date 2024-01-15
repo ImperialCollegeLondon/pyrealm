@@ -40,7 +40,7 @@ from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
 from scipy.interpolate import interp1d  # type: ignore
-
+import datetime
 
 class FastSlowScaler:
     """Convert variables between photosynthetic fast and slow response scales.
@@ -85,7 +85,7 @@ class FastSlowScaler:
 
         # - with strictly increasing time deltas that are both evenly spaced and evenly
         #   divisible into a day
-        n_datetimes = datetimes.shape[0]
+        # n_datetimes = datetimes.shape[0]
         datetime_deltas = np.diff(datetimes)
         spacing = set(datetime_deltas)
 
@@ -98,27 +98,65 @@ class FastSlowScaler:
         if self.spacing < 0:
             raise ValueError("Datetime sequence must be increasing")
 
-        # Get the number of observations per day and check it is evenly divisible.
+        # Find the minimum and maximum daily sample point
+        min_time = min(
+            np.datetime64(sample).astype(datetime.datetime).time() for sample in
+            datetimes
+        )
+        max_time = max(
+            np.datetime64(sample).astype(datetime.datetime).time() for sample in
+            datetimes
+        )
+
+        # Get the number of observations per day.
         n_sec = 24 * 60 * 60
         obs_per_date = n_sec // self.spacing.astype("timedelta64[s]").astype(int)
-        day_remainder = n_sec % self.spacing.astype("timedelta64[s]").astype(int)
 
-        if day_remainder:
-            raise ValueError("Datetime spacing is not evenly divisible into a day")
+        # Check whether the first day is complete
+        if datetimes[0].astype(datetime.datetime).time() != min_time:
+            Warning("First day incomplete - add padding to datetimes.")
+            #Find how many values are missing at start of first day
+            difference_in_seconds = (
+                datetime.datetime.combine(
+                    datetime.datetime(datetimes[0].astype(object).year,
+                                      datetimes[0].astype(object).month,
+                                      datetimes[0].astype(object).day),
+                    min_time)
+                - datetimes[0].astype(datetime.datetime)).total_seconds()
 
-        obs_remainder = n_datetimes % obs_per_date
-        if obs_remainder:
-            raise ValueError("Datetimes include incomplete days")
+            self.num_missing_values_start = ((obs_per_date - difference_in_seconds) //
+                                      self.spacing.astype("timedelta64[s]").astype(int))
+        else:
+            self.num_missing_values_start = 0
+
+        # Check whether the last day is complete
+        if datetimes[-1].astype(datetime.datetime).time() != max_time:
+            Warning("Last day incomplete - add padding to datetimes.")
+            # Find how many values are missing at end of last day
+            difference_in_seconds = (
+                datetimes[-1].astype(datetime.datetime) -
+                datetime.datetime.combine(
+                    datetime.datetime(datetimes[-1].astype(object).year,
+                                      datetimes[-1].astype(object).month,
+                                      datetimes[-1].astype(object).day),
+                    max_time)).total_seconds()
+
+            self.num_missing_values_end = ((obs_per_date - difference_in_seconds) //
+                                      self.spacing.astype("timedelta64[s]").astype(int))
+        else:
+            self.num_missing_values_end = 0
+
+        # Pad incomplete days with NaNs
+        datetimes = np.pad(
+            datetimes,
+            (int(self.num_missing_values_start), int(self.num_missing_values_end)),
+            constant_values=(np.nan, np.nan),
+        )
 
         # Get a view of the datetimes wrapped on the number of observations per date
         # and extract the observation dates and times
         datetimes_by_date = datetimes.view()
         datetimes_by_date.shape = (-1, obs_per_date)
-
-        # Data could still wrap onto obs x day view but having dates change mid row
-        first_row_dates = datetimes_by_date[0, :].astype("datetime64[D]")
-        if len(set(first_row_dates)) > 1:
-            raise ValueError("Datetimes include incomplete days")
 
         self.observation_dates: NDArray[np.datetime64] = datetimes_by_date[:, 0].astype(
             "datetime64[D]"
@@ -157,6 +195,27 @@ class FastSlowScaler:
 
         self.sample_datetimes_max: NDArray[np.datetime64]
         """The maximum datetime of for each daily sample."""
+
+    def _pad_values(self, values: NDArray) -> NDArray:
+        """Pad values array to full days.
+
+        This method takes an array representing daily values and pads the first and
+        last day with NaN values so that they correspond to full days, similar to the
+        datetime array of this class.
+
+        Args:
+            values: An array containing the sample values. The first dimension
+            should be matching the number of days in the instances
+            :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` object.
+        """
+
+        # Pad incomplete days with NaNs
+        values[0] = np.pad(
+            values[0],
+            (int(self.num_missing_values_start), int(self.num_missing_values_end)),
+            constant_values=(np.nan, np.nan),
+        )
+        return values
 
     def _set_times(self) -> None:
         """Sets the times at which representative values are sampled.
@@ -312,6 +371,7 @@ class FastSlowScaler:
             )
         # Check that the first axis has the same shape as the number of
         # datetimes in the init
+        values = self._pad_values(values)
         if values.shape[0] != self.datetimes.shape[0]:
             raise ValueError(
                 "The first dimension of values is not the same length "
@@ -341,6 +401,7 @@ class FastSlowScaler:
         Returns:
             An array of mean daily values during the acclimation window
         """
+        values = self._pad_values(values)
         daily_values = self.get_window_values(values)
 
         return daily_values.mean(axis=1)
@@ -387,6 +448,8 @@ class FastSlowScaler:
               :class:`numpy.timedelta64` value giving the time of day from which to fill
               values forward.
         """
+
+        values = self._pad_values(values)
 
         if values.shape[0] != self.n_days:
             raise ValueError("Values is not of length n_days on its first axis.")
