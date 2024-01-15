@@ -35,12 +35,13 @@ component of fitting the P Model at subdaily time scales. The class is used as f
   :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance.
 """  # noqa: D205, D415
 
+import datetime
 from typing import Optional
 
 import numpy as np
 from numpy.typing import NDArray
 from scipy.interpolate import interp1d  # type: ignore
-import datetime
+
 
 class FastSlowScaler:
     """Convert variables between photosynthetic fast and slow response scales.
@@ -100,12 +101,12 @@ class FastSlowScaler:
 
         # Find the minimum and maximum daily sample point
         min_time = min(
-            np.datetime64(sample).astype(datetime.datetime).time() for sample in
-            datetimes
+            np.datetime64(sample).astype(datetime.datetime).time()
+            for sample in datetimes
         )
         max_time = max(
-            np.datetime64(sample).astype(datetime.datetime).time() for sample in
-            datetimes
+            np.datetime64(sample).astype(datetime.datetime).time()
+            for sample in datetimes
         )
 
         # Get the number of observations per day.
@@ -115,17 +116,22 @@ class FastSlowScaler:
         # Check whether the first day is complete
         if datetimes[0].astype(datetime.datetime).time() != min_time:
             Warning("First day incomplete - add padding to datetimes.")
-            #Find how many values are missing at start of first day
+            # Find how many values are missing at start of first day
             difference_in_seconds = (
                 datetime.datetime.combine(
-                    datetime.datetime(datetimes[0].astype(object).year,
-                                      datetimes[0].astype(object).month,
-                                      datetimes[0].astype(object).day),
-                    min_time)
-                - datetimes[0].astype(datetime.datetime)).total_seconds()
+                    datetime.datetime(
+                        datetimes[0].astype(object).year,
+                        datetimes[0].astype(object).month,
+                        datetimes[0].astype(object).day,
+                    ),
+                    min_time,
+                )
+                - datetimes[0].astype(datetime.datetime)
+            ).total_seconds()
 
-            self.num_missing_values_start = ((obs_per_date - difference_in_seconds) //
-                                      self.spacing.astype("timedelta64[s]").astype(int))
+            self.num_missing_values_start = (
+                obs_per_date - difference_in_seconds
+            ) // self.spacing.astype("timedelta64[s]").astype(int)
         else:
             self.num_missing_values_start = 0
 
@@ -134,15 +140,20 @@ class FastSlowScaler:
             Warning("Last day incomplete - add padding to datetimes.")
             # Find how many values are missing at end of last day
             difference_in_seconds = (
-                datetimes[-1].astype(datetime.datetime) -
-                datetime.datetime.combine(
-                    datetime.datetime(datetimes[-1].astype(object).year,
-                                      datetimes[-1].astype(object).month,
-                                      datetimes[-1].astype(object).day),
-                    max_time)).total_seconds()
+                datetimes[-1].astype(datetime.datetime)
+                - datetime.datetime.combine(
+                    datetime.datetime(
+                        datetimes[-1].astype(object).year,
+                        datetimes[-1].astype(object).month,
+                        datetimes[-1].astype(object).day,
+                    ),
+                    max_time,
+                )
+            ).total_seconds()
 
-            self.num_missing_values_end = ((obs_per_date - difference_in_seconds) //
-                                      self.spacing.astype("timedelta64[s]").astype(int))
+            self.num_missing_values_end = (
+                obs_per_date - difference_in_seconds
+            ) // self.spacing.astype("timedelta64[s]").astype(int)
         else:
             self.num_missing_values_end = 0
 
