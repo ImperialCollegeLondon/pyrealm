@@ -2,7 +2,6 @@
 
 from importlib import resources
 
-import numpy as np
 import pytest
 import xarray
 
@@ -18,63 +17,6 @@ def splash_core_constants():
     from pyrealm.constants import CoreConst
 
     return CoreConst(k_To=288.15, water_density_method="chen")
-
-
-@pytest.fixture()
-def daily_flux_benchmarks() -> tuple[np.ndarray, np.ndarray]:
-    """Test daily values.
-
-    Loads an input file and SPLASH outputs for 100 random locations with a wide range of
-    possible input values. Not intended for testing time series iteration, just the
-    daily predictions of all core variables.
-    """
-
-    dpath = resources.files("pyrealm_build_data.splash")
-
-    inputs = np.genfromtxt(
-        str(dpath / "inputs.csv"),
-        dtype=None,
-        delimiter=",",
-        names=True,
-        encoding="UTF-8",
-    )
-
-    expected = np.genfromtxt(
-        str(dpath / "benchmark_daily_fluxes.csv"),
-        dtype=None,
-        delimiter=",",
-        names=True,
-        encoding="UTF-8",
-    )
-
-    # rename a couple of fields to match new implementation
-    assert expected.dtype.names is not None
-    exp_fields = list(expected.dtype.names)
-    exp_fields[exp_fields.index("my_nu")] = "nu"
-    exp_fields[exp_fields.index("my_lambda")] = "lambda_"
-    expected.dtype.names = tuple(exp_fields)
-
-    return inputs, expected
-
-
-@pytest.fixture()
-def one_d_benchmark() -> tuple[xarray.Dataset, xarray.Dataset]:
-    """Test one dimensional time series.
-
-    Loads the input data and resulting soil moisture outputs from the single location
-    San Francisco dataset provided with the original implementation. These were
-    originally calculated using the __main__ code in SPLASH main.py, but the data has
-    bee converted to netCDF and run using an alternative interface in order to retain
-    more validation data.
-    """
-
-    dpath = resources.files("pyrealm_build_data.splash")
-
-    inputs = xarray.load_dataset(dpath / "splash_test_example.nc")
-
-    expected = xarray.load_dataset(dpath / "splash_test_example_out.nc")
-
-    return inputs, expected
 
 
 @pytest.fixture()
