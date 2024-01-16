@@ -33,21 +33,47 @@ def splash_model(splash_core_constants, grid_benchmarks):
     )
 
 
-def test_splash_model_initialization(splash, grid_benchmarks):
+def test_splash_model_initialization(splash_model, grid_benchmarks):
     """Test the initialization of the SplashModel class."""
 
     inputs, _ = grid_benchmarks
-    assert splash.shape == inputs.time.shape + inputs.elev.shape
-    assert splash.pa.shape == inputs.elev.shape
+    assert splash_model.shape == inputs.time.shape + inputs.elev.shape
+    assert splash_model.pa.shape == inputs.elev.shape
 
 
-def test_estimate_daily_water_balance(splash):
+def test_estimate_daily_water_balance(splash_model):
     """Test the estimate_daily_water_balance method of the SplashModel class."""
+    wn_init = np.array([75])
+    wn, rn = splash_model.estimate_daily_water_balance(wn_init)
+
+    assert isinstance(wn, np.ndarray)
+    assert wn.shape == wn_init.shape
+    assert isinstance(rn, np.ndarray)
+    assert rn.shape == wn_init.shape
 
 
-def test_estimate_initial_soil_moisture(splash):
+def test_estimate_initial_soil_moisture(splash_model):
     """Test the estimate_initial_soil_moisture method of the SplashModel class."""
+    wn_init = np.array([75])
+    max_iter = 10
+    max_diff = 1.0
+    verbose = False
+
+    wn = splash_model.estimate_initial_soil_moisture(
+        wn_init, max_iter, max_diff, verbose
+    )
+
+    assert isinstance(wn, np.ndarray)
+    assert wn.shape == wn_init.shape
 
 
-def test_calc_soil_moisture():
+def test_calc_soil_moisture(splash_model):
     """Test the calc_soil_moisture method of the SplashModel class."""
+    wn_init = np.array([75])
+
+    wn, rn = splash_model.calc_soil_moisture(wn_init)
+
+    assert isinstance(wn, np.ndarray)
+    assert wn.shape == wn_init.shape
+    assert isinstance(rn, np.ndarray)
+    assert rn.shape == wn_init.shape
