@@ -14,7 +14,7 @@ import pytest
 
 @pytest.fixture
 def calendar(grid_benchmarks):
-    """Provide the dates from the inputs fixture."""
+    """Provide the dates with a random start date."""
     from pyrealm.core.calendar import Calendar
 
     T = 366
