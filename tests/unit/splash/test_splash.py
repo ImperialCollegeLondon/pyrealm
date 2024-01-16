@@ -1,6 +1,5 @@
 """This module tests the main methods in the SplashModel.
 
-- __init__, which initializes the model
 - estimate_daily_water_balance, which estimates soil moisture and run off given
   preceeding soil moisture
 - estimate_initial_soil_moisture, which assumes a stationary relationship over an
@@ -14,66 +13,73 @@ import pytest
 
 
 @pytest.fixture
-def splash_model(splash_core_constants, grid_benchmarks):
+def calendar(grid_benchmarks):
+    """Provide the dates from the inputs fixture."""
+    from pyrealm.core.calendar import Calendar
+
+    T = 366
+    dates = grid_benchmarks[0].time.data
+    t0 = np.random.randint(0, len(dates) - T)
+    return Calendar(inputs.time.data[t0:t0+T])  # fmt: skip
+
+
+@pytest.fixture
+def inputs(grid_benchmarks, calendar):
+    """Provide the inputs from the grid_benchmarks fixture."""
+    return grid_benchmarks[0].sel(time=calendar.dates)
+
+
+@pytest.fixture
+def expected(grid_benchmarks, calendar):
+    """Provide the expected outputs from the grid_benchmarks fixture."""
+    return grid_benchmarks[1].sel(time=calendar.dates)
+
+
+@pytest.fixture
+def splash_model(splash_core_constants, inputs, calendar):
     """Create a SplashModel object for testing."""
 
-    from pyrealm.core.calendar import Calendar
     from pyrealm.splash.splash import SplashModel
 
-    inputs, _ = grid_benchmarks
-
-    return SplashModel(
+    splash_model = SplashModel(
         lat=np.broadcast_to(inputs.lat.data[None, :, None], inputs.sf.data.shape),
         elv=np.broadcast_to(inputs.elev.data[None, :, :], inputs.sf.data.shape),
-        dates=Calendar(inputs.time.data),
+        dates=calendar,
         sf=inputs.sf.data,
         tc=inputs.tmp.data,
         pn=inputs.pre.data,
         core_const=splash_core_constants,
     )
 
-
-def test_splash_model_initialization(splash_model, grid_benchmarks):
-    """Test the initialization of the SplashModel class."""
-
-    inputs, _ = grid_benchmarks
-    assert splash_model.shape == inputs.time.shape + inputs.elev.shape
-    assert splash_model.pa.shape == inputs.elev.shape
+    assert splash_model.shape == calendar.shape + inputs.elev.shape
+    return splash_model
 
 
 def test_estimate_daily_water_balance(splash_model):
     """Test the estimate_daily_water_balance method of the SplashModel class."""
-    wn_init = np.array([75])
-    wn, rn = splash_model.estimate_daily_water_balance(wn_init)
 
-    assert isinstance(wn, np.ndarray)
-    assert wn.shape == wn_init.shape
-    assert isinstance(rn, np.ndarray)
-    assert rn.shape == wn_init.shape
+    wn_init = np.random.random(splash_model.shape) * splash_model.kWm
+    aet, wn, rn = splash_model.estimate_daily_water_balance(wn_init)
 
-
-def test_estimate_initial_soil_moisture(splash_model):
-    """Test the estimate_initial_soil_moisture method of the SplashModel class."""
-    wn_init = np.array([75])
-    max_iter = 10
-    max_diff = 1.0
-    verbose = False
-
-    wn = splash_model.estimate_initial_soil_moisture(
-        wn_init, max_iter, max_diff, verbose
+    assert np.allclose(
+        aet + wn + rn, wn_init + splash_model.pn + splash_model.evap.cond
     )
 
-    assert isinstance(wn, np.ndarray)
-    assert wn.shape == wn_init.shape
+
+def test_estimate_initial_soil_moisture(splash_model, expected):
+    """Test the estimate_initial_soil_moisture method of the SplashModel class."""
+
+    wn_init = np.random.random(splash_model.shape) * splash_model.kWm
+    wn = splash_model.estimate_initial_soil_moisture(wn_init)
+
+    assert np.allclose(wn, expected["wn_spun_up"].data)
 
 
-def test_calc_soil_moisture(splash_model):
+def test_calc_soil_moisture(splash_model, expected):
     """Test the calc_soil_moisture method of the SplashModel class."""
-    wn_init = np.array([75])
 
-    wn, rn = splash_model.calc_soil_moisture(wn_init)
+    aet, wn, ro = splash_model.calculate_soil_moisture(expected["wn_spun_up"].data)
 
-    assert isinstance(wn, np.ndarray)
-    assert wn.shape == wn_init.shape
-    assert isinstance(rn, np.ndarray)
-    assert rn.shape == wn_init.shape
+    assert np.allclose(aet, expected["aet_d"].data, equal_nan=True)
+    assert np.allclose(wn, expected["wn"].data, equal_nan=True)
+    assert np.allclose(ro, expected["ro"].data, equal_nan=True, atol=1e-04)
