@@ -225,7 +225,7 @@ class OptimalChiPrentice14(NewCalcOptimalChi):
         ...     tc=np.array([20]), vpd=np.array([1000]),
         ...     co2=np.array([400]), patm=np.array([101325.0])
         ... )
-        >>> vals = CalcOptimalChi(env=env)
+        >>> vals = OptimalChiPrentice14(env=env)
         >>> vals.chi.round(5)
         array([0.69435])
         >>> vals.mc.round(5)
@@ -284,7 +284,7 @@ class OptimalChiC4(NewCalcOptimalChi):
         ...     tc=np.array([20]), vpd=np.array([1000]), co2=np.array([400]),
         ...     patm=np.array([101325.0]), theta=np.array([0.5])
         ... )
-        >>> vals = CalcOptimalChi(env=env, method='c4')
+        >>> vals = OptimalChiC4(env=env)
         >>> vals.chi.round(5)
         array([0.44967])
         >>> vals.mj.round(1)
