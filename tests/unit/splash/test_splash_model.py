@@ -58,12 +58,12 @@ def splash_model(splash_core_constants, inputs, calendar):
 def test_estimate_daily_water_balance(splash_model):
     """Test the estimate_daily_water_balance method of the SplashModel class."""
 
-    wn_init = np.random.random(splash_model.shape) * splash_model.kWm
-    aet, wn, rn = splash_model.estimate_daily_water_balance(wn_init)
-
-    assert np.allclose(
-        aet + wn + rn, wn_init + splash_model.pn + splash_model.evap.cond
-    )
+    for _ in range(5):
+        wn_init = np.random.random(splash_model.shape) * splash_model.kWm
+        aet, wn, rn = splash_model.estimate_daily_water_balance(wn_init)
+        assert np.allclose(
+            aet + wn + rn, wn_init + splash_model.pn + splash_model.evap.cond
+        )
 
 
 def test_estimate_initial_soil_moisture(splash_model, expected):
