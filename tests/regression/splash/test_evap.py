@@ -181,4 +181,4 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
     # been created in the original implementation, the whole time sequence can be passed
     # in as a single array and calculated without daily iteration
     aet = evap.estimate_aet(wn=expected["wn"].data, day_idx=None)
-    np.allclose(aet, expected["aet_d"], equal_nan=True)
+    assert np.allclose(aet, expected["aet_d"], equal_nan=True)
