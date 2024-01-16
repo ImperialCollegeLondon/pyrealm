@@ -1,30 +1,13 @@
 r"""The module :mod:`~pyrealm.pmodel.calc_optimal_chi_new` provides  
 the abstract base class :class:`~pyrealm.pmodel.calc_optimal_chi_new.CalcOptimalChiNew`,
 which is used to support different implementations of the calculation of optimal chi.
-
-Defining an optimal chi implementation.
-=======================================
-
-
-
-The value of ``beta`` differs between implementations: it may take a constant value
-across cells but can vary with environmental conditions, such as approaches to
-capture soil moisture responses.
-
-2. The variable ``xi`` ():math:`\xi`), which captures the sensitivity of
-    :math:`\chi` to the vapour pressure deficit, and is related to the carbon cost of
-    water (Medlyn et al. 2011; Prentice et 2014).
-
-
-
 """  # noqa D210, D415
 
 from __future__ import annotations
 
-from warnings import warn
 from abc import ABC, abstractmethod
-
 from typing import Optional, Type
+from warnings import warn
 
 import numpy as np
 from numpy.typing import NDArray
@@ -32,7 +15,6 @@ from numpy.typing import NDArray
 from pyrealm.constants import PModelConst
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
-
 
 OPTIMAL_CHI_CLASS_REGISTRY: dict[str, Type[NewCalcOptimalChi]] = {}
 """A registry for optimal chi calculation classes.
@@ -97,19 +79,22 @@ class NewCalcOptimalChi(ABC):
         specific subclasses.
     """
 
-    @property
-    @abstractmethod
-    def method(cls) -> str:
-        """The method name.
+    # @property
+    # @abstractmethod
+    # def method(cls) -> str:
+    #     """The method name.
 
-        This class property sets the name used to refer to identify the class in
-        the :data:`~pyrealm.pmodel.calc_optimal_chi.OPTIMAL_CHI_METHOD_REGISTRY`.
-        """
+    #     This class property sets the name used to refer to identify the class in
+    #     the :data:`~pyrealm.pmodel.calc_optimal_chi.OPTIMAL_CHI_METHOD_REGISTRY`.
+    #     """
 
-    @property
-    @abstractmethod
-    def is_c4(cls) -> bool:
-        """Does the class represent a C4 pathway."""
+    # @property
+    # @abstractmethod
+    # def is_c4(cls) -> bool:
+    #     """Does the class represent a C4 pathway."""
+
+    method: str
+    is_c4: bool
 
     def __init__(
         self,
@@ -195,7 +180,7 @@ class NewCalcOptimalChi(ABC):
 
     @classmethod
     def __init_subclass__(cls) -> None:
-        """Initialise subclasses deriving"""
+        """Initialise a subclass deriving from this ABC."""
 
         OPTIMAL_CHI_CLASS_REGISTRY[cls.method] = cls
 

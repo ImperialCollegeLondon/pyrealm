@@ -144,7 +144,6 @@ def test_calc_optimal_chi_new(
     """Test the CalcOptimalChi class."""
 
     from pyrealm.pmodel import PModelEnvironment
-
     from pyrealm.pmodel.calc_optimal_chi_new import OPTIMAL_CHI_CLASS_REGISTRY
 
     with context_manager:
