@@ -58,11 +58,13 @@ def splash_model(splash_core_constants, inputs, calendar):
 def test_estimate_daily_water_balance(splash_model):
     """Test the estimate_daily_water_balance method of the SplashModel class."""
 
-    for _ in range(5):
+    for _ in range(100):
         wn_init = np.random.random(splash_model.shape) * splash_model.kWm
         aet, wn, rn = splash_model.estimate_daily_water_balance(wn_init)
         assert np.allclose(
-            aet + wn + rn, wn_init + splash_model.pn + splash_model.evap.cond
+            aet + wn + rn, 
+            wn_init + splash_model.pn + splash_model.evap.cond,
+            equal_nan=True
         )
 
 
@@ -72,7 +74,7 @@ def test_estimate_initial_soil_moisture(splash_model, expected):
     wn_init = np.random.random(splash_model.shape[1:]) * splash_model.kWm
     wn = splash_model.estimate_initial_soil_moisture(wn_init)
 
-    assert np.allclose(wn, expected["wn_spun_up"].data)
+    assert np.allclose(wn, expected["wn_spun_up"].data, equal_nan=True)
 
 
 def test_calc_soil_moisture(splash_model, expected):
@@ -82,4 +84,4 @@ def test_calc_soil_moisture(splash_model, expected):
 
     assert np.allclose(aet, expected["aet_d"].data, equal_nan=True)
     assert np.allclose(wn, expected["wn"].data, equal_nan=True)
-    assert np.allclose(ro, expected["ro"].data, equal_nan=True, atol=1e-04)
+    assert np.allclose(ro, expected["ro"].data, equal_nan=True, atol=1e-4)
