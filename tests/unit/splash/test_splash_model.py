@@ -62,9 +62,9 @@ def test_estimate_daily_water_balance(splash_model):
         wn_init = np.random.random(splash_model.shape) * splash_model.kWm
         aet, wn, rn = splash_model.estimate_daily_water_balance(wn_init)
         assert np.allclose(
-            aet + wn + rn, 
+            aet + wn + rn,
             wn_init + splash_model.pn + splash_model.evap.cond,
-            equal_nan=True
+            equal_nan=True,
         )
 
 
