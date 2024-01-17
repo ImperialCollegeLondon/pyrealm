@@ -51,7 +51,7 @@ def splash_model(splash_core_constants, inputs, calendar):
         core_const=splash_core_constants,
     )
 
-    assert splash_model.shape == calendar.shape + inputs.elev.shape
+    assert splash_model.shape == (len(calendar), *inputs.elev.shape)
     return splash_model
 
 
