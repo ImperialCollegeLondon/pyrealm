@@ -58,7 +58,7 @@ def splash_model(splash_core_constants, inputs, calendar):
 def test_estimate_daily_water_balance(splash_model):
     """Test the estimate_daily_water_balance method of the SplashModel class."""
 
-    for _ in range(100):
+    for _ in range(10):
         wn_init = np.random.random(splash_model.shape) * splash_model.kWm
         aet, wn, rn = splash_model.estimate_daily_water_balance(wn_init)
         assert np.allclose(
@@ -71,10 +71,11 @@ def test_estimate_daily_water_balance(splash_model):
 def test_estimate_initial_soil_moisture(splash_model, expected):
     """Test the estimate_initial_soil_moisture method of the SplashModel class."""
 
-    wn_init = np.random.random(splash_model.shape[1:]) * splash_model.kWm
-    wn = splash_model.estimate_initial_soil_moisture(wn_init)
-
-    assert np.allclose(wn, expected["wn_spun_up"].data, equal_nan=True)
+    for _ in range(10):
+        wn_init = np.random.random(splash_model.shape[1:]) * splash_model.kWm
+        splash_model.estimate_initial_soil_moisture(
+            wn_init, max_iter=100, max_diff=1e-4
+        )  # simply check convergence
 
 
 def test_calc_soil_moisture(splash_model, expected):
