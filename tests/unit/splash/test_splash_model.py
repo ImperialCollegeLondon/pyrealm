@@ -69,7 +69,7 @@ def test_estimate_daily_water_balance(splash_model):
 def test_estimate_initial_soil_moisture(splash_model, expected):
     """Test the estimate_initial_soil_moisture method of the SplashModel class."""
 
-    wn_init = np.random.random(splash_model.shape) * splash_model.kWm
+    wn_init = np.random.random(splash_model.shape[1:]) * splash_model.kWm
     wn = splash_model.estimate_initial_soil_moisture(wn_init)
 
     assert np.allclose(wn, expected["wn_spun_up"].data)
