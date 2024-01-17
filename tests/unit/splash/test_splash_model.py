@@ -12,15 +12,16 @@ import numpy as np
 import pytest
 
 
-@pytest.fixture
-def calendar(grid_benchmarks):
+@pytest.fixture(params=range(5))  # parametrized (multiple calls)
+def calendar(grid_benchmarks, T=366):
     """Provide the dates with a random start date."""
     from pyrealm.core.calendar import Calendar
 
-    T = 366
     dates = grid_benchmarks[0].time.data
+
+    # generate random start dates
     t0 = np.random.randint(0, len(dates) - T)
-    return Calendar(dates[t0:t0+T])  # fmt: skip
+    yield Calendar(dates[t0:t0+T])  # fmt: skip
 
 
 @pytest.fixture
@@ -71,18 +72,23 @@ def test_estimate_daily_water_balance(splash_model):
 def test_estimate_initial_soil_moisture(splash_model, expected):
     """Test the estimate_initial_soil_moisture method of the SplashModel class."""
 
-    for _ in range(10):
-        wn_init = np.random.random(splash_model.shape[1:]) * splash_model.kWm
-        splash_model.estimate_initial_soil_moisture(
-            wn_init, max_iter=100, max_diff=1e-4
-        )  # simply check convergence
+    wn_init = splash_model.estimate_initial_soil_moisture()
+
+    # Check against the spun up value from the original implementation
+    assert np.allclose(wn_init, expected.wn_spun_up, equal_nan=True)
+
+    wn_init = np.random.random(splash_model.shape[1:]) * splash_model.kWm
+
+    splash_model.estimate_initial_soil_moisture(
+        wn_init, max_iter=100, max_diff=1e-4
+    )  # simply check convergence
 
 
 def test_calc_soil_moisture(splash_model, expected):
     """Test the calc_soil_moisture method of the SplashModel class."""
 
-    aet, wn, ro = splash_model.calculate_soil_moisture(expected["wn_spun_up"].data)
+    aet, wn, ro = splash_model.calculate_soil_moisture(expected.wn_spun_up.data)
 
-    assert np.allclose(aet, expected["aet_d"].data, equal_nan=True)
-    assert np.allclose(wn, expected["wn"].data, equal_nan=True)
-    assert np.allclose(ro, expected["ro"].data, equal_nan=True, atol=1e-4)
+    assert np.allclose(aet, expected.aet_d.data, equal_nan=True)
+    assert np.allclose(wn, expected.wn.data, equal_nan=True)
+    assert np.allclose(ro, expected.ro.data, equal_nan=True, atol=1e-4)
