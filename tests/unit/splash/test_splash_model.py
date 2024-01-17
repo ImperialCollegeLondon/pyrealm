@@ -20,7 +20,7 @@ def calendar(grid_benchmarks):
     T = 366
     dates = grid_benchmarks[0].time.data
     t0 = np.random.randint(0, len(dates) - T)
-    return Calendar(inputs.time.data[t0:t0+T])  # fmt: skip
+    return Calendar(dates[t0:t0+T])  # fmt: skip
 
 
 @pytest.fixture
