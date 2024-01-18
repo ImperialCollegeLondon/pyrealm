@@ -160,6 +160,7 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
         dates=cal,
         sf=inputs["sf"].data,
         tc=inputs["tmp"].data,
+        core_const=splash_core_constants,
     )
 
     pa = calc_patm(elev, core_const=splash_core_constants)
@@ -179,6 +180,11 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
 
     # Now validate the expected AET - because the whole soil moisture sequence has
     # been created in the original implementation, the whole time sequence can be passed
-    # in as a single array and calculated without daily iteration
-    aet = evap.estimate_aet(wn=expected["wn"].data, day_idx=None)
+    # in as a single array and calculated without daily iteration, *but* the soil
+    # moisture used to calculate AET is from the preceeding day, so need to shift the wn
+    # sequence to start with the spun up values and drop the last day.
+    wn_spun_up = np.expand_dims(expected["wn_spun_up"].data, axis=0)
+    wn_sequence = np.vstack([wn_spun_up, expected["wn"].data[:-1, :, :]])
+
+    aet = evap.estimate_aet(wn=wn_sequence, day_idx=None)
     assert np.allclose(aet, expected["aet_d"], equal_nan=True)
