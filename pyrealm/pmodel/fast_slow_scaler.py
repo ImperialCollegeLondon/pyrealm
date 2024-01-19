@@ -168,8 +168,6 @@ class FastSlowScaler:
         else:
             self.num_missing_values_end = 0
 
-        import pdb; pdb.set_trace()
-
         # Get a view of the datetimes wrapped on the number of observations per date
         # and extract the observation dates and times
         datetimes_by_date = datetimes.view()
