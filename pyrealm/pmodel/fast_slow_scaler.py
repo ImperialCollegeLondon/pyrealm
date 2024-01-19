@@ -117,52 +117,58 @@ class FastSlowScaler:
         if datetimes[0].astype(datetime.datetime).time() != min_time:
             Warning("First day incomplete - add padding to datetimes.")
             # Find how many values are missing at start of first day
-            difference_in_seconds = (
-                datetime.datetime.combine(
+            start_datetime = datetime.datetime.combine(
                     datetime.datetime(
                         datetimes[0].astype(object).year,
                         datetimes[0].astype(object).month,
                         datetimes[0].astype(object).day,
                     ),
-                    min_time,
-                )
-                - datetimes[0].astype(datetime.datetime)
-            ).total_seconds()
+                    min_time)
+            difference_in_seconds = int((datetimes[0].astype(datetime.datetime) -
+                                     start_datetime ).total_seconds())
 
             self.num_missing_values_start = (
                 obs_per_date - difference_in_seconds
             ) // self.spacing.astype("timedelta64[s]").astype(int)
+
+            # Pad incomplete first day
+            missing_start_values = np.arange(np.datetime64(start_datetime),
+                      datetimes[0], self.spacing.astype("timedelta64[s]").astype(int),
+                      dtype='datetime64[s]')
+
+            datetimes = np.append(missing_start_values, datetimes)
         else:
             self.num_missing_values_start = 0
 
         # Check whether the last day is complete
         if datetimes[-1].astype(datetime.datetime).time() != max_time:
             Warning("Last day incomplete - add padding to datetimes.")
-            # Find how many values are missing at end of last day
-            difference_in_seconds = (
-                datetimes[-1].astype(datetime.datetime)
-                - datetime.datetime.combine(
+            end_datetime = datetime.datetime.combine(
                     datetime.datetime(
                         datetimes[-1].astype(object).year,
                         datetimes[-1].astype(object).month,
                         datetimes[-1].astype(object).day,
                     ),
-                    max_time,
+                    max_time
                 )
-            ).total_seconds()
+            # Find how many values are missing at end of last day
+            difference_in_seconds = int((end_datetime - datetimes[-1].astype(
+                datetime.datetime)).total_seconds())
 
-            self.num_missing_values_end = (
-                obs_per_date - difference_in_seconds
+            self.num_missing_values_end = (obs_per_date - difference_in_seconds
             ) // self.spacing.astype("timedelta64[s]").astype(int)
+
+            # Pad incomplete last day
+            missing_end_values = np.arange(datetimes[-1].astype("datetime64[s]"),
+                    np.datetime64(end_datetime),
+                    self.spacing.astype("timedelta64[s]").astype(int),
+                    dtype='datetime64[s]')
+
+            datetimes = np.append(datetimes, missing_end_values)
         else:
             self.num_missing_values_end = 0
 
-        # Pad incomplete days with NaNs
-        datetimes = np.pad(
-            datetimes,
-            (int(self.num_missing_values_start), int(self.num_missing_values_end)),
-            constant_values=(np.nan, np.nan),
-        )
+        import pdb; pdb.set_trace()
 
         # Get a view of the datetimes wrapped on the number of observations per date
         # and extract the observation dates and times
@@ -221,12 +227,12 @@ class FastSlowScaler:
         """
 
         # Pad incomplete days with NaNs
-        values[0] = np.pad(
+        values_0_padded = np.pad(
             values[0],
             (int(self.num_missing_values_start), int(self.num_missing_values_end)),
             constant_values=(np.nan, np.nan),
         )
-        return values
+        return values_0_padded
 
     def _set_times(self) -> None:
         """Sets the times at which representative values are sampled.
@@ -243,7 +249,6 @@ class FastSlowScaler:
           An array of the maximum daily datetime of observations included in daily
           samples.
         """
-
         # Get a view of the times wrapped by date and then reshape along the first
         # axis into daily subarrays.
         times_by_day = self.datetimes.view()
@@ -382,7 +387,7 @@ class FastSlowScaler:
             )
         # Check that the first axis has the same shape as the number of
         # datetimes in the init
-        values = self._pad_values(values)
+        values[0] = self._pad_values(values)
         if values.shape[0] != self.datetimes.shape[0]:
             raise ValueError(
                 "The first dimension of values is not the same length "
@@ -412,7 +417,7 @@ class FastSlowScaler:
         Returns:
             An array of mean daily values during the acclimation window
         """
-        values = self._pad_values(values)
+        values[0] = self._pad_values(values)
         daily_values = self.get_window_values(values)
 
         return daily_values.mean(axis=1)
@@ -460,7 +465,7 @@ class FastSlowScaler:
               values forward.
         """
 
-        values = self._pad_values(values)
+        values[0] = self._pad_values(values)
 
         if values.shape[0] != self.n_days:
             raise ValueError("Values is not of length n_days on its first axis.")
