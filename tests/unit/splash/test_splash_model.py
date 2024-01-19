@@ -145,7 +145,7 @@ def test_estimate_initial_soil_moisture(splash_model):
     if splash_model.shape[0] > 365:
         context = nullcontext()
     else:
-        context = pytest.raises((ValueError, IndexError))
+        context = pytest.raises(ValueError)
 
     wn_init = np.random.random(splash_model.shape[1:]) * splash_model.kWm
 
