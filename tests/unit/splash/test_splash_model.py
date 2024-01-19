@@ -12,7 +12,6 @@ from contextlib import nullcontext
 
 import numpy as np
 import pytest
-import xarray as xr
 
 
 @pytest.fixture(params=[(0, 365), (0, 366), (123, 567)])  # parametrized fixture
@@ -25,59 +24,35 @@ def calendar(request, grid_benchmarks):
     yield Calendar(dates[start:end])  # fmt: skip
 
 
-@pytest.fixture
-def variable_bounds():
-    """Provide the variable bounds from the inputs."""
-    return dict(
-        lat=[-90, 90],
-        sf=[0, 1],
-        tmp=[-100, 100],
-        pre=[0, None],
-    )
-
-
 @pytest.mark.parametrize(
-    argnames="flags",
-    argvalues=[
-        dict(lat=lat, sf=sf, tmp=tmp, pre=pre)
-        for lat in [-1, 0, 1]
-        for sf in [-1, 0, 1]
-        for tmp in [-1, 0, 1]
-        for pre in [-1, 0]
-    ],  # -1: underflow, 0: no change, 1: overflow
+    argnames="flag",
+    argvalues=["underflow", "overflow"],
 )
-def test_splash_model_init(
-    splash_core_constants, grid_benchmarks, flags, variable_bounds
-):
+@pytest.mark.parametrize(argnames="var", argvalues=["lat", "sf", "tmp", "pre"])
+def test_splash_model_init(splash_core_constants, grid_benchmarks, var, flag):
     """Test the initialization of the SplashModel class."""
 
     from pyrealm.core.calendar import Calendar
     from pyrealm.splash.splash import SplashModel
 
-    dataset = grid_benchmarks[0].sel(time=slice("2000-01-01", "2000-04-01"))
+    bounds = dict(
+        lat=[-90, 90],
+        sf=[0, 1],
+        tmp=[-25, 80],
+        pre=[0, 100],
+    )
 
-    def update_vals(ds, var):
-        """Update the values of the variable."""
-        vmin, vmax = variable_bounds[var]
-        flag = flags[var]
-        if flag == -1:
-            return ds.assign({var: xr.full_like(ds[var], vmin - 1e-4)})
-        elif flag == 1:
-            return ds.assign({var: xr.full_like(ds[var], vmax + 1e-4)})
-        else:
-            return ds
+    ds = grid_benchmarks[0].sel(time=slice("2000-01-01", "2000-04-01")).copy()
 
-    ds = dataset
-    for var in variable_bounds:
-        ds = update_vals(ds, var)
+    vmin, vmax = bounds[var]
+    arr = ds[var].data
+    if flag == "underflow":
+        arr.flat[np.random.choice(arr.size)] = vmin - 1e-4
+    elif flag == "overflow":
+        arr.flat[np.random.choice(arr.size)] = vmax + 1e-4
 
-    if all(x == 0 for x in flags.values()):
-        context = nullcontext()
-    else:
-        context = pytest.raises(ValueError)
-
-    with context:
-        splash_model = SplashModel(
+    with pytest.raises(ValueError):
+        SplashModel(
             lat=np.broadcast_to(ds.lat.data[None, :, None], ds.sf.data.shape),
             elv=np.broadcast_to(ds.elev.data[None, :, :], ds.sf.data.shape),
             dates=Calendar(ds.time.data),
@@ -86,7 +61,6 @@ def test_splash_model_init(
             pn=ds.pre.data,
             core_const=splash_core_constants,
         )
-        assert splash_model.shape == (len(ds.time), *ds.elev.shape)
 
 
 @pytest.fixture
@@ -97,7 +71,7 @@ def splash_model(grid_benchmarks, splash_core_constants, calendar):
 
     ds = grid_benchmarks[0].sel(time=calendar.dates)
 
-    return SplashModel(
+    splash = SplashModel(
         lat=np.broadcast_to(ds.lat.data[None, :, None], ds.sf.data.shape),
         elv=np.broadcast_to(ds.elev.data[None, :, :], ds.sf.data.shape),
         dates=calendar,
@@ -107,6 +81,9 @@ def splash_model(grid_benchmarks, splash_core_constants, calendar):
         core_const=splash_core_constants,
     )
 
+    assert splash.shape == (len(ds.time), *ds.elev.shape)
+    return splash
+
 
 @pytest.mark.parametrize(
     argnames="overflow,underflow",
@@ -114,7 +91,6 @@ def splash_model(grid_benchmarks, splash_core_constants, calendar):
         pytest.param(0, 0, id="no overflow or underflow"),
         pytest.param(0, 1, id="underflow"),
         pytest.param(1, 0, id="overflow"),
-        pytest.param(1, 1, id="overflow and underflow"),
     ],
 )
 def test_estimate_daily_water_balance(splash_model, overflow, underflow):
@@ -124,10 +100,10 @@ def test_estimate_daily_water_balance(splash_model, overflow, underflow):
     context = nullcontext()
 
     if overflow:
-        wn_init.flat[0] += splash_model.kWm
+        wn_init.flat[np.random.choice(wn_init.size)] = splash_model.kWm + 1e-4
         context = pytest.raises(ValueError)
     if underflow:
-        wn_init.flat[1] -= splash_model.kWm
+        wn_init.flat[np.random.choice(wn_init.size)] = -1e-4
         context = pytest.raises(ValueError)
 
     with context:
