@@ -39,7 +39,7 @@ def test_splash_model_init(splash_core_constants, grid_benchmarks, var, flag):
         lat=[-90, 90],
         sf=[0, 1],
         tmp=[-25, 80],
-        pre=[0, 100],
+        pre=[0, 1000],
     )
 
     ds = grid_benchmarks[0].sel(time=slice("2000-01-01", "2000-04-01")).copy()
@@ -51,7 +51,7 @@ def test_splash_model_init(splash_core_constants, grid_benchmarks, var, flag):
     elif flag == "overflow":
         arr.flat[np.random.choice(arr.size)] = vmax + 1e-4
 
-    with pytest.raises(ValueError):
+    with pytest.warns(UserWarning):
         SplashModel(
             lat=np.broadcast_to(ds.lat.data[None, :, None], ds.sf.data.shape),
             elv=np.broadcast_to(ds.elev.data[None, :, :], ds.sf.data.shape),
@@ -101,7 +101,7 @@ def test_estimate_daily_water_balance(splash_model, overflow, underflow):
 
     if overflow:
         wn_init.flat[np.random.choice(wn_init.size)] = splash_model.kWm + 1e-4
-        context = pytest.raises(ValueError)
+        context = pytest.warns(UserWarning)
     if underflow:
         wn_init.flat[np.random.choice(wn_init.size)] = -1e-4
         context = pytest.raises(ValueError)

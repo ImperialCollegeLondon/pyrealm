@@ -58,7 +58,7 @@ class SplashModel:
         lat=[-90, 90],
         sf=[0, 1],
         tc=[-25, 80],
-        pn=[0, 100],
+        pn=[0, 1000],
     )
 
     def __init__(

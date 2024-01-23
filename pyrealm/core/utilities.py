@@ -248,7 +248,7 @@ def bounds_checker(
     out_of_bounds = np.logical_or(lower_func(values, lower), upper_func(values, upper))
 
     if np.any(out_of_bounds):
-        raise ValueError(
+        warnings.warn(
             f"Variable {label} ({unit}) contains values outside "
             f"the expected range ({lower},{upper}). Check units?"
         )
