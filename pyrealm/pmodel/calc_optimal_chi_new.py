@@ -80,20 +80,6 @@ class NewCalcOptimalChi(ABC):
         specific subclasses.
     """
 
-    # @property
-    # @abstractmethod
-    # def method(cls) -> str:
-    #     """The method name.
-
-    #     This class property sets the name used to refer to identify the class in
-    #     the :data:`~pyrealm.pmodel.calc_optimal_chi.OPTIMAL_CHI_METHOD_REGISTRY`.
-    #     """
-
-    # @property
-    # @abstractmethod
-    # def is_c4(cls) -> bool:
-    #     """Does the class represent a C4 pathway."""
-
     method: str
     is_c4: bool
 
@@ -134,19 +120,24 @@ class NewCalcOptimalChi(ABC):
         self.chi: NDArray
         r"""The ratio of leaf internal to ambient :math:`\ce{CO2}` partial pressure
         (:math:`\chi`)."""
-        self.ci: NDArray
-        r"""The leaf internal :math:`\ce{CO2}` partial pressure (:math:`c_i`)."""
         self.mc: NDArray
         r""":math:`\ce{CO2}` limitation factor for RuBisCO-limited assimilation
         (:math:`m_c`)."""
         self.mj: NDArray
         r""":math:`\ce{CO2}` limitation factor for light-limited assimilation
         (:math:`m_j`)."""
+        self.ci: NDArray
+        r"""The leaf internal :math:`\ce{CO2}` partial pressure (:math:`c_i`)."""
         self.mjoc: NDArray
         r"""Ratio of :math:`m_j/m_c`."""
 
         self.set_beta()
         self.estimate_chi()
+
+        # Validate that the subclass methods populate the attributes correctly.
+        _ = check_input_shapes(
+            env.ca, self.beta, self.xi, self.chi, self.ci, self.mj, self.mc, self.mjoc
+        )
 
     @abstractmethod
     def set_beta(self) -> None:
@@ -188,7 +179,8 @@ class NewCalcOptimalChi(ABC):
         OPTIMAL_CHI_CLASS_REGISTRY[cls.method] = cls
 
 
-# TODO - rootzonestress handling - new methods? Move rzs into env?
+# TODO - rootzonestress handling - new model subclasses and move rzs into
+#        PModelEnvironment
 
 
 class OptimalChiPrentice14(NewCalcOptimalChi, method="prentice14", is_c4=False):
