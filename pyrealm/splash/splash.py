@@ -10,7 +10,7 @@ from numpy.typing import NDArray
 from pyrealm.constants import CoreConst
 from pyrealm.core.calendar import Calendar
 from pyrealm.core.pressure import calc_patm
-from pyrealm.core.utilities import check_input_shapes
+from pyrealm.core.utilities import bounds_checker, check_input_shapes
 from pyrealm.splash.evap import DailyEvapFluxes
 from pyrealm.splash.solar import DailySolarFluxes
 
@@ -54,6 +54,13 @@ class SplashModel:
         kWm: The maximum soil moisture capacity, defaulting to 150 (mm)
     """
 
+    variable_ranges = dict(
+        lat=[-90, 90],
+        sf=[0, 1],
+        tc=[-25, 80],
+        pn=[0, 100],
+    )
+
     def __init__(
         self,
         lat: NDArray,
@@ -62,7 +69,7 @@ class SplashModel:
         tc: NDArray,
         pn: NDArray,
         dates: Calendar,
-        kWm: NDArray = np.array([150.0]),
+        kWm: float = 150.0,
         core_const: CoreConst = CoreConst(),
     ):
         # Check input sizes are congurent
@@ -87,6 +94,10 @@ class SplashModel:
         """The dates of observations along the first array axis."""
         self.kWm = kWm
         """The maximum soil water capacity for sites."""
+
+        # Check variables are within expected ranges
+        for var, (lo, hi) in self.variable_ranges.items():
+            bounds_checker(getattr(self, var), lo, hi)
 
         # TODO - potentially allow _actual_ climatic pressure data as an input
         self.pa = calc_patm(elv, core_const=core_const)
@@ -144,14 +155,14 @@ class SplashModel:
             # Check the shape is the same as the shape of a slice along axis 0
             if wn_init.shape != self.tc[0].shape:
                 raise ValueError("Incorrect shape in wn_init")
-            wn_start = wn_init
+            wn_start = bounds_checker(wn_init, 0, self.kWm)
         else:
             wn_start = np.zeros_like(self.tc[0])
 
         # Find a date one year into the future from the first calendar date.
         # TODO - fix leap year handling and non Jan 1 starts
 
-        if self.tc.shape[0] < 365:
+        if self.tc.shape[0] < 366:
             raise ValueError("Cannot equilibrate - less than one year of data")
 
         # Run the equilibration loop
@@ -234,7 +245,8 @@ class SplashModel:
             didx = day_idx
 
         # Calculate the expected aet_d given the previous wn
-        aet = self.evap.estimate_aet(wn=previous_wn, day_idx=day_idx)
+        wn = bounds_checker(previous_wn, 0, self.kWm)
+        aet = self.evap.estimate_aet(wn=wn, day_idx=day_idx)
 
         # Calculate current soil moisture, mm
         current_wn = previous_wn + self.pn[didx] + self.evap.cond[didx] - aet
@@ -275,7 +287,7 @@ class SplashModel:
         wn_out = np.full_like(self.tc, np.nan)
         ro_out = np.full_like(self.tc, np.nan)
 
-        curr_wn = wn_init
+        curr_wn = bounds_checker(wn_init, 0, self.kWm)
         for day_idx in np.arange(self.pn.shape[0]):
             # Calculate the balance for this date, updating the input for
             # the following day
