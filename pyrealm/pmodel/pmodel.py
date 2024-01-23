@@ -15,6 +15,10 @@ from pyrealm import ExperimentalFeatureWarning
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.calc_optimal_chi import CalcOptimalChi
+from pyrealm.pmodel.calc_optimal_chi_new import (
+    OPTIMAL_CHI_CLASS_REGISTRY,
+    NewCalcOptimalChi,
+)
 from pyrealm.pmodel.functions import (
     calc_ftemp_inst_rd,
     calc_ftemp_inst_vcmax,
@@ -271,10 +275,13 @@ class PModel:
         # Optimal ci
         # The heart of the P-model: calculate ci:ca ratio (chi) and additional terms
         # -----------------------------------------------------------------------
-        self.optchi: CalcOptimalChi = CalcOptimalChi(
+        try:
+            opt_chi_class = OPTIMAL_CHI_CLASS_REGISTRY[method_optchi]
+        except KeyError:
+            raise ValueError(f"Unknown optimal chi estimation method: {method_optchi}")
+
+        self.optchi: NewCalcOptimalChi = opt_chi_class(
             env=env,
-            method=method_optchi,
-            rootzonestress=rootzonestress or np.array([1.0]),
             pmodel_const=self.pmodel_const,
         )
         """Details of the optimal chi calculation for the model"""
