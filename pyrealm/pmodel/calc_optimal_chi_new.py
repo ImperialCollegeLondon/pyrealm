@@ -1,5 +1,5 @@
 r"""The module :mod:`~pyrealm.pmodel.calc_optimal_chi_new` provides  
-the abstract base class :class:`~pyrealm.pmodel.calc_optimal_chi_new.CalcOptimalChiNew`,
+the abstract base class :class:`~pyrealm.pmodel.calc_optimal_chi_new.NewCalcOptimalChi`,
 which is used to support different implementations of the calculation of optimal chi.
 """  # noqa D210, D415
 
@@ -25,7 +25,8 @@ Different implementations of the calculation of optimal chi must all be subclass
 This dictionary is used as a registry for defined subclasses and a defined method name
 is used to retrieve a particular implementation from this registry. For example:
 
-.. code::
+.. code:: python
+
     prentice14_opt_chi = OPTIMAL_CHI_CLASS_REGISTRY['prentice14']
 """
 
@@ -207,15 +208,14 @@ class OptimalChiPrentice14(NewCalcOptimalChi, method="prentice14", is_c4=False):
         m_j = \frac{c_a - \Gamma^{*}}
                 {c_a + 2 \Gamma^{*}}
 
-    Finally,  :math:`m_c` is calculated, following Equation 7 in
-    :cite:`Stocker:2020dh`, as:
+    Finally,  :math:`m_c` is calculated, following Equation 7 in :cite:`Stocker:2020dh`,
+    as:
 
     .. math::
 
         m_c = \frac{c_i - \Gamma^{*}}{c_i + K},
 
-    where :math:`K` is the Michaelis Menten coefficient of Rubisco-limited
-    assimilation.
+    where :math:`K` is the Michaelis Menten coefficient of Rubisco-limited assimilation.
 
     Examples:
         >>> import numpy as np
@@ -324,7 +324,7 @@ class OptimalChiLavergne20C3(NewCalcOptimalChi, method="lavergne20_c3", is_c4=Fa
     Optimal :math:`\chi` is calculated using a definition of the unit cost ratio $\beta$
     as a function of soil moisture ($\theta$, m3 m-3), following :cite:`lavergne:2020a`:
 
-        .. math:: :nowrap:
+    .. math:: :nowrap:
 
         \[
             \beta = e ^ {b\theta + a},
@@ -482,7 +482,12 @@ class OptimalChiLavergne20C4(NewCalcOptimalChi, method="lavergne20_c4", is_c4=Tr
         """Estimate ``chi`` for C4 plants excluding photorespiration."""
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
-        self.xi = np.sqrt((self.beta * self.env.kmm) / (1.6 * self.env.ns_star))
+        if xi_values is not None:
+            _ = check_input_shapes(self.env.ca, xi_values)
+            self.xi = xi_values
+        else:
+            self.xi = np.sqrt((self.beta * self.env.kmm) / (1.6 * self.env.ns_star))
+
         self.chi = self.xi / (self.xi + np.sqrt(self.env.vpd))
 
         # mj is equal to 1 as gammastar is null
@@ -503,7 +508,7 @@ class OptimalChiC4NoGamma(NewCalcOptimalChi, method="c4_no_gamma", is_c4=True):
     but uses the same C4 specific estimate of the unit cost ratio :math:`\beta`,
     :attr:`~pyrealm.constants.pmodel_const.PModelConst.beta_cost_ratio_c4`.
 
-        .. math:: :nowrap:
+    .. math:: :nowrap:
 
         \[
             \begin{align*}
@@ -516,7 +521,7 @@ class OptimalChiC4NoGamma(NewCalcOptimalChi, method="c4_no_gamma", is_c4=True):
     photosynthesis, but :math:`m_c` and hence :math:`m_{joc}` are calculated, not
     set to one.
 
-        .. math:: :nowrap:
+    .. math:: :nowrap:
 
         \[
             \begin{align*}
@@ -548,7 +553,13 @@ class OptimalChiC4NoGamma(NewCalcOptimalChi, method="c4_no_gamma", is_c4=True):
     def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
         """Estimate ``chi`` for C4 plants excluding photorespiration."""
 
-        self.xi = np.sqrt((self.beta * self.env.kmm) / (1.6 * self.env.ns_star))
+        # Calculate chi and xi as in Prentice 14 but removing gamma terms.
+        if xi_values is not None:
+            _ = check_input_shapes(self.env.ca, xi_values)
+            self.xi = xi_values
+        else:
+            self.xi = np.sqrt((self.beta * self.env.kmm) / (1.6 * self.env.ns_star))
+
         # self.xi = np.sqrt(
         #     (self.beta * self.rootzonestress * self.env.kmm) /
         #     (1.6 * self.env.ns_star)

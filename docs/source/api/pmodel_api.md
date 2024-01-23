@@ -50,6 +50,14 @@ kernelspec:
     :members:
 ```
 
+## The {mod}`~pyrealm.pmodel.calc_optimal_chi_new` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.pmodel.calc_optimal_chi_new
+    :autosummary:
+    :members:
+```
+
 ## The {mod}`~pyrealm.pmodel.functions` submodule
 
 ```{eval-rst}
