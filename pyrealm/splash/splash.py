@@ -54,11 +54,11 @@ class SplashModel:
         kWm: The maximum soil moisture capacity, defaulting to 150 (mm)
     """
 
-    variable_ranges = dict(
-        lat=[-90, 90],
-        sf=[0, 1],
-        tc=[-25, 80],
-        pn=[0, 1000],
+    variable_ranges: dict = dict(
+        lat=(-90, 90),
+        sf=(0, 1),
+        tc=(-25, 80),
+        pn=(0, 1000),
     )
 
     def __init__(
