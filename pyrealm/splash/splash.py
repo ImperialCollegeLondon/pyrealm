@@ -69,7 +69,7 @@ class SplashModel:
         tc: NDArray,
         pn: NDArray,
         dates: Calendar,
-        kWm: float = 150.0,
+        kWm: NDArray = np.array([150.0]),
         core_const: CoreConst = CoreConst(),
     ):
         # Check input sizes are congurent
