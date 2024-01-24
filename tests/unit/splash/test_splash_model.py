@@ -21,7 +21,7 @@ def calendar(request, grid_benchmarks):
 
     dates = grid_benchmarks[0].time.data
     start, end = request.param
-    yield Calendar(dates[start:end])  # fmt: skip
+    yield Calendar(dates[start:end])
 
 
 @pytest.mark.parametrize(
