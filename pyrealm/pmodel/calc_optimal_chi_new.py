@@ -96,24 +96,13 @@ class NewCalcOptimalChi(ABC):
     def __init__(
         self,
         env: PModelEnvironment,
-        rootzonestress: NDArray = np.array([1.0]),
         pmodel_const: PModelConst = PModelConst(),
     ):
         self.env: PModelEnvironment = env
         """The PModelEnvironment containing the photosynthetic environment for the
         model."""
-
-        # If rootzonestress is not simply equal to 1 (or an equivalent ndarray), check
-        # rootzonestress conforms to the environment data
-        if np.allclose(rootzonestress, 1.0):
-            self.shape: tuple = env.shape
-            """Records the common numpy array shape of array inputs."""
-        else:
-            self.shape = check_input_shapes(env.ca, rootzonestress)
-            warn("The rootzonestress option is an experimental feature.")
-
-        self.rootzonestress: NDArray = rootzonestress
-        """Experimental rootzonestress factor, unitless."""
+        self.shape: tuple[int, ...] = env.shape
+        """The shape of the input environment data."""
 
         self.pmodel_const: PModelConst = pmodel_const
         """The PModelParams used for optimal chi estimation"""
@@ -303,6 +292,9 @@ class OptimalChiPrentice14RootzoneStress(
 
         \xi &= \sqrt{(\beta f_{rz} (K+ \Gamma^{*}) / (1.6 \eta^{*}))}
 
+    Calculation of the root zone stress factor is not currently part of the `pyrealm`
+    package.
+
     Examples:
         >>> import numpy as np
         >>> env = PModelEnvironment(
@@ -317,6 +309,14 @@ class OptimalChiPrentice14RootzoneStress(
 
     def set_beta(self) -> None:
         """Set ``beta`` to a constant C3 specific value."""
+
+        # Warn that this is an experimental feature.
+        warn(
+            "The prentice14_rootzonestress method is experimental, "
+            "see the class documentation",
+            ExperimentalFeatureWarning,
+        )
+
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.beta = self.pmodel_const.beta_cost_ratio_prentice14
 
