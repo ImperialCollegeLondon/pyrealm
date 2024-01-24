@@ -191,12 +191,11 @@ class NewCalcOptimalChi(ABC):
         OPTIMAL_CHI_CLASS_REGISTRY[cls.method] = cls
 
 
-# TODO - rootzonestress handling - new model subclasses and move rzs into
-#        PModelEnvironment
-
-
 class OptimalChiPrentice14(
-    NewCalcOptimalChi, method="prentice14", is_c4=False, requires=[]
+    NewCalcOptimalChi,
+    method="prentice14",
+    is_c4=False,
+    requires=[],
 ):
     r"""Calculate :math:`\chi` for C3 plants following :cite:`Prentice:2014bc`.
 
@@ -284,9 +283,10 @@ class OptimalChiPrentice14RootzoneStress(
     r"""Calculate :math:`\chi` for C3 plants following :cite:`Prentice:2014bc` with root
     zone stress penalty.
 
-    The calculations are identical to :class:`~pyrealm.pmodel.calc_optimal_chi_new` but
-    applying an experimental root zone stress penalty (:math:`f_{rz}`) to :math:`\beta`
-    in the calculation of :math:`\xi`:
+    The calculations are identical to
+    :class:`~pyrealm.pmodel.calc_optimal_chi_new.OptimalChiPrentice14` but apply an
+    experimental rootzone stress penalty (:math:`f_{rz}`) to :math:`\beta` in the
+    calculation of :math:`\xi`:
 
     .. math::
 
@@ -347,7 +347,12 @@ class OptimalChiPrentice14RootzoneStress(
         self.mjoc = self.mj / self.mc
 
 
-class OptimalChiC4(NewCalcOptimalChi, method="c4", is_c4=True, requires=[]):
+class OptimalChiC4(
+    NewCalcOptimalChi,
+    method="c4",
+    is_c4=True,
+    requires=[],
+):
     r"""Estimate :math:`\chi` for C4 plants following :cite:`Prentice:2014bc`.
 
     Optimal :math:`\chi` is calculated as in
@@ -361,8 +366,8 @@ class OptimalChiC4(NewCalcOptimalChi, method="c4", is_c4=True, requires=[]):
     Examples:
         >>> import numpy as np
         >>> env = PModelEnvironment(
-        ...     tc=np.array([20]), vpd=np.array([1000]), co2=np.array([400]),
-        ...     patm=np.array([101325.0]), theta=np.array([0.5])
+        ...     tc=np.array([20]), vpd=np.array([1000]),
+        ...     co2=np.array([400]), patm=np.array([101325.0])
         ... )
         >>> vals = OptimalChiC4(env=env)
         >>> vals.chi.round(5)
@@ -403,8 +408,82 @@ class OptimalChiC4(NewCalcOptimalChi, method="c4", is_c4=True, requires=[]):
         self.mjoc = np.ones(self.shape)
 
 
+class OptimalChiC4RootzoneStress(
+    NewCalcOptimalChi,
+    method="c4_rootzonestress",
+    is_c4=True,
+    requires=["rootzonestress"],
+):
+    r"""Estimate :math:`\chi` for C4 plants following :cite:`Prentice:2014bc` with
+     root zone stress penalty.
+
+    The calculations are identical to
+    :class:`~pyrealm.pmodel.calc_optimal_chi_new.OptimalChiC4` but apply an
+    experimental rootzone stress penalty (:math:`f_{rz}`) to :math:`\beta` in the
+    calculation of :math:`\xi`:
+
+    .. math::
+
+        \xi &= \sqrt{(\beta f_{rz} (K+ \Gamma^{*}) / (1.6 \eta^{*}))}
+
+    Calculation of the root zone stress factor is not currently part of the `pyrealm`
+    package.
+
+    Examples:
+        >>> import numpy as np
+        >>> env = PModelEnvironment(
+        ...     tc=np.array([20]), vpd=np.array([1000]),
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     rootzonestress=0.5
+        ... )
+        >>> vals = OptimalChiC4RootzoneStress(env=env)
+        >>> vals.chi.round(5)
+        array([0.44967])
+        >>> vals.mj.round(1)
+        array([1.])
+        >>> vals.mc.round(1)
+        array([1.])
+    """  # noqa D210, D415 - long but sane title line.
+
+    def set_beta(self) -> None:
+        """Set ``beta`` to a constant C4 specific value."""
+        # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
+        self.beta = self.pmodel_const.beta_cost_ratio_c4
+
+    def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
+        """Estimate ``chi`` for C4 plants, setting ``mj`` and ``mc`` to 1."""
+        if xi_values is not None:
+            _ = check_input_shapes(self.env.ca, xi_values)
+            self.xi = xi_values
+        else:
+            self.xi = np.sqrt(
+                (
+                    self.beta
+                    * self.env.rootzonestress
+                    * (self.env.kmm + self.env.gammastar)
+                )
+                / (1.6 * self.env.ns_star)
+            )
+
+        self.chi = self.env.gammastar / self.env.ca + (
+            1.0 - self.env.gammastar / self.env.ca
+        ) * self.xi / (self.xi + np.sqrt(self.env.vpd))
+
+        self.ci = self.chi * self.env.ca
+
+        # These values need to retain any dimensions of the original inputs - if
+        # ftemp_kphio is set to 1.0 (i.e. no temperature correction) then the dimensions
+        # of tc are lost.
+        self.mc = np.ones(self.shape)
+        self.mj = np.ones(self.shape)
+        self.mjoc = np.ones(self.shape)
+
+
 class OptimalChiLavergne20C3(
-    NewCalcOptimalChi, method="lavergne20_c3", is_c4=False, requires=["theta"]
+    NewCalcOptimalChi,
+    method="lavergne20_c3",
+    is_c4=False,
+    requires=["theta"],
 ):
     r"""Estimate :math:`\chi` for C3 plants using soil moisture corrected :math:`\beta`.
 
@@ -481,7 +560,10 @@ class OptimalChiLavergne20C3(
 
 
 class OptimalChiLavergne20C4(
-    NewCalcOptimalChi, method="lavergne20_c4", is_c4=True, requires=["theta"]
+    NewCalcOptimalChi,
+    method="lavergne20_c4",
+    is_c4=True,
+    requires=["theta"],
 ):
     r"""Calculate soil moisture corrected :math:`\chi` for C4 plants.
 
@@ -568,7 +650,10 @@ class OptimalChiLavergne20C4(
 
 
 class OptimalChiC4NoGamma(
-    NewCalcOptimalChi, method="c4_no_gamma", is_c4=True, requires=[]
+    NewCalcOptimalChi,
+    method="c4_no_gamma",
+    is_c4=True,
+    requires=[],
 ):
     r"""Calculate optimal chi for C4 plants assuming negligible photorespiration.
 
@@ -634,6 +719,73 @@ class OptimalChiC4NoGamma(
         #     (self.beta * self.rootzonestress * self.env.kmm) /
         #     (1.6 * self.env.ns_star)
         # )
+
+        self.chi = self.xi / (self.xi + np.sqrt(self.env.vpd))
+
+        # mj is equal to 1 as gammastar is null
+        self.mj = np.ones(self.shape)
+
+        # Calculate m and mc and m/mc
+        self.ci = self.chi * self.env.ca
+        self.mc = (self.ci) / (self.ci + self.env.kmm)
+        self.mjoc = self.mj / self.mc
+
+
+class OptimalChiC4NoGammaRootZoneStress(
+    NewCalcOptimalChi,
+    method="c4_no_gamma_rootzonestress",
+    is_c4=True,
+    requires=["rootzonestress"],
+):
+    r"""Calculate optimal chi for C4 plants assuming negligible photorespiration with
+     root zone stress penalty.
+
+    The calculations are identical to
+    :class:`~pyrealm.pmodel.calc_optimal_chi_new.OptimalChiC4NoGamma` but apply an
+    experimental rootzone stress penalty (:math:`f_{rz}`) to :math:`\beta` in the
+    calculation of :math:`\xi`:
+
+    .. math::
+
+        \xi &= \sqrt{(\beta f_{rz} K) / (1.6 \eta^{*}))}
+
+    Calculation of the root zone stress factor is not currently part of the `pyrealm`
+    package.
+
+    Examples:
+        >>> import numpy as np
+        >>> env = PModelEnvironment(
+        ...     tc=np.array([20]), vpd=np.array([1000]),
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     rootzonestress=np.array([0.5])
+        ... )
+        >>> vals = OptimalChiC4NoGammaRootZoneStress(env=env)
+        >>> vals.chi.round(5)
+        array([0.3919])
+        >>> vals.mj.round(1)
+        array([1.])
+        >>> vals.mc.round(1)
+        array([0.3])
+    """  # noqa D210, D415 - long but sane title line.
+
+    def set_beta(self) -> None:
+        """Set constant ``beta`` for C4 plants."""
+
+        # Calculate chi and xi as in Prentice 14 but removing gamma terms.
+        self.beta = self.pmodel_const.beta_cost_ratio_c4
+
+    def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
+        """Estimate ``chi`` for C4 plants excluding photorespiration."""
+
+        # Calculate chi and xi as in Prentice 14 but removing gamma terms.
+        if xi_values is not None:
+            _ = check_input_shapes(self.env.ca, xi_values)
+            self.xi = xi_values
+        else:
+            self.xi = np.sqrt(
+                (self.beta * self.env.rootzonestress * self.env.kmm)
+                / (1.6 * self.env.ns_star)
+            )
 
         self.chi = self.xi / (self.xi + np.sqrt(self.env.vpd))
 
