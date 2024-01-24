@@ -399,9 +399,6 @@ class CalcOptimalChi:
             array([1.])
         """
 
-        # Replace missing rootzonestress with 1
-        self.rootzonestress = self.rootzonestress or np.array([1.0])
-
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.beta = self.pmodel_const.beta_cost_ratio_c4
         self.xi = np.sqrt(
@@ -467,9 +464,6 @@ class CalcOptimalChi:
             >>> vals.mc.round(1)
             array([0.3])
         """
-
-        # Replace missing rootzonestress with 1
-        self.rootzonestress = self.rootzonestress or np.array([1.0])
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
         self.beta = self.pmodel_const.beta_cost_ratio_c4

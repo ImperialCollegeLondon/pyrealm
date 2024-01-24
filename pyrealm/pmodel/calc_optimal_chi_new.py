@@ -82,7 +82,16 @@ class NewCalcOptimalChi(ABC):
     """
 
     method: str
+    """A short method name used to identify the class in
+    :data:`~pyrealm.pmodel.calc_optimal_chi_new.OPTIMAL_CHI_CLASS_REGISTRY`.
+    """
     is_c4: bool
+    """A flag indicating if the method captures the C4 photosynthetic pathway."""
+    requires: list[str]
+    """A list of names of optional attributes of
+    :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` that must be populated
+    to use a method.
+    """
 
     def __init__(
         self,
@@ -132,6 +141,8 @@ class NewCalcOptimalChi(ABC):
         self.mjoc: NDArray
         r"""Ratio of :math:`m_j/m_c`."""
 
+        # Run the calculation methods after checking for any required variables
+        self._check_requires()
         self.set_beta()
         self.estimate_chi()
 
@@ -147,6 +158,16 @@ class NewCalcOptimalChi(ABC):
     @abstractmethod
     def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
         """Estimate xi, chi and other variables."""
+
+    def _check_requires(self) -> None:
+        """Check additional required variables are present."""
+
+        for required_var in self.requires:
+            if getattr(self.env, required_var) is None:
+                raise ValueError(
+                    f"{self.__class__.__name__} (method {self.method}) requires "
+                    f"{required_var} to be provided in the PModelEnvironment."
+                )
 
     def __repr__(self) -> str:
         """Generates a string representation of a CalcOptimalChiNew instance."""
@@ -172,11 +193,12 @@ class NewCalcOptimalChi(ABC):
         summarize_attrs(self, attrs, dp=dp)
 
     @classmethod
-    def __init_subclass__(cls, method: str, is_c4: bool) -> None:
+    def __init_subclass__(cls, method: str, is_c4: bool, requires: list[str]) -> None:
         """Initialise a subclass deriving from this ABC."""
 
         cls.method = method
         cls.is_c4 = is_c4
+        cls.requires = requires
         OPTIMAL_CHI_CLASS_REGISTRY[cls.method] = cls
 
 
@@ -184,7 +206,9 @@ class NewCalcOptimalChi(ABC):
 #        PModelEnvironment
 
 
-class OptimalChiPrentice14(NewCalcOptimalChi, method="prentice14", is_c4=False):
+class OptimalChiPrentice14(
+    NewCalcOptimalChi, method="prentice14", is_c4=False, requires=[]
+):
     r"""Calculate :math:`\chi` for C3 plants following :cite:`Prentice:2014bc`.
 
     Optimal :math:`\chi` is calculated following Equation 8 in
@@ -262,7 +286,68 @@ class OptimalChiPrentice14(NewCalcOptimalChi, method="prentice14", is_c4=False):
         self.mjoc = self.mj / self.mc
 
 
-class OptimalChiC4(NewCalcOptimalChi, method="c4", is_c4=True):
+class OptimalChiPrentice14RootzoneStress(
+    NewCalcOptimalChi,
+    method="prentice14_rootzonestress",
+    is_c4=False,
+    requires=["rootzonestress"],
+):
+    r"""Calculate :math:`\chi` for C3 plants following :cite:`Prentice:2014bc` with root
+    zone stress penalty.
+
+    The calculations are identical to :class:`~pyrealm.pmodel.calc_optimal_chi_new` but
+    applying an experimental root zone stress penalty (:math:`f_{rz}`) to :math:`\beta`
+    in the calculation of :math:`\xi`:
+
+    .. math::
+
+        \xi &= \sqrt{(\beta f_{rz} (K+ \Gamma^{*}) / (1.6 \eta^{*}))}
+
+    Examples:
+        >>> import numpy as np
+        >>> env = PModelEnvironment(
+        ...     tc=np.array([20]), vpd=np.array([1000]),
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     rootzonestress=0.5
+        ... )
+        >>> vals = OptimalChiPrentice14RootzoneStress(env=env)
+        >>> vals.chi.round(5)
+        array([0.64203948])
+    """  # noqa D210, D415 - long but sane title line.
+
+    def set_beta(self) -> None:
+        """Set ``beta`` to a constant C3 specific value."""
+        # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
+        self.beta = self.pmodel_const.beta_cost_ratio_prentice14
+
+    def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
+        """Estimate ``chi`` for C3 plants."""
+
+        if xi_values is not None:
+            _ = check_input_shapes(self.env.ca, xi_values)
+            self.xi = xi_values
+        else:
+            self.xi = np.sqrt(
+                (
+                    self.beta
+                    * self.env.rootzonestress
+                    * (self.env.kmm + self.env.gammastar)
+                )
+                / (1.6 * self.env.ns_star)
+            )
+
+        self.chi = self.env.gammastar / self.env.ca + (
+            1.0 - self.env.gammastar / self.env.ca
+        ) * self.xi / (self.xi + np.sqrt(self.env.vpd))
+
+        # Calculate m and mc and m/mc
+        self.ci = self.chi * self.env.ca
+        self.mj = (self.ci - self.env.gammastar) / (self.ci + 2 * self.env.gammastar)
+        self.mc = (self.ci - self.env.gammastar) / (self.ci + self.env.kmm)
+        self.mjoc = self.mj / self.mc
+
+
+class OptimalChiC4(NewCalcOptimalChi, method="c4", is_c4=True, requires=[]):
     r"""Estimate :math:`\chi` for C4 plants following :cite:`Prentice:2014bc`.
 
     Optimal :math:`\chi` is calculated as in
@@ -318,7 +403,9 @@ class OptimalChiC4(NewCalcOptimalChi, method="c4", is_c4=True):
         self.mjoc = np.ones(self.shape)
 
 
-class OptimalChiLavergne20C3(NewCalcOptimalChi, method="lavergne20_c3", is_c4=False):
+class OptimalChiLavergne20C3(
+    NewCalcOptimalChi, method="lavergne20_c3", is_c4=False, requires=["theta"]
+):
     r"""Estimate :math:`\chi` for C3 plants using soil moisture corrected :math:`\beta`.
 
     Optimal :math:`\chi` is calculated using a definition of the unit cost ratio $\beta$
@@ -363,15 +450,10 @@ class OptimalChiLavergne20C3(NewCalcOptimalChi, method="lavergne20_c3", is_c4=Fa
     def set_beta(self) -> None:
         """Set ``beta`` with soil moisture corrections."""
 
-        if self.env.theta is None:
-            raise RuntimeError(
-                "`OptimalChiLavergne20C3` requires soil moisture "
-                "in the PModelEnvironment"
-            )
-
-        # Calculate beta as a function of theta
+        # Calculate beta as a function of theta, which is guaranteed not to be None by
+        # _check_requires so supress mypy here
         self.beta = np.exp(
-            self.pmodel_const.lavergne_2020_b_c3 * self.env.theta
+            self.pmodel_const.lavergne_2020_b_c3 * self.env.theta  # type: ignore[operator] # noqa: E501
             + self.pmodel_const.lavergne_2020_a_c3
         )
 
@@ -398,7 +480,9 @@ class OptimalChiLavergne20C3(NewCalcOptimalChi, method="lavergne20_c3", is_c4=Fa
         self.mjoc = self.mj / self.mc
 
 
-class OptimalChiLavergne20C4(NewCalcOptimalChi, method="lavergne20_c4", is_c4=True):
+class OptimalChiLavergne20C4(
+    NewCalcOptimalChi, method="lavergne20_c4", is_c4=True, requires=["theta"]
+):
     r"""Calculate soil moisture corrected :math:`\chi` for C4 plants.
 
     This method calculates :math:`\beta` as a function of soil moisture following
@@ -446,16 +530,8 @@ class OptimalChiLavergne20C4(NewCalcOptimalChi, method="lavergne20_c4", is_c4=Tr
         array([3.55989])
     """
 
-    def __init__(
-        self,
-        env: PModelEnvironment,
-        rootzonestress: NDArray = np.array([1.0]),
-        pmodel_const: PModelConst = PModelConst(),
-    ) -> None:
-        """Add experimental warning to __init__."""
-        super().__init__(
-            env=env, rootzonestress=rootzonestress, pmodel_const=pmodel_const
-        )
+    def set_beta(self) -> None:
+        """Set ``beta`` with soil moisture corrections."""
 
         # Warn that this is an experimental feature.
         warn(
@@ -463,18 +539,10 @@ class OptimalChiLavergne20C4(NewCalcOptimalChi, method="lavergne20_c4", is_c4=Tr
             ExperimentalFeatureWarning,
         )
 
-    def set_beta(self) -> None:
-        """Set ``beta`` with soil moisture corrections."""
-
-        # This method needs theta
-        if self.env.theta is None:
-            raise RuntimeError(
-                "`OptimalChiLavergne20C4` requires soil moisture "
-                "in the PModelEnvironment"
-            )
-        # Calculate beta as a function of theta
+        # Calculate beta as a function of theta, which is guaranteed not to be None by
+        # _check_requires so supress mypy here
         self.beta = np.exp(
-            self.pmodel_const.lavergne_2020_b_c4 * self.env.theta
+            self.pmodel_const.lavergne_2020_b_c4 * self.env.theta  # type: ignore[operator] # noqa: E501
             + self.pmodel_const.lavergne_2020_a_c4
         )
 
@@ -499,7 +567,9 @@ class OptimalChiLavergne20C4(NewCalcOptimalChi, method="lavergne20_c4", is_c4=Tr
         self.mjoc = self.mj / self.mc
 
 
-class OptimalChiC4NoGamma(NewCalcOptimalChi, method="c4_no_gamma", is_c4=True):
+class OptimalChiC4NoGamma(
+    NewCalcOptimalChi, method="c4_no_gamma", is_c4=True, requires=[]
+):
     r"""Calculate optimal chi for C4 plants assuming negligible photorespiration.
 
     Calculates :math:`\chi` assuming that photorespiration (:math:`\Gamma^\ast`) is

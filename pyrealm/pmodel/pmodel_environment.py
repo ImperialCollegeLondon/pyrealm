@@ -44,9 +44,16 @@ class PModelEnvironment:
     In addition to the four key variables above, the PModelEnvironment class
     is used to provide additional variables used by some methods.
 
-    * the volumetric soil moisture content, required to calculate optimal
-      :math:`\chi` in
-      :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.lavergne20_c3`.
+    * the volumetric soil moisture content (:math:`\theta`), required to calculate
+      optimal :math:`\chi` in
+      :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.lavergne20_c3` and
+      :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.lavergne20_c4`.
+
+    * a unitless root zone stress factor, an experimental term used to optionally
+      penalise the :math:`\beta` term in the estimation of :math:`\chi` in
+      :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.prentice14` and
+      :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.c4` and
+      :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.c4_no_gamma`.
 
     Args:
         tc: Temperature, relevant for photosynthesis (°C)
@@ -54,6 +61,7 @@ class PModelEnvironment:
         co2: Atmospheric CO2 concentration (ppm)
         patm: Atmospheric pressure (Pa)
         theta: Volumetric soil moisture (m3/m3)
+        rootzonestress: Root zone stress factor (-)
         pmodel_const: An instance of
             :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: An instance of
@@ -74,6 +82,7 @@ class PModelEnvironment:
         co2: NDArray,
         patm: NDArray,
         theta: Optional[NDArray] = None,
+        rootzonestress: Optional[NDArray] = None,
         pmodel_const: PModelConst = PModelConst(),
         core_const: CoreConst = CoreConst(),
     ):
@@ -125,15 +134,22 @@ class PModelEnvironment:
         temperature and pressure, unitless"""
 
         # Optional variables
-        self.theta: Optional[NDArray]
+        self.theta: Optional[NDArray] = None
         """Volumetric soil moisture (m3/m3)"""
+        self.rootzonestress: Optional[NDArray] = None
+        """Rootzone stress factor (experimental) (-)"""
 
-        if theta is None:
-            self.theta = None
-        else:
+        if theta is not None:
             # Is the input congruent with the other variables and in bounds.
             _ = check_input_shapes(tc, theta)
             self.theta = bounds_checker(theta, 0, 0.8, "[]", "theta", "m3/m3")
+
+        if rootzonestress is not None:
+            # Is the input congruent with the other variables and in bounds.
+            _ = check_input_shapes(tc, rootzonestress)
+            self.rootzonestress = bounds_checker(
+                rootzonestress, 0, 1, "[]", "rootzonestress", "-"
+            )
 
         # Store constant settings
         self.pmodel_const = pmodel_const
