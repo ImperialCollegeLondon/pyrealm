@@ -304,7 +304,7 @@ class OptimalChiPrentice14RootzoneStress(
         ... )
         >>> vals = OptimalChiPrentice14RootzoneStress(env=env)
         >>> vals.chi.round(5)
-        array([0.64203948])
+        array([0.62016])
     """  # noqa D210, D415 - long but sane title line.
 
     def set_beta(self) -> None:
@@ -372,9 +372,9 @@ class OptimalChiC4(
         >>> vals = OptimalChiC4(env=env)
         >>> vals.chi.round(5)
         array([0.44967])
-        >>> vals.mj.round(1)
+        >>> vals.mj.round(5)
         array([1.])
-        >>> vals.mc.round(1)
+        >>> vals.mc.round(5)
         array([1.])
     """
 
@@ -438,10 +438,10 @@ class OptimalChiC4RootzoneStress(
         ... )
         >>> vals = OptimalChiC4RootzoneStress(env=env)
         >>> vals.chi.round(5)
-        array([0.44967])
-        >>> vals.mj.round(1)
+        array([0.37659])
+        >>> vals.mj.round(5)
         array([1.])
-        >>> vals.mc.round(1)
+        >>> vals.mc.round(5)
         array([1.])
     """  # noqa D210, D415 - long but sane title line.
 
@@ -693,10 +693,10 @@ class OptimalChiC4NoGamma(
         >>> vals = OptimalChiC4NoGamma(env=env)
         >>> vals.chi.round(5)
         array([0.3919])
-        >>> vals.mj.round(1)
+        >>> vals.mj.round(5)
         array([1.])
-        >>> vals.mc.round(1)
-        array([0.3])
+        >>> vals.mc.round(5)
+        array([0.25626])
     """
 
     def set_beta(self) -> None:
@@ -761,11 +761,11 @@ class OptimalChiC4NoGammaRootZoneStress(
         ... )
         >>> vals = OptimalChiC4NoGammaRootZoneStress(env=env)
         >>> vals.chi.round(5)
-        array([0.3919])
-        >>> vals.mj.round(1)
+        array([0.31305])
+        >>> vals.mj.round(5)
         array([1.])
-        >>> vals.mc.round(1)
-        array([0.3])
+        >>> vals.mc.round(5)
+        array([0.21583])
     """  # noqa D210, D415 - long but sane title line.
 
     def set_beta(self) -> None:
