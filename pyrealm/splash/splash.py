@@ -80,11 +80,11 @@ class SplashModel:
         """The sunshine fraction (0-1) of daily observations."""
         self.tc: NDArray = bounds_checker(tc, -25, 80, label="tc", unit="°C")
         """The air temperature in °C of daily observations."""
-        self.pn: NDArray = bounds_checker(pn, 0, np.inf, label="pn", unit="mm/day")
+        self.pn: NDArray = bounds_checker(pn, 0, 1e3, label="pn", unit="mm/day")
         """The precipitation in mm of daily observations."""
         self.dates: Calendar = dates
         """The dates of observations along the first array axis."""
-        self.kWm: NDArray = bounds_checker(kWm, 0, np.inf, label="kWm", unit="mm")
+        self.kWm: NDArray = bounds_checker(kWm, 0, 1e4, label="kWm", unit="mm")
         """The maximum soil water capacity for sites."""
 
         # TODO - potentially allow _actual_ climatic pressure data as an input

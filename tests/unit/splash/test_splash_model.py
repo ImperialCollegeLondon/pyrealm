@@ -101,7 +101,7 @@ def test_estimate_daily_water_balance(splash_model, overflow, underflow):
 
     if overflow:
         wn_init.flat[np.random.choice(wn_init.size)] = splash_model.kWm + 1e-4
-        context = pytest.warns(UserWarning)
+        context = pytest.raises(ValueError)
     if underflow:
         wn_init.flat[np.random.choice(wn_init.size)] = -1e-4
         context = pytest.raises(ValueError)
