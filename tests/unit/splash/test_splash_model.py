@@ -39,7 +39,7 @@ def test_splash_model_init(splash_core_constants, grid_benchmarks, var, flag):
         lat=[-90, 90],
         sf=[0, 1],
         tmp=[-25, 80],
-        pre=[0, 1000],
+        pre=[0, np.inf],
     )
 
     ds = grid_benchmarks[0].sel(time=slice("2000-01-01", "2000-04-01")).copy()
