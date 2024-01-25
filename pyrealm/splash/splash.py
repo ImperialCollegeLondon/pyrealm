@@ -54,13 +54,6 @@ class SplashModel:
         kWm: The maximum soil moisture capacity, defaulting to 150 (mm)
     """
 
-    variable_ranges: dict = dict(
-        lat=(-90, 90),
-        sf=(0, 1),
-        tc=(-25, 80),
-        pn=(0, 1000),
-    )
-
     def __init__(
         self,
         lat: NDArray,
@@ -76,31 +69,26 @@ class SplashModel:
         # TODO - think about broadcasting lat and elv rather than forcing users to do
         #        this in advance. xarray would be good here for identifying axes and
         #        checking congruence more widely.
-        self.shape = check_input_shapes(elv, lat, sf, tc, pn)
+        self.shape: tuple = check_input_shapes(elv, lat, sf, tc, pn)
         """The array shape of the input variables"""
 
-        # Assign required public attributes
-        self.elv = elv
+        self.elv: NDArray = elv
         """The elevation of sites."""
-        self.lat = lat
+        self.lat: NDArray = bounds_checker(lat, -90, 90, label="lat", unit="°")
         """The latitude of sites."""
-        self.sf = sf
+        self.sf: NDArray = bounds_checker(sf, 0, 1, label="sf")
         """The sunshine fraction (0-1) of daily observations."""
-        self.tc = tc
+        self.tc: NDArray = bounds_checker(tc, -25, 80, label="tc", unit="°C")
         """The air temperature in °C of daily observations."""
-        self.pn = pn
+        self.pn: NDArray = bounds_checker(pn, 0, np.inf, label="pn", unit="mm/day")
         """The precipitation in mm of daily observations."""
-        self.dates = dates
+        self.dates: Calendar = dates
         """The dates of observations along the first array axis."""
-        self.kWm = kWm
+        self.kWm: NDArray = bounds_checker(kWm, 0, np.inf, label="kWm", unit="mm")
         """The maximum soil water capacity for sites."""
 
-        # Check variables are within expected ranges
-        for var, (lo, hi) in self.variable_ranges.items():
-            bounds_checker(getattr(self, var), lo, hi)
-
         # TODO - potentially allow _actual_ climatic pressure data as an input
-        self.pa = calc_patm(elv, core_const=core_const)
+        self.pa: NDArray = calc_patm(elv, core_const=core_const)
         """The atmospheric pressure at sites, derived from elevation"""
 
         # Calculate the daily solar fluxes - these are invariant across the simulation
@@ -155,7 +143,9 @@ class SplashModel:
             # Check the shape is the same as the shape of a slice along axis 0
             if wn_init.shape != self.tc[0].shape:
                 raise ValueError("Incorrect shape in wn_init")
-            wn_start = bounds_checker(wn_init, 0, self.kWm)
+            if np.any((wn_init < 0) | (wn_init > self.kWm)):
+                raise ValueError("Soil moisture must be between 0 and kWm")
+            wn_start = wn_init
         else:
             wn_start = np.zeros_like(self.tc[0])
 
@@ -245,8 +235,10 @@ class SplashModel:
             didx = day_idx
 
         # Calculate the expected aet_d given the previous wn
-        wn = bounds_checker(previous_wn, 0, self.kWm)
-        aet = self.evap.estimate_aet(wn=wn, day_idx=day_idx)
+        if np.any((previous_wn < 0) | (previous_wn > self.kWm)):
+            raise ValueError("Soil moisture must be between 0 and kWm")
+
+        aet = self.evap.estimate_aet(wn=previous_wn, day_idx=day_idx)
 
         # Calculate current soil moisture, mm
         current_wn = previous_wn + self.pn[didx] + self.evap.cond[didx] - aet
