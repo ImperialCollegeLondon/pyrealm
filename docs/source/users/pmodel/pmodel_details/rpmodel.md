@@ -47,7 +47,7 @@ The implementations differ in a number of ways:
    The ``rpmodel`` package has suites of functions for calculating $J_{max}$ limitation
    and optimal $\chi$. These have been combined into classes
    {class}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation` and
-   {class}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`. This allows the common
+   {class}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi`. This allows the common
    parameters and
    outputs of these functions to be standardised and the different methods are provided
    via a ``method`` argument to each class.
@@ -58,7 +58,7 @@ The implementations differ in a number of ways:
    can be used with C4 plants and hence it is not possible to simulate $J_{max}$
    limitation for C4 plants. In the implementation in {mod}`~pyrealm.pmodel`, C4 plants
    are set to have no $\ce{CO2}$ limitation in
-   {class}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`, although the correct internal
+   {class}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi`, although the correct internal
    $\ce{CO2}$ partial pressure is calculated, and are then free to use whichever
    $J_{max}$ method is preferred in
    {class}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation`.

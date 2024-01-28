@@ -384,9 +384,7 @@ def test_calc_co2_to_ca(values, co2, patm, context_manager, expvals):
         ),  # shape error, c3
     ],
 )
-def test_calc_optimal_chi(
-    values, tc, patm, co2, vpd, method, context_manager, expvalues
-):
+def test_optimal_chi(values, tc, patm, co2, vpd, method, context_manager, expvalues):
     """Test the CalcOptimalChi class."""
 
     from pyrealm.pmodel import CalcOptimalChi, PModelEnvironment

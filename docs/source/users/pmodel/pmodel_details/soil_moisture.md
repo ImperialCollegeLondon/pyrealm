@@ -25,7 +25,7 @@ photosynthesis:
   * $\beta(\theta)$ {cite:p}`mengoli:2023a`.
 * The experimental `rootzonestress` argument to {class}`~pyrealm.pmodel.pmodel.PModel`.
 * The `lavergne20_c3` and `lavergne20_c4` methods for
-  {class}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`, which use an empirical model
+  {class}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi`, which use an empirical model
   of the
   change in the ratio of the photosynthetic costs of carboxilation and transpiration.
   Altering this cost ratio - inconveniently also called $\beta$ - for soil moisture

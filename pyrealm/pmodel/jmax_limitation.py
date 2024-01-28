@@ -13,7 +13,7 @@ from numpy.typing import NDArray
 
 from pyrealm.constants import PModelConst
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.pmodel.calc_optimal_chi_new import NewCalcOptimalChi
+from pyrealm.pmodel.optimal_chi_new import OptimalChi
 
 
 class JmaxLimitation:
@@ -35,7 +35,7 @@ class JmaxLimitation:
     in :cite:`Smith:2019dv`.
 
     Arguments:
-        optchi: an instance of :class:`pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`
+        optchi: an instance of :class:`pyrealm.pmodel.optimal_chi.CalcOptimalChi`
             providing the :math:`\ce{CO2}` limitation term of light use efficiency
             (:math:`m_j`) and the :math:`\ce{CO2}` limitation term for Rubisco
             assimilation (:math:`m_c`).
@@ -47,7 +47,7 @@ class JmaxLimitation:
     Examples:
         >>> import numpy as np
         >>> from pyrealm.pmodel.pmodel_environment import PModelEnvironment
-        >>> from pyrealm.pmodel.calc_optimal_chi_new import OptimalChiPrentice14
+        >>> from pyrealm.pmodel.optimal_chi_new import OptimalChiPrentice14
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
         ...     co2=np.array([400]), patm=np.array([101325.0])
@@ -76,13 +76,13 @@ class JmaxLimitation:
 
     def __init__(
         self,
-        optchi: NewCalcOptimalChi,
+        optchi: OptimalChi,
         method: str = "wang17",
         pmodel_const: PModelConst = PModelConst(),
     ):
         self.shape: tuple = check_input_shapes(optchi.mj)
         """Records the common numpy array shape of array inputs."""
-        self.optchi: NewCalcOptimalChi = optchi
+        self.optchi: OptimalChi = optchi
         """Details of the optimal chi calculation for the model"""
         self.method: str = method
         """Records the method used to calculate Jmax limitation."""

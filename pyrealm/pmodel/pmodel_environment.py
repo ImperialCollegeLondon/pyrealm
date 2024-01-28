@@ -46,14 +46,14 @@ class PModelEnvironment:
 
     * the volumetric soil moisture content (:math:`\theta`), required to calculate
       optimal :math:`\chi` in
-      :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.lavergne20_c3` and
-      :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.lavergne20_c4`.
+      :meth:`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.lavergne20_c3` and
+      :meth:`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.lavergne20_c4`.
 
     * a unitless root zone stress factor, an experimental term used to optionally
       penalise the :math:`\beta` term in the estimation of :math:`\chi` in
-      :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.prentice14` and
-      :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.c4` and
-      :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.c4_no_gamma`.
+      :meth:`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.prentice14` and
+      :meth:`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.c4` and
+      :meth:`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.c4_no_gamma`.
 
     Args:
         tc: Temperature, relevant for photosynthesis (°C)

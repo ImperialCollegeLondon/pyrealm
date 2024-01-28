@@ -46,7 +46,7 @@ def memory_effect(
     By default, the ``values`` array must not contain missing values (`numpy.nan`).
     However, :math:`V_{cmax}` and :math:`J_{max}` are not estimable in some conditions
     (namely when :math:`m \le c^{\ast}`, see
-    :class:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`) and so missing values in
+    :class:`~pyrealm.pmodel.optimal_chi.CalcOptimalChi`) and so missing values in
     P Model
     predictions can arise even when the forcing data is complete, breaking the recursion
     shown above. When ``handle_nan=True``, this function fills missing data as follow:

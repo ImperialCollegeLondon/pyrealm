@@ -138,13 +138,13 @@ def values():
         # ),  # shape error, c3
     ],
 )
-def test_calc_optimal_chi_new(
+def test_optimal_chi_new(
     values, tc, patm, co2, vpd, method, context_manager, expvalues
 ):
     """Test the CalcOptimalChi class."""
 
     from pyrealm.pmodel import PModelEnvironment
-    from pyrealm.pmodel.calc_optimal_chi_new import OPTIMAL_CHI_CLASS_REGISTRY
+    from pyrealm.pmodel.optimal_chi_new import OPTIMAL_CHI_CLASS_REGISTRY
 
     with context_manager:
         env = PModelEnvironment(

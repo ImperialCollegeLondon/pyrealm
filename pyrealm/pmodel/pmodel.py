@@ -14,17 +14,13 @@ from numpy.typing import NDArray
 from pyrealm import ExperimentalFeatureWarning
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
-from pyrealm.pmodel.calc_optimal_chi import CalcOptimalChi
-from pyrealm.pmodel.calc_optimal_chi_new import (
-    OPTIMAL_CHI_CLASS_REGISTRY,
-    NewCalcOptimalChi,
-)
 from pyrealm.pmodel.functions import (
     calc_ftemp_inst_rd,
     calc_ftemp_inst_vcmax,
     calc_ftemp_kphio,
 )
 from pyrealm.pmodel.jmax_limitation import JmaxLimitation
+from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY, OptimalChi
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
 # Design notes on PModel (0.3.1 -> 0.4.0)
@@ -57,7 +53,7 @@ class PModel:
 
     1. Estimate :math:`\ce{CO2}` limitation factors and optimal internal to ambient
        :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using
-       :class:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`.
+       :class:`~pyrealm.pmodel.optimal_chi.CalcOptimalChi`.
     2. Estimate limitation factors to :math:`V_{cmax}` and :math:`J_{max}` using
        :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation`.
     3. Optionally, estimate productivity measures including GPP by supplying FAPAR and
@@ -154,11 +150,11 @@ class PModel:
             larger, so check definitions here.
         rootzonestress: (Optional, default=None) An experimental option
             for providing a root zone water stress penalty to the :math:`beta` parameter
-            in :class:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`.
+            in :class:`~pyrealm.pmodel.optimal_chi.CalcOptimalChi`.
         method_optchi: (Optional, default=`prentice14`) Selects the method to be
             used for calculating optimal :math:`chi`. The choice of method also sets the
             choice of  C3 or C4 photosynthetic pathway (see
-            :class:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`).
+            :class:`~pyrealm.pmodel.optimal_chi.CalcOptimalChi`).
         method_jmaxlim: (Optional, default=`wang17`) Method to use for
             :math:`J_{max}` limitation
         do_ftemp_kphio: (Optional, default=True) Include the temperature-
@@ -253,12 +249,26 @@ class PModel:
         else:
             self.init_kphio = kphio
 
-        # Check method_optchi and set c3/c4
-        self.c4: bool = CalcOptimalChi._method_lookup(method_optchi)
-        """Indicates if estimates calculated using C3 or C4 photosynthesis."""
-
+        # -----------------------------------------------------------------------
+        # Optimal ci
+        # The heart of the P-model: calculate ci:ca ratio (chi) and additional terms
+        # -----------------------------------------------------------------------
         self.method_optchi: str = method_optchi
         """Records the method used to calculate optimal chi."""
+
+        try:
+            opt_chi_class = OPTIMAL_CHI_CLASS_REGISTRY[method_optchi]
+        except KeyError:
+            raise ValueError(f"Unknown optimal chi estimation method: {method_optchi}")
+
+        self.optchi: OptimalChi = opt_chi_class(
+            env=env,
+            pmodel_const=self.pmodel_const,
+        )
+        """An subclass OptimalChi, implementing the requested chi calculation method"""
+
+        self.c4: bool = self.optchi.is_c4
+        """Does the OptimalChi method approximate a C3 or C4 pathway."""
 
         # -----------------------------------------------------------------------
         # Temperature dependence of quantum yield efficiency
@@ -270,21 +280,6 @@ class PModel:
             self.kphio = self.init_kphio * ftemp_kphio
         else:
             self.kphio = np.array([self.init_kphio])
-
-        # -----------------------------------------------------------------------
-        # Optimal ci
-        # The heart of the P-model: calculate ci:ca ratio (chi) and additional terms
-        # -----------------------------------------------------------------------
-        try:
-            opt_chi_class = OPTIMAL_CHI_CLASS_REGISTRY[method_optchi]
-        except KeyError:
-            raise ValueError(f"Unknown optimal chi estimation method: {method_optchi}")
-
-        self.optchi: NewCalcOptimalChi = opt_chi_class(
-            env=env,
-            pmodel_const=self.pmodel_const,
-        )
-        """Details of the optimal chi calculation for the model"""
 
         # -----------------------------------------------------------------------
         # Calculation of Jmax limitation terms

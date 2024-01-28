@@ -32,7 +32,7 @@ import pytest
 )
 def test_rootzonestress(method, expected_chi):
     """Tests the optimal chi methods that support rootzonestress."""
-    from pyrealm.pmodel.calc_optimal_chi import CalcOptimalChi
+    from pyrealm.pmodel.optimal_chi import CalcOptimalChi
     from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
     n_vals = 5
@@ -70,7 +70,7 @@ def test_rootzonestress(method, expected_chi):
 )
 def test_rootzonestress_new(method, expected_chi):
     """Tests the optimal chi methods that support rootzonestress."""
-    from pyrealm.pmodel.calc_optimal_chi_new import OPTIMAL_CHI_CLASS_REGISTRY
+    from pyrealm.pmodel.optimal_chi_new import OPTIMAL_CHI_CLASS_REGISTRY
     from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
     n_vals = 5
@@ -115,7 +115,7 @@ def test_rootzonestress_new(method, expected_chi):
 )
 def test_CalcOptimalChiNew_requires(method, context_manager, message):
     """Tests the _check_requires mechanism for methods with requires set."""
-    from pyrealm.pmodel.calc_optimal_chi_new import OPTIMAL_CHI_CLASS_REGISTRY
+    from pyrealm.pmodel.optimal_chi_new import OPTIMAL_CHI_CLASS_REGISTRY
     from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
     n_vals = 5

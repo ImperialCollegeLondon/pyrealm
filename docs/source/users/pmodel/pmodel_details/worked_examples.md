@@ -95,10 +95,10 @@ model.summarize()
 
 ### $\chi$ estimates and $\ce{CO2}$ limitation
 
-The instance also contains a {class}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`
+The instance also contains a {class}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi`
 object,
 recording key parameters from the [calculation of $\chi$](optimal_chi).
-This object also has a {meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.summarize`
+This object also has a {meth}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.summarize`
 method:
 
 ```{code-cell} ipython3
