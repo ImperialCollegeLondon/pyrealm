@@ -20,7 +20,7 @@ from pyrealm.pmodel.functions import (
     calc_ftemp_kphio,
 )
 from pyrealm.pmodel.jmax_limitation import JmaxLimitation
-from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY, OptimalChi
+from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY, OptimalChiABC
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
 # Design notes on PModel (0.3.1 -> 0.4.0)
@@ -261,7 +261,7 @@ class PModel:
         except KeyError:
             raise ValueError(f"Unknown optimal chi estimation method: {method_optchi}")
 
-        self.optchi: OptimalChi = opt_chi_class(
+        self.optchi: OptimalChiABC = opt_chi_class(
             env=env,
             pmodel_const=self.pmodel_const,
         )

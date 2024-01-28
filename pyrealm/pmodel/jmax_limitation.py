@@ -13,7 +13,7 @@ from numpy.typing import NDArray
 
 from pyrealm.constants import PModelConst
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.pmodel.optimal_chi_new import OptimalChi
+from pyrealm.pmodel.optimal_chi import OptimalChiABC
 
 
 class JmaxLimitation:
@@ -76,13 +76,13 @@ class JmaxLimitation:
 
     def __init__(
         self,
-        optchi: OptimalChi,
+        optchi: OptimalChiABC,
         method: str = "wang17",
         pmodel_const: PModelConst = PModelConst(),
     ):
         self.shape: tuple = check_input_shapes(optchi.mj)
         """Records the common numpy array shape of array inputs."""
-        self.optchi: OptimalChi = optchi
+        self.optchi: OptimalChiABC = optchi
         """Details of the optimal chi calculation for the model"""
         self.method: str = method
         """Records the method used to calculate Jmax limitation."""

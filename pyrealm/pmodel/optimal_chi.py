@@ -1,5 +1,5 @@
-r"""The module :mod:`~pyrealm.pmodel.optimal_chi_new` provides  
-the abstract base class :class:`~pyrealm.pmodel.optimal_chi_new.OptimalChi`,
+r"""The module :mod:`~pyrealm.pmodel.optimal_chi` provides  
+the abstract base class :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`,
 which is used to support different implementations of the calculation of optimal chi.
 """  # noqa D210, D415
 
@@ -17,11 +17,11 @@ from pyrealm.constants import PModelConst
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
-OPTIMAL_CHI_CLASS_REGISTRY: dict[str, Type[OptimalChi]] = {}
+OPTIMAL_CHI_CLASS_REGISTRY: dict[str, Type[OptimalChiABC]] = {}
 """A registry for optimal chi calculation classes.
 
 Different implementations of the calculation of optimal chi must all be subclasses of
-:class:`~pyrealm.pmodel.optimal_chi_new.OptimalChi` abstract base class.
+:class:`~pyrealm.pmodel.optimal_chi.OptimalChi` abstract base class.
 This dictionary is used as a registry for defined subclasses and a defined method name
 is used to retrieve a particular implementation from this registry. For example:
 
@@ -31,7 +31,7 @@ is used to retrieve a particular implementation from this registry. For example:
 """
 
 
-class OptimalChi(ABC):
+class OptimalChiABC(ABC):
     r"""Abstract Base Class for estimating optimal leaf internal CO2 concentration.
 
     This provides a base class for the implementation of alternative approaches to
@@ -83,7 +83,7 @@ class OptimalChi(ABC):
 
     method: str
     """A short method name used to identify the class in
-    :data:`~pyrealm.pmodel.optimal_chi_new.OPTIMAL_CHI_CLASS_REGISTRY`.
+    :data:`~pyrealm.pmodel.optimal_chi.OPTIMAL_CHI_CLASS_REGISTRY`.
     """
     is_c4: bool
     """A flag indicating if the method captures the C4 photosynthetic pathway."""
@@ -192,7 +192,7 @@ class OptimalChi(ABC):
 
 
 class OptimalChiPrentice14(
-    OptimalChi,
+    OptimalChiABC,
     method="prentice14",
     is_c4=False,
     requires=[],
@@ -275,7 +275,7 @@ class OptimalChiPrentice14(
 
 
 class OptimalChiPrentice14RootzoneStress(
-    OptimalChi,
+    OptimalChiABC,
     method="prentice14_rootzonestress",
     is_c4=False,
     requires=["rootzonestress"],
@@ -284,7 +284,7 @@ class OptimalChiPrentice14RootzoneStress(
     zone stress penalty.
 
     The calculations are identical to
-    :class:`~pyrealm.pmodel.optimal_chi_new.OptimalChiPrentice14` but apply an
+    :class:`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14` but apply an
     experimental rootzone stress penalty (:math:`f_{rz}`) to :math:`\beta` in the
     calculation of :math:`\xi`:
 
@@ -348,7 +348,7 @@ class OptimalChiPrentice14RootzoneStress(
 
 
 class OptimalChiC4(
-    OptimalChi,
+    OptimalChiABC,
     method="c4",
     is_c4=True,
     requires=[],
@@ -356,7 +356,7 @@ class OptimalChiC4(
     r"""Estimate :math:`\chi` for C4 plants following :cite:`Prentice:2014bc`.
 
     Optimal :math:`\chi` is calculated as in
-    :meth:`~pyrealm.pmodel.optimal_chi_new.OptimalChiPrentice14`, but using a C4
+    :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`, but using a C4
     specific estimate of the unit cost ratio :math:`\beta`, see
     :attr:`~pyrealm.constants.pmodel_const.PModelConst.beta_cost_ratio_c4`.
 
@@ -409,7 +409,7 @@ class OptimalChiC4(
 
 
 class OptimalChiC4RootzoneStress(
-    OptimalChi,
+    OptimalChiABC,
     method="c4_rootzonestress",
     is_c4=True,
     requires=["rootzonestress"],
@@ -418,7 +418,7 @@ class OptimalChiC4RootzoneStress(
      root zone stress penalty.
 
     The calculations are identical to
-    :class:`~pyrealm.pmodel.optimal_chi_new.OptimalChiC4` but apply an
+    :class:`~pyrealm.pmodel.optimal_chi.OptimalChiC4` but apply an
     experimental rootzone stress penalty (:math:`f_{rz}`) to :math:`\beta` in the
     calculation of :math:`\xi`:
 
@@ -480,7 +480,7 @@ class OptimalChiC4RootzoneStress(
 
 
 class OptimalChiLavergne20C3(
-    OptimalChi,
+    OptimalChiABC,
     method="lavergne20_c3",
     is_c4=False,
     requires=["theta"],
@@ -560,7 +560,7 @@ class OptimalChiLavergne20C3(
 
 
 class OptimalChiLavergne20C4(
-    OptimalChi,
+    OptimalChiABC,
     method="lavergne20_c4",
     is_c4=True,
     requires=["theta"],
@@ -574,7 +574,7 @@ class OptimalChiLavergne20C4(
     the default coefficients of the moisture scaling from :cite:`lavergne:2020a` for
     C3 plants are adjusted to match the theoretical expectation that :math:`\beta`
     for C4 plants is nine times smaller than :math:`\beta` for C3 plants (see
-    :meth:`~pyrealm.pmodel.optimal_chi_new.OptimalChiC4`): :math:`b`
+    :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiC4`): :math:`b`
     (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c4`) is
     unchanged but
     :math:`a_{C4} = a_{C3} - log(9)`
@@ -582,7 +582,7 @@ class OptimalChiLavergne20C4(
 
     Following the calculation of :math:`\beta`, this method then follows the
     calculations described in
-    :meth:`~pyrealm.pmodel.optimal_chi_new.OptimalChiC4NoGamma`
+    :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGamma`
     ::math:`m_j = 1.0`
     because photorespiration is negligible, but :math:`m_c` and hence
     :math:`m_{joc}` are calculated.
@@ -650,7 +650,7 @@ class OptimalChiLavergne20C4(
 
 
 class OptimalChiC4NoGamma(
-    OptimalChi,
+    OptimalChiABC,
     method="c4_no_gamma",
     is_c4=True,
     requires=[],
@@ -732,7 +732,7 @@ class OptimalChiC4NoGamma(
 
 
 class OptimalChiC4NoGammaRootZoneStress(
-    OptimalChi,
+    OptimalChiABC,
     method="c4_no_gamma_rootzonestress",
     is_c4=True,
     requires=["rootzonestress"],
@@ -741,7 +741,7 @@ class OptimalChiC4NoGammaRootZoneStress(
      root zone stress penalty.
 
     The calculations are identical to
-    :class:`~pyrealm.pmodel.optimal_chi_new.OptimalChiC4NoGamma` but apply an
+    :class:`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGamma` but apply an
     experimental rootzone stress penalty (:math:`f_{rz}`) to :math:`\beta` in the
     calculation of :math:`\xi`:
 
