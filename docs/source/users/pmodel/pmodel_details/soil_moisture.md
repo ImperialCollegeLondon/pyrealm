@@ -25,14 +25,14 @@ photosynthesis:
   * $\beta(\theta)$ {cite:p}`mengoli:2023a`.
 * The experimental `rootzonestress` argument to {class}`~pyrealm.pmodel.pmodel.PModel`.
 * The `lavergne20_c3` and `lavergne20_c4` methods for
-  {class}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi`, which use an empirical model
+  {class}`~pyrealm.pmodel.optimal_chi.OptimalChiABC`, which use an empirical model
   of the
   change in the ratio of the photosynthetic costs of carboxilation and transpiration.
   Altering this cost ratio - inconveniently also called $\beta$ - for soil moisture
   stress provides a more complete picture of plant responses than GPP penalty factors.
 
-The first three of these approaches are described here, but see [here](optimal_chi) for
-details of the last method.
+The first three of these approaches are described here, but see [here](./optimal_chi)
+for details of the last method.
 
 ## The {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` penalty factor
 

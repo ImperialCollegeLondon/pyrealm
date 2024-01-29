@@ -21,8 +21,8 @@ OPTIMAL_CHI_CLASS_REGISTRY: dict[str, Type[OptimalChiABC]] = {}
 """A registry for optimal chi calculation classes.
 
 Different implementations of the calculation of optimal chi must all be subclasses of
-:class:`~pyrealm.pmodel.optimal_chi.OptimalChi` abstract base class.
-This dictionary is used as a registry for defined subclasses and a defined method name
+:class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC` abstract base class.
+This dictionary is used as a registry for defined subclasses and a method name
 is used to retrieve a particular implementation from this registry. For example:
 
 .. code:: python
@@ -159,14 +159,14 @@ class OptimalChiABC(ABC):
                 )
 
     def __repr__(self) -> str:
-        """Generates a string representation of a CalcOptimalChiNew instance."""
+        """Generates a string representation of an OptimalChi instance."""
         return f"{type(self).__name__}(shape={self.shape})"
 
     def summarize(self, dp: int = 2) -> None:
-        """Print CalcOptimalChi summary.
+        """Print OptimalChi summary.
 
         Prints a summary of the variables calculated within an instance
-        of CalcOptimalChi including the mean, range and number of nan values.
+        of OptimalChi including the mean, range and number of nan values.
 
         Args:
             dp: The number of decimal places used in rounding summary stats.
@@ -503,9 +503,8 @@ class OptimalChiLavergne20C3(
     :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c3`).
 
     Values of :math:`\chi` and other predictions are then calculated as in
-    :meth:`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.prentice14`. This method
-    requires that `env` includes estimates of :math:`\theta` and  is incompatible
-    with the `rootzonestress` approach.
+    :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`. This method
+    requires that `env` includes estimates of :math:`\theta`.
 
     Examples:
         >>> import numpy as np
@@ -569,7 +568,7 @@ class OptimalChiLavergne20C4(
 
     This method calculates :math:`\beta` as a function of soil moisture following
     the equation described in the
-    :meth:`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.lavergne20_c3` method.
+    :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3` method.
     However,
     the default coefficients of the moisture scaling from :cite:`lavergne:2020a` for
     C3 plants are adjusted to match the theoretical expectation that :math:`\beta`
@@ -659,7 +658,7 @@ class OptimalChiC4NoGamma(
 
     Calculates :math:`\chi` assuming that photorespiration (:math:`\Gamma^\ast`) is
     negligible for C4 plants. This simplifies the calculation of :math:`\xi` and
-    :math:`\chi` compared to :meth:`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.c4`,
+    :math:`\chi` compared to :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiC4`,
     but uses the same C4 specific estimate of the unit cost ratio :math:`\beta`,
     :attr:`~pyrealm.constants.pmodel_const.PModelConst.beta_cost_ratio_c4`.
 
@@ -731,7 +730,7 @@ class OptimalChiC4NoGamma(
         self.mjoc = self.mj / self.mc
 
 
-class OptimalChiC4NoGammaRootZoneStress(
+class OptimalChiC4NoGammaRootzoneStress(
     OptimalChiABC,
     method="c4_no_gamma_rootzonestress",
     is_c4=True,
@@ -759,7 +758,7 @@ class OptimalChiC4NoGammaRootZoneStress(
         ...     co2=np.array([400]), patm=np.array([101325.0]),
         ...     rootzonestress=np.array([0.5])
         ... )
-        >>> vals = OptimalChiC4NoGammaRootZoneStress(env=env)
+        >>> vals = OptimalChiC4NoGammaRootzoneStress(env=env)
         >>> vals.chi.round(5)
         array([0.31305])
         >>> vals.mj.round(5)

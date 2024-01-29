@@ -387,14 +387,16 @@ def test_calc_co2_to_ca(values, co2, patm, context_manager, expvals):
 def test_optimal_chi(values, tc, patm, co2, vpd, method, context_manager, expvalues):
     """Test the CalcOptimalChi class."""
 
-    from pyrealm.pmodel import CalcOptimalChi, PModelEnvironment
+    from pyrealm.pmodel import PModelEnvironment
+    from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
 
     with context_manager:
         env = PModelEnvironment(
             tc=values[tc], patm=values[patm], vpd=values[vpd], co2=values[co2]
         )
 
-        ret = CalcOptimalChi(env, method=method)
+        OptChiClass = OPTIMAL_CHI_CLASS_REGISTRY[method]
+        ret = OptChiClass(env)
 
         if expvalues is not None:
             expected = values[expvalues]
@@ -445,17 +447,10 @@ def test_jmax_limitation(
     # - these have all been synchronised so that anything with type 'mx' or 'ar'
     #   used the tc_ar input
 
-    from pyrealm.pmodel import (
-        CalcOptimalChi,
-        JmaxLimitation,
-        PModelEnvironment,
-        calc_ftemp_kphio,
-    )
+    from pyrealm.pmodel import JmaxLimitation, PModelEnvironment, calc_ftemp_kphio
+    from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
 
-    if c4:
-        oc_method = "c4"
-    else:
-        oc_method = "prentice14"
+    oc_method = "c4" if c4 else "prentice14"
 
     if not ftemp_kphio:
         ftemp_kphio = 1.0
@@ -469,7 +464,8 @@ def test_jmax_limitation(
         tc=values[tc], patm=values[patm], vpd=values[vpd], co2=values[co2]
     )
 
-    optchi = CalcOptimalChi(env, method=oc_method)
+    OptChiClass = OPTIMAL_CHI_CLASS_REGISTRY[oc_method]
+    optchi = OptChiClass(env)
 
     jmax = JmaxLimitation(optchi, method=jmax_method)
 

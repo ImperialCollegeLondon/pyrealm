@@ -35,7 +35,7 @@ class JmaxLimitation:
     in :cite:`Smith:2019dv`.
 
     Arguments:
-        optchi: an instance of :class:`pyrealm.pmodel.optimal_chi.CalcOptimalChi`
+        optchi: an instance of :class:`pyrealm.pmodel.optimal_chi.OptimalChiABC`
             providing the :math:`\ce{CO2}` limitation term of light use efficiency
             (:math:`m_j`) and the :math:`\ce{CO2}` limitation term for Rubisco
             assimilation (:math:`m_c`).
@@ -47,7 +47,7 @@ class JmaxLimitation:
     Examples:
         >>> import numpy as np
         >>> from pyrealm.pmodel.pmodel_environment import PModelEnvironment
-        >>> from pyrealm.pmodel.optimal_chi_new import OptimalChiPrentice14
+        >>> from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
         ...     co2=np.array([400]), patm=np.array([101325.0])
