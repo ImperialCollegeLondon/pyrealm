@@ -452,7 +452,7 @@ but the variation in $\beta$ with rootzone stress is shown below.
 
 * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14RootzoneStress`
 * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4RootzoneStress`
-* {class}`~pyrealm.pmodel.optimal_chi.OptimalC4NoGammaRootzoneStress`
+* {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGammaRootzoneStress`
 
 ```{code-cell} ipython3
 :tags: [hide-input]
