@@ -39,23 +39,23 @@ users to extend these methods to provide additional approaches.
 :header-rows: 1
 
 * - Method name
-  * Method class
+  - Method class
 * - `prentice14`
-  * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`
+  - {class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`
 * - `c4`
-  * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4`
+  - {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4`
 * - `c4_no_gamma`
-  * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGamma`
+  - {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGamma`
 * - `lavergne20_c3`
-  * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3`
+  - {class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3`
 * - `lavergne20_c4`
-  * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C4`
+  - {class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C4`
 * - `prentice14_rootzonestress`
-  * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14RootzoneStress`
+  - {class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14RootzoneStress`
 * - `c4_rootzonestress`
-  * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4RootzoneStress`
+  - {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4RootzoneStress`
 * - `c4_no_gamma_rootzonestress`
-  * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGammaRootzoneStress`
+  - {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGammaRootzoneStress`
 ```
 
 ```{code-cell} ipython3
