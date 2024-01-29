@@ -5,9 +5,9 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.1
 kernelspec:
-  display_name: Python 3
+  display_name: pyrealm_python3
   language: python
   name: pyrealm_python3
 ---
@@ -16,6 +16,11 @@ kernelspec:
 
 The next step is to estimate the following parameters:
 
+* The ratio of carboxylation to transpiration cost factors (``beta``, $\beta$).
+  In some approaches, this is taken as a fixed value, but other approaches apply
+  penalties to $\beta$ based on environmental conditions. At present, these
+  approaches are the `{cite:t}`lavergne:2020a` modifications with soil moisture content
+  (``theta``, $\theta$) and the experimental root zone stress approaches.
 * The value $\chi = c_i/c_a$, which is the unitless ratio of leaf internal $\ce{CO2}$
   partial pressure ($c_i$, Pa) to ambient $\ce{CO2}$ partial pressure ($c_a$, Pa).
 * A parameter ($\xi$) describing the sensitivity of $\chi$ to vapour pressure deficit
@@ -23,18 +28,47 @@ The next step is to estimate the following parameters:
 * $\ce{CO2}$ limitation factors to both light assimilation ($m_j$) and carboxylation
   ($m_c$) along with their ratio ($m_{joc} = m_j / m_c$).
 
-The details of these calculations are in
-{class}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi`,
-which implements a number of approaches to calculating these values:
+The  {class}`~pyrealm.pmodel.optimal_chi` module implements the following methods for
+calculating these values, providing options to handle C3 and C4 photosynthesis and
+different implementations of water stress. The method names are used to select an
+approach when fitting a {class}`~pyrealm.pmodel.pmodel.PModel`, and each is implemented
+in a specific model class that provides the appropriate calculations. It is possible for
+users to extend these methods to provide additional approaches.
 
-```{code-cell}
+```{list-table}
+:header-rows: 1
+
+* - Method name
+  * Method class
+* - `prentice14`
+  * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`
+* - `c4`
+  * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4`
+* - `c4_no_gamma`
+  * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGamma`
+* - `lavergne20_c3`
+  * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3`
+* - `lavergne20_c4`
+  * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C4`
+* - `prentice14_rootzonestress`
+  * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14RootzoneStress`
+* - `c4_rootzonestress`
+  * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4RootzoneStress`
+* - `c4_no_gamma_rootzonestress`
+  * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGammaRootzoneStress`
+```
+
+```{code-cell} ipython3
 :tags: [hide-input]
 
 from itertools import product
-from pyrealm.pmodel import CalcOptimalChi, PModelEnvironment, PModel
+
 import numpy as np
 from matplotlib import pyplot
 from matplotlib.lines import Line2D
+
+from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
+from pyrealm.pmodel import PModelEnvironment, PModel
 
 # Create inputs for a temperature curve at:
 # - two atmospheric pressures
@@ -151,12 +185,12 @@ def plot_opt_chi(mod):
     # pyplot.tight_layout();
 ```
 
-## Method {meth}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.prentice14`
+## The `prentice14` method
 
 This **C3 method** follows the approach detailed in {cite:t}`Prentice:2014bc`, see
-{meth}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.prentice14` for details.
+{class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14` for details.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Run the P Model and plot predictions
@@ -164,14 +198,13 @@ pmodel_c3 = PModel(pmodel_env, method_optchi="prentice14")
 plot_opt_chi(pmodel_c3)
 ```
 
-## Method {meth}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.c4`
+## The `C4` method
 
 This **C4_method** follows the approach detailed in {cite:t}`Prentice:2014bc`, but uses
 a C4 specific version of the unit cost ratio ($\beta$). It also sets $m_j = m_c = 1$.
+See {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4` for details.
 
-See {meth}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.c4` for details.
-
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Run the P Model and plot predictions
@@ -179,18 +212,17 @@ pmodel_c4 = PModel(pmodel_env, method_optchi="c4")
 plot_opt_chi(pmodel_c4)
 ```
 
-## Method {meth}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.c4_no_gamma`
+## The `c4_no_gamma` method
 
 This method drops terms from the approach given in {cite:t}`Prentice:2014bc` to reflect
 the assumption that photorespiration ($\Gamma^\ast$) is negligible in C4 photosynthesis.
 It uses the same $\beta$ estimate as
-{meth}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.c4`
+{class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4`
 and also also sets $m_j = 1$, but $m_c$ is calculated as in
-{meth}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.prentice14`.
+{class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`. See
+{meth}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGamma` for details.
 
-See {meth}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.c4_no_gamma` for details.
-
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Run the P Model and plot predictions
@@ -198,41 +230,45 @@ pmodel_c4 = PModel(pmodel_env, method_optchi="c4_no_gamma")
 plot_opt_chi(pmodel_c4)
 ```
 
-## Methods {meth}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.lavergne20_c3` and {meth}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.lavergne20_c4`
+## The `lavergne20_c3` and `lavergne20_c4` methods
 
 These methods follow the approach detailed in {cite:t}`lavergne:2020a`, which fitted
 an empirical model of $\beta$ for C3 plants as a function of volumetric soil moisture
 ($\theta$, m3/m3), using data from leaf gas exchange measurements. The C4 method takes
 the same approach but with modified empirical parameters giving predictions of
 $\beta_{C3} = 9 \times \beta_{C4}$. Following the approach of
-{meth}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.c4_no_gamma`, $m_c$ is calculated
+{class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGamma`, $m_c$ is calculated
 but $m_j=1$.
 
 ```{warning}
 Note that {cite:t}`lavergne:2020a` found **no relationship** between C4 $\beta$
 values and soil moisture in leaf gas exchange data  The
-{meth}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.lavergne20_c4` method is **an 
+{class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C4` method is **an 
 experimental
 feature** - see the documentation for the
-{meth}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.lavergne20_c4` and
-{meth}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.c4` methods for the theoretical 
+{class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C4` and
+{class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4` methods for the theoretical 
 rationale.
 ```
 
-The calculation details are provided in the description of the
-{meth}`~pyrealm.pmodel.optimal_chi.CalcOptimalChi.lavergne20_c3` method, but the
-variation in
-$\beta$ with $\theta$ is shown below.
+### Variation in $\beta$ with soil moisture
 
-```{code-cell}
+The calculation details are provided in the description of the
+{class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3` method, but the
+variation in $\beta$ with $\theta$ is shown below.
+
+```{code-cell} ipython3
 :tags: [hide-input]
 
-# Only theta is used in the calculation of beta
+# Theta is required for the calculation of beta
+from pyrealm.pmodel.optimal_chi import OptimalChiLavergne20C3, OptimalChiLavergne20C4
+
 pmodel_env_theta_range = PModelEnvironment(
     tc=25, patm=101325, vpd=0, co2=400, theta=np.linspace(0, 0.8, 81)
 )
-opt_chi_lavergne20_c3 = CalcOptimalChi(pmodel_env_theta_range, method="lavergne20_c3")
-opt_chi_lavergne20_c4 = CalcOptimalChi(pmodel_env_theta_range, method="lavergne20_c4")
+opt_chi_lavergne20_c3 = OptimalChiLavergne20C3(pmodel_env_theta_range)
+opt_chi_lavergne20_c4 = OptimalChiLavergne20C4(pmodel_env_theta_range)
+
 # Plot the predictions
 fig, ax1 = pyplot.subplots(1, 1, figsize=(6, 4))
 ax1.plot(pmodel_env_theta_range.theta, opt_chi_lavergne20_c4.beta, label="C3")
@@ -243,13 +279,13 @@ ax1.legend()
 pyplot.tight_layout()
 ```
 
-### Optimal $\chi$
+### Estimation of optimal $\chi$
 
 The plots below show the impacts on optimal $\chi$ across a temperature gradient for two
 values of VPD and soil moisture, with constant atmospheric pressure (101325 Pa) and CO2
 (280 ppm).
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Environments with high and low soil moisture
@@ -263,10 +299,10 @@ pmodel_env_lo = PModelEnvironment(
 )
 
 # Run the P Model and plot predictions
-chi_lavc3_hi = CalcOptimalChi(pmodel_env_hi, method="lavergne20_c3")
-chi_lavc4_hi = CalcOptimalChi(pmodel_env_hi, method="lavergne20_c4")
-chi_lavc3_lo = CalcOptimalChi(pmodel_env_lo, method="lavergne20_c3")
-chi_lavc4_lo = CalcOptimalChi(pmodel_env_lo, method="lavergne20_c4")
+chi_lavc3_hi = OptimalChiLavergne20C3(pmodel_env_hi)
+chi_lavc4_hi = OptimalChiLavergne20C4(pmodel_env_hi)
+chi_lavc3_lo = OptimalChiLavergne20C3(pmodel_env_lo)
+chi_lavc4_lo = OptimalChiLavergne20C4(pmodel_env_lo)
 
 fig, (ax1, ax2) = pyplot.subplots(1, 2, figsize=(10, 5), sharey=True)
 
@@ -314,7 +350,7 @@ pyplot.tight_layout()
 The plots below illustrate the impact of temperature and  $\theta$ on  $m_j$ and $m_c$,
 again with constant atmospheric pressure (101325 Pa) and CO2 (280 ppm).
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 fig, ((ax1, ax3), (ax2, ax4)) = pyplot.subplots(2, 2, figsize=(10, 10), sharey=True)
