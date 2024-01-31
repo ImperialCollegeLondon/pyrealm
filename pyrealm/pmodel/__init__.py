@@ -37,7 +37,6 @@ from pyrealm.pmodel.competition import (
 from pyrealm.pmodel.fast_slow_scaler import FastSlowScaler
 from pyrealm.pmodel.functions import (
     calc_co2_to_ca,
-    calc_density_h2o,
     calc_ftemp_arrh,
     calc_ftemp_inst_rd,
     calc_ftemp_inst_vcmax,
@@ -45,7 +44,6 @@ from pyrealm.pmodel.functions import (
     calc_gammastar,
     calc_kmm,
     calc_ns_star,
-    calc_patm,
     calc_soilmstress_mengoli,
     calc_soilmstress_stocker,
     calc_viscosity_h2o,

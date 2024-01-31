@@ -12,8 +12,8 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import PModelConst
+from pyrealm.core.utilities import check_input_shapes
 from pyrealm.pmodel.calc_optimal_chi import CalcOptimalChi
-from pyrealm.utilities import check_input_shapes
 
 
 class JmaxLimitation:
@@ -41,7 +41,8 @@ class JmaxLimitation:
             assimilation (:math:`m_c`).
         method: method to apply :math:`J_{max}` limitation (default: ``wang17``,
             or ``smith19`` or ``none``)
-        const: An instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: An instance of
+            :class:`~pyrealm.constants.pmodel_const.PModelConst`.
 
     Examples:
         >>> import numpy as np
@@ -76,7 +77,7 @@ class JmaxLimitation:
         self,
         optchi: CalcOptimalChi,
         method: str = "wang17",
-        const: PModelConst = PModelConst(),
+        pmodel_const: PModelConst = PModelConst(),
     ):
         self.shape: tuple = check_input_shapes(optchi.mj)
         """Records the common numpy array shape of array inputs."""
@@ -84,7 +85,7 @@ class JmaxLimitation:
         """Details of the optimal chi calculation for the model"""
         self.method: str = method
         """Records the method used to calculate Jmax limitation."""
-        self.const: PModelConst = const
+        self.pmodel_const: PModelConst = pmodel_const
         """The PModelParams instance used for the calculation."""
 
         # Attributes populated by alternative method - two should always be populated by
@@ -141,19 +142,19 @@ class JmaxLimitation:
                 \]
 
         The variable :math:`c^*` is a cost parameter for maintaining :math:`J_{max}`
-        and is set in `const.wang_c`.
+        and is set in `pmodel_const.wang_c`.
         """
 
         # Calculate √ {1 – (c*/m)^(2/3)} (see Eqn 2 of Wang et al 2017) and
         # √ {(m/c*)^(2/3) - 1} safely, both are undefined where m <= c*.
-        vals_defined = np.greater(self.optchi.mj, self.const.wang17_c)
+        vals_defined = np.greater(self.optchi.mj, self.pmodel_const.wang17_c)
 
         self.f_v = np.sqrt(
-            1 - (self.const.wang17_c / self.optchi.mj) ** (2.0 / 3.0),
+            1 - (self.pmodel_const.wang17_c / self.optchi.mj) ** (2.0 / 3.0),
             where=vals_defined,
         )
         self.f_j = np.sqrt(
-            (self.optchi.mj / self.const.wang17_c) ** (2.0 / 3.0) - 1,
+            (self.optchi.mj / self.pmodel_const.wang17_c) ** (2.0 / 3.0) - 1,
             where=vals_defined,
         )
 
@@ -206,12 +207,12 @@ class JmaxLimitation:
 
         # Adopted from Nick Smith's code:
         # Calculate omega, see Smith et al., 2019 Ecology Letters  # Eq. S4
-        theta = self.const.smith19_theta
-        c_cost = self.const.smith19_c_cost
+        theta = self.pmodel_const.smith19_theta
+        c_cost = self.pmodel_const.smith19_c_cost
 
         # simplification terms for omega calculation
         cm = 4 * c_cost / self.optchi.mj
-        v = 1 / (cm * (1 - self.const.smith19_theta * cm)) - 4 * theta
+        v = 1 / (cm * (1 - self.pmodel_const.smith19_theta * cm)) - 4 * theta
 
         # account for non-linearities at low m values. This code finds
         # the roots of a quadratic function that is defined purely from

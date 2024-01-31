@@ -46,7 +46,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 import xarray
 
-from pyrealm.pmodel import PModel, PModelEnvironment, calc_patm
+from pyrealm.pmodel import PModel, PModelEnvironment
+from pyrealm.core.pressure import calc_patm
 
 # Calculate the PModelEnvironment
 env = PModelEnvironment(tc=20.0, patm=101325.0, vpd=820, co2=400)

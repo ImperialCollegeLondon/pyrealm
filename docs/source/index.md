@@ -27,9 +27,9 @@ The `tmodel` module
 : Estimating plant allocation of gross primary productivity to growth and respiration,
   using the [T Model](users/tmodel/tmodel) {cite:p}`Li:2014bc`.
 
-The `hygro` module
-: Provides functions for [converting common hygrometric variables](users/hygro) to
-  vapour pressure deficit for use in the P Model.
+The `core` module
+: Contains fundamental utilities and physics functionality shared across the
+  package, including the [hygro](users/hygro) and the utilities submodules.
 
 ## Indices and tables
 

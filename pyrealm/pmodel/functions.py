@@ -7,219 +7,16 @@ the key equations used in each function.
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.constants import PModelConst
-from pyrealm.utilities import check_input_shapes
-
-
-def calc_density_h2o_chen(
-    tc: NDArray, p: NDArray, const: PModelConst = PModelConst()
-) -> NDArray:
-    """Calculate the density of water using Chen et al 2008.
-
-    This function calculates the density of water at a given temperature and pressure
-    (kg/m^3) following :cite:t:`chen:2008a`.
-
-    Warning:
-        The predictions from this function are numerically unstable around -58°C.
-
-    Args:
-        tc: Air temperature (°C)
-        p: Atmospheric pressure (Pa)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-
-    PModel Parameters:
-        chen_po: polynomial coefficients of water density equation at 1 atm.
-        chen_ko: polynomial coefficients of bulk modulus at 1 atm.
-        chen_ca: polynomial coefficients of temperature coefficient :math:`c_a`.
-        chen_cb: polynomial coefficients of temperature coefficient :math:`c_b`.
-
-    Returns:
-        Water density as a float in (g cm^-3)
-
-    Raises:
-        ValueError: if the inputs have incompatible shapes.
-
-    Examples:
-        >>> round(calc_density_h2o_chen(20, 101325), 3)
-        998.25
-    """
-
-    # Calculate density at 1 atm (kg/m^3):
-    po_coef = const.chen_po
-    po = po_coef[0] + po_coef[1] * tc
-    po += po_coef[2] * tc * tc
-    po += po_coef[3] * tc * tc * tc
-    po += po_coef[4] * tc * tc * tc * tc
-    po += po_coef[5] * tc * tc * tc * tc * tc
-    po += po_coef[6] * tc * tc * tc * tc * tc * tc
-    po += po_coef[7] * tc * tc * tc * tc * tc * tc * tc
-    po += po_coef[8] * tc * tc * tc * tc * tc * tc * tc * tc
-
-    # Calculate bulk modulus at 1 atm (bar):
-    ko_coef = const.chen_ko
-    ko = ko_coef[0] + ko_coef[1] * tc
-    ko += ko_coef[2] * tc * tc
-    ko += ko_coef[3] * tc * tc * tc
-    ko += ko_coef[4] * tc * tc * tc * tc
-    ko += ko_coef[5] * tc * tc * tc * tc * tc
-
-    # Calculate temperature dependent coefficients:
-    ca_coef = const.chen_ca
-    ca = ca_coef[0] + ca_coef[1] * tc
-    ca += ca_coef[2] * tc * tc
-    ca += ca_coef[3] * tc * tc * tc
-    ca += ca_coef[4] * tc * tc * tc * tc
-
-    cb_coef = const.chen_cb
-    cb = cb_coef[0] + cb_coef[1] * tc
-    cb += cb_coef[2] * tc * tc
-    cb += cb_coef[3] * tc * tc * tc
-    cb += cb_coef[4] * tc * tc * tc * tc
-
-    # Convert atmospheric pressure to bar (1 bar = 100000 Pa)
-    pbar = (1.0e-5) * p
-
-    pw = ko + ca * pbar + cb * pbar**2.0
-    pw /= ko + ca * pbar + cb * pbar**2.0 - pbar
-    pw *= (1e3) * po
-    return pw
-
-
-def calc_density_h2o_fisher(
-    tc: NDArray,
-    patm: NDArray,
-    const: PModelConst = PModelConst(),
-) -> NDArray:
-    """Calculate water density.
-
-    Calculates the density of water as a function of temperature and atmospheric
-    pressure, using the Tumlirz Equation and coefficients calculated by
-    :cite:t:`Fisher:1975tm`.
-
-    Warning:
-        The predictions from this function are unstable around -45°C.
-
-    Args:
-        tc: air temperature, °C
-        patm: atmospheric pressure, Pa
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-
-    PModel Parameters:
-        lambda_: polynomial coefficients of Tumlirz equation (``fisher_dial_lambda``).
-        Po: polynomial coefficients of Tumlirz equation (``fisher_dial_Po``).
-        Vinf: polynomial coefficients of Tumlirz equation (``fisher_dial_Vinf``).
-
-    Returns:
-        Water density as a float in (g cm^-3)
-
-    Raises:
-        ValueError: if the inputs have incompatible shapes.
-
-    Examples:
-        >>> round(calc_density_h2o_fisher(20, 101325), 3)
-        998.206
-    """
-
-    # Check input shapes, shape not used
-    _ = check_input_shapes(tc, patm)
-
-    # Calculate lambda, (bar cm^3)/g:
-    lambda_coef = const.fisher_dial_lambda
-    lambda_val = lambda_coef[0] + lambda_coef[1] * tc
-    lambda_val += lambda_coef[2] * tc * tc
-    lambda_val += lambda_coef[3] * tc * tc * tc
-    lambda_val += lambda_coef[4] * tc * tc * tc * tc
-
-    # Calculate po, bar
-    po_coef = const.fisher_dial_Po
-    po_val = po_coef[0] + po_coef[1] * tc
-    po_val += po_coef[2] * tc * tc
-    po_val += po_coef[3] * tc * tc * tc
-    po_val += po_coef[4] * tc * tc * tc * tc
-
-    # Calculate vinf, cm^3/g
-    vinf_coef = const.fisher_dial_Vinf
-    vinf_val = vinf_coef[0] + vinf_coef[1] * tc
-    vinf_val += vinf_coef[2] * tc * tc
-    vinf_val += vinf_coef[3] * tc * tc * tc
-    vinf_val += vinf_coef[4] * tc * tc * tc * tc
-    vinf_val += vinf_coef[5] * tc * tc * tc * tc * tc
-    vinf_val += vinf_coef[6] * tc * tc * tc * tc * tc * tc
-    vinf_val += vinf_coef[7] * tc * tc * tc * tc * tc * tc * tc
-    vinf_val += vinf_coef[8] * tc * tc * tc * tc * tc * tc * tc * tc
-    vinf_val += vinf_coef[9] * tc * tc * tc * tc * tc * tc * tc * tc * tc
-
-    # Convert pressure to bars (1 bar <- 100000 Pa)
-    pbar = 1e-5 * patm
-
-    # Calculate the specific volume (cm^3 g^-1):
-    spec_vol = vinf_val + lambda_val / (po_val + pbar)
-
-    # Convert to density (g cm^-3) -> 1000 g/kg; 1000000 cm^3/m^3 -> kg/m^3:
-    rho = 1e3 / spec_vol
-
-    return rho
-
-
-def calc_density_h2o(
-    tc: NDArray,
-    patm: NDArray,
-    const: PModelConst = PModelConst(),
-    safe: bool = True,
-) -> NDArray:
-    """Calculate water density.
-
-    Calculates the density of water as a function of temperature and atmospheric
-    pressure. This function uses either the method provided by :cite:t:`Fisher:1975tm`
-    (:func:`~pyrealm.pmodel.functions.calc_density_h2o_fisher`) or :cite:t:`chen:2008a`
-    (:func:`~pyrealm.pmodel.functions.calc_density_h2o_chen`).
-
-    The `water_density_method` argument to
-    :class:`~pyrealm.constants.pmodel_const.PModelConst` is used to set which of the
-    ``fisher`` or ``chen`` methods is used.
-
-    Args:
-        tc: air temperature, °C
-        patm: atmospheric pressure, Pa
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-        safe: Prevents the function from estimating density below -30°C, where the
-            functions are numerically unstable.
-
-    Returns:
-        Water density as a float in (g cm^-3)
-
-    Raises:
-        ValueError: if ``tc`` contains values below -30°C and ``safe`` is True, or if
-            the inputs have incompatible shapes.
-
-    Examples:
-        >>> round(calc_density_h2o(20, 101325), 3)
-        998.206
-    """
-
-    # Safe guard against instability in functions at low temperature.
-    if safe and np.nanmin(tc) < np.array([-30]):
-        raise ValueError(
-            "Water density calculations below about -30°C are "
-            "unstable. See argument safe to calc_density_h2o"
-        )
-
-    # Check input shapes, shape not used
-    _ = check_input_shapes(tc, patm)
-
-    if const.water_density_method == "fisher":
-        return calc_density_h2o_fisher(tc, patm, const)
-
-    if const.water_density_method == "chen":
-        return calc_density_h2o_chen(tc, patm, const)
-
-    raise ValueError("Unknown method provided to calc_density_h2o")
+from pyrealm.constants import CoreConst, PModelConst
+from pyrealm.core.utilities import check_input_shapes
+from pyrealm.core.water import calc_viscosity_h2o
 
 
 def calc_ftemp_arrh(
     tk: NDArray,
     ha: float,
-    const: PModelConst = PModelConst(),
+    pmodel_const: PModelConst = PModelConst(),
+    core_const: CoreConst = CoreConst(),
 ) -> NDArray:
     r"""Calculate enzyme kinetics scaling factor.
 
@@ -251,10 +48,12 @@ def calc_ftemp_arrh(
     Args:
         tk: Temperature (in Kelvin)
         ha: Activation energy (in :math:`J \text{mol}^{-1}`)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
-        To: a standard reference temperature (:math:`T_0`, ``k_To``)
+        To: standard reference temperature for photosynthetic processes (:math:`T_0`,
+            ``k_To``)
         R: the universal gas constant (:math:`R`, ``k_R``)
 
     Returns:
@@ -271,12 +70,15 @@ def calc_ftemp_arrh(
     # exp( ha * (tc - 25.0)/(298.15 * kR * (tc + 273.15)) )
     # exp( (ha/kR) * (1/298.15 - 1/tk) )
 
-    tkref = const.k_To + const.k_CtoK
+    tkref = pmodel_const.plant_T_ref + core_const.k_CtoK
 
-    return np.exp(ha * (tk - tkref) / (tkref * const.k_R * tk))
+    return np.exp(ha * (tk - tkref) / (tkref * core_const.k_R * tk))
 
 
-def calc_ftemp_inst_rd(tc: NDArray, const: PModelConst = PModelConst()) -> NDArray:
+def calc_ftemp_inst_rd(
+    tc: NDArray,
+    pmodel_const: PModelConst = PModelConst(),
+) -> NDArray:
     r"""Calculate temperature scaling of dark respiration.
 
     Calculates the temperature-scaling factor for dark respiration at a given
@@ -289,10 +91,11 @@ def calc_ftemp_inst_rd(tc: NDArray, const: PModelConst = PModelConst()) -> NDArr
 
     Args:
         tc: Temperature (degrees Celsius)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
 
     PModel Parameters:
-        To: standard reference temperature (:math:`T_o`, ``k_To``)
+        To: standard reference temperature for photosynthetic processes (:math:`T_o`,
+            ``k_To``)
         b: empirically derived global mean coefficient
             (:math:`b`, ``heskel_b``)
         c: empirically derived global mean coefficient
@@ -309,12 +112,16 @@ def calc_ftemp_inst_rd(tc: NDArray, const: PModelConst = PModelConst()) -> NDArr
     """
 
     return np.exp(
-        const.heskel_b * (tc - const.k_To)
-        - const.heskel_c * (tc**2 - const.k_To**2)
+        pmodel_const.heskel_b * (tc - pmodel_const.plant_T_ref)
+        - pmodel_const.heskel_c * (tc**2 - pmodel_const.plant_T_ref**2)
     )
 
 
-def calc_ftemp_inst_vcmax(tc: NDArray, const: PModelConst = PModelConst()) -> NDArray:
+def calc_ftemp_inst_vcmax(
+    tc: NDArray,
+    pmodel_const: PModelConst = PModelConst(),
+    core_const: CoreConst = CoreConst(),
+) -> NDArray:
     r"""Calculate temperature scaling of :math:`V_{cmax}`.
 
     This function calculates the temperature-scaling factor :math:`f` of the
@@ -346,7 +153,8 @@ def calc_ftemp_inst_vcmax(tc: NDArray, const: PModelConst = PModelConst()) -> ND
     Args:
         tc:  temperature, or in general the temperature relevant for
             photosynthesis (°C)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
         Ha: activation energy (:math:`H_a`, ``kattge_knorr_Ha``)
@@ -369,23 +177,26 @@ def calc_ftemp_inst_vcmax(tc: NDArray, const: PModelConst = PModelConst()) -> ND
     """
 
     # Convert temperatures to Kelvin
-    tkref = const.k_To + const.k_CtoK
-    tk = tc + const.k_CtoK
+    tkref = pmodel_const.plant_T_ref + core_const.k_CtoK
+    tk = tc + core_const.k_CtoK
 
     # Calculate entropy following Kattge & Knorr (2007): slope and intercept
     # are defined using temperature in °C, not K!!! 'tcgrowth' corresponds
     # to 'tmean' in Nicks, 'tc25' is 'to' in Nick's
-    dent = const.kattge_knorr_a_ent + const.kattge_knorr_b_ent * tc
-    fva = calc_ftemp_arrh(tk, const.kattge_knorr_Ha)
-    fvb = (1 + np.exp((tkref * dent - const.kattge_knorr_Hd) / (const.k_R * tkref))) / (
-        1 + np.exp((tk * dent - const.kattge_knorr_Hd) / (const.k_R * tk))
-    )
+    dent = pmodel_const.kattge_knorr_a_ent + pmodel_const.kattge_knorr_b_ent * tc
+    fva = calc_ftemp_arrh(tk, pmodel_const.kattge_knorr_Ha)
+    fvb = (
+        1
+        + np.exp(
+            (tkref * dent - pmodel_const.kattge_knorr_Hd) / (core_const.k_R * tkref)
+        )
+    ) / (1 + np.exp((tk * dent - pmodel_const.kattge_knorr_Hd) / (core_const.k_R * tk)))
 
     return fva * fvb
 
 
 def calc_ftemp_kphio(
-    tc: NDArray, c4: bool = False, const: PModelConst = PModelConst()
+    tc: NDArray, c4: bool = False, pmodel_const: PModelConst = PModelConst()
 ) -> NDArray:
     r"""Calculate temperature dependence of quantum yield efficiency.
 
@@ -406,7 +217,7 @@ def calc_ftemp_kphio(
         tc: Temperature, relevant for photosynthesis (°C)
         c4: Boolean specifying whether fitted temperature response for C4 plants
             is used. Defaults to ``False`` to estimate :math:`\phi(T)` for C3 plants.
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
 
     PModel Parameters:
         C3: the parameters (:math:`a,b,c`, ``kphio_C3``) are taken from the
@@ -433,9 +244,9 @@ def calc_ftemp_kphio(
     """
 
     if c4:
-        coef = const.kphio_C4
+        coef = pmodel_const.kphio_C4
     else:
-        coef = const.kphio_C3
+        coef = pmodel_const.kphio_C3
 
     ftemp = coef[0] + coef[1] * tc + coef[2] * tc**2
     ftemp = np.clip(ftemp, 0.0, None)
@@ -444,7 +255,10 @@ def calc_ftemp_kphio(
 
 
 def calc_gammastar(
-    tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()
+    tc: NDArray,
+    patm: NDArray,
+    pmodel_const: PModelConst = PModelConst(),
+    core_const: CoreConst = CoreConst(),
 ) -> NDArray:
     r"""Calculate the photorespiratory CO2 compensation point.
 
@@ -463,7 +277,8 @@ def calc_gammastar(
     Args:
         tc: Temperature relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pascals)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
         To: the standard reference temperature (:math:`T_0`. ``k_To``)
@@ -486,20 +301,22 @@ def calc_gammastar(
     _ = check_input_shapes(tc, patm)
 
     return (
-        const.bernacchi_gs25_0
+        pmodel_const.bernacchi_gs25_0
         * patm
-        / const.k_Po
-        * calc_ftemp_arrh((tc + const.k_CtoK), ha=const.bernacchi_dha)
+        / core_const.k_Po
+        * calc_ftemp_arrh((tc + core_const.k_CtoK), ha=pmodel_const.bernacchi_dha)
     )
 
 
 def calc_ns_star(
-    tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()
+    tc: NDArray,
+    patm: NDArray,
+    core_const: CoreConst = CoreConst(),
 ) -> NDArray:
     r"""Calculate the relative viscosity of water.
 
     Calculates the relative viscosity of water (:math:`\eta^*`), given the standard
-    temperature and pressure, using :func:`~pyrealm.pmodel.functions.calc_viscosity_h2o`
+    temperature and pressure, using :func:`~pyrealm.core.water.calc_viscosity_h2o`
     (:math:`v(t,p)`) as:
 
     .. math::
@@ -509,7 +326,7 @@ def calc_ns_star(
     Args:
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pa)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
         To: standard temperature (:math:`t0`, ``k_To``)
@@ -525,17 +342,22 @@ def calc_ns_star(
         1.12536
     """
 
-    visc_env = calc_viscosity_h2o(tc, patm, const=const)
+    visc_env = calc_viscosity_h2o(tc, patm, core_const=core_const)
     visc_std = calc_viscosity_h2o(
-        np.array(const.k_To),
-        np.array(const.k_Po),
-        const=const,
+        np.array(core_const.k_To) - np.array(core_const.k_CtoK),
+        np.array(core_const.k_Po),
+        core_const=core_const,
     )
 
     return visc_env / visc_std
 
 
-def calc_kmm(tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()) -> NDArray:
+def calc_kmm(
+    tc: NDArray,
+    patm: NDArray,
+    pmodel_const: PModelConst = PModelConst(),
+    core_const: CoreConst = CoreConst(),
+) -> NDArray:
     r"""Calculate the Michaelis Menten coefficient of Rubisco-limited assimilation.
 
     Calculates the Michaelis Menten coefficient of Rubisco-limited assimilation
@@ -565,7 +387,8 @@ def calc_kmm(tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()) -> 
     Args:
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pa)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
         hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`, ``bernacchi_dhac``)
@@ -590,19 +413,26 @@ def calc_kmm(tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()) -> 
     _ = check_input_shapes(tc, patm)
 
     # conversion to Kelvin
-    tk = tc + const.k_CtoK
+    tk = tc + core_const.k_CtoK
 
-    kc = const.bernacchi_kc25 * calc_ftemp_arrh(tk, ha=const.bernacchi_dhac)
-    ko = const.bernacchi_ko25 * calc_ftemp_arrh(tk, ha=const.bernacchi_dhao)
+    kc = pmodel_const.bernacchi_kc25 * calc_ftemp_arrh(
+        tk, ha=pmodel_const.bernacchi_dhac
+    )
+    ko = pmodel_const.bernacchi_ko25 * calc_ftemp_arrh(
+        tk, ha=pmodel_const.bernacchi_dhao
+    )
 
     # O2 partial pressure
-    po = const.k_co * 1e-6 * patm
+    po = core_const.k_co * 1e-6 * patm
 
     return kc * (1.0 + po / ko)
 
 
 def calc_kp_c4(
-    tc: NDArray, patm: NDArray, const: PModelConst = PModelConst()
+    tc: NDArray,
+    patm: NDArray,
+    pmodel_const: PModelConst = PModelConst(),
+    core_const: CoreConst = CoreConst(),
 ) -> NDArray:
     r"""Calculate the Michaelis Menten coefficient of PEPc.
 
@@ -613,7 +443,8 @@ def calc_kp_c4(
     Args:
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pa)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
         hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`,
@@ -636,14 +467,14 @@ def calc_kp_c4(
     _ = check_input_shapes(tc, patm)
 
     # conversion to Kelvin
-    tk = tc + const.k_CtoK
-    return const.boyd_kp25_c4 * calc_ftemp_arrh(tk, ha=const.boyd_dhac_c4)
+    tk = tc + core_const.k_CtoK
+    return pmodel_const.boyd_kp25_c4 * calc_ftemp_arrh(tk, ha=pmodel_const.boyd_dhac_c4)
 
 
 def calc_soilmstress_stocker(
     soilm: NDArray,
     meanalpha: NDArray = np.array(1.0),
-    const: PModelConst = PModelConst(),
+    pmodel_const: PModelConst = PModelConst(),
 ) -> NDArray:
     r"""Calculate Stocker's empirical soil moisture stress factor.
 
@@ -687,7 +518,7 @@ def calc_soilmstress_stocker(
             (unitless). Defaults to 1.0 (no soil moisture stress).
         meanalpha: Local annual mean ratio of actual over potential
             evapotranspiration, measure for average aridity. Defaults to 1.0.
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
 
     PModel Parameters:
         theta0: lower bound of soil moisture
@@ -713,12 +544,14 @@ def calc_soilmstress_stocker(
     _ = check_input_shapes(soilm, meanalpha)
 
     # Calculate outstress
-    y0 = const.soilmstress_a + const.soilmstress_b * meanalpha
-    beta = (1.0 - y0) / (const.soilmstress_theta0 - const.soilmstress_thetastar) ** 2
-    outstress = 1.0 - beta * (soilm - const.soilmstress_thetastar) ** 2
+    y0 = pmodel_const.soilmstress_a + pmodel_const.soilmstress_b * meanalpha
+    beta = (1.0 - y0) / (
+        pmodel_const.soilmstress_theta0 - pmodel_const.soilmstress_thetastar
+    ) ** 2
+    outstress = 1.0 - beta * (soilm - pmodel_const.soilmstress_thetastar) ** 2
 
     # Filter wrt to thetastar
-    outstress = np.where(soilm <= const.soilmstress_thetastar, outstress, 1.0)
+    outstress = np.where(soilm <= pmodel_const.soilmstress_thetastar, outstress, 1.0)
 
     # Clip
     outstress = np.clip(outstress, 0.0, 1.0)
@@ -729,7 +562,7 @@ def calc_soilmstress_stocker(
 def calc_soilmstress_mengoli(
     soilm: NDArray = np.array(1.0),
     aridity_index: NDArray = np.array(1.0),
-    const: PModelConst = PModelConst(),
+    pmodel_const: PModelConst = PModelConst(),
 ) -> NDArray:
     r"""Calculate the Mengoli et al. empirical soil moisture stress factor.
 
@@ -762,7 +595,7 @@ def calc_soilmstress_mengoli(
     Args:
         soilm: Relative soil moisture (unitless).
         aridity_index: The climatological aridity index.
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
 
     PModel Parameters:
 
@@ -794,188 +627,19 @@ def calc_soilmstress_mengoli(
 
     # Calculate maximal level and threshold
     y = np.minimum(
-        const.soilm_mengoli_y_a * np.power(aridity_index, const.soilm_mengoli_y_b), 1
+        pmodel_const.soilm_mengoli_y_a
+        * np.power(aridity_index, pmodel_const.soilm_mengoli_y_b),
+        1,
     )
 
     psi = np.minimum(
-        const.soilm_mengoli_psi_a * np.power(aridity_index, const.soilm_mengoli_psi_b),
+        pmodel_const.soilm_mengoli_psi_a
+        * np.power(aridity_index, pmodel_const.soilm_mengoli_psi_b),
         1,
     )
 
     # Return factor
     return np.where(soilm >= psi, y, (y / psi) * soilm)
-
-
-def calc_viscosity_h2o(
-    tc: NDArray,
-    patm: NDArray,
-    const: PModelConst = PModelConst(),
-    simple: bool = False,
-) -> NDArray:
-    r"""Calculate the viscosity of water.
-
-    Calculates the viscosity of water (:math:`\eta`) as a function of temperature and
-    atmospheric pressure :cite:p:`Huber:2009fy`.
-
-    Args:
-        tc: air temperature (°C)
-        patm: atmospheric pressure (Pa)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-        simple: Use the simple formulation.
-
-    Returns:
-        A float giving the viscosity of water (mu, Pa s)
-
-    Examples:
-        >>> # Density of water at 20 degrees C and standard atmospheric pressure:
-        >>> round(calc_viscosity_h2o(20, 101325), 7)
-        0.0010016
-    """
-
-    # Check inputs, return shape not used
-    _ = check_input_shapes(tc, patm)
-
-    if simple or const.simple_viscosity:
-        # The reference for this is unknown, but is used in some implementations
-        # so is included here to allow intercomparison.
-        return np.exp(-3.719 + 580 / ((tc + 273) - 138))
-
-    # Get the density of water, kg/m^3
-    rho = calc_density_h2o(tc, patm, const=const)
-
-    # Calculate dimensionless parameters:
-    tbar = (tc + const.k_CtoK) / const.huber_tk_ast
-    rbar = rho / const.huber_rho_ast
-
-    # Calculate mu0 (Eq. 11 & Table 2, Huber et al., 2009):
-    mu0 = const.huber_H_i[0] + const.huber_H_i[1] / tbar
-    mu0 += const.huber_H_i[2] / (tbar * tbar)
-    mu0 += const.huber_H_i[3] / (tbar * tbar * tbar)
-    mu0 = (1e2 * np.sqrt(tbar)) / mu0
-
-    # Calculate mu1 (Eq. 12 & Table 3, Huber et al., 2009):
-    ctbar = (1.0 / tbar) - 1.0
-    mu1 = 0.0
-
-    # Iterate over the rows of the H_ij constants matrix
-    for row_idx in np.arange(const.huber_H_ij.shape[1]):
-        cf1 = ctbar**row_idx
-        cf2 = 0.0
-        for col_idx in np.arange(const.huber_H_ij.shape[0]):
-            cf2 += const.huber_H_ij[col_idx, row_idx] * (rbar - 1.0) ** col_idx
-        mu1 += cf1 * cf2
-
-    mu1 = np.exp(rbar * mu1)
-
-    # Calculate mu_bar (Eq. 2, Huber et al., 2009), assumes mu2 = 1
-    mu_bar = mu0 * mu1
-
-    # Calculate mu (Eq. 1, Huber et al., 2009)
-    return mu_bar * const.huber_mu_ast  # Pa s
-
-
-def calc_viscosity_h2o_matrix(
-    tc: NDArray,
-    patm: NDArray,
-    const: PModelConst = PModelConst(),
-    simple: bool = False,
-) -> NDArray:
-    r"""Calculate the viscosity of water.
-
-    Calculates the viscosity of water (:math:`\eta`) as a function of temperature and
-    atmospheric pressure :cite:p:`Huber:2009fy`.
-
-    Args:
-        tc: air temperature (°C)
-        patm: atmospheric pressure (Pa)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-        simple: Use the simple formulation.
-
-    Returns:
-        A float giving the viscosity of water (mu, Pa s)
-
-    Examples:
-        >>> # Density of water at 20 degrees C and standard atmospheric pressure:
-        >>> round(calc_viscosity_h2o(20, 101325), 7)
-        0.0010016
-    """
-
-    # Check inputs, return shape not used
-    _ = check_input_shapes(tc, patm)
-
-    if simple or const.simple_viscosity:
-        # The reference for this is unknown, but is used in some implementations
-        # so is included here to allow intercomparison.
-        return np.exp(-3.719 + 580 / ((tc + 273) - 138))
-
-    # Get the density of water, kg/m^3
-    rho = calc_density_h2o(tc, patm, const=const)
-
-    # Calculate dimensionless parameters:
-    tbar = (tc + const.k_CtoK) / const.huber_tk_ast
-    rbar = rho / const.huber_rho_ast
-
-    # Calculate mu0 (Eq. 11 & Table 2, Huber et al., 2009):
-    tbar_pow = np.power.outer(tbar, np.arange(0, 4))
-    mu0 = (1e2 * np.sqrt(tbar)) / np.sum(np.array(const.huber_H_i) / tbar_pow, axis=-1)
-
-    # Calculate mu1 (Eq. 12 & Table 3, Huber et al., 2009):
-    h_array = np.array(const.huber_H_ij)
-    ctbar = (1.0 / tbar) - 1.0
-    row_j, _ = np.indices(h_array.shape)
-    mu1 = h_array * np.power.outer(rbar - 1.0, row_j)
-    mu1 = np.power.outer(ctbar, np.arange(0, 6)) * np.sum(mu1, axis=(-2))
-    mu1 = np.exp(rbar * mu1.sum(axis=-1))
-
-    # Calculate mu_bar (Eq. 2, Huber et al., 2009), assumes mu2 = 1
-    mu_bar = mu0 * mu1
-
-    # Calculate mu (Eq. 1, Huber et al., 2009)
-    return mu_bar * const.huber_mu_ast  # Pa s
-
-
-def calc_patm(elv: NDArray, const: PModelConst = PModelConst()) -> NDArray:
-    r"""Calculate atmospheric pressure from elevation.
-
-    Calculates atmospheric pressure as a function of elevation with reference to the
-    standard atmosphere.  The elevation-dependence of atmospheric pressure is computed
-    by assuming a linear decrease in temperature with elevation and a mean adiabatic
-    lapse rate (Eqn 3, :cite:alp:`BerberanSantos:2009bk`):
-
-    .. math::
-
-        p(z) = p_0 ( 1 - L z / K_0) ^{ G M / (R L) },
-
-    Args:
-        elv: Elevation above sea-level (:math:`z`, metres above sea level.)
-        const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-
-    PModel Parameters:
-        G: gravity constant (:math:`g`, ``k_G``)
-        Po: standard atmospheric pressure at sea level (:math:`p_0`, ``k_Po``)
-        L: adiabatic temperature lapse rate (:math:`L`, ``k_L``),
-        M: molecular weight for dry air (:math:`M`, ``k_Ma``),
-        R: universal gas constant (:math:`R`, `k_R``)
-        Ko: reference temperature in Kelvin (:math:`K_0`, ``k_To``).
-
-    Returns:
-        A numeric value for :math:`p` in Pascals.
-
-    Examples:
-        >>> # Standard atmospheric pressure, in Pa, corrected for 1000 m.a.s.l.
-        >>> round(calc_patm(1000), 2)
-        90241.54
-    """
-
-    # Convert elevation to pressure, Pa. This equation uses the base temperature
-    # in Kelvins, while other functions use this constant in the PARAM units of
-    # °C.
-
-    kto = const.k_To + const.k_CtoK
-
-    return const.k_Po * (1.0 - const.k_L * elv / kto) ** (
-        const.k_G * const.k_Ma / (const.k_R * const.k_L)
-    )
 
 
 def calc_co2_to_ca(co2: NDArray, patm: NDArray) -> NDArray:
