@@ -82,28 +82,3 @@ for k, a in params_ds.items():
 fs = make_time_features(ds.time).to_xarray().to_dataarray()
 params_ds["feature"] = fs
 params_ds.to_netcdf("data_model_params.nc")
-
-
-def reconstruct_data(params_ds: xr.Dataset) -> xr.Dataset:
-    """Reconstruct the data from the model parameters."""
-    rec_ds = xr.Dataset()
-    f = params_ds["feature"]
-    for k, a in params_ds.items():
-        if k != "feature":
-            rec_ds[k] = xr.dot(f, a)
-    return rec_ds
-
-
-rec_ds = reconstruct_data(params_ds)
-
-
-def r2_score(y_true: ArrayLike, y_pred: ArrayLike) -> float:
-    """Compute the R2 score."""
-    return 1 - ((y_true - y_pred) ** 2).sum() / ((y_true - y_true.mean()) ** 2).sum()
-
-
-for k in ds.data_vars:
-    t = ds[k].sel(lat=rec_ds.lat).squeeze()[::321]
-    p = rec_ds[k].squeeze()[::321]
-    r2 = r2_score(t, p)
-    print(f"R2 score for {k}: {r2:.2f}")
