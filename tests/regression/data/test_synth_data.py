@@ -15,14 +15,18 @@ def r2_score(y_true: xr.DataArray, y_pred: xr.DataArray) -> float:
 @pytest.fixture
 def dataset(path="pyrealm_build_data/inputs_data_24.25.nc"):
     """The original dataset."""
-    return xr.open_dataset(path)
+    try:
+        return xr.open_dataset(path)
+    except ValueError:
+        pytest.skip("Original LFS dataset not checked out.")
 
 
 @pytest.fixture
 def synth_dataset(path="pyrealm_build_data/data_model_params.nc"):
     """Generate the synthetic dataset from the model parameters."""
-    ds = xr.open_dataset(path)
-    return xr.Dataset({k: a @ ds["feature"] for k, a in ds.items() if k != "feature"})
+    from pyrealm_build_data.synth_data import decompress
+
+    return decompress(xr.open_dataset(path))
 
 
 def test_synth_data_quality(dataset, synth_dataset):

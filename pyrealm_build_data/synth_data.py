@@ -5,30 +5,22 @@ which can be later used to reconstruct the original dataset.
 """
 import numpy as np
 import pandas as pd
-import statsmodels.api as sm
 import xarray as xr
-from np.typing import ArrayLike
-from tqdm import tqdm
-
-ds = xr.open_dataset("inputs_data_24.25.nc")
-
-const_vars_over_time = ["patm"]
-const_vars_over_space = ["co2"]
 
 
-def make_time_features(dt: ArrayLike, is_const: bool = False) -> pd.DataFrame:
+def make_time_features(t: np.ndarray, const_only: bool = False) -> pd.DataFrame:
     """Make time features for a given time index."""
-    dt = pd.to_datetime(dt).rename("time")
+    dt = pd.to_datetime(t).rename("time")
     df = sm.add_constant(pd.DataFrame(index=dt))
 
-    if is_const:
+    if const_only:
         return df
 
     # Linear trend
     df["linear"] = (dt - pd.Timestamp("2000-01-01")) / pd.Timedelta("1h")
 
     # El-Nino and La-Nina seasonality component
-    for k in [1, 2, 3, 4]:
+    for k in [2, 3, 4, 6]:
         df[f"cross_year_{k}_sin"] = np.sin(2 * k * np.pi * dt.year / 12)
         df[f"cross_year_{k}_cos"] = np.cos(2 * k * np.pi * dt.year / 12)
 
@@ -45,11 +37,11 @@ def make_time_features(dt: ArrayLike, is_const: bool = False) -> pd.DataFrame:
     return df
 
 
-def fit_ts_model(da: xr.DataArray, is_const: bool = False) -> pd.DataFrame:
+def fit_ts_model(da: xr.DataArray, const_only: bool = False) -> pd.DataFrame:
     """Fit a time series model to the data."""
-    df = da.sel(time=slice(None, None, 2)).to_series().unstack("time").T
+    df = da.resample(time="2h").to_series().unstack("time").T
     df = df.dropna(axis=1, how="all")
-    features = make_time_features(df.index, is_const=is_const)
+    features = make_time_features(df.index, const_only=const_only)
     params = pd.DataFrame(index=df.columns, columns=features.columns)
     for k in tqdm(df.columns):
         y = df[k].dropna()
@@ -59,26 +51,39 @@ def fit_ts_model(da: xr.DataArray, is_const: bool = False) -> pd.DataFrame:
     return params.astype(float)
 
 
-params_ds = xr.Dataset()
+def decompress(ds: xr.Dataset) -> xr.Dataset:
+    """Decompress the dataset from the model parameters."""
+    return xr.Dataset({k: a @ ds["feature"] for k, a in ds.items() if k != "feature"})
 
-for k in ds.data_vars:
-    print("Fitting", k)
-    if k in const_vars_over_space:
-        da = ds[k].isel(lat=[0], lon=[0])
-    else:
-        da = ds[k]
-    if k in const_vars_over_time:
-        ps = fit_ts_model(da, is_const=True)
-    else:
-        ps = fit_ts_model(da)
-    params_ds[k] = ps.to_xarray().to_dataarray()
 
-for k, a in params_ds.items():
-    if k in const_vars_over_space:
-        params_ds[k] = a.fillna(a.isel(lat=0, lon=0))
-    elif k in const_vars_over_time:
-        params_ds[k] = a.fillna(0)
+if __name__ == "__main__":
+    import statsmodels.api as sm
+    from tqdm import tqdm
 
-fs = make_time_features(ds.time).to_xarray().to_dataarray()
-params_ds["feature"] = fs
-params_ds.to_netcdf("data_model_params.nc")
+    ds = xr.open_dataset("inputs_data_24.25.nc")
+
+    const_vars_over_time = ["patm"]
+    const_vars_over_space = ["co2"]
+
+    params_ds = xr.Dataset()
+
+    for k in ds.data_vars:
+        print("Fitting", k)
+        if k in const_vars_over_space:
+            da = ds[k].isel(lat=[0], lon=[0])
+        else:
+            da = ds[k]
+        if k in const_vars_over_time:
+            ps = fit_ts_model(da, const_only=True)
+        else:
+            ps = fit_ts_model(da)
+        params_ds[k] = ps.to_xarray().to_dataarray()
+
+    for k, a in params_ds.items():
+        if k in const_vars_over_space:
+            params_ds[k] = a.fillna(a.isel(lat=0, lon=0))
+        elif k in const_vars_over_time:
+            params_ds[k] = a.fillna(0)
+
+    params_ds["feature"] = make_time_features(ds.time).to_xarray().to_dataarray()
+    params_ds.to_netcdf("data_model_params.nc")
