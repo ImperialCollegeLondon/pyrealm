@@ -118,23 +118,30 @@ class FastSlowScaler:
             Warning("First day incomplete - add padding to datetimes.")
             # Find how many values are missing at start of first day
             start_datetime = datetime.datetime.combine(
-                    datetime.datetime(
-                        datetimes[0].astype(object).year,
-                        datetimes[0].astype(object).month,
-                        datetimes[0].astype(object).day,
-                    ),
-                    min_time)
-            difference_in_seconds = int((datetimes[0].astype(datetime.datetime) -
-                                     start_datetime ).total_seconds())
+                datetime.datetime(
+                    datetimes[0].astype(object).year,
+                    datetimes[0].astype(object).month,
+                    datetimes[0].astype(object).day,
+                ),
+                min_time,
+            )
+            difference_in_seconds = int(
+                (
+                    datetimes[0].astype(datetime.datetime) - start_datetime
+                ).total_seconds()
+            )
 
             self.num_missing_values_start = (
                 obs_per_date - difference_in_seconds
             ) // self.spacing.astype("timedelta64[s]").astype(int)
 
             # Pad incomplete first day
-            missing_start_values = np.arange(np.datetime64(start_datetime),
-                      datetimes[0], self.spacing.astype("timedelta64[s]").astype(int),
-                      dtype='datetime64[s]')
+            missing_start_values = np.arange(
+                np.datetime64(start_datetime),
+                datetimes[0],
+                self.spacing.astype("timedelta64[s]").astype(int),
+                dtype="datetime64[s]",
+            )
 
             datetimes = np.append(missing_start_values, datetimes)
         else:
@@ -144,25 +151,29 @@ class FastSlowScaler:
         if datetimes[-1].astype(datetime.datetime).time() != max_time:
             Warning("Last day incomplete - add padding to datetimes.")
             end_datetime = datetime.datetime.combine(
-                    datetime.datetime(
-                        datetimes[-1].astype(object).year,
-                        datetimes[-1].astype(object).month,
-                        datetimes[-1].astype(object).day,
-                    ),
-                    max_time
-                )
+                datetime.datetime(
+                    datetimes[-1].astype(object).year,
+                    datetimes[-1].astype(object).month,
+                    datetimes[-1].astype(object).day,
+                ),
+                max_time,
+            )
             # Find how many values are missing at end of last day
-            difference_in_seconds = int((end_datetime - datetimes[-1].astype(
-                datetime.datetime)).total_seconds())
+            difference_in_seconds = int(
+                (end_datetime - datetimes[-1].astype(datetime.datetime)).total_seconds()
+            )
 
-            self.num_missing_values_end = (obs_per_date - difference_in_seconds
+            self.num_missing_values_end = (
+                obs_per_date - difference_in_seconds
             ) // self.spacing.astype("timedelta64[s]").astype(int)
 
             # Pad incomplete last day
-            missing_end_values = np.arange(datetimes[-1].astype("datetime64[s]"),
-                    np.datetime64(end_datetime),
-                    self.spacing.astype("timedelta64[s]").astype(int),
-                    dtype='datetime64[s]')
+            missing_end_values = np.arange(
+                datetimes[-1].astype("datetime64[s]"),
+                np.datetime64(end_datetime),
+                self.spacing.astype("timedelta64[s]").astype(int),
+                dtype="datetime64[s]",
+            )
 
             datetimes = np.append(datetimes, missing_end_values)
         else:
