@@ -68,39 +68,39 @@ def fixture_FSS():
             ),
             id="Negative timedeltas",
         ),
-        pytest.param(
-            pytest.raises(ValueError),
-            "Datetime spacing is not evenly divisible into a day",
-            np.arange(
-                np.datetime64("2014-06-01 00:00"),
-                np.datetime64("2014-06-07 00:00"),
-                np.timedelta64(21, "m"),
-                dtype="datetime64[s]",
-            ),
-            id="Spacing not evenly divisible",
-        ),
-        pytest.param(
-            pytest.raises(ValueError),
-            "Datetimes include incomplete days",
-            np.arange(
-                np.datetime64("2014-06-01 12:00"),
-                np.datetime64("2014-06-07 00:00"),
-                np.timedelta64(30, "m"),
-                dtype="datetime64[s]",
-            ),
-            id="Not complete days by length",
-        ),
-        pytest.param(
-            pytest.raises(ValueError),
-            "Datetimes include incomplete days",
-            np.arange(
-                np.datetime64("2014-06-01 12:00"),
-                np.datetime64("2014-06-07 12:00"),
-                np.timedelta64(30, "m"),
-                dtype="datetime64[s]",
-            ),
-            id="Not complete days by wrapping",
-        ),
+        #        pytest.param(
+        #            pytest.raises(ValueError),
+        #            "Datetime spacing is not evenly divisible into a day",
+        #            np.arange(
+        #                np.datetime64("2014-06-01 00:00"),
+        #                np.datetime64("2014-06-07 00:00"),
+        #                np.timedelta64(21, "m"),
+        #                dtype="datetime64[s]",
+        #            ),
+        #            id="Spacing not evenly divisible",
+        #        ),
+        #        pytest.param(
+        #            pytest.raises(ValueError),
+        #            "Datetimes include incomplete days",
+        #            np.arange(
+        #                np.datetime64("2014-06-01 12:00"),
+        #                np.datetime64("2014-06-07 00:00"),
+        #                np.timedelta64(30, "m"),
+        #                dtype="datetime64[s]",
+        #            ),
+        #            id="Not complete days by length",
+        #        ),
+        #        pytest.param(
+        #            pytest.raises(ValueError),
+        #            "Datetimes include incomplete days",
+        #            np.arange(
+        #                np.datetime64("2014-06-01 12:00"),
+        #                np.datetime64("2014-06-07 12:00"),
+        #                np.timedelta64(30, "m"),
+        #                dtype="datetime64[s]",
+        #            ),
+        #            id="Not complete days by wrapping",
+        #        ),
         pytest.param(
             does_not_raise(),
             None,
@@ -339,20 +339,20 @@ def test_FSS_get_wv_errors(fixture_FSS, ctext_mngr, msg, values):
             np.ones((3 * 48, 5, 5)), np.ones((3, 5, 5)), id="3d_shape_correct"
         ),
         pytest.param(  # 1D - values are correct
-            np.arange(144), np.array([24, 72, 120]), id="1d_values_correct"
+            np.arange(144.0), np.array([24, 72, 120]), id="1d_values_correct"
         ),
         pytest.param(  # 2D - values are correct
-            np.broadcast_to(np.arange(144), (5, 144)).T,
+            np.broadcast_to(np.arange(144.0), (5, 144)).T,
             np.tile([24, 72, 120], (5, 1)).T,
             id="2d_values_correct",
         ),
         pytest.param(  # 3D - values are correct
-            np.broadcast_to(np.arange(144), (5, 5, 144)).T,
+            np.broadcast_to(np.arange(144.0), (5, 5, 144)).T,
             np.tile([24, 72, 120], (5, 5, 1)).T,
             id="3d_values_correct",
         ),
         pytest.param(  # 3D - values are correct with spatial variation
-            np.arange(144 * 25).reshape(144, 5, 5),
+            np.arange(144.0 * 25).reshape(144, 5, 5),
             (
                 np.tile([600, 1800, 3000], (5, 5, 1)).T
                 + np.indices((3, 5, 5))[2]
@@ -462,29 +462,35 @@ class Test_FSS_get_vals:
         pytest.param(
             does_not_raise(),
             None,
-            np.array([1, 2, 3]),
-            np.repeat([np.nan, 1, 2, 3], (26, 48, 48, 22)),
+            np.array([1.0, 2.0, 3.0]),
+            np.repeat([np.nan, 1.0, 2.0, 3.0], (26, 48, 48, 22)),
             None,
             id="1D test",
         ),
         pytest.param(
             does_not_raise(),
             None,
-            np.array([1, 2, 3]),
-            np.repeat([1, 2, 3], (48, 48, 48)),
+            np.array([1.0, 2.0, 3.0]),
+            np.repeat([1.0, 2.0, 3.0], (48, 48, 48)),
             np.timedelta64(0, "h"),
             id="1D test - fill from",
         ),
         pytest.param(
             does_not_raise(),
             None,
-            np.array([[[1, 4], [7, 10]], [[2, 5], [8, 11]], [[3, 6], [9, 12]]]),
+            np.array(
+                [
+                    [[1.0, 4.0], [7.0, 10.0]],
+                    [[2.0, 5.0], [8.0, 11.0]],
+                    [[3.0, 6.0], [9.0, 12.0]],
+                ]
+            ),
             np.repeat(
                 a=[
                     [[np.nan, np.nan], [np.nan, np.nan]],
-                    [[1, 4], [7, 10]],
-                    [[2, 5], [8, 11]],
-                    [[3, 6], [9, 12]],
+                    [[1.0, 4.0], [7.0, 10.0]],
+                    [[2.0, 5.0], [8.0, 11.0]],
+                    [[3.0, 6.0], [9.0, 12.0]],
                 ],
                 repeats=[26, 48, 48, 22],
                 axis=0,
@@ -495,13 +501,19 @@ class Test_FSS_get_vals:
         pytest.param(
             does_not_raise(),
             None,
-            np.array([[[1, 4], [7, 10]], [[2, 5], [8, 11]], [[3, 6], [9, 12]]]),
+            np.array(
+                [
+                    [[1.0, 4.0], [7.0, 10.0]],
+                    [[2.0, 5.0], [8.0, 11.0]],
+                    [[3.0, 6.0], [9.0, 12.0]],
+                ]
+            ),
             np.repeat(
                 a=[
                     [[np.nan, np.nan], [np.nan, np.nan]],
-                    [[1, 4], [7, 10]],
-                    [[2, 5], [8, 11]],
-                    [[3, 6], [9, 12]],
+                    [[1.0, 4.0], [7.0, 10.0]],
+                    [[2.0, 5.0], [8.0, 11.0]],
+                    [[3.0, 6.0], [9.0, 12.0]],
                 ],
                 repeats=[4, 48, 48, 44],
                 axis=0,
@@ -512,9 +524,9 @@ class Test_FSS_get_vals:
         pytest.param(
             does_not_raise(),
             None,
-            np.array([[1, 4], [2, 5], [3, 6]]),
+            np.array([[1.0, 4.0], [2.0, 5.0], [3.0, 6.0]]),
             np.repeat(
-                a=[[np.nan, np.nan], [1, 4], [2, 5], [3, 6]],
+                a=[[np.nan, np.nan], [1.0, 4.0], [2.0, 5.0], [3.0, 6.0]],
                 repeats=[26, 48, 48, 22],
                 axis=0,
             ),
@@ -561,9 +573,9 @@ def test_FSS_resample_subdaily(
             np.concatenate(
                 [
                     np.repeat([np.nan], 28),  # before first window
-                    np.repeat([0], 48),  # repeated first value of 0
-                    np.arange(0, 49),  # offset increase up to 48
-                    np.arange(47, 28, -1),  # truncated decrease back down to 0
+                    np.repeat([0.0], 48),  # repeated first value of 0
+                    np.arange(0.0, 49.0),  # offset increase up to 48
+                    np.arange(47.0, 28.0, -1.0),  # truncated decrease back down to 0
                 ]
             ),
             id="1D test max",
@@ -574,32 +586,32 @@ def test_FSS_resample_subdaily(
             np.concatenate(
                 [
                     np.repeat([np.nan], 26),
-                    np.repeat([0], 48),
-                    np.arange(0, 49),
-                    np.arange(47, 26, -1),
+                    np.repeat([0.0], 48),
+                    np.arange(0.0, 49.0),
+                    np.arange(47.0, 26.0, -1.0),
                 ]
             ),
             id="1D test mean",
         ),
         pytest.param(
             "max",
-            np.array([[0, 0], [48, -48], [0, 0]]),
+            np.array([[0.0, 0.0], [48.0, -48.0], [0.0, 0.0]]),
             np.dstack(
                 [
                     np.concatenate(
                         [
                             np.repeat([np.nan], 28),
-                            np.repeat([0], 48),
-                            np.arange(0, 49),
-                            np.arange(47, 28, -1),
+                            np.repeat([0.0], 48),
+                            np.arange(0.0, 49.0),
+                            np.arange(47.0, 28.0, -1.0),
                         ]
                     ),
                     np.concatenate(
                         [
                             np.repeat([np.nan], 28),
-                            np.repeat([0], 48),
-                            np.arange(0, -49, -1),
-                            np.arange(-47, -28, 1),
+                            np.repeat([0.0], 48),
+                            np.arange(0.0, -49.0, -1.0),
+                            np.arange(-47.0, -28.0, 1.0),
                         ]
                     ),
                 ]

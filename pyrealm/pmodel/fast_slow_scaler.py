@@ -230,9 +230,9 @@ class FastSlowScaler:
         datetime array of this class.
 
         Args:
-            values: An array containing the sample values. The first dimension
-            should be matching the number of days in the instances
-            :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` object.
+            values: An array containing the sample values. The first dimension should be
+              matching the number of days in the instances
+              :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` object.
         """
 
         # Pad incomplete days with NaNs
@@ -396,7 +396,8 @@ class FastSlowScaler:
             )
         # Check that the first axis has the same shape as the number of
         # datetimes in the init
-        values[0] = self._pad_values(values)
+        padded_values = values.copy()
+        padded_values[0] = self._pad_values(values)
         if values.shape[0] != self.datetimes.shape[0]:
             raise ValueError(
                 "The first dimension of values is not the same length "
@@ -406,8 +407,10 @@ class FastSlowScaler:
         # Get a view of the values wrapped by date and then reshape along the first
         # axis into daily subarrays, leaving any remaining dimensions untouched.
         # Using a view and reshape should avoid copying the data.
-        values_by_day = values.view()
-        values_by_day.shape = tuple([self.n_days, self.n_obs] + list(values.shape[1:]))
+        values_by_day = padded_values.view()
+        values_by_day.shape = tuple(
+            [self.n_days, self.n_obs] + list(padded_values.shape[1:])
+        )
 
         # subset to the included daily values
         return values_by_day[:, self.include, ...]
@@ -426,10 +429,11 @@ class FastSlowScaler:
         Returns:
             An array of mean daily values during the acclimation window
         """
-        values[0] = self._pad_values(values)
-        daily_values = self.get_window_values(values)
+        padded_values = values.copy()
+        padded_values[0] = self._pad_values(padded_values)
+        daily_values = self.get_window_values(padded_values)
 
-        return daily_values.mean(axis=1)
+        return np.nanmean(daily_values, axis=1)
 
     def fill_daily_to_subdaily(
         self,
@@ -474,9 +478,10 @@ class FastSlowScaler:
               values forward.
         """
 
-        values[0] = self._pad_values(values)
+        padded_values = values.copy()
+        padded_values[0] = self._pad_values(values)
 
-        if values.shape[0] != self.n_days:
+        if padded_values.shape[0] != self.n_days:
             raise ValueError("Values is not of length n_days on its first axis.")
 
         if fill_from is not None:
@@ -508,9 +513,9 @@ class FastSlowScaler:
         #   value until _after_ the update point.
 
         if kind == "previous":
-            fill_value = (None, values[-1])
+            fill_value = (None, padded_values[-1])
         elif kind == "linear":
-            values = np.insert(values, 0, values[0], axis=0)
+            padded_values = np.insert(values, 0, padded_values[0], axis=0)
             update_time = np.append(
                 update_time, update_time[-1] + np.timedelta64(1, "D")
             )
@@ -520,7 +525,7 @@ class FastSlowScaler:
 
         interp_fun = interp1d(
             update_time.astype("int"),
-            values,
+            padded_values,
             axis=0,
             kind=kind,
             bounds_error=False,
