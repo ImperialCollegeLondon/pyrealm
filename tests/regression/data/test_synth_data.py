@@ -8,7 +8,7 @@ import xarray as xr
 try:
     DATASET = xr.open_dataset("pyrealm_build_data/inputs_data_24.25.nc")
 except ValueError:
-    pytest.skip("Original LFS dataset not checked out.")
+    pytest.skip("Original LFS dataset not checked out.", allow_module_level=True)
 
 VARS = DATASET.data_vars
 
