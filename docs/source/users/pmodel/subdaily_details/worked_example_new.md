@@ -14,7 +14,7 @@ kernelspec:
 
 # Draft implementation of general Subdaily model
 
-```{code-cell}
+```{code-cell} ipython3
 from importlib import resources
 
 import xarray
@@ -39,10 +39,10 @@ C3 pathway.
 
 This version:
 
-1) Takes an existing P Model object fitted with _any_ of the existing calculation
+1. Takes an existing P Model object fitted with _any_ of the existing calculation
    methods for optimal `chi`. This includes the `prentice14` model but also the
    existing `c4` and `c4_no_gamma`.
-2) The optimal chi calculations now have the option to assert the `xi` values to
+2. The optimal chi calculations now have the option to assert the `xi` values to
    be used. In the normal P Model, the expected `xi` is used, but now we can also
    take the same forcing variables and recalculate with lagged `xi`.
 
@@ -50,7 +50,12 @@ So the new implementation takes a P Model, calculates the daily optimal values
 during the acclimation window (as before), applies a lag (as before), but can
 now use the existing `pyrealm` optimal `chi` mechanism to estimate `chi`, `ci`,
 `mc` and `mj` using lagged `xi`. The lagged `vcmax` and `jmax` are calculated
-using the same `jmax` limitation scheme as the original model.
+using the same `jmax` limitation scheme as the original model and then `Ac` and
+`Aj` are calculated as usual.
+
+I think this is also a better user interface. The subdaily calculation is
+applied to an existing P Model and uses all the same settings, so a user just
+needs to set the acclimation window and how strong a lag to apply (`alpha`).
 
 Note that this _can_ also be used with the experimental optimal chi methods:
 Aliénor's soil moisture approaches and Rodolfo's rootzone stress. This makes
@@ -60,7 +65,7 @@ if this is the right way to apply this!
 The test data use some UK WFDE data for three sites in order to compare predictions
 over a time series.
 
-```{code-cell}
+```{code-cell} ipython3
 # Loading the example dataset:
 dpath = (
     resources.files("pyrealm_build_data.uk_data") / "UK_WFDE5_FAPAR_2018_JuneJuly.nc"
@@ -81,7 +86,7 @@ sites = xarray.Dataset(
 The WFDE data need some conversion for use in the PModel, along with the definition of
 the atmospheric CO2 concentration.
 
-```{code-cell}
+```{code-cell} ipython3
 # Variable set up
 # Air temperature in °C from Tair in Kelvin
 tc = (ds["Tair"] - 273.15).to_numpy()
@@ -100,7 +105,7 @@ co2 = np.ones_like(tc) * 400
 
 The code below then calculates the photosynthetic environment.
 
-```{code-cell}
+```{code-cell} ipython3
 # Generate and check the PModelEnvironment
 pm_env = PModelEnvironment(tc=tc, patm=patm, vpd=vpd, co2=co2)
 pm_env.summarize()
@@ -111,14 +116,14 @@ pm_env.summarize()
 The standard implementation of the P Model used below assumes that plants can
 instantaneously adopt optimal behaviour.
 
-```{code-cell}
+```{code-cell} ipython3
 # Standard PModels
 pmodC3 = PModel(env=pm_env, kphio=1 / 8, method_optchi="prentice14")
 pmodC3.estimate_productivity(fapar=fapar, ppfd=ppfd)
 pmodC3.summarize()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 pmodC4 = PModel(env=pm_env, kphio=1 / 8, method_optchi="c4_no_gamma")
 pmodC4.estimate_productivity(fapar=fapar, ppfd=ppfd)
 pmodC4.summarize()
@@ -129,7 +134,7 @@ pmodC4.summarize()
 The code below then refits these models, with slow responses in $\xi$, $V_{cmax25}$ and
 $J_{max25}$. The new implementation is
 
-```{code-cell}
+```{code-cell} ipython3
 # Set the acclimation window to an hour either side of noon
 fsscaler = FastSlowScaler(datetimes)
 fsscaler.set_window(
@@ -159,7 +164,7 @@ fs_pmod = FastSlowPModel(
 Reassuringly, the two subdaily C3 models predict equal GPP, except for trivial
 precision differences.
 
-```{code-cell}
+```{code-cell} ipython3
 fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(10, 4))
 
 ax1.scatter(fs_pmod.gpp.flatten(), subdailyC3.gpp.flatten())
@@ -167,7 +172,7 @@ ax1.set_xlabel("GPP from original implementation")
 ax1.set_ylabel("GPP from new implementation")
 
 ax2.hist((fs_pmod.gpp.flatten() - subdailyC3.gpp.flatten()) / subdailyC3.gpp.flatten())
-ax2.set_xlabel("Percentage difference in GPP")
+ax2.set_xlabel("Percentage difference in GPP");
 ```
 
 ## Time series predictions
@@ -176,7 +181,7 @@ The code below then extracts the time series for the two months from the three s
 shown above and plots the instantaneous predictions against predictions including slow
 photosynthetic responses.
 
-```{code-cell}
+```{code-cell} ipython3
 # Store the predictions in the xarray Dataset to use indexing
 ds["GPP_pmodC3"] = (ds["Tair"].dims, pmodC3.gpp)
 ds["GPP_subdailyC3"] = (ds["Tair"].dims, subdailyC3.gpp)
@@ -228,6 +233,7 @@ axes[0][0].legend(loc="lower center", bbox_to_anchor=[0.5, 1], ncols=2, frameon=
 plt.tight_layout()
 ```
 
-```{code-cell}
-
+```{code-cell} ipython3
+# Save the new predictions alongside the input data.
+ds.to_netcdf('new_subdaily_C3_and_C4_GPP_values.nc')
 ```
