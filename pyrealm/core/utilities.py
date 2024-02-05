@@ -214,8 +214,8 @@ def _get_interval_functions(interval_type: str = "[]") -> tuple[np.ufunc, np.ufu
 
 def bounds_checker(
     values: NDArray,
-    lower: Union[float, NDArray] = -np.infty,
-    upper: Union[float, NDArray] = np.infty,
+    lower: float = -np.infty,
+    upper: float = np.infty,
     interval_type: str = "[]",
     label: str = "",
     unit: str = "",

@@ -280,7 +280,11 @@ class SplashModel:
         wn_out = np.full_like(self.tc, np.nan)
         ro_out = np.full_like(self.tc, np.nan)
 
-        curr_wn = bounds_checker(wn_init, 0, self.kWm)
+        if np.any((wn_init < 0) | (wn_init > self.kWm)):
+            raise ValueError("Soil moisture must be between 0 and kWm")
+
+        curr_wn = wn_init
+
         for day_idx in np.arange(self.pn.shape[0]):
             # Calculate the balance for this date, updating the input for
             # the following day
