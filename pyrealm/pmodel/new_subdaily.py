@@ -107,9 +107,11 @@ class SubdailyPModel:
         self.env = pmodel.env
 
         # 1) Generate a PModelEnvironment containing the average conditions within the
-        #    daily acclimation window, including any of the optional variables provided.
+        #    daily acclimation window, including any optional variables required by the
+        #    optimal chi calculations used in the model.
+        daily_environment_vars = ["tc", "co2", "patm", "vpd"] + pmodel.optchi.requires
         daily_environment: dict[str, NDArray] = {}
-        for env_var_name in ("tc", "co2", "patm", "vpd", "theta", "rootzonestress"):
+        for env_var_name in daily_environment_vars:
             env_var = getattr(self.env, env_var_name)
             if env_var is not None:
                 daily_environment[env_var_name] = fs_scaler.get_daily_means(env_var)
