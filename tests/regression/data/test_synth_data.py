@@ -5,7 +5,11 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-DATASET = xr.open_dataset("pyrealm_build_data/inputs_data_24.25.nc")
+try:
+    DATASET = xr.open_dataset("pyrealm_build_data/inputs_data_24.25.nc")
+except ValueError:
+    pytest.skip("Original LFS dataset not checked out.")
+
 VARS = DATASET.data_vars
 
 
@@ -22,17 +26,14 @@ def syndata(modelpath="pyrealm_build_data/data_model.nc"):
     from pyrealm_build_data.synth_data import reconstruct
 
     model = xr.open_dataset(modelpath)
-    ts = pd.date_range("2010-01-01", "2018-01-01", freq="8h")
+    ts = pd.date_range("2012-01-01", "2018-01-01", freq="12h")
     return reconstruct(model, ts)
 
 
 @pytest.fixture
 def dataset(syndata):
     """The original dataset."""
-    try:
-        return DATASET.sel(time=syndata.time)
-    except ValueError:
-        pytest.skip("Original LFS dataset not checked out.")
+    return DATASET.sel(time=syndata.time)
 
 
 @pytest.mark.parametrize("var", VARS)
