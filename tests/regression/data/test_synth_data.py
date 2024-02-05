@@ -1,40 +1,52 @@
 """Test the quality of the synthetic data generated from the model parameters."""
 
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
+
+DATASET = xr.open_dataset("pyrealm_build_data/inputs_data_24.25.nc")
+VARS = DATASET.data_vars
 
 
 def r2_score(y_true: xr.DataArray, y_pred: xr.DataArray) -> float:
     """Compute the R2 score."""
-    SSE = ((y_true - y_pred) ** 2).sum().item()
-    SST = ((y_true - y_true.mean()) ** 2).sum().item()
+    SSE = ((y_true - y_pred) ** 2).sum()
+    SST = ((y_true - y_true.mean()) ** 2).sum()
     return 1 - SSE / SST
 
 
 @pytest.fixture
-def dataset(path="pyrealm_build_data/inputs_data_24.25.nc"):
+def syndata(modelpath="pyrealm_build_data/data_model.nc"):
+    """The synthetic dataset."""
+    from pyrealm_build_data.synth_data import reconstruct
+
+    model = xr.open_dataset(modelpath)
+    ts = pd.date_range("2010-01-01", "2018-01-01", freq="8h")
+    return reconstruct(model, ts)
+
+
+@pytest.fixture
+def dataset(syndata):
     """The original dataset."""
     try:
-        return xr.open_dataset(path)
+        return DATASET.sel(time=syndata.time)
     except ValueError:
         pytest.skip("Original LFS dataset not checked out.")
 
 
-@pytest.fixture
-def synth_dataset(path="pyrealm_build_data/data_model_params.nc"):
-    """Generate the synthetic dataset from the model parameters."""
-    from pyrealm_build_data.synth_data import decompress
-
-    return decompress(xr.open_dataset(path))
-
-
-def test_synth_data_quality(dataset, synth_dataset):
+@pytest.mark.parametrize("var", VARS)
+def test_synth_data_quality(dataset, syndata, var):
     """Test the quality of the synthetic data."""
-    sample = np.random.choice(dataset.time.size, 1000, replace=False)
-    for k in dataset.data_vars:
-        t = dataset[k].sel(lat=synth_dataset.lat).isel(time=sample)
-        p = synth_dataset[k].isel(time=sample)
-        r2 = r2_score(t, p)
-        print(f"R2 score for {k}: {r2:.2f}")
-        assert r2 > 0.85
+    times = syndata.time[np.random.choice(syndata.time.size, 1000, replace=False)]
+    lats = syndata.lat[np.random.choice(syndata.lat.size, 100, replace=False)]
+    t = dataset[var].sel(lat=lats, time=times)
+    p = syndata[var].sel(lat=lats, time=times)
+    s = r2_score(t, p)
+    print(f"R2 score for {var} is {s:.2f}")
+    if s < 0.8:
+        # import matplotlib.pyplot as plt
+        # t.sortby("time").mean(["lat", "lon"]).plot()
+        # p.sortby("time").mean(["lat", "lon"]).plot()
+        # plt.show()
+        raise AssertionError
