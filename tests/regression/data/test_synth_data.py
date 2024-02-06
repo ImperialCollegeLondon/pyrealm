@@ -1,7 +1,6 @@
 """Test the quality of the synthetic data generated from the model parameters."""
 
 import numpy as np
-import pandas as pd
 import pytest
 import xarray as xr
 
@@ -26,7 +25,7 @@ def syndata(modelpath="pyrealm_build_data/data_model.nc"):
     from pyrealm_build_data.synth_data import reconstruct
 
     model = xr.open_dataset(modelpath)
-    ts = pd.date_range("2012-01-01", "2018-01-01", freq="12h")
+    ts = xr.date_range("2012-01-01", "2018-01-01", freq="12h")
     return reconstruct(model, ts)
 
 
