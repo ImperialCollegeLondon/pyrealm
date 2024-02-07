@@ -24,22 +24,15 @@ def make_time_features(t: np.ndarray) -> pd.DataFrame:
     return df
 
 
-def fit_ts_model(df: pd.DataFrame, fs: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
+def fit_ts_model(df: pd.DataFrame, fs: pd.DataFrame) -> Tuple[pd.DataFrame, float]:
     """Fit a time series model to the data."""
-    from tqdm import tqdm
-    from scipy.optimize import minimize, LinearConstraint
-
-    df = df.dropna(axis=1, how="all")  # drop locations with all NaNs
-    df = df.interpolate(method="time")  # fill NaNs with linear interpolation
-    T, M, D = df.shape[0], df.shape[1], fs.shape[1]  # times, locs, feats
-    X = fs.values  # (T, D)
-    Y = df.values  # (T, M)
-    cons = LinearConstraint(X, Y.min(axis=0), Y.max(axis=0))
-    res = minimize(lambda a: np.sum((X @ a.reshape(D, M) - Y)**2), np.zeros(M * D), constraints=cons)
-    if res.success:
-        pars = pd.DataFrame(res.x.reshape(D, M), index=df.columns, columns=fs.columns)
-        losses = np.mean((X @ pars.values - Y) ** 2, axis=0) / np.var(Y, axis=0)
-        return pars, pd.Series(losses, index=df.columns)
+    df = df.dropna(axis=1, how="all").fillna(df.mean())
+    Y = df.values  # (times, locs)
+    X = fs.values  # (times, feats)
+    A = np.linalg.pinv(X) @ Y  # (feats, locs)
+    loss = np.mean((X @ A - Y) ** 2) / np.var(Y)
+    pars = pd.DataFrame(A.T, index=df.columns, columns=fs.columns)
+    return pars, loss
 
 
 def reconstruct(ds: xr.Dataset, dt: np.ndarray | pd.DatetimeIndex) -> xr.Dataset:
@@ -68,10 +61,9 @@ if __name__ == "__main__":
         df = da.to_series().unstack("time").T  # (datetimes, locations)
         fs = features.loc[df.index]  # (datetimes, features)
         fs = fs[special_time_features.get(k, fs.columns)]
-        ps, ls = fit_ts_model(df, fs)  # (locations, features)
-        print("Loss:", ls.mean())
+        ps, r = fit_ts_model(df, fs)  # (locations, features)
+        print("Loss:", r)
         ps[features.keys().difference(ps.columns)] = 0.0
         model[k] = ps.to_xarray().to_dataarray()
 
-    # model["features"] = features.to_xarray().to_dataarray()
     model.to_netcdf("pyrealm_build_data/data_model.nc")
