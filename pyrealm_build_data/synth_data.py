@@ -17,7 +17,7 @@ def make_time_features(t: np.ndarray) -> pd.DataFrame:
 
     df["linear"] = (dt - pd.Timestamp("2000-01-01")) / pd.Timedelta("365.25d")
 
-    for f in [365.25, 12, 6, 4, 3, 2, 1, 1 / 2, 1 / 3, 1 / 4, 1 / 6]:
+    for f in [730.5, 365.25, 12, 6, 4, 3, 2, 1, 1 / 2, 1 / 3, 1 / 4, 1 / 6]:
         df[f"freq_{f:.2f}_sin"] = np.sin(2 * np.pi * f * df["linear"])
         df[f"freq_{f:.2f}_cos"] = np.cos(2 * np.pi * f * df["linear"])
 
@@ -27,19 +27,19 @@ def make_time_features(t: np.ndarray) -> pd.DataFrame:
 def fit_ts_model(df: pd.DataFrame, fs: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
     """Fit a time series model to the data."""
     from tqdm import tqdm
+    from scipy.optimize import minimize, LinearConstraint
 
-    df = df.dropna(axis=1, how="all")
-    params = pd.DataFrame(index=df.columns, columns=fs.columns)
-    losses = []
-    for k in tqdm(df.columns):
-        y = df[k].dropna()
-        X = fs.loc[y.index]
-        c, r, *_ = np.linalg.lstsq(X, y, rcond=None)
-        # TODO: optimize with constraints, e.g. ppfd >= 0
-        losses.extend(r / np.sum(y**2))
-        params.loc[k] = c
-
-    return params, pd.Series(losses, index=df.columns)
+    df = df.dropna(axis=1, how="all")  # drop locations with all NaNs
+    df = df.interpolate(method="time")  # fill NaNs with linear interpolation
+    T, M, D = df.shape[0], df.shape[1], fs.shape[1]  # times, locs, feats
+    X = fs.values  # (T, D)
+    Y = df.values  # (T, M)
+    cons = LinearConstraint(X, Y.min(axis=0), Y.max(axis=0))
+    res = minimize(lambda a: np.sum((X @ a.reshape(D, M) - Y)**2), np.zeros(M * D), constraints=cons)
+    if res.success:
+        pars = pd.DataFrame(res.x.reshape(D, M), index=df.columns, columns=fs.columns)
+        losses = np.mean((X @ pars.values - Y) ** 2, axis=0) / np.var(Y, axis=0)
+        return pars, pd.Series(losses, index=df.columns)
 
 
 def reconstruct(ds: xr.Dataset, dt: np.ndarray | pd.DatetimeIndex) -> xr.Dataset:
