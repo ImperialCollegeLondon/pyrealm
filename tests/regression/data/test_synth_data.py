@@ -6,10 +6,9 @@ import xarray as xr
 
 try:
     DATASET = xr.open_dataset("pyrealm_build_data/inputs_data_24.25.nc")
+    VARS = DATASET.data_vars
 except ValueError:
     pytest.skip("Original LFS dataset not checked out.", allow_module_level=True)
-
-VARS = DATASET.data_vars
 
 
 def r2_score(y_true: xr.DataArray, y_pred: xr.DataArray) -> float:
@@ -44,9 +43,4 @@ def test_synth_data_quality(dataset, syndata, var):
     p = syndata[var].sel(lat=lats, time=times)
     s = r2_score(t, p)
     print(f"R2 score for {var} is {s:.2f}")
-    if s < 0.8:
-        # import matplotlib.pyplot as plt
-        # t.sortby("time").mean(["lat", "lon"]).plot()
-        # p.sortby("time").mean(["lat", "lon"]).plot()
-        # plt.show()
-        raise AssertionError
+    assert s > 0.85

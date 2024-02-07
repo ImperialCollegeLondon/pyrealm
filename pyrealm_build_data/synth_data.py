@@ -1,7 +1,8 @@
 """This script uses a parametrized model to compress the input dataset.
 
-It fits a time series model to the input data and stores the model parameters,
-which can be later used to reconstruct the original dataset.
+It fits a time series model to the input data and stores the model parameters.
+The dataset can then be reconstructed from the model parameters using the `reconstruct` function,
+provided with a custom time index.
 """
 from typing import Tuple
 
