@@ -111,7 +111,7 @@ class FastSlowScaler:
 
         # Get the number of observations per day.
         n_sec = 24 * 60 * 60
-        obs_per_date = n_sec // self.spacing.astype("timedelta64[s]").astype(int)
+        obs_per_date = n_sec // self.spacing.astype(int)
 
         # Check whether the first day is complete
         if datetimes[0].astype(datetime.datetime).time() != min_time:
@@ -132,8 +132,8 @@ class FastSlowScaler:
             )
 
             self.num_missing_values_start = (
-                obs_per_date - difference_in_seconds
-            ) // self.spacing.astype("timedelta64[s]").astype(int)
+                n_sec - difference_in_seconds
+            ) // self.spacing.astype(int)
 
             # Pad incomplete first day
             missing_start_values = np.arange(
@@ -164,14 +164,14 @@ class FastSlowScaler:
             )
 
             self.num_missing_values_end = (
-                obs_per_date - difference_in_seconds
-            ) // self.spacing.astype("timedelta64[s]").astype(int)
+                n_sec - difference_in_seconds
+            ) // self.spacing.astype(int)
 
             # Pad incomplete last day
             missing_end_values = np.arange(
                 datetimes[-1].astype("datetime64[s]"),
                 np.datetime64(end_datetime),
-                self.spacing.astype("timedelta64[s]").astype(int),
+                self.spacing.astype(int),
                 dtype="datetime64[s]",
             )
 
@@ -236,12 +236,14 @@ class FastSlowScaler:
         """
 
         # Pad incomplete days with NaNs
-        values_0_padded = np.pad(
-            values[0],
-            (int(self.num_missing_values_start), int(self.num_missing_values_end)),
-            constant_values=(np.nan, np.nan),
+        pad_dim = (int(self.num_missing_values_start), int(self.num_missing_values_end))
+        no_pad_dims = tuple(map(tuple, np.zeros((values.ndim - 1,), dtype="i,i")))
+
+        values_padded = np.pad(
+            values, ((pad_dim,) + no_pad_dims), constant_values=(np.nan, np.nan)
         )
-        return values_0_padded
+
+        return values_padded
 
     def _set_times(self) -> None:
         """Sets the times at which representative values are sampled.
@@ -396,9 +398,8 @@ class FastSlowScaler:
             )
         # Check that the first axis has the same shape as the number of
         # datetimes in the init
-        padded_values = values.copy()
-        padded_values[0] = self._pad_values(values)
-        if values.shape[0] != self.datetimes.shape[0]:
+        padded_values = self._pad_values(values)
+        if padded_values.shape[0] != self.datetimes.shape[0]:
             raise ValueError(
                 "The first dimension of values is not the same length "
                 "as the datetime sequence"
@@ -429,9 +430,8 @@ class FastSlowScaler:
         Returns:
             An array of mean daily values during the acclimation window
         """
-        padded_values = values.copy()
-        padded_values[0] = self._pad_values(padded_values)
-        daily_values = self.get_window_values(padded_values)
+
+        daily_values = self.get_window_values(values)
 
         return np.nanmean(daily_values, axis=1)
 
@@ -478,8 +478,7 @@ class FastSlowScaler:
               values forward.
         """
 
-        padded_values = values.copy()
-        padded_values[0] = self._pad_values(values)
+        padded_values = self._pad_values(values)
 
         if padded_values.shape[0] != self.n_days:
             raise ValueError("Values is not of length n_days on its first axis.")
