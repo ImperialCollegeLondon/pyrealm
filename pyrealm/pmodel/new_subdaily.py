@@ -240,3 +240,28 @@ class SubdailyPModel:
             * self.env.core_const.k_c_molmass
         )
         """Estimated subdaily GPP."""
+
+
+def pmodel_to_subdaily(
+    pmodel: PModel,
+    fs_scaler: FastSlowScaler,
+    alpha: float = 1 / 15,
+    handle_nan: bool = False,
+    fill_kind: str = "previous",
+) -> SubdailyPModel:
+    """Draft function to convert standard P Model to subdaily P Model."""
+    # Check that productivity has been estimated
+
+    return SubdailyPModel(
+        env=pmodel.env,
+        fs_scaler=fs_scaler,
+        fapar=pmodel.fapar,
+        ppfd=pmodel.ppfd,
+        kphio=pmodel.init_kphio,
+        do_ftemp_kphio=pmodel.do_ftemp_kphio,
+        method_optchi=pmodel.method_optchi,
+        method_jmaxlim=pmodel.method_jmaxlim,
+        alpha=alpha,
+        handle_nan=handle_nan,
+        fill_kind=fill_kind,
+    )

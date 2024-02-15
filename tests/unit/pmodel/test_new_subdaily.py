@@ -233,5 +233,43 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
         fs_scaler=fsscaler,
         fapar=fapar,
         ppfd=ppfd,
+        method_optchi=method_optchi,
         handle_nan=True,
     )
+
+
+@pytest.mark.parametrize("method_optchi", OPTIMAL_CHI_CLASS_REGISTRY.keys())
+def test_pmodel_to_subdaily(be_vie_data_components, method_optchi):
+    """Tests the pmodel_to_subdaily method."""
+
+    from pyrealm.pmodel import FastSlowScaler, PModel
+    from pyrealm.pmodel.new_subdaily import SubdailyPModel, pmodel_to_subdaily
+
+    env, ppfd, fapar, datetime, _ = be_vie_data_components
+
+    # Get the fast slow scaler and set window
+    fsscaler = FastSlowScaler(datetime)
+    fsscaler.set_window(
+        window_center=np.timedelta64(12, "h"),
+        half_width=np.timedelta64(30, "m"),
+    )
+
+    # Run as a subdaily model
+    direct = SubdailyPModel(
+        env=env,
+        fs_scaler=fsscaler,
+        fapar=fapar,
+        ppfd=ppfd,
+        method_optchi=method_optchi,
+        handle_nan=True,
+    )
+
+    # Convert a standard model
+    standard_model = PModel(env=env, kphio=1 / 8, method_optchi=method_optchi)
+    standard_model.estimate_productivity(fapar=fapar, ppfd=ppfd)
+
+    converted = pmodel_to_subdaily(
+        pmodel=standard_model, fs_scaler=fsscaler, handle_nan=True
+    )
+
+    assert np.allclose(converted.gpp, direct.gpp, equal_nan=True)
