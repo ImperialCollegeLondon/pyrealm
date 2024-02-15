@@ -1,4 +1,5 @@
 """Tests the implementation of the FastSlowModel against the reference benchmark."""
+
 from importlib import resources
 
 import numpy as np
@@ -132,7 +133,9 @@ def test_FSPModel_corr(be_vie_data_components):
 
     # Run as a subdaily model
     fs_pmodel = SubdailyPModel(
-        pmodel=pmodel,
+        env=env,
+        ppfd=ppfd,
+        fapar=fapar,
         fs_scaler=fsscaler,
         handle_nan=True,
     )
@@ -157,7 +160,7 @@ def test_FSPModel_dimensionality(be_vie_data, ndims):
     dimensions to check the results scale as expected.
     """
 
-    from pyrealm.pmodel import FastSlowScaler, PModel, PModelEnvironment
+    from pyrealm.pmodel import FastSlowScaler, PModelEnvironment
     from pyrealm.pmodel.new_subdaily import SubdailyPModel
 
     datetime = be_vie_data["time"].astype(np.datetime64)
@@ -188,15 +191,12 @@ def test_FSPModel_dimensionality(be_vie_data, ndims):
     fapar_vals = np.random.random(extra_dims)
     fapar_vals[0] = 1.0
 
-    pmodel = PModel(env, kphio=1 / 8)
-    pmodel.estimate_productivity(
-        fapar=fapar_vals * np.ones(array_dims).transpose(),
-        ppfd=np.ones(array_dims).transpose(),
-    )
     # Fast slow model
     fs_pmodel = SubdailyPModel(
-        pmodel=pmodel,
+        env=env,
         fs_scaler=fsscaler,
+        fapar=fapar_vals * np.ones(array_dims).transpose(),
+        ppfd=np.ones(array_dims).transpose(),
         handle_nan=True,
     )
 
@@ -215,14 +215,10 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
     implementations of the OptimalChi ABC.
     """
 
-    from pyrealm.pmodel import FastSlowScaler, PModel
+    from pyrealm.pmodel import FastSlowScaler
     from pyrealm.pmodel.new_subdaily import SubdailyPModel
 
     env, ppfd, fapar, datetime, _ = be_vie_data_components
-
-    # Fit the standard P Model
-    pmodel = PModel(env=env, kphio=1 / 8, method_optchi=method_optchi)
-    pmodel.estimate_productivity(fapar=fapar, ppfd=ppfd)
 
     # Get the fast slow scaler and set window
     fsscaler = FastSlowScaler(datetime)
@@ -233,7 +229,9 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
 
     # Run as a subdaily model and it should complete.
     _ = SubdailyPModel(
-        pmodel=pmodel,
+        env=env,
         fs_scaler=fsscaler,
+        fapar=fapar,
+        ppfd=ppfd,
         handle_nan=True,
     )

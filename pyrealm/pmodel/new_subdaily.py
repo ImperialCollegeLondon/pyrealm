@@ -14,6 +14,7 @@ from pyrealm.pmodel import (
     PModel,
     PModelEnvironment,
     calc_ftemp_arrh,
+    calc_ftemp_kphio,
     memory_effect,
 )
 from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
@@ -77,8 +78,14 @@ class SubdailyPModel:
 
     def __init__(
         self,
-        pmodel: PModel,
+        env: PModelEnvironment,
         fs_scaler: FastSlowScaler,
+        fapar: NDArray,
+        ppfd: NDArray,
+        kphio: float = 1 / 8,
+        do_ftemp_kphio: bool = True,
+        method_optchi: str = "prentice14",
+        method_jmaxlim: str = "wang17",
         alpha: float = 1 / 15,
         handle_nan: bool = False,
         fill_kind: str = "previous",
@@ -92,7 +99,7 @@ class SubdailyPModel:
         # Check that the length of the fast slow scaler is congruent with the
         # first axis of the photosynthetic environment
         n_datetimes = fs_scaler.datetimes.shape[0]
-        n_env_first_axis = pmodel.env.tc.shape[0]
+        n_env_first_axis = env.tc.shape[0]
 
         if n_datetimes != n_env_first_axis:
             raise ValueError("env and fs_scaler do not have congruent dimensions")
@@ -101,16 +108,22 @@ class SubdailyPModel:
         if not hasattr(fs_scaler, "include"):
             raise ValueError("The daily sampling window has not been set on fs_scaler")
 
-        # Check that estimate_productivity has been run on the model
-        if not hasattr(pmodel, "_gpp"):
-            raise ValueError("The subdaily model requires estimate_productivity")
-
-        self.env = pmodel.env
+        # Set up kphio attributes
+        self.env: PModelEnvironment = env
+        self.init_kphio: float = kphio
+        self.do_ftemp_kphio = do_ftemp_kphio
+        self.kphio: NDArray
 
         # 1) Generate a PModelEnvironment containing the average conditions within the
         #    daily acclimation window, including any optional variables required by the
         #    optimal chi calculations used in the model.
-        daily_environment_vars = ["tc", "co2", "patm", "vpd"] + pmodel.optchi.requires
+        optimal_chi_class = OPTIMAL_CHI_CLASS_REGISTRY[method_optchi]
+        daily_environment_vars = [
+            "tc",
+            "co2",
+            "patm",
+            "vpd",
+        ] + optimal_chi_class.requires
         daily_environment: dict[str, NDArray] = {}
         for env_var_name in daily_environment_vars:
             env_var = getattr(self.env, env_var_name)
@@ -127,10 +140,10 @@ class SubdailyPModel:
         #    for the original model.
         self.pmodel_acclim: PModel = PModel(
             pmodel_env_acclim,
-            kphio=pmodel.init_kphio,
-            do_ftemp_kphio=pmodel.do_ftemp_kphio,
-            method_optchi=pmodel.method_optchi,
-            method_jmaxlim=pmodel.method_jmaxlim,
+            kphio=kphio,
+            do_ftemp_kphio=do_ftemp_kphio,
+            method_optchi=method_optchi,
+            method_jmaxlim=method_jmaxlim,
         )
         r"""P Model predictions for the daily acclimation conditions.
 
@@ -143,8 +156,8 @@ class SubdailyPModel:
         """
 
         # 3) Estimate productivity to calculate jmax and vcmax
-        self.ppfd_acclim = fs_scaler.get_daily_means(pmodel.ppfd)
-        self.fapar_acclim = fs_scaler.get_daily_means(pmodel.fapar)
+        self.ppfd_acclim = fs_scaler.get_daily_means(ppfd)
+        self.fapar_acclim = fs_scaler.get_daily_means(fapar)
 
         self.pmodel_acclim.estimate_productivity(
             fapar=self.fapar_acclim, ppfd=self.ppfd_acclim
@@ -193,22 +206,29 @@ class SubdailyPModel:
         """Estimated subdaily :math:`J_{max}`."""
 
         # 8) Recalculate chi using the OptimalChi class from the provided method.
-        optimal_chi_class = OPTIMAL_CHI_CLASS_REGISTRY[pmodel.method_optchi]
         self.optimal_chi = optimal_chi_class(
-            env=self.env, pmodel_const=pmodel.pmodel_const
+            env=self.env, pmodel_const=env.pmodel_const
         )
         self.optimal_chi.estimate_chi(xi_values=self.subdaily_xi)
 
         """Estimated subdaily :math:`c_i`."""
 
         # Calculate Ac, J and Aj at subdaily scale to calculate assimilation
+        if self.do_ftemp_kphio:
+            ftemp_kphio = calc_ftemp_kphio(
+                env.tc, optimal_chi_class.is_c4, pmodel_const=env.pmodel_const
+            )
+            self.kphio = self.init_kphio * ftemp_kphio
+        else:
+            self.kphio = np.array([self.init_kphio])
+
         self.subdaily_Ac: NDArray = self.subdaily_vcmax * self.optimal_chi.mc
         """Estimated subdaily :math:`A_c`."""
 
-        iabs = pmodel.fapar * pmodel.ppfd
+        iabs = fapar * ppfd
 
-        subdaily_J = (4 * pmodel.kphio * iabs) / np.sqrt(
-            1 + ((4 * pmodel.kphio * iabs) / self.subdaily_jmax) ** 2
+        subdaily_J = (4 * self.kphio * iabs) / np.sqrt(
+            1 + ((4 * self.kphio * iabs) / self.subdaily_jmax) ** 2
         )
 
         self.subdaily_Aj: NDArray = (subdaily_J / 4) * self.optimal_chi.mj
