@@ -10,7 +10,7 @@ from numpy.typing import NDArray
 from pyrealm.constants import CoreConst
 from pyrealm.core.calendar import Calendar
 from pyrealm.core.pressure import calc_patm
-from pyrealm.core.utilities import check_input_shapes
+from pyrealm.core.utilities import bounds_checker, check_input_shapes
 from pyrealm.splash.evap import DailyEvapFluxes
 from pyrealm.splash.solar import DailySolarFluxes
 
@@ -69,27 +69,26 @@ class SplashModel:
         # TODO - think about broadcasting lat and elv rather than forcing users to do
         #        this in advance. xarray would be good here for identifying axes and
         #        checking congruence more widely.
-        self.shape = check_input_shapes(elv, lat, sf, tc, pn)
+        self.shape: tuple = check_input_shapes(elv, lat, sf, tc, pn)
         """The array shape of the input variables"""
 
-        # Assign required public attributes
-        self.elv = elv
+        self.elv: NDArray = elv
         """The elevation of sites."""
-        self.lat = lat
+        self.lat: NDArray = bounds_checker(lat, -90, 90, label="lat", unit="°")
         """The latitude of sites."""
-        self.sf = sf
+        self.sf: NDArray = bounds_checker(sf, 0, 1, label="sf")
         """The sunshine fraction (0-1) of daily observations."""
-        self.tc = tc
+        self.tc: NDArray = bounds_checker(tc, -25, 80, label="tc", unit="°C")
         """The air temperature in °C of daily observations."""
-        self.pn = pn
+        self.pn: NDArray = bounds_checker(pn, 0, 1e3, label="pn", unit="mm/day")
         """The precipitation in mm of daily observations."""
-        self.dates = dates
+        self.dates: Calendar = dates
         """The dates of observations along the first array axis."""
-        self.kWm = kWm
+        self.kWm: NDArray = bounds_checker(kWm, 0, 1e4, label="kWm", unit="mm")
         """The maximum soil water capacity for sites."""
 
         # TODO - potentially allow _actual_ climatic pressure data as an input
-        self.pa = calc_patm(elv, core_const=core_const)
+        self.pa: NDArray = calc_patm(elv, core_const=core_const)
         """The atmospheric pressure at sites, derived from elevation"""
 
         # Calculate the daily solar fluxes - these are invariant across the simulation
@@ -144,6 +143,8 @@ class SplashModel:
             # Check the shape is the same as the shape of a slice along axis 0
             if wn_init.shape != self.tc[0].shape:
                 raise ValueError("Incorrect shape in wn_init")
+            if np.any((wn_init < 0) | (wn_init > self.kWm)):
+                raise ValueError("Soil moisture must be between 0 and kWm")
             wn_start = wn_init
         else:
             wn_start = np.zeros_like(self.tc[0])
@@ -151,7 +152,7 @@ class SplashModel:
         # Find a date one year into the future from the first calendar date.
         # TODO - fix leap year handling and non Jan 1 starts
 
-        if self.tc.shape[0] < 365:
+        if self.tc.shape[0] < 366:
             raise ValueError("Cannot equilibrate - less than one year of data")
 
         # Run the equilibration loop
@@ -234,6 +235,9 @@ class SplashModel:
             didx = day_idx
 
         # Calculate the expected aet_d given the previous wn
+        if np.any((previous_wn < 0) | (previous_wn > self.kWm)):
+            raise ValueError("Soil moisture must be between 0 and kWm")
+
         aet = self.evap.estimate_aet(wn=previous_wn, day_idx=day_idx)
 
         # Calculate current soil moisture, mm
@@ -275,7 +279,11 @@ class SplashModel:
         wn_out = np.full_like(self.tc, np.nan)
         ro_out = np.full_like(self.tc, np.nan)
 
+        if np.any((wn_init < 0) | (wn_init > self.kWm)):
+            raise ValueError("Soil moisture must be between 0 and kWm")
+
         curr_wn = wn_init
+
         for day_idx in np.arange(self.pn.shape[0]):
             # Calculate the balance for this date, updating the input for
             # the following day

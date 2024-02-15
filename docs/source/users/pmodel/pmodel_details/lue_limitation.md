@@ -44,9 +44,9 @@ meanalpha_2d = np.broadcast_to(meanalpha_1d, (n_pts, n_pts))
 co2_2d = np.broadcast_to(co2_1d, (n_pts, n_pts))
 ```
 
-Once key [photosynthetic parameters](photosynthetic_environment) and [optimal
-chi](optimal_chi) have been calculated, the {class}`~pyrealm.pmodel.pmodel.PModel`
-class can report estimates of:
+Once key [photosynthetic parameters](photosynthetic_environment) and
+[optimal chi](optimal_chi.md) have been calculated, the
+{class}`~pyrealm.pmodel.pmodel.PModel` class can report estimates of:
 
 * the light use efficiency (LUE), as grams of carbon per mole of photons, and
 * the intrinsic water use efficiency (IWUE), as micromoles per mole of photons.
