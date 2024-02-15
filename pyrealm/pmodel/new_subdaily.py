@@ -2,6 +2,7 @@ r"""The :mod:`~pyrealm.pmodel.subdaily` module provides extensions to the P Mode
 incorporate modelling of the fast and slow responses of photosynthesis to changing
 conditions.
 """  # noqa: D205, D415
+
 from warnings import warn
 
 import numpy as np
@@ -150,16 +151,12 @@ class SubdailyPModel:
         )
 
         # 4) Calculate the optimal jmax and vcmax at 25°C
-        # TODO - Are these any of the existing values in the constants?
-        ha_vcmax25 = 65330
-        ha_jmax25 = 43900
-
         tk_acclim = pmodel_env_acclim.tc + self.env.core_const.k_CtoK
         self.vcmax25_opt = self.pmodel_acclim.vcmax * (
-            1 / calc_ftemp_arrh(tk_acclim, ha_vcmax25)
+            1 / calc_ftemp_arrh(tk_acclim, self.env.pmodel_const.subdaily_vcmax25_ha)
         )
         self.jmax25_opt = self.pmodel_acclim.jmax * (
-            1 / calc_ftemp_arrh(tk_acclim, ha_jmax25)
+            1 / calc_ftemp_arrh(tk_acclim, self.env.pmodel_const.subdaily_jmax25_ha)
         )
 
         # 5) Calculate the realised daily values from the instantaneous optimal values
@@ -186,12 +183,12 @@ class SubdailyPModel:
         #    actual subdaily temperatures.
         subdaily_tk = self.env.tc + self.env.core_const.k_CtoK
         self.subdaily_vcmax: NDArray = self.subdaily_vcmax25 * calc_ftemp_arrh(
-            tk=subdaily_tk, ha=ha_vcmax25
+            tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_vcmax25_ha
         )
         """Estimated subdaily :math:`V_{cmax}`."""
 
         self.subdaily_jmax: NDArray = self.subdaily_jmax25 * calc_ftemp_arrh(
-            tk=subdaily_tk, ha=ha_jmax25
+            tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_jmax25_ha
         )
         """Estimated subdaily :math:`J_{max}`."""
 
