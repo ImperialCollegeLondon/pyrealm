@@ -55,9 +55,8 @@ class FastSlowScaler:
     values that provide the observation datetimes for a dataset sampled on a 'fast'
     timescale. The datetimes must:
 
-    * be strictly increasing,
-    * be evenly spaced, using a spacing that evenly divides a day, and
-    * completely cover a set of days.
+    * be strictly increasing, and
+    * be evenly spaced, using a spacing that evenly divides a day.
 
     Warning:
         The values in ``datetimes`` are assumed to be the precise times of the
@@ -217,22 +216,23 @@ class FastSlowScaler:
         """
 
         self.sample_datetimes_mean: NDArray[np.datetime64]
-        """The mean datetime of for each daily sample."""
+        """The mean datetime for each daily sample."""
 
         self.sample_datetimes_max: NDArray[np.datetime64]
-        """The maximum datetime of for each daily sample."""
+        """The maximum datetime for each daily sample."""
 
-    def _pad_values(self, values: NDArray) -> NDArray:
+    def pad_values(self, values: NDArray) -> NDArray:
         """Pad values array to full days.
 
         This method takes an array representing daily values and pads the first and
         last day with NaN values so that they correspond to full days, similar to the
-        datetime array of this class.
+        datetimes array of this class.
 
         Args:
             values: An array containing the sample values. The first dimension should be
-              matching the number of days in the instances
-              :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` object.
+              matching the number of measurements, i.e., the first dimension of
+              datetimes in
+              :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler`.
         """
 
         # Pad incomplete days with NaNs
@@ -398,7 +398,7 @@ class FastSlowScaler:
             )
         # Check that the first axis has the same shape as the number of
         # datetimes in the init
-        padded_values = self._pad_values(values)
+        padded_values = self.pad_values(values)
         if padded_values.shape[0] != self.datetimes.shape[0]:
             raise ValueError(
                 "The first dimension of values is not the same length "
@@ -478,9 +478,7 @@ class FastSlowScaler:
               values forward.
         """
 
-        padded_values = self._pad_values(values)
-
-        if padded_values.shape[0] != self.n_days:
+        if values.shape[0] != self.n_days:
             raise ValueError("Values is not of length n_days on its first axis.")
 
         if fill_from is not None:
@@ -512,9 +510,9 @@ class FastSlowScaler:
         #   value until _after_ the update point.
 
         if kind == "previous":
-            fill_value = (None, padded_values[-1])
+            fill_value = (None, values[-1])
         elif kind == "linear":
-            padded_values = np.insert(values, 0, padded_values[0], axis=0)
+            values = np.insert(values, 0, values[0], axis=0)
             update_time = np.append(
                 update_time, update_time[-1] + np.timedelta64(1, "D")
             )
@@ -524,7 +522,7 @@ class FastSlowScaler:
 
         interp_fun = interp1d(
             update_time.astype("int"),
-            padded_values,
+            values,
             axis=0,
             kind=kind,
             bounds_error=False,
