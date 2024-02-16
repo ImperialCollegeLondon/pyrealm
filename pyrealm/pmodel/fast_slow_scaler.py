@@ -236,12 +236,20 @@ class FastSlowScaler:
         """
 
         # Pad incomplete days with NaNs
-        pad_dim = (int(self.num_missing_values_start), int(self.num_missing_values_end))
-        no_pad_dims = tuple(map(tuple, np.zeros((values.ndim - 1,), dtype="i,i")))
+        if not self.num_missing_values_end == self.num_missing_values_start == 0:
+            pad_dim = (
+                int(self.num_missing_values_start),
+                int(self.num_missing_values_end),
+            )
+            no_pad_dims = tuple(map(tuple, np.zeros((values.ndim - 1,), dtype="i,i")))
 
-        values_padded = np.pad(
-            values, ((pad_dim,) + no_pad_dims), constant_values=(np.nan, np.nan)
-        )
+            values_padded = np.pad(
+                values,
+                ((pad_dim,) + no_pad_dims),  # type: ignore
+                constant_values=(np.nan, np.nan),
+            )
+        else:
+            values_padded = values
 
         return values_padded
 
