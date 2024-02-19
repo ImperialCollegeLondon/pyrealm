@@ -10,6 +10,15 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+VAR_BOUNDS = dict(
+    temp=(-25, 80),
+    patm=(3e4, 11e4),
+    vpd=(0, 1e4),
+    co2=(0, 1e3),
+    fapar=(0, 1),
+    ppfd=(0, 1e4),
+)
+
 
 def make_time_features(t: np.ndarray) -> pd.DataFrame:
     """Make time features for a given time index."""
@@ -39,7 +48,9 @@ def fit_ts_model(df: pd.DataFrame, fs: pd.DataFrame) -> Tuple[pd.DataFrame, floa
 def reconstruct(ds: xr.Dataset, dt: np.ndarray | pd.DatetimeIndex) -> xr.Dataset:
     """Reconstruct the full dataset from the model parameters."""
     x = make_time_features(dt).to_xarray().to_dataarray()
-    return xr.Dataset({k: a @ x for k, a in ds.items() if k != "features"})
+    ds = xr.Dataset({k: a @ x for k, a in ds.items()})
+    ds = xr.Dataset({k: a.clip(*VAR_BOUNDS[k]) for k, a in ds.items()})
+    return ds
 
 
 if __name__ == "__main__":
