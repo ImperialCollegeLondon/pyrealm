@@ -856,9 +856,9 @@
 <!-- 374 -->
 <g id="node58" class="node">
 <title>374</title>
-<g id="a_node58"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/pmodel/calc_optimal_chi.py">
+<g id="a_node58"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/pmodel/optimal_chi.py">
 <polygon fill="#0d1a77" stroke="#0d1a77" points="1232,-940 1092,-940 1092,-888 1232,-888 1232,-940"/>
-<text text-anchor="middle" x="1162" y="-928" font-family="Arial" font-size="10.00" fill="#ffffff">calc_optimal_chi:58:__init__</text>
+<text text-anchor="middle" x="1162" y="-928" font-family="Arial" font-size="10.00" fill="#ffffff">optimal_chi:58:__init__</text>
 <text text-anchor="middle" x="1162" y="-917" font-family="Arial" font-size="10.00" fill="#ffffff">3.06%</text>
 <text text-anchor="middle" x="1162" y="-906" font-family="Arial" font-size="10.00" fill="#ffffff">(0.00%)</text>
 <text text-anchor="middle" x="1162" y="-895" font-family="Arial" font-size="10.00" fill="#ffffff">3×</text>
@@ -1408,9 +1408,9 @@
 <!-- 378 -->
 <g id="node59" class="node">
 <title>378</title>
-<g id="a_node59"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/pmodel/calc_optimal_chi.py">
+<g id="a_node59"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/pmodel/optimal_chi.py">
 <polygon fill="#0d1475" stroke="#0d1475" points="1234,-848 1078,-848 1078,-796 1234,-796 1234,-848"/>
-<text text-anchor="middle" x="1156" y="-836" font-family="Arial" font-size="10.00" fill="#ffffff">calc_optimal_chi:154:prentice14</text>
+<text text-anchor="middle" x="1156" y="-836" font-family="Arial" font-size="10.00" fill="#ffffff">optimal_chi:154:prentice14</text>
 <text text-anchor="middle" x="1156" y="-825" font-family="Arial" font-size="10.00" fill="#ffffff">1.81%</text>
 <text text-anchor="middle" x="1156" y="-814" font-family="Arial" font-size="10.00" fill="#ffffff">(1.81%)</text>
 <text text-anchor="middle" x="1156" y="-803" font-family="Arial" font-size="10.00" fill="#ffffff">2×</text>
@@ -1428,9 +1428,9 @@
 <!-- 379 -->
 <g id="node60" class="node">
 <title>379</title>
-<g id="a_node60"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/pmodel/calc_optimal_chi.py">
+<g id="a_node60"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/pmodel/optimal_chi.py">
 <polygon fill="#0d1274" stroke="#0d1274" points="1069,-848 947,-848 947,-796 1069,-796 1069,-848"/>
-<text text-anchor="middle" x="1008" y="-836" font-family="Arial" font-size="10.00" fill="#ffffff">calc_optimal_chi:374:c4</text>
+<text text-anchor="middle" x="1008" y="-836" font-family="Arial" font-size="10.00" fill="#ffffff">optimal_chi:374:c4</text>
 <text text-anchor="middle" x="1008" y="-825" font-family="Arial" font-size="10.00" fill="#ffffff">1.25%</text>
 <text text-anchor="middle" x="1008" y="-814" font-family="Arial" font-size="10.00" fill="#ffffff">(1.04%)</text>
 <text text-anchor="middle" x="1008" y="-803" font-family="Arial" font-size="10.00" fill="#ffffff">1×</text>

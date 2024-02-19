@@ -77,7 +77,7 @@ kpis = ["tottime_percall", "cumtime_percall", "tottime", "cumtime"]
 labels = df[kpis].idxmax()
 bm = df.pivot_table(index="timestamp", columns="label", values=kpis)
 bm = bm[list(map(tuple, labels.reset_index().values))]
-bm = bm.iloc[-args.max_benchmark:]  # fmt: skip
+bm = bm.iloc[-args.max_benchmark :]
 bm.columns = bm.columns.map(lambda x: f"{x[1]}({x[0]})")
 bm.T.plot.barh(figsize=(20, 10))
 plt.tight_layout()

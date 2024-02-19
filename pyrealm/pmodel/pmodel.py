@@ -11,16 +11,15 @@ from warnings import warn
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm import ExperimentalFeatureWarning
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
-from pyrealm.pmodel.calc_optimal_chi import CalcOptimalChi
 from pyrealm.pmodel.functions import (
     calc_ftemp_inst_rd,
     calc_ftemp_inst_vcmax,
     calc_ftemp_kphio,
 )
 from pyrealm.pmodel.jmax_limitation import JmaxLimitation
+from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY, OptimalChiABC
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
 # Design notes on PModel (0.3.1 -> 0.4.0)
@@ -52,8 +51,8 @@ class PModel:
     flow of the model is:
 
     1. Estimate :math:`\ce{CO2}` limitation factors and optimal internal to ambient
-       :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using
-       :class:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`.
+       :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using one of the
+       methods based on :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`.
     2. Estimate limitation factors to :math:`V_{cmax}` and :math:`J_{max}` using
        :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation`.
     3. Optionally, estimate productivity measures including GPP by supplying FAPAR and
@@ -133,12 +132,12 @@ class PModel:
       and the reported values will be set to ``np.nan`` under these conditions.
 
     Soil moisture effects:
-        The `rootzonestress` arguments and the `lavergne20_c3` and `lavergne20_c4`
-        options to ``method_optchi`` implement different approaches to soil moisture
-        effects on photosynthesis and are incompatible.
-
-        See also the alternative GPP penalty factors that can be applied after fitting
-        the P Model (:func:`pyrealm.pmodel.functions.calc_soilmstress_stocker` and
+        The `lavergne20_c3`, `lavergne20_c4`, ``prentice14_rootzonestress``,
+        ``c4_rootzonestress`` and ``c4_no_gamma_rootzonestress`` options to
+        ``method_optchi`` implement different approaches to soil moisture effects on
+        photosynthesis. See also the alternative GPP penalty factors that can be applied
+        after fitting the P Model
+        (:func:`pyrealm.pmodel.functions.calc_soilmstress_stocker` and
         :func:`pyrealm.pmodel.functions.calc_soilmstress_mengoli`).
 
     Args:
@@ -148,13 +147,10 @@ class PModel:
             (:math:`\phi_0`, unitless). Note that :math:`\phi_0` is sometimes used to
             refer to the quantum yield of electron transfer, which is exactly four times
             larger, so check definitions here.
-        rootzonestress: (Optional, default=None) An experimental option
-            for providing a root zone water stress penalty to the :math:`beta` parameter
-            in :class:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`.
         method_optchi: (Optional, default=`prentice14`) Selects the method to be
             used for calculating optimal :math:`chi`. The choice of method also sets the
             choice of  C3 or C4 photosynthetic pathway (see
-            :class:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`).
+            :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`).
         method_jmaxlim: (Optional, default=`wang17`) Method to use for
             :math:`J_{max}` limitation
         do_ftemp_kphio: (Optional, default=True) Include the temperature-
@@ -191,14 +187,12 @@ class PModel:
     def __init__(
         self,
         env: PModelEnvironment,
-        rootzonestress: Optional[NDArray] = None,
         kphio: Optional[float] = None,
         do_ftemp_kphio: bool = True,
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
     ):
-        # Check possible array inputs against the photosynthetic environment
-        self.shape: tuple = check_input_shapes(env.gammastar, rootzonestress)
+        self.shape: tuple = env.shape
         """Records the common numpy array shape of array inputs."""
 
         # Store a reference to the photosynthetic environment and a direct
@@ -210,27 +204,6 @@ class PModel:
         """The PModelConst instance used to create the model environment."""
         self.core_const: CoreConst = env.core_const
         """The CoreConst instance used to create the model environment."""
-
-        # Soil moisture and root zone stress handling
-
-        if (rootzonestress is not None) & (
-            method_optchi in ("lavergne20_c3", "lavergne20_c4")
-        ):
-            raise AttributeError(
-                "rootzonestress and the lavergne20 method_optchi options are parallel "
-                "approaches to soil moisture effects and cannot be combined."
-            )
-
-        if rootzonestress is None:
-            self._do_rootzonestress = False
-            """Private flag indicating user provided rootzonestress factor"""
-        else:
-            warn(
-                "The rootzonestress option is an experimental penalty factor to "
-                "beta",
-                ExperimentalFeatureWarning,
-            )
-            self.do_rootzonestress = True
 
         # kphio calculation:
         self.init_kphio: float
@@ -249,12 +222,26 @@ class PModel:
         else:
             self.init_kphio = kphio
 
-        # Check method_optchi and set c3/c4
-        self.c4: bool = CalcOptimalChi._method_lookup(method_optchi)
-        """Indicates if estimates calculated using C3 or C4 photosynthesis."""
-
+        # -----------------------------------------------------------------------
+        # Optimal ci
+        # The heart of the P-model: calculate ci:ca ratio (chi) and additional terms
+        # -----------------------------------------------------------------------
         self.method_optchi: str = method_optchi
         """Records the method used to calculate optimal chi."""
+
+        try:
+            opt_chi_class = OPTIMAL_CHI_CLASS_REGISTRY[method_optchi]
+        except KeyError:
+            raise ValueError(f"Unknown optimal chi estimation method: {method_optchi}")
+
+        self.optchi: OptimalChiABC = opt_chi_class(
+            env=env,
+            pmodel_const=self.pmodel_const,
+        )
+        """An subclass OptimalChi, implementing the requested chi calculation method"""
+
+        self.c4: bool = self.optchi.is_c4
+        """Does the OptimalChi method approximate a C3 or C4 pathway."""
 
         # -----------------------------------------------------------------------
         # Temperature dependence of quantum yield efficiency
@@ -266,18 +253,6 @@ class PModel:
             self.kphio = self.init_kphio * ftemp_kphio
         else:
             self.kphio = np.array([self.init_kphio])
-
-        # -----------------------------------------------------------------------
-        # Optimal ci
-        # The heart of the P-model: calculate ci:ca ratio (chi) and additional terms
-        # -----------------------------------------------------------------------
-        self.optchi: CalcOptimalChi = CalcOptimalChi(
-            env=env,
-            method=method_optchi,
-            rootzonestress=rootzonestress or np.array([1.0]),
-            pmodel_const=self.pmodel_const,
-        )
-        """Details of the optimal chi calculation for the model"""
 
         # -----------------------------------------------------------------------
         # Calculation of Jmax limitation terms
@@ -449,10 +424,7 @@ class PModel:
 
     def __repr__(self) -> str:
         """Generates a string representation of PModel instance."""
-        if self._do_rootzonestress:
-            stress = "Root zone"
-        else:
-            stress = "None"
+
         return (
             f"PModel("
             f"shape={self.shape}, "
@@ -461,7 +433,6 @@ class PModel:
             f"method_optchi={self.method_optchi}, "
             f"c4={self.c4}, "
             f"method_jmaxlim={self.method_jmaxlim}, "
-            f"Water stress={stress})"
         )
 
     def summarize(self, dp: int = 2) -> None:
