@@ -1,13 +1,15 @@
-"""Provides the Calendar utility class.
+"""Provides the Calendar and CalendarDay utility classes.
 
-The Calendar class is currently used to support the operation of the
-:mod:`~pyrealm.splash` submodule, which requires the Julian day, number of days in the
-year and year for solar calculations. The class provides iterable and indexable access
-to a date sequence for use in those calculations.
+The :class:`pyrealm.core.calendar.Calendar` class is currently used to support the
+operation of the :mod:`~pyrealm.splash` submodule, which requires the Julian day, number
+of days in the year and year for solar calculations. The class provides iterable and
+indexable access to a date sequence for use in those calculations, returning individual
+:class:`pyrealm.core.calendar.CalendarDay` instances.
 
 It is possible that this could be replaced with xarray dt accessors if pyrealm adopts
 xarray data structures.
 """
+
 from dataclasses import dataclass, field
 from typing import Any, Generator, Sized
 
@@ -18,31 +20,70 @@ import numpy as np
 class CalendarDay:
     """The CalendarDay class.
 
-    This dataclass holds a np.datetime64 datetime representing a day and the
-    corresponding year, julian day and days in year.
+    This dataclass holds a :class:`numpy.datetime64` datetime representing a day and the
+    corresponding year, julian day (the integer index of the day within the year)
+    and the total number of days in the year.
     """
 
     date: np.datetime64
+    """The date of the instance as numpy.datetime64."""
     year: int
+    """The year of the instance as an integer."""
     julian_day: int
+    """The julian day of the instance as an integer."""
     days_in_year: int
+    """The total number of days in the year."""
+
+    def __repr__(self) -> str:
+        """A custom representation method.
+
+        The dataclass implementation does not support custom field representation, so
+        this replaces the default.
+        """
+        return (
+            f"CalendarDay(date={str(self.date)}, year={self.year}, "
+            f"julian_day={self.julian_day}, days_in_year={self.days_in_year})"
+        )
 
 
 @dataclass
 class Calendar(Sized):
     """The Calendar class.
 
-    This utility class takes a numpy array of datetime64 values containing a time series
-    of individual days and calculates the date, year, julian day and days in the year
-    for each observation. The class object can be iterated over as a generator, yielding
-    each date in turn and indexed. In both cases, the returned object is a CalendarDay
-    instance.
+    This utility class takes a numpy array of :class:`numpy.datetime64` values
+    representing a time series of individual days and calculates the date, year, julian
+    day and days in the year for each observation. The class object can be iterated
+    over, yielding each date in turn, and dates within the series can also be accessed
+    by index. In both cases, the returned object is a
+    :class:`~pyrealm.core.calendar.CalendarDay` instance.
+
+    Examples:
+        >>> days=np.arange(
+        ...     np.datetime64("2000-01-01"),
+        ...     np.datetime64("2002-01-01"),
+        ...     np.timedelta64(1, "D)
+        ... )
+        >>> cal = Calendar(days)
+        >>> cal
+        Calendar(2000-01-01, 2001-12-31)
+        >>> len(cal) == (366 + 365)
+        True
+        >>> cal[0]
+        CalendarDay(date=2000-01-01, year=2000, julian_day=1, days_in_year=366)
+        >>> for date in cal:
+        ...     pass
+        >>> date
+        CalendarDay(date=2001-12-31, year=2001, julian_day=365, days_in_year=365)
     """
 
     dates: np.ndarray
+    """A numpy array containing :class:`numpy.datetime64` values."""
     year: np.ndarray = field(init=False)
+    """A numpy array giving the year of each datetime."""
     julian_day: np.ndarray = field(init=False)
+    """A numpy array giving the julian day of each datetime."""
     days_in_year: np.ndarray = field(init=False)
+    """A numpy array giving the number of days in the year for each datetime."""
 
     def __post_init__(self) -> None:
         """Calculate year, julian day and days in year from dates."""
@@ -71,3 +112,8 @@ class Calendar(Sized):
     def __len__(self) -> int:
         """Length of a Calendar object."""
         return self.n_dates
+
+    def __repr__(self) -> str:
+        """Representation of a Calendar instance."""
+
+        return f"Calendar({str(self.dates[0])}, {str(self.dates[-1])})"
