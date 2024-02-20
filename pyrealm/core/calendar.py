@@ -61,7 +61,7 @@ class Calendar(Sized):
         >>> days=np.arange(
         ...     np.datetime64("2000-01-01"),
         ...     np.datetime64("2002-01-01"),
-        ...     np.timedelta64(1, "D)
+        ...     np.timedelta64(1, "D")
         ... )
         >>> cal = Calendar(days)
         >>> cal
