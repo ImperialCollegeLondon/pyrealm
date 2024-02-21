@@ -25,7 +25,7 @@ import matplotlib.cm as cm
 import matplotlib.dates as mdates
 
 from pyrealm.pmodel import PModel, FastSlowPModel, PModelEnvironment, FastSlowScaler
-from pyrealm.pmodel.new_subdaily import SubdailyPModel
+from pyrealm.pmodel.new_subdaily import SubdailyPModel, convert_pmodel_to_subdaily
 
 from pyrealm.core.hygro import convert_sh_to_vpd
 ```
@@ -34,28 +34,31 @@ This notebook demonstrates a new implementation of the subdaily P Model.
 The current implementation (`pmodel.FastSlowPModel`) is a conversion of
 Giulia's original R code used for the JULES paper, although it extends that
 code to add slow acclimation of the `xi` parameter. The equations in that
-implementation are hard-coded to the Prentice et al (2014) equations for the
+implementation were hard-coded to the {cite:t}`Prentice:2014bc` equations for the
 C3 pathway.
 
-This version:
+This implementation takes all of the same arguments as the standard
+{class}`~pyrealm.pmodel.pmodel.PModel` class, used to fit a model that exhibits
+instantaneously optimal behaviour. This allows users to select between the different
+optimal chi estimation options, including those representing C4 pathways and water
+stress.
 
-1. Takes an existing P Model object fitted with _any_ of the existing calculation
-   methods for optimal `chi`. This includes the `prentice14` model but also the
-   existing `c4` and `c4_no_gamma`.
-2. The optimal chi calculations now have the option to assert the `xi` values to
-   be used. In the normal P Model, the expected `xi` is used, but now we can also
-   take the same forcing variables and recalculate with lagged `xi`.
+This uses the new optimal chi calculations, which provide the option to assert the `xi`
+values to be used. In the normal P Model, the expected `xi` is used, but now we can also
+take the same forcing variables and recalculate with lagged `xi`.
 
-So the new implementation takes a P Model, calculates the daily optimal values
-during the acclimation window (as before), applies a lag (as before), but can
-now use the existing `pyrealm` optimal `chi` mechanism to estimate `chi`, `ci`,
-`mc` and `mj` using lagged `xi`. The lagged `vcmax` and `jmax` are calculated
-using the same `jmax` limitation scheme as the original model and then `Ac` and
+So the new implementation takes a PModel environment, calculates the daily optimal
+values during the acclimation window (as before), applies a lag (as before), but can
+now use the existing {class}`~pyrealm.pmodel.optimal_chi.OptimalChi` methods to estimate
+`chi`, `ci`, `mc` and `mj` using lagged `xi`. The lagged `vcmax` and `jmax` are
+calculated using the `jmax` limitation scheme specified by the user and then `Ac` and
 `Aj` are calculated as usual.
 
-I think this is also a better user interface. The subdaily calculation is
-applied to an existing P Model and uses all the same settings, so a user just
-needs to set the acclimation window and how strong a lag to apply (`alpha`).
+I think this is also a better user interface. The subdaily interface is very similar to
+the existing P Model implementation and uses all the same settings, so a user just
+needs to set the acclimation window and how strong a lag to apply (`alpha`). The new
+code also provides a simple wrapper to automatically convert an existing standard
+`PModel` instance to a `SubdailyPModel`.
 
 Note that this _can_ also be used with the experimental optimal chi methods:
 Aliénor's soil moisture approaches and Rodolfo's rootzone stress. This makes
@@ -132,7 +135,7 @@ pmodC4.summarize()
 ## Subdaily P Model
 
 The code below then refits these models, with slow responses in $\xi$, $V_{cmax25}$ and
-$J_{max25}$. The new implementation is
+$J_{max25}$.
 
 ```{code-cell} ipython3
 # Set the acclimation window to an hour either side of noon
@@ -144,10 +147,24 @@ fsscaler.set_window(
 
 # Fit C3 and C4 with the new implementation
 subdailyC3 = SubdailyPModel(
-    pmodel=pmodC3, fs_scaler=fsscaler, alpha=1 / 15, handle_nan=True
+    env=pm_env, 
+    kphio=1 / 8, 
+    method_optchi="prentice14",
+    fapar=fapar,
+    ppfd=ppfd,
+    fs_scaler=fsscaler, 
+    alpha=1 / 15, 
+    handle_nan=True,
 )
 subdailyC4 = SubdailyPModel(
-    pmodel=pmodC4, fs_scaler=fsscaler, alpha=1 / 15, handle_nan=True
+    env=pm_env, 
+    kphio=1 / 8, 
+    method_optchi="c4_no_gamma",
+    fapar=fapar,
+    ppfd=ppfd,
+    fs_scaler=fsscaler, 
+    alpha=1 / 15, 
+    handle_nan=True,
 )
 
 # Fit C3 using the original implementation
@@ -231,6 +248,38 @@ for (ax1, ax2), st in zip(axes, sites["stid"].values):
 
 axes[0][0].legend(loc="lower center", bbox_to_anchor=[0.5, 1], ncols=2, frameon=False)
 plt.tight_layout()
+```
+
+## Converting models
+
+The subdaily models can also be obtained directly from the standard models, using the
+`convert_pmodel_to_subdaily` method:
+
+```{code-cell} ipython3
+# Convert standard C3 model
+converted_C3 = convert_pmodel_to_subdaily(
+    pmodel=pmodC3,
+    fs_scaler=fsscaler, 
+    alpha=1 / 15, 
+    handle_nan=True,
+)
+
+# Convert standard C4 model
+converted_C4 = convert_pmodel_to_subdaily(
+    pmodel=pmodC4,
+    fs_scaler=fsscaler, 
+    alpha=1 / 15, 
+    handle_nan=True,
+)
+```
+
+This produces the same outputs as the `SubdailyPModel` class, but is convenient and more
+compact when the two models are going to be compared.
+
+```{code-cell} ipython3
+# Models have identical GPP - maximum absolute difference is zero.
+print(np.nanmax(abs(subdailyC3.gpp.flatten() - converted_C3.gpp.flatten())))
+print(np.nanmax(abs(subdailyC4.gpp.flatten() - converted_C4.gpp.flatten())))
 ```
 
 ```{code-cell} ipython3
