@@ -4,24 +4,23 @@ It fits a time series model to the input data and stores the model parameters.
 The dataset can then be reconstructed from the model parameters using the `reconstruct`
 function, provided with a custom time index.
 """
-from typing import Tuple
-
 import numpy as np
 import pandas as pd
 import xarray as xr
-
-VAR_BOUNDS = dict(
-    temp=(-25, 80),
-    patm=(3e4, 11e4),
-    vpd=(0, 1e4),
-    co2=(0, 1e3),
-    fapar=(0, 1),
-    ppfd=(0, 1e4),
-)
+from numpy.typing import ArrayLike
 
 
-def make_time_features(t: np.ndarray) -> pd.DataFrame:
-    """Make time features for a given time index."""
+def make_time_features(t: ArrayLike) -> pd.DataFrame:
+    """Make time features for a given time index.
+
+    The model can be written as
+    g(t) = a₀ + a₁ t + ∑_i b_i sin(2π f_i t) + c_i cos(2π f_i t),
+    where t is the time index, f_i are the frequencies, and a₀, a₁, b_i, c_i are the
+    model parameters.
+
+    Args:
+        t: An array of datetime values.
+    """
     dt = pd.to_datetime(t).rename("time")
     df = pd.DataFrame(index=dt).assign(const=1.0)
 
@@ -34,28 +33,60 @@ def make_time_features(t: np.ndarray) -> pd.DataFrame:
     return df
 
 
-def fit_ts_model(df: pd.DataFrame, fs: pd.DataFrame) -> Tuple[pd.DataFrame, float]:
-    """Fit a time series model to the data."""
-    df = df.dropna(axis=1, how="all").fillna(df.mean())
+def fit_ts_model(da: xr.DataArray, fs: pd.DataFrame) -> xr.DataArray:
+    """Fit a time series model to the data.
+
+    Args:
+        da: A DataArray with the input data.
+        fs: A DataFrame with the time features.
+    """
+    print("Fitting", da.name)
+
+    da = da.isel(time=slice(None, None, 4))  # downsample along time
+    da = da.dropna("time", how="all")
+    da = da.fillna(da.mean("time"))
+    df = da.to_series().unstack("time").T
+
     Y = df.values  # (times, locs)
-    X = fs.values  # (times, feats)
-    A = np.linalg.pinv(X) @ Y  # (feats, locs)
-    loss = np.mean((X @ A - Y) ** 2) / np.var(Y)
+    X = fs.loc[df.index].values  # (times, feats)
+    A, res, *_ = np.linalg.lstsq(X, Y, rcond=None)  # (feats, locs)
+
+    loss = np.mean(res) / len(X) / np.var(Y)
     pars = pd.DataFrame(A.T, index=df.columns, columns=fs.columns)
-    return pars, loss
+
+    print("Loss:", loss)
+    return pars.to_xarray().to_dataarray()
 
 
-def reconstruct(ds: xr.Dataset, dt: np.ndarray | pd.DatetimeIndex) -> xr.Dataset:
-    """Reconstruct the full dataset from the model parameters."""
+def reconstruct(
+    ds: xr.Dataset, dt: ArrayLike, bounds: dict | None = None
+) -> xr.Dataset:
+    """Reconstruct the full dataset from the model parameters.
+
+    Args:
+        ds: A Dataset with the model parameters.
+        dt: An array of datetime values.
+        bounds: A dictionary with the bounds for the reconstructed variables.
+    """
+    if bounds is None:
+        bounds = dict(
+            temp=(-25, 80),
+            patm=(3e4, 11e4),
+            vpd=(0, 1e4),
+            co2=(0, 1e3),
+            fapar=(0, 1),
+            ppfd=(0, 1e4),
+        )
     x = make_time_features(dt).to_xarray().to_dataarray()
     ds = xr.Dataset({k: a @ x for k, a in ds.items()})
-    ds = xr.Dataset({k: a.clip(*VAR_BOUNDS[k]) for k, a in ds.items()})
+    ds = xr.Dataset({k: a.clip(*bounds[k]) for k, a in ds.items()})
     return ds
 
 
 if __name__ == "__main__":
     ds = xr.open_dataset("pyrealm_build_data/inputs_data_24.25.nc")
 
+    # drop locations with all NaNs (for any variable)
     mask = ~ds.isnull().all("time").to_dataarray().any("variable")
     ds = ds.where(mask, drop=True)
 
@@ -65,17 +96,11 @@ if __name__ == "__main__":
     )
 
     features = make_time_features(ds.time)
+
     model = xr.Dataset()
-
     for k in ds.data_vars:
-        print("Fitting", k)
-        da = ds[k].isel(time=slice(None, None, 4))  # downsample along time
-        df = da.to_series().unstack("time").T  # (datetimes, locations)
-        fs = features.loc[df.index]  # (datetimes, features)
-        fs = fs[special_time_features.get(k, fs.columns)]
-        ps, r = fit_ts_model(df, fs)  # (locations, features)
-        print("Loss:", r)
-        ps[features.keys().difference(ps.columns)] = 0.0
-        model[k] = ps.to_xarray().to_dataarray()
+        cols = special_time_features.get(k, features.columns)
+        model[k] = fit_ts_model(ds[k], features[cols])
 
+    model = model.fillna(0.0)
     model.to_netcdf("pyrealm_build_data/data_model.nc")
