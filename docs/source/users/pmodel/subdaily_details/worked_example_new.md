@@ -48,11 +48,11 @@ values to be used. In the normal P Model, the expected `xi` is used, but now we 
 take the same forcing variables and recalculate with lagged `xi`.
 
 So the new implementation takes a PModel environment, calculates the daily optimal
-values during the acclimation window (as before), applies a lag (as before), but can
-now use the existing {class}`~pyrealm.pmodel.optimal_chi.OptimalChi` methods to estimate
-`chi`, `ci`, `mc` and `mj` using lagged `xi`. The lagged `vcmax` and `jmax` are
-calculated using the `jmax` limitation scheme specified by the user and then `Ac` and
-`Aj` are calculated as usual.
+values during the acclimation window (as before), applies a lag (as before), but can now
+use the {class}`~pyrealm.pmodel.optimal_chi.OptimalChiABC` methods to estimate `chi`,
+`ci`, `mc` and `mj` using lagged `xi`. The lagged `vcmax` and `jmax` are calculated
+using the `jmax` limitation scheme specified by the user and then `Ac` and `Aj` are
+calculated as usual.
 
 I think this is also a better user interface. The subdaily interface is very similar to
 the existing P Model implementation and uses all the same settings, so a user just
