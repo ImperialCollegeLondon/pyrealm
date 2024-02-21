@@ -70,7 +70,7 @@ class SubdailyPModel:
         ppfd: The PPDF for each observation.
         alpha: The :math:`\alpha` weight.
         handle_nan: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect` function
-          be allowe to handle missing values.
+          be allowed to handle missing values.
         kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -).
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.
@@ -242,14 +242,32 @@ class SubdailyPModel:
         """Estimated subdaily GPP."""
 
 
-def pmodel_to_subdaily(
+def convert_pmodel_to_subdaily(
     pmodel: PModel,
     fs_scaler: FastSlowScaler,
     alpha: float = 1 / 15,
     handle_nan: bool = False,
     fill_kind: str = "previous",
 ) -> SubdailyPModel:
-    """Draft function to convert standard P Model to subdaily P Model."""
+    r"""Convert a standard P Model to a subdaily P Model.
+
+    This function takes an existing :class:`~pyrealm.pmodel.pmodel.PModel` instance and
+    converts it to a :class:`~pyrealm.pmodel.new_subdaily.SubfdailyPModel` instance
+    using provided settings. The
+    :meth:`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` method must have been
+    called on the :class:`~pyrealm.pmodel.pmodel.PModel` instance in order to provide
+    PPFD and FAPAR to the subdaily model
+
+    Args:
+        pmodel: An existing standard PModel instance.
+        fs_scaler: A FastSlowScalar instance giving the acclimation window for the
+            subdaily model.
+        alpha: The :math:`\alpha` weight.
+        handle_nan: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect` function
+          be allowed to handle missing values.
+        fill_kind: The approach used to fill daily realised values to the subdaily
+          timescale, currently one of 'previous' or 'linear'.
+    """
     # Check that productivity has been estimated
 
     return SubdailyPModel(
