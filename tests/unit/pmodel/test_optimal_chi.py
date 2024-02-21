@@ -1,4 +1,4 @@
-"""Testing CalcOptimal submodule."""
+"""Testing Optimal submodule."""
 
 
 import numpy as np
