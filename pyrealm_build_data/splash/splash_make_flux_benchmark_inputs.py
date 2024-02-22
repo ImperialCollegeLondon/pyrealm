@@ -9,8 +9,8 @@ import argparse
 from pathlib import Path
 
 import numpy as np
-import pandas
-from splash_py_version.evap import EVAP
+import pandas  # type: ignore [import-untyped]
+from splash_py_version.evap import EVAP  # type: ignore [import-not-found]
 
 
 def splash_make_flux_benchmark_inputs(output_file: str) -> None:
@@ -59,4 +59,4 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("run_splash_make_flux_benchmark_inputs")
     parser.add_argument("-o", "--output_file", type=Path)
     args = parser.parse_args()
-    splash_make_flux_benchmark_inputs(args.ouput_file)
+    splash_make_flux_benchmark_inputs(args.output_file)
