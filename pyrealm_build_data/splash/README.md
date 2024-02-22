@@ -15,3 +15,10 @@ is created using:
 ```sh
 python splash_make_flux_benchmark_inputs.py -o inputs.csv
 ```
+
+The `splash_run_calc_daily_fluxes.py` script can then be used to run the inputs through
+the original SPLASH implementation provided in the `splash_py_version` module.
+
+```sh
+python splash_run_calc_daily_fluxes.py -i inputs.csv -o benchmark_daily_fluxes.csv
+```
