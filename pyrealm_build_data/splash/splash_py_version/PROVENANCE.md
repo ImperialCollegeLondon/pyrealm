@@ -6,5 +6,6 @@ files here are the contents of the path: `releases/v1.0/py_version` from the `ma
 branch of the repo at commit `52d9454b566d`.
 
 This note and the `__init__.py` file to allow the module to be imported are the only
-new files in the directory. The code files have been modified by `isort` and `black` but
-are otherwise unchanged.
+new files in the directory. The code files have been modified by `isort` and `black` and
+the package internal imports have been extended to allow the code to be imported by the
+benchmark data generation scripts.

@@ -41,8 +41,8 @@
 import logging
 
 import numpy
-from const import kCw, kWm
-from evap import EVAP
+from splash_py_version.const import kCw, kWm
+from splash_py_version.evap import EVAP
 
 
 ###############################################################################

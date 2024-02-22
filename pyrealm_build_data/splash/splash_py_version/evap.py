@@ -40,9 +40,9 @@
 import logging
 
 import numpy
-from const import kG, kL, kMa, kMv, kPo, kR, kTo, kw, pir
-from solar import SOLAR
-from utilities import dsin
+from splash_py_version.const import kG, kL, kMa, kMv, kPo, kR, kTo, kw, pir
+from splash_py_version.solar import SOLAR
+from splash_py_version.utilities import dsin
 
 
 ###############################################################################

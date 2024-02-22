@@ -43,8 +43,21 @@ import numpy
 
 # NOTE: For palaeoclimate studies, import separate ke, keps and komega values
 #       corresponding to your study period
-from const import kA, kalb_sw, kalb_vis, kb, kc, kd, ke, keps, kfFEC, kGsc, komega, pir
-from utilities import dcos, dsin
+from splash_py_version.const import (
+    kA,
+    kalb_sw,
+    kalb_vis,
+    kb,
+    kc,
+    kd,
+    ke,
+    keps,
+    kfFEC,
+    kGsc,
+    komega,
+    pir,
+)
+from splash_py_version.utilities import dcos, dsin
 
 
 ###############################################################################

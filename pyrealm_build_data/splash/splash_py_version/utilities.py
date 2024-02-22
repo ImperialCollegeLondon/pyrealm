@@ -41,7 +41,7 @@
 import logging
 
 import numpy
-from const import pir
+from splash_py_version.const import pir
 
 
 ###############################################################################
