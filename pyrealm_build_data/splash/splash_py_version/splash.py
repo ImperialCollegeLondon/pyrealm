@@ -41,7 +41,6 @@
 import logging
 
 import numpy
-
 from const import kCw, kWm
 from evap import EVAP
 
@@ -57,6 +56,7 @@ class SPLASH:
     History:  Version 1.0
               - changed xrange to range for Python 2/3 compatability [16.02.05]
     """
+
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
     # ////////////////////////////////////////////////////////////////////////
@@ -75,10 +75,8 @@ class SPLASH:
         self.logger.info("elevation set to %f m", elv)
 
         if lat > 90.0 or lat < -90.0:
-            self.logger.error(
-                "Latitude outside range of validity, (-90 to 90)!")
-            raise ValueError(
-                "Latitude outside range of validity, (-90 to 90)!")
+            self.logger.error("Latitude outside range of validity, (-90 to 90)!")
+            raise ValueError("Latitude outside range of validity, (-90 to 90)!")
         else:
             self.logger.info("latitude set to %0.3f degrees", lat)
             self.lat = lat
@@ -92,16 +90,16 @@ class SPLASH:
             self.logger.debug("initialized EVAP class")
 
         # Initialize daily status variables:
-        self.ho = 0.      # daily solar irradiation, J/m2
-        self.hn = 0.      # daily net radiation, J/m2
-        self.ppfd = 0.    # daily PPFD, mol/m2
-        self.cond = 0.    # daily condensation water, mm
-        self.wn = 0.      # daily soil moisture, mm
-        self.precip = 0.  # daily precipitation, mm
-        self.ro = 0.      # daily runoff, mm
-        self.eet = 0.     # daily equilibrium ET, mm
-        self.pet = 0.     # daily potential ET, mm
-        self.aet = 0.     # daily actual ET, mm
+        self.ho = 0.0  # daily solar irradiation, J/m2
+        self.hn = 0.0  # daily net radiation, J/m2
+        self.ppfd = 0.0  # daily PPFD, mol/m2
+        self.cond = 0.0  # daily condensation water, mm
+        self.wn = 0.0  # daily soil moisture, mm
+        self.precip = 0.0  # daily precipitation, mm
+        self.ro = 0.0  # daily runoff, mm
+        self.eet = 0.0  # daily equilibrium ET, mm
+        self.pet = 0.0  # daily potential ET, mm
+        self.aet = 0.0  # daily actual ET, mm
         self.wn_vec = numpy.array([])  # daily soil moisture array
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -126,15 +124,12 @@ class SPLASH:
             if (numpy.array(d.num_lines) == n).all():
                 wn_vec = numpy.zeros((n,))
             else:
-                self.logger.error(
-                    "Inconsistent number of lines read from DATA class!")
-                raise IndexError(
-                    "Inconsistent number of lines read from DATA class!")
+                self.logger.error("Inconsistent number of lines read from DATA class!")
+                raise IndexError("Inconsistent number of lines read from DATA class!")
         else:
             n = d.num_lines
             wn_vec = numpy.zeros((n,))
-        self.logger.info(
-            "Created soil moisture array of length %d", len(wn_vec))
+        self.logger.info("Created soil moisture array of length %d", len(wn_vec))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 2. Run one year:
@@ -145,15 +140,17 @@ class SPLASH:
             if i == 0:
                 wn = wn_vec[-1]
             else:
-                wn = wn_vec[i-1]
+                wn = wn_vec[i - 1]
 
             # Calculate soil moisture and runoff:
-            sm, ro = self.quick_run(n=i+1,
-                                    y=d.year,
-                                    wn=wn,
-                                    sf=d.sf_vec[i],
-                                    tc=d.tair_vec[i],
-                                    pn=d.pn_vec[i])
+            sm, ro = self.quick_run(
+                n=i + 1,
+                y=d.year,
+                wn=wn,
+                sf=d.sf_vec[i],
+                tc=d.tair_vec[i],
+                pn=d.pn_vec[i],
+            )
             wn_vec[i] = sm
         self.logger.info("completed first year")
 
@@ -161,12 +158,14 @@ class SPLASH:
         # 3. Calculate change in starting soil moisture:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         start_sm = wn_vec[0]
-        end_sm, ro = self.quick_run(n=1,
-                                    y=d.year,
-                                    wn=wn_vec[-1],
-                                    sf=d.sf_vec[0],
-                                    tc=d.tair_vec[0],
-                                    pn=d.pn_vec[0])
+        end_sm, ro = self.quick_run(
+            n=1,
+            y=d.year,
+            wn=wn_vec[-1],
+            sf=d.sf_vec[0],
+            tc=d.tair_vec[0],
+            pn=d.pn_vec[0],
+        )
         diff_sm = numpy.abs(end_sm - start_sm)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -181,24 +180,28 @@ class SPLASH:
                 if i == 0:
                     wn = wn_vec[-1]
                 else:
-                    wn = wn_vec[i-1]
+                    wn = wn_vec[i - 1]
 
                 # Calculate soil moisture and runoff:
-                sm, ro = self.quick_run(n=i+1,
-                                        y=d.year,
-                                        wn=wn,
-                                        sf=d.sf_vec[i],
-                                        tc=d.tair_vec[i],
-                                        pn=d.pn_vec[i])
+                sm, ro = self.quick_run(
+                    n=i + 1,
+                    y=d.year,
+                    wn=wn,
+                    sf=d.sf_vec[i],
+                    tc=d.tair_vec[i],
+                    pn=d.pn_vec[i],
+                )
                 wn_vec[i] = sm
 
             start_sm = wn_vec[0]
-            end_sm, ro = self.quick_run(n=1,
-                                        y=d.year,
-                                        wn=wn_vec[-1],
-                                        sf=d.sf_vec[0],
-                                        tc=d.tair_vec[0],
-                                        pn=d.pn_vec[0])
+            end_sm, ro = self.quick_run(
+                n=1,
+                y=d.year,
+                wn=wn_vec[-1],
+                sf=d.sf_vec[0],
+                tc=d.tair_vec[0],
+                pn=d.pn_vec[0],
+            )
             diff_sm = numpy.abs(end_sm - start_sm)
             self.logger.info("soil moisture differential: %f", diff_sm)
             spin_count += 1
@@ -224,7 +227,7 @@ class SPLASH:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 1. Calculate evaporative supply rate, mm/h
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        sw = kCw*(wn/kWm)
+        sw = kCw * (wn / kWm)
         self.logger.debug("evaporative supply rate: %f mm/h", sw)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -233,8 +236,7 @@ class SPLASH:
         try:
             self.evap.calculate_daily_fluxes(sw, n, y, sf, tc)
         except:
-            self.logger.exception(
-                "failed to calculate daily evaporation fluxes")
+            self.logger.exception("failed to calculate daily evaporation fluxes")
             raise
         else:
             cond = self.evap.cond
@@ -270,7 +272,7 @@ class SPLASH:
             ro = 0
             self.logger.debug("excess runoff: %d mm", ro)
 
-        return(sm, ro)
+        return (sm, ro)
 
     def run_one_day(self, n, y, wn, sf, tc, pn):
         """
@@ -290,13 +292,13 @@ class SPLASH:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 0. Set meteorological variables:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.precip = pn    # daily precipitation, mm
+        self.precip = pn  # daily precipitation, mm
         self.logger.debug("daily precipitation: %f mm", pn)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 1. Calculate evaporative supply rate (sw), mm/h
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        sw = kCw*float(wn)/kWm
+        sw = kCw * float(wn) / kWm
         self.logger.debug("evaporative supply rate: %f mm/h", sw)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -305,14 +307,13 @@ class SPLASH:
         try:
             self.evap.calculate_daily_fluxes(sw, n, y, sf, tc)
         except:
-            self.logger.exception(
-                "failed to calculate daily evaporation fluxes")
+            self.logger.exception("failed to calculate daily evaporation fluxes")
             raise
         else:
-            self.cond = self.evap.cond    # daily condensation, mm
-            self.aet = self.evap.aet_d    # daily actual ET, mm
-            self.eet = self.evap.eet_d    # daily equilibrium ET, mm
-            self.pet = self.evap.pet_d    # daily potential ET, mm
+            self.cond = self.evap.cond  # daily condensation, mm
+            self.aet = self.evap.aet_d  # daily actual ET, mm
+            self.eet = self.evap.eet_d  # daily equilibrium ET, mm
+            self.pet = self.evap.pet_d  # daily potential ET, mm
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate today's soil moisture (sm), mm
@@ -379,10 +380,11 @@ class SPLASH:
         for i in range(len(self.wn_vec)):
             print("%d,%0.6f" % (i, self.wn_vec[i]))
 
+
 ###############################################################################
 # MAIN PROGRAM
 ###############################################################################
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Create a root logger:
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)
@@ -398,7 +400,7 @@ if __name__ == '__main__':
 
     # Test one-year of SPLASH:
     my_lat = 37.7
-    my_elv = 142.
+    my_elv = 142.0
     my_day = 172
     my_year = 2000
     my_sf = 1.0

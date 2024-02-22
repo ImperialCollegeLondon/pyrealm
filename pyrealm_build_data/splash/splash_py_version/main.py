@@ -88,7 +88,7 @@ from splash import SPLASH
 ###############################################################################
 ## MAIN PROGRAM
 ###############################################################################
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Create a root logger:
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO)
@@ -106,20 +106,20 @@ if __name__ == '__main__':
     my_data = DATA()
     if example == 1:
         # Example 1: read CSV file:
-        my_file = '../../../data/example_data.csv'
+        my_file = "../../../data/example_data.csv"
         my_data.read_csv(my_file)
     elif example == 2:
         # Example 2: read TXT files:
-        my_sf_file = 'daily_sf_2000_cruts.txt'
-        my_pn_file = 'daily_pn_2000_wfdei.txt'
-        my_tair_file = 'daily_tair_2000_wfdei.txt'
-        my_data.read_txt(my_sf_file, 'sf')
-        my_data.read_txt(my_pn_file, 'pn')
-        my_data.read_txt(my_tair_file, 'tair')
+        my_sf_file = "daily_sf_2000_cruts.txt"
+        my_pn_file = "daily_pn_2000_wfdei.txt"
+        my_tair_file = "daily_tair_2000_wfdei.txt"
+        my_data.read_txt(my_sf_file, "sf")
+        my_data.read_txt(my_pn_file, "pn")
+        my_data.read_txt(my_tair_file, "tair")
 
     # Consistency Test #4: Spin-Up
     my_lat = 37.7
-    my_elv = 142.
+    my_elv = 142.0
     my_class = SPLASH(my_lat, my_elv)
     my_class.spin_up(my_data)
     my_class.print_daily_sm()

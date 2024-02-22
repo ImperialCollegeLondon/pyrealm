@@ -53,6 +53,7 @@ class DATA:
     History:  Version 1.0
               - added logging statements [16.02.05]
     """
+
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
     # ////////////////////////////////////////////////////////////////////////
@@ -68,7 +69,7 @@ class DATA:
 
         self.file_name = ""
         self.year = 0
-        self.num_lines = 0.
+        self.num_lines = 0.0
         self.sf_vec = numpy.array([])
         self.tair_vec = numpy.array([])
         self.pn_vec = numpy.array([])
@@ -88,18 +89,19 @@ class DATA:
         self.file_name = fname
 
         try:
-            data = numpy.loadtxt(fname,
-                                 dtype={'names': ('sf', 'tair', 'pn'),
-                                        'formats': ('f4', 'f4', 'f4')},
-                                 delimiter=',',
-                                 skiprows=1)
+            data = numpy.loadtxt(
+                fname,
+                dtype={"names": ("sf", "tair", "pn"), "formats": ("f4", "f4", "f4")},
+                delimiter=",",
+                skiprows=1,
+            )
         except IOError:
             self.logger.exception("could not read input file %s", fname)
             raise
         else:
-            self.sf_vec = data['sf']
-            self.tair_vec = data['tair']
-            self.pn_vec = data['pn']
+            self.sf_vec = data["sf"]
+            self.tair_vec = data["tair"]
+            self.pn_vec = data["pn"]
             self.num_lines = data.shape[0]
 
             if y == -1:
@@ -126,16 +128,16 @@ class DATA:
         self.file_name.append(fname)
 
         try:
-            data = numpy.loadtxt(fname, dtype='f4')
+            data = numpy.loadtxt(fname, dtype="f4")
         except IOError:
             self.logger.exception("could not read input file %s", fname)
             raise
         else:
-            if var == 'sf':
+            if var == "sf":
                 self.sf_vec = data
-            elif var == 'pn':
+            elif var == "pn":
                 self.pn_vec = data
-            elif var == 'tair':
+            elif var == "tair":
                 self.tair_vec = data
             else:
                 self.logger.error("variable %s undefined!", var)
