@@ -8,56 +8,63 @@ import argparse
 from pathlib import Path
 
 import pandas  # type: ignore [import-untyped]
-from splash_py_version.const import kCw, kWm  # type: ignore [import-not-found]
-from splash_py_version.evap import EVAP  # type: ignore [import-not-found]
+from splash_py_version.splash import SPLASH  # type: ignore [import-not-found]
 
 
-def splash_run_calc_daily_fluxes(input_file: str, output_file: str) -> None:
+def splash_run_calc_daily_fluxes(input_file: Path, output_file: Path) -> None:
     """Calculate the daily fluxes for a set of locations.
 
     This function takes an input file where rows give locations, date, tc, sf and sw and
-    then runs each row in turn through EVAP.calculate_daily_fluxes. That also runs the
-    same data through the SOLAR.calculate_daily_fluxes method internally. The function
-    then writes out a CSV files of all of the internal calculations of the two methods
-    for use as a benchmark.
+    then runs each row in turn through SPLASH.run_one_day. That also runs the same data
+    through the EVAP.calculate_daily_fluxes and SOLAR.calculate_daily_fluxes method
+    internally. The function then writes out a CSV files of all of the internal
+    calculations for use as a benchmark.
     """
 
     data = pandas.read_csv(input_file)
     results = []
     for _, row in data.iterrows():
-        evap = EVAP(row.lat, row.elv)
-        # Calculate evaporative supply rate
-        sw = kCw * row.wn / kWm
-        evap.calculate_daily_fluxes(
-            n=row.julian_day, y=row.year, sf=row.sf, tc=row.tc, sw=sw
+        print(row.dates)
+        # evap = EVAP(row.lat, row.elv)
+        # # Calculate evaporative supply rate
+        # sw = kCw * row.wn / kWm
+        # evap.calculate_daily_fluxes(
+        #     n=row.julian_day, y=row.year, sf=row.sf, tc=row.tc, sw=sw
+        # )
+
+        # Calculate daily values
+        splash = SPLASH(row.lat, row.elv)
+        splash.run_one_day(
+            n=row.julian_day, y=row.year, wn=row.wn, sf=row.sf, tc=row.tc, pn=row.pn
         )
 
         results.append(
             (
-                evap.solar.my_nu,
-                evap.solar.my_lambda,
-                evap.solar.dr,
-                evap.solar.delta,
-                evap.solar.hs,
-                evap.solar.ra_d,
-                evap.solar.tau,
-                evap.solar.ppfd_d,
-                evap.solar.hn,
-                evap.solar.rnl,
-                evap.solar.rn_d,
-                evap.solar.rnn_d,
-                evap.sat,
-                evap.lv,
-                evap.pw,
-                evap.psy,
-                evap.econ,
-                evap.cond,
-                evap.eet_d,
-                evap.pet_d,
-                evap.rx,
-                sw,
-                evap.hi,
-                evap.aet_d,
+                splash.evap.solar.my_nu,
+                splash.evap.solar.my_lambda,
+                splash.evap.solar.dr,
+                splash.evap.solar.delta,
+                splash.evap.solar.hs,
+                splash.evap.solar.ra_d,
+                splash.evap.solar.tau,
+                splash.evap.solar.ppfd_d,
+                splash.evap.solar.hn,
+                splash.evap.solar.rnl,
+                splash.evap.solar.rn_d,
+                splash.evap.solar.rnn_d,
+                splash.evap.sat,
+                splash.evap.lv,
+                splash.evap.pw,
+                splash.evap.psy,
+                splash.evap.econ,
+                splash.evap.rx,
+                splash.evap.hi,
+                splash.evap.cond,
+                splash.evap.eet_d,
+                splash.evap.pet_d,
+                splash.evap.aet_d,
+                splash.wn,
+                splash.ro,
             )
         )
 
@@ -81,13 +88,14 @@ def splash_run_calc_daily_fluxes(input_file: str, output_file: str) -> None:
             "pw",
             "psy",
             "econ",
+            "rx",
+            "hi",
             "cond",
             "eet_d",
             "pet_d",
-            "rx",
-            "sw",
-            "hi",
             "aet_d",
+            "wn",
+            "ro",
         ],
     )
     out.to_csv(output_file, index=False, float_format="%0.8e")
