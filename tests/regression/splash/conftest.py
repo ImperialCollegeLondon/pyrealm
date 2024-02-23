@@ -32,7 +32,7 @@ def daily_flux_benchmarks() -> tuple[np.ndarray, np.ndarray]:
     dpath = resources.files("pyrealm_build_data.splash")
 
     inputs = np.genfromtxt(
-        str(dpath / "inputs.csv"),
+        str(dpath / "data/daily_flux_benchmark_inputs.csv"),
         dtype=None,
         delimiter=",",
         names=True,
@@ -40,7 +40,7 @@ def daily_flux_benchmarks() -> tuple[np.ndarray, np.ndarray]:
     )
 
     expected = np.genfromtxt(
-        str(dpath / "benchmark_daily_fluxes.csv"),
+        str(dpath / "data/daily_flux_benchmark_outputs.csv"),
         dtype=None,
         delimiter=",",
         names=True,
