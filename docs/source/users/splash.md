@@ -58,7 +58,7 @@ from pyrealm.core.calendar import Calendar
 
 # Load gridded data
 dpath = resources.files("pyrealm_build_data.splash")
-data = xarray.load_dataset(dpath / "splash_test_grid_nw_us.nc")
+data = xarray.load_dataset(dpath / "data/splash_nw_us_grid_data.nc")
 
 # Define three sites for showing time series
 sites = xarray.Dataset(
