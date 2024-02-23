@@ -67,24 +67,25 @@ python splash_run_time_series_parallel.py \
 
 This is a 20 x 20 cell spatial grid covering 2 years of daily data that is used to
 validate the spin up of the initial moisture and the calculation of SPLASH water balance
-over a time series. The dataset is generated using the `splash_make_grid.py` script,
-which requires paths to local copies of the `WFDE5_v2` dataset and a version of the
-`CRU TS` dataset. Note that the file paths below are examples and these data are not
-included in the `pyrealm` repo.
+over a time series across a larger spatial extent. The dataset is generated using the
+`splash_make_spatial_grid_data.py` script, which requires paths to local copies of the
+`WFDE5_v2` dataset and a version of the `CRU TS` dataset. Note that the file paths below
+are examples and these data **are not included in the `pyrealm` repo**.
 
 ```sh
-python splash_make_grid.py \ 
+python splash_make_spatial_grid_data.py \ 
    -w "/rds/general/project/lemontree/live/source/wfde5/wfde5_v2/" \ 
    -c "/rds/general/project/lemontree/live/source/cru_ts/cru_ts_4.0.4/" \ 
-   -o "splash_test_grid_nw_us.nc"
+   -o "data/splash_nw_us_grid_data.nc"
 ```
 
-The dataset can then be analysed using the original SPLASH implementation using the
-script `splash_run_time_series_parallel.py`. This uses parallel processing to run
-multiple cells simultaneously and will output the progress of the calculations.
+The resulting `splash_nw_us_grid_data.nc` dataset can then be analysed using the
+original SPLASH implementation using the script `splash_run_time_series_parallel.py`.
+This uses parallel processing to run multiple cells simultaneously and will output the
+progress of the calculations.
 
 ```sh
 python splash_run_time_series_parallel.py \ 
-    -i "splash_test_grid_nw_us.nc" \ 
-    -o "splash_test_grid_nw_us_out.nc"
+    -i "data/splash_nw_us_grid_data.nc" \ 
+    -o "data/splash_nw_us_grid_data_outputs.nc"
 ```
