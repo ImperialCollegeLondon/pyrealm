@@ -8,7 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import xarray
-from multiprocess.pool import Pool
+from multiprocess.pool import Pool  # type: ignore [import-untyped]
 from splash_py_version.splash import SPLASH  # type: ignore [import-not-found]
 
 
@@ -40,8 +40,14 @@ def run_one_cell(
     lat_idx, lat, lon_idx, lon, cell_elev = coords
 
     # date and time variables - repetitious, could move outside but meh.
+
+    # ALERT - there is something very odd here - if the julian_day is left as the xarray
+    # DataArray (not .to_numpy()) then when n is extracted, it obviously gets passed in
+    # as a DataArray. That causes a simply _huge_ performance hit (~ 35 fold) but also
+    # leads to small numerical differences in the SPLASH calculations.
+
     years = input_data.time.dt.year
-    julian_day = input_data.time.dt.dayofyear
+    julian_day = input_data.time.dt.dayofyear.to_numpy()
     year_one = years == years[0]
 
     # Create the SPLASH instance

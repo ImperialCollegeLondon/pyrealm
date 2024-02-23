@@ -36,7 +36,7 @@ the alterations to make the SPLASH code importable, the command below can be use
 the code and capture the output:
 
 ```sh
-python -m splash_py_version.main > test_example_out_original.csv
+python -m splash_py_version.main > splash_test_example_out_original.csv
 ```
 
 Note that this command also generates `main.log`, which contains over 54K lines of
@@ -57,7 +57,7 @@ SPLASH components using script `splash_run_time_series_parallel.py`.
 ```sh
 python splash_run_time_series_parallel.py \ 
     -i "splash_test_example.nc" \ 
-    -o "splash_test_example_out_new.nc"
+    -o "splash_test_example_out.nc"
 ```
 
 ## Gridded time series
