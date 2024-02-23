@@ -13,7 +13,7 @@ import numpy as np
 import xarray
 
 data = np.genfromtxt(
-    "data/example_data.csv",
+    "data/splash_sf_example_data.csv",
     dtype=None,
     delimiter=",",
     names=True,
@@ -47,4 +47,4 @@ splash_grid = xarray.Dataset(
     }
 )
 
-splash_grid.to_netcdf("splash_test_example.nc")
+splash_grid.to_netcdf("data/splash_sf_example_data.nc")

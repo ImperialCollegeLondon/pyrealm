@@ -70,9 +70,9 @@ def one_d_benchmark() -> tuple[xarray.Dataset, xarray.Dataset]:
 
     dpath = resources.files("pyrealm_build_data.splash")
 
-    inputs = xarray.load_dataset(dpath / "splash_test_example.nc")
+    inputs = xarray.load_dataset(dpath / "data/splash_sf_example_data.nc")
 
-    expected = xarray.load_dataset(dpath / "splash_test_example_out.nc")
+    expected = xarray.load_dataset(dpath / "data/splash_sf_example_data_details.nc")
 
     return inputs, expected
 
