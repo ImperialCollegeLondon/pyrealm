@@ -20,7 +20,44 @@ The `splash_run_calc_daily_fluxes.py` script can then be used to run the inputs 
 the original SPLASH implementation provided in the `splash_py_version` module.
 
 ```sh
-python splash_run_calc_daily_fluxes.py -i inputs.csv -o benchmark_daily_fluxes.csv
+python splash_run_calc_daily_fluxes.py -i inputs.csv -o benchmark_daily_fluxes_2.csv
+```
+
+## Original time series
+
+The SPLASH v1.0 implementation provided a time series of inputs for a single location
+around San Francisco in 2000, with precipitation and temperature taken from WFDEI and
+sunshine fraction interpolated from CRU TS. The original source data is included as
+`data/example_data.csv`.
+
+The original SPLASH `main.py` provides a simple example to run this code and output
+water balance, which can be used as a direct benchmark without any wrapper scripts. With
+the alterations to make the SPLASH code importable, the command below can be used to run
+the code and capture the output:
+
+```sh
+python -m splash_py_version.main > test_example_out_original.csv
+```
+
+Note that this command also generates `main.log`, which contains over 54K lines of
+logging and takes up over 6 Mb. This is not included in the `pyrealm` repo.
+
+Because the `test_example_out_original.csv` file only contains predicted water balance,
+the same input data is also run through a wrapper script to allow daily calculations to
+be benchmarked in more detail. The first step is to use the `splash_make_example.py`
+script to convert the CSV data into a properly dimensioned NetCDF file:
+
+```sh
+python splash_make_example.py
+```
+
+This creates the file `splash_test_example.nc`, which can be run using the original
+SPLASH components using script `splash_run_time_series_parallel.py`.
+
+```sh
+python splash_run_time_series_parallel.py \ 
+    -i "splash_test_example.nc" \ 
+    -o "splash_test_example_out_new.nc"
 ```
 
 ## Gridded time series
@@ -29,7 +66,8 @@ This is a 20 x 20 cell spatial grid covering 2 years of daily data that is used 
 validate the spin up of the initial moisture and the calculation of SPLASH water balance
 over a time series. The dataset is generated using the `splash_make_grid.py` script,
 which requires paths to local copies of the `WFDE5_v2` dataset and a version of the
-`CRU TS` dataset.
+`CRU TS` dataset. Note that the file paths below are examples and these data are not
+included in the `pyrealm` repo.
 
 ```sh
 python splash_make_grid.py \ 

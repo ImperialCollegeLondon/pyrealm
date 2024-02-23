@@ -74,6 +74,11 @@ def run_one_cell(
     ppfd_d = np.empty((nt))
     rn_d = np.empty((nt))
     rnn_d = np.empty((nt))
+    sat = np.empty((nt))
+    lv = np.empty((nt))
+    pw = np.empty((nt))
+    psy = np.empty((nt))
+    econ = np.empty((nt))
     cond = np.empty((nt))
     eet = np.empty((nt))
     aet = np.empty((nt))
@@ -90,9 +95,18 @@ def run_one_cell(
             tc=tair_vec[day_idx],
             pn=pn_vec[day_idx],
         )
+        # Update wn
+        wn_curr = splash.wn
+
+        # Store data
         ppfd_d[day_idx] = splash.evap.solar.ppfd_d
         rn_d[day_idx] = splash.evap.solar.rn_d
         rnn_d[day_idx] = splash.evap.solar.rnn_d
+        sat[day_idx] = splash.evap.sat
+        lv[day_idx] = splash.evap.lv
+        pw[day_idx] = splash.evap.pw
+        psy[day_idx] = splash.evap.psy
+        econ[day_idx] = splash.evap.econ
         cond[day_idx] = splash.cond
         eet[day_idx] = splash.eet
         pet[day_idx] = splash.pet
@@ -106,6 +120,11 @@ def run_one_cell(
         ppfd_d=ppfd_d,
         rn_d=rn_d,
         rnn_d=rnn_d,
+        sat=sat,
+        lv=lv,
+        pw=pw,
+        psy=psy,
+        econ=econ,
         cond=cond,
         eet=eet,
         pet=pet,
@@ -127,18 +146,22 @@ def run_splash_time_series(
     input_data = xarray.load_dataset(input_file)
 
     # Create storage for the results: evap and core solar
-    ppfd_d = xarray.DataArray(coords=input_data.coords)
-    rn_d = xarray.DataArray(coords=input_data.coords)
-    rnn_d = xarray.DataArray(coords=input_data.coords)
-    cond = xarray.DataArray(coords=input_data.coords)
-    eet = xarray.DataArray(coords=input_data.coords)
-    pet = xarray.DataArray(coords=input_data.coords)
-    aet = xarray.DataArray(coords=input_data.coords)
-    wn = xarray.DataArray(coords=input_data.coords)
-    ro = xarray.DataArray(coords=input_data.coords)
-    wn_spun_up = xarray.DataArray(
-        coords={"lat": input_data.lat, "lon": input_data.lon}, dims=["lat", "lon"]
-    )
+    # Create storage for the results: evap and core solar
+    ppfd_d = xarray.full_like(input_data.tmp, fill_value=np.nan)
+    rn_d = xarray.full_like(input_data.tmp, fill_value=np.nan)
+    rnn_d = xarray.full_like(input_data.tmp, fill_value=np.nan)
+    sat = xarray.full_like(input_data.tmp, fill_value=np.nan)
+    lv = xarray.full_like(input_data.tmp, fill_value=np.nan)
+    pw = xarray.full_like(input_data.tmp, fill_value=np.nan)
+    psy = xarray.full_like(input_data.tmp, fill_value=np.nan)
+    econ = xarray.full_like(input_data.tmp, fill_value=np.nan)
+    cond = xarray.full_like(input_data.tmp, fill_value=np.nan)
+    eet = xarray.full_like(input_data.tmp, fill_value=np.nan)
+    pet = xarray.full_like(input_data.tmp, fill_value=np.nan)
+    aet = xarray.full_like(input_data.tmp, fill_value=np.nan)
+    wn = xarray.full_like(input_data.tmp, fill_value=np.nan)
+    ro = xarray.full_like(input_data.tmp, fill_value=np.nan)
+    wn_spun_up = xarray.full_like(input_data.elev, fill_value=np.nan)
 
     # Create coords tuples to pass to run_one_cell
     coords = []
@@ -171,26 +194,37 @@ def run_splash_time_series(
         else:
             continue
 
-        ppfd_d[lat_idx, lon_idx, :] = res["ppfd_d"]
-        rn_d[lat_idx, lon_idx, :] = res["rn_d"]
-        rnn_d[lat_idx, lon_idx, :] = res["rnn_d"]
-        cond[lat_idx, lon_idx, :] = res["cond"]
-        eet[lat_idx, lon_idx, :] = res["eet"]
-        pet[lat_idx, lon_idx, :] = res["pet"]
-        aet[lat_idx, lon_idx, :] = res["aet"]
-        wn[lat_idx, lon_idx, :] = res["wn"]
-        ro[lat_idx, lon_idx, :] = res["ro"]
+        ppfd_d[:, lat_idx, lon_idx] = res["ppfd_d"]
+        rn_d[:, lat_idx, lon_idx] = res["rn_d"]
+        rnn_d[:, lat_idx, lon_idx] = res["rnn_d"]
+        sat[:, lat_idx, lon_idx] = res["sat"]
+        lv[:, lat_idx, lon_idx] = res["lv"]
+        pw[:, lat_idx, lon_idx] = res["pw"]
+        psy[:, lat_idx, lon_idx] = res["psy"]
+        econ[:, lat_idx, lon_idx] = res["econ"]
+        cond[:, lat_idx, lon_idx] = res["cond"]
+        eet[:, lat_idx, lon_idx] = res["eet"]
+        pet[:, lat_idx, lon_idx] = res["pet"]
+        aet[:, lat_idx, lon_idx] = res["aet"]
+        wn[:, lat_idx, lon_idx] = res["wn"]
+        ro[:, lat_idx, lon_idx] = res["ro"]
+
         wn_spun_up[lat_idx, lon_idx] = res["wn_spun_up"]
 
     out = xarray.Dataset(
         {
-            "ppfd": ppfd_d,
+            "ppfd_d": ppfd_d,
             "rn_d": rn_d,
             "rnn_d": rnn_d,
+            "sat": sat,
+            "lv": lv,
+            "pw": pw,
+            "psy": psy,
+            "econ": econ,
             "cond": cond,
-            "eet": eet,
-            "pet": pet,
-            "aet": aet,
+            "eet_d": eet,
+            "pet_d": pet,
+            "aet_d": aet,
             "wn": wn,
             "ro": ro,
             "wn_spun_up": wn_spun_up,
@@ -199,7 +233,7 @@ def run_splash_time_series(
     out.to_netcdf(output_file)
 
     end = datetime.now()
-    print(f"{n_real} land cells calculated in {(end - start).seconds}")
+    print(f"{n_real} land cells calculated in {(end - start).seconds} seconds")
 
 
 ###############################################################################

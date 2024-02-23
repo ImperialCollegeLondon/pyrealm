@@ -5,7 +5,14 @@ developed by Tyler Davis, hosted at [https://bitbucket.org/labprentice/splash]. 
 files here are the contents of the path: `releases/v1.0/py_version` from the `master`
 branch of the repo at commit `52d9454b566d`.
 
-This note and the `__init__.py` file to allow the module to be imported are the only
-new files in the directory. The code files have been modified by `isort` and `black` and
-the package internal imports have been extended to allow the code to be imported by the
-benchmark data generation scripts.
+Changes:
+
+* This note and the `__init__.py` file to allow the module to be imported are the  only
+  new files in the directory.
+* The code files have been modified by `isort` and `black` to make it easier to get the
+  files past `pre-commit` but the `flake8` and `mypy` checking are explicitly
+  supressed to keep the files as close to their original content as possible.
+* The package internal imports have been prepended with `splash_py_version` to allow the
+  code to be imported as a package by the benchmark data generation scripts.
+* The data path in `main.py` has been updated to point to the location of the input in
+  this repo, rather than the original repo.

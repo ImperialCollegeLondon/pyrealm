@@ -82,8 +82,8 @@
 ###############################################################################
 import logging
 
-from data import DATA
-from splash import SPLASH
+from splash_py_version.data import DATA
+from splash_py_version.splash import SPLASH
 
 ###############################################################################
 ## MAIN PROGRAM
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     my_data = DATA()
     if example == 1:
         # Example 1: read CSV file:
-        my_file = "../../../data/example_data.csv"
+        my_file = "data/example_data.csv"
         my_data.read_csv(my_file)
     elif example == 2:
         # Example 2: read TXT files:
