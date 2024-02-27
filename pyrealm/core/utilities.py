@@ -338,7 +338,7 @@ def bounds_mask(
     return outputs
 
 
-def eval_poly(x: NDArray, cf: list | NDArray) -> NDArray:
+def eval_poly(x: NDArray, cf: Union[list, NDArray]) -> NDArray:
     """Evaluates a polynomial with coefficients cf at the values in x.
 
     Args:
