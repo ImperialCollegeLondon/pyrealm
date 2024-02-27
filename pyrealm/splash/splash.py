@@ -5,7 +5,7 @@ predictions under the SPLASH model.
 from typing import Optional, Union
 
 import numpy as np
-import pandas as pd
+import pandas as pd  # type: ignore
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
