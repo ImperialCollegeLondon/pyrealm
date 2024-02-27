@@ -336,3 +336,17 @@ def bounds_mask(
     )
 
     return outputs
+
+
+def eval_poly(x: NDArray, cf: list | NDArray) -> NDArray:
+    """Evaluates a polynomial with coefficients cf at the values in x.
+
+    Args:
+        x: The values at which to evaluate the polynomial
+        cf: The coefficients of the polynomial, ordered from the
+            lowest (constant) to the highest degree.
+    """
+    y = np.zeros_like(x)
+    for c in reversed(cf):
+        y = x * y + c
+    return y

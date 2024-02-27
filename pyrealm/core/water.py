@@ -7,7 +7,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
-from pyrealm.core.utilities import check_input_shapes
+from pyrealm.core.utilities import check_input_shapes, eval_poly
 
 
 def calc_density_h2o_chen(
@@ -43,35 +43,18 @@ def calc_density_h2o_chen(
 
     # Calculate density at 1 atm (kg/m^3):
     po_coef = core_const.chen_po
-    po = po_coef[0] + po_coef[1] * tc
-    po += po_coef[2] * tc * tc
-    po += po_coef[3] * tc * tc * tc
-    po += po_coef[4] * tc * tc * tc * tc
-    po += po_coef[5] * tc * tc * tc * tc * tc
-    po += po_coef[6] * tc * tc * tc * tc * tc * tc
-    po += po_coef[7] * tc * tc * tc * tc * tc * tc * tc
-    po += po_coef[8] * tc * tc * tc * tc * tc * tc * tc * tc
+    po = eval_poly(tc, po_coef)
 
     # Calculate bulk modulus at 1 atm (bar):
     ko_coef = core_const.chen_ko
-    ko = ko_coef[0] + ko_coef[1] * tc
-    ko += ko_coef[2] * tc * tc
-    ko += ko_coef[3] * tc * tc * tc
-    ko += ko_coef[4] * tc * tc * tc * tc
-    ko += ko_coef[5] * tc * tc * tc * tc * tc
+    ko = eval_poly(tc, ko_coef)
 
     # Calculate temperature dependent coefficients:
     ca_coef = core_const.chen_ca
-    ca = ca_coef[0] + ca_coef[1] * tc
-    ca += ca_coef[2] * tc * tc
-    ca += ca_coef[3] * tc * tc * tc
-    ca += ca_coef[4] * tc * tc * tc * tc
+    ca = eval_poly(tc, ca_coef)
 
     cb_coef = core_const.chen_cb
-    cb = cb_coef[0] + cb_coef[1] * tc
-    cb += cb_coef[2] * tc * tc
-    cb += cb_coef[3] * tc * tc * tc
-    cb += cb_coef[4] * tc * tc * tc * tc
+    cb = eval_poly(tc, cb_coef)
 
     # Convert atmospheric pressure to bar (1 bar = 100000 Pa)
     pbar = (1.0e-5) * p
@@ -119,29 +102,15 @@ def calc_density_h2o_fisher(
 
     # Calculate lambda, (bar cm^3)/g:
     lambda_coef = core_const.fisher_dial_lambda
-    lambda_val = lambda_coef[0] + lambda_coef[1] * tc
-    lambda_val += lambda_coef[2] * tc * tc
-    lambda_val += lambda_coef[3] * tc * tc * tc
-    lambda_val += lambda_coef[4] * tc * tc * tc * tc
+    lambda_val = eval_poly(tc, lambda_coef)
 
     # Calculate po, bar
     po_coef = core_const.fisher_dial_Po
-    po_val = po_coef[0] + po_coef[1] * tc
-    po_val += po_coef[2] * tc * tc
-    po_val += po_coef[3] * tc * tc * tc
-    po_val += po_coef[4] * tc * tc * tc * tc
+    po_val = eval_poly(tc, po_coef)
 
     # Calculate vinf, cm^3/g
     vinf_coef = core_const.fisher_dial_Vinf
-    vinf_val = vinf_coef[0] + vinf_coef[1] * tc
-    vinf_val += vinf_coef[2] * tc * tc
-    vinf_val += vinf_coef[3] * tc * tc * tc
-    vinf_val += vinf_coef[4] * tc * tc * tc * tc
-    vinf_val += vinf_coef[5] * tc * tc * tc * tc * tc
-    vinf_val += vinf_coef[6] * tc * tc * tc * tc * tc * tc
-    vinf_val += vinf_coef[7] * tc * tc * tc * tc * tc * tc * tc
-    vinf_val += vinf_coef[8] * tc * tc * tc * tc * tc * tc * tc * tc
-    vinf_val += vinf_coef[9] * tc * tc * tc * tc * tc * tc * tc * tc * tc
+    vinf_val = eval_poly(tc, vinf_coef)
 
     # Convert pressure to bars (1 bar <- 100000 Pa)
     pbar = 1e-5 * patm

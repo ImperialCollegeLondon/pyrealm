@@ -9,7 +9,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
-from pyrealm.core.utilities import bounds_checker
+from pyrealm.core.utilities import bounds_checker, eval_poly
 
 
 def calc_vp_sat(ta: NDArray, core_const: CoreConst = CoreConst()) -> NDArray:
@@ -241,12 +241,17 @@ def calc_specific_heat(tc: NDArray) -> NDArray:
     # TODO move these coefficients into constants?
 
     tc = np.clip(tc, 0, 100)
-    cp = 1.0045714270 + (2.050632750e-3) * tc
-    cp += -(1.631537093e-4) * tc * tc
-    cp += (6.212300300e-6) * tc * tc * tc
-    cp += -(8.830478888e-8) * tc * tc * tc * tc
-    cp += (5.071307038e-10) * tc * tc * tc * tc * tc
-    cp *= 1e3
+    cp = 1e3 * eval_poly(
+        tc,
+        [
+            1.0045714270,
+            2.050632750e-3,
+            -1.631537093e-4,
+            6.212300300e-6,
+            -8.830478888e-8,
+            5.071307038e-10,
+        ],
+    )
 
     return cp
 
