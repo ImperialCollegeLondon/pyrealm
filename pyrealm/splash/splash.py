@@ -5,6 +5,7 @@ predictions under the SPLASH model.
 from typing import Optional, Union
 
 import numpy as np
+import pandas as pd
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
@@ -153,11 +154,11 @@ class SplashModel:
             wn_start = np.zeros(self.shape[1:])
 
         # Find a date one year into the future from the first calendar date.
-        # TODO - fix leap year handling and non Jan 1 starts
+        date_start = pd.Timestamp(self.dates[0].date)
+        date_end = date_start + pd.DateOffset(years=1)
+        num_days = (date_end - date_start).days
 
-        day1 = self.dates[0]
-
-        if self.shape[0] < day1.days_in_year:
+        if self.shape[0] < num_days:
             raise ValueError("Cannot equilibrate - less than one year of data")
 
         # Run the equilibration loop
@@ -167,7 +168,7 @@ class SplashModel:
 
             # Loop over the calendar object, updating the soil_moisture array
             wn_day = wn_start
-            for day_idx in range(day1.days_in_year):
+            for day_idx in range(num_days):
                 # Calculate aet, soil moisture and runoff:
                 _, wn_day, _ = self.estimate_daily_water_balance(
                     previous_wn=wn_day, day_idx=day_idx
