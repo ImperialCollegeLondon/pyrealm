@@ -15,7 +15,16 @@ parser = ArgumentParser()
 parser.add_argument("--event", help="Github event name", default="none")
 parser.add_argument("--prof-dir", help="Profiling results directory", default="prof")
 parser.add_argument(
-    "--max-benchmark", help="Maximum number of benchmarks to plot", type=int, default=5
+    "--no-save", help="Do not save the profiling results", action="store_true"
+)
+parser.add_argument(
+    "--no-plot", help="Do not plot the profiling results", action="store_true"
+)
+parser.add_argument(
+    "--selector", help="Filter the filenames by regex, e.g. 'splash', 'pmodel'"
+)
+parser.add_argument(
+    "--max-benchmark", help="Max number of benchmarks to plot", type=int, default=5
 )
 args = parser.parse_args()
 
@@ -24,6 +33,7 @@ orig_prof_path = root / args.prof_dir / "combined.prof"
 orig_graph_path = root / args.prof_dir / "combined.svg"
 prof_path = root / "profiling/profiling.prof"
 graph_path = root / "profiling/call-graph.svg"
+report_path = root / "profiling/prof-report.csv"
 
 # Copy the profiling results to the current folder
 if orig_prof_path.exists():
@@ -39,12 +49,10 @@ else:
 # Read the profiling results
 sio = StringIO()
 p = pstats.Stats(str(prof_path), stream=sio)
-p.print_stats(str(root).replace("\\", "\\\\"))
-# p.print_callers(str(root))
+p.print_stats("pyrealm")
 report = sio.getvalue()
 
 # Convert to a DataFrame and save to CSV
-report = report.replace(str(root / "*")[:-1], "")  # remove common path
 _, report = re.split(r"\n(?= +ncalls)", report, 1)  # remove header
 df = (
     pd.read_csv(StringIO(report), sep=" +", engine="python")
@@ -52,24 +60,35 @@ df = (
     .sort_values(by="cumtime_percall", ascending=False)
     .query("cumtime > 0.01")
 )
-df[["filename", "lineno", "function"]] = df.pop(
-    "filename:lineno(function)"
-).str.extract(r"(.*?):(.*?)\((.*)\)", expand=True)
+s = df.pop("filename:lineno(function)")
+df[["filename", "lineno", "function"]] = s.str.extract(
+    r"(.*):(.*?)\((.*)\)", expand=True
+)
+df.dropna(inplace=True)
+if args.selector:
+    df = df[df.filename.str.contains(args.selector)]
+i_diff = next(i for i, cs in enumerate(zip(*df.filename)) if len(set(cs)) > 1)
+df["filename"] = [s[i_diff:] for s in df.filename]  # remove common prefix
 dt = datetime.datetime.fromtimestamp(prof_path.stat().st_mtime)
 df.index = pd.Series([dt.strftime("%Y-%m-%d %H:%M:%S")] * len(df), name="timestamp")
 print(df)
 df["label"] = df["filename"].str.extract(r"(\w+).py").squeeze() + "." + df["function"]
-df["event"] = [args.event] * len(df)
-report_path = root / "profiling/prof-report.csv"
-df.to_csv(report_path, mode="a", header=not report_path.exists())
 
 # Filter and plot the results
-df.plot.barh(y=["tottime_percall", "cumtime_percall"], x="label", figsize=(20, 10))
-plt.ylabel("")
-plt.gca().invert_yaxis()
-plt.tight_layout()
-plt.legend(loc="lower right")
-plt.savefig(root / "profiling/profiling.png")
+if not args.no_plot:
+    df.plot.barh(y=["tottime_percall", "cumtime_percall"], x="label", figsize=(20, 10))
+    plt.ylabel("")
+    plt.gca().invert_yaxis()
+    plt.tight_layout()
+    plt.legend(loc="lower right")
+    plt.savefig(root / "profiling/profiling.png")
+
+# Save the profiling results
+if not args.no_save:
+    df["event"] = [args.event] * len(df)
+    df.to_csv(report_path, mode="a", header=not report_path.exists())
+else:
+    exit(0)
 
 # Plot benchmark results
 df = pd.read_csv(report_path, index_col="label", parse_dates=["timestamp"])
