@@ -9,7 +9,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
-from pyrealm.core.utilities import bounds_checker, eval_poly
+from pyrealm.core.utilities import bounds_checker, evaluate_horner_polynomial
 
 
 def calc_vp_sat(ta: NDArray, core_const: CoreConst = CoreConst()) -> NDArray:
@@ -241,7 +241,7 @@ def calc_specific_heat(tc: NDArray) -> NDArray:
     # TODO move these coefficients into constants?
 
     tc = np.clip(tc, 0, 100)
-    cp = 1e3 * eval_poly(
+    cp = 1e3 * evaluate_horner_polynomial(
         tc,
         [
             1.0045714270,

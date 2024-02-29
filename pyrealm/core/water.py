@@ -7,7 +7,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
-from pyrealm.core.utilities import check_input_shapes, eval_poly
+from pyrealm.core.utilities import check_input_shapes, evaluate_horner_polynomial
 
 
 def calc_density_h2o_chen(
@@ -43,18 +43,18 @@ def calc_density_h2o_chen(
 
     # Calculate density at 1 atm (kg/m^3):
     po_coef = core_const.chen_po
-    po = eval_poly(tc, po_coef)
+    po = evaluate_horner_polynomial(tc, po_coef)
 
     # Calculate bulk modulus at 1 atm (bar):
     ko_coef = core_const.chen_ko
-    ko = eval_poly(tc, ko_coef)
+    ko = evaluate_horner_polynomial(tc, ko_coef)
 
     # Calculate temperature dependent coefficients:
     ca_coef = core_const.chen_ca
-    ca = eval_poly(tc, ca_coef)
+    ca = evaluate_horner_polynomial(tc, ca_coef)
 
     cb_coef = core_const.chen_cb
-    cb = eval_poly(tc, cb_coef)
+    cb = evaluate_horner_polynomial(tc, cb_coef)
 
     # Convert atmospheric pressure to bar (1 bar = 100000 Pa)
     pbar = (1.0e-5) * p
@@ -102,15 +102,15 @@ def calc_density_h2o_fisher(
 
     # Calculate lambda, (bar cm^3)/g:
     lambda_coef = core_const.fisher_dial_lambda
-    lambda_val = eval_poly(tc, lambda_coef)
+    lambda_val = evaluate_horner_polynomial(tc, lambda_coef)
 
     # Calculate po, bar
     po_coef = core_const.fisher_dial_Po
-    po_val = eval_poly(tc, po_coef)
+    po_val = evaluate_horner_polynomial(tc, po_coef)
 
     # Calculate vinf, cm^3/g
     vinf_coef = core_const.fisher_dial_Vinf
-    vinf_val = eval_poly(tc, vinf_coef)
+    vinf_val = evaluate_horner_polynomial(tc, vinf_coef)
 
     # Convert pressure to bars (1 bar <- 100000 Pa)
     pbar = 1e-5 * patm
