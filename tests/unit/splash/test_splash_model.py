@@ -82,6 +82,7 @@ def splash_model(grid_benchmarks, splash_core_constants, calendar):
     )
 
     assert splash.shape == (len(ds.time), *ds.elev.shape)
+    assert splash.shape[0] == len(calendar)
     return splash
 
 
