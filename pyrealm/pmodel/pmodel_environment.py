@@ -10,14 +10,14 @@ from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.constants import PModelConst
+from pyrealm.constants import CoreConst, PModelConst
+from pyrealm.core.utilities import bounds_checker, check_input_shapes, summarize_attrs
 from pyrealm.pmodel.functions import (
     calc_co2_to_ca,
     calc_gammastar,
     calc_kmm,
     calc_ns_star,
 )
-from pyrealm.utilities import bounds_checker, check_input_shapes, summarize_attrs
 
 
 class PModelEnvironment:
@@ -44,9 +44,16 @@ class PModelEnvironment:
     In addition to the four key variables above, the PModelEnvironment class
     is used to provide additional variables used by some methods.
 
-    * the volumetric soil moisture content, required to calculate optimal
-      :math:`\chi` in
-      :meth:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.lavergne20_c3`.
+    * the volumetric soil moisture content (:math:`\theta`), required to calculate
+      optimal :math:`\chi` in
+      :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3` and
+      :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3`.
+
+    * a unitless root zone stress factor, an experimental term used to optionally
+      penalise the :math:`\beta` term in the estimation of :math:`\chi` in
+      :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14RootzoneStress` and
+      :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiC4RootzoneStress` and
+      :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGammaRootzoneStress`.
 
     Args:
         tc: Temperature, relevant for photosynthesis (°C)
@@ -54,8 +61,11 @@ class PModelEnvironment:
         co2: Atmospheric CO2 concentration (ppm)
         patm: Atmospheric pressure (Pa)
         theta: Volumetric soil moisture (m3/m3)
-        const: An instance of
+        rootzonestress: Root zone stress factor (-)
+        pmodel_const: An instance of
             :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        core_const: An instance of
+            :class:`~pyrealm.constants.core_const.CoreConst`.
 
     Examples:
         >>> import numpy as np
@@ -72,7 +82,9 @@ class PModelEnvironment:
         co2: NDArray,
         patm: NDArray,
         theta: Optional[NDArray] = None,
-        const: PModelConst = PModelConst(),
+        rootzonestress: Optional[NDArray] = None,
+        pmodel_const: PModelConst = PModelConst(),
+        core_const: CoreConst = CoreConst(),
     ):
         self.shape: tuple = check_input_shapes(tc, vpd, co2, patm)
 
@@ -103,10 +115,12 @@ class PModelEnvironment:
         self.ca: NDArray = calc_co2_to_ca(self.co2, self.patm)
         """Ambient CO2 partial pressure, Pa"""
 
-        self.gammastar = calc_gammastar(tc, patm, const=const)
+        self.gammastar = calc_gammastar(
+            tc, patm, pmodel_const=pmodel_const, core_const=core_const
+        )
         r"""Photorespiratory compensation point (:math:`\Gamma^\ast`, Pa)"""
 
-        self.kmm = calc_kmm(tc, patm, const=const)
+        self.kmm = calc_kmm(tc, patm, pmodel_const=pmodel_const, core_const=core_const)
         """Michaelis Menten coefficient, Pa"""
 
         # # Michaelis-Menten coef. C4 plants (Pa) NOT CHECKED. Need to think
@@ -115,24 +129,33 @@ class PModelEnvironment:
         # # has not yet been implemented.
         # self.kp_c4 = calc_kp_c4(tc, patm, const=const)
 
-        self.ns_star = calc_ns_star(tc, patm, const=const)
+        self.ns_star = calc_ns_star(tc, patm, core_const=core_const)
         """Viscosity correction factor realtive to standard
         temperature and pressure, unitless"""
 
         # Optional variables
-        self.theta: Optional[NDArray]
+        self.theta: Optional[NDArray] = None
         """Volumetric soil moisture (m3/m3)"""
+        self.rootzonestress: Optional[NDArray] = None
+        """Rootzone stress factor (experimental) (-)"""
 
-        if theta is None:
-            self.theta = None
-        else:
+        if theta is not None:
             # Is the input congruent with the other variables and in bounds.
             _ = check_input_shapes(tc, theta)
             self.theta = bounds_checker(theta, 0, 0.8, "[]", "theta", "m3/m3")
 
-        # Store parameters
-        self.const = const
-        """PModel Parameters used from calculation"""
+        if rootzonestress is not None:
+            # Is the input congruent with the other variables and in bounds.
+            _ = check_input_shapes(tc, rootzonestress)
+            self.rootzonestress = bounds_checker(
+                rootzonestress, 0, 1, "[]", "rootzonestress", "-"
+            )
+
+        # Store constant settings
+        self.pmodel_const = pmodel_const
+        """PModel constants used to calculate environment"""
+        self.core_const = core_const
+        """Core constants used to calculate environment"""
 
     def __repr__(self) -> str:
         """Generates a string representation of PModelEnvironment instance."""

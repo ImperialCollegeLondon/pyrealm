@@ -18,6 +18,9 @@ The `pyrealm` package currently includes:
   and carbon isotope fractionation.
 * The T Model of the allocation of gross primary productivity to estimate net primary
   productivity and hence plant growth.
+* The SPLASH model for calculating soil moisture and actual evapotranspiration.
+* A suite of core physics functions and other utilities used to support the modules
+  above.
 
 For more details, see the package website:
 [https://pyrealm.readthedocs.io/](https://pyrealm.readthedocs.io/).

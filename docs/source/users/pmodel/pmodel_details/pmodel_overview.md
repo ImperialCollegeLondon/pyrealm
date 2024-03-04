@@ -43,7 +43,7 @@ The main steps are:
   environmental variables are used to calculate four key variables describing the
   photosynthetic environment of a plant.
 
-* Calculation of [leaf $\ce{CO2}$ variables](optimal_chi). The photosynthetic
+* Calculation of [leaf $\ce{CO2}$ variables](../pmodel_details/optimal_chi). The photosynthetic
   environment is then used to calculate the optimal ratio of internal to external CO2
   concentration ($chi$), along with $\ce{CO2}$ partial pressures and limitation factors.
   This step also governs the main differences between C3 and C4 photosynthesis.

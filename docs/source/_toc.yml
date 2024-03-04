@@ -26,6 +26,7 @@ subtrees:
         - file: users/pmodel/c3c4model.md
         - file: users/pmodel/isotopic_discrimination.md
   - file: users/tmodel/tmodel.md
+  - file: users/splash.md
   - file: users/constants.md
   - file: users/hygro.md 
 

@@ -46,7 +46,7 @@ def memory_effect(
     By default, the ``values`` array must not contain missing values (`numpy.nan`).
     However, :math:`V_{cmax}` and :math:`J_{max}` are not estimable in some conditions
     (namely when :math:`m \le c^{\ast}`, see
-    :class:`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`) and so missing values in
+    :class:`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`) and so missing values in
     P Model
     predictions can arise even when the forcing data is complete, breaking the recursion
     shown above. When ``handle_nan=True``, this function fills missing data as follow:
@@ -225,7 +225,8 @@ class FastSlowPModel:
             vpd=vpd_acclim,
             co2=co2_acclim,
             patm=patm_acclim,
-            const=self.env.const,
+            pmodel_const=self.env.pmodel_const,
+            core_const=self.env.core_const,
         )
         self.pmodel_acclim: PModel = PModel(pmodel_env_acclim, kphio=kphio)
         r"""P Model predictions for the daily acclimation conditions.
@@ -247,7 +248,7 @@ class FastSlowPModel:
         ha_vcmax25 = 65330
         ha_jmax25 = 43900
 
-        tk_acclim = temp_acclim + self.env.const.k_CtoK
+        tk_acclim = temp_acclim + self.env.core_const.k_CtoK
         self.vcmax25_opt = self.pmodel_acclim.vcmax * (
             1 / calc_ftemp_arrh(tk_acclim, ha_vcmax25)
         )
@@ -270,7 +271,8 @@ class FastSlowPModel:
         r"""Realised daily slow responses in :math:`J_{max25}`"""
 
         # Fill the daily realised values onto the subdaily scale
-        subdaily_tk = fs_scaler.pad_values(self.env.tc + self.env.const.k_CtoK)
+
+        subdaily_tk = fs_scaler.pad_values(self.env.tc + self.env.core_const.k_CtoK)
 
         # Fill the realised xi, jmax25 and vcmax25 from subdaily to daily and then
         # adjust jmax25 and vcmax25 to jmax and vcmax given actual temperature at
@@ -320,7 +322,8 @@ class FastSlowPModel:
 
         # Calculate GPP and convert from mol to gC
         self.gpp: NDArray = (
-            np.minimum(self.subdaily_Aj, self.subdaily_Ac) * self.env.const.k_c_molmass
+            np.minimum(self.subdaily_Aj, self.subdaily_Ac)
+            * self.env.core_const.k_c_molmass
         )
         """Estimated subdaily GPP."""
 
@@ -433,7 +436,8 @@ class FastSlowPModel_JAMES:
             vpd=vpd_acclim,
             co2=co2_acclim,
             patm=patm_acclim,
-            const=self.env.const,
+            pmodel_const=self.env.pmodel_const,
+            core_const=self.env.core_const,
         )
         self.pmodel_acclim: PModel = PModel(pmodel_env_acclim, kphio=kphio)
         r"""P Model predictions for the daily acclimation conditions.
@@ -455,7 +459,7 @@ class FastSlowPModel_JAMES:
         ha_vcmax25 = 65330
         ha_jmax25 = 43900
 
-        tk_acclim = temp_acclim + self.env.const.k_CtoK
+        tk_acclim = temp_acclim + self.env.core_const.k_CtoK
         self.vcmax25_opt = self.pmodel_acclim.vcmax * (
             1 / calc_ftemp_arrh(tk_acclim, ha_vcmax25)
         )
@@ -495,7 +499,7 @@ class FastSlowPModel_JAMES:
         """Estimated subdaily :math:`c_i`."""
 
         # Fill the daily realised values onto the subdaily scale
-        subdaily_tk = self.env.tc + self.env.const.k_CtoK
+        subdaily_tk = self.env.tc + self.env.core_const.k_CtoK
 
         # Fill the realised xi, jmax25 and vcmax25 from subdaily to daily and then
         # adjust jmax25 and vcmax25 to jmax and vcmax given actual temperature at
@@ -541,6 +545,7 @@ class FastSlowPModel_JAMES:
 
         # Calculate GPP, converting from mol m2 s1 to grams carbon m2 s1
         self.gpp: NDArray = (
-            np.minimum(self.subdaily_Aj, self.subdaily_Ac) * self.env.const.k_c_molmass
+            np.minimum(self.subdaily_Aj, self.subdaily_Ac)
+            * self.env.core_const.k_c_molmass
         )
         """Estimated subdaily GPP."""

@@ -8,8 +8,8 @@ from warnings import warn
 from numpy.typing import NDArray
 
 from pyrealm.constants import IsotopesConst
+from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.pmodel import PModel
-from pyrealm.utilities import check_input_shapes, summarize_attrs
 
 
 class CalcCarbonIsotopes:
@@ -34,8 +34,9 @@ class CalcCarbonIsotopes:
             (:math:`\delta\ce{^{13}C}`, permil).
         D14CO2: Atmospheric isotopic ratio for Carbon 14
             (:math:`\Delta\ce{^{14}C}`, permil).
-        const: An instance of :class:`~pyrealm.constants.isotope_const.IsotopesConst`,
-            parameterizing the calculations.
+        isotopes_const: An instance
+            of :class:`~pyrealm.constants.isotope_const.IsotopesConst`, parameterizing
+            the calculations.
     """
 
     def __init__(
@@ -43,12 +44,12 @@ class CalcCarbonIsotopes:
         pmodel: PModel,
         D14CO2: NDArray,
         d13CO2: NDArray,
-        const: IsotopesConst = IsotopesConst(),
+        isotopes_const: IsotopesConst = IsotopesConst(),
     ):
         # Check inputs are congruent
         _ = check_input_shapes(pmodel.env.tc, d13CO2, D14CO2)
 
-        self.const: IsotopesConst = const
+        self.isotopes_const: IsotopesConst = isotopes_const
         """The IsotopesParams instance used to calculate estimates."""
         self.shape: tuple = pmodel.shape
         """Records the common numpy array shape of array inputs."""
@@ -92,7 +93,7 @@ class CalcCarbonIsotopes:
         self.d14C_leaf = (D14CO2 - self.Delta14C) / (1 + self.Delta14C / 1000)
 
         # Isotopic composition of wood considering post-photosynthetic fractionation:
-        self.d13C_wood = self.d13C_leaf + self.const.frank_postfrac
+        self.d13C_wood = self.d13C_leaf + self.isotopes_const.frank_postfrac
 
     def __repr__(self) -> str:
         """Generates a string representation of a CalcCarbonIsotopes instance."""
@@ -109,9 +110,14 @@ class CalcCarbonIsotopes:
             >>> import numpy as np
             >>> from pyrealm.pmodel import PModel, PModelEnvironment
             >>> from pyrealm.constants import PModelConst
-            >>> const = PModelConst(beta_cost_ratio_c4=35)
-            >>> env = PModelEnvironment(tc=np.array([20]), patm=np.array([101325]),
-            ...              co2=np.array([400]), vpd=np.array([1000]), const=const)
+            >>> pmodel_const = PModelConst(beta_cost_ratio_c4=35)
+            >>> env = PModelEnvironment(
+            ...     tc=np.array([20]),
+            ...     patm=np.array([101325]),
+            ...     co2=np.array([400]),
+            ...     vpd=np.array([1000]),
+            ...     pmodel_const=pmodel_const
+            ... )
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
             >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
             >>> mod_c4_delta.Delta13C.round(4)
@@ -122,8 +128,8 @@ class CalcCarbonIsotopes:
 
         # Equation from C3/C4 paper
         self.Delta13C_simple = (
-            self.const.lavergne_delta13_a
-            + self.const.lavergne_delta13_b * pmodel.optchi.chi
+            self.isotopes_const.lavergne_delta13_a
+            + self.isotopes_const.lavergne_delta13_b * pmodel.optchi.chi
         )
         self.Delta13C = self.Delta13C_simple
 
@@ -142,9 +148,14 @@ class CalcCarbonIsotopes:
             >>> import numpy as np
             >>> from pyrealm.pmodel import PModel, PModelEnvironment
             >>> from pyrealm.constants import PModelConst
-            >>> const = PModelConst(beta_cost_ratio_c4=35)
-            >>> env = PModelEnvironment(tc=np.array([20]), patm=np.array([101325]),
-            ...              co2=np.array([400]), vpd=np.array([1000]), const=const)
+            >>> pmodel_const = PModelConst(beta_cost_ratio_c4=35)
+            >>> env = PModelEnvironment(
+            ...     tc=np.array([20]),
+            ...     patm=np.array([101325]),
+            ...     co2=np.array([400]),
+            ...     vpd=np.array([1000]),
+            ...     pmodel_const=pmodel_const
+            ... )
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
             >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
             >>> # mod_c4_delta.Delta13C.round(4)
@@ -161,12 +172,12 @@ class CalcCarbonIsotopes:
 
         # 13C discrimination (‰): von Caemmerer et al. (2014) Eq. 1
         self.Delta13C_simple = (
-            self.const.farquhar_a
+            self.isotopes_const.farquhar_a
             + (
-                self.const.vonCaemmerer_b4
-                + (self.const.farquhar_b - self.const.vonCaemmerer_s)
-                * self.const.vonCaemmerer_phi
-                - self.const.farquhar_a
+                self.isotopes_const.vonCaemmerer_b4
+                + (self.isotopes_const.farquhar_b - self.isotopes_const.vonCaemmerer_s)
+                * self.isotopes_const.vonCaemmerer_phi
+                - self.isotopes_const.farquhar_a
             )
             * pmodel.optchi.chi
         )
@@ -199,15 +210,17 @@ class CalcCarbonIsotopes:
         # 13C discrimination (permil): Farquhar et al. (1982)
         # Simple
         self.Delta13C_simple = (
-            self.const.farquhar_a
-            + (self.const.farquhar_b - self.const.farquhar_a) * pmodel.optchi.chi
+            self.isotopes_const.farquhar_a
+            + (self.isotopes_const.farquhar_b - self.isotopes_const.farquhar_a)
+            * pmodel.optchi.chi
         )
 
         # with photorespiratory effect:
         self.Delta13C = (
-            self.const.farquhar_a
-            + (self.const.farquhar_b2 - self.const.farquhar_a) * pmodel.optchi.chi
-            - self.const.farquhar_f * pmodel.env.gammastar / pmodel.env.ca
+            self.isotopes_const.farquhar_a
+            + (self.isotopes_const.farquhar_b2 - self.isotopes_const.farquhar_a)
+            * pmodel.optchi.chi
+            - self.isotopes_const.farquhar_f * pmodel.env.gammastar / pmodel.env.ca
         )
 
     def summarize(self, dp: int = 2) -> None:

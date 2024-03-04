@@ -46,7 +46,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 import xarray
 
-from pyrealm.pmodel import PModel, PModelEnvironment, calc_patm
+from pyrealm.pmodel import PModel, PModelEnvironment
+from pyrealm.core.pressure import calc_patm
 
 # Calculate the PModelEnvironment
 env = PModelEnvironment(tc=20.0, patm=101325.0, vpd=820, co2=400)
@@ -94,10 +95,10 @@ model.summarize()
 
 ### $\chi$ estimates and $\ce{CO2}$ limitation
 
-The instance also contains a {class}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi`
+The instance also contains a {class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`
 object,
-recording key parameters from the [calculation of $\chi$](optimal_chi).
-This object also has a {meth}`~pyrealm.pmodel.calc_optimal_chi.CalcOptimalChi.summarize`
+recording key parameters from the [calculation of $\chi$](./optimal_chi).
+This object also has a {meth}`~pyrealm.pmodel.optimal_chi.OptimalChiABC.summarize`
 method:
 
 ```{code-cell} ipython3

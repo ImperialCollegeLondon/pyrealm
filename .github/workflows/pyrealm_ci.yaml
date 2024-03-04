@@ -1,13 +1,13 @@
 name: Test and build
 
-on: [push, pull_request, release]
+on: [push, pull_request, merge_group, release]
 
 jobs:
   qa:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - uses: pre-commit/action@v3.0.0
@@ -22,14 +22,11 @@ jobs:
         python-version: [ "3.9" , "3.10", "3.11"]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
-        lfs: true
-        
-    - name: Pull LFS objects
-      run: git lfs pull
+        ref: ${{ github.head_ref }}
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -42,20 +39,38 @@ jobs:
       run: poetry install
 
     - name: Run tests
-      run: poetry run pytest --cov-report xml
+      run: poetry run pytest -m "not profiling" --cov-report xml
 
     - name: Upload coverage reports to Codecov
+      id: codecov
       if: success() && (matrix.os == 'ubuntu-latest' && matrix.python-version == 3.9)
       uses: codecov/codecov-action@v3
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+    - name: Run profiling
+      id: profiling
+      if: steps.lfs.outcome == 'success'
+      run: |
+        sudo apt-get install graphviz
+        poetry run pytest -m "profiling" --profile-svg
+
+    - name: Report performance (this step will fail if performance degrades)
+      if: steps.profiling.outcome == 'success'
+      run: poetry run python profiling/report.py --event ${{ github.event_name }}
+
+    - uses: stefanzweifel/git-auto-commit-action@v5
+      if: ${{ always() && steps.profiling.outcome != 'skipped' && github.event_name == 'merge_group' }}
+      with:
+        commit_message: Auto-generated profiling results
+        file_pattern: 'profiling/* .gitattributes'
+
   docs_build:
     needs: qa
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
