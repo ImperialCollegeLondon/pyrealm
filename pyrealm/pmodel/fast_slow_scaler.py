@@ -111,6 +111,7 @@ class FastSlowScaler:
         # Get the number of observations per day.
         n_sec = 24 * 60 * 60
         obs_per_date = n_sec // self.spacing.astype(int)
+        self.obs_per_date = obs_per_date
 
         # Check whether the first day is complete
         if datetimes[0].astype(datetime.datetime).time() != min_time:
