@@ -187,6 +187,7 @@ class FastSlowScaler:
         self.observation_dates: NDArray[np.datetime64] = datetimes_by_date[:, 0].astype(
             "datetime64[D]"
         )
+
         """The dates covered by the observations"""
 
         self.n_days: int = len(self.observation_dates)
@@ -250,7 +251,7 @@ class FastSlowScaler:
                 constant_values=(np.nan, np.nan),
             )
         else:
-            values_padded = values
+            return values
 
         return values_padded
 
