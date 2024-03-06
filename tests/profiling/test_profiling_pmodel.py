@@ -120,7 +120,7 @@ class TestClass:
 
         comp.summarize()
 
-    def test_profile_subdaily(self, setup):
+    def test_profiling_subdaily(self, setup):
         """Profiling the subdaily submodule."""
         from pyrealm.pmodel import FastSlowPModel, FastSlowScaler
 
