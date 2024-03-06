@@ -152,7 +152,6 @@ def run_splash_time_series(
     input_data = xarray.load_dataset(input_file)
 
     # Create storage for the results: evap and core solar
-    # Create storage for the results: evap and core solar
     ppfd_d = xarray.full_like(input_data.tmp, fill_value=np.nan)
     rn_d = xarray.full_like(input_data.tmp, fill_value=np.nan)
     rnn_d = xarray.full_like(input_data.tmp, fill_value=np.nan)
@@ -170,20 +169,17 @@ def run_splash_time_series(
     wn_spun_up = xarray.full_like(input_data.elev, fill_value=np.nan)
 
     # Create coords tuples to pass to run_one_cell
-    coords = []
-    for lat_idx, lat in enumerate(input_data.lat):
-        for lon_idx, lon in enumerate(input_data.lon):
-            # Create the SPLASH instance
-            cell_elev = input_data["elev"][lat_idx, lon_idx]
-            coords.append(
-                (
-                    lat_idx,
-                    float(lat.data),
-                    lon_idx,
-                    float(lon.data),
-                    float(cell_elev.data),
-                )
-            )
+    coords = [
+        (
+            lat_idx,
+            float(lat.data),
+            lon_idx,
+            float(lon.data),
+            input_data["elev"].data[lat_idx, lon_idx],
+        )
+        for lat_idx, lat in enumerate(input_data.lat)
+        for lon_idx, lon in enumerate(input_data.lon)
+    ]
 
     # Use a pool of processes to run the set of cells
     with Pool(n_cores) as pool:

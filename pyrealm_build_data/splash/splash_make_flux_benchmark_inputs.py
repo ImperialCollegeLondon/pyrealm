@@ -12,6 +12,8 @@ import numpy as np
 import pandas  # type: ignore [import-untyped]
 from splash_py_version.evap import EVAP  # type: ignore [import-not-found]
 
+from pyrealm.core.calendar import Calendar
+
 
 def splash_make_flux_benchmark_inputs(output_file: str) -> None:
     """Generates a benchmark input file for SPLASH testing."""
@@ -24,16 +26,15 @@ def splash_make_flux_benchmark_inputs(output_file: str) -> None:
     diff = d_end - d_start
     rand_day = np.random.choice(diff.astype(int), size=n_inputs)
     dates = d_start + rand_day
-    years = dates.astype("datetime64[Y]")
-    startnext = (years + 1).astype("datetime64[D]")
+    calendar = Calendar(dates)
 
     inputs_dict = {
         "lat": np.random.uniform(low=-90, high=90, size=n_inputs),
         "elv": np.random.uniform(low=0, high=1000, size=n_inputs),
         "dates": dates,
-        "year": years.astype("int") + 1970,
-        "julian_day": (dates - years + 1).astype("int"),
-        "days_in_year": (startnext - years).astype("int"),
+        "year": calendar.year,
+        "julian_day": calendar.julian_day,
+        "days_in_year": calendar.days_in_year,
         "wn": np.random.uniform(low=0, high=150, size=n_inputs),
         "sf": np.random.uniform(low=0, high=1, size=n_inputs),
         "tc": np.random.uniform(low=0, high=35, size=n_inputs),
