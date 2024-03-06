@@ -339,11 +339,21 @@ def bounds_mask(
 
 
 def evaluate_horner_polynomial(x: NDArray, cf: Union[list, NDArray]) -> NDArray:
-    """Evaluates a polynomial with coefficients `cf` at `x` using Horner's method.
+    r"""Evaluates a polynomial with coefficients `cf` at `x` using Horner's method.
 
-    Horner's method is a fast way to evaluate polynomials, especially for large degrees.
-    For example, the polynomial `p(x) = x^3 + 3x^2 + 4x + 5` can be evaluated
-    at `x = 2` using Horner's method as `p(2) = 2 * (2 * (2 * 1 + 3) + 4) + 5`.
+    Horner's method is a fast way to evaluate polynomials, especially for large degrees,
+    that can be evaluated efficiently using the following rearrangement to avoid taking
+    large powers.
+
+    .. math::
+        :nowrap:
+
+        \[
+            \begin{align*}
+                p(x) &= 5 + 4x + 3x^2 + 2x^3\\
+                    &= 5 + x(4 + x(3 + 2x))
+            \end{align*}
+        \]
 
     Args:
         x: The values at which to evaluate the polynomial
