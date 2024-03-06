@@ -7,8 +7,9 @@ branch of the repo at commit `52d9454b566d`.
 
 Changes:
 
-* This note and the `__init__.py` file to allow the module to be imported are the  only
-  new files in the directory.
+* Two files have been added to the directory. The first is this provenance note and the
+  other is the `__init__.py` file to allow the module to be imported by the benchmarking
+  scripts.
 * The code files have been modified by `isort` and `black` to make it easier to get the
   files past `pre-commit` but the `flake8` and `mypy` checking are explicitly
   supressed to keep the files as close to their original content as possible.
