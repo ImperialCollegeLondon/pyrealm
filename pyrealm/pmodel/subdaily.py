@@ -2,7 +2,7 @@ r"""The :mod:`~pyrealm.pmodel.subdaily` module provides extensions to the P Mode
 incorporate modelling of the fast and slow responses of photosynthesis to changing
 conditions.
 """  # noqa: D205, D415
-from typing import Optional
+from typing import Optional, Tuple
 from warnings import warn
 
 import numpy as np
@@ -185,6 +185,7 @@ class FastSlowPModel:
         kphio: float = 1 / 8,
         handle_nan: bool = False,
         fill_kind: str = "previous",
+        init_realised: Optional[Tuple[NDArray, NDArray, NDArray]] = None,
     ) -> None:
         # Warn about the API
         warn(
@@ -255,6 +256,9 @@ class FastSlowPModel:
         self.jmax25_opt = self.pmodel_acclim.jmax * (
             1 / calc_ftemp_arrh(tk_acclim, ha_jmax25)
         )
+        """Instantaneous optimal :math:`x_{i}`, :math:`V_{cmax}` and :math:`J_{max}`"""
+        if init_realised is not None:
+            self.init_xi_real, self.init_vcmax_real, self.init_jmax_real = init_realised
 
         # Calculate the realised values from the instantaneous optimal values
         self.xi_real: NDArray = memory_effect(
@@ -268,6 +272,7 @@ class FastSlowPModel:
         self.jmax25_real: NDArray = memory_effect(
             self.jmax25_opt, alpha=alpha, handle_nan=handle_nan
         )
+
         r"""Realised daily slow responses in :math:`J_{max25}`"""
 
         # Fill the daily realised values onto the subdaily scale
