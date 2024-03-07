@@ -1,6 +1,7 @@
 """Wrapper script to run the original SPLASH implementation across gridded inputs."""
 
 import argparse
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from itertools import repeat
@@ -9,7 +10,16 @@ from pathlib import Path
 import numpy as np
 import xarray
 from multiprocess.pool import Pool  # type: ignore [import-untyped]
-from splash_py_version.splash import SPLASH  # type: ignore [import-not-found]
+
+# This is included to force the directory containing splash_py_version on to the
+# $PYTHONPATH so that the API used in this directory can be imported by other scripts.
+# Using only the relative path only works when running from this directory.
+path = Path(__file__).parent
+sys.path.insert(0, str(path.absolute()))
+
+from splash_py_version.splash import (  # type: ignore [import-not-found] # noqa: E402, E501
+    SPLASH,
+)
 
 
 @dataclass
