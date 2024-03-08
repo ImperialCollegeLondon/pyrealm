@@ -52,8 +52,15 @@ class SubdailyPModel:
     * The :meth:`~pyrealm.pmodel.subdaily.memory_effect` function is then used to
       calculate realised slowly responding values for :math:`\xi`, :math:`V_{cmax25}`
       and :math:`J_{max25}`, given a weight :math:`\alpha \in [0,1]` that sets the speed
-      of acclimation. The ``handle_nan`` argument is passed to this function to set
-      whether missing values in the optimal predictions are permitted and handled.
+      of acclimation using :math:`R_{t} = R_{t-1}(1 - \alpha) + O_{t} \alpha`, where
+      :math:`O` is the optimal value and :math:`R` is the realised value after
+      acclimation along a time series (:math:`t = 1..n`). Higher values of `alpha` give
+      more rapid acclimation: :math:`\alpha=1` results in immediate acclimation and
+      :math:`\alpha=0` results in no acclimation at all, with values pinned to the
+      initial estimates.
+    * The ``handle_nan`` argument is passed to
+      :meth:`~pyrealm.pmodel.subdaily.memory_effect` to set whether missing
+      values in the optimal predictions are permitted and handled.
     * The realised values are then filled back onto the original subdaily timescale,
       with :math:`V_{cmax}` and :math:`J_{max}` then being calculated from the slowly
       responding :math:`V_{cmax25}` and :math:`J_{max25}` and the actual subdaily
@@ -192,7 +199,7 @@ class SubdailyPModel:
         self.subdaily_jmax25 = fs_scaler.fill_daily_to_subdaily(self.jmax25_real)
         self.subdaily_xi = fs_scaler.fill_daily_to_subdaily(self.xi_real)
 
-        # 7) Adjust subdaily jmax25 and vcmax25 back toto jmax and vcmax given the
+        # 7) Adjust subdaily jmax25 and vcmax25 back to jmax and vcmax given the
         #    actual subdaily temperatures.
         subdaily_tk = self.env.tc + self.env.core_const.k_CtoK
         self.subdaily_vcmax: NDArray = self.subdaily_vcmax25 * calc_ftemp_arrh(
