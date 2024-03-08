@@ -31,8 +31,8 @@ def grid_benchmarks() -> tuple[xarray.Dataset, xarray.Dataset]:
 
     dpath = resources.files("pyrealm_build_data.splash")
 
-    inputs = xarray.load_dataset(dpath / "splash_test_grid_nw_us.nc")
+    inputs = xarray.load_dataset(dpath / "data/splash_nw_us_grid_data.nc")
 
-    expected = xarray.load_dataset(dpath / "splash_test_grid_nw_us_out.nc")
+    expected = xarray.load_dataset(dpath / "data/splash_nw_us_grid_data_outputs.nc")
 
     return inputs, expected
