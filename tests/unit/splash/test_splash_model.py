@@ -71,18 +71,26 @@ def splash_model(grid_benchmarks, splash_core_constants, calendar):
 
     ds = grid_benchmarks[0].sel(time=calendar.dates)
 
-    splash = SplashModel(
-        lat=np.broadcast_to(ds.lat.data[None, :, None], ds.sf.data.shape),
-        elv=np.broadcast_to(ds.elev.data[None, :, :], ds.sf.data.shape),
-        dates=calendar,
-        sf=ds.sf.data,
-        tc=ds.tmp.data,
-        pn=ds.pre.data,
-        core_const=splash_core_constants,
-    )
+    for test_time_index_check in [True, False]:
+        if test_time_index_check:
+            dates = calendar[:-1]
+            context = pytest.raises(ValueError)
+        else:
+            dates = calendar
+            context = nullcontext()
+
+        with context:
+            splash = SplashModel(
+                lat=np.broadcast_to(ds.lat.data[None, :, None], ds.sf.data.shape),
+                elv=np.broadcast_to(ds.elev.data[None, :, :], ds.sf.data.shape),
+                dates=dates,
+                sf=ds.sf.data,
+                tc=ds.tmp.data,
+                pn=ds.pre.data,
+                core_const=splash_core_constants,
+            )
 
     assert splash.shape == (len(ds.time), *ds.elev.shape)
-    assert splash.shape[0] == len(calendar)
     return splash
 
 
