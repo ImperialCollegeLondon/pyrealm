@@ -80,8 +80,8 @@ def fixture_FSS():
             id="Spacing not evenly divisible",
         ),
         pytest.param(
-            pytest.raises(ValueError),
-            "Datetimes include incomplete days",
+            does_not_raise(),
+            None,
             np.arange(
                 np.datetime64("2014-06-01 12:00"),
                 np.datetime64("2014-06-07 00:00"),
@@ -91,8 +91,8 @@ def fixture_FSS():
             id="Not complete days by length",
         ),
         pytest.param(
-            pytest.raises(ValueError),
-            "Datetimes include incomplete days",
+            does_not_raise(),
+            None,
             np.arange(
                 np.datetime64("2014-06-01 12:00"),
                 np.datetime64("2014-06-07 12:00"),

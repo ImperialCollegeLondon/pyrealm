@@ -80,12 +80,11 @@ class FastSlowScaler:
                 "Datetimes are not a 1 dimensional array with dtype datetime64"
             )
 
-        # Enforce data storage in second precision
+        # - stored with second precision
         datetimes = datetimes.astype("datetime64[s]")
 
         # - with strictly increasing time deltas that are both evenly spaced and evenly
         #   divisible into a day
-        n_datetimes = datetimes.shape[0]
         datetime_deltas = np.diff(datetimes)
         spacing = set(datetime_deltas)
 
@@ -98,39 +97,56 @@ class FastSlowScaler:
         if self.spacing < 0:
             raise ValueError("Datetime sequence must be increasing")
 
-        # Get the number of observations per day and check it is evenly divisible.
-        n_sec = 24 * 60 * 60
-        obs_per_date = n_sec // self.spacing.astype("timedelta64[s]").astype(int)
-        day_remainder = n_sec % self.spacing.astype("timedelta64[s]").astype(int)
+        # Work out observations by date and look for incomplete dates at the start and
+        # end of the time sequence
+        dates = datetimes.astype("datetime64[D]")
+        unique_dates, date_counts = np.unique(dates, return_counts=True)
 
+        # Do we have at least three complete day to ensure we have a complete set of
+        # observation times on day 2. Three days is not sensible for the model but this
+        # ensures the padding can de determined.
+        if len(unique_dates) < 3:
+            ValueError("Not enough data to validate observation times")
+
+        # Get the maximum number of observations per day and check it is evenly
+        # divisible by the number of seconds in a day.
+        obs_per_date = date_counts.max()
+        day_remainder = (24 * 60 * 60) % obs_per_date
         if day_remainder:
             raise ValueError("Datetime spacing is not evenly divisible into a day")
 
-        obs_remainder = n_datetimes % obs_per_date
-        if obs_remainder:
-            raise ValueError("Datetimes include incomplete days")
+        # Set the datetime padding
+        self.padding: tuple[int, int] = (
+            obs_per_date - date_counts[0],
+            obs_per_date - date_counts[-1],
+        )
+        """Padding used to handle incomplete start and end days.
 
-        # Get a view of the datetimes wrapped on the number of observations per date
-        # and extract the observation dates and times
-        datetimes_by_date = datetimes.view()
-        datetimes_by_date.shape = (-1, obs_per_date)
+        Provides the number of observations to add to the start and end of the provided
+        datetime sequence to give complete days."""
 
-        # Data could still wrap onto obs x day view but having dates change mid row
-        first_row_dates = datetimes_by_date[0, :].astype("datetime64[D]")
-        if len(set(first_row_dates)) > 1:
-            raise ValueError("Datetimes include incomplete days")
-
-        self.observation_dates: NDArray[np.datetime64] = datetimes_by_date[:, 0].astype(
+        # Get a complete set of observation times from day 2 - we have guaranteed
+        # that the second day is complete.
+        complete_times = datetimes[dates == unique_dates[1]]
+        observation_timedeltas = complete_times - complete_times[0].astype(
             "datetime64[D]"
         )
+
+        # Add padded datetimes as a time series containing only complete days, using an
+        # offset to the last observations to avoid an off by one error from np.arange.
+        self.padded_datetimes = np.arange(
+            unique_dates[0] + observation_timedeltas[0],
+            unique_dates[-1] + (observation_timedeltas[-1] + np.timedelta64(1, "s")),
+            np.diff(observation_timedeltas)[0],
+        )
+
+        self.observation_dates: NDArray[np.datetime64] = unique_dates
         """The dates covered by the observations"""
 
         self.n_days: int = len(self.observation_dates)
         """The number of days covered by the observations"""
 
-        self.observation_times: NDArray[np.timedelta64] = (
-            datetimes_by_date[0, :] - self.observation_dates[0]
-        ).astype("timedelta64[s]")
+        self.observation_times: NDArray[np.timedelta64] = observation_timedeltas
         """The times of observations through the day as timedelta64 values in seconds"""
 
         self.n_obs: int = len(self.observation_times)
@@ -174,9 +190,9 @@ class FastSlowScaler:
           samples.
         """
 
-        # Get a view of the times wrapped by date and then reshape along the first
+        # Get a view of the complete padded datetimes and then reshape along the first
         # axis into daily subarrays.
-        times_by_day = self.datetimes.view()
+        times_by_day = self.padded_datetimes.view()
         times_by_day.shape = tuple([self.n_days, self.n_obs])
 
         # subset to the included daily values
@@ -292,6 +308,29 @@ class FastSlowScaler:
 
     #     self.method = "Around max"
 
+    def pad_values(self, values: NDArray) -> NDArray:
+        """Pad values array to full days.
+
+        This method takes an array representing daily values and pads the first and
+        last day with NaN values so that they correspond to full days, similar to the
+        datetimes array of this class.
+
+        Args:
+            values: An array containing the sample values. The first dimension should be
+              matching the number of measurements, i.e., the first dimension of
+              datetimes in
+              :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler`.
+        """
+
+        if self.padding == (0, 0):
+            return values
+
+        # Construct a padding iterable for np.pad, to pad only the first time axis
+        padding_dims = list((self.padding,))
+        padding_dims.extend([(0, 0)] * (values.ndim - 1))
+
+        return np.pad(values, padding_dims, constant_values=(np.nan, np.nan))
+
     def get_window_values(self, values: NDArray) -> NDArray:
         """Extract acclimation window values for a variable.
 
@@ -320,8 +359,11 @@ class FastSlowScaler:
 
         # Get a view of the values wrapped by date and then reshape along the first
         # axis into daily subarrays, leaving any remaining dimensions untouched.
-        # Using a view and reshape should avoid copying the data.
-        values_by_day = values.view()
+        # When the values are padded the returned value is automatically a padded copy
+        # of the original data, but if there is no padding, the original data is
+        # returned and using a view and reshape should avoid copying the data.
+        padded_values = self.pad_values(values)
+        values_by_day = padded_values.view()
         values_by_day.shape = tuple([self.n_days, self.n_obs] + list(values.shape[1:]))
 
         # subset to the included daily values
