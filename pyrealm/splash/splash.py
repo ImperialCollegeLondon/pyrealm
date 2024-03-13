@@ -171,11 +171,12 @@ class SplashModel:
             # Calculate the difference between the start of year soil moisture and the
             # final day of the year and then update the start point to the end of year.
             diff_sm = np.abs(wn_start - wn_day)
+            max_diff = np.nanmax(diff_sm)
             wn_start = wn_day
 
             # Report if verbose
             if verbose:
-                print(f"Iteration: {n_iter}; maximum difference: {diff_sm.max()}")
+                print(f"Iteration: {n_iter}; maximum difference: {max_diff}")
 
             if np.nanmax(diff_sm) <= max_diff:
                 equilibrated = True
@@ -184,7 +185,7 @@ class SplashModel:
         if not equilibrated:
             raise RuntimeError(
                 f"Initial soil moisture did not converge within {n_iter} iterations:"
-                f"maximum absolute difference = {diff_sm.max()}"
+                f"maximum absolute difference = {max_diff}"
             )
 
         return wn_start
