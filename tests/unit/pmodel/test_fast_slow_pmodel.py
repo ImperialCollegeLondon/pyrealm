@@ -124,7 +124,7 @@ def test_FSPModel_corr(be_vie_data_components):
         env=env,
         fs_scaler=fsscaler,
         handle_nan=True,
-        kphio=1 / 8,
+        kphio=1.0 / 8.0,
         fapar=fapar,
         ppfd=ppfd,
     )

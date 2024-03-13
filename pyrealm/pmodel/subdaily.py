@@ -272,7 +272,7 @@ class FastSlowPModel:
 
         # Fill the daily realised values onto the subdaily scale
 
-        subdaily_tk = fs_scaler.pad_values(self.env.tc + self.env.core_const.k_CtoK)
+        subdaily_tk = self.env.tc + self.env.core_const.k_CtoK
 
         # Fill the realised xi, jmax25 and vcmax25 from subdaily to daily and then
         # adjust jmax25 and vcmax25 to jmax and vcmax given actual temperature at
@@ -291,23 +291,20 @@ class FastSlowPModel:
         """Estimated subdaily :math:`J_{max}`."""
 
         self.subdaily_ci: NDArray = (
-            self.subdaily_xi
-            * fs_scaler.pad_values(
-                self.env.ca + self.env.gammastar * np.sqrt(self.env.vpd)
-            )
-        ) / (self.subdaily_xi + fs_scaler.pad_values(np.sqrt(self.env.vpd)))
+            self.subdaily_xi * self.env.ca + self.env.gammastar * np.sqrt(self.env.vpd)
+        ) / (self.subdaily_xi + np.sqrt(self.env.vpd))
         """Estimated subdaily :math:`c_i`."""
 
         # Calculate Ac, J and Aj at subdaily scale to calculate assimilation
         self.subdaily_Ac: NDArray = (
             self.subdaily_vcmax
-            * (self.subdaily_ci - fs_scaler.pad_values(self.env.gammastar))
-            / (self.subdaily_ci + fs_scaler.pad_values(self.env.kmm))
+            * (self.subdaily_ci - self.env.gammastar)
+            / (self.subdaily_ci + self.env.kmm)
         )
         """Estimated subdaily :math:`A_c`."""
 
-        kphio_tc = fs_scaler.pad_values(kphio * calc_ftemp_kphio(tc=self.env.tc))
-        iabs = fs_scaler.pad_values(fapar * ppfd)
+        kphio_tc = kphio * calc_ftemp_kphio(tc=self.env.tc)
+        iabs = fapar * ppfd
 
         subdaily_J = (4 * kphio_tc * iabs) / np.sqrt(
             1 + ((4 * kphio_tc * iabs) / self.subdaily_jmax) ** 2
@@ -315,8 +312,8 @@ class FastSlowPModel:
 
         self.subdaily_Aj: NDArray = (
             (subdaily_J / 4)
-            * (self.subdaily_ci - fs_scaler.pad_values(self.env.gammastar))
-            / (self.subdaily_ci + 2 * fs_scaler.pad_values(self.env.gammastar))
+            * (self.subdaily_ci - self.env.gammastar)
+            / (self.subdaily_ci + 2 * self.env.gammastar)
         )
         """Estimated subdaily :math:`A_j`."""
 

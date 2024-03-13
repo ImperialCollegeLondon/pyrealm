@@ -110,8 +110,7 @@ class FastSlowScaler:
 
         # Get the number of observations per day.
         n_sec = 24 * 60 * 60
-        obs_per_date = n_sec // self.spacing.astype(int)
-        self.obs_per_date = obs_per_date
+        self.obs_per_date = n_sec // self.spacing.astype(int)
 
         # Check whether the first day is complete
         if datetimes[0].astype(datetime.datetime).time() != min_time:
@@ -182,7 +181,7 @@ class FastSlowScaler:
         # Get a view of the datetimes wrapped on the number of observations per date
         # and extract the observation dates and times
         datetimes_by_date = datetimes.view()
-        datetimes_by_date.shape = (-1, obs_per_date)
+        datetimes_by_date.shape = (-1, self.obs_per_date)
 
         self.observation_dates: NDArray[np.datetime64] = datetimes_by_date[:, 0].astype(
             "datetime64[D]"
