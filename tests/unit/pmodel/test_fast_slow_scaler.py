@@ -68,39 +68,39 @@ def fixture_FSS():
             ),
             id="Negative timedeltas",
         ),
-        #        pytest.param(
-        #            pytest.raises(ValueError),
-        #            "Datetime spacing is not evenly divisible into a day",
-        #            np.arange(
-        #                np.datetime64("2014-06-01 00:00"),
-        #                np.datetime64("2014-06-07 00:00"),
-        #                np.timedelta64(21, "m"),
-        #                dtype="datetime64[s]",
-        #            ),
-        #            id="Spacing not evenly divisible",
-        #        ),
-        #        pytest.param(
-        #            pytest.raises(ValueError),
-        #            "Datetimes include incomplete days",
-        #            np.arange(
-        #                np.datetime64("2014-06-01 12:00"),
-        #                np.datetime64("2014-06-07 00:00"),
-        #                np.timedelta64(30, "m"),
-        #                dtype="datetime64[s]",
-        #            ),
-        #            id="Not complete days by length",
-        #        ),
-        #        pytest.param(
-        #            pytest.raises(ValueError),
-        #            "Datetimes include incomplete days",
-        #            np.arange(
-        #                np.datetime64("2014-06-01 12:00"),
-        #                np.datetime64("2014-06-07 12:00"),
-        #                np.timedelta64(30, "m"),
-        #                dtype="datetime64[s]",
-        #            ),
-        #            id="Not complete days by wrapping",
-        #        ),
+        pytest.param(
+            pytest.raises(ValueError),
+            "Datetime spacing is not evenly divisible into a day",
+            np.arange(
+                np.datetime64("2014-06-01 00:00"),
+                np.datetime64("2014-06-07 00:00"),
+                np.timedelta64(21, "m"),
+                dtype="datetime64[s]",
+            ),
+            id="Spacing not evenly divisible",
+        ),
+        pytest.param(
+            does_not_raise(),
+            None,
+            np.arange(
+                np.datetime64("2014-06-01 12:00"),
+                np.datetime64("2014-06-07 00:00"),
+                np.timedelta64(30, "m"),
+                dtype="datetime64[s]",
+            ),
+            id="Not complete days by length",
+        ),
+        pytest.param(
+            does_not_raise(),
+            None,
+            np.arange(
+                np.datetime64("2014-06-01 12:00"),
+                np.datetime64("2014-06-07 12:00"),
+                np.timedelta64(30, "m"),
+                dtype="datetime64[s]",
+            ),
+            id="Not complete days by wrapping",
+        ),
         pytest.param(
             does_not_raise(),
             None,

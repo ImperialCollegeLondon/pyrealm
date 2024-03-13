@@ -85,7 +85,6 @@ class FastSlowScaler:
 
         # - with strictly increasing time deltas that are both evenly spaced and evenly
         #   divisible into a day
-        # n_datetimes = datetimes.shape[0]
         datetime_deltas = np.diff(datetimes)
         spacing = set(datetime_deltas)
 
@@ -111,6 +110,11 @@ class FastSlowScaler:
         # Get the number of observations per day.
         n_sec = 24 * 60 * 60
         self.obs_per_date = n_sec // self.spacing.astype(int)
+
+        day_remainder = n_sec % self.spacing.astype(int)
+
+        if day_remainder:
+            raise ValueError("Datetime spacing is not evenly divisible into a day")
 
         # Check whether the first day is complete
         if datetimes[0].astype(datetime.datetime).time() != min_time:

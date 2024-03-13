@@ -195,11 +195,11 @@ class FastSlowPModel:
 
         # Check that the length of the fast slow scaler is congruent with the
         # first axis of the photosynthetic environment
-        # n_datetimes = fs_scaler.datetimes.shape[0]
-        # n_env_first_axis = env.tc.shape[0]
+        n_datetimes = fs_scaler.datetimes.shape[0]
+        n_env_first_axis = env.tc.shape[0]
 
-        # if n_datetimes != n_env_first_axis:
-        #    raise ValueError("env and fs_scaler do not have congruent dimensions")
+        if n_datetimes != n_env_first_axis:
+            raise ValueError("env and fs_scaler do not have congruent dimensions")
 
         # Has a set method been run on the fast slow scaler
         if not hasattr(fs_scaler, "include"):
