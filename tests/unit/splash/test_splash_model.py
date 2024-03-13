@@ -67,13 +67,14 @@ def test_splash_model_init(splash_core_constants, grid_benchmarks, var, flag):
 def splash_model(grid_benchmarks, splash_core_constants, calendar):
     """Create a SplashModel object for testing."""
 
+    from pyrealm.core.calendar import Calendar
     from pyrealm.splash.splash import SplashModel
 
     ds = grid_benchmarks[0].sel(time=calendar.dates)
 
     for test_time_index_check in [True, False]:
         if test_time_index_check:
-            dates = calendar[:-1]
+            dates = Calendar(calendar.dates[:-1])
             context = pytest.raises(ValueError)
         else:
             dates = calendar
