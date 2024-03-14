@@ -159,14 +159,10 @@ def test_FSPModel_corr(be_vie_data_components):
     without acclimating xi.
     """
 
-    from pyrealm.pmodel import FastSlowScaler, PModel
+    from pyrealm.pmodel import FastSlowScaler
     from pyrealm.pmodel.new_subdaily import SubdailyPModel
 
     env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components
-
-    # Fit the standard P Model
-    pmodel = PModel(env=env, kphio=1 / 8)
-    pmodel.estimate_productivity(fapar=fapar, ppfd=ppfd)
 
     # Get the fast slow scaler and set window
     fsscaler = FastSlowScaler(datetime)
@@ -216,17 +212,13 @@ def test_FSPModel_corr_padded(be_vie_data_components_padded):
     have incomplete days to check that the handling of the data holds up when the dates
     are changed. Note that this does nothing at all to the calculations - the data are
     padded with np.nan - so this is mostly checking that padding by itself does not
-    raise issues.
+    cause the calculations to differ.
     """
 
-    from pyrealm.pmodel import FastSlowScaler, PModel
+    from pyrealm.pmodel import FastSlowScaler
     from pyrealm.pmodel.new_subdaily import SubdailyPModel
 
     env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components_padded
-
-    # Fit the standard P Model
-    pmodel = PModel(env=env, kphio=1 / 8)
-    pmodel.estimate_productivity(fapar=fapar, ppfd=ppfd)
 
     # Get the fast slow scaler and set window
     fsscaler = FastSlowScaler(datetime)
