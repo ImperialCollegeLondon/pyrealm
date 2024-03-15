@@ -24,87 +24,83 @@ def be_vie_data():
     return data
 
 
-# @pytest.fixture(scope="module")
-# def be_vie_data_components(be_vie_data):
-#     """Convert the test data into a PModelEnv and arrays."""
-
-#     from pyrealm.pmodel import PModelEnvironment
-
-#     # Extract the key half hourly timestep variables
-#     ppfd_subdaily = be_vie_data["ppfd"].to_numpy()
-#     fapar_subdaily = be_vie_data["fapar"].to_numpy()
-#     datetime_subdaily = be_vie_data["time"].to_numpy()
-#     expected_gpp = be_vie_data["GPP_JAMES"].to_numpy()
-
-#     # Create the environment including some randomly distributed water variables
-#     # to test the methods that require those variables
-#     rng = np.random.default_rng()
-#     subdaily_env = PModelEnvironment(
-#         tc=be_vie_data["ta"].to_numpy(),
-#         vpd=be_vie_data["vpd"].to_numpy(),
-#         co2=be_vie_data["co2"].to_numpy(),
-#         patm=be_vie_data["patm"].to_numpy(),
-#         theta=rng.uniform(low=0.7, high=1.0, size=be_vie_data["ppfd"].shape),
-#         rootzonestress=rng.uniform(low=0.7, high=1.0, size=be_vie_data["ppfd"].shape),
-#     )
-
-#     return (
-#         subdaily_env, ppfd_subdaily, fapar_subdaily, datetime_subdaily, expected_gpp
-#     )
-
-
 @pytest.fixture(scope="function")
-def be_vie_data_components(request, be_vie_data):
-    """Convert the test data into a PModelEnv and arrays.
+def be_vie_data_components(be_vie_data):
+    """Provides a data factory to convert the test data into a PModelEnv and arrays.
 
-    This fixture optionally allows indirect paramaterisation to provide a 2 tuple of
-    integers that are used to extend the time sequence before and after the original
-    data. This is used to simulate incomplete days by adding the requested number of
-    half hourly time steps onto the original datetimes - so (12, 12) would extend the
-    datetimes to from 6pm on the day before the first date to 6am on the day after the
-    last date. If request.param is not defined, the original data is used.
+    This fixture returns an instance of a DataFactory class, that provides a `get`
+    method to allow different subsets of the data to be built into the inputs for
+    subdaily model testing. Providing this as a DataFactory generator allows tests to
+    access more than one subset of the same data, which is useful in comparing the
+    behaviour of complete and incomplete daily datetime sequences.
 
-    This is _not_ expected to be used to extend the actual data - which are deliberately
-    padded with `np.nan` to preserve the calculations giving the expected sequence of
-    GPP values.
+    The get method supports two modes, "pad" and "crop, both of which also require a
+    `start` and `end` value.
+
+    * In "pad" mode,  the original time series is extended by the specified number of
+      half hourly steps at the start and end of the original data. The datetimes are
+      filled in to give an actual time series but the data values are simply padded with
+      `np.nan`. This is used to check that the presence of incomplete days does not
+      affect the prediction of the sequence of GPP values. Since the actual data are not
+      changed, the padded data should pass without affecting the calculations.
+
+    * In "crop" mode, the original time series is cropped to only the rows in start:end.
+      This is used to assess the behaviour of incomplete day handling and the switch
+      points between providing daily estimates.
     """
 
     from pyrealm.pmodel import PModelEnvironment
 
-    # Get the padding from request.param if indirect parameterisation is used, otherwise
-    # use the data as is.
-    padding = getattr(request, "param", (0, 0))
+    class DataFactory:
+        def get(self, mode: str = "", start: int = 0, end: int = 0):
+            # Get a copy of the data so as to not break the module scope loaded object.
+            data = be_vie_data.copy()
 
-    # Pad the datetimes with actual time sequences
-    datetime_subdaily = be_vie_data["time"].to_numpy()
-    spacing = np.diff(datetime_subdaily)[0]
+            # Implement the two sampling modes
+            if mode == "pad":
+                # Get the new time series with the padded times
+                datetime_subdaily = data["time"].to_numpy()
+                spacing = np.diff(datetime_subdaily)[0]
+                pad_start = datetime_subdaily[0] - np.arange(start, 0, -1) * spacing
+                pad_end = datetime_subdaily[-1] + np.arange(1, end + 1, 1) * spacing
 
-    pad_start = datetime_subdaily[0] - np.arange(padding[0], 0, -1) * spacing
-    pad_end = datetime_subdaily[-1] + np.arange(1, padding[1] + 1, 1) * spacing
+                # Pad the data frame with np.nan as requested
+                data.index = range(start, len(data) + start)
+                data = data.reindex(range(0, len(data) + start + end))
 
-    datetime_subdaily = np.concatenate([pad_start, datetime_subdaily, pad_end])
+                # Set the new times into the data frame
+                data["time"] = np.concatenate([pad_start, datetime_subdaily, pad_end])
 
-    def _pad_pd_to_np(vals):
-        """Add any required padding to the start and end of the data."""
-        return np.pad(vals.to_numpy(), padding, constant_values=np.nan)
+            if mode == "crop":
+                # Crop the data to the requested block and get the datetimes
+                data = data.iloc[start:end]
 
-    ppfd_subdaily = _pad_pd_to_np(be_vie_data["ppfd"])
-    fapar_subdaily = _pad_pd_to_np(be_vie_data["fapar"])
-    expected_gpp = _pad_pd_to_np(be_vie_data["GPP_JAMES"])
+            datetime_subdaily = data["time"].to_numpy()
+            ppfd_subdaily = data["ppfd"].to_numpy()
+            fapar_subdaily = data["fapar"].to_numpy()
+            expected_gpp = data["GPP_JAMES"].to_numpy()
 
-    # Create the environment including some randomly distributed water variables to test
-    # the methods that require those variables
-    rng = np.random.default_rng()
-    subdaily_env = PModelEnvironment(
-        tc=_pad_pd_to_np(be_vie_data["ta"]),
-        vpd=_pad_pd_to_np(be_vie_data["vpd"]),
-        co2=_pad_pd_to_np(be_vie_data["co2"]),
-        patm=_pad_pd_to_np(be_vie_data["patm"]),
-        theta=rng.uniform(low=0.5, high=0.8, size=ppfd_subdaily.shape),
-        rootzonestress=rng.uniform(low=0.7, high=1.0, size=ppfd_subdaily.shape),
-    )
+            # Create the environment including some randomly distributed water variables
+            # to test the methods that require those variables
+            rng = np.random.default_rng()
+            subdaily_env = PModelEnvironment(
+                tc=data["ta"].to_numpy(),
+                vpd=data["vpd"].to_numpy(),
+                co2=data["co2"].to_numpy(),
+                patm=data["patm"].to_numpy(),
+                theta=rng.uniform(low=0.5, high=0.8, size=ppfd_subdaily.shape),
+                rootzonestress=rng.uniform(low=0.7, high=1.0, size=ppfd_subdaily.shape),
+            )
 
-    return subdaily_env, ppfd_subdaily, fapar_subdaily, datetime_subdaily, expected_gpp
+            return (
+                subdaily_env,
+                ppfd_subdaily,
+                fapar_subdaily,
+                datetime_subdaily,
+                expected_gpp,
+            )
+
+    return DataFactory()
 
 
 def test_FSPModel_JAMES(be_vie_data_components):
@@ -117,7 +113,7 @@ def test_FSPModel_JAMES(be_vie_data_components):
     from pyrealm.pmodel import FastSlowScaler
     from pyrealm.pmodel.subdaily import FastSlowPModel_JAMES
 
-    env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components
+    env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components.get()
 
     # Get the fast slow scaler and set window
     fsscaler = FastSlowScaler(datetime)
@@ -157,74 +153,33 @@ def test_FSPModel_JAMES(be_vie_data_components):
     )
 
 
-# def test_FSPModel_corr(be_vie_data_components):
-#     """Test FastSlowPModel.
-
-#     This tests that the pyrealm implementation including acclimating xi at least
-#     correlates well with the legacy calculations from the Mengoli et al JAMES paper
-#     without acclimating xi.
-#     """
-
-#     from pyrealm.pmodel import FastSlowScaler
-#     from pyrealm.pmodel.new_subdaily import SubdailyPModel
-
-#     env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components
-
-#     # Get the fast slow scaler and set window
-#     fsscaler = FastSlowScaler(datetime)
-#     fsscaler.set_window(
-#         window_center=np.timedelta64(12, "h"),
-#         half_width=np.timedelta64(30, "m"),
-#     )
-
-#     # Run as a subdaily model
-#     fs_pmodel = SubdailyPModel(
-#         env=env,
-#         ppfd=ppfd,
-#         fapar=fapar,
-#         fs_scaler=fsscaler,
-#         handle_nan=True,
-#     )
-
-#     valid = np.logical_not(
-#         np.logical_or(np.isnan(expected_gpp), np.isnan(fs_pmodel.gpp))
-#     )
-
-#     # Test that non-NaN predictions correlate well and are approximately the same
-#     gpp_in_micromols = fs_pmodel.gpp[valid] / env.core_const.k_c_molmass
-#     assert np.allclose(gpp_in_micromols, expected_gpp[valid], rtol=0.2)
-#     r_vals = np.corrcoef(gpp_in_micromols, expected_gpp[valid])
-#     assert np.all(r_vals > 0.995)
-
-
 @pytest.mark.parametrize(
-    argnames="be_vie_data_components",
+    argnames="data_args",
     argvalues=[
-        pytest.param((0, 0), id="no pad"),
-        pytest.param((12, 0), id="start pad"),
-        pytest.param((0, 12), id="end pad"),
-        pytest.param((12, 12), id="pad both"),
+        pytest.param({"mode": "pad", "start": 0, "end": 0}, id="no pad"),
+        pytest.param({"mode": "pad", "start": 12, "end": 0}, id="start pad"),
+        pytest.param({"mode": "pad", "start": 0, "end": 12}, id="end pad"),
+        pytest.param({"mode": "pad", "start": 12, "end": 12}, id="pad both"),
     ],
-    indirect=["be_vie_data_components"],
 )
-def test_FSPModel_corr_padded(be_vie_data_components):
+def test_FSPModel_corr(be_vie_data_components, data_args):
     """Test FastSlowPModel.
 
     This tests that the pyrealm implementation including acclimating xi at least
     correlates well with the legacy calculations from the Mengoli et al JAMES paper
     without acclimating xi.
 
-    The fixture providing the data uses indirect parameterisation to pad the data to
-    have incomplete days to check that the handling of the data holds up when the dates
-    are changed. Note that this does nothing at all to the calculations - the data are
-    padded with np.nan - so this is mostly checking that padding by itself does not
-    cause the calculations to differ.
+    The test also uses indirect parameterisation to pad the data to have incomplete days
+    to check that the handling of the data holds up when the dates are changed. Note
+    that this does nothing at all to the calculations - the data are padded with np.nan
+    - so this is mostly checking that padding by itself does not cause the calculations
+    to differ.
     """
 
     from pyrealm.pmodel import FastSlowScaler
     from pyrealm.pmodel.new_subdaily import SubdailyPModel
 
-    env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components
+    env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components.get(**data_args)
 
     # Get the fast slow scaler and set window
     fsscaler = FastSlowScaler(datetime)
@@ -320,7 +275,7 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
     from pyrealm.pmodel import FastSlowScaler
     from pyrealm.pmodel.new_subdaily import SubdailyPModel
 
-    env, ppfd, fapar, datetime, _ = be_vie_data_components
+    env, ppfd, fapar, datetime, _ = be_vie_data_components.get()
 
     # Get the fast slow scaler and set window
     fsscaler = FastSlowScaler(datetime)
@@ -347,7 +302,7 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
     from pyrealm.pmodel import FastSlowScaler, PModel
     from pyrealm.pmodel.new_subdaily import SubdailyPModel, convert_pmodel_to_subdaily
 
-    env, ppfd, fapar, datetime, _ = be_vie_data_components
+    env, ppfd, fapar, datetime, _ = be_vie_data_components.get()
 
     # Get the fast slow scaler and set window
     fsscaler = FastSlowScaler(datetime)
@@ -378,52 +333,41 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
 
 
 @pytest.mark.parametrize(
-    argnames="start_point",
+    argnames="be_vie_data_components",
     argvalues=[
-        pytest.param(48, id="complete_day"),
-        pytest.param(36, id="no_acclim_data"),
-        pytest.param(24, id="partial_acclim_data"),
-        pytest.param(12, id="all_acclim_data"),
+        pytest.param(("crop", 48, 48 * 6), id="complete day"),
+        pytest.param(("crop", 36, 48 * 6), id="non window start"),
+        pytest.param(("crop", 25, 48 * 6), id="partial window start"),
+        pytest.param(("crop", 23, 48 * 6), id="all window start"),
     ],
+    indirect=["be_vie_data_components"],
 )
-def test_FSPModel_start_time_behaviour(be_vie_data, start_point):
+def test_FSPModel_incomplete_day_behaviour(be_vie_data_components):
     """Test FastSlowPModel.
 
     This tests that the SubdailyModel works as expected with incomplete start and end
-    days.
+    days. It uses indirect parameterisation to subset the data being passed in by the
+    be_vie_data_components fixture.
     """
 
-    # from pyrealm.pmodel import FastSlowScaler, PModel
-    # from pyrealm.pmodel.new_subdaily import SubdailyPModel
+    from pyrealm.pmodel.new_subdaily import FastSlowScaler, SubdailyPModel
 
-    # truncated_data = data[]
+    env, ppfd, fapar, datetime, _ = be_vie_data_components.get()
 
-    # # Fit the standard P Model
-    # pmodel = PModel(env=env, kphio=1 / 8)
-    # pmodel.estimate_productivity(fapar=fapar, ppfd=ppfd)
+    # Get the fast slow scaler and set window
+    fsscaler = FastSlowScaler(datetime)
+    fsscaler.set_window(
+        window_center=np.timedelta64(12, "h"),
+        half_width=np.timedelta64(30, "m"),
+    )
 
-    # # Get the fast slow scaler and set window
-    # fsscaler = FastSlowScaler(datetime)
-    # fsscaler.set_window(
-    #     window_center=np.timedelta64(12, "h"),
-    #     half_width=np.timedelta64(30, "m"),
-    # )
+    # Run as a subdaily model
+    fs_pmodel = SubdailyPModel(
+        env=env,
+        ppfd=ppfd,
+        fapar=fapar,
+        fs_scaler=fsscaler,
+        handle_nan=True,
+    )
 
-    # # Run as a subdaily model
-    # fs_pmodel = SubdailyPModel(
-    #     env=env,
-    #     ppfd=ppfd,
-    #     fapar=fapar,
-    #     fs_scaler=fsscaler,
-    #     handle_nan=True,
-    # )
-
-    # valid = np.logical_not(
-    #     np.logical_or(np.isnan(expected_gpp), np.isnan(fs_pmodel.gpp))
-    # )
-
-    # # Test that non-NaN predictions correlate well and are approximately the same
-    # gpp_in_micromols = fs_pmodel.gpp[valid] / env.core_const.k_c_molmass
-    # assert np.allclose(gpp_in_micromols, expected_gpp[valid], rtol=0.2)
-    # r_vals = np.corrcoef(gpp_in_micromols, expected_gpp[valid])
-    # assert np.all(r_vals > 0.995)
+    assert isinstance(fs_pmodel, SubdailyPModel)
