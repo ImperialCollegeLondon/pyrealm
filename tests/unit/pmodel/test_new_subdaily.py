@@ -333,41 +333,62 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
 
 
 @pytest.mark.parametrize(
-    argnames="be_vie_data_components",
+    argnames="incomplete,complete",
     argvalues=[
-        pytest.param(("crop", 48, 48 * 6), id="complete day"),
-        pytest.param(("crop", 36, 48 * 6), id="non window start"),
-        pytest.param(("crop", 25, 48 * 6), id="partial window start"),
-        pytest.param(("crop", 23, 48 * 6), id="all window start"),
+        pytest.param(
+            {"mode": "crop", "start": 48, "end": 48 * 6},
+            {"mode": "crop", "start": 48, "end": 48 * 6},
+            id="complete day",
+        ),
+        pytest.param(
+            {"mode": "crop", "start": 36, "end": 48 * 6},
+            {"mode": "crop", "start": 48, "end": 48 * 6},
+            id="non window start",
+        ),
+        pytest.param(
+            {"mode": "crop", "start": 25, "end": 48 * 6},
+            {"mode": "crop", "start": 48, "end": 48 * 6},
+            id="partial window start",
+        ),
+        pytest.param(
+            {"mode": "crop", "start": 23, "end": 48 * 6},
+            {"mode": "crop", "start": 48, "end": 48 * 6},
+            id="all window start",
+        ),
     ],
-    indirect=["be_vie_data_components"],
 )
-def test_FSPModel_incomplete_day_behaviour(be_vie_data_components):
+def test_FSPModel_incomplete_day_behaviour(
+    be_vie_data_components, incomplete, complete
+):
     """Test FastSlowPModel.
 
     This tests that the SubdailyModel works as expected with incomplete start and end
-    days. It uses indirect parameterisation to subset the data being passed in by the
-    be_vie_data_components fixture.
+    days.
+
     """
 
     from pyrealm.pmodel.new_subdaily import FastSlowScaler, SubdailyPModel
 
-    env, ppfd, fapar, datetime, _ = be_vie_data_components.get()
+    def model_fitter(env, ppfd, fapar, datetime):
+        # Get the fast slow scaler and set window
+        fsscaler = FastSlowScaler(datetime)
+        fsscaler.set_window(
+            window_center=np.timedelta64(12, "h"),
+            half_width=np.timedelta64(30, "m"),
+        )
 
-    # Get the fast slow scaler and set window
-    fsscaler = FastSlowScaler(datetime)
-    fsscaler.set_window(
-        window_center=np.timedelta64(12, "h"),
-        half_width=np.timedelta64(30, "m"),
-    )
+        # Run as a subdaily model
+        return SubdailyPModel(
+            env=env,
+            ppfd=ppfd,
+            fapar=fapar,
+            fs_scaler=fsscaler,
+            handle_nan=True,
+        )
 
-    # Run as a subdaily model
-    fs_pmodel = SubdailyPModel(
-        env=env,
-        ppfd=ppfd,
-        fapar=fapar,
-        fs_scaler=fsscaler,
-        handle_nan=True,
-    )
+    # Feed the arguments for complete and incomplete days into DataFactory and then feed
+    # the returned values (except the last element containing GPP) into the model fitter
+    incomplete_mod = model_fitter(*be_vie_data_components.get(**incomplete)[:-1])
+    complete_mod = model_fitter(*be_vie_data_components.get(**complete)[:-1])
 
-    assert isinstance(fs_pmodel, SubdailyPModel)
+    assert np.allclose(incomplete_mod.gpp, complete_mod.gpp, equal_nan=True)
