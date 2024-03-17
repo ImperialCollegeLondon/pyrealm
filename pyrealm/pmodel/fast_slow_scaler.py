@@ -369,21 +369,33 @@ class FastSlowScaler:
         # subset to the included daily values
         return values_by_day[:, self.include, ...]
 
-    def get_daily_means(self, values: NDArray) -> NDArray:
+    def get_daily_means(
+        self, values: NDArray, allow_partial_data: bool = False
+    ) -> NDArray:
         """Get the daily means of a variable during the acclimation window.
 
         This method extracts values from a given variable during a defined acclimation
         window set using one of the ``set_`` methods, and then calculates the daily mean
-        of those values.
+        of those values. The `allow_partial_data` option switches between using
+        :func:`np.mean` and :func:`np.nanmean` - note that this will still return
+        `np.nan` if no data is present in the acclimation window.
 
         The values can have any number of dimensions, but the first dimension must
         represent the time axis and have the same length as the original set of
         observation times.
 
+        Args:
+            values: An array of values to reduce to daily averages.
+            allow_partial_data: Exclude missing data from the calculation of the daily
+                average value.
+
         Returns:
             An array of mean daily values during the acclimation window
         """
         daily_values = self.get_window_values(values)
+
+        if allow_partial_data:
+            return np.nanmean(daily_values, axis=1)
 
         return daily_values.mean(axis=1)
 
