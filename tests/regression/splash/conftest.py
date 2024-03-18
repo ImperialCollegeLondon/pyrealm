@@ -32,7 +32,7 @@ def daily_flux_benchmarks() -> tuple[np.ndarray, np.ndarray]:
     dpath = resources.files("pyrealm_build_data.splash")
 
     inputs = np.genfromtxt(
-        str(dpath / "inputs.csv"),
+        str(dpath / "data/daily_flux_benchmark_inputs.csv"),
         dtype=None,
         delimiter=",",
         names=True,
@@ -40,7 +40,7 @@ def daily_flux_benchmarks() -> tuple[np.ndarray, np.ndarray]:
     )
 
     expected = np.genfromtxt(
-        str(dpath / "benchmark_daily_fluxes.csv"),
+        str(dpath / "data/daily_flux_benchmark_outputs.csv"),
         dtype=None,
         delimiter=",",
         names=True,
@@ -70,9 +70,9 @@ def one_d_benchmark() -> tuple[xarray.Dataset, xarray.Dataset]:
 
     dpath = resources.files("pyrealm_build_data.splash")
 
-    inputs = xarray.load_dataset(dpath / "splash_test_example.nc")
+    inputs = xarray.load_dataset(dpath / "data/splash_sf_example_data.nc")
 
-    expected = xarray.load_dataset(dpath / "splash_test_example_out.nc")
+    expected = xarray.load_dataset(dpath / "data/splash_sf_example_data_details.nc")
 
     return inputs, expected
 
@@ -89,8 +89,8 @@ def grid_benchmarks() -> tuple[xarray.Dataset, xarray.Dataset]:
 
     dpath = resources.files("pyrealm_build_data.splash")
 
-    inputs = xarray.load_dataset(dpath / "splash_test_grid_nw_us.nc")
+    inputs = xarray.load_dataset(dpath / "data/splash_nw_us_grid_data.nc")
 
-    expected = xarray.load_dataset(dpath / "splash_test_grid_nw_us_out.nc")
+    expected = xarray.load_dataset(dpath / "data/splash_nw_us_grid_data_outputs.nc")
 
     return inputs, expected
