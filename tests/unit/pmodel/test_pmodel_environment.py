@@ -18,7 +18,6 @@ from pyrealm.pmodel.functions import (
     "tc, patm, expected_result",
     [
         (20, 101325, 46.09928),  # Test case with known inputs and expected output
-        # Add more test cases here with different inputs and expected outputs
     ],
 )
 def test_calc_kmm(tc, patm, expected_result):
@@ -40,7 +39,6 @@ def test_calc_kmm(tc, patm, expected_result):
     "tc, patm, expected_result",
     [
         (20, 101325, 1.12536),  # Test case with known inputs and expected output
-        # Add more test cases here with different inputs and expected outputs
     ],
 )
 def test_calc_ns_star(tc, patm, expected_result):
@@ -57,7 +55,6 @@ def test_calc_ns_star(tc, patm, expected_result):
     "tc, patm, expected_result",
     [
         (20, 101325, 3.33925),  # Test case with known inputs and expected output
-        # Add more test cases here with different inputs and expected outputs
     ],
 )
 def test_calc_gammastar(tc, patm, expected_result):
@@ -77,7 +74,6 @@ def test_calc_gammastar(tc, patm, expected_result):
     "co2, patm, expected_result",
     [
         (413.03, 101325, 41.850265),  # Test case with known inputs and expected output
-        # Add more test cases here with different inputs and expected outputs
     ],
 )
 def test_calc_co2_to_ca(co2, patm, expected_result):
