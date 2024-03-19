@@ -115,6 +115,10 @@ class SubdailyPModel:
         if not hasattr(fs_scaler, "include"):
             raise ValueError("The daily sampling window has not been set on fs_scaler")
 
+        # Store the datetimes for reference
+        self.datetimes = fs_scaler.datetimes
+        """The datetimes of the observations used in the subdaily model."""
+
         # Set up kphio attributes
         self.env: PModelEnvironment = env
         self.init_kphio: float = kphio
