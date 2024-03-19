@@ -352,7 +352,7 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
         ),
         pytest.param(
             {"mode": "crop", "start": 23, "end": 48 * 6},
-            {"mode": "crop", "start": 48, "end": 48 * 6},
+            {"mode": "crop", "start": 0, "end": 48 * 6},
             id="all window start",
         ),
     ],
@@ -391,4 +391,9 @@ def test_FSPModel_incomplete_day_behaviour(
     incomplete_mod = model_fitter(*be_vie_data_components.get(**incomplete)[:-1])
     complete_mod = model_fitter(*be_vie_data_components.get(**complete)[:-1])
 
-    assert np.allclose(incomplete_mod.gpp, complete_mod.gpp, equal_nan=True)
+    #
+    assert np.allclose(
+        incomplete_mod.gpp[(48 - incomplete["start"]) :],
+        complete_mod.gpp,
+        equal_nan=True,
+    )
