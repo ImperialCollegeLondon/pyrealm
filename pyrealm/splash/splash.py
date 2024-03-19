@@ -103,7 +103,7 @@ class SplashModel:
         )
         """Estimated evaporative fluxes for observations"""
 
-    def estimate_initial_soil_moisture(  # noqa: C901
+    def estimate_initial_soil_moisture(  # noqa: max-complexity=12
         self,
         wn_init: Optional[NDArray] = None,
         max_iter: int = 10,
@@ -123,6 +123,9 @@ class SplashModel:
         The user can provide an array of initial values across sites, defaulting to an
         initial guess of zero soil moisture in all sites . The user can also control the
         maximum number of update iterations and the accepted tolerance for convergence.
+        The method will normally fail if the estimates do not converge, but the
+        ``return_convergence`` option can be used to return the estimated soil moisture
+        at each iteration regardless of the success of convergence.
 
         Args:
             wn_init: An optional estimate of the start of year soil moisture.
@@ -130,13 +133,19 @@ class SplashModel:
             max_diff: The maximum acceptable difference between year start and year end
                 soil moisture,
             return_convergence: Optionally return an array of soil moistures at the end
-                of each iteration.
+                of each iteration even when convergence fails.
             verbose: Optionally turn on detailed logging of the iteration process.
 
         Returns:
             An array of the estimated starting soil moisture. If ``return_convergence``
             is set to True, the returned array will have an additional dimension for
             each iteration of the equilibration loop.
+
+        Raises:
+            ValueError: The input data are of the wrong shape, contain invalid values or
+                do not include at least a full year of data.
+            RuntimeError: The estimation fails to converge within the set number of
+                iterations.
         """
 
         # Initialise loop termination
@@ -190,17 +199,18 @@ class SplashModel:
             if np.nanmax(diff_sm) <= max_diff:
                 equilibrated = True
 
-        # Check for convergence failure.
+        # The return convergence option returns regardless of convergence success
+        if return_convergence:
+            return np.array(wn_ret)  # (n_iter, *wn_start.shape)
+
+        # Otherwise check for convergence failure before returning the final values.
         if not equilibrated:
             raise RuntimeError(
                 f"Initial soil moisture did not converge within {n_iter} iterations:"
                 f"maximum absolute difference = {max_diff}"
             )
 
-        if return_convergence:
-            return np.array(wn_ret)  # (n_iter, *wn_start.shape)
-        else:
-            return wn_start
+        return wn_start
 
     def estimate_daily_water_balance(
         self, previous_wn: NDArray, day_idx: Optional[int] = None
