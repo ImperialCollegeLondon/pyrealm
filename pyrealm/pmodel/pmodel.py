@@ -5,7 +5,7 @@ the following pmodel core class:
     Applies the PModel to locations.
 """  # noqa D210, D415
 
-from typing import Optional, Union
+from typing import Optional
 from warnings import warn
 
 import numpy as np
@@ -295,6 +295,8 @@ class PModel:
         self._jmax: NDArray
         self._gpp: NDArray
         self._gs: NDArray
+        self._ppfd: NDArray
+        self._fapar: NDArray
 
     def _check_estimated(self, varname: str) -> None:
         """Raise error when accessing unpopulated parameters.
@@ -342,8 +344,20 @@ class PModel:
         self._check_estimated("gs")
         return self._gs
 
+    @property
+    def ppfd(self) -> NDArray:
+        """Stomatal conductance (µmol m-2 s-1)."""
+        self._check_estimated("gs")
+        return self._ppfd
+
+    @property
+    def fapar(self) -> NDArray:
+        """Stomatal conductance (µmol m-2 s-1)."""
+        self._check_estimated("gs")
+        return self._fapar
+
     def estimate_productivity(
-        self, fapar: Union[float, np.ndarray] = 1, ppfd: Union[float, np.ndarray] = 1
+        self, fapar: np.ndarray = np.array([1]), ppfd: np.ndarray = np.array([1])
     ) -> None:
         r"""Estimate productivity of P Model from absorbed irradiance.
 
@@ -373,6 +387,11 @@ class PModel:
 
         # Check input shapes against each other and an existing calculated value
         _ = check_input_shapes(ppfd, fapar, self.lue)
+
+        # Store the input ppfd and fapar - this is primarily so that they can be reused
+        # by the subdaily model
+        self._fapar = fapar
+        self._ppfd = ppfd
 
         # Calculate Iabs
         iabs = fapar * ppfd
