@@ -43,8 +43,8 @@ The subdaily model provides two options to help deal with missing data.
    (`allow_holdover`). If the first value is missing, this is held over until the first
    valid observation.
 
-The code below gives a concrete example - a time series that starts and ends during
-in the middle of a one hour acclimation window around noon. Only two of the three
+The code below gives a concrete example - a time series that starts and ends during in
+the middle of a one hour acclimation window around noon. Only two of the three
 observations are provided for the first and last day
 
 ```{code-cell} ipython3
@@ -56,12 +56,17 @@ from pyrealm.pmodel.subdaily import memory_effect
 # A five day time series running from noon until noon
 datetimes = np.arange(
     np.datetime64('2012-05-06 12:00'),
-    np.datetime64('2012-05-10 12:00'),
+    np.datetime64('2012-05-12 12:00'),
     np.timedelta64(30, 'm')
 )
 
-# Random example data
-data = np.random.uniform(size=datetimes.shape)
+# Example data with missing values
+data = np.arange(len(datetimes), dtype='float')
+data[datetimes == np.datetime64('2012-05-08 11:30')] = np.nan
+data[np.logical_and(
+    datetimes >= np.datetime64('2012-05-10 11:30'),
+    datetimes <= np.datetime64('2012-05-10 12:30'),
+    )] = np.nan
 
 # Create the acclimation window sampler
 fsscaler = FastSlowScaler(datetimes)
@@ -71,18 +76,35 @@ fsscaler.set_window(
 )
 ```
 
+The :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_daily_values` method
+extracts the values within the acclimation window for each day. With the half hourly
+data and the window set above, these are the observations at 11:30, 12:00 and 12:30.
+This method is typically used internally and not directly by users, but it shows the
+problem of the missing data clearly:
+
+* The 11:30 observation is 'missing' on the first day because the data start at 12:00.
+* The 12:00 and 12:30 observations are 'missing' on the last day because the data ends
+  at 11:30.
+* One day has a single missing 12:00 data point within the acclimation window.
+* One day has no data within the acclimation window.
+
+```{code-cell} ipython3
+fsscaler.get_window_values(data)
+```
+
 The daily average conditions are calculated using the
 :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_daily_means` method. If
-partial data are not allowed - which is the default - the daily average conditions
-for the first and last day are missing (`np.nan`).
+partial data are not allowed - which is the default - the daily average conditions for
+all days with missing data is also missing (`np.nan`).
 
 ```{code-cell} ipython3
 partial_not_allowed = fsscaler.get_daily_means(data)
 partial_not_allowed
 ```
 
-Setting `allow_partial_data = True` allows the daily average conditions to be
-calculated from the partial available information.
+Setting `allow_partial_data = True` allows the daily average conditions to be calculated
+from the partial available information. This does not solve the problem for the day with
+no data in the acclimation window.
 
 ```{code-cell} ipython3
 partial_allowed = fsscaler.get_daily_means(data, allow_partial_data=True)
@@ -90,19 +112,26 @@ partial_allowed
 ```
 
 The :func:`~pyrealm.pmodel.subdaily.memory_effect` function is used to calculate
-realised values of a variable from the optimal values. By default, this function
-*cannot be run* when missing data are present:
+realised values of a variable from the optimal values. By default, this function *cannot
+be run* when missing data are present:
 
 ```{code-cell} ipython3
 memory_effect(partial_not_allowed)
 ```
 
-The `allow_holdover` option allows the function to be run - the value for
-the first day is still `np.nan` but the valid observation for day 4 is
-repeated to fill the gap caused by the missing data on day 5.
+The `allow_holdover` option allows the function to be run - the value for the first day
+is still `np.nan` but the missing observations on day 3, 5 and 7 are filled by holding
+over the valid observations from the previous day.
 
 ```{code-cell} ipython3
 memory_effect(partial_not_allowed, handle_nan=True)
+```
+
+When the partial data is allowed, the `allow_holdover` is still required to fill the
+gap on day 5 by holding over the data from day 4.
+
+```{code-cell} ipython3
+memory_effect(partial_allowed, handle_nan=True)
 ```
 
 These options do not fix all problems: the best way forward depends partly on the source
