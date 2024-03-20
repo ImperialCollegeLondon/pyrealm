@@ -333,37 +333,45 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
 
 
 @pytest.mark.parametrize(
-    argnames="incomplete,complete",
+    argnames="incomplete,complete,allow_partial",
     argvalues=[
         pytest.param(
             {"mode": "crop", "start": 48, "end": 48 * 6},
             {"mode": "crop", "start": 48, "end": 48 * 6},
+            False,
             id="complete day",
         ),
         pytest.param(
             {"mode": "crop", "start": 36, "end": 48 * 6},
             {"mode": "crop", "start": 48, "end": 48 * 6},
+            False,
             id="non window start",
         ),
         pytest.param(
             {"mode": "crop", "start": 25, "end": 48 * 6},
             {"mode": "crop", "start": 48, "end": 48 * 6},
+            False,
             id="partial window start",
         ),
         pytest.param(
             {"mode": "crop", "start": 23, "end": 48 * 6},
             {"mode": "crop", "start": 0, "end": 48 * 6},
+            False,
             id="all window start",
         ),
     ],
 )
 def test_FSPModel_incomplete_day_behaviour(
-    be_vie_data_components, incomplete, complete
+    be_vie_data_components,
+    incomplete,
+    complete,
+    allow_partial,
 ):
     """Test FastSlowPModel.
 
     This tests that the SubdailyModel works as expected with incomplete start and end
-    days.
+    days and with partial data allowed or not. The setup fits two models, one of which
+    uses complete days and the other of which
 
     """
 
@@ -391,9 +399,12 @@ def test_FSPModel_incomplete_day_behaviour(
     incomplete_mod = model_fitter(*be_vie_data_components.get(**incomplete)[:-1])
     complete_mod = model_fitter(*be_vie_data_components.get(**complete)[:-1])
 
-    #
-    assert np.allclose(
-        incomplete_mod.gpp[(48 - incomplete["start"]) :],
-        complete_mod.gpp,
-        equal_nan=True,
-    )
+    # Reduce the GPP values to those with matching timestamps
+    incomplete_gpp = incomplete_mod.gpp[
+        np.isin(incomplete_mod.datetimes, complete_mod.datetimes)
+    ]
+    complete_gpp = complete_mod.gpp[
+        np.isin(complete_mod.datetimes, incomplete_mod.datetimes)
+    ]
+
+    assert np.allclose(incomplete_gpp, complete_gpp, equal_nan=True)
