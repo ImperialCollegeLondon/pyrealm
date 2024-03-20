@@ -104,7 +104,7 @@ partial_not_allowed
 
 Setting `allow_partial_data = True` allows the daily average conditions to be calculated
 from the partial available information. This does not solve the problem for the day with
-no data in the acclimation window.
+no data in the acclimation window, which still results in a missing value.
 
 ```{code-cell} ipython3
 partial_allowed = fsscaler.get_daily_means(data, allow_partial_data=True)
@@ -112,10 +112,12 @@ partial_allowed
 ```
 
 The :func:`~pyrealm.pmodel.subdaily.memory_effect` function is used to calculate
-realised values of a variable from the optimal values. By default, this function *cannot
-be run* when missing data are present:
+realised values of a variable from the optimal values. By default, this function *will
+raise an error* when missing data are present:
 
 ```{code-cell} ipython3
+:tags: ["raises-exception"]
+
 memory_effect(partial_not_allowed)
 ```
 
