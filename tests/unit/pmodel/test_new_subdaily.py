@@ -132,7 +132,7 @@ def test_FSPModel_JAMES(be_vie_data_components):
     fs_pmodel_james = FastSlowPModel_JAMES(
         env=env,
         fs_scaler=fsscaler,
-        handle_nan=True,
+        allow_holdover=True,
         kphio=1 / 8,
         fapar=fapar,
         ppfd=ppfd,
@@ -194,7 +194,7 @@ def test_FSPModel_corr(be_vie_data_components, data_args):
         ppfd=ppfd,
         fapar=fapar,
         fs_scaler=fsscaler,
-        handle_nan=True,
+        allow_holdover=True,
     )
 
     valid = np.logical_not(
@@ -254,7 +254,7 @@ def test_FSPModel_dimensionality(be_vie_data, ndims):
         fs_scaler=fsscaler,
         fapar=fapar_vals * np.ones(array_dims).transpose(),
         ppfd=np.ones(array_dims).transpose(),
-        handle_nan=True,
+        allow_holdover=True,
     )
 
     # The GPP along the timescale of the different dimensions should be directly
@@ -291,7 +291,7 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
         fapar=fapar,
         ppfd=ppfd,
         method_optchi=method_optchi,
-        handle_nan=True,
+        allow_holdover=True,
     )
 
 
@@ -318,7 +318,7 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
         fapar=fapar,
         ppfd=ppfd,
         method_optchi=method_optchi,
-        handle_nan=True,
+        allow_holdover=True,
     )
 
     # Convert a standard model
@@ -326,7 +326,7 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
     standard_model.estimate_productivity(fapar=fapar, ppfd=ppfd)
 
     converted = convert_pmodel_to_subdaily(
-        pmodel=standard_model, fs_scaler=fsscaler, handle_nan=True
+        pmodel=standard_model, fs_scaler=fsscaler, allow_holdover=True
     )
 
     assert np.allclose(converted.gpp, direct.gpp, equal_nan=True)
@@ -391,7 +391,7 @@ def test_FSPModel_incomplete_day_behaviour(
             ppfd=ppfd,
             fapar=fapar,
             fs_scaler=fsscaler,
-            handle_nan=True,
+            allow_holdover=True,
         )
 
     # Feed the arguments for complete and incomplete days into DataFactory and then feed

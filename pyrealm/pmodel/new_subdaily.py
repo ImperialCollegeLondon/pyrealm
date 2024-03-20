@@ -58,9 +58,10 @@ class SubdailyPModel:
       more rapid acclimation: :math:`\alpha=1` results in immediate acclimation and
       :math:`\alpha=0` results in no acclimation at all, with values pinned to the
       initial estimates.
-    * The ``handle_nan`` argument is passed to
+    * The ``allow_holdover`` argument is passed to
       :meth:`~pyrealm.pmodel.subdaily.memory_effect` to set whether missing
-      values in the optimal predictions are permitted and handled.
+      values in the optimal predictions can be filled by holding over previous valid
+      values.
     * The realised values are then filled back onto the original subdaily timescale,
       with :math:`V_{cmax}` and :math:`J_{max}` then being calculated from the slowly
       responding :math:`V_{cmax25}` and :math:`J_{max25}` and the actual subdaily
@@ -76,8 +77,8 @@ class SubdailyPModel:
         fapar: The :math:`f_{APAR}` for each observation.
         ppfd: The PPDF for each observation.
         alpha: The :math:`\alpha` weight.
-        handle_nan: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect` function
-          be allowed to handle missing values.
+        allow_holdover: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect`
+          function be allowed to hold over values to fill missing values.
         kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -).
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.
@@ -94,7 +95,7 @@ class SubdailyPModel:
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
         alpha: float = 1 / 15,
-        handle_nan: bool = False,
+        allow_holdover: bool = False,
         fill_kind: str = "previous",
     ) -> None:
         # Warn about the API
@@ -185,15 +186,15 @@ class SubdailyPModel:
 
         # 5) Calculate the realised daily values from the instantaneous optimal values
         self.xi_real: NDArray = memory_effect(
-            self.pmodel_acclim.optchi.xi, alpha=alpha, handle_nan=handle_nan
+            self.pmodel_acclim.optchi.xi, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`\xi`"""
         self.vcmax25_real: NDArray = memory_effect(
-            self.vcmax25_opt, alpha=alpha, handle_nan=handle_nan
+            self.vcmax25_opt, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`V_{cmax25}`"""
         self.jmax25_real: NDArray = memory_effect(
-            self.jmax25_opt, alpha=alpha, handle_nan=handle_nan
+            self.jmax25_opt, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`J_{max25}`"""
 
@@ -257,7 +258,7 @@ def convert_pmodel_to_subdaily(
     pmodel: PModel,
     fs_scaler: FastSlowScaler,
     alpha: float = 1 / 15,
-    handle_nan: bool = False,
+    allow_holdover: bool = False,
     fill_kind: str = "previous",
 ) -> SubdailyPModel:
     r"""Convert a standard P Model to a subdaily P Model.
@@ -274,8 +275,8 @@ def convert_pmodel_to_subdaily(
         fs_scaler: A FastSlowScalar instance giving the acclimation window for the
             subdaily model.
         alpha: The :math:`\alpha` weight.
-        handle_nan: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect` function
-          be allowed to handle missing values.
+        allow_holdover: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect`
+          function be allowed to hold over values to fill missing values.
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.
     """
@@ -291,6 +292,6 @@ def convert_pmodel_to_subdaily(
         method_optchi=pmodel.method_optchi,
         method_jmaxlim=pmodel.method_jmaxlim,
         alpha=alpha,
-        handle_nan=handle_nan,
+        allow_holdover=allow_holdover,
         fill_kind=fill_kind,
     )

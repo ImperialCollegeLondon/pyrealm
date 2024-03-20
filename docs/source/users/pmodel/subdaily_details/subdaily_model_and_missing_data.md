@@ -124,14 +124,14 @@ is still `np.nan` but the missing observations on day 3, 5 and 7 are filled by h
 over the valid observations from the previous day.
 
 ```{code-cell} ipython3
-memory_effect(partial_not_allowed, handle_nan=True)
+memory_effect(partial_not_allowed, allow_holdover=True)
 ```
 
 When the partial data is allowed, the `allow_holdover` is still required to fill the
 gap on day 5 by holding over the data from day 4.
 
 ```{code-cell} ipython3
-memory_effect(partial_allowed, handle_nan=True)
+memory_effect(partial_allowed, allow_holdover=True)
 ```
 
 These options do not fix all problems: the best way forward depends partly on the source

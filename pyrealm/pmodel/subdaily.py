@@ -6,8 +6,8 @@ TODO - document nan behaviour
     - incomplete samples (allow_partial_acclimation_data) sporadic missing data or data
       on first day not completely covering observations included in acclimation
       conditions
-    - missing daily acclimation samples (handle_nan) - no data in acclimation conditions
-      during the day or pmodel predications are np.nan
+    - missing daily acclimation samples (allow_holdover) - no data in acclimation
+      conditions during the day or pmodel predications are np.nan
 
 
 """  # noqa: D205, D415
@@ -29,7 +29,7 @@ from pyrealm.pmodel import (
 
 
 def memory_effect(
-    values: NDArray, alpha: float = 0.067, handle_nan: bool = False
+    values: NDArray, alpha: float = 0.067, allow_holdover: bool = False
 ) -> NDArray:
     r"""Apply a memory effect to a variable.
 
@@ -59,7 +59,11 @@ def memory_effect(
     :class:`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`) and so missing values in
     P Model
     predictions can arise even when the forcing data is complete, breaking the recursion
-    shown above. When ``handle_nan=True``, this function fills missing data as follow:
+    shown above. When ``allow_holdover=True``, initial missing values are kept, and the
+    first observed optimal value is accepted as the first realised value (as with the
+    start of the recursion above). After this, if the current optimal value is missing,
+    then the previous estimate of the realised value is held over until it can next be
+    updated from observed data.
 
     +-------------------+--------+-------------------------------------------------+
     |                   |        |   Current optimal (:math:`O_{t}`)               |
@@ -71,15 +75,11 @@ def memory_effect(
     | (:math:`R_{t-1}`) | not NA | :math:`R_{t-1}` | :math:`R_{t-1}(1-a) + O_{t}a` |
     +-------------------+--------+-----------------+-------------------------------+
 
-    Initial missing values are kept, and the first observed optimal value is accepted as
-    the first realised value (as with the start of the recursion above). After this, if
-    the current optimal value is missing, then the previous estimate of the realised
-    value is held over until it can next be updated from observed data.
-
     Args:
         values: The values to apply the memory effect to.
         alpha: The relative weight applied to the most recent observation.
-        handle_nan: Allow missing values to be handled.
+        allow_holdover: Allow missing values to be filled by holding over earlier
+            values.
 
     Returns:
         An array of the same shape as ``values`` with the memory effect applied.
@@ -87,7 +87,7 @@ def memory_effect(
 
     # Check for nan and nan handling
     nan_present = np.any(np.isnan(values))
-    if nan_present and not handle_nan:
+    if nan_present and not allow_holdover:
         raise ValueError("Missing values in data passed to memory_effect")
 
     # Initialise the output storage and set the first values to be a slice along the
@@ -161,7 +161,7 @@ class FastSlowPModel:
     * The :meth:`~pyrealm.pmodel.subdaily.memory_effect` function is then used to
       calculate realised slowly responding values for :math:`\xi`, :math:`V_{cmax25}`
       and :math:`J_{max25}`, given a weight :math:`\alpha \in [0,1]` that sets the speed
-      of acclimation. The ``handle_nan`` argument is passed to this function to set
+      of acclimation. The ``allow_holdover`` argument is passed to this function to set
       whether missing values in the optimal predictions are permitted and handled.
     * The realised values are then filled back onto the original subdaily timescale,
       with :math:`V_{cmax}` and :math:`J_{max}` then being calculated from the slowly
@@ -178,8 +178,8 @@ class FastSlowPModel:
         fapar: The :math:`f_{APAR}` for each observation.
         ppfd: The PPDF for each observation.
         alpha: The :math:`\alpha` weight.
-        handle_nan: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect` function
-          be allowe to handle missing values.
+        allow_holdover: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect`
+          function be allowed to hold over values to fill missing values.
         kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -).
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.
@@ -193,7 +193,7 @@ class FastSlowPModel:
         fapar: NDArray,
         alpha: float = 1 / 15,
         kphio: float = 1 / 8,
-        handle_nan: bool = False,
+        allow_holdover: bool = False,
         fill_kind: str = "previous",
     ) -> None:
         # Warn about the API
@@ -265,15 +265,15 @@ class FastSlowPModel:
 
         # Calculate the realised values from the instantaneous optimal values
         self.xi_real: NDArray = memory_effect(
-            self.pmodel_acclim.optchi.xi, alpha=alpha, handle_nan=handle_nan
+            self.pmodel_acclim.optchi.xi, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`\xi`"""
         self.vcmax25_real: NDArray = memory_effect(
-            self.vcmax25_opt, alpha=alpha, handle_nan=handle_nan
+            self.vcmax25_opt, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`V_{cmax25}`"""
         self.jmax25_real: NDArray = memory_effect(
-            self.jmax25_opt, alpha=alpha, handle_nan=handle_nan
+            self.jmax25_opt, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`J_{max25}`"""
 
@@ -372,8 +372,8 @@ class FastSlowPModel_JAMES:
         fapar: The :math:`f_{APAR}` for each observation.
         ppfd: The PPDF for each observation.
         alpha: The :math:`\alpha` weight.
-        handle_nan: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect` function
-          be allowe to handle missing values.
+        allow_holdover: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect`
+          function be allowed to hold over values to fill missing values.
         kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -).
         vpd_scaler: An alternate
           :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance used to
@@ -392,7 +392,7 @@ class FastSlowPModel_JAMES:
         ppfd: NDArray,
         fapar: NDArray,
         alpha: float = 1 / 15,
-        handle_nan: bool = False,
+        allow_holdover: bool = False,
         kphio: float = 1 / 8,
         vpd_scaler: Optional[FastSlowScaler] = None,
         fill_from: Optional[np.timedelta64] = None,
@@ -469,11 +469,11 @@ class FastSlowPModel_JAMES:
 
         # Calculate the realised values from the instantaneous optimal values
         self.vcmax25_real: NDArray = memory_effect(
-            self.vcmax25_opt, alpha=alpha, handle_nan=handle_nan
+            self.vcmax25_opt, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`V_{cmax25}`"""
         self.jmax25_real: NDArray = memory_effect(
-            self.jmax25_opt, alpha=alpha, handle_nan=handle_nan
+            self.jmax25_opt, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`J_{max25}`"""
 
