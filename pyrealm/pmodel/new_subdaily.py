@@ -79,6 +79,8 @@ class SubdailyPModel:
         alpha: The :math:`\alpha` weight.
         allow_holdover: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect`
           function be allowed to hold over values to fill missing values.
+        allow_partial_data: Should estimates of daily optimal conditions be calculated
+          with missing values in the acclimation window.
         kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -).
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.
@@ -96,6 +98,7 @@ class SubdailyPModel:
         method_jmaxlim: str = "wang17",
         alpha: float = 1 / 15,
         allow_holdover: bool = False,
+        allow_partial_data: bool = False,
         fill_kind: str = "previous",
     ) -> None:
         # Warn about the API
@@ -140,7 +143,9 @@ class SubdailyPModel:
         for env_var_name in daily_environment_vars:
             env_var = getattr(self.env, env_var_name)
             if env_var is not None:
-                daily_environment[env_var_name] = fs_scaler.get_daily_means(env_var)
+                daily_environment[env_var_name] = fs_scaler.get_daily_means(
+                    env_var, allow_partial_data=allow_partial_data
+                )
 
         pmodel_env_acclim = PModelEnvironment(
             **daily_environment,
