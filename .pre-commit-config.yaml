@@ -22,7 +22,7 @@ repos:
     rev: "v1.8.0"
     hooks:
       - id: mypy
-        additional_dependencies: [numpy, types-tabulate]
+        additional_dependencies: [numpy, types-tabulate, pandas-stubs]
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.38.0
     hooks:

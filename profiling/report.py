@@ -70,13 +70,13 @@ if args.selector:
 i_diff = next(i for i, cs in enumerate(zip(*df.filename)) if len(set(cs)) > 1)
 df["filename"] = [s[i_diff:] for s in df.filename]  # remove common prefix
 dt = datetime.datetime.fromtimestamp(prof_path.stat().st_mtime)
-df.index = pd.Series([dt.strftime("%Y-%m-%d %H:%M:%S")] * len(df), name="timestamp")
+df.index = pd.Index([dt.strftime("%Y-%m-%d %H:%M:%S")] * len(df), name="timestamp")
 print(df)
 df["label"] = df["filename"].str.extract(r"(\w+).py").squeeze() + "." + df["function"]
 
 # Filter and plot the results
 if not args.no_plot:
-    df.plot.barh(y=["tottime_percall", "cumtime_percall"], x="label", figsize=(20, 10))
+    df.plot.barh(y=("tottime_percall", "cumtime_percall"), x="label", figsize=(20, 10))
     plt.ylabel("")
     plt.gca().invert_yaxis()
     plt.tight_layout()
@@ -94,7 +94,7 @@ else:
 df = pd.read_csv(report_path, index_col="label", parse_dates=["timestamp"])
 kpis = ["tottime_percall", "cumtime_percall", "tottime", "cumtime"]
 labels = df[kpis].idxmax()
-bm = df.pivot_table(index="timestamp", columns="label", values=kpis)
+bm = df.pivot_table(index="timestamp", columns="label", values=kpis)  # type: ignore
 bm = bm[list(map(tuple, labels.reset_index().values))]
 bm = bm.iloc[-args.max_benchmark :]
 bm.columns = bm.columns.map(lambda x: f"{x[1]}({x[0]})")
