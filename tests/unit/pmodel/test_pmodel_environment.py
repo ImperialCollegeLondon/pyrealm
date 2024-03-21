@@ -1,5 +1,7 @@
 """Testing PModel Environment submodule."""
 
+import json
+
 import numpy as np
 import pytest
 
@@ -42,18 +44,24 @@ def test_pmodel_environment(
     assert env.ns_star == pytest.approx(expected_ns_star, abs=1e-5)
 
 
-"""Testing the intermediate PModel variables (kmm,gammastar, ns_star, co2_to_ca)."""
+"""Testing the boundries of variables (kmm,gammastar, ns_star, co2_to_ca)."""
 
-""""Test that ns_star output is within bounds"""
+with open("pyrealm_build_data/rpmodel/test_inputs.json") as f:
+    data = json.load(f)
+
+# Test values of forcing variables as input to functions
+tc_ar_values = data["tc_ar"]
+patm_ar_values = data["patm_ar"]
+co2_ar_values = data["co2_ar"]
+
+
+""""Test that kmm output is within bounds"""
 kmm_lower_bound = 0
 kmm_upper_bound = 1000
 
-tc_range = np.linspace(-30, 40, 5)
-patm_range = np.linspace(80000, 120000, 5)
-
 
 @pytest.mark.parametrize(
-    "tc, patm", [(tc, patm) for tc in tc_range for patm in patm_range]
+    "tc, patm", [(tc, patm) for tc in tc_ar_values for patm in patm_ar_values]
 )
 def test_out_of_bound_output(tc, patm):
     """Function to calulate kmm."""
@@ -78,12 +86,9 @@ def test_out_of_bound_output(tc, patm):
 ns_star_lower_bound = 0
 ns_star_upper_bound = 10
 
-tc_range = np.linspace(-30, 40, 5)
-patm_range = np.linspace(80000, 120000, 5)
-
 
 @pytest.mark.parametrize(
-    "tc, patm", [(tc, patm) for tc in tc_range for patm in patm_range]
+    "tc, patm", [(tc, patm) for tc in tc_ar_values for patm in patm_ar_values]
 )
 def test_out_of_bound_output_ns_star(tc, patm):
     """Function to calculate ns_star."""
@@ -103,12 +108,9 @@ def test_out_of_bound_output_ns_star(tc, patm):
 gammastar_lower_bound = 0
 gammastar_upper_bound = 30
 
-tc_range = np.linspace(-30, 40, 5)
-patm_range = np.linspace(80000, 120000, 5)
-
 
 @pytest.mark.parametrize(
-    "tc, patm", [(tc, patm) for tc in tc_range for patm in patm_range]
+    "tc, patm", [(tc, patm) for tc in tc_ar_values for patm in patm_ar_values]
 )
 def test_out_of_bound_output_gammastar(tc, patm):
     """Function to calculate calc_gammastar."""
@@ -131,12 +133,9 @@ def test_out_of_bound_output_gammastar(tc, patm):
 co2_to_ca_lower_bound = 0
 co2_to_ca_upper_bound = 100
 
-co2_range = np.linspace(300, 500, 5)
-patm_range = np.linspace(80000, 120000, 5)
-
 
 @pytest.mark.parametrize(
-    "co2, patm", [(co2, patm) for co2 in co2_range for patm in patm_range]
+    "co2, patm", [(co2, patm) for co2 in co2_ar_values for patm in patm_ar_values]
 )
 def test_out_of_bound_output_co2_to_ca(co2, patm):
     """Function to calculate co2_to_ca."""
