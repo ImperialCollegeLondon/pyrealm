@@ -2,6 +2,7 @@
 predictions under the SPLASH model.
 """  # noqa: D205, D415
 
+import warnings
 from typing import Optional, Union
 
 import numpy as np
@@ -201,6 +202,11 @@ class SplashModel:
 
         # The return convergence option returns regardless of convergence success
         if return_convergence:
+            if not equilibrated:
+                warnings.warn(
+                    f"Initial soil moisture did not converge within {n_iter} "
+                    f"iterations: maximum absolute difference = {max_diff}"
+                )
             return np.array(wn_ret)  # (n_iter, *wn_start.shape)
 
         # Otherwise check for convergence failure before returning the final values.
