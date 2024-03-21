@@ -1,5 +1,6 @@
 """Testing PModel Environment submodule."""
 
+import numpy as np
 import pytest
 
 from pyrealm.constants import CoreConst, PModelConst
@@ -9,76 +10,144 @@ from pyrealm.pmodel.functions import (
     calc_kmm,
     calc_ns_star,
 )
+from pyrealm.pmodel.pmodel_environment import PModelEnvironment
+
+""""Test that the pmodel environment calculates attributes match the expected values."""
+
+
+@pytest.mark.parametrize(
+    "tc,vpd,co2, patm, expected_ca, expected_gammastar, expected_kmm, expected_ns_star",
+    [
+        # Test case with known inputs and expected outputs
+        (
+            np.array([20]),
+            np.array([820]),
+            np.array([400]),
+            np.array([101325.0]),
+            40.53,
+            3.33925,
+            46.09928,
+            1.12536,
+        ),
+    ],
+)
+def test_pmodel_environment(
+    tc, vpd, co2, patm, expected_ca, expected_gammastar, expected_kmm, expected_ns_star
+):
+    """Test the PModelEnvironment class."""
+    # Create an instance of PModelEnvironment with the test inputs
+    env = PModelEnvironment(tc=tc, vpd=vpd, co2=co2, patm=patm)
+
+    # Check if the calculated attributes match the expected outputs
+    assert env.ca == pytest.approx(expected_ca, abs=1e-5)
+    assert env.gammastar == pytest.approx(expected_gammastar, abs=1e-5)
+    assert env.kmm == pytest.approx(expected_kmm, abs=1e-5)
+    assert env.ns_star == pytest.approx(expected_ns_star, abs=1e-5)
+
 
 """Testing the intermediate PModel varaibles (kmm,gammastar, ns_star, co2_to_ca)."""
 
+""""Test that ns_star output is within bounds"""
+kmm_lower_bound = 0
+kmm_upper_bound = 1000
 
-# Define test cases
+tc_range = np.linspace(-30, 40, 5)
+patm_range = np.linspace(80000, 120000, 5)
+
+
 @pytest.mark.parametrize(
-    "tc, patm, expected_result",
-    [
-        (20, 101325, 46.09928),  # Test case with known inputs and expected output
-    ],
+    "tc, patm", [(tc, patm) for tc in tc_range for patm in patm_range]
 )
-def test_calc_kmm(tc, patm, expected_result):
-    """Test the calc_kmm function."""
-    # Create an instance of PModelConst with the required attributes
+def test_out_of_bound_output(tc, patm):
+    """Function to calulate kmm."""
     pmodel_const = PModelConst(
         bernacchi_kc25=39.97,
         bernacchi_ko25=27480,
         bernacchi_dhac=79430,
         bernacchi_dhao=36380,
     )
-    # Call the function with the test inputs and the PModelConst instance
+
     result = calc_kmm(tc=tc, patm=patm, pmodel_const=pmodel_const)
-    # Check if the result matches the expected output
-    assert result == pytest.approx(expected_result, abs=1e-5)
+
+    assert np.all(
+        result >= kmm_lower_bound
+    ), f"Result for (tc={tc}, patm={patm}) is out of lower bound"
+    assert np.all(
+        result <= kmm_upper_bound
+    ), f"Result for (tc={tc}, patm={patm}) is out of upper bound"
+
+
+"""Test that calc_ns_star output is within bounds"""
+ns_star_lower_bound = 0
+ns_star_upper_bound = 10
+
+tc_range = np.linspace(-30, 40, 5)
+patm_range = np.linspace(80000, 120000, 5)
 
 
 @pytest.mark.parametrize(
-    "tc, patm, expected_result",
-    [
-        (20, 101325, 1.12536),  # Test case with known inputs and expected output
-    ],
+    "tc, patm", [(tc, patm) for tc in tc_range for patm in patm_range]
 )
-def test_calc_ns_star(tc, patm, expected_result):
-    """Test the calc_ns_star function."""
-    # Create an instance of CoreConst with the required attributes
+def test_out_of_bound_output_ns_star(tc, patm):
+    """Function to calculate ns_star."""
     core_const = CoreConst(k_To=298.15, k_Po=101325)
-    # Call the function with the test inputs and the CoreConst instance
+
     result = calc_ns_star(tc=tc, patm=patm, core_const=core_const)
-    # Check if the result matches the expected output
-    assert result == pytest.approx(expected_result, abs=1e-5)
+
+    assert np.all(
+        result >= ns_star_lower_bound
+    ), f"Result for (tc={tc}, patm={patm}) is out of lower bound"
+    assert np.all(
+        result <= ns_star_upper_bound
+    ), f"Result for (tc={tc}, patm={patm}) is out of upper bound"
+
+
+"""Test that calc_gammastar output is within bounds."""
+gammastar_lower_bound = 0
+gammastar_upper_bound = 30
+
+tc_range = np.linspace(-30, 40, 5)
+patm_range = np.linspace(80000, 120000, 5)
 
 
 @pytest.mark.parametrize(
-    "tc, patm, expected_result",
-    [
-        (20, 101325, 3.33925),  # Test case with known inputs and expected output
-    ],
+    "tc, patm", [(tc, patm) for tc in tc_range for patm in patm_range]
 )
-def test_calc_gammastar(tc, patm, expected_result):
-    """Test the calc_gammastar function."""
-    # Create instances of CoreConst and PModelConst with the required attributes
+def test_out_of_bound_output_gammastar(tc, patm):
+    """Function to calculate calc_gammastar."""
     core_const = CoreConst(k_To=298.15, k_Po=101325)
     pmodel_const = PModelConst(bernacchi_gs25_0=4.332, bernacchi_dha=37830)
-    # Call the function with the test inputs and the CoreConst and PModelConst instances
+
     result = calc_gammastar(
         tc=tc, patm=patm, pmodel_const=pmodel_const, core_const=core_const
     )
-    # Check if the result matches the expected output
-    assert result == pytest.approx(expected_result, abs=1e-5)
+
+    assert np.all(
+        result >= gammastar_lower_bound
+    ), f"Result for (tc={tc}, patm={patm}) is out of lower bound"
+    assert np.all(
+        result <= gammastar_upper_bound
+    ), f"Result for (tc={tc}, patm={patm}) is out of upper bound"
+
+
+"""Test that calc_co2_to_ca output is within bounds"""
+co2_to_ca_lower_bound = 0
+co2_to_ca_upper_bound = 100
+
+co2_range = np.linspace(300, 500, 5)
+patm_range = np.linspace(80000, 120000, 5)
 
 
 @pytest.mark.parametrize(
-    "co2, patm, expected_result",
-    [
-        (413.03, 101325, 41.850265),  # Test case with known inputs and expected output
-    ],
+    "co2, patm", [(co2, patm) for co2 in co2_range for patm in patm_range]
 )
-def test_calc_co2_to_ca(co2, patm, expected_result):
-    """Test function calc_co2_to_ca."""
-    # Call the function with the test inputs
+def test_out_of_bound_output_co2_to_ca(co2, patm):
+    """Function to calculate co2_to_ca."""
     result = calc_co2_to_ca(co2=co2, patm=patm)
-    # Check if the result matches the expected output
-    assert result == pytest.approx(expected_result, abs=1e-6)
+
+    assert np.all(
+        result >= co2_to_ca_lower_bound
+    ), f"Result for (co2={co2}, patm={patm}) is out of lower bound"
+    assert np.all(
+        result <= co2_to_ca_upper_bound
+    ), f"Result for (co2={co2}, patm={patm}) is out of upper bound"
