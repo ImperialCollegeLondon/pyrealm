@@ -18,7 +18,6 @@ from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 @pytest.mark.parametrize(
     "tc,vpd,co2, patm, expected_ca, expected_gammastar, expected_kmm, expected_ns_star",
     [
-        # Test case with known inputs and expected outputs
         (
             np.array([20]),
             np.array([820]),
@@ -35,17 +34,15 @@ def test_pmodel_environment(
     tc, vpd, co2, patm, expected_ca, expected_gammastar, expected_kmm, expected_ns_star
 ):
     """Test the PModelEnvironment class."""
-    # Create an instance of PModelEnvironment with the test inputs
     env = PModelEnvironment(tc=tc, vpd=vpd, co2=co2, patm=patm)
 
-    # Check if the calculated attributes match the expected outputs
     assert env.ca == pytest.approx(expected_ca, abs=1e-5)
     assert env.gammastar == pytest.approx(expected_gammastar, abs=1e-5)
     assert env.kmm == pytest.approx(expected_kmm, abs=1e-5)
     assert env.ns_star == pytest.approx(expected_ns_star, abs=1e-5)
 
 
-"""Testing the intermediate PModel varaibles (kmm,gammastar, ns_star, co2_to_ca)."""
+"""Testing the intermediate PModel variables (kmm,gammastar, ns_star, co2_to_ca)."""
 
 """"Test that ns_star output is within bounds"""
 kmm_lower_bound = 0
