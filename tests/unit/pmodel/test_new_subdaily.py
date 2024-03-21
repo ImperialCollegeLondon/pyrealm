@@ -1,6 +1,9 @@
 """Tests the implementation of the FastSlowModel against the reference benchmark."""
 
+import datetime
+from contextlib import nullcontext as does_not_raise
 from importlib import resources
+from typing import Optional
 
 import numpy as np
 import pandas
@@ -52,7 +55,13 @@ def be_vie_data_components(be_vie_data):
     from pyrealm.pmodel import PModelEnvironment
 
     class DataFactory:
-        def get(self, mode: str = "", start: int = 0, end: int = 0):
+        def get(
+            self,
+            mode: str = "",
+            start: int = 0,
+            end: int = 0,
+            pre_average: Optional[list[datetime.time]] = None,
+        ):
             # Get a copy of the data so as to not break the module scope loaded object.
             data = be_vie_data.copy()
 
@@ -72,7 +81,7 @@ def be_vie_data_components(be_vie_data):
                 data["time"] = np.concatenate([pad_start, datetime_subdaily, pad_end])
 
             if mode == "crop":
-                # Crop the data to the requested block and get the datetimes
+                # Crop the data to the requested block
                 data = data.iloc[start:end]
 
             datetime_subdaily = data["time"].to_numpy()
@@ -333,46 +342,169 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
 
 
 @pytest.mark.parametrize(
-    argnames="incomplete,complete,allow_partial",
+    argnames="incomplete,complete,allow_holdover,allow_partial_data,patch_means,raises",
     argvalues=[
         pytest.param(
             {"mode": "crop", "start": 48, "end": 48 * 6},
             {"mode": "crop", "start": 48, "end": 48 * 6},
+            True,
             False,
-            id="complete day",
+            False,
+            does_not_raise(),
+            id="complete day hold+ partial-",
+        ),
+        pytest.param(
+            {"mode": "crop", "start": 36, "end": 48 * 6},
+            {"mode": "crop", "start": 48, "end": 48 * 6},
+            True,
+            False,
+            False,
+            does_not_raise(),
+            id="non window start hold+ partial-",
+        ),
+        pytest.param(
+            {"mode": "crop", "start": 25, "end": 48 * 6},
+            {"mode": "crop", "start": 48, "end": 48 * 6},
+            True,
+            False,
+            False,
+            does_not_raise(),
+            id="partial window start hold+ partial-",
+        ),
+        pytest.param(
+            {"mode": "crop", "start": 23, "end": 48 * 6},
+            {"mode": "crop", "start": 0, "end": 48 * 6},
+            True,
+            False,
+            False,
+            does_not_raise(),
+            id="all window start hold+ partial-",
+        ),
+        pytest.param(
+            {"mode": "crop", "start": 48, "end": 48 * 6},
+            {"mode": "crop", "start": 48, "end": 48 * 6},
+            False,
+            False,
+            False,
+            does_not_raise(),
+            id="complete day hold- partial-",
         ),
         pytest.param(
             {"mode": "crop", "start": 36, "end": 48 * 6},
             {"mode": "crop", "start": 48, "end": 48 * 6},
             False,
-            id="non window start",
+            False,
+            False,
+            pytest.raises(ValueError),
+            id="non window start hold- partial-",
         ),
         pytest.param(
             {"mode": "crop", "start": 25, "end": 48 * 6},
             {"mode": "crop", "start": 48, "end": 48 * 6},
             False,
-            id="partial window start",
+            False,
+            False,
+            pytest.raises(ValueError),
+            id="partial window start hold- partial-",
         ),
         pytest.param(
             {"mode": "crop", "start": 23, "end": 48 * 6},
             {"mode": "crop", "start": 0, "end": 48 * 6},
             False,
-            id="all window start",
+            False,
+            False,
+            does_not_raise(),
+            id="all window start hold- partial-",
+        ),
+        pytest.param(
+            {"mode": "crop", "start": 48, "end": 48 * 6},
+            {"mode": "crop", "start": 48, "end": 48 * 6},
+            True,
+            True,
+            False,
+            does_not_raise(),
+            id="complete day hold+ partial+",
+        ),
+        pytest.param(
+            {"mode": "crop", "start": 36, "end": 48 * 6},
+            {"mode": "crop", "start": 48, "end": 48 * 6},
+            True,
+            True,
+            False,
+            does_not_raise(),
+            id="non window start hold+ partial+",
+        ),
+        pytest.param(
+            {"mode": "crop", "start": 25, "end": 48 * 6},
+            {"mode": "crop", "start": 0, "end": 48 * 6},
+            True,
+            True,
+            True,
+            does_not_raise(),
+            id="partial window start hold+ partial+",
+        ),
+        pytest.param(
+            {"mode": "crop", "start": 23, "end": 48 * 6},
+            {"mode": "crop", "start": 0, "end": 48 * 6},
+            True,
+            True,
+            False,
+            does_not_raise(),
+            id="all window start hold+ partial+",
         ),
     ],
 )
 def test_FSPModel_incomplete_day_behaviour(
+    mocker,
     be_vie_data_components,
     incomplete,
     complete,
-    allow_partial,
+    allow_holdover,
+    allow_partial_data,
+    patch_means,
+    raises,
 ):
     """Test FastSlowPModel.
 
     This tests that the SubdailyModel works as expected with incomplete start and end
-    days and with partial data allowed or not. The setup fits two models, one of which
-    uses complete days and the other of which
+    days and with partial data and holdover allowed or not. The setup fits two models:
 
+    * complete_mod uses only complete days, as in the original implementation
+    * incomplete days can be:
+        * actually complete (should be identical)
+        * include only non-window observations at the end of the first day
+        * include partial window observations on the first day
+        * include all of the window observations on the first day
+
+    To then explain the test logic, the first check is if the incomplete model raises
+    or not:
+
+    * With allow_partial_data = True and allow_holdover = True, all models should run,
+      but with allow_partial_data = False and allow_holdover = False, the non-window and
+      partial models will fail because they will include an np.nan estimate for the
+      first incomplete day.
+
+    * With allow_partial_data = True and allow_holdover = True, all models should run,
+      but with allow_partial_data = True and allow_holdover = False, the non-window
+      models will fail because it includes an np.nan estimate for the first incomplete
+      day.
+
+    The next check is whether the GPP predictions then match to a suitably chosen
+    complete day:
+
+    * For the complete 'incomplete' this should just match.
+    * For the non-window incomplete, it starts predictions the following day, so a
+      complete model starting the following midnight should match. The same is true for
+      the partial window if allow_partial_data = False - it's basically the same model.
+    * The all window model should match a complete model starting at the previous
+      midnight.
+    * It is more difficult to test the partial data with allow_partial_data = True
+      because the subsample of available data gives a different daily mean to the
+      complete model. You can force all the values to be equal to the mean within the
+      window - the mean is now stable - but then the half hourly predictions are wrong.
+      The only practical way to do this is to patch `get_daily_means` with the daily
+      averages for each variable in the complete model, but allow the rest of the
+      calculations to use the actual data.
     """
 
     from pyrealm.pmodel.new_subdaily import FastSlowScaler, SubdailyPModel
@@ -391,20 +523,51 @@ def test_FSPModel_incomplete_day_behaviour(
             ppfd=ppfd,
             fapar=fapar,
             fs_scaler=fsscaler,
-            allow_holdover=True,
+            allow_holdover=allow_holdover,
+            allow_partial_data=allow_partial_data,
         )
 
     # Feed the arguments for complete and incomplete days into DataFactory and then feed
     # the returned values (except the last element containing GPP) into the model fitter
-    incomplete_mod = model_fitter(*be_vie_data_components.get(**incomplete)[:-1])
-    complete_mod = model_fitter(*be_vie_data_components.get(**complete)[:-1])
+    # function above
+    with raises:
+        complete_mod = model_fitter(*be_vie_data_components.get(**complete)[:-1])
 
-    # Reduce the GPP values to those with matching timestamps
-    incomplete_gpp = incomplete_mod.gpp[
-        np.isin(incomplete_mod.datetimes, complete_mod.datetimes)
-    ]
-    complete_gpp = complete_mod.gpp[
-        np.isin(complete_mod.datetimes, incomplete_mod.datetimes)
-    ]
+        if patch_means:
+            # Patch the return values for `get_daily_means` to be the same as the
+            # complete model - these have to to be in the same order that they are
+            # calculated within the model, so the each call gets patched with the right
+            # values.
+            patched_means = [
+                complete_mod.pmodel_acclim.env.tc,
+                complete_mod.pmodel_acclim.env.co2,
+                complete_mod.pmodel_acclim.env.patm,
+                complete_mod.pmodel_acclim.env.vpd,
+                complete_mod.pmodel_acclim.fapar,
+                complete_mod.pmodel_acclim.ppfd,
+            ]
 
-    assert np.allclose(incomplete_gpp, complete_gpp, equal_nan=True)
+            with mocker.patch.object(
+                FastSlowScaler,
+                "get_daily_means",
+                side_effect=patched_means,
+            ):
+                incomplete_mod = model_fitter(
+                    *be_vie_data_components.get(**incomplete)[:-1]
+                )
+        else:
+            incomplete_mod = model_fitter(
+                *be_vie_data_components.get(**incomplete)[:-1]
+            )
+
+    if isinstance(raises, does_not_raise):
+        # Reduce the GPP values to those with matching timestamps
+        incomplete_gpp = incomplete_mod.gpp[
+            np.isin(incomplete_mod.datetimes, complete_mod.datetimes)
+        ]
+        complete_gpp = complete_mod.gpp[
+            np.isin(complete_mod.datetimes, incomplete_mod.datetimes)
+        ]
+
+        # Check the predictions are close
+        assert np.allclose(incomplete_gpp, complete_gpp, equal_nan=True)

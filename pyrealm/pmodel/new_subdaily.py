@@ -173,8 +173,12 @@ class SubdailyPModel:
         """
 
         # 3) Estimate productivity to calculate jmax and vcmax
-        self.ppfd_acclim = fs_scaler.get_daily_means(ppfd)
-        self.fapar_acclim = fs_scaler.get_daily_means(fapar)
+        self.ppfd_acclim = fs_scaler.get_daily_means(
+            ppfd, allow_partial_data=allow_partial_data
+        )
+        self.fapar_acclim = fs_scaler.get_daily_means(
+            fapar, allow_partial_data=allow_partial_data
+        )
 
         self.pmodel_acclim.estimate_productivity(
             fapar=self.fapar_acclim, ppfd=self.ppfd_acclim
