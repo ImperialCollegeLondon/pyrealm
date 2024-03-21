@@ -44,7 +44,7 @@ def test_pmodel_environment(
     assert env.ns_star == pytest.approx(expected_ns_star, abs=1e-5)
 
 
-"""Testing the boundries of variables (kmm,gammastar, ns_star, co2_to_ca)."""
+"""Testing the boundries of variables kmm,gammastar, ns_star, co2_to_ca."""
 
 with open("pyrealm_build_data/rpmodel/test_inputs.json") as f:
     data = json.load(f)
