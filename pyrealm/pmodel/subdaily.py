@@ -1,10 +1,6 @@
 r"""The :mod:`~pyrealm.pmodel.subdaily` module provides extensions to the P Model that
 incorporate modelling of the fast and slow responses of photosynthesis to changing
 conditions.
-
-TODO - rewrite docs
-
-
 """  # noqa: D205, D415
 
 from typing import Optional

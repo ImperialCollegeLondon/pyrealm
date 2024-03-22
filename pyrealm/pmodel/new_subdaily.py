@@ -32,23 +32,21 @@ class SubdailyPModel:
     is extended to include the slow response of :math:`\xi` in addition to
     :math:`V_{cmax25}` and :math:`J_{max25}`.
 
-    The first dimension of the data arrays use to create the
-    :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance must
-    represent
-    the time
-    axis of the observations. The actual datetimes of those observations must then be
-    used to initialiase a :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler`
-    instance, and one of the ``set_`` methods of that class must be used to define an
-    acclimation window.
+    The workflow of the model:
 
-    The workflow of the model is then:
-
-    * The daily acclimation window set in the
-      :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance is used to
-      calculate daily average values for forcing variables from within the acclimation
-      window.
+    * The first dimension of the data arrays used to create the
+      :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance must
+      represent the time axis of the observations. The ``fs_scaler`` argument is used to
+      provide :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance which
+      sets the dates and time of those observations and sets which daily observations
+      form the daily acclimation window that will be used to estimate the optimal daily
+      behaviour, using one of the ``set_`` methods to that class.
+    * The :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_daily_means` method
+      is then used to extract daily average values for forcing variables from within the
+      acclimation window, setting the conditions that the plant will optimise to.
     * A standard P Model is then run on those daily forcing values to generate predicted
-      states for photosynthetic parameters that give rise to optimal productivity.
+      states for photosynthetic parameters that give rise to optimal productivity in
+      that window.
     * The :meth:`~pyrealm.pmodel.subdaily.memory_effect` function is then used to
       calculate realised slowly responding values for :math:`\xi`, :math:`V_{cmax25}`
       and :math:`J_{max25}`, given a weight :math:`\alpha \in [0,1]` that sets the speed
@@ -58,16 +56,30 @@ class SubdailyPModel:
       more rapid acclimation: :math:`\alpha=1` results in immediate acclimation and
       :math:`\alpha=0` results in no acclimation at all, with values pinned to the
       initial estimates.
-    * The ``allow_holdover`` argument is passed to
-      :meth:`~pyrealm.pmodel.subdaily.memory_effect` to set whether missing
-      values in the optimal predictions can be filled by holding over previous valid
-      values.
     * The realised values are then filled back onto the original subdaily timescale,
       with :math:`V_{cmax}` and :math:`J_{max}` then being calculated from the slowly
       responding :math:`V_{cmax25}` and :math:`J_{max25}` and the actual subdaily
       temperature observations and :math:`c_i` calculated using realised values of
       :math:`\xi` but subdaily values in the other parameters.
     * Predictions of GPP are then made as in the standard P Model.
+
+    Missing values:
+
+        Missing data can arise in a number of ways: actual gaps in the forcing data, the
+        observations starting part way through a day and missing some or all of the
+        acclimation window for the day, or undefined values in P Model predictions. Some
+        options include:
+
+        * The ``allow_partial_data`` argument is passed on to
+          :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_daily_means` to
+          allow daily optimum conditions to be calculated when the data in the
+          acclimation window is incomplete. This does not fix problems when no data is
+          present in the window or when the P Model predictions for a day are undefined.
+
+        * The ``allow_holdover`` argument is passed on to
+          :meth:`~pyrealm.pmodel.subdaily.memory_effect` to set whether missing values
+          in the optimal predictions can be filled by holding over previous valid
+          values.
 
     Args:
         env: An instance of

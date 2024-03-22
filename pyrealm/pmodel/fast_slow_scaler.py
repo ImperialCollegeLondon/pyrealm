@@ -378,9 +378,9 @@ class FastSlowScaler:
         window set using one of the ``set_`` methods, and then calculates the daily mean
         of those values.
 
-        The `allow_partial_data` option switches between using :func:`np.mean` and
-        :func:`np.nanmean`, so that daily mean values can be calculated even if the data
-        in the acclimation window is incomplete. Note that this will still return
+        The `allow_partial_data` option switches between using :func:`numpy.mean` and
+        :func:`numpy.nanmean`, so that daily mean values can be calculated even if the
+        data in the acclimation window is incomplete. Note that this will still return
         `np.nan` if _no_ data is present in the acclimation window. It also has no
         effect if the
         :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.set_nearest` method has
