@@ -2,12 +2,7 @@ r"""The :mod:`~pyrealm.pmodel.subdaily` module provides extensions to the P Mode
 incorporate modelling of the fast and slow responses of photosynthesis to changing
 conditions.
 
-TODO - document nan behaviour
-    - incomplete samples (allow_partial_acclimation_data) sporadic missing data or data
-      on first day not completely covering observations included in acclimation
-      conditions
-    - missing daily acclimation samples (allow_holdover) - no data in acclimation
-      conditions during the day or pmodel predications are np.nan
+TODO - rewrite docs
 
 
 """  # noqa: D205, D415
