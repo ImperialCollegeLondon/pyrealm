@@ -51,4 +51,8 @@ from pyrealm.pmodel.isotopes import CalcCarbonIsotopes
 from pyrealm.pmodel.jmax_limitation import JmaxLimitation
 from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
-from pyrealm.pmodel.subdaily import FastSlowPModel, memory_effect
+from pyrealm.pmodel.subdaily import (
+    SubdailyPModel,
+    convert_pmodel_to_subdaily,
+    memory_effect,
+)
