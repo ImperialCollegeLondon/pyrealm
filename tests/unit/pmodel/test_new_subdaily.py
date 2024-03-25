@@ -186,7 +186,7 @@ def test_FSPModel_corr(be_vie_data_components, data_args):
     """
 
     from pyrealm.pmodel import FastSlowScaler
-    from pyrealm.pmodel.new_subdaily import SubdailyPModel
+    from pyrealm.pmodel.subdaily import SubdailyPModel
 
     env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components.get(**data_args)
 
@@ -227,7 +227,7 @@ def test_FSPModel_dimensionality(be_vie_data, ndims):
     """
 
     from pyrealm.pmodel import FastSlowScaler, PModelEnvironment
-    from pyrealm.pmodel.new_subdaily import SubdailyPModel
+    from pyrealm.pmodel.subdaily import SubdailyPModel
 
     datetime = be_vie_data["time"].to_numpy()
 
@@ -282,7 +282,7 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
     """
 
     from pyrealm.pmodel import FastSlowScaler
-    from pyrealm.pmodel.new_subdaily import SubdailyPModel
+    from pyrealm.pmodel.subdaily import SubdailyPModel
 
     env, ppfd, fapar, datetime, _ = be_vie_data_components.get()
 
@@ -309,7 +309,7 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
     """Tests the convert_pmodel_to_subdaily method."""
 
     from pyrealm.pmodel import FastSlowScaler, PModel
-    from pyrealm.pmodel.new_subdaily import SubdailyPModel, convert_pmodel_to_subdaily
+    from pyrealm.pmodel.subdaily import SubdailyPModel, convert_pmodel_to_subdaily
 
     env, ppfd, fapar, datetime, _ = be_vie_data_components.get()
 
@@ -507,7 +507,7 @@ def test_FSPModel_incomplete_day_behaviour(
       calculations to use the actual data.
     """
 
-    from pyrealm.pmodel.new_subdaily import FastSlowScaler, SubdailyPModel
+    from pyrealm.pmodel.subdaily import FastSlowScaler, SubdailyPModel
 
     def model_fitter(env, ppfd, fapar, datetime):
         # Get the fast slow scaler and set window
