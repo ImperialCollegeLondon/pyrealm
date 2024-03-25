@@ -22,6 +22,8 @@ Constants
   :class:`~pyrealm.constants.pmodel_const.PModelConst` dataclass. These can be changed
   by the user but are typically used to configure an entire analysis rather than a
   single function.
+
+  isort:skip_file
 """  # noqa: D210, D415
 
 # This __init__ file imports the following members from submodules in order to
@@ -50,9 +52,9 @@ from pyrealm.pmodel.isotopes import CalcCarbonIsotopes
 from pyrealm.pmodel.jmax_limitation import JmaxLimitation
 from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
+from pyrealm.pmodel.subdaily_scaler import SubdailyScaler
 from pyrealm.pmodel.subdaily import (
     SubdailyPModel,
     convert_pmodel_to_subdaily,
     memory_effect,
 )
-from pyrealm.pmodel.subdaily_scaler import SubdailyScaler
