@@ -37,6 +37,7 @@ from pyrealm.pmodel import (
     PModelEnvironment,
     PModel,
 )
+from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
 from pyrealm.pmodel.functions import calc_ftemp_arrh, calc_ftemp_kphio
 ```
 
@@ -169,15 +170,11 @@ at 25°C. This is acheived by multiplying by the reciprocal of the exponential p
 the Arrhenius equation ($h^{-1}$ in {cite}`mengoli:2022a`).
 
 ```{code-cell} ipython3
-pmodel_standard.pmodel_
-```
-
-```{code-cell} ipython3
 # Are these any of the existing values in the constants?
 ha_vcmax25 = 65330
 ha_jmax25 = 43900
 
-tk_acclim = temp_acclim + pmodel_subdaily.core_const.k_CtoK
+tk_acclim = temp_acclim + pmodel_subdaily.env.core_const.k_CtoK
 vcmax25_acclim = pmodel_acclim.vcmax * (1 / calc_ftemp_arrh(tk_acclim, ha_vcmax25))
 jmax25_acclim = pmodel_acclim.jmax * (1 / calc_ftemp_arrh(tk_acclim, ha_jmax25))
 ```
@@ -195,8 +192,8 @@ jmax25_real = memory_effect(jmax25_acclim, alpha=1 / 15, allow_holdover=True)
 ```
 
 The plots below show the instantaneously acclimated values for  $J_{max25}$,
-$V_{cmax25}$ and $\xi$ in grey along with the realised slow reponses.
-applied.
+$V_{cmax25}$ and $\xi$ in grey along with the realised slow reponses, after
+application of the memory effect.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
@@ -233,7 +230,7 @@ temperature at fast scales:
   responses of $J_{max}$ and $V_{cmax}$.
 
 ```{code-cell} ipython3
-tk_subdaily = subdaily_env.tc + pmodel_subdaily.core_const.k_CtoK
+tk_subdaily = subdaily_env.tc + pmodel_subdaily.env.core_const.k_CtoK
 
 # Fill the realised jmax and vcmax from subdaily to daily
 vcmax25_subdaily = fsscaler.fill_daily_to_subdaily(vcmax25_real)
@@ -247,19 +244,21 @@ jmax_subdaily = jmax25_subdaily * calc_ftemp_arrh(tk=tk_subdaily, ha=ha_jmax25)
 #### Calculation of $c_i$
 
 The subdaily variation in $c_i$ can now be calculated using $c_a$ and fast reponses in
-$\Gamma^\ast$ with the realised slow responses of $\xi$. The original implementation of
-{cite:t}`mengoli:2022a` here used  optimal values from the acclimation window of $\xi$,
-$\Gamma^{\ast}$ and $c_a$, interpolated to the subdaily timescale and the actual
-subdaily variation in VPD.
+$\Gamma^\ast$ with the realised slow responses of $\xi$. This is achieved by
+passing the realised values of $\xi$ as a fixed constraint to the calculation of
+optimal $\chi$, rather than calculating the instantaneously optimal values of $\xi$
+as is the case in the standard P Model.
 
 ```{code-cell} ipython3
 # Interpolate xi to subdaily scale
 xi_subdaily = fsscaler.fill_daily_to_subdaily(xi_real)
 
+# Calculate the optimal chi, imposing the realised xi values
+subdaily_chi = OptimalChiPrentice14(env=subdaily_env)
+subdaily_chi.estimate_chi(xi_values=xi_subdaily)
+
 # Calculate ci
-ci_subdaily = (
-    xi_subdaily * subdaily_env.ca + subdaily_env.gammastar * np.sqrt(subdaily_env.vpd)
-) / (xi_subdaily + np.sqrt(subdaily_env.vpd))
+ci_subdaily = subdaily_chi.ci
 ```
 
 #### Calculation of assimilation and GPP
@@ -273,8 +272,8 @@ temperature.
 # Calculate Ac
 Ac_subdaily = (
     vcmax_subdaily
-    * (ci_subdaily - subdaily_env.gammastar)
-    / (ci_subdaily + subdaily_env.kmm)
+    * (subdaily_chi.ci - subdaily_env.gammastar)
+    / (subdaily_chi.ci + subdaily_env.kmm)
 )
 
 # Calculate J and Aj
@@ -285,12 +284,12 @@ J_subdaily = (4 * phi * iabs) / np.sqrt(1 + ((4 * phi * iabs) / jmax_subdaily) *
 
 Aj_subdaily = (
     (J_subdaily / 4)
-    * (ci_subdaily - subdaily_env.gammastar)
-    / (ci_subdaily + 2 * subdaily_env.gammastar)
+    * (subdaily_chi.ci - subdaily_env.gammastar)
+    / (subdaily_chi.ci + 2 * subdaily_env.gammastar)
 )
 
 # Calculate GPP and convert from micromols to micrograms
-GPP_subdaily = np.minimum(Ac_subdaily, Aj_subdaily) * pmodel_subdaily.core_const.k_c_molmass
+GPP_subdaily = np.minimum(Ac_subdaily, Aj_subdaily) * pmodel_subdaily.env.core_const.k_c_molmass
 
 # Compare to the SubdailyPModel outputs
 diff = GPP_subdaily - pmodel_subdaily.gpp
