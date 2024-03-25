@@ -1,6 +1,23 @@
 r"""The :mod:`~pyrealm.pmodel.subdaily` module provides extensions to the P Model that
 incorporate modelling of the fast and slow responses of photosynthesis to changing
 conditions.
+
+The initial implementation of the subdaily model followed the code structure of the
+original implementation of the weighted mean approach :cite:p:`mengoli:2022a`, which was
+hard-coded to applying the {cite:t}`Prentice:2014bc` equations for the C3 pathway and
+contained some other slight differences in calculations. That original structure is
+largely preserved in the :class:`~pyrealm.pmodel.subdaily.SubdailyPModel_JAMES` class,
+which also documents the main differences and updates to the original approach. The
+:class:`~pyrealm.pmodel.subdaily.SubdailyPModel_JAMES` implementation is not intended
+for wide use and provides an approach for regression testing against outputs from the
+original R implementation.
+
+The main :class:`~pyrealm.pmodel.subdaily.SubdailyPModel` class provides the main
+interface for fitting subdaily models. It incorporates slow responses of the :math:`\xi`
+parameter in calculating optimal :math:`\chi`. This implementation can also be fitted
+using any of the existing approaches for calculating optimal :math:`\chi`, including
+using C4 pathways and soil moisture effects on optimal :math:`\chi`, but this is
+experimental and not validated.
 """  # noqa: D205, D415
 
 from typing import Optional
@@ -278,11 +295,11 @@ class SubdailyPModel:
         r"""P Model predictions for the daily acclimation conditions.
 
         A :class:`~pyrealm.pmodel.pmodel.PModel` instance providing the predictions of
-        the P Model for the daily acclimation conditions set for the FastSlowPModel. The
+        the P Model for the daily acclimation conditions set for the SubdailyPModel. The
         model is used to obtain predictions of the instantaneously optimal estimates of
-        :math:`V_{cmax}`, :math:`J_{max}` and :math:`\xi` during the acclimation window.
-        These are then used to estimate realised values of those parameters given slow
-        responses to acclimation.
+        :math:`V_{cmax}`, :math:`J_{max}` and :math:`\xi` dgturing the acclimation
+        window. These are then used to estimate realised values of those parameters
+        given slow responses to acclimation.
         """
 
         # 3) Estimate productivity to calculate jmax and vcmax
@@ -419,7 +436,7 @@ def convert_pmodel_to_subdaily(
     )
 
 
-class FastSlowPModel_JAMES:
+class SubdailyPModel_JAMES:
     r"""Fits the JAMES P Model incorporating fast and slow photosynthetic responses.
 
     This is alternative implementation of the P Model incorporating slow responses that
@@ -429,7 +446,7 @@ class FastSlowPModel_JAMES:
     The key difference is that :math:`\xi` does not have a slow response, with
     :math:`c_i` calculated using the daily optimal values during the acclimation window
     for :math:`\xi`, :math:`c_a` and :math:`\Gamma^{\ast}`  and subdaily variation in
-    VPD. The main implementation in :class:`~pyrealm.pmodel.subdaily.FastSlowPModel`
+    VPD. The main implementation in :class:`~pyrealm.pmodel.subdaily.SubdailyPModel`
     instead uses fast subdaily responses in :math:`c_a`, :math:`\Gamma^{\ast}` and VPD
     and realised slow responses in :math:`\xi`.
 
@@ -481,7 +498,7 @@ class FastSlowPModel_JAMES:
     ) -> None:
         # Really warn about the API
         warn(
-            "FastSlowPModel_JAMES is for validation against an older implementation "
+            "SubdailyPModel_JAMES is for validation against an older implementation "
             "and is not for production use.",
             DeprecationWarning,
         )
@@ -528,7 +545,7 @@ class FastSlowPModel_JAMES:
         r"""P Model predictions for the daily acclimation conditions.
 
         A :class:`~pyrealm.pmodel.pmodel.PModel` instance providing the predictions of
-        the P Model for the daily acclimation conditions set for the FastSlowPModel. The
+        the P Model for the daily acclimation conditions set for the SubdailyPModel. The
         model predicts instantaneous optimal estimates of :math:`V_{cmax}`,
         :math:`J_max` and `:math:`\xi`, which are then used to estimate realised values
         of those parameters given slow responses to acclimation.
