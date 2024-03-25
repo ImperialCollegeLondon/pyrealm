@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: pyrealm_python3
   language: python
@@ -20,19 +20,20 @@ steps used in the estimation process in order to show intermediates results but 
 practice, as shown in the [worked example](worked_example), most of these calculations
 are handled internally by the model fitting in `pyrealm`.
 
-```{code-cell} python python
+```{code-cell} ipython3
 :tags: [hide-input]
 
 from importlib import resources
 
-import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.dates as mdates
+import numpy as np
+import pandas
 
 from pyrealm.pmodel import (
     FastSlowScaler,
     memory_effect,
-    SubdailyModel,
+    SubdailyPModel,
     PModelEnvironment,
     PModel,
 )
@@ -45,25 +46,19 @@ The code below uses half hourly data from 2014 for the [BE-Vie FluxNET
 site](https://fluxnet.org/doi/FLUXNET2015/BE-Vie), which was also used as a
 demonstration in {cite:t}`mengoli:2022a`.
 
-```{code-cell} python
+```{code-cell} ipython3
 data_path = resources.files("pyrealm_build_data.subdaily") / "subdaily_BE_Vie_2014.csv"
-data = np.genfromtxt(
-    data_path,
-    names=True,
-    delimiter=",",
-    dtype=None,
-    encoding="UTF8",
-    missing_values="NA",
-)
 
-# Extract the key half hourly timestep variables
-temp_subdaily = data["ta"]
-vpd_subdaily = data["vpd"]
-co2_subdaily = data["co2"]
-patm_subdaily = data["patm"]
-ppfd_subdaily = data["ppfd"]
-fapar_subdaily = data["fapar"]
-datetime_subdaily = data["time"].astype(np.datetime64)
+data = pandas.read_csv(str(data_path))
+
+# Extract the key half hourly timestep variables as numpy arrays
+temp_subdaily = data["ta"].to_numpy()
+vpd_subdaily = data["vpd"].to_numpy()
+co2_subdaily = data["co2"].to_numpy()
+patm_subdaily = data["patm"].to_numpy()
+ppfd_subdaily = data["ppfd"].to_numpy()
+fapar_subdaily = data["fapar"].to_numpy()
+datetime_subdaily = pandas.to_datetime(data["time"]).to_numpy()
 ```
 
 ## Photosynthetic environment
@@ -72,7 +67,7 @@ This dataset can then be used to calculate the photosynthetic environment at the
 subdaily timescale. The code below also estimates GPP under the standard P Model with no
 slow responses for comparison.
 
-```{code-cell} python
+```{code-cell} ipython3
 # Calculate the photosynthetic environment
 subdaily_env = PModelEnvironment(
     tc=temp_subdaily,
@@ -98,7 +93,7 @@ best to sample those conditions. Typically those might be the observed environme
 conditions at the observation closest to noon, or the mean environmental conditions in a
 window around noon.
 
-```{code-cell} python
+```{code-cell} ipython3
 # Create the fast slow scaler
 fsscaler = FastSlowScaler(datetime_subdaily)
 
@@ -118,7 +113,7 @@ pmodel_subdaily = SubdailyPModel(
 )
 ```
 
-```{code-cell} python
+```{code-cell} ipython3
 :tags: [hide-input]
 
 idx = np.arange(48 * 120, 48 * 130)
@@ -142,7 +137,7 @@ The daily average conditions during the acclimation window can be sampled and us
 inputs to the standard P Model to calculate the optimal behaviour of plants under those
 conditions.
 
-```{code-cell} python
+```{code-cell} ipython3
 # Get the daily acclimation conditions for the forcing variables
 temp_acclim = fsscaler.get_daily_means(temp_subdaily)
 co2_acclim = fsscaler.get_daily_means(co2_subdaily)
@@ -173,7 +168,11 @@ temperatures so $J_{max}$ and $V_{cmax}$ must first be standardised to expected 
 at 25°C. This is acheived by multiplying by the reciprocal of the exponential part of
 the Arrhenius equation ($h^{-1}$ in {cite}`mengoli:2022a`).
 
-```{code-cell} python
+```{code-cell} ipython3
+pmodel_standard.pmodel_
+```
+
+```{code-cell} ipython3
 # Are these any of the existing values in the constants?
 ha_vcmax25 = 65330
 ha_jmax25 = 43900
@@ -188,7 +187,7 @@ jmax25_acclim = pmodel_acclim.jmax * (1 / calc_ftemp_arrh(tk_acclim, ha_jmax25))
 The memory effect can now be applied to the three parameters with slow
 responses to calculate realised values, here using the default 15 day window.
 
-```{code-cell} python
+```{code-cell} ipython3
 # Calculation of memory effect in xi, vcmax25 and jmax25
 xi_real = memory_effect(pmodel_acclim.optchi.xi, alpha=1 / 15)
 vcmax25_real = memory_effect(vcmax25_acclim, alpha=1 / 15, allow_holdover=True)
@@ -199,7 +198,7 @@ The plots below show the instantaneously acclimated values for  $J_{max25}$,
 $V_{cmax25}$ and $\xi$ in grey along with the realised slow reponses.
 applied.
 
-```{code-cell} python
+```{code-cell} ipython3
 :tags: [hide-input]
 
 fig, axes = plt.subplots(1, 3, figsize=(16, 5))
@@ -233,7 +232,7 @@ temperature at fast scales:
 * These values are adjusted to the actual half hourly temperatures to give the fast
   responses of $J_{max}$ and $V_{cmax}$.
 
-```{code-cell} python
+```{code-cell} ipython3
 tk_subdaily = subdaily_env.tc + pmodel_subdaily.core_const.k_CtoK
 
 # Fill the realised jmax and vcmax from subdaily to daily
@@ -253,7 +252,7 @@ $\Gamma^\ast$ with the realised slow responses of $\xi$. The original implementa
 $\Gamma^{\ast}$ and $c_a$, interpolated to the subdaily timescale and the actual
 subdaily variation in VPD.
 
-```{code-cell} python
+```{code-cell} ipython3
 # Interpolate xi to subdaily scale
 xi_subdaily = fsscaler.fill_daily_to_subdaily(xi_real)
 
@@ -270,7 +269,7 @@ Model, where $c_i$ includes the slow responses of $\xi$ and $V_{cmax}$ and $J_{m
 include the slow responses of $V_{cmax25}$ and $J_{max25}$ and fast responses to
 temperature.
 
-```{code-cell} python
+```{code-cell} ipython3
 # Calculate Ac
 Ac_subdaily = (
     vcmax_subdaily

@@ -24,8 +24,7 @@ from matplotlib.colors import Normalize
 import matplotlib.cm as cm
 import matplotlib.dates as mdates
 
-from pyrealm.pmodel import PModel, FastSlowPModel, PModelEnvironment, FastSlowScaler
-from pyrealm.pmodel.new_subdaily import SubdailyPModel, convert_pmodel_to_subdaily
+from pyrealm.pmodel import PModel, PModelEnvironment, FastSlowScaler, SubdailyPModel, convert_pmodel_to_subdaily
 
 from pyrealm.core.hygro import convert_sh_to_vpd
 ```

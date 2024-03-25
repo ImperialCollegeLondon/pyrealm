@@ -403,7 +403,7 @@ def convert_pmodel_to_subdaily(
     r"""Convert a standard P Model to a subdaily P Model.
 
     This function takes an existing :class:`~pyrealm.pmodel.pmodel.PModel` instance and
-    converts it to a :class:`~pyrealm.pmodel.new_subdaily.SubfdailyPModel` instance
+    converts it to a :class:`~pyrealm.pmodel.subdaily.SubdailyPModel` instance
     using provided settings. The
     :meth:`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` method must have been
     called on the :class:`~pyrealm.pmodel.pmodel.PModel` instance in order to provide
