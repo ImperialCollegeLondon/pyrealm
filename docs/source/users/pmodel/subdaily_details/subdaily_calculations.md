@@ -32,7 +32,7 @@ import matplotlib.dates as mdates
 from pyrealm.pmodel import (
     FastSlowScaler,
     memory_effect,
-    FastSlowPModel,
+    SubdailyModel,
     PModelEnvironment,
     PModel,
 )
@@ -82,9 +82,9 @@ subdaily_env = PModelEnvironment(
 )
 
 # Fit the standard P Model
-pmodel_subdaily = PModel(subdaily_env, kphio=1 / 8)
-pmodel_subdaily.estimate_productivity(ppfd=ppfd_subdaily, fapar=fapar_subdaily)
-pmodel_subdaily.summarize()
+pmodel_standard = PModel(subdaily_env, kphio=1 / 8)
+pmodel_standard.estimate_productivity(ppfd=ppfd_subdaily, fapar=fapar_subdaily)
+pmodel_standard.summarize()
 ```
 
 The code below then fits a P Model including slow responses, which requires the
@@ -109,7 +109,7 @@ fsscaler.set_window(
 )
 
 # Fit the P Model with fast and slow responses
-pmodel_fastslow = FastSlowPModel(
+pmodel_subdaily = SubdailyPModel(
     env=subdaily_env,
     fs_scaler=fsscaler,
     allow_holdover=True,
@@ -123,8 +123,8 @@ pmodel_fastslow = FastSlowPModel(
 
 idx = np.arange(48 * 120, 48 * 130)
 plt.figure(figsize=(10, 4))
-plt.plot(datetime_subdaily[idx], pmodel_subdaily.gpp[idx], label="Instantaneous model")
-plt.plot(datetime_subdaily[idx], pmodel_fastslow.gpp[idx], "r-", label="Slow responses")
+plt.plot(datetime_subdaily[idx], pmodel_standard.gpp[idx], label="Instantaneous model")
+plt.plot(datetime_subdaily[idx], pmodel_subdaily.gpp[idx], "r-", label="Slow responses")
 plt.ylabel = "GPP"
 plt.legend(frameon=False)
 plt.show()
@@ -132,7 +132,7 @@ plt.show()
 
 ## Calculation of GPP using fast and slow responses
 
-The {class}`~pyrealm.pmodel.subdaily.FastSlowPModel` implements the calculations used to
+The {class}`~pyrealm.pmodel.subdaily.SubdailyPModel` implements the calculations used to
 estimate GPP using slow responses, but the details of these calculations are shown
 below.
 
@@ -293,7 +293,7 @@ Aj_subdaily = (
 # Calculate GPP and convert from micromols to micrograms
 GPP_subdaily = np.minimum(Ac_subdaily, Aj_subdaily) * pmodel_subdaily.core_const.k_c_molmass
 
-# Compare to the FastSlowPModel outputs
-diff = GPP_subdaily - pmodel_fastslow.gpp
+# Compare to the SubdailyPModel outputs
+diff = GPP_subdaily - pmodel_subdaily.gpp
 print(np.nanmin(diff), np.nanmax(diff))
 ```
