@@ -28,9 +28,9 @@ from numpy.typing import NDArray
 
 from pyrealm import ExperimentalFeatureWarning
 from pyrealm.pmodel import (
-    FastSlowScaler,
     PModel,
     PModelEnvironment,
+    SubdailyScaler,
     calc_ftemp_arrh,
     calc_ftemp_kphio,
 )
@@ -155,11 +155,11 @@ class SubdailyPModel:
     * The first dimension of the data arrays used to create the
       :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance must
       represent the time axis of the observations. The ``fs_scaler`` argument is used to
-      provide :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance which
+      provide :class:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler` instance which
       sets the dates and time of those observations and sets which daily observations
       form the daily acclimation window that will be used to estimate the optimal daily
       behaviour, using one of the ``set_`` methods to that class.
-    * The :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_daily_means` method
+    * The :meth:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler.get_daily_means` method
       is then used to extract daily average values for forcing variables from within the
       acclimation window, setting the conditions that the plant will optimise to.
     * A standard P Model is then run on those daily forcing values to generate predicted
@@ -189,7 +189,7 @@ class SubdailyPModel:
         options include:
 
         * The ``allow_partial_data`` argument is passed on to
-          :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_daily_means` to
+          :meth:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler.get_daily_means` to
           allow daily optimum conditions to be calculated when the data in the
           acclimation window is incomplete. This does not fix problems when no data is
           present in the window or when the P Model predictions for a day are undefined.
@@ -203,7 +203,7 @@ class SubdailyPModel:
         env: An instance of
           :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
         fs_scaler: An instance of
-          :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler`.
+          :class:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler`.
         fapar: The :math:`f_{APAR}` for each observation.
         ppfd: The PPDF for each observation.
         alpha: The :math:`\alpha` weight.
@@ -219,7 +219,7 @@ class SubdailyPModel:
     def __init__(
         self,
         env: PModelEnvironment,
-        fs_scaler: FastSlowScaler,
+        fs_scaler: SubdailyScaler,
         fapar: NDArray,
         ppfd: NDArray,
         kphio: float = 1 / 8,
@@ -395,7 +395,7 @@ class SubdailyPModel:
 
 def convert_pmodel_to_subdaily(
     pmodel: PModel,
-    fs_scaler: FastSlowScaler,
+    fs_scaler: SubdailyScaler,
     alpha: float = 1 / 15,
     allow_holdover: bool = False,
     fill_kind: str = "previous",
@@ -411,7 +411,7 @@ def convert_pmodel_to_subdaily(
 
     Args:
         pmodel: An existing standard PModel instance.
-        fs_scaler: A FastSlowScalar instance giving the acclimation window for the
+        fs_scaler: A SubdailyScaler instance giving the acclimation window for the
             subdaily model.
         alpha: The :math:`\alpha` weight.
         allow_holdover: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect`
@@ -466,7 +466,7 @@ class SubdailyPModel_JAMES:
         env: An instance of
           :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
         fs_scaler: An instance of
-          :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler`.
+          :class:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler`.
         fapar: The :math:`f_{APAR}` for each observation.
         ppfd: The PPDF for each observation.
         alpha: The :math:`\alpha` weight.
@@ -474,7 +474,7 @@ class SubdailyPModel_JAMES:
           function be allowed to hold over values to fill missing values.
         kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -).
         vpd_scaler: An alternate
-          :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance used to
+          :class:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler` instance used to
           calculate daily acclimation conditions for VPD.
         fill_from: A :class:`numpy.timedelta64` object giving the time since midnight
           used for filling :math:`J_{max25}` and :math:`V_{cmax25}` to the subdaily
@@ -486,13 +486,13 @@ class SubdailyPModel_JAMES:
     def __init__(
         self,
         env: PModelEnvironment,
-        fs_scaler: FastSlowScaler,
+        fs_scaler: SubdailyScaler,
         ppfd: NDArray,
         fapar: NDArray,
         alpha: float = 1 / 15,
         allow_holdover: bool = False,
         kphio: float = 1 / 8,
-        vpd_scaler: Optional[FastSlowScaler] = None,
+        vpd_scaler: Optional[SubdailyScaler] = None,
         fill_from: Optional[np.timedelta64] = None,
         fill_kind: str = "previous",
     ) -> None:

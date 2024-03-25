@@ -119,20 +119,20 @@ def test_SubdailyPModel_JAMES(be_vie_data_components):
     version of the weighted average calculations without acclimating xi.
     """
 
-    from pyrealm.pmodel import FastSlowScaler
+    from pyrealm.pmodel import SubdailyScaler
     from pyrealm.pmodel.subdaily import SubdailyPModel_JAMES
 
     env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components.get()
 
     # Get the fast slow scaler and set window
-    fsscaler = FastSlowScaler(datetime)
+    fsscaler = SubdailyScaler(datetime)
     fsscaler.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
 
     # Alternate scalar used to duplicate VPD settings in JAMES implementation
-    vpdscaler = FastSlowScaler(datetime)
+    vpdscaler = SubdailyScaler(datetime)
     vpdscaler.set_nearest(time=np.timedelta64(12, "h"))
 
     # Fast slow model without acclimating xi with best fit adaptations to the original
@@ -185,13 +185,13 @@ def test_FSPModel_corr(be_vie_data_components, data_args):
     to differ.
     """
 
-    from pyrealm.pmodel import FastSlowScaler
+    from pyrealm.pmodel import SubdailyScaler
     from pyrealm.pmodel.subdaily import SubdailyPModel
 
     env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components.get(**data_args)
 
     # Get the fast slow scaler and set window
-    fsscaler = FastSlowScaler(datetime)
+    fsscaler = SubdailyScaler(datetime)
     fsscaler.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
@@ -226,7 +226,7 @@ def test_FSPModel_dimensionality(be_vie_data, ndims):
     dimensions to check the results scale as expected.
     """
 
-    from pyrealm.pmodel import FastSlowScaler, PModelEnvironment
+    from pyrealm.pmodel import PModelEnvironment, SubdailyScaler
     from pyrealm.pmodel.subdaily import SubdailyPModel
 
     datetime = be_vie_data["time"].to_numpy()
@@ -247,7 +247,7 @@ def test_FSPModel_dimensionality(be_vie_data, ndims):
     )
 
     # Get the fast slow scaler and set window
-    fsscaler = FastSlowScaler(datetime)
+    fsscaler = SubdailyScaler(datetime)
     fsscaler.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
@@ -281,13 +281,13 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
     implementations of the OptimalChi ABC.
     """
 
-    from pyrealm.pmodel import FastSlowScaler
+    from pyrealm.pmodel import SubdailyScaler
     from pyrealm.pmodel.subdaily import SubdailyPModel
 
     env, ppfd, fapar, datetime, _ = be_vie_data_components.get()
 
     # Get the fast slow scaler and set window
-    fsscaler = FastSlowScaler(datetime)
+    fsscaler = SubdailyScaler(datetime)
     fsscaler.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
@@ -308,13 +308,13 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
 def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
     """Tests the convert_pmodel_to_subdaily method."""
 
-    from pyrealm.pmodel import FastSlowScaler, PModel
+    from pyrealm.pmodel import PModel, SubdailyScaler
     from pyrealm.pmodel.subdaily import SubdailyPModel, convert_pmodel_to_subdaily
 
     env, ppfd, fapar, datetime, _ = be_vie_data_components.get()
 
     # Get the fast slow scaler and set window
-    fsscaler = FastSlowScaler(datetime)
+    fsscaler = SubdailyScaler(datetime)
     fsscaler.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
@@ -507,11 +507,11 @@ def test_FSPModel_incomplete_day_behaviour(
       calculations to use the actual data.
     """
 
-    from pyrealm.pmodel.subdaily import FastSlowScaler, SubdailyPModel
+    from pyrealm.pmodel.subdaily import SubdailyPModel, SubdailyScaler
 
     def model_fitter(env, ppfd, fapar, datetime):
         # Get the fast slow scaler and set window
-        fsscaler = FastSlowScaler(datetime)
+        fsscaler = SubdailyScaler(datetime)
         fsscaler.set_window(
             window_center=np.timedelta64(12, "h"),
             half_width=np.timedelta64(30, "m"),
@@ -548,7 +548,7 @@ def test_FSPModel_incomplete_day_behaviour(
             ]
 
             with mocker.patch.object(
-                FastSlowScaler,
+                SubdailyScaler,
                 "get_daily_means",
                 side_effect=patched_means,
             ):

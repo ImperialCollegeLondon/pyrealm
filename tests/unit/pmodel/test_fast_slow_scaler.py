@@ -1,4 +1,4 @@
-"""This module tests the FastSlowScaler class.
+"""This module tests the SubdailyScaler class.
 
 This class handles estimating daily reference values and then interpolating lagged
 responses back to subdaily time scales.
@@ -12,10 +12,10 @@ import pytest
 
 @pytest.fixture
 def fixture_FSS():
-    """A fixture providing a FastSlowScaler object."""
-    from pyrealm.pmodel import FastSlowScaler
+    """A fixture providing a SubdailyScaler object."""
+    from pyrealm.pmodel import SubdailyScaler
 
-    return FastSlowScaler(
+    return SubdailyScaler(
         datetimes=np.arange(
             np.datetime64("2014-06-01 00:00"),
             np.datetime64("2014-06-04 00:00"),
@@ -26,7 +26,7 @@ def fixture_FSS():
 
 
 # ----------------------------------------
-# Testing FastSlowScaler
+# Testing SubdailyScaler
 # ----------------------------------------
 
 
@@ -115,11 +115,11 @@ def fixture_FSS():
     ],
 )
 def test_FSS_init(ctext_mngr, msg, datetimes):
-    """Test the FastSlowScaler init handling of date ranges."""
-    from pyrealm.pmodel import FastSlowScaler
+    """Test the SubdailyScaler init handling of date ranges."""
+    from pyrealm.pmodel import SubdailyScaler
 
     with ctext_mngr as cman:
-        _ = FastSlowScaler(datetimes=datetimes)
+        _ = SubdailyScaler(datetimes=datetimes)
 
     if msg is not None:
         assert str(cman.value) == msg
@@ -163,7 +163,7 @@ def test_FSS_init(ctext_mngr, msg, datetimes):
     ],
 )
 def test_FSS_set_window(fixture_FSS, ctext_mngr, msg, kwargs, samp_mean, samp_max):
-    """Test the FastSlowScaler set_window method."""
+    """Test the SubdailyScaler set_window method."""
 
     with ctext_mngr as cman:
         fixture_FSS.set_window(**kwargs)
@@ -228,7 +228,7 @@ def test_FSS_set_window(fixture_FSS, ctext_mngr, msg, kwargs, samp_mean, samp_ma
     ],
 )
 def test_FSS_set_include(fixture_FSS, ctext_mngr, msg, include, samp_mean, samp_max):
-    """Test the FastSlowScaler set_include method."""
+    """Test the SubdailyScaler set_include method."""
     with ctext_mngr as cman:
         fixture_FSS.set_include(include)
 
@@ -291,7 +291,7 @@ def test_FSS_set_include(fixture_FSS, ctext_mngr, msg, include, samp_mean, samp_
     ],
 )
 def test_FSS_set_nearest(fixture_FSS, ctext_mngr, msg, time, samp_mean, samp_max):
-    """Test the FastSlowScaler set_nearest method."""
+    """Test the SubdailyScaler set_nearest method."""
     with ctext_mngr as cman:
         fixture_FSS.set_nearest(time)
 
@@ -318,7 +318,7 @@ def test_FSS_set_nearest(fixture_FSS, ctext_mngr, msg, time, samp_mean, samp_max
     ],
 )
 def test_FSS_get_wv_errors(fixture_FSS, ctext_mngr, msg, values):
-    """Test errors arising in the FastSlowScaler get_window_value method."""
+    """Test errors arising in the SubdailyScaler get_window_value method."""
     fixture_FSS.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(2, "h"),
@@ -755,7 +755,7 @@ def test_FSS_resample_subdaily(
     exp_values,
     fill_from,
 ):
-    """Test the calculation of subdaily samples using FastSlowScaler."""
+    """Test the calculation of subdaily samples using SubdailyScaler."""
 
     # Set the included observations - the different parameterisations here and for
     # the update point should all select the same update point.
@@ -835,7 +835,7 @@ def test_FSS_resample_subdaily_linear(
     input_values,
     exp_values,
 ):
-    """Test FastSlowScaler resampling to subdaily timescale by linear interpolation."""
+    """Test SubdailyScaler resampling to subdaily timescale by linear interpolation."""
 
     # Set the included observations
     fixture_FSS.set_window(

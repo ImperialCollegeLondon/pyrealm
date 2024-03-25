@@ -33,7 +33,6 @@ from pyrealm.pmodel.competition import (
     calculate_tree_proportion,
     convert_gpp_advantage_to_c4_fraction,
 )
-from pyrealm.pmodel.fast_slow_scaler import FastSlowScaler
 from pyrealm.pmodel.functions import (
     calc_co2_to_ca,
     calc_ftemp_arrh,
@@ -56,3 +55,4 @@ from pyrealm.pmodel.subdaily import (
     convert_pmodel_to_subdaily,
     memory_effect,
 )
+from pyrealm.pmodel.subdaily_scaler import SubdailyScaler

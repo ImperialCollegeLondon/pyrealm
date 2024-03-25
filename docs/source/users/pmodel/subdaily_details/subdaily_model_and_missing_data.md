@@ -50,7 +50,7 @@ observations are provided for the first and last day
 ```{code-cell} ipython3
 import numpy as np
 
-from pyrealm.pmodel.fast_slow_scaler import FastSlowScaler
+from pyrealm.pmodel.subdaily_scaler import SubdailyScaler
 from pyrealm.pmodel.subdaily import memory_effect
 
 # A five day time series running from noon until noon
@@ -69,14 +69,14 @@ data[np.logical_and(
     )] = np.nan
 
 # Create the acclimation window sampler
-fsscaler = FastSlowScaler(datetimes)
+fsscaler = SubdailyScaler(datetimes)
 fsscaler.set_window(
     window_center = np.timedelta64(12, 'h'),
     half_width = np.timedelta64(30, 'm')
 )
 ```
 
-The :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_daily_values` method
+The :meth:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler.get_daily_values` method
 extracts the values within the acclimation window for each day. With the half hourly
 data and the window set above, these are the observations at 11:30, 12:00 and 12:30.
 This method is typically used internally and not directly by users, but it shows the
@@ -93,7 +93,7 @@ fsscaler.get_window_values(data)
 ```
 
 The daily average conditions are calculated using the
-:meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_daily_means` method. If
+:meth:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler.get_daily_means` method. If
 partial data are not allowed - which is the default - the daily average conditions for
 all days with missing data is also missing (`np.nan`).
 

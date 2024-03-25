@@ -31,7 +31,7 @@ import numpy as np
 import pandas
 
 from pyrealm.pmodel import (
-    FastSlowScaler,
+    SubdailyScaler,
     memory_effect,
     SubdailyPModel,
     PModelEnvironment,
@@ -96,7 +96,7 @@ window around noon.
 
 ```{code-cell} ipython3
 # Create the fast slow scaler
-fsscaler = FastSlowScaler(datetime_subdaily)
+fsscaler = SubdailyScaler(datetime_subdaily)
 
 # Set the acclimation window as the values within a one hour window centred on noon
 fsscaler.set_window(

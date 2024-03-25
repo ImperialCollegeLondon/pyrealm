@@ -74,10 +74,10 @@ kernelspec:
     :members:
 ```
 
-## The {mod}`~pyrealm.pmodel.fast_slow_scaler` submodule
+## The {mod}`~pyrealm.pmodel.subdaily_scaler` submodule
 
 ```{eval-rst}
-.. automodule:: pyrealm.pmodel.fast_slow_scaler
+.. automodule:: pyrealm.pmodel.subdaily_scaler
     :autosummary:
     :members:
     :private-members:

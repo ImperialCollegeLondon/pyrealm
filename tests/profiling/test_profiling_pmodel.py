@@ -122,10 +122,10 @@ class TestClass:
 
     def test_profiling_subdaily(self, setup):
         """Profiling the subdaily submodule."""
-        from pyrealm.pmodel import FastSlowScaler, SubdailyPModel
+        from pyrealm.pmodel import SubdailyPModel, SubdailyScaler
 
         # SubdailyPModel with 1 hour noon acclimation window
-        fsscaler = FastSlowScaler(self.local_time)
+        fsscaler = SubdailyScaler(self.local_time)
         fsscaler.set_window(
             window_center=np.timedelta64(12, "h"),
             half_width=np.timedelta64(1, "h"),

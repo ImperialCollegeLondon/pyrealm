@@ -24,7 +24,7 @@ from matplotlib.colors import Normalize
 import matplotlib.cm as cm
 import matplotlib.dates as mdates
 
-from pyrealm.pmodel import PModel, PModelEnvironment, FastSlowScaler, SubdailyPModel, convert_pmodel_to_subdaily
+from pyrealm.pmodel import PModel, PModelEnvironment, SubdailyScaler, SubdailyPModel, convert_pmodel_to_subdaily
 
 from pyrealm.core.hygro import convert_sh_to_vpd
 ```
@@ -127,7 +127,7 @@ calculated again to update those realised estimates.
 
 ```{code-cell} ipython3
 # Set the acclimation window to an hour either side of noon
-fsscaler = FastSlowScaler(datetimes)
+fsscaler = SubdailyScaler(datetimes)
 fsscaler.set_window(
     window_center=np.timedelta64(12, "h"),
     half_width=np.timedelta64(1, "h"),
