@@ -1,8 +1,8 @@
-"""The :mod:`~pyrealm.pmodel.subdaily_scaler` module provides the
-:class:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler` class, which is a core
+"""The :mod:`~pyrealm.pmodel.scaler` module provides the
+:class:`~pyrealm.pmodel.scaler.SubdailyScaler` class, which is a core
 component of fitting the P Model at subdaily time scales. The class is used as follows:
 
-* A :class:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler` instance is created using
+* A :class:`~pyrealm.pmodel.scaler.SubdailyScaler` instance is created using
   the time series of the observations for the subdaily data being used within a model.
 
 * An acclimation window is then set, defining a period of the day representing the
@@ -11,28 +11,28 @@ component of fitting the P Model at subdaily time scales. The class is used as f
   efficiency of the plant can best make use of high levels of sunlight. The window can
   be set using one of three methods:
 
-  * The :meth:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler.set_window` method sets a
+  * The :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.set_window` method sets a
     window centred on a given time during the day with a fixed width.
-  * The :meth:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler.set_nearest` method sets
+  * The :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.set_nearest` method sets
     the acclimation window as the single observation closest to a given time of day.
-  * The :meth:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler.set_include` method
+  * The :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.set_include` method
     allows the user to set an arbitrary selection of observations during the day as the
     acclimation window.
 
   If new ``set_`` functions are defined, then they will need to call the
-  :meth:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler._set_times` method to update
+  :meth:`~pyrealm.pmodel.scaler.SubdailyScaler._set_times` method to update
   the instance attributes used to set the acclimation window.
 
-* The :meth:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler.get_daily_means` method
+* The :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.get_daily_means` method
   can then be used to get the average value of a variable within the acclimation window
   for each day. Alternatively, the
-  :meth:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler.get_window_values` method can
+  :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.get_window_values` method can
   be used to get the actual values observed during each daily window.
 
-* The :meth:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler.fill_daily_to_subdaily`
+* The :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.fill_daily_to_subdaily`
   reverses this process: it takes an array of daily values and fills those values back
   onto the faster timescale used to create the
-  :class:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler` instance.
+  :class:`~pyrealm.pmodel.scaler.SubdailyScaler` instance.
 """  # noqa: D205, D415
 
 from typing import Optional
@@ -180,12 +180,12 @@ class SubdailyScaler:
         This private method should be called by all ``set_`` methods. It is used to
         update the instance to populate the following attributes:
 
-        * :attr:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler.sample_datetimes`: An
+        * :attr:`~pyrealm.pmodel.scaler.SubdailyScaler.sample_datetimes`: An
           array of the datetimes of observations included in daily samples of shape
           (n_day, n_sample).
-        * :attr:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler.sample_datetimes_mean`:
+        * :attr:`~pyrealm.pmodel.scaler.SubdailyScaler.sample_datetimes_mean`:
           An array of the mean daily datetime of observations included in daily samples.
-        * :attr:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler.sample_datetimes_max`:
+        * :attr:`~pyrealm.pmodel.scaler.SubdailyScaler.sample_datetimes_max`:
           An array of the maximum daily datetime of observations included in daily
           samples.
         """
@@ -319,7 +319,7 @@ class SubdailyScaler:
             values: An array containing the sample values. The first dimension should be
               matching the number of measurements, i.e., the first dimension of
               datetimes in
-              :class:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler`.
+              :class:`~pyrealm.pmodel.scaler.SubdailyScaler`.
         """
 
         if self.padding == (0, 0):
@@ -383,7 +383,7 @@ class SubdailyScaler:
         data in the acclimation window is incomplete. Note that this will still return
         `np.nan` if _no_ data is present in the acclimation window. It also has no
         effect if the
-        :meth:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler.set_nearest` method has
+        :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.set_nearest` method has
         been used to set the acclimation observations, because this method only ever
         sets a single observation.
 
@@ -417,7 +417,7 @@ class SubdailyScaler:
 
         This method takes an array representing daily values and interpolates those
         values back onto the subdaily timescale used to create the
-        :class:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler` instance. The first
+        :class:`~pyrealm.pmodel.scaler.SubdailyScaler` instance. The first
         axis of the `values` must be the same length as the number of days used to
         create the instance.
 
@@ -439,7 +439,7 @@ class SubdailyScaler:
 
         Args:
             values: An array with the first dimension matching the number of days in the
-              instances :class:`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler` object.
+              instances :class:`~pyrealm.pmodel.scaler.SubdailyScaler` object.
             update_point: The point in the acclimation window at which the plant updates
               to the new daily value: one of 'mean' or 'max'.
             kind: The kind of interpolation to use to fill between daily values: one of

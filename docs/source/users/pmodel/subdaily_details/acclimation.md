@@ -47,7 +47,7 @@ from pyrealm.pmodel import SubdailyScaler, memory_effect
 ## The acclimation window
 
 Defining the acclimation window uses the
-{class}`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler`:  this class is used to define
+{class}`~pyrealm.pmodel.scaler.SubdailyScaler`:  this class is used to define
 the timing of observations on a fast time scale and then set the daily window. The code
 below creates a simple time series representing a parameter responding instantaneously
 to changing environmental conditions on a fast scale.
@@ -193,7 +193,7 @@ subdaily predictions. The interpolation process sets two things:
     is _always_ applied to avoid interpolating to a value that is not yet known.
 
 The code below shows how the
-{meth}`~pyrealm.pmodel.subdaily_scaler.SubdailyScaler.fill_daily_to_subdaily` method is
+{meth}`~pyrealm.pmodel.scaler.SubdailyScaler.fill_daily_to_subdaily` method is
 used to interpolate realised values back to the subdaily scale, using different settings
 for the update point and interpolation method.
 
