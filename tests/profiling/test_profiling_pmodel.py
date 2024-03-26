@@ -133,7 +133,7 @@ class TestClass:
         fs_pmod = FastSlowPModel(
             env=self.pm_env,
             fs_scaler=fsscaler,
-            handle_nan=True,
+            allow_holdover=True,
             fapar=self.fapar,
             ppfd=self.ppfd,
             alpha=1 / 15,

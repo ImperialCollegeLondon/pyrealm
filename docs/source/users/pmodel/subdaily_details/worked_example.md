@@ -123,7 +123,7 @@ fsscaler.set_window(
 fs_pmod = FastSlowPModel(
     env=pm_env,
     fs_scaler=fsscaler,
-    handle_nan=True,
+    allow_holdover=True,
     fapar=fapar,
     ppfd=ppfd,
     alpha=1 / 15,

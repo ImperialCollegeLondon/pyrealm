@@ -32,23 +32,21 @@ class SubdailyPModel:
     is extended to include the slow response of :math:`\xi` in addition to
     :math:`V_{cmax25}` and :math:`J_{max25}`.
 
-    The first dimension of the data arrays use to create the
-    :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance must
-    represent
-    the time
-    axis of the observations. The actual datetimes of those observations must then be
-    used to initialiase a :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler`
-    instance, and one of the ``set_`` methods of that class must be used to define an
-    acclimation window.
+    The workflow of the model:
 
-    The workflow of the model is then:
-
-    * The daily acclimation window set in the
-      :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance is used to
-      calculate daily average values for forcing variables from within the acclimation
-      window.
+    * The first dimension of the data arrays used to create the
+      :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance must
+      represent the time axis of the observations. The ``fs_scaler`` argument is used to
+      provide :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance which
+      sets the dates and time of those observations and sets which daily observations
+      form the daily acclimation window that will be used to estimate the optimal daily
+      behaviour, using one of the ``set_`` methods to that class.
+    * The :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_daily_means` method
+      is then used to extract daily average values for forcing variables from within the
+      acclimation window, setting the conditions that the plant will optimise to.
     * A standard P Model is then run on those daily forcing values to generate predicted
-      states for photosynthetic parameters that give rise to optimal productivity.
+      states for photosynthetic parameters that give rise to optimal productivity in
+      that window.
     * The :meth:`~pyrealm.pmodel.subdaily.memory_effect` function is then used to
       calculate realised slowly responding values for :math:`\xi`, :math:`V_{cmax25}`
       and :math:`J_{max25}`, given a weight :math:`\alpha \in [0,1]` that sets the speed
@@ -58,15 +56,30 @@ class SubdailyPModel:
       more rapid acclimation: :math:`\alpha=1` results in immediate acclimation and
       :math:`\alpha=0` results in no acclimation at all, with values pinned to the
       initial estimates.
-    * The ``handle_nan`` argument is passed to
-      :meth:`~pyrealm.pmodel.subdaily.memory_effect` to set whether missing
-      values in the optimal predictions are permitted and handled.
     * The realised values are then filled back onto the original subdaily timescale,
       with :math:`V_{cmax}` and :math:`J_{max}` then being calculated from the slowly
       responding :math:`V_{cmax25}` and :math:`J_{max25}` and the actual subdaily
       temperature observations and :math:`c_i` calculated using realised values of
       :math:`\xi` but subdaily values in the other parameters.
     * Predictions of GPP are then made as in the standard P Model.
+
+    Missing values:
+
+        Missing data can arise in a number of ways: actual gaps in the forcing data, the
+        observations starting part way through a day and missing some or all of the
+        acclimation window for the day, or undefined values in P Model predictions. Some
+        options include:
+
+        * The ``allow_partial_data`` argument is passed on to
+          :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_daily_means` to
+          allow daily optimum conditions to be calculated when the data in the
+          acclimation window is incomplete. This does not fix problems when no data is
+          present in the window or when the P Model predictions for a day are undefined.
+
+        * The ``allow_holdover`` argument is passed on to
+          :meth:`~pyrealm.pmodel.subdaily.memory_effect` to set whether missing values
+          in the optimal predictions can be filled by holding over previous valid
+          values.
 
     Args:
         env: An instance of
@@ -76,8 +89,10 @@ class SubdailyPModel:
         fapar: The :math:`f_{APAR}` for each observation.
         ppfd: The PPDF for each observation.
         alpha: The :math:`\alpha` weight.
-        handle_nan: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect` function
-          be allowed to handle missing values.
+        allow_holdover: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect`
+          function be allowed to hold over values to fill missing values.
+        allow_partial_data: Should estimates of daily optimal conditions be calculated
+          with missing values in the acclimation window.
         kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -).
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.
@@ -94,7 +109,8 @@ class SubdailyPModel:
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
         alpha: float = 1 / 15,
-        handle_nan: bool = False,
+        allow_holdover: bool = False,
+        allow_partial_data: bool = False,
         fill_kind: str = "previous",
     ) -> None:
         # Warn about the API
@@ -114,6 +130,10 @@ class SubdailyPModel:
         # Has a set method been run on the fast slow scaler
         if not hasattr(fs_scaler, "include"):
             raise ValueError("The daily sampling window has not been set on fs_scaler")
+
+        # Store the datetimes for reference
+        self.datetimes = fs_scaler.datetimes
+        """The datetimes of the observations used in the subdaily model."""
 
         # Set up kphio attributes
         self.env: PModelEnvironment = env
@@ -135,7 +155,9 @@ class SubdailyPModel:
         for env_var_name in daily_environment_vars:
             env_var = getattr(self.env, env_var_name)
             if env_var is not None:
-                daily_environment[env_var_name] = fs_scaler.get_daily_means(env_var)
+                daily_environment[env_var_name] = fs_scaler.get_daily_means(
+                    env_var, allow_partial_data=allow_partial_data
+                )
 
         pmodel_env_acclim = PModelEnvironment(
             **daily_environment,
@@ -163,8 +185,12 @@ class SubdailyPModel:
         """
 
         # 3) Estimate productivity to calculate jmax and vcmax
-        self.ppfd_acclim = fs_scaler.get_daily_means(ppfd)
-        self.fapar_acclim = fs_scaler.get_daily_means(fapar)
+        self.ppfd_acclim = fs_scaler.get_daily_means(
+            ppfd, allow_partial_data=allow_partial_data
+        )
+        self.fapar_acclim = fs_scaler.get_daily_means(
+            fapar, allow_partial_data=allow_partial_data
+        )
 
         self.pmodel_acclim.estimate_productivity(
             fapar=self.fapar_acclim, ppfd=self.ppfd_acclim
@@ -181,15 +207,15 @@ class SubdailyPModel:
 
         # 5) Calculate the realised daily values from the instantaneous optimal values
         self.xi_real: NDArray = memory_effect(
-            self.pmodel_acclim.optchi.xi, alpha=alpha, handle_nan=handle_nan
+            self.pmodel_acclim.optchi.xi, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`\xi`"""
         self.vcmax25_real: NDArray = memory_effect(
-            self.vcmax25_opt, alpha=alpha, handle_nan=handle_nan
+            self.vcmax25_opt, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`V_{cmax25}`"""
         self.jmax25_real: NDArray = memory_effect(
-            self.jmax25_opt, alpha=alpha, handle_nan=handle_nan
+            self.jmax25_opt, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`J_{max25}`"""
 
@@ -253,7 +279,7 @@ def convert_pmodel_to_subdaily(
     pmodel: PModel,
     fs_scaler: FastSlowScaler,
     alpha: float = 1 / 15,
-    handle_nan: bool = False,
+    allow_holdover: bool = False,
     fill_kind: str = "previous",
 ) -> SubdailyPModel:
     r"""Convert a standard P Model to a subdaily P Model.
@@ -270,8 +296,8 @@ def convert_pmodel_to_subdaily(
         fs_scaler: A FastSlowScalar instance giving the acclimation window for the
             subdaily model.
         alpha: The :math:`\alpha` weight.
-        handle_nan: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect` function
-          be allowed to handle missing values.
+        allow_holdover: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect`
+          function be allowed to hold over values to fill missing values.
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.
     """
@@ -287,6 +313,6 @@ def convert_pmodel_to_subdaily(
         method_optchi=pmodel.method_optchi,
         method_jmaxlim=pmodel.method_jmaxlim,
         alpha=alpha,
-        handle_nan=handle_nan,
+        allow_holdover=allow_holdover,
         fill_kind=fill_kind,
     )
