@@ -178,6 +178,6 @@ basic flow is:
    main PyPI site, which is also configured to trust publications from the repository.
 
 ```{eval-rst}
-.. include:: ../../../.github/workflows/pyrealm_publish.yml
+.. include::  ../../../.github/workflows/pyrealm_publish.yaml
     :code: yaml
 ```
