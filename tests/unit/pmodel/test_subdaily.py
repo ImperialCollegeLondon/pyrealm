@@ -112,33 +112,33 @@ def be_vie_data_components(be_vie_data):
     return DataFactory()
 
 
-def test_FSPModel_JAMES(be_vie_data_components):
-    """Test FastSlowPModel_JAMES.
+def test_SubdailyPModel_JAMES(be_vie_data_components):
+    """Test SubdailyPModel_JAMES.
 
     This tests the legacy calculations from the Mengoli et al JAMES paper, using that
     version of the weighted average calculations without acclimating xi.
     """
 
-    from pyrealm.pmodel import FastSlowScaler
-    from pyrealm.pmodel.subdaily import FastSlowPModel_JAMES
+    from pyrealm.pmodel import SubdailyScaler
+    from pyrealm.pmodel.subdaily import SubdailyPModel_JAMES
 
     env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components.get()
 
     # Get the fast slow scaler and set window
-    fsscaler = FastSlowScaler(datetime)
+    fsscaler = SubdailyScaler(datetime)
     fsscaler.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
 
     # Alternate scalar used to duplicate VPD settings in JAMES implementation
-    vpdscaler = FastSlowScaler(datetime)
+    vpdscaler = SubdailyScaler(datetime)
     vpdscaler.set_nearest(time=np.timedelta64(12, "h"))
 
     # Fast slow model without acclimating xi with best fit adaptations to the original
     # - VPD in daily optimum using different window
     # - Jmax and Vcmax filling from midday not window end
-    fs_pmodel_james = FastSlowPModel_JAMES(
+    fs_pmodel_james = SubdailyPModel_JAMES(
         env=env,
         fs_scaler=fsscaler,
         allow_holdover=True,
@@ -172,7 +172,7 @@ def test_FSPModel_JAMES(be_vie_data_components):
     ],
 )
 def test_FSPModel_corr(be_vie_data_components, data_args):
-    """Test FastSlowPModel.
+    """Test SubdailyPModel.
 
     This tests that the pyrealm implementation including acclimating xi at least
     correlates well with the legacy calculations from the Mengoli et al JAMES paper
@@ -185,20 +185,20 @@ def test_FSPModel_corr(be_vie_data_components, data_args):
     to differ.
     """
 
-    from pyrealm.pmodel import FastSlowScaler
-    from pyrealm.pmodel.new_subdaily import SubdailyPModel
+    from pyrealm.pmodel import SubdailyScaler
+    from pyrealm.pmodel.subdaily import SubdailyPModel
 
     env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components.get(**data_args)
 
     # Get the fast slow scaler and set window
-    fsscaler = FastSlowScaler(datetime)
+    fsscaler = SubdailyScaler(datetime)
     fsscaler.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
 
     # Run as a subdaily model
-    fs_pmodel = SubdailyPModel(
+    subdaily_pmodel = SubdailyPModel(
         env=env,
         ppfd=ppfd,
         fapar=fapar,
@@ -207,11 +207,11 @@ def test_FSPModel_corr(be_vie_data_components, data_args):
     )
 
     valid = np.logical_not(
-        np.logical_or(np.isnan(expected_gpp), np.isnan(fs_pmodel.gpp))
+        np.logical_or(np.isnan(expected_gpp), np.isnan(subdaily_pmodel.gpp))
     )
 
     # Test that non-NaN predictions correlate well and are approximately the same
-    gpp_in_micromols = fs_pmodel.gpp[valid] / env.core_const.k_c_molmass
+    gpp_in_micromols = subdaily_pmodel.gpp[valid] / env.core_const.k_c_molmass
     assert np.allclose(gpp_in_micromols, expected_gpp[valid], rtol=0.2)
     r_vals = np.corrcoef(gpp_in_micromols, expected_gpp[valid])
     assert np.all(r_vals > 0.995)
@@ -219,15 +219,15 @@ def test_FSPModel_corr(be_vie_data_components, data_args):
 
 @pytest.mark.parametrize("ndims", [2, 3, 4])
 def test_FSPModel_dimensionality(be_vie_data, ndims):
-    """Tests that the FastSlowPModel handles dimensions correctly.
+    """Tests that the SubdailyPModel handles dimensions correctly.
 
     This broadcasts the BE-Vie onto more dimensions and checks that the code iterates
     over those dimensions correctly. fAPAR and PPFD are then fixed across the other
     dimensions to check the results scale as expected.
     """
 
-    from pyrealm.pmodel import FastSlowScaler, PModelEnvironment
-    from pyrealm.pmodel.new_subdaily import SubdailyPModel
+    from pyrealm.pmodel import PModelEnvironment, SubdailyScaler
+    from pyrealm.pmodel.subdaily import SubdailyPModel
 
     datetime = be_vie_data["time"].to_numpy()
 
@@ -247,7 +247,7 @@ def test_FSPModel_dimensionality(be_vie_data, ndims):
     )
 
     # Get the fast slow scaler and set window
-    fsscaler = FastSlowScaler(datetime)
+    fsscaler = SubdailyScaler(datetime)
     fsscaler.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
@@ -258,7 +258,7 @@ def test_FSPModel_dimensionality(be_vie_data, ndims):
     fapar_vals[0] = 1.0
 
     # Fast slow model
-    fs_pmodel = SubdailyPModel(
+    subdaily_pmodel = SubdailyPModel(
         env=env,
         fs_scaler=fsscaler,
         fapar=fapar_vals * np.ones(array_dims).transpose(),
@@ -269,7 +269,7 @@ def test_FSPModel_dimensionality(be_vie_data, ndims):
     # The GPP along the timescale of the different dimensions should be directly
     # proportional to the random fapar values and hence GPP/FAPAR should all equal the
     # value when it is set to 1
-    timeaxis_mean = np.nansum(fs_pmodel.gpp, axis=0)
+    timeaxis_mean = np.nansum(subdaily_pmodel.gpp, axis=0)
     assert np.allclose(timeaxis_mean / fapar_vals, timeaxis_mean[0])
 
 
@@ -281,13 +281,13 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
     implementations of the OptimalChi ABC.
     """
 
-    from pyrealm.pmodel import FastSlowScaler
-    from pyrealm.pmodel.new_subdaily import SubdailyPModel
+    from pyrealm.pmodel import SubdailyScaler
+    from pyrealm.pmodel.subdaily import SubdailyPModel
 
     env, ppfd, fapar, datetime, _ = be_vie_data_components.get()
 
     # Get the fast slow scaler and set window
-    fsscaler = FastSlowScaler(datetime)
+    fsscaler = SubdailyScaler(datetime)
     fsscaler.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
@@ -308,13 +308,13 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
 def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
     """Tests the convert_pmodel_to_subdaily method."""
 
-    from pyrealm.pmodel import FastSlowScaler, PModel
-    from pyrealm.pmodel.new_subdaily import SubdailyPModel, convert_pmodel_to_subdaily
+    from pyrealm.pmodel import PModel, SubdailyScaler
+    from pyrealm.pmodel.subdaily import SubdailyPModel, convert_pmodel_to_subdaily
 
     env, ppfd, fapar, datetime, _ = be_vie_data_components.get()
 
     # Get the fast slow scaler and set window
-    fsscaler = FastSlowScaler(datetime)
+    fsscaler = SubdailyScaler(datetime)
     fsscaler.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
@@ -464,7 +464,7 @@ def test_FSPModel_incomplete_day_behaviour(
     patch_means,
     raises,
 ):
-    """Test FastSlowPModel.
+    """Test SubdailyPModel.
 
     This tests that the SubdailyModel works as expected with incomplete start and end
     days and with partial data and holdover allowed or not. The setup fits two models:
@@ -507,11 +507,11 @@ def test_FSPModel_incomplete_day_behaviour(
       calculations to use the actual data.
     """
 
-    from pyrealm.pmodel.new_subdaily import FastSlowScaler, SubdailyPModel
+    from pyrealm.pmodel.subdaily import SubdailyPModel, SubdailyScaler
 
     def model_fitter(env, ppfd, fapar, datetime):
         # Get the fast slow scaler and set window
-        fsscaler = FastSlowScaler(datetime)
+        fsscaler = SubdailyScaler(datetime)
         fsscaler.set_window(
             window_center=np.timedelta64(12, "h"),
             half_width=np.timedelta64(30, "m"),
@@ -548,7 +548,7 @@ def test_FSPModel_incomplete_day_behaviour(
             ]
 
             with mocker.patch.object(
-                FastSlowScaler,
+                SubdailyScaler,
                 "get_daily_means",
                 side_effect=patched_means,
             ):

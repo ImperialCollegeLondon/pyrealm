@@ -5,16 +5,16 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: pyrealm_python3
   language: python
   name: pyrealm_python3
 ---
 
-# Worked example
+# Worked example of the Subdaily P Model
 
-```{code-cell}
+```{code-cell} ipython3
 from importlib import resources
 
 import xarray
@@ -24,20 +24,36 @@ from matplotlib.colors import Normalize
 import matplotlib.cm as cm
 import matplotlib.dates as mdates
 
-from pyrealm.pmodel import PModel, FastSlowPModel, PModelEnvironment, FastSlowScaler
+from pyrealm.pmodel import PModel, PModelEnvironment, SubdailyScaler, SubdailyPModel, convert_pmodel_to_subdaily
+
 from pyrealm.core.hygro import convert_sh_to_vpd
 ```
 
-This notebook shows an example analysis using the P Model including fast and slow
-photosynthetic responses. The dataset is taken from WFDE5 v2 and provides 1 hourly
-resolution data on a 0.5° spatial grid. The fAPAR data is interpolated to the same
-spatial and temporal resolution from MODIS data.
+This notebook shows example analyses fitting P Models that include fast and slow
+photosynthetic responses to subdaily variation in environmental conditions. The dataset
+is taken from WFDE5 v2 and provides 1 hourly resolution data on a 0.5° spatial grid. The
+fAPAR data is interpolated to the same spatial and temporal resolution from MODIS data.
 
 * time: 2018-06-01 00:00 to 2018-07-31 23:00 at 1 hour resolution.
 * longitude: 10°W to 4°E at 0.5° resolution.
 * latitude: 49°N to 60°N at 0.5° resolution
 
-```{code-cell}
+This notebook demonstrates fitting subdaily P Models in the `pyrealm` package. Model
+fitting basically takes all of the same arguments as the standard
+{class}`~pyrealm.pmodel.pmodel.PModel` class. There are three additional things to set:
+
+* The timing of the observations and the daily window that should be used to estimate
+  [acclimation of slow responses](acclimation.md#the-acclimation-window).
+* How rapidly plants [acclimate to daily optimal
+  conditions](./acclimation.md#estimating-realised-responses).
+* Approaches to handling any [missing data](./subdaily_model_and_missing_data.md): since
+  estimating acclimation involves a recursive function, the subdaily model can be
+  derailed by missing or undefined data.
+
+The test data use some UK WFDE data for three sites in order to compare predictions
+over a time series.
+
+```{code-cell} ipython3
 # Loading the example dataset:
 dpath = (
     resources.files("pyrealm_build_data.uk_data") / "UK_WFDE5_FAPAR_2018_JuneJuly.nc"
@@ -55,23 +71,10 @@ sites = xarray.Dataset(
 )
 ```
 
-The plot below shows the spatial extent of the dataset using noon temperature for a
-focal day. It also shows the locations of three sites used below to show time series of
-predictions.
-
-```{code-cell}
-focal_datetime = np.where(datetimes == np.datetime64("2018-06-12 12:00:00"))[0]
-
-# Plot the temperature data for an example timepoint and show the sites
-focal_temp = ds["Tair"][focal_datetime] - 273.15
-focal_temp.plot()
-plt.plot(sites["lon"], sites["lat"], "xr")
-```
-
 The WFDE data need some conversion for use in the PModel, along with the definition of
 the atmospheric CO2 concentration.
 
-```{code-cell}
+```{code-cell} ipython3
 # Variable set up
 # Air temperature in °C from Tair in Kelvin
 tc = (ds["Tair"] - 273.15).to_numpy()
@@ -90,84 +93,66 @@ co2 = np.ones_like(tc) * 400
 
 The code below then calculates the photosynthetic environment.
 
-```{code-cell}
+```{code-cell} ipython3
 # Generate and check the PModelEnvironment
 pm_env = PModelEnvironment(tc=tc, patm=patm, vpd=vpd, co2=co2)
 pm_env.summarize()
 ```
 
-## Instantaneous P Model
+## Instantaneous C3 and C4 P Models
 
 The standard implementation of the P Model used below assumes that plants can
 instantaneously adopt optimal behaviour.
 
-```{code-cell}
-# Standard PModel
-pmod = PModel(env=pm_env, kphio=1 / 8)
-pmod.estimate_productivity(fapar=fapar, ppfd=ppfd)
-pmod.summarize()
+```{code-cell} ipython3
+# Standard PModels
+pmodC3 = PModel(env=pm_env, kphio=1 / 8, method_optchi="prentice14")
+pmodC3.estimate_productivity(fapar=fapar, ppfd=ppfd)
+pmodC3.summarize()
 ```
 
-## P Model with slow responses
+```{code-cell} ipython3
+pmodC4 = PModel(env=pm_env, kphio=1 / 8, method_optchi="c4_no_gamma")
+pmodC4.estimate_productivity(fapar=fapar, ppfd=ppfd)
+pmodC4.summarize()
+```
 
-The code below then refits the model, with slow responses in $\xi$, $V_{cmax25}$ and
-$J_{max25}$.
+## Subdaily P Models
 
-```{code-cell}
-# FastSlowPModel with 1 hour noon acclimation window
-fsscaler = FastSlowScaler(datetimes)
+The code below then refits these models, with slow responses in $\xi$, $V_{cmax25}$ and
+$J_{max25}$. The `allow_holdover` argument allows the estimation of realised optimal
+values to holdover previous realised values to cover missing data within the
+calculations: essentially the plant does not acclimate until the optimal values can be
+calculated again to update those realised estimates.
+
+```{code-cell} ipython3
+# Set the acclimation window to an hour either side of noon
+fsscaler = SubdailyScaler(datetimes)
 fsscaler.set_window(
     window_center=np.timedelta64(12, "h"),
     half_width=np.timedelta64(1, "h"),
 )
-fs_pmod = FastSlowPModel(
-    env=pm_env,
-    fs_scaler=fsscaler,
-    allow_holdover=True,
+
+# Fit C3 and C4 with the new implementation
+subdailyC3 = SubdailyPModel(
+    env=pm_env, 
+    kphio=1 / 8, 
+    method_optchi="prentice14",
     fapar=fapar,
     ppfd=ppfd,
-    alpha=1 / 15,
+    fs_scaler=fsscaler, 
+    alpha=1 / 15, 
+    allow_holdover=True,
 )
-```
-
-## Spatial predictions
-
-The plots below show the spatial variation in the predicted GPP from the two models for
-the focal datetime, along with a scatterplot comparing the two predictions.
-
-```{code-cell}
-# Extract the spatial grid for the focal datetime
-pmod_gpp_focal = pmod.gpp[focal_datetime].squeeze()
-fs_pmod_gpp_focal = fs_pmod.gpp[focal_datetime].squeeze()
-
-# Set up subfigures
-fig = plt.figure(layout="constrained", figsize=(10, 3))
-(subfig1, subfig2) = fig.subfigures(1, 2, width_ratios=[0.8, 2])
-
-# Plot the GPP predictions of the two models
-ax = subfig1.subplots(1, 1)
-ax.scatter(pmod_gpp_focal, fs_pmod_gpp_focal)
-ax.plot([100, 450], [100, 450], "r-", linewidth=0.5)
-ax.set_xlabel("Instantaneous GPP")
-ax.set_ylabel("FastSlow GPP")
-ax.set_title(" ")
-
-(ax1, ax2) = subfig2.subplots(1, 2, sharey=True, sharex=True)
-
-# Get a shared colour scale using the maximum across the two approaches
-cmap = cm.get_cmap("viridis")
-normalizer = Normalize(0, np.nanmax([pmod_gpp_focal, fs_pmod_gpp_focal]))
-im = cm.ScalarMappable(norm=normalizer)
-
-# Plot the spatial grids
-ax1.imshow(pmod_gpp_focal, aspect=1, origin="lower", cmap=cmap, norm=normalizer)
-ax1.set_title("Instantaneous")
-ax2.imshow(fs_pmod_gpp_focal, aspect=1, origin="lower", cmap=cmap, norm=normalizer)
-ax2.set_title("Fast Slow")
-
-# Add a colour bar
-subfig2.colorbar(
-    im, ax=[ax1, ax2], shrink=0.55, label=r"GPP ($\mu g C\,m^{-2}\,s^{-1}$)"
+subdailyC4 = SubdailyPModel(
+    env=pm_env, 
+    kphio=1 / 8, 
+    method_optchi="c4_no_gamma",
+    fapar=fapar,
+    ppfd=ppfd,
+    fs_scaler=fsscaler, 
+    alpha=1 / 15, 
+    allow_holdover=True,
 )
 ```
 
@@ -177,33 +162,86 @@ The code below then extracts the time series for the two months from the three s
 shown above and plots the instantaneous predictions against predictions including slow
 photosynthetic responses.
 
-```{code-cell}
+```{code-cell} ipython3
 # Store the predictions in the xarray Dataset to use indexing
-ds["GPP_pmod"] = (ds["Tair"].dims, pmod.gpp)
-ds["GPP_fs_pmod"] = (ds["Tair"].dims, fs_pmod.gpp)
+ds["GPP_pmodC3"] = (ds["Tair"].dims, pmodC3.gpp)
+ds["GPP_subdailyC3"] = (ds["Tair"].dims, subdailyC3.gpp)
+ds["GPP_pmodC4"] = (ds["Tair"].dims, pmodC4.gpp)
+ds["GPP_subdailyC4"] = (ds["Tair"].dims, subdailyC4.gpp)
 
 # Get three sites to show time series for locations
 site_ds = ds.sel(sites, method="nearest")
 
 # Set up subplots
-fig, axes = plt.subplots(3, 1, figsize=(10, 8), sharey=True)
+fig, axes = plt.subplots(3, 2, figsize=(10, 8), sharey=True)
 
 # Plot the time series for the two approaches for each site
-for ax, st in zip(axes, sites["stid"].values):
+for (ax1, ax2), st in zip(axes, sites["stid"].values):
 
-    ax.plot(
-        datetimes, site_ds["GPP_pmod"].sel(stid=st), label="Instantaneous", color="0.4"
-    )
-    ax.plot(
+    ax1.plot(
         datetimes,
-        site_ds["GPP_fs_pmod"].sel(stid=st),
-        label="Fast Slow",
+        site_ds["GPP_pmodC3"].sel(stid=st),
+        label="Instantaneous",
+        color="0.4",
+    )
+    ax1.plot(
+        datetimes,
+        site_ds["GPP_subdailyC3"].sel(stid=st),
+        label="Subdaily",
         color="red",
         alpha=0.7,
     )
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))
-    ax.text(0.02, 0.90, st, transform=ax.transAxes)
+    ax1.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))
+    ax1.text(0.02, 0.90, st + " - C3", transform=ax1.transAxes)
 
-axes[0].legend(loc="lower center", bbox_to_anchor=[0.5, 1], ncols=2, frameon=False)
+    ax2.plot(
+        datetimes,
+        site_ds["GPP_pmodC4"].sel(stid=st),
+        label="Instantaneous",
+        color="0.4",
+    )
+    ax2.plot(
+        datetimes,
+        site_ds["GPP_subdailyC4"].sel(stid=st),
+        label="Subdaily",
+        color="red",
+        alpha=0.7,
+    )
+    ax2.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))
+    ax2.text(0.02, 0.90, st + " - C4", transform=ax2.transAxes)
+
+axes[0][0].legend(loc="lower center", bbox_to_anchor=[0.5, 1], ncols=2, frameon=False)
 plt.tight_layout()
+```
+
+## Converting models
+
+The subdaily models can also be obtained directly from the standard models, using the
+`convert_pmodel_to_subdaily` method:
+
+```{code-cell} ipython3
+# Convert standard C3 model
+converted_C3 = convert_pmodel_to_subdaily(
+    pmodel=pmodC3,
+    fs_scaler=fsscaler, 
+    alpha=1 / 15, 
+    allow_holdover=True,
+)
+
+# Convert standard C4 model
+converted_C4 = convert_pmodel_to_subdaily(
+    pmodel=pmodC4,
+    fs_scaler=fsscaler, 
+    alpha=1 / 15, 
+    allow_holdover=True,
+)
+```
+
+This produces the same outputs as the `SubdailyPModel` class, but is convenient and more
+compact when the two models are going to be compared.
+
+```{code-cell} ipython3
+# Models have identical GPP - maximum absolute difference is zero.
+print(np.nanmax(abs(subdailyC3.gpp.flatten() - converted_C3.gpp.flatten())))
+print(np.nanmax(abs(subdailyC4.gpp.flatten() - converted_C4.gpp.flatten())))
 ```
