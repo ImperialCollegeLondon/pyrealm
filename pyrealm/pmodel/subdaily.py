@@ -297,7 +297,7 @@ class SubdailyPModel:
         A :class:`~pyrealm.pmodel.pmodel.PModel` instance providing the predictions of
         the P Model for the daily acclimation conditions set for the SubdailyPModel. The
         model is used to obtain predictions of the instantaneously optimal estimates of
-        :math:`V_{cmax}`, :math:`J_{max}` and :math:`\xi` dgturing the acclimation
+        :math:`V_{cmax}`, :math:`J_{max}` and :math:`\xi` during the acclimation
         window. These are then used to estimate realised values of those parameters
         given slow responses to acclimation.
         """
