@@ -32,7 +32,7 @@ The subdaily model provides two options to help deal with missing data.
    calculation of daily average values by ignoring missing data and taking the average
    of the available observations (`allow_partial_data`).
 
-   However, allowing partial data cannot solve the issue where there is no data is
+   However, allowing partial data cannot solve the issue where no data is
    present in the acclimation window for a day or where the P Model calculations are
    undefined for the optimal behaviour on a day. Both of these cases will lead to a
    missing value in the time series of daily optimal values, which would then be
