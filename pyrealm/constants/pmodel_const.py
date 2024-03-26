@@ -111,6 +111,12 @@ class PModelConst(ConstantsClass):
     kattge_knorr_Hd: float = 200000
     """Deactivation energy (:math:`H_d`, 200000, J/mol)"""
 
+    # Subdaily activatation energy
+    subdaily_vcmax25_ha: float = 65330
+    """Activation energy for vcmax25 (:math:`H_a`, 65330, J/mol)"""
+    subdaily_jmax25_ha: float = 43900
+    """Activation energy for jmax25 (:math:`H_a`, 43900, J/mol)"""
+
     # Kphio:
     # - note that kphio_C4 has been updated to account for an unintended double
     #   8 fold downscaling to account for the fraction of light reaching PS2.

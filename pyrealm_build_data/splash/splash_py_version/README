@@ -1,0 +1,100 @@
+SPLASH v.1.0
+============
+
+License
+=======
+
+Copyright (C) 2016 Prentice Lab
+
+
+Requirements
+============
+
+This code was successfully compiled and executed using Python 2.7 and Python 3.5
+interpreters (Python Software Foundation, 2016).
+
+This code requires the installation of third-party packages: NumPy (v.1.8.2,
+v.1.10.4 by NumPy Developers, 2013) and SciPy (v.0.13.3, v.0.17.0 by SciPy
+Developers, 2016) and references the basic date and time types (datetime),
+logging facility (logging), Unix-style pathname pattern extension (glob), and
+miscellaneous operating system interfaces (os) modules.
+
+To run (Python 2/3):
+
+`python main.py`
+Results are printed to screen.
+Requires input file (../../../data/example_data.csv).
+
+
+To run tests (Python 2/3):
+
+TEST 1:
+`python solar.py`
+Results are printed to file (solar.log)
+
+TEST 2:
+`python evap.py`
+Results are printed to file (evap.log)
+
+TEST 3:
+`python splash.py`
+Results are printed to file (splash.log) and screen.
+
+To create input data (Python 2/3):
+
+`python splash_data.py`
+Results are printed to file (./out/splash_data_out.csv); make certain directory "out" exists before running.
+
+
+Contents
+========
+
+const.py
+    Contains definitions for SPLASH global constants.
+    Requires:
+        - numpy
+
+data.py
+    DATA class definition for reading input data.
+    References:
+        - logging
+        - numpy
+
+evap.py
+    EVAP class definition for calculating daily evapotranspiration quantities.
+    References:
+        - logging
+        - numpy
+
+main.py
+    Main function for running the SPLASH code.
+    References:
+        - logging
+
+solar.py
+    SOLAR class definition for calculating daily radiation fluxes.
+    References:
+        - logging
+        - numpy
+
+splash.py
+    SPLASH class definition for updating daily quantities of radiation, evapotranspiration, soil moisture and runoff.
+    References:
+        - logging
+        - numpy
+
+splash_data.py
+    SPLASH_DATA class and script to produce a CSV file with daily input data (i.e., sunshine fraction, air temperature, and precipitation)
+    References:
+        - datetime
+        - glob
+        - logging
+        - numpy
+        - os.path
+        - scipy.io.netcdf
+
+utilities.py
+    Contains utility functions that are shared amongst classes.
+    References:
+        - logging
+        - numpy
