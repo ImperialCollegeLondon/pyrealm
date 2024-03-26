@@ -497,7 +497,7 @@ class Test_FSS_get_vals_window_and_include:
     that only ever selects a single value and allow_partial_data has no effect and so
     get_daily_means with that method are tested separately.
 
-    These tests checks that the correct values are extracted from daily representative
+    This test checks that the correct values are extracted from daily representative
     and that the mean is correctly calculated.
 
     It also checks the allow_partial_data option by feeding in values that are np.nan
