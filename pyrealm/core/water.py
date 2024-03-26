@@ -2,7 +2,6 @@
 density and viscosity of water given the air temperature and atmospheric pressure.
 """  # noqa D210, D415
 
-
 import numpy as np
 from numpy.typing import NDArray
 
