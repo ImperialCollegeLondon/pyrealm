@@ -55,7 +55,7 @@ def test_memory_effect(inputs, alpha):
 
 
 @pytest.mark.parametrize(
-    argnames="inputs,handle_nan,context_manager,expected",
+    argnames="inputs,allow_holdover,context_manager,expected",
     argvalues=[
         pytest.param(
             np.arange(1, 8),
@@ -81,7 +81,7 @@ def test_memory_effect(inputs, alpha):
     ],
 )
 @pytest.mark.parametrize(argnames="ndim", argvalues=(1, 2, 3))
-def test_memory_effect_inputs(inputs, handle_nan, context_manager, expected, ndim):
+def test_memory_effect_inputs(inputs, allow_holdover, context_manager, expected, ndim):
     """Simple testing of nan handling and predictions across multiple dimensions."""
     from pyrealm.pmodel.subdaily import memory_effect
 
@@ -96,6 +96,6 @@ def test_memory_effect_inputs(inputs, handle_nan, context_manager, expected, ndi
             expected = np.broadcast_to(expected[:, np.newaxis, np.newaxis], (7, 2, 2))
 
     with context_manager:
-        results = memory_effect(inputs, handle_nan=handle_nan, alpha=0.1)
+        results = memory_effect(inputs, allow_holdover=allow_holdover, alpha=0.1)
 
         assert np.allclose(results, expected)

@@ -154,7 +154,7 @@ subdailyC3 = SubdailyPModel(
     ppfd=ppfd,
     fs_scaler=fsscaler, 
     alpha=1 / 15, 
-    handle_nan=True,
+    allow_holdover=True,
 )
 subdailyC4 = SubdailyPModel(
     env=pm_env, 
@@ -164,14 +164,14 @@ subdailyC4 = SubdailyPModel(
     ppfd=ppfd,
     fs_scaler=fsscaler, 
     alpha=1 / 15, 
-    handle_nan=True,
+    allow_holdover=True,
 )
 
 # Fit C3 using the original implementation
 fs_pmod = FastSlowPModel(
     env=pm_env,
     fs_scaler=fsscaler,
-    handle_nan=True,
+    allow_holdover=True,
     fapar=fapar,
     ppfd=ppfd,
     alpha=1 / 15,
@@ -261,7 +261,7 @@ converted_C3 = convert_pmodel_to_subdaily(
     pmodel=pmodC3,
     fs_scaler=fsscaler, 
     alpha=1 / 15, 
-    handle_nan=True,
+    allow_holdover=True,
 )
 
 # Convert standard C4 model
@@ -269,7 +269,7 @@ converted_C4 = convert_pmodel_to_subdaily(
     pmodel=pmodC4,
     fs_scaler=fsscaler, 
     alpha=1 / 15, 
-    handle_nan=True,
+    allow_holdover=True,
 )
 ```
 
