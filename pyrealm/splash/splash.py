@@ -6,6 +6,7 @@ import warnings
 from typing import Optional, Union
 
 import numpy as np
+import pandas as pd  # type: ignore
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
@@ -72,6 +73,9 @@ class SplashModel:
         #        checking congruence more widely.
         self.shape: tuple = check_input_shapes(elv, lat, sf, tc, pn)
         """The array shape of the input variables"""
+
+        if len(dates) != self.shape[0]:
+            raise ValueError("Number of dates must match the first dimension of inputs")
 
         self.elv: NDArray = elv
         """The elevation of sites."""
@@ -156,18 +160,20 @@ class SplashModel:
 
         if wn_init is not None:
             # Check the shape is the same as the shape of a slice along axis 0
-            if wn_init.shape != self.tc[0].shape:
+            if wn_init.shape != self.shape[1:]:
                 raise ValueError("Incorrect shape in wn_init")
             if np.any((wn_init < 0) | (wn_init > self.kWm)):
                 raise ValueError("Soil moisture must be between 0 and kWm")
             wn_start = wn_init
         else:
-            wn_start = np.zeros_like(self.tc[0])
+            wn_start = np.zeros(self.shape[1:])
 
         # Find a date one year into the future from the first calendar date.
-        # TODO - fix leap year handling and non Jan 1 starts
+        date_start = pd.Timestamp(self.dates[0].date)
+        date_end = date_start + pd.DateOffset(years=1)
+        num_days = (date_end - date_start).days
 
-        if self.tc.shape[0] < 366:
+        if self.shape[0] < num_days:
             raise ValueError("Cannot equilibrate - less than one year of data")
 
         # Run the equilibration loop
@@ -177,7 +183,7 @@ class SplashModel:
 
             # Loop over the calendar object, updating the soil_moisture array
             wn_day = wn_start
-            for day_idx in np.arange(366):
+            for day_idx in range(num_days):
                 # Calculate aet, soil moisture and runoff:
                 _, wn_day, _ = self.estimate_daily_water_balance(
                     previous_wn=wn_day, day_idx=day_idx
@@ -258,7 +264,7 @@ class SplashModel:
         # the whole dataset.
         if day_idx is None:
             check_input_shapes(previous_wn, self.pn)
-            didx: Union[int, slice] = slice(self.pn.shape[0])
+            didx: Union[int, slice] = slice(self.shape[0])
         else:
             check_input_shapes(previous_wn, self.pn[day_idx])
             didx = day_idx
@@ -313,7 +319,7 @@ class SplashModel:
 
         curr_wn = wn_init
 
-        for day_idx in np.arange(self.pn.shape[0]):
+        for day_idx in range(self.shape[0]):
             # Calculate the balance for this date, updating the input for
             # the following day
             aet, curr_wn, ro = self.estimate_daily_water_balance(
