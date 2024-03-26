@@ -481,7 +481,7 @@ def test_jmax_limitation(
         xf = 1
 
     expected_lue = (
-        (0.05 * ftemp_kphio) * optchi.mj * jmax.f_v * xf * env.core_const.k_c_molmass
+        (0.05 * ftemp_kphio) * optchi.mj * jmax.f_v * xf * env.const.k_c_molmass
     )
     assert np.allclose(expected_lue, expected["lue"], equal_nan=True)
 

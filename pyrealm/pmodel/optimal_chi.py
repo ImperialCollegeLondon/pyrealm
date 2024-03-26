@@ -104,7 +104,7 @@ class OptimalChiABC(ABC):
         self.shape: tuple[int, ...] = env.shape
         """The shape of the input environment data."""
 
-        self.pmodel_const: PModelConst = pmodel_const
+        self.const: PModelConst = pmodel_const
         """The PModelParams used for optimal chi estimation"""
 
         # Declare attributes populated by methods. These are typed but not assigned a
@@ -249,7 +249,7 @@ class OptimalChiPrentice14(
     def set_beta(self) -> None:
         """Set ``beta`` to a constant C3 specific value."""
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.beta = self.pmodel_const.beta_cost_ratio_prentice14
+        self.beta = self.const.beta_cost_ratio_prentice14
 
     def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
         """Estimate ``chi`` for C3 plants."""
@@ -318,7 +318,7 @@ class OptimalChiPrentice14RootzoneStress(
         )
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.beta = self.pmodel_const.beta_cost_ratio_prentice14
+        self.beta = self.const.beta_cost_ratio_prentice14
 
     def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
         """Estimate ``chi`` for C3 plants."""
@@ -381,7 +381,7 @@ class OptimalChiC4(
     def set_beta(self) -> None:
         """Set ``beta`` to a constant C4 specific value."""
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.beta = self.pmodel_const.beta_cost_ratio_c4
+        self.beta = self.const.beta_cost_ratio_c4
 
     def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
         """Estimate ``chi`` for C4 plants, setting ``mj`` and ``mc`` to 1."""
@@ -448,7 +448,7 @@ class OptimalChiC4RootzoneStress(
     def set_beta(self) -> None:
         """Set ``beta`` to a constant C4 specific value."""
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.beta = self.pmodel_const.beta_cost_ratio_c4
+        self.beta = self.const.beta_cost_ratio_c4
 
     def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
         """Estimate ``chi`` for C4 plants, setting ``mj`` and ``mc`` to 1."""
@@ -531,8 +531,8 @@ class OptimalChiLavergne20C3(
         # Calculate beta as a function of theta, which is guaranteed not to be None by
         # _check_requires so supress mypy here
         self.beta = np.exp(
-            self.pmodel_const.lavergne_2020_b_c3 * self.env.theta  # type: ignore[operator] # noqa: E501
-            + self.pmodel_const.lavergne_2020_a_c3
+            self.const.lavergne_2020_b_c3 * self.env.theta  # type: ignore[operator] # noqa: E501
+            + self.const.lavergne_2020_a_c3
         )
 
     def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
@@ -623,8 +623,8 @@ class OptimalChiLavergne20C4(
         # Calculate beta as a function of theta, which is guaranteed not to be None by
         # _check_requires so supress mypy here
         self.beta = np.exp(
-            self.pmodel_const.lavergne_2020_b_c4 * self.env.theta  # type: ignore[operator] # noqa: E501
-            + self.pmodel_const.lavergne_2020_a_c4
+            self.const.lavergne_2020_b_c4 * self.env.theta  # type: ignore[operator] # noqa: E501
+            + self.const.lavergne_2020_a_c4
         )
 
     def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
@@ -702,7 +702,7 @@ class OptimalChiC4NoGamma(
         """Set constant ``beta`` for C4 plants."""
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
-        self.beta = self.pmodel_const.beta_cost_ratio_c4
+        self.beta = self.const.beta_cost_ratio_c4
 
     def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
         """Estimate ``chi`` for C4 plants excluding photorespiration."""
@@ -771,7 +771,7 @@ class OptimalChiC4NoGammaRootzoneStress(
         """Set constant ``beta`` for C4 plants."""
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
-        self.beta = self.pmodel_const.beta_cost_ratio_c4
+        self.beta = self.const.beta_cost_ratio_c4
 
     def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
         """Estimate ``chi`` for C4 plants excluding photorespiration."""
