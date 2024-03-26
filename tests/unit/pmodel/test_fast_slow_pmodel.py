@@ -1,4 +1,5 @@
 """Tests the implementation of the FastSlowModel against the reference benchmark."""
+
 from importlib import resources
 
 import numpy as np
@@ -79,7 +80,7 @@ def test_FSPModel_JAMES(be_vie_data_components):
     fs_pmodel_james = FastSlowPModel_JAMES(
         env=env,
         fs_scaler=fsscaler,
-        handle_nan=True,
+        allow_holdover=True,
         kphio=1 / 8,
         fapar=fapar,
         ppfd=ppfd,
@@ -123,7 +124,7 @@ def test_FSPModel_corr(be_vie_data_components):
     fs_pmodel = FastSlowPModel(
         env=env,
         fs_scaler=fsscaler,
-        handle_nan=True,
+        allow_holdover=True,
         kphio=1 / 8,
         fapar=fapar,
         ppfd=ppfd,

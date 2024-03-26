@@ -112,7 +112,7 @@ fsscaler.set_window(
 pmodel_fastslow = FastSlowPModel(
     env=subdaily_env,
     fs_scaler=fsscaler,
-    handle_nan=True,
+    allow_holdover=True,
     ppfd=ppfd_subdaily,
     fapar=fapar_subdaily,
 )
@@ -191,8 +191,8 @@ responses to calculate realised values, here using the default 15 day window.
 ```{code-cell} python
 # Calculation of memory effect in xi, vcmax25 and jmax25
 xi_real = memory_effect(pmodel_acclim.optchi.xi, alpha=1 / 15)
-vcmax25_real = memory_effect(vcmax25_acclim, alpha=1 / 15, handle_nan=True)
-jmax25_real = memory_effect(jmax25_acclim, alpha=1 / 15, handle_nan=True)
+vcmax25_real = memory_effect(vcmax25_acclim, alpha=1 / 15, allow_holdover=True)
+jmax25_real = memory_effect(jmax25_acclim, alpha=1 / 15, allow_holdover=True)
 ```
 
 The plots below show the instantaneously acclimated values for  $J_{max25}$,
