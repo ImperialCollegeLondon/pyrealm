@@ -192,7 +192,6 @@ class SplashModel:
             # Calculate the difference between the start of year soil moisture and the
             # final day of the year and then update the start point to the end of year.
             diff_sm = np.abs(wn_start - wn_day)
-            max_diff = np.nanmax(diff_sm)
             wn_start = wn_day
 
             # Optionally store the soil moisture at the end of each loop
