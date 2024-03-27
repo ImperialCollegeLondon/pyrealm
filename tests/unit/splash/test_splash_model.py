@@ -45,18 +45,20 @@ def test_splash_model_init(splash_core_constants, grid_benchmarks, var, flag):
     ds = grid_benchmarks[0].sel(time=slice("2000-01-01", "2000-04-01")).copy()
     dates = ds.time.data
 
+    # ensure raising error if calendar size is more or less than timestamps
     if var == "dates":
-        if flag < 0:
+        if flag < 0:  # less dates than timestamps
             dates = dates[:-1]
-        else:
+        else:  # more dates than timestamps
             ds = ds.sel(time=dates[:-1])
         context = pytest.raises(ValueError)
+    # ensure warning if variable is out of bounds
     else:
         vmin, vmax = bounds[var]
         arr = ds[var].data
-        if flag < 0:
+        if flag < 0:  # out of lower bound
             arr.flat[np.random.choice(arr.size)] = vmin - 1e-4
-        else:
+        else:  # out of upper bound
             arr.flat[np.random.choice(arr.size)] = vmax + 1e-4
         context = pytest.warns(UserWarning)
 
