@@ -192,6 +192,7 @@ class SplashModel:
             # Calculate the difference between the start of year soil moisture and the
             # final day of the year and then update the start point to the end of year.
             diff_sm = np.abs(wn_start - wn_day)
+            cur_diff = np.nanmax(diff_sm)
             wn_start = wn_day
 
             # Optionally store the soil moisture at the end of each loop
@@ -200,28 +201,26 @@ class SplashModel:
 
             # Report if verbose
             if verbose:
-                print(f"Iteration: {n_iter}; maximum difference: {max_diff}")
+                print(f"Iteration: {n_iter}; maximum difference: {cur_diff}")
 
-            if np.nanmax(diff_sm) <= max_diff:
+            if cur_diff <= max_diff:
                 equilibrated = True
 
-        # The return convergence option returns regardless of convergence success
-        if return_convergence:
-            if not equilibrated:
-                warnings.warn(
-                    f"Initial soil moisture did not converge within {n_iter} "
-                    f"iterations: maximum absolute difference = {max_diff}"
-                )
-            return np.array(wn_ret)  # (n_iter, *wn_start.shape)
-
-        # Otherwise check for convergence failure before returning the final values.
+        # Check for convergence failure before returning the final values.
         if not equilibrated:
-            raise RuntimeError(
+            msg = (
                 f"Initial soil moisture did not converge within {n_iter} iterations:"
-                f"maximum absolute difference = {max_diff}"
+                f"maximum absolute difference = {cur_diff}"
             )
+            if return_convergence:  # always returns without raising an error
+                warnings.warn(msg)
+            else:
+                raise RuntimeError(msg)
 
-        return wn_start
+        if return_convergence:  # returns the values of wn at each iteration
+            return np.array(wn_ret)  # (n_iter, *wn_start.shape)
+        else:
+            return wn_start
 
     def estimate_daily_water_balance(
         self, previous_wn: NDArray, day_idx: Optional[int] = None
