@@ -2,9 +2,11 @@
 predictions under the SPLASH model.
 """  # noqa: D205, D415
 
+import warnings
 from typing import Optional, Union
 
 import numpy as np
+import pandas as pd  # type: ignore
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
@@ -72,6 +74,9 @@ class SplashModel:
         self.shape: tuple = check_input_shapes(elv, lat, sf, tc, pn)
         """The array shape of the input variables"""
 
+        if len(dates) != self.shape[0]:
+            raise ValueError("Number of dates must match the first dimension of inputs")
+
         self.elv: NDArray = elv
         """The elevation of sites."""
         self.lat: NDArray = bounds_checker(lat, -90, 90, label="lat", unit="°")
@@ -103,11 +108,12 @@ class SplashModel:
         )
         """Estimated evaporative fluxes for observations"""
 
-    def estimate_initial_soil_moisture(
+    def estimate_initial_soil_moisture(  # noqa: max-complexity=12
         self,
         wn_init: Optional[NDArray] = None,
         max_iter: int = 10,
         max_diff: float = 1.0,
+        return_convergence: bool = False,
         verbose: bool = False,
     ) -> NDArray:
         """Estimate initial soil moisture.
@@ -122,37 +128,52 @@ class SplashModel:
         The user can provide an array of initial values across sites, defaulting to an
         initial guess of zero soil moisture in all sites . The user can also control the
         maximum number of update iterations and the accepted tolerance for convergence.
+        The method will normally fail if the estimates do not converge, but the
+        ``return_convergence`` option can be used to return the estimated soil moisture
+        at each iteration regardless of the success of convergence.
 
         Args:
             wn_init: An optional estimate of the start of year soil moisture.
             max_iter: The maximum number of iterations used to achieve convergence.
             max_diff: The maximum acceptable difference between year start and year end
                 soil moisture,
+            return_convergence: Optionally return an array of soil moistures at the end
+                of each iteration even when convergence fails.
             verbose: Optionally turn on detailed logging of the iteration process.
 
         Returns:
-            An array of the estimated starting soil moisture.
+            An array of the estimated starting soil moisture. If ``return_convergence``
+            is set to True, the returned array will have an additional dimension for
+            each iteration of the equilibration loop.
+
+        Raises:
+            ValueError: The input data are of the wrong shape, contain invalid values or
+                do not include at least a full year of data.
+            RuntimeError: The estimation fails to converge within the set number of
+                iterations.
         """
 
         # Initialise loop termination
         equilibrated = False
         n_iter = 0
-        diff_sm = np.array([np.nan])
+        wn_ret = []
 
         if wn_init is not None:
             # Check the shape is the same as the shape of a slice along axis 0
-            if wn_init.shape != self.tc[0].shape:
+            if wn_init.shape != self.shape[1:]:
                 raise ValueError("Incorrect shape in wn_init")
             if np.any((wn_init < 0) | (wn_init > self.kWm)):
                 raise ValueError("Soil moisture must be between 0 and kWm")
             wn_start = wn_init
         else:
-            wn_start = np.zeros_like(self.tc[0])
+            wn_start = np.zeros(self.shape[1:])
 
         # Find a date one year into the future from the first calendar date.
-        # TODO - fix leap year handling and non Jan 1 starts
+        date_start = pd.Timestamp(self.dates[0].date)
+        date_end = date_start + pd.DateOffset(years=1)
+        num_days = (date_end - date_start).days
 
-        if self.tc.shape[0] < 366:
+        if self.shape[0] < num_days:
             raise ValueError("Cannot equilibrate - less than one year of data")
 
         # Run the equilibration loop
@@ -162,7 +183,7 @@ class SplashModel:
 
             # Loop over the calendar object, updating the soil_moisture array
             wn_day = wn_start
-            for day_idx in np.arange(366):
+            for day_idx in range(num_days):
                 # Calculate aet, soil moisture and runoff:
                 _, wn_day, _ = self.estimate_daily_water_balance(
                     previous_wn=wn_day, day_idx=day_idx
@@ -171,23 +192,35 @@ class SplashModel:
             # Calculate the difference between the start of year soil moisture and the
             # final day of the year and then update the start point to the end of year.
             diff_sm = np.abs(wn_start - wn_day)
+            cur_diff = np.nanmax(diff_sm)
             wn_start = wn_day
+
+            # Optionally store the soil moisture at the end of each loop
+            if return_convergence:
+                wn_ret.append(wn_start)
 
             # Report if verbose
             if verbose:
-                print(f"Iteration: {n_iter}; maximum difference: {diff_sm.max()}")
+                print(f"Iteration: {n_iter}; maximum difference: {cur_diff}")
 
-            if np.nanmax(diff_sm) <= max_diff:
+            if cur_diff <= max_diff:
                 equilibrated = True
 
-        # Check for convergence failure.
+        # Check for convergence failure before returning the final values.
         if not equilibrated:
-            raise RuntimeError(
+            msg = (
                 f"Initial soil moisture did not converge within {n_iter} iterations:"
-                f"maximum absolute difference = {diff_sm.max()}"
+                f"maximum absolute difference = {cur_diff}"
             )
+            if return_convergence:  # always returns without raising an error
+                warnings.warn(msg)
+            else:
+                raise RuntimeError(msg)
 
-        return wn_start
+        if return_convergence:  # returns the values of wn at each iteration
+            return np.array(wn_ret)  # (n_iter, *wn_start.shape)
+        else:
+            return wn_start
 
     def estimate_daily_water_balance(
         self, previous_wn: NDArray, day_idx: Optional[int] = None
@@ -229,7 +262,7 @@ class SplashModel:
         # the whole dataset.
         if day_idx is None:
             check_input_shapes(previous_wn, self.pn)
-            didx: Union[int, slice] = slice(self.pn.shape[0])
+            didx: Union[int, slice] = slice(self.shape[0])
         else:
             check_input_shapes(previous_wn, self.pn[day_idx])
             didx = day_idx
@@ -284,7 +317,7 @@ class SplashModel:
 
         curr_wn = wn_init
 
-        for day_idx in np.arange(self.pn.shape[0]):
+        for day_idx in range(self.shape[0]):
             # Calculate the balance for this date, updating the input for
             # the following day
             aet, curr_wn, ro = self.estimate_daily_water_balance(

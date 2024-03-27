@@ -56,7 +56,9 @@ df[["filename", "lineno", "function"]] = df.pop(
     "filename:lineno(function)"
 ).str.extract(r"(.*?):(.*?)\((.*)\)", expand=True)
 dt = datetime.datetime.fromtimestamp(prof_path.stat().st_mtime)
-df.index = pd.Series([dt.strftime("%Y-%m-%d %H:%M:%S")] * len(df), name="timestamp")
+df.index = pd.Series(
+    [dt.strftime("%Y-%m-%d %H:%M:%S")] * len(df), name="timestamp"
+)  # type: ignore
 print(df)
 df["label"] = df["filename"].str.extract(r"(\w+).py").squeeze() + "." + df["function"]
 df["event"] = [args.event] * len(df)
@@ -64,7 +66,11 @@ report_path = root / "profiling/prof-report.csv"
 df.to_csv(report_path, mode="a", header=not report_path.exists())
 
 # Filter and plot the results
-df.plot.barh(y=["tottime_percall", "cumtime_percall"], x="label", figsize=(20, 10))
+df.plot.barh(
+    y=["tottime_percall", "cumtime_percall"],  # type: ignore
+    x="label",
+    figsize=(20, 10),
+)
 plt.ylabel("")
 plt.gca().invert_yaxis()
 plt.tight_layout()
@@ -75,7 +81,7 @@ plt.savefig(root / "profiling/profiling.png")
 df = pd.read_csv(report_path, index_col="label", parse_dates=["timestamp"])
 kpis = ["tottime_percall", "cumtime_percall", "tottime", "cumtime"]
 labels = df[kpis].idxmax()
-bm = df.pivot_table(index="timestamp", columns="label", values=kpis)
+bm = df.pivot_table(index="timestamp", columns="label", values=kpis)  # type: ignore
 bm = bm[list(map(tuple, labels.reset_index().values))]
 bm = bm.iloc[-args.max_benchmark :]
 bm.columns = bm.columns.map(lambda x: f"{x[1]}({x[0]})")

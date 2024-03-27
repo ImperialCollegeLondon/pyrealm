@@ -1,69 +1,68 @@
 [tool.poetry]
-name = "pyrealm"
-version = "0.10.1"
-description = "Python implementations of REALM models"
 authors = ["David Orme <d.orme@imperial.ac.uk>"]
-homepage = "https://pyrealm.readthedocs.io/"
-repository = "https://github.com/davidorme/pyrealm"
-readme = "README.md"
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-    "Topic :: Scientific/Engineering",
-    "Intended Audience :: Science/Research",
-    "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Topic :: Scientific/Engineering",
+  "Intended Audience :: Science/Research",
+  "Development Status :: 4 - Beta",
 ]
+description = "Python implementations of REALM models"
+homepage = "https://pyrealm.readthedocs.io/"
 license = "MIT"
+name = "pyrealm"
 packages = [
-    { include = "pyrealm" },
-    { include = "pyrealm_build_data", format = "sdist" },
+  {include = "pyrealm"},
+  {include = "pyrealm_build_data", format = "sdist"},
 ]
-
+readme = "README.md"
+repository = "https://github.com/davidorme/pyrealm"
+version = "0.10.1"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
-numpy = "^1.16.5"
-scipy = "^1.7.3"
-tabulate = "^0.8.10"
 dacite = "^1.6.0"
 graphviz = "*"
+numpy = "^1.16.5"
+python = ">=3.9,<3.12"
+scipy = "^1.7.3"
+tabulate = "^0.8.10"
 
 [tool.poetry.group.types.dependencies]
+pandas-stubs = "^2.2.0.240218"
 types-tabulate = "^0.9.0.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.1.2"
-pytest-flake8 = "^1.1.1"
 pytest-cov = "^3.0.0"
-pytest-mypy = "^0.9.1"
+pytest-flake8 = "^1.1.1"
 pytest-mock = "^3.8.1"
+pytest-mypy = "^0.9.1"
 pytest-profiling = "^1.7.0"
 
 [tool.poetry.group.dev.dependencies]
-black = { version = "^22.10.0", allow-prereleases = true }
-pre-commit = "^3.2.0"
+black = {version = "^22.10.0", allow-prereleases = true}
 flake8 = "^4.0.1"
 flake8-docstrings = "^1.6.0"
-mypy = "^0.991"
-isort = "^5.12.0"
-pandas = "^2.2.0"
-matplotlib = "^3.5.2"
 ipython = "^8.9.0"
+isort = "^5.12.0"
+matplotlib = "^3.5.2"
 multiprocess = "^0.70.16"
+mypy = "^0.991"
+pandas = "^2.2.0"
+pre-commit = "^3.2.0"
 
 [tool.poetry.group.docs.dependencies]
-sphinx = "^7.0.0"
-sphinxcontrib-bibtex = "^2.6.1"
-myst-nb = "^1.0.0"
-sphinx-rtd-theme = "^2.0.0"
 autodocsumm = "^0.2.8"
-pydocstyle = "^6.1.1"
-xarray = "^2023.4.0"
-sphinx-external-toc = "^1.0.0"
+myst-nb = "^1.0.0"
 netcdf4 = "^1.6.3"
-
+pydocstyle = "^6.1.1"
+sphinx = "^7.0.0"
+sphinx-external-toc = "^1.0.0"
+sphinx-rtd-theme = "^2.0.0"
+sphinxcontrib-bibtex = "^2.6.1"
+xarray = "^2023.4.0"
 
 [build-system]
-requires = ["poetry-core>=1.2.0"]
 build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.2.0"]

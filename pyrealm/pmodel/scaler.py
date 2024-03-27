@@ -1,8 +1,8 @@
-"""The :mod:`~pyrealm.pmodel.fast_slow_scaler` module provides the
-:class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` class, which is a core
+"""The :mod:`~pyrealm.pmodel.scaler` module provides the
+:class:`~pyrealm.pmodel.scaler.SubdailyScaler` class, which is a core
 component of fitting the P Model at subdaily time scales. The class is used as follows:
 
-* A :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance is created using
+* A :class:`~pyrealm.pmodel.scaler.SubdailyScaler` instance is created using
   the time series of the observations for the subdaily data being used within a model.
 
 * An acclimation window is then set, defining a period of the day representing the
@@ -11,28 +11,28 @@ component of fitting the P Model at subdaily time scales. The class is used as f
   efficiency of the plant can best make use of high levels of sunlight. The window can
   be set using one of three methods:
 
-  * The :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.set_window` method sets a
+  * The :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.set_window` method sets a
     window centred on a given time during the day with a fixed width.
-  * The :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.set_nearest` method sets
+  * The :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.set_nearest` method sets
     the acclimation window as the single observation closest to a given time of day.
-  * The :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.set_include` method
+  * The :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.set_include` method
     allows the user to set an arbitrary selection of observations during the day as the
     acclimation window.
 
   If new ``set_`` functions are defined, then they will need to call the
-  :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler._set_times` method to update
+  :meth:`~pyrealm.pmodel.scaler.SubdailyScaler._set_times` method to update
   the instance attributes used to set the acclimation window.
 
-* The :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_daily_means` method
+* The :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.get_daily_means` method
   can then be used to get the average value of a variable within the acclimation window
   for each day. Alternatively, the
-  :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.get_window_values` method can
+  :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.get_window_values` method can
   be used to get the actual values observed during each daily window.
 
-* The :meth:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.fill_daily_to_subdaily`
+* The :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.fill_daily_to_subdaily`
   reverses this process: it takes an array of daily values and fills those values back
   onto the faster timescale used to create the
-  :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance.
+  :class:`~pyrealm.pmodel.scaler.SubdailyScaler` instance.
 """  # noqa: D205, D415
 
 from typing import Optional
@@ -42,7 +42,7 @@ from numpy.typing import NDArray
 from scipy.interpolate import interp1d  # type: ignore
 
 
-class FastSlowScaler:
+class SubdailyScaler:
     """Convert variables between photosynthetic fast and slow response scales.
 
     This class provides methods that allow data to be converted between
@@ -80,12 +80,11 @@ class FastSlowScaler:
                 "Datetimes are not a 1 dimensional array with dtype datetime64"
             )
 
-        # Enforce data storage in second precision
+        # - stored with second precision
         datetimes = datetimes.astype("datetime64[s]")
 
         # - with strictly increasing time deltas that are both evenly spaced and evenly
         #   divisible into a day
-        n_datetimes = datetimes.shape[0]
         datetime_deltas = np.diff(datetimes)
         spacing = set(datetime_deltas)
 
@@ -98,39 +97,56 @@ class FastSlowScaler:
         if self.spacing < 0:
             raise ValueError("Datetime sequence must be increasing")
 
-        # Get the number of observations per day and check it is evenly divisible.
-        n_sec = 24 * 60 * 60
-        obs_per_date = n_sec // self.spacing.astype("timedelta64[s]").astype(int)
-        day_remainder = n_sec % self.spacing.astype("timedelta64[s]").astype(int)
+        # Work out observations by date and look for incomplete dates at the start and
+        # end of the time sequence
+        dates = datetimes.astype("datetime64[D]")
+        unique_dates, date_counts = np.unique(dates, return_counts=True)
 
+        # Do we have at least three complete day to ensure we have a complete set of
+        # observation times on day 2. Three days is not sensible for the model but this
+        # ensures the padding can de determined.
+        if len(unique_dates) < 3:
+            ValueError("Not enough data to validate observation times")
+
+        # Get the maximum number of observations per day and check it is evenly
+        # divisible by the number of seconds in a day.
+        obs_per_date = date_counts.max()
+        day_remainder = (24 * 60 * 60) % obs_per_date
         if day_remainder:
             raise ValueError("Datetime spacing is not evenly divisible into a day")
 
-        obs_remainder = n_datetimes % obs_per_date
-        if obs_remainder:
-            raise ValueError("Datetimes include incomplete days")
+        # Set the datetime padding
+        self.padding: tuple[int, int] = (
+            obs_per_date - date_counts[0],
+            obs_per_date - date_counts[-1],
+        )
+        """Padding used to handle incomplete start and end days.
 
-        # Get a view of the datetimes wrapped on the number of observations per date
-        # and extract the observation dates and times
-        datetimes_by_date = datetimes.view()
-        datetimes_by_date.shape = (-1, obs_per_date)
+        Provides the number of observations to add to the start and end of the provided
+        datetime sequence to give complete days."""
 
-        # Data could still wrap onto obs x day view but having dates change mid row
-        first_row_dates = datetimes_by_date[0, :].astype("datetime64[D]")
-        if len(set(first_row_dates)) > 1:
-            raise ValueError("Datetimes include incomplete days")
-
-        self.observation_dates: NDArray[np.datetime64] = datetimes_by_date[:, 0].astype(
+        # Get a complete set of observation times from day 2 - we have guaranteed
+        # that the second day is complete.
+        complete_times = datetimes[dates == unique_dates[1]]
+        observation_timedeltas = complete_times - complete_times[0].astype(
             "datetime64[D]"
         )
+
+        # Add padded datetimes as a time series containing only complete days, using an
+        # offset to the last observations to avoid an off by one error from np.arange.
+        self.padded_datetimes = np.arange(
+            unique_dates[0] + observation_timedeltas[0],
+            unique_dates[-1] + (observation_timedeltas[-1] + np.timedelta64(1, "s")),
+            np.diff(observation_timedeltas)[0],
+        )
+
+        self.observation_dates: NDArray[np.datetime64] = unique_dates
         """The dates covered by the observations"""
 
         self.n_days: int = len(self.observation_dates)
         """The number of days covered by the observations"""
 
-        self.observation_times: NDArray[np.timedelta64] = (
-            datetimes_by_date[0, :] - self.observation_dates[0]
-        ).astype("timedelta64[s]")
+        self.observation_times: NDArray[np.timedelta64] = observation_timedeltas
         """The times of observations through the day as timedelta64 values in seconds"""
 
         self.n_obs: int = len(self.observation_times)
@@ -164,19 +180,19 @@ class FastSlowScaler:
         This private method should be called by all ``set_`` methods. It is used to
         update the instance to populate the following attributes:
 
-        * :attr:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.sample_datetimes`: An
+        * :attr:`~pyrealm.pmodel.scaler.SubdailyScaler.sample_datetimes`: An
           array of the datetimes of observations included in daily samples of shape
           (n_day, n_sample).
-        * :attr:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.sample_datetimes_mean`:
+        * :attr:`~pyrealm.pmodel.scaler.SubdailyScaler.sample_datetimes_mean`:
           An array of the mean daily datetime of observations included in daily samples.
-        * :attr:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.sample_datetimes_max`:
+        * :attr:`~pyrealm.pmodel.scaler.SubdailyScaler.sample_datetimes_max`:
           An array of the maximum daily datetime of observations included in daily
           samples.
         """
 
-        # Get a view of the times wrapped by date and then reshape along the first
+        # Get a view of the complete padded datetimes and then reshape along the first
         # axis into daily subarrays.
-        times_by_day = self.datetimes.view()
+        times_by_day = self.padded_datetimes.view()
         times_by_day.shape = tuple([self.n_days, self.n_obs])
 
         # subset to the included daily values
@@ -292,6 +308,29 @@ class FastSlowScaler:
 
     #     self.method = "Around max"
 
+    def pad_values(self, values: NDArray) -> NDArray:
+        """Pad values array to full days.
+
+        This method takes an array representing daily values and pads the first and
+        last day with NaN values so that they correspond to full days, similar to the
+        datetimes array of this class.
+
+        Args:
+            values: An array containing the sample values. The first dimension should be
+              matching the number of measurements, i.e., the first dimension of
+              datetimes in
+              :class:`~pyrealm.pmodel.scaler.SubdailyScaler`.
+        """
+
+        if self.padding == (0, 0):
+            return values
+
+        # Construct a padding iterable for np.pad, to pad only the first time axis
+        padding_dims = list((self.padding,))
+        padding_dims.extend([(0, 0)] * (values.ndim - 1))
+
+        return np.pad(values, padding_dims, constant_values=(np.nan, np.nan))
+
     def get_window_values(self, values: NDArray) -> NDArray:
         """Extract acclimation window values for a variable.
 
@@ -320,28 +359,50 @@ class FastSlowScaler:
 
         # Get a view of the values wrapped by date and then reshape along the first
         # axis into daily subarrays, leaving any remaining dimensions untouched.
-        # Using a view and reshape should avoid copying the data.
-        values_by_day = values.view()
+        # When the values are padded the returned value is automatically a padded copy
+        # of the original data, but if there is no padding, the original data is
+        # returned and using a view and reshape should avoid copying the data.
+        padded_values = self.pad_values(values)
+        values_by_day = padded_values.view()
         values_by_day.shape = tuple([self.n_days, self.n_obs] + list(values.shape[1:]))
 
         # subset to the included daily values
         return values_by_day[:, self.include, ...]
 
-    def get_daily_means(self, values: NDArray) -> NDArray:
+    def get_daily_means(
+        self, values: NDArray, allow_partial_data: bool = False
+    ) -> NDArray:
         """Get the daily means of a variable during the acclimation window.
 
         This method extracts values from a given variable during a defined acclimation
         window set using one of the ``set_`` methods, and then calculates the daily mean
         of those values.
 
+        The `allow_partial_data` option switches between using :func:`numpy.mean` and
+        :func:`numpy.nanmean`, so that daily mean values can be calculated even if the
+        data in the acclimation window is incomplete. Note that this will still return
+        `np.nan` if _no_ data is present in the acclimation window. It also has no
+        effect if the
+        :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.set_nearest` method has
+        been used to set the acclimation observations, because this method only ever
+        sets a single observation.
+
         The values can have any number of dimensions, but the first dimension must
         represent the time axis and have the same length as the original set of
         observation times.
+
+        Args:
+            values: An array of values to reduce to daily averages.
+            allow_partial_data: Exclude missing data from the calculation of the daily
+                average value.
 
         Returns:
             An array of mean daily values during the acclimation window
         """
         daily_values = self.get_window_values(values)
+
+        if allow_partial_data:
+            return np.nanmean(daily_values, axis=1)
 
         return daily_values.mean(axis=1)
 
@@ -356,7 +417,7 @@ class FastSlowScaler:
 
         This method takes an array representing daily values and interpolates those
         values back onto the subdaily timescale used to create the
-        :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` instance. The first
+        :class:`~pyrealm.pmodel.scaler.SubdailyScaler` instance. The first
         axis of the `values` must be the same length as the number of days used to
         create the instance.
 
@@ -378,7 +439,7 @@ class FastSlowScaler:
 
         Args:
             values: An array with the first dimension matching the number of days in the
-              instances :class:`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler` object.
+              instances :class:`~pyrealm.pmodel.scaler.SubdailyScaler` object.
             update_point: The point in the acclimation window at which the plant updates
               to the new daily value: one of 'mean' or 'max'.
             kind: The kind of interpolation to use to fill between daily values: one of
