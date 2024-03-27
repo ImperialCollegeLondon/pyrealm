@@ -7,6 +7,7 @@
 - calculate_soil_moisture, which iterates an initial soil moisture forward over a time
   series.
 """
+
 from itertools import product
 
 import numpy as np
@@ -204,7 +205,8 @@ def test_run_spin_up_gridded(splash_core_constants, grid_benchmarks):
     wn = splash.estimate_initial_soil_moisture()
 
     # Check against the spun up value from the original implementation
-    assert np.allclose(wn, expected.wn_spun_up, equal_nan=True)
+    expected_wn = expected["wn_spun_up"].to_numpy()
+    assert np.allclose(wn, expected_wn, equal_nan=True)
 
 
 # Testing the iterated water balance calculation
