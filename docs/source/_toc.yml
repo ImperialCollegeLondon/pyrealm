@@ -38,6 +38,7 @@ subtrees:
 - caption: Development
   entries:
   - file: development/developers.md
+  - file: development/release_process.md
   - file: development/pyrealm_build_data.md
 
 - caption: Bibliography

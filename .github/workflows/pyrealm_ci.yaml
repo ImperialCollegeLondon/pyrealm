@@ -1,6 +1,13 @@
 name: Test and build
 
-on: [push, pull_request, merge_group, release]
+# When does this run - new, reopened or updated PRs, pushes to main or develop and when
+# the workflow is called by another workflow, such as the publishing actions.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, develop]
+  workflow_call:
 
 jobs:
   qa:
