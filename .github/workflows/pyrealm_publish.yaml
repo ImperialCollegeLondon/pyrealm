@@ -1,0 +1,101 @@
+name: Publishing
+
+on: 
+  release:
+    types: [published]
+
+jobs:
+  # First, run the standard test suite - for this to work correctly, the workflow needs
+  # to inherit the organisation secrets used to authenticate to CodeCov.
+  # https://github.com/actions/runner/issues/1413
+  test:
+    uses: ./.github/workflows/pyrealm_ci.yaml
+    secrets: inherit
+
+  # Next, build the package wheel and source releases and add them to the release assets
+  build-wheel:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Build the package - this could use `poetry build` directly but pyproject.toml 
+      # already has the build-system configured to use poetry so `pip` should pick that
+      # up automatically.
+      - name: Build sdist
+        run: |
+          python -m pip install --upgrade build
+          python -m build
+
+      # Upload the build outputs as job artifacts - these will be two files with x.y.z
+      # version numbers:
+      # - pyrealm-x.y.z-py3-none-any.whl
+      # - pyrealm-x.y.z.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          path: dist/pyrealm*
+
+      # Add the built files to the release assets, alongside the repo archives 
+      # automatically added by GitHub. These files should then match exactly to the
+      # published files on PyPI.
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: dist/pyrealm*
+
+  # Now attempt to publish the package to the TestPyPI site, where the pyrealm project
+  # has been configured to allow trusted publishing from this repo and workflow.
+  #
+  # The skip-existing option allows the publication step to pass even when the release
+  # files already exists on PyPI. That suggests something has gone wrong with the
+  # release or the build file staging and the release should not be allowed to continue
+  # to publish on PyPI.
+
+  publish-TestPyPI:
+    needs: build-wheel
+    name: Publish pyrealm to TestPyPI
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+
+    steps:
+      # Download the built package files from the job artifacts
+      - name: Download sdist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: artifact
+          path: dist
+      
+      # Information step to show the contents of the job artifacts
+      - name: Display structure of downloaded files
+        run: ls -R dist
+      
+      # Use trusted publishing to release the files downloaded into dist to TestPyPI
+      - name: Publish package distributions to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          # skip-existing: true
+
+  # The final job in the workflow is to publish to the real PyPI
+  publish-PyPI:
+    needs: publish-TestPyPI
+    name: Publish pyrealm to PyPI
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+
+    steps:
+      # Download the built package files from the job artifacts
+      - name: Download sdist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: artifact
+          path: dist
+      
+      # Information step to show the contents of the job artifacts
+      - name: Display structure of downloaded files
+        run: ls -R dist
+      
+      # Use trusted publishing to release the files downloaded into dist to PyPI
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
