@@ -97,7 +97,7 @@ class ConstantsClass:
         Returns:
             An instance of the parameter class.
         """
-        with open(filename, "r") as infile:
+        with open(filename) as infile:
             json_data = json.load(infile)
 
         return cls.from_dict(json_data)

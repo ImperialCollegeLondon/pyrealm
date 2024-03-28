@@ -1,5 +1,4 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
 #
 # data.py
 #
@@ -95,7 +94,7 @@ class DATA:
                 delimiter=",",
                 skiprows=1,
             )
-        except IOError:
+        except OSError:
             self.logger.exception("could not read input file %s", fname)
             raise
         else:
@@ -129,7 +128,7 @@ class DATA:
 
         try:
             data = numpy.loadtxt(fname, dtype="f4")
-        except IOError:
+        except OSError:
             self.logger.exception("could not read input file %s", fname)
             raise
         else:
