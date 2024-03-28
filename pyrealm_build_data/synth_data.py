@@ -4,13 +4,14 @@ It fits a time series model to the input data and stores the model parameters.
 The dataset can then be reconstructed from the model parameters using the `reconstruct`
 function, provided with a custom time index.
 """
+from typing import Sequence
+
 import numpy as np
 import pandas as pd
 import xarray as xr
-from numpy.typing import ArrayLike
 
 
-def make_time_features(t: ArrayLike) -> pd.DataFrame:
+def make_time_features(t: Sequence[float]) -> pd.DataFrame:
     """Make time features for a given time index.
 
     The model can be written as
@@ -59,7 +60,7 @@ def fit_ts_model(da: xr.DataArray, fs: pd.DataFrame) -> xr.DataArray:
 
 
 def reconstruct(
-    ds: xr.Dataset, dt: ArrayLike, bounds: dict | None = None
+    ds: xr.Dataset, dt: Sequence[float], bounds: dict | None = None
 ) -> xr.Dataset:
     """Reconstruct the full dataset from the model parameters.
 
