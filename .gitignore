@@ -30,7 +30,6 @@ pyrealm.egg-info
 
 # Data
 pyrealm_build_data/inputs_data_24.25.nc
-pyrealm_build_data/eda.py
 
 # Profiling
 prof/
