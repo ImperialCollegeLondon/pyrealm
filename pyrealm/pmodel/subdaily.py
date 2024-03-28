@@ -279,8 +279,7 @@ class SubdailyPModel:
 
         pmodel_env_acclim = PModelEnvironment(
             **daily_environment,
-            pmodel_const=self.env.pmodel_const,
-            core_const=self.env.core_const,
+            pmodel_const=self.env.const,
         )
 
         # 2) Fit a PModel to those environmental conditions, using the supplied settings
@@ -315,12 +314,12 @@ class SubdailyPModel:
         )
 
         # 4) Calculate the optimal jmax and vcmax at 25°C
-        tk_acclim = pmodel_env_acclim.tc + self.env.core_const.k_CtoK
+        tk_acclim = pmodel_env_acclim.tc + self.env.const.k_CtoK
         self.vcmax25_opt = self.pmodel_acclim.vcmax * (
-            1 / calc_ftemp_arrh(tk_acclim, self.env.pmodel_const.subdaily_vcmax25_ha)
+            1 / calc_ftemp_arrh(tk_acclim, self.env.const.subdaily_vcmax25_ha)
         )
         self.jmax25_opt = self.pmodel_acclim.jmax * (
-            1 / calc_ftemp_arrh(tk_acclim, self.env.pmodel_const.subdaily_jmax25_ha)
+            1 / calc_ftemp_arrh(tk_acclim, self.env.const.subdaily_jmax25_ha)
         )
 
         # 5) Calculate the realised daily values from the instantaneous optimal values
@@ -345,21 +344,19 @@ class SubdailyPModel:
 
         # 7) Adjust subdaily jmax25 and vcmax25 back to jmax and vcmax given the
         #    actual subdaily temperatures.
-        subdaily_tk = self.env.tc + self.env.core_const.k_CtoK
+        subdaily_tk = self.env.tc + self.env.const.k_CtoK
         self.subdaily_vcmax: NDArray = self.subdaily_vcmax25 * calc_ftemp_arrh(
-            tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_vcmax25_ha
+            tk=subdaily_tk, ha=self.env.const.subdaily_vcmax25_ha
         )
         """Estimated subdaily :math:`V_{cmax}`."""
 
         self.subdaily_jmax: NDArray = self.subdaily_jmax25 * calc_ftemp_arrh(
-            tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_jmax25_ha
+            tk=subdaily_tk, ha=self.env.const.subdaily_jmax25_ha
         )
         """Estimated subdaily :math:`J_{max}`."""
 
         # 8) Recalculate chi using the OptimalChi class from the provided method.
-        self.optimal_chi = optimal_chi_class(
-            env=self.env, pmodel_const=env.pmodel_const
-        )
+        self.optimal_chi = optimal_chi_class(env=self.env, pmodel_const=env.const)
         self.optimal_chi.estimate_chi(xi_values=self.subdaily_xi)
 
         """Estimated subdaily :math:`c_i`."""
@@ -367,7 +364,7 @@ class SubdailyPModel:
         # Calculate Ac, J and Aj at subdaily scale to calculate assimilation
         if self.do_ftemp_kphio:
             ftemp_kphio = calc_ftemp_kphio(
-                env.tc, optimal_chi_class.is_c4, pmodel_const=env.pmodel_const
+                env.tc, optimal_chi_class.is_c4, pmodel_const=env.const
             )
             self.kphio = self.init_kphio * ftemp_kphio
         else:
@@ -387,8 +384,7 @@ class SubdailyPModel:
 
         # Calculate GPP and convert from mol to gC
         self.gpp: NDArray = (
-            np.minimum(self.subdaily_Aj, self.subdaily_Ac)
-            * self.env.core_const.k_c_molmass
+            np.minimum(self.subdaily_Aj, self.subdaily_Ac) * self.env.const.k_c_molmass
         )
         """Estimated subdaily GPP."""
 
@@ -538,8 +534,7 @@ class SubdailyPModel_JAMES:
             vpd=vpd_acclim,
             co2=co2_acclim,
             patm=patm_acclim,
-            pmodel_const=self.env.pmodel_const,
-            core_const=self.env.core_const,
+            pmodel_const=self.env.const,
         )
         self.pmodel_acclim: PModel = PModel(pmodel_env_acclim, kphio=kphio)
         r"""P Model predictions for the daily acclimation conditions.
@@ -557,12 +552,12 @@ class SubdailyPModel_JAMES:
         )
 
         # Calculate the optimal jmax and vcmax at 25°C
-        tk_acclim = temp_acclim + self.env.core_const.k_CtoK
+        tk_acclim = temp_acclim + self.env.const.k_CtoK
         self.vcmax25_opt = self.pmodel_acclim.vcmax * (
-            1 / calc_ftemp_arrh(tk_acclim, self.env.pmodel_const.subdaily_vcmax25_ha)
+            1 / calc_ftemp_arrh(tk_acclim, self.env.const.subdaily_vcmax25_ha)
         )
         self.jmax25_opt = self.pmodel_acclim.jmax * (
-            1 / calc_ftemp_arrh(tk_acclim, self.env.pmodel_const.subdaily_jmax25_ha)
+            1 / calc_ftemp_arrh(tk_acclim, self.env.const.subdaily_jmax25_ha)
         )
 
         # Calculate the realised values from the instantaneous optimal values
@@ -597,7 +592,7 @@ class SubdailyPModel_JAMES:
         """Estimated subdaily :math:`c_i`."""
 
         # Fill the daily realised values onto the subdaily scale
-        subdaily_tk = self.env.tc + self.env.core_const.k_CtoK
+        subdaily_tk = self.env.tc + self.env.const.k_CtoK
 
         # Fill the realised xi, jmax25 and vcmax25 from subdaily to daily and then
         # adjust jmax25 and vcmax25 to jmax and vcmax given actual temperature at
@@ -610,12 +605,12 @@ class SubdailyPModel_JAMES:
         )
 
         self.subdaily_vcmax: NDArray = self.subdaily_vcmax25 * calc_ftemp_arrh(
-            tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_vcmax25_ha
+            tk=subdaily_tk, ha=self.env.const.subdaily_vcmax25_ha
         )
         """Estimated subdaily :math:`V_{cmax}`."""
 
         self.subdaily_jmax: NDArray = self.subdaily_jmax25 * calc_ftemp_arrh(
-            tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_jmax25_ha
+            tk=subdaily_tk, ha=self.env.const.subdaily_jmax25_ha
         )
         """Estimated subdaily :math:`J_{max}`."""
 
@@ -643,7 +638,6 @@ class SubdailyPModel_JAMES:
 
         # Calculate GPP, converting from mol m2 s1 to grams carbon m2 s1
         self.gpp: NDArray = (
-            np.minimum(self.subdaily_Aj, self.subdaily_Ac)
-            * self.env.core_const.k_c_molmass
+            np.minimum(self.subdaily_Aj, self.subdaily_Ac) * self.env.const.k_c_molmass
         )
         """Estimated subdaily GPP."""

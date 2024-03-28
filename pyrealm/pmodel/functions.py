@@ -258,7 +258,6 @@ def calc_gammastar(
     tc: NDArray,
     patm: NDArray,
     pmodel_const: PModelConst = PModelConst(),
-    core_const: CoreConst = CoreConst(),
 ) -> NDArray:
     r"""Calculate the photorespiratory CO2 compensation point.
 
@@ -278,7 +277,6 @@ def calc_gammastar(
         tc: Temperature relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pascals)
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
         To: the standard reference temperature (:math:`T_0`. ``k_To``)
@@ -303,8 +301,8 @@ def calc_gammastar(
     return (
         pmodel_const.bernacchi_gs25_0
         * patm
-        / core_const.k_Po
-        * calc_ftemp_arrh((tc + core_const.k_CtoK), ha=pmodel_const.bernacchi_dha)
+        / pmodel_const.k_Po
+        * calc_ftemp_arrh((tc + pmodel_const.k_CtoK), ha=pmodel_const.bernacchi_dha)
     )
 
 
@@ -432,7 +430,6 @@ def calc_kp_c4(
     tc: NDArray,
     patm: NDArray,
     pmodel_const: PModelConst = PModelConst(),
-    core_const: CoreConst = CoreConst(),
 ) -> NDArray:
     r"""Calculate the Michaelis Menten coefficient of PEPc.
 
@@ -444,7 +441,6 @@ def calc_kp_c4(
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
         patm: Atmospheric pressure (:math:`p`, Pa)
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
         hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`,
@@ -467,7 +463,7 @@ def calc_kp_c4(
     _ = check_input_shapes(tc, patm)
 
     # conversion to Kelvin
-    tk = tc + core_const.k_CtoK
+    tk = tc + pmodel_const.k_CtoK
     return pmodel_const.boyd_kp25_c4 * calc_ftemp_arrh(tk, ha=pmodel_const.boyd_dhac_c4)
 
 

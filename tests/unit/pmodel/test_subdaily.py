@@ -157,7 +157,7 @@ def test_SubdailyPModel_JAMES(be_vie_data_components):
     # and rounding of outputs prevent a closer match between the implementations
     assert np.allclose(
         fs_pmodel_james.gpp[valid],
-        expected_gpp[valid] * env.core_const.k_c_molmass,
+        expected_gpp[valid] * env.const.k_c_molmass,
         rtol=0.005,
     )
 
@@ -211,7 +211,7 @@ def test_FSPModel_corr(be_vie_data_components, data_args):
     )
 
     # Test that non-NaN predictions correlate well and are approximately the same
-    gpp_in_micromols = subdaily_pmodel.gpp[valid] / env.core_const.k_c_molmass
+    gpp_in_micromols = subdaily_pmodel.gpp[valid] / env.const.k_c_molmass
     assert np.allclose(gpp_in_micromols, expected_gpp[valid], rtol=0.2)
     r_vals = np.corrcoef(gpp_in_micromols, expected_gpp[valid])
     assert np.all(r_vals > 0.995)
