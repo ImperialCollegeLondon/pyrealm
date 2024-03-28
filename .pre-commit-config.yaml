@@ -4,6 +4,11 @@ repos:
     hooks:
       - id: check-merge-conflict
       - id: debug-statements
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.13.0
+    hooks:
+      - id: pyupgrade
+        args: [--py310-plus]
   - repo: https://github.com/timothycrosley/isort
     rev: "5.13.2"
     hooks:

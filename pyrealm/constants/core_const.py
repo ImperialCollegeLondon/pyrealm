@@ -3,7 +3,6 @@ used in the functions in the :mod:`~pyrealm.core` submodules.
 """  # noqa: D205, D415
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 import numpy as np
 from numpy.typing import NDArray
@@ -122,7 +121,7 @@ class CoreConst(ConstantsClass):
     defaulting to those of  ``Sonntag1990``."""
     mwr: float = 0.622
     """The ratio molecular weight of water vapour to dry air (:math:`MW_r`, -)"""
-    magnus_option: Optional[str] = None
+    magnus_option: str | None = None
     """Pre-defined Magnus equation parameterisations. Use one of ``Allen1998``,
     ``Alduchov1996`` or ``Sonntag1990`` to set values for
     :attr:`~pyrealm.constants.core_const.CoreConst.magnus_coef`.

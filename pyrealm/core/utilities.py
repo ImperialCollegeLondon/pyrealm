@@ -42,8 +42,6 @@ Numpy lacks a general solution to missing data:
 https://numpy.org/neps/nep-0026-missing-data-summary
 """  # noqa: D205, D415
 
-from typing import Union
-
 import numpy as np
 import tabulate
 from numpy.typing import NDArray
@@ -51,7 +49,7 @@ from numpy.typing import NDArray
 from pyrealm import warnings
 
 
-def check_input_shapes(*args: Union[float, int, np.generic, np.ndarray, None]) -> tuple:
+def check_input_shapes(*args: float | int | np.generic | np.ndarray | None) -> tuple:
     """Check sets of input variables have congruent shapes.
 
     This helper function validates inputs to check that they are either scalars or
@@ -338,7 +336,7 @@ def bounds_mask(
     return outputs
 
 
-def evaluate_horner_polynomial(x: NDArray, cf: Union[list, NDArray]) -> NDArray:
+def evaluate_horner_polynomial(x: NDArray, cf: list | NDArray) -> NDArray:
     r"""Evaluates a polynomial with coefficients `cf` at `x` using Horner's method.
 
     Horner's method is a fast way to evaluate polynomials, especially for large degrees,

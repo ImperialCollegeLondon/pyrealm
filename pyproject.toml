@@ -24,7 +24,7 @@ version = "0.10.1"
 dacite = "^1.6.0"
 graphviz = "*"
 numpy = "^1.16.5"
-python = ">=3.9,<3.12"
+python = ">=3.10"
 scipy = "^1.7.3"
 tabulate = "^0.8.10"
 
