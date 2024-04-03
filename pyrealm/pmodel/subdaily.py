@@ -20,7 +20,6 @@ using C4 pathways and soil moisture effects on optimal :math:`\chi`, but this is
 experimental and not validated.
 """  # noqa: D205, D415
 
-from typing import Optional
 from warnings import warn
 
 import numpy as np
@@ -492,8 +491,8 @@ class SubdailyPModel_JAMES:
         alpha: float = 1 / 15,
         allow_holdover: bool = False,
         kphio: float = 1 / 8,
-        vpd_scaler: Optional[SubdailyScaler] = None,
-        fill_from: Optional[np.timedelta64] = None,
+        vpd_scaler: SubdailyScaler | None = None,
+        fill_from: np.timedelta64 | None = None,
         fill_kind: str = "previous",
     ) -> None:
         # Really warn about the API

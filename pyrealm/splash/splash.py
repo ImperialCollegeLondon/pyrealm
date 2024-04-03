@@ -3,7 +3,6 @@ predictions under the SPLASH model.
 """  # noqa: D205, D415
 
 import warnings
-from typing import Optional, Union
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -110,7 +109,7 @@ class SplashModel:
 
     def estimate_initial_soil_moisture(  # noqa: max-complexity=12
         self,
-        wn_init: Optional[NDArray] = None,
+        wn_init: NDArray | None = None,
         max_iter: int = 10,
         max_diff: float = 1.0,
         return_convergence: bool = False,
@@ -223,7 +222,7 @@ class SplashModel:
             return wn_start
 
     def estimate_daily_water_balance(
-        self, previous_wn: NDArray, day_idx: Optional[int] = None
+        self, previous_wn: NDArray, day_idx: int | None = None
     ) -> tuple[NDArray, NDArray, NDArray]:
         r"""Estimate the daily water balance.
 
@@ -262,7 +261,7 @@ class SplashModel:
         # the whole dataset.
         if day_idx is None:
             check_input_shapes(previous_wn, self.pn)
-            didx: Union[int, slice] = slice(self.shape[0])
+            didx: int | slice = slice(self.shape[0])
         else:
             check_input_shapes(previous_wn, self.pn[day_idx])
             didx = day_idx

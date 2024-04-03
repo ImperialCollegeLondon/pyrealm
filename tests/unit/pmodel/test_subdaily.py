@@ -3,7 +3,6 @@
 import datetime
 from contextlib import nullcontext as does_not_raise
 from importlib import resources
-from typing import Optional
 
 import numpy as np
 import pandas
@@ -60,7 +59,7 @@ def be_vie_data_components(be_vie_data):
             mode: str = "",
             start: int = 0,
             end: int = 0,
-            pre_average: Optional[list[datetime.time]] = None,
+            pre_average: list[datetime.time] | None = None,
         ):
             # Get a copy of the data so as to not break the module scope loaded object.
             data = be_vie_data.copy()

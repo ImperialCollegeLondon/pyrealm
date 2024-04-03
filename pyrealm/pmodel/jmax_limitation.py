@@ -6,8 +6,6 @@ the following pmodel core class:
 
 """  # noqa D210, D415
 
-from typing import Optional
-
 import numpy as np
 from numpy.typing import NDArray
 
@@ -95,10 +93,10 @@ class JmaxLimitation:
         """:math:`J_{max}` limitation factor, calculated using the method."""
         self.f_v: NDArray
         """:math:`V_{cmax}` limitation factor, calculated using the method."""
-        self.omega: Optional[NDArray] = None
+        self.omega: NDArray | None = None
         """Component of :math:`J_{max}` calculation for method ``smith19``
         (:cite:`Smith:2019dv`)."""
-        self.omega_star: Optional[NDArray] = None
+        self.omega_star: NDArray | None = None
         """Component of :math:`J_{max}` calculation for method ``smith19``
         (:cite:`Smith:2019dv`)."""
 

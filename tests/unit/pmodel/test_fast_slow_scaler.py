@@ -313,7 +313,7 @@ def test_FSS_set_nearest(fixture_FSS, ctext_mngr, msg, time, samp_mean, samp_max
             pytest.raises(ValueError),
             "The first dimension of values is not the same length "
             "as the datetime sequence",
-            np.ones((288)),
+            np.ones(288),
         ),
     ],
 )
@@ -339,7 +339,7 @@ PARTIAL_VARYING = np.concatenate([[np.nan] * 24, np.arange(24, 144)])
 @pytest.mark.parametrize(
     argnames="values, expected_means, allow_partial_data",
     argvalues=[
-        pytest.param(np.ones((144)), np.array([1, 1, 1]), False, id="1d_shape_correct"),
+        pytest.param(np.ones(144), np.array([1, 1, 1]), False, id="1d_shape_correct"),
         pytest.param(
             PARTIAL_ONES,
             np.array([np.nan, 1, 1]),
@@ -542,7 +542,7 @@ class Test_FSS_get_vals_window_and_include:
 @pytest.mark.parametrize(
     argnames="values, expected_means",
     argvalues=[
-        pytest.param(np.ones((144)), np.array([1, 1, 1]), id="1d_shape_correct"),
+        pytest.param(np.ones(144), np.array([1, 1, 1]), id="1d_shape_correct"),
         pytest.param(PARTIAL_ONES, np.array([np.nan, 1, 1]), id="1d_shape_correct_nan"),
         pytest.param(np.ones((144, 5)), np.ones((3, 5)), id="2d_shape_correct"),
         pytest.param(

@@ -3,7 +3,6 @@ fluxes.
 """  # noqa: D205, D415
 
 from dataclasses import InitVar, dataclass, field
-from typing import Optional, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -108,8 +107,8 @@ class DailyEvapFluxes:
         self.rx = (3.6e6) * (1.0 + self.core_const.k_w) * self.econ
 
     def estimate_aet(
-        self, wn: NDArray, day_idx: Optional[int] = None, only_aet: bool = True
-    ) -> Union[NDArray, tuple[NDArray, NDArray, NDArray]]:
+        self, wn: NDArray, day_idx: int | None = None, only_aet: bool = True
+    ) -> NDArray | tuple[NDArray, NDArray, NDArray]:
         """Estimate actual evapotranspiration.
 
         This method estimates the daily actual evapotranspiration (AET, mm/day), given
@@ -137,7 +136,7 @@ class DailyEvapFluxes:
         # soil moisture. The slice here is used to programatically select `array[:]`.
         if day_idx is None:
             check_input_shapes(wn, self.sat)
-            didx: Union[int, slice] = slice(self.sat.shape[0])
+            didx: int | slice = slice(self.sat.shape[0])
         else:
             check_input_shapes(wn, self.sat[day_idx])
             didx = day_idx

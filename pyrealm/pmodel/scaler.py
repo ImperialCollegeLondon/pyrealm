@@ -35,8 +35,6 @@ component of fitting the P Model at subdaily time scales. The class is used as f
   :class:`~pyrealm.pmodel.scaler.SubdailyScaler` instance.
 """  # noqa: D205, D415
 
-from typing import Optional
-
 import numpy as np
 from numpy.typing import NDArray
 from scipy.interpolate import interp1d  # type: ignore
@@ -411,7 +409,7 @@ class SubdailyScaler:
         values: NDArray,
         update_point: str = "max",
         kind: str = "previous",
-        fill_from: Optional[np.timedelta64] = None,
+        fill_from: np.timedelta64 | None = None,
     ) -> NDArray:
         """Resample daily variables onto the subdaily time scale.
 
