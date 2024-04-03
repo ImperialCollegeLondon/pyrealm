@@ -65,12 +65,7 @@ kmm_upper_bound = 1000
 )
 def test_out_of_bound_output(tc, patm):
     """Function to calulate kmm."""
-    pmodel_const = PModelConst(
-        bernacchi_kc25=39.97,
-        bernacchi_ko25=27480,
-        bernacchi_dhac=79430,
-        bernacchi_dhao=36380,
-    )
+    pmodel_const = PModelConst()
 
     result = calc_kmm(tc=tc, patm=patm, pmodel_const=pmodel_const)
 
