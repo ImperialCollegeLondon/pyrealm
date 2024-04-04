@@ -1,5 +1,12 @@
 [tool.poetry]
-authors = ["David Orme <d.orme@imperial.ac.uk>"]
+authors = [
+  "David Orme <d.orme@imperial.ac.uk>",
+  "Alienor Lavergne <alienor.lavergne@springernature.com>",
+  "Marion Weinzierl <mw925@cam.ac.uk>",
+  "Tianzhang Cai <tc684@cam.ac.uk>",
+  "Surbhi Goel <sg2147@cam.ac.uk>",
+  "Alexander Smith",
+]
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
@@ -8,7 +15,7 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Development Status :: 4 - Beta",
 ]
-description = "Python implementations of REALM models"
+description = "Python tools for modelling plant productivity and demography."
 homepage = "https://pyrealm.readthedocs.io/"
 license = "MIT"
 name = "pyrealm"
@@ -18,7 +25,7 @@ packages = [
 ]
 readme = "README.md"
 repository = "https://github.com/davidorme/pyrealm"
-version = "0.10.1"
+version = "1.0.1a0"
 
 [tool.poetry.dependencies]
 dacite = "^1.6.0"
