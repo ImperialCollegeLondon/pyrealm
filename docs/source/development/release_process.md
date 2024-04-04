@@ -20,6 +20,7 @@ The package release process has three stages:
   version.
 * Publish a release on GitHub - this is basically just a specific tagged commit on
   `main` that has some associated release notes.
+* Publish the code on Zenodo.
 * Publish the built code packages to PyPI - this is the packaged version of the code
   that users will install and use. The `pyrealm` package uses the trusted publishing
   mechanism to make it easy to add new release to PyPI.
