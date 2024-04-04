@@ -14,7 +14,7 @@ kernelspec:
 
 # Package release process
 
-The package release process has three stages:
+The package release process has four stages. The last two steps are automated:
 
 * Merge changes from the `develop` branch onto `main` that will form the new release
   version.
@@ -106,6 +106,15 @@ a target branch. The steps are:
    about whether to publish it.
 
 1. Once everyone is agreed **publish the release**.
+
+## Publish the package on Zenodo
+
+The `pyrealm` package is set up to publish on Zenodo automatically when a release is
+published. This saves a zip file of the repository as a new Zenodo record, under the
+[`pyrealm` concept ID](https://zenodo.org/doi/10.5281/zenodo.8366847).
+
+This process can be turned off for test releases but only through the owning Zenodo
+account, which belongs to David Orme.
 
 ## Publish the package on PyPI
 
