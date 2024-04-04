@@ -141,11 +141,16 @@
         - The soilmstress argument to PModel is removed and both the Mengoli and Stocker
           approaches are now intended to be applied as penalties to GPP after P Model
           fitting, allowing the two to be compared from the same P Model outputs.
-0.10.1  - Addition of draft extention of subdaily memory_effect function that allows for
+0.10.1  - Addition of draft extension of subdaily memory_effect function that allows for
           missing data arising from non-estimable Jmax and Vcmax.
-0.11.0  - Addition of a more pythonic re-implementation of the SPLASH v1.0 model with a
+1.0.0   - Addition of a more pythonic re-implementation of the SPLASH v1.0 model with a
           more flexible user interface and faster calculation.
         - Revision of the optimal chi calculation internals - better internal structure
-          and extensible but also working towards a more flexible implementation of
-          sub-daily models with a wider range of optimal chi models.
+          and extensible framework, with option to constrain xi values to allow
+          slow acclimation of xi. 
+        - Updated implementation of the SubdailyPModel (renamed from FastSlowPModel) to
+          use the new optimal chi structure and allow it to be used with all optimal chi
+          models, including C4 photosynthesis.
         - Updated and revised unit testing.
+        - Dropped support for Python 3.9 for first main release and to adopt more recent
+          typing syntax.
