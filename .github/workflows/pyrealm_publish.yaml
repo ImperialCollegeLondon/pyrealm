@@ -76,13 +76,15 @@ jobs:
           repository-url: https://test.pypi.org/legacy/
           # skip-existing: true
 
-  # The final job in the workflow is to publish to the real PyPI
+  # The final job in the workflow is to publish to the real PyPI as long as the release
+  # name does not contain the tag 'test-pypi-only'
   publish-PyPI:
     needs: publish-TestPyPI
     name: Publish pyrealm to PyPI
     runs-on: ubuntu-latest
     permissions:
       id-token: write
+    if: ${{ ! contains('test-pypi-only', github.event.release.name)}}
 
     steps:
       # Download the built package files from the job artifacts

@@ -90,6 +90,11 @@ a target branch. The steps are:
    * Alternatively, you can simply type the tag name into that drop down and the tag
      will be created alongside the draft release.
 
+1. You will need to choose a title for the release: basically `Release vX.Y.Z` is fine.
+   However, the title text also provides a mechanism for suppressing automatic trusted
+   publication to the main PyPI server by using `Release vX.Y.Z test-pypi-only`. See
+   below for details.
+
 1. You can create release notes automatically - this is basically a list of the commits
    being added since the last release - and can also set the version as a pre-release.
    This is different from having an explicit release version number (e.g. `X.Y.Za1`) -
@@ -176,6 +181,11 @@ basic flow is:
    automatically trust publications from this GitHub repository.
 1. As long as all the steps above succeed, the job artefacts are now published to the
    main PyPI site, which is also configured to trust publications from the repository.
+
+   The last step of publication to the main PyPI site can be skipped by including the
+   text `test-pypi-only` in the title text for the release. This allows pre-release
+   tests and experimentation to be tested without automatically adding them to the
+   official released versions.
 
 ```{eval-rst}
 .. include::  ../../../.github/workflows/pyrealm_publish.yaml
