@@ -57,20 +57,21 @@ jobs:
 
     - name: Run profiling
       id: profiling
-      if: steps.lfs.outcome == 'success'
+      if: success() && (matrix.os == 'ubuntu-latest' && matrix.python-version == 3.10)
       run: |
         sudo apt-get install graphviz
         poetry run pytest -m "profiling" --profile-svg
 
     - name: Report performance (this step will fail if performance degrades)
-      if: steps.profiling.outcome == 'success'
+      id: profile_benchmark
+      if: ${{steps.profiling.outcome != 'skipped' && steps.profiling.outcome == 'success'}}
       run: poetry run python profiling/report.py --event ${{ github.event_name }}
 
     - uses: stefanzweifel/git-auto-commit-action@v5
-      if: ${{ always() && steps.profiling.outcome != 'skipped' && github.event_name == 'merge_group' }}
+      if: ${{ steps.profile_benchmark.outcome != 'skipped'}}
       with:
         commit_message: Auto-generated profiling results
-        file_pattern: 'profiling/* .gitattributes'
+        file_pattern: 'profiling/*'
 
   docs_build:
     needs: qa
