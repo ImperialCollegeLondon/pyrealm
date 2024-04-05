@@ -33,7 +33,7 @@ class TestClass:
     def setup(self, splash_core_constants):
         """Set up the the splash model and load the test data set."""
         dpath = resources.files("pyrealm_build_data.splash")
-        data = xarray.load_dataset(dpath / "splash_test_grid_nw_us.nc")
+        data = xarray.load_dataset(dpath / "data/splash_nw_us_grid_data.nc")
 
         self.splash = SplashModel(
             lat=np.broadcast_to(data.lat.data[None, :, None], data.sf.data.shape),
