@@ -4,7 +4,7 @@ import datetime
 import pstats
 import sys
 import textwrap
-from argparse import ArgumentParser, Namespace, RawDescriptionHelpFormatter
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from io import StringIO
 from pathlib import Path
 
@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-def read_prof_as_dataframe(
+def convert_and_filter_prof_file(
     prof_path: Path,
     commit_sha: str,
     exclude: list[str] = ["{.*}", "<.*>", "/lib/"],
@@ -45,7 +45,6 @@ def read_prof_as_dataframe(
     # to inconsistent behaviour across platforms
     sio = StringIO()
     p = pstats.Stats(str(prof_path), stream=sio)
-    # p.strip_dirs()
     p.print_stats()
     sio.seek(0)
 
@@ -84,8 +83,8 @@ def read_prof_as_dataframe(
         "filename:lineno(function)"
     ).str.extract(r"(.*):(.*?)\((.*)\)", expand=True)
 
-    # Get the unique part of the file paths - note that the parts are not of even
-    # length, but the zip should catch the similar portions
+    # Get the unique part of the file paths - note that the zip won't cover all of the
+    # parts as they are not of even length, but should cover the identical portions.
     parts = [Path(fn).parts for fn in df["filename"]]
     diverge_index = [len(set(pt)) == 1 for pt in zip(*parts)].index(False)
     df["filename"] = ["/".join(list(fn)[diverge_index:]) for fn in parts]
@@ -96,38 +95,21 @@ def read_prof_as_dataframe(
     # Add the provided git commit SHA for information
     df["commit_sha"] = commit_sha
 
+    # Add fields to ignore particular benchmarks and allow regression
+    df["ignore_result"] = False
+    df["ignore_justification"] = ""
+
     return df
-
-
-def plot_profiling(df: pd.DataFrame, cfg: Namespace) -> None:
-    """Plot the profiling results.
-
-    Args:
-        df: Profiling report DataFrame.
-        cfg: Configuration of the profiling report.
-    """
-
-    df.plot.barh(
-        y=["tottime_percall", "cumtime_percall"], x="label", figsize=(20, 10)
-    )  # type: ignore
-    plt.ylabel("")
-    plt.gca().invert_yaxis()
-    plt.tight_layout()
-    plt.legend(loc="lower right")
-
-    if cfg.show:
-        plt.show()
-
-    if cfg.prof_plot_path:
-        plt.savefig(cfg.prof_plot_path)
 
 
 def run_benchmark(
     incoming: pd.DataFrame,
     database_path: Path,
     fail_path: Path,
+    plot_path: Path | None = None,
     tolerance: float = 1.05,
     n_runs: int = 5,
+    new_database: bool = False,
     append_on_pass: bool = False,
 ) -> bool:
     """Benchmark profiling results.
@@ -149,15 +131,33 @@ def run_benchmark(
         incoming: A data frame of incoming profiling data.
         database_path: The path to the database of previous profiling data
         fail_path: A path to write out data on functions that fail profiling
+        plot_path: An optional path for creating a benchmarking plot.
         tolerance: Fractional acceptable change in performance
         n_runs: The number of most recent runs to use
         append_on_pass: Should the incoming data be added to the database.
+        new_database: Should the incoming data be used to create a new profiling
+            database file.
     """
+
+    if new_database:
+        if database_path.exists():
+            raise RuntimeError(
+                f"Cannot overwrite existing database file: {database_path}"
+            )
+
+        incoming.to_csv(database_path, index=False)
+        return True
+
+    if not database_path.exists():
+        raise FileNotFoundError(f"Database file not found: {database_path}")
 
     # Read database and reduce to most recent n runs.
     database = pd.read_csv(database_path)
     n_recent_timestamps = sorted(database["timestamp"].unique())[-n_runs:]
     database = database.loc[database["timestamp"].isin(n_recent_timestamps)]
+
+    # Remove any rows that have been flagged using ignore_results
+    database = database[~database["ignore_result"]]
 
     # Find the best (minimum) previous indicator values from those runs in the database
     # - Note that min() here takes the minimum value for each column within the group.
@@ -182,6 +182,12 @@ def run_benchmark(
     kpi_fail = [comparison[f"{kpi}_performance"] > (1 + tolerance) for kpi in kpis]
     failing_rows = comparison[pd.DataFrame(kpi_fail).any()]
 
+    if plot_path is not None:
+        create_benchmark_plot(
+            plot_path=plot_path,
+            incoming=incoming,
+        )
+
     # If any rows fail then save out the information and return False
     if not failing_rows.empty:
         failing_rows.to_csv(fail_path, index=False)
@@ -195,24 +201,23 @@ def run_benchmark(
     return True
 
 
-def plot_benchmark(bm: pd.DataFrame, cfg: Namespace) -> None:
-    """Plot the benchmark results and check the performance change.
+def create_benchmark_plot(plot_path: Path, incoming: pd.DataFrame) -> None:
+    """Plot the profiling results.
 
     Args:
-        bm: Benchmark DataFrame.
-        cfg: Configuration of the profiling report.
+        plot_path: A path to write the plot to.
+        incoming: The data to be plotted
     """
 
-    # Plot benchmark results
-    bm.T.plot.barh(figsize=(20, 10))
+    incoming.plot.barh(
+        y=["tottime_percall", "cumtime_percall"], x="label", figsize=(20, 10)
+    )  # type: ignore
+    plt.ylabel("")
+    plt.gca().invert_yaxis()
     plt.tight_layout()
     plt.legend(loc="lower right")
 
-    if cfg.show:
-        plt.show()
-
-    if cfg.bm_plot_path:
-        plt.savefig(cfg.bm_plot_path)
+    plt.savefig(plot_path)
 
 
 def profile_report_cli() -> None:
@@ -281,6 +286,11 @@ def profile_report_cli() -> None:
         action="store_true",
     )
     parser.add_argument(
+        "--new-database",
+        help="Use the incoming data to start a new profiling database",
+        action="store_true",
+    )
+    parser.add_argument(
         "--no-save", help="Do not save the profiling results", action="store_true"
     )
     parser.add_argument(
@@ -298,7 +308,7 @@ def profile_report_cli() -> None:
     # else:
     #     print(f"Cannot find the call graph at {orig_graph_path}.")
 
-    incoming = read_prof_as_dataframe(
+    incoming = convert_and_filter_prof_file(
         prof_path=args.prof_path,
         commit_sha=args.commit_sha,
         exclude=args.exclude,
@@ -311,6 +321,7 @@ def profile_report_cli() -> None:
         tolerance=args.tolerance,
         n_runs=args.n_runs,
         append_on_pass=args.append_on_pass,
+        new_database=args.new_database,
     )
 
     # plot_profiling(df, cfg)
