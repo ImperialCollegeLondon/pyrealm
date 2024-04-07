@@ -31,7 +31,7 @@ def convert_and_filter_prof_file(
     * '{.*}' excludes profiling of '{built-in ... } and similar,
     * '<.*>' excludes profiling of '<frozen ...>` and similar.
 
-    The remaining rows should show the performance of pyrealm code.
+    The remaining rows should show the performance of just the pyrealm code.
 
     Args:
         prof_path: Path to the profiling output.
@@ -107,7 +107,7 @@ def run_benchmark(
     database_path: Path,
     fail_path: Path,
     plot_path: Path | None = None,
-    tolerance: float = 1.05,
+    tolerance: float = 0.05,
     n_runs: int = 5,
     new_database: bool = False,
     append_on_pass: bool = False,
@@ -156,66 +156,111 @@ def run_benchmark(
     n_recent_timestamps = sorted(database["timestamp"].unique())[-n_runs:]
     database = database.loc[database["timestamp"].isin(n_recent_timestamps)]
 
-    # Remove any rows that have been flagged using ignore_results
-    database = database[~database["ignore_result"]]
-
-    # Find the best (minimum) previous indicator values from those runs in the database
-    # - Note that min() here takes the minimum value for each column within the group.
+    # Find the best (minimum) previous indicator values for each label from those runs
+    # in the database that have not explicitly been ignored.  Note that min() here takes
+    # the minimum value for each column within the group.
     kpis = ["tottime_percall", "cumtime_percall", "tottime", "cumtime"]
-    targets = database[["label"] + kpis].groupby("label").min()
-
-    # Merge to get the incoming and target values of KPIS between matching functions
-    # - Note that the inner join is used to deliberately drop functions that no longer
-    #   exist (not in incoming) or are new to the package (not in database).
-    comparison = incoming.merge(
-        targets, how="inner", on="label", suffixes=("_incoming", "_target")
+    targets = (
+        database.loc[~database["ignore_result"], ["label"] + kpis]
+        .groupby("label")
+        .min()
     )
+    targets.columns = targets.columns + "_target"
 
-    # Calculate the relative performance
-    # - TODO deal with divide by zero.
+    # Combine the incoming and database profiling and merge with targets on label to get
+    # the observed and target values for each function
+    incoming_sha = incoming["commit_sha"].unique()[0]
+    combined = pd.concat([database, incoming])
+    combined["is_incoming"] = combined["commit_sha"] == incoming_sha
+    combined = combined.merge(targets, how="left", on="label")
+
+    # Calculate the relative KPIs for each kpi
+    # TODO - handle zeros
     for kpi in kpis:
-        comparison[f"{kpi}_performance"] = (
-            comparison[f"{kpi}_incoming"] / comparison[f"{kpi}_target"]
-        )
+        combined["relative_" + kpi] = combined[kpi] / combined[kpi + "_target"]
 
-    # Find rows where performance change is outside tolerance
-    kpi_fail = [comparison[f"{kpi}_performance"] > (1 + tolerance) for kpi in kpis]
-    failing_rows = comparison[pd.DataFrame(kpi_fail).any()]
+    # Find rows where performance change of incoming profiling is outside tolerance
+    threshold = 1 + tolerance
+    kpi_fail = [combined[f"relative_{kpi}"] > threshold for kpi in kpis]
+    failing_rows = combined[pd.DataFrame(kpi_fail).any() & combined["is_incoming"]]
 
+    # Plot before handling failure
     if plot_path is not None:
         create_benchmark_plot(
-            plot_path=plot_path,
-            incoming=incoming,
+            plot_path=plot_path, combined=combined, threshold=threshold
         )
 
-    # If any rows fail then save out the information and return False
+    # If any rows fail then save out the rows for all results on failing labels and
+    # return False
     if not failing_rows.empty:
-        failing_rows.to_csv(fail_path, index=False)
+        failure_info = combined[combined["label"].isin(failing_rows["label"])]
+        failure_info.to_csv(fail_path, index=False)
         return False
 
-    # Otherwise, append the new data to the database and return True
+    # Otherwise, save the combined database after dropping internal fields if requested
+    # and then return True
     if append_on_pass:
-        combined = pd.concat([database, incoming])
+        combined.drop(
+            columns=["is_incoming"]
+            + [f"relative_{kpi}" for kpi in kpis]
+            + [f"{kpi}_target" for kpi in kpis],
+            inplace=True,
+        )
         combined.to_csv(database_path, index=False)
 
     return True
 
 
-def create_benchmark_plot(plot_path: Path, incoming: pd.DataFrame) -> None:
+def create_benchmark_plot(
+    plot_path: Path, combined: pd.DataFrame, threshold: float = 1.05
+) -> None:
     """Plot the profiling results.
 
     Args:
         plot_path: A path to write the plot to.
-        incoming: The data to be plotted
+        combined: The combined profiling data to be plotted
+        threshold: The upper threshold to pass benchmarking
     """
 
-    incoming.plot.barh(
-        y=["tottime_percall", "cumtime_percall"], x="label", figsize=(20, 10)
-    )  # type: ignore
-    plt.ylabel("")
-    plt.gca().invert_yaxis()
+    incoming = combined[combined["is_incoming"]]
+    database = combined[~combined["is_incoming"]]
+
+    previous_versions = (
+        database[["timestamp", "commit_sha"]]
+        .drop_duplicates()
+        .sort_values(by="timestamp", ascending=False)
+    )
+
+    plt.figure(figsize=(8.27, 11.69))
+
+    for idx, sha in enumerate(previous_versions["commit_sha"]):
+        subset = combined[combined["commit_sha"] == sha]
+
+        plt.scatter(
+            subset["relative_cumtime_percall"],
+            subset["label"]
+            + subset["cumtime_percall_target"].map(lambda x: f" [{x:0.3f}]"),
+            marker=f"${idx + 1}$",
+            color=[
+                "lightgray" if val else "dimgrey" for val in subset["ignore_result"]
+            ],
+        )
+
+    plt.scatter(
+        incoming["relative_cumtime_percall"],
+        incoming["label"]
+        + incoming["cumtime_percall_target"].map(lambda x: f" [{x:0.3f}]"),
+        marker="o",
+        facecolors="none",
+        color=[
+            "royalblue" if val <= threshold else "firebrick"
+            for val in incoming["relative_cumtime_percall"]
+        ],
+    )
+
+    plt.axvline(threshold, linestyle="--", color="grey", linewidth=0.3)
     plt.tight_layout()
-    plt.legend(loc="lower right")
+    # plt.legend(loc="lower right")
 
     plt.savefig(plot_path)
 
