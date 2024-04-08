@@ -212,56 +212,86 @@ def run_benchmark(
 
 
 def create_benchmark_plot(
-    plot_path: Path, combined: pd.DataFrame, threshold: float = 1.05
+    plot_path: Path,
+    combined: pd.DataFrame,
+    threshold: float = 1.05,
+    kpi: str = "cumtime",
 ) -> None:
-    """Plot the profiling results.
+    """Plot the benchmarking results.
+
+    This function generates a PNG plot that plots the relative performance of each
+    labelled code object. Performance is always relative to the fastest performance
+    found in previous profiling runs and this is shown in square brackets alongside the
+    label.
+
+    The incoming performance is shown as circles and previous versions are shown as
+    numbers. A vertical line indicates the threshold for failing the benchmarking.
+    Previous values that have been explicitly set as `ignore_result` are shown in light
+    grey for information.
 
     Args:
-        plot_path: A path to write the plot to.
+        plot_path: An output path for the plot
         combined: The combined profiling data to be plotted
         threshold: The upper threshold to pass benchmarking
+        kpi: A string specifying the performance metric to plot
     """
 
+    # Sort labels to display in order from most time consuming to least and split into
+    # previous and incoming values.
+    combined = combined.sort_values(by=f"{kpi}_target")
     incoming = combined[combined["is_incoming"]]
     database = combined[~combined["is_incoming"]]
 
+    # Get commit SHA values
     previous_versions = (
         database[["timestamp", "commit_sha"]]
         .drop_duplicates()
         .sort_values(by="timestamp", ascending=False)
     )
+    incoming_version = incoming["commit_sha"].unique()[0]
 
+    # A4 portrait
     plt.figure(figsize=(8.27, 11.69))
 
+    # Plot each previous version using text 1...n as plot symbols, with lighter grey for
+    # values that have been set as ignore_result.
     for idx, sha in enumerate(previous_versions["commit_sha"]):
         subset = combined[combined["commit_sha"] == sha]
 
         plt.scatter(
-            subset["relative_cumtime_percall"],
-            subset["label"]
-            + subset["cumtime_percall_target"].map(lambda x: f" [{x:0.3f}]"),
+            subset[f"relative_{kpi}"],
+            subset["label"] + subset[f"{kpi}_target"].map(lambda x: f" [{x:0.3f}]"),
             marker=f"${idx + 1}$",
             color=[
                 "lightgray" if val else "dimgrey" for val in subset["ignore_result"]
             ],
+            label=sha,
         )
 
+    # Plot the incoming data as open circles, blue points when inside tolerance and red
+    # if outside tolerance.
+    fail = [False if val <= threshold else True for val in incoming[f"relative_{kpi}"]]
     plt.scatter(
-        incoming["relative_cumtime_percall"],
-        incoming["label"]
-        + incoming["cumtime_percall_target"].map(lambda x: f" [{x:0.3f}]"),
+        incoming[f"relative_{kpi}"],
+        incoming["label"] + incoming[f"{kpi}_target"].map(lambda x: f" [{x:0.3f}]"),
         marker="o",
         facecolors="none",
-        color=[
-            "royalblue" if val <= threshold else "firebrick"
-            for val in incoming["relative_cumtime_percall"]
-        ],
+        color=["firebrick" if val else "royalblue" for val in fail],
+        label=f"{incoming_version} [incoming]",
     )
 
-    plt.axvline(threshold, linestyle="--", color="grey", linewidth=0.3)
+    # Add a vertical line for the threshold value and a legend
+    plt.axvline(threshold, linestyle="--", color="indianred", linewidth=0.3)
+    plt.legend(loc="lower right", bbox_to_anchor=(1.0, 1.05), ncol=6, frameon=False)
+    plt.xlabel(f"Relative {kpi}")
     plt.tight_layout()
-    # plt.legend(loc="lower right")
 
+    # Colour the labels of failing rows.
+    for idx, val in enumerate(fail):
+        if val:
+            plt.gca().get_yticklabels()[idx].set_color("firebrick")
+
+    # Save to file
     plt.savefig(plot_path)
 
 
@@ -336,10 +366,7 @@ def profile_report_cli() -> None:
         action="store_true",
     )
     parser.add_argument(
-        "--no-save", help="Do not save the profiling results", action="store_true"
-    )
-    parser.add_argument(
-        "--show", help="Show the plots (which blocks the program)", action="store_true"
+        "--plot-path", help="Generate a benchmarking plot to this path", type=Path
     )
 
     args = parser.parse_args()
@@ -367,10 +394,9 @@ def profile_report_cli() -> None:
         n_runs=args.n_runs,
         append_on_pass=args.append_on_pass,
         new_database=args.new_database,
+        plot_path=args.plot_path,
     )
 
-    # plot_profiling(df, cfg)
-    # plot_benchmark(bm, cfg)
     if not success:
         print("Benchmarking failed.")
         sys.exit(1)
