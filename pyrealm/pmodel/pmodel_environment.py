@@ -5,8 +5,6 @@ the following pmodel core class:
     Calculates the photosynthetic environment for locations.
 """  # noqa D210, D415
 
-from typing import Optional
-
 import numpy as np
 from numpy.typing import NDArray
 
@@ -81,8 +79,8 @@ class PModelEnvironment:
         vpd: NDArray,
         co2: NDArray,
         patm: NDArray,
-        theta: Optional[NDArray] = None,
-        rootzonestress: Optional[NDArray] = None,
+        theta: NDArray | None = None,
+        rootzonestress: NDArray | None = None,
         pmodel_const: PModelConst = PModelConst(),
         core_const: CoreConst = CoreConst(),
     ):
@@ -134,9 +132,9 @@ class PModelEnvironment:
         temperature and pressure, unitless"""
 
         # Optional variables
-        self.theta: Optional[NDArray] = None
+        self.theta: NDArray | None = None
         """Volumetric soil moisture (m3/m3)"""
-        self.rootzonestress: Optional[NDArray] = None
+        self.rootzonestress: NDArray | None = None
         """Rootzone stress factor (experimental) (-)"""
 
         if theta is not None:

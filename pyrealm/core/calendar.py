@@ -10,8 +10,9 @@ It is possible that this could be replaced with xarray dt accessors if pyrealm a
 xarray data structures.
 """
 
+from collections.abc import Generator, Sized
 from dataclasses import dataclass, field
-from typing import Any, Generator, Sized
+from typing import Any
 
 import numpy as np
 
