@@ -116,7 +116,7 @@ def run_benchmark(
     new_database: bool = False,
     append_on_pass: bool = False,
 ) -> bool:
-    """Benchmark profiling results.
+    """Run benchmark checks on profiling results.
 
     This function takes new profiling results and benchmarks key performance indicators
     against the best results from the N most recent runs in the profiling database. The
@@ -308,7 +308,7 @@ class RawDescAndDefaultsHelpFormatter(
         RawDescriptionHelpFormatter.__init__(self, prog, width=88, max_help_position=30)
 
 
-def profile_report_cli() -> None:
+def run_benchmarking_cli() -> None:
     """Run the package benchmarking.
 
     This function runs the standard benchmarking for the pyrealm package. The profiling
@@ -322,8 +322,8 @@ def profile_report_cli() -> None:
     benchmarking to only code objects within the package.
     """
 
-    if profile_report_cli.__doc__ is not None:
-        doc = "    " + profile_report_cli.__doc__
+    if run_benchmarking_cli.__doc__ is not None:
+        doc = "    " + run_benchmarking_cli.__doc__
     else:
         doc = "Python in -OO mode"
 
@@ -416,4 +416,4 @@ def profile_report_cli() -> None:
 
 
 if __name__ == "__main__":
-    profile_report_cli()
+    run_benchmarking_cli()
