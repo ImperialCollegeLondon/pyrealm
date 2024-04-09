@@ -93,8 +93,8 @@ def convert_and_filter_prof_file(
     diverge_index = [len(set(pt)) == 1 for pt in zip(*parts)].index(False)
     df["filename"] = ["/".join(list(fn)[diverge_index:]) for fn in parts]
 
-    # Add a unique label for each function for plotting
-    df["label"] = df["filename"] + ":" + df["function"]
+    # Add a unique label for each process being benchmarked
+    df["process_id"] = df["filename"] + ":" + df["function"]
 
     # Add the provided git commit SHA for information
     df["label"] = label
@@ -165,8 +165,8 @@ def run_benchmark(
     # the minimum value for each column within the group.
     kpis = ["tottime_percall", "cumtime_percall", "tottime", "cumtime"]
     targets = (
-        database.loc[~database["ignore_result"], ["label"] + kpis]
-        .groupby("label")
+        database.loc[~database["ignore_result"], ["process_id"] + kpis]
+        .groupby("process_id")
         .min()
     )
     targets.columns = targets.columns + "_target"
@@ -176,7 +176,7 @@ def run_benchmark(
     incoming_sha = incoming["label"].unique()[0]
     combined = pd.concat([database, incoming])
     combined["is_incoming"] = combined["label"] == incoming_sha
-    combined = combined.merge(targets, how="left", on="label")
+    combined = combined.merge(targets, how="left", on="process_id")
 
     # Calculate the relative KPIs for each kpi
     # TODO - handle zeros
@@ -197,7 +197,7 @@ def run_benchmark(
     # If any rows fail then save out the rows for all results on failing labels and
     # return False
     if not failing_rows.empty:
-        failure_info = combined[combined["label"].isin(failing_rows["label"])]
+        failure_info = combined[combined["process_id"].isin(failing_rows["process_id"])]
         failure_info.to_csv(fail_data_path, index=False)
         return False
 
@@ -246,7 +246,7 @@ def create_benchmark_plot(
     incoming = combined[combined["is_incoming"]]
     database = combined[~combined["is_incoming"]]
 
-    # Get the labels for the previous and incoming versions
+    # Get the code version labels for the previous and incoming versions
     previous_versions = (
         database[["timestamp", "label"]]
         .drop_duplicates()
@@ -264,7 +264,8 @@ def create_benchmark_plot(
 
         plt.scatter(
             subset[f"relative_{kpi}"],
-            subset["label"] + subset[f"{kpi}_target"].map(lambda x: f" [{x:0.3f}]"),
+            subset["process_id"]
+            + subset[f"{kpi}_target"].map(lambda x: f" [{x:0.3f}]"),
             marker=f"${idx + 1}$",
             color=[
                 "lightgray" if val else "dimgrey" for val in subset["ignore_result"]
@@ -277,7 +278,8 @@ def create_benchmark_plot(
     fail = [False if val <= threshold else True for val in incoming[f"relative_{kpi}"]]
     plt.scatter(
         incoming[f"relative_{kpi}"],
-        incoming["label"] + incoming[f"{kpi}_target"].map(lambda x: f" [{x:0.3f}]"),
+        incoming["process_id"]
+        + incoming[f"{kpi}_target"].map(lambda x: f" [{x:0.3f}]"),
         marker="o",
         facecolors="none",
         color=["firebrick" if val else "royalblue" for val in fail],
