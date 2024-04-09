@@ -1,6 +1,13 @@
 name: Test and build
 
-on: [push, pull_request, merge_group, release]
+# When does this run - new, reopened or updated PRs, pushes to main or develop and when
+# the workflow is called by another workflow, such as the publishing actions.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, develop]
+  workflow_call:
 
 jobs:
   qa:
@@ -19,7 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
-        python-version: [ "3.9" , "3.10", "3.11"]
+        python-version: ["3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v4
@@ -43,7 +50,7 @@ jobs:
 
     - name: Upload coverage reports to Codecov
       id: codecov
-      if: success() && (matrix.os == 'ubuntu-latest' && matrix.python-version == 3.9)
+      if: success() && (matrix.os == 'ubuntu-latest' && matrix.python-version == 3.10)
       uses: codecov/codecov-action@v3
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

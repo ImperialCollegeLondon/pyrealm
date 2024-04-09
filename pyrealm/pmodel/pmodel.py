@@ -5,7 +5,6 @@ the following pmodel core class:
     Applies the PModel to locations.
 """  # noqa D210, D415
 
-from typing import Optional
 from warnings import warn
 
 import numpy as np
@@ -187,7 +186,7 @@ class PModel:
     def __init__(
         self,
         env: PModelEnvironment,
-        kphio: Optional[float] = None,
+        kphio: float | None = None,
         do_ftemp_kphio: bool = True,
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",

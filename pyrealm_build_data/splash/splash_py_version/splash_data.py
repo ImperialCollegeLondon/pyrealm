@@ -741,11 +741,11 @@ class SPLASH_DATA:
         Features: Writes daily variables (i.e., timestamp, sf, tair and pn) to
                   the output file in CSV format
         """
-        output_line = "%s,%f,%f,%f\n" % (ts, sf, tair, pn)
+        output_line = f"{ts},{sf:f},{tair:f},{pn:f}\n"
         try:
             OUT = open(self.output_file, "a")
             OUT.write(output_line)
-        except IOError:
+        except OSError:
             logging.exception("Failed to write to %s" % (self.output_file))
             raise
         else:
@@ -761,7 +761,7 @@ class SPLASH_DATA:
         try:
             OUT = open(f, "w")
             OUT.write(d)
-        except IOError:
+        except OSError:
             logging.exception("Failed to write to %s" % (f))
             raise
         else:

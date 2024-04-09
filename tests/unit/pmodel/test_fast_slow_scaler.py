@@ -1,4 +1,4 @@
-"""This module tests the FastSlowScaler class.
+"""This module tests the SubdailyScaler class.
 
 This class handles estimating daily reference values and then interpolating lagged
 responses back to subdaily time scales.
@@ -12,10 +12,10 @@ import pytest
 
 @pytest.fixture
 def fixture_FSS():
-    """A fixture providing a FastSlowScaler object."""
-    from pyrealm.pmodel import FastSlowScaler
+    """A fixture providing a SubdailyScaler object."""
+    from pyrealm.pmodel import SubdailyScaler
 
-    return FastSlowScaler(
+    return SubdailyScaler(
         datetimes=np.arange(
             np.datetime64("2014-06-01 00:00"),
             np.datetime64("2014-06-04 00:00"),
@@ -26,7 +26,7 @@ def fixture_FSS():
 
 
 # ----------------------------------------
-# Testing FastSlowScaler
+# Testing SubdailyScaler
 # ----------------------------------------
 
 
@@ -80,8 +80,8 @@ def fixture_FSS():
             id="Spacing not evenly divisible",
         ),
         pytest.param(
-            pytest.raises(ValueError),
-            "Datetimes include incomplete days",
+            does_not_raise(),
+            None,
             np.arange(
                 np.datetime64("2014-06-01 12:00"),
                 np.datetime64("2014-06-07 00:00"),
@@ -91,8 +91,8 @@ def fixture_FSS():
             id="Not complete days by length",
         ),
         pytest.param(
-            pytest.raises(ValueError),
-            "Datetimes include incomplete days",
+            does_not_raise(),
+            None,
             np.arange(
                 np.datetime64("2014-06-01 12:00"),
                 np.datetime64("2014-06-07 12:00"),
@@ -115,11 +115,11 @@ def fixture_FSS():
     ],
 )
 def test_FSS_init(ctext_mngr, msg, datetimes):
-    """Test the FastSlowScaler init handling of date ranges."""
-    from pyrealm.pmodel import FastSlowScaler
+    """Test the SubdailyScaler init handling of date ranges."""
+    from pyrealm.pmodel import SubdailyScaler
 
     with ctext_mngr as cman:
-        _ = FastSlowScaler(datetimes=datetimes)
+        _ = SubdailyScaler(datetimes=datetimes)
 
     if msg is not None:
         assert str(cman.value) == msg
@@ -163,7 +163,7 @@ def test_FSS_init(ctext_mngr, msg, datetimes):
     ],
 )
 def test_FSS_set_window(fixture_FSS, ctext_mngr, msg, kwargs, samp_mean, samp_max):
-    """Test the FastSlowScaler set_window method."""
+    """Test the SubdailyScaler set_window method."""
 
     with ctext_mngr as cman:
         fixture_FSS.set_window(**kwargs)
@@ -228,7 +228,7 @@ def test_FSS_set_window(fixture_FSS, ctext_mngr, msg, kwargs, samp_mean, samp_ma
     ],
 )
 def test_FSS_set_include(fixture_FSS, ctext_mngr, msg, include, samp_mean, samp_max):
-    """Test the FastSlowScaler set_include method."""
+    """Test the SubdailyScaler set_include method."""
     with ctext_mngr as cman:
         fixture_FSS.set_include(include)
 
@@ -291,7 +291,7 @@ def test_FSS_set_include(fixture_FSS, ctext_mngr, msg, include, samp_mean, samp_
     ],
 )
 def test_FSS_set_nearest(fixture_FSS, ctext_mngr, msg, time, samp_mean, samp_max):
-    """Test the FastSlowScaler set_nearest method."""
+    """Test the SubdailyScaler set_nearest method."""
     with ctext_mngr as cman:
         fixture_FSS.set_nearest(time)
 
@@ -313,12 +313,12 @@ def test_FSS_set_nearest(fixture_FSS, ctext_mngr, msg, time, samp_mean, samp_max
             pytest.raises(ValueError),
             "The first dimension of values is not the same length "
             "as the datetime sequence",
-            np.ones((288)),
+            np.ones(288),
         ),
     ],
 )
 def test_FSS_get_wv_errors(fixture_FSS, ctext_mngr, msg, values):
-    """Test errors arising in the FastSlowScaler get_window_value method."""
+    """Test errors arising in the SubdailyScaler get_window_value method."""
     fixture_FSS.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(2, "h"),
@@ -330,26 +330,106 @@ def test_FSS_get_wv_errors(fixture_FSS, ctext_mngr, msg, values):
     assert str(cman.value) == msg
 
 
+# Some widely used arrays for the next test - data series with initial np.nans to test
+# the behaviour of allow_partial_data. Three days of half hourly data = 144 values.
+PARTIAL_ONES = np.repeat([np.nan, 1], [24, 144 - 24])
+PARTIAL_VARYING = np.concatenate([[np.nan] * 24, np.arange(24, 144)])
+
+
 @pytest.mark.parametrize(
-    argnames=["values", "expected_means"],
+    argnames="values, expected_means, allow_partial_data",
     argvalues=[
-        pytest.param(np.ones((3 * 48)), np.array([1, 1, 1]), id="1d_shape_correct"),
-        pytest.param(np.ones((3 * 48, 5)), np.ones((3, 5)), id="2d_shape_correct"),
+        pytest.param(np.ones(144), np.array([1, 1, 1]), False, id="1d_shape_correct"),
+        pytest.param(
+            PARTIAL_ONES,
+            np.array([np.nan, 1, 1]),
+            False,
+            id="1d_shape_correct_partial-",
+        ),
+        pytest.param(
+            PARTIAL_ONES,
+            np.array([1, 1, 1]),
+            True,
+            id="1d_shape_correct_partial+",
+        ),
+        pytest.param(np.ones((144, 5)), np.ones((3, 5)), False, id="2d_shape_correct"),
+        pytest.param(
+            np.broadcast_to(PARTIAL_ONES, (5, 144)).T,
+            np.broadcast_to([np.nan, 1, 1], (5, 3)).T,
+            False,
+            id="2d_shape_correct_partial-",
+        ),
+        pytest.param(
+            np.broadcast_to(PARTIAL_ONES, (5, 144)).T,
+            np.ones((3, 5)),
+            True,
+            id="2d_shape_correct_partial+",
+        ),
         pytest.param(  # Simple 3D - shape is correct
-            np.ones((3 * 48, 5, 5)), np.ones((3, 5, 5)), id="3d_shape_correct"
+            np.ones((144, 5, 5)), np.ones((3, 5, 5)), False, id="3d_shape_correct"
+        ),
+        pytest.param(
+            np.broadcast_to(PARTIAL_ONES, (5, 5, 144)).T,
+            np.broadcast_to([np.nan, 1, 1], (5, 5, 3)).T,
+            False,
+            id="3d_shape_correct_partial-",
+        ),
+        pytest.param(
+            np.broadcast_to(PARTIAL_ONES, (5, 5, 144)).T,
+            np.ones((3, 5, 5)),
+            True,
+            id="3d_shape_correct_partial+",
         ),
         pytest.param(  # 1D - values are correct
-            np.arange(144), np.array([24, 72, 120]), id="1d_values_correct"
+            np.arange(144), np.array([24, 72, 120]), False, id="1d_values_correct"
+        ),
+        pytest.param(
+            PARTIAL_VARYING,
+            np.array([np.nan, 72, 120]),
+            False,
+            id="1d_values_correct_partial-",
+        ),
+        pytest.param(
+            PARTIAL_VARYING,
+            np.array([26, 72, 120]),
+            True,
+            id="1d_values_correct_partial+",
         ),
         pytest.param(  # 2D - values are correct
             np.broadcast_to(np.arange(144), (5, 144)).T,
             np.tile([24, 72, 120], (5, 1)).T,
+            False,
             id="2d_values_correct",
+        ),
+        pytest.param(
+            np.broadcast_to(PARTIAL_VARYING, (5, 144)).T,
+            np.broadcast_to([np.nan, 72, 120], (5, 3)).T,
+            False,
+            id="2d_values_correct_partial-",
+        ),
+        pytest.param(
+            np.broadcast_to(PARTIAL_VARYING, (5, 144)).T,
+            np.broadcast_to([26, 72, 120], (5, 3)).T,
+            True,
+            id="2d_values_correct_partial+",
         ),
         pytest.param(  # 3D - values are correct
             np.broadcast_to(np.arange(144), (5, 5, 144)).T,
             np.tile([24, 72, 120], (5, 5, 1)).T,
+            False,
             id="3d_values_correct",
+        ),
+        pytest.param(
+            np.broadcast_to(PARTIAL_VARYING, (5, 5, 144)).T,
+            np.broadcast_to([np.nan, 72, 120], (5, 5, 3)).T,
+            False,
+            id="3d_values_correct_partial-",
+        ),
+        pytest.param(
+            np.broadcast_to(PARTIAL_VARYING, (5, 5, 144)).T,
+            np.broadcast_to([26, 72, 120], (5, 5, 3)).T,
+            True,
+            id="3d_values_correct_partial+",
         ),
         pytest.param(  # 3D - values are correct with spatial variation
             np.arange(144 * 25).reshape(144, 5, 5),
@@ -358,47 +438,188 @@ def test_FSS_get_wv_errors(fixture_FSS, ctext_mngr, msg, values):
                 + np.indices((3, 5, 5))[2]
                 + 5 * np.indices((3, 5, 5))[1]
             ),
+            False,
             id="3d_values_correct_complex",
+        ),
+        pytest.param(
+            np.concatenate(
+                [
+                    np.full((24, 5, 5), np.nan),
+                    np.arange(144 * 25, dtype="float").reshape(144, 5, 5)[24:, :, :],
+                ]
+            ),
+            (
+                np.tile([np.nan, 1800, 3000], (5, 5, 1)).T
+                + np.indices((3, 5, 5))[2]
+                + 5 * np.indices((3, 5, 5))[1]
+            ),
+            False,
+            id="3d_values_correct_complex_partial-",
+        ),
+        pytest.param(
+            np.concatenate(
+                [
+                    np.full((29, 5, 5), np.nan),
+                    np.arange(144 * 25, dtype="float").reshape(144, 5, 5)[29:, :, :],
+                ]
+            ),
+            (
+                np.tile([np.nan, 1800, 3000], (5, 5, 1)).T
+                + np.indices((3, 5, 5))[2]
+                + 5 * np.indices((3, 5, 5))[1]
+            ),
+            True,
+            id="3d_values_correct_complex_partial+_but_all_nan",
+        ),
+        pytest.param(
+            np.concatenate(
+                [
+                    np.full((24, 5, 5), np.nan),
+                    np.arange(144 * 25, dtype="float").reshape(144, 5, 5)[24:, :, :],
+                ]
+            ),
+            (
+                np.tile([650, 1800, 3000], (5, 5, 1)).T
+                + np.indices((3, 5, 5))[2]
+                + 5 * np.indices((3, 5, 5))[1]
+            ),
+            True,
+            id="3d_values_correct_complex_partial+",
         ),
     ],
 )
-class Test_FSS_get_vals:
-    """Test FSS get methods.
+class Test_FSS_get_vals_window_and_include:
+    """Test FSS get methods for set_window and set_include.
+
+    The daily values extracted using the set_window and set_include methods can be the
+    same, by setting the window and the include to cover the same observations, so these
+    tests can share a parameterisation. This doesn't follow for set_nearest because
+    that only ever selects a single value and allow_partial_data has no effect and so
+    get_daily_means with that method are tested separately.
 
     This test checks that the correct values are extracted from daily representative
     and that the mean is correctly calculated.
+
+    It also checks the allow_partial_data option by feeding in values that are np.nan
+    until half way through the first window. Depending on the setting of
+    allow_partial_data, the return values either have np.nan in the first day or a
+    slightly higher value calculated from the mean of the available data.
+
+    The allow_partial_data=True is also checked when _all_ the extracted daily values
+    are np.nan - this should revert to setting np.nan in the first day.
     """
 
-    def test_FSS_get_vals_window(self, fixture_FSS, values, expected_means):
+    def test_FSS_get_vals_window(
+        self, fixture_FSS, values, expected_means, allow_partial_data
+    ):
         """Test a window."""
         fixture_FSS.set_window(
             window_center=np.timedelta64(12, "h"),
             half_width=np.timedelta64(2, "h"),
         )
-        calculated_means = fixture_FSS.get_daily_means(values)
+        calculated_means = fixture_FSS.get_daily_means(
+            values, allow_partial_data=allow_partial_data
+        )
 
-        assert np.allclose(calculated_means, expected_means)
+        assert np.allclose(calculated_means, expected_means, equal_nan=True)
 
-    def test_FSS_get_vals_include(self, fixture_FSS, values, expected_means):
+    def test_FSS_get_vals_include(
+        self, fixture_FSS, values, expected_means, allow_partial_data
+    ):
         """Test include."""
 
         # This duplicates the selection of the window test but using direct include
         inc = np.zeros(48, dtype=np.bool_)
         inc[20:29] = True
         fixture_FSS.set_include(inc)
-        calculated_means = fixture_FSS.get_daily_means(values)
+        calculated_means = fixture_FSS.get_daily_means(
+            values, allow_partial_data=allow_partial_data
+        )
 
-        assert np.allclose(calculated_means, expected_means)
+        assert np.allclose(calculated_means, expected_means, equal_nan=True)
 
-    def test_FSS_get_vals_nearest(self, fixture_FSS, values, expected_means):
-        """Test nearest."""
 
-        # This assumes the data are symmetrical about the middle hour, which is bit of a
-        # reach
-        fixture_FSS.set_nearest(np.timedelta64(11 * 60 + 50, "m"))
-        calculated_means = fixture_FSS.get_daily_means(values)
+@pytest.mark.parametrize(
+    argnames="values, expected_means",
+    argvalues=[
+        pytest.param(np.ones(144), np.array([1, 1, 1]), id="1d_shape_correct"),
+        pytest.param(PARTIAL_ONES, np.array([np.nan, 1, 1]), id="1d_shape_correct_nan"),
+        pytest.param(np.ones((144, 5)), np.ones((3, 5)), id="2d_shape_correct"),
+        pytest.param(
+            np.broadcast_to(PARTIAL_ONES, (5, 144)).T,
+            np.broadcast_to([np.nan, 1, 1], (5, 3)).T,
+            id="2d_shape_correct_nan",
+        ),
+        pytest.param(np.ones((144, 5, 5)), np.ones((3, 5, 5)), id="3d_shape_correct"),
+        pytest.param(
+            np.broadcast_to(PARTIAL_ONES, (5, 5, 144)).T,
+            np.broadcast_to([np.nan, 1, 1], (5, 5, 3)).T,
+            id="3d_shape_correct_nan",
+        ),
+        pytest.param(  # 1D - values are correct
+            np.arange(144), np.array([23, 71, 119]), id="1d_values_correct"
+        ),
+        pytest.param(
+            PARTIAL_VARYING, np.array([np.nan, 71, 119]), id="1d_values_correct_nan"
+        ),
+        pytest.param(  # 2D - values are correct
+            np.broadcast_to(np.arange(144), (5, 144)).T,
+            np.tile([23, 71, 119], (5, 1)).T,
+            id="2d_values_correct",
+        ),
+        pytest.param(
+            np.broadcast_to(PARTIAL_VARYING, (5, 144)).T,
+            np.broadcast_to([np.nan, 71, 119], (5, 3)).T,
+            id="2d_values_correct_nan",
+        ),
+        pytest.param(  # 3D - values are correct
+            np.broadcast_to(np.arange(144), (5, 5, 144)).T,
+            np.tile([23, 71, 119], (5, 5, 1)).T,
+            id="3d_values_correct",
+        ),
+        pytest.param(
+            np.broadcast_to(PARTIAL_VARYING, (5, 5, 144)).T,
+            np.broadcast_to([np.nan, 71, 119], (5, 5, 3)).T,
+            id="3d_values_correct_nan",
+        ),
+        pytest.param(  # 3D - values are correct with spatial variation
+            np.arange(144 * 25).reshape(144, 5, 5),
+            (
+                np.tile([575, 1775, 2975], (5, 5, 1)).T
+                + np.indices((3, 5, 5))[2]
+                + 5 * np.indices((3, 5, 5))[1]
+            ),
+            id="3d_values_correct_complex",
+        ),
+        pytest.param(
+            np.concatenate(
+                [
+                    np.full((24, 5, 5), np.nan),
+                    np.arange(144 * 25, dtype="float").reshape(144, 5, 5)[24:, :, :],
+                ]
+            ),
+            (
+                np.tile([np.nan, 1775, 2975], (5, 5, 1)).T
+                + np.indices((3, 5, 5))[2]
+                + 5 * np.indices((3, 5, 5))[1]
+            ),
+            id="3d_values_correct_complex_nan",
+        ),
+    ],
+)
+def test_FSS_get_vals_nearest(fixture_FSS, values, expected_means):
+    """Test get_daily_values.
 
-        assert np.allclose(calculated_means, expected_means)
+    This tests the specific behaviour when set_nearest is used and a single observation
+    is selected as the daily acclimation conditions: allow_partial_data has no effect
+    here, so this just tests that np.nan appears as expected.
+    """
+
+    # Select the 11:30 observation, which is missing in PARTIAL_ONES and PARTIAL_VARYING
+    fixture_FSS.set_nearest(np.timedelta64(11 * 60 + 29, "m"))
+    calculated_means = fixture_FSS.get_daily_means(values)
+
+    assert np.allclose(calculated_means, expected_means, equal_nan=True)
 
 
 @pytest.mark.parametrize(
@@ -534,7 +755,7 @@ def test_FSS_resample_subdaily(
     exp_values,
     fill_from,
 ):
-    """Test the calculation of subdaily samples using FastSlowScaler."""
+    """Test the calculation of subdaily samples using SubdailyScaler."""
 
     # Set the included observations - the different parameterisations here and for
     # the update point should all select the same update point.
@@ -614,7 +835,7 @@ def test_FSS_resample_subdaily_linear(
     input_values,
     exp_values,
 ):
-    """Test FastSlowScaler resampling to subdaily timescale by linear interpolation."""
+    """Test SubdailyScaler resampling to subdaily timescale by linear interpolation."""
 
     # Set the included observations
     fixture_FSS.set_window(

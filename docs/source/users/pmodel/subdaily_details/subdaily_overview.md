@@ -59,13 +59,21 @@ The implementation has the following steps:
 * A standard P model is used to estimate *optimal* behaviour during the daily
   acclimation conditions. An [acclimation
   process](acclimation.md#estimating-realised-responses) is then applied to the optimal
-  daily estimates of $\xi$, $V_{cmax25}$ using a rolling weighted mean to estimate the
-  slow *realised* responses of these parameters.
+  daily estimates of $\xi$, $V_{cmax25}$ and $J_{max25}$ using a rolling weighted mean to
+  estimate the slow *realised* responses of these parameters.
 
 * The daily realised values are then
   [interpolated](acclimation.md#interpolation-of-realised-values-to-subdaily-timescales)
-  back to the subdaily time scale and combined with the estimated fast responses of
-  other variables to calculate GPP at subdaily timescales.
+  back to the subdaily time scale.
+  
+* Optimal $\chi$ is then recalculated on the subdaily timescale, but with the values of
+  $\xi$ constrained to the slowly responding realised values. Similarly, $V_{cmax}$ and
+  $J_{max}$ are calculated estimated at the subdaily temperatures, but using the
+  slowly responding realised values of  $V_{cmax25}$ and $J_{max25}$. All other values
+  adopt the normal fast responding values, giving GPP at subdaily timescales that
+  accounts for slow responses.
 
 This implementation largely follows the weighted average method of
-{cite:t}`mengoli:2022a`, but is modified to include slow responses in $\xi$.
+{cite:t}`mengoli:2022a`, but is modified to include slow responses in $\xi$. It has also
+been extended to allow calculations of optimal $\chi$ for C4 plants and for other
+extensions to the calculation of $\chi$ (see [here](../pmodel_details/optimal_chi.md)).

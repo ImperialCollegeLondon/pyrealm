@@ -6,7 +6,6 @@ which is used to support different implementations of the calculation of optimal
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional, Type
 from warnings import warn
 
 import numpy as np
@@ -17,7 +16,7 @@ from pyrealm.constants import PModelConst
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
-OPTIMAL_CHI_CLASS_REGISTRY: dict[str, Type[OptimalChiABC]] = {}
+OPTIMAL_CHI_CLASS_REGISTRY: dict[str, type[OptimalChiABC]] = {}
 """A registry for optimal chi calculation classes.
 
 Different implementations of the calculation of optimal chi must all be subclasses of
@@ -145,7 +144,7 @@ class OptimalChiABC(ABC):
         """Set the beta values."""
 
     @abstractmethod
-    def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
+    def estimate_chi(self, xi_values: NDArray | None = None) -> None:
         """Estimate xi, chi and other variables."""
 
     def _check_requires(self) -> None:
@@ -251,7 +250,7 @@ class OptimalChiPrentice14(
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.beta = self.pmodel_const.beta_cost_ratio_prentice14
 
-    def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
+    def estimate_chi(self, xi_values: NDArray | None = None) -> None:
         """Estimate ``chi`` for C3 plants."""
 
         if xi_values is not None:
@@ -320,7 +319,7 @@ class OptimalChiPrentice14RootzoneStress(
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.beta = self.pmodel_const.beta_cost_ratio_prentice14
 
-    def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
+    def estimate_chi(self, xi_values: NDArray | None = None) -> None:
         """Estimate ``chi`` for C3 plants."""
 
         if xi_values is not None:
@@ -383,7 +382,7 @@ class OptimalChiC4(
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.beta = self.pmodel_const.beta_cost_ratio_c4
 
-    def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
+    def estimate_chi(self, xi_values: NDArray | None = None) -> None:
         """Estimate ``chi`` for C4 plants, setting ``mj`` and ``mc`` to 1."""
         if xi_values is not None:
             _ = check_input_shapes(self.env.ca, xi_values)
@@ -450,7 +449,7 @@ class OptimalChiC4RootzoneStress(
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.beta = self.pmodel_const.beta_cost_ratio_c4
 
-    def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
+    def estimate_chi(self, xi_values: NDArray | None = None) -> None:
         """Estimate ``chi`` for C4 plants, setting ``mj`` and ``mc`` to 1."""
         if xi_values is not None:
             _ = check_input_shapes(self.env.ca, xi_values)
@@ -535,7 +534,7 @@ class OptimalChiLavergne20C3(
             + self.pmodel_const.lavergne_2020_a_c3
         )
 
-    def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
+    def estimate_chi(self, xi_values: NDArray | None = None) -> None:
         """Estimate ``chi`` for C3 plants."""
 
         if xi_values is not None:
@@ -627,7 +626,7 @@ class OptimalChiLavergne20C4(
             + self.pmodel_const.lavergne_2020_a_c4
         )
 
-    def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
+    def estimate_chi(self, xi_values: NDArray | None = None) -> None:
         """Estimate ``chi`` for C4 plants excluding photorespiration."""
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
@@ -704,7 +703,7 @@ class OptimalChiC4NoGamma(
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
         self.beta = self.pmodel_const.beta_cost_ratio_c4
 
-    def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
+    def estimate_chi(self, xi_values: NDArray | None = None) -> None:
         """Estimate ``chi`` for C4 plants excluding photorespiration."""
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
@@ -773,7 +772,7 @@ class OptimalChiC4NoGammaRootzoneStress(
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
         self.beta = self.pmodel_const.beta_cost_ratio_c4
 
-    def estimate_chi(self, xi_values: Optional[NDArray] = None) -> None:
+    def estimate_chi(self, xi_values: NDArray | None = None) -> None:
         """Estimate ``chi`` for C4 plants excluding photorespiration."""
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.

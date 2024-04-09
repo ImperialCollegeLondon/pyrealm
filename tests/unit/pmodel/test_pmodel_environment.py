@@ -1,5 +1,6 @@
 """Testing PModel Environment submodule."""
 
+
 import json
 
 import numpy as np
@@ -46,99 +47,102 @@ def test_pmodel_environment(
 
 """Testing the boundries of variables kmm,gammastar, ns_star, co2_to_ca."""
 
-with open("pyrealm_build_data/rpmodel/test_inputs.json") as f:
-    data = json.load(f)
 
-# Test values of forcing variables as input to functions
-tc_ar_values = data["tc_ar"]
-patm_ar_values = data["patm_ar"]
-co2_ar_values = data["co2_ar"]
+@pytest.fixture
+def function_test_data():
+    """Function to load input data for testing."""
+    data_path = "pyrealm_build_data/rpmodel/test_inputs.json"
+    with open(data_path) as f:
+        data = json.load(f)
+    # Test values of forcing variables as input to functions
+    return data["tc_ar"], data["patm_ar"], data["co2_ar"]
 
 
 """"Test that kmm output is within bounds"""
-kmm_lower_bound = 0
-kmm_upper_bound = 1000
 
 
-@pytest.mark.parametrize(
-    "tc, patm", [(tc, patm) for tc in tc_ar_values for patm in patm_ar_values]
-)
-def test_out_of_bound_output(tc, patm):
-    """Function to calulate kmm."""
+def test_out_of_bound_output(function_test_data):
+    """Function to calculate kmm."""
+    tc_ar_values, patm_ar_values, co2_ar_values = function_test_data
+
     pmodel_const = PModelConst()
+    kmm_lower_bound = 0
+    kmm_upper_bound = 1000
 
-    result = calc_kmm(tc=tc, patm=patm, pmodel_const=pmodel_const)
+    for tc, patm, co2 in zip(tc_ar_values, patm_ar_values, co2_ar_values):
+        result = calc_kmm(tc=tc, patm=patm, pmodel_const=pmodel_const)
 
-    assert np.all(
-        result >= kmm_lower_bound
-    ), f"Result for (tc={tc}, patm={patm}) is out of lower bound"
-    assert np.all(
-        result <= kmm_upper_bound
-    ), f"Result for (tc={tc}, patm={patm}) is out of upper bound"
+        assert np.all(
+            result >= kmm_lower_bound
+        ), f"Result for (tc={tc}, patm={patm}, co2={co2}) is out of lower bound"
+        assert np.all(
+            result <= kmm_upper_bound
+        ), f"Result for (tc={tc}, patm={patm}, co2={co2}) is out of upper bound"
 
 
 """Test that calc_ns_star output is within bounds"""
-ns_star_lower_bound = 0
-ns_star_upper_bound = 10
 
 
-@pytest.mark.parametrize(
-    "tc, patm", [(tc, patm) for tc in tc_ar_values for patm in patm_ar_values]
-)
-def test_out_of_bound_output_ns_star(tc, patm):
+def test_out_of_bound_output_ns_star(function_test_data):
     """Function to calculate ns_star."""
+    tc_ar_values, patm_ar_values, _ = function_test_data  # Ignore the third variable
+
     core_const = CoreConst(k_To=298.15, k_Po=101325)
+    ns_star_lower_bound = 0
+    ns_star_upper_bound = 10
 
-    result = calc_ns_star(tc=tc, patm=patm, core_const=core_const)
+    for tc, patm in zip(tc_ar_values, patm_ar_values):
+        result = calc_ns_star(tc=tc, patm=patm, core_const=core_const)
 
-    assert np.all(
-        result >= ns_star_lower_bound
-    ), f"Result for (tc={tc}, patm={patm}) is out of lower bound"
-    assert np.all(
-        result <= ns_star_upper_bound
-    ), f"Result for (tc={tc}, patm={patm}) is out of upper bound"
+        assert np.all(
+            result >= ns_star_lower_bound
+        ), f"Result for (tc={tc}, patm={patm}) is out of lower bound"
+        assert np.all(
+            result <= ns_star_upper_bound
+        ), f"Result for (tc={tc}, patm={patm}) is out of upper bound"
 
 
 """Test that calc_gammastar output is within bounds."""
-gammastar_lower_bound = 0
-gammastar_upper_bound = 30
 
 
-@pytest.mark.parametrize(
-    "tc, patm", [(tc, patm) for tc in tc_ar_values for patm in patm_ar_values]
-)
-def test_out_of_bound_output_gammastar(tc, patm):
+def test_out_of_bound_output_gammastar(function_test_data):
     """Function to calculate calc_gammastar."""
+    tc_ar_values, patm_ar_values, _ = function_test_data
+
     core_const = CoreConst(k_To=298.15, k_Po=101325)
     pmodel_const = PModelConst(bernacchi_gs25_0=4.332, bernacchi_dha=37830)
+    gammastar_lower_bound = 0
+    gammastar_upper_bound = 30
 
-    result = calc_gammastar(
-        tc=tc, patm=patm, pmodel_const=pmodel_const, core_const=core_const
-    )
+    for tc, patm in zip(tc_ar_values, patm_ar_values):
+        result = calc_gammastar(
+            tc=tc, patm=patm, pmodel_const=pmodel_const, core_const=core_const
+        )
 
-    assert np.all(
-        result >= gammastar_lower_bound
-    ), f"Result for (tc={tc}, patm={patm}) is out of lower bound"
-    assert np.all(
-        result <= gammastar_upper_bound
-    ), f"Result for (tc={tc}, patm={patm}) is out of upper bound"
+        assert np.all(
+            result >= gammastar_lower_bound
+        ), f"Result for (tc={tc}, patm={patm}) is out of lower bound"
+        assert np.all(
+            result <= gammastar_upper_bound
+        ), f"Result for (tc={tc}, patm={patm}) is out of upper bound"
 
 
 """Test that calc_co2_to_ca output is within bounds"""
-co2_to_ca_lower_bound = 0
-co2_to_ca_upper_bound = 100
 
 
-@pytest.mark.parametrize(
-    "co2, patm", [(co2, patm) for co2 in co2_ar_values for patm in patm_ar_values]
-)
-def test_out_of_bound_output_co2_to_ca(co2, patm):
+def test_out_of_bound_output_co2_to_ca(function_test_data):
     """Function to calculate co2_to_ca."""
-    result = calc_co2_to_ca(co2=co2, patm=patm)
+    _, patm_ar_values, co2_ar_values = function_test_data
 
-    assert np.all(
-        result >= co2_to_ca_lower_bound
-    ), f"Result for (co2={co2}, patm={patm}) is out of lower bound"
-    assert np.all(
-        result <= co2_to_ca_upper_bound
-    ), f"Result for (co2={co2}, patm={patm}) is out of upper bound"
+    co2_to_ca_lower_bound = 0
+    co2_to_ca_upper_bound = 100
+
+    for co2, patm in zip(co2_ar_values, patm_ar_values):
+        result = calc_co2_to_ca(co2=co2, patm=patm)
+
+        assert np.all(
+            result >= co2_to_ca_lower_bound
+        ), f"Result for (co2={co2}, patm={patm}) is out of lower bound"
+        assert np.all(
+            result <= co2_to_ca_upper_bound
+        ), f"Result for (co2={co2}, patm={patm}) is out of upper bound"

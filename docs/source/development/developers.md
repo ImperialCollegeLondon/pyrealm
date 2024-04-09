@@ -21,7 +21,7 @@ but that document contains links that break by simply `include`ing it here -->
 
 ### Installation
 
-The package requires Python 3.9 or newer. The `pyrealm` package can be installed
+The package requires Python 3.10 or newer. The `pyrealm` package can be installed
 from [PyPi](https://pypi.org/project/pyrealm/) but to develop the package you will need
 to clone this repository and then install
 [Poetry](https://python-poetry.org/docs/#installation) for dependency management and to
@@ -238,8 +238,16 @@ readable. In order to append the new profiling results to the CSV report at
 `profiling/prof-report.csv`, and generate some benchmark plots, run
 
 ```bash
-poetry run python profiling/report.py
+python profiling/report.py [--no-save] [--no-plot] [--selector S] [--max-benchmark N]
 ```
+
+Some useful optional arguments are:
+
+* `--no-save`: do not save the new profiling results to the CSV report.
+* `--no-plot`: do not generate the benchmark plots.
+* `--selector S`: only include filenames that match the given regex
+  `S` in the profiling report.
+* `--max-benchmark N`: only keep the top `N` benchmarks in the plots.
 
 #### Latest profiling results
 

@@ -22,8 +22,8 @@ subtrees:
             - entries:
               - file: users/pmodel/subdaily_details/subdaily_calculations.md
               - file: users/pmodel/subdaily_details/acclimation.md
+              - file: users/pmodel/subdaily_details/subdaily_model_and_missing_data.md
               - file: users/pmodel/subdaily_details/worked_example.md
-              - file: users/pmodel/subdaily_details/worked_example_new.md
         - file: users/pmodel/c3c4model.md
         - file: users/pmodel/isotopic_discrimination.md
   - file: users/tmodel/tmodel.md
@@ -38,6 +38,7 @@ subtrees:
 - caption: Development
   entries:
   - file: development/developers.md
+  - file: development/release_process.md
   - file: development/pyrealm_build_data.md
 
 - caption: Bibliography
