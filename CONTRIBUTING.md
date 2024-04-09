@@ -336,8 +336,10 @@ options:
 ##### Manual benchmarking
 
 Once you have run the `pytest-profiling` test suite and generated `prof/combined.prof`
-for some new code, you can run the following code to
-benchmark those results.
+for some new code, you can run the following code to benchmark those results. In the
+code below, `incoming` is used as a label for the new code - you could also a commit SHA
+to identify the profiled code more explicitly (use `git rev-parse --short HEAD` to show
+the current commit SHA).
 
 ```bash
 cd profiling

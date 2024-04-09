@@ -126,10 +126,10 @@ def run_benchmark(
 
     If any functionality fails the performance testing, the failing functions are
     written to data file along with the observed ('incoming') and target timings. If the
-    performance benchmarking passes, the incoming data can optionally be appended to the
-    database. This is typically only be used when a pull request is merged into the
-    develop or main branches, to extend the test database ready for the next
-    benchmarking run.
+    performance benchmarking passes, the database can optionally be updated to include
+    the incoming performance data. This is typically only be used when a pull request is
+    merged into the develop or main branches, to extend the test database ready for the
+    next benchmarking run.
 
     Args:
         incoming: A data frame of incoming profiling data.
@@ -400,7 +400,7 @@ def run_benchmarking_cli() -> None:
         fail_data_path=args.fail_data_path,
         tolerance=args.tolerance,
         n_runs=args.n_runs,
-        update_on_pass=args.append_on_pass,
+        update_on_pass=args.update_on_pass,
         new_database=args.new_database,
         plot_path=args.plot_path,
     )
