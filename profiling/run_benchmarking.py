@@ -18,7 +18,7 @@ import pandas as pd
 
 def convert_and_filter_prof_file(
     prof_path: Path,
-    commit_sha: str,
+    label: str,
     exclude: list[str] = ["{.*}", "<.*>", "/lib/"],
 ) -> pd.DataFrame:
     """Convert profiling output to a standard data frame.
@@ -39,7 +39,7 @@ def convert_and_filter_prof_file(
 
     Args:
         prof_path: Path to the profiling output.
-        commit_sha: A commit SHA used to label a particular profiling run.
+        label: A string used to label a particular profiling run, typically a commit SHA
         exclude: A list of patterns used to exclude rows from the profiling stats.
     """
 
@@ -97,7 +97,7 @@ def convert_and_filter_prof_file(
     df["label"] = df["filename"] + ":" + df["function"]
 
     # Add the provided git commit SHA for information
-    df["commit_sha"] = commit_sha
+    df["label"] = label
 
     # Add fields to ignore particular benchmarks and allow regression
     df["ignore_result"] = False
@@ -173,9 +173,9 @@ def run_benchmark(
 
     # Combine the incoming and database profiling and merge with targets on label to get
     # the observed and target values for each function
-    incoming_sha = incoming["commit_sha"].unique()[0]
+    incoming_sha = incoming["label"].unique()[0]
     combined = pd.concat([database, incoming])
-    combined["is_incoming"] = combined["commit_sha"] == incoming_sha
+    combined["is_incoming"] = combined["label"] == incoming_sha
     combined = combined.merge(targets, how="left", on="label")
 
     # Calculate the relative KPIs for each kpi
@@ -246,21 +246,21 @@ def create_benchmark_plot(
     incoming = combined[combined["is_incoming"]]
     database = combined[~combined["is_incoming"]]
 
-    # Get commit SHA values
+    # Get the labels for the previous and incoming versions
     previous_versions = (
-        database[["timestamp", "commit_sha"]]
+        database[["timestamp", "label"]]
         .drop_duplicates()
         .sort_values(by="timestamp", ascending=False)
     )
-    incoming_version = incoming["commit_sha"].unique()[0]
+    incoming_version = incoming["label"].unique()[0]
 
     # A4 portrait
     plt.figure(figsize=(8.27, 11.69))
 
     # Plot each previous version using text 1...n as plot symbols, with lighter grey for
     # values that have been set as ignore_result.
-    for idx, sha in enumerate(previous_versions["commit_sha"]):
-        subset = combined[combined["commit_sha"] == sha]
+    for idx, label in enumerate(previous_versions["label"]):
+        subset = combined[combined["label"] == label]
 
         plt.scatter(
             subset[f"relative_{kpi}"],
@@ -269,7 +269,7 @@ def create_benchmark_plot(
             color=[
                 "lightgray" if val else "dimgrey" for val in subset["ignore_result"]
             ],
-            label=sha,
+            label=label,
         )
 
     # Plot the incoming data as open circles, blue points when inside tolerance and red
@@ -313,8 +313,8 @@ def run_benchmarking_cli() -> None:
 
     This function runs the standard benchmarking for the pyrealm package. The profiling
     tests in the test suite generate a set of combined profile data across the package
-    functionality. This function can then reads in a set of combined profile data and
-    compare it to previous benchmark data.
+    functionality. This command then reads in a set of combined profile data and
+    compares it to previous benchmark data.
 
     The profiling excludes all profiled code objects matching regex patterns provided
     using the `--exclude` argument. The defaults exclude standard and site packages,
@@ -346,7 +346,10 @@ def run_benchmarking_cli() -> None:
         type=Path,
         help="Output path for data on benchmark fails",
     )
-    parser.add_argument("commit_sha", help="Github commit SHA")
+    parser.add_argument(
+        "label",
+        help="A text label for the incoming profiling results, typically a commit SHA",
+    )
     parser.add_argument(
         "--exclude",
         action="append",
@@ -392,7 +395,7 @@ def run_benchmarking_cli() -> None:
 
     incoming = convert_and_filter_prof_file(
         prof_path=args.prof_path,
-        commit_sha=args.commit_sha,
+        label=args.label,
         exclude=args.exclude,
     )
 
