@@ -114,7 +114,7 @@ def run_benchmark(
     tolerance: float = 0.05,
     n_runs: int = 5,
     new_database: bool = False,
-    append_on_pass: bool = False,
+    update_on_pass: bool = False,
 ) -> bool:
     """Run benchmark checks on profiling results.
 
@@ -138,7 +138,7 @@ def run_benchmark(
         plot_path: An optional path for creating a benchmarking plot.
         tolerance: Fractional acceptable change in performance
         n_runs: The number of most recent runs to use
-        append_on_pass: Should the incoming data be added to the database.
+        update_on_pass: Should the incoming data be added to the database.
         new_database: Should the incoming data be used to create a new profiling
             database file.
     """
@@ -201,9 +201,9 @@ def run_benchmark(
         failure_info.to_csv(fail_data_path, index=False)
         return False
 
-    # Otherwise, save the combined database after dropping internal fields if requested
-    # and then return True
-    if append_on_pass:
+    # Should the
+    if update_on_pass:
+        # Drop the fields added by this function and save the updated combined data
         combined.drop(
             columns=["is_incoming"]
             + [f"relative_{kpi}" for kpi in kpis]
@@ -369,8 +369,8 @@ def run_benchmarking_cli() -> None:
         default=0.05,
     )
     parser.add_argument(
-        "--append-on-pass",
-        help="Add incoming data to the database when benchmarking passes",
+        "--update-on-pass",
+        help="Update the profiling database if benchmarking passes",
         action="store_true",
     )
     parser.add_argument(
@@ -388,11 +388,6 @@ def run_benchmarking_cli() -> None:
     if not args.prof_path.exists():
         raise FileNotFoundError(f"Cannot find the profiling file at {args.prof_path}.")
 
-    # if orig_graph_path.exists():
-    #     os.system(f"cp {orig_graph_path} {graph_path}")
-    # else:
-    #     print(f"Cannot find the call graph at {orig_graph_path}.")
-
     incoming = convert_and_filter_prof_file(
         prof_path=args.prof_path,
         label=args.label,
@@ -405,7 +400,7 @@ def run_benchmarking_cli() -> None:
         fail_data_path=args.fail_data_path,
         tolerance=args.tolerance,
         n_runs=args.n_runs,
-        append_on_pass=args.append_on_pass,
+        update_on_pass=args.append_on_pass,
         new_database=args.new_database,
         plot_path=args.plot_path,
     )
