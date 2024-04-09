@@ -125,7 +125,7 @@ a toggle button to allow it to be expanded.
 ```
 ````
 
-## Development notes
+### Extensions
 
 The `sphinx` configuration includes the `sphinx.ext.mathjax` extension to support
 mathematical notation. This has been configured to also load the `mhchem` extension,
@@ -185,6 +185,8 @@ package modules. This includes:
   implementations of some functionality, such as the `rpmodel` and `SPLASH` packages.
 * unit testing of individual functions and methodsm and,
 * integration testing of using combinations of modules.
+* performance profiling of the `pyrealm` codebase: see the separate [section on
+  profiling](./CONTRIBUTING#profiling).
 
 These are the main tests that the package is behaving as expected and producing stable
 outputs and can be run from repository using:
@@ -192,30 +194,6 @@ outputs and can be run from repository using:
 ```bash
 poetry run pytest
 ```
-
-#### Using 'pytest-profiling'
-
-[Pytest-profiling](https://pypi.org/project/pytest-profiling/) is a plugin to pytest
-that enables profiling of tests. It can be used to generate a call graph and to
-determine the number of hits and total time spent in each function or method.
-[Graphviz](https://pypi.org/project/graphviz/) is a package that uses `dot` command to
-facilitate the rendering of the call graph and a manual install of graphviz is required
-depending on the os. Dedicated profiling tests have been created for PyRealm.
-Please see the relevant testing directory.
-
-```bash
-poetry run pytest --profile
-```
-
-to generate a report. You can run
-
-```bash
-poetry run pytest --profile-svg
-```
-
-to generate a call graph. The graph is saved at `prof/combined.svg`.
-
-To enable profiling of a test function or class, decorate it with `@pytest.mark.profiling`.
 
 #### Using 'pytest-coverage'
 
@@ -246,6 +224,176 @@ Normally, `doctest` is used to test a return value but can also be used to check
 error or warning is raised. See the example for `pyrealm.utilities.convert_rh_to_vpd`
 which redirects the stderr to stdout to allow for the warning text to be included in the
 doctest.
+
+### Profiling and benchmarking
+
+We use code profiling to assess the performance of `pyrealm` code and compare it to
+previous code versions to identify bottlenecks and guard against degraded performance
+when code changes.
+
+Profiling and benchmarking can be run manually - which is useful if you are working on
+code and want to check it doesn't impact performance - but are also run as part of the
+continuous integration process when code is to be merged into the `develop` or `main`
+branches.
+
+#### Generating profiling data
+
+We use the [pytest-profiling](https://pypi.org/project/pytest-profiling/) plugin to run
+a set of profiling tests and generate profiling data. These tests are located
+`tests/profiling` and consist of a small set of high-level scripts that are intended to
+use a large proportion of the `pyrealm` codebase with reasonably large inputs.
+
+All tests in the profiling suite are decorated with `@pytest.mark.profiling`. Tests with
+this mark are excluded from the standard `pytest` testing via the `-m "not profiling"`
+argument in `setup.cfg`. Any test can be decorated with the `profiling` mark to move it
+temporarily into the profiling test suite.
+
+To run the profiling test suite and generate code profiling data, run `pytest` as
+follows:
+
+```bash
+poetry run pytest --profile-svg -m "profiling"
+```
+
+This selects _only_ the profiling tests and runs them using `pytest-profiling`. The
+`--profile-svg` both runs the profiling _and_ generates a figure showing the call
+hierachy of code objects and the time time spent in each call. Generating this graph
+graph requires the [graphviz](https://pypi.org/project/graphviz/) command line library,
+which provides the `dot` command for generating SVG graph diagrams. You will need to
+install `graphviz` to use this option. Alternatively, you can use the following command
+to only generate the profile data.
+
+```bash
+poetry run pytest --profile -m "profiling"
+```
+
+The `pytest-profiling` plugin saves data and graphs to the `prof` direectory, which is
+excluded from the `git` repository. The key files are the combined results:
+`prof/combined.prof` and `prof/combined.svg`.
+
+#### Benchmarking code performance
+
+When `pytest-profiling` runs, the resulting `prof/combined.prof` file contains detailed
+information on all the calls invoked in the test code, including the number of times
+each call is made and the time spent on each call. The `prof/combined.svg` shows where
+time is spent during the test runs, which identifies bottlenecks, but it is also useful
+to check that the time spent on a call has not increased markedly when code is revised.
+
+The `profiling` directory contains a database of previous profiling results
+(`profiling-database.csv`) and the `run_benchmarking.py` tool, which can be used to
+benchmark new profiling data. The basic process is:
+
+* read the current `prof/combined.prof` file and convert it to human-readable CSV data,
+* find the best performance for each call over recent previous runs, and
+* check if the relative performance of the incoming code is notably slower than that
+  best performance.
+
+By default, we use the 5 most recent code versions and the threshold performance is 5%
+slower than the previous best performance. The report tool consists of a command line
+wrapper around a set of profiling functions, which can be imported for programatic use.
+for use.
+
+The usage of the tool is:
+
+```txt
+usage: run_benchmarking.py [-h] [--exclude EXCLUDE] [--n-runs N_RUNS]
+                           [--tolerance TOLERANCE] [--append-on-pass] [--new-database]
+                           [--plot-path PLOT_PATH]
+                           prof_path database_path fail_data_path commit_sha
+
+Run the package benchmarking.
+
+This function runs the standard benchmarking for the pyrealm package. The profiling
+tests in the test suite generate a set of combined profile data across the package
+functionality. This function can then reads in a set of combined profile data and
+compare it to previous benchmark data.
+
+The profiling excludes all profiled code objects matching regex patterns provided
+using the `--exclude` argument. The defaults exclude standard and site packages,
+built in code and various other standard code, and are intended to reduce the
+benchmarking to only code objects within the package.
+
+positional arguments:
+  prof_path              Path to pytest-profiling output
+  database_path          Path to benchmarking database
+  fail_data_path         Output path for data on benchmark fails
+  commit_sha             Github commit SHA
+
+options:
+  -h, --help             show this help message and exit
+  --exclude EXCLUDE      Exclude profiled code matching a regex pattern, can be repeated
+                         (default: ['{.*}', '<.*>', '/lib/'])
+  --n-runs N_RUNS        Number of most recent runs to use in benchmarking (default: 5)
+  --tolerance TOLERANCE  Tolerance of time cost increase in benchmarking (default: 0.05)
+  --append-on-pass       Add incoming data to the database when benchmarking passes
+                         (default: False)
+  --new-database         Use the incoming data to start a new profiling database
+                         (default: False)
+  --plot-path PLOT_PATH  Generate a benchmarking plot to this path (default: None)
+```
+
+##### Manual benchmarking
+
+Once you have run the `pytest-profiling` test suite and generated `prof/combined.prof`
+for some new code, you can run the following code to
+benchmark those results.
+
+```bash
+cd profiling
+poetry run python run_benchmarking.py \
+       ../prof/combined.prof profiling-database.csv failure-data.csv incoming
+```
+
+This command will run the benchmark checks and print a success or failure message to the
+screen. If the benchmarking fails, then the file `failure-data.csv` will be created and
+will contain the incoming and database performance data for all processes that have
+failed benchmarks. You can alter the benchmark tolerance and number of most recent
+versions used for comparison, and also generate a plot of relative performance.
+
+```bash
+poetry run python run_benchmarking.py \
+       ../prof/combined.prof profiling-database.csv failure-data.csv incoming
+       --n-runs 4 --threshold 0.06 --plot-path performance-plot.png
+```
+
+If benchmarking passes, the incoming data _can_ be added to the main
+`profiling-database.csv` database using the `--update-on-pass` option, but this database
+should generally **only be updated by the continuous integration process** . If you do
+want to compare profiles for multiple local versions of code, you can provide a new
+database path and use the `--new-database` option to create a separate local database.
+The `--update-on-pass` option can then be used to add data to that local file.
+
+```bash
+poetry run python run_benchmarking.py \
+       ../prof/combined.prof local-database.csv failure-data.csv incoming
+       --new-database
+```
+
+##### Continuous integration benchmarking
+
+The continuous integration process runs the profiling test suite and then runs the
+benchmarking with the following settings (where `8c2cbfe` is the commit SHA of the code
+being profiled):
+
+```bash
+poetry run python run_benchmarking.py \
+       ../prof/combined.prof profiling-database.csv failure-data.csv 8c2cbfe
+        --n-runs 5 --threshold 0.05 --plot-path performance-plot.png --update-on-pass 
+```
+
+##### Resolving failed benchmarking
+
+If benchmarking fails then the incoming code has introduced possibly troublesome
+performance issues. If the code can be made more efficient, then submit commits to fix
+the performance.
+
+However, if the code cannot be made more efficient, or does something new that is
+inherently more time-consuming, then the `profiling-database.csv` can be updated to
+exclude performance targets that are now expected to fail. Find the rows in the database
+for the most recent 5 versions for the failing code and change the `ignore_result` field
+to `True` if that row sets an unacheivable target for the new code. You should also
+provide a brief comment in the `ignore_justification` field to explain which commit is
+being passed as a result and why.
 
 ### Building the documentation
 
