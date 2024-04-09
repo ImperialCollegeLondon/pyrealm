@@ -67,8 +67,13 @@ jobs:
       if: ${{steps.profiling.outcome == 'success'}}
       run: poetry run python profiling/run_benchmarking.py prof/combined.prof profiling/profiling-database.csv profiling/test-failures.csv ${{ github.sha }} --update-on-pass --plot-path profiling/performance-plot.png
 
-    - uses: stefanzweifel/git-auto-commit-action@v5
+    - name: Copy the new call graph
+      id: copy_call_graph
       if: ${{steps.profile_benchmark.outcome == 'success'}}
+      run: cp prof/combined.svg profiling/call-graph.svg
+
+    - uses: stefanzweifel/git-auto-commit-action@v5
+      if: ${{steps.copy_call_graph.outcome == 'success'}}
       with:
         commit_message: Auto-generated profiling results
         file_pattern: 'profiling/*'
