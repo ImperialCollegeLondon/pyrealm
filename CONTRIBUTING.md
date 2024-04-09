@@ -299,14 +299,14 @@ The usage of the tool is:
 usage: run_benchmarking.py [-h] [--exclude EXCLUDE] [--n-runs N_RUNS]
                            [--tolerance TOLERANCE] [--append-on-pass] [--new-database]
                            [--plot-path PLOT_PATH]
-                           prof_path database_path fail_data_path commit_sha
+                           prof_path database_path fail_data_path label
 
 Run the package benchmarking.
 
 This function runs the standard benchmarking for the pyrealm package. The profiling
 tests in the test suite generate a set of combined profile data across the package
-functionality. This function can then reads in a set of combined profile data and
-compare it to previous benchmark data.
+functionality. This command then reads in a set of combined profile data and
+compares it to previous benchmark data.
 
 The profiling excludes all profiled code objects matching regex patterns provided
 using the `--exclude` argument. The defaults exclude standard and site packages,
@@ -317,7 +317,8 @@ positional arguments:
   prof_path              Path to pytest-profiling output
   database_path          Path to benchmarking database
   fail_data_path         Output path for data on benchmark fails
-  commit_sha             Github commit SHA
+  label                  A text label for the incoming profiling results, typically a
+                         commit SHA
 
 options:
   -h, --help             show this help message and exit
@@ -372,13 +373,13 @@ poetry run python run_benchmarking.py \
 ##### Continuous integration benchmarking
 
 The continuous integration process runs the profiling test suite and then runs the
-benchmarking with the following settings (where `8c2cbfe` is the commit SHA of the code
-being profiled):
+benchmarking with the following settings, where `8c2cbfe` is the commit SHA of the code
+being profiled and using the default number of previous runs (5) and threshold (0.05):
 
 ```bash
 poetry run python run_benchmarking.py \
        ../prof/combined.prof profiling-database.csv failure-data.csv 8c2cbfe
-        --n-runs 5 --threshold 0.05 --plot-path performance-plot.png --update-on-pass 
+        --plot-path performance-plot.png --update-on-pass 
 ```
 
 ##### Resolving failed benchmarking

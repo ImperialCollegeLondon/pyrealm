@@ -55,20 +55,20 @@ jobs:
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-    - name: Run profiling
+    - name: Run the profiling test suite
       id: profiling
       if: success() && (matrix.os == 'ubuntu-latest' && matrix.python-version == 3.10)
       run: |
         sudo apt-get install graphviz
         poetry run pytest -m "profiling" --profile-svg
 
-    - name: Report performance (this step will fail if performance degrades)
+    - name: Benchmark performance (this step will fail if performance degrades)
       id: profile_benchmark
-      if: ${{steps.profiling.outcome != 'skipped' && steps.profiling.outcome == 'success'}}
-      run: poetry run python profiling/report.py --event ${{ github.event_name }}
+      if: ${{steps.profiling.outcome == 'success'}}
+      run: poetry run python profiling/run_benchmarking.py prof/combined.prof profiling/profiling-database.csv profiling/test-failures.csv ${{ github.sha }} --update-on-pass --plot-path profiling/performance-plot.png
 
     - uses: stefanzweifel/git-auto-commit-action@v5
-      if: ${{ steps.profile_benchmark.outcome != 'skipped'}}
+      if: ${{steps.profile_benchmark.outcome == 'success'}}
       with:
         commit_message: Auto-generated profiling results
         file_pattern: 'profiling/*'
