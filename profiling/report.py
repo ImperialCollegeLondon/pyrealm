@@ -4,7 +4,11 @@ import datetime
 import pstats
 import sys
 import textwrap
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from argparse import (
+    ArgumentDefaultsHelpFormatter,
+    ArgumentParser,
+    RawDescriptionHelpFormatter,
+)
 from io import StringIO
 from pathlib import Path
 
@@ -105,7 +109,7 @@ def convert_and_filter_prof_file(
 def run_benchmark(
     incoming: pd.DataFrame,
     database_path: Path,
-    fail_path: Path,
+    fail_data_path: Path,
     plot_path: Path | None = None,
     tolerance: float = 0.05,
     n_runs: int = 5,
@@ -130,7 +134,7 @@ def run_benchmark(
     Args:
         incoming: A data frame of incoming profiling data.
         database_path: The path to the database of previous profiling data
-        fail_path: A path to write out data on functions that fail profiling
+        fail_data_path: A path to write out data on functions that fail profiling
         plot_path: An optional path for creating a benchmarking plot.
         tolerance: Fractional acceptable change in performance
         n_runs: The number of most recent runs to use
@@ -194,7 +198,7 @@ def run_benchmark(
     # return False
     if not failing_rows.empty:
         failure_info = combined[combined["label"].isin(failing_rows["label"])]
-        failure_info.to_csv(fail_path, index=False)
+        failure_info.to_csv(fail_data_path, index=False)
         return False
 
     # Otherwise, save the combined database after dropping internal fields if requested
@@ -295,6 +299,15 @@ def create_benchmark_plot(
     plt.savefig(plot_path)
 
 
+class RawDescAndDefaultsHelpFormatter(
+    RawDescriptionHelpFormatter, ArgumentDefaultsHelpFormatter
+):
+    """Combine argparse formatter helpers and restrict width."""
+
+    def __init__(self, prog: str) -> None:
+        RawDescriptionHelpFormatter.__init__(self, prog, width=88, max_help_position=30)
+
+
 def profile_report_cli() -> None:
     """Run the package benchmarking.
 
@@ -316,26 +329,29 @@ def profile_report_cli() -> None:
 
     parser = ArgumentParser(
         description=textwrap.dedent(doc),
-        formatter_class=RawDescriptionHelpFormatter,
+        formatter_class=RawDescAndDefaultsHelpFormatter,
     )
     parser.add_argument(
-        "--prof-path",
+        "prof_path",
         type=Path,
         help="Path to pytest-profiling output",
-        default="../prof/combined.prof",
     )
-    parser.add_argument("--commit-sha", help="Github commit SHA", default="none")
+    parser.add_argument(
+        "database_path",
+        type=Path,
+        help="Path to benchmarking database",
+    )
+    parser.add_argument(
+        "fail_data_path",
+        type=Path,
+        help="Output path for data on benchmark fails",
+    )
+    parser.add_argument("commit_sha", help="Github commit SHA")
     parser.add_argument(
         "--exclude",
         action="append",
         help="Exclude profiled code matching a regex pattern, can be repeated",
         default=["{.*}", "<.*>", "/lib/"],
-    )
-    parser.add_argument(
-        "--database-path",
-        type=Path,
-        help="Path to benchmarking database",
-        default="prof-report.csv",
     )
     parser.add_argument(
         "--n-runs",
@@ -348,12 +364,6 @@ def profile_report_cli() -> None:
         help="Tolerance of time cost increase in benchmarking",
         type=float,
         default=0.05,
-    )
-    parser.add_argument(
-        "--fail-path",
-        type=Path,
-        help="Output path for data on benchmark fails",
-        default="benchmark-fails.csv",
     )
     parser.add_argument(
         "--append-on-pass",
@@ -389,7 +399,7 @@ def profile_report_cli() -> None:
     success = run_benchmark(
         incoming=incoming,
         database_path=args.database_path,
-        fail_path=args.fail_path,
+        fail_data_path=args.fail_data_path,
         tolerance=args.tolerance,
         n_runs=args.n_runs,
         append_on_pass=args.append_on_pass,
