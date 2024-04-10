@@ -62,10 +62,16 @@ jobs:
         sudo apt-get install graphviz
         poetry run pytest -m "profiling" --profile-svg
 
+    - name: Set short git commit SHA
+      id: vars
+      run: |
+        calculatedSha=$(git rev-parse --short ${{ github.sha }})
+        echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
+
     - name: Benchmark performance (this step will fail if performance degrades)
       id: profile_benchmark
       if: ${{steps.profiling.outcome == 'success'}}
-      run: poetry run python profiling/run_benchmarking.py prof/combined.prof profiling/profiling-database.csv profiling/benchmark-fails.csv ${{ github.sha }} --update-on-pass --plot-path profiling/performance-plot.png
+      run: poetry run python profiling/run_benchmarking.py prof/combined.prof profiling/profiling-database.csv profiling/benchmark-fails.csv ${{ env.COMMIT_SHORT_SHA }} --update-on-pass --plot-path profiling/performance-plot.png
 
     - name: Copy the new call graph if the benchmarking passes
       id: copy_call_graph

@@ -187,7 +187,6 @@ def run_benchmark(
     plot_path: Path | None = None,
     tolerance: float = 0.05,
     n_runs: int = 5,
-    new_database: bool = False,
     update_on_pass: bool = False,
 ) -> bool:
     """Run benchmark checks on profiling results.
@@ -217,17 +216,10 @@ def run_benchmark(
             database file.
     """
 
-    if new_database:
-        if database_path.exists():
-            raise RuntimeError(
-                f"Cannot overwrite existing database file: {database_path}"
-            )
-
+    if not database_path.exists():
+        print(f"Creating new database: {database_path}")
         incoming.to_csv(database_path, index=False)
         return True
-
-    if not database_path.exists():
-        raise FileNotFoundError(f"Database file not found: {database_path}")
 
     # Read database and reduce to most recent n runs.
     database = pd.read_csv(database_path)
@@ -485,11 +477,6 @@ def run_benchmarking_cli() -> None:
         action="store_true",
     )
     parser.add_argument(
-        "--new-database",
-        help="Use the incoming data to start a new profiling database",
-        action="store_true",
-    )
-    parser.add_argument(
         "--plot-path", help="Generate a benchmarking plot to this path", type=Path
     )
 
@@ -512,7 +499,6 @@ def run_benchmarking_cli() -> None:
         tolerance=args.tolerance,
         n_runs=args.n_runs,
         update_on_pass=args.update_on_pass,
-        new_database=args.new_database,
         plot_path=args.plot_path,
     )
 

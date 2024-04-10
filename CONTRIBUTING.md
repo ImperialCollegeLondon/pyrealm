@@ -364,16 +364,14 @@ poetry run python profiling/run_benchmarking.py \
 If benchmarking passes, the incoming data _can_ be added to the main
 `profiling-database.csv` database using the `--update-on-pass` option, but this database
 should generally **only be updated by the continuous integration process** . If you do
-want to compare profiles for multiple local versions of code, you can provide a new
-database path and use the `--new-database` option to create a separate local database.
-The `--update-on-pass` option can then be used to add data to that local file for
-testing purposes.
+want to compare profiles for multiple local versions of code, you can provide a new path
+and this will be used to create a separate local database. The `--update-on-pass` option
+can then be used to add data to that local file for testing purposes.
 
 ```bash
 poetry run python profiling/run_benchmarking.py \
        prof/combined.prof profiling/local-database.csv \
-       profiling/benchmark-fails.csv incoming \
-       --new-database
+       profiling/benchmark-fails.csv incoming
 ```
 
 ##### Continuous integration benchmarking
