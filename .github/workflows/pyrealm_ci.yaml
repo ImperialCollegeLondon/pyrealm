@@ -65,7 +65,7 @@ jobs:
     - name: Benchmark performance (this step will fail if performance degrades)
       id: profile_benchmark
       if: ${{steps.profiling.outcome == 'success'}}
-      run: poetry run python profiling/run_benchmarking.py prof/combined.prof profiling/profiling-database.csv profiling/test-failures.csv ${{ github.sha }} --update-on-pass --plot-path profiling/performance-plot.png
+      run: poetry run python profiling/run_benchmarking.py prof/combined.prof profiling/profiling-database.csv profiling/benchmark-fails.csv ${{ github.sha }} --update-on-pass --plot-path profiling/performance-plot.png
 
     - name: Copy the new call graph
       id: copy_call_graph
