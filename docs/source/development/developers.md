@@ -251,7 +251,7 @@ Some useful optional arguments are:
 
 #### Latest profiling results
 
-![profiling plot](../../../profiling/)
+![profiling plot](../../../profiling/performance-plot.png)
 ![call graph](../../../profiling/call-graph.svg)
 
 ### Building the documentation
