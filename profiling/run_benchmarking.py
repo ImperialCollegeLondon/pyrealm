@@ -14,6 +14,7 @@ from io import StringIO
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 
@@ -292,7 +293,7 @@ def create_benchmark_plot(
     plot_path: Path,
     combined: pd.DataFrame,
     threshold: float = 1.05,
-    kpi: str = "cumtime",
+    kpi: str = "cumtime_percall",
 ) -> None:
     """Plot the benchmarking results.
 
@@ -328,7 +329,7 @@ def create_benchmark_plot(
     incoming_version = incoming["label"].unique()[0]
 
     # A4 portrait
-    plt.figure(figsize=(8.27, 11.69))
+    plt.figure(figsize=(11.69, 8.27))
 
     # Plot each previous version using text 1...n as plot symbols, with lighter grey for
     # values that have been set as ignore_result.
@@ -371,7 +372,42 @@ def create_benchmark_plot(
             plt.gca().get_yticklabels()[idx].set_color("firebrick")
 
     # Save to file
-    plt.savefig(plot_path)
+    plt.savefig(plot_path, dpi=600)
+
+
+def generate_test_database() -> None:
+    """Function to create a test database.
+
+    This function takes a single profiling output (`prof/combined.prof`) and duplicates
+    the profiling data 5 times with some minor variation to create a local test database
+    for checking the benchmarking processes.
+
+    The function can be run from the package root at the command line using:
+
+    python -c "from profiling.run_benchmarking import *; _generate_test_database()"
+    """
+
+    # Create testing database
+    prof_path = Path("prof/combined.prof")
+    df = convert_and_filter_prof_file(prof_path=prof_path, label="test2")
+    copies: list = []
+
+    for test in range(1, 6):
+        df2 = df.copy()
+        df2["label"] = f"test_{test}"
+        df["timestamp"] = df["timestamp"].astype("datetime64[ns]") + np.timedelta64(
+            1, "D"
+        )
+        kpis = ["tottime_percall", "cumtime_percall", "tottime", "cumtime"]
+
+        for kpi in kpis:
+            df2[kpi] = df[kpi] * np.random.uniform(
+                low=0.98, high=1.03, size=len(df[kpi])
+            )
+        copies.append(df2)
+
+    test_db = pd.concat(copies)
+    test_db.to_csv("profiling/test-profiling-database.csv")
 
 
 class RawDescAndDefaultsHelpFormatter(
@@ -429,7 +465,7 @@ def run_benchmarking_cli() -> None:
         "--exclude",
         action="append",
         help="Exclude profiled code matching a regex pattern, can be repeated",
-        default=["{.*}", "<.*>", "/lib/"],
+        default=["{.*}", "<.*>", "/lib/", "/tests/"],
     )
     parser.add_argument(
         "--n-runs",
