@@ -61,25 +61,27 @@ jobs:
       run: |
         sudo apt-get install graphviz
         poetry run pytest -m "profiling" --profile-svg
-
-    - name: Set short git commit SHA
-      id: vars
-      run: |
         calculatedSha=$(git rev-parse --short ${{ github.sha }})
         echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
 
-    - name: Benchmark performance (this step will fail if performance degrades)
-      id: profile_benchmark
+    # This step only runs if the profiling succeeds - so only runs on ubuntu/3.10 and 
+    # will itself fail if the benchmarking fails
+    - name: Benchmark performance
+      id: benchmarking
       if: ${{steps.profiling.outcome == 'success'}}
       run: poetry run python profiling/run_benchmarking.py prof/combined.prof profiling/profiling-database.csv profiling/benchmark-fails.csv ${{ env.COMMIT_SHORT_SHA }} --update-on-pass --plot-path profiling/performance-plot.png
 
-    - name: Copy the new call graph if the benchmarking passes
-      id: copy_call_graph
-      if: ${{steps.profile_benchmark.outcome == 'success'}}
+    # If the benchmarking succeeds, then update the call graph. This again only runs on
+    # the ubuntu/3.10 runner used for the profiling.
+    - name: Update call graph
+      id: update_call_graph
+      if: ${{steps.benchmarking.outcome == 'success'}}
       run: cp prof/combined.svg profiling/call-graph.svg
-
+    
+    # This runs if the benchmark passes or fails (so still only on ubuntu/3.10) and is
+    # skipped on other runners or if the profiling itself fails.
     - uses: stefanzweifel/git-auto-commit-action@v5
-      if: always()
+      if: ${{steps.benchmarking.outcome != 'skipped'}}
       with:
         commit_message: Auto-generated profiling results
         file_pattern: 'profiling/*'
