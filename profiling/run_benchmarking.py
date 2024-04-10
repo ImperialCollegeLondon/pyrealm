@@ -1,5 +1,6 @@
 """Run profile benchmarking and generate benchmarking graphics."""
 
+import ast
 import datetime
 import pstats
 import sys
@@ -16,10 +17,73 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
+def get_function_map(root: Path) -> dict[tuple[str, int, str], str]:
+    """Create an AST function map.
+
+    This function uses the AST parser to scan the pyrealm codebase and identify all of
+    the function definitions that might be referenced within profiling stats. The AST
+    nodes are then used to build a dictionary that maps call information from profiling
+    - which uses line numbers to identify calls within source files - onto call ids from
+    the package AST structure, will be more stable across versions.
+
+    The dictionary is keyed using (source file name, line number, call name) and the
+    values are strings that identify functions within source files and methods within
+    classes within source files.
+
+    One added difficulty is that the line numbering differs betwen the two approaches.
+    The line numbers reported by `ast` nodes are the _actual_ line where the `def` or
+    `class` statement is found. The line numbers reported by `pstats` are offset if the
+    callable has decorators, so this mapping function has to find the lowest line number
+    of the function node and any decorator nodes.
+
+    Warning:
+
+        In order to separate class methods from functions, this function relies on
+        `ast.walk` walking `ast.ClassDef` nodes before `ast.FunctionDef` nodes and then
+        adds a `class_name` attribute to functions in the class body. That attribute can
+        then be checked when the `ast.FunctionDef` node is revisited later in the walk.
+        This is a bit of a hack.
+
+    Returns:
+        A dictionary mapping profile call ids to AST based call id.
+    """
+
+    ast_map = {}
+
+    # Visit all the python modules below the root and add FunctionDef details to the
+    # ast_map list. This relies on a hack - ClassDef are walked before FunctionDef and
+    # so methods can be discovered and annotated with the class_name attribute before
+    # they are added to the ast_map. https://stackoverflow.com/questions/64225210
+    for src_file in root.rglob("*.py"):
+        parsed_ast = ast.parse(src_file.read_text())
+
+        for node in ast.walk(parsed_ast):
+            if isinstance(node, ast.FunctionDef):
+                # Find the line number used by profiling, which includes any decorators
+                lineno = min([d.lineno for d in node.decorator_list + [node]])
+
+                if hasattr(node, "class_name"):
+                    ast_map[(str(src_file), lineno, node.name)] = (
+                        f"{src_file}:{node.class_name}"  # type: ignore [attr-defined]
+                        f".{node.name}"
+                    )
+                else:
+                    ast_map[
+                        (str(src_file), lineno, node.name)
+                    ] = f"{src_file}:{node.name}"
+            if isinstance(node, ast.ClassDef):
+                # Add parent node
+                for child in node.body:
+                    if isinstance(child, ast.FunctionDef):
+                        child.class_name = node.name  # type: ignore [attr-defined]
+
+    return ast_map
+
+
 def convert_and_filter_prof_file(
     prof_path: Path,
     label: str,
-    exclude: list[str] = ["{.*}", "<.*>", "/lib/"],
+    exclude: list[str] = ["{.*}", "<.*>", "/lib/", "/tests/"],
 ) -> pd.DataFrame:
     """Convert profiling output to a standard data frame.
 
@@ -34,8 +98,9 @@ def convert_and_filter_prof_file(
     * '/lib/' excludes standard and site packages,
     * '{.*}' excludes profiling of '{built-in ... } and similar,
     * '<.*>' excludes profiling of '<frozen ...>` and similar.
+    * '/tests/' excludes the test functions and classes calling the pyrealm code.
 
-    The remaining rows should show the performance of just the pyrealm code.
+    The remaining rows should show the performance of just the pyrealm codebase.
 
     Args:
         prof_path: Path to the profiling output.
@@ -87,14 +152,22 @@ def convert_and_filter_prof_file(
         "filename:lineno(function)"
     ).str.extract(r"(.*):(.*?)\((.*)\)", expand=True)
 
-    # Get the unique part of the file paths - note that the zip won't cover all of the
-    # parts as they are not of even length, but should cover the identical portions.
-    parts = [Path(fn).parts for fn in df["filename"]]
-    diverge_index = [len(set(pt)) == 1 for pt in zip(*parts)].index(False)
-    df["filename"] = ["/".join(list(fn)[diverge_index:]) for fn in parts]
+    # The exclude patterns above should now have reduced the profiling data to only
+    # calls within the pyrealm codebase, so shorten the filenames to their position
+    # within the package by splitting on the string 'pyrealm' and keeping the last
+    # entry. The leading pyrealm is replaced to make for easier matching with the AST
+    # structure.
+    df["filename"] = (
+        df["filename"].str.split("pyrealm").apply(lambda x: f"pyrealm{x[-1]}")
+    )
 
-    # Add a unique label for each process being benchmarked
-    df["process_id"] = df["filename"] + ":" + df["function"]
+    # Map the profiling data onto the AST structure for the package
+    ast_map = get_function_map(Path("pyrealm"))
+
+    # Use the profile data to look up the AST callable id
+    df["process_id"] = df.apply(
+        lambda rw: ast_map[(rw.filename, int(rw.lineno), rw.function)], axis=1
+    )
 
     # Add the provided git commit SHA for information
     df["label"] = label
