@@ -77,7 +77,7 @@ jobs:
     # skipped on other runners or if the profiling step fails. The commit message
     # includes [skip actions] to avoid triggering a new testing round
     - uses: stefanzweifel/git-auto-commit-action@v5
-      if: always() & ${{steps.benchmarking.outcome != 'skipped'}}
+      if: always() && steps.benchmarking.outcome != 'skipped'
       with:
         commit_message: Auto-generated profiling results [skip actions]
         file_pattern: 'profiling/*'
