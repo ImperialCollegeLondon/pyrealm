@@ -16,22 +16,27 @@ kernelspec:
 
 The `pyrealm` repository includes both the `pyrealm` package and the
 `pyrealm_build_data` package. The `pyrealm_build_data` package contains datasets that
-are used in the `pyrealm` build process. This includes:
+are used in the `pyrealm` build and testing process. This includes:
 
 * Example datasets that are used in the package documentation, such as simple spatial
   datasets for showing the use of the P Model.
-* "Golden" datasets including a set of input data and output predictions from
-  previous implementations of `pyrealm` functionality. These are used to benchmark
-  `pyrealm` functionality within the testing framework (see below).
+* "Golden" datasets for regression testing `pyrealm` implementations against the outputs
+  of other implementations. These datasets will include a set of input data and then
+  output predictions from other implementations.
+* Datasets for providing profiling of `pyrealm` code and for benchmarking new versions
+  of the package code against earlier implementations to check for performance issues
 
 Note that `pyrealm_build_data` is a source distribution only (`sdist`) component of
-`pyrealm`, so is not included in binary distributions (`wheel`), such as those available
-from PyPi.
+`pyrealm`, so is not included in binary distributions (`wheel`) that are typically
+installed by end users. This means that the main `pyrealm` codebase should not require
+data from the `pyrealm_build_data` package.
+
+## Package contents
 
 The package is organised into submodules that reflect the data use or previous
 implementation.
 
-## The `bigleaf` submodule
+### The `bigleaf` submodule
 
 This submodule contains benchmark outputs from the `bigleaf` package in `R`, which has
 been used as the basis for core hygrometry functions. The `bigleaf_conversions.R` R
@@ -48,12 +53,12 @@ as:
 Rscript bigleaf_conversions.R
 ```
 
-## The `rpmodel` submodule
+### The `rpmodel` submodule
 
 This submodule contains benchmark outputs from the `rpmodel` package in `R`, which has
 been used as the basis for initial development of the standard P Model.
 
-### Test inputs
+#### Test inputs
 
 The `generate_test_inputs.py` file defines a set of constants for running P Model
 calculations and then defines a set of scalar and array inputs for the forcing variables
@@ -68,7 +73,7 @@ It requires `python` and the `numpy` package and can be run as:
 python generate_test_inputs.py
 ```
 
-### Simple `rpmodel` benchmarking
+#### Simple `rpmodel` benchmarking
 
 The `test_outputs_rpmodel.R` contains R code to run the test input data set, and store
 the expected predictions from the `rpmodel` package as `test_outputs_rpmodel.json`. It
@@ -78,7 +83,7 @@ requires an installation of `R` and the `rpmodel` package and can be run as:
 Rscript test_outputs_rpmodel.R
 ```
 
-### Global array test
+#### Global array test
 
 The remaining files in the submodule are intended to provide a global test dataset for
 benchmarking the use of `rpmodel` on a global time-series, so using 3 dimensional arrays
@@ -104,7 +109,7 @@ package:
 Rscript test_global_array.R
 ```
 
-## The `subdaily` submodule
+### The `subdaily` submodule
 
 At present, this submodule only contains a single file containing the predictions for
 the `BE_Vie` fluxnet site from the original implementation of the `subdaily` module,
@@ -117,7 +122,7 @@ TODO - This submodule should be updated to include the required code along with 
 settings files and a runner script to reproduce this code. Or possibly to checkout the
 required code as part of a shell script.
 
-## The `t_model` submodule
+### The `t_model` submodule
 
 The `t_model.r` contains the original implementation of the T Model calculations in R
 {cite:p}`Li:2014bc`. The `rtmodel_test_outputs.r` script sources this file and then
@@ -129,7 +134,7 @@ To generate the predicted outputs again requires an R installation
 Rscript rtmodel_test_outputs.r
 ```
 
-## The `uk_data` submodule
+### The `uk_data` submodule
 
 This submodule contains the Python script `create_2D_uk_inputs.py`, which is used to
 generate the NetCDF output file `UK_WFDE5_FAPAR_2018_JuneJuly.nc`. This contains P Model
