@@ -65,25 +65,21 @@ jobs:
         echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
 
     # This step only runs if the profiling succeeds - so only runs on ubuntu/3.10 and 
-    # will itself fail if the benchmarking fails
-    - name: Benchmark performance
+    # will itself fail if the benchmarking fails. It also copies over the call graph.
+    - name: Benchmark performance and copy call graph
       id: benchmarking
       if: ${{steps.profiling.outcome == 'success'}}
-      run: poetry run python profiling/run_benchmarking.py prof/combined.prof profiling/profiling-database.csv profiling/benchmark-fails.csv ${{ env.COMMIT_SHORT_SHA }} --update-on-pass --plot-path profiling/performance-plot.png
+      run: |
+        poetry run python profiling/run_benchmarking.py prof/combined.prof profiling/profiling-database.csv profiling/benchmark-fails.csv ${{ env.COMMIT_SHORT_SHA }} --update-on-pass --plot-path profiling/performance-plot.png
+        cp prof/combined.svg profiling/call-graph.svg
 
-    # If the benchmarking succeeds, then update the call graph. This again only runs on
-    # the ubuntu/3.10 runner used for the profiling.
-    - name: Update call graph
-      id: update_call_graph
-      if: ${{steps.benchmarking.outcome == 'success'}}
-      run: cp prof/combined.svg profiling/call-graph.svg
-    
     # This runs if the benchmark passes or fails (so still only on ubuntu/3.10) and is
-    # skipped on other runners or if the profiling itself fails.
+    # skipped on other runners or if the profiling step fails. The commit message
+    # includes [skip actions] to avoid triggering a new testing round
     - uses: stefanzweifel/git-auto-commit-action@v5
-      if: ${{steps.benchmarking.outcome != 'skipped'}}
+      if: always() & ${{steps.benchmarking.outcome != 'skipped'}}
       with:
-        commit_message: Auto-generated profiling results
+        commit_message: Auto-generated profiling results [skip actions]
         file_pattern: 'profiling/*'
 
   docs_build:
