@@ -26,21 +26,14 @@ on setting up the development environment and developing `pyrealm`.
 
 ## Development components
 
-### Code development
+### Contributing code
 
-All code development is through this Github repository. The basic process is shown below
-but the main thing to stress is **communication**. We are keen to engage with new
-contributors and to help get new code into `pyrealm` in the smoothest possible way.
-
-* Create an issue on Github describing the change to be made.
-* Use the issue interface to generate a branch for the issue.
-* Commit your changes on that branch.
-* Create a pull request from that branch onto `develop`.
-* Request a review from other package developers.
-* Respond to reviews until the pull request is approved.
-* Merge to `develop`.
-
-The `pyrealm` package uses `mypy` to provide static type checking.
+All code contributions are added to `pyrealm` through this Github repository. You might
+want to help fix an existing bug or add a requested feature or have your own ideas to
+add to `pyrealm`. Whatever you want to do the first, thing is to open a new issue or
+post on an existing issue and start a conversation with the other developers. We are
+really keen to engage with new contributors and to help get new code into `pyrealm` in
+the smoothest possible way.
 
 See the [code development page](docs/source/development/code_development.md) for more
 details.
@@ -68,8 +61,8 @@ See the [documentation page](docs/source/development/documentation.md) for more 
 
 ### The `pyrealm_build_data` package
 
-The `pyrealm` repository also includes the `pyrealm_build_data` package providing data
-files for use in testing and documentation.
+The `pyrealm` repository also includes the `pyrealm_build_data` package that is used to
+provide data files for use in testing and documentation.
 
 See the [`pyrealm_build_data` page](docs/source/development/pyrealm_build_data.md) for
 more details on the available data and usage.
@@ -82,7 +75,7 @@ commits until all hooks pass. You should install these to ensure that your commi
 meets these standards.
 
 See the [pre-commit configuration page](docs/source/development/pre_commit.md) for more
-details on `pre-commit` and the hooks used.
+details on setting up `pre-commit` and the hooks used.
 
 ### Continuous integration
 
@@ -100,3 +93,14 @@ PyPI.
 
 See the [release process page](docs/source/development/release_process.md) for
 more details on the release process.
+
+### Profiling and benchmarking
+
+Even if the code works as expected and passes all our tests, it can still be slow! We
+use code profiling to work out where time is spent when using `pyrealm` and identify
+where we can improve performance. We also use benchmarking between `pyrealm` versions to
+make sure that changes to the code aren't making it slower. This is run automatically on
+the `develop` branch but can also be used to do local profiling and benchmarking.
+
+See the [profiling and benchmarking
+page](docs/source/development/profiling_and_benchmarking.md) for more details.
