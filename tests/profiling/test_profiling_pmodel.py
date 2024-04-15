@@ -21,7 +21,7 @@ def setup():
     delete it all when the tests exit.
     """
 
-    print("\n***\nSetting up\n***\n")
+    print("\n***\nSetting up profiling of pmodel\n***\n")
 
     # Loading the dataset:
     dpath = resources.files("pyrealm_build_data") / "inputs_data_reduced_1y.nc"
