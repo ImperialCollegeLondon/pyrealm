@@ -5,8 +5,6 @@ name: Test and build
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  # push:
-  #   branches: [main, develop]
   workflow_call:
 
 jobs:
