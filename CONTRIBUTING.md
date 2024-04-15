@@ -239,7 +239,7 @@ branches.
 #### Generating profiling data
 
 We use the [pytest-profiling](https://pypi.org/project/pytest-profiling/) plugin to run
-a set of profiling tests and generate profiling data. These tests are located
+a set of profiling tests and generate profiling data. These tests are located at
 `tests/profiling` and consist of a small set of high-level scripts that are intended to
 use a large proportion of the `pyrealm` codebase with reasonably large inputs.
 
