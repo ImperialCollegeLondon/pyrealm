@@ -9,45 +9,73 @@ import numpy as np
 import pytest
 import xarray
 
-from pyrealm.core.calendar import Calendar
-from pyrealm.splash.splash import SplashModel
 
+@pytest.fixture(scope="module")
+def setup():
+    """Setup the data for the profiling.
 
-@pytest.fixture
-def splash_core_constants():
-    """Provide constants using SPLASH original defaults.
+    This currently just tiles the data along the longitude axis to increase the load.
+    Tiling along the latitude axis adds more complexity - all results at the same
+    latitude should be identical, so tiling on longitude is easy.
 
-    SPLASH v1 uses 15°C / 288.1 5 K in the standard atmosphere definition and uses the
-    Chen method for calculating water density.
+    Tiling on time is a pain because of leap years, so even though the year tile is
+    there, don't use it. The clever thing to do here is to split those two years into
+    leap and non leap and then build the pattern up that way.
     """
-    from pyrealm.constants import CoreConst
 
-    return CoreConst(k_To=288.15, water_density_method="chen")
+    from pyrealm.core.calendar import Calendar
+
+    dpath = resources.files("pyrealm_build_data.splash")
+    data = xarray.load_dataset(dpath / "data/splash_nw_us_grid_data.nc")
+
+    # Scale up data to give a more robust profile
+    def _scale_up(array, lon_tile=5, year_tile=1):
+        """Bulk out the data."""
+        # Tile on lon and time axis
+        return np.tile(array, (year_tile, 1, lon_tile))
+
+    lon_tile = 500
+    year_tile = 1
+
+    sf = _scale_up(data.sf.to_numpy(), lon_tile=lon_tile, year_tile=year_tile)
+    tc = _scale_up(data.tmp.to_numpy(), lon_tile=lon_tile, year_tile=year_tile)
+    pn = _scale_up(data.pre.to_numpy(), lon_tile=lon_tile, year_tile=year_tile)
+
+    elv = np.tile(data.elev.to_numpy(), (1, lon_tile))
+    elv = np.broadcast_to(elv[None, :, :], sf.shape)
+    lat = np.broadcast_to(data.lat.to_numpy()[None, :, None], sf.shape)
+
+    dates = Calendar(data.time.data)
+
+    return sf, tc, pn, elv, lat, dates
 
 
 @pytest.mark.profiling
-class TestClass:
-    """Test class for the profiler running on the pmodel implementation."""
+def test_profile_splash(setup):
+    """Run a splash analysis for profiling."""
 
-    @pytest.fixture()
-    def setup(self, splash_core_constants):
-        """Set up the the splash model and load the test data set."""
-        dpath = resources.files("pyrealm_build_data.splash")
-        data = xarray.load_dataset(dpath / "data/splash_nw_us_grid_data.nc")
+    from pyrealm.constants import CoreConst
+    from pyrealm.splash.splash import SplashModel
 
-        self.splash = SplashModel(
-            lat=np.broadcast_to(data.lat.data[None, :, None], data.sf.data.shape),
-            elv=np.broadcast_to(data.elev.data[None, :, :], data.sf.data.shape),
-            dates=Calendar(data.time.data),
-            sf=data.sf.data,
-            tc=data.tmp.data,
-            pn=data.pre.data,
-            core_const=splash_core_constants,
-        )
+    # SPLASH v1 uses 15°C / 288.1 5 K in the standard atmosphere definition and uses the
+    # Chen method for calculating water density.
 
-    def test_profiling_calculate_soil_moisture(self, setup):
-        """Profile the calculate_soil_moisture method of the splash model."""
-        init_soil_moisture = self.splash.estimate_initial_soil_moisture(verbose=False)
-        aet_out, wn_out, ro_out = self.splash.calculate_soil_moisture(
-            init_soil_moisture
-        )
+    splash_core_constants = CoreConst(k_To=288.15, water_density_method="chen")
+
+    # Extract the input data
+    sf, tc, pn, elv, lat, dates = setup
+
+    # Create the model
+    splash = SplashModel(
+        lat=lat,
+        elv=elv,
+        dates=dates,
+        sf=sf,
+        tc=tc,
+        pn=pn,
+        core_const=splash_core_constants,
+    )
+
+    # Run the initial soil calculation and then the time series.
+    init_soil_moisture = splash.estimate_initial_soil_moisture(verbose=False)
+    aet_out, wn_out, ro_out = splash.calculate_soil_moisture(init_soil_moisture)
