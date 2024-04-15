@@ -36,12 +36,24 @@ poetry run pytest
 See the [installation page](docs/source/development/overview.md) for more details
 on setting up the development environment and developing `pyrealm`.
 
+### The `pyrealm_build_data` package
+
+The `pyrealm` repository also includes the `pyrealm_build_data` package that is used to
+provide data files for use in testing and documentation. See the [`pyrealm_build_data`
+page](docs/source/development/pyrealm_build_data.md) for more details on the available
+data and usage.
+
 ### Code testing
 
-We use the `pytest` package to provide testing for the `pyrealm` package. The test suite
-includes unit tests, regression testing against alternate implementations and
-performance profiling tests. We use `codecov` to assess the coverage of the package code
-by the test suite.
+We use the `pytest` package to provide unit testing for the `pyrealm` package. The test
+suite lives in the `tests` directory and all new and updated code should include tests
+to check that the code works as intended. The test suite also includes regression
+testing against previous implementations and a set of tests for code profiling and
+performance benchmarking.
+
+We use the `pytest-cov` plugin to generate coverage reports on `pyrealm` code, to check
+how well the code is covered by the test suite. We use `codecov` to record code coverage
+and report on changes in coverage between commits..
 
 See the [code testing page](docs/source/development/code_testing.md) for more details.
 
@@ -58,27 +70,20 @@ for more details on setting up `pre-commit` and the hooks used.
 ### Continuous integration
 
 The project uses a GitHub Actions workflow to support continuous integration. The
-workflow is used to check the code quality, apply code tests and performance checks and
-build on all pull requests.
+workflow is used to check the code quality, run the unit and regression testing suite and
+check the documentation builds successfully on all pull requests.
 
-See the [continuous integration page](docs/source/development/pre_commit.md) for
+See the [GitHub Actions page](docs/source/development/github_actions.md) for
 more details on the workflow and process.
-
-### Release process
-
-We use trusted publishing from Github releases to submit new versions of the package to
-PyPI.
-
-See the [release process page](docs/source/development/release_process.md) for
-more details on the release process.
 
 ### Profiling and benchmarking
 
 Even if the code works as expected and passes all our tests, it can still be slow! We
 use code profiling to work out where time is spent when using `pyrealm` and identify
 where we can improve performance. We also use benchmarking between `pyrealm` versions to
-make sure that changes to the code aren't making it slower. This is run automatically on
-the `develop` branch but can also be used to do local profiling and benchmarking.
+make sure that changes to the code aren't making it slower. This is run automatically
+when new code is pulled to the `develop` or `main` branches but can also be used to do
+local profiling and benchmarking.
 
 See the [profiling and benchmarking
 page](docs/source/development/profiling_and_benchmarking.md) for more details.
@@ -95,10 +100,8 @@ We use:
 
 See the [documentation page](docs/source/development/documentation.md) for more details.
 
-### The `pyrealm_build_data` package
+### Release process
 
-The `pyrealm` repository also includes the `pyrealm_build_data` package that is used to
-provide data files for use in testing and documentation.
-
-See the [`pyrealm_build_data` page](docs/source/development/pyrealm_build_data.md) for
-more details on the available data and usage.
+We use trusted publishing from Github releases to submit new versions of the package to
+PyPI. See the [release process page](docs/source/development/release_process.md) for
+more details on the release process.
