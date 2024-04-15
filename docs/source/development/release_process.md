@@ -16,8 +16,8 @@ kernelspec:
 
 The package release process has three stages:
 
-* Merge changes from the `develop` branch onto `main` that will form the new release
-  version.
+* Create a new release branch from the `develop` branch that will be merged onto `main`
+  to generate a new release version.
 * Publish a release on GitHub - this is basically just a specific tagged commit on
   `main` that has some associated release notes.
 * Publish the built code packages to PyPI - this is the packaged version of the code

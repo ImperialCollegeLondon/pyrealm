@@ -4,6 +4,18 @@ We welcome contributions to improving and extending the `pyrealm` package. This 
 provides an overview of the key components for contributing to `pyrealm` and then links
 to more details on the package website: [https://pyrealm.readthedocs.io/](https://pyrealm.readthedocs.io/)
 
+## Contributing code
+
+All code contributions are added to `pyrealm` through this Github repository. You might
+want to help fix an existing bug or add a requested feature or have your own ideas to
+add to `pyrealm`. Whatever you want to do the first, thing is to open a new issue or
+post on an existing issue and start a conversation with the other developers. We are
+really keen to engage with new contributors and to help get new code into `pyrealm` in
+the smoothest possible way.
+
+See the [code development page](docs/source/development/overview.md) for more
+details.
+
 ## Quick Start
 
 The `pyrealm` package uses the `poetry` tool for package management. Getting a simple
@@ -21,22 +33,8 @@ poetry install
 poetry run pytest
 ```
 
-See the [installation page](docs/source/development/installation.md) for more details
+See the [installation page](docs/source/development/overview.md) for more details
 on setting up the development environment and developing `pyrealm`.
-
-## Development components
-
-### Contributing code
-
-All code contributions are added to `pyrealm` through this Github repository. You might
-want to help fix an existing bug or add a requested feature or have your own ideas to
-add to `pyrealm`. Whatever you want to do the first, thing is to open a new issue or
-post on an existing issue and start a conversation with the other developers. We are
-really keen to engage with new contributors and to help get new code into `pyrealm` in
-the smoothest possible way.
-
-See the [code development page](docs/source/development/code_development.md) for more
-details.
 
 ### Code testing
 
@@ -47,26 +45,6 @@ by the test suite.
 
 See the [code testing page](docs/source/development/code_testing.md) for more details.
 
-### Documentation
-
-We use:
-
-* The `sphinx` package to build the `pyrealm` website on ReadTheDocs.
-* Docstrings to describe the code and automatically generate API descriptions for the
-  website.
-* The `doctest` package to provide limited examples of code use in docstrings.
-* MyST Markdown notebooks to provide extended usage examples within the website.
-
-See the [documentation page](docs/source/development/documentation.md) for more details.
-
-### The `pyrealm_build_data` package
-
-The `pyrealm` repository also includes the `pyrealm_build_data` package that is used to
-provide data files for use in testing and documentation.
-
-See the [`pyrealm_build_data` page](docs/source/development/pyrealm_build_data.md) for
-more details on the available data and usage.
-
 ### Code quality checks
 
 The package includes configuration for a set of `pre-commit` hooks to ensure code
@@ -74,8 +52,8 @@ commits meet common community quality standards. The `pre-commit` tool blocks `g
 commits until all hooks pass. You should install these to ensure that your commited code
 meets these standards.
 
-See the [pre-commit configuration page](docs/source/development/pre_commit.md) for more
-details on setting up `pre-commit` and the hooks used.
+See the [pre-commit configuration page](docs/source/development/code_qa_and_typing.md)
+for more details on setting up `pre-commit` and the hooks used.
 
 ### Continuous integration
 
@@ -104,3 +82,23 @@ the `develop` branch but can also be used to do local profiling and benchmarking
 
 See the [profiling and benchmarking
 page](docs/source/development/profiling_and_benchmarking.md) for more details.
+
+### Documentation
+
+We use:
+
+* The `sphinx` package to build the `pyrealm` website on ReadTheDocs.
+* Docstrings to describe the code and automatically generate API descriptions for the
+  website.
+* The `doctest` package to provide limited examples of code use in docstrings.
+* MyST Markdown notebooks to provide extended usage examples within the website.
+
+See the [documentation page](docs/source/development/documentation.md) for more details.
+
+### The `pyrealm_build_data` package
+
+The `pyrealm` repository also includes the `pyrealm_build_data` package that is used to
+provide data files for use in testing and documentation.
+
+See the [`pyrealm_build_data` page](docs/source/development/pyrealm_build_data.md) for
+more details on the available data and usage.
