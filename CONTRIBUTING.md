@@ -2,7 +2,13 @@
 
 We welcome contributions to improving and extending the `pyrealm` package. This page
 provides an overview of the key components for contributing to `pyrealm` and then links
-to more details on the package website: [https://pyrealm.readthedocs.io/](https://pyrealm.readthedocs.io/)
+to more details on the package website:
+[https://pyrealm.readthedocs.io/](https://pyrealm.readthedocs.io/)
+
+The [development overview
+page](https://pyrealm.readthedocs.io/en/latest/development/overview.html) on the website
+provides an expanded overview of this page, including more details on setting up your
+computer to develop `pyrealm`.
 
 ## Contributing code
 
@@ -13,8 +19,9 @@ post on an existing issue and start a conversation with the other developers. We
 really keen to engage with new contributors and to help get new code into `pyrealm` in
 the smoothest possible way.
 
-See the [code development page](docs/source/development/overview.md) for more
-details.
+See the [development overview
+page](https://pyrealm.readthedocs.io/en/latest/development/overview.html#contributing-code)
+for more details.
 
 ## Quick Start
 
@@ -33,8 +40,9 @@ poetry install
 poetry run pytest
 ```
 
-See the [installation page](docs/source/development/overview.md) for more details
-on setting up the development environment and developing `pyrealm`.
+See the [installation
+page](https://pyrealm.readthedocs.io/en/latest/development/overview.html) for more
+details on setting up the development environment and developing `pyrealm`.
 
 ### The `pyrealm_build_data` package
 
@@ -55,7 +63,9 @@ We use the `pytest-cov` plugin to generate coverage reports on `pyrealm` code, t
 how well the code is covered by the test suite. We use `codecov` to record code coverage
 and report on changes in coverage between commits..
 
-See the [code testing page](docs/source/development/code_testing.md) for more details.
+See the [code testing
+page](https://pyrealm.readthedocs.io/en/latest/development/code_testing.md) for more
+details.
 
 ### Code quality checks
 
@@ -64,17 +74,19 @@ commits meet common community quality standards. The `pre-commit` tool blocks `g
 commits until all hooks pass. You should install these to ensure that your commited code
 meets these standards.
 
-See the [pre-commit configuration page](docs/source/development/code_qa_and_typing.md)
-for more details on setting up `pre-commit` and the hooks used.
+See the [pre-commit configuration
+page](https://pyrealm.readthedocs.io/en/latest/development/code_qa_and_typing.md) for
+more details on setting up `pre-commit` and the hooks used.
 
 ### Continuous integration
 
 The project uses a GitHub Actions workflow to support continuous integration. The
-workflow is used to check the code quality, run the unit and regression testing suite and
-check the documentation builds successfully on all pull requests.
+workflow is used to check the code quality, run the unit and regression testing suite
+and check the documentation builds successfully on all pull requests.
 
-See the [GitHub Actions page](docs/source/development/github_actions.md) for
-more details on the workflow and process.
+See the [GitHub Actions
+page](https://pyrealm.readthedocs.io/en/latest/development/github_actions.md) for more
+details on the workflow and process.
 
 ### Profiling and benchmarking
 
@@ -86,7 +98,8 @@ when new code is pulled to the `develop` or `main` branches but can also be used
 local profiling and benchmarking.
 
 See the [profiling and benchmarking
-page](docs/source/development/profiling_and_benchmarking.md) for more details.
+page](https://pyrealm.readthedocs.io/en/latest/development/profiling_and_benchmarking.md)
+for more details.
 
 ### Documentation
 
@@ -98,10 +111,13 @@ We use:
 * The `doctest` package to provide limited examples of code use in docstrings.
 * MyST Markdown notebooks to provide extended usage examples within the website.
 
-See the [documentation page](docs/source/development/documentation.md) for more details.
+See the [documentation
+page](https://pyrealm.readthedocs.io/en/latest/development/documentation.md) for more
+details.
 
 ### Release process
 
 We use trusted publishing from Github releases to submit new versions of the package to
-PyPI. See the [release process page](docs/source/development/release_process.md) for
-more details on the release process.
+PyPI. See the [release process
+page](https://pyrealm.readthedocs.io/en/latest/development/release_process.md) for more
+details on the release process.

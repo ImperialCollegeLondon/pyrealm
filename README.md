@@ -32,7 +32,7 @@ roadmap along with the a feature set to aim for in version 1.0.0.
 
 ## Using `pyrealm`
 
-The `pyrealm` package requires Python 3.9 or greater. We make released versions
+The `pyrealm` package requires Python 3.10 or greater. We make released versions
 available via [PyPi](https://pypi.org/project/pyrealm/) and also generate DOIs for each
 release via [Zenodo](https://doi.org/10.5281/zenodo.8366847). You can install the most
 recent release using `pip`:

@@ -1,3 +1,17 @@
+---
+jupytext:
+  formats: md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.13.8
+kernelspec:
+  display_name: Python 3
+  language: python
+  name: pyrealm_python3
+---
+
 # Package testing and profiling
 
 The `pyrealm` package uses `pytest` to provide benchmark tests, unit tests and
@@ -20,6 +34,11 @@ outputs and can be run from repository using:
 ```bash
 poetry run pytest
 ```
+
+The `setup.cfg` file contains `pytest` configuration details. By default, we do not
+include the slow-running `profiling` tests as part of the standard `pytest` suite. See
+the [profiling page](./profiling_and_benchmarking.md) for details on running those
+tests.
 
 ## Using `doctest`
 
@@ -51,4 +70,7 @@ poetry run pytest --cov=<test_path>
 ```
 
 to perform coverage analysis. The report is stored with the name `index.html`. It can be
-used to determine if your contribution is adequately tested.
+used to determine if your contribution is adequately tested. The GitHub Actions
+[continuous integration workflow](./github_actions.md#pyrealm_ciyaml) automatically
+uploads coverage data to the
+[CodeCov](https://app.codecov.io/gh/ImperialCollegeLondon/pyrealm) website.
