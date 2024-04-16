@@ -6,18 +6,13 @@ on:
     branches: [main, develop]
 
 jobs:
-  qa:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - uses: pre-commit/action@v3.0.0
-
   test:
-    needs: qa
-    runs-on: ubuntu_latest
+    uses: ./.github/workflows/pyrealm_ci.yaml
+    secrets: inherit
+
+  profiling:
+    needs: test
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
 
