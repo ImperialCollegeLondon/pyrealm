@@ -23,6 +23,20 @@ code and want to check it doesn't impact performance - but are also run as part 
 continuous integration process when code is to be merged into the `develop` or `main`
 branches.
 
+## Latest performance results
+
+The two plots below show the current profiling and benchmarking results. The
+**profiling plot** shows where time is spent in the different calls during the profiling
+tests on the codebase at a single commit.
+
+![profiling plot](../../../profiling/call-graph.svg)
+
+The **benchmarking** plot shows the cumulative time per call for successive commits and
+allows developers to check if an incoming commit has caused code to slow down more than
+a given threshold (currently 5% longer run times or greater).
+
+![benchmarking plot](../../../profiling/performance-plot.png)
+
 ## Generating profiling data
 
 We use the [pytest-profiling](https://pypi.org/project/pytest-profiling/) plugin to run
@@ -82,7 +96,7 @@ for use.
 
 The usage of the tool is:
 
-```txt
+```text
 usage: run_benchmarking.py [-h] [--exclude EXCLUDE] [--n-runs N_RUNS]
                            [--tolerance TOLERANCE] [--append-on-pass] [--new-database]
                            [--plot-path PLOT_PATH]
@@ -202,9 +216,3 @@ for the most recent 5 versions for the failing code and change the `ignore_resul
 to `True` if that row sets an unacheivable target for the new code. You should also
 provide a brief comment in the `ignore_justification` field to explain which commit is
 being passed as a result and why.
-
-## Latest profiling results
-
-![profiling plot](../../../profiling/profiling.png)
-![benchmark plot](../../../profiling/benchmark.png)
-![call graph](../../../profiling/call-graph.svg)
