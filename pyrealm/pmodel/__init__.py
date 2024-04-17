@@ -33,7 +33,6 @@ from pyrealm.pmodel.competition import (
     calculate_tree_proportion,
     convert_gpp_advantage_to_c4_fraction,
 )
-from pyrealm.pmodel.fast_slow_scaler import FastSlowScaler
 from pyrealm.pmodel.functions import (
     calc_co2_to_ca,
     calc_ftemp_arrh,
@@ -51,4 +50,9 @@ from pyrealm.pmodel.isotopes import CalcCarbonIsotopes
 from pyrealm.pmodel.jmax_limitation import JmaxLimitation
 from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
-from pyrealm.pmodel.subdaily import FastSlowPModel, memory_effect
+from pyrealm.pmodel.scaler import SubdailyScaler
+from pyrealm.pmodel.subdaily import (
+    SubdailyPModel,
+    convert_pmodel_to_subdaily,
+    memory_effect,
+)

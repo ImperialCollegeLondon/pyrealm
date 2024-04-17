@@ -4,7 +4,7 @@
 
 ### Installation
 
-The package requires Python 3.9 or newer. The `pyrealm` package can be installed
+The package requires Python 3.10 or newer. The `pyrealm` package can be installed
 from [PyPi](https://pypi.org/project/pyrealm/) but to develop the package you will need
 to clone this repository and then install
 [Poetry](https://python-poetry.org/docs/#installation) for dependency management and to
@@ -125,7 +125,7 @@ a toggle button to allow it to be expanded.
 ```
 ````
 
-## Development notes
+### Extensions
 
 The `sphinx` configuration includes the `sphinx.ext.mathjax` extension to support
 mathematical notation. This has been configured to also load the `mhchem` extension,
@@ -185,6 +185,8 @@ package modules. This includes:
   implementations of some functionality, such as the `rpmodel` and `SPLASH` packages.
 * unit testing of individual functions and methodsm and,
 * integration testing of using combinations of modules.
+* performance profiling of the `pyrealm` codebase: see the separate [section on
+  profiling](./CONTRIBUTING#profiling).
 
 These are the main tests that the package is behaving as expected and producing stable
 outputs and can be run from repository using:
@@ -192,30 +194,6 @@ outputs and can be run from repository using:
 ```bash
 poetry run pytest
 ```
-
-#### Using 'pytest-profiling'
-
-[Pytest-profiling](https://pypi.org/project/pytest-profiling/) is a plugin to pytest
-that enables profiling of tests. It can be used to generate a call graph and to
-determine the number of hits and total time spent in each function or method.
-[Graphviz](https://pypi.org/project/graphviz/) is a package that uses `dot` command to
-facilitate the rendering of the call graph and a manual install of graphviz is required
-depending on the os. Dedicated profiling tests have been created for PyRealm.
-Please see the relevant testing directory.
-
-```bash
-poetry run pytest --profile
-```
-
-to generate a report. You can run
-
-```bash
-poetry run pytest --profile-svg
-```
-
-to generate a call graph. The graph is saved at `prof/combined.svg`.
-
-To enable profiling of a test function or class, decorate it with `@pytest.mark.profiling`.
 
 #### Using 'pytest-coverage'
 
@@ -246,6 +224,197 @@ Normally, `doctest` is used to test a return value but can also be used to check
 error or warning is raised. See the example for `pyrealm.utilities.convert_rh_to_vpd`
 which redirects the stderr to stdout to allow for the warning text to be included in the
 doctest.
+
+### Profiling and benchmarking
+
+We use code profiling to assess the performance of `pyrealm` code and compare it to
+previous code versions to identify bottlenecks and guard against degraded performance
+when code changes.
+
+Profiling and benchmarking can be run manually - which is useful if you are working on
+code and want to check it doesn't impact performance - but are also run as part of the
+continuous integration process when code is to be merged into the `develop` or `main`
+branches.
+
+#### Generating profiling data
+
+We use the [pytest-profiling](https://pypi.org/project/pytest-profiling/) plugin to run
+a set of profiling tests and generate profiling data. These tests are located at
+`tests/profiling` and consist of a small set of high-level scripts that are intended to
+use a large proportion of the `pyrealm` codebase with reasonably large inputs.
+
+All tests in the profiling suite are decorated with `@pytest.mark.profiling`. Tests with
+this mark are excluded from the standard `pytest` testing via the `-m "not profiling"`
+argument in `setup.cfg`. Any test can be decorated with the `profiling` mark to move it
+temporarily into the profiling test suite.
+
+To run the profiling test suite and generate code profiling data, run `pytest` as
+follows:
+
+```bash
+poetry run pytest --profile-svg -m "profiling"
+```
+
+This selects _only_ the profiling tests and runs them using `pytest-profiling`. The
+`--profile-svg` both runs the profiling _and_ generates a figure showing the call
+hierachy of code objects and the time time spent in each call. Generating this graph
+graph requires the [graphviz](https://pypi.org/project/graphviz/) command line library,
+which provides the `dot` command for generating SVG graph diagrams. You will need to
+install `graphviz` to use this option. Alternatively, you can use the following command
+to only generate the profile data.
+
+```bash
+poetry run pytest --profile -m "profiling"
+```
+
+The `pytest-profiling` plugin saves data and graphs to the `prof` direectory, which is
+excluded from the `git` repository. The key files are the combined results:
+`prof/combined.prof` and `prof/combined.svg`.
+
+#### Benchmarking code performance
+
+When `pytest-profiling` runs, the resulting `prof/combined.prof` file contains detailed
+information on all the calls invoked in the test code, including the number of times
+each call is made and the time spent on each call. The `prof/combined.svg` shows where
+time is spent during the test runs, which identifies bottlenecks, but it is also useful
+to check that the time spent on a call has not increased markedly when code is revised.
+
+The `profiling` directory contains a database of previous profiling results
+(`profiling-database.csv`) and the `run_benchmarking.py` tool, which can be used to
+benchmark new profiling data. The basic process is:
+
+* read the current `prof/combined.prof` file and convert it to human-readable CSV data,
+* find the best performance for each call over recent previous runs, and
+* check if the relative performance of the incoming code is notably slower than that
+  best performance.
+
+By default, we use the 5 most recent code versions and the threshold performance is 5%
+slower than the previous best performance. The report tool consists of a command line
+wrapper around a set of profiling functions, which can be imported for programatic use.
+for use.
+
+The usage of the tool is:
+
+```txt
+usage: run_benchmarking.py [-h] [--exclude EXCLUDE] [--n-runs N_RUNS]
+                           [--tolerance TOLERANCE] [--append-on-pass] [--new-database]
+                           [--plot-path PLOT_PATH]
+                           prof_path database_path fail_data_path label
+
+Run the package benchmarking.
+
+This function runs the standard benchmarking for the pyrealm package. The profiling
+tests in the test suite generate a set of combined profile data across the package
+functionality. This command then reads in a set of combined profile data and
+compares it to previous benchmark data.
+
+The profiling excludes all profiled code objects matching regex patterns provided
+using the `--exclude` argument. The defaults exclude standard and site packages,
+built in code and various other standard code, and are intended to reduce the
+benchmarking to only code objects within the package.
+
+positional arguments:
+  prof_path              Path to pytest-profiling output
+  database_path          Path to benchmarking database
+  fail_data_path         Output path for data on benchmark fails
+  label                  A text label for the incoming profiling results, typically a
+                         commit SHA
+
+options:
+  -h, --help             show this help message and exit
+  --exclude EXCLUDE      Exclude profiled code matching a regex pattern, can be repeated
+                         (default: ['{.*}', '<.*>', '/lib/'])
+  --n-runs N_RUNS        Number of most recent runs to use in benchmarking (default: 5)
+  --tolerance TOLERANCE  Tolerance of time cost increase in benchmarking (default: 0.05)
+  --append-on-pass       Add incoming data to the database when benchmarking passes
+                         (default: False)
+  --new-database         Use the incoming data to start a new profiling database
+                         (default: False)
+  --plot-path PLOT_PATH  Generate a benchmarking plot to this path (default: None)
+```
+
+##### Manual benchmarking
+
+Once you have run the `pytest-profiling` test suite and generated `prof/combined.prof`
+for some new code, you can run the following code to benchmark those results. In the
+code below, `incoming` is used as a label for the new code - you could also a commit SHA
+to identify the profiled code more explicitly (use `git rev-parse --short HEAD` to show
+the current commit SHA).
+
+```bash
+poetry run python profiling/run_benchmarking.py \
+       prof/combined.prof profiling/profiling-database.csv \
+       profiling/benchmark-fails.csv incoming
+```
+
+This command will run the benchmark checks and print a success or failure message to the
+screen. If the benchmarking fails, then the file `benchmark-fails.csv` will be created
+and will contain the incoming and database performance data for all processes that have
+failed benchmarks. You can alter the benchmark tolerance and number of most recent
+versions used for comparison, and also generate a plot of relative performance.
+
+```bash
+poetry run python profiling/run_benchmarking.py \
+       prof/combined.prof profiling/profiling-database.csv \
+       profiling/benchmark-fails.csv incoming \
+       --n-runs 4 --tolerance 0.06 \
+       --plot-path profiling/performance-plot.png
+```
+
+If benchmarking passes, the incoming data _can_ be added to the main
+`profiling-database.csv` database using the `--update-on-pass` option, but this database
+should generally **only be updated by the continuous integration process** . If you do
+want to compare profiles for multiple local versions of code, you can provide a new path
+and this will be used to create a separate local database. The `--update-on-pass` option
+can then be used to add data to that local file for testing purposes.
+
+```bash
+poetry run python profiling/run_benchmarking.py \
+       prof/combined.prof profiling/local-database.csv \
+       profiling/benchmark-fails.csv incoming
+```
+
+##### Continuous integration benchmarking
+
+The continuous integration process runs the profiling test suite and then runs the
+benchmarking with the following settings, where `8c2cbfe` is the commit SHA of the code
+being profiled and using the default number of previous runs (5) and tolerance (0.05):
+
+```bash
+poetry run python profiling/run_benchmarking.py \
+       prof/combined.prof profiling/profiling-database.csv \
+       profiling/benchmark-fails.csv 8c2cbfe \
+       --plot-path profiling/performance-plot.png --update-on-pass 
+```
+
+The continuous integration process automatically commits the results of benchmarking
+into the repository. If the benchmarking **passes**, these commits will be:
+
+* an update to `profiling/profiling-database.csv` to add the new performance data,
+* a new version of `profiling/performance-plot.png`, and
+* a copy of the call graph generated by profiling (`prof/combined.svg` is copied to
+  `profiling/call-graph.svg`)
+
+If the benchmarking **fails**, two files are updated to identify the processes
+responsible for the failure:
+
+* a new version of `profiling/performance-plot.png` to help see what has failed.
+* an update to `profiling/benchmark-fails.csv`, which gives data on the failed process
+  and recent versions it has been compared to.
+
+##### Resolving failed benchmarking
+
+If benchmarking fails then the incoming code has introduced possibly troublesome
+performance issues. If the code can be made more efficient, then submit commits to fix
+the performance, which will re-run the CI process and benchmarking.
+
+However, if the code cannot be made more efficient, or does something new that is
+inherently more time-consuming, then the `profiling-database.csv` can be updated to
+exclude performance targets that are now expected to fail. Find the rows in the database
+for the most recent 5 versions for the failing code and change the `ignore_result` field
+to `True` if that row sets an unacheivable target for the new code. You should also
+provide a brief comment in the `ignore_justification` field to explain which commit is
+being passed as a result and why.
 
 ### Building the documentation
 
@@ -291,129 +460,5 @@ up to date with the literature for the project.
 
 ## Release process
 
-Releasing a new version of the package follows the flow below:
-
-1. Create a `release` branch from `develop` containing the new release code.
-2. Check that this branch builds correctly, that the documentation builds correctly and
-   that the package publishes to the `test-pypi` repository.
-3. When all is well, create pull requests on GitHub to merge the `release` branch into
-   both `develop` and `main`, along with a version tag for the release.
-4. Once you have updated your local repository, then the tag can be used to build and
-   publish the final version to the main PyPi site.
-
-It is easier if `git` is configured to push new tags along with commits. This
-essentially just means that new releases can be sent with a single commit. This only
-needs to be set once.
-
-```bash
-set git config --global push.followTags true
-```
-
-### Create the release branch
-
-Using `git flow` commands as an example to create a new release:
-
-```sh
-git flow release start new_release
-```
-
-Obviously, use something specific, not `new_release`! Ideally, you would do a dry run of
-the next step and use the version - but it should be fairly obvious what this will be!
-
-The `poetry version` command can then be used to bump the version number. Note that the
-command needs a 'bump rule', which sets which part of the semantic version number to
-increment (`major`, `minor` or `patch`). For example:
-
-```sh
-poetry version patch
-```
-
-This updates `pyproject.toml`. At present, the package is set up so that you also *have
-to update the version number in `pyrealm/version.py`* to match manually.
-
-### Publish and test the release branch
-
-With those changes committed, publish the release branch:
-
-```sh
-git commit -m "Version bump" pyrealm/version.py
-git flow release publish new_release
-```
-
-The GitHub Actions will then ensure that the code passes quality assurance and then runs
-the test suites on a range of Python versions and operating systems.
-
-### Check package publication
-
-The `sdist` and `wheel` builds for the package can then be built locally using `poetry`
-
-```bash
-poetry build
-```
-
-The first time this is run, `poetry` needs to be configured to add the Test PyPi
-repository and an API token from that site. Note that accounts are not shared between
-the Test and main PyPi sites: the API token for `test-pypi` is different from
-`pypi` and you have to log in to each system separately and generate a token on each.
-
-```sh
-poetry config repositories.test-pypi https://test.pypi.org/legacy/
-poetry config pypi-token.test-pypi <your-token>
-```
-
-The built packages can then be published to `test-pypi` using:
-
-```sh
-poetry publish -r test-pypi
-```
-
-### Check the documentation builds
-
-Log in to:
-
-[https://readthedocs.org](https://readthedocs.org)
-
-which is the admin site controlling the build process. From the Versions tab, activate
-the `release/new_release` branch and wait for it to build. Check the Builds tab to see
-that it has built successfully and maybe check updates! If it has built succesfully, do
-check pages to make sure that page code has executed successfully, and then go back to
-the Versions tab and deactivate and hide the branch.
-
-### Create pull requests into `main` and `develop`
-
-If all is well, then two PRs need to be made on GitHub:
-
-* The `release` branch into `main`, to bring all commits since the last release and
-  any fixes on release into `main`.
-* The `release` branch into `develop`, to bring any `release` fixes back into `develop`.
-
-Once both of those have been merged, the `feature` branch can be deleted.
-
-### Tag, build and publish
-
-Once the `origin` repository is merged, then use `git pull` to bring `develop` and
-`main` up to date on a local repo. Then, create a tag using the release version.
-
-```sh
-git checkout main
-git tag <version>
-git push --tags
-```
-
-The final commit on `main` is now tagged with the release version. You can add tags on
-the GitHub website, but only by using the GitHub release system and we are using PyPi to
-distribute package releases.
-
-Before publishing a package to the main PyPi site for the first time, you need to set an
-API token for PyPi.
-
-```sh
-poetry config pypi-token.pypi <your-token>
-```
-
-And now you can build the packages from `main` and publish.
-
-```sh
-poetry build
-poetry publish
-```
+Releasing a new version of the package uses trusted publishing. The process is described
+on the package website in [this file](./docs/source/development/release_process.md).

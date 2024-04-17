@@ -26,9 +26,9 @@ def calendar(request, grid_benchmarks):
 
 @pytest.mark.parametrize(
     argnames="flag",
-    argvalues=["underflow", "overflow"],
+    argvalues=[-1, 1],
 )
-@pytest.mark.parametrize(argnames="var", argvalues=["lat", "sf", "tmp", "pre"])
+@pytest.mark.parametrize(argnames="var", argvalues=["lat", "sf", "tmp", "pre", "dates"])
 def test_splash_model_init(splash_core_constants, grid_benchmarks, var, flag):
     """Test the initialization of the SplashModel class."""
 
@@ -43,19 +43,30 @@ def test_splash_model_init(splash_core_constants, grid_benchmarks, var, flag):
     )
 
     ds = grid_benchmarks[0].sel(time=slice("2000-01-01", "2000-04-01")).copy()
+    dates = ds.time.data
 
-    vmin, vmax = bounds[var]
-    arr = ds[var].data
-    if flag == "underflow":
-        arr.flat[np.random.choice(arr.size)] = vmin - 1e-4
-    elif flag == "overflow":
-        arr.flat[np.random.choice(arr.size)] = vmax + 1e-4
+    # ensure raising error if calendar size is more or less than timestamps
+    if var == "dates":
+        if flag < 0:  # less dates than timestamps
+            dates = dates[:-1]
+        else:  # more dates than timestamps
+            ds = ds.sel(time=dates[:-1])
+        context = pytest.raises(ValueError)
+    # ensure warning if variable is out of bounds
+    else:
+        vmin, vmax = bounds[var]
+        arr = ds[var].data
+        if flag < 0:  # out of lower bound
+            arr.flat[np.random.choice(arr.size)] = vmin - 1e-4
+        else:  # out of upper bound
+            arr.flat[np.random.choice(arr.size)] = vmax + 1e-4
+        context = pytest.warns(UserWarning)
 
-    with pytest.warns(UserWarning):
+    with context:
         SplashModel(
             lat=np.broadcast_to(ds.lat.data[None, :, None], ds.sf.data.shape),
             elv=np.broadcast_to(ds.elev.data[None, :, :], ds.sf.data.shape),
-            dates=Calendar(ds.time.data),
+            dates=Calendar(dates),
             sf=ds.sf.data,
             tc=ds.tmp.data,
             pn=ds.pre.data,
