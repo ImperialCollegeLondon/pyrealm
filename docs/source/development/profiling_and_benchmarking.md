@@ -237,28 +237,32 @@ is estimate using, for example:
 /usr/bin/time -l pytest tests/profiling/test_profiling_pmodel.py -m "profiling"
 ```
 
+<!-- markdownlint-disable MD004 -->
+
 :::{list-table} test_profiling_pmodel.py
 :header-rows: 1
 
-* * pmodel_profile_scaleup
-  * peak memory footprint in GB
-* * 40
-  * 35.84
-* * 20
-  * 19.74
-* * 10
-  * 9.95
+* - pmodel_profile_scaleup
+  - peak memory footprint in GB
+* - 40
+  - 35.84
+* - 20
+  - 19.74
+* - 10
+  - 9.95
 :::
 
 :::{list-table} test_profiling_splash.py
 :header-rows: 1
 
-* * splash_profile_scaleup
-  * peak memory footprint in GB
-* * 500
-  * 22.47
-* * 250
-  * 11.54
-* * 125
-  * 5.95
+* - splash_profile_scaleup
+  - peak memory footprint in GB
+* - 500
+  - 22.47
+* - 250
+  - 11.54
+* - 125
+  - 5.95
 :::
+
+<!-- markdownlint-enable MD004 -->
