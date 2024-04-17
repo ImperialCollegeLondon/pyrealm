@@ -216,3 +216,49 @@ for the most recent 5 versions for the failing code and change the `ignore_resul
 to `True` if that row sets an unacheivable target for the new code. You should also
 provide a brief comment in the `ignore_justification` field to explain which commit is
 being passed as a result and why.
+
+## Scaling of the profiling with problem size
+
+This topic is a work in progress but we ideally would like to look at profiling with
+variable problem sizes to be able to catch code that scales poorly. At the moment, the
+profiling tests use a couple of smaller datasets that are then tiled to scale up the
+problem size.
+
+This scaling up is partly to get more stable profiling results -  small problems have a
+lot of runtime noise, leading to benchmarking fails - but the same mechanism could also
+be used to modify problem size.
+
+The scaling up also affects the peak memory usage of the tests, which can lead to issues
+with running the tests on local machines and GitHub Action runners. The data below shows
+how the peak memory usage changes with problem set scaling factors. The peak memory size
+is estimate using, for example:
+
+```sh
+/usr/bin/time -l pytest tests/profiling/test_profiling_pmodel.py -m "profiling"
+```
+
+:::{list-table} test_profiling_pmodel.py
+:header-rows: 1
+
+* * pmodel_profile_scaleup
+  * peak memory footprint in GB
+* * 40
+  * 35.84
+* * 20
+  * 19.74
+* * 10
+  * 9.95
+:::
+
+:::{list-table} test_profiling_splash.py
+:header-rows: 1
+
+* * splash_profile_scaleup
+  * peak memory footprint in GB
+* * 500
+  * 22.47
+* * 250
+  * 11.54
+* * 125
+  * 5.95
+:::
