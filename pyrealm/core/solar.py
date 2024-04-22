@@ -2,7 +2,6 @@
 radiation fluxes and other radiative values.
 """  # noqa: D205, D415
 
-
 import numpy as np
 from numpy.typing import NDArray
 

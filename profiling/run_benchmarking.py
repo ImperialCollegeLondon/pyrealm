@@ -69,9 +69,9 @@ def get_function_map(root: Path) -> dict[tuple[str, int, str], str]:
                         f".{node.name}"
                     )
                 else:
-                    ast_map[
-                        (str(src_file), lineno, node.name)
-                    ] = f"{src_file}:{node.name}"
+                    ast_map[(str(src_file), lineno, node.name)] = (
+                        f"{src_file}:{node.name}"
+                    )
             if isinstance(node, ast.ClassDef):
                 # Add parent node
                 for child in node.body:
