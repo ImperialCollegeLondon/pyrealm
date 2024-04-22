@@ -1,4 +1,4 @@
-"""The module :mod:`~pyrealm.pmodel.jmax_limitation` provides the implementation of 
+"""The module :mod:`~pyrealm.pmodel.jmax_limitation` provides the implementation of
 the following pmodel core class:
 
 * :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation`:
@@ -222,9 +222,7 @@ class JmaxLimitation:
         aquad = -1
         bquad = cap_p
         cquad = -(cap_p * theta)
-        roots = np.polynomial.polynomial.polyroots(
-            [aquad, bquad, cquad]
-        )  # type: ignore [no-untyped-call]
+        roots = np.polynomial.polynomial.polyroots([aquad, bquad, cquad])  # type: ignore [no-untyped-call]
 
         # factors derived as in Smith et al., 2019
         m_star = (4 * c_cost) / roots[0].real

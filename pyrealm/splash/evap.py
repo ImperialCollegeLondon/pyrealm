@@ -124,7 +124,7 @@ class DailyEvapFluxes:
             wn: The soil moisture (mm).
             day_idx: An integer giving the index of the provided ``wn`` values along the
                 time axis.
-            aet_only: Should the function only return AET or AET, ``hi`` and ``sw``.
+            only_aet: Should the function only return AET or AET, ``hi`` and ``sw``.
 
         Returns:
             An array of AET values or a tuple of arrays containing AET, ``hi`` and

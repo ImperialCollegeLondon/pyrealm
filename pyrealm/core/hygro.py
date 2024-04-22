@@ -194,7 +194,7 @@ def calc_saturation_vapour_pressure_slope(tc: NDArray) -> NDArray:
     Args:
         tc: The air temperature (°C)
 
-    Returns
+    Returns:
         The calculated slope in kPa °C-1.
     """
 

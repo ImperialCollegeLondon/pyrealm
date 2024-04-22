@@ -38,7 +38,6 @@ def get_function_map(root: Path) -> dict[tuple[str, int, str], str]:
     of the function node and any decorator nodes.
 
     Warning:
-
         In order to separate class methods from functions, this function relies on
         `ast.walk` walking `ast.ClassDef` nodes before `ast.FunctionDef` nodes and then
         adds a `class_name` attribute to functions in the class body. That attribute can
