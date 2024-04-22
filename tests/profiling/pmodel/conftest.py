@@ -7,12 +7,12 @@ import pytest
 import xarray
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 def pmodel_profile_data(pytestconfig):
     """Setting up the pmodel and loading the test data set.
 
-    This uses a module scoped yield fixture to only load the data once and then to
-    delete it all when the tests exit.
+    This uses a package scoped yield fixture to only load the data once for the pmodel
+    tests and then to delete it all when the tests exit.
     """
     from pyrealm.pmodel import PModelEnvironment
 
@@ -75,43 +75,3 @@ def pmodel_profile_data(pytestconfig):
 
     # Delete all the local objects
     del list(locals().keys())[:]
-
-
-@pytest.fixture(scope="session")
-def splash_profile_data(pytestconfig):
-    """Setup the data for the profiling.
-
-    This currently just tiles the data along the longitude axis to increase the load.
-    Tiling along the latitude axis adds more complexity - all results at the same
-    latitude should be identical, so tiling on longitude is easy.
-
-    Tiling on time is a pain because of leap years, so even though the year tile is
-    there, don't use it. The clever thing to do here is to split those two years into
-    leap and non leap and then build the pattern up that way.
-    """
-
-    from pyrealm.core.calendar import Calendar
-
-    dpath = resources.files("pyrealm_build_data.splash")
-    data = xarray.load_dataset(dpath / "data/splash_nw_us_grid_data.nc")
-
-    # Scale up data to give a more robust profile
-    def _scale_up(array, scaling_factor: int):
-        """Bulk out the data."""
-        # Tile on lon and time axis
-        return np.tile(array, (1, 1, scaling_factor))
-
-    # Variable set up
-    scaling_factor = pytestconfig.getoption("splash_profile_scaleup")
-
-    sf = _scale_up(data.sf.to_numpy(), scaling_factor=scaling_factor)
-    tc = _scale_up(data.tmp.to_numpy(), scaling_factor=scaling_factor)
-    pn = _scale_up(data.pre.to_numpy(), scaling_factor=scaling_factor)
-
-    elv = np.tile(data.elev.to_numpy(), (1, scaling_factor))
-    elv = np.broadcast_to(elv[None, :, :], sf.shape)
-    lat = np.broadcast_to(data.lat.to_numpy()[None, :, None], sf.shape)
-
-    dates = Calendar(data.time.data)
-
-    return sf, tc, pn, elv, lat, dates
