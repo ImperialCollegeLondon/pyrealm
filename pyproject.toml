@@ -23,7 +23,7 @@ version = "0.10.1"
 [tool.poetry.dependencies]
 dacite = "^1.6.0" 
 numpy = "^1.16.5" 
-python = ">=3.10"
+python = ">=3.10,<4.0" # pytest-ruff has an upper bound
 scipy = "^1.7.3" 
 tabulate = "^0.8.10" 
 
@@ -37,12 +37,10 @@ pytest = "^7.1.2"
 pytest-cov = "^3.0.0"
 pytest-mock = "^3.8.1"
 pytest-profiling = "^1.7.0"
+pytest-ruff = "^0.3.1"
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^8.9.0"
-jupyterlab = "^4.2.1"
-jupyterlab-myst = "^2.4.2"
-jupytext = "^1.16.2"
 matplotlib = "^3.5.2"
 multiprocess = "^0.70.16"
 mypy = "^0.991"
@@ -88,8 +86,8 @@ module = "tests.*"
 
 [tool.pytest.ini_options]
 addopts = """
-  -v 
-  -p no:warnings
+  -v --ruff --ruff-format
+  --mypy -p no:warnings
   -m "not profiling" 	
   --cov=pyrealm  
   --cov-report=html:reports/coverage
@@ -117,7 +115,6 @@ select = [
   "D", # pydocstyle
   "I", # isort
   "UP", # pyupgrade
-  "RUF", # RUF specific checks
 ]
 
 # On top of the Google convention, disable:
