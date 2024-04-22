@@ -1,5 +1,6 @@
 """Some pytest configuration specific to the profiling test suite."""
 
+import gc
 from importlib import resources
 
 import numpy as np
@@ -75,3 +76,4 @@ def pmodel_profile_data(pytestconfig):
 
     # Delete all the local objects
     del list(locals().keys())[:]
+    gc.collect()

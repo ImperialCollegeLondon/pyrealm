@@ -1,5 +1,6 @@
 """Some pytest configuration specific to the profiling test suite."""
 
+import gc
 from importlib import resources
 
 import numpy as np
@@ -27,6 +28,8 @@ def splash_profile_data(pytestconfig):
 
     from pyrealm.core.calendar import Calendar
 
+    print("\n***\nSetting up profiling of splash profiling data\n***\n")
+
     dpath = resources.files("pyrealm_build_data.splash")
     data = xarray.load_dataset(dpath / "data/splash_nw_us_grid_data.nc")
 
@@ -49,4 +52,10 @@ def splash_profile_data(pytestconfig):
 
     dates = Calendar(data.time.data)
 
-    return sf, tc, pn, elv, lat, dates
+    yield sf, tc, pn, elv, lat, dates
+
+    print("\n***\nTearing down\n***\n")
+
+    # Delete all the local objects
+    del list(locals().keys())[:]
+    gc.collect()
