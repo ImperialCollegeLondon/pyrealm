@@ -31,12 +31,9 @@ package website. The content directories are:
 * The `api` directory contains some simple stub files that are used to link to API
   content generated from docstrings.
 
-We use the `sphinx_external_toc` package to maintain a table of contents for the
-package: you will need to add new pages to `_toc.yml` for them to appear in the table.
-
 ### MyST Markdown
 
-All of documentation in `docs/source` uses [MyST
+All of the documentation in `docs/source` uses [MyST
 Markdown](https://myst-parser.readthedocs.io/en/latest/) rather than the
 reStructuredText (`.rst`) format. Markdown is easier to write and read and the MyST
 Markdown extension is a literate programming format that allows Markdown pages to be run
@@ -48,9 +45,28 @@ does not display on GitHub, the JSON format `.ipynb` files are much bulkier and 
 change whenever the notebook is run, not just when there are meaningful changes to the
 content.
 
+MyST Markdown notebooks need to contain a `YAML` format header that provides details on
+how to run the notebook. The content below should appear right at the top of the file.
+
+```yaml
+---
+jupytext:
+  formats: md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.13.8
+kernelspec:
+  display_name: Python 3
+  language: python
+  name: pyrealm_python3
+---
+```
+
 When the package documentation is built in `sphinx` the `myst_nb` extension
 automatically runs any code in MyST markdown documents and renders the resulting code
-and outputs into the HTLM. The documentation can therefore contain dynamically generated
+and outputs into HTML. The documentation can therefore contain dynamically generated
 examples of running code and output plots to demonstrate how to use the
 package. This build process also ensures that code in documentation is kept up to date
 with the package. The syntax for including code blocks in documents is shown below -
@@ -65,6 +81,14 @@ documentation, but with a toggle button to allow it to be expanded.
 ```
 ````
 
+### Table of contents
+
+We use the `sphinx_external_toc` package to maintain a table of contents for the
+package. The file `docs/source/_toc.yml` contains the structure of the table and you
+will need to add new documentation files to this file for them to appear in the table.
+The documentation build process will fail if it finds files in `docs/source` that are
+not included in the table of contents!
+
 ### Docstrings
 
 The `pyrealm` package uses docstrings written in the [Google
@@ -73,9 +97,12 @@ This allows the function documentation to be stored alongside the code and it is
 in the documentation using the `sphinx` `autodoc` extension. See the code itself for
 examples of the documentation formatting and typical content.
 
-Unlike the files in `docs/sources` pages, the docstrings in code need to be written
-using reStructuredText: at present the `autodoc` functions in `sphinx` currently rely on
-`rst` inputs.
+At the moment, we use the `autodoc` plugins for `sphinx` to convert docstrings to HTML
+and build the online API documentation. Unfortunately, the `autodoc` package is
+hard-coded to expect docstrings to use reStructuredText, which means that at the moment
+**all docstrings have to be written in `rst` format**. At some point, we'd like to
+switch away to using Markdown throughout, but for the moment look at the existing
+docstrings to get examples of how the formatting differs.
 
 ### Referencing
 
@@ -84,6 +111,18 @@ citations. This uses Latex like citation keys in the documentation to insert ref
 and build a bibliography. The `sphinx` configuration in `docs/source/conf.py` provides a
 custom Author/Year citation style. The reference library in `source/refs.bib` needs to
 be kept up to date with the literature for the project.
+
+The three common use cases are shown below using a couple of reference tags
+(`Prentice:2014bc` and `Wang:2017go`) that are inclued provided in the current
+[reference library](../refs.bib).
+
+* Cite with date in parentheses (``{cite:t}`Prentice:2014bc` ``): the model implemented
+  in {cite:p}`Prentice:2014bc`.
+* Cite with reference(s) in parentheses (``{cite:p}`Prentice:2014bc,Wang:2017go` ``):
+  using the P Model {cite:t}`Prentice:2014bc,Wang:2017go`.
+* Cite as above but suppressing the parentheses to allow text before or after the
+  citation (``(see {cite:alp}`Prentice:2014bc` for details)``): the class implements
+  the P Model (see {cite:alp}`Prentice:2014bc` for details).
 
 ## Building the documentation
 

@@ -18,9 +18,28 @@ This page gives an overview of the process of contributing code to the `pyrealm`
 package, along with the development environment and tools you will need to setup to work
 with the codebase.
 
+## What is a package contributor?
+
+Being a contributor is all about helping improve the `pyrealm` package. That could be
+something very small, like fixing typos in the package website, or something large, like
+adding a draft of an entirely new science module to the package.
+
+We welcome _all_ contributions, but we need to manage contributions of code and
+documentation to make sure everything works properly together and to keep the code and
+documentation consistent. We do a lot of this by using some automated tools that help
+keep the package well organised and ensure that it keeps giving the same results through
+time.
+
+These tools take a bit of getting used to and the rest of this document sets out how to
+get your computer set up to run them. It is a good idea to start off with a small
+contribution in order to get used to the workflow - please do reach out to other
+developers for help in getting things to work if you run into problems. We will expect
+you to have read this document and the linked details pages, but we do not expect them
+to be a perfect or complete explanation!
+
 ## Contributing code
 
-The workflow for contributing code to `pyrealm` is:
+The workflow for contributing to `pyrealm` is:
 
 1. Decide what you want to work on. This could be an existing bug or feature request or
    could be something new. If it is new, then create an new issue on Github describing
@@ -28,6 +47,8 @@ The workflow for contributing code to `pyrealm` is:
    feature requests: please do provide as much detail as possible on the bug or the
    feature you would like to provide. If you want to work on an existing issue, then
    just add a comment and say you would like to work on it.
+
+   [https://github.com/ImperialCollegeLondon/pyrealm/issues](https://github.com/ImperialCollegeLondon/pyrealm/issues)
 
    Whatever issue you do want to work on, do give other developers a chance to comment
    on suggestions before putting a lot of effort in!
@@ -84,7 +105,7 @@ git clone https://github.com/ImperialCollegeLondon/pyrealm.git
 
 You can now use `poetry` to install the package dependencies. This is not just the
 package requirements for end users of the package, but also a wider set of tools used in
-package development. The `poetry` tools uses the
+package development. `poetry` uses the
 [pyproject.toml](https://github.com/ImperialCollegeLondon/pyrealm/blob/develop/pyproject.toml)
 file to configure the dependencies that will be installed.
 
@@ -95,9 +116,16 @@ poetry install
 Poetry uses a virtual environment for package development: all packages are installed to
 a stand-alone python environment that is only used for `pyrealm` development. This makes
 sure that the development environment is consistent across python versions and different
-developers. It does mean you need to put `poetry run` before command to run commands in
-that environment or `poetry shell` to start a new shell that specifically uses that
-environment.
+developers. However, when you are working on the command line, you need to **explicitly
+use the `pyrealm` environment** to run any command that needs to use the `pyrealm`
+environment - and that is pretty much everything described in this document. There are
+two options to do this:
+
+1. You can add `poetry run` before a command to make sure that single command is run
+   using the `poetry` environment. This approach is used in the example commands below.
+1. You can use `poetry shell` to start a new shell that uses this environment: you can
+   then run commands without needing `poetry run` and they should use the correct
+   enviroment. This is usually more convenient.
 
 You should now be able to run the following command to see that `pyrealm` is installed
 and is showing the current version.
@@ -105,6 +133,29 @@ and is showing the current version.
 ```sh
 poetry run python -c "import pyrealm; print(pyrealm.__version__)"
 ```
+
+### Updating `poetry` and package versions
+
+You will not need to do this when setting up your development environment but one of the
+things that `poetry` does is to maintain a fixed set of compatible required packages.
+The `pyproject.toml` files sets constraints on package versions, but the particular
+combination to be used for a given commit is resolved and stored in the `poetry.lock`
+file.
+
+* If you want to **add a package** - either using `poetry add` or by manually updating
+  `pyproject.toml` - you will then need to run `poetry update` to check that a
+  compatible set of package versions exists and to update the `poetry.lock` file.
+
+* If you want to **update a package** then `poetry update` will update all the required
+  packages and update `poetry.lock`. You can use `poetry update package_name` to only
+  update a particular requirement.
+
+* The `poetry install` command - as shown above - can be re-run to re-install the
+  package. You will typically only need to do this if commands provided by the package
+  have changed and need to be updated.
+
+If you pull code from GitHub that changes `pyproject.toml` and `poetry.lock`, you should
+also run `poetry update` to bring your environment in line with other developers.
 
 ### Installing and using `pre-commit`
 
@@ -114,8 +165,13 @@ completing when any of those checks fail. We use `pre-commit` to help catch a wi
 of common issues and make sure that all code pushed to the GitHub repository meets some
 simple quality assurance checks and uses some common formatting standards.
 
+There is a detailed description of the `pre-commit` output and the  configured checks
+and update process on the [code quality assurance page](./code_qa_and_typing.md).
+Briefly, we use `pre-commit` to catch inconsistent formatting and variable typing and to
+run the widely-used `flake8` code checking suite.
+
 The `pre-commit` tool is installed by the `poetry install` step above, so you now need
-to install the `pyrealm` configuration for `precommit` and run the tool to set up the
+to install the `pyrealm` configuration for `pre-commit` and run the tool to set up the
 environment and check it is all working.
 
 ```sh
@@ -125,8 +181,6 @@ poetry run pre-commit run --all-files
 
 That might take a little while to run on the first use. Once you have done this, every
 `git commit` will generate similar output and your commit will fail if issues are found.
-See the [code quality assurance page](./code_qa_and_typing.md) for more information on
-the output, along with the configuration and update process.
 
 ### Static typing with `mypy`
 

@@ -25,11 +25,11 @@ package modules. This includes:
 
 * regression testing the output of `pyrealm` code against previously existing
   implementations of some functionality, such as the `rpmodel` and `SPLASH` packages.
-* unit testing of individual functions and methodsm and,
+* unit testing of individual functions and methods and,
 * profiling and integration testing using combinations of modules.
 
-These are the main tests that the package is behaving as expected and producing stable
-outputs and can be run from repository using:
+These are the main tests that ensure that the package is behaving as expected and that
+it produces stable outputs. The test suite can be run from repository using:
 
 ```bash
 poetry run pytest
@@ -56,9 +56,9 @@ poetry run python -m doctest pyrealm/pmodel/pmodel.py
 
 Normally, `doctest` is just used to test a return value: the value tested is the value
 printed to the console, so it is common to use some form of `round` to make sure values
-match. It can also be used to check that an error or warning is raised. See the example
-for {meth}``pyrealm.utilities.convert_rh_to_vpd` to allow for a warning text to be
-included in the doctest.
+match. It can also be used to check that an error or warning is raised. See the
+docstring for {meth}`~pyrealm.core.hygro.convert_rh_to_vpd` to see how checking for
+warning text can be included in a doctest.
 
 ## Using `pytest-coverage` and `codecov`
 
