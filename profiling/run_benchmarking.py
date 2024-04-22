@@ -38,7 +38,6 @@ def get_function_map(root: Path) -> dict[tuple[str, int, str], str]:
     of the function node and any decorator nodes.
 
     Warning:
-
         In order to separate class methods from functions, this function relies on
         `ast.walk` walking `ast.ClassDef` nodes before `ast.FunctionDef` nodes and then
         adds a `class_name` attribute to functions in the class body. That attribute can
@@ -69,9 +68,9 @@ def get_function_map(root: Path) -> dict[tuple[str, int, str], str]:
                         f".{node.name}"
                     )
                 else:
-                    ast_map[
-                        (str(src_file), lineno, node.name)
-                    ] = f"{src_file}:{node.name}"
+                    ast_map[(str(src_file), lineno, node.name)] = (
+                        f"{src_file}:{node.name}"
+                    )
             if isinstance(node, ast.ClassDef):
                 # Add parent node
                 for child in node.body:

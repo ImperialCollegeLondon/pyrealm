@@ -1,4 +1,4 @@
-r"""The module :mod:`~pyrealm.pmodel.optimal_chi` provides  
+r"""The module :mod:`~pyrealm.pmodel.optimal_chi` provides
 the abstract base class :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`,
 which is used to support different implementations of the calculation of optimal chi.
 """  # noqa D210, D415
@@ -586,10 +586,9 @@ class OptimalChiLavergne20C4(
     :math:`m_{joc}` are calculated.
 
     Note:
-
-    This is an **experimental approach**. The research underlying
-    :cite:`lavergne:2020a`, found **no relationship** between C4 :math:`\beta`
-    values and soil moisture in leaf gas exchange measurements.
+        This is an **experimental approach**. The research underlying
+        :cite:`lavergne:2020a`, found **no relationship** between C4 :math:`\beta`
+        values and soil moisture in leaf gas exchange measurements.
 
     Examples:
         >>> import numpy as np
