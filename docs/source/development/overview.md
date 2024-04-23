@@ -81,7 +81,8 @@ The workflow for contributing to `pyrealm` is:
 
 The short descriptions below provide the key commands needed to set up your development
 environment and provide links to more detailed descriptions of code development for
-`pyrealm`.
+`pyrealm`. The [example setup script](#setup-script-example) below gathers
+the commands together into a single script, currently only for Linux.
 
 ### Python environment
 
@@ -192,12 +193,6 @@ installed by `poetry` and is run as one of the `pre-commit` checks.
 The `mypy` package and the plugins we use are all installed by `poetry`. See the [code
 quality assurance page](./code_qa_and_typing.md) for more information on using `mypy`.
 
-### The `pyrealm-build-data` package
-
-The `pyrealm` repository includes the [`pyrealm-build-data`
-package](./pyrealm_build_data.md), which is used to provide a range of datasets used in
-package testing and in documentation.
-
 ### Package testing
 
 All code in the `pyrealm` package should have accompanying unit tests, using `pytest`.
@@ -207,7 +202,14 @@ known inputs to a function and check that the expected answer (which could be an
 Exception) is generated.
 
 Again, the `pytest` package and plugins are installed by `poetry`. See the [code testing
-page](./code_testing.md) for more details.
+page](./code_testing.md) for more details but you should be able to check the tests run
+using the following command. Be warned that the `mypy` steps can be very time consuming
+on the first run, but `pytest` does some cacheing that makes them quicker when they next
+run.
+
+```sh
+poetry run pytest
+```
 
 ### Code profiling
 
@@ -219,6 +221,12 @@ performance.
 
 See the [profiling and benchmarking page](./profiling_and_benchmarking.md) for more
 details on running profiling.
+
+### The `pyrealm-build-data` package
+
+The `pyrealm` repository includes the [`pyrealm-build-data`
+package](./pyrealm_build_data.md), which is used to provide a range of datasets used in
+package testing and in documentation.
 
 ### Documentation
 
@@ -255,3 +263,57 @@ We use trusted publishing from GitHub releases to release new versions of `pyrea
 [PyPI](https://pypi.org/project/pyrealm/). Releases are also picked up and archived on
 [Zenodo](https://doi.org/10.5281/zenodo.8366847). See the [release process
 page](./release_process.md) for details.
+
+## Setup script example
+
+The scripts below bundle all the commands together to show the set up process, including
+using `pyenv` to mangage `python` versions.
+
+:::{admonition} Setup script
+
+``` sh
+#!/bin/bash
+
+# pyenv and poetry use sqlite3
+sudo apt install sqlite3 sqlite3-doc libsqlite3-dev
+
+# install pyenv to manage parallel python environments
+curl <https://pyenv.run> | bash
+
+# Manually edit .bash_profile or .profile to setup pyenv:
+
+# export PYENV_ROOT="$HOME/.pyenv":
+# [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH":
+# eval "$(pyenv init -)"
+
+# Install a python version
+pyenv install 3.11
+
+# Install poetry
+curl -sSL https://install.python-poetry.org | python3 -
+
+# Manually add poetry to path in profile file:
+
+# export PATH="/home/validate/.local/bin:$PATH"
+
+# Clone the repository
+git clone https://github.com/ImperialCollegeLondon/pyrealm.git
+
+# Configure the pyrealm repo to use python 3.11
+cd pyrealm
+pyenv local 3.11
+poetry env use 3.11
+
+# Install the package with poetry
+poetry install
+
+# Install pre-commit and check
+poetry run pre-commit install
+poetry run pre-commit run --all-files
+
+# Run the test suite
+poetry run pytest
+
+```
+
+:::
