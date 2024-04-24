@@ -1,12 +1,13 @@
-name: Profiling
+name: Profiling on approve
 
-# This runs when code is pushed to main or develop
+# This runs when a pull request is submitted
 on:
-  push:
-    branches: [main, develop]
+  pull_request_review:
+    types: [submitted]
 
 jobs:
   test:
+    if: github.event.review.state == 'APPROVED'
     uses: ./.github/workflows/pyrealm_ci.yaml
     secrets: inherit
 
@@ -30,25 +31,25 @@ jobs:
       with:
         poetry-version: 1.2.2
 
-    - name: Install dependencies
-      run: poetry install
-
-    - name: Run the profiling test suite
-      id: profiling
+    - name: Install dependencies and add env vars
       run: |
+        poetry install
         sudo apt-get install graphviz
-        poetry run pytest -m "profiling" --profile-svg
         calculatedSha=$(git rev-parse --short ${{ github.sha }})
         echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
 
+    - name: Run the profiling test suite, using time to get peak memory usage
+      id: profiling
+      run: poetry run /usr/bin/time -v pytest -m "profiling" --profile-svg
+
     # This step only runs if the profiling succeeds
-    - name: Benchmark performance and copy call graph
+    - name: Benchmark performance
       id: benchmarking
       if: ${{steps.profiling.outcome == 'success'}}
-      run: poetry run /usr/bin/time -v python profiling/run_benchmarking.py prof/combined.prof profiling/profiling-database.csv profiling/benchmark-fails.csv ${{ env.COMMIT_SHORT_SHA }} --update-on-pass --plot-path profiling/performance-plot.png
+      run: poetry run python profiling/run_benchmarking.py prof/combined.prof profiling/profiling-database.csv profiling/benchmark-fails.csv ${{ env.COMMIT_SHORT_SHA }} --update-on-pass --plot-path profiling/performance-plot.png
 
     # This step copies over the updated call graph
-    - name: Benchmark performance and copy call graph
+    - name: Copy call graph
       id: update-call-graph
       if: always() && steps.benchmarking.outcome != 'skipped'
       run: cp prof/combined.svg profiling/call-graph.svg
