@@ -1,4 +1,4 @@
-name: Profiling
+name: Profiling after push
 
 # This runs when code is pushed to main or develop
 on:
