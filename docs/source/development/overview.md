@@ -42,7 +42,7 @@ to be a perfect or complete explanation!
 The workflow for contributing to `pyrealm` is:
 
 1. Decide what you want to work on. This could be an existing bug or feature request or
-   could be something new. If it is new, then create an new issue on Github describing
+   could be something new. If it is new, then create a new issue on Github describing
    what you want to change or add. The issue tracker provides templates for bugs and
    feature requests: please do provide as much detail as possible on the bug or the
    feature you would like to provide. If you want to work on an existing issue, then
@@ -267,7 +267,8 @@ page](./release_process.md) for details.
 ## Setup script example
 
 The scripts below bundle all the commands together to show the set up process, including
-using `pyenv` to mangage `python` versions.
+using `pyenv` to mangage `python` versions, ending by running the unit tests. This sets
+up everything you need, ready to start developing on pyrealm.
 
 :::{admonition} Setup script
 

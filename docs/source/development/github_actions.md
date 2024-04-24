@@ -14,9 +14,9 @@ kernelspec:
 
 # GitHub Actions
 
-The project uses several workflows using GitHub Actions to maintain code quality
-and check confirm that the package and website are building correctly. The actions are
-defined in `.github/workflows`directory and currently include:
+The project uses several workflows using GitHub Actions to maintain code quality and
+confirm that the package and website are building correctly. The actions are defined in
+`.github/workflows`directory and currently include:
 
 ## `pre-commit_autoupdate.yaml`
 

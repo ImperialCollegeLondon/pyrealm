@@ -40,7 +40,7 @@ a given threshold (currently 5% longer run times or greater).
 ## Running code profiling
 
 We use the [pytest-profiling](https://pypi.org/project/pytest-profiling/) plugin to run
-a set of profiling tests and generate profiling data. These tests are located
+a set of profiling tests and generate profiling data. These tests are located in
 `tests/profiling` and consist of a small set of high-level scripts that are intended to
 use a large proportion of the `pyrealm` codebase with reasonably large inputs.
 
@@ -58,24 +58,24 @@ poetry run pytest --profile-svg -m "profiling"
 
 This selects _only_ the profiling tests and runs them using `pytest-profiling`. The
 `--profile-svg` both runs the profiling _and_ generates a figure showing the call
-hierachy of code objects and the time time spent in each call. Generating this graph
-graph requires the [graphviz](https://pypi.org/project/graphviz/) command line library,
-which provides the `dot` command for generating SVG graph diagrams. You will need to
-install `graphviz` to use this option. Alternatively, you can use the following command
-to only generate the profile data.
+hierachy of code objects and the time spent in each call. Generating this graph requires
+the [graphviz](https://pypi.org/project/graphviz/) command line library, which provides
+the `dot` command for generating SVG graph diagrams. You will need to install `graphviz`
+to use this option. Alternatively, you can use the following command to only generate
+the profile data.
 
 ```bash
 poetry run pytest --profile -m "profiling"
 ```
 
-The `pytest-profiling` plugin saves data and graphs to the `prof` direectory, which is
+The `pytest-profiling` plugin saves data and graphs to the `prof` directory, which is
 excluded from the `git` repository. The key files are the combined results:
 `prof/combined.prof` and `prof/combined.svg`.
 
 ### Scaling of the profiling with problem size
 
 The profiling tests use a couple of smaller datasets that are then tiled to scale up the
-problem size. The size of thse scaling factors can be controlled from the command line.
+problem size. The size of these scaling factors can be controlled from the command line.
 
 * This scaling up is partly to get more stable profiling results -  small problems have
   a lot of runtime noise, leading to benchmarking fails.
@@ -85,8 +85,8 @@ problem size. The size of thse scaling factors can be controlled from the comman
   issues with running the tests on local machines and GitHub Action runners.
 
 The data below shows how the peak memory usage changes with problem set scaling factors.
-The peak memory size is estimate using, `/usr/bin/time -l` and changing the scaling
-factors. For example:
+The peak memory size is estimated using, `/usr/bin/time -l` and changing the scaling
+factors (note that `-v` is required instead on Linux systems). For example:
 
 ```sh
 /usr/bin/time -l pytest tests/profiling/test_profiling_pmodel.py \
@@ -192,9 +192,12 @@ options:
 
 Once you have run the `pytest-profiling` test suite and generated `prof/combined.prof`
 for some new code, you can run the following code to benchmark those results. In the
-code below, `incoming` is used as a label for the new code - you could also a commit SHA
-to identify the profiled code more explicitly (use `git rev-parse --short HEAD` to show
-the current commit SHA).
+code below, `incoming` is used as a label for the new code, but it is more useful to use
+the commit SHA to identify the profiled code more explicitly. The SHA is a unique hash
+calculated from summary information for each commit. The SHA is 40 characters long (e.g.
+`4413a1954447497ee8a236eb447520646437519f`), but is usually truncated to the first 7
+characters (`4413a19`): this can be shown for the last commit using
+`git rev-parse --short HEAD`.
 
 ```bash
 poetry run python profiling/run_benchmarking.py \
@@ -267,6 +270,6 @@ However, if the code cannot be made more efficient, or does something new that i
 inherently more time-consuming, then the `profiling-database.csv` can be updated to
 exclude performance targets that are now expected to fail. Find the rows in the database
 for the most recent 5 versions for the failing code and change the `ignore_result` field
-to `True` if that row sets an unacheivable target for the new code. You should also
+to `True` if that row sets an unachievable target for the new code. You should also
 provide a brief comment in the `ignore_justification` field to explain which commit is
 being passed as a result and why.

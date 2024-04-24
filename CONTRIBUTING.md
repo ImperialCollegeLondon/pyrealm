@@ -14,7 +14,7 @@ computer to develop `pyrealm`.
 
 All code contributions are added to `pyrealm` through this Github repository. You might
 want to help fix an existing bug or add a requested feature or have your own ideas to
-add to `pyrealm`. Whatever you want to do the first, thing is to open a new issue or
+add to `pyrealm`. Whatever you want to do, the first thing is to open a new issue or
 post on an existing issue and start a conversation with the other developers. We are
 really keen to engage with new contributors and to help get new code into `pyrealm` in
 the smoothest possible way.
