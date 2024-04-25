@@ -63,13 +63,19 @@ provides an overview of the strategy.
 
 1. Check that branch out locally and make commits to it, pushing them to GitHub
    regularly. Do try and make frequent small commits with clear, specific commit
-   messages.
+   messages: a commit does not mean that an issue is completed, just that you want to
+   record your progress. The commit history can always be compressed at the merge stage
+   (see below).
 
 1. Create a pull request (PR) from the issue branch onto the `develop` branch. The PR
    description should tag the issue being addressed and explain how the incoming code
    fixes the issue. You can start a PR as 'draft' PR: this can be a useful way to start
    describing a PR content and checking that testing is passing before opening a PR up
    for review.
+
+   We prefer pull requests to be small, with the aim of reviewing and merging frequently
+   the smallest functional unit of work that you can. This helps stop pull requests
+   getting stalled on more and more complex tasks and makes code review fast.
 
 1. Check that the continuous integration testing passes and fix any issues causing test
    failures.
