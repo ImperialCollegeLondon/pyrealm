@@ -6,6 +6,7 @@ create a test set of outputs for validation between the two implementations.
 For validation, a mix of scalar and array inputs are created to check that
 broadcasting works as intended.
 """
+
 import json
 
 import numpy as np

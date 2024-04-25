@@ -4,6 +4,7 @@ TODO - note that there are parallel tests in test_pmodel that benchmark against 
 rpmodel outputs and test a wider range of inputs. Those could be moved here. These tests
 check the size of outputs and that the results meet a simple benchmark value.
 """
+
 import numpy as np
 import pytest
 
