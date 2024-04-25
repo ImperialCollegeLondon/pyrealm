@@ -28,8 +28,9 @@ are used in the `pyrealm` build and testing process. This includes:
 
 Note that `pyrealm_build_data` is a source distribution only (`sdist`) component of
 `pyrealm`, so is not included in binary distributions (`wheel`) that are typically
-installed by end users. This means that the main `pyrealm` codebase should not require
-data from the `pyrealm_build_data` package.
+installed by end users. This means that files in `pyrealm_build_data` are not available
+if a user has simply used `pip install pyrealm`: please *do not* use
+`pyrealm_build_data` within the main `pyrealm` code.
 
 ## Package contents
 

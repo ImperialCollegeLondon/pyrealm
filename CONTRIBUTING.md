@@ -26,8 +26,14 @@ for more details.
 ## Quick Start
 
 The `pyrealm` package uses the `poetry` tool for package management. Getting a simple
-development environment should involve  installing Python 3.10 or higher and `poetry`
-and then using the following commands:
+development environment should involve:
+
+* Installing `python`: `pyrealm` requires `python >3.10` and we currently support
+  versions `python <=3.11`.
+* Installing `poetry`: although the `poetry` tool manages the versions of all the
+  package requirements, the version of `poetry` itself is not managed. Developers should
+  all ensure that they install the **same version of poetry** to avoid version
+  incompatibility issues. We currently use `poetry 1.8.2`.
 
 ```sh
 # Download the repository

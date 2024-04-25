@@ -39,7 +39,10 @@ to be a perfect or complete explanation!
 
 ## Contributing code
 
-The workflow for contributing to `pyrealm` is:
+The workflow for contributing to `pyrealm` currently follows the Gitflow strategy. The
+basic workflow is described below but [this AWS
+link](https://docs.aws.amazon.com/prescriptive-guidance/latest/choosing-git-branch-approach/gitflow-branching-strategy.html)
+provides an overview of the strategy.
 
 1. Decide what you want to work on. This could be an existing bug or feature request or
    could be something new. If it is new, then create a new issue on Github describing
@@ -53,8 +56,10 @@ The workflow for contributing to `pyrealm` is:
    Whatever issue you do want to work on, do give other developers a chance to comment
    on suggestions before putting a lot of effort in!
 
-1. Use the Github issue page interface to create a branch for the issue. The branch name
-   will start with the issue number, which makes branches much easier to track.
+1. On Github issue pages, there is a development link to "create a branch" for the
+   issue. The branch name will then start with the issue number, which makes branches
+   much easier to track, and is explicitly linked to the issue. Feel free to shorten the
+   branch name - it uses the issue title by default.
 
 1. Check that branch out locally and make commits to it, pushing them to GitHub
    regularly. Do try and make frequent small commits with clear, specific commit
@@ -69,13 +74,27 @@ The workflow for contributing to `pyrealm` is:
 1. Check that the continuous integration testing passes and fix any issues causing test
    failures.
 
-1. Request reviews from other package developers. A PR cannot be merged into `develop`
-   until at least one approving review has been added to the code. Reviews will often
-   suggest changes to the code and you should discuss those suggestions and implement
-   them.
+1. Request reviews from other package developers using the Review section on the PR
+   page. A PR cannot be merged into `develop` until at least one approving review has
+   been added to the code. Reviews will often suggest changes to the code and you should
+   discuss those suggestions and implement them.
+
+   Hopefully, you will have talked to other developers during the process of writing the
+   PR and should have some ideas of who to ask for a review. If not, please request
+   [`davidorme`](https://github.com/davidorme) to review the PR and we can then work out
+   which of the core team is best placed to give feedback.
 
 1. Once a PR has been approved, the PR can be merged into `develop` and the branch can
    be deleted.
+
+   The `Merge Pull Request` button provides alternative merge strategies. The default is
+   to create a "merge commit" - all of the commits on the PR are merged individually to
+   `develop` - but you can also "squash and commit" - which squashes all of the commits
+   into a single commit and message before merging. Squashing commits can be really
+   helpful to avoid a bunch of minor 'typo' commit messages, but can also make it harder
+   to find commits that made bigger changes on a branch. In general, we use "merge
+   commits", but if the commit history on a branch is mostly a sequence of minor edits,
+   feel free to squash.
 
 ## The package development environment
 
@@ -86,14 +105,28 @@ the commands together into a single script, currently only for Linux.
 
 ### Python environment
 
-You will need to install Python 3.10 or greater to develop `pyrealm`. We recommend using
-`pyenv` or `pyenv-win` to manage your Python installations but this is only really
-needed if you want to be able to test your code on different python versions.
+You will need to install Python to develop `pyrealm`. The package is currently tested
+against the following Python versions: 3.10 and 3.11. You should install one of these
+versions for developing `pyrealm`.
+
+We highly recommend using [`pyenv`](https://github.com/pyenv/pyenv) or
+[`pyenv-win`](https://github.com/pyenv-win/pyenv-win)  to manage your Python
+installations. These tools allow you to manage multiple different python versions in
+parallel and to switch between them. However, these extra steps are not necessary to get
+started.
 
 ### Package management
 
 We use [`poetry`](https://python-poetry.org/docs/#installation) for dependency
 management and for managing development environments and you will need to install it.
+The `pyrealm` package currently uses `poetry` version 1.8.2 and you should specify this
+when installing to avoid conflicts with the package management process.
+
+For the typical installation process, this would be as simple as:
+
+```sh
+curl -sSL https://install.python-poetry.org | python3 - --version 1.2.0
+```
 
 ### Installing `pyrealm`
 
@@ -275,7 +308,7 @@ up everything you need, ready to start developing on pyrealm.
 ``` sh
 #!/bin/bash
 
-# pyenv and poetry use sqlite3
+# pyenv and poetry use sqlite3. You _may_ need to install these requirements first.
 sudo apt install sqlite3 sqlite3-doc libsqlite3-dev
 
 # install pyenv to manage parallel python environments
