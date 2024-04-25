@@ -23,7 +23,7 @@ jobs:
 
     - uses: actions/setup-python@v5
       with:
-        python-version: 3.10
+        python-version: "3.10"
 
     - name: Install Poetry
       uses: abatilo/actions-poetry@v2.1.6
@@ -45,7 +45,7 @@ jobs:
     - name: Benchmark performance and copy call graph
       id: benchmarking
       if: ${{steps.profiling.outcome == 'success'}}
-      run: poetry run python profiling/run_benchmarking.py prof/combined.prof profiling/profiling-database.csv profiling/benchmark-fails.csv ${{ env.COMMIT_SHORT_SHA }} --update-on-pass --plot-path profiling/performance-plot.png
+      run: poetry run /usr/bin/time -v python profiling/run_benchmarking.py prof/combined.prof profiling/profiling-database.csv profiling/benchmark-fails.csv ${{ env.COMMIT_SHORT_SHA }} --update-on-pass --plot-path profiling/performance-plot.png
 
     # This step copies over the updated call graph
     - name: Benchmark performance and copy call graph

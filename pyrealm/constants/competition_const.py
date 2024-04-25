@@ -1,4 +1,5 @@
 """The competition_const module TODO."""
+
 from dataclasses import dataclass
 
 from pyrealm.constants import ConstantsClass
