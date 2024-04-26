@@ -7,9 +7,9 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.16.1
 kernelspec:
-  display_name: vr_python3
+  display_name: pyrealm_python3
   language: python
-  name: vr_python3
+  name: pyrealm_python3
 ---
 
 # Canopy model
