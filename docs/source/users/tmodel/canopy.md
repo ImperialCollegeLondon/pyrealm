@@ -27,7 +27,7 @@ functional type, using a set of traits. The code below creates a PFT with the de
 set of trait values.
 
 ```{warning}
-This implementation:
+This sketch:
 
 * Assumes a single individual of each stem diameter, but in practice
   we are going to want to include a number of individuals to capture cohorts.
@@ -44,7 +44,7 @@ from scipy.optimize import root_scalar
 
 from pyrealm.tmodel import TTree
 
-np.set_printoptions(precision=2)
+np.set_printoptions(precision=3)
 
 # Plant functional type with default parameterization
 pft = TTree(diameters=np.array([0.1, 0.15, 0.2, 0.25, 0.38, 0.4, 1.0]))
@@ -422,7 +422,7 @@ ax1.hlines(z_star, 0, (stem_x + rm).max(), color=zcol, linewidth=0.5)
 # at which different canopy layers close
 ax2.hlines(z_star, 0, community_Ap_z.max(), color=zcol, linewidth=0.5)
 ax2.vlines(
-    canopy_area * np.arange(1, n_closed_layer + 1) * (1 - community_gap_fraction),
+    canopy_area * np.arange(1, len(z_star)) * (1 - community_gap_fraction),
     0,
     pft.height.max(),
     color=zcol,
@@ -445,7 +445,7 @@ ax3.set_yticklabels(z_star_labels(z_star))
 ax4 = ax2.twiny()
 
 # Add canopy layer closure areas on top axis
-cum_area = np.arange(1, n_closed_layer + 1) * canopy_area * (1 - community_gap_fraction)
+cum_area = np.arange(1, len(z_star)) * canopy_area * (1 - community_gap_fraction)
 
 def cum_area_labels(X):
     return [f"$A_{l + 1}$ = {z:.1f}" for l, z in enumerate(X)]
