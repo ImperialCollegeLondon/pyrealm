@@ -528,7 +528,7 @@ class OptimalChiLavergne20C3(
         """Set ``beta`` with soil moisture corrections."""
 
         # Calculate beta as a function of theta, which is guaranteed not to be None by
-        # _check_requires so supress mypy here
+        # _check_requires so suppress mypy here
         self.beta = np.exp(
             self.pmodel_const.lavergne_2020_b_c3 * self.env.theta  # type: ignore[operator] # noqa: E501
             + self.pmodel_const.lavergne_2020_a_c3
@@ -620,7 +620,7 @@ class OptimalChiLavergne20C4(
         )
 
         # Calculate beta as a function of theta, which is guaranteed not to be None by
-        # _check_requires so supress mypy here
+        # _check_requires so suppress mypy here
         self.beta = np.exp(
             self.pmodel_const.lavergne_2020_b_c4 * self.env.theta  # type: ignore[operator] # noqa: E501
             + self.pmodel_const.lavergne_2020_a_c4
