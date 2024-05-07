@@ -19,8 +19,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-      # with:
-      #   ref: ${{ github.head_ref }}
+      with:
+        ref: ${{ github.ref }}
 
     - uses: actions/setup-python@v5
       with:
@@ -61,4 +61,4 @@ jobs:
       with:
         commit_message: Auto-generated profiling results [skip actions]
         file_pattern: 'profiling/*'
-        branch: ${{ github.head_ref }}
+        branch: ${{ github.ref }}
