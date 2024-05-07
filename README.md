@@ -9,7 +9,7 @@ build](https://github.com/ImperialCollegeLondon/pyrealm/actions/workflows/pyreal
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/ImperialCollegeLondon/pyrealm/develop.svg)](https://results.pre-commit.ci/latest/github/ImperialCollegeLondon/pyrealm/develop)
 
 The `pyrealm` package provides a toolbox implementing some key models for estimating
-plant productivity, growth and demography in Python 3. The outputs of different models
+plant productivity, growth and demography in Python. The outputs of different models
 can be then easily fed into other models within `pyrealm` to allow productivity
 estimates to be fed forward into estimation of net primary productivity, growth and
 ultimately plant community demography.
@@ -34,10 +34,11 @@ roadmap along with the a feature set to aim for in version 1.0.0.
 
 ## Using `pyrealm`
 
-The `pyrealm` package requires Python 3.9 or greater. We make released versions
-available via [PyPi](https://pypi.org/project/pyrealm/) and also generate DOIs for each
-release via [Zenodo](https://doi.org/10.5281/zenodo.8366847). You can install the most
-recent release using `pip`:
+The `pyrealm` package requires Python 3 and the currently supported Python versions are:
+3.10 and 3.11. We make released package versions available via
+[PyPi](https://pypi.org/project/pyrealm/) and also generate DOIs for each release via
+[Zenodo](https://doi.org/10.5281/zenodo.8366847). You can install the most recent
+release using `pip`:
 
 ```sh
 pip install pyrealm
