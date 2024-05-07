@@ -61,3 +61,4 @@ jobs:
       with:
         commit_message: Auto-generated profiling results [skip actions]
         file_pattern: 'profiling/*'
+        branch: ${{ github.head_ref }}
