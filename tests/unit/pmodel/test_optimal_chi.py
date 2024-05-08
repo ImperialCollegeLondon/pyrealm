@@ -1,6 +1,5 @@
 """Testing Optimal submodule."""
 
-
 import numpy as np
 import pytest
 
@@ -130,53 +129,124 @@ def test_subclasses(pmodelenv_args, subclass, expected):
 
 
 @pytest.mark.parametrize(
-    argnames=["subclass", "pmodelenv_args", "expected"],
+    argnames=["subclass", "extra_vars", "estimable_on_missing"],
     argvalues=[
-        (
+        pytest.param(
             OptimalChiPrentice14,
-            dict(tc=np.nan, patm=101325, co2=400, vpd=1000),
-            dict(chi=0.69435, mc=0.33408, mj=0.7123, mjoc=2.13211),
+            None,
+            {
+                "beta": ["tc", "vpd", "co2", "patm"],  # Fixed
+                "xi": ["co2", "vpd"],  # Needs tc and patm
+                "chi": [],  # Needs all
+                "ci": [],
+            },
+            id="OptimalChiPrentice14",
         ),
-        (
+        pytest.param(
             OptimalChiPrentice14RootzoneStress,
-            dict(tc=20, patm=101325, co2=400, vpd=1000, rootzonestress=np.nan),
-            dict(chi=0.62016),
+            {"rootzonestress": np.array([0.5])},
+            {
+                "beta": ["tc", "vpd", "co2", "patm", "rootzonestress"],  # Fixed
+                "xi": ["co2", "vpd"],  # Needs tc and patm
+                "chi": [],  # Needs all
+                "ci": [],
+            },
+            id="OptimalChiPrentice14RootzoneStress",
         ),
-        (
+        pytest.param(
             OptimalChiC4,
-            dict(tc=np.nan, patm=101325, co2=400, vpd=1000),
-            dict(chi=0.44967, mj=1.0, mjoc=1.0),
+            None,
+            {
+                "beta": ["tc", "vpd", "co2", "patm"],  # Fixed
+                "xi": ["co2", "vpd"],  # Needs tc and patm
+                "chi": [],  # Needs all
+                "ci": [],
+            },
+            id="OptimalChiC4",
         ),
-        (
+        pytest.param(
             OptimalChiC4RootzoneStress,
-            dict(tc=20, patm=101325, co2=400, vpd=1000, rootzonestress=np.nan),
-            dict(chi=0.37659, mj=1.0, mjoc=1.0),
+            {"rootzonestress": np.array([0.5])},
+            {
+                "beta": ["tc", "vpd", "co2", "patm", "rootzonestress"],  # Fixed
+                "xi": ["co2", "vpd"],  # Needs tc and patm
+                "chi": [],  # Needs all
+                "ci": [],
+            },
+            id="OptimalChiC4RootzoneStress",
         ),
-        (
+        pytest.param(
             OptimalChiLavergne20C3,
-            dict(tc=20, patm=101325, co2=400, vpd=1000, theta=np.nan),
-            dict(beta=224.75255, chi=0.73663, mc=0.34911, mj=0.7258, mjoc=2.07901),
+            {"theta": np.array([0.5])},
+            {
+                "beta": ["tc", "vpd", "co2", "patm"],  # Needs theta
+                "xi": ["co2", "vpd"],  # Needs tc and patm
+                "chi": [],  # Needs all
+                "ci": [],
+            },
+            id="OptimalChiLavergne20C3",
         ),
-        (
+        pytest.param(
             OptimalChiLavergne20C4,
-            dict(tc=20, patm=101325, co2=400, vpd=1000, theta=np.nan),
-            dict(beta=24.97251, chi=0.44432, mc=0.28091, mj=1.0, mjoc=3.55989),
+            {"theta": np.array([0.5])},
+            {
+                "beta": ["tc", "vpd", "co2", "patm"],  # Needs theta
+                "xi": ["co2", "vpd"],  # Needs tc and patm
+                "chi": ["co2"],  # chi does not depend on CO2
+                "ci": [],  # But ci cannot be estimated without CO2
+            },
+            id="OptimalChiLavergne20C4",
         ),
-        (
+        pytest.param(
             OptimalChiC4NoGamma,
-            dict(tc=np.nan, patm=101325, co2=400, vpd=1000),
-            dict(chi=0.3919, mc=0.25626, mj=1.0),
+            None,
+            {
+                "beta": ["tc", "vpd", "co2", "patm"],  # Needs theta
+                "xi": ["co2", "vpd"],  # Needs tc and patm
+                "chi": ["co2"],  # chi does not depend on CO2
+                "ci": [],  # But ci cannot be estimated without CO2
+            },
+            id="OptimalChiC4NoGamma",
         ),
-        (
+        pytest.param(
             OptimalChiC4NoGammaRootzoneStress,
-            dict(tc=20, patm=101325, co2=400, vpd=1000, rootzonestress=np.nan),
-            dict(chi=0.31305, mc=0.21583, mj=1.0),
+            {"rootzonestress": np.array([0.5])},
+            {
+                "beta": ["tc", "vpd", "co2", "patm", "rootzonestress"],  # Needs theta
+                "xi": ["co2", "vpd"],  # Needs tc and patm
+                "chi": ["co2"],  # chi does not depend on CO2
+                "ci": [],  # But ci cannot be estimated without CO2
+            },
+            id="OptimalChiC4NoGammaRootzoneStress",
         ),
     ],
 )
-def test_nan_handling(pmodelenv_args, subclass, expected):
+def test_nan_handling(subclass, extra_vars, estimable_on_missing):
     """Test that subclasses handles NaNs correctly."""
-    env = PModelEnvironment(**pmodelenv_args)
-    instance = subclass(env)
-    for key, value in expected.items():
-        assert getattr(instance, key) == pytest.approx(value, rel=1e-3)
+
+    # Setup the required vars
+    vars = dict(
+        tc=np.array([20]),
+        patm=np.array([101325]),
+        co2=np.array([400]),
+        vpd=np.array([1000]),
+    )
+    if extra_vars is not None:
+        vars.update(extra_vars)
+
+    # Set each var to nan in turn
+    for var in vars:
+        pmodelenv_args_copy = vars.copy()
+        pmodelenv_args_copy[var] = np.array([np.nan])
+        env = PModelEnvironment(**pmodelenv_args_copy)
+        instance = subclass(env)
+
+        for pred_var in ["beta", "xi", "chi", "ci"]:
+            if var in estimable_on_missing[pred_var]:
+                assert not np.isnan(
+                    getattr(instance, pred_var)
+                ), f"{pred_var} is np.nan but estimable with missing {var}"
+            else:
+                assert np.isnan(
+                    getattr(instance, pred_var)
+                ), f"{pred_var} estimated but should not be with missing {var}"

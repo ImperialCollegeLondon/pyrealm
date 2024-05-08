@@ -322,9 +322,14 @@ class SubdailyPModel:
         self.jmax25_opt = self.pmodel_acclim.jmax * (
             1 / calc_ftemp_arrh(tk_acclim, self.env.pmodel_const.subdaily_jmax25_ha)
         )
+
         """Instantaneous optimal :math:`x_{i}`, :math:`V_{cmax}` and :math:`J_{max}`"""
         if init_realised is not None:
             self.init_xi_real, self.init_vcmax_real, self.init_jmax_real = init_realised
+        else:
+            self.init_xi_real = self.pmodel_acclim.optchi.xi
+            self.init_vcmax_real = self.vcmax25_opt
+            self.init_jmax_real = self.jmax25_opt
 
         # 5) Calculate the realised daily values from the instantaneous optimal values
         self.xi_real: NDArray = memory_effect(
