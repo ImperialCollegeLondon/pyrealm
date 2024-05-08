@@ -37,7 +37,12 @@ subtrees:
 
 - caption: Development
   entries:
-  - file: development/developers.md
+  - file: development/overview.md
+  - file: development/code_qa_and_typing.md
+  - file: development/documentation.md
+  - file: development/code_testing.md
+  - file: development/profiling_and_benchmarking.md
+  - file: development/github_actions.md
   - file: development/release_process.md
   - file: development/pyrealm_build_data.md
 

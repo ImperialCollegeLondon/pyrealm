@@ -20,7 +20,6 @@ This implementation has the following desired features:
 6. Is a class, to allow __repr__ and other methods.
 """  # noqa D210, D415
 
-
 import json
 from dataclasses import asdict, dataclass
 

@@ -45,7 +45,7 @@ jobs:
     - name: Benchmark performance and copy call graph
       id: benchmarking
       if: ${{steps.profiling.outcome == 'success'}}
-      run: poetry run python profiling/run_benchmarking.py prof/combined.prof profiling/profiling-database.csv profiling/benchmark-fails.csv ${{ env.COMMIT_SHORT_SHA }} --update-on-pass --plot-path profiling/performance-plot.png
+      run: poetry run /usr/bin/time -v python profiling/run_benchmarking.py prof/combined.prof profiling/profiling-database.csv profiling/benchmark-fails.csv ${{ env.COMMIT_SHORT_SHA }} --update-on-pass --plot-path profiling/performance-plot.png
 
     # This step copies over the updated call graph
     - name: Benchmark performance and copy call graph

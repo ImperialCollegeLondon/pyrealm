@@ -3,7 +3,6 @@ used for calculating the photosynthetic behaviour of plants. The documentation d
 the key equations used in each function.
 """  # noqa D210, D415
 
-
 import numpy as np
 from numpy.typing import NDArray
 
