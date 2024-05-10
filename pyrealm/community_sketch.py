@@ -34,7 +34,7 @@ class PlantFunctionalType:
 class Cohort:
     """placeholder."""
 
-    pft: str
+    pft_name: str
     dbh: float
     number_of_members: int
 
@@ -74,7 +74,7 @@ class CohortGeometry:
     """placeholder."""
 
     number_of_members: int
-    pft: str
+    pft_name: str
     dbh: float
     height: float
     crown_area: float
@@ -127,7 +127,7 @@ class Community:
         results = []
 
         for cohort in self.cohorts:
-            pft = self.flora.get(cohort.pft)
+            pft = self.flora.get(cohort.pft_name)
 
             # don't think this is an elegant way to do this, but putting it here for now
             if pft is None:
@@ -155,7 +155,7 @@ class Community:
             results.append(
                 CohortGeometry(
                     cohort.number_of_members,
-                    cohort.pft,
+                    cohort.pft_name,
                     cohort.dbh,
                     height,
                     crown_area,
@@ -177,7 +177,7 @@ class Community:
         pass
 
 
-def calculate_qm(m: float, n: float) -> float:
+def calculate_q_m(m: float, n: float) -> float:
     """placeholder."""
     return (
         m
@@ -188,32 +188,71 @@ def calculate_qm(m: float, n: float) -> float:
 
 
 def calculate_stem_canopy_factors(
-    cohort_geometry: CohortGeometry, flora: Flora
+    cohort_geometry: CohortGeometry, pft: PlantFunctionalType
 ) -> tuple[int, int]:
     """placeholder."""
-    pft = flora[cohort_geometry.pft]
     m = pft.m
     n = pft.n
-    qm = calculate_qm(m, n)
+    q_m = calculate_q_m(m, n)
 
     # Height of maximum crown radius
-    zm = cohort_geometry.height * ((n - 1) / (m * n - 1)) ** (1 / n)
+    z_m = cohort_geometry.height * ((n - 1) / (m * n - 1)) ** (1 / n)
 
-    # Slope to give Ac at zm
-    r0 = 1 / qm * np.sqrt(cohort_geometry.crown_area / np.pi)
+    # Scaling factor to give expected Ac (crown area) at
+    # z_m (height of maximum crown radius)
+    r_0 = 1 / q_m * np.sqrt(cohort_geometry.crown_area / np.pi)
 
-    return zm, r0
+    return z_m, r_0
+
+
+def calculate_relative_canopy_radius_at_z(
+    z: float, H: float, m: float, n: float
+) -> float:
+    """Calculate q(z) at a given height, z."""
+
+    z_over_H = z / H
+
+    return m * n * z_over_H ** (n - 1) * (1 - z_over_H**n) ** (m - 1)
+
+
+def calculate_crown_radius_profile_for_cohort(
+    cohort_geometry: CohortGeometry,
+    pft: PlantFunctionalType,
+    z_resolution: float = 0.05,
+) -> np.typing.NDArray:
+    """Calculate the crown radius profile for a given cohort."""
+
+    max_height_padding = 1
+    floating_point_correction = 0.00001
+
+    z = np.arange(0, cohort_geometry.height + max_height_padding, z_resolution)
+    z = np.sort(np.concatenate([z, cohort_geometry.height - floating_point_correction]))
+
+    z_m, r_0 = calculate_stem_canopy_factors(cohort_geometry, pft)
+
+    # # Convert the heights into a column matrix to broadcast against the stems
+    # # and then calculate r(z) = r0 * q(z)
+    # r_z = r_0 * calculate_relative_canopy_radius_at_z(
+    #     z[:, None], cohort_geometry.height, pft.m, pft.n
+    # )
+    #
+    # # When z > H, r_z < 0, so set radius to 0 where rz < 0
+    # r_z[np.where(r_z < 0)] = 0
+
+    return z
 
 
 class Canopy:
     """placeholder."""
 
-    def __init__(self) -> None:
+    def __init__(self, community: Community) -> None:
         """placeholder."""
-        self.canopy_layer_heights: object
+        self.community = community
+        # self.canopy_layer_heights = self.calculate_canopy_layer_heights(
+        #     community.community_geometry
+        # )
 
     def calculate_canopy_layer_heights(
         self, community_geometry: CommunityGeometry
     ) -> None:
         """placeholder."""
-        pass
