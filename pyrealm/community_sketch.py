@@ -31,22 +31,12 @@ class PlantFunctionalType:
 
 
 @dataclass
-class CohortSpatialDistribution(dict[str, int]):
-    """placeholder."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        # TODO keyed dictionary of cell IDs and number
-        #  of members in a given cell - e.g. cell_number_1 : 6
-
-
-@dataclass
 class Cohort:
     """placeholder."""
 
     pft: str
     dbh: float
-    spatial_distribution: CohortSpatialDistribution
+    number_of_members: int
 
 
 class Flora(dict[str, PlantFunctionalType]):
@@ -83,7 +73,7 @@ class Flora(dict[str, PlantFunctionalType]):
 class CohortGeometry:
     """placeholder."""
 
-    spatial_distribution: CohortSpatialDistribution
+    number_of_members: int
     pft: str
     dbh: float
     height: float
@@ -164,7 +154,7 @@ class Community:
 
             results.append(
                 CohortGeometry(
-                    cohort.spatial_distribution,
+                    cohort.number_of_members,
                     cohort.pft,
                     cohort.dbh,
                     height,
@@ -175,11 +165,6 @@ class Community:
                     mass_swd,
                 )
             )
-
-            # feel like there should be a more lightweight way to store this than
-            # storing the cohorts as nested objects, with spatial distribution as
-            # a nested object in that, maybe a dict of cohorts and spatial
-            # distribution, and a dict of cohort geometry
         return results
 
     def calculate_gpp(self, cell_ppfd: NDArray, lue: NDArray) -> None:
