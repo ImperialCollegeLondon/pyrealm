@@ -1,6 +1,7 @@
 """A very incomplete sketch of some community and demography functionality."""
 
 from dataclasses import dataclass
+from typing import TypeAlias
 
 import numpy as np
 from numpy.typing import NDArray
@@ -93,11 +94,7 @@ class CohortGeometry:
     mass_swd: float
 
 
-class CommunityGeometry(list[CohortGeometry]):
-    """placeholder."""
-
-    def __init__(self) -> None:
-        super().__init__()
+CommunityGeometry: TypeAlias = list[CohortGeometry]
 
 
 class Community:
@@ -109,12 +106,12 @@ class Community:
     def __init__(self, flora: Flora, cohorts: list[Cohort]) -> None:
         self.flora: Flora = flora
         self.cohorts: list[Cohort] = cohorts
+        self.community_geometry: CommunityGeometry = self.calculate_geometry()
 
         # Things populated by methods
         self.canopy_layer_heights: NDArray[np.float32]
         self.lai_by_canopy_layer: NDArray[np.float32]
 
-        self.calculate_geometry()
         # Things to add later
 
         # pft keyed dictionary of propagule density, size, energy content pft keyed
@@ -210,7 +207,6 @@ def calculate_stem_canopy_factors(
 ) -> tuple[int, int]:
     """placeholder."""
     pft = flora[cohort_geometry.pft]
-    # TODO assuming m and n are per plant functional type here
     m = pft.m
     n = pft.n
     qm = calculate_qm(m, n)
