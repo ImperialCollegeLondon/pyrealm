@@ -79,7 +79,7 @@ class CohortGeometry:
     height: float
     crown_area: float
     crown_fraction: float
-    mass_stm: float
+    mass_stem: float
     mass_fol: float
     mass_swd: float
 
