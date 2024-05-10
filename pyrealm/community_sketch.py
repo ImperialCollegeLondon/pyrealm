@@ -43,8 +43,8 @@ class CohortSpatialDistribution(dict[str, int]):
 class Cohort:
     """placeholder."""
 
-    dbh: float
     pft: str
+    dbh: float
     spatial_distribution: CohortSpatialDistribution
 
 
@@ -82,7 +82,9 @@ class Flora(dict[str, PlantFunctionalType]):
 class CohortGeometry:
     """placeholder."""
 
-    cohort: Cohort
+    spatial_distribution: CohortSpatialDistribution
+    pft: str
+    dbh: float
     height: float
     crown_area: float
     crown_fraction: float
@@ -165,7 +167,9 @@ class Community:
 
             results.append(
                 CohortGeometry(
-                    cohort,
+                    cohort.spatial_distribution,
+                    cohort.pft,
+                    cohort.dbh,
                     height,
                     crown_area,
                     crown_fraction,
@@ -205,7 +209,7 @@ def calculate_stem_canopy_factors(
     cohort_geometry: CohortGeometry, flora: Flora
 ) -> tuple[int, int]:
     """placeholder."""
-    pft = flora[cohort_geometry.cohort.pft]
+    pft = flora[cohort_geometry.pft]
     # TODO assuming m and n are per plant functional type here
     m = pft.m
     n = pft.n
