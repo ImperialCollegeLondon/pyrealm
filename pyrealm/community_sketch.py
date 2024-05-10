@@ -246,6 +246,104 @@ def calculate_crown_radius_profile_for_cohort(
     return r_z
 
 
+# def calculate_projected_canopy_area_profile_for_individual(
+#     z: np.ndarray, cohort_geometry: CohortGeometry, pft: PlantFunctionalType
+# ) -> int:
+#     """Calculate projected crown area above a given height.
+#
+#     This function takes PFT specific parameters (shape parameters) and stem specific
+#     sizes and estimates the projected crown area above a given height $z$. The inputs
+#     can either be scalars describing a single stem or arrays representing a community
+#     of stems. If only a single PFT is being modelled then `m`, `n`, `qm` and `fg` can
+#     be scalars with arrays `H`, `Ac` and `zm` giving the sizes of stems within that
+#     PFT.
+#
+#     Args:
+#         :param z: array of heights
+#         :param cohort_geometry: calculated geometry of cohort
+#         :param pft: plant functional type
+#     """
+#     q_m = calculate_q_m(pft.m, pft.n)
+#     z_m, r_0 = calculate_stem_canopy_factors(cohort_geometry, pft)
+#
+#     # Calculate q(z)
+#     q_z = calculate_relative_canopy_radius_profile(
+#         z, cohort_geometry.height, pft.m, pft.n
+#     )
+#
+#     # Calculate Ap given z > z_m
+#     A_p = cohort_geometry.crown_area * (q_z / q_m) ** 2
+#     # Set Ap = Ac where z <= z_m
+#     A_p = np.where(z <= z_m, cohort_geometry.crown_area, A_p)
+#     # Set Ap = 0 where z > H
+#     A_p = np.where(z > cohort_geometry.height, 0, A_p)
+#
+#     return A_p
+
+
+# def solve_canopy_closure_height(
+#     z: float,
+#     l: int,
+#     A: float,
+#     fG: float,
+#     m: float,
+#     n: float,
+#     qm: float,
+#     cohort_geometry: CohortGeometry,
+#     zm: float,
+# ) -> np.ndarray:
+#     """Solver function for canopy closure height.
+#
+#     This function returns the difference between the total community projected area
+#     at a height $z$ and the total available canopy space for canopy layer $l$, given
+#     the community gap fraction for a given height. It is used with a root solver to
+#     find canopy layer closure heights $z^*_l* for a community.
+#
+#     Args:
+#         m, n, qm : PFT specific shape parameters
+#         H, Ac, zm: stem specific sizes
+#         A, l: cell area and layer index
+#         fG: community gap fraction
+#         :param qm:
+#     """
+#
+#     # Calculate Ap(z)
+#     Ap_z = calculate_projected_canopy_area_profile_for_individual(
+#         z=z, cohort_geometry=cohort_geometry, m=m, n=n, qm=qm, zm=zm
+#     )
+#
+#     # Return the difference between the projected area and the available space
+#     return Ap_z.sum() - (A * l) * (1 - fG)
+#
+#
+# def calculate_canopy_heights(
+#     A: float,
+#     fG: float,
+#     m: Stems,
+#     n: Stems,
+#     qm: Stems,
+#     pft,
+#     zm: Stems,
+# ):
+#
+#     # Calculate the number of layers
+#     total_community_ca = pft.crown_area.sum()
+#     n_layers = int(np.ceil(total_community_ca / (A * (1 - fG))))
+#
+#     # Data store for z*
+#     z_star = np.zeros(n_layers)
+#
+#     # Loop over the layers TODO - edge case of completely filled final layer
+#     for lyr in np.arange(n_layers - 1):
+#         z_star[lyr] = root_scalar(
+#             solve_canopy_closure_height,
+#             args=(lyr + 1, A, fG, m, n, qm, pft, zm),
+#             bracket=(0, pft.height.max()),
+#         ).root
+#
+#     return z_star
+
+
 class Canopy:
     """placeholder."""
 
