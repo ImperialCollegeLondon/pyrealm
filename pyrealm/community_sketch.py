@@ -215,6 +215,11 @@ def calculate_relative_canopy_radius_at_z(
     return m * n * z_over_H ** (n - 1) * (1 - z_over_H**n) ** (m - 1)
 
 
+calculate_relative_canopy_radius_profile = np.vectorize(
+    calculate_relative_canopy_radius_at_z
+)
+
+
 def calculate_crown_radius_profile_for_cohort(
     cohort_geometry: CohortGeometry,
     pft: PlantFunctionalType,
@@ -230,16 +235,15 @@ def calculate_crown_radius_profile_for_cohort(
 
     z_m, r_0 = calculate_stem_canopy_factors(cohort_geometry, pft)
 
-    # # Convert the heights into a column matrix to broadcast against the stems
-    # # and then calculate r(z) = r0 * q(z)
-    # r_z = r_0 * calculate_relative_canopy_radius_at_z(
-    #     z[:, None], cohort_geometry.height, pft.m, pft.n
-    # )
-    #
-    # # When z > H, r_z < 0, so set radius to 0 where rz < 0
-    # r_z[np.where(r_z < 0)] = 0
+    # calculate r(z) = r0 * q(z) for a cohort
+    r_z = r_0 * calculate_relative_canopy_radius_profile(
+        z, cohort_geometry.height, pft.m, pft.n
+    )
 
-    return z
+    # When z > H, r_z < 0, so set radius to 0 where rz < 0
+    r_z[np.where(r_z < 0)] = 0
+
+    return r_z
 
 
 class Canopy:
