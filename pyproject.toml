@@ -24,7 +24,7 @@ packages = [
   {include = "pyrealm_build_data", format = "sdist"},
 ]
 readme = "README.md"
-repository = "https://github.com/davidorme/pyrealm"
+repository = "https://github.com/ImperialCollegeLondon/pyrealm"
 version = "1.0.1a3"
 
 [tool.poetry.dependencies]
