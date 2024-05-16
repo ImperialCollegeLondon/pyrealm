@@ -29,47 +29,47 @@ version = "1.0.1a4"
 
 [tool.poetry.dependencies]
 dacite = "^1.6.0"
-numpy = "^1.16.5"
+numpy = "^1.26.4"
 python = ">=3.10"
-scipy = "^1.7.3"
-tabulate = "^0.8.10"
+scipy = "^1.13.0"
+tabulate = "^0.9.0"
 
 [tool.poetry.group.types.dependencies]
-pandas-stubs = "^2.2.0.240218"
+pandas-stubs = "^2.2.2.240514"
 types-tabulate = "^0.9.0.0"
 
 [tool.poetry.group.test.dependencies]
 graphviz = "*"
-pytest = "^7.1.2"
-pytest-cov = "^3.0.0"
+pytest = "^8.2.0"
+pytest-cov = "^5.0.0"
 pytest-flake8 = "^1.1.1"
-pytest-mock = "^3.8.1"
-pytest-mypy = "^0.9.1"
+pytest-mock = "^3.14.0"
+pytest-mypy = "^0.10.3"
 pytest-profiling = "^1.7.0"
 
 [tool.poetry.group.dev.dependencies]
 black = {version = "^22.10.0", allow-prereleases = true}
-flake8 = "^4.0.1"
+flake8 = "^7.0.0"
 flake8-docstrings = "^1.6.0"
 ipython = "^8.9.0"
 isort = "^5.12.0"
-matplotlib = "^3.5.2"
+matplotlib = "^3.9.0"
 multiprocess = "^0.70.16"
-mypy = "^0.991"
-pandas = "^2.2.0"
-pre-commit = "^3.2.0"
+mypy = "^1.10.0"
+pandas = "^2.2.2"
+pre-commit = "^3.7.1"
 
 [tool.poetry.group.docs.dependencies]
 autodocsumm = "^0.2.8"
 myst-nb = "^1.0.0"
 netcdf4 = "^1.6.3"
-pydocstyle = "^6.1.1"
+pydocstyle = "^6.3.0"
 sphinx = "^7.0.0"
 sphinx-external-toc = "^1.0.0"
 sphinx-rtd-theme = "^2.0.0"
 sphinxcontrib-bibtex = "^2.6.1"
-xarray = "^2023.4.0"
+xarray = "^2024.5.0"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
-requires = ["poetry-core>=1.2.0"]
+requires = ["poetry-core>=1.8.2"]
