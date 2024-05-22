@@ -9,7 +9,11 @@ from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
 from pyrealm.core.calendar import Calendar
-from pyrealm.core.solar import calc_heliocentric_longitudes, calc_distance_factor, calc_declination_angle_delta
+from pyrealm.core.solar import (
+    calc_declination_angle_delta,
+    calc_distance_factor,
+    calc_heliocentric_longitudes,
+)
 from pyrealm.core.utilities import check_input_shapes
 
 
@@ -89,7 +93,9 @@ class DailySolarFluxes:
         dr = calc_distance_factor(nu, self.core_const.k_e)
 
         # Calculate declination angle (delta), Woolf (1968)
-        delta = calc_declination_angle_delta(lambda_, self.const.k_eps, self.const.k_pir)
+        delta = calc_declination_angle_delta(
+            lambda_, self.const.k_eps, self.const.k_pir
+        )
 
         # The nu, lambda_, dr and delta attributes are all one dimensional arrays
         # calculated from the Calendar along the first (time) axis of the other inputs.
