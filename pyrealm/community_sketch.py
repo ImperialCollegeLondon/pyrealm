@@ -34,28 +34,6 @@ class PlantFunctionalType:
     n: float
 
 
-# TODO refactor these classes a bit, better naming for Cohort
-# and Cohort geometry.
-# One is for importing and one is augmented with height calculations
-
-
-@dataclass_json
-@dataclass
-class Cohort:
-    """placeholder."""
-
-    pft_name: str
-    dbh: float
-    number_of_members: int
-
-
-@dataclass_json
-@dataclass
-class ImportedCommunity:
-    cell_id: int
-    cohorts: list[Cohort]
-
-
 class Flora(dict[str, PlantFunctionalType]):
     """Defines the flora used in a ``virtual_ecosystem`` model.
 
@@ -85,6 +63,21 @@ class Flora(dict[str, PlantFunctionalType]):
         for name, pft in zip(pft_names, pfts):
             self[name] = pft
 
+@dataclass_json
+@dataclass
+class Cohort:
+    """placeholder."""
+
+    pft_name: str
+    dbh: float
+    number_of_members: int
+
+
+@dataclass_json
+@dataclass
+class ImportedCommunity:
+    cell_id: int
+    cohorts: list[Cohort]
 
 @dataclass
 class CohortGeometry:
@@ -101,6 +94,27 @@ class CohortGeometry:
     mass_swd: float
 
 
+class FloraDeserialiser:
+    @classmethod
+    def load_flora(cls, path: str) -> Flora:
+        with open(path) as file:
+            pfts_json = json.load(file)
+        pfts = PlantFunctionalType.schema().load(pfts_json, many=True)
+        return Flora(pfts)
+
+
+class CommunityDeserialiser:
+    def __init__(self, flora: Flora):
+        self.flora = flora
+
+    def load_communities(self, path: str) -> list[Cohort]:
+        with open(path) as file:
+            communities_json = json.load(file)
+            flora = self.flora
+        imported_communities = ImportedCommunity.schema().load(communities_json, many=True)
+        return imported_communities
+
+
 class Community:
     """Beginnings of a community class.
 
@@ -110,9 +124,9 @@ class Community:
     def __init__(self, flora: Flora, cohorts: list[Cohort]) -> None:
         self.flora: Flora = flora
         self.cohorts: list[Cohort] = cohorts
-        self.cohort_geometries: list[CohortGeometry] = map(
+        self.cohort_geometries: list[CohortGeometry] = list(map(
             self.calculate_cohort_geometry_using_t_model, self.cohorts
-        )
+        ))
 
         # Things to add later
 
@@ -160,18 +174,10 @@ class Community:
             mass_swd,
         )
 
-    def calculate_geometry_using_t_model(self) -> list[CohortGeometry]:
-        """placeholder."""
-        results = []
+    def recruit(self) -> None:
+        """Add new cohorts from the seedbank."""
 
-        for cohort in self.cohorts:
-            results.append(self.calculate_cohort_geometry_using_t_model(cohort))
-        return results
-
-        def recruit(self) -> None:
-            """Add new cohorts from the seedbank."""
-
-        pass
+    pass
 
     def remove_empty_cohorts(self) -> None:
         """Remove cohort data for empty cohorts."""
@@ -366,19 +372,11 @@ class Canopy:
 
 if __name__ == "__main__":
 
-    with open("pyrealm_build_data/community/pfts.json") as f:
-        pfts_json = json.load(f)
-    pfts = PlantFunctionalType.schema().load(pfts_json, many=True)
-    print(pfts)
+    flora = FloraDeserialiser.load_flora("pyrealm_build_data/community/pfts.json")
+    community_deserialiser = CommunityDeserialiser(flora)
+    communities = community_deserialiser.load_communities("pyrealm_build_data/community/communities.json")
 
-    flora = Flora(pfts)
+    print(communities)
 
-    with open("pyrealm_build_data/community/communities.json") as f:
-        communities_json = json.load(f)
-    imported_communities = ImportedCommunity.schema().load(communities_json, many=True)
-    print(imported_communities)
 
-    for imported_community in imported_communities:
-        community = Community(flora, imported_community.cohorts)
-        canopy = Canopy(community)
-        print(canopy.canopy_layer_heights)
+
