@@ -63,6 +63,7 @@ class Flora(dict[str, PlantFunctionalType]):
         for name, pft in zip(pft_names, pfts):
             self[name] = pft
 
+
 @dataclass_json
 @dataclass
 class Cohort:
@@ -78,6 +79,7 @@ class Cohort:
 class ImportedCommunity:
     cell_id: int
     cohorts: list[Cohort]
+
 
 @dataclass
 class CohortGeometry:
@@ -111,7 +113,9 @@ class CommunityDeserialiser:
         with open(path) as file:
             communities_json = json.load(file)
             flora = self.flora
-        imported_communities = ImportedCommunity.schema().load(communities_json, many=True)
+        imported_communities = ImportedCommunity.schema().load(
+            communities_json, many=True
+        )
         return imported_communities
 
 
@@ -124,9 +128,9 @@ class Community:
     def __init__(self, flora: Flora, cohorts: list[Cohort]) -> None:
         self.flora: Flora = flora
         self.cohorts: list[Cohort] = cohorts
-        self.cohort_geometries: list[CohortGeometry] = list(map(
-            self.calculate_cohort_geometry_using_t_model, self.cohorts
-        ))
+        self.cohort_geometries: list[CohortGeometry] = list(
+            map(self.calculate_cohort_geometry_using_t_model, self.cohorts)
+        )
 
         # Things to add later
 
@@ -374,9 +378,8 @@ if __name__ == "__main__":
 
     flora = FloraDeserialiser.load_flora("pyrealm_build_data/community/pfts.json")
     community_deserialiser = CommunityDeserialiser(flora)
-    communities = community_deserialiser.load_communities("pyrealm_build_data/community/communities.json")
+    communities = community_deserialiser.load_communities(
+        "pyrealm_build_data/community/communities.json"
+    )
 
     print(communities)
-
-
-
