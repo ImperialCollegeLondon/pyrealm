@@ -1,6 +1,6 @@
 import json
 
-from community_sketch import Flora, PlantFunctionalType, ImportedCommunity
+from community_sketch import Flora, ImportedCommunity, PlantFunctionalType
 
 
 class FloraDeserialiser:
@@ -20,5 +20,7 @@ class CommunityDeserialiser:
         with open(path) as file:
             communities_json = json.load(file)
             flora = self.flora
-        imported_communities = ImportedCommunity.schema().load(communities_json, many=True)
+        imported_communities = ImportedCommunity.schema().load(
+            communities_json, many=True
+        )
         return imported_communities

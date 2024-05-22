@@ -214,7 +214,9 @@ def calculate_relative_canopy_radius(
     return m * n * z_over_H ** (n - 1) * (1 - z_over_H**n) ** (m - 1)
 
 
-def create_z_axis(z_min: float, z_max: float, z_resolution: float = 0.05) -> np.typing.NDArray:
+def create_z_axis(
+    z_min: float, z_max: float, z_resolution: float = 0.05
+) -> np.typing.NDArray:
     max_height_padding = 1
     floating_point_correction = 0.00001
 
