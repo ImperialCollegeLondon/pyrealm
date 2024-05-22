@@ -1,13 +1,13 @@
 """A very incomplete sketch of some community and demography functionality."""
 
-import json
 from dataclasses import dataclass
-from typing import TypeAlias
 
 import numpy as np
 from dataclasses_json import dataclass_json
 from numpy.typing import NDArray
 from scipy.optimize import root_scalar
+
+from pyrealm.canopy_model.deserialisation import FloraDeserialiser, CommunityDeserialiser
 
 
 @dataclass_json
@@ -63,6 +63,7 @@ class Flora(dict[str, PlantFunctionalType]):
         for name, pft in zip(pft_names, pfts):
             self[name] = pft
 
+
 @dataclass_json
 @dataclass
 class Cohort:
@@ -79,6 +80,10 @@ class ImportedCommunity:
     cell_id: int
     cohorts: list[Cohort]
 
+
+
+
+
 @dataclass
 class CohortGeometry:
     """Cohort geometry calculated using the T Model."""
@@ -92,27 +97,6 @@ class CohortGeometry:
     mass_stem: float
     mass_fol: float
     mass_swd: float
-
-
-class FloraDeserialiser:
-    @classmethod
-    def load_flora(cls, path: str) -> Flora:
-        with open(path) as file:
-            pfts_json = json.load(file)
-        pfts = PlantFunctionalType.schema().load(pfts_json, many=True)
-        return Flora(pfts)
-
-
-class CommunityDeserialiser:
-    def __init__(self, flora: Flora):
-        self.flora = flora
-
-    def load_communities(self, path: str) -> list[Cohort]:
-        with open(path) as file:
-            communities_json = json.load(file)
-            flora = self.flora
-        imported_communities = ImportedCommunity.schema().load(communities_json, many=True)
-        return imported_communities
 
 
 class Community:
@@ -376,7 +360,6 @@ if __name__ == "__main__":
     community_deserialiser = CommunityDeserialiser(flora)
     communities = community_deserialiser.load_communities("pyrealm_build_data/community/communities.json")
 
-    print(communities)
 
 
 
