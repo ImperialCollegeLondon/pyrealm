@@ -23,6 +23,82 @@ from pyrealm.constants import CoreConst
 # )
 
 
+## plan to move individual functions from splash.solar.py here for general use
+
+def calc_distance_factor(nu, k_e):
+    '''Calculate distance factor
+
+    This function calculates distance factor using the method of Berger et al. (1993)
+    Args:
+        nu: helio centric true anomaly
+        k_e: Solar eccentricity
+
+    Returns:
+        dr: distance factor
+    '''
+    dr = (
+            1.0
+            / (
+                (1.0 - k_e**2)
+                / (1.0 + k_e * np.cos(np.deg2rad(nu)))
+            )
+        ) ** 2
+
+    return dr
+
+def calc_declination_angle_delta(lambda_, k_eps, k_pir):
+    '''Calculate declination angle delta
+
+    This function calculates the solar declination angle delta using the method of Woolf (1968)
+
+    Args:
+        lambda_: heliocentric longitude
+        k_eps: Solar obliquity
+        k_pir: conversion factor from radians to degrees
+
+    Returns:
+        delta: solar declination angle delta
+    '''
+    delta = (
+            np.arcsin(
+                np.sin(np.deg2rad(lambda_)) * np.sin(np.deg2rad(k_eps))
+            )
+            / k_pir
+        )
+
+    return delta
+
+def calc_lat_delta_intermediates(delta, lat):
+    '''Calculates intermediate values for use in solar radiation calcs
+
+    This function calculates ru and rv which are dimensionless intermediate values calculated from the solar declination angle delta and the observation latitude
+
+    Args:
+        delta: solar declination delta
+        lat: observation latitude
+
+    Returns:
+        Tuple: ru, rv
+            
+    '''
+    ru = np.sin(np.deg2rad(delta)) * np.sin(np.deg2rad(lat))
+    rv = np.cos(np.deg2rad(delta)) * np.cos(np.deg2rad(lat))
+
+    return ru, rv
+
+def calc_sunset_hour_angle(ru, rv, k_pir):
+    '''Calculate sunset hour angle
+
+    This function calculates the sunset hour angle using Eq3.22, Stine & Geyer (2001)
+    
+    Args:
+        ru: dimensionless
+    '''
+
+    angle  = np.arccos(-1.0 * np.clip(ru / rv, -1.0, 1.0))/ k_pir
+
+    return angle
+
 def calc_heliocentric_longitudes(
     julian_day: NDArray, n_days: NDArray, core_const: CoreConst = CoreConst()
 ) -> tuple[NDArray, NDArray]:
@@ -87,3 +163,5 @@ def calc_heliocentric_longitudes(
     nu = (lambda_ - core_const.k_omega) % 360
 
     return (nu, lambda_)
+
+
