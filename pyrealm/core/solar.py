@@ -25,9 +25,14 @@ from pyrealm.constants import CoreConst
 
 ## plan to move individual functions from splash.solar.py here for general use
 
+<<<<<<< Updated upstream
 
 def calc_distance_factor(nu, k_e):
     """Calculate distance factor
+=======
+def calc_distance_factor(nu: NDArray, k_e: float):
+    '''Calculate distance factor
+>>>>>>> Stashed changes
 
     This function calculates distance factor using the method of Berger et al. (1993)
     Args:
@@ -41,9 +46,14 @@ def calc_distance_factor(nu, k_e):
 
     return dr
 
+<<<<<<< Updated upstream
 
 def calc_declination_angle_delta(lambda_, k_eps, k_pir):
     """Calculate declination angle delta
+=======
+def calc_declination_angle_delta(lambda_: NDArray, k_eps: float, k_pir: float):
+    '''Calculate declination angle delta
+>>>>>>> Stashed changes
 
     This function calculates the solar declination angle delta using the method of Woolf (1968)
 
@@ -59,9 +69,14 @@ def calc_declination_angle_delta(lambda_, k_eps, k_pir):
 
     return delta
 
+<<<<<<< Updated upstream
 
 def calc_lat_delta_intermediates(delta, lat):
     """Calculates intermediate values for use in solar radiation calcs
+=======
+def calc_lat_delta_intermediates(delta: NDArray, lat: NDArray):
+    '''Calculates intermediate values for use in solar radiation calcs
+>>>>>>> Stashed changes
 
     This function calculates ru and rv which are dimensionless intermediate values calculated from the solar declination angle delta and the observation latitude
 
