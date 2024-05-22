@@ -25,6 +25,7 @@ from pyrealm.constants import CoreConst
 
 # plan to move individual functions from splash.solar.py here for general use
 
+<<<<<<< Updated upstream
 
 def calc_distance_factor(nu: NDArray, k_e: float) -> NDArray:
     """Calculate distance factor.
@@ -42,6 +43,7 @@ def calc_distance_factor(nu: NDArray, k_e: float) -> NDArray:
 
     return dr
 
+<<<<<<< Updated upstream
 
 def calc_declination_angle_delta(
     lambda_: NDArray, k_eps: float, k_pir: float
@@ -63,6 +65,7 @@ def calc_declination_angle_delta(
 
     return delta
 
+<<<<<<< Updated upstream
 
 def calc_lat_delta_intermediates(
     delta: NDArray, lat: NDArray
