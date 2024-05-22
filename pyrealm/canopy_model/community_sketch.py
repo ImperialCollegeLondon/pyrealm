@@ -7,7 +7,10 @@ from dataclasses_json import dataclass_json
 from numpy.typing import NDArray
 from scipy.optimize import root_scalar
 
-from pyrealm.canopy_model.deserialisation import FloraDeserialiser, CommunityDeserialiser
+from pyrealm.canopy_model.deserialisation import (
+    CommunityDeserialiser,
+    FloraDeserialiser,
+)
 
 
 @dataclass_json
@@ -81,9 +84,6 @@ class ImportedCommunity:
     cohorts: list[Cohort]
 
 
-
-
-
 @dataclass
 class CohortGeometry:
     """Cohort geometry calculated using the T Model."""
@@ -108,9 +108,9 @@ class Community:
     def __init__(self, flora: Flora, cohorts: list[Cohort]) -> None:
         self.flora: Flora = flora
         self.cohorts: list[Cohort] = cohorts
-        self.cohort_geometries: list[CohortGeometry] = list(map(
-            self.calculate_cohort_geometry_using_t_model, self.cohorts
-        ))
+        self.cohort_geometries: list[CohortGeometry] = list(
+            map(self.calculate_cohort_geometry_using_t_model, self.cohorts)
+        )
 
         # Things to add later
 
@@ -214,7 +214,7 @@ def calculate_relative_canopy_radius(
     return m * n * z_over_H ** (n - 1) * (1 - z_over_H**n) ** (m - 1)
 
 
-def create_z_axis(z_min: float, z_max: float, z_resolution: float = 0.05):
+def create_z_axis(z_min: float, z_max: float, z_resolution: float = 0.05) -> np.typing.NDArray:
     max_height_padding = 1
     floating_point_correction = 0.00001
 
@@ -358,8 +358,6 @@ if __name__ == "__main__":
 
     flora = FloraDeserialiser.load_flora("pyrealm_build_data/community/pfts.json")
     community_deserialiser = CommunityDeserialiser(flora)
-    communities = community_deserialiser.load_communities("pyrealm_build_data/community/communities.json")
-
-
-
-
+    communities = community_deserialiser.load_communities(
+        "pyrealm_build_data/community/communities.json"
+    )
