@@ -230,6 +230,78 @@ class Community:
         pass
 
 
+class Canopy:
+    """placeholder."""
+
+    def __init__(self, community: Community, canopy_gap_fraction: float) -> None:
+        """placeholder."""
+        self.community = community
+        self.cohort_geometries = community.cohort_geometries
+        self.max_individual_height = max(
+            cohort.height for cohort in self.cohort_geometries
+        )
+        self.f_g = canopy_gap_fraction
+
+        self.canopy_layer_heights = self.calculate_canopy_layer_heights(
+            community.cell_area, self.f_g
+        )
+
+    def solve_canopy_closure_height(
+        self,
+        z: float,
+        l: int,
+        A: float,
+        fG: float,
+    ) -> float:
+        """Solver function for canopy closure height.
+
+        This function returns the difference between the total community projected area
+        at a height $z$ and the total available canopy space for canopy layer $l$, given
+        the community gap fraction for a given height. It is used with a root solver to
+        find canopy layer closure heights $z^*_l* for a community.
+        :param fG: community gap fraction
+        :param A: community area
+        :param l: layer index
+        :param z: height
+        """
+
+        cohort_areas_at_z = map(
+            lambda cohort: cohort.number_of_members
+            * calculate_projected_canopy_area_for_individual(z, cohort),
+            self.cohort_geometries,
+        )
+
+        total_projected_area_at_z = sum(cohort_areas_at_z)
+
+        # Return the difference between the projected area and the available space
+        return total_projected_area_at_z - (A * l) * (1 - fG)
+
+    def calculate_canopy_layer_heights(self, A: float, fG: float) -> NDArray:
+        """Placeholder."""
+        # Calculate the number of layers
+        cohort_crown_areas = map(
+            lambda cohort: cohort.number_of_members * cohort.crown_area,
+            self.cohort_geometries,
+        )
+        print("*********cohort crown areas********")
+        print(list(cohort_crown_areas))
+        total_community_crown_area = sum(cohort_crown_areas)
+        number_of_layers = int(np.ceil(total_community_crown_area / (A * (1 - fG))))
+
+        # Data store for z*
+        z_star = np.zeros(number_of_layers)
+
+        # Loop over the layers TODO - edge case of completely filled final layer
+        for n in np.arange(number_of_layers - 1):
+            z_star[n] = root_scalar(
+                self.solve_canopy_closure_height,
+                args=(n + 1, A, fG),
+                bracket=(0, self.max_individual_height),
+            ).root
+
+        return z_star
+
+
 def calculate_q_m(m: float, n: float) -> float:
     """placeholder."""
     return (
@@ -340,76 +412,6 @@ def calculate_projected_canopy_area_for_individual(
     return A_p
 
 
-class Canopy:
-    """placeholder."""
-
-    def __init__(self, community: Community, canopy_gap_fraction: float) -> None:
-        """placeholder."""
-        self.community = community
-        self.cohort_geometries = community.cohort_geometries
-        self.max_individual_height = max(
-            cohort.height for cohort in self.cohort_geometries
-        )
-        self.f_g = canopy_gap_fraction
-
-        self.canopy_layer_heights = self.calculate_canopy_layer_heights(
-            community.cell_area, self.f_g
-        )
-
-    def solve_canopy_closure_height(
-        self,
-        z: float,
-        l: int,
-        A: float,
-        fG: float,
-    ) -> float:
-        """Solver function for canopy closure height.
-
-        This function returns the difference between the total community projected area
-        at a height $z$ and the total available canopy space for canopy layer $l$, given
-        the community gap fraction for a given height. It is used with a root solver to
-        find canopy layer closure heights $z^*_l* for a community.
-        :param fG: community gap fraction
-        :param A: community area
-        :param l: layer index
-        :param z: height
-        """
-
-        cohort_areas_at_z = map(
-            lambda cohort: cohort.number_of_members
-            * calculate_projected_canopy_area_for_individual(z, cohort),
-            self.cohort_geometries,
-        )
-
-        total_projected_area_at_z = sum(cohort_areas_at_z)
-
-        # Return the difference between the projected area and the available space
-        return total_projected_area_at_z - (A * l) * (1 - fG)
-
-    def calculate_canopy_layer_heights(self, A: float, fG: float) -> NDArray:
-        """Placeholder."""
-        # Calculate the number of layers
-        cohort_crown_areas = map(
-            lambda cohort: cohort.number_of_members * cohort.crown_area,
-            self.cohort_geometries,
-        )
-        total_community_crown_area = sum(cohort_crown_areas)
-        number_of_layers = int(np.ceil(total_community_crown_area / (A * (1 - fG))))
-
-        # Data store for z*
-        z_star = np.zeros(number_of_layers)
-
-        # Loop over the layers TODO - edge case of completely filled final layer
-        for n in np.arange(number_of_layers - 1):
-            z_star[n] = root_scalar(
-                self.solve_canopy_closure_height,
-                args=(n + 1, A, fG),
-                bracket=(0, self.max_individual_height),
-            ).root
-
-        return z_star
-
-
 if __name__ == "__main__":
 
     pfts = PlantFunctionalTypeDeserialiser.load_flora(
@@ -424,8 +426,5 @@ if __name__ == "__main__":
     for imported_community in imported_communities:
         community = Community(flora, imported_community, 32)
         canopy = Canopy(community, 2 / 32)
-        print("cohort heights: \n ")
-        for geometry in community.cohort_geometries:
-            print(geometry.height)
         print("canopy layer heights: \n")
         print(canopy.canopy_layer_heights)
