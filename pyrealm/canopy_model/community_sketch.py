@@ -283,9 +283,8 @@ class Canopy:
             lambda cohort: cohort.number_of_members * cohort.crown_area,
             self.cohort_geometries,
         )
-        print("*********cohort crown areas********")
-        print(list(cohort_crown_areas))
         total_community_crown_area = sum(cohort_crown_areas)
+        print(total_community_crown_area)
         number_of_layers = int(np.ceil(total_community_crown_area / (A * (1 - fG))))
 
         # Data store for z*
