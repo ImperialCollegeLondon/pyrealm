@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 
-@pytest.mar.parameterise(
+@pytest.mark.parameterise(
     argnames="nu, k_e, expected",
     argvalues=[
         (np.array([0, 180, 360]), 0.0167, np.array([1.0342557, 0.9674184, 1.0342557])),
@@ -20,6 +20,31 @@ def test_calc_distance_factor(nu, k_e, expected):
     from pyrealm.core.solar import calc_distance_factor
 
     result = calc_distance_factor(nu, k_e)
+
+    assert np.allclose(result, expected)
+
+
+@pytest.mark.parameterise(
+    argnames="lambda_, k_eps, k_pir, expected",
+    argvalues=[
+        (
+            np.array([-90, 0, 90]),
+            23.45,
+            57.29577951,
+            np.array([-0.007143278, 0, 0.007143278]),
+        )
+    ],
+)
+def test_calc_declination_angle_delta(lambda_, k_eps, k_pir, expected):
+    """Tests calc_declination_angle_delta.
+
+    This test tests the maths over the applicable range of longitudes with
+    representative k_eps and k_pir constants.
+    """
+
+    from pyrealm.core.solar import calc_declination_angle_delta
+
+    result = calc_declination_angle_delta(lambda_, k_eps, k_pir)
 
     assert np.allclose(result, expected)
 
