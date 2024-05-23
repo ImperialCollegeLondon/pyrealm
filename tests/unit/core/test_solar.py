@@ -57,6 +57,19 @@ def test_calc_declination_angle_delta(lambda_, k_eps, k_pir, expected):
         (np.array([0, 3.37172e-05]), np.array([0.999999999, 0.258819045])),
     ),
 )
+def test_calc_lat_delta_intermediates(delta, lat, expected):
+    """Tests calc_lat_delta_intermediates.
+
+    This test tests the maths over an applciable range of delta and latitude values.
+    """
+
+    from pyrealm.core.solar import calc_lat_delta_intermediates
+
+    result = calc_lat_delta_intermediates(delta, lat)
+
+    assert np.allclose(result, expected)
+
+
 @pytest.mark.parametrize(
     argnames="day,n_day,expected",
     argvalues=[
