@@ -4,6 +4,26 @@ import numpy as np
 import pytest
 
 
+@pytest.mar.parameterise(
+    argnames="nu, k_e, expected",
+    argvalues=[
+        (np.array([0, 180, 360]), 0.0167, np.array([1.0342557, 0.9674184, 1.0342557])),
+    ],
+)
+def test_calc_distance_factor(nu, k_e, expected):
+    """Tests calc_distance_factor.
+
+    The test values represent the range of acceptable input values of nu
+    (0-360 degrees), and a typical value of k_e for the earth. This tests
+    aims to confirm the correct implementation of the maths.
+    """
+    from pyrealm.core.solar import calc_distance_factor
+
+    result = calc_distance_factor(nu, k_e)
+
+    assert np.allclose(result, expected)
+
+
 @pytest.mark.parametrize(
     argnames="day,n_day,expected",
     argvalues=[
