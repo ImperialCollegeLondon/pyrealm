@@ -409,11 +409,6 @@ class Canopy:
 
         return z_star
 
-    # def calculate_canopy_layer_heights(
-    #         self, community_geometry: CohortGeometries
-    # ) -> None:
-    #     """placeholder."""
-
 
 if __name__ == "__main__":
 
