@@ -75,23 +75,25 @@ class Community:
         # NOTE: is it better to avoid repeated merge operations by making the inventory
         #       include the trait data at __init__ and when cohorts are added. Cost of
         #       increasing data storage and repeated data, but probably faster.
-        traits = inventory[["pft"]].merge(self.flora.pft_data, how="left")
+        inventory = inventory.merge(
+            self.flora.pft_data, how="left", left_on="pft", right_on="pft"
+        )
 
         # Height of tree from diameter, Equation (4) of Li ea.
-        inventory["height"] = traits["h_max"] * (
-            1 - np.exp(-traits["a_hd"] * inventory["dbh"] / traits["h_max"])
+        inventory["height"] = inventory["h_max"] * (
+            1 - np.exp(-inventory["a_hd"] * inventory["dbh"] / inventory["h_max"])
         )
 
         # Crown area of tree, Equation (8) of Li ea.
         inventory["crown_area"] = (
-            ((np.pi * traits["ca_ratio"]) / (4 * traits["a_hd"]))
+            ((np.pi * inventory["ca_ratio"]) / (4 * inventory["a_hd"]))
             * inventory["dbh"]
             * inventory["height"]
         )
 
         # Crown fraction, Equation (11) of Li ea.
         inventory["crown_fraction"] = inventory["height"] / (
-            traits["a_hd"] * inventory["dbh"]
+            inventory["a_hd"] * inventory["dbh"]
         )
 
         # Masses
@@ -99,17 +101,17 @@ class Community:
             (np.pi / 8)
             * (inventory["dbh"] ** 2)
             * inventory["height"]
-            * traits["rho_s"]
+            * inventory["rho_s"]
         )
         inventory["mass_fol"] = (
-            inventory["crown_area"] * traits["lai"] * (1 / traits["sla"])
+            inventory["crown_area"] * inventory["lai"] * (1 / inventory["sla"])
         )
         inventory["mass_swd"] = (
             inventory["crown_area"]
-            * traits["rho_s"]
+            * inventory["rho_s"]
             * inventory["height"]
             * (1 - inventory["crown_fraction"] / 2)
-            / traits["ca_ratio"]
+            / inventory["ca_ratio"]
         )
 
         # TODO: Use canopy constants (m, n) to calculate
@@ -146,15 +148,15 @@ class Canopy:
     def __calculate_qm_for_inventory(self) -> None:
         inventory = self.inventory
         inventory["q_m"] = (
-            inventory["m"]
-            * inventory["n"]
-            * ((inventory["n"] - 1) / (inventory["m"] * inventory["n"] - 1))
-            ** (1 - 1 / inventory["n"])
+            inventory["pft_m"]
+            * inventory["pft_n"]
+            * ((inventory["pft_n"] - 1) / (inventory["pft_m"] * inventory["pft_n"] - 1))
+            ** (1 - 1 / inventory["pft_n"])
             * (
-                ((inventory["m"] - 1) * inventory["n"])
-                / (inventory["m"] * inventory["n"] - 1)
+                ((inventory["pft_m"] - 1) * inventory["pft_n"])
+                / (inventory["pft_m"] * inventory["pft_n"] - 1)
             )
-            ** (inventory["m"] - 1)
+            ** (inventory["pft_m"] - 1)
         )
         self.inventory = inventory
 
@@ -167,8 +169,8 @@ class Canopy:
         inventory = self.inventory
         # Height of maximum crown radius
         inventory["z_m"] = inventory["height"] * (
-            (inventory["n"] - 1) / (inventory["m"] * inventory["n"] - 1)
-        ) ** (1 / inventory["n"])
+            (inventory["pft_n"] - 1) / (inventory["pft_m"] * inventory["pft_n"] - 1)
+        ) ** (1 / inventory["pft_n"])
 
         # Slope to give Ac at zm
         inventory["r_0"] = (
@@ -176,7 +178,7 @@ class Canopy:
         )
         self.inventory = inventory
 
-    def __calculate_relative_canopy_radius_at_z(self, z: float) -> pd.Series[float]:
+    def __calculate_relative_canopy_radius_at_z(self, z: float) -> pd.Series:
         """Calculate q(z)."""
 
         inventory = self.inventory
@@ -184,13 +186,13 @@ class Canopy:
         z_over_H = z / inventory["height"]
 
         return (
-            inventory["m"]
-            * inventory["n"]
-            * z_over_H ** (inventory["n"] - 1)
-            * (1 - z_over_H ** inventory["n"]) ** (inventory["m"] - 1)
+            inventory["pft_m"]
+            * inventory["pft_n"]
+            * z_over_H ** (inventory["pft_n"] - 1)
+            * (1 - z_over_H ** inventory["pft_n"]) ** (inventory["pft_m"] - 1)
         )
 
-    def __calculate_projected_area_at_z(self, z: float) -> pd.Series[float]:
+    def __calculate_projected_area_at_z(self, z: float) -> pd.Series:
         """Calculate projected crown area above a given height.
 
         This function takes PFT specific parameters (shape parameters) and stem
@@ -290,8 +292,8 @@ if __name__ == "__main__":
     community = Community(flora=flora, inventory=inventory, cell_area=32)
 
     # A thing has been calculated
-    print(community.inventory["height"])
+    print(f"heights from t model: \n {community.inventory['height']}")
 
     canopy = Canopy(community)
 
-    print(canopy.canopy_layer_heights)
+    print(f"canopy layer heights: \n {canopy.canopy_layer_heights}")
