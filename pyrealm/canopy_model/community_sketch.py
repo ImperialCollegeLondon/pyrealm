@@ -183,7 +183,7 @@ class Community:
         if pft is None:
             raise Exception("PFT not provided in list")
 
-        height = pft.h_max * (1 - np.exp(-pft.a_hd) * cohort.dbh / pft.h_max)
+        height = pft.h_max * (1 - np.exp(-pft.a_hd * cohort.dbh / pft.h_max))
 
         # Crown area of tree, Equation (8) of Li ea.
         crown_area = (np.pi * pft.ca_ratio / (4 * pft.a_hd)) * cohort.dbh * height
@@ -419,7 +419,13 @@ if __name__ == "__main__":
     imported_communities = CommunityDeserialiser.load_communities(
         "pyrealm_build_data/community/communities.json"
     )
+    print("START OF RUN ***********")
+
     for imported_community in imported_communities:
         community = Community(flora, imported_community, 32)
         canopy = Canopy(community, 2 / 32)
+        print("cohort heights: \n ")
+        for geometry in community.cohort_geometries:
+            print(geometry.height)
+        print("canopy layer heights: \n")
         print(canopy.canopy_layer_heights)
