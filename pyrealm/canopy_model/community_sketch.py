@@ -392,7 +392,9 @@ def calculate_projected_canopy_area_for_individual(
     :param z: array of heights
     :param cohort_geometry: calculated geometry of cohort
     """
-    q_m = calculate_q_m(cohort_geometry.pft.m, cohort_geometry.pft.n)
+    q_m = calculate_q_m(
+        cohort_geometry.pft.m, cohort_geometry.pft.n
+    )  # TODO move this outside function, don't need to do this every time.
     z_m, r_0 = calculate_stem_canopy_factors(cohort_geometry)
 
     # Calculate q(z)
