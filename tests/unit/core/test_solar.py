@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 
-@pytest.mark.parameterize(
+@pytest.mark.parametrize(
     argnames="nu, k_e, expected",
     argvalues=[
         (np.array([0, 180, 360]), 0.0167, np.array([1.0342557, 0.9674184, 1.0342557])),
@@ -24,7 +24,7 @@ def test_calc_distance_factor(nu, k_e, expected):
     assert np.allclose(result, expected)
 
 
-@pytest.mark.parameterize(
+@pytest.mark.parametrize(
     argnames="lambda_, k_eps, k_pir, expected",
     argvalues=[
         (
@@ -49,7 +49,7 @@ def test_calc_declination_angle_delta(lambda_, k_eps, k_pir, expected):
     assert np.allclose(result, expected)
 
 
-@pytest.mark.parameterize(
+@pytest.mark.parametrize(
     argnames="delta,lat, expected",
     argvalues=(
         np.array([0, 0.007143278]),
