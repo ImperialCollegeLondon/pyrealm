@@ -51,11 +51,13 @@ def test_calc_declination_angle_delta(lambda_, k_eps, k_pir, expected):
 
 @pytest.mark.parametrize(
     argnames="delta,lat, expected",
-    argvalues=(
-        np.array([0, 0.007143278]),
-        np.array([0, 75]),
-        (np.array([0, 3.37172e-05]), np.array([0.999999999, 0.258819045])),
-    ),
+    argvalues=[
+        (
+            np.array([0, 0.007143278]),
+            np.array([0, 75]),
+            (np.array([0, 3.37172e-05]), np.array([0.999999999, 0.258819045])),
+        ),
+    ],
 )
 def test_calc_lat_delta_intermediates(delta, lat, expected):
     """Tests calc_lat_delta_intermediates.
