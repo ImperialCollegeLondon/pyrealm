@@ -1,16 +1,12 @@
 """A very incomplete sketch of some community and demography functionality."""
 
+import json
 from dataclasses import dataclass
 
 import numpy as np
 from dataclasses_json import dataclass_json
 from numpy.typing import NDArray
 from scipy.optimize import root_scalar
-
-from pyrealm.canopy_model.deserialisation import (
-    CommunityDeserialiser,
-    FloraDeserialiser,
-)
 
 
 @dataclass_json
@@ -70,7 +66,10 @@ class Flora(dict[str, PlantFunctionalType]):
 @dataclass_json
 @dataclass
 class Cohort:
-    """placeholder."""
+    """Contains raw imported cohort data.
+
+    Dataclass for storing Cohort data imported from json.
+    """
 
     pft_name: str
     dbh: float
@@ -80,13 +79,23 @@ class Cohort:
 @dataclass_json
 @dataclass
 class ImportedCommunity:
+    """Contains raw imported community data.
+
+    Dataclass for storing Community data imported from json.
+    """
+
     cell_id: int
     cohorts: list[Cohort]
 
 
 @dataclass
 class CohortGeometry:
-    """Cohort geometry calculated using the T Model."""
+    """Cohort traits.
+
+    Includes the plant functional type of the cohort, and the geometry and mass
+    calculated using the T Model. I'm not sure this all belongs in the same class
+    this way. Would also like to find a better name for this class.
+    """
 
     number_of_members: int
     pft: PlantFunctionalType
@@ -99,15 +108,58 @@ class CohortGeometry:
     mass_swd: float
 
 
+# TODO split things into sensible modules
+class PlantFunctionalTypeDeserialiser:
+    """Utility class for deserialising json file to a list of plant functional types."""
+
+    @classmethod
+    def load_flora(cls, path: str) -> list[PlantFunctionalType]:
+        """Loads a list of plant functional type objects from a json file.
+
+        Uses the built-in json_dataclass functionality to deserialise a json array of
+        plant functional type objects to a python list of plant functional types.
+        Automatically validates type of the input using a marshmallow type schema.
+
+        :param path: The path for a file containing a json array of Plant Functional
+        Type objects.
+        :return: A list of deserialised PlantFunctionalType objects.
+        """
+        with open(path) as file:
+            pfts_json = json.load(file)
+        pfts = PlantFunctionalType.schema().load(pfts_json, many=True)  # type: ignore[attr-defined] # noqa: E501
+        return pfts
+
+
+class CommunityDeserialiser:
+    """Provides utility for deserialising json file to list of Community objects."""
+
+    @classmethod
+    def load_communities(cls, path: str) -> list[ImportedCommunity]:
+        """Loads a list of community objects from a json file.
+
+        Uses the built-in json_dataclass functionality to deserialise a json array of
+        community objects to a python list of community objects. Automatically
+        validates type of the input using a marshmallow type schema.
+        :param path: The path for a file containing a json array of Community objects.
+        :return: A deserialised list of community objects.
+        """
+        with open(path) as file:
+            communities_json = json.load(file)
+        return ImportedCommunity.schema().load(communities_json, many=True)  # type: ignore[attr-defined]  # noqa: E501
+
+
 class Community:
     """Beginnings of a community class.
 
     This could handle multiple locations or a single location.
     """
 
-    def __init__(self, flora: Flora, cohorts: list[Cohort]) -> None:
+    def __init__(
+        self, flora: Flora, imported_community: ImportedCommunity, cell_area: float
+    ) -> None:
         self.flora: Flora = flora
-        self.cohorts: list[Cohort] = cohorts
+        self.cohorts: list[Cohort] = imported_community.cohorts
+        self.cell_area: float = cell_area
         self.cohort_geometries: list[CohortGeometry] = list(
             map(self.calculate_cohort_geometry_using_t_model, self.cohorts)
         )
@@ -204,9 +256,7 @@ def calculate_stem_canopy_factors(cohort_geometry: CohortGeometry) -> tuple[int,
     return z_m, r_0
 
 
-def calculate_relative_canopy_radius(
-    z: np.ndarray, H: float, m: float, n: float
-) -> np.ndarray:
+def calculate_relative_canopy_radius(z: float, H: float, m: float, n: float) -> float:
     """Calculate q(z) at a given height, z."""
 
     z_over_H = z / H
@@ -214,13 +264,25 @@ def calculate_relative_canopy_radius(
     return m * n * z_over_H ** (n - 1) * (1 - z_over_H**n) ** (m - 1)
 
 
+calculate_relative_canopy_radius_profile = np.vectorize(
+    calculate_relative_canopy_radius
+)
+
+
 def create_z_axis(
-    z_min: float, z_max: float, z_resolution: float = 0.05
+    z_min: float, z_max: float, resolution: float = 0.05
 ) -> np.typing.NDArray:
+    """Provides a z axis in the form of a numpy array.
+
+    :param z_min: start of the axis
+    :param z_max: end of the axis
+    :param resolution: resolution of the axis
+    :return: a z axis from z_min, to z_max, in increments of the resolution
+    """
     max_height_padding = 1
     floating_point_correction = 0.00001
 
-    z = np.arange(z_min, z_max + max_height_padding, z_resolution)
+    z = np.arange(z_min, z_max + max_height_padding, resolution)
     z = np.sort(np.concatenate([z, z_max - floating_point_correction]))
 
     return z
@@ -237,7 +299,7 @@ def calculate_crown_radius_profile_for_cohort(
     z_m, r_0 = calculate_stem_canopy_factors(cohort_geometry)
 
     # calculate r(z) = r0 * q(z) for a cohort
-    r_z = r_0 * calculate_relative_canopy_radius(
+    r_z = r_0 * calculate_relative_canopy_radius_profile(
         z, cohort_geometry.height, cohort_geometry.pft.m, cohort_geometry.pft.n
     )
 
@@ -249,20 +311,15 @@ def calculate_crown_radius_profile_for_cohort(
 
 def calculate_projected_canopy_area_for_individual(
     z: float, cohort_geometry: CohortGeometry
-) -> int:
+) -> float:
     """Calculate projected crown area above a given height.
 
     This function takes PFT specific parameters (shape parameters) and stem specific
-    sizes and estimates the projected crown area above a given height $z$. The inputs
-    can either be scalars describing a single stem or arrays representing a community
-    of stems. If only a single PFT is being modelled then `m`, `n`, `qm` and `fg` can
-    be scalars with arrays `H`, `Ac` and `zm` giving the sizes of stems within that
-    PFT.
-
-    Args:
-        :param z: array of heights
-        :param cohort_geometry: calculated geometry of cohort
-        :param pft: plant functional type
+    sizes and estimates the projected crown area above a given height $z$. Note,
+    this calculation gives the canopy area for a single individual within the cohort,
+    not for the cohort as a whole.
+    :param z: array of heights
+    :param cohort_geometry: calculated geometry of cohort
     """
     q_m = calculate_q_m(cohort_geometry.pft.m, cohort_geometry.pft.n)
     z_m, r_0 = calculate_stem_canopy_factors(cohort_geometry)
@@ -272,12 +329,13 @@ def calculate_projected_canopy_area_for_individual(
         z, cohort_geometry.height, cohort_geometry.pft.m, cohort_geometry.pft.n
     )
 
-    # Calculate Ap given z > z_m
-    A_p = cohort_geometry.crown_area * (q_z / q_m) ** 2
-    # Set Ap = Ac where z <= z_m
-    A_p = np.where(z <= z_m, cohort_geometry.crown_area, A_p)
-    # Set Ap = 0 where z > H
-    A_p = np.where(z > cohort_geometry.height, 0, A_p)
+    # Calculate A_p
+    if z <= z_m:
+        A_p = cohort_geometry.crown_area
+    elif z > cohort_geometry.height:
+        A_p = 0
+    else:
+        A_p = cohort_geometry.crown_area * (q_z / q_m) ** 2
 
     return A_p
 
@@ -285,15 +343,18 @@ def calculate_projected_canopy_area_for_individual(
 class Canopy:
     """placeholder."""
 
-    def __init__(self, community: Community) -> None:
+    def __init__(self, community: Community, canopy_gap_fraction: float) -> None:
         """placeholder."""
         self.community = community
         self.cohort_geometries = community.cohort_geometries
         self.max_individual_height = max(
             cohort.height for cohort in self.cohort_geometries
         )
+        self.f_g = canopy_gap_fraction
 
-        self.canopy_layer_heights = self.calculate_canopy_layer_heights()
+        self.canopy_layer_heights = self.calculate_canopy_layer_heights(
+            community.cell_area, self.f_g
+        )
 
     def solve_canopy_closure_height(
         self,
@@ -301,20 +362,17 @@ class Canopy:
         l: int,
         A: float,
         fG: float,
-    ) -> np.ndarray:
+    ) -> float:
         """Solver function for canopy closure height.
 
         This function returns the difference between the total community projected area
         at a height $z$ and the total available canopy space for canopy layer $l$, given
         the community gap fraction for a given height. It is used with a root solver to
         find canopy layer closure heights $z^*_l* for a community.
-
-        Args:
-            A: community area
-            l: layer index
-            fG: community gap fraction
-            :param z:
-            :param qm:
+        :param fG: community gap fraction
+        :param A: community area
+        :param l: layer index
+        :param z: height
         """
 
         cohort_areas_at_z = map(
@@ -328,7 +386,8 @@ class Canopy:
         # Return the difference between the projected area and the available space
         return total_projected_area_at_z - (A * l) * (1 - fG)
 
-    def calculate_canopy_layer_heights(self, A: float, fG: float):
+    def calculate_canopy_layer_heights(self, A: float, fG: float) -> NDArray:
+        """Placeholder."""
         # Calculate the number of layers
         cohort_crown_areas = map(
             lambda cohort: cohort.number_of_members * cohort.crown_area,
@@ -358,8 +417,14 @@ class Canopy:
 
 if __name__ == "__main__":
 
-    flora = FloraDeserialiser.load_flora("pyrealm_build_data/community/pfts.json")
-    community_deserialiser = CommunityDeserialiser(flora)
-    communities = community_deserialiser.load_communities(
+    pfts = PlantFunctionalTypeDeserialiser.load_flora(
+        "pyrealm_build_data/community/pfts.json"
+    )
+    flora = Flora(pfts)
+    imported_communities = CommunityDeserialiser.load_communities(
         "pyrealm_build_data/community/communities.json"
     )
+    for imported_community in imported_communities:
+        community = Community(flora, imported_community, 32)
+        canopy = Canopy(community, 2 / 32)
+        print(canopy.canopy_layer_heights)
