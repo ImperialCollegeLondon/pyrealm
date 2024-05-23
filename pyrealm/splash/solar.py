@@ -94,7 +94,7 @@ class DailySolarFluxes:
 
         # Calculate declination angle (delta), Woolf (1968)
         delta = calc_declination_angle_delta(
-            lambda_, self.const.k_eps, self.const.k_pir
+            lambda_, self.core_const.k_eps, self.core_const.k_pir
         )
 
         # The nu, lambda_, dr and delta attributes are all one dimensional arrays
