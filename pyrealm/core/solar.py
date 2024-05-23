@@ -23,16 +23,11 @@ from pyrealm.constants import CoreConst
 # )
 
 
-## plan to move individual functions from splash.solar.py here for general use
+# plan to move individual functions from splash.solar.py here for general use
 
-<<<<<<< Updated upstream
 
-def calc_distance_factor(nu, k_e):
-    """Calculate distance factor
-=======
-def calc_distance_factor(nu: NDArray, k_e: float):
-    '''Calculate distance factor
->>>>>>> Stashed changes
+def calc_distance_factor(nu: NDArray, k_e: float) -> NDArray:
+    """Calculate distance factor.
 
     This function calculates distance factor using the method of Berger et al. (1993)
     Args:
@@ -42,20 +37,19 @@ def calc_distance_factor(nu: NDArray, k_e: float):
     Returns:
         dr: distance factor
     """
+
     dr = (1.0 / ((1.0 - k_e**2) / (1.0 + k_e * np.cos(np.deg2rad(nu))))) ** 2
 
     return dr
 
-<<<<<<< Updated upstream
 
-def calc_declination_angle_delta(lambda_, k_eps, k_pir):
-    """Calculate declination angle delta
-=======
-def calc_declination_angle_delta(lambda_: NDArray, k_eps: float, k_pir: float):
-    '''Calculate declination angle delta
->>>>>>> Stashed changes
+def calc_declination_angle_delta(
+    lambda_: NDArray, k_eps: float, k_pir: float
+) -> NDArray:
+    """Calculate declination angle delta.
 
-    This function calculates the solar declination angle delta using the method of Woolf (1968)
+    This function calculates the solar declination angle delta using
+    the method of Woolf (1968)
 
     Args:
         lambda_: heliocentric longitude
@@ -69,16 +63,15 @@ def calc_declination_angle_delta(lambda_: NDArray, k_eps: float, k_pir: float):
 
     return delta
 
-<<<<<<< Updated upstream
 
-def calc_lat_delta_intermediates(delta, lat):
-    """Calculates intermediate values for use in solar radiation calcs
-=======
-def calc_lat_delta_intermediates(delta: NDArray, lat: NDArray):
-    '''Calculates intermediate values for use in solar radiation calcs
->>>>>>> Stashed changes
+def calc_lat_delta_intermediates(
+    delta: NDArray, lat: NDArray
+) -> tuple[NDArray, NDArray]:
+    """Calculates intermediate values for use in solar radiation calcs.
 
-    This function calculates ru and rv which are dimensionless intermediate values calculated from the solar declination angle delta and the observation latitude
+    This function calculates ru and rv which are dimensionless intermediate
+    values calculated from the solar declination angle delta and the
+    observation latitude.
 
     Args:
         delta: solar declination delta
@@ -94,13 +87,15 @@ def calc_lat_delta_intermediates(delta: NDArray, lat: NDArray):
     return ru, rv
 
 
-def calc_sunset_hour_angle(ru, rv, k_pir):
-    """Calculate sunset hour angle
+def calc_sunset_hour_angle(ru: NDArray, rv: NDArray, k_pir: float) -> NDArray:
+    """Calculate sunset hour angle.
 
     This function calculates the sunset hour angle using Eq3.22, Stine & Geyer (2001)
 
     Args:
-        ru: dimensionless
+        ru: dimensionless parameter
+        rv: dimensionless parameter
+        k_pir: constant rad to degrees conversion
     """
 
     angle = np.arccos(-1.0 * np.clip(ru / rv, -1.0, 1.0)) / k_pir
