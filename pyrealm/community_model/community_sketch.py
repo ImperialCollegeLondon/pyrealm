@@ -285,15 +285,22 @@ if __name__ == "__main__":
     # Load the data from the build data
     dpath = resources.files("pyrealm_build_data.community")
     pft_data = pd.read_csv("pyrealm_build_data/community/pfts.csv")
-    inventory = pd.read_csv("pyrealm_build_data/community/community.csv")
+    community_data = pd.read_csv("pyrealm_build_data/community/community.csv")
+
+    data_grouped_by_community = community_data.groupby(community_data.cell_id)
+    community_dataframes = [
+        data_grouped_by_community.get_group(x) for x in data_grouped_by_community.groups
+    ]
 
     # Create the objects
     flora = Flora(pft_data=pft_data)
-    community = Community(flora=flora, inventory=inventory, cell_area=32)
 
-    # A thing has been calculated
-    print(f"heights from t model: \n {community.inventory['height']}")
+    for community_dataframe in community_dataframes:
+        community = Community(flora=flora, inventory=community_dataframe, cell_area=32)
 
-    canopy = Canopy(community)
+        # A thing has been calculated
+        print(f"heights from t model: \n {community.inventory['height']}")
 
-    print(f"canopy layer heights: \n {canopy.canopy_layer_heights}")
+        canopy = Canopy(community)
+
+        print(f"canopy layer heights: \n {canopy.canopy_layer_heights}")
