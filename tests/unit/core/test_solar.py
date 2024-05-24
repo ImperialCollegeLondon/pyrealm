@@ -97,6 +97,33 @@ def test_calc_sunset_hour_angle(ru, rv, k_pir, expected):
 
 
 @pytest.mark.parametrize(
+    argnames="rad_const, dr, ru, rv, k_pir, hs, expected",
+    argvalues=[
+        (
+            1360.8,
+            np.array([0.002, 0.001]),
+            np.array([0.1, 0.2]),
+            np.array([0.1, 0.1]),
+            57.29577951,
+            np.array([85, 60]),
+            np.array([36460158.36, 25734560.07]),
+        )
+    ],
+)
+def test_calc_daily_solar_radiation(rad_const, dr, ru, rv, k_pir, hs, expected):
+    """Tests calc_daily_solar_radiation.
+
+    This test is intended to verify the implemented maths
+    """
+
+    from pyrealm.core.solar import calc_daily_solar_radiation
+
+    result = calc_daily_solar_radiation(rad_const, dr, ru, rv, k_pir, hs)
+
+    assert np.allclose(result, expected)
+
+
+@pytest.mark.parametrize(
     argnames="day,n_day,expected",
     argvalues=[
         (240, 365, (231.44076437634416, 154.44076437634416)),
