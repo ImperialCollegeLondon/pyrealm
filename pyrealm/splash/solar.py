@@ -13,6 +13,8 @@ from pyrealm.core.solar import (
     calc_declination_angle_delta,
     calc_distance_factor,
     calc_heliocentric_longitudes,
+    calc_lat_delta_intermediates,
+    calc_sunset_hour_angle,
 )
 from pyrealm.core.utilities import check_input_shapes
 
@@ -109,14 +111,10 @@ class DailySolarFluxes:
         self.delta = np.expand_dims(delta, axis=expand_dims)
 
         # Calculate variable substitutes (u and v), unitless
-        self.ru = np.sin(np.deg2rad(self.delta)) * np.sin(np.deg2rad(lat))
-        self.rv = np.cos(np.deg2rad(self.delta)) * np.cos(np.deg2rad(lat))
+        self.ru, self.rv = calc_lat_delta_intermediates(self.delta, lat)
 
         # Calculate the sunset hour angle (hs), Eq. 3.22, Stine & Geyer (2001)
-        self.hs = (
-            np.arccos(-1.0 * np.clip(self.ru / self.rv, -1.0, 1.0))
-            / self.core_const.k_pir
-        )
+        self.hs = calc_sunset_hour_angle(self.ru, self.rv, self.core_const.k_pir)
 
         # Calculate daily extraterrestrial solar radiation (ra_d), J/m^2
         # Eq. 1.10.3, Duffy & Beckman (1993)
