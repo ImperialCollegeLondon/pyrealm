@@ -221,9 +221,9 @@ class Canopy:
         #  with Nan.
         Ap = inventory["crown_area"] * (q_z / inventory["q_m"]) ** 2
         # Set Ap = Ac where z <= zm
-        Ap.where(z <= inventory["z_m"], inventory["crown_area"])
+        Ap.where(z > inventory["z_m"], inventory["crown_area"], inplace=True)
         # Set Ap = 0 where z > H
-        Ap.where(z > inventory["height"], 0)
+        Ap.where(z <= inventory["height"], 0, inplace=True)
 
         # think this will be a panda series but need to check...
         return Ap
