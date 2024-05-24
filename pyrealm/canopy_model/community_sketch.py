@@ -264,8 +264,6 @@ class Canopy:
             map(calculate_stem_canopy_factors, self.pfts, self.t_model_geometries)
         )
 
-        print(self.canopy_factors)
-
         self.max_individual_height = max(
             cohort.height for cohort in self.t_model_geometries
         )
@@ -320,7 +318,6 @@ class Canopy:
             self.t_model_geometries,
         )
         total_community_crown_area = sum(cohort_crown_areas)
-        print(total_community_crown_area)
         number_of_layers = int(np.ceil(total_community_crown_area / (A * (1 - fG))))
 
         # Data store for z*
@@ -462,7 +459,6 @@ if __name__ == "__main__":
     imported_communities = CommunityDeserialiser.load_communities(
         "pyrealm_build_data/community/communities.json"
     )
-    print("START OF RUN ***********")
 
     for imported_community in imported_communities:
         community = Community(flora, imported_community, 32)
