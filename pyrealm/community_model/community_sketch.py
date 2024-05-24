@@ -216,6 +216,9 @@ class Canopy:
 
         # Calculate Ap for an individual in the cohort
         # Calculate Ap given z > zm
+
+        # TODO This is a bug! where replaces values that don't satisfy the condition
+        #  with Nan.
         Ap = inventory["crown_area"] * (q_z / inventory["q_m"]) ** 2
         # Set Ap = Ac where z <= zm
         Ap.where(z <= inventory["z_m"], inventory["crown_area"])
