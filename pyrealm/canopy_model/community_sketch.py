@@ -89,23 +89,29 @@ class ImportedCommunity:
 
 
 @dataclass
-class CohortGeometry:
-    """Cohort traits.
+class TModelGeometry:
+    """Cohort traits calculated using the T Model.
 
     Includes the plant functional type of the cohort, and the geometry and mass
     calculated using the T Model. I'm not sure this all belongs in the same class
     this way. Would also like to find a better name for this class.
     """
 
-    number_of_members: int
-    pft: PlantFunctionalType
-    dbh: float
     height: float
     crown_area: float
     crown_fraction: float
     mass_stem: float
     mass_fol: float
     mass_swd: float
+
+
+@dataclass
+class CanopyFactors:
+    """Canopy factors calculated from Jaideep's extension to the T Model."""
+
+    q_m: float
+    z_m: float
+    r_0: float
 
 
 # TODO split things into sensible modules
@@ -158,11 +164,20 @@ class Community:
         self, flora: Flora, imported_community: ImportedCommunity, cell_area: float
     ) -> None:
         self.flora: Flora = flora
-        self.cohorts: list[Cohort] = imported_community.cohorts
         self.cell_area: float = cell_area
-        self.cohort_geometries: list[CohortGeometry] = list(
-            map(self.calculate_cohort_geometry_using_t_model, self.cohorts)
+        self.cohorts: list[Cohort] = imported_community.cohorts
+
+        self.pfts: list[PlantFunctionalType] = list(
+            map(self.get_plant_functional_type_for_cohort, self.cohorts)
         )
+
+        self.t_model_geometries: list[TModelGeometry] = list(
+            map(self.calculate_t_model_geometry, self.cohorts, self.pfts)
+        )
+
+        # Note the pfts, cohorts and t_model geometries aren't tied together, but the
+        # order is preserved in the lists, this may become an issue when we start
+        # adding and removing cohorts.
 
         # Things to add later
 
@@ -174,14 +189,21 @@ class Community:
         # per cohort structure of fruit mass, energy, size?
         self.fruit: object
 
-    def calculate_cohort_geometry_using_t_model(self, cohort: Cohort) -> CohortGeometry:
-        """placeholder."""
-
+    def get_plant_functional_type_for_cohort(
+        self, cohort: Cohort
+    ) -> PlantFunctionalType:
+        """Retrieve plant functional type for a cohort from the flora dictionary."""
         pft = self.flora.get(cohort.pft_name)
 
-        # don't think this is an elegant way to do this, but putting it here for now
         if pft is None:
             raise Exception("PFT not provided in list")
+        return pft
+
+    @classmethod
+    def calculate_t_model_geometry(
+        cls, cohort: Cohort, pft: PlantFunctionalType
+    ) -> TModelGeometry:
+        """placeholder."""
 
         height = pft.h_max * (1 - np.exp(-pft.a_hd * cohort.dbh / pft.h_max))
 
@@ -198,10 +220,7 @@ class Community:
             crown_area * pft.rho_s * height * (1 - crown_fraction / 2) / pft.ca_ratio
         )
 
-        return CohortGeometry(
-            cohort.number_of_members,
-            pft,
-            cohort.dbh,
+        return TModelGeometry(
             height,
             crown_area,
             crown_fraction,
@@ -235,12 +254,21 @@ class Canopy:
 
     def __init__(self, community: Community, canopy_gap_fraction: float) -> None:
         """placeholder."""
-        self.community = community
-        self.cohort_geometries = community.cohort_geometries
-        self.max_individual_height = max(
-            cohort.height for cohort in self.cohort_geometries
-        )
         self.f_g = canopy_gap_fraction
+
+        self.cohorts = community.cohorts
+        self.pfts = community.pfts
+        self.t_model_geometries = community.t_model_geometries
+
+        self.canopy_factors: list[CanopyFactors] = list(
+            map(calculate_stem_canopy_factors, self.pfts, self.t_model_geometries)
+        )
+
+        print(self.canopy_factors)
+
+        self.max_individual_height = max(
+            cohort.height for cohort in self.t_model_geometries
+        )
 
         self.canopy_layer_heights = self.calculate_canopy_layer_heights(
             community.cell_area, self.f_g
@@ -266,9 +294,12 @@ class Canopy:
         """
 
         cohort_areas_at_z = map(
-            lambda cohort: cohort.number_of_members
-            * calculate_projected_canopy_area_for_individual(z, cohort),
-            self.cohort_geometries,
+            lambda cohort, pft, t_geom, canopy_f: cohort.number_of_members
+            * calculate_projected_canopy_area_for_individual(z, pft, t_geom, canopy_f),
+            self.cohorts,
+            self.pfts,
+            self.t_model_geometries,
+            self.canopy_factors,
         )
 
         total_projected_area_at_z = sum(cohort_areas_at_z)
@@ -280,8 +311,9 @@ class Canopy:
         """Placeholder."""
         # Calculate the number of layers
         cohort_crown_areas = map(
-            lambda cohort: cohort.number_of_members * cohort.crown_area,
-            self.cohort_geometries,
+            lambda cohort, t_geom: cohort.number_of_members * t_geom.crown_area,
+            self.cohorts,
+            self.t_model_geometries,
         )
         total_community_crown_area = sum(cohort_crown_areas)
         print(total_community_crown_area)
@@ -311,20 +343,22 @@ def calculate_q_m(m: float, n: float) -> float:
     )
 
 
-def calculate_stem_canopy_factors(cohort_geometry: CohortGeometry) -> tuple[int, int]:
-    """placeholder."""
-    m = cohort_geometry.pft.m
-    n = cohort_geometry.pft.n
+def calculate_stem_canopy_factors(
+    pft: PlantFunctionalType, t_model_geometry: TModelGeometry
+) -> CanopyFactors:
+    """Calculate stem canopy factors from Jaideep's extension to the T Model."""
+    m = pft.m
+    n = pft.n
     q_m = calculate_q_m(m, n)
 
     # Height of maximum crown radius
-    z_m = cohort_geometry.height * ((n - 1) / (m * n - 1)) ** (1 / n)
+    z_m = t_model_geometry.height * ((n - 1) / (m * n - 1)) ** (1 / n)
 
     # Scaling factor to give expected Ac (crown area) at
     # z_m (height of maximum crown radius)
-    r_0 = 1 / q_m * np.sqrt(cohort_geometry.crown_area / np.pi)
+    r_0 = 1 / q_m * np.sqrt(t_model_geometry.crown_area / np.pi)
 
-    return z_m, r_0
+    return CanopyFactors(q_m, z_m, r_0)
 
 
 def calculate_relative_canopy_radius(z: float, H: float, m: float, n: float) -> float:
@@ -360,18 +394,19 @@ def create_z_axis(
 
 
 def calculate_crown_radius_profile_for_cohort(
-    cohort_geometry: CohortGeometry,
+    pft: PlantFunctionalType,
+    t_model_geometry: TModelGeometry,
     z_resolution: float = 0.05,
 ) -> np.typing.NDArray:
     """Calculate the crown radius profile for a given cohort."""
 
-    z = create_z_axis(0, cohort_geometry.height, z_resolution)
+    z = create_z_axis(0, t_model_geometry.height, z_resolution)
 
-    z_m, r_0 = calculate_stem_canopy_factors(cohort_geometry)
+    canopy_factors = calculate_stem_canopy_factors(pft, t_model_geometry)
 
     # calculate r(z) = r0 * q(z) for a cohort
-    r_z = r_0 * calculate_relative_canopy_radius_profile(
-        z, cohort_geometry.height, cohort_geometry.pft.m, cohort_geometry.pft.n
+    r_z = canopy_factors.r_0 * calculate_relative_canopy_radius_profile(
+        z, t_model_geometry.height, pft.m, pft.n
     )
 
     # When z > H, r_z < 0, so set radius to 0 where rz < 0
@@ -381,7 +416,10 @@ def calculate_crown_radius_profile_for_cohort(
 
 
 def calculate_projected_canopy_area_for_individual(
-    z: float, cohort_geometry: CohortGeometry
+    z: float,
+    pft: PlantFunctionalType,
+    t_model_geometry: TModelGeometry,
+    canopy_factors: CanopyFactors,
 ) -> float:
     """Calculate projected crown area above a given height.
 
@@ -389,26 +427,24 @@ def calculate_projected_canopy_area_for_individual(
     sizes and estimates the projected crown area above a given height $z$. Note,
     this calculation gives the canopy area for a single individual within the cohort,
     not for the cohort as a whole.
-    :param z: array of heights
-    :param cohort_geometry: calculated geometry of cohort
+    :param canopy_factors:
+    :param pft:
+    :param z_m: stem canopy factor from Jaideep’s extension of the T Model.
+    :param q_m: stem canopy factor from Jaideep’s extension of the T Model.
+    :param z: height on the z axis.
+    :param t_model_geometry: calculated geometry of cohort using T model.
     """
-    q_m = calculate_q_m(
-        cohort_geometry.pft.m, cohort_geometry.pft.n
-    )  # TODO move this outside function, don't need to do this every time.
-    z_m, r_0 = calculate_stem_canopy_factors(cohort_geometry)
 
     # Calculate q(z)
-    q_z = calculate_relative_canopy_radius(
-        z, cohort_geometry.height, cohort_geometry.pft.m, cohort_geometry.pft.n
-    )
+    q_z = calculate_relative_canopy_radius(z, t_model_geometry.height, pft.m, pft.n)
 
     # Calculate A_p
-    if z <= z_m:
-        A_p = cohort_geometry.crown_area
-    elif z > cohort_geometry.height:
+    if z <= canopy_factors.z_m:
+        A_p = t_model_geometry.crown_area
+    elif z > t_model_geometry.height:
         A_p = 0
     else:
-        A_p = cohort_geometry.crown_area * (q_z / q_m) ** 2
+        A_p = t_model_geometry.crown_area * (q_z / canopy_factors.q_m) ** 2
 
     return A_p
 
