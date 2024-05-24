@@ -274,6 +274,19 @@ class Canopy:
             community.cell_area, self.f_g
         )
 
+    def calculate_community_projected_area_at_z(self, z: float) -> float:
+        """Calculate the total area of community stems."""
+        cohort_areas_at_z = map(
+            lambda cohort, pft, t_geom, canopy_f: cohort.number_of_members
+            * calculate_projected_canopy_area_for_individual(z, pft, t_geom, canopy_f),
+            self.cohorts,
+            self.pfts,
+            self.t_model_geometries,
+            self.canopy_factors,
+        )
+
+        return sum(cohort_areas_at_z)
+
     def solve_canopy_closure_height(
         self,
         z: float,
@@ -293,19 +306,10 @@ class Canopy:
         :param z: height
         """
 
-        cohort_areas_at_z = map(
-            lambda cohort, pft, t_geom, canopy_f: cohort.number_of_members
-            * calculate_projected_canopy_area_for_individual(z, pft, t_geom, canopy_f),
-            self.cohorts,
-            self.pfts,
-            self.t_model_geometries,
-            self.canopy_factors,
-        )
-
-        total_projected_area_at_z = sum(cohort_areas_at_z)
+        community_projected_area_at_z = self.calculate_community_projected_area_at_z(z)
 
         # Return the difference between the projected area and the available space
-        return total_projected_area_at_z - (A * l) * (1 - fG)
+        return community_projected_area_at_z - (A * l) * (1 - fG)
 
     def calculate_canopy_layer_heights(self, A: float, fG: float) -> NDArray:
         """Placeholder."""
