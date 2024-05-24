@@ -135,6 +135,25 @@ def calc_daily_solar_radiation(
     return ra_d
 
 
+def calc_transmissivity(k_c: float, k_d: float, sf: NDArray, elv: NDArray) -> NDArray:
+    """Calculate atmospheric transmissivity, tau.
+
+    This function calculates atmospheric transmissivity using the method of
+    Eq.11, Linacre (1968) and Eq 2, Allen (1996)
+
+    Args:
+        k_c: dimensionless cloudy transmissivity
+        k_d: dimensionless angular coefficient of transmissivity
+        sf: Daily sunshine fraction of observations, unitless
+        elv: Elevation of observations, metres
+
+    Returns:
+        tau: bulk transmissivity, unitless
+    """
+    tau = (k_c + k_d * sf) * (1.0 + (2.67e-5) * elv)
+    return tau
+
+
 def calc_heliocentric_longitudes(
     julian_day: NDArray, n_days: NDArray, core_const: CoreConst = CoreConst()
 ) -> tuple[NDArray, NDArray]:

@@ -10,11 +10,13 @@ from numpy.typing import NDArray
 from pyrealm.constants import CoreConst
 from pyrealm.core.calendar import Calendar
 from pyrealm.core.solar import (
+    calc_daily_solar_radiation,
     calc_declination_angle_delta,
     calc_distance_factor,
     calc_heliocentric_longitudes,
     calc_lat_delta_intermediates,
     calc_sunset_hour_angle,
+    calc_transmissivity,
 )
 from pyrealm.core.utilities import check_input_shapes
 
@@ -118,20 +120,19 @@ class DailySolarFluxes:
 
         # Calculate daily extraterrestrial solar radiation (ra_d), J/m^2
         # Eq. 1.10.3, Duffy & Beckman (1993)
-        self.ra_d = (
-            (86400.0 / np.pi)
-            * self.core_const.k_Gsc
-            * self.dr
-            * (
-                self.ru * self.core_const.k_pir * self.hs
-                + self.rv * np.sin(np.deg2rad(self.hs))
-            )
+        self.ra_d = calc_daily_solar_radiation(
+            self.core_const.k_Gsc,
+            self.dr,
+            self.ru,
+            self.rv,
+            self.core_const.k_pir,
+            self.hs,
         )
 
         # Calculate transmittivity (tau), unitless
         # Eq. 11, Linacre (1968); Eq. 2, Allen (1996)
-        self.tau = (self.core_const.k_c + self.core_const.k_d * sf) * (
-            1.0 + (2.67e-5) * elv
+        self.tau = calc_transmissivity(
+            self.core_const.k_c, self.core_const.k_d, sf, elv
         )
 
         # Calculate daily PPFD (ppfd_d), mol/m^2
