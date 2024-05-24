@@ -78,6 +78,7 @@ def test_calc_lat_delta_intermediates(delta, lat, expected):
         (
             np.array([0.1, 0.8]),
             np.array([0.8, 0.1]),
+            57.29577951,
             np.array([0.029602951, 0.054831136]),
         )
     ],
