@@ -55,10 +55,9 @@ jobs:
       run: cp prof/combined.svg profiling/call-graph.svg
 
     # This runs if the benchmark passes or fails and skips if the profiling step fails.
-    # The commit message includes [skip actions] to avoid triggering a new round
     - uses: stefanzweifel/git-auto-commit-action@v5
       if: always() && steps.benchmarking.outcome != 'skipped'
       with:
-        commit_message: Auto-generated profiling results [skip actions]
+        commit_message: Auto-generated profiling results
         file_pattern: 'profiling/*'
         branch: ${{ github.event.pull_request.head.ref }}
