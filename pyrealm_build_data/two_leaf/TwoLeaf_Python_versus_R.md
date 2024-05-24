@@ -1,6 +1,6 @@
 ---
 jupytext:
-  formats: ipynb,md:myst
+  formats: md:myst
   text_representation:
     extension: .md
     format_name: myst
@@ -11,8 +11,6 @@ kernelspec:
   language: python
   name: pyrealm_python3
 ---
-
-
 
 # Compare R to Python draft implementations
 

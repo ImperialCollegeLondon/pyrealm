@@ -1,6 +1,6 @@
 ---
 jupytext:
-  formats: ipynb,md:myst
+  formats: md:myst
   text_representation:
     extension: .md
     format_name: myst
@@ -11,8 +11,6 @@ kernelspec:
   language: python
   name: pyrealm_python3
 ---
-
-
 
 # Two leaf radiative transfer model
 
@@ -573,8 +571,8 @@ implementation of the calculations.
 python_outputs = pd.DataFrame({
     'time': forcing_data['time'],
     'gpp_pmod': (
-        subdaily_pmod.gpp / subdaily_pmod.env.core_const.k_c_molmass, # as µmol not µg
-    )
+        subdaily_pmod.gpp / subdaily_pmod.env.core_const.k_c_molmass # as µmol not µg
+    ),
     "gammastar_pmod": subdaily_pmod.env.gammastar,
     "kmm_pmod": subdaily_pmod.env.kmm,
     "ci_pmod": subdaily_pmod.optimal_chi.ci,
