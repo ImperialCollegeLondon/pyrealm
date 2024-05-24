@@ -192,7 +192,7 @@ class Canopy:
             * (1 - z_over_H ** inventory["pft_n"]) ** (inventory["pft_m"] - 1)
         )
 
-    def __calculate_projected_area_at_z(self, z: float) -> pd.Series:
+    def calculate_projected_area_at_z(self, z: float) -> pd.Series:
         """Calculate projected crown area above a given height.
 
         This function takes PFT specific parameters (shape parameters) and stem
@@ -225,9 +225,18 @@ class Canopy:
         # think this will be a panda series but need to check...
         return Ap
 
+    def calculate_total_canopy_area_at_z(self, z: float) -> float:
+        """Calculate total projected area at height z."""
+        # Calculate Ap(z) for an individual in the cohort
+        Ap_z = self.calculate_projected_area_at_z(z=z)
+
+        cohort_Ap_z = self.inventory["number_of_members"] * Ap_z
+
+        return cohort_Ap_z.sum()
+
     def solve_canopy_closure_height(
         self, z: float, layer_index: int, A: float, fG: float
-    ) -> np.ndarray:
+    ) -> float:
         """Solver function for canopy closure height.
 
         This function returns the difference between the total community projected area
@@ -242,13 +251,10 @@ class Canopy:
             fG: community gap fraction
         """
 
-        # Calculate Ap(z) for an individual in the cohort
-        Ap_z = self.__calculate_projected_area_at_z(z=z)
-
-        cohort_Ap_z = self.inventory["number_of_members"] * Ap_z
+        total_canopy_area = self.calculate_total_canopy_area_at_z(z)
 
         # Return the difference between the projected area and the available space
-        return cohort_Ap_z.sum() - (A * layer_index) * (1 - fG)
+        return total_canopy_area - (A * layer_index) * (1 - fG)
 
     def __calculate_canopy_layer_heights(self, A: float, fG: float) -> NDArray:
         """Calculate the heights of the canopy layers.
@@ -304,3 +310,5 @@ if __name__ == "__main__":
         canopy = Canopy(community)
 
         print(f"canopy layer heights: \n {canopy.canopy_layer_heights}")
+
+        print(canopy.calculate_total_canopy_area_at_z(11.00))
