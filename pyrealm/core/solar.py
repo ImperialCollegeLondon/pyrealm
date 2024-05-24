@@ -31,7 +31,7 @@ def calc_distance_factor(nu: NDArray, k_e: float) -> NDArray:
 
     This function calculates distance factor using the method of Berger et al. (1993)
     Args:
-        nu: helio centric true anomaly
+        nu: heliocentric true anomaly
         k_e: Solar eccentricity
 
     Returns:
@@ -95,12 +95,44 @@ def calc_sunset_hour_angle(ru: NDArray, rv: NDArray, k_pir: float) -> NDArray:
     Args:
         ru: dimensionless parameter
         rv: dimensionless parameter
-        k_pir: constant rad to degrees conversion
+        k_pir: constant rad to degrees conversion, degrees/rad
     """
 
     angle = np.arccos(-1.0 * np.clip(ru / rv, -1.0, 1.0)) / k_pir
 
     return angle
+
+
+def calc_daily_solar_radiation(
+    rad_const: float, dr: NDArray, ru: NDArray, rv: NDArray, k_pir: float, hs: NDArray
+) -> NDArray:
+    """Calculate daily extraterrestrial solar radiation (J/m^2).
+
+    This function calculates the daily extraterrestrial solar radition (J/m^2)
+    using Eq. 1.10.3, Duffy & Beckman (1993)
+
+    Args:
+        rad_const: planetary radiation constant, W/m^2
+        dr: dimensionless distance factor
+        ru: dimensionless variable substitute
+        rv, dimensionless variable substitute
+        k_pir: radians to degrees conversion, degrees/rad
+        hs: local hour angle, degrees
+
+    Returns:
+        ra_d: daily solar radiation, J/m^2
+    """
+
+    secs_d = 86400  # seconds in one earth day
+
+    ra_d = (
+        (secs_d / np.pi)
+        * rad_const
+        * dr
+        * (ru * k_pir * hs + rv * np.sin(np.deg2rad(hs)))
+    )
+
+    return ra_d
 
 
 def calc_heliocentric_longitudes(
