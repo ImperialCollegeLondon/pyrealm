@@ -154,6 +154,146 @@ def calc_transmissivity(k_c: float, k_d: float, sf: NDArray, elv: NDArray) -> ND
     return tau
 
 
+def calc_ppfd(k_fFEC: float, k_alb_vis: float, tau: NDArray, ra_d: NDArray) -> NDArray:
+    """Calculate photosynthetic photon flux density, PPFD,(mol/m^2).
+
+    This function calculates the PPFD in mol/m^2 from secondary calculated
+    variables and constants.
+
+    Args:
+        k_fFEC: from flux to energy conversion, umol/J
+        k_alb_vis: visible light albedo
+        tau: bulk transmissivity, unitless
+        ra_d: daily solar radiation, J/m^2
+
+    Returns:
+        ppfd: photosynthetic photon flux density, mol/m^2
+    """
+
+    ppfd = (1.0e6) * k_fFEC * (1.0 - k_alb_vis) * tau * ra_d
+
+    return ppfd
+
+
+def calc_rnl(k_b: float, sf: NDArray, k_A: float, tc: NDArray) -> NDArray:
+    """Calculates net longwave radiation, rnl, W/m^2.
+
+    This function calculates net longwave radiation in W/m^2.
+
+    Args:
+        k_b: calculation constant for Rnl
+        sf: sunshine fraction of observations, unitless
+        k_A: calculation constant for Rnl
+        tc: temperature of observations, °C
+
+    Returns:
+        rnl: net longwave radiation, W/m^2
+    """
+
+    rnl = (k_b + (1.0 - k_b) * sf) * (k_A - tc)
+
+    return rnl
+
+
+def calc_rw(k_alb_sw: float, tau: NDArray, k_Gsc: float, dr: NDArray) -> NDArray:
+    """Calculates variable substitute rw, W/m^2.
+
+    Args:
+        k_alb_sw: shortwave albedo
+        tau: bulk transmissivity, unitless
+        k_Gsc: solar constant, W/m^2
+        dr: distance ration, unitless
+
+    Returns:
+        rw: intermediate variable, W/m^2
+    """
+
+    rw = (1.0 - k_alb_sw) * tau * k_Gsc * dr
+
+    return rw
+
+
+def net_rad_crossover_hour_angle(
+    rnl: NDArray, rw: NDArray, ru: NDArray, rv: NDArray, k_pir: float
+) -> NDArray:
+    """Calculates the net radiation crossover hour angle, degrees.
+
+    This function calculates the net radiation crossover hour angle in degrees.
+
+    Args:
+        rnl: net longwave radiation, W/m^2
+        rw: dimensionless variable substitute
+        ru: dimensionless variable substitute
+        rv: dimensionless variable substitute
+        k_pir: conversion factor from radians to degrees
+
+    Returns:
+        hn: crossover hour angle, degrees
+    """
+
+    hn = np.arccos(np.clip((rnl - rw * ru) / (rw * rv), -1.0, 1.0)) / k_pir
+
+    return hn
+
+
+def calc_daytime_net_radiation(
+    hn: NDArray, k_pir: float, rw: NDArray, ru: NDArray, rv: NDArray, rnl: NDArray
+) -> NDArray:
+    """Calculates daily net radiation, J/m^2.
+
+    Args:
+        hn: crossover hour angle, degrees
+        k_pir: conversion factor from radians to degrees
+        rw: dimensionless variable substitute
+        ru: dimensionless variable substitute
+        rv: dimensionless variable substitute
+        rnl: net longwave radiation, W/m^2
+
+    Result:
+        rn_d: daily net radiation, J/m^2
+    """
+    secs_d = 86400  # seconds in one solar day
+
+    rn_d = (secs_d / np.pi) * (
+        hn * k_pir * (rw * ru - rnl) + rw * rv * np.sin(np.deg2rad(hn))
+    )
+
+    return rn_d
+
+
+def calc_nighttime_net_radiation(
+    rw: NDArray,
+    rv: NDArray,
+    ru: NDArray,
+    hs: NDArray,
+    hn: NDArray,
+    k_pir: float,
+    rnl: NDArray,
+) -> NDArray:
+    """Calculates nightime net radiation, J/m^2.
+
+    Args:
+        rw: dimensionless variable substitute
+        rv: dimensionless variable substitute
+        ru: dimensionless variable substitute
+        hs: sunset hour angle, degrees
+        hn: crossover hour angle, degrees
+        k_pir: conversion factor from radians to degrees
+
+    Returns:
+        rnn_d: nighttime net radiation, J/m^2
+    """
+    secs_d = 86400  # seconds in one solar day
+
+    rnn_d = (
+        (rw * rv * (np.sin(np.deg2rad(hs)) - np.sin(np.deg2rad(hn))))
+        + (rw * ru * k_pir * (hs - hn))
+        - (rnl * (np.pi - k_pir * hn))
+    ) * (secs_d / np.pi)
+
+    return rnn_d
+
+
 def calc_heliocentric_longitudes(
     julian_day: NDArray, n_days: NDArray, core_const: CoreConst = CoreConst()
 ) -> tuple[NDArray, NDArray]:
