@@ -124,6 +124,23 @@ def test_calc_daily_solar_radiation(rad_const, dr, ru, rv, k_pir, hs, expected):
     assert np.allclose(result, expected)
 
 
+@pytest.mark.parmetrize(
+    argnames="k_c, k_d, sf, elv, expected",
+    argvalues=[(0.25, 0.5, np.array([500, 1000]), np.array([0.38000625, 0.51335]))],
+)
+def test_calc_transmissivity(k_c, k_d, sf, elv, expected):
+    """Tests calc_transmissivity.
+
+    This test is intended to verify the implemented maths
+    """
+
+    from pyrealm.core.solar import calc_transmissivity
+
+    result = calc_transmissivity(k_c, k_d, sf, elv)
+
+    assert np.allclose(result, expected)
+
+
 @pytest.mark.parametrize(
     argnames="day,n_day,expected",
     argvalues=[
