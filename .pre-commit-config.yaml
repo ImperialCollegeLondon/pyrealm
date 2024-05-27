@@ -31,7 +31,7 @@ repos:
         exclude: "pyrealm_build_data/splash/splash_py_version/.*\\.py"
         # https://stackoverflow.com/a/75447331/3401916
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.40.0
+    rev: v0.41.0
     hooks:
     - id: markdownlint
 
