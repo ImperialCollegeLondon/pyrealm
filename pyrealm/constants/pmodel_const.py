@@ -5,11 +5,11 @@ from dataclasses import dataclass, field
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.constants import ConstantsClass
+from pyrealm.constants import CoreConst
 
 
 @dataclass(frozen=True)
-class PModelConst(ConstantsClass):
+class PModelConst(CoreConst):
     r"""Constants for the P Model.
 
     This dataclass provides the following underlying constants used in calculating the

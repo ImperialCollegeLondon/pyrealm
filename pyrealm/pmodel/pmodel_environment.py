@@ -8,7 +8,7 @@ the following pmodel core class:
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.constants import CoreConst, PModelConst
+from pyrealm.constants import PModelConst
 from pyrealm.core.utilities import bounds_checker, check_input_shapes, summarize_attrs
 from pyrealm.pmodel.functions import (
     calc_co2_to_ca,
@@ -82,7 +82,7 @@ class PModelEnvironment:
         theta: NDArray | None = None,
         rootzonestress: NDArray | None = None,
         pmodel_const: PModelConst = PModelConst(),
-        core_const: CoreConst = CoreConst(),
+        # core_const: CoreConst = CoreConst(),
     ):
         self.shape: tuple = check_input_shapes(tc, vpd, co2, patm)
 
@@ -113,12 +113,10 @@ class PModelEnvironment:
         self.ca: NDArray = calc_co2_to_ca(self.co2, self.patm)
         """Ambient CO2 partial pressure, Pa"""
 
-        self.gammastar = calc_gammastar(
-            tc, patm, pmodel_const=pmodel_const, core_const=core_const
-        )
+        self.gammastar = calc_gammastar(tc, patm, pmodel_const=pmodel_const)
         r"""Photorespiratory compensation point (:math:`\Gamma^\ast`, Pa)"""
 
-        self.kmm = calc_kmm(tc, patm, pmodel_const=pmodel_const, core_const=core_const)
+        self.kmm = calc_kmm(tc, patm, pmodel_const=pmodel_const)
         """Michaelis Menten coefficient, Pa"""
 
         # # Michaelis-Menten coef. C4 plants (Pa) NOT CHECKED. Need to think
@@ -127,7 +125,7 @@ class PModelEnvironment:
         # # has not yet been implemented.
         # self.kp_c4 = calc_kp_c4(tc, patm, const=const)
 
-        self.ns_star = calc_ns_star(tc, patm, core_const=core_const)
+        self.ns_star = calc_ns_star(tc, patm, core_const=pmodel_const)
         """Viscosity correction factor realtive to standard
         temperature and pressure, unitless"""
 
@@ -150,10 +148,8 @@ class PModelEnvironment:
             )
 
         # Store constant settings
-        self.pmodel_const = pmodel_const
+        self.const = pmodel_const
         """PModel constants used to calculate environment"""
-        self.core_const = core_const
-        """Core constants used to calculate environment"""
 
     def __repr__(self) -> str:
         """Generates a string representation of PModelEnvironment instance."""

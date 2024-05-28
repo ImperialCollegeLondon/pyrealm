@@ -10,7 +10,7 @@ from warnings import warn
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.constants import CoreConst, PModelConst
+from pyrealm.constants import PModelConst
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.functions import (
     calc_ftemp_inst_rd,
@@ -199,10 +199,8 @@ class PModel:
         self.env: PModelEnvironment = env
         """The PModelEnvironment used to fit the P Model."""
 
-        self.pmodel_const: PModelConst = env.pmodel_const
+        self.const: PModelConst = env.const
         """The PModelConst instance used to create the model environment."""
-        self.core_const: CoreConst = env.core_const
-        """The CoreConst instance used to create the model environment."""
 
         # kphio calculation:
         self.init_kphio: float
@@ -235,7 +233,7 @@ class PModel:
 
         self.optchi: OptimalChiABC = opt_chi_class(
             env=env,
-            pmodel_const=self.pmodel_const,
+            pmodel_const=self.const,
         )
         """An subclass OptimalChi, implementing the requested chi calculation method"""
 
@@ -246,9 +244,7 @@ class PModel:
         # Temperature dependence of quantum yield efficiency
         # -----------------------------------------------------------------------
         if self.do_ftemp_kphio:
-            ftemp_kphio = calc_ftemp_kphio(
-                env.tc, self.c4, pmodel_const=self.pmodel_const
-            )
+            ftemp_kphio = calc_ftemp_kphio(env.tc, self.c4, pmodel_const=self.const)
             self.kphio = self.init_kphio * ftemp_kphio
         else:
             self.kphio = np.array([self.init_kphio])
@@ -260,7 +256,7 @@ class PModel:
         """Records the method used to calculate Jmax limitation."""
 
         self.jmaxlim: JmaxLimitation = JmaxLimitation(
-            self.optchi, method=self.method_jmaxlim, pmodel_const=self.pmodel_const
+            self.optchi, method=self.method_jmaxlim, pmodel_const=self.const
         )
         """Details of the Jmax limitation calculation for the model"""
         # -----------------------------------------------------------------------
@@ -279,7 +275,7 @@ class PModel:
         # The basic calculation of LUE = phi0 * M_c * m with an added penalty term
         # for jmax limitation
         self.lue: NDArray = (
-            self.kphio * self.optchi.mj * self.jmaxlim.f_v * self.core_const.k_c_molmass
+            self.kphio * self.optchi.mj * self.jmaxlim.f_v * self.const.k_c_molmass
         )
         """Light use efficiency (LUE, g C mol-1)"""
 
@@ -403,14 +399,14 @@ class PModel:
 
         # V_cmax25 (vcmax normalized to const.k_To)
         ftemp25_inst_vcmax = calc_ftemp_inst_vcmax(
-            self.env.tc, core_const=self.core_const, pmodel_const=self.pmodel_const
+            self.env.tc, core_const=self.const, pmodel_const=self.const
         )
         self._vcmax25 = self._vcmax / ftemp25_inst_vcmax
 
         # Dark respiration at growth temperature
-        ftemp_inst_rd = calc_ftemp_inst_rd(self.env.tc, pmodel_const=self.pmodel_const)
+        ftemp_inst_rd = calc_ftemp_inst_rd(self.env.tc, pmodel_const=self.const)
         self._rd = (
-            self.pmodel_const.atkin_rd_to_vcmax
+            self.const.atkin_rd_to_vcmax
             * (ftemp_inst_rd / ftemp25_inst_vcmax)
             * self._vcmax
         )
@@ -424,9 +420,7 @@ class PModel:
 
         assim = np.minimum(a_j, a_c)
 
-        if not np.allclose(
-            assim, self._gpp / self.core_const.k_c_molmass, equal_nan=True
-        ):
+        if not np.allclose(assim, self._gpp / self.const.k_c_molmass, equal_nan=True):
             warn("Assimilation and GPP are not identical")
 
         # Stomatal conductance - do not estimate when VPD = 0 or when floating point

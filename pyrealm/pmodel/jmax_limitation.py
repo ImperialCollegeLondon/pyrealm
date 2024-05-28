@@ -84,7 +84,7 @@ class JmaxLimitation:
         """Details of the optimal chi calculation for the model"""
         self.method: str = method
         """Records the method used to calculate Jmax limitation."""
-        self.pmodel_const: PModelConst = pmodel_const
+        self.const: PModelConst = pmodel_const
         """The PModelParams instance used for the calculation."""
 
         # Attributes populated by alternative method - two should always be populated by
@@ -146,14 +146,14 @@ class JmaxLimitation:
 
         # Calculate √ {1 – (c*/m)^(2/3)} (see Eqn 2 of Wang et al 2017) and
         # √ {(m/c*)^(2/3) - 1} safely, both are undefined where m <= c*.
-        vals_defined = np.greater(self.optchi.mj, self.pmodel_const.wang17_c)
+        vals_defined = np.greater(self.optchi.mj, self.const.wang17_c)
 
         self.f_v = np.sqrt(
-            1 - (self.pmodel_const.wang17_c / self.optchi.mj) ** (2.0 / 3.0),
+            1 - (self.const.wang17_c / self.optchi.mj) ** (2.0 / 3.0),
             where=vals_defined,
         )
         self.f_j = np.sqrt(
-            (self.optchi.mj / self.pmodel_const.wang17_c) ** (2.0 / 3.0) - 1,
+            (self.optchi.mj / self.const.wang17_c) ** (2.0 / 3.0) - 1,
             where=vals_defined,
         )
 
@@ -206,12 +206,12 @@ class JmaxLimitation:
 
         # Adopted from Nick Smith's code:
         # Calculate omega, see Smith et al., 2019 Ecology Letters  # Eq. S4
-        theta = self.pmodel_const.smith19_theta
-        c_cost = self.pmodel_const.smith19_c_cost
+        theta = self.const.smith19_theta
+        c_cost = self.const.smith19_c_cost
 
         # simplification terms for omega calculation
         cm = 4 * c_cost / self.optchi.mj
-        v = 1 / (cm * (1 - self.pmodel_const.smith19_theta * cm)) - 4 * theta
+        v = 1 / (cm * (1 - self.const.smith19_theta * cm)) - 4 * theta
 
         # account for non-linearities at low m values. This code finds
         # the roots of a quadratic function that is defined purely from

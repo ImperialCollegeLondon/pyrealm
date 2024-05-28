@@ -174,7 +174,7 @@ the Arrhenius equation ($h^{-1}$ in {cite}`mengoli:2022a`).
 ha_vcmax25 = 65330
 ha_jmax25 = 43900
 
-tk_acclim = temp_acclim + pmodel_subdaily.env.core_const.k_CtoK
+tk_acclim = temp_acclim + pmodel_subdaily.env.const.k_CtoK
 vcmax25_acclim = pmodel_acclim.vcmax * (1 / calc_ftemp_arrh(tk_acclim, ha_vcmax25))
 jmax25_acclim = pmodel_acclim.jmax * (1 / calc_ftemp_arrh(tk_acclim, ha_jmax25))
 ```
@@ -230,7 +230,7 @@ temperature at fast scales:
   responses of $J_{max}$ and $V_{cmax}$.
 
 ```{code-cell} ipython3
-tk_subdaily = subdaily_env.tc + pmodel_subdaily.env.core_const.k_CtoK
+tk_subdaily = subdaily_env.tc + pmodel_subdaily.env.const.k_CtoK
 
 # Fill the realised jmax and vcmax from subdaily to daily
 vcmax25_subdaily = fsscaler.fill_daily_to_subdaily(vcmax25_real)
@@ -289,7 +289,7 @@ Aj_subdaily = (
 )
 
 # Calculate GPP and convert from micromols to micrograms
-GPP_subdaily = np.minimum(Ac_subdaily, Aj_subdaily) * pmodel_subdaily.env.core_const.k_c_molmass
+GPP_subdaily = np.minimum(Ac_subdaily, Aj_subdaily) * pmodel_subdaily.env.const.k_c_molmass
 
 # Compare to the SubdailyPModel outputs
 diff = GPP_subdaily - pmodel_subdaily.gpp
