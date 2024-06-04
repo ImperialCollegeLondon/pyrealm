@@ -6,14 +6,15 @@ JSON arrays.
 
 import json
 
-from pyrealm.canopy_model.base_objects import ImportedCommunity, PlantFunctionalType
+from pyrealm.canopy_model.model.community import Community
+from pyrealm.canopy_model.model.flora import PlantFunctionalType
 
 
 class PlantFunctionalTypeDeserialiser:
     """Utility class for deserialising json file to a list of plant functional types."""
 
     @classmethod
-    def load_flora(cls, path: str) -> list[PlantFunctionalType]:
+    def load_plant_functional_types(cls, path: str) -> list[PlantFunctionalType]:
         """Loads a list of plant functional type objects from a json file.
 
         Uses the built-in json_dataclass functionality to deserialise a json array of
@@ -33,8 +34,11 @@ class PlantFunctionalTypeDeserialiser:
 class CommunityDeserialiser:
     """Provides utility for deserialising json file to list of Community objects."""
 
+    def __init__(self, plant_functional_types: list[PlantFunctionalType]):
+        self.plant_functional_types = plant_functional_types
+
     @classmethod
-    def load_communities(cls, path: str) -> list[ImportedCommunity]:
+    def load_communities(cls, path: str) -> list[Community]:
         """Loads a list of community objects from a json file.
 
         Uses the built-in json_dataclass functionality to deserialise a json array of
@@ -45,4 +49,4 @@ class CommunityDeserialiser:
         """
         with open(path) as file:
             communities_json = json.load(file)
-        return ImportedCommunity.schema().load(communities_json, many=True)  # type: ignore[attr-defined]  # noqa: E501
+        return Community.schema().load(communities_json, many=True)  # type: ignore[attr-defined]  # noqa: E501

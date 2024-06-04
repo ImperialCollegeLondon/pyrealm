@@ -6,8 +6,9 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.optimize import root_scalar
 
-from pyrealm.canopy_model.base_objects import PlantFunctionalType
-from pyrealm.canopy_model.community import Community, TModelGeometry
+from pyrealm.canopy_model.model.cohort import TModelGeometry
+from pyrealm.canopy_model.model.community import Community
+from pyrealm.canopy_model.model.flora import PlantFunctionalType
 
 
 @dataclass
@@ -25,17 +26,19 @@ class Canopy:
     def __init__(self, community: Community, canopy_gap_fraction: float) -> None:
         """placeholder."""
         self.f_g = canopy_gap_fraction
-
         self.cohorts = community.cohorts
-        self.pfts = community.pfts
-        self.t_model_geometries = community.t_model_geometries
 
         self.canopy_factors: list[CanopyFactors] = list(
-            map(calculate_stem_canopy_factors, self.pfts, self.t_model_geometries)
+            map(
+                lambda cohort: calculate_stem_canopy_factors(
+                    cohort.pft, cohort.t_model_geometry
+                ),
+                self.cohorts,
+            )
         )
 
         self.max_individual_height = max(
-            cohort.height for cohort in self.t_model_geometries
+            cohort.t_model_geometry.height for cohort in self.cohorts
         )
 
         self.canopy_layer_heights = self.calculate_canopy_layer_heights(
@@ -45,11 +48,11 @@ class Canopy:
     def calculate_community_projected_area_at_z(self, z: float) -> float:
         """Calculate the total area of community stems."""
         cohort_areas_at_z = map(
-            lambda cohort, pft, t_geom, canopy_f: cohort.number_of_members
-            * calculate_projected_canopy_area_for_individual(z, pft, t_geom, canopy_f),
+            lambda cohort, canopy_f: cohort.number_of_members
+            * calculate_projected_canopy_area_for_individual(
+                z, cohort.pft, cohort.t_model_geometry, canopy_f
+            ),
             self.cohorts,
-            self.pfts,
-            self.t_model_geometries,
             self.canopy_factors,
         )
 
@@ -83,9 +86,9 @@ class Canopy:
         """Placeholder."""
         # Calculate the number of layers
         cohort_crown_areas = map(
-            lambda cohort, t_geom: cohort.number_of_members * t_geom.crown_area,
+            lambda cohort: cohort.number_of_members
+            * cohort.t_model_geometry.crown_area,
             self.cohorts,
-            self.t_model_geometries,
         )
         total_community_crown_area = sum(cohort_crown_areas)
         number_of_layers = int(np.ceil(total_community_crown_area / (A * (1 - fG))))
@@ -102,6 +105,15 @@ class Canopy:
             ).root
 
         return z_star
+
+    def calculate_gpp(self, cell_ppfd: NDArray, lue: NDArray) -> None:
+        """Estimate the gross primary productivity.
+
+        Not sure where to place this - need an array of LUE that matches to the
+
+        """
+
+        pass
 
 
 def calculate_q_m(m: float, n: float) -> float:

@@ -57,28 +57,3 @@ class Flora(dict[str, PlantFunctionalType]):
 
         for name, pft in zip(pft_names, pfts):
             self[name] = pft
-
-
-@dataclass_json
-@dataclass
-class Cohort:
-    """Contains raw imported cohort data.
-
-    Dataclass for storing Cohort data imported from json.
-    """
-
-    pft_name: str
-    dbh: float
-    number_of_members: int
-
-
-@dataclass_json
-@dataclass
-class ImportedCommunity:
-    """Contains raw imported community data.
-
-    Dataclass for storing Community data imported from json.
-    """
-
-    cell_id: int
-    cohorts: list[Cohort]
