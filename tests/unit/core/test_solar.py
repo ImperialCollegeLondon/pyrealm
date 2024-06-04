@@ -142,6 +142,100 @@ def test_calc_transmissivity(k_c, k_d, sf, elv, expected):
 
 
 @pytest.mark.parametrize(
+    argnames="k_fFEC, k_alb_vis, tau, ra_d, expected",
+    argvalues=[
+        (2.04, 0.03, np.array([300000000, 200000000], np.array([1.7809e14, 1.5830e14])))
+    ],
+)
+def test_calc_ppfd(k_fFEC, k_alb_vis, tau, ra_d, expected):
+    """Tests calc_ppfd.
+
+    This test is intended to verify the implemented maths.
+    """
+
+    from pyrealm.core.solar import calc_ppfd
+
+    result = calc_ppfd(k_fFEC, k_alb_vis, tau, ra_d)
+
+    assert np.allclose(result, expected)
+
+
+@pytest.mark.parameterise(
+    argnames="k_b, sg, k_A, tc, expected",
+    argvalues=[
+        (0.2, np.array([0.25, 0.5]), 107, np.array([0, 25]), np.array([42.8, 49.2]))
+    ],
+)
+def test_calc_rnl(k_b, sg, k_A, tc, expected):
+    """Tests calc_rnl.
+
+    This test is intended to verify the implemented maths.
+    """
+    from pyrealm.core.solar import calc_rnl
+
+    result = calc_rnl(k_b, sg, k_A, tc)
+
+    assert np.allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    argnames="k_alb_sw, tau, k_Gsc, dr, expected",
+    argvalues=[
+        (
+            0.17,
+            np.array([0.3, 0.4]),
+            1360.8,
+            np.array([1.03, 1.02]),
+            np.array([349.004376, 460.821312]),
+        )
+    ],
+)
+def test_calc_rw(k_alb_sw, tau, k_Gsc, dr, expected):
+    """Test calc_rw.
+
+    This test is intended to verify the implemented maths.
+    """
+    from pyrealm.core.solar import calc_rw
+
+    result = calc_rw(k_alb_sw, tau, k_Gsc, dr)
+
+    assert np.allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    argnames="rnl, rw, ru, rv, k_pir, expected",
+    argvalues=[
+        (
+            45,
+            400,
+            np.array([0.04, 0.01]),
+            np.array([0.5, 0.1]),
+            57.29577951,
+            np.array([0.024875887, 0]),
+        )
+    ],
+)
+def test_calc_net_rad_crossover_hour_angle(rnl, rw, ru, rv, k_pir, expected):
+    """Tests calc_net_rad_crossover_hour_angle.
+
+    This test is intended to verify the implemented maths.
+    """
+
+    from pyrealm.core.solar import calc_net_rad_crossover_hour_angle
+
+    result = calc_net_rad_crossover_hour_angle(
+        rnl,
+        rw,
+        ru,
+        rv,
+        k_pir,
+    )
+
+    assert np.allclose(result, expected)
+
+
+@pytest.mark.parametrize(argnames="hn, k_pir, rw, ru, rv, rnl", argvalues=[()])
+@pytest.mark.parametrize(
     argnames="day,n_day,expected",
     argvalues=[
         (240, 365, (231.44076437634416, 154.44076437634416)),

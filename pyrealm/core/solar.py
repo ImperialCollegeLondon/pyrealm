@@ -31,7 +31,7 @@ def calc_distance_factor(nu: NDArray, k_e: float) -> NDArray:
 
     This function calculates distance factor using the method of Berger et al. (1993)
     Args:
-        nu: heliocentric true anomaly
+        nu: heliocentric true anomaly (degrees)
         k_e: Solar eccentricity
 
     Returns:
@@ -213,7 +213,7 @@ def calc_rw(k_alb_sw: float, tau: NDArray, k_Gsc: float, dr: NDArray) -> NDArray
     return rw
 
 
-def net_rad_crossover_hour_angle(
+def calc_net_rad_crossover_hour_angle(
     rnl: NDArray, rw: NDArray, ru: NDArray, rv: NDArray, k_pir: float
 ) -> NDArray:
     """Calculates the net radiation crossover hour angle, degrees.
