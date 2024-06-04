@@ -35,7 +35,7 @@ class Cohort:
     """
 
     pft_name: InitVar[str]
-    flora: InitVar[Flora]
+    flora: InitVar[Flora]  # where to declare this...
     dbh: float
     number_of_members: int
     pft: PlantFunctionalType = field(init=False)
