@@ -9,7 +9,7 @@ jupytext:
 kernelspec:
   display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 
 # Developing `pyrealm`
@@ -272,23 +272,17 @@ package testing and in documentation.
 We use `sphinx` to maintain the documentation for `pyrealm` and Google style docstrings
 using the `napoleon` formatting to provide API documentation for the code. We use MyST
 Markdown to provide dynamically built usage examples. See the [documentation
-page](./documentation.md) for details.
-
-In order to build the documentation, you will need to register the `poetry` virtual
-enviroment, so that it can be used by `jupyter` and `myst` to build dynamic content.
-This only needs to be done once.
-
-```bash
-poetry run python -m ipykernel install --user --name=pyrealm_python3
-```
-
-After that, the following code can be used to build the documentation
+page](./documentation.md) for details but to get started, the following code can be used
+to build the documentation.
 
 ```bash
 # Build docs using sphinx
 cd docs
 poetry run sphinx-build -W --keep-going source build
 ```
+
+Once that command completes, the file `docs/build/html/index.html` can be opened to view
+the built documentation.
 
 ### GitHub Actions
 

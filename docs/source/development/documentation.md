@@ -9,7 +9,7 @@ jupytext:
 kernelspec:
   display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 
 # Documentation
@@ -60,7 +60,7 @@ jupytext:
 kernelspec:
   display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 ```
 
@@ -132,12 +132,15 @@ docstrings. The `sphinx` building process requires some extra packages, but thes
 included in the `docs` group in `pyproject.toml` and should be installed.
 
 In order to build the package documentation, Jupyter needs to be able to associate the
-documentation files with the Python environment managed by `poetry`. This is done by
-installing the `poetry` environment as a new Jupyter kernel with a fixed name. This
-allows all build systems to run notebooks using the correct build environment:
+documentation files with the Python environment managed by `poetry`. Fortunately, the
+`poetry shell` and `poetry run` commands update the Jupyter kernel specifications so
+that the `python3` kernel name points to the `poetry` environment. For example:
 
 ```bash
-poetry run python -m ipykernel install --user --name=pyrealm_python3
+$ poetry run jupyter kernelspec list
+Available kernels:
+  ...
+  python3            /Users/dorme/Library/Caches/pypoetry/virtualenvs/pyrealm-QywIOHcp-py3.10/share/jupyter/kernels/python3
 ```
 
 In order to build the package documentation, the following command can then be used:
