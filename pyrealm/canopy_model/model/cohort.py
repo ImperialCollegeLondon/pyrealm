@@ -1,6 +1,10 @@
 """Contains classes relating to modelling a cohort."""
 
 from pyrealm.canopy_model.model.flora import Flora, PlantFunctionalType
+from pyrealm.canopy_model.model.jaideep_t_model_extension import (
+    CanopyFactors,
+    calculate_stem_canopy_factors,
+)
 from pyrealm.canopy_model.model.t_model import (
     TModelGeometry,
     calculate_t_model_geometry,
@@ -22,6 +26,9 @@ class Cohort:
         )
         self.t_model_geometry: TModelGeometry = calculate_t_model_geometry(
             self.dbh, self.pft
+        )
+        self.canopy_factors: CanopyFactors = calculate_stem_canopy_factors(
+            self.pft, self.t_model_geometry
         )
 
     @classmethod

@@ -8,8 +8,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from pyrealm.canopy_model.model.cohort import TModelGeometry
 from pyrealm.canopy_model.model.flora import PlantFunctionalType
+from pyrealm.canopy_model.model.t_model import TModelGeometry
 
 
 @dataclass

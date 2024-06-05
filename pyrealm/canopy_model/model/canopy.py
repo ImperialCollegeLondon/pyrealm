@@ -6,9 +6,7 @@ from scipy.optimize import root_scalar
 
 from pyrealm.canopy_model.model.community import Community
 from pyrealm.canopy_model.model.jaideep_t_model_extension import (
-    CanopyFactors,
     calculate_projected_canopy_area_for_individual,
-    calculate_stem_canopy_factors,
 )
 
 
@@ -19,15 +17,6 @@ class Canopy:
         """placeholder."""
         self.f_g = canopy_gap_fraction
         self.cohorts = community.cohorts
-
-        self.canopy_factors: list[CanopyFactors] = list(
-            map(
-                lambda cohort: calculate_stem_canopy_factors(
-                    cohort.pft, cohort.t_model_geometry
-                ),
-                self.cohorts,
-            )
-        )
 
         self.max_individual_height = max(
             cohort.t_model_geometry.height for cohort in self.cohorts
@@ -40,12 +29,11 @@ class Canopy:
     def calculate_community_projected_area_at_z(self, z: float) -> float:
         """Calculate the total area of community stems."""
         cohort_areas_at_z = map(
-            lambda cohort, canopy_f: cohort.number_of_members
+            lambda cohort: cohort.number_of_members
             * calculate_projected_canopy_area_for_individual(
-                z, cohort.pft, cohort.t_model_geometry, canopy_f
+                z, cohort.pft, cohort.t_model_geometry, cohort.canopy_factors
             ),
             self.cohorts,
-            self.canopy_factors,
         )
 
         return sum(cohort_areas_at_z)
