@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
@@ -306,7 +306,7 @@ up everything you need, ready to start developing on pyrealm.
 :::{admonition} Setup script
 
 ``` sh
-#!/bin/bash
+!/bin/bash
 
 # pyenv and poetry use sqlite3. You _may_ need to install these requirements first.
 sudo apt install sqlite3 sqlite3-doc libsqlite3-dev

@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
@@ -39,9 +39,7 @@ co2_1d = np.array([280, 410])
 tc_4d, patm_4d, vpd_4d, co2_4d = np.meshgrid(tc_1d, patm_1d, vpd_1d, co2_1d)
 
 # Calculate the photosynthetic environment
-pmodel_env = PModelEnvironment(tc=tc_4d, patm=patm_4d, 
-vpd=vpd_4d, 
-    co2=co2_4d)
+pmodel_env = PModelEnvironment(tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d)
 
 # Run the P Models
 pmodel_c3 = PModel(pmodel_env)
@@ -223,7 +221,7 @@ must be expressed as $\boldsymbol{\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{
 Estimates of PPFD sometimes use different temporal or spatial scales - for
 example daily moles of photons per hectare. Although GPP can also be expressed
 with different units, many other predictions of the P Model ($J_{max}$,
-$V_{cmax}$, $g_s$ and $r_d$) _must_ be expressed as 
+$V_{cmax}$, $g_s$ and $r_d$) _must_ be expressed as
 $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$ and so this
 standard unit must also be used for PPFD.
 ```
@@ -279,7 +277,9 @@ plot_fun("vcmax", r"$v_{cmax}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^
 ```{code-cell}
 :tags: [hide-input]
 
-plot_fun("vcmax25", r"$v_{cmax25}$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
+plot_fun(
+    "vcmax25", r"$v_{cmax25}$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
+)
 ```
 
 ### Maximum rate of electron transport. (``jmax``)
@@ -352,15 +352,15 @@ def plot_iabs(ax, estvar, estvarlab):
 fig, axs = pyplot.subplots(2, 3, figsize=(12, 8), sharex=True)
 
 plot_iabs(
-    axs[0, 0],
-    "gpp",
-     r"GPP ($\mu\mathrm{g\,C}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
-plot_iabs(axs[0, 1],
-    "rd",
-     r"$r_d$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
-plot_iabs(axs[0, 2],
+    axs[0, 0], "gpp", r"GPP ($\mu\mathrm{g\,C}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
+)
+plot_iabs(
+    axs[0, 1], "rd", r"$r_d$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
+)
+plot_iabs(
+    axs[0, 2],
     "vcmax",
-     r"$v_{cmax}$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
+    r"$v_{cmax}$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)",
 )
 plot_iabs(
     axs[1, 0],
@@ -368,14 +368,13 @@ plot_iabs(
     r"$v_{cmax25}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)",
 )
 plot_iabs(
-    axs[1, 1], 
+    axs[1, 1],
     "jmax",
-    r"$J_{max}$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
+    r"$J_{max}$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)",
 )
-plot_iabs(axs[1, 2],
-    "gs",
-    r"$g_s$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
-    )
+plot_iabs(
+    axs[1, 2], "gs", r"$g_s$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
+)
 
 axs[0, 0].legend(
     [

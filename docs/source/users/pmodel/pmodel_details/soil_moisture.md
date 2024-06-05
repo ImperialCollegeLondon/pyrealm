@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.1
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
@@ -86,7 +86,7 @@ varies with changing soil moisture for some different values of mean aridity. In
 the examples below, the default $\theta_0 = 0$ has been changed to $\theta_0 =
 0.1$ to make the lower bound more obvious.
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 from matplotlib import pyplot as plt
@@ -152,7 +152,7 @@ by the resulting factor. The example below shows how the predicted light use
 efficiency from the P Model changes across an aridity gradient both with and without the
 soil moisture factor.
 
-```{code-cell} ipython3
+```{code-cell}
 # Calculate the P Model in a constant environment
 tc = np.array([20] * 101)
 sm_gradient = np.linspace(0, 1.0, 101)
@@ -175,7 +175,7 @@ for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
     gpp_stressed[mean_alpha] = model.gpp * sm_stress
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 plt.plot(sm_gradient, model.gpp, label="No soil moisture penalty")
@@ -235,15 +235,15 @@ y &= \min( a  \textrm{AI} ^ {b}, 1)\\
 \end{align*}
 $$
 
-```{code-cell} ipython3
+```{code-cell}
 from pyrealm.constants import PModelConst
 
-const=PModelConst()
+const = PModelConst()
 aridity_index = np.arange(0.35, 7, 0.1)
 
 y = np.minimum(
-        const.soilm_mengoli_y_a * np.power(aridity_index, const.soilm_mengoli_y_b), 1
-    )
+    const.soilm_mengoli_y_a * np.power(aridity_index, const.soilm_mengoli_y_b), 1
+)
 
 
 psi = np.minimum(
@@ -251,8 +251,8 @@ psi = np.minimum(
     1,
 )
 
-plt.plot(aridity_index, y, label='Maximum level ($y$)')
-plt.plot(aridity_index, psi, label='Critical threshold ($\psi$)')
+plt.plot(aridity_index, y, label="Maximum level ($y$)")
+plt.plot(aridity_index, psi, label="Critical threshold ($\psi$)")
 plt.xlabel(r"Aridity Index (AI)")
 plt.ylabel(r"$\beta(\theta)$")
 plt.legend()
@@ -270,7 +270,7 @@ $$
     \end{cases}
 $$
 
-```{code-cell} ipython3
+```{code-cell}
 # Calculate the soil moisture stress factor across a soil moisture
 # gradient for different aridity index values
 beta = {}
@@ -280,7 +280,7 @@ for ai in ai_vals:
     beta[ai] = pmodel.calc_soilmstress_mengoli(
         soilm=sm_gradient, aridity_index=np.array(ai)
     )
-    plt.plot(sm_gradient, beta[ai], label= f"AI = {ai}")
+    plt.plot(sm_gradient, beta[ai], label=f"AI = {ai}")
 
 plt.xlabel(r"Relative soil moisture $\theta$")
 plt.ylabel(r"$\beta(\theta)$")
@@ -299,10 +299,10 @@ calculated and then applied to the GPP calculated for a model
 ({attr}`~pyrealm.pmodel.pmodel.PModel.gpp`). In the example below, the result is
 obviously just $\beta(\theta)$ from above scaled to the constant GPP.
 
-```{code-cell} ipython3
+```{code-cell}
 for ai in ai_vals:
 
-    plt.plot(sm_gradient, model.gpp * beta[ai], label= f"AI = {ai}")
+    plt.plot(sm_gradient, model.gpp * beta[ai], label=f"AI = {ai}")
 
 plt.xlabel(r"Relative soil moisture $\theta$")
 plt.ylabel("GPP")
@@ -310,6 +310,6 @@ plt.legend()
 plt.show()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 
 ```
