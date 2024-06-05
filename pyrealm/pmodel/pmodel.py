@@ -1,4 +1,4 @@
-"""The module :mod:`~pyrealm.pmodel.pmodel` provides the implementation of 
+"""The module :mod:`~pyrealm.pmodel.pmodel` provides the implementation of
 the following pmodel core class:
 
 * :class:`~pyrealm.pmodel.pmodel.PModel`:
@@ -345,13 +345,15 @@ class PModel:
 
     @property
     def ppfd(self) -> NDArray:
-        """Stomatal conductance (µmol m-2 s-1)."""
+        """Photosynthetic photon flux density (PPFD, µmol m-2 s-1)."""
         self._check_estimated("gs")
         return self._ppfd
 
     @property
     def fapar(self) -> NDArray:
-        """Stomatal conductance (µmol m-2 s-1)."""
+        """Fraction of absorbed photosynthetically active radiation
+        (:math:`f_{APAR}` unitless).
+        """  # noqa: D205, D415
         self._check_estimated("gs")
         return self._fapar
 
