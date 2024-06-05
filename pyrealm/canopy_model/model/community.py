@@ -12,7 +12,7 @@ from pyrealm.canopy_model.model.cohort import Cohort
 class Community:
     """Represents a community of plants in a single location.
 
-    Dataclass for storing Community data imported from json.
+    The plants within the community are represented as a collection of cohorts.
     """
 
     cell_id: int

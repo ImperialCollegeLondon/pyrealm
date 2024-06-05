@@ -2,26 +2,13 @@
 
 from dataclasses import InitVar, dataclass, field
 
-import numpy as np
 from dataclasses_json import dataclass_json
 
 from pyrealm.canopy_model.model.flora import Flora, PlantFunctionalType
-
-
-@dataclass
-class TModelGeometry:
-    """Geometry and mass of a cohort, calculated using the T Model.
-
-    Includes the geometry and mass of a particular cohort with a given
-    diameter at breast height, calculated using the T Model.
-    """
-
-    height: float
-    crown_area: float
-    crown_fraction: float
-    mass_stem: float
-    mass_fol: float
-    mass_swd: float
+from pyrealm.canopy_model.model.t_model import (
+    TModelGeometry,
+    calculate_t_model_geometry,
+)
 
 
 @dataclass_json
@@ -43,7 +30,7 @@ class Cohort:
 
     def __post_init__(self, pft_name: str, flora: Flora) -> None:
         self.pft = self.look_up_plant_functional_type(pft_name, flora)
-        self.t_model_geometry = self.calculate_t_model_geometry(self.dbh, self.pft)
+        self.t_model_geometry = calculate_t_model_geometry(self.dbh, self.pft)
 
     @classmethod
     def look_up_plant_functional_type(
@@ -55,36 +42,3 @@ class Cohort:
         if pft is None:
             raise Exception("Cohort data supplied with in an invalid PFT name.")
         return pft
-
-    @classmethod
-    def calculate_t_model_geometry(
-        cls, dbh: float, pft: PlantFunctionalType
-    ) -> TModelGeometry:
-        """Calculate T Model Geometry.
-
-        Calculate the geometry and mass of a plant or cohort with a given diameter at
-        breast height and plant functional type.
-        """
-
-        height = pft.h_max * (1 - np.exp(-pft.a_hd * dbh / pft.h_max))
-
-        # Crown area of tree, Equation (8) of Li ea.
-        crown_area = (np.pi * pft.ca_ratio / (4 * pft.a_hd)) * dbh * height
-
-        # Crown fraction, Equation (11) of Li ea.
-        crown_fraction = height / (pft.a_hd * dbh)
-
-        # Masses
-        mass_stem = (np.pi / 8) * (dbh**2) * height * pft.rho_s
-        mass_fol = crown_area * pft.lai * (1 / pft.sla)
-        mass_swd = (
-            crown_area * pft.rho_s * height * (1 - crown_fraction / 2) / pft.ca_ratio
-        )
-        return TModelGeometry(
-            height,
-            crown_area,
-            crown_fraction,
-            mass_stem,
-            mass_fol,
-            mass_swd,
-        )
