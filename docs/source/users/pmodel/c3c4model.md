@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
@@ -74,7 +74,7 @@ pyplot.legend(title="Forest cover", frameon=False)
 pyplot.title(r"Initial C4 fraction prediction from $A_4$ and tree cover")
 pyplot.xlabel("Proportion C4 GPP advantage $A_4$")
 pyplot.ylabel("Expected C4 fraction ($F_4$)")
-pyplot.axvline(0, ls="--", c="grey");
+pyplot.axvline(0, ls="--", c="grey")
 ```
 
 ## Step 3: Account for shading by C3 trees
@@ -99,7 +99,7 @@ pyplot.axvline(2.8, ls="--", c="grey")
 
 pyplot.title("Proportion of GPP from C3 trees")
 pyplot.xlabel("GPP from C3 plants (kg m-2 yr-1)")
-pyplot.ylabel("Proportion of GPP from C3 trees (h, -)");
+pyplot.ylabel("Proportion of GPP from C3 trees (h, -)")
 ```
 
 ## Step 4: Filtering cold areas and cropland

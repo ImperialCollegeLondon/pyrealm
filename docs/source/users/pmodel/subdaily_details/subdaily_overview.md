@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
@@ -65,7 +65,7 @@ The implementation has the following steps:
 * The daily realised values are then
   [interpolated](acclimation.md#interpolation-of-realised-values-to-subdaily-timescales)
   back to the subdaily time scale.
-  
+
 * Optimal $\chi$ is then recalculated on the subdaily timescale, but with the values of
   $\xi$ constrained to the slowly responding realised values. Similarly, $V_{cmax}$ and
   $J_{max}$ are calculated estimated at the subdaily temperatures, but using the

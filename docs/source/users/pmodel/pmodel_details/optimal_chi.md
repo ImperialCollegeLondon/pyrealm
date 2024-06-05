@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.1
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
@@ -64,7 +64,7 @@ for use within a P Model.
   - {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGammaRootzoneStress`
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 from itertools import product
@@ -92,6 +92,7 @@ tc_4d, patm_4d, vpd_4d, co2_4d = np.meshgrid(tc_1d, patm_1d, vpd_1d, co2_1d)
 
 # Calculate the photosynthetic environment
 pmodel_env = PModelEnvironment(tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d)
+
 
 # A plotter function for a model
 def plot_opt_chi(mod):
@@ -196,7 +197,7 @@ def plot_opt_chi(mod):
 This **C3 method** follows the approach detailed in {cite:t}`Prentice:2014bc`, see
 {class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14` for details.
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 # Run the P Model and plot predictions
@@ -210,7 +211,7 @@ This **C4 method** follows the approach detailed in {cite:t}`Prentice:2014bc`, b
 a C4 specific version of the unit cost ratio ($\beta$). It also sets $m_j = m_c = 1$.
 See {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4` for details.
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 # Run the P Model and plot predictions
@@ -228,7 +229,7 @@ and also also sets $m_j = 1$, but $m_c$ is calculated as in
 {class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`. See
 {meth}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGamma` for details.
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 # Run the P Model and plot predictions
@@ -249,11 +250,11 @@ but $m_j=1$.
 ```{warning}
 Note that {cite:t}`lavergne:2020a` found **no relationship** between C4 $\beta$
 values and soil moisture in leaf gas exchange data  The
-{class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C4` method is **an 
+{class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C4` method is **an
 experimental
 feature** - see the documentation for the
 {class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C4` and
-{class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4` methods for the theoretical 
+{class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4` methods for the theoretical
 rationale.
 ```
 
@@ -263,7 +264,7 @@ The calculation details are provided in the description of the
 {class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3` method, but the
 variation in $\beta$ with $\theta$ is shown below.
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 # Theta is required for the calculation of beta
@@ -291,7 +292,7 @@ The plots below show the impacts on optimal $\chi$ across a temperature gradient
 values of VPD and soil moisture, with constant atmospheric pressure (101325 Pa) and CO2
 (280 ppm).
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 # Environments with high and low soil moisture
@@ -356,7 +357,7 @@ pyplot.tight_layout()
 The plots below illustrate the impact of temperature and  $\theta$ on  $m_j$ and $m_c$,
 again with constant atmospheric pressure (101325 Pa) and CO2 (280 ppm).
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 fig, ((ax1, ax3), (ax2, ax4)) = pyplot.subplots(2, 2, figsize=(10, 10), sharey=True)
@@ -454,22 +455,22 @@ but the variation in $\beta$ with rootzone stress is shown below.
 * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4RootzoneStress`
 * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGammaRootzoneStress`
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 from pyrealm.pmodel.optimal_chi import (
-  OptimalChiPrentice14RootzoneStress,
-  OptimalChiC4RootzoneStress,
-  OptimalChiC4NoGammaRootzoneStress,
+    OptimalChiPrentice14RootzoneStress,
+    OptimalChiC4RootzoneStress,
+    OptimalChiC4NoGammaRootzoneStress,
 )
 
 # Rootzone stress is required for the calculation of beta
 pmodel_env_rootzonestress = PModelEnvironment(
-    tc=np.repeat(25, 101), 
-    patm=np.repeat(101325, 101), 
+    tc=np.repeat(25, 101),
+    patm=np.repeat(101325, 101),
     vpd=np.repeat(1000, 101),
-    co2=np.repeat(400, 101), 
-    rootzonestress=np.linspace(0, 1, 101)
+    co2=np.repeat(400, 101),
+    rootzonestress=np.linspace(0, 1, 101),
 )
 
 # Estimate using the 3 different methods
@@ -480,19 +481,13 @@ opt_chi_c4_no_gamma_rzs = OptimalChiC4NoGammaRootzoneStress(pmodel_env_rootzones
 # Plot the predictions
 fig, ax1 = pyplot.subplots(1, 1, figsize=(6, 4))
 ax1.plot(
-  pmodel_env_rootzonestress.rootzonestress, 
-  opt_chi_prentice14_rzs.xi, 
-  label="C3"
+    pmodel_env_rootzonestress.rootzonestress, opt_chi_prentice14_rzs.xi, label="C3"
 )
+ax1.plot(pmodel_env_rootzonestress.rootzonestress, opt_chi_c4_rzs.xi, label="C4")
 ax1.plot(
-  pmodel_env_rootzonestress.rootzonestress, 
-  opt_chi_c4_rzs.xi, 
-  label="C4"
-)
-ax1.plot(
-  pmodel_env_rootzonestress.rootzonestress, 
-  opt_chi_c4_no_gamma_rzs.xi, 
-  label="C4 no gamma"
+    pmodel_env_rootzonestress.rootzonestress,
+    opt_chi_c4_no_gamma_rzs.xi,
+    label="C4 no gamma",
 )
 ax1.set_xlabel(r"Rootzone stress factor (-)")
 ax1.set_ylabel(r"``xi`` parameter ($\xi$, -)")
@@ -506,7 +501,7 @@ The plots below show the impacts on optimal $\chi$ across a temperature gradient
 values of VPD and rootzone stress, with constant atmospheric pressure (101325 Pa) and CO2
 (280 ppm).
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 # Environments with high and low rootzone stress

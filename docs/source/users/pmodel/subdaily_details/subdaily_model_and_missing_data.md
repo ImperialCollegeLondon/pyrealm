@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.1
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
@@ -47,7 +47,7 @@ The code below gives a concrete example - a time series that starts and ends dur
 the middle of a one hour acclimation window around noon. Only two of the three
 observations are provided for the first and last day
 
-```{code-cell} ipython3
+```{code-cell}
 import numpy as np
 
 from pyrealm.pmodel.scaler import SubdailyScaler
@@ -55,24 +55,25 @@ from pyrealm.pmodel.subdaily import memory_effect
 
 # A five day time series running from noon until noon
 datetimes = np.arange(
-    np.datetime64('2012-05-06 12:00'),
-    np.datetime64('2012-05-12 12:00'),
-    np.timedelta64(30, 'm')
+    np.datetime64("2012-05-06 12:00"),
+    np.datetime64("2012-05-12 12:00"),
+    np.timedelta64(30, "m"),
 )
 
 # Example data with missing values
-data = np.arange(len(datetimes), dtype='float')
-data[datetimes == np.datetime64('2012-05-08 11:30')] = np.nan
-data[np.logical_and(
-    datetimes >= np.datetime64('2012-05-10 11:30'),
-    datetimes <= np.datetime64('2012-05-10 12:30'),
-    )] = np.nan
+data = np.arange(len(datetimes), dtype="float")
+data[datetimes == np.datetime64("2012-05-08 11:30")] = np.nan
+data[
+    np.logical_and(
+        datetimes >= np.datetime64("2012-05-10 11:30"),
+        datetimes <= np.datetime64("2012-05-10 12:30"),
+    )
+] = np.nan
 
 # Create the acclimation window sampler
 fsscaler = SubdailyScaler(datetimes)
 fsscaler.set_window(
-    window_center = np.timedelta64(12, 'h'),
-    half_width = np.timedelta64(30, 'm')
+    window_center=np.timedelta64(12, "h"), half_width=np.timedelta64(30, "m")
 )
 ```
 
@@ -88,7 +89,7 @@ problem of the missing data clearly:
 * One day has a single missing 12:00 data point within the acclimation window.
 * One day has no data within the acclimation window.
 
-```{code-cell} ipython3
+```{code-cell}
 fsscaler.get_window_values(data)
 ```
 
@@ -97,7 +98,7 @@ The daily average conditions are calculated using the
 partial data are not allowed - which is the default - the daily average conditions for
 all days with missing data is also missing (`np.nan`).
 
-```{code-cell} ipython3
+```{code-cell}
 partial_not_allowed = fsscaler.get_daily_means(data)
 partial_not_allowed
 ```
@@ -106,7 +107,7 @@ Setting `allow_partial_data = True` allows the daily average conditions to be ca
 from the partial available information. This does not solve the problem for the day with
 no data in the acclimation window, which still results in a missing value.
 
-```{code-cell} ipython3
+```{code-cell}
 partial_allowed = fsscaler.get_daily_means(data, allow_partial_data=True)
 partial_allowed
 ```
@@ -115,8 +116,8 @@ The :func:`~pyrealm.pmodel.subdaily.memory_effect` function is used to calculate
 realised values of a variable from the optimal values. By default, this function *will
 raise an error* when missing data are present:
 
-```{code-cell} ipython3
-:tags: ["raises-exception"]
+```{code-cell}
+:tags: [raises-exception]
 
 memory_effect(partial_not_allowed)
 ```
@@ -125,14 +126,14 @@ The `allow_holdover` option allows the function to be run - the value for the fi
 is still `np.nan` but the missing observations on day 3, 5 and 7 are filled by holding
 over the valid observations from the previous day.
 
-```{code-cell} ipython3
+```{code-cell}
 memory_effect(partial_not_allowed, allow_holdover=True)
 ```
 
 When the partial data is allowed, the `allow_holdover` is still required to fill the
 gap on day 5 by holding over the data from day 4.
 
-```{code-cell} ipython3
+```{code-cell}
 memory_effect(partial_allowed, allow_holdover=True)
 ```
 
