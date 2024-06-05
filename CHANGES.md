@@ -73,7 +73,7 @@ released versions. More detail can be found at the GitHub release page for each 
 
 ## 0.8.1
 
-- Updates and fixes and docs on soil moisture optimal chi methods (lavergne20_c4)
+- Updates and fixes and docs on soil moisture optimal chi methods (`lavergne20_c4`)
 - Shifting package management to using poetry and implementing better QA toolchain
   including pre-commit suite.
 - Moving docs out of root and into docs/source, docs/build etc.
