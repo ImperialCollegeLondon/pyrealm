@@ -14,8 +14,9 @@ from pyrealm.canopy_model.model.t_model import (
 class Cohort:
     """Contains cohort data.
 
-    Stores cohort data, initialises the detailed plant functional data and calculates
-    the T Model Geometry of a given cohort.
+    Stores cohort data. During initialisation, retrieves the detailed plant functional
+    type data, calculates the T Model Geometry of a given cohort and the canopy factors
+    from Jaideep's extension to the T Model.
     """
 
     def __init__(self, dbh: float, number_of_members: int, pft_name: str, flora: Flora):
