@@ -15,11 +15,15 @@ if __name__ == "__main__":
         "pyrealm_build_data/community/pfts.json"
     )
 
-    communities = CommunityDeserialiser(pfts, 32).load_communities(
+    cell_area = 32
+
+    communities = CommunityDeserialiser(pfts, cell_area).load_communities(
         "pyrealm_build_data/community/communities.json"
     )
 
+    community_gap_fraction = 2 / 32
+
     for community in communities:
-        canopy = Canopy(community, 2 / 32)
+        canopy = Canopy(community, community_gap_fraction)
         print("canopy layer heights: \n")
         print(canopy.canopy_layer_heights)
