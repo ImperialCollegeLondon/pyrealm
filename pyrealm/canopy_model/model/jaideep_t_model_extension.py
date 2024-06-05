@@ -7,6 +7,7 @@ the T Model.
 from dataclasses import dataclass
 
 import numpy as np
+from numpy.typing import NDArray
 
 from pyrealm.canopy_model.model.flora import PlantFunctionalType
 from pyrealm.canopy_model.model.t_model import TModelGeometry
@@ -100,7 +101,7 @@ def calculate_crown_radius_profile(
     pft: PlantFunctionalType,
     t_model_geometry: TModelGeometry,
     z_resolution: float = 0.05,
-) -> np.typing.NDArray:
+) -> NDArray:
     """Calculate the crown radius profile for a given cohort."""
 
     z = create_z_axis(0, t_model_geometry.height, z_resolution)
