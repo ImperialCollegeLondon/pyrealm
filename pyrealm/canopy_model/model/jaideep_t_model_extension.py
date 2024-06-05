@@ -21,6 +21,16 @@ class CanopyFactors:
     r_0: float
 
 
+def calculate_q_m(m: float, n: float) -> float:
+    """placeholder."""
+    return (
+        m
+        * n
+        * ((n - 1) / (m * n - 1)) ** (1 - 1 / n)
+        * (((m - 1) * n) / (m * n - 1)) ** (m - 1)
+    )
+
+
 def calculate_stem_canopy_factors(
     pft: PlantFunctionalType, t_model_geometry: TModelGeometry
 ) -> CanopyFactors:
@@ -39,16 +49,6 @@ def calculate_stem_canopy_factors(
     return CanopyFactors(q_m, z_m, r_0)
 
 
-def calculate_q_m(m: float, n: float) -> float:
-    """placeholder."""
-    return (
-        m
-        * n
-        * ((n - 1) / (m * n - 1)) ** (1 - 1 / n)
-        * (((m - 1) * n) / (m * n - 1)) ** (m - 1)
-    )
-
-
 def calculate_relative_canopy_radius(z: float, H: float, m: float, n: float) -> float:
     """Calculate q(z) at a given height, z."""
 
@@ -60,28 +60,6 @@ def calculate_relative_canopy_radius(z: float, H: float, m: float, n: float) -> 
 calculate_relative_canopy_radius_profile = np.vectorize(
     calculate_relative_canopy_radius
 )
-
-
-def calculate_crown_radius_profile_for_cohort(
-    pft: PlantFunctionalType,
-    t_model_geometry: TModelGeometry,
-    z_resolution: float = 0.05,
-) -> np.typing.NDArray:
-    """Calculate the crown radius profile for a given cohort."""
-
-    z = create_z_axis(0, t_model_geometry.height, z_resolution)
-
-    canopy_factors = calculate_stem_canopy_factors(pft, t_model_geometry)
-
-    # calculate r(z) = r0 * q(z) for a cohort
-    r_z = canopy_factors.r_0 * calculate_relative_canopy_radius_profile(
-        z, t_model_geometry.height, pft.m, pft.n
-    )
-
-    # When z > H, r_z < 0, so set radius to 0 where rz < 0
-    r_z[np.where(r_z < 0)] = 0
-
-    return r_z
 
 
 def calculate_projected_canopy_area_for_individual(
@@ -116,6 +94,28 @@ def calculate_projected_canopy_area_for_individual(
         A_p = t_model_geometry.crown_area * (q_z / canopy_factors.q_m) ** 2
 
     return A_p
+
+
+def calculate_crown_radius_profile(
+    pft: PlantFunctionalType,
+    t_model_geometry: TModelGeometry,
+    z_resolution: float = 0.05,
+) -> np.typing.NDArray:
+    """Calculate the crown radius profile for a given cohort."""
+
+    z = create_z_axis(0, t_model_geometry.height, z_resolution)
+
+    canopy_factors = calculate_stem_canopy_factors(pft, t_model_geometry)
+
+    # calculate r(z) = r0 * q(z) for a cohort
+    r_z = canopy_factors.r_0 * calculate_relative_canopy_radius_profile(
+        z, t_model_geometry.height, pft.m, pft.n
+    )
+
+    # When z > H, r_z < 0, so set radius to 0 where rz < 0
+    r_z[np.where(r_z < 0)] = 0
+
+    return r_z
 
 
 def create_z_axis(

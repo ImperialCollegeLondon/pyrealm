@@ -15,11 +15,11 @@ if __name__ == "__main__":
         "pyrealm_build_data/community/pfts.json"
     )
 
-    imported_communities = CommunityDeserialiser(pfts, 32).load_communities(
+    communities = CommunityDeserialiser(pfts, 32).load_communities(
         "pyrealm_build_data/community/communities.json"
     )
 
-    for imported_community in imported_communities:
-        canopy = Canopy(imported_community, 2 / 32)
+    for community in communities:
+        canopy = Canopy(community, 2 / 32)
         print("canopy layer heights: \n")
         print(canopy.canopy_layer_heights)
