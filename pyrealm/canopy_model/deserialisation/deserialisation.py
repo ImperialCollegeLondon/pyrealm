@@ -81,7 +81,7 @@ class CommunityDeserialiser:
         flora = Flora(self.plant_functional_types)
         communities = list(
             map(
-                lambda imported_community: self.load_community_from_imported_community(
+                lambda imported_community: self.convert_imported_community_to_community(
                     imported_community, flora
                 ),
                 imported_communities,
@@ -90,7 +90,7 @@ class CommunityDeserialiser:
 
         return communities
 
-    def load_community_from_imported_community(
+    def convert_imported_community_to_community(
         self, imported_community: ImportedCommunity, flora: Flora
     ) -> Community:
         """Convert ImportedCommunity to Community object.
