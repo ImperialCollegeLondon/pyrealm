@@ -12,7 +12,8 @@ class TwoLeafConst(ConstantsClass):
     """Pyrealm two leaf canopy model constants dataclass."""
 
     # two leaf canopy model constants
-
+    k_PA0 = 101325
+    """Reference standard pressure"""
     k_fa: float = 0.426  # needs citation
     """scattering coefficient of PAR in the atmosphere, dimensionless"""
     k_sigma: float = 0.15  # needs citation
