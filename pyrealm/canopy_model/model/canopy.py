@@ -4,9 +4,11 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.optimize import root_scalar
 
+from pyrealm.canopy_model.model.cohort import Cohort
 from pyrealm.canopy_model.model.community import Community
 from pyrealm.canopy_model.model.jaideep_t_model_extension import (
     calculate_projected_canopy_area_for_individual,
+    calculate_relative_canopy_radius,
 )
 
 
@@ -24,6 +26,10 @@ class Canopy:
 
         self.canopy_layer_heights = self.calculate_canopy_layer_heights(
             community.cell_area, self.f_g
+        )
+
+        self.A_cp_within_layer = map(
+            self.calculate_total_canopy_A_cp, self.canopy_layer_heights
         )
 
     def calculate_community_projected_area_at_z(self, z: float) -> float:
@@ -94,3 +100,58 @@ class Canopy:
         """
 
         pass
+
+    @classmethod
+    def calculate_projected_leaf_area_for_individual(
+        cls, z: float, f_g: float, cohort: Cohort
+    ) -> float:
+        """Calculate projected crown area above a given height.
+
+        Calculation applies to an individual within a cohort.This function takes PFT
+        specific parameters (shape parameters) and stem specific sizes and estimates
+        the projected crown area above a given height $z$. The inputs can either be
+        scalars describing a single stem or arrays representing a community of stems.
+        If only a single PFT is being modelled then `m`, `n`, `qm` and `fg` can be
+        scalars with arrays `H`, `Ac` and `zm` giving the sizes of stems within that
+        PFT.
+
+        :param f_g: Crown gap fraction.
+        :param z: Height from ground.
+        :param cohort: a cohort consisting of plants with the same diameter at
+        breast height and plant functional type.
+
+        """
+
+        # Calculate q(z)
+        q_z = calculate_relative_canopy_radius(
+            z, cohort.t_model_geometry.height, cohort.pft.m, cohort.pft.n
+        )
+
+        # Calculate Ac term
+        Ac_term = (
+            cohort.t_model_geometry.crown_area * (q_z / cohort.canopy_factors.q_m) ** 2
+        )
+
+        if z <= cohort.canopy_factors.z_m:
+            A_cp = cohort.t_model_geometry.crown_area - Ac_term * f_g
+        elif z > cohort.t_model_geometry.height:
+            A_cp = 0
+        else:
+            A_cp = Ac_term * (1 - f_g)
+
+        return A_cp
+
+    def calculate_total_canopy_A_cp(self, z: float) -> float:
+        """Calculate total leaf area at a given height.
+
+        :param z: Height above ground.
+        :return: Total leaf area in the canopy at a given height.
+        """
+        A_cp_for_cohorts = list(
+            map(
+                lambda cohort: cohort.number_of_members
+                * self.calculate_projected_leaf_area_for_individual(z, 0.05, cohort),
+                self.cohorts,
+            )
+        )
+        return sum(A_cp_for_cohorts)
