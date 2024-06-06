@@ -5,11 +5,11 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 
 # The T Model
@@ -32,9 +32,10 @@ class description.
 
 The class can be used to create a default T Model trait set:
 
-```{code-cell} ipython3
+```{code-cell}
 import numpy as np
 from pyrealm import tmodel
+
 # A tree using the default parameterisation
 traits1 = tmodel.TModelTraits()
 print(traits1)
@@ -42,7 +43,7 @@ print(traits1)
 
 It can also be edited to generate different growth patterns:
 
-```{code-cell} ipython3
+```{code-cell}
 # A slower growing tree with a higher maximum height
 traits2 = tmodel.TModelTraits(a_hd=50, h_max=40)
 print(traits2)
@@ -71,10 +72,10 @@ diameters and an optional set of traits as a
 {class}`~pyrealm.constants.tmodel_const.TModelTraits` object. If no traits are provided,
 the default {class}`~pyrealm.constants.tmodel_const.TModelTraits` settings are used.
 
-```{code-cell} ipython3
+```{code-cell}
 # Use a sequence of diameters from sapling to large tree
 diameters = np.linspace(0.02, 2, 100)
-tree1 = tmodel.TTree(diameters=diameters)  # Using default traits 
+tree1 = tmodel.TTree(diameters=diameters)  # Using default traits
 tree2 = tmodel.TTree(diameters=diameters, traits=traits2)
 ```
 
@@ -92,30 +93,31 @@ These inputs are then immediately used to calculate the following properties of 
 Using an array of diameter values provides an immediate way to visualise the geometric
 scaling resulting from a particular set of plant traits:
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 from matplotlib import pyplot
-fig, (ax1, ax2, ax3) = pyplot.subplots(1,3, figsize=(12, 4))
-ax1.plot(tree1.diameter, tree1.height, label='traits1')
-ax1.plot(tree2.diameter, tree2.height, label='traits2')
-ax1.set_title('Height')
-ax1.set_xlabel('Stem diameter (m)')
-ax1.set_ylabel('Height (m)')
+
+fig, (ax1, ax2, ax3) = pyplot.subplots(1, 3, figsize=(12, 4))
+ax1.plot(tree1.diameter, tree1.height, label="traits1")
+ax1.plot(tree2.diameter, tree2.height, label="traits2")
+ax1.set_title("Height")
+ax1.set_xlabel("Stem diameter (m)")
+ax1.set_ylabel("Height (m)")
 ax1.legend()
-ax2.plot(tree1.diameter, tree1.crown_area, label='traits1')
-ax2.plot(tree2.diameter, tree2.crown_area, label='traits2')
-ax2.set_title('Crown Area')
-ax2.set_xlabel('Stem diameter (m)')
-ax2.set_ylabel('Crown area (m2)')
+ax2.plot(tree1.diameter, tree1.crown_area, label="traits1")
+ax2.plot(tree2.diameter, tree2.crown_area, label="traits2")
+ax2.set_title("Crown Area")
+ax2.set_xlabel("Stem diameter (m)")
+ax2.set_ylabel("Crown area (m2)")
 ax2.legend()
-ax3.plot(tree1.diameter, tree1.mass_stm, label='Stem')
-ax3.plot(tree1.diameter, tree1.mass_swd, label='Sapwood')
-ax3.plot(tree1.diameter, tree1.mass_fol, label='Leaf and fine root')
-ax3.set_yscale('log')
-ax3.set_title('Mass (traits1)')
-ax3.set_xlabel('Stem diameter (m)')
-ax3.set_ylabel('Log Mass (kg)')
+ax3.plot(tree1.diameter, tree1.mass_stm, label="Stem")
+ax3.plot(tree1.diameter, tree1.mass_swd, label="Sapwood")
+ax3.plot(tree1.diameter, tree1.mass_fol, label="Leaf and fine root")
+ax3.set_yscale("log")
+ax3.set_title("Mass (traits1)")
+ax3.set_xlabel("Stem diameter (m)")
+ax3.set_ylabel("Log Mass (kg)")
 ax3.legend()
 pyplot.show()
 ```
@@ -143,33 +145,33 @@ provide estimates of the following growth parameters:
 The code below calculates growth estimates at each diameter under a constant GPP of 7
 TODO - UNITS!.
 
-```{code-cell} ipython3
+```{code-cell}
 tree1.calculate_growth(np.array([7]))
 tree2.calculate_growth(np.array([7]))
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
-fig, (ax1, ax2, ax3) = pyplot.subplots(1,3, figsize=(12, 4))
-ax1.plot(tree1.diameter, tree1.npp, label='traits1')
-ax1.plot(tree2.diameter, tree2.npp, label='traits2')
-ax1.set_title('NPP')
-ax1.set_xlabel('Net primary productivity (m)')
-ax1.set_ylabel('Height (m)')
+fig, (ax1, ax2, ax3) = pyplot.subplots(1, 3, figsize=(12, 4))
+ax1.plot(tree1.diameter, tree1.npp, label="traits1")
+ax1.plot(tree2.diameter, tree2.npp, label="traits2")
+ax1.set_title("NPP")
+ax1.set_xlabel("Net primary productivity (m)")
+ax1.set_ylabel("Height (m)")
 ax1.legend()
-ax2.plot(tree1.diameter, tree1.resp_swd, label='Sapwood')
-ax2.plot(tree1.diameter, tree1.resp_frt, label='Fine roots')
-ax2.plot(tree1.diameter, tree1.resp_fol, label='Foliage')
-ax2.set_title('Respiration (traits1)')
-ax2.set_xlabel('Stem diameter (m)')
-ax2.set_ylabel('Respiration')
+ax2.plot(tree1.diameter, tree1.resp_swd, label="Sapwood")
+ax2.plot(tree1.diameter, tree1.resp_frt, label="Fine roots")
+ax2.plot(tree1.diameter, tree1.resp_fol, label="Foliage")
+ax2.set_title("Respiration (traits1)")
+ax2.set_xlabel("Stem diameter (m)")
+ax2.set_ylabel("Respiration")
 ax2.legend()
-ax3.plot(tree1.diameter, tree1.delta_d, label='traits1')
-ax3.plot(tree2.diameter, tree2.delta_d, label='traits2')
-ax3.set_title('Delta diameter ')
-ax3.set_xlabel('Stem diameter (m)')
-ax3.set_ylabel('Delta diameter (m)')
+ax3.plot(tree1.diameter, tree1.delta_d, label="traits1")
+ax3.plot(tree2.diameter, tree2.delta_d, label="traits2")
+ax3.set_title("Delta diameter ")
+ax3.set_xlabel("Stem diameter (m)")
+ax3.set_ylabel("Delta diameter (m)")
 ax3.legend()
 pyplot.show()
 ```
@@ -182,12 +184,12 @@ The {meth}`~pyrealm.tmodel.TTree.reset_diameters` can be used to update an exist
 {meth}`~pyrealm.tmodel.TTree.reset_diameters` automatically resets any calculated growth
 parameters: they will need to be recalculated for the new diameters.
 
-```{code-cell} ipython3
+```{code-cell}
 tree1.reset_diameters(np.array([0.0001]))
 print(tree1.height)
 ```
 
-<!-- 
+<!--
 ## The {func}`~pyrealm.tmodel.grow_ttree` function
 
 The  {class}`~pyrealm.tmodel.TTree` class implements the calculation of the T Model

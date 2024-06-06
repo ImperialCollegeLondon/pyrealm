@@ -24,4 +24,12 @@ repos:
     rev: v0.40.0
     hooks:
     - id: markdownlint
-
+  - repo: https://github.com/mwouts/jupytext
+    rev: v1.16.2
+    hooks:
+    - id: jupytext
+      args: [--pipe, black]
+      files: docs/source 
+      additional_dependencies:
+        - black==24.4.2 # Matches hook
+      
