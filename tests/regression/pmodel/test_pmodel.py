@@ -12,8 +12,6 @@ from importlib import resources
 import numpy as np
 import pytest
 
-# flake8: noqa D103 - docstrings on unit tests
-
 # RPMODEL bugs
 # rpmodel was using an incorrect parameterisation of the C4 ftemp kphio curve
 # that is fixed but currently (1.2.0) an implementation error in the output checking

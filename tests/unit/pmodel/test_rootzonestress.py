@@ -2,7 +2,7 @@
 
 This is primarily to help catch errors in the outputs during function refactoring and
 the input values and outputs are simply those of the earliest implementation.
-"""  # noqa D210, D415
+"""  # D210, D415
 
 from contextlib import nullcontext as does_not_raise
 
