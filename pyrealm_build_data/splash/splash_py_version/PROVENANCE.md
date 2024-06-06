@@ -12,7 +12,7 @@ Changes:
   scripts.
 * The code files have been modified by `isort` and `black` to make it easier to get the
   files past `pre-commit` but the `flake8` and `mypy` checking are explicitly
-  supressed to keep the files as close to their original content as possible.
+  suppressed to keep the files as close to their original content as possible.
 * The package internal imports have been prepended with `splash_py_version` to allow the
   code to be imported as a package by the benchmark data generation scripts.
 * The data path in `main.py` has been updated to point to the location of the input in

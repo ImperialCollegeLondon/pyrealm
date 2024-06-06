@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: check-merge-conflict
       - id: debug-statements
@@ -13,14 +13,14 @@ repos:
       # Run the formatter.
       - id: ruff-format
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.8.0"
+    rev: "v1.10.0"
     hooks:
       - id: mypy
         additional_dependencies: [numpy, types-tabulate, pandas-stubs]
         exclude: "pyrealm_build_data/splash/splash_py_version/.*\\.py"
         # https://stackoverflow.com/a/75447331/3401916
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.38.0
+    rev: v0.40.0
     hooks:
     - id: markdownlint
 

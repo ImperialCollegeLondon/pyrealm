@@ -150,7 +150,7 @@ intersphinx_mapping = {
 autodoc_default_flags = ["members"]
 autosummary_generate = True
 
-myst_enable_extensions = ["dollarmath", "deflist"]
+myst_enable_extensions = ["dollarmath", "deflist", "colon_fence"]
 myst_heading_anchors = 4
 
 # Enable mhchem for chemical formulae
