@@ -144,7 +144,7 @@ class JmaxLimitation:
         and is set in `pmodel_const.wang_c`.
         """
 
-        # Calculate √ {1 – (c*/m)^(2/3)} (see Eqn 2 of Wang et al 2017) and
+        # Calculate √ {1 - (c*/m)^(2/3)} (see Eqn 2 of Wang et al 2017) and
         # √ {(m/c*)^(2/3) - 1} safely, both are undefined where m <= c*.
         vals_defined = np.greater(self.optchi.mj, self.pmodel_const.wang17_c)
 

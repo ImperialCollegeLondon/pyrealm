@@ -22,11 +22,11 @@ Constants
   :class:`~pyrealm.constants.pmodel_const.PModelConst` dataclass. These can be changed
   by the user but are typically used to configure an entire analysis rather than a
   single function.
-"""  # noqa: D210, D415
+"""  # noqa: D415
 
 # This __init__ file imports the following members from submodules in order to
 # flatten the namespace for the main public components and setup.cfg applies
-# # noqa: F401 to the whole file.
+# # to the whole file.
 
 from pyrealm.pmodel.competition import (
     C3C4Competition,
