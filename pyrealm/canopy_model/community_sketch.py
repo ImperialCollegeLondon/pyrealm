@@ -6,9 +6,6 @@ from pyrealm.canopy_model.deserialisation.deserialisation import (
 )
 from pyrealm.canopy_model.model.canopy import Canopy
 
-# from pyrealm.canopy_model.model.canopy import Canopy
-# from pyrealm.canopy_model.model.community import Community
-
 if __name__ == "__main__":
 
     pfts = PlantFunctionalTypeDeserialiser.load_plant_functional_types(
