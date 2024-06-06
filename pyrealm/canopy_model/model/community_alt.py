@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from numpy.typing import NDArray
 import numpy as np
+from numpy.typing import NDArray
 
-from pyrealm.canopy_model.model.flora import Flora
 from pyrealm.canopy_model.model.canopy import Canopy
+from pyrealm.canopy_model.model.flora import Flora
 
 
 class Community:
