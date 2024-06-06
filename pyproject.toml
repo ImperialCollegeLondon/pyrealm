@@ -117,6 +117,7 @@ select = [
   "D", # pydocstyle
   "I", # isort
   "UP", # pyupgrade
+  "RUF", # RUF specific checks
 ]
 
 # On top of the Google convention, disable:
