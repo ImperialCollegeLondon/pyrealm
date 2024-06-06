@@ -45,7 +45,7 @@ def pmodel_profile_data(pytestconfig):
 
     def _scale_up(array, scaling_factor: int):
         # Broadcast along the last axis
-        return np.broadcast_to(array, list(array.shape[:-1]) + [scaling_factor])
+        return np.broadcast_to(array, [*list(array.shape[:-1]), scaling_factor])
 
     # Variable set up
     scaling_factor = pytestconfig.getoption("pmodel_profile_scaleup")

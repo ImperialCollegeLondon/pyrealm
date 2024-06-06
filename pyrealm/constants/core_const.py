@@ -1,6 +1,6 @@
 """The :mod:`~pyrealm.constants.core_const` module provides a data class of constants
 used in the functions in the :mod:`~pyrealm.core` submodules.
-"""  # noqa: D205, D415
+"""  # noqa: D205
 
 from dataclasses import dataclass, field
 

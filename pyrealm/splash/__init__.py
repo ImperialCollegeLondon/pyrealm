@@ -25,4 +25,4 @@ restructured. The main changes are:
 * The hard-coded constants in the original code can now be modified by users. In
   particular, the maximum soil moisture capacity (``kWm``) was fixed globally in SPLASH
   v1.0 at 150mm: this can now be set by the user and can vary between sites.
-"""  # noqa: D205, D415
+"""  # noqa: D205

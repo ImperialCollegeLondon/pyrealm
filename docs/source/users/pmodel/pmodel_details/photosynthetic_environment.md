@@ -5,11 +5,11 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 
 # Photosynthetic environment
@@ -27,7 +27,7 @@ The descriptions below show the typical ranges of these values under common
 environmental inputs along with links to the more detailed documentation of
 the key functions.
 
-```{code-cell} python
+```{code-cell}
 :tags: [hide-input]
 
 # This code loads required packages and then creates a representative range of
@@ -69,7 +69,7 @@ Details: {func}`pyrealm.pmodel.functions.calc_gammastar`
 The photorespiratory compensation point ($\Gamma^*$) varies with as a function
 of temperature and atmospheric pressure:
 
-```{code-cell} python
+```{code-cell}
 :tags: [hide-input]
 
 # Calculate gammastar
@@ -92,7 +92,7 @@ Details: {func}`pyrealm.pmodel.functions.calc_kmm`
 The Michaelis-Menten coefficient for photosynthesis ($K_{mm}$) also varies with
 temperature and atmospheric pressure:
 
-```{code-cell} python
+```{code-cell}
 :tags: [hide-input]
 
 # Calculate K_mm
@@ -119,7 +119,7 @@ pressure ($\eta^*$).
 
 The figure shows how $\eta^*$ varies with temperature and pressure.
 
-```{code-cell} python
+```{code-cell}
 :tags: [hide-input]
 
 # Calculate the viscosity under the range of values and the standard
@@ -147,7 +147,7 @@ Details: {func}`pyrealm.pmodel.functions.calc_co2_to_ca`
 The partial pressure of $\ce{CO2}$ is a function of the atmospheric concentration of
 $\ce{CO2}$ in parts per million and the atmospheric pressure:
 
-```{code-cell} python
+```{code-cell}
 :tags: [hide-input]
 
 # Variation in partial pressure

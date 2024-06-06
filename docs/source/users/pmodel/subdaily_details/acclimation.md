@@ -5,11 +5,11 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.2
 kernelspec:
-  display_name: pyrealm_python3
+  display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 
 # Estimating acclimation
@@ -60,8 +60,6 @@ present results using one hour windows around noon or even the single value clos
 noon.
 
 ```{code-cell}
-:tags: []
-
 # Define a set of observations at a subdaily timescale
 fast_datetimes = np.arange(
     np.datetime64("1970-01-01"), np.datetime64("1970-01-08"), np.timedelta64(30, "m")

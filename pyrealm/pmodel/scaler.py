@@ -362,7 +362,7 @@ class SubdailyScaler:
         # returned and using a view and reshape should avoid copying the data.
         padded_values = self.pad_values(values)
         values_by_day = padded_values.view()
-        values_by_day.shape = tuple([self.n_days, self.n_obs] + list(values.shape[1:]))
+        values_by_day.shape = tuple([self.n_days, self.n_obs, *list(values.shape[1:])])
 
         # subset to the included daily values
         return values_by_day[:, self.include, ...]

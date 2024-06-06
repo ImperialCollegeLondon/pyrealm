@@ -1,4 +1,4 @@
-"""The module :mod:`~pyrealm.pmodel.jmax_limitation` provides the implementation of 
+"""The module :mod:`~pyrealm.pmodel.jmax_limitation` provides the implementation of
 the following pmodel core class:
 
 * :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation`:
@@ -144,7 +144,7 @@ class JmaxLimitation:
         and is set in `pmodel_const.wang_c`.
         """
 
-        # Calculate √ {1 – (c*/m)^(2/3)} (see Eqn 2 of Wang et al 2017) and
+        # Calculate √ {1 - (c*/m)^(2/3)} (see Eqn 2 of Wang et al 2017) and
         # √ {(m/c*)^(2/3) - 1} safely, both are undefined where m <= c*.
         vals_defined = np.greater(self.optchi.mj, self.pmodel_const.wang17_c)
 
@@ -222,9 +222,7 @@ class JmaxLimitation:
         aquad = -1
         bquad = cap_p
         cquad = -(cap_p * theta)
-        roots = np.polynomial.polynomial.polyroots(
-            [aquad, bquad, cquad]
-        )  # type: ignore [no-untyped-call]
+        roots = np.polynomial.polynomial.polyroots([aquad, bquad, cquad])  # type: ignore [no-untyped-call]
 
         # factors derived as in Smith et al., 2019
         m_star = (4 * c_cost) / roots[0].real

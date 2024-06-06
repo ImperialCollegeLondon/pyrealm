@@ -9,7 +9,7 @@ growth given an estimate of gross primary productivity (GPP).
   geometry for a given diameter or predict growth from estimated GPP.
 * The function :func:`~pyrealm.tmodel.grow_ttree` predicts plant growth through
   time given a time series of GPP.
-"""  # noqa: D205, D415
+"""  # noqa: D205
 
 import numpy as np
 from numpy.typing import NDArray
@@ -97,12 +97,12 @@ class TTree:
 
     @property
     def diameter(self) -> NDArray:
-        """Individual diameter (m)."""  # noqa: D402
+        """Individual diameter (m)."""
         return self._diameter
 
     @property
     def height(self) -> NDArray:
-        """Individual height (m)."""  # noqa: D402
+        """Individual height (m)."""
         return self._height
 
     @property
