@@ -1,6 +1,6 @@
 """The ``evap`` submodule provides functions and classes to calculate evaporative
 fluxes.
-"""  # noqa: D205, D415
+"""  # noqa: D205
 
 from dataclasses import InitVar, dataclass, field
 
@@ -50,7 +50,7 @@ class DailyEvapFluxes:
     pa: InitVar[NDArray]
     tc: InitVar[NDArray]
     kWm: NDArray = field(default_factory=lambda: np.array([150.0]))
-    core_const: CoreConst = CoreConst()
+    core_const: CoreConst = field(default_factory=lambda: CoreConst())
 
     sat: NDArray = field(init=False)
     """Slope of saturation vapour pressure temperature curve, Pa/K"""
@@ -124,7 +124,7 @@ class DailyEvapFluxes:
             wn: The soil moisture (mm).
             day_idx: An integer giving the index of the provided ``wn`` values along the
                 time axis.
-            aet_only: Should the function only return AET or AET, ``hi`` and ``sw``.
+            only_aet: Should the function only return AET or AET, ``hi`` and ``sw``.
 
         Returns:
             An array of AET values or a tuple of arrays containing AET, ``hi`` and

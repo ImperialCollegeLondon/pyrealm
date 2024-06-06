@@ -1,4 +1,4 @@
-"""The module :mod:`~pyrealm.pmodel.pmodel` provides the implementation of 
+"""The module :mod:`~pyrealm.pmodel.pmodel` provides the implementation of
 the following pmodel core class:
 
 * :class:`~pyrealm.pmodel.pmodel.PModel`:
