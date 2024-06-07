@@ -14,7 +14,7 @@ class TwoLeafIrradience:
         beta_angle (NDArray): Array of beta angles (radians).
         ppfd (NDArray): Array of photosynthetic photon flux density values.
         leaf_area_index (NDArray): Array of leaf area index values.
-        PATM (NDArray): Array of atmospheric pressure values.
+        patm (NDArray): Array of atmospheric pressure values.
     """
 
     def __init__(
@@ -22,12 +22,12 @@ class TwoLeafIrradience:
         beta_angle: NDArray,
         ppfd: NDArray,
         leaf_area_index: NDArray,
-        PATM: NDArray,
+        patm: NDArray,
     ):
         self.beta_angle = beta_angle
         self.ppfd = ppfd
         self.leaf_area_index = leaf_area_index
-        self.PATM = PATM
+        self.patm = patm
 
         constants = TwoLeafConst()
 
@@ -47,7 +47,7 @@ class TwoLeafIrradience:
             bool: True if all input arrays have the same shape, False otherwise.
         """
         try:
-            arrays = [self.beta_angle, self.ppfd, self.leaf_area_index, self.PATM]
+            arrays = [self.beta_angle, self.ppfd, self.leaf_area_index, self.patm]
             shapes = [array.shape for array in arrays]
             if not all(shape == shapes[0] for shape in shapes):
                 raise ValueError("Input arrays have inconsistent shapes.")
@@ -84,7 +84,7 @@ class TwoLeafIrradience:
         Returns:
             NDArray: Array of fractions of diffuse radiation.
         """
-        m = (self.PATM / self.PA0) / np.sin(self.beta_angle)
+        m = (self.patm / self.PA0) / np.sin(self.beta_angle)
         fd = (1 - 0.72**m) / (1 + (0.72**m * (1 / self.k_fa - 1)))
         return fd
 
