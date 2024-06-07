@@ -1,6 +1,6 @@
 """To do."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -24,5 +24,5 @@ class TwoLeafConst(ConstantsClass):
     k_kd_prime: float = 0.719  # needs citation
     """diffuse and scattered diffuse PAR extinction coefficient, dimensionless"""
 
-    k_sol_obs_angle: float = np.deg2rad(1)  # needs a citation
+    k_sol_obs_angle: float = field(default_factory=np.deg2rad(1))  # needs a citation
     """ solar obscurity angle, radians"""
