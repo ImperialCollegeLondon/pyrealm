@@ -31,7 +31,7 @@ class TwoLeafIrradience:
 
         constants = TwoLeafConst()
 
-        self.PA0: float = constants.k_PA0
+        self.pa0: float = constants.k_PA0
         self.k_fa: float = constants.k_fa
         self.k_sigma: float = constants.k_sigma
         self.k_rho_cd: float = constants.k_rho_cd
@@ -84,7 +84,7 @@ class TwoLeafIrradience:
         Returns:
             NDArray: Array of fractions of diffuse radiation.
         """
-        m = (self.patm / self.PA0) / np.sin(self.beta_angle)
+        m = (self.patm / self.pa0) / np.sin(self.beta_angle)
         fd = (1 - 0.72**m) / (1 + (0.72**m * (1 / self.k_fa - 1)))
         return fd
 
