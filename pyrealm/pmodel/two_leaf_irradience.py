@@ -2,7 +2,6 @@
 
 import numpy as np
 from numpy.typing import NDArray
-from pysolar import get_altitude, get_altitude_fast
 
 from pyrealm.constants.two_leaf_canopy import TwoLeafConst
 
@@ -308,24 +307,3 @@ def beta_angle_from_lat_dec_hour(
     ) * np.cos(hour_angle)
 
     return beta
-
-
-def beta_angle_from_lat_long_time(
-    latitudes: NDArray, longitudes: NDArray, date_time: NDArray, fast: bool = False
-) -> NDArray:
-    """Calculate beta angle from position and time.
-
-    Uses Pysolar core libraries for more accurate calculation of beta (solar elevation)
-    NB: each element in date_time numpy array should be in pydatetime format.
-    """
-    solar_elevations = np.zeros_like(latitudes, dtype=float)
-
-    if not fast:
-        get_beta = get_altitude
-    else:
-        get_beta = get_altitude_fast
-
-    for i, (lat, lon, date_time) in enumerate(zip(latitudes, longitudes, date_time)):
-        solar_elevations[i] = get_beta(lat, lon, date_time)
-
-    return solar_elevations
