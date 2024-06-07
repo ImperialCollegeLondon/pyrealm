@@ -2,6 +2,7 @@
 
 import numpy as np
 from numpy.typing import NDArray
+from pysolar import get_altitude, get_altitude_fast
 
 from pyrealm.constants.two_leaf_canopy import TwoLeafConst
 
@@ -11,15 +12,21 @@ class TwoLeafIrradience:
 
     Args:
         beta_angle (NDArray): Array of beta angles (radians).
-        PPFD (NDArray): Array of photosynthetic photon flux density values.
-        LAI (NDArray): Array of leaf area index values.
+        ppfd (NDArray): Array of photosynthetic photon flux density values.
+        leaf_area_index (NDArray): Array of leaf area index values.
         PATM (NDArray): Array of atmospheric pressure values.
     """
 
-    def __init__(self, beta_angle: NDArray, PPFD: NDArray, LAI: NDArray, PATM: NDArray):
+    def __init__(
+        self,
+        beta_angle: NDArray,
+        ppfd: NDArray,
+        leaf_area_index: NDArray,
+        PATM: NDArray,
+    ):
         self.beta_angle = beta_angle
-        self.PPFD = PPFD
-        self.LAI = LAI
+        self.ppfd = ppfd
+        self.leaf_area_index = leaf_area_index
         self.PATM = PATM
 
         constants = TwoLeafConst()
@@ -40,7 +47,7 @@ class TwoLeafIrradience:
             bool: True if all input arrays have the same shape, False otherwise.
         """
         try:
-            arrays = [self.beta_angle, self.PPFD, self.LAI, self.PATM]
+            arrays = [self.beta_angle, self.ppfd, self.leaf_area_index, self.PATM]
             shapes = [array.shape for array in arrays]
             if not all(shape == shapes[0] for shape in shapes):
                 raise ValueError("Input arrays have inconsistent shapes.")
@@ -114,7 +121,7 @@ class TwoLeafIrradience:
         Returns:
             NDArray: Array of diffuse radiation values.
         """
-        I_d = np.clip(self.PPFD * fd, a_min=0, a_max=np.inf)
+        I_d = np.clip(self.ppfd * fd, a_min=0, a_max=np.inf)
         return I_d
 
     def _calc_beam_irradience(self, fd: NDArray) -> NDArray:
@@ -126,7 +133,7 @@ class TwoLeafIrradience:
         Returns:
             NDArray: Array of beam irradiance values.
         """
-        I_b = self.PPFD * (1 - fd)
+        I_b = self.ppfd * (1 - fd)
         return I_b
 
     def _calc_scattered_beam_irradience(
@@ -144,9 +151,9 @@ class TwoLeafIrradience:
         Returns:
             NDArray: Array of scattered beam irradiance values.
         """
-        I_bs = I_b * (1 - rho_cb) * kb_prime * np.exp(-kb_prime * self.LAI) - (
-            1 - self.k_sigma
-        ) * kb * np.exp(-kb * self.LAI)
+        I_bs = I_b * (1 - rho_cb) * kb_prime * np.exp(
+            -kb_prime * self.leaf_area_index
+        ) - (1 - self.k_sigma) * kb * np.exp(-kb * self.leaf_area_index)
         return I_bs
 
     def _calc_canopy_irradience(
@@ -164,9 +171,9 @@ class TwoLeafIrradience:
         Returns:
             NDArray: Array of canopy irradiance values.
         """
-        I_c = (1 - rho_cb) * I_b * (1 - np.exp(-kb_prime * self.LAI)) + (
+        I_c = (1 - rho_cb) * I_b * (1 - np.exp(-kb_prime * self.leaf_area_index)) + (
             1 - self.k_rho_cd
-        ) * I_d * (1 - np.exp(-kb_prime * self.LAI))
+        ) * I_d * (1 - np.exp(-kb_prime * self.leaf_area_index))
         return I_c
 
     def _calc_sunlit_beam_irrad(self, I_b: NDArray, kb: NDArray) -> NDArray:
@@ -179,7 +186,7 @@ class TwoLeafIrradience:
         Returns:
             NDArray: Array of sunlit beam irradiance values.
         """
-        Isun_beam = I_b * (1 - self.k_sigma) * (1 - np.exp(-kb * self.LAI))
+        Isun_beam = I_b * (1 - self.k_sigma) * (1 - np.exp(-kb * self.leaf_area_index))
         return Isun_beam
 
     def _calc_sunlit_diffuse_irrad(self, I_d: NDArray, kb: NDArray) -> NDArray:
@@ -195,7 +202,7 @@ class TwoLeafIrradience:
         Isun_diffuse = (
             I_d
             * (1 - self.k_rho_cd)
-            * (1 - np.exp(-(self.k_kd_prime + kb) * self.LAI))
+            * (1 - np.exp(-(self.k_kd_prime + kb) * self.leaf_area_index))
             * self.k_kd_prime
             / (self.k_kd_prime + kb)
         )
@@ -218,10 +225,10 @@ class TwoLeafIrradience:
         """
         Isun_scattered = I_b * (
             (1 - rho_cb)
-            * (1 - np.exp(-(kb_prime + kb) * self.LAI))
+            * (1 - np.exp(-(kb_prime + kb) * self.leaf_area_index))
             * kb_prime
             / (kb_prime + kb)
-            - (1 - self.k_sigma) * (1 - np.exp(-2 * kb * self.LAI)) / 2
+            - (1 - self.k_sigma) * (1 - np.exp(-2 * kb * self.leaf_area_index)) / 2
         )
         return Isun_scattered
 
@@ -280,8 +287,10 @@ class TwoLeafIrradience:
         return I_csun, I_cshade
 
 
-def beta_angle(latitude: NDArray, declination: NDArray, hour_angle: NDArray) -> NDArray:
-    """Calculates solar beta angle.
+def beta_angle_from_lat_dec_hour(
+    latitude: NDArray, declination: NDArray, hour_angle: NDArray
+) -> NDArray:
+    """Calculates solar beta angle (elevation angle).
 
     Calculates solar beta angle using Eq A13 of dePury & Farquhar (1997).
 
@@ -299,3 +308,24 @@ def beta_angle(latitude: NDArray, declination: NDArray, hour_angle: NDArray) -> 
     ) * np.cos(hour_angle)
 
     return beta
+
+
+def beta_angle_from_lat_long_time(
+    latitudes: NDArray, longitudes: NDArray, date_time: NDArray, fast: bool = False
+) -> NDArray:
+    """Calculate beta angle from position and time.
+
+    Uses Pysolar core libraries for more accurate calculation of beta (solar elevation)
+    NB: each element in date_time numpy array should be in pydatetime format.
+    """
+    solar_elevations = np.zeros_like(latitudes, dtype=float)
+
+    if not fast:
+        get_beta = get_altitude
+    else:
+        get_beta = get_altitude_fast
+
+    for i, (lat, lon, date_time) in enumerate(zip(latitudes, longitudes, date_time)):
+        solar_elevations[i] = get_beta(lat, lon, date_time)
+
+    return solar_elevations
