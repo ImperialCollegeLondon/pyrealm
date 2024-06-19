@@ -94,7 +94,7 @@ def check_input_shapes(*args: float | int | np.generic | np.ndarray | None) -> t
         #    # Note that 0-dim ndarrays (which are scalars) pass through
         #    if val.ndim > 0:
         #        shapes.add(val.shape)
-        elif val is None or isinstance(val, float | int | np.generic):
+        elif val is None or isinstance(val, (float | int | np.generic)):
             pass  # No need to track scalars and optional values pass None
         else:
             raise ValueError(f"Unexpected input to check_input_shapes: {type(val)}")

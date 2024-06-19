@@ -8,7 +8,7 @@ and shouldn't change trivially.
 Runs a simple scalar test for each of the different optchi methods.
 """
 
-# flake8: noqa D103 - docstrings on unit tests
+# flake8: noqa: D103  # directive properly formatted
 
 import numpy as np
 import pytest

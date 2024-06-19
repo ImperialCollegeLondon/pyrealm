@@ -66,7 +66,7 @@ import pytest
     ],
 )
 def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
-    """Test the C3/C4 competition model"""
+    """Test the C3/C4 competition model."""
     from pyrealm.pmodel import (
         C3C4Competition,
         CalcCarbonIsotopes,
