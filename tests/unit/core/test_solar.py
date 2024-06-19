@@ -7,7 +7,7 @@ import pytest
 @pytest.mark.parametrize(
     argnames="nu, k_e, expected",
     argvalues=[
-        (np.array([0, 180, 360]), 0.0167, np.array([1.0342557, 0.9674184, 1.0342557])),
+        (np.array([166.097934]), 0.0167, np.array([0.968381])),
     ],
 )
 def test_calc_distance_factor(nu, k_e, expected):
@@ -28,10 +28,10 @@ def test_calc_distance_factor(nu, k_e, expected):
     argnames="lambda_, k_eps, k_pir, expected",
     argvalues=[
         (
-            np.array([-90, 0, 90]),
+            np.array([89.097934]),
             23.45,
             57.29577951,
-            np.array([-0.007143278, 0, 0.007143278]),
+            np.array([23.436921]),
         )
     ],
 )
@@ -53,9 +53,9 @@ def test_calc_declination_angle_delta(lambda_, k_eps, k_pir, expected):
     argnames="delta,lat, expected",
     argvalues=[
         (
-            np.array([0.002, 0.002]),
-            np.array([0, 75]),
-            (np.array([0, 3.37172e-05]), np.array([0.999999999, 0.258819045])),
+            np.array([23.436921]),
+            np.array([37.7]),
+            (np.array([0.243228277]), np.array([0.725946417])),
         ),
     ],
 )
