@@ -30,6 +30,7 @@ def calc_distance_factor(nu: NDArray, k_e: float) -> NDArray:
     """Calculate distance factor.
 
     This function calculates distance factor using the method of Berger et al. (1993)
+
     Args:
         nu: heliocentric true anomaly (degrees)
         k_e: Solar eccentricity
