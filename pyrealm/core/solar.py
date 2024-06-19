@@ -30,6 +30,7 @@ def calc_distance_factor(nu: NDArray, k_e: float) -> NDArray:
     """Calculate distance factor.
 
     This function calculates distance factor using the method of Berger et al. (1993)
+
     Args:
         nu: heliocentric true anomaly (degrees)
         k_e: Solar eccentricity
@@ -115,7 +116,7 @@ def calc_daily_solar_radiation(
         rad_const: planetary radiation constant, W/m^2
         dr: dimensionless distance factor
         ru: dimensionless variable substitute
-        rv, dimensionless variable substitute
+        rv: dimensionless variable substitute
         k_pir: radians to degrees conversion, degrees/rad
         hs: local hour angle, degrees
 
@@ -279,6 +280,7 @@ def calc_nighttime_net_radiation(
         hs: sunset hour angle, degrees
         hn: crossover hour angle, degrees
         k_pir: conversion factor from radians to degrees
+        rnl: net longwave radiation, rnl, W/m^2
 
     Returns:
         rnn_d: nighttime net radiation, J/m^2
