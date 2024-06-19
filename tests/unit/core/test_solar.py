@@ -7,7 +7,7 @@ import pytest
 @pytest.mark.parametrize(
     argnames="nu, k_e, expected",
     argvalues=[
-        (np.array([0, 180, 360]), 0.0167, np.array([1.0342557, 0.9674184, 1.0342557])),
+        (np.array([166.097934]), 0.0167, np.array([0.968381])),
     ],
 )
 def test_calc_distance_factor(nu, k_e, expected):
@@ -28,10 +28,10 @@ def test_calc_distance_factor(nu, k_e, expected):
     argnames="lambda_, k_eps, k_pir, expected",
     argvalues=[
         (
-            np.array([-90, 0, 90]),
+            np.array([89.097934]),
             23.45,
             57.29577951,
-            np.array([-0.007143278, 0, 0.007143278]),
+            np.array([23.436921]),
         )
     ],
 )
@@ -53,9 +53,9 @@ def test_calc_declination_angle_delta(lambda_, k_eps, k_pir, expected):
     argnames="delta,lat, expected",
     argvalues=[
         (
-            np.array([0.002, 0.002]),
-            np.array([0, 75]),
-            (np.array([0, 3.37172e-05]), np.array([0.999999999, 0.258819045])),
+            np.array([23.436921]),
+            np.array([37.7]),
+            (np.array([0.243228277]), np.array([0.725946417])),
         ),
     ],
 )
@@ -76,10 +76,10 @@ def test_calc_lat_delta_intermediates(delta, lat, expected):
     argnames="ru, rv, k_pir, expected",
     argvalues=[
         (
-            np.array([0.1, 0.8]),
-            np.array([0.8, 0.1]),
+            np.array([0.243228277]),
+            np.array([0.725946417]),
             57.29577951,
-            np.array([0.029602951, 0.054831136]),
+            np.array([109.575573]),
         )
     ],
 )
@@ -102,12 +102,12 @@ def test_calc_sunset_hour_angle(ru, rv, k_pir, expected):
     argvalues=[
         (
             1360.8,
-            np.array([0.002, 0.001]),
-            np.array([0.1, 0.2]),
-            np.array([0.1, 0.1]),
+            np.array([0.968381]),
+            np.array([0.243228277]),
+            np.array([0.725946417]),
             57.29577951,
-            np.array([85, 60]),
-            np.array([36460158.36, 25734560.07]),
+            np.array([109.575573]),
+            np.array([41646763]),
         )
     ],
 )
@@ -126,7 +126,7 @@ def test_calc_daily_solar_radiation(rad_const, dr, ru, rv, k_pir, hs, expected):
 
 @pytest.mark.parmetrize(
     argnames="k_c, k_d, sf, elv, expected",
-    argvalues=[(0.25, 0.5, np.array([500, 1000]), np.array([0.38000625, 0.51335]))],
+    argvalues=[(0.25, 0.5, np.array([1.0]), np.array([0.752844]))],
 )
 def test_calc_transmissivity(k_c, k_d, sf, elv, expected):
     """Tests calc_transmissivity.
@@ -144,7 +144,7 @@ def test_calc_transmissivity(k_c, k_d, sf, elv, expected):
 @pytest.mark.parametrize(
     argnames="k_fFEC, k_alb_vis, tau, ra_d, expected",
     argvalues=[
-        (2.04, 0.03, np.array([300000000, 200000000], np.array([1.7809e14, 1.5830e14])))
+        (2.04, 0.03, np.array([0.752844]), np.array([41646763]), np.array([62.042300]))
     ],
 )
 def test_calc_ppfd(k_fFEC, k_alb_vis, tau, ra_d, expected):
@@ -161,19 +161,17 @@ def test_calc_ppfd(k_fFEC, k_alb_vis, tau, ra_d, expected):
 
 
 @pytest.mark.parameterise(
-    argnames="k_b, sg, k_A, tc, expected",
-    argvalues=[
-        (0.2, np.array([0.25, 0.5]), 107, np.array([0, 25]), np.array([42.8, 49.2]))
-    ],
+    argnames="k_b, sf, k_A, tc, expected",
+    argvalues=[(0.2, np.array([1.0]), 107, np.array([23.0]), np.array([84.000000]))],
 )
-def test_calc_rnl(k_b, sg, k_A, tc, expected):
+def test_calc_rnl(k_b, sf, k_A, tc, expected):
     """Tests calc_rnl.
 
     This test is intended to verify the implemented maths.
     """
     from pyrealm.core.solar import calc_rnl
 
-    result = calc_rnl(k_b, sg, k_A, tc)
+    result = calc_rnl(k_b, sf, k_A, tc)
 
     assert np.allclose(result, expected)
 
@@ -183,10 +181,10 @@ def test_calc_rnl(k_b, sg, k_A, tc, expected):
     argvalues=[
         (
             0.17,
-            np.array([0.3, 0.4]),
+            np.array([0.752844]),
             1360.8,
-            np.array([1.03, 1.02]),
-            np.array([349.004376, 460.821312]),
+            np.array([0.968381]),
+            np.array([823.4242375]),
         )
     ],
 )
@@ -206,12 +204,12 @@ def test_calc_rw(k_alb_sw, tau, k_Gsc, dr, expected):
     argnames="rnl, rw, ru, rv, k_pir, expected",
     argvalues=[
         (
-            45,
-            400,
-            np.array([0.04, 0.01]),
-            np.array([0.5, 0.1]),
+            84.000000,
+            np.array([823.4242375]),
+            np.array([0.243228277]),
+            np.array([0.725946417]),
             57.29577951,
-            np.array([0.024875887, 0]),
+            np.array([101.217016]),
         )
     ],
 )
