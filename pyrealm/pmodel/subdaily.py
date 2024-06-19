@@ -18,7 +18,7 @@ parameter in calculating optimal :math:`\chi`. This implementation can also be f
 using any of the existing approaches for calculating optimal :math:`\chi`, including
 using C4 pathways and soil moisture effects on optimal :math:`\chi`, but this is
 experimental and not validated.
-"""  # noqa: D205, D415
+"""  # noqa: D205
 
 from warnings import warn
 
@@ -268,7 +268,8 @@ class SubdailyPModel:
             "co2",
             "patm",
             "vpd",
-        ] + optimal_chi_class.requires
+            *optimal_chi_class.requires,
+        ]
         daily_environment: dict[str, NDArray] = {}
         for env_var_name in daily_environment_vars:
             env_var = getattr(self.env, env_var_name)

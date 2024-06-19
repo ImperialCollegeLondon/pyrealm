@@ -235,7 +235,7 @@ def test_FSPModel_dimensionality(be_vie_data, ndims):
     # transposed to return datetime to the first axis. When n_dim = 1, the data are
     # passed as is.
     extra_dims = [3] * (ndims - 1)
-    array_dims = tuple(extra_dims + [len(datetime)])
+    array_dims = tuple([*extra_dims, len(datetime)])
 
     # Create the environment
     env = PModelEnvironment(
