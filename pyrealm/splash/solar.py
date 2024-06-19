@@ -1,6 +1,6 @@
 """The ``solar`` submodule provides functions and classes to calculate daily solar
 radiation fluxes and other radiative values.
-"""  # noqa: D205, D415
+"""  # noqa: D205
 
 from dataclasses import InitVar, dataclass, field
 
@@ -35,7 +35,7 @@ class DailySolarFluxes:
     dates: Calendar
     sf: InitVar[NDArray]
     tc: InitVar[NDArray]
-    core_const: CoreConst = CoreConst()
+    core_const: CoreConst = field(default_factory=lambda: CoreConst())
 
     nu: NDArray = field(init=False)
     """True heliocentric anomaly, degrees"""

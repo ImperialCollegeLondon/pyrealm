@@ -1,5 +1,4 @@
-"""
-Testing CalcCarbonIsotopes
+"""Testing CalcCarbonIsotopes.
 
 This is slightly dubious as the test values are those predicted by the first
 implementation of the code. That _has_ been checked against an initial reference
@@ -8,8 +7,6 @@ and shouldn't change trivially.
 
 Runs a simple scalar test for each of the different optchi methods.
 """
-
-# flake8: noqa D103 - docstrings on unit tests
 
 import numpy as np
 import pytest
