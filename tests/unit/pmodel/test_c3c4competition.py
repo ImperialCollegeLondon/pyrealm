@@ -73,7 +73,7 @@ def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
         PModel,
         PModelEnvironment,
     )
-    
+
     env = PModelEnvironment(
         tc=np.array([20, 35]),
         patm=np.array([101325]),
