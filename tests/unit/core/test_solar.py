@@ -300,7 +300,6 @@ def test_calc_net_rad_crossover_hour_angle(rnl, rw, ru, rv, k_pir, expected):
     assert np.allclose(result, expected)
 
 
-@pytest.mark.parametrize(argnames="hn, k_pir, rw, ru, rv, rnl", argvalues=[()])
 @pytest.mark.parametrize(
     argnames="day,n_day,expected",
     argvalues=[
