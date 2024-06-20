@@ -37,7 +37,7 @@ def calc_density_h2o_chen(
 
     Examples:
         >>> round(calc_density_h2o_chen(20, 101325), 3)
-        998.25
+        np.float64(998.25)
     """
 
     # Calculate density at 1 atm (kg/m^3):
@@ -93,7 +93,7 @@ def calc_density_h2o_fisher(
 
     Examples:
         >>> round(calc_density_h2o_fisher(20, 101325), 3)
-        998.206
+        np.float64(998.206)
     """
 
     # Check input shapes, shape not used
@@ -156,7 +156,7 @@ def calc_density_h2o(
 
     Examples:
         >>> round(calc_density_h2o(20, 101325), 3)
-        998.206
+        np.float64(998.206)
     """
 
     # Safe guard against instability in functions at low temperature.
@@ -201,7 +201,7 @@ def calc_viscosity_h2o(
     Examples:
         >>> # Density of water at 20 degrees C and standard atmospheric pressure:
         >>> round(calc_viscosity_h2o(20, 101325), 7)
-        0.0010016
+        np.float64(0.0010016)
     """
 
     # Check inputs, return shape not used
@@ -269,7 +269,7 @@ def calc_viscosity_h2o_matrix(
     Examples:
         >>> # Density of water at 20 degrees C and standard atmospheric pressure:
         >>> round(calc_viscosity_h2o(20, 101325), 7)
-        0.0010016
+        np.float64(0.0010016)
     """
 
     # Check inputs, return shape not used
