@@ -228,7 +228,7 @@ def test_calc_ppfd(k_fFEC, k_alb_vis, tau, ra_d, expected):
     assert np.allclose(result, expected)
 
 
-@pytest.mark.parameterise(
+@pytest.mark.parametrize(
     argnames="k_b, sf, k_A, tc, expected",
     argvalues=[(0.2, np.array([1.0]), 107, np.array([23.0]), np.array([84.000000]))],
 )
