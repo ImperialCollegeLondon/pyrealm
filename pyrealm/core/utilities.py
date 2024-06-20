@@ -24,10 +24,10 @@ but...
   >>> import numpy as np
   >>> x = np.ma.masked_array([1,2,np.nan, 4], mask=[1,0,0,1])
   >>> x.mean()
-  nan
+  np.float64(nan)
   >>> x = np.ma.masked_array([1,2,np.nan, 4], mask=[1,0,1,0])
   >>> x.mean()
-  3.0
+  np.float64(3.0)
 
 So the general approach here is now:
 
@@ -212,8 +212,8 @@ def _get_interval_functions(interval_type: str = "[]") -> tuple[np.ufunc, np.ufu
 
 def bounds_checker(
     values: NDArray,
-    lower: float = -np.infty,
-    upper: float = np.infty,
+    lower: float = -np.inf,
+    upper: float = np.inf,
     interval_type: str = "[]",
     label: str = "",
     unit: str = "",
@@ -256,8 +256,8 @@ def bounds_checker(
 
 def bounds_mask(
     inputs: NDArray,
-    lower: float = -np.infty,
-    upper: float = np.infty,
+    lower: float = -np.inf,
+    upper: float = np.inf,
     interval_type: str = "[]",
     label: str = "",
 ) -> NDArray[np.floating]:
@@ -282,16 +282,16 @@ def bounds_mask(
     Examples:
         >>> vals = np.array([-15, 20, 30, 124], dtype=float)
         >>> np.nansum(vals)
-        159.0
+        np.float64(159.0)
         >>> vals_c = bounds_mask(vals, 0, 100, label='temperature')
         >>> np.nansum(vals_c)
-        50.0
+        np.float64(50.0)
         >>> vals_c = bounds_mask(vals, 0, 124, interval_type='[]', label='temperature')
         >>> np.nansum(vals_c)
-        174.0
+        np.float64(174.0)
         >>> vals_c = bounds_mask(vals, 0, 124, interval_type='[)', label='temperature')
         >>> np.nansum(vals_c)
-        50.0
+        np.float64(50.0)
     """
 
     # Get the interval functions
