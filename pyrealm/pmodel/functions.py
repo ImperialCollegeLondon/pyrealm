@@ -656,7 +656,7 @@ def calc_co2_to_ca(co2: NDArray, patm: NDArray) -> NDArray:
 
     Examples:
         >>> np.round(calc_co2_to_ca(413.03, 101325), 6)
-        41.850265
+        np.float64(41.850265)
     """
 
     return 1.0e-6 * co2 * patm  # Pa, atms. CO2
