@@ -1,6 +1,6 @@
 """The ``splash`` submodule provides the main SplashModel class for calculating
 predictions under the SPLASH model.
-"""  # noqa: D205, D415
+"""  # noqa: D205
 
 import warnings
 

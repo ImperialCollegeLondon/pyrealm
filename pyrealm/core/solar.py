@@ -1,6 +1,6 @@
 """The ``solar`` submodule provides functions and classes to calculate daily solar
 radiation fluxes and other radiative values.
-"""  # noqa: D205, D415
+"""  # noqa: D205
 
 import numpy as np
 from numpy.typing import NDArray

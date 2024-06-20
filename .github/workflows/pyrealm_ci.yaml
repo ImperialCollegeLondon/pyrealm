@@ -70,9 +70,6 @@ jobs:
 
       - name: Install dependencies
         run: poetry install
-
-      - name: Set ipython kernel
-        run: poetry run python -m ipykernel install --user --name=pyrealm_python3
       
       - name: Build docs using sphinx
         run: |

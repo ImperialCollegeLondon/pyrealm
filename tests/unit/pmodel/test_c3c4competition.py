@@ -8,8 +8,6 @@ and shouldn't change trivially.
 Runs a simple scalar test for each of the different optchi methods.
 """
 
-# flake8: noqa D103 - docstrings on unit tests
-
 import numpy as np
 import pytest
 
@@ -75,7 +73,7 @@ from pyrealm.pmodel import (
     ],
 )
 def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
-    """Test the C3/C4 competition model"""
+    """Test the C3/C4 competition model."""
     env = PModelEnvironment(
         tc=np.array([20, 35]),
         patm=np.array([101325]),
