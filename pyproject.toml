@@ -118,6 +118,7 @@ select = [
   "I", # isort
   "UP", # pyupgrade
   "RUF", # RUF specific checks
+  "NPY201"
 ]
 
 # On top of the Google convention, disable:
