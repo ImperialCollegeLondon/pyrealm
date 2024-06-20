@@ -22,7 +22,7 @@ version = "0.10.1"
 
 [tool.poetry.dependencies]
 dacite = "^1.6.0" 
-numpy = "^1.16.5" 
+numpy = "^2.0.0" 
 python = ">=3.10"
 scipy = "^1.7.3" 
 tabulate = "^0.8.10" 
@@ -118,6 +118,7 @@ select = [
   "I", # isort
   "UP", # pyupgrade
   "RUF", # RUF specific checks
+  "NPY201"
 ]
 
 # On top of the Google convention, disable:
