@@ -27,7 +27,7 @@ but...
   np.float64(nan)
   >>> x = np.ma.masked_array([1,2,np.nan, 4], mask=[1,0,1,0])
   >>> x.mean()
-  3.0
+  np.float64(3.0)
 
 So the general approach here is now:
 
@@ -285,13 +285,13 @@ def bounds_mask(
         np.float64(159.0)
         >>> vals_c = bounds_mask(vals, 0, 100, label='temperature')
         >>> np.nansum(vals_c)
-        50.0
+        np.float64(50.0)
         >>> vals_c = bounds_mask(vals, 0, 124, interval_type='[]', label='temperature')
         >>> np.nansum(vals_c)
-        174.0
+        np.float64(174.0)
         >>> vals_c = bounds_mask(vals, 0, 124, interval_type='[)', label='temperature')
         >>> np.nansum(vals_c)
-        50.0
+        np.float64(50.0)
     """
 
     # Get the interval functions
