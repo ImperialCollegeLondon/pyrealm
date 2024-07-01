@@ -5,11 +5,11 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 
 # Photosynthetic environment
@@ -39,13 +39,14 @@ the key functions.
 
 from matplotlib import pyplot
 import numpy as np
-from pyrealm.constants import PModelConst
-from pyrealm.pmodel import calc_gammastar, calc_kmm, calc_viscosity_h2o, calc_co2_to_ca
+from pyrealm.constants import CoreConst
+from pyrealm.core.water import calc_viscosity_h2o
+from pyrealm.pmodel import calc_gammastar, calc_kmm, calc_co2_to_ca
 
 %matplotlib inline
 
-# get the default set of P Model parameters
-const = PModelConst()
+# Get the default set of core constants
+const = CoreConst()
 
 # Set the resolution of examples
 n_pts = 101
@@ -109,7 +110,7 @@ pyplot.show()
 
 ## Relative viscosity of water ($\eta^*$)
 
-Details: {func}`pyrealm.pmodel.functions.calc_density_h2o`, {func}`pyrealm.pmodel.functions.calc_viscosity_h2o`
+Details: {func}`pyrealm.core.water.calc_density_h2o`, {func}`pyrealm.core.water.calc_viscosity_h2o`
 
 The density ($\rho$) and viscosity ($\mu$) of water both vary with temperature
 and atmospheric pressure. Together, these functions are used to calculate the

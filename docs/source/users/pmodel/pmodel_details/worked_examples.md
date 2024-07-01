@@ -5,11 +5,11 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.2
 kernelspec:
-  display_name: pyrealm_python3
+  display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 
 # Worked examples
@@ -28,7 +28,7 @@ not attempt to resolve the broadcasting of array dimensions.
 This example calculates a single point estimate of GPP. The first step is to use
 estimates of environmental variables to calculate the
 photosynthetic environment for the model
-({class}`~pyrealm.pmodel.pmodel.PModelEnvironment`).
+({class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`).
 
 The example shows the steps required using a single site with:
 
@@ -39,14 +39,15 @@ The example shows the steps required using a single site with:
 
 ### Estimate photosynthetic environment
 
-```{code-cell} ipython3
+```{code-cell}
 from importlib import resources
 
 from matplotlib import pyplot as plt
 import numpy as np
 import xarray
 
-from pyrealm.pmodel import PModel, PModelEnvironment, calc_patm
+from pyrealm.pmodel import PModel, PModelEnvironment
+from pyrealm.core.pressure import calc_patm
 
 # Calculate the PModelEnvironment
 env = PModelEnvironment(tc=20.0, patm=101325.0, vpd=820, co2=400)
@@ -55,14 +56,14 @@ env = PModelEnvironment(tc=20.0, patm=101325.0, vpd=820, co2=400)
 The `env` object now holds the photosynthetic environment, which can be re-used
 with different P Model settings. The representation of `env` is deliberately
 terse - just the shape of the data - but the
-{meth}`~pyrealm.pmodel.pmodel.PModelEnvironment.summarize` method provides a
+{meth}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment.summarize` method provides a
 more detailed summary of the attributes.
 
-```{code-cell} ipython3
+```{code-cell}
 env
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 env.summarize()
 ```
 
@@ -71,14 +72,14 @@ env.summarize()
 Next, the P Model can be fitted to the photosynthetic environment using the
 ({class}`~pyrealm.pmodel.pmodel.PModel`) class:
 
-```{code-cell} ipython3
+```{code-cell}
 model = PModel(env)
 ```
 
 The returned model object holds a lot of information. The representation of the
 model object shows a terse display of the settings used to run the model:
 
-```{code-cell} ipython3
+```{code-cell}
 model
 ```
 
@@ -88,17 +89,19 @@ displays a summary of calculated predictions. Initially, this shows two measures
 photosynthetic efficiency: the intrinsic water use efficiency (``iwue``) and the light
 use efficiency (``lue``).
 
-```{code-cell} ipython3
+```{code-cell}
 model.summarize()
 ```
 
 ### $\chi$ estimates and $\ce{CO2}$ limitation
 
-The instance also contains a {class}`~pyrealm.pmodel.pmodel.CalcOptimalChi` object,
-recording key parameters from the [calculation of $\chi$](optimal_chi).
-This object also has a {meth}`~pyrealm.pmodel.pmodel.CalcOptimalChi.summarize` method:
+The instance also contains a {class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`
+object,
+recording key parameters from the [calculation of $\chi$](./optimal_chi).
+This object also has a {meth}`~pyrealm.pmodel.optimal_chi.OptimalChiABC.summarize`
+method:
 
-```{code-cell} ipython3
+```{code-cell}
 model.optchi.summarize()
 ```
 
@@ -114,7 +117,7 @@ Here we are using:
 * An absorption fraction of 0.91 (-), and
 * a PPFD of 834 µmol m-2 s-1.
 
-```{code-cell} ipython3
+```{code-cell}
 model.estimate_productivity(fapar=0.91, ppfd=834)
 model.summarize()
 ```
@@ -146,12 +149,12 @@ to be the same size so some of the variables have repeated data across dimension
   cell.
 * Elevation is constant across months, so the data for each month is repeated.
 
-```{code-cell} ipython3
+```{code-cell}
 # Load an example dataset containing the forcing variables.
-data_path = resources.files('pyrealm_build_data') / "pmodel_inputs.nc"
+data_path = resources.files("pyrealm_build_data.rpmodel") / "pmodel_global.nc"
 ds = xarray.load_dataset(data_path)
 
-# Extract the six variables for the two months and convert from 
+# Extract the six variables for the two months and convert from
 # xarray DataArray objects to numpy arrays
 temp = ds["temp"].to_numpy()
 co2 = ds["CO2"].to_numpy()
@@ -165,7 +168,7 @@ The model can now be run using that data. The first step is to convert the eleva
 data to atmospheric pressure, and then this is used to set the photosynthetic
 environment for the model:
 
-```{code-cell} ipython3
+```{code-cell}
 # Convert elevation to atmospheric pressure
 patm = calc_patm(elev)
 
@@ -183,24 +186,24 @@ env.summarize()
 That environment can then be run to calculate the P model predictions for light use
 efficiency:
 
-```{code-cell} ipython3
+```{code-cell}
 # Run the P model
 model = PModel(env)
 
 # Plot LUE for first month
 im = plt.imshow(model.lue[0, :, :], origin="lower", extent=[-180, 180, -90, 90])
 plt.colorbar(im, fraction=0.022, pad=0.03)
-plt.title("Light use efficiency");
+plt.title("Light use efficiency")
 ```
 
 Finally, the light use efficiency can be used to calculate GPP given the
 photosynthetic photon flux density and fAPAR.
 
-```{code-cell} ipython3
+```{code-cell}
 # Scale the outputs from values per unit iabs to realised values
 model.estimate_productivity(fapar, ppfd)
 
 im = plt.imshow(model.gpp[0, :, :], origin="lower", extent=[-180, 180, -90, 90])
 plt.colorbar(im, fraction=0.022, pad=0.03)
-plt.title("GPP");
+plt.title("GPP")
 ```

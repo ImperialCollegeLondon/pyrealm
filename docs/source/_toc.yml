@@ -22,10 +22,12 @@ subtrees:
             - entries:
               - file: users/pmodel/subdaily_details/subdaily_calculations.md
               - file: users/pmodel/subdaily_details/acclimation.md
+              - file: users/pmodel/subdaily_details/subdaily_model_and_missing_data.md
               - file: users/pmodel/subdaily_details/worked_example.md
         - file: users/pmodel/c3c4model.md
         - file: users/pmodel/isotopic_discrimination.md
   - file: users/tmodel/tmodel.md
+  - file: users/splash.md
   - file: users/constants.md
   - file: users/hygro.md 
 
@@ -35,7 +37,14 @@ subtrees:
 
 - caption: Development
   entries:
-  - file: development/developers.md
+  - file: development/overview.md
+  - file: development/code_qa_and_typing.md
+  - file: development/documentation.md
+  - file: development/code_testing.md
+  - file: development/profiling_and_benchmarking.md
+  - file: development/github_actions.md
+  - file: development/release_process.md
+  - file: development/pyrealm_build_data.md
 
 - caption: Bibliography
   entries:

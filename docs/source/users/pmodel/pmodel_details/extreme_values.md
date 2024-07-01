@@ -5,11 +5,11 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 
 # Extreme forcing values
@@ -18,7 +18,7 @@ The four photosynthetic environment variables and the effect of temperature on t
 temperature dependence of quantum yield efficiency are all calculated directly from the
 input forcing variables. While the majority of those calculations behave smoothly with
 extreme values of temperature and atmospheric pressure, the calculation of the relative
-viscosity of water ($\eta^*$) does not handle low temperatures well.
+viscosity of water ($\eta^{\ast}$) does not handle low temperatures well.
 
 Forcing datasets for the input to the P Model - particularly remotely sensed datasets -
 often contain extreme values that may lead to unexpected model predictions. This page
@@ -30,7 +30,8 @@ be filter or clipped to remove problem values.
 
 - Temperature (°C): the range of air temperatures in global datasets can easily include
   values as extreme as -80 °C to 50 °C. However, the water density calculation is
-  unstable below -25°C and so {class}`~pyrealm.pmodel.pmodel.PModelEnvironment` _will
+  unstable below -25°C and so
+  {class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` _will
   not_ accept values below -25°C.
 - Atmospheric Pressure (Pa): at sea-level, extremes of 87000 Pa to 108400 Pa have been
   observed but with elevation can fall much lower, down to ~34000 Pa at the summit of Mt
@@ -56,7 +57,8 @@ Note that the default values for C3 photosynthesis give **non-zero values below 
 
 from matplotlib import pyplot
 import numpy as np
-from pyrealm.pmodel import calc_ftemp_kphio, calc_gammastar, calc_kmm, calc_density_h2o
+from pyrealm.pmodel import calc_ftemp_kphio, calc_gammastar, calc_kmm
+from pyrealm.core.water import calc_density_h2o
 
 %matplotlib inline
 
@@ -85,7 +87,7 @@ pyplot.show()
 <!-- markdownlint-disable-next-line MD049 -->
 The photorespiratory compensation point ($\Gamma^*$) varies with as a function of
 temperature and atmospheric pressure, and behaves smoothly with extreme inputs. Note
-that again, $\Gamma^*$ has non-zero values for sub-zero temperatures.
+that again, $\Gamma^_$ has non-zero values for sub-zero temperatures.
 
 ```{code-cell}
 :tags: [hide-input]

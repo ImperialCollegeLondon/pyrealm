@@ -5,11 +5,11 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 
 # LUE Limitation
@@ -44,9 +44,9 @@ meanalpha_2d = np.broadcast_to(meanalpha_1d, (n_pts, n_pts))
 co2_2d = np.broadcast_to(co2_1d, (n_pts, n_pts))
 ```
 
-Once key [photosynthetic parameters](photosynthetic_environment) and [optimal
-chi](optimal_chi) have been calculated, the {class}`~pyrealm.pmodel.pmodel.PModel`
-class can report estimates of:
+Once key [photosynthetic parameters](photosynthetic_environment) and
+[optimal chi](optimal_chi.md) have been calculated, the
+{class}`~pyrealm.pmodel.pmodel.PModel` class can report estimates of:
 
 * the light use efficiency (LUE), as grams of carbon per mole of photons, and
 * the intrinsic water use efficiency (IWUE), as micromoles per mole of photons.
@@ -104,12 +104,20 @@ dependency of $\phi_0$.
 ```{code-cell}
 env = PModelEnvironment(tc=30, patm=101325, vpd=820, co2=400)
 model_fixkphio = PModel(env, kphio=0.08, do_ftemp_kphio=False)
-np.array([model_fixkphio.init_kphio, model_fixkphio.kphio])
+model_fixkphio.init_kphio
+```
+
+```{code-cell}
+model_fixkphio.kphio
 ```
 
 ```{code-cell}
 model_tempkphio = PModel(env, kphio=0.08, do_ftemp_kphio=True)
-np.array([model_tempkphio.init_kphio, model_tempkphio.kphio])
+model_fixkphio.init_kphio
+```
+
+```{code-cell}
+model_fixkphio.kphio
 ```
 
 The scaling of temperature dependence varies for C3 and C4 plants and the function
@@ -146,11 +154,11 @@ options for this setting are:
   = 1$.
 * `wang17`: This is the default setting for `method_jmaxlim` and applies the
   calculations describe in  {cite:t}`Wang:2017go`. The calculation details can be
-  seen in the {meth}`~pyrealm.pmodel.pmodel.JmaxLimitation.wang17` method.
+  seen in the {meth}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation.wang17` method.
 
 * `smith19`: This is an alternate calculation for optimal values of $J_{max}$
   and $V_{cmax}$ described in {cite:t}`Smith:2019dv`. The calculation details can be
-  seen in the {meth}`~pyrealm.pmodel.pmodel.JmaxLimitation.smith19` method.
+  seen in the {meth}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation.smith19` method.
 
 ```{code-cell}
 model_jmax_simple = PModel(env, kphio=0.08, method_jmaxlim="simple")

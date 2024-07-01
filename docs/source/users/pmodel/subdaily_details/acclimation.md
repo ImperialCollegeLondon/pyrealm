@@ -5,11 +5,11 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.2
 kernelspec:
-  display_name: pyrealm_python3
+  display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 
 # Estimating acclimation
@@ -41,18 +41,18 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle, Patch
 import matplotlib.dates as mdates
 
-from pyrealm.pmodel import FastSlowScaler, memory_effect
+from pyrealm.pmodel import SubdailyScaler, memory_effect
 ```
 
 ## The acclimation window
 
 Defining the acclimation window uses the
-{class}`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler`:  this class is used to define
+{class}`~pyrealm.pmodel.scaler.SubdailyScaler`:  this class is used to define
 the timing of observations on a fast time scale and then set the daily window. The code
 below creates a simple time series representing a parameter responding instantaneously
 to changing environmental conditions on a fast scale.
 
-The code then sets up a `FastSlowScaler` instance using the observations time on the
+The code then sets up a `SubdailyScaler` instance using the observations time on the
 fast scale and sets a 6 hour acclimation window around noon. This is a particularly wide
 acclimation window, chosen to make it easier to see different approaches to
 interpolating data back to subdaily timescales. In practice {cite:t}`mengoli:2022a`
@@ -60,8 +60,6 @@ present results using one hour windows around noon or even the single value clos
 noon.
 
 ```{code-cell}
-:tags: []
-
 # Define a set of observations at a subdaily timescale
 fast_datetimes = np.arange(
     np.datetime64("1970-01-01"), np.datetime64("1970-01-08"), np.timedelta64(30, "m")
@@ -73,7 +71,7 @@ fast_data = fast_data * np.linspace(1, 0.1, len(fast_data))
 fast_data = np.where(fast_data < 0, 0, fast_data)
 
 # Create a scaler, using a deliberately wide 6 hour window around noon
-demo_scaler = FastSlowScaler(fast_datetimes)
+demo_scaler = SubdailyScaler(fast_datetimes)
 half_width = np.timedelta64(3, "h")
 demo_scaler.set_window(window_center=np.timedelta64(12, "h"), half_width=half_width)
 ```
@@ -193,7 +191,7 @@ subdaily predictions. The interpolation process sets two things:
     is _always_ applied to avoid interpolating to a value that is not yet known.
 
 The code below shows how the
-{meth}`~pyrealm.pmodel.fast_slow_scaler.FastSlowScaler.fill_daily_to_subdaily` method is
+{meth}`~pyrealm.pmodel.scaler.SubdailyScaler.fill_daily_to_subdaily` method is
 used to interpolate realised values back to the subdaily scale, using different settings
 for the update point and interpolation method.
 

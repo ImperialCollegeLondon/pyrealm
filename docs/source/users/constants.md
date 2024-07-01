@@ -4,10 +4,12 @@ jupytext:
   text_representation:
     extension: .md
     format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 
 # Package constants
@@ -34,35 +36,36 @@ of default model constants. The core API and details for each class can be seen
 
 These can be used to generate the default set of model parameters:
 
-```{code-cell} python
-from pyrealm.constants import PModelConst, TModelTraits
+```{code-cell}
+from pyrealm.constants import CoreConst, TModelTraits
 
-ppar = PModelConst()
-ttrt = TModelTraits()
+core_const = CoreConst()
+tmodel_const = TModelTraits()
 
-print(ppar)
-print(ttrt)
+print(core_const)
+print(tmodel_const)
 ```
 
 And individual values can be altered using the parameter arguments:
 
-```{code-cell} python
-# Simulate the P Model under the moon's gravity...
-ppar_moon = PModelConst(k_G = 1.62)
+```{code-cell}
+# Estimate processes under the moon's gravity...
+core_const_moon = CoreConst(k_G=1.62)
 # ... allowing a much greater maximum height
-ttrt_moon = TModelTraits(h_max=200)
+tmodel_const_moon = TModelTraits(h_max=200)
 
-print(ppar_moon.k_G)
-print(ttrt_moon.h_max)
+print(core_const_moon.k_G)
+print(tmodel_const_moon.h_max)
 ```
 
 In order to ensure that a set of parameters cannot change while models are being run,
 instances of these parameter classes are **frozen**. You cannot  edit an existing
 instance and will need to create a new instance to use different parameters.
 
-```{code-cell} python
-:tags: ["raises-exception"]
-ppar_moon.k_G = 9.80665
+```{code-cell}
+:tags: [raises-exception]
+
+core_const_moon.k_G = 9.80665
 ```
 
 ## Exporting and reloading parameter sets
@@ -73,10 +76,11 @@ export of parameter settings to dictionaries and to JSON formatted files. The co
 shows these methods working. First, a trait definition in a JSON file is read into a
 dictionary:
 
-```{code-cell} python
+```{code-cell}
 import json
 import pprint
-trt_dict = json.load(open('../files/traits.json', 'r'))
+
+trt_dict = json.load(open("../files/traits.json", "r"))
 pprint.pprint(trt_dict)
 ```
 
@@ -85,9 +89,9 @@ the {meth}`~pyrealm.constants.base.ConstantsClass.from_dict` method. The
 {meth}`~pyrealm.constants.base.ConstantsClass.from_json` method allows this to
 be done more directly and the resulting instances are identical.
 
-```{code-cell} python
+```{code-cell}
 traits1 = TModelTraits.from_dict(trt_dict)
-traits2 = TModelTraits.from_json('../files/traits.json')
+traits2 = TModelTraits.from_json("../files/traits.json")
 
 print(traits1)
 print(traits2)

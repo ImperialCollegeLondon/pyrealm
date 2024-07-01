@@ -5,11 +5,11 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 
 # The `rpmodel` implementation
@@ -44,24 +44,26 @@ The implementations differ in a number of ways:
    also been moved to {class}`~pyrealm.constants.pmodel_const.PModelConst` to simplify
    function arguments.
 
-1. The ``rpmodel`` package has suites of functions for calculating $J_{max}$ limitation
-   and optimal $\chi$. These have been combined into classes
-   {class}`~pyrealm.pmodel.pmodel.JmaxLimitation` and
-   {class}`~pyrealm.pmodel.pmodel.CalcOptimalChi`. This allows the common parameters and
-   outputs of these functions to be standardised and the different methods are provided
-   via a ``method`` argument to each class.
+   The ``rpmodel`` package has suites of functions for calculating $J_{max}$ limitation
+   and optimal $\chi$. These have been combined into the
+   {class}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation` limitation claas and a set of
+   approaches to optimal chi calculated using subclasses of
+   {class}`~pyrealm.pmodel.optimal_chi.OptimalChiABC`. This allows the common
+   parameters and outputs of these functions to be standardised and the different
+   methods are provided via a ``method`` argument to each class.
 
-1. When simulating C4 plants, the ``rpmodel`` package, the ``rpmodel`` function enforces
+   When simulating C4 plants, the ``rpmodel`` package, the ``rpmodel`` function enforces
    a separate $J_{max}$ method (``rpmodel:::calc_lue_vcmax_c4``). This is equivalent to
    the `simple` model with the $\ce{CO2}$ limitation factor $m_j=1.0$. Only this method
    can be used with C4 plants and hence it is not possible to simulate $J_{max}$
    limitation for C4 plants. In the implementation in {mod}`~pyrealm.pmodel`, C4 plants
    are set to have no $\ce{CO2}$ limitation in
-   {class}`~pyrealm.pmodel.pmodel.CalcOptimalChi`, although the correct internal
+   {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4`, although the correct internal
    $\ce{CO2}$ partial pressure is calculated, and are then free to use whichever
-   $J_{max}$ method is preferred in {class}`~pyrealm.pmodel.pmodel.JmaxLimitation`.
+   $J_{max}$ method is preferred in
+   {class}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation`.
 
-1. The ``rpmodel`` function has a large number of arguments. This is partly
+   The ``rpmodel`` function has a large number of arguments. This is partly
    because of some redundancy in identifying the use case. For example, using
    soil moisture stress can be inferred simply by providing inputs, rather then
    requiring the logical flag. However, the function also include steps that
@@ -71,7 +73,7 @@ The implementations differ in a number of ways:
    core of inputs and methods and functions reproduce the rest of the
    functionality in the P Model.
 
-1. One key difference here is that the ``rpmodel`` function extended the
+   One key difference here is that the ``rpmodel`` function extended the
    implementation of the empirical soil moisture factor $\beta(\theta)$ from a simple
    factor on light use efficiency (LUE) to estimate the underlying values of $J_{max}$
    and $V_{cmax}$. In the {mod}`~pyrealm.pmodel` module, the $\beta(\theta)$ is _only_

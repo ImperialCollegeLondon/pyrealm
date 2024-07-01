@@ -20,13 +20,13 @@ This implementation has the following desired features:
 6. Is a class, to allow __repr__ and other methods.
 """  # noqa D210, D415
 
-
 import json
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 
-from dacite.core import from_dict
+from dacite import from_dict
 
 
+@dataclass(frozen=True)
 class ConstantsClass:
     """Base class for model constants.
 
@@ -96,7 +96,7 @@ class ConstantsClass:
         Returns:
             An instance of the parameter class.
         """
-        with open(filename, "r") as infile:
+        with open(filename) as infile:
             json_data = json.load(infile)
 
         return cls.from_dict(json_data)

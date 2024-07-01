@@ -5,11 +5,11 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 
 <!-- markdownlint-disable-next-line MD041 -->
@@ -43,14 +43,14 @@ The main steps are:
   environmental variables are used to calculate four key variables describing the
   photosynthetic environment of a plant.
 
-* Calculation of [leaf $\ce{CO2}$ variables](optimal_chi). The photosynthetic
+* Calculation of [leaf $\ce{CO2}$ variables](../pmodel_details/optimal_chi). The photosynthetic
   environment is then used to calculate the optimal ratio of internal to external CO2
   concentration ($chi$), along with $\ce{CO2}$ partial pressures and limitation factors.
   This step also governs the main differences between C3 and C4 photosynthesis.
 
 * Constraints on [light use efficiency (LUE)](lue_limitation). The calculation of light
   use efficiency can be subjected to a number of constraints:
-  
+
   * Theoretical limitations to the maximum rates of Rubsico regeneration
     ($J_{max}$) and maximum carboxylation capacity ($V_{cmax}$)
 

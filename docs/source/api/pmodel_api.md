@@ -5,11 +5,11 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 
 # The {mod}`~pyrealm.pmodel` module
@@ -22,6 +22,30 @@ kernelspec:
 
 ```{eval-rst}
 .. automodule:: pyrealm.pmodel.pmodel
+    :autosummary:
+    :members:
+```
+
+## The {mod}`~pyrealm.pmodel.pmodel_environment` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.pmodel.pmodel_environment
+    :autosummary:
+    :members:
+```
+
+## The {mod}`~pyrealm.pmodel.jmax_limitation` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.pmodel.jmax_limitation
+    :autosummary:
+    :members:
+```
+
+## The {mod}`~pyrealm.pmodel.optimal_chi` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.pmodel.optimal_chi
     :autosummary:
     :members:
 ```
@@ -50,10 +74,10 @@ kernelspec:
     :members:
 ```
 
-## The {mod}`~pyrealm.pmodel.fast_slow_scaler` submodule
+## The {mod}`~pyrealm.pmodel.scaler` submodule
 
 ```{eval-rst}
-.. automodule:: pyrealm.pmodel.fast_slow_scaler
+.. automodule:: pyrealm.pmodel.scaler
     :autosummary:
     :members:
     :private-members:

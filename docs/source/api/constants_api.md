@@ -5,13 +5,12 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
-
 
 # The {mod}`~pyrealm.constants` module
 
@@ -27,6 +26,13 @@ kernelspec:
     :members:
 ```
 
+## Core constants
+
+```{eval-rst}
+.. autoclass:: pyrealm.constants.core_const.CoreConst
+    :members:
+```
+
 ## P Model constants
 
 ```{eval-rst}
@@ -38,13 +44,6 @@ kernelspec:
 
 ```{eval-rst}
 .. autoclass:: pyrealm.constants.tmodel_const.TModelTraits
-    :members:
-```
-
-## Hygrometry constants
-
-```{eval-rst}
-.. autoclass:: pyrealm.constants.hygro_const.HygroConst
     :members:
 ```
 

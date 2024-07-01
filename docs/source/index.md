@@ -4,10 +4,12 @@ jupytext:
   text_representation:
     extension: .md
     format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 
 # The `pyrealm` package
@@ -27,9 +29,9 @@ The `tmodel` module
 : Estimating plant allocation of gross primary productivity to growth and respiration,
   using the [T Model](users/tmodel/tmodel) {cite:p}`Li:2014bc`.
 
-The `hygro` module
-: Provides functions for [converting common hygrometric variables](users/hygro) to
-  vapour pressure deficit for use in the P Model.
+The `core` module
+: Contains fundamental utilities and physics functionality shared across the
+  package, including the [hygro](users/hygro) and the utilities submodules.
 
 ## Indices and tables
 
