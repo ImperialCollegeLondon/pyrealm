@@ -530,7 +530,7 @@ class OptimalChiLavergne20C3(
         # Calculate beta as a function of theta, which is guaranteed not to be None by
         # _check_requires so suppress mypy here
         self.beta = np.exp(
-            self.pmodel_const.lavergne_2020_b_c3 * self.env.theta  # type: ignore[operator] # noqa: E501
+            self.pmodel_const.lavergne_2020_b_c3 * self.env.theta  # type: ignore[operator]
             + self.pmodel_const.lavergne_2020_a_c3
         )
 
@@ -586,10 +586,9 @@ class OptimalChiLavergne20C4(
     :math:`m_{joc}` are calculated.
 
     Note:
-
-    This is an **experimental approach**. The research underlying
-    :cite:`lavergne:2020a`, found **no relationship** between C4 :math:`\beta`
-    values and soil moisture in leaf gas exchange measurements.
+        This is an **experimental approach**. The research underlying
+        :cite:`lavergne:2020a`, found **no relationship** between C4 :math:`\beta`
+        values and soil moisture in leaf gas exchange measurements.
 
     Examples:
         >>> import numpy as np
@@ -622,7 +621,7 @@ class OptimalChiLavergne20C4(
         # Calculate beta as a function of theta, which is guaranteed not to be None by
         # _check_requires so suppress mypy here
         self.beta = np.exp(
-            self.pmodel_const.lavergne_2020_b_c4 * self.env.theta  # type: ignore[operator] # noqa: E501
+            self.pmodel_const.lavergne_2020_b_c4 * self.env.theta  # type: ignore[operator]
             + self.pmodel_const.lavergne_2020_a_c4
         )
 

@@ -42,7 +42,7 @@ class CalendarDay:
         this replaces the default.
         """
         return (
-            f"CalendarDay(date={str(self.date)}, year={self.year}, "
+            f"CalendarDay(date={self.date!s}, year={self.year}, "
             f"julian_day={self.julian_day}, days_in_year={self.days_in_year})"
         )
 
@@ -117,4 +117,4 @@ class Calendar(Sized):
     def __repr__(self) -> str:
         """Representation of a Calendar instance."""
 
-        return f"Calendar({str(self.dates[0])}, {str(self.dates[-1])})"
+        return f"Calendar({self.dates[0]!s}, {self.dates[-1]!s})"

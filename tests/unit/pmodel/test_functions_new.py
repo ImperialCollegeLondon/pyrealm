@@ -2,7 +2,7 @@
 
 These are primarily to help catch gross errors in the outputs during function
 refactoring.
-"""  # noqa D210, D415
+"""  # D210, D415
 
 import numpy as np
 import pytest

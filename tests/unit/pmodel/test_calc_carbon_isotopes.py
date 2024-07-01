@@ -1,5 +1,4 @@
-"""
-Testing CalcCarbonIsotopes
+"""Testing CalcCarbonIsotopes.
 
 This is slightly dubious as the test values are those predicted by the first
 implementation of the code. That _has_ been checked against an initial reference
@@ -9,12 +8,8 @@ and shouldn't change trivially.
 Runs a simple scalar test for each of the different optchi methods.
 """
 
-# flake8: noqa D103 - docstrings on unit tests
-
 import numpy as np
 import pytest
-
-from pyrealm.pmodel import CalcCarbonIsotopes, PModel, PModelEnvironment
 
 
 @pytest.mark.parametrize(
@@ -72,6 +67,8 @@ from pyrealm.pmodel import CalcCarbonIsotopes, PModel, PModelEnvironment
 )
 def test_CalcCarbonIsotopes(pmodelenv_args, pmodel_args, expected):
     """Tests the CalcCarbonIsotopes class."""
+    from pyrealm.pmodel import CalcCarbonIsotopes, PModel, PModelEnvironment
+
     env = PModelEnvironment(**pmodelenv_args)
     pmodel = PModel(env, **pmodel_args)
     cci = CalcCarbonIsotopes(pmodel, d13CO2=np.array([-8.4]), D14CO2=np.array([19.2]))

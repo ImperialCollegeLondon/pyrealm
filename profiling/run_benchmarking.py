@@ -38,7 +38,6 @@ def get_function_map(root: Path) -> dict[tuple[str, int, str], str]:
     of the function node and any decorator nodes.
 
     Warning:
-
         In order to separate class methods from functions, this function relies on
         `ast.walk` walking `ast.ClassDef` nodes before `ast.FunctionDef` nodes and then
         adds a `class_name` attribute to functions in the class body. That attribute can
@@ -61,7 +60,7 @@ def get_function_map(root: Path) -> dict[tuple[str, int, str], str]:
         for node in ast.walk(parsed_ast):
             if isinstance(node, ast.FunctionDef):
                 # Find the line number used by profiling, which includes any decorators
-                lineno = min([d.lineno for d in node.decorator_list + [node]])
+                lineno = min([d.lineno for d in [*node.decorator_list, node]])
 
                 if hasattr(node, "class_name"):
                     ast_map[(str(src_file), lineno, node.name)] = (
@@ -231,7 +230,7 @@ def run_benchmark(
     # the minimum value for each column within the group.
     kpis = ["tottime_percall", "cumtime_percall", "tottime", "cumtime"]
     targets = (
-        database.loc[~database["ignore_result"], ["process_id"] + kpis]
+        database.loc[~database["ignore_result"], ["process_id", *kpis]]
         .groupby("process_id")
         .min()
     )
