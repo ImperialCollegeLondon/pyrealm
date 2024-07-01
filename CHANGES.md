@@ -15,7 +15,9 @@ released versions. More detail can be found at the GitHub release page for each 
   including C4 photosynthesis.
 - Updated and revised unit testing.
 - Dropped support for Python 3.9 for first main release and to adopt more recent typing
-  syntax.
+  syntax and added Python 3.12.
+- Updated code to work with the recent release of `numpy 2.0`.
+- Updated the developer tool chain to move to `ruff` for code linting and formatting.
 
 ## 0.10.1
 
