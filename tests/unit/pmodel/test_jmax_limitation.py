@@ -3,15 +3,13 @@
 import numpy as np
 import pytest
 
-# from pyrealm.constants import PModelConst
-from pyrealm.pmodel.jmax_limitation import JmaxLimitation
-from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
-from pyrealm.pmodel.pmodel_environment import PModelEnvironment
-
 
 @pytest.fixture
 def mock_optimal_chi():
     """Build an OptimalChiABC instance."""
+    from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
+    from pyrealm.pmodel.pmodel_environment import PModelEnvironment
+
     # Create an instance of OptimalChiABC for testing
     env = PModelEnvironment(
         tc=np.array([20]),
@@ -40,6 +38,8 @@ def mock_optimal_chi():
 )
 def test_jmax_limitation(mock_optimal_chi, method, expected_f_j, expected_f_v):
     """Test that JmaxLimitation class works as expected."""
+    from pyrealm.pmodel.jmax_limitation import JmaxLimitation
+
     # Create an instance of JmaxLimitation with mock OptimalChiABC and test method
     jmax_limitation = JmaxLimitation(mock_optimal_chi, method=method)
     # Assert that calculated f_j and f_v match expected values
@@ -49,6 +49,8 @@ def test_jmax_limitation(mock_optimal_chi, method, expected_f_j, expected_f_v):
 
 def test_invalid_method(mock_optimal_chi):
     """Test that JmaxLimitation raises ValueError for invalid method."""
+    from pyrealm.pmodel.jmax_limitation import JmaxLimitation
+
     # Test invalid method
     with pytest.raises(ValueError):
         JmaxLimitation(mock_optimal_chi, method="invalid_method")
