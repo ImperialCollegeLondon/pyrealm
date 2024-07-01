@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.abspath("../"))
 # -- Project information -----------------------------------------------------
 
 project = "pyrealm: Ecosystem Models in Python"
-copyright = "2020, David Orme"
+copyright = "2024, David Orme"
 author = "David Orme"
 
 # The full version, including alpha/beta/rc tags
