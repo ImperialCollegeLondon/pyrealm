@@ -28,7 +28,7 @@ packages = [
 ]
 readme = "README.md"
 repository = "https://github.com/ImperialCollegeLondon/pyrealm"
-version = "1.0.0a5"
+version = "1.0.0"
 
 [tool.poetry.dependencies]
 dacite = "^1.6.0" 
