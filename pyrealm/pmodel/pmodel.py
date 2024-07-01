@@ -353,7 +353,7 @@ class PModel:
     def fapar(self) -> NDArray:
         """Fraction of absorbed photosynthetically active radiation
         (:math:`f_{APAR}` unitless).
-        """  # noqa: D205, D415
+        """  # noqa: D205
         self._check_estimated("gs")
         return self._fapar
 
