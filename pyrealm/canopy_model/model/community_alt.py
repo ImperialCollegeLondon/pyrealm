@@ -34,45 +34,85 @@ class Community:
         self.cohort_pft_names: NDArray[np.str_] = cohort_pft_names
 
         # initialise empty arrays representing properties of plant functional types
-        self.pft_a_hd_values: NDArray[np.float32] = np.empty(self.number_of_cohorts, dtype=np.float32)
-        self.pft_ca_ratio_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
-        self.pft_h_max_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
-        self.pft_lai_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
-        self.pft_par_ext_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
-        self.pft_resp_f_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
-        self.pft_resp_r_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
-        self.pft_resp_s_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
-        self.pft_rho_s_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
-        self.pft_sla_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
-        self.pft_tau_f_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
-        self.pft_tau_r_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
-        self.pft_yld_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
-        self.pft_zeta_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
-        self.pft_m_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
-        self.pft_n_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
+        self.pft_a_hd_values: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
+        self.pft_ca_ratio_values: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
+        self.pft_h_max_values: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
+        self.pft_lai_values: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
+        self.pft_par_ext_values: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
+        self.pft_resp_f_values: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
+        self.pft_resp_r_values: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
+        self.pft_resp_s_values: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
+        self.pft_rho_s_values: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
+        self.pft_sla_values: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
+        self.pft_tau_f_values: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
+        self.pft_tau_r_values: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
+        self.pft_yld_values: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
+        self.pft_zeta_values: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
+        self.pft_m_values: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
+        self.pft_n_values: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
 
         # initialise empty arrays representing properties calculated using the t model
-        self.t_model_heights: NDArray[np.float32] = np.empty(self.number_of_cohorts)
-        self.t_model_crown_areas: NDArray[np.float32] = np.empty(self.number_of_cohorts)
+        self.t_model_heights: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
+        self.t_model_crown_areas: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
         self.t_model_crown_fractions: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts
+            self.number_of_cohorts, dtype=np.float32
         )
-        self.t_model_stem_masses: NDArray[np.float32] = np.empty(self.number_of_cohorts)
+        self.t_model_stem_masses: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
         self.t_model_foliage_masses: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts
+            self.number_of_cohorts, dtype=np.float32
         )
-        self.t_model_swd_masses: NDArray[np.float32] = np.empty(self.number_of_cohorts)
+        self.t_model_swd_masses: NDArray[np.float32] = np.empty(
+            self.number_of_cohorts, dtype=np.float32
+        )
 
         # initialise empty arrays containing properties pertaining to Jaideep's t model
         # extension
         self.canopy_factor_q_m_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts
+            self.number_of_cohorts, dtype=np.float32
         )
         self.canopy_factor_z_m_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts
+            self.number_of_cohorts, dtype=np.float32
         )
         self.canopy_factor_r_0_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts
+            self.number_of_cohorts, dtype=np.float32
         )
 
         # populate the initialised arrays with the relevant calculations
