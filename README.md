@@ -34,7 +34,7 @@ For more details, see the package website:
 ## Using `pyrealm`
 
 The `pyrealm` package requires Python 3 and the currently supported Python versions are:
-3.10 and 3.11. We make released package versions available via
+3.10, 3.11 and 3.12. We make released package versions available via
 [PyPi](https://pypi.org/project/pyrealm/) and also generate DOIs for each release via
 [Zenodo](https://doi.org/10.5281/zenodo.8366847). You can install the most recent
 release using `pip`:
