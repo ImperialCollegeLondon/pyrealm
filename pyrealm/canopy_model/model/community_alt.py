@@ -34,7 +34,7 @@ class Community:
         self.cohort_pft_names: NDArray[np.str_] = cohort_pft_names
 
         # initialise empty arrays representing properties of plant functional types
-        self.pft_a_hd_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
+        self.pft_a_hd_values: NDArray[np.float32] = np.empty(self.number_of_cohorts, dtype=np.float32)
         self.pft_ca_ratio_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
         self.pft_h_max_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
         self.pft_lai_values: NDArray[np.float32] = np.empty(self.number_of_cohorts)
