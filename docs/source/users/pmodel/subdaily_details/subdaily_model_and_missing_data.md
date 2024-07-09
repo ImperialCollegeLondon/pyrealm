@@ -138,7 +138,7 @@ memory_effect(partial_allowed, allow_holdover=True)
 ```
 
 These options do not fix all problems: the best way forward depends partly on the source
-of the missing data and how common it is, as discused below.
+of the missing data and how common it is, as discussed below.
 
 ## Sources of missing data
 

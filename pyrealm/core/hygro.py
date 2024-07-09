@@ -1,4 +1,4 @@
-"""The :mod:`~pyrealm.core.hygro` submodule provides provides conversion functions for
+"""The :mod:`~pyrealm.core.hygro` submodule provides conversion functions for
 common hygrometric variables. The module provides conversions to vapour pressure
 deficit, which is the required input for the :class:`~pyrealm.pmodel.pmodel.PModel`
 from vapour pressure, specific humidity and relative humidity. The implementation is
