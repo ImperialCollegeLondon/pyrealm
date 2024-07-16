@@ -10,6 +10,7 @@ documentation root, use os.path.abspath to make it absolute, like shown here.
 import os
 import sys
 from dataclasses import dataclass, field
+from datetime import datetime
 
 import sphinxcontrib.bibtex.plugin
 from sphinxcontrib.bibtex.style.referencing import BracketStyle
@@ -23,7 +24,8 @@ sys.path.insert(0, os.path.abspath("../"))
 # -- Project information -----------------------------------------------------
 
 project = "pyrealm: Ecosystem Models in Python"
-copyright = "2024, David Orme"
+
+current_year = datetime.today().strftime("%Y")
 author = "David Orme"
 
 # The full version, including alpha/beta/rc tags
