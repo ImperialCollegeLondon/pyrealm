@@ -73,17 +73,17 @@ def test_calc_lat_delta_intermediates(delta, lat, expected):
 
 
 @pytest.mark.parametrize(
-    argnames="ru, rv, k_pir, expected",
+    argnames="delta, latitude, k_pir, expected",
     argvalues=[
         (
-            np.array([0.243228277]),
-            np.array([0.725946417]),
+            np.array([23.436921]),
+            np.array([37.7]),
             np.pi / 180.0,
             np.array([109.575573]),
         )
     ],
 )
-def test_calc_sunset_hour_angle(ru, rv, k_pir, expected):
+def test_calc_sunset_hour_angle(delta, latitude, k_pir, expected):
     """Tests calc_sunset_hour_angle.
 
     This test is intended to verify the maths over a range of applicable input
@@ -92,7 +92,7 @@ def test_calc_sunset_hour_angle(ru, rv, k_pir, expected):
 
     from pyrealm.core.solar import calc_sunset_hour_angle
 
-    result = calc_sunset_hour_angle(ru, rv, k_pir)
+    result = calc_sunset_hour_angle(delta, latitude, k_pir)
 
     assert np.allclose(result, expected)
 
