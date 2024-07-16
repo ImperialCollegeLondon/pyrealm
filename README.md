@@ -3,6 +3,8 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/pyrealm)](https://pypi.org/project/pyrealm/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pyrealm)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8366847.svg)](https://doi.org/10.5281/zenodo.8366847)
+[![Documentation
+Status](https://readthedocs.org/projects/pyrealm/badge/?version=latest)](https://pyrealm.readthedocs.io/en/latest/?badge=latest)
 [![codecov](https://codecov.io/gh/ImperialCollegeLondon/pyrealm/branch/develop/graph/badge.svg)](https://codecov.io/gh/ImperialCollegeLondon/pyrealm)
 [![Test and
 build](https://github.com/ImperialCollegeLondon/pyrealm/actions/workflows/pyrealm_ci.yaml/badge.svg?branch=develop)](https://github.com/ImperialCollegeLondon/pyrealm/actions/workflows/pyrealm_ci.yaml)
@@ -29,13 +31,10 @@ The `pyrealm` package currently includes:
 For more details, see the package website:
 [https://pyrealm.readthedocs.io/](https://pyrealm.readthedocs.io/).
 
-**TODO** Need to link here to a _roadmap_ for the package and therefore _create_ that
-roadmap along with the a feature set to aim for in version 1.0.0.
-
 ## Using `pyrealm`
 
 The `pyrealm` package requires Python 3 and the currently supported Python versions are:
-3.10 and 3.11. We make released package versions available via
+3.10, 3.11 and 3.12. We make released package versions available via
 [PyPi](https://pypi.org/project/pyrealm/) and also generate DOIs for each release via
 [Zenodo](https://doi.org/10.5281/zenodo.8366847). You can install the most recent
 release using `pip`:
@@ -110,7 +109,7 @@ institutions:
   an [ERC grant](https://cordis.europa.eu/project/id/787203) to Prof. Colin Prentice
   (Imperial College London).
 * The [LEMONTREE project](https://research.reading.ac.uk/lemontree/), funded by Schmidt
-  Futures through the [VESRI
+  Sciences through the [VESRI
   programme](https://www.schmidtfutures.com/our-work/virtual-earth-system-research-institute-vesri/)
   to support an international research team lead by Prof. Sandy Harrison (University of
   Reading).
@@ -122,4 +121,4 @@ institutions:
   Science](https://iccs.cam.ac.uk/) at the University of Cambridge, through the [Virtual
   Institute for Scientific
   Software](https://www.schmidtfutures.com/our-work/virtual-institute-for-scientific-software/)
-  program funded by Schmidt Futures.
+  program funded by Schmidt Sciences.

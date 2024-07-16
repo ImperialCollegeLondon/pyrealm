@@ -24,10 +24,10 @@ but...
   >>> import numpy as np
   >>> x = np.ma.masked_array([1,2,np.nan, 4], mask=[1,0,0,1])
   >>> x.mean()
-  nan
+  np.float64(nan)
   >>> x = np.ma.masked_array([1,2,np.nan, 4], mask=[1,0,1,0])
   >>> x.mean()
-  3.0
+  np.float64(3.0)
 
 So the general approach here is now:
 
@@ -94,7 +94,7 @@ def check_input_shapes(*args: float | int | np.generic | np.ndarray | None) -> t
         #    # Note that 0-dim ndarrays (which are scalars) pass through
         #    if val.ndim > 0:
         #        shapes.add(val.shape)
-        elif val is None or isinstance(val, float | int | np.generic):
+        elif val is None or isinstance(val, (float | int | np.generic)):
             pass  # No need to track scalars and optional values pass None
         else:
             raise ValueError(f"Unexpected input to check_input_shapes: {type(val)}")
@@ -282,16 +282,16 @@ def bounds_mask(
     Examples:
         >>> vals = np.array([-15, 20, 30, 124], dtype=float)
         >>> np.nansum(vals)
-        159.0
+        np.float64(159.0)
         >>> vals_c = bounds_mask(vals, 0, 100, label='temperature')
         >>> np.nansum(vals_c)
-        50.0
+        np.float64(50.0)
         >>> vals_c = bounds_mask(vals, 0, 124, interval_type='[]', label='temperature')
         >>> np.nansum(vals_c)
-        174.0
+        np.float64(174.0)
         >>> vals_c = bounds_mask(vals, 0, 124, interval_type='[)', label='temperature')
         >>> np.nansum(vals_c)
-        50.0
+        np.float64(50.0)
     """
 
     # Get the interval functions

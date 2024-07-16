@@ -5,15 +5,6 @@ import json
 import numpy as np
 import pytest
 
-from pyrealm.constants import CoreConst, PModelConst
-from pyrealm.pmodel.functions import (
-    calc_co2_to_ca,
-    calc_gammastar,
-    calc_kmm,
-    calc_ns_star,
-)
-from pyrealm.pmodel.pmodel_environment import PModelEnvironment
-
 """"Test that the pmodel environment calculates attributes match the expected values."""
 
 
@@ -36,6 +27,8 @@ def test_pmodel_environment(
     tc, vpd, co2, patm, expected_ca, expected_gammastar, expected_kmm, expected_ns_star
 ):
     """Test the PModelEnvironment class."""
+    from pyrealm.pmodel.pmodel_environment import PModelEnvironment
+
     env = PModelEnvironment(tc=tc, vpd=vpd, co2=co2, patm=patm)
 
     assert env.ca == pytest.approx(expected_ca, abs=1e-5)
@@ -62,6 +55,9 @@ def function_test_data():
 
 def test_out_of_bound_output(function_test_data):
     """Function to calculate kmm."""
+    from pyrealm.constants import PModelConst
+    from pyrealm.pmodel.functions import calc_kmm
+
     tc_ar_values, patm_ar_values, co2_ar_values = function_test_data
 
     pmodel_const = PModelConst()
@@ -84,6 +80,9 @@ def test_out_of_bound_output(function_test_data):
 
 def test_out_of_bound_output_ns_star(function_test_data):
     """Function to calculate ns_star."""
+    from pyrealm.constants import CoreConst
+    from pyrealm.pmodel.functions import calc_ns_star
+
     tc_ar_values, patm_ar_values, _ = function_test_data  # Ignore the third variable
 
     core_const = CoreConst(k_To=298.15, k_Po=101325)
@@ -106,6 +105,9 @@ def test_out_of_bound_output_ns_star(function_test_data):
 
 def test_out_of_bound_output_gammastar(function_test_data):
     """Function to calculate calc_gammastar."""
+    from pyrealm.constants import CoreConst, PModelConst
+    from pyrealm.pmodel.functions import calc_gammastar
+
     tc_ar_values, patm_ar_values, _ = function_test_data
 
     core_const = CoreConst(k_To=298.15, k_Po=101325)
@@ -131,6 +133,8 @@ def test_out_of_bound_output_gammastar(function_test_data):
 
 def test_out_of_bound_output_co2_to_ca(function_test_data):
     """Function to calculate co2_to_ca."""
+    from pyrealm.pmodel.functions import calc_co2_to_ca
+
     _, patm_ar_values, co2_ar_values = function_test_data
 
     co2_to_ca_lower_bound = 0

@@ -8,8 +8,41 @@ authors:
   - given-names: C. David L.
     family-names: Orme
     email: d.orme@imperial.ac.uk
-    affiliation: Imperial College London
+    affiliation: Department of Life Sciences, Imperial College London
     orcid: 'https://orcid.org/0000-0002-7005-1394'
+  - given-names: Alienor
+    family-names: Lavergne
+    email: alienor.lavergne@springernature.com
+    affiliation: Department of Life Sciences, Imperial College London
+  - given-names: Vivienne
+    family-names: Groner
+    email: v.groner@imperial.ac.uk
+    affiliation: Department of Life Sciences, Imperial College London
+  - given-names: Marion
+    family-names: Weinzierl
+    email: mw925@cam.ac.uk
+    affiliation: Institute of Computing for Climate Science, University of Cambridge
+  - given-names: Tianzhang
+    family-names: Cai
+    email: tc684@cam.ac.uk
+    affiliation: Institute of Computing for Climate Science, University of Cambridge
+  - given-names: Surbhi
+    family-names: Goel
+    email: sg2147@cam.ac.uk
+    affiliation: Institute of Computing for Climate Science, University of Cambridge
+  - given-names: Alexander
+    family-names: Smith
+    email: as3402@cam.ac.uk
+    affiliation: Institute of Computing for Climate Science, University of Cambridge
+  - given-names: James
+    family-names: Emberton
+    email: je484@cam.ac.uk
+    affiliation: Institute of Computing for Climate Science, University of Cambridge
+  - given-names: Amy
+    family-names: Pike
+    email: ap766@cam.ac.uk
+    affiliation: Institute of Computing for Climate Science, University of Cambridge
+
 repository-code: 'https://github.com/ImperialCollegeLondon/pyrealm'
 url: 'https://pyrealm.readthedocs.io'
 repository: 'https://pypi.org/project/pyrealm/'

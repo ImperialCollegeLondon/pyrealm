@@ -31,12 +31,12 @@ is used to retrieve a particular implementation from this registry. For example:
 
 
 class OptimalChiABC(ABC):
-    r"""Abstract Base Class for estimating optimal leaf internal CO2 concentration.
+    r"""ABC for estimating optimal leaf internal :math:`\ce{CO2}` concentration.
 
-    This provides a base class for the implementation of alternative approaches to
-    calculating the optimal :math:`\chi` and :math:`\ce{CO2}` limitation factors. All
-    implementations estimate the following values, which are attributes of the resulting
-    class instance.
+    This provides an abstract base class for the implementation of alternative
+    approaches to calculating the optimal :math:`\chi` and :math:`\ce{CO2}` limitation
+    factors. All implementations estimate the following values, which are attributes of
+    the resulting class instance.
 
     - The ratio of carboxylation to transpiration cost factors (``beta``,
       :math:`\beta`).

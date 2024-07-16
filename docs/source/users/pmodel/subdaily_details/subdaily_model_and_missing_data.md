@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.2
+    jupytext_version: 1.16.3
 kernelspec:
   display_name: Python 3
   language: python
@@ -138,7 +138,7 @@ memory_effect(partial_allowed, allow_holdover=True)
 ```
 
 These options do not fix all problems: the best way forward depends partly on the source
-of the missing data and how common it is, as discused below.
+of the missing data and how common it is, as discussed below.
 
 ## Sources of missing data
 

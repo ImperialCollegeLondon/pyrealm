@@ -10,6 +10,7 @@ documentation root, use os.path.abspath to make it absolute, like shown here.
 import os
 import sys
 from dataclasses import dataclass, field
+from datetime import datetime
 
 import sphinxcontrib.bibtex.plugin
 from sphinxcontrib.bibtex.style.referencing import BracketStyle
@@ -23,8 +24,10 @@ sys.path.insert(0, os.path.abspath("../"))
 # -- Project information -----------------------------------------------------
 
 project = "pyrealm: Ecosystem Models in Python"
-copyright = "2020, David Orme"
-author = "David Orme"
+
+current_year = datetime.today().strftime("%Y")
+copyright = "2020-" + current_year + ", Pyrealm Developers"
+author = "Pyrealm Developers"
 
 # The full version, including alpha/beta/rc tags
 version = pyrealm_version
@@ -90,6 +93,7 @@ nitpick_ignore = [
     ("py:class", "numpy._typing._generic_alias.ScalarType"),
     ("py:class", "numpy.float32"),
     ("py:class", "numpy.timedelta64"),
+    ("py:class", "numpy.bool_"),
     ("py:class", "numpy.ndarray"),
     ("py:class", "numpy.dtype"),
     ("py:class", "numpy.dtype[+ScalarType]"),

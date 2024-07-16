@@ -61,7 +61,7 @@ def calc_ftemp_arrh(
     Examples:
         >>> # Relative rate change from 25 to 10 degrees Celsius (percent change)
         >>> round((1.0-calc_ftemp_arrh( 283.15, 100000)) * 100, 4)
-        88.1991
+        np.float64(88.1991)
     """
 
     # Note that the following forms are equivalent:
@@ -107,7 +107,7 @@ def calc_ftemp_inst_rd(
         >>> # Relative percentage instantaneous change in Rd going from 10 to 25 degrees
         >>> val = (calc_ftemp_inst_rd(25) / calc_ftemp_inst_rd(10) - 1) * 100
         >>> round(val, 4)
-        250.9593
+        np.float64(250.9593)
     """
 
     return np.exp(
@@ -172,7 +172,7 @@ def calc_ftemp_inst_vcmax(
         >>> # not acclimatedly) from 10 to 25 degrees (percent change):
         >>> val = ((calc_ftemp_inst_vcmax(25)/calc_ftemp_inst_vcmax(10)-1) * 100)
         >>> round(val, 4)
-        283.1775
+        np.float64(283.1775)
     """
 
     # Convert temperatures to Kelvin
@@ -233,13 +233,13 @@ def calc_ftemp_kphio(
         >>> # degrees celsius (percent change):
         >>> val = (calc_ftemp_kphio(25.0) / calc_ftemp_kphio(5.0) - 1) * 100
         >>> round(val, 5)
-        52.03969
+        np.float64(52.03969)
         >>> # Relative change in the quantum yield efficiency between 5 and 25
         >>> # degrees celsius (percent change) for a C4 plant:
         >>> val = (calc_ftemp_kphio(25.0, c4=True) /
         ...        calc_ftemp_kphio(5.0, c4=True) - 1) * 100
         >>> round(val, 5)
-        432.25806
+        np.float64(432.25806)
     """
 
     if c4:
@@ -338,7 +338,7 @@ def calc_ns_star(
         >>> # Relative viscosity at 20 degrees Celsius and standard
         >>> # atmosphere (in Pa):
         >>> round(calc_ns_star(20, 101325), 5)
-        1.12536
+        np.float64(1.12536)
     """
 
     visc_env = calc_viscosity_h2o(tc, patm, core_const=core_const)
@@ -405,7 +405,7 @@ def calc_kmm(
         >>> # Michaelis-Menten coefficient at 20 degrees Celsius and standard
         >>> # atmosphere (in Pa):
         >>> round(calc_kmm(20, 101325), 5)
-        46.09928
+        np.float64(46.09928)
     """
 
     # Check inputs, return shape not used
@@ -656,7 +656,7 @@ def calc_co2_to_ca(co2: NDArray, patm: NDArray) -> NDArray:
 
     Examples:
         >>> np.round(calc_co2_to_ca(413.03, 101325), 6)
-        41.850265
+        np.float64(41.850265)
     """
 
     return 1.0e-6 * co2 * patm  # Pa, atms. CO2
