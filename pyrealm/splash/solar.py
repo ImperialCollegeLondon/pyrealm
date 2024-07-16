@@ -116,7 +116,7 @@ class DailySolarFluxes:
         self.ru, self.rv = calc_lat_delta_intermediates(self.delta, lat)
 
         # Calculate the sunset hour angle (hs), Eq. 3.22, Stine & Geyer (2001)
-        self.hs = calc_sunset_hour_angle(self.ru, self.rv, self.core_const.k_pir)
+        self.hs = calc_sunset_hour_angle(self.delta, lat, self.core_const.k_pir)
 
         # Calculate daily extraterrestrial solar radiation (ra_d), J/m^2
         # Eq. 1.10.3, Duffy & Beckman (1993)
