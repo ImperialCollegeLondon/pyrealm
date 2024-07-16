@@ -109,11 +109,6 @@ def calc_sunset_hour_angle(delta: NDArray, latitude: NDArray, k_pir: float) -> N
 def _calc_sunset_hour_angle_from_ru_rv(
     ru: NDArray, rv: NDArray, k_pir: float
 ) -> NDArray:
-
-
-def _calc_sunset_hour_angle_from_ru_rv(
-    ru: NDArray, rv: NDArray, k_pir: float
-) -> NDArray:
     """Calculate sunset hour angle from intermediates.
 
     This function calculates the sunset hour angle using Eq3.22, Stine & Geyer (2001).
