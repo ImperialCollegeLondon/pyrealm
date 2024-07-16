@@ -26,7 +26,8 @@ sys.path.insert(0, os.path.abspath("../"))
 project = "pyrealm: Ecosystem Models in Python"
 
 current_year = datetime.today().strftime("%Y")
-author = "David Orme"
+copyright = "2020-" + current_year + ", Pyrealm Developers"
+author = "Pyrealm Developers"
 
 # The full version, including alpha/beta/rc tags
 version = pyrealm_version
