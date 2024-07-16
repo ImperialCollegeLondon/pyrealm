@@ -88,7 +88,7 @@ def calc_lat_delta_intermediates(
     return ru, rv
 
 
-def calc_sunset_hour_angle(ru: NDArray, rv: NDArray, k_pir: float) -> NDArray:
+def calc_sunset_hour_angle(delta: NDArray, lat: NDArray, k_pir: float) -> NDArray:
     """Calculate sunset hour angle.
 
     This function calculates the sunset hour angle using Eq3.22, Stine & Geyer (2001)
@@ -98,10 +98,21 @@ def calc_sunset_hour_angle(ru: NDArray, rv: NDArray, k_pir: float) -> NDArray:
         rv: dimensionless parameter
         k_pir: constant rad to degrees conversion, degrees/rad
     """
+    ru, rv = calc_lat_delta_intermediates(delta, lat)
+    
+    return _calc_sunset_hour_angle_from_ru_rv(ru, rv, k_pir)
+    
+def _calc_sunset_hour_angle_from_ru_rv(ru: NDArray, rv: NDArray, k_pir: float) -> NDArray:
+    """Calculate sunset hour angle from intermediates.
+    
+    This function calculates the sunset hour angle using Eq3.22, Stine & Geyer (2001)
+    Args:
+        ru: dimensionless parameter
+        rv: dimensionless parameter
+        k_pir: constant rad to degrees conversion, degrees/rad
+    """
 
-    angle = np.arccos(-1.0 * np.clip(ru / rv, -1.0, 1.0)) / k_pir
-
-    return angle
+    return np.arccos(-1.0 * np.clip(ru / rv, -1.0, 1.0)) / k_pir
 
 
 def calc_daily_solar_radiation(
