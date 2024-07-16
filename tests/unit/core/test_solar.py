@@ -29,8 +29,8 @@ def test_calc_distance_factor(nu, k_e, expected):
     argvalues=[
         (
             np.array([89.097934]),
-            23.45,
-            0.01745,
+            23.44,
+            np.pi / 180.0,
             np.array([23.436921]),
         )
     ],
@@ -146,7 +146,7 @@ def test_calc_lat_delta_intermediates(delta, lat, expected):
         (
             np.array([0.243228277]),
             np.array([0.725946417]),
-            0.01745,
+            np.pi / 180.0,
             np.array([109.575573]),
         )
     ],
@@ -173,7 +173,7 @@ def test_calc_sunset_hour_angle(ru, rv, k_pir, expected):
             np.array([0.968381]),
             np.array([0.243228277]),
             np.array([0.725946417]),
-            0.01745,
+            np.pi / 180.0,
             np.array([109.575573]),
             np.array([41646763]),
         )
@@ -192,7 +192,7 @@ def test_calc_daily_solar_radiation(rad_const, dr, ru, rv, k_pir, hs, expected):
     assert np.allclose(result, expected)
 
 
-@pytest.mark.parmetrize(
+@pytest.mark.parametrize(
     argnames="k_c, k_d, sf, elv, expected",
     argvalues=[(0.25, 0.5, np.array([1.0]), np.array([142]), np.array([0.752844]))],
 )
@@ -276,7 +276,7 @@ def test_calc_rw(k_alb_sw, tau, k_Gsc, dr, expected):
             np.array([823.4242375]),
             np.array([0.243228277]),
             np.array([0.725946417]),
-            0.01745,
+            np.pi / 180.0,
             np.array([101.217016]),
         )
     ],

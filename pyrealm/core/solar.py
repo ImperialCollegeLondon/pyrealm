@@ -171,7 +171,7 @@ def calc_ppfd(k_fFEC: float, k_alb_vis: float, tau: NDArray, ra_d: NDArray) -> N
         ppfd: photosynthetic photon flux density, mol/m^2
     """
 
-    ppfd = (1.0e6) * k_fFEC * (1.0 - k_alb_vis) * tau * ra_d
+    ppfd = (1.0e-6) * k_fFEC * (1.0 - k_alb_vis) * tau * ra_d
 
     return ppfd
 
