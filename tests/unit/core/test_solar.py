@@ -50,7 +50,7 @@ def test_calc_declination_angle_delta(lambda_, k_eps, k_pir, expected):
 
 
 @pytest.mark.parametrize(
-    argnames="delta,lat, expected",
+    argnames="delta,latitude, expected",
     argvalues=[
         (
             np.array([23.436921]),
@@ -59,7 +59,7 @@ def test_calc_declination_angle_delta(lambda_, k_eps, k_pir, expected):
         ),
     ],
 )
-def test_calc_lat_delta_intermediates(delta, lat, expected):
+def test_calc_lat_delta_intermediates(delta, latitude, expected):
     """Tests calc_lat_delta_intermediates.
 
     This test tests the maths over an applciable range of delta and latitude values.
@@ -67,7 +67,7 @@ def test_calc_lat_delta_intermediates(delta, lat, expected):
 
     from pyrealm.core.solar import calc_lat_delta_intermediates
 
-    result = calc_lat_delta_intermediates(delta, lat)
+    result = calc_lat_delta_intermediates(delta, latitude)
 
     assert np.allclose(result, expected)
 
@@ -166,20 +166,22 @@ def test_calc_sunset_hour_angle(delta, latitude, k_pir, expected):
 
 
 @pytest.mark.parametrize(
-    argnames="rad_const, dr, ru, rv, k_pir, hs, expected",
+    argnames="rad_const, dr, k_pir, hs, delta, latitude, expected",
     argvalues=[
         (
             1360.8,
             np.array([0.968381]),
-            np.array([0.243228277]),
-            np.array([0.725946417]),
             np.pi / 180.0,
             np.array([109.575573]),
+            np.array([23.436921]),
+            np.array([37.7]),
             np.array([41646763]),
         )
     ],
 )
-def test_calc_daily_solar_radiation(rad_const, dr, ru, rv, k_pir, hs, expected):
+def test_calc_daily_solar_radiation(
+    rad_const, dr, k_pir, hs, delta, latitude, expected
+):
     """Tests calc_daily_solar_radiation.
 
     This test is intended to verify the implemented maths
@@ -187,7 +189,7 @@ def test_calc_daily_solar_radiation(rad_const, dr, ru, rv, k_pir, hs, expected):
 
     from pyrealm.core.solar import calc_daily_solar_radiation
 
-    result = calc_daily_solar_radiation(rad_const, dr, ru, rv, k_pir, hs)
+    result = calc_daily_solar_radiation(rad_const, dr, k_pir, hs, delta, latitude)
 
     assert np.allclose(result, expected)
 
@@ -269,19 +271,24 @@ def test_calc_rw(k_alb_sw, tau, k_Gsc, dr, expected):
 
 
 @pytest.mark.parametrize(
-    argnames="rnl, rw, ru, rv, k_pir, expected",
+    argnames="rnl, k_pir, k_alb_sw, tau, k_Gsc, dr, delta, latitude, expected",
     argvalues=[
         (
             84.000000,
-            np.array([823.4242375]),
-            np.array([0.243228277]),
-            np.array([0.725946417]),
             np.pi / 180.0,
+            0.17,
+            np.array([0.752844]),
+            1360.8,
+            np.array([0.968381]),
+            np.array([23.436921]),
+            np.array([37.7]),
             np.array([101.217016]),
         )
     ],
 )
-def test_calc_net_rad_crossover_hour_angle(rnl, rw, ru, rv, k_pir, expected):
+def test_calc_net_rad_crossover_hour_angle(
+    rnl, k_pir, k_alb_sw, tau, k_Gsc, dr, delta, latitude, expected
+):
     """Tests calc_net_rad_crossover_hour_angle.
 
     This test is intended to verify the implemented maths.
@@ -290,11 +297,7 @@ def test_calc_net_rad_crossover_hour_angle(rnl, rw, ru, rv, k_pir, expected):
     from pyrealm.core.solar import calc_net_rad_crossover_hour_angle
 
     result = calc_net_rad_crossover_hour_angle(
-        rnl,
-        rw,
-        ru,
-        rv,
-        k_pir,
+        rnl, k_pir, k_alb_sw, tau, k_Gsc, dr, delta, latitude
     )
 
     assert np.allclose(result, expected)

@@ -11,10 +11,16 @@ from pyrealm.constants import CoreConst
 from pyrealm.core.calendar import Calendar
 from pyrealm.core.solar import (
     calc_daily_solar_radiation,
+    calc_daytime_net_radiation,
     calc_declination_angle_delta,
     calc_distance_factor,
     calc_heliocentric_longitudes,
     calc_lat_delta_intermediates,
+    calc_net_rad_crossover_hour_angle,
+    calc_nighttime_net_radiation,
+    calc_ppfd,
+    calc_rnl,
+    calc_rw,
     calc_sunset_hour_angle,
     calc_transmissivity,
 )
@@ -112,7 +118,6 @@ class DailySolarFluxes:
         self.dr = np.expand_dims(dr, axis=expand_dims)
         self.delta = np.expand_dims(delta, axis=expand_dims)
 
-        # Calculate variable substitutes (u and v), unitless
         self.ru, self.rv = calc_lat_delta_intermediates(self.delta, lat)
 
         # Calculate the sunset hour angle (hs), Eq. 3.22, Stine & Geyer (2001)
@@ -123,10 +128,10 @@ class DailySolarFluxes:
         self.ra_d = calc_daily_solar_radiation(
             self.core_const.k_Gsc,
             self.dr,
-            self.ru,
-            self.rv,
             self.core_const.k_pir,
             self.hs,
+            self.delta,
+            lat,
         )
 
         # Calculate transmittivity (tau), unitless
@@ -135,50 +140,54 @@ class DailySolarFluxes:
             self.core_const.k_c, self.core_const.k_d, sf, elv
         )
 
+        self.rw = calc_rw(
+            self.core_const.k_alb_sw, self.tau, self.core_const.k_Gsc, self.dr
+        )
+
         # Calculate daily PPFD (ppfd_d), mol/m^2
-        self.ppfd_d = (
-            (1.0e-6)
-            * self.core_const.k_fFEC
-            * (1.0 - self.core_const.k_alb_vis)
-            * self.tau
-            * self.ra_d
+        self.ppfd_d = calc_ppfd(
+            self.core_const.k_fFEC, self.core_const.k_alb_vis, self.tau, self.ra_d
         )
 
         # Estimate net longwave radiation (rnl), W/m^2
         # Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
-        self.rnl = (self.core_const.k_b + (1.0 - self.core_const.k_b) * sf) * (
-            self.core_const.k_A - tc
-        )
-
-        # Calculate variable substitute (rw), W/m^2
-        self.rw = (
-            (1.0 - self.core_const.k_alb_sw)
-            * self.tau
-            * self.core_const.k_Gsc
-            * self.dr
-        )
+        self.rnl = calc_rnl(self.core_const.k_b, sf, self.core_const.k_A, tc)
 
         # Calculate net radiation cross-over hour angle (hn), degrees
-        self.hn = (
-            np.arccos(
-                np.clip((self.rnl - self.rw * self.ru) / (self.rw * self.rv), -1.0, 1.0)
-            )
-            / self.core_const.k_pir
+        self.hn = calc_net_rad_crossover_hour_angle(
+            self.rnl,
+            self.core_const.k_pir,
+            self.core_const.k_alb_sw,
+            self.tau,
+            self.core_const.k_Gsc,
+            self.dr,
+            self.delta,
+            lat,
         )
 
         # Calculate daytime net radiation (rn_d), J/m^2
-        self.rn_d = (86400.0 / np.pi) * (
-            self.hn * self.core_const.k_pir * (self.rw * self.ru - self.rnl)
-            + self.rw * self.rv * np.sin(np.deg2rad(self.hn))
+        self.rn_d = calc_daytime_net_radiation(
+            self.hn,
+            self.core_const.k_pir,
+            self.rnl,
+            self.delta,
+            lat,
+            self.core_const.k_alb_sw,
+            self.tau,
+            self.core_const.k_Gsc,
+            self.dr,
         )
 
         # Calculate nighttime net radiation (rnn_d), J/m^2
-        self.rnn_d = (
-            (
-                self.rw
-                * self.rv
-                * (np.sin(np.deg2rad(self.hs)) - np.sin(np.deg2rad(self.hn)))
-            )
-            + (self.rw * self.ru * self.core_const.k_pir * (self.hs - self.hn))
-            - (self.rnl * (np.pi - self.core_const.k_pir * self.hn))
-        ) * (86400.0 / np.pi)
+        self.rnn_d = calc_nighttime_net_radiation(
+            self.core_const.k_pir,
+            self.rnl,
+            self.hn,
+            self.hs,
+            self.delta,
+            lat,
+            self.core_const.k_alb_sw,
+            self.tau,
+            self.core_const.k_Gsc,
+            self.dr,
+        )
