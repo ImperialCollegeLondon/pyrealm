@@ -211,7 +211,11 @@ class SubdailyPModel:
           function be allowed to hold over values to fill missing values.
         allow_partial_data: Should estimates of daily optimal conditions be calculated
           with missing values in the acclimation window.
-        kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -).
+        kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -). Note
+            that :math:`\phi_0` is sometimes used to refer to the quantum yield of
+            electron transfer, which is exactly four times larger, so check definitions
+            here. This is often a single global value, but the argument also accepts
+            externally calculated per-observation estimates of kphio.
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.
     """

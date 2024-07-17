@@ -145,7 +145,9 @@ class PModel:
         kphio: (Optional) The quantum yield efficiency of photosynthesis
             (:math:`\phi_0`, unitless). Note that :math:`\phi_0` is sometimes used to
             refer to the quantum yield of electron transfer, which is exactly four times
-            larger, so check definitions here.
+            larger, so check definitions here. This is often a single global value, but
+            the argument also accepts externally calculated per-observation estimates of
+            kphio.
         method_optchi: (Optional, default=`prentice14`) Selects the method to be
             used for calculating optimal :math:`chi`. The choice of method also sets the
             choice of  C3 or C4 photosynthetic pathway (see
