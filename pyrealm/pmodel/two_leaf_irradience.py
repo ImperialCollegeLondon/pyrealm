@@ -7,7 +7,12 @@ from pyrealm.constants.two_leaf_canopy import TwoLeafConst
 
 
 class TwoLeafIrradience:
-    """Calculates daytime and nighttime net radiation using the two-leaf model.
+    """Running the two leaf, two stream model within Pyrealm.
+
+    This class implements the methodology of Pury and Farquhar (1997)
+    :cite:p:`Pury&Farquhar:1997` two leaf, two stream model. This model is chosen to
+    provide a better representation than the big leaf model and to align closely to
+    the workings of the BESS model (Ryuet al. 2011):cite:p:`Ryu_et_al:2011`.
 
     Args:
         beta_angle (NDArray): Array of beta angles (radians).
