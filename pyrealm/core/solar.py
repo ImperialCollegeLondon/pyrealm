@@ -7,24 +7,6 @@ from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
 
-# from pyrealm.splash.const import (
-#     kA,
-#     kalb_sw,
-#     kalb_vis,
-#     kb,
-#     kc,
-#     kd,
-#     ke,
-#     keps,
-#     kfFEC,
-#     kGsc,
-#     komega,
-#     pir,
-# )
-
-
-# plan to move individual functions from splash.solar.py here for general use
-
 
 def calc_distance_factor(nu: NDArray, k_e: float) -> NDArray:
     """Calculate distance factor.
