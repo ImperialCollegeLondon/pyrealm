@@ -1,5 +1,15 @@
 [tool.poetry]
-authors = ["David Orme <d.orme@imperial.ac.uk>"]
+authors = [
+  "David Orme <d.orme@imperial.ac.uk>",
+  "Alienor Lavergne <alienor.lavergne@springernature.com>",
+  "Vivienne Groner <v.groner@imperial.ac.uk>",
+  "Marion Weinzierl <mw925@cam.ac.uk>",
+  "Tianzhang Cai <tc684@cam.ac.uk>",
+  "Surbhi Goel <sg2147@cam.ac.uk>",
+  "Alexander Smith <as3402@cam.ac.uk>",
+  "James Emberton <je484@cam.ac.uk>",
+  "Amy Pike <ap766@cam.ac.uk>",
+]
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
@@ -8,7 +18,7 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Development Status :: 4 - Beta",
 ]
-description = "Python implementations of REALM models"
+description = "Python tools for modelling plant productivity and demography."
 homepage = "https://pyrealm.readthedocs.io/"
 license = "MIT"
 name = "pyrealm"
@@ -17,12 +27,12 @@ packages = [
   {include = "pyrealm_build_data", format = "sdist"},
 ]
 readme = "README.md"
-repository = "https://github.com/davidorme/pyrealm"
-version = "0.10.1"
+repository = "https://github.com/ImperialCollegeLondon/pyrealm"
+version = "1.0.0"
 
 [tool.poetry.dependencies]
 dacite = "^1.6.0" 
-numpy = "^1.16.5" 
+numpy = "^2.0.0" 
 python = ">=3.10"
 scipy = "^1.7.3" 
 tabulate = "^0.8.10" 
@@ -63,7 +73,7 @@ xarray = "^2023.4.0"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
-requires = ["poetry-core>=1.2.0"]
+requires = ["poetry-core>=1.8.2"]
 
 [tool.mypy]
 disallow_incomplete_defs = true
@@ -118,6 +128,7 @@ select = [
   "I", # isort
   "UP", # pyupgrade
   "RUF", # RUF specific checks
+  "NPY201"
 ]
 
 # On top of the Google convention, disable:

@@ -242,7 +242,7 @@
 <text text-anchor="middle" x="1416.5" y="-554" font-family="Arial" font-size="10.00" fill="#0d0e73">4×</text>
 </g>
 <!-- 97 -->
-<g id="node10" class="node">
+<g id="node2" class="node">
 <title>97</title>
 <g id="a_node10"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/pmodel/pmodel.py">
 <polygon fill="#0d367e" stroke="#0d367e" points="1024,-634 861,-634 861,-582 1024,-582 1024,-634"/>
@@ -321,7 +321,7 @@
 <text text-anchor="middle" x="1559.5" y="-657" font-family="Arial" font-size="10.00" fill="#0d0f73">0.55%</text>
 <text text-anchor="middle" x="1559.5" y="-646" font-family="Arial" font-size="10.00" fill="#0d0f73">1×</text>
 </g>
-<!-- 127 -->
+<!-- 1010 -->
 <g id="node14" class="node">
 <title>127</title>
 <g id="a_node14"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/pmodel/optimal_chi.py">
@@ -678,7 +678,7 @@
 <text text-anchor="middle" x="2398.5" y="-355" font-family="Arial" font-size="10.00" fill="#0d1f78">4×</text>
 </g>
 <!-- 103 -->
-<g id="node24" class="node">
+<g id="node19" class="node">
 <title>103</title>
 <g id="a_node24"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/core/water.py">
 <polygon fill="#0d1e78" stroke="#0d1e78" points="2518.5,-236 2356.5,-236 2356.5,-184 2518.5,-184 2518.5,-236"/>
@@ -689,7 +689,107 @@
 </a>
 </g>
 </g>
-<!-- 149 -->
+<!-- 58&#45;&gt;103 -->
+<g id="edge15" class="edge">
+<title>58&#45;&gt;103</title>
+<path fill="none" stroke="#0c688a" stroke-width="0.73" d="M2069.86,-592.13C2011.88,-580.56 1931.2,-563.13 1857.2,-542.15"/>
+<polygon fill="#0c688a" stroke="#0c688a" stroke-width="0.73" points="1857.33,-540.62 1852.78,-540.89 1856.5,-543.52 1857.33,-540.62"/>
+<text text-anchor="middle" x="1993.58" y="-565" font-family="Arial" font-size="10.00" fill="#0c688a">18.14%</text>
+<text text-anchor="middle" x="1993.58" y="-554" font-family="Arial" font-size="10.00" fill="#0c688a">2×</text>
+</g>
+<!-- 104 -->
+<g id="node20" class="node">
+<title>104</title>
+<g id="a_node20"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/pmodel/functions.py">
+<polygon fill="#0d1074" stroke="#0d1074" points="2376.58,-542 2230.58,-542 2230.58,-490 2376.58,-490 2376.58,-542"/>
+<text text-anchor="middle" x="2303.58" y="-530" font-family="Arial" font-size="10.00" fill="#ffffff">functions:644:calc_co2_to_ca</text>
+<text text-anchor="middle" x="2303.58" y="-519" font-family="Arial" font-size="10.00" fill="#ffffff">0.72%</text>
+<text text-anchor="middle" x="2303.58" y="-508" font-family="Arial" font-size="10.00" fill="#ffffff">(0.72%)</text>
+<text text-anchor="middle" x="2303.58" y="-497" font-family="Arial" font-size="10.00" fill="#ffffff">2×</text>
+</a>
+</g>
+</g>
+<!-- 58&#45;&gt;104 -->
+<g id="edge16" class="edge">
+<title>58&#45;&gt;104</title>
+<path fill="none" stroke="#0d1074" stroke-width="0.5" d="M2191.75,-581.93C2212.16,-570.08 2236.54,-555.92 2257.33,-543.86"/>
+<polygon fill="#0d1074" stroke="#0d1074" stroke-width="0.5" points="2257.95,-544.91 2260.36,-542.09 2256.72,-542.79 2257.95,-544.91"/>
+<text text-anchor="middle" x="2258.58" y="-565" font-family="Arial" font-size="10.00" fill="#0d1074">0.72%</text>
+<text text-anchor="middle" x="2258.58" y="-554" font-family="Arial" font-size="10.00" fill="#0d1074">2×</text>
+</g>
+<!-- 103&#45;&gt;54 -->
+<g id="edge48" class="edge">
+<title>103&#45;&gt;54</title>
+<path fill="none" stroke="#0c688a" stroke-width="0.72" d="M1718.2,-491.33C1716.65,-490.87 1715.11,-490.43 1713.58,-490 1634.01,-467.67 1610.62,-471.75 1529.31,-450.17"/>
+<polygon fill="#0c688a" stroke="#0c688a" stroke-width="0.72" points="1529.43,-448.65 1524.89,-448.99 1528.65,-451.56 1529.43,-448.65"/>
+<text text-anchor="middle" x="1696.58" y="-473" font-family="Arial" font-size="10.00" fill="#0c688a">18.10%</text>
+<text text-anchor="middle" x="1696.58" y="-462" font-family="Arial" font-size="10.00" fill="#0c688a">4×</text>
+</g>
+<!-- 59 -->
+<g id="node21" class="node">
+<title>59</title>
+<g id="a_node21"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/pmodel/optimal_chi.py">
+<polygon fill="#0d1b77" stroke="#0d1b77" points="969.58,-542 853.58,-542 853.58,-490 969.58,-490 969.58,-542"/>
+<text text-anchor="middle" x="911.58" y="-530" font-family="Arial" font-size="10.00" fill="#ffffff">optimal_chi:95:__init__</text>
+<text text-anchor="middle" x="911.58" y="-519" font-family="Arial" font-size="10.00" fill="#ffffff">3.26%</text>
+<text text-anchor="middle" x="911.58" y="-508" font-family="Arial" font-size="10.00" fill="#ffffff">(0.00%)</text>
+<text text-anchor="middle" x="911.58" y="-497" font-family="Arial" font-size="10.00" fill="#ffffff">4×</text>
+</a>
+</g>
+</g>
+<!-- 62 -->
+<g id="node22" class="node">
+<title>62</title>
+<g id="a_node22"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/pmodel/optimal_chi.py">
+<polygon fill="#0d1a77" stroke="#0d1a77" points="876.08,-450 733.08,-450 733.08,-398 876.08,-398 876.08,-450"/>
+<text text-anchor="middle" x="804.58" y="-438" font-family="Arial" font-size="10.00" fill="#ffffff">optimal_chi:253:estimate_chi</text>
+<text text-anchor="middle" x="804.58" y="-427" font-family="Arial" font-size="10.00" fill="#ffffff">3.23%</text>
+<text text-anchor="middle" x="804.58" y="-416" font-family="Arial" font-size="10.00" fill="#ffffff">(3.23%)</text>
+<text text-anchor="middle" x="804.58" y="-405" font-family="Arial" font-size="10.00" fill="#ffffff">4×</text>
+</a>
+</g>
+</g>
+<!-- 59&#45;&gt;62 -->
+<g id="edge18" class="edge">
+<title>59&#45;&gt;62</title>
+<path fill="none" stroke="#0d1776" stroke-width="0.5" d="M882.94,-490C871.67,-480.25 858.58,-469.03 846.58,-459 843.99,-456.84 841.29,-454.61 838.58,-452.38"/>
+<polygon fill="#0d1776" stroke="#0d1776" stroke-width="0.5" points="839.34,-451.42 835.86,-450.15 837.79,-453.31 839.34,-451.42"/>
+<text text-anchor="middle" x="886.58" y="-473" font-family="Arial" font-size="10.00" fill="#0d1776">2.37%</text>
+<text text-anchor="middle" x="886.58" y="-462" font-family="Arial" font-size="10.00" fill="#0d1776">3×</text>
+</g>
+<!-- 168 -->
+<g id="node23" class="node">
+<title>168</title>
+<g id="a_node23"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/pmodel/optimal_chi.py">
+<polygon fill="#0d1074" stroke="#0d1074" points="1028.08,-450 885.08,-450 885.08,-398 1028.08,-398 1028.08,-450"/>
+<text text-anchor="middle" x="956.58" y="-438" font-family="Arial" font-size="10.00" fill="#ffffff">optimal_chi:385:estimate_chi</text>
+<text text-anchor="middle" x="956.58" y="-427" font-family="Arial" font-size="10.00" fill="#ffffff">0.89%</text>
+<text text-anchor="middle" x="956.58" y="-416" font-family="Arial" font-size="10.00" fill="#ffffff">(0.77%)</text>
+<text text-anchor="middle" x="956.58" y="-405" font-family="Arial" font-size="10.00" fill="#ffffff">1×</text>
+</a>
+</g>
+</g>
+<!-- 59&#45;&gt;168 -->
+<g id="edge19" class="edge">
+<title>59&#45;&gt;168</title>
+<path fill="none" stroke="#0d1074" stroke-width="0.5" d="M924.11,-489.93C929.77,-478.61 936.48,-465.19 942.33,-453.5"/>
+<polygon fill="#0d1074" stroke="#0d1074" stroke-width="0.5" points="943.48,-453.93 943.95,-450.25 941.29,-452.83 943.48,-453.93"/>
+<text text-anchor="middle" x="953.58" y="-473" font-family="Arial" font-size="10.00" fill="#0d1074">0.89%</text>
+<text text-anchor="middle" x="953.58" y="-462" font-family="Arial" font-size="10.00" fill="#0d1074">1×</text>
+</g>
+<!-- 60 -->
+<g id="node24" class="node">
+<title>60</title>
+<g id="a_node24"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/pmodel/competition.py">
+<polygon fill="#0d1375" stroke="#0d1375" points="2876.58,-634 2754.58,-634 2754.58,-582 2876.58,-582 2876.58,-634"/>
+<text text-anchor="middle" x="2815.58" y="-622" font-family="Arial" font-size="10.00" fill="#ffffff">competition:182:__init__</text>
+<text text-anchor="middle" x="2815.58" y="-611" font-family="Arial" font-size="10.00" fill="#ffffff">1.53%</text>
+<text text-anchor="middle" x="2815.58" y="-600" font-family="Arial" font-size="10.00" fill="#ffffff">(0.39%)</text>
+<text text-anchor="middle" x="2815.58" y="-589" font-family="Arial" font-size="10.00" fill="#ffffff">1×</text>
+</a>
+</g>
+</g>
+<!-- 172 -->
 <g id="node25" class="node">
 <title>149</title>
 <g id="a_node25"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/core/utilities.py">
@@ -725,7 +825,7 @@
 <text text-anchor="middle" x="2451.5" y="-259" font-family="Arial" font-size="10.00" fill="#0d1e78">4.07%</text>
 <text text-anchor="middle" x="2451.5" y="-248" font-family="Arial" font-size="10.00" fill="#0d1e78">4×</text>
 </g>
-<!-- 151 -->
+<!-- 1019 -->
 <g id="node27" class="node">
 <title>151</title>
 <g id="a_node27"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/core/water.py">
@@ -794,18 +894,6 @@
 <text text-anchor="middle" x="2862.5" y="-554" font-family="Arial" font-size="10.00" fill="#0d0f74">1×</text>
 </g>
 <!-- 1866 -->
-<<<<<<< HEAD
-<!-- 1866 -->
-<g id="node29" class="node">
-<title>1866</title>
-<title>1866</title>
-<g id="a_node29"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/core/hygro.py">
-<polygon fill="#0d0f74" stroke="#0d0f74" points="2633,-450 2453,-450 2453,-398 2633,-398 2633,-450"/>
-<text text-anchor="middle" x="2543" y="-438" font-family="Arial" font-size="10.00" fill="#ffffff">hygro:210:calc_enthalpy_vaporisation</text>
-<text text-anchor="middle" x="2543" y="-427" font-family="Arial" font-size="10.00" fill="#ffffff">0.59%</text>
-<text text-anchor="middle" x="2543" y="-416" font-family="Arial" font-size="10.00" fill="#ffffff">(0.59%)</text>
-<text text-anchor="middle" x="2543" y="-405" font-family="Arial" font-size="10.00" fill="#ffffff">2×</text>
-=======
 <g id="node30" class="node">
 <title>1866</title>
 <g id="a_node30"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/core/hygro.py">
@@ -814,17 +902,12 @@
 <text text-anchor="middle" x="2671.5" y="-427" font-family="Arial" font-size="10.00" fill="#ffffff">0.56%</text>
 <text text-anchor="middle" x="2671.5" y="-416" font-family="Arial" font-size="10.00" fill="#ffffff">(0.56%)</text>
 <text text-anchor="middle" x="2671.5" y="-405" font-family="Arial" font-size="10.00" fill="#ffffff">2×</text>
->>>>>>> 0ec30c2 (Auto-generated profiling results [skip actions])
 </a>
 </g>
 </g>
 <!-- 106&#45;&gt;1866 -->
-<<<<<<< HEAD
 <!-- 106&#45;&gt;1866 -->
 <g id="edge34" class="edge">
-=======
-<g id="edge35" class="edge">
->>>>>>> 0ec30c2 (Auto-generated profiling results [skip actions])
 <title>106&#45;&gt;1866</title>
 <path fill="none" stroke="#0d0e73" stroke-width="0.5" d="M2749.95,-581.83C2744.91,-557.45 2735.47,-519.88 2720.5,-490 2713.96,-476.95 2704.73,-463.86 2696.04,-452.87"/>
 <polygon fill="#0d0e73" stroke="#0d0e73" stroke-width="0.5" points="2696.98,-452.1 2693.84,-450.13 2695.07,-453.63 2696.98,-452.1"/>
@@ -832,7 +915,6 @@
 <text text-anchor="middle" x="2753.5" y="-508" font-family="Arial" font-size="10.00" fill="#0d0e73">1×</text>
 </g>
 <!-- 1867 -->
-<<<<<<< HEAD
 <!-- 1867 -->
 <g id="node30" class="node">
 <title>1867</title>
@@ -843,26 +925,12 @@
 <text text-anchor="middle" x="2395" y="-519" font-family="Arial" font-size="10.00" fill="#ffffff">1.56%</text>
 <text text-anchor="middle" x="2395" y="-508" font-family="Arial" font-size="10.00" fill="#ffffff">(0.25%)</text>
 <text text-anchor="middle" x="2395" y="-497" font-family="Arial" font-size="10.00" fill="#ffffff">1×</text>
-=======
-<g id="node31" class="node">
-<title>1867</title>
-<g id="a_node31"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/core/hygro.py">
-<polygon fill="#0d1375" stroke="#0d1375" points="2715.5,-542 2525.5,-542 2525.5,-490 2715.5,-490 2715.5,-542"/>
-<text text-anchor="middle" x="2620.5" y="-530" font-family="Arial" font-size="10.00" fill="#ffffff">hygro:259:calc_psychrometric_constant</text>
-<text text-anchor="middle" x="2620.5" y="-519" font-family="Arial" font-size="10.00" fill="#ffffff">1.48%</text>
-<text text-anchor="middle" x="2620.5" y="-508" font-family="Arial" font-size="10.00" fill="#ffffff">(0.24%)</text>
-<text text-anchor="middle" x="2620.5" y="-497" font-family="Arial" font-size="10.00" fill="#ffffff">1×</text>
->>>>>>> 0ec30c2 (Auto-generated profiling results [skip actions])
 </a>
 </g>
 </g>
 <!-- 106&#45;&gt;1867 -->
-<<<<<<< HEAD
 <!-- 106&#45;&gt;1867 -->
 <g id="edge35" class="edge">
-=======
-<g id="edge36" class="edge">
->>>>>>> 0ec30c2 (Auto-generated profiling results [skip actions])
 <title>106&#45;&gt;1867</title>
 <path fill="none" stroke="#0d1375" stroke-width="0.5" d="M2712.39,-581.91C2707.67,-578.96 2702.96,-575.95 2698.5,-573 2684.8,-563.94 2670.08,-553.56 2657.17,-544.21"/>
 <polygon fill="#0d1375" stroke="#0d1375" stroke-width="0.5" points="2657.83,-543.17 2654.27,-542.11 2656.39,-545.16 2657.83,-543.17"/>
@@ -1177,17 +1245,37 @@
 <text text-anchor="middle" x="2173.5" y="-657" font-family="Arial" font-size="10.00" fill="#0c9a80">29.56%</text>
 <text text-anchor="middle" x="2173.5" y="-646" font-family="Arial" font-size="10.00" fill="#0c9a80">1×</text>
 </g>
-<!-- 890 -->
-<g id="node58" class="node">
-<title>890</title>
-<g id="a_node58"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/splash/splash.py">
-<polygon fill="#0d2d7c" stroke="#0d2d7c" points="1631,-634 1436,-634 1436,-582 1631,-582 1631,-634"/>
-<text text-anchor="middle" x="1533.5" y="-622" font-family="Arial" font-size="10.00" fill="#ffffff">splash:110:estimate_initial_soil_moisture</text>
-<text text-anchor="middle" x="1533.5" y="-611" font-family="Arial" font-size="10.00" fill="#ffffff">7.32%</text>
-<text text-anchor="middle" x="1533.5" y="-600" font-family="Arial" font-size="10.00" fill="#ffffff">(0.01%)</text>
-<text text-anchor="middle" x="1533.5" y="-589" font-family="Arial" font-size="10.00" fill="#ffffff">1×</text>
-</a>
+<!-- 106&#45;&gt;56 -->
+<g id="edge54" class="edge">
+<title>106&#45;&gt;56</title>
+<path fill="none" stroke="#0d317d" stroke-width="0.5" d="M2312.5,-675.05C2310.17,-674.68 2307.86,-674.33 2305.58,-674 2249.14,-665.82 2232.44,-680.56 2177.58,-665 2157.3,-659.25 2155.86,-648.72 2135.58,-643 2115.83,-637.43 1855.42,-621.82 1716.91,-613.84"/>
+<polygon fill="#0d317d" stroke="#0d317d" stroke-width="0.5" points="1716.81,-612.61 1713.25,-613.63 1716.67,-615.05 1716.81,-612.61"/>
+<text text-anchor="middle" x="2191.58" y="-657" font-family="Arial" font-size="10.00" fill="#0d317d">8.15%</text>
+<text text-anchor="middle" x="2191.58" y="-646" font-family="Arial" font-size="10.00" fill="#0d317d">2×</text>
 </g>
+<!-- 106&#45;&gt;60 -->
+<g id="edge55" class="edge">
+<title>106&#45;&gt;60</title>
+<path fill="none" stroke="#0d1375" stroke-width="0.5" d="M2524.66,-675.78C2528.34,-675.15 2531.99,-674.56 2535.58,-674 2576.62,-667.65 2587.67,-672.13 2628.58,-665 2683.69,-655.39 2697.27,-650.96 2750.58,-634 2750.74,-633.95 2750.89,-633.9 2751.05,-633.85"/>
+<polygon fill="#0d1375" stroke="#0d1375" stroke-width="0.5" points="2751.46,-635 2754.41,-632.76 2750.7,-632.67 2751.46,-635"/>
+<text text-anchor="middle" x="2733.58" y="-657" font-family="Arial" font-size="10.00" fill="#0d1375">1.53%</text>
+<text text-anchor="middle" x="2733.58" y="-646" font-family="Arial" font-size="10.00" fill="#0d1375">1×</text>
+</g>
+<!-- 106&#45;&gt;68 -->
+<g id="edge56" class="edge">
+<title>145&#45;&gt;142</title>
+<path fill="none" stroke="#0d4983" stroke-width="0.51" d="M1487.62,-489.93C1461.58,-478.03 1430.45,-463.81 1403.96,-451.71"/>
+<polygon fill="#0d4983" stroke="#0d4983" stroke-width="0.51" points="1404.22,-450.44 1400.42,-450.09 1403.17,-452.73 1404.22,-450.44"/>
+<text text-anchor="middle" x="1484.5" y="-473" font-family="Arial" font-size="10.00" fill="#0d4983">12.74%</text>
+<text text-anchor="middle" x="1484.5" y="-462" font-family="Arial" font-size="10.00" fill="#0d4983">1463×</text>
+</g>
+<!-- 149&#45;&gt;1001 -->
+<g id="edge60" class="edge">
+<title>149&#45;&gt;1001</title>
+<path fill="none" stroke="#0d0d73" stroke-width="0.5" d="M2436.68,-408.11C2418.1,-404.52 2398.1,-400.9 2379.5,-398 2102.46,-354.87 1769.06,-321.33 1634.83,-308.58"/>
+<polygon fill="#0d0d73" stroke="#0d0d73" stroke-width="0.5" points="1634.9,-307.36 1631.3,-308.25 1634.67,-309.8 1634.9,-307.36"/>
+<text text-anchor="middle" x="2328.5" y="-366" font-family="Arial" font-size="10.00" fill="#0d0d73">0.13%</text>
+<text text-anchor="middle" x="2328.5" y="-355" font-family="Arial" font-size="10.00" fill="#0d0d73">1×</text>
 </g>
 <!-- 1660&#45;&gt;890 -->
 <g id="edge104" class="edge">
@@ -1197,15 +1285,15 @@
 <text text-anchor="middle" x="1614.5" y="-657" font-family="Arial" font-size="10.00" fill="#0d2d7c">7.32%</text>
 <text text-anchor="middle" x="1614.5" y="-646" font-family="Arial" font-size="10.00" fill="#0d2d7c">1×</text>
 </g>
-<!-- 991 -->
-<g id="node64" class="node">
-<title>991</title>
-<g id="a_node64"><a xlink:title="/home/runner/work/pyrealm/pyrealm/pyrealm/splash/splash.py">
-<polygon fill="#0d2f7c" stroke="#0d2f7c" points="1809,-634 1640,-634 1640,-582 1809,-582 1809,-634"/>
-<text text-anchor="middle" x="1724.5" y="-622" font-family="Arial" font-size="10.00" fill="#ffffff">splash:287:calculate_soil_moisture</text>
-<text text-anchor="middle" x="1724.5" y="-611" font-family="Arial" font-size="10.00" fill="#ffffff">7.58%</text>
-<text text-anchor="middle" x="1724.5" y="-600" font-family="Arial" font-size="10.00" fill="#ffffff">(0.11%)</text>
-<text text-anchor="middle" x="1724.5" y="-589" font-family="Arial" font-size="10.00" fill="#ffffff">1×</text>
+<!-- 229 -->
+<g id="node49" class="node">
+<title>188</title>
+<g id="a_node49"><a xlink:title="/home/runner/.cache/pypoetry/virtualenvs/pyrealm&#45;vVLSS9B3&#45;py3.10/lib/python3.10/site&#45;packages/_pytest/python.py">
+<polygon fill="#dcce05" stroke="#dcce05" points="1381,-940 1232,-940 1232,-888 1381,-888 1381,-940"/>
+<text text-anchor="middle" x="1306.5" y="-928" font-family="Arial" font-size="10.00" fill="#ffffff">python:187:pytest_pyfunc_call</text>
+<text text-anchor="middle" x="1306.5" y="-917" font-family="Arial" font-size="10.00" fill="#ffffff">76.65%</text>
+<text text-anchor="middle" x="1306.5" y="-906" font-family="Arial" font-size="10.00" fill="#ffffff">(0.19%)</text>
+<text text-anchor="middle" x="1306.5" y="-895" font-family="Arial" font-size="10.00" fill="#ffffff">3×</text>
 </a>
 </g>
 </g>
@@ -1728,7 +1816,6 @@
 <!-- 1122 -->
 <g id="node74" class="node">
 <title>1122</title>
-<<<<<<< HEAD
 <title>1122</title>
 <g id="a_node73"><a xlink:title="/home/runner/.cache/pypoetry/virtualenvs/pyrealm&#45;vVLSS9B3&#45;py3.10/lib/python3.10/site&#45;packages/_pytest/runner.py">
 <polygon fill="#ff0000" stroke="#ff0000" points="2967.5,-634 2836.5,-634 2836.5,-582 2967.5,-582 2967.5,-634"/>
@@ -1736,14 +1823,6 @@
 <text text-anchor="middle" x="2902" y="-611" font-family="Arial" font-size="10.00" fill="#ffffff">99.98%</text>
 <text text-anchor="middle" x="2902" y="-600" font-family="Arial" font-size="10.00" fill="#ffffff">(0.00%)</text>
 <text text-anchor="middle" x="2902" y="-589" font-family="Arial" font-size="10.00" fill="#ffffff">9×</text>
-=======
-<g id="a_node74"><a xlink:title="/home/runner/.cache/pypoetry/virtualenvs/pyrealm&#45;vVLSS9B3&#45;py3.10/lib/python3.10/site&#45;packages/_pytest/runner.py">
-<polygon fill="#ff0000" stroke="#ff0000" points="3362,-634 3231,-634 3231,-582 3362,-582 3362,-634"/>
-<text text-anchor="middle" x="3296.5" y="-622" font-family="Arial" font-size="10.00" fill="#ffffff">runner:219:call_and_report</text>
-<text text-anchor="middle" x="3296.5" y="-611" font-family="Arial" font-size="10.00" fill="#ffffff">99.98%</text>
-<text text-anchor="middle" x="3296.5" y="-600" font-family="Arial" font-size="10.00" fill="#ffffff">(0.00%)</text>
-<text text-anchor="middle" x="3296.5" y="-589" font-family="Arial" font-size="10.00" fill="#ffffff">9×</text>
->>>>>>> 0ec30c2 (Auto-generated profiling results [skip actions])
 </a>
 </g>
 </g>
