@@ -125,6 +125,36 @@ def _calc_sunset_hour_angle_from_ru_rv(
 
 
 def calc_daily_solar_radiation(
+    rad_const: float,
+    dr: NDArray,
+    k_pir: float,
+    hs: NDArray,
+    delta: NDArray,
+    latitude: NDArray,
+) -> NDArray:
+    """Calculate daily extraterrestrial solar radiation (J/m^2).
+
+    This function calculates the daily extraterrestrial solar radition (J/m^2)
+    using Eq. 1.10.3, Duffy & Beckman (1993)
+
+    Args:
+        rad_const: planetary radiation constant, W/m^2
+        dr: dimensionless distance factor
+        k_pir: radians to degrees conversion, degrees/rad
+        hs: local hour angle, degrees
+        delta: solar declination delta
+        latitude: site latitude(s)
+
+
+    Returns:
+        ra_d: daily solar radiation, J/m^2
+    """
+    ru, rv = calc_lat_delta_intermediates(delta, latitude)
+
+    return _calc_daily_solar_radiation(rad_const, dr, ru, rv, k_pir, hs)
+
+
+def _calc_daily_solar_radiation(
     rad_const: float, dr: NDArray, ru: NDArray, rv: NDArray, k_pir: float, hs: NDArray
 ) -> NDArray:
     """Calculate daily extraterrestrial solar radiation (J/m^2).
@@ -235,6 +265,41 @@ def calc_rw(k_alb_sw: float, tau: NDArray, k_Gsc: float, dr: NDArray) -> NDArray
 
 
 def calc_net_rad_crossover_hour_angle(
+    rnl: NDArray,
+    k_pir: float,
+    k_alb_sw: float,
+    tau: NDArray,
+    k_Gsc: float,
+    dr: NDArray,
+    delta: NDArray,
+    latitude: NDArray,
+) -> NDArray:
+    """Calculates the net radiation crossover hour angle, degrees.
+
+    This function calculates the net radiation crossover hour angle in degrees.
+
+    Args:
+        rnl: net longwave radiation, W/m^2
+        k_pir: conversion factor from radians to degrees
+        k_alb_sw: shortwave albedo
+        tau: bulk transmissivity, unitless
+        k_Gsc: solar constant, W/m^2
+        dr: distance ration, unitless
+        delta: solar declination delta
+        latitude: site latitude(s)
+
+
+    Returns:
+        _calc_net_rad_crossover_hour_angle
+    """
+
+    ru, rv = calc_lat_delta_intermediates(delta, latitude)
+    rw = calc_rw(k_alb_sw, tau, k_Gsc, dr)
+
+    return _calc_net_rad_crossover_hour_angle(rnl, rw, ru, rv, k_pir)
+
+
+def _calc_net_rad_crossover_hour_angle(
     rnl: NDArray, rw: NDArray, ru: NDArray, rv: NDArray, k_pir: float
 ) -> NDArray:
     """Calculates the net radiation crossover hour angle, degrees.
@@ -243,13 +308,13 @@ def calc_net_rad_crossover_hour_angle(
 
     Args:
         rnl: net longwave radiation, W/m^2
-        rw: dimensionless variable substitute
-        ru: dimensionless variable substitute
-        rv: dimensionless variable substitute
+        rw: intermediate variable, W/m^2
+        ru: intermediate variable, W/m^2
+        rv: intermediate variable, W/m^2
         k_pir: conversion factor from radians to degrees
 
     Returns:
-        hn: crossover hour angle, degrees
+        hn: net radiation crossover hour angle, degrees
     """
 
     hn = np.arccos(np.clip((rnl - rw * ru) / (rw * rv), -1.0, 1.0)) / k_pir
@@ -258,6 +323,39 @@ def calc_net_rad_crossover_hour_angle(
 
 
 def calc_daytime_net_radiation(
+    hn: NDArray,
+    k_pir: float,
+    rnl: NDArray,
+    delta: NDArray,
+    latitude: NDArray,
+    k_alb_sw: float,
+    tau: NDArray,
+    k_Gsc: float,
+    dr: NDArray,
+) -> NDArray:
+    """Calculates daily net radiation, J/m^2.
+
+    Args:
+        hn: crossover hour angle, degrees
+        k_pir: conversion factor from radians to degrees
+        rnl: net longwave radiation, W/m^2
+        delta: solar declination delta
+        latitude: site latitude(s)
+        k_alb_sw: shortwave albedo
+        tau: bulk transmissivity, unitless
+        k_Gsc: solar constant, W/m^2
+        dr: distance ration, unitless
+
+    Result:
+        _calc_daytime_net_radiation
+    """
+    ru, rv = calc_lat_delta_intermediates(delta, latitude)
+    rw = calc_rw(k_alb_sw, tau, k_Gsc, dr)
+
+    return _calc_daytime_net_radiation(hn, k_pir, rw, ru, rv, rnl)
+
+
+def _calc_daytime_net_radiation(
     hn: NDArray, k_pir: float, rw: NDArray, ru: NDArray, rv: NDArray, rnl: NDArray
 ) -> NDArray:
     """Calculates daily net radiation, J/m^2.
@@ -273,6 +371,7 @@ def calc_daytime_net_radiation(
     Result:
         rn_d: daily net radiation, J/m^2
     """
+
     secs_d = 86400  # seconds in one solar day
 
     rn_d = (secs_d / np.pi) * (
@@ -283,6 +382,41 @@ def calc_daytime_net_radiation(
 
 
 def calc_nighttime_net_radiation(
+    k_pir: float,
+    rnl: NDArray,
+    hn: NDArray,
+    hs: NDArray,
+    delta: NDArray,
+    latitude: NDArray,
+    k_alb_sw: float,
+    tau: NDArray,
+    k_Gsc: float,
+    dr: NDArray,
+) -> NDArray:
+    """Calculates nightime net radiation, J/m^2.
+
+    Args:
+        k_pir: conversion factor from radians to degrees
+        rnl: net longwave radiation, rnl, W/m^2
+        hs: sunset hour angle, degrees
+        hn: crossover hour angle, degrees
+        delta: solar declination delta
+        latitude: site latitude(s)
+        k_alb_sw: shortwave albedo
+        tau: bulk transmissivity, unitless
+        k_Gsc: solar constant, W/m^2
+        dr: distance ration, unitless
+
+    Returns:
+        _calc_nighttime_net_radiation
+    """
+    ru, rv = calc_lat_delta_intermediates(delta, latitude)
+    rw = calc_rw(k_alb_sw, tau, k_Gsc, dr)
+
+    return _calc_nighttime_net_radiation(rw, rv, ru, hs, hn, k_pir, rnl)
+
+
+def _calc_nighttime_net_radiation(
     rw: NDArray,
     rv: NDArray,
     ru: NDArray,
