@@ -26,6 +26,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm import ExperimentalFeatureWarning
+from pyrealm.core.utilities import check_input_shapes
 from pyrealm.pmodel import (
     PModel,
     PModelEnvironment,
@@ -221,7 +222,7 @@ class SubdailyPModel:
         fs_scaler: SubdailyScaler,
         fapar: NDArray,
         ppfd: NDArray,
-        kphio: float = 1 / 8,
+        kphio: float | NDArray = 1 / 8,
         do_ftemp_kphio: bool = True,
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
@@ -254,9 +255,25 @@ class SubdailyPModel:
 
         # Set up kphio attributes
         self.env: PModelEnvironment = env
-        self.init_kphio: float = kphio
-        self.do_ftemp_kphio = do_ftemp_kphio
+        """The PModelEnvironment used to fit the P Model."""
+        self.do_ftemp_kphio: bool = do_ftemp_kphio
+        r"""Records if :math:`\phi_0` (``kphio``) is temperature corrected."""
+
+        # kphio calculation:
+        self.init_kphio: NDArray
+        r"""The initial value of :math:`\phi_0` (``kphio``)"""
         self.kphio: NDArray
+        r"""The value of :math:`\phi_0` used with any temperature correction applied."""
+
+        # Setup initial kphio
+        if isinstance(kphio, float):
+            # A single scalar global value
+            self.init_kphio = np.array([kphio])
+        elif isinstance(kphio, np.ndarray):
+            # An array of values, which must match the shape of the inputs to the
+            # PModelEnvironment instance.
+            _ = check_input_shapes(self.env.tc, kphio)
+            self.init_kphio = kphio
 
         # 1) Generate a PModelEnvironment containing the average conditions within the
         #    daily acclimation window, including any optional variables required by the
@@ -371,7 +388,7 @@ class SubdailyPModel:
             )
             self.kphio = self.init_kphio * ftemp_kphio
         else:
-            self.kphio = np.array([self.init_kphio])
+            self.kphio = self.init_kphio
 
         self.subdaily_Ac: NDArray = self.subdaily_vcmax * self.optimal_chi.mc
         """Estimated subdaily :math:`A_c`."""

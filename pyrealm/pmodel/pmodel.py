@@ -186,7 +186,7 @@ class PModel:
     def __init__(
         self,
         env: PModelEnvironment,
-        kphio: float | None = None,
+        kphio: float | NDArray | None = None,
         do_ftemp_kphio: bool = True,
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
@@ -205,7 +205,7 @@ class PModel:
         """The CoreConst instance used to create the model environment."""
 
         # kphio calculation:
-        self.init_kphio: float
+        self.init_kphio: NDArray
         r"""The initial value of :math:`\phi_0` (``kphio``)"""
         self.kphio: NDArray
         r"""The value of :math:`\phi_0` used with any temperature correction applied."""
@@ -215,11 +215,18 @@ class PModel:
         # Set context specific defaults for kphio to match Stocker paper
         if kphio is None:
             if not self.do_ftemp_kphio:
-                self.init_kphio = 0.049977
+                self.init_kphio = np.array([0.049977])
             else:
-                self.init_kphio = 0.081785
+                self.init_kphio = np.array([0.081785])
         else:
-            self.init_kphio = kphio
+            if isinstance(kphio, float):
+                # A single scalar global value
+                self.init_kphio = np.array([kphio])
+            elif isinstance(kphio, np.ndarray):
+                # An array of values, which must match the shape of the inputs to the
+                # PModelEnvironment instance.
+                _ = check_input_shapes(self.env.tc, kphio)
+                self.init_kphio = kphio
 
         # -----------------------------------------------------------------------
         # Optimal ci
@@ -251,7 +258,7 @@ class PModel:
             )
             self.kphio = self.init_kphio * ftemp_kphio
         else:
-            self.kphio = np.array([self.init_kphio])
+            self.kphio = self.init_kphio
 
         # -----------------------------------------------------------------------
         # Calculation of Jmax limitation terms
