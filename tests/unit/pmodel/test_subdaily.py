@@ -2,28 +2,11 @@
 
 import datetime
 from contextlib import nullcontext as does_not_raise
-from importlib import resources
 
 import numpy as np
-import pandas
 import pytest
 
 from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
-
-
-@pytest.fixture(scope="module")
-def be_vie_data():
-    """Import the benchmark test data."""
-
-    # Load the BE-Vie data
-    data_path = (
-        resources.files("pyrealm_build_data.subdaily") / "subdaily_BE_Vie_2014.csv"
-    )
-
-    data = pandas.read_csv(str(data_path))
-    data["time"] = pandas.to_datetime(data["time"])
-
-    return data
 
 
 @pytest.fixture(scope="function")
