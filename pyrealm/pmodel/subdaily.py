@@ -181,6 +181,12 @@ class SubdailyPModel:
       :math:`\xi` but subdaily values in the other parameters.
     * Predictions of GPP are then made as in the standard P Model.
 
+    As with the :class:`~pyrealm.pmodel.pmodel.PModel`, the values of the `kphio`
+    argument _can_ be provided as an array of values, potentially varying through time
+    and space. The behaviour of the daily model that drives acclimation here is to take
+    the daily mean `kphio` value for each time series within the acclimation window, as
+    for the other variables. This is an experimental solution!
+
     Missing values:
 
         Missing data can arise in a number of ways: actual gaps in the forcing data, the
