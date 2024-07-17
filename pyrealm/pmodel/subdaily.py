@@ -272,7 +272,7 @@ class SubdailyPModel:
         # Setup initial kphio
         if isinstance(kphio, float):
             # A single scalar global value
-            self.init_kphio = np.array([kphio])
+            self.init_kphio = np.array(kphio)
         elif isinstance(kphio, np.ndarray):
             # An array of values, which must match the shape of the inputs to the
             # PModelEnvironment instance.
@@ -306,9 +306,19 @@ class SubdailyPModel:
 
         # 2) Fit a PModel to those environmental conditions, using the supplied settings
         #    for the original model.
+
+        # If the kphio is a non-scalar array, use the mean kphio within the window to
+        # calculate the daily optimal behaviour.
+        if np.ndim(self.init_kphio) > 0:
+            daily_kphio = fs_scaler.get_daily_means(
+                self.init_kphio, allow_partial_data=allow_partial_data
+            )
+        else:
+            daily_kphio = self.init_kphio
+
         self.pmodel_acclim: PModel = PModel(
             pmodel_env_acclim,
-            kphio=kphio,
+            kphio=daily_kphio,
             do_ftemp_kphio=do_ftemp_kphio,
             method_optchi=method_optchi,
             method_jmaxlim=method_jmaxlim,

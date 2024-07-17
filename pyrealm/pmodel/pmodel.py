@@ -217,13 +217,13 @@ class PModel:
         # Set context specific defaults for kphio to match Stocker paper
         if kphio is None:
             if not self.do_ftemp_kphio:
-                self.init_kphio = np.array([0.049977])
+                self.init_kphio = np.array(0.049977)
             else:
-                self.init_kphio = np.array([0.081785])
+                self.init_kphio = np.array(0.081785)
         else:
             if isinstance(kphio, float):
                 # A single scalar global value
-                self.init_kphio = np.array([kphio])
+                self.init_kphio = np.array(kphio)
             elif isinstance(kphio, np.ndarray):
                 # An array of values, which must match the shape of the inputs to the
                 # PModelEnvironment instance.

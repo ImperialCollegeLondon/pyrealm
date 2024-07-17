@@ -52,7 +52,7 @@ def test_scalar_kphio(basic_inputs_and_expected):
 
 
 @pytest.fixture
-def variable_kphio(self, basic_inputs_and_expected):
+def variable_kphio(basic_inputs_and_expected):
     """Calculates gpp with alternate kphio by iteration.
 
     This uses the original single scalar value approach (tested above) to get
@@ -79,7 +79,7 @@ def variable_kphio(self, basic_inputs_and_expected):
 
 
 @pytest.mark.parametrize(argnames="shape", argvalues=[(125,), (25, 5), (5, 5, 5)])
-def test_kphio_arrays(self, basic_inputs_and_expected, variable_kphio, shape):
+def test_kphio_arrays(basic_inputs_and_expected, variable_kphio, shape):
     """Check behaviour with array inputs of kphio."""
 
     from pyrealm.pmodel import PModel, PModelEnvironment
@@ -97,3 +97,85 @@ def test_kphio_arrays(self, basic_inputs_and_expected, variable_kphio, shape):
     mod.estimate_productivity(fapar=inputs.fapar, ppfd=inputs.ppfd)
 
     assert np.allclose(mod.gpp, expected_gpp.reshape(shape))
+
+
+@pytest.fixture
+def variable_kphio_subdaily(be_vie_data_components):
+    """Calculates gpp with alternate kphio by iteration.
+
+    This uses the original single scalar value approach (tested above) to get
+    expected values for a wide range of kphio values by iteration across the time frame
+    of a subdaily model.
+    """
+
+    from pyrealm.pmodel import SubdailyScaler
+    from pyrealm.pmodel.subdaily import SubdailyPModel
+
+    env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components.get()
+
+    # Get the fast slow scaler and set window
+    fsscaler = SubdailyScaler(datetime)
+    fsscaler.set_window(
+        window_center=np.timedelta64(12, "h"),
+        half_width=np.timedelta64(30, "m"),
+    )
+
+    # Set a large range of values to use in testing
+    kphio_values = np.arange(0.001, 0.126, step=0.001)
+    gpp = np.empty((len(datetime), len(kphio_values)))
+
+    for idx, kphio in enumerate(kphio_values):
+        # Run as a subdaily model
+        subdaily_pmodel = SubdailyPModel(
+            env=env,
+            ppfd=ppfd,
+            fapar=fapar,
+            kphio=kphio,
+            fs_scaler=fsscaler,
+            allow_holdover=True,
+        )
+        gpp[:, idx] = subdaily_pmodel.gpp
+
+    return kphio_values, gpp
+
+
+@pytest.mark.parametrize(
+    argnames="shape,new_dims",
+    argvalues=[((17520, 125), (1,)), ((17520, 25, 5), (1, 2))],
+)
+def test_kphio_arrays_subdaily(
+    be_vie_data_components, variable_kphio_subdaily, shape, new_dims
+):
+    """Check behaviour with array inputs of kphio."""
+
+    from pyrealm.pmodel import PModelEnvironment, SubdailyPModel, SubdailyScaler
+
+    env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components.get()
+    kphio_vals, expected_gpp = variable_kphio_subdaily
+
+    # Get the fast slow scaler and set window
+    fsscaler = SubdailyScaler(datetime)
+    fsscaler.set_window(
+        window_center=np.timedelta64(12, "h"),
+        half_width=np.timedelta64(30, "m"),
+    )
+
+    # Run a subdaily model, reshaping the inputs to arrays rather than a single site to
+    # then test input arrays of kphio values.
+    env = PModelEnvironment(
+        tc=np.broadcast_to(np.expand_dims(env.tc, axis=new_dims), shape),
+        patm=np.broadcast_to(np.expand_dims(env.patm, axis=new_dims), shape),
+        co2=np.broadcast_to(np.expand_dims(env.co2, axis=new_dims), shape),
+        vpd=np.broadcast_to(np.expand_dims(env.vpd, axis=new_dims), shape),
+    )
+
+    subdaily_pmodel = SubdailyPModel(
+        env=env,
+        ppfd=np.broadcast_to(np.expand_dims(ppfd, axis=new_dims), shape),
+        fapar=np.broadcast_to(np.expand_dims(fapar, axis=new_dims), shape),
+        kphio=np.broadcast_to(kphio_vals.reshape(shape[1:]), shape),
+        fs_scaler=fsscaler,
+        allow_holdover=True,
+    )
+
+    assert np.allclose(subdaily_pmodel.gpp, expected_gpp.reshape(shape), equal_nan=True)
