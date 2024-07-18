@@ -217,7 +217,57 @@ def test_calc_transmissivity(k_c, k_d, sf, elv, expected):
         (2.04, 0.03, np.array([0.752844]), np.array([41646763]), np.array([62.042300]))
     ],
 )
-def test_calc_ppfd(k_fFEC, k_alb_vis, tau, ra_d, expected):
+def test_calc_ppfd_from_tau_ra_d(k_fFEC, k_alb_vis, tau, ra_d, expected):
+    """Tests calc_ppfd_from_tau_ra_d.
+
+    This test is intended to verify the implemented maths.
+    """
+
+    from pyrealm.core.solar import calc_ppfd_from_tau_ra_d
+
+    result = calc_ppfd_from_tau_ra_d(k_fFEC, k_alb_vis, tau, ra_d)
+
+    assert np.allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    argnames="sf, elv, latitude, julian_day, n_days, k_e, k_eps, k_pir, k_d, k_Gsc,\
+    k_fFec, k_alb_vis, k_c, expected",
+    argvalues=[
+        (
+            np.array([1.0]),
+            np.array([142]),
+            np.array([37.7]),
+            np.array([172]),
+            np.array([366]),
+            0.0167,
+            23.44,
+            np.pi / 180.0,
+            0.50,
+            1360.8,
+            2.04,
+            0.03,
+            0.25,
+            np.array([62.042300]),
+        )
+    ],
+)
+def test_calc_ppfd(
+    sf,
+    elv,
+    latitude,
+    julian_day,
+    n_days,
+    k_e,
+    k_eps,
+    k_pir,
+    k_d,
+    k_Gsc,
+    k_fFec,
+    k_alb_vis,
+    k_c,
+    expected,
+):
     """Tests calc_ppfd.
 
     This test is intended to verify the implemented maths.
@@ -225,7 +275,21 @@ def test_calc_ppfd(k_fFEC, k_alb_vis, tau, ra_d, expected):
 
     from pyrealm.core.solar import calc_ppfd
 
-    result = calc_ppfd(k_fFEC, k_alb_vis, tau, ra_d)
+    result = calc_ppfd(
+        sf,
+        elv,
+        latitude,
+        julian_day,
+        n_days,
+        k_e,
+        k_eps,
+        k_pir,
+        k_d,
+        k_Gsc,
+        k_fFec,
+        k_alb_vis,
+        k_c,
+    )
 
     assert np.allclose(result, expected)
 
