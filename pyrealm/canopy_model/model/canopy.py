@@ -8,7 +8,7 @@ from pyrealm.canopy_model.model.cohort import Cohort
 from pyrealm.canopy_model.model.community import Community
 from pyrealm.canopy_model.model.jaideep_t_model_extension import (
     calculate_projected_canopy_area_for_individual,
-    calculate_relative_canopy_radius,
+    calculate_relative_canopy_radius, calculate_projected_canopy_area_for_individuals,
 )
 
 
@@ -27,15 +27,19 @@ class Canopy:
             self.calculate_total_canopy_A_cp, self.canopy_layer_heights
         )
 
-    def calculate_community_projected_area_at_z(self, z: float) -> float:
+    def calculate_community_projected_area_at_z(self, community: Community, z: float) -> float:
         """Calculate the total area of community stems."""
-        cohort_areas_at_z = map(
-            lambda cohort: cohort.number_of_members
-            * calculate_projected_canopy_area_for_individual(
-                z, cohort.pft, cohort.t_model_geometry, cohort.canopy_factors
-            ),
-            self.cohorts,
-        )
+        projected_canopy_area_for_individuals = (
+            calculate_projected_canopy_area_for_individuals(z,
+                                                            community.t_model_heights,
+                                                            community.t_model_crown_areas,
+                                                            community.pft_m_values,
+                                                            community.pft_n_values,
+                                                            community.canopy_factor_q_m_values,
+                                                            community.canopy_factor_z_m_values))
+
+        cohort_areas_at_z = (community.cohort_number_of_individuals
+                             * projected_canopy_area_for_individuals)
 
         return sum(cohort_areas_at_z)
 
@@ -78,7 +82,7 @@ class Canopy:
         for n in np.arange(number_of_layers - 1):
             z_star[n] = root_scalar(
                 self.solve_canopy_closure_height,
-                args=(n + 1, A, fG),
+                args=(n + 1, community.cell_area, fG),
                 bracket=(0, self.max_individual_height),
             ).root
 
