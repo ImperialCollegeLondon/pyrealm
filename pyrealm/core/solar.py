@@ -292,13 +292,13 @@ def calc_ppfd(
         >>> # define variable values
         >>> sf = np.array([1.0])
         >>> elv = np.array([142])
-        >>> latitide = np.array([37.7])
+        >>> latitude = np.array([37.7])
         >>> julian_day = np.array([172])
         >>> n_days = np.array([366])
         >>> # evaluate function
-        >>> calc_ppfd(sf, elv, latitude, julian_day, n_days, const.k_e, const.k_eps,
-        const.k_pir, const.k_d,const.k_Gsc, const.k_fFec, const.k_alb_vis, const.k_c)
-        array([62.042300])
+        >>> calc_ppfd(sf, elv, latitude, julian_day, n_days, const.k_e, const.k_eps,\
+        const.k_pir, const.k_d,const.k_Gsc, const.k_fFEC, const.k_alb_vis, const.k_c)
+        array([62.04230021])
 
 
     """
