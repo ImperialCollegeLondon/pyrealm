@@ -647,12 +647,18 @@ def calc_heliocentric_longitudes(
     return (nu, lambda_)
 
 
-def beta_angle_from_lat_dec_hour(
+def calc_beta_angle_from_lat_dec_hour(
     latitude: NDArray, declination: NDArray, hour_angle: NDArray
 ) -> NDArray:
-    """Calculates solar beta angle (elevation angle).
+    r"""Calculates solar beta angle (elevation angle).
 
     Calculates solar beta angle using Eq A13 of dePury & Farquhar (1997).
+
+    .. math::
+
+        \beta = \sin(\text{latitude}) \cdot \sin(\text{declination}) +
+        \cos(\text{latitude}) \cdot \cos(\text{declination}) \cdot
+        \cos(\text{hour\_angle})
 
     Args:
         latitude: array of latitudes (rads)
@@ -660,11 +666,38 @@ def beta_angle_from_lat_dec_hour(
         hour_angle: array of hour angle (rads)
 
     Returns:
-        beta: array of solar beta angles
+        beta: array of solar beta angles (rads)
     """
 
-    beta = np.sin(latitude) * np.sin(declination) + np.cos(latitude) * np.cos(
+    sin_beta = np.sin(latitude) * np.sin(declination) + np.cos(latitude) * np.cos(
         declination
     ) * np.cos(hour_angle)
 
+    beta = np.arcsin(sin_beta)
+
     return beta
+
+
+def calc_declination(td: NDArray, k_pir: float) -> NDArray:
+    r"""Calculates solar declination angle.
+
+    Use method described in eqn A14 or dePury& Farquhar (1997) to calculate solar
+    declination angle.
+
+    .. math::
+
+        \text{declination} = -23.4 \cdot \left(\frac{1}{k\_pir}\right) \cdot \cos\left
+        (\frac{2 \cdot \pi \cdot (td + 10)}{365}\right)
+
+    Args:
+        td          : Julian day of the year
+        k_pir       : radians to degrees conversion
+
+    Returns:
+        declination : solar declination (radians)
+    """
+
+    # Calculate declination
+    declination = -23.4 * (1 / k_pir) * np.cos((2 * np.pi * (td + 10)) / 365)
+
+    return declination

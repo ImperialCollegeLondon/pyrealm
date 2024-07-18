@@ -13,9 +13,7 @@ import pytest
 def test_calc_distance_factor(nu, k_e, expected):
     """Tests calc_distance_factor.
 
-    The test values represent the range of acceptable input values of nu
-    (0-360 degrees), and a typical value of k_e for the earth. This tests
-    aims to confirm the correct implementation of the maths.
+    This tests aims to confirm the correct implementation of the maths.
     """
     from pyrealm.core.solar import calc_distance_factor
 
@@ -38,8 +36,7 @@ def test_calc_distance_factor(nu, k_e, expected):
 def test_calc_declination_angle_delta(lambda_, k_eps, k_pir, expected):
     """Tests calc_declination_angle_delta.
 
-    This test tests the maths over the applicable range of longitudes with
-    representative k_eps and k_pir constants.
+    This tests aims to confirm the correct implementation of the maths.
     """
 
     from pyrealm.core.solar import calc_declination_angle_delta
@@ -62,7 +59,7 @@ def test_calc_declination_angle_delta(lambda_, k_eps, k_pir, expected):
 def test_calc_lat_delta_intermediates(delta, latitude, expected):
     """Tests calc_lat_delta_intermediates.
 
-    This test tests the maths over an applciable range of delta and latitude values.
+    This tests aims to confirm the correct implementation of the maths.
     """
 
     from pyrealm.core.solar import calc_lat_delta_intermediates
@@ -154,8 +151,7 @@ def test_calc_lat_delta_intermediates(delta, lat, expected):
 def test_calc_sunset_hour_angle(delta, latitude, k_pir, expected):
     """Tests calc_sunset_hour_angle.
 
-    This test is intended to verify the maths over a range of applicable input
-    values in the correct formats
+    This tests aims to confirm the correct implementation of the maths.
     """
 
     from pyrealm.core.solar import calc_sunset_hour_angle
@@ -387,3 +383,38 @@ def test_calc_heliocentric_longitudes(day, n_day, expected):
 
     result = calc_heliocentric_longitudes(day, n_day)
     assert np.allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    argnames="latitude, declination, hour_angle, expected",
+    argvalues=[
+        (np.array([0.7854]), np.array([0.4093]), np.array([0]), np.array([1.19469633]))
+    ],
+)
+def test_calc_beta_value(latitude, declination, hour_angle, expected):
+    """Tests calc_beta_angle.
+
+    This test is intended to verify the implemented maths.
+    """
+
+    from pyrealm.core.solar import calc_beta_angle_from_lat_dec_hour
+
+    result = calc_beta_angle_from_lat_dec_hour(latitude, declination, hour_angle)
+
+    assert np.allclose(result, expected)
+
+    @pytest.mark.parametrize(
+        argnames="td, k_pir, expected",
+        argvalues=[(np.array([298]), 180 / np.pi, -0.23)],
+    )
+    def test_calc_declination(td, k_pir, expected):
+        """Tests calc_declination.
+
+        This test is intended to verify the implemented maths.
+        """
+
+        from pyrealm.core.solar import test_calc_declination
+
+        result = test_calc_declination(td, k_pir)
+
+        assert np.allclose(result, expected)
