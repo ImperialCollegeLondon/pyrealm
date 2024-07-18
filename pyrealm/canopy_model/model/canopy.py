@@ -18,15 +18,10 @@ class Canopy:
     def __init__(self, community: Community, canopy_gap_fraction: float) -> None:
         """placeholder."""
         self.f_g = canopy_gap_fraction
-        self.cohorts = community.cohorts
 
-        self.max_individual_height = max(
-            cohort.t_model_geometry.height for cohort in self.cohorts
-        )
+        self.max_individual_height = community.t_model_heights.max()
 
-        self.canopy_layer_heights = self.calculate_canopy_layer_heights(
-            community.cell_area, self.f_g
-        )
+        self.canopy_layer_heights = self.calculate_canopy_layer_heights(community, self.f_g)
 
         self.A_cp_within_layer = map(
             self.calculate_total_canopy_A_cp, self.canopy_layer_heights
@@ -68,16 +63,13 @@ class Canopy:
         # Return the difference between the projected area and the available space
         return community_projected_area_at_z - (A * l) * (1 - fG)
 
-    def calculate_canopy_layer_heights(self, A: float, fG: float) -> NDArray:
+    def calculate_canopy_layer_heights(self, community: Community, fG: float) -> NDArray:
         """Placeholder."""
         # Calculate the number of layers
-        cohort_crown_areas = map(
-            lambda cohort: cohort.number_of_members
-            * cohort.t_model_geometry.crown_area,
-            self.cohorts,
-        )
-        total_community_crown_area = sum(cohort_crown_areas)
-        number_of_layers = int(np.ceil(total_community_crown_area / (A * (1 - fG))))
+        cohort_crown_areas = (community.cohort_number_of_individuals
+                              * community.t_model_crown_areas)
+        total_community_crown_area = cohort_crown_areas.sum()
+        number_of_layers = int(np.ceil(total_community_crown_area / (community.cell_area * (1 - fG))))
 
         # Data store for z*
         z_star = np.zeros(number_of_layers)
