@@ -4,50 +4,38 @@ Utilities to calculate and store the canopy factors from Jaideep's extension to
 the T Model.
 """
 
-from dataclasses import dataclass
-
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.canopy_model.model.flora import PlantFunctionalType
-from pyrealm.canopy_model.model.t_model import TModelGeometry
 
-
-@dataclass
-class CanopyFactors:
-    """Canopy factors calculated from Jaideep's extension to the T Model."""
-
-    q_m: float
-    z_m: float
-    r_0: float
-
-
-def calculate_q_m(m: float, n: float) -> float:
+def calculate_q_m(m: NDArray[np.float32],
+                  n: NDArray[np.float32]) -> NDArray[np.float32]:
     """placeholder."""
     return (
-        m
-        * n
-        * ((n - 1) / (m * n - 1)) ** (1 - 1 / n)
-        * (((m - 1) * n) / (m * n - 1)) ** (m - 1)
+            m
+            * n
+            * ((n - 1) / (m * n - 1)) ** (1 - 1 / n)
+            * (((m - 1) * n) / (m * n - 1)) ** (m - 1)
     )
 
 
-def calculate_stem_canopy_factors(
-    pft: PlantFunctionalType, t_model_geometry: TModelGeometry
-) -> CanopyFactors:
-    """Calculate stem canopy factors from Jaideep's extension to the T Model."""
-    m = pft.m
-    n = pft.n
-    q_m = calculate_q_m(m, n)
-
+def calculate_z_m(m: NDArray[np.float32],
+                  n: NDArray[np.float32],
+                  height: NDArray[np.float32]) -> NDArray[np.float32]:
     # Height of maximum crown radius
-    z_m = t_model_geometry.height * ((n - 1) / (m * n - 1)) ** (1 / n)
+    z_m = height * ((n - 1) / (m * n - 1)) ** (1 / n)
+    return z_m
 
+
+def calculate_r_0(q_m: NDArray[np.float32],
+                  crown_area: NDArray[np.float32]
+                  ) -> NDArray[np.float32]:
+    """Calculate stem canopy factors from Jaideep's extension to the T Model."""
     # Scaling factor to give expected Ac (crown area) at
     # z_m (height of maximum crown radius)
-    r_0 = 1 / q_m * np.sqrt(t_model_geometry.crown_area / np.pi)
+    r_0 = 1 / q_m * np.sqrt(crown_area / np.pi)
 
-    return CanopyFactors(q_m, z_m, r_0)
+    return r_0
 
 
 def calculate_relative_canopy_radius(z: float, H: float, m: float, n: float) -> float:
@@ -55,7 +43,7 @@ def calculate_relative_canopy_radius(z: float, H: float, m: float, n: float) -> 
 
     z_over_H = z / H
 
-    return m * n * z_over_H ** (n - 1) * (1 - z_over_H**n) ** (m - 1)
+    return m * n * z_over_H ** (n - 1) * (1 - z_over_H ** n) ** (m - 1)
 
 
 calculate_relative_canopy_radius_profile = np.vectorize(
@@ -64,10 +52,10 @@ calculate_relative_canopy_radius_profile = np.vectorize(
 
 
 def calculate_projected_canopy_area_for_individual(
-    z: float,
-    pft: PlantFunctionalType,
-    t_model_geometry: TModelGeometry,
-    canopy_factors: CanopyFactors,
+        z: float,
+        pft: PlantFunctionalType,
+        t_model_geometry: TModelGeometry,
+        canopy_factors: CanopyFactors,
 ) -> float:
     """Calculate projected crown area above a given height.
 
@@ -98,9 +86,9 @@ def calculate_projected_canopy_area_for_individual(
 
 
 def calculate_crown_radius_profile(
-    pft: PlantFunctionalType,
-    t_model_geometry: TModelGeometry,
-    z_resolution: float = 0.05,
+        pft: PlantFunctionalType,
+        t_model_geometry: TModelGeometry,
+        z_resolution: float = 0.05,
 ) -> NDArray:
     """Calculate the crown radius profile for a given cohort."""
 
@@ -120,7 +108,7 @@ def calculate_crown_radius_profile(
 
 
 def create_z_axis(
-    z_min: float, z_max: float, resolution: float = 0.05
+        z_min: float, z_max: float, resolution: float = 0.05
 ) -> np.typing.NDArray:
     """Provides a z axis in the form of a numpy array.
 
