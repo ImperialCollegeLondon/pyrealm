@@ -18,7 +18,7 @@ from pyrealm.core.solar import (
     calc_lat_delta_intermediates,
     calc_net_rad_crossover_hour_angle,
     calc_nighttime_net_radiation,
-    calc_ppfd,
+    calc_ppfd_from_tau_ra_d,
     calc_rnl,
     calc_rw,
     calc_sunset_hour_angle,
@@ -145,7 +145,7 @@ class DailySolarFluxes:
         )
 
         # Calculate daily PPFD (ppfd_d), mol/m^2
-        self.ppfd_d = calc_ppfd(
+        self.ppfd_d = calc_ppfd_from_tau_ra_d(
             self.core_const.k_fFEC, self.core_const.k_alb_vis, self.tau, self.ra_d
         )
 
