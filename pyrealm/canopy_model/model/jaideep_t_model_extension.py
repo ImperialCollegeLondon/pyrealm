@@ -31,7 +31,7 @@ def calculate_r_0(q_m: NDArray[np.float32],
                   crown_area: NDArray[np.float32]
                   ) -> NDArray[np.float32]:
     """Calculate stem canopy factors from Jaideep's extension to the T Model."""
-    # Scaling factor to give expected Ac (crown area) at
+    # Scaling factor to give expected A_c (crown area) at
     # z_m (height of maximum crown radius)
     r_0 = 1 / q_m * np.sqrt(crown_area / np.pi)
 
@@ -53,8 +53,8 @@ def calculate_projected_canopy_area_for_individuals(
     sizes and estimates the projected crown area above a given height $z$. Note,
     this calculation gives the canopy area for a single individual within the cohort,
     not for the cohort as a whole.
-    :param n:
     :param m:
+    :param n:
     :param crown_area:
     :param height:
     :param z_m: stem canopy factor from Jaideep’s extension of the T Model.
@@ -63,7 +63,7 @@ def calculate_projected_canopy_area_for_individuals(
     """
 
     # Calculate q(z)
-    q_z = calculate_relative_canopy_radius(z, height, m, n)
+    q_z = calculate_relative_canopy_radii(z, height, m, n)
 
     # Calculate A_p
     # Calculate Ap given z > zm
@@ -76,17 +76,13 @@ def calculate_projected_canopy_area_for_individuals(
     return A_p
 
 
-def calculate_relative_canopy_radius(z: float,
-                                     height: NDArray[np.float32],
-                                     m: NDArray[np.float32],
-                                     n: NDArray[np.float32]) -> float:
+def calculate_relative_canopy_radii(z: float,
+                                    height: NDArray[np.float32],
+                                    m: NDArray[np.float32],
+                                    n: NDArray[np.float32]) -> NDArray[np.float32]:
     """Calculate q(z) at a given height, z."""
 
     z_over_height = z / height
 
     return m * n * z_over_height ** (n - 1) * (1 - z_over_height ** n) ** (m - 1)
 
-
-calculate_relative_canopy_radius_profile = np.vectorize(
-    calculate_relative_canopy_radius
-)
