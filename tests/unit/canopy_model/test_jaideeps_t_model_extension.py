@@ -1,16 +1,19 @@
-import unittest
+import pytest
+import numpy as np
+from numpy.testing import assert_array_equal
+
+from pyrealm.canopy_model.model.jaideep_t_model_extension import *
 
 
-class MyTestCase(unittest.TestCase):
-    def test_something(self):
-        self.assertEqual(True, False)  # add assertion here
+def test_calculate_q_m_values_returns_q_m_for_valid_input():
+    m_values = np.array()
+    n_values = np.array()
+    expected_q_m_values = np.array()
+    actual_q_m_values = calculate_q_m_values(m_values, n_values)
+    assert_array_equal(actual_q_m_values, expected_q_m_values)
 
 
-if __name__ == '__main__':
-    unittest.main()
-
-
-def test_calculate_q_m_values():
+def test_calculate_q_m_values_raises_exception_for_invalid_input():
     pass
 
 
