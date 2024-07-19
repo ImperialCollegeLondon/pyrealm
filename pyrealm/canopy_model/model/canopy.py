@@ -18,7 +18,7 @@ class Canopy:
         """placeholder."""
         self.max_individual_height = community.t_model_heights.max()
 
-        self.canopy_layer_heights = self.calculate_canopy_layer_heights(community, self.f_g)
+        self.canopy_layer_heights = self.calculate_canopy_layer_heights(community, canopy_gap_fraction)
 
         #TODO fix the dimensionality of this
         self.A_cp_within_layer = map(

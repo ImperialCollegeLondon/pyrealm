@@ -8,8 +8,8 @@ import numpy as np
 from numpy.typing import NDArray
 
 
-def calculate_q_m(m: NDArray[np.float32],
-                  n: NDArray[np.float32]) -> NDArray[np.float32]:
+def calculate_q_m_values(m: NDArray[np.float32],
+                         n: NDArray[np.float32]) -> NDArray[np.float32]:
     """placeholder."""
     return (
             m
@@ -19,17 +19,17 @@ def calculate_q_m(m: NDArray[np.float32],
     )
 
 
-def calculate_z_m(m: NDArray[np.float32],
-                  n: NDArray[np.float32],
-                  height: NDArray[np.float32]) -> NDArray[np.float32]:
+def calculate_z_m_values(m: NDArray[np.float32],
+                         n: NDArray[np.float32],
+                         height: NDArray[np.float32]) -> NDArray[np.float32]:
     # Height of maximum crown radius
     z_m = height * ((n - 1) / (m * n - 1)) ** (1 / n)
     return z_m
 
 
-def calculate_r_0(q_m: NDArray[np.float32],
-                  crown_area: NDArray[np.float32]
-                  ) -> NDArray[np.float32]:
+def calculate_r_0_values(q_m: NDArray[np.float32],
+                         crown_area: NDArray[np.float32]
+                         ) -> NDArray[np.float32]:
     """Calculate stem canopy factors from Jaideep's extension to the T Model."""
     # Scaling factor to give expected A_c (crown area) at
     # z_m (height of maximum crown radius)

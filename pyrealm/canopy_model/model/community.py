@@ -6,8 +6,8 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.canopy_model.model.flora import Flora, PlantFunctionalType
-from pyrealm.canopy_model.model.jaideep_t_model_extension import calculate_q_m, \
-    calculate_r_0, calculate_z_m
+from pyrealm.canopy_model.model.jaideep_t_model_extension import calculate_q_m_values, \
+    calculate_r_0_values, calculate_z_m_values
 
 
 class Community:
@@ -203,13 +203,13 @@ class Community:
         :return:
         """
 
-        self.canopy_factor_q_m_values = calculate_q_m(self.pft_m_values,
-                                                      self.pft_n_values)
-        self.canopy_factor_r_0_values = calculate_r_0(self.canopy_factor_q_m_values,
-                                                      self.t_model_crown_areas)
-        self.canopy_factor_z_m_values = calculate_z_m(self.pft_m_values,
-                                                      self.pft_n_values,
-                                                      self.t_model_heights)
+        self.canopy_factor_q_m_values = calculate_q_m_values(self.pft_m_values,
+                                                             self.pft_n_values)
+        self.canopy_factor_r_0_values = calculate_r_0_values(self.canopy_factor_q_m_values,
+                                                             self.t_model_crown_areas)
+        self.canopy_factor_z_m_values = calculate_z_m_values(self.pft_m_values,
+                                                             self.pft_n_values,
+                                                             self.t_model_heights)
 
     def __look_up_plant_functional_type(self, pft_name: str) -> PlantFunctionalType:
         """Retrieve plant functional type for a cohort from the flora dictionary."""
