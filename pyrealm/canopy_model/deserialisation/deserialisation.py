@@ -78,7 +78,7 @@ class CommunityDeserialiser:
 
         imported_communities = ImportedCommunity.schema().load(
             communities_json, many=True
-        )  # type: ignore[attr-defined] # noqa: E501
+        )  # type: ignore[attr-defined]
 
         flora = Flora(self.plant_functional_types)
         communities = list(
