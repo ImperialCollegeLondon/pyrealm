@@ -1,9 +1,9 @@
-"""The :mod:`~pyrealm.core.hygro` submodule provides provides conversion functions for
+"""The :mod:`~pyrealm.core.hygro` submodule provides conversion functions for
 common hygrometric variables. The module provides conversions to vapour pressure
 deficit, which is the required input for the :class:`~pyrealm.pmodel.pmodel.PModel`
 from vapour pressure, specific humidity and relative humidity. The implementation is
 drawn from and validated against the ``bigleaf`` R package.
-"""  # noqa: D205, D415
+"""  # noqa: D205
 
 import numpy as np
 from numpy.typing import NDArray
@@ -194,7 +194,7 @@ def calc_saturation_vapour_pressure_slope(tc: NDArray) -> NDArray:
     Args:
         tc: The air temperature (°C)
 
-    Returns
+    Returns:
         The calculated slope in kPa °C-1.
     """
 

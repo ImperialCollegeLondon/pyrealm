@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
-        python-version: ["3.10", "3.11"]
+        python-version: ["3.10", "3.11", "3.12"]
 
     steps:
     - uses: actions/checkout@v4
@@ -70,9 +70,6 @@ jobs:
 
       - name: Install dependencies
         run: poetry install
-
-      - name: Set ipython kernel
-        run: poetry run python -m ipykernel install --user --name=pyrealm_python3
       
       - name: Build docs using sphinx
         run: |

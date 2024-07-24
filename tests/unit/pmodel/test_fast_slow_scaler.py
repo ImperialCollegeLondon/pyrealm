@@ -2,7 +2,7 @@
 
 This class handles estimating daily reference values and then interpolating lagged
 responses back to subdaily time scales.
-"""  # noqa: D205, D415
+"""
 
 from contextlib import nullcontext as does_not_raise
 

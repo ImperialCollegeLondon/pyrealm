@@ -1,0 +1,64 @@
+name: Profiling on approve
+
+# This runs when a pull request is submitted
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  test:
+    if: github.event.review.state == 'APPROVED'
+    uses: ./.github/workflows/pyrealm_ci.yaml
+    secrets: inherit
+
+  profiling:
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.ref }}
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+    - name: Install Poetry
+      uses: abatilo/actions-poetry@v2.1.6
+      with:
+        poetry-version: 1.8.2
+
+    - name: Install dependencies and add env vars
+      run: |
+        poetry install
+        sudo apt-get install graphviz
+        calculatedSha=$(git rev-parse --short ${{ github.sha }})
+        echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
+
+    - name: Run the profiling test suite, using time to get peak memory usage
+      id: profiling
+      run: poetry run /usr/bin/time -v pytest -m "profiling" --profile-svg
+
+    # This step only runs if the profiling succeeds
+    - name: Benchmark performance
+      id: benchmarking
+      if: ${{steps.profiling.outcome == 'success'}}
+      run: poetry run python profiling/run_benchmarking.py prof/combined.prof profiling/profiling-database.csv profiling/benchmark-fails.csv ${{ env.COMMIT_SHORT_SHA }} --update-on-pass --plot-path profiling/performance-plot.png
+
+    # This step copies over the updated call graph
+    - name: Copy call graph
+      id: update-call-graph
+      if: always() && steps.benchmarking.outcome != 'skipped'
+      run: cp prof/combined.svg profiling/call-graph.svg
+
+    # This runs if the benchmark passes or fails and skips if the profiling step fails.
+    # The commit message includes [skip actions] to avoid triggering a new round
+    - uses: stefanzweifel/git-auto-commit-action@v5
+      if: always() && steps.benchmarking.outcome != 'skipped'
+      with:
+        commit_message: Auto-generated profiling results [skip actions]
+        file_pattern: 'profiling/*'
+        branch: ${{ github.event.pull_request.head.ref }}

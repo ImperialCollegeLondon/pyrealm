@@ -5,11 +5,11 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.2
 kernelspec:
   display_name: Python 3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 
 # Developing `pyrealm`
@@ -131,7 +131,7 @@ when installing to avoid conflicts with the package management process.
 For the typical installation process, this would be as simple as:
 
 ```sh
-curl -sSL https://install.python-poetry.org | python3 - --version 1.2.0
+curl -SSL https://install.python-poetry.org | python3 - --version 1.8.2
 ```
 
 ### Installing `pyrealm`
@@ -272,23 +272,17 @@ package testing and in documentation.
 We use `sphinx` to maintain the documentation for `pyrealm` and Google style docstrings
 using the `napoleon` formatting to provide API documentation for the code. We use MyST
 Markdown to provide dynamically built usage examples. See the [documentation
-page](./documentation.md) for details.
-
-In order to build the documentation, you will need to register the `poetry` virtual
-enviroment, so that it can be used by `jupyter` and `myst` to build dynamic content.
-This only needs to be done once.
-
-```bash
-poetry run python -m ipykernel install --user --name=pyrealm_python3
-```
-
-After that, the following code can be used to build the documentation
+page](./documentation.md) for details but to get started, the following code can be used
+to build the documentation.
 
 ```bash
 # Build docs using sphinx
 cd docs
 poetry run sphinx-build -W --keep-going source build
 ```
+
+Once that command completes, the file `docs/build/html/index.html` can be opened to view
+the built documentation.
 
 ### GitHub Actions
 
@@ -312,7 +306,7 @@ up everything you need, ready to start developing on pyrealm.
 :::{admonition} Setup script
 
 ``` sh
-#!/bin/bash
+!/bin/bash
 
 # pyenv and poetry use sqlite3. You _may_ need to install these requirements first.
 sudo apt install sqlite3 sqlite3-doc libsqlite3-dev

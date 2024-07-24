@@ -17,7 +17,7 @@ from multiprocess.pool import Pool  # type: ignore [import-untyped]
 path = Path(__file__).parent
 sys.path.insert(0, str(path.absolute()))
 
-from splash_py_version.splash import (  # type: ignore [import-not-found] # noqa: E402, E501
+from splash_py_version.splash import (  # type: ignore [import-not-found] # noqa: E402
     SPLASH,
 )
 

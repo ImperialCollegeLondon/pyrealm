@@ -1,4 +1,4 @@
-"""The module :mod:`~pyrealm.pmodel.pmodel_environment` provides the implementation of 
+"""The module :mod:`~pyrealm.pmodel.pmodel_environment` provides the implementation of
 the following pmodel core class:
 
 * :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`:
@@ -25,7 +25,7 @@ class PModelEnvironment:
     calculates four photosynthetic variables for those environmental
     conditions:
 
-    * the photorespiratory CO2 compensation point (:math:`\Gamma^{*}`,
+    * the photorespiratory :math:`\ce{CO2}` compensation point (:math:`\Gamma^{*}`,
       using :func:`~pyrealm.pmodel.functions.calc_gammastar`),
     * the relative viscosity of water (:math:`\eta^*`,
       using :func:`~pyrealm.pmodel.functions.calc_ns_star`),
@@ -56,7 +56,7 @@ class PModelEnvironment:
     Args:
         tc: Temperature, relevant for photosynthesis (°C)
         vpd: Vapour pressure deficit (Pa)
-        co2: Atmospheric CO2 concentration (ppm)
+        co2: Atmospheric :math:`\ce{CO2}` concentration (ppm)
         patm: Atmospheric pressure (Pa)
         theta: Volumetric soil moisture (m3/m3)
         rootzonestress: Root zone stress factor (-)

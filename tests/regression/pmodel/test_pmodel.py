@@ -12,8 +12,6 @@ from importlib import resources
 import numpy as np
 import pytest
 
-# flake8: noqa D103 - docstrings on unit tests
-
 # RPMODEL bugs
 # rpmodel was using an incorrect parameterisation of the C4 ftemp kphio curve
 # that is fixed but currently (1.2.0) an implementation error in the output checking
@@ -564,7 +562,7 @@ def test_pmodelenvironment_exception(inputs, context_manager):
     from pyrealm.pmodel import PModelEnvironment
 
     with context_manager:
-        ret = PModelEnvironment(**inputs)
+        _ = PModelEnvironment(**inputs)
 
 
 # ------------------------------------------
@@ -582,7 +580,7 @@ def test_pmodelenvironment_exception(inputs, context_manager):
 
 @pytest.fixture(scope="module")
 def pmodelenv(values):
-    """Fixture to create PModelEnvironments with scalar and array inputs"""
+    """Fixture to create PModelEnvironments with scalar and array inputs."""
 
     from pyrealm.pmodel import PModelEnvironment
 
@@ -674,7 +672,7 @@ def test_pmodel_class_c3(
 
     if "sm-on" in name:
         warnings.warn(
-            "Skipping jmax, vcmax,rd and gs testing when using soil moisture stress β(θ)"
+            "Skipping jmax, vcmax,rd and gs testing when using soil moisture stress"
         )
         return
 
@@ -770,7 +768,7 @@ def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, e
 
     if "sm-on" in name:
         warnings.warn(
-            "Skipping jmax, vcmax,rd and gs testing when using soil moisture stress β(θ)"
+            "Skipping jmax, vcmax,rd and gs testing when using soil moisture stress"
         )
         return
 
