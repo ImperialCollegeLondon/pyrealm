@@ -6,8 +6,8 @@ from scipy.optimize import root_scalar
 
 from pyrealm.canopy_model.model.community import Community
 from pyrealm.canopy_model.model.jaideep_t_model_extension import (
+    calculate_projected_canopy_area_for_individuals,
     calculate_relative_canopy_radii,
-    calculate_projected_canopy_area_for_individuals
 )
 
 
@@ -15,28 +15,35 @@ class Canopy:
     """placeholder."""
 
     def __init__(self, community: Community, canopy_gap_fraction: float) -> None:
-        """placeholder."""
+        """Placeholder."""
         self.max_individual_height = community.t_model_heights.max()
 
-        self.canopy_layer_heights = self.calculate_canopy_layer_heights(community, canopy_gap_fraction)
+        self.canopy_layer_heights = self.calculate_canopy_layer_heights(
+            community, canopy_gap_fraction
+        )
 
-        #TODO fix the dimensionality of this
+        # TODO I would like to avoid using a map here if possible as it's really a slow
+        #  for loop under the hood, but the dimensions become difficult to reason/read
+        #  otherwise
         self.A_cp_within_layer = map(
             self.calculate_total_canopy_A_cp,
             self.canopy_layer_heights,
             canopy_gap_fraction,
-            community
+            community,
         )
 
-    def calculate_canopy_layer_heights(self, community: Community, fG: float) \
-            -> NDArray:
+    def calculate_canopy_layer_heights(
+        self, community: Community, fG: float
+    ) -> NDArray:
         """Placeholder."""
         # Calculate the number of layers
-        cohort_crown_areas = (community.cohort_number_of_individuals
-                              * community.t_model_crown_areas)
+        cohort_crown_areas = (
+            community.cohort_number_of_individuals * community.t_model_crown_areas
+        )
         total_community_crown_area = cohort_crown_areas.sum()
-        number_of_layers = int(np.ceil(total_community_crown_area /
-                                       (community.cell_area * (1 - fG))))
+        number_of_layers = int(
+            np.ceil(total_community_crown_area / (community.cell_area * (1 - fG)))
+        )
 
         # Data store for z*
         z_star = np.zeros(number_of_layers)
@@ -51,10 +58,9 @@ class Canopy:
 
         return z_star
 
-    def calculate_total_canopy_A_cp(self,
-                                    z: float,
-                                    f_g: float,
-                                    community: Community) -> float:
+    def calculate_total_canopy_A_cp(
+        self, z: float, f_g: float, community: Community
+    ) -> float:
         """Calculate total leaf area at a given height.
 
         :param f_g:
@@ -63,23 +69,21 @@ class Canopy:
         :return: Total leaf area in the canopy at a given height.
         """
         A_cp_for_individuals = self.calculate_projected_leaf_area_for_individuals(
-            z,
-            f_g,
-            community)
+            z, f_g, community
+        )
 
         A_cp_for_cohorts = A_cp_for_individuals * community.cohort_number_of_individuals
 
         return A_cp_for_cohorts.sum()
 
-
     @classmethod
     def solve_canopy_closure_height(
-            cls,
-            z: float,
-            community: Community,
-            l: int,
-            A: float,
-            fG: float,
+        cls,
+        z: float,
+        community: Community,
+        l: int,
+        A: float,
+        fG: float,
     ) -> float:
         """Solver function for canopy closure height.
 
@@ -95,15 +99,16 @@ class Canopy:
         """
 
         community_projected_area_at_z = cls.calculate_community_projected_area_at_z(
-            community,
-            z)
+            community, z
+        )
 
         # Return the difference between the projected area and the available space
         return community_projected_area_at_z - (A * l) * (1 - fG)
 
     @classmethod
-    def calculate_community_projected_area_at_z(cls, community: Community, z: float) \
-            -> float:
+    def calculate_community_projected_area_at_z(
+        cls, community: Community, z: float
+    ) -> float:
         """Calculate the total area of community stems."""
         projected_canopy_area_for_individuals = (
             calculate_projected_canopy_area_for_individuals(
@@ -113,10 +118,14 @@ class Canopy:
                 community.pft_m_values,
                 community.pft_n_values,
                 community.canopy_factor_q_m_values,
-                community.canopy_factor_z_m_values))
+                community.canopy_factor_z_m_values,
+            )
+        )
 
-        cohort_areas_at_z = (community.cohort_number_of_individuals
-                             * projected_canopy_area_for_individuals)
+        cohort_areas_at_z = (
+            community.cohort_number_of_individuals
+            * projected_canopy_area_for_individuals
+        )
 
         return sum(cohort_areas_at_z)
 
@@ -155,15 +164,16 @@ class Canopy:
 
         # Calculate Ac terms
         A_c_terms = (
-            community.t_model_crown_areas * (q_z / community.canopy_factor_q_m_values) ** 2
+            community.t_model_crown_areas
+            * (q_z / community.canopy_factor_q_m_values) ** 2
         )
 
         # Set Acp either side of zm
-        A_cp = np.where(z <= community.canopy_factor_z_m_values,
-                        community.t_model_crown_areas - A_c_terms * f_g,
-                        A_c_terms * (1 - f_g))
+        A_cp = np.where(
+            z <= community.canopy_factor_z_m_values,
+            community.t_model_crown_areas - A_c_terms * f_g,
+            A_c_terms * (1 - f_g),
+        )
         # Set Ap = 0 where z > H
-        A_cp = np.where(z > community.t_model_heights,
-                        0,
-                        A_cp)
+        A_cp = np.where(z > community.t_model_heights, 0, A_cp)
         return A_cp
