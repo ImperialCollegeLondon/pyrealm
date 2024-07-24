@@ -131,6 +131,24 @@ class Community:
             self.pft_m_values, self.pft_n_values, self.t_model_heights
         )
 
+    def load_communities_from_csv(cls, csv_path: str) -> list[Community]:
+        csv_data = np.genfromtxt(fname=csv_path,
+                                names=True,
+                                delimiter=',',
+                                skip_header=0,
+                                usemask=False,
+                                usecols=(reco_idx, gpp_idx,))
+
+        print(csv_data)
+
+        cell_id = 1
+        cell_area = 1.0
+        cohort_dbh_values = np.empty()
+        cohort_number_of_individuals = np.empty()
+        cohort_pft_names = np.empty()
+        flora = Flora([PlantFunctionalType("foo",1,2,3,4,5,6,1,1,1,1,1,1,1,1,1,1)])
+        return [Community(cell_id, cell_area, cohort_dbh_values, cohort_number_of_individuals, cohort_pft_names, flora)]
+
     def __populate_pft_arrays(self) -> None:
         """Populate plant functional type arrays.
 
