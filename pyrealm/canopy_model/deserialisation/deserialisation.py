@@ -50,7 +50,7 @@ class PlantFunctionalTypeDeserialiser:
         """
         with open(path) as file:
             pfts_json = json.load(file)
-        pfts = PlantFunctionalType.schema().load(pfts_json, many=True)  # type: ignore[attr-defined] # noqa: E501
+        pfts = PlantFunctionalType.schema().load(pfts_json, many=True)  # type: ignore[attr-defined]
         return pfts
 
 
@@ -76,7 +76,9 @@ class CommunityDeserialiser:
         with open(path) as file:
             communities_json = json.load(file)
 
-        imported_communities = ImportedCommunity.schema().load(communities_json, many=True)  # type: ignore[attr-defined] # noqa: E501
+        imported_communities = ImportedCommunity.schema().load(
+            communities_json, many=True
+        )  # type: ignore[attr-defined] # noqa: E501
 
         flora = Flora(self.plant_functional_types)
         communities = list(

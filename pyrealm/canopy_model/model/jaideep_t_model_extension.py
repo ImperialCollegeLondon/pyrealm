@@ -8,28 +8,29 @@ import numpy as np
 from numpy.typing import NDArray
 
 
-def calculate_q_m_values(m: NDArray[np.float32],
-                         n: NDArray[np.float32]) -> NDArray[np.float32]:
-    """placeholder."""
+def calculate_q_m_values(
+    m: NDArray[np.float32], n: NDArray[np.float32]
+) -> NDArray[np.float32]:
+    """Placeholder."""
     return (
-            m
-            * n
-            * ((n - 1) / (m * n - 1)) ** (1 - 1 / n)
-            * (((m - 1) * n) / (m * n - 1)) ** (m - 1)
+        m
+        * n
+        * ((n - 1) / (m * n - 1)) ** (1 - 1 / n)
+        * (((m - 1) * n) / (m * n - 1)) ** (m - 1)
     )
 
 
-def calculate_z_m_values(m: NDArray[np.float32],
-                         n: NDArray[np.float32],
-                         height: NDArray[np.float32]) -> NDArray[np.float32]:
+def calculate_z_m_values(
+    m: NDArray[np.float32], n: NDArray[np.float32], height: NDArray[np.float32]
+) -> NDArray[np.float32]:
     # Height of maximum crown radius
     z_m = height * ((n - 1) / (m * n - 1)) ** (1 / n)
     return z_m
 
 
-def calculate_r_0_values(q_m: NDArray[np.float32],
-                         crown_area: NDArray[np.float32]
-                         ) -> NDArray[np.float32]:
+def calculate_r_0_values(
+    q_m: NDArray[np.float32], crown_area: NDArray[np.float32]
+) -> NDArray[np.float32]:
     """Calculate stem canopy factors from Jaideep's extension to the T Model."""
     # Scaling factor to give expected A_c (crown area) at
     # z_m (height of maximum crown radius)
@@ -39,13 +40,13 @@ def calculate_r_0_values(q_m: NDArray[np.float32],
 
 
 def calculate_projected_canopy_area_for_individuals(
-        z: float,
-        height: NDArray[np.float32],
-        crown_area: NDArray[np.float32],
-        m: NDArray[np.float32],
-        n: NDArray[np.float32],
-        q_m: NDArray[np.float32],
-        z_m: NDArray[np.float32]
+    z: float,
+    height: NDArray[np.float32],
+    crown_area: NDArray[np.float32],
+    m: NDArray[np.float32],
+    n: NDArray[np.float32],
+    q_m: NDArray[np.float32],
+    z_m: NDArray[np.float32],
 ) -> NDArray[np.float32]:
     """Calculate projected crown area above a given height.
 
@@ -76,13 +77,14 @@ def calculate_projected_canopy_area_for_individuals(
     return A_p
 
 
-def calculate_relative_canopy_radii(z: float,
-                                    height: NDArray[np.float32],
-                                    m: NDArray[np.float32],
-                                    n: NDArray[np.float32]) -> NDArray[np.float32]:
+def calculate_relative_canopy_radii(
+    z: float,
+    height: NDArray[np.float32],
+    m: NDArray[np.float32],
+    n: NDArray[np.float32],
+) -> NDArray[np.float32]:
     """Calculate q(z) at a given height, z."""
 
     z_over_height = z / height
 
-    return m * n * z_over_height ** (n - 1) * (1 - z_over_height ** n) ** (m - 1)
-
+    return m * n * z_over_height ** (n - 1) * (1 - z_over_height**n) ** (m - 1)
