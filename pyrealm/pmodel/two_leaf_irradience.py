@@ -3,7 +3,11 @@
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm.constants import core_const
 from pyrealm.constants.two_leaf_canopy import TwoLeafConst
+from pyrealm.pmodel import PModel
+from pyrealm.pmodel.optimal_chi import OptimalChiABC
+from pyrealm.pmodel.subdaily import SubdailyPModel
 
 
 class TwoLeafIrradience:
@@ -291,24 +295,230 @@ class TwoLeafIrradience:
         return I_csun, I_cshade
 
 
-def beta_angle_from_lat_dec_hour(
-    latitude: NDArray, declination: NDArray, hour_angle: NDArray
-) -> NDArray:
-    """Calculates solar beta angle (elevation angle).
+class TwoLeafAssimilation:
+    """Temp."""
 
-    Calculates solar beta angle using Eq A13 of dePury & Farquhar (1997).
+    def __init__(
+        self, pmodel: PModel | SubdailyPModel, irrad: TwoLeafIrradience, LAI: NDArray
+    ):
+        self.pmodel = pmodel
+        self.irrad = irrad
+        self.LAI = LAI
 
-    Args:
-        latitude: array of latitudes (rads)
-        declination: array of declinations (rads)
-        hour_angle: array of hour angle (rads)
+        self.vcmax_pmod: NDArray
+        self.vcmax25_pmod: NDArray
+        self.optchi_obj: OptimalChiABC
+        self.core_const: core_const
+        self.gpp: NDArray
 
-    Returns:
-        beta: array of solar beta angles
-    """
+        self._get_vcmax_pmod()
+        self._get_vcmax_25_pmod()
+        self._get_optchi_obj()
+        self._get_core_const()
 
-    beta = np.sin(latitude) * np.sin(declination) + np.cos(latitude) * np.cos(
-        declination
-    ) * np.cos(hour_angle)
+    def _get_vcmax_pmod(self) -> None:
+        """Temp."""
 
-    return beta
+        self.vcmax_pmod = (
+            self.pmodel.vcmax
+            if isinstance(self.pmodel, PModel)
+            else self.pmodel.subdaily_vcmax
+        )
+
+    def _get_vcmax_25_pmod(self) -> None:
+        """Temp."""
+
+        self.vcmax25_pmod = (
+            self.pmodel.vcmax25
+            if isinstance(self.pmodel, PModel)
+            else self.pmodel.subdaily_vcmax25
+        )
+
+    def _get_optchi_obj(self) -> None:
+        """Temp."""
+        self.optchi_obj = (
+            self.pmodel.optchi
+            if isinstance(self.pmodel, PModel)
+            else self.pmodel.optimal_chi
+        )
+
+    def _get_core_const(self) -> None:
+        """Temp."""
+        self.core_const = (
+            self.pmodel.core_const
+            if isinstance(self.pmodel, PModel)
+            else self.pmodel.env.core_const
+        )
+
+    def _kv_LLoyd(self) -> NDArray:
+        r"""Calculate Kv_Lloyd parameter.
+
+        Generate extinction coefficients to express the vertical gradient in
+        photosynthetic capacity after the equation provided in Figure 10 of
+        Lloyd et al. (2010)
+
+        :math:`\text{kv\_Lloyd} = \exp(0.00963 \cdot \text{vcmax\_pmod} - 2.43)`
+
+        NB: Vcmax is used here rather than vcmax_25
+        """
+
+        kv_Lloyd = np.exp(0.00963 * self.vcmax_pmod - 2.43)
+
+        return kv_Lloyd
+
+    def _Vmax25_canopy(self, kv_Lloyd: NDArray) -> None:
+        r"""Calculate carboxylation in the canopy at standard conditions.
+
+        :math:`\text{Vmax25\_canopy} = \text{LAI} \cdot \text{vcmax25\_pmod} \cdot \left
+        (\frac{1 - \exp(-\text{kv\_Lloyd})}{\text{kv\_Lloyd}}\right)`
+        """
+
+        Vmax25_canopy = (
+            self.LAI * self.vcmax25_pmod * ((1 - np.exp(-kv_Lloyd)) / kv_Lloyd)
+        )
+
+        return Vmax25_canopy
+
+    def _Vmax25_sun(self, kv_Lloyd: NDArray) -> NDArray:
+        r"""Calculate carboxylation in sunlit areas at standard conditions.
+
+        :math:`\text{Vmax25\_sun} = \text{LAI} \cdot \text{vcmax25\_pmod} \cdot \left(\frac{1 -
+        \exp(-\text{kv\_Lloyd} - \text{irrad.kb} \cdot \text{LAI})}{\text{kv\_Lloyd} + \text{irrad.kb}
+        \cdot \text{LAI}}\right)`
+        """
+
+        Vmax25_sun = (
+            self.LAI
+            * self.vcmax25_pmod
+            * (
+                (1 - np.exp(-kv_Lloyd - self.irrad.kb * self.LAI))
+                / (kv_Lloyd + self.irrad.kb * self.LAI)
+            )
+        )
+
+        return Vmax25_sun
+
+    def _Vmax25_shade(self, Vmax25_canopy: NDArray, Vmax_25_sun: NDArray) -> NDArray:
+        r"""Calculate carboxylation in shade areas at standard conditions."""
+
+        return Vmax25_canopy - Vmax_25_sun
+
+    def _carboxylation_to_T(self, Vmax25: NDArray) -> NDArray:
+        r"""Convert carboxylation rates to ambient temperature.
+
+        Convert carboxylation rates to ambient temperature using an Arrhenius function.
+
+        :math:`\text{Vmax\_sun} = \text{Vmax25\} \cdot \exp \left(\frac{64800 \cdot
+        (\text{pmodel.env.tc} - 25)}{298 \cdot 8.314 \cdot (\text{pmodel.env.tc} + 273)}
+        \right)`
+
+        """
+
+        Vmax = Vmax25 * np.exp(
+            64800
+            * (self.pmodel.env.tc - 25)
+            / (298 * 8.314 * (self.pmodel.env.tc + 273))
+        )
+
+        return Vmax
+
+    def _photosynthetic_estimate(self, Vmax: NDArray) -> NDArray:
+        """Calculates photosynthetic estimates as V_cmax * mc."""
+
+        Av = Vmax * self.optchi_obj.mc
+
+        return Av
+
+    def _Jmax25(self, Vmax25: NDArray) -> NDArray:
+        """Calculates Jmax estimates for sun and shade.
+
+        Uses Eqn 31, after Wullschleger
+        """
+
+        Jmax25 = 29.1 + 1.64 * Vmax25
+
+        return Jmax25
+
+    def _Jmax25_temp_correction(self, Jmax25: NDArray) -> NDArray:
+        """Temperature correction (Mengoli 2021 Eqn 3b).
+
+        T in K.
+
+        """
+
+        Jmax = Jmax25 * np.exp(
+            (43990 / 8.314) * (1 / 298 - 1 / (self.pmodel.env.tc + 273))
+        )
+
+        return Jmax
+
+    def _calc_J(
+        self, Jmax, I_c: TwoLeafIrradience.I_csun | TwoLeafIrradience.I_cshade
+    ) -> NDArray:
+        """Calculates J."""
+
+        J = self.Jmax_sun * I_c * (1 - 0.15) / (I_c + 2.2 * Jmax)
+
+        return J
+
+    def _calc_Aj(self, J: NDArray) -> NDArray:
+        """Calculate J."""
+
+        Aj = self.optchi_obj.mj * J / 4
+
+        return Aj
+
+    def _Acanopy(self, Aj, Av):
+        """Calculate the assimilation in each partition as the minimum of Aj and Av.
+
+        Clip data when the sun is below the angle of obscurity
+        """
+
+        ew_minima = np.minimum(Aj, Av)
+
+        Acanopy = np.where(
+            self.irrad.beta_angle < self.irrad.solar_obscurity_angle, 0, ew_minima
+        )
+
+        return Acanopy
+
+    def _gpp(self, Acanopy_sun: NDArray, Acanopy_shade: NDArray) -> NDArray:
+        """Calculate gpp."""
+
+        gpp = self.core_const.k_c_molmass * Acanopy_sun + Acanopy_shade
+
+        return gpp
+
+    def calc_gpp(self) -> None:
+        """Calculate gross primary product."""
+
+        kv_Lloyd = self._kv_LLoyd()
+
+        Vmax25_canopy = self._Vmax25_canopy(kv_Lloyd)
+        Vmax25_sun = self._Vmax25_sun(kv_Lloyd)
+        Vmax25_shade = self._Vmax25_shade(Vmax25_canopy, Vmax25_sun)
+
+        Vmax_sun = self._carboxylation_to_T(Vmax25_sun)
+        Vmax_shade = self._carboxylation_to_T(Vmax25_shade)
+
+        Av_sun = self._photosynthetic_estimate(Vmax_sun)
+        Av_shade = self._photosynthetic_estimate(Vmax_shade)
+
+        Jmax25_sun = self._Jmax25(Vmax25_sun)
+        Jmax25_shade = self._Jmax25(Vmax25_shade)
+
+        Jmax_sun = self._Jmax25_temp_correction(Jmax25_sun)
+        Jmax_shade = self._Jmax25_temp_correction(Jmax25_shade)
+
+        J_sun = self._calc_J(Jmax_sun, self.irrad.I_csun)
+        J_shade = self._calc_J(Jmax_shade, self.irrad.I_cshade)
+
+        Aj_sun = self._calc_Aj(J_sun)
+        Aj_shade = self._calc_Aj(J_shade)
+
+        Acanopy_sun = self._Acanopy(Aj_sun, Av_sun)
+        Acanopy_shade = self._Acanopy(Aj_shade, Av_shade)
+
+        gpp = self._gpp(Acanopy_sun, Acanopy_shade)
+
+        return gpp
