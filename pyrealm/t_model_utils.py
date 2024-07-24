@@ -14,6 +14,7 @@ def calculate_heights(
     pft_a_hd_values: NDArray[np.float32],
     diameters_at_breast_height: NDArray[np.float32],
 ) -> NDArray[np.float32]:
+    """Height of tree from diameter, Equation (4) of Li ea."""
     heights = pft_h_max_values * (
         1 - np.exp(-pft_a_hd_values * diameters_at_breast_height / pft_h_max_values)
     )
@@ -27,7 +28,7 @@ def calculate_crown_areas(
     diameters_at_breast_height: NDArray[np.float32],
     heights: NDArray[np.float32],
 ) -> NDArray[np.float32]:
-    # Crown area of tree, Equation (8) of Li ea.
+    """Crown area of tree, Equation (8) of Li ea."""
     t_model_crown_areas = (
         (np.pi * pft_ca_ratio_values / (4 * pft_a_hd_values))
         * diameters_at_breast_height
@@ -42,7 +43,7 @@ def calculate_crown_fractions(
     pft_a_hd_values: NDArray[np.float32],
     diameters_at_breast_height: NDArray[np.float32],
 ) -> NDArray[np.float32]:
-    # Crown fraction, Equation (11) of Li ea.
+    """Crown fraction, Equation (11) of Li ea."""
     crown_fractions = heights / (pft_a_hd_values * diameters_at_breast_height)
 
     return crown_fractions

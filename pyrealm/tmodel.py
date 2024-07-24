@@ -12,6 +12,7 @@ growth given an estimate of gross primary productivity (GPP).
 """  # noqa: D205, D415
 
 import numpy as np
+import t_model_utils
 from numpy.typing import NDArray
 
 from pyrealm.constants.tmodel_const import TModelTraits
@@ -209,31 +210,34 @@ class TTree:
         self._diameter = values
 
         # Height of tree from diameter, Equation (4) of Li ea.
-        self._height = self.traits.h_max * (
-            1 - np.exp(-self.traits.a_hd * self._diameter / self.traits.h_max)
+        self._height = t_model_utils.calculate_heights(
+            self.traits.h_max, self.traits.a_hd, self._diameter
         )
 
         # Crown area of tree, Equation (8) of Li ea.
-        self._crown_area = (
-            ((np.pi * self.traits.ca_ratio) / (4 * self.traits.a_hd))
-            * self._diameter
-            * self._height
+        self._crown_area = t_model_utils.calculate_crown_areas(
+            self.traits.ca_ratio, self.traits.a_hd, self._diameter, self._height
         )
 
         # Crown fraction, Equation (11) of Li ea.
-        self._crown_fraction = self._height / (self.traits.a_hd * self._diameter)
-
-        # Masses
-        self._mass_stm = (
-            (np.pi / 8) * (self._diameter**2) * self._height * self.traits.rho_s
+        self._crown_fraction = t_model_utils.calculate_crown_fractions(
+            self.height, self.traits.a_hd, self._diameter
         )
-        self._mass_fol = self._crown_area * self.traits.lai * (1 / self.traits.sla)
-        self._mass_swd = (
-            self._crown_area
-            * self.traits.rho_s
-            * self._height
-            * (1 - self._crown_fraction / 2)
-            / self.traits.ca_ratio
+        # Masses
+        self._mass_stm = t_model_utils.calculate_stem_masses(
+            self._diameter, self._height, self.traits.rho_s
+        )
+
+        self._mass_fol = t_model_utils.calculate_foliage_masses(
+            self._crown_area, self.traits.lai, self.traits.sla
+        )
+
+        self._mass_swd = t_model_utils.calculate_swd_masses(
+            self._crown_area,
+            self.traits.rho_s,
+            self._height,
+            self._crown_fraction,
+            self.traits.ca_ratio,
         )
 
         # Flag any calculated growth values as outdated

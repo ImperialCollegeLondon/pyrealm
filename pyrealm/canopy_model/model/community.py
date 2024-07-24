@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import numpy as np
-import t_model_utils as t_model
 from numpy.typing import NDArray
 
-from pyrealm.canopy_model.model.flora import Flora, PlantFunctionalType
 import pyrealm.canopy_model.model.jaideep_t_model_extension as t_model_extension
+from pyrealm import t_model_utils as t_model
+from pyrealm.canopy_model.model.flora import Flora, PlantFunctionalType
 
 
 class Community:
