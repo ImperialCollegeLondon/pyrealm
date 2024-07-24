@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.1
+    jupytext_version: 1.16.3
 kernelspec:
   display_name: pyrealm_python3
   language: python
@@ -33,7 +33,7 @@ This sketch:
   we are going to want to include a number of individuals to capture cohorts.
 * Assumes a single PFT, where we will need to provide a mixed community.
 * Consequently handles forest inventory properties in a muddled way: we will
-  likely package all of the stem data into a single class, probably a community 
+  likely package all of the stem data into a single class, probably a community
   object.
 ```
 
@@ -91,12 +91,13 @@ $$
 def calculate_qm(m, n):
 
     # Constant q_m
-    return  (
+    return (
         m
         * n
         * ((n - 1) / (m * n - 1)) ** (1 - 1 / n)
         * (((m - 1) * n) / (m * n - 1)) ** (m - 1)
     )
+
 
 def calculate_stem_canopy_factors(pft, m, n):
 
@@ -107,14 +108,15 @@ def calculate_stem_canopy_factors(pft, m, n):
     r0 = 1 / qm * np.sqrt(pft.crown_area / np.pi)
 
     return zm, r0
-    
+
+
 # Shape parameters for a fairly top heavy crown profile
 m = 2
 n = 5
 qm = calculate_qm(m=m, n=n)
 zm, r0 = calculate_stem_canopy_factors(pft=pft, m=m, n=n)
 
-print("qm = ", np.round(qm,4))
+print("qm = ", np.round(qm, 4))
 print("zm = ", zm)
 print("r0 = ", r0)
 ```
@@ -133,10 +135,10 @@ $$
 ```{code-cell}
 def calculate_relative_canopy_radius_at_z(z, H, m, n):
     """Calculate q(z)"""
-    
+
     z_over_H = z / H
-    
-    return  m * n * z_over_H ** (n - 1) * (1 - z_over_H**n) ** (m - 1)
+
+    return m * n * z_over_H ** (n - 1) * (1 - z_over_H**n) ** (m - 1)
 ```
 
 ```{code-cell}
@@ -155,7 +157,7 @@ Vertical crown radius profiles can now be calculated for each stem:
 ```{code-cell}
 # Create an interpolation from ground to maximum stem height, with 5 cm resolution.
 # Also append a set of values _fractionally_ less than the exact height  of stems
-# so that the height at the top of each stem is included but to avoid floating 
+# so that the height at the top of each stem is included but to avoid floating
 # point issues with exact heights.
 
 zres = 0.05
@@ -224,6 +226,7 @@ $$
 ```{code-cell}
 Stems = float | np.ndarray
 
+
 def calculate_projected_area(
     z: float,
     pft,
@@ -231,7 +234,6 @@ def calculate_projected_area(
     n: Stems,
     qm: Stems,
     zm: Stems,
-
 ) -> np.ndarray:
     """Calculate projected crown area above a given height.
 
@@ -251,7 +253,7 @@ def calculate_projected_area(
 
     # Calculate q(z)
     qz = calculate_relative_canopy_radius_at_z(z, pft.height, m, n)
-    
+
     # Calculate Ap given z > zm
     Ap = pft.crown_area * (qz / qm) ** 2
     # Set Ap = Ac where z <= zm
@@ -267,9 +269,7 @@ vertical profile for individual stems and across the community.
 
 ```{code-cell}
 # Calculate the projected area for each stem
-Ap_z = calculate_projected_area(
-    z=z[:, None], pft=pft, m=m, n=n, qm=qm, zm=zm
-)
+Ap_z = calculate_projected_area(z=z[:, None], pft=pft, m=m, n=n, qm=qm, zm=zm)
 
 # Plot the calculated values for each stem and across the community
 fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(10, 5))
@@ -329,7 +329,7 @@ def solve_canopy_closure_height(
 
     This function returns the difference between the total community projected area
     at a height $z$ and the total available canopy space for canopy layer $l$, given
-    the community gap fraction for a given height. It is used with a root solver to 
+    the community gap fraction for a given height. It is used with a root solver to
     find canopy layer closure heights $z^*_l* for a community.
 
     Args:
@@ -340,12 +340,11 @@ def solve_canopy_closure_height(
     """
 
     # Calculate Ap(z)
-    Ap_z = calculate_projected_area(
-        z=z, pft=pft, m=m, n=n, qm=qm, zm=zm
-    )
+    Ap_z = calculate_projected_area(z=z, pft=pft, m=m, n=n, qm=qm, zm=zm)
 
     # Return the difference between the projected area and the available space
     return Ap_z.sum() - (A * l) * (1 - fG)
+
 
 def calculate_canopy_heights(
     A: float,
@@ -381,7 +380,7 @@ stems. These should be identical to the crown area of the stems.
 ```{code-cell}
 # Set the total available canopy space and community gap fraction
 canopy_area = 32
-community_gap_fraction = 2/32
+community_gap_fraction = 2 / 32
 
 z_star = calculate_canopy_heights(
     A=canopy_area, fG=community_gap_fraction, m=m, n=n, qm=qm, pft=pft, zm=zm
@@ -435,8 +434,10 @@ ax2.set_xlabel("Projected crown area above height $z$ ($A_p(z)$, m2)")
 # Add z* values on the righthand axis
 ax3 = ax2.twinx()
 
+
 def z_star_labels(X):
     return [f"$z^*_{l + 1}$ = {z:.2f}" for l, z in enumerate(X)]
+
 
 ax3.set_ylim(ax2.get_ylim())
 ax3.set_yticks(z_star)
@@ -447,8 +448,10 @@ ax4 = ax2.twiny()
 # Add canopy layer closure areas on top axis
 cum_area = np.arange(1, len(z_star)) * canopy_area * (1 - community_gap_fraction)
 
+
 def cum_area_labels(X):
     return [f"$A_{l + 1}$ = {z:.1f}" for l, z in enumerate(X)]
+
 
 ax4.set_xlim(ax2.get_xlim())
 ax4.set_xticks(cum_area)
@@ -462,9 +465,7 @@ $z^*_l$ and hence the projected area of canopy **within each layer**.
 
 ```{code-cell}
 # Calculate the canopy area above z_star for each stem
-Ap_z_star = calculate_projected_area(
-    z=z_star[:, None], pft=pft, m=m, n=n, qm=qm, zm=zm
-)
+Ap_z_star = calculate_projected_area(z=z_star[:, None], pft=pft, m=m, n=n, qm=qm, zm=zm)
 
 print(Ap_z_star)
 ```
@@ -513,7 +514,6 @@ def calculate_leaf_area(
     n: Stems,
     qm: Stems,
     zm: Stems,
-
 ) -> np.ndarray:
     """Calculate leaf area above a given height.
 
@@ -533,7 +533,7 @@ def calculate_leaf_area(
 
     # Calculate q(z)
     qz = calculate_relative_canopy_radius_at_z(z, pft.height, m, n)
-    
+
     # Calculate Ac term
     Ac_term = pft.crown_area * (qz / qm) ** 2
     # Set Acp either side of zm
@@ -556,23 +556,23 @@ fig, ax1 = plt.subplots(1, 1, figsize=(6, 5))
 for fg in np.arange(0, 1.01, 0.05):
 
     if fg == 0:
-        color='red'
-        label='$f_g = 0$'
-        lwd=0.5
+        color = "red"
+        label = "$f_g = 0$"
+        lwd = 0.5
     elif fg == 1:
-        color='blue'
-        label='$f_g = 1$'
-        lwd=0.5
+        color = "blue"
+        label = "$f_g = 1$"
+        lwd = 0.5
     else:
-        color='black'
-        label=None
-        lwd=0.25
+        color = "black"
+        label = None
+        lwd = 0.25
 
     Acp_z = calculate_leaf_area(z=z[:, None], fg=fg, pft=pft, m=m, n=n, qm=qm, zm=zm)
     ax1.plot(np.nansum(Acp_z, axis=1), z, color=color, linewidth=lwd, label=label)
 
 ax1.set_xlabel(r"Projected leaf area above height $z$ ($\tilde{A}_{cp}(z)$, m2)")
-ax1.legend(frameon=False);
+ax1.legend(frameon=False)
 ```
 
 We can now calculate the crown area occupied by leaves above the height of each closed
@@ -610,7 +610,7 @@ where $k$ is the light extinction coefficient ($k$) and $L$ is the leaf area ind
 (LAI). The LAI can be calculated for each stem and layer:
 
 ```{code-cell}
-LAI = (Acp_within_layer / canopy_area)
+LAI = Acp_within_layer / canopy_area
 print(LAI)
 ```
 
@@ -629,7 +629,7 @@ The layer LAI values can now be used to calculate the light transmission of each
 hence the cumulative light extinction profile through the canopy.
 
 ```{code-cell}
-f_abs = (1 - np.exp(-pft.traits.par_ext * LAI_layer))
+f_abs = 1 - np.exp(-pft.traits.par_ext * LAI_layer)
 ext = np.cumproduct(f_abs)
 
 print("f_abs = ", f_abs)

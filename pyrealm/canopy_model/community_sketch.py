@@ -7,7 +7,6 @@ from pyrealm.canopy_model.deserialisation.deserialisation import (
 from pyrealm.canopy_model.model.canopy import Canopy
 
 if __name__ == "__main__":
-
     pfts = PlantFunctionalTypeDeserialiser.load_plant_functional_types(
         "pyrealm_build_data/community/pfts.json"
     )
