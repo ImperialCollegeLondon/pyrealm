@@ -23,13 +23,13 @@ class Canopy:
         )
 
         # TODO I would like to avoid using a map here if possible as it's really a slow
-        #  for loop under the hood, but the dimensions become difficult to reason/read
-        #  otherwise
+        #  for loop under the hood, but haven't thought of a way to do this and keep
+        #  the code readable.
         self.A_cp_within_layer = map(
             self.calculate_total_canopy_A_cp,
             self.canopy_layer_heights,
-            canopy_gap_fraction,
-            community,
+            np.full(self.canopy_layer_heights.len(), canopy_gap_fraction),
+            np.full(self.canopy_layer_heights.len(), community),
         )
 
     def calculate_canopy_layer_heights(
