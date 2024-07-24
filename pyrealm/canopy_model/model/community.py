@@ -131,13 +131,19 @@ class Community:
             self.pft_m_values, self.pft_n_values, self.t_model_heights
         )
 
-    def load_communities_from_csv(cls, csv_path: str) -> list[Community]:
+    def load_communities_from_csv(cls, csv_path: str, flora: Flora) -> list[Community]:
+
+        dtype = [np.int_, np.str_, np.float32, np.float32]
+        headers = ["cell_id", "pft", "dbh", "n"]
+        delimiter = ","
+        skip_header = 0
+
         csv_data = np.genfromtxt(fname=csv_path,
-                                names=True,
-                                delimiter=',',
-                                skip_header=0,
-                                usemask=False,
-                                usecols=(reco_idx, gpp_idx,))
+                                 dtype=dtype,
+                                 names=headers,
+                                 delimiter=delimiter,
+                                 skip_header=skip_header,
+                                 usemask=False)
 
         print(csv_data)
 
