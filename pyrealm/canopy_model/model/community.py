@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import numpy as np
+import t_model_utils as t_model
 from numpy.typing import NDArray
 
 from pyrealm.canopy_model.model.flora import Flora, PlantFunctionalType
-from pyrealm.canopy_model.model.jaideep_t_model_extension import calculate_q_m_values, \
-    calculate_r_0_values, calculate_z_m_values
+from pyrealm.canopy_model.model.jaideep_t_model_extension import (
+    calculate_q_m_values,
+    calculate_r_0_values,
+    calculate_z_m_values,
+)
 
 
 class Community:
@@ -85,44 +89,52 @@ class Community:
             self.__number_of_cohorts, dtype=np.float32
         )
 
-        # initialise empty arrays representing properties calculated using the t model
-        self.t_model_heights: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
-        )
-        self.t_model_crown_areas: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
-        )
-        self.t_model_crown_fractions: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
-        )
-        self.t_model_stem_masses: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
-        )
-        self.t_model_foliage_masses: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
-        )
-        self.t_model_swd_masses: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
-        )
-
-        # initialise empty arrays containing properties pertaining to Jaideep's t model
-        # extension
-        self.canopy_factor_q_m_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
-        )
-        self.canopy_factor_z_m_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
-        )
-        self.canopy_factor_r_0_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
-        )
-
-        # populate the initialised arrays with the relevant calculations
         self.__populate_pft_arrays()
-        self.__calculate_t_model_geometry_arrays()
-        self.__calculate_canopy_factor_arrays()
 
-    # Note: These functions have a lot of side effects and this is all very stateful
+        # Create arrays containing values relating to T Model geometry
+        self.t_model_heights = t_model.calculate_heights(
+            self.pft_h_max_values, self.pft_a_hd_values, self.cohort_dbh_values
+        )
+
+        self.t_model_crown_areas = t_model.calculate_crown_areas(
+            self.pft_ca_ratio_values,
+            self.pft_a_hd_values,
+            self.cohort_dbh_values,
+            self.t_model_heights,
+        )
+
+        self.t_model_crown_fractions = t_model.calculate_crown_fractions(
+            self.t_model_heights, self.pft_a_hd_values, self.cohort_dbh_values
+        )
+
+        self.t_model_stem_masses = t_model.calculate_stem_masses(
+            self.cohort_dbh_values, self.t_model_heights, self.pft_rho_s_values
+        )
+
+        self.t_model_foliage_masses = t_model.calculate_foliage_masses(
+            self.t_model_crown_areas, self.pft_lai_values, self.pft_sla_values
+        )
+
+        self.t_model_swd_masses = t_model.calculate_swd_masses(
+            self.t_model_crown_areas,
+            self.pft_rho_s_values,
+            self.t_model_heights,
+            self.t_model_crown_fractions,
+            self.pft_ca_ratio_values,
+        )
+
+        # Create arrays containing properties pertaining to Jaideep's t model
+        # extension
+        self.canopy_factor_q_m_values = calculate_q_m_values(
+            self.pft_m_values, self.pft_n_values
+        )
+        self.canopy_factor_r_0_values = calculate_r_0_values(
+            self.canopy_factor_q_m_values, self.t_model_crown_areas
+        )
+        self.canopy_factor_z_m_values = calculate_z_m_values(
+            self.pft_m_values, self.pft_n_values, self.t_model_heights
+        )
+
     def __populate_pft_arrays(self) -> None:
         """Populate plant functional type arrays.
 
@@ -150,66 +162,6 @@ class Community:
             self.pft_zeta_values[i] = pft.zeta
             self.pft_m_values[i] = pft.m
             self.pft_n_values[i] = pft.n
-
-    def __calculate_t_model_geometry_arrays(self) -> None:
-        """Populate t model arrays.
-
-        Populate the relevant initialised arrays with properties calculated using the
-        t model.
-        :return: None
-        """
-        self.t_model_heights = self.pft_h_max_values * (
-            1
-            - np.exp(
-                -self.pft_a_hd_values * self.cohort_dbh_values / self.pft_h_max_values
-            )
-        )
-
-        # Crown area of tree, Equation (8) of Li ea.
-        self.t_model_crown_areas = (
-            (np.pi * self.pft_ca_ratio_values / (4 * self.pft_a_hd_values))
-            * self.cohort_dbh_values
-            * self.t_model_heights
-        )
-
-        # Crown fraction, Equation (11) of Li ea.
-        self.t_model_crown_fractions = self.t_model_heights / (
-            self.pft_a_hd_values * self.cohort_dbh_values
-        )
-
-        # Masses
-        self.t_model_stem_masses = (
-            (np.pi / 8)
-            * (self.cohort_dbh_values**2)
-            * self.t_model_heights
-            * self.pft_rho_s_values
-        )
-        self.t_model_foliage_masses = (
-            self.t_model_crown_areas * self.pft_lai_values * (1 / self.pft_sla_values)
-        )
-        self.t_model_swd_masses = (
-            self.t_model_crown_areas
-            * self.pft_rho_s_values
-            * self.t_model_heights
-            * (1 - self.t_model_crown_fractions / 2)
-            / self.pft_ca_ratio_values
-        )
-
-    def __calculate_canopy_factor_arrays(self) -> None:
-        """Populate canopy factor arrays.
-
-        Populate the relevant initialised arrays with properties calculated using
-        Jaideep's extension to the T Model.
-        :return:
-        """
-
-        self.canopy_factor_q_m_values = calculate_q_m_values(self.pft_m_values,
-                                                             self.pft_n_values)
-        self.canopy_factor_r_0_values = calculate_r_0_values(self.canopy_factor_q_m_values,
-                                                             self.t_model_crown_areas)
-        self.canopy_factor_z_m_values = calculate_z_m_values(self.pft_m_values,
-                                                             self.pft_n_values,
-                                                             self.t_model_heights)
 
     def __look_up_plant_functional_type(self, pft_name: str) -> PlantFunctionalType:
         """Retrieve plant functional type for a cohort from the flora dictionary."""
