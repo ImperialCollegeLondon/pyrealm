@@ -7,11 +7,7 @@ import t_model_utils as t_model
 from numpy.typing import NDArray
 
 from pyrealm.canopy_model.model.flora import Flora, PlantFunctionalType
-from pyrealm.canopy_model.model.jaideep_t_model_extension import (
-    calculate_q_m_values,
-    calculate_r_0_values,
-    calculate_z_m_values,
-)
+import pyrealm.canopy_model.model.jaideep_t_model_extension as t_model_extension
 
 
 class Community:
@@ -125,13 +121,13 @@ class Community:
 
         # Create arrays containing properties pertaining to Jaideep's t model
         # extension
-        self.canopy_factor_q_m_values = calculate_q_m_values(
+        self.canopy_factor_q_m_values = t_model_extension.calculate_q_m_values(
             self.pft_m_values, self.pft_n_values
         )
-        self.canopy_factor_r_0_values = calculate_r_0_values(
+        self.canopy_factor_r_0_values = t_model_extension.calculate_r_0_values(
             self.canopy_factor_q_m_values, self.t_model_crown_areas
         )
-        self.canopy_factor_z_m_values = calculate_z_m_values(
+        self.canopy_factor_z_m_values = t_model_extension.calculate_z_m_values(
             self.pft_m_values, self.pft_n_values, self.t_model_heights
         )
 
