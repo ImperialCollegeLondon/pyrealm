@@ -69,16 +69,17 @@ calc_phi0 <- function(AI, tc, mGDD0 = NA) {
 }
 
 
-aridity_index <- exp(seq(log(0.2), log(30), length = 20))
-temp <- seq(5, 45, length = 20)
-mean_gdd_temp <- seq(5, 45, length = 20)
+aridity_index <- c(0.2, 0.5, 0.8, 1.0, 5.0, 10.0)
+temp <- seq(0, 50, by = 1)
+mean_gdd_temp <- seq(5, 30, by = 5)
 
 data <- expand.grid(
-    aridity_index = aridity_index,
     temp = temp,
+    aridity_index = aridity_index,
     mean_gdd_temp = mean_gdd_temp
 )
 
+# Function is not parallelised so loop over inputs
 data$phio <- NA
 
 for (row_idx in seq_along(data$aridity_index)) {
@@ -88,4 +89,4 @@ for (row_idx in seq_along(data$aridity_index)) {
     )
 }
 
-write.csv(data, "sandoval_kphio.csv")
+write.csv(data, "sandoval_kphio.csv", row.names = FALSE)

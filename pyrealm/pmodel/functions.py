@@ -62,8 +62,8 @@ def calc_ftemp_arrh(
 
     Examples:
         >>> # Relative rate change from 25 to 10 degrees Celsius (percent change)
-        >>> round((1.0-calc_ftemp_arrh( 283.15, 100000)) * 100, 4)
-        np.float64(88.1991)
+        >>> np.round((1.0-calc_ftemp_arrh( 283.15, 100000)) * 100, 4)
+        array([88.1991])
     """
 
     # Note that the following forms are equivalent:
@@ -174,8 +174,8 @@ def calc_ftemp_inst_vcmax(
         >>> # Relative change in Vcmax going (instantaneously, i.e. not
         >>> # not acclimatedly) from 10 to 25 degrees (percent change):
         >>> val = ((calc_ftemp_inst_vcmax(25)/calc_ftemp_inst_vcmax(10)-1) * 100)
-        >>> round(val, 4)
-        np.float64(283.1775)
+        >>> np.round(val, 4)
+        array([283.1775])
     """
 
     # Convert temperatures to Kelvin
@@ -239,8 +239,8 @@ def calc_modified_arrhenius_factor(
         >>> # Relative change in Vcmax going (instantaneously, i.e. not
         >>> # not acclimatedly) from 10 to 25 degrees (percent change):
         >>> val = ((calc_ftemp_inst_vcmax(25)/calc_ftemp_inst_vcmax(10)-1) * 100)
-        >>> round(val, 4)
-        np.float64(283.1775)
+        >>> np.round(val, 4)
+        array([283.1775])
     """
 
     if mode not in ["M2002", "J1942"]:
@@ -477,8 +477,8 @@ def calc_kmm(
     Examples:
         >>> # Michaelis-Menten coefficient at 20 degrees Celsius and standard
         >>> # atmosphere (in Pa):
-        >>> round(calc_kmm(20, 101325), 5)
-        np.float64(46.09928)
+        >>> np.round(calc_kmm(20, 101325), 5)
+        array([46.09928])
     """
 
     # Check inputs, return shape not used
