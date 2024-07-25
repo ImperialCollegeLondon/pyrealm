@@ -81,6 +81,8 @@ class PModelEnvironment:
         patm: NDArray,
         theta: NDArray | None = None,
         rootzonestress: NDArray | None = None,
+        aridity_index: NDArray | None = None,
+        mean_growth_temperature: NDArray | None = None,
         pmodel_const: PModelConst = PModelConst(),
         core_const: CoreConst = CoreConst(),
     ):
@@ -132,10 +134,20 @@ class PModelEnvironment:
         temperature and pressure, unitless"""
 
         # Optional variables
-        self.theta: NDArray | None = None
+
+        # TODO - could this be done flexibly using kwargs and then setting the requires
+        #        attributes for the downstream classes that use the PModelEnvironment.
+        #        Easy to add the attributes dynamically, but bounds checking less
+        #        obvious.
+
+        self.theta: NDArray
         """Volumetric soil moisture (m3/m3)"""
-        self.rootzonestress: NDArray | None = None
+        self.rootzonestress: NDArray
         """Rootzone stress factor (experimental) (-)"""
+        self.aridity_index: NDArray
+        """Climatological aridity index as PET/P (-)"""
+        self.mean_growth_temperature: NDArray
+        """Mean temperature > 0°C during growing degree days (°C)"""
 
         if theta is not None:
             # Is the input congruent with the other variables and in bounds.
@@ -147,6 +159,20 @@ class PModelEnvironment:
             _ = check_input_shapes(tc, rootzonestress)
             self.rootzonestress = bounds_checker(
                 rootzonestress, 0, 1, "[]", "rootzonestress", "-"
+            )
+
+        if aridity_index is not None:
+            # Is the input congruent with the other variables and in bounds.
+            _ = check_input_shapes(tc, aridity_index)
+            self.aridity_index = bounds_checker(
+                aridity_index, 0, 50, "[]", "aridity_index", "-"
+            )
+
+        if mean_growth_temperature is not None:
+            # Is the input congruent with the other variables and in bounds.
+            _ = check_input_shapes(tc, mean_growth_temperature)
+            self.mean_growth_temperature = bounds_checker(
+                mean_growth_temperature, 0, 50, "[]", "mean_growth_temperature", "-"
             )
 
         # Store constant settings

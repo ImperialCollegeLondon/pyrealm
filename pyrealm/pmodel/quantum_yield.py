@@ -226,7 +226,7 @@ class QuantumYieldSandoval(
         # Calculate deaactivation energy J/mol
         Hd = 294.804 * deltaS
         # activation energy J/mol
-        Ha = 75000
+        Ha = 75000.0
 
         # theoretical maximum phi0 and curvature parameters (Long, 1993;Sandoval et al.,
         # in.prep.)

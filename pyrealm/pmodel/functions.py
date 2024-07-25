@@ -13,7 +13,7 @@ from pyrealm.core.water import calc_viscosity_h2o
 
 def calc_ftemp_arrh(
     tk: NDArray,
-    ha: float,
+    ha: float | NDArray,
     tk_ref: NDArray | None = None,
     pmodel_const: PModelConst = PModelConst(),
     core_const: CoreConst = CoreConst(),
@@ -199,9 +199,9 @@ def calc_ftemp_inst_vcmax(
 
 def calc_modified_arrhenius_factor(
     tk: NDArray,
-    Ha: NDArray,
-    Hd: NDArray,
-    deltaS: NDArray,
+    Ha: float | NDArray,
+    Hd: float | NDArray,
+    deltaS: float | NDArray,
     mode: str = "M2002",
     tk_ref: NDArray | None = None,
     pmodel_const: PModelConst = PModelConst(),
@@ -250,7 +250,7 @@ def calc_modified_arrhenius_factor(
 
     # Convert temperatures to Kelvin
     if tk_ref is None:
-        tk_ref = pmodel_const.plant_T_ref + core_const.k_CtoK
+        tk_ref = np.array([pmodel_const.plant_T_ref + core_const.k_CtoK])
 
     # Calculate Arrhenius components
     fva = calc_ftemp_arrh(tk=tk, ha=Ha, tk_ref=tk_ref)
@@ -260,9 +260,11 @@ def calc_modified_arrhenius_factor(
     )
 
     if mode == "M2002":
+        # Medlyn et al. 2002 simplification
         return fva * fvb
-    elif mode == "J1942":
-        return fva * (tk / tk_ref) * fvb
+
+    # Johnson et al 1942
+    return fva * (tk / tk_ref) * fvb
 
 
 def calc_ftemp_kphio(
