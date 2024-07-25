@@ -14,6 +14,7 @@ from pyrealm.core.water import calc_viscosity_h2o
 def calc_ftemp_arrh(
     tk: NDArray,
     ha: float,
+    tk_ref: NDArray | None = None,
     pmodel_const: PModelConst = PModelConst(),
     core_const: CoreConst = CoreConst(),
 ) -> NDArray:
@@ -47,6 +48,7 @@ def calc_ftemp_arrh(
     Args:
         tk: Temperature (in Kelvin)
         ha: Activation energy (in :math:`J \text{mol}^{-1}`)
+        tk_ref: The reference temperature for the reaction.
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
@@ -69,9 +71,10 @@ def calc_ftemp_arrh(
     # exp( ha * (tc - 25.0)/(298.15 * kR * (tc + 273.15)) )
     # exp( (ha/kR) * (1/298.15 - 1/tk) )
 
-    tkref = pmodel_const.plant_T_ref + core_const.k_CtoK
+    if tk_ref is None:
+        tk_ref = np.array([pmodel_const.plant_T_ref + core_const.k_CtoK])
 
-    return np.exp(ha * (tk - tkref) / (tkref * core_const.k_R * tk))
+    return np.exp(ha * (tk - tk_ref) / (tk_ref * core_const.k_R * tk))
 
 
 def calc_ftemp_inst_rd(
@@ -192,6 +195,74 @@ def calc_ftemp_inst_vcmax(
     ) / (1 + np.exp((tk * dent - pmodel_const.kattge_knorr_Hd) / (core_const.k_R * tk)))
 
     return fva * fvb
+
+
+def calc_modified_arrhenius_factor(
+    tk: NDArray,
+    Ha: NDArray,
+    Hd: NDArray,
+    deltaS: NDArray,
+    mode: str = "M2002",
+    tk_ref: NDArray | None = None,
+    pmodel_const: PModelConst = PModelConst(),
+    core_const: CoreConst = CoreConst(),
+) -> NDArray:
+    r"""Calculate the modified Arrhenius factor with temperature for an enzyme.
+
+    This function returns a temperature-determined factor expressing the rate of an
+    enzymatic process relative to the rate at a given reference temperature. This is
+    used in the calculation of :math:`V_{cmax}` but also other temperature dependent
+    enzymatic processes.
+
+    The function can operate in one of two modes ("M2002" or "J1942") using the two
+    alternative derivations of the modified Arrhenius relationship presented in
+    :cite:`murphy:2021a`.
+
+    Args:
+        tk: The temperature at which to calculate the factor (K)
+        Ha: The activation energy of the enzyme (:math:`H_a`)
+        Hd: The deactivation energy of the enzyme (:math:`H_d`)
+        deltaS: The entropy of the process (:math:`\Delta S`)
+        tk_ref: The reference temperature for the process (K)
+        mode: The calculation mode.
+        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
+
+    PModel Parameters:
+        To: The standard reference temperature expressed in Kelvin (`T_0`, ``k_To``)
+        R: the universal gas constant (:math:`R`, ``k_R``)
+
+    Returns:
+        Values for :math:`f`
+
+    Examples:
+        >>> # Relative change in Vcmax going (instantaneously, i.e. not
+        >>> # not acclimatedly) from 10 to 25 degrees (percent change):
+        >>> val = ((calc_ftemp_inst_vcmax(25)/calc_ftemp_inst_vcmax(10)-1) * 100)
+        >>> round(val, 4)
+        np.float64(283.1775)
+    """
+
+    if mode not in ["M2002", "J1942"]:
+        raise ValueError(
+            f"Unknown mode option for calc_modified_arrhenius_factor: {mode}"
+        )
+
+    # Convert temperatures to Kelvin
+    if tk_ref is None:
+        tk_ref = pmodel_const.plant_T_ref + core_const.k_CtoK
+
+    # Calculate Arrhenius components
+    fva = calc_ftemp_arrh(tk=tk, ha=Ha, tk_ref=tk_ref)
+
+    fvb = (1 + np.exp((tk_ref * deltaS - Hd) / (core_const.k_R * tk_ref))) / (
+        1 + np.exp((tk * deltaS - Hd) / (core_const.k_R * tk))
+    )
+
+    if mode == "M2002":
+        return fva * fvb
+    elif mode == "J1942":
+        return fva * (tk / tk_ref) * fvb
 
 
 def calc_ftemp_kphio(
