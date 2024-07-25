@@ -131,31 +131,29 @@ class Community:
             self.pft_m_values, self.pft_n_values, self.t_model_heights
         )
 
-    def load_communities_from_csv(cls, csv_path: str, flora: Flora) -> list[Community]:
-        dtype = [np.int_, np.str_, np.float32, np.float32]
+    @classmethod
+    def load_communities_from_csv(
+        cls, cell_area: float, csv_path: str, flora: Flora
+    ) -> list[Community]:
+        dtype = [np.int_, "U20", np.float32, np.float32]
         headers = ["cell_id", "pft", "dbh", "n"]
         delimiter = ","
-        skip_header = 0
+        skip_header = 1
 
-        csv_data = np.genfromtxt(
+        cell_id, pft, dbh, n = np.genfromtxt(
             fname=csv_path,
             dtype=dtype,
             names=headers,
+            unpack=True,
             delimiter=delimiter,
             skip_header=skip_header,
             usemask=False,
         )
 
-        print(csv_data)
-
         cell_id = 1
-        cell_area = 1.0
-        cohort_dbh_values = np.empty()
-        cohort_number_of_individuals = np.empty()
-        cohort_pft_names = np.empty()
-        flora = Flora(
-            [PlantFunctionalType("foo", 1, 2, 3, 4, 5, 6, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)]
-        )
+        cohort_dbh_values = np.empty(1)
+        cohort_number_of_individuals = np.empty(1)
+        cohort_pft_names = np.empty(1)
         return [
             Community(
                 cell_id,

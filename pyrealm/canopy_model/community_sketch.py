@@ -1,21 +1,23 @@
 """A very incomplete sketch of some community and demography functionality."""
 
 from pyrealm.canopy_model.deserialisation.deserialisation import (
-    CommunityDeserialiser,
     PlantFunctionalTypeDeserialiser,
 )
 from pyrealm.canopy_model.model.canopy import Canopy
+from pyrealm.canopy_model.model.community import Community
+from pyrealm.canopy_model.model.flora import Flora
 
 if __name__ == "__main__":
     pfts = PlantFunctionalTypeDeserialiser.load_plant_functional_types(
         "pyrealm_build_data/community/pfts.json"
     )
 
-    cell_area = 32
+    flora = Flora(pfts)
 
-    communities = CommunityDeserialiser(pfts, cell_area).load_communities(
-        "pyrealm_build_data/community/communities.json"
-    )
+    cell_area = 32
+    csv_path = "pyrealm_build_data/community/communities.csv"
+
+    communities = Community.load_communities_from_csv(cell_area, csv_path, flora)
 
     community_gap_fraction = 2 / 32
 
