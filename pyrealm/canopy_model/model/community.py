@@ -132,18 +132,19 @@ class Community:
         )
 
     def load_communities_from_csv(cls, csv_path: str, flora: Flora) -> list[Community]:
-
         dtype = [np.int_, np.str_, np.float32, np.float32]
         headers = ["cell_id", "pft", "dbh", "n"]
         delimiter = ","
         skip_header = 0
 
-        csv_data = np.genfromtxt(fname=csv_path,
-                                 dtype=dtype,
-                                 names=headers,
-                                 delimiter=delimiter,
-                                 skip_header=skip_header,
-                                 usemask=False)
+        csv_data = np.genfromtxt(
+            fname=csv_path,
+            dtype=dtype,
+            names=headers,
+            delimiter=delimiter,
+            skip_header=skip_header,
+            usemask=False,
+        )
 
         print(csv_data)
 
@@ -152,8 +153,19 @@ class Community:
         cohort_dbh_values = np.empty()
         cohort_number_of_individuals = np.empty()
         cohort_pft_names = np.empty()
-        flora = Flora([PlantFunctionalType("foo",1,2,3,4,5,6,1,1,1,1,1,1,1,1,1,1)])
-        return [Community(cell_id, cell_area, cohort_dbh_values, cohort_number_of_individuals, cohort_pft_names, flora)]
+        flora = Flora(
+            [PlantFunctionalType("foo", 1, 2, 3, 4, 5, 6, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)]
+        )
+        return [
+            Community(
+                cell_id,
+                cell_area,
+                cohort_dbh_values,
+                cohort_number_of_individuals,
+                cohort_pft_names,
+                flora,
+            )
+        ]
 
     def __populate_pft_arrays(self) -> None:
         """Populate plant functional type arrays.
