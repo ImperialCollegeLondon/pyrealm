@@ -81,34 +81,55 @@ class TwoLeafIrradience:
         """Calculate absorbed irradiance for sunlit and shaded leaves."""
 
         self.kb = beam_extinction_coeff(self.beta_angle, self.k_sol_obs_angle)
-        self.kb_prime = scattered_beam_extinction_coeff(self.beta_angle,
-                                                         self.k_sol_obs_angle)
-        self.fd = fraction_of_diffuse_rad(self.patm, self.pa0, self.beta_angle,
-                                           self.k_fa)
+        self.kb_prime = scattered_beam_extinction_coeff(
+            self.beta_angle, self.k_sol_obs_angle
+        )
+        self.fd = fraction_of_diffuse_rad(
+            self.patm, self.pa0, self.beta_angle, self.k_fa
+        )
         self.rho_h = beam_irradience_h_leaves(self.k_sigma)
         self.rho_cb = beam_irrad_unif_leaf_angle_dist(self.rho_h, self.kb)
         self.I_d = diffuse_radiation(self.fd, self.ppfd)
         self.I_b = beam_irradience(self.ppfd, self.fd)
-        self.I_c = canopy_irradience(self.rho_cb, self.I_b, self.kb_prime, self.I_d, 
-                                     self.leaf_area_index, self.k_rho_cd)
-        self.Isun_beam = sunlit_beam_irrad(self.I_b,self.k_sigma, self.kb, 
-                                           self.leaf_area_index)
-        self.Isun_diffuse = sunlit_diffuse_irrad(self.I_d,self.rho_cb,self.k_kd_prime, 
-                                                 self.kb, self.leaf_area_index)
-        self.Isun_scattered = sunlit_scattered_irrad(self.I_b, self.rho_cb, 
-                            self.kb_prime, self.kb, self.leaf_area_index, self.k_sigma)
-        self.I_csun = sunlit_absorbed_irrad(self.Isun_beam, self.Isun_diffuse, 
-                                                  self.Isun_scattered)
-        self.I_cshade = shaded_absorbed_irrad(self.beta_angle, self.k_sol_obs_angle, 
-                                              self.I_c, self.I_csun)
+        self.I_c = canopy_irradience(
+            self.rho_cb,
+            self.I_b,
+            self.kb_prime,
+            self.I_d,
+            self.leaf_area_index,
+            self.k_rho_cd,
+        )
+        self.Isun_beam = sunlit_beam_irrad(
+            self.I_b, self.k_sigma, self.kb, self.leaf_area_index
+        )
+        self.Isun_diffuse = sunlit_diffuse_irrad(
+            self.I_d, self.rho_cb, self.k_kd_prime, self.kb, self.leaf_area_index
+        )
+        self.Isun_scattered = sunlit_scattered_irrad(
+            self.I_b,
+            self.rho_cb,
+            self.kb_prime,
+            self.kb,
+            self.leaf_area_index,
+            self.k_sigma,
+        )
+        self.I_csun = sunlit_absorbed_irrad(
+            self.Isun_beam, self.Isun_diffuse, self.Isun_scattered
+        )
+        self.I_cshade = shaded_absorbed_irrad(
+            self.beta_angle, self.k_sol_obs_angle, self.I_c, self.I_csun
+        )
+
 
 class TwoLeafAssimilation:
     """Temp."""
 
     def __init__(
-        self, pmodel: PModel | SubdailyPModel, irrad: TwoLeafIrradience, 
-        leaf_area_index: NDArray):
-
+        self,
+        pmodel: PModel | SubdailyPModel,
+        irrad: TwoLeafIrradience,
+        leaf_area_index: NDArray,
+    ):
         self.pmodel = pmodel
         self.irrad = irrad
         self.leaf_area_index = leaf_area_index
@@ -163,15 +184,18 @@ class TwoLeafAssimilation:
 
         self.kv_Lloyd = canopy_extinction_coefficient(self.vcmax_pmod)
 
-        self.Vmax25_canopy = Vmax25_canopy(self.leaf_area_index, self.vcmax25_pmod, 
-                                           self.kv_Lloyd)
-        self.Vmax25_sun = Vmax25_sun(self.leaf_area_index, self.vcmax25_pmod, 
-                                     self.kv_Lloyd, self.irrad.kb)
+        self.Vmax25_canopy = Vmax25_canopy(
+            self.leaf_area_index, self.vcmax25_pmod, self.kv_Lloyd
+        )
+        self.Vmax25_sun = Vmax25_sun(
+            self.leaf_area_index, self.vcmax25_pmod, self.kv_Lloyd, self.irrad.kb
+        )
         self.Vmax25_shade = Vmax25_shade(self.Vmax25_canopy, self.Vmax25_sun)
 
         self.Vmax_sun = carboxylation_scaling_to_T(self.Vmax25_sun, self.pmodel.env.tc)
-        self.Vmax_shade = carboxylation_scaling_to_T(self.Vmax25_shade, 
-                                                     self.pmodel.env.tc)
+        self.Vmax_shade = carboxylation_scaling_to_T(
+            self.Vmax25_shade, self.pmodel.env.tc
+        )
 
         self.Av_sun = photosynthetic_estimate(self.Vmax_sun, self.optchi_obj.mc)
         self.Av_shade = photosynthetic_estimate(self.Vmax_shade, self.optchi_obj.mc)
@@ -188,18 +212,27 @@ class TwoLeafAssimilation:
         self.Aj_sun = assimilation_rate(self.optchi_obj.mj, self.J_sun)
         self.Aj_shade = assimilation_rate(self.optchi_obj.mj, self.J_shade)
 
-        self.Acanopy_sun = assimilation_canopy(self.Aj_sun, self.Av_sun, 
-                            self.irrad.beta_angle, self.irrad.k_sol_obs_angle)
-        self.Acanopy_shade = assimilation_canopy(self.Aj_shade, self.Av_shade,
-                            self.irrad.beta_angle,self.irrad.k_sol_obs_angle)
+        self.Acanopy_sun = assimilation_canopy(
+            self.Aj_sun, self.Av_sun, self.irrad.beta_angle, self.irrad.k_sol_obs_angle
+        )
+        self.Acanopy_shade = assimilation_canopy(
+            self.Aj_shade,
+            self.Av_shade,
+            self.irrad.beta_angle,
+            self.irrad.k_sol_obs_angle,
+        )
 
-        self.gpp_estimate = gross_primary_product(self.core_const.k_c_molmass, 
-                            self.Acanopy_sun, self.Acanopy_shade)
+        self.gpp_estimate = gross_primary_product(
+            self.core_const.k_c_molmass, self.Acanopy_sun, self.Acanopy_shade
+        )
 
 
-
-def beam_extinction_coeff(beta_angle: NDArray, k_sol_obs_angle: float, 
-                          clip_angle: float = 30, kb_numerator: float = 0.5) -> NDArray:
+def beam_extinction_coeff(
+    beta_angle: NDArray,
+    k_sol_obs_angle: float,
+    clip_angle: float = 30,
+    kb_numerator: float = 0.5,
+) -> NDArray:
     r"""Calculate the beam extinction coefficient.
 
     The beam extinction coefficient represents the attenuation of direct sunlight 
@@ -227,38 +260,43 @@ def beam_extinction_coeff(beta_angle: NDArray, k_sol_obs_angle: float,
         NDArray: Array of beam extinction coefficients.
     """
     kb = np.where(
-        beta_angle > k_sol_obs_angle, kb_numerator / np.sin(beta_angle), clip_angle)
+        beta_angle > k_sol_obs_angle, kb_numerator / np.sin(beta_angle), clip_angle
+    )
     return kb
 
-def scattered_beam_extinction_coeff(beta_angle: NDArray, k_sol_obs_angle: float
-                                    ) -> NDArray:
+
+def scattered_beam_extinction_coeff(
+    beta_angle: NDArray, k_sol_obs_angle: float
+) -> NDArray:
     r"""Calculate the scattered beam extinction coefficient.
 
-    The scattered beam extinction coefficient accounts for the attenuation of 
+    The scattered beam extinction coefficient accounts for the attenuation of
     scattered sunlight in the canopy.
 
     .. math::
-        \text{kb\_prime} = \text{beam\_extinction\_coeff}(\beta\_angle, 
+        \text{kb\_prime} = \text{beam\_extinction\_coeff}(\beta\_angle,
         \text{k\_sol\_obs\_angle}, 27, 0.46)
 
     Args:
         beta_angle (NDArray): Array of solar elevation angles.
-        k_sol_obs_angle (float): Solar angle threshold for calculating the extinction 
+        k_sol_obs_angle (float): Solar angle threshold for calculating the extinction
                                  coefficient.
 
     Returns:
         NDArray: Array of scattered beam extinction coefficients.
     """
-    
+
     kb_prime = beam_extinction_coeff(beta_angle, k_sol_obs_angle, 27, 0.46)
 
     return kb_prime
 
-def fraction_of_diffuse_rad(patm: NDArray, pa0: float, beta_angle: NDArray, 
-                            k_fa: float) -> NDArray:
+
+def fraction_of_diffuse_rad(
+    patm: NDArray, pa0: float, beta_angle: NDArray, k_fa: float
+) -> NDArray:
     r"""Calculate the fraction of diffuse radiation.
 
-    The fraction of diffuse radiation represents the proportion of sunlight that is 
+    The fraction of diffuse radiation represents the proportion of sunlight that is
     scattered before reaching the canopy.
 
     .. math::
@@ -281,10 +319,11 @@ def fraction_of_diffuse_rad(patm: NDArray, pa0: float, beta_angle: NDArray,
 
     return fd
 
+
 def beam_irradience_h_leaves(k_sigma: float) -> NDArray:
     r"""Calculate the beam irradiance for horizontal leaves.
 
-    The beam irradiance for horizontal leaves considers the leaf orientation and 
+    The beam irradiance for horizontal leaves considers the leaf orientation and
     the direct sunlight received.
 
     .. math::
@@ -292,7 +331,7 @@ def beam_irradience_h_leaves(k_sigma: float) -> NDArray:
         \rho_h = \frac{1 - \sqrt{1 - k\_sigma}}{1 + \sqrt{1 - k\_sigma}}
 
     Args:
-        k_sigma (float): Parameter representing the fraction of light intercepted by 
+        k_sigma (float): Parameter representing the fraction of light intercepted by
                          horizontal leaves.
 
     Returns:
@@ -303,10 +342,11 @@ def beam_irradience_h_leaves(k_sigma: float) -> NDArray:
 
     return rho_h
 
+
 def beam_irrad_unif_leaf_angle_dist(rho_h: NDArray, kb: NDArray) -> NDArray:
     r"""Calculate the beam irradiance with a uniform leaf angle distribution.
 
-    The beam irradiance with a uniform leaf angle distribution considers different 
+    The beam irradiance with a uniform leaf angle distribution considers different
     leaf orientations within the canopy.
 
     .. math::
@@ -325,10 +365,11 @@ def beam_irrad_unif_leaf_angle_dist(rho_h: NDArray, kb: NDArray) -> NDArray:
 
     return rho_cb
 
+
 def diffuse_radiation(fd: NDArray, ppfd: NDArray) -> NDArray:
     r"""Calculate the diffuse radiation.
 
-    The diffuse radiation is the portion of sunlight that is scattered in the 
+    The diffuse radiation is the portion of sunlight that is scattered in the
     atmosphere before reaching the canopy.
 
     .. math::
@@ -347,10 +388,11 @@ def diffuse_radiation(fd: NDArray, ppfd: NDArray) -> NDArray:
 
     return I_d
 
+
 def beam_irradience(ppfd: NDArray, fd: NDArray) -> NDArray:
     r"""Calculate the beam irradiance.
 
-    The beam irradiance is the direct component of sunlight that reaches the canopy 
+    The beam irradiance is the direct component of sunlight that reaches the canopy
     without being scattered.
 
     .. math::
@@ -369,25 +411,31 @@ def beam_irradience(ppfd: NDArray, fd: NDArray) -> NDArray:
 
     return I_b
 
-def scattered_beam_irradience(I_b: NDArray, kb: NDArray, kb_prime: NDArray, 
-                              rho_cb: NDArray, leaf_area_index: NDArray, 
-                              k_sigma: NDArray) -> NDArray:
+
+def scattered_beam_irradience(
+    I_b: NDArray,
+    kb: NDArray,
+    kb_prime: NDArray,
+    rho_cb: NDArray,
+    leaf_area_index: NDArray,
+    k_sigma: NDArray,
+) -> NDArray:
     r"""Calculate the scattered beam irradiance.
 
-    The scattered beam irradiance is the portion of direct sunlight that is 
+    The scattered beam irradiance is the portion of direct sunlight that is
     scattered within the canopy.
 
     .. math::
 
-        I_{bs} = I_b \cdot (1 - \rho_{cb}) \cdot kb\_prime \cdot \exp(-kb\_prime \cdot 
-        leaf\_area\_index) - (1 - k\_sigma) \cdot kb \cdot \exp(-kb \cdot 
+        I_{bs} = I_b \cdot (1 - \rho_{cb}) \cdot kb\_prime \cdot \exp(-kb\_prime \cdot
+        leaf\_area\_index) - (1 - k\_sigma) \cdot kb \cdot \exp(-kb \cdot
         leaf\_area\_index)
 
     Args:
         I_b (NDArray): Array of beam irradiance values.
         kb (NDArray): Array of beam extinction coefficients.
         kb_prime (NDArray): Array of scattered beam extinction coefficients.
-        rho_cb (NDArray): Array of beam irradiances with uniform leaf angle 
+        rho_cb (NDArray): Array of beam irradiances with uniform leaf angle
             distribution.
         leaf_area_index (NDArray): Array of leaf area index values.
         k_sigma (NDArray): Array of sigma values.
@@ -396,28 +444,34 @@ def scattered_beam_irradience(I_b: NDArray, kb: NDArray, kb_prime: NDArray,
         NDArray: Array of scattered beam irradiance values.
     """
 
-    I_bs = I_b * (1 - rho_cb) * kb_prime * np.exp(
-            -kb_prime * leaf_area_index) - (1 - k_sigma) * kb \
-    * np.exp(-kb * leaf_area_index)
-    
+    I_bs = I_b * (1 - rho_cb) * kb_prime * np.exp(-kb_prime * leaf_area_index) - (
+        1 - k_sigma
+    ) * kb * np.exp(-kb * leaf_area_index)
+
     return I_bs
 
-def canopy_irradience(rho_cb: NDArray, I_b: NDArray, kb_prime: NDArray, 
-                            I_d: NDArray, leaf_area_index: NDArray, 
-                            k_rho_cd: float)-> NDArray:
+
+def canopy_irradience(
+    rho_cb: NDArray,
+    I_b: NDArray,
+    kb_prime: NDArray,
+    I_d: NDArray,
+    leaf_area_index: NDArray,
+    k_rho_cd: float,
+) -> NDArray:
     r"""Calculate the canopy irradiance.
 
-    The canopy irradiance is the total irradiance within the canopy, including both 
+    The canopy irradiance is the total irradiance within the canopy, including both
     direct and diffuse radiation components.
 
     .. math::
 
-        I_c = (1 - \rho_{cb}) \cdot I_b \cdot 
-        (1 - \exp(-kb\_prime \cdot leaf\_area\_index)) + 
+        I_c = (1 - \rho_{cb}) \cdot I_b \cdot
+        (1 - \exp(-kb\_prime \cdot leaf\_area\_index)) +
         (1 - k\_rho\_cd) \cdot I_d \cdot (1 - \exp(-kb\_prime \cdot leaf\_area\_index))
 
     Args:
-        rho_cb (NDArray): Array of beam irradiances with uniform leaf angle 
+        rho_cb (NDArray): Array of beam irradiances with uniform leaf angle
             distribution.
         I_b (NDArray): Array of beam irradiance values.
         kb_prime (NDArray): Array of scattered beam extinction coefficients.
@@ -429,20 +483,23 @@ def canopy_irradience(rho_cb: NDArray, I_b: NDArray, kb_prime: NDArray,
         NDArray: Array of canopy irradiance values.
     """
     I_c = (1 - rho_cb) * I_b * (1 - np.exp(-kb_prime * leaf_area_index)) + (
-        1 - k_rho_cd) * I_d * (1 - np.exp(-kb_prime * leaf_area_index))
-    
+        1 - k_rho_cd
+    ) * I_d * (1 - np.exp(-kb_prime * leaf_area_index))
+
     return I_c
 
-def sunlit_beam_irrad(I_b: NDArray, k_sigma: float, kb: NDArray, 
-                      leaf_area_index: NDArray) -> NDArray:
+
+def sunlit_beam_irrad(
+    I_b: NDArray, k_sigma: float, kb: NDArray, leaf_area_index: NDArray
+) -> NDArray:
     r"""Calculate the sunlit beam irradiance.
 
-    The sunlit beam irradiance is the direct sunlight received by the sunlit portion 
+    The sunlit beam irradiance is the direct sunlight received by the sunlit portion
     of the canopy.
 
     .. math::
 
-        I_{sun\_beam} = I_b \cdot (1 - k\_sigma) \cdot (1 - \exp(-kb \cdot 
+        I_{sun\_beam} = I_b \cdot (1 - k\_sigma) \cdot (1 - \exp(-kb \cdot
         leaf\_area\_index))
 
     Args:
@@ -455,20 +512,26 @@ def sunlit_beam_irrad(I_b: NDArray, k_sigma: float, kb: NDArray,
         NDArray: Array of sunlit beam irradiance values.
     """
     Isun_beam = I_b * (1 - k_sigma) * (1 - np.exp(-kb * leaf_area_index))
-    
+
     return Isun_beam
 
-def sunlit_diffuse_irrad(I_d: NDArray, k_rho_cd: NDArray, k_kd_prime: float, 
-                               kb: NDArray, leaf_area_index: NDArray) -> NDArray:
+
+def sunlit_diffuse_irrad(
+    I_d: NDArray,
+    k_rho_cd: NDArray,
+    k_kd_prime: float,
+    kb: NDArray,
+    leaf_area_index: NDArray,
+) -> NDArray:
     r"""Calculate the sunlit diffuse irradiance.
 
-    The sunlit diffuse irradiance is the diffuse radiation received by the sunlit 
+    The sunlit diffuse irradiance is the diffuse radiation received by the sunlit
     portion of the canopy.
 
     .. math::
 
-        I_{sun\_diffuse} = I_d \cdot (1 - k\_rho\_cd) \cdot 
-        (1 - \exp(-(k\_kd\_prime + kb) \cdot 
+        I_{sun\_diffuse} = I_d \cdot (1 - k\_rho\_cd) \cdot
+        (1 - \exp(-(k\_kd\_prime + kb) \cdot
         leaf\_area\_index)) \cdot \frac{k\_kd\_prime}{k\_kd\_prime + kb}
 
     Args:
@@ -481,28 +544,40 @@ def sunlit_diffuse_irrad(I_d: NDArray, k_rho_cd: NDArray, k_kd_prime: float,
     Returns:
         NDArray: Array of sunlit diffuse irradiance values.
     """
-    Isun_diffuse = (I_d* (1 - k_rho_cd)* (1 - np.exp(-(k_kd_prime + kb) * \
-                    leaf_area_index))* k_kd_prime / (k_kd_prime + kb))
-    
+    Isun_diffuse = (
+        I_d
+        * (1 - k_rho_cd)
+        * (1 - np.exp(-(k_kd_prime + kb) * leaf_area_index))
+        * k_kd_prime
+        / (k_kd_prime + kb)
+    )
+
     return Isun_diffuse
 
-def sunlit_scattered_irrad(I_b: NDArray, rho_cb: NDArray, kb_prime: NDArray, kb: NDArray
-                           , leaf_area_index: NDArray, k_sigma: float) -> NDArray:
+
+def sunlit_scattered_irrad(
+    I_b: NDArray,
+    rho_cb: NDArray,
+    kb_prime: NDArray,
+    kb: NDArray,
+    leaf_area_index: NDArray,
+    k_sigma: float,
+) -> NDArray:
     r"""Calculate the sunlit scattered irradiance.
 
-    The sunlit scattered irradiance is the scattered radiation received by the sunlit 
+    The sunlit scattered irradiance is the scattered radiation received by the sunlit
     portion of the canopy.
 
     .. math::
 
-        I_{sun\_scattered} = I_b \cdot ((1 - \rho_{cb}) \cdot 
-        (1 - \exp(-(kb\_prime + kb) \cdot 
-        leaf\_area\_index)) \cdot \frac{kb\_prime}{kb\_prime + kb} - (1 - k\_sigma) 
+        I_{sun\_scattered} = I_b \cdot ((1 - \rho_{cb}) \cdot
+        (1 - \exp(-(kb\_prime + kb) \cdot
+        leaf\_area\_index)) \cdot \frac{kb\_prime}{kb\_prime + kb} - (1 - k\_sigma)
         \cdot (1 - \exp(-2 \cdot kb \cdot leaf\_area\_index)) / 2)
 
     Args:
         I_b (NDArray): Array of beam irradiance values.
-        rho_cb (NDArray): Array of beam irradiances with uniform leaf angle 
+        rho_cb (NDArray): Array of beam irradiances with uniform leaf angle
             distribution.
         kb_prime (NDArray): Array of scattered beam extinction coefficients.
         kb (NDArray): Array of beam extinction coefficients.
@@ -512,17 +587,23 @@ def sunlit_scattered_irrad(I_b: NDArray, rho_cb: NDArray, kb_prime: NDArray, kb:
     Returns:
         NDArray: Array of sunlit scattered irradiance values.
     """
-    Isun_scattered = I_b * ((1 - rho_cb)* (1 - np.exp(-(kb_prime + kb) * \
-                        leaf_area_index))* kb_prime/ (kb_prime + kb)
-            - (1 - k_sigma) * (1 - np.exp(-2 * kb * leaf_area_index)) / 2)
-    
+    Isun_scattered = I_b * (
+        (1 - rho_cb)
+        * (1 - np.exp(-(kb_prime + kb) * leaf_area_index))
+        * kb_prime
+        / (kb_prime + kb)
+        - (1 - k_sigma) * (1 - np.exp(-2 * kb * leaf_area_index)) / 2
+    )
+
     return Isun_scattered
 
-def sunlit_absorbed_irrad(Isun_beam: NDArray, Isun_diffuse: NDArray, 
-                          Isun_scattered: NDArray) -> NDArray:
+
+def sunlit_absorbed_irrad(
+    Isun_beam: NDArray, Isun_diffuse: NDArray, Isun_scattered: NDArray
+) -> NDArray:
     r"""Calculate the sunlit absorbed irradiance.
 
-    The sunlit absorbed irradiance is the total irradiance absorbed by the sunlit 
+    The sunlit absorbed irradiance is the total irradiance absorbed by the sunlit
     portion of the canopy, combining beam, diffuse, and scattered irradiance.
 
     .. math::
@@ -541,11 +622,13 @@ def sunlit_absorbed_irrad(Isun_beam: NDArray, Isun_diffuse: NDArray,
 
     return I_csun
 
-def shaded_absorbed_irrad(beta_angle: NDArray, k_sol_obs_angle: float, I_c: NDArray, 
-                          I_csun: NDArray) -> NDArray:
+
+def shaded_absorbed_irrad(
+    beta_angle: NDArray, k_sol_obs_angle: float, I_c: NDArray, I_csun: NDArray
+) -> NDArray:
     r"""Calculate the irradiance absorbed by the shaded fraction of the canopy.
 
-    The irradiance absorbed by the shaded fraction of the canopy is calculated by 
+    The irradiance absorbed by the shaded fraction of the canopy is calculated by
     subtracting the sunlit absorbed irradiance from the total canopy irradiance.
 
     .. math::
@@ -565,12 +648,13 @@ def shaded_absorbed_irrad(beta_angle: NDArray, k_sol_obs_angle: float, I_c: NDAr
 
     return I_cshade
 
+
 def canopy_extinction_coefficient(vcmax_pmod: NDArray) -> NDArray:
     r"""Calculate :math:`\k_V` parameter.
 
-    This function calculates the extinction coefficient, :math:`\k_V`, which represents 
-    how the photosynthetic capacity (Vcmax) decreases with depth in the plant canopy. 
-    The exponential model used here is derived from empirical data and represents how 
+    This function calculates the extinction coefficient, :math:`\k_V`, which represents
+    how the photosynthetic capacity (Vcmax) decreases with depth in the plant canopy.
+    The exponential model used here is derived from empirical data and represents how
     light attenuation affects photosynthetic capacity vertically within the canopy.
 
     Equation is sourced from Figure 10 of Lloyd et al. (2010).
@@ -590,20 +674,22 @@ def canopy_extinction_coefficient(vcmax_pmod: NDArray) -> NDArray:
     kv_Lloyd = np.exp(0.00963 * vcmax_pmod - 2.43)
     return kv_Lloyd
 
-def Vmax25_canopy(leaf_area_index: NDArray, vcmax25_pmod: NDArray, kv: NDArray
-                  ) -> NDArray:
+
+def Vmax25_canopy(
+    leaf_area_index: NDArray, vcmax25_pmod: NDArray, kv: NDArray
+) -> NDArray:
     r"""Calculate carboxylation rate, :math:`\V_max25` in the canopy at 25C.
 
-    This function calculates the maximum carboxylation rate of the canopy at a 
-    reference temperature of 25°C. It integrates the vertical gradient of 
-    photosynthetic capacity across the leaf area index (LAI), considering the 
+    This function calculates the maximum carboxylation rate of the canopy at a
+    reference temperature of 25°C. It integrates the vertical gradient of
+    photosynthetic capacity across the leaf area index (LAI), considering the
     extinction coefficient for light.
 
     .. math::
-        \text{Vmax25\_canopy} = \text{LAI} \cdot \text{vcmax25\_pmod} \cdot 
+        \text{Vmax25\_canopy} = \text{LAI} \cdot \text{vcmax25\_pmod} \cdot
         \left(\frac{1 - \exp(-\text{kv})}{\text{kv}}\right)
- 
-    
+
+
     Args:
         leaf_area_index (NDArray): The leaf area index.
         vcmax25_pmod (NDArray): The Vcmax25 parameter for the pmodel.
@@ -616,17 +702,19 @@ def Vmax25_canopy(leaf_area_index: NDArray, vcmax25_pmod: NDArray, kv: NDArray
 
     return Vmax25_canopy
 
-def Vmax25_sun(leaf_area_index: NDArray, vcmax25_pmod: NDArray, kv: NDArray, kb: NDArray
-               ) -> NDArray:
+
+def Vmax25_sun(
+    leaf_area_index: NDArray, vcmax25_pmod: NDArray, kv: NDArray, kb: NDArray
+) -> NDArray:
     r"""Calculate carboxylation in sunlit areas at standard conditions.
 
-    This function calculates the maximum carboxylation rate for the sunlit portions of 
-    the canopy at 25°C. It considers both the extinction coefficient and the direct 
+    This function calculates the maximum carboxylation rate for the sunlit portions of
+    the canopy at 25°C. It considers both the extinction coefficient and the direct
     sunlight penetration parameter :math:`\k_b`.
 
     .. math::
 
-        \text{Vmax25\_sun} = \text{leaf\_area\_index} \cdot \text{vcmax25\_pmod} \cdot 
+        \text{Vmax25\_sun} = \text{leaf\_area\_index} \cdot \text{vcmax25\_pmod} \cdot
         \left( \frac{1 - \exp(-\text{kv} - \text{kb} \cdot \text{leaf\_area\_index})}
         {\text{kv} + \text{kb} \cdot \text{leaf\_area\_index}} \right)
 
@@ -639,16 +727,20 @@ def Vmax25_sun(leaf_area_index: NDArray, vcmax25_pmod: NDArray, kv: NDArray, kb:
     Returns:
         NDArray: The calculated Vmax25 sun values.
     """
-    Vmax25_sun = leaf_area_index * vcmax25_pmod * ((1 - np.exp(-kv - kb * 
-                    leaf_area_index)) / (kv + kb * leaf_area_index))
-    
+    Vmax25_sun = (
+        leaf_area_index
+        * vcmax25_pmod
+        * ((1 - np.exp(-kv - kb * leaf_area_index)) / (kv + kb * leaf_area_index))
+    )
+
     return Vmax25_sun
+
 
 def Vmax25_shade(Vmax25_canopy: NDArray, Vmax_25_sun: NDArray) -> NDArray:
     r"""Calculate carboxylation in shaded areas at standard conditions.
 
-    This function calculates the maximum carboxylation rate for the shaded portions of 
-    the canopy by subtracting the sunlit carboxylation rate from the total canopy 
+    This function calculates the maximum carboxylation rate for the shaded portions of
+    the canopy by subtracting the sunlit carboxylation rate from the total canopy
     carboxylation rate.
 
     .. math::
@@ -666,15 +758,16 @@ def Vmax25_shade(Vmax25_canopy: NDArray, Vmax_25_sun: NDArray) -> NDArray:
 
     return Vmax25_shade
 
+
 def carboxylation_scaling_to_T(Vmax25: NDArray, tc: NDArray) -> NDArray:
     r"""Convert carboxylation rates at 25C to rate at ambient temperature (C).
 
-    This function adjusts the carboxylation rate from the reference temperature of 25°C 
-    to the ambient temperature using an Arrhenius-type function, which describes the 
+    This function adjusts the carboxylation rate from the reference temperature of 25°C
+    to the ambient temperature using an Arrhenius-type function, which describes the
     temperature dependence of enzymatic reactions.
 
     .. math::
-        \text{Vmax\_sun} = \text{Vmax25} \cdot \exp \left(\frac{64800 \cdot (\text{tc} 
+        \text{Vmax\_sun} = \text{Vmax25} \cdot \exp \left(\frac{64800 \cdot (\text{tc}
         - 25)}{298 \cdot 8.314 \cdot (\text{tc} + 273)}\right)
 
     Args:
@@ -689,10 +782,11 @@ def carboxylation_scaling_to_T(Vmax25: NDArray, tc: NDArray) -> NDArray:
 
     return Vmax
 
+
 def photosynthetic_estimate(Vmax: NDArray, mc: NDArray) -> NDArray:
     r"""Calculate photosynthetic rate estimate.
 
-    This function estimates photosynthetic rates by multiplying the carboxylation 
+    This function estimates photosynthetic rates by multiplying the carboxylation
     capacity by mc, the limitation term for Rubisco-limited assimilation.
 
     .. math::
@@ -711,11 +805,12 @@ def photosynthetic_estimate(Vmax: NDArray, mc: NDArray) -> NDArray:
 
     return Av
 
+
 def Jmax25(Vmax25: NDArray) -> NDArray:
     r"""Calculate the maximum rate of electron transport Jmax25.
 
     This function calculates the maximum rate of electron transport Jmax25
-    at 25°C, which is related to the capacity for light-driven electron transport in 
+    at 25°C, which is related to the capacity for light-driven electron transport in
     photosynthesis.
 
     Uses Eqn 31, after Wullschleger.
@@ -736,17 +831,18 @@ def Jmax25(Vmax25: NDArray) -> NDArray:
 
     return Jmax25
 
+
 def Jmax25_temp_correction(Jmax25: NDArray, tc: NDArray) -> NDArray:
     r"""Corrects Jmax value to ambient temperature.
 
-    This function adjusts the maximum electron transport rate Jmax25 for temperature 
+    This function adjusts the maximum electron transport rate Jmax25 for temperature
     using a temperature correction formula, similar to the Arrhenius equation.
 
     Correction derived from Mengoli 2021 Eqn 3b.
 
     .. math::
 
-        J_{max} = J_{max25} \cdot \exp\left(\frac{43990}{8.314} 
+        J_{max} = J_{max25} \cdot \exp\left(\frac{43990}{8.314}
         \left( \frac{1}{298} - \frac{1}{\text{tc} + 273} \right)\right)
 
 
@@ -762,10 +858,11 @@ def Jmax25_temp_correction(Jmax25: NDArray, tc: NDArray) -> NDArray:
 
     return Jmax
 
+
 def electron_transport_rate(Jmax: NDArray, I_c: NDArray) -> NDArray:
     r"""Calculate electron transport rate J.
 
-    This function calculates the electron transport rate J,considering the irradiance 
+    This function calculates the electron transport rate J,considering the irradiance
     I_c and the maximum electron transport rate Jmax
 
     .. math::
@@ -784,10 +881,11 @@ def electron_transport_rate(Jmax: NDArray, I_c: NDArray) -> NDArray:
 
     return J
 
+
 def assimilation_rate(mj: NDArray, J: NDArray) -> NDArray:
     r"""Calculate assimilation rate A.
 
-    This function calculates the assimilation rate driven by electron transport, 
+    This function calculates the assimilation rate driven by electron transport,
     Aj, using the parameter mj and the electron transport rate J.
 
     .. math::
@@ -805,8 +903,10 @@ def assimilation_rate(mj: NDArray, J: NDArray) -> NDArray:
 
     return A
 
-def assimilation_canopy(Aj: NDArray, Av: NDArray, beta_angle: NDArray, 
-                        solar_obscurity_angle: float) -> NDArray:
+
+def assimilation_canopy(
+    Aj: NDArray, Av: NDArray, beta_angle: NDArray, solar_obscurity_angle: float
+) -> NDArray:
     r"""Calculate assimilation in canopy, Acanopy.
 
     This function calculates the total canopy assimilation by taking the minimum of Aj 
@@ -836,17 +936,19 @@ def assimilation_canopy(Aj: NDArray, Av: NDArray, beta_angle: NDArray,
 
     return Acanopy
 
-def gross_primary_product(k_c_molmass: float, Acanopy_sun: NDArray, 
-                          Acanopy_shade: NDArray) -> NDArray:
+
+def gross_primary_product(
+    k_c_molmass: float, Acanopy_sun: NDArray, Acanopy_shade: NDArray
+) -> NDArray:
     r"""Calculate gross primary productivity (GPP).
 
-    This function calculates the gross primary productivity (GPP) by combining the 
-    assimilation rates of sunlit (Acanopy_sun) and shaded (Acanopy_shade) portions of 
+    This function calculates the gross primary productivity (GPP) by combining the
+    assimilation rates of sunlit (Acanopy_sun) and shaded (Acanopy_shade) portions of
     the canopy, scaled by a molar mass constant, k_c_molmass.
 
     .. math::
 
-        \text{gpp} = k_{\text{c\_molmass}} \cdot A_{\text{canopy\_sun}} + 
+        \text{gpp} = k_{\text{c\_molmass}} \cdot A_{\text{canopy\_sun}} +
         A_{\text{canopy\_shade}}
 
     Args:
