@@ -14,12 +14,12 @@ if __name__ == "__main__":
 
     flora = Flora(pfts)
 
+    # Would like to add these to config somewhere
     cell_area = 32
+    community_gap_fraction = 2 / 32
     csv_path = "pyrealm_build_data/community/communities.csv"
 
     communities = Community.load_communities_from_csv(cell_area, csv_path, flora)
-
-    community_gap_fraction = 2 / 32
 
     for community in communities:
         canopy = Canopy(community, community_gap_fraction)

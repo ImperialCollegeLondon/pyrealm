@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import numpy as np
+import pandas as pd
 from numpy.typing import NDArray
 
-import pyrealm.canopy_model.model.jaideep_t_model_extension as t_model_extension
-from pyrealm import t_model_utils as t_model
+import pyrealm.canopy_model.functions.jaideep_t_model_extension_functions as t_model_extension
+from pyrealm import t_model_functions as t_model
 from pyrealm.canopy_model.model.flora import Flora, PlantFunctionalType
 
 
@@ -135,35 +136,27 @@ class Community:
     def load_communities_from_csv(
         cls, cell_area: float, csv_path: str, flora: Flora
     ) -> list[Community]:
-        dtype = [np.int_, "U20", np.float32, np.float32]
-        headers = ["cell_id", "pft", "dbh", "n"]
-        delimiter = ","
-        skip_header = 1
 
-        cell_id, pft, dbh, n = np.genfromtxt(
-            fname=csv_path,
-            dtype=dtype,
-            names=headers,
-            unpack=True,
-            delimiter=delimiter,
-            skip_header=skip_header,
-            usemask=False,
-        )
+        community_data = pd.read_csv(csv_path)
 
-        cell_id = 1
-        cohort_dbh_values = np.empty(1)
-        cohort_number_of_individuals = np.empty(1)
-        cohort_pft_names = np.empty(1)
-        return [
-            Community(
-                cell_id,
-                cell_area,
-                cohort_dbh_values,
-                cohort_number_of_individuals,
-                cohort_pft_names,
-                flora,
-            )
-        ]
+        data_grouped_by_community = community_data.groupby(community_data.cell_id)
+
+        communities = []
+
+        for cell_id in data_grouped_by_community.groups:
+            community_dataframe = data_grouped_by_community.get_group(cell_id)
+            dbh_values = community_dataframe["dbh"].to_numpy(dtype=np.float32)
+            number_of_individuals = community_dataframe["n"].to_numpy(dtype=np.int_)
+            pft_names = community_dataframe["pft"].to_numpy(dtype="U20")
+            community_object = Community(cell_id,
+                                         cell_area,
+                                         dbh_values,
+                                         number_of_individuals,
+                                         pft_names,
+                                         flora)
+            communities.append(community_object)
+
+        return communities
 
     def __populate_pft_arrays(self) -> None:
         """Populate plant functional type arrays.
@@ -198,5 +191,5 @@ class Community:
         pft = self.flora.get(pft_name)
 
         if pft is None:
-            raise Exception("Cohort data supplied with in an invalid PFT name.")
+            raise Exception(f"Cohort data supplied with in an invalid PFT name: {pft_name}")
         return pft

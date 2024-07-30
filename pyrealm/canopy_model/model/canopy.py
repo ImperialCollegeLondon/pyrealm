@@ -5,7 +5,7 @@ from numpy.typing import NDArray
 from scipy.optimize import root_scalar
 
 from pyrealm.canopy_model.model.community import Community
-from pyrealm.canopy_model.model.jaideep_t_model_extension import (
+from pyrealm.canopy_model.functions.jaideep_t_model_extension_functions import (
     calculate_projected_canopy_area_for_individuals,
     calculate_relative_canopy_radii,
 )

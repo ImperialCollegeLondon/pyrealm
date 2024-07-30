@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import assert_array_equal
 
-from pyrealm.canopy_model.model.jaideep_t_model_extension import *
+from pyrealm.canopy_model.functions.jaideep_t_model_extension_functions import *
 
 
 def test_calculate_q_m_values_returns_q_m_for_valid_input():

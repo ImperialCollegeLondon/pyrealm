@@ -12,7 +12,7 @@ growth given an estimate of gross primary productivity (GPP).
 """  # noqa: D205
 
 import numpy as np
-import t_model_utils
+import t_model_functions
 from numpy.typing import NDArray
 
 from pyrealm.constants.tmodel_const import TModelTraits
