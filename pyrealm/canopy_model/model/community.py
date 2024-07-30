@@ -136,7 +136,6 @@ class Community:
     def load_communities_from_csv(
         cls, cell_area: float, csv_path: str, flora: Flora
     ) -> list[Community]:
-
         community_data = pd.read_csv(csv_path)
 
         data_grouped_by_community = community_data.groupby(community_data.cell_id)
@@ -148,12 +147,9 @@ class Community:
             dbh_values = community_dataframe["dbh"].to_numpy(dtype=np.float32)
             number_of_individuals = community_dataframe["n"].to_numpy(dtype=np.int_)
             pft_names = community_dataframe["pft"].to_numpy(dtype="U20")
-            community_object = Community(cell_id,
-                                         cell_area,
-                                         dbh_values,
-                                         number_of_individuals,
-                                         pft_names,
-                                         flora)
+            community_object = Community(
+                cell_id, cell_area, dbh_values, number_of_individuals, pft_names, flora
+            )
             communities.append(community_object)
 
         return communities
@@ -191,5 +187,7 @@ class Community:
         pft = self.flora.get(pft_name)
 
         if pft is None:
-            raise Exception(f"Cohort data supplied with in an invalid PFT name: {pft_name}")
+            raise Exception(
+                f"Cohort data supplied with in an invalid PFT name: {pft_name}"
+            )
         return pft
