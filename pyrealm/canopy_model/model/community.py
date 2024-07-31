@@ -22,13 +22,13 @@ class Community:
     represented inside the class as a struct of arrays, with each element in a given
     array representing a property of a cohort. The properties of a given cohort are
     spread across the arrays and associated positionally, e.g. a cohort that has its
-    pft_h_max in the third element of the pft_h_max_values array, will have the number
+    pft_h_max in the third element of the pft_h_max_values array will have the number
     of individuals in the cohort in the third element of the
     cohort_number_of_individuals array. Care must therefore be taken to
     modify all the arrays when adding and removing cohorts.
 
-    In addition to the properties the class is initialised with, the following is
-    calculated during initialisation and exposes these properties publicly:
+    In addition to the properties the class is initialised with, the following
+    properties are calculated during initialisation and exposed publicly:
     geometry of cohorts calculated using the t model, and canopy factors from
     Jaideep's extension to the t model.
 
