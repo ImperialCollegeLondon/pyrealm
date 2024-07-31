@@ -602,13 +602,15 @@ def pmodelenv(values):
 
 
 @pytest.mark.parametrize("soilmstress", [False, True], ids=["sm-off", "sm-on"])
-@pytest.mark.parametrize("ftemp_kphio", [True, False], ids=["fkphio-on", "fkphio-off"])
+@pytest.mark.parametrize(
+    "method_kphio", ["bernacchi_c3", "constant"], ids=["fkphio-on", "fkphio-off"]
+)
 @pytest.mark.parametrize(
     "luevcmax_method", ["wang17", "smith19", "none"], ids=["wang17", "smith19", "none"]
 )
 @pytest.mark.parametrize("environ", ["sc", "ar"], ids=["sc", "ar"])
 def test_pmodel_class_c3(
-    request, values, pmodelenv, soilmstress, ftemp_kphio, luevcmax_method, environ
+    request, values, pmodelenv, soilmstress, method_kphio, luevcmax_method, environ
 ):
     """Test the PModel class for C3 plants."""
 
@@ -625,9 +627,9 @@ def test_pmodel_class_c3(
 
     ret = PModel(
         pmodelenv[environ],
-        kphio=0.05,
-        do_ftemp_kphio=ftemp_kphio,
+        method_kphio=method_kphio,
         method_jmaxlim=luevcmax_method,
+        reference_kphio=0.05,
     )
 
     # Estimate productivity
@@ -704,12 +706,21 @@ def test_pmodel_class_c3(
 
 
 @pytest.mark.parametrize("soilmstress", [False, True], ids=["sm-off", "sm-on"])
-@pytest.mark.parametrize("ftemp_kphio", [True, False], ids=["fkphio-on", "fkphio-off"])
+@pytest.mark.parametrize(
+    "method_kphio", ["bernacchi_c4", "constant"], ids=["fkphio-on", "fkphio-off"]
+)
 @pytest.mark.parametrize("environ", ["sc", "ar"], ids=["sc", "ar"])
-def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, environ):
+def test_pmodel_class_c4(
+    request, values, pmodelenv, soilmstress, method_kphio, environ
+):
     """Test the PModel class for C4 plants."""
 
-    from pyrealm.pmodel import PModel, calc_ftemp_kphio, calc_soilmstress_stocker
+    from pyrealm.pmodel import (
+        PModel,
+        PModelEnvironment,
+        calc_soilmstress_stocker,
+    )
+    from pyrealm.pmodel.quantum_yield import QuantumYieldBernacchiC4
 
     if soilmstress:
         soilmstress = calc_soilmstress_stocker(
@@ -718,19 +729,23 @@ def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, e
     else:
         soilmstress = np.array([1.0])
 
-    # TODO bug in rpmodel 1.2.2 forces an odd downscaling of kphio when
-    # do_ftemp_kphio is False, so this is scaling back up to match.
-    if ftemp_kphio:
+    # TODO bug in rpmodel 1.2.2 forces an odd downscaling of kphio when do_ftemp_kphio
+    # is False, so the kf factor is calculated to scale the reference kphio back up to
+    # match.
+
+    if method_kphio == "bernacchi_c4":
         kf = 1
     else:
-        kf = calc_ftemp_kphio(15, c4=True)
+        bug_env = PModelEnvironment(tc=15, patm=101325, vpd=800, co2=400)
+        correction = QuantumYieldBernacchiC4(env=bug_env, reference_kphio=0.05)
+        kf = correction.kphio / 0.05
 
     ret = PModel(
         pmodelenv[environ],
-        kphio=0.05 * kf,  # See note above
-        do_ftemp_kphio=ftemp_kphio,
+        method_kphio=method_kphio,
         method_jmaxlim="simple",  # enforced in rpmodel.
         method_optchi="c4",
+        reference_kphio=0.05 * kf,  # See note above
     )
 
     # Estimate productivity
@@ -797,7 +812,7 @@ def test_pmodel_summarise(capsys, values, pmodelenv):
 
     from pyrealm.pmodel import PModel
 
-    ret = PModel(pmodelenv["sc"], kphio=0.05)
+    ret = PModel(pmodelenv["sc"], reference_kphio=0.05)
 
     # Test what comes back before estimate_productivity
     ret.summarize()

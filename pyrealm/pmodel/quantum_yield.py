@@ -1,7 +1,9 @@
 r"""The module :mod:`~pyrealm.pmodel.quantum_yield` provides
-the abstract base class :class:`~pyrealm.pmodel.quantum_yield.QuantumYieldABC`,
-which is used to support different implementations of the calculation of the intrinsic
-quantum yield of photosynthesis.
+the abstract base class :class:`~pyrealm.pmodel.quantum_yield.QuantumYieldABC`, which is
+used to support different implementations of the calculation of the intrinsic quantum
+yield efficiency of photosynthesis (:math:`\phi_0`, unitless). Note that :math:`\phi_0`
+is sometimes used to refer to the quantum yield of electron transfer, which is exactly
+four times larger, so check definitions here.
 """  # noqa D210, D415
 
 from __future__ import annotations
