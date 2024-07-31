@@ -6,13 +6,34 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-import pyrealm.canopy_model.functions.jaideep_t_model_extension_functions as t_model_extension
+import pyrealm.canopy_model.functions.jaideep_t_model_extension_functions as t_model_extension  # noqa: E501
 from pyrealm import t_model_functions as t_model
 from pyrealm.canopy_model.model.flora import Flora, PlantFunctionalType
 
 
 class Community:
-    """placeholder."""
+    """Class containing properties of a community.
+
+    A community is a group of plants in a given location. A location consists of a cell
+    with a specified area and ID.
+
+    A community is broken down into cohorts, ie a collection of plants with the same
+    diameter at breast height (DBH) and plant functional type (PFT). This is
+    represented inside the class as a struct of arrays, with each element in a given
+    array representing a property of a cohort. The properties of a given cohort are
+    spread across the arrays and associated positionally, e.g. a cohort that has its
+    pft_h_max in the third element of the pft_h_max_values array, will have the number
+    of individuals in the cohort in the third element of the
+    cohort_number_of_individuals array. Care must therefore be taken to
+    modify all the arrays when adding and removing cohorts.
+
+    In addition to the properties the class is initialised with, the following is
+    calculated during initialisation and exposes these properties publicly:
+    geometry of cohorts calculated using the t model, and canopy factors from
+    Jaideep's extension to the t model.
+
+    A method is also provided to load community data from a csv file.
+    """
 
     def __init__(
         self,
@@ -27,7 +48,7 @@ class Community:
         self.cell_id: int = cell_id
         self.cell_area: float = cell_area
         self.flora: Flora = flora
-        self.__number_of_cohorts: int = len(cohort_dbh_values)
+        self.number_of_cohorts: int = len(cohort_dbh_values)
 
         # arrays representing properties of cohorts
         self.cohort_dbh_values: NDArray[np.float32] = cohort_dbh_values
@@ -38,52 +59,52 @@ class Community:
 
         # initialise empty arrays representing properties of plant functional types
         self.pft_a_hd_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
+            self.number_of_cohorts, dtype=np.float32
         )
         self.pft_ca_ratio_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
+            self.number_of_cohorts, dtype=np.float32
         )
         self.pft_h_max_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
+            self.number_of_cohorts, dtype=np.float32
         )
         self.pft_lai_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
+            self.number_of_cohorts, dtype=np.float32
         )
         self.pft_par_ext_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
+            self.number_of_cohorts, dtype=np.float32
         )
         self.pft_resp_f_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
+            self.number_of_cohorts, dtype=np.float32
         )
         self.pft_resp_r_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
+            self.number_of_cohorts, dtype=np.float32
         )
         self.pft_resp_s_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
+            self.number_of_cohorts, dtype=np.float32
         )
         self.pft_rho_s_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
+            self.number_of_cohorts, dtype=np.float32
         )
         self.pft_sla_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
+            self.number_of_cohorts, dtype=np.float32
         )
         self.pft_tau_f_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
+            self.number_of_cohorts, dtype=np.float32
         )
         self.pft_tau_r_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
+            self.number_of_cohorts, dtype=np.float32
         )
         self.pft_yld_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
+            self.number_of_cohorts, dtype=np.float32
         )
         self.pft_zeta_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
+            self.number_of_cohorts, dtype=np.float32
         )
         self.pft_m_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
+            self.number_of_cohorts, dtype=np.float32
         )
         self.pft_n_values: NDArray[np.float32] = np.empty(
-            self.__number_of_cohorts, dtype=np.float32
+            self.number_of_cohorts, dtype=np.float32
         )
 
         self.__populate_pft_arrays()
@@ -136,20 +157,42 @@ class Community:
     def load_communities_from_csv(
         cls, cell_area: float, csv_path: str, flora: Flora
     ) -> list[Community]:
+        """Loads a list of communities from a csv provided in the appropriate format.
+
+        The csv should contain the following columns: cell_id,
+        diameter_at_breast_height, plant_functional_type, number_of_individuals. Each
+        row in the csv should represent one cohort.
+
+        :param cell_area: the area of the cell at each location, this is assumed to be
+        the same across all the locations in the csv.
+        :param csv_path: path to the csv containing community data.
+        :param flora: a flora object, ie a dictionary of plant functional properties,
+        keyed by pft name.
+        :return: a list of community objects, loaded from the csv
+        file.
+        """
         community_data = pd.read_csv(csv_path)
 
         data_grouped_by_community = community_data.groupby(community_data.cell_id)
 
         communities = []
 
-        # change cell_id to community_id here and in the csv?
         for cell_id in data_grouped_by_community.groups:
             community_dataframe = data_grouped_by_community.get_group(cell_id)
-            dbh_values = community_dataframe["dbh"].to_numpy(dtype=np.float32)
-            number_of_individuals = community_dataframe["n"].to_numpy(dtype=np.int_)
-            pft_names = community_dataframe["pft"].to_numpy(dtype="U20")
+            dbh_values = community_dataframe["diameter_at_breast_height"].to_numpy(
+                dtype=np.float32
+            )
+            number_of_individuals = community_dataframe[
+                "number_of_individuals"
+            ].to_numpy(dtype=np.int_)
+            pft_names = community_dataframe["plant_functional_type"].to_numpy(dtype=str)
             community_object = Community(
-                cell_id, cell_area, dbh_values, number_of_individuals, pft_names, flora
+                cell_id,
+                cell_area,
+                dbh_values,
+                number_of_individuals,
+                pft_names,
+                flora,
             )
             communities.append(community_object)
 
@@ -164,7 +207,7 @@ class Community:
         array.
         :return: None
         """
-        for i in range(0, self.__number_of_cohorts):
+        for i in range(0, self.number_of_cohorts):
             pft = self.__look_up_plant_functional_type(self.cohort_pft_names[i])
             self.pft_a_hd_values[i] = pft.a_hd
             self.pft_ca_ratio_values[i] = pft.ca_ratio

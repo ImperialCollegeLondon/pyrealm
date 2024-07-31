@@ -1,4 +1,4 @@
-cell_id,pft,dbh,n
+cell_id,plant_functional_type,diameter_at_breast_height,number_of_individuals
 1,test1,0.2,6
 1,test1,0.25,6
 1,test1,0.3,3

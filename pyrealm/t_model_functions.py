@@ -54,6 +54,7 @@ def calculate_stem_masses(
     heights: NDArray[np.float32],
     pft_rho_s_values: NDArray[np.float32],
 ) -> NDArray[np.float32]:
+    """Mass of stems."""
     stem_masses = (
         (np.pi / 8) * (diameters_at_breast_height**2) * heights * pft_rho_s_values
     )
@@ -66,14 +67,20 @@ def calculate_foliage_masses(
     pft_lai_values: NDArray[np.float32],
     pft_sla_values: NDArray[np.float32],
 ) -> NDArray[np.float32]:
+    """Mass of foliage."""
     foliage_masses = crown_areas * pft_lai_values * (1 / pft_sla_values)
 
     return foliage_masses
 
 
 def calculate_swd_masses(
-    crown_areas, pft_rho_s_values, heights, crown_fractions, pft_ca_ratio_values
-):
+    crown_areas: NDArray[np.float32],
+    pft_rho_s_values: NDArray[np.float32],
+    heights: NDArray[np.float32],
+    crown_fractions: NDArray[np.float32],
+    pft_ca_ratio_values: NDArray[np.float32],
+) -> NDArray[np.float32]:
+    """Mass of ???"""
     swd_masses = (
         crown_areas
         * pft_rho_s_values

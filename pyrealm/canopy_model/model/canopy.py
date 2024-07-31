@@ -12,7 +12,7 @@ from pyrealm.canopy_model.model.community import Community
 
 
 class Canopy:
-    """placeholder."""
+    """A class containing attributes of a canopy, including the structure."""
 
     def __init__(self, community: Community, canopy_gap_fraction: float) -> None:
         """Placeholder."""
@@ -22,9 +22,7 @@ class Canopy:
             community, canopy_gap_fraction
         )
 
-        # TODO I would like to avoid using a map here if possible as it's really a slow
-        #  for loop under the hood, but haven't thought of a way to do this and keep
-        #  the code readable.
+        # TODO move from a map to using arrays here, this will be part of next ticket.
         self.A_cp_within_layer = map(
             self.calculate_total_canopy_A_cp,
             self.canopy_layer_heights,
@@ -81,7 +79,7 @@ class Canopy:
         cls,
         z: float,
         community: Community,
-        l: int,
+        layer_index: int,
         A: float,
         fG: float,
     ) -> float:
@@ -94,7 +92,7 @@ class Canopy:
         :param community:
         :param fG: community gap fraction
         :param A: community area
-        :param l: layer index
+        :param layer_index: layer index
         :param z: height
         """
 
@@ -103,7 +101,7 @@ class Canopy:
         )
 
         # Return the difference between the projected area and the available space
-        return community_projected_area_at_z - (A * l) * (1 - fG)
+        return community_projected_area_at_z - (A * layer_index) * (1 - fG)
 
     @classmethod
     def calculate_community_projected_area_at_z(
@@ -141,7 +139,7 @@ class Canopy:
     @classmethod
     def calculate_projected_leaf_area_for_individuals(
         cls, z: float, f_g: float, community: Community
-    ) -> float:
+    ) -> NDArray[np.float32]:
         """Calculate projected crown area above a given height.
 
         Calculation applies to an individual within a cohort.This function takes PFT
