@@ -143,6 +143,7 @@ class Community:
 
         communities = []
 
+        # change cell_id to community_id here and in the csv?
         for cell_id in data_grouped_by_community.groups:
             community_dataframe = data_grouped_by_community.get_group(cell_id)
             dbh_values = community_dataframe["dbh"].to_numpy(dtype=np.float32)
@@ -167,7 +168,7 @@ class Community:
         array.
         :return: None
         """
-        for i in range(0, self.__number_of_cohorts - 1):
+        for i in range(0, self.__number_of_cohorts):
             pft = self.__look_up_plant_functional_type(self.cohort_pft_names[i])
             self.pft_a_hd_values[i] = pft.a_hd
             self.pft_ca_ratio_values[i] = pft.ca_ratio

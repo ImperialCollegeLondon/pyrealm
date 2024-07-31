@@ -28,8 +28,8 @@ class Canopy:
         self.A_cp_within_layer = map(
             self.calculate_total_canopy_A_cp,
             self.canopy_layer_heights,
-            np.full(self.canopy_layer_heights.len(), canopy_gap_fraction),
-            np.full(self.canopy_layer_heights.len(), community),
+            np.full(len(self.canopy_layer_heights), canopy_gap_fraction),
+            np.full(len(self.canopy_layer_heights), community),
         )
 
     def calculate_canopy_layer_heights(
