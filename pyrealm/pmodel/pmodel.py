@@ -167,7 +167,7 @@ class PModel:
     def __init__(
         self,
         env: PModelEnvironment,
-        method_kphio: str = "bernacchi_c3",
+        method_kphio: str = "temperature",
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
         reference_kphio: float | None = None,
@@ -217,6 +217,7 @@ class PModel:
 
         self.kphio: QuantumYieldABC = kphio_class(
             env=env,
+            use_c4=self.c4,
             pmodel_const=self.pmodel_const,
             core_const=self.core_const,
             reference_kphio=reference_kphio,

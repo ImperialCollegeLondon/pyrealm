@@ -51,72 +51,46 @@ def test_QuantumYieldConstant(quantum_yield_env, reference_kphio, expected_kphio
 
 
 @pytest.mark.parametrize(
-    argnames="reference_kphio, expected_kphio_factor",
+    argnames="use_c4, reference_kphio, expected_kphio_factor",
     argvalues=(
         pytest.param(
-            None, np.array([0.4535, 0.538, 0.6055, 0.656, 0.6895, 0.706]), id="default"
+            False,
+            None,
+            np.array([0.4535, 0.538, 0.6055, 0.656, 0.6895, 0.706]),
+            id="default_c3",
         ),
         pytest.param(
-            0.1, np.array([0.4535, 0.538, 0.6055, 0.656, 0.6895, 0.706]), id="provided"
+            False,
+            0.1,
+            np.array([0.4535, 0.538, 0.6055, 0.656, 0.6895, 0.706]),
+            id="provided_c3",
         ),
-    ),
-)
-def test_QuantumYieldBernacchiC3(
-    quantum_yield_env, reference_kphio, expected_kphio_factor
-):
-    """Test the Bernacchi temperature method for C3 plants."""
-
-    from pyrealm.pmodel.quantum_yield import (
-        QUANTUM_YIELD_CLASS_REGISTRY,
-        QuantumYieldBernacchiC3,
-    )
-
-    qy = QuantumYieldBernacchiC3(
-        env=quantum_yield_env,
-        reference_kphio=reference_kphio,
-    )
-
-    # The expected_kphio_factor values are the output of the previous implementation
-    # (calc_ftemp_kphio), which returned the temperature factors that then needed
-    # multiplying by the reference kphio.
-    assert np.allclose(qy.kphio, qy.reference_kphio * expected_kphio_factor)
-
-    qy2 = QUANTUM_YIELD_CLASS_REGISTRY["bernacchi_c3"](
-        env=quantum_yield_env,
-        reference_kphio=reference_kphio,
-    )
-
-    assert np.allclose(qy2.kphio, qy2.reference_kphio * expected_kphio_factor)
-
-
-@pytest.mark.parametrize(
-    argnames="reference_kphio, expected_kphio_factor",
-    argvalues=(
         pytest.param(
+            True,
             None,
             np.array([0.0744, 0.1896, 0.2816, 0.3504, 0.396, 0.4184]),
-            id="default",
+            id="default_c4",
         ),
         pytest.param(
+            True,
             0.1,
             np.array([0.0744, 0.1896, 0.2816, 0.3504, 0.396, 0.4184]),
-            id="provided",
+            id="provided_c4",
         ),
     ),
 )
-def test_QuantumYieldBernacchiC4(
-    quantum_yield_env, reference_kphio, expected_kphio_factor
+def test_QuantumYieldTemperature(
+    quantum_yield_env, use_c4, reference_kphio, expected_kphio_factor
 ):
-    """Test the Bernacchi temperature method for C4 plants."""
+    """Test the temperature kphio method."""
 
     from pyrealm.pmodel.quantum_yield import (
         QUANTUM_YIELD_CLASS_REGISTRY,
-        QuantumYieldBernacchiC4,
+        QuantumYieldTemperature,
     )
 
-    qy = QuantumYieldBernacchiC4(
-        env=quantum_yield_env,
-        reference_kphio=reference_kphio,
+    qy = QuantumYieldTemperature(
+        env=quantum_yield_env, reference_kphio=reference_kphio, use_c4=use_c4
     )
 
     # The expected_kphio_factor values are the output of the previous implementation
@@ -124,14 +98,10 @@ def test_QuantumYieldBernacchiC4(
     # multiplying by the reference kphio.
     assert np.allclose(qy.kphio, qy.reference_kphio * expected_kphio_factor)
 
-    qy2 = QUANTUM_YIELD_CLASS_REGISTRY["bernacchi_c4"](
-        env=quantum_yield_env,
-        reference_kphio=reference_kphio,
+    qy2 = QUANTUM_YIELD_CLASS_REGISTRY["temperature"](
+        env=quantum_yield_env, reference_kphio=reference_kphio, use_c4=use_c4
     )
 
-    # The expected_kphio_factor values are the output of the previous implementation
-    # (calc_ftemp_kphio), which returned the temperature factors that then needed
-    # multiplying by the reference kphio.
     assert np.allclose(qy2.kphio, qy2.reference_kphio * expected_kphio_factor)
 
 

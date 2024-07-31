@@ -68,8 +68,6 @@ class QuantumYieldABC(ABC):
     """A short method name used to identify the class in
     :data:`~pyrealm.pmodel.quantum_yield.QUANTUM_YIELD_CLASS_REGISTRY`.
     """
-    is_c4: bool
-    """A flag indicating if the method captures the C4 photosynthetic pathway."""
     requires: list[str]
     """A list of names of optional attributes of
     :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` that must be populated
@@ -83,6 +81,7 @@ class QuantumYieldABC(ABC):
         self,
         env: PModelEnvironment,
         reference_kphio: float | None = None,
+        use_c4: bool = False,
         pmodel_const: PModelConst = PModelConst(),
         core_const: CoreConst = CoreConst(),
     ):
@@ -97,6 +96,8 @@ class QuantumYieldABC(ABC):
         """The CoreConst used for calculating quantum yield"""
         self.reference_kphio: float = reference_kphio or self.default_reference_kphio
         """The reference value for kphio for the method."""
+        self.use_c4: bool = use_c4
+        """Use a C4 parameterisation if available."""
 
         # Declare attributes populated by methods. These are typed but not assigned a
         # default value as they must are populated by the subclass specific
@@ -147,14 +148,12 @@ class QuantumYieldABC(ABC):
     def __init_subclass__(
         cls,
         method: str,
-        is_c4: bool,
         requires: list[str],
         default_reference_kphio: float,
     ) -> None:
         """Initialise a subclass deriving from this ABC."""
 
         cls.method = method
-        cls.is_c4 = is_c4
         cls.requires = requires
         cls.default_reference_kphio = default_reference_kphio
         QUANTUM_YIELD_CLASS_REGISTRY[cls.method] = cls
@@ -163,7 +162,6 @@ class QuantumYieldABC(ABC):
 class QuantumYieldConstant(
     QuantumYieldABC,
     method="constant",
-    is_c4=False,
     requires=[],
     default_reference_kphio=0.049977,
 ):
@@ -175,48 +173,34 @@ class QuantumYieldConstant(
         self.kphio = np.array([self.reference_kphio])
 
 
-class QuantumYieldBernacchiC3(
+class QuantumYieldTemperature(
     QuantumYieldABC,
-    method="bernacchi_c3",
-    is_c4=False,
+    method="temperature",
     requires=[],
     default_reference_kphio=0.081785,
 ):
-    """Calculate kphio following Bernacchi for C3 plants."""
+    """Calculate temperature modulated kphio.
+
+    This method follows  for C3 plants.
+    """
 
     def _calculate_kphio(
         self,
     ) -> None:
         """Calculate kphio."""
 
-        ftemp = evaluate_horner_polynomial(self.env.tc, self.pmodel_const.kphio_C3)
+        if self.use_c4:
+            ftemp = evaluate_horner_polynomial(self.env.tc, self.pmodel_const.kphio_C4)
+        else:
+            ftemp = evaluate_horner_polynomial(self.env.tc, self.pmodel_const.kphio_C3)
+
         ftemp = np.clip(ftemp, 0.0, None)
-
-        self.kphio = ftemp * self.reference_kphio
-
-
-class QuantumYieldBernacchiC4(
-    QuantumYieldABC,
-    method="bernacchi_c4",
-    is_c4=True,
-    requires=[],
-    default_reference_kphio=0.081785,
-):
-    """Calculate kphio following Bernacchi."""
-
-    def _calculate_kphio(self) -> None:
-        """Calculate kphio."""
-
-        ftemp = evaluate_horner_polynomial(self.env.tc, self.pmodel_const.kphio_C4)
-        ftemp = np.clip(ftemp, 0.0, None)
-
         self.kphio = ftemp * self.reference_kphio
 
 
 class QuantumYieldSandoval(
     QuantumYieldABC,
     method="sandoval",
-    is_c4=False,
     requires=["aridity_index", "mean_growth_temperature"],
     default_reference_kphio=1.0 / 9.0,
 ):

@@ -603,7 +603,7 @@ def pmodelenv(values):
 
 @pytest.mark.parametrize("soilmstress", [False, True], ids=["sm-off", "sm-on"])
 @pytest.mark.parametrize(
-    "method_kphio", ["bernacchi_c3", "constant"], ids=["fkphio-on", "fkphio-off"]
+    "method_kphio", ["temperature", "constant"], ids=["fkphio-on", "fkphio-off"]
 )
 @pytest.mark.parametrize(
     "luevcmax_method", ["wang17", "smith19", "none"], ids=["wang17", "smith19", "none"]
@@ -707,7 +707,7 @@ def test_pmodel_class_c3(
 
 @pytest.mark.parametrize("soilmstress", [False, True], ids=["sm-off", "sm-on"])
 @pytest.mark.parametrize(
-    "method_kphio", ["bernacchi_c4", "constant"], ids=["fkphio-on", "fkphio-off"]
+    "method_kphio", ["temperature", "constant"], ids=["fkphio-on", "fkphio-off"]
 )
 @pytest.mark.parametrize("environ", ["sc", "ar"], ids=["sc", "ar"])
 def test_pmodel_class_c4(
@@ -720,7 +720,7 @@ def test_pmodel_class_c4(
         PModelEnvironment,
         calc_soilmstress_stocker,
     )
-    from pyrealm.pmodel.quantum_yield import QuantumYieldBernacchiC4
+    from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
 
     if soilmstress:
         soilmstress = calc_soilmstress_stocker(
@@ -733,11 +733,13 @@ def test_pmodel_class_c4(
     # is False, so the kf factor is calculated to scale the reference kphio back up to
     # match.
 
-    if method_kphio == "bernacchi_c4":
+    if method_kphio == "temperature":
         kf = 1
     else:
         bug_env = PModelEnvironment(tc=15, patm=101325, vpd=800, co2=400)
-        correction = QuantumYieldBernacchiC4(env=bug_env, reference_kphio=0.05)
+        correction = QuantumYieldTemperature(
+            env=bug_env, reference_kphio=0.05, use_c4=True
+        )
         kf = correction.kphio / 0.05
 
     ret = PModel(
