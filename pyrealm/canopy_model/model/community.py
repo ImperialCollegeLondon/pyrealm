@@ -187,7 +187,7 @@ class Community:
             ].to_numpy(dtype=np.int_)
             pft_names = community_dataframe["plant_functional_type"].to_numpy(dtype=str)
             community_object = Community(
-                cell_id,
+                cell_id,  # type:ignore
                 cell_area,
                 dbh_values,
                 number_of_individuals,
