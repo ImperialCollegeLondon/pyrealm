@@ -1,4 +1,4 @@
-"""placeholder."""
+"""Contains a class representing properties of a community."""
 
 from __future__ import annotations
 
