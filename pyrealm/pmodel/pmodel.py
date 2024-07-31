@@ -15,7 +15,6 @@ from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.functions import (
     calc_ftemp_inst_rd,
     calc_ftemp_inst_vcmax,
-    calc_ftemp_kphio,
 )
 from pyrealm.pmodel.jmax_limitation import JmaxLimitation
 from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY, OptimalChiABC
