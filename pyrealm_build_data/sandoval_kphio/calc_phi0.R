@@ -16,7 +16,10 @@ calc_phi0 <- function(AI, tc, mGDD0 = NA) {
     ###############################################################################################
     # 01.define the parameters/constants
     ###############################################################################################
-    phi_o_theo <- 0.111 # theoretical maximum phi0 (Long, 1993;Sandoval et al., in.prep.)
+
+    # DO change here to avoid imprecision in theoretical maxmimum
+    # phi_o_theo <- 0.111 # theoretical maximum phi0 (Long, 1993;Sandoval et al., in.prep.)
+    phi_o_theo <- 1 / 9
     m <- 6.8681 # curvature parameter phio max (Sandoval et al., in.prep.)
     n <- 0.07956432 # curvature parameter phio max (Sandoval et al., in.prep.)
     Rgas <- 8.3145 # ideal gas constant J/mol/K
@@ -89,4 +92,5 @@ for (row_idx in seq_along(data$aridity_index)) {
     )
 }
 
+data$phio <- round(data$phio, digits = 8)
 write.csv(data, "sandoval_kphio.csv", row.names = FALSE)

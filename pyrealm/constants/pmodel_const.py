@@ -89,6 +89,22 @@ class PModelConst(ConstantsClass):
 
     """
 
+    sandoval_peak_phio: tuple[float, float] = (6.8681, 0.07956432)
+    """Curvature parameters for calculation of peak phio in the Sandoval method for
+    estimation of quantum yield efficiency."""
+
+    sandoval_kinetics: tuple[float, float, float, float] = (
+        1558.853,
+        -50.223,
+        294.804,
+        75000.0,
+    )
+    """Enzyme kinetics parameters for estimation of kphion from mean growth temperature
+    in the Sandoval method for estimation of quantum yield efficiency. Values are: the
+    intercept and slope of activation entropy as a function of the mean growth
+    temperature (J/mol/K), the deactivation energy constant (J/mol) and the activation
+    energy (J/mol). """
+
     plant_T_ref: float = 25.0
     """Standard baseline reference temperature of photosynthetic processes (Prentice,
     unpublished)  (:math:`T_o` , 25.0, °C)"""

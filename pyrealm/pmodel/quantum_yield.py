@@ -7,7 +7,6 @@ quantum yield of photosynthesis.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
 from warnings import warn
 
 import numpy as np
@@ -74,10 +73,14 @@ class QuantumYieldABC(ABC):
     :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` that must be populated
     to use a method.
     """
+    default_reference_kphio: float
+    """A default value for the reference kphio value for use with a given
+    implementation."""
 
     def __init__(
         self,
         env: PModelEnvironment,
+        reference_kphio: float | None = None,
         pmodel_const: PModelConst = PModelConst(),
         core_const: CoreConst = CoreConst(),
     ):
@@ -90,12 +93,14 @@ class QuantumYieldABC(ABC):
         """The PModelConst used for calculating quantum yield"""
         self.core_const: CoreConst = core_const
         """The CoreConst used for calculating quantum yield"""
+        self.reference_kphio: float = reference_kphio or self.default_reference_kphio
+        """The reference value for kphio for the method."""
 
         # Declare attributes populated by methods. These are typed but not assigned a
         # default value as they must are populated by the subclass specific
         # calculate_kphio method, which is called below to populate the values.
         self.kphio: NDArray
-        """The intrinsic quantum yield of photosynthesis."""
+        """The calculated intrinsic quantum yield of photosynthesis."""
 
         # Run the calculation methods after checking for any required variables
         self._check_requires()
@@ -105,14 +110,14 @@ class QuantumYieldABC(ABC):
         _ = check_input_shapes(env.ca, self.kphio)
 
     @abstractmethod
-    def _calculate_kphio(self, **kwargs: Any) -> None:
+    def _calculate_kphio(self) -> None:
         """Calculate the intrinsic quantum yield of photosynthesis."""
 
     def _check_requires(self) -> None:
         """Check additional required variables are present."""
 
         for required_var in self.requires:
-            if getattr(self.env, required_var) is None:
+            if not hasattr(self.env, required_var):
                 raise ValueError(
                     f"{self.__class__.__name__} (method {self.method}) requires "
                     f"{required_var} to be provided in the PModelEnvironment."
@@ -137,12 +142,19 @@ class QuantumYieldABC(ABC):
         summarize_attrs(self, attrs, dp=dp)
 
     @classmethod
-    def __init_subclass__(cls, method: str, is_c4: bool, requires: list[str]) -> None:
+    def __init_subclass__(
+        cls,
+        method: str,
+        is_c4: bool,
+        requires: list[str],
+        default_reference_kphio: float,
+    ) -> None:
         """Initialise a subclass deriving from this ABC."""
 
         cls.method = method
         cls.is_c4 = is_c4
         cls.requires = requires
+        cls.default_reference_kphio = default_reference_kphio
         QUANTUM_YIELD_CLASS_REGISTRY[cls.method] = cls
 
 
@@ -151,16 +163,14 @@ class QuantumYieldConstant(
     method="constant",
     is_c4=False,
     requires=[],
+    default_reference_kphio=0.049977,
 ):
     """Constant kphio."""
 
-    def _calculate_kphio(self, **kwargs: Any) -> None:
+    def _calculate_kphio(self) -> None:
         """Constant kphio."""
 
-        if "init_kphio" not in kwargs:
-            raise ValueError("Missing definition of initial kphio.")
-
-        self.kphio = np.array([kwargs["init_kphio"]])
+        self.kphio = np.array([self.reference_kphio])
 
 
 class QuantumYieldBernacchiC3(
@@ -168,19 +178,19 @@ class QuantumYieldBernacchiC3(
     method="bernacchi_c3",
     is_c4=False,
     requires=[],
+    default_reference_kphio=0.081785,
 ):
     """Calculate kphio following Bernacchi for C3 plants."""
 
-    def _calculate_kphio(self, **kwargs: Any) -> None:
+    def _calculate_kphio(
+        self,
+    ) -> None:
         """Calculate kphio."""
-
-        if "init_kphio" not in kwargs:
-            raise ValueError("Missing definition of constant kphio.")
 
         ftemp = evaluate_horner_polynomial(self.env.tc, self.pmodel_const.kphio_C3)
         ftemp = np.clip(ftemp, 0.0, None)
 
-        self.kphio = ftemp * kwargs["init_kphio"]
+        self.kphio = ftemp * self.reference_kphio
 
 
 class QuantumYieldBernacchiC4(
@@ -188,19 +198,17 @@ class QuantumYieldBernacchiC4(
     method="bernacchi_c4",
     is_c4=True,
     requires=[],
+    default_reference_kphio=0.081785,
 ):
     """Calculate kphio following Bernacchi."""
 
-    def _calculate_kphio(self, **kwargs: Any) -> None:
+    def _calculate_kphio(self) -> None:
         """Calculate kphio."""
-
-        if "init_kphio" not in kwargs:
-            raise ValueError("Missing definition of constant kphio.")
 
         ftemp = evaluate_horner_polynomial(self.env.tc, self.pmodel_const.kphio_C4)
         ftemp = np.clip(ftemp, 0.0, None)
 
-        self.kphio = ftemp * kwargs["init_kphio"]
+        self.kphio = ftemp * self.reference_kphio
 
 
 class QuantumYieldSandoval(
@@ -208,38 +216,39 @@ class QuantumYieldSandoval(
     method="sandoval",
     is_c4=False,
     requires=["aridity_index", "mean_growth_temperature"],
+    default_reference_kphio=1.0 / 9.0,
 ):
-    """Calculate kphio following Sandoval."""
+    """Calculate kphio following Sandoval.
 
-    def _calculate_kphio(self, **kwargs: Any) -> None:
-        """Constant kphio."""
+    Reference kphio is the theoretical maximum quantum yield, defaulting to the ratio of
+    1/9 in the absence of a Q cycle (Long, 1993).
+    """
+
+    def _calculate_kphio(self) -> None:
+        """Calculate kphio."""
 
         # Warn that this is an experimental feature.
         warn(
-            "The sandoval method for calculating kphi0 is experimental, "
+            "The sandoval method for calculating kphio is experimental, "
             "see the class documentation",
             ExperimentalFeatureWarning,
         )
 
-        # Calculate activation entropy as a function of mean growth temperature, J/mol/K
-        deltaS = 1558.853 - 50.223 * self.env.mean_growth_temperature
+        # Calculate enzyme kinetics
+        a_ent, b_ent, Hd_base, Ha = self.pmodel_const.sandoval_kinetics
+        # Calculate activation entropy as a linear function of
+        # mean growth temperature, J/mol/K
+        deltaS = a_ent + b_ent * self.env.mean_growth_temperature
         # Calculate deaactivation energy J/mol
-        Hd = 294.804 * deltaS
-        # activation energy J/mol
-        Ha = 75000.0
-
-        # theoretical maximum phi0 and curvature parameters (Long, 1993;Sandoval et al.,
-        # in.prep.)
-        phi_o_theo = 0.111
-        m = 6.8681
-        n = 0.07956432
+        Hd = Hd_base * deltaS
 
         # Calculate the optimal temperature to be used as the reference temperature in
         # the modified Arrhenius calculation
         Topt = Hd / (deltaS - self.core_const.k_R * np.log(Ha / (Hd - Ha)))
 
         # Calculate peak kphio given the aridity index
-        kphio_peak = phi_o_theo / (1 + (self.env.aridity_index) ** m) ** n
+        m, n = self.pmodel_const.sandoval_peak_phio
+        kphio_peak = self.reference_kphio / (1 + (self.env.aridity_index) ** m) ** n
 
         # Calculate the modified Arrhenius factor using the
         f_kphio = calc_modified_arrhenius_factor(
@@ -252,4 +261,4 @@ class QuantumYieldSandoval(
         )
 
         # Apply the factor and store it.
-        self.kphio = kphio_peak * f_kphio
+        self.kphio = np.array([kphio_peak * f_kphio])
