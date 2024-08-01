@@ -106,7 +106,6 @@ addopts = """
   --doctest-modules 
   --ignore=pyrealm/__main__.py
   --ignore=tests/pmodel/generate_test_inputs.py
-  --import-mode importlib
   """
 python_files = 'test_*.py'
 testpaths = ['tests', 'pyrealm']
