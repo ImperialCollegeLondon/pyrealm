@@ -26,6 +26,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm import ExperimentalFeatureWarning
+from pyrealm.core.utilities import check_input_shapes
 from pyrealm.pmodel import (
     PModel,
     PModelEnvironment,
@@ -180,6 +181,12 @@ class SubdailyPModel:
       :math:`\xi` but subdaily values in the other parameters.
     * Predictions of GPP are then made as in the standard P Model.
 
+    As with the :class:`~pyrealm.pmodel.pmodel.PModel`, the values of the `kphio`
+    argument _can_ be provided as an array of values, potentially varying through time
+    and space. The behaviour of the daily model that drives acclimation here is to take
+    the daily mean `kphio` value for each time series within the acclimation window, as
+    for the other variables. This is an experimental solution!
+
     Missing values:
 
         Missing data can arise in a number of ways: actual gaps in the forcing data, the
@@ -210,7 +217,11 @@ class SubdailyPModel:
           function be allowed to hold over values to fill missing values.
         allow_partial_data: Should estimates of daily optimal conditions be calculated
           with missing values in the acclimation window.
-        kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -).
+        kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -). Note
+            that :math:`\phi_0` is sometimes used to refer to the quantum yield of
+            electron transfer, which is exactly four times larger, so check definitions
+            here. This is often a single global value, but the argument also accepts
+            externally calculated per-observation estimates of kphio.
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.
     """
@@ -221,7 +232,7 @@ class SubdailyPModel:
         fs_scaler: SubdailyScaler,
         fapar: NDArray,
         ppfd: NDArray,
-        kphio: float = 1 / 8,
+        kphio: float | NDArray = 1 / 8,
         do_ftemp_kphio: bool = True,
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
@@ -254,9 +265,25 @@ class SubdailyPModel:
 
         # Set up kphio attributes
         self.env: PModelEnvironment = env
-        self.init_kphio: float = kphio
-        self.do_ftemp_kphio = do_ftemp_kphio
+        """The PModelEnvironment used to fit the P Model."""
+        self.do_ftemp_kphio: bool = do_ftemp_kphio
+        r"""Records if :math:`\phi_0` (``kphio``) is temperature corrected."""
+
+        # kphio calculation:
+        self.init_kphio: NDArray
+        r"""The initial value of :math:`\phi_0` (``kphio``)"""
         self.kphio: NDArray
+        r"""The value of :math:`\phi_0` used with any temperature correction applied."""
+
+        # Setup initial kphio
+        if isinstance(kphio, float):
+            # A single scalar global value
+            self.init_kphio = np.array(kphio)
+        elif isinstance(kphio, np.ndarray):
+            # An array of values, which must match the shape of the inputs to the
+            # PModelEnvironment instance.
+            _ = check_input_shapes(self.env.tc, kphio)
+            self.init_kphio = kphio
 
         # 1) Generate a PModelEnvironment containing the average conditions within the
         #    daily acclimation window, including any optional variables required by the
@@ -285,9 +312,19 @@ class SubdailyPModel:
 
         # 2) Fit a PModel to those environmental conditions, using the supplied settings
         #    for the original model.
+
+        # If the kphio is a non-scalar array, use the mean kphio within the window to
+        # calculate the daily optimal behaviour.
+        if np.ndim(self.init_kphio) > 0:
+            daily_kphio = fs_scaler.get_daily_means(
+                self.init_kphio, allow_partial_data=allow_partial_data
+            )
+        else:
+            daily_kphio = self.init_kphio
+
         self.pmodel_acclim: PModel = PModel(
             pmodel_env_acclim,
-            kphio=kphio,
+            kphio=daily_kphio,
             do_ftemp_kphio=do_ftemp_kphio,
             method_optchi=method_optchi,
             method_jmaxlim=method_jmaxlim,
@@ -371,7 +408,7 @@ class SubdailyPModel:
             )
             self.kphio = self.init_kphio * ftemp_kphio
         else:
-            self.kphio = np.array([self.init_kphio])
+            self.kphio = self.init_kphio
 
         self.subdaily_Ac: NDArray = self.subdaily_vcmax * self.optimal_chi.mc
         """Estimated subdaily :math:`A_c`."""
