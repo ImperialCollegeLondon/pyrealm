@@ -110,7 +110,7 @@ def calc_ftemp_inst_rd(
         >>> # Relative percentage instantaneous change in Rd going from 10 to 25 degrees
         >>> val = (calc_ftemp_inst_rd(25) / calc_ftemp_inst_rd(10) - 1) * 100
         >>> round(val, 4)
-        np.float64(250.9593)
+        250.9593
     """
 
     return np.exp(
@@ -306,13 +306,13 @@ def calc_ftemp_kphio(
         >>> # degrees celsius (percent change):
         >>> val = (calc_ftemp_kphio(25.0) / calc_ftemp_kphio(5.0) - 1) * 100
         >>> round(val, 5)
-        np.float64(52.03969)
+        52.03969
         >>> # Relative change in the quantum yield efficiency between 5 and 25
         >>> # degrees celsius (percent change) for a C4 plant:
         >>> val = (calc_ftemp_kphio(25.0, c4=True) /
         ...        calc_ftemp_kphio(5.0, c4=True) - 1) * 100
         >>> round(val, 5)
-        np.float64(432.25806)
+        432.25806
     """
 
     if c4:
@@ -411,7 +411,7 @@ def calc_ns_star(
         >>> # Relative viscosity at 20 degrees Celsius and standard
         >>> # atmosphere (in Pa):
         >>> round(calc_ns_star(20, 101325), 5)
-        np.float64(1.12536)
+        1.12536
     """
 
     visc_env = calc_viscosity_h2o(tc, patm, core_const=core_const)
@@ -729,7 +729,7 @@ def calc_co2_to_ca(co2: NDArray, patm: NDArray) -> NDArray:
 
     Examples:
         >>> np.round(calc_co2_to_ca(413.03, 101325), 6)
-        np.float64(41.850265)
+        41.850265
     """
 
     return 1.0e-6 * co2 * patm  # Pa, atms. CO2
