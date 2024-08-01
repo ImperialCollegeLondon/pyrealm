@@ -133,8 +133,10 @@ class PModel:
             :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`).
         method_jmaxlim: (Optional, default=`wang17`) Method to use for
             :math:`J_{max}` limitation.
-        reference_kphio: An optional alternative reference value to be passed to the
-            kphio calculation method.
+        reference_kphio: An optional alternative reference value for the quantum yield
+            efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
+            calculation method. 
+
 
 
     Examples:
@@ -189,19 +191,18 @@ class PModel:
         # Optimal ci
         # The heart of the P-model: calculate ci:ca ratio (chi) and additional terms
         # -----------------------------------------------------------------------
-        self.method_optchi: str = method_optchi
-        """Records the method used to calculate optimal chi."""
 
-        try:
-            opt_chi_class = OPTIMAL_CHI_CLASS_REGISTRY[method_optchi]
-        except KeyError:
+        if method_optchi not in OPTIMAL_CHI_CLASS_REGISTRY:
             raise ValueError(f"Unknown optimal chi estimation method: {method_optchi}")
 
-        self.optchi: OptimalChiABC = opt_chi_class(
+        self.method_optchi: str = method_optchi
+        """The method used to calculate optimal chi."""
+
+        self.optchi: OptimalChiABC = OPTIMAL_CHI_CLASS_REGISTRY[method_optchi](
             env=env,
             pmodel_const=self.pmodel_const,
         )
-        """An subclass OptimalChi, implementing the requested chi calculation method"""
+        """A subclass of OptimalChiABC, providing optimal chi calculation."""
 
         self.c4: bool = self.optchi.is_c4
         """Does the OptimalChi method approximate a C3 or C4 pathway."""
@@ -209,21 +210,18 @@ class PModel:
         # -----------------------------------------------------------------------
         # Calculate the quantum yield of photosynthesis (kphio)
         # -----------------------------------------------------------------------
-        self.method_kphio: str = method_kphio
-        try:
-            kphio_class = QUANTUM_YIELD_CLASS_REGISTRY[method_kphio]
-        except KeyError:
+        if method_kphio not in QUANTUM_YIELD_CLASS_REGISTRY:
             raise ValueError(f"Unknown kphio calculation method: {method_kphio}")
 
-        self.kphio: QuantumYieldABC = kphio_class(
+        self.method_kphio: str = method_kphio
+        """The method used to calculate kphio."""
+
+        self.kphio: QuantumYieldABC = QUANTUM_YIELD_CLASS_REGISTRY[method_kphio](
             env=env,
             use_c4=self.c4,
-            pmodel_const=self.pmodel_const,
-            core_const=self.core_const,
             reference_kphio=reference_kphio,
         )
-        """A subclass of QuantumYieldABC, implementing the requested kphio calculation
-        method."""
+        """A subclass of QuantumYieldABC, providing kphio calculation."""
 
         # -----------------------------------------------------------------------
         # Calculation of Jmax limitation terms

@@ -15,7 +15,6 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm import ExperimentalFeatureWarning
-from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import (
     check_input_shapes,
     evaluate_horner_polynomial,
@@ -82,18 +81,12 @@ class QuantumYieldABC(ABC):
         env: PModelEnvironment,
         reference_kphio: float | None = None,
         use_c4: bool = False,
-        pmodel_const: PModelConst = PModelConst(),
-        core_const: CoreConst = CoreConst(),
     ):
         self.env: PModelEnvironment = env
         """The PModelEnvironment containing the photosynthetic environment for the
         model."""
         self.shape: tuple[int, ...] = env.shape
         """The shape of the input environment data."""
-        self.pmodel_const: PModelConst = pmodel_const
-        """The PModelConst used for calculating quantum yield"""
-        self.core_const: CoreConst = core_const
-        """The CoreConst used for calculating quantum yield"""
         self.reference_kphio: float = reference_kphio or self.default_reference_kphio
         """The reference value for kphio for the method."""
         self.use_c4: bool = use_c4
@@ -190,9 +183,13 @@ class QuantumYieldTemperature(
         """Calculate kphio."""
 
         if self.use_c4:
-            ftemp = evaluate_horner_polynomial(self.env.tc, self.pmodel_const.kphio_C4)
+            ftemp = evaluate_horner_polynomial(
+                self.env.tc, self.env.pmodel_const.kphio_C4
+            )
         else:
-            ftemp = evaluate_horner_polynomial(self.env.tc, self.pmodel_const.kphio_C3)
+            ftemp = evaluate_horner_polynomial(
+                self.env.tc, self.env.pmodel_const.kphio_C3
+            )
 
         ftemp = np.clip(ftemp, 0.0, None)
         self.kphio = ftemp * self.reference_kphio
@@ -221,7 +218,7 @@ class QuantumYieldSandoval(
         )
 
         # Calculate enzyme kinetics
-        a_ent, b_ent, Hd_base, Ha = self.pmodel_const.sandoval_kinetics
+        a_ent, b_ent, Hd_base, Ha = self.env.pmodel_const.sandoval_kinetics
         # Calculate activation entropy as a linear function of
         # mean growth temperature, J/mol/K
         deltaS = a_ent + b_ent * self.env.mean_growth_temperature
@@ -230,15 +227,15 @@ class QuantumYieldSandoval(
 
         # Calculate the optimal temperature to be used as the reference temperature in
         # the modified Arrhenius calculation
-        Topt = Hd / (deltaS - self.core_const.k_R * np.log(Ha / (Hd - Ha)))
+        Topt = Hd / (deltaS - self.env.core_const.k_R * np.log(Ha / (Hd - Ha)))
 
         # Calculate peak kphio given the aridity index
-        m, n = self.pmodel_const.sandoval_peak_phio
+        m, n = self.env.pmodel_const.sandoval_peak_phio
         kphio_peak = self.reference_kphio / (1 + (self.env.aridity_index) ** m) ** n
 
         # Calculate the modified Arrhenius factor using the
         f_kphio = calc_modified_arrhenius_factor(
-            tk=self.env.tc + self.core_const.k_CtoK,
+            tk=self.env.tc + self.env.core_const.k_CtoK,
             Ha=Ha,
             Hd=Hd,
             deltaS=deltaS,
