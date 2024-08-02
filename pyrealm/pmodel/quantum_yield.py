@@ -90,24 +90,27 @@ class QuantumYieldABC(ABC):
         model."""
         self.shape: tuple[int, ...] = env.shape
         """The shape of the input environment data."""
-        self.reference_kphio: NDArray
-        """The kphio reference value for the method."""
 
-        # If the reference kphio value is an array check if it is allowed and that it
-        # matches the shape of the environment.
-        if isinstance(reference_kphio, np.ndarray):
+        # Set the reference kphio to the class default value if not provided and convert
+        # the value to np.array if needed
+        if reference_kphio is None:
+            reference_kphio = self.default_reference_kphio
+        if isinstance(reference_kphio, float | int):
+            reference_kphio = np.array([reference_kphio])
+
+        # Now check - if the reference_kphio value is a non-scalar array - that array
+        # inputs are handled by the kphio method and that the shape matches the shape of
+        # the environment.
+        if isinstance(reference_kphio, np.ndarray) and reference_kphio.size > 1:
             if self.array_reference_kphio_ok:
                 check_input_shapes(self.env.tc, reference_kphio)
-                self.reference_kphio = reference_kphio
             else:
                 raise ValueError(
                     f"The {self.method} method for kphio does not support arrays "
                     "of reference kphio values"
                 )
-        else:
-            reference_kphio = reference_kphio or self.default_reference_kphio
-            self.reference_kphio = np.array([reference_kphio])
 
+        self.reference_kphio: NDArray = reference_kphio
         """The kphio reference value for the method."""
         self.use_c4: bool = use_c4
         """Use a C4 parameterisation if available."""

@@ -315,15 +315,38 @@ class SubdailyPModel:
             core_const=self.env.core_const,
         )
 
+        # Handle the kphio settings. First, calculate kphio at the subdaily scale.
+        self.kphio: QuantumYieldABC = QUANTUM_YIELD_CLASS_REGISTRY[method_kphio](
+            env=env,
+            use_c4=self.c4,
+            reference_kphio=reference_kphio,
+        )
+        """Subdaily kphio values."""
+
+        # If the kphio method takes a single reference value then we can simply
+        # recalculate the kphio using the same method for the daily acclimation
+        # conditions but if the reference value is an array then the correct behaviour
+        # is not obvious: currently, use the mean calculated kphio within the window to
+        # calculate the daily acclimation value behaviour and set the kphio method to be
+        # fixed to avoid altering the inputs.
+        if self.kphio.reference_kphio.size > 1:
+            daily_reference_kphio = fs_scaler.get_daily_means(
+                self.kphio.kphio, allow_partial_data=allow_partial_data
+            )
+            daily_method_kphio = "fixed"
+        else:
+            daily_reference_kphio = self.kphio.reference_kphio
+            daily_method_kphio = self.method_kphio
+
         # 2) Fit a PModel to those environmental conditions, using the supplied settings
         #    for the original model.
 
         self.pmodel_acclim: PModel = PModel(
             env=pmodel_env_acclim,
-            method_kphio=method_kphio,
+            method_kphio=daily_method_kphio,
             method_optchi=method_optchi,
             method_jmaxlim=method_jmaxlim,
-            reference_kphio=reference_kphio,
+            reference_kphio=daily_reference_kphio,
         )
         r"""P Model predictions for the daily acclimation conditions.
 
@@ -396,14 +419,6 @@ class SubdailyPModel:
         self.optimal_chi.estimate_chi(xi_values=self.subdaily_xi)
 
         """Estimated subdaily :math:`c_i`."""
-
-        # Calculate kphio at the subdaily scale.
-        self.kphio: QuantumYieldABC = QUANTUM_YIELD_CLASS_REGISTRY[method_kphio](
-            env=env,
-            use_c4=self.c4,
-            reference_kphio=reference_kphio,
-        )
-        """Subdaily kphio values."""
 
         # Calculate Ac, J and Aj at subdaily scale to calculate assimilation
         self.subdaily_Ac: NDArray = self.subdaily_vcmax * self.optimal_chi.mc
