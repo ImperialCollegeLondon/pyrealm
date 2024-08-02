@@ -58,3 +58,11 @@ kernelspec:
     :autosummary:
     :members:
 ```
+
+## The {mod}`~pyrealm.core.solar` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.core.solar
+    :autosummary:
+    :members:
+```
