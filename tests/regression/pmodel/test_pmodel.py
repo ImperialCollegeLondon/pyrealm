@@ -603,7 +603,7 @@ def pmodelenv(values):
 
 @pytest.mark.parametrize("soilmstress", [False, True], ids=["sm-off", "sm-on"])
 @pytest.mark.parametrize(
-    "method_kphio", ["temperature", "constant"], ids=["fkphio-on", "fkphio-off"]
+    "method_kphio", ["temperature", "fixed"], ids=["fkphio-on", "fkphio-off"]
 )
 @pytest.mark.parametrize(
     "luevcmax_method", ["wang17", "smith19", "none"], ids=["wang17", "smith19", "none"]
@@ -707,7 +707,7 @@ def test_pmodel_class_c3(
 
 @pytest.mark.parametrize("soilmstress", [False, True], ids=["sm-off", "sm-on"])
 @pytest.mark.parametrize(
-    "method_kphio", ["temperature", "constant"], ids=["fkphio-on", "fkphio-off"]
+    "method_kphio", ["temperature", "fixed"], ids=["fkphio-on", "fkphio-off"]
 )
 @pytest.mark.parametrize("environ", ["sc", "ar"], ids=["sc", "ar"])
 def test_pmodel_class_c4(

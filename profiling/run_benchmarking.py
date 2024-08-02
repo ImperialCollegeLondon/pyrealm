@@ -60,7 +60,7 @@ def get_function_map(root: Path) -> dict[tuple[str, int, str], str]:
         for node in ast.walk(parsed_ast):
             if isinstance(node, ast.FunctionDef):
                 # Find the line number used by profiling, which includes any decorators
-                lineno = min([d.lineno for d in [*node.decorator_list, node]])
+                lineno = min([d.lineno for d in [*node.decorator_list, node]])  # type: ignore [attr-defined]
 
                 if hasattr(node, "class_name"):
                     ast_map[(str(src_file), lineno, node.name)] = (

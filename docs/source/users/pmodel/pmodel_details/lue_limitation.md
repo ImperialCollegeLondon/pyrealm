@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.3
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3
   language: python
@@ -63,21 +63,6 @@ where $\phi_0$ is the quantum yield efficiency of photosynthesis, $M_C$ is the
 molar mass of carbon and $m_j$ is the $\ce{CO2}$ limitation term of light use
 efficiency from the calculation of optimal $\chi$.
 
-However, the {class}`pyrealm.pmodel.pmodel.PModel` class also incorporates two further
-factors:
-
-* temperature (t) dependence of $\phi_0$,
-* $J_{max}$ limitation of $m_j$ by a factor $f_v$ and
-
-$$
-  \text{LUE} = \phi_0(t) \cdot M_C \cdot m_j \cdot f_v$
-$$
-
-### $\phi_0$ and temperature dependency
-
-The {class}`~pyrealm.pmodel.pmodel.PModel` uses a single variable to capture the
-apparent quantum yield efficiency of photosynthesis (`kphio`, $\phi_0$).
-
 ```{warning}
 
 Note that $\phi_0$ is sometimes used to refer to the quantum yield of electron
@@ -86,7 +71,21 @@ photosynthesis.
 
 ```
 
-The value of $\phi_0$ shows temperature dependence, which is modelled following
+However, the {class}`pyrealm.pmodel.pmodel.PModel` class also incorporates two further
+factors:
+
+* temperature (t) dependence of $\phi_0$,
+* $J_{max}$ limitation of $m_j$ by a factor $f_v$ and
+
+$$
+  \text{LUE} = \phi_0(t) \cdot M_C \cdot m_j \cdot f_v
+$$
+
+### $\phi_0$ and temperature dependency
+
+The {class}`~pyrealm.pmodel.pmodel.PModel` uses a single variable to capture the
+apparent quantum yield efficiency of photosynthesis (`kphio`, $\phi_0$). The value of
+$\phi_0$ shows temperature dependence, which is modelled following
 {cite:t}`Bernacchi:2003dc` for C3 plants and {cite:t}`cai:2020a` for C4 plants (see
 {func}`~pyrealm.pmodel.functions.calc_ftemp_kphio`). The temperature dependency is
 applied by default but can be turned off using the
@@ -139,6 +138,42 @@ pyplot.title("Temperature dependence of quantum yield efficiency")
 pyplot.xlabel("Temperature °C")
 pyplot.ylabel("Limitation factor")
 pyplot.legend()
+pyplot.show()
+```
+
+### Setting $\phi_0$ directly
+
+In addition to fixed or temperature dependent $\phi_0$, it is also possible to provide
+$\phi_0$ values for each observation in the P Model. In this case, you will need to
+provide an array of values that has the same shape as the other driver variables and
+these values are then used within the calculations for each observation.
+
+This option is provided to allow users to experiment with alternative per-observation
+calculations of $\phi_0$ limitation - for example, modulation of $\phi_0$ by temperature
+and aridity - that are not implemented within the `PModel` or `SubdailyPModel` classes.
+This approach is used in the plot below to show the simple linear scaling of LUE with
+$\phi_0$ for a constant environment.
+
+```{code-cell}
+:tags: [hide-input]
+
+# A constant environment to show a range of kphio values
+kphio_values = np.arange(0, 0.126, step=0.001)
+n_vals = len(kphio_values)
+
+env = PModelEnvironment(
+    tc=np.repeat(20, n_vals),
+    patm=np.repeat(101325, n_vals),
+    vpd=np.repeat(820, n_vals),
+    co2=np.repeat(400, n_vals),
+)
+model_var_kphio = PModel(env, kphio=kphio_values, do_ftemp_kphio=False)
+
+# Create a line plot of ftemp kphio
+pyplot.plot(kphio_values, model_var_kphio.lue)
+pyplot.title("Variation in LUE with changing $\phi_0$")
+pyplot.xlabel("$\phi_0$")
+pyplot.ylabel("LUE")
 pyplot.show()
 ```
 

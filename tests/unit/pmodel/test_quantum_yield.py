@@ -26,15 +26,15 @@ def quantum_yield_env():
         pytest.param(0.1, 0.1, id="provided"),
     ),
 )
-def test_QuantumYieldConstant(quantum_yield_env, reference_kphio, expected_kphio):
+def test_QuantumYieldFixed(quantum_yield_env, reference_kphio, expected_kphio):
     """Test the constant method."""
 
     from pyrealm.pmodel.quantum_yield import (
         QUANTUM_YIELD_CLASS_REGISTRY,
-        QuantumYieldConstant,
+        QuantumYieldFixed,
     )
 
-    qy = QuantumYieldConstant(
+    qy = QuantumYieldFixed(
         env=quantum_yield_env,
         reference_kphio=reference_kphio,
     )
@@ -42,7 +42,7 @@ def test_QuantumYieldConstant(quantum_yield_env, reference_kphio, expected_kphio
     # Should be a scalar
     assert np.allclose(qy.kphio, np.array([expected_kphio]))
 
-    qy2 = QUANTUM_YIELD_CLASS_REGISTRY["constant"](
+    qy2 = QUANTUM_YIELD_CLASS_REGISTRY["fixed"](
         env=quantum_yield_env,
         reference_kphio=reference_kphio,
     )

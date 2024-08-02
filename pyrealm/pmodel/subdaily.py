@@ -184,6 +184,12 @@ class SubdailyPModel:
       :math:`\xi` but subdaily values in the other parameters.
     * Predictions of GPP are then made as in the standard P Model.
 
+    As with the :class:`~pyrealm.pmodel.pmodel.PModel`, the values of the `kphio`
+    argument _can_ be provided as an array of values, potentially varying through time
+    and space. The behaviour of the daily model that drives acclimation here is to take
+    the daily mean `kphio` value for each time series within the acclimation window, as
+    for the other variables. This is an experimental solution!
+
     Missing values:
 
         Missing data can arise in a number of ways: actual gaps in the forcing data, the
@@ -311,12 +317,22 @@ class SubdailyPModel:
 
         # 2) Fit a PModel to those environmental conditions, using the supplied settings
         #    for the original model.
+
+        # If the kphio is a non-scalar array, use the mean kphio within the window to
+        # calculate the daily optimal behaviour.
+        if np.ndim(reference_kphio) > 0:
+            daily_kphio = fs_scaler.get_daily_means(
+                reference_kphio, allow_partial_data=allow_partial_data
+            )
+        else:
+            daily_kphio = reference_kphio
+
         self.pmodel_acclim: PModel = PModel(
             env=pmodel_env_acclim,
             method_kphio=method_kphio,
             method_optchi=method_optchi,
             method_jmaxlim=method_jmaxlim,
-            reference_kphio=reference_kphio,
+            reference_kphio=daily_kphio,
         )
         r"""P Model predictions for the daily acclimation conditions.
 

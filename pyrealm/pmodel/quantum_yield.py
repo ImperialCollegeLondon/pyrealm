@@ -75,11 +75,14 @@ class QuantumYieldABC(ABC):
     default_reference_kphio: float
     """A default value for the reference kphio value for use with a given
     implementation."""
+    array_reference_kphio_ok: bool
+    """Does the implementation handle arrays inputs to the reference_kphio __init__
+    argument."""
 
     def __init__(
         self,
         env: PModelEnvironment,
-        reference_kphio: float | None = None,
+        reference_kphio: float | NDArray | None = None,
         use_c4: bool = False,
     ):
         self.env: PModelEnvironment = env
@@ -87,8 +90,25 @@ class QuantumYieldABC(ABC):
         model."""
         self.shape: tuple[int, ...] = env.shape
         """The shape of the input environment data."""
-        self.reference_kphio: float = reference_kphio or self.default_reference_kphio
-        """The reference value for kphio for the method."""
+        self.reference_kphio: NDArray
+        """The kphio reference value for the method."""
+
+        # If the reference kphio value is an array check if it is allowed and that it
+        # matches the shape of the environment.
+        if isinstance(reference_kphio, np.ndarray):
+            if self.array_reference_kphio_ok:
+                check_input_shapes(self.env.tc, reference_kphio)
+                self.reference_kphio = reference_kphio
+            else:
+                raise ValueError(
+                    f"The {self.method} method for kphio does not support arrays "
+                    "of reference kphio values"
+                )
+        else:
+            reference_kphio = reference_kphio or self.default_reference_kphio
+            self.reference_kphio: NDArray = np.array([reference_kphio])
+
+        """The kphio reference value for the method."""
         self.use_c4: bool = use_c4
         """Use a C4 parameterisation if available."""
 
@@ -143,27 +163,30 @@ class QuantumYieldABC(ABC):
         method: str,
         requires: list[str],
         default_reference_kphio: float,
+        array_reference_kphio_ok: bool,
     ) -> None:
         """Initialise a subclass deriving from this ABC."""
 
         cls.method = method
         cls.requires = requires
         cls.default_reference_kphio = default_reference_kphio
+        cls.array_reference_kphio_ok = array_reference_kphio_ok
         QUANTUM_YIELD_CLASS_REGISTRY[cls.method] = cls
 
 
-class QuantumYieldConstant(
+class QuantumYieldFixed(
     QuantumYieldABC,
-    method="constant",
+    method="fixed",
     requires=[],
     default_reference_kphio=0.049977,
+    array_reference_kphio_ok=True,
 ):
     """Constant kphio."""
 
     def _calculate_kphio(self) -> None:
         """Constant kphio."""
 
-        self.kphio = np.array([self.reference_kphio])
+        self.kphio = self.reference_kphio
 
 
 class QuantumYieldTemperature(
@@ -171,6 +194,7 @@ class QuantumYieldTemperature(
     method="temperature",
     requires=[],
     default_reference_kphio=0.081785,
+    array_reference_kphio_ok=False,
 ):
     """Calculate temperature modulated kphio.
 
@@ -200,6 +224,7 @@ class QuantumYieldSandoval(
     method="sandoval",
     requires=["aridity_index", "mean_growth_temperature"],
     default_reference_kphio=1.0 / 9.0,
+    array_reference_kphio_ok=False,
 ):
     """Calculate kphio following Sandoval.
 
@@ -244,4 +269,4 @@ class QuantumYieldSandoval(
         )
 
         # Apply the factor and store it.
-        self.kphio = np.array([kphio_peak * f_kphio])
+        self.kphio = kphio_peak * f_kphio
