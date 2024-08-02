@@ -236,7 +236,7 @@ class SubdailyPModel:
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
         method_kphio: str = "temperature",
-        reference_kphio: float | None = None,
+        reference_kphio: float | NDArray | None = None,
         alpha: float = 1 / 15,
         allow_holdover: bool = False,
         allow_partial_data: bool = False,
@@ -318,21 +318,12 @@ class SubdailyPModel:
         # 2) Fit a PModel to those environmental conditions, using the supplied settings
         #    for the original model.
 
-        # If the kphio is a non-scalar array, use the mean kphio within the window to
-        # calculate the daily optimal behaviour.
-        if np.ndim(reference_kphio) > 0:
-            daily_kphio = fs_scaler.get_daily_means(
-                reference_kphio, allow_partial_data=allow_partial_data
-            )
-        else:
-            daily_kphio = reference_kphio
-
         self.pmodel_acclim: PModel = PModel(
             env=pmodel_env_acclim,
             method_kphio=method_kphio,
             method_optchi=method_optchi,
             method_jmaxlim=method_jmaxlim,
-            reference_kphio=daily_kphio,
+            reference_kphio=reference_kphio,
         )
         r"""P Model predictions for the daily acclimation conditions.
 
@@ -412,6 +403,7 @@ class SubdailyPModel:
             use_c4=self.c4,
             reference_kphio=reference_kphio,
         )
+        """Subdaily kphio values."""
 
         # Calculate Ac, J and Aj at subdaily scale to calculate assimilation
         self.subdaily_Ac: NDArray = self.subdaily_vcmax * self.optimal_chi.mc

@@ -172,7 +172,7 @@ class PModel:
         method_kphio: str = "temperature",
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
-        reference_kphio: float | None = None,
+        reference_kphio: float | NDArray | None = None,
     ):
         self.shape: tuple = env.shape
         """Records the common numpy array shape of array inputs."""

@@ -106,7 +106,7 @@ class QuantumYieldABC(ABC):
                 )
         else:
             reference_kphio = reference_kphio or self.default_reference_kphio
-            self.reference_kphio: NDArray = np.array([reference_kphio])
+            self.reference_kphio = np.array([reference_kphio])
 
         """The kphio reference value for the method."""
         self.use_c4: bool = use_c4
