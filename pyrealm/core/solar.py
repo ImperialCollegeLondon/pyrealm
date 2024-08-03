@@ -24,7 +24,7 @@ def calc_distance_factor(nu: NDArray, k_e: float) -> NDArray:
         k_e         : Solar eccentricity
 
     Returns:
-        dr          : distance factor
+        A distance factor
     """  # noqa: E501
 
     dr = (1.0 / ((1.0 - k_e**2) / (1.0 + k_e * np.cos(np.deg2rad(nu))))) ** 2
