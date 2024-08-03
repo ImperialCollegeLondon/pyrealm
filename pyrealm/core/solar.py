@@ -13,15 +13,20 @@ from pyrealm.core.utilities import check_input_shapes
 def calc_distance_factor(nu: NDArray, k_e: float) -> NDArray:
     r"""Calculates distance factor.
 
-    This function calculates distance factor using the method of Berger et al. (1993)
+    This function calculates the distance factor :math:`dr` using the method of
+    :cite:t:`berger:1993a`.
 
     .. math::
 
-        dr = \left( \frac{1.0}{\left(\frac{1.0 - k_e^2}{1.0 + k_e \cos\left(\deg2rad(\nu)\right)}\right)} \right)^2
+        dr = \left( 1.0 \mathbin{/}
+               \left(\frac{1.0 - k_e^2}
+                          {1.0 + k_e \cos\left(\nu \cdot \pi \mathbin{/} 180)\right)}
+               \right)
+             \right)^2
 
     Args:
-        nu          : heliocentric true anomaly (degrees)
-        k_e         : Solar eccentricity
+        nu          : heliocentric true anomaly (:math:`\nu`, degrees)
+        k_e         : Solar eccentricity (:math:`k_e`)
 
     Returns:
         A distance factor
