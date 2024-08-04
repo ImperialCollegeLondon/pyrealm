@@ -10,7 +10,7 @@ from pyrealm.constants import CoreConst
 from pyrealm.core.utilities import check_input_shapes
 
 
-def calc_distance_factor(nu: NDArray, k_e: float) -> NDArray:
+def calc_distance_factor(nu: NDArray, const: CoreConst) -> NDArray:
     r"""Calculates distance factor.
 
     This function calculates the distance factor :math:`dr` using the method of
@@ -25,25 +25,27 @@ def calc_distance_factor(nu: NDArray, k_e: float) -> NDArray:
              \right)^2
 
     Args:
-        nu          : heliocentric true anomaly (:math:`\nu`, degrees)
-        k_e         : Solar eccentricity (:math:`k_e`)
+        nu          : Heliocentric true anomaly (degrees)
+        const       : CoreConst object containing core constants, including:
+            k_e     : Solar eccentricity
+
 
     Returns:
         A distance factor
     """
+
+    k_e = const.k_e
 
     dr = (1.0 / ((1.0 - k_e**2) / (1.0 + k_e * np.cos(np.deg2rad(nu))))) ** 2
 
     return dr
 
 
-def calc_declination_angle_delta(
-    lambda_: NDArray, k_eps: float, k_pir: float
-) -> NDArray:
+def calc_declination_angle_delta(lambda_: NDArray, const: CoreConst) -> NDArray:
     r"""Calculates declination angle delta.
 
     This function calculates the solar declination angle delta using
-    the method of Woolf (1968)
+    the method of Woolf (1968).
 
     .. math::
 
@@ -51,12 +53,16 @@ def calc_declination_angle_delta(
 
     Args:
         lambda_     : heliocentric longitude
-        k_eps       : Solar obliquity
-        k_pir       : conversion factor from radians to degrees
+        const       : CoreConst object containing core constants, including:
+            k_eps   : Solar obliquity
+            k_pir   : conversion factor from radians to degrees
 
     Returns:
         delta       : solar declination angle delta
     """  # noqa: E501
+    k_eps = const.k_eps
+    k_pir = const.k_pir
+
     delta = np.arcsin(np.sin(np.deg2rad(lambda_)) * np.sin(np.deg2rad(k_eps))) / k_pir
 
     return delta
@@ -93,7 +99,9 @@ def calc_lat_delta_intermediates(
     return ru, rv
 
 
-def calc_sunset_hour_angle(delta: NDArray, latitude: NDArray, k_pir: float) -> NDArray:
+def calc_sunset_hour_angle(
+    delta: NDArray, latitude: NDArray, const: CoreConst
+) -> NDArray:
     r"""Calculates sunset hour angle.
 
     This function calculates the sunset hour angle using Eq3.22, Stine & Geyer (2001)
@@ -105,18 +113,19 @@ def calc_sunset_hour_angle(delta: NDArray, latitude: NDArray, k_pir: float) -> N
     Args:
         delta       : solar declination delta
         latitude    : site latitude(s)
-        k_pir       : constant rad to degrees conversion, degrees/rad
+        const       : CoreConst object containing core constants:
 
     Returns:
         hour angle  : local hour angle, degrees
     """
-    ru, rv = calc_lat_delta_intermediates(delta, latitude)
 
-    return _calc_sunset_hour_angle_from_ru_rv(ru, rv, k_pir)
+    ru, rv = calc_lat_delta_intermediates(delta=delta, latitude=latitude)
+
+    return _calc_sunset_hour_angle_from_ru_rv(ru, rv, const)
 
 
 def _calc_sunset_hour_angle_from_ru_rv(
-    ru: NDArray, rv: NDArray, k_pir: float
+    ru: NDArray, rv: NDArray, const: CoreConst
 ) -> NDArray:
     """Calculate sunset hour angle from intermediates.
 
@@ -125,21 +134,18 @@ def _calc_sunset_hour_angle_from_ru_rv(
     Args:
         ru          : dimensionless parameter
         rv          : dimensionless parameter
-        k_pir       : constant rad to degrees conversion, degrees/rad
+        const       : CoreConst object containing core constants, including:
+            k_pir   : constant rad to degrees conversion, degrees/rad
     Returns:
         hour angle  : local hour angle, degrees
     """
+    k_pir = const.k_pir
 
     return np.arccos(-1.0 * np.clip(ru / rv, -1.0, 1.0)) / k_pir
 
 
 def calc_daily_solar_radiation(
-    rad_const: float,
-    dr: NDArray,
-    k_pir: float,
-    hs: NDArray,
-    delta: NDArray,
-    latitude: NDArray,
+    dr: NDArray, hs: NDArray, delta: NDArray, latitude: NDArray, const: CoreConst
 ) -> NDArray:
     r"""Calculate daily extraterrestrial solar radiation (J/m^2).
 
@@ -154,22 +160,23 @@ def calc_daily_solar_radiation(
     Args:
         rad_const   : planetary radiation constant, W/m^2
         dr          : dimensionless distance factor
-        k_pir       : radians to degrees conversion, degrees/rad
         hs          : local hour angle, degrees
         delta       : solar declination delta
         latitude    : site latitude(s)
+        const       : CoreConst object containing core constants:
 
 
     Returns:
         ra_d        : daily solar radiation, J/m^2
     """
-    ru, rv = calc_lat_delta_intermediates(delta, latitude)
 
-    return _calc_daily_solar_radiation(rad_const, dr, ru, rv, k_pir, hs)
+    ru, rv = calc_lat_delta_intermediates(delta=delta, latitude=latitude)
+
+    return _calc_daily_solar_radiation(dr=dr, ru=ru, rv=rv, hs=hs, const=const)
 
 
 def _calc_daily_solar_radiation(
-    rad_const: float, dr: NDArray, ru: NDArray, rv: NDArray, k_pir: float, hs: NDArray
+    dr: NDArray, ru: NDArray, rv: NDArray, hs: NDArray, const: CoreConst
 ) -> NDArray:
     """Calculate daily extraterrestrial solar radiation (J/m^2).
 
@@ -177,22 +184,25 @@ def _calc_daily_solar_radiation(
     using Eq. 1.10.3, Duffy & Beckman (1993)
 
     Args:
-        rad_const   : planetary radiation constant, W/m^2
         dr          : dimensionless distance factor
         ru          : dimensionless variable substitute
         rv          : dimensionless variable substitute
-        k_pir       : radians to degrees conversion, degrees/rad
         hs          : local hour angle, degrees
+        const       : CoreConst object containing core constants, including:
+            k_pir   : radians to degrees conversion, degrees/rad
+            k_secs_d: seconds in one solar day
+            k_Gsc   : planetary radiation constant, W/m^2
 
     Returns:
         ra_d        : daily solar radiation, J/m^2
     """
-
-    secs_d = 86400  # seconds in one earth day
+    k_pir = const.k_pir
+    k_secs_d = const.k_secs_d
+    k_Gsc = const.k_Gsc
 
     ra_d = (
-        (secs_d / np.pi)
-        * rad_const
+        (k_secs_d / np.pi)
+        * k_Gsc
         * dr
         * (ru * k_pir * hs + rv * np.sin(np.deg2rad(hs)))
     )
@@ -200,7 +210,7 @@ def _calc_daily_solar_radiation(
     return ra_d
 
 
-def calc_transmissivity(k_c: float, k_d: float, sf: NDArray, elv: NDArray) -> NDArray:
+def calc_transmissivity(sf: NDArray, elv: NDArray, const: CoreConst) -> NDArray:
     r"""Calculate atmospheric transmissivity, tau.
 
     This function calculates atmospheric transmissivity using the method of
@@ -211,20 +221,27 @@ def calc_transmissivity(k_c: float, k_d: float, sf: NDArray, elv: NDArray) -> ND
         \tau = (k\_c + k\_d \cdot sf) \cdot (1.0 + (2.67 \times 10^{-5}) \cdot elv)
 
     Args:
-        k_c         : dimensionless cloudy transmissivity
-        k_d         : dimensionless angular coefficient of transmissivity
         sf          : Daily sunshine fraction of observations, unitless
         elv         : Elevation of observations, metres
+        const       : CoreConst object containing core constants, including:
+            k_c     : dimensionless cloudy transmissivity
+            k_d     : dimensionless angular coefficient of transmissivity
 
     Returns:
         tau         : bulk transmissivity, unitless
     """
+    k_c = const.k_c
+    k_d = const.k_d
+
     tau = (k_c + k_d * sf) * (1.0 + (2.67e-5) * elv)
+
     return tau
 
 
 def calc_ppfd_from_tau_ra_d(
-    k_fFEC: float, k_alb_vis: float, tau: NDArray, ra_d: NDArray
+    tau: NDArray,
+    ra_d: NDArray,
+    const: CoreConst,
 ) -> NDArray:
     r"""Calculate photosynthetic photon flux density, PPFD,(mol/m^2).
 
@@ -237,14 +254,17 @@ def calc_ppfd_from_tau_ra_d(
             cdot ra\_d
 
     Args:
-        k_fFEC      : from flux to energy conversion, umol/J
-        k_alb_vis   : visible light albedo
-        tau         : bulk transmissivity, unitless
-        ra_d        : daily solar radiation, J/m^2
+        tau          : bulk transmissivity, unitless
+        ra_d         : daily solar radiation, J/m^2
+        const        : CoreConst object containing core constants, including:
+            k_fFEC   : from flux to energy conversion, umol/J
+            k_alb_vis: visible light albedo
 
     Returns:
         ppfd        : photosynthetic photon flux density, mol/m^2
     """
+    k_fFEC = const.k_fFEC
+    k_alb_vis = const.k_alb_vis
 
     ppfd = (1.0e-6) * k_fFEC * (1.0 - k_alb_vis) * tau * ra_d
 
@@ -257,33 +277,19 @@ def calc_ppfd(
     latitude: NDArray,
     julian_day: NDArray,
     n_days: NDArray,
-    k_e: float,
-    k_eps: float,
-    k_pir: float,
-    k_d: float,
-    k_Gsc: float,
-    k_fFec: float,
-    k_alb_vis: float,
-    k_c: float,
+    const: CoreConst,
 ) -> NDArray:
     """Calculates photosynthetic photon flux density, PPFD,(mol/m^2).
 
     This function calulates ppfd (mol/m^2) from primary variables.
 
     Args:
-        sf          : Daily sunshine fraction of observations, unitless
-        elv         : Elevation of observations, metres
-        latitude    : The Latitude of observations (degrees)
-        julian_day  : Julian day of the year
-        n_days      : days in the calendar year
-        k_e         : Solar eccentricity
-        k_eps       : Solar obliquity
-        k_pir       : Conversion factor from radians to degrees
-        k_d         : angular coefficient of transmittivity
-        k_Gsc       : solar constant, W/m^2
-        k_fFec      : from flux to energy conversion, umol/J
-        k_alb_vis   : visible light albedo
-        k_c         : cloudy transmittivity
+        sf           : Daily sunshine fraction of observations, unitless
+        elv          : Elevation of observations, metres
+        latitude     : The Latitude of observations (degrees)
+        julian_day   : Julian day of the year
+        n_days       : days in the calendar year
+        const        : CoreConst object containing core constants:
 
     Returns:
         ppfd        : photosynthetic photon flux density, PPFD,(mol/m^2)
@@ -301,38 +307,39 @@ def calc_ppfd(
         >>> julian_day = np.array([172])
         >>> n_days = np.array([366])
         >>> # evaluate function
-        >>> calc_ppfd(sf, elv, latitude, julian_day, n_days, const.k_e, const.k_eps,\
-        const.k_pir, const.k_d,const.k_Gsc, const.k_fFEC, const.k_alb_vis, const.k_c)
+        >>> calc_ppfd(sf = sf, elv = elv, latitude = latitude, julian_day = julian_day,
+        n_days = n_days, const = const)
         array([62.04230021])
 
 
     """
-
     # Validate the inputs
     _ = check_input_shapes(latitude, elv, sf, julian_day, n_days)
 
     # Calculate intermediate values
 
-    nu, lambda_ = calc_heliocentric_longitudes(julian_day, n_days)
+    nu, lambda_ = calc_heliocentric_longitudes(julian_day=julian_day, n_days=n_days)
 
-    dr = calc_distance_factor(nu, k_e)
+    dr = calc_distance_factor(nu=nu, const=const)
 
-    delta = calc_declination_angle_delta(lambda_, k_eps, k_pir)
+    delta = calc_declination_angle_delta(lambda_=lambda_, const=const)
 
-    tau = calc_transmissivity(k_c, k_d, sf, elv)
+    tau = calc_transmissivity(sf=sf, elv=elv, const=const)
 
-    hs = calc_sunset_hour_angle(delta, latitude, k_pir)
+    hs = calc_sunset_hour_angle(delta=delta, latitude=latitude, const=const)
 
-    ra_d = calc_daily_solar_radiation(k_Gsc, dr, k_pir, hs, delta, latitude)
+    ra_d = calc_daily_solar_radiation(
+        dr=dr, hs=hs, delta=delta, latitude=latitude, const=const
+    )
 
     # Calculate ppfd
 
-    ppfd = calc_ppfd_from_tau_ra_d(k_fFec, k_alb_vis, tau, ra_d)
+    ppfd = calc_ppfd_from_tau_ra_d(tau=tau, ra_d=ra_d, const=const)
 
     return ppfd
 
 
-def calc_rnl(k_b: float, sf: NDArray, k_A: float, tc: NDArray) -> NDArray:
+def calc_rnl(sf: NDArray, tc: NDArray, const: CoreConst) -> NDArray:
     r"""Calculates net longwave radiation, rnl, W/m^2.
 
     This function calculates net longwave radiation in W/m^2.
@@ -342,21 +349,24 @@ def calc_rnl(k_b: float, sf: NDArray, k_A: float, tc: NDArray) -> NDArray:
         rnl = (k\_b + (1.0 - k\_b) \cdot sf) \cdot (k\_A - tc)
 
     Args:
-        k_b         : calculation constant for Rnl
-        sf          : sunshine fraction of observations, unitless
-        k_A         : calculation constant for Rnl
-        tc          : temperature of observations, °C
+        sf           : sunshine fraction of observations, unitless
+        tc           : temperature of observations, °C
+        const        : CoreConst object containing core constants, including:
+            k_b      : calculation constant for Rnl
+            k_A      : calculation constant for Rnl
 
     Returns:
         rnl         : net longwave radiation, W/m^2
     """
+    k_b = const.k_b
+    k_A = const.k_A
 
     rnl = (k_b + (1.0 - k_b) * sf) * (k_A - tc)
 
     return rnl
 
 
-def calc_rw(k_alb_sw: float, tau: NDArray, k_Gsc: float, dr: NDArray) -> NDArray:
+def calc_rw(tau: NDArray, dr: NDArray, const: CoreConst) -> NDArray:
     r"""Calculates variable substitute rw, W/m^2.
 
     .. math::
@@ -364,14 +374,17 @@ def calc_rw(k_alb_sw: float, tau: NDArray, k_Gsc: float, dr: NDArray) -> NDArray
         rw = (1.0 - k\_alb\_sw) \cdot \tau \cdot k\_Gsc \cdot dr
 
     Args:
-        k_alb_sw    : shortwave albedo
-        tau         : bulk transmissivity, unitless
-        k_Gsc       : solar constant, W/m^2
-        dr          : distance ration, unitless
+        tau          : bulk transmissivity, unitless
+        dr           : distance ration, unitless
+        const        : CoreConst object containing core constants, including:
+            k_alb_sw : shortwave albedo
+            k_Gsc    : solar constant, W/m^2
 
     Returns:
         rw          : intermediate variable, W/m^2
     """
+    k_alb_sw = const.k_alb_sw
+    k_Gsc = const.k_Gsc
 
     rw = (1.0 - k_alb_sw) * tau * k_Gsc * dr
 
@@ -380,13 +393,11 @@ def calc_rw(k_alb_sw: float, tau: NDArray, k_Gsc: float, dr: NDArray) -> NDArray
 
 def calc_net_rad_crossover_hour_angle(
     rnl: NDArray,
-    k_pir: float,
-    k_alb_sw: float,
     tau: NDArray,
-    k_Gsc: float,
     dr: NDArray,
     delta: NDArray,
     latitude: NDArray,
+    const: CoreConst,
 ) -> NDArray:
     r"""Calculates the net radiation crossover hour angle, degrees.
 
@@ -398,43 +409,46 @@ def calc_net_rad_crossover_hour_angle(
         {k\_pir}
 
     Args:
-        rnl         : net longwave radiation, W/m^2
-        k_pir       : conversion factor from radians to degrees
-        k_alb_sw    : shortwave albedo
-        tau         : bulk transmissivity, unitless
-        k_Gsc       : solar constant, W/m^2
-        dr          : distance ration, unitless
-        delta       : solar declination delta
-        latitude    : site latitude(s)
+        rnl          : net longwave radiation, W/m^2
+        tau          : bulk transmissivity, unitless
+        dr           : distance ration, unitless
+        delta        : solar declination delta
+        latitude     : site latitude(s)
+        const        : CoreConst object containing core constants, including:
+            k_pir    : conversion factor from radians to degrees
+            k_alb_sw : shortwave albedo
+            k_Gsc    : solar constant, W/m^2
 
 
     Returns:
         _calc_net_rad_crossover_hour_angle
     """
 
-    ru, rv = calc_lat_delta_intermediates(delta, latitude)
-    rw = calc_rw(k_alb_sw, tau, k_Gsc, dr)
+    ru, rv = calc_lat_delta_intermediates(delta=delta, latitude=latitude)
+    rw = calc_rw(tau=tau, dr=dr, const=const)
 
-    return _calc_net_rad_crossover_hour_angle(rnl, rw, ru, rv, k_pir)
+    return _calc_net_rad_crossover_hour_angle(rnl=rnl, rw=rw, ru=ru, rv=rv, const=const)
 
 
 def _calc_net_rad_crossover_hour_angle(
-    rnl: NDArray, rw: NDArray, ru: NDArray, rv: NDArray, k_pir: float
+    rnl: NDArray, rw: NDArray, ru: NDArray, rv: NDArray, const: CoreConst
 ) -> NDArray:
     """Calculates the net radiation crossover hour angle, degrees.
 
     This function calculates the net radiation crossover hour angle in degrees.
 
     Args:
-        rnl         : net longwave radiation, W/m^2
-        rw          : intermediate variable, W/m^2
-        ru          : intermediate variable, W/m^2
-        rv          : intermediate variable, W/m^2
-        k_pir       : conversion factor from radians to degrees
+        rnl          : net longwave radiation, W/m^2
+        rw           : intermediate variable, W/m^2
+        ru           : intermediate variable, W/m^2
+        rv           : intermediate variable, W/m^2
+        const        : CoreConst object containing core constants:
+
 
     Returns:
         hn          : net radiation crossover hour angle, degrees
     """
+    k_pir = const.k_pir
 
     hn = np.arccos(np.clip((rnl - rw * ru) / (rw * rv), -1.0, 1.0)) / k_pir
 
@@ -443,64 +457,64 @@ def _calc_net_rad_crossover_hour_angle(
 
 def calc_daytime_net_radiation(
     hn: NDArray,
-    k_pir: float,
     rnl: NDArray,
     delta: NDArray,
     latitude: NDArray,
-    k_alb_sw: float,
     tau: NDArray,
-    k_Gsc: float,
     dr: NDArray,
+    const: CoreConst,
 ) -> NDArray:
     r"""Calculates daily net radiation, J/m^2.
 
     .. math::
-        secs\_d = 86400  \quad \text{ \# seconds in one solar day}
 
         rn\_d = \left( \frac{secs\_d}{\pi} \right) \cdot 
         \left( hn \cdot k\_pir \cdot (rw \cdot ru - rnl) + rw \cdot rv \cdot \
         sin(\deg2rad(hn)) \right)
 
     Args:
-        hn          : crossover hour angle, degrees
-        k_pir       : conversion factor from radians to degrees
-        rnl         : net longwave radiation, W/m^2
-        delta       : solar declination delta
-        latitude    : site latitude(s)
-        k_alb_sw    : shortwave albedo
-        tau         : bulk transmissivity, unitless
-        k_Gsc       : solar constant, W/m^2
-        dr          : distance ration, unitless
+        hn           : crossover hour angle, degrees
+        rnl          : net longwave radiation, W/m^2
+        delta        : solar declination delta
+        latitude     : site latitude(s)
+        tau          : bulk transmissivity, unitless
+        dr           : distance ration, unitless
+        const        : CoreConst object containing core constants, including:
+            k_pir    : conversion factor from radians to degrees
+            k_alb_sw : shortwave albedo
+            k_Gsc    : solar constant, W/m^2
 
     Result:
         _calc_daytime_net_radiation
     """
-    ru, rv = calc_lat_delta_intermediates(delta, latitude)
-    rw = calc_rw(k_alb_sw, tau, k_Gsc, dr)
+    ru, rv = calc_lat_delta_intermediates(delta=delta, latitude=latitude)
+    rw = calc_rw(tau, dr, const)
 
-    return _calc_daytime_net_radiation(hn, k_pir, rw, ru, rv, rnl)
+    return _calc_daytime_net_radiation(hn=hn, rw=rw, ru=ru, rv=rv, rnl=rnl, const=const)
 
 
 def _calc_daytime_net_radiation(
-    hn: NDArray, k_pir: float, rw: NDArray, ru: NDArray, rv: NDArray, rnl: NDArray
+    hn: NDArray, rw: NDArray, ru: NDArray, rv: NDArray, rnl: NDArray, const: CoreConst
 ) -> NDArray:
     """Calculates daily net radiation, J/m^2.
 
     Args:
-        hn          : crossover hour angle, degrees
-        k_pir       : conversion factor from radians to degrees
-        rw          : dimensionless variable substitute
-        ru          : dimensionless variable substitute
-        rv          : dimensionless variable substitute
-        rnl         : net longwave radiation, W/m^2
+        hn           : crossover hour angle, degrees
+        rw           : dimensionless variable substitute
+        ru           : dimensionless variable substitute
+        rv           : dimensionless variable substitute
+        rnl          : net longwave radiation, W/m^2
+        const        : CoreConst object containing core constants, including:
+            k_pir    : conversion factor from radians to degrees
+            k_secs_d : seconds in one solar day
 
     Result:
         rn_d        : daily net radiation, J/m^2
     """
+    k_pir = const.k_pir
+    k_secs_d = const.k_secs_d
 
-    secs_d = 86400  # seconds in one solar day
-
-    rn_d = (secs_d / np.pi) * (
+    rn_d = (k_secs_d / np.pi) * (
         hn * k_pir * (rw * ru - rnl) + rw * rv * np.sin(np.deg2rad(hn))
     )
 
@@ -508,22 +522,18 @@ def _calc_daytime_net_radiation(
 
 
 def calc_nighttime_net_radiation(
-    k_pir: float,
     rnl: NDArray,
     hn: NDArray,
     hs: NDArray,
     delta: NDArray,
     latitude: NDArray,
-    k_alb_sw: float,
     tau: NDArray,
-    k_Gsc: float,
     dr: NDArray,
+    const: CoreConst,
 ) -> NDArray:
     r"""Calculates nightime net radiation, J/m^2.
 
     .. math::
-
-        secs\_d = 86400  \quad \text{ \# seconds in one solar day}
 
         rnn\_d = \left(
         rw \cdot rv \cdot (\sin(\deg2rad(hs)) - \sin(\deg2rad(hn)))
@@ -532,24 +542,24 @@ def calc_nighttime_net_radiation(
         \right) \cdot \left( \frac{secs\_d}{\pi} \right)
 
     Args:
-        k_pir       : conversion factor from radians to degrees
-        rnl         : net longwave radiation, rnl, W/m^2
-        hs          : sunset hour angle, degrees
-        hn          : crossover hour angle, degrees
-        delta       : solar declination delta
-        latitude    : site latitude(s)
-        k_alb_sw    : shortwave albedo
-        tau         : bulk transmissivity, unitless
-        k_Gsc       : solar constant, W/m^2
-        dr          : distance ration, unitless
+        rnl          : net longwave radiation, rnl, W/m^2
+        hs           : sunset hour angle, degrees
+        hn           : crossover hour angle, degrees
+        delta        : solar declination delta
+        latitude     : site latitude(s)
+        tau          : bulk transmissivity, unitless
+        dr           : distance ration, unitless
+        const        : CoreConst object containing core constants:
 
     Returns:
         _calc_nighttime_net_radiation
     """
-    ru, rv = calc_lat_delta_intermediates(delta, latitude)
-    rw = calc_rw(k_alb_sw, tau, k_Gsc, dr)
+    ru, rv = calc_lat_delta_intermediates(delta=delta, latitude=latitude)
+    rw = calc_rw(tau=tau, dr=dr, const=const)
 
-    return _calc_nighttime_net_radiation(rw, rv, ru, hs, hn, k_pir, rnl)
+    return _calc_nighttime_net_radiation(
+        rw=rw, rv=rv, ru=ru, hs=hs, hn=hn, rnl=rnl, const=const
+    )
 
 
 def _calc_nighttime_net_radiation(
@@ -558,30 +568,33 @@ def _calc_nighttime_net_radiation(
     ru: NDArray,
     hs: NDArray,
     hn: NDArray,
-    k_pir: float,
     rnl: NDArray,
+    const: CoreConst,
 ) -> NDArray:
     """Calculates nightime net radiation, J/m^2.
 
     Args:
-        rw          : dimensionless variable substitute
-        rv          : dimensionless variable substitute
-        ru          : dimensionless variable substitute
-        hs          : sunset hour angle, degrees
-        hn          : crossover hour angle, degrees
-        k_pir       : conversion factor from radians to degrees
-        rnl         : net longwave radiation, rnl, W/m^2
+        rw           : dimensionless variable substitute
+        rv           : dimensionless variable substitute
+        ru           : dimensionless variable substitute
+        hs           : sunset hour angle, degrees
+        hn           : crossover hour angle, degrees
+        rnl          : net longwave radiation, rnl, W/m^2
+        const        : CoreConst object containing core constants, including:
+            k_pir    : conversion factor from radians to degrees
+            k_secs_d : seconds in one solar day
 
     Returns:
         rnn_d       : nighttime net radiation, J/m^2
     """
-    secs_d = 86400  # seconds in one solar day
+    k_pir = const.k_pir
+    k_secs_d = const.k_secs_d
 
     rnn_d = (
         (rw * rv * (np.sin(np.deg2rad(hs)) - np.sin(np.deg2rad(hn))))
         + (rw * ru * k_pir * (hs - hn))
         - (rnl * (np.pi - k_pir * hn))
-    ) * (secs_d / np.pi)
+    ) * (k_secs_d / np.pi)
 
     return rnn_d
 
@@ -652,12 +665,13 @@ def calc_heliocentric_longitudes(
     return (nu, lambda_)
 
 
-def calc_beta_angle_from_lat_dec_hour(
+def calc_alpha_angle_from_lat_dec_hour(
     latitude: NDArray, declination: NDArray, hour_angle: NDArray
 ) -> NDArray:
-    r"""Calculates solar beta angle (elevation angle).
+    r"""Calculates solar alpha angle (elevation angle).
 
-    Calculates solar beta angle using Eq A13 of dePury & Farquhar (1997).
+    Calculates solar alpha angle (elevation angle) using Eq A13 of dePury & Farquhar
+    (1997).
 
     .. math::
 
@@ -671,19 +685,19 @@ def calc_beta_angle_from_lat_dec_hour(
         hour_angle: array of hour angle (rads)
 
     Returns:
-        beta: array of solar beta angles (rads)
+        alpha: array of solar alpha angles (rads)
     """
 
-    sin_beta = np.sin(latitude) * np.sin(declination) + np.cos(latitude) * np.cos(
+    sin_alpha = np.sin(latitude) * np.sin(declination) + np.cos(latitude) * np.cos(
         declination
     ) * np.cos(hour_angle)
 
-    beta = np.arcsin(sin_beta)
+    alpha = np.arcsin(sin_alpha)
 
-    return beta
+    return alpha
 
 
-def calc_declination(td: NDArray, k_pir: float) -> NDArray:
+def calc_declination(td: NDArray, const: CoreConst) -> NDArray:
     r"""Calculates solar declination angle.
 
     Use method described in eqn A14 or dePury& Farquhar (1997) to calculate solar
@@ -695,14 +709,15 @@ def calc_declination(td: NDArray, k_pir: float) -> NDArray:
         (\frac{2 \cdot \pi \cdot (td + 10)}{365}\right)
 
     Args:
-        td          : Julian day of the year
-        k_pir       : radians to degrees conversion
+        td           : Julian day of the year
+        const        : CoreConst object containing core constants, including:
+            k_pir    : conversion factor from radians to degrees
 
     Returns:
         declination : solar declination (radians)
     """
+    k_pir = const.k_pir
 
-    # Calculate declination
     declination = -23.4 * (1 / k_pir) * np.cos((2 * np.pi * (td + 10)) / 365)
 
     return declination
