@@ -307,8 +307,8 @@ def calc_ppfd(
         >>> julian_day = np.array([172])
         >>> n_days = np.array([366])
         >>> # evaluate function
-        >>> calc_ppfd(sf = sf, elv = elv, latitude = latitude, julian_day = julian_day,
-        n_days = n_days, const = const)
+        >>> calc_ppfd(sf = sf, elv = elv, latitude = latitude, julian_day = julian_day,\
+            n_days = n_days, const = const)
         array([62.04230021])
 
 
