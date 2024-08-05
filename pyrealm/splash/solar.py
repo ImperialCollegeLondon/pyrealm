@@ -100,10 +100,12 @@ class DailySolarFluxes:
         )
 
         # Calculate distance factor (dr), Berger et al. (1993)
-        dr = calc_distance_factor(nu, self.core_const)
+        dr = calc_distance_factor(nu, self.core_const.k_e)
 
         # Calculate declination angle (delta), Woolf (1968)
-        delta = calc_declination_angle_delta(lambda_, self.core_const)
+        delta = calc_declination_angle_delta(
+            lambda_, self.core_const.k_eps, self.core_const.k_pir
+        )
 
         # The nu, lambda_, dr and delta attributes are all one dimensional arrays
         # calculated from the Calendar along the first (time) axis of the other inputs.
@@ -119,7 +121,7 @@ class DailySolarFluxes:
         self.ru, self.rv = calc_lat_delta_intermediates(self.delta, lat)
 
         # Calculate the sunset hour angle (hs), Eq. 3.22, Stine & Geyer (2001)
-        self.hs = calc_sunset_hour_angle(self.delta, lat, self.core_const)
+        self.hs = calc_sunset_hour_angle(self.delta, lat, self.core_const.k_pir)
 
         # Calculate daily extraterrestrial solar radiation (ra_d), J/m^2
         # Eq. 1.10.3, Duffy & Beckman (1993)
@@ -129,16 +131,22 @@ class DailySolarFluxes:
 
         # Calculate transmittivity (tau), unitless
         # Eq. 11, Linacre (1968); Eq. 2, Allen (1996)
-        self.tau = calc_transmissivity(sf, elv, self.core_const)
+        self.tau = calc_transmissivity(
+            sf, elv, self.core_const.k_c, self.core_const.k_d
+        )
 
-        self.rw = calc_rw(self.tau, self.dr, self.core_const)
+        self.rw = calc_rw(
+            self.tau, self.dr, self.core_const.k_alb_sw, self.core_const.k_Gsc
+        )
 
         # Calculate daily PPFD (ppfd_d), mol/m^2
-        self.ppfd_d = calc_ppfd_from_tau_ra_d(self.tau, self.ra_d, self.core_const)
+        self.ppfd_d = calc_ppfd_from_tau_ra_d(
+            self.tau, self.ra_d, self.core_const.k_fFEC, self.core_const.k_alb_vis
+        )
 
         # Estimate net longwave radiation (rnl), W/m^2
         # Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
-        self.rnl = calc_rnl(sf, tc, self.core_const)
+        self.rnl = calc_rnl(sf, tc, self.core_const.k_b, self.core_const.k_A)
 
         # Calculate net radiation cross-over hour angle (hn), degrees
         self.hn = calc_net_rad_crossover_hour_angle(

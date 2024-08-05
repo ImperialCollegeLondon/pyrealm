@@ -26,7 +26,7 @@ def test_calc_distance_factor(nu, expected):
     from pyrealm.core.solar import calc_distance_factor
 
     Const = CoreConst()
-    result = calc_distance_factor(nu, Const)
+    result = calc_distance_factor(nu, Const.k_e)
 
     assert np.allclose(result, expected)
 
@@ -49,7 +49,7 @@ def test_calc_declination_angle_delta(lambda_, expected):
     from pyrealm.core.solar import calc_declination_angle_delta
 
     Const = CoreConst()
-    result = calc_declination_angle_delta(lambda_, Const)
+    result = calc_declination_angle_delta(lambda_, Const.k_eps, Const.k_pir)
 
     assert np.allclose(result, expected)
 
@@ -164,7 +164,7 @@ def test_calc_sunset_hour_angle(delta, latitude, expected):
     from pyrealm.core.solar import calc_sunset_hour_angle
 
     Const = CoreConst()
-    result = calc_sunset_hour_angle(delta, latitude, Const)
+    result = calc_sunset_hour_angle(delta, latitude, Const.k_pir)
 
     assert np.allclose(result, expected)
 
@@ -210,7 +210,7 @@ def test_calc_transmissivity(sf, elv, expected):
 
     Const = CoreConst()
 
-    result = calc_transmissivity(sf, elv, Const)
+    result = calc_transmissivity(sf, elv, Const.k_c, Const.k_d)
 
     assert np.allclose(result, expected)
 
@@ -229,7 +229,7 @@ def test_calc_ppfd_from_tau_ra_d(tau, ra_d, expected):
 
     Const = CoreConst()
 
-    result = calc_ppfd_from_tau_ra_d(tau, ra_d, Const)
+    result = calc_ppfd_from_tau_ra_d(tau, ra_d, Const.k_fFEC, Const.k_alb_vis)
 
     assert np.allclose(result, expected)
 
@@ -282,7 +282,7 @@ def test_calc_rnl(sf, tc, expected):
 
     Const = CoreConst()
 
-    result = calc_rnl(sf, tc, Const)
+    result = calc_rnl(sf, tc, Const.k_b, Const.k_A)
 
     assert np.allclose(result, expected)
 
@@ -306,7 +306,7 @@ def test_calc_rw(tau, dr, expected):
 
     Const = CoreConst()
 
-    result = calc_rw(tau, dr, Const)
+    result = calc_rw(tau, dr, Const.k_alb_sw, Const.k_Gsc)
 
     assert np.allclose(result, expected)
 
@@ -315,7 +315,7 @@ def test_calc_rw(tau, dr, expected):
     argnames="rnl, tau, dr, delta, latitude, expected",
     argvalues=[
         (
-            84.000000,
+            np.array([84.000000]),
             np.array([0.752844]),
             np.array([0.968381]),
             np.array([23.436921]),
@@ -335,6 +335,59 @@ def test_calc_net_rad_crossover_hour_angle(rnl, tau, dr, delta, latitude, expect
     Const = CoreConst()
 
     result = calc_net_rad_crossover_hour_angle(rnl, tau, dr, delta, latitude, Const)
+
+    assert np.allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    argnames="hn,rnl,delta,latitude,tau,dr,expected",
+    argvalues=[
+        (
+            np.array([101.217016]),
+            np.array([84.000000]),
+            np.array([23.436921]),
+            np.array([37.7]),
+            np.array([0.752844]),
+            np.array([0.968381]),
+            np.array([21774953]),
+        )
+    ],
+)
+def test_daytime_net_radiation(hn, rnl, delta, latitude, tau, dr, expected):
+    """Tests calculation of net daytime radiation."""
+
+    from pyrealm.core.solar import calc_daytime_net_radiation
+
+    Const = CoreConst()
+
+    result = calc_daytime_net_radiation(hn, rnl, delta, latitude, tau, dr, Const)
+
+    assert np.allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    argnames="rnl, hn, hs, delta, latitude, tau, dr, expected",
+    argvalues=[
+        (
+            np.array([84.000000]),
+            np.array([101.217016]),
+            np.array([109.575573]),
+            np.array([23.436921]),
+            np.array([37.7]),
+            np.array([0.752844]),
+            np.array([0.968381]),
+            np.array([-3009150]),
+        )
+    ],
+)
+def test_nightime_net_radiation(rnl, hn, hs, delta, latitude, tau, dr, expected):
+    """Tests calculation of net nighttime radiation."""
+
+    from pyrealm.core.solar import calc_nighttime_net_radiation
+
+    Const = CoreConst()
+
+    result = calc_nighttime_net_radiation(rnl, hn, hs, delta, latitude, tau, dr, Const)
 
     assert np.allclose(result, expected)
 
@@ -367,8 +420,8 @@ def test_calc_heliocentric_longitudes(day, n_day, expected):
         (np.array([0.7854]), np.array([0.4093]), np.array([0]), np.array([1.19469633]))
     ],
 )
-def test_calc_beta_value(latitude, declination, hour_angle, expected):
-    """Tests calc_beta_angle.
+def test_calc_alpha_value(latitude, declination, hour_angle, expected):
+    """Tests calc_alpha_angle.
 
     This test is intended to verify the implemented maths.
     """
@@ -379,20 +432,20 @@ def test_calc_beta_value(latitude, declination, hour_angle, expected):
 
     assert np.allclose(result, expected)
 
-    @pytest.mark.parametrize(
-        argnames="td, k_pir, expected",
-        argvalues=[(np.array([298]), -0.23)],
-    )
-    def test_calc_declination(td, expected):
-        """Tests calc_declination.
 
-        This test is intended to verify the implemented maths.
-        """
+@pytest.mark.parametrize(
+    argnames="td, expected",
+    argvalues=[(np.array([298]), -0.22708144)],
+)
+def test_calc_declination(td, expected):
+    """Test."""
 
-        from pyrealm.core.solar import test_calc_declination
+    # This test is intended to verify the implemented maths.
 
-        Const = CoreConst()
+    from pyrealm.core.solar import calc_declination
 
-        result = test_calc_declination(td, Const)
+    # Const = CoreConst()
 
-        assert np.allclose(result, expected)
+    result = calc_declination(td)
+
+    assert np.allclose(result, expected)
