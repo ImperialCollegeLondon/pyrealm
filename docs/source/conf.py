@@ -82,7 +82,7 @@ sphinxcontrib.bibtex.plugin.register_plugin(
 )
 
 bibtex_reference_style = "author_year_round"
-
+bibtex_default_style = "plain"
 
 # Cross-reference checking
 # TODO - find some better solution than this to all of these bizarre cross reference

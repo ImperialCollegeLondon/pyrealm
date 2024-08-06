@@ -26,16 +26,16 @@ reference documentation](../../../api/pmodel_api)
 
 ## Overview
 
-The P Model is a model of carbon capture and water use by plants. Four forcing variables
-are used to define the environment that the plant experiences:
+The P Model is a model of carbon capture and water use by plants. Four core forcing
+variables are used to define the environment that the plant experiences:
 
 * temperature (`tc`, °C),
 * vapor pressure deficit (`vpd`, Pa),
 * atmospheric $\ce{CO2}$ concentration (`co2`, ppm), and
 * atmospheric pressure (`patm`, Pa).
 
-From these inputs, the model breaks down into four broad stages, each of which is
-described in more detail in the link for each stage
+From these inputs, the model breaks down into the following broad stages, each of which
+is described in more detail in the link for each stage
 
 The main steps are:
 
@@ -43,22 +43,21 @@ The main steps are:
   environmental variables are used to calculate four key variables describing the
   photosynthetic environment of a plant.
 
-* Calculation of [leaf $\ce{CO2}$ variables](../pmodel_details/optimal_chi). The photosynthetic
-  environment is then used to calculate the optimal ratio of internal to external CO2
-  concentration ($chi$), along with $\ce{CO2}$ partial pressures and limitation factors.
-  This step also governs the main differences between C3 and C4 photosynthesis.
+* Calculation of [leaf $\ce{CO2}$ variables](../pmodel_details/optimal_chi). The
+  photosynthetic environment is then used to calculate the optimal ratio of internal to
+  external CO2 concentration ($chi$), along with $\ce{CO2}$ partial pressures and
+  limitation factors. This step also governs the main differences between C3 and C4
+  photosynthesis.
 
-* Constraints on [light use efficiency (LUE)](lue_limitation). The calculation of light
-  use efficiency can be subjected to a number of constraints:
+* Determination of the temperature sensitivity of the [quantum yield
+  efficiency](quantum_yield) of photosynthesis (`kphio`, $\phi_0$).
 
-  * Theoretical limitations to the maximum rates of Rubsico regeneration
-    ($J_{max}$) and maximum carboxylation capacity ($V_{cmax}$)
+* Theoretical limitations to the maximum rates of Rubsico regeneration $J_{max}$) and
+  maximum carboxylation capacity ($V_{cmax}$) that can act as further constraints on
+  [light use efficiency (LUE)](lue_limitation).
 
-  * Temperature sensitivity of the quantum yield efficiency of photosynthesis
-  (`kphio`, $\phi_0$).
-
-  * Different approaches to incorporating effects of [soil moisture
-    stress](soil_moisture) on productivity.
+* Different approaches to incorporating effects of [soil moisture stress](soil_moisture)
+  on productivity.
 
 * Estimation of [gross primary productivity](estimating-productivity). Once LUE has been
   calculated, estimates of absorbed photosynthetically active radiation, can be used to

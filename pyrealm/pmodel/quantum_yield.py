@@ -235,6 +235,17 @@ class QuantumYieldSandoval(
     1/9 in the absence of a Q cycle (Long, 1993).
     """
 
+    def peak_quantum_yield(self, aridity: NDArray) -> NDArray:
+        """Calculate the peak quantum yield as a function of the aridity index.
+
+        Args:
+            aridity: An array of aridity index values.
+        """
+
+        # Calculate peak kphio given the aridity index
+        m, n = self.env.pmodel_const.sandoval_peak_phio
+        return self.reference_kphio / (1 + (self.env.aridity_index) ** m) ** n
+
     def _calculate_kphio(self) -> None:
         """Calculate kphio."""
 
@@ -258,8 +269,7 @@ class QuantumYieldSandoval(
         Topt = Hd / (deltaS - self.env.core_const.k_R * np.log(Ha / (Hd - Ha)))
 
         # Calculate peak kphio given the aridity index
-        m, n = self.env.pmodel_const.sandoval_peak_phio
-        kphio_peak = self.reference_kphio / (1 + (self.env.aridity_index) ** m) ** n
+        kphio_peak = self.peak_quantum_yield(aridity=self.env.aridity_index)
 
         # Calculate the modified Arrhenius factor using the
         f_kphio = calc_modified_arrhenius_factor(
