@@ -137,8 +137,6 @@ class PModel:
             efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
             calculation method. 
 
-
-
     Examples:
         >>> import numpy as np
         >>> from pyrealm.pmodel.pmodel_environment import PModelEnvironment

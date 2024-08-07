@@ -5,7 +5,6 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3
   language: python
@@ -27,8 +26,11 @@ ecophysiological model of optimal carbon dioxide uptake by plants
 * Details of calculations of:
   * the [photosynthetic_environment](pmodel_details/photosynthetic_environment),
   * [optimal chi](pmodel_details/optimal_chi) values,
-  * limits on [light use efficiency](pmodel_details/lue_limitation), and
-  * the estimation of [gross primary productivity](pmodel_details/envt_variation_outputs.md#estimating-productivity).
+  * estimation of quantum yield efficiency (pmodel_details/quantum_yield),
+  * estimation of [electron transfer rate limitation](pmodel_details/jmax_limitation),
+    and
+  * the estimation of [gross primary
+    productivity](pmodel_details/envt_variation_outputs.md#estimating-productivity).
 
 * Approaches to the impacts of [soil moisture stress](pmodel_details/soil_moisture).
 * The behaviour of P Model equations with [extreme forcing

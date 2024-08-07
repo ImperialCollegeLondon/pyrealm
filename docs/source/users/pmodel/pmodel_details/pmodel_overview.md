@@ -57,7 +57,7 @@ photosynthesis) captures how many moles of photons are required to capture one m
 carbon dioxide.
 
 The term $m_j$ is at the heart of the P model and describes the trade off between
-[carbon dioxide capture and water loss in photosynthesis](optimal_chi). Given the
+[carbon dioxide capture and water loss in photosynthesis](./optimal_chi). Given the
 environmental conditions, a leaf will adjust its stomata, setting a ratio of internal to
 external carbon dioxide partial pressure ($\chi$) that optimises this trade off. Under
 adverse conditions, this limits the partial pressure of carbon dioxide within the leaf
@@ -79,12 +79,12 @@ $$
 $$
 
 * The function $\phi_0(E)$ captures methods that introduce environmental modulation of
-  the [quantum yield efficiency of photosynthesis](quantum_yield), such as variation in
-  $\phi_0$ with air temperature. These methods are selected using the `method_kphio`
+  the [quantum yield efficiency of photosynthesis](./quantum_yield), such as variation
+  in $\phi_0$ with air temperature. These methods are selected using the `method_kphio`
   argument when fitting a P model.
 
 * The additional term $f_j$ describes further [limitation of the electron transfer
-  rate](jmax_limitation) of photosynthesis ($J_{max}$ limitation). These methods are
+  rate](./jmax_limitation) of photosynthesis ($J_{max}$ limitation). These methods are
   selected using the `method_jmaxlim` argument when fitting a P model.
 
 :::{warning}

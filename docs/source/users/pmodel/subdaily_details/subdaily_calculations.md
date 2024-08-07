@@ -5,7 +5,6 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3
   language: python
@@ -78,7 +77,7 @@ subdaily_env = PModelEnvironment(
 )
 
 # Fit the standard P Model
-pmodel_standard = PModel(subdaily_env, kphio=1 / 8)
+pmodel_standard = PModel(subdaily_env, method_kphio="fixed", reference_kphio=1 / 8)
 pmodel_standard.estimate_productivity(ppfd=ppfd_subdaily, fapar=fapar_subdaily)
 pmodel_standard.summarize()
 ```
