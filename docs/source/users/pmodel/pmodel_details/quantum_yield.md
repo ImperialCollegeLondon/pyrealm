@@ -5,14 +5,13 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
 
-# LUE Limitation
+# Quantum yield efficiency of photosynthesis
 
 ```{code-cell}
 :tags: [hide-input]
@@ -45,36 +44,6 @@ meanalpha_2d = np.broadcast_to(meanalpha_1d, (n_pts, n_pts))
 co2_2d = np.broadcast_to(co2_1d, (n_pts, n_pts))
 ```
 
-Once key [photosynthetic parameters](photosynthetic_environment) and [optimal
-chi](optimal_chi.md) have been calculated, the {class}`~pyrealm.pmodel.pmodel.PModel`
-class can report estimates of:
-
-* the light use efficiency (LUE), as grams of carbon per mole of photons, and
-* the intrinsic water use efficiency (IWUE), as micromoles per mole of photons.
-
-## Light use efficiency
-
-In its simplest form:
-
-$$
-  \text{LUE} = \phi_0 \cdot M_C \cdot m_j
-$$
-
-where $\phi_0$ is the quantum yield efficiency of photosynthesis, $M_C$ is the molar
-mass of carbon and $m_j$ is the $\ce{CO2}$ limitation term of light use efficiency from
-the calculation of optimal $\chi$. However, the light use efficiency may be adjusted by
-different approaches to estimation of $\phi_0$ and limitation of $J_{max}$, adding
-terms for:
-
-* method dependent modulation of $\phi_0$ ($\phi_0^{\prime}$), and
-* $J_{max}$ limitation of $m_j$ by a factor $f_v$.
-
-$$
-  \text{LUE} = \phi_0^{\prime} \cdot M_C \cdot m_j \cdot f_v
-$$
-
-### Quantum yield efficiency of photosynthesis
-
 :::{warning}
 
 Note that $\phi_0$ is also sometimes used to refer to the quantum yield of electron
@@ -102,7 +71,7 @@ currently implemented approaches are described below. Note that each approach ha
 specific **reference value for $\phi_{0}$**, which is used as the baseline for further
 calculations. This value can be altered via the `reference_kphio` argument.
 
-### Temperature dependent $\phi_0$
+## Temperature dependent $\phi_0$
 
 The default approach (`method_kphio='temperature'`) applies a temperature dependent
 estimate of $\phi_0$, following {cite:t}`Bernacchi:2003dc` for C3 plants and
@@ -130,7 +99,7 @@ pyplot.legend()
 pyplot.show()
 ```
 
-#### Fixed $\phi_0$
+## Fixed $\phi_0$
 
 This approach (`method_kphio='fixed'`) applies a fixed value of $\phi_0$ in the
 calculation of light use efficiency. The default reference value used in this case is
@@ -171,7 +140,7 @@ pyplot.ylabel("LUE")
 pyplot.show()
 ```
 
-#### Temperature and aridity effects on $\phi_0$
+## Temperature and aridity effects on $\phi_0$
 
 The option `method_kphio='sandoval'` implements an experimental calculation
 {cite}`sandoval:in_prep` of $\phi_0$ as a function of a local aridity index (P/PET), the
@@ -189,6 +158,8 @@ $\phi_{0A} = \dfrac{\phi_{0R}}{(1 + \textrm{AI}^m) ^ n}$
 This captures a decrease in maximum $\phi_0$ in arid conditions, as shown below.
 
 ```{code-cell}
+:tags: [hide-input]
+
 n_vals = 51
 aridity_index = np.logspace(-2, 1.5, num=n_vals)
 
@@ -218,6 +189,8 @@ mean growth temperature ($T_g$) in a location. The plot below shows how aridity 
 growth temperature interact to change the location and height of the peak $\phi_0$.
 
 ```{code-cell}
+:tags: [hide-input]
+
 n_vals = 51
 mean_growth_values = np.array([10, 22, 24, 25])
 aridity_values = np.array([1.0, 1.5, 5.0])
@@ -256,59 +229,4 @@ for ai_idx, (ax, ai_val) in enumerate(zip(axes, aridity_values)):
 
 ax.legend(frameon=False)
 pyplot.show()
-```
-
-### Limitation of electron transfer rate ($J_{max}$) and carboxylation capacity ($V_{cmax}$)
-
-The {class}`~pyrealm.pmodel.pmodel.PModel` implements three alternative approaches to
-the calculation of $J_{max}$ and $V_{cmax}$, using the argument
-`method_jmaxlim`. These options set the calculation of two factor ($f_j$ and
-$f_v$) which are applied to the calculation of $J_{max}$ and $V_{cmax}$. The
-options for this setting are:
-
-* `simple`: These are the 'simple' formulations of the P Model, with $f_j = f_v
-  = 1$.
-* `wang17`: This is the default setting for `method_jmaxlim` and applies the
-  calculations describe in  {cite:t}`Wang:2017go`. The calculation details can be
-  seen in the {meth}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation.wang17` method.
-
-* `smith19`: This is an alternate calculation for optimal values of $J_{max}$
-  and $V_{cmax}$ described in {cite:t}`Smith:2019dv`. The calculation details can be
-  seen in the {meth}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation.smith19` method.
-
-+++
-
-The plot below shows the effects of each method on the LUE across a temperature
-gradient ($P=101325.0 , \ce{CO2}= 400 \text{ppm}, \text{VPD}=820$) and fixed $\phi_0=0.08$.
-
-```{code-cell}
-:tags: [hide-input]
-
-# Calculate variation in m_jlim with temperature
-env = PModelEnvironment(tc=tc_1d, patm=101325, vpd=820, co2=400)
-
-model_jmax_simple = PModel(
-    env, method_jmaxlim="simple", method_kphio="fixed", reference_kphio=0.08
-)
-model_jmax_wang17 = PModel(
-    env, method_jmaxlim="wang17", method_kphio="fixed", reference_kphio=0.08
-)
-model_jmax_smith19 = PModel(
-    env, method_jmaxlim="smith19", method_kphio="fixed", reference_kphio=0.08
-)
-
-# Create a line plot of the resulting values of m_j
-pyplot.plot(tc_1d, model_jmax_simple.lue, label="simple")
-pyplot.plot(tc_1d, model_jmax_wang17.lue, label="wang17")
-pyplot.plot(tc_1d, model_jmax_smith19.lue, label="smith19")
-
-pyplot.title("Effects of J_max limitation")
-pyplot.xlabel("Temperature °C")
-pyplot.ylabel("Light Use Efficiency (g C mol-1)")
-pyplot.legend()
-pyplot.show()
-```
-
-```{code-cell}
-
 ```
