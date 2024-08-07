@@ -224,6 +224,8 @@ class SubdailyPModel:
             externally calculated per-observation estimates of kphio.
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.
+        init_realised: A tuple of three NumPy arrays (xi_real, vcmax25_real,
+          jmax25_real).
     """
 
     def __init__(
@@ -240,6 +242,7 @@ class SubdailyPModel:
         allow_holdover: bool = False,
         allow_partial_data: bool = False,
         fill_kind: str = "previous",
+        init_realised: tuple[NDArray, NDArray, NDArray] | None = None,
     ) -> None:
         # Warn about the API
         warn(
@@ -360,6 +363,14 @@ class SubdailyPModel:
             1 / calc_ftemp_arrh(tk_acclim, self.env.pmodel_const.subdaily_jmax25_ha)
         )
 
+        """Instantaneous optimal :math:`x_{i}`, :math:`V_{cmax}` and :math:`J_{max}`"""
+        if init_realised is not None:
+            self.init_xi_real, self.init_vcmax_real, self.init_jmax_real = init_realised
+        else:
+            self.init_xi_real = self.pmodel_acclim.optchi.xi
+            self.init_vcmax_real = self.vcmax25_opt
+            self.init_jmax_real = self.jmax25_opt
+
         # 5) Calculate the realised daily values from the instantaneous optimal values
         self.xi_real: NDArray = memory_effect(
             self.pmodel_acclim.optchi.xi, alpha=alpha, allow_holdover=allow_holdover
@@ -372,6 +383,7 @@ class SubdailyPModel:
         self.jmax25_real: NDArray = memory_effect(
             self.jmax25_opt, alpha=alpha, allow_holdover=allow_holdover
         )
+
         r"""Realised daily slow responses in :math:`J_{max25}`"""
 
         # 6) Fill the realised xi, jmax25 and vcmax25 from daily values back to the
