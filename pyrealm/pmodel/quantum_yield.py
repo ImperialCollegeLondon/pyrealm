@@ -1,9 +1,11 @@
-r"""The module :mod:`~pyrealm.pmodel.quantum_yield` provides
-the abstract base class :class:`~pyrealm.pmodel.quantum_yield.QuantumYieldABC`, which is
-used to support different implementations of the calculation of the intrinsic quantum
-yield efficiency of photosynthesis (:math:`\phi_0`, unitless). Note that :math:`\phi_0`
-is sometimes used to refer to the quantum yield of electron transfer, which is exactly
-four times larger, so check definitions here.
+r"""The module :mod:`~pyrealm.pmodel.quantum_yield` provides the abstract base class
+:class:`~pyrealm.pmodel.quantum_yield.QuantumYieldABC`, which is used to support
+different implementations of the calculation of the intrinsic quantum yield efficiency
+of photosynthesis (:math:`\phi_0`, unitless). The module then provides subclasses of the
+ABC implementing different approaches.
+
+Note that :math:`\phi_0` is sometimes used to refer to the quantum yield of electron
+transfer, which is exactly four times larger, so check definitions here.
 """  # noqa D210, D415
 
 from __future__ import annotations
@@ -34,7 +36,7 @@ retrieve a particular implementation from this registry. For example:
 
 .. code:: python
 
-    bianchi_phi_0 = QUANTUM_YIELD_CLASS_REGISTRY['bianchi']
+    temperature_phio = QUANTUM_YIELD_CLASS_REGISTRY['temperature']
 """
 
 
@@ -51,12 +53,46 @@ class QuantumYieldABC(ABC):
     ``kphio``  and is automatically called by the ``__init__`` method when a subclass
     instance is created.
 
+    Subclasses must define several class attributes when created:
+
+    .. code:: python
+
+        class QuantumYieldFixed(
+            QuantumYieldABC,
+            method="method_name",
+            requires=["an_environment_variable"],
+            default_reference_kphio=0.049977,
+            array_reference_kphio_ok=True,
+        ):
+
+    * The ``method`` argument sets the name of the method, which can then be used to
+      select the implemented class from the
+      :data:`~pyrealm.pmodel.quantum_yield.QUANTUM_YIELD_CLASS_REGISTRY`.
+    * The `requires` argument sets a list of variables that must be present in the
+      :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` to use this
+      approach. The core ``tc``, ``vpd``, ``patm`` and ``co2`` variables do not need to
+      be included in this list.
+    * The ``default_reference_kphio`` argument sets the default value for :math:`\phi_0`
+      that will be used by the implementation. The ``__init__`` method will then check
+      whether array values are accepted and that the shape of an array is congruent with
+      the other data.
+    * The ``array_reference_kphio_ok`` argument sets whether the method can accept an
+      array of :math:`\phi_0` values or whether a single global reference value should
+      be used.
+
+    The definition of the ``_calculate_kphio`` method for subclasses can also provide C3
+    and C4 implementations for calculate :math:`\phi_0` - or possibly raise an error for
+    one pathway - using the ``use_c4`` attribute.
+
     Args:
         env: An instance of
             :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`  providing the
             photosynthetic environment for the model.
-        pmodel_const: An instance of
-            :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+        reference_kphio: An optional value to be used instead of the default reference
+            kphio for the subclass. This is typically a single float but some approaches
+            may support an array of values here.
+        use_c4: Should the calculation use parameterisation for C4 photosynthesis rather
+            than C3 photosynthesis.
 
     Returns:
         Instances of the abstract base class should not be created - use instances of
@@ -184,10 +220,18 @@ class QuantumYieldFixed(
     default_reference_kphio=0.049977,
     array_reference_kphio_ok=True,
 ):
-    """Constant kphio."""
+    r"""Apply a fixed value for :math:`\phi_0`.
+
+    This implementation applies a fixed value for the quantum yield without any
+    environmental variation. The default value used is :math:`\phi_0 = 0.049977`,
+    following the ORG settings parameterisation in Table 1. of {cite:t}`Stocker:2020dh`.
+
+    This implementation will accept an array of values to allow externally estimated
+    values to be passed to a P model.
+    """
 
     def _calculate_kphio(self) -> None:
-        """Constant kphio."""
+        """Set fixed kphio."""
 
         self.kphio = self.reference_kphio
 
@@ -199,9 +243,23 @@ class QuantumYieldTemperature(
     default_reference_kphio=0.081785,
     array_reference_kphio_ok=False,
 ):
-    """Calculate temperature modulated kphio.
+    r"""Calculate temperature dependent of quantum yield efficiency.
 
-    This method follows  for C3 plants.
+    This implementation calculates temperature dependent quantum yield efficiency, as a
+    quadratic function of temperature (:math:`T`).
+
+    .. math::
+
+        \phi(T) = a + b T - c T^2
+
+    The values of :math:`a, b, c` are dependent on whether :math:`\phi_0` is being
+    estimated for C3 or C4 photosynthesis. For C3 photosynthesis, the default values use
+    the temperature dependence of the maximum quantum yield of photosystem II in
+    light-adapted tobacco leaves determined by :cite:t:`Bernacchi:2003dc`. For C4
+    photosynthesis, the default values are taken from :cite:t:`cai:2020a`.
+
+    The default reference value for this approach is :math:`\phi_0 = 0.081785` following
+    the BRC parameterisation in Table 1. of {cite:t}`Stocker:2020dh`.
     """
 
     def _calculate_kphio(
@@ -229,10 +287,17 @@ class QuantumYieldSandoval(
     default_reference_kphio=1.0 / 9.0,
     array_reference_kphio_ok=False,
 ):
-    """Calculate kphio following Sandoval.
+    r"""Calculate aridity and mean growth temperature effects on quantum yield.
 
-    Reference kphio is the theoretical maximum quantum yield, defaulting to the ratio of
-    1/9 in the absence of a Q cycle (Long, 1993).
+    This experimental approach implements the method of :cite:t:`sandoval:in_prep`. This
+    approach modifies the maximum possible :math:`\phi_0` as a function of the
+    climatological aridity index. It then also adjusts the temperature at which the
+    highest :math:`\phi_0` can be attained as a function of the mean growth temperature
+    for an observation. It then calculates the expected :math:`\phi_0` as a function of
+    temperature via a modified Arrhenius relationship.
+
+    The reference kphio for this approach is the theoretical maximum quantum yield,
+    defaulting to the ratio of 1/9 in the absence of a Q cycle :cite:`long:1993a`.
     """
 
     def peak_quantum_yield(self, aridity: NDArray) -> NDArray:
