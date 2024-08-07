@@ -213,6 +213,8 @@ class SubdailyPModel:
         kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -).
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.
+        init_realised: A tuple of three NumPy arrays (xi_real, vcmax25_real,
+          jmax25_real).
     """
 
     def __init__(
