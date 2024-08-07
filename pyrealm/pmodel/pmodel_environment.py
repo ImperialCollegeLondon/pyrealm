@@ -211,7 +211,17 @@ class PModelEnvironment:
             ("ns_star", "-"),
         ]
 
-        if self.theta is not None:
-            attrs += [("theta", "m3/m3")]
+        # Add any optional variables - need to check here if these attributes actually
+        # exist because if they are not provided they are typed but not populated.
+        optional_vars = [
+            ("theta", "m3/m3"),
+            ("rootzonestress", "-"),
+            ("aridity_index", "-"),
+            ("mean_growth_temperature", "°C"),
+        ]
+
+        for opt_var, unit in optional_vars:
+            if getattr(self, opt_var, None) is not None:
+                attrs += [(opt_var, unit)]
 
         summarize_attrs(self, attrs, dp=dp)
