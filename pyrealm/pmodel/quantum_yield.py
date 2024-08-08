@@ -342,8 +342,9 @@ class QuantumYieldSandoval(
             Ha=Ha,
             Hd=Hd,
             deltaS=deltaS,
-            mode="J1942",
             tk_ref=Topt,
+            mode=self.env.pmodel_const.modified_arrhenius_mode,
+            core_const=self.env.core_const,
         )
 
         # Apply the factor and store it.

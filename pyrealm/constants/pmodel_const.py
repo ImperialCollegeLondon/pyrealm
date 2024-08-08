@@ -101,6 +101,12 @@ class PModelConst(ConstantsClass):
     of the mean growth temperature (J/mol/K), the deactivation energy constant (J/mol)
     and the activation energy (J/mol). """
 
+    modified_arrhenius_mode: str = "M2002"
+    """The calculation mode to use with the modified Arrhenius equation in
+    :func:`~pyrealm.pmodel.functions.calc_modified_arrhenius_factor`. This mode should
+    be consistently within an analysis, so forms part of the model constants. The two
+    options are ``M2002`` and ``J1942``, see :cite:t:`murphy:2021a` for details."""
+
     plant_T_ref: float = 25.0
     """Standard baseline reference temperature of photosynthetic processes (Prentice,
     unpublished)  (:math:`T_o` , 25.0, °C)"""

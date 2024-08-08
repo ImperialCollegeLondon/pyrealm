@@ -383,8 +383,9 @@ class PModel:
             tk=self.env.tc + self.core_const.k_CtoK,
             Ha=kk_ha,
             Hd=kk_hd,
+            tk_ref=self.pmodel_const.plant_T_ref + self.core_const.k_CtoK,
+            mode=self.pmodel_const.modified_arrhenius_mode,
             deltaS=kk_deltaS,
-            pmodel_const=self.pmodel_const,
             core_const=self.core_const,
         )
         self._vcmax25 = self._vcmax / ftemp25_inst_vcmax

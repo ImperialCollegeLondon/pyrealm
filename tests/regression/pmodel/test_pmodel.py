@@ -132,7 +132,7 @@ def test_calc_ftemp_inst_vcmax(values, tc, expvars):
     from pyrealm.constants import CoreConst, PModelConst
     from pyrealm.pmodel.functions import calc_modified_arrhenius_factor
 
-    pmodel_const = PModelConst()
+    pmodel_const = PModelConst(modified_arrhenius_mode="M2002")
     core_const = CoreConst()
 
     kk_a, kk_b, kk_ha, kk_hd = pmodel_const.kattge_knorr_kinetics
@@ -145,8 +145,9 @@ def test_calc_ftemp_inst_vcmax(values, tc, expvars):
         tk=values[tc] + core_const.k_CtoK,
         Ha=kk_ha,
         Hd=kk_hd,
+        tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
+        mode=pmodel_const.modified_arrhenius_mode,
         deltaS=kk_deltaS,
-        pmodel_const=pmodel_const,
         core_const=core_const,
     )
 

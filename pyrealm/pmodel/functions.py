@@ -14,7 +14,7 @@ from pyrealm.core.water import calc_viscosity_h2o
 def calc_ftemp_arrh(
     tk: NDArray,
     ha: float | NDArray,
-    tk_ref: NDArray | None = None,
+    tk_ref: float | NDArray | None = None,
     pmodel_const: PModelConst = PModelConst(),
     core_const: CoreConst = CoreConst(),
 ) -> NDArray:
@@ -124,9 +124,8 @@ def calc_modified_arrhenius_factor(
     Ha: float | NDArray,
     Hd: float | NDArray,
     deltaS: float | NDArray,
+    tk_ref: float | NDArray,
     mode: str = "M2002",
-    tk_ref: NDArray | None = None,
-    pmodel_const: PModelConst = PModelConst(),
     core_const: CoreConst = CoreConst(),
 ) -> NDArray:
     r"""Calculate the modified Arrhenius factor with temperature for an enzyme.
@@ -136,9 +135,10 @@ def calc_modified_arrhenius_factor(
     used in the calculation of :math:`V_{cmax}` but also other temperature dependent
     enzymatic processes.
 
-    The function can operate in one of two modes ("M2002" or "J1942") using the two
+    The function can operate in one of two modes (``M2002`` or ``J1942``) using
     alternative derivations of the modified Arrhenius relationship presented in
-    :cite:`murphy:2021a`.
+    :cite:t:`murphy:2021a`. The ``J1942`` includes an additional factor (tk/tk_ref) that
+    is ommitted from the simpler ``M2002`` derivation.
 
     Args:
         tk: The temperature at which to calculate the factor (K)
@@ -178,10 +178,6 @@ def calc_modified_arrhenius_factor(
         raise ValueError(
             f"Unknown mode option for calc_modified_arrhenius_factor: {mode}"
         )
-
-    # Convert temperatures to Kelvin
-    if tk_ref is None:
-        tk_ref = np.array([pmodel_const.plant_T_ref + core_const.k_CtoK])
 
     # Calculate Arrhenius components
     fva = calc_ftemp_arrh(tk=tk, ha=Ha, tk_ref=tk_ref)
