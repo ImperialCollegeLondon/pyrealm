@@ -5,6 +5,7 @@ expected. The input values here are the simple scalar inputs to the rpmodel regr
 tests.
 """
 
+from contextlib import nullcontext as does_not_raise
 from types import SimpleNamespace
 
 import numpy as np
@@ -22,6 +23,8 @@ def basic_inputs_and_expected():
             vpd=np.array([1000]),
             fapar=np.array([1]),
             ppfd=np.array([300]),
+            aridity_index=np.array([1]),
+            mean_growth_temperature=np.array([20]),
         ),
         SimpleNamespace(
             gpp=np.array([71.2246803]),
@@ -42,7 +45,7 @@ def test_scalar_kphio(basic_inputs_and_expected):
     env = PModelEnvironment(
         tc=inputs.tc, patm=inputs.patm, co2=inputs.co2, vpd=inputs.vpd
     )
-    mod = PModel(env, kphio=0.05, do_ftemp_kphio=False)
+    mod = PModel(env, method_kphio="fixed", reference_kphio=0.05)
     mod.estimate_productivity(fapar=inputs.fapar, ppfd=inputs.ppfd)
 
     assert np.allclose(mod.gpp, expected.gpp)
@@ -71,11 +74,81 @@ def variable_kphio(basic_inputs_and_expected):
         env = PModelEnvironment(
             tc=inputs.tc, patm=inputs.patm, co2=inputs.co2, vpd=inputs.vpd
         )
-        mod = PModel(env, kphio=kph, do_ftemp_kphio=False)
+        mod = PModel(env, method_kphio="fixed", reference_kphio=kph)
         mod.estimate_productivity(fapar=inputs.fapar, ppfd=inputs.ppfd)
         gpp[idx] = mod.gpp
 
     return kphio_values, gpp
+
+
+@pytest.mark.parametrize(
+    argnames="method,kphio_vals,raises",
+    argvalues=[
+        pytest.param(
+            "fixed",
+            np.full((4, 4), 1 / 8),
+            pytest.raises(ValueError),
+            id="fixed_wrong_shape",
+        ),
+        pytest.param(
+            "fixed",
+            1 / 8,
+            does_not_raise(),
+            id="fixed_with_float",
+        ),
+        pytest.param(
+            "fixed",
+            np.full((5, 5), 1 / 8),
+            does_not_raise(),
+            id="fixed_right_shape",
+        ),
+        pytest.param(
+            "temperature",
+            np.full((5, 5), 1 / 8),
+            pytest.raises(ValueError),
+            id="temperature_fails_with_arrays",
+        ),
+        pytest.param(
+            "temperature",
+            1 / 8,
+            does_not_raise(),
+            id="temperature_ok_with_float",
+        ),
+        pytest.param(
+            "sandoval",
+            np.full((5, 5), 1 / 8),
+            pytest.raises(ValueError),
+            id="sandoval_fails_with_arrays",
+        ),
+        pytest.param(
+            "sandoval",
+            1 / 8,
+            does_not_raise(),
+            id="sandoval_ok_with_float",
+        ),
+    ],
+)
+def test_kphio_arrays_failure_modes(
+    basic_inputs_and_expected, method, kphio_vals, raises
+):
+    """Check behaviour with array inputs of kphio."""
+
+    from pyrealm.pmodel import PModel, PModelEnvironment
+
+    inputs, _ = basic_inputs_and_expected
+
+    # Make an environment with array inputs.
+    env = PModelEnvironment(
+        tc=np.full((5, 5), inputs.tc),
+        patm=np.full((5, 5), inputs.patm),
+        co2=np.full((5, 5), inputs.co2),
+        vpd=np.full((5, 5), inputs.vpd),
+        aridity_index=np.full((5, 5), inputs.aridity_index),
+        mean_growth_temperature=np.full((5, 5), inputs.mean_growth_temperature),
+    )
+
+    with raises:
+        _ = PModel(env, reference_kphio=kphio_vals, method_kphio=method)
 
 
 @pytest.mark.parametrize(argnames="shape", argvalues=[(125,), (25, 5), (5, 5, 5)])
@@ -93,7 +166,7 @@ def test_kphio_arrays(basic_inputs_and_expected, variable_kphio, shape):
         co2=np.broadcast_to(inputs.co2, shape),
         vpd=np.broadcast_to(inputs.vpd, shape),
     )
-    mod = PModel(env, kphio=kphio_vals.reshape(shape), do_ftemp_kphio=False)
+    mod = PModel(env, reference_kphio=kphio_vals.reshape(shape), method_kphio="fixed")
     mod.estimate_productivity(fapar=inputs.fapar, ppfd=inputs.ppfd)
 
     assert np.allclose(mod.gpp, expected_gpp.reshape(shape))
@@ -130,7 +203,8 @@ def variable_kphio_subdaily(be_vie_data_components):
             env=env,
             ppfd=ppfd,
             fapar=fapar,
-            kphio=kphio,
+            method_kphio="fixed",
+            reference_kphio=kphio,
             fs_scaler=fsscaler,
             allow_holdover=True,
         )
@@ -173,7 +247,8 @@ def test_kphio_arrays_subdaily(
         env=env,
         ppfd=np.broadcast_to(np.expand_dims(ppfd, axis=new_dims), shape),
         fapar=np.broadcast_to(np.expand_dims(fapar, axis=new_dims), shape),
-        kphio=np.broadcast_to(kphio_vals.reshape(shape[1:]), shape),
+        method_kphio="fixed",
+        reference_kphio=np.broadcast_to(kphio_vals.reshape(shape[1:]), shape),
         fs_scaler=fsscaler,
         allow_holdover=True,
     )

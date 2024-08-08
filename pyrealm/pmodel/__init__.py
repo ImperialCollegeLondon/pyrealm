@@ -37,8 +37,6 @@ from pyrealm.pmodel.functions import (
     calc_co2_to_ca,
     calc_ftemp_arrh,
     calc_ftemp_inst_rd,
-    calc_ftemp_inst_vcmax,
-    calc_ftemp_kphio,
     calc_gammastar,
     calc_kmm,
     calc_ns_star,

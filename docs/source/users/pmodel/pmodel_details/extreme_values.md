@@ -5,9 +5,8 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
@@ -54,26 +53,29 @@ Note that the default values for C3 photosynthesis give **non-zero values below 
 
 ```{code-cell}
 :tags: [hide-input]
+:trusted: true
 
 from matplotlib import pyplot
 import numpy as np
-from pyrealm.pmodel import calc_ftemp_kphio, calc_gammastar, calc_kmm
 from pyrealm.core.water import calc_density_h2o
+from pyrealm.pmodel import calc_gammastar, calc_kmm, PModelEnvironment
+from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
 
 %matplotlib inline
 
 # Set the resolution of examples
 n_pts = 101
-# Create a range of representative values for temperature
-tc_1d = np.linspace(-80, 100, n_pts)
+
+# Create environment containing a range of representative values for temperature
+env = PModelEnvironment(tc=np.linspace(-25, 100, n_pts), patm=101325, vpd=820, co2=400)
 
 # Calculate temperature dependence of quantum yield efficiency
-fkphio_c3 = calc_ftemp_kphio(tc_1d, c4=False)
-fkphio_c4 = calc_ftemp_kphio(tc_1d, c4=True)
+fkphio_c3 = QuantumYieldTemperature(env, use_c4=False)
+fkphio_c4 = QuantumYieldTemperature(env, use_c4=True)
 
 # Create a line plot of ftemp kphio
-pyplot.plot(tc_1d, fkphio_c3, label="C3")
-pyplot.plot(tc_1d, fkphio_c4, label="C4")
+pyplot.plot(env.tc, fkphio_c3.kphio, label="C3")
+pyplot.plot(env.tc, fkphio_c4.kphio, label="C4")
 
 pyplot.title("Temperature dependence of quantum yield efficiency")
 pyplot.xlabel("Temperature °C")
@@ -91,16 +93,22 @@ that again, $\Gamma^_$ has non-zero values for sub-zero temperatures.
 
 ```{code-cell}
 :tags: [hide-input]
+:trusted: true
 
 # Calculate gammastar at different pressures
+tc_1d = np.linspace(-80, 100, n_pts)
+
+# Create a contour plot of gamma
+fig, ax = pyplot.subplots(1, 1)
+
 for patm in [3, 7, 9, 11, 13]:
     pyplot.plot(tc_1d, calc_gammastar(tc_1d, patm * 1000), label=f"{patm} kPa")
 
-# Create a contour plot of gamma
-pyplot.title("Temperature and pressure dependence of $\Gamma^*$")
-pyplot.xlabel("Temperature °C")
-pyplot.ylabel("$\Gamma^*$")
-pyplot.legend()
+ax.set_title("Temperature and pressure dependence of $\Gamma^*$")
+ax.set_xlabel("Temperature °C")
+ax.set_ylabel("$\Gamma^*$")
+ax.set_yscale("log")
+ax.legend(frameon=False)
 pyplot.show()
 ```
 
@@ -111,9 +119,9 @@ temperature and atmospheric pressure and again behaves smoothly with extreme val
 
 ```{code-cell}
 :tags: [hide-input]
+:trusted: true
 
-fig = pyplot.figure()
-ax = pyplot.gca()
+fig, ax = pyplot.subplots(1, 1)
 
 # Calculate K_mm
 for patm in [3, 7, 9, 11, 13]:
@@ -136,9 +144,9 @@ issue with low temperatures arising from the equations for the density of water.
 
 ```{code-cell}
 :tags: [hide-input]
+:trusted: true
 
-fig = pyplot.figure()
-ax = pyplot.gca()
+fig, ax = pyplot.subplots(1, 1)
 
 # Calculate rho
 for patm in [3, 7, 9, 11, 13]:
@@ -161,9 +169,9 @@ predictions below about -30 °C.
 
 ```{code-cell}
 :tags: [hide-input]
+:trusted: true
 
-fig = pyplot.figure()
-ax = pyplot.gca()
+fig, ax = pyplot.subplots(1, 1)
 
 tc_1d = np.linspace(-40, 20, n_pts)
 

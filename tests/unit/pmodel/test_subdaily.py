@@ -93,11 +93,12 @@ def test_FSPModel_corr(be_vie_data_components, data_args):
         half_width=np.timedelta64(30, "m"),
     )
 
-    # Run as a subdaily model
+    # Run as a subdaily model using the kphio used in the reference implementation.
     subdaily_pmodel = SubdailyPModel(
         env=env,
         ppfd=ppfd,
         fapar=fapar,
+        reference_kphio=1 / 8,
         fs_scaler=fsscaler,
         allow_holdover=True,
     )
@@ -227,7 +228,10 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
     )
 
     # Convert a standard model
-    standard_model = PModel(env=env, kphio=1 / 8, method_optchi=method_optchi)
+    standard_model = PModel(
+        env=env,
+        method_optchi=method_optchi,
+    )
     standard_model.estimate_productivity(fapar=fapar, ppfd=ppfd)
 
     converted = convert_pmodel_to_subdaily(

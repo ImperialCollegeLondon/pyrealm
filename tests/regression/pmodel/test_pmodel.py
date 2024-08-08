@@ -124,15 +124,38 @@ def test_calc_ftemp_arrh(values, tk, expvars):
     ],
 )
 def test_calc_ftemp_inst_vcmax(values, tc, expvars):
-    """Test the calc_ftemp_inst_vcmax function."""
-    from pyrealm.pmodel import calc_ftemp_inst_vcmax
+    """Test the calculation of values returned by calc_ftemp_inst_vcmax in rpmodel.
 
-    ret = calc_ftemp_inst_vcmax(values[tc])
+    This specific function was retired in favour of a more general modified arrhenius
+    function, but check the predictions match to the rpmodel outputs for this component.
+    """
+    from pyrealm.constants import CoreConst, PModelConst
+    from pyrealm.pmodel.functions import calc_modified_arrhenius_factor
+
+    pmodel_const = PModelConst(modified_arrhenius_mode="M2002")
+    core_const = CoreConst()
+
+    kk_a, kk_b, kk_ha, kk_hd = pmodel_const.kattge_knorr_kinetics
+
+    # Calculate entropy as a function of temperature _in °C_
+    kk_deltaS = kk_a + kk_b * values[tc]
+
+    # Calculate the arrhenius factor
+    ret = calc_modified_arrhenius_factor(
+        tk=values[tc] + core_const.k_CtoK,
+        Ha=kk_ha,
+        Hd=kk_hd,
+        tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
+        mode=pmodel_const.modified_arrhenius_mode,
+        deltaS=kk_deltaS,
+        core_const=core_const,
+    )
+
     assert np.allclose(ret, values[expvars])
 
 
 # ------------------------------------------
-# Testing calc_ftemp_inst_vcmax - temp only
+# Testing calc_ftemp_kphio - temp only
 # ------------------------------------------
 
 # TODO - submit pull request to rpmodel with fix for this
@@ -148,11 +171,22 @@ def test_calc_ftemp_inst_vcmax(values, tc, expvars):
     ],
 )
 def test_calc_ftemp_kphio(values, tc, c4, expvars):
-    """Test the calc_ftemp_kphio function."""
-    from pyrealm.pmodel import calc_ftemp_kphio
+    """Test the calc_ftemp_kphio values.
 
-    ret = calc_ftemp_kphio(tc=values[tc], c4=c4)
-    assert np.allclose(ret, values[expvars])
+    This function in rpmodel has been replaced by the wider QuantumYield ABC framework
+    but make sure the outputs still align.
+    """
+    from pyrealm.pmodel.pmodel_environment import PModelEnvironment
+    from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
+
+    # Only tc is used from this environment
+    env = PModelEnvironment(tc=values[tc], patm=101325, vpd=820, co2=400)
+
+    ret = QuantumYieldTemperature(env=env, use_c4=c4)
+
+    # The QuantumYield class returns the actual kphio, not the correction factor, so
+    # scale back to the correction factor
+    assert np.allclose(ret.kphio / ret.reference_kphio, values[expvars])
 
 
 # ------------------------------------------
@@ -445,22 +479,22 @@ def test_jmax_limitation(
     # - these have all been synchronised so that anything with type 'mx' or 'ar'
     #   used the tc_ar input
 
-    from pyrealm.pmodel import JmaxLimitation, PModelEnvironment, calc_ftemp_kphio
+    from pyrealm.pmodel import JmaxLimitation, PModelEnvironment
     from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
+    from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
 
     oc_method = "c4" if c4 else "prentice14"
-
-    if not ftemp_kphio:
-        ftemp_kphio = 1.0
-    elif tc == "tc_sc":
-        ftemp_kphio = calc_ftemp_kphio(tc=values[tc], c4=c4)
-    else:
-        ftemp_kphio = calc_ftemp_kphio(tc=values[tc], c4=c4)
 
     # Optimal Chi
     env = PModelEnvironment(
         tc=values[tc], patm=values[patm], vpd=values[vpd], co2=values[co2]
     )
+
+    if not ftemp_kphio:
+        ftemp_kphio = 1.0
+    else:
+        kphio = QuantumYieldTemperature(env=env, use_c4=c4)
+        ftemp_kphio = kphio.kphio / kphio.reference_kphio
 
     OptChiClass = OPTIMAL_CHI_CLASS_REGISTRY[oc_method]
     optchi = OptChiClass(env)
@@ -602,13 +636,15 @@ def pmodelenv(values):
 
 
 @pytest.mark.parametrize("soilmstress", [False, True], ids=["sm-off", "sm-on"])
-@pytest.mark.parametrize("ftemp_kphio", [True, False], ids=["fkphio-on", "fkphio-off"])
+@pytest.mark.parametrize(
+    "method_kphio", ["temperature", "fixed"], ids=["fkphio-on", "fkphio-off"]
+)
 @pytest.mark.parametrize(
     "luevcmax_method", ["wang17", "smith19", "none"], ids=["wang17", "smith19", "none"]
 )
 @pytest.mark.parametrize("environ", ["sc", "ar"], ids=["sc", "ar"])
 def test_pmodel_class_c3(
-    request, values, pmodelenv, soilmstress, ftemp_kphio, luevcmax_method, environ
+    request, values, pmodelenv, soilmstress, method_kphio, luevcmax_method, environ
 ):
     """Test the PModel class for C3 plants."""
 
@@ -625,9 +661,9 @@ def test_pmodel_class_c3(
 
     ret = PModel(
         pmodelenv[environ],
-        kphio=0.05,
-        do_ftemp_kphio=ftemp_kphio,
+        method_kphio=method_kphio,
         method_jmaxlim=luevcmax_method,
+        reference_kphio=0.05,
     )
 
     # Estimate productivity
@@ -704,12 +740,21 @@ def test_pmodel_class_c3(
 
 
 @pytest.mark.parametrize("soilmstress", [False, True], ids=["sm-off", "sm-on"])
-@pytest.mark.parametrize("ftemp_kphio", [True, False], ids=["fkphio-on", "fkphio-off"])
+@pytest.mark.parametrize(
+    "method_kphio", ["temperature", "fixed"], ids=["fkphio-on", "fkphio-off"]
+)
 @pytest.mark.parametrize("environ", ["sc", "ar"], ids=["sc", "ar"])
-def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, environ):
+def test_pmodel_class_c4(
+    request, values, pmodelenv, soilmstress, method_kphio, environ
+):
     """Test the PModel class for C4 plants."""
 
-    from pyrealm.pmodel import PModel, calc_ftemp_kphio, calc_soilmstress_stocker
+    from pyrealm.pmodel import (
+        PModel,
+        PModelEnvironment,
+        calc_soilmstress_stocker,
+    )
+    from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
 
     if soilmstress:
         soilmstress = calc_soilmstress_stocker(
@@ -718,19 +763,25 @@ def test_pmodel_class_c4(request, values, pmodelenv, soilmstress, ftemp_kphio, e
     else:
         soilmstress = np.array([1.0])
 
-    # TODO bug in rpmodel 1.2.2 forces an odd downscaling of kphio when
-    # do_ftemp_kphio is False, so this is scaling back up to match.
-    if ftemp_kphio:
+    # TODO bug in rpmodel 1.2.2 forces an odd downscaling of kphio when do_ftemp_kphio
+    # is False, so the kf factor is calculated to scale the reference kphio back up to
+    # match.
+
+    if method_kphio == "temperature":
         kf = 1
     else:
-        kf = calc_ftemp_kphio(15, c4=True)
+        bug_env = PModelEnvironment(tc=15, patm=101325, vpd=800, co2=400)
+        correction = QuantumYieldTemperature(
+            env=bug_env, reference_kphio=0.05, use_c4=True
+        )
+        kf = correction.kphio / 0.05
 
     ret = PModel(
         pmodelenv[environ],
-        kphio=0.05 * kf,  # See note above
-        do_ftemp_kphio=ftemp_kphio,
+        method_kphio=method_kphio,
         method_jmaxlim="simple",  # enforced in rpmodel.
         method_optchi="c4",
+        reference_kphio=0.05 * kf,  # See note above
     )
 
     # Estimate productivity
@@ -797,7 +848,7 @@ def test_pmodel_summarise(capsys, values, pmodelenv):
 
     from pyrealm.pmodel import PModel
 
-    ret = PModel(pmodelenv["sc"], kphio=0.05)
+    ret = PModel(pmodelenv["sc"], reference_kphio=0.05)
 
     # Test what comes back before estimate_productivity
     ret.summarize()
