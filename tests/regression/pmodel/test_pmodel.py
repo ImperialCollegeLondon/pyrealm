@@ -124,15 +124,37 @@ def test_calc_ftemp_arrh(values, tk, expvars):
     ],
 )
 def test_calc_ftemp_inst_vcmax(values, tc, expvars):
-    """Test the calc_ftemp_inst_vcmax function."""
-    from pyrealm.pmodel import calc_ftemp_inst_vcmax
+    """Test the calculation of values returned by calc_ftemp_inst_vcmax in rpmodel.
 
-    ret = calc_ftemp_inst_vcmax(values[tc])
+    This specific function was retired in favour of a more general modified arrhenius
+    function, but check the predictions match to the rpmodel outputs for this component.
+    """
+    from pyrealm.constants import CoreConst, PModelConst
+    from pyrealm.pmodel.functions import calc_modified_arrhenius_factor
+
+    pmodel_const = PModelConst()
+    core_const = CoreConst()
+
+    kk_a, kk_b, kk_ha, kk_hd = pmodel_const.kattge_knorr_kinetics
+
+    # Calculate entropy as a function of temperature _in °C_
+    kk_deltaS = kk_a + kk_b * values[tc]
+
+    # Calculate the arrhenius factor
+    ret = calc_modified_arrhenius_factor(
+        tk=values[tc] + core_const.k_CtoK,
+        Ha=kk_ha,
+        Hd=kk_hd,
+        deltaS=kk_deltaS,
+        pmodel_const=pmodel_const,
+        core_const=core_const,
+    )
+
     assert np.allclose(ret, values[expvars])
 
 
 # ------------------------------------------
-# Testing calc_ftemp_inst_vcmax - temp only
+# Testing calc_ftemp_kphio - temp only
 # ------------------------------------------
 
 # TODO - submit pull request to rpmodel with fix for this
@@ -148,11 +170,22 @@ def test_calc_ftemp_inst_vcmax(values, tc, expvars):
     ],
 )
 def test_calc_ftemp_kphio(values, tc, c4, expvars):
-    """Test the calc_ftemp_kphio function."""
-    from pyrealm.pmodel import calc_ftemp_kphio
+    """Test the calc_ftemp_kphio values.
 
-    ret = calc_ftemp_kphio(tc=values[tc], c4=c4)
-    assert np.allclose(ret, values[expvars])
+    This function in rpmodel has been replaced by the wider QuantumYield ABC framework
+    but make sure the outputs still align.
+    """
+    from pyrealm.pmodel.pmodel_environment import PModelEnvironment
+    from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
+
+    # Only tc is used from this environment
+    env = PModelEnvironment(tc=values[tc], patm=101325, vpd=820, co2=400)
+
+    ret = QuantumYieldTemperature(env=env, use_c4=c4)
+
+    # The QuantumYield class returns the actual kphio, not the correction factor, so
+    # scale back to the correction factor
+    assert np.allclose(ret.kphio / ret.reference_kphio, values[expvars])
 
 
 # ------------------------------------------
@@ -445,22 +478,22 @@ def test_jmax_limitation(
     # - these have all been synchronised so that anything with type 'mx' or 'ar'
     #   used the tc_ar input
 
-    from pyrealm.pmodel import JmaxLimitation, PModelEnvironment, calc_ftemp_kphio
+    from pyrealm.pmodel import JmaxLimitation, PModelEnvironment
     from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
+    from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
 
     oc_method = "c4" if c4 else "prentice14"
-
-    if not ftemp_kphio:
-        ftemp_kphio = 1.0
-    elif tc == "tc_sc":
-        ftemp_kphio = calc_ftemp_kphio(tc=values[tc], c4=c4)
-    else:
-        ftemp_kphio = calc_ftemp_kphio(tc=values[tc], c4=c4)
 
     # Optimal Chi
     env = PModelEnvironment(
         tc=values[tc], patm=values[patm], vpd=values[vpd], co2=values[co2]
     )
+
+    if not ftemp_kphio:
+        ftemp_kphio = 1.0
+    else:
+        kphio = QuantumYieldTemperature(env=env, use_c4=c4)
+        ftemp_kphio = kphio.kphio / kphio.reference_kphio
 
     OptChiClass = OPTIMAL_CHI_CLASS_REGISTRY[oc_method]
     optchi = OptChiClass(env)

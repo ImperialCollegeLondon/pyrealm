@@ -46,9 +46,9 @@ def calc_ftemp_arrh(
         \]
 
     Args:
-        tk: Temperature (in Kelvin)
+        tk: Temperature (K)
         ha: Activation energy (in :math:`J \text{mol}^{-1}`)
-        tk_ref: The reference temperature for the reaction.
+        tk_ref: The reference temperature for the reaction (K).
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
@@ -92,7 +92,7 @@ def calc_ftemp_inst_rd(
             fr = \exp( b (T_o - T) -  c ( T_o^2 - T^2 ))
 
     Args:
-        tc: Temperature (degrees Celsius)
+        tc: Temperature (°C)
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
 
     PModel Parameters:
@@ -117,84 +117,6 @@ def calc_ftemp_inst_rd(
         pmodel_const.heskel_b * (tc - pmodel_const.plant_T_ref)
         - pmodel_const.heskel_c * (tc**2 - pmodel_const.plant_T_ref**2)
     )
-
-
-def calc_ftemp_inst_vcmax(
-    tc: NDArray,
-    pmodel_const: PModelConst = PModelConst(),
-    core_const: CoreConst = CoreConst(),
-) -> NDArray:
-    r"""Calculate temperature scaling of :math:`V_{cmax}`.
-
-    This function calculates the temperature-scaling factor :math:`f` of the
-    instantaneous temperature response of :math:`V_{cmax}`, given the temperature
-    (:math:`T`) relative to the standard reference temperature (:math:`T_0`), following
-    modified Arrhenius kinetics.
-
-    .. math::
-
-       V = f V_{ref}
-
-    The value of :math:`f` is given by :cite:t:`Kattge:2007db` (Eqn 1) as:
-
-    .. math::
-
-        f = g(T, H_a) \cdot
-                \frac{1 + \exp( (T_0 \Delta S - H_d) / (T_0 R))}
-                     {1 + \exp( (T \Delta S - H_d) / (T R))}
-
-    where :math:`g(T, H_a)` is a regular Arrhenius-type temperature response function
-    (see :func:`~pyrealm.pmodel.functions.calc_ftemp_arrh`). The term :math:`\Delta S`
-    is the entropy factor, calculated as a linear function of :math:`T` in °C following
-    :cite:t:`Kattge:2007db` (Table 3, Eqn 4):
-
-    .. math::
-
-        \Delta S = a + b T
-
-    Args:
-        tc:  temperature, or in general the temperature relevant for
-            photosynthesis (°C)
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
-
-    PModel Parameters:
-        Ha: activation energy (:math:`H_a`, ``kattge_knorr_Ha``)
-        Hd: deactivation energy (:math:`H_d`, ``kattge_knorr_Hd``)
-        To: standard reference temperature expressed
-          in Kelvin (`T_0`, ``k_To``)
-        R: the universal gas constant (:math:`R`, ``k_R``)
-        a: intercept of the entropy factor (:math:`a`, ``kattge_knorr_a_ent``)
-        b: slope of the entropy factor (:math:`b`, ``kattge_knorr_b_ent``)
-
-    Returns:
-        Values for :math:`f`
-
-    Examples:
-        >>> # Relative change in Vcmax going (instantaneously, i.e. not
-        >>> # not acclimatedly) from 10 to 25 degrees (percent change):
-        >>> val = ((calc_ftemp_inst_vcmax(25)/calc_ftemp_inst_vcmax(10)-1) * 100)
-        >>> np.round(val, 4)
-        array([283.1775])
-    """
-
-    # Convert temperatures to Kelvin
-    tkref = pmodel_const.plant_T_ref + core_const.k_CtoK
-    tk = tc + core_const.k_CtoK
-
-    # Calculate entropy following Kattge & Knorr (2007): slope and intercept
-    # are defined using temperature in °C, not K!!! 'tcgrowth' corresponds
-    # to 'tmean' in Nicks, 'tc25' is 'to' in Nick's
-    dent = pmodel_const.kattge_knorr_a_ent + pmodel_const.kattge_knorr_b_ent * tc
-    fva = calc_ftemp_arrh(tk, pmodel_const.kattge_knorr_Ha)
-    fvb = (
-        1
-        + np.exp(
-            (tkref * dent - pmodel_const.kattge_knorr_Hd) / (core_const.k_R * tkref)
-        )
-    ) / (1 + np.exp((tk * dent - pmodel_const.kattge_knorr_Hd) / (core_const.k_R * tk)))
-
-    return fva * fvb
 
 
 def calc_modified_arrhenius_factor(
@@ -236,11 +158,20 @@ def calc_modified_arrhenius_factor(
         Values for :math:`f`
 
     Examples:
-        >>> # Relative change in Vcmax going (instantaneously, i.e. not
-        >>> # not acclimatedly) from 10 to 25 degrees (percent change):
-        >>> val = ((calc_ftemp_inst_vcmax(25)/calc_ftemp_inst_vcmax(10)-1) * 100)
+        >>> # Calculate the factor for the relative rate of V_cmax at 10 degrees
+        >>> # compared to the rate at the reference temperature of 25°C.
+        >>> from pyrealm.constants import PModelConst
+        >>> pmodel_const = PModelConst()
+        >>> # Get enzyme kinetics parameters
+        >>> a, b, ha, hd = pmodel_const.kattge_knorr_kinetics
+        >>> # Calculate entropy as a function of temperature _in °C_
+        >>> deltaS = a + b * 10
+        >>> # Calculate the arrhenius factor
+        >>> val = calc_modified_arrhenius_factor(
+        ...     tk= 283.15, Ha=ha, Hd=hd, deltaS=deltaS
+        ... )
         >>> np.round(val, 4)
-        array([283.1775])
+        array([0.261])
     """
 
     if mode not in ["M2002", "J1942"]:

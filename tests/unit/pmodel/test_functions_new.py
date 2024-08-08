@@ -5,7 +5,6 @@ refactoring.
 """  # D210, D415
 
 import numpy as np
-import pytest
 
 
 def test_calc_ftemp_arrh(tk=np.array([300]), ha=40000):
@@ -20,27 +19,6 @@ def test_calc_ftemp_inst_rd(tc=np.array([30.0])):
     from pyrealm.pmodel.functions import calc_ftemp_inst_rd
 
     assert np.allclose(calc_ftemp_inst_rd(tc), 1.4455646406287255)
-
-
-def test_calc_ftemp_inst_vcmax(tc=np.array([30.0])):
-    """Test calc_ftemp_inst_rd."""
-    from pyrealm.pmodel.functions import calc_ftemp_inst_vcmax
-
-    assert np.allclose(calc_ftemp_inst_vcmax(tc), 1.5427221126407435)
-
-
-@pytest.mark.parametrize(
-    argnames="tc,c4,expected",
-    argvalues=[
-        (np.array([30]), False, 0.706),
-        (np.array([30]), True, 0.4183999999999998),
-    ],
-)
-def test_calc_ftemp_kphio(tc, c4, expected):
-    """Test calc_ftemp_inst_rd."""
-    from pyrealm.pmodel.functions import calc_ftemp_kphio
-
-    assert np.allclose(calc_ftemp_kphio(tc, c4), expected)
 
 
 def test_calc_gammastar(tc=np.array([30.0]), patm=np.array([123456])):

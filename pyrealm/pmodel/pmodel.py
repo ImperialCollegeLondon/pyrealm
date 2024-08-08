@@ -12,10 +12,7 @@ from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
-from pyrealm.pmodel.functions import (
-    calc_ftemp_inst_rd,
-    calc_ftemp_inst_vcmax,
-)
+from pyrealm.pmodel.functions import calc_ftemp_inst_rd, calc_modified_arrhenius_factor
 from pyrealm.pmodel.jmax_limitation import JmaxLimitation
 from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY, OptimalChiABC
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
@@ -84,8 +81,9 @@ class PModel:
 
     * The maximum carboxylation capacity (mol C m-2) normalised to the standard
       temperature as: :math:`V_{cmax25} = V_{cmax}  / fv(t)`, where :math:`fv(t)` is the
-      instantaneous temperature response of :math:`V_{cmax}` implemented in
-      :func:`~pyrealm.pmodel.functions.calc_ftemp_inst_vcmax`
+      instantaneous temperature response of :math:`V_{cmax}` calculated using a modified
+      Arrhenius equation
+      :func:`~pyrealm.pmodel.functions.calc_modified_arrhenius_factor`.
 
     * Dark respiration, calculated as:
 
@@ -375,9 +373,19 @@ class PModel:
         # V_cmax
         self._vcmax = self.kphio.kphio * iabs * self.optchi.mjoc * self.jmaxlim.f_v
 
-        # V_cmax25 (vcmax normalized to const.k_To)
-        ftemp25_inst_vcmax = calc_ftemp_inst_vcmax(
-            self.env.tc, core_const=self.core_const, pmodel_const=self.pmodel_const
+        # Calculate the modified arrhenius factor to normalise V_cmax to V_cmax25
+        # - Get parameters
+        kk_a, kk_b, kk_ha, kk_hd = self.pmodel_const.kattge_knorr_kinetics
+        # Calculate entropy as a function of temperature _in °C_
+        kk_deltaS = kk_a + kk_b * self.env.tc
+        # Calculate the arrhenius factor
+        ftemp25_inst_vcmax = calc_modified_arrhenius_factor(
+            tk=self.env.tc + self.core_const.k_CtoK,
+            Ha=kk_ha,
+            Hd=kk_hd,
+            deltaS=kk_deltaS,
+            pmodel_const=self.pmodel_const,
+            core_const=self.core_const,
         )
         self._vcmax25 = self._vcmax / ftemp25_inst_vcmax
 
