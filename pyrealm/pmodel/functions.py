@@ -48,7 +48,10 @@ def calc_ftemp_arrh(
     Args:
         tk: Temperature (K)
         ha: Activation energy (in :math:`J \text{mol}^{-1}`)
-        tk_ref: The reference temperature for the reaction (K).
+        tk_ref: The reference temperature for the reaction (K). Optional, defaulting to
+            the value of
+            :attr:`PModelConst.plant_T_ref<pyrealm.constants.PModelConst.plant_T_ref>`
+            expressed in Kelvin.
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
@@ -109,7 +112,7 @@ def calc_ftemp_inst_rd(
     Examples:
         >>> # Relative percentage instantaneous change in Rd going from 10 to 25 degrees
         >>> val = (calc_ftemp_inst_rd(25) / calc_ftemp_inst_rd(10) - 1) * 100
-        >>> round(val, 4)
+        >>> np.round(val, 4)
         np.float64(250.9593)
     """
 
@@ -168,10 +171,10 @@ def calc_modified_arrhenius_factor(
         >>> deltaS = a + b * 10
         >>> # Calculate the arrhenius factor
         >>> val = calc_modified_arrhenius_factor(
-        ...     tk= 283.15, Ha=ha, Hd=hd, deltaS=deltaS
+        ...     tk= 10 + 273.15, Ha=ha, Hd=hd, deltaS=deltaS, tk_ref=25 +273.15
         ... )
         >>> np.round(val, 4)
-        array([0.261])
+        np.float64(0.261)
     """
 
     if mode not in ["M2002", "J1942"]:

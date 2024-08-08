@@ -7,7 +7,12 @@ import pytest
 @pytest.fixture
 def quantum_yield_env():
     """Simple fixture for providing the quantum yield inputs."""
+    from pyrealm.constants import PModelConst
     from pyrealm.pmodel import PModelEnvironment
+
+    # The referene implementation uses the J1942 derivation for the arrhenius
+    # calculation
+    pmodel_const = PModelConst(modified_arrhenius_mode="J1942")
 
     return PModelEnvironment(
         tc=np.array([5, 10, 15, 20, 25, 30]),
@@ -16,6 +21,7 @@ def quantum_yield_env():
         co2=400,
         mean_growth_temperature=np.array([10, 20, 10, 20, 10, 20]),
         aridity_index=np.array([0.9, 0.9, 2, 2, 5, 5]),
+        pmodel_const=pmodel_const,
     )
 
 

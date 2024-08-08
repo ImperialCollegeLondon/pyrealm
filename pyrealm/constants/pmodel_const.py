@@ -96,7 +96,7 @@ class PModelConst(ConstantsClass):
         75000.0,
     )
     """Enzyme kinetics parameters for estimation of kphio from mean growth temperature
-    in the Sandoval method :cite:t:`Sandoval:in_prep` for estimation of quantum yield
+    in the Sandoval method :cite:t:`sandoval:in_prep` for estimation of quantum yield
     efficiency. Values are: the intercept and slope of activation entropy as a function
     of the mean growth temperature (J/mol/K), the deactivation energy constant (J/mol)
     and the activation energy (J/mol). """

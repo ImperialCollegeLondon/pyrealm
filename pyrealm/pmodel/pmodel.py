@@ -184,7 +184,7 @@ class PModel:
         """The CoreConst instance used to create the model environment."""
 
         # -----------------------------------------------------------------------
-        # Optimal ci
+        # Optimal chi
         # The heart of the P-model: calculate ci:ca ratio (chi) and additional terms
         # -----------------------------------------------------------------------
 
