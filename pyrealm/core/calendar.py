@@ -118,3 +118,19 @@ class Calendar(Sized):
         """Representation of a Calendar instance."""
 
         return f"Calendar({self.dates[0]!s}, {self.dates[-1]!s})"
+
+
+@dataclass
+class LocationDateTime:
+    """TBC."""
+
+    latitude: float
+    longitude: float
+    UTC_offset: float
+    year_date_time: np.ndarray
+    julian_days: np.ndarray
+    local_time: np.ndarray
+
+    def __post_init__(self) -> None:
+        self.julian_days = Calendar(self.year_date_time).julian_day
+        self.localtime = self.year_date_time.astype("datetime64[H]")
