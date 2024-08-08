@@ -1,3 +1,14 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: all
+#     notebook_metadata_filter: -jupytext.text_representation.jupytext_version,settings,mystnb
+#     text_representation:
+#       extension: .py
+#       format_name: light
+#       format_version: '1.5'
+# ---
+
 """Configure the Sphinx documentation builder.
 
 -- Path setup --------------------------------------------------------------
@@ -18,7 +29,9 @@ from sphinxcontrib.bibtex.style.referencing.author_year import AuthorYearReferen
 
 from pyrealm import __version__ as pyrealm_version
 
+# +
 sys.path.insert(0, os.path.abspath("../"))
+# -
 
 
 # -- Project information -----------------------------------------------------
@@ -55,7 +68,9 @@ extensions = [
 external_toc_path = "_toc.yml"  # optional, default: _toc.yml
 external_toc_exclude_missing = False  # optional, default: False
 
+# + [markdown]
 # Citation styling
+# -
 
 
 def bracket_style() -> BracketStyle:
@@ -142,6 +157,7 @@ nitpick_ignore = [
     ),
 ]
 
+# +
 intersphinx_mapping = {
     "pytest": ("https://docs.pytest.org/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
@@ -149,6 +165,7 @@ intersphinx_mapping = {
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
     "shapely": ("https://shapely.readthedocs.io/en/stable/", None),
 }
+# -
 
 
 autodoc_default_flags = ["members"]
@@ -195,6 +212,7 @@ exclude_patterns = ["maxime*", "**.ipynb_checkpoints"]
 # html_theme = 'sphinx_material'
 html_theme = "sphinx_rtd_theme"
 
+# +
 html_theme_options = {
     "logo_only": False,
     "display_version": True,
@@ -208,6 +226,7 @@ html_theme_options = {
     "includehidden": True,
     "titles_only": False,
 }
+# -
 
 
 # Add any paths that contain custom static files (such as style sheets) here,
