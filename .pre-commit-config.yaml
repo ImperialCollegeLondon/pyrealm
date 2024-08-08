@@ -29,7 +29,8 @@ repos:
     hooks:
     - id: jupytext
       args: [--pipe, black]
-      files: docs/source 
+      files: docs/source
+      exclude: docs/source/conf.py
       additional_dependencies:
         - black==24.4.2 # Matches hook
       
