@@ -7,6 +7,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
+from pyrealm.core.calendar import LocationDateTime
 from pyrealm.core.utilities import check_input_shapes
 
 
@@ -27,7 +28,6 @@ def calc_distance_factor(nu: NDArray, k_e: float) -> NDArray:
     Args:
         nu          : Heliocentric true anomaly (degrees)
         k_e         : Solar eccentricity
-
 
     Returns:
         An array of distance factors
@@ -659,12 +659,10 @@ def calc_heliocentric_longitudes(
     return (nu, lambda_)
 
 
-def calc_solar_elev_from_lat_dec_hour(
-    latitude: NDArray, declination: NDArray, hour_angle: NDArray
-) -> NDArray:
-    r"""Calculates solar alpha angle (elevation angle).
+def calc_solar_elevation(site_obs_data: LocationDateTime) -> NDArray:
+    r"""Calculates solar elevation angle.
 
-    Calculates solar elevation angle using Eq A13 of dePury & Farquhar
+    Calculates solar elevation angle using methods outlined in dePury & Farquhar
     (1997).
 
     .. math::
@@ -674,24 +672,45 @@ def calc_solar_elev_from_lat_dec_hour(
         \cos(\text{hour\_angle})
 
     Args:
-        latitude        : array of latitudes (rads)
-        declination     : array of declinations (rads)
-        hour_angle      : array of hour angle (rads)
+        site_obs_data   : awd
+
 
     Returns:
         Array of solar elevation angles (radians).
     """
 
+    G_d = day_angle(site_obs_data.julian_days)
+
+    E_t = equation_of_time(G_d)
+
+    t0 = solar_noon(site_obs_data.longitude, site_obs_data.UTC_offset, E_t)
+
+    hour_angle = local_hour_angle(site_obs_data.local_time, t0)
+
+    declination = solar_declination(site_obs_data.julian_days)
+
+    elevation = elevation_from_lat_dec_hn(
+        site_obs_data.latitude, declination, hour_angle
+    )
+
+    return elevation
+
+
+def elevation_from_lat_dec_hn(
+    latitude: NDArray | float, declination: NDArray, hour_angle: NDArray
+) -> NDArray:
+    """TBC."""
+
     sin_alpha = np.sin(latitude) * np.sin(declination) + np.cos(latitude) * np.cos(
         declination
     ) * np.cos(hour_angle)
 
-    alpha = np.arcsin(sin_alpha)
+    elevation = np.arcsin(sin_alpha)
 
-    return alpha
+    return elevation
 
 
-def calc_declination(td: NDArray) -> NDArray:
+def solar_declination(td: NDArray) -> NDArray:
     r"""Calculates solar declination angle.
 
     Use method described in eqn A14 of dePury& Farquhar (1997) to calculate solar
@@ -712,3 +731,71 @@ def calc_declination(td: NDArray) -> NDArray:
     declination = -23.4 * (np.pi / 180) * np.cos((2 * np.pi * (td + 10)) / 365)
 
     return declination
+
+
+def local_hour_angle(t: NDArray, t0: NDArray) -> NDArray:
+    """Test."""
+
+    h = np.pi * (t - t0) / 12
+
+    return h
+
+
+def solar_noon(L_e: float, L_s: float, E_t: NDArray) -> NDArray:
+    """Test."""
+
+    t0 = 12 + (4 * (L_e - L_s) - E_t) / 60
+
+    return t0
+
+
+def equation_of_time(day_angle: NDArray) -> NDArray:
+    r"""Calculates equation of time.
+
+    .. math::
+    E_t = 0.017
+    + 0.4281 \cos(\gamma)
+    - 7.351 \sin(\gamma)
+    - 3.349 \cos(2\gamma)
+    - 9.731 \sin(2\gamma)
+
+    Args:
+        day_angle           : day angle in radians
+
+
+    Returns:
+        An array of Equation of time values
+
+    """
+
+    E_t = (
+        0.017
+        + 0.4281 * np.cos(day_angle)
+        - 7.351 * np.sin(day_angle)
+        - 3.349 * np.cos(2 * day_angle)
+        - 9.731 * np.sin(day_angle)
+    )
+    return E_t
+
+
+def day_angle(t_d: NDArray) -> NDArray:
+    r"""Calculates solar day angle (gamma), radians.
+
+    The day angle (gamma) for a given day of the year N, (where N=1 for January 1st and
+    N=365 for December 31st) can be calculated using the following formula:
+
+    .. math::
+
+    \gamma = \frac{2\pi (N - 1)}{365}
+
+    Args:
+        t_d         : Julian day of the year
+
+    Returns:
+        An array of solar day angle
+
+    """
+
+    2 * np.pi * (t_d - 1) / 365
+
+    return t_d
