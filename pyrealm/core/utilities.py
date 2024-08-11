@@ -47,9 +47,10 @@ import tabulate
 from numpy.typing import NDArray
 
 from pyrealm import warnings
+from pyrealm.typing import FlexArray
 
 
-def check_input_shapes(*args: float | int | np.generic | np.ndarray | None) -> tuple:
+def check_input_shapes(*args: float | int | np.generic | FlexArray | None) -> tuple:
     """Check sets of input variables have congruent shapes.
 
     This helper function validates inputs to check that they are either scalars or
@@ -85,7 +86,7 @@ def check_input_shapes(*args: float | int | np.generic | np.ndarray | None) -> t
     #   - 1 dim ndarrays with only a single value
 
     for val in args:
-        if isinstance(val, np.ndarray):
+        if isinstance(val, FlexArray):
             # Note that 0-dim ndarrays (which are scalars) pass through as do
             # one dimensional arrays with a single value (also a scalar)
             if not (val.ndim == 0 or val.shape == (1,)):
