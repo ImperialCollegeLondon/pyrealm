@@ -660,37 +660,46 @@ def calc_heliocentric_longitudes(
 
 
 def calc_solar_elevation(site_obs_data: LocationDateTime) -> NDArray:
-    r"""Calculates solar elevation angle.
+    r"""Calculate the solar elevation angle for a specific location and times.
 
-    Calculates solar elevation angle using methods outlined in dePury & Farquhar
-    (1997).
-
-    .. math::
-
-        \beta = \sin(\text{latitude}) \cdot \sin(\text{declination}) +
-        \cos(\text{latitude}) \cdot \cos(\text{declination}) \cdot
-        \cos(\text{hour\_angle})
+    This function calculates the solar elevation angle, which is the angle between
+    the sun and the observer's local horizon, using the methods outlined in
+    de Pury & Farquhar (1997). The solar elevation angle is essential for understanding
+    the sun's position in the sky at a given location and time.
 
     Args:
-        site_obs_data   : awd
-
+        site_obs_data   : A data object containing the location and
+                            time-specific information for the observation site,
+                            including
+            latitude_rad: site latitude in radians
+            longitude   : site longitude in degrees
+            UTC offset  : Offset from UTC for site lcoal meridian
+            local time  : local time of observations at site
+            Julian days : Julian day of observations at site
 
     Returns:
-        Array of solar elevation angles (radians).
+        An array of solar elevation angles in radians, representing the angular height
+        of the sun above the horizon at the specified location and time.
+
     """
 
     G_d = day_angle(site_obs_data.julian_days)
+    print(G_d)
 
     E_t = equation_of_time(G_d)
+    print(E_t)
 
     t0 = solar_noon(site_obs_data.longitude, site_obs_data.UTC_offset, E_t)
+    print(t0)
 
     hour_angle = local_hour_angle(site_obs_data.local_time, t0)
+    print(hour_angle)
 
     declination = solar_declination(site_obs_data.julian_days)
+    print(declination)
 
     elevation = elevation_from_lat_dec_hn(
-        site_obs_data.latitude, declination, hour_angle
+        site_obs_data.latitude_rad, declination, hour_angle
     )
 
     return elevation
@@ -699,7 +708,41 @@ def calc_solar_elevation(site_obs_data: LocationDateTime) -> NDArray:
 def elevation_from_lat_dec_hn(
     latitude: NDArray | float, declination: NDArray, hour_angle: NDArray
 ) -> NDArray:
-    """TBC."""
+    r"""Calculate the elevation angle of the sun above the horizon.
+
+    The elevation angle (or solar altitude angle) is the angle between the horizon and
+    the sun, which indicates how high the sun is in the sky at a given time. This
+    function calculates the elevation angle based on the observer's latitude, the
+    solar declination, and the hour angle.
+
+    The calculation is based on the following trigonometric relationship:
+
+    .. math::
+        \sin(\alpha) = \sin(\phi) \cdot \sin(\delta) +
+        \cos(\phi) \cdot \cos(\delta) \cdot \cos(h)
+
+    where:
+        - \(\alpha\) is the elevation angle.
+        - \(\phi\) is the latitude of the observer.
+        - \(\delta\) is the solar declination.
+        - \(h\) is the hour angle.
+
+    The elevation angle is then given by:
+
+    .. math::
+        \alpha = \arcsin(\sin(\alpha))
+
+    Args:
+        latitude    : Array of latitudes in radians, or a single latitude value (as a
+                        float).
+        declination : Array of solar declination angles in radians.
+        hour_angle  : Array of hour angles in radians.
+
+    Returns:
+        An array of elevation angles in radians (as a floating-point number array),
+        representing the angular height of the sun above the horizon.
+
+    """
 
     sin_alpha = np.sin(latitude) * np.sin(declination) + np.cos(latitude) * np.cos(
         declination
@@ -734,7 +777,28 @@ def solar_declination(td: NDArray) -> NDArray:
 
 
 def local_hour_angle(t: NDArray, t0: NDArray) -> NDArray:
-    """Test."""
+    r"""Calculate the local hour angle for a given time and solar noon.
+
+    The local hour angle is a measure of time, expressed in angular terms, that
+    indicates the position of the sun relative to solar noon. This function calculates
+    the local hour angle by determining the difference between the current time (t)
+    and the solar noon time (t_0), and then converting this difference into an angle.
+
+    .. math::
+        h = \pi \cdot \frac{t - t_0}{12}
+
+    Args:
+        t           : Array of current time values in hours (as a floating-point
+                        number).
+        t0          : Array of solar noon time values in hours (as a floating-point
+                        number).
+
+    Returns:
+        The local hour angle in radians (as a floating-point number array), which
+        represents the angular distance of the sun from the local meridian at the
+        given time.
+
+    """
 
     h = np.pi * (t - t0) / 12
 
@@ -742,39 +806,65 @@ def local_hour_angle(t: NDArray, t0: NDArray) -> NDArray:
 
 
 def solar_noon(L_e: float, L_s: float, E_t: NDArray) -> NDArray:
-    """Test."""
+    r"""Calculate the solar noon time for a given location.
 
-    t0 = 12 + (4 * (L_e - L_s) - E_t) / 60
+    The solar noon is the time of day when the sun is at its highest point in the sky
+    for a given location.
+    This function calculates the solar noon by adjusting the standard noon time
+    (12:00 PM) based on the difference between the local longitude (L_e) and the
+    standard meridian (L_s) and the equation of time (E_t).
+
+    .. math::
+        t_0 = 12 + \frac{4 \cdot (L_e - L_s) - E_t}{60}
+
+    Args:
+        L_e         : Local longitude of the observer in degrees (positive for east,
+                        negative for west).
+        L_s         : Longitude of the standard meridian for the observer's time zone
+                        in degrees.
+        E_t         : Equation of time in minutes, accounting for the irregularity of
+                        the Earth's orbit and axial tilt.
+
+    Returns:
+        The solar noon time in hours (as a floating-point number), which can be
+        interpreted as a time of day.
+
+    """
+
+    t0 = 12 + (4 * -(L_e - L_s) - E_t) / 60
 
     return t0
 
 
 def equation_of_time(day_angle: NDArray) -> NDArray:
-    r"""Calculates equation of time.
+    r"""Calculates equation of time in minutes.
+
+    reference Iqbal(1983)
+    https://books.google.co.uk/books?redir_esc=y&id=3_qWce_mbPsC&q=equation+of+time#v=snippet&q=equation%20of%20time&f=false
+
+    replaces implemenattion in dePury and Farquahar (1997) due to typos
 
     .. math::
-    E_t = 0.017
-    + 0.4281 \cos(\gamma)
-    - 7.351 \sin(\gamma)
-    - 3.349 \cos(2\gamma)
-    - 9.731 \sin(2\gamma)
+
 
     Args:
-        day_angle           : day angle in radians
+        day_angle       : day angle in radians
 
 
     Returns:
         An array of Equation of time values
 
     """
-
+    # factors = [0.017, 0.4281, 7.351, 3.349, 9.731, 2, 1]
+    factors = [0.000075, 0.001868, 0.032077, 0.014615, 0.04089, 2, 229.18]
     E_t = (
-        0.017
-        + 0.4281 * np.cos(day_angle)
-        - 7.351 * np.sin(day_angle)
-        - 3.349 * np.cos(2 * day_angle)
-        - 9.731 * np.sin(day_angle)
-    )
+        0.000075
+        + factors[1] * np.cos(day_angle)
+        - factors[2] * np.sin(day_angle)
+        - factors[3] * np.cos(2 * day_angle)
+        - factors[4] * np.sin(factors[5] * day_angle)
+    ) * factors[6]
+
     return E_t
 
 
@@ -792,10 +882,10 @@ def day_angle(t_d: NDArray) -> NDArray:
         t_d         : Julian day of the year
 
     Returns:
-        An array of solar day angle
+        An array of solar day angles
 
     """
 
-    2 * np.pi * (t_d - 1) / 365
+    day_angle = 2 * np.pi * (t_d - 1) / 365
 
-    return t_d
+    return day_angle

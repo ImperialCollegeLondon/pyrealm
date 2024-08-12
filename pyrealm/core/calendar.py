@@ -125,12 +125,35 @@ class LocationDateTime:
     """TBC."""
 
     latitude: float
+    latitude_rad: float = field(init=False)
     longitude: float
-    UTC_offset: float
+    longitude_rad: float = field(init=False)
+    UTC_offset: int
     year_date_time: np.ndarray
-    julian_days: np.ndarray
-    local_time: np.ndarray
+    julian_days: np.ndarray = field(init=False)
+    local_time: np.ndarray = field(init=False)
 
     def __post_init__(self) -> None:
         self.julian_days = Calendar(self.year_date_time).julian_day
-        self.localtime = self.year_date_time.astype("datetime64[H]")
+        self.local_time = self.decimal_hour()
+        self.latitude_rad = self.latitude * np.pi / 180
+        self.longitude_rad = self.longitude * np.pi / 180
+
+    def decimal_hour(self) -> np.ndarray:
+        """Convert year_date_time to a decimal representation of hours.
+
+        This method extracts the hours and minutes from the `year_date_time` attribute
+        and converts them into a decimal representation of hours.
+
+        Returns:
+            An array of decimal hour values.
+        """
+
+        # Extract hours
+        hours = self.year_date_time.astype("datetime64[h]").astype(int) % 24
+
+        # Extract minutes
+        minutes = self.year_date_time.astype("datetime64[m]").astype(int) % 60
+
+        # Convert to decimal hours
+        return hours + minutes / 60

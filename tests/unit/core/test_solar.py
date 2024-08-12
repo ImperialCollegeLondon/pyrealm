@@ -415,20 +415,36 @@ def test_calc_heliocentric_longitudes(day, n_day, expected):
 
 
 @pytest.mark.parametrize(
-    argnames="latitude, declination, hour_angle, expected",
+    argnames="latitude, longitude, year_date_time, UTC_offset, expected",
     argvalues=[
-        (np.array([0.7854]), np.array([0.4093]), np.array([0]), np.array([1.19469633]))
+        (
+            -35.058333,
+            147.34167,
+            np.array([np.datetime64("1995-10-25T10:30")]),
+            150,
+            np.array([1.0615713]),
+        )
     ],
 )
-def test_calc_alpha_value(latitude, declination, hour_angle, expected):
-    """Tests calc_alpha_angle.
+def test_calc_solar_elevation(
+    latitude, longitude, year_date_time, UTC_offset, expected
+):
+    """Tests calc_solar_elevation.
 
     This test is intended to verify the implemented maths.
     """
 
-    from pyrealm.core.solar import calc_alpha_angle_from_lat_dec_hour
+    from pyrealm.core.calendar import LocationDateTime
+    from pyrealm.core.solar import calc_solar_elevation
 
-    result = calc_alpha_angle_from_lat_dec_hour(latitude, declination, hour_angle)
+    site_obs_data = LocationDateTime(
+        latitude=latitude,
+        longitude=longitude,
+        UTC_offset=UTC_offset,
+        year_date_time=year_date_time,
+    )
+
+    result = calc_solar_elevation(site_obs_data)
 
     assert np.allclose(result, expected)
 
@@ -442,10 +458,82 @@ def test_calc_declination(td, expected):
 
     # This test is intended to verify the implemented maths.
 
-    from pyrealm.core.solar import calc_declination
+    from pyrealm.core.solar import solar_declination
 
     # Const = CoreConst()
 
-    result = calc_declination(td)
+    result = solar_declination(td)
+
+    assert np.allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    argnames="julian_day, expected",
+    argvalues=[(np.array([298]), 5.11261928)],
+)
+def test_calc_day_angle(julian_day, expected):
+    """TBD."""
+
+    from pyrealm.core.solar import day_angle
+
+    result = day_angle(julian_day)
+
+    assert np.allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    argnames="day_angle, expected",
+    argvalues=[(np.array([5.11]), 15.99711625)],
+)
+def test_equation_of_time(day_angle, expected):
+    """TBD."""
+
+    from pyrealm.core.solar import equation_of_time
+
+    result = equation_of_time(day_angle)
+
+    assert np.allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    argnames="longitude, UTC_offset, E_t, expected",
+    argvalues=[(147.34167, 150, 16.01, np.array([11.910388666666668]))],
+)
+def test_solar_noon(longitude, UTC_offset, E_t, expected):
+    """TBC."""
+
+    from pyrealm.core.solar import solar_noon
+
+    result = solar_noon(longitude, UTC_offset, E_t)
+
+    assert np.allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    argnames="t, t0, expected",
+    argvalues=[(np.array([10.5]), np.array([11.91]), np.array([-0.36913714]))],
+)
+def test_local_hour_angle(t, t0, expected):
+    """TBD."""
+
+    from pyrealm.core.solar import local_hour_angle
+
+    result = local_hour_angle(t, t0)
+
+    assert np.allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    argnames="latitude, declination, hour_angle, expected",
+    argvalues=[
+        (np.array([-0.61]), np.array([-0.23]), np.array([-0.37]), np.array([1.0647289]))
+    ],
+)
+def test_elevation_from_lat_dec_hn(latitude, declination, hour_angle, expected):
+    """TBD."""
+
+    from pyrealm.core.solar import elevation_from_lat_dec_hn
+
+    result = elevation_from_lat_dec_hn(latitude, declination, hour_angle)
 
     assert np.allclose(result, expected)
