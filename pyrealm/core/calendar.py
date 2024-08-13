@@ -129,6 +129,28 @@ class LocationDateTime:
     radians, the Julian days from the date-time information, and a decimal
     representation of the local time.
 
+    Attributes:
+        latitude        : The latitude of the location in degrees.
+        latitude_rad    : The latitude of the location in radians, calculated
+                            automatically.
+        longitude       : The longitude of the location in degrees.
+        longitude_rad   : The longitude of the location in radians, calculated
+                            automatically.
+        UTC_offset      : The offset from Coordinated Universal Time (UTC) for the
+                            location.
+        year_date_time  : An array of bp.datetime64 values corresponding to observations
+                            at the location.
+        julian_days     : An array of Julian day of the year numbers calculated
+                            from the `year_date_time`.
+        local_time      : An array of local times in decimal hour format
+                            calculated from the `year_date_time`.
+
+    Methods:
+        __post_init__() : Initializes calculated fields like `latitude_rad`,
+                            `longitude_rad`, `julian_days`, and `local_time` after the
+                            object is instantiated.
+        decimal_hour()  : Converts the `year_date_time` to a decimal
+                            representation of hours.
 
     Example:
         >>> import numpy as np
