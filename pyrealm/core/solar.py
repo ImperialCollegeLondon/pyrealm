@@ -664,44 +664,56 @@ def calc_solar_elevation(site_obs_data: LocationDateTime) -> NDArray:
 
     This function calculates the solar elevation angle, which is the angle between
     the sun and the observer's local horizon, using the methods outlined in
-    de Pury & Farquhar (1997). The solar elevation angle is essential for understanding
-    the sun's position in the sky at a given location and time.
+    de Pury & Farquhar (1997).
+
+    NB: This implementation does not correct for the effect of local observation
+    altitude on perceived solar elevation.
 
     Args:
         site_obs_data   : A data object containing the location and
                             time-specific information for the observation site,
                             including
             latitude_rad: site latitude in radians
-            longitude   : site longitude in degrees
-            UTC offset  : Offset from UTC for site lcoal meridian
-            local time  : local time of observations at site
+            longitude   : site longitude in decimal degrees
+            UTC offset  : Offset from UTC for site local meridian, decimal degrees
+            local time  : decimal local time of observations at site,
             Julian days : Julian day of observations at site
 
     Returns:
         An array of solar elevation angles in radians, representing the angular height
         of the sun above the horizon at the specified location and time.
 
-    """
+    Example:
+        >>> # Calculate solar elevation at Wagga Wagga, Australia on 25th October 1995.
+        >>> # Worked example taken from dePury and Farquhar (1997)
+        >>> import numpy as np
+        >>> from pyrealm.core.calendar import LocationDateTime
+        >>> from pyrealm.core.solar import calc_solar_elevation
+        >>> # Create instance of LocatioDateTime dataclass
+        >>> latitude = -35.058333
+        >>> longitude = 147.34167
+        >>> year_date_time = np.array([np.datetime64("1995-10-25T10:30")])
+        >>> UTC_offset = 150.0
+        >>> ldt = LocationDateTime(latitude = latitude, longitude = longitude, year_date_time = year_date_time, UTC_offset = UTC_offset)
+        >>> # Run solar elevation calculation
+        >>> calc_solar_elevation(ldt)
+        array([1.0615713])
+
+    """  # noqa: E501
 
     G_d = day_angle(site_obs_data.julian_days)
-    print(G_d)
 
     E_t = equation_of_time(G_d)
-    print(E_t)
 
     t0 = solar_noon(site_obs_data.longitude, site_obs_data.UTC_offset, E_t)
-    print(t0)
 
     hour_angle = local_hour_angle(site_obs_data.local_time, t0)
-    print(hour_angle)
 
     declination = solar_declination(site_obs_data.julian_days)
-    print(declination)
 
     elevation = elevation_from_lat_dec_hn(
         site_obs_data.latitude_rad, declination, hour_angle
     )
-
     return elevation
 
 
@@ -715,7 +727,8 @@ def elevation_from_lat_dec_hn(
     function calculates the elevation angle based on the observer's latitude, the
     solar declination, and the hour angle.
 
-    The calculation is based on the following trigonometric relationship:
+    The calculation is based on the following trigonometric relationship based on Eqn
+    A13, de Pury and Farquhar:
 
     .. math::
         \sin(\alpha) = \sin(\phi) \cdot \sin(\delta) +
@@ -784,6 +797,8 @@ def local_hour_angle(t: NDArray, t0: NDArray) -> NDArray:
     the local hour angle by determining the difference between the current time (t)
     and the solar noon time (t_0), and then converting this difference into an angle.
 
+    Equation implemented from A15 de Pury and Farquhar (1997).
+
     .. math::
         h = \pi \cdot \frac{t - t_0}{12}
 
@@ -815,7 +830,7 @@ def solar_noon(L_e: float, L_s: float, E_t: NDArray) -> NDArray:
     standard meridian (L_s) and the equation of time (E_t).
 
     .. math::
-        t_0 = 12 + \frac{4 \cdot (L_e - L_s) - E_t}{60}
+        t_0 = 12 + \frac{4 \cdot -(L_e - L_s) - E_t}{60}
 
     Args:
         L_e         : Local longitude of the observer in degrees (positive for east,
@@ -839,31 +854,35 @@ def solar_noon(L_e: float, L_s: float, E_t: NDArray) -> NDArray:
 def equation_of_time(day_angle: NDArray) -> NDArray:
     r"""Calculates equation of time in minutes.
 
-    reference Iqbal(1983)
-    https://books.google.co.uk/books?redir_esc=y&id=3_qWce_mbPsC&q=equation+of+time#v=snippet&q=equation%20of%20time&f=false
-
-    replaces implemenattion in dePury and Farquahar (1997) due to typos
+    Based on eqn 1.4.1 Iqbal (1983) rather than A17 de Pury and Farquahar (1997) due to
+    incorrect reported implementation in the latter.
 
     .. math::
+
+    E_t = \left( 0.000075
+    + 0.001868 \cdot \cos(\Gamma)
+    - 0.032077 \cdot \sin(\Gamma)
+    - 0.014615 \cdot \cos(2\Gamma)
+    - 0.04089 \cdot \sin(2\Gamma) \right)
+    \times 229.18
+
+    Where gamma is the day angle.
 
 
     Args:
         day_angle       : day angle in radians
 
-
     Returns:
         An array of Equation of time values
 
     """
-    # factors = [0.017, 0.4281, 7.351, 3.349, 9.731, 2, 1]
-    factors = [0.000075, 0.001868, 0.032077, 0.014615, 0.04089, 2, 229.18]
     E_t = (
         0.000075
-        + factors[1] * np.cos(day_angle)
-        - factors[2] * np.sin(day_angle)
-        - factors[3] * np.cos(2 * day_angle)
-        - factors[4] * np.sin(factors[5] * day_angle)
-    ) * factors[6]
+        + 0.001868 * np.cos(day_angle)
+        - 0.032077 * np.sin(day_angle)
+        - 0.014615 * np.cos(2 * day_angle)
+        - 0.04089 * np.sin(2 * day_angle)
+    ) * 229.18
 
     return E_t
 
@@ -873,6 +892,8 @@ def day_angle(t_d: NDArray) -> NDArray:
 
     The day angle (gamma) for a given day of the year N, (where N=1 for January 1st and
     N=365 for December 31st) can be calculated using the following formula:
+
+    Based on Eqn A18, De Pury and Farquhar (1997).
 
     .. math::
 

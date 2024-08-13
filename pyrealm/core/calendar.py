@@ -122,7 +122,49 @@ class Calendar(Sized):
 
 @dataclass
 class LocationDateTime:
-    """TBC."""
+    """A data class representing an observation location and date and time information.
+
+    This class encapsulates the latitude and longitude of a location along with a c
+    orrespondingtime array. It automatically calculates the latitude and longitude in
+    radians, the Julian days from the date-time information, and a decimal
+    representation of the local time.
+
+    Attributes:
+        latitude        : The latitude of the location in degrees.
+        latitude_rad    : The latitude of the location in radians, calculated
+                            automatically.
+        longitude       : The longitude of the location in degrees.
+        longitude_rad   : The longitude of the location in radians, calculated
+                            automatically.
+        UTC_offset      : The offset from Coordinated Universal Time (UTC) for the
+                            location.
+        year_date_time  : An array of bp.datetime64 values corresponding to observations
+                            at the location.
+        julian_days (np.ndarray): An array of Julian day of the year numbers calculated
+                            from the `year_date_time`.
+        local_time (np.ndarray): An array of local times in decimal hour format
+                            calculated from the `year_date_time`.
+
+    Methods:
+        __post_init__(): Initializes calculated fields like `latitude_rad`,
+                            `longitude_rad`, `julian_days`, and `local_time` after the
+                            object is instantiated.
+        decimal_hour() -> np.ndarray: Converts the `year_date_time` to a decimal
+                            representation of hours.
+
+    Example:
+        >>> import numpy as np
+        >>> ldt = LocationDateTime(
+        ...     latitude=-35.058333,
+        ...     longitude=147.34167,
+        ...     UTC_offset=10,
+        ...     year_date_time=np.array([np.datetime64("2024-08-12T10:30")])
+        ... )
+        >>> print(ldt.latitude_rad)
+        -0.6118833411105811
+        >>> print(ldt.local_time)
+        [10.5]
+    """
 
     latitude: float
     latitude_rad: float = field(init=False)
