@@ -30,13 +30,12 @@ class TwoLeafIrradience:
         ppfd: NDArray,
         leaf_area_index: NDArray,
         patm: NDArray,
+        constants: TwoLeafConst = TwoLeafConst(),
     ):
         self.beta_angle = beta_angle
         self.ppfd = ppfd
         self.leaf_area_index = leaf_area_index
         self.patm = patm
-
-        constants = TwoLeafConst()
 
         self.pa0: float = constants.k_PA0
         self.k_fa: float = constants.k_fa
@@ -48,7 +47,7 @@ class TwoLeafIrradience:
         self.kb: NDArray
         self.kb_prime: NDArray
         self.fd: NDArray
-        self.rho_h: NDArray
+        self.rho_h: float
         self.rho_cb: NDArray
         self.I_d: NDArray
         self.T_b: NDArray
@@ -320,7 +319,7 @@ def fraction_of_diffuse_rad(
     return fd
 
 
-def beam_irradience_h_leaves(k_sigma: float) -> NDArray:
+def beam_irradience_h_leaves(k_sigma: float) -> float:
     r"""Calculate the beam irradiance for horizontal leaves.
 
     The beam irradiance for horizontal leaves considers the leaf orientation and
@@ -343,7 +342,7 @@ def beam_irradience_h_leaves(k_sigma: float) -> NDArray:
     return rho_h
 
 
-def beam_irrad_unif_leaf_angle_dist(rho_h: NDArray, kb: NDArray) -> NDArray:
+def beam_irrad_unif_leaf_angle_dist(rho_h: float, kb: NDArray) -> NDArray:
     r"""Calculate the beam irradiance with a uniform leaf angle distribution.
 
     The beam irradiance with a uniform leaf angle distribution considers different
