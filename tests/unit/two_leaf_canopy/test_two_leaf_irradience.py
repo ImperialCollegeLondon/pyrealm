@@ -1,6 +1,18 @@
-"""Docstring.
+"""test_two_leaf_irradience_functions.
 
-Docstring
+This module contains pytest unit tests for validating the correctness of various
+functions involved in the calculation of photosynthetic parameters and canopy
+irradiance models. The functions tested include those related to beam extinction
+coefficients, irradiance calculations, carboxylation scaling, electron transport
+rates, and gross primary productivity (GPP).
+
+Each test function is parameterized with a variety of input scenarios to ensure
+robustness and accuracy of the implemented algorithms. Calculations are verified
+against expected values derived from mathematical formulas to ensure consistency
+and correctness.
+
+Tests are designed to cover edge cases, typical use cases, and mixed scenarios,
+providing comprehensive coverage of the model's functionality.
 """
 
 import numpy as np
