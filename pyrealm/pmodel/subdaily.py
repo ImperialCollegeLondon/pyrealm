@@ -224,8 +224,8 @@ class SubdailyPModel:
             externally calculated per-observation estimates of kphio.
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.
-        init_realised: A tuple of three NumPy arrays (xi_real, vcmax25_real,
-          jmax25_real).
+        init_realised: A tuple of initial realised values of three NumPy arrays
+        (xi_real, vcmax25_real, jmax25_real).
     """
 
     def __init__(
