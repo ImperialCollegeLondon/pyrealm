@@ -57,3 +57,9 @@ class Flora(dict[str, PlantFunctionalType]):
 
         for name, pft in zip(pft_names, pfts):
             self[name] = pft
+
+
+# class FloraDataFrame(pd.DataFrame):
+#     def __init__(self) -> None:
+#         super().__init__()
+#         #add some validation here

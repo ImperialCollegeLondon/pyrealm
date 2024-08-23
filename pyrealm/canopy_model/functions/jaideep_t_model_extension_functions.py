@@ -20,12 +20,13 @@ def calculate_q_m_values(
     )
 
 
-def calculate_z_m_values(
+def calculate_z_max_values(
     m: NDArray[np.float32], n: NDArray[np.float32], height: NDArray[np.float32]
 ) -> NDArray[np.float32]:
+    """Calculate z_m, the height of maximum crown radius."""
     # Height of maximum crown radius
-    z_m = height * ((n - 1) / (m * n - 1)) ** (1 / n)
-    return z_m
+    z_max = height * ((n - 1) / (m * n - 1)) ** (1 / n)
+    return z_max
 
 
 def calculate_r_0_values(
@@ -37,44 +38,6 @@ def calculate_r_0_values(
     r_0 = 1 / q_m * np.sqrt(crown_area / np.pi)
 
     return r_0
-
-
-def calculate_projected_canopy_area_for_individuals(
-    z: float,
-    height: NDArray[np.float32],
-    crown_area: NDArray[np.float32],
-    m: NDArray[np.float32],
-    n: NDArray[np.float32],
-    q_m: NDArray[np.float32],
-    z_m: NDArray[np.float32],
-) -> NDArray[np.float32]:
-    """Calculate projected crown area above a given height.
-
-    This function takes PFT specific parameters (shape parameters) and stem specific
-    sizes and estimates the projected crown area above a given height $z$. Note,
-    this calculation gives the canopy area for a single individual within the cohort,
-    not for the cohort as a whole.
-    :param m:
-    :param n:
-    :param crown_area:
-    :param height:
-    :param z_m: stem canopy factor from Jaideep’s extension of the T Model.
-    :param q_m: stem canopy factor from Jaideep’s extension of the T Model.
-    :param z: height on the z axis.
-    """
-
-    # Calculate q(z)
-    q_z = calculate_relative_canopy_radii(z, height, m, n)
-
-    # Calculate A_p
-    # Calculate Ap given z > zm
-    A_p = crown_area * (q_z / q_m) ** 2
-    # Set Ap = Ac where z <= zm
-    A_p = np.where(z <= z_m, crown_area, A_p)
-    # Set Ap = 0 where z > H
-    A_p = np.where(z > height, 0, A_p)
-
-    return A_p
 
 
 def calculate_relative_canopy_radii(

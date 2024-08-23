@@ -149,7 +149,7 @@ class Community:
         self.canopy_factor_r_0_values = t_model_extension.calculate_r_0_values(
             self.canopy_factor_q_m_values, self.t_model_crown_areas
         )
-        self.canopy_factor_z_m_values = t_model_extension.calculate_z_m_values(
+        self.canopy_factor_z_m_values = t_model_extension.calculate_z_max_values(
             self.pft_m_values, self.pft_n_values, self.t_model_heights
         )
 
@@ -165,7 +165,7 @@ class Community:
 
         :param cell_area: the area of the cell at each location, this is assumed to be
         the same across all the locations in the csv.
-        :param csv_path: path to the csv containing community data.
+        :param csv_path: path to the csv containing community data, as detailed above.
         :param flora: a flora object, ie a dictionary of plant functional properties,
         keyed by pft name.
         :return: a list of community objects, loaded from the csv
