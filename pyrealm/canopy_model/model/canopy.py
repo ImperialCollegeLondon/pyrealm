@@ -33,7 +33,7 @@ class Canopy:
             canopy_gap_fraction,
         )
 
-        # TODO there may be a more efficient less loopy solution here.
+        # TODO there may be a more efficient solution here that does not use a loop.
         self.A_cp_within_layer = map(
             calculate_total_canopy_A_cp,
             self.canopy_layer_heights,
