@@ -211,33 +211,36 @@ class TTree:
 
         # Height of tree from diameter, Equation (4) of Li ea.
         self._height = t_model_functions.calculate_heights(
-            self.traits.h_max, self.traits.a_hd, self._diameter
+            np.array([self.traits.h_max]), np.array([self.traits.a_hd]), self._diameter
         )
 
         # Crown area of tree, Equation (8) of Li ea.
         self._crown_area = t_model_functions.calculate_crown_areas(
-            self.traits.ca_ratio, self.traits.a_hd, self._diameter, self._height
+            np.array([self.traits.ca_ratio]),
+            np.array([self.traits.a_hd]),
+            self._diameter,
+            self._height,
         )
 
         # Crown fraction, Equation (11) of Li ea.
         self._crown_fraction = t_model_functions.calculate_crown_fractions(
-            self.height, self.traits.a_hd, self._diameter
+            self.height, np.array([self.traits.a_hd]), self._diameter
         )
         # Masses
         self._mass_stm = t_model_functions.calculate_stem_masses(
-            self._diameter, self._height, self.traits.rho_s
+            self._diameter, self._height, np.array([self.traits.rho_s])
         )
 
         self._mass_fol = t_model_functions.calculate_foliage_masses(
-            self._crown_area, self.traits.lai, self.traits.sla
+            self._crown_area, np.array([self.traits.lai]), np.array([self.traits.sla])
         )
 
         self._mass_swd = t_model_functions.calculate_swd_masses(
             self._crown_area,
-            self.traits.rho_s,
+            np.array([self.traits.rho_s]),
             self._height,
             self._crown_fraction,
-            self.traits.ca_ratio,
+            np.array([self.traits.ca_ratio]),
         )
 
         # Flag any calculated growth values as outdated
