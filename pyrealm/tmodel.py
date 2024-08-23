@@ -14,6 +14,7 @@ growth given an estimate of gross primary productivity (GPP).
 import numpy as np
 from numpy.typing import NDArray
 
+import pyrealm.t_model_functions as t_model_functions
 from pyrealm.constants.tmodel_const import TModelTraits
 
 # Design Notes:
@@ -209,29 +210,29 @@ class TTree:
         self._diameter = values
 
         # Height of tree from diameter, Equation (4) of Li ea.
-        self._height = t_model_utils.calculate_heights(
+        self._height = t_model_functions.calculate_heights(
             self.traits.h_max, self.traits.a_hd, self._diameter
         )
 
         # Crown area of tree, Equation (8) of Li ea.
-        self._crown_area = t_model_utils.calculate_crown_areas(
+        self._crown_area = t_model_functions.calculate_crown_areas(
             self.traits.ca_ratio, self.traits.a_hd, self._diameter, self._height
         )
 
         # Crown fraction, Equation (11) of Li ea.
-        self._crown_fraction = t_model_utils.calculate_crown_fractions(
+        self._crown_fraction = t_model_functions.calculate_crown_fractions(
             self.height, self.traits.a_hd, self._diameter
         )
         # Masses
-        self._mass_stm = t_model_utils.calculate_stem_masses(
+        self._mass_stm = t_model_functions.calculate_stem_masses(
             self._diameter, self._height, self.traits.rho_s
         )
 
-        self._mass_fol = t_model_utils.calculate_foliage_masses(
+        self._mass_fol = t_model_functions.calculate_foliage_masses(
             self._crown_area, self.traits.lai, self.traits.sla
         )
 
-        self._mass_swd = t_model_utils.calculate_swd_masses(
+        self._mass_swd = t_model_functions.calculate_swd_masses(
             self._crown_area,
             self.traits.rho_s,
             self._height,
