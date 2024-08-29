@@ -5,8 +5,7 @@ the following pmodel core class:
     Calculates the photosynthetic environment for locations.
 """  # noqa D210, D415
 
-import numpy as np
-from numpy.typing import NDArray
+from array_api_compat import get_namespace
 
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import bounds_checker, check_input_shapes, summarize_attrs
@@ -16,6 +15,7 @@ from pyrealm.pmodel.functions import (
     calc_kmm,
     calc_ns_star,
 )
+from pyrealm.typing import FlexArray
 
 
 class PModelEnvironment:
@@ -75,42 +75,43 @@ class PModelEnvironment:
 
     def __init__(
         self,
-        tc: NDArray,
-        vpd: NDArray,
-        co2: NDArray,
-        patm: NDArray,
-        theta: NDArray | None = None,
-        rootzonestress: NDArray | None = None,
+        tc: FlexArray,
+        vpd: FlexArray,
+        co2: FlexArray,
+        patm: FlexArray,
+        theta: FlexArray | None = None,
+        rootzonestress: FlexArray | None = None,
         pmodel_const: PModelConst = PModelConst(),
         core_const: CoreConst = CoreConst(),
     ):
         self.shape: tuple = check_input_shapes(tc, vpd, co2, patm)
+        self.array_backend = get_namespace(tc, vpd, co2, patm)
 
         # Validate and store the forcing variables
-        self.tc: NDArray = bounds_checker(tc, -25, 80, "[]", "tc", "°C")
+        self.tc: FlexArray = bounds_checker(tc, -25, 80, "[]", "tc", "°C")
         """The temperature at which to estimate photosynthesis, °C"""
-        self.vpd: NDArray = bounds_checker(vpd, 0, 10000, "[]", "vpd", "Pa")
+        self.vpd: FlexArray = bounds_checker(vpd, 0, 10000, "[]", "vpd", "Pa")
         """Vapour pressure deficit, Pa"""
-        self.co2: NDArray = bounds_checker(co2, 0, 1000, "[]", "co2", "ppm")
+        self.co2: FlexArray = bounds_checker(co2, 0, 1000, "[]", "co2", "ppm")
         """CO2 concentration, ppm"""
-        self.patm: NDArray = bounds_checker(patm, 30000, 110000, "[]", "patm", "Pa")
+        self.patm: FlexArray = bounds_checker(patm, 30000, 110000, "[]", "patm", "Pa")
         """Atmospheric pressure, Pa"""
 
         # Guard against calc_density issues
-        if np.nanmin(self.tc) < np.array([-25]):
+        if self.array_backend.nanmin(self.tc) < self.array_backend.array([-25]):
             raise ValueError(
                 "Cannot calculate P Model predictions for values below"
                 " -25°C. See calc_density_h2o."
             )
 
         # Guard against negative VPD issues
-        if np.nanmin(self.vpd) < np.array([0]):
+        if self.array_backend.nanmin(self.vpd) < self.array_backend.array([0]):
             raise ValueError(
                 "Negative VPD values will lead to missing data - clip to "
-                "zero or explicitly set to np.nan"
+                "zero or explicitly set to array_backend.nan"
             )
 
-        self.ca: NDArray = calc_co2_to_ca(self.co2, self.patm)
+        self.ca: FlexArray = calc_co2_to_ca(self.co2, self.patm)
         """Ambient CO2 partial pressure, Pa"""
 
         self.gammastar = calc_gammastar(
@@ -132,9 +133,9 @@ class PModelEnvironment:
         temperature and pressure, unitless"""
 
         # Optional variables
-        self.theta: NDArray | None = None
+        self.theta: FlexArray | None = None
         """Volumetric soil moisture (m3/m3)"""
-        self.rootzonestress: NDArray | None = None
+        self.rootzonestress: FlexArray | None = None
         """Rootzone stress factor (experimental) (-)"""
 
         if theta is not None:
