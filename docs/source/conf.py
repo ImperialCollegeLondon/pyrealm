@@ -103,6 +103,8 @@ nitpick_ignore = [
     ("py:class", "numpy.dtype"),
     ("py:class", "numpy.dtype[+ScalarType]"),
     ("py:class", "numpy.typing.NDArray"),
+    ("py:class", "numpy.NDArray"),
+    ("py:class", "NDArray"),
     ("py:class", "dataclasses.InitVar"),
     (
         "py:class",

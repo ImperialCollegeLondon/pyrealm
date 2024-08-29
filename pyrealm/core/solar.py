@@ -670,14 +670,9 @@ def calc_solar_elevation(site_obs_data: LocationDateTime) -> NDArray:
     altitude on perceived solar elevation.
 
     Args:
-        site_obs_data   : A data object containing the location and
-                            time-specific information for the observation site,
-                            including
-            latitude_rad: site latitude in radians
-            longitude   : site longitude in decimal degrees
-            UTC offset  : Offset from UTC for site local meridian, decimal degrees
-            local time  : decimal local time of observations at site,
-            Julian days : Julian day of observations at site
+        site_obs_data: A :class:`~pyrealm.core.calendar.LocationDateTime` instance
+            containing the location and time-specific information for the observation
+            site.
 
     Returns:
         An array of solar elevation angles in radians, representing the angular height
@@ -734,11 +729,12 @@ def elevation_from_lat_dec_hn(
         \sin(\alpha) = \sin(\phi) \cdot \sin(\delta) +
         \cos(\phi) \cdot \cos(\delta) \cdot \cos(h)
 
-    where:
-        - \(\alpha\) is the elevation angle.
-        - \(\phi\) is the latitude of the observer.
-        - \(\delta\) is the solar declination.
-        - \(h\) is the hour angle.
+    where,
+
+    - :math:`\alpha` is the elevation angle,
+    - :math:`\phi` is the latitude of the observer,
+    - :math:`\delta` is the solar declination, and
+    - :math:`h` is the hour angle.
 
     The elevation angle is then given by:
 
