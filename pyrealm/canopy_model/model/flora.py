@@ -1,4 +1,12 @@
-"""Base objects for import to the canopy module."""
+"""The flora module implements definitions of:
+
+* The PlantFunctionalType dataclass, which is used to parameterise the traits of
+  different plant functional types.
+* The Flora class, which is simply a dictionary of named plant functional types for use
+  in describing a plant community in a simulation. The Flora class also defines factory
+  methods to create instances from plant functional type data stored in JSON, TOML or
+  CSV formats.
+"""  # noqa: D415
 
 from __future__ import annotations
 
@@ -26,15 +34,16 @@ class PlantFunctionalType:
     """The PlantFunctionalType dataclass.
 
     This dataclass implements the set of traits required to define a plant functional
-    type for use in ``pyrealm``. The majority of the traits are those required to
-    parameterise the T Model :cite:`Li:2014bc`.  The
-    default values are taken from Table 1 of :cite:t:`Li:2014bc`.
+    type for use in ``pyrealm``. The majority of the traits and their default values are
+    those required to parameterise the T Model :cite:`Li:2014bc`.
 
-    Note that the foliage maintenance respiration fraction is not named in the original
-    T Model implementation, but has been included as a modifiable trait in this
-    implementation. This implementation adds two further canopy shape parameters (``m``
-    and ``n``), which are then used to calculate two derived attributes (``q_m`` and
-    ``z_max_ratio``).
+    The foliage maintenance respiration fraction is not named in the original T Model
+    implementation, but has been included as a modifiable trait in this implementation.
+    This implementation adds two further canopy shape parameters (``m`` and ``n``),
+    which are then used to calculate two derived attributes (``q_m`` and
+    ``z_max_ratio``). These are used to define the vertical distribution of leaves
+    around a stem and follow the implementation developed in the PlantFATE model
+    :cite:`joshi:2022a`.
     """
 
     name: str
