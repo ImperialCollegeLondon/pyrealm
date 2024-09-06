@@ -1,7 +1,13 @@
 """The flora module implements definitions of:
 
-* The PlantFunctionalType dataclass, which is used to parameterise the traits of
-  different plant functional types.
+* The ``PlantFunctionalType`` and ``PlantFunctionalTypeStrict`` dataclasses, which are
+  used to parameterise the traits of different plant functional types. The
+  ``PlantFunctionalType`` dataclass is a subclass of ``PlantFunctionalTypeStrict`` that
+  simply adds default values to the attributes.
+* The ``PlantFunctionalTypeStrict`` dataclass is used as the basis of a ``marshmallow``
+  schema for validating the creation of plant functional types from data files. This
+  intentionally enforces a complete description of the traits in the input data. The
+  ``PlantFunctionalType`` is provided as a more convenient API for programmatic use.
 * The Flora class, which is simply a dictionary of named plant functional types for use
   in describing a plant community in a simulation. The Flora class also defines factory
   methods to create instances from plant functional type data stored in JSON, TOML or
@@ -34,54 +40,59 @@ class PlantFunctionalTypeStrict:
     """The PlantFunctionalTypeStrict dataclass.
 
     This dataclass implements the set of traits required to define a plant functional
-    type for use in ``pyrealm``. The majority of the traits and their default values are
-    those required to parameterise the T Model :cite:`Li:2014bc`.
+    type for use in ``pyrealm``.
 
-    The foliage maintenance respiration fraction is not named in the original T Model
-    implementation, but has been included as a modifiable trait in this implementation.
-    This implementation adds two further canopy shape parameters (``m`` and ``n``),
-    which are then used to calculate two derived attributes (``q_m`` and
-    ``z_max_ratio``). These are used to define the vertical distribution of leaves
-    around a stem and follow the implementation developed in the PlantFATE model
-    :cite:`joshi:2022a`.
+    * Most traits are taken from the definition of the T Model of plant growth and GPP
+      allocation :cite:`Li:2014bc`.
+    * The foliage maintenance respiration fraction was not explicitly included in
+      :cite:t:`Li:2014bc` - there was assumed to be a 10% penalty on GPP before
+      calculating the other component - but has been explicitly included here.
+    * This implementation adds two further canopy shape parameters (``m`` and ``n``),
+      which are then used to calculate two derived attributes (``q_m`` and
+      ``z_max_ratio``). These are used to define the vertical distribution of leaves
+      around a stem and follow the implementation developed in the PlantFATE model
+      :cite:`joshi:2022a`.
+
+    See also :class:`~pyrealm.demography.flora.PlantFunctionalType` for the default
+    values implemented in that subclass.
     """
 
     name: str
-    """The name of the plant functional type."""
+    r"""The name of the plant functional type."""
     a_hd: float
-    """Initial slope of height-diameter relationship (:math:`a`, 116.0, -)"""
+    r"""Initial slope of height-diameter relationship (:math:`a`, -)"""
     ca_ratio: float
-    """Initial ratio of crown area to stem cross-sectional area
-    (:math:`c`, 390.43, -)"""
+    r"""Initial ratio of crown area to stem cross-sectional area
+    (:math:`c`, -)"""
     h_max: float
-    """Maximum tree height (:math:`H_m`, 25.33, m)"""
+    r"""Maximum tree height (:math:`H_m`, m)"""
     rho_s: float
-    r"""Sapwood density (:math:`\rho_s`, 200.0, kg Cm-3)"""
+    r"""Sapwood density (:math:`\rho_s`, kg Cm-3)"""
     lai: float
-    """Leaf area index within the crown (:math:`L`, 1.8, -)"""
+    """Leaf area index within the crown (:math:`L`,  -)"""
     sla: float
-    r"""Specific leaf area (:math:`\sigma`, 14.0, m2 kg-1 C)"""
+    r"""Specific leaf area (:math:`\sigma`,  m2 kg-1 C)"""
     tau_f: float
-    r"""Foliage turnover time (:math:`\tau_f`, 4.0, years)"""
+    r"""Foliage turnover time (:math:`\tau_f`,years)"""
     tau_r: float
-    """Fine-root turnover time (:math:`\tau_r`, 1.04, years)"""
+    r"""Fine-root turnover time (:math:`\tau_r`,  years)"""
     par_ext: float
-    """Extinction coefficient of photosynthetically active radiation (PAR) (:math:`k`,
-    0.5, -)"""
+    r"""Extinction coefficient of photosynthetically active radiation (PAR) (:math:`k`,
+     -)"""
     yld: float
-    """Yield_factor (:math:`y`, 0.17, -)"""
+    r"""Yield factor (:math:`y`,  -)"""
     zeta: float
-    r"""Ratio of fine-root mass to foliage area (:math:`\zeta`, 0.17, kg C m-2)"""
+    r"""Ratio of fine-root mass to foliage area (:math:`\zeta`, kg C m-2)"""
     resp_r: float
-    """Fine-root specific respiration rate (:math:`r_r`, 0.913, year-1)"""
+    r"""Fine-root specific respiration rate (:math:`r_r`, year-1)"""
     resp_s: float
-    """Sapwood-specific respiration rate (:math:`r_s`, 0.044, year-1)"""
+    r"""Sapwood-specific respiration rate (:math:`r_s`,  year-1)"""
     resp_f: float
-    """Foliage maintenance respiration fraction (:math:`r_f`,  0.1, -)"""
+    r"""Foliage maintenance respiration fraction (:math:`r_f`,  -)"""
     m: float
-    """Canopy shape parameter (:math:`m`, -)"""
+    r"""Canopy shape parameter (:math:`m`, -)"""
     n: float
-    """Canopy shape parameter (:math:`n`, -)"""
+    r"""Canopy shape parameter (:math:`n`, -)"""
 
     q_m: float = field(init=False)
     """Scaling factor to derive maximum crown radius from crown area."""
@@ -105,57 +116,55 @@ class PlantFunctionalTypeStrict:
 
 @dataclass(frozen=True)
 class PlantFunctionalType(PlantFunctionalTypeStrict):
-    """The PlantFunctionalType dataclass.
+    r"""The PlantFunctionalType dataclass.
 
-    This dataclass implements the set of traits required to define a plant functional
-    type for use in ``pyrealm``. The majority of the traits and their default values are
-    those required to parameterise the T Model :cite:`Li:2014bc`.
+    This dataclass is a subclass of
+    :class:`~pyrealm.demography.flora.PlantFunctionalTypeStrict` that implements exactly
+    the same set of traits but provides default values. This class is intended as a
+    convenience API for programmatic use, where the parent provides a strict schema for
+    generating plant functional type instances from data.
 
-    The foliage maintenance respiration fraction is not named in the original T Model
-    implementation, but has been included as a modifiable trait in this implementation.
-    This implementation adds two further canopy shape parameters (``m`` and ``n``),
-    which are then used to calculate two derived attributes (``q_m`` and
-    ``z_max_ratio``). These are used to define the vertical distribution of leaves
-    around a stem and follow the implementation developed in the PlantFATE model
-    :cite:`joshi:2022a`.
+    The table below lists the attributes and default values taken from Table 1 of
+    :cite:t:`Li:2014bc`
+
+    .. csv-table::
+        :header: "Attribute", "Default", "Unit"
+        :widths: 15, 10, 30
+
+        a_hd, 116.0, -
+        ca_ratio, 390.43, -
+        h_max,  25.33, m
+        rho_s, 200.0, kg Cm-3
+        lai,  1.8, -
+        sla,  14.0, m2 kg-1 C
+        tau_f, 4.0, years
+        tau_r,  1.04, years
+        par_ext, 0.5, -
+        yld, 0.17, -
+        zeta, 0.17, kg C m-2
+        resp_r,  0.913, year-1
+        resp_s,  0.044, year-1
+        resp_f,  0.1, -
+        m, 2, -
+        n, 5, -
     """
 
-    name: str
-    """The name of the plant functional type."""
     a_hd: float = 116.0
-    """Initial slope of height-diameter relationship (:math:`a`, 116.0, -)"""
     ca_ratio: float = 390.43
-    """Initial ratio of crown area to stem cross-sectional area
-    (:math:`c`, 390.43, -)"""
     h_max: float = 25.33
-    """Maximum tree height (:math:`H_m`, 25.33, m)"""
     rho_s: float = 200.0
-    r"""Sapwood density (:math:`\rho_s`, 200.0, kg Cm-3)"""
     lai: float = 1.8
-    """Leaf area index within the crown (:math:`L`, 1.8, -)"""
     sla: float = 14.0
-    r"""Specific leaf area (:math:`\sigma`, 14.0, m2 kg-1 C)"""
     tau_f: float = 4.0
-    r"""Foliage turnover time (:math:`\tau_f`, 4.0, years)"""
     tau_r: float = 1.04
-    """Fine-root turnover time (:math:`\tau_r`, 1.04, years)"""
     par_ext: float = 0.5
-    """Extinction coefficient of photosynthetically active radiation (PAR) (:math:`k`,
-    0.5, -)"""
     yld: float = 0.17
-    """Yield_factor (:math:`y`, 0.17, -)"""
     zeta: float = 0.17
-    r"""Ratio of fine-root mass to foliage area (:math:`\zeta`, 0.17, kg C m-2)"""
     resp_r: float = 0.913
-    """Fine-root specific respiration rate (:math:`r_r`, 0.913, year-1)"""
     resp_s: float = 0.044
-    """Sapwood-specific respiration rate (:math:`r_s`, 0.044, year-1)"""
     resp_f: float = 0.1
-    """Foliage maintenance respiration fraction (:math:`r_f`,  0.1, -)"""
     m: float = 2
-    """Canopy shape parameter (:math:`m`, -)"""
     n: float = 5
-    """Canopy shape parameter (:math:`n`, -)"""
 
 
 PlantFunctionalTypeSchema = marshmallow_dataclass.class_schema(
