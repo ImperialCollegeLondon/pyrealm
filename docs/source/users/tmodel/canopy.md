@@ -7,9 +7,9 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.16.4
 kernelspec:
-  display_name: pyrealm_python3
+  display_name: python3
   language: python
-  name: pyrealm_python3
+  name: python3
 ---
 
 # Canopy model
@@ -637,7 +637,7 @@ hence the cumulative light extinction profile through the canopy.
 
 ```{code-cell}
 f_abs = 1 - np.exp(-pft.traits.par_ext * LAI_layer)
-ext = np.cumproduct(f_abs)
+ext = np.cumprod(f_abs)
 
 print("f_abs = ", f_abs)
 print("extinction = ", ext)

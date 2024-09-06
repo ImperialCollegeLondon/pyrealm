@@ -29,7 +29,7 @@ else:
 def test_PlantFunctionalType__init__(args, outcome):
     """Test the plant functional type initialisation."""
 
-    from pyrealm.canopy_model.model.flora import (
+    from pyrealm.demography.flora import (
         PlantFunctionalType,
         calculate_q_m,
         calculate_z_max_proportion,
@@ -60,7 +60,7 @@ def flora_inputs(request):
     have a diverse set of inputs.
     """
 
-    from pyrealm.canopy_model.model.flora import PlantFunctionalType
+    from pyrealm.demography.flora import PlantFunctionalType
 
     broadleaf = PlantFunctionalType(name="broadleaf")
     conifer = PlantFunctionalType(name="conifer")
@@ -92,7 +92,7 @@ def flora_inputs(request):
 def test_Flora__init__(flora_inputs, outcome):
     """Test the plant functional type initialisation."""
 
-    from pyrealm.canopy_model.model.flora import Flora
+    from pyrealm.demography.flora import Flora
 
     with outcome:
         flora = Flora(pfts=flora_inputs)
@@ -120,7 +120,7 @@ def test_Flora__init__(flora_inputs, outcome):
 )
 def test_flora_from_json(filename, outcome):
     """Test JSON loading."""
-    from pyrealm.canopy_model.model.flora import Flora
+    from pyrealm.demography.flora import Flora
 
     datapath = resources.files("pyrealm_build_data.community") / filename
 
@@ -146,7 +146,7 @@ def test_flora_from_json(filename, outcome):
 )
 def test_flora_from_toml(filename, outcome):
     """Test TOML loading."""
-    from pyrealm.canopy_model.model.flora import Flora
+    from pyrealm.demography.flora import Flora
 
     datapath = resources.files("pyrealm_build_data.community") / filename
 
@@ -172,7 +172,7 @@ def test_flora_from_toml(filename, outcome):
 )
 def test_flora_from_csv(filename, outcome):
     """Test CSV loading."""
-    from pyrealm.canopy_model.model.flora import Flora
+    from pyrealm.demography.flora import Flora
 
     datapath = resources.files("pyrealm_build_data.community") / filename
 
@@ -198,7 +198,7 @@ def test_flora_from_csv(filename, outcome):
 def test_calculate_q_m(m, n, q_m):
     """Test calculation of q_m."""
 
-    from pyrealm.canopy_model.model.flora import calculate_q_m
+    from pyrealm.demography.flora import calculate_q_m
 
     calculated_q_m = calculate_q_m(m, n)
     assert calculated_q_m == pytest.approx(q_m)
@@ -221,7 +221,7 @@ def test_calculate_q_m_values_raises_exception_for_invalid_input():
 def test_calculate_z_max_ratio(m, n, z_max_ratio):
     """Test calculation of z_max proportion."""
 
-    from pyrealm.canopy_model.model.flora import calculate_z_max_proportion
+    from pyrealm.demography.flora import calculate_z_max_proportion
 
     calculated_zmr = calculate_z_max_proportion(m, n)
     assert calculated_zmr == pytest.approx(z_max_ratio)

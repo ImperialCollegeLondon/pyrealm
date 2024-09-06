@@ -141,16 +141,14 @@ class Flora(dict[str, PlantFunctionalType]):
 
     The flora is the set of plant functional types used within a particular simulation
     and this class provides dictionary-like access to a defined set of
-    :class:`~virtual_ecosystem.models.plants.functional_types.PlantFunctionalType`
-    instances.
+    :class:`~pyrealm.demography.flora.PlantFunctionalType` instances.
 
     Instances of this class should not be altered during model fitting, at least until
     the point where plant evolution is included in the modelling process.
 
     Args:
         pfts: A sequence of ``PlantFunctionalType`` instances, which must not have
-            duplicated
-            :attr:`~virtual_ecosystem.models.plants.functional_types.PlantFunctionalType.pft_name`
+            duplicated :attr:`~pyrealm.demography.flora.PlantFunctionalType.name`
             attributes.
     """
 
