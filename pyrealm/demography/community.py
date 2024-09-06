@@ -2,15 +2,28 @@
 
 from __future__ import annotations
 
+import json
+import sys
+from dataclasses import dataclass, field
+
+import marshmallow_dataclass
 import numpy as np
 import pandas as pd
+from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
 from pyrealm.demography import t_model_functions as t_model
-from pyrealm.demography import t_model_functions_extra as t_model_extra
 from pyrealm.demography.flora import Flora, PlantFunctionalType
 
+if sys.version_info[:2] >= (3, 11):
+    import tomllib
+    from tomllib import TOMLDecodeError
+else:
+    import tomli as tomllib
+    from tomli import TOMLDecodeError
 
+
+@dataclass
 class Community:
     """Class containing properties of a community.
 
@@ -35,79 +48,70 @@ class Community:
     A method is also provided to load community data from a csv file.
     """
 
-    def __init__(
-        self,
-        cell_id: int,
-        cell_area: float,
-        cohort_dbh_values: NDArray[np.float32],
-        cohort_number_of_individuals: NDArray[np.int_],
-        cohort_pft_names: NDArray[np.str_],
-        flora: Flora,
-    ):
-        # community wide properties
-        self.cell_id: int = cell_id
-        self.cell_area: float = cell_area
-        self.flora: Flora = flora
-        self.number_of_cohorts: int = len(cohort_dbh_values)
+    # Dataclass attributes for initialisation
+    # - community wide properties
+    cell_id: int
+    cell_area: float
+    flora: Flora
 
-        # arrays representing properties of cohorts
-        self.cohort_dbh_values: NDArray[np.float32] = cohort_dbh_values
-        self.cohort_number_of_individuals: NDArray[np.int_] = (
-            cohort_number_of_individuals
-        )
-        self.cohort_pft_names: NDArray[np.str_] = cohort_pft_names
+    # - arrays representing properties of cohorts
+    cohort_dbh_values: NDArray[np.float32]
+    cohort_number_of_individuals: NDArray[np.int_]
+    cohort_pft_names: NDArray[np.str_]
 
-        # initialise empty arrays representing properties of plant functional types
-        self.pft_a_hd_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts, dtype=np.float32
-        )
-        self.pft_ca_ratio_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts, dtype=np.float32
-        )
-        self.pft_h_max_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts, dtype=np.float32
-        )
-        self.pft_lai_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts, dtype=np.float32
-        )
-        self.pft_par_ext_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts, dtype=np.float32
-        )
-        self.pft_resp_f_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts, dtype=np.float32
-        )
-        self.pft_resp_r_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts, dtype=np.float32
-        )
-        self.pft_resp_s_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts, dtype=np.float32
-        )
-        self.pft_rho_s_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts, dtype=np.float32
-        )
-        self.pft_sla_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts, dtype=np.float32
-        )
-        self.pft_tau_f_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts, dtype=np.float32
-        )
-        self.pft_tau_r_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts, dtype=np.float32
-        )
-        self.pft_yld_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts, dtype=np.float32
-        )
-        self.pft_zeta_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts, dtype=np.float32
-        )
-        self.pft_m_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts, dtype=np.float32
-        )
-        self.pft_n_values: NDArray[np.float32] = np.empty(
-            self.number_of_cohorts, dtype=np.float32
-        )
+    # Post init properties
+    number_of_cohorts: int = field(init=False)
 
-        self.__populate_pft_arrays()
+    # - arrays representing properties of plant functional types
+    pft_a_hd_values: NDArray[np.float32] = field(init=False)
+    pft_ca_ratio_values: NDArray[np.float32] = field(init=False)
+    pft_h_max_values: NDArray[np.float32] = field(init=False)
+    pft_lai_values: NDArray[np.float32] = field(init=False)
+    pft_par_ext_values: NDArray[np.float32] = field(init=False)
+    pft_resp_f_values: NDArray[np.float32] = field(init=False)
+    pft_resp_r_values: NDArray[np.float32] = field(init=False)
+    pft_resp_s_values: NDArray[np.float32] = field(init=False)
+    pft_rho_s_values: NDArray[np.float32] = field(init=False)
+    pft_sla_values: NDArray[np.float32] = field(init=False)
+    pft_tau_f_values: NDArray[np.float32] = field(init=False)
+    pft_tau_r_values: NDArray[np.float32] = field(init=False)
+    pft_yld_values: NDArray[np.float32] = field(init=False)
+    pft_zeta_values: NDArray[np.float32] = field(init=False)
+    pft_m_values: NDArray[np.float32] = field(init=False)
+    pft_n_values: NDArray[np.float32] = field(init=False)
+    pft_q_m_values: NDArray[np.float32] = field(init=False)
+    pft_z_max_prop_values: NDArray[np.float32] = field(init=False)
+
+    # Create arrays containing values relating to T Model geometry
+    t_model_heights: NDArray[np.float32] = field(init=False)
+    t_model_crown_areas: NDArray[np.float32] = field(init=False)
+    t_model_crown_fractions: NDArray[np.float32] = field(init=False)
+    t_model_stem_masses: NDArray[np.float32] = field(init=False)
+    t_model_foliage_masses: NDArray[np.float32] = field(init=False)
+    t_model_swd_masses: NDArray[np.float32] = field(init=False)
+    t_model_r_0_values: NDArray[np.float32] = field(init=False)
+    t_model_z_m_values: NDArray[np.float32] = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Populate derived community attributes.
+
+        The ``__post_init__`` method populates arrays of PFT values, unpacking the data
+        in the ``Flora`` object into arrays of per-cohort values. It then calculates the
+        predictions of the T Model for each cohort, again as arrays of per-cohort
+        values.
+        """
+
+        # Populate the pft
+        self._populate_pft_arrays()
+        self._calculate_t_model()
+
+    def _calculate_t_model(self) -> None:
+        """Calculate T Model predictions across cohorts.
+
+        This method populates or updates the community attributes predicted by the T
+        Model :cite:`Li:2014bc` and by the canopy shape extensions to the T Model
+        implemented in PlantFate :cite:`joshi:2022a`.
+        """
 
         # Create arrays containing values relating to T Model geometry
         self.t_model_heights = t_model.calculate_heights(
@@ -143,14 +147,11 @@ class Community:
 
         # Create arrays containing properties pertaining to Jaideep's t model
         # extension
-        self.canopy_factor_q_m_values = t_model_extra.calculate_q_m_values(
-            self.pft_m_values, self.pft_n_values
+        self.canopy_factor_r_0_values = t_model.calculate_r_0_values(
+            self.pft_q_m_values, self.t_model_crown_areas
         )
-        self.canopy_factor_r_0_values = t_model_extra.calculate_r_0_values(
-            self.canopy_factor_q_m_values, self.t_model_crown_areas
-        )
-        self.canopy_factor_z_m_values = t_model_extra.calculate_z_max_values(
-            self.pft_m_values, self.pft_n_values, self.t_model_heights
+        self.canopy_factor_z_m_values = t_model.calculate_z_max_values(
+            self.pft_z_max_prop_values, self.t_model_heights
         )
 
     @classmethod
@@ -198,7 +199,7 @@ class Community:
 
         return communities
 
-    def __populate_pft_arrays(self) -> None:
+    def _populate_pft_arrays(self) -> None:
         """Populate plant functional type arrays.
 
         Populate the initialised arrays containing properties relating to plant

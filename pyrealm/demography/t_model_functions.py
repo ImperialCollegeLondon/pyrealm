@@ -105,11 +105,11 @@ def calculate_q_m_values(
 
 
 def calculate_z_max_values(
-    m: NDArray[np.float32], n: NDArray[np.float32], height: NDArray[np.float32]
+    z_max_prop: NDArray[np.float32], height: NDArray[np.float32]
 ) -> NDArray[np.float32]:
     """Calculate z_m, the height of maximum crown radius."""
     # Height of maximum crown radius
-    z_max = height * ((n - 1) / (m * n - 1)) ** (1 / n)
+    z_max = height * z_max_prop
     return z_max
 
 
