@@ -14,6 +14,62 @@ if sys.version_info[:2] >= (3, 11):
 else:
     from tomli import TOMLDecodeError
 
+
+STRICT_PFT_ARGS = dict(
+    a_hd=116.0,
+    ca_ratio=390.43,
+    h_max=15.33,
+    lai=1.8,
+    name="broadleaf",
+    par_ext=0.5,
+    resp_f=0.1,
+    resp_r=0.913,
+    resp_s=0.044,
+    rho_s=200.0,
+    sla=14.0,
+    tau_f=4.0,
+    tau_r=1.04,
+    yld=0.17,
+    zeta=0.17,
+    m=2,
+    n=5,
+)
+"""A dictionary of the full set of arguments needed for PlantFunctionalTypeStrict."""
+
+
+#
+# Test PlantFunctionalTypeStrict dataclass
+#
+
+
+@pytest.mark.parametrize(
+    argnames="args,outcome",
+    argvalues=[
+        pytest.param(STRICT_PFT_ARGS, does_not_raise(), id="full"),
+        pytest.param({"name": "broadleaf"}, pytest.raises(TypeError), id="partial"),
+        pytest.param({}, pytest.raises(TypeError), id="empty"),
+    ],
+)
+def test_PlantFunctionalTypeStrict__init__(args, outcome):
+    """Test the plant functional type initialisation."""
+
+    from pyrealm.demography.flora import (
+        PlantFunctionalTypeStrict,
+        calculate_q_m,
+        calculate_z_max_proportion,
+    )
+
+    with outcome:
+        pft = PlantFunctionalTypeStrict(**args)
+
+        # Check name attribute and post_init attributes if instantiation succeeds.
+        if isinstance(outcome, does_not_raise):
+            assert pft.name == "broadleaf"
+            # Expected values from defaults
+            assert pft.q_m == calculate_q_m(m=2, n=5)
+            assert pft.z_max_prop == calculate_z_max_proportion(m=2, n=5)
+
+
 #
 # Test PlantFunctionalType dataclass
 #
@@ -60,10 +116,14 @@ def flora_inputs(request):
     have a diverse set of inputs.
     """
 
-    from pyrealm.demography.flora import PlantFunctionalType
+    from pyrealm.demography.flora import PlantFunctionalType, PlantFunctionalTypeStrict
 
     broadleaf = PlantFunctionalType(name="broadleaf")
     conifer = PlantFunctionalType(name="conifer")
+    broadleaf_strict = PlantFunctionalTypeStrict(**STRICT_PFT_ARGS)
+    conifer_strict_args = STRICT_PFT_ARGS.copy()
+    conifer_strict_args["name"] = "conifer"
+    conifer_strict = PlantFunctionalType(**conifer_strict_args)
 
     match request.param:
         case "not_sequence":
@@ -72,10 +132,18 @@ def flora_inputs(request):
             return [1, 2, 3]
         case "single_pft":
             return [broadleaf]
+        case "single_pft_strict":
+            return [broadleaf_strict]
         case "multiple_pfts":
             return [broadleaf, conifer]
+        case "multiple_pfts_strict":
+            return [broadleaf_strict, conifer_strict]
+        case "multiple_pfts_mixed":
+            return [broadleaf_strict, conifer]
         case "duplicated_names":
             return [broadleaf, broadleaf]
+        case "duplicated_names_mixed":
+            return [broadleaf_strict, broadleaf]
 
 
 @pytest.mark.parametrize(
@@ -84,8 +152,12 @@ def flora_inputs(request):
         pytest.param("not_sequence", pytest.raises(ValueError)),
         pytest.param("sequence_not_all_pfts", pytest.raises(ValueError)),
         pytest.param("single_pft", does_not_raise()),
+        pytest.param("single_pft_strict", does_not_raise()),
         pytest.param("multiple_pfts", does_not_raise()),
+        pytest.param("multiple_pfts_strict", does_not_raise()),
+        pytest.param("multiple_pfts_mixed", does_not_raise()),
         pytest.param("duplicated_names", pytest.raises(ValueError)),
+        pytest.param("duplicated_names_mixed", pytest.raises(ValueError)),
     ],
     indirect=["flora_inputs"],
 )
@@ -112,7 +184,7 @@ def test_Flora__init__(flora_inputs, outcome):
     argnames="filename,outcome",
     argvalues=[
         pytest.param("pfts.json", does_not_raise(), id="correct"),
-        pytest.param("pfts_partial.json", does_not_raise(), id="partial"),
+        pytest.param("pfts_partial.json", pytest.raises(ValidationError), id="partial"),
         pytest.param("pfts.toml", pytest.raises(JSONDecodeError), id="format_wrong"),
         pytest.param("no.pfts", pytest.raises(FileNotFoundError), id="file_missing"),
         pytest.param("pfts_invalid.json", pytest.raises(ValidationError), id="invalid"),
@@ -138,7 +210,7 @@ def test_flora_from_json(filename, outcome):
     argnames="filename,outcome",
     argvalues=[
         pytest.param("pfts.toml", does_not_raise(), id="correct"),
-        pytest.param("pfts_partial.toml", does_not_raise(), id="partial"),
+        pytest.param("pfts_partial.toml", pytest.raises(ValidationError), id="partial"),
         pytest.param("pfts.json", pytest.raises(TOMLDecodeError), id="format_wrong"),
         pytest.param("no.pfts", pytest.raises(FileNotFoundError), id="file_missing"),
         pytest.param("pfts_invalid.toml", pytest.raises(ValidationError), id="invalid"),
@@ -166,7 +238,7 @@ def test_flora_from_toml(filename, outcome):
         pytest.param("pfts.csv", does_not_raise(), id="correct"),
         pytest.param("pfts.json", pytest.raises(ParserError), id="format_wrong"),
         pytest.param("no.pfts", pytest.raises(FileNotFoundError), id="file_missing"),
-        pytest.param("pfts_partial.csv", does_not_raise(), id="partial"),
+        pytest.param("pfts_partial.csv", pytest.raises(ValidationError), id="partial"),
         pytest.param("pfts_invalid.csv", pytest.raises(ValidationError), id="invalid"),
     ],
 )
