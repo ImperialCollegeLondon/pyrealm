@@ -5,7 +5,6 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
 kernelspec:
   display_name: python3
   language: python
@@ -60,8 +59,12 @@ pft.height
 ```
 
 ```{code-cell}
+:lines_to_next_cell: 2
+
 pft.crown_area
 ```
+
++++ {"lines_to_next_cell": 2}
 
 ### Crown shape
 
@@ -95,6 +98,8 @@ r_0 &= \frac{1}{q_m}\sqrt{\frac{A_c}{\pi}}
 $$
 
 ```{code-cell}
+:lines_to_next_cell: 2
+
 def calculate_qm(m, n):
 
     # Constant q_m
@@ -127,6 +132,8 @@ print("qm = ", np.round(qm, 4))
 print("zm = ", zm)
 print("r0 = ", r0)
 ```
+
++++ {"lines_to_next_cell": 2}
 
 The following functions then provide the value at height $z$ of relative $q(z)$ and
 actual $r(z)$ canopy radius:
@@ -275,6 +282,8 @@ The code below calculates the projected crown area for each stem and then plots 
 vertical profile for individual stems and across the community.
 
 ```{code-cell}
+:lines_to_next_cell: 2
+
 # Calculate the projected area for each stem
 Ap_z = calculate_projected_area(z=z[:, None], pft=pft, m=m, n=n, qm=qm, zm=zm)
 
@@ -292,6 +301,8 @@ ax2.set_xlabel("Total community $A_p(z)$ (m2)")
 
 plt.tight_layout()
 ```
+
++++ {"lines_to_next_cell": 2}
 
 ### Canopy closure and canopy gap fraction
 
@@ -478,11 +489,15 @@ print(Ap_z_star)
 ```
 
 ```{code-cell}
+:lines_to_next_cell: 2
+
 # Calculate the contribution _within_ each layer per stem
 Ap_within_layer = np.diff(Ap_z_star, axis=0, prepend=0)
 
 print(Ap_within_layer)
 ```
+
++++ {"lines_to_next_cell": 2}
 
 ### Leaf area within canopy layers
 
