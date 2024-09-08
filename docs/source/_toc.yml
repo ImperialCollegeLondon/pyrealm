@@ -12,7 +12,8 @@ subtrees:
               - file: users/pmodel/pmodel_details/worked_examples.md
               - file: users/pmodel/pmodel_details/photosynthetic_environment.md
               - file: users/pmodel/pmodel_details/optimal_chi.md
-              - file: users/pmodel/pmodel_details/lue_limitation.md
+              - file: users/pmodel/pmodel_details/quantum_yield.md
+              - file: users/pmodel/pmodel_details/jmax_limitation.md
               - file: users/pmodel/pmodel_details/envt_variation_outputs.md
               - file: users/pmodel/pmodel_details/soil_moisture.md
               - file: users/pmodel/pmodel_details/extreme_values.md

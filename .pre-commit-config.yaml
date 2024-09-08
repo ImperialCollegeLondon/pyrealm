@@ -6,7 +6,7 @@ repos:
       - id: debug-statements
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.6.2
+    rev: v0.6.3
     hooks:
       # Run the linter.
       - id: ruff
@@ -29,7 +29,8 @@ repos:
     hooks:
     - id: jupytext
       args: [--pipe, black]
-      files: docs/source 
+      files: docs/source
+      exclude: docs/source/conf.py
       additional_dependencies:
         - black==24.4.2 # Matches hook
       

@@ -151,7 +151,7 @@ class OptimalChiABC(ABC):
         """Check additional required variables are present."""
 
         for required_var in self.requires:
-            if getattr(self.env, required_var) is None:
+            if not hasattr(self.env, required_var):
                 raise ValueError(
                     f"{self.__class__.__name__} (method {self.method}) requires "
                     f"{required_var} to be provided in the PModelEnvironment."

@@ -22,12 +22,8 @@ class PModelConst(ConstantsClass):
       (:attr:`~pyrealm.constants.pmodel_const.PModelConst.heskel_b`,
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.heskel_c`)
 
-    * **Temperature and entropy of VCMax**. Values taken from Table 3 of
-      :cite:t:`Kattge:2007db`
-      (:attr:`~pyrealm.constants.pmodel_const.PModelConst.kattge_knorr_a_ent`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.kattge_knorr_b_ent`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.kattge_knorr_Ha`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.kattge_knorr_Hd`)
+    * **Enzyme kinetics for VCMax**. Values taken from Table 3 of
+      :cite:t:`Kattge:2007db`.
 
     * **Scaling of Kphio with temperature**. The parameters of quadratic functions for
       the temperature dependence of Kphio are:
@@ -89,6 +85,28 @@ class PModelConst(ConstantsClass):
 
     """
 
+    sandoval_peak_phio: tuple[float, float] = (6.8681, 0.07956432)
+    """Curvature parameters for calculation of peak phio in the Sandoval method for
+    estimation of quantum yield efficiency."""
+
+    sandoval_kinetics: tuple[float, float, float, float] = (
+        1558.853,
+        -50.223,
+        294.804,
+        75000.0,
+    )
+    """Enzyme kinetics parameters for estimation of kphio from mean growth temperature
+    in the Sandoval method :cite:t:`sandoval:in_prep` for estimation of quantum yield
+    efficiency. Values are: the intercept and slope of activation entropy as a function
+    of the mean growth temperature (J/mol/K), the deactivation energy constant (J/mol)
+    and the activation energy (J/mol). """
+
+    modified_arrhenius_mode: str = "M2002"
+    """The calculation mode to use with the modified Arrhenius equation in
+    :func:`~pyrealm.pmodel.functions.calc_modified_arrhenius_factor`. This mode should
+    be consistently within an analysis, so forms part of the model constants. The two
+    options are ``M2002`` and ``J1942``, see :cite:t:`murphy:2021a` for details."""
+
     plant_T_ref: float = 25.0
     """Standard baseline reference temperature of photosynthetic processes (Prentice,
     unpublished)  (:math:`T_o` , 25.0, °C)"""
@@ -99,17 +117,17 @@ class PModelConst(ConstantsClass):
     heskel_c: float = 0.0005
     """Quadratic coefficient of scaling of dark respiration (:math:`c`, 0.0005)"""
 
-    # KattgeKnorr
-    kattge_knorr_a_ent: float = 668.39
-    """Offset of entropy vs. temperature relationship (:math:`a_{ent}`, 668.39,
-    J/mol/K)"""
-    kattge_knorr_b_ent: float = -1.07
-    """Slope of entropy vs. temperature relationship (:math:`b_{ent}`, -1.07,
-    J/mol/K^2)"""
-    kattge_knorr_Ha: float = 71513
-    """Activation energy (:math:`H_a`, 71513, J/mol)"""
-    kattge_knorr_Hd: float = 200000
-    """Deactivation energy (:math:`H_d`, 200000, J/mol)"""
+    # KattgeKnorr vcmax
+    kattge_knorr_kinetics: tuple[float, float, float, float] = (
+        668.39,
+        -1.07,
+        71513,
+        200000,
+    )
+    """Enzyme kinetics parameters for estimation of V_cmax25 from Table 3 
+    of :cite:t:`Kattge:2007db`. Values are: the intercept and slope of activation
+    entropy as a function of the mean growth temperature (J/mol/K), the deactivation
+    energy constant (J/mol) and the activation energy (J/mol). """
 
     # Subdaily activatation energy
     subdaily_vcmax25_ha: float = 65330
