@@ -13,7 +13,7 @@ from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
 from pyrealm.demography import t_model_functions as t_model
-from pyrealm.demography.flora import Flora, PlantFunctionalType
+from pyrealm.demography.flora import Flora, PlantFunctionalTypeStrict
 
 if sys.version_info[:2] >= (3, 11):
     import tomllib
@@ -101,7 +101,16 @@ class Community:
         values.
         """
 
-        # Populate the pft
+        # Check the initial PFT values are known
+        unknown_pfts = set(self.cohort_pft_names).difference(self.flora.keys())
+
+        if unknown_pfts:
+            raise ValueError(
+                f"Plant functional types unknown in flora: {','.join(unknown_pfts)}"
+            )
+
+        # Populate the pft arrays and then calculate the geometry and other T model
+        # components
         self._populate_pft_arrays()
         self._calculate_t_model()
 
@@ -154,6 +163,45 @@ class Community:
             self.pft_z_max_prop_values, self.t_model_heights
         )
 
+    def _populate_pft_arrays(self) -> None:
+        """Populate plant functional type arrays.
+
+        Populate the initialised arrays containing properties relating to plant
+        functional type by looking up the plant functional type in the Flora dictionary,
+        extracting the properties and inserting them into the relevant position in the
+        array.
+        :return: None
+        """
+        for i in range(0, self.number_of_cohorts):
+            pft = self.__look_up_plant_functional_type(self.cohort_pft_names[i])
+            self.pft_a_hd_values[i] = pft.a_hd
+            self.pft_ca_ratio_values[i] = pft.ca_ratio
+            self.pft_h_max_values[i] = pft.h_max
+            self.pft_lai_values[i] = pft.lai
+            self.pft_par_ext_values[i] = pft.par_ext
+            self.pft_resp_f_values[i] = pft.resp_f
+            self.pft_resp_r_values[i] = pft.resp_r
+            self.pft_resp_s_values[i] = pft.resp_s
+            self.pft_rho_s_values[i] = pft.rho_s
+            self.pft_sla_values[i] = pft.sla
+            self.pft_tau_f_values[i] = pft.tau_f
+            self.pft_tau_r_values[i] = pft.tau_r
+            self.pft_yld_values[i] = pft.yld
+            self.pft_zeta_values[i] = pft.zeta
+            self.pft_m_values[i] = pft.m
+            self.pft_n_values[i] = pft.n
+
+    def __look_up_plant_functional_type(
+        self, pft_name: str
+    ) -> type[PlantFunctionalTypeStrict]:
+        """Retrieve plant functional type for a cohort from the flora dictionary."""
+
+        if pft_name not in self.flora:
+            raise Exception(
+                f"Cohort data supplied with in an invalid PFT name: {pft_name}"
+            )
+        return self.flora[pft_name]
+
     @classmethod
     def load_communities_from_csv(
         cls, cell_area: float, csv_path: str, flora: Flora
@@ -198,41 +246,3 @@ class Community:
             communities.append(community_object)
 
         return communities
-
-    def _populate_pft_arrays(self) -> None:
-        """Populate plant functional type arrays.
-
-        Populate the initialised arrays containing properties relating to plant
-        functional type by looking up the plant functional type in the Flora dictionary,
-        extracting the properties and inserting them into the relevant position in the
-        array.
-        :return: None
-        """
-        for i in range(0, self.number_of_cohorts):
-            pft = self.__look_up_plant_functional_type(self.cohort_pft_names[i])
-            self.pft_a_hd_values[i] = pft.a_hd
-            self.pft_ca_ratio_values[i] = pft.ca_ratio
-            self.pft_h_max_values[i] = pft.h_max
-            self.pft_lai_values[i] = pft.lai
-            self.pft_par_ext_values[i] = pft.par_ext
-            self.pft_resp_f_values[i] = pft.resp_f
-            self.pft_resp_r_values[i] = pft.resp_r
-            self.pft_resp_s_values[i] = pft.resp_s
-            self.pft_rho_s_values[i] = pft.rho_s
-            self.pft_sla_values[i] = pft.sla
-            self.pft_tau_f_values[i] = pft.tau_f
-            self.pft_tau_r_values[i] = pft.tau_r
-            self.pft_yld_values[i] = pft.yld
-            self.pft_zeta_values[i] = pft.zeta
-            self.pft_m_values[i] = pft.m
-            self.pft_n_values[i] = pft.n
-
-    def __look_up_plant_functional_type(self, pft_name: str) -> PlantFunctionalType:
-        """Retrieve plant functional type for a cohort from the flora dictionary."""
-        pft = self.flora.get(pft_name)
-
-        if pft is None:
-            raise Exception(
-                f"Cohort data supplied with in an invalid PFT name: {pft_name}"
-            )
-        return pft
