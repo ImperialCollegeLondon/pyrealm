@@ -27,7 +27,6 @@ import marshmallow_dataclass
 import numpy as np
 import pandas as pd
 from marshmallow.exceptions import ValidationError
-from numpy.typing import NDArray
 
 if sys.version_info[:2] >= (3, 11):
     import tomllib
@@ -254,20 +253,22 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
         for name, pft in zip(pft_names, pfts):
             self[name] = pft
 
-        # Generate an array representation to facilitate creating across cohort values
-        self.arrays: dict[str, NDArray] = {}
-        """A dictionary of trait values as numpy arrays.
-
-        The 'name' array can be used to get the index of different traits and allow
-        the values in the other arrays to be easily unpacked across cohorts.
-        """
-
+        # Generate an dataframe representation to facilitate merging to cohort data.
+        # - assemble pft fields into arrays
+        data = {}
         pft_fields = [f.name for f in fields(PlantFunctionalTypeStrict)]
 
         for pft_field in pft_fields:
-            self.arrays[pft_field] = np.array(
+            data[pft_field] = np.array(
                 [getattr(pft, pft_field) for pft in self.values()]
             )
+
+        self.data: pd.DataFrame = pd.DataFrame(data)
+        """A dataframe of trait values as numpy arrays.
+
+        The 'name' column can be used with cohort names to broadcast plant functional
+        type data out to cohorts.
+        """
 
     @classmethod
     def _from_file_data(cls, file_data: dict) -> Flora:
