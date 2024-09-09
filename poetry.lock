@@ -1795,6 +1795,48 @@ files = [
 ]
 
 [[package]]
+name = "marshmallow"
+version = "3.22.0"
+description = "A lightweight library for converting complex datatypes to and from native Python datatypes."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "marshmallow-3.22.0-py3-none-any.whl", hash = "sha256:71a2dce49ef901c3f97ed296ae5051135fd3febd2bf43afe0ae9a82143a494d9"},
+    {file = "marshmallow-3.22.0.tar.gz", hash = "sha256:4972f529104a220bb8637d595aa4c9762afbe7f7a77d82dc58c1615d70c5823e"},
+]
+
+[package.dependencies]
+packaging = ">=17.0"
+
+[package.extras]
+dev = ["marshmallow[tests]", "pre-commit (>=3.5,<4.0)", "tox"]
+docs = ["alabaster (==1.0.0)", "autodocsumm (==0.2.13)", "sphinx (==8.0.2)", "sphinx-issues (==4.1.0)", "sphinx-version-warning (==1.1.2)"]
+tests = ["pytest", "pytz", "simplejson"]
+
+[[package]]
+name = "marshmallow-dataclass"
+version = "8.7.0"
+description = "Python library to convert dataclasses into marshmallow schemas."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "marshmallow_dataclass-8.7.0-py3-none-any.whl", hash = "sha256:9e528d72b83f2b6b0f60cb29fd38781a6f7ce2155295adb1ed33289826a93c4b"},
+    {file = "marshmallow_dataclass-8.7.0.tar.gz", hash = "sha256:0218008fec3fd4b5f739b2a0c6d7593bcc403308f6da953e341e4e359e268849"},
+]
+
+[package.dependencies]
+marshmallow = ">=3.18.0"
+typeguard = ">=4.0.0,<4.1.0"
+typing-extensions = {version = ">=4.2.0", markers = "python_version < \"3.11\""}
+typing-inspect = ">=0.9.0,<0.10.0"
+
+[package.extras]
+dev = ["pre-commit (>=2.17,<3.0)", "pytest (>=5.4)", "pytest-mypy-plugins (>=1.2.0)", "sphinx"]
+docs = ["sphinx"]
+lint = ["pre-commit (>=2.17,<3.0)"]
+tests = ["pytest (>=5.4)", "pytest-mypy-plugins (>=1.2.0)"]
+
+[[package]]
 name = "matplotlib"
 version = "3.9.1"
 description = "Python plotting package"
@@ -3759,6 +3801,24 @@ docs = ["myst-parser", "pydata-sphinx-theme", "sphinx"]
 test = ["argcomplete (>=3.0.3)", "mypy (>=1.7.0)", "pre-commit", "pytest (>=7.0,<8.2)", "pytest-mock", "pytest-mypy-testing"]
 
 [[package]]
+name = "typeguard"
+version = "4.0.1"
+description = "Run-time type checker for Python"
+optional = false
+python-versions = ">=3.7.4"
+files = [
+    {file = "typeguard-4.0.1-py3-none-any.whl", hash = "sha256:43f55cc9953f26dae362adb973b6c9ad6b97bfffcc6757277912eddd5cfa345b"},
+    {file = "typeguard-4.0.1.tar.gz", hash = "sha256:db35142d1f92fc8c1b954e5cc03b57810428f9cd4e4604647bdf5764fc5bbba9"},
+]
+
+[package.dependencies]
+typing-extensions = {version = ">=4.7.0", markers = "python_version < \"3.12\""}
+
+[package.extras]
+doc = ["Sphinx (<7)", "packaging", "sphinx-autodoc-typehints (>=1.2.0)", "sphinx-rtd-theme"]
+test = ["mypy (>=1.2.0)", "pytest (>=7)"]
+
+[[package]]
 name = "types-python-dateutil"
 version = "2.9.0.20240316"
 description = "Typing stubs for python-dateutil"
@@ -3801,6 +3861,21 @@ files = [
     {file = "typing_extensions-4.12.2-py3-none-any.whl", hash = "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d"},
     {file = "typing_extensions-4.12.2.tar.gz", hash = "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"},
 ]
+
+[[package]]
+name = "typing-inspect"
+version = "0.9.0"
+description = "Runtime inspection utilities for typing module."
+optional = false
+python-versions = "*"
+files = [
+    {file = "typing_inspect-0.9.0-py3-none-any.whl", hash = "sha256:9ee6fc59062311ef8547596ab6b955e1b8aa46242d854bfc78f4f6b0eff35f9f"},
+    {file = "typing_inspect-0.9.0.tar.gz", hash = "sha256:b23fc42ff6f6ef6954e4852c1fb512cdd18dbea03134f91f856a95ccc9461f78"},
+]
+
+[package.dependencies]
+mypy-extensions = ">=0.3.0"
+typing-extensions = ">=3.7.4"
 
 [[package]]
 name = "tzdata"
@@ -3959,4 +4034,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10"
-content-hash = "47bf9006da7dea679c3ebd0892d08041d477bbcc3d898326280382a6e48777c8"
+content-hash = "aef31655540ecd90f7e317fe133563bcfa68b2dadbd711cb61389563fd57e555"
