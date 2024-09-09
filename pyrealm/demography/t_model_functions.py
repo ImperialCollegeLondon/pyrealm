@@ -7,19 +7,27 @@ t model.
 
 import numpy as np
 from numpy.typing import NDArray
+from pandas import Series
 
 
-def calculate_heights(
-    pft_h_max_values: NDArray[np.float32],
-    pft_a_hd_values: NDArray[np.float32],
-    diameters_at_breast_height: NDArray[np.float32],
-) -> NDArray[np.float32]:
-    """Height of tree from diameter, Equation (4) of Li ea."""
-    heights = pft_h_max_values * (
-        1 - np.exp(-pft_a_hd_values * diameters_at_breast_height / pft_h_max_values)
-    )
+def calculate_heights(h_max: Series, a_hd: Series, dbh: Series) -> Series:
+    r"""Calculate tree height under the T Model.
 
-    return heights
+    The height of tree is calculated from individual diameters at breast height, along
+    with the maximum height and initial slope of the height/diameter relationship of the
+    plant functional type :cite:p:`{Equation 4, }Li:2014bc`:
+
+    .. math::
+
+         H_{max}  \left(1 - \exp(-a_{HD} \cdot \textrm{DBH} / H_{max})\right)
+
+    Args:
+        h_max: Maximum height of the PFT
+        a_hd: Initial slope of the height/diameter relationship of the PFT
+        dbh: Diameter at breast height of individuals
+    """
+
+    return h_max * (1 - np.exp(-a_hd * dbh / h_max))
 
 
 def calculate_crown_areas(

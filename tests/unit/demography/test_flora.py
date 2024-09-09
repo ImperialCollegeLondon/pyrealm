@@ -2,9 +2,11 @@
 
 import sys
 from contextlib import nullcontext as does_not_raise
+from dataclasses import fields
 from importlib import resources
 from json import JSONDecodeError
 
+import pandas as pd
 import pytest
 from marshmallow.exceptions import ValidationError
 from pandas.errors import ParserError
@@ -169,10 +171,17 @@ def test_Flora__init__(flora_inputs, outcome):
     with outcome:
         flora = Flora(pfts=flora_inputs)
 
-        # Simple check that PFT instances are correctly keyed by name.
         if isinstance(outcome, does_not_raise):
+            # Simple check that PFT instances are correctly keyed by name.
             for k, v in flora.items():
                 assert k == v.name
+
+            # Check data view is correct
+            assert isinstance(flora.data, pd.DataFrame)
+            assert flora.data.shape == (
+                len(flora_inputs),
+                len(fields(list(flora.values())[0])),
+            )
 
 
 #

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, InitVar
 
 import marshmallow_dataclass
 import numpy as np
@@ -55,32 +55,15 @@ class Community:
     flora: Flora
 
     # - arrays representing properties of cohorts
-    cohort_dbh_values: NDArray[np.float32]
-    cohort_number_of_individuals: NDArray[np.int_]
-    cohort_pft_names: NDArray[np.str_]
+    cohort_dbh_values: InitVar[NDArray[np.float32]]
+    cohort_n_individuals: InitVar[NDArray[np.int_]]
+    cohort_pft_names: InitVar[NDArray[np.str_]]
 
     # Post init properties
     number_of_cohorts: int = field(init=False)
 
-    # - arrays representing properties of plant functional types
-    pft_a_hd_values: NDArray[np.float32] = field(init=False)
-    pft_ca_ratio_values: NDArray[np.float32] = field(init=False)
-    pft_h_max_values: NDArray[np.float32] = field(init=False)
-    pft_lai_values: NDArray[np.float32] = field(init=False)
-    pft_par_ext_values: NDArray[np.float32] = field(init=False)
-    pft_resp_f_values: NDArray[np.float32] = field(init=False)
-    pft_resp_r_values: NDArray[np.float32] = field(init=False)
-    pft_resp_s_values: NDArray[np.float32] = field(init=False)
-    pft_rho_s_values: NDArray[np.float32] = field(init=False)
-    pft_sla_values: NDArray[np.float32] = field(init=False)
-    pft_tau_f_values: NDArray[np.float32] = field(init=False)
-    pft_tau_r_values: NDArray[np.float32] = field(init=False)
-    pft_yld_values: NDArray[np.float32] = field(init=False)
-    pft_zeta_values: NDArray[np.float32] = field(init=False)
-    pft_m_values: NDArray[np.float32] = field(init=False)
-    pft_n_values: NDArray[np.float32] = field(init=False)
-    pft_q_m_values: NDArray[np.float32] = field(init=False)
-    pft_z_max_prop_values: NDArray[np.float32] = field(init=False)
+    # Dataframe of cohort
+    cohort_data: pd.DataFrame = field(init=False)
 
     # Create arrays containing values relating to T Model geometry
     t_model_heights: NDArray[np.float32] = field(init=False)
@@ -92,26 +75,36 @@ class Community:
     t_model_r_0_values: NDArray[np.float32] = field(init=False)
     t_model_z_m_values: NDArray[np.float32] = field(init=False)
 
-    def __post_init__(self) -> None:
+    def __post_init__(
+        self,
+        cohort_dbh_values: NDArray[np.float32],
+        cohort_n_individuals: NDArray[np.int_],
+        cohort_pft_names: NDArray[np.str_],
+    ) -> None:
         """Populate derived community attributes.
 
-        The ``__post_init__`` method populates arrays of PFT values, unpacking the data
-        in the ``Flora`` object into arrays of per-cohort values. It then calculates the
-        predictions of the T Model for each cohort, again as arrays of per-cohort
-        values.
+        The ``__post_init__`` builds a pandas dataframe of PFT values and T model
+        predictions across the initial cohort data.
         """
 
         # Check the initial PFT values are known
-        unknown_pfts = set(self.cohort_pft_names).difference(self.flora.keys())
+        unknown_pfts = set(cohort_pft_names).difference(self.flora.keys())
 
         if unknown_pfts:
             raise ValueError(
                 f"Plant functional types unknown in flora: {','.join(unknown_pfts)}"
             )
 
-        # Populate the pft arrays and then calculate the geometry and other T model
-        # components
-        self._populate_pft_arrays()
+        #
+        cohort_data = pd.DataFrame(
+            {
+                "name": cohort_pft_names,
+                "dbh": cohort_dbh_values,
+                "n_individuals": cohort_n_individuals,
+            }
+        )
+        # Add the pft trait data to the cohort data
+        self.cohort_data = pd.merge(cohort_data, self.flora.data)
         self._calculate_t_model()
 
     def _calculate_t_model(self) -> None:
@@ -122,46 +115,48 @@ class Community:
         implemented in PlantFate :cite:`joshi:2022a`.
         """
 
-        # Create arrays containing values relating to T Model geometry
-        self.t_model_heights = t_model.calculate_heights(
-            self.pft_h_max_values, self.pft_a_hd_values, self.cohort_dbh_values
+        # Add data to cohort dataframes capturing the T Model geometry
+        self.cohort_data["height"] = t_model.calculate_heights(
+            h_max=self.cohort_data["h_max"],
+            a_hd=self.cohort_data["a_hd"],
+            dbh=self.cohort_data["dbh"],
         )
 
-        self.t_model_crown_areas = t_model.calculate_crown_areas(
-            self.pft_ca_ratio_values,
-            self.pft_a_hd_values,
-            self.cohort_dbh_values,
-            self.t_model_heights,
-        )
+        # self.t_model_crown_areas = t_model.calculate_crown_areas(
+        #     self.pft_ca_ratio_values,
+        #     self.pft_a_hd_values,
+        #     self.cohort_dbh_values,
+        #     self.t_model_heights,
+        # )
 
-        self.t_model_crown_fractions = t_model.calculate_crown_fractions(
-            self.t_model_heights, self.pft_a_hd_values, self.cohort_dbh_values
-        )
+        # self.t_model_crown_fractions = t_model.calculate_crown_fractions(
+        #     self.t_model_heights, self.pft_a_hd_values, self.cohort_dbh_values
+        # )
 
-        self.t_model_stem_masses = t_model.calculate_stem_masses(
-            self.cohort_dbh_values, self.t_model_heights, self.pft_rho_s_values
-        )
+        # self.t_model_stem_masses = t_model.calculate_stem_masses(
+        #     self.cohort_dbh_values, self.t_model_heights, self.pft_rho_s_values
+        # )
 
-        self.t_model_foliage_masses = t_model.calculate_foliage_masses(
-            self.t_model_crown_areas, self.pft_lai_values, self.pft_sla_values
-        )
+        # self.t_model_foliage_masses = t_model.calculate_foliage_masses(
+        #     self.t_model_crown_areas, self.pft_lai_values, self.pft_sla_values
+        # )
 
-        self.t_model_swd_masses = t_model.calculate_swd_masses(
-            self.t_model_crown_areas,
-            self.pft_rho_s_values,
-            self.t_model_heights,
-            self.t_model_crown_fractions,
-            self.pft_ca_ratio_values,
-        )
+        # self.t_model_swd_masses = t_model.calculate_swd_masses(
+        #     self.t_model_crown_areas,
+        #     self.pft_rho_s_values,
+        #     self.t_model_heights,
+        #     self.t_model_crown_fractions,
+        #     self.pft_ca_ratio_values,
+        # )
 
-        # Create arrays containing properties pertaining to Jaideep's t model
-        # extension
-        self.canopy_factor_r_0_values = t_model.calculate_r_0_values(
-            self.pft_q_m_values, self.t_model_crown_areas
-        )
-        self.canopy_factor_z_m_values = t_model.calculate_z_max_values(
-            self.pft_z_max_prop_values, self.t_model_heights
-        )
+        # # Create arrays containing properties pertaining to Jaideep's t model
+        # # extension
+        # self.canopy_factor_r_0_values = t_model.calculate_r_0_values(
+        #     self.pft_q_m_values, self.t_model_crown_areas
+        # )
+        # self.canopy_factor_z_m_values = t_model.calculate_z_max_values(
+        #     self.pft_z_max_prop_values, self.t_model_heights
+        # )
 
     def _populate_pft_arrays(self) -> None:
         """Populate plant functional type arrays.
@@ -172,6 +167,9 @@ class Community:
         array.
         :return: None
         """
+
+        # Get the index of the cohort pfts in the array representation of
+
         for i in range(0, self.number_of_cohorts):
             pft = self.__look_up_plant_functional_type(self.cohort_pft_names[i])
             self.pft_a_hd_values[i] = pft.a_hd
