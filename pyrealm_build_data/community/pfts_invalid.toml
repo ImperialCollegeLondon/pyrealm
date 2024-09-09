@@ -1,0 +1,37 @@
+[[pft]]
+a_hd = 116.0
+ca_ratio = 390.43
+h_max = 25.33
+laindex = 1.8
+name = 'test1'
+par_ext = 0.5
+resp_f = 0.1
+resp_r = 0.913
+resp_s = 0.044
+rho_s = 200.0
+sla = 14.0
+tau_f = 4.0
+tau_r = 1.04
+yld = 0.17
+zeta = 0.17
+m = 'a'
+n = 5
+
+[[pft]]
+a_hd = 116.0
+ca_ratio = 390.43
+h_max = 15.33
+laindex = 1.8
+name = 'test2'
+par_ext = 0.5
+resp_f = 0.1
+resp_r = 0.913
+resp_s = 0.044
+rho_s = 200.0
+sla = 14.0
+tau_f = 4.0
+tau_r = 1.04
+yld = 0.17
+zeta = 0.17
+m = 'a'
+n = 5
