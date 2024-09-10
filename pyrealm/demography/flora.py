@@ -28,6 +28,11 @@ import numpy as np
 import pandas as pd
 from marshmallow.exceptions import ValidationError
 
+from pyrealm.demography.t_model_functions import (
+    calculate_canopy_q_m,
+    calculate_canopy_z_max_proportion,
+)
+
 if sys.version_info[:2] >= (3, 11):
     import tomllib
     from tomllib import TOMLDecodeError
@@ -109,9 +114,9 @@ class PlantFunctionalTypeStrict:
 
         # Calculate q_m and z_max proportion. Need to use __setattr__ because the
         # dataclass is frozen.
-        object.__setattr__(self, "q_m", calculate_q_m(m=self.m, n=self.n))
+        object.__setattr__(self, "q_m", calculate_canopy_q_m(m=self.m, n=self.n))
         object.__setattr__(
-            self, "z_max_prop", calculate_z_max_proportion(m=self.m, n=self.n)
+            self, "z_max_prop", calculate_canopy_z_max_proportion(m=self.m, n=self.n)
         )
 
 
@@ -177,38 +182,6 @@ This schema explicitly uses the strict version of the dataclass, which enforces 
 descriptions of plant functional type data rather than allowing partial data and filling
 in gaps from the default values.
 """
-
-
-def calculate_q_m(m: float, n: float) -> float:
-    """Calculate a q_m value.
-
-    The value of q_m is a constant canopy scaling parameter derived from the ``m`` and
-    ``n`` attributes defined for a plant functional type.
-
-    Args:
-        m: Canopy shape parameter
-        n: Canopy shape parameter
-    """
-    return (
-        m
-        * n
-        * ((n - 1) / (m * n - 1)) ** (1 - 1 / n)
-        * (((m - 1) * n) / (m * n - 1)) ** (m - 1)
-    )
-
-
-def calculate_z_max_proportion(m: float, n: float) -> float:
-    """Calculate the z_m proportion.
-
-    The z_m proportion is the constant proportion of stem height at which the maximum
-    crown radius is found for a given plant functional type.
-
-    Args:
-        m: Canopy shape parameter
-        n: Canopy shape parameter
-    """
-
-    return ((n - 1) / (m * n - 1)) ** (1 / n)
 
 
 class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
