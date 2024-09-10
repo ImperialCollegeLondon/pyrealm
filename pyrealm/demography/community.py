@@ -2,25 +2,26 @@
 
 from __future__ import annotations
 
-import json
-import sys
-from dataclasses import dataclass, field, InitVar
+# import json
+# import sys
+from dataclasses import InitVar, dataclass, field
 
-import marshmallow_dataclass
+# import marshmallow_dataclass
 import numpy as np
 import pandas as pd
-from marshmallow.exceptions import ValidationError
+
+# from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
 from pyrealm.demography import t_model_functions as t_model
-from pyrealm.demography.flora import Flora, PlantFunctionalTypeStrict
+from pyrealm.demography.flora import Flora
 
-if sys.version_info[:2] >= (3, 11):
-    import tomllib
-    from tomllib import TOMLDecodeError
-else:
-    import tomli as tomllib
-    from tomli import TOMLDecodeError
+# if sys.version_info[:2] >= (3, 11):
+#     import tomllib
+#     from tomllib import TOMLDecodeError
+# else:
+#     import tomli as tomllib
+#     from tomli import TOMLDecodeError
 
 
 @dataclass
@@ -65,16 +66,6 @@ class Community:
     # Dataframe of cohort
     cohort_data: pd.DataFrame = field(init=False)
 
-    # Create arrays containing values relating to T Model geometry
-    t_model_heights: NDArray[np.float32] = field(init=False)
-    t_model_crown_areas: NDArray[np.float32] = field(init=False)
-    t_model_crown_fractions: NDArray[np.float32] = field(init=False)
-    t_model_stem_masses: NDArray[np.float32] = field(init=False)
-    t_model_foliage_masses: NDArray[np.float32] = field(init=False)
-    t_model_swd_masses: NDArray[np.float32] = field(init=False)
-    t_model_r_0_values: NDArray[np.float32] = field(init=False)
-    t_model_z_m_values: NDArray[np.float32] = field(init=False)
-
     def __post_init__(
         self,
         cohort_dbh_values: NDArray[np.float32],
@@ -95,7 +86,14 @@ class Community:
                 f"Plant functional types unknown in flora: {','.join(unknown_pfts)}"
             )
 
-        #
+        # Check the cohort inputs are of equal length
+        if not (
+            (cohort_dbh_values.shape == cohort_n_individuals.shape)
+            and (cohort_dbh_values.shape == cohort_pft_names.shape)
+        ):
+            raise ValueError("Cohort data are not equally sized")
+
+        # Convert to a dataframe
         cohort_data = pd.DataFrame(
             {
                 "name": cohort_pft_names,
@@ -103,12 +101,16 @@ class Community:
                 "n_individuals": cohort_n_individuals,
             }
         )
-        # Add the pft trait data to the cohort data
+        # Broadcast the pft trait data to the cohort data by merging with the flora data
+        # and then store as the cohort data attribute
         self.cohort_data = pd.merge(cohort_data, self.flora.data)
+        self.number_of_cohorts = self.cohort_data.shape[0]
+
+        # Populate the T model fields
         self._calculate_t_model()
 
     def _calculate_t_model(self) -> None:
-        """Calculate T Model predictions across cohorts.
+        """Calculate T Model predictions across cohort data.
 
         This method populates or updates the community attributes predicted by the T
         Model :cite:`Li:2014bc` and by the canopy shape extensions to the T Model
@@ -116,131 +118,99 @@ class Community:
         """
 
         # Add data to cohort dataframes capturing the T Model geometry
+        # - Classic T Model scaling
         self.cohort_data["height"] = t_model.calculate_heights(
             h_max=self.cohort_data["h_max"],
             a_hd=self.cohort_data["a_hd"],
             dbh=self.cohort_data["dbh"],
         )
 
-        # self.t_model_crown_areas = t_model.calculate_crown_areas(
-        #     self.pft_ca_ratio_values,
-        #     self.pft_a_hd_values,
-        #     self.cohort_dbh_values,
-        #     self.t_model_heights,
-        # )
+        self.cohort_data["crown_area"] = t_model.calculate_crown_areas(
+            ca_ratio=self.cohort_data["ca_ratio"],
+            a_hd=self.cohort_data["a_hd"],
+            dbh=self.cohort_data["dbh"],
+            height=self.cohort_data["height"],
+        )
 
-        # self.t_model_crown_fractions = t_model.calculate_crown_fractions(
-        #     self.t_model_heights, self.pft_a_hd_values, self.cohort_dbh_values
-        # )
+        self.cohort_data["crown_fraction"] = t_model.calculate_crown_fractions(
+            a_hd=self.cohort_data["a_hd"],
+            dbh=self.cohort_data["dbh"],
+            height=self.cohort_data["height"],
+        )
 
-        # self.t_model_stem_masses = t_model.calculate_stem_masses(
-        #     self.cohort_dbh_values, self.t_model_heights, self.pft_rho_s_values
-        # )
+        self.cohort_data["stem_mass"] = t_model.calculate_stem_masses(
+            rho_s=self.cohort_data["rho_s"],
+            dbh=self.cohort_data["dbh"],
+            height=self.cohort_data["height"],
+        )
 
-        # self.t_model_foliage_masses = t_model.calculate_foliage_masses(
-        #     self.t_model_crown_areas, self.pft_lai_values, self.pft_sla_values
-        # )
+        self.cohort_data["foliage_mass"] = t_model.calculate_foliage_masses(
+            sla=self.cohort_data["sla"],
+            lai=self.cohort_data["lai"],
+            crown_area=self.cohort_data["crown_area"],
+        )
 
-        # self.t_model_swd_masses = t_model.calculate_swd_masses(
-        #     self.t_model_crown_areas,
-        #     self.pft_rho_s_values,
-        #     self.t_model_heights,
-        #     self.t_model_crown_fractions,
-        #     self.pft_ca_ratio_values,
-        # )
+        self.cohort_data["sapwood_mass"] = t_model.calculate_sapwood_masses(
+            rho_s=self.cohort_data["rho_s"],
+            ca_ratio=self.cohort_data["ca_ratio"],
+            height=self.cohort_data["height"],
+            crown_area=self.cohort_data["crown_area"],
+            crown_fraction=self.cohort_data["crown_fraction"],
+        )
 
-        # # Create arrays containing properties pertaining to Jaideep's t model
-        # # extension
-        # self.canopy_factor_r_0_values = t_model.calculate_r_0_values(
-        #     self.pft_q_m_values, self.t_model_crown_areas
-        # )
-        # self.canopy_factor_z_m_values = t_model.calculate_z_max_values(
-        #     self.pft_z_max_prop_values, self.t_model_heights
-        # )
+        # Canopy shape extension to T Model from PlantFATE
+        self.cohort_data["canopy_z_max"] = t_model.calculate_canopy_z_max(
+            z_max_prop=self.cohort_data["z_max_prop"],
+            height=self.cohort_data["height"],
+        )
+        self.cohort_data["canopy_r0"] = t_model.calculate_canopy_r0(
+            q_m=self.cohort_data["q_m"],
+            crown_area=self.cohort_data["crown_area"],
+        )
 
-    def _populate_pft_arrays(self) -> None:
-        """Populate plant functional type arrays.
+    # @classmethod
+    # def load_communities_from_csv(
+    #     cls, cell_area: float, csv_path: str, flora: Flora
+    # ) -> list[Community]:
+    #     """Loads a list of communities from a csv provided in the appropriate format.
 
-        Populate the initialised arrays containing properties relating to plant
-        functional type by looking up the plant functional type in the Flora dictionary,
-        extracting the properties and inserting them into the relevant position in the
-        array.
-        :return: None
-        """
+    #     The csv should contain the following columns: cell_id,
+    #     diameter_at_breast_height, plant_functional_type, number_of_individuals. Each
+    #     row in the csv should represent one cohort.
 
-        # Get the index of the cohort pfts in the array representation of
+    #     :param cell_area: the area of the cell at each location, this is assumed to be
+    #     the same across all the locations in the csv.
+    #     :param csv_path: path to the csv containing community data, as detailed above.
+    #     :param flora: a flora object, ie a dictionary of plant functional properties,
+    #     keyed by pft name.
+    #     :return: a list of community objects, loaded from the csv
+    #     file.
+    #     """
+    #     community_data = pd.read_csv(csv_path)
 
-        for i in range(0, self.number_of_cohorts):
-            pft = self.__look_up_plant_functional_type(self.cohort_pft_names[i])
-            self.pft_a_hd_values[i] = pft.a_hd
-            self.pft_ca_ratio_values[i] = pft.ca_ratio
-            self.pft_h_max_values[i] = pft.h_max
-            self.pft_lai_values[i] = pft.lai
-            self.pft_par_ext_values[i] = pft.par_ext
-            self.pft_resp_f_values[i] = pft.resp_f
-            self.pft_resp_r_values[i] = pft.resp_r
-            self.pft_resp_s_values[i] = pft.resp_s
-            self.pft_rho_s_values[i] = pft.rho_s
-            self.pft_sla_values[i] = pft.sla
-            self.pft_tau_f_values[i] = pft.tau_f
-            self.pft_tau_r_values[i] = pft.tau_r
-            self.pft_yld_values[i] = pft.yld
-            self.pft_zeta_values[i] = pft.zeta
-            self.pft_m_values[i] = pft.m
-            self.pft_n_values[i] = pft.n
+    #     data_grouped_by_community = community_data.groupby(community_data.cell_id)
 
-    def __look_up_plant_functional_type(
-        self, pft_name: str
-    ) -> type[PlantFunctionalTypeStrict]:
-        """Retrieve plant functional type for a cohort from the flora dictionary."""
+    #     communities = []
 
-        if pft_name not in self.flora:
-            raise Exception(
-                f"Cohort data supplied with in an invalid PFT name: {pft_name}"
-            )
-        return self.flora[pft_name]
+    #     for cell_id in data_grouped_by_community.groups:
+    #         community_dataframe = data_grouped_by_community.get_group(cell_id)
+    #         dbh_values = community_dataframe["diameter_at_breast_height"].to_numpy(
+    #             dtype=np.float32
+    #         )
+    #         number_of_individuals = community_dataframe[
+    #             "number_of_individuals"
+    #         ].to_numpy(dtype=np.int_)
+    #         pft_names = community_dataframe["plant_functional_type"].to_numpy(
+    #               dtype=str
+    #         )
+    #         community_object = Community(
+    #             cell_id,  # type:ignore
+    #             cell_area,
+    #             dbh_values,
+    #             number_of_individuals,
+    #             pft_names,
+    #             flora,
+    #         )
+    #         communities.append(community_object)
 
-    @classmethod
-    def load_communities_from_csv(
-        cls, cell_area: float, csv_path: str, flora: Flora
-    ) -> list[Community]:
-        """Loads a list of communities from a csv provided in the appropriate format.
-
-        The csv should contain the following columns: cell_id,
-        diameter_at_breast_height, plant_functional_type, number_of_individuals. Each
-        row in the csv should represent one cohort.
-
-        :param cell_area: the area of the cell at each location, this is assumed to be
-        the same across all the locations in the csv.
-        :param csv_path: path to the csv containing community data, as detailed above.
-        :param flora: a flora object, ie a dictionary of plant functional properties,
-        keyed by pft name.
-        :return: a list of community objects, loaded from the csv
-        file.
-        """
-        community_data = pd.read_csv(csv_path)
-
-        data_grouped_by_community = community_data.groupby(community_data.cell_id)
-
-        communities = []
-
-        for cell_id in data_grouped_by_community.groups:
-            community_dataframe = data_grouped_by_community.get_group(cell_id)
-            dbh_values = community_dataframe["diameter_at_breast_height"].to_numpy(
-                dtype=np.float32
-            )
-            number_of_individuals = community_dataframe[
-                "number_of_individuals"
-            ].to_numpy(dtype=np.int_)
-            pft_names = community_dataframe["plant_functional_type"].to_numpy(dtype=str)
-            community_object = Community(
-                cell_id,  # type:ignore
-                cell_area,
-                dbh_values,
-                number_of_individuals,
-                pft_names,
-                flora,
-            )
-            communities.append(community_object)
-
-        return communities
+    #     return communities

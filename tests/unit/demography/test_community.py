@@ -31,7 +31,25 @@ def fixture_flora():
             np.array([2, 10, 3]),
             does_not_raise(),
             id="correct",
-        )
+        ),
+        pytest.param(
+            1,
+            100,
+            np.array(["broadleaf", "broadleaf", "juniper"]),
+            np.array([0.2, 0.1, 0.2]),
+            np.array([2, 10, 3]),
+            pytest.raises(ValueError),
+            id="unknown_pft",
+        ),
+        pytest.param(
+            1,
+            100,
+            np.array(["broadleaf", "broadleaf", "juniper"]),
+            np.array([0.2, 0.1, 0.2]),
+            np.array([2, 10, 3, 4]),
+            pytest.raises(ValueError),
+            id="unequal_cohort_data_lengths",
+        ),
     ],
 )
 def test_Community_initialisation(
@@ -45,14 +63,18 @@ def test_Community_initialisation(
 
     from pyrealm.demography.community import Community
 
-    community = Community(
-        cell_id=cell_id,
-        cell_area=cell_area,
-        cohort_pft_names=cohort_pfts,
-        cohort_dbh_values=cohort_dbh,
-        cohort_n_individuals=cohort_n,
-        flora=fixture_flora,
-    )
+    with outcome:
+        community = Community(
+            cell_id=cell_id,
+            cell_area=cell_area,
+            cohort_pft_names=cohort_pfts,
+            cohort_dbh_values=cohort_dbh,
+            cohort_n_individuals=cohort_n,
+            flora=fixture_flora,
+        )
+
+        if isinstance(outcome, does_not_raise):
+            assert community
 
 
 def test_import_from_csv():
