@@ -6,7 +6,6 @@ the calculate stem growth given net primary productivity.
 """  # noqa: D205
 
 import numpy as np
-from numpy.typing import NDArray
 from pandas import Series
 
 
@@ -229,10 +228,10 @@ def calculate_canopy_r0(q_m: Series, crown_area: Series) -> Series:
 
 def calculate_relative_canopy_radii(
     z: float,
-    height: NDArray[np.float32],
-    m: NDArray[np.float32],
-    n: NDArray[np.float32],
-) -> NDArray[np.float32]:
+    height: Series,
+    m: Series,
+    n: Series,
+) -> Series:
     """Calculate q(z) at a given height, z."""
 
     z_over_height = z / height
