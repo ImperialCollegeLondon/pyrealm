@@ -85,7 +85,7 @@ def calculate_stem_masses(rho_s: Series, height: Series, dbh: Series) -> Series:
 
     .. math::
 
-        (\pi / 8) \rho_s D^2 H
+        W_s = (\pi / 8) \rho_s D^2 H
 
     Args:
         rho_s: Wood density of the PFT
@@ -164,10 +164,14 @@ def calculate_canopy_q_m(m: float, n: float) -> float:
 
 
 def calculate_canopy_z_max_proportion(m: float, n: float) -> float:
-    """Calculate the z_m proportion.
+    r"""Calculate the z_m proportion.
 
-    The z_m proportion is the constant proportion of stem height at which the maximum
-    crown radius is found for a given plant functional type.
+    The z_m proportion (:math:`p_{zm}`) is the constant proportion of stem height at
+    which the maximum crown radius is found for a given plant functional type.
+
+    .. math::
+
+        p_{zm} = \left(\dfrac{n-1}{m n -1}\right)^ {\tfrac{1}{n}}
 
     Args:
         m: Canopy shape parameter
@@ -232,7 +236,23 @@ def calculate_relative_canopy_radii(
     m: Series,
     n: Series,
 ) -> Series:
-    """Calculate q(z) at a given height, z."""
+    r"""Calculate relative canopy radius at a given height.
+
+    The canopy shape parameters ``m`` and ``n`` define the vertical distribution of
+    canopy along the stem. For a stem of a given total height, this function calculates
+    the relative canopy radius at a given height :math:`z`:
+
+    .. math::
+
+        q(z) = m n \left(\dfrac{z}{H}\right) ^ {n -1}
+        \left( 1 - \left(\dfrac{z}{H}\right) ^ n \right)^{m-1}
+
+    Args:
+        z: Height at which to calculate relative radius
+        height: Total height of individual stem
+        m: Canopy shape parameter of PFT
+        n: Canopy shape parameter of PFT
+    """
 
     z_over_height = z / height
 
