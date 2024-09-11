@@ -5,12 +5,12 @@ from __future__ import annotations
 # import json
 # import sys
 from dataclasses import InitVar, dataclass, field
+from typing import Any
 
-# import marshmallow_dataclass
 import numpy as np
 import pandas as pd
-
-# from marshmallow.exceptions import ValidationError
+from marshmallow import Schema, fields, validates_schema
+from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
 from pyrealm.demography import t_model_functions as t_model
@@ -22,6 +22,39 @@ from pyrealm.demography.flora import Flora
 # else:
 #     import tomli as tomllib
 #     from tomli import TOMLDecodeError
+
+
+class CommunitySchema(Schema):
+    """A validation schema for community initialisation data.
+
+    This schema can be used to validate the data being used to create a Community
+    instance via one of the factory methods. It does not validate the Flora argument,
+    which is loaded and validated separately.
+    """
+
+    cell_id = fields.Integer(required=True)
+    cell_area = fields.Float(required=True)
+    cohort_dbh_values = fields.List(fields.Float(), required=True)
+    cohort_n_individuals = fields.List(fields.Integer(), required=True)
+    cohort_pft_names = fields.List(fields.Str(), required=True)
+
+    @validates_schema
+    def validate_array_lengths(self, data: dict, **kwargs: Any) -> None:
+        """Schema wide validation.
+
+        This checks that the cohort data arrays are of equal length.
+
+        Args:
+            data: Data passed to the validator
+            kwargs: Additional keyword arguments passed by marshmallow
+        """
+
+        len_dbh = len(data["cohort_dbh_values"])
+        len_n = len(data["cohort_n_individuals"])
+        len_pft = len(data["cohort_pft_names"])
+
+        if not ((len_dbh == len_n) and (len_dbh == len_pft)):
+            raise ValidationError("Cohort arrays of unequal length.")
 
 
 @dataclass
@@ -167,6 +200,76 @@ class Community:
             q_m=self.cohort_data["q_m"],
             crown_area=self.cohort_data["crown_area"],
         )
+
+    @classmethod
+    def _from_file_data(cls, flora: Flora, file_data: dict) -> Community:
+        """Create a Flora object from a JSON string.
+
+        Args:
+            flora: The Flora instance to be used with the community
+            file_data: The payload from a data file defining plant functional types.
+        """
+
+        # Validate the input data against the schema.
+        try:
+            community_data = CommunitySchema().load(data=file_data)  # type: ignore[attr-defined]
+        except ValidationError as excep:
+            raise excep
+
+        # Pass validated data into class instance
+        return cls(
+            cell_id=community_data["cell_id"],
+            cell_area=community_data["cell_area"],
+            cohort_dbh_values=np.array(community_data["cohort_dbh_values"]),
+            cohort_n_individuals=np.array(community_data["cohort_n_individuals"]),
+            cohort_pft_names=np.array(community_data["cohort_pft_names"]),
+            flora=flora,
+        )
+
+    # @classmethod
+    # def from_json(cls, path: Path) -> Flora:
+    #     """Create a Flora object from a JSON file.
+
+    #     Args:
+    #         path: A path to a JSON file of plant functional type definitions.
+    #     """
+
+    #     try:
+    #         file_data = json.load(open(path))
+    #     except (FileNotFoundError, json.JSONDecodeError) as excep:
+    #         raise excep
+
+    #     return cls._from_file_data(file_data=file_data)
+
+    # @classmethod
+    # def from_toml(cls, path: Path) -> Flora:
+    #     """Create a Flora object from a TOML file.
+
+    #     Args:
+    #         path: A path to a TOML file of plant functional type definitions.
+    #     """
+
+    #     try:
+    #         file_data = tomllib.load(open(path, "rb"))
+    #     except (FileNotFoundError, TOMLDecodeError) as excep:
+    #         raise excep
+
+    #     return cls._from_file_data(file_data)
+
+    # @classmethod
+    # def from_csv(cls, path: Path) -> Flora:
+    #     """Create a Flora object from a CSV file.
+
+    #     Args:
+    #         path: A path to a CSV file of plant functional type definitions.
+    #     """
+
+    #     try:
+    #         data = pd.read_csv(path)
+    #     except (FileNotFoundError, pd.errors.ParserError) as excep:
+    #         raise excep
+
+    #     return cls._from_file_data({"pft": data.to_dict(orient="records")})
 
     # @classmethod
     # def load_communities_from_csv(
