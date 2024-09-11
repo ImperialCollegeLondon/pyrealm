@@ -142,6 +142,42 @@ def test_Community_initialisation(
             {"cell_elevation": ["Unknown field."]},
             id="extra_field",
         ),
+        pytest.param(
+            {
+                "cell_id": 1,
+                "cell_area": "a",
+                "cohort_pft_names": ["broadleaf", "broadleaf", "conifer"],
+                "cohort_n_individuals": [2, 10, 3],
+                "cohort_dbh_values": [0.2, 0.1, 0.2],
+            },
+            pytest.raises(ValidationError),
+            {"cell_area": ["Not a valid number."]},
+            id="wrong_type_in_simple_field",
+        ),
+        pytest.param(
+            {
+                "cell_id": 1,
+                "cell_area": 100,
+                "cohort_pft_names": ["broadleaf", "broadleaf", "conifer"],
+                "cohort_n_individuals": [2, 10.2, 3],
+                "cohort_dbh_values": [0.2, 0.1, 0.2],
+            },
+            pytest.raises(ValidationError),
+            {"cohort_n_individuals": {1: ["Not a valid integer."]}},
+            id="float_in_n_individuals",
+        ),
+        pytest.param(
+            {
+                "cell_id": 1,
+                "cell_area": 100,
+                "cohort_pft_names": ["broadleaf", "broadleaf", "conifer"],
+                "cohort_n_individuals": [2, 10, 3],
+                "cohort_dbh_values": [0.2, "a", 0.2],
+            },
+            pytest.raises(ValidationError),
+            {"cohort_dbh_values": {1: ["Not a valid number."]}},
+            id="float_in_n_individuals",
+        ),
     ],
 )
 def test_Community__from_file_data(fixture_flora, file_data, outcome, excep_message):
@@ -161,9 +197,81 @@ def test_Community__from_file_data(fixture_flora, file_data, outcome, excep_mess
             assert community
             return
 
+    # Note that value.messages is an extension provided by marshmallow.ValidationError
     assert excep.value.messages == excep_message
 
 
-def test_import_from_csv():
+@pytest.mark.parametrize(
+    argnames="file_data,outcome,excep_message",
+    argvalues=[
+        pytest.param(
+            """cell_id,cell_area,cohort_pft_names,cohort_dbh_values,cohort_n_individuals
+1,100,broadleaf,0.2,6
+1,100,broadleaf,0.25,6
+1,100,broadleaf,0.3,3
+1,100,broadleaf,0.35,1
+1,100,conifer,0.5,1
+1,100,conifer,0.6,1
+""",
+            does_not_raise(),
+            None,
+            id="correct",
+        ),
+        pytest.param(
+            """cell_id,cell_elevation,cohort_pft_names,cohort_dbh_values,cohort_n_individuals
+1,100,broadleaf,0.2,6
+1,100,broadleaf,0.25,6
+1,100,broadleaf,0.3,3
+1,100,broadleaf,0.35,1
+1,100,conifer,0.5,1
+1,100,conifer,0.6,1
+""",
+            pytest.raises(ValueError),
+            "Missing fields in community data: cell_area",
+            id="missing_field",
+        ),
+        pytest.param(
+            """cell_id,cell_area,cohort_pft_names,cohort_dbh_values,cohort_n_individuals
+1,100,broadleaf,0.2,6
+1,100,broadleaf,0.25,6
+1,100,broadleaf,0.3,3
+1,100,broadleaf,0.35,1
+11,100,conifer,0.5,1
+1,100,conifer,0.6,1
+""",
+            pytest.raises(ValueError),
+            "Multiple cell id values fields in community data, see load_communities",
+            id="not_just_one_cell_id",
+        ),
+        pytest.param(
+            """cell_id,cell_area,cohort_pft_names,cohort_dbh_values,cohort_n_individuals
+1,100,broadleaf,0.2,6
+1,100,broadleaf,0.25,6
+1,100,broadleaf,0.3,3
+1,100,broadleaf,0.35,1
+1,200,conifer,0.5,1
+1,100,conifer,0.6,1
+""",
+            pytest.raises(ValueError),
+            "Cell area varies in community data",
+            id="not_just_one_cell_area",
+        ),
+    ],
+)
+def test_Community_from_csv(tmp_path, fixture_flora, file_data, outcome, excep_message):
     """Test that a community can be successfully imported from a csv."""
-    pass
+
+    from pyrealm.demography.community import Community
+
+    temp_file = tmp_path / "data.csv"
+    temp_file.write_text(file_data, encoding="utf-8")
+
+    with outcome as excep:
+        community = Community.from_csv(path=temp_file, flora=fixture_flora)
+
+        if isinstance(outcome, does_not_raise):
+            # TODO - test something here
+            assert community
+            return
+
+    assert str(excep.value) == excep_message

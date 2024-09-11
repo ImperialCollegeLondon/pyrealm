@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from dataclasses import InitVar, dataclass, field
+
 # import json
 # import sys
-from dataclasses import InitVar, dataclass, field
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -32,10 +34,10 @@ class CommunitySchema(Schema):
     which is loaded and validated separately.
     """
 
-    cell_id = fields.Integer(required=True)
+    cell_id = fields.Integer(required=True, strict=True)
     cell_area = fields.Float(required=True)
     cohort_dbh_values = fields.List(fields.Float(), required=True)
-    cohort_n_individuals = fields.List(fields.Integer(), required=True)
+    cohort_n_individuals = fields.List(fields.Integer(strict=True), required=True)
     cohort_pft_names = fields.List(fields.Str(), required=True)
 
     @validates_schema
@@ -226,6 +228,56 @@ class Community:
             flora=flora,
         )
 
+    @classmethod
+    def from_csv(cls, path: Path, flora: Flora) -> Community:
+        """Create a Community object from a CSV file.
+
+        This factory method checks that the required fields are present in the CSV data
+        and that the cell_id and cell_area values are constant. It then passes the data
+        through further validation using the
+        `meth`:`~pyrealm.demography.community.Community._from_file_data` method and
+        returns a Community instance.
+
+        Args:
+            path: A path to a CSV file of community data
+            flora: A Flora instance providing plant functional types used in the
+                community data
+        """
+
+        # Load the data
+        try:
+            community_data = pd.read_csv(path)
+        except (FileNotFoundError, pd.errors.ParserError) as excep:
+            raise excep
+
+        # Check required fields are present
+        required_fields = set(CommunitySchema().fields.keys())
+        missing_fields = required_fields.difference(community_data.columns)
+        if missing_fields:
+            raise ValueError(
+                f"Missing fields in community data: {','.join(missing_fields)}"
+            )
+
+        # Check cell area and cell id consistent
+        if not all(community_data["cell_id"] == community_data["cell_id"][0]):
+            raise ValueError(
+                "Multiple cell id values fields in community data, see load_communities"
+            )
+
+        if not all(community_data["cell_area"] == community_data["cell_area"][0]):
+            raise ValueError("Cell area varies in community data")
+
+        return cls._from_file_data(
+            file_data=dict(
+                cell_id=community_data["cell_id"][0],
+                cell_area=community_data["cell_area"][0],
+                cohort_dbh_values=np.array(community_data["cohort_dbh_values"]),
+                cohort_n_individuals=np.array(community_data["cohort_n_individuals"]),
+                cohort_pft_names=np.array(community_data["cohort_pft_names"]),
+            ),
+            flora=flora,
+        )
+
     # @classmethod
     # def from_json(cls, path: Path) -> Flora:
     #     """Create a Flora object from a JSON file.
@@ -255,21 +307,6 @@ class Community:
     #         raise excep
 
     #     return cls._from_file_data(file_data)
-
-    # @classmethod
-    # def from_csv(cls, path: Path) -> Flora:
-    #     """Create a Flora object from a CSV file.
-
-    #     Args:
-    #         path: A path to a CSV file of plant functional type definitions.
-    #     """
-
-    #     try:
-    #         data = pd.read_csv(path)
-    #     except (FileNotFoundError, pd.errors.ParserError) as excep:
-    #         raise excep
-
-    #     return cls._from_file_data({"pft": data.to_dict(orient="records")})
 
     # @classmethod
     # def load_communities_from_csv(
