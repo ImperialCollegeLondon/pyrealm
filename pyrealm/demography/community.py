@@ -1,29 +1,40 @@
-"""Contains a class representing properties of a community."""
+"""This modules provides the Community class, which contains the set of size-structured
+cohorts of plants across a range of plant functional types that occur a given location
+(or 'cell') with a given cell id number and area.
+
+The class provides factory methods to create Community instances from CSV, JSON and TOML
+files, using :mod:`marshmallow` schemas to both validate the input data and to perform
+post processing to align the input formats to the initialisation arguments to the
+Community class.
+
+Internally, the cohort data in the Community class is represented as a pandas dataframe,
+which makes it possible to update cohort attributes in parallel across all cohorts but
+also provide a clean interface for adding and removing cohorts to a Community.
+"""  # noqa: D205
 
 from __future__ import annotations
 
+import json
+import sys
 from dataclasses import InitVar, dataclass, field
-
-# import json
-# import sys
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
-from marshmallow import Schema, fields, validates_schema
+from marshmallow import Schema, fields, post_load, validates_schema
 from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
 from pyrealm.demography import t_model_functions as t_model
 from pyrealm.demography.flora import Flora
 
-# if sys.version_info[:2] >= (3, 11):
-#     import tomllib
-#     from tomllib import TOMLDecodeError
-# else:
-#     import tomli as tomllib
-#     from tomli import TOMLDecodeError
+if sys.version_info[:2] >= (3, 11):
+    import tomllib
+    from tomllib import TOMLDecodeError
+else:
+    import tomli as tomllib
+    from tomli import TOMLDecodeError
 
 
 class CommunitySchema(Schema):
@@ -57,6 +68,164 @@ class CommunitySchema(Schema):
 
         if not ((len_dbh == len_n) and (len_dbh == len_pft)):
             raise ValidationError("Cohort arrays of unequal length.")
+
+
+class CohortSchema(Schema):
+    """A validation schema for Cohort data.
+
+    This schema can be used to validate the ``cohorts`` components of JSON and TOML
+    community data files.
+    """
+
+    dbh_value = fields.Float(required=True)
+    n_individuals = fields.Integer(strict=True, required=True)
+    pft_name = fields.Str(required=True)
+
+
+class CommunityStructuredDataSchema(Schema):
+    """A validation schema for Cohort data in a structured format (JSON/TOML).
+
+    This schema can be used to validate data for creating a Community instance stored in
+    a structured format such as JSON or TOML. The format is expected to provide a cell
+    area and id along with an array of cohort objects providing the plant functional
+    type name, diameter at breast height (DBH) and number of individuals (see
+    :class:`~pyrealm.demography.community.CohortSchema`). Example inputs with this
+    structure are:
+
+    .. code-block:: toml
+        :caption: TOML
+
+        cell_area = 100
+        cell_id = 1
+
+        [[cohorts]]
+        dbh_value = 0.2
+        n_individuals = 6
+        pft_name = "broadleaf"
+
+        [[cohorts]]
+        dbh_value = 0.25
+        n_individuals = 6
+        pft_name = "conifer"
+
+    .. code-block:: json
+        :caption: JSON
+
+        {
+        "cell_id": 1,
+        "cell_area": 100,
+        "cohorts": [
+            {
+                "pft_name": "broadleaf",
+                "dbh_value": 0.2,
+                "n_individuals": 6
+            },
+            {
+                "pft_name": "broadleaf",
+                "dbh_value": 0.25,
+                "n_individuals": 6
+            }]
+        }
+
+    Any data validated with this schema is post-processed to convert the cohort objects
+    into the arrays of cohort data required to initialise instances of the
+    :class:`~pyrealm.demography.community.Community` class.
+    """
+
+    cell_id = fields.Integer(required=True, strict=True)
+    cell_area = fields.Float(required=True)
+    cohorts = fields.List(fields.Nested(CohortSchema), required=True)
+
+    @post_load
+    def cohort_objects_to_arrays(self, data: dict, **kwargs: Any) -> dict:
+        """Convert cohorts to arrays.
+
+        This post load method converts the cohort objects into arrays, which is the
+        format used to initialise a Community object.
+
+        Args:
+            data: Data passed to the validator
+            kwargs: Additional keyword arguments passed by marshmallow
+        """
+
+        data["cohort_dbh_values"] = np.array([c["dbh_value"] for c in data["cohorts"]])
+        data["cohort_n_individuals"] = np.array(
+            [c["n_individuals"] for c in data["cohorts"]]
+        )
+        data["cohort_pft_names"] = np.array([c["pft_name"] for c in data["cohorts"]])
+
+        del data["cohorts"]
+
+        return data
+
+
+class CommunityCSVDataSchema(Schema):
+    """A validation schema for community initialisation data in CSV format.
+
+    This schema can be used to validate data for creating a Community instance stored in
+    CSV format. The file is expected to provide fields providing cell id and cell area
+    and then functional type name, diameter at breast height (DBH) and number of
+    individuals. Each row is taken to represent a cohort and the cell id and area
+    *must** be consistent across rows.
+
+    .. code-block:: csv
+        cell_id,cell_area,cohort_pft_names,cohort_dbh_values,cohort_n_individuals
+        1,100,broadleaf,0.2,6
+        1,100,broadleaf,0.25,6
+        1,100,broadleaf,0.3,3
+        1,100,broadleaf,0.35,1
+        1,100,conifer,0.5,1
+        1,100,conifer,0.6,1
+
+    The input data is expected to be converted to a dictionary of lists, representing
+    the field, as for example by using :meth:`~pd.DataFrame.to_dict('list')`.
+
+    The schema automatically validates that the cell id and area are consistent and then
+    post-processing is used to simplify those fields to the scalar inputs required to
+    initialise instances of the  :class:`~pyrealm.demography.community.Community` class
+    and to convert the cohort data into arrays,
+    """
+
+    cell_id = fields.List(fields.Integer(strict=True), required=True)
+    cell_area = fields.List(fields.Float(), required=True)
+    cohort_dbh_values = fields.List(fields.Float(), required=True)
+    cohort_n_individuals = fields.List(fields.Integer(strict=True), required=True)
+    cohort_pft_names = fields.List(fields.Str(), required=True)
+
+    @validates_schema
+    def validate_consistent_cell_data(self, data: dict, **kwargs: Any) -> None:
+        """Schema wide validation.
+
+        Args:
+            data: Data passed to the validator
+            kwargs: Additional keyword arguments passed by marshmallow
+        """
+
+        # Check cell area and cell id consistent
+        if not all([c == data["cell_id"][0] for c in data["cell_id"]]):
+            raise ValueError(
+                "Multiple cell id values fields in community data, see load_communities"
+            )
+
+        if not all([c == data["cell_area"][0] for c in data["cell_area"]]):
+            raise ValueError("Cell area varies in community data")
+
+    @post_load
+    def make_cell_data_scalar(self, data: dict, **kwargs: Any) -> dict:
+        """Make cell data scalar.
+
+        This post load method reduces the repeated cell id and cell area across CSV data
+        rows into the scalar inputs required to initialise a Community object.
+        """
+
+        data["cell_id"] = data["cell_id"][0]
+        data["cell_area"] = data["cell_area"][0]
+
+        data["cohort_dbh_values"] = np.array(data["cohort_dbh_values"])
+        data["cohort_n_individuals"] = np.array(data["cohort_n_individuals"])
+        data["cohort_pft_names"] = np.array(data["cohort_pft_names"])
+
+        return data
 
 
 @dataclass
@@ -107,11 +276,33 @@ class Community:
         cohort_n_individuals: NDArray[np.int_],
         cohort_pft_names: NDArray[np.str_],
     ) -> None:
-        """Populate derived community attributes.
+        """Validate inputs and populate derived community attributes.
 
         The ``__post_init__`` builds a pandas dataframe of PFT values and T model
-        predictions across the initial cohort data.
+        predictions across the validated initial cohort data.
         """
+
+        # Check cell area and cell id
+        if not (isinstance(self.cell_area, float | int) and self.cell_area > 0):
+            raise ValueError("Community cell area must be a positive number.")
+
+        if not (isinstance(self.cell_id, int) and self.cell_id >= 0):
+            raise ValueError("Community cell id must be a integer >= 0.")
+
+        # Check cohort data types
+        if not (
+            isinstance(cohort_dbh_values, np.ndarray)
+            and isinstance(cohort_n_individuals, np.ndarray)
+            and isinstance(cohort_pft_names, np.ndarray)
+        ):
+            raise ValueError("Cohort data not passed as numpy arrays.")
+
+        # Check the cohort inputs are of equal length
+        if not (
+            (cohort_dbh_values.shape == cohort_n_individuals.shape)
+            and (cohort_dbh_values.shape == cohort_pft_names.shape)
+        ):
+            raise ValueError("Cohort arrays are of unequal length")
 
         # Check the initial PFT values are known
         unknown_pfts = set(cohort_pft_names).difference(self.flora.keys())
@@ -120,13 +311,6 @@ class Community:
             raise ValueError(
                 f"Plant functional types unknown in flora: {','.join(unknown_pfts)}"
             )
-
-        # Check the cohort inputs are of equal length
-        if not (
-            (cohort_dbh_values.shape == cohort_n_individuals.shape)
-            and (cohort_dbh_values.shape == cohort_pft_names.shape)
-        ):
-            raise ValueError("Cohort data are not equally sized")
 
         # Convert to a dataframe
         cohort_data = pd.DataFrame(
@@ -204,31 +388,6 @@ class Community:
         )
 
     @classmethod
-    def _from_file_data(cls, flora: Flora, file_data: dict) -> Community:
-        """Create a Flora object from a JSON string.
-
-        Args:
-            flora: The Flora instance to be used with the community
-            file_data: The payload from a data file defining plant functional types.
-        """
-
-        # Validate the input data against the schema.
-        try:
-            community_data = CommunitySchema().load(data=file_data)  # type: ignore[attr-defined]
-        except ValidationError as excep:
-            raise excep
-
-        # Pass validated data into class instance
-        return cls(
-            cell_id=community_data["cell_id"],
-            cell_area=community_data["cell_area"],
-            cohort_dbh_values=np.array(community_data["cohort_dbh_values"]),
-            cohort_n_individuals=np.array(community_data["cohort_n_individuals"]),
-            cohort_pft_names=np.array(community_data["cohort_pft_names"]),
-            flora=flora,
-        )
-
-    @classmethod
     def from_csv(cls, path: Path, flora: Flora) -> Community:
         """Create a Community object from a CSV file.
 
@@ -246,67 +405,78 @@ class Community:
 
         # Load the data
         try:
-            community_data = pd.read_csv(path)
+            file_data = pd.read_csv(path)
         except (FileNotFoundError, pd.errors.ParserError) as excep:
             raise excep
 
-        # Check required fields are present
-        required_fields = set(CommunitySchema().fields.keys())
-        missing_fields = required_fields.difference(community_data.columns)
-        if missing_fields:
-            raise ValueError(
-                f"Missing fields in community data: {','.join(missing_fields)}"
-            )
+        # Validate the data - there is an inconsequential typing issue here:
+        # Argument "data" to "load" of "Schema" has incompatible type
+        # "dict[Hashable, Any]";
+        # expected "Mapping[str, Any] | Iterable[Mapping[str, Any]]"
+        try:
+            file_data = CommunityCSVDataSchema().load(data=file_data.to_dict("list"))  # type: ignore[arg-type]
+        except ValidationError as excep:
+            raise excep
 
-        # Check cell area and cell id consistent
-        if not all(community_data["cell_id"] == community_data["cell_id"][0]):
-            raise ValueError(
-                "Multiple cell id values fields in community data, see load_communities"
-            )
+        return cls(**file_data, flora=flora)
 
-        if not all(community_data["cell_area"] == community_data["cell_area"][0]):
-            raise ValueError("Cell area varies in community data")
+    @classmethod
+    def from_json(cls, path: Path, flora: Flora) -> Community:
+        """Create a Community object from a JSON file.
 
-        return cls._from_file_data(
-            file_data=dict(
-                cell_id=community_data["cell_id"][0],
-                cell_area=community_data["cell_area"][0],
-                cohort_dbh_values=np.array(community_data["cohort_dbh_values"]),
-                cohort_n_individuals=np.array(community_data["cohort_n_individuals"]),
-                cohort_pft_names=np.array(community_data["cohort_pft_names"]),
-            ),
-            flora=flora,
-        )
+        This factory method loads community data from a JSON community file and
+        validates it using
+        `class`:`~pyrealm.demography.community.CommunityStructuredDataSchema` before
+        using the data to initialise a Community instance.
 
-    # @classmethod
-    # def from_json(cls, path: Path) -> Flora:
-    #     """Create a Flora object from a JSON file.
+        Args:
+            path: A path to a JSON file of community data
+            flora: A Flora instance providing plant functional types used in the
+                community data
+        """
 
-    #     Args:
-    #         path: A path to a JSON file of plant functional type definitions.
-    #     """
+        # Load the data
+        try:
+            file_data = json.load(open(path))
+        except (FileNotFoundError, json.JSONDecodeError) as excep:
+            raise excep
 
-    #     try:
-    #         file_data = json.load(open(path))
-    #     except (FileNotFoundError, json.JSONDecodeError) as excep:
-    #         raise excep
+        # Validate the data
+        try:
+            file_data = CommunityStructuredDataSchema().load(data=file_data)
+        except ValidationError as excep:
+            raise excep
 
-    #     return cls._from_file_data(file_data=file_data)
+        return cls(**file_data, flora=flora)
 
-    # @classmethod
-    # def from_toml(cls, path: Path) -> Flora:
-    #     """Create a Flora object from a TOML file.
+    @classmethod
+    def from_toml(cls, path: Path, flora: Flora) -> Community:
+        """Create a Community object from a TOML file.
 
-    #     Args:
-    #         path: A path to a TOML file of plant functional type definitions.
-    #     """
+        This factory method loads community data from a TOML community file and
+        validates it using
+        `class`:`~pyrealm.demography.community.CommunityStructuredDataSchema` before
+        using the data to initialise a Community instance.
 
-    #     try:
-    #         file_data = tomllib.load(open(path, "rb"))
-    #     except (FileNotFoundError, TOMLDecodeError) as excep:
-    #         raise excep
+        Args:
+            path: A path to a TOML file of community data
+            flora: A Flora instance providing plant functional types used in the
+                community data
+        """
 
-    #     return cls._from_file_data(file_data)
+        # Load the data
+        try:
+            file_data = tomllib.load(open(path, "rb"))
+        except (FileNotFoundError, TOMLDecodeError) as excep:
+            raise excep
+
+        # Validate the data
+        try:
+            file_data = CommunityStructuredDataSchema().load(data=file_data)
+        except ValidationError as excep:
+            raise excep
+
+        return cls(**file_data, flora=flora)
 
     # @classmethod
     # def load_communities_from_csv(
