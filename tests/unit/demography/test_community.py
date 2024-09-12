@@ -251,14 +251,88 @@ def test_Community_from_csv(tmp_path, fixture_flora, file_data, outcome, excep_m
         pytest.param(
             """{"cell_id":1,"cell_area":100,"cohorts":[
             {"pft_name":"broadleaf","dbh_value":0.2,"n_individuals":6},
-            {"pft_name":"broadleaf","dbh_value":0.25,"n_individuals":6},
-            {"pft_name":"broadleaf","dbh_value":0.3,"n_individuals":3},
-            {"pft_name":"broadleaf","dbh_value":0.35,"n_individuals":1},
-            {"pft_name":"conifer","dbh_value":0.5,"n_individuals":1},
-            {"pft_name":"conifer","dbh_value":0.6,"n_individuals":1}]}""",
+            {"pft_name":"conifer","dbh_value":0.5,"n_individuals":1}]}""",
             does_not_raise(),
             None,
             id="correct",
+        ),
+        pytest.param(
+            """{"cell_id":1,"cohorts":[
+            {"pft_name":"broadleaf","dbh_value":0.2,"n_individuals":6},
+            {"pft_name":"conifer","dbh_value":0.6,"n_individuals":1}]}""",
+            pytest.raises(ValidationError),
+            "{'cell_area': ['Missing data for required field.']}",
+            id="missing_area",
+        ),
+        pytest.param(
+            """{"cell_id":1,"cell_area":"a","cohorts":[
+            {"pft_name":"broadleaf","dbh_value":0.2,"n_individuals":6},
+            {"pft_name":"conifer","dbh_value":0.6,"n_individuals":1}]}""",
+            pytest.raises(ValidationError),
+            "{'cell_area': ['Not a valid number.']}",
+            id="area_as_string",
+        ),
+        pytest.param(
+            """{"cell_id":1.2,"cell_area":100,"cohorts":[
+            {"pft_name":"broadleaf","dbh_value":0.2,"n_individuals":6},
+            {"pft_name":"conifer","dbh_value":0.6,"n_individuals":1}]}""",
+            pytest.raises(ValidationError),
+            "{'cell_id': ['Not a valid integer.']}",
+            id="id_as_float",
+        ),
+        pytest.param(
+            """{"cell_id":-1,"cell_area":100,"cohorts":[
+            {"pft_name":"broadleaf","dbh_value":0.2,"n_individuals":6},
+            {"pft_name":"conifer","dbh_value":0.6,"n_individuals":1}]}""",
+            pytest.raises(ValidationError),
+            "{'cell_id': ['Must be greater than or equal to 0.']}",
+            id="id_negative",
+        ),
+        pytest.param(
+            """{"cell_id":1,"cell_area":0,"cohorts":[
+            {"pft_name":"broadleaf","dbh_value":0.2,"n_individuals":6},
+            {"pft_name":"conifer","dbh_value":0.6,"n_individuals":1}]}""",
+            pytest.raises(ValidationError),
+            "{'cell_area': ['Must be greater than 0.']}",
+            id="area_zero",
+        ),
+        pytest.param(
+            """{"cell_id":1,"cell_area":100,"cohorts":[]}""",
+            pytest.raises(ValidationError),
+            "{'cohorts': ['Shorter than minimum length 1.']}",
+            id="no_cohorts",
+        ),
+        pytest.param(
+            """{"cell_id":1,"cell_area":100,"cohorts":[
+            {"pft_name":1,"dbh_value":0.2,"n_individuals":6},
+            {"pft_name":"conifer","dbh_value":0.6,"n_individuals":1}]}""",
+            pytest.raises(ValidationError),
+            "{'cohorts': {0: {'pft_name': ['Not a valid string.']}}}",
+            id="bad_cohort_name",
+        ),
+        pytest.param(
+            """{"cell_id":1,"cell_area":100,"cohorts":[
+            {"pft_name":"broadleaf","dbh_value":0,"n_individuals":6},
+            {"pft_name":"conifer","dbh_value":0.6,"n_individuals":1}]}""",
+            pytest.raises(ValidationError),
+            "{'cohorts': {0: {'dbh_value': ['Must be greater than 0.']}}}",
+            id="dbh_zero",
+        ),
+        pytest.param(
+            """{"cell_id":1,"cell_area":100,"cohorts":[
+            {"pft_name":"broadleaf","dbh_value":0.2,"n_individuals":6.1},
+            {"pft_name":"conifer","dbh_value":0.6,"n_individuals":1}]}""",
+            pytest.raises(ValidationError),
+            "{'cohorts': {0: {'n_individuals': ['Not a valid integer.']}}}",
+            id="individuals_float",
+        ),
+        pytest.param(
+            """{"cell_id":1,"cell_area":100,"cohorts":[
+            {"pft_name":"broadleaf","dbh_value":0.2,"n_individuals":0},
+            {"pft_name":"conifer","dbh_value":0.6,"n_individuals":1}]}""",
+            pytest.raises(ValidationError),
+            "{'cohorts': {0: {'n_individuals': ['Must be greater than 0.']}}}",
+            id="individuals_less_than_one",
         ),
     ],
 )

@@ -22,7 +22,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from marshmallow import Schema, fields, post_load, validates_schema
+from marshmallow import Schema, fields, post_load, validate, validates_schema
 from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
@@ -37,39 +37,6 @@ else:
     from tomli import TOMLDecodeError
 
 
-class CommunitySchema(Schema):
-    """A validation schema for community initialisation data.
-
-    This schema can be used to validate the data being used to create a Community
-    instance via one of the factory methods. It does not validate the Flora argument,
-    which is loaded and validated separately.
-    """
-
-    cell_id = fields.Integer(required=True, strict=True)
-    cell_area = fields.Float(required=True)
-    cohort_dbh_values = fields.List(fields.Float(), required=True)
-    cohort_n_individuals = fields.List(fields.Integer(strict=True), required=True)
-    cohort_pft_names = fields.List(fields.Str(), required=True)
-
-    @validates_schema
-    def validate_array_lengths(self, data: dict, **kwargs: Any) -> None:
-        """Schema wide validation.
-
-        This checks that the cohort data arrays are of equal length.
-
-        Args:
-            data: Data passed to the validator
-            kwargs: Additional keyword arguments passed by marshmallow
-        """
-
-        len_dbh = len(data["cohort_dbh_values"])
-        len_n = len(data["cohort_n_individuals"])
-        len_pft = len(data["cohort_pft_names"])
-
-        if not ((len_dbh == len_n) and (len_dbh == len_pft)):
-            raise ValidationError("Cohort arrays of unequal length.")
-
-
 class CohortSchema(Schema):
     """A validation schema for Cohort data.
 
@@ -77,8 +44,12 @@ class CohortSchema(Schema):
     community data files.
     """
 
-    dbh_value = fields.Float(required=True)
-    n_individuals = fields.Integer(strict=True, required=True)
+    dbh_value = fields.Float(
+        required=True, validate=validate.Range(min=0, min_inclusive=False)
+    )
+    n_individuals = fields.Integer(
+        strict=True, required=True, validate=validate.Range(min=0, min_inclusive=False)
+    )
     pft_name = fields.Str(required=True)
 
 
@@ -132,9 +103,13 @@ class CommunityStructuredDataSchema(Schema):
     :class:`~pyrealm.demography.community.Community` class.
     """
 
-    cell_id = fields.Integer(required=True, strict=True)
-    cell_area = fields.Float(required=True)
-    cohorts = fields.List(fields.Nested(CohortSchema), required=True)
+    cell_id = fields.Integer(required=True, strict=True, validate=validate.Range(min=0))
+    cell_area = fields.Float(
+        required=True, validate=validate.Range(min=0, min_inclusive=False)
+    )
+    cohorts = fields.List(
+        fields.Nested(CohortSchema), required=True, validate=validate.Length(min=1)
+    )
 
     @post_load
     def cohort_objects_to_arrays(self, data: dict, **kwargs: Any) -> dict:
