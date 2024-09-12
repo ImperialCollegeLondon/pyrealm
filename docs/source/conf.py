@@ -96,6 +96,7 @@ nitpick_ignore = [
     ("py:class", "numpy._typing._array_like._ScalarType_co"),
     ("py:class", "numpy._typing._generic_alias.ScalarType"),
     ("py:class", "numpy.float32"),
+    ("py:class", "numpy.int64"),
     ("py:class", "numpy.timedelta64"),
     ("py:class", "numpy.bool_"),
     ("py:class", "numpy.ndarray"),
@@ -152,7 +153,9 @@ intersphinx_mapping = {
     "numpy": ("https://numpy.org/doc/stable/", None),
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
+    "pandas": ("http://pandas.pydata.org/pandas-docs/dev/", None),
     "shapely": ("https://shapely.readthedocs.io/en/stable/", None),
+    "marshmallow": ("https://marshmallow.readthedocs.io/en/stable/", None),
 }
 # -
 

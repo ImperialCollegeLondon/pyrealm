@@ -143,7 +143,8 @@ class CommunityCSVDataSchema(Schema):
     individuals. Each row is taken to represent a cohort and the cell id and area
     *must** be consistent across rows.
 
-    .. code-block:: csv
+    .. code-block::
+
         cell_id,cell_area,cohort_pft_names,cohort_dbh_values,cohort_n_individuals
         1,100,broadleaf,0.2,6
         1,100,broadleaf,0.25,6
@@ -153,7 +154,8 @@ class CommunityCSVDataSchema(Schema):
         1,100,conifer,0.6,1
 
     The input data is expected to be converted to a dictionary of lists, representing
-    the field, as for example by using :meth:`~pd.DataFrame.to_dict('list')`.
+    the field, as for example by using :meth:`~pandas.DataFrame.to_dict` with the
+    ``orient='list'`` argument.
 
     The schema automatically validates that the cell id and area are consistent and then
     post-processing is used to simplify those fields to the scalar inputs required to

@@ -4,10 +4,11 @@
   used to parameterise the traits of different plant functional types. The
   ``PlantFunctionalType`` dataclass is a subclass of ``PlantFunctionalTypeStrict`` that
   simply adds default values to the attributes.
-* The ``PlantFunctionalTypeStrict`` dataclass is used as the basis of a ``marshmallow``
-  schema for validating the creation of plant functional types from data files. This
-  intentionally enforces a complete description of the traits in the input data. The
-  ``PlantFunctionalType`` is provided as a more convenient API for programmatic use.
+* The ``PlantFunctionalTypeStrict`` dataclass is used as the basis of a
+  :mod:`~marshmallow` schema for validating the creation of plant functional types from
+  data files. This intentionally enforces a complete description of the traits in the
+  input data. The ``PlantFunctionalType`` is provided as a more convenient API for
+  programmatic use.
 * The Flora class, which is simply a dictionary of named plant functional types for use
   in describing a plant community in a simulation. The Flora class also defines factory
   methods to create instances from plant functional type data stored in JSON, TOML or
@@ -146,7 +147,7 @@ class PlantFunctionalType(PlantFunctionalTypeStrict):
         tau_f, 4.0, years
         tau_r,  1.04, years
         par_ext, 0.5, -
-        yld, 0.17, -
+        yld, 0.6, -
         zeta, 0.17, kg C m-2
         resp_r,  0.913, year-1
         resp_s,  0.044, year-1
@@ -164,7 +165,7 @@ class PlantFunctionalType(PlantFunctionalTypeStrict):
     tau_f: float = 4.0
     tau_r: float = 1.04
     par_ext: float = 0.5
-    yld: float = 0.17
+    yld: float = 0.6
     zeta: float = 0.17
     resp_r: float = 0.913
     resp_s: float = 0.044
