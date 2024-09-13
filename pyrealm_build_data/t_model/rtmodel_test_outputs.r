@@ -12,9 +12,9 @@ tmodel <- function(P0, year, a, cr, Hm, rho, rr,
     P0 <- P0 * (1 - 0.1)
     aa <- length(year) # simulate years
     output <- matrix()
-    output <- matrix(NA, nrow = aa, ncol = 12, byrow = T)
+    output <- matrix(NA, nrow = aa, ncol = 13, byrow = T)
     colnames(output) <- c(
-        "dD", "D", "H", "Ac", "Wf", "Ws", "Wss",
+        "dD", "D", "H", "fc", "Ac", "Wf", "Ws", "Wss",
         "GPP", "Rm1", "Rm2", "dWs", "dWfr"
     ) # you can decide which index you want output
     dD <- 0
@@ -80,7 +80,7 @@ tmodel <- function(P0, year, a, cr, Hm, rho, rr,
             a * d * (1 - H / Hm) + H
         )) * (1 / sigma + zeta) * dD
         output[i, ] <- c(
-            dD / 2 * 1000, d, H, Ac, Wf, Ws, Wss, GPP, Rm1, Rm2, dWs, dWfr
+            dD / 2 * 1000, d, H, fc, Ac, Wf, Ws, Wss, GPP, Rm1, Rm2, dWs, dWfr
         )
     }
 

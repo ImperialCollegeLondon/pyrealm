@@ -32,6 +32,7 @@ def rvalues():
         ("dD", "delta_d"),
         ("D", "diameter"),
         ("H", "height"),
+        ("fc", "crown_fraction"),
         ("Ac", "crown_area"),
         ("Wf", "mass_fol"),
         ("Ws", "mass_stm"),
