@@ -98,7 +98,7 @@ tmodel_run <- tmodel(rep(7, 100), seq(100),
     tf = 4.0,
     tr = 1.04,
     K = 0.5,
-    y = 0.17,
+    y = 0.6,
     zeta = 0.17,
     rr = 0.913,
     rs = 0.044
