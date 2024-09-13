@@ -38,10 +38,26 @@ else:
 
 
 class CohortSchema(Schema):
-    """A validation schema for Cohort data.
+    """A validation schema for Cohort data objects.
 
     This schema can be used to validate the ``cohorts`` components of JSON and TOML
-    community data files.
+    community data files, which are simple dictionaries:
+
+    .. code-block:: toml
+        :caption: TOML
+
+        dbh_value = 0.2
+        n_individuals = 6
+        pft_name = "broadleaf"
+
+    .. code-block:: json
+        :caption: JSON
+
+        {
+            "pft_name": "broadleaf",
+            "dbh_value": 0.2,
+            "n_individuals": 6
+        }
     """
 
     dbh_value = fields.Float(
@@ -153,9 +169,9 @@ class CommunityCSVDataSchema(Schema):
         1,100,conifer,0.5,1
         1,100,conifer,0.6,1
 
-    The input data is expected to be converted to a dictionary of lists, representing
-    the field, as for example by using :meth:`~pandas.DataFrame.to_dict` with the
-    ``orient='list'`` argument.
+    The input data is expected to be provided to this schema as a dictionary of lists of
+    field values keyed by field name, as for example by using
+    :meth:`pandas.DataFrame.to_dict` with the ``orient='list'`` argument.
 
     The schema automatically validates that the cell id and area are consistent and then
     post-processing is used to simplify those fields to the scalar inputs required to
@@ -207,27 +223,31 @@ class CommunityCSVDataSchema(Schema):
 
 @dataclass
 class Community:
-    """Class containing properties of a community.
+    """The plant community class.
 
-    A community is a group of plants in a given location. A location consists of a cell
-    with a specified area and ID.
+    A community is a set of size-structured plant cohorts in a given location, where the
+    location has a specified numeric id and a known area in square meters.
 
-    A community is broken down into cohorts, ie a collection of plants with the same
-    diameter at breast height (DBH) and plant functional type (PFT). This is
-    represented inside the class as a struct of arrays, with each element in a given
-    array representing a property of a cohort. The properties of a given cohort are
-    spread across the arrays and associated positionally, e.g. a cohort that has its
-    pft_h_max in the third element of the pft_h_max_values array will have the number
-    of individuals in the cohort in the third element of the
-    cohort_number_of_individuals array. Care must therefore be taken to
-    modify all the arrays when adding and removing cohorts.
+    A cohort defines a number of individual plants with the same diameter at breast
+    height (DBH) and plant functional type (PFT). Internally, the cohort data is built
+    into a :class:`pandas.DataFrame` with each row representing a cohort and each column
+    representing a property of the cohort. The initial input data is extended to include
+    the plant functional type traits for each cohort (see
+    :class:`~pyrealm.demography.flora.PlantFunctionalType`) and then is further extended
+    to include the geometric and canopy predictions of the T Model for each cohort.
 
-    In addition to the properties the class is initialised with, the following
-    properties are calculated during initialisation and exposed publicly:
-    geometry of cohorts calculated using the t model, and canopy factors from
-    Jaideep's extension to the t model.
+    Factory methods are provided to load community data from csv, TOML or JSON files.
 
-    A method is also provided to load community data from a csv file.
+    Args:
+        cell_id: An positive integer id for the community location.
+        cell_area: An area in square metres for the community location.
+        flora: A flora object containing the plant functional types for the community
+        cohort_dbh_values: A numpy array giving the diameter at breast height in metres
+            for each cohort.
+        cohort_n_individuals: A numpy array giving the number of individuals in each
+            cohort.
+        cohort_pft_names: A numpy array giving the name of the plant functional type in
+            each cohort.
     """
 
     # Dataclass attributes for initialisation
@@ -244,7 +264,7 @@ class Community:
     # Post init properties
     number_of_cohorts: int = field(init=False)
 
-    # Dataframe of cohort
+    # Dataframe of cohort data
     cohort_data: pd.DataFrame = field(init=False)
 
     def __post_init__(
