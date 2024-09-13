@@ -37,6 +37,7 @@ def rvalues():
         ("Wf", "mass_fol"),
         ("Ws", "mass_stm"),
         ("Wss", "mass_swd"),
+        ("P0", "potential_gpp"),
         ("GPP", "gpp_actual"),
         ("Rm1", "resp_swd"),
         ("Rm2", "resp_frt"),

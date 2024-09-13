@@ -1,6 +1,8 @@
-"""Test TModel class.
+"""Regression tests of the demography.t_model functions.
 
-Tests the init, grow_ttree and other methods of TModel.
+The original R implementation has been used to generate a set of predicted growth
+trajectories across a set of PFT definitions (default from the original paper and then
+two fairly randomly chosen variants).
 """
 
 from importlib import resources
@@ -71,7 +73,8 @@ def rvalues():
                 "Wf": "mass_fol",
                 "Ws": "mass_stm",
                 "Wss": "mass_swd",
-                "GPP": "gpp_actual",
+                "P0": "potential_gpp",
+                "GPP": "crown_gpp",
                 "Rm1": "resp_swd",
                 "Rm2": "resp_frt",
                 "dWs": "delta_mass_stm",
@@ -84,11 +87,11 @@ def rvalues():
         # millimetres, not diameter increase in metres
         data["delta_d"] = data["delta_d"] / 500
 
-        # The R tmodel implementation slices off foliar respiration costs from GPP
-        # before doing anything - the pyrealm.tmodel implementation keeps this cost
-        # within the tree calculation, so proportionally inflate the GPP to make it
-        # match
-        data["gpp_actual"] = data["gpp_actual"] / (1 - pft.resp_f)
+        # The reported P0 in the R tmodel outputs has already had fixed foliar
+        # respiration costs removed before calculating anything. The pyrealm
+        # implementation has this as a PFT trait, so in some tests the potential GPP
+        # will need to be proportionally scaled up to make them match, but this is not
+        # true for _all_ tests so the values here are left untouched.
 
         # Add a tuple of the inputs and outputs to the return list.
         return_value.append((pft, dbh_init, data))
@@ -180,3 +183,163 @@ def test_calculate_sapwood_masses(rvalues):
             rho_s=pft.rho_s,
         )
         assert_array_almost_equal(actual_sapwood_masses, data["mass_swd"], decimal=8)
+
+
+def test_calculate_whole_crown_gpp(rvalues):
+    """Tests calculation of sapwood masses of trees.
+
+    Note that this test can used reported P0 from R directly - no need to correct for
+    foliar respiration.
+    """
+
+    from pyrealm.demography.t_model_functions import calculate_whole_crown_gpp
+
+    for pft, _, data in rvalues:
+        actual_whole_crown_gpp = calculate_whole_crown_gpp(
+            potential_gpp=data["potential_gpp"],
+            crown_area=data["crown_area"],
+            par_ext=pft.par_ext,
+            lai=pft.lai,
+        )
+        assert_array_almost_equal(actual_whole_crown_gpp, data["crown_gpp"], decimal=8)
+
+
+def test_calculate_sapwood_respiration(rvalues):
+    """Tests calculation of sapwood respiration of trees."""
+
+    from pyrealm.demography.t_model_functions import calculate_sapwood_respiration
+
+    for pft, _, data in rvalues:
+        actual_sapwood_respiration = calculate_sapwood_respiration(
+            sapwood_mass=data["mass_swd"],
+            resp_s=pft.resp_s,
+        )
+        assert_array_almost_equal(
+            actual_sapwood_respiration, data["resp_swd"], decimal=8
+        )
+
+
+def test_calculate_foliar_respiration(rvalues):
+    """Tests calculation of foliar respiration of trees.
+
+    This is implemented as a fixed proportion of GPP - and the reported values from R
+    are automatically penalised by this proportion beforehand, so this test looks
+    circular but is important to validate this difference.
+    """
+
+    from pyrealm.demography.t_model_functions import calculate_foliar_respiration
+
+    for pft, _, data in rvalues:
+        actual_foliar_respiration = calculate_foliar_respiration(
+            whole_crown_gpp=data["crown_gpp"],
+            resp_f=pft.resp_f,
+        )
+        assert_array_almost_equal(
+            actual_foliar_respiration,
+            data["crown_gpp"] * pft.resp_f,
+            decimal=8,
+        )
+
+
+def test_calculate_fine_root_respiration(rvalues):
+    """Tests calculation of fine root respiration of trees."""
+
+    from pyrealm.demography.t_model_functions import calculate_fine_root_respiration
+
+    for pft, _, data in rvalues:
+        actual_fine_root_respiration = calculate_fine_root_respiration(
+            zeta=pft.zeta,
+            sla=pft.sla,
+            resp_r=pft.resp_r,
+            foliage_mass=data["mass_fol"],
+        )
+        assert_array_almost_equal(
+            actual_fine_root_respiration,
+            data["resp_frt"],
+            decimal=8,
+        )
+
+
+def test_calculate_net_primary_productivity(rvalues):
+    """Tests calculation of fine root respiration of trees.
+
+    Again - this test has to account for the R implementation removing foliar
+    respiration from potential GPP before calculating crown GPP.
+    """
+
+    from pyrealm.demography.t_model_functions import calculate_net_primary_productivity
+
+    for pft, _, data in rvalues:
+        actual_npp = calculate_net_primary_productivity(
+            yld=pft.yld,
+            whole_crown_gpp=data["crown_gpp"] / (1 - pft.resp_f),
+            foliar_respiration=data["crown_gpp"] / (1 - pft.resp_f) * pft.resp_f,
+            fine_root_respiration=data["resp_frt"],
+            sapwood_respiration=data["resp_swd"],
+        )
+        assert_array_almost_equal(
+            actual_npp,
+            data["NPP"],
+            decimal=8,
+        )
+
+
+def test_calculate_foliage_and_fine_root_turnover(rvalues):
+    """Tests calculation of fine root respiration of trees."""
+
+    from pyrealm.demography.t_model_functions import (
+        calculate_foliage_and_fine_root_turnover,
+    )
+
+    for pft, _, data in rvalues:
+        actual_turnover = calculate_foliage_and_fine_root_turnover(
+            lai=pft.lai,
+            sla=pft.sla,
+            tau_f=pft.tau_f,
+            zeta=pft.zeta,
+            tau_r=pft.tau_r,
+            crown_area=data["crown_area"],
+        )
+        assert_array_almost_equal(
+            actual_turnover,
+            data["turnover"],
+            decimal=8,
+        )
+
+
+def test_calculate_growth_increments(rvalues):
+    """Tests calculation of fine root respiration of trees."""
+
+    from pyrealm.demography.t_model_functions import (
+        calculate_growth_increments,
+    )
+
+    for pft, _, data in rvalues:
+        delta_dbh, delta_mass_stem, delta_mass_fine_root = calculate_growth_increments(
+            rho_s=pft.rho_s,
+            a_hd=pft.a_hd,
+            h_max=pft.h_max,
+            lai=pft.lai,
+            ca_ratio=pft.ca_ratio,
+            sla=pft.sla,
+            zeta=pft.zeta,
+            npp=data["NPP"],
+            turnover=data["turnover"],
+            dbh=data["diameter"],
+            height=data["height"],
+        )
+        assert_array_almost_equal(
+            delta_dbh,
+            data["delta_d"],
+            decimal=8,
+        )
+        assert_array_almost_equal(
+            delta_mass_stem,
+            data["delta_mass_stm"],
+            decimal=8,
+        )
+        assert_array_almost_equal(
+            delta_mass_fine_root,
+            data["delta_mass_frt"],
+            decimal=8,
+        )

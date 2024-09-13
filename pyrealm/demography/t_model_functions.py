@@ -145,6 +145,108 @@ def calculate_sapwood_masses(
     return crown_area * rho_s * height * (1 - crown_fraction / 2) / ca_ratio
 
 
+def calculate_whole_crown_gpp(
+    potential_gpp: Series, crown_area: Series, par_ext: Series, lai: Series
+) -> Series:
+    r"""Calculate whole crown gross primary productivity.
+
+    Given an estimate of potential gross primary productivity (GPP) per metre squared
+    (:math:`P_0`), this function scales the GPP up to the whole crown, given the crown
+    area (:math:`A_c`) and leaf area index (:math:`L`) and the extinction coefficient
+    (:math:`k`) :cite:p:`{Equation 12, }Li:2014bc`:.
+
+    .. math::
+
+        P = P_0 A_c (1 - e^{-kL})
+
+    Args:
+        potential_gpp: Potential GPP per metre squared
+        crown_area: The crown area in metres squared
+        par_ext: The extinction coefficient
+        lai: The leaf area index
+    """
+
+    return potential_gpp * crown_area * (1 - np.exp(-(par_ext * lai)))
+
+
+def calculate_sapwood_respiration(resp_s: Series, sapwood_mass: Series) -> Series:
+    """TODO docstring."""
+    return sapwood_mass * resp_s
+
+
+def calculate_foliar_respiration(resp_f: Series, whole_crown_gpp: Series) -> Series:
+    """TODO docstring."""
+    return whole_crown_gpp * resp_f
+
+
+def calculate_fine_root_respiration(
+    zeta: Series, sla: Series, resp_r: Series, foliage_mass: Series
+) -> Series:
+    """TODO docstring."""
+
+    return zeta * sla * foliage_mass * resp_r
+
+
+def calculate_net_primary_productivity(
+    yld: Series,
+    whole_crown_gpp: Series,
+    foliar_respiration: Series,
+    fine_root_respiration: Series,
+    sapwood_respiration: Series,
+) -> Series:
+    """TODO docstring."""
+
+    return yld * (
+        whole_crown_gpp
+        - foliar_respiration
+        - fine_root_respiration
+        - sapwood_respiration
+    )
+
+
+def calculate_foliage_and_fine_root_turnover(
+    lai: Series,
+    sla: Series,
+    tau_f: Series,
+    zeta: Series,
+    tau_r: Series,
+    crown_area: Series,
+) -> Series:
+    """TODO docstring."""
+
+    return crown_area * lai * ((1 / (sla * tau_f)) + (zeta / tau_r))
+
+
+def calculate_growth_increments(
+    rho_s: Series,
+    a_hd: Series,
+    h_max: Series,
+    lai: Series,
+    ca_ratio: Series,
+    sla: Series,
+    zeta: Series,
+    npp: Series,
+    turnover: Series,
+    dbh: Series,
+    height: Series,
+) -> tuple[Series, Series, Series]:
+    """TODO docstring."""
+    # relative increments - these are used to calculate delta_d and
+    # then scaled by delta_d to give actual increments
+    dSdD = np.pi / 8 * rho_s * dbh * (a_hd * dbh * (1 - (height / h_max)) + 2 * height)
+
+    dFdD = (
+        lai
+        * ((np.pi * ca_ratio) / (4 * a_hd))
+        * (a_hd * dbh * (1 - height / h_max) + height)
+        * (1 / sla + zeta)
+    )
+
+    delta_d = (npp - turnover) / (dSdD + dFdD)
+
+    return (delta_d, dSdD * delta_d, dFdD * delta_d)
+
+
 def calculate_canopy_q_m(m: float, n: float) -> float:
     """Calculate a q_m value.
 
