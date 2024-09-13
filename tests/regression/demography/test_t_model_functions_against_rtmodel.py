@@ -293,12 +293,11 @@ def test_calculate_foliage_and_fine_root_turnover(rvalues):
 
     for pft, _, data in rvalues:
         actual_turnover = calculate_foliage_and_fine_root_turnover(
-            lai=pft.lai,
             sla=pft.sla,
             tau_f=pft.tau_f,
             zeta=pft.zeta,
             tau_r=pft.tau_r,
-            crown_area=data["crown_area"],
+            foliage_mass=data["mass_fol"],
         )
         assert_array_almost_equal(
             actual_turnover,
