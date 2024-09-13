@@ -87,21 +87,26 @@ tmodel <- function(P0, year, a, cr, Hm, rho, rr,
     return(output)
 }
 
-tmodel_run <- tmodel(rep(7, 100), seq(100),
-    d = 0.1,
-    a = 116.0,
-    cr = 390.43,
-    Hm = 25.33,
-    rho = 200.0,
-    L = 1.8,
-    sigma = 14.0,
-    tf = 4.0,
-    tr = 1.04,
-    K = 0.5,
-    y = 0.6,
-    zeta = 0.17,
-    rr = 0.913,
-    rs = 0.044
-)
+# Load alternative plant functional types
+pfts <- read.csv("pft_definitions.csv")
 
-write.csv(tmodel_run, "rtmodel_output.csv", row.names = FALSE)
+for (pft_idx in seq_len(nrow(pfts))) {
+    # Get the PFT
+    pft <- as.list(pfts[pft_idx, ])
+
+    # Seperate off the name
+    name <- pft[["name"]]
+    pft[["name"]] <- NULL
+
+    # Get GPP sequence
+    n_years <- 100
+    pft[["P0"]] <- rnorm(n_years, mean = 7)
+    pft[["year"]] <- seq(n_years)
+
+    tmodel_run <- do.call(tmodel, pft)
+
+    write.csv(tmodel_run,
+        sprintf("rtmodel_output_%s.csv", name),
+        row.names = FALSE
+    )
+}
