@@ -19,7 +19,9 @@ def rvalues():
     """Fixture to load test inputs from file.
 
     The regression test inputs consist of time series of growth from an initial DBH
-    using a small set of different plant functional type definitions.
+    run using the original R implementation of the T model, for each of a small set of
+    different plant functional type definitions. The PFT definitions are loaded first
+    and then the output file associated with each PFT is loaded.
     """
     from pyrealm.demography.flora import PlantFunctionalType
 
@@ -87,7 +89,7 @@ def rvalues():
         # millimetres, not diameter increase in metres
         data["delta_d"] = data["delta_d"] / 500
 
-        # The reported P0 in the R tmodel outputs has already had fixed foliar
+        # NOTE: The reported P0 in the R tmodel outputs has already had fixed foliar
         # respiration costs removed before calculating anything. The pyrealm
         # implementation has this as a PFT trait, so in some tests the potential GPP
         # will need to be proportionally scaled up to make them match, but this is not
