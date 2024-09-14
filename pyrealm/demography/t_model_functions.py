@@ -220,9 +220,9 @@ def calculate_fine_root_respiration(
          R_{r} = \zeta \sigma W_f r_r
 
     Args:
-        zeta: The ratio of fine root mass to foliage area.
-        sla: The specific leaf area
-        resp_r: The respiration rate of fine roots.
+        zeta: The ratio of fine root mass to foliage area of the PFT.
+        sla: The specific leaf area of the PFT.
+        resp_r: The respiration rate of fine roots of the PFT.
         foliage_mass: The individual foliage mass.
     """
 
@@ -370,6 +370,18 @@ def calculate_growth_increments(
         \end{align*}
       \]
 
+    Args:
+        rho_s: Wood density of the PFT
+        a_hd: Initial slope of the height/diameter relationship of the PFT
+        h_max: Maximum height of the PFT
+        lai: Leaf area index of the PFT
+        ca_ratio: Crown area ratio of the PFT
+        sla: Specific leaf area of the PFT
+        zeta: The ratio of fine root mass to foliage area of the PFT
+        npp: Net primary productivity of individuals
+        turnover: Fine root and foliage turnover cost of individuals
+        dbh: Diameter at breast height of individuals
+        height: Stem height of individuals
     """
     # Rates of change in stem and foliar
     dWsdt = np.pi / 8 * rho_s * dbh * (a_hd * dbh * (1 - (height / h_max)) + 2 * height)
