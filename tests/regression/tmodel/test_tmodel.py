@@ -3,11 +3,11 @@
 Tests the init, grow_ttree and other methods of TModel.
 """
 
-import csv
 from contextlib import nullcontext as does_not_raise
 from importlib import resources
 
 import numpy as np
+import pandas as pd
 import pytest
 
 # Fixtures: inputs and expected values from the original implementation in R
@@ -22,48 +22,43 @@ def rvalues():
     """
     from pyrealm.tmodel import TModelTraits
 
-    datapath = resources.files("pyrealm_build_data.t_model") / "rtmodel_output.csv"
-
-    with open(str(datapath)) as infile:
-        rdr = csv.DictReader(infile, quoting=csv.QUOTE_NONNUMERIC)
-        values = [v for v in rdr]
-
-    name_map = (
-        ("dD", "delta_d"),
-        ("D", "diameter"),
-        ("H", "height"),
-        ("fc", "crown_fraction"),
-        ("Ac", "crown_area"),
-        ("Wf", "mass_fol"),
-        ("Ws", "mass_stm"),
-        ("Wss", "mass_swd"),
-        ("P0", "potential_gpp"),
-        ("GPP", "gpp_actual"),
-        ("Rm1", "resp_swd"),
-        ("Rm2", "resp_frt"),
-        ("dWs", "delta_mass_stm"),
-        ("dWfr", "delta_mass_frt"),
+    datapath = (
+        resources.files("pyrealm_build_data.t_model") / "rtmodel_output_default.csv"
     )
 
-    # copy values under R names to py names
+    data = pd.read_csv(datapath)
+
+    data = data.rename(
+        columns={
+            "dD": "delta_d",
+            "D": "diameter",
+            "H": "height",
+            "fc": "crown_fraction",
+            "Ac": "crown_area",
+            "Wf": "mass_fol",
+            "Ws": "mass_stm",
+            "Wss": "mass_swd",
+            "P0": "potential_gpp",
+            "GPP": "gpp_actual",
+            "Rm1": "resp_swd",
+            "Rm2": "resp_frt",
+            "dWs": "delta_mass_stm",
+            "dWfr": "delta_mass_frt",
+        }
+    )
+
+    # Fix some scaling differences:
+    # The R tmodel implementation rescales reported delta_d as a radial increase in
+    # millimetres, not diameter increase in metres
+    data["delta_d"] = data["delta_d"] / 500
+
+    # The R tmodel implementation slices off foliar respiration costs from
+    # GPP before doing anything - the pyrealm.tmodel implementation keeps
+    # this cost within the tree calculation
     traits = TModelTraits()
+    data["gpp_actual"] = data["gpp_actual"] / (1 - traits.resp_f)
 
-    for row in values:
-        for rnm, pynm in name_map:
-            # Fix some scaling differences:
-            if pynm == "delta_d":
-                # The R tmodel implementation rescales reported delta_d as
-                # a radial increase in millimetres, not diameter increase in metres
-                row[pynm] = row[rnm] / 500
-            elif pynm == "gpp_actual":
-                # The R tmodel implementation slices off foliar respiration costs from
-                # GPP before doing anything - the pyrealm.tmodel implementation keeps
-                # this cost within the tree calculation
-                row[pynm] = row[rnm] / (1 - traits.resp_f)
-            else:
-                row[pynm] = row[rnm]
-
-    return values
+    return data
 
 
 @pytest.mark.parametrize(argnames="row", argvalues=np.arange(0, 100, 10))
@@ -73,10 +68,11 @@ def test_tmodel_init(rvalues, row):
     from pyrealm.constants.tmodel_const import TModelTraits
     from pyrealm.tmodel import TTree
 
-    ttree = TTree(traits=TModelTraits, diameters=rvalues[row]["diameter"])
+    row = rvalues.iloc[row]
+    ttree = TTree(traits=TModelTraits, diameters=row["diameter"])
 
     for geom_est in ("height", "crown_area", "mass_fol", "mass_stm", "mass_swd"):
-        assert np.allclose(getattr(ttree, geom_est), rvalues[row][geom_est])
+        assert np.allclose(getattr(ttree, geom_est), row[geom_est])
 
 
 @pytest.mark.parametrize(argnames="row", argvalues=np.arange(0, 100, 10))
@@ -87,10 +83,11 @@ def test_tmodel_reset_diameters(rvalues, row):
     from pyrealm.tmodel import TTree
 
     ttree = TTree(diameters=0.001, traits=TModelTraits())
-    ttree.reset_diameters(rvalues[row]["diameter"])
+    row = rvalues.iloc[row]
+    ttree.reset_diameters(row["diameter"])
 
     for geom_est in ("height", "crown_area", "mass_fol", "mass_stm", "mass_swd"):
-        assert np.allclose(getattr(ttree, geom_est), rvalues[row][geom_est])
+        assert np.allclose(getattr(ttree, geom_est), row[geom_est])
 
 
 def test_tmodel_init_array(rvalues):
@@ -99,11 +96,11 @@ def test_tmodel_init_array(rvalues):
     from pyrealm.constants.tmodel_const import TModelTraits
     from pyrealm.tmodel import TTree
 
-    diams = np.array([rw["diameter"] for rw in rvalues])
+    diams = np.array(rvalues["diameter"])
     ttree = TTree(diameters=diams, traits=TModelTraits)
 
     for geom_est in ("height", "crown_area", "mass_fol", "mass_stm", "mass_swd"):
-        vals = [rw[geom_est] for rw in rvalues]
+        vals = rvalues[geom_est]
         assert np.allclose(getattr(ttree, geom_est), vals)
 
 
@@ -150,19 +147,20 @@ def test_tmodel_growth_access(sequence, raises):
 def test_tmodel_calculate_growth(rvalues, row):
     """Test calculate_growth with scalars.
 
-    Runs a test of the tmodel.TTree against output from the R implementation.
-    The values in the test come from simulating a 100 year run starting from
-    a stem diameter of 0.1 and with an annual GPP value of 7. Each row in the
-    file is the successive growth, but this test just runs some values from the
-    sequence.
+    Runs a test of the tmodel.TTree against output from the R implementation. The values
+    in the test come from simulating a 100 year run starting from a stem diameter of
+    0.1. Each row in the file is the successive growth, but this test just runs some
+    values from the sequence.
     """
 
     from pyrealm.constants.tmodel_const import TModelTraits
     from pyrealm.tmodel import TTree
 
     # create a tree with the initial diameter given in the row
-    ttree = TTree(diameters=rvalues[row]["diameter"], traits=TModelTraits())
-    ttree.calculate_growth(7)
+    row = rvalues.iloc[row]
+    traits = TModelTraits()
+    ttree = TTree(diameters=row["diameter"], traits=traits)
+    ttree.calculate_growth(row["potential_gpp"] / (1 - traits.resp_f))
 
     for growth_est in (
         "delta_d",
@@ -172,7 +170,7 @@ def test_tmodel_calculate_growth(rvalues, row):
         "delta_mass_stm",
         "delta_mass_frt",
     ):
-        assert np.allclose(getattr(ttree, growth_est), rvalues[row][growth_est])
+        assert np.allclose(getattr(ttree, growth_est), row[growth_est])
 
 
 def test_tmodel_calculate_growth_array(rvalues):
@@ -182,9 +180,10 @@ def test_tmodel_calculate_growth_array(rvalues):
     from pyrealm.tmodel import TTree
 
     # create a tree with the initial diameter given in the row
-    diams = np.array([rw["diameter"] for rw in rvalues])
-    ttree = TTree(diameters=diams, traits=TModelTraits)
-    ttree.calculate_growth(7)
+    diams = np.array(rvalues["diameter"])
+    traits = TModelTraits()
+    ttree = TTree(diameters=diams, traits=traits)
+    ttree.calculate_growth(rvalues["potential_gpp"] / (1 - traits.resp_f))
 
     for growth_est in (
         "delta_d",
@@ -194,8 +193,7 @@ def test_tmodel_calculate_growth_array(rvalues):
         "delta_mass_stm",
         "delta_mass_frt",
     ):
-        vals = [rw[growth_est] for rw in rvalues]
-        assert np.allclose(getattr(ttree, growth_est), vals)
+        assert np.allclose(getattr(ttree, growth_est), rvalues[growth_est])
 
 
 # @pytest.mark.parametrize(
