@@ -145,6 +145,7 @@ nitpick_ignore = [
             "numpy.ndarray[typing.Any, numpy.dtype[+ScalarType]]]"
         ),
     ),
+    ("py:class", "pandas.core.frame.DataFrame"),
 ]
 
 # +
