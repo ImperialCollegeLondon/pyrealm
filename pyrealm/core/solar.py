@@ -44,7 +44,7 @@ def calc_declination_angle_delta(
     r"""Calculates declination angle delta.
 
     This function calculates the solar declination angle delta using
-    the method of Woolf (1968).
+    the method of :cite:t:'Woolf:1968'.
 
     .. math::
 
@@ -99,7 +99,8 @@ def calc_lat_delta_intermediates(
 def calc_sunset_hour_angle(delta: NDArray, latitude: NDArray, k_pir: float) -> NDArray:
     r"""Calculates sunset hour angle.
 
-    This function calculates the sunset hour angle using Eq3.22, Stine & Geyer (2001)
+    This function calculates the sunset hour angle using eq3.22
+    :cite:t:'stine_geyer:2001'.
 
     .. math::
 
@@ -124,7 +125,8 @@ def _calc_sunset_hour_angle_from_ru_rv(
 ) -> NDArray:
     """Calculate sunset hour angle from intermediates.
 
-    This function calculates the sunset hour angle using Eq3.22, Stine & Geyer (2001).
+    This function calculates the sunset hour angle using Eq3.22,
+    :cite:t:'stine_geyer:2001'.
 
     Args:
         ru          : dimensionless parameter
@@ -143,7 +145,7 @@ def calc_daily_solar_radiation(
     r"""Calculate daily extraterrestrial solar radiation (J/m^2).
 
     This function calculates the daily extraterrestrial solar radition (J/m^2)
-    using Eq. 1.10.3, Duffy & Beckman (1993)
+    using Eq. 1.10.3 :cite:t:'Duffie & Beckman:2013'.
 
     .. math::
 
@@ -174,7 +176,7 @@ def _calc_daily_solar_radiation(
     """Calculate daily extraterrestrial solar radiation (J/m^2).
 
     This function calculates the daily extraterrestrial solar radition (J/m^2)
-    using Eq. 1.10.3, Duffy & Beckman (1993)
+    using Eq. 1.10.3, :cite:t:'Duffie & Beckman:2013'
 
     Args:
         dr          : dimensionless distance factor
@@ -207,7 +209,7 @@ def calc_transmissivity(sf: NDArray, elv: NDArray, k_c: float, k_d: float) -> ND
     r"""Calculate atmospheric transmissivity, tau.
 
     This function calculates atmospheric transmissivity using the method of
-    Eq.11, Linacre (1968) and Eq 2, Allen (1996)
+    Eq.11, :cite:t:'Linacre:1968' and Eq 2, :cite:t:'Allen:1996'.
 
     .. math::
 
@@ -331,7 +333,9 @@ def calc_ppfd(
 def calc_rnl(sf: NDArray, tc: NDArray, k_b: float, k_A: float) -> NDArray:
     r"""Calculates net longwave radiation, rnl, W/m^2.
 
-    This function calculates net longwave radiation in W/m^2.
+    This function calculates net longwave radiation in W/m^2
+    using the methods of Eq. 11, :cite:t:'Prentice et al.:1993',
+    Eq. 5 and 6, :cite:t:'Linacre:1968'.
 
     .. math::
 
@@ -723,7 +727,7 @@ def elevation_from_lat_dec_hn(
     solar declination, and the hour angle.
 
     The calculation is based on the following trigonometric relationship based on Eqn
-    A13, de Pury and Farquhar:
+    A13, :cite:t:'de Pury and Farquhar:1997':
 
     .. math::
         \sin(\alpha) = \sin(\phi) \cdot \sin(\delta) +
@@ -765,8 +769,8 @@ def elevation_from_lat_dec_hn(
 def solar_declination(td: NDArray) -> NDArray:
     r"""Calculates solar declination angle.
 
-    Use method described in eqn A14 of dePury& Farquhar (1997) to calculate solar
-    declination angle.
+    Use method described in eqn A14 of :cite:t:'dePury& Farquhar:1997' to calculate
+    solar declination angle.
 
     .. math::
 
@@ -793,7 +797,7 @@ def local_hour_angle(t: NDArray, t0: NDArray) -> NDArray:
     the local hour angle by determining the difference between the current time (t)
     and the solar noon time (t_0), and then converting this difference into an angle.
 
-    Equation implemented from A15 de Pury and Farquhar (1997).
+    Equation implemented from A15 :citet:'de Pury and Farquhar:1997'.
 
     .. math::
         h = \pi \cdot \frac{t - t_0}{12}
@@ -823,7 +827,8 @@ def solar_noon(L_e: float, L_s: float, E_t: NDArray) -> NDArray:
     for a given location.
     This function calculates the solar noon by adjusting the standard noon time
     (12:00 PM) based on the difference between the local longitude (L_e) and the
-    standard meridian (L_s) and the equation of time (E_t).
+    standard meridian (L_s) and the equation of time (E_t). Based on EqA16,
+    :cite:t:'de Pury and Farquhar:1997'.
 
     .. math::
         t_0 = 12 + \frac{4 \cdot -(L_e - L_s) - E_t}{60}
@@ -850,8 +855,9 @@ def solar_noon(L_e: float, L_s: float, E_t: NDArray) -> NDArray:
 def equation_of_time(day_angle: NDArray) -> NDArray:
     r"""Calculates equation of time in minutes.
 
-    Based on eqn 1.4.1 Iqbal (1983) rather than A17 de Pury and Farquahar (1997) due to
-    incorrect reported implementation in the latter.
+    Based on eqn 1.4.1 :cite:t:'Iqbal:1983' rather than A17
+    :cite:t:'de Pury and Farquahar:1997' due to incorrect reported implementation in
+    the latter.
 
     .. math::
 
@@ -889,7 +895,7 @@ def day_angle(t_d: NDArray) -> NDArray:
     The day angle (gamma) for a given day of the year N, (where N=1 for January 1st and
     N=365 for December 31st) can be calculated using the following formula:
 
-    Based on Eqn A18, De Pury and Farquhar (1997).
+    Based on Eqn A18, :cite:t:'De Pury and Farquhar:1997'.
 
     .. math::
 
