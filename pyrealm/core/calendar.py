@@ -167,24 +167,13 @@ class LocationDateTime:
     """
 
     latitude: float
-    """The latitude of the location in degrees."""
     latitude_rad: float = field(init=False)
-    """The latitude of the location in radians, calculated automatically."""
     longitude: float
-    """The longitude of the location in degrees."""
     longitude_rad: float = field(init=False)
-    """The longitude of the location in radians, calculated automatically."""
     UTC_offset: int
-    """The offset from Coordinated Universal Time (UTC) for the location."""
     year_date_time: np.ndarray
-    """An array of np.datetime64 values corresponding to observations at the 
-    location."""
     julian_days: np.ndarray = field(init=False)
-    """An array of Julian day of the year numbers calculated from the 
-    `year_date_time`."""
     local_time: np.ndarray = field(init=False)
-    """An array of local times in decimal hour format calculated from the 
-    `year_date_time`."""
 
     def __post_init__(self) -> None:
         self.julian_days = Calendar(self.year_date_time).julian_day
@@ -194,6 +183,8 @@ class LocationDateTime:
 
     def decimal_hour(self) -> np.ndarray:
         """Convert year_date_time to a decimal representation of hours.
+
+        .. :noindex:
 
         This method extracts the hours and minutes from the `year_date_time` attribute
         and converts them into a decimal representation of hours.
