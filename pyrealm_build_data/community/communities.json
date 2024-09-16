@@ -1,0 +1,76 @@
+{
+  "cells": [
+    {
+      "cell_id": 1,
+      "cell_area": 100,
+      "cohorts": [
+        {
+          "pft_name": "test1",
+          "dbh": 0.2,
+          "number_of_members": 6
+        },
+        {
+          "pft_name": "test1",
+          "dbh": 0.25,
+          "number_of_members": 6
+        },
+        {
+          "pft_name": "test1",
+          "dbh": 0.3,
+          "number_of_members": 3
+        },
+        {
+          "pft_name": "test1",
+          "dbh": 0.35,
+          "number_of_members": 1
+        },
+        {
+          "pft_name": "test2",
+          "dbh": 0.5,
+          "number_of_members": 1
+        },
+        {
+          "pft_name": "test2",
+          "dbh": 0.6,
+          "number_of_members": 1
+        }
+      ]
+    },
+    {
+      "cell_id": 1,
+      "cell_area": 100,
+      "cohorts": [
+        {
+          "pft_name": "test1",
+          "dbh": 0.2,
+          "number_of_members": 6
+        },
+        {
+          "pft_name": "test1",
+          "dbh": 0.25,
+          "number_of_members": 6
+        },
+        {
+          "pft_name": "test1",
+          "dbh": 0.3,
+          "number_of_members": 3
+        },
+        {
+          "pft_name": "test1",
+          "dbh": 0.35,
+          "number_of_members": 1
+        },
+        {
+          "pft_name": "test2",
+          "dbh": 0.5,
+          "number_of_members": 1
+        },
+        {
+          "pft_name": "test2",
+          "dbh": 0.6,
+          "number_of_members": 1
+        }
+      ]
+    }
+  ]
+}

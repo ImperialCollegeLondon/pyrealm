@@ -1,0 +1,67 @@
+[[cells]]
+cell_area = 100
+cell_id = 1
+
+[[cells.cohorts]]
+dbh = 0.2
+number_of_members = 6
+pft_name = "test1"
+
+[[cells.cohorts]]
+dbh = 0.25
+number_of_members = 6
+pft_name = "test1"
+
+[[cells.cohorts]]
+dbh = 0.3
+number_of_members = 3
+pft_name = "test1"
+
+[[cells.cohorts]]
+dbh = 0.35
+number_of_members = 1
+pft_name = "test1"
+
+[[cells.cohorts]]
+dbh = 0.5
+number_of_members = 1
+pft_name = "test2"
+
+[[cells.cohorts]]
+dbh = 0.6
+number_of_members = 1
+pft_name = "test2"
+
+[[cells]]
+cell_area = 100
+cell_id = 1
+
+[[cells.cohorts]]
+dbh = 0.2
+number_of_members = 6
+pft_name = "test1"
+
+[[cells.cohorts]]
+dbh = 0.25
+number_of_members = 6
+pft_name = "test1"
+
+[[cells.cohorts]]
+dbh = 0.3
+number_of_members = 3
+pft_name = "test1"
+
+[[cells.cohorts]]
+dbh = 0.35
+number_of_members = 1
+pft_name = "test1"
+
+[[cells.cohorts]]
+dbh = 0.5
+number_of_members = 1
+pft_name = "test2"
+
+[[cells.cohorts]]
+dbh = 0.6
+number_of_members = 1
+pft_name = "test2"

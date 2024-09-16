@@ -26,3 +26,19 @@ kernelspec:
     :autosummary:
     :members:
 ```
+
+## The {mod}`~pyrealm.demography.community` module
+
+```{eval-rst}
+.. automodule:: pyrealm.demography.community
+    :autosummary:
+    :members:
+```
+
+## The {mod}`~pyrealm.demography.t_model_functions` module
+
+```{eval-rst}
+.. automodule:: pyrealm.demography.t_model_functions
+    :autosummary:
+    :members:
+```

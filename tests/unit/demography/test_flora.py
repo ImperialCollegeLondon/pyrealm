@@ -2,9 +2,11 @@
 
 import sys
 from contextlib import nullcontext as does_not_raise
+from dataclasses import fields
 from importlib import resources
 from json import JSONDecodeError
 
+import pandas as pd
 import pytest
 from marshmallow.exceptions import ValidationError
 from pandas.errors import ParserError
@@ -55,8 +57,8 @@ def test_PlantFunctionalTypeStrict__init__(args, outcome):
 
     from pyrealm.demography.flora import (
         PlantFunctionalTypeStrict,
-        calculate_q_m,
-        calculate_z_max_proportion,
+        calculate_canopy_q_m,
+        calculate_canopy_z_max_proportion,
     )
 
     with outcome:
@@ -66,8 +68,8 @@ def test_PlantFunctionalTypeStrict__init__(args, outcome):
         if isinstance(outcome, does_not_raise):
             assert pft.name == "broadleaf"
             # Expected values from defaults
-            assert pft.q_m == calculate_q_m(m=2, n=5)
-            assert pft.z_max_prop == calculate_z_max_proportion(m=2, n=5)
+            assert pft.q_m == calculate_canopy_q_m(m=2, n=5)
+            assert pft.z_max_prop == calculate_canopy_z_max_proportion(m=2, n=5)
 
 
 #
@@ -87,8 +89,8 @@ def test_PlantFunctionalType__init__(args, outcome):
 
     from pyrealm.demography.flora import (
         PlantFunctionalType,
-        calculate_q_m,
-        calculate_z_max_proportion,
+        calculate_canopy_q_m,
+        calculate_canopy_z_max_proportion,
     )
 
     with outcome:
@@ -98,8 +100,8 @@ def test_PlantFunctionalType__init__(args, outcome):
         if isinstance(outcome, does_not_raise):
             assert pft.name == "broadleaf"
             # Expected values from defaults
-            assert pft.q_m == calculate_q_m(m=2, n=5)
-            assert pft.z_max_prop == calculate_z_max_proportion(m=2, n=5)
+            assert pft.q_m == calculate_canopy_q_m(m=2, n=5)
+            assert pft.z_max_prop == calculate_canopy_z_max_proportion(m=2, n=5)
 
 
 #
@@ -169,10 +171,17 @@ def test_Flora__init__(flora_inputs, outcome):
     with outcome:
         flora = Flora(pfts=flora_inputs)
 
-        # Simple check that PFT instances are correctly keyed by name.
         if isinstance(outcome, does_not_raise):
+            # Simple check that PFT instances are correctly keyed by name.
             for k, v in flora.items():
                 assert k == v.name
+
+            # Check data view is correct
+            assert isinstance(flora.data, pd.DataFrame)
+            assert flora.data.shape == (
+                len(flora_inputs),
+                len(fields(next(iter(flora.values())))),
+            )
 
 
 #
@@ -270,9 +279,9 @@ def test_flora_from_csv(filename, outcome):
 def test_calculate_q_m(m, n, q_m):
     """Test calculation of q_m."""
 
-    from pyrealm.demography.flora import calculate_q_m
+    from pyrealm.demography.flora import calculate_canopy_q_m
 
-    calculated_q_m = calculate_q_m(m, n)
+    calculated_q_m = calculate_canopy_q_m(m, n)
     assert calculated_q_m == pytest.approx(q_m)
 
 
@@ -293,7 +302,7 @@ def test_calculate_q_m_values_raises_exception_for_invalid_input():
 def test_calculate_z_max_ratio(m, n, z_max_ratio):
     """Test calculation of z_max proportion."""
 
-    from pyrealm.demography.flora import calculate_z_max_proportion
+    from pyrealm.demography.flora import calculate_canopy_z_max_proportion
 
-    calculated_zmr = calculate_z_max_proportion(m, n)
+    calculated_zmr = calculate_canopy_z_max_proportion(m, n)
     assert calculated_zmr == pytest.approx(z_max_ratio)

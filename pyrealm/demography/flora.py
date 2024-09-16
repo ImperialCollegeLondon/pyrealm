@@ -4,10 +4,11 @@
   used to parameterise the traits of different plant functional types. The
   ``PlantFunctionalType`` dataclass is a subclass of ``PlantFunctionalTypeStrict`` that
   simply adds default values to the attributes.
-* The ``PlantFunctionalTypeStrict`` dataclass is used as the basis of a ``marshmallow``
-  schema for validating the creation of plant functional types from data files. This
-  intentionally enforces a complete description of the traits in the input data. The
-  ``PlantFunctionalType`` is provided as a more convenient API for programmatic use.
+* The ``PlantFunctionalTypeStrict`` dataclass is used as the basis of a
+  :mod:`~marshmallow` schema for validating the creation of plant functional types from
+  data files. This intentionally enforces a complete description of the traits in the
+  input data. The ``PlantFunctionalType`` is provided as a more convenient API for
+  programmatic use.
 * The Flora class, which is simply a dictionary of named plant functional types for use
   in describing a plant community in a simulation. The Flora class also defines factory
   methods to create instances from plant functional type data stored in JSON, TOML or
@@ -20,12 +21,18 @@ import json
 import sys
 from collections import Counter
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from pathlib import Path
 
 import marshmallow_dataclass
+import numpy as np
 import pandas as pd
 from marshmallow.exceptions import ValidationError
+
+from pyrealm.demography.t_model_functions import (
+    calculate_canopy_q_m,
+    calculate_canopy_z_max_proportion,
+)
 
 if sys.version_info[:2] >= (3, 11):
     import tomllib
@@ -108,9 +115,9 @@ class PlantFunctionalTypeStrict:
 
         # Calculate q_m and z_max proportion. Need to use __setattr__ because the
         # dataclass is frozen.
-        object.__setattr__(self, "q_m", calculate_q_m(m=self.m, n=self.n))
+        object.__setattr__(self, "q_m", calculate_canopy_q_m(m=self.m, n=self.n))
         object.__setattr__(
-            self, "z_max_prop", calculate_z_max_proportion(m=self.m, n=self.n)
+            self, "z_max_prop", calculate_canopy_z_max_proportion(m=self.m, n=self.n)
         )
 
 
@@ -140,7 +147,7 @@ class PlantFunctionalType(PlantFunctionalTypeStrict):
         tau_f, 4.0, years
         tau_r,  1.04, years
         par_ext, 0.5, -
-        yld, 0.17, -
+        yld, 0.6, -
         zeta, 0.17, kg C m-2
         resp_r,  0.913, year-1
         resp_s,  0.044, year-1
@@ -158,7 +165,7 @@ class PlantFunctionalType(PlantFunctionalTypeStrict):
     tau_f: float = 4.0
     tau_r: float = 1.04
     par_ext: float = 0.5
-    yld: float = 0.17
+    yld: float = 0.6
     zeta: float = 0.17
     resp_r: float = 0.913
     resp_s: float = 0.044
@@ -176,38 +183,6 @@ This schema explicitly uses the strict version of the dataclass, which enforces 
 descriptions of plant functional type data rather than allowing partial data and filling
 in gaps from the default values.
 """
-
-
-def calculate_q_m(m: float, n: float) -> float:
-    """Calculate a q_m value.
-
-    The value of q_m is a constant canopy scaling parameter derived from the ``m`` and
-    ``n`` attributes defined for a plant functional type.
-
-    Args:
-        m: Canopy shape parameter
-        n: Canopy shape parameter
-    """
-    return (
-        m
-        * n
-        * ((n - 1) / (m * n - 1)) ** (1 - 1 / n)
-        * (((m - 1) * n) / (m * n - 1)) ** (m - 1)
-    )
-
-
-def calculate_z_max_proportion(m: float, n: float) -> float:
-    """Calculate the z_m proportion.
-
-    The z_m proportion is the constant proportion of stem height at which the maximum
-    crown radius is found for a given plant functional type.
-
-    Args:
-        m: Canopy shape parameter
-        n: Canopy shape parameter
-    """
-
-    return ((n - 1) / (m * n - 1)) ** (1 / n)
 
 
 class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
@@ -251,6 +226,23 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
         # Populate the dictionary using the PFT name as key
         for name, pft in zip(pft_names, pfts):
             self[name] = pft
+
+        # Generate an dataframe representation to facilitate merging to cohort data.
+        # - assemble pft fields into arrays
+        data = {}
+        pft_fields = [f.name for f in fields(PlantFunctionalTypeStrict)]
+
+        for pft_field in pft_fields:
+            data[pft_field] = np.array(
+                [getattr(pft, pft_field) for pft in self.values()]
+            )
+
+        self.data: pd.DataFrame = pd.DataFrame(data)
+        """A dataframe of trait values as numpy arrays.
+
+        The 'name' column can be used with cohort names to broadcast plant functional
+        type data out to cohorts.
+        """
 
     @classmethod
     def _from_file_data(cls, file_data: dict) -> Flora:

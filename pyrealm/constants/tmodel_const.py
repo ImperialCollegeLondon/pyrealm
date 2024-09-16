@@ -35,7 +35,7 @@ class TModelTraits(ConstantsClass):
     """Fine-root turnover time (:math:`\tau_r`, 1.04, years)"""
     par_ext: float = 0.5  # k, PAR extinction coefficient (-)
     """PAR extinction coefficient (:math:`k`, 0.5, -)"""
-    yld: float = 0.17  # y, Yield_factor (-)
+    yld: float = 0.6  # y, Yield_factor (-)
     """Yield_factor (:math:`y`, 0.17, -)"""
     zeta: float = 0.17  # zeta, Ratio of fine-root mass to foliage area (kgCm-2)
     r"""Ratio of fine-root mass to foliage area (:math:`\zeta`, 0.17, kg C m-2)"""
