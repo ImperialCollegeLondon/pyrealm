@@ -454,7 +454,10 @@ def test_calc_solar_elevation(
     argvalues=[(np.array([298]), -0.22708144)],
 )
 def test_calc_declination(td, expected):
-    """Test."""
+    """Tests calc_declination.
+
+    This test is intended to verify the implemented maths.
+    """
 
     # This test is intended to verify the implemented maths.
 
@@ -472,7 +475,10 @@ def test_calc_declination(td, expected):
     argvalues=[(np.array([298]), 5.11261928)],
 )
 def test_calc_day_angle(julian_day, expected):
-    """TBD."""
+    """Tests calc_day_angle.
+
+    This test is intended to verify the implemented maths.
+    """
 
     from pyrealm.core.solar import day_angle
 
@@ -486,7 +492,10 @@ def test_calc_day_angle(julian_day, expected):
     argvalues=[(np.array([5.11]), 15.99711625)],
 )
 def test_equation_of_time(day_angle, expected):
-    """TBD."""
+    """Tests equation_of_time.
+
+    This test is intended to verify the implemented maths.
+    """
 
     from pyrealm.core.solar import equation_of_time
 
@@ -500,7 +509,10 @@ def test_equation_of_time(day_angle, expected):
     argvalues=[(147.34167, 150, 16.01, np.array([11.910388666666668]))],
 )
 def test_solar_noon(longitude, UTC_offset, E_t, expected):
-    """TBC."""
+    """Tests solar_noon.
+
+    This test is intended to verify the implemented maths.
+    """
 
     from pyrealm.core.solar import solar_noon
 
@@ -514,7 +526,10 @@ def test_solar_noon(longitude, UTC_offset, E_t, expected):
     argvalues=[(np.array([10.5]), np.array([11.91]), np.array([-0.36913714]))],
 )
 def test_local_hour_angle(t, t0, expected):
-    """TBD."""
+    """Tests local_hour_angle.
+
+    This test is intended to verify the implemented maths.
+    """
 
     from pyrealm.core.solar import local_hour_angle
 
@@ -530,7 +545,10 @@ def test_local_hour_angle(t, t0, expected):
     ],
 )
 def test_elevation_from_lat_dec_hn(latitude, declination, hour_angle, expected):
-    """TBD."""
+    """Tests elevation_from_lat_dec_hn.
+
+    This test is intended to verify the implemented maths.
+    """
 
     from pyrealm.core.solar import elevation_from_lat_dec_hn
 
