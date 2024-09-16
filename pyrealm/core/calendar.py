@@ -184,6 +184,8 @@ class LocationDateTime:
     def decimal_hour(self) -> np.ndarray:
         """Convert year_date_time to a decimal representation of hours.
 
+        .. :no-index:
+
         This method extracts the hours and minutes from the `year_date_time` attribute
         and converts them into a decimal representation of hours.
 
