@@ -25,7 +25,6 @@ kernelspec:
 .. automodule:: pyrealm.core.calendar
     :autosummary:
     :members:
-    :noindex:
 ```
 
 ## The {mod}`~pyrealm.core.hygro` submodule
