@@ -11,87 +11,95 @@ Internally, the cohort data in the Community class is represented as a pandas da
 which makes it possible to update cohort attributes in parallel across all cohorts but
 also provide a clean interface for adding and removing cohorts to a Community.
 
-Worked example:
->>> from flora import PlantFunctionalType, Flora
->>> from t_model import (
+Worked example
+==============
+
+The example code below demonstrates defining PFTs, creating a Flora collection,
+initializing a Community, and computing ecological metrics using the T Model for a set
+of plant cohorts.
+
+>>> import pandas as pd
+>>>
+>>> from pyrealm.demography.flora import PlantFunctionalType, Flora
+>>> from pyrealm.demography.t_model_functions import (
 ...     calculate_heights, calculate_crown_areas, calculate_stem_masses,
 ...     calculate_foliage_masses
 ... )
->>> import pandas as pd
 
 >>> pft1 = PlantFunctionalType(
-    ...     name="Evergreen Tree",
-    ...     a_hd=120.0,
-    ...     ca_ratio=380.0,
-    ...     h_max=30.0,
-    ...     rho_s=210.0,
-    ...     lai=3.0,
-    ...     sla=12.0,
-    ...     tau_f=5.0,
-    ...     tau_r=1.2,
-    ...     par_ext=0.6,
-    ...     yld=0.65,
-    ...     zeta=0.18,
-    ...     resp_r=0.95,
-    ...     resp_s=0.045,
-    ...     resp_f=0.12,
-    ...     m=2.5,
-    ...     n=4.5,
-    ... )
+...     name="Evergreen Tree",
+...     a_hd=120.0,
+...     ca_ratio=380.0,
+...     h_max=30.0,
+...     rho_s=210.0,
+...     lai=3.0,
+...     sla=12.0,
+...     tau_f=5.0,
+...     tau_r=1.2,
+...     par_ext=0.6,
+...     yld=0.65,
+...     zeta=0.18,
+...     resp_r=0.95,
+...     resp_s=0.045,
+...     resp_f=0.12,
+...     m=2.5,
+...     n=4.5,
+... )
 
-    >>> pft2 = PlantFunctionalType(
-    ...     name="Deciduous Shrub",
-    ...     a_hd=100.0,
-    ...     ca_ratio=350.0,
-    ...     h_max=4.0,
-    ...     rho_s=180.0,
-    ...     lai=2.0,
-    ...     sla=15.0,
-    ...     tau_f=3.0,
-    ...     tau_r=0.8,
-    ...     par_ext=0.4,
-    ...     yld=0.55,
-    ...     zeta=0.15,
-    ...     resp_r=0.85,
-    ...     resp_s=0.05,
-    ...     resp_f=0.1,
-    ...     m=3.0,
-    ...     n=5.0,
-    ... )
+>>> pft2 = PlantFunctionalType(
+...     name="Deciduous Shrub",
+...     a_hd=100.0,
+...     ca_ratio=350.0,
+...     h_max=4.0,
+...     rho_s=180.0,
+...     lai=2.0,
+...     sla=15.0,
+...     tau_f=3.0,
+...     tau_r=0.8,
+...     par_ext=0.4,
+...     yld=0.55,
+...     zeta=0.15,
+...     resp_r=0.85,
+...     resp_s=0.05,
+...     resp_f=0.1,
+...     m=3.0,
+...     n=5.0,
+... )
 
-    Create a Flora collection:
+Create a Flora collection:
 
-    >>> flora = Flora([pft1, pft2])
+>>> flora = Flora([pft1, pft2])
 
-    Define cohort data representing plant density, age, DBH (diameter at breast height), and associated PFTs:
+Define community data as size-structured cohorts of given plant functional types with a
+given number of individuals.
 
-    >>> cohort_dbh_values = np.array([0.10, 0.03, 0.12, 0.025])  # DBH in meters
-    >>> cohort_n_individuals = np.array([100, 200, 150, 180])    # Number of individuals
-    >>> cohort_pft_names = np.array(["Evergreen Tree", "Deciduous Shrub", "Evergreen Tree", "Deciduous Shrub"])
+>>> cohort_dbh_values = np.array([0.10, 0.03, 0.12, 0.025])
+>>> cohort_n_individuals = np.array([100, 200, 150, 180])
+>>> cohort_pft_names = np.array(
+...    ["Evergreen Tree", "Deciduous Shrub", "Evergreen Tree", "Deciduous Shrub"]
+... )
 
-    Initialize a Community with the given cohort data:
+Initialize a Community into an area of 1000 square meter with the given cohort data:
 
-    >>> community = Community(
-    ...     cell_id=1,
-    ...     cell_area=1000.0,  # Area in square meters
-    ...     flora=flora,
-    ...     cohort_dbh_values=cohort_dbh_values,
-    ...     cohort_n_individuals=cohort_n_individuals,
-    ...     cohort_pft_names=cohort_pft_names
-    ... )
+>>> community = Community(
+...     cell_id=1,
+...     cell_area=1000.0,
+...     flora=flora,
+...     cohort_dbh_values=cohort_dbh_values,
+...     cohort_n_individuals=cohort_n_individuals,
+...     cohort_pft_names=cohort_pft_names
+... )
 
-    Display the community's cohort data with calculated T Model predictions:
+Display the community's cohort data with calculated T Model predictions:
 
-    >>> community.cohort_data[['name', 'dbh', 'n_individuals', 'height', 'crown_area', 'stem_mass', 'foliage_mass']]
-               name     dbh  n_individuals    height  crown_area    stem_mass  foliage_mass
-    0  Evergreen Tree  0.10            100   21.9911    250.4934   41617.4785      62.6234
-    1  Deciduous Shrub  0.03            200    2.7315     8.1571     120.7982       1.0876
-    2  Evergreen Tree  0.12            150   24.0988    300.5911   56976.5148      75.1478
-    3  Deciduous Shrub  0.025           180    2.3607     7.0236      88.9265       0.9353
-
-  The example demonstrates defining PFTs, creating a Flora collection, initializing a Community, and computing 
-    ecological metrics using the T Model for a set of plant cohorts.
-    """
+>>> community.cohort_data[
+...    ['name', 'dbh', 'n_individuals', 'height', 'crown_area', 'stem_mass']
+... ]
+              name    dbh  n_individuals     height  crown_area  stem_mass
+0   Evergreen Tree  0.100            100   9.890399    2.459835   8.156296
+1  Deciduous Shrub  0.030            200   2.110534    0.174049   0.134266
+2   Evergreen Tree  0.120            150  11.436498    3.413238  13.581094
+3  Deciduous Shrub  0.025            180   1.858954    0.127752   0.082126
 """  # noqa: D205
 
 from __future__ import annotations
@@ -108,6 +116,7 @@ from marshmallow import Schema, fields, post_load, validate, validates_schema
 from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
+from pyrealm.core.utilities import check_input_shapes
 from pyrealm.demography import t_model_functions as t_model
 from pyrealm.demography.flora import Flora
 
@@ -377,10 +386,11 @@ class Community:
             raise ValueError("Cohort data not passed as numpy arrays.")
 
         # Check the cohort inputs are of equal length
-        if not (
-            (cohort_dbh_values.shape == cohort_n_individuals.shape)
-            and (cohort_dbh_values.shape == cohort_pft_names.shape)
-        ):
+        try:
+            check_input_shapes(
+                cohort_dbh_values, cohort_n_individuals, cohort_dbh_values
+            )
+        except ValueError:
             raise ValueError("Cohort arrays are of unequal length")
 
         # Check the initial PFT values are known
