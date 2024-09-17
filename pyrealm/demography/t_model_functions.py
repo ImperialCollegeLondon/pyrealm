@@ -2,7 +2,7 @@
 :cite:`Li:2014bc`:. This provides scaling relationships using the plant functional type
 traits defined in the :mod:`~pyrealm.demography.flora` module and the diameter at breast
 height of individual stems to define the stem geometry, masses, respiration and hence
-the calculate stem growth given net primary productivity.
+calculate stem growth given net primary productivity.
 """  # noqa: D205
 
 import numpy as np

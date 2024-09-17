@@ -1,4 +1,6 @@
-"""Class containing functions for calculating properties of a canopy."""
+"""A set of functions implementing the canopy shape and vertical leaf distribution model
+used in PlantFATE :cite:t:`joshi:2022a`.
+"""  # noqa: D205
 
 import numpy as np
 from numpy.typing import NDArray
@@ -7,8 +9,10 @@ from pandas import Series
 # from pyrealm.demography.community import Community
 
 
-def calculate_canopy_q_m(m: float, n: float) -> float:
-    """Calculate a q_m value.
+def calculate_canopy_q_m(
+    m: float | NDArray[np.float32], n: float | NDArray[np.float32]
+) -> NDArray[np.float32]:
+    """Calculate the canopy scaling paramater ``q_m``.
 
     The value of q_m is a constant canopy scaling parameter derived from the ``m`` and
     ``n`` attributes defined for a plant functional type.
@@ -25,7 +29,9 @@ def calculate_canopy_q_m(m: float, n: float) -> float:
     )
 
 
-def calculate_canopy_z_max_proportion(m: float, n: float) -> float:
+def calculate_canopy_z_max_proportion(
+    m: float | NDArray[np.float32], n: float | NDArray[np.float32]
+) -> NDArray[np.float32]:
     r"""Calculate the z_m proportion.
 
     The z_m proportion (:math:`p_{zm}`) is the constant proportion of stem height at
