@@ -2,8 +2,94 @@
 
 import numpy as np
 from numpy.typing import NDArray
+from pandas import Series
 
-from pyrealm.demography.community import Community
+# from pyrealm.demography.community import Community
+
+
+def calculate_canopy_q_m(m: float, n: float) -> float:
+    """Calculate a q_m value.
+
+    The value of q_m is a constant canopy scaling parameter derived from the ``m`` and
+    ``n`` attributes defined for a plant functional type.
+
+    Args:
+        m: Canopy shape parameter
+        n: Canopy shape parameter
+    """
+    return (
+        m
+        * n
+        * ((n - 1) / (m * n - 1)) ** (1 - 1 / n)
+        * (((m - 1) * n) / (m * n - 1)) ** (m - 1)
+    )
+
+
+def calculate_canopy_z_max_proportion(m: float, n: float) -> float:
+    r"""Calculate the z_m proportion.
+
+    The z_m proportion (:math:`p_{zm}`) is the constant proportion of stem height at
+    which the maximum crown radius is found for a given plant functional type.
+
+    .. math::
+
+        p_{zm} = \left(\dfrac{n-1}{m n -1}\right)^ {\tfrac{1}{n}}
+
+    Args:
+        m: Canopy shape parameter
+        n: Canopy shape parameter
+    """
+
+    return ((n - 1) / (m * n - 1)) ** (1 / n)
+
+
+def calculate_canopy_z_max(z_max_prop: Series, height: Series) -> Series:
+    r"""Calculate height of maximum crown radius.
+
+    The height of the maximum crown radius (:math:`z_m`) is derived from the canopy
+    shape parameters (:math:`m,n`) and the resulting fixed proportion (:math:`p_{zm}`)
+    for plant functional types. These shape parameters are defined as part of the
+    extension of the T Model presented by :cite:t:`joshi:2022a`.
+
+    The value :math:`z_m` is the height above ground where the largest canopy radius is
+    found, given the proportion and the estimated stem height (:math:`H`) of
+    individuals.
+
+    .. math::
+
+        z_m = p_{zm} H
+
+    Args:
+        z_max_prop: Canopy shape parameter of the PFT
+        height: Crown area of individuals
+    """
+    """Calculate z_m, the height of maximum crown radius."""
+
+    return height * z_max_prop
+
+
+def calculate_canopy_r0(q_m: Series, crown_area: Series) -> Series:
+    r"""Calculate scaling factor for height of maximum crown radius.
+
+    This scaling factor (:math:`r_0`) is derived from the canopy shape parameters
+    (:math:`m,n,q_m`) for plant functional types and the estimated crown area
+    (:math:`A_c`) of individuals. The shape parameters are defined as part of the
+    extension of the T Model presented by :cite:t:`joshi:2022a` and :math:`r_0` is used
+    to scale the crown area such that the crown area at the  maximum crown radius fits
+    the expectations of the T Model.
+
+    .. math::
+
+        r_0 = 1/q_m  \sqrt{A_c / \pi}
+
+    Args:
+        q_m: Canopy shape parameter of the PFT
+        crown_area: Crown area of individuals
+    """
+    # Scaling factor to give expected A_c (crown area) at
+    # z_m (height of maximum crown radius)
+
+    return 1 / q_m * np.sqrt(crown_area / np.pi)
 
 
 def calculate_relative_canopy_radius_at_z(
@@ -130,67 +216,68 @@ def solve_community_projected_canopy_area(
     return (A_p * n_individuals).sum() - target_area
 
 
-def calculate_projected_leaf_area_for_individuals(
-    z: float, f_g: float, community: Community
-) -> NDArray[np.float32]:
-    """Calculate projected crown area above a given height.
+# def calculate_projected_leaf_area_for_individuals(
+#     z: float, f_g: float, community: Community
+# ) -> NDArray[np.float32]:
+#     """Calculate projected crown area above a given height.
 
-    Calculation applies to an individual within a cohort.This function takes PFT
-    specific parameters (shape parameters) and stem specific sizes and estimates
-    the projected crown area above a given height $z$. The inputs can either be
-    scalars describing a single stem or arrays representing a community of stems.
-    If only a single PFT is being modelled then `m`, `n`, `qm` and `fg` can be
-    scalars with arrays `H`, `Ac` and `zm` giving the sizes of stems within that
-    PFT.
+#     Calculation applies to an individual within a cohort.This function takes PFT
+#     specific parameters (shape parameters) and stem specific sizes and estimates
+#     the projected crown area above a given height $z$. The inputs can either be
+#     scalars describing a single stem or arrays representing a community of stems.
+#     If only a single PFT is being modelled then `m`, `n`, `qm` and `fg` can be
+#     scalars with arrays `H`, `Ac` and `zm` giving the sizes of stems within that
+#     PFT.
 
-    :param community:
-    :param f_g: Crown gap fraction.
-    :param z: Height from ground.
-    """
+#     :param community:
+#     :param f_g: Crown gap fraction.
+#     :param z: Height from ground.
+#     """
 
-    # Calculate q(z)
-    q_z = calculate_relative_canopy_radii(
-        z, community.t_model_heights, community.pft_m_values, community.pft_n_values
-    )
+#     # Calculate q(z)
+#     q_z = calculate_relative_canopy_radii(
+#         z, community.t_model_heights, community.pft_m_values, community.pft_n_values
+#     )
 
-    # Calculate Ac terms
-    A_c_terms = (
-        community.t_model_crown_areas * (q_z / community.canopy_factor_q_m_values) ** 2
-    )
+#     # Calculate Ac terms
+#     A_c_terms = (
+#         community.t_model_crown_areas *
+#         (q_z / community.canopy_factor_q_m_values) ** 2
+#     )
 
-    # Set Acp either side of zm
-    A_cp = np.where(
-        z <= community.canopy_factor_z_m_values,
-        community.t_model_crown_areas - A_c_terms * f_g,
-        A_c_terms * (1 - f_g),
-    )
-    # Set Ap = 0 where z > H
-    A_cp = np.where(z > community.t_model_heights, 0, A_cp)
-    return A_cp
-
-
-def calculate_total_canopy_A_cp(z: float, f_g: float, community: Community) -> float:
-    """Calculate total leaf area at a given height.
-
-    :param f_g:
-    :param community:
-    :param z: Height above ground.
-    :return: Total leaf area in the canopy at a given height.
-    """
-    A_cp_for_individuals = calculate_projected_leaf_area_for_individuals(
-        z, f_g, community
-    )
-
-    A_cp_for_cohorts = A_cp_for_individuals * community.cohort_number_of_individuals
-
-    return A_cp_for_cohorts.sum()
+#     # Set Acp either side of zm
+#     A_cp = np.where(
+#         z <= community.canopy_factor_z_m_values,
+#         community.t_model_crown_areas - A_c_terms * f_g,
+#         A_c_terms * (1 - f_g),
+#     )
+#     # Set Ap = 0 where z > H
+#     A_cp = np.where(z > community.t_model_heights, 0, A_cp)
+#     return A_cp
 
 
-def calculate_gpp(cell_ppfd: NDArray, lue: NDArray) -> float:
-    """Estimate the gross primary productivity.
+# def calculate_total_canopy_A_cp(z: float, f_g: float, community: Community) -> float:
+#     """Calculate total leaf area at a given height.
 
-    Not sure where to place this - need an array of LUE that matches to the
+#     :param f_g:
+#     :param community:
+#     :param z: Height above ground.
+#     :return: Total leaf area in the canopy at a given height.
+#     """
+#     A_cp_for_individuals = calculate_projected_leaf_area_for_individuals(
+#         z, f_g, community
+#     )
 
-    """
+#     A_cp_for_cohorts = A_cp_for_individuals * community.cohort_number_of_individuals
 
-    return 100
+#     return A_cp_for_cohorts.sum()
+
+
+# def calculate_gpp(cell_ppfd: NDArray, lue: NDArray) -> float:
+#     """Estimate the gross primary productivity.
+
+#     Not sure where to place this - need an array of LUE that matches to the
+
+#     """
+
+#     return 100

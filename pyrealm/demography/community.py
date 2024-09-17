@@ -117,6 +117,7 @@ from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
 from pyrealm.core.utilities import check_input_shapes
+from pyrealm.demography import canopy_functions
 from pyrealm.demography import t_model_functions as t_model
 from pyrealm.demography.flora import Flora
 
@@ -467,11 +468,11 @@ class Community:
         )
 
         # Canopy shape extension to T Model from PlantFATE
-        self.cohort_data["canopy_z_max"] = t_model.calculate_canopy_z_max(
+        self.cohort_data["canopy_z_max"] = canopy_functions.calculate_canopy_z_max(
             z_max_prop=self.cohort_data["z_max_prop"],
             height=self.cohort_data["height"],
         )
-        self.cohort_data["canopy_r0"] = t_model.calculate_canopy_r0(
+        self.cohort_data["canopy_r0"] = canopy_functions.calculate_canopy_r0(
             q_m=self.cohort_data["q_m"],
             crown_area=self.cohort_data["crown_area"],
         )

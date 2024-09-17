@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 from marshmallow.exceptions import ValidationError
 
-from pyrealm.demography.t_model_functions import (
+from pyrealm.demography.canopy_functions import (
     calculate_canopy_q_m,
     calculate_canopy_z_max_proportion,
 )
