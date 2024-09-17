@@ -3,6 +3,7 @@
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm.constants.core_const import CoreConst
 from pyrealm.constants.two_leaf_canopy import TwoLeafConst
 from pyrealm.pmodel import PModel
 from pyrealm.pmodel.optimal_chi import OptimalChiABC
@@ -58,7 +59,11 @@ class TwoLeafIrradience:
         self.I_csun: NDArray
         self.I_cshade: NDArray
 
-        self.shapes_agree = self._check_input_consistency()
+        self.arrays = [self.beta_angle, self.ppfd, self.leaf_area_index, self.patm]
+        self.shapes_agree: bool = self._check_input_consistency()
+        self.no_NaNs: bool = self._check_for_NaN()
+        self.no_negatives: bool = self._check_for_negative_values()
+        self.pass_checks = all([self.shapes_agree, self.no_NaNs, self.no_negatives])
 
     def _check_input_consistency(self) -> bool:
         """Check if input arrays have consistent shapes.
@@ -66,14 +71,37 @@ class TwoLeafIrradience:
         Returns:
             bool: True if all input arrays have the same shape, False otherwise.
         """
+        arrays = [self.beta_angle, self.ppfd, self.leaf_area_index, self.patm]
         try:
-            arrays = [self.beta_angle, self.ppfd, self.leaf_area_index, self.patm]
             shapes = [array.shape for array in arrays]
             if not all(shape == shapes[0] for shape in shapes):
                 raise ValueError("Input arrays have inconsistent shapes.")
             return True
         except Exception as e:
             print(f"Error in input consistency check: {e}")
+            return False
+
+    def _check_for_NaN(self) -> bool:
+        """Tests for any NaN in input arrays."""
+        arrays = [self.beta_angle, self.ppfd, self.leaf_area_index, self.patm]
+        try:
+            for array in arrays:
+                if np.isnan(array).any():
+                    raise ValueError("Nan data in input array")
+            return True
+        except Exception as e:
+            print(f"Error in input NaN check: {e}")
+            return False
+
+    def _check_for_negative_values(self) -> bool:
+        """Tests for negative values in arrays."""
+        try:
+            for array in [self.ppfd, self.leaf_area_index, self.patm]:
+                if not (array >= 0).all():
+                    raise ValueError("Input arrays contain negative values.")
+            return True
+        except Exception as e:
+            print(f"Error in input negative number check: {e}")
             return False
 
     def calc_absorbed_irradience(self) -> None:
@@ -102,7 +130,7 @@ class TwoLeafIrradience:
             self.I_b, self.k_sigma, self.kb, self.leaf_area_index
         )
         self.Isun_diffuse = sunlit_diffuse_irrad(
-            self.I_d, self.rho_cb, self.k_kd_prime, self.kb, self.leaf_area_index
+            self.I_d, self.k_rho_cd, self.k_kd_prime, self.kb, self.leaf_area_index
         )
         self.Isun_scattered = sunlit_scattered_irrad(
             self.I_b,
@@ -121,7 +149,23 @@ class TwoLeafIrradience:
 
 
 class TwoLeafAssimilation:
-    """Temp."""
+    """A class to estimate the gross primary production (GPP) using a two-leaf approach.
+
+    This class integrates a photosynthesis model (`PModel` or `SubdailyPModel`) and
+    irradiance data (`TwoLeafIrradience`) to compute various canopy photosynthetic
+    properties and GPP estimates.
+
+    Attributes:
+        pmodel (PModel | SubdailyPModel): The photosynthesis model used for
+            assimilation.
+        irrad (TwoLeafIrradience): Irradiance data required for GPP calculations.
+        leaf_area_index (NDArray): Array of leaf area index values.
+        vcmax_pmod (NDArray): Maximum carboxylation rate at current conditions.
+        vcmax25_pmod (NDArray): Maximum carboxylation rate at 25°C.
+        optchi_obj (OptimalChiABC): Object containing optimization of chi.
+        core_const (CoreConst): Core constants retrieved from the PModel.
+        gpp (NDArray): Estimated gross primary production.
+    """
 
     def __init__(
         self,
@@ -129,6 +173,13 @@ class TwoLeafAssimilation:
         irrad: TwoLeafIrradience,
         leaf_area_index: NDArray,
     ):
+        """Initialize the TwoLeafAssimilation class.
+
+        Args:
+            pmodel (PModel | SubdailyPModel): The photosynthesis model.
+            irrad (TwoLeafIrradience): The irradiance data.
+            leaf_area_index (NDArray): Array of leaf area index values.
+        """
         self.pmodel = pmodel
         self.irrad = irrad
         self.leaf_area_index = leaf_area_index
@@ -136,17 +187,19 @@ class TwoLeafAssimilation:
         self.vcmax_pmod: NDArray
         self.vcmax25_pmod: NDArray
         self.optchi_obj: OptimalChiABC
-        self.core_const
+        self.core_const = self._get_core_const()
         self.gpp: NDArray
 
         self._get_vcmax_pmod()
         self._get_vcmax_25_pmod()
         self._get_optchi_obj()
-        self._get_core_const()
 
     def _get_vcmax_pmod(self) -> None:
-        """Temp."""
+        """Retrieve the maximum carboxylation rate from the photosynthesis model.
 
+        Sets:
+            vcmax_pmod (NDArray): Maximum carboxylation rate based on the model type.
+        """
         self.vcmax_pmod = (
             self.pmodel.vcmax
             if isinstance(self.pmodel, PModel)
@@ -154,8 +207,12 @@ class TwoLeafAssimilation:
         )
 
     def _get_vcmax_25_pmod(self) -> None:
-        """Temp."""
+        """Get the maximum carboxylation rate at 25°C from the photosynthesis model.
 
+        Sets:
+            vcmax25_pmod (NDArray): Maximum carboxylation rate at 25°C based on the
+            model type.
+        """
         self.vcmax25_pmod = (
             self.pmodel.vcmax25
             if isinstance(self.pmodel, PModel)
@@ -163,24 +220,38 @@ class TwoLeafAssimilation:
         )
 
     def _get_optchi_obj(self) -> None:
-        """Temp."""
+        """Retrieve the optimal chi object from the photosynthesis model.
+
+        Sets:
+            optchi_obj (OptimalChiABC): Optimal chi object based on the model type.
+        """
         self.optchi_obj = (
             self.pmodel.optchi
             if isinstance(self.pmodel, PModel)
             else self.pmodel.optimal_chi
         )
 
-    def _get_core_const(self) -> None:
-        """Temp."""
-        self.core_const = (
-            self.pmodel.core_const
-            if isinstance(self.pmodel, PModel)
-            else self.pmodel.env.core_const
-        )
+    def _get_core_const(self) -> CoreConst:
+        """Retrieve the core constants from the photosynthesis model.
+
+        Returns:
+            CoreConst: The core constants from the PModel or SubdailyPModel.
+        """
+        if isinstance(self.pmodel, PModel):
+            return self.pmodel.core_const
+        else:
+            return self.pmodel.env.core_const
 
     def gpp_estimator(self) -> None:
-        """Calculate gross primary product."""
+        """Estimate the gross primary production (GPP) using the two-leaf model.
 
+        This method calculates various parameters related to photosynthesis, including
+        carboxylation rates, assimilation rates, and electron transport rates for sunlit
+        and shaded leaves, ultimately leading to the estimation of GPP.
+
+        Sets:
+            gpp_estimate (NDArray): Estimated gross primary production.
+        """
         self.kv_Lloyd = canopy_extinction_coefficient(self.vcmax_pmod)
 
         self.Vmax25_canopy = Vmax25_canopy(
@@ -517,7 +588,7 @@ def sunlit_beam_irrad(
 
 def sunlit_diffuse_irrad(
     I_d: NDArray,
-    k_rho_cd: NDArray,
+    k_rho_cd: float,
     k_kd_prime: float,
     kb: NDArray,
     leaf_area_index: NDArray,
@@ -535,7 +606,7 @@ def sunlit_diffuse_irrad(
 
     Args:
         I_d (NDArray): Array of diffuse radiation values.
-        k_rho_cd (NDArray): Array of rho_cd values.
+        k_rho_cd (float): Constant rho_cd value.
         k_kd_prime (float): Constant for calculating the sunlit diffuse irradiance.
         kb (NDArray): Array of beam extinction coefficients.
         leaf_area_index (NDArray): Array of leaf area index values.

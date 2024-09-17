@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+import numpy as np
+
 from pyrealm.constants import ConstantsClass
 
 
@@ -22,5 +24,5 @@ class TwoLeafConst(ConstantsClass):
     k_kd_prime: float = 0.719  # needs citation
     """diffuse and scattered diffuse PAR extinction coefficient, dimensionless"""
 
-    k_sol_obs_angle: float = 0.01745329  # 1 degree in rads, needs a citation
+    k_sol_obs_angle: float = 1 / (2 * np.pi)  # 1 degree in rads, needs a citation
     """ solar obscurity angle, radians"""
