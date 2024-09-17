@@ -228,32 +228,3 @@ def calculate_canopy_r0(q_m: Series, crown_area: Series) -> Series:
     # z_m (height of maximum crown radius)
 
     return 1 / q_m * np.sqrt(crown_area / np.pi)
-
-
-def calculate_relative_canopy_radii(
-    z: float,
-    height: Series,
-    m: Series,
-    n: Series,
-) -> Series:
-    r"""Calculate relative canopy radius at a given height.
-
-    The canopy shape parameters ``m`` and ``n`` define the vertical distribution of
-    canopy along the stem. For a stem of a given total height, this function calculates
-    the relative canopy radius at a given height :math:`z`:
-
-    .. math::
-
-        q(z) = m n \left(\dfrac{z}{H}\right) ^ {n -1}
-        \left( 1 - \left(\dfrac{z}{H}\right) ^ n \right)^{m-1}
-
-    Args:
-        z: Height at which to calculate relative radius
-        height: Total height of individual stem
-        m: Canopy shape parameter of PFT
-        n: Canopy shape parameter of PFT
-    """
-
-    z_over_height = z / height
-
-    return m * n * z_over_height ** (n - 1) * (1 - z_over_height**n) ** (m - 1)

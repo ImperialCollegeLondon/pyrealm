@@ -2,52 +2,40 @@
 
 import numpy as np
 from numpy.typing import NDArray
-from scipy.optimize import root_scalar
 
 from pyrealm.demography.community import Community
-from pyrealm.demography.t_model_functions import calculate_relative_canopy_radii
 
 
-def calculate_total_community_crown_area(community: Community) -> float:
-    """Calculate the total crown area of a community."""
-    # Calculate the number of layers
-    cohort_crown_areas = (
-        community.cohort_number_of_individuals * community.t_model_crown_areas
-    )
-    total_community_crown_area = cohort_crown_areas.sum()
-    return total_community_crown_area
+def calculate_relative_canopy_radius_at_z(
+    z: float,
+    height: NDArray[np.float32],
+    m: NDArray[np.float32],
+    n: NDArray[np.float32],
+) -> NDArray[np.float32]:
+    r"""Calculate relative canopy radius at a given height.
+
+    The canopy shape parameters ``m`` and ``n`` define the vertical distribution of
+    canopy along the stem. For a stem of a given total height, this function calculates
+    the relative canopy radius at a given height :math:`z`:
+
+    .. math::
+
+        q(z) = m n \left(\dfrac{z}{H}\right) ^ {n -1}
+        \left( 1 - \left(\dfrac{z}{H}\right) ^ n \right)^{m-1}
+
+    Args:
+        z: Height at which to calculate relative radius
+        height: Total height of individual stem
+        m: Canopy shape parameter of PFT
+        n: Canopy shape parameter of PFT
+    """
+
+    z_over_height = z / height
+
+    return m * n * z_over_height ** (n - 1) * (1 - z_over_height**n) ** (m - 1)
 
 
-def calculate_number_of_canopy_layers(
-    cell_area: float, total_community_crown_area: float, fG: float
-) -> int:
-    """Calculate the number of canopy layers in a given community."""
-    number_of_layers = int(np.ceil(total_community_crown_area / (cell_area * (1 - fG))))
-    return number_of_layers
-
-
-def calculate_community_projected_area_at_z(community: Community, z: float) -> float:
-    """Calculate the total area of community stems."""
-    projected_canopy_area_for_individuals = (
-        calculate_projected_canopy_area_for_individuals(
-            z,
-            community.t_model_heights,
-            community.t_model_crown_areas,
-            community.pft_m_values,
-            community.pft_n_values,
-            community.canopy_factor_q_m_values,
-            community.canopy_factor_z_m_values,
-        )
-    )
-
-    cohort_areas_at_z = (
-        community.cohort_number_of_individuals * projected_canopy_area_for_individuals
-    )
-
-    return sum(cohort_areas_at_z)
-
-
-def calculate_projected_canopy_area_for_individuals(
+def calculate_stem_projected_canopy_area_at_z(
     z: float,
     height: NDArray[np.float32],
     crown_area: NDArray[np.float32],
@@ -56,23 +44,24 @@ def calculate_projected_canopy_area_for_individuals(
     q_m: NDArray[np.float32],
     z_m: NDArray[np.float32],
 ) -> NDArray[np.float32]:
-    """Calculate projected crown area above a given height.
+    """Calculate stem projected crown area above a given height.
 
-    This function takes PFT specific parameters (shape parameters) and stem specific
-    sizes and estimates the projected crown area above a given height $z$. Note,
-    this calculation gives the canopy area for a single individual within the cohort,
-    not for the cohort as a whole.
-    :param m:
-    :param n:
-    :param crown_area:
-    :param height:
-    :param z_m: stem canopy factor from Jaideep extension of the T Model.
-    :param q_m: stem canopy factor from Jaideep extension of the T Model.
-    :param z: height on the z axis.
+    This function takes data on stem heights and crown areas, and then uses the canopy
+    shape parameters associated with each stem to calculate the projected crown area
+    above a given height $z$.
+
+    Args:
+        z: Vertical height on the z axis.
+        crown_area: Crown area of each cohort
+        height: Stem height of each cohort
+        m: Canopy shape parameter ``m``` for each cohort
+        n: Canopy shape parameter ``n``` for each cohort
+        q_m: Canopy shape parameter ``q_m``` for each cohort
+        z_m: Canopy shape parameter ``z_m``` for each cohort
     """
 
     # Calculate q(z)
-    q_z = calculate_relative_canopy_radii(z, height, m, n)
+    q_z = calculate_relative_canopy_radius_at_z(z, height, m, n)
 
     # Calculate A_p
     # Calculate Ap given z > zm
@@ -85,54 +74,60 @@ def calculate_projected_canopy_area_for_individuals(
     return A_p
 
 
-def calculate_canopy_layer_heights(
-    number_of_canopy_layers: int,
-    max_individual_height: float,
-    community: Community,
-    fG: float,
-) -> NDArray:
-    """Calculate the heights of the layers of the canopy for a community."""
-
-    # Data store for z*
-    z_star = np.zeros(number_of_canopy_layers)
-
-    # Loop over the layers TODO - edge case of completely filled final layer
-    for n in np.arange(number_of_canopy_layers - 1):
-        z_star[n] = root_scalar(
-            solve_canopy_closure_height,
-            args=(community, n + 1, community.cell_area, fG),
-            bracket=(0, max_individual_height),
-        ).root
-
-    return z_star
-
-
-def solve_canopy_closure_height(
+def solve_community_projected_canopy_area(
     z: float,
-    community: Community,
-    layer_index: int,
-    A: float,
-    fG: float,
-) -> float:
-    """Solver function for canopy closure height.
+    height: NDArray[np.float32],
+    crown_area: NDArray[np.float32],
+    m: NDArray[np.float32],
+    n: NDArray[np.float32],
+    q_m: NDArray[np.float32],
+    z_m: NDArray[np.float32],
+    n_individuals: NDArray[np.float32],
+    target_area: float = 0,
+) -> NDArray[np.float32]:
+    """Solver function for community wide projected crown area.
 
-    This function returns the difference between the total community projected area
-    at a height $z$ and the total available canopy space for canopy layer $l$, given
-    the community gap fraction for a given height. It is used with a root solver to
-    find canopy layer closure heights $z^*_l* for a community.
-    :param community:
-    :param fG: community gap fraction
-    :param A: community area
-    :param layer_index: layer index
-    :param z: height
+    This function takes the number of individuals in each cohort along with the stem
+    height and crown area and a given vertical height (:math:`z`). It then uses the
+    canopy shape parameters associated with each cohort to calculate the community wide
+    projected crown area above that height (:math:`A_p(z)`). This is simply the sum of
+    the products of the individual stem projected area at :math:`z` and the number of
+    individuals in each cohort.
+
+    The return value is the difference between the calculated :math:`A_p(z)` and a
+    user-specified target area, This allows the function to be used with a root solver
+    to find :math:`z` values that result in a given :math:`A_p(z)`. The default target
+    area is zero, so the default return value will be the actual total :math:`A_p(z)`
+    for the community.
+
+    A typical use case for the target area would be to specify the area at which a given
+    canopy layer closes under the perfect plasticity approximation in order to find the
+    closure height.
+
+    Args:
+        z: Vertical height on the z axis.
+        n_individuals: Number of individuals in each cohort
+        crown_area: Crown area of each cohort
+        height: Stem height of each cohort
+        m: Canopy shape parameter ``m``` for each cohort
+        n: Canopy shape parameter ``n``` for each cohort
+        q_m: Canopy shape parameter ``q_m``` for each cohort
+        z_m: Canopy shape parameter ``z_m``` for each cohort
+        target_area: A target projected crown area.
     """
 
-    community_projected_area_at_z = calculate_community_projected_area_at_z(
-        community, z
+    # Calculate A(p) for the stems in each cohort
+    A_p = calculate_stem_projected_canopy_area_at_z(
+        z=z,
+        height=height,
+        crown_area=crown_area,
+        m=m,
+        n=n,
+        q_m=q_m,
+        z_m=z_m,
     )
 
-    # Return the difference between the projected area and the available space
-    return community_projected_area_at_z - (A * layer_index) * (1 - fG)
+    return (A_p * n_individuals).sum() - target_area
 
 
 def calculate_projected_leaf_area_for_individuals(
