@@ -2,14 +2,14 @@
 
 import numpy as np
 
-from pyrealm.canopy_model.functions.canopy_functions import (
+from pyrealm.demography.canopy_functions import (
     calculate_canopy_layer_heights,
     calculate_gpp,
     calculate_number_of_canopy_layers,
     calculate_total_canopy_A_cp,
     calculate_total_community_crown_area,
 )
-from pyrealm.canopy_model.model.community import Community
+from pyrealm.demography.community import Community
 
 
 class Canopy:

@@ -4,10 +4,8 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.optimize import root_scalar
 
-from pyrealm.canopy_model.functions.jaideep_t_model_extension_functions import (
-    calculate_relative_canopy_radii,
-)
-from pyrealm.canopy_model.model.community import Community
+from pyrealm.demography.community import Community
+from pyrealm.demography.t_model_functions import calculate_relative_canopy_radii
 
 
 def calculate_total_community_crown_area(community: Community) -> float:
