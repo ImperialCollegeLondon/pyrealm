@@ -247,9 +247,11 @@ def calculate_net_primary_productivity(
     .. math::
         P_{net} = y (P - R_m) = y (P - W_{\cdot s} r_s - \zeta \sigma W_f r_r - P r_f)
 
-    Note that this differs from Equation 13 of :cite:t:`Li:2014bc`, which removes foliar
-    respiration from potential GPP. This approach is equivalent but allows the foliar
-    respiration to vary between plant functional types.
+    Note that this differs from Equation 13 of :cite:t:`Li:2014bc`, which does not
+    include a term for foliar respiration. This is because :cite:t:`Li:2014bc` remove
+    foliar respiration as a fixed proportion of potential GPP as the first step in their
+    calculations. The approach here is equivalent but allows the foliar respiration to
+    vary between plant functional types.
 
     Args:
         yld: The yield proportion.
@@ -315,7 +317,7 @@ def calculate_growth_increments(
 
     Given an estimate of net primary productivity (:math:`P_{net}`), less associated  
     turnover costs (:math:`T`), the remaining productivity can be allocated to growth
-    and hence estimate resulting increments in:
+    and hence estimate resulting increments :cite:`Li:2014bc` in:
     
     * the stem diameter (:math:`\Delta D`),
     * the stem mass (:math:`\Delta W_s`), and 
