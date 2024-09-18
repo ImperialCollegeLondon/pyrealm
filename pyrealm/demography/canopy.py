@@ -15,7 +15,7 @@ class Canopy:
 
     def __init__(self, community: Community, canopy_gap_fraction: float) -> None:
         # Calculate community wide properties: total crown area and maximum height
-        self.total_crown_area: float = (
+        self.total_community_crown_area: float = (
             community.cohort_data["crown_area"] * community.cohort_data["n_individuals"]
         ).sum()
         """Total crown area across individuals in the community (metres 2)."""
@@ -26,20 +26,24 @@ class Canopy:
         self.crown_area_per_layer: float = community.cell_area * (
             1 - canopy_gap_fraction
         )
-        """Total crown area required to fill a canopy layer, given the canopy gap
-        fraction."""
+        """Total crown area permitted in a single canopy layer, given the available
+        cell area of the community and its canopy gap fraction."""
 
         self.n_layers: int = int(
-            np.ceil(self.total_crown_area / self.crown_area_per_layer)
+            np.ceil(self.total_community_crown_area / self.crown_area_per_layer)
         )
         """Total number of canopy layers needed to contain the total crown area."""
 
         # Find the closure heights of the canopy layers under the perfect plasticity
-        # approximation.
-        # Loop over the layers TODO - edge case of completely filled final layer
+        # approximation by solving Ac(z) - L_n = 0 across the community where L is the
+        # total cumulative crown area in layer n and above, discounted by the canopy gap
+        # fraction.
+
         self.layer_closure_heights: NDArray[np.float32] = np.full(
             (self.n_layers), np.nan
         )
+
+        # Loop over the layers TODO - check edge case of completely filled final layer
         for layer in np.arange(self.n_layers):
             target_area = (layer + 1) * community.cell_area * (1 - canopy_gap_fraction)
 
@@ -64,9 +68,4 @@ class Canopy:
         #     self.canopy_layer_heights,
         #     np.full(self.number_of_canopy_layers, canopy_gap_fraction),
         #     np.full(self.number_of_canopy_layers, community),
-        # )
-
-        # self.gpp = calculate_gpp(
-        #     np.zeros(self.number_of_canopy_layers),
-        #     np.zeros(self.number_of_canopy_layers),
         # )
