@@ -101,7 +101,7 @@ def calculate_foliage_masses(sla: Series, lai: Series, crown_area: Series) -> Se
 
     The foliage mass (:math:`W_{f}`) is calculated from the crown area (:math:`A_{c}`),
     along with the specific leaf area (:math:`\sigma`) and leaf area index (:math:`L`)
-    of the plant functional type :cite:p:`Li:2014bc`:
+    of the plant functional type :cite:p:`Li:2014bc`.
 
     .. math::
 
@@ -128,7 +128,7 @@ def calculate_sapwood_masses(
     The sapwood mass (:math:`W_{\cdot s}`) is calculated from the individual crown area
     (:math:`A_{c}`), height :math:`H` and canopy fraction (:math:`f_{c}`) along with the
     wood density (:math:`\rho_s`) and crown area ratio :math:`A_{c}` of the  plant
-    functional type :cite:p:`{Equation 14, }Li:2014bc`:
+    functional type :cite:p:`{Equation 14, }Li:2014bc`.
 
     .. math::
 
@@ -143,6 +143,262 @@ def calculate_sapwood_masses(
     """
 
     return crown_area * rho_s * height * (1 - crown_fraction / 2) / ca_ratio
+
+
+def calculate_whole_crown_gpp(
+    potential_gpp: Series, crown_area: Series, par_ext: Series, lai: Series
+) -> Series:
+    r"""Calculate whole crown gross primary productivity.
+
+    This function calculates individual GPP across the whole crown, given  the
+    individual potential gross primary productivity (GPP) per metre squared
+    (:math:`P_0`) and crown area (:math:`A_c`), along with the leaf area index
+    (:math:`L`) and the extinction coefficient (:math:`k`) of the plant functional type
+    :cite:p:`{Equation 12, }Li:2014bc`.
+
+    .. math::
+
+        P = P_0 A_c (1 - e^{-kL})
+
+    Args:
+        potential_gpp: Potential GPP per metre squared
+        crown_area: The crown area in metres squared
+        par_ext: The extinction coefficient
+        lai: The leaf area index
+    """
+
+    return potential_gpp * crown_area * (1 - np.exp(-(par_ext * lai)))
+
+
+def calculate_sapwood_respiration(resp_s: Series, sapwood_mass: Series) -> Series:
+    r"""Calculate sapwood respiration.
+
+    Calculates the total sapwood respiration (:math:`R_{\cdot s}`) given the individual
+    sapwood mass (:math:`W_{\cdot s}`) and the sapwood respiration rate of the plant
+    functional type (:math:`r_{s}`) :cite:p:`{see Equation 13, }Li:2014bc`.
+
+    .. math::
+         R_{\cdot s} = W_{\cdot s} \, r_s
+
+    Args:
+        resp_s: The sapwood respiration rate
+        sapwood_mass: The individual sapwood mass
+    """
+    return sapwood_mass * resp_s
+
+
+def calculate_foliar_respiration(resp_f: Series, whole_crown_gpp: Series) -> Series:
+    r"""Calculate foliar respiration.
+
+    Calculates the total foliar respiration (:math:`R_{f}`) given the individual crown
+    GPP (:math:`P`) and the foliar respiration rate of the plant functional type
+    (:math:`r_{f}`). :cite:t:`Li:2014bc` remove foliar respiration as a constant
+    proportion of potential GPP before calculating GPP for the crown, but ``pyrealm``
+    treats this proportion as part of the definition of plant functional types.
+
+    .. math::
+         R_{f} = P \, r_f
+
+    Args:
+        resp_f: The foliar respiration rate
+        whole_crown_gpp: The individual whole crown GPP.
+    """
+    return whole_crown_gpp * resp_f
+
+
+def calculate_fine_root_respiration(
+    zeta: Series, sla: Series, resp_r: Series, foliage_mass: Series
+) -> Series:
+    r"""Calculate foliar respiration.
+
+    Calculates the total fine root respiration (:math:`R_{r}`) given the individual
+    foliage mass (:math:`W_f`), along with the fine root respiration rate (:math:`r_r`),
+    the ratio of fine root mass to foliage area (:math:`\zeta`) and the specific leaf
+    area (:math:`\sigma`) :cite:p:`{see Equation 13, }Li:2014bc`
+
+    .. math::
+         R_{r} = \zeta \sigma W_f r_r
+
+    Args:
+        zeta: The ratio of fine root mass to foliage area of the PFT.
+        sla: The specific leaf area of the PFT.
+        resp_r: The respiration rate of fine roots of the PFT.
+        foliage_mass: The individual foliage mass.
+    """
+
+    return zeta * sla * foliage_mass * resp_r
+
+
+def calculate_net_primary_productivity(
+    yld: Series,
+    whole_crown_gpp: Series,
+    foliar_respiration: Series,
+    fine_root_respiration: Series,
+    sapwood_respiration: Series,
+) -> Series:
+    r"""Calculate net primary productivity.
+
+    The net primary productivity (NPP, :math:`P_{net}`) is calculated as a plant
+    functional type specific yield proportion (:math:`y`) of the total GPP (:math:`P`)
+    for the individual minus respiration (:math:`R_m`), as the sum of the respiration
+    costs for foliage  (:math:`R_f`), fine roots  (:math:`R_r`) and sapwood
+    (:math:`R_s`).
+
+    .. math::
+        P_{net} = y (P - R_m) = y (P - W_{\cdot s} r_s - \zeta \sigma W_f r_r - P r_f)
+
+    Note that this differs from Equation 13 of :cite:t:`Li:2014bc`, which does not
+    include a term for foliar respiration. This is because :cite:t:`Li:2014bc` remove
+    foliar respiration as a fixed proportion of potential GPP as the first step in their
+    calculations. The approach here is equivalent but allows the foliar respiration to
+    vary between plant functional types.
+
+    Args:
+        yld: The yield proportion.
+        whole_crown_gpp: The total GPP for the crown.
+        foliar_respiration: The total foliar respiration.
+        fine_root_respiration: The total fine root respiration
+        sapwood_respiration: The total sapwood respiration.
+    """
+
+    return yld * (
+        whole_crown_gpp
+        - foliar_respiration
+        - fine_root_respiration
+        - sapwood_respiration
+    )
+
+
+def calculate_foliage_and_fine_root_turnover(
+    sla: Series,
+    zeta: Series,
+    tau_f: Series,
+    tau_r: Series,
+    foliage_mass: Series,
+) -> Series:
+    r"""Calculate turnover costs.
+
+    This function calculates the costs associated with the turnover of fine roots and
+    foliage. This is calculated from the total foliage mass of individuals
+    (:math:`W_f`), along with the specific leaf area (:math:`\sigma`) and fine root mass
+    to foliar area ratio (:math:`\zeta`) and the turnover times of foliage
+    (:math:`\tau_f`) and fine roots (:math:`\tau_r`) of the plant functional type
+    :cite:p:`{see Equation 15, }Li:2014bc`.
+
+    .. math::
+
+        T = W_f \left( \frac{1}{\tau_f} + \frac{\sigma \zeta}{\tau_f} \right)
+
+    Args:
+        sla: The specific leaf area
+        zeta: The ratio of fine root mass to foliage area.
+        tau_f: The turnover time of foliage
+        tau_r: The turnover time of fine roots
+        foliage_mass: The foliage mass
+    """
+
+    return foliage_mass * ((1 / tau_f) + (sla * zeta / tau_r))
+
+
+def calculate_growth_increments(
+    rho_s: Series,
+    a_hd: Series,
+    h_max: Series,
+    lai: Series,
+    ca_ratio: Series,
+    sla: Series,
+    zeta: Series,
+    npp: Series,
+    turnover: Series,
+    dbh: Series,
+    height: Series,
+) -> tuple[Series, Series, Series]:
+    r"""Calculate growth increments.
+
+    Given an estimate of net primary productivity (:math:`P_{net}`), less associated  
+    turnover costs (:math:`T`), the remaining productivity can be allocated to growth
+    and hence estimate resulting increments :cite:`Li:2014bc` in:
+    
+    * the stem diameter (:math:`\Delta D`),
+    * the stem mass (:math:`\Delta W_s`), and 
+    * the foliar mass (:math:`\Delta W_f`). 
+        
+        
+    The stem diameter increment can be calculated using the available productivity for
+    growth and the rates of change in stem (:math:`\textrm{d}W_s / \textrm{d}t`) and
+    foliar masses (:math:`\textrm{d}W_f / \textrm{d}t`): 
+
+    .. math::
+
+        \Delta D = \frac{P_{net} - T}{ \textrm{d}W_s / \textrm{d}t  +
+             \textrm{d}W_f / \textrm{d}t}
+
+    The rates of change in stem and foliar mass can be calculated as:
+
+    .. math::
+      :nowrap:
+
+      \[
+        \begin{align*}
+            \textrm{d}W_s / \textrm{d}t &= \frac{\pi}{8} \rho_s D
+                \left(a D \left(1 - \frac{H}{H_{m}} + 2 H \right) \right) \\
+
+            \textrm{d}W_f / \textrm{d}t &= L \frac{\pi c}{4 a} \left(a D \left( 1 -
+                \frac{H}{H_{m}} + H \right) \right) \frac{1}{\sigma + \zeta}
+        \end{align*}
+      \]
+
+    given the current stem diameter (:math:`D`) and height (:math:`H`) and the following
+    plant functional type traits:
+
+    * the specific leaf area (:math:`\sigma`),
+    * the leaf area index (:math:`L`),
+    * the wood  density of the PFT (:math:`\rho_s`),
+    * the maximum height (:math:`H_{m}`),
+    * the initial slope of the height/diameter relationship (:math:`a`),
+    * the crown area ratio (:math:`c`), and
+    * the ratio of fine root mass to leaf area (:math:`\zeta`).
+
+    The resulting incremental changes in stem mass and foliar mass can then be
+    calculated as:
+
+    .. math::
+      :nowrap:
+
+      \[
+        \begin{align*}
+        \Delta W_s &=  \textrm{d}W_s / \textrm{d}t \, \Delta D\\
+        \Delta W_f &=  \textrm{d}W_f / \textrm{d}t \, \Delta D
+        \end{align*}
+      \]
+
+    Args:
+        rho_s: Wood density of the PFT
+        a_hd: Initial slope of the height/diameter relationship of the PFT
+        h_max: Maximum height of the PFT
+        lai: Leaf area index of the PFT
+        ca_ratio: Crown area ratio of the PFT
+        sla: Specific leaf area of the PFT
+        zeta: The ratio of fine root mass to foliage area of the PFT
+        npp: Net primary productivity of individuals
+        turnover: Fine root and foliage turnover cost of individuals
+        dbh: Diameter at breast height of individuals
+        height: Stem height of individuals
+    """
+    # Rates of change in stem and foliar
+    dWsdt = np.pi / 8 * rho_s * dbh * (a_hd * dbh * (1 - (height / h_max)) + 2 * height)
+
+    dWfdt = (
+        lai
+        * ((np.pi * ca_ratio) / (4 * a_hd))
+        * (a_hd * dbh * (1 - height / h_max) + height)
+        * (1 / sla + zeta)
+    )
+
+    # Increment of diameter at breast height
+    delta_d = (npp - turnover) / (dWsdt + dWfdt)
+
+    return (delta_d, dWsdt * delta_d, dWfdt * delta_d)
 
 
 def calculate_canopy_q_m(m: float, n: float) -> float:
@@ -201,7 +457,6 @@ def calculate_canopy_z_max(z_max_prop: Series, height: Series) -> Series:
         z_max_prop: Canopy shape parameter of the PFT
         height: Crown area of individuals
     """
-    """Calculate z_m, the height of maximum crown radius."""
 
     return height * z_max_prop
 
