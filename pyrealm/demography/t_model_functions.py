@@ -31,7 +31,7 @@ def calculate_heights(h_max: Series, a_hd: Series, dbh: Series) -> Series:
 
 
 def calculate_crown_areas(
-    ca_ratio: Series, a_hd: Series, dbh: Series, height: Series
+    ca_ratio: Series, a_hd: Series, dbh: Series, stem_height: Series
 ) -> Series:
     r"""Calculate tree crown area under the T Model.
 
@@ -49,13 +49,13 @@ def calculate_crown_areas(
         ca_ratio: Crown area ratio of the PFT
         a_hd: Initial slope of the height/diameter relationship of the PFT
         dbh: Diameter at breast height of individuals
-        height: Stem height of individuals
+        stem_height: Stem height of individuals
     """
 
-    return ((np.pi * ca_ratio) / (4 * a_hd)) * dbh * height
+    return ((np.pi * ca_ratio) / (4 * a_hd)) * dbh * stem_height
 
 
-def calculate_crown_fractions(a_hd: Series, height: Series, dbh: Series) -> Series:
+def calculate_crown_fractions(a_hd: Series, stem_height: Series, dbh: Series) -> Series:
     r"""Calculate tree crown fraction under the T Model.
 
     The crown fraction (:math:`f_{c}`)is calculated from individual diameters at breast
@@ -69,14 +69,14 @@ def calculate_crown_fractions(a_hd: Series, height: Series, dbh: Series) -> Seri
 
     Args:
         a_hd: Initial slope of the height/diameter relationship of the PFT
+        stem_height: Stem height of individuals
         dbh: Diameter at breast height of individuals
-        height: Stem height of individuals
     """
 
-    return height / (a_hd * dbh)
+    return stem_height / (a_hd * dbh)
 
 
-def calculate_stem_masses(rho_s: Series, height: Series, dbh: Series) -> Series:
+def calculate_stem_masses(rho_s: Series, stem_height: Series, dbh: Series) -> Series:
     r"""Calculate stem mass under the T Model.
 
     The stem mass (:math:`W_{s}`) is calculated from individual diameters at breast
@@ -89,11 +89,11 @@ def calculate_stem_masses(rho_s: Series, height: Series, dbh: Series) -> Series:
 
     Args:
         rho_s: Wood density of the PFT
+        stem_height: Stem height of individuals
         dbh: Diameter at breast height of individuals
-        height: Stem height of individuals
     """
 
-    return (np.pi / 8) * rho_s * (dbh**2) * height
+    return (np.pi / 8) * rho_s * (dbh**2) * stem_height
 
 
 def calculate_foliage_masses(sla: Series, lai: Series, crown_area: Series) -> Series:
@@ -119,7 +119,7 @@ def calculate_foliage_masses(sla: Series, lai: Series, crown_area: Series) -> Se
 def calculate_sapwood_masses(
     rho_s: Series,
     ca_ratio: Series,
-    height: Series,
+    stem_height: Series,
     crown_area: Series,
     crown_fraction: Series,
 ) -> Series:
@@ -137,12 +137,12 @@ def calculate_sapwood_masses(
     Args:
         rho_s: Wood density of the PFT
         ca_ratio: Crown area ratio of the PFT
-        height: Stem height of individuals
+        stem_height: Stem height of individuals
         crown_area: Crown area of individuals
         crown_fraction: Crown fraction of individuals
     """
 
-    return crown_area * rho_s * height * (1 - crown_fraction / 2) / ca_ratio
+    return crown_area * rho_s * stem_height * (1 - crown_fraction / 2) / ca_ratio
 
 
 def calculate_whole_crown_gpp(

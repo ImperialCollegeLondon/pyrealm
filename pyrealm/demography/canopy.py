@@ -20,7 +20,7 @@ class Canopy:
         ).sum()
         """Total crown area across individuals in the community (metres 2)."""
 
-        self.max_height: float = community.cohort_data["height"].max()
+        self.max_stem_height: float = community.cohort_data["stem_height"].max()
         """Maximum height of any individual in the community (metres)."""
 
         self.crown_area_per_layer: float = community.cell_area * (
@@ -48,25 +48,25 @@ class Canopy:
                 args=(
                     community.cohort_data["n_individuals"],  # n_individuals
                     community.cohort_data["crown_area"],  # crown_area
-                    community.cohort_data["height"],  # height
+                    community.cohort_data["stem_height"],  # stem_height
                     community.cohort_data["m"],  # m
                     community.cohort_data["n"],  # n
                     community.cohort_data["q_m"],  # q_m
                     community.cohort_data["q_n"],  # z_m
                     target_area,  # target_area
                 ),
-                bracket=(0, self.max_height),
+                bracket=(0, self.max_stem_height),
             ).root
 
-        # TODO there may be a more efficient solution here that does not use a loop.
-        self.A_cp_within_layer = map(
-            calculate_total_canopy_A_cp,
-            self.canopy_layer_heights,
-            np.full(self.number_of_canopy_layers, canopy_gap_fraction),
-            np.full(self.number_of_canopy_layers, community),
-        )
+        # # TODO there may be a more efficient solution here that does not use a loop.
+        # self.A_cp_within_layer = map(
+        #     calculate_total_canopy_A_cp,
+        #     self.canopy_layer_heights,
+        #     np.full(self.number_of_canopy_layers, canopy_gap_fraction),
+        #     np.full(self.number_of_canopy_layers, community),
+        # )
 
-        self.gpp = calculate_gpp(
-            np.zeros(self.number_of_canopy_layers),
-            np.zeros(self.number_of_canopy_layers),
-        )
+        # self.gpp = calculate_gpp(
+        #     np.zeros(self.number_of_canopy_layers),
+        #     np.zeros(self.number_of_canopy_layers),
+        # )

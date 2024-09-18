@@ -94,14 +94,14 @@ def test_calculate_relative_canopy_radius_at_z(fixture_community):
 
     # Canopy shape model gives the maximum radius at a height z_max
     z_max = (
-        fixture_community.cohort_data["height"]
+        fixture_community.cohort_data["stem_height"]
         * fixture_community.cohort_data["z_max_prop"]
     )
 
     # Get the relative radius at that height
     q_z_values = calculate_relative_canopy_radius_at_z(
         z=z_max,
-        height=fixture_community.cohort_data["height"],
+        stem_height=fixture_community.cohort_data["stem_height"],
         m=fixture_community.cohort_data["m"],
         n=fixture_community.cohort_data["n"],
     )
@@ -157,7 +157,7 @@ def test_calculate_stem_projected_canopy_area_at_z(
 
     Ap_z_values = calculate_stem_projected_canopy_area_at_z(
         z=heights,
-        height=fixture_community.cohort_data["height"],
+        stem_height=fixture_community.cohort_data["stem_height"],
         crown_area=fixture_community.cohort_data["crown_area"],
         m=fixture_community.cohort_data["m"],
         n=fixture_community.cohort_data["n"],
@@ -194,7 +194,7 @@ def test_solve_community_projected_canopy_area(fixture_community):
     ):
         solved = solve_community_projected_canopy_area(
             z=this_height,
-            height=fixture_community.cohort_data["height"],
+            stem_height=fixture_community.cohort_data["stem_height"],
             crown_area=fixture_community.cohort_data["crown_area"],
             n_individuals=fixture_community.cohort_data["n_individuals"],
             m=fixture_community.cohort_data["m"],

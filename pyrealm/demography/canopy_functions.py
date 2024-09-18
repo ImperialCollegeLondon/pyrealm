@@ -49,7 +49,7 @@ def calculate_canopy_z_max_proportion(
     return ((n - 1) / (m * n - 1)) ** (1 / n)
 
 
-def calculate_canopy_z_max(z_max_prop: Series, height: Series) -> Series:
+def calculate_canopy_z_max(z_max_prop: Series, stem_height: Series) -> Series:
     r"""Calculate height of maximum crown radius.
 
     The height of the maximum crown radius (:math:`z_m`) is derived from the canopy
@@ -67,11 +67,11 @@ def calculate_canopy_z_max(z_max_prop: Series, height: Series) -> Series:
 
     Args:
         z_max_prop: Canopy shape parameter of the PFT
-        height: Crown area of individuals
+        stem_height: Stem height of individuals
     """
     """Calculate z_m, the height of maximum crown radius."""
 
-    return height * z_max_prop
+    return stem_height * z_max_prop
 
 
 def calculate_canopy_r0(q_m: Series, crown_area: Series) -> Series:
@@ -100,7 +100,7 @@ def calculate_canopy_r0(q_m: Series, crown_area: Series) -> Series:
 
 def calculate_relative_canopy_radius_at_z(
     z: float,
-    height: NDArray[np.float32],
+    stem_height: NDArray[np.float32],
     m: NDArray[np.float32],
     n: NDArray[np.float32],
 ) -> NDArray[np.float32]:
@@ -117,19 +117,19 @@ def calculate_relative_canopy_radius_at_z(
 
     Args:
         z: Height at which to calculate relative radius
-        height: Total height of individual stem
+        stem_height: Total height of individual stem
         m: Canopy shape parameter of PFT
         n: Canopy shape parameter of PFT
     """
 
-    z_over_height = z / height
+    z_over_height = z / stem_height
 
     return m * n * z_over_height ** (n - 1) * (1 - z_over_height**n) ** (m - 1)
 
 
 def calculate_stem_projected_canopy_area_at_z(
     z: float,
-    height: NDArray[np.float32],
+    stem_height: NDArray[np.float32],
     crown_area: NDArray[np.float32],
     m: NDArray[np.float32],
     n: NDArray[np.float32],
@@ -145,7 +145,7 @@ def calculate_stem_projected_canopy_area_at_z(
     Args:
         z: Vertical height on the z axis.
         crown_area: Crown area of each cohort
-        height: Stem height of each cohort
+        stem_height: Stem height of each cohort
         m: Canopy shape parameter ``m``` for each cohort
         n: Canopy shape parameter ``n``` for each cohort
         q_m: Canopy shape parameter ``q_m``` for each cohort
@@ -153,7 +153,7 @@ def calculate_stem_projected_canopy_area_at_z(
     """
 
     # Calculate q(z)
-    q_z = calculate_relative_canopy_radius_at_z(z, height, m, n)
+    q_z = calculate_relative_canopy_radius_at_z(z, stem_height, m, n)
 
     # Calculate A_p
     # Calculate Ap given z > zm
@@ -161,14 +161,14 @@ def calculate_stem_projected_canopy_area_at_z(
     # Set Ap = Ac where z <= zm
     A_p = np.where(z <= z_m, crown_area, A_p)
     # Set Ap = 0 where z > H
-    A_p = np.where(z > height, 0, A_p)
+    A_p = np.where(z > stem_height, 0, A_p)
 
     return A_p
 
 
 def solve_community_projected_canopy_area(
     z: float,
-    height: NDArray[np.float32],
+    stem_height: NDArray[np.float32],
     crown_area: NDArray[np.float32],
     m: NDArray[np.float32],
     n: NDArray[np.float32],
@@ -200,7 +200,7 @@ def solve_community_projected_canopy_area(
         z: Vertical height on the z axis.
         n_individuals: Number of individuals in each cohort
         crown_area: Crown area of each cohort
-        height: Stem height of each cohort
+        stem_height: Stem height of each cohort
         m: Canopy shape parameter ``m``` for each cohort
         n: Canopy shape parameter ``n``` for each cohort
         q_m: Canopy shape parameter ``q_m``` for each cohort
@@ -211,7 +211,7 @@ def solve_community_projected_canopy_area(
     # Calculate A(p) for the stems in each cohort
     A_p = calculate_stem_projected_canopy_area_at_z(
         z=z,
-        height=height,
+        stem_height=stem_height,
         crown_area=crown_area,
         m=m,
         n=n,
@@ -222,44 +222,60 @@ def solve_community_projected_canopy_area(
     return (A_p * n_individuals).sum() - target_area
 
 
-# def calculate_projected_leaf_area_for_individuals(
-#     z: float, f_g: float, community: Community
-# ) -> NDArray[np.float32]:
-#     """Calculate projected crown area above a given height.
+def calculate_stem_projected_leaf_area_at_z(
+    z: float | NDArray[np.float32],
+    stem_height: NDArray[np.float32],
+    crown_area: NDArray[np.float32],
+    z_max: NDArray[np.float32],
+    f_g: NDArray[np.float32],
+    m: NDArray[np.float32],
+    n: NDArray[np.float32],
+    q_m: NDArray[np.float32],
+    z_m: NDArray[np.float32],
+) -> NDArray[np.float32]:
+    """Calculate projected leaf area above a given height.
 
-#     Calculation applies to an individual within a cohort.This function takes PFT
-#     specific parameters (shape parameters) and stem specific sizes and estimates
-#     the projected crown area above a given height $z$. The inputs can either be
-#     scalars describing a single stem or arrays representing a community of stems.
-#     If only a single PFT is being modelled then `m`, `n`, `qm` and `fg` can be
-#     scalars with arrays `H`, `Ac` and `zm` giving the sizes of stems within that
-#     PFT.
+    Calculation applies to an individual within a cohort.This function takes PFT
+    specific parameters (shape parameters) and stem specific sizes and estimates
+    the projected crown area above a given height $z$. The inputs can either be
+    scalars describing a single stem or arrays representing a community of stems.
+    If only a single PFT is being modelled then `m`, `n`, `qm` and `fg` can be
+    scalars with arrays `H`, `Ac` and `zm` giving the sizes of stems within that
+    PFT.
 
-#     :param community:
-#     :param f_g: Crown gap fraction.
-#     :param z: Height from ground.
-#     """
+    Args:
+        z: Vertical height on the z axis.
+        crown_area: Crown area for a stem
+        stem_height: Total height of a stem
+        z_max: Height of maximum canopy radius for each stem
+        f_g: Within crown gap fraction for each stem.
+        m: Canopy shape parameter ``m``` for each stem
+        n: Canopy shape parameter ``n``` for each stem
+        q_m: Canopy shape parameter ``q_m``` for each stem
+        z_m: Canopy shape parameter ``z_m``` for each stem
+    """
 
-#     # Calculate q(z)
-#     q_z = calculate_relative_canopy_radii(
-#         z, community.t_model_heights, community.pft_m_values, community.pft_n_values
-#     )
+    # Calculate q(z)
+    q_z = calculate_relative_canopy_radius_at_z(
+        z=z,
+        stem_height=stem_height,
+        m=m,
+        n=n,
+    )
 
-#     # Calculate Ac terms
-#     A_c_terms = (
-#         community.t_model_crown_areas *
-#         (q_z / community.canopy_factor_q_m_values) ** 2
-#     )
+    # Calculate Ac terms
+    A_c_terms = crown_area * (q_z / q_m) ** 2
 
-#     # Set Acp either side of zm
-#     A_cp = np.where(
-#         z <= community.canopy_factor_z_m_values,
-#         community.t_model_crown_areas - A_c_terms * f_g,
-#         A_c_terms * (1 - f_g),
-#     )
-#     # Set Ap = 0 where z > H
-#     A_cp = np.where(z > community.t_model_heights, 0, A_cp)
-#     return A_cp
+    # Set Acp either side of zm
+    A_cp = np.where(
+        z <= z_max,
+        crown_area - A_c_terms * f_g,
+        A_c_terms * (1 - f_g),
+    )
+    # Set Ap = 0 where z > H
+    A_cp = np.where(z > stem_height, 0, A_cp)
+
+    return A_cp
 
 
 # def calculate_total_canopy_A_cp(z: float, f_g: float, community: Community) -> float:

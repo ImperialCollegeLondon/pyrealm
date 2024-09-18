@@ -123,7 +123,7 @@ def test_calculate_crown_areas(rvalues):
             ca_ratio=pft.ca_ratio,
             a_hd=pft.a_hd,
             dbh=data["diameter"],
-            height=data["height"],
+            stem_height=data["height"],
         )
 
         assert_array_almost_equal(actual_crown_areas, data["crown_area"], decimal=8)
@@ -138,7 +138,7 @@ def test_calculate_crown_fractions(rvalues):
         actual_crown_fractions = calculate_crown_fractions(
             a_hd=pft.a_hd,
             dbh=data["diameter"],
-            height=data["height"],
+            stem_height=data["height"],
         )
         assert_array_almost_equal(
             actual_crown_fractions, data["crown_fraction"], decimal=8
@@ -153,7 +153,7 @@ def test_calculate_stem_masses(rvalues):
     for pft, _, data in rvalues:
         actual_stem_masses = calculate_stem_masses(
             dbh=data["diameter"],
-            height=data["height"],
+            stem_height=data["height"],
             rho_s=pft.rho_s,
         )
         assert_array_almost_equal(actual_stem_masses, data["mass_stm"], decimal=8)
@@ -179,7 +179,7 @@ def test_calculate_sapwood_masses(rvalues):
     for pft, _, data in rvalues:
         actual_sapwood_masses = calculate_sapwood_masses(
             crown_area=data["crown_area"],
-            height=data["height"],
+            stem_height=data["height"],
             crown_fraction=data["crown_fraction"],
             ca_ratio=pft.ca_ratio,
             rho_s=pft.rho_s,

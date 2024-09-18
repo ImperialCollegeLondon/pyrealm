@@ -29,13 +29,13 @@ def test_calculate_crown_areas():
     pft_ca_ratio_values = np.array([2, 3])
     pft_a_hd_values = np.array([116.0, 116.0])
     diameters_at_breast_height = np.array([0.2, 0.6])
-    heights = np.array([15.194142, 15.166396])
+    stem_height = np.array([15.194142, 15.166396])
     expected_crown_areas = np.array([0.04114983, 0.1848361])
     actual_crown_areas = calculate_crown_areas(
         ca_ratio=pft_ca_ratio_values,
         a_hd=pft_a_hd_values,
         dbh=diameters_at_breast_height,
-        height=heights,
+        stem_height=stem_height,
     )
 
     np.allclose(actual_crown_areas, expected_crown_areas)
@@ -48,12 +48,12 @@ def test_calculate_crown_fractions():
 
     pft_a_hd_values = np.array([116.0, 116.0])
     diameters_at_breast_height = np.array([0.2, 0.6])
-    heights = np.array([15.194142, 15.166396])
+    stem_height = np.array([15.194142, 15.166396])
     expected_crown_fractions = np.array([0.65491991, 0.21790799])
     actual_crown_fractions = calculate_crown_fractions(
         a_hd=pft_a_hd_values,
         dbh=diameters_at_breast_height,
-        height=heights,
+        stem_height=stem_height,
     )
 
     np.allclose(actual_crown_fractions, expected_crown_fractions)
@@ -65,11 +65,11 @@ def test_calculate_stem_masses():
     from pyrealm.demography.t_model_functions import calculate_stem_masses
 
     diameters_at_breast_height = np.array([0.2, 0.6])
-    heights = np.array([15.194142, 15.166396])
+    stem_height = np.array([15.194142, 15.166396])
     pft_rho_s_values = np.array([200.0, 200.0])
     expected_stem_masses = np.array([47.73380488, 428.8197443])
     actual_stem_masses = calculate_stem_masses(
-        dbh=diameters_at_breast_height, height=heights, rho_s=pft_rho_s_values
+        dbh=diameters_at_breast_height, stem_height=stem_height, rho_s=pft_rho_s_values
     )
 
     np.allclose(actual_stem_masses, expected_stem_masses)
@@ -98,14 +98,14 @@ def test_calculate_sapwood_masses():
 
     crown_areas = np.array([0.04114983, 0.1848361])
     pft_rho_s_values = np.array([200.0, 200.0])
-    heights = np.array([15.194142, 15.166396])
+    stem_height = np.array([15.194142, 15.166396])
     crown_fractions = np.array([0.65491991, 0.21790799])
     pft_ca_ratio_values = [390.43, 390.43]
     expected_sapwood_masses = np.array([0.21540173, 1.27954667])
     actual_sapwood_masses = calculate_sapwood_masses(
         crown_area=crown_areas,
         rho_s=pft_rho_s_values,
-        height=heights,
+        stem_height=stem_height,
         crown_fraction=crown_fractions,
         ca_ratio=pft_ca_ratio_values,
     )
