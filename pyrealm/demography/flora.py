@@ -54,11 +54,12 @@ class PlantFunctionalTypeStrict:
     * The foliage maintenance respiration fraction was not explicitly included in
       :cite:t:`Li:2014bc` - there was assumed to be a 10% penalty on GPP before
       calculating the other component - but has been explicitly included here.
-    * This implementation adds two further canopy shape parameters (``m`` and ``n``),
-      which are then used to calculate two derived attributes (``q_m`` and
-      ``z_max_ratio``). These are used to define the vertical distribution of leaves
-      around a stem and follow the implementation developed in the PlantFATE model
-      :cite:`joshi:2022a`.
+    * This implementation adds two further canopy shape parameters (``m`` and ``n`` and
+      ``f_g``). The first two are then used to calculate two constant derived attributes
+      (``q_m`` and ``z_max_ratio``) that define the vertical distribution of the crown.
+      The last parameter (``f_g``) is the crown gap fraction, that defines the vertical
+      distribution of leaves within the crown. This canopy model parameterisation
+      follows the implementation developed in the PlantFATE model :cite:`joshi:2022a`.
 
     See also :class:`~pyrealm.demography.flora.PlantFunctionalType` for the default
     values implemented in that subclass.
@@ -100,6 +101,8 @@ class PlantFunctionalTypeStrict:
     r"""Canopy shape parameter (:math:`m`, -)"""
     n: float
     r"""Canopy shape parameter (:math:`n`, -)"""
+    f_g: float
+    r"""Crown gap fraction (:math:`f_g`, -)"""
 
     q_m: float = field(init=False)
     """Scaling factor to derive maximum crown radius from crown area."""
@@ -132,7 +135,8 @@ class PlantFunctionalType(PlantFunctionalTypeStrict):
     generating plant functional type instances from data.
 
     The table below lists the attributes and default values taken from Table 1 of
-    :cite:t:`Li:2014bc`
+    :cite:t:`Li:2014bc`, except for ``m``, ``n`` and ``f_g`` which take representative
+    values from :cite:t:`joshi:2022a`.
 
     .. csv-table::
         :header: "Attribute", "Default", "Unit"
@@ -154,6 +158,7 @@ class PlantFunctionalType(PlantFunctionalTypeStrict):
         resp_f,  0.1, -
         m, 2, -
         n, 5, -
+        f_g, 0.05, -
     """
 
     a_hd: float = 116.0
@@ -172,6 +177,7 @@ class PlantFunctionalType(PlantFunctionalTypeStrict):
     resp_f: float = 0.1
     m: float = 2
     n: float = 5
+    f_g: float = 0.05
 
 
 PlantFunctionalTypeSchema = marshmallow_dataclass.class_schema(
