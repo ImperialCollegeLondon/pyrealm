@@ -362,6 +362,9 @@ def calculate_stem_projected_leaf_area_at_z(
         validate: Boolean flag to suppress argument validation.
     """
 
+    # TODO - could this merge with the stem crown area function? A lot of overlap, so
+    # could be much more efficient to return both from one function.
+
     if validate:
         _validate_z_args(z, crown_area, stem_height, f_g, q_m, z_max)
         _validate_q_z(z, q_z, crown_area)
