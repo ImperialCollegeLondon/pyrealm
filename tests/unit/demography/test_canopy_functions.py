@@ -1,5 +1,7 @@
 """test the functions in canopy_functions.py."""
 
+from contextlib import nullcontext as does_not_raise
+
 import numpy as np
 import pytest
 
@@ -81,8 +83,146 @@ def test_calculate_r_0_values(fixture_canopy_shape, crown_areas, expected_r0):
     assert np.allclose(actual_r0_values, expected_r0)
 
 
-def test_calculate_relative_canopy_radius_at_z(fixture_community):
-    """Test crown radius height prediction.
+@pytest.fixture
+def fixture_z_qz_stem_properties(request):
+    """Fixture providing test cases of z, q_z and stem properties .
+
+    This fixture allows tests to use indirect parameterisation to share a set of test
+    cases of inputs for the z, stem properties and q_z arguments. In each case, the
+    returned value is a tuple of arrays that just provide the correct shapes for the
+    various test cases:
+
+    * an input value for z
+    * a first stem property row array
+    * a list giving another stem property array
+    * an array with the shape of the resulting q_z value from the above or None if those
+      inputs are invalid for calculating q_z
+
+    The two stem property arrays allow the number of properties to be controlled at the
+    test level (differing number of args for different functions) but also to introduce
+    inconsistent property lengths. To package these up for use with, for example a total
+    of 3 stem properties:
+
+    .. code:: python
+
+        z, arg1, args, q_z = fixture_z_qz_stem_properties
+        stem_args = [arg1, * args * 2]
+
+    """
+
+    match request.param:
+        case "0D_z_ok":
+            return (np.array(1), np.ones(4), [np.ones(4)], np.ones(4))
+        case "1D_scalar_z_ok":
+            return (np.ones(1), np.ones(4), [np.ones(4)], np.ones(4))
+        case "1D_row_z_ok":
+            return (np.ones(4), np.ones(4), [np.ones(4)], np.ones(4))
+        case "2D_column_z_ok":
+            return (np.ones((4, 1)), np.ones(4), [np.ones(4)], np.ones((4, 4)))
+        case "1D_row_z_wrong_length":
+            return (np.ones(5), np.ones(4), [np.ones(4)], None)
+        case "2D_z_not_column":
+            return (np.ones((4, 2)), np.ones(4), [np.ones(4)], None)
+        case "inconsistent_stem_properties":
+            return (np.ones(4), np.ones(5), [np.ones(4)], None)
+        case "1D_q_z_inconsistent":
+            return (np.ones(4), np.ones(4), [np.ones(4)], np.ones(5))
+        case "2D_q_z_inconsistent":
+            return (np.ones(4), np.ones(4), [np.ones(4)], np.ones((5, 4)))
+
+
+@pytest.mark.parametrize(
+    argnames="fixture_z_qz_stem_properties, outcome",
+    argvalues=[
+        ("0D_z_ok", does_not_raise()),
+        ("1D_scalar_z_ok", does_not_raise()),
+        ("1D_row_z_ok", does_not_raise()),
+        ("2D_column_z_ok", does_not_raise()),
+        ("1D_row_z_wrong_length", pytest.raises(ValueError)),
+        ("2D_z_not_column", pytest.raises(ValueError)),
+        ("inconsistent_stem_properties", pytest.raises(ValueError)),
+    ],
+    indirect=["fixture_z_qz_stem_properties"],
+)
+def test__validate_z_args(fixture_z_qz_stem_properties, outcome):
+    """Tests the validation of z args to canopy functions."""
+
+    from pyrealm.demography.canopy_functions import _validate_z_args
+
+    # Build inputs
+    z, arg1, args, _ = fixture_z_qz_stem_properties
+    stem_args = [arg1, *args * 2]  # length of args doesn't really matter here.
+
+    with outcome:
+        _validate_z_args(z, *stem_args)
+
+
+@pytest.mark.parametrize(
+    argnames="fixture_z_qz_stem_properties, outcome",
+    argvalues=[
+        ("0D_z_ok", does_not_raise()),
+        ("1D_scalar_z_ok", does_not_raise()),
+        ("1D_row_z_ok", does_not_raise()),
+        ("2D_column_z_ok", does_not_raise()),
+        ("1D_row_z_wrong_length", pytest.raises(ValueError)),
+        ("2D_z_not_column", pytest.raises(ValueError)),
+        ("inconsistent_stem_properties", pytest.raises(ValueError)),
+        ("1D_q_z_inconsistent", pytest.raises(ValueError)),
+        ("2D_q_z_inconsistent", pytest.raises(ValueError)),
+    ],
+    indirect=["fixture_z_qz_stem_properties"],
+)
+def test__validate_q_z_args(fixture_z_qz_stem_properties, outcome):
+    """Tests the validation of z args to canopy functions."""
+
+    from pyrealm.demography.canopy_functions import _validate_q_z
+
+    # Build inputs
+    z, stem_property, _, q_z = fixture_z_qz_stem_properties
+
+    with outcome:
+        _validate_q_z(z, q_z, stem_property)
+
+
+@pytest.mark.parametrize(
+    argnames="fixture_z_qz_stem_properties, outcome",
+    argvalues=[
+        ("0D_z_ok", does_not_raise()),
+        ("1D_scalar_z_ok", does_not_raise()),
+        ("1D_row_z_ok", does_not_raise()),
+        ("2D_column_z_ok", does_not_raise()),
+        ("1D_row_z_wrong_length", pytest.raises(ValueError)),
+        ("2D_z_not_column", pytest.raises(ValueError)),
+        ("inconsistent_stem_properties", pytest.raises(ValueError)),
+    ],
+    indirect=["fixture_z_qz_stem_properties"],
+)
+def test_calculate_relative_canopy_radius_at_z_inputs(
+    fixture_z_qz_stem_properties, outcome
+):
+    """Test calculate_relative_canopy_radius_at_z input and output shapes .
+
+    This test checks the function behaviour with different inputs.
+    """
+
+    from pyrealm.demography.canopy_functions import (
+        calculate_relative_canopy_radius_at_z,
+    )
+
+    # Build inputs
+    z, arg1, args, q_z = fixture_z_qz_stem_properties
+    stem_args = [arg1, *args * 2]  # Need 3 stem arguments.
+
+    with outcome:
+        # Get the relative radius at that height
+        q_z_values = calculate_relative_canopy_radius_at_z(z, *stem_args)
+
+        if isinstance(outcome, does_not_raise):
+            assert q_z_values.shape == q_z.shape
+
+
+def test_calculate_relative_canopy_radius_at_z_values(fixture_community):
+    """Test calculate_relative_canopy_radius_at_z.
 
     This test validates the expectation that the canopy shape model correctly
     predicts the crown area from the T Model equations at the predicted height of
@@ -97,14 +237,14 @@ def test_calculate_relative_canopy_radius_at_z(fixture_community):
     z_max = (
         fixture_community.cohort_data["stem_height"]
         * fixture_community.cohort_data["z_max_prop"]
-    )
+    ).to_numpy()
 
     # Get the relative radius at that height
     q_z_values = calculate_relative_canopy_radius_at_z(
         z=z_max,
-        stem_height=fixture_community.cohort_data["stem_height"],
-        m=fixture_community.cohort_data["m"],
-        n=fixture_community.cohort_data["n"],
+        stem_height=fixture_community.cohort_data["stem_height"].to_numpy(),
+        m=fixture_community.cohort_data["m"].to_numpy(),
+        n=fixture_community.cohort_data["n"].to_numpy(),
     )
 
     # Now test that the circular crown area from that radius is equivalent to the direct
@@ -113,6 +253,39 @@ def test_calculate_relative_canopy_radius_at_z(fixture_community):
         fixture_community.cohort_data["crown_area"],
         np.pi * (q_z_values * fixture_community.cohort_data["canopy_r0"]) ** 2,
     )
+
+
+@pytest.mark.parametrize(
+    argnames="fixture_z_qz_stem_properties, outcome",
+    argvalues=[
+        ("0D_z_ok", does_not_raise()),
+        ("1D_scalar_z_ok", does_not_raise()),
+        ("1D_row_z_ok", does_not_raise()),
+        ("2D_column_z_ok", does_not_raise()),
+        ("1D_row_z_wrong_length", pytest.raises(ValueError)),
+        ("2D_z_not_column", pytest.raises(ValueError)),
+        ("inconsistent_stem_properties", pytest.raises(ValueError)),
+        ("1D_q_z_inconsistent", pytest.raises(ValueError)),
+        ("2D_q_z_inconsistent", pytest.raises(ValueError)),
+    ],
+    indirect=["fixture_z_qz_stem_properties"],
+)
+def test_calculate_stem_projected_crown_area_at_z_inputs(
+    fixture_z_qz_stem_properties, outcome
+):
+    """Tests the validation of inputs to calculate_stem_projected_crown_area_at_z."""
+    from pyrealm.demography.canopy_functions import (
+        calculate_stem_projected_crown_area_at_z,
+    )
+
+    # Build inputs
+    z, arg1, args, q_z = fixture_z_qz_stem_properties
+    stem_args = [arg1, *args * 3]  # Need 4 stem arguments.
+    with outcome:
+        Ap_z_values = calculate_stem_projected_crown_area_at_z(z, q_z, *stem_args)
+
+        if isinstance(outcome, does_not_raise):
+            assert Ap_z_values.shape == q_z.shape
 
 
 @pytest.mark.parametrize(
@@ -140,7 +313,7 @@ def test_calculate_relative_canopy_radius_at_z(fixture_community):
         ),
     ],
 )
-def test_calculate_stem_projected_canopy_area_at_z(
+def test_calculate_stem_projected_crown_area_at_z_values(
     fixture_community, heights, expected_Ap_z
 ):
     """Test calculate_stem_projected_canopy_area_at_z.
@@ -153,17 +326,26 @@ def test_calculate_stem_projected_canopy_area_at_z(
     """
 
     from pyrealm.demography.canopy_functions import (
-        calculate_stem_projected_canopy_area_at_z,
+        calculate_relative_canopy_radius_at_z,
+        calculate_stem_projected_crown_area_at_z,
     )
 
-    Ap_z_values = calculate_stem_projected_canopy_area_at_z(
+    # Calculate the required q_z
+    q_z = calculate_relative_canopy_radius_at_z(
         z=heights,
-        stem_height=fixture_community.cohort_data["stem_height"],
-        crown_area=fixture_community.cohort_data["crown_area"],
-        m=fixture_community.cohort_data["m"],
-        n=fixture_community.cohort_data["n"],
-        q_m=fixture_community.cohort_data["q_m"],
-        z_m=fixture_community.cohort_data["canopy_z_max"],
+        stem_height=fixture_community.cohort_data["stem_height"].to_numpy(),
+        m=fixture_community.cohort_data["m"].to_numpy(),
+        n=fixture_community.cohort_data["n"].to_numpy(),
+    )
+
+    # Calculate and test these values
+    Ap_z_values = calculate_stem_projected_crown_area_at_z(
+        z=heights,
+        q_z=q_z,
+        stem_height=fixture_community.cohort_data["stem_height"].to_numpy(),
+        crown_area=fixture_community.cohort_data["crown_area"].to_numpy(),
+        q_m=fixture_community.cohort_data["q_m"].to_numpy(),
+        z_max=fixture_community.cohort_data["canopy_z_max"].to_numpy(),
     )
 
     assert np.allclose(
@@ -195,20 +377,53 @@ def test_solve_community_projected_canopy_area(fixture_community):
     ):
         solved = solve_community_projected_canopy_area(
             z=this_height,
-            stem_height=fixture_community.cohort_data["stem_height"],
-            crown_area=fixture_community.cohort_data["crown_area"],
-            n_individuals=fixture_community.cohort_data["n_individuals"],
-            m=fixture_community.cohort_data["m"],
-            n=fixture_community.cohort_data["n"],
-            q_m=fixture_community.cohort_data["q_m"],
-            z_m=fixture_community.cohort_data["canopy_z_max"],
+            stem_height=fixture_community.cohort_data["stem_height"].to_numpy(),
+            crown_area=fixture_community.cohort_data["crown_area"].to_numpy(),
+            n_individuals=fixture_community.cohort_data["n_individuals"].to_numpy(),
+            m=fixture_community.cohort_data["m"].to_numpy(),
+            n=fixture_community.cohort_data["n"].to_numpy(),
+            q_m=fixture_community.cohort_data["q_m"].to_numpy(),
+            z_max=fixture_community.cohort_data["canopy_z_max"].to_numpy(),
             target_area=this_target,
         )
 
     assert solved == pytest.approx(0)
 
 
-def test_calculate_stem_projected_leaf_area_at_z_aligns_with(fixture_community):
+@pytest.mark.parametrize(
+    argnames="fixture_z_qz_stem_properties, outcome",
+    argvalues=[
+        ("0D_z_ok", does_not_raise()),
+        ("1D_scalar_z_ok", does_not_raise()),
+        ("1D_row_z_ok", does_not_raise()),
+        ("2D_column_z_ok", does_not_raise()),
+        ("1D_row_z_wrong_length", pytest.raises(ValueError)),
+        ("2D_z_not_column", pytest.raises(ValueError)),
+        ("inconsistent_stem_properties", pytest.raises(ValueError)),
+        ("1D_q_z_inconsistent", pytest.raises(ValueError)),
+        ("2D_q_z_inconsistent", pytest.raises(ValueError)),
+    ],
+    indirect=["fixture_z_qz_stem_properties"],
+)
+def test_calculate_stem_projected_leaf_area_at_z_inputs(
+    fixture_z_qz_stem_properties, outcome
+):
+    """Tests the validation of inputs to calculate_stem_projected_crown_area_at_z."""
+    from pyrealm.demography.canopy_functions import (
+        calculate_stem_projected_leaf_area_at_z,
+    )
+
+    # Build inputs
+    z, arg1, args, q_z = fixture_z_qz_stem_properties
+    stem_args = [arg1, *args * 4]  # Need 5 stem arguments.
+    with outcome:
+        Ap_z_values = calculate_stem_projected_leaf_area_at_z(z, q_z, *stem_args)
+
+        if isinstance(outcome, does_not_raise):
+            assert Ap_z_values.shape == q_z.shape
+
+
+def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
     """Test calculate_stem_projected_leaf_area_at_z.
 
     This test uses hand calculated values to check predictions, but there are some more
@@ -216,6 +431,7 @@ def test_calculate_stem_projected_leaf_area_at_z_aligns_with(fixture_community):
     """
 
     from pyrealm.demography.canopy_functions import (
+        calculate_relative_canopy_radius_at_z,
         calculate_stem_projected_leaf_area_at_z,
     )
 
@@ -223,16 +439,21 @@ def test_calculate_stem_projected_leaf_area_at_z_aligns_with(fixture_community):
     # to the highest
     z_max = fixture_community.cohort_data["canopy_z_max"].to_numpy()[:, None]
 
-    leaf_area_fg0 = calculate_stem_projected_leaf_area_at_z(
+    q_z = calculate_relative_canopy_radius_at_z(
         z=z_max,
         stem_height=fixture_community.cohort_data["stem_height"].to_numpy(),
-        crown_area=fixture_community.cohort_data["crown_area"].to_numpy(),
-        z_max=fixture_community.cohort_data["canopy_z_max"].to_numpy(),
-        f_g=fixture_community.cohort_data["f_g"].to_numpy(),
         m=fixture_community.cohort_data["m"].to_numpy(),
         n=fixture_community.cohort_data["n"].to_numpy(),
+    )
+
+    leaf_area_fg0 = calculate_stem_projected_leaf_area_at_z(
+        z=z_max,
+        q_z=q_z,
+        stem_height=fixture_community.cohort_data["stem_height"].to_numpy(),
+        crown_area=fixture_community.cohort_data["crown_area"].to_numpy(),
+        f_g=fixture_community.cohort_data["f_g"].to_numpy(),
         q_m=fixture_community.cohort_data["q_m"].to_numpy(),
-        z_m=fixture_community.cohort_data["canopy_z_max"].to_numpy(),
+        z_max=fixture_community.cohort_data["canopy_z_max"].to_numpy(),
     )
 
     # Pre-calculated values
@@ -263,14 +484,12 @@ def test_calculate_stem_projected_leaf_area_at_z_aligns_with(fixture_community):
 
     leaf_area_fg002 = calculate_stem_projected_leaf_area_at_z(
         z=z_max,
+        q_z=q_z,
         stem_height=fixture_community.cohort_data["stem_height"].to_numpy(),
         crown_area=fixture_community.cohort_data["crown_area"].to_numpy(),
-        z_max=fixture_community.cohort_data["canopy_z_max"].to_numpy(),
         f_g=fixture_community.cohort_data["f_g"].to_numpy(),
-        m=fixture_community.cohort_data["m"].to_numpy(),
-        n=fixture_community.cohort_data["n"].to_numpy(),
         q_m=fixture_community.cohort_data["q_m"].to_numpy(),
-        z_m=fixture_community.cohort_data["canopy_z_max"].to_numpy(),
+        z_max=fixture_community.cohort_data["canopy_z_max"].to_numpy(),
     )
 
     expected_leaf_area_fg002 = np.array(

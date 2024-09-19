@@ -6,7 +6,7 @@ import numpy as np
 from numpy.typing import NDArray
 from pandas import Series
 
-# from pyrealm.demography.community import Community
+from pyrealm.core.utilities import check_input_shapes
 
 
 def calculate_canopy_q_m(
@@ -98,11 +98,78 @@ def calculate_canopy_r0(q_m: Series, crown_area: Series) -> Series:
     return 1 / q_m * np.sqrt(crown_area / np.pi)
 
 
+def _validate_z_args(z: NDArray[np.float32], *args: NDArray[np.float32]) -> None:
+    """Shared validation routine for vertical height arguments.
+
+    The canopy functions that take a height argument ``z`` can take a range of input
+    shapes for ``z``, alongside a set of other row arrays representing cohort
+    properties. This function is used to check that the cohort properties are of equal
+    length and that the ``z`` value has one of the accepted shapes described in
+    :meth:`~pyrealm.demography.canopy_functions.calculate_relative_canopy_radius_at_z`.
+
+    Args:
+        z: The inputs to the ``z`` argument of a function.
+        args: Other arrays representing cohort properties.
+    """
+
+    if z.size == 1 or z.ndim == 1:
+        # All same height or stem specific heights - check z is either a scalar or also
+        # a row vector of the right length.
+        check_input_shapes(z, *args)
+        return
+    elif z.ndim == 2 and z.shape[1] == 1:
+        # Z is a column vector, just check stem properties.
+        check_input_shapes(*args)
+        return
+
+    raise ValueError("Invalid shape for the z value.")
+
+
+def _validate_q_z(
+    z: NDArray[np.float32],
+    q_z: NDArray[np.float32],
+    stem_property: NDArray[np.float32],
+) -> None:
+    """Shared validation routine for relative radius arguments.
+
+    The functions
+    :meth:`~pyrealm.demography.canopy_functions.calculate_stem_projected_canopy_area_at_z`
+    and
+    :meth:`~pyrealm.demography.canopy_functions.calculate_stem_projected_leaf_area_at_z`
+    both require the arguments ``z`` and ``q_z``, where ``z`` is an array of vertical
+    heights and ``q_z`` is the relative canopy radius at those heights for a set of
+    stems. This function checks that the inputs are congruent with each other, and with
+    the shape of a stem property argument,  given the set of expected forms of ``z``
+    described in
+    :meth:`~pyrealm.demography.canopy_functions.calculate_relative_canopy_radius_at_z`.
+
+
+    Args:
+        z: The input to the ``z`` argument.
+        q_z: The input to the ``q_z`` argument.
+        stem_property: An argument input representing a stem property.
+    """
+
+    if z.size == 1 or z.ndim == 1:
+        # All same height or stem specific heights - q_z must then also be row vector of
+        # the same length as the stem propertys and z must be scalar or a row_vector.
+        check_input_shapes(z, q_z, stem_property)
+        return
+    elif z.ndim == 2 and z.shape[1] == 1:
+        # z is a column array, so check q_z is a matrix
+        if q_z.shape != (z.size, stem_property.size):
+            raise ValueError("Invalid shape for q_z.")
+        return
+
+    raise ValueError("Invalid shape for the z value.")
+
+
 def calculate_relative_canopy_radius_at_z(
-    z: float,
+    z: NDArray[np.float32],
     stem_height: NDArray[np.float32],
     m: NDArray[np.float32],
     n: NDArray[np.float32],
+    validate: bool = True,
 ) -> NDArray[np.float32]:
     r"""Calculate relative canopy radius at a given height.
 
@@ -115,51 +182,75 @@ def calculate_relative_canopy_radius_at_z(
         q(z) = m n \left(\dfrac{z}{H}\right) ^ {n -1}
         \left( 1 - \left(\dfrac{z}{H}\right) ^ n \right)^{m-1}
 
+    This function calculates :math:`q(z)` across a set of stems: the ``stem_height``,
+    ``m`` and ``n`` arguments should be one-dimensional arrays ('row vectors') of equal
+    length :math:`I`.  The value for ``z`` is then an array of heights, with one of the
+    following shapes:
+
+    1. A scalar array: :math:`q(z)` is found for all stems at the same height and the
+       return value is a 1D array of length :math:`I`.
+    2. A row vector of length :math:`I`: :math:`q(z)` is found for all stems at
+       stem-specific heights and the return value is again a 1D array of length
+       :math:`I`.
+    3. A column vector of length :math:`J`, that is a 2 dimensional array of shape
+       (:math:`J`, 1). This allows :math:`q(z)` to be calculated efficiently for a set
+       of heights for all stems and return a 2D array of shape (:math:`J`, :math:`I`).
+
     Args:
         z: Height at which to calculate relative radius
         stem_height: Total height of individual stem
         m: Canopy shape parameter of PFT
         n: Canopy shape parameter of PFT
+        validate: Boolean flag to suppress argument validation.
     """
+
+    if validate:
+        _validate_z_args(z, stem_height, m, n)
 
     z_over_height = z / stem_height
 
     return m * n * z_over_height ** (n - 1) * (1 - z_over_height**n) ** (m - 1)
 
 
-def calculate_stem_projected_canopy_area_at_z(
-    z: float,
+def calculate_stem_projected_crown_area_at_z(
+    z: NDArray[np.float32],
+    q_z: NDArray[np.float32],
     stem_height: NDArray[np.float32],
     crown_area: NDArray[np.float32],
-    m: NDArray[np.float32],
-    n: NDArray[np.float32],
     q_m: NDArray[np.float32],
-    z_m: NDArray[np.float32],
+    z_max: NDArray[np.float32],
+    validate: bool = True,
 ) -> NDArray[np.float32]:
     """Calculate stem projected crown area above a given height.
 
-    This function takes data on stem heights and crown areas, and then uses the canopy
-    shape parameters associated with each stem to calculate the projected crown area
-    above a given height $z$.
+    This function calculates the projected crown area of a set of stems with given
+    properties at a set of vertical heights. The stem properties are given in the
+    arguments ``stem_height``,``crown_area``,``q_m`` and ``z_max``, which must be
+    one-dimensional arrays ('row vectors') of equal length. The array of vertical
+    heights ``z`` accepts a range of input shapes (see
+    :meth:`~pyrealm.demography.canopy_functions.calculate_relative_canopy_radius_at_z`
+    ) and this function then also requires the expected relative stem radius (``q_z``)
+    calculated from those heights.
 
     Args:
-        z: Vertical height on the z axis.
-        crown_area: Crown area of each cohort
-        stem_height: Stem height of each cohort
-        m: Canopy shape parameter ``m``` for each cohort
-        n: Canopy shape parameter ``n``` for each cohort
-        q_m: Canopy shape parameter ``q_m``` for each cohort
-        z_m: Canopy shape parameter ``z_m``` for each cohort
+        z: Vertical height at which to estimate crown area
+        q_z: Relative crown radius at those heights
+        crown_area: Crown area of each stem
+        stem_height: Stem height of each stem
+        q_m: Canopy shape parameter ``q_m``` for each stem
+        z_max: Height of maximum crown radous for each stem
+        validate: Boolean flag to suppress argument validation.
     """
 
-    # Calculate q(z)
-    q_z = calculate_relative_canopy_radius_at_z(z, stem_height, m, n)
+    if validate:
+        _validate_z_args(z, stem_height, crown_area, q_m, z_max)
+        _validate_q_z(z, q_z, crown_area)
 
     # Calculate A_p
     # Calculate Ap given z > zm
     A_p = crown_area * (q_z / q_m) ** 2
     # Set Ap = Ac where z <= zm
-    A_p = np.where(z <= z_m, crown_area, A_p)
+    A_p = np.where(z <= z_max, crown_area, A_p)
     # Set Ap = 0 where z > H
     A_p = np.where(z > stem_height, 0, A_p)
 
@@ -173,9 +264,10 @@ def solve_community_projected_canopy_area(
     m: NDArray[np.float32],
     n: NDArray[np.float32],
     q_m: NDArray[np.float32],
-    z_m: NDArray[np.float32],
+    z_max: NDArray[np.float32],
     n_individuals: NDArray[np.float32],
     target_area: float = 0,
+    validate: bool = True,
 ) -> NDArray[np.float32]:
     """Solver function for community wide projected crown area.
 
@@ -204,69 +296,80 @@ def solve_community_projected_canopy_area(
         m: Canopy shape parameter ``m``` for each cohort
         n: Canopy shape parameter ``n``` for each cohort
         q_m: Canopy shape parameter ``q_m``` for each cohort
-        z_m: Canopy shape parameter ``z_m``` for each cohort
+        z_max: Canopy shape parameter ``z_m``` for each cohort
         target_area: A target projected crown area.
+        validate: Boolean flag to suppress argument validation.
     """
+    # Convert z to array for validation and typing
+    z_arr = np.array(z)
 
+    if validate:
+        _validate_z_args(
+            z_arr, n_individuals, crown_area, stem_height, m, n, q_m, z_max
+        )
+
+    q_z = calculate_relative_canopy_radius_at_z(
+        z=z_arr, stem_height=stem_height, m=m, n=n, validate=False
+    )
     # Calculate A(p) for the stems in each cohort
-    A_p = calculate_stem_projected_canopy_area_at_z(
-        z=z,
+    A_p = calculate_stem_projected_crown_area_at_z(
+        z=z_arr,
+        q_z=q_z,
         stem_height=stem_height,
         crown_area=crown_area,
-        m=m,
-        n=n,
         q_m=q_m,
-        z_m=z_m,
+        z_max=z_max,
+        validate=False,
     )
 
     return (A_p * n_individuals).sum() - target_area
 
 
 def calculate_stem_projected_leaf_area_at_z(
-    z: float | NDArray[np.float32],
+    z: NDArray[np.float32],
+    q_z: NDArray[np.float32],
     stem_height: NDArray[np.float32],
     crown_area: NDArray[np.float32],
-    z_max: NDArray[np.float32],
     f_g: NDArray[np.float32],
-    m: NDArray[np.float32],
-    n: NDArray[np.float32],
     q_m: NDArray[np.float32],
-    z_m: NDArray[np.float32],
+    z_max: NDArray[np.float32],
+    validate: bool = True,
 ) -> NDArray[np.float32]:
     """Calculate projected leaf area above a given height.
 
-    Calculation applies to an individual within a cohort.This function takes PFT
-    specific parameters (shape parameters) and stem specific sizes and estimates
-    the projected crown area above a given height $z$. The inputs can either be
-    scalars describing a single stem or arrays representing a community of stems.
-    If only a single PFT is being modelled then `m`, `n`, `qm` and `fg` can be
-    scalars with arrays `H`, `Ac` and `zm` giving the sizes of stems within that
-    PFT.
+    This function calculates the projected leaf area of a set of stems with given
+    properties at a set of vertical heights. This differs from crown area in allowing
+    for crown openness within the crown of an individual stem that results in the
+    displacement of leaf area further down into the canopy. The degree of openness is
+    controlled by the crown gap fraction property of each stem.
+
+    The stem properties are given in the arguments
+    ``stem_height``,``crown_area``,``f_g``,``q_m`` and ``z_max``, which must be
+    one-dimensional arrays ('row vectors') of equal length. The array of vertical
+    heights ``z`` accepts a range of input shapes (see
+    :meth:`~pyrealm.demography.canopy_functions.calculate_relative_canopy_radius_at_z`
+    ) and this function then also requires the expected relative stem radius (``q_z``)
+    calculated from those heights.
 
     Args:
-        z: Vertical height on the z axis.
+        z: Vertical heights on the z axis.
+        q_z: Relative crown radius at heights in z.
         crown_area: Crown area for a stem
         stem_height: Total height of a stem
-        z_max: Height of maximum canopy radius for each stem
         f_g: Within crown gap fraction for each stem.
-        m: Canopy shape parameter ``m``` for each stem
-        n: Canopy shape parameter ``n``` for each stem
         q_m: Canopy shape parameter ``q_m``` for each stem
-        z_m: Canopy shape parameter ``z_m``` for each stem
+        z_max: Height of maximum canopy radius for each stem
+        validate: Boolean flag to suppress argument validation.
     """
 
-    # Calculate q(z)
-    q_z = calculate_relative_canopy_radius_at_z(
-        z=z,
-        stem_height=stem_height,
-        m=m,
-        n=n,
-    )
+    if validate:
+        _validate_z_args(z, crown_area, stem_height, f_g, q_m, z_max)
+        _validate_q_z(z, q_z, crown_area)
 
     # Calculate Ac terms
     A_c_terms = crown_area * (q_z / q_m) ** 2
 
-    # Set Acp either side of zm
+    # Set Acp either side of z_max
     A_cp = np.where(
         z <= z_max,
         crown_area - A_c_terms * f_g,

@@ -5,6 +5,8 @@ from numpy.typing import NDArray
 from scipy.optimize import root_scalar
 
 from pyrealm.demography.canopy_functions import (
+    calculate_relative_canopy_radius_at_z,
+    calculate_stem_projected_crown_area_at_z,
     solve_community_projected_canopy_area,
 )
 from pyrealm.demography.community import Community
@@ -55,12 +57,35 @@ class Canopy:
                     community.cohort_data["stem_height"],  # stem_height
                     community.cohort_data["m"],  # m
                     community.cohort_data["n"],  # n
-                    community.cohort_data["q_m"],  # q_m
-                    community.cohort_data["q_n"],  # z_m
+                    community.cohort_data["canopy_q_m"],  # q_m
+                    community.cohort_data["canopy_z_max"],  # z_m
                     target_area,  # target_area
+                    False,  # validate
                 ),
                 bracket=(0, self.max_stem_height),
             ).root
+
+        # Find the stem projected canopy area and relative canopy radius at canopy
+        # closure heights
+        self.stem_relative_radius = calculate_relative_canopy_radius_at_z(
+            z=self.layer_closure_heights[:, None],
+            stem_height=community.cohort_data["stem_height"].to_numpy(),
+            m=community.cohort_data["m"].to_numpy(),
+            n=community.cohort_data["n"].to_numpy(),
+            validate=False,
+        )
+
+        self.stem_crown_area = calculate_stem_projected_crown_area_at_z(
+            z=self.layer_closure_heights[:, None],
+            q_z=self.stem_relative_radius,
+            crown_area=community.cohort_data["crown_area"].to_numpy(),
+            stem_height=community.cohort_data["stem_height"].to_numpy(),
+            q_m=community.cohort_data["canopy_q_m"].to_numpy(),
+            z_max=community.cohort_data["canopy_z_max"].to_numpy(),
+            validate=False,
+        )
+
+        # Find the stem projected leaf area at canopy closure heights.
 
         # # TODO there may be a more efficient solution here that does not use a loop.
         # self.A_cp_within_layer = map(
