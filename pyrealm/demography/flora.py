@@ -314,11 +314,11 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
         if not ((dbh is None) ^ (stem_height is None)):
             raise ValueError("Provide one of either dbh or stem_height")
 
-        # Convert pft data to dict of numpy arrays - TODO: this may become redundant if
-        # self.data adopts the dict of arrays format
-        pft_data: dict[str, NDArray] = {
-            k: v.to_numpy() for k, v in self.data.to_dict(orient="series").items()
-        }
+        # # Convert pft data to dict of numpy arrays - TODO: this may become redundant if
+        # # self.data adopts the dict of arrays format
+        # pft_data: dict[str, NDArray] = {
+        #     k: v.to_numpy() for k, v in self.data.to_dict(orient="series").items()
+        # }
 
         # Convert stem height to DBH for the plant functional type
         if stem_height is not None:
