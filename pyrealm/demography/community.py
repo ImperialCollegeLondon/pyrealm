@@ -355,7 +355,6 @@ class Community:
     # Post init properties
     number_of_cohorts: int = field(init=False)
     cohort_data: dict[str, NDArray] = field(init=False)
-    pft_data: dict[str, NDArray] = field(init=False)
 
     def __post_init__(
         self,
@@ -407,9 +406,9 @@ class Community:
             "n_individuals": cohort_n_individuals,
         }
 
-        # Broadcast the pft trait data to the cohort data by merging with the flora data
-        # and then store as the cohort data attribute
-        self.pft_data = self._unpack_pft_data(cohort_pft_names)
+        # Duplicate the pft trait data to match the cohort data and add to the cohort
+        # data dictionary.
+        self.cohort_data.update(self._unpack_pft_data(cohort_pft_names))
 
         self.number_of_cohorts = len(cohort_pft_names)
 
@@ -424,8 +423,8 @@ class Community:
         Args:
             cohort_pft_names: The PFT name for each cohort
         """
-        # Find the index of the PFT names in the flora PFT data
-        pft_index = np.array([self.flora[nm] for nm in cohort_pft_names])
+        # Get the indices for the cohort PFT names in the flora PFT data
+        pft_index = [self.flora.pft_indices[str(nm)] for nm in cohort_pft_names]
 
         # Use that index to duplicate the PFT specific data into a per cohort entry for
         # each of the PFT traits
