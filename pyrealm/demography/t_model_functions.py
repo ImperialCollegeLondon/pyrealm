@@ -30,6 +30,36 @@ def calculate_heights(h_max: Series, a_hd: Series, dbh: Series) -> Series:
     return h_max * (1 - np.exp(-a_hd * dbh / h_max))
 
 
+def calculate_dbh_from_height(
+    h_max: Series, a_hd: Series, stem_height: Series
+) -> Series:
+    r"""Calculate diameter at breast height from stem height under the T Model.
+
+    This function inverts the normal calculation of stem height (:math:`H`) from
+    diameter at breast height (:math:`D`) in the T Model (see
+    :meth:`~pyrealm.demography.t_model_functions.calculate_heights`). This is a helper
+    function to allow users to convert known stem heights for a plant functional type,
+    with maximum height (:math:`H_{m}`) and initial slope of the height/diameter
+    relationship (:math:`a`) into the expected :math:`D` values.
+
+    .. math::
+
+         D = \frac{H \left( \log \left(\frac{H}{H_{m}-H}\right)\right)}{a}
+
+    Args:
+        h_max: Maximum height of the PFT
+        a_hd: Initial slope of the height/diameter relationship of the PFT
+        stem_height: Stem height of individuals
+    """
+
+    if np.any(stem_height > h_max):
+        raise ValueError(
+            "Stem height values must not be greater than maximum stem height"
+        )
+
+    return (h_max * np.log(h_max / (h_max - stem_height))) / a_hd
+
+
 def calculate_crown_areas(
     ca_ratio: Series, a_hd: Series, dbh: Series, height: Series
 ) -> Series:

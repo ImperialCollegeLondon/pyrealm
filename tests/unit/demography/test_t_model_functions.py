@@ -1,6 +1,9 @@
 """test the functions in t_model_functions.py."""
 
+from contextlib import nullcontext as does_not_raise
+
 import numpy as np
+import pytest
 from numpy.testing import assert_array_almost_equal
 
 from pyrealm.demography.t_model_functions import (
@@ -26,6 +29,32 @@ def test_calculate_heights():
         dbh=diameters_at_breast_height,
     )
     assert_array_almost_equal(actual_heights, expected_heights, decimal=8)
+
+
+@pytest.mark.parametrize(
+    argnames="stem_heights,outcome,expected_dbh",
+    argvalues=[
+        (np.array([15.19414157, 15.16639589]), does_not_raise(), np.array([0.2, 0.6])),
+        (np.array([30, 20]), pytest.raises(ValueError), None),
+    ],
+)
+def test_calculate_dbh_from_height(stem_heights, outcome, expected_dbh):
+    """Tests inverted calculation of dbh from height, checking for overheight stems."""
+
+    from pyrealm.demography.t_model_functions import calculate_dbh_from_height
+
+    pft_h_max_values = np.array([25.33, 15.33])
+    pft_a_hd_values = np.array([116.0, 116.0])
+
+    with outcome:
+        actual_dbh = calculate_dbh_from_height(
+            h_max=pft_h_max_values,
+            a_hd=pft_a_hd_values,
+            stem_height=stem_heights,
+        )
+
+        if isinstance(outcome, does_not_raise):
+            assert np.allclose(actual_dbh, expected_dbh)
 
 
 def test_calculate_crown_areas():

@@ -28,10 +28,12 @@ import marshmallow_dataclass
 import numpy as np
 import pandas as pd
 from marshmallow.exceptions import ValidationError
+from numpy.typing import NDArray
 
 from pyrealm.demography.t_model_functions import (
     calculate_canopy_q_m,
     calculate_canopy_z_max_proportion,
+    calculate_dbh_from_height,
 )
 
 if sys.version_info[:2] >= (3, 11):
@@ -302,3 +304,48 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
             raise excep
 
         return cls._from_file_data({"pft": data.to_dict(orient="records")})
+
+    def get_allometries(
+        self, dbh: NDArray[np.float32] | None, stem_height: NDArray[np.float32] | None
+    ) -> dict[str, NDArray]:
+        """Populates the T Model allometry from the initial size data."""
+
+        # Need exclusively one of dbh or stem_height - use XOR
+        if not ((dbh is None) ^ (stem_height is None)):
+            raise ValueError("Provide one of either dbh or stem_height")
+
+        # Convert pft data to dict of numpy arrays - TODO: this may become redundant if
+        # self.data adopts the dict of arrays format
+        pft_data: dict[str, NDArray] = {
+            k: v.to_numpy() for k, v in self.data.to_dict(orient="series").items()
+        }
+
+        # Convert stem height to DBH for the plant functional type
+        if stem_height is not None:
+            self.dbh = calculate_dbh_from_height(
+                h_max=pft_data["h_max"], a_hd=pft_data["h_max"], stem_height=stem_height
+            )
+
+        return {}
+
+
+#     @dataclass
+# class PFTAllometry:
+#     """TODO."""
+
+#     pft: type[PlantFunctionalTypeStrict]
+#     dbh: NDArray[np.float32] | None
+#     stem_height: NDArray[np.float32] | None
+#     data: dict[str, NDArray[np.float32]] = field(init=False)
+
+#     def __post_init__(self) -> None:
+#         """Populates the T Model allometry from the initial size data."""
+#         # Need one of dbh or stem_height - use XOR
+#         if not ((self.dbh is None) ^ (self.stem_height is None)):
+#             raise ValueError("Provide one of either dbh or stem_height")
+
+#         # Convert stem height to DBH for the plant functional type
+#         if self.stem_height is not None:
+#             self.dbh = calculate_dbh_from_height(
+#                 h_max=self.pft.h_max, a_hd=self.pft.a_hd, stem_height=self.stem_height
+#             )
