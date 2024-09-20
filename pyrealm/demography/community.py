@@ -354,9 +354,8 @@ class Community:
 
     # Post init properties
     number_of_cohorts: int = field(init=False)
-
-    # Dataframe of cohort data
-    cohort_data: pd.DataFrame = field(init=False)
+    cohort_data: dict[str, NDArray] = field(init=False)
+    pft_data: dict[str, NDArray] = field(init=False)
 
     def __post_init__(
         self,
@@ -401,21 +400,36 @@ class Community:
                 f"Plant functional types unknown in flora: {','.join(unknown_pfts)}"
             )
 
-        # Convert to a dataframe
-        cohort_data = pd.DataFrame(
-            {
-                "name": cohort_pft_names,
-                "dbh": cohort_dbh_values,
-                "n_individuals": cohort_n_individuals,
-            }
-        )
+        # Store as a dictionary
+        self.cohort_data: dict[str, NDArray] = {
+            "name": cohort_pft_names,
+            "dbh": cohort_dbh_values,
+            "n_individuals": cohort_n_individuals,
+        }
+
         # Broadcast the pft trait data to the cohort data by merging with the flora data
         # and then store as the cohort data attribute
-        self.cohort_data = pd.merge(cohort_data, self.flora.data)
-        self.number_of_cohorts = self.cohort_data.shape[0]
+        self.pft_data = self._unpack_pft_data(cohort_pft_names)
+
+        self.number_of_cohorts = len(cohort_pft_names)
 
         # Populate the T model fields
         self._calculate_t_model()
+
+    def _unpack_pft_data(
+        self, cohort_pft_names: NDArray[np.str_]
+    ) -> dict[str, NDArray]:
+        """Creates a dictionary of PFT data for a set of cohorts.
+
+        Args:
+            cohort_pft_names: The PFT name for each cohort
+        """
+        # Find the index of the PFT names in the flora PFT data
+        pft_index = np.array([self.flora[nm] for nm in cohort_pft_names])
+
+        # Use that index to duplicate the PFT specific data into a per cohort entry for
+        # each of the PFT traits
+        return {k: v[pft_index] for k, v in self.flora.data.items()}
 
     def _calculate_t_model(self) -> None:
         """Calculate T Model predictions across cohort data.

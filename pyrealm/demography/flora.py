@@ -241,6 +241,9 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
         self.data: dict[str, NDArray] = data
         """A dictionary of trait values as numpy arrays."""
 
+        self.pft_indices = {k: v for k, v in enumerate(self.data["name"])}
+        """An dictionary giving the index of each PFT name in the PFT data."""
+
     @classmethod
     def _from_file_data(cls, file_data: dict) -> Flora:
         """Create a Flora object from a JSON string.
