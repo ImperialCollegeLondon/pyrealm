@@ -19,26 +19,24 @@ def _validate_t_model_args(pft_args: list[NDArray], size_args: list[NDArray]) ->
         size_args: A list of arrays representing stem sizes at which to evaluate
             functions.
     """
-    pft_args_shape = check_input_shapes(*pft_args)
-    size_args_shape = check_input_shapes(*pft_args)
+
+    try:
+        pft_args_shape = check_input_shapes(*pft_args)
+    except ValueError:
+        raise ValueError("PFT trait values are not of equal length")
+
+    try:
+        size_args_shape = check_input_shapes(*size_args)
+    except ValueError:
+        raise ValueError("Size arrays are not of equal length")
 
     if len(pft_args_shape) > 1:
-        raise ValueError("T model functions only accept 1D arrays of PFT traits")
+        raise ValueError("T model functions only accept 1D arrays of PFT trait values")
 
-    if len(size_args_shape) == 1 and not pft_args_shape == size_args_shape:
-        raise ValueError(
-            "Incompatible one dimensional PFT trait and size data arrays. "
-            "If you want predictions across a range of size for each PFT, convert "
-            "the size inputs to a column array, using e.g. dbh[:, None]"
-        )
-
-    elif len(size_args_shape) == 2 and size_args_shape[1] != 1:
-        raise ValueError(
-            "Two dimensional size data is not a column array: the second axis length "
-            "is not one."
-        )
-    else:
-        raise ValueError("Size data arrays can only be one or two dimensional")
+    try:
+        _ = np.broadcast_shapes(pft_args_shape, size_args_shape)
+    except ValueError:
+        raise ValueError("PFT and size inputs to T model function are not compatible.")
 
 
 def calculate_heights(
