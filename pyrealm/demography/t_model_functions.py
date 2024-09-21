@@ -8,6 +8,38 @@ the calculate stem growth given net primary productivity.
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm.core.utilities import check_input_shapes
+
+
+def _validate_t_model_args(pft_args: list[NDArray], size_args: list[NDArray]) -> None:
+    """Shared validation for T model function inputs.
+
+    Args:
+        pft_args: A list of row arrays representing trait values
+        size_args: A list of arrays representing stem sizes at which to evaluate
+            functions.
+    """
+    pft_args_shape = check_input_shapes(*pft_args)
+    size_args_shape = check_input_shapes(*pft_args)
+
+    if len(pft_args_shape) > 1:
+        raise ValueError("T model functions only accept 1D arrays of PFT traits")
+
+    if len(size_args_shape) == 1 and not pft_args_shape == size_args_shape:
+        raise ValueError(
+            "Incompatible one dimensional PFT trait and size data arrays. "
+            "If you want predictions across a range of size for each PFT, convert "
+            "the size inputs to a column array, using e.g. dbh[:, None]"
+        )
+
+    elif len(size_args_shape) == 2 and size_args_shape[1] != 1:
+        raise ValueError(
+            "Two dimensional size data is not a column array: the second axis length "
+            "is not one."
+        )
+    else:
+        raise ValueError("Size data arrays can only be one or two dimensional")
+
 
 def calculate_heights(
     h_max: NDArray[np.float32], a_hd: NDArray[np.float32], dbh: NDArray[np.float32]
