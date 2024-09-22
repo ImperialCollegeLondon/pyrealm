@@ -94,7 +94,7 @@ Convert the community cohort data to a :class:`pandas.DataFrame` for nicer displ
 show some of the calculated T Model predictions:
 
 >>> pd.DataFrame(community.cohort_data)[
-...    ['name', 'dbh', 'n_individuals', 'height', 'crown_area', 'stem_mass']
+...    ['name', 'dbh', 'n_individuals', 'stem_height', 'crown_area', 'stem_mass']
 ... ]
               name    dbh  n_individuals  stem_height  crown_area  stem_mass
 0   Evergreen Tree  0.100            100     9.890399    2.459835   8.156296
