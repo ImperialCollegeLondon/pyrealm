@@ -1,8 +1,10 @@
 """test the functions in t_model_functions.py."""
 
 from contextlib import nullcontext as does_not_raise
+from importlib import resources
 
 import numpy as np
+import pandas as pd
 import pytest
 
 
@@ -78,111 +80,235 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
     assert str(excep.value).startswith(excep_message)
 
 
-def test_calculate_heights():
-    """Tests happy path for calculation of heights of tree from diameter."""
+@pytest.fixture
+def rtmodel_data():
+    """Loads some simple predictions from the R implementation for testing."""
 
-    from pyrealm.demography.t_model_functions import calculate_heights
+    # Load the PFT definitions and rename to pyrealm attributes
+    pfts_path = resources.files("pyrealm_build_data.t_model") / "pft_definitions.csv"
+    pft_definitions = pd.read_csv(pfts_path)
 
-    pft_h_max_values = np.array([25.33, 15.33])
-    pft_a_hd_values = np.array([116.0, 116.0])
-    diameters_at_breast_height = np.array([0.2, 0.6])
-    expected_heights = np.array([15.19414157, 15.16639589])
-    actual_heights = calculate_heights(
-        h_max=pft_h_max_values,
-        a_hd=pft_a_hd_values,
-        dbh=diameters_at_breast_height,
+    # Map the PFT trait args from the R implementation to pyrealm
+    pft_definitions = pft_definitions.rename(
+        columns={
+            "a": "a_hd",
+            "cr": "ca_ratio",
+            "Hm": "h_max",
+            "rho": "rho_s",
+            "L": "lai",
+            "sigma": "sla",
+            "tf": "tau_f",
+            "tr": "tau_r",
+            "K": "par_ext",
+            "y": "yld",
+            "rr": "resp_r",
+            "rs": "resp_s",
+        }
     )
 
-    np.allclose(actual_heights, expected_heights)
+    rdata_path = (
+        resources.files("pyrealm_build_data.t_model") / "rtmodel_unit_testing.csv"
+    )
+    rdata = pd.read_csv(rdata_path)
 
-
-def test_calculate_crown_areas():
-    """Tests happy path for calculation of crown areas of trees."""
-
-    from pyrealm.demography.t_model_functions import calculate_crown_areas
-
-    pft_ca_ratio_values = np.array([2, 3])
-    pft_a_hd_values = np.array([116.0, 116.0])
-    diameters_at_breast_height = np.array([0.2, 0.6])
-    stem_height = np.array([15.194142, 15.166396])
-    expected_crown_areas = np.array([0.04114983, 0.1848361])
-    actual_crown_areas = calculate_crown_areas(
-        ca_ratio=pft_ca_ratio_values,
-        a_hd=pft_a_hd_values,
-        dbh=diameters_at_breast_height,
-        stem_height=stem_height,
+    rdata = rdata.rename(
+        columns={
+            "dD": "delta_d",
+            "D": "diameter",
+            "H": "height",
+            "fc": "crown_fraction",
+            "Ac": "crown_area",
+            "Wf": "mass_fol",
+            "Ws": "mass_stm",
+            "Wss": "mass_swd",
+            "P0": "potential_gpp",
+            "GPP": "crown_gpp",
+            "Rm1": "resp_swd",
+            "Rm2": "resp_frt",
+            "dWs": "delta_mass_stm",
+            "dWfr": "delta_mass_frt",
+        }
     )
 
-    np.allclose(actual_crown_areas, expected_crown_areas)
+    # Fix some scaling differences:
+    # The R tmodel implementation rescales reported delta_d as a radial increase in
+    # millimetres, not diameter increase in metres
+    rdata["delta_d"] = rdata["delta_d"] / 500
+
+    # Wrap the return data into arrays with PFT as columns and diameter values as rows
+    pft_arrays = {k: v.to_numpy() for k, v in pft_definitions.items()}
+    rdata_arrays = {k: np.reshape(v, (3, 6)).T for k, v in rdata.items()}
+
+    return pft_arrays, rdata_arrays
 
 
-def test_calculate_crown_fractions():
-    """Tests happy path for calculation of crown fractions of trees."""
+@pytest.mark.parametrize(
+    argnames="data_idx, pft_idx, out_idx, exp_shape",
+    argvalues=[
+        pytest.param((0, slice(None)), slice(None), (0, slice(None)), (3,), id="row_1"),
+        pytest.param((1, slice(None)), slice(None), (1, slice(None)), (3,), id="row_2"),
+        pytest.param((2, slice(None)), slice(None), (2, slice(None)), (3,), id="row_3"),
+        pytest.param((3, slice(None)), slice(None), (3, slice(None)), (3,), id="row_4"),
+        pytest.param((4, slice(None)), slice(None), (4, slice(None)), (3,), id="row_5"),
+        pytest.param((5, slice(None)), slice(None), (5, slice(None)), (3,), id="row_6"),
+        pytest.param((slice(None), [0]), [0], (slice(None), [0]), (6, 1), id="col_1"),
+        pytest.param((slice(None), [1]), [1], (slice(None), [1]), (6, 1), id="col_1"),
+        pytest.param((slice(None), [2]), [2], (slice(None), [2]), (6, 1), id="col_1"),
+        pytest.param(
+            (slice(None), slice(None)),
+            slice(None),
+            (slice(None), slice(None)),
+            (6, 3),
+            id="array",
+        ),
+        pytest.param(
+            (slice(None), [0]),
+            slice(None),
+            (slice(None), slice(None)),
+            (6, 3),
+            id="column_broadcast",
+        ),
+    ],
+)
+class TestTModel:
+    """Test T Model functions.
 
-    from pyrealm.demography.t_model_functions import calculate_crown_fractions
+    A class is used here to pass the same parameterisation of input array shapes to each
+    of the T model functions. The combination of data_idx and pft_idx slice up the
+    inputs to provide a wide range of input shape combinations
 
-    pft_a_hd_values = np.array([116.0, 116.0])
-    diameters_at_breast_height = np.array([0.2, 0.6])
-    stem_height = np.array([15.194142, 15.166396])
-    expected_crown_fractions = np.array([0.65491991, 0.21790799])
-    actual_crown_fractions = calculate_crown_fractions(
-        a_hd=pft_a_hd_values,
-        dbh=diameters_at_breast_height,
-        stem_height=stem_height,
-    )
+    * each data row against full pft array
+    * each column against a scalar pft array for a single PFT
+    * whole array against full pft array
 
-    np.allclose(actual_crown_fractions, expected_crown_fractions)
+    The last paramaterization broadcasts the whole first column of data against the full
+    row array of PFT data. This only works for the special case of calculating height
+    from DBH, which shares a single set of values across all PFTs. All other data input
+    value then have PFT specific predictions across columns so cannot be broadcast in
+    this way.
+    """
 
+    def test_calculate_heights(
+        self, rtmodel_data, data_idx, pft_idx, out_idx, exp_shape
+    ):
+        """Tests calculation of heights of tree from diameter."""
+        from pyrealm.demography.t_model_functions import calculate_heights
 
-def test_calculate_stem_masses():
-    """Tests happy path for calculation of stem masses."""
+        pfts, data = rtmodel_data
 
-    from pyrealm.demography.t_model_functions import calculate_stem_masses
+        result = calculate_heights(
+            h_max=pfts["h_max"][pft_idx],
+            a_hd=pfts["a_hd"][pft_idx],
+            dbh=data["diameter"][data_idx],
+        )
 
-    diameters_at_breast_height = np.array([0.2, 0.6])
-    stem_height = np.array([15.194142, 15.166396])
-    pft_rho_s_values = np.array([200.0, 200.0])
-    expected_stem_masses = np.array([47.73380488, 428.8197443])
-    actual_stem_masses = calculate_stem_masses(
-        dbh=diameters_at_breast_height, stem_height=stem_height, rho_s=pft_rho_s_values
-    )
+        assert result.shape == exp_shape
+        assert np.allclose(result, data["height"][out_idx])
 
-    np.allclose(actual_stem_masses, expected_stem_masses)
+    def test_calculate_crown_areas(
+        self, request, rtmodel_data, data_idx, pft_idx, out_idx, exp_shape
+    ):
+        """Tests calculation of crown areas of trees."""
 
+        from pyrealm.demography.t_model_functions import calculate_crown_areas
 
-def test_calculate_foliage_masses():
-    """Tests happy path for calculation of foliage masses."""
+        if request.node.callspec.id == "column_broadcast":
+            pytest.skip()
 
-    from pyrealm.demography.t_model_functions import calculate_foliage_masses
+        pfts, data = rtmodel_data
 
-    crown_areas = np.array([0.04114983, 0.1848361])
-    pft_lai_values = np.array([1.8, 1.8])
-    pft_sla_values = np.array([14.0, 14.0])
-    expected_foliage_masses = np.array([0.00529069, 0.02376464])
-    actual_foliage_masses = calculate_foliage_masses(
-        crown_area=crown_areas, lai=pft_lai_values, sla=pft_sla_values
-    )
+        result = calculate_crown_areas(
+            ca_ratio=pfts["ca_ratio"][pft_idx],
+            a_hd=pfts["a_hd"][pft_idx],
+            dbh=data["diameter"][data_idx],
+            stem_height=data["height"][data_idx],
+        )
 
-    np.allclose(actual_foliage_masses, expected_foliage_masses)
+        assert result.shape == exp_shape
+        assert np.allclose(result, data["crown_area"][out_idx])
 
+    def test_calculate_crown_fractions(
+        self, request, rtmodel_data, data_idx, pft_idx, out_idx, exp_shape
+    ):
+        """Tests calculation of crown fraction of trees."""
 
-def test_calculate_sapwood_masses():
-    """Tests happy path for calculation of sapwood masses."""
+        from pyrealm.demography.t_model_functions import calculate_crown_fractions
 
-    from pyrealm.demography.t_model_functions import calculate_sapwood_masses
+        if request.node.callspec.id == "column_broadcast":
+            pytest.skip()
 
-    crown_areas = np.array([0.04114983, 0.1848361])
-    pft_rho_s_values = np.array([200.0, 200.0])
-    stem_height = np.array([15.194142, 15.166396])
-    crown_fractions = np.array([0.65491991, 0.21790799])
-    pft_ca_ratio_values = [390.43, 390.43]
-    expected_sapwood_masses = np.array([0.21540173, 1.27954667])
-    actual_sapwood_masses = calculate_sapwood_masses(
-        crown_area=crown_areas,
-        rho_s=pft_rho_s_values,
-        stem_height=stem_height,
-        crown_fraction=crown_fractions,
-        ca_ratio=pft_ca_ratio_values,
-    )
+        pfts, data = rtmodel_data
 
-    np.allclose(actual_sapwood_masses, expected_sapwood_masses)
+        result = calculate_crown_fractions(
+            a_hd=pfts["a_hd"][pft_idx],
+            dbh=data["diameter"][data_idx],
+            stem_height=data["height"][data_idx],
+        )
+
+        assert result.shape == exp_shape
+        assert np.allclose(result, data["crown_fraction"][out_idx])
+
+    def test_calculate_stem_masses(
+        self, request, rtmodel_data, data_idx, pft_idx, out_idx, exp_shape
+    ):
+        """Tests calculation of stem masses of trees."""
+
+        from pyrealm.demography.t_model_functions import calculate_stem_masses
+
+        if request.node.callspec.id == "column_broadcast":
+            pytest.skip()
+
+        pfts, data = rtmodel_data
+
+        result = calculate_stem_masses(
+            rho_s=pfts["rho_s"][pft_idx],
+            dbh=data["diameter"][data_idx],
+            stem_height=data["height"][data_idx],
+        )
+
+        assert result.shape == exp_shape
+        assert np.allclose(result, data["mass_stm"][out_idx])
+
+    def test_calculate_foliage_masses(
+        self, request, rtmodel_data, data_idx, pft_idx, out_idx, exp_shape
+    ):
+        """Tests calculation of stem masses of trees."""
+
+        from pyrealm.demography.t_model_functions import calculate_foliage_masses
+
+        if request.node.callspec.id == "column_broadcast":
+            pytest.skip()
+
+        pfts, data = rtmodel_data
+
+        result = calculate_foliage_masses(
+            lai=pfts["lai"][pft_idx],
+            sla=pfts["sla"][pft_idx],
+            crown_area=data["crown_area"][data_idx],
+        )
+
+        assert result.shape == exp_shape
+        assert np.allclose(result, data["mass_fol"][out_idx])
+
+    def test_calculate_sapwood_masses(
+        self, request, rtmodel_data, data_idx, pft_idx, out_idx, exp_shape
+    ):
+        """Tests calculation of stem masses of trees."""
+
+        from pyrealm.demography.t_model_functions import calculate_sapwood_masses
+
+        if request.node.callspec.id == "column_broadcast":
+            pytest.skip()
+
+        pfts, data = rtmodel_data
+
+        result = calculate_sapwood_masses(
+            rho_s=pfts["rho_s"][pft_idx],
+            ca_ratio=pfts["ca_ratio"][pft_idx],
+            crown_area=data["crown_area"][data_idx],
+            stem_height=data["height"][data_idx],
+            crown_fraction=data["crown_fraction"][data_idx],
+        )
+
+        assert result.shape == exp_shape
+        assert np.allclose(result, data["mass_swd"][out_idx])

@@ -90,6 +90,7 @@ tmodel <- function(P0, year, a, cr, Hm, rho, rr,
 # Load alternative plant functional types
 pfts <- read.csv("pft_definitions.csv")
 
+# Generate 100 year sequences of plant growth to do fine regression testing
 for (pft_idx in seq_len(nrow(pfts))) {
     # Get the PFT
     pft <- as.list(pfts[pft_idx, ])
@@ -110,3 +111,32 @@ for (pft_idx in seq_len(nrow(pfts))) {
         row.names = FALSE
     )
 }
+
+# Generate some simple snapshot predictions for single years to provide
+# expectations for varying matrix inputs in unit testing.
+
+
+dbh <- c(0.01, 0.05, 0.1, 0.25, 0.5, 1.0)
+results <- list()
+
+for (pft_idx in seq_len(nrow(pfts))) {
+    # Get the PFT
+    pft <- as.list(pfts[pft_idx, ])
+
+    # Seperate off the name
+    name <- pft[["name"]]
+    pft[["name"]] <- NULL
+    pft[["P0"]] <- 7 / 0.9
+    pft[["year"]] <- 1
+
+    for (dbh_val in dbh) {
+        pft[["d"]] <- dbh_val
+        tmodel_run <- do.call(tmodel, pft)
+        these_res <- data.frame(tmodel_run)
+        these_res["pft_name"] <- name
+        results <- c(results, list(these_res))
+    }
+}
+
+results <- do.call(rbind, results)
+write.csv(results, "rtmodel_unit_testing.csv", row.names = FALSE)
