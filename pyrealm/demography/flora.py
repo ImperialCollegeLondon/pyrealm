@@ -28,6 +28,7 @@ import marshmallow_dataclass
 import numpy as np
 import pandas as pd
 from marshmallow.exceptions import ValidationError
+from numpy.typing import NDArray
 
 from pyrealm.demography.canopy_functions import (
     calculate_canopy_q_m,
@@ -243,12 +244,11 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
                 [getattr(pft, pft_field) for pft in self.values()]
             )
 
-        self.data: pd.DataFrame = pd.DataFrame(data)
-        """A dataframe of trait values as numpy arrays.
+        self.data: dict[str, NDArray] = data
+        """A dictionary of trait values as numpy arrays."""
 
-        The 'name' column can be used with cohort names to broadcast plant functional
-        type data out to cohorts.
-        """
+        self.pft_indices = {v: k for k, v in enumerate(self.data["name"])}
+        """An dictionary giving the index of each PFT name in the PFT data."""
 
     @classmethod
     def _from_file_data(cls, file_data: dict) -> Flora:
