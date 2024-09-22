@@ -71,13 +71,13 @@ class Canopy:
             solution = root_scalar(
                 solve_community_projected_canopy_area,
                 args=(
-                    community.cohort_data["stem_height"].to_numpy(),
-                    community.cohort_data["crown_area"].to_numpy(),
-                    community.cohort_data["m"].to_numpy(),
-                    community.cohort_data["n"].to_numpy(),
-                    community.cohort_data["q_m"].to_numpy(),
-                    community.cohort_data["canopy_z_max"].to_numpy(),
-                    community.cohort_data["n_individuals"].to_numpy(),
+                    community.cohort_data["stem_height"],
+                    community.cohort_data["crown_area"],
+                    community.cohort_data["m"],
+                    community.cohort_data["n"],
+                    community.cohort_data["q_m"],
+                    community.cohort_data["canopy_z_max"],
+                    community.cohort_data["n_individuals"],
                     target_area,
                     False,  # validate
                 ),
@@ -96,9 +96,9 @@ class Canopy:
         self.stem_relative_radius: NDArray[np.float32] = (
             calculate_relative_canopy_radius_at_z(
                 z=self.layer_heights,
-                stem_height=community.cohort_data["stem_height"].to_numpy(),
-                m=community.cohort_data["m"].to_numpy(),
-                n=community.cohort_data["n"].to_numpy(),
+                stem_height=community.cohort_data["stem_height"],
+                m=community.cohort_data["m"],
+                n=community.cohort_data["n"],
                 validate=False,
             )
         )
@@ -108,10 +108,10 @@ class Canopy:
             calculate_stem_projected_crown_area_at_z(
                 z=self.layer_heights,
                 q_z=self.stem_relative_radius,
-                crown_area=community.cohort_data["crown_area"].to_numpy(),
-                stem_height=community.cohort_data["stem_height"].to_numpy(),
-                q_m=community.cohort_data["q_m"].to_numpy(),
-                z_max=community.cohort_data["canopy_z_max"].to_numpy(),
+                crown_area=community.cohort_data["crown_area"],
+                stem_height=community.cohort_data["stem_height"],
+                q_m=community.cohort_data["q_m"],
+                z_max=community.cohort_data["canopy_z_max"],
                 validate=False,
             )
         )
@@ -122,11 +122,11 @@ class Canopy:
             calculate_stem_projected_leaf_area_at_z(
                 z=self.layer_heights,
                 q_z=self.stem_relative_radius,
-                crown_area=community.cohort_data["crown_area"].to_numpy(),
-                stem_height=community.cohort_data["stem_height"].to_numpy(),
-                f_g=community.cohort_data["f_g"].to_numpy(),
-                q_m=community.cohort_data["q_m"].to_numpy(),
-                z_max=community.cohort_data["canopy_z_max"].to_numpy(),
+                crown_area=community.cohort_data["crown_area"],
+                stem_height=community.cohort_data["stem_height"],
+                f_g=community.cohort_data["f_g"],
+                q_m=community.cohort_data["q_m"],
+                z_max=community.cohort_data["canopy_z_max"],
                 validate=False,
             )
         )

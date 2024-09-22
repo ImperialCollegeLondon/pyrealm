@@ -29,7 +29,7 @@ def fixture_community():
 
     # A simple community containing one sample stem, with an initial crown gap fraction
     # of zero.
-    flora = Flora([PlantFunctionalType(name="test", f_g=0)])
+    flora = Flora([PlantFunctionalType(name="test", f_g=0.0)])
     return Community(
         cell_id=1,
         cell_area=100,
@@ -237,14 +237,14 @@ def test_calculate_relative_canopy_radius_at_z_values(fixture_community):
     z_max = (
         fixture_community.cohort_data["stem_height"]
         * fixture_community.cohort_data["z_max_prop"]
-    ).to_numpy()
+    )
 
     # Get the relative radius at that height
     q_z_values = calculate_relative_canopy_radius_at_z(
         z=z_max,
-        stem_height=fixture_community.cohort_data["stem_height"].to_numpy(),
-        m=fixture_community.cohort_data["m"].to_numpy(),
-        n=fixture_community.cohort_data["n"].to_numpy(),
+        stem_height=fixture_community.cohort_data["stem_height"],
+        m=fixture_community.cohort_data["m"],
+        n=fixture_community.cohort_data["n"],
     )
 
     # Now test that the circular crown area from that radius is equivalent to the direct
@@ -333,19 +333,19 @@ def test_calculate_stem_projected_crown_area_at_z_values(
     # Calculate the required q_z
     q_z = calculate_relative_canopy_radius_at_z(
         z=heights,
-        stem_height=fixture_community.cohort_data["stem_height"].to_numpy(),
-        m=fixture_community.cohort_data["m"].to_numpy(),
-        n=fixture_community.cohort_data["n"].to_numpy(),
+        stem_height=fixture_community.cohort_data["stem_height"],
+        m=fixture_community.cohort_data["m"],
+        n=fixture_community.cohort_data["n"],
     )
 
     # Calculate and test these values
     Ap_z_values = calculate_stem_projected_crown_area_at_z(
         z=heights,
         q_z=q_z,
-        stem_height=fixture_community.cohort_data["stem_height"].to_numpy(),
-        crown_area=fixture_community.cohort_data["crown_area"].to_numpy(),
-        q_m=fixture_community.cohort_data["q_m"].to_numpy(),
-        z_max=fixture_community.cohort_data["canopy_z_max"].to_numpy(),
+        stem_height=fixture_community.cohort_data["stem_height"],
+        crown_area=fixture_community.cohort_data["crown_area"],
+        q_m=fixture_community.cohort_data["q_m"],
+        z_max=fixture_community.cohort_data["canopy_z_max"],
     )
 
     assert np.allclose(
@@ -377,13 +377,13 @@ def test_solve_community_projected_canopy_area(fixture_community):
     ):
         solved = solve_community_projected_canopy_area(
             z=this_height,
-            stem_height=fixture_community.cohort_data["stem_height"].to_numpy(),
-            crown_area=fixture_community.cohort_data["crown_area"].to_numpy(),
-            n_individuals=fixture_community.cohort_data["n_individuals"].to_numpy(),
-            m=fixture_community.cohort_data["m"].to_numpy(),
-            n=fixture_community.cohort_data["n"].to_numpy(),
-            q_m=fixture_community.cohort_data["q_m"].to_numpy(),
-            z_max=fixture_community.cohort_data["canopy_z_max"].to_numpy(),
+            stem_height=fixture_community.cohort_data["stem_height"],
+            crown_area=fixture_community.cohort_data["crown_area"],
+            n_individuals=fixture_community.cohort_data["n_individuals"],
+            m=fixture_community.cohort_data["m"],
+            n=fixture_community.cohort_data["n"],
+            q_m=fixture_community.cohort_data["q_m"],
+            z_max=fixture_community.cohort_data["canopy_z_max"],
             target_area=this_target,
         )
 
@@ -437,23 +437,23 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
 
     # Calculate the leaf areas at the locations of z_max for each stem from the lowest
     # to the highest
-    z_max = fixture_community.cohort_data["canopy_z_max"].to_numpy()[:, None]
+    z_max = fixture_community.cohort_data["canopy_z_max"][:, None]
 
     q_z = calculate_relative_canopy_radius_at_z(
         z=z_max,
-        stem_height=fixture_community.cohort_data["stem_height"].to_numpy(),
-        m=fixture_community.cohort_data["m"].to_numpy(),
-        n=fixture_community.cohort_data["n"].to_numpy(),
+        stem_height=fixture_community.cohort_data["stem_height"],
+        m=fixture_community.cohort_data["m"],
+        n=fixture_community.cohort_data["n"],
     )
 
     leaf_area_fg0 = calculate_stem_projected_leaf_area_at_z(
         z=z_max,
         q_z=q_z,
-        stem_height=fixture_community.cohort_data["stem_height"].to_numpy(),
-        crown_area=fixture_community.cohort_data["crown_area"].to_numpy(),
-        f_g=fixture_community.cohort_data["f_g"].to_numpy(),
-        q_m=fixture_community.cohort_data["q_m"].to_numpy(),
-        z_max=fixture_community.cohort_data["canopy_z_max"].to_numpy(),
+        stem_height=fixture_community.cohort_data["stem_height"],
+        crown_area=fixture_community.cohort_data["crown_area"],
+        f_g=fixture_community.cohort_data["f_g"],
+        q_m=fixture_community.cohort_data["q_m"],
+        z_max=fixture_community.cohort_data["canopy_z_max"],
     )
 
     # Pre-calculated values
@@ -470,13 +470,11 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
 
     # More rigourous check - with f_g = 0, the projected leaf area of each stem in the
     # lowest layer must equal the crown area (all the crown is now accounted for).
-    assert np.allclose(
-        leaf_area_fg0[0, :], fixture_community.cohort_data["crown_area"].to_numpy()
-    )
+    assert np.allclose(leaf_area_fg0[0, :], fixture_community.cohort_data["crown_area"])
     # Also the diagonal of the resulting matrix (4 heights for 4 cohorts) should _also_
     # match the crown areas as the leaf area is all accounted for exactly at z_max.
     assert np.allclose(
-        np.diag(leaf_area_fg0), fixture_community.cohort_data["crown_area"].to_numpy()
+        np.diag(leaf_area_fg0), fixture_community.cohort_data["crown_area"]
     )
 
     # Introduce some crown gap fraction and recalculate
@@ -485,11 +483,11 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
     leaf_area_fg002 = calculate_stem_projected_leaf_area_at_z(
         z=z_max,
         q_z=q_z,
-        stem_height=fixture_community.cohort_data["stem_height"].to_numpy(),
-        crown_area=fixture_community.cohort_data["crown_area"].to_numpy(),
-        f_g=fixture_community.cohort_data["f_g"].to_numpy(),
-        q_m=fixture_community.cohort_data["q_m"].to_numpy(),
-        z_max=fixture_community.cohort_data["canopy_z_max"].to_numpy(),
+        stem_height=fixture_community.cohort_data["stem_height"],
+        crown_area=fixture_community.cohort_data["crown_area"],
+        f_g=fixture_community.cohort_data["f_g"],
+        q_m=fixture_community.cohort_data["q_m"],
+        z_max=fixture_community.cohort_data["canopy_z_max"],
     )
 
     expected_leaf_area_fg002 = np.array(
@@ -514,5 +512,5 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
     #   the stem all but the crown gap fraction should be accounted for
     assert np.allclose(
         np.diag(leaf_area_fg002),
-        fixture_community.cohort_data["crown_area"].to_numpy() * 0.98,
+        fixture_community.cohort_data["crown_area"] * 0.98,
     )

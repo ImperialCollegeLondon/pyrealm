@@ -4,7 +4,6 @@ used in PlantFATE :cite:t:`joshi:2022a`.
 
 import numpy as np
 from numpy.typing import NDArray
-from pandas import Series
 
 from pyrealm.core.utilities import check_input_shapes
 
@@ -49,7 +48,9 @@ def calculate_canopy_z_max_proportion(
     return ((n - 1) / (m * n - 1)) ** (1 / n)
 
 
-def calculate_canopy_z_max(z_max_prop: Series, stem_height: Series) -> Series:
+def calculate_canopy_z_max(
+    z_max_prop: NDArray[np.float32], stem_height: NDArray[np.float32]
+) -> NDArray[np.float32]:
     r"""Calculate height of maximum crown radius.
 
     The height of the maximum crown radius (:math:`z_m`) is derived from the canopy
@@ -74,7 +75,9 @@ def calculate_canopy_z_max(z_max_prop: Series, stem_height: Series) -> Series:
     return stem_height * z_max_prop
 
 
-def calculate_canopy_r0(q_m: Series, crown_area: Series) -> Series:
+def calculate_canopy_r0(
+    q_m: NDArray[np.float32], crown_area: NDArray[np.float32]
+) -> NDArray[np.float32]:
     r"""Calculate scaling factor for height of maximum crown radius.
 
     This scaling factor (:math:`r_0`) is derived from the canopy shape parameters
