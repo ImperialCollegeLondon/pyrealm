@@ -365,8 +365,9 @@ def calculate_stem_projected_leaf_area_at_z(
         validate: Boolean flag to suppress argument validation.
     """
 
-    # TODO - could this merge with the stem crown area function? A lot of overlap, so
-    # could be much more efficient to return both from one function.
+    # NOTE: Although the internals of this function overlap a lot with
+    #       calculate_stem_projected_crown_area_at_z, we want that function to be as
+    #       lean as possible, as it used within solve_community_projected_canopy_area.
 
     if validate:
         _validate_z_args(z, crown_area, stem_height, f_g, q_m, z_max)

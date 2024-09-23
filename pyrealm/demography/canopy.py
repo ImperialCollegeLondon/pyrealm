@@ -79,8 +79,8 @@ class Canopy:
         for layer in np.arange(self.n_layers - 1):
             target_area = (layer + 1) * community.cell_area * (1 - canopy_gap_fraction)
 
-            # TODO - the solution here is predictably closer to the upper bracket, might
-            # be a better algorithm to find the root.
+            # TODO - the solution here is typically closer to the upper bracket, might
+            # be a better algorithm to find the root (#293).
             solution = root_scalar(
                 solve_community_projected_canopy_area,
                 args=(
@@ -106,6 +106,9 @@ class Canopy:
             self.layer_heights[layer] = starting_guess = solution.root
 
         # Find relative canopy radius at the layer heights
+        # NOTE - here and in the calls below, validate=False is enforced because the
+        # Community class structures and code should guarantee valid inputs and so
+        # turning off the validation internally should simply speed up the code.
         self.stem_relative_radius: NDArray[np.float32] = (
             calculate_relative_canopy_radius_at_z(
                 z=self.layer_heights,
