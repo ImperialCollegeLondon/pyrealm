@@ -198,11 +198,11 @@ def calculate_whole_crown_gpp(
 ) -> NDArray[np.float32]:
     r"""Calculate whole crown gross primary productivity.
 
-    This function calculates individual GPP across the whole crown, given  the
-    individual potential gross primary productivity (GPP) per metre squared
-    (:math:`P_0`) and crown area (:math:`A_c`), along with the leaf area index
-    (:math:`L`) and the extinction coefficient (:math:`k`) of the plant functional type
-    :cite:p:`{Equation 12, }Li:2014bc`.
+    This function calculates individual GPP across the whole crown, given the individual
+    potential gross primary productivity (GPP) per metre squared (:math:`P_0`) and crown
+    area (:math:`A_c`), along with the leaf area index (:math:`L`) and the extinction
+    coefficient (:math:`k`) of the plant functional type :cite:p:`{Equation 12,
+    }Li:2014bc`.
 
     .. math::
 
@@ -366,7 +366,7 @@ def calculate_growth_increments(
     npp: NDArray[np.float32],
     turnover: NDArray[np.float32],
     dbh: NDArray[np.float32],
-    height: NDArray[np.float32],
+    stem_height: NDArray[np.float32],
 ) -> tuple[NDArray[np.float32], NDArray[np.float32], NDArray[np.float32]]:
     r"""Calculate growth increments.
 
@@ -438,15 +438,21 @@ def calculate_growth_increments(
         npp: Net primary productivity of individuals
         turnover: Fine root and foliage turnover cost of individuals
         dbh: Diameter at breast height of individuals
-        height: Stem height of individuals
+        stem_height: Stem height of individuals
     """
     # Rates of change in stem and foliar
-    dWsdt = np.pi / 8 * rho_s * dbh * (a_hd * dbh * (1 - (height / h_max)) + 2 * height)
+    dWsdt = (
+        np.pi
+        / 8
+        * rho_s
+        * dbh
+        * (a_hd * dbh * (1 - (stem_height / h_max)) + 2 * stem_height)
+    )
 
     dWfdt = (
         lai
         * ((np.pi * ca_ratio) / (4 * a_hd))
-        * (a_hd * dbh * (1 - height / h_max) + height)
+        * (a_hd * dbh * (1 - stem_height / h_max) + stem_height)
         * (1 / sla + zeta)
     )
 
