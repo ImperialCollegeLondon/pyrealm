@@ -7,9 +7,8 @@ files, using :mod:`marshmallow` schemas to both validate the input data and to p
 post processing to align the input formats to the initialisation arguments to the
 Community class.
 
-Internally, the cohort data in the Community class is represented as a pandas dataframe,
-which makes it possible to update cohort attributes in parallel across all cohorts but
-also provide a clean interface for adding and removing cohorts to a Community.
+Internally, the cohort data in the Community class is represented as a dictionary of
+`numpy` arrays.
 
 Worked example
 ==============
