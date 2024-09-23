@@ -39,7 +39,7 @@ def _validate_t_model_args(pft_args: list[NDArray], size_args: list[NDArray]) ->
     # that they are the same length.abs
 
     if len(size_args_shape) == 1 and not pft_args_shape == size_args_shape:
-        raise ValueError("Trait and size inputs are row arrays and unequal length.")
+        raise ValueError("Trait and size inputs are row arrays of unequal length.")
 
     # Otherwise use np.broadcast_shapes to catch issues
     try:

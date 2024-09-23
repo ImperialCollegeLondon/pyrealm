@@ -43,7 +43,7 @@ import pytest
             [np.ones(4), np.ones(4)],
             [np.ones(5), np.ones(5)],
             pytest.raises(ValueError),
-            "PFT and size inputs to T model function are not compatible.",
+            "Trait and size inputs are row arrays of unequal length.",
             id="sizes_row_array_of_bad_length",
         ),
         pytest.param(
@@ -270,10 +270,10 @@ def rtmodel_data():
             (0, slice(None)),
             [0, 1, 2, 0],
             pytest.raises(ValueError),
-            "PFT and size inputs to T model function are not compatible.",
+            "Trait and size inputs are row arrays of unequal length.",
             None,
             None,
-            id="fail_PFT_too_long",
+            id="fail_PFT_and_sizes_rows_but_not_equal_length",
         ),
         pytest.param(
             (0, slice(None)),
@@ -285,13 +285,13 @@ def rtmodel_data():
             id="fail_2D_PFT",
         ),
         pytest.param(
-            ([0, 1, 2, 0], 0),
+            (slice(None), [0, 1]),
             slice(None),
             pytest.raises(ValueError),
             "PFT and size inputs to T model function are not compatible.",
             None,
             None,
-            id="fail_row_size_data_too_long",
+            id="fail_badly_shaped_2D",
         ),
     ],
 )
