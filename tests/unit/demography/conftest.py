@@ -8,8 +8,10 @@ import pytest
 
 
 @pytest.fixture
-def rtmodel_data():
-    """Loads some simple predictions from the R implementation for testing."""
+def rtmodel_flora():
+    """Generates a flora object from the rtmodel test definitions."""
+
+    from pyrealm.demography.flora import Flora, PlantFunctionalType
 
     # Load the PFT definitions and rename to pyrealm attributes
     pfts_path = resources.files("pyrealm_build_data.t_model") / "pft_definitions.csv"
@@ -33,9 +35,25 @@ def rtmodel_data():
         }
     )
 
-    # Add foliar respiration rate as 0.1, as this is handled outside of the R
-    # implementation as a function of GPP.
-    pft_definitions["resp_f"] = 0.1
+    pft_definitions = pft_definitions.drop(columns=["d"])
+
+    return Flora(
+        pfts=[
+            PlantFunctionalType(**args)
+            for args in pft_definitions.to_dict(orient="records")
+        ]
+    )
+
+
+@pytest.fixture()
+def rtmodel_flora_dict(rtmodel_flora):
+    """Returns the data dictionary attribute of the rtmodel Flora object."""
+    return rtmodel_flora.data
+
+
+@pytest.fixture
+def rtmodel_data():
+    """Loads some simple predictions from the R implementation for testing."""
 
     rdata_path = (
         resources.files("pyrealm_build_data.t_model") / "rtmodel_unit_testing.csv"
@@ -67,7 +85,6 @@ def rtmodel_data():
     rdata["delta_d"] = rdata["delta_d"] / 500
 
     # Wrap the return data into arrays with PFT as columns and diameter values as rows
-    pft_arrays = {k: v.to_numpy() for k, v in pft_definitions.items()}
     rdata_arrays = {k: np.reshape(v, (3, 6)).T for k, v in rdata.items()}
 
-    return pft_arrays, rdata_arrays
+    return rdata_arrays
