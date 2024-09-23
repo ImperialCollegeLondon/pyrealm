@@ -92,7 +92,7 @@ Initialize a Community into an area of 1000 square meter with the given cohort d
 Convert the community cohort data to a :class:`pandas.DataFrame` for nicer display and
 show some of the calculated T Model predictions:
 
->>> community.cohort_data[
+>>> pd.DataFrame(community.cohort_data)[
 ...    ['name', 'dbh', 'n_individuals', 'stem_height', 'crown_area', 'stem_mass']
 ... ]
               name    dbh  n_individuals  stem_height  crown_area  stem_mass
