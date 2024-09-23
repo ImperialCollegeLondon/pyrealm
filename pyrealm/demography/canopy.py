@@ -2,7 +2,7 @@
 
 import numpy as np
 from numpy.typing import NDArray
-from scipy.optimize import root_scalar
+from scipy.optimize import root_scalar  # type: ignore [import-untyped]
 
 from pyrealm.demography.canopy_functions import (
     calculate_relative_canopy_radius_at_z,
@@ -14,17 +14,30 @@ from pyrealm.demography.community import Community
 
 
 class Canopy:
-    """A class containing attributes of a canopy, including the structure.
+    """Model of the canopy for a plant community.
 
-    at which canopy layers close. This also includes
-        ground level, which will capture all remaning crown and leaf area below the last
-        closed layer.
+    This class generates a canopy structure for a community of trees using the
+    perfect-plasticity approximation model :cite:`purves:2008a`. In this approach, each
+    individual is assumed to arrange its canopy crown area plastically to take up space
+    in canopy layers and that new layers form below the canopy top as the available
+    space is occupied.
+
+    Real canopies contain canopy gaps, through process such as crown shyness. This
+    is included in the model through the canopy gap fraction, which sets the proportion
+    of the available space that will remain unfilled by any canopy.
+
+    Args:
+        community: A Community object that will be used to generate the canopy model.
+        canopy_gap_fraction: The proportion of the available space unfilled by canopy
+            (default: 0.05).
+        layer_tolerance: The minimum precision used by the solver to find canopy layer
+            closure heights (default: 0.001 metres)
     """
 
     def __init__(
         self,
         community: Community,
-        canopy_gap_fraction: float,
+        canopy_gap_fraction: float = 0.05,
         layer_tolerance: float = 0.001,
     ) -> None:
         # Calculate community wide properties: total crown area and maximum height
