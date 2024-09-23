@@ -267,11 +267,11 @@ class TestTModel:
             result = calculate_heights(
                 h_max=rtmodel_flora_dict["h_max"][pft_idx],
                 a_hd=rtmodel_flora_dict["a_hd"][pft_idx],
-                dbh=rtmodel_data["diameter"][data_idx],
+                dbh=rtmodel_data["dbh"][data_idx],
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["height"][out_idx])
+            assert np.allclose(result, rtmodel_data["stem_height"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -295,11 +295,11 @@ class TestTModel:
             result = calculate_dbh_from_height(
                 h_max=rtmodel_flora_dict["h_max"][pft_idx],
                 a_hd=rtmodel_flora_dict["a_hd"][pft_idx],
-                stem_height=rtmodel_data["height"][data_idx],
+                stem_height=rtmodel_data["stem_height"][data_idx],
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["diameter"][out_idx])
+            assert np.allclose(result, rtmodel_data["dbh"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -323,8 +323,8 @@ class TestTModel:
             result = calculate_crown_areas(
                 ca_ratio=rtmodel_flora_dict["ca_ratio"][pft_idx],
                 a_hd=rtmodel_flora_dict["a_hd"][pft_idx],
-                dbh=rtmodel_data["diameter"][data_idx],
-                stem_height=rtmodel_data["height"][data_idx],
+                dbh=rtmodel_data["dbh"][data_idx],
+                stem_height=rtmodel_data["stem_height"][data_idx],
             )
 
             assert result.shape == exp_shape
@@ -351,8 +351,8 @@ class TestTModel:
         with outcome as excep:
             result = calculate_crown_fractions(
                 a_hd=rtmodel_flora_dict["a_hd"][pft_idx],
-                dbh=rtmodel_data["diameter"][data_idx],
-                stem_height=rtmodel_data["height"][data_idx],
+                dbh=rtmodel_data["dbh"][data_idx],
+                stem_height=rtmodel_data["stem_height"][data_idx],
             )
 
             assert result.shape == exp_shape
@@ -379,12 +379,12 @@ class TestTModel:
         with outcome as excep:
             result = calculate_stem_masses(
                 rho_s=rtmodel_flora_dict["rho_s"][pft_idx],
-                dbh=rtmodel_data["diameter"][data_idx],
-                stem_height=rtmodel_data["height"][data_idx],
+                dbh=rtmodel_data["dbh"][data_idx],
+                stem_height=rtmodel_data["stem_height"][data_idx],
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["mass_stm"][out_idx])
+            assert np.allclose(result, rtmodel_data["stem_mass"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -412,7 +412,7 @@ class TestTModel:
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["mass_fol"][out_idx])
+            assert np.allclose(result, rtmodel_data["foliage_mass"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -437,12 +437,12 @@ class TestTModel:
                 rho_s=rtmodel_flora_dict["rho_s"][pft_idx],
                 ca_ratio=rtmodel_flora_dict["ca_ratio"][pft_idx],
                 crown_area=rtmodel_data["crown_area"][data_idx],
-                stem_height=rtmodel_data["height"][data_idx],
+                stem_height=rtmodel_data["stem_height"][data_idx],
                 crown_fraction=rtmodel_data["crown_fraction"][data_idx],
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["mass_swd"][out_idx])
+            assert np.allclose(result, rtmodel_data["sapwood_mass"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -494,7 +494,7 @@ class TestTModel:
         with outcome as excep:
             result = calculate_sapwood_respiration(
                 resp_s=rtmodel_flora_dict["resp_s"][pft_idx],
-                sapwood_mass=rtmodel_data["mass_swd"][data_idx],
+                sapwood_mass=rtmodel_data["sapwood_mass"][data_idx],
             )
 
             assert result.shape == exp_shape
@@ -560,7 +560,7 @@ class TestTModel:
                 zeta=rtmodel_flora_dict["zeta"][pft_idx],
                 sla=rtmodel_flora_dict["sla"][pft_idx],
                 resp_r=rtmodel_flora_dict["resp_r"][pft_idx],
-                foliage_mass=rtmodel_data["mass_fol"][data_idx],
+                foliage_mass=rtmodel_data["foliage_mass"][data_idx],
             )
 
             assert result.shape == exp_shape
@@ -624,7 +624,7 @@ class TestTModel:
                 zeta=rtmodel_flora_dict["zeta"][pft_idx],
                 tau_f=rtmodel_flora_dict["tau_f"][pft_idx],
                 tau_r=rtmodel_flora_dict["tau_r"][pft_idx],
-                foliage_mass=rtmodel_data["mass_fol"][data_idx],
+                foliage_mass=rtmodel_data["foliage_mass"][data_idx],
             )
 
             assert result.shape == exp_shape
@@ -661,8 +661,8 @@ class TestTModel:
                 zeta=rtmodel_flora_dict["zeta"][pft_idx],
                 npp=rtmodel_data["NPP"][data_idx],
                 turnover=rtmodel_data["turnover"][data_idx],
-                dbh=rtmodel_data["diameter"][data_idx],
-                stem_height=rtmodel_data["height"][data_idx],
+                dbh=rtmodel_data["dbh"][data_idx],
+                stem_height=rtmodel_data["stem_height"][data_idx],
             )
 
             assert delta_d.shape == exp_shape

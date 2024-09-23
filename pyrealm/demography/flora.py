@@ -314,7 +314,9 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
         return cls._from_file_data({"pft": data.to_dict(orient="records")})
 
     def get_allometries(
-        self, dbh: NDArray[np.float32] | None, stem_height: NDArray[np.float32] | None
+        self,
+        dbh: NDArray[np.float32] | None = None,
+        stem_height: NDArray[np.float32] | None = None,
     ) -> dict[str, NDArray]:
         """Populates the T Model allometry from the initial size data."""
 

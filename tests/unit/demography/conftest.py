@@ -63,13 +63,13 @@ def rtmodel_data():
     rdata = rdata.rename(
         columns={
             "dD": "delta_d",
-            "D": "diameter",
-            "H": "height",
+            "D": "dbh",
+            "H": "stem_height",
             "fc": "crown_fraction",
             "Ac": "crown_area",
-            "Wf": "mass_fol",
-            "Ws": "mass_stm",
-            "Wss": "mass_swd",
+            "Wf": "foliage_mass",
+            "Ws": "stem_mass",
+            "Wss": "sapwood_mass",
             "P0": "potential_gpp",
             "GPP": "crown_gpp",
             "Rm1": "resp_swd",

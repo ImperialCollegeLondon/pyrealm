@@ -5,6 +5,7 @@ from contextlib import nullcontext as does_not_raise
 from importlib import resources
 from json import JSONDecodeError
 
+import numpy as np
 import pytest
 from marshmallow.exceptions import ValidationError
 from pandas.errors import ParserError
@@ -262,6 +263,15 @@ def test_flora_from_csv(filename, outcome):
             assert len(flora) == 2
             for nm in ["test1", "test2"]:
                 assert nm in flora
+
+
+def test_Flora_get_allometries(rtmodel_data, rtmodel_flora):
+    """Test the get allometries method."""
+
+    result = rtmodel_flora.get_allometries(rtmodel_data["dbh"])
+
+    for key, value in result.items():
+        assert np.allclose(value, rtmodel_data[key])
 
 
 #

@@ -605,7 +605,7 @@ def calculate_t_model(
     stem_data["stem_height"] = calculate_heights(
         h_max=pft_data["h_max"],
         a_hd=pft_data["a_hd"],
-        dbh=stem_data["diameter"],
+        dbh=stem_data["dbh"],
     )
 
     stem_data["crown_area"] = calculate_crown_areas(
