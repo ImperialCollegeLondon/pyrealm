@@ -16,23 +16,32 @@ def _validate_t_model_args(pft_args: list[NDArray], size_args: list[NDArray]) ->
 
     Args:
         pft_args: A list of row arrays representing trait values
-        size_args: A list of arrays representing stem sizes at which to evaluate
-            functions.
+        size_args: A list of arrays representing points in the stem size and growth
+            allometries at which to evaluate functions.
     """
 
+    # Check PFT inputs all line up and are 1D (row) arrays
     try:
         pft_args_shape = check_input_shapes(*pft_args)
     except ValueError:
         raise ValueError("PFT trait values are not of equal length")
 
+    if len(pft_args_shape) > 1:
+        raise ValueError("T model functions only accept 1D arrays of PFT trait values")
+
+    # Check size and growth inputs
     try:
         size_args_shape = check_input_shapes(*size_args)
     except ValueError:
         raise ValueError("Size arrays are not of equal length")
 
-    if len(pft_args_shape) > 1:
-        raise ValueError("T model functions only accept 1D arrays of PFT trait values")
+    # Explicitly check to see if the size arrays are row arrays and - if so - enforce
+    # that they are the same length.abs
 
+    if len(size_args_shape) == 1 and not pft_args_shape == size_args_shape:
+        raise ValueError("Trait and size inputs are row arrays and unequal length.")
+
+    # Otherwise use np.broadcast_shapes to catch issues
     try:
         _ = np.broadcast_shapes(pft_args_shape, size_args_shape)
     except ValueError:
