@@ -101,6 +101,7 @@ def calculate_dbh_from_height(
         h_max: Maximum height of the PFT
         a_hd: Initial slope of the height/diameter relationship of the PFT
         stem_height: Stem height of individuals
+        validate: Boolean flag to suppress argument validation
     """
 
     if validate:
@@ -586,3 +587,58 @@ def calculate_growth_increments(
     delta_d = (npp - turnover) / (dWsdt + dWfdt)
 
     return (delta_d, dWsdt * delta_d, dWfdt * delta_d)
+
+
+def calculate_t_model(
+    pft_data: dict[str, NDArray[np.float32]], dbh: NDArray[np.float32]
+) -> dict[str, NDArray[np.float32]]:
+    """Calculate T Model predictions across cohort data.
+
+    This method calculate predictions of stem allometries under the T Model
+    :cite:`Li:2014bc`, given diameters at breast height for a set of plant functional
+    traits.
+
+    """
+
+    stem_data = {"dbh": dbh}
+
+    stem_data["stem_height"] = calculate_heights(
+        h_max=pft_data["h_max"],
+        a_hd=pft_data["a_hd"],
+        dbh=stem_data["diameter"],
+    )
+
+    stem_data["crown_area"] = calculate_crown_areas(
+        ca_ratio=pft_data["ca_ratio"],
+        a_hd=pft_data["a_hd"],
+        dbh=stem_data["dbh"],
+        stem_height=stem_data["stem_height"],
+    )
+
+    stem_data["crown_fraction"] = calculate_crown_fractions(
+        a_hd=pft_data["a_hd"],
+        dbh=stem_data["dbh"],
+        stem_height=stem_data["stem_height"],
+    )
+
+    stem_data["stem_mass"] = calculate_stem_masses(
+        rho_s=pft_data["rho_s"],
+        dbh=stem_data["dbh"],
+        stem_height=stem_data["stem_height"],
+    )
+
+    stem_data["foliage_mass"] = calculate_foliage_masses(
+        sla=pft_data["sla"],
+        lai=pft_data["lai"],
+        crown_area=stem_data["crown_area"],
+    )
+
+    stem_data["sapwood_mass"] = calculate_sapwood_masses(
+        rho_s=pft_data["rho_s"],
+        ca_ratio=pft_data["ca_ratio"],
+        stem_height=stem_data["stem_height"],
+        crown_area=stem_data["crown_area"],
+        crown_fraction=stem_data["crown_fraction"],
+    )
+
+    return stem_data

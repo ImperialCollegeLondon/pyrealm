@@ -341,7 +341,7 @@ class TestTModel:
     def test_calculate_dbh_from_height(
         self, rtmodel_data, data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape
     ):
-        """Tests inverted calculation of dbh from height"""
+        """Tests inverted calculation of dbh from height."""
 
         from pyrealm.demography.t_model_functions import calculate_dbh_from_height
 

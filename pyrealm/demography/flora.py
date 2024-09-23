@@ -34,7 +34,10 @@ from pyrealm.demography.canopy_functions import (
     calculate_canopy_q_m,
     calculate_canopy_z_max_proportion,
 )
-from pyrealm.demography.t_model_functions import calculate_dbh_from_height
+from pyrealm.demography.t_model_functions import (
+    calculate_dbh_from_height,
+    calculate_t_model,
+)
 
 if sys.version_info[:2] >= (3, 11):
     import tomllib
@@ -235,8 +238,8 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
         for name, pft in zip(pft_names, pfts):
             self[name] = pft
 
-        # Generate an dataframe representation to facilitate merging to cohort data.
-        # - assemble pft fields into arrays
+        # Generate a dictionary of arrays of traits across PFTs and an index mapping PFT
+        # names onto the index of those arrays.
         data = {}
         pft_fields = [f.name for f in fields(PlantFunctionalTypeStrict)]
 
@@ -319,19 +322,16 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
         if not ((dbh is None) ^ (stem_height is None)):
             raise ValueError("Provide one of either dbh or stem_height")
 
-        # # Convert pft data to dict of numpy arrays - TODO: this may become redundant if
-        # # self.data adopts the dict of arrays format
-        # pft_data: dict[str, NDArray] = {
-        #     k: v.to_numpy() for k, v in self.data.to_dict(orient="series").items()
-        # }
-
         # Convert stem height to DBH for the plant functional type
+        # TODO - make this return np.nan for overheight, not fail.
         if stem_height is not None:
-            self.dbh = calculate_dbh_from_height(
-                h_max=pft_data["h_max"], a_hd=pft_data["h_max"], stem_height=stem_height
+            dbh = calculate_dbh_from_height(
+                h_max=self.data["h_max"],
+                a_hd=self.data["a_hd"],
+                stem_height=stem_height,
             )
 
-        return {}
+        return calculate_t_model(pft_data=self.data, dbh=dbh)  # type: ignore [arg-type]
 
 
 #     @dataclass
