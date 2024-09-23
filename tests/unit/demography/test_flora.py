@@ -2,11 +2,9 @@
 
 import sys
 from contextlib import nullcontext as does_not_raise
-from dataclasses import fields
 from importlib import resources
 from json import JSONDecodeError
 
-import pandas as pd
 import pytest
 from marshmallow.exceptions import ValidationError
 from pandas.errors import ParserError
@@ -177,11 +175,9 @@ def test_Flora__init__(flora_inputs, outcome):
                 assert k == v.name
 
             # Check data view is correct
-            assert isinstance(flora.data, pd.DataFrame)
-            assert flora.data.shape == (
-                len(flora_inputs),
-                len(fields(next(iter(flora.values())))),
-            )
+            assert isinstance(flora.data, dict)
+            for trait_array in flora.data.values():
+                assert trait_array.shape == (len(flora),)
 
 
 #

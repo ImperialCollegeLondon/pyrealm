@@ -6,10 +6,42 @@ the calculate stem growth given net primary productivity.
 """  # noqa: D205
 
 import numpy as np
-from pandas import Series
+from numpy.typing import NDArray
+
+from pyrealm.core.utilities import check_input_shapes
 
 
-def calculate_heights(h_max: Series, a_hd: Series, dbh: Series) -> Series:
+def _validate_t_model_args(pft_args: list[NDArray], size_args: list[NDArray]) -> None:
+    """Shared validation for T model function inputs.
+
+    Args:
+        pft_args: A list of row arrays representing trait values
+        size_args: A list of arrays representing stem sizes at which to evaluate
+            functions.
+    """
+
+    try:
+        pft_args_shape = check_input_shapes(*pft_args)
+    except ValueError:
+        raise ValueError("PFT trait values are not of equal length")
+
+    try:
+        size_args_shape = check_input_shapes(*size_args)
+    except ValueError:
+        raise ValueError("Size arrays are not of equal length")
+
+    if len(pft_args_shape) > 1:
+        raise ValueError("T model functions only accept 1D arrays of PFT trait values")
+
+    try:
+        _ = np.broadcast_shapes(pft_args_shape, size_args_shape)
+    except ValueError:
+        raise ValueError("PFT and size inputs to T model function are not compatible.")
+
+
+def calculate_heights(
+    h_max: NDArray[np.float32], a_hd: NDArray[np.float32], dbh: NDArray[np.float32]
+) -> NDArray[np.float32]:
     r"""Calculate tree height under the T Model.
 
     The height of trees (:math:`H`) are calculated from individual diameters at breast
@@ -31,8 +63,11 @@ def calculate_heights(h_max: Series, a_hd: Series, dbh: Series) -> Series:
 
 
 def calculate_crown_areas(
-    ca_ratio: Series, a_hd: Series, dbh: Series, height: Series
-) -> Series:
+    ca_ratio: NDArray[np.float32],
+    a_hd: NDArray[np.float32],
+    dbh: NDArray[np.float32],
+    height: NDArray[np.float32],
+) -> NDArray[np.float32]:
     r"""Calculate tree crown area under the T Model.
 
     The tree crown area (:math:`A_{c}`)is calculated from individual diameters at breast
@@ -55,7 +90,9 @@ def calculate_crown_areas(
     return ((np.pi * ca_ratio) / (4 * a_hd)) * dbh * height
 
 
-def calculate_crown_fractions(a_hd: Series, height: Series, dbh: Series) -> Series:
+def calculate_crown_fractions(
+    a_hd: NDArray[np.float32], height: NDArray[np.float32], dbh: NDArray[np.float32]
+) -> NDArray[np.float32]:
     r"""Calculate tree crown fraction under the T Model.
 
     The crown fraction (:math:`f_{c}`)is calculated from individual diameters at breast
@@ -76,7 +113,9 @@ def calculate_crown_fractions(a_hd: Series, height: Series, dbh: Series) -> Seri
     return height / (a_hd * dbh)
 
 
-def calculate_stem_masses(rho_s: Series, height: Series, dbh: Series) -> Series:
+def calculate_stem_masses(
+    rho_s: NDArray[np.float32], height: NDArray[np.float32], dbh: NDArray[np.float32]
+) -> NDArray[np.float32]:
     r"""Calculate stem mass under the T Model.
 
     The stem mass (:math:`W_{s}`) is calculated from individual diameters at breast
@@ -96,7 +135,9 @@ def calculate_stem_masses(rho_s: Series, height: Series, dbh: Series) -> Series:
     return (np.pi / 8) * rho_s * (dbh**2) * height
 
 
-def calculate_foliage_masses(sla: Series, lai: Series, crown_area: Series) -> Series:
+def calculate_foliage_masses(
+    sla: NDArray[np.float32], lai: NDArray[np.float32], crown_area: NDArray[np.float32]
+) -> NDArray[np.float32]:
     r"""Calculate foliage mass under the T Model.
 
     The foliage mass (:math:`W_{f}`) is calculated from the crown area (:math:`A_{c}`),
@@ -117,12 +158,12 @@ def calculate_foliage_masses(sla: Series, lai: Series, crown_area: Series) -> Se
 
 
 def calculate_sapwood_masses(
-    rho_s: Series,
-    ca_ratio: Series,
-    height: Series,
-    crown_area: Series,
-    crown_fraction: Series,
-) -> Series:
+    rho_s: NDArray[np.float32],
+    ca_ratio: NDArray[np.float32],
+    height: NDArray[np.float32],
+    crown_area: NDArray[np.float32],
+    crown_fraction: NDArray[np.float32],
+) -> NDArray[np.float32]:
     r"""Calculate sapwood mass under the T Model.
 
     The sapwood mass (:math:`W_{\cdot s}`) is calculated from the individual crown area
@@ -146,8 +187,11 @@ def calculate_sapwood_masses(
 
 
 def calculate_whole_crown_gpp(
-    potential_gpp: Series, crown_area: Series, par_ext: Series, lai: Series
-) -> Series:
+    potential_gpp: NDArray[np.float32],
+    crown_area: NDArray[np.float32],
+    par_ext: NDArray[np.float32],
+    lai: NDArray[np.float32],
+) -> NDArray[np.float32]:
     r"""Calculate whole crown gross primary productivity.
 
     This function calculates individual GPP across the whole crown, given  the
@@ -170,7 +214,9 @@ def calculate_whole_crown_gpp(
     return potential_gpp * crown_area * (1 - np.exp(-(par_ext * lai)))
 
 
-def calculate_sapwood_respiration(resp_s: Series, sapwood_mass: Series) -> Series:
+def calculate_sapwood_respiration(
+    resp_s: NDArray[np.float32], sapwood_mass: NDArray[np.float32]
+) -> NDArray[np.float32]:
     r"""Calculate sapwood respiration.
 
     Calculates the total sapwood respiration (:math:`R_{\cdot s}`) given the individual
@@ -187,7 +233,9 @@ def calculate_sapwood_respiration(resp_s: Series, sapwood_mass: Series) -> Serie
     return sapwood_mass * resp_s
 
 
-def calculate_foliar_respiration(resp_f: Series, whole_crown_gpp: Series) -> Series:
+def calculate_foliar_respiration(
+    resp_f: NDArray[np.float32], whole_crown_gpp: NDArray[np.float32]
+) -> NDArray[np.float32]:
     r"""Calculate foliar respiration.
 
     Calculates the total foliar respiration (:math:`R_{f}`) given the individual crown
@@ -207,8 +255,11 @@ def calculate_foliar_respiration(resp_f: Series, whole_crown_gpp: Series) -> Ser
 
 
 def calculate_fine_root_respiration(
-    zeta: Series, sla: Series, resp_r: Series, foliage_mass: Series
-) -> Series:
+    zeta: NDArray[np.float32],
+    sla: NDArray[np.float32],
+    resp_r: NDArray[np.float32],
+    foliage_mass: NDArray[np.float32],
+) -> NDArray[np.float32]:
     r"""Calculate foliar respiration.
 
     Calculates the total fine root respiration (:math:`R_{r}`) given the individual
@@ -230,12 +281,12 @@ def calculate_fine_root_respiration(
 
 
 def calculate_net_primary_productivity(
-    yld: Series,
-    whole_crown_gpp: Series,
-    foliar_respiration: Series,
-    fine_root_respiration: Series,
-    sapwood_respiration: Series,
-) -> Series:
+    yld: NDArray[np.float32],
+    whole_crown_gpp: NDArray[np.float32],
+    foliar_respiration: NDArray[np.float32],
+    fine_root_respiration: NDArray[np.float32],
+    sapwood_respiration: NDArray[np.float32],
+) -> NDArray[np.float32]:
     r"""Calculate net primary productivity.
 
     The net primary productivity (NPP, :math:`P_{net}`) is calculated as a plant
@@ -270,12 +321,12 @@ def calculate_net_primary_productivity(
 
 
 def calculate_foliage_and_fine_root_turnover(
-    sla: Series,
-    zeta: Series,
-    tau_f: Series,
-    tau_r: Series,
-    foliage_mass: Series,
-) -> Series:
+    sla: NDArray[np.float32],
+    zeta: NDArray[np.float32],
+    tau_f: NDArray[np.float32],
+    tau_r: NDArray[np.float32],
+    foliage_mass: NDArray[np.float32],
+) -> NDArray[np.float32]:
     r"""Calculate turnover costs.
 
     This function calculates the costs associated with the turnover of fine roots and
@@ -301,18 +352,18 @@ def calculate_foliage_and_fine_root_turnover(
 
 
 def calculate_growth_increments(
-    rho_s: Series,
-    a_hd: Series,
-    h_max: Series,
-    lai: Series,
-    ca_ratio: Series,
-    sla: Series,
-    zeta: Series,
-    npp: Series,
-    turnover: Series,
-    dbh: Series,
-    height: Series,
-) -> tuple[Series, Series, Series]:
+    rho_s: NDArray[np.float32],
+    a_hd: NDArray[np.float32],
+    h_max: NDArray[np.float32],
+    lai: NDArray[np.float32],
+    ca_ratio: NDArray[np.float32],
+    sla: NDArray[np.float32],
+    zeta: NDArray[np.float32],
+    npp: NDArray[np.float32],
+    turnover: NDArray[np.float32],
+    dbh: NDArray[np.float32],
+    height: NDArray[np.float32],
+) -> tuple[NDArray[np.float32], NDArray[np.float32], NDArray[np.float32]]:
     r"""Calculate growth increments.
 
     Given an estimate of net primary productivity (:math:`P_{net}`), less associated  
@@ -437,7 +488,9 @@ def calculate_canopy_z_max_proportion(m: float, n: float) -> float:
     return ((n - 1) / (m * n - 1)) ** (1 / n)
 
 
-def calculate_canopy_z_max(z_max_prop: Series, height: Series) -> Series:
+def calculate_canopy_z_max(
+    z_max_prop: NDArray[np.float32], height: NDArray[np.float32]
+) -> NDArray[np.float32]:
     r"""Calculate height of maximum crown radius.
 
     The height of the maximum crown radius (:math:`z_m`) is derived from the canopy
@@ -461,7 +514,9 @@ def calculate_canopy_z_max(z_max_prop: Series, height: Series) -> Series:
     return height * z_max_prop
 
 
-def calculate_canopy_r0(q_m: Series, crown_area: Series) -> Series:
+def calculate_canopy_r0(
+    q_m: NDArray[np.float32], crown_area: NDArray[np.float32]
+) -> NDArray[np.float32]:
     r"""Calculate scaling factor for height of maximum crown radius.
 
     This scaling factor (:math:`r_0`) is derived from the canopy shape parameters
@@ -487,10 +542,10 @@ def calculate_canopy_r0(q_m: Series, crown_area: Series) -> Series:
 
 def calculate_relative_canopy_radii(
     z: float,
-    height: Series,
-    m: Series,
-    n: Series,
-) -> Series:
+    height: NDArray[np.float32],
+    m: NDArray[np.float32],
+    n: NDArray[np.float32],
+) -> NDArray[np.float32]:
     r"""Calculate relative canopy radius at a given height.
 
     The canopy shape parameters ``m`` and ``n`` define the vertical distribution of
