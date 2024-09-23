@@ -7,6 +7,7 @@ two fairly randomly chosen variants).
 
 from importlib import resources
 
+import numpy as np
 import pandas as pd
 import pytest
 from numpy.testing import assert_array_almost_equal
@@ -23,7 +24,6 @@ def rvalues():
     different plant functional type definitions. The PFT definitions are loaded first
     and then the output file associated with each PFT is loaded.
     """
-    from pyrealm.demography.flora import PlantFunctionalType
 
     # Load the PFT definitions and rename to pyrealm attributes
     pfts_path = resources.files("pyrealm_build_data.t_model") / "pft_definitions.csv"
@@ -53,15 +53,21 @@ def rvalues():
     return_value = []
 
     # Loop over the PFT definitions
-    for pft_args in pft_definitions:
-        # Record the starting DBH and create the PFT instances
-        dbh_init = pft_args.pop("d")
-        pft = PlantFunctionalType(**pft_args)
+    for pft in pft_definitions:
+        # Record the starting DBH and name
+        dbh_init = pft.pop("d")
+        pft_name = pft.pop("name")
+
+        # Add foliar respiration
+        pft["resp_f"] = 0.1
+
+        # Convert dict values to row arrays
+        pft = {k: np.array([v]) for k, v in pft.items()}
 
         # Load the appropriate output file and then remap the field names
         datapath = (
             resources.files("pyrealm_build_data.t_model")
-            / f"rtmodel_output_{pft.name}.csv"
+            / f"rtmodel_output_{pft_name}.csv"
         )
         data = pd.read_csv(datapath)
 
@@ -95,6 +101,10 @@ def rvalues():
         # will need to be proportionally scaled up to make them match, but this is not
         # true for _all_ tests so the values here are left untouched.
 
+        # Convert data to column arrays
+        data = data.to_dict(orient="list")
+        data = {k: np.array(v)[:, None] for k, v in data.items()}
+
         # Add a tuple of the inputs and outputs to the return list.
         return_value.append((pft, dbh_init, data))
 
@@ -108,7 +118,7 @@ def test_calculate_heights(rvalues):
 
     for pft, _, data in rvalues:
         actual_heights = calculate_heights(
-            h_max=pft.h_max, a_hd=pft.a_hd, dbh=data["diameter"]
+            h_max=pft["h_max"], a_hd=pft["a_hd"], dbh=data["diameter"]
         )
 
         assert_array_almost_equal(actual_heights, data["height"], decimal=8)
@@ -120,10 +130,10 @@ def test_calculate_crown_areas(rvalues):
 
     for pft, _, data in rvalues:
         actual_crown_areas = calculate_crown_areas(
-            ca_ratio=pft.ca_ratio,
-            a_hd=pft.a_hd,
+            ca_ratio=pft["ca_ratio"],
+            a_hd=pft["a_hd"],
             dbh=data["diameter"],
-            height=data["height"],
+            stem_height=data["height"],
         )
 
         assert_array_almost_equal(actual_crown_areas, data["crown_area"], decimal=8)
@@ -136,9 +146,9 @@ def test_calculate_crown_fractions(rvalues):
 
     for pft, _, data in rvalues:
         actual_crown_fractions = calculate_crown_fractions(
-            a_hd=pft.a_hd,
+            a_hd=pft["a_hd"],
             dbh=data["diameter"],
-            height=data["height"],
+            stem_height=data["height"],
         )
         assert_array_almost_equal(
             actual_crown_fractions, data["crown_fraction"], decimal=8
@@ -153,8 +163,8 @@ def test_calculate_stem_masses(rvalues):
     for pft, _, data in rvalues:
         actual_stem_masses = calculate_stem_masses(
             dbh=data["diameter"],
-            height=data["height"],
-            rho_s=pft.rho_s,
+            stem_height=data["height"],
+            rho_s=pft["rho_s"],
         )
         assert_array_almost_equal(actual_stem_masses, data["mass_stm"], decimal=8)
 
@@ -166,7 +176,7 @@ def test_calculate_foliage_masses(rvalues):
 
     for pft, _, data in rvalues:
         actual_foliage_masses = calculate_foliage_masses(
-            crown_area=data["crown_area"], lai=pft.lai, sla=pft.sla
+            crown_area=data["crown_area"], lai=pft["lai"], sla=pft["sla"]
         )
         assert_array_almost_equal(actual_foliage_masses, data["mass_fol"], decimal=8)
 
@@ -179,10 +189,10 @@ def test_calculate_sapwood_masses(rvalues):
     for pft, _, data in rvalues:
         actual_sapwood_masses = calculate_sapwood_masses(
             crown_area=data["crown_area"],
-            height=data["height"],
+            stem_height=data["height"],
             crown_fraction=data["crown_fraction"],
-            ca_ratio=pft.ca_ratio,
-            rho_s=pft.rho_s,
+            ca_ratio=pft["ca_ratio"],
+            rho_s=pft["rho_s"],
         )
         assert_array_almost_equal(actual_sapwood_masses, data["mass_swd"], decimal=8)
 
@@ -200,8 +210,8 @@ def test_calculate_whole_crown_gpp(rvalues):
         actual_whole_crown_gpp = calculate_whole_crown_gpp(
             potential_gpp=data["potential_gpp"],
             crown_area=data["crown_area"],
-            par_ext=pft.par_ext,
-            lai=pft.lai,
+            par_ext=pft["par_ext"],
+            lai=pft["lai"],
         )
         assert_array_almost_equal(actual_whole_crown_gpp, data["crown_gpp"], decimal=8)
 
@@ -214,7 +224,7 @@ def test_calculate_sapwood_respiration(rvalues):
     for pft, _, data in rvalues:
         actual_sapwood_respiration = calculate_sapwood_respiration(
             sapwood_mass=data["mass_swd"],
-            resp_s=pft.resp_s,
+            resp_s=pft["resp_s"],
         )
         assert_array_almost_equal(
             actual_sapwood_respiration, data["resp_swd"], decimal=8
@@ -234,11 +244,11 @@ def test_calculate_foliar_respiration(rvalues):
     for pft, _, data in rvalues:
         actual_foliar_respiration = calculate_foliar_respiration(
             whole_crown_gpp=data["crown_gpp"],
-            resp_f=pft.resp_f,
+            resp_f=pft["resp_f"],
         )
         assert_array_almost_equal(
             actual_foliar_respiration,
-            data["crown_gpp"] * pft.resp_f,
+            data["crown_gpp"] * pft["resp_f"],
             decimal=8,
         )
 
@@ -250,9 +260,9 @@ def test_calculate_fine_root_respiration(rvalues):
 
     for pft, _, data in rvalues:
         actual_fine_root_respiration = calculate_fine_root_respiration(
-            zeta=pft.zeta,
-            sla=pft.sla,
-            resp_r=pft.resp_r,
+            zeta=pft["zeta"],
+            sla=pft["sla"],
+            resp_r=pft["resp_r"],
             foliage_mass=data["mass_fol"],
         )
         assert_array_almost_equal(
@@ -273,9 +283,9 @@ def test_calculate_net_primary_productivity(rvalues):
 
     for pft, _, data in rvalues:
         actual_npp = calculate_net_primary_productivity(
-            yld=pft.yld,
-            whole_crown_gpp=data["crown_gpp"] / (1 - pft.resp_f),
-            foliar_respiration=data["crown_gpp"] / (1 - pft.resp_f) * pft.resp_f,
+            yld=pft["yld"],
+            whole_crown_gpp=data["crown_gpp"] / (1 - pft["resp_f"]),
+            foliar_respiration=data["crown_gpp"] / (1 - pft["resp_f"]) * pft["resp_f"],
             fine_root_respiration=data["resp_frt"],
             sapwood_respiration=data["resp_swd"],
         )
@@ -295,10 +305,10 @@ def test_calculate_foliage_and_fine_root_turnover(rvalues):
 
     for pft, _, data in rvalues:
         actual_turnover = calculate_foliage_and_fine_root_turnover(
-            sla=pft.sla,
-            tau_f=pft.tau_f,
-            zeta=pft.zeta,
-            tau_r=pft.tau_r,
+            sla=pft["sla"],
+            tau_f=pft["tau_f"],
+            zeta=pft["zeta"],
+            tau_r=pft["tau_r"],
             foliage_mass=data["mass_fol"],
         )
         assert_array_almost_equal(
@@ -317,17 +327,17 @@ def test_calculate_growth_increments(rvalues):
 
     for pft, _, data in rvalues:
         delta_dbh, delta_mass_stem, delta_mass_fine_root = calculate_growth_increments(
-            rho_s=pft.rho_s,
-            a_hd=pft.a_hd,
-            h_max=pft.h_max,
-            lai=pft.lai,
-            ca_ratio=pft.ca_ratio,
-            sla=pft.sla,
-            zeta=pft.zeta,
+            rho_s=pft["rho_s"],
+            a_hd=pft["a_hd"],
+            h_max=pft["h_max"],
+            lai=pft["lai"],
+            ca_ratio=pft["ca_ratio"],
+            sla=pft["sla"],
+            zeta=pft["zeta"],
             npp=data["NPP"],
             turnover=data["turnover"],
             dbh=data["diameter"],
-            height=data["height"],
+            stem_height=data["height"],
         )
         assert_array_almost_equal(
             delta_dbh,

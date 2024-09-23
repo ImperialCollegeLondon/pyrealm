@@ -2,14 +2,58 @@
 :cite:`Li:2014bc`:. This provides scaling relationships using the plant functional type
 traits defined in the :mod:`~pyrealm.demography.flora` module and the diameter at breast
 height of individual stems to define the stem geometry, masses, respiration and hence
-the calculate stem growth given net primary productivity.
+calculate stem growth given net primary productivity.
 """  # noqa: D205
 
 import numpy as np
-from pandas import Series
+from numpy.typing import NDArray
+
+from pyrealm.core.utilities import check_input_shapes
 
 
-def calculate_heights(h_max: Series, a_hd: Series, dbh: Series) -> Series:
+def _validate_t_model_args(pft_args: list[NDArray], size_args: list[NDArray]) -> None:
+    """Shared validation for T model function inputs.
+
+    Args:
+        pft_args: A list of row arrays representing trait values
+        size_args: A list of arrays representing points in the stem size and growth
+            allometries at which to evaluate functions.
+    """
+
+    # Check PFT inputs all line up and are 1D (row) arrays
+    try:
+        pft_args_shape = check_input_shapes(*pft_args)
+    except ValueError:
+        raise ValueError("PFT trait values are not of equal length")
+
+    if len(pft_args_shape) > 1:
+        raise ValueError("T model functions only accept 1D arrays of PFT trait values")
+
+    # Check size and growth inputs
+    try:
+        size_args_shape = check_input_shapes(*size_args)
+    except ValueError:
+        raise ValueError("Size arrays are not of equal length")
+
+    # Explicitly check to see if the size arrays are row arrays and - if so - enforce
+    # that they are the same length.abs
+
+    if len(size_args_shape) == 1 and not pft_args_shape == size_args_shape:
+        raise ValueError("Trait and size inputs are row arrays of unequal length.")
+
+    # Otherwise use np.broadcast_shapes to catch issues
+    try:
+        _ = np.broadcast_shapes(pft_args_shape, size_args_shape)
+    except ValueError:
+        raise ValueError("PFT and size inputs to T model function are not compatible.")
+
+
+def calculate_heights(
+    h_max: NDArray[np.float32],
+    a_hd: NDArray[np.float32],
+    dbh: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
     r"""Calculate tree height under the T Model.
 
     The height of trees (:math:`H`) are calculated from individual diameters at breast
@@ -25,14 +69,21 @@ def calculate_heights(h_max: Series, a_hd: Series, dbh: Series) -> Series:
         h_max: Maximum height of the PFT
         a_hd: Initial slope of the height/diameter relationship of the PFT
         dbh: Diameter at breast height of individuals
+        validate: Boolean flag to suppress argument validation
     """
+
+    if validate:
+        _validate_t_model_args(pft_args=[h_max, a_hd], size_args=[dbh])
 
     return h_max * (1 - np.exp(-a_hd * dbh / h_max))
 
 
 def calculate_dbh_from_height(
-    h_max: Series, a_hd: Series, stem_height: Series
-) -> Series:
+    h_max: NDArray[np.float32],
+    a_hd: NDArray[np.float32],
+    stem_height: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
     r"""Calculate diameter at breast height from stem height under the T Model.
 
     This function inverts the normal calculation of stem height (:math:`H`) from
@@ -52,6 +103,9 @@ def calculate_dbh_from_height(
         stem_height: Stem height of individuals
     """
 
+    if validate:
+        _validate_t_model_args(pft_args=[h_max, a_hd], size_args=[stem_height])
+
     if np.any(stem_height > h_max):
         raise ValueError(
             "Stem height values must not be greater than maximum stem height"
@@ -61,8 +115,12 @@ def calculate_dbh_from_height(
 
 
 def calculate_crown_areas(
-    ca_ratio: Series, a_hd: Series, dbh: Series, height: Series
-) -> Series:
+    ca_ratio: NDArray[np.float32],
+    a_hd: NDArray[np.float32],
+    dbh: NDArray[np.float32],
+    stem_height: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
     r"""Calculate tree crown area under the T Model.
 
     The tree crown area (:math:`A_{c}`)is calculated from individual diameters at breast
@@ -79,13 +137,22 @@ def calculate_crown_areas(
         ca_ratio: Crown area ratio of the PFT
         a_hd: Initial slope of the height/diameter relationship of the PFT
         dbh: Diameter at breast height of individuals
-        height: Stem height of individuals
+        stem_height: Stem height of individuals
+        validate: Boolean flag to suppress argument validation
     """
 
-    return ((np.pi * ca_ratio) / (4 * a_hd)) * dbh * height
+    if validate:
+        _validate_t_model_args(pft_args=[ca_ratio, a_hd], size_args=[dbh, stem_height])
+
+    return ((np.pi * ca_ratio) / (4 * a_hd)) * dbh * stem_height
 
 
-def calculate_crown_fractions(a_hd: Series, height: Series, dbh: Series) -> Series:
+def calculate_crown_fractions(
+    a_hd: NDArray[np.float32],
+    stem_height: NDArray[np.float32],
+    dbh: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
     r"""Calculate tree crown fraction under the T Model.
 
     The crown fraction (:math:`f_{c}`)is calculated from individual diameters at breast
@@ -99,14 +166,22 @@ def calculate_crown_fractions(a_hd: Series, height: Series, dbh: Series) -> Seri
 
     Args:
         a_hd: Initial slope of the height/diameter relationship of the PFT
+        stem_height: Stem height of individuals
         dbh: Diameter at breast height of individuals
-        height: Stem height of individuals
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(pft_args=[a_hd], size_args=[dbh, stem_height])
 
-    return height / (a_hd * dbh)
+    return stem_height / (a_hd * dbh)
 
 
-def calculate_stem_masses(rho_s: Series, height: Series, dbh: Series) -> Series:
+def calculate_stem_masses(
+    rho_s: NDArray[np.float32],
+    stem_height: NDArray[np.float32],
+    dbh: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
     r"""Calculate stem mass under the T Model.
 
     The stem mass (:math:`W_{s}`) is calculated from individual diameters at breast
@@ -119,14 +194,22 @@ def calculate_stem_masses(rho_s: Series, height: Series, dbh: Series) -> Series:
 
     Args:
         rho_s: Wood density of the PFT
+        stem_height: Stem height of individuals
         dbh: Diameter at breast height of individuals
-        height: Stem height of individuals
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(pft_args=[rho_s], size_args=[dbh, stem_height])
 
-    return (np.pi / 8) * rho_s * (dbh**2) * height
+    return (np.pi / 8) * rho_s * (dbh**2) * stem_height
 
 
-def calculate_foliage_masses(sla: Series, lai: Series, crown_area: Series) -> Series:
+def calculate_foliage_masses(
+    sla: NDArray[np.float32],
+    lai: NDArray[np.float32],
+    crown_area: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
     r"""Calculate foliage mass under the T Model.
 
     The foliage mass (:math:`W_{f}`) is calculated from the crown area (:math:`A_{c}`),
@@ -141,18 +224,22 @@ def calculate_foliage_masses(sla: Series, lai: Series, crown_area: Series) -> Se
         sla: Specific leaf area of the PFT
         lai: Leaf area index of the PFT
         crown_area: Crown area of individuals
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(pft_args=[sla, lai], size_args=[crown_area])
 
     return crown_area * lai * (1 / sla)
 
 
 def calculate_sapwood_masses(
-    rho_s: Series,
-    ca_ratio: Series,
-    height: Series,
-    crown_area: Series,
-    crown_fraction: Series,
-) -> Series:
+    rho_s: NDArray[np.float32],
+    ca_ratio: NDArray[np.float32],
+    stem_height: NDArray[np.float32],
+    crown_area: NDArray[np.float32],
+    crown_fraction: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
     r"""Calculate sapwood mass under the T Model.
 
     The sapwood mass (:math:`W_{\cdot s}`) is calculated from the individual crown area
@@ -167,40 +254,59 @@ def calculate_sapwood_masses(
     Args:
         rho_s: Wood density of the PFT
         ca_ratio: Crown area ratio of the PFT
-        height: Stem height of individuals
+        stem_height: Stem height of individuals
         crown_area: Crown area of individuals
         crown_fraction: Crown fraction of individuals
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(
+            pft_args=[rho_s, ca_ratio],
+            size_args=[stem_height, crown_area, crown_fraction],
+        )
 
-    return crown_area * rho_s * height * (1 - crown_fraction / 2) / ca_ratio
+    return crown_area * rho_s * stem_height * (1 - crown_fraction / 2) / ca_ratio
 
 
 def calculate_whole_crown_gpp(
-    potential_gpp: Series, crown_area: Series, par_ext: Series, lai: Series
-) -> Series:
+    potential_gpp: NDArray[np.float32],
+    crown_area: NDArray[np.float32],
+    par_ext: NDArray[np.float32],
+    lai: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
     r"""Calculate whole crown gross primary productivity.
 
-    This function calculates individual GPP across the whole crown, given  the
-    individual potential gross primary productivity (GPP) per metre squared
-    (:math:`P_0`) and crown area (:math:`A_c`), along with the leaf area index
-    (:math:`L`) and the extinction coefficient (:math:`k`) of the plant functional type
-    :cite:p:`{Equation 12, }Li:2014bc`.
+    This function calculates individual GPP across the whole crown, given the individual
+    potential gross primary productivity (GPP) per metre squared (:math:`P_0`) and crown
+    area (:math:`A_c`), along with the leaf area index (:math:`L`) and the extinction
+    coefficient (:math:`k`) of the plant functional type :cite:p:`{Equation 12,
+    }Li:2014bc`.
 
     .. math::
 
         P = P_0 A_c (1 - e^{-kL})
 
     Args:
+        lai: The leaf area index
+        par_ext: The extinction coefficient
         potential_gpp: Potential GPP per metre squared
         crown_area: The crown area in metres squared
-        par_ext: The extinction coefficient
-        lai: The leaf area index
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(
+            pft_args=[lai, par_ext], size_args=[potential_gpp, crown_area]
+        )
 
     return potential_gpp * crown_area * (1 - np.exp(-(par_ext * lai)))
 
 
-def calculate_sapwood_respiration(resp_s: Series, sapwood_mass: Series) -> Series:
+def calculate_sapwood_respiration(
+    resp_s: NDArray[np.float32],
+    sapwood_mass: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
     r"""Calculate sapwood respiration.
 
     Calculates the total sapwood respiration (:math:`R_{\cdot s}`) given the individual
@@ -213,11 +319,19 @@ def calculate_sapwood_respiration(resp_s: Series, sapwood_mass: Series) -> Serie
     Args:
         resp_s: The sapwood respiration rate
         sapwood_mass: The individual sapwood mass
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(pft_args=[resp_s], size_args=[sapwood_mass])
+
     return sapwood_mass * resp_s
 
 
-def calculate_foliar_respiration(resp_f: Series, whole_crown_gpp: Series) -> Series:
+def calculate_foliar_respiration(
+    resp_f: NDArray[np.float32],
+    whole_crown_gpp: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
     r"""Calculate foliar respiration.
 
     Calculates the total foliar respiration (:math:`R_{f}`) given the individual crown
@@ -232,13 +346,21 @@ def calculate_foliar_respiration(resp_f: Series, whole_crown_gpp: Series) -> Ser
     Args:
         resp_f: The foliar respiration rate
         whole_crown_gpp: The individual whole crown GPP.
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(pft_args=[resp_f], size_args=[whole_crown_gpp])
+
     return whole_crown_gpp * resp_f
 
 
 def calculate_fine_root_respiration(
-    zeta: Series, sla: Series, resp_r: Series, foliage_mass: Series
-) -> Series:
+    zeta: NDArray[np.float32],
+    sla: NDArray[np.float32],
+    resp_r: NDArray[np.float32],
+    foliage_mass: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
     r"""Calculate foliar respiration.
 
     Calculates the total fine root respiration (:math:`R_{r}`) given the individual
@@ -254,18 +376,22 @@ def calculate_fine_root_respiration(
         sla: The specific leaf area of the PFT.
         resp_r: The respiration rate of fine roots of the PFT.
         foliage_mass: The individual foliage mass.
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(pft_args=[zeta, sla, resp_r], size_args=[foliage_mass])
 
     return zeta * sla * foliage_mass * resp_r
 
 
 def calculate_net_primary_productivity(
-    yld: Series,
-    whole_crown_gpp: Series,
-    foliar_respiration: Series,
-    fine_root_respiration: Series,
-    sapwood_respiration: Series,
-) -> Series:
+    yld: NDArray[np.float32],
+    whole_crown_gpp: NDArray[np.float32],
+    foliar_respiration: NDArray[np.float32],
+    fine_root_respiration: NDArray[np.float32],
+    sapwood_respiration: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
     r"""Calculate net primary productivity.
 
     The net primary productivity (NPP, :math:`P_{net}`) is calculated as a plant
@@ -289,7 +415,18 @@ def calculate_net_primary_productivity(
         foliar_respiration: The total foliar respiration.
         fine_root_respiration: The total fine root respiration
         sapwood_respiration: The total sapwood respiration.
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(
+            pft_args=[yld],
+            size_args=[
+                whole_crown_gpp,
+                foliar_respiration,
+                fine_root_respiration,
+                sapwood_respiration,
+            ],
+        )
 
     return yld * (
         whole_crown_gpp
@@ -300,12 +437,13 @@ def calculate_net_primary_productivity(
 
 
 def calculate_foliage_and_fine_root_turnover(
-    sla: Series,
-    zeta: Series,
-    tau_f: Series,
-    tau_r: Series,
-    foliage_mass: Series,
-) -> Series:
+    sla: NDArray[np.float32],
+    zeta: NDArray[np.float32],
+    tau_f: NDArray[np.float32],
+    tau_r: NDArray[np.float32],
+    foliage_mass: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
     r"""Calculate turnover costs.
 
     This function calculates the costs associated with the turnover of fine roots and
@@ -325,24 +463,30 @@ def calculate_foliage_and_fine_root_turnover(
         tau_f: The turnover time of foliage
         tau_r: The turnover time of fine roots
         foliage_mass: The foliage mass
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(
+            pft_args=[sla, zeta, tau_f, tau_r], size_args=[foliage_mass]
+        )
 
     return foliage_mass * ((1 / tau_f) + (sla * zeta / tau_r))
 
 
 def calculate_growth_increments(
-    rho_s: Series,
-    a_hd: Series,
-    h_max: Series,
-    lai: Series,
-    ca_ratio: Series,
-    sla: Series,
-    zeta: Series,
-    npp: Series,
-    turnover: Series,
-    dbh: Series,
-    height: Series,
-) -> tuple[Series, Series, Series]:
+    rho_s: NDArray[np.float32],
+    a_hd: NDArray[np.float32],
+    h_max: NDArray[np.float32],
+    lai: NDArray[np.float32],
+    ca_ratio: NDArray[np.float32],
+    sla: NDArray[np.float32],
+    zeta: NDArray[np.float32],
+    npp: NDArray[np.float32],
+    turnover: NDArray[np.float32],
+    dbh: NDArray[np.float32],
+    stem_height: NDArray[np.float32],
+    validate: bool = True,
+) -> tuple[NDArray[np.float32], NDArray[np.float32], NDArray[np.float32]]:
     r"""Calculate growth increments.
 
     Given an estimate of net primary productivity (:math:`P_{net}`), less associated  
@@ -413,15 +557,28 @@ def calculate_growth_increments(
         npp: Net primary productivity of individuals
         turnover: Fine root and foliage turnover cost of individuals
         dbh: Diameter at breast height of individuals
-        height: Stem height of individuals
+        stem_height: Stem height of individuals
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(
+            pft_args=[rho_s, a_hd, h_max, lai, ca_ratio, sla, zeta],
+            size_args=[npp, turnover, dbh, stem_height],
+        )
+
     # Rates of change in stem and foliar
-    dWsdt = np.pi / 8 * rho_s * dbh * (a_hd * dbh * (1 - (height / h_max)) + 2 * height)
+    dWsdt = (
+        np.pi
+        / 8
+        * rho_s
+        * dbh
+        * (a_hd * dbh * (1 - (stem_height / h_max)) + 2 * stem_height)
+    )
 
     dWfdt = (
         lai
         * ((np.pi * ca_ratio) / (4 * a_hd))
-        * (a_hd * dbh * (1 - height / h_max) + height)
+        * (a_hd * dbh * (1 - stem_height / h_max) + stem_height)
         * (1 / sla + zeta)
     )
 
@@ -429,116 +586,3 @@ def calculate_growth_increments(
     delta_d = (npp - turnover) / (dWsdt + dWfdt)
 
     return (delta_d, dWsdt * delta_d, dWfdt * delta_d)
-
-
-def calculate_canopy_q_m(m: float, n: float) -> float:
-    """Calculate a q_m value.
-
-    The value of q_m is a constant canopy scaling parameter derived from the ``m`` and
-    ``n`` attributes defined for a plant functional type.
-
-    Args:
-        m: Canopy shape parameter
-        n: Canopy shape parameter
-    """
-    return (
-        m
-        * n
-        * ((n - 1) / (m * n - 1)) ** (1 - 1 / n)
-        * (((m - 1) * n) / (m * n - 1)) ** (m - 1)
-    )
-
-
-def calculate_canopy_z_max_proportion(m: float, n: float) -> float:
-    r"""Calculate the z_m proportion.
-
-    The z_m proportion (:math:`p_{zm}`) is the constant proportion of stem height at
-    which the maximum crown radius is found for a given plant functional type.
-
-    .. math::
-
-        p_{zm} = \left(\dfrac{n-1}{m n -1}\right)^ {\tfrac{1}{n}}
-
-    Args:
-        m: Canopy shape parameter
-        n: Canopy shape parameter
-    """
-
-    return ((n - 1) / (m * n - 1)) ** (1 / n)
-
-
-def calculate_canopy_z_max(z_max_prop: Series, height: Series) -> Series:
-    r"""Calculate height of maximum crown radius.
-
-    The height of the maximum crown radius (:math:`z_m`) is derived from the canopy
-    shape parameters (:math:`m,n`) and the resulting fixed proportion (:math:`p_{zm}`)
-    for plant functional types. These shape parameters are defined as part of the
-    extension of the T Model presented by :cite:t:`joshi:2022a`.
-
-    The value :math:`z_m` is the height above ground where the largest canopy radius is
-    found, given the proportion and the estimated stem height (:math:`H`) of
-    individuals.
-
-    .. math::
-
-        z_m = p_{zm} H
-
-    Args:
-        z_max_prop: Canopy shape parameter of the PFT
-        height: Crown area of individuals
-    """
-
-    return height * z_max_prop
-
-
-def calculate_canopy_r0(q_m: Series, crown_area: Series) -> Series:
-    r"""Calculate scaling factor for height of maximum crown radius.
-
-    This scaling factor (:math:`r_0`) is derived from the canopy shape parameters
-    (:math:`m,n,q_m`) for plant functional types and the estimated crown area
-    (:math:`A_c`) of individuals. The shape parameters are defined as part of the
-    extension of the T Model presented by :cite:t:`joshi:2022a` and :math:`r_0` is used
-    to scale the crown area such that the crown area at the  maximum crown radius fits
-    the expectations of the T Model.
-
-    .. math::
-
-        r_0 = 1/q_m  \sqrt{A_c / \pi}
-
-    Args:
-        q_m: Canopy shape parameter of the PFT
-        crown_area: Crown area of individuals
-    """
-    # Scaling factor to give expected A_c (crown area) at
-    # z_m (height of maximum crown radius)
-
-    return 1 / q_m * np.sqrt(crown_area / np.pi)
-
-
-def calculate_relative_canopy_radii(
-    z: float,
-    height: Series,
-    m: Series,
-    n: Series,
-) -> Series:
-    r"""Calculate relative canopy radius at a given height.
-
-    The canopy shape parameters ``m`` and ``n`` define the vertical distribution of
-    canopy along the stem. For a stem of a given total height, this function calculates
-    the relative canopy radius at a given height :math:`z`:
-
-    .. math::
-
-        q(z) = m n \left(\dfrac{z}{H}\right) ^ {n -1}
-        \left( 1 - \left(\dfrac{z}{H}\right) ^ n \right)^{m-1}
-
-    Args:
-        z: Height at which to calculate relative radius
-        height: Total height of individual stem
-        m: Canopy shape parameter of PFT
-        n: Canopy shape parameter of PFT
-    """
-
-    z_over_height = z / height
-
-    return m * n * z_over_height ** (n - 1) * (1 - z_over_height**n) ** (m - 1)

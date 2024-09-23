@@ -1,8 +1,11 @@
 [[pft]]
 a_hd = 116.0
 ca_ratio = 390.43
+f_g = 0.02
 h_max = 25.33
 lai = 1.8
+m = 2
+n = 5
 name = 'test1'
 par_ext = 0.5
 resp_f = 0.1
@@ -14,14 +17,15 @@ tau_f = 4.0
 tau_r = 1.04
 yld = 0.17
 zeta = 0.17
-m = 2
-n = 5
 
 [[pft]]
 a_hd = 116.0
 ca_ratio = 390.43
+f_g = 0.02
 h_max = 15.33
 lai = 1.8
+m = 2
+n = 5
 name = 'test2'
 par_ext = 0.5
 resp_f = 0.1
@@ -33,5 +37,3 @@ tau_f = 4.0
 tau_r = 1.04
 yld = 0.17
 zeta = 0.17
-m = 2
-n = 5
