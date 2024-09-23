@@ -40,7 +40,10 @@ def _validate_t_model_args(pft_args: list[NDArray], size_args: list[NDArray]) ->
 
 
 def calculate_heights(
-    h_max: NDArray[np.float32], a_hd: NDArray[np.float32], dbh: NDArray[np.float32]
+    h_max: NDArray[np.float32],
+    a_hd: NDArray[np.float32],
+    dbh: NDArray[np.float32],
+    validate: bool = True,
 ) -> NDArray[np.float32]:
     r"""Calculate tree height under the T Model.
 
@@ -57,7 +60,11 @@ def calculate_heights(
         h_max: Maximum height of the PFT
         a_hd: Initial slope of the height/diameter relationship of the PFT
         dbh: Diameter at breast height of individuals
+        validate: Boolean flag to suppress argument validation
     """
+
+    if validate:
+        _validate_t_model_args(pft_args=[h_max, a_hd], size_args=[dbh])
 
     return h_max * (1 - np.exp(-a_hd * dbh / h_max))
 
@@ -67,6 +74,7 @@ def calculate_crown_areas(
     a_hd: NDArray[np.float32],
     dbh: NDArray[np.float32],
     stem_height: NDArray[np.float32],
+    validate: bool = True,
 ) -> NDArray[np.float32]:
     r"""Calculate tree crown area under the T Model.
 
@@ -85,7 +93,11 @@ def calculate_crown_areas(
         a_hd: Initial slope of the height/diameter relationship of the PFT
         dbh: Diameter at breast height of individuals
         stem_height: Stem height of individuals
+        validate: Boolean flag to suppress argument validation
     """
+
+    if validate:
+        _validate_t_model_args(pft_args=[ca_ratio, a_hd], size_args=[dbh, stem_height])
 
     return ((np.pi * ca_ratio) / (4 * a_hd)) * dbh * stem_height
 
@@ -94,6 +106,7 @@ def calculate_crown_fractions(
     a_hd: NDArray[np.float32],
     stem_height: NDArray[np.float32],
     dbh: NDArray[np.float32],
+    validate: bool = True,
 ) -> NDArray[np.float32]:
     r"""Calculate tree crown fraction under the T Model.
 
@@ -110,7 +123,10 @@ def calculate_crown_fractions(
         a_hd: Initial slope of the height/diameter relationship of the PFT
         stem_height: Stem height of individuals
         dbh: Diameter at breast height of individuals
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(pft_args=[a_hd], size_args=[dbh, stem_height])
 
     return stem_height / (a_hd * dbh)
 
@@ -119,6 +135,7 @@ def calculate_stem_masses(
     rho_s: NDArray[np.float32],
     stem_height: NDArray[np.float32],
     dbh: NDArray[np.float32],
+    validate: bool = True,
 ) -> NDArray[np.float32]:
     r"""Calculate stem mass under the T Model.
 
@@ -134,13 +151,19 @@ def calculate_stem_masses(
         rho_s: Wood density of the PFT
         stem_height: Stem height of individuals
         dbh: Diameter at breast height of individuals
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(pft_args=[rho_s], size_args=[dbh, stem_height])
 
     return (np.pi / 8) * rho_s * (dbh**2) * stem_height
 
 
 def calculate_foliage_masses(
-    sla: NDArray[np.float32], lai: NDArray[np.float32], crown_area: NDArray[np.float32]
+    sla: NDArray[np.float32],
+    lai: NDArray[np.float32],
+    crown_area: NDArray[np.float32],
+    validate: bool = True,
 ) -> NDArray[np.float32]:
     r"""Calculate foliage mass under the T Model.
 
@@ -156,7 +179,10 @@ def calculate_foliage_masses(
         sla: Specific leaf area of the PFT
         lai: Leaf area index of the PFT
         crown_area: Crown area of individuals
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(pft_args=[sla, lai], size_args=[crown_area])
 
     return crown_area * lai * (1 / sla)
 
@@ -167,6 +193,7 @@ def calculate_sapwood_masses(
     stem_height: NDArray[np.float32],
     crown_area: NDArray[np.float32],
     crown_fraction: NDArray[np.float32],
+    validate: bool = True,
 ) -> NDArray[np.float32]:
     r"""Calculate sapwood mass under the T Model.
 
@@ -185,7 +212,13 @@ def calculate_sapwood_masses(
         stem_height: Stem height of individuals
         crown_area: Crown area of individuals
         crown_fraction: Crown fraction of individuals
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(
+            pft_args=[rho_s, ca_ratio],
+            size_args=[stem_height, crown_area, crown_fraction],
+        )
 
     return crown_area * rho_s * stem_height * (1 - crown_fraction / 2) / ca_ratio
 
@@ -195,6 +228,7 @@ def calculate_whole_crown_gpp(
     crown_area: NDArray[np.float32],
     par_ext: NDArray[np.float32],
     lai: NDArray[np.float32],
+    validate: bool = True,
 ) -> NDArray[np.float32]:
     r"""Calculate whole crown gross primary productivity.
 
@@ -209,17 +243,24 @@ def calculate_whole_crown_gpp(
         P = P_0 A_c (1 - e^{-kL})
 
     Args:
+        lai: The leaf area index
+        par_ext: The extinction coefficient
         potential_gpp: Potential GPP per metre squared
         crown_area: The crown area in metres squared
-        par_ext: The extinction coefficient
-        lai: The leaf area index
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(
+            pft_args=[lai, par_ext], size_args=[potential_gpp, crown_area]
+        )
 
     return potential_gpp * crown_area * (1 - np.exp(-(par_ext * lai)))
 
 
 def calculate_sapwood_respiration(
-    resp_s: NDArray[np.float32], sapwood_mass: NDArray[np.float32]
+    resp_s: NDArray[np.float32],
+    sapwood_mass: NDArray[np.float32],
+    validate: bool = True,
 ) -> NDArray[np.float32]:
     r"""Calculate sapwood respiration.
 
@@ -233,12 +274,18 @@ def calculate_sapwood_respiration(
     Args:
         resp_s: The sapwood respiration rate
         sapwood_mass: The individual sapwood mass
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(pft_args=[resp_s], size_args=[sapwood_mass])
+
     return sapwood_mass * resp_s
 
 
 def calculate_foliar_respiration(
-    resp_f: NDArray[np.float32], whole_crown_gpp: NDArray[np.float32]
+    resp_f: NDArray[np.float32],
+    whole_crown_gpp: NDArray[np.float32],
+    validate: bool = True,
 ) -> NDArray[np.float32]:
     r"""Calculate foliar respiration.
 
@@ -254,7 +301,11 @@ def calculate_foliar_respiration(
     Args:
         resp_f: The foliar respiration rate
         whole_crown_gpp: The individual whole crown GPP.
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(pft_args=[resp_f], size_args=[whole_crown_gpp])
+
     return whole_crown_gpp * resp_f
 
 
@@ -263,6 +314,7 @@ def calculate_fine_root_respiration(
     sla: NDArray[np.float32],
     resp_r: NDArray[np.float32],
     foliage_mass: NDArray[np.float32],
+    validate: bool = True,
 ) -> NDArray[np.float32]:
     r"""Calculate foliar respiration.
 
@@ -279,7 +331,10 @@ def calculate_fine_root_respiration(
         sla: The specific leaf area of the PFT.
         resp_r: The respiration rate of fine roots of the PFT.
         foliage_mass: The individual foliage mass.
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(pft_args=[zeta, sla, resp_r], size_args=[foliage_mass])
 
     return zeta * sla * foliage_mass * resp_r
 
@@ -290,6 +345,7 @@ def calculate_net_primary_productivity(
     foliar_respiration: NDArray[np.float32],
     fine_root_respiration: NDArray[np.float32],
     sapwood_respiration: NDArray[np.float32],
+    validate: bool = True,
 ) -> NDArray[np.float32]:
     r"""Calculate net primary productivity.
 
@@ -314,7 +370,18 @@ def calculate_net_primary_productivity(
         foliar_respiration: The total foliar respiration.
         fine_root_respiration: The total fine root respiration
         sapwood_respiration: The total sapwood respiration.
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(
+            pft_args=[yld],
+            size_args=[
+                whole_crown_gpp,
+                foliar_respiration,
+                fine_root_respiration,
+                sapwood_respiration,
+            ],
+        )
 
     return yld * (
         whole_crown_gpp
@@ -330,6 +397,7 @@ def calculate_foliage_and_fine_root_turnover(
     tau_f: NDArray[np.float32],
     tau_r: NDArray[np.float32],
     foliage_mass: NDArray[np.float32],
+    validate: bool = True,
 ) -> NDArray[np.float32]:
     r"""Calculate turnover costs.
 
@@ -350,7 +418,12 @@ def calculate_foliage_and_fine_root_turnover(
         tau_f: The turnover time of foliage
         tau_r: The turnover time of fine roots
         foliage_mass: The foliage mass
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(
+            pft_args=[sla, zeta, tau_f, tau_r], size_args=[foliage_mass]
+        )
 
     return foliage_mass * ((1 / tau_f) + (sla * zeta / tau_r))
 
@@ -367,6 +440,7 @@ def calculate_growth_increments(
     turnover: NDArray[np.float32],
     dbh: NDArray[np.float32],
     stem_height: NDArray[np.float32],
+    validate: bool = True,
 ) -> tuple[NDArray[np.float32], NDArray[np.float32], NDArray[np.float32]]:
     r"""Calculate growth increments.
 
@@ -439,7 +513,14 @@ def calculate_growth_increments(
         turnover: Fine root and foliage turnover cost of individuals
         dbh: Diameter at breast height of individuals
         stem_height: Stem height of individuals
+        validate: Boolean flag to suppress argument validation
     """
+    if validate:
+        _validate_t_model_args(
+            pft_args=[rho_s, a_hd, h_max, lai, ca_ratio, sla, zeta],
+            size_args=[npp, turnover, dbh, stem_height],
+        )
+
     # Rates of change in stem and foliar
     dWsdt = (
         np.pi
