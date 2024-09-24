@@ -257,6 +257,11 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
         self.n_pfts = len(pfts)
         """The number of plant functional types in the Flora instance."""
 
+    def __repr__(self) -> str:
+        """Simple representation of the Flora instance."""
+
+        return f"Flora with {self.n_pfts} functional types: {', '.join(self.keys())}"
+
     @classmethod
     def _from_file_data(cls, file_data: dict) -> Flora:
         """Create a Flora object from a JSON string.
