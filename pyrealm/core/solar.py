@@ -241,7 +241,7 @@ def calc_ppfd_from_tau_ra_d(
     .. math::
 
         ppfd = (1.0 \times 10^{-6}) \cdot k\_fFEC \cdot (1.0 - k\_alb\_vis) \cdot \tau \
-            cdot ra\_d
+            \cdot ra\_d
 
     Args:
         tau          : bulk transmissivity, unitless
