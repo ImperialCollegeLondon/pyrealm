@@ -511,7 +511,6 @@ def calculate_growth_increments(
     * the stem mass (:math:`\Delta W_s`), and 
     * the foliar mass (:math:`\Delta W_f`). 
         
-        
     The stem diameter increment can be calculated using the available productivity for
     growth and the rates of change in stem (:math:`\textrm{d}W_s / \textrm{d}t`) and
     foliar masses (:math:`\textrm{d}W_f / \textrm{d}t`): 
@@ -573,6 +572,10 @@ def calculate_growth_increments(
         dbh: Diameter at breast height of individuals
         stem_height: Stem height of individuals
         validate: Boolean flag to suppress argument validation
+    
+    Returns:
+        A tuple of arrays containing the calculated increments in stem diameter, stem
+        mass and foliar mass.
     """
     if validate:
         _validate_t_model_args(
@@ -602,15 +605,21 @@ def calculate_growth_increments(
     return (delta_d, dWsdt * delta_d, dWfdt * delta_d)
 
 
-def calculate_t_model(
+def calculate_t_model_allometry(
     pft_data: dict[str, NDArray[np.float32]], dbh: NDArray[np.float32]
 ) -> dict[str, NDArray[np.float32]]:
-    """Calculate T Model predictions across cohort data.
+    """Calculate T Model allometric predictions across cohort data.
 
-    This method calculate predictions of stem allometries under the T Model
+    This method calculate predictions of stem allometries for stem height, crown area,
+    crown fraction, stem mass, foliage mass and sapwood mass under the T Model
     :cite:`Li:2014bc`, given diameters at breast height for a set of plant functional
     traits.
 
+    Args:
+        pft_data: A dictionary of plant functional trait data, as for example returned
+            from :attr:`<pyrealm.demography.flora.Flora.data>Flora.data` attribute.
+        dbh: An array of diameter at breast height values for which to predict stem
+            allometry values.
     """
 
     stem_data = {"dbh": dbh}
@@ -652,6 +661,80 @@ def calculate_t_model(
         stem_height=stem_data["stem_height"],
         crown_area=stem_data["crown_area"],
         crown_fraction=stem_data["crown_fraction"],
+    )
+
+    return stem_data
+
+
+def calculate_t_model_growth(
+    pft_data: dict[str, NDArray[np.float32]],
+    dbh: NDArray[np.float32],
+    potential_gpp: NDArray[np.float32],
+) -> dict[str, NDArray[np.float32]]:
+    """Calculate T Model predictions across cohort data.
+
+    This method calculate predictions of stem allometries and growth predictions under
+    the T Model :cite:`Li:2014bc`, given both diameters at breast height for a set of
+    plant functional traits and potential gross primary productivity estimates for each
+    height.
+    """
+
+    stem_data = calculate_t_model_allometry(pft_data=pft_data, dbh=dbh)
+
+    stem_data["whole_crown_gpp"] = calculate_whole_crown_gpp(
+        potential_gpp=potential_gpp,
+        crown_area=stem_data["crown_area"],
+        par_ext=pft_data["par_ext"],
+        lai=pft_data["lai"],
+    )
+
+    stem_data["sapwood_respiration"] = calculate_sapwood_respiration(
+        resp_s=pft_data["lai"], sapwood_mass=stem_data["sapwood_mass"]
+    )
+
+    stem_data["foliar_respiration"] = calculate_foliar_respiration(
+        resp_f=pft_data["resp_f"], whole_crown_gpp=stem_data["whole_crown_gpp"]
+    )
+
+    stem_data["fine_root_respiration"] = calculate_fine_root_respiration(
+        zeta=pft_data["zeta"],
+        sla=pft_data["sla"],
+        resp_r=pft_data["resp_r"],
+        foliage_mass=stem_data["foliage_mass"],
+    )
+
+    stem_data["npp"] = calculate_net_primary_productivity(
+        yld=pft_data["yld"],
+        whole_crown_gpp=stem_data["whole_crown_gpp"],
+        foliar_respiration=stem_data["foliar_respiration"],
+        fine_root_respiration=stem_data["fine_root_respiration"],
+        sapwood_respiration=stem_data["sapwood_respiration"],
+    )
+
+    stem_data["turnover"] = calculate_foliage_and_fine_root_turnover(
+        sla=pft_data["sla"],
+        zeta=pft_data["zeta"],
+        tau_f=pft_data["tau_f"],
+        tau_r=pft_data["tau_r"],
+        foliage_mass=stem_data["foliage_mass"],
+    )
+
+    (
+        stem_data["delta_dbh"],
+        stem_data["delta_stem_mass"],
+        stem_data["delta_foliage_mass"],
+    ) = calculate_growth_increments(
+        rho_s=pft_data["rho_s"],
+        a_hd=pft_data["a_hd"],
+        h_max=pft_data["h_max"],
+        lai=pft_data["lai"],
+        ca_ratio=pft_data["ca_ratio"],
+        sla=pft_data["sla"],
+        zeta=pft_data["zeta"],
+        npp=stem_data["npp"],
+        turnover=stem_data["turnover"],
+        dbh=stem_data["dbh"],
+        stem_height=stem_data["stem_height"],
     )
 
     return stem_data

@@ -36,7 +36,8 @@ from pyrealm.demography.canopy_functions import (
 )
 from pyrealm.demography.t_model_functions import (
     calculate_dbh_from_height,
-    calculate_t_model,
+    calculate_t_model_allometry,
+    calculate_t_model_growth,
 )
 
 if sys.version_info[:2] >= (3, 11):
@@ -384,7 +385,87 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
             # Broadcast the dbh to a  (n_heights, n_pfts)
             dbh_arr = np.broadcast_to(dbh[:, None], (dbh.size, self.n_pfts))
 
-        return calculate_t_model(pft_data=self.data, dbh=dbh_arr)
+        return calculate_t_model_allometry(pft_data=self.data, dbh=dbh_arr)
+
+    def get_growth(
+        self,
+        potential_gpp: NDArray[np.float32],
+        dbh: NDArray[np.float32] | None = None,
+        stem_height: NDArray[np.float32] | None = None,
+    ) -> dict[str, NDArray]:
+        """Calculate T Model scalings for the Flora members.
+
+        This method calculates the allometric predictions of the T Model for all of the
+        plant functional types within a Flora, given an array of stem sizes at which to
+        calculate the predictions. The T Model uses diameter at breast height (DBH) as
+        the fundamental metric of stem size but this method will also accept a set of
+        stem heights as an alternative size metric. Stem heights are converted back into
+        the expected DBH before calculating the allometric predictions - if any of the
+        stem heights are higher than the maximum height for a PFT, these will be shown
+        as `np.nan` values.
+
+        Both ``dbh`` and ``stem_height`` must be provided as one-dimensional arrays and
+        it is an error to provide both. The method returns a dictionary of the
+        allometric predictions of the T Model:
+
+
+        * "whole_crown_gpp"
+        * "sapwood_respiration"
+        * "foliar_respiration"
+        * "fine_root_respiration"
+        * "npp"
+        * "turnover"
+        * "delta_dbh"
+        * "delta_stem_mass"
+        * "delta_foliage_mass"],
+
+        Each dictionary entry is a 2D array with PFTs as columns and the predictions for
+        each size value as rows.
+
+        Args:
+            potential_gpp: An array of potential GPP values.
+            dbh: An array of diameter at breast height values.
+            stem_height: An array of stem height values.
+        """
+
+        # Need exclusively one of dbh or stem_height - use XOR
+        if not ((dbh is None) ^ (stem_height is None)):
+            raise ValueError("Provide one of either dbh or stem_height")
+
+        if stem_height is not None:
+            # Check array dimensions
+            if stem_height.ndim != 1:
+                raise ValueError("Stem heights must be a one dimensional array")
+
+            # Convert stem heights back into an array of initial DBH values
+            # - broadcast to (n_heights, n_pfts)
+            n_size = stem_height.size
+            stem_height = np.broadcast_to(stem_height[:, None], (n_size, self.n_pfts))
+            dbh_arr = calculate_dbh_from_height(
+                h_max=self.data["h_max"],
+                a_hd=self.data["a_hd"],
+                stem_height=stem_height,
+            )
+        elif dbh is not None:
+            # Check array dimensions
+            if dbh.ndim != 1:
+                raise ValueError("DBH must be a one dimensional array")
+
+            # Broadcast the dbh to a  (n_heights, n_pfts)
+            n_size = dbh.size
+            dbh_arr = np.broadcast_to(dbh[:, None], (n_size, self.n_pfts))
+
+        if not ((potential_gpp.ndim == 1) and (potential_gpp.size == n_size)):
+            raise ValueError(
+                "GPP must be a one dimensional array of the same "
+                "size as DBH or stem height"
+            )
+
+        gpp_arr = np.broadcast_to(potential_gpp[:, None], (n_size, self.n_pfts))
+
+        return calculate_t_model_growth(
+            pft_data=self.data, dbh=dbh_arr, potential_gpp=gpp_arr
+        )
 
 
 #     @dataclass
