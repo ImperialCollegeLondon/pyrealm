@@ -417,7 +417,7 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
         * "turnover"
         * "delta_dbh"
         * "delta_stem_mass"
-        * "delta_foliage_mass"],
+        * "delta_foliage_mass"
 
         Each dictionary entry is a 2D array with PFTs as columns and the predictions for
         each size value as rows.
