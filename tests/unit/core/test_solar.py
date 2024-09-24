@@ -273,16 +273,16 @@ def test_calc_ppfd(
     argnames="sf, tc, expected",
     argvalues=[(np.array([1.0]), np.array([23.0]), np.array([84.000000]))],
 )
-def test_calc_rnl(sf, tc, expected):
-    """Tests calc_rnl.
+def test_calc_net_longwave_radiation(sf, tc, expected):
+    """Tests calc_net_longwave_radiation.
 
     This test is intended to verify the implemented maths.
     """
-    from pyrealm.core.solar import calc_rnl
+    from pyrealm.core.solar import calc_net_longwave_radiation
 
     Const = CoreConst()
 
-    result = calc_rnl(sf, tc, Const.k_b, Const.k_A)
+    result = calc_net_longwave_radiation(sf, tc, Const.k_b, Const.k_A)
 
     assert np.allclose(result, expected)
 

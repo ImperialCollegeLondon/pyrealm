@@ -334,7 +334,9 @@ def calc_ppfd(
     return ppfd
 
 
-def calc_rnl(sf: NDArray, tc: NDArray, k_b: float, k_A: float) -> NDArray:
+def calc_net_longwave_radiation(
+    sf: NDArray, tc: NDArray, k_b: float, k_A: float
+) -> NDArray:
     r"""Calculates net longwave radiation, rnl, W/m^2.
 
     This function calculates net longwave radiation in W/m^2 using the methods
@@ -691,13 +693,13 @@ def calc_solar_elevation(site_obs_data: LocationDateTime) -> NDArray:
         >>> import numpy as np
         >>> from pyrealm.core.calendar import LocationDateTime
         >>> from pyrealm.core.solar import calc_solar_elevation
-        >>> # Create instance of LocatioDateTime dataclass
+        >>> # Create instance of LocationDateTime dataclass
         >>> latitude = -35.058333
         >>> longitude = 147.34167
         >>> year_date_time = np.array([np.datetime64("1995-10-25T10:30")])
         >>> UTC_offset = 150.0
-        >>> ldt = LocationDateTime(latitude = latitude, longitude = longitude, \
-            year_date_time = year_date_time, UTC_offset = UTC_offset)
+        >>> ldt = LocationDateTime(latitude = latitude, longitude = longitude,\
+        ...     year_date_time = year_date_time, UTC_offset = UTC_offset)
         >>> # Run solar elevation calculation
         >>> calc_solar_elevation(ldt)
         array([1.0615713])

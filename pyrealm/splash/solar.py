@@ -16,10 +16,10 @@ from pyrealm.core.solar import (
     calc_distance_factor,
     calc_heliocentric_longitudes,
     calc_lat_delta_intermediates,
+    calc_net_longwave_radiation,
     calc_net_rad_crossover_hour_angle,
     calc_nighttime_net_radiation,
     calc_ppfd_from_tau_ra_d,
-    calc_rnl,
     calc_rw,
     calc_sunset_hour_angle,
     calc_transmissivity,
@@ -146,7 +146,9 @@ class DailySolarFluxes:
 
         # Estimate net longwave radiation (rnl), W/m^2
         # Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
-        self.rnl = calc_rnl(sf, tc, self.core_const.k_b, self.core_const.k_A)
+        self.rnl = calc_net_longwave_radiation(
+            sf, tc, self.core_const.k_b, self.core_const.k_A
+        )
 
         # Calculate net radiation cross-over hour angle (hn), degrees
         self.hn = calc_net_rad_crossover_hour_angle(
