@@ -40,44 +40,69 @@ class Canopy:
         canopy_gap_fraction: float = 0.05,
         layer_tolerance: float = 0.001,
     ) -> None:
-        # Calculate community wide properties: total crown area and maximum height
-        self.total_community_crown_area: float = (
-            community.cohort_data["crown_area"] * community.cohort_data["n_individuals"]
-        ).sum()
+        self.canopy_gap_fraction: float = canopy_gap_fraction
+        """Canopy gap fraction."""
+        self.layer_tolerance: float = layer_tolerance
+        """Numerical tolerance for solving canopy layer closure."""
+        self.total_community_crown_area: float
         """Total crown area across individuals in the community (metres 2)."""
-
-        self.max_stem_height: float = community.cohort_data["stem_height"].max()
+        self.max_stem_height: float
         """Maximum height of any individual in the community (metres)."""
-
-        self.crown_area_per_layer: float = community.cell_area * (
-            1 - canopy_gap_fraction
-        )
+        self.crown_area_per_layer: float
         """Total crown area permitted in a single canopy layer, given the available
         cell area of the community and its canopy gap fraction."""
+        self.n_layers: int
+        """Total number of canopy layers."""
+        self.n_cohorts: int
+        """Total number of cohorts in the canopy."""
+        self.layer_heights: NDArray[np.float32]
+        """Column vector of the heights of canopy layers."""
+        self.stem_relative_radius: NDArray[np.float32]
+        """Relative radius values of stems at canopy layer heights."""
+        self.stem_crown_area: NDArray[np.float32]
+        """Stem projected crown area at canopy layer heights."""
+        self.stem_leaf_area: NDArray[np.float32]
+        """Stem projected leaf area at canopy layer heights."""
 
-        self.n_layers: int = int(
+        self._calculate_canopy(community=community)
+
+    def _calculate_canopy(self, community: Community) -> None:
+        """Calculate the canopy structure.
+
+        This private method runs the calculations needed to populate the instance
+        attributes.
+
+        Args:
+            community: The Community object passed to the instance.
+        """
+
+        # Calculate community wide properties: total crown area, maximum height, crown
+        # area required to fill a layer and total number of canopy layers
+        self.total_community_crown_area = (
+            community.cohort_data["crown_area"] * community.cohort_data["n_individuals"]
+        ).sum()
+
+        self.max_stem_height = community.cohort_data["stem_height"].max()
+
+        self.crown_area_per_layer = community.cell_area * (1 - self.canopy_gap_fraction)
+
+        self.n_layers = int(
             np.ceil(self.total_community_crown_area / self.crown_area_per_layer)
         )
-        """Total number of canopy layers."""
-
-        self.n_cohorts: int = community.number_of_cohorts
-        """Total number of cohorts in the canopy."""
+        self.n_cohorts = community.number_of_cohorts
 
         # Find the closure heights of the canopy layers under the perfect plasticity
         # approximation by solving Ac(z) - L_n = 0 across the community where L is the
         # total cumulative crown area in layer n and above, discounted by the canopy gap
         # fraction.
 
-        self.layer_heights: NDArray[np.float32] = np.zeros(
-            (self.n_layers, 1), dtype=np.float32
-        )
-        """Column vector of the heights of canopy layers."""
+        self.layer_heights = np.zeros((self.n_layers, 1), dtype=np.float32)
 
         # Loop over the layers except for the final layer, which will be the partial
         # remaining vegetation below the last closed layer.
         starting_guess = self.max_stem_height
         for layer in np.arange(self.n_layers - 1):
-            target_area = (layer + 1) * community.cell_area * (1 - canopy_gap_fraction)
+            target_area = (layer + 1) * self.crown_area_per_layer
 
             # TODO - the solution here is typically closer to the upper bracket, might
             # be a better algorithm to find the root (#293).
@@ -95,7 +120,7 @@ class Canopy:
                     False,  # validate
                 ),
                 bracket=(0, starting_guess),
-                xtol=layer_tolerance,
+                xtol=self.layer_tolerance,
             )
 
             if not solution.converged:
@@ -109,41 +134,33 @@ class Canopy:
         # NOTE - here and in the calls below, validate=False is enforced because the
         # Community class structures and code should guarantee valid inputs and so
         # turning off the validation internally should simply speed up the code.
-        self.stem_relative_radius: NDArray[np.float32] = (
-            calculate_relative_canopy_radius_at_z(
-                z=self.layer_heights,
-                stem_height=community.cohort_data["stem_height"],
-                m=community.cohort_data["m"],
-                n=community.cohort_data["n"],
-                validate=False,
-            )
+        self.stem_relative_radius = calculate_relative_canopy_radius_at_z(
+            z=self.layer_heights,
+            stem_height=community.cohort_data["stem_height"],
+            m=community.cohort_data["m"],
+            n=community.cohort_data["n"],
+            validate=False,
         )
-        """Relative radius values of stems at canopy layer heights."""
 
-        self.stem_crown_area: NDArray[np.float32] = (
-            calculate_stem_projected_crown_area_at_z(
-                z=self.layer_heights,
-                q_z=self.stem_relative_radius,
-                crown_area=community.cohort_data["crown_area"],
-                stem_height=community.cohort_data["stem_height"],
-                q_m=community.cohort_data["q_m"],
-                z_max=community.cohort_data["canopy_z_max"],
-                validate=False,
-            )
+        # Calculate projected crown area of a cohort stem at canopy closure heights.
+        self.stem_crown_area = calculate_stem_projected_crown_area_at_z(
+            z=self.layer_heights,
+            q_z=self.stem_relative_radius,
+            crown_area=community.cohort_data["crown_area"],
+            stem_height=community.cohort_data["stem_height"],
+            q_m=community.cohort_data["q_m"],
+            z_max=community.cohort_data["canopy_z_max"],
+            validate=False,
         )
-        """Stem projected crown area at canopy layer heights."""
 
-        # Find the stem projected leaf area at canopy closure heights.
-        self.stem_leaf_area: NDArray[np.float32] = (
-            calculate_stem_projected_leaf_area_at_z(
-                z=self.layer_heights,
-                q_z=self.stem_relative_radius,
-                crown_area=community.cohort_data["crown_area"],
-                stem_height=community.cohort_data["stem_height"],
-                f_g=community.cohort_data["f_g"],
-                q_m=community.cohort_data["q_m"],
-                z_max=community.cohort_data["canopy_z_max"],
-                validate=False,
-            )
+        # Find the projected leaf area of a cohort stem at canopy closure heights.
+        self.stem_leaf_area = calculate_stem_projected_leaf_area_at_z(
+            z=self.layer_heights,
+            q_z=self.stem_relative_radius,
+            crown_area=community.cohort_data["crown_area"],
+            stem_height=community.cohort_data["stem_height"],
+            f_g=community.cohort_data["f_g"],
+            q_m=community.cohort_data["q_m"],
+            z_max=community.cohort_data["canopy_z_max"],
+            validate=False,
         )
-        """Stem projected leaf area at canopy layer heights."""
