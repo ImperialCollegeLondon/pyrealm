@@ -97,6 +97,14 @@ def calculate_dbh_from_height(
 
          D = \frac{H \left( \log \left(\frac{H}{H_{m}-H}\right)\right)}{a}
 
+    Warning:
+        Where the stem height is greater than the maximum height for a PFT, then
+        :math:`D` is undefined and the return array will contain `np.nan`. Where the
+        stem height equals the maximum height, the model predicts an infinite stem
+        diameter: the `h_max` parameter is the asymptotic maximum stem height of an
+        exponential function. Similarly, heights very close the maximum height may lead
+        to unrealistically large predictions of DBH.
+
     Args:
         h_max: Maximum height of the PFT
         a_hd: Initial slope of the height/diameter relationship of the PFT
@@ -107,12 +115,17 @@ def calculate_dbh_from_height(
     if validate:
         _validate_t_model_args(pft_args=[h_max, a_hd], size_args=[stem_height])
 
-    if np.any(stem_height > h_max):
-        raise ValueError(
-            "Stem height values must not be greater than maximum stem height"
-        )
+    # The equation here blows up in a couple of ways:
+    # - H > h_max leads to negative logs which generates np.nan with an invalid value
+    #   warning. The np.nan here is what we want to happen, so the warning needs
+    #   suppressing.
+    # - H = h_max generates a divide by zero which returns inf with a warning. Here the
+    #   answer should be h_max so that needs trapping.
 
-    return (h_max * np.log(h_max / (h_max - stem_height))) / a_hd
+    with np.testing.suppress_warnings() as sup:
+        sup.filter(RuntimeWarning, "divide by zero encountered in divide")
+        sup.filter(RuntimeWarning, "invalid value encountered in log")
+        return (h_max * np.log(h_max / (h_max - stem_height))) / a_hd
 
 
 def calculate_crown_areas(

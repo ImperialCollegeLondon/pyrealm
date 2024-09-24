@@ -678,21 +678,30 @@ class TestTModel:
         assert str(excep.value).startswith(excep_msg)
 
 
-def test_calculate_dbh_from_height_overheight():
-    """Test inverted calculation of dbh from height raises with overheight stems.
+def test_calculate_dbh_from_height_edge_cases():
+    """Test inverted calculation of dbh from height handles edges cases.
 
-    If H > h_max, dbh is not calculable and should raise a ValueError
+    * If H > h_max, dbh is not calculable and should be np.nan
+    * If H = h_max, dbh is infinite.
     """
 
     from pyrealm.demography.t_model_functions import calculate_dbh_from_height
 
-    pft_h_max_values = np.array([25.33, 15.33])
+    pft_h_max_values = np.array([20, 30])
     pft_a_hd_values = np.array([116.0, 116.0])
-    stem_heights = np.array([30, 20])
+    stem_heights = np.array([[0], [10], [20], [30], [40]])
 
-    with pytest.raises(ValueError):
-        _ = calculate_dbh_from_height(
-            h_max=pft_h_max_values,
-            a_hd=pft_a_hd_values,
-            stem_height=stem_heights,
-        )
+    dbh = calculate_dbh_from_height(
+        h_max=pft_h_max_values,
+        a_hd=pft_a_hd_values,
+        stem_height=stem_heights,
+    )
+
+    # first row should be all zeros (zero height gives zero diameter)
+    assert np.all(dbh[0, :] == 0)
+
+    # Infinite entries
+    assert np.all(np.isinf(dbh) == np.array([[0, 0], [0, 0], [1, 0], [0, 1], [0, 0]]))
+
+    # Undefined entries
+    assert np.all(np.isnan(dbh) == np.array([[0, 0], [0, 0], [0, 0], [1, 0], [1, 1]]))
