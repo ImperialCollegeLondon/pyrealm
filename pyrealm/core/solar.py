@@ -861,12 +861,12 @@ def equation_of_time(day_angle: NDArray) -> NDArray:
 
     .. math::
 
-    E_t = \left( 0.000075
-    + 0.001868 \cdot \cos(\Gamma)
-    - 0.032077 \cdot \sin(\Gamma)
-    - 0.014615 \cdot \cos(2\Gamma)
-    - 0.04089 \cdot \sin(2\Gamma) \right)
-    \times 229.18
+        E_t = \left( 0.000075
+            + 0.001868 \cdot \cos(\Gamma)
+            - 0.032077 \cdot \sin(\Gamma)
+            - 0.014615 \cdot \cos(2\Gamma)
+            - 0.04089 \cdot \sin(2\Gamma) \right)
+            \times 229.18
 
     Where gamma is the day angle.
 
