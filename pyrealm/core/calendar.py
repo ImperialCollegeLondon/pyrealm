@@ -134,7 +134,6 @@ class LocationDateTime:
         >>> ldt = LocationDateTime(
         ...     latitude=-35.058333,
         ...     longitude=147.34167,
-        ...     UTC_offset=10,
         ...     year_date_time=np.array([np.datetime64("2024-08-12T10:30")])
         ... )
         >>> print(ldt.latitude_rad)
@@ -151,11 +150,9 @@ class LocationDateTime:
     """The longitude of the location in degrees."""
     longitude_rad: float = field(init=False)
     """The longitude of the location in radians, calculated automatically."""
-    UTC_offset: int
-    """The offset from Coordinated Universal Time (UTC) for the location."""
     year_date_time: np.ndarray
     """An array of np.datetime64 values corresponding to observations at the 
-    location."""
+    location (local time)."""
     julian_days: np.ndarray = field(init=False)
     """An array of Julian day of the year numbers calculated from the
     ``year_date_time``."""
