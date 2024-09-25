@@ -101,70 +101,83 @@ def calculate_canopy_r0(
     return 1 / q_m * np.sqrt(crown_area / np.pi)
 
 
-def _validate_z_args(z: NDArray[np.float32], *args: NDArray[np.float32]) -> None:
-    """Shared validation routine for vertical height arguments.
-
-    The canopy functions that take a height argument ``z`` can take a range of input
-    shapes for ``z``, alongside a set of other row arrays representing cohort
-    properties. This function is used to check that the cohort properties are of equal
-    length and that the ``z`` value has one of the accepted shapes described in
-    :meth:`~pyrealm.demography.canopy_functions.calculate_relative_canopy_radius_at_z`.
-
-    Args:
-        z: The inputs to the ``z`` argument of a function.
-        args: Other arrays representing cohort properties.
-    """
-
-    if z.size == 1 or z.ndim == 1:
-        # All same height or stem specific heights - check z is either a scalar or also
-        # a row vector of the right length.
-        check_input_shapes(z, *args)
-        return
-    elif z.ndim == 2 and z.shape[1] == 1:
-        # Z is a column vector, just check stem properties.
-        check_input_shapes(*args)
-        return
-
-    raise ValueError("Invalid shape for the z value.")
-
-
-def _validate_q_z(
+def _validate_z_qz_args(
     z: NDArray[np.float32],
-    q_z: NDArray[np.float32],
-    stem_property: NDArray[np.float32],
+    stem_properties: list[NDArray[np.float32]],
+    q_z: NDArray[np.float32] | None = None,
 ) -> None:
-    """Shared validation routine for relative radius arguments.
+    """Shared validation of for canopy function arguments.
 
-    The functions
-    :meth:`~pyrealm.demography.canopy_functions.calculate_stem_projected_canopy_area_at_z`
-    and
-    :meth:`~pyrealm.demography.canopy_functions.calculate_stem_projected_leaf_area_at_z`
-    both require the arguments ``z`` and ``q_z``, where ``z`` is an array of vertical
-    heights and ``q_z`` is the relative canopy radius at those heights for a set of
-    stems. This function checks that the inputs are congruent with each other, and with
-    the shape of a stem property argument,  given the set of expected forms of ``z``
-    described in
-    :meth:`~pyrealm.demography.canopy_functions.calculate_relative_canopy_radius_at_z`.
+    Several of the canopy functions in this module require a vertical height (``z``)
+    argument and, in some cases, the relative canopy radius (``q_z``) at that height.
+    These arguments need to have shapes that are congruent with each other and with the
+    arrays providing stem properties for which values are calculated.
 
+    This function provides the following validation checks (see also the documentation
+    of accepted shapes for ``z`` in
+    :meth:`~pyrealm.demography.canopy_functions.calculate_relative_canopy_radius_at_z`).
+
+    * Stem properties are identically shaped row (1D) arrays.
+    * The ``z`` argument is then one of:
+        * a scalar arrays (i.e. np.array(42) or np.array([42])),
+        * a row array with identical shape to the stem properties, or
+        * a column vector array (i.e. with shape ``(N, 1)``).
+    * If ``q_z`` is provided then:
+        * if ``z`` is a row array, ``q_z`` must then have identical shape, or
+        * if ``z`` is a column array ``(N, 1)``, ``q_z`` must then have shape ``(N,
+          n_stem_properties``).
 
     Args:
-        z: The input to the ``z`` argument.
-        q_z: The input to the ``q_z`` argument.
-        stem_property: An argument input representing a stem property.
+        z: An array input to the ``z`` argument of a canopy function.
+        stem_properties: A list of array inputs representing stem properties.
+        q_z: An optional array input to the ``q_z`` argument of a canopy function.
     """
 
-    if z.size == 1 or z.ndim == 1:
-        # All same height or stem specific heights - q_z must then also be row vector of
-        # the same length as the stem propertys and z must be scalar or a row_vector.
-        check_input_shapes(z, q_z, stem_property)
-        return
-    elif z.ndim == 2 and z.shape[1] == 1:
-        # z is a column array, so check q_z is a matrix
-        if q_z.shape != (z.size, stem_property.size):
-            raise ValueError("Invalid shape for q_z.")
-        return
+    # Check the stem properties
+    try:
+        stem_shape = check_input_shapes(*stem_properties)
+    except ValueError:
+        raise ValueError("Stem properties are not of equal size")
 
-    raise ValueError("Invalid shape for the z value.")
+    if len(stem_shape) > 1:
+        raise ValueError("Stem properties are not row arrays")
+
+    # Record the number of stems
+    n_stems = stem_shape[0]
+
+    # Trap error conditions for z array
+    if z.size == 1:
+        pass
+    elif (z.ndim == 1) and (z.shape != stem_shape):
+        raise ValueError(
+            f"The z argument is a row array (shape: {z.shape}) but is not congruent "
+            f"with the cohort data (shape: {stem_shape})."
+        )
+    elif (z.ndim == 2) and (z.shape[1] != 1):
+        raise ValueError(
+            f"The z argument is two dimensional (shape: {z.shape}) but is "
+            "not a column array."
+        )
+    elif z.ndim > 2:
+        raise ValueError(
+            f"The z argument (shape: {z.shape}) is not a row or column vector array"
+        )
+
+    # Now test q_z congruence with z if provided
+    if q_z is not None:
+        if ((z.size == 1) or (z.ndim == 1)) and (z.shape != q_z.shape):
+            raise ValueError(
+                f"The q_z argument (shape: {q_z.shape}) is not a row array "
+                f"matching stem properties (shape: {stem_shape})"
+            )
+        elif (z.ndim == 2) and (q_z.shape != (z.size, n_stems)):
+            raise ValueError(
+                f"The q_z argument (shape: {q_z.shape}) is not a 2D array congruent "
+                f"with the broadcasted shape of the z argument (shape: {z.shape}) "
+                f"and stem property arguments (shape: {stem_shape})"
+            )
+
+    return
 
 
 def calculate_relative_canopy_radius_at_z(
@@ -208,7 +221,7 @@ def calculate_relative_canopy_radius_at_z(
     """
 
     if validate:
-        _validate_z_args(z, stem_height, m, n)
+        _validate_z_qz_args(z=z, stem_properties=[stem_height, m, n])
 
     z_over_height = z / stem_height
 
@@ -246,8 +259,9 @@ def calculate_stem_projected_crown_area_at_z(
     """
 
     if validate:
-        _validate_z_args(z, stem_height, crown_area, q_m, z_max)
-        _validate_q_z(z, q_z, crown_area)
+        _validate_z_qz_args(
+            z=z, stem_properties=[stem_height, crown_area, q_m, z_max], q_z=q_z
+        )
 
     # Calculate A_p
     # Calculate Ap given z > zm
@@ -307,8 +321,9 @@ def solve_community_projected_canopy_area(
     z_arr = np.array(z)
 
     if validate:
-        _validate_z_args(
-            z_arr, n_individuals, crown_area, stem_height, m, n, q_m, z_max
+        _validate_z_qz_args(
+            z=z_arr,
+            stem_properties=[n_individuals, crown_area, stem_height, m, n, q_m, z_max],
         )
 
     q_z = calculate_relative_canopy_radius_at_z(
@@ -370,8 +385,9 @@ def calculate_stem_projected_leaf_area_at_z(
     #       lean as possible, as it used within solve_community_projected_canopy_area.
 
     if validate:
-        _validate_z_args(z, crown_area, stem_height, f_g, q_m, z_max)
-        _validate_q_z(z, q_z, crown_area)
+        _validate_z_qz_args(
+            z=z, stem_properties=[crown_area, stem_height, f_g, q_m, z_max], q_z=q_z
+        )
 
     # Calculate Ac terms
     A_c_terms = crown_area * (q_z / q_m) ** 2
