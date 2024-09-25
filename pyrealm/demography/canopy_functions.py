@@ -10,7 +10,7 @@ from pyrealm.core.utilities import check_input_shapes
 
 def calculate_canopy_q_m(
     m: float | NDArray[np.float32], n: float | NDArray[np.float32]
-) -> NDArray[np.float32]:
+) -> float | NDArray[np.float32]:
     """Calculate the canopy scaling paramater ``q_m``.
 
     The value of q_m is a constant canopy scaling parameter derived from the ``m`` and
@@ -30,7 +30,7 @@ def calculate_canopy_q_m(
 
 def calculate_canopy_z_max_proportion(
     m: float | NDArray[np.float32], n: float | NDArray[np.float32]
-) -> NDArray[np.float32]:
+) -> float | NDArray[np.float32]:
     r"""Calculate the z_m proportion.
 
     The z_m proportion (:math:`p_{zm}`) is the constant proportion of stem height at
