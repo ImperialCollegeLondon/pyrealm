@@ -85,7 +85,8 @@ def test_calculate_r_0_values(fixture_canopy_shape, crown_areas, expected_r0):
 
 
 ZQZInput = namedtuple(
-    "ZQZInput", ["z", "stem", "more_stem", "q_z", "outcome", "excep_msg"]
+    "ZQZInput",
+    ["z", "stem", "more_stem", "q_z", "outcome", "excep_msg", "output_shape"],
 )
 """Simple named tuple to make inputs to z and qz checking a bit clearer.
 
@@ -96,7 +97,7 @@ Contents:
 * a value for q_z array or None
 * the validation outcome: a pytest.raises or does_not_raise context handler
 * the start of the expected message on failure or None.
-
+* the expected shape of successful output
 
 The two stem property elements allow the number of properties to be controlled at
 the test level (differing number of args for different functions) but also to
@@ -105,7 +106,9 @@ example a total of 3 stem properties:
 
 .. code:: python
 
-    z, stem, more_stem, q_z, outcome, excep_msg = fixture_z_qz_stem_properties
+    z, stem, more_stem, q_z, outcome, excep_msg, exp_shape = (
+        fixture_z_qz_stem_properties
+    )
     stem_args = [stem, * more_stem * 2]
 """
 
@@ -132,6 +135,7 @@ def fixture_z_qz_stem_properties(request):
                 q_z=None,
                 outcome=pytest.raises(ValueError),
                 excep_msg="Stem properties are not of equal size",
+                output_shape=None,
             )
         case "fail_stem_props_not_1D":
             return ZQZInput(
@@ -141,6 +145,7 @@ def fixture_z_qz_stem_properties(request):
                 q_z=None,
                 outcome=pytest.raises(ValueError),
                 excep_msg="Stem properties are not row arrays",
+                output_shape=None,
             )
         case "fail_1D_z_not_congruent_with_stem":
             return ZQZInput(
@@ -151,6 +156,7 @@ def fixture_z_qz_stem_properties(request):
                 outcome=pytest.raises(ValueError),
                 excep_msg="The z argument is a row array (shape: (5,)) but is not "
                 "congruent with the cohort data (shape: (4,))",
+                output_shape=None,
             )
         case "fail_2D_z_not_column_array":
             return ZQZInput(
@@ -161,6 +167,7 @@ def fixture_z_qz_stem_properties(request):
                 outcome=pytest.raises(ValueError),
                 excep_msg="The z argument is two dimensional (shape: (5, 2)) but is "
                 "not a column array.",
+                output_shape=None,
             )
         case "fail_z_more_than_2D":
             return ZQZInput(
@@ -171,6 +178,7 @@ def fixture_z_qz_stem_properties(request):
                 outcome=pytest.raises(ValueError),
                 excep_msg="The z argument (shape: (5, 2, 6)) is not "
                 "a row or column vector array",
+                output_shape=None,
             )
         case "pass_0D_z":
             return ZQZInput(
@@ -180,6 +188,7 @@ def fixture_z_qz_stem_properties(request):
                 q_z=None,
                 outcome=does_not_raise(),
                 excep_msg=None,
+                output_shape=(4,),
             )
         case "pass_1D_scalar_z":
             return ZQZInput(
@@ -189,6 +198,7 @@ def fixture_z_qz_stem_properties(request):
                 q_z=None,
                 outcome=does_not_raise(),
                 excep_msg=None,
+                output_shape=(4,),
             )
         case "pass_1D_row_array_z":
             return ZQZInput(
@@ -198,6 +208,7 @@ def fixture_z_qz_stem_properties(request):
                 q_z=None,
                 outcome=does_not_raise(),
                 excep_msg=None,
+                output_shape=(4,),
             )
         case "pass_2D_column_array_z":
             return ZQZInput(
@@ -207,6 +218,7 @@ def fixture_z_qz_stem_properties(request):
                 q_z=None,
                 outcome=does_not_raise(),
                 excep_msg=None,
+                output_shape=(5, 4),
             )
         case "fail_0D_z_but_q_z_not_row":
             return ZQZInput(
@@ -217,6 +229,7 @@ def fixture_z_qz_stem_properties(request):
                 outcome=pytest.raises(ValueError),
                 excep_msg="The q_z argument (shape: (7,)) is not a row array "
                 "matching stem properties (shape: (4,))",
+                output_shape=None,
             )
         case "fail_1D_scalar_z_but_q_z_not_row":
             return ZQZInput(
@@ -227,6 +240,7 @@ def fixture_z_qz_stem_properties(request):
                 outcome=pytest.raises(ValueError),
                 excep_msg="The q_z argument (shape: (6, 9)) is not a row array "
                 "matching stem properties (shape: (4,))",
+                output_shape=None,
             )
         case "fail_1D_row_z_but_q_z_not_row":
             return ZQZInput(
@@ -237,6 +251,7 @@ def fixture_z_qz_stem_properties(request):
                 outcome=pytest.raises(ValueError),
                 excep_msg="The q_z argument (shape: ()) is not a row array "
                 "matching stem properties (shape: (4,))",
+                output_shape=None,
             )
         case "fail_2D_column_z_but_q_z_not_congruent":
             return ZQZInput(
@@ -248,28 +263,48 @@ def fixture_z_qz_stem_properties(request):
                 excep_msg="The q_z argument (shape: (6, 9)) is not a 2D array "
                 "congruent with the broadcasted shape of the z argument (shape: "
                 "(5, 1)) and stem property arguments (shape: (4,))",
+                output_shape=None,
             )
-
-        # case "0D_z_ok":
-        #     return (np.array(1), np.ones(4), [np.ones(4)], np.ones(4))
-        # case "1D_scalar_z_ok":
-        #     return (np.ones(1), np.ones(4), [np.ones(4)], np.ones(4))
-        # case "1D_row_z_ok":
-        #     return (np.ones(4), np.ones(4), [np.ones(4)], np.ones(4))
-        # case "2D_column_z_ok":
-        #     return (np.ones((4, 1)), np.ones(4), [np.ones(4)], np.ones((4, 4)))
-        # case "1D_row_z_wrong_length":
-        #     return (np.ones(5), np.ones(4), [np.ones(4)], None)
-        # case "2D_z_not_column":
-        #     return (np.ones((4, 2)), np.ones(4), [np.ones(4)], None)
-        # case "stem_properties_not_1D":
-        #     return (np.ones(4), np.ones((4, 2)), [np.ones((4, 2))], None)
-        # case "inconsistent_stem_properties":
-        #     return (np.ones(4), np.ones(5), [np.ones(4)], None)
-        # case "1D_q_z_inconsistent":
-        #     return (np.ones(4), np.ones(4), [np.ones(4)], np.ones(5))
-        # case "2D_q_z_inconsistent":
-        #     return (np.ones(4), np.ones(4), [np.ones(4)], np.ones((5, 4)))
+        case "pass_0D_z_and_q_z_row":
+            return ZQZInput(
+                z=np.array(1),
+                stem=np.ones(4),
+                more_stem=[np.ones(4)],
+                q_z=np.ones(4),
+                outcome=does_not_raise(),
+                excep_msg=None,
+                output_shape=(4,),
+            )
+        case "pass_1D_scalar_z_and_q_z_row":
+            return ZQZInput(
+                z=np.ones(1),
+                stem=np.ones(4),
+                more_stem=[np.ones(4)],
+                q_z=np.ones(4),
+                outcome=does_not_raise(),
+                excep_msg=None,
+                output_shape=(4,),
+            )
+        case "pass_1D_row_z_and_q_z_row":
+            return ZQZInput(
+                z=np.ones(4),
+                stem=np.ones(4),
+                more_stem=[np.ones(4)],
+                q_z=np.ones(4),
+                outcome=does_not_raise(),
+                excep_msg=None,
+                output_shape=(4,),
+            )
+        case "pass_2D_column_z_and_congruent_q_z":
+            return ZQZInput(
+                z=np.ones((5, 1)),
+                stem=np.ones(4),
+                more_stem=[np.ones(4)],
+                q_z=np.ones((5, 4)),
+                outcome=does_not_raise(),
+                excep_msg=None,
+                output_shape=(5, 4),
+            )
 
 
 @pytest.mark.parametrize(
@@ -288,34 +323,10 @@ def fixture_z_qz_stem_properties(request):
         "fail_1D_scalar_z_but_q_z_not_row",
         "fail_1D_row_z_but_q_z_not_row",
         "fail_2D_column_z_but_q_z_not_congruent",
-        # pytest.param("0D_z_ok", does_not_raise(), None, id="0D_z_ok"),
-        # pytest.param("1D_scalar_z_ok", does_not_raise(), None, id="1D_scalar_z_ok"),
-        # pytest.param("1D_row_z_ok", does_not_raise(), None, id="1D_row_z_ok"),
-        # pytest.param("2D_column_z_ok", does_not_raise(), None, id="2D_column_z_ok"),
-        # pytest.param(
-        #     "1D_row_z_wrong_length",
-        #     pytest.raises(ValueError),
-        #     "The z argument is a row array",
-        #     id="1D_row_z_wrong_length",
-        # ),
-        # pytest.param(
-        #     "2D_z_not_column",
-        #     pytest.raises(ValueError),
-        #     "The z argument is two dimensional",
-        #     id="2D_z_not_column",
-        # ),
-        # pytest.param(
-        #     "inconsistent_stem_properties",
-        #     pytest.raises(ValueError),
-        #     "Cohort properties are not of equal size",
-        #     id="inconsistent_stem_properties",
-        # ),
-        # pytest.param(
-        #     "stem_properties_not_1D",
-        #     pytest.raises(ValueError),
-        #     "Cohort properties are not row arrays",
-        #     id="stem_properties_not_1D",
-        # ),
+        "pass_0D_z_and_q_z_row",
+        "pass_1D_scalar_z_and_q_z_row",
+        "pass_1D_row_z_and_q_z_row",
+        "pass_2D_column_z_and_congruent_q_z",
     ],
     indirect=["fixture_z_qz_stem_properties"],
 )
@@ -324,8 +335,8 @@ def test__validate_z_qz__args(fixture_z_qz_stem_properties):
 
     from pyrealm.demography.canopy_functions import _validate_z_qz_args
 
-    # Unpack the input arguments for the test case
-    z, stem, more_stem, q_z, outcome, excep_msg = fixture_z_qz_stem_properties
+    # Unpack the input arguments for the test case - not testing outputs here
+    z, stem, more_stem, q_z, outcome, excep_msg, _ = fixture_z_qz_stem_properties
     stem_args = [stem, *more_stem * 2]  # length of args doesn't really matter here.
 
     with outcome as excep:
@@ -336,21 +347,21 @@ def test__validate_z_qz__args(fixture_z_qz_stem_properties):
 
 
 @pytest.mark.parametrize(
-    argnames="fixture_z_qz_stem_properties, outcome",
+    argnames="fixture_z_qz_stem_properties",
     argvalues=[
-        ("0D_z_ok", does_not_raise()),
-        ("1D_scalar_z_ok", does_not_raise()),
-        ("1D_row_z_ok", does_not_raise()),
-        ("2D_column_z_ok", does_not_raise()),
-        ("1D_row_z_wrong_length", pytest.raises(ValueError)),
-        ("2D_z_not_column", pytest.raises(ValueError)),
-        ("inconsistent_stem_properties", pytest.raises(ValueError)),
+        "fail_stem_props_unequal",
+        "fail_stem_props_not_1D",
+        "fail_1D_z_not_congruent_with_stem",
+        "fail_2D_z_not_column_array",
+        "fail_z_more_than_2D",
+        "pass_0D_z",
+        "pass_1D_scalar_z",
+        "pass_1D_row_array_z",
+        "pass_2D_column_array_z",
     ],
     indirect=["fixture_z_qz_stem_properties"],
 )
-def test_calculate_relative_canopy_radius_at_z_inputs(
-    fixture_z_qz_stem_properties, outcome
-):
+def test_calculate_relative_canopy_radius_at_z_inputs(fixture_z_qz_stem_properties):
     """Test calculate_relative_canopy_radius_at_z input and output shapes .
 
     This test checks the function behaviour with different inputs.
@@ -361,15 +372,19 @@ def test_calculate_relative_canopy_radius_at_z_inputs(
     )
 
     # Build inputs
-    z, arg1, args, q_z = fixture_z_qz_stem_properties
-    stem_args = [arg1, *args * 2]  # Need 3 stem arguments.
+    z, stem, more_stem, _, outcome, excep_msg, out_shape = fixture_z_qz_stem_properties
+    stem_args = [stem, *more_stem * 2]  # Need 3 stem arguments.
 
-    with outcome:
+    with outcome as excep:
         # Get the relative radius at that height
         q_z_values = calculate_relative_canopy_radius_at_z(z, *stem_args)
 
         if isinstance(outcome, does_not_raise):
-            assert q_z_values.shape == q_z.shape
+            assert q_z_values.shape == out_shape
+
+        return
+
+    assert str(excep.value).startswith(excep_msg)
 
 
 def test_calculate_relative_canopy_radius_at_z_values(fixture_community):
@@ -407,36 +422,46 @@ def test_calculate_relative_canopy_radius_at_z_values(fixture_community):
 
 
 @pytest.mark.parametrize(
-    argnames="fixture_z_qz_stem_properties, outcome",
+    argnames="fixture_z_qz_stem_properties",
     argvalues=[
-        ("0D_z_ok", does_not_raise()),
-        ("1D_scalar_z_ok", does_not_raise()),
-        ("1D_row_z_ok", does_not_raise()),
-        ("2D_column_z_ok", does_not_raise()),
-        ("1D_row_z_wrong_length", pytest.raises(ValueError)),
-        ("2D_z_not_column", pytest.raises(ValueError)),
-        ("inconsistent_stem_properties", pytest.raises(ValueError)),
-        ("1D_q_z_inconsistent", pytest.raises(ValueError)),
-        ("2D_q_z_inconsistent", pytest.raises(ValueError)),
+        "fail_stem_props_unequal",
+        "fail_stem_props_not_1D",
+        "fail_1D_z_not_congruent_with_stem",
+        "fail_2D_z_not_column_array",
+        "fail_z_more_than_2D",
+        "fail_0D_z_but_q_z_not_row",
+        "fail_1D_scalar_z_but_q_z_not_row",
+        "fail_1D_row_z_but_q_z_not_row",
+        "fail_2D_column_z_but_q_z_not_congruent",
+        "pass_0D_z_and_q_z_row",
+        "pass_1D_scalar_z_and_q_z_row",
+        "pass_1D_row_z_and_q_z_row",
+        "pass_2D_column_z_and_congruent_q_z",
     ],
     indirect=["fixture_z_qz_stem_properties"],
 )
-def test_calculate_stem_projected_crown_area_at_z_inputs(
-    fixture_z_qz_stem_properties, outcome
-):
+def test_calculate_stem_projected_crown_area_at_z_inputs(fixture_z_qz_stem_properties):
     """Tests the validation of inputs to calculate_stem_projected_crown_area_at_z."""
     from pyrealm.demography.canopy_functions import (
         calculate_stem_projected_crown_area_at_z,
     )
 
     # Build inputs
-    z, arg1, args, q_z = fixture_z_qz_stem_properties
-    stem_args = [arg1, *args * 3]  # Need 4 stem arguments.
-    with outcome:
+    z, stem, more_stem, q_z, outcome, excep_msg, out_shape = (
+        fixture_z_qz_stem_properties
+    )
+    stem_args = [stem, *more_stem * 3]  # Need 4 stem arguments.
+
+    with outcome as excep:
+        # Get the relative radius at that height
         Ap_z_values = calculate_stem_projected_crown_area_at_z(z, q_z, *stem_args)
 
         if isinstance(outcome, does_not_raise):
-            assert Ap_z_values.shape == q_z.shape
+            assert Ap_z_values.shape == out_shape
+
+        return
+
+    assert str(excep.value).startswith(excep_msg)
 
 
 @pytest.mark.parametrize(
@@ -542,36 +567,46 @@ def test_solve_community_projected_canopy_area(fixture_community):
 
 
 @pytest.mark.parametrize(
-    argnames="fixture_z_qz_stem_properties, outcome",
+    argnames="fixture_z_qz_stem_properties",
     argvalues=[
-        ("0D_z_ok", does_not_raise()),
-        ("1D_scalar_z_ok", does_not_raise()),
-        ("1D_row_z_ok", does_not_raise()),
-        ("2D_column_z_ok", does_not_raise()),
-        ("1D_row_z_wrong_length", pytest.raises(ValueError)),
-        ("2D_z_not_column", pytest.raises(ValueError)),
-        ("inconsistent_stem_properties", pytest.raises(ValueError)),
-        ("1D_q_z_inconsistent", pytest.raises(ValueError)),
-        ("2D_q_z_inconsistent", pytest.raises(ValueError)),
+        "fail_stem_props_unequal",
+        "fail_stem_props_not_1D",
+        "fail_1D_z_not_congruent_with_stem",
+        "fail_2D_z_not_column_array",
+        "fail_z_more_than_2D",
+        "fail_0D_z_but_q_z_not_row",
+        "fail_1D_scalar_z_but_q_z_not_row",
+        "fail_1D_row_z_but_q_z_not_row",
+        "fail_2D_column_z_but_q_z_not_congruent",
+        "pass_0D_z_and_q_z_row",
+        "pass_1D_scalar_z_and_q_z_row",
+        "pass_1D_row_z_and_q_z_row",
+        "pass_2D_column_z_and_congruent_q_z",
     ],
     indirect=["fixture_z_qz_stem_properties"],
 )
-def test_calculate_stem_projected_leaf_area_at_z_inputs(
-    fixture_z_qz_stem_properties, outcome
-):
+def test_calculate_stem_projected_leaf_area_at_z_inputs(fixture_z_qz_stem_properties):
     """Tests the validation of inputs to calculate_stem_projected_crown_area_at_z."""
     from pyrealm.demography.canopy_functions import (
         calculate_stem_projected_leaf_area_at_z,
     )
 
     # Build inputs
-    z, arg1, args, q_z = fixture_z_qz_stem_properties
-    stem_args = [arg1, *args * 4]  # Need 5 stem arguments.
-    with outcome:
+    z, stem, more_stem, q_z, outcome, excep_msg, out_shape = (
+        fixture_z_qz_stem_properties
+    )
+    stem_args = [stem, *more_stem * 4]  # Need 5 stem arguments.
+
+    with outcome as excep:
+        # Get the relative radius at that height
         Ap_z_values = calculate_stem_projected_leaf_area_at_z(z, q_z, *stem_args)
 
         if isinstance(outcome, does_not_raise):
-            assert Ap_z_values.shape == q_z.shape
+            assert Ap_z_values.shape == out_shape
+
+        return
+
+    assert str(excep.value).startswith(excep_msg)
 
 
 def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):

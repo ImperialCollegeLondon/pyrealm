@@ -165,7 +165,7 @@ def _validate_z_qz_args(
 
     # Now test q_z congruence with z if provided
     if q_z is not None:
-        if ((z.size == 1) or (z.ndim == 1)) and (z.shape != q_z.shape):
+        if ((z.size == 1) or (z.ndim == 1)) and (q_z.shape != stem_shape):
             raise ValueError(
                 f"The q_z argument (shape: {q_z.shape}) is not a row array "
                 f"matching stem properties (shape: {stem_shape})"
