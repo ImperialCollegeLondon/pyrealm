@@ -71,9 +71,9 @@ def calc_lat_delta_intermediates(
 ) -> tuple[NDArray, NDArray]:
     r"""Calculates intermediate values for use in solar radiation calcs.
 
-    This function calculates ru and rv which are dimensionless intermediate
-    values calculated from the solar declination angle delta and the observation
-    latitude.
+    This function calculates :math:`ru` and :math:`rv` which are dimensionless
+    intermediate values calculated from the solar declination angle delta and the
+    observation latitude.
 
     .. math::
 
@@ -88,7 +88,7 @@ def calc_lat_delta_intermediates(
         latitude: observation latitude (degrees)
 
     Returns:
-        A Tuple of ru and rv, calculation intermediates, unitless
+        A Tuple of :math:`ru` and :math:`rv`, calculation intermediates, unitless
 
     """
     ru = np.sin(np.deg2rad(delta)) * np.sin(np.deg2rad(latitude))
@@ -100,7 +100,7 @@ def calc_lat_delta_intermediates(
 def calc_sunset_hour_angle(delta: NDArray, latitude: NDArray, k_pir: float) -> NDArray:
     r"""Calculates sunset hour angle.
 
-    This function calculates the sunset hour angle using eq3.22
+    This function calculates the sunset hour angle :math:`hs` using eq3.22
     :cite:t:`stine_geyer:2001`.
 
     .. math::
@@ -148,7 +148,7 @@ def calc_daily_solar_radiation(
     r"""Calculate daily extraterrestrial solar radiation (J/m^2).
 
     This function calculates the daily extraterrestrial solar radition
-    (J/m^2)using Eq. 1.10.3 :cite:t:`Duffie & Beckman:2013`.
+    (J/m^2) using Eq. 1.10.3 :cite:t:`Duffie & Beckman:2013`.
 
     .. math::
 
@@ -165,7 +165,7 @@ def calc_daily_solar_radiation(
         const: CoreConst object containing core constants:
 
     Returns:
-        NDArray     : An array of daily solar radiation, J/m^2
+        NDArray: An array of daily solar radiation, J/m^2
     """
 
     ru, rv = calc_lat_delta_intermediates(delta=delta, latitude=latitude)
@@ -179,7 +179,7 @@ def _calc_daily_solar_radiation(
     """Calculate daily extraterrestrial solar radiation (J/m^2).
 
     This function calculates the daily extraterrestrial solar radition (J/m^2)
-    using Eq. 1.10.3, :cite:t:`Duffie & Beckman:2013`
+    using Eq. 1.10.3, :cite:t:`Duffie & Beckman:2013`.
 
     Args:
         dr: dimensionless distance factor
@@ -209,7 +209,7 @@ def _calc_daily_solar_radiation(
 
 
 def calc_transmissivity(sf: NDArray, elv: NDArray, k_c: float, k_d: float) -> NDArray:
-    r"""Calculate atmospheric transmissivity, tau.
+    r"""Calculate atmospheric transmissivity, :math:`tau`.
 
     This function calculates atmospheric transmissivity using the method of
     Eq.11, :cite:t:`Linacre:1968` and Eq 2, :cite:t:`Allen:1996`.
@@ -236,10 +236,10 @@ def calc_transmissivity(sf: NDArray, elv: NDArray, k_c: float, k_d: float) -> ND
 def calc_ppfd_from_tau_ra_d(
     tau: NDArray, ra_d: NDArray, k_fFEC: float, k_alb_vis: float
 ) -> NDArray:
-    r"""Calculate photosynthetic photon flux density, PPFD,(mol/m^2).
+    r"""Calculate photosynthetic photon flux density, :math:`PPFD`,(mol/m^2).
 
-    This function calculates the PPFD in mol/m^2 from secondary calculated
-    variables and constants.
+    This function calculates the :math:`PPFD` in mol/m^2 from secondary calculated
+    variables, and constants.
 
     .. math::
 
@@ -270,9 +270,9 @@ def calc_ppfd(
     n_days: NDArray,
     const: CoreConst,
 ) -> NDArray:
-    """Calculates photosynthetic photon flux density, PPFD,(mol/m^2).
+    """Calculates photosynthetic photon flux density, :math:`PPFD`,(mol/m^2).
 
-    This function calulates ppfd (mol/m^2) from primary variables.
+    This function calulates ppfd (mol/m^2) from the observation location and time.
 
     Args:
         sf: Daily sunshine fraction of observations, unitless
@@ -283,7 +283,7 @@ def calc_ppfd(
         const: CoreConst object containing core constants:
 
     Returns:
-        An array of photosynthetic photon flux density, PPFD,(mol/m^2)
+        An array of photosynthetic photon flux density, :math:`PPFD`,(mol/m^2)
 
     Example:
         >>> # Calculate ppfd
@@ -337,7 +337,7 @@ def calc_ppfd(
 def calc_net_longwave_radiation(
     sf: NDArray, tc: NDArray, k_b: float, k_A: float
 ) -> NDArray:
-    r"""Calculates net longwave radiation, rnl, W/m^2.
+    r"""Calculates net longwave radiation, :math:`rnl`, W/m^2.
 
     This function calculates net longwave radiation in W/m^2 using the methods
     of Eq. 11, :cite:t:`Prentice et al.:1993`, Eq. 5 and 6,
@@ -363,7 +363,7 @@ def calc_net_longwave_radiation(
 
 
 def calc_rw(tau: NDArray, dr: NDArray, k_alb_sw: float, k_Gsc: float) -> NDArray:
-    r"""Calculates variable substitute rw, W/m^2.
+    r"""Calculates variable substitute :math:`rw`, W/m^2.
 
     .. math::
 
@@ -392,9 +392,10 @@ def calc_net_rad_crossover_hour_angle(
     latitude: NDArray,
     const: CoreConst,
 ) -> NDArray:
-    r"""Calculates the net radiation crossover hour angle, degrees.
+    r"""Calculates the net radiation crossover hour angle, :math:`hn` degrees.
 
-    This function calculates the net radiation crossover hour angle in degrees.
+    This function calculates the net radiation crossover hour angle :math:`hn` in
+    degrees.
 
     .. math::
 
@@ -457,7 +458,7 @@ def calc_daytime_net_radiation(
     dr: NDArray,
     const: CoreConst,
 ) -> NDArray:
-    r"""Calculates daily net radiation, J/m^2.
+    r"""Calculates daily net radiation, :math:`rn\d`, J/m^2.
 
     .. math::
 
@@ -529,7 +530,7 @@ def calc_nighttime_net_radiation(
     dr: NDArray,
     const: CoreConst,
 ) -> NDArray:
-    r"""Calculates nightime net radiation, J/m^2.
+    r"""Calculates nightime net radiation, :math:`rnn\d` J/m^2.
 
     .. math::
 
@@ -775,7 +776,7 @@ def solar_declination(td: NDArray) -> NDArray:
     r"""Calculates solar declination angle.
 
     Use method described in eqn A14 of :cite:t:`dePury& Farquhar:1997` to calculate
-    solar declination angle.
+    solar declination angle, from day of the year.
 
     .. math::
 
@@ -795,12 +796,13 @@ def solar_declination(td: NDArray) -> NDArray:
 
 
 def local_hour_angle(t: NDArray, t0: NDArray) -> NDArray:
-    r"""Calculate the local hour angle for a given time and solar noon.
+    r"""Calculate the local hour angle :math:`h` for a given time and solar noon.
 
     The local hour angle is a measure of time, expressed in angular terms, that
     indicates the position of the sun relative to solar noon. This function calculates
-    the local hour angle by determining the difference between the current time (t)
-    and the solar noon time (t_0), and then converting this difference into an angle.
+    the local hour angle by determining the difference between the current time (``t``)
+    and the solar noon time (``t_0``), and then converting this difference into an
+    angle.
 
     Equation implemented from A15 :citet:`de Pury and Farquhar:1997`.
 
@@ -829,8 +831,8 @@ def solar_noon(L_e: float, L_s: float, E_t: NDArray) -> NDArray:
     The solar noon is the time of day when the sun is at its highest point in
     the sky for a given location. This function calculates the solar noon by
     adjusting the standard noon time (12:00 PM) based on the difference between
-    the local longitude (L_e) and the standard meridian (L_s) and the equation
-    of time (E_t). Based on EqA16, :cite:t:`de Pury and Farquhar:1997`.
+    the local longitude (``L_e``) and the local standard meridian (``L_s``) and the
+    equation of time (``E_t``). Based on EqA16, :cite:t:`de Pury and Farquhar:1997`.
 
     .. math::
         t_0 = 12 + \frac{4 \cdot -(L_e - L_s) - E_t}{60}
@@ -894,8 +896,8 @@ def equation_of_time(day_angle: NDArray) -> NDArray:
 def day_angle(t_d: NDArray) -> NDArray:
     r"""Calculates solar day angle (gamma), radians.
 
-    The day angle (gamma) for a given day of the year N, (where N=1 for January 1st and
-    N=365 for December 31st) can be calculated using the following formula:
+    The day angle (``gamma``) for a given day of the year ``N``, (where N=1 for January
+    1st and N=365 for December 31st) can be calculated using the following formula:
 
     Based on Eqn A18, :cite:t:`De Pury and Farquhar:1997`.
 
