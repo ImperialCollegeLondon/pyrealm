@@ -697,9 +697,8 @@ def calc_solar_elevation(site_obs_data: LocationDateTime) -> NDArray:
         >>> latitude = -35.058333
         >>> longitude = 147.34167
         >>> year_date_time = np.array([np.datetime64("1995-10-25T10:30")])
-        >>> UTC_offset = 150.0
         >>> ldt = LocationDateTime(latitude = latitude, longitude = longitude,\
-        ...     year_date_time = year_date_time, UTC_offset = UTC_offset)
+        ...     year_date_time = year_date_time)
         >>> # Run solar elevation calculation
         >>> calc_solar_elevation(ldt)
         array([1.0615713])
@@ -710,9 +709,9 @@ def calc_solar_elevation(site_obs_data: LocationDateTime) -> NDArray:
 
     E_t = equation_of_time(G_d)
 
-    t0 = solar_noon(site_obs_data.longitude, site_obs_data.UTC_offset, E_t)
+    t0 = solar_noon(site_obs_data.longitude, site_obs_data.local_standard_meridian, E_t)
 
-    hour_angle = local_hour_angle(site_obs_data.local_time, t0)
+    hour_angle = local_hour_angle(site_obs_data.decimal_time, t0)
 
     declination = solar_declination(site_obs_data.julian_days)
 

@@ -415,20 +415,17 @@ def test_calc_heliocentric_longitudes(day, n_day, expected):
 
 
 @pytest.mark.parametrize(
-    argnames="latitude, longitude, year_date_time, UTC_offset, expected",
+    argnames="latitude, longitude, year_date_time, expected",
     argvalues=[
         (
             -35.058333,
             147.34167,
             np.array([np.datetime64("1995-10-25T10:30")]),
-            150,
             np.array([1.0615713]),
         )
     ],
 )
-def test_calc_solar_elevation(
-    latitude, longitude, year_date_time, UTC_offset, expected
-):
+def test_calc_solar_elevation(latitude, longitude, year_date_time, expected):
     """Tests calc_solar_elevation.
 
     This test is intended to verify the implemented maths.
@@ -440,7 +437,6 @@ def test_calc_solar_elevation(
     site_obs_data = LocationDateTime(
         latitude=latitude,
         longitude=longitude,
-        UTC_offset=UTC_offset,
         year_date_time=year_date_time,
     )
 
@@ -505,10 +501,10 @@ def test_equation_of_time(day_angle, expected):
 
 
 @pytest.mark.parametrize(
-    argnames="longitude, UTC_offset, E_t, expected",
+    argnames="longitude, standard_meridian, E_t, expected",
     argvalues=[(147.34167, 150, 16.01, np.array([11.910388666666668]))],
 )
-def test_solar_noon(longitude, UTC_offset, E_t, expected):
+def test_solar_noon(longitude, standard_meridian, E_t, expected):
     """Tests solar_noon.
 
     This test is intended to verify the implemented maths.
@@ -516,7 +512,7 @@ def test_solar_noon(longitude, UTC_offset, E_t, expected):
 
     from pyrealm.core.solar import solar_noon
 
-    result = solar_noon(longitude, UTC_offset, E_t)
+    result = solar_noon(longitude, standard_meridian, E_t)
 
     assert np.allclose(result, expected)
 

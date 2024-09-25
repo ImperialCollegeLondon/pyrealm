@@ -134,12 +134,14 @@ class LocationDateTime:
         >>> ldt = LocationDateTime(
         ...     latitude=-35.058333,
         ...     longitude=147.34167,
-        ...     year_date_time=np.array([np.datetime64("2024-08-12T10:30")])
+        ...     year_date_time=np.array([np.datetime64("2024-08-12T10:30")]),
         ... )
         >>> print(ldt.latitude_rad)
         -0.6118833411105811
-        >>> print(ldt.local_time)
+        >>> print(ldt.decimal_time)
         [10.5]
+        >>> print(ldt.local_standard_meridian)
+        150
     """
 
     latitude: float
@@ -156,9 +158,11 @@ class LocationDateTime:
     julian_days: np.ndarray = field(init=False)
     """An array of Julian day of the year numbers calculated from the
     ``year_date_time``."""
-    local_time: np.ndarray = field(init=False)
-    """An array of Julian day of the year numbers calculated from the 
-    ``year_date_time``."""
+    decimal_time: np.ndarray = field(init=False)
+    """An array of decimal hour values calculated from local ``year_date_time``."""
+    local_standard_meridian: int = field(init=False)
+    """An int describing time offset from local meridian to Greenwich meridian
+    in hours."""
 
     def __post_init__(self) -> None:
         """Initialise calculated attributes.
@@ -168,9 +172,10 @@ class LocationDateTime:
         """
 
         self.julian_days = Calendar(self.year_date_time).julian_day
-        self.local_time = self.decimal_hour()
+        self.decimal_time = self.decimal_hour()
         self.latitude_rad = self.latitude * np.pi / 180
         self.longitude_rad = self.longitude * np.pi / 180
+        self.local_standard_meridian = self.get_local_standard_meridian()
 
     def decimal_hour(self) -> np.ndarray:
         """Convert ``year_date_time`` to a decimal representation of hours.
@@ -190,3 +195,13 @@ class LocationDateTime:
 
         # Convert to decimal hours
         return hours + minutes / 60
+
+    def get_local_standard_meridian(self) -> int:
+        """Calculates local meridian from longitude.
+
+        Returns:
+            An integer in degrees format representing local meridian offset from
+            Greenwich.
+        """
+
+        return 30 * round(self.longitude / 30)
