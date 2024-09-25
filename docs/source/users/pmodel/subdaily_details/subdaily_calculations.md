@@ -21,7 +21,6 @@ are handled internally by the model fitting in `pyrealm`.
 
 ```{code-cell}
 :tags: [hide-input]
-:trusted: true
 
 from importlib import resources
 
@@ -48,8 +47,6 @@ site](https://fluxnet.org/doi/FLUXNET2015/BE-Vie), which was also used as a
 demonstration in {cite:t}`mengoli:2022a`.
 
 ```{code-cell}
-:trusted: true
-
 data_path = resources.files("pyrealm_build_data.subdaily") / "subdaily_BE_Vie_2014.csv"
 
 data = pandas.read_csv(str(data_path))
@@ -71,8 +68,6 @@ subdaily timescale. The code below also estimates GPP under the standard P Model
 slow responses for comparison.
 
 ```{code-cell}
-:trusted: true
-
 # Calculate the photosynthetic environment
 subdaily_env = PModelEnvironment(
     tc=temp_subdaily,
@@ -99,8 +94,6 @@ conditions at the observation closest to noon, or the mean environmental conditi
 window around noon.
 
 ```{code-cell}
-:trusted: true
-
 # Create the fast slow scaler
 fsscaler = SubdailyScaler(datetime_subdaily)
 
@@ -122,7 +115,6 @@ pmodel_subdaily = SubdailyPModel(
 
 ```{code-cell}
 :tags: [hide-input]
-:trusted: true
 
 idx = np.arange(48 * 120, 48 * 130)
 plt.figure(figsize=(10, 4))
@@ -146,8 +138,6 @@ inputs to the standard P Model to calculate the optimal behaviour of plants unde
 conditions.
 
 ```{code-cell}
-:trusted: true
-
 # Get the daily acclimation conditions for the forcing variables
 temp_acclim = fsscaler.get_daily_means(temp_subdaily)
 co2_acclim = fsscaler.get_daily_means(co2_subdaily)
@@ -179,8 +169,6 @@ at 25°C. This is acheived by multiplying by the reciprocal of the exponential p
 the Arrhenius equation ($h^{-1}$ in {cite}`mengoli:2022a`).
 
 ```{code-cell}
-:trusted: true
-
 # Are these any of the existing values in the constants?
 ha_vcmax25 = 65330
 ha_jmax25 = 43900
@@ -196,8 +184,6 @@ The memory effect can now be applied to the three parameters with slow
 responses to calculate realised values, here using the default 15 day window.
 
 ```{code-cell}
-:trusted: true
-
 # Calculation of memory effect in xi, vcmax25 and jmax25
 xi_real = memory_effect(pmodel_acclim.optchi.xi, alpha=1 / 15)
 vcmax25_real = memory_effect(vcmax25_acclim, alpha=1 / 15, allow_holdover=True)
@@ -210,7 +196,6 @@ application of the memory effect.
 
 ```{code-cell}
 :tags: [hide-input]
-:trusted: true
 
 fig, axes = plt.subplots(1, 3, figsize=(16, 5))
 
@@ -244,8 +229,6 @@ temperature at fast scales:
   responses of $J_{max}$ and $V_{cmax}$.
 
 ```{code-cell}
-:trusted: true
-
 tk_subdaily = subdaily_env.tc + pmodel_subdaily.env.core_const.k_CtoK
 
 # Fill the realised jmax and vcmax from subdaily to daily
@@ -266,8 +249,6 @@ optimal $\chi$, rather than calculating the instantaneously optimal values of $\
 as is the case in the standard P Model.
 
 ```{code-cell}
-:trusted: true
-
 # Interpolate xi to subdaily scale
 xi_subdaily = fsscaler.fill_daily_to_subdaily(xi_real)
 
@@ -287,8 +268,6 @@ include the slow responses of $V_{cmax25}$ and $J_{max25}$ and fast responses to
 temperature.
 
 ```{code-cell}
-:trusted: true
-
 # Calculate Ac
 Ac_subdaily = (
     vcmax_subdaily
@@ -319,7 +298,5 @@ print(np.nanmin(diff), np.nanmax(diff))
 ```
 
 ```{code-cell}
-:trusted: true
-
 
 ```
