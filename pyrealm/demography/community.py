@@ -93,13 +93,13 @@ Convert the community cohort data to a :class:`pandas.DataFrame` for nicer displ
 show some of the calculated T Model predictions:
 
 >>> pd.DataFrame(community.cohort_data)[
-...    ['name', 'dbh', 'n_individuals', 'height', 'crown_area', 'stem_mass']
+...    ['name', 'dbh', 'n_individuals', 'stem_height', 'crown_area', 'stem_mass']
 ... ]
-              name    dbh  n_individuals     height  crown_area  stem_mass
-0   Evergreen Tree  0.100            100   9.890399    2.459835   8.156296
-1  Deciduous Shrub  0.030            200   2.110534    0.174049   0.134266
-2   Evergreen Tree  0.120            150  11.436498    3.413238  13.581094
-3  Deciduous Shrub  0.025            180   1.858954    0.127752   0.082126
+              name    dbh  n_individuals  stem_height  crown_area  stem_mass
+0   Evergreen Tree  0.100            100     9.890399    2.459835   8.156296
+1  Deciduous Shrub  0.030            200     2.110534    0.174049   0.134266
+2   Evergreen Tree  0.120            150    11.436498    3.413238  13.581094
+3  Deciduous Shrub  0.025            180     1.858954    0.127752   0.082126
 """  # noqa: D205
 
 from __future__ import annotations
@@ -117,6 +117,7 @@ from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
 from pyrealm.core.utilities import check_input_shapes
+from pyrealm.demography import canopy_functions
 from pyrealm.demography import t_model_functions as t_model
 from pyrealm.demography.flora import Flora
 
@@ -440,7 +441,7 @@ class Community:
 
         # Add data to cohort dataframes capturing the T Model geometry
         # - Classic T Model scaling
-        self.cohort_data["height"] = t_model.calculate_heights(
+        self.cohort_data["stem_height"] = t_model.calculate_heights(
             h_max=self.cohort_data["h_max"],
             a_hd=self.cohort_data["a_hd"],
             dbh=self.cohort_data["dbh"],
@@ -450,19 +451,19 @@ class Community:
             ca_ratio=self.cohort_data["ca_ratio"],
             a_hd=self.cohort_data["a_hd"],
             dbh=self.cohort_data["dbh"],
-            height=self.cohort_data["height"],
+            stem_height=self.cohort_data["stem_height"],
         )
 
         self.cohort_data["crown_fraction"] = t_model.calculate_crown_fractions(
             a_hd=self.cohort_data["a_hd"],
             dbh=self.cohort_data["dbh"],
-            height=self.cohort_data["height"],
+            stem_height=self.cohort_data["stem_height"],
         )
 
         self.cohort_data["stem_mass"] = t_model.calculate_stem_masses(
             rho_s=self.cohort_data["rho_s"],
             dbh=self.cohort_data["dbh"],
-            height=self.cohort_data["height"],
+            stem_height=self.cohort_data["stem_height"],
         )
 
         self.cohort_data["foliage_mass"] = t_model.calculate_foliage_masses(
@@ -474,17 +475,17 @@ class Community:
         self.cohort_data["sapwood_mass"] = t_model.calculate_sapwood_masses(
             rho_s=self.cohort_data["rho_s"],
             ca_ratio=self.cohort_data["ca_ratio"],
-            height=self.cohort_data["height"],
+            stem_height=self.cohort_data["stem_height"],
             crown_area=self.cohort_data["crown_area"],
             crown_fraction=self.cohort_data["crown_fraction"],
         )
 
         # Canopy shape extension to T Model from PlantFATE
-        self.cohort_data["canopy_z_max"] = t_model.calculate_canopy_z_max(
+        self.cohort_data["canopy_z_max"] = canopy_functions.calculate_canopy_z_max(
             z_max_prop=self.cohort_data["z_max_prop"],
-            height=self.cohort_data["height"],
+            stem_height=self.cohort_data["stem_height"],
         )
-        self.cohort_data["canopy_r0"] = t_model.calculate_canopy_r0(
+        self.cohort_data["canopy_r0"] = canopy_functions.calculate_canopy_r0(
             q_m=self.cohort_data["q_m"],
             crown_area=self.cohort_data["crown_area"],
         )

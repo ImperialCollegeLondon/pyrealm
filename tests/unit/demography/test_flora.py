@@ -31,6 +31,7 @@ STRICT_PFT_ARGS = dict(
     tau_r=1.04,
     yld=0.17,
     zeta=0.17,
+    f_g=0.02,
     m=2,
     n=5,
 )
