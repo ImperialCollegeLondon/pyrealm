@@ -148,7 +148,7 @@ def calc_daily_solar_radiation(
     r"""Calculate daily extraterrestrial solar radiation (J/m^2).
 
     This function calculates the daily extraterrestrial solar radition
-    (J/m^2) using Eq. 1.10.3 :cite:t:`Duffie & Beckman:2013`.
+    (J/m^2) using Eq. 1.10.3 :cite:t:`Duffie:2013a`.
 
     .. math::
 
@@ -179,7 +179,7 @@ def _calc_daily_solar_radiation(
     """Calculate daily extraterrestrial solar radiation (J/m^2).
 
     This function calculates the daily extraterrestrial solar radition (J/m^2)
-    using Eq. 1.10.3, :cite:t:`Duffie & Beckman:2013`.
+    using Eq. 1.10.3, :cite:t:`Duffie:2013a`.
 
     Args:
         dr: dimensionless distance factor
