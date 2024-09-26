@@ -39,8 +39,6 @@ The example shows the steps required using a single site with:
 ### Estimate photosynthetic environment
 
 ```{code-cell}
-:trusted: true
-
 from importlib import resources
 
 from matplotlib import pyplot as plt
@@ -61,14 +59,10 @@ terse - just the shape of the data - but the
 more detailed summary of the attributes.
 
 ```{code-cell}
-:trusted: true
-
 env
 ```
 
 ```{code-cell}
-:trusted: true
-
 env.summarize()
 ```
 
@@ -78,8 +72,6 @@ Next, the P Model can be fitted to the photosynthetic environment using the
 ({class}`~pyrealm.pmodel.pmodel.PModel`) class:
 
 ```{code-cell}
-:trusted: true
-
 model = PModel(env)
 ```
 
@@ -87,8 +79,6 @@ The returned model object holds a lot of information. The representation of the
 model object shows a terse display of the settings used to run the model:
 
 ```{code-cell}
-:trusted: true
-
 model
 ```
 
@@ -99,8 +89,6 @@ photosynthetic efficiency: the intrinsic water use efficiency (``iwue``) and the
 use efficiency (``lue``).
 
 ```{code-cell}
-:trusted: true
-
 model.summarize()
 ```
 
@@ -113,8 +101,6 @@ This object also has a {meth}`~pyrealm.pmodel.optimal_chi.OptimalChiABC.summariz
 method:
 
 ```{code-cell}
-:trusted: true
-
 model.optchi.summarize()
 ```
 
@@ -131,8 +117,6 @@ Here we are using:
 * a PPFD of 834 µmol m-2 s-1.
 
 ```{code-cell}
-:trusted: true
-
 model.estimate_productivity(fapar=0.91, ppfd=834)
 model.summarize()
 ```
@@ -165,8 +149,6 @@ to be the same size so some of the variables have repeated data across dimension
 * Elevation is constant across months, so the data for each month is repeated.
 
 ```{code-cell}
-:trusted: true
-
 # Load an example dataset containing the forcing variables.
 data_path = resources.files("pyrealm_build_data.rpmodel") / "pmodel_global.nc"
 ds = xarray.load_dataset(data_path)
@@ -186,8 +168,6 @@ data to atmospheric pressure, and then this is used to set the photosynthetic
 environment for the model:
 
 ```{code-cell}
-:trusted: true
-
 # Convert elevation to atmospheric pressure
 patm = calc_patm(elev)
 
@@ -206,8 +186,6 @@ That environment can then be run to calculate the P model predictions for light 
 efficiency:
 
 ```{code-cell}
-:trusted: true
-
 # Run the P model
 model = PModel(env)
 
@@ -221,8 +199,6 @@ Finally, the light use efficiency can be used to calculate GPP given the
 photosynthetic photon flux density and fAPAR.
 
 ```{code-cell}
-:trusted: true
-
 # Scale the outputs from values per unit iabs to realised values
 model.estimate_productivity(fapar, ppfd)
 
