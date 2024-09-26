@@ -429,38 +429,29 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
             raise ValueError("Provide one of either dbh or stem_height")
 
         if stem_height is not None:
-            # Check array dimensions
-            if stem_height.ndim != 1:
-                raise ValueError("Stem heights must be a one dimensional array")
+            # TODO: This steals the validation from the canopy functions - this might be
+            #       a general function for the module - see also the
+            #       validate_t_model_args function.
+            _validate_z_qz_args(z=stem_height, stem_properties=[self.data["h_max"]])
 
-            # Convert stem heights back into an array of initial DBH values
-            # - broadcast to (n_heights, n_pfts)
-            n_size = stem_height.size
-            stem_height = np.broadcast_to(stem_height[:, None], (n_size, self.n_pfts))
-            dbh_arr = calculate_dbh_from_height(
+            dbh = calculate_dbh_from_height(
                 h_max=self.data["h_max"],
                 a_hd=self.data["a_hd"],
                 stem_height=stem_height,
             )
         elif dbh is not None:
-            # Check array dimensions
-            if dbh.ndim != 1:
-                raise ValueError("DBH must be a one dimensional array")
+            # TODO: This steals the validation from the canopy functions - this might be
+            #       a general function for the module - see also the
+            #       validate_t_model_args function.
+            _validate_z_qz_args(z=dbh, stem_properties=[self.data["h_max"]])
 
-            # Broadcast the dbh to a  (n_heights, n_pfts)
-            n_size = dbh.size
-            dbh_arr = np.broadcast_to(dbh[:, None], (n_size, self.n_pfts))
-
-        if not ((potential_gpp.ndim == 1) and (potential_gpp.size == n_size)):
-            raise ValueError(
-                "GPP must be a one dimensional array of the same "
-                "size as DBH or stem height"
-            )
-
-        gpp_arr = np.broadcast_to(potential_gpp[:, None], (n_size, self.n_pfts))
+        if potential_gpp.shape != dbh.shape:  # type: ignore [union-attr]
+            raise ValueError("GPP must have the same shape as DBH or stem height")
 
         return calculate_t_model_allocation(
-            pft_data=self.data, dbh=dbh_arr, potential_gpp=gpp_arr
+            pft_data=self.data,
+            dbh=dbh,  # type: ignore [arg-type]
+            potential_gpp=potential_gpp,
         )
 
     def get_canopy_profile(

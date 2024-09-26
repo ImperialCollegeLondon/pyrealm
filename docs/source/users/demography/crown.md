@@ -13,6 +13,13 @@ kernelspec:
 
 # The tree crown model
 
+:::{admonition} Warning
+
+This area of `pyrealm` is in active development and this notebook currently contains
+notes and initial demonstration code.
+
+:::
+
 ```{code-cell}
 from matplotlib import pyplot as plt
 import numpy as np
@@ -67,7 +74,7 @@ ax1.set_ylabel("n")
 ax1.set_aspect("equal")
 
 # Plot z_max_prop as a function of m and n
-cntr_set2 = ax2.contourf(m, n, p_zm, levels=10)
+cntr_set2 = ax2.contourf(m, n, z_max_prop, levels=10)
 fig.colorbar(cntr_set2, ax=ax2, label="z_max_prop")
 ax2.set_xlabel("m")
 ax2.set_ylabel("n")
@@ -106,7 +113,7 @@ allometry = flora.get_allometries(stem_height=stem_height)
 We can use {mod}`pandas` to visualise those allometric predictions.
 
 ```{code-cell}
-pandas.DataFrame(allometry)
+pd.DataFrame(allometry)
 ```
 
 We can now use the {meth}`~pyrealm.demography.flora.Flora.get_canopy_profile` method to
@@ -151,7 +158,7 @@ vertical profile. For the example PFTs in the `Flora` object, the maximum relati
 radius values on each stem are:
 
 ```{code-cell}
-max_relative_crown_radius = canopy_profiles["relative_canopy_radius"].max(axis=0)
+max_relative_crown_radius = crown_profiles["relative_canopy_radius"].max(axis=0)
 print(max_relative_crown_radius)
 ```
 
@@ -159,7 +166,7 @@ However the scaled maximum radius values match the expected crown area in the al
 table above
 
 ```{code-cell}
-max_crown_radius = canopy_profiles["crown_radius"].max(axis=0)
+max_crown_radius = crown_profiles["crown_radius"].max(axis=0)
 print(max_crown_radius)
 print(max_crown_radius**2 * np.pi)
 ```
@@ -180,12 +187,12 @@ stem_max_width = np.maximum(max_crown_radius, max_relative_crown_radius)
 for pft_idx, offset, colour in zip((0, 1, 2), (0, 5, 12), ("r", "g", "b")):
 
     # Plot relative radius either side of offset
-    stem_qz = canopy_profiles["relative_canopy_radius"][:, pft_idx]
+    stem_qz = crown_profiles["relative_canopy_radius"][:, pft_idx]
     ax.plot(stem_qz + offset, z, color=colour, linestyle="--", linewidth=1)
     ax.plot(-stem_qz + offset, z, color=colour, linestyle="--", linewidth=1)
 
     # Plot actual crown radius either side of offset
-    stem_rz = canopy_profiles["crown_radius"][:, pft_idx]
+    stem_rz = crown_profiles["crown_radius"][:, pft_idx]
     ax.plot(stem_rz + offset, z, color=colour)
     ax.plot(-stem_rz + offset, z, color=colour)
 

@@ -463,7 +463,7 @@ def calculate_canopy_profiles(
 
     Args:
         pft_data: A dictionary of plant functional trait data, as for example returned
-            from :attr:`<pyrealm.demography.flora.Flora.data>Flora.data` attribute.
+            from :attr:`Flora.data<pyrealm.demography.flora.Flora.data>` attribute.
         z: An array of vertical height values at which to calculate canopy profiles.
         stem_height: A row array providing expected stem height for each PFT.
         crown_area: A row array providing expected crown area for each PFT.

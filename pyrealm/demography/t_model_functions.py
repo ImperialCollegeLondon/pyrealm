@@ -620,7 +620,7 @@ def calculate_t_model_allometry(
 
     Args:
         pft_data: A dictionary of plant functional trait data, as for example returned
-            from :attr:`<pyrealm.demography.flora.Flora.data>Flora.data` attribute.
+            from :attr:`Flora.data<pyrealm.demography.flora.Flora.data>` attribute.
         dbh: An array of diameter at breast height values for which to predict stem
             allometry values.
     """
@@ -705,37 +705,40 @@ def calculate_t_model_allocation(
 
     stem_data = calculate_t_model_allometry(pft_data=pft_data, dbh=dbh)
 
-    stem_data["whole_crown_gpp"] = calculate_whole_crown_gpp(
+    # Broadcast potential GPP to match stem data outputs
+    potential_gpp = np.broadcast_to(potential_gpp, stem_data["dbh"].shape)
+
+    whole_crown_gpp = calculate_whole_crown_gpp(
         potential_gpp=potential_gpp,
         crown_area=stem_data["crown_area"],
         par_ext=pft_data["par_ext"],
         lai=pft_data["lai"],
     )
 
-    stem_data["sapwood_respiration"] = calculate_sapwood_respiration(
+    sapwood_respiration = calculate_sapwood_respiration(
         resp_s=pft_data["lai"], sapwood_mass=stem_data["sapwood_mass"]
     )
 
-    stem_data["foliar_respiration"] = calculate_foliar_respiration(
-        resp_f=pft_data["resp_f"], whole_crown_gpp=stem_data["whole_crown_gpp"]
+    foliar_respiration = calculate_foliar_respiration(
+        resp_f=pft_data["resp_f"], whole_crown_gpp=whole_crown_gpp
     )
 
-    stem_data["fine_root_respiration"] = calculate_fine_root_respiration(
+    fine_root_respiration = calculate_fine_root_respiration(
         zeta=pft_data["zeta"],
         sla=pft_data["sla"],
         resp_r=pft_data["resp_r"],
         foliage_mass=stem_data["foliage_mass"],
     )
 
-    stem_data["npp"] = calculate_net_primary_productivity(
+    npp = calculate_net_primary_productivity(
         yld=pft_data["yld"],
-        whole_crown_gpp=stem_data["whole_crown_gpp"],
-        foliar_respiration=stem_data["foliar_respiration"],
-        fine_root_respiration=stem_data["fine_root_respiration"],
-        sapwood_respiration=stem_data["sapwood_respiration"],
+        whole_crown_gpp=whole_crown_gpp,
+        foliar_respiration=foliar_respiration,
+        fine_root_respiration=fine_root_respiration,
+        sapwood_respiration=sapwood_respiration,
     )
 
-    stem_data["turnover"] = calculate_foliage_and_fine_root_turnover(
+    turnover = calculate_foliage_and_fine_root_turnover(
         sla=pft_data["sla"],
         zeta=pft_data["zeta"],
         tau_f=pft_data["tau_f"],
@@ -743,11 +746,7 @@ def calculate_t_model_allocation(
         foliage_mass=stem_data["foliage_mass"],
     )
 
-    (
-        stem_data["delta_dbh"],
-        stem_data["delta_stem_mass"],
-        stem_data["delta_foliage_mass"],
-    ) = calculate_growth_increments(
+    (delta_dbh, delta_stem_mass, delta_foliage_mass) = calculate_growth_increments(
         rho_s=pft_data["rho_s"],
         a_hd=pft_data["a_hd"],
         h_max=pft_data["h_max"],
@@ -755,10 +754,20 @@ def calculate_t_model_allocation(
         ca_ratio=pft_data["ca_ratio"],
         sla=pft_data["sla"],
         zeta=pft_data["zeta"],
-        npp=stem_data["npp"],
-        turnover=stem_data["turnover"],
+        npp=npp,
+        turnover=turnover,
         dbh=stem_data["dbh"],
         stem_height=stem_data["stem_height"],
     )
 
-    return stem_data
+    return dict(
+        whole_crown_gpp=whole_crown_gpp,
+        sapwood_respiration=sapwood_respiration,
+        foliar_respiration=foliar_respiration,
+        fine_root_respiration=fine_root_respiration,
+        npp=npp,
+        turnover=turnover,
+        delta_dbh=delta_dbh,
+        delta_stem_mass=delta_stem_mass,
+        delta_foliage_mass=delta_foliage_mass,
+    )

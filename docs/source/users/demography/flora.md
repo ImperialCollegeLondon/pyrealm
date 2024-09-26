@@ -58,7 +58,7 @@ The returned values in the dictionary are 2 dimensional arrays with each DBH val
 row and each PFT as a column. This makes them convenient to plot using `matplotlib`.
 
 ```{code-cell}
-dbh = np.arange(0, 1.6, 0.01)
+dbh = np.arange(0, 1.6, 0.01)[:, None]
 allometries = flora.get_allometries(dbh=dbh)
 ```
 
@@ -87,8 +87,8 @@ for ax, (var, ylab) in zip(axes.flatten(), plot_details):
 ```
 
 ```{code-cell}
-potential_gpp = np.repeat(55, dbh.size)
-allometries = flora.get_growth(dbh=dbh, potential_gpp=potential_gpp)
+potential_gpp = np.repeat(55, dbh.size)[:, None]
+allocation = flora.get_allocation(dbh=dbh, potential_gpp=potential_gpp)
 ```
 
 ```{code-cell}
@@ -109,7 +109,7 @@ plot_details = [
 axes = axes.flatten()
 
 for ax, (var, ylab) in zip(axes, plot_details):
-    ax.plot(dbh, allometries[var], label=flora.keys())
+    ax.plot(dbh, allocation[var], label=flora.keys())
     ax.set_xlabel("Diameter at breast height (m)")
     ax.set_ylabel(ylab)
 
@@ -118,8 +118,4 @@ for ax, (var, ylab) in zip(axes, plot_details):
 
 # Delete unused panel in 5 x 2 grid
 fig.delaxes(axes[-1])
-```
-
-```{code-cell}
-
 ```
