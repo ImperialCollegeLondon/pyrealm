@@ -273,10 +273,12 @@ def test_Flora_get_allometries_dbh_against_rtmodel(rtmodel_data, rtmodel_flora):
     correct values. So the shapes go (3,) x (6, 1) -> (6,3)
     """
 
-    result = rtmodel_flora.get_allometries(dbh=rtmodel_data["dbh"][:, 0])
+    result = rtmodel_flora.get_allometries(dbh=rtmodel_data["dbh"][:, [0]])
 
     for key, value in result.items():
-        assert np.allclose(value, rtmodel_data[key])
+        # Skip canopy shape allometries that are not in the original T Model
+        if key not in ("canopy_r0", "canopy_z_max"):
+            assert np.allclose(value, rtmodel_data[key])
 
 
 def test_Flora_get_allometries_stem_height_against_rtmodel(rtmodel_data, rtmodel_flora):
@@ -291,11 +293,13 @@ def test_Flora_get_allometries_stem_height_against_rtmodel(rtmodel_data, rtmodel
     for idx, (name, pft) in enumerate(rtmodel_flora.items()):
         single_pft_flora = Flora(pfts=[pft])
         result = single_pft_flora.get_allometries(
-            stem_height=rtmodel_data["stem_height"][:, idx]
+            stem_height=rtmodel_data["stem_height"][:, [idx]]
         )
 
         for key, value in result.items():
-            assert np.allclose(value, rtmodel_data[key][:, [idx]])
+            # Skip canopy shape allometries that are not in the original T Model
+            if key not in ("canopy_r0", "canopy_z_max"):
+                assert np.allclose(value, rtmodel_data[key][:, [idx]])
 
 
 @pytest.mark.parametrize(
@@ -319,14 +323,16 @@ def test_Flora_get_allometries_stem_height_against_rtmodel(rtmodel_data, rtmodel
             np.array([[0.1, 0.2, 0.3]]),
             None,
             pytest.raises(ValueError),
-            "DBH must be a one dimensional array",
+            "The z argument is two dimensional (shape: (1, 3)) "
+            "but is not a column array.",  # TODO - fix to DBH not z
             id="fail_dbh_not_1D",
         ),
         pytest.param(
             None,
             np.array([[10, 20, 30]]),
             pytest.raises(ValueError),
-            "Stem heights must be a one dimensional array",
+            "The z argument is two dimensional (shape: (1, 3)) "
+            "but is not a column array.",  # TODO - fix to stem_height not z
             id="fail_stem_height_not_1D",
         ),
         pytest.param(
@@ -334,18 +340,32 @@ def test_Flora_get_allometries_stem_height_against_rtmodel(rtmodel_data, rtmodel
             None,
             does_not_raise(),
             None,
-            id="ok_with_dbh",
+            id="ok_with_dbh_as_row",
         ),
         pytest.param(
             None,
             np.array([5, 10, 15]),
             does_not_raise(),
             None,
-            id="ok_with_stem_heights",
+            id="ok_with_stem_heights_as_row",
+        ),
+        pytest.param(
+            np.array([[0.1], [0.2], [0.3]]),
+            None,
+            does_not_raise(),
+            None,
+            id="ok_with_dbh_as_col",
         ),
         pytest.param(
             None,
-            np.array([0, 5, 10, 15, 45.33, 1000]),
+            np.array([[5], [10], [15]]),
+            does_not_raise(),
+            None,
+            id="ok_with_stem_heights_as_col",
+        ),
+        pytest.param(
+            None,
+            np.array([[0], [5], [10], [15], [45.33], [1000]]),
             does_not_raise(),
             None,
             id="ok_with_edgy_stem_heights",

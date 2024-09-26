@@ -625,58 +625,69 @@ def calculate_t_model_allometry(
             allometry values.
     """
 
-    stem_data = {"dbh": dbh}
-
-    stem_data["stem_height"] = calculate_heights(
+    stem_height = calculate_heights(
         h_max=pft_data["h_max"],
         a_hd=pft_data["a_hd"],
-        dbh=stem_data["dbh"],
+        dbh=dbh,
     )
 
-    stem_data["crown_area"] = calculate_crown_areas(
+    # Broadcast dbh to shape of stem height to get congruent shapes
+    dbh = np.broadcast_to(dbh, stem_height.shape)
+
+    crown_area = calculate_crown_areas(
         ca_ratio=pft_data["ca_ratio"],
         a_hd=pft_data["a_hd"],
-        dbh=stem_data["dbh"],
-        stem_height=stem_data["stem_height"],
+        dbh=dbh,
+        stem_height=stem_height,
     )
 
-    stem_data["crown_fraction"] = calculate_crown_fractions(
+    crown_fraction = calculate_crown_fractions(
         a_hd=pft_data["a_hd"],
-        dbh=stem_data["dbh"],
-        stem_height=stem_data["stem_height"],
+        dbh=dbh,
+        stem_height=stem_height,
     )
 
-    stem_data["stem_mass"] = calculate_stem_masses(
+    stem_mass = calculate_stem_masses(
         rho_s=pft_data["rho_s"],
-        dbh=stem_data["dbh"],
-        stem_height=stem_data["stem_height"],
+        dbh=dbh,
+        stem_height=stem_height,
     )
 
-    stem_data["foliage_mass"] = calculate_foliage_masses(
+    foliage_mass = calculate_foliage_masses(
         sla=pft_data["sla"],
         lai=pft_data["lai"],
-        crown_area=stem_data["crown_area"],
+        crown_area=crown_area,
     )
 
-    stem_data["sapwood_mass"] = calculate_sapwood_masses(
+    sapwood_mass = calculate_sapwood_masses(
         rho_s=pft_data["rho_s"],
         ca_ratio=pft_data["ca_ratio"],
-        stem_height=stem_data["stem_height"],
-        crown_area=stem_data["crown_area"],
-        crown_fraction=stem_data["crown_fraction"],
+        stem_height=stem_height,
+        crown_area=crown_area,
+        crown_fraction=crown_fraction,
     )
 
-    stem_data["canopy_r0"] = calculate_canopy_r0(
+    canopy_r0 = calculate_canopy_r0(
         q_m=pft_data["q_m"],
-        crown_area=stem_data["crown_area"],
+        crown_area=crown_area,
     )
 
-    stem_data["canopy_z_max"] = calculate_canopy_z_max(
+    canopy_z_max = calculate_canopy_z_max(
         z_max_prop=pft_data["z_max_prop"],
-        stem_height=stem_data["stem_height"],
+        stem_height=stem_height,
     )
 
-    return stem_data
+    return dict(
+        dbh=dbh,
+        stem_height=stem_height,
+        crown_area=crown_area,
+        crown_fraction=crown_fraction,
+        stem_mass=stem_mass,
+        foliage_mass=foliage_mass,
+        sapwood_mass=sapwood_mass,
+        canopy_r0=canopy_r0,
+        canopy_z_max=canopy_z_max,
+    )
 
 
 def calculate_t_model_allocation(
