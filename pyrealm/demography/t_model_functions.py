@@ -9,6 +9,10 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.core.utilities import check_input_shapes
+from pyrealm.demography.canopy_functions import (
+    calculate_canopy_r0,
+    calculate_canopy_z_max,
+)
 
 
 def _validate_t_model_args(pft_args: list[NDArray], size_args: list[NDArray]) -> None:
@@ -36,8 +40,7 @@ def _validate_t_model_args(pft_args: list[NDArray], size_args: list[NDArray]) ->
         raise ValueError("Size arrays are not of equal length")
 
     # Explicitly check to see if the size arrays are row arrays and - if so - enforce
-    # that they are the same length.abs
-
+    # that they are the same length.
     if len(size_args_shape) == 1 and not pft_args_shape == size_args_shape:
         raise ValueError("Trait and size inputs are row arrays of unequal length.")
 
@@ -663,10 +666,20 @@ def calculate_t_model_allometry(
         crown_fraction=stem_data["crown_fraction"],
     )
 
+    stem_data["canopy_r0"] = calculate_canopy_r0(
+        q_m=pft_data["q_m"],
+        crown_area=stem_data["crown_area"],
+    )
+
+    stem_data["canopy_z_max"] = calculate_canopy_z_max(
+        z_max_prop=pft_data["z_max_prop"],
+        stem_height=stem_data["stem_height"],
+    )
+
     return stem_data
 
 
-def calculate_t_model_growth(
+def calculate_t_model_allocation(
     pft_data: dict[str, NDArray[np.float32]],
     dbh: NDArray[np.float32],
     potential_gpp: NDArray[np.float32],

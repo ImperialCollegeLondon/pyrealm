@@ -119,3 +119,7 @@ for ax, (var, ylab) in zip(axes, plot_details):
 # Delete unused panel in 5 x 2 grid
 fig.delaxes(axes[-1])
 ```
+
+```{code-cell}
+
+```

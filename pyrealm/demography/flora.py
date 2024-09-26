@@ -31,13 +31,15 @@ from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
 from pyrealm.demography.canopy_functions import (
+    _validate_z_qz_args,
+    calculate_canopy_profiles,
     calculate_canopy_q_m,
     calculate_canopy_z_max_proportion,
 )
 from pyrealm.demography.t_model_functions import (
     calculate_dbh_from_height,
+    calculate_t_model_allocation,
     calculate_t_model_allometry,
-    calculate_t_model_growth,
 )
 
 if sys.version_info[:2] >= (3, 11):
@@ -331,15 +333,7 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
 
         This method calculates the allometric predictions of the T Model for all of the
         plant functional types within a Flora, given an array of stem sizes at which to
-        calculate the predictions. The T Model uses diameter at breast height (DBH) as
-        the fundamental metric of stem size but this method will also accept a set of
-        stem heights as an alternative size metric. Stem heights are converted back into
-        the expected DBH before calculating the allometric predictions - if any of the
-        stem heights are higher than the maximum height for a PFT, these will be shown
-        as `np.nan` values.
-
-        Both ``dbh`` and ``stem_height`` must be provided as one-dimensional arrays and
-        it is an error to provide both. The method returns a dictionary of the
+        calculate the predictions. The method returns a dictionary of the following
         allometric predictions of the T Model:
 
         * 'dbh'
@@ -351,7 +345,15 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
         * 'sapwood_mass'
 
         Each dictionary entry is a 2D array with PFTs as columns and the predictions for
-        each size value as rows.
+        each stem size as rows.
+
+        The T Model uses diameter at breast height (DBH) as the fundamental metric of
+        stem size but this method will also accept a set of stem heights as an
+        alternative size metric. Stem heights are converted back into the expected DBH
+        before calculating the allometric predictions - if any of the stem heights are
+        higher than the maximum height for a PFT, these will be shown as `np.nan`
+        values. One of ``dbh`` and ``stem_height`` must be provided as a one-dimensional
+        array.
 
         Args:
             dbh: An array of diameter at breast height values.
@@ -363,31 +365,26 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
             raise ValueError("Provide one of either dbh or stem_height")
 
         if stem_height is not None:
-            # Check array dimensions
-            if stem_height.ndim != 1:
-                raise ValueError("Stem heights must be a one dimensional array")
+            # TODO: This steals the validation from the canopy functions - this might be
+            #       a general function for the module - see also the
+            #       validate_t_model_args function.
+            _validate_z_qz_args(z=stem_height, stem_properties=[self.data["h_max"]])
 
-            # Convert stem heights back into an array of initial DBH values
-            # - broadcast to (n_heights, n_pfts)
-            stem_height = np.broadcast_to(
-                stem_height[:, None], (stem_height.size, self.n_pfts)
-            )
-            dbh_arr = calculate_dbh_from_height(
+            dbh = calculate_dbh_from_height(
                 h_max=self.data["h_max"],
                 a_hd=self.data["a_hd"],
                 stem_height=stem_height,
             )
         elif dbh is not None:
-            # Check array dimensions
-            if dbh.ndim != 1:
-                raise ValueError("DBH must be a one dimensional array")
+            # TODO: This steals the validation from the canopy functions - this might be
+            #       a general function for the module - see also the
+            #       validate_t_model_args function.
+            _validate_z_qz_args(z=dbh, stem_properties=[self.data["h_max"]])
 
-            # Broadcast the dbh to a  (n_heights, n_pfts)
-            dbh_arr = np.broadcast_to(dbh[:, None], (dbh.size, self.n_pfts))
+        # DBH is now always populated so ignore warning that it might be None
+        return calculate_t_model_allometry(pft_data=self.data, dbh=dbh)  # type: ignore [arg-type]
 
-        return calculate_t_model_allometry(pft_data=self.data, dbh=dbh_arr)
-
-    def get_growth(
+    def get_allocation(
         self,
         potential_gpp: NDArray[np.float32],
         dbh: NDArray[np.float32] | None = None,
@@ -395,19 +392,10 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
     ) -> dict[str, NDArray]:
         """Calculate T Model scalings for the Flora members.
 
-        This method calculates the allometric predictions of the T Model for all of the
-        plant functional types within a Flora, given an array of stem sizes at which to
-        calculate the predictions. The T Model uses diameter at breast height (DBH) as
-        the fundamental metric of stem size but this method will also accept a set of
-        stem heights as an alternative size metric. Stem heights are converted back into
-        the expected DBH before calculating the allometric predictions - if any of the
-        stem heights are higher than the maximum height for a PFT, these will be shown
-        as `np.nan` values.
-
-        Both ``dbh`` and ``stem_height`` must be provided as one-dimensional arrays and
-        it is an error to provide both. The method returns a dictionary of the
-        allometric predictions of the T Model:
-
+        This method calculates the predicted allocation of potential gross primary
+        productivity (GPP) under the T Model for all of the plant functional types
+        within a Flora, given values for stem size and potential GPP. The method returns
+        a dictionary of the allocation predictions of the T Model:
 
         * "whole_crown_gpp"
         * "sapwood_respiration"
@@ -421,6 +409,14 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
 
         Each dictionary entry is a 2D array with PFTs as columns and the predictions for
         each size value as rows.
+
+        The T Model uses diameter at breast height (DBH) as the fundamental metric of
+        stem size but this method will also accept a set of stem heights as an
+        alternative size metric. Stem heights are converted back into the expected DBH
+        before calculating the allometric predictions - if any of the stem heights are
+        higher than the maximum height for a PFT, these will be shown as `np.nan`
+        values. One of ``dbh`` and ``stem_height`` must be provided as a one-dimensional
+        array, and ``potential_gpp`` must have the same shape.
 
         Args:
             potential_gpp: An array of potential GPP values.
@@ -463,28 +459,37 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
 
         gpp_arr = np.broadcast_to(potential_gpp[:, None], (n_size, self.n_pfts))
 
-        return calculate_t_model_growth(
+        return calculate_t_model_allocation(
             pft_data=self.data, dbh=dbh_arr, potential_gpp=gpp_arr
         )
 
+    def get_canopy_profile(
+        self,
+        z: NDArray[np.float32],
+        stem_height: NDArray[np.float32],
+        crown_area: NDArray[np.float32],
+        r0: NDArray[np.float32],
+        z_max: NDArray[np.float32],
+    ) -> dict[str, NDArray]:
+        """Calculate T Model scalings for the Flora members.
 
-#     @dataclass
-# class PFTAllometry:
-#     """TODO."""
+        TODO: Description
 
-#     pft: type[PlantFunctionalTypeStrict]
-#     dbh: NDArray[np.float32] | None
-#     stem_height: NDArray[np.float32] | None
-#     data: dict[str, NDArray[np.float32]] = field(init=False)
+        Args:
+            z: TODO
+            stem_height: TODO
+            crown_area: TODO
+            r0: TODO
+            z_max: TODO
+        """
 
-#     def __post_init__(self) -> None:
-#         """Populates the T Model allometry from the initial size data."""
-#         # Need one of dbh or stem_height - use XOR
-#         if not ((self.dbh is None) ^ (self.stem_height is None)):
-#             raise ValueError("Provide one of either dbh or stem_height")
+        # TODO - validation
 
-#         # Convert stem height to DBH for the plant functional type
-#         if self.stem_height is not None:
-#             self.dbh = calculate_dbh_from_height(
-#                 h_max=self.pft.h_max, a_hd=self.pft.a_hd, stem_height=self.stem_height
-#             )
+        return calculate_canopy_profiles(
+            pft_data=self.data,
+            z=z,
+            stem_height=stem_height,
+            crown_area=crown_area,
+            r0=r0,
+            z_max=z_max,
+        )
