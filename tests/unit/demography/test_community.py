@@ -17,15 +17,14 @@ def fixture_expected(fixture_flora):
 
     from pyrealm.demography.t_model_functions import calculate_heights
 
-    a_hd = np.array([fixture_flora["broadleaf"].a_hd, fixture_flora["conifer"].a_hd])
-    h_max = np.array([fixture_flora["broadleaf"].h_max, fixture_flora["conifer"].h_max])
-    n_indiv = np.array([6, 1])
     dbh = np.array([0.2, 0.5])
 
     expected = {
-        "n_individuals": n_indiv,
-        "a_hd": a_hd,
-        "height": calculate_heights(a_hd=a_hd, h_max=h_max, dbh=dbh),
+        "n_individuals": np.array([6, 1]),
+        "a_hd": fixture_flora.a_hd,
+        "height": calculate_heights(
+            a_hd=fixture_flora.a_hd, h_max=fixture_flora.h_max, dbh=dbh
+        ),
     }
 
     return expected
@@ -39,7 +38,7 @@ def check_expected(community, expected):
         expected["n_individuals"],
     )
     assert np.allclose(
-        community.cohort_data["a_hd"],
+        community.stem_traits.a_hd,
         expected["a_hd"],
     )
     assert np.allclose(
