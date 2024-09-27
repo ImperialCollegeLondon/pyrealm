@@ -114,7 +114,7 @@ class Canopy:
                     community.stem_traits.m,
                     community.stem_traits.n,
                     community.stem_traits.q_m,
-                    community.stem_allometry.canopy_z_max,
+                    community.stem_allometry.crown_z_max,
                     community.cohort_data["n_individuals"],
                     target_area,
                     False,  # validate
@@ -149,7 +149,7 @@ class Canopy:
             crown_area=community.stem_allometry.crown_area,
             stem_height=community.stem_allometry.stem_height,
             q_m=community.stem_traits.q_m,
-            z_max=community.stem_allometry.canopy_z_max,
+            z_max=community.stem_allometry.crown_z_max,
             validate=False,
         )
 
@@ -161,6 +161,6 @@ class Canopy:
             stem_height=community.stem_allometry.stem_height,
             f_g=community.stem_traits.f_g,
             q_m=community.stem_traits.q_m,
-            z_max=community.stem_allometry.canopy_z_max,
+            z_max=community.stem_allometry.crown_z_max,
             validate=False,
         )

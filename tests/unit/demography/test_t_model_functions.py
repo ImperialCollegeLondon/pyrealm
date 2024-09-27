@@ -722,7 +722,7 @@ def test_StemAllometry(rtmodel_flora, rtmodel_data):
     vars_to_check = (
         v
         for v in stem_allometry.allometry_attrs
-        if v not in ["canopy_r0", "canopy_z_max"]
+        if v not in ["crown_r0", "crown_z_max"]
     )
     for var in vars_to_check:
         assert np.allclose(getattr(stem_allometry, var), rtmodel_data[var])

@@ -635,8 +635,8 @@ class StemAllometry:
         "stem_mass",
         "foliage_mass",
         "sapwood_mass",
-        "canopy_r0",
-        "canopy_z_max",
+        "crown_r0",
+        "crown_z_max",
     )
 
     # Init vars
@@ -663,9 +663,9 @@ class StemAllometry:
     """Foliage mass (kg)"""
     sapwood_mass: NDArray[np.float32] = field(init=False)
     """Sapwood mass (kg)"""
-    canopy_r0: NDArray[np.float32] = field(init=False)
-    """Canopy radius scaling factor (-)"""
-    canopy_z_max: NDArray[np.float32] = field(init=False)
+    crown_r0: NDArray[np.float32] = field(init=False)
+    """Crown radius scaling factor (-)"""
+    crown_z_max: NDArray[np.float32] = field(init=False)
     """Height of maximum crown radius (metres)"""
 
     def __post_init__(
@@ -715,12 +715,12 @@ class StemAllometry:
             crown_fraction=self.crown_fraction,
         )
 
-        self.canopy_r0 = calculate_crown_r0(
+        self.crown_r0 = calculate_crown_r0(
             q_m=stem_traits.q_m,
             crown_area=self.crown_area,
         )
 
-        self.canopy_z_max = calculate_crown_z_max(
+        self.crown_z_max = calculate_crown_z_max(
             z_max_prop=stem_traits.z_max_prop,
             stem_height=self.stem_height,
         )

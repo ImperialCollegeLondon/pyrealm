@@ -417,7 +417,7 @@ def test_calculate_relative_crown_radius_at_z_values(fixture_community):
     # prediction from the T model allometric equations.
     assert np.allclose(
         fixture_community.stem_allometry.crown_area,
-        np.pi * (q_z_values * fixture_community.stem_allometry.canopy_r0) ** 2,
+        np.pi * (q_z_values * fixture_community.stem_allometry.crown_r0) ** 2,
     )
 
 
@@ -521,7 +521,7 @@ def test_calculate_stem_projected_crown_area_at_z_values(
         stem_height=fixture_community.stem_allometry.stem_height,
         crown_area=fixture_community.stem_allometry.crown_area,
         q_m=fixture_community.stem_traits.q_m,
-        z_max=fixture_community.stem_allometry.canopy_z_max,
+        z_max=fixture_community.stem_allometry.crown_z_max,
     )
 
     assert np.allclose(
@@ -548,7 +548,7 @@ def test_solve_community_projected_canopy_area(fixture_community):
         this_height,
         this_target,
     ) in zip(
-        np.flip(fixture_community.stem_allometry.canopy_z_max),
+        np.flip(fixture_community.stem_allometry.crown_z_max),
         np.cumsum(np.flip(fixture_community.stem_allometry.crown_area)),
     ):
         solved = solve_community_projected_canopy_area(
@@ -559,7 +559,7 @@ def test_solve_community_projected_canopy_area(fixture_community):
             m=fixture_community.stem_traits.m,
             n=fixture_community.stem_traits.n,
             q_m=fixture_community.stem_traits.q_m,
-            z_max=fixture_community.stem_allometry.canopy_z_max,
+            z_max=fixture_community.stem_allometry.crown_z_max,
             target_area=this_target,
         )
 
@@ -623,7 +623,7 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
 
     # Calculate the leaf areas at the locations of z_max for each stem from the lowest
     # to the highest
-    z_max = fixture_community.stem_allometry.canopy_z_max[:, None]
+    z_max = fixture_community.stem_allometry.crown_z_max[:, None]
 
     q_z = calculate_relative_crown_radius_at_z(
         z=z_max,
@@ -639,7 +639,7 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
         crown_area=fixture_community.stem_allometry.crown_area,
         f_g=fixture_community.stem_traits.f_g,
         q_m=fixture_community.stem_traits.q_m,
-        z_max=fixture_community.stem_allometry.canopy_z_max,
+        z_max=fixture_community.stem_allometry.crown_z_max,
     )
 
     # Pre-calculated values
@@ -673,7 +673,7 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
         crown_area=fixture_community.stem_allometry.crown_area,
         f_g=fixture_community.stem_traits.f_g,
         q_m=fixture_community.stem_traits.q_m,
-        z_max=fixture_community.stem_allometry.canopy_z_max,
+        z_max=fixture_community.stem_allometry.crown_z_max,
     )
 
     expected_leaf_area_fg002 = np.array(

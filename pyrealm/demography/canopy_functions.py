@@ -444,11 +444,11 @@ def calculate_stem_projected_leaf_area_at_z(
 class CrownProfile:
     """Calculate vertical crown profiles for stems.
 
-    This method calculates canopy profile predictions, given an array of vertical
+    This method calculates crown profile predictions, given an array of vertical
     heights (``z``) for:
 
-    * relativate canopy radius,
-    * actual canopy radius,
+    * relativate crown radius,
+    * actual crown radius,
     * projected crown area, and
     * project leaf area.
 
@@ -459,7 +459,7 @@ class CrownProfile:
     Args:
         stem_traits:
         stem_allometry: A Ste
-        z: An array of vertical height values at which to calculate canopy profiles.
+        z: An array of vertical height values at which to calculate crown profiles.
         stem_height: A row array providing expected stem height for each PFT.
         crown_area: A row array providing expected crown area for each PFT.
         r0: A row array providing expected r0 for each PFT.
@@ -471,7 +471,7 @@ class CrownProfile:
     stem_allometry: InitVar[StemAllometry]
     """A StemAllometry instance setting the stem allometries for the crown profile."""
     z: InitVar[NDArray[np.float32]]
-    """An array of vertical height values at which to calculate canopy profiles."""
+    """An array of vertical height values at which to calculate crown profiles."""
 
     relativate_crown_radius: NDArray[np.float32] = field(init=False)
     """An array of the relative crown radius of stems at z heights"""
@@ -488,7 +488,7 @@ class CrownProfile:
         stem_allometry: StemAllometry,
         z: NDArray[np.float32],
     ) -> None:
-        """Populate canopy profile attributes from the traits, allometry and height."""
+        """Populate crown profile attributes from the traits, allometry and height."""
         # Calculate relative crown radius
         self.relative_crown_radius = calculate_relative_crown_radius_at_z(
             z=z,
@@ -499,7 +499,7 @@ class CrownProfile:
 
         # Calculate actual radius
         self.crown_radius = calculate_crown_radius(
-            q_z=self.relative_crown_radius, r0=stem_allometry.canopy_r0
+            q_z=self.relative_crown_radius, r0=stem_allometry.crown_r0
         )
 
         # Calculate projected crown area
@@ -509,7 +509,7 @@ class CrownProfile:
             crown_area=stem_allometry.crown_area,
             q_m=stem_traits.q_m,
             stem_height=stem_allometry.stem_height,
-            z_max=stem_allometry.canopy_z_max,
+            z_max=stem_allometry.crown_z_max,
         )
 
         # Calculate projected leaf area
@@ -520,5 +520,5 @@ class CrownProfile:
             q_m=stem_traits.q_m,
             crown_area=stem_allometry.crown_area,
             stem_height=stem_allometry.stem_height,
-            z_max=stem_allometry.canopy_z_max,
+            z_max=stem_allometry.crown_z_max,
         )
