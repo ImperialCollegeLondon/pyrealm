@@ -402,15 +402,15 @@ def test_calculate_relative_canopy_radius_at_z_values(fixture_community):
     # Canopy shape model gives the maximum radius at a height z_max
     z_max = (
         fixture_community.cohort_data["stem_height"]
-        * fixture_community.cohort_data["z_max_prop"]
+        * fixture_community.stem_traits.z_max_prop
     )
 
     # Get the relative radius at that height
     q_z_values = calculate_relative_canopy_radius_at_z(
         z=z_max,
         stem_height=fixture_community.cohort_data["stem_height"],
-        m=fixture_community.cohort_data["m"],
-        n=fixture_community.cohort_data["n"],
+        m=fixture_community.stem_traits.m,
+        n=fixture_community.stem_traits.n,
     )
 
     # Now test that the circular crown area from that radius is equivalent to the direct
@@ -510,8 +510,8 @@ def test_calculate_stem_projected_crown_area_at_z_values(
     q_z = calculate_relative_canopy_radius_at_z(
         z=heights,
         stem_height=fixture_community.cohort_data["stem_height"],
-        m=fixture_community.cohort_data["m"],
-        n=fixture_community.cohort_data["n"],
+        m=fixture_community.stem_traits.m,
+        n=fixture_community.stem_traits.n,
     )
 
     # Calculate and test these values
@@ -520,7 +520,7 @@ def test_calculate_stem_projected_crown_area_at_z_values(
         q_z=q_z,
         stem_height=fixture_community.cohort_data["stem_height"],
         crown_area=fixture_community.cohort_data["crown_area"],
-        q_m=fixture_community.cohort_data["q_m"],
+        q_m=fixture_community.stem_traits.q_m,
         z_max=fixture_community.cohort_data["canopy_z_max"],
     )
 
@@ -556,9 +556,9 @@ def test_solve_community_projected_canopy_area(fixture_community):
             stem_height=fixture_community.cohort_data["stem_height"],
             crown_area=fixture_community.cohort_data["crown_area"],
             n_individuals=fixture_community.cohort_data["n_individuals"],
-            m=fixture_community.cohort_data["m"],
-            n=fixture_community.cohort_data["n"],
-            q_m=fixture_community.cohort_data["q_m"],
+            m=fixture_community.stem_traits.m,
+            n=fixture_community.stem_traits.n,
+            q_m=fixture_community.stem_traits.q_m,
             z_max=fixture_community.cohort_data["canopy_z_max"],
             target_area=this_target,
         )
@@ -628,8 +628,8 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
     q_z = calculate_relative_canopy_radius_at_z(
         z=z_max,
         stem_height=fixture_community.cohort_data["stem_height"],
-        m=fixture_community.cohort_data["m"],
-        n=fixture_community.cohort_data["n"],
+        m=fixture_community.stem_traits.m,
+        n=fixture_community.stem_traits.n,
     )
 
     leaf_area_fg0 = calculate_stem_projected_leaf_area_at_z(
@@ -637,8 +637,8 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
         q_z=q_z,
         stem_height=fixture_community.cohort_data["stem_height"],
         crown_area=fixture_community.cohort_data["crown_area"],
-        f_g=fixture_community.cohort_data["f_g"],
-        q_m=fixture_community.cohort_data["q_m"],
+        f_g=fixture_community.stem_traits.f_g,
+        q_m=fixture_community.stem_traits.q_m,
         z_max=fixture_community.cohort_data["canopy_z_max"],
     )
 
@@ -664,15 +664,15 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
     )
 
     # Introduce some crown gap fraction and recalculate
-    fixture_community.cohort_data["f_g"] += 0.02
+    fixture_community.stem_traits.f_g += 0.02
 
     leaf_area_fg002 = calculate_stem_projected_leaf_area_at_z(
         z=z_max,
         q_z=q_z,
         stem_height=fixture_community.cohort_data["stem_height"],
         crown_area=fixture_community.cohort_data["crown_area"],
-        f_g=fixture_community.cohort_data["f_g"],
-        q_m=fixture_community.cohort_data["q_m"],
+        f_g=fixture_community.stem_traits.f_g,
+        q_m=fixture_community.stem_traits.q_m,
         z_max=fixture_community.cohort_data["canopy_z_max"],
     )
 
