@@ -9,10 +9,12 @@
   data files. This intentionally enforces a complete description of the traits in the
   input data. The ``PlantFunctionalType`` is provided as a more convenient API for
   programmatic use.
-* The Flora class, which is simply a dictionary of named plant functional types for use
-  in describing a plant community in a simulation. The Flora class also defines factory
-  methods to create instances from plant functional type data stored in JSON, TOML or
-  CSV formats.
+* The Flora class, which is a dataclass representing a collection of plant functional
+  types for use in describing a plant community in a simulation. It provides the same
+  trait attributes as the plant functional type classes, but the values are arrays of
+  trait values across the provided PFTS. The Flora class also defines factory methods to
+  create instances from plant functional type data stored in JSON, TOML or CSV formats.
+
 """  # noqa: D415
 
 from __future__ import annotations
@@ -23,6 +25,7 @@ from collections import Counter
 from collections.abc import Sequence
 from dataclasses import InitVar, dataclass, field, fields
 from pathlib import Path
+from typing import ClassVar
 
 import marshmallow_dataclass
 import numpy as np
@@ -211,9 +214,16 @@ class Flora:
             :attr:`~pyrealm.demography.flora.PlantFunctionalTypeStrict.name` attributes.
     """
 
+    # The only init argument.
     pfts: InitVar[Sequence[type[PlantFunctionalTypeStrict]]]
     r"""A sequence of plant functional type instances to include in the Flora."""
 
+    # A class variable setting the attribute names of traits.
+    trait_attrs: ClassVar[list[str]] = [
+        f.name for f in fields(PlantFunctionalTypeStrict)
+    ]
+
+    # Populated post init
     name: NDArray[np.str_] = field(init=False)
     r"""The name of the plant functional type."""
     a_hd: NDArray[np.float32] = field(init=False)
@@ -282,10 +292,8 @@ class Flora:
         # Populate the pft dictionary using the PFT name as key
         object.__setattr__(self, "pft_dict", {p.name: p for p in pfts})
 
-        # Populate the plant functional type attributes with arrays
-        pft_fields = [f.name for f in fields(PlantFunctionalTypeStrict)]
-
-        for pft_field in pft_fields:
+        # Populate the trait attributes with arrays
+        for pft_field in self.trait_attrs:
             object.__setattr__(
                 self, pft_field, np.array([getattr(pft, pft_field) for pft in pfts])
             )
@@ -351,3 +359,88 @@ class Flora:
             raise excep
 
         return cls._from_file_data({"pft": data.to_dict(orient="records")})
+
+    def get_stem_traits(self, pft_names: NDArray[np.str_]) -> StemTraits:
+        """Generates a stem traits object for a set of names.
+
+        Args:
+            pft_names: An array of PFT names for each stem.
+        """
+
+        # Check the initial PFT values are known
+        unknown_pfts = set(pft_names).difference(self.name)
+
+        if unknown_pfts:
+            raise ValueError(
+                f"Plant functional types unknown in flora: {','.join(unknown_pfts)}"
+            )
+
+        # Get the indices for the cohort PFT names in the flora PFT data
+        pft_index = [self.pft_indices[str(nm)] for nm in pft_names]
+
+        # For each trait, get that attribute from the Flora, extract the values
+        # matching the pft_names and pass that into the StemTraits constructor.
+
+        return StemTraits(
+            **{trt: getattr(self, trt)[pft_index] for trt in self.trait_attrs}
+        )
+
+
+@dataclass()
+class StemTraits:
+    """A dataclass for stem traits.
+
+    This dataclass is used to provide arrays of plant functional type (PFT) traits
+    across a set of stems. The main use case is to provide stem trait data as arrays
+    across the cohorts within a community object.
+
+    It provides the same attribute interface as the
+    :class:`~pyrealm.demography.flora.Flora` class, but unlike that class:
+
+    * is purely a data container, and
+    * plant functional types can be represented multiple times to represent multiple
+      stems or cohorts of the same PFT.
+    """
+
+    name: NDArray[np.str_]
+    r"""The name of the plant functional type."""
+    a_hd: NDArray[np.float32]
+    r"""Initial slope of height-diameter relationship (:math:`a`, -)"""
+    ca_ratio: NDArray[np.float32]
+    r"""Initial ratio of crown area to stem cross-sectional area
+    (:math:`c`, -)"""
+    h_max: NDArray[np.float32]
+    r"""Maximum tree height (:math:`H_m`, m)"""
+    rho_s: NDArray[np.float32]
+    r"""Sapwood density (:math:`\rho_s`, kg Cm-3)"""
+    lai: NDArray[np.float32]
+    """Leaf area index within the crown (:math:`L`,  -)"""
+    sla: NDArray[np.float32]
+    r"""Specific leaf area (:math:`\sigma`,  m2 kg-1 C)"""
+    tau_f: NDArray[np.float32]
+    r"""Foliage turnover time (:math:`\tau_f`,years)"""
+    tau_r: NDArray[np.float32]
+    r"""Fine-root turnover time (:math:`\tau_r`,  years)"""
+    par_ext: NDArray[np.float32]
+    r"""Extinction coefficient of photosynthetically active radiation (PAR) (:math:`k`,
+     -)"""
+    yld: NDArray[np.float32]
+    r"""Yield factor (:math:`y`,  -)"""
+    zeta: NDArray[np.float32]
+    r"""Ratio of fine-root mass to foliage area (:math:`\zeta`, kg C m-2)"""
+    resp_r: NDArray[np.float32]
+    r"""Fine-root specific respiration rate (:math:`r_r`, year-1)"""
+    resp_s: NDArray[np.float32]
+    r"""Sapwood-specific respiration rate (:math:`r_s`,  year-1)"""
+    resp_f: NDArray[np.float32]
+    r"""Foliage maintenance respiration fraction (:math:`r_f`,  -)"""
+    m: NDArray[np.float32]
+    r"""Canopy shape parameter (:math:`m`, -)"""
+    n: NDArray[np.float32]
+    r"""Canopy shape parameter (:math:`n`, -)"""
+    f_g: NDArray[np.float32]
+    r"""Crown gap fraction (:math:`f_g`, -)"""
+    q_m: NDArray[np.float32]
+    """Scaling factor to derive maximum crown radius from crown area."""
+    z_max_prop: NDArray[np.float32]
+    """Proportion of stem height at which maximum crown radius is found."""
