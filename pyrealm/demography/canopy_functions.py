@@ -12,59 +12,6 @@ from pyrealm.demography.flora import Flora, StemTraits
 from pyrealm.demography.t_model_functions import StemAllometry
 
 
-def calculate_crown_z_max(
-    z_max_prop: NDArray[np.float32], stem_height: NDArray[np.float32]
-) -> NDArray[np.float32]:
-    r"""Calculate height of maximum crown radius.
-
-    The height of the maximum crown radius (:math:`z_m`) is derived from the crown
-    shape parameters (:math:`m,n`) and the resulting fixed proportion (:math:`p_{zm}`)
-    for plant functional types. These shape parameters are defined as part of the
-    extension of the T Model presented by :cite:t:`joshi:2022a`.
-
-    The value :math:`z_m` is the height above ground where the largest crown radius is
-    found, given the proportion and the estimated stem height (:math:`H`) of
-    individuals.
-
-    .. math::
-
-        z_m = p_{zm} H
-
-    Args:
-        z_max_prop: Crown shape parameter of the PFT
-        stem_height: Stem height of individuals
-    """
-    """Calculate z_m, the height of maximum crown radius."""
-
-    return stem_height * z_max_prop
-
-
-def calculate_crown_r0(
-    q_m: NDArray[np.float32], crown_area: NDArray[np.float32]
-) -> NDArray[np.float32]:
-    r"""Calculate scaling factor for width of maximum crown radius.
-
-    This scaling factor (:math:`r_0`) is derived from the crown shape parameters
-    (:math:`m,n,q_m`) for plant functional types and the estimated crown area
-    (:math:`A_c`) of individuals. The shape parameters are defined as part of the
-    extension of the T Model presented by :cite:t:`joshi:2022a` and :math:`r_0` is used
-    to scale the crown area such that the crown area at the  maximum crown radius fits
-    the expectations of the T Model.
-
-    .. math::
-
-        r_0 = 1/q_m  \sqrt{A_c / \pi}
-
-    Args:
-        q_m: Crown shape parameter of the PFT
-        crown_area: Crown area of individuals
-    """
-    # Scaling factor to give expected A_c (crown area) at
-    # z_m (height of maximum crown radius)
-
-    return 1 / q_m * np.sqrt(crown_area / np.pi)
-
-
 def _validate_z_qz_args(
     z: NDArray[np.float32],
     stem_properties: list[NDArray[np.float32]],
