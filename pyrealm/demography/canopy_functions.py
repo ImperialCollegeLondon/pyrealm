@@ -2,10 +2,14 @@
 used in PlantFATE :cite:t:`joshi:2022a`.
 """  # noqa: D205
 
+from dataclasses import InitVar, dataclass, field
+
 import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.core.utilities import check_input_shapes
+from pyrealm.demography.flora import Flora, StemTraits
+from pyrealm.demography.t_model_functions import StemAllometry
 
 
 def calculate_canopy_q_m(
@@ -78,7 +82,7 @@ def calculate_canopy_z_max(
 def calculate_canopy_r0(
     q_m: NDArray[np.float32], crown_area: NDArray[np.float32]
 ) -> NDArray[np.float32]:
-    r"""Calculate scaling factor for height of maximum crown radius.
+    r"""Calculate scaling factor for width of maximum crown radius.
 
     This scaling factor (:math:`r_0`) is derived from the canopy shape parameters
     (:math:`m,n,q_m`) for plant functional types and the estimated crown area
@@ -226,6 +230,38 @@ def calculate_relative_canopy_radius_at_z(
     z_over_height = z / stem_height
 
     return m * n * z_over_height ** (n - 1) * (1 - z_over_height**n) ** (m - 1)
+
+
+def calculate_canopy_radius(
+    q_z: NDArray[np.float32],
+    r0: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
+    r"""Calculate canopy radius from relative radius and canopy r0.
+
+    The relative canopy radius (:math:`q(z)`) at a given height :math:`z` describes the
+    vertical profile of the canopy shape, but only varies with the ``m`` and ``n`` shape
+    parameters and the stem height. The actual crown radius at a given height
+    (:math:`r(z)`) needs to be scaled using :math:`r_0` such that the maximum crown area
+    equals the expected crown area given the crown area ratio traiit for the plant
+    functional type:
+
+    .. math::
+
+        r(z) = r_0 q(z)
+
+    This function calculates :math:`r(z)` given estimated ``r0`` and an array of
+    relative radius values.
+
+    Args:
+        q_z: TODO
+        r0: TODO
+        validate: Boolean flag to suppress argument validation.
+    """
+
+    # TODO - think about validation here. qz must be row array or 2D (N, n_pft)
+
+    return r0 * q_z
 
 
 def calculate_stem_projected_crown_area_at_z(
@@ -404,28 +440,85 @@ def calculate_stem_projected_leaf_area_at_z(
     return A_cp
 
 
-# def calculate_total_canopy_A_cp(z: float, f_g: float, community: Community) -> float:
-#     """Calculate total leaf area at a given height.
+@dataclass
+class CrownProfile:
+    """Calculate vertical crown profiles for stems.
 
-#     :param f_g:
-#     :param community:
-#     :param z: Height above ground.
-#     :return: Total leaf area in the canopy at a given height.
-#     """
-#     A_cp_for_individuals = calculate_projected_leaf_area_for_individuals(
-#         z, f_g, community
-#     )
+    This method calculates canopy profile predictions, given an array of vertical
+    heights (``z``) for:
 
-#     A_cp_for_cohorts = A_cp_for_individuals * community.cohort_number_of_individuals
+    * relativate canopy radius,
+    * actual canopy radius,
+    * projected crown area, and
+    * project leaf area.
 
-#     return A_cp_for_cohorts.sum()
+    The predictions require a set of plant functional types (PFTs) but also the expected
+    allometric predictions of stem height, crown area and z_max for an actual stem of a
+    given size for each PFT.
 
+    Args:
+        stem_traits:
+        stem_allometry: A Ste
+        z: An array of vertical height values at which to calculate canopy profiles.
+        stem_height: A row array providing expected stem height for each PFT.
+        crown_area: A row array providing expected crown area for each PFT.
+        r0: A row array providing expected r0 for each PFT.
+        z_max: A row array providing expected z_max height for each PFT.
+    """
 
-# def calculate_gpp(cell_ppfd: NDArray, lue: NDArray) -> float:
-#     """Estimate the gross primary productivity.
+    stem_traits: InitVar[StemTraits | Flora]
+    """A Flora or StemTraits instance providing plant functional trait data."""
+    stem_allometry: InitVar[StemAllometry]
+    """A StemAllometry instance setting the stem allometries for the crown profile."""
+    z: InitVar[NDArray[np.float32]]
+    """An array of vertical height values at which to calculate canopy profiles."""
 
-#     Not sure where to place this - need an array of LUE that matches to the
+    relativate_crown_radius: NDArray[np.float32] = field(init=False)
+    """An array of the relative crown radius of stems at z heights"""
+    crown_radius: NDArray[np.float32] = field(init=False)
+    """An array of the actual crown radius of stems at z heights"""
+    projected_crown_area: NDArray[np.float32] = field(init=False)
+    """An array of the projected crown area of stems at z heights"""
+    project_leaf_area: NDArray[np.float32] = field(init=False)
+    """An array of the projected leaf area of stems at z heights"""
 
-#     """
+    def __post_init__(
+        self,
+        stem_traits: StemTraits | Flora,
+        stem_allometry: StemAllometry,
+        z: NDArray[np.float32],
+    ) -> None:
+        """Populate canopy profile attributes from the traits, allometry and height."""
+        # Calculate relative crown radius
+        self.relative_crown_radius = calculate_relative_canopy_radius_at_z(
+            z=z,
+            m=stem_traits.m,
+            n=stem_traits.n,
+            stem_height=stem_allometry.stem_height,
+        )
 
-#     return 100
+        # Calculate actual radius
+        self.crown_radius = calculate_canopy_radius(
+            q_z=self.relative_crown_radius, r0=stem_allometry.canopy_r0
+        )
+
+        # Calculate projected crown area
+        self.projected_crown_area = calculate_stem_projected_crown_area_at_z(
+            z=z,
+            q_z=self.relativate_crown_radius,
+            crown_area=stem_allometry.crown_area,
+            q_m=stem_traits.q_m,
+            stem_height=stem_allometry.stem_height,
+            z_max=stem_allometry.canopy_z_max,
+        )
+
+        # Calculate projected leaf area
+        self.projected_leaf_area = calculate_stem_projected_leaf_area_at_z(
+            z=z,
+            q_z=self.relative_crown_radius,
+            f_g=stem_traits.f_g,
+            q_m=stem_traits.q_m,
+            crown_area=stem_allometry.crown_area,
+            stem_height=stem_allometry.stem_height,
+            z_max=stem_allometry.canopy_z_max,
+        )
