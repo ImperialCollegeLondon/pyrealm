@@ -13,8 +13,8 @@ from numpy.typing import NDArray
 
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.demography.canopy_functions import (
-    calculate_canopy_r0,
-    calculate_canopy_z_max,
+    calculate_crown_r0,
+    calculate_crown_z_max,
 )
 from pyrealm.demography.flora import Flora, StemTraits
 
@@ -715,12 +715,12 @@ class StemAllometry:
             crown_fraction=self.crown_fraction,
         )
 
-        self.canopy_r0 = calculate_canopy_r0(
+        self.canopy_r0 = calculate_crown_r0(
             q_m=stem_traits.q_m,
             crown_area=self.crown_area,
         )
 
-        self.canopy_z_max = calculate_canopy_z_max(
+        self.canopy_z_max = calculate_crown_z_max(
             z_max_prop=stem_traits.z_max_prop,
             stem_height=self.stem_height,
         )

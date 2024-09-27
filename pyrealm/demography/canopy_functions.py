@@ -1,4 +1,4 @@
-"""A set of functions implementing the canopy shape and vertical leaf distribution model
+"""A set of functions implementing the crown shape and vertical leaf distribution model
 used in PlantFATE :cite:t:`joshi:2022a`.
 """  # noqa: D205
 
@@ -12,17 +12,17 @@ from pyrealm.demography.flora import Flora, StemTraits
 from pyrealm.demography.t_model_functions import StemAllometry
 
 
-def calculate_canopy_q_m(
+def calculate_crown_q_m(
     m: float | NDArray[np.float32], n: float | NDArray[np.float32]
 ) -> float | NDArray[np.float32]:
-    """Calculate the canopy scaling paramater ``q_m``.
+    """Calculate the crown scaling paramater ``q_m``.
 
-    The value of q_m is a constant canopy scaling parameter derived from the ``m`` and
+    The value of q_m is a constant crown scaling parameter derived from the ``m`` and
     ``n`` attributes defined for a plant functional type.
 
     Args:
-        m: Canopy shape parameter
-        n: Canopy shape parameter
+        m: Crown shape parameter
+        n: Crown shape parameter
     """
     return (
         m
@@ -32,7 +32,7 @@ def calculate_canopy_q_m(
     )
 
 
-def calculate_canopy_z_max_proportion(
+def calculate_crown_z_max_proportion(
     m: float | NDArray[np.float32], n: float | NDArray[np.float32]
 ) -> float | NDArray[np.float32]:
     r"""Calculate the z_m proportion.
@@ -45,24 +45,24 @@ def calculate_canopy_z_max_proportion(
         p_{zm} = \left(\dfrac{n-1}{m n -1}\right)^ {\tfrac{1}{n}}
 
     Args:
-        m: Canopy shape parameter
-        n: Canopy shape parameter
+        m: Crown shape parameter
+        n: Crown shape parameter
     """
 
     return ((n - 1) / (m * n - 1)) ** (1 / n)
 
 
-def calculate_canopy_z_max(
+def calculate_crown_z_max(
     z_max_prop: NDArray[np.float32], stem_height: NDArray[np.float32]
 ) -> NDArray[np.float32]:
     r"""Calculate height of maximum crown radius.
 
-    The height of the maximum crown radius (:math:`z_m`) is derived from the canopy
+    The height of the maximum crown radius (:math:`z_m`) is derived from the crown
     shape parameters (:math:`m,n`) and the resulting fixed proportion (:math:`p_{zm}`)
     for plant functional types. These shape parameters are defined as part of the
     extension of the T Model presented by :cite:t:`joshi:2022a`.
 
-    The value :math:`z_m` is the height above ground where the largest canopy radius is
+    The value :math:`z_m` is the height above ground where the largest crown radius is
     found, given the proportion and the estimated stem height (:math:`H`) of
     individuals.
 
@@ -71,7 +71,7 @@ def calculate_canopy_z_max(
         z_m = p_{zm} H
 
     Args:
-        z_max_prop: Canopy shape parameter of the PFT
+        z_max_prop: Crown shape parameter of the PFT
         stem_height: Stem height of individuals
     """
     """Calculate z_m, the height of maximum crown radius."""
@@ -79,12 +79,12 @@ def calculate_canopy_z_max(
     return stem_height * z_max_prop
 
 
-def calculate_canopy_r0(
+def calculate_crown_r0(
     q_m: NDArray[np.float32], crown_area: NDArray[np.float32]
 ) -> NDArray[np.float32]:
     r"""Calculate scaling factor for width of maximum crown radius.
 
-    This scaling factor (:math:`r_0`) is derived from the canopy shape parameters
+    This scaling factor (:math:`r_0`) is derived from the crown shape parameters
     (:math:`m,n,q_m`) for plant functional types and the estimated crown area
     (:math:`A_c`) of individuals. The shape parameters are defined as part of the
     extension of the T Model presented by :cite:t:`joshi:2022a` and :math:`r_0` is used
@@ -96,7 +96,7 @@ def calculate_canopy_r0(
         r_0 = 1/q_m  \sqrt{A_c / \pi}
 
     Args:
-        q_m: Canopy shape parameter of the PFT
+        q_m: Crown shape parameter of the PFT
         crown_area: Crown area of individuals
     """
     # Scaling factor to give expected A_c (crown area) at
@@ -110,16 +110,16 @@ def _validate_z_qz_args(
     stem_properties: list[NDArray[np.float32]],
     q_z: NDArray[np.float32] | None = None,
 ) -> None:
-    """Shared validation of for canopy function arguments.
+    """Shared validation of for crown function arguments.
 
-    Several of the canopy functions in this module require a vertical height (``z``)
-    argument and, in some cases, the relative canopy radius (``q_z``) at that height.
+    Several of the crown functions in this module require a vertical height (``z``)
+    argument and, in some cases, the relative crown radius (``q_z``) at that height.
     These arguments need to have shapes that are congruent with each other and with the
     arrays providing stem properties for which values are calculated.
 
     This function provides the following validation checks (see also the documentation
     of accepted shapes for ``z`` in
-    :meth:`~pyrealm.demography.canopy_functions.calculate_relative_canopy_radius_at_z`).
+    :meth:`~pyrealm.demography.canopy_functions.calculate_relative_crown_radius_at_z`).
 
     * Stem properties are identically shaped row (1D) arrays.
     * The ``z`` argument is then one of:
@@ -132,9 +132,9 @@ def _validate_z_qz_args(
           n_stem_properties``).
 
     Args:
-        z: An array input to the ``z`` argument of a canopy function.
+        z: An array input to the ``z`` argument of a crown function.
         stem_properties: A list of array inputs representing stem properties.
-        q_z: An optional array input to the ``q_z`` argument of a canopy function.
+        q_z: An optional array input to the ``q_z`` argument of a crown function.
     """
 
     # Check the stem properties
@@ -184,18 +184,18 @@ def _validate_z_qz_args(
     return
 
 
-def calculate_relative_canopy_radius_at_z(
+def calculate_relative_crown_radius_at_z(
     z: NDArray[np.float32],
     stem_height: NDArray[np.float32],
     m: NDArray[np.float32],
     n: NDArray[np.float32],
     validate: bool = True,
 ) -> NDArray[np.float32]:
-    r"""Calculate relative canopy radius at a given height.
+    r"""Calculate relative crown radius at a given height.
 
-    The canopy shape parameters ``m`` and ``n`` define the vertical distribution of
-    canopy along the stem. For a stem of a given total height, this function calculates
-    the relative canopy radius at a given height :math:`z`:
+    The crown shape parameters ``m`` and ``n`` define the vertical distribution of
+    crown along the stem. For a stem of a given total height, this function calculates
+    the relative crown radius at a given height :math:`z`:
 
     .. math::
 
@@ -232,15 +232,15 @@ def calculate_relative_canopy_radius_at_z(
     return m * n * z_over_height ** (n - 1) * (1 - z_over_height**n) ** (m - 1)
 
 
-def calculate_canopy_radius(
+def calculate_crown_radius(
     q_z: NDArray[np.float32],
     r0: NDArray[np.float32],
     validate: bool = True,
 ) -> NDArray[np.float32]:
-    r"""Calculate canopy radius from relative radius and canopy r0.
+    r"""Calculate crown radius from relative crown radius and crown r0.
 
-    The relative canopy radius (:math:`q(z)`) at a given height :math:`z` describes the
-    vertical profile of the canopy shape, but only varies with the ``m`` and ``n`` shape
+    The relative crown radius (:math:`q(z)`) at a given height :math:`z` describes the
+    vertical profile of the crown shape, but only varies with the ``m`` and ``n`` shape
     parameters and the stem height. The actual crown radius at a given height
     (:math:`r(z)`) needs to be scaled using :math:`r_0` such that the maximum crown area
     equals the expected crown area given the crown area ratio traiit for the plant
@@ -280,7 +280,7 @@ def calculate_stem_projected_crown_area_at_z(
     arguments ``stem_height``,``crown_area``,``q_m`` and ``z_max``, which must be
     one-dimensional arrays ('row vectors') of equal length. The array of vertical
     heights ``z`` accepts a range of input shapes (see
-    :meth:`~pyrealm.demography.canopy_functions.calculate_relative_canopy_radius_at_z`
+    :meth:`~pyrealm.demography.canopy_functions.calculate_relative_crown_radius_at_z`
     ) and this function then also requires the expected relative stem radius (``q_z``)
     calculated from those heights.
 
@@ -322,14 +322,14 @@ def solve_community_projected_canopy_area(
     target_area: float = 0,
     validate: bool = True,
 ) -> NDArray[np.float32]:
-    """Solver function for community wide projected crown area.
+    """Solver function for community wide projected canopy area.
 
     This function takes the number of individuals in each cohort along with the stem
     height and crown area and a given vertical height (:math:`z`). It then uses the
-    canopy shape parameters associated with each cohort to calculate the community wide
+    crown shape parameters associated with each cohort to calculate the community wide
     projected crown area above that height (:math:`A_p(z)`). This is simply the sum of
-    the products of the individual stem projected area at :math:`z` and the number of
-    individuals in each cohort.
+    the products of the individual stem crown projected area at :math:`z` and the number
+    of individuals in each cohort.
 
     The return value is the difference between the calculated :math:`A_p(z)` and a
     user-specified target area, This allows the function to be used with a root solver
@@ -346,10 +346,10 @@ def solve_community_projected_canopy_area(
         n_individuals: Number of individuals in each cohort
         crown_area: Crown area of each cohort
         stem_height: Stem height of each cohort
-        m: Canopy shape parameter ``m``` for each cohort
-        n: Canopy shape parameter ``n``` for each cohort
-        q_m: Canopy shape parameter ``q_m``` for each cohort
-        z_max: Canopy shape parameter ``z_m``` for each cohort
+        m: Crown shape parameter ``m``` for each cohort
+        n: Crown shape parameter ``n``` for each cohort
+        q_m: Crown shape parameter ``q_m``` for each cohort
+        z_max: Crown shape parameter ``z_m``` for each cohort
         target_area: A target projected crown area.
         validate: Boolean flag to suppress argument validation.
     """
@@ -362,7 +362,7 @@ def solve_community_projected_canopy_area(
             stem_properties=[n_individuals, crown_area, stem_height, m, n, q_m, z_max],
         )
 
-    q_z = calculate_relative_canopy_radius_at_z(
+    q_z = calculate_relative_crown_radius_at_z(
         z=z_arr, stem_height=stem_height, m=m, n=n, validate=False
     )
     # Calculate A(p) for the stems in each cohort
@@ -394,14 +394,14 @@ def calculate_stem_projected_leaf_area_at_z(
     This function calculates the projected leaf area of a set of stems with given
     properties at a set of vertical heights. This differs from crown area in allowing
     for crown openness within the crown of an individual stem that results in the
-    displacement of leaf area further down into the canopy. The degree of openness is
+    displacement of leaf area further down into the crown. The degree of openness is
     controlled by the crown gap fraction property of each stem.
 
     The stem properties are given in the arguments
     ``stem_height``,``crown_area``,``f_g``,``q_m`` and ``z_max``, which must be
     one-dimensional arrays ('row vectors') of equal length. The array of vertical
     heights ``z`` accepts a range of input shapes (see
-    :meth:`~pyrealm.demography.canopy_functions.calculate_relative_canopy_radius_at_z`
+    :meth:`~pyrealm.demography.canopy_functions.calculate_relative_crown_radius_at_z`
     ) and this function then also requires the expected relative stem radius (``q_z``)
     calculated from those heights.
 
@@ -412,13 +412,13 @@ def calculate_stem_projected_leaf_area_at_z(
         stem_height: Total height of a stem
         f_g: Within crown gap fraction for each stem.
         q_m: Canopy shape parameter ``q_m``` for each stem
-        z_max: Height of maximum canopy radius for each stem
+        z_max: Height of maximum crown radius for each stem
         validate: Boolean flag to suppress argument validation.
     """
 
     # NOTE: Although the internals of this function overlap a lot with
     #       calculate_stem_projected_crown_area_at_z, we want that function to be as
-    #       lean as possible, as it used within solve_community_projected_canopy_area.
+    #       lean as possible, as it used within solve_community_projected_crown_area.
 
     if validate:
         _validate_z_qz_args(
@@ -490,7 +490,7 @@ class CrownProfile:
     ) -> None:
         """Populate canopy profile attributes from the traits, allometry and height."""
         # Calculate relative crown radius
-        self.relative_crown_radius = calculate_relative_canopy_radius_at_z(
+        self.relative_crown_radius = calculate_relative_crown_radius_at_z(
             z=z,
             m=stem_traits.m,
             n=stem_traits.n,
@@ -498,7 +498,7 @@ class CrownProfile:
         )
 
         # Calculate actual radius
-        self.crown_radius = calculate_canopy_radius(
+        self.crown_radius = calculate_crown_radius(
             q_z=self.relative_crown_radius, r0=stem_allometry.canopy_r0
         )
 

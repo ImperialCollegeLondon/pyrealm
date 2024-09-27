@@ -41,24 +41,24 @@ def fixture_community():
     )
 
 
-def test_calculate_canopy_q_m(fixture_canopy_shape):
-    """Test calculate_canopy_q_m."""
+def test_calculate_crown_q_m(fixture_canopy_shape):
+    """Test calculate_crown_q_m."""
 
-    from pyrealm.demography.canopy_functions import calculate_canopy_q_m
+    from pyrealm.demography.canopy_functions import calculate_crown_q_m
 
-    actual_q_m_values = calculate_canopy_q_m(
+    actual_q_m_values = calculate_crown_q_m(
         m=fixture_canopy_shape["m"], n=fixture_canopy_shape["n"]
     )
 
     assert np.allclose(actual_q_m_values, fixture_canopy_shape["q_m"])
 
 
-def test_calculate_canopy_z_max_proportion(fixture_canopy_shape):
-    """Test calculate_canopy_z_max_proportion."""
+def test_calculate_crown_z_max_proportion(fixture_canopy_shape):
+    """Test calculate_crown_z_max_proportion."""
 
-    from pyrealm.demography.canopy_functions import calculate_canopy_z_max_proportion
+    from pyrealm.demography.canopy_functions import calculate_crown_z_max_proportion
 
-    actual_p_zm = calculate_canopy_z_max_proportion(
+    actual_p_zm = calculate_crown_z_max_proportion(
         m=fixture_canopy_shape["m"], n=fixture_canopy_shape["n"]
     )
 
@@ -75,9 +75,9 @@ def test_calculate_canopy_z_max_proportion(fixture_canopy_shape):
 def test_calculate_r_0_values(fixture_canopy_shape, crown_areas, expected_r0):
     """Test happy path for calculating r_0."""
 
-    from pyrealm.demography.canopy_functions import calculate_canopy_r0
+    from pyrealm.demography.canopy_functions import calculate_crown_r0
 
-    actual_r0_values = calculate_canopy_r0(
+    actual_r0_values = calculate_crown_r0(
         q_m=fixture_canopy_shape["q_m"], crown_area=crown_areas
     )
 
@@ -361,14 +361,14 @@ def test__validate_z_qz__args(fixture_z_qz_stem_properties):
     ],
     indirect=["fixture_z_qz_stem_properties"],
 )
-def test_calculate_relative_canopy_radius_at_z_inputs(fixture_z_qz_stem_properties):
-    """Test calculate_relative_canopy_radius_at_z input and output shapes .
+def test_calculate_relative_crown_radius_at_z_inputs(fixture_z_qz_stem_properties):
+    """Test calculate_relative_crown_radius_at_z input and output shapes .
 
     This test checks the function behaviour with different inputs.
     """
 
     from pyrealm.demography.canopy_functions import (
-        calculate_relative_canopy_radius_at_z,
+        calculate_relative_crown_radius_at_z,
     )
 
     # Build inputs
@@ -377,7 +377,7 @@ def test_calculate_relative_canopy_radius_at_z_inputs(fixture_z_qz_stem_properti
 
     with outcome as excep:
         # Get the relative radius at that height
-        q_z_values = calculate_relative_canopy_radius_at_z(z, *stem_args)
+        q_z_values = calculate_relative_crown_radius_at_z(z, *stem_args)
 
         if isinstance(outcome, does_not_raise):
             assert q_z_values.shape == out_shape
@@ -387,8 +387,8 @@ def test_calculate_relative_canopy_radius_at_z_inputs(fixture_z_qz_stem_properti
     assert str(excep.value).startswith(excep_msg)
 
 
-def test_calculate_relative_canopy_radius_at_z_values(fixture_community):
-    """Test calculate_relative_canopy_radius_at_z.
+def test_calculate_relative_crown_radius_at_z_values(fixture_community):
+    """Test calculate_relative_crown_radius_at_z.
 
     This test validates the expectation that the canopy shape model correctly
     predicts the crown area from the T Model equations at the predicted height of
@@ -396,7 +396,7 @@ def test_calculate_relative_canopy_radius_at_z_values(fixture_community):
     """
 
     from pyrealm.demography.canopy_functions import (
-        calculate_relative_canopy_radius_at_z,
+        calculate_relative_crown_radius_at_z,
     )
 
     # Canopy shape model gives the maximum radius at a height z_max
@@ -406,7 +406,7 @@ def test_calculate_relative_canopy_radius_at_z_values(fixture_community):
     )
 
     # Get the relative radius at that height
-    q_z_values = calculate_relative_canopy_radius_at_z(
+    q_z_values = calculate_relative_crown_radius_at_z(
         z=z_max,
         stem_height=fixture_community.stem_allometry.stem_height,
         m=fixture_community.stem_traits.m,
@@ -502,12 +502,12 @@ def test_calculate_stem_projected_crown_area_at_z_values(
     """
 
     from pyrealm.demography.canopy_functions import (
-        calculate_relative_canopy_radius_at_z,
+        calculate_relative_crown_radius_at_z,
         calculate_stem_projected_crown_area_at_z,
     )
 
     # Calculate the required q_z
-    q_z = calculate_relative_canopy_radius_at_z(
+    q_z = calculate_relative_crown_radius_at_z(
         z=heights,
         stem_height=fixture_community.stem_allometry.stem_height,
         m=fixture_community.stem_traits.m,
@@ -617,7 +617,7 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
     """
 
     from pyrealm.demography.canopy_functions import (
-        calculate_relative_canopy_radius_at_z,
+        calculate_relative_crown_radius_at_z,
         calculate_stem_projected_leaf_area_at_z,
     )
 
@@ -625,7 +625,7 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
     # to the highest
     z_max = fixture_community.stem_allometry.canopy_z_max[:, None]
 
-    q_z = calculate_relative_canopy_radius_at_z(
+    q_z = calculate_relative_crown_radius_at_z(
         z=z_max,
         stem_height=fixture_community.stem_allometry.stem_height,
         m=fixture_community.stem_traits.m,

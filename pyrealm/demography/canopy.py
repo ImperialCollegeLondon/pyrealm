@@ -5,7 +5,7 @@ from numpy.typing import NDArray
 from scipy.optimize import root_scalar  # type: ignore [import-untyped]
 
 from pyrealm.demography.canopy_functions import (
-    calculate_relative_canopy_radius_at_z,
+    calculate_relative_crown_radius_at_z,
     calculate_stem_projected_crown_area_at_z,
     calculate_stem_projected_leaf_area_at_z,
     solve_community_projected_canopy_area,
@@ -134,7 +134,7 @@ class Canopy:
         # NOTE - here and in the calls below, validate=False is enforced because the
         # Community class structures and code should guarantee valid inputs and so
         # turning off the validation internally should simply speed up the code.
-        self.stem_relative_radius = calculate_relative_canopy_radius_at_z(
+        self.stem_relative_radius = calculate_relative_crown_radius_at_z(
             z=self.layer_heights,
             stem_height=community.stem_allometry.stem_height,
             m=community.stem_traits.m,

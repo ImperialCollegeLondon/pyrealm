@@ -34,8 +34,8 @@ from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
 from pyrealm.demography.canopy_functions import (
-    calculate_canopy_q_m,
-    calculate_canopy_z_max_proportion,
+    calculate_crown_q_m,
+    calculate_crown_z_max_proportion,
 )
 
 if sys.version_info[:2] >= (3, 11):
@@ -122,9 +122,9 @@ class PlantFunctionalTypeStrict:
 
         # Calculate q_m and z_max proportion. Need to use __setattr__ because the
         # dataclass is frozen.
-        object.__setattr__(self, "q_m", calculate_canopy_q_m(m=self.m, n=self.n))
+        object.__setattr__(self, "q_m", calculate_crown_q_m(m=self.m, n=self.n))
         object.__setattr__(
-            self, "z_max_prop", calculate_canopy_z_max_proportion(m=self.m, n=self.n)
+            self, "z_max_prop", calculate_crown_z_max_proportion(m=self.m, n=self.n)
         )
 
 
