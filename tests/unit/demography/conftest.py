@@ -51,6 +51,10 @@ def rtmodel_flora():
 
     pft_definitions = pft_definitions.drop(columns=["d"])
 
+    # Set foliar respiration to zero to avoid issues with this being applied before
+    # estimating whole crown gpp in rtmodel
+    pft_definitions["resp_f"] = 0
+
     return Flora(
         pfts=[
             PlantFunctionalType(**args)
@@ -70,7 +74,6 @@ def rtmodel_data():
 
     rdata = rdata.rename(
         columns={
-            "dD": "delta_d",
             "D": "dbh",
             "H": "stem_height",
             "fc": "crown_fraction",
@@ -79,18 +82,20 @@ def rtmodel_data():
             "Ws": "stem_mass",
             "Wss": "sapwood_mass",
             "P0": "potential_gpp",
-            "GPP": "crown_gpp",
-            "Rm1": "resp_swd",
-            "Rm2": "resp_frt",
-            "dWs": "delta_mass_stm",
-            "dWfr": "delta_mass_frt",
+            "GPP": "whole_crown_gpp",
+            "Rm1": "sapwood_respiration",
+            "Rm2": "fine_root_respiration",
+            "NPP": "npp",
+            "dD": "delta_dbh",
+            "dWs": "delta_stem_mass",
+            "dWfr": "delta_foliage_mass",
         }
     )
 
     # Fix some scaling differences:
     # The R tmodel implementation rescales reported delta_d as a radial increase in
     # millimetres, not diameter increase in metres
-    rdata["delta_d"] = rdata["delta_d"] / 500
+    rdata["delta_dbh"] = rdata["delta_dbh"] / 500
 
     # Wrap the return data into arrays with PFT as columns and diameter values as rows
     rdata_arrays = {k: np.reshape(v, (3, 6)).T for k, v in rdata.items()}
