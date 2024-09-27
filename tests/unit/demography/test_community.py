@@ -8,20 +8,6 @@ from marshmallow.exceptions import ValidationError
 
 
 @pytest.fixture
-def fixture_flora():
-    """Simple flora object for use in community tests."""
-
-    from pyrealm.demography.flora import Flora, PlantFunctionalType
-
-    return Flora(
-        [
-            PlantFunctionalType(name="broadleaf", h_max=30),
-            PlantFunctionalType(name="conifer", h_max=20),
-        ]
-    )
-
-
-@pytest.fixture
 def fixture_expected(fixture_flora):
     """Expected results for test data.
 

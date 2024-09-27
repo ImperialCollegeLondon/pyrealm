@@ -299,7 +299,7 @@ class Flora:
             )
 
         # Populate the pft trait indices
-        object.__setattr__(self, "pft_dict", {v: k for k, v in enumerate(self.name)})
+        object.__setattr__(self, "pft_indices", {v: k for k, v in enumerate(self.name)})
 
     @classmethod
     def _from_file_data(cls, file_data: dict) -> Flora:
@@ -402,6 +402,12 @@ class StemTraits:
       stems or cohorts of the same PFT.
     """
 
+    # A class variable setting the attribute names of traits.
+    trait_attrs: ClassVar[list[str]] = [
+        f.name for f in fields(PlantFunctionalTypeStrict)
+    ]
+
+    # Instance trait attributes
     name: NDArray[np.str_]
     r"""The name of the plant functional type."""
     a_hd: NDArray[np.float32]
