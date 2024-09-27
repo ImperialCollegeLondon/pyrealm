@@ -79,10 +79,10 @@ class Canopy:
         # Calculate community wide properties: total crown area, maximum height, crown
         # area required to fill a layer and total number of canopy layers
         self.total_community_crown_area = (
-            community.cohort_data["crown_area"] * community.cohort_data["n_individuals"]
+            community.stem_allometry.crown_area * community.cohort_data["n_individuals"]
         ).sum()
 
-        self.max_stem_height = community.cohort_data["stem_height"].max()
+        self.max_stem_height = community.stem_allometry.stem_height.max()
 
         self.crown_area_per_layer = community.cell_area * (1 - self.canopy_gap_fraction)
 
@@ -109,12 +109,12 @@ class Canopy:
             solution = root_scalar(
                 solve_community_projected_canopy_area,
                 args=(
-                    community.cohort_data["stem_height"],
-                    community.cohort_data["crown_area"],
+                    community.stem_allometry.stem_height,
+                    community.stem_allometry.crown_area,
                     community.stem_traits.m,
                     community.stem_traits.n,
                     community.stem_traits.q_m,
-                    community.cohort_data["canopy_z_max"],
+                    community.stem_allometry.canopy_z_max,
                     community.cohort_data["n_individuals"],
                     target_area,
                     False,  # validate
@@ -136,7 +136,7 @@ class Canopy:
         # turning off the validation internally should simply speed up the code.
         self.stem_relative_radius = calculate_relative_canopy_radius_at_z(
             z=self.layer_heights,
-            stem_height=community.cohort_data["stem_height"],
+            stem_height=community.stem_allometry.stem_height,
             m=community.stem_traits.m,
             n=community.stem_traits.n,
             validate=False,
@@ -146,10 +146,10 @@ class Canopy:
         self.stem_crown_area = calculate_stem_projected_crown_area_at_z(
             z=self.layer_heights,
             q_z=self.stem_relative_radius,
-            crown_area=community.cohort_data["crown_area"],
-            stem_height=community.cohort_data["stem_height"],
+            crown_area=community.stem_allometry.crown_area,
+            stem_height=community.stem_allometry.stem_height,
             q_m=community.stem_traits.q_m,
-            z_max=community.cohort_data["canopy_z_max"],
+            z_max=community.stem_allometry.canopy_z_max,
             validate=False,
         )
 
@@ -157,10 +157,10 @@ class Canopy:
         self.stem_leaf_area = calculate_stem_projected_leaf_area_at_z(
             z=self.layer_heights,
             q_z=self.stem_relative_radius,
-            crown_area=community.cohort_data["crown_area"],
-            stem_height=community.cohort_data["stem_height"],
+            crown_area=community.stem_allometry.crown_area,
+            stem_height=community.stem_allometry.stem_height,
             f_g=community.stem_traits.f_g,
             q_m=community.stem_traits.q_m,
-            z_max=community.cohort_data["canopy_z_max"],
+            z_max=community.stem_allometry.canopy_z_max,
             validate=False,
         )
