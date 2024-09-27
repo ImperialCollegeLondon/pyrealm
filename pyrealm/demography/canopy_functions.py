@@ -12,46 +12,6 @@ from pyrealm.demography.flora import Flora, StemTraits
 from pyrealm.demography.t_model_functions import StemAllometry
 
 
-def calculate_crown_q_m(
-    m: float | NDArray[np.float32], n: float | NDArray[np.float32]
-) -> float | NDArray[np.float32]:
-    """Calculate the crown scaling paramater ``q_m``.
-
-    The value of q_m is a constant crown scaling parameter derived from the ``m`` and
-    ``n`` attributes defined for a plant functional type.
-
-    Args:
-        m: Crown shape parameter
-        n: Crown shape parameter
-    """
-    return (
-        m
-        * n
-        * ((n - 1) / (m * n - 1)) ** (1 - 1 / n)
-        * (((m - 1) * n) / (m * n - 1)) ** (m - 1)
-    )
-
-
-def calculate_crown_z_max_proportion(
-    m: float | NDArray[np.float32], n: float | NDArray[np.float32]
-) -> float | NDArray[np.float32]:
-    r"""Calculate the z_m proportion.
-
-    The z_m proportion (:math:`p_{zm}`) is the constant proportion of stem height at
-    which the maximum crown radius is found for a given plant functional type.
-
-    .. math::
-
-        p_{zm} = \left(\dfrac{n-1}{m n -1}\right)^ {\tfrac{1}{n}}
-
-    Args:
-        m: Crown shape parameter
-        n: Crown shape parameter
-    """
-
-    return ((n - 1) / (m * n - 1)) ** (1 / n)
-
-
 def calculate_crown_z_max(
     z_max_prop: NDArray[np.float32], stem_height: NDArray[np.float32]
 ) -> NDArray[np.float32]:
