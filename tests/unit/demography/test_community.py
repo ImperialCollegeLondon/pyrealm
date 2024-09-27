@@ -42,7 +42,7 @@ def check_expected(community, expected):
         expected["a_hd"],
     )
     assert np.allclose(
-        community.cohort_data["stem_height"],
+        community.stem_allometry.stem_height,
         expected["height"],
     )
 

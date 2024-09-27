@@ -89,12 +89,17 @@ Initialize a Community into an area of 1000 square meter with the given cohort d
 ...     cohort_pft_names=cohort_pft_names
 ... )
 
-Convert the community cohort data to a :class:`pandas.DataFrame` for nicer display and
-show some of the calculated T Model predictions:
+Convert some of the data to a :class:`pandas.DataFrame` for nicer display and show some
+of the calculated T Model predictions:
 
->>> pd.DataFrame(community.cohort_data)[
-...    ['name', 'dbh', 'n_individuals', 'stem_height', 'crown_area', 'stem_mass']
-... ]
+>>> pd.DataFrame({
+...    'name': community.stem_traits.name,
+...    'n_individuals': community.cohort_data["n_individuals"],
+...    'dbh': community.stem_allometry.dbh,
+...    'stem_height': community.stem_allometry.stem_height,
+...    'crown_area': community.stem_allometry.crown_area,
+...    'stem_mass': community.stem_allometry.stem_mass,
+... })
               name    dbh  n_individuals  stem_height  crown_area  stem_mass
 0   Evergreen Tree  0.100            100     9.890399    2.459835   8.156296
 1  Deciduous Shrub  0.030            200     2.110534    0.174049   0.134266

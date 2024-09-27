@@ -38,7 +38,7 @@ def test_Canopy__init__():
         np.ceil(
             (
                 (
-                    community.cohort_data["crown_area"]
+                    community.stem_allometry.crown_area
                     * community.cohort_data["n_individuals"]
                 ).sum()
                 * (1 + canopy_gap_fraction)
