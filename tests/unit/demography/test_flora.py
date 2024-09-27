@@ -5,7 +5,6 @@ from contextlib import nullcontext as does_not_raise
 from importlib import resources
 from json import JSONDecodeError
 
-import numpy as np
 import pytest
 from marshmallow.exceptions import ValidationError
 from pandas.errors import ParserError
@@ -263,124 +262,6 @@ def test_flora_from_csv(filename, outcome):
             assert len(flora) == 2
             for nm in ["test1", "test2"]:
                 assert nm in flora
-
-
-def test_Flora_get_allometries_dbh_against_rtmodel(rtmodel_data, rtmodel_flora):
-    """Test the get allometries method against reference values using dbh.
-
-    This test checks that the outcome of running a column array of the rtmodel test data
-    DBH values (which are the same for each PFT) into get_allometries returns the
-    correct values. So the shapes go (3,) x (6, 1) -> (6,3)
-    """
-
-    result = rtmodel_flora.get_allometries(dbh=rtmodel_data["dbh"][:, [0]])
-
-    for key, value in result.items():
-        # Skip canopy shape allometries that are not in the original T Model
-        if key not in ("canopy_r0", "canopy_z_max"):
-            assert np.allclose(value, rtmodel_data[key])
-
-
-def test_Flora_get_allometries_stem_height_against_rtmodel(rtmodel_data, rtmodel_flora):
-    """Test the get allometries method against reference values using stem height.
-
-    The stem heights differ for each PFT, so for this to work with stem height as a 1D
-    input each PFT needs to be run separately. So the test does three iterations of
-    (1,) x (6, 1) -> (6, 1) and checks each column.
-    """
-    from pyrealm.demography.flora import Flora
-
-    for idx, (name, pft) in enumerate(rtmodel_flora.items()):
-        single_pft_flora = Flora(pfts=[pft])
-        result = single_pft_flora.get_allometries(
-            stem_height=rtmodel_data["stem_height"][:, [idx]]
-        )
-
-        for key, value in result.items():
-            # Skip canopy shape allometries that are not in the original T Model
-            if key not in ("canopy_r0", "canopy_z_max"):
-                assert np.allclose(value, rtmodel_data[key][:, [idx]])
-
-
-@pytest.mark.parametrize(
-    argnames="dbh,stem_height,outcome,excep_msg",
-    argvalues=[
-        pytest.param(
-            None,
-            None,
-            pytest.raises(ValueError),
-            "Provide one of either dbh or stem_height",
-            id="fail_no_size_data",
-        ),
-        pytest.param(
-            np.array([0.1, 0.2, 0.3]),
-            np.array([10, 20, 30]),
-            pytest.raises(ValueError),
-            "Provide one of either dbh or stem_height",
-            id="fail_too_much_size_data",
-        ),
-        pytest.param(
-            np.array([[0.1, 0.2, 0.3]]),
-            None,
-            pytest.raises(ValueError),
-            "The z argument is two dimensional (shape: (1, 3)) "
-            "but is not a column array.",  # TODO - fix to DBH not z
-            id="fail_dbh_not_1D",
-        ),
-        pytest.param(
-            None,
-            np.array([[10, 20, 30]]),
-            pytest.raises(ValueError),
-            "The z argument is two dimensional (shape: (1, 3)) "
-            "but is not a column array.",  # TODO - fix to stem_height not z
-            id="fail_stem_height_not_1D",
-        ),
-        pytest.param(
-            np.array([0.1, 0.2, 0.3]),
-            None,
-            does_not_raise(),
-            None,
-            id="ok_with_dbh_as_row",
-        ),
-        pytest.param(
-            None,
-            np.array([5, 10, 15]),
-            does_not_raise(),
-            None,
-            id="ok_with_stem_heights_as_row",
-        ),
-        pytest.param(
-            np.array([[0.1], [0.2], [0.3]]),
-            None,
-            does_not_raise(),
-            None,
-            id="ok_with_dbh_as_col",
-        ),
-        pytest.param(
-            None,
-            np.array([[5], [10], [15]]),
-            does_not_raise(),
-            None,
-            id="ok_with_stem_heights_as_col",
-        ),
-        pytest.param(
-            None,
-            np.array([[0], [5], [10], [15], [45.33], [1000]]),
-            does_not_raise(),
-            None,
-            id="ok_with_edgy_stem_heights",
-        ),  # 0, at max height and > max height
-    ],
-)
-def test_Flora_get_allometries_setup(
-    rtmodel_flora, dbh, stem_height, outcome, excep_msg
-):
-    """Test the get allometries input checking."""
-    with outcome as excep:
-        _ = rtmodel_flora.get_allometries(dbh=dbh, stem_height=stem_height)
-        return
-
-    assert str(excep.value) == excep_msg
 
 
 #

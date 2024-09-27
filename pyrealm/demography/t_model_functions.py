@@ -9,10 +9,6 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.demography.canopy_functions import (
-    calculate_canopy_r0,
-    calculate_canopy_z_max,
-)
 
 
 def _validate_t_model_args(pft_args: list[NDArray], size_args: list[NDArray]) -> None:
@@ -40,7 +36,8 @@ def _validate_t_model_args(pft_args: list[NDArray], size_args: list[NDArray]) ->
         raise ValueError("Size arrays are not of equal length")
 
     # Explicitly check to see if the size arrays are row arrays and - if so - enforce
-    # that they are the same length.
+    # that they are the same length.abs
+
     if len(size_args_shape) == 1 and not pft_args_shape == size_args_shape:
         raise ValueError("Trait and size inputs are row arrays of unequal length.")
 
@@ -79,56 +76,6 @@ def calculate_heights(
         _validate_t_model_args(pft_args=[h_max, a_hd], size_args=[dbh])
 
     return h_max * (1 - np.exp(-a_hd * dbh / h_max))
-
-
-def calculate_dbh_from_height(
-    h_max: NDArray[np.float32],
-    a_hd: NDArray[np.float32],
-    stem_height: NDArray[np.float32],
-    validate: bool = True,
-) -> NDArray[np.float32]:
-    r"""Calculate diameter at breast height from stem height under the T Model.
-
-    This function inverts the normal calculation of stem height (:math:`H`) from
-    diameter at breast height (:math:`D`) in the T Model (see
-    :meth:`~pyrealm.demography.t_model_functions.calculate_heights`). This is a helper
-    function to allow users to convert known stem heights for a plant functional type,
-    with maximum height (:math:`H_{m}`) and initial slope of the height/diameter
-    relationship (:math:`a`) into the expected :math:`D` values.
-
-    .. math::
-
-         D = \frac{H \left( \log \left(\frac{H}{H_{m}-H}\right)\right)}{a}
-
-    Warning:
-        Where the stem height is greater than the maximum height for a PFT, then
-        :math:`D` is undefined and the return array will contain `np.nan`. Where the
-        stem height equals the maximum height, the model predicts an infinite stem
-        diameter: the `h_max` parameter is the asymptotic maximum stem height of an
-        exponential function. Similarly, heights very close the maximum height may lead
-        to unrealistically large predictions of DBH.
-
-    Args:
-        h_max: Maximum height of the PFT
-        a_hd: Initial slope of the height/diameter relationship of the PFT
-        stem_height: Stem height of individuals
-        validate: Boolean flag to suppress argument validation
-    """
-
-    if validate:
-        _validate_t_model_args(pft_args=[h_max, a_hd], size_args=[stem_height])
-
-    # The equation here blows up in a couple of ways:
-    # - H > h_max leads to negative logs which generates np.nan with an invalid value
-    #   warning. The np.nan here is what we want to happen, so the warning needs
-    #   suppressing.
-    # - H = h_max generates a divide by zero which returns inf with a warning. Here the
-    #   answer should be h_max so that needs trapping.
-
-    with np.testing.suppress_warnings() as sup:
-        sup.filter(RuntimeWarning, "divide by zero encountered in divide")
-        sup.filter(RuntimeWarning, "invalid value encountered in log")
-        return (h_max * np.log(h_max / (h_max - stem_height))) / a_hd
 
 
 def calculate_crown_areas(
@@ -514,6 +461,7 @@ def calculate_growth_increments(
     * the stem mass (:math:`\Delta W_s`), and 
     * the foliar mass (:math:`\Delta W_f`). 
         
+        
     The stem diameter increment can be calculated using the available productivity for
     growth and the rates of change in stem (:math:`\textrm{d}W_s / \textrm{d}t`) and
     foliar masses (:math:`\textrm{d}W_f / \textrm{d}t`): 
@@ -575,10 +523,6 @@ def calculate_growth_increments(
         dbh: Diameter at breast height of individuals
         stem_height: Stem height of individuals
         validate: Boolean flag to suppress argument validation
-    
-    Returns:
-        A tuple of arrays containing the calculated increments in stem diameter, stem
-        mass and foliar mass.
     """
     if validate:
         _validate_t_model_args(
@@ -606,168 +550,3 @@ def calculate_growth_increments(
     delta_d = (npp - turnover) / (dWsdt + dWfdt)
 
     return (delta_d, dWsdt * delta_d, dWfdt * delta_d)
-
-
-def calculate_t_model_allometry(
-    pft_data: dict[str, NDArray[np.float32]], dbh: NDArray[np.float32]
-) -> dict[str, NDArray[np.float32]]:
-    """Calculate T Model allometric predictions across cohort data.
-
-    This method calculate predictions of stem allometries for stem height, crown area,
-    crown fraction, stem mass, foliage mass and sapwood mass under the T Model
-    :cite:`Li:2014bc`, given diameters at breast height for a set of plant functional
-    traits.
-
-    Args:
-        pft_data: A dictionary of plant functional trait data, as for example returned
-            from :attr:`Flora.data<pyrealm.demography.flora.Flora.data>` attribute.
-        dbh: An array of diameter at breast height values for which to predict stem
-            allometry values.
-    """
-
-    stem_height = calculate_heights(
-        h_max=pft_data["h_max"],
-        a_hd=pft_data["a_hd"],
-        dbh=dbh,
-    )
-
-    # Broadcast dbh to shape of stem height to get congruent shapes
-    dbh = np.broadcast_to(dbh, stem_height.shape)
-
-    crown_area = calculate_crown_areas(
-        ca_ratio=pft_data["ca_ratio"],
-        a_hd=pft_data["a_hd"],
-        dbh=dbh,
-        stem_height=stem_height,
-    )
-
-    crown_fraction = calculate_crown_fractions(
-        a_hd=pft_data["a_hd"],
-        dbh=dbh,
-        stem_height=stem_height,
-    )
-
-    stem_mass = calculate_stem_masses(
-        rho_s=pft_data["rho_s"],
-        dbh=dbh,
-        stem_height=stem_height,
-    )
-
-    foliage_mass = calculate_foliage_masses(
-        sla=pft_data["sla"],
-        lai=pft_data["lai"],
-        crown_area=crown_area,
-    )
-
-    sapwood_mass = calculate_sapwood_masses(
-        rho_s=pft_data["rho_s"],
-        ca_ratio=pft_data["ca_ratio"],
-        stem_height=stem_height,
-        crown_area=crown_area,
-        crown_fraction=crown_fraction,
-    )
-
-    canopy_r0 = calculate_canopy_r0(
-        q_m=pft_data["q_m"],
-        crown_area=crown_area,
-    )
-
-    canopy_z_max = calculate_canopy_z_max(
-        z_max_prop=pft_data["z_max_prop"],
-        stem_height=stem_height,
-    )
-
-    return dict(
-        dbh=dbh,
-        stem_height=stem_height,
-        crown_area=crown_area,
-        crown_fraction=crown_fraction,
-        stem_mass=stem_mass,
-        foliage_mass=foliage_mass,
-        sapwood_mass=sapwood_mass,
-        canopy_r0=canopy_r0,
-        canopy_z_max=canopy_z_max,
-    )
-
-
-def calculate_t_model_allocation(
-    pft_data: dict[str, NDArray[np.float32]],
-    dbh: NDArray[np.float32],
-    potential_gpp: NDArray[np.float32],
-) -> dict[str, NDArray[np.float32]]:
-    """Calculate T Model predictions across cohort data.
-
-    This method calculate predictions of stem allometries and growth predictions under
-    the T Model :cite:`Li:2014bc`, given both diameters at breast height for a set of
-    plant functional traits and potential gross primary productivity estimates for each
-    height.
-    """
-
-    stem_data = calculate_t_model_allometry(pft_data=pft_data, dbh=dbh)
-
-    # Broadcast potential GPP to match stem data outputs
-    potential_gpp = np.broadcast_to(potential_gpp, stem_data["dbh"].shape)
-
-    whole_crown_gpp = calculate_whole_crown_gpp(
-        potential_gpp=potential_gpp,
-        crown_area=stem_data["crown_area"],
-        par_ext=pft_data["par_ext"],
-        lai=pft_data["lai"],
-    )
-
-    sapwood_respiration = calculate_sapwood_respiration(
-        resp_s=pft_data["lai"], sapwood_mass=stem_data["sapwood_mass"]
-    )
-
-    foliar_respiration = calculate_foliar_respiration(
-        resp_f=pft_data["resp_f"], whole_crown_gpp=whole_crown_gpp
-    )
-
-    fine_root_respiration = calculate_fine_root_respiration(
-        zeta=pft_data["zeta"],
-        sla=pft_data["sla"],
-        resp_r=pft_data["resp_r"],
-        foliage_mass=stem_data["foliage_mass"],
-    )
-
-    npp = calculate_net_primary_productivity(
-        yld=pft_data["yld"],
-        whole_crown_gpp=whole_crown_gpp,
-        foliar_respiration=foliar_respiration,
-        fine_root_respiration=fine_root_respiration,
-        sapwood_respiration=sapwood_respiration,
-    )
-
-    turnover = calculate_foliage_and_fine_root_turnover(
-        sla=pft_data["sla"],
-        zeta=pft_data["zeta"],
-        tau_f=pft_data["tau_f"],
-        tau_r=pft_data["tau_r"],
-        foliage_mass=stem_data["foliage_mass"],
-    )
-
-    (delta_dbh, delta_stem_mass, delta_foliage_mass) = calculate_growth_increments(
-        rho_s=pft_data["rho_s"],
-        a_hd=pft_data["a_hd"],
-        h_max=pft_data["h_max"],
-        lai=pft_data["lai"],
-        ca_ratio=pft_data["ca_ratio"],
-        sla=pft_data["sla"],
-        zeta=pft_data["zeta"],
-        npp=npp,
-        turnover=turnover,
-        dbh=stem_data["dbh"],
-        stem_height=stem_data["stem_height"],
-    )
-
-    return dict(
-        whole_crown_gpp=whole_crown_gpp,
-        sapwood_respiration=sapwood_respiration,
-        foliar_respiration=foliar_respiration,
-        fine_root_respiration=fine_root_respiration,
-        npp=npp,
-        turnover=turnover,
-        delta_dbh=delta_dbh,
-        delta_stem_mass=delta_stem_mass,
-        delta_foliage_mass=delta_foliage_mass,
-    )
