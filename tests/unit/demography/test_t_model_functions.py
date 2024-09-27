@@ -1,10 +1,8 @@
 """test the functions in t_model_functions.py."""
 
 from contextlib import nullcontext as does_not_raise
-from importlib import resources
 
 import numpy as np
-import pandas as pd
 import pytest
 
 
@@ -78,72 +76,6 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
         return
 
     assert str(excep.value).startswith(excep_message)
-
-
-@pytest.fixture
-def rtmodel_data():
-    """Loads some simple predictions from the R implementation for testing."""
-
-    # Load the PFT definitions and rename to pyrealm attributes
-    pfts_path = resources.files("pyrealm_build_data.t_model") / "pft_definitions.csv"
-    pft_definitions = pd.read_csv(pfts_path)
-
-    # Map the PFT trait args from the R implementation to pyrealm
-    pft_definitions = pft_definitions.rename(
-        columns={
-            "a": "a_hd",
-            "cr": "ca_ratio",
-            "Hm": "h_max",
-            "rho": "rho_s",
-            "L": "lai",
-            "sigma": "sla",
-            "tf": "tau_f",
-            "tr": "tau_r",
-            "K": "par_ext",
-            "y": "yld",
-            "rr": "resp_r",
-            "rs": "resp_s",
-        }
-    )
-
-    # Add foliar respiration rate as 0.1, as this is handled outside of the R
-    # implementation as a function of GPP.
-    pft_definitions["resp_f"] = 0.1
-
-    rdata_path = (
-        resources.files("pyrealm_build_data.t_model") / "rtmodel_unit_testing.csv"
-    )
-    rdata = pd.read_csv(rdata_path)
-
-    rdata = rdata.rename(
-        columns={
-            "dD": "delta_d",
-            "D": "diameter",
-            "H": "height",
-            "fc": "crown_fraction",
-            "Ac": "crown_area",
-            "Wf": "mass_fol",
-            "Ws": "mass_stm",
-            "Wss": "mass_swd",
-            "P0": "potential_gpp",
-            "GPP": "crown_gpp",
-            "Rm1": "resp_swd",
-            "Rm2": "resp_frt",
-            "dWs": "delta_mass_stm",
-            "dWfr": "delta_mass_frt",
-        }
-    )
-
-    # Fix some scaling differences:
-    # The R tmodel implementation rescales reported delta_d as a radial increase in
-    # millimetres, not diameter increase in metres
-    rdata["delta_d"] = rdata["delta_d"] / 500
-
-    # Wrap the return data into arrays with PFT as columns and diameter values as rows
-    pft_arrays = {k: v.to_numpy() for k, v in pft_definitions.items()}
-    rdata_arrays = {k: np.reshape(v, (3, 6)).T for k, v in rdata.items()}
-
-    return pft_arrays, rdata_arrays
 
 
 @pytest.mark.parametrize(
@@ -318,179 +250,255 @@ class TestTModel:
     """
 
     def test_calculate_heights(
-        self, rtmodel_data, data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape
+        self,
+        rtmodel_data,
+        rtmodel_flora_dict,
+        data_idx,
+        pft_idx,
+        outcome,
+        excep_msg,
+        out_idx,
+        exp_shape,
     ):
         """Tests calculation of heights of tree from diameter."""
         from pyrealm.demography.t_model_functions import calculate_heights
 
-        pfts, data = rtmodel_data
-
         with outcome as excep:
             result = calculate_heights(
-                h_max=pfts["h_max"][pft_idx],
-                a_hd=pfts["a_hd"][pft_idx],
-                dbh=data["diameter"][data_idx],
+                h_max=rtmodel_flora_dict["h_max"][pft_idx],
+                a_hd=rtmodel_flora_dict["a_hd"][pft_idx],
+                dbh=rtmodel_data["dbh"][data_idx],
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, data["height"][out_idx])
+            assert np.allclose(result, rtmodel_data["stem_height"][out_idx])
+            return
+
+        assert str(excep.value).startswith(excep_msg)
+
+    def test_calculate_dbh_from_height(
+        self,
+        rtmodel_data,
+        rtmodel_flora_dict,
+        data_idx,
+        pft_idx,
+        outcome,
+        excep_msg,
+        out_idx,
+        exp_shape,
+    ):
+        """Tests inverted calculation of dbh from height."""
+
+        from pyrealm.demography.t_model_functions import calculate_dbh_from_height
+
+        with outcome as excep:
+            result = calculate_dbh_from_height(
+                h_max=rtmodel_flora_dict["h_max"][pft_idx],
+                a_hd=rtmodel_flora_dict["a_hd"][pft_idx],
+                stem_height=rtmodel_data["stem_height"][data_idx],
+            )
+
+            assert result.shape == exp_shape
+            assert np.allclose(result, rtmodel_data["dbh"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
 
     def test_calculate_crown_areas(
-        self, rtmodel_data, data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape
+        self,
+        rtmodel_data,
+        rtmodel_flora_dict,
+        data_idx,
+        pft_idx,
+        outcome,
+        excep_msg,
+        out_idx,
+        exp_shape,
     ):
         """Tests calculation of crown areas of trees."""
 
         from pyrealm.demography.t_model_functions import calculate_crown_areas
 
-        pfts, data = rtmodel_data
-
         with outcome as excep:
             result = calculate_crown_areas(
-                ca_ratio=pfts["ca_ratio"][pft_idx],
-                a_hd=pfts["a_hd"][pft_idx],
-                dbh=data["diameter"][data_idx],
-                stem_height=data["height"][data_idx],
+                ca_ratio=rtmodel_flora_dict["ca_ratio"][pft_idx],
+                a_hd=rtmodel_flora_dict["a_hd"][pft_idx],
+                dbh=rtmodel_data["dbh"][data_idx],
+                stem_height=rtmodel_data["stem_height"][data_idx],
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, data["crown_area"][out_idx])
+            assert np.allclose(result, rtmodel_data["crown_area"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
 
     def test_calculate_crown_fractions(
-        self, rtmodel_data, data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape
+        self,
+        rtmodel_data,
+        rtmodel_flora_dict,
+        data_idx,
+        pft_idx,
+        outcome,
+        excep_msg,
+        out_idx,
+        exp_shape,
     ):
         """Tests calculation of crown fraction of trees."""
 
         from pyrealm.demography.t_model_functions import calculate_crown_fractions
 
-        pfts, data = rtmodel_data
-
         with outcome as excep:
             result = calculate_crown_fractions(
-                a_hd=pfts["a_hd"][pft_idx],
-                dbh=data["diameter"][data_idx],
-                stem_height=data["height"][data_idx],
+                a_hd=rtmodel_flora_dict["a_hd"][pft_idx],
+                dbh=rtmodel_data["dbh"][data_idx],
+                stem_height=rtmodel_data["stem_height"][data_idx],
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, data["crown_fraction"][out_idx])
+            assert np.allclose(result, rtmodel_data["crown_fraction"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
 
     def test_calculate_stem_masses(
-        self, rtmodel_data, data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape
+        self,
+        rtmodel_data,
+        rtmodel_flora_dict,
+        data_idx,
+        pft_idx,
+        outcome,
+        excep_msg,
+        out_idx,
+        exp_shape,
     ):
         """Tests calculation of stem masses of trees."""
 
         from pyrealm.demography.t_model_functions import calculate_stem_masses
 
-        pfts, data = rtmodel_data
-
         with outcome as excep:
             result = calculate_stem_masses(
-                rho_s=pfts["rho_s"][pft_idx],
-                dbh=data["diameter"][data_idx],
-                stem_height=data["height"][data_idx],
+                rho_s=rtmodel_flora_dict["rho_s"][pft_idx],
+                dbh=rtmodel_data["dbh"][data_idx],
+                stem_height=rtmodel_data["stem_height"][data_idx],
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, data["mass_stm"][out_idx])
+            assert np.allclose(result, rtmodel_data["stem_mass"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
 
     def test_calculate_foliage_masses(
-        self, rtmodel_data, data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape
+        self,
+        rtmodel_data,
+        rtmodel_flora_dict,
+        data_idx,
+        pft_idx,
+        outcome,
+        excep_msg,
+        out_idx,
+        exp_shape,
     ):
         """Tests calculation of stem masses of trees."""
 
         from pyrealm.demography.t_model_functions import calculate_foliage_masses
 
-        pfts, data = rtmodel_data
-
         with outcome as excep:
             result = calculate_foliage_masses(
-                lai=pfts["lai"][pft_idx],
-                sla=pfts["sla"][pft_idx],
-                crown_area=data["crown_area"][data_idx],
+                lai=rtmodel_flora_dict["lai"][pft_idx],
+                sla=rtmodel_flora_dict["sla"][pft_idx],
+                crown_area=rtmodel_data["crown_area"][data_idx],
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, data["mass_fol"][out_idx])
+            assert np.allclose(result, rtmodel_data["foliage_mass"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
 
     def test_calculate_sapwood_masses(
-        self, rtmodel_data, data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape
+        self,
+        rtmodel_data,
+        rtmodel_flora_dict,
+        data_idx,
+        pft_idx,
+        outcome,
+        excep_msg,
+        out_idx,
+        exp_shape,
     ):
         """Tests calculation of stem masses of trees."""
 
         from pyrealm.demography.t_model_functions import calculate_sapwood_masses
 
-        pfts, data = rtmodel_data
-
         with outcome as excep:
             result = calculate_sapwood_masses(
-                rho_s=pfts["rho_s"][pft_idx],
-                ca_ratio=pfts["ca_ratio"][pft_idx],
-                crown_area=data["crown_area"][data_idx],
-                stem_height=data["height"][data_idx],
-                crown_fraction=data["crown_fraction"][data_idx],
+                rho_s=rtmodel_flora_dict["rho_s"][pft_idx],
+                ca_ratio=rtmodel_flora_dict["ca_ratio"][pft_idx],
+                crown_area=rtmodel_data["crown_area"][data_idx],
+                stem_height=rtmodel_data["stem_height"][data_idx],
+                crown_fraction=rtmodel_data["crown_fraction"][data_idx],
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, data["mass_swd"][out_idx])
+            assert np.allclose(result, rtmodel_data["sapwood_mass"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
 
     def test_calculate_whole_crown_gpp(
-        self, rtmodel_data, data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape
+        self,
+        rtmodel_data,
+        rtmodel_flora_dict,
+        data_idx,
+        pft_idx,
+        outcome,
+        excep_msg,
+        out_idx,
+        exp_shape,
     ):
         """Tests calculation of whole crown GPP."""
 
         from pyrealm.demography.t_model_functions import calculate_whole_crown_gpp
 
-        pfts, data = rtmodel_data
-
         with outcome as excep:
             result = calculate_whole_crown_gpp(
-                lai=pfts["lai"][pft_idx],
-                par_ext=pfts["par_ext"][pft_idx],
-                crown_area=data["crown_area"][data_idx],
-                potential_gpp=data["potential_gpp"][data_idx],
+                lai=rtmodel_flora_dict["lai"][pft_idx],
+                par_ext=rtmodel_flora_dict["par_ext"][pft_idx],
+                crown_area=rtmodel_data["crown_area"][data_idx],
+                potential_gpp=rtmodel_data["potential_gpp"][data_idx],
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, data["crown_gpp"][out_idx])
+            assert np.allclose(result, rtmodel_data["crown_gpp"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
 
     def test_calculate_sapwood_respiration(
-        self, rtmodel_data, data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape
+        self,
+        rtmodel_data,
+        rtmodel_flora_dict,
+        data_idx,
+        pft_idx,
+        outcome,
+        excep_msg,
+        out_idx,
+        exp_shape,
     ):
         """Tests calculation of sapwood respiration."""
 
         from pyrealm.demography.t_model_functions import calculate_sapwood_respiration
 
-        pfts, data = rtmodel_data
-
         with outcome as excep:
             result = calculate_sapwood_respiration(
-                resp_s=pfts["resp_s"][pft_idx],
-                sapwood_mass=data["mass_swd"][data_idx],
+                resp_s=rtmodel_flora_dict["resp_s"][pft_idx],
+                sapwood_mass=rtmodel_data["sapwood_mass"][data_idx],
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, data["resp_swd"][out_idx])
+            assert np.allclose(result, rtmodel_data["resp_swd"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -499,6 +507,7 @@ class TestTModel:
         self,
         request,
         rtmodel_data,
+        rtmodel_flora_dict,
         data_idx,
         pft_idx,
         outcome,
@@ -515,47 +524,61 @@ class TestTModel:
 
         from pyrealm.demography.t_model_functions import calculate_foliar_respiration
 
-        pfts, data = rtmodel_data
-
         with outcome as excep:
             result = calculate_foliar_respiration(
-                resp_f=pfts["resp_f"][pft_idx],
-                whole_crown_gpp=data["crown_gpp"][data_idx],
+                resp_f=rtmodel_flora_dict["resp_f"][pft_idx],
+                whole_crown_gpp=rtmodel_data["crown_gpp"][data_idx],
             )
 
             assert result.shape == exp_shape
             assert np.allclose(
-                result, data["crown_gpp"][data_idx] * pfts["resp_f"][pft_idx]
+                result,
+                rtmodel_data["crown_gpp"][data_idx]
+                * rtmodel_flora_dict["resp_f"][pft_idx],
             )
             return
 
         assert str(excep.value).startswith(excep_msg)
 
     def test_calculate_fine_root_respiration(
-        self, rtmodel_data, data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape
+        self,
+        rtmodel_data,
+        rtmodel_flora_dict,
+        data_idx,
+        pft_idx,
+        outcome,
+        excep_msg,
+        out_idx,
+        exp_shape,
     ):
         """Tests calculation of fine root respiration."""
 
         from pyrealm.demography.t_model_functions import calculate_fine_root_respiration
 
-        pfts, data = rtmodel_data
-
         with outcome as excep:
             result = calculate_fine_root_respiration(
-                zeta=pfts["zeta"][pft_idx],
-                sla=pfts["sla"][pft_idx],
-                resp_r=pfts["resp_r"][pft_idx],
-                foliage_mass=data["mass_fol"][data_idx],
+                zeta=rtmodel_flora_dict["zeta"][pft_idx],
+                sla=rtmodel_flora_dict["sla"][pft_idx],
+                resp_r=rtmodel_flora_dict["resp_r"][pft_idx],
+                foliage_mass=rtmodel_data["foliage_mass"][data_idx],
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, data["resp_frt"][out_idx])
+            assert np.allclose(result, rtmodel_data["resp_frt"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
 
     def test_calculate_net_primary_productivity(
-        self, rtmodel_data, data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape
+        self,
+        rtmodel_data,
+        rtmodel_flora_dict,
+        data_idx,
+        pft_idx,
+        outcome,
+        excep_msg,
+        out_idx,
+        exp_shape,
     ):
         """Tests calculation of net primary productivity."""
 
@@ -563,25 +586,31 @@ class TestTModel:
             calculate_net_primary_productivity,
         )
 
-        pfts, data = rtmodel_data
-
         with outcome as excep:
             result = calculate_net_primary_productivity(
-                yld=pfts["yld"][pft_idx],
-                whole_crown_gpp=data["crown_gpp"][data_idx],
+                yld=rtmodel_flora_dict["yld"][pft_idx],
+                whole_crown_gpp=rtmodel_data["crown_gpp"][data_idx],
                 foliar_respiration=0,  # Not included here in the R implementation
-                fine_root_respiration=data["resp_frt"][data_idx],
-                sapwood_respiration=data["resp_swd"][data_idx],
+                fine_root_respiration=rtmodel_data["resp_frt"][data_idx],
+                sapwood_respiration=rtmodel_data["resp_swd"][data_idx],
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, data["NPP"][out_idx])
+            assert np.allclose(result, rtmodel_data["NPP"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
 
     def test_calculate_foliage_and_fine_root_turnover(
-        self, rtmodel_data, data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape
+        self,
+        rtmodel_data,
+        rtmodel_flora_dict,
+        data_idx,
+        pft_idx,
+        outcome,
+        excep_msg,
+        out_idx,
+        exp_shape,
     ):
         """Tests calculation of foliage and fine root turnover."""
 
@@ -589,25 +618,31 @@ class TestTModel:
             calculate_foliage_and_fine_root_turnover,
         )
 
-        pfts, data = rtmodel_data
-
         with outcome as excep:
             result = calculate_foliage_and_fine_root_turnover(
-                sla=pfts["sla"][pft_idx],
-                zeta=pfts["zeta"][pft_idx],
-                tau_f=pfts["tau_f"][pft_idx],
-                tau_r=pfts["tau_r"][pft_idx],
-                foliage_mass=data["mass_fol"][data_idx],
+                sla=rtmodel_flora_dict["sla"][pft_idx],
+                zeta=rtmodel_flora_dict["zeta"][pft_idx],
+                tau_f=rtmodel_flora_dict["tau_f"][pft_idx],
+                tau_r=rtmodel_flora_dict["tau_r"][pft_idx],
+                foliage_mass=rtmodel_data["foliage_mass"][data_idx],
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, data["turnover"][out_idx])
+            assert np.allclose(result, rtmodel_data["turnover"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
 
     def test_calculate_calculate_growth_increments(
-        self, rtmodel_data, data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape
+        self,
+        rtmodel_data,
+        rtmodel_flora_dict,
+        data_idx,
+        pft_idx,
+        outcome,
+        excep_msg,
+        out_idx,
+        exp_shape,
     ):
         """Tests calculation of growth increments."""
 
@@ -615,31 +650,58 @@ class TestTModel:
             calculate_growth_increments,
         )
 
-        pfts, data = rtmodel_data
-
         with outcome as excep:
             delta_d, delta_mass_stm, delta_mass_frt = calculate_growth_increments(
-                rho_s=pfts["rho_s"][pft_idx],
-                a_hd=pfts["a_hd"][pft_idx],
-                h_max=pfts["h_max"][pft_idx],
-                lai=pfts["lai"][pft_idx],
-                ca_ratio=pfts["ca_ratio"][pft_idx],
-                sla=pfts["sla"][pft_idx],
-                zeta=pfts["zeta"][pft_idx],
-                npp=data["NPP"][data_idx],
-                turnover=data["turnover"][data_idx],
-                dbh=data["diameter"][data_idx],
-                stem_height=data["height"][data_idx],
+                rho_s=rtmodel_flora_dict["rho_s"][pft_idx],
+                a_hd=rtmodel_flora_dict["a_hd"][pft_idx],
+                h_max=rtmodel_flora_dict["h_max"][pft_idx],
+                lai=rtmodel_flora_dict["lai"][pft_idx],
+                ca_ratio=rtmodel_flora_dict["ca_ratio"][pft_idx],
+                sla=rtmodel_flora_dict["sla"][pft_idx],
+                zeta=rtmodel_flora_dict["zeta"][pft_idx],
+                npp=rtmodel_data["NPP"][data_idx],
+                turnover=rtmodel_data["turnover"][data_idx],
+                dbh=rtmodel_data["dbh"][data_idx],
+                stem_height=rtmodel_data["stem_height"][data_idx],
             )
 
             assert delta_d.shape == exp_shape
-            assert np.allclose(delta_d, data["delta_d"][out_idx])
+            assert np.allclose(delta_d, rtmodel_data["delta_d"][out_idx])
 
             assert delta_mass_stm.shape == exp_shape
-            assert np.allclose(delta_mass_stm, data["delta_mass_stm"][out_idx])
+            assert np.allclose(delta_mass_stm, rtmodel_data["delta_mass_stm"][out_idx])
 
             assert delta_mass_frt.shape == exp_shape
-            assert np.allclose(delta_mass_frt, data["delta_mass_frt"][out_idx])
+            assert np.allclose(delta_mass_frt, rtmodel_data["delta_mass_frt"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
+
+
+def test_calculate_dbh_from_height_edge_cases():
+    """Test inverted calculation of dbh from height handles edges cases.
+
+    * If H > h_max, dbh is not calculable and should be np.nan
+    * If H = h_max, dbh is infinite.
+    """
+
+    from pyrealm.demography.t_model_functions import calculate_dbh_from_height
+
+    pft_h_max_values = np.array([20, 30])
+    pft_a_hd_values = np.array([116.0, 116.0])
+    stem_heights = np.array([[0], [10], [20], [30], [40]])
+
+    dbh = calculate_dbh_from_height(
+        h_max=pft_h_max_values,
+        a_hd=pft_a_hd_values,
+        stem_height=stem_heights,
+    )
+
+    # first row should be all zeros (zero height gives zero diameter)
+    assert np.all(dbh[0, :] == 0)
+
+    # Infinite entries
+    assert np.all(np.isinf(dbh) == np.array([[0, 0], [0, 0], [1, 0], [0, 1], [0, 0]]))
+
+    # Undefined entries
+    assert np.all(np.isnan(dbh) == np.array([[0, 0], [0, 0], [0, 0], [1, 0], [1, 1]]))

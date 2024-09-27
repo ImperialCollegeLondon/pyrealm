@@ -78,7 +78,7 @@ def calculate_canopy_z_max(
 def calculate_canopy_r0(
     q_m: NDArray[np.float32], crown_area: NDArray[np.float32]
 ) -> NDArray[np.float32]:
-    r"""Calculate scaling factor for height of maximum crown radius.
+    r"""Calculate scaling factor width of maximum crown radius.
 
     This scaling factor (:math:`r_0`) is derived from the canopy shape parameters
     (:math:`m,n,q_m`) for plant functional types and the estimated crown area
@@ -225,7 +225,42 @@ def calculate_relative_canopy_radius_at_z(
 
     z_over_height = z / stem_height
 
+    # Remove predictions of canopy radius above stem height
+    z_over_height = np.where(z > stem_height, np.nan, z_over_height)
+
     return m * n * z_over_height ** (n - 1) * (1 - z_over_height**n) ** (m - 1)
+
+
+def calculate_canopy_radius(
+    q_z: NDArray[np.float32],
+    r0: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
+    r"""Calculate canopy radius from relative radius and canopy r0.
+
+    The relative canopy radius (:math:`q(z)`) at a given height :math:`z` describes the
+    vertical profile of the canopy shape, but only varies with the ``m`` and ``n`` shape
+    parameters and the stem height. The actual crown radius at a given height
+    (:math:`r(z)`) needs to be scaled using :math:`r_0` such that the maximum crown area
+    equals the expected crown area given the crown area ratio traiit for the plant
+    functional type:
+
+    .. math::
+
+        r(z) = r_0 q(z)
+
+    This function calculates :math:`r(z)` given estimated ``r0`` and an array of
+    relative radius values.
+
+    Args:
+        q_z: TODO
+        r0: TODO
+        validate: Boolean flag to suppress argument validation.
+    """
+
+    # TODO - think about validation here. qz must be row array or 2D (N, n_pft)
+
+    return r0 * q_z
 
 
 def calculate_stem_projected_crown_area_at_z(
@@ -404,28 +439,73 @@ def calculate_stem_projected_leaf_area_at_z(
     return A_cp
 
 
-# def calculate_total_canopy_A_cp(z: float, f_g: float, community: Community) -> float:
-#     """Calculate total leaf area at a given height.
+def calculate_canopy_profiles(
+    pft_data: dict[str, NDArray[np.float32]],
+    z: NDArray[np.float32],
+    stem_height: NDArray[np.float32],
+    crown_area: NDArray[np.float32],
+    r0: NDArray[np.float32],
+    z_max: NDArray[np.float32],
+) -> dict[str, NDArray[np.float32]]:
+    """Calculate vertical canopy profiles for stems.
 
-#     :param f_g:
-#     :param community:
-#     :param z: Height above ground.
-#     :return: Total leaf area in the canopy at a given height.
-#     """
-#     A_cp_for_individuals = calculate_projected_leaf_area_for_individuals(
-#         z, f_g, community
-#     )
+    This method calculates canopy profile predictions, given an array of vertical
+    heights (``z``) for:
 
-#     A_cp_for_cohorts = A_cp_for_individuals * community.cohort_number_of_individuals
+    * relativate canopy radius,
+    * actual canopy radius,
+    * projected crown area, and
+    * project leaf area.
 
-#     return A_cp_for_cohorts.sum()
+    The predictions require a set of plant functional types (PFTs) but also the expected
+    allometric predictions of stem height, crown area and z_max for an actual stem of a
+    given size for each PFT.
 
+    Args:
+        pft_data: A dictionary of plant functional trait data, as for example returned
+            from :attr:`Flora.data<pyrealm.demography.flora.Flora.data>` attribute.
+        z: An array of vertical height values at which to calculate canopy profiles.
+        stem_height: A row array providing expected stem height for each PFT.
+        crown_area: A row array providing expected crown area for each PFT.
+        r0: A row array providing expected r0 for each PFT.
+        z_max: A row array providing expected z_max height for each PFT.
+    """
 
-# def calculate_gpp(cell_ppfd: NDArray, lue: NDArray) -> float:
-#     """Estimate the gross primary productivity.
+    # Calculate relative radius
+    relative_canopy_radius = calculate_relative_canopy_radius_at_z(
+        z=z,
+        m=pft_data["m"],
+        n=pft_data["n"],
+        stem_height=stem_height,
+    )
 
-#     Not sure where to place this - need an array of LUE that matches to the
+    # Calculate actual radius
+    crown_radius = calculate_canopy_radius(q_z=relative_canopy_radius, r0=r0)
 
-#     """
+    # Calculate projected crown area
+    projected_crown_area = calculate_stem_projected_crown_area_at_z(
+        z=z,
+        q_z=relative_canopy_radius,
+        crown_area=crown_area,
+        q_m=pft_data["q_m"],
+        stem_height=stem_height,
+        z_max=z_max,
+    )
 
-#     return 100
+    # Calculate projected leaf area
+    projected_leaf_area = calculate_stem_projected_leaf_area_at_z(
+        z=z,
+        q_z=relative_canopy_radius,
+        f_g=pft_data["f_g"],
+        crown_area=crown_area,
+        q_m=pft_data["q_m"],
+        stem_height=stem_height,
+        z_max=z_max,
+    )
+
+    return dict(
+        relative_canopy_radius=relative_canopy_radius,
+        crown_radius=crown_radius,
+        projected_crown_area=projected_crown_area,
+        projected_leaf_area=projected_leaf_area,
+    )

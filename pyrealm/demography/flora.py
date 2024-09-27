@@ -31,8 +31,15 @@ from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
 from pyrealm.demography.canopy_functions import (
+    _validate_z_qz_args,
+    calculate_canopy_profiles,
     calculate_canopy_q_m,
     calculate_canopy_z_max_proportion,
+)
+from pyrealm.demography.t_model_functions import (
+    calculate_dbh_from_height,
+    calculate_t_model_allocation,
+    calculate_t_model_allometry,
 )
 
 if sys.version_info[:2] >= (3, 11):
@@ -234,8 +241,8 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
         for name, pft in zip(pft_names, pfts):
             self[name] = pft
 
-        # Generate an dataframe representation to facilitate merging to cohort data.
-        # - assemble pft fields into arrays
+        # Generate a dictionary of arrays of traits across PFTs and an index mapping PFT
+        # names onto the index of those arrays.
         data = {}
         pft_fields = [f.name for f in fields(PlantFunctionalTypeStrict)]
 
@@ -249,6 +256,14 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
 
         self.pft_indices = {v: k for k, v in enumerate(self.data["name"])}
         """An dictionary giving the index of each PFT name in the PFT data."""
+
+        self.n_pfts = len(pfts)
+        """The number of plant functional types in the Flora instance."""
+
+    def __repr__(self) -> str:
+        """Simple representation of the Flora instance."""
+
+        return f"Flora with {self.n_pfts} functional types: {', '.join(self.keys())}"
 
     @classmethod
     def _from_file_data(cls, file_data: dict) -> Flora:
@@ -308,3 +323,164 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
             raise excep
 
         return cls._from_file_data({"pft": data.to_dict(orient="records")})
+
+    def get_allometries(
+        self,
+        dbh: NDArray[np.float32] | None = None,
+        stem_height: NDArray[np.float32] | None = None,
+    ) -> dict[str, NDArray]:
+        """Calculate T Model scalings for the Flora members.
+
+        This method calculates the allometric predictions of the T Model for all of the
+        plant functional types within a Flora, given an array of stem sizes at which to
+        calculate the predictions. The method returns a dictionary of the following
+        allometric predictions of the T Model:
+
+        * 'dbh'
+        * 'stem_height'
+        * 'crown_area'
+        * 'crown_fraction',
+        * 'stem_mass'
+        * 'foliage_mass'
+        * 'sapwood_mass'
+
+        Each dictionary entry is a 2D array with PFTs as columns and the predictions for
+        each stem size as rows.
+
+        The T Model uses diameter at breast height (DBH) as the fundamental metric of
+        stem size but this method will also accept a set of stem heights as an
+        alternative size metric. Stem heights are converted back into the expected DBH
+        before calculating the allometric predictions - if any of the stem heights are
+        higher than the maximum height for a PFT, these will be shown as `np.nan`
+        values. One of ``dbh`` and ``stem_height`` must be provided as a one-dimensional
+        array.
+
+        Args:
+            dbh: An array of diameter at breast height values.
+            stem_height: An array of stem height values.
+        """
+
+        # Need exclusively one of dbh or stem_height - use XOR
+        if not ((dbh is None) ^ (stem_height is None)):
+            raise ValueError("Provide one of either dbh or stem_height")
+
+        if stem_height is not None:
+            # TODO: This steals the validation from the canopy functions - this might be
+            #       a general function for the module - see also the
+            #       validate_t_model_args function.
+            _validate_z_qz_args(z=stem_height, stem_properties=[self.data["h_max"]])
+
+            dbh = calculate_dbh_from_height(
+                h_max=self.data["h_max"],
+                a_hd=self.data["a_hd"],
+                stem_height=stem_height,
+            )
+        elif dbh is not None:
+            # TODO: This steals the validation from the canopy functions - this might be
+            #       a general function for the module - see also the
+            #       validate_t_model_args function.
+            _validate_z_qz_args(z=dbh, stem_properties=[self.data["h_max"]])
+
+        # DBH is now always populated so ignore warning that it might be None
+        return calculate_t_model_allometry(pft_data=self.data, dbh=dbh)  # type: ignore [arg-type]
+
+    def get_allocation(
+        self,
+        potential_gpp: NDArray[np.float32],
+        dbh: NDArray[np.float32] | None = None,
+        stem_height: NDArray[np.float32] | None = None,
+    ) -> dict[str, NDArray]:
+        """Calculate T Model scalings for the Flora members.
+
+        This method calculates the predicted allocation of potential gross primary
+        productivity (GPP) under the T Model for all of the plant functional types
+        within a Flora, given values for stem size and potential GPP. The method returns
+        a dictionary of the allocation predictions of the T Model:
+
+        * "whole_crown_gpp"
+        * "sapwood_respiration"
+        * "foliar_respiration"
+        * "fine_root_respiration"
+        * "npp"
+        * "turnover"
+        * "delta_dbh"
+        * "delta_stem_mass"
+        * "delta_foliage_mass"
+
+        Each dictionary entry is a 2D array with PFTs as columns and the predictions for
+        each size value as rows.
+
+        The T Model uses diameter at breast height (DBH) as the fundamental metric of
+        stem size but this method will also accept a set of stem heights as an
+        alternative size metric. Stem heights are converted back into the expected DBH
+        before calculating the allometric predictions - if any of the stem heights are
+        higher than the maximum height for a PFT, these will be shown as `np.nan`
+        values. One of ``dbh`` and ``stem_height`` must be provided as a one-dimensional
+        array, and ``potential_gpp`` must have the same shape.
+
+        Args:
+            potential_gpp: An array of potential GPP values.
+            dbh: An array of diameter at breast height values.
+            stem_height: An array of stem height values.
+        """
+
+        # Need exclusively one of dbh or stem_height - use XOR
+        if not ((dbh is None) ^ (stem_height is None)):
+            raise ValueError("Provide one of either dbh or stem_height")
+
+        if stem_height is not None:
+            # TODO: This steals the validation from the canopy functions - this might be
+            #       a general function for the module - see also the
+            #       validate_t_model_args function.
+            _validate_z_qz_args(z=stem_height, stem_properties=[self.data["h_max"]])
+
+            dbh = calculate_dbh_from_height(
+                h_max=self.data["h_max"],
+                a_hd=self.data["a_hd"],
+                stem_height=stem_height,
+            )
+        elif dbh is not None:
+            # TODO: This steals the validation from the canopy functions - this might be
+            #       a general function for the module - see also the
+            #       validate_t_model_args function.
+            _validate_z_qz_args(z=dbh, stem_properties=[self.data["h_max"]])
+
+        if potential_gpp.shape != dbh.shape:  # type: ignore [union-attr]
+            raise ValueError("GPP must have the same shape as DBH or stem height")
+
+        return calculate_t_model_allocation(
+            pft_data=self.data,
+            dbh=dbh,  # type: ignore [arg-type]
+            potential_gpp=potential_gpp,
+        )
+
+    def get_canopy_profile(
+        self,
+        z: NDArray[np.float32],
+        stem_height: NDArray[np.float32],
+        crown_area: NDArray[np.float32],
+        r0: NDArray[np.float32],
+        z_max: NDArray[np.float32],
+    ) -> dict[str, NDArray]:
+        """Calculate T Model scalings for the Flora members.
+
+        TODO: Description
+
+        Args:
+            z: TODO
+            stem_height: TODO
+            crown_area: TODO
+            r0: TODO
+            z_max: TODO
+        """
+
+        # TODO - validation
+
+        return calculate_canopy_profiles(
+            pft_data=self.data,
+            z=z,
+            stem_height=stem_height,
+            crown_area=crown_area,
+            r0=r0,
+            z_max=z_max,
+        )
