@@ -8,21 +8,6 @@ import pytest
 
 
 @pytest.fixture
-def fixture_canopy_shape():
-    """Fixture providing input and expected values for shape parameter calculations.
-
-    These are hand calculated and only really test that the calculations haven't changed
-    from the initial implementation.
-    """
-    return {
-        "m": np.array([2, 3]),
-        "n": np.array([5, 4]),
-        "q_m": np.array([2.9038988210485766, 2.3953681843215673]),
-        "p_zm": np.array([0.850283, 0.72265688]),
-    }
-
-
-@pytest.fixture
 def fixture_community():
     """A fixture providing a simple community."""
     from pyrealm.demography.community import Community
@@ -39,49 +24,6 @@ def fixture_community():
         cohort_pft_names=np.repeat(["test"], 4),
         cohort_dbh_values=np.array([0.2, 0.4, 0.6, 0.8]),
     )
-
-
-def test_calculate_crown_q_m(fixture_canopy_shape):
-    """Test calculate_crown_q_m."""
-
-    from pyrealm.demography.canopy_functions import calculate_crown_q_m
-
-    actual_q_m_values = calculate_crown_q_m(
-        m=fixture_canopy_shape["m"], n=fixture_canopy_shape["n"]
-    )
-
-    assert np.allclose(actual_q_m_values, fixture_canopy_shape["q_m"])
-
-
-def test_calculate_crown_z_max_proportion(fixture_canopy_shape):
-    """Test calculate_crown_z_max_proportion."""
-
-    from pyrealm.demography.canopy_functions import calculate_crown_z_max_proportion
-
-    actual_p_zm = calculate_crown_z_max_proportion(
-        m=fixture_canopy_shape["m"], n=fixture_canopy_shape["n"]
-    )
-
-    assert np.allclose(actual_p_zm, fixture_canopy_shape["p_zm"])
-
-
-@pytest.mark.parametrize(
-    argnames="crown_areas, expected_r0",
-    argvalues=(
-        (np.array([20, 30]), np.array([0.86887756, 1.29007041])),
-        (np.array([30, 40]), np.array([1.06415334, 1.489645])),
-    ),
-)
-def test_calculate_r_0_values(fixture_canopy_shape, crown_areas, expected_r0):
-    """Test happy path for calculating r_0."""
-
-    from pyrealm.demography.canopy_functions import calculate_crown_r0
-
-    actual_r0_values = calculate_crown_r0(
-        q_m=fixture_canopy_shape["q_m"], crown_area=crown_areas
-    )
-
-    assert np.allclose(actual_r0_values, expected_r0)
 
 
 ZQZInput = namedtuple(

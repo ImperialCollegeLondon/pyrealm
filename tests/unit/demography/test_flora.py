@@ -5,6 +5,7 @@ from contextlib import nullcontext as does_not_raise
 from importlib import resources
 from json import JSONDecodeError
 
+import numpy as np
 import pytest
 from marshmallow.exceptions import ValidationError
 from pandas.errors import ParserError
@@ -104,17 +105,29 @@ def test_PlantFunctionalType__init__(args, outcome):
 
 
 #
-# Test PlantFunctionalType __post_init__ functions
+# Test PlantFunctionalType __post_init__ trait calculation functions
 #
 
 
-@pytest.mark.parametrize(
-    argnames="m,n,q_m",
-    argvalues=[(2, 5, 2.9038988210485766), (3, 4, 2.3953681843215673)],
-)
-def test_pft_calculate_q_m(m, n, q_m):
+@pytest.fixture
+def fixture_crown_shape():
+    """Fixture of input and expected values for crown shape parameter calculations.
+
+    These are hand calculated and only really test that the calculations haven't changed
+    from the initial implementation.
+    """
+    return (
+        np.array([2, 3]),  # m
+        np.array([5, 4]),  # n
+        np.array([2.9038988210485766, 2.3953681843215673]),  # q_m
+        np.array([0.850283, 0.72265688]),  # p_zm
+    )
+
+
+def test_pft_calculate_q_m(fixture_crown_shape):
     """Test calculation of q_m."""
 
+    m, n, q_m, _ = fixture_crown_shape
     from pyrealm.demography.flora import calculate_crown_q_m
 
     calculated_q_m = calculate_crown_q_m(m, n)
@@ -131,17 +144,15 @@ def test_calculate_q_m_values_raises_exception_for_invalid_input():
     pass
 
 
-@pytest.mark.parametrize(
-    argnames="m,n,z_max_ratio",
-    argvalues=[(2, 5, 0.8502830004171938), (3, 4, 0.7226568811456053)],
-)
-def test_pft_calculate_z_max_ratio(m, n, z_max_ratio):
+def test_pft_calculate_z_max_ratio(fixture_crown_shape):
     """Test calculation of z_max proportion."""
 
     from pyrealm.demography.flora import calculate_crown_z_max_proportion
 
+    m, n, _, p_zm = fixture_crown_shape
+
     calculated_zmr = calculate_crown_z_max_proportion(m, n)
-    assert calculated_zmr == pytest.approx(z_max_ratio)
+    assert calculated_zmr == pytest.approx(p_zm)
 
 
 #

@@ -7,6 +7,24 @@ import pytest
 
 
 @pytest.mark.parametrize(
+    argnames="crown_areas, expected_r0",
+    argvalues=(
+        (np.array([20, 30]), np.array([0.86887756, 1.29007041])),
+        (np.array([30, 40]), np.array([1.06415334, 1.489645])),
+    ),
+)
+def test_calculate_crown_r_0_values(crown_areas, expected_r0):
+    """Test happy path for calculating r_0."""
+
+    from pyrealm.demography.t_model_functions import calculate_crown_r0
+
+    q_m = np.array([2.9038988210485766, 2.3953681843215673])
+    actual_r0_values = calculate_crown_r0(q_m=q_m, crown_area=crown_areas)
+
+    assert np.allclose(actual_r0_values, expected_r0)
+
+
+@pytest.mark.parametrize(
     argnames="pft_args, size_args, outcome, excep_message",
     argvalues=[
         pytest.param(
