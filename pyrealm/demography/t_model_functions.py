@@ -6,6 +6,7 @@ calculate stem growth given net primary productivity.
 """  # noqa: D205
 
 from dataclasses import InitVar, dataclass, field
+from typing import ClassVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -624,6 +625,18 @@ class StemAllometry:
         at_dbh: An array of diameter at breast height values at which to predict stem
             allometry values.
     """
+
+    allometry_attrs: ClassVar[tuple[str, ...]] = (
+        "dbh",
+        "stem_height",
+        "crown_area",
+        "crown_fraction",
+        "stem_mass",
+        "foliage_mass",
+        "sapwood_mass",
+        "canopy_r0",
+        "canopy_z_max",
+    )
 
     # Init vars
     stem_traits: InitVar[Flora | StemTraits]
