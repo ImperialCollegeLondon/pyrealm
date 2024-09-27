@@ -21,7 +21,7 @@ import json
 import sys
 from collections import Counter
 from collections.abc import Sequence
-from dataclasses import dataclass, field, fields
+from dataclasses import InitVar, dataclass, field, fields
 from pathlib import Path
 
 import marshmallow_dataclass
@@ -192,16 +192,18 @@ in gaps from the default values.
 """
 
 
-class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
-    """Defines the flora used in a ``virtual_ecosystem`` model.
+@dataclass(frozen=True)
+class Flora:
+    """A dataclass providing trait data on collection of plant functional types.
 
-    The flora is the set of plant functional types used within a particular simulation
-    and this class provides dictionary-like access to a defined set of
+    A flora provides trait data on the complete collection of plant functional types
+    that will be used within a particular simulation. The dataclass provides access
+    to trait attributes as row arrays across those plant functional types.
+
+    The class is created using a list of
     :class:`~pyrealm.demography.flora.PlantFunctionalType` or
-    :class:`~pyrealm.demography.flora.PlantFunctionalTypeStrict` instances.
-
-    Instances of this class should not be altered during model fitting, at least until
-    the point where plant evolution is included in the modelling process.
+    :class:`~pyrealm.demography.flora.PlantFunctionalTypeStrict` instances, which must
+    have unique names.
 
     Args:
         pfts: A sequence of ``PlantFunctionalType`` or ``PlantFunctionalTypeStrict``
@@ -209,10 +211,57 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
             :attr:`~pyrealm.demography.flora.PlantFunctionalTypeStrict.name` attributes.
     """
 
-    def __init__(self, pfts: Sequence[type[PlantFunctionalTypeStrict]]) -> None:
-        # Initialise the dict superclass to implement dict like behaviour
-        super().__init__()
+    pfts: InitVar[Sequence[type[PlantFunctionalTypeStrict]]]
+    r"""A sequence of plant functional type instances to include in the Flora."""
 
+    name: NDArray[np.str_] = field(init=False)
+    r"""The name of the plant functional type."""
+    a_hd: NDArray[np.float32] = field(init=False)
+    r"""Initial slope of height-diameter relationship (:math:`a`, -)"""
+    ca_ratio: NDArray[np.float32] = field(init=False)
+    r"""Initial ratio of crown area to stem cross-sectional area
+    (:math:`c`, -)"""
+    h_max: NDArray[np.float32] = field(init=False)
+    r"""Maximum tree height (:math:`H_m`, m)"""
+    rho_s: NDArray[np.float32] = field(init=False)
+    r"""Sapwood density (:math:`\rho_s`, kg Cm-3)"""
+    lai: NDArray[np.float32] = field(init=False)
+    """Leaf area index within the crown (:math:`L`,  -)"""
+    sla: NDArray[np.float32] = field(init=False)
+    r"""Specific leaf area (:math:`\sigma`,  m2 kg-1 C)"""
+    tau_f: NDArray[np.float32] = field(init=False)
+    r"""Foliage turnover time (:math:`\tau_f`,years)"""
+    tau_r: NDArray[np.float32] = field(init=False)
+    r"""Fine-root turnover time (:math:`\tau_r`,  years)"""
+    par_ext: NDArray[np.float32] = field(init=False)
+    r"""Extinction coefficient of photosynthetically active radiation (PAR) (:math:`k`,
+     -)"""
+    yld: NDArray[np.float32] = field(init=False)
+    r"""Yield factor (:math:`y`,  -)"""
+    zeta: NDArray[np.float32] = field(init=False)
+    r"""Ratio of fine-root mass to foliage area (:math:`\zeta`, kg C m-2)"""
+    resp_r: NDArray[np.float32] = field(init=False)
+    r"""Fine-root specific respiration rate (:math:`r_r`, year-1)"""
+    resp_s: NDArray[np.float32] = field(init=False)
+    r"""Sapwood-specific respiration rate (:math:`r_s`,  year-1)"""
+    resp_f: NDArray[np.float32] = field(init=False)
+    r"""Foliage maintenance respiration fraction (:math:`r_f`,  -)"""
+    m: NDArray[np.float32] = field(init=False)
+    r"""Canopy shape parameter (:math:`m`, -)"""
+    n: NDArray[np.float32] = field(init=False)
+    r"""Canopy shape parameter (:math:`n`, -)"""
+    f_g: NDArray[np.float32] = field(init=False)
+    r"""Crown gap fraction (:math:`f_g`, -)"""
+    q_m: NDArray[np.float32] = field(init=False)
+    """Scaling factor to derive maximum crown radius from crown area."""
+    z_max_prop: NDArray[np.float32] = field(init=False)
+    """Proportion of stem height at which maximum crown radius is found."""
+    pft_dict: dict[str, type[PlantFunctionalTypeStrict]] = field(init=False)
+    """A dictionary of the original plant functional type instances, keyed by name."""
+    pft_indices: dict[str, int] = field(init=False)
+    """An dictionary giving the index of each PFT name in the trait array attributes."""
+
+    def __post_init__(self, pfts: Sequence[type[PlantFunctionalTypeStrict]]) -> None:
         # Check the PFT data
         if (not isinstance(pfts, Sequence)) or (
             not all([isinstance(v, PlantFunctionalTypeStrict) for v in pfts])
@@ -230,25 +279,19 @@ class Flora(dict[str, type[PlantFunctionalTypeStrict]]):
                 f"Duplicated plant functional type names: {','.join(duplicates)}"
             )
 
-        # Populate the dictionary using the PFT name as key
-        for name, pft in zip(pft_names, pfts):
-            self[name] = pft
+        # Populate the pft dictionary using the PFT name as key
+        object.__setattr__(self, "pft_dict", {p.name: p for p in pfts})
 
-        # Generate an dataframe representation to facilitate merging to cohort data.
-        # - assemble pft fields into arrays
-        data = {}
+        # Populate the plant functional type attributes with arrays
         pft_fields = [f.name for f in fields(PlantFunctionalTypeStrict)]
 
         for pft_field in pft_fields:
-            data[pft_field] = np.array(
-                [getattr(pft, pft_field) for pft in self.values()]
+            object.__setattr__(
+                self, pft_field, np.array([getattr(pft, pft_field) for pft in pfts])
             )
 
-        self.data: dict[str, NDArray] = data
-        """A dictionary of trait values as numpy arrays."""
-
-        self.pft_indices = {v: k for k, v in enumerate(self.data["name"])}
-        """An dictionary giving the index of each PFT name in the PFT data."""
+        # Populate the pft trait indices
+        object.__setattr__(self, "pft_dict", {v: k for k, v in enumerate(self.name)})
 
     @classmethod
     def _from_file_data(cls, file_data: dict) -> Flora:

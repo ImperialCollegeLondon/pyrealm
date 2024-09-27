@@ -128,57 +128,53 @@ def flora_inputs(request):
 
     match request.param:
         case "not_sequence":
-            return "Notasequence"
+            return "Notasequence", pytest.raises(ValueError)
         case "sequence_not_all_pfts":
-            return [1, 2, 3]
+            return [1, 2, 3], pytest.raises(ValueError)
         case "single_pft":
-            return [broadleaf]
+            return [broadleaf], does_not_raise()
         case "single_pft_strict":
-            return [broadleaf_strict]
+            return [broadleaf_strict], does_not_raise()
         case "multiple_pfts":
-            return [broadleaf, conifer]
+            return [broadleaf, conifer], does_not_raise()
         case "multiple_pfts_strict":
-            return [broadleaf_strict, conifer_strict]
+            return [broadleaf_strict, conifer_strict], does_not_raise()
         case "multiple_pfts_mixed":
-            return [broadleaf_strict, conifer]
+            return [broadleaf_strict, conifer], does_not_raise()
         case "duplicated_names":
-            return [broadleaf, broadleaf]
+            return [broadleaf, broadleaf], pytest.raises(ValueError)
         case "duplicated_names_mixed":
-            return [broadleaf_strict, broadleaf]
+            return [broadleaf_strict, broadleaf], pytest.raises(ValueError)
 
 
 @pytest.mark.parametrize(
-    argnames="flora_inputs,outcome",
+    argnames="flora_inputs",
     argvalues=[
-        pytest.param("not_sequence", pytest.raises(ValueError)),
-        pytest.param("sequence_not_all_pfts", pytest.raises(ValueError)),
-        pytest.param("single_pft", does_not_raise()),
-        pytest.param("single_pft_strict", does_not_raise()),
-        pytest.param("multiple_pfts", does_not_raise()),
-        pytest.param("multiple_pfts_strict", does_not_raise()),
-        pytest.param("multiple_pfts_mixed", does_not_raise()),
-        pytest.param("duplicated_names", pytest.raises(ValueError)),
-        pytest.param("duplicated_names_mixed", pytest.raises(ValueError)),
+        "not_sequence",
+        "sequence_not_all_pfts",
+        "single_pft",
+        "single_pft_strict",
+        "multiple_pfts",
+        "multiple_pfts_strict",
+        "multiple_pfts_mixed",
+        "duplicated_names",
+        "duplicated_names_mixed",
     ],
     indirect=["flora_inputs"],
 )
-def test_Flora__init__(flora_inputs, outcome):
+def test_Flora__init__(flora_inputs):
     """Test the plant functional type initialisation."""
 
     from pyrealm.demography.flora import Flora
 
+    pfts, outcome = flora_inputs
+
     with outcome:
-        flora = Flora(pfts=flora_inputs)
+        flora = Flora(pfts=pfts)
 
         if isinstance(outcome, does_not_raise):
-            # Simple check that PFT instances are correctly keyed by name.
-            for k, v in flora.items():
-                assert k == v.name
-
-            # Check data view is correct
-            assert isinstance(flora.data, dict)
-            for trait_array in flora.data.values():
-                assert trait_array.shape == (len(flora),)
+            # Really basic check that an array attribute is the right size
+            assert flora.a_hd.shape == (len(flora.pft_dict),)
 
 
 #
@@ -207,9 +203,9 @@ def test_flora_from_json(filename, outcome):
 
         if isinstance(outcome, does_not_raise):
             # Coarse check of what got loaded
-            assert len(flora) == 2
+            assert flora.name.shape == (2,)
             for nm in ["test1", "test2"]:
-                assert nm in flora
+                assert nm in flora.name
 
 
 @pytest.mark.parametrize(
@@ -233,9 +229,9 @@ def test_flora_from_toml(filename, outcome):
 
         if isinstance(outcome, does_not_raise):
             # Coarse check of what got loaded
-            assert len(flora) == 2
+            assert flora.name.shape == (2,)
             for nm in ["test1", "test2"]:
-                assert nm in flora
+                assert nm in flora.name
 
 
 @pytest.mark.parametrize(
@@ -259,9 +255,9 @@ def test_flora_from_csv(filename, outcome):
 
         if isinstance(outcome, does_not_raise):
             # Coarse check of what got loaded
-            assert len(flora) == 2
+            assert flora.name.shape == (2,)
             for nm in ["test1", "test2"]:
-                assert nm in flora
+                assert nm in flora.name
 
 
 #
