@@ -621,16 +621,16 @@ class StemAllometry:
     Args:
         pft_data: A dictionary of plant functional trait data, as for example returned
             from :attr:`Flora.data<pyrealm.demography.flora.Flora.data>` attribute.
-        dbh: An array of diameter at breast height values for which to predict stem
+        at_dbh: An array of diameter at breast height values at which to predict stem
             allometry values.
     """
 
     # Init vars
     stem_traits: InitVar[Flora | StemTraits]
-    dbh: InitVar[NDArray[np.float32]]
+    at_dbh: InitVar[NDArray[np.float32]]
 
     # Post init allometry attributes
-    # dbh: NDArray[np.float32] = field(post_init=False)
+    dbh: NDArray[np.float32] = field(init=False)
     stem_height: NDArray[np.float32] = field(init=False)
     crown_area: NDArray[np.float32] = field(init=False)
     crown_fraction: NDArray[np.float32] = field(init=False)
@@ -641,35 +641,35 @@ class StemAllometry:
     canopy_z_max: NDArray[np.float32] = field(init=False)
 
     def __post_init__(
-        self, stem_traits: Flora | StemTraits, dbh: NDArray[np.float32]
+        self, stem_traits: Flora | StemTraits, at_dbh: NDArray[np.float32]
     ) -> None:
         """Populate the stem allometry attributes from the traits and size data."""
 
         self.stem_height = calculate_heights(
             h_max=stem_traits.h_max,
             a_hd=stem_traits.a_hd,
-            dbh=dbh,
+            dbh=at_dbh,
         )
 
-        # Broadcast dbh to shape of stem height to get congruent shapes
-        dbh = np.broadcast_to(dbh, self.stem_height.shape)
+        # Broadcast at_dbh to shape of stem height to get congruent shapes
+        self.dbh = np.broadcast_to(at_dbh, self.stem_height.shape)
 
         self.crown_area = calculate_crown_areas(
             ca_ratio=stem_traits.ca_ratio,
             a_hd=stem_traits.a_hd,
-            dbh=dbh,
+            dbh=self.dbh,
             stem_height=self.stem_height,
         )
 
         self.crown_fraction = calculate_crown_fractions(
             a_hd=stem_traits.a_hd,
-            dbh=dbh,
+            dbh=self.dbh,
             stem_height=self.stem_height,
         )
 
         self.stem_mass = calculate_stem_masses(
             rho_s=stem_traits.rho_s,
-            dbh=dbh,
+            dbh=self.dbh,
             stem_height=self.stem_height,
         )
 

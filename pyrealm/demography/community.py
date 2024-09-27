@@ -94,8 +94,8 @@ of the calculated T Model predictions:
 
 >>> pd.DataFrame({
 ...    'name': community.stem_traits.name,
-...    'n_individuals': community.cohort_data["n_individuals"],
 ...    'dbh': community.stem_allometry.dbh,
+...    'n_individuals': community.cohort_data["n_individuals"],
 ...    'stem_height': community.stem_allometry.stem_height,
 ...    'crown_area': community.stem_allometry.crown_area,
 ...    'stem_mass': community.stem_allometry.stem_mass,
@@ -412,7 +412,7 @@ class Community:
 
         # Populate the stem allometry
         self.stem_allometry = StemAllometry(
-            stem_traits=self.stem_traits, dbh=cohort_dbh_values
+            stem_traits=self.stem_traits, at_dbh=cohort_dbh_values
         )
 
     @classmethod
