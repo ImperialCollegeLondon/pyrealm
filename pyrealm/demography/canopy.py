@@ -111,9 +111,9 @@ class Canopy:
                 args=(
                     community.cohort_data["stem_height"],
                     community.cohort_data["crown_area"],
-                    community.cohort_data["m"],
-                    community.cohort_data["n"],
-                    community.cohort_data["q_m"],
+                    community.stem_traits.m,
+                    community.stem_traits.n,
+                    community.stem_traits.q_m,
                     community.cohort_data["canopy_z_max"],
                     community.cohort_data["n_individuals"],
                     target_area,
@@ -137,8 +137,8 @@ class Canopy:
         self.stem_relative_radius = calculate_relative_canopy_radius_at_z(
             z=self.layer_heights,
             stem_height=community.cohort_data["stem_height"],
-            m=community.cohort_data["m"],
-            n=community.cohort_data["n"],
+            m=community.stem_traits.m,
+            n=community.stem_traits.n,
             validate=False,
         )
 
@@ -148,7 +148,7 @@ class Canopy:
             q_z=self.stem_relative_radius,
             crown_area=community.cohort_data["crown_area"],
             stem_height=community.cohort_data["stem_height"],
-            q_m=community.cohort_data["q_m"],
+            q_m=community.stem_traits.q_m,
             z_max=community.cohort_data["canopy_z_max"],
             validate=False,
         )
@@ -159,8 +159,8 @@ class Canopy:
             q_z=self.stem_relative_radius,
             crown_area=community.cohort_data["crown_area"],
             stem_height=community.cohort_data["stem_height"],
-            f_g=community.cohort_data["f_g"],
-            q_m=community.cohort_data["q_m"],
+            f_g=community.stem_traits.f_g,
+            q_m=community.stem_traits.q_m,
             z_max=community.cohort_data["canopy_z_max"],
             validate=False,
         )

@@ -119,7 +119,7 @@ from numpy.typing import NDArray
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.demography import canopy_functions
 from pyrealm.demography import t_model_functions as t_model
-from pyrealm.demography.flora import Flora
+from pyrealm.demography.flora import Flora, StemTraits
 
 if sys.version_info[:2] >= (3, 11):
     import tomllib
@@ -355,6 +355,7 @@ class Community:
 
     # Post init properties
     number_of_cohorts: int = field(init=False)
+    stem_traits: StemTraits = field(init=False)
     cohort_data: dict[str, NDArray] = field(init=False)
 
     def __post_init__(
@@ -392,14 +393,6 @@ class Community:
         except ValueError:
             raise ValueError("Cohort arrays are of unequal length")
 
-        # Check the initial PFT values are known
-        unknown_pfts = set(cohort_pft_names).difference(self.flora.keys())
-
-        if unknown_pfts:
-            raise ValueError(
-                f"Plant functional types unknown in flora: {','.join(unknown_pfts)}"
-            )
-
         # Store as a dictionary
         self.cohort_data: dict[str, NDArray] = {
             "name": cohort_pft_names,
@@ -407,29 +400,13 @@ class Community:
             "n_individuals": cohort_n_individuals,
         }
 
-        # Duplicate the pft trait data to match the cohort data and add to the cohort
-        # data dictionary.
-        self.cohort_data.update(self._unpack_pft_data(cohort_pft_names))
+        # Get the stem traits for the cohorts
+        self.stem_traits = self.flora.get_stem_traits(cohort_pft_names)
 
         self.number_of_cohorts = len(cohort_pft_names)
 
         # Populate the T model fields
         self._calculate_t_model()
-
-    def _unpack_pft_data(
-        self, cohort_pft_names: NDArray[np.str_]
-    ) -> dict[str, NDArray]:
-        """Creates a dictionary of PFT data for a set of cohorts.
-
-        Args:
-            cohort_pft_names: The PFT name for each cohort
-        """
-        # Get the indices for the cohort PFT names in the flora PFT data
-        pft_index = [self.flora.pft_indices[str(nm)] for nm in cohort_pft_names]
-
-        # Use that index to duplicate the PFT specific data into a per cohort entry for
-        # each of the PFT traits
-        return {k: v[pft_index] for k, v in self.flora.data.items()}
 
     def _calculate_t_model(self) -> None:
         """Calculate T Model predictions across cohort data.
@@ -442,39 +419,39 @@ class Community:
         # Add data to cohort dataframes capturing the T Model geometry
         # - Classic T Model scaling
         self.cohort_data["stem_height"] = t_model.calculate_heights(
-            h_max=self.cohort_data["h_max"],
-            a_hd=self.cohort_data["a_hd"],
+            h_max=self.stem_traits.h_max,
+            a_hd=self.stem_traits.a_hd,
             dbh=self.cohort_data["dbh"],
         )
 
         self.cohort_data["crown_area"] = t_model.calculate_crown_areas(
-            ca_ratio=self.cohort_data["ca_ratio"],
-            a_hd=self.cohort_data["a_hd"],
+            ca_ratio=self.stem_traits.ca_ratio,
+            a_hd=self.stem_traits.a_hd,
             dbh=self.cohort_data["dbh"],
             stem_height=self.cohort_data["stem_height"],
         )
 
         self.cohort_data["crown_fraction"] = t_model.calculate_crown_fractions(
-            a_hd=self.cohort_data["a_hd"],
+            a_hd=self.stem_traits.a_hd,
             dbh=self.cohort_data["dbh"],
             stem_height=self.cohort_data["stem_height"],
         )
 
         self.cohort_data["stem_mass"] = t_model.calculate_stem_masses(
-            rho_s=self.cohort_data["rho_s"],
+            rho_s=self.stem_traits.rho_s,
             dbh=self.cohort_data["dbh"],
             stem_height=self.cohort_data["stem_height"],
         )
 
         self.cohort_data["foliage_mass"] = t_model.calculate_foliage_masses(
-            sla=self.cohort_data["sla"],
-            lai=self.cohort_data["lai"],
+            sla=self.stem_traits.sla,
+            lai=self.stem_traits.lai,
             crown_area=self.cohort_data["crown_area"],
         )
 
         self.cohort_data["sapwood_mass"] = t_model.calculate_sapwood_masses(
-            rho_s=self.cohort_data["rho_s"],
-            ca_ratio=self.cohort_data["ca_ratio"],
+            rho_s=self.stem_traits.rho_s,
+            ca_ratio=self.stem_traits.ca_ratio,
             stem_height=self.cohort_data["stem_height"],
             crown_area=self.cohort_data["crown_area"],
             crown_fraction=self.cohort_data["crown_fraction"],
@@ -482,11 +459,11 @@ class Community:
 
         # Canopy shape extension to T Model from PlantFATE
         self.cohort_data["canopy_z_max"] = canopy_functions.calculate_canopy_z_max(
-            z_max_prop=self.cohort_data["z_max_prop"],
+            z_max_prop=self.stem_traits.z_max_prop,
             stem_height=self.cohort_data["stem_height"],
         )
         self.cohort_data["canopy_r0"] = canopy_functions.calculate_canopy_r0(
-            q_m=self.cohort_data["q_m"],
+            q_m=self.stem_traits.q_m,
             crown_area=self.cohort_data["crown_area"],
         )
 
