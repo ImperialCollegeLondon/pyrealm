@@ -620,8 +620,9 @@ class StemAllometry:
     traits.
 
     Args:
-        pft_data: A dictionary of plant functional trait data, as for example returned
-            from :attr:`Flora.data<pyrealm.demography.flora.Flora.data>` attribute.
+        stem_traits: An instance of :class:`~pyrealm.demography.flora.Flora` or
+            :class:`~pyrealm.demography.flora.StemTraits`, providing plant functional
+            trait data for a set of stems.
         at_dbh: An array of diameter at breast height values at which to predict stem
             allometry values.
     """
@@ -640,18 +641,32 @@ class StemAllometry:
 
     # Init vars
     stem_traits: InitVar[Flora | StemTraits]
+    """ An instance of :class:`~pyrealm.demography.flora.Flora` or 
+    :class:`~pyrealm.demography.flora.StemTraits`, providing plant functional trait data
+    for a set of stems."""
     at_dbh: InitVar[NDArray[np.float32]]
+    """An array of diameter at breast height values at which to predict stem allometry 
+    values."""
 
     # Post init allometry attributes
     dbh: NDArray[np.float32] = field(init=False)
+    """Diameter at breast height (metres)"""
     stem_height: NDArray[np.float32] = field(init=False)
+    """Stem height (metres)"""
     crown_area: NDArray[np.float32] = field(init=False)
+    """Crown area (square metres)"""
     crown_fraction: NDArray[np.float32] = field(init=False)
+    """Vertical fraction of the stem covered by the crown (-)"""
     stem_mass: NDArray[np.float32] = field(init=False)
+    """Stem mass (kg)"""
     foliage_mass: NDArray[np.float32] = field(init=False)
+    """Foliage mass (kg)"""
     sapwood_mass: NDArray[np.float32] = field(init=False)
+    """Sapwood mass (kg)"""
     canopy_r0: NDArray[np.float32] = field(init=False)
+    """Canopy radius scaling factor (-)"""
     canopy_z_max: NDArray[np.float32] = field(init=False)
+    """Height of maximum crown radius (metres)"""
 
     def __post_init__(
         self, stem_traits: Flora | StemTraits, at_dbh: NDArray[np.float32]
