@@ -136,10 +136,10 @@ We can use {mod}`pandas` to visualise those allometric predictions.
 pd.DataFrame({k: getattr(allometry, k) for k in allometry.allometry_attrs})
 ```
 
-We can now use the {meth}`~pyrealm.demography.flora.Flora.get_canopy_profile` method to
-calculate the canopy profile for each stem for a set of vertical heights. The heights
+We can now use the {class}`~pyrealm.demography.crown.CrownProfile` class to
+calculate the crown profile for each stem for a set of vertical heights. The heights
 need to be defined as a column array, that is with a shape `(N, 1)`, in order to show
-that we want the canopy variables to be calculated at each height for each PFT.
+that we want the crown variables to be calculated at each height for each PFT.
 
 ```{code-cell}
 # Create a set of vertical heights as a column array.
@@ -253,15 +253,15 @@ crown_profiles2 = CrownProfile(stem_traits=flora2, stem_allometry=allometry2, z=
 The plot below shows how projected crown area (solid lines) and leaf area (dashed lines)
 change with height along the stem.
 
-* The projected crown area increases from zero at the top of the canopy, according to
-  the canopy profile, until it reaches the maximum crown radius, at which point it
-  remains constant down to ground level. The total crown areas differs for each stem
-  because of the slightly different values used for the crown area ratio.
+* The projected crown area increases from zero at the top of the crown until it reaches
+  the maximum crown radius, at which point it remains constant down to ground level. The
+  total crown areas differs for each stem because of the slightly different values used
+  for the crown area ratio.
 
 * The projected leaf area is very similar but leaf area is displaced towards the ground
   because of the crown gap fraction (`f_g`). Where `f_g = 0` (the red line), the two
   lines are identical, but as `f_g` increases, more of the leaf area is displaced down
-  within the canopy.
+  within the crown.
 
 ```{code-cell}
 fig, ax = plt.subplots(ncols=1)
