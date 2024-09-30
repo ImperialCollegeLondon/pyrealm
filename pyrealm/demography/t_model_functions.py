@@ -724,3 +724,135 @@ class StemAllometry:
             z_max_prop=stem_traits.z_max_prop,
             stem_height=self.stem_height,
         )
+
+
+@dataclass()
+class StemAllocation:
+    """Calculate T Model allocation predictions across a set of stems.
+
+    This method calculate predictions of allocation of potential GPP for stems under the
+    T Model :cite:`Li:2014bc`, given a set of traits for those stems and the stem
+    allometries given the stem size.
+
+    Args:
+        stem_traits: An instance of :class:`~pyrealm.demography.flora.Flora` or
+            :class:`~pyrealm.demography.flora.StemTraits`, providing plant functional
+            trait data for a set of stems.
+        stem_allometry: An instance of
+            :class:`~pyrealm.demography.t_model_functions.StemAllometry`
+            providing the stem size data for which to calculate allocation.
+        at_potential_gpp: An array of diameter at breast height values at which to
+            predict stem allometry values.
+    """
+
+    allocation_attrs: ClassVar[tuple[str, ...]] = (
+        "potential_gpp",
+        "whole_crown_gpp",
+        "sapwood_respiration",
+        "foliar_respiration",
+        "fine_root_respiration",
+        "npp",
+        "turnover",
+        "delta_dbh",
+        "delta_stem_mass",
+        "delta_foliage_mass",
+    )
+
+    # Init vars
+    stem_traits: InitVar[Flora | StemTraits]
+    """An instance of :class:`~pyrealm.demography.flora.Flora` or 
+    :class:`~pyrealm.demography.flora.StemTraits`, providing plant functional trait data
+    for a set of stems."""
+    stem_allometry: InitVar[StemAllometry]
+    """An instance of :class:`~pyrealm.demography.t_model_functions.StemAllometry`
+    providing the stem size data for which to calculate allocation."""
+    at_potential_gpp: InitVar[NDArray[np.float32]]
+    """An array of potential gross primary productivity for each stem that should be
+    allocated to respiration, turnover and growth."""
+
+    # Post init allometry attributes
+    potential_gpp: NDArray[np.float32] = field(init=False)
+    """Potential GPP per unit area (g C m2)"""
+    whole_crown_gpp: NDArray[np.float32] = field(init=False)
+    """Estimated GPP across the whole crown (g C)"""
+    sapwood_respiration: NDArray[np.float32] = field(init=False)
+    """Allocation to sapwood respiration (g C)"""
+    foliar_respiration: NDArray[np.float32] = field(init=False)
+    """Allocation to foliar respiration (g C)"""
+    fine_root_respiration: NDArray[np.float32] = field(init=False)
+    """Allocation to fine root respiration (g C)"""
+    npp: NDArray[np.float32] = field(init=False)
+    """Net primary productivity (g C)"""
+    turnover: NDArray[np.float32] = field(init=False)
+    """Allocation to leaf and fine root turnover (g C)"""
+    delta_dbh: NDArray[np.float32] = field(init=False)
+    """Predicted increase in stem diameter from growth allocation (g C)"""
+    delta_stem_mass: NDArray[np.float32] = field(init=False)
+    """Predicted increase in stem mass from growth allocation (g C)"""
+    delta_foliage_mass: NDArray[np.float32] = field(init=False)
+    """Predicted increase in foliar mass from growth allocation (g C)"""
+
+    def __post_init__(
+        self,
+        stem_traits: Flora | StemTraits,
+        stem_allometry: StemAllometry,
+        at_potential_gpp: NDArray[np.float32],
+    ) -> None:
+        """Populate stem allocation attributes from the traits, allometry and GPP."""
+
+        # Broadcast potential GPP to match stem data outputs
+        self.potential_gpp = np.broadcast_to(at_potential_gpp, stem_allometry.dbh.shape)
+
+        self.whole_crown_gpp = calculate_whole_crown_gpp(
+            potential_gpp=self.potential_gpp,
+            crown_area=stem_allometry.crown_area,
+            par_ext=stem_traits.par_ext,
+            lai=stem_traits.lai,
+        )
+
+        self.sapwood_respiration = calculate_sapwood_respiration(
+            resp_s=stem_traits.resp_s, sapwood_mass=stem_allometry.sapwood_mass
+        )
+
+        self.foliar_respiration = calculate_foliar_respiration(
+            resp_f=stem_traits.resp_f, whole_crown_gpp=self.whole_crown_gpp
+        )
+
+        self.fine_root_respiration = calculate_fine_root_respiration(
+            zeta=stem_traits.zeta,
+            sla=stem_traits.sla,
+            resp_r=stem_traits.resp_r,
+            foliage_mass=stem_allometry.foliage_mass,
+        )
+
+        self.npp = calculate_net_primary_productivity(
+            yld=stem_traits.yld,
+            whole_crown_gpp=self.whole_crown_gpp,
+            foliar_respiration=self.foliar_respiration,
+            fine_root_respiration=self.fine_root_respiration,
+            sapwood_respiration=self.sapwood_respiration,
+        )
+
+        self.turnover = calculate_foliage_and_fine_root_turnover(
+            sla=stem_traits.sla,
+            zeta=stem_traits.zeta,
+            tau_f=stem_traits.tau_f,
+            tau_r=stem_traits.tau_r,
+            foliage_mass=stem_allometry.foliage_mass,
+        )
+
+        (self.delta_dbh, self.delta_stem_mass, self.delta_foliage_mass) = (
+            calculate_growth_increments(
+                rho_s=stem_traits.rho_s,
+                a_hd=stem_traits.a_hd,
+                h_max=stem_traits.h_max,
+                lai=stem_traits.lai,
+                ca_ratio=stem_traits.ca_ratio,
+                sla=stem_traits.sla,
+                zeta=stem_traits.zeta,
+                npp=self.npp,
+                turnover=self.turnover,
+                dbh=stem_allometry.dbh,
+                stem_height=stem_allometry.stem_height,
+            )
+        )
