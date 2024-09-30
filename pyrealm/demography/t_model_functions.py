@@ -716,6 +716,9 @@ class StemAllometry:
     """Crown radius scaling factor (-)"""
     crown_z_max: NDArray[np.float32] = field(init=False)
     """Height of maximum crown radius (metres)"""
+    # Information attributes
+    _n_z_obs: int = field(init=False)
+    """The number of calculated height values per stem."""
 
     def __post_init__(
         self, stem_traits: Flora | StemTraits, at_dbh: NDArray[np.float32]
@@ -773,6 +776,20 @@ class StemAllometry:
             z_max_prop=stem_traits.z_max_prop,
             stem_height=self.stem_height,
         )
+
+        if self.dbh.ndim == 1:
+            self._n_z_obs = 1
+        else:
+            self._n_z_obs = self.dbh.shape[0]
+
+    def __repr__(self) -> str:
+        if self._n_z_obs == 1:
+            return f"StemAllometry: Single prediction for {len(self.dbh)} stems"
+        else:
+            return (
+                f"StemAllometry: Prediction for {len(self.dbh)} stems "
+                f"at {self._n_z_obs} DBH values."
+            )
 
 
 @dataclass()
