@@ -33,17 +33,52 @@ import pandas as pd
 from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
-from pyrealm.demography.canopy_functions import (
-    calculate_canopy_q_m,
-    calculate_canopy_z_max_proportion,
-)
-
 if sys.version_info[:2] >= (3, 11):
     import tomllib
     from tomllib import TOMLDecodeError
 else:
     import tomli as tomllib
     from tomli import TOMLDecodeError
+
+
+def calculate_crown_q_m(
+    m: float | NDArray[np.float32], n: float | NDArray[np.float32]
+) -> float | NDArray[np.float32]:
+    """Calculate the crown scaling trait ``q_m``.
+
+    The value of q_m is a constant crown scaling parameter derived from the ``m`` and
+    ``n`` attributes defined for a plant functional type.
+
+    Args:
+        m: Crown shape parameter
+        n: Crown shape parameter
+    """
+    return (
+        m
+        * n
+        * ((n - 1) / (m * n - 1)) ** (1 - 1 / n)
+        * (((m - 1) * n) / (m * n - 1)) ** (m - 1)
+    )
+
+
+def calculate_crown_z_max_proportion(
+    m: float | NDArray[np.float32], n: float | NDArray[np.float32]
+) -> float | NDArray[np.float32]:
+    r"""Calculate the z_m trait.
+
+    The z_m proportion (:math:`p_{zm}`) is the constant proportion of stem height at
+    which the maximum crown radius is found for a given plant functional type.
+
+    .. math::
+
+        p_{zm} = \left(\dfrac{n-1}{m n -1}\right)^ {\tfrac{1}{n}}
+
+    Args:
+        m: Crown shape parameter
+        n: Crown shape parameter
+    """
+
+    return ((n - 1) / (m * n - 1)) ** (1 / n)
 
 
 @dataclass(frozen=True)
@@ -122,9 +157,9 @@ class PlantFunctionalTypeStrict:
 
         # Calculate q_m and z_max proportion. Need to use __setattr__ because the
         # dataclass is frozen.
-        object.__setattr__(self, "q_m", calculate_canopy_q_m(m=self.m, n=self.n))
+        object.__setattr__(self, "q_m", calculate_crown_q_m(m=self.m, n=self.n))
         object.__setattr__(
-            self, "z_max_prop", calculate_canopy_z_max_proportion(m=self.m, n=self.n)
+            self, "z_max_prop", calculate_crown_z_max_proportion(m=self.m, n=self.n)
         )
 
 

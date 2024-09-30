@@ -12,10 +12,6 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.demography.canopy_functions import (
-    calculate_canopy_r0,
-    calculate_canopy_z_max,
-)
 from pyrealm.demography.flora import Flora, StemTraits
 
 
@@ -288,6 +284,58 @@ def calculate_sapwood_masses(
         )
 
     return crown_area * rho_s * stem_height * (1 - crown_fraction / 2) / ca_ratio
+
+
+def calculate_crown_z_max(
+    z_max_prop: NDArray[np.float32], stem_height: NDArray[np.float32]
+) -> NDArray[np.float32]:
+    r"""Calculate height of maximum crown radius.
+
+    The height of the maximum crown radius (:math:`z_m`) is derived from the crown
+    shape parameters (:math:`m,n`) and the resulting fixed proportion (:math:`p_{zm}`)
+    for plant functional types. These shape parameters are defined as part of the
+    extension of the T Model presented by :cite:t:`joshi:2022a`.
+
+    The value :math:`z_m` is the height above ground where the largest crown radius is
+    found, given the proportion and the estimated stem height (:math:`H`) of
+    individuals.
+
+    .. math::
+
+        z_m = p_{zm} H
+
+    Args:
+        z_max_prop: Crown shape parameter of the PFT
+        stem_height: Stem height of individuals
+    """
+
+    return stem_height * z_max_prop
+
+
+def calculate_crown_r0(
+    q_m: NDArray[np.float32], crown_area: NDArray[np.float32]
+) -> NDArray[np.float32]:
+    r"""Calculate scaling factor for width of maximum crown radius.
+
+    This scaling factor (:math:`r_0`) is derived from the crown shape parameters
+    (:math:`m,n,q_m`) for plant functional types and the estimated crown area
+    (:math:`A_c`) of individuals. The shape parameters are defined as part of the
+    extension of the T Model presented by :cite:t:`joshi:2022a` and :math:`r_0` is used
+    to scale the crown area such that the crown area at the  maximum crown radius fits
+    the expectations of the T Model.
+
+    .. math::
+
+        r_0 = 1/q_m  \sqrt{A_c / \pi}
+
+    Args:
+        q_m: Crown shape parameter of the PFT
+        crown_area: Crown area of individuals
+    """
+    # Scaling factor to give expected A_c (crown area) at
+    # z_m (height of maximum crown radius)
+
+    return 1 / q_m * np.sqrt(crown_area / np.pi)
 
 
 def calculate_whole_crown_gpp(
@@ -635,8 +683,8 @@ class StemAllometry:
         "stem_mass",
         "foliage_mass",
         "sapwood_mass",
-        "canopy_r0",
-        "canopy_z_max",
+        "crown_r0",
+        "crown_z_max",
     )
 
     # Init vars
@@ -663,9 +711,9 @@ class StemAllometry:
     """Foliage mass (kg)"""
     sapwood_mass: NDArray[np.float32] = field(init=False)
     """Sapwood mass (kg)"""
-    canopy_r0: NDArray[np.float32] = field(init=False)
-    """Canopy radius scaling factor (-)"""
-    canopy_z_max: NDArray[np.float32] = field(init=False)
+    crown_r0: NDArray[np.float32] = field(init=False)
+    """Crown radius scaling factor (-)"""
+    crown_z_max: NDArray[np.float32] = field(init=False)
     """Height of maximum crown radius (metres)"""
 
     def __post_init__(
@@ -715,12 +763,12 @@ class StemAllometry:
             crown_fraction=self.crown_fraction,
         )
 
-        self.canopy_r0 = calculate_canopy_r0(
+        self.crown_r0 = calculate_crown_r0(
             q_m=stem_traits.q_m,
             crown_area=self.crown_area,
         )
 
-        self.canopy_z_max = calculate_canopy_z_max(
+        self.crown_z_max = calculate_crown_z_max(
             z_max_prop=stem_traits.z_max_prop,
             stem_height=self.stem_height,
         )

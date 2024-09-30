@@ -4,13 +4,13 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.optimize import root_scalar  # type: ignore [import-untyped]
 
-from pyrealm.demography.canopy_functions import (
-    calculate_relative_canopy_radius_at_z,
+from pyrealm.demography.community import Community
+from pyrealm.demography.crown import (
+    calculate_relative_crown_radius_at_z,
     calculate_stem_projected_crown_area_at_z,
     calculate_stem_projected_leaf_area_at_z,
     solve_community_projected_canopy_area,
 )
-from pyrealm.demography.community import Community
 
 
 class Canopy:
@@ -114,7 +114,7 @@ class Canopy:
                     community.stem_traits.m,
                     community.stem_traits.n,
                     community.stem_traits.q_m,
-                    community.stem_allometry.canopy_z_max,
+                    community.stem_allometry.crown_z_max,
                     community.cohort_data["n_individuals"],
                     target_area,
                     False,  # validate
@@ -134,7 +134,7 @@ class Canopy:
         # NOTE - here and in the calls below, validate=False is enforced because the
         # Community class structures and code should guarantee valid inputs and so
         # turning off the validation internally should simply speed up the code.
-        self.stem_relative_radius = calculate_relative_canopy_radius_at_z(
+        self.stem_relative_radius = calculate_relative_crown_radius_at_z(
             z=self.layer_heights,
             stem_height=community.stem_allometry.stem_height,
             m=community.stem_traits.m,
@@ -149,7 +149,7 @@ class Canopy:
             crown_area=community.stem_allometry.crown_area,
             stem_height=community.stem_allometry.stem_height,
             q_m=community.stem_traits.q_m,
-            z_max=community.stem_allometry.canopy_z_max,
+            z_max=community.stem_allometry.crown_z_max,
             validate=False,
         )
 
@@ -161,6 +161,6 @@ class Canopy:
             stem_height=community.stem_allometry.stem_height,
             f_g=community.stem_traits.f_g,
             q_m=community.stem_traits.q_m,
-            z_max=community.stem_allometry.canopy_z_max,
+            z_max=community.stem_allometry.crown_z_max,
             validate=False,
         )
