@@ -357,7 +357,7 @@ class CrownProfile:
     * relative crown radius,
     * actual crown radius,
     * projected crown area, and
-    * project leaf area.
+    * projected leaf area.
 
     The predictions require a set of plant functional types (PFTs) but also the expected
     allometric predictions of stem height, crown area and z_max for an actual stem of a
@@ -386,7 +386,7 @@ class CrownProfile:
     """An array of the actual crown radius of stems at z heights"""
     projected_crown_area: NDArray[np.float32] = field(init=False)
     """An array of the projected crown area of stems at z heights"""
-    project_leaf_area: NDArray[np.float32] = field(init=False)
+    projected_leaf_area: NDArray[np.float32] = field(init=False)
     """An array of the projected leaf area of stems at z heights"""
 
     def __post_init__(
