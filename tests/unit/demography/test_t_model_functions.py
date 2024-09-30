@@ -471,7 +471,7 @@ class TestTModel:
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["crown_gpp"][out_idx])
+            assert np.allclose(result, rtmodel_data["whole_crown_gpp"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -498,7 +498,7 @@ class TestTModel:
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["resp_swd"][out_idx])
+            assert np.allclose(result, rtmodel_data["sapwood_respiration"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -527,13 +527,14 @@ class TestTModel:
         with outcome as excep:
             result = calculate_foliar_respiration(
                 resp_f=rtmodel_flora.resp_f[pft_idx],
-                whole_crown_gpp=rtmodel_data["crown_gpp"][data_idx],
+                whole_crown_gpp=rtmodel_data["whole_crown_gpp"][data_idx],
             )
 
             assert result.shape == exp_shape
             assert np.allclose(
                 result,
-                rtmodel_data["crown_gpp"][data_idx] * rtmodel_flora.resp_f[pft_idx],
+                rtmodel_data["whole_crown_gpp"][data_idx]
+                * rtmodel_flora.resp_f[pft_idx],
             )
             return
 
@@ -563,7 +564,7 @@ class TestTModel:
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["resp_frt"][out_idx])
+            assert np.allclose(result, rtmodel_data["fine_root_respiration"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -588,14 +589,14 @@ class TestTModel:
         with outcome as excep:
             result = calculate_net_primary_productivity(
                 yld=rtmodel_flora.yld[pft_idx],
-                whole_crown_gpp=rtmodel_data["crown_gpp"][data_idx],
+                whole_crown_gpp=rtmodel_data["whole_crown_gpp"][data_idx],
                 foliar_respiration=0,  # Not included here in the R implementation
-                fine_root_respiration=rtmodel_data["resp_frt"][data_idx],
-                sapwood_respiration=rtmodel_data["resp_swd"][data_idx],
+                fine_root_respiration=rtmodel_data["fine_root_respiration"][data_idx],
+                sapwood_respiration=rtmodel_data["sapwood_respiration"][data_idx],
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["NPP"][out_idx])
+            assert np.allclose(result, rtmodel_data["npp"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -658,20 +659,22 @@ class TestTModel:
                 ca_ratio=rtmodel_flora.ca_ratio[pft_idx],
                 sla=rtmodel_flora.sla[pft_idx],
                 zeta=rtmodel_flora.zeta[pft_idx],
-                npp=rtmodel_data["NPP"][data_idx],
+                npp=rtmodel_data["npp"][data_idx],
                 turnover=rtmodel_data["turnover"][data_idx],
                 dbh=rtmodel_data["dbh"][data_idx],
                 stem_height=rtmodel_data["stem_height"][data_idx],
             )
 
             assert delta_d.shape == exp_shape
-            assert np.allclose(delta_d, rtmodel_data["delta_d"][out_idx])
+            assert np.allclose(delta_d, rtmodel_data["delta_dbh"][out_idx])
 
             assert delta_mass_stm.shape == exp_shape
-            assert np.allclose(delta_mass_stm, rtmodel_data["delta_mass_stm"][out_idx])
+            assert np.allclose(delta_mass_stm, rtmodel_data["delta_stem_mass"][out_idx])
 
             assert delta_mass_frt.shape == exp_shape
-            assert np.allclose(delta_mass_frt, rtmodel_data["delta_mass_frt"][out_idx])
+            assert np.allclose(
+                delta_mass_frt, rtmodel_data["delta_foliage_mass"][out_idx]
+            )
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -716,6 +719,33 @@ def test_StemAllometry(rtmodel_flora, rtmodel_data):
     )
 
     # Check the variables provided by the rtmodel implementation
-    to_check = set(stem_allometry.allometry_attrs) - set(["canopy_r0", "canopy_z_max"])
-    for var in to_check:
+    vars_to_check = (
+        v
+        for v in stem_allometry.allometry_attrs
+        if v not in ["canopy_r0", "canopy_z_max"]
+    )
+    for var in vars_to_check:
         assert np.allclose(getattr(stem_allometry, var), rtmodel_data[var])
+
+
+def test_StemAllocation(rtmodel_flora, rtmodel_data):
+    """Test the StemAllometry class."""
+
+    from pyrealm.demography.t_model_functions import StemAllocation, StemAllometry
+
+    stem_allometry = StemAllometry(
+        stem_traits=rtmodel_flora, at_dbh=rtmodel_data["dbh"][:, [0]]
+    )
+
+    stem_allocation = StemAllocation(
+        stem_traits=rtmodel_flora,
+        stem_allometry=stem_allometry,
+        at_potential_gpp=rtmodel_data["potential_gpp"],
+    )
+
+    # Check the variables provided by the rtmodel implementation
+    vars_to_check = (
+        v for v in stem_allocation.allocation_attrs if v not in ["foliar_respiration"]
+    )
+    for var in vars_to_check:
+        assert np.allclose(getattr(stem_allocation, var), rtmodel_data[var])
