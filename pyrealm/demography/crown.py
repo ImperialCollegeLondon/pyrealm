@@ -161,8 +161,8 @@ def calculate_crown_radius(
     relative radius values.
 
     Args:
-        q_z: TODO
-        r0: TODO
+        q_z: An array of relative crown radius values
+        r0:  An array of crown radius scaling factor values
         validate: Boolean flag to suppress argument validation.
     """
 
@@ -364,8 +364,10 @@ class CrownProfile:
     given size for each PFT.
 
     Args:
-        stem_traits:
-        stem_allometry: A Ste
+        stem_traits: A Flora or StemTraits instance providing plant functional trait
+            data.
+        stem_allometry: A StemAllometry instance setting the stem allometries for the
+            crown profile.
         z: An array of vertical height values at which to calculate crown profiles.
         stem_height: A row array providing expected stem height for each PFT.
         crown_area: A row array providing expected crown area for each PFT.
