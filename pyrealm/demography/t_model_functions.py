@@ -308,7 +308,6 @@ def calculate_crown_z_max(
         z_max_prop: Crown shape parameter of the PFT
         stem_height: Stem height of individuals
     """
-    """Calculate z_m, the height of maximum crown radius."""
 
     return stem_height * z_max_prop
 
