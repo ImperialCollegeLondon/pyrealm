@@ -259,6 +259,7 @@ class Flora:
     ]
 
     # Populated post init
+    # - trait arrays
     name: NDArray[np.str_] = field(init=False)
     r"""The name of the plant functional type."""
     a_hd: NDArray[np.float32] = field(init=False)
@@ -301,10 +302,14 @@ class Flora:
     """Scaling factor to derive maximum crown radius from crown area."""
     z_max_prop: NDArray[np.float32] = field(init=False)
     """Proportion of stem height at which maximum crown radius is found."""
+
+    # - other instance attributes
     pft_dict: dict[str, type[PlantFunctionalTypeStrict]] = field(init=False)
     """A dictionary of the original plant functional type instances, keyed by name."""
     pft_indices: dict[str, int] = field(init=False)
     """An dictionary giving the index of each PFT name in the trait array attributes."""
+    n_pfts: int = field(init=False)
+    """The number of plant functional types in the Flora instance."""
 
     def __post_init__(self, pfts: Sequence[type[PlantFunctionalTypeStrict]]) -> None:
         # Check the PFT data
@@ -324,8 +329,9 @@ class Flora:
                 f"Duplicated plant functional type names: {','.join(duplicates)}"
             )
 
-        # Populate the pft dictionary using the PFT name as key
+        # Populate the pft dictionary using the PFT name as key and the number of PFTs
         object.__setattr__(self, "pft_dict", {p.name: p for p in pfts})
+        object.__setattr__(self, "n_pfts", len(pfts))
 
         # Populate the trait attributes with arrays
         for pft_field in self.trait_attrs:
@@ -335,6 +341,11 @@ class Flora:
 
         # Populate the pft trait indices
         object.__setattr__(self, "pft_indices", {v: k for k, v in enumerate(self.name)})
+
+    def __repr__(self) -> str:
+        """Simple representation of the Flora instance."""
+
+        return f"Flora with {self.n_pfts} functional types: {', '.join(self.name)}"
 
     @classmethod
     def _from_file_data(cls, file_data: dict) -> Flora:
