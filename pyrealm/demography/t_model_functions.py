@@ -715,6 +715,7 @@ class StemAllometry:
     """Crown radius scaling factor (-)"""
     crown_z_max: NDArray[np.float32] = field(init=False)
     """Height of maximum crown radius (metres)"""
+
     # Information attributes
     _n_pred: int = field(init=False)
     """The number of predictions per stem."""
@@ -789,7 +790,7 @@ class StemAllometry:
 
     def __repr__(self) -> str:
         return (
-            f"StemAllometry: Prediction for {self._n_stems} stems at se"
+            f"StemAllometry: Prediction for {self._n_stems} stems "
             f"at {self._n_pred} DBH values."
         )
 
@@ -859,6 +860,12 @@ class StemAllocation:
     """Predicted increase in stem mass from growth allocation (g C)"""
     delta_foliage_mass: NDArray[np.float32] = field(init=False)
     """Predicted increase in foliar mass from growth allocation (g C)"""
+
+    # Information attributes
+    _n_pred: int = field(init=False)
+    """The number of predictions per stem."""
+    _n_stems: int = field(init=False)
+    """The number of stems."""
 
     def __post_init__(
         self,
@@ -936,6 +943,6 @@ class StemAllocation:
 
     def __repr__(self) -> str:
         return (
-            f"StemAllocation: Prediction for {self._n_stems} stems"
+            f"StemAllocation: Prediction for {self._n_stems} stems "
             f"at {self._n_pred} observations."
         )

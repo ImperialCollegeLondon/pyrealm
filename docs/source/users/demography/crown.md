@@ -94,7 +94,7 @@ ax2.set_aspect("equal")
 
 The examples below show the calculation of crown profiles for a set of plant functional
 types (PFTs) with differing crown trait values. We first need to create a
-:class:`~pyrealm.demography.flora.Flora` object that defines those PFTs.
+{class}`~pyrealm.demography.flora.Flora` object that defines those PFTs.
 
 ```{code-cell}
 flora = Flora(
@@ -223,6 +223,9 @@ for pft_idx, offset, colour in zip((0, 1, 2), (0, 5, 12), ("r", "g", "b")):
         linestyle=":",
     )
 
+    ax.set_xlabel("Crown profile")
+    ax.set_ylabel("Height above ground (m)")
+
 ax.set_aspect(aspect=1)
 ```
 
@@ -275,8 +278,6 @@ for pft_idx, offset, colour in zip((0, 1, 2), (0, 5, 10), ("r", "g", "b")):
         color=colour,
         linestyle="--",
     )
-```
-
-```{code-cell}
-
+    ax.set_xlabel("Projected area (m2)")
+    ax.set_ylabel("Height above ground (m)")
 ```
