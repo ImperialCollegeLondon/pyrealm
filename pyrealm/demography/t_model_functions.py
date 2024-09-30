@@ -716,8 +716,10 @@ class StemAllometry:
     crown_z_max: NDArray[np.float32] = field(init=False)
     """Height of maximum crown radius (metres)"""
     # Information attributes
-    _n_z_obs: int = field(init=False)
-    """The number of calculated height values per stem."""
+    _n_pred: int = field(init=False)
+    """The number of predictions per stem."""
+    _n_stems: int = field(init=False)
+    """The number of stems."""
 
     def __post_init__(
         self, stem_traits: Flora | StemTraits, at_dbh: NDArray[np.float32]
@@ -776,19 +778,20 @@ class StemAllometry:
             stem_height=self.stem_height,
         )
 
+        # Set the number of observations per stem (one if dbh is 1D, otherwise size of
+        # the first axis)
         if self.dbh.ndim == 1:
-            self._n_z_obs = 1
+            self._n_pred = 1
         else:
-            self._n_z_obs = self.dbh.shape[0]
+            self._n_pred = self.dbh.shape[0]
+
+        self._n_stems = stem_traits._n_stems
 
     def __repr__(self) -> str:
-        if self._n_z_obs == 1:
-            return f"StemAllometry: Single prediction for {len(self.dbh)} stems"
-        else:
-            return (
-                f"StemAllometry: Prediction for {len(self.dbh)} stems "
-                f"at {self._n_z_obs} DBH values."
-            )
+        return (
+            f"StemAllometry: Prediction for {self._n_stems} stems at se"
+            f"at {self._n_pred} DBH values."
+        )
 
 
 @dataclass()
@@ -920,4 +923,19 @@ class StemAllocation:
                 dbh=stem_allometry.dbh,
                 stem_height=stem_allometry.stem_height,
             )
+        )
+
+        # Set the number of observations per stem (one if dbh is 1D, otherwise size of
+        # the first axis)
+        if self.potential_gpp.ndim == 1:
+            self._n_pred = 1
+        else:
+            self._n_pred = self.potential_gpp.shape[0]
+
+        self._n_stems = stem_traits._n_stems
+
+    def __repr__(self) -> str:
+        return (
+            f"StemAllocation: Prediction for {self._n_stems} stems"
+            f"at {self._n_pred} observations."
         )
