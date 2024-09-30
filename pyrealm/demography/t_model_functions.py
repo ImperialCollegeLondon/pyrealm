@@ -5,10 +5,18 @@ height of individual stems to define the stem geometry, masses, respiration and 
 calculate stem growth given net primary productivity.
 """  # noqa: D205
 
+from dataclasses import InitVar, dataclass, field
+from typing import ClassVar
+
 import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.core.utilities import check_input_shapes
+from pyrealm.demography.canopy_functions import (
+    calculate_canopy_r0,
+    calculate_canopy_z_max,
+)
+from pyrealm.demography.flora import Flora, StemTraits
 
 
 def _validate_t_model_args(pft_args: list[NDArray], size_args: list[NDArray]) -> None:
@@ -600,3 +608,119 @@ def calculate_growth_increments(
     delta_d = (npp - turnover) / (dWsdt + dWfdt)
 
     return (delta_d, dWsdt * delta_d, dWfdt * delta_d)
+
+
+@dataclass
+class StemAllometry:
+    """Calculate T Model allometric predictions across a set of stems.
+
+    This method calculate predictions of stem allometries for stem height, crown area,
+    crown fraction, stem mass, foliage mass and sapwood mass under the T Model
+    :cite:`Li:2014bc`, given diameters at breast height for a set of plant functional
+    traits.
+
+    Args:
+        stem_traits: An instance of :class:`~pyrealm.demography.flora.Flora` or
+            :class:`~pyrealm.demography.flora.StemTraits`, providing plant functional
+            trait data for a set of stems.
+        at_dbh: An array of diameter at breast height values at which to predict stem
+            allometry values.
+    """
+
+    allometry_attrs: ClassVar[tuple[str, ...]] = (
+        "dbh",
+        "stem_height",
+        "crown_area",
+        "crown_fraction",
+        "stem_mass",
+        "foliage_mass",
+        "sapwood_mass",
+        "canopy_r0",
+        "canopy_z_max",
+    )
+
+    # Init vars
+    stem_traits: InitVar[Flora | StemTraits]
+    """ An instance of :class:`~pyrealm.demography.flora.Flora` or 
+    :class:`~pyrealm.demography.flora.StemTraits`, providing plant functional trait data
+    for a set of stems."""
+    at_dbh: InitVar[NDArray[np.float32]]
+    """An array of diameter at breast height values at which to predict stem allometry 
+    values."""
+
+    # Post init allometry attributes
+    dbh: NDArray[np.float32] = field(init=False)
+    """Diameter at breast height (metres)"""
+    stem_height: NDArray[np.float32] = field(init=False)
+    """Stem height (metres)"""
+    crown_area: NDArray[np.float32] = field(init=False)
+    """Crown area (square metres)"""
+    crown_fraction: NDArray[np.float32] = field(init=False)
+    """Vertical fraction of the stem covered by the crown (-)"""
+    stem_mass: NDArray[np.float32] = field(init=False)
+    """Stem mass (kg)"""
+    foliage_mass: NDArray[np.float32] = field(init=False)
+    """Foliage mass (kg)"""
+    sapwood_mass: NDArray[np.float32] = field(init=False)
+    """Sapwood mass (kg)"""
+    canopy_r0: NDArray[np.float32] = field(init=False)
+    """Canopy radius scaling factor (-)"""
+    canopy_z_max: NDArray[np.float32] = field(init=False)
+    """Height of maximum crown radius (metres)"""
+
+    def __post_init__(
+        self, stem_traits: Flora | StemTraits, at_dbh: NDArray[np.float32]
+    ) -> None:
+        """Populate the stem allometry attributes from the traits and size data."""
+
+        self.stem_height = calculate_heights(
+            h_max=stem_traits.h_max,
+            a_hd=stem_traits.a_hd,
+            dbh=at_dbh,
+        )
+
+        # Broadcast at_dbh to shape of stem height to get congruent shapes
+        self.dbh = np.broadcast_to(at_dbh, self.stem_height.shape)
+
+        self.crown_area = calculate_crown_areas(
+            ca_ratio=stem_traits.ca_ratio,
+            a_hd=stem_traits.a_hd,
+            dbh=self.dbh,
+            stem_height=self.stem_height,
+        )
+
+        self.crown_fraction = calculate_crown_fractions(
+            a_hd=stem_traits.a_hd,
+            dbh=self.dbh,
+            stem_height=self.stem_height,
+        )
+
+        self.stem_mass = calculate_stem_masses(
+            rho_s=stem_traits.rho_s,
+            dbh=self.dbh,
+            stem_height=self.stem_height,
+        )
+
+        self.foliage_mass = calculate_foliage_masses(
+            sla=stem_traits.sla,
+            lai=stem_traits.lai,
+            crown_area=self.crown_area,
+        )
+
+        self.sapwood_mass = calculate_sapwood_masses(
+            rho_s=stem_traits.rho_s,
+            ca_ratio=stem_traits.ca_ratio,
+            stem_height=self.stem_height,
+            crown_area=self.crown_area,
+            crown_fraction=self.crown_fraction,
+        )
+
+        self.canopy_r0 = calculate_canopy_r0(
+            q_m=stem_traits.q_m,
+            crown_area=self.crown_area,
+        )
+
+        self.canopy_z_max = calculate_canopy_z_max(
+            z_max_prop=stem_traits.z_max_prop,
+            stem_height=self.stem_height,
+        )

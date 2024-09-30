@@ -89,12 +89,17 @@ Initialize a Community into an area of 1000 square meter with the given cohort d
 ...     cohort_pft_names=cohort_pft_names
 ... )
 
-Convert the community cohort data to a :class:`pandas.DataFrame` for nicer display and
-show some of the calculated T Model predictions:
+Convert some of the data to a :class:`pandas.DataFrame` for nicer display and show some
+of the calculated T Model predictions:
 
->>> pd.DataFrame(community.cohort_data)[
-...    ['name', 'dbh', 'n_individuals', 'stem_height', 'crown_area', 'stem_mass']
-... ]
+>>> pd.DataFrame({
+...    'name': community.stem_traits.name,
+...    'dbh': community.stem_allometry.dbh,
+...    'n_individuals': community.cohort_data["n_individuals"],
+...    'stem_height': community.stem_allometry.stem_height,
+...    'crown_area': community.stem_allometry.crown_area,
+...    'stem_mass': community.stem_allometry.stem_mass,
+... })
               name    dbh  n_individuals  stem_height  crown_area  stem_mass
 0   Evergreen Tree  0.100            100     9.890399    2.459835   8.156296
 1  Deciduous Shrub  0.030            200     2.110534    0.174049   0.134266
@@ -117,9 +122,8 @@ from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.demography import canopy_functions
-from pyrealm.demography import t_model_functions as t_model
 from pyrealm.demography.flora import Flora, StemTraits
+from pyrealm.demography.t_model_functions import StemAllometry
 
 if sys.version_info[:2] >= (3, 11):
     import tomllib
@@ -356,6 +360,7 @@ class Community:
     # Post init properties
     number_of_cohorts: int = field(init=False)
     stem_traits: StemTraits = field(init=False)
+    stem_allometry: StemAllometry = field(init=False)
     cohort_data: dict[str, NDArray] = field(init=False)
 
     def __post_init__(
@@ -405,66 +410,9 @@ class Community:
 
         self.number_of_cohorts = len(cohort_pft_names)
 
-        # Populate the T model fields
-        self._calculate_t_model()
-
-    def _calculate_t_model(self) -> None:
-        """Calculate T Model predictions across cohort data.
-
-        This method populates or updates the community attributes predicted by the T
-        Model :cite:`Li:2014bc` and by the canopy shape extensions to the T Model
-        implemented in PlantFate :cite:`joshi:2022a`.
-        """
-
-        # Add data to cohort dataframes capturing the T Model geometry
-        # - Classic T Model scaling
-        self.cohort_data["stem_height"] = t_model.calculate_heights(
-            h_max=self.stem_traits.h_max,
-            a_hd=self.stem_traits.a_hd,
-            dbh=self.cohort_data["dbh"],
-        )
-
-        self.cohort_data["crown_area"] = t_model.calculate_crown_areas(
-            ca_ratio=self.stem_traits.ca_ratio,
-            a_hd=self.stem_traits.a_hd,
-            dbh=self.cohort_data["dbh"],
-            stem_height=self.cohort_data["stem_height"],
-        )
-
-        self.cohort_data["crown_fraction"] = t_model.calculate_crown_fractions(
-            a_hd=self.stem_traits.a_hd,
-            dbh=self.cohort_data["dbh"],
-            stem_height=self.cohort_data["stem_height"],
-        )
-
-        self.cohort_data["stem_mass"] = t_model.calculate_stem_masses(
-            rho_s=self.stem_traits.rho_s,
-            dbh=self.cohort_data["dbh"],
-            stem_height=self.cohort_data["stem_height"],
-        )
-
-        self.cohort_data["foliage_mass"] = t_model.calculate_foliage_masses(
-            sla=self.stem_traits.sla,
-            lai=self.stem_traits.lai,
-            crown_area=self.cohort_data["crown_area"],
-        )
-
-        self.cohort_data["sapwood_mass"] = t_model.calculate_sapwood_masses(
-            rho_s=self.stem_traits.rho_s,
-            ca_ratio=self.stem_traits.ca_ratio,
-            stem_height=self.cohort_data["stem_height"],
-            crown_area=self.cohort_data["crown_area"],
-            crown_fraction=self.cohort_data["crown_fraction"],
-        )
-
-        # Canopy shape extension to T Model from PlantFATE
-        self.cohort_data["canopy_z_max"] = canopy_functions.calculate_canopy_z_max(
-            z_max_prop=self.stem_traits.z_max_prop,
-            stem_height=self.cohort_data["stem_height"],
-        )
-        self.cohort_data["canopy_r0"] = canopy_functions.calculate_canopy_r0(
-            q_m=self.stem_traits.q_m,
-            crown_area=self.cohort_data["crown_area"],
+        # Populate the stem allometry
+        self.stem_allometry = StemAllometry(
+            stem_traits=self.stem_traits, at_dbh=cohort_dbh_values
         )
 
     @classmethod

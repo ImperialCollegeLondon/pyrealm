@@ -704,3 +704,18 @@ def test_calculate_dbh_from_height_edge_cases():
 
     # Undefined entries
     assert np.all(np.isnan(dbh) == np.array([[0, 0], [0, 0], [0, 0], [1, 0], [1, 1]]))
+
+
+def test_StemAllometry(rtmodel_flora, rtmodel_data):
+    """Test the StemAllometry class."""
+
+    from pyrealm.demography.t_model_functions import StemAllometry
+
+    stem_allometry = StemAllometry(
+        stem_traits=rtmodel_flora, at_dbh=rtmodel_data["dbh"][:, [0]]
+    )
+
+    # Check the variables provided by the rtmodel implementation
+    to_check = set(stem_allometry.allometry_attrs) - set(["canopy_r0", "canopy_z_max"])
+    for var in to_check:
+        assert np.allclose(getattr(stem_allometry, var), rtmodel_data[var])
