@@ -97,11 +97,11 @@ class PlantFunctionalTypeStrict:
     * The foliage maintenance respiration fraction was not explicitly included in
       :cite:t:`Li:2014bc` - there was assumed to be a 10% penalty on GPP before
       calculating the other component - but has been explicitly included here.
-    * This implementation adds two further canopy shape parameters (``m`` and ``n`` and
+    * This implementation adds two further crown shape parameters (``m`` and ``n`` and
       ``f_g``). The first two are then used to calculate two constant derived attributes
       (``q_m`` and ``z_max_ratio``) that define the vertical distribution of the crown.
       The last parameter (``f_g``) is the crown gap fraction, that defines the vertical
-      distribution of leaves within the crown. This canopy model parameterisation
+      distribution of leaves within the crown. This crown model parameterisation
       follows the implementation developed in the PlantFATE model :cite:`joshi:2022a`.
 
     See also :class:`~pyrealm.demography.flora.PlantFunctionalType` for the default
