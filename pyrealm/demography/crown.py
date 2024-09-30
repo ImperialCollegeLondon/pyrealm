@@ -26,7 +26,7 @@ def _validate_z_qz_args(
 
     This function provides the following validation checks (see also the documentation
     of accepted shapes for ``z`` in
-    :meth:`~pyrealm.demography.canopy_functions.calculate_relative_crown_radius_at_z`).
+    :meth:`~pyrealm.demography.crown.calculate_relative_crown_radius_at_z`).
 
     * Stem properties are identically shaped row (1D) arrays.
     * The ``z`` argument is then one of:
@@ -187,7 +187,7 @@ def calculate_stem_projected_crown_area_at_z(
     arguments ``stem_height``,``crown_area``,``q_m`` and ``z_max``, which must be
     one-dimensional arrays ('row vectors') of equal length. The array of vertical
     heights ``z`` accepts a range of input shapes (see
-    :meth:`~pyrealm.demography.canopy_functions.calculate_relative_crown_radius_at_z`
+    :meth:`~pyrealm.demography.crown.calculate_relative_crown_radius_at_z`
     ) and this function then also requires the expected relative stem radius (``q_z``)
     calculated from those heights.
 
@@ -308,7 +308,7 @@ def calculate_stem_projected_leaf_area_at_z(
     ``stem_height``,``crown_area``,``f_g``,``q_m`` and ``z_max``, which must be
     one-dimensional arrays ('row vectors') of equal length. The array of vertical
     heights ``z`` accepts a range of input shapes (see
-    :meth:`~pyrealm.demography.canopy_functions.calculate_relative_crown_radius_at_z`
+    :meth:`~pyrealm.demography.crown.calculate_relative_crown_radius_at_z`
     ) and this function then also requires the expected relative stem radius (``q_z``)
     calculated from those heights.
 

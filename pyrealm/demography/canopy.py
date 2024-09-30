@@ -4,13 +4,13 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.optimize import root_scalar  # type: ignore [import-untyped]
 
-from pyrealm.demography.canopy_functions import (
+from pyrealm.demography.community import Community
+from pyrealm.demography.crown import (
     calculate_relative_crown_radius_at_z,
     calculate_stem_projected_crown_area_at_z,
     calculate_stem_projected_leaf_area_at_z,
     solve_community_projected_canopy_area,
 )
-from pyrealm.demography.community import Community
 
 
 class Canopy:

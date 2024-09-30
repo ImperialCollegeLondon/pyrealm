@@ -275,7 +275,7 @@ def fixture_z_qz_stem_properties(request):
 def test__validate_z_qz__args(fixture_z_qz_stem_properties):
     """Tests the validation function for arguments to canopy functions."""
 
-    from pyrealm.demography.canopy_functions import _validate_z_qz_args
+    from pyrealm.demography.crown import _validate_z_qz_args
 
     # Unpack the input arguments for the test case - not testing outputs here
     z, stem, more_stem, q_z, outcome, excep_msg, _ = fixture_z_qz_stem_properties
@@ -309,7 +309,7 @@ def test_calculate_relative_crown_radius_at_z_inputs(fixture_z_qz_stem_propertie
     This test checks the function behaviour with different inputs.
     """
 
-    from pyrealm.demography.canopy_functions import (
+    from pyrealm.demography.crown import (
         calculate_relative_crown_radius_at_z,
     )
 
@@ -337,7 +337,7 @@ def test_calculate_relative_crown_radius_at_z_values(fixture_community):
     maximum crown radius.
     """
 
-    from pyrealm.demography.canopy_functions import (
+    from pyrealm.demography.crown import (
         calculate_relative_crown_radius_at_z,
     )
 
@@ -378,7 +378,7 @@ def test_calculate_relative_crown_radius_at_z_values(fixture_community):
 )
 def test_calculate_stem_projected_crown_area_at_z_inputs(fixture_z_qz_stem_properties):
     """Tests the validation of inputs to calculate_stem_projected_crown_area_at_z."""
-    from pyrealm.demography.canopy_functions import (
+    from pyrealm.demography.crown import (
         calculate_stem_projected_crown_area_at_z,
     )
 
@@ -437,7 +437,7 @@ def test_calculate_stem_projected_crown_area_at_z_values(
     * 1 metre below z_max - all values should be equal to crown area
     """
 
-    from pyrealm.demography.canopy_functions import (
+    from pyrealm.demography.crown import (
         calculate_relative_crown_radius_at_z,
         calculate_stem_projected_crown_area_at_z,
     )
@@ -476,7 +476,7 @@ def test_solve_community_projected_canopy_area(fixture_community):
     2 and so on.
     """
 
-    from pyrealm.demography.canopy_functions import (
+    from pyrealm.demography.crown import (
         solve_community_projected_canopy_area,
     )
 
@@ -523,7 +523,7 @@ def test_solve_community_projected_canopy_area(fixture_community):
 )
 def test_calculate_stem_projected_leaf_area_at_z_inputs(fixture_z_qz_stem_properties):
     """Tests the validation of inputs to calculate_stem_projected_crown_area_at_z."""
-    from pyrealm.demography.canopy_functions import (
+    from pyrealm.demography.crown import (
         calculate_stem_projected_leaf_area_at_z,
     )
 
@@ -552,7 +552,7 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
     robust theoretical checks about the expectations and crown area.
     """
 
-    from pyrealm.demography.canopy_functions import (
+    from pyrealm.demography.crown import (
         calculate_relative_crown_radius_at_z,
         calculate_stem_projected_leaf_area_at_z,
     )
@@ -645,7 +645,7 @@ def test_CrownProfile(fixture_community):
     validate that this wrapper class works as intended.
     """
 
-    from pyrealm.demography.canopy_functions import CrownProfile
+    from pyrealm.demography.crown import CrownProfile
 
     # Estimate the profile at the heights of the maximum crown radii for each cohort
     crown_profile = CrownProfile(
