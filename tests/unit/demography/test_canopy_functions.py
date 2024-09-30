@@ -341,15 +341,9 @@ def test_calculate_relative_crown_radius_at_z_values(fixture_community):
         calculate_relative_crown_radius_at_z,
     )
 
-    # Canopy shape model gives the maximum radius at a height z_max
-    z_max = (
-        fixture_community.stem_allometry.stem_height
-        * fixture_community.stem_traits.z_max_prop
-    )
-
-    # Get the relative radius at that height
+    # Get the relative radius at that heights of the crown z_max values
     q_z_values = calculate_relative_crown_radius_at_z(
-        z=z_max,
+        z=fixture_community.stem_allometry.crown_z_max,
         stem_height=fixture_community.stem_allometry.stem_height,
         m=fixture_community.stem_traits.m,
         n=fixture_community.stem_traits.n,
@@ -641,4 +635,39 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
     assert np.allclose(
         np.diag(leaf_area_fg002),
         fixture_community.stem_allometry.crown_area * 0.98,
+    )
+
+
+def test_CrownProfile(fixture_community):
+    """Test the CrownProfile class.
+
+    This implements a subset of the tests in the more detailed function checks above to
+    validate that this wrapper class works as intended.
+    """
+
+    from pyrealm.demography.canopy_functions import CrownProfile
+
+    # Estimate the profile at the heights of the maximum crown radii for each cohort
+    crown_profile = CrownProfile(
+        stem_traits=fixture_community.stem_traits,
+        stem_allometry=fixture_community.stem_allometry,
+        z=fixture_community.stem_allometry.crown_z_max[:, None],
+    )
+
+    # Crown radius on diagonal predicts crown area accurately
+    assert np.allclose(
+        np.diag(crown_profile.crown_radius) ** 2 * np.pi,
+        fixture_community.stem_allometry.crown_area,
+    )
+
+    # Same is true for projected crown area at z_max heights
+    assert np.allclose(
+        np.diag(crown_profile.projected_crown_area),
+        fixture_community.stem_allometry.crown_area,
+    )
+
+    # And since f_g=0, so is projected leaf area
+    assert np.allclose(
+        np.diag(crown_profile.projected_leaf_area),
+        fixture_community.stem_allometry.crown_area,
     )
