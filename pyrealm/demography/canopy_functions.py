@@ -412,7 +412,7 @@ class CrownProfile:
         # Calculate projected crown area
         self.projected_crown_area = calculate_stem_projected_crown_area_at_z(
             z=z,
-            q_z=self.relativate_crown_radius,
+            q_z=self.relative_crown_radius,
             crown_area=stem_allometry.crown_area,
             q_m=stem_traits.q_m,
             stem_height=stem_allometry.stem_height,
