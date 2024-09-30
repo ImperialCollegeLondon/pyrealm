@@ -354,7 +354,7 @@ class CrownProfile:
     This method calculates crown profile predictions, given an array of vertical
     heights (``z``) for:
 
-    * relativate crown radius,
+    * relative crown radius,
     * actual crown radius,
     * projected crown area, and
     * project leaf area.
@@ -380,7 +380,7 @@ class CrownProfile:
     z: InitVar[NDArray[np.float32]]
     """An array of vertical height values at which to calculate crown profiles."""
 
-    relativate_crown_radius: NDArray[np.float32] = field(init=False)
+    relative_crown_radius: NDArray[np.float32] = field(init=False)
     """An array of the relative crown radius of stems at z heights"""
     crown_radius: NDArray[np.float32] = field(init=False)
     """An array of the actual crown radius of stems at z heights"""
