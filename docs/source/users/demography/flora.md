@@ -26,6 +26,7 @@ describe plant functional types (PFTs) and their traits.
 ```{code-cell}
 from matplotlib import pyplot as plt
 import numpy as np
+import pandas as pd
 
 from pyrealm.demography.flora import PlantFunctionalType, Flora
 
@@ -40,53 +41,55 @@ Model {cite}`Li:2014bc` to govern the allometric scaling and carbon allocation o
 but also include parameters for crown shape that follow the implementation developed in
 the PlantFATE model {cite}`joshi:2022a`.
 
+<!-- markdownlint-disable MD007 MD004 -->
+
 :::{list-table}
 :widths: 10 30
 :header-rows: 1
 
-* * Trait name
-  * Description
-* * `a_hd`
-  * Initial slope of height-diameter relationship ($a$, -)
-* * `ca_ratio`
-  * Initial ratio of crown area to stem cross-sectional area ($c$, -)
-* * `h_max`
-  * Maximum tree height ($H_m$, m)
-* * `rho_s`
-  * Sapwood density ($\rho_s$, kg Cm-3)
-* * `lai`
-  * Leaf area index within the crown ($L$,  -)
-* * `sla`
-  * Specific leaf area ($\sigma$,  m2 kg-1 C)
-* * `tau_f`
-  * Foliage turnover time ($\tau_f$,years)
-* * `tau_r`
-  * Fine-root turnover time ($\tau_r$,  years)
-* * `par_ext`
-  * Extinction coefficient of photosynthetically active radiation (PAR) ($k$, -)
-* * `yld`
-  * Yield factor ($y$,  -)
-* * `zeta`
-  * Ratio of fine-root mass to foliage area ($\zeta$, kg C m-2)
-* * `resp_r`
-  * Fine-root specific respiration rate ($r_r$, year-1)
-* * `resp_s`
-  * Sapwood-specific respiration rate ($r_s$,  year-1)
-* * `resp_f`
-  * Foliage maintenance respiration fraction ($r_f$,  -)
-* * `m`
-  * Crown shape parameter ($m$, -)
-* * `n`
-  * Crown shape parameter ($n$, -)
-* * `f_g`
-  * Crown gap fraction ($f_g$, -)
-* * `q_m`
-  * Scaling factor to derive maximum crown radius from crown area.
-* * `z_max_prop`
-  * Proportion of stem height at which maximum crown radius is found.
+* - Trait name
+  - Description
+* - `a_hd`
+  - Initial slope of height-diameter relationship ($a$, -)
+* - `ca_ratio`
+  - Initial ratio of crown area to stem cross-sectional area ($c$, -)
+* - `h_max`
+  - Maximum tree height ($H_m$, m)
+* - `rho_s`
+  - Sapwood density ($\rho_s$, kg Cm-3)
+* - `lai`
+  - Leaf area index within the crown ($L$,  -)
+* - `sla`
+  - Specific leaf area ($\sigma$,  m2 kg-1 C)
+* - `tau_f`
+  - Foliage turnover time ($\tau_f$,years)
+* - `tau_r`
+  - Fine-root turnover time ($\tau_r$,  years)
+* - `par_ext`
+  - Extinction coefficient of photosynthetically active radiation (PAR) ($k$, -)
+* - `yld`
+  - Yield factor ($y$,  -)
+* - `zeta`
+  - Ratio of fine-root mass to foliage area ($\zeta$, kg C m-2)
+* - `resp_r`
+  - Fine-root specific respiration rate ($r_r$, year-1)
+* - `resp_s`
+  - Sapwood-specific respiration rate ($r_s$,  year-1)
+* - `resp_f`
+  - Foliage maintenance respiration fraction ($r_f$,  -)
+* - `m`
+  - Crown shape parameter ($m$, -)
+* - `n`
+  - Crown shape parameter ($n$, -)
+* - `f_g`
+  - Crown gap fraction ($f_g$, -)
+* - `q_m`
+  - Scaling factor to derive maximum crown radius from crown area.
+* - `z_max_prop`
+  - Proportion of stem height at which maximum crown radius is found.
 :::
 
-+++
+<!-- markdownlint-enable MD007 MD004 -->
 
 ## Plant Functional Types
 
@@ -124,6 +127,10 @@ flora = Flora([short_pft, medium_pft, tall_pft])
 flora
 ```
 
+```{code-cell}
+pd.DataFrame({k: getattr(flora, k) for k in flora.trait_attrs})
+```
+
 You can also create `Flora` instances using PFT data stored TOML, JSON and CSV file formats.
 
 ## Stem allometry
@@ -144,12 +151,19 @@ the predictions of the T Model for:
 * Height of maximum crown radius (`crown_z_max`, m).
 
 The DBH input can be a scalar array or a one dimensional array providing a single value
-for each PFT. This then calculates a single estimate for a specific stem size.
+for each PFT. This then calculates a single estimate at the given size for each stem.
 
 ```{code-cell}
 # Calculate a single prediction
 single_allometry = StemAllometry(stem_traits=flora, at_dbh=np.array([0.1, 0.1, 0.1]))
-single_allometry.stem_height
+```
+
+We can display those predictions as a `pandas.DataFrame`:
+
+```{code-cell}
+pd.DataFrame(
+    {k: getattr(single_allometry, k) for k in single_allometry.allometry_attrs}
+)
 ```
 
 However, the DBH values can also be a column array (an `N` x 1 array). In this case, the
@@ -190,13 +204,34 @@ for ax, (var, ylab) in zip(axes.flatten(), plot_details):
         ax.legend(frameon=False)
 ```
 
+## Productivity allocation
+
+The T Model also predicts how potential GPP will be allocated to respiration, turnover
+and growth for stems with a given PFT and allometry. Again, a single value can be
+provided to get a single estimate of the allocation model for each stem:
+
 ```{code-cell}
-potential_gpp = np.repeat(55, dbh_col.size)[:, None]
-print(potential_gpp)
+single_allocation = StemAllocation(
+    stem_traits=flora, stem_allometry=single_allometry, at_potential_gpp=np.array([55])
+)
+single_allocation
+```
 
+```{code-cell}
+pd.DataFrame(
+    {k: getattr(single_allocation, k) for k in single_allocation.allocation_attrs}
+)
+```
 
+Using a column array of potential GPP values can be used predict multiple estimates of
+allocation per stem. In the first example, the code takes the allometric predictions
+from above and calculates the GPP allocation for stems of varying size with the same
+potential GPP:
+
+```{code-cell}
+potential_gpp = np.repeat(5, dbh_col.size)[:, None]
 allocation = StemAllocation(
-    stem_traits=flora, stem_allometry=single_allometry, at_potential_gpp=potential_gpp
+    stem_traits=flora, stem_allometry=allometries, at_potential_gpp=potential_gpp
 )
 ```
 
@@ -218,7 +253,7 @@ plot_details = [
 axes = axes.flatten()
 
 for ax, (var, ylab) in zip(axes, plot_details):
-    ax.plot(dbh, allocation[var], label=flora.keys())
+    ax.plot(dbh_col, getattr(allocation, var), label=flora.name)
     ax.set_xlabel("Diameter at breast height (m)")
     ax.set_ylabel(ylab)
 
@@ -227,4 +262,42 @@ for ax, (var, ylab) in zip(axes, plot_details):
 
 # Delete unused panel in 5 x 2 grid
 fig.delaxes(axes[-1])
+```
+
+An alternative calculation is to make allocation predictions for varying potential GPP
+for constant allometries:
+
+```{code-cell}
+# Column array of DBH values from 0 to 1.6 metres
+dbh_constant = np.repeat(0.2, 50)[:, None]
+# Get the allometric predictions
+constant_allometries = StemAllometry(stem_traits=flora, at_dbh=dbh_constant)
+
+potential_gpp_varying = np.linspace(1, 10, num=50)[:, None]
+allocation_2 = StemAllocation(
+    stem_traits=flora,
+    stem_allometry=constant_allometries,
+    at_potential_gpp=potential_gpp_varying,
+)
+```
+
+```{code-cell}
+fig, axes = plt.subplots(ncols=2, nrows=5, sharex=True, figsize=(10, 12))
+
+axes = axes.flatten()
+
+for ax, (var, ylab) in zip(axes, plot_details):
+    ax.plot(potential_gpp_varying, getattr(allocation_2, var), label=flora.name)
+    ax.set_xlabel("Potential GPP")
+    ax.set_ylabel(ylab)
+
+    if var == "whole_crown_gpp":
+        ax.legend(frameon=False)
+
+# Delete unused panel in 5 x 2 grid
+fig.delaxes(axes[-1])
+```
+
+```{code-cell}
+
 ```
