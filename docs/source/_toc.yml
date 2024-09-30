@@ -1,6 +1,7 @@
 root: index
 subtrees:
 
+
 - caption: Users
   entries: 
   - file: users/pmodel/module_overview.md
@@ -27,6 +28,11 @@ subtrees:
               - file: users/pmodel/subdaily_details/worked_example.md
         - file: users/pmodel/c3c4model.md
         - file: users/pmodel/isotopic_discrimination.md
+  - file: users/demography/module_overview.md
+    subtrees:
+      - entries:
+        - file: users/demography/flora.md
+        - file: users/demography/crown.md
   - file: users/tmodel/tmodel.md
   - file: users/tmodel/canopy.md
   - file: users/splash.md
