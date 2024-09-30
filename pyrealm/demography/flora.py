@@ -9,12 +9,16 @@
   data files. This intentionally enforces a complete description of the traits in the
   input data. The ``PlantFunctionalType`` is provided as a more convenient API for
   programmatic use.
-* The Flora class, which is a dataclass representing a collection of plant functional
-  types for use in describing a plant community in a simulation. It provides the same
-  trait attributes as the plant functional type classes, but the values are arrays of
-  trait values across the provided PFTS. The Flora class also defines factory methods to
-  create instances from plant functional type data stored in JSON, TOML or CSV formats.
-
+* The Flora dataclass, which represents a collection of plant functional types for use
+  in describing a plant community in a simulation. It provides the same trait attributes
+  as the plant functional type classes, but the values are arrays of trait values across
+  the provided PFTS. The Flora class also defines factory methods to create instances
+  from plant functional type data stored in JSON, TOML or CSV formats.
+* The StemTraits dataclass, which represents a collection of stems used in a simulation.
+  It again provides the same trait attributes as the plant functional type classes, but
+  as arrays. This differs from the Flora class in allowing multiple stems of the same
+  plant functional type and is primarily used to broadcast PFT traits into arrays for
+  use in calculating demography across the stems in plant cohorts.
 """  # noqa: D415
 
 from __future__ import annotations
@@ -137,9 +141,9 @@ class PlantFunctionalTypeStrict:
     resp_f: float
     r"""Foliage maintenance respiration fraction (:math:`r_f`,  -)"""
     m: float
-    r"""Canopy shape parameter (:math:`m`, -)"""
+    r"""Crown shape parameter (:math:`m`, -)"""
     n: float
-    r"""Canopy shape parameter (:math:`n`, -)"""
+    r"""Crown shape parameter (:math:`n`, -)"""
     f_g: float
     r"""Crown gap fraction (:math:`f_g`, -)"""
 
@@ -200,6 +204,7 @@ class PlantFunctionalType(PlantFunctionalTypeStrict):
         f_g, 0.05, -
     """
 
+    name: str
     a_hd: float = 116.0
     ca_ratio: float = 390.43
     h_max: float = 25.33
@@ -293,9 +298,9 @@ class Flora:
     resp_f: NDArray[np.float32] = field(init=False)
     r"""Foliage maintenance respiration fraction (:math:`r_f`,  -)"""
     m: NDArray[np.float32] = field(init=False)
-    r"""Canopy shape parameter (:math:`m`, -)"""
+    r"""Crown shape parameter (:math:`m`, -)"""
     n: NDArray[np.float32] = field(init=False)
-    r"""Canopy shape parameter (:math:`n`, -)"""
+    r"""Crown shape parameter (:math:`n`, -)"""
     f_g: NDArray[np.float32] = field(init=False)
     r"""Crown gap fraction (:math:`f_g`, -)"""
     q_m: NDArray[np.float32] = field(init=False)
@@ -487,9 +492,9 @@ class StemTraits:
     resp_f: NDArray[np.float32]
     r"""Foliage maintenance respiration fraction (:math:`r_f`,  -)"""
     m: NDArray[np.float32]
-    r"""Canopy shape parameter (:math:`m`, -)"""
+    r"""Crown shape parameter (:math:`m`, -)"""
     n: NDArray[np.float32]
-    r"""Canopy shape parameter (:math:`n`, -)"""
+    r"""Crown shape parameter (:math:`n`, -)"""
     f_g: NDArray[np.float32]
     r"""Crown gap fraction (:math:`f_g`, -)"""
     q_m: NDArray[np.float32]
