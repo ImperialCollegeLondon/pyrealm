@@ -772,15 +772,25 @@ class StemAllocation:
 
     # Post init allometry attributes
     potential_gpp: NDArray[np.float32] = field(init=False)
+    """Potential GPP per unit area (g C m2)"""
     whole_crown_gpp: NDArray[np.float32] = field(init=False)
+    """Estimated GPP across the whole crown (g C)"""
     sapwood_respiration: NDArray[np.float32] = field(init=False)
+    """Allocation to sapwood respiration (g C)"""
     foliar_respiration: NDArray[np.float32] = field(init=False)
+    """Allocation to foliar respiration (g C)"""
     fine_root_respiration: NDArray[np.float32] = field(init=False)
+    """Allocation to fine root respiration (g C)"""
     npp: NDArray[np.float32] = field(init=False)
+    """Net primary productivity (g C)"""
     turnover: NDArray[np.float32] = field(init=False)
+    """Allocation to leaf and fine root turnover (g C)"""
     delta_dbh: NDArray[np.float32] = field(init=False)
+    """Predicted increase in stem diameter from growth allocation (g C)"""
     delta_stem_mass: NDArray[np.float32] = field(init=False)
+    """Predicted increase in stem mass from growth allocation (g C)"""
     delta_foliage_mass: NDArray[np.float32] = field(init=False)
+    """Predicted increase in foliar mass from growth allocation (g C)"""
 
     def __post_init__(
         self,
