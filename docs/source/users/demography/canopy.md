@@ -83,7 +83,7 @@ The {class}`~pyrealm.demography.canopy.Canopy` class automatically finds the can
 closure heights, given a {class}`~pyrealm.demography.community.Community` instance
 and the required canopy gap fraction.
 
-The code below creates a simple community and then fits the canopy model:
+The code below creates a simple community:
 
 ```{code-cell}
 # Two PFTs
@@ -245,11 +245,6 @@ ax.set_ylabel("Vertical height ($z$, m)")
 ax.set_xlabel("Community-wide projected area (m2)")
 ax.legend(frameon=False)
 ```
-
-The projected area from individual stems to each canopy layer can then be calculated at
-$z^*_l$ and hence the projected area of canopy **within each layer**.
-
-+++
 
 ### Light transmission through the canopy
 
