@@ -6,12 +6,19 @@ jupytext:
     format_name: myst
     format_version: 0.13
 kernelspec:
-  display_name: python3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
 
 # Canopy model
+
+:::{admonition} Warning
+
+This area of `pyrealm` is in active development and this notebook currently contains
+notes and initial demonstration code.
+
+:::
 
 This notebook walks through the steps in generating the canopy model as (hopefully) used
 in Plant-FATE.

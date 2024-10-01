@@ -95,7 +95,7 @@ the PlantFATE model {cite}`joshi:2022a`.
 
 The {class}`~pyrealm.demography.flora.PlantFunctionalType` class is used define a PFT
 with a given name, along with the trait values associated with the PFT. By default,
-values for each trait are taken from Table 1 of {cite}`Li:2014bc`, but these can be
+values for each trait are taken from Table 1 of {cite:t}`Li:2014bc`, but these can be
 adjusted for different PFTs. The code below contains three examples that just differ in
 their maximum height.
 
