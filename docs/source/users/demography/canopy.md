@@ -37,6 +37,7 @@ import pandas as pd
 
 from pyrealm.demography.flora import PlantFunctionalType, Flora
 from pyrealm.demography.community import Community
+from pyrealm.demography.crown import CrownProfile
 from pyrealm.demography.canopy import Canopy
 ```
 
@@ -92,7 +93,7 @@ The code below creates a simple community and then fits the canopy model:
 short_pft = PlantFunctionalType(
     name="short", h_max=15, m=1.5, n=1.5, f_g=0, ca_ratio=380
 )
-tall_pft = PlantFunctionalType(name="tall", h_max=30, m=1.5, n=4, f_g=0.2, ca_ratio=500)
+tall_pft = PlantFunctionalType(name="tall", h_max=30, m=1.5, n=2, f_g=0.2, ca_ratio=500)
 
 # Create the flora
 flora = Flora([short_pft, tall_pft])
@@ -166,219 +167,89 @@ towards the ground in the last cohort, because the `tall` PFT has a large gap fr
 canopy.stem_leaf_area
 ```
 
-We can now plot the canopy stems alongside the community $A_p(z)$ profile, and
+### Visualizing layer closure heights and areas
+
+We can use the {class}`~pyrealm.demography.crown.CrownProfile` class to calculate a
+community crown and leaf area profile across a range of height values. For each height,
+we calculate the sum of the product of stem projected area and the number of
+individuals in each cohort.
+
+```{code-cell}
+# Set of vertical height to calculate crown profiles
+at_z = np.linspace(0, 26, num=261)[:, None]
+
+# Calculate the crown profile for the stem for each cohort
+crown_profiles = CrownProfile(
+    stem_traits=community.stem_traits, stem_allometry=community.stem_allometry, z=at_z
+)
+
+# Calculate the total projected crown area across the community at each height
+community_crown_area = np.nansum(
+    crown_profiles.projected_crown_area * community.cohort_data["n_individuals"], axis=1
+)
+# Do the same for the projected leaf area
+community_leaf_area = np.nansum(
+    crown_profiles.projected_leaf_area * community.cohort_data["n_individuals"], axis=1
+)
+```
+
+We can now plot community-wide $A_p(z)$ and $\tilde{A}_{cp}(z)$ profiles, and
 superimpose the calculated $z^*_l$ values and the cumulative canopy area for each layer
 to confirm that the calculated values coincide with the profile. Note here that the
 total area at each closed layer height is omitting the community gap fraction.
 
 ```{code-cell}
-community_Ap_z = np.nansum(Ap_z, axis=1)
+fig, ax = plt.subplots(ncols=1)
 
-fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(10, 5))
+# Calculate the crown area at which each canopy layer closes.
+closure_areas = np.arange(1, canopy.n_layers + 1) * canopy.crown_area_per_layer
 
-zcol = "red"
+# Add lines showing the canopy closure heights and closure areas.
+for val in canopy.layer_heights:
+    ax.axhline(val, color="red", linewidth=0.5, zorder=0)
 
-# Plot the canopy parts
-ax1.plot(stem_x + rz_below_zm, z, color="khaki")
-ax1.plot(stem_x - rz_below_zm, z, color="khaki")
-ax1.plot(stem_x + rz_above_zm, z, color="forestgreen")
-ax1.plot(stem_x - rz_above_zm, z, color="forestgreen")
+for val in closure_areas:
+    ax.axvline(val, color="red", linewidth=0.5, zorder=0)
 
-# Add the maximum radius
-ax1.plot(np.vstack((stem_x - rm, stem_x + rm)), np.vstack((zm, zm)), color="firebrick")
-
-# Plot the stem centre lines
-ax1.vlines(stem_x, 0, pft.height, linestyles="-", color="grey")
-
-ax1.set_ylabel("Height above ground ($z$, m)")
-ax1.set_xlabel("Arbitrary stem position")
-ax1.hlines(z_star, 0, (stem_x + rm).max(), color=zcol, linewidth=0.5)
-
-# Plot the projected community crown area by height along with the heights
-# at which different canopy layers close
-ax2.hlines(z_star, 0, community_Ap_z.max(), color=zcol, linewidth=0.5)
-ax2.vlines(
-    canopy_area * np.arange(1, len(z_star)) * (1 - community_gap_fraction),
-    0,
-    pft.height.max(),
-    color=zcol,
-    linewidth=0.5,
+# Show the community projected crown area profile
+ax.plot(community_crown_area, at_z, zorder=1, label="Crown area")
+ax.plot(
+    community_leaf_area,
+    at_z,
+    zorder=1,
+    linestyle="--",
+    color="black",
+    linewidth=1,
+    label="Leaf area",
 )
 
-ax2.plot(community_Ap_z, z)
-ax2.set_xlabel("Projected crown area above height $z$ ($A_p(z)$, m2)")
 
 # Add z* values on the righthand axis
-ax3 = ax2.twinx()
+ax_rhs = ax.twinx()
+ax_rhs.set_ylim(ax.get_ylim())
+z_star_labels = [
+    f"$z^*_{l + 1} = {val:.2f}$"
+    for l, val in enumerate(np.nditer(canopy.layer_heights))
+]
+ax_rhs.set_yticks(canopy.layer_heights.flatten())
+ax_rhs.set_yticklabels(z_star_labels)
 
+# Add cumulative canopy area at top
+ax_top = ax.twiny()
+ax_top.set_xlim(ax.get_xlim())
+area_labels = [f"$A_{l + 1}$ = {z:.1f}" for l, z in enumerate(np.nditer(closure_areas))]
+ax_top.set_xticks(closure_areas)
+ax_top.set_xticklabels(area_labels)
 
-def z_star_labels(X):
-    return [f"$z^*_{l + 1}$ = {z:.2f}" for l, z in enumerate(X)]
-
-
-ax3.set_ylim(ax2.get_ylim())
-ax3.set_yticks(z_star)
-ax3.set_yticklabels(z_star_labels(z_star))
-
-ax4 = ax2.twiny()
-
-# Add canopy layer closure areas on top axis
-cum_area = np.arange(1, len(z_star)) * canopy_area * (1 - community_gap_fraction)
-
-
-def cum_area_labels(X):
-    return [f"$A_{l + 1}$ = {z:.1f}" for l, z in enumerate(X)]
-
-
-ax4.set_xlim(ax2.get_xlim())
-ax4.set_xticks(cum_area)
-ax4.set_xticklabels(cum_area_labels(cum_area))
-
-plt.tight_layout()
+ax.set_ylabel("Vertical height ($z$, m)")
+ax.set_xlabel("Community-wide projected area (m2)")
+ax.legend(frameon=False)
 ```
 
 The projected area from individual stems to each canopy layer can then be calculated at
 $z^*_l$ and hence the projected area of canopy **within each layer**.
 
-```{code-cell}
-# Calculate the canopy area above z_star for each stem
-Ap_z_star = calculate_projected_area(z=z_star[:, None], pft=pft, m=m, n=n, qm=qm, zm=zm)
-
-print(Ap_z_star)
-```
-
-```{code-cell}
-:lines_to_next_cell: 2
-
-# Calculate the contribution _within_ each layer per stem
-Ap_within_layer = np.diff(Ap_z_star, axis=0, prepend=0)
-
-print(Ap_within_layer)
-```
-
-+++ {"lines_to_next_cell": 2}
-
-### Leaf area within canopy layers
-
-The projected area occupied by leaves at a given height $\tilde{A}_{cp}(z)$ is
-needed to calculate light transmission through those layers. This differs from the
-projected area $A_p(z)$ because, although a tree occupies an area in the canopy
-following the PPA, a **crown gap fraction** ($f_g$) reduces the actual leaf area
-at a given height $z$.
-
-The crown gap fraction does not affect the overall projected canopy area at ground
-level or the community gap fraction: the amount of clear sky at ground level is
-governed purely by $f_G$. Instead it models how leaf gaps in the upper canopy are
-filled by leaf area at lower heights. It captures the vertical distribution of
-leaf area within the canopy: a higher $f_g$ will give fewer leaves at the top of
-the canopy and more leaves further down within the canopy.
-
-The calculation of $\tilde{A}_{cp}(z)$ is defined as:
-
-$$
-\tilde{A}_{cp}(z)=
-\begin{cases}
-0, & z \gt H \\
-A_c \left(\dfrac{q(z)}{q_m}\right)^2 \left(1 - f_g\right), & H \gt z \gt z_m \\
-Ac - A_c \left(\dfrac{q(z)}{q_m}\right)^2 f_g, & zm \gt z
-\end{cases}
-$$
-
-The function below calculates $\tilde{A}_{cp}(z)$.
-
-```{code-cell}
-def calculate_leaf_area(
-    z: float,
-    fg: float,
-    pft,
-    m: Stems,
-    n: Stems,
-    qm: Stems,
-    zm: Stems,
-) -> np.ndarray:
-    """Calculate leaf area above a given height.
-
-    This function takes PFT specific parameters (shape parameters) and stem specific
-    sizes and estimates the projected crown area above a given height $z$. The inputs
-    can either be scalars describing a single stem or arrays representing a community
-    of stems. If only a single PFT is being modelled then `m`, `n`, `qm` and `fg` can
-    be scalars with arrays `H`, `Ac` and `zm` giving the sizes of stems within that
-    PFT.
-
-    Args:
-        z: Canopy height
-        fg: crown gap fraction
-        m, n, qm : PFT specific shape parameters
-        pft, qm, zm: stem data
-    """
-
-    # Calculate q(z)
-    qz = calculate_relative_canopy_radius_at_z(z, pft.height, m, n)
-
-    # Calculate Ac term
-    Ac_term = pft.crown_area * (qz / qm) ** 2
-    # Set Acp either side of zm
-    Acp = np.where(z <= zm, pft.crown_area - Ac_term * fg, Ac_term * (1 - fg))
-    # Set Ap = 0 where z > H
-    Acp = np.where(z > pft.height, 0, Acp)
-
-    return Acp
-```
-
-The plot below shows how the vertical leaf area profile for the community changes for
-different values of $f_g$. When $f_g = 0$, then $A_cp(z) = A_p(z)$ (red line) because
-there are no crown gaps and hence all of the leaf area is within the crown surface. As
-$f_g \to 1$, more of the leaf area is displaced deeper into the canopy, leaves in the
-lower crown intercepting light coming through holes in the upper canopy.
-
-```{code-cell}
-fig, ax1 = plt.subplots(1, 1, figsize=(6, 5))
-
-for fg in np.arange(0, 1.01, 0.05):
-
-    if fg == 0:
-        color = "red"
-        label = "$f_g = 0$"
-        lwd = 0.5
-    elif fg == 1:
-        color = "blue"
-        label = "$f_g = 1$"
-        lwd = 0.5
-    else:
-        color = "black"
-        label = None
-        lwd = 0.25
-
-    Acp_z = calculate_leaf_area(z=z[:, None], fg=fg, pft=pft, m=m, n=n, qm=qm, zm=zm)
-    ax1.plot(np.nansum(Acp_z, axis=1), z, color=color, linewidth=lwd, label=label)
-
-ax1.set_xlabel(r"Projected leaf area above height $z$ ($\tilde{A}_{cp}(z)$, m2)")
-ax1.legend(frameon=False)
-```
-
-We can now calculate the crown area occupied by leaves above the height of each closed
-layer $z^*_l$:
-
-```{code-cell}
-# Calculate the leaf area above z_star for each stem
-crown_gap_fraction = 0.05
-Acp_z_star = calculate_leaf_area(
-    z=z_star[:, None], fg=crown_gap_fraction, pft=pft, m=m, n=n, qm=qm, zm=zm
-)
-
-print(Acp_z_star)
-```
-
-And from that, the area occupied by leaves **within each layer**. These values are
-similar to the projected crown area within layers (`Ap_within_layer`, above) but
-leaf area is displaced into lower layers because $f_g > 0$.
-
-```{code-cell}
-# Calculate the contribution _within_ each layer per stem
-Acp_within_layer = np.diff(Acp_z_star, axis=0, prepend=0)
-
-print(Acp_within_layer)
-```
++++
 
 ### Light transmission through the canopy
 
@@ -391,30 +262,30 @@ where $k$ is the light extinction coefficient ($k$) and $L$ is the leaf area ind
 (LAI). The LAI can be calculated for each stem and layer:
 
 ```{code-cell}
-LAI = Acp_within_layer / canopy_area
-print(LAI)
+# LAI = Acp_within_layer / canopy_area
+# print(LAI)
 ```
 
 This can be used to calculate the LAI of individual stems but also the LAI of each layer
 in the canopy:
 
 ```{code-cell}
-LAI_stem = LAI.sum(axis=0)
-LAI_layer = LAI.sum(axis=1)
+# LAI_stem = LAI.sum(axis=0)
+# LAI_layer = LAI.sum(axis=1)
 
-print("LAI stem = ", LAI_stem)
-print("LAI layer = ", LAI_layer)
+# print("LAI stem = ", LAI_stem)
+# print("LAI layer = ", LAI_layer)
 ```
 
 The layer LAI values can now be used to calculate the light transmission of each layer and
 hence the cumulative light extinction profile through the canopy.
 
 ```{code-cell}
-f_abs = 1 - np.exp(-pft.traits.par_ext * LAI_layer)
-ext = np.cumprod(f_abs)
+# f_abs = 1 - np.exp(-pft.traits.par_ext * LAI_layer)
+# ext = np.cumprod(f_abs)
 
-print("f_abs = ", f_abs)
-print("extinction = ", ext)
+# print("f_abs = ", f_abs)
+# print("extinction = ", ext)
 ```
 
 One issue that needs to be resolved is that the T Model implementation in `pyrealm`
@@ -422,7 +293,7 @@ follows the original implementation of the T Model in having LAI as a fixed trai
 a given plant functional type, so is constant for all stems of that PFT.
 
 ```{code-cell}
-print("f_abs = ", (1 - np.exp(-pft.traits.par_ext * pft.traits.lai)))
+# print("f_abs = ", (1 - np.exp(-pft.traits.par_ext * pft.traits.lai)))
 ```
 
 ## Things to worry about later
