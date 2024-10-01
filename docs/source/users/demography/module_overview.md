@@ -24,4 +24,4 @@ The functionality of the demography module is split into the following submodule
 * The [`community` module](./community.md) that implements a plant community model using
   size-structured cohorts.
 * The [`canopy` module](./canopy.md) that generates a model of the canopy structure for
-  a community, based on the Perfect Plasticity Approximation model :cite:`purves:2008a`.
+  a community, based on the Perfect Plasticity Approximation model {cite}`purves:2008a`.

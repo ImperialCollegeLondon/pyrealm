@@ -20,398 +20,150 @@ notes and initial demonstration code.
 
 :::
 
-This notebook walks through the steps in generating the canopy model as (hopefully) used
-in Plant-FATE.
+The canopy model uses the perfect plasticity approximation (PPA) {cite}`purves:2008a`,
+which assumes that plants are always able to plastically arrange their crown within the
+broader canopy of the community to maximise their crown size and fill the available
+space $A$. When the area $A$ is filled, a new lower canopy layer is formed until all
+of the individual crown area has been distributed across within the canopy.
 
-## The T Model
-
-The T Model provides a numerical description of how tree geometry scales with stem
-diameter, and an allocation model of how GPP predicts changes in stem diameter.
-
-The implementation in `pyrealm` provides a class representing a particular plant
-functional type, using a set of traits. The code below creates a PFT with the default
-set of trait values.
-
-```{warning}
-This sketch:
-
-* Assumes a single individual of each stem diameter, but in practice
-  we are going to want to include a number of individuals to capture cohorts.
-* Assumes a single PFT, where we will need to provide a mixed community.
-* Consequently handles forest inventory properties in a muddled way: we will
-  likely package all of the stem data into a single class, probably a community
-  object.
-```
+The key variables in calculating the canopy model are the crown projected area $A_p$
+and leaf projected projected area $\tilde{A}_{cp}(z)$, which are calculated for a stem
+of a given size using the  [crown model](./crown.md).
 
 ```{code-cell}
+from matplotlib import pyplot as plt
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.optimize import root_scalar
+import pandas as pd
 
-from pyrealm.tmodel import TTree
-
-np.set_printoptions(precision=3)
-
-# Plant functional type with default parameterization
-pft = TTree(diameters=np.array([0.1, 0.15, 0.2, 0.25, 0.38, 0.4, 1.0]))
-pft.traits
+from pyrealm.demography.flora import PlantFunctionalType, Flora
+from pyrealm.demography.community import Community
+from pyrealm.demography.canopy import Canopy
 ```
 
-The scaling of a set of trees is automatically calculated using the initial diameters to
-the `TTree` instance. This automatically calculates the other dimensions, such as
-height, using the underlying scaling equations of the T Model.
+## Canopy closure and canopy gap fraction
 
-```{code-cell}
-pft.height
-```
-
-```{code-cell}
-:lines_to_next_cell: 2
-
-pft.crown_area
-```
-
-+++ {"lines_to_next_cell": 2}
-
-### Crown shape
-
-Jaideep's extension of the T Model adds a crown shape model, driven by two parameters
-($m$ and $n$) that provide a very flexible description of the vertical crown profile.
-These are used to derive two further invariant parameters: $q_m$ scales the canopy
-radius to match the predictions of crown area under the T model and $p_{zm}$ is the
-proportion of the total stem height at which the maximum crown radius occurs. Both these
-values are constant for a plant functional type.
+A simple method for finding the first canopy closure height is to find a height $z^*_1$
+at which the sum of crown projected area across all stems $N_s$ in a community equals $A$:
 
 $$
-\begin{align}
-q_m &= m n \left(\dfrac{n-1}{m n -1}\right)^ {1 - \tfrac{1}{n}}
-    \left(\dfrac{\left(m-1\right) n}{m n -1}\right)^ {m-1} \\[8pt]
-p_{zm} &= \left(\dfrac{n-1}{m n -1}\right)^ {\tfrac{1}{n}}
-\end{align}
+\sum_1^{N_s}{ A_p(z^*_1)} = A
 $$
 
-For individual stems, with expected height $H$ and crown area $A_c$, we can then
-estimate:
-
-* the height $z_m$ at which the maximum crown radius $r_m$ is found, and
-* a slope $r_0$ that scales the relative canopy radius so that the $r_m$ matches
-  the allometric prediction of $A_c$ from the T Model.
-
-$$
-\begin{align}
-z_m &= H p_{zm}\\[8pt]
-r_0 &= \frac{1}{q_m}\sqrt{\frac{A_c}{\pi}}
-\end{align}
-$$
-
-```{code-cell}
-:lines_to_next_cell: 2
-
-def calculate_qm(m, n):
-
-    # Constant q_m
-    return (
-        m
-        * n
-        * ((n - 1) / (m * n - 1)) ** (1 - 1 / n)
-        * (((m - 1) * n) / (m * n - 1)) ** (m - 1)
-    )
-
-
-def calculate_stem_canopy_factors(pft, m, n):
-
-    # Height of maximum crown radius
-    zm = pft.height * ((n - 1) / (m * n - 1)) ** (1 / n)
-
-    # Slope to give Ac at zm
-    r0 = 1 / qm * np.sqrt(pft.crown_area / np.pi)
-
-    return zm, r0
-
-
-# Shape parameters for a fairly top heavy crown profile
-m = 2
-n = 5
-qm = calculate_qm(m=m, n=n)
-zm, r0 = calculate_stem_canopy_factors(pft=pft, m=m, n=n)
-
-print("qm = ", np.round(qm, 4))
-print("zm = ", zm)
-print("r0 = ", r0)
-```
-
-+++ {"lines_to_next_cell": 2}
-
-The following functions then provide the value at height $z$ of relative $q(z)$ and
-actual $r(z)$ canopy radius:
-
-$$
-\begin{align}
-q(z) &= m n \left(\dfrac{z}{H}\right) ^ {n -1}
-    \left( 1 - \left(\dfrac{z}{H}\right) ^ n \right)^{m-1}\\[8pt]
-r(z) &= r_0 \; q(z)
-\end{align}
-$$
-
-```{code-cell}
-def calculate_relative_canopy_radius_at_z(z, H, m, n):
-    """Calculate q(z)"""
-
-    z_over_H = z / H
-
-    return m * n * z_over_H ** (n - 1) * (1 - z_over_H**n) ** (m - 1)
-```
-
-```{code-cell}
-# Validate that zm and r0 generate the predicted maximum crown area
-q_zm = calculate_relative_canopy_radius_at_z(zm, pft.height, m, n)
-rm = r0 * q_zm
-print("rm = ", rm)
-```
-
-```{code-cell}
-np.allclose(rm**2 * np.pi, pft.crown_area)
-```
-
-Vertical crown radius profiles can now be calculated for each stem:
-
-```{code-cell}
-# Create an interpolation from ground to maximum stem height, with 5 cm resolution.
-# Also append a set of values _fractionally_ less than the exact height  of stems
-# so that the height at the top of each stem is included but to avoid floating
-# point issues with exact heights.
-
-zres = 0.05
-z = np.arange(0, pft.height.max() + 1, zres)
-z = np.sort(np.concatenate([z, pft.height - 0.00001]))
-
-# Convert the heights into a column matrix to broadcast against the stems
-# and then calculate r(z) = r0 * q(z)
-rz = r0 * calculate_relative_canopy_radius_at_z(z[:, None], pft.height, m, n)
-
-# When z > H, rz < 0, so set radius to 0 where rz < 0
-rz[np.where(rz < 0)] = 0
-
-np.cumsum(np.convolve(rm, np.ones(2), "valid") + 0.1)
-```
-
-Those can be plotted out to show the vertical crown radius profiles
-
-```{code-cell}
-# Separate the stems along the x axis for plotting
-stem_x = np.concatenate(
-    [np.array([0]), np.cumsum(np.convolve(rm, np.ones(2), "valid") + 0.4)]
-)
-
-# Get the canopy sections above and below zm
-rz_above_zm = np.where(np.logical_and(rz > 0, np.greater.outer(z, zm)), rz, np.nan)
-rz_below_zm = np.where(np.logical_and(rz > 0, np.less_equal.outer(z, zm)), rz, np.nan)
-
-# Plot the canopy parts
-plt.plot(stem_x + rz_below_zm, z, color="khaki")
-plt.plot(stem_x - rz_below_zm, z, color="khaki")
-plt.plot(stem_x + rz_above_zm, z, color="forestgreen")
-plt.plot(stem_x - rz_above_zm, z, color="forestgreen")
-
-# Add the maximum radius
-plt.plot(np.vstack((stem_x - rm, stem_x + rm)), np.vstack((zm, zm)), color="firebrick")
-
-# Plot the stem centre lines
-plt.vlines(stem_x, 0, pft.height, linestyles="-", color="grey")
-
-plt.gca().set_aspect("equal")
-```
-
-## Canopy structure
-
-The canopy structure model uses the perfect plasticity approximation (PPA), which
-assumes that plants can arrange their canopies to fill the available space $A$.
-It takes the **projected area of stems** $Ap(z)$ within the canopy and finds the heights
-at which each canopy layer closes ($z^*_l$ for $l = 1, 2, 3 ...$) where the total projected
-area of the canopy equals $lA$.
-
-### Canopy projected area
-
-The projected area $A_p$ for a stem with height $H$, a maximum crown area $A_c$ at a
-height $z_m$ and $m$, $n$ and $q_m$ for the associated plant functional type is
-
-$$
-A_p(z)=
-\begin{cases}
-A_c, & z \le z_m \\
-A_c \left(\dfrac{q(z)}{q_m}\right)^2, & H > z > z_m \\
-0, & z > H
-\end{cases}
-$$
-
-```{code-cell}
-Stems = float | np.ndarray
-
-
-def calculate_projected_area(
-    z: float,
-    pft,
-    m: Stems,
-    n: Stems,
-    qm: Stems,
-    zm: Stems,
-) -> np.ndarray:
-    """Calculate projected crown area above a given height.
-
-    This function takes PFT specific parameters (shape parameters) and stem specific
-    sizes and estimates the projected crown area above a given height $z$. The inputs
-    can either be scalars describing a single stem or arrays representing a community
-    of stems. If only a single PFT is being modelled then `m`, `n`, `qm` and `fg` can
-    be scalars with arrays `H`, `Ac` and `zm` giving the sizes of stems within that
-    PFT.
-
-    Args:
-        z: Canopy height
-        m, n, qm : PFT specific shape parameters
-        pft, qm, zm: stem data
-
-    """
-
-    # Calculate q(z)
-    qz = calculate_relative_canopy_radius_at_z(z, pft.height, m, n)
-
-    # Calculate Ap given z > zm
-    Ap = pft.crown_area * (qz / qm) ** 2
-    # Set Ap = Ac where z <= zm
-    Ap = np.where(z <= zm, pft.crown_area, Ap)
-    # Set Ap = 0 where z > H
-    Ap = np.where(z > pft.height, 0, Ap)
-
-    return Ap
-```
-
-The code below calculates the projected crown area for each stem and then plots the
-vertical profile for individual stems and across the community.
-
-```{code-cell}
-:lines_to_next_cell: 2
-
-# Calculate the projected area for each stem
-Ap_z = calculate_projected_area(z=z[:, None], pft=pft, m=m, n=n, qm=qm, zm=zm)
-
-# Plot the calculated values for each stem and across the community
-fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(10, 5))
-
-# Plot the individual stem projected area
-ax1.set_ylabel("Height above ground ($z$, m)")
-ax1.plot(Ap_z, z)
-ax1.set_xlabel("Stem $A_p(z)$ (m2)")
-
-# Plot the individual stem projected area
-ax2.plot(np.nansum(Ap_z, axis=1), z)
-ax2.set_xlabel("Total community $A_p(z)$ (m2)")
-
-plt.tight_layout()
-```
-
-+++ {"lines_to_next_cell": 2}
-
-### Canopy closure and canopy gap fraction
-
-The total cumulative projected area shown above is modified by a community-level
+However, the canopy model is modified by a community-level
 **canopy gap fraction** ($f_G$) that captures the overall proportion of the canopy area
 that is left unfilled by canopy. This gap fraction, capturing processes such as crown
-shyness, describes the proportion of open sky visible from the forest floor.
-
-The definition of the height of canopy layer closure ($z^*_l$) for a given canopy
-layer $l = 1, ..., l_m$ is then:
+shyness, describes the proportion of open sky visible from the forest floor. This
+gives the following definition of the height of canopy layer closure ($z^*_l$) for a
+given canopy layer $l = 1, ..., l_m$:
 
 $$
 \sum_1^{N_s}{ A_p(z^*_l)} = l A(1 - f_G)
 $$
 
-This can be found numerically using a root solver as:
+The set of heights $z^*$  can be found numerically by using a root solver to find
+values of $z^*_l$ for $l = 1, ..., l_m$ that satisfy:
 
 $$
 \sum_1^{N_s}{ A_p(z^*_l)} - l A(1 - f_G) = 0
 $$
 
-The total number of layers $l_m$ in a canopy, where the final layer may not be fully closed,
-can be found given the total crown area across stems as:
+The total number of layers $l_m$ in a canopy, where the final layer may not be fully
+closed, can be found given the total crown area across stems as:
 
 $$
-l_m = \left\lceil \frac{\sum_1^{N_s}{ A_c}}{ A(1 - f_G)}\right\rceil
+l_m = \left\lceil \frac{\sum_1^{N_s}{A_c}}{ A(1 - f_G)}\right\rceil
 $$
+
++++
+
+## Implementation in `pyrealm`
+
+The {class}`~pyrealm.demography.canopy.Canopy` class automatically finds the canopy
+closure heights, given a {class}`~pyrealm.demography.community.Community` instance
+and the required canopy gap fraction.
+
+The code below creates a simple community and then fits the canopy model:
 
 ```{code-cell}
-def solve_canopy_closure_height(
-    z: float,
-    l: int,
-    A: float,
-    fG: float,
-    m: Stems,
-    n: Stems,
-    qm: Stems,
-    pft: Stems,
-    zm: Stems,
-) -> np.ndarray:
-    """Solver function for canopy closure height.
+# Two PFTs
+# - a shorter understory tree with a columnar canopy and no crown gaps
+# - a taller canopy tree with a top heavy canopy and more crown gaps
 
-    This function returns the difference between the total community projected area
-    at a height $z$ and the total available canopy space for canopy layer $l$, given
-    the community gap fraction for a given height. It is used with a root solver to
-    find canopy layer closure heights $z^*_l* for a community.
+short_pft = PlantFunctionalType(
+    name="short", h_max=15, m=1.5, n=1.5, f_g=0, ca_ratio=380
+)
+tall_pft = PlantFunctionalType(name="tall", h_max=30, m=1.5, n=4, f_g=0.2, ca_ratio=500)
 
-    Args:
-        m, n, qm : PFT specific shape parameters
-        H, Ac, zm: stem specific sizes
-        A, l: cell area and layer index
-        fG: community gap fraction
-    """
+# Create the flora
+flora = Flora([short_pft, tall_pft])
 
-    # Calculate Ap(z)
-    Ap_z = calculate_projected_area(z=z, pft=pft, m=m, n=n, qm=qm, zm=zm)
+# Create a simply community with three cohorts
+# - 15 saplings of the short PFT
+# - 5 larger stems of the short PFT
+# - 2 large stems of tall PFT
 
-    # Return the difference between the projected area and the available space
-    return Ap_z.sum() - (A * l) * (1 - fG)
-
-
-def calculate_canopy_heights(
-    A: float,
-    fG: float,
-    m: Stems,
-    n: Stems,
-    qm: Stems,
-    pft,
-    zm: Stems,
-):
-
-    # Calculate the number of layers
-    total_community_ca = pft.crown_area.sum()
-    n_layers = int(np.ceil(total_community_ca / (A * (1 - fG))))
-
-    # Data store for z*
-    z_star = np.zeros(n_layers)
-
-    # Loop over the layers TODO - edge case of completely filled final layer
-    for lyr in np.arange(n_layers - 1):
-        z_star[lyr] = root_scalar(
-            solve_canopy_closure_height,
-            args=(lyr + 1, A, fG, m, n, qm, pft, zm),
-            bracket=(0, pft.height.max()),
-        ).root
-
-    return z_star
+community = Community(
+    flora=flora,
+    cell_area=32,
+    cell_id=1,
+    cohort_dbh_values=np.array([0.02, 0.20, 0.5]),
+    cohort_n_individuals=np.array([15, 5, 2]),
+    cohort_pft_names=np.array(["short", "short", "tall"]),
+)
 ```
 
-The example below calculates the projected crown area above ground level for the example
-stems. These should be identical to the crown area of the stems.
+We can then look at the expected allometries for the stems in each cohort:
 
 ```{code-cell}
-# Set the total available canopy space and community gap fraction
-canopy_area = 32
-community_gap_fraction = 2 / 32
+print("H = ", community.stem_allometry.stem_height)
+print("Ac = ", community.stem_allometry.crown_area)
+```
 
-z_star = calculate_canopy_heights(
-    A=canopy_area, fG=community_gap_fraction, m=m, n=n, qm=qm, pft=pft, zm=zm
-)
+We can now calculate the canopy model for the community:
 
-print("z_star = ", z_star)
+```{code-cell}
+canopy = Canopy(community=community, canopy_gap_fraction=2 / 32)
+```
+
+We can then look at three key properties of the canopy model: the layer closure
+heights ($z^*_l$) and the projected crown areas and leaf areas at each of those
+heights for each stem in the three cohorts.
+
+There are four canopy layers, with the top two very close together because of the
+large crown area in the two stems in the cohort of `tall` trees.
+
+```{code-cell}
+canopy.layer_heights
+```
+
+The `stem_crown_area` attribute then provides the crown area of each stem found in each
+layer.
+
+```{code-cell}
+canopy.stem_crown_area
+```
+
+Given the canopy gap fraction, the available crown area per layer is 30 m2, so
+the first two layers are taken up entirely by the two stems in the cohort of large
+trees. We can confirm that the calculation is correct by calculating the total crown area
+across the cohorts at each height:
+
+```{code-cell}
+np.sum(canopy.stem_crown_area * community.cohort_data["n_individuals"], axis=1)
+```
+
+Those are equal to the layer closure areas of 30, 60 and 90 m2 and the last layer does
+not quite close. The slight numerical differences result from the precision of the root
+solver for finding $z^*_l$ and this can be adjusted by using the `layer_tolerance`
+argument to the `Canopy` class
+
+The projected leaf area per stem is reported in the `stem_leaf_area` attribute. This is
+identical to the projected crown area for the first two cohorts because the crown gap
+fraction $f_g$ is zero for this PFT. The projected leaf area is however displaced
+towards the ground in the last cohort, because the `tall` PFT has a large gap fraction.
+
+```{code-cell}
+canopy.stem_leaf_area
 ```
 
 We can now plot the canopy stems alongside the community $A_p(z)$ profile, and
