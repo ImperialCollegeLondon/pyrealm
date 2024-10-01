@@ -38,7 +38,10 @@ from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
 
 
 def memory_effect(
-    values: NDArray, alpha: float = 0.067, allow_holdover: bool = False
+    values: NDArray,
+    initial_values: NDArray | None = None,
+    alpha: float = 0.067,
+    allow_holdover: bool = False,
 ) -> NDArray:
     r"""Apply a memory effect to a variable.
 
@@ -86,6 +89,8 @@ def memory_effect(
 
     Args:
         values: The values to apply the memory effect to.
+        initial_values: Last available realised value used if model is fitted in
+        chunks and value at t=0 is not optimal.
         alpha: The relative weight applied to the most recent observation.
         allow_holdover: Allow missing values to be filled by holding over earlier
             values.
@@ -102,7 +107,10 @@ def memory_effect(
     # Initialise the output storage and set the first values to be a slice along the
     # first axis of the input values
     memory_values = np.empty_like(values, dtype=np.float32)
-    memory_values[0] = values[0]
+    if initial_values is None:
+        memory_values[0] = values[0]
+    else:
+        memory_values[0] = initial_values
 
     # Handle the data if there are no missing data,
     if not nan_present:
@@ -365,23 +373,36 @@ class SubdailyPModel:
 
         """Instantaneous optimal :math:`x_{i}`, :math:`V_{cmax}` and :math:`J_{max}`"""
         if init_realised is not None:
-            self.init_xi_real, self.init_vcmax_real, self.init_jmax_real = init_realised
+            if not (
+                (init_realised[0].shape() == self.xi_real.shape())
+                and (init_realised[1].shape() == self.vcmax25_real.shape())
+                and (init_realised[2].shape() == self.jmax25_real.shape())
+            ):
+                raise Exception("`init_realised` has wrong shape in Subdaily PModel")
+            else:
+                init_xi_real, init_vcmax_real, init_jmax_real = init_realised
         else:
-            self.init_xi_real = self.pmodel_acclim.optchi.xi
-            self.init_vcmax_real = self.vcmax25_opt
-            self.init_jmax_real = self.jmax25_opt
+            init_xi_real = self.pmodel_acclim.optchi.xi
+            init_vcmax_real = self.vcmax25_opt
+            init_jmax_real = self.jmax25_opt
 
         # 5) Calculate the realised daily values from the instantaneous optimal values
         self.xi_real: NDArray = memory_effect(
-            self.pmodel_acclim.optchi.xi, alpha=alpha, allow_holdover=allow_holdover
+            self.pmodel_acclim.optchi.xi,
+            init_xi_real,
+            alpha=alpha,
+            allow_holdover=allow_holdover,
         )
         r"""Realised daily slow responses in :math:`\xi`"""
         self.vcmax25_real: NDArray = memory_effect(
-            self.vcmax25_opt, alpha=alpha, allow_holdover=allow_holdover
+            self.vcmax25_opt,
+            init_vcmax_real,
+            alpha=alpha,
+            allow_holdover=allow_holdover,
         )
         r"""Realised daily slow responses in :math:`V_{cmax25}`"""
         self.jmax25_real: NDArray = memory_effect(
-            self.jmax25_opt, alpha=alpha, allow_holdover=allow_holdover
+            self.jmax25_opt, init_jmax_real, alpha=alpha, allow_holdover=allow_holdover
         )
 
         r"""Realised daily slow responses in :math:`J_{max25}`"""
