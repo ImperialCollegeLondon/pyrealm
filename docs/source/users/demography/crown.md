@@ -386,6 +386,54 @@ for pft_idx, offset, colour in zip((0, 1, 2), (0, 5, 10), ("r", "g", "b")):
     ax.set_ylabel("Height above ground (m)")
 ```
 
+We can also generate predictions for a single PFT with varying crown gap fraction. In
+the plot below, note that all leaf area is above $z_{max}$ when $f_g=1$ and all leaf
+area is *below*
+
+```{code-cell}
+fig, ax = plt.subplots(ncols=1)
+
+# Loop over f_g values
+for f_g in np.linspace(0, 1, num=11):
+
+    label = None
+    colour = "gray"
+
+    if f_g == 0:
+        label = "$f_g=0$"
+        colour = "red"
+    elif f_g == 1:
+        label = "$f_g=1$"
+        colour = "blue"
+
+    # Create a flora with a single PFT with current f_g and then generate a
+    # stem allometry and crown profile
+    flora_f_g = Flora(
+        [PlantFunctionalType(name="example", h_max=20, m=2, n=2, f_g=f_g)]
+    )
+    allometry_f_g = StemAllometry(stem_traits=flora_f_g, at_dbh=np.array([0.4]))
+    profile = CrownProfile(
+        stem_traits=flora_f_g, stem_allometry=allometry_f_g, z=area_z
+    )
+
+    # Plot the projected leaf area with height
+    ax.plot(profile.projected_leaf_area, area_z, color=colour, label=label, linewidth=1)
+
+# Add a horizontal line for z_max
+ax.plot(
+    [-1, allometry_f_g.crown_area[0] + 1],
+    [allometry_f_g.crown_z_max, allometry_f_g.crown_z_max],
+    linestyle="--",
+    color="black",
+    label="$z_{max}$",
+    linewidth=1,
+)
+
+ax.set_ylabel(r"Vertical height ($z$, m)")
+ax.set_xlabel(r"Projected leaf area ($\tilde{A}_{cp}(z)$, m2)")
+ax.legend(frameon=False)
+```
+
 ```{code-cell}
 
 ```
