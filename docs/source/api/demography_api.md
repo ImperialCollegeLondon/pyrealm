@@ -50,3 +50,11 @@ kernelspec:
     :autosummary:
     :members:
 ```
+
+## The {mod}`~pyrealm.demography.canopy` module
+
+```{eval-rst}
+.. automodule:: pyrealm.demography.canopy
+    :autosummary:
+    :members:
+```

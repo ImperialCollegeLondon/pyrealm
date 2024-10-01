@@ -34,6 +34,7 @@ subtrees:
         - file: users/demography/flora.md
         - file: users/demography/t_model.md
         - file: users/demography/crown.md
+        - file: users/demography/community.md
         - file: users/demography/canopy.md
   - file: users/tmodel/tmodel.md
   - file: users/tmodel/canopy.md
