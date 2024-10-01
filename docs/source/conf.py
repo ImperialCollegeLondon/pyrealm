@@ -18,7 +18,9 @@ from sphinxcontrib.bibtex.style.referencing.author_year import AuthorYearReferen
 
 from pyrealm import __version__ as pyrealm_version
 
+# +
 sys.path.insert(0, os.path.abspath("../"))
+# -
 
 
 # -- Project information -----------------------------------------------------
@@ -55,7 +57,9 @@ extensions = [
 external_toc_path = "_toc.yml"  # optional, default: _toc.yml
 external_toc_exclude_missing = False  # optional, default: False
 
+# + [markdown]
 # Citation styling
+# -
 
 
 def bracket_style() -> BracketStyle:
@@ -82,7 +86,7 @@ sphinxcontrib.bibtex.plugin.register_plugin(
 )
 
 bibtex_reference_style = "author_year_round"
-
+bibtex_default_style = "plain"
 
 # Cross-reference checking
 # TODO - find some better solution than this to all of these bizarre cross reference
@@ -92,6 +96,7 @@ nitpick_ignore = [
     ("py:class", "numpy._typing._array_like._ScalarType_co"),
     ("py:class", "numpy._typing._generic_alias.ScalarType"),
     ("py:class", "numpy.float32"),
+    ("py:class", "numpy.int64"),
     ("py:class", "numpy.timedelta64"),
     ("py:class", "numpy.bool_"),
     ("py:class", "numpy.ndarray"),
@@ -140,15 +145,20 @@ nitpick_ignore = [
             "numpy.ndarray[typing.Any, numpy.dtype[+ScalarType]]]"
         ),
     ),
+    ("py:class", "pandas.core.frame.DataFrame"),
 ]
 
+# +
 intersphinx_mapping = {
     "pytest": ("https://docs.pytest.org/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
+    "pandas": ("http://pandas.pydata.org/pandas-docs/dev/", None),
     "shapely": ("https://shapely.readthedocs.io/en/stable/", None),
+    "marshmallow": ("https://marshmallow.readthedocs.io/en/stable/", None),
 }
+# -
 
 
 autodoc_default_flags = ["members"]
@@ -195,6 +205,7 @@ exclude_patterns = ["maxime*", "**.ipynb_checkpoints"]
 # html_theme = 'sphinx_material'
 html_theme = "sphinx_rtd_theme"
 
+# +
 html_theme_options = {
     "logo_only": False,
     "display_version": True,
@@ -208,6 +219,7 @@ html_theme_options = {
     "includehidden": True,
     "titles_only": False,
 }
+# -
 
 
 # Add any paths that contain custom static files (such as style sheets) here,

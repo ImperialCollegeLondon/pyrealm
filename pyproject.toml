@@ -37,6 +37,10 @@ python = ">=3.10"
 scipy = "^1.7.3" 
 tabulate = "^0.8.10" 
 
+marshmallow = "^3.22.0"
+pandas = "^2.2.2"
+marshmallow-dataclass = "^8.7.0"
+pandas-stubs = "^2.2.2.240909"
 [tool.poetry.group.types.dependencies]
 pandas-stubs = "^2.2.0.240218"
 types-tabulate = "^0.9.0.0"
@@ -100,10 +104,10 @@ module = "tests.*"
 addopts = """
   -v 
   -p no:warnings
-  -m "not profiling" 	
-  --cov=pyrealm  
+  -m "not profiling"
+  --cov=pyrealm
   --cov-report=html:reports/coverage
-  --doctest-modules 
+  --doctest-modules
   --ignore=pyrealm/__main__.py
   --ignore=tests/pmodel/generate_test_inputs.py
   """
@@ -140,3 +144,9 @@ ignore = [
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.jupytext]
+# Stop jupytext from removing mystnb and other settings in MyST Notebook YAML headers
+notebook_metadata_filter = "-jupytext.text_representation.jupytext_version,settings,mystnb"
+# Also stop it from stripping cell metadata.
+cell_metadata_filter =  "all"

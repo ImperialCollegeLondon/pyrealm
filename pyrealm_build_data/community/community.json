@@ -1,0 +1,36 @@
+{
+    "cell_id": 1,
+    "cell_area": 100,
+    "cohorts": [
+        {
+            "pft_name": "broadleaf",
+            "dbh_value": 0.2,
+            "n_individuals": 6
+        },
+        {
+            "pft_name": "broadleaf",
+            "dbh_value": 0.25,
+            "n_individuals": 6
+        },
+        {
+            "pft_name": "broadleaf",
+            "dbh_value": 0.3,
+            "n_individuals": 3
+        },
+        {
+            "pft_name": "broadleaf",
+            "dbh_value": 0.35,
+            "n_individuals": 1
+        },
+        {
+            "pft_name": "conifer",
+            "dbh_value": 0.5,
+            "n_individuals": 1
+        },
+        {
+            "pft_name": "conifer",
+            "dbh_value": 0.6,
+            "n_individuals": 1
+        }
+    ]
+}

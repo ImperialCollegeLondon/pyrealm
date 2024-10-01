@@ -1,0 +1,433 @@
+"""A set of functions implementing the crown shape and vertical leaf distribution model
+used in PlantFATE :cite:t:`joshi:2022a`.
+"""  # noqa: D205
+
+from dataclasses import InitVar, dataclass, field
+
+import numpy as np
+from numpy.typing import NDArray
+
+from pyrealm.core.utilities import check_input_shapes
+from pyrealm.demography.flora import Flora, StemTraits
+from pyrealm.demography.t_model_functions import StemAllometry
+
+
+def _validate_z_qz_args(
+    z: NDArray[np.float32],
+    stem_properties: list[NDArray[np.float32]],
+    q_z: NDArray[np.float32] | None = None,
+) -> None:
+    """Shared validation of for crown function arguments.
+
+    Several of the crown functions in this module require a vertical height (``z``)
+    argument and, in some cases, the relative crown radius (``q_z``) at that height.
+    These arguments need to have shapes that are congruent with each other and with the
+    arrays providing stem properties for which values are calculated.
+
+    This function provides the following validation checks (see also the documentation
+    of accepted shapes for ``z`` in
+    :meth:`~pyrealm.demography.crown.calculate_relative_crown_radius_at_z`).
+
+    * Stem properties are identically shaped row (1D) arrays.
+    * The ``z`` argument is then one of:
+        * a scalar arrays (i.e. np.array(42) or np.array([42])),
+        * a row array with identical shape to the stem properties, or
+        * a column vector array (i.e. with shape ``(N, 1)``).
+    * If ``q_z`` is provided then:
+        * if ``z`` is a row array, ``q_z`` must then have identical shape, or
+        * if ``z`` is a column array ``(N, 1)``, ``q_z`` must then have shape ``(N,
+          n_stem_properties``).
+
+    Args:
+        z: An array input to the ``z`` argument of a crown function.
+        stem_properties: A list of array inputs representing stem properties.
+        q_z: An optional array input to the ``q_z`` argument of a crown function.
+    """
+
+    # Check the stem properties
+    try:
+        stem_shape = check_input_shapes(*stem_properties)
+    except ValueError:
+        raise ValueError("Stem properties are not of equal size")
+
+    if len(stem_shape) > 1:
+        raise ValueError("Stem properties are not row arrays")
+
+    # Record the number of stems
+    n_stems = stem_shape[0]
+
+    # Trap error conditions for z array
+    if z.size == 1:
+        pass
+    elif (z.ndim == 1) and (z.shape != stem_shape):
+        raise ValueError(
+            f"The z argument is a row array (shape: {z.shape}) but is not congruent "
+            f"with the cohort data (shape: {stem_shape})."
+        )
+    elif (z.ndim == 2) and (z.shape[1] != 1):
+        raise ValueError(
+            f"The z argument is two dimensional (shape: {z.shape}) but is "
+            "not a column array."
+        )
+    elif z.ndim > 2:
+        raise ValueError(
+            f"The z argument (shape: {z.shape}) is not a row or column vector array"
+        )
+
+    # Now test q_z congruence with z if provided
+    if q_z is not None:
+        if ((z.size == 1) or (z.ndim == 1)) and (q_z.shape != stem_shape):
+            raise ValueError(
+                f"The q_z argument (shape: {q_z.shape}) is not a row array "
+                f"matching stem properties (shape: {stem_shape})"
+            )
+        elif (z.ndim == 2) and (q_z.shape != (z.size, n_stems)):
+            raise ValueError(
+                f"The q_z argument (shape: {q_z.shape}) is not a 2D array congruent "
+                f"with the broadcasted shape of the z argument (shape: {z.shape}) "
+                f"and stem property arguments (shape: {stem_shape})"
+            )
+
+    return
+
+
+def calculate_relative_crown_radius_at_z(
+    z: NDArray[np.float32],
+    stem_height: NDArray[np.float32],
+    m: NDArray[np.float32],
+    n: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
+    r"""Calculate relative crown radius at a given height.
+
+    The crown shape parameters ``m`` and ``n`` define the vertical distribution of
+    crown along the stem. For a stem of a given total height, this function calculates
+    the relative crown radius at a given height :math:`z`:
+
+    .. math::
+
+        q(z) = m n \left(\dfrac{z}{H}\right) ^ {n -1}
+        \left( 1 - \left(\dfrac{z}{H}\right) ^ n \right)^{m-1}
+
+    This function calculates :math:`q(z)` across a set of stems: the ``stem_height``,
+    ``m`` and ``n`` arguments should be one-dimensional arrays ('row vectors') of equal
+    length :math:`I`.  The value for ``z`` is then an array of heights, with one of the
+    following shapes:
+
+    1. A scalar array: :math:`q(z)` is found for all stems at the same height and the
+       return value is a 1D array of length :math:`I`.
+    2. A row vector of length :math:`I`: :math:`q(z)` is found for all stems at
+       stem-specific heights and the return value is again a 1D array of length
+       :math:`I`.
+    3. A column vector of length :math:`J`, that is a 2 dimensional array of shape
+       (:math:`J`, 1). This allows :math:`q(z)` to be calculated efficiently for a set
+       of heights for all stems and return a 2D array of shape (:math:`J`, :math:`I`).
+
+    Args:
+        z: Height at which to calculate relative radius
+        stem_height: Total height of individual stem
+        m: Canopy shape parameter of PFT
+        n: Canopy shape parameter of PFT
+        validate: Boolean flag to suppress argument validation.
+    """
+
+    if validate:
+        _validate_z_qz_args(z=z, stem_properties=[stem_height, m, n])
+
+    z_over_height = z / stem_height
+
+    return m * n * z_over_height ** (n - 1) * (1 - z_over_height**n) ** (m - 1)
+
+
+def calculate_crown_radius(
+    q_z: NDArray[np.float32],
+    r0: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
+    r"""Calculate crown radius from relative crown radius and crown r0.
+
+    The relative crown radius (:math:`q(z)`) at a given height :math:`z` describes the
+    vertical profile of the crown shape, but only varies with the ``m`` and ``n`` shape
+    parameters and the stem height. The actual crown radius at a given height
+    (:math:`r(z)`) needs to be scaled using :math:`r_0` such that the maximum crown area
+    equals the expected crown area given the crown area ratio traiit for the plant
+    functional type:
+
+    .. math::
+
+        r(z) = r_0 q(z)
+
+    This function calculates :math:`r(z)` given estimated ``r0`` and an array of
+    relative radius values.
+
+    Args:
+        q_z: An array of relative crown radius values
+        r0:  An array of crown radius scaling factor values
+        validate: Boolean flag to suppress argument validation.
+    """
+
+    # TODO - think about validation here. qz must be row array or 2D (N, n_pft)
+
+    return r0 * q_z
+
+
+def calculate_stem_projected_crown_area_at_z(
+    z: NDArray[np.float32],
+    q_z: NDArray[np.float32],
+    stem_height: NDArray[np.float32],
+    crown_area: NDArray[np.float32],
+    q_m: NDArray[np.float32],
+    z_max: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
+    """Calculate stem projected crown area above a given height.
+
+    This function calculates the projected crown area of a set of stems with given
+    properties at a set of vertical heights. The stem properties are given in the
+    arguments ``stem_height``,``crown_area``,``q_m`` and ``z_max``, which must be
+    one-dimensional arrays ('row vectors') of equal length. The array of vertical
+    heights ``z`` accepts a range of input shapes (see
+    :meth:`~pyrealm.demography.crown.calculate_relative_crown_radius_at_z`
+    ) and this function then also requires the expected relative stem radius (``q_z``)
+    calculated from those heights.
+
+    Args:
+        z: Vertical height at which to estimate crown area
+        q_z: Relative crown radius at those heights
+        crown_area: Crown area of each stem
+        stem_height: Stem height of each stem
+        q_m: Canopy shape parameter ``q_m``` for each stem
+        z_max: Height of maximum crown radous for each stem
+        validate: Boolean flag to suppress argument validation.
+    """
+
+    if validate:
+        _validate_z_qz_args(
+            z=z, stem_properties=[stem_height, crown_area, q_m, z_max], q_z=q_z
+        )
+
+    # Calculate A_p
+    # Calculate Ap given z > zm
+    A_p = crown_area * (q_z / q_m) ** 2
+    # Set Ap = Ac where z <= zm
+    A_p = np.where(z <= z_max, crown_area, A_p)
+    # Set Ap = 0 where z > H
+    A_p = np.where(z > stem_height, 0, A_p)
+
+    return A_p
+
+
+def solve_community_projected_canopy_area(
+    z: float,
+    stem_height: NDArray[np.float32],
+    crown_area: NDArray[np.float32],
+    m: NDArray[np.float32],
+    n: NDArray[np.float32],
+    q_m: NDArray[np.float32],
+    z_max: NDArray[np.float32],
+    n_individuals: NDArray[np.float32],
+    target_area: float = 0,
+    validate: bool = True,
+) -> NDArray[np.float32]:
+    """Solver function for community wide projected canopy area.
+
+    This function takes the number of individuals in each cohort along with the stem
+    height and crown area and a given vertical height (:math:`z`). It then uses the
+    crown shape parameters associated with each cohort to calculate the community wide
+    projected crown area above that height (:math:`A_p(z)`). This is simply the sum of
+    the products of the individual stem crown projected area at :math:`z` and the number
+    of individuals in each cohort.
+
+    The return value is the difference between the calculated :math:`A_p(z)` and a
+    user-specified target area, This allows the function to be used with a root solver
+    to find :math:`z` values that result in a given :math:`A_p(z)`. The default target
+    area is zero, so the default return value will be the actual total :math:`A_p(z)`
+    for the community.
+
+    A typical use case for the target area would be to specify the area at which a given
+    canopy layer closes under the perfect plasticity approximation in order to find the
+    closure height.
+
+    Args:
+        z: Vertical height on the z axis.
+        n_individuals: Number of individuals in each cohort
+        crown_area: Crown area of each cohort
+        stem_height: Stem height of each cohort
+        m: Crown shape parameter ``m``` for each cohort
+        n: Crown shape parameter ``n``` for each cohort
+        q_m: Crown shape parameter ``q_m``` for each cohort
+        z_max: Crown shape parameter ``z_m``` for each cohort
+        target_area: A target projected crown area.
+        validate: Boolean flag to suppress argument validation.
+    """
+    # Convert z to array for validation and typing
+    z_arr = np.array(z)
+
+    if validate:
+        _validate_z_qz_args(
+            z=z_arr,
+            stem_properties=[n_individuals, crown_area, stem_height, m, n, q_m, z_max],
+        )
+
+    q_z = calculate_relative_crown_radius_at_z(
+        z=z_arr, stem_height=stem_height, m=m, n=n, validate=False
+    )
+    # Calculate A(p) for the stems in each cohort
+    A_p = calculate_stem_projected_crown_area_at_z(
+        z=z_arr,
+        q_z=q_z,
+        stem_height=stem_height,
+        crown_area=crown_area,
+        q_m=q_m,
+        z_max=z_max,
+        validate=False,
+    )
+
+    return (A_p * n_individuals).sum() - target_area
+
+
+def calculate_stem_projected_leaf_area_at_z(
+    z: NDArray[np.float32],
+    q_z: NDArray[np.float32],
+    stem_height: NDArray[np.float32],
+    crown_area: NDArray[np.float32],
+    f_g: NDArray[np.float32],
+    q_m: NDArray[np.float32],
+    z_max: NDArray[np.float32],
+    validate: bool = True,
+) -> NDArray[np.float32]:
+    """Calculate projected leaf area above a given height.
+
+    This function calculates the projected leaf area of a set of stems with given
+    properties at a set of vertical heights. This differs from crown area in allowing
+    for crown openness within the crown of an individual stem that results in the
+    displacement of leaf area further down into the crown. The degree of openness is
+    controlled by the crown gap fraction property of each stem.
+
+    The stem properties are given in the arguments
+    ``stem_height``,``crown_area``,``f_g``,``q_m`` and ``z_max``, which must be
+    one-dimensional arrays ('row vectors') of equal length. The array of vertical
+    heights ``z`` accepts a range of input shapes (see
+    :meth:`~pyrealm.demography.crown.calculate_relative_crown_radius_at_z`
+    ) and this function then also requires the expected relative stem radius (``q_z``)
+    calculated from those heights.
+
+    Args:
+        z: Vertical heights on the z axis.
+        q_z: Relative crown radius at heights in z.
+        crown_area: Crown area for a stem
+        stem_height: Total height of a stem
+        f_g: Within crown gap fraction for each stem.
+        q_m: Canopy shape parameter ``q_m``` for each stem
+        z_max: Height of maximum crown radius for each stem
+        validate: Boolean flag to suppress argument validation.
+    """
+
+    # NOTE: Although the internals of this function overlap a lot with
+    #       calculate_stem_projected_crown_area_at_z, we want that function to be as
+    #       lean as possible, as it used within solve_community_projected_crown_area.
+
+    if validate:
+        _validate_z_qz_args(
+            z=z, stem_properties=[crown_area, stem_height, f_g, q_m, z_max], q_z=q_z
+        )
+
+    # Calculate Ac terms
+    A_c_terms = crown_area * (q_z / q_m) ** 2
+
+    # Set Acp either side of z_max
+    A_cp = np.where(
+        z <= z_max,
+        crown_area - A_c_terms * f_g,
+        A_c_terms * (1 - f_g),
+    )
+    # Set Ap = 0 where z > H
+    A_cp = np.where(z > stem_height, 0, A_cp)
+
+    return A_cp
+
+
+@dataclass
+class CrownProfile:
+    """Calculate vertical crown profiles for stems.
+
+    This method calculates crown profile predictions, given an array of vertical
+    heights (``z``) for:
+
+    * relative crown radius,
+    * actual crown radius,
+    * projected crown area, and
+    * projected leaf area.
+
+    The predictions require a set of plant functional types (PFTs) but also the expected
+    allometric predictions of stem height, crown area and z_max for an actual stem of a
+    given size for each PFT.
+
+    Args:
+        stem_traits: A Flora or StemTraits instance providing plant functional trait
+            data.
+        stem_allometry: A StemAllometry instance setting the stem allometries for the
+            crown profile.
+        z: An array of vertical height values at which to calculate crown profiles.
+        stem_height: A row array providing expected stem height for each PFT.
+        crown_area: A row array providing expected crown area for each PFT.
+        r0: A row array providing expected r0 for each PFT.
+        z_max: A row array providing expected z_max height for each PFT.
+    """
+
+    stem_traits: InitVar[StemTraits | Flora]
+    """A Flora or StemTraits instance providing plant functional trait data."""
+    stem_allometry: InitVar[StemAllometry]
+    """A StemAllometry instance setting the stem allometries for the crown profile."""
+    z: InitVar[NDArray[np.float32]]
+    """An array of vertical height values at which to calculate crown profiles."""
+
+    relative_crown_radius: NDArray[np.float32] = field(init=False)
+    """An array of the relative crown radius of stems at z heights"""
+    crown_radius: NDArray[np.float32] = field(init=False)
+    """An array of the actual crown radius of stems at z heights"""
+    projected_crown_area: NDArray[np.float32] = field(init=False)
+    """An array of the projected crown area of stems at z heights"""
+    projected_leaf_area: NDArray[np.float32] = field(init=False)
+    """An array of the projected leaf area of stems at z heights"""
+
+    def __post_init__(
+        self,
+        stem_traits: StemTraits | Flora,
+        stem_allometry: StemAllometry,
+        z: NDArray[np.float32],
+    ) -> None:
+        """Populate crown profile attributes from the traits, allometry and height."""
+        # Calculate relative crown radius
+        self.relative_crown_radius = calculate_relative_crown_radius_at_z(
+            z=z,
+            m=stem_traits.m,
+            n=stem_traits.n,
+            stem_height=stem_allometry.stem_height,
+        )
+
+        # Calculate actual radius
+        self.crown_radius = calculate_crown_radius(
+            q_z=self.relative_crown_radius, r0=stem_allometry.crown_r0
+        )
+
+        # Calculate projected crown area
+        self.projected_crown_area = calculate_stem_projected_crown_area_at_z(
+            z=z,
+            q_z=self.relative_crown_radius,
+            crown_area=stem_allometry.crown_area,
+            q_m=stem_traits.q_m,
+            stem_height=stem_allometry.stem_height,
+            z_max=stem_allometry.crown_z_max,
+        )
+
+        # Calculate projected leaf area
+        self.projected_leaf_area = calculate_stem_projected_leaf_area_at_z(
+            z=z,
+            q_z=self.relative_crown_radius,
+            f_g=stem_traits.f_g,
+            q_m=stem_traits.q_m,
+            crown_area=stem_allometry.crown_area,
+            stem_height=stem_allometry.stem_height,
+            z_max=stem_allometry.crown_z_max,
+        )
