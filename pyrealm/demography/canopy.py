@@ -6,9 +6,7 @@ from scipy.optimize import root_scalar  # type: ignore [import-untyped]
 
 from pyrealm.demography.community import Community
 from pyrealm.demography.crown import (
-    calculate_relative_crown_radius_at_z,
-    calculate_stem_projected_crown_area_at_z,
-    calculate_stem_projected_leaf_area_at_z,
+    CrownProfile,
     solve_community_projected_canopy_area,
 )
 
@@ -57,12 +55,8 @@ class Canopy:
         """Total number of cohorts in the canopy."""
         self.layer_heights: NDArray[np.float32]
         """Column vector of the heights of canopy layers."""
-        self.stem_relative_radius: NDArray[np.float32]
-        """Relative radius values of stems at canopy layer heights."""
-        self.stem_crown_area: NDArray[np.float32]
-        """Stem projected crown area at canopy layer heights."""
-        self.stem_leaf_area: NDArray[np.float32]
-        """Stem projected leaf area at canopy layer heights."""
+        self.crown_profile: CrownProfile
+        """The crown profiles of stems at layer heights."""
 
         self._calculate_canopy(community=community)
 
@@ -130,37 +124,53 @@ class Canopy:
 
             self.layer_heights[layer] = starting_guess = solution.root
 
-        # Find relative canopy radius at the layer heights
-        # NOTE - here and in the calls below, validate=False is enforced because the
-        # Community class structures and code should guarantee valid inputs and so
-        # turning off the validation internally should simply speed up the code.
-        self.stem_relative_radius = calculate_relative_crown_radius_at_z(
+        # Calculate the crown profile at the layer heights
+        # TODO - reimpose validation
+        self.crown_profile = CrownProfile(
+            stem_traits=community.stem_traits,
+            stem_allometry=community.stem_allometry,
             z=self.layer_heights,
-            stem_height=community.stem_allometry.stem_height,
-            m=community.stem_traits.m,
-            n=community.stem_traits.n,
-            validate=False,
         )
 
-        # Calculate projected crown area of a cohort stem at canopy closure heights.
-        self.stem_crown_area = calculate_stem_projected_crown_area_at_z(
-            z=self.layer_heights,
-            q_z=self.stem_relative_radius,
-            crown_area=community.stem_allometry.crown_area,
-            stem_height=community.stem_allometry.stem_height,
-            q_m=community.stem_traits.q_m,
-            z_max=community.stem_allometry.crown_z_max,
-            validate=False,
+        # self.canopy_projected_crown_area
+        # self.canopy_projected_leaf_area
+
+        # Partition the projected leaf area into the leaf area in each layer for each
+        # stem and then scale up to the cohort leaf area in each layer.
+        self.layer_stem_leaf_area = np.diff(
+            self.crown_profile.projected_leaf_area, axis=0, prepend=0
+        )
+        self.layer_cohort_leaf_area = (
+            self.layer_stem_leaf_area * community.cohort_data["n_individuals"]
         )
 
-        # Find the projected leaf area of a cohort stem at canopy closure heights.
-        self.stem_leaf_area = calculate_stem_projected_leaf_area_at_z(
-            z=self.layer_heights,
-            q_z=self.stem_relative_radius,
-            crown_area=community.stem_allometry.crown_area,
-            stem_height=community.stem_allometry.stem_height,
-            f_g=community.stem_traits.f_g,
-            q_m=community.stem_traits.q_m,
-            z_max=community.stem_allometry.crown_z_max,
-            validate=False,
+        # Calculate the leaf area index per layer per cohort, using the stem
+        # specific leaf area index values. LAI is a value per m2, so scale back down by
+        # the community area.
+        self.layer_cohort_lai = (
+            self.layer_cohort_leaf_area * community.stem_traits.lai
+        ) / community.cell_area
+
+        # Calculate the Beer-Lambert light extinction per layer and cohort
+        self.layer_cohort_f_abs = 1 - np.exp(
+            -community.stem_traits.par_ext * self.layer_cohort_lai
         )
+
+        # Calculate the canopy wide light extinction per layer
+        self.layer_canopy_f_abs = self.layer_cohort_f_abs.sum(axis=1)
+
+        # Calculate cumulative light extinction across the canopy
+        self.canopy_extinction_profile = np.cumprod(self.layer_canopy_f_abs)
+
+        # Calculate the fraction of radiation absorbed by each layer
+        # # TODO - include append=0 here to include ground or just backcalculate
+        self.fapar_profile = -np.diff(
+            np.cumprod(1 - self.layer_canopy_f_abs),
+            prepend=1,  # append=0
+        )
+
+        # Partition the light back among the individual stems: simply weighting by per
+        # cohort contribution to f_abs and divide through by the number of individuals
+        self.stem_fapar = (
+            self.layer_cohort_f_abs * self.fapar_profile[:, None]
+        ) / self.layer_cohort_f_abs.sum(axis=1)[:, None]
