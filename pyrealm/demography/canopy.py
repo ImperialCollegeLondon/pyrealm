@@ -82,6 +82,75 @@ def solve_canopy_area_filling_height(
     return (A_p * n_individuals).sum() - target_area
 
 
+def fit_perfect_plasticity_approximation(
+    community: Community,
+    canopy_gap_fraction: float,
+    max_stem_height: float,
+    solver_tolerance: float,
+) -> NDArray[np.float32]:
+    """Find canopy layer heights under the PPA model.
+
+    Finds the closure heights of the canopy layers under the perfect plasticity
+    approximation by solving Ac(z) - L_n = 0 across the community where L is the
+    total cumulative crown area in layer n and above, discounted by the canopy gap
+    fraction.
+
+    Args:
+        community: A community instance providing plant cohort data
+        canopy_gap_fraction: The canopy gap fraction
+        max_stem_height: The maximum stem height in the canopy, used as an upper bound
+            on finding the closure height of the topmost layer.
+        solver_tolerance: The absolute tolerance used with the root solver to find the
+            layer heights.
+    """
+
+    # Calculate the number of layers to contain the total community crown area
+    total_community_crown_area = (
+        community.stem_allometry.crown_area * community.cohort_data["n_individuals"]
+    ).sum()
+    crown_area_per_layer = community.cell_area * (1 - canopy_gap_fraction)
+    n_layers = int(np.ceil(total_community_crown_area / crown_area_per_layer))
+
+    # Initialise the layer heights array and then loop over the layers indices,
+    # except for the final layer, which will be the partial remaining vegetation below
+    # the last closed layer.
+    layer_heights = np.zeros(n_layers, dtype=np.float32)
+    upper_bound = max_stem_height
+
+    for layer in np.arange(n_layers - 1):
+        # Set the target area for this layer
+        target_area = (layer + 1) * crown_area_per_layer
+
+        # TODO - the solution is typically closer to the upper bound of the bracket,
+        # there might be a better algorithm to find the root (#293).
+        solution = root_scalar(
+            solve_canopy_area_filling_height,
+            args=(
+                community.stem_allometry.stem_height,
+                community.stem_allometry.crown_area,
+                community.stem_traits.m,
+                community.stem_traits.n,
+                community.stem_traits.q_m,
+                community.stem_allometry.crown_z_max,
+                community.cohort_data["n_individuals"],
+                target_area,
+                False,  # validate
+            ),
+            bracket=(0, upper_bound),
+            xtol=solver_tolerance,
+        )
+
+        if not solution.converged:
+            raise RuntimeError(
+                "Estimation of canopy layer closure heights failed to converge."
+            )
+
+        # Store the solution and update the upper bound for the next layer down.
+        layer_heights[layer] = upper_bound = solution.root
+
+    return layer_heights
+
+
 class Canopy:
     """Model of the canopy for a plant community.
 
@@ -106,20 +175,22 @@ class Canopy:
     def __init__(
         self,
         community: Community,
+        fit_ppa: bool = True,
+        layer_heights: NDArray[np.float32] | None = None,
         canopy_gap_fraction: float = 0.05,
-        layer_tolerance: float = 0.001,
+        solver_tolerance: float = 0.001,
     ) -> None:
+        # Store required init vars
         self.canopy_gap_fraction: float = canopy_gap_fraction
         """Canopy gap fraction."""
-        self.layer_tolerance: float = layer_tolerance
-        """Numerical tolerance for solving canopy layer closure."""
+        self.solver_tolerance: float = solver_tolerance
+        """Numerical tolerance for fitting the PPA model of canopy layer closure."""
+
+        # Define class attributes
         self.total_community_crown_area: float
         """Total crown area across individuals in the community (metres 2)."""
         self.max_stem_height: float
         """Maximum height of any individual in the community (metres)."""
-        self.crown_area_per_layer: float
-        """Total crown area permitted in a single canopy layer, given the available
-        cell area of the community and its canopy gap fraction."""
         self.n_layers: int
         """Total number of canopy layers."""
         self.n_cohorts: int
@@ -145,71 +216,37 @@ class Canopy:
         self.stem_fapar: NDArray[np.float32]
         """The fAPAR for individual stems by layer."""
 
+        # Check operating mode
+        if fit_ppa ^ (layer_heights is None):
+            raise ValueError("Either set fit_ppa=True or provide layer heights.")
+
+        # Set simple attributes
+        self.max_stem_height = community.stem_allometry.stem_height.max()
+        self.n_cohorts = community.number_of_cohorts
+
+        # Populate layer heights
+        if layer_heights is not None:
+            self.layer_heights = layer_heights
+        else:
+            self.layer_heights = fit_perfect_plasticity_approximation(
+                community=community,
+                canopy_gap_fraction=canopy_gap_fraction,
+                max_stem_height=self.max_stem_height,
+                solver_tolerance=solver_tolerance,
+            )
+
         self._calculate_canopy(community=community)
 
     def _calculate_canopy(self, community: Community) -> None:
         """Calculate the canopy structure.
 
         This private method runs the calculations needed to populate the instance
-        attributes.
+        attributes, given the layer heights provided by the user or calculated using the
+        PPA model.
 
         Args:
             community: The Community object passed to the instance.
         """
-
-        # Calculate community wide properties: total crown area, maximum height, crown
-        # area required to fill a layer and total number of canopy layers
-        self.total_community_crown_area = (
-            community.stem_allometry.crown_area * community.cohort_data["n_individuals"]
-        ).sum()
-
-        self.max_stem_height = community.stem_allometry.stem_height.max()
-
-        self.crown_area_per_layer = community.cell_area * (1 - self.canopy_gap_fraction)
-
-        self.n_layers = int(
-            np.ceil(self.total_community_crown_area / self.crown_area_per_layer)
-        )
-        self.n_cohorts = community.number_of_cohorts
-
-        # Find the closure heights of the canopy layers under the perfect plasticity
-        # approximation by solving Ac(z) - L_n = 0 across the community where L is the
-        # total cumulative crown area in layer n and above, discounted by the canopy gap
-        # fraction.
-
-        self.layer_heights = np.zeros((self.n_layers, 1), dtype=np.float32)
-
-        # Loop over the layers except for the final layer, which will be the partial
-        # remaining vegetation below the last closed layer.
-        starting_guess = self.max_stem_height
-        for layer in np.arange(self.n_layers - 1):
-            target_area = (layer + 1) * self.crown_area_per_layer
-
-            # TODO - the solution here is typically closer to the upper bracket, might
-            # be a better algorithm to find the root (#293).
-            solution = root_scalar(
-                solve_canopy_area_filling_height,
-                args=(
-                    community.stem_allometry.stem_height,
-                    community.stem_allometry.crown_area,
-                    community.stem_traits.m,
-                    community.stem_traits.n,
-                    community.stem_traits.q_m,
-                    community.stem_allometry.crown_z_max,
-                    community.cohort_data["n_individuals"],
-                    target_area,
-                    False,  # validate
-                ),
-                bracket=(0, starting_guess),
-                xtol=self.layer_tolerance,
-            )
-
-            if not solution.converged:
-                raise RuntimeError(
-                    "Estimation of canopy layer closure heights failed to converge."
-                )
-
-            self.layer_heights[layer] = starting_guess = solution.root
 
         # Calculate the crown profile at the layer heights
         # TODO - reimpose validation
@@ -218,9 +255,6 @@ class Canopy:
             stem_allometry=community.stem_allometry,
             z=self.layer_heights,
         )
-
-        # self.canopy_projected_crown_area
-        # self.canopy_projected_leaf_area
 
         # Partition the projected leaf area into the leaf area in each layer for each
         # stem and then scale up to the cohort leaf area in each layer.
