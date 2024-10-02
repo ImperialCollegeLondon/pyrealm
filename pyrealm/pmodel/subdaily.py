@@ -113,7 +113,7 @@ def memory_effect(
     if initial_values is None:
         memory_values[0] = values[0]
     else:
-        memory_values[0] = initial_values
+        memory_values[0] = initial_values[0]
 
     # Handle the data if there are no missing data,
     if not nan_present:
@@ -408,20 +408,23 @@ class SubdailyPModel:
         # 5) Calculate the realised daily values from the instantaneous optimal values
         self.xi_real: NDArray = memory_effect(
             self.pmodel_acclim.optchi.xi,
-            init_xi_real,
+            initial_values=init_xi_real,
             alpha=alpha,
             allow_holdover=allow_holdover,
         )
         r"""Realised daily slow responses in :math:`\xi`"""
         self.vcmax25_real: NDArray = memory_effect(
             self.vcmax25_opt,
-            init_vcmax_real,
+            initial_values=init_vcmax_real,
             alpha=alpha,
             allow_holdover=allow_holdover,
         )
         r"""Realised daily slow responses in :math:`V_{cmax25}`"""
         self.jmax25_real: NDArray = memory_effect(
-            self.jmax25_opt, init_jmax_real, alpha=alpha, allow_holdover=allow_holdover
+            self.jmax25_opt,
+            initial_values=init_jmax_real,
+            alpha=alpha,
+            allow_holdover=allow_holdover,
         )
 
         r"""Realised daily slow responses in :math:`J_{max25}`"""
