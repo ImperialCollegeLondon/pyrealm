@@ -7,8 +7,79 @@ from scipy.optimize import root_scalar  # type: ignore [import-untyped]
 from pyrealm.demography.community import Community
 from pyrealm.demography.crown import (
     CrownProfile,
-    solve_community_projected_canopy_area,
+    _validate_z_qz_args,
+    calculate_relative_crown_radius_at_z,
+    calculate_stem_projected_crown_area_at_z,
 )
+
+
+def solve_canopy_area_filling_height(
+    z: float,
+    stem_height: NDArray[np.float32],
+    crown_area: NDArray[np.float32],
+    m: NDArray[np.float32],
+    n: NDArray[np.float32],
+    q_m: NDArray[np.float32],
+    z_max: NDArray[np.float32],
+    n_individuals: NDArray[np.float32],
+    target_area: float = 0,
+    validate: bool = True,
+) -> NDArray[np.float32]:
+    """Solver function for finding the height where a canopy occupies a given area.
+
+    This function takes the number of individuals in each cohort along with the stem
+    height and crown area and a given vertical height (:math:`z`). It then uses the
+    crown shape parameters associated with each cohort to calculate the community wide
+    projected crown area above that height (:math:`A_p(z)`). This is simply the sum of
+    the products of the individual stem crown projected area at :math:`z` and the number
+    of individuals in each cohort.
+
+    The return value is the difference between the calculated :math:`A_p(z)` and a
+    user-specified target area, This allows the function to be used with a root solver
+    to find :math:`z` values that result in a given :math:`A_p(z)`. The default target
+    area is zero, so the default return value will be the actual total :math:`A_p(z)`
+    for the community.
+
+    A typical use case for the target area would be to specify the area at which a given
+    canopy layer closes under the perfect plasticity approximation in order to find the
+    closure height.
+
+    Args:
+        z: Vertical height on the z axis.
+        n_individuals: Number of individuals in each cohort
+        crown_area: Crown area of each cohort
+        stem_height: Stem height of each cohort
+        m: Crown shape parameter ``m``` for each cohort
+        n: Crown shape parameter ``n``` for each cohort
+        q_m: Crown shape parameter ``q_m``` for each cohort
+        z_max: Crown shape parameter ``z_m``` for each cohort
+        target_area: A target projected crown area.
+        validate: Boolean flag to suppress argument validation.
+    """
+    # Convert z to array for validation and typing
+    z_arr = np.array(z)
+
+    if validate:
+        _validate_z_qz_args(
+            z=z_arr,
+            stem_properties=[n_individuals, crown_area, stem_height, m, n, q_m, z_max],
+        )
+
+    q_z = calculate_relative_crown_radius_at_z(
+        z=z_arr, stem_height=stem_height, m=m, n=n, validate=False
+    )
+    # Calculate A(p) for the stems in each cohort
+    A_p = calculate_stem_projected_crown_area_at_z(
+        z=z_arr,
+        q_z=q_z,
+        stem_height=stem_height,
+        crown_area=crown_area,
+        q_m=q_m,
+        z_max=z_max,
+        validate=False,
+    )
+
+    return (A_p * n_individuals).sum() - target_area
 
 
 class Canopy:
@@ -57,6 +128,22 @@ class Canopy:
         """Column vector of the heights of canopy layers."""
         self.crown_profile: CrownProfile
         """The crown profiles of stems at layer heights."""
+        self.layer_stem_leaf_area: NDArray[np.float32]
+        """The leaf area of an individual stem per cohorts by layer."""
+        self.layer_cohort_leaf_area: NDArray[np.float32]
+        """The total leaf areas within cohorts by layer."""
+        self.layer_cohort_lai: NDArray[np.float32]
+        """The leaf area index for each cohort by layer."""
+        self.layer_cohort_f_abs: NDArray[np.float32]
+        """The fraction of light absorbed by each cohort by layer."""
+        self.layer_canopy_f_abs: NDArray[np.float32]
+        """The canopy-wide fraction of light absorbed by layer."""
+        self.canopy_extinction_profile: NDArray[np.float32]
+        """The canopy-wide light extinction profile by layer."""
+        self.fapar_profile: NDArray[np.float32]
+        """The canopy-wide fAPAR profile by layer."""
+        self.stem_fapar: NDArray[np.float32]
+        """The fAPAR for individual stems by layer."""
 
         self._calculate_canopy(community=community)
 
@@ -101,7 +188,7 @@ class Canopy:
             # TODO - the solution here is typically closer to the upper bracket, might
             # be a better algorithm to find the root (#293).
             solution = root_scalar(
-                solve_community_projected_canopy_area,
+                solve_canopy_area_filling_height,
                 args=(
                     community.stem_allometry.stem_height,
                     community.stem_allometry.crown_area,
