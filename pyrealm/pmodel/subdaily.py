@@ -113,7 +113,7 @@ def memory_effect(
     if initial_values is None:
         memory_values[0] = values[0]
     else:
-        memory_values[0] = initial_values[0]
+        memory_values[0] = initial_values
 
     # Handle the data if there are no missing data,
     if not nan_present:
@@ -393,17 +393,15 @@ class SubdailyPModel:
         """Instantaneous optimal :math:`x_{i}`, :math:`V_{cmax}` and :math:`J_{max}`"""
         if init_realised is not None:
             if not (
-                (init_realised[0].shape() == self.xi_real.shape())
-                and (init_realised[1].shape() == self.vcmax25_real.shape())
-                and (init_realised[2].shape() == self.jmax25_real.shape())
+                (init_realised[0].shape() == self.xi_real[0].shape())
+                and (init_realised[1].shape() == self.vcmax25_real[0].shape())
+                and (init_realised[2].shape() == self.jmax25_real[0].shape())
             ):
                 raise Exception("`init_realised` has wrong shape in Subdaily PModel")
             else:
                 init_xi_real, init_vcmax_real, init_jmax_real = init_realised
         else:
-            init_xi_real = self.pmodel_acclim.optchi.xi
-            init_vcmax_real = self.vcmax25_opt
-            init_jmax_real = self.jmax25_opt
+            init_xi_real, init_vcmax_real, init_jmax_real = [None, None, None]
 
         # 5) Calculate the realised daily values from the instantaneous optimal values
         self.xi_real: NDArray = memory_effect(
