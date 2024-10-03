@@ -22,6 +22,7 @@ notes and initial demonstration code.
 
 ```{code-cell}
 from matplotlib import pyplot as plt
+from matplotlib.patches import Polygon
 import numpy as np
 import pandas as pd
 
@@ -39,6 +40,7 @@ from pyrealm.demography.t_model_functions import (
 
 from pyrealm.demography.crown import (
     CrownProfile,
+    get_crown_xy,
 )
 ```
 
@@ -341,10 +343,10 @@ no_gaps_pft = PlantFunctionalType(
     name="no_gaps", h_max=20, m=1.5, n=1.5, f_g=0, ca_ratio=380
 )
 few_gaps_pft = PlantFunctionalType(
-    name="few_gaps", h_max=20, m=1.5, n=4, f_g=0.05, ca_ratio=400
+    name="few_gaps", h_max=20, m=1.5, n=4, f_g=0.1, ca_ratio=400
 )
 many_gaps_pft = PlantFunctionalType(
-    name="many_gaps", h_max=20, m=4, n=1.5, f_g=0.2, ca_ratio=420
+    name="many_gaps", h_max=20, m=4, n=1.5, f_g=0.3, ca_ratio=420
 )
 
 # Calculate allometries for each PFT at the same stem DBH
@@ -434,4 +436,48 @@ ax.plot(
 ax.set_ylabel(r"Vertical height ($z$, m)")
 ax.set_xlabel(r"Projected leaf area ($\tilde{A}_{cp}(z)$, m2)")
 ax.legend(frameon=False)
+```
+
+```{code-cell}
+# Set stem offsets for plotting
+stem_offsets = np.array([0, 6, 12])
+
+crown_radius_as_xy = get_crown_xy(
+    crown_profile=area_crown_profiles,
+    stem_allometry=area_allometry,
+    attr="crown_radius",
+    stem_offsets=stem_offsets,
+    as_xy=True,
+)
+
+projected_crown_radius_xy = get_crown_xy(
+    crown_profile=area_crown_profiles,
+    stem_allometry=area_allometry,
+    attr="projected_crown_radius",
+    stem_offsets=stem_offsets,
+)
+
+projected_leaf_radius_xy = get_crown_xy(
+    crown_profile=area_crown_profiles,
+    stem_allometry=area_allometry,
+    attr="projected_leaf_radius",
+    stem_offsets=stem_offsets,
+)
+```
+
+```{code-cell}
+fig, ax = plt.subplots()
+
+for cr_xy, (ch, cpr), (lh, lpr) in zip(
+    crown_radius_as_xy, projected_crown_radius_xy, projected_leaf_radius_xy
+):
+    ax.add_patch(Polygon(cr_xy, color="lightgrey"))
+    ax.plot(cpr, ch, color="black", linewidth=1)
+    ax.plot(lpr, lh, color="red", linewidth=1)
+
+ax.set_aspect(0.5)
+```
+
+```{code-cell}
+
 ```
