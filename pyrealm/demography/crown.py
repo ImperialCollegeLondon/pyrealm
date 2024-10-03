@@ -3,6 +3,7 @@ used in PlantFATE :cite:t:`joshi:2022a`.
 """  # noqa: D205
 
 from dataclasses import InitVar, dataclass, field
+from typing import ClassVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -306,11 +307,20 @@ class CrownProfile:
         z_max: A row array providing expected z_max height for each PFT.
     """
 
+    var_attr_names: ClassVar[tuple[str, ...]] = (
+        "relative_crown_radius",
+        "crown_radius",
+        "projected_crown_area",
+        "projected_leaf_area",
+        "projected_crown_radius",
+        "projected_leaf_radius",
+    )
+
     stem_traits: InitVar[StemTraits | Flora]
     """A Flora or StemTraits instance providing plant functional trait data."""
     stem_allometry: InitVar[StemAllometry]
     """A StemAllometry instance setting the stem allometries for the crown profile."""
-    z: InitVar[NDArray[np.float32]]
+    z: NDArray[np.float32]
     """An array of vertical height values at which to calculate crown profiles."""
 
     relative_crown_radius: NDArray[np.float32] = field(init=False)
@@ -332,12 +342,11 @@ class CrownProfile:
         self,
         stem_traits: StemTraits | Flora,
         stem_allometry: StemAllometry,
-        z: NDArray[np.float32],
     ) -> None:
         """Populate crown profile attributes from the traits, allometry and height."""
         # Calculate relative crown radius
         self.relative_crown_radius = calculate_relative_crown_radius_at_z(
-            z=z,
+            z=self.z,
             m=stem_traits.m,
             n=stem_traits.n,
             stem_height=stem_allometry.stem_height,
@@ -350,7 +359,7 @@ class CrownProfile:
 
         # Calculate projected crown area
         self.projected_crown_area = calculate_stem_projected_crown_area_at_z(
-            z=z,
+            z=self.z,
             q_z=self.relative_crown_radius,
             crown_area=stem_allometry.crown_area,
             q_m=stem_traits.q_m,
@@ -360,7 +369,7 @@ class CrownProfile:
 
         # Calculate projected leaf area
         self.projected_leaf_area = calculate_stem_projected_leaf_area_at_z(
-            z=z,
+            z=self.z,
             q_z=self.relative_crown_radius,
             f_g=stem_traits.f_g,
             q_m=stem_traits.q_m,
@@ -383,3 +392,114 @@ class CrownProfile:
             f"CrownProfile: Prediction for {self._n_stems} stems "
             f"at {self._n_pred} observations."
         )
+
+    @property
+    def projected_crown_radius(self) -> NDArray[np.float32]:
+        """An array of the projected crown radius of stems at z heights."""
+        return np.sqrt(self.projected_crown_area / np.pi)
+
+    @property
+    def projected_leaf_radius(self) -> NDArray[np.float32]:
+        """An array of the projected leaf radius of stems at z heights."""
+        return np.sqrt(self.projected_leaf_area / np.pi)
+
+
+def get_crown_xy(
+    crown_profile: CrownProfile,
+    stem_allometry: StemAllometry,
+    attr: str,
+    stem_offsets: NDArray[np.float32] | None,
+    two_sided: bool = True,
+    as_xy: bool = False,
+) -> list[tuple[NDArray, NDArray]] | list[NDArray]:
+    """Extract plotting data from crown profiles.
+
+    A CrownProfile instance contains crown radius and projected area data for a set of
+    stems at given heights, but can contain predictions of these attributes above the
+    actual heights of some or all of the stems or indeed below ground.
+
+    This function extracts plotting data for a given attribute for each crown that
+    includes only the predictions within the height range of the actual stem. It can
+    also mirror the values around the vertical midline to provide a two sided canopy
+    shape.
+
+    The data are returned as a list with one entry per stem. The default value for each
+    entry a tuple of two arrays (height, attribute values) but the `as_xy=True` option
+    will return an `(N, 2)` dimensioned XY array suitable for use with
+    {class}`~matplotlib.patches.Polygon`.
+
+    Args:
+        crown_profile: A crown profile instance
+        stem_allometry: The stem allometry instance used to create the crown profile
+        attr: The crown profile attribute to plot
+        stem_offsets: An optional array of offsets to add to the midline of stems.
+        two_sided: Should the plotting data show a two sided canopy.
+        as_xy: Should the plotting data be returned as a single XY array.
+
+    """
+
+    # Input validation
+    if attr not in crown_profile.var_attr_names:
+        raise ValueError(f"Unknown crown profile attribute: {attr}")
+
+    # TODO
+    # - more validation once the dimensioning has been thought through #317
+    # - we're expecting a one d allometry and a 2D profile with multiple heights.
+
+    # Get the attribute and flatten the heights from a column array to one dimensional
+    attr_values = getattr(crown_profile, attr)
+    z = crown_profile.z.flatten()
+
+    # Orient the data so that lower heights always come first
+    if z[0] < z[-1]:
+        z = np.flip(z)
+        attr_values = np.flip(attr_values, axis=0)
+
+    # Collect the per stem data
+    crown_plotting_data: list[tuple[NDArray, NDArray]] | list[NDArray] = []
+
+    for stem_index in np.arange(attr_values.shape[1]):
+        # Find the heights and values that fall within the individual stem
+        height_is_valid = np.logical_and(
+            z <= stem_allometry.stem_height[stem_index], z >= 0
+        )
+        valid_attr_values: NDArray = attr_values[height_is_valid, stem_index]
+        valid_heights: NDArray = z[height_is_valid]
+
+        if two_sided:
+            # The values are extended to include the reverse profile as well as the zero
+            # value at the stem height
+            valid_heights = np.concatenate(
+                [
+                    np.flip(valid_heights),
+                    stem_allometry.stem_height[[stem_index]],
+                    valid_heights,
+                ]
+            )
+            valid_attr_values = np.concatenate(
+                [-np.flip(valid_attr_values), [0], valid_attr_values]
+            )
+        else:
+            # Only the zero value is added
+            valid_heights = np.concatenate(
+                [
+                    stem_allometry.stem_height[[stem_index]],
+                    valid_heights,
+                ]
+            )
+            valid_attr_values = np.concatenate([[0], valid_attr_values])
+
+        # Add offsets if provided
+        if stem_offsets is not None:
+            valid_attr_values += stem_offsets[stem_index]
+
+        if as_xy:
+            # Combine the values into an XY array
+            crown_plotting_data.append(
+                np.hstack([valid_attr_values[:, None], valid_heights[:, None]])
+            )
+        else:
+            # Return the individual 1D arrays
+            crown_plotting_data.append((valid_heights, valid_attr_values))
+
+    return crown_plotting_data
