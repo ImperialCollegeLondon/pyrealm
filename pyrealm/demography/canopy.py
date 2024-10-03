@@ -148,17 +148,17 @@ def fit_perfect_plasticity_approximation(
         # Store the solution and update the upper bound for the next layer down.
         layer_heights[layer] = upper_bound = solution.root
 
-    return layer_heights
+    return layer_heights[:, None]
 
 
 class Canopy:
-    """Model of the canopy for a plant community.
+    """Calculate canopy characteristics for a plant community.
 
     This class generates a canopy structure for a community of trees using the
-    perfect-plasticity approximation model :cite:`purves:2008a`. In this approach, each
-    individual is assumed to arrange its canopy crown area plastically to take up space
-    in canopy layers and that new layers form below the canopy top as the available
-    space is occupied.
+    perfect-plasticity approximation (PPA) model :cite:`purves:2008a`. In this approach,
+    each individual is assumed to arrange its canopy crown area plastically to take up
+    space in canopy layers and that new layers form below the canopy top as the
+    available space is occupied.
 
     Real canopies contain canopy gaps, through process such as crown shyness. This
     is included in the model through the canopy gap fraction, which sets the proportion
@@ -166,6 +166,10 @@ class Canopy:
 
     Args:
         community: A Community object that will be used to generate the canopy model.
+        layer_heights: A column array of vertical heights at which to calculate canopy
+            variables.
+        fit_ppa: Calculate layer heights as the canopy layer closure heights under the
+            PPA model.
         canopy_gap_fraction: The proportion of the available space unfilled by canopy
             (default: 0.05).
         layer_tolerance: The minimum precision used by the solver to find canopy layer
@@ -175,8 +179,8 @@ class Canopy:
     def __init__(
         self,
         community: Community,
-        fit_ppa: bool = True,
         layer_heights: NDArray[np.float32] | None = None,
+        fit_ppa: bool = False,
         canopy_gap_fraction: float = 0.05,
         solver_tolerance: float = 0.001,
     ) -> None:
