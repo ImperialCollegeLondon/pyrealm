@@ -9,12 +9,16 @@
   data files. This intentionally enforces a complete description of the traits in the
   input data. The ``PlantFunctionalType`` is provided as a more convenient API for
   programmatic use.
-* The Flora class, which is a dataclass representing a collection of plant functional
-  types for use in describing a plant community in a simulation. It provides the same
-  trait attributes as the plant functional type classes, but the values are arrays of
-  trait values across the provided PFTS. The Flora class also defines factory methods to
-  create instances from plant functional type data stored in JSON, TOML or CSV formats.
-
+* The Flora dataclass, which represents a collection of plant functional types for use
+  in describing a plant community in a simulation. It provides the same trait attributes
+  as the plant functional type classes, but the values are arrays of trait values across
+  the provided PFTS. The Flora class also defines factory methods to create instances
+  from plant functional type data stored in JSON, TOML or CSV formats.
+* The StemTraits dataclass, which represents a collection of stems used in a simulation.
+  It again provides the same trait attributes as the plant functional type classes, but
+  as arrays. This differs from the Flora class in allowing multiple stems of the same
+  plant functional type and is primarily used to broadcast PFT traits into arrays for
+  use in calculating demography across the stems in plant cohorts.
 """  # noqa: D415
 
 from __future__ import annotations
@@ -93,11 +97,11 @@ class PlantFunctionalTypeStrict:
     * The foliage maintenance respiration fraction was not explicitly included in
       :cite:t:`Li:2014bc` - there was assumed to be a 10% penalty on GPP before
       calculating the other component - but has been explicitly included here.
-    * This implementation adds two further canopy shape parameters (``m`` and ``n`` and
+    * This implementation adds two further crown shape parameters (``m`` and ``n`` and
       ``f_g``). The first two are then used to calculate two constant derived attributes
       (``q_m`` and ``z_max_ratio``) that define the vertical distribution of the crown.
       The last parameter (``f_g``) is the crown gap fraction, that defines the vertical
-      distribution of leaves within the crown. This canopy model parameterisation
+      distribution of leaves within the crown. This crown model parameterisation
       follows the implementation developed in the PlantFATE model :cite:`joshi:2022a`.
 
     See also :class:`~pyrealm.demography.flora.PlantFunctionalType` for the default
@@ -137,9 +141,9 @@ class PlantFunctionalTypeStrict:
     resp_f: float
     r"""Foliage maintenance respiration fraction (:math:`r_f`,  -)"""
     m: float
-    r"""Canopy shape parameter (:math:`m`, -)"""
+    r"""Crown shape parameter (:math:`m`, -)"""
     n: float
-    r"""Canopy shape parameter (:math:`n`, -)"""
+    r"""Crown shape parameter (:math:`n`, -)"""
     f_g: float
     r"""Crown gap fraction (:math:`f_g`, -)"""
 
@@ -200,6 +204,7 @@ class PlantFunctionalType(PlantFunctionalTypeStrict):
         f_g, 0.05, -
     """
 
+    name: str
     a_hd: float = 116.0
     ca_ratio: float = 390.43
     h_max: float = 25.33
@@ -259,6 +264,7 @@ class Flora:
     ]
 
     # Populated post init
+    # - trait arrays
     name: NDArray[np.str_] = field(init=False)
     r"""The name of the plant functional type."""
     a_hd: NDArray[np.float32] = field(init=False)
@@ -292,19 +298,25 @@ class Flora:
     resp_f: NDArray[np.float32] = field(init=False)
     r"""Foliage maintenance respiration fraction (:math:`r_f`,  -)"""
     m: NDArray[np.float32] = field(init=False)
-    r"""Canopy shape parameter (:math:`m`, -)"""
+    r"""Crown shape parameter (:math:`m`, -)"""
     n: NDArray[np.float32] = field(init=False)
-    r"""Canopy shape parameter (:math:`n`, -)"""
+    r"""Crown shape parameter (:math:`n`, -)"""
     f_g: NDArray[np.float32] = field(init=False)
     r"""Crown gap fraction (:math:`f_g`, -)"""
     q_m: NDArray[np.float32] = field(init=False)
     """Scaling factor to derive maximum crown radius from crown area."""
     z_max_prop: NDArray[np.float32] = field(init=False)
     """Proportion of stem height at which maximum crown radius is found."""
+
+    # - other instance attributes
     pft_dict: dict[str, type[PlantFunctionalTypeStrict]] = field(init=False)
     """A dictionary of the original plant functional type instances, keyed by name."""
     pft_indices: dict[str, int] = field(init=False)
     """An dictionary giving the index of each PFT name in the trait array attributes."""
+    n_pfts: int = field(init=False)
+    """The number of plant functional types in the Flora instance."""
+    _n_stems: int = field(init=False)
+    """Private attribute for compatibility with StemTraits API."""
 
     def __post_init__(self, pfts: Sequence[type[PlantFunctionalTypeStrict]]) -> None:
         # Check the PFT data
@@ -324,8 +336,10 @@ class Flora:
                 f"Duplicated plant functional type names: {','.join(duplicates)}"
             )
 
-        # Populate the pft dictionary using the PFT name as key
+        # Populate the pft dictionary using the PFT name as key and the number of PFTs
         object.__setattr__(self, "pft_dict", {p.name: p for p in pfts})
+        object.__setattr__(self, "n_pfts", len(pfts))
+        object.__setattr__(self, "_n_stems", len(pfts))
 
         # Populate the trait attributes with arrays
         for pft_field in self.trait_attrs:
@@ -335,6 +349,11 @@ class Flora:
 
         # Populate the pft trait indices
         object.__setattr__(self, "pft_indices", {v: k for k, v in enumerate(self.name)})
+
+    def __repr__(self) -> str:
+        """Simple representation of the Flora instance."""
+
+        return f"Flora with {self._n_stems} functional types: {', '.join(self.name)}"
 
     @classmethod
     def _from_file_data(cls, file_data: dict) -> Flora:
@@ -476,12 +495,19 @@ class StemTraits:
     resp_f: NDArray[np.float32]
     r"""Foliage maintenance respiration fraction (:math:`r_f`,  -)"""
     m: NDArray[np.float32]
-    r"""Canopy shape parameter (:math:`m`, -)"""
+    r"""Crown shape parameter (:math:`m`, -)"""
     n: NDArray[np.float32]
-    r"""Canopy shape parameter (:math:`n`, -)"""
+    r"""Crown shape parameter (:math:`n`, -)"""
     f_g: NDArray[np.float32]
     r"""Crown gap fraction (:math:`f_g`, -)"""
     q_m: NDArray[np.float32]
     """Scaling factor to derive maximum crown radius from crown area."""
     z_max_prop: NDArray[np.float32]
     """Proportion of stem height at which maximum crown radius is found."""
+
+    # Post init attributes
+    _n_stems: int = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Post init validation and attribute setting."""
+        self._n_stems = len(self.a_hd)

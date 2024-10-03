@@ -27,6 +27,22 @@ kernelspec:
     :members:
 ```
 
+## The {mod}`~pyrealm.demography.t_model_functions` module
+
+```{eval-rst}
+.. automodule:: pyrealm.demography.t_model_functions
+    :autosummary:
+    :members:
+```
+
+## The {mod}`~pyrealm.demography.crown` module
+
+```{eval-rst}
+.. automodule:: pyrealm.demography.crown
+    :autosummary:
+    :members:
+```
+
 ## The {mod}`~pyrealm.demography.community` module
 
 ```{eval-rst}
@@ -35,10 +51,10 @@ kernelspec:
     :members:
 ```
 
-## The {mod}`~pyrealm.demography.t_model_functions` module
+## The {mod}`~pyrealm.demography.canopy` module
 
 ```{eval-rst}
-.. automodule:: pyrealm.demography.t_model_functions
+.. automodule:: pyrealm.demography.canopy
     :autosummary:
     :members:
 ```

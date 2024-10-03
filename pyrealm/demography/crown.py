@@ -217,75 +217,6 @@ def calculate_stem_projected_crown_area_at_z(
     return A_p
 
 
-def solve_community_projected_canopy_area(
-    z: float,
-    stem_height: NDArray[np.float32],
-    crown_area: NDArray[np.float32],
-    m: NDArray[np.float32],
-    n: NDArray[np.float32],
-    q_m: NDArray[np.float32],
-    z_max: NDArray[np.float32],
-    n_individuals: NDArray[np.float32],
-    target_area: float = 0,
-    validate: bool = True,
-) -> NDArray[np.float32]:
-    """Solver function for community wide projected canopy area.
-
-    This function takes the number of individuals in each cohort along with the stem
-    height and crown area and a given vertical height (:math:`z`). It then uses the
-    crown shape parameters associated with each cohort to calculate the community wide
-    projected crown area above that height (:math:`A_p(z)`). This is simply the sum of
-    the products of the individual stem crown projected area at :math:`z` and the number
-    of individuals in each cohort.
-
-    The return value is the difference between the calculated :math:`A_p(z)` and a
-    user-specified target area, This allows the function to be used with a root solver
-    to find :math:`z` values that result in a given :math:`A_p(z)`. The default target
-    area is zero, so the default return value will be the actual total :math:`A_p(z)`
-    for the community.
-
-    A typical use case for the target area would be to specify the area at which a given
-    canopy layer closes under the perfect plasticity approximation in order to find the
-    closure height.
-
-    Args:
-        z: Vertical height on the z axis.
-        n_individuals: Number of individuals in each cohort
-        crown_area: Crown area of each cohort
-        stem_height: Stem height of each cohort
-        m: Crown shape parameter ``m``` for each cohort
-        n: Crown shape parameter ``n``` for each cohort
-        q_m: Crown shape parameter ``q_m``` for each cohort
-        z_max: Crown shape parameter ``z_m``` for each cohort
-        target_area: A target projected crown area.
-        validate: Boolean flag to suppress argument validation.
-    """
-    # Convert z to array for validation and typing
-    z_arr = np.array(z)
-
-    if validate:
-        _validate_z_qz_args(
-            z=z_arr,
-            stem_properties=[n_individuals, crown_area, stem_height, m, n, q_m, z_max],
-        )
-
-    q_z = calculate_relative_crown_radius_at_z(
-        z=z_arr, stem_height=stem_height, m=m, n=n, validate=False
-    )
-    # Calculate A(p) for the stems in each cohort
-    A_p = calculate_stem_projected_crown_area_at_z(
-        z=z_arr,
-        q_z=q_z,
-        stem_height=stem_height,
-        crown_area=crown_area,
-        q_m=q_m,
-        z_max=z_max,
-        validate=False,
-    )
-
-    return (A_p * n_individuals).sum() - target_area
-
-
 def calculate_stem_projected_leaf_area_at_z(
     z: NDArray[np.float32],
     q_z: NDArray[np.float32],
@@ -391,6 +322,12 @@ class CrownProfile:
     projected_leaf_area: NDArray[np.float32] = field(init=False)
     """An array of the projected leaf area of stems at z heights"""
 
+    # Information attributes
+    _n_pred: int = field(init=False)
+    """The number of predictions per stem."""
+    _n_stems: int = field(init=False)
+    """The number of stems."""
+
     def __post_init__(
         self,
         stem_traits: StemTraits | Flora,
@@ -430,4 +367,19 @@ class CrownProfile:
             crown_area=stem_allometry.crown_area,
             stem_height=stem_allometry.stem_height,
             z_max=stem_allometry.crown_z_max,
+        )
+
+        # Set the number of observations per stem (one if dbh is 1D, otherwise size of
+        # the first axis)
+        if self.relative_crown_radius.ndim == 1:
+            self._n_pred = 1
+        else:
+            self._n_pred = self.relative_crown_radius.shape[0]
+
+        self._n_stems = stem_traits._n_stems
+
+    def __repr__(self) -> str:
+        return (
+            f"CrownProfile: Prediction for {self._n_stems} stems "
+            f"at {self._n_pred} observations."
         )
