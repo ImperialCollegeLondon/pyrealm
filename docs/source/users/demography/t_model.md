@@ -131,7 +131,7 @@ pd.DataFrame(
 )
 ```
 
-Using a column array of potential GPP values can be used predict multiple estimates of
+Using a column array of potential GPP values can be used to predict multiple estimates of
 allocation per stem. In the first example, the code takes the allometric predictions
 from above and calculates the GPP allocation for stems of varying size with the same
 potential GPP:
