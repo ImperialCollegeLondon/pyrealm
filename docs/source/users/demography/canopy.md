@@ -27,7 +27,7 @@ space $A$. When the area $A$ is filled, a new lower canopy layer is formed until
 of the individual crown area has been distributed across within the canopy.
 
 The key variables in calculating the canopy model are the crown projected area $A_p$
-and leaf projected projected area $\tilde{A}_{cp}(z)$, which are calculated for a stem
+and leaf projected area $\tilde{A}_{cp}(z)$, which are calculated for a stem
 of a given size using the  [crown model](./crown.md).
 
 ```{code-cell}
