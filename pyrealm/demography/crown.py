@@ -295,6 +295,12 @@ class CrownProfile:
     allometric predictions of stem height, crown area and z_max for an actual stem of a
     given size for each PFT.
 
+    In addition to the variables above, the class can also has properties the calculate
+    the projected crown radius and projected leaf radius. These are simply the radii
+    that would result in the two projected areas: the values are not directly meaningful
+    for calculating canopy models, but can be useful for exploring the behavour of
+    projected area on the same linear scale as the crown radius.
+
     Args:
         stem_traits: A Flora or StemTraits instance providing plant functional trait
             data.

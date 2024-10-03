@@ -22,7 +22,8 @@ notes and initial demonstration code.
 
 ```{code-cell}
 from matplotlib import pyplot as plt
-from matplotlib.patches import Polygon
+from matplotlib.lines import Line2D
+from matplotlib.patches import Polygon, Patch
 import numpy as np
 import pandas as pd
 
@@ -276,9 +277,20 @@ stem. For each stem:
 * the dotted horizontal line shows the height at which the maximum crown radius is
   found ($z_{max}$).
 
-Note that the equation for the relative radius $q(z)$ that defines canopy shape can
-make predictions with actual values outside of the range of the actual stem and not
-only where $0 \leq z \leq H$.
+:::{admonition} Note
+
+The predictions of the equation for the relative radius $q(z)$ are not limited to
+height values within the range of the actual height of a given stem
+($0 \leq z \leq H$). This is critical for calculating behaviour with height across
+multiple stems when calculating canopy profiles for a community. The plot below
+includes predictions of $q(z)$ below ground level and above stem height.
+
+The {meth}`~pyrealm.demography.crown.get_crown_xy` helper function can be used to
+extract plotting structures for each stem within a `CrownProfile` that *are*
+restricted to actual valid heights for that stem and is demonstrated in the
+[code below](#plotting-tools-for-crown-shapes).
+
+:::
 
 ```{code-cell}
 fig, ax = plt.subplots(ncols=1)
@@ -438,10 +450,30 @@ ax.set_xlabel(r"Projected leaf area ($\tilde{A}_{cp}(z)$, m2)")
 ax.legend(frameon=False)
 ```
 
+## Plotting tools for crown shapes
+
+The {meth}`~pyrealm.demography.crown.get_crown_xy` function makes it easier to extract
+neat crown profiles from `CrownProfile` objects, for use in plotting crown data. The
+function takes a paired `CrownProfile` and `StemAllometry` and extracts a particular
+crown profile variable, and removes predictions for each stem that are outside of
+the stem range for that stem. It converts the data for each stem into coordinates that
+will plot as a complete two-sided crown outline. The returned value is a list with an
+entry for each stem in one of two formats.
+
+* A pair of coordinate arrays: height and variable value.
+* An single XY array with height and variable values in the columns, as used for
+  example in `matplotlib` Patch objects.
+
+The code below uses this function to generate plotting data for the crown radius,
+projected crown radius and projected leaf radius. These last two variables do not
+have direct computational use - the cumulative projected area is what matters - but
+allow the projected variables to be visualised at the same scale as the crown radius.
+
 ```{code-cell}
-# Set stem offsets for plotting
+# Set stem offsets for separating stems along the x axis
 stem_offsets = np.array([0, 6, 12])
 
+# Get the crown radius in XY format to plot as a polygon
 crown_radius_as_xy = get_crown_xy(
     crown_profile=area_crown_profiles,
     stem_allometry=area_allometry,
@@ -450,6 +482,7 @@ crown_radius_as_xy = get_crown_xy(
     as_xy=True,
 )
 
+# Get the projected crown and leaf radii to plot as lines
 projected_crown_radius_xy = get_crown_xy(
     crown_profile=area_crown_profiles,
     stem_allometry=area_allometry,
@@ -468,16 +501,23 @@ projected_leaf_radius_xy = get_crown_xy(
 ```{code-cell}
 fig, ax = plt.subplots()
 
+# Bundle the three plotting structures and loop over the three stems.
 for cr_xy, (ch, cpr), (lh, lpr) in zip(
     crown_radius_as_xy, projected_crown_radius_xy, projected_leaf_radius_xy
 ):
     ax.add_patch(Polygon(cr_xy, color="lightgrey"))
-    ax.plot(cpr, ch, color="black", linewidth=1)
+    ax.plot(cpr, ch, color="0.4", linewidth=2)
     ax.plot(lpr, lh, color="red", linewidth=1)
 
 ax.set_aspect(0.5)
-```
-
-```{code-cell}
-
+plt.legend(
+    handles=[
+        Patch(color="lightgrey", label="Crown profile"),
+        Line2D([0], [0], label="Projected crown", color="0.4", linewidth=2),
+        Line2D([0], [0], label="Projected leaf", color="red", linewidth=1),
+    ],
+    ncols=3,
+    loc="upper center",
+    bbox_to_anchor=(0.5, 1.15),
+)
 ```
