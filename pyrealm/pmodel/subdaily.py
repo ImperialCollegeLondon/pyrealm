@@ -93,7 +93,7 @@ def memory_effect(
     Args:
         values: The values to apply the memory effect to.
         initial_values: Last available realised value used if model is fitted in
-        chunks and value at t=0 is not optimal.
+            chunks and value at t=0 is not optimal.
         alpha: The relative weight applied to the most recent observation.
         allow_holdover: Allow missing values to be filled by holding over earlier
             values.
