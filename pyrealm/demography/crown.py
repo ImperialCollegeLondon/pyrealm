@@ -391,6 +391,12 @@ class CrownProfile:
     projected_leaf_area: NDArray[np.float32] = field(init=False)
     """An array of the projected leaf area of stems at z heights"""
 
+    # Information attributes
+    _n_pred: int = field(init=False)
+    """The number of predictions per stem."""
+    _n_stems: int = field(init=False)
+    """The number of stems."""
+
     def __post_init__(
         self,
         stem_traits: StemTraits | Flora,
@@ -430,4 +436,19 @@ class CrownProfile:
             crown_area=stem_allometry.crown_area,
             stem_height=stem_allometry.stem_height,
             z_max=stem_allometry.crown_z_max,
+        )
+
+        # Set the number of observations per stem (one if dbh is 1D, otherwise size of
+        # the first axis)
+        if self.relative_crown_radius.ndim == 1:
+            self._n_pred = 1
+        else:
+            self._n_pred = self.relative_crown_radius.shape[0]
+
+        self._n_stems = stem_traits._n_stems
+
+    def __repr__(self) -> str:
+        return (
+            f"CrownProfile: Prediction for {self._n_stems} stems "
+            f"at {self._n_pred} observations."
         )
