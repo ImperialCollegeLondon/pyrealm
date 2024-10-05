@@ -88,12 +88,24 @@ def fit_perfect_plasticity_approximation(
     max_stem_height: float,
     solver_tolerance: float,
 ) -> NDArray[np.float32]:
-    """Find canopy layer heights under the PPA model.
+    r"""Find canopy layer heights under the PPA model.
 
     Finds the closure heights of the canopy layers under the perfect plasticity
-    approximation by solving Ac(z) - L_n = 0 across the community where L is the
-    total cumulative crown area in layer n and above, discounted by the canopy gap
-    fraction.
+    approximation by fidnding the set of heights that lead to complete closure of canopy
+    layers through the canopy. The function solves the following equation for integers
+    :math:`l \in (1,2,..., m)`:
+
+    .. math::
+
+        \sum_{s=1}^{N_s}{ A_p(z^*_l)} = l A(1 - f_G)
+
+    The right hand side sets out the total area needed to close a given layer :math:`l`
+    and all layers above it:  :math:`l` times the total community area  :math:`A` less
+    any canopy gap fraction (:math:`f_G`). The left hand side then calculates the
+    projected crown area for each stem :math:`s` :math:`A_p(z^*_l)_{[s]}` and sums those
+    areas across all stems in the community  :math:`N_s`. The specific height
+    :math:`z^*_l` is then the height at which the two terms are equal and hence solves
+    the equation for layer :math:`l`.
 
     Args:
         community: A community instance providing plant cohort data

@@ -500,7 +500,7 @@ def get_crown_xy(
             valid_attr_values += stem_offsets[stem_index]
 
         if as_xy:
-            # Combine the values into an XY array
+            # Combine the values into an (N,2) XY array
             crown_plotting_data.append(
                 np.hstack([valid_attr_values[:, None], valid_heights[:, None]])
             )
