@@ -31,15 +31,15 @@ repository = "https://github.com/ImperialCollegeLondon/pyrealm"
 version = "1.0.0"
 
 [tool.poetry.dependencies]
-dacite = "^1.6.0" 
-numpy = "^2.0.0" 
+dacite = "^1.6.0"
+numpy = "^2.0.0"
 python = ">=3.10"
-scipy = "^1.7.3" 
-tabulate = "^0.8.10" 
+scipy = "^1.7.3"
+tabulate = "^0.8.10"
 
 marshmallow = "^3.22.0"
-pandas = "^2.2.2"
 marshmallow-dataclass = "^8.7.0"
+pandas = "^2.2.2"
 pandas-stubs = "^2.2.2.240909"
 [tool.poetry.group.types.dependencies]
 pandas-stubs = "^2.2.0.240218"
@@ -132,7 +132,7 @@ select = [
   "I", # isort
   "UP", # pyupgrade
   "RUF", # RUF specific checks
-  "NPY201"
+  "NPY201",
 ]
 
 # On top of the Google convention, disable:
@@ -147,6 +147,6 @@ convention = "google"
 
 [tool.jupytext]
 # Stop jupytext from removing mystnb and other settings in MyST Notebook YAML headers
-notebook_metadata_filter = "-jupytext.text_representation.jupytext_version,settings,mystnb"
+notebook_metadata_filter = "jupytext.text_representation.jupytext_version,settings,mystnb,language_info"
 # Also stop it from stripping cell metadata.
-cell_metadata_filter =  "all"
+cell_metadata_filter = "all"

@@ -1,17 +1,14 @@
 ---
 jupytext:
-  formats: md:myst
   text_representation:
-    extension: .md
-    format_name: myst
-    format_version: 0.13
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
 
-# Canopy model
+# The canopy model
 
 :::{admonition} Warning
 
@@ -20,15 +17,38 @@ notes and initial demonstration code.
 
 :::
 
+The canopy is the representation of the combined crowns across all individual stems
+within each cohort in a [community](./community.md). The main use of the canopy is
+to calculate the light environment within the canopy, which allows the the productivity
+of stems to be estimated across the vertical dimension.
+
+The key variables in calculating the canopy model are the crown projected area $A_p(z)$
+and leaf projected area $\tilde{A}_{cp}(z)$, which are calculated for a stem
+of a given size at a vertical height $z$ using the [crown model](./crown.md). For a
+given stem, the difference in projected leaf area values between two heights provides
+the actual leaf area between two heights. This then gives an expression for the leaf
+area index (LAI, $L$) between two heights $z_i$ and $z_j$:
+
+$$
+    L_{i,j} = \frac{L\left(\tilde{A}_{cp}(z_j) - \tilde{A}_{cp}(z_i)\right)}{A},
+$$
+
+where $z_i > z_j$ and $A$ is the area occupied by the community. The value of $L_{i,j}$
+is then the leaf area index per square metre for the stem between the two heights. The
+light extinction between $z_i$ and $z_j$ then follows the Beer Lambert law,
+with the fraction of light absorbed $f_{abs}$ calculated as:
+
+$$
+f_{abs[i,j]} = 1 - e^{-kL_{i,j}}
+$$
+
+given the extinction coefficient $k$ from the plant functional type of the stem.
+
 The canopy model uses the perfect plasticity approximation (PPA) {cite}`purves:2008a`,
 which assumes that plants are always able to plastically arrange their crown within the
 broader canopy of the community to maximise their crown size and fill the available
 space $A$. When the area $A$ is filled, a new lower canopy layer is formed until all
 of the individual crown area has been distributed across within the canopy.
-
-The key variables in calculating the canopy model are the crown projected area $A_p$
-and leaf projected area $\tilde{A}_{cp}(z)$, which are calculated for a stem
-of a given size using the  [crown model](./crown.md).
 
 ```{code-cell}
 from matplotlib import pyplot as plt
@@ -93,7 +113,7 @@ The code below creates a simple community:
 short_pft = PlantFunctionalType(
     name="short", h_max=15, m=1.5, n=1.5, f_g=0, ca_ratio=380
 )
-tall_pft = PlantFunctionalType(name="tall", h_max=30, m=1.5, n=2, f_g=0.2, ca_ratio=500)
+tall_pft = PlantFunctionalType(name="tall", h_max=30, m=3, n=1.5, f_g=0.2, ca_ratio=500)
 
 # Create the flora
 flora = Flora([short_pft, tall_pft])
@@ -107,7 +127,7 @@ community = Community(
     flora=flora,
     cell_area=32,
     cell_id=1,
-    cohort_dbh_values=np.array([0.02, 0.20, 0.5]),
+    cohort_dbh_values=np.array([0.05, 0.20, 0.5]),
     cohort_n_individuals=np.array([15, 5, 2]),
     cohort_pft_names=np.array(["short", "short", "tall"]),
 )
@@ -123,7 +143,35 @@ print("Ac = ", community.stem_allometry.crown_area)
 We can now calculate the canopy model for the community:
 
 ```{code-cell}
-canopy = Canopy(community=community, canopy_gap_fraction=2 / 32)
+:lines_to_next_cell: 2
+
+hghts = np.linspace(26, 0, num=251)[:, None]
+canopy = Canopy(
+    community=community, canopy_gap_fraction=2 / 32, layer_heights=hghts, fit_ppa=False
+)
+```
+
+```{code-cell}
+fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(ncols=5, sharey=True, figsize=(12, 6))
+
+ax1.plot(canopy.fapar_profile, hghts)
+
+ax2.plot(np.cumsum(canopy.fapar_profile), hghts)
+ax3.plot(canopy.layer_stem_leaf_area, hghts)
+ax4.plot(canopy.crown_profile.projected_leaf_radius, hghts)
+
+ax5.set_prop_cycle("color", ["r", "b", "g"])
+ax5.plot(canopy.crown_profile.crown_radius, hghts)
+ax5.plot(canopy.crown_profile.projected_leaf_radius, hghts, linestyle="--")
+
+# ax1.plot(canopy.crown_profile.projected_leaf_radius, hghts)
+# ax1.plot(canopy.crown_profile.projected_crown_radius, hghts)
+# ax1.set_aspect(1)
+# plt.xscale('log')
+```
+
+```{code-cell}
+canopy.stem_fapar.sum()
 ```
 
 We can then look at three key properties of the canopy model: the layer closure
