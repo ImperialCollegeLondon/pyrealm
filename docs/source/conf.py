@@ -13,7 +13,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 import sphinxcontrib.bibtex.plugin
-import tuple
 from sphinxcontrib.bibtex.style.referencing import BracketStyle
 from sphinxcontrib.bibtex.style.referencing.author_year import AuthorYearReferenceStyle
 
