@@ -147,6 +147,6 @@ convention = "google"
 
 [tool.jupytext]
 # Stop jupytext from removing mystnb and other settings in MyST Notebook YAML headers
-notebook_metadata_filter = "jupytext.text_representation.jupytext_version,settings,mystnb,language_info"
+notebook_metadata_filter = "settings,mystnb,language_info"
 # Also stop it from stripping cell metadata.
-cell_metadata_filter = "all"
+cell_metadata_filter = "all,-trusted"

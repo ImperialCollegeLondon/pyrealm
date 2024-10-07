@@ -1,6 +1,9 @@
 ---
 jupytext:
   text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
     jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3 (ipykernel)
@@ -103,6 +106,8 @@ The {class}`~pyrealm.demography.canopy.Canopy` class automatically finds the can
 closure heights, given a {class}`~pyrealm.demography.community.Community` instance
 and the required canopy gap fraction.
 
+THIS IS A TEST CHANGE TO CHECK JUPYTEXT BEHAVIOUR.
+
 The code below creates a simple community:
 
 ```{code-cell}
@@ -143,8 +148,6 @@ print("Ac = ", community.stem_allometry.crown_area)
 We can now calculate the canopy model for the community:
 
 ```{code-cell}
-:lines_to_next_cell: 2
-
 hghts = np.linspace(26, 0, num=251)[:, None]
 canopy = Canopy(
     community=community, canopy_gap_fraction=2 / 32, layer_heights=hghts, fit_ppa=False
