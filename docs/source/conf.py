@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 import sphinxcontrib.bibtex.plugin
+import tuple
 from sphinxcontrib.bibtex.style.referencing import BracketStyle
 from sphinxcontrib.bibtex.style.referencing.author_year import AuthorYearReferenceStyle
 
@@ -187,6 +188,15 @@ add_module_names = False
 # - Group members by type not alphabetically
 autodoc_member_order = "groupwise"
 
+# Control how type hints are shown in the generated documentation
+autodoc_typehints_format = "short"  # Use short format for type hints
+
+# Use unqualified names for types (i.e., without the module prefix)
+python_use_unqualified_type_names = True
+
+napoleon_use_param = False  # Do not show type hints in function signatures
+napoleon_use_rtype = False  # Do not show return types in function signatures
+
 bibtex_bibfiles = ["refs.bib"]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -228,6 +238,23 @@ html_theme_options = {
 html_static_path = ["_static"]
 
 
+# Custom logic to simplify specific types in type annotations
+def simplify_type_hints(signature: str, return_annotation: str) -> tuple[str, str]:
+    """Simplifies function signatures for documentation."""
+    # Replace verbose numpy type hints with simpler versions
+    if signature:
+        signature = signature.replace("~numpy.ndarray", "ndarray")
+        signature = signature.replace("~typing.Any", "Any")
+        signature = signature.replace("~numpy.dtype[~numpy.float32]", "float32")
+    if return_annotation:
+        return_annotation = return_annotation.replace("~numpy.ndarray", "ndarray")
+        return_annotation = return_annotation.replace("~typing.Any", "Any")
+        return_annotation = return_annotation.replace(
+            "~numpy.dtype[~numpy.float32]", "float32"
+        )
+    return signature, return_annotation
+
+
 def setup(app):  # type: ignore
     """Use setup to remove .ipynb from sources.
 
@@ -236,3 +263,5 @@ def setup(app):  # type: ignore
     """
     # Ignore .ipynb files
     app.registry.source_suffix.pop(".ipynb", None)
+    # Connect the event to modify the type hints
+    app.connect("autodoc-process-signature", simplify_type_hints)
