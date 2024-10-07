@@ -9,6 +9,16 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # The canopy model
@@ -53,7 +63,7 @@ broader canopy of the community to maximise their crown size and fill the availa
 space $A$. When the area $A$ is filled, a new lower canopy layer is formed until all
 of the individual crown area has been distributed across within the canopy.
 
-```{code-cell}
+```{code-cell} ipython3
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
@@ -106,11 +116,9 @@ The {class}`~pyrealm.demography.canopy.Canopy` class automatically finds the can
 closure heights, given a {class}`~pyrealm.demography.community.Community` instance
 and the required canopy gap fraction.
 
-THIS IS A TEST CHANGE TO CHECK JUPYTEXT BEHAVIOUR.
-
 The code below creates a simple community:
 
-```{code-cell}
+```{code-cell} ipython3
 # Two PFTs
 # - a shorter understory tree with a columnar canopy and no crown gaps
 # - a taller canopy tree with a top heavy canopy and more crown gaps
@@ -140,21 +148,21 @@ community = Community(
 
 We can then look at the expected allometries for the stems in each cohort:
 
-```{code-cell}
+```{code-cell} ipython3
 print("H = ", community.stem_allometry.stem_height)
 print("Ac = ", community.stem_allometry.crown_area)
 ```
 
 We can now calculate the canopy model for the community:
 
-```{code-cell}
+```{code-cell} ipython3
 hghts = np.linspace(26, 0, num=251)[:, None]
 canopy = Canopy(
     community=community, canopy_gap_fraction=2 / 32, layer_heights=hghts, fit_ppa=False
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(ncols=5, sharey=True, figsize=(12, 6))
 
 ax1.plot(canopy.fapar_profile, hghts)
@@ -173,7 +181,7 @@ ax5.plot(canopy.crown_profile.projected_leaf_radius, hghts, linestyle="--")
 # plt.xscale('log')
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 canopy.stem_fapar.sum()
 ```
 
@@ -184,14 +192,14 @@ heights for each stem in the three cohorts.
 There are four canopy layers, with the top two very close together because of the
 large crown area in the two stems in the cohort of `tall` trees.
 
-```{code-cell}
+```{code-cell} ipython3
 canopy.layer_heights
 ```
 
 The `stem_crown_area` attribute then provides the crown area of each stem found in each
 layer.
 
-```{code-cell}
+```{code-cell} ipython3
 canopy.stem_crown_area
 ```
 
@@ -200,7 +208,7 @@ the first two layers are taken up entirely by the two stems in the cohort of lar
 trees. We can confirm that the calculation is correct by calculating the total crown area
 across the cohorts at each height:
 
-```{code-cell}
+```{code-cell} ipython3
 np.sum(canopy.stem_crown_area * community.cohort_data["n_individuals"], axis=1)
 ```
 
@@ -214,7 +222,7 @@ identical to the projected crown area for the first two cohorts because the crow
 fraction $f_g$ is zero for this PFT. The projected leaf area is however displaced
 towards the ground in the last cohort, because the `tall` PFT has a large gap fraction.
 
-```{code-cell}
+```{code-cell} ipython3
 canopy.stem_leaf_area
 ```
 
@@ -225,7 +233,7 @@ community crown and leaf area profile across a range of height values. For each 
 we calculate the sum of the product of stem projected area and the number of
 individuals in each cohort.
 
-```{code-cell}
+```{code-cell} ipython3
 # Set of vertical height to calculate crown profiles
 at_z = np.linspace(0, 26, num=261)[:, None]
 
@@ -249,7 +257,7 @@ superimpose the calculated $z^*_l$ values and the cumulative canopy area for eac
 to confirm that the calculated values coincide with the profile. Note here that the
 total area at each closed layer height is omitting the community gap fraction.
 
-```{code-cell}
+```{code-cell} ipython3
 fig, ax = plt.subplots(ncols=1)
 
 # Calculate the crown area at which each canopy layer closes.
@@ -307,7 +315,7 @@ $f_{abs} = 1 - e ^ {-kL}$,
 where $k$ is the light extinction coefficient ($k$) and $L$ is the leaf area index
 (LAI). The LAI can be calculated for each stem and layer:
 
-```{code-cell}
+```{code-cell} ipython3
 # LAI = Acp_within_layer / canopy_area
 # print(LAI)
 ```
@@ -315,7 +323,7 @@ where $k$ is the light extinction coefficient ($k$) and $L$ is the leaf area ind
 This can be used to calculate the LAI of individual stems but also the LAI of each layer
 in the canopy:
 
-```{code-cell}
+```{code-cell} ipython3
 # LAI_stem = LAI.sum(axis=0)
 # LAI_layer = LAI.sum(axis=1)
 
@@ -326,7 +334,7 @@ in the canopy:
 The layer LAI values can now be used to calculate the light transmission of each layer and
 hence the cumulative light extinction profile through the canopy.
 
-```{code-cell}
+```{code-cell} ipython3
 # f_abs = 1 - np.exp(-pft.traits.par_ext * LAI_layer)
 # ext = np.cumprod(f_abs)
 
@@ -338,7 +346,7 @@ One issue that needs to be resolved is that the T Model implementation in `pyrea
 follows the original implementation of the T Model in having LAI as a fixed trait of
 a given plant functional type, so is constant for all stems of that PFT.
 
-```{code-cell}
+```{code-cell} ipython3
 # print("f_abs = ", (1 - np.exp(-pft.traits.par_ext * pft.traits.lai)))
 ```
 
