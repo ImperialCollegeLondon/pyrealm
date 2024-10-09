@@ -414,7 +414,7 @@ def get_crown_xy(
     crown_profile: CrownProfile,
     stem_allometry: StemAllometry,
     attr: str,
-    stem_offsets: NDArray[np.float32] | None,
+    stem_offsets: NDArray[np.float32] | None = None,
     two_sided: bool = True,
     as_xy: bool = False,
 ) -> list[tuple[NDArray, NDArray]] | list[NDArray]:

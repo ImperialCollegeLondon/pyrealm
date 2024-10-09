@@ -277,37 +277,38 @@ class Canopy:
         self.layer_stem_leaf_area = np.diff(
             self.crown_profile.projected_leaf_area, axis=0, prepend=0
         )
-        self.layer_cohort_leaf_area = (
-            self.layer_stem_leaf_area * community.cohort_data["n_individuals"]
-        )
 
-        # Calculate the leaf area index per layer per cohort, using the stem
+        # Calculate the leaf area index per layer per stem, using the stem
         # specific leaf area index values. LAI is a value per m2, so scale back down by
         # the community area.
         self.layer_cohort_lai = (
-            self.layer_cohort_leaf_area * community.stem_traits.lai
+            self.layer_stem_leaf_area
+            * community.cohort_data["n_individuals"]
+            * community.stem_traits.lai
         ) / community.cell_area
 
-        # Calculate the Beer-Lambert light extinction per layer and cohort
-        self.layer_cohort_f_abs = 1 - np.exp(
+        # Calculate the Beer-Lambert light transmission component per layer and cohort
+        self.layer_cohort_f_trans = np.exp(
             -community.stem_traits.par_ext * self.layer_cohort_lai
         )
+        # Aggregate across cohorts into a layer wide transimissivity
+        self.layer_f_trans = self.layer_cohort_f_trans.prod(axis=1)
 
         # Calculate the canopy wide light extinction per layer
-        self.layer_canopy_f_abs = self.layer_cohort_f_abs.sum(axis=1)
+        self.layer_f_abs = 1 - self.layer_f_trans
 
         # Calculate cumulative light extinction across the canopy
-        self.canopy_extinction_profile = np.cumprod(self.layer_canopy_f_abs)
+        self.extinction_profile = 1 - np.cumprod(self.layer_f_trans)
 
         # Calculate the fraction of radiation absorbed by each layer
         # # TODO - include append=0 here to include ground or just backcalculate
         self.fapar_profile = -np.diff(
-            np.cumprod(1 - self.layer_canopy_f_abs),
+            np.cumprod(1 - self.layer_cohort_f_trans),
             prepend=1,  # append=0
         )
 
-        # Partition the light back among the individual stems: simply weighting by per
-        # cohort contribution to f_abs and divide through by the number of individuals
-        self.stem_fapar = (
-            self.layer_cohort_f_abs * self.fapar_profile[:, None]
-        ) / self.layer_cohort_f_abs.sum(axis=1)[:, None]
+        # # Partition the light back among the individual stems: simply weighting by per
+        # # cohort contribution to f_abs and divide through by the number of individuals
+        # self.stem_fapar = (
+        #     self.layer_cohort_f_trans * self.fapar_profile[:, None]
+        # ) / self.layer_cohort_f_trans.sum(axis=1)[:, None]
