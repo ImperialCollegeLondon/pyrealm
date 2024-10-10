@@ -193,7 +193,7 @@ class Canopy:
         community: Community,
         layer_heights: NDArray[np.float32] | None = None,
         fit_ppa: bool = False,
-        canopy_gap_fraction: float = 0.05,
+        canopy_gap_fraction: float = 0,
         solver_tolerance: float = 0.001,
     ) -> None:
         # Store required init vars
@@ -204,9 +204,9 @@ class Canopy:
 
         # Define class attributes
         self.total_community_crown_area: float
-        """Total crown area across individuals in the community (metres 2)."""
+        """Total crown area across all individuals in the community (m2)."""
         self.max_stem_height: float
-        """Maximum height of any individual in the community (metres)."""
+        """Maximum height of any individual in the community (m)."""
         self.n_layers: int
         """Total number of canopy layers."""
         self.n_cohorts: int
@@ -231,7 +231,8 @@ class Canopy:
         """The canopy-wide fAPAR profile by layer."""
         self.stem_fapar: NDArray[np.float32]
         """The fAPAR for individual stems by layer."""
-
+        self.filled_community_area: float
+        """The area filled by crown."""
         # Check operating mode
         if fit_ppa ^ (layer_heights is None):
             raise ValueError("Either set fit_ppa=True or provide layer heights.")
@@ -239,6 +240,9 @@ class Canopy:
         # Set simple attributes
         self.max_stem_height = community.stem_allometry.stem_height.max()
         self.n_cohorts = community.number_of_cohorts
+        self.filled_community_area = community.cell_area * (
+            1 - self.canopy_gap_fraction
+        )
 
         # Populate layer heights
         if layer_heights is not None:
@@ -280,12 +284,12 @@ class Canopy:
 
         # Calculate the leaf area index per layer per stem, using the stem
         # specific leaf area index values. LAI is a value per m2, so scale back down by
-        # the community area.
+        # the available community area.
         self.layer_cohort_lai = (
             self.layer_stem_leaf_area
             * community.cohort_data["n_individuals"]
             * community.stem_traits.lai
-        ) / community.cell_area
+        ) / community.cell_area  # self.filled_community_area
 
         # Calculate the Beer-Lambert light transmission component per layer and cohort
         self.layer_cohort_f_trans = np.exp(

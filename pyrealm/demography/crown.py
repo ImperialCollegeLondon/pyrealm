@@ -77,7 +77,9 @@ def _validate_z_qz_args(
 
     # Now test q_z congruence with z if provided
     if q_z is not None:
-        if ((z.size == 1) or (z.ndim == 1)) and (q_z.shape != stem_shape):
+        if q_z.shape == z.shape:
+            pass
+        elif ((z.size == 1) or (z.ndim == 1)) and (q_z.shape != stem_shape):
             raise ValueError(
                 f"The q_z argument (shape: {q_z.shape}) is not a row array "
                 f"matching stem properties (shape: {stem_shape})"
@@ -198,7 +200,7 @@ def calculate_stem_projected_crown_area_at_z(
         crown_area: Crown area of each stem
         stem_height: Stem height of each stem
         q_m: Canopy shape parameter ``q_m``` for each stem
-        z_max: Height of maximum crown radous for each stem
+        z_max: Height of maximum crown radi `us for each stem
         validate: Boolean flag to suppress argument validation.
     """
 

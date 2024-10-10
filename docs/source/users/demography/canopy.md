@@ -45,23 +45,28 @@ from pyrealm.demography.t_model_functions import StemAllometry
 
 The `canopy` module in `pyrealm` is used to calculate a model of the light environment
 across all of cohorts within a plant [community](./community.md). Each cohort consists
-of a number of identically-sized individuals $n_{ch}$ from a given [plant functional
-type (PFT)](./flora.md). Because the individuals are identically sized, they all share
-the same [stem allometry](./t_model.md) and the same  [crown model](./crown.md).
+of:
+
+* a number of identically-sized individuals,
+* of the same [plant functional type (PFT)](./flora.md),
+* that share the same [stem allometry](./t_model.md) and [crown model](./crown.md).
+
+The purpose of the `canopy` module is to estimate how light is absorbed down through the
+canopy and allow the absorption of incoming light at different heights in the canopy to
+be partitioned across stems within each cohort.
 
 ## Light extinction for a single stem
 
-The key variables in determining the light environment for a given
-stem are as follows:
+The key variables in determining the light environment for a given stem are as follows:
 
-* The projected crown area ${A}_{p}(z)$ sets how crown area accumulates, given
-  the crown shape, from the top of the stem to the ground.
-* The projected leaf area $\tilde{A}_{cp}(z)$ modifies the crown area to allow
-  for the vertical displacement of crown area by the crown gap fraction.
-* The leaf area index $L$ for the PFT is a simple factor that sets the leaf density
-  of the crown, allowing stems with identical crown area to vary in the density of
-  actual leaf surface for light capture. Values of $L$ are always expressed as the area
-  of leaf surface per square meter.
+* The projected crown area ${A}_{p}(z)$ sets how crown area accumulates, given the crown
+  shape, from the top of the stem to the ground.
+* The projected leaf area $\tilde{A}_{cp}(z)$ modifies the crown area to allow for the
+  vertical displacement of crown area by the crown gap fraction.
+* The leaf area index $L$ for the PFT is a simple factor that sets the leaf density of
+  the crown, allowing stems with identical crown area to vary in the density of actual
+  leaf surface for light capture. Values of $L$ are always expressed as the area of leaf
+  surface per square meter.
 * The extinction coefficient $k$ for a PFT sets how much light is absorbed when passing
   through the leaf surface of that PFT.
 
@@ -88,8 +93,8 @@ $$
 f_{abs[a,b]} = 1 - e^{\left(-k\dfrac{L A_{l[a,b]}}{A_c}\right)}
 $$
 
-When $z_a = H$ and $z_b=0$, then $A_{l[a,b]} = A_c$ and hence simplifies to
-the original equation.
+When $z_a = H$ and $z_b=0$, then $A_{l[a,b]} = A_c$ and hence simplifies to the original
+equation.
 
 The code below creates a simple example community containing a single cohort containing
 a single stem and then calculates the light extinction profile down through the canopy.
@@ -117,7 +122,10 @@ simple_community = Community(
 # Get the canopy model for the simple case from the canopy top
 # to the ground
 hghts = np.linspace(simple_stem.stem_height[0], 0, num=101)[:, None]
-simple_canopy = Canopy(community=simple_community, layer_heights=hghts)
+simple_canopy = Canopy(
+    community=simple_community,
+    layer_heights=hghts,
+)
 ```
 
 As a simple check that the calculation across height layers is correct, the canopy
@@ -126,14 +134,10 @@ should equal the whole canopy $f_{abs}$ calculated using the simple Beer-Lambert
 equation and the PFT trait values.
 
 ```{code-cell} ipython3
-:scrolled: true
-
 print(simple_canopy.extinction_profile[-1])
 ```
 
 ```{code-cell} ipython3
-:scrolled: true
-
 print(1 - np.exp(-simple_pft.par_ext * simple_pft.lai))
 ```
 
@@ -205,13 +209,8 @@ $$
 The Beer-Lambert equation across the cohorts is then:
 
 $$
-f_{abs} = 1 - e^{\left(\sum\limits_{m=1}^{n}-k_h{[m]} L_{H[m]}\right)}
-$$
-
-or equivalently
-
-$$
-f_{abs} = 1 - \prod\limits_{m=1}^{n}e^{-k_{[m]}  L_{H[m]}}
+f_{abs} = 1 - e^{\left(\sum\limits_{m=1}^{n}-k_{[m]} L_{H[m]}\right)}
+        =  1 - \prod\limits_{m=1}^{n}e^{-k_{[m]}  L_{H[m]}}
 $$
 
 This equation can be adjusted as before to partition light absorption within vertical
@@ -255,7 +254,7 @@ community = Community(
 
 # Calculate the canopy profile across vertical heights
 hghts = np.linspace(community.stem_allometry.stem_height.max(), 0, num=101)[:, None]
-canopy = Canopy(community=community, canopy_gap_fraction=0, layer_heights=hghts)
+canopy = Canopy(community=community, layer_heights=hghts)
 ```
 
 As before, we can verify that the cumulative light extinction at the bottom of the
@@ -367,95 +366,31 @@ l_m = \left\lceil \frac{\sum_1^{N_s}{A_c}}{ A(1 - f_G)}\right\rceil
 $$
 
 ```{code-cell} ipython3
-canopy = Canopy(community=community, canopy_gap_fraction=2 / 32, fit_ppa=True)
+canopy_ppa = Canopy(community=community, canopy_gap_fraction=0, fit_ppa=True)
 ```
 
 ```{code-cell} ipython3
-canopy.layer_heights
-```
-
-## Implementation in `pyrealm`
-
-The {class}`~pyrealm.demography.canopy.Canopy` class automatically finds the canopy
-closure heights, given a {class}`~pyrealm.demography.community.Community` instance and
-the required canopy gap fraction.
-
-```{code-cell} ipython3
-canopy.crown_profile.projected_leaf_area[:, 1]
-```
-
-```{code-cell} ipython3
-canopy.layer_stem_leaf_area[:, 1]
-```
-
-```{code-cell} ipython3
-plt.plot(canopy.layer_stem_leaf_area[:, 1], "ro")
-```
-
-We can then look at three key properties of the canopy model: the layer closure heights
-($z^*_l$) and the projected crown areas and leaf areas at each of those heights for each
-stem in the three cohorts.
-
-There are four canopy layers, with the top two very close together because of the large
-crown area in the two stems in the cohort of `tall` trees.
-
-```{code-cell} ipython3
-canopy.layer_heights
-```
-
-The `stem_crown_area` attribute then provides the crown area of each stem found in each
-layer.
-
-```{code-cell} ipython3
-canopy.stem_crown_area
-```
-
-Given the canopy gap fraction, the available crown area per layer is 30 m2, so
-the first two layers are taken up entirely by the two stems in the cohort of large
-trees. We can confirm that the calculation is correct by calculating the total crown area
-across the cohorts at each height:
-
-```{code-cell} ipython3
-np.sum(canopy.stem_crown_area * community.cohort_data["n_individuals"], axis=1)
-```
-
-Those are equal to the layer closure areas of 30, 60 and 90 m2 and the last layer does
-not quite close. The slight numerical differences result from the precision of the root
-solver for finding $z^*_l$ and this can be adjusted by using the `layer_tolerance`
-argument to the `Canopy` class
-
-The projected leaf area per stem is reported in the `stem_leaf_area` attribute. This is
-identical to the projected crown area for the first two cohorts because the crown gap
-fraction $f_g$ is zero for this PFT. The projected leaf area is however displaced
-towards the ground in the last cohort, because the `tall` PFT has a large gap fraction.
-
-```{code-cell} ipython3
-canopy.stem_leaf_area
+canopy_ppa.layer_heights
 ```
 
 ### Visualizing layer closure heights and areas
 
-We can use the {class}`~pyrealm.demography.crown.CrownProfile` class to calculate a
-community crown and leaf area profile across a range of height values. For each height,
+We can use the crown profile calculated for the previous canopy model to calculate a
+whole community crown and leaf area profile for the community. For each height,
 we calculate the sum of the product of stem projected area and the number of
 individuals in each cohort.
 
 ```{code-cell} ipython3
-# Set of vertical height to calculate crown profiles
-at_z = np.linspace(0, 26, num=261)[:, None]
-
-# Calculate the crown profile for the stem for each cohort
-crown_profiles = CrownProfile(
-    stem_traits=community.stem_traits, stem_allometry=community.stem_allometry, z=at_z
-)
-
 # Calculate the total projected crown area across the community at each height
 community_crown_area = np.nansum(
-    crown_profiles.projected_crown_area * community.cohort_data["n_individuals"], axis=1
+    canopy.crown_profile.projected_crown_area * community.cohort_data["n_individuals"],
+    axis=1,
 )
+
 # Do the same for the projected leaf area
 community_leaf_area = np.nansum(
-    crown_profiles.projected_leaf_area * community.cohort_data["n_individuals"], axis=1
+    canopy.crown_profile.projected_leaf_area * community.cohort_data["n_individuals"],
+    axis=1,
 )
 ```
 
@@ -469,21 +404,21 @@ fig, ax = plt.subplots(ncols=1)
 
 # Calculate the crown area at which each canopy layer closes.
 closure_areas = (
-    np.arange(1, len(canopy.layer_heights) + 1) * community.cell_area * (30 / 32)
+    np.arange(1, len(canopy_ppa.layer_heights) + 1) * canopy.filled_community_area
 )
 
 # Add lines showing the canopy closure heights and closure areas.
-for val in canopy.layer_heights:
+for val in canopy_ppa.layer_heights:
     ax.axhline(val, color="red", linewidth=0.5, zorder=0)
 
 for val in closure_areas:
     ax.axvline(val, color="red", linewidth=0.5, zorder=0)
 
 # Show the community projected crown area profile
-ax.plot(community_crown_area, at_z, zorder=1, label="Crown area")
+ax.plot(community_crown_area, canopy.layer_heights, zorder=1, label="Crown area")
 ax.plot(
     community_leaf_area,
-    at_z,
+    canopy.layer_heights,
     zorder=1,
     linestyle="--",
     color="black",
@@ -497,9 +432,9 @@ ax_rhs = ax.twinx()
 ax_rhs.set_ylim(ax.get_ylim())
 z_star_labels = [
     f"$z^*_{l + 1} = {val:.2f}$"
-    for l, val in enumerate(np.nditer(canopy.layer_heights))
+    for l, val in enumerate(np.nditer(canopy_ppa.layer_heights))
 ]
-ax_rhs.set_yticks(canopy.layer_heights.flatten())
+ax_rhs.set_yticks(canopy_ppa.layer_heights.flatten())
 ax_rhs.set_yticklabels(z_star_labels)
 
 # Add cumulative canopy area at top
@@ -514,15 +449,17 @@ ax.set_xlabel("Community-wide projected area (m2)")
 ax.legend(frameon=False)
 ```
 
+## Light allocation
+
 ```{code-cell} ipython3
 ppfd = 1000
 
-ppfd_layer = -np.diff(ppfd * np.cumprod(canopy.layer_f_trans), prepend=ppfd)
+ppfd_layer = -np.diff(ppfd * np.cumprod(canopy_ppa.layer_f_trans), prepend=ppfd)
 ppfd_layer
 ```
 
 ```{code-cell} ipython3
-(1 - canopy.layer_cohort_f_trans) * ppfd_layer[:, None]
+(1 - canopy_ppa.layer_cohort_f_trans) * ppfd_layer[:, None]
 ```
 
 ## Things to worry about later
