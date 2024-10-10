@@ -200,7 +200,7 @@ def calculate_stem_projected_crown_area_at_z(
         crown_area: Crown area of each stem
         stem_height: Stem height of each stem
         q_m: Canopy shape parameter ``q_m``` for each stem
-        z_max: Height of maximum crown radi `us for each stem
+        z_max: Height of maximum crown radius for each stem
         validate: Boolean flag to suppress argument validation.
     """
 
