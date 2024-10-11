@@ -5,6 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -53,7 +54,6 @@ Note that the default values for C3 photosynthesis give **non-zero values below 
 
 ```{code-cell}
 :tags: [hide-input]
-:trusted: true
 
 from matplotlib import pyplot
 import numpy as np
@@ -93,7 +93,6 @@ that again, $\Gamma^_$ has non-zero values for sub-zero temperatures.
 
 ```{code-cell}
 :tags: [hide-input]
-:trusted: true
 
 # Calculate gammastar at different pressures
 tc_1d = np.linspace(-80, 100, n_pts)
@@ -119,7 +118,6 @@ temperature and atmospheric pressure and again behaves smoothly with extreme val
 
 ```{code-cell}
 :tags: [hide-input]
-:trusted: true
 
 fig, ax = pyplot.subplots(1, 1)
 
@@ -144,7 +142,6 @@ issue with low temperatures arising from the equations for the density of water.
 
 ```{code-cell}
 :tags: [hide-input]
-:trusted: true
 
 fig, ax = pyplot.subplots(1, 1)
 
@@ -169,7 +166,6 @@ predictions below about -30 °C.
 
 ```{code-cell}
 :tags: [hide-input]
-:trusted: true
 
 fig, ax = pyplot.subplots(1, 1)
 

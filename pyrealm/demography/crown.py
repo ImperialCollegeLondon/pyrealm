@@ -464,7 +464,7 @@ def get_crown_xy(
         attr_values = np.flip(attr_values, axis=0)
 
     # Collect the per stem data
-    crown_plotting_data: list[tuple[NDArray, NDArray]] | list[NDArray] = []
+    crown_plotting_data: list = []
 
     for stem_index in np.arange(attr_values.shape[1]):
         # Find the heights and values that fall within the individual stem
