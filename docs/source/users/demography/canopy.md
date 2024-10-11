@@ -19,6 +19,8 @@ language_info:
   nbconvert_exporter: python
   pygments_lexer: ipython3
   version: 3.11.9
+settings:
+  output_matplotlib_strings: remove
 ---
 
 # The canopy model
@@ -152,6 +154,8 @@ The plot below shows:
 4. The light extinction profile through the canopy.
 
 ```{code-cell} ipython3
+:tags: [hide-input]
+
 fig, (ax1, ax2, ax3, ax4) = plt.subplots(ncols=4, sharey=True, figsize=(12, 6))
 
 # Generate plot structures for stem profiles
@@ -233,11 +237,14 @@ short_pft = PlantFunctionalType(
     h_max=15,
     m=1.5,
     n=1.5,
+    par_ext=0.4,
     f_g=0,
     ca_ratio=380,
     lai=4,
 )
-tall_pft = PlantFunctionalType(name="tall", h_max=30, m=3, n=1.5, f_g=0.2, ca_ratio=500)
+tall_pft = PlantFunctionalType(
+    name="tall", h_max=30, m=3, n=1.5, par_ext=0.6, f_g=0.2, ca_ratio=500
+)
 
 # Create the flora
 flora = Flora([short_pft, tall_pft])
@@ -318,10 +325,19 @@ ax3.set_xlabel("Light absorption fraction (-)")
 
 # Plot the light extinction profile through the canopy.
 ax4.plot(canopy.extinction_profile, hghts, color="grey")
-ax4.set_xlabel("Cumulative light\nabsorption fraction (-)")
+_ = ax4.set_xlabel("Cumulative light\nabsorption fraction (-)")
 ```
 
 ## Canopy closure and canopy gap fraction
+
+:::{admonition} TODO
+
+Need to work out how to include the gap fraction in the calculation of light extinction
+because at the moment, the gap fraction in the PPA calculates the layer closure heights
+accounting for that, but the LAI is not accounting for it so there is no shift in the
+light extinction profile.
+
+:::
 
 In addition to calculating profiles from a provided sequence of vertical heights, the
 canopy model also implements the calculation of canopy layers, following the perfect
@@ -369,8 +385,18 @@ $$
 canopy_ppa = Canopy(community=community, canopy_gap_fraction=0, fit_ppa=True)
 ```
 
+The `canopy_ppa.layer_heights` attribute now contains the heights at which the PPA
+layers close:
+
 ```{code-cell} ipython3
 canopy_ppa.layer_heights
+```
+
+And the final value in the canopy extinction profile still matches the expectation from
+above:
+
+```{code-cell} ipython3
+print(canopy_ppa.extinction_profile[-1])
 ```
 
 ### Visualizing layer closure heights and areas
@@ -400,23 +426,25 @@ to confirm that the calculated values coincide with the profile. Note here that 
 total area at each closed layer height is omitting the community gap fraction.
 
 ```{code-cell} ipython3
-fig, ax = plt.subplots(ncols=1)
+fig, (ax1, ax2) = plt.subplots(ncols=2, sharey=True, figsize=(12, 6))
 
 # Calculate the crown area at which each canopy layer closes.
 closure_areas = (
     np.arange(1, len(canopy_ppa.layer_heights) + 1) * canopy.filled_community_area
 )
 
+# LH plot - projected leaf area with height.
+
 # Add lines showing the canopy closure heights and closure areas.
 for val in canopy_ppa.layer_heights:
-    ax.axhline(val, color="red", linewidth=0.5, zorder=0)
+    ax1.axhline(val, color="red", linewidth=0.5, zorder=0)
 
 for val in closure_areas:
-    ax.axvline(val, color="red", linewidth=0.5, zorder=0)
+    ax1.axvline(val, color="red", linewidth=0.5, zorder=0)
 
 # Show the community projected crown area profile
-ax.plot(community_crown_area, canopy.layer_heights, zorder=1, label="Crown area")
-ax.plot(
+ax1.plot(community_crown_area, canopy.layer_heights, zorder=1, label="Crown area")
+ax1.plot(
     community_leaf_area,
     canopy.layer_heights,
     zorder=1,
@@ -426,41 +454,139 @@ ax.plot(
     label="Leaf area",
 )
 
+# Add cumulative canopy area at top
+ax1_top = ax1.twiny()
+ax1_top.set_xlim(ax1.get_xlim())
+area_labels = [f"$A_{l + 1}$ = {z:.1f}" for l, z in enumerate(np.nditer(closure_areas))]
+ax1_top.set_xticks(closure_areas)
+ax1_top.set_xticklabels(area_labels, rotation=90)
+
+ax1.set_ylabel("Vertical height ($z$, m)")
+ax1.set_xlabel("Community-wide projected area (m2)")
+ax1.legend(frameon=False)
+
+# RH plot - light extinction
+for val in canopy_ppa.layer_heights:
+    ax2.axhline(val, color="red", linewidth=0.5, zorder=0)
+
+for val in canopy_ppa.extinction_profile:
+    ax2.axvline(val, color="red", linewidth=0.5, zorder=0)
+
+ax2.plot(canopy.extinction_profile, hghts)
+
+ax2_top = ax2.twiny()
+ax2_top.set_xlim(ax2.get_xlim())
+extinction_labels = [
+    f"$f_{{abs{l + 1}}}$ = {z:.3f}"
+    for l, z in enumerate(np.nditer(canopy_ppa.extinction_profile))
+]
+ax2_top.set_xticks(canopy_ppa.extinction_profile)
+ax2_top.set_xticklabels(extinction_labels, rotation=90)
+
+ax2.set_xlabel("Light extinction (-)")
 
 # Add z* values on the righthand axis
-ax_rhs = ax.twinx()
-ax_rhs.set_ylim(ax.get_ylim())
+ax2_rhs = ax2.twinx()
+ax2_rhs.set_ylim(ax2.get_ylim())
 z_star_labels = [
     f"$z^*_{l + 1} = {val:.2f}$"
     for l, val in enumerate(np.nditer(canopy_ppa.layer_heights))
 ]
-ax_rhs.set_yticks(canopy_ppa.layer_heights.flatten())
-ax_rhs.set_yticklabels(z_star_labels)
-
-# Add cumulative canopy area at top
-ax_top = ax.twiny()
-ax_top.set_xlim(ax.get_xlim())
-area_labels = [f"$A_{l + 1}$ = {z:.1f}" for l, z in enumerate(np.nditer(closure_areas))]
-ax_top.set_xticks(closure_areas)
-ax_top.set_xticklabels(area_labels)
-
-ax.set_ylabel("Vertical height ($z$, m)")
-ax.set_xlabel("Community-wide projected area (m2)")
-ax.legend(frameon=False)
+ax2_rhs.set_yticks(canopy_ppa.layer_heights.flatten())
+_ = ax2_rhs.set_yticklabels(z_star_labels)
 ```
 
 ## Light allocation
 
+In order to use the light extinction with the P Model, we need to calculate the
+photosynthetic photon flux density (PPFD) captured within each layer and each cohort.
+The steps below show this partitioning process for the PPA layers calculated above.
+
+1. Calculate the fraction of light transmitted $f_{tr}$ through each layer for each
+   cohort. The two arrays below show the extinction coefficients for the PFT of each
+   cohort and then the cohort LAI ($L_H$, columns) components within each layer (rows).
+   The transmission through each component is then $f_{tr}=e^{-kL_H}$.
+
+```{code-cell} ipython3
+print("k = \n", community.stem_traits.par_ext, "\n")
+print("L_H = \n", canopy_ppa.layer_cohort_lai)
+```
+
+```{code-cell} ipython3
+layer_cohort_f_tr = np.exp(-community.stem_traits.par_ext * canopy_ppa.layer_cohort_lai)
+print(layer_cohort_f_tr)
+```
+
+The fraction absorbed $f_{abs} = 1 - f_{tr}$.
+
+```{code-cell} ipython3
+layer_cohort_f_abs = 1 - layer_cohort_f_tr
+print(layer_cohort_f_abs)
+```
+
+These matrices show that there is complete transmission ($f_{abs} = 0, f_{tr} = 1$)
+where a given stem has no leaf area within the layer but otherwise the leaves of each
+stem absorb some light.
+
+If we want to calculate the total transmission within each layer, we need to sum the
+individual cohort contributions within the exponent:
+
+```{code-cell} ipython3
+np.exp(np.sum(-community.stem_traits.par_ext * canopy_ppa.layer_cohort_lai, axis=1))
+```
+
+Or alternatively, take the product within layers of the cohort components:
+
+```{code-cell} ipython3
+layer_f_tr = np.prod(layer_cohort_f_tr, axis=1)
+print(layer_f_tr)
+```
+
+From that we can calculate $f_{abs} for each layer.
+
+```{code-cell} ipython3
+layer_f_abs = 1 - layer_f_tr
+print(layer_f_abs)
+```
+
+We can also calculate the cumulative fraction of light transmitted through the layers:
+
+```{code-cell} ipython3
+transmission_profile = np.cumprod(layer_f_tr)
+print(transmission_profile)
+```
+
+And then the extinction profile:
+
+```{code-cell} ipython3
+extinction_profile = 1 - transmission_profile
+print(extinction_profile)
+```
+
+The last thing to do is then calculate how much light is absorbed within each cohort.
+The light can be partitioned into the light absorbed within each layer and reaching the
+ground as follows:
+
 ```{code-cell} ipython3
 ppfd = 1000
-
-ppfd_layer = -np.diff(ppfd * np.cumprod(canopy_ppa.layer_f_trans), prepend=ppfd)
-ppfd_layer
+ppfd_layer = -np.diff(ppfd * transmission_profile, prepend=ppfd, append=0)
+print(ppfd_layer)
 ```
+
+The cumulative sum across those quantities accounts for all of the incoming light and
+matches the scaling of the extinction profile:
 
 ```{code-cell} ipython3
-(1 - canopy_ppa.layer_cohort_f_trans) * ppfd_layer[:, None]
+print(np.cumsum(ppfd_layer))
 ```
+
+:::{admonition} TODO
+
+Now need to work out what the correct partition is of this within cohorts. It might
+simply be weighted by relative $f_{abs}$ by cohort (i.e. `layer_cohort_f_abs`) but I'm
+not 100% convinced!
+
+:::
 
 ## Things to worry about later
 
