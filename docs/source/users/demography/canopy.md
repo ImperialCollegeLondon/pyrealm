@@ -179,11 +179,11 @@ ax1.set_xlabel("Profile radius (m)")
 ax1.set_ylabel("Vertical height (m)")
 
 # Plot the leaf area between heights for stems
-ax2.plot(simple_canopy.layer_stem_leaf_area, hghts, color="red")
+ax2.plot(simple_canopy.stem_leaf_area, hghts, color="red")
 ax2.set_xlabel("Leaf area (m2)")
 
 # Plot the fraction of light absorbed at different heights
-ax3.plot(simple_canopy.layer_f_abs, hghts, color="red")
+ax3.plot(simple_canopy.f_abs, hghts, color="red")
 ax3.set_xlabel("Light absorption fraction (-)")
 
 # Plot the light extinction profile through the canopy.
@@ -254,8 +254,8 @@ community = Community(
     flora=flora,
     cell_area=32,
     cell_id=1,
-    cohort_dbh_values=np.array([0.05, 0.20, 0.5]),
-    cohort_n_individuals=np.array([7, 3, 1]),
+    cohort_dbh_values=np.array([0.1, 0.20, 0.5]),
+    cohort_n_individuals=np.array([7, 3, 2]),
     cohort_pft_names=np.array(["short", "short", "tall"]),
 )
 
@@ -284,6 +284,8 @@ print(canopy.extinction_profile[-1])
 ```
 
 ```{code-cell} ipython3
+:tags: [hide-input]
+
 cols = ["r", "b", "g"]
 
 mpl.rcParams["axes.prop_cycle"] = mpl.cycler(color=cols)
@@ -315,12 +317,12 @@ ax1.set_xlabel("Profile radius (m)")
 ax1.set_ylabel("Vertical height (m)")
 
 # Plot the leaf area between heights for stems
-ax2.plot(canopy.layer_stem_leaf_area, hghts)
+ax2.plot(canopy.stem_leaf_area, hghts)
 ax2.set_xlabel("Leaf area per stem (m2)")
 
 # Plot the fraction of light absorbed at different heights
-ax3.plot(canopy.layer_f_abs, hghts, color="grey")
-ax3.plot(1 - canopy.layer_cohort_f_trans, hghts)
+ax3.plot(canopy.f_abs, hghts, color="grey")
+ax3.plot(1 - canopy.cohort_f_trans, hghts)
 ax3.set_xlabel("Light absorption fraction (-)")
 
 # Plot the light extinction profile through the canopy.
@@ -385,11 +387,11 @@ $$
 canopy_ppa = Canopy(community=community, canopy_gap_fraction=0, fit_ppa=True)
 ```
 
-The `canopy_ppa.layer_heights` attribute now contains the heights at which the PPA
+The `canopy_ppa.heights` attribute now contains the heights at which the PPA
 layers close:
 
 ```{code-cell} ipython3
-canopy_ppa.layer_heights
+canopy_ppa.heights
 ```
 
 And the final value in the canopy extinction profile still matches the expectation from
@@ -426,27 +428,27 @@ to confirm that the calculated values coincide with the profile. Note here that 
 total area at each closed layer height is omitting the community gap fraction.
 
 ```{code-cell} ipython3
+:tags: [hide-input]
+
 fig, (ax1, ax2) = plt.subplots(ncols=2, sharey=True, figsize=(12, 6))
 
 # Calculate the crown area at which each canopy layer closes.
-closure_areas = (
-    np.arange(1, len(canopy_ppa.layer_heights) + 1) * canopy.filled_community_area
-)
+closure_areas = np.arange(1, len(canopy_ppa.heights) + 1) * canopy.filled_community_area
 
 # LH plot - projected leaf area with height.
 
 # Add lines showing the canopy closure heights and closure areas.
-for val in canopy_ppa.layer_heights:
+for val in canopy_ppa.heights:
     ax1.axhline(val, color="red", linewidth=0.5, zorder=0)
 
 for val in closure_areas:
     ax1.axvline(val, color="red", linewidth=0.5, zorder=0)
 
 # Show the community projected crown area profile
-ax1.plot(community_crown_area, canopy.layer_heights, zorder=1, label="Crown area")
+ax1.plot(community_crown_area, canopy.heights, zorder=1, label="Crown area")
 ax1.plot(
     community_leaf_area,
-    canopy.layer_heights,
+    canopy.heights,
     zorder=1,
     linestyle="--",
     color="black",
@@ -466,7 +468,7 @@ ax1.set_xlabel("Community-wide projected area (m2)")
 ax1.legend(frameon=False)
 
 # RH plot - light extinction
-for val in canopy_ppa.layer_heights:
+for val in canopy_ppa.heights:
     ax2.axhline(val, color="red", linewidth=0.5, zorder=0)
 
 for val in canopy_ppa.extinction_profile:
@@ -489,111 +491,96 @@ ax2.set_xlabel("Light extinction (-)")
 ax2_rhs = ax2.twinx()
 ax2_rhs.set_ylim(ax2.get_ylim())
 z_star_labels = [
-    f"$z^*_{l + 1} = {val:.2f}$"
-    for l, val in enumerate(np.nditer(canopy_ppa.layer_heights))
+    f"$z^*_{l + 1} = {val:.2f}$" for l, val in enumerate(np.nditer(canopy_ppa.heights))
 ]
-ax2_rhs.set_yticks(canopy_ppa.layer_heights.flatten())
+ax2_rhs.set_yticks(canopy_ppa.heights.flatten())
 _ = ax2_rhs.set_yticklabels(z_star_labels)
 ```
 
 ## Light allocation
 
-In order to use the light extinction with the P Model, we need to calculate the
-photosynthetic photon flux density (PPFD) captured within each layer and each cohort.
+<!-- markdownlint-disable  MD029 -->
+
+In order to use the light extinction with the P Model, we need to calculate the fraction
+of absorbed photosynthetically active radiation $f_{APAR}$ within each layer for each
+cohort. These values can be multiplied by the canopy-top photosynthetic photon flux
+density (PPFD) to give the actual light absorbed for photosynthesis.
+
 The steps below show this partitioning process for the PPA layers calculated above.
 
 1. Calculate the fraction of light transmitted $f_{tr}$ through each layer for each
    cohort. The two arrays below show the extinction coefficients for the PFT of each
    cohort and then the cohort LAI ($L_H$, columns) components within each layer (rows).
-   The transmission through each component is then $f_{tr}=e^{-kL_H}$.
+   The transmission through each component is then $f_{tr}=e^{-kL_H}$ and
+   $f_{abs} = 1 - f_{tr}$ .
 
 ```{code-cell} ipython3
 print("k = \n", community.stem_traits.par_ext, "\n")
-print("L_H = \n", canopy_ppa.layer_cohort_lai)
+print("L_H = \n", canopy_ppa.cohort_lai)
 ```
 
 ```{code-cell} ipython3
-layer_cohort_f_tr = np.exp(-community.stem_traits.par_ext * canopy_ppa.layer_cohort_lai)
+layer_cohort_f_tr = np.exp(-community.stem_traits.par_ext * canopy_ppa.cohort_lai)
 print(layer_cohort_f_tr)
 ```
-
-The fraction absorbed $f_{abs} = 1 - f_{tr}$.
 
 ```{code-cell} ipython3
 layer_cohort_f_abs = 1 - layer_cohort_f_tr
 print(layer_cohort_f_abs)
 ```
 
-These matrices show that there is complete transmission ($f_{abs} = 0, f_{tr} = 1$)
-where a given stem has no leaf area within the layer but otherwise the leaves of each
-stem absorb some light.
+   These matrices show that there is complete transmission ($f_{abs} = 0, f_{tr} = 1$)
+   where a given stem has no leaf area within the layer but otherwise the leaves of each
+   stem absorb some light.
 
-If we want to calculate the total transmission within each layer, we need to sum the
-individual cohort contributions within the exponent:
-
-```{code-cell} ipython3
-np.exp(np.sum(-community.stem_traits.par_ext * canopy_ppa.layer_cohort_lai, axis=1))
-```
-
-Or alternatively, take the product within layers of the cohort components:
+2. Calculate the total transmission across cohorts within each layer, as the product of
+   the individual cohort transmission within the layers, and then the absorption within
+   each layer
 
 ```{code-cell} ipython3
 layer_f_tr = np.prod(layer_cohort_f_tr, axis=1)
 print(layer_f_tr)
 ```
 
-From that we can calculate $f_{abs} for each layer.
-
 ```{code-cell} ipython3
 layer_f_abs = 1 - layer_f_tr
 print(layer_f_abs)
 ```
 
-We can also calculate the cumulative fraction of light transmitted through the layers:
+3. Calculate the transmission and extinction profiles through the layers as the
+   cumulative product of light transmitted.
 
 ```{code-cell} ipython3
 transmission_profile = np.cumprod(layer_f_tr)
 print(transmission_profile)
 ```
 
-And then the extinction profile:
-
 ```{code-cell} ipython3
 extinction_profile = 1 - transmission_profile
 print(extinction_profile)
 ```
 
-The last thing to do is then calculate how much light is absorbed within each cohort.
-The light can be partitioned into the light absorbed within each layer and reaching the
-ground as follows:
+4. Calculate the fraction of light transmitted through each each layer:
 
 ```{code-cell} ipython3
-ppfd = 1000
-ppfd_layer = -np.diff(ppfd * transmission_profile, prepend=ppfd, append=0)
-print(ppfd_layer)
+layer_fapar = -np.diff(transmission_profile, prepend=1)
+print(layer_fapar)
 ```
 
-The cumulative sum across those quantities accounts for all of the incoming light and
-matches the scaling of the extinction profile:
+5. Calculate the relative absorbance across cohort within each layer and then use this
+   to partition the light absorbed in that layer across the cohorts:
 
 ```{code-cell} ipython3
-print(np.cumsum(ppfd_layer))
+cohort_fapar = (
+    layer_cohort_f_abs / layer_cohort_f_abs.sum(axis=1)[:, None]
+) * layer_fapar[:, None]
+print(cohort_fapar)
 ```
 
-:::{admonition} TODO
+6. Last, divide the cohort $f_{APAR}$ through by the number of individuals in each
+   cohort to given the $f_{APAR}$ for each stem at each height.
 
-Now need to work out what the correct partition is of this within cohorts. It might
-simply be weighted by relative $f_{abs}$ by cohort (i.e. `layer_cohort_f_abs`) but I'm
-not 100% convinced!
-
-:::
-
-## Things to worry about later
-
-Herbivory - leaf fall (transmission increases, truncate at 0, replace from NSCs) vs leaf
-turnover (transmission constant, increased GPP penalty)
-
-Leaf area dynamics in PlantFATE - acclimation to herbivory and transitory decreases in
-transimission, need non-structural carbohydrates  to recover from total defoliation.
-
-Leaf economics.
+```{code-cell} ipython3
+stem_fapar = cohort_fapar / community.cohort_data["n_individuals"]
+print(stem_fapar)
+```
