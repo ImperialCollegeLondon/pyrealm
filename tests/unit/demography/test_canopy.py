@@ -47,7 +47,7 @@ def test_Canopy__init__():
             / community.cell_area
         )
     )
-    assert canopy.layer_stem_leaf_area.shape == (
+    assert canopy.stem_leaf_area.shape == (
         n_layers_from_crown_area,
         canopy.n_cohorts,
     )
