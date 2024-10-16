@@ -212,7 +212,7 @@ def calc_transmissivity(sf: NDArray, elv: NDArray, k_c: float, k_d: float) -> ND
     r"""Calculate atmospheric transmissivity, :math:`tau`.
 
     This function calculates atmospheric transmissivity using the method of
-    Eq.11, :cite:t:`Linacre:1968` and Eq 2, :cite:t:`Allen:1996`.
+    Eq.11, :cite:t:`Linacre:1968a` and Eq 2, :cite:t:`allen:1996a`.
 
     .. math::
 
@@ -340,8 +340,7 @@ def calc_net_longwave_radiation(
     r"""Calculates net longwave radiation, :math:`rnl`, W/m^2.
 
     This function calculates net longwave radiation in W/m^2 using the methods
-    of Eq. 11, :cite:t:`Prentice et al.:1993`, Eq. 5 and 6,
-    :cite:t:`Linacre:1968`.
+    of Eq. 11, :cite:t:`colinprentice:1993a`, Eq. 5 and 6 :cite:t:`Linacre:1968a` .
 
     .. math::
 
@@ -674,15 +673,15 @@ def calc_solar_elevation(site_obs_data: LocationDateTime) -> NDArray:
 
     This function calculates the solar elevation angle, which is the angle
     between the sun and the observer's local horizon, using the methods outlined
-    in :cite:t:`de Pury and Farquhar:1997`.
+    in :cite:t:`depury:1997a`.
 
     NB: This implementation does not correct for the effect of local observation
     altitude on perceived solar elevation.
 
     Args:
-        site_obs_data: A:class:`~pyrealm.core.calendar.LocationDateTime`instance
-        containing the location and time-specific information for the
-        observation site.
+        site_obs_data: A :class:`~pyrealm.core.calendar.LocationDateTime` instance \
+            containing the location and time-specific information for the observation \
+            site.
 
     Returns:
         An array of solar elevation angles in radians, representing the angular
@@ -733,7 +732,7 @@ def elevation_from_lat_dec_hn(
     solar declination, and the hour angle.
 
     The calculation is based on the following trigonometric relationship based on Eqn
-    A13, :cite:t:`de Pury and Farquhar:1997`:
+    A13, :cite:t:`depury:1997a`:
 
     .. math::
         \sin(\alpha) = \sin(\phi) \cdot \sin(\delta) +
@@ -775,7 +774,7 @@ def elevation_from_lat_dec_hn(
 def solar_declination(td: NDArray) -> NDArray:
     r"""Calculates solar declination angle.
 
-    Use method described in eqn A14 of :cite:t:`dePury& Farquhar:1997` to calculate
+    Use method described in eqn A14 of :cite:t:`depury:1997a` to calculate
     solar declination angle, from day of the year.
 
     .. math::
@@ -804,7 +803,7 @@ def local_hour_angle(t: NDArray, t0: NDArray) -> NDArray:
     and the solar noon time (``t_0``), and then converting this difference into an
     angle.
 
-    Equation implemented from A15 :citet:`de Pury and Farquhar:1997`.
+    Equation implemented from A15 :cite:t:`depury:1997a`.
 
     .. math::
         h = \pi \cdot \frac{t - t_0}{12}
@@ -832,18 +831,17 @@ def solar_noon(L_e: float, L_s: float, E_t: NDArray) -> NDArray:
     the sky for a given location. This function calculates the solar noon by
     adjusting the standard noon time (12:00 PM) based on the difference between
     the local longitude (``L_e``) and the local standard meridian (``L_s``) and the
-    equation of time (``E_t``). Based on EqA16, :cite:t:`de Pury and Farquhar:1997`.
+    equation of time (``E_t``). Based on EqA16, :cite:t:`depury:1997a`.
 
     .. math::
         t_0 = 12 + \frac{4 \cdot -(L_e - L_s) - E_t}{60}
 
     Args:
-        L_e: Local longitude of the observer in degrees (positive for
-        east,negative for west).
-        L_s: Longitude of the standard meridian for the
-        observer's time zone in degrees.
-        E_t: Equation of time in minutes, accounting for the irregularity of the
-        Earth's orbit and axial tilt.
+        L_e: Local longitude of the observer in degrees (positive for east,negative for\
+              west).
+        L_s: Longitude of the standard meridian for the observer's time zone in degrees.
+        E_t: Equation of time in minutes, accounting for the irregularity of the \
+            Earth's orbit and axial tilt.
 
     Returns:
         The solar noon time in hours (as a floating-point number), which can be
@@ -859,8 +857,8 @@ def solar_noon(L_e: float, L_s: float, E_t: NDArray) -> NDArray:
 def equation_of_time(day_angle: NDArray) -> NDArray:
     r"""Calculates equation of time in minutes.
 
-    Based on eqn 1.4.1 :cite:t:`Iqbal:1983` rather than eqn A17
-    :cite:t:`de Pury and Farquahar:1997` due to incorrect reported implementation in
+    Based on eqn 1.4.1 :cite:t:`iqbal:1983a` rather than eqn A17
+    :cite:t:`depury:1997a` due to incorrect reported implementation in
     the latter.
 
     .. math::
@@ -899,7 +897,7 @@ def day_angle(t_d: NDArray) -> NDArray:
     The day angle (``gamma``) for a given day of the year ``N``, (where N=1 for January
     1st and N=365 for December 31st) can be calculated using the following formula:
 
-    Based on Eqn A18, :cite:t:`De Pury and Farquhar:1997`.
+    Based on Eqn A18, :cite:t:`depury:1997a`.
 
     .. math::
 
