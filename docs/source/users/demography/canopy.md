@@ -35,6 +35,7 @@ notes and initial demonstration code.
 ```{code-cell} ipython3
 from matplotlib import pyplot as plt
 import matplotlib as mpl
+from matplotlib.patches import Polygon
 import numpy as np
 import pandas as pd
 
@@ -228,7 +229,7 @@ and then three cohorts:
 
 * 7 saplings of the short PFT
 * 3 larger stems of the short PFT
-* 1 large stems of tall PFT
+* 2 large stems of tall PFT
 
 ```{code-cell} ipython3
 # Define PFTs
@@ -262,6 +263,33 @@ community = Community(
 # Calculate the canopy profile across vertical heights
 hghts = np.linspace(community.stem_allometry.stem_height.max(), 0, num=101)[:, None]
 canopy = Canopy(community=community, layer_heights=hghts)
+```
+
+The plot below then shows a simplistic 2D representation of the community.
+
+```{code-cell} ipython3
+fig, ax = plt.subplots(ncols=1)
+
+# Extract the crown profiles as XY arrays for plotting
+profiles = get_crown_xy(
+    crown_profile=canopy.crown_profile,
+    stem_allometry=community.stem_allometry,
+    attr="crown_radius",
+    as_xy=True,
+)
+
+for idx, crown in enumerate(profiles):
+
+    # Get spaced but slightly randomized stem locations
+    n_stems = community.cohort_data["n_individuals"][idx]
+    stem_locations = np.linspace(0, 10, num=n_stems) + np.random.normal(size=n_stems)
+
+    # Plot the crown model for each stem
+    for stem_loc in stem_locations:
+        ax.add_patch(Polygon(crown + np.array([stem_loc, 0]), color="#00550055"))
+
+ax.autoscale_view()
+ax.set_aspect(1)
 ```
 
 As before, we can verify that the cumulative light extinction at the bottom of the
@@ -384,7 +412,7 @@ l_m = \left\lceil \frac{\sum_1^{N_s}{A_c}}{ A(1 - f_G)}\right\rceil
 $$
 
 ```{code-cell} ipython3
-canopy_ppa = Canopy(community=community, canopy_gap_fraction=0, fit_ppa=True)
+canopy_ppa = Canopy(community=community, canopy_gap_fraction=2 / 32, fit_ppa=True)
 ```
 
 The `canopy_ppa.heights` attribute now contains the heights at which the PPA
@@ -495,6 +523,11 @@ z_star_labels = [
 ]
 ax2_rhs.set_yticks(canopy_ppa.heights.flatten())
 _ = ax2_rhs.set_yticklabels(z_star_labels)
+```
+
+```{code-cell} ipython3
+t = 0.6
+(1 - 0.2) - t
 ```
 
 ## Light allocation
