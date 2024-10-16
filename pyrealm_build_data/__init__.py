@@ -10,6 +10,9 @@ that are used in the ``pyrealm`` build and testing process. This includes:
 * Datasets for providing profiling of ``pyrealm`` code and for benchmarking new versions
   of the package code against earlier implementations to check for performance issues.
 
+The package is organised into submodules that reflect the data use or previous
+implementation.
+
 Note that ``pyrealm_build_data`` is a source distribution only (``sdist``) component of
 ``pyrealm``, so is not included in binary distributions (``wheel``) that are typically
 installed by end users. This means that files in ``pyrealm_build_data`` are not
