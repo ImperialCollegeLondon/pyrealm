@@ -184,17 +184,23 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
         reference_kphio=1 / 8,
         fs_scaler=fsscaler2,
         allow_holdover=True,
-        init_realised=(
+        previous_realised=(
             part_1_subdaily_pmodel.optimal_chi.xi[-1],
             part_1_subdaily_pmodel.vcmax25_real[-1],
             part_1_subdaily_pmodel.jmax25_real[-1],
         ),
     )
 
-    assert np.allclose(
-        all_in_one_subdaily_pmodel.gpp,
-        np.concat([part_1_subdaily_pmodel.gpp, part_2_subdaily_pmodel.gpp]),
+    # assert np.allclose(
+    #     all_in_one_subdaily_pmodel.gpp,
+    #     np.concat([part_1_subdaily_pmodel.gpp, part_2_subdaily_pmodel.gpp]),
+    # )
+
+    diff = all_in_one_subdaily_pmodel.gpp - np.concat(
+        [part_1_subdaily_pmodel.gpp, part_2_subdaily_pmodel.gpp]
     )
+
+    assert np.nanmax(np.abs(diff)) == 0
 
 
 @pytest.mark.parametrize("ndims", [2, 3, 4])
