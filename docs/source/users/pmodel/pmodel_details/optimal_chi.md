@@ -5,10 +5,21 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Optimal $\chi$ and leaf $\ce{CO2}$
@@ -63,7 +74,7 @@ for use within a P Model.
   - {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGammaRootzoneStress`
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 from itertools import product
@@ -196,7 +207,7 @@ def plot_opt_chi(mod):
 This **C3 method** follows the approach detailed in {cite:t}`Prentice:2014bc`, see
 {class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14` for details.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Run the P Model and plot predictions
@@ -210,7 +221,7 @@ This **C4 method** follows the approach detailed in {cite:t}`Prentice:2014bc`, b
 a C4 specific version of the unit cost ratio ($\beta$). It also sets $m_j = m_c = 1$.
 See {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4` for details.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Run the P Model and plot predictions
@@ -228,7 +239,7 @@ and also also sets $m_j = 1$, but $m_c$ is calculated as in
 {class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`. See
 {meth}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGamma` for details.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Run the P Model and plot predictions
@@ -263,7 +274,7 @@ The calculation details are provided in the description of the
 {class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3` method, but the
 variation in $\beta$ with $\theta$ is shown below.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Theta is required for the calculation of beta
@@ -291,7 +302,7 @@ The plots below show the impacts on optimal $\chi$ across a temperature gradient
 values of VPD and soil moisture, with constant atmospheric pressure (101325 Pa) and CO2
 (280 ppm).
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Environments with high and low soil moisture
@@ -356,7 +367,7 @@ pyplot.tight_layout()
 The plots below illustrate the impact of temperature and  $\theta$ on  $m_j$ and $m_c$,
 again with constant atmospheric pressure (101325 Pa) and CO2 (280 ppm).
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 fig, ((ax1, ax3), (ax2, ax4)) = pyplot.subplots(2, 2, figsize=(10, 10), sharey=True)
@@ -454,7 +465,7 @@ but the variation in $\beta$ with rootzone stress is shown below.
 * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4RootzoneStress`
 * {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGammaRootzoneStress`
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 from pyrealm.pmodel.optimal_chi import (
@@ -500,7 +511,7 @@ The plots below show the impacts on optimal $\chi$ across a temperature gradient
 values of VPD and rootzone stress, with constant atmospheric pressure (101325 Pa) and CO2
 (280 ppm).
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Environments with high and low rootzone stress
