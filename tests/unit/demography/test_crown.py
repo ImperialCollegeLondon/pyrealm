@@ -1,30 +1,10 @@
-"""test the functions in canopy_functions.py."""
+"""Test the functions in crown.py."""
 
 from collections import namedtuple
 from contextlib import nullcontext as does_not_raise
 
 import numpy as np
 import pytest
-
-
-@pytest.fixture
-def fixture_community():
-    """A fixture providing a simple community."""
-    from pyrealm.demography.community import Community
-    from pyrealm.demography.flora import Flora, PlantFunctionalType
-
-    # A simple community containing one sample stem, with an initial crown gap fraction
-    # of zero.
-    flora = Flora([PlantFunctionalType(name="test", f_g=0.0)])
-    return Community(
-        cell_id=1,
-        cell_area=100,
-        flora=flora,
-        cohort_n_individuals=np.repeat([1], 4),
-        cohort_pft_names=np.repeat(["test"], 4),
-        cohort_dbh_values=np.array([0.2, 0.4, 0.6, 0.8]),
-    )
-
 
 ZQZInput = namedtuple(
     "ZQZInput",
@@ -464,42 +444,6 @@ def test_calculate_stem_projected_crown_area_at_z_values(
         Ap_z_values,
         expected_Ap_z,
     )
-
-
-def test_solve_community_projected_canopy_area(fixture_community):
-    """Test solve_community_projected_canopy_area.
-
-    The logic of this test is that given the cumulative sum of the crown areas in the
-    fixture from tallest to shortest as the target, providing the z_max of each stem as
-    the height _should_ always return zero, as this is exactly the height at which that
-    cumulative area would close: crown 1 closes at z_max 1, crown 1 + 2 closes at z_max
-    2 and so on.
-    """
-
-    from pyrealm.demography.crown import (
-        solve_community_projected_canopy_area,
-    )
-
-    for (
-        this_height,
-        this_target,
-    ) in zip(
-        np.flip(fixture_community.stem_allometry.crown_z_max),
-        np.cumsum(np.flip(fixture_community.stem_allometry.crown_area)),
-    ):
-        solved = solve_community_projected_canopy_area(
-            z=this_height,
-            stem_height=fixture_community.stem_allometry.stem_height,
-            crown_area=fixture_community.stem_allometry.crown_area,
-            n_individuals=fixture_community.cohort_data["n_individuals"],
-            m=fixture_community.stem_traits.m,
-            n=fixture_community.stem_traits.n,
-            q_m=fixture_community.stem_traits.q_m,
-            z_max=fixture_community.stem_allometry.crown_z_max,
-            target_area=this_target,
-        )
-
-    assert solved == pytest.approx(0)
 
 
 @pytest.mark.parametrize(
