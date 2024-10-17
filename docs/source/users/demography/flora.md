@@ -5,10 +5,21 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Plant Functional Types and Traits
@@ -23,7 +34,7 @@ notes and initial demonstration code.
 This page introduces the main components of the {mod}`~pyrealm.demography` module that
 describe plant functional types (PFTs) and their traits.
 
-```{code-cell}
+```{code-cell} ipython3
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
@@ -100,7 +111,7 @@ their maximum height.
 Note that the `q_m` and `z_max_prop` traits are calculated from the `m` and `n` traits
 and cannot be set directly.
 
-```{code-cell}
+```{code-cell} ipython3
 short_pft = PlantFunctionalType(name="short", h_max=10)
 medium_pft = PlantFunctionalType(name="medium", h_max=20)
 tall_pft = PlantFunctionalType(name="tall", h_max=30)
@@ -108,7 +119,7 @@ tall_pft = PlantFunctionalType(name="tall", h_max=30)
 
 The traits values set for a PFT instance can then be shown:
 
-```{code-cell}
+```{code-cell} ipython3
 short_pft
 ```
 
@@ -129,13 +140,13 @@ that will be used in a demographic simulation. It can be created directly by pro
 the list of {class}`~pyrealm.demography.flora.PlantFunctionalType` instances. The only
 requirement is that each PFT instance uses a different name.
 
-```{code-cell}
+```{code-cell} ipython3
 flora = Flora([short_pft, medium_pft, tall_pft])
 
 flora
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 pd.DataFrame({k: getattr(flora, k) for k in flora.trait_attrs})
 ```
 
@@ -153,7 +164,7 @@ within {class}`~pyrealm.demography.community.Community` objects.
 A `StemTraits` instance can be created directly by providing arrays for each trait, but is
 more easily created from a `Flora` object by providing a list of PFT names:
 
-```{code-cell}
+```{code-cell} ipython3
 # Get stem traits for a range of stems
 stem_pfts = ["short", "short", "short", "medium", "medium", "tall"]
 stem_traits = flora.get_stem_traits(pft_names=stem_pfts)

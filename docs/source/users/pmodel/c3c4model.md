@@ -5,10 +5,21 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # C3 / C4 Competition
@@ -41,7 +52,7 @@ expected C4 fraction ($F_4$) in a community (see
 correction term for the estimated percentage tree cover and the plot below shows how
 $F_4$ changes with $A_4$, given differing estimates of tree cover.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 import numpy as np
@@ -87,7 +98,7 @@ The plot below shows how $h$ varies with the expected GPP from C3 plants alone. 
 dashed line shows the C3 GPP estimate above which canopy closure leads to complete
 shading of C4 plants.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Just use the competition model to predict h across a GPP gradient
@@ -123,7 +134,7 @@ cover of 0.5.
 
 ### Code
 
-```{code-cell}
+```{code-cell} ipython3
 # Use a simple temperature sequence to generate a range of optimal chi values
 n_pts = 51
 tc_1d = np.linspace(-10, 45, n_pts)
@@ -201,7 +212,7 @@ Panel F
 : The contributions of plants using the C3 and C4 pathways to predicted
   $\delta\ce{^{13}C}$ .
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Generate the plots
