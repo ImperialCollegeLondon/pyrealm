@@ -85,7 +85,7 @@ def test_memory_effect_chunked(inputs_whole, alpha):
     result_chunk1 = memory_effect(inputs_chunk1, alpha=alpha)
 
     result_chunk2 = memory_effect(
-        inputs_chunk2, initial_values=result_chunk1[-1], alpha=alpha
+        inputs_chunk2, previous_values=result_chunk1[-1], alpha=alpha
     )
 
     assert np.allclose(result_whole[-1], result_chunk2[-1])

@@ -42,7 +42,7 @@ from pyrealm.pmodel.quantum_yield import (
 
 def memory_effect(
     values: NDArray,
-    initial_values: NDArray | None = None,
+    previous_values: NDArray | None = None,
     alpha: float = 0.067,
     allow_holdover: bool = False,
 ) -> NDArray:
@@ -92,7 +92,7 @@ def memory_effect(
 
     Args:
         values: The values to apply the memory effect to.
-        initial_values: Last available realised value used if model is fitted in
+        previous_values: Last available realised value used if model is fitted in
             chunks and value at t=0 is not optimal.
         alpha: The relative weight applied to the most recent observation.
         allow_holdover: Allow missing values to be filled by holding over earlier
@@ -110,10 +110,10 @@ def memory_effect(
     # Initialise the output storage and set the first values to be a slice along the
     # first axis of the input values
     memory_values = np.empty_like(values, dtype=np.float32)
-    if initial_values is None:
+    if previous_values is None:
         memory_values[0] = values[0]
     else:
-        memory_values[0] = initial_values
+        memory_values[0] = previous_values * (1 - alpha) + values[0] * alpha
 
     # Handle the data if there are no missing data,
     if not nan_present:
@@ -406,21 +406,21 @@ class SubdailyPModel:
         # 5) Calculate the realised daily values from the instantaneous optimal values
         self.xi_real: NDArray = memory_effect(
             self.pmodel_acclim.optchi.xi,
-            initial_values=init_xi_real,
+            previous_values=init_xi_real,
             alpha=alpha,
             allow_holdover=allow_holdover,
         )
         r"""Realised daily slow responses in :math:`\xi`"""
         self.vcmax25_real: NDArray = memory_effect(
             self.vcmax25_opt,
-            initial_values=init_vcmax_real,
+            previous_values=init_vcmax_real,
             alpha=alpha,
             allow_holdover=allow_holdover,
         )
         r"""Realised daily slow responses in :math:`V_{cmax25}`"""
         self.jmax25_real: NDArray = memory_effect(
             self.jmax25_opt,
-            initial_values=init_jmax_real,
+            previous_values=init_jmax_real,
             alpha=alpha,
             allow_holdover=allow_holdover,
         )
