@@ -10,11 +10,21 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # $J_{max}$ limitation
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 from matplotlib import pyplot
@@ -51,7 +61,7 @@ The plot below shows the effects of each method on the light use efficienct acro
 temperature gradient. The other forcing variables are fixed ($P=101325.0 , \ce{CO2}= 400
 \text{ppm}, \text{VPD}=820$) and $\phi_0$ is also fixed ($\phi_0=0.08$).
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Calculate variation in m_jlim with temperature

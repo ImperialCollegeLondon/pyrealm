@@ -525,11 +525,6 @@ ax2_rhs.set_yticks(canopy_ppa.heights.flatten())
 _ = ax2_rhs.set_yticklabels(z_star_labels)
 ```
 
-```{code-cell} ipython3
-t = 0.6
-(1 - 0.2) - t
-```
-
 ## Light allocation
 
 <!-- markdownlint-disable  MD029 -->

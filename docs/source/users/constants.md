@@ -10,6 +10,16 @@ kernelspec:
   display_name: Python 3
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Package constants
@@ -36,7 +46,7 @@ of default model constants. The core API and details for each class can be seen
 
 These can be used to generate the default set of model parameters:
 
-```{code-cell}
+```{code-cell} ipython3
 from pyrealm.constants import CoreConst, TModelTraits
 
 core_const = CoreConst()
@@ -48,7 +58,7 @@ print(tmodel_const)
 
 And individual values can be altered using the parameter arguments:
 
-```{code-cell}
+```{code-cell} ipython3
 # Estimate processes under the moon's gravity...
 core_const_moon = CoreConst(k_G=1.62)
 # ... allowing a much greater maximum height
@@ -62,7 +72,7 @@ In order to ensure that a set of parameters cannot change while models are being
 instances of these parameter classes are **frozen**. You cannot  edit an existing
 instance and will need to create a new instance to use different parameters.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [raises-exception]
 
 core_const_moon.k_G = 9.80665
@@ -76,7 +86,7 @@ export of parameter settings to dictionaries and to JSON formatted files. The co
 shows these methods working. First, a trait definition in a JSON file is read into a
 dictionary:
 
-```{code-cell}
+```{code-cell} ipython3
 import json
 import pprint
 
@@ -89,7 +99,7 @@ the {meth}`~pyrealm.constants.base.ConstantsClass.from_dict` method. The
 {meth}`~pyrealm.constants.base.ConstantsClass.from_json` method allows this to
 be done more directly and the resulting instances are identical.
 
-```{code-cell}
+```{code-cell} ipython3
 traits1 = TModelTraits.from_dict(trt_dict)
 traits2 = TModelTraits.from_json("../files/traits.json")
 

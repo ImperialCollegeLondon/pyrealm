@@ -10,11 +10,21 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Worked example of the Subdaily P Model
 
-```{code-cell}
+```{code-cell} ipython3
 from importlib import resources
 
 import xarray
@@ -59,7 +69,7 @@ fitting basically takes all of the same arguments as the standard
 The test data use some UK WFDE data for three sites in order to compare predictions
 over a time series.
 
-```{code-cell}
+```{code-cell} ipython3
 # Loading the example dataset:
 dpath = (
     resources.files("pyrealm_build_data.uk_data") / "UK_WFDE5_FAPAR_2018_JuneJuly.nc"
@@ -80,7 +90,7 @@ sites = xarray.Dataset(
 The WFDE data need some conversion for use in the PModel, along with the definition of
 the atmospheric CO2 concentration.
 
-```{code-cell}
+```{code-cell} ipython3
 # Variable set up
 # Air temperature in °C from Tair in Kelvin
 tc = (ds["Tair"] - 273.15).to_numpy()
@@ -99,7 +109,7 @@ co2 = np.ones_like(tc) * 400
 
 The code below then calculates the photosynthetic environment.
 
-```{code-cell}
+```{code-cell} ipython3
 # Generate and check the PModelEnvironment
 pm_env = PModelEnvironment(tc=tc, patm=patm, vpd=vpd, co2=co2)
 pm_env.summarize()
@@ -110,7 +120,7 @@ pm_env.summarize()
 The standard implementation of the P Model used below assumes that plants can
 instantaneously adopt optimal behaviour.
 
-```{code-cell}
+```{code-cell} ipython3
 # Standard PModels
 pmodC3 = PModel(
     env=pm_env, method_kphio="fixed", reference_kphio=1 / 8, method_optchi="prentice14"
@@ -119,7 +129,7 @@ pmodC3.estimate_productivity(fapar=fapar, ppfd=ppfd)
 pmodC3.summarize()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 pmodC4 = PModel(
     env=pm_env, method_kphio="fixed", reference_kphio=1 / 8, method_optchi="c4_no_gamma"
 )
@@ -135,7 +145,7 @@ values to holdover previous realised values to cover missing data within the
 calculations: essentially the plant does not acclimate until the optimal values can be
 calculated again to update those realised estimates.
 
-```{code-cell}
+```{code-cell} ipython3
 # Set the acclimation window to an hour either side of noon
 fsscaler = SubdailyScaler(datetimes)
 fsscaler.set_window(
@@ -174,7 +184,7 @@ The code below then extracts the time series for the two months from the three s
 shown above and plots the instantaneous predictions against predictions including slow
 photosynthetic responses.
 
-```{code-cell}
+```{code-cell} ipython3
 # Store the predictions in the xarray Dataset to use indexing
 ds["GPP_pmodC3"] = (ds["Tair"].dims, pmodC3.gpp)
 ds["GPP_subdailyC3"] = (ds["Tair"].dims, subdailyC3.gpp)
@@ -231,7 +241,7 @@ plt.tight_layout()
 The subdaily models can also be obtained directly from the standard models, using the
 `convert_pmodel_to_subdaily` method:
 
-```{code-cell}
+```{code-cell} ipython3
 # Convert standard C3 model
 converted_C3 = convert_pmodel_to_subdaily(
     pmodel=pmodC3,
@@ -252,7 +262,7 @@ converted_C4 = convert_pmodel_to_subdaily(
 This produces the same outputs as the `SubdailyPModel` class, but is convenient and more
 compact when the two models are going to be compared.
 
-```{code-cell}
+```{code-cell} ipython3
 # Models have identical GPP - maximum absolute difference is zero.
 print(np.nanmax(abs(subdailyC3.gpp.flatten() - converted_C3.gpp.flatten())))
 print(np.nanmax(abs(subdailyC4.gpp.flatten() - converted_C4.gpp.flatten())))

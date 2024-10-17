@@ -10,6 +10,16 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Plant Communities
@@ -20,7 +30,7 @@ This area of `pyrealm` is in active development.
 
 :::
 
-```{code-cell}
+```{code-cell} ipython3
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
@@ -29,7 +39,7 @@ from pyrealm.demography.flora import PlantFunctionalType, Flora
 from pyrealm.demography.community import Community
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 short_pft = PlantFunctionalType(
     name="short", h_max=15, m=1.5, n=1.5, f_g=0, ca_ratio=380
 )
@@ -53,10 +63,10 @@ community = Community(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 community
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 
 ```

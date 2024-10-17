@@ -10,6 +10,16 @@ kernelspec:
   display_name: Python 3
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Missing data in the subdaily model
@@ -47,7 +57,7 @@ The code below gives a concrete example - a time series that starts and ends dur
 the middle of a one hour acclimation window around noon. Only two of the three
 observations are provided for the first and last day
 
-```{code-cell}
+```{code-cell} ipython3
 import numpy as np
 
 from pyrealm.pmodel.scaler import SubdailyScaler
@@ -89,7 +99,7 @@ problem of the missing data clearly:
 * One day has a single missing 12:00 data point within the acclimation window.
 * One day has no data within the acclimation window.
 
-```{code-cell}
+```{code-cell} ipython3
 fsscaler.get_window_values(data)
 ```
 
@@ -98,7 +108,7 @@ The daily average conditions are calculated using the
 partial data are not allowed - which is the default - the daily average conditions for
 all days with missing data is also missing (`np.nan`).
 
-```{code-cell}
+```{code-cell} ipython3
 partial_not_allowed = fsscaler.get_daily_means(data)
 partial_not_allowed
 ```
@@ -107,7 +117,7 @@ Setting `allow_partial_data = True` allows the daily average conditions to be ca
 from the partial available information. This does not solve the problem for the day with
 no data in the acclimation window, which still results in a missing value.
 
-```{code-cell}
+```{code-cell} ipython3
 partial_allowed = fsscaler.get_daily_means(data, allow_partial_data=True)
 partial_allowed
 ```
@@ -116,7 +126,7 @@ The :func:`~pyrealm.pmodel.subdaily.memory_effect` function is used to calculate
 realised values of a variable from the optimal values. By default, this function *will
 raise an error* when missing data are present:
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [raises-exception]
 
 memory_effect(partial_not_allowed)
@@ -126,14 +136,14 @@ The `allow_holdover` option allows the function to be run - the value for the fi
 is still `np.nan` but the missing observations on day 3, 5 and 7 are filled by holding
 over the valid observations from the previous day.
 
-```{code-cell}
+```{code-cell} ipython3
 memory_effect(partial_not_allowed, allow_holdover=True)
 ```
 
 When the partial data is allowed, the `allow_holdover` is still required to fill the
 gap on day 5 by holding over the data from day 4.
 
-```{code-cell}
+```{code-cell} ipython3
 memory_effect(partial_allowed, allow_holdover=True)
 ```
 

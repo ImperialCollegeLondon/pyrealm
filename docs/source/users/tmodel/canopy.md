@@ -10,6 +10,16 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Canopy model
@@ -37,7 +47,7 @@ This sketch:
   object.
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import root_scalar
@@ -55,11 +65,11 @@ The scaling of a set of trees is automatically calculated using the initial diam
 the `TTree` instance. This automatically calculates the other dimensions, such as
 height, using the underlying scaling equations of the T Model.
 
-```{code-cell}
+```{code-cell} ipython3
 pft.height
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :lines_to_next_cell: 2
 
 pft.crown_area
@@ -98,7 +108,7 @@ r_0 &= \frac{1}{q_m}\sqrt{\frac{A_c}{\pi}}
 \end{align}
 $$
 
-```{code-cell}
+```{code-cell} ipython3
 :lines_to_next_cell: 2
 
 def calculate_qm(m, n):
@@ -147,7 +157,7 @@ r(z) &= r_0 \; q(z)
 \end{align}
 $$
 
-```{code-cell}
+```{code-cell} ipython3
 def calculate_relative_canopy_radius_at_z(z, H, m, n):
     """Calculate q(z)"""
 
@@ -156,20 +166,20 @@ def calculate_relative_canopy_radius_at_z(z, H, m, n):
     return m * n * z_over_H ** (n - 1) * (1 - z_over_H**n) ** (m - 1)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 # Validate that zm and r0 generate the predicted maximum crown area
 q_zm = calculate_relative_canopy_radius_at_z(zm, pft.height, m, n)
 rm = r0 * q_zm
 print("rm = ", rm)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 np.allclose(rm**2 * np.pi, pft.crown_area)
 ```
 
 Vertical crown radius profiles can now be calculated for each stem:
 
-```{code-cell}
+```{code-cell} ipython3
 # Create an interpolation from ground to maximum stem height, with 5 cm resolution.
 # Also append a set of values _fractionally_ less than the exact height  of stems
 # so that the height at the top of each stem is included but to avoid floating
@@ -191,7 +201,7 @@ np.cumsum(np.convolve(rm, np.ones(2), "valid") + 0.1)
 
 Those can be plotted out to show the vertical crown radius profiles
 
-```{code-cell}
+```{code-cell} ipython3
 # Separate the stems along the x axis for plotting
 stem_x = np.concatenate(
     [np.array([0]), np.cumsum(np.convolve(rm, np.ones(2), "valid") + 0.4)]
@@ -238,7 +248,7 @@ A_c \left(\dfrac{q(z)}{q_m}\right)^2, & H > z > z_m \\
 \end{cases}
 $$
 
-```{code-cell}
+```{code-cell} ipython3
 Stems = float | np.ndarray
 
 
@@ -282,7 +292,7 @@ def calculate_projected_area(
 The code below calculates the projected crown area for each stem and then plots the
 vertical profile for individual stems and across the community.
 
-```{code-cell}
+```{code-cell} ipython3
 :lines_to_next_cell: 2
 
 # Calculate the projected area for each stem
@@ -332,7 +342,7 @@ $$
 l_m = \left\lceil \frac{\sum_1^{N_s}{ A_c}}{ A(1 - f_G)}\right\rceil
 $$
 
-```{code-cell}
+```{code-cell} ipython3
 def solve_canopy_closure_height(
     z: float,
     l: int,
@@ -396,7 +406,7 @@ def calculate_canopy_heights(
 The example below calculates the projected crown area above ground level for the example
 stems. These should be identical to the crown area of the stems.
 
-```{code-cell}
+```{code-cell} ipython3
 # Set the total available canopy space and community gap fraction
 canopy_area = 32
 community_gap_fraction = 2 / 32
@@ -413,7 +423,7 @@ superimpose the calculated $z^*_l$ values and the cumulative canopy area for eac
 to confirm that the calculated values coincide with the profile. Note here that the
 total area at each closed layer height is omitting the community gap fraction.
 
-```{code-cell}
+```{code-cell} ipython3
 community_Ap_z = np.nansum(Ap_z, axis=1)
 
 fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(10, 5))
@@ -482,14 +492,14 @@ plt.tight_layout()
 The projected area from individual stems to each canopy layer can then be calculated at
 $z^*_l$ and hence the projected area of canopy **within each layer**.
 
-```{code-cell}
+```{code-cell} ipython3
 # Calculate the canopy area above z_star for each stem
 Ap_z_star = calculate_projected_area(z=z_star[:, None], pft=pft, m=m, n=n, qm=qm, zm=zm)
 
 print(Ap_z_star)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :lines_to_next_cell: 2
 
 # Calculate the contribution _within_ each layer per stem
@@ -528,7 +538,7 @@ $$
 
 The function below calculates $\tilde{A}_{cp}(z)$.
 
-```{code-cell}
+```{code-cell} ipython3
 def calculate_leaf_area(
     z: float,
     fg: float,
@@ -573,7 +583,7 @@ there are no crown gaps and hence all of the leaf area is within the crown surfa
 $f_g \to 1$, more of the leaf area is displaced deeper into the canopy, leaves in the
 lower crown intercepting light coming through holes in the upper canopy.
 
-```{code-cell}
+```{code-cell} ipython3
 fig, ax1 = plt.subplots(1, 1, figsize=(6, 5))
 
 for fg in np.arange(0, 1.01, 0.05):
@@ -601,7 +611,7 @@ ax1.legend(frameon=False)
 We can now calculate the crown area occupied by leaves above the height of each closed
 layer $z^*_l$:
 
-```{code-cell}
+```{code-cell} ipython3
 # Calculate the leaf area above z_star for each stem
 crown_gap_fraction = 0.05
 Acp_z_star = calculate_leaf_area(
@@ -615,7 +625,7 @@ And from that, the area occupied by leaves **within each layer**. These values a
 similar to the projected crown area within layers (`Ap_within_layer`, above) but
 leaf area is displaced into lower layers because $f_g > 0$.
 
-```{code-cell}
+```{code-cell} ipython3
 # Calculate the contribution _within_ each layer per stem
 Acp_within_layer = np.diff(Acp_z_star, axis=0, prepend=0)
 
@@ -632,7 +642,7 @@ $f_{abs} = 1 - e ^ {-kL}$,
 where $k$ is the light extinction coefficient ($k$) and $L$ is the leaf area index
 (LAI). The LAI can be calculated for each stem and layer:
 
-```{code-cell}
+```{code-cell} ipython3
 LAI = Acp_within_layer / canopy_area
 print(LAI)
 ```
@@ -640,7 +650,7 @@ print(LAI)
 This can be used to calculate the LAI of individual stems but also the LAI of each layer
 in the canopy:
 
-```{code-cell}
+```{code-cell} ipython3
 LAI_stem = LAI.sum(axis=0)
 LAI_layer = LAI.sum(axis=1)
 
@@ -651,7 +661,7 @@ print("LAI layer = ", LAI_layer)
 The layer LAI values can now be used to calculate the light transmission of each layer and
 hence the cumulative light extinction profile through the canopy.
 
-```{code-cell}
+```{code-cell} ipython3
 f_abs = 1 - np.exp(-pft.traits.par_ext * LAI_layer)
 ext = np.cumprod(f_abs)
 
@@ -663,7 +673,7 @@ One issue that needs to be resolved is that the T Model implementation in `pyrea
 follows the original implementation of the T Model in having LAI as a fixed trait of
 a given plant functional type, so is constant for all stems of that PFT.
 
-```{code-cell}
+```{code-cell} ipython3
 print("f_abs = ", (1 - np.exp(-pft.traits.par_ext * pft.traits.lai)))
 ```
 
