@@ -5,10 +5,21 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # The tree crown model
@@ -20,7 +31,7 @@ notes and initial demonstration code.
 
 :::
 
-```{code-cell}
+```{code-cell} ipython3
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
@@ -146,7 +157,7 @@ The {class}`~pyrealm.demography.flora.PlantFunctionalType` class is typically
 used to set specific PFTs, but the functions to calculate $q_m$ and $p_{zm}$
 are used directly below to provides a demonstration of the impacts of each trait.
 
-```{code-cell}
+```{code-cell} ipython3
 # Set a range of values for m and n traits
 m = n = np.arange(1.0, 5, 0.1)
 
@@ -155,7 +166,7 @@ q_m = calculate_crown_q_m(m=m, n=n[:, None])
 z_max_prop = calculate_crown_z_max_proportion(m=m, n=n[:, None])
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(10.9, 4))
 
 # Plot q_m as a function of m and n
@@ -191,7 +202,7 @@ profiles for PFTs. It requires:
 The code below creates a set of PFTS with differing crown trait values and then creates
 a `Flora` object using the PFTs.
 
-```{code-cell}
+```{code-cell} ipython3
 # A PFT with a small crown area and equal m and n values
 narrow_pft = PlantFunctionalType(name="narrow", h_max=20, m=1.5, n=1.5, ca_ratio=20)
 # A PFT with an intermediate crown area  and m < n
@@ -206,7 +217,7 @@ flora
 
 The Flora object can also be used to show a table of canopy variables:
 
-```{code-cell}
+```{code-cell} ipython3
 # TODO - add a Flora.to_pandas() method
 flora_data = pd.DataFrame({k: getattr(flora, k) for k in flora.trait_attrs})
 flora_data[["name", "ca_ratio", "m", "n", "f_g", "q_m", "z_max_prop"]]
@@ -217,7 +228,7 @@ The T Model uses DBH to define stem size - here the the code is being used to
 back-calculate the required DBH values to give three stems with similar heights
 near the maximum height for each PFT.
 
-```{code-cell}
+```{code-cell} ipython3
 # Generate the expected stem allometries at similar heights for each PFT
 stem_height = np.array([19, 17, 15])
 stem_dbh = calculate_dbh_from_height(
@@ -226,14 +237,14 @@ stem_dbh = calculate_dbh_from_height(
 stem_dbh
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 # Calculate the stem allometries
 allometry = StemAllometry(stem_traits=flora, at_dbh=stem_dbh)
 ```
 
 We can again use {mod}`pandas` to get a table of those allometric predictions:
 
-```{code-cell}
+```{code-cell} ipython3
 pd.DataFrame({k: getattr(allometry, k) for k in allometry.allometry_attrs})
 ```
 
@@ -243,7 +254,7 @@ that is with a shape `(N, 1)`.
 
 We can then calculate the crown profiles.
 
-```{code-cell}
+```{code-cell} ipython3
 # Create a set of vertical heights as a column array.
 z = np.linspace(-1, 20.0, num=211)[:, None]
 
@@ -259,7 +270,7 @@ above calculated at each height $z$:
 * The projected crown area
 * The projected leaf area
 
-```{code-cell}
+```{code-cell} ipython3
 crown_profiles
 ```
 
@@ -276,7 +287,7 @@ stem. For each stem:
 Note that the equation for the relative radius $q(z)$ does define values where
 $z <0$ or $z > H$.
 
-```{code-cell}
+```{code-cell} ipython3
 fig, ax = plt.subplots(ncols=1)
 
 # Find the maximum of the actual and relative maximum crown widths
@@ -318,7 +329,7 @@ We can also use the `CanopyProfile` class with a single row of heights to calcul
 the crown profile at the expected $z_max$ and show that this matches the expected
 crown area from the T Model allometry.
 
-```{code-cell}
+```{code-cell} ipython3
 # Calculate the crown profile across those heights for each PFT
 z_max = flora.z_max_prop * stem_height
 profile_at_zmax = CrownProfile(stem_traits=flora, stem_allometry=allometry, z=z_max)
@@ -334,7 +345,7 @@ using the PFTs defined above because they have very different crown areas, so th
 below generates new profiles for a new set of PFTs that have similar crown area ratios
 but different shapes and gap fractions.
 
-```{code-cell}
+```{code-cell} ipython3
 no_gaps_pft = PlantFunctionalType(
     name="no_gaps", h_max=20, m=1.5, n=1.5, f_g=0, ca_ratio=380
 )
@@ -370,7 +381,7 @@ lines) change with height along the stem.
   lines are identical, but as `f_g` increases, more of the leaf area is displaced down
   within the crown.
 
-```{code-cell}
+```{code-cell} ipython3
 fig, ax = plt.subplots(ncols=1)
 
 for pft_idx, offset, colour in zip((0, 1, 2), (0, 5, 10), ("r", "g", "b")):
@@ -390,7 +401,7 @@ We can also generate predictions for a single PFT with varying crown gap fractio
 the plot below, note that all leaf area is above $z_{max}$ when $f_g=1$ and all leaf
 area is *below*
 
-```{code-cell}
+```{code-cell} ipython3
 fig, ax = plt.subplots(ncols=1)
 
 # Loop over f_g values
@@ -434,6 +445,6 @@ ax.set_xlabel(r"Projected leaf area ($\tilde{A}_{cp}(z)$, m2)")
 ax.legend(frameon=False)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 
 ```

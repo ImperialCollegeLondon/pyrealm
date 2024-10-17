@@ -5,10 +5,21 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # The `splash` submodule
@@ -46,7 +57,7 @@ The data below provides a 2 year daily time series of precipitation, temperature
 solar fraction (1 - cloud cover) for 0.5° resolution grid cells in a 10° by 10° block
 of the North Western USA. It also provides the mean elevation of those cells.
 
-```{code-cell}
+```{code-cell} ipython3
 from importlib import resources
 import numpy as np
 import xarray
@@ -74,7 +85,7 @@ data
 The plot below shows the elevation for the example data area, along with the locations
 of three sites that will be used to compare SPLASH outputs.
 
-```{code-cell}
+```{code-cell} ipython3
 # Get the latitude and longitude extents
 extent = (
     data["lon"].min(),
@@ -95,7 +106,7 @@ The three sites capture wetter coastal conditions with milder temperatures (San
 Francisco), intermediate rainfall with colder temperatures (Yosemite) and arid
 conditions with extreme temperatures (Death Valley).
 
-```{code-cell}
+```{code-cell} ipython3
 # Get three sites to show time series for locations
 site_data = data.sel(sites, method="nearest")
 
@@ -149,7 +160,7 @@ may well be constant across the longitude dimension for gridded data - but, at t
 moment, you need to broadcast these variables to match.
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 splash = SplashModel(
     lat=np.broadcast_to(data.lat.data[None, :, None], data.sf.data.shape),
     elv=np.broadcast_to(data.elev.data[None, :, :], data.sf.data.shape),
@@ -176,7 +187,7 @@ give the expected soil moisture at the end of the year. If this is sufficiently 
 to the start values, the estimate is returned, otherwise the end of year expectations
 are used as a starting point to recalculate the annual water balances.
 
-```{code-cell}
+```{code-cell} ipython3
 init_soil_moisture = splash.estimate_initial_soil_moisture(verbose=False)
 ```
 
@@ -200,7 +211,7 @@ The plots show the soil moisture for the first day, along with the changes in so
 moisture from the initial estimates (the 'previous day'). Note the saturated soil
 moisture of 150mm near the coast and in the mountains.
 
-```{code-cell}
+```{code-cell} ipython3
 # Calculate the water balance equation for the first day from the initial soil
 #  moisture estimates.
 aet, wn, ro = splash.estimate_daily_water_balance(init_soil_moisture, day_idx=0)
@@ -223,13 +234,13 @@ the daily estimation across all of the dates in the input data from initial soil
 moisture estimates. It returns a set of time series of soil moisture, runoff and AET for
 all sites.
 
-```{code-cell}
+```{code-cell} ipython3
 aet_out, wn_out, ro_out = splash.calculate_soil_moisture(init_soil_moisture)
 ```
 
 The plots below show the resulting soil moisture and a time series for the three
 
-```{code-cell}
+```{code-cell} ipython3
 # Add the outputs to the xarray to select the three sites easily.
 data["aet"] = xarray.DataArray(aet_out, dims=("time", "lat", "lon"))
 data["wn"] = xarray.DataArray(wn_out, dims=("time", "lat", "lon"))
