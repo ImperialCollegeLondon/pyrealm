@@ -185,6 +185,10 @@ class SubdailyPModel:
       more rapid acclimation: :math:`\alpha=1` results in immediate acclimation and
       :math:`\alpha=0` results in no acclimation at all, with values pinned to the
       initial estimates.
+    * By default, the initial realised value :math:`R_1` for each of the three slowly
+      acclimating variables is assumed to be the first optimal value :math:`O_1`, but
+      the `previous_realised` argument can be used to provide values of :math:`R_0` from
+      which to calculate :math:`R_{1} = R_{0}(1 - \alpha) + O_{1} \alpha`.
     * The realised values are then filled back onto the original subdaily timescale,
       with :math:`V_{cmax}` and :math:`J_{max}` then being calculated from the slowly
       responding :math:`V_{cmax25}` and :math:`J_{max25}` and the actual subdaily
@@ -229,12 +233,12 @@ class SubdailyPModel:
         allow_partial_data: Should estimates of daily optimal conditions be calculated
           with missing values in the acclimation window.
         reference_kphio: An optional alternative reference value for the quantum yield
-            efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
-            calculation method.
+          efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
+          calculation method.
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.
-        init_realised: A tuple of initial realised values of three NumPy arrays
-        (xi_real, vcmax25_real, jmax25_real).
+        previous_realised: A tuple of previous realised values of three NumPy arrays
+          (xi_real, vcmax25_real, jmax25_real).
     """
 
     def __init__(
@@ -251,7 +255,7 @@ class SubdailyPModel:
         allow_holdover: bool = False,
         allow_partial_data: bool = False,
         fill_kind: str = "previous",
-        init_realised: tuple[NDArray, NDArray, NDArray] | None = None,
+        previous_realised: tuple[NDArray, NDArray, NDArray] | None = None,
     ) -> None:
         # Warn about the API
         warn(
@@ -391,15 +395,22 @@ class SubdailyPModel:
         )
 
         """Instantaneous optimal :math:`x_{i}`, :math:`V_{cmax}` and :math:`J_{max}`"""
-        if init_realised is not None:
+        # Check the shape of previous realised values are congruent with a slice across
+        # the time axis
+        if previous_realised is not None:
+            # All variables should share the shape of a slice along the first axis of
+            # the environmental forcings
+            expected_shape = self.env.tc[0].shape
             if not (
-                (init_realised[0].shape() == self.xi_real[0].shape())
-                and (init_realised[1].shape() == self.vcmax25_real[0].shape())
-                and (init_realised[2].shape() == self.jmax25_real[0].shape())
+                (previous_realised[0].shape == expected_shape)
+                and (previous_realised[1].shape == expected_shape)
+                and (previous_realised[2].shape == expected_shape)
             ):
-                raise Exception("`init_realised` has wrong shape in Subdaily PModel")
+                raise Exception(
+                    "`previous_realised` entries have wrong shape in Subdaily PModel"
+                )
             else:
-                init_xi_real, init_vcmax_real, init_jmax_real = init_realised
+                init_xi_real, init_vcmax_real, init_jmax_real = previous_realised
         else:
             init_xi_real, init_vcmax_real, init_jmax_real = [None, None, None]
 
