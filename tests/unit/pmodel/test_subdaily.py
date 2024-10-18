@@ -191,16 +191,11 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
         ),
     )
 
-    # assert np.allclose(
-    #     all_in_one_subdaily_pmodel.gpp,
-    #     np.concat([part_1_subdaily_pmodel.gpp, part_2_subdaily_pmodel.gpp]),
-    # )
-
-    diff = all_in_one_subdaily_pmodel.gpp - np.concat(
-        [part_1_subdaily_pmodel.gpp, part_2_subdaily_pmodel.gpp]
+    assert np.allclose(
+        all_in_one_subdaily_pmodel.gpp,
+        np.concat([part_1_subdaily_pmodel.gpp, part_2_subdaily_pmodel.gpp]),
+        equal_nan=True,
     )
-
-    assert np.nanmax(np.abs(diff)) == 0
 
 
 @pytest.mark.parametrize("ndims", [2, 3, 4])

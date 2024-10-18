@@ -398,6 +398,12 @@ class SubdailyPModel:
         # Check the shape of previous realised values are congruent with a slice across
         # the time axis
         if previous_realised is not None:
+            if fill_kind != "previous":
+                raise NotImplementedError(
+                    "Using previous_realised is only implemented for "
+                    "fill_kind = 'previous'"
+                )
+
             # All variables should share the shape of a slice along the first axis of
             # the environmental forcings
             expected_shape = self.env.tc[0].shape
@@ -406,32 +412,38 @@ class SubdailyPModel:
                 and (previous_realised[1].shape == expected_shape)
                 and (previous_realised[2].shape == expected_shape)
             ):
-                raise Exception(
+                raise ValueError(
                     "`previous_realised` entries have wrong shape in Subdaily PModel"
                 )
             else:
-                init_xi_real, init_vcmax_real, init_jmax_real = previous_realised
+                previous_xi_real, previous_vcmax25_real, previous_jmax25_real = (
+                    previous_realised
+                )
         else:
-            init_xi_real, init_vcmax_real, init_jmax_real = [None, None, None]
+            previous_xi_real, previous_vcmax25_real, previous_jmax25_real = [
+                None,
+                None,
+                None,
+            ]
 
         # 5) Calculate the realised daily values from the instantaneous optimal values
         self.xi_real: NDArray = memory_effect(
             self.pmodel_acclim.optchi.xi,
-            previous_values=init_xi_real,
+            previous_values=previous_xi_real,
             alpha=alpha,
             allow_holdover=allow_holdover,
         )
         r"""Realised daily slow responses in :math:`\xi`"""
         self.vcmax25_real: NDArray = memory_effect(
             self.vcmax25_opt,
-            previous_values=init_vcmax_real,
+            previous_values=previous_vcmax25_real,
             alpha=alpha,
             allow_holdover=allow_holdover,
         )
         r"""Realised daily slow responses in :math:`V_{cmax25}`"""
         self.jmax25_real: NDArray = memory_effect(
             self.jmax25_opt,
-            previous_values=init_jmax_real,
+            previous_values=previous_jmax25_real,
             alpha=alpha,
             allow_holdover=allow_holdover,
         )
@@ -440,9 +452,15 @@ class SubdailyPModel:
 
         # 6) Fill the realised xi, jmax25 and vcmax25 from daily values back to the
         # subdaily timescale.
-        self.subdaily_vcmax25 = fs_scaler.fill_daily_to_subdaily(self.vcmax25_real)
-        self.subdaily_jmax25 = fs_scaler.fill_daily_to_subdaily(self.jmax25_real)
-        self.subdaily_xi = fs_scaler.fill_daily_to_subdaily(self.xi_real)
+        self.subdaily_xi = fs_scaler.fill_daily_to_subdaily(
+            self.xi_real, previous_value=previous_xi_real
+        )
+        self.subdaily_vcmax25 = fs_scaler.fill_daily_to_subdaily(
+            self.vcmax25_real, previous_value=previous_vcmax25_real
+        )
+        self.subdaily_jmax25 = fs_scaler.fill_daily_to_subdaily(
+            self.jmax25_real, previous_value=previous_jmax25_real
+        )
 
         # 7) Adjust subdaily jmax25 and vcmax25 back to jmax and vcmax given the
         #    actual subdaily temperatures.
