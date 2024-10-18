@@ -2,12 +2,15 @@
 atmospheric pressure.
 """  # noqa D210, D415
 
+import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
 
 
-def calc_patm(elv: NDArray, core_const: CoreConst = CoreConst()) -> NDArray:
+def calc_patm(
+    elv: NDArray[np.float64], core_const: CoreConst = CoreConst()
+) -> NDArray[np.float64]:
     r"""Calculate atmospheric pressure from elevation.
 
     Calculates atmospheric pressure as a function of elevation with reference to the

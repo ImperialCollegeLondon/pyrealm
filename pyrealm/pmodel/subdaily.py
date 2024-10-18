@@ -41,8 +41,8 @@ from pyrealm.pmodel.quantum_yield import (
 
 
 def memory_effect(
-    values: NDArray, alpha: float = 0.067, allow_holdover: bool = False
-) -> NDArray:
+    values: NDArray[np.float64], alpha: float = 0.067, allow_holdover: bool = False
+) -> NDArray[np.float64]:
     r"""Apply a memory effect to a variable.
 
     Three key photosynthetic parameters (:math:`\xi`, :math:`V_{cmax25}` and
@@ -104,7 +104,7 @@ def memory_effect(
 
     # Initialise the output storage and set the first values to be a slice along the
     # first axis of the input values
-    memory_values = np.empty_like(values, dtype=np.float32)
+    memory_values = np.empty_like(values, dtype=np.float64)
     memory_values[0] = values[0]
 
     # Handle the data if there are no missing data,
@@ -231,8 +231,8 @@ class SubdailyPModel:
         self,
         env: PModelEnvironment,
         fs_scaler: SubdailyScaler,
-        fapar: NDArray,
-        ppfd: NDArray,
+        fapar: NDArray[np.float64],
+        ppfd: NDArray[np.float64],
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
         method_kphio: str = "temperature",
@@ -380,15 +380,15 @@ class SubdailyPModel:
         )
 
         # 5) Calculate the realised daily values from the instantaneous optimal values
-        self.xi_real: NDArray = memory_effect(
+        self.xi_real: NDArray[np.float64] = memory_effect(
             self.pmodel_acclim.optchi.xi, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`\xi`"""
-        self.vcmax25_real: NDArray = memory_effect(
+        self.vcmax25_real: NDArray[np.float64] = memory_effect(
             self.vcmax25_opt, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`V_{cmax25}`"""
-        self.jmax25_real: NDArray = memory_effect(
+        self.jmax25_real: NDArray[np.float64] = memory_effect(
             self.jmax25_opt, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`J_{max25}`"""
@@ -402,13 +402,19 @@ class SubdailyPModel:
         # 7) Adjust subdaily jmax25 and vcmax25 back to jmax and vcmax given the
         #    actual subdaily temperatures.
         subdaily_tk = self.env.tc + self.env.core_const.k_CtoK
-        self.subdaily_vcmax: NDArray = self.subdaily_vcmax25 * calc_ftemp_arrh(
-            tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_vcmax25_ha
+        self.subdaily_vcmax: NDArray[np.float64] = (
+            self.subdaily_vcmax25
+            * calc_ftemp_arrh(
+                tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_vcmax25_ha
+            )
         )
         """Estimated subdaily :math:`V_{cmax}`."""
 
-        self.subdaily_jmax: NDArray = self.subdaily_jmax25 * calc_ftemp_arrh(
-            tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_jmax25_ha
+        self.subdaily_jmax: NDArray[np.float64] = (
+            self.subdaily_jmax25
+            * calc_ftemp_arrh(
+                tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_jmax25_ha
+            )
         )
         """Estimated subdaily :math:`J_{max}`."""
 
@@ -421,7 +427,9 @@ class SubdailyPModel:
         """Estimated subdaily :math:`c_i`."""
 
         # Calculate Ac, J and Aj at subdaily scale to calculate assimilation
-        self.subdaily_Ac: NDArray = self.subdaily_vcmax * self.optimal_chi.mc
+        self.subdaily_Ac: NDArray[np.float64] = (
+            self.subdaily_vcmax * self.optimal_chi.mc
+        )
         """Estimated subdaily :math:`A_c`."""
 
         iabs = fapar * ppfd
@@ -430,11 +438,11 @@ class SubdailyPModel:
             1 + ((4 * self.kphio.kphio * iabs) / self.subdaily_jmax) ** 2
         )
 
-        self.subdaily_Aj: NDArray = (subdaily_J / 4) * self.optimal_chi.mj
+        self.subdaily_Aj: NDArray[np.float64] = (subdaily_J / 4) * self.optimal_chi.mj
         """Estimated subdaily :math:`A_j`."""
 
         # Calculate GPP and convert from mol to gC
-        self.gpp: NDArray = (
+        self.gpp: NDArray[np.float64] = (
             np.minimum(self.subdaily_Aj, self.subdaily_Ac)
             * self.env.core_const.k_c_molmass
         )
@@ -535,8 +543,8 @@ class SubdailyPModel_JAMES:
         self,
         env: PModelEnvironment,
         fs_scaler: SubdailyScaler,
-        ppfd: NDArray,
-        fapar: NDArray,
+        ppfd: NDArray[np.float64],
+        fapar: NDArray[np.float64],
         alpha: float = 1 / 15,
         allow_holdover: bool = False,
         kphio: float = 1 / 8,
@@ -618,11 +626,11 @@ class SubdailyPModel_JAMES:
         )
 
         # Calculate the realised values from the instantaneous optimal values
-        self.vcmax25_real: NDArray = memory_effect(
+        self.vcmax25_real: NDArray[np.float64] = memory_effect(
             self.vcmax25_opt, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`V_{cmax25}`"""
-        self.jmax25_real: NDArray = memory_effect(
+        self.jmax25_real: NDArray[np.float64] = memory_effect(
             self.jmax25_opt, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`J_{max25}`"""
@@ -661,18 +669,24 @@ class SubdailyPModel_JAMES:
             self.jmax25_real, fill_from=fill_from
         )
 
-        self.subdaily_vcmax: NDArray = self.subdaily_vcmax25 * calc_ftemp_arrh(
-            tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_vcmax25_ha
+        self.subdaily_vcmax: NDArray[np.float64] = (
+            self.subdaily_vcmax25
+            * calc_ftemp_arrh(
+                tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_vcmax25_ha
+            )
         )
         """Estimated subdaily :math:`V_{cmax}`."""
 
-        self.subdaily_jmax: NDArray = self.subdaily_jmax25 * calc_ftemp_arrh(
-            tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_jmax25_ha
+        self.subdaily_jmax: NDArray[np.float64] = (
+            self.subdaily_jmax25
+            * calc_ftemp_arrh(
+                tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_jmax25_ha
+            )
         )
         """Estimated subdaily :math:`J_{max}`."""
 
         # Calculate Ac, J and Aj at subdaily scale to calculate assimilation
-        self.subdaily_Ac: NDArray = (
+        self.subdaily_Ac: NDArray[np.float64] = (
             self.subdaily_vcmax
             * (self.subdaily_ci - self.env.gammastar)
             / (self.subdaily_ci + self.env.kmm)
@@ -688,7 +702,7 @@ class SubdailyPModel_JAMES:
             1 + ((4 * self.kphio.kphio * iabs) / self.subdaily_jmax) ** 2
         )
 
-        self.subdaily_Aj: NDArray = (
+        self.subdaily_Aj: NDArray[np.float64] = (
             (subdaily_J / 4)
             * (self.subdaily_ci - self.env.gammastar)
             / (self.subdaily_ci + 2 * self.env.gammastar)
@@ -696,7 +710,7 @@ class SubdailyPModel_JAMES:
         """Estimated subdaily :math:`A_j`."""
 
         # Calculate GPP, converting from mol m2 s1 to grams carbon m2 s1
-        self.gpp: NDArray = (
+        self.gpp: NDArray[np.float64] = (
             np.minimum(self.subdaily_Aj, self.subdaily_Ac)
             * self.env.core_const.k_c_molmass
         )

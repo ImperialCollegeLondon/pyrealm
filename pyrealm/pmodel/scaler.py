@@ -69,7 +69,7 @@ class SubdailyScaler:
 
     def __init__(
         self,
-        datetimes: NDArray,
+        datetimes: NDArray[np.datetime64],
     ) -> None:
         # Datetime validation. The inputs must be:
         # - one dimensional datetime64
@@ -306,7 +306,7 @@ class SubdailyScaler:
 
     #     self.method = "Around max"
 
-    def pad_values(self, values: NDArray) -> NDArray:
+    def pad_values(self, values: NDArray[np.float64]) -> NDArray[np.float64]:
         """Pad values array to full days.
 
         This method takes an array representing daily values and pads the first and
@@ -329,7 +329,7 @@ class SubdailyScaler:
 
         return np.pad(values, padding_dims, constant_values=(np.nan, np.nan))
 
-    def get_window_values(self, values: NDArray) -> NDArray:
+    def get_window_values(self, values: NDArray[np.float64]) -> NDArray[np.float64]:
         """Extract acclimation window values for a variable.
 
         This method takes an array of values which has the same shape along the first
@@ -368,8 +368,8 @@ class SubdailyScaler:
         return values_by_day[:, self.include, ...]
 
     def get_daily_means(
-        self, values: NDArray, allow_partial_data: bool = False
-    ) -> NDArray:
+        self, values: NDArray[np.float64], allow_partial_data: bool = False
+    ) -> NDArray[np.float64]:
         """Get the daily means of a variable during the acclimation window.
 
         This method extracts values from a given variable during a defined acclimation
@@ -406,11 +406,11 @@ class SubdailyScaler:
 
     def fill_daily_to_subdaily(
         self,
-        values: NDArray,
+        values: NDArray[np.float64],
         update_point: str = "max",
         kind: str = "previous",
         fill_from: np.timedelta64 | None = None,
-    ) -> NDArray:
+    ) -> NDArray[np.float64]:
         """Resample daily variables onto the subdaily time scale.
 
         This method takes an array representing daily values and interpolates those
