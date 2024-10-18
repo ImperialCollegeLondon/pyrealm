@@ -55,6 +55,43 @@ def test_memory_effect(inputs, alpha):
 
 
 @pytest.mark.parametrize(
+    argnames="inputs_whole",
+    argvalues=[
+        pytest.param(np.arange(0, 10), id="1D"),
+        pytest.param(
+            np.column_stack([np.arange(0, 10)] * 4) + np.arange(4),
+            id="2D",
+        ),
+        pytest.param(
+            np.dstack([np.column_stack([np.arange(0, 10)] * 4)] * 4)
+            + np.arange(16).reshape(4, 4),
+            id="3D",
+        ),
+    ],
+)
+@pytest.mark.parametrize(argnames="alpha", argvalues=(0.0, 0.5, 1.0))
+def test_memory_effect_chunked(inputs_whole, alpha):
+    """Test that the memory effect works when chunking the time series up.
+
+    This compares the output of `test_memory_effect` with the output of
+    `memory_effect` which gets the two time chunks fed sequentially.,
+    """
+    from pyrealm.pmodel import memory_effect
+
+    result_whole = memory_effect(inputs_whole, alpha=alpha)
+
+    [inputs_chunk1, inputs_chunk2] = np.split(inputs_whole, [5], axis=0)
+
+    result_chunk1 = memory_effect(inputs_chunk1, alpha=alpha)
+
+    result_chunk2 = memory_effect(
+        inputs_chunk2, previous_values=result_chunk1[-1], alpha=alpha
+    )
+
+    assert np.allclose(result_whole[-1], result_chunk2[-1])
+
+
+@pytest.mark.parametrize(
     argnames="inputs,allow_holdover,context_manager,expected",
     argvalues=[
         pytest.param(
