@@ -40,7 +40,7 @@ from pyrealm.demography.t_model_functions import StemAllocation, StemAllometry
 ```
 
 To generate predictions under the T Model, we need a Flora object providing the
-[trait values](./flora.md) for each of the PFTsto be modelled:
+[trait values](./flora.md) for each of the PFTs to be modelled:
 
 ```{code-cell} ipython3
 # Three PFTS
@@ -77,12 +77,12 @@ for each PFT. This then calculates a single estimate at the given size for each 
 single_allometry = StemAllometry(stem_traits=flora, at_dbh=np.array([0.1, 0.1, 0.1]))
 ```
 
-We can display those predictions as a `pandas.DataFrame`:
+The class provides a
+{meth}`~pyrealm.demography.t_model_functions.StemAllometry.to_pandas()` method
+to export the stem data for data exploration.
 
 ```{code-cell} ipython3
-pd.DataFrame(
-    {k: getattr(single_allometry, k) for k in single_allometry.allometry_attrs}
-)
+single_allometry.to_pandas()
 ```
 
 However, the DBH values can also be a column array (an `N` x 1 array). In this case, the
@@ -123,11 +123,19 @@ for ax, (var, ylab) in zip(axes.flatten(), plot_details):
         ax.legend(frameon=False)
 ```
 
+The {meth}`~pyrealm.demography.t_model_functions.StemAllometry.to_pandas()` method
+can still be used, but the values are stacked into columns along with a column index
+
+```{code-cell} ipython3
+allometries.to_pandas()
+```
+
 ## Productivity allocation
 
 The T Model also predicts how potential GPP will be allocated to respiration, turnover
-and growth for stems with a given PFT and allometry. Again, a single value can be
-provided to get a single estimate of the allocation model for each stem:
+and growth for stems with a given PFT and allometry using the
+{meth}`~pyrealm.demography.t_model_functions.StemAllometry` class. Again, a single
+value can be provided to get a single estimate of the allocation model for each stem:
 
 ```{code-cell} ipython3
 single_allocation = StemAllocation(
@@ -136,10 +144,12 @@ single_allocation = StemAllocation(
 single_allocation
 ```
 
+The class provides the
+{meth}`~pyrealm.demography.t_model_functions.StemAllocation.to_pandas()` method to
+export data for exploration.
+
 ```{code-cell} ipython3
-pd.DataFrame(
-    {k: getattr(single_allocation, k) for k in single_allocation.allocation_attrs}
-)
+single_allocation.to_pandas()
 ```
 
 Using a column array of potential GPP values can be used to predict multiple estimates of
@@ -217,6 +227,9 @@ for ax, (var, ylab) in zip(axes, plot_details):
 fig.delaxes(axes[-1])
 ```
 
-```{code-cell} ipython3
+As before, the {meth}`~pyrealm.demography.t_model_functions.StemAllometry.to_pandas()`
+method can be used to export the data for each stem:
 
+```{code-cell} ipython3
+allocation.to_pandas()
 ```

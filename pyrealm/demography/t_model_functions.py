@@ -12,6 +12,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.core.utilities import check_input_shapes
+from pyrealm.demography.core import PandasExporter
 from pyrealm.demography.flora import Flora, StemTraits
 
 
@@ -659,7 +660,7 @@ def calculate_growth_increments(
 
 
 @dataclass
-class StemAllometry:
+class StemAllometry(PandasExporter):
     """Calculate T Model allometric predictions across a set of stems.
 
     This method calculate predictions of stem allometries for stem height, crown area,
@@ -675,7 +676,7 @@ class StemAllometry:
             allometry values.
     """
 
-    allometry_attrs: ClassVar[tuple[str, ...]] = (
+    array_attrs: ClassVar[tuple[str, ...]] = (
         "dbh",
         "stem_height",
         "crown_area",
@@ -796,7 +797,7 @@ class StemAllometry:
 
 
 @dataclass()
-class StemAllocation:
+class StemAllocation(PandasExporter):
     """Calculate T Model allocation predictions across a set of stems.
 
     This method calculate predictions of allocation of potential GPP for stems under the
@@ -814,7 +815,7 @@ class StemAllocation:
             predict stem allometry values.
     """
 
-    allocation_attrs: ClassVar[tuple[str, ...]] = (
+    array_attrs: ClassVar[tuple[str, ...]] = (
         "potential_gpp",
         "whole_crown_gpp",
         "sapwood_respiration",
