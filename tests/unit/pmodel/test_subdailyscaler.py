@@ -11,7 +11,7 @@ import pytest
 
 
 @pytest.fixture
-def fixture_FSS():
+def fixture_SubdailyScaler():
     """A fixture providing a SubdailyScaler object."""
     from pyrealm.pmodel import SubdailyScaler
 
@@ -114,7 +114,7 @@ def fixture_FSS():
         ),
     ],
 )
-def test_FSS_init(ctext_mngr, msg, datetimes):
+def test_SubdailyScaler_init(ctext_mngr, msg, datetimes):
     """Test the SubdailyScaler init handling of date ranges."""
     from pyrealm.pmodel import SubdailyScaler
 
@@ -162,11 +162,13 @@ def test_FSS_init(ctext_mngr, msg, datetimes):
         ),
     ],
 )
-def test_FSS_set_window(fixture_FSS, ctext_mngr, msg, kwargs, samp_mean, samp_max):
+def test_SubdailyScaler_set_window(
+    fixture_SubdailyScaler, ctext_mngr, msg, kwargs, samp_mean, samp_max
+):
     """Test the SubdailyScaler set_window method."""
 
     with ctext_mngr as cman:
-        fixture_FSS.set_window(**kwargs)
+        fixture_SubdailyScaler.set_window(**kwargs)
 
     if msg is not None:
         assert str(cman.value) == msg
@@ -174,8 +176,8 @@ def test_FSS_set_window(fixture_FSS, ctext_mngr, msg, kwargs, samp_mean, samp_ma
         # Check that _set_times has run correctly. Can't use allclose directly on
         # datetimes and since these are integers under the hood, don't need float
         # testing
-        assert np.all(fixture_FSS.sample_datetimes_mean == samp_mean)
-        assert np.all(fixture_FSS.sample_datetimes_max == samp_max)
+        assert np.all(fixture_SubdailyScaler.sample_datetimes_mean == samp_mean)
+        assert np.all(fixture_SubdailyScaler.sample_datetimes_max == samp_max)
 
 
 @pytest.mark.parametrize(
@@ -227,10 +229,12 @@ def test_FSS_set_window(fixture_FSS, ctext_mngr, msg, kwargs, samp_mean, samp_ma
         ),
     ],
 )
-def test_FSS_set_include(fixture_FSS, ctext_mngr, msg, include, samp_mean, samp_max):
+def test_SubdailyScaler_set_include(
+    fixture_SubdailyScaler, ctext_mngr, msg, include, samp_mean, samp_max
+):
     """Test the SubdailyScaler set_include method."""
     with ctext_mngr as cman:
-        fixture_FSS.set_include(include)
+        fixture_SubdailyScaler.set_include(include)
 
     if msg is not None:
         assert str(cman.value) == msg
@@ -239,8 +243,8 @@ def test_FSS_set_include(fixture_FSS, ctext_mngr, msg, include, samp_mean, samp_
         # Check that _set_times has run correctly. Can't use allclose directly on
         # datetimes and since these are integers under the hood, don't need float
         # testing
-        assert np.all(fixture_FSS.sample_datetimes_mean == samp_mean)
-        assert np.all(fixture_FSS.sample_datetimes_max == samp_max)
+        assert np.all(fixture_SubdailyScaler.sample_datetimes_mean == samp_mean)
+        assert np.all(fixture_SubdailyScaler.sample_datetimes_max == samp_max)
 
 
 @pytest.mark.parametrize(
@@ -290,10 +294,12 @@ def test_FSS_set_include(fixture_FSS, ctext_mngr, msg, include, samp_mean, samp_
         ),
     ],
 )
-def test_FSS_set_nearest(fixture_FSS, ctext_mngr, msg, time, samp_mean, samp_max):
+def test_SubdailyScaler_set_nearest(
+    fixture_SubdailyScaler, ctext_mngr, msg, time, samp_mean, samp_max
+):
     """Test the SubdailyScaler set_nearest method."""
     with ctext_mngr as cman:
-        fixture_FSS.set_nearest(time)
+        fixture_SubdailyScaler.set_nearest(time)
 
     if msg is not None:
         assert str(cman.value) == msg
@@ -302,8 +308,8 @@ def test_FSS_set_nearest(fixture_FSS, ctext_mngr, msg, time, samp_mean, samp_max
         # Check that _set_times has run correctly. Can't use allclose directly on
         # datetimes and since these are integers under the hood, don't need float
         # testing
-        assert np.all(fixture_FSS.sample_datetimes_mean == samp_mean)
-        assert np.all(fixture_FSS.sample_datetimes_max == samp_max)
+        assert np.all(fixture_SubdailyScaler.sample_datetimes_mean == samp_mean)
+        assert np.all(fixture_SubdailyScaler.sample_datetimes_max == samp_max)
 
 
 @pytest.mark.parametrize(
@@ -317,15 +323,15 @@ def test_FSS_set_nearest(fixture_FSS, ctext_mngr, msg, time, samp_mean, samp_max
         ),
     ],
 )
-def test_FSS_get_wv_errors(fixture_FSS, ctext_mngr, msg, values):
+def test_SubdailyScaler_get_wv_errors(fixture_SubdailyScaler, ctext_mngr, msg, values):
     """Test errors arising in the SubdailyScaler get_window_value method."""
-    fixture_FSS.set_window(
+    fixture_SubdailyScaler.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(2, "h"),
     )
 
     with ctext_mngr as cman:
-        _ = fixture_FSS.get_window_values(values)
+        _ = fixture_SubdailyScaler.get_window_values(values)
 
     assert str(cman.value) == msg
 
@@ -488,8 +494,8 @@ PARTIAL_VARYING = np.concatenate([[np.nan] * 24, np.arange(24, 144)])
         ),
     ],
 )
-class Test_FSS_get_vals_window_and_include:
-    """Test FSS get methods for set_window and set_include.
+class Test_SubdailyScaler_get_vals_window_and_include:
+    """Test SubdailyScaler get methods for set_window and set_include.
 
     The daily values extracted using the set_window and set_include methods can be the
     same, by setting the window and the include to cover the same observations, so these
@@ -509,30 +515,30 @@ class Test_FSS_get_vals_window_and_include:
     are np.nan - this should revert to setting np.nan in the first day.
     """
 
-    def test_FSS_get_vals_window(
-        self, fixture_FSS, values, expected_means, allow_partial_data
+    def test_SubdailyScaler_get_vals_window(
+        self, fixture_SubdailyScaler, values, expected_means, allow_partial_data
     ):
         """Test a window."""
-        fixture_FSS.set_window(
+        fixture_SubdailyScaler.set_window(
             window_center=np.timedelta64(12, "h"),
             half_width=np.timedelta64(2, "h"),
         )
-        calculated_means = fixture_FSS.get_daily_means(
+        calculated_means = fixture_SubdailyScaler.get_daily_means(
             values, allow_partial_data=allow_partial_data
         )
 
         assert np.allclose(calculated_means, expected_means, equal_nan=True)
 
-    def test_FSS_get_vals_include(
-        self, fixture_FSS, values, expected_means, allow_partial_data
+    def test_SubdailyScaler_get_vals_include(
+        self, fixture_SubdailyScaler, values, expected_means, allow_partial_data
     ):
         """Test include."""
 
         # This duplicates the selection of the window test but using direct include
         inc = np.zeros(48, dtype=np.bool_)
         inc[20:29] = True
-        fixture_FSS.set_include(inc)
-        calculated_means = fixture_FSS.get_daily_means(
+        fixture_SubdailyScaler.set_include(inc)
+        calculated_means = fixture_SubdailyScaler.get_daily_means(
             values, allow_partial_data=allow_partial_data
         )
 
@@ -607,7 +613,9 @@ class Test_FSS_get_vals_window_and_include:
         ),
     ],
 )
-def test_FSS_get_vals_nearest(fixture_FSS, values, expected_means):
+def test_SubdailyScaler_get_vals_nearest(
+    fixture_SubdailyScaler, values, expected_means
+):
     """Test get_daily_values.
 
     This tests the specific behaviour when set_nearest is used and a single observation
@@ -616,8 +624,8 @@ def test_FSS_get_vals_nearest(fixture_FSS, values, expected_means):
     """
 
     # Select the 11:30 observation, which is missing in PARTIAL_ONES and PARTIAL_VARYING
-    fixture_FSS.set_nearest(np.timedelta64(11 * 60 + 29, "m"))
-    calculated_means = fixture_FSS.get_daily_means(values)
+    fixture_SubdailyScaler.set_nearest(np.timedelta64(11 * 60 + 29, "m"))
+    calculated_means = fixture_SubdailyScaler.get_daily_means(values)
 
     assert np.allclose(calculated_means, expected_means, equal_nan=True)
 
@@ -744,8 +752,8 @@ def test_FSS_get_vals_nearest(fixture_FSS, values, expected_means):
         ),
     ],
 )
-def test_FSS_resample_subdaily(
-    fixture_FSS,
+def test_SubdailyScaler_fill_daily_to_subdaily_previous(
+    fixture_SubdailyScaler,
     method_name,
     kwargs,
     update_point,
@@ -755,15 +763,15 @@ def test_FSS_resample_subdaily(
     exp_values,
     fill_from,
 ):
-    """Test the calculation of subdaily samples using SubdailyScaler."""
+    """Test fill_daily_to_subdaily using SubdailyScale with method previous."""
 
     # Set the included observations - the different parameterisations here and for
     # the update point should all select the same update point.
-    func = getattr(fixture_FSS, method_name)
+    func = getattr(fixture_SubdailyScaler, method_name)
     func(**kwargs)
 
     with ctext_mngr as cman:
-        res = fixture_FSS.fill_daily_to_subdaily(
+        res = fixture_SubdailyScaler.fill_daily_to_subdaily(
             input_values, update_point=update_point, fill_from=fill_from
         )
 
@@ -829,20 +837,20 @@ def test_FSS_resample_subdaily(
         ),
     ],
 )
-def test_FSS_resample_subdaily_linear(
-    fixture_FSS,
+def test_SubdailyScaler_fill_daily_to_subdaily_linear(
+    fixture_SubdailyScaler,
     update_point,
     input_values,
     exp_values,
 ):
-    """Test SubdailyScaler resampling to subdaily timescale by linear interpolation."""
+    """Test fill_daily_to_subdaily using SubdailyScaler with method linear."""
 
     # Set the included observations
-    fixture_FSS.set_window(
+    fixture_SubdailyScaler.set_window(
         window_center=np.timedelta64(13, "h"), half_width=np.timedelta64(1, "h")
     )
 
-    res = fixture_FSS.fill_daily_to_subdaily(
+    res = fixture_SubdailyScaler.fill_daily_to_subdaily(
         input_values, update_point=update_point, kind="linear"
     )
 
