@@ -96,6 +96,7 @@ nitpick_ignore = [
     ("py:class", "numpy._typing._array_like._ScalarType_co"),
     ("py:class", "numpy._typing._generic_alias.ScalarType"),
     ("py:class", "numpy.float32"),
+    ("py:class", "numpy.float64"),
     ("py:class", "numpy.int64"),
     ("py:class", "numpy.timedelta64"),
     ("py:class", "numpy.bool_"),
