@@ -64,6 +64,25 @@ def rtmodel_flora():
 
 
 @pytest.fixture
+def fixture_community():
+    """A fixture providing a simple community."""
+    from pyrealm.demography.community import Community
+    from pyrealm.demography.flora import Flora, PlantFunctionalType
+
+    # A simple community containing one sample stem, with an initial crown gap fraction
+    # of zero.
+    flora = Flora([PlantFunctionalType(name="test", f_g=0.0)])
+    return Community(
+        cell_id=1,
+        cell_area=100,
+        flora=flora,
+        cohort_n_individuals=np.repeat([1], 4),
+        cohort_pft_names=np.repeat(["test"], 4),
+        cohort_dbh_values=np.array([0.2, 0.4, 0.6, 0.8]),
+    )
+
+
+@pytest.fixture
 def rtmodel_data():
     """Loads some simple predictions from the R implementation for testing."""
 
