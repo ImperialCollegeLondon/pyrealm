@@ -89,14 +89,14 @@ class JmaxLimitation:
 
         # Attributes populated by alternative method - two should always be populated by
         # the methods used below, but omega and omega_star only apply to smith19
-        self.f_j: NDArray
+        self.f_j: NDArray[np.float64]
         """:math:`J_{max}` limitation factor, calculated using the method."""
-        self.f_v: NDArray
+        self.f_v: NDArray[np.float64]
         """:math:`V_{cmax}` limitation factor, calculated using the method."""
-        self.omega: NDArray | None = None
+        self.omega: NDArray[np.float64] | None = None
         """Component of :math:`J_{max}` calculation for method ``smith19``
         (:cite:`Smith:2019dv`)."""
-        self.omega_star: NDArray | None = None
+        self.omega_star: NDArray[np.float64] | None = None
         """Component of :math:`J_{max}` calculation for method ``smith19``
         (:cite:`Smith:2019dv`)."""
 

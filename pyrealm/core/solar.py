@@ -24,7 +24,9 @@ from pyrealm.constants import CoreConst
 
 
 def calc_heliocentric_longitudes(
-    julian_day: NDArray, n_days: NDArray, core_const: CoreConst = CoreConst()
+    julian_day: NDArray[np.float64],
+    n_days: NDArray[np.float64],
+    core_const: CoreConst = CoreConst(),
 ) -> tuple[NDArray, NDArray]:
     """Calculate heliocentric longitude and anomaly.
 

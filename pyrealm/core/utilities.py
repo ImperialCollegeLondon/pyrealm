@@ -211,13 +211,13 @@ def _get_interval_functions(interval_type: str = "[]") -> tuple[np.ufunc, np.ufu
 
 
 def bounds_checker(
-    values: NDArray,
+    values: NDArray[np.float64],
     lower: float = -np.inf,
     upper: float = np.inf,
     interval_type: str = "[]",
     label: str = "",
     unit: str = "",
-) -> NDArray:
+) -> NDArray[np.float64]:
     r"""Check inputs fall within bounds.
 
     This is a simple pass through function that tests whether the values fall within
@@ -255,7 +255,7 @@ def bounds_checker(
 
 
 def bounds_mask(
-    inputs: NDArray,
+    inputs: NDArray[np.float64],
     lower: float = -np.inf,
     upper: float = np.inf,
     interval_type: str = "[]",
@@ -312,7 +312,7 @@ def bounds_mask(
     # modifying the original input. Using type
     if not np.issubdtype(inputs.dtype, np.floating):
         # Copies implicitly
-        outputs = inputs.astype(np.float32)
+        outputs = inputs.astype(np.float64)
     else:
         outputs = inputs.copy()
 
@@ -336,7 +336,9 @@ def bounds_mask(
     return outputs
 
 
-def evaluate_horner_polynomial(x: NDArray, cf: list | NDArray) -> NDArray:
+def evaluate_horner_polynomial(
+    x: NDArray[np.float64], cf: list | NDArray
+) -> NDArray[np.float64]:
     r"""Evaluates a polynomial with coefficients `cf` at `x` using Horner's method.
 
     Horner's method is a fast way to evaluate polynomials, especially for large degrees,

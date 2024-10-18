@@ -353,7 +353,7 @@ class Community:
     flora: Flora
 
     # - arrays representing properties of cohorts
-    cohort_dbh_values: InitVar[NDArray[np.float32]]
+    cohort_dbh_values: InitVar[NDArray[np.float64]]
     cohort_n_individuals: InitVar[NDArray[np.int_]]
     cohort_pft_names: InitVar[NDArray[np.str_]]
 
@@ -365,7 +365,7 @@ class Community:
 
     def __post_init__(
         self,
-        cohort_dbh_values: NDArray[np.float32],
+        cohort_dbh_values: NDArray[np.float64],
         cohort_n_individuals: NDArray[np.int_],
         cohort_pft_names: NDArray[np.str_],
     ) -> None:

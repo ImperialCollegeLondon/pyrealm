@@ -53,11 +53,11 @@ def _validate_t_model_args(pft_args: list[NDArray], size_args: list[NDArray]) ->
 
 
 def calculate_heights(
-    h_max: NDArray[np.float32],
-    a_hd: NDArray[np.float32],
-    dbh: NDArray[np.float32],
+    h_max: NDArray[np.float64],
+    a_hd: NDArray[np.float64],
+    dbh: NDArray[np.float64],
     validate: bool = True,
-) -> NDArray[np.float32]:
+) -> NDArray[np.float64]:
     r"""Calculate tree height under the T Model.
 
     The height of trees (:math:`H`) are calculated from individual diameters at breast
@@ -83,11 +83,11 @@ def calculate_heights(
 
 
 def calculate_dbh_from_height(
-    h_max: NDArray[np.float32],
-    a_hd: NDArray[np.float32],
-    stem_height: NDArray[np.float32],
+    h_max: NDArray[np.float64],
+    a_hd: NDArray[np.float64],
+    stem_height: NDArray[np.float64],
     validate: bool = True,
-) -> NDArray[np.float32]:
+) -> NDArray[np.float64]:
     r"""Calculate diameter at breast height from stem height under the T Model.
 
     This function inverts the normal calculation of stem height (:math:`H`) from
@@ -133,12 +133,12 @@ def calculate_dbh_from_height(
 
 
 def calculate_crown_areas(
-    ca_ratio: NDArray[np.float32],
-    a_hd: NDArray[np.float32],
-    dbh: NDArray[np.float32],
-    stem_height: NDArray[np.float32],
+    ca_ratio: NDArray[np.float64],
+    a_hd: NDArray[np.float64],
+    dbh: NDArray[np.float64],
+    stem_height: NDArray[np.float64],
     validate: bool = True,
-) -> NDArray[np.float32]:
+) -> NDArray[np.float64]:
     r"""Calculate tree crown area under the T Model.
 
     The tree crown area (:math:`A_{c}`)is calculated from individual diameters at breast
@@ -166,11 +166,11 @@ def calculate_crown_areas(
 
 
 def calculate_crown_fractions(
-    a_hd: NDArray[np.float32],
-    stem_height: NDArray[np.float32],
-    dbh: NDArray[np.float32],
+    a_hd: NDArray[np.float64],
+    stem_height: NDArray[np.float64],
+    dbh: NDArray[np.float64],
     validate: bool = True,
-) -> NDArray[np.float32]:
+) -> NDArray[np.float64]:
     r"""Calculate tree crown fraction under the T Model.
 
     The crown fraction (:math:`f_{c}`)is calculated from individual diameters at breast
@@ -195,11 +195,11 @@ def calculate_crown_fractions(
 
 
 def calculate_stem_masses(
-    rho_s: NDArray[np.float32],
-    stem_height: NDArray[np.float32],
-    dbh: NDArray[np.float32],
+    rho_s: NDArray[np.float64],
+    stem_height: NDArray[np.float64],
+    dbh: NDArray[np.float64],
     validate: bool = True,
-) -> NDArray[np.float32]:
+) -> NDArray[np.float64]:
     r"""Calculate stem mass under the T Model.
 
     The stem mass (:math:`W_{s}`) is calculated from individual diameters at breast
@@ -223,11 +223,11 @@ def calculate_stem_masses(
 
 
 def calculate_foliage_masses(
-    sla: NDArray[np.float32],
-    lai: NDArray[np.float32],
-    crown_area: NDArray[np.float32],
+    sla: NDArray[np.float64],
+    lai: NDArray[np.float64],
+    crown_area: NDArray[np.float64],
     validate: bool = True,
-) -> NDArray[np.float32]:
+) -> NDArray[np.float64]:
     r"""Calculate foliage mass under the T Model.
 
     The foliage mass (:math:`W_{f}`) is calculated from the crown area (:math:`A_{c}`),
@@ -251,13 +251,13 @@ def calculate_foliage_masses(
 
 
 def calculate_sapwood_masses(
-    rho_s: NDArray[np.float32],
-    ca_ratio: NDArray[np.float32],
-    stem_height: NDArray[np.float32],
-    crown_area: NDArray[np.float32],
-    crown_fraction: NDArray[np.float32],
+    rho_s: NDArray[np.float64],
+    ca_ratio: NDArray[np.float64],
+    stem_height: NDArray[np.float64],
+    crown_area: NDArray[np.float64],
+    crown_fraction: NDArray[np.float64],
     validate: bool = True,
-) -> NDArray[np.float32]:
+) -> NDArray[np.float64]:
     r"""Calculate sapwood mass under the T Model.
 
     The sapwood mass (:math:`W_{\cdot s}`) is calculated from the individual crown area
@@ -287,8 +287,8 @@ def calculate_sapwood_masses(
 
 
 def calculate_crown_z_max(
-    z_max_prop: NDArray[np.float32], stem_height: NDArray[np.float32]
-) -> NDArray[np.float32]:
+    z_max_prop: NDArray[np.float64], stem_height: NDArray[np.float64]
+) -> NDArray[np.float64]:
     r"""Calculate height of maximum crown radius.
 
     The height of the maximum crown radius (:math:`z_m`) is derived from the crown
@@ -313,8 +313,8 @@ def calculate_crown_z_max(
 
 
 def calculate_crown_r0(
-    q_m: NDArray[np.float32], crown_area: NDArray[np.float32]
-) -> NDArray[np.float32]:
+    q_m: NDArray[np.float64], crown_area: NDArray[np.float64]
+) -> NDArray[np.float64]:
     r"""Calculate scaling factor for width of maximum crown radius.
 
     This scaling factor (:math:`r_0`) is derived from the crown shape parameters
@@ -339,12 +339,12 @@ def calculate_crown_r0(
 
 
 def calculate_whole_crown_gpp(
-    potential_gpp: NDArray[np.float32],
-    crown_area: NDArray[np.float32],
-    par_ext: NDArray[np.float32],
-    lai: NDArray[np.float32],
+    potential_gpp: NDArray[np.float64],
+    crown_area: NDArray[np.float64],
+    par_ext: NDArray[np.float64],
+    lai: NDArray[np.float64],
     validate: bool = True,
-) -> NDArray[np.float32]:
+) -> NDArray[np.float64]:
     r"""Calculate whole crown gross primary productivity.
 
     This function calculates individual GPP across the whole crown, given the individual
@@ -373,10 +373,10 @@ def calculate_whole_crown_gpp(
 
 
 def calculate_sapwood_respiration(
-    resp_s: NDArray[np.float32],
-    sapwood_mass: NDArray[np.float32],
+    resp_s: NDArray[np.float64],
+    sapwood_mass: NDArray[np.float64],
     validate: bool = True,
-) -> NDArray[np.float32]:
+) -> NDArray[np.float64]:
     r"""Calculate sapwood respiration.
 
     Calculates the total sapwood respiration (:math:`R_{\cdot s}`) given the individual
@@ -398,10 +398,10 @@ def calculate_sapwood_respiration(
 
 
 def calculate_foliar_respiration(
-    resp_f: NDArray[np.float32],
-    whole_crown_gpp: NDArray[np.float32],
+    resp_f: NDArray[np.float64],
+    whole_crown_gpp: NDArray[np.float64],
     validate: bool = True,
-) -> NDArray[np.float32]:
+) -> NDArray[np.float64]:
     r"""Calculate foliar respiration.
 
     Calculates the total foliar respiration (:math:`R_{f}`) given the individual crown
@@ -425,12 +425,12 @@ def calculate_foliar_respiration(
 
 
 def calculate_fine_root_respiration(
-    zeta: NDArray[np.float32],
-    sla: NDArray[np.float32],
-    resp_r: NDArray[np.float32],
-    foliage_mass: NDArray[np.float32],
+    zeta: NDArray[np.float64],
+    sla: NDArray[np.float64],
+    resp_r: NDArray[np.float64],
+    foliage_mass: NDArray[np.float64],
     validate: bool = True,
-) -> NDArray[np.float32]:
+) -> NDArray[np.float64]:
     r"""Calculate foliar respiration.
 
     Calculates the total fine root respiration (:math:`R_{r}`) given the individual
@@ -455,13 +455,13 @@ def calculate_fine_root_respiration(
 
 
 def calculate_net_primary_productivity(
-    yld: NDArray[np.float32],
-    whole_crown_gpp: NDArray[np.float32],
-    foliar_respiration: NDArray[np.float32],
-    fine_root_respiration: NDArray[np.float32],
-    sapwood_respiration: NDArray[np.float32],
+    yld: NDArray[np.float64],
+    whole_crown_gpp: NDArray[np.float64],
+    foliar_respiration: NDArray[np.float64],
+    fine_root_respiration: NDArray[np.float64],
+    sapwood_respiration: NDArray[np.float64],
     validate: bool = True,
-) -> NDArray[np.float32]:
+) -> NDArray[np.float64]:
     r"""Calculate net primary productivity.
 
     The net primary productivity (NPP, :math:`P_{net}`) is calculated as a plant
@@ -507,13 +507,13 @@ def calculate_net_primary_productivity(
 
 
 def calculate_foliage_and_fine_root_turnover(
-    sla: NDArray[np.float32],
-    zeta: NDArray[np.float32],
-    tau_f: NDArray[np.float32],
-    tau_r: NDArray[np.float32],
-    foliage_mass: NDArray[np.float32],
+    sla: NDArray[np.float64],
+    zeta: NDArray[np.float64],
+    tau_f: NDArray[np.float64],
+    tau_r: NDArray[np.float64],
+    foliage_mass: NDArray[np.float64],
     validate: bool = True,
-) -> NDArray[np.float32]:
+) -> NDArray[np.float64]:
     r"""Calculate turnover costs.
 
     This function calculates the costs associated with the turnover of fine roots and
@@ -544,19 +544,19 @@ def calculate_foliage_and_fine_root_turnover(
 
 
 def calculate_growth_increments(
-    rho_s: NDArray[np.float32],
-    a_hd: NDArray[np.float32],
-    h_max: NDArray[np.float32],
-    lai: NDArray[np.float32],
-    ca_ratio: NDArray[np.float32],
-    sla: NDArray[np.float32],
-    zeta: NDArray[np.float32],
-    npp: NDArray[np.float32],
-    turnover: NDArray[np.float32],
-    dbh: NDArray[np.float32],
-    stem_height: NDArray[np.float32],
+    rho_s: NDArray[np.float64],
+    a_hd: NDArray[np.float64],
+    h_max: NDArray[np.float64],
+    lai: NDArray[np.float64],
+    ca_ratio: NDArray[np.float64],
+    sla: NDArray[np.float64],
+    zeta: NDArray[np.float64],
+    npp: NDArray[np.float64],
+    turnover: NDArray[np.float64],
+    dbh: NDArray[np.float64],
+    stem_height: NDArray[np.float64],
     validate: bool = True,
-) -> tuple[NDArray[np.float32], NDArray[np.float32], NDArray[np.float32]]:
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     r"""Calculate growth increments.
 
     Given an estimate of net primary productivity (:math:`P_{net}`), less associated  
@@ -692,28 +692,28 @@ class StemAllometry:
     """ An instance of :class:`~pyrealm.demography.flora.Flora` or 
     :class:`~pyrealm.demography.flora.StemTraits`, providing plant functional trait data
     for a set of stems."""
-    at_dbh: InitVar[NDArray[np.float32]]
+    at_dbh: InitVar[NDArray[np.float64]]
     """An array of diameter at breast height values at which to predict stem allometry 
     values."""
 
     # Post init allometry attributes
-    dbh: NDArray[np.float32] = field(init=False)
+    dbh: NDArray[np.float64] = field(init=False)
     """Diameter at breast height (metres)"""
-    stem_height: NDArray[np.float32] = field(init=False)
+    stem_height: NDArray[np.float64] = field(init=False)
     """Stem height (metres)"""
-    crown_area: NDArray[np.float32] = field(init=False)
+    crown_area: NDArray[np.float64] = field(init=False)
     """Crown area (square metres)"""
-    crown_fraction: NDArray[np.float32] = field(init=False)
+    crown_fraction: NDArray[np.float64] = field(init=False)
     """Vertical fraction of the stem covered by the crown (-)"""
-    stem_mass: NDArray[np.float32] = field(init=False)
+    stem_mass: NDArray[np.float64] = field(init=False)
     """Stem mass (kg)"""
-    foliage_mass: NDArray[np.float32] = field(init=False)
+    foliage_mass: NDArray[np.float64] = field(init=False)
     """Foliage mass (kg)"""
-    sapwood_mass: NDArray[np.float32] = field(init=False)
+    sapwood_mass: NDArray[np.float64] = field(init=False)
     """Sapwood mass (kg)"""
-    crown_r0: NDArray[np.float32] = field(init=False)
+    crown_r0: NDArray[np.float64] = field(init=False)
     """Crown radius scaling factor (-)"""
-    crown_z_max: NDArray[np.float32] = field(init=False)
+    crown_z_max: NDArray[np.float64] = field(init=False)
     """Height of maximum crown radius (metres)"""
 
     # Information attributes
@@ -723,7 +723,7 @@ class StemAllometry:
     """The number of stems."""
 
     def __post_init__(
-        self, stem_traits: Flora | StemTraits, at_dbh: NDArray[np.float32]
+        self, stem_traits: Flora | StemTraits, at_dbh: NDArray[np.float64]
     ) -> None:
         """Populate the stem allometry attributes from the traits and size data."""
 
@@ -835,30 +835,30 @@ class StemAllocation:
     stem_allometry: InitVar[StemAllometry]
     """An instance of :class:`~pyrealm.demography.t_model_functions.StemAllometry`
     providing the stem size data for which to calculate allocation."""
-    at_potential_gpp: InitVar[NDArray[np.float32]]
+    at_potential_gpp: InitVar[NDArray[np.float64]]
     """An array of potential gross primary productivity for each stem that should be
     allocated to respiration, turnover and growth."""
 
     # Post init allometry attributes
-    potential_gpp: NDArray[np.float32] = field(init=False)
+    potential_gpp: NDArray[np.float64] = field(init=False)
     """Potential GPP per unit area (g C m2)"""
-    whole_crown_gpp: NDArray[np.float32] = field(init=False)
+    whole_crown_gpp: NDArray[np.float64] = field(init=False)
     """Estimated GPP across the whole crown (g C)"""
-    sapwood_respiration: NDArray[np.float32] = field(init=False)
+    sapwood_respiration: NDArray[np.float64] = field(init=False)
     """Allocation to sapwood respiration (g C)"""
-    foliar_respiration: NDArray[np.float32] = field(init=False)
+    foliar_respiration: NDArray[np.float64] = field(init=False)
     """Allocation to foliar respiration (g C)"""
-    fine_root_respiration: NDArray[np.float32] = field(init=False)
+    fine_root_respiration: NDArray[np.float64] = field(init=False)
     """Allocation to fine root respiration (g C)"""
-    npp: NDArray[np.float32] = field(init=False)
+    npp: NDArray[np.float64] = field(init=False)
     """Net primary productivity (g C)"""
-    turnover: NDArray[np.float32] = field(init=False)
+    turnover: NDArray[np.float64] = field(init=False)
     """Allocation to leaf and fine root turnover (g C)"""
-    delta_dbh: NDArray[np.float32] = field(init=False)
+    delta_dbh: NDArray[np.float64] = field(init=False)
     """Predicted increase in stem diameter from growth allocation (g C)"""
-    delta_stem_mass: NDArray[np.float32] = field(init=False)
+    delta_stem_mass: NDArray[np.float64] = field(init=False)
     """Predicted increase in stem mass from growth allocation (g C)"""
-    delta_foliage_mass: NDArray[np.float32] = field(init=False)
+    delta_foliage_mass: NDArray[np.float64] = field(init=False)
     """Predicted increase in foliar mass from growth allocation (g C)"""
 
     # Information attributes
@@ -871,7 +871,7 @@ class StemAllocation:
         self,
         stem_traits: Flora | StemTraits,
         stem_allometry: StemAllometry,
-        at_potential_gpp: NDArray[np.float32],
+        at_potential_gpp: NDArray[np.float64],
     ) -> None:
         """Populate stem allocation attributes from the traits, allometry and GPP."""
 

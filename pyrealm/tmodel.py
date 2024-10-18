@@ -47,7 +47,7 @@ class TTree:
 
     def __init__(
         self,
-        diameters: NDArray,
+        diameters: NDArray[np.float64],
         traits: TModelTraits = TModelTraits(),
     ) -> None:
         self.traits: TModelTraits = traits
@@ -55,33 +55,33 @@ class TTree:
         # The diameter is used to define all of the geometric scaling
         # based on the trait parameters.
 
-        self._diameter: NDArray
-        self._height: NDArray
-        self._crown_fraction: NDArray
-        self._crown_area: NDArray
-        self._mass_stm: NDArray
-        self._mass_fol: NDArray
-        self._mass_swd: NDArray
+        self._diameter: NDArray[np.float64]
+        self._height: NDArray[np.float64]
+        self._crown_fraction: NDArray[np.float64]
+        self._crown_area: NDArray[np.float64]
+        self._mass_stm: NDArray[np.float64]
+        self._mass_fol: NDArray[np.float64]
+        self._mass_swd: NDArray[np.float64]
 
         self.reset_diameters(diameters)
 
         # Growth is then applied by providing estimated gpp using the
         # calculate_growth() method, which populates the following:
         self.growth_calculated: bool = False
-        self._gpp_raw: NDArray
-        self._gpp_actual: NDArray
-        self._npp: NDArray
-        self._resp_swd: NDArray
-        self._resp_frt: NDArray
-        self._resp_fol: NDArray
-        self._turnover: NDArray
-        self._d_mass_s: NDArray
-        self._d_mass_fr: NDArray
-        self._delta_d: NDArray
-        self._delta_mass_stm: NDArray
-        self._delta_mass_frt: NDArray
+        self._gpp_raw: NDArray[np.float64]
+        self._gpp_actual: NDArray[np.float64]
+        self._npp: NDArray[np.float64]
+        self._resp_swd: NDArray[np.float64]
+        self._resp_frt: NDArray[np.float64]
+        self._resp_fol: NDArray[np.float64]
+        self._turnover: NDArray[np.float64]
+        self._d_mass_s: NDArray[np.float64]
+        self._d_mass_fr: NDArray[np.float64]
+        self._delta_d: NDArray[np.float64]
+        self._delta_mass_stm: NDArray[np.float64]
+        self._delta_mass_frt: NDArray[np.float64]
 
-    def _check_growth_calculated(self, property: str) -> NDArray:
+    def _check_growth_calculated(self, property: str) -> NDArray[np.float64]:
         """Helper function to return growth values if calculated.
 
         This acts as a gatekeeper to make sure that a growth property is not returned
@@ -96,101 +96,101 @@ class TTree:
         return getattr(self, property)
 
     @property
-    def diameter(self) -> NDArray:
+    def diameter(self) -> NDArray[np.float64]:
         """Individual diameter (m)."""
         return self._diameter
 
     @property
-    def height(self) -> NDArray:
+    def height(self) -> NDArray[np.float64]:
         """Individual height (m)."""
         return self._height
 
     @property
-    def crown_fraction(self) -> NDArray:
+    def crown_fraction(self) -> NDArray[np.float64]:
         """Individual crown fraction (unitless)."""
         return self._crown_fraction
 
     @property
-    def crown_area(self) -> NDArray:
+    def crown_area(self) -> NDArray[np.float64]:
         """Individual crown area (m2)."""
         return self._crown_area
 
     @property
-    def mass_swd(self) -> NDArray:
+    def mass_swd(self) -> NDArray[np.float64]:
         """Individual softwood mass (kg)."""
         return self._mass_swd
 
     @property
-    def mass_stm(self) -> NDArray:
+    def mass_stm(self) -> NDArray[np.float64]:
         """Individual stem mass (kg)."""
         return self._mass_stm
 
     @property
-    def mass_fol(self) -> NDArray:
+    def mass_fol(self) -> NDArray[np.float64]:
         """Individual foliage mass (kg)."""
         return self._mass_fol
 
     @property
-    def gpp_raw(self) -> NDArray:
+    def gpp_raw(self) -> NDArray[np.float64]:
         """Raw gross primary productivity."""
         return self._check_growth_calculated("_gpp_raw")
 
     @property
-    def gpp_actual(self) -> NDArray:
+    def gpp_actual(self) -> NDArray[np.float64]:
         """Actual gross primary productivity."""
         return self._check_growth_calculated("_gpp_actual")
 
     @property
-    def resp_swd(self) -> NDArray:
+    def resp_swd(self) -> NDArray[np.float64]:
         """Individual softwood respiration costs."""
         return self._check_growth_calculated("_resp_swd")
 
     @property
-    def resp_frt(self) -> NDArray:
+    def resp_frt(self) -> NDArray[np.float64]:
         """Individual fine root respiration costs."""
         return self._check_growth_calculated("_resp_frt")
 
     @property
-    def resp_fol(self) -> NDArray:
+    def resp_fol(self) -> NDArray[np.float64]:
         """Individual foliar respiration costs."""
         return self._check_growth_calculated("_resp_fol")
 
     @property
-    def npp(self) -> NDArray:
+    def npp(self) -> NDArray[np.float64]:
         """Net primary productivity."""
         return self._check_growth_calculated("_npp")
 
     @property
-    def turnover(self) -> NDArray:
+    def turnover(self) -> NDArray[np.float64]:
         """Plant turnover."""
         return self._check_growth_calculated("_turnover")
 
     @property
-    def d_mass_s(self) -> NDArray:
+    def d_mass_s(self) -> NDArray[np.float64]:
         """Individual relative change in mass."""
         return self._check_growth_calculated("_d_mass_s")
 
     @property
-    def d_mass_fr(self) -> NDArray:
+    def d_mass_fr(self) -> NDArray[np.float64]:
         """Individual relative change in fine root mass."""
         return self._check_growth_calculated("_d_mass_fr")
 
     @property
-    def delta_d(self) -> NDArray:
+    def delta_d(self) -> NDArray[np.float64]:
         """Individual change in diameter."""
         return self._check_growth_calculated("_delta_d")
 
     @property
-    def delta_mass_stm(self) -> NDArray:
+    def delta_mass_stm(self) -> NDArray[np.float64]:
         """Individual total change in stem mass."""
         return self._check_growth_calculated("_delta_mass_stm")
 
     @property
-    def delta_mass_frt(self) -> NDArray:
+    def delta_mass_frt(self) -> NDArray[np.float64]:
         """Individual total change in fine root mass."""
         return self._check_growth_calculated("_delta_mass_frt")
 
-    def reset_diameters(self, values: NDArray) -> None:
+    def reset_diameters(self, values: NDArray[np.float64]) -> None:
         """Reset the stem diameters for the T model.
 
         The set_diameter method can be used to reset the diameter values and then uses
@@ -239,7 +239,7 @@ class TTree:
         # Flag any calculated growth values as outdated
         self.growth_calculated = False
 
-    def calculate_growth(self, gpp: NDArray) -> None:
+    def calculate_growth(self, gpp: NDArray[np.float64]) -> None:
         """Calculate growth predictions given a GPP estimate.
 
         This method updates the instance with predicted changes in tree geometry, mass
@@ -318,8 +318,8 @@ class TTree:
 
 
 def grow_ttree(
-    gpp: NDArray,
-    d_init: NDArray,
+    gpp: NDArray[np.float64],
+    d_init: NDArray[np.float64],
     time_axis: int,
     traits: TModelTraits = TModelTraits(),
     outvars: tuple[str, ...] = ("diameter", "height", "crown_area", "delta_d"),

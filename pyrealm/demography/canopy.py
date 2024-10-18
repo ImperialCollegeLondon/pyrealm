@@ -55,13 +55,13 @@ class Canopy:
         """Total number of canopy layers."""
         self.n_cohorts: int
         """Total number of cohorts in the canopy."""
-        self.layer_heights: NDArray[np.float32]
+        self.layer_heights: NDArray[np.float64]
         """Column vector of the heights of canopy layers."""
-        self.stem_relative_radius: NDArray[np.float32]
+        self.stem_relative_radius: NDArray[np.float64]
         """Relative radius values of stems at canopy layer heights."""
-        self.stem_crown_area: NDArray[np.float32]
+        self.stem_crown_area: NDArray[np.float64]
         """Stem projected crown area at canopy layer heights."""
-        self.stem_leaf_area: NDArray[np.float32]
+        self.stem_leaf_area: NDArray[np.float64]
         """Stem projected leaf area at canopy layer heights."""
 
         self._calculate_canopy(community=community)
