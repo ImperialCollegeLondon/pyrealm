@@ -37,6 +37,8 @@ import pandas as pd
 from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
+from pyrealm.demography.core import PandasExporter
+
 if sys.version_info[:2] >= (3, 11):
     import tomllib
     from tomllib import TOMLDecodeError
@@ -236,7 +238,7 @@ in gaps from the default values.
 
 
 @dataclass(frozen=True)
-class Flora:
+class Flora(PandasExporter):
     """A dataclass providing trait data on collection of plant functional types.
 
     A flora provides trait data on the complete collection of plant functional types
@@ -258,10 +260,10 @@ class Flora:
     pfts: InitVar[Sequence[type[PlantFunctionalTypeStrict]]]
     r"""A sequence of plant functional type instances to include in the Flora."""
 
-    # A class variable setting the attribute names of traits.
-    trait_attrs: ClassVar[list[str]] = [
+    # A class variable setting the names of PFT traits held as arrays.
+    array_attrs: ClassVar[tuple[str, ...]] = tuple(
         f.name for f in fields(PlantFunctionalTypeStrict)
-    ]
+    )
 
     # Populated post init
     # - trait arrays
@@ -342,7 +344,7 @@ class Flora:
         object.__setattr__(self, "_n_stems", len(pfts))
 
         # Populate the trait attributes with arrays
-        for pft_field in self.trait_attrs:
+        for pft_field in self.array_attrs:
             object.__setattr__(
                 self, pft_field, np.array([getattr(pft, pft_field) for pft in pfts])
             )
@@ -436,12 +438,12 @@ class Flora:
         # matching the pft_names and pass that into the StemTraits constructor.
 
         return StemTraits(
-            **{trt: getattr(self, trt)[pft_index] for trt in self.trait_attrs}
+            **{trt: getattr(self, trt)[pft_index] for trt in self.array_attrs}
         )
 
 
 @dataclass()
-class StemTraits:
+class StemTraits(PandasExporter):
     """A dataclass for stem traits.
 
     This dataclass is used to provide arrays of plant functional type (PFT) traits
@@ -457,9 +459,9 @@ class StemTraits:
     """
 
     # A class variable setting the attribute names of traits.
-    trait_attrs: ClassVar[list[str]] = [
+    array_attrs: ClassVar[tuple[str, ...]] = tuple(
         f.name for f in fields(PlantFunctionalTypeStrict)
-    ]
+    )
 
     # Instance trait attributes
     name: NDArray[np.str_]
