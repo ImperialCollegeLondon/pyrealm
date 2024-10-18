@@ -686,27 +686,37 @@ def test_SubdailyScaler_get_vals_nearest(
     ],
 )
 @pytest.mark.parametrize(
-    argnames=["ctext_mngr", "msg", "input_values", "exp_values", "fill_from"],
+    argnames=["input_values", "exp_values", "fill_from", "previous_value"],
     argvalues=[
         pytest.param(
-            does_not_raise(),
-            None,
             np.array([1, 2, 3]),
             np.repeat([np.nan, 1, 2, 3], (26, 48, 48, 22)),
+            None,
             None,
             id="1D test",
         ),
         pytest.param(
-            does_not_raise(),
-            None,
             np.array([1, 2, 3]),
             np.repeat([1, 2, 3], (48, 48, 48)),
             np.timedelta64(0, "h"),
+            None,
             id="1D test - fill from",
         ),
         pytest.param(
-            does_not_raise(),
+            np.array([1, 2, 3]),
+            np.repeat([0, 1, 2, 3], (26, 48, 48, 22)),
             None,
+            np.array([0]),
+            id="1D test - previous value 1D",
+        ),
+        pytest.param(
+            np.array([1, 2, 3]),
+            np.repeat([0, 1, 2, 3], (26, 48, 48, 22)),
+            None,
+            np.array(0),
+            id="1D test - previous value 0D",
+        ),
+        pytest.param(
             np.array([[[1, 4], [7, 10]], [[2, 5], [8, 11]], [[3, 6], [9, 12]]]),
             np.repeat(
                 a=[
@@ -719,11 +729,10 @@ def test_SubdailyScaler_get_vals_nearest(
                 axis=0,
             ),
             None,
-            id="2D test",
+            None,
+            id="3D test",
         ),
         pytest.param(
-            does_not_raise(),
-            None,
             np.array([[[1, 4], [7, 10]], [[2, 5], [8, 11]], [[3, 6], [9, 12]]]),
             np.repeat(
                 a=[
@@ -736,11 +745,26 @@ def test_SubdailyScaler_get_vals_nearest(
                 axis=0,
             ),
             np.timedelta64(2, "h"),
-            id="2D test - fill from",
+            None,
+            id="3D test - fill from",
         ),
         pytest.param(
-            does_not_raise(),
+            np.array([[[1, 4], [7, 10]], [[2, 5], [8, 11]], [[3, 6], [9, 12]]]),
+            np.repeat(
+                a=[
+                    [[0, 3], [6, 9]],
+                    [[1, 4], [7, 10]],
+                    [[2, 5], [8, 11]],
+                    [[3, 6], [9, 12]],
+                ],
+                repeats=[26, 48, 48, 22],
+                axis=0,
+            ),
             None,
+            np.array([[0, 3], [6, 9]]),
+            id="3D test - previous value 2D",
+        ),
+        pytest.param(
             np.array([[1, 4], [2, 5], [3, 6]]),
             np.repeat(
                 a=[[np.nan, np.nan], [1, 4], [2, 5], [3, 6]],
@@ -748,7 +772,8 @@ def test_SubdailyScaler_get_vals_nearest(
                 axis=0,
             ),
             None,
-            id="3D test",
+            None,
+            id="2D test",
         ),
     ],
 )
@@ -757,28 +782,31 @@ def test_SubdailyScaler_fill_daily_to_subdaily_previous(
     method_name,
     kwargs,
     update_point,
-    ctext_mngr,
-    msg,
     input_values,
     exp_values,
     fill_from,
+    previous_value,
 ):
-    """Test fill_daily_to_subdaily using SubdailyScale with method previous."""
+    """Test fill_daily_to_subdaily using SubdailyScale with method previous.
+
+    The first parameterisation sets the exact same acclimation windows in a bunch of
+    different ways. The second paramaterisation provides inputs with different
+    dimensionality.
+    """
 
     # Set the included observations - the different parameterisations here and for
     # the update point should all select the same update point.
     func = getattr(fixture_SubdailyScaler, method_name)
     func(**kwargs)
 
-    with ctext_mngr as cman:
-        res = fixture_SubdailyScaler.fill_daily_to_subdaily(
-            input_values, update_point=update_point, fill_from=fill_from
-        )
+    res = fixture_SubdailyScaler.fill_daily_to_subdaily(
+        input_values,
+        update_point=update_point,
+        fill_from=fill_from,
+        previous_value=previous_value,
+    )
 
-    if cman is not None:
-        assert str(cman.value) == msg
-    else:
-        assert np.allclose(res, exp_values, equal_nan=True)
+    assert np.allclose(res, exp_values, equal_nan=True)
 
 
 @pytest.mark.parametrize(
@@ -855,3 +883,73 @@ def test_SubdailyScaler_fill_daily_to_subdaily_linear(
     )
 
     assert np.allclose(res, exp_values, equal_nan=True)
+
+
+@pytest.mark.parametrize(
+    argnames="inputs, outcome, msg",
+    argvalues=[
+        pytest.param(
+            {"values": np.arange(12)},
+            pytest.raises(ValueError),
+            "Values is not of length n_days on its first axis",
+            id="values wrong shape",
+        ),
+        pytest.param(
+            {"values": np.arange(3), "fill_from": 3},
+            pytest.raises(ValueError),
+            "The fill_from argument must be a timedelta64 value",
+            id="fill_from not timedelta64",
+        ),
+        pytest.param(
+            {"values": np.arange(3), "fill_from": np.timedelta64(12, "D")},
+            pytest.raises(ValueError),
+            "The fill_from argument is not >= 0 and < 24 hours",
+            id="fill_from too large",
+        ),
+        pytest.param(
+            {"values": np.arange(3), "fill_from": np.timedelta64(-1, "s")},
+            pytest.raises(ValueError),
+            "The fill_from argument is not >= 0 and < 24 hours",
+            id="fill_from negative",
+        ),
+        pytest.param(
+            {"values": np.arange(3), "update_point": "noon"},
+            pytest.raises(ValueError),
+            "Unknown update point",
+            id="unknown update point",
+        ),
+        pytest.param(
+            {"values": np.arange(3), "previous_value": np.array(1), "kind": "linear"},
+            pytest.raises(NotImplementedError),
+            "Using previous value with kind='linear' is not implemented",
+            id="previous_value with linear",
+        ),
+        pytest.param(
+            {"values": np.arange(3), "previous_value": np.ones(4)},
+            pytest.raises(ValueError),
+            "The input to previous_value is not congruent with "
+            "the shape of the observed data",
+            id="previous_value shape issue",
+        ),
+        pytest.param(
+            {"values": np.arange(3), "kind": "quadratic"},
+            pytest.raises(ValueError),
+            "Unsupported interpolation option",
+            id="unsupported interpolation",
+        ),
+    ],
+)
+def test_SubdailyScaler_fill_daily_to_subdaily_failure_modes(
+    fixture_SubdailyScaler, inputs, outcome, msg
+):
+    """Test fill_daily_to_subdaily using SubdailyScaler with method linear."""
+
+    # Set the included observations
+    fixture_SubdailyScaler.set_window(
+        window_center=np.timedelta64(13, "h"), half_width=np.timedelta64(1, "h")
+    )
+
+    with outcome as excep:
+        _ = fixture_SubdailyScaler.fill_daily_to_subdaily(**inputs)
+
+    assert str(excep.value) == msg
