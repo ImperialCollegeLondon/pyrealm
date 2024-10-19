@@ -9,6 +9,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.core.utilities import check_input_shapes
+from pyrealm.demography.core import PandasExporter
 from pyrealm.demography.flora import Flora, StemTraits
 from pyrealm.demography.t_model_functions import StemAllometry
 
@@ -282,7 +283,7 @@ def calculate_stem_projected_leaf_area_at_z(
 
 
 @dataclass
-class CrownProfile:
+class CrownProfile(PandasExporter):
     """Calculate vertical crown profiles for stems.
 
     This method calculates crown profile predictions, given an array of vertical
@@ -315,7 +316,7 @@ class CrownProfile:
         z_max: A row array providing expected z_max height for each PFT.
     """
 
-    var_attr_names: ClassVar[tuple[str, ...]] = (
+    array_attrs: ClassVar[tuple[str, ...]] = (
         "relative_crown_radius",
         "crown_radius",
         "projected_crown_area",
@@ -447,7 +448,7 @@ def get_crown_xy(
     """
 
     # Input validation
-    if attr not in crown_profile.var_attr_names:
+    if attr not in crown_profile.array_attrs:
         raise ValueError(f"Unknown crown profile attribute: {attr}")
 
     # TODO
