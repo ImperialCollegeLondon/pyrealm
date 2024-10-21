@@ -114,6 +114,90 @@ def test_FSPModel_corr(be_vie_data_components, data_args):
     assert np.all(r_vals > 0.995)
 
 
+def test_SubdailyPModel_previous_realised(be_vie_data_components):
+    """Test the functionality that allows the subdaily model to restart in blocks."""
+
+    from pyrealm.pmodel import SubdailyScaler
+    from pyrealm.pmodel.subdaily import SubdailyPModel
+
+    # Run all in one model
+    env, ppfd, fapar, datetime, _ = be_vie_data_components.get(
+        mode="crop", start=0, end=17520
+    )
+
+    # Get the fast slow scaler and set window
+    fsscaler = SubdailyScaler(datetime)
+    fsscaler.set_window(
+        window_center=np.timedelta64(12, "h"),
+        half_width=np.timedelta64(30, "m"),
+    )
+
+    # Run as a subdaily model using the kphio used in the reference implementation.
+    all_in_one_subdaily_pmodel = SubdailyPModel(
+        env=env,
+        ppfd=ppfd,
+        fapar=fapar,
+        reference_kphio=1 / 8,
+        fs_scaler=fsscaler,
+        allow_holdover=True,
+    )
+
+    # Run first half of year
+    env1, ppfd1, fapar1, datetime1, _ = be_vie_data_components.get(
+        mode="crop", start=0, end=182 * 48
+    )
+
+    # Get the fast slow scaler and set window
+    fsscaler1 = SubdailyScaler(datetime1)
+    fsscaler1.set_window(
+        window_center=np.timedelta64(12, "h"),
+        half_width=np.timedelta64(30, "m"),
+    )
+
+    # Run as a subdaily model using the kphio used in the reference implementation.
+    part_1_subdaily_pmodel = SubdailyPModel(
+        env=env1,
+        ppfd=ppfd1,
+        fapar=fapar1,
+        reference_kphio=1 / 8,
+        fs_scaler=fsscaler1,
+        allow_holdover=True,
+    )
+
+    # Run second year
+    env2, ppfd2, fapar2, datetime2, _ = be_vie_data_components.get(
+        mode="crop", start=182 * 48, end=365 * 48
+    )
+
+    # Get the fast slow scaler and set window
+    fsscaler2 = SubdailyScaler(datetime2)
+    fsscaler2.set_window(
+        window_center=np.timedelta64(12, "h"),
+        half_width=np.timedelta64(30, "m"),
+    )
+
+    # Run as a subdaily model using the kphio used in the reference implementation.
+    part_2_subdaily_pmodel = SubdailyPModel(
+        env=env2,
+        ppfd=ppfd2,
+        fapar=fapar2,
+        reference_kphio=1 / 8,
+        fs_scaler=fsscaler2,
+        allow_holdover=True,
+        previous_realised=(
+            part_1_subdaily_pmodel.optimal_chi.xi[-1],
+            part_1_subdaily_pmodel.vcmax25_real[-1],
+            part_1_subdaily_pmodel.jmax25_real[-1],
+        ),
+    )
+
+    assert np.allclose(
+        all_in_one_subdaily_pmodel.gpp,
+        np.concat([part_1_subdaily_pmodel.gpp, part_2_subdaily_pmodel.gpp]),
+        equal_nan=True,
+    )
+
+
 @pytest.mark.parametrize("ndims", [2, 3, 4])
 def test_FSPModel_dimensionality(be_vie_data, ndims):
     """Tests that the SubdailyPModel handles dimensions correctly.
