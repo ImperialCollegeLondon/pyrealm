@@ -5,10 +5,21 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Soil moisture effects
@@ -85,7 +96,7 @@ varies with changing soil moisture for some different values of mean aridity. In
 the examples below, the default $\theta_0 = 0$ has been changed to $\theta_0 =
 0.1$ to make the lower bound more obvious.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 from matplotlib import pyplot as plt
@@ -151,7 +162,7 @@ by the resulting factor. The example below shows how the predicted light use
 efficiency from the P Model changes across an aridity gradient both with and without the
 soil moisture factor.
 
-```{code-cell}
+```{code-cell} ipython3
 # Calculate the P Model in a constant environment
 tc = np.array([20] * 101)
 sm_gradient = np.linspace(0, 1.0, 101)
@@ -174,7 +185,7 @@ for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
     gpp_stressed[mean_alpha] = model.gpp * sm_stress
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 plt.plot(sm_gradient, model.gpp, label="No soil moisture penalty")
@@ -234,7 +245,7 @@ y &= \min( a  \textrm{AI} ^ {b}, 1)\\
 \end{align*}
 $$
 
-```{code-cell}
+```{code-cell} ipython3
 from pyrealm.constants import PModelConst
 
 const = PModelConst()
@@ -269,7 +280,7 @@ $$
     \end{cases}
 $$
 
-```{code-cell}
+```{code-cell} ipython3
 # Calculate the soil moisture stress factor across a soil moisture
 # gradient for different aridity index values
 beta = {}
@@ -298,7 +309,7 @@ calculated and then applied to the GPP calculated for a model
 ({attr}`~pyrealm.pmodel.pmodel.PModel.gpp`). In the example below, the result is
 obviously just $\beta(\theta)$ from above scaled to the constant GPP.
 
-```{code-cell}
+```{code-cell} ipython3
 for ai in ai_vals:
 
     plt.plot(sm_gradient, model.gpp * beta[ai], label=f"AI = {ai}")
@@ -309,6 +320,6 @@ plt.legend()
 plt.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 
 ```

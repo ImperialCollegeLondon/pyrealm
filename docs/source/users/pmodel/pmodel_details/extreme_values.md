@@ -5,10 +5,21 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Extreme forcing values
@@ -51,9 +62,8 @@ settings, the roots of these quadratics are:
 
 Note that the default values for C3 photosynthesis give **non-zero values below 0°C**.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
-:trusted: true
 
 from matplotlib import pyplot
 import numpy as np
@@ -91,9 +101,8 @@ The photorespiratory compensation point ($\Gamma^*$) varies with as a function o
 temperature and atmospheric pressure, and behaves smoothly with extreme inputs. Note
 that again, $\Gamma^_$ has non-zero values for sub-zero temperatures.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
-:trusted: true
 
 # Calculate gammastar at different pressures
 tc_1d = np.linspace(-80, 100, n_pts)
@@ -117,9 +126,8 @@ pyplot.show()
 The Michaelis-Menten coefficient for photosynthesis ($K_{mm}$)  also varies with
 temperature and atmospheric pressure and again behaves smoothly with extreme values.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
-:trusted: true
 
 fig, ax = pyplot.subplots(1, 1)
 
@@ -142,9 +150,8 @@ The density ($\rho$) and viscosity ($\mu$) of water both vary with temperature a
 atmospheric pressure. Looking at the density of water, there is a serious numerical
 issue with low temperatures arising from the equations for the density of water.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
-:trusted: true
 
 fig, ax = pyplot.subplots(1, 1)
 
@@ -167,9 +174,8 @@ Zooming in, the behaviour of this function is not reliable at extreme low temper
 leading to unstable estimates of $\eta^*$ and the P Model should not be used to make
 predictions below about -30 °C.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
-:trusted: true
 
 fig, ax = pyplot.subplots(1, 1)
 

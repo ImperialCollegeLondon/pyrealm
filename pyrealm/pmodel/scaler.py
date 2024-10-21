@@ -69,7 +69,7 @@ class SubdailyScaler:
 
     def __init__(
         self,
-        datetimes: NDArray,
+        datetimes: NDArray[np.datetime64],
     ) -> None:
         # Datetime validation. The inputs must be:
         # - one dimensional datetime64
@@ -306,7 +306,7 @@ class SubdailyScaler:
 
     #     self.method = "Around max"
 
-    def pad_values(self, values: NDArray) -> NDArray:
+    def pad_values(self, values: NDArray[np.float64]) -> NDArray[np.float64]:
         """Pad values array to full days.
 
         This method takes an array representing daily values and pads the first and
@@ -329,7 +329,7 @@ class SubdailyScaler:
 
         return np.pad(values, padding_dims, constant_values=(np.nan, np.nan))
 
-    def get_window_values(self, values: NDArray) -> NDArray:
+    def get_window_values(self, values: NDArray[np.float64]) -> NDArray[np.float64]:
         """Extract acclimation window values for a variable.
 
         This method takes an array of values which has the same shape along the first
@@ -368,8 +368,8 @@ class SubdailyScaler:
         return values_by_day[:, self.include, ...]
 
     def get_daily_means(
-        self, values: NDArray, allow_partial_data: bool = False
-    ) -> NDArray:
+        self, values: NDArray[np.float64], allow_partial_data: bool = False
+    ) -> NDArray[np.float64]:
         """Get the daily means of a variable during the acclimation window.
 
         This method extracts values from a given variable during a defined acclimation
@@ -406,11 +406,12 @@ class SubdailyScaler:
 
     def fill_daily_to_subdaily(
         self,
-        values: NDArray,
+        values: NDArray[np.float64],
+        previous_value: NDArray[np.float64] | None = None,
         update_point: str = "max",
         kind: str = "previous",
         fill_from: np.timedelta64 | None = None,
-    ) -> NDArray:
+    ) -> NDArray[np.float64]:
         """Resample daily variables onto the subdaily time scale.
 
         This method takes an array representing daily values and interpolates those
@@ -419,45 +420,53 @@ class SubdailyScaler:
         axis of the `values` must be the same length as the number of days used to
         create the instance.
 
-        Two interpolation kinds are currently implemented:
-
-        * ``previous`` interpolates the daily value as a constant, until updating to the
-          next daily value. This option will fill values until the end of the time
-          series.
-        * ``linear`` interpolates linearly between the update points of the daily
-          values. The interpolated values are held constant for the first day and then
-          interpolated linearly: this is to avoid plants adapting optimally to future
-          conditions.
-
         The update point defaults to the maximum time of day during the acclimation
         window. It can also be set to the mean time of day, but note that this implies
         that the plant predicts the daily values between the mean and max observation
         time. The ``fill_from`` argument can be used to set the update point to an
         arbitrary time of day.
 
+        Two interpolation kinds are currently implemented:
+
+        * ``previous`` interpolates the daily value as a constant, until updating to the
+          next daily value. This option will fill values until the end of the time
+          series. The
+        * ``linear`` interpolates linearly between the update points of the daily
+          values. The interpolated values are held constant for the first day and then
+          interpolated linearly: this is to avoid plants adapting optimally to future
+          conditions.
+
+        Subdaily observations before the update point on the first day of the time
+        series are filled with ``np.nan``. The ``previous_value`` argument can be used
+        to provide an alternative value, allowing time series to be processed in blocks,
+        but this option is only currently implemented for the ``previous``
+        interpolation method.
+
         Args:
             values: An array with the first dimension matching the number of days in the
-              instances :class:`~pyrealm.pmodel.scaler.SubdailyScaler` object.
+                instances :class:`~pyrealm.pmodel.scaler.SubdailyScaler` object.
+            previous_value: An array with dimensions equal to a slice across the first
+                axis of the values array.
             update_point: The point in the acclimation window at which the plant updates
-              to the new daily value: one of 'mean' or 'max'.
+                to the new daily value: one of 'mean' or 'max'.
             kind: The kind of interpolation to use to fill between daily values: one of
-              'previous' or 'linear',
+                'previous' or 'linear',
             fill_from: As an alternative to ``update_point``, an
-              :class:`numpy.timedelta64` value giving the time of day from which to fill
-              values forward.
+                :class:`numpy.timedelta64` value giving the time of day from which to
+                fill values forward.
         """
 
         if values.shape[0] != self.n_days:
-            raise ValueError("Values is not of length n_days on its first axis.")
+            raise ValueError("Values is not of length n_days on its first axis")
 
         if fill_from is not None:
             if not isinstance(fill_from, np.timedelta64):
-                raise ValueError("The fill_from argument must be a timedelta64 value.")
+                raise ValueError("The fill_from argument must be a timedelta64 value")
 
             # Convert to seconds and check it is in range
             _fill_from = fill_from.astype("timedelta64[s]")
             if not (_fill_from >= 0 and _fill_from < 24 * 60 * 60):
-                raise ValueError("The fill_from argument is not >= 0 and < 24 hours.")
+                raise ValueError("The fill_from argument is not >= 0 and < 24 hours")
 
             update_time = self.observation_dates + _fill_from
 
@@ -468,8 +477,23 @@ class SubdailyScaler:
         else:
             raise ValueError("Unknown update point")
 
-        # Note that interp1d cannot handle datetime64 inputs, so need to interpolate
-        # using datetimes cast to integer types
+        # Check previous value settings - only allow with previous interpolation and
+        # check the previous value shape matches
+        if previous_value is not None:
+            if kind == "linear":
+                raise NotImplementedError(
+                    "Using previous value with kind='linear' is not implemented"
+                )
+
+            # Use np.broadcast_shapes here to handle checking array shapes. This is
+            # mostly to catch the fact that () and (1,) are equivalent.
+            try:
+                np.broadcast_shapes(previous_value.shape, values.shape)
+            except ValueError:
+                raise ValueError(
+                    "The input to previous_value is not congruent with "
+                    "the shape of the observed data"
+                )
 
         # Use fill_value to handle extrapolation before or after update point:
         # - previous will fill the last value forward to the end of the time series,
@@ -479,8 +503,16 @@ class SubdailyScaler:
         #   value until _after_ the update point.
 
         if kind == "previous":
-            fill_value = (None, values[-1])
+            # The fill values here are used to extend the last daily value out to the
+            # end of the subdaily observations but also to fill any provided previous
+            # values for subdaily observations _before_ the first daily value. If
+            # the default previous value of None is supplied, this inserts np.nan as
+            # expected.
+            fill_value = (previous_value, values[-1])
         elif kind == "linear":
+            # Shift the values forward by a day, inserting a copy of the first day at
+            # the start. This then avoids plants seeing the future and provides values
+            # up until the last observation.
             values = np.insert(values, 0, values[0], axis=0)
             update_time = np.append(
                 update_time, update_time[-1] + np.timedelta64(1, "D")
@@ -489,6 +521,8 @@ class SubdailyScaler:
         else:
             raise ValueError("Unsupported interpolation option")
 
+        # Note that interp1d cannot handle datetime64 inputs, so need to interpolate
+        # using datetimes cast to integer types
         interp_fun = interp1d(
             update_time.astype("int"),
             values,
@@ -496,6 +530,7 @@ class SubdailyScaler:
             kind=kind,
             bounds_error=False,
             fill_value=fill_value,
+            assume_sorted=True,
         )
 
         # TODO - The kind "previous" might be replaceable with bottleneck.push
