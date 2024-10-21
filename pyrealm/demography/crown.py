@@ -439,7 +439,8 @@ def get_crown_xy(
     Args:
         crown_profile: A crown profile instance
         stem_allometry: The stem allometry instance used to create the crown profile
-        attr: The crown profile attribute to plot
+        attr: The crown profile attribute to plot (see
+            :class:`~pyrealm.demography.crown.CrownProfile`)
         stem_offsets: An optional array of offsets to add to the midline of stems.
         two_sided: Should the plotting data show a two sided canopy.
         as_xy: Should the plotting data be returned as a single XY array.
