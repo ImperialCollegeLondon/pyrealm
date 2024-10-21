@@ -15,16 +15,16 @@ from pyrealm.demography.crown import (
 
 def solve_canopy_area_filling_height(
     z: float,
-    stem_height: NDArray[np.float32],
-    crown_area: NDArray[np.float32],
-    m: NDArray[np.float32],
-    n: NDArray[np.float32],
-    q_m: NDArray[np.float32],
-    z_max: NDArray[np.float32],
-    n_individuals: NDArray[np.float32],
+    stem_height: NDArray[np.float64],
+    crown_area: NDArray[np.float64],
+    m: NDArray[np.float64],
+    n: NDArray[np.float64],
+    q_m: NDArray[np.float64],
+    z_max: NDArray[np.float64],
+    n_individuals: NDArray[np.float64],
     target_area: float = 0,
     validate: bool = True,
-) -> NDArray[np.float32]:
+) -> NDArray[np.float64]:
     """Solver function for finding the height where a canopy occupies a given area.
 
     This function takes the number of individuals in each cohort along with the stem
@@ -87,7 +87,7 @@ def fit_perfect_plasticity_approximation(
     canopy_gap_fraction: float,
     max_stem_height: float,
     solver_tolerance: float,
-) -> NDArray[np.float32]:
+) -> NDArray[np.float64]:
     r"""Find canopy layer heights under the PPA model.
 
     Finds the closure heights of the canopy layers under the perfect plasticity
@@ -126,7 +126,7 @@ def fit_perfect_plasticity_approximation(
     # Initialise the layer heights array and then loop over the layers indices,
     # except for the final layer, which will be the partial remaining vegetation below
     # the last closed layer.
-    layer_heights = np.zeros(n_layers, dtype=np.float32)
+    layer_heights = np.zeros(n_layers, dtype=np.float64)
     upper_bound = max_stem_height
 
     for layer in np.arange(n_layers - 1):
@@ -191,7 +191,7 @@ class Canopy:
     def __init__(
         self,
         community: Community,
-        layer_heights: NDArray[np.float32] | None = None,
+        layer_heights: NDArray[np.float64] | None = None,
         fit_ppa: bool = False,
         canopy_gap_fraction: float = 0,
         solver_tolerance: float = 0.001,
@@ -209,32 +209,32 @@ class Canopy:
         """Total number of canopy layers."""
         self.n_cohorts: int
         """Total number of cohorts in the canopy."""
-        self.heights: NDArray[np.float32]
+        self.heights: NDArray[np.float64]
         """The vertical heights at which the canopy structure is calculated."""
 
         self.crown_profile: CrownProfile
         """The crown profiles of the community stems at the provided layer heights."""
-        self.stem_leaf_area: NDArray[np.float32]
+        self.stem_leaf_area: NDArray[np.float64]
         """The leaf area of the crown model for each cohort by layer."""
-        self.cohort_lai: NDArray[np.float32]
+        self.cohort_lai: NDArray[np.float64]
         """The leaf area index for each cohort by layer."""
-        self.cohort_f_trans: NDArray[np.float32]
+        self.cohort_f_trans: NDArray[np.float64]
         """The fraction of light transmitted by each cohort by layer."""
-        self.cohort_f_abs: NDArray[np.float32]
+        self.cohort_f_abs: NDArray[np.float64]
         """The fraction of light absorbed by each cohort by layer."""
-        self.f_trans: NDArray[np.float32]
+        self.f_trans: NDArray[np.float64]
         """The fraction of light transmitted by the whole community by layer."""
-        self.f_abs: NDArray[np.float32]
+        self.f_abs: NDArray[np.float64]
         """The fraction of light absorbed by the whole community by layer."""
-        self.transmission_profile: NDArray[np.float32]
+        self.transmission_profile: NDArray[np.float64]
         """The light transmission profile for the whole community by layer."""
-        self.extinction_profile: NDArray[np.float32]
+        self.extinction_profile: NDArray[np.float64]
         """The light extinction profile for the whole community by layer."""
-        self.fapar: NDArray[np.float32]
+        self.fapar: NDArray[np.float64]
         """The fraction of absorbed radiation for the whole community by layer."""
-        self.cohort_fapar: NDArray[np.float32]
+        self.cohort_fapar: NDArray[np.float64]
         """The fraction of absorbed radiation for each cohort by layer."""
-        self.stem_fapar: NDArray[np.float32]
+        self.stem_fapar: NDArray[np.float64]
         """The fraction of absorbed radiation for each stem by layer."""
         self.filled_community_area: float
         """The area filled by crown after accounting for the crown gap fraction."""

@@ -139,11 +139,11 @@ class PModelConst(ConstantsClass):
     # - note that kphio_C4 has been updated to account for an unintended double
     #   8 fold downscaling to account for the fraction of light reaching PS2.
     #   from original values of [-0.008, 0.00375, -0.58e-4]
-    kphio_C4: NDArray[np.float32] = field(
+    kphio_C4: NDArray[np.float64] = field(
         default_factory=lambda: np.array((-0.064, 0.03, -0.000464))
     )
     """Quadratic scaling of Kphio with temperature for C4 plants"""
-    kphio_C3: NDArray[np.float32] = field(
+    kphio_C3: NDArray[np.float64] = field(
         default_factory=lambda: np.array((0.352, 0.022, -0.00034))
     )
     """Quadratic scaling of Kphio with temperature for C3 plants"""
@@ -193,11 +193,11 @@ class PModelConst(ConstantsClass):
     """Exponent of the threshold function for Mengoli soil moisture"""
 
     # Unit cost ratio (beta) values for different CalcOptimalChi methods
-    beta_cost_ratio_prentice14: NDArray[np.float32] = field(
+    beta_cost_ratio_prentice14: NDArray[np.float64] = field(
         default_factory=lambda: np.array([146.0])
     )
     r"""Unit cost ratio for C3 plants (:math:`\beta`, 146.0)."""
-    beta_cost_ratio_c4: NDArray[np.float32] = field(
+    beta_cost_ratio_c4: NDArray[np.float64] = field(
         default_factory=lambda: np.array([146.0 / 9])
     )
     r"""Unit cost ratio for C4 plants (:math:`\beta`, 16.222)."""

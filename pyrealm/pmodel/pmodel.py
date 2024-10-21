@@ -238,14 +238,14 @@ class PModel:
         # in Pascals, but more commonly reported in µmol mol-1. The standard equation
         # (ca - ci) / 1.6 expects inputs in ppm, so the pascal versions are back
         # converted here.
-        self.iwue: NDArray = (5 / 8 * (env.ca - self.optchi.ci)) / (
+        self.iwue: NDArray[np.float64] = (5 / 8 * (env.ca - self.optchi.ci)) / (
             1e-6 * self.env.patm
         )
         """Intrinsic water use efficiency (iWUE, µmol mol-1)"""
 
         # The basic calculation of LUE = phi0 * M_c * m with an added penalty term
         # for jmax limitation
-        self.lue: NDArray = (
+        self.lue: NDArray[np.float64] = (
             self.kphio.kphio
             * self.optchi.mj
             * self.jmaxlim.f_v
@@ -258,14 +258,14 @@ class PModel:
         # no defaults and are only populated by estimate_productivity. Their getter
         # methods have a check to raise an informative error
         # -----------------------------------------------------------------------
-        self._vcmax: NDArray
-        self._vcmax25: NDArray
-        self._rd: NDArray
-        self._jmax: NDArray
-        self._gpp: NDArray
-        self._gs: NDArray
-        self._ppfd: NDArray
-        self._fapar: NDArray
+        self._vcmax: NDArray[np.float64]
+        self._vcmax25: NDArray[np.float64]
+        self._rd: NDArray[np.float64]
+        self._jmax: NDArray[np.float64]
+        self._gpp: NDArray[np.float64]
+        self._gs: NDArray[np.float64]
+        self._ppfd: NDArray[np.float64]
+        self._fapar: NDArray[np.float64]
 
     def _check_estimated(self, varname: str) -> None:
         """Raise error when accessing unpopulated parameters.
@@ -277,50 +277,50 @@ class PModel:
             raise RuntimeError(f"{varname} not calculated: use estimate_productivity")
 
     @property
-    def gpp(self) -> NDArray:
+    def gpp(self) -> NDArray[np.float64]:
         """Gross primary productivity (µg C m-2 s-1)."""
         self._check_estimated("gpp")
 
         return self._gpp
 
     @property
-    def vcmax(self) -> NDArray:
+    def vcmax(self) -> NDArray[np.float64]:
         """Maximum rate of carboxylation (µmol m-2 s-1)."""
         self._check_estimated("vcmax")
         return self._vcmax
 
     @property
-    def vcmax25(self) -> NDArray:
+    def vcmax25(self) -> NDArray[np.float64]:
         """Maximum rate of carboxylation at standard temperature (µmol m-2 s-1)."""
         self._check_estimated("vcmax25")
         return self._vcmax25
 
     @property
-    def rd(self) -> NDArray:
+    def rd(self) -> NDArray[np.float64]:
         """Dark respiration (µmol m-2 s-1)."""
         self._check_estimated("rd")
         return self._rd
 
     @property
-    def jmax(self) -> NDArray:
+    def jmax(self) -> NDArray[np.float64]:
         """Maximum rate of electron transport (µmol m-2 s-1)."""
         self._check_estimated("jmax")
         return self._jmax
 
     @property
-    def gs(self) -> NDArray:
+    def gs(self) -> NDArray[np.float64]:
         """Stomatal conductance (µmol m-2 s-1)."""
         self._check_estimated("gs")
         return self._gs
 
     @property
-    def ppfd(self) -> NDArray:
+    def ppfd(self) -> NDArray[np.float64]:
         """Photosynthetic photon flux density (PPFD, µmol m-2 s-1)."""
         self._check_estimated("gs")
         return self._ppfd
 
     @property
-    def fapar(self) -> NDArray:
+    def fapar(self) -> NDArray[np.float64]:
         """Fraction of absorbed photosynthetically active radiation
         (:math:`f_{APAR}` unitless).
         """  # noqa: D205
