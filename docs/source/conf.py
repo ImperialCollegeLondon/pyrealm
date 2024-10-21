@@ -12,6 +12,9 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 
+# Import Matplotlib to avoid this message in notebooks:
+# "Matplotlib is building the font cache; this may take a moment."
+import matplotlib.pyplot  # noqa: F401
 import sphinxcontrib.bibtex.plugin
 from sphinxcontrib.bibtex.style.referencing import BracketStyle
 from sphinxcontrib.bibtex.style.referencing.author_year import AuthorYearReferenceStyle
