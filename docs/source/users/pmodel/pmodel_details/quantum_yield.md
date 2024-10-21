@@ -5,15 +5,26 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Quantum yield efficiency of photosynthesis
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # This code loads required packages and then creates a representative range of
@@ -79,7 +90,7 @@ estimate of $\phi_0$, following {cite:t}`Bernacchi:2003dc` for C3 plants and
 $\phi_0 = 0.081785$, following the BRC parameterisation in Table 1. of
 {cite:t}`Stocker:2020dh`.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Calculate temperature dependence of quantum yield efficiency
@@ -117,7 +128,7 @@ $\phi_0$ values to an otherwise constant environment. As you would expect given
 $\text{LUE} = \phi_0 \cdot M_C \cdot m_j$, light use efficiency changes linearly along
 this gradient of $\phi_0$ values.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # A constant environment to show a range of kphio values
@@ -157,7 +168,7 @@ $\phi_{0A} = \dfrac{\phi_{0R}}{(1 + \textrm{AI}^m) ^ n}$
 
 This captures a decrease in maximum $\phi_0$ in arid conditions, as shown below.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 n_vals = 51
@@ -188,7 +199,7 @@ approach also alters the temperature at which $\phi_0$ is maximised as a functio
 mean growth temperature ($T_g$) in a location. The plot below shows how aridity and mean
 growth temperature interact to change the location and height of the peak $\phi_0$.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 n_vals = 51

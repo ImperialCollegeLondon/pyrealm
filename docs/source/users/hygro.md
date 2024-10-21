@@ -5,15 +5,26 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Hygrometric functions
 
-```{code-cell}
+```{code-cell} ipython3
 # This code loads required packages and then creates a representative range of
 # values of the core variables to use in function plots.
 #
@@ -72,7 +83,7 @@ and returns kPa, so if you are using VP to prepare input data for
 
 ## Saturated vapour pressure
 
-```{code-cell}
+```{code-cell} ipython3
 # Create a sequence of air temperatures and calculate the saturated vapour pressure
 vp_sat = hygro.calc_vp_sat(ta_1d)
 
@@ -85,7 +96,7 @@ pyplot.show()
 
 ## Vapour pressure to VPD
 
-```{code-cell}
+```{code-cell} ipython3
 vpd = hygro.convert_vp_to_vpd(vp_2d, ta_2d.transpose())
 
 # Plot vpd
@@ -100,7 +111,7 @@ pyplot.show()
 
 ## Relative humidity to VPD
 
-```{code-cell}
+```{code-cell} ipython3
 vpd = hygro.convert_rh_to_vpd(rh_2d, ta_2d.transpose())
 
 # Plot vpd
@@ -117,7 +128,7 @@ pyplot.show()
 
 ## Specific humidity to VPD
 
-```{code-cell}
+```{code-cell} ipython3
 # Create a sequence of air temperatures and calculate the saturated vapour pressure
 vpd1 = hygro.convert_sh_to_vpd(sh_1d, ta=20, patm=101.325)
 vpd2 = hygro.convert_sh_to_vpd(sh_1d, ta=30, patm=101.325)
