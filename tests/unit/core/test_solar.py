@@ -78,75 +78,7 @@ def test_calc_lat_delta_intermediates(delta, latitude, expected):
 
 
 @pytest.mark.parametrize(
-    argnames="nu, k_e, expected",
-    argvalues=[
-        (np.array([166.097934]), 0.0167, np.array([0.968381])),
-    ],
-)
-def test_calc_distance_factor(nu, k_e, expected):
-    """Tests calc_distance_factor.
-
-    The test values represent the range of acceptable input values of nu
-    (0-360 degrees), and a typical value of k_e for the earth. This tests
-    aims to confirm the correct implementation of the maths.
-    """
-    from pyrealm.core.solar import calc_distance_factor
-
-    result = calc_distance_factor(nu, k_e)
-
-    assert np.allclose(result, expected)
-
-
-@pytest.mark.parametrize(
-    argnames="lambda_, k_eps, k_pir, expected",
-    argvalues=[
-        (
-            np.array([89.097934]),
-            23.45,
-            57.29577951,
-            np.array([23.436921]),
-        )
-    ],
-)
-def test_calc_declination_angle_delta(lambda_, k_eps, k_pir, expected):
-    """Tests calc_declination_angle_delta.
-
-    This test tests the maths over the applicable range of longitudes with
-    representative k_eps and k_pir constants.
-    """
-
-    from pyrealm.core.solar import calc_declination_angle_delta
-
-    result = calc_declination_angle_delta(lambda_, k_eps, k_pir)
-
-    assert np.allclose(result, expected)
-
-
-@pytest.mark.parametrize(
-    argnames="delta,lat, expected",
-    argvalues=[
-        (
-            np.array([23.436921]),
-            np.array([37.7]),
-            (np.array([0.243228277]), np.array([0.725946417])),
-        ),
-    ],
-)
-def test_calc_lat_delta_intermediates(delta, lat, expected):
-    """Tests calc_lat_delta_intermediates.
-
-    This test tests the maths over an applciable range of delta and latitude values.
-    """
-
-    from pyrealm.core.solar import calc_lat_delta_intermediates
-
-    result = calc_lat_delta_intermediates(delta, lat)
-
-    assert np.allclose(result, expected)
-
-
-@pytest.mark.parametrize(
-    argnames="ru, rv, k_pir, expected",
+    argnames="delta, latitude, expected",
     argvalues=[
         (
             np.array([23.436921]),
