@@ -41,7 +41,10 @@ from pyrealm.pmodel.quantum_yield import (
 
 
 def memory_effect(
-    values: NDArray[np.float64], alpha: float = 0.067, allow_holdover: bool = False
+    values: NDArray[np.float64],
+    previous_values: NDArray[np.float64] | None = None,
+    alpha: float = 0.067,
+    allow_holdover: bool = False,
 ) -> NDArray[np.float64]:
     r"""Apply a memory effect to a variable.
 
@@ -89,6 +92,8 @@ def memory_effect(
 
     Args:
         values: The values to apply the memory effect to.
+        previous_values: Last available realised value used if model is fitted in
+            chunks and value at t=0 is not optimal.
         alpha: The relative weight applied to the most recent observation.
         allow_holdover: Allow missing values to be filled by holding over earlier
             values.
@@ -105,7 +110,10 @@ def memory_effect(
     # Initialise the output storage and set the first values to be a slice along the
     # first axis of the input values
     memory_values = np.empty_like(values, dtype=np.float64)
-    memory_values[0] = values[0]
+    if previous_values is None:
+        memory_values[0] = values[0]
+    else:
+        memory_values[0] = previous_values * (1 - alpha) + values[0] * alpha
 
     # Handle the data if there are no missing data,
     if not nan_present:
@@ -177,6 +185,10 @@ class SubdailyPModel:
       more rapid acclimation: :math:`\alpha=1` results in immediate acclimation and
       :math:`\alpha=0` results in no acclimation at all, with values pinned to the
       initial estimates.
+    * By default, the initial realised value :math:`R_1` for each of the three slowly
+      acclimating variables is assumed to be the first optimal value :math:`O_1`, but
+      the `previous_realised` argument can be used to provide values of :math:`R_0` from
+      which to calculate :math:`R_{1} = R_{0}(1 - \alpha) + O_{1} \alpha`.
     * The realised values are then filled back onto the original subdaily timescale,
       with :math:`V_{cmax}` and :math:`J_{max}` then being calculated from the slowly
       responding :math:`V_{cmax25}` and :math:`J_{max25}` and the actual subdaily
@@ -221,10 +233,12 @@ class SubdailyPModel:
         allow_partial_data: Should estimates of daily optimal conditions be calculated
           with missing values in the acclimation window.
         reference_kphio: An optional alternative reference value for the quantum yield
-            efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
-            calculation method.
+          efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
+          calculation method.
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.
+        previous_realised: A tuple of previous realised values of three NumPy arrays
+          (xi_real, vcmax25_real, jmax25_real).
     """
 
     def __init__(
@@ -241,6 +255,7 @@ class SubdailyPModel:
         allow_holdover: bool = False,
         allow_partial_data: bool = False,
         fill_kind: str = "previous",
+        previous_realised: tuple[NDArray, NDArray, NDArray] | None = None,
     ) -> None:
         # Warn about the API
         warn(
@@ -379,25 +394,73 @@ class SubdailyPModel:
             1 / calc_ftemp_arrh(tk_acclim, self.env.pmodel_const.subdaily_jmax25_ha)
         )
 
+        """Instantaneous optimal :math:`x_{i}`, :math:`V_{cmax}` and :math:`J_{max}`"""
+        # Check the shape of previous realised values are congruent with a slice across
+        # the time axis
+        if previous_realised is not None:
+            if fill_kind != "previous":
+                raise NotImplementedError(
+                    "Using previous_realised is only implemented for "
+                    "fill_kind = 'previous'"
+                )
+
+            # All variables should share the shape of a slice along the first axis of
+            # the environmental forcings
+            expected_shape = self.env.tc[0].shape
+            if not (
+                (previous_realised[0].shape == expected_shape)
+                and (previous_realised[1].shape == expected_shape)
+                and (previous_realised[2].shape == expected_shape)
+            ):
+                raise ValueError(
+                    "`previous_realised` entries have wrong shape in Subdaily PModel"
+                )
+            else:
+                previous_xi_real, previous_vcmax25_real, previous_jmax25_real = (
+                    previous_realised
+                )
+        else:
+            previous_xi_real, previous_vcmax25_real, previous_jmax25_real = [
+                None,
+                None,
+                None,
+            ]
+
         # 5) Calculate the realised daily values from the instantaneous optimal values
         self.xi_real: NDArray[np.float64] = memory_effect(
-            self.pmodel_acclim.optchi.xi, alpha=alpha, allow_holdover=allow_holdover
+            self.pmodel_acclim.optchi.xi,
+            previous_values=previous_xi_real,
+            alpha=alpha,
+            allow_holdover=allow_holdover,
         )
         r"""Realised daily slow responses in :math:`\xi`"""
         self.vcmax25_real: NDArray[np.float64] = memory_effect(
-            self.vcmax25_opt, alpha=alpha, allow_holdover=allow_holdover
+            self.vcmax25_opt,
+            previous_values=previous_vcmax25_real,
+            alpha=alpha,
+            allow_holdover=allow_holdover,
         )
         r"""Realised daily slow responses in :math:`V_{cmax25}`"""
         self.jmax25_real: NDArray[np.float64] = memory_effect(
-            self.jmax25_opt, alpha=alpha, allow_holdover=allow_holdover
+            self.jmax25_opt,
+            previous_values=previous_jmax25_real,
+            alpha=alpha,
+            allow_holdover=allow_holdover,
         )
+
         r"""Realised daily slow responses in :math:`J_{max25}`"""
 
         # 6) Fill the realised xi, jmax25 and vcmax25 from daily values back to the
         # subdaily timescale.
-        self.subdaily_vcmax25 = fs_scaler.fill_daily_to_subdaily(self.vcmax25_real)
-        self.subdaily_jmax25 = fs_scaler.fill_daily_to_subdaily(self.jmax25_real)
-        self.subdaily_xi = fs_scaler.fill_daily_to_subdaily(self.xi_real)
+        self.subdaily_xi = fs_scaler.fill_daily_to_subdaily(
+            self.xi_real, previous_value=previous_xi_real
+        )
+        self.subdaily_vcmax25 = fs_scaler.fill_daily_to_subdaily(
+            self.vcmax25_real, previous_value=previous_vcmax25_real
+        )
+        self.subdaily_jmax25 = fs_scaler.fill_daily_to_subdaily(
+            self.jmax25_real, previous_value=previous_jmax25_real
+        )
 
         # 7) Adjust subdaily jmax25 and vcmax25 back to jmax and vcmax given the
         #    actual subdaily temperatures.

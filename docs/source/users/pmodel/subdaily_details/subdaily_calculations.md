@@ -307,7 +307,3 @@ GPP_subdaily = (
 diff = GPP_subdaily - pmodel_subdaily.gpp
 print(np.nanmin(diff), np.nanmax(diff))
 ```
-
-```{code-cell} ipython3
-
-```
