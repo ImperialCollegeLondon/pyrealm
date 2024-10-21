@@ -20,8 +20,8 @@ def calc_distance_factor(nu: NDArray, k_e: float) -> NDArray:
     .. math::
 
         dr = \left( 1.0 \mathbin{/}
-               \left(\frac{1.0 - k_e^2}
-                          {1.0 + k_e \cos\left(\nu \cdot \pi \mathbin{/}
+               \left(\frac{1.0 - k_{e}^2}
+                          {1.0 + k_{e} \cos\left(\nu \cdot \pi \mathbin{/}
                           180)\right)}
                \right)
              \right)^2
@@ -49,8 +49,8 @@ def calc_declination_angle_delta(
 
     .. math::
 
-        \delta = \frac{\arcsin(\sin(\deg2rad(\lambda))
-            \cdot \sin(\deg2rad(k\_eps)))}{k\_pir}
+        \delta = \frac{\arcsin(\sin(\deg2rad(\lambda_))
+            \cdot \sin(\deg2rad(k_{eps})))}{k_{pir}}
 
     Args:
         lambda_: heliocentric longitude
@@ -106,7 +106,7 @@ def calc_sunset_hour_angle(delta: NDArray, latitude: NDArray, k_pir: float) -> N
     .. math::
 
         hs = \frac{\arccos(-1.0 \cdot \text{clip}(\frac{ru}{rv}, -1.0,
-        1.0))}{k\_pir}
+        1.0))}{k_{pir}}
 
     Args:
         delta: solar declination delta
