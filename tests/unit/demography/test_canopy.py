@@ -5,7 +5,7 @@ import pytest
 
 
 @pytest.mark.parametrize(
-    argnames="args,expected",
+    argnames="cohort_args, cohort_expected, community_expected",
     argvalues=(
         [
             pytest.param(
@@ -17,6 +17,10 @@ import pytest
                     "cell_area": 8,
                 },
                 (np.full((3,), 2), np.full((3,), 1), np.full((3,), np.exp(-0.5))),
+                (
+                    np.full((1,), np.exp(-0.5)) ** 3,
+                    np.full((1,), np.exp(-0.5)) ** 3,
+                ),
                 id="single layer",
             ),
             pytest.param(
@@ -28,24 +32,58 @@ import pytest
                     "cell_area": 8,
                 },
                 (np.full((3, 3), 2), np.full((3, 3), 1), np.full((3, 3), np.exp(-0.5))),
-                id="two layers",
+                (
+                    np.full((3,), np.exp(-0.5)) ** 3,
+                    np.power(np.exp(-0.5), np.array([3, 6, 9])),
+                ),
+                id="three layers",
             ),
         ]
     ),
 )
-def test_CohortCanopyData__init__(args, expected):
-    """Test creation of the cohort canopy data."""
+class TestCanopyData:
+    """Shared testing of the cohort and community canopy dataclasses.
 
-    from pyrealm.demography.canopy import CohortCanopyData
+    Simple cohort tests:
+    - LAI = (2 leaf area * 2 individuals * 2 LAI) / 8 area = 1
+    - trans = e ^ {-k L}, and since L = 1, trans = e^{-k}
 
-    # Calculate canopy components
-    instance = CohortCanopyData(**args)
+    Simple community tests
+    - Three identical cohorts so community trans = (e{-k})^3 for each layer
+    - Transmission profile (e{-k})^3, e{-k})^6, e{-k})^9)
+    """
 
-    # Unpack and test expectations
-    exp_stem_leaf_area, exp_lai, exp_f_trans = expected
-    assert np.allclose(instance.stem_leaf_area, exp_stem_leaf_area)
-    assert np.allclose(instance.lai, exp_lai)
-    assert np.allclose(instance.f_trans, exp_f_trans)
+    def test_CohortCanopyData__init__(
+        self, cohort_args, cohort_expected, community_expected
+    ):
+        """Test creation of the cohort canopy data."""
+
+        from pyrealm.demography.canopy import CohortCanopyData
+
+        # Calculate canopy components
+        instance = CohortCanopyData(**cohort_args)
+
+        # Unpack and test expectations
+        exp_stem_leaf_area, exp_lai, exp_f_trans = cohort_expected
+        assert np.allclose(instance.stem_leaf_area, exp_stem_leaf_area)
+        assert np.allclose(instance.lai, exp_lai)
+        assert np.allclose(instance.f_trans, exp_f_trans)
+
+    def test_CommunityCanopyData__init__(
+        self, cohort_args, cohort_expected, community_expected
+    ):
+        """Test creation of the community canopy data."""
+
+        from pyrealm.demography.canopy import CohortCanopyData, CommunityCanopyData
+
+        cohort_data = CohortCanopyData(**cohort_args)
+
+        instance = CommunityCanopyData(cohort_transmissivity=cohort_data.f_trans)
+
+        # Unpack and test expectations
+        exp_f_trans, exp_trans_prof = community_expected
+        assert np.allclose(instance.f_trans, exp_f_trans)
+        assert np.allclose(instance.transmission_profile, exp_trans_prof)
 
 
 def test_Canopy__init__():
