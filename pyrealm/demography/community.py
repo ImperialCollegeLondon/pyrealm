@@ -84,9 +84,11 @@ Initialize a Community into an area of 1000 square meter with the given cohort d
 ...     cell_id=1,
 ...     cell_area=1000.0,
 ...     flora=flora,
-...     cohort_dbh_values=cohort_dbh_values,
-...     cohort_n_individuals=cohort_n_individuals,
-...     cohort_pft_names=cohort_pft_names
+...     cohorts=Cohorts(
+...         dbh_values=cohort_dbh_values,
+...         n_individuals=cohort_n_individuals,
+...         pft_names=cohort_pft_names,
+...     ),
 ... )
 
 Convert some of the data to a :class:`pandas.DataFrame` for nicer display and show some
