@@ -1,114 +1,11 @@
 """Tests the implementation of the FastSlowModel against the reference benchmark."""
 
-import datetime
 from contextlib import nullcontext as does_not_raise
-from importlib import resources
 
 import numpy as np
-import pandas
 import pytest
 
 from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
-
-
-@pytest.fixture(scope="module")
-def be_vie_data():
-    """Import the benchmark test data."""
-
-    # Load the BE-Vie data
-    data_path = (
-        resources.files("pyrealm_build_data.subdaily") / "subdaily_BE_Vie_2014.csv"
-    )
-
-    data = pandas.read_csv(str(data_path))
-    data["time"] = pandas.to_datetime(data["time"])
-
-    return data
-
-
-@pytest.fixture(scope="function")
-def be_vie_data_components(be_vie_data):
-    """Provides a data factory to convert the test data into a PModelEnv and arrays.
-
-    This fixture returns an instance of a DataFactory class, that provides a `get`
-    method to allow different subsets of the data to be built into the inputs for
-    subdaily model testing. Providing this as a DataFactory generator allows tests to
-    access more than one subset of the same data, which is useful in comparing the
-    behaviour of complete and incomplete daily datetime sequences.
-
-    The get method supports two modes, "pad" and "crop, both of which also require a
-    `start` and `end` value.
-
-    * In "pad" mode,  the original time series is extended by the specified number of
-      half hourly steps at the start and end of the original data. The datetimes are
-      filled in to give an actual time series but the data values are simply padded with
-      `np.nan`. This is used to check that the presence of incomplete days does not
-      affect the prediction of the sequence of GPP values. Since the actual data are not
-      changed, the padded data should pass without affecting the calculations.
-
-    * In "crop" mode, the original time series is cropped to only the rows in start:end.
-      This is used to assess the behaviour of incomplete day handling and the switch
-      points between providing daily estimates.
-    """
-
-    from pyrealm.pmodel import PModelEnvironment
-
-    class DataFactory:
-        def get(
-            self,
-            mode: str = "",
-            start: int = 0,
-            end: int = 0,
-            pre_average: list[datetime.time] | None = None,
-        ):
-            # Get a copy of the data so as to not break the module scope loaded object.
-            data = be_vie_data.copy()
-
-            # Implement the two sampling modes
-            if mode == "pad":
-                # Get the new time series with the padded times
-                datetime_subdaily = data["time"].to_numpy()
-                spacing = np.diff(datetime_subdaily)[0]
-                pad_start = datetime_subdaily[0] - np.arange(start, 0, -1) * spacing
-                pad_end = datetime_subdaily[-1] + np.arange(1, end + 1, 1) * spacing
-
-                # Pad the data frame with np.nan as requested
-                data.index = range(start, len(data) + start)
-                data = data.reindex(range(0, len(data) + start + end))
-
-                # Set the new times into the data frame
-                data["time"] = np.concatenate([pad_start, datetime_subdaily, pad_end])
-
-            if mode == "crop":
-                # Crop the data to the requested block
-                data = data.iloc[start:end]
-
-            datetime_subdaily = data["time"].to_numpy()
-            ppfd_subdaily = data["ppfd"].to_numpy()
-            fapar_subdaily = data["fapar"].to_numpy()
-            expected_gpp = data["GPP_JAMES"].to_numpy()
-
-            # Create the environment including some randomly distributed water variables
-            # to test the methods that require those variables
-            rng = np.random.default_rng()
-            subdaily_env = PModelEnvironment(
-                tc=data["ta"].to_numpy(),
-                vpd=data["vpd"].to_numpy(),
-                co2=data["co2"].to_numpy(),
-                patm=data["patm"].to_numpy(),
-                theta=rng.uniform(low=0.5, high=0.8, size=ppfd_subdaily.shape),
-                rootzonestress=rng.uniform(low=0.7, high=1.0, size=ppfd_subdaily.shape),
-            )
-
-            return (
-                subdaily_env,
-                ppfd_subdaily,
-                fapar_subdaily,
-                datetime_subdaily,
-                expected_gpp,
-            )
-
-    return DataFactory()
 
 
 def test_SubdailyPModel_JAMES(be_vie_data_components):
@@ -196,11 +93,12 @@ def test_FSPModel_corr(be_vie_data_components, data_args):
         half_width=np.timedelta64(30, "m"),
     )
 
-    # Run as a subdaily model
+    # Run as a subdaily model using the kphio used in the reference implementation.
     subdaily_pmodel = SubdailyPModel(
         env=env,
         ppfd=ppfd,
         fapar=fapar,
+        reference_kphio=1 / 8,
         fs_scaler=fsscaler,
         allow_holdover=True,
     )
@@ -214,6 +112,90 @@ def test_FSPModel_corr(be_vie_data_components, data_args):
     assert np.allclose(gpp_in_micromols, expected_gpp[valid], rtol=0.2)
     r_vals = np.corrcoef(gpp_in_micromols, expected_gpp[valid])
     assert np.all(r_vals > 0.995)
+
+
+def test_SubdailyPModel_previous_realised(be_vie_data_components):
+    """Test the functionality that allows the subdaily model to restart in blocks."""
+
+    from pyrealm.pmodel import SubdailyScaler
+    from pyrealm.pmodel.subdaily import SubdailyPModel
+
+    # Run all in one model
+    env, ppfd, fapar, datetime, _ = be_vie_data_components.get(
+        mode="crop", start=0, end=17520
+    )
+
+    # Get the fast slow scaler and set window
+    fsscaler = SubdailyScaler(datetime)
+    fsscaler.set_window(
+        window_center=np.timedelta64(12, "h"),
+        half_width=np.timedelta64(30, "m"),
+    )
+
+    # Run as a subdaily model using the kphio used in the reference implementation.
+    all_in_one_subdaily_pmodel = SubdailyPModel(
+        env=env,
+        ppfd=ppfd,
+        fapar=fapar,
+        reference_kphio=1 / 8,
+        fs_scaler=fsscaler,
+        allow_holdover=True,
+    )
+
+    # Run first half of year
+    env1, ppfd1, fapar1, datetime1, _ = be_vie_data_components.get(
+        mode="crop", start=0, end=182 * 48
+    )
+
+    # Get the fast slow scaler and set window
+    fsscaler1 = SubdailyScaler(datetime1)
+    fsscaler1.set_window(
+        window_center=np.timedelta64(12, "h"),
+        half_width=np.timedelta64(30, "m"),
+    )
+
+    # Run as a subdaily model using the kphio used in the reference implementation.
+    part_1_subdaily_pmodel = SubdailyPModel(
+        env=env1,
+        ppfd=ppfd1,
+        fapar=fapar1,
+        reference_kphio=1 / 8,
+        fs_scaler=fsscaler1,
+        allow_holdover=True,
+    )
+
+    # Run second year
+    env2, ppfd2, fapar2, datetime2, _ = be_vie_data_components.get(
+        mode="crop", start=182 * 48, end=365 * 48
+    )
+
+    # Get the fast slow scaler and set window
+    fsscaler2 = SubdailyScaler(datetime2)
+    fsscaler2.set_window(
+        window_center=np.timedelta64(12, "h"),
+        half_width=np.timedelta64(30, "m"),
+    )
+
+    # Run as a subdaily model using the kphio used in the reference implementation.
+    part_2_subdaily_pmodel = SubdailyPModel(
+        env=env2,
+        ppfd=ppfd2,
+        fapar=fapar2,
+        reference_kphio=1 / 8,
+        fs_scaler=fsscaler2,
+        allow_holdover=True,
+        previous_realised=(
+            part_1_subdaily_pmodel.optimal_chi.xi[-1],
+            part_1_subdaily_pmodel.vcmax25_real[-1],
+            part_1_subdaily_pmodel.jmax25_real[-1],
+        ),
+    )
+
+    assert np.allclose(
+        all_in_one_subdaily_pmodel.gpp,
+        np.concat([part_1_subdaily_pmodel.gpp, part_2_subdaily_pmodel.gpp]),
+        equal_nan=True,
+    )
 
 
 @pytest.mark.parametrize("ndims", [2, 3, 4])
@@ -330,7 +312,10 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
     )
 
     # Convert a standard model
-    standard_model = PModel(env=env, kphio=1 / 8, method_optchi=method_optchi)
+    standard_model = PModel(
+        env=env,
+        method_optchi=method_optchi,
+    )
     standard_model.estimate_productivity(fapar=fapar, ppfd=ppfd)
 
     converted = convert_pmodel_to_subdaily(

@@ -1,12 +1,12 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: check-merge-conflict
       - id: debug-statements
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.5.2
+    rev: v0.6.9
     hooks:
       # Run the linter.
       - id: ruff
@@ -14,22 +14,23 @@ repos:
       # Run the formatter.
       - id: ruff-format
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.10.1"
+    rev: "v1.11.2"
     hooks:
       - id: mypy
         additional_dependencies: [numpy, types-tabulate, pandas-stubs]
         exclude: "pyrealm_build_data/splash/splash_py_version/.*\\.py"
         # https://stackoverflow.com/a/75447331/3401916
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.41.0
+    rev: v0.42.0
     hooks:
     - id: markdownlint
   - repo: https://github.com/mwouts/jupytext
-    rev: v1.16.3d
+    rev: v1.16.4b
     hooks:
     - id: jupytext
       args: [--pipe, black]
-      files: docs/source 
+      files: docs/source
+      exclude: docs/source/conf.py
       additional_dependencies:
         - black==24.4.2 # Matches hook
       

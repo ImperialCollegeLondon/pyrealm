@@ -1,6 +1,7 @@
 root: index
 subtrees:
 
+
 - caption: Users
   entries: 
   - file: users/pmodel/module_overview.md
@@ -12,7 +13,8 @@ subtrees:
               - file: users/pmodel/pmodel_details/worked_examples.md
               - file: users/pmodel/pmodel_details/photosynthetic_environment.md
               - file: users/pmodel/pmodel_details/optimal_chi.md
-              - file: users/pmodel/pmodel_details/lue_limitation.md
+              - file: users/pmodel/pmodel_details/quantum_yield.md
+              - file: users/pmodel/pmodel_details/jmax_limitation.md
               - file: users/pmodel/pmodel_details/envt_variation_outputs.md
               - file: users/pmodel/pmodel_details/soil_moisture.md
               - file: users/pmodel/pmodel_details/extreme_values.md
@@ -26,7 +28,16 @@ subtrees:
               - file: users/pmodel/subdaily_details/worked_example.md
         - file: users/pmodel/c3c4model.md
         - file: users/pmodel/isotopic_discrimination.md
+  - file: users/demography/module_overview.md
+    subtrees:
+      - entries:
+        - file: users/demography/flora.md
+        - file: users/demography/t_model.md
+        - file: users/demography/crown.md
+        - file: users/demography/community.md
+        - file: users/demography/canopy.md
   - file: users/tmodel/tmodel.md
+  - file: users/tmodel/canopy.md
   - file: users/splash.md
   - file: users/constants.md
   - file: users/hygro.md 

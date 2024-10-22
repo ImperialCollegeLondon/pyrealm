@@ -5,11 +5,21 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.3
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # The T Model
@@ -32,7 +42,7 @@ class description.
 
 The class can be used to create a default T Model trait set:
 
-```{code-cell}
+```{code-cell} ipython3
 import numpy as np
 from pyrealm import tmodel
 
@@ -43,7 +53,7 @@ print(traits1)
 
 It can also be edited to generate different growth patterns:
 
-```{code-cell}
+```{code-cell} ipython3
 # A slower growing tree with a higher maximum height
 traits2 = tmodel.TModelTraits(a_hd=50, h_max=40)
 print(traits2)
@@ -72,7 +82,7 @@ diameters and an optional set of traits as a
 {class}`~pyrealm.constants.tmodel_const.TModelTraits` object. If no traits are provided,
 the default {class}`~pyrealm.constants.tmodel_const.TModelTraits` settings are used.
 
-```{code-cell}
+```{code-cell} ipython3
 # Use a sequence of diameters from sapling to large tree
 diameters = np.linspace(0.02, 2, 100)
 tree1 = tmodel.TTree(diameters=diameters)  # Using default traits
@@ -93,7 +103,7 @@ These inputs are then immediately used to calculate the following properties of 
 Using an array of diameter values provides an immediate way to visualise the geometric
 scaling resulting from a particular set of plant traits:
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 from matplotlib import pyplot
@@ -145,12 +155,12 @@ provide estimates of the following growth parameters:
 The code below calculates growth estimates at each diameter under a constant GPP of 7
 TODO - UNITS!.
 
-```{code-cell}
+```{code-cell} ipython3
 tree1.calculate_growth(np.array([7]))
 tree2.calculate_growth(np.array([7]))
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 fig, (ax1, ax2, ax3) = pyplot.subplots(1, 3, figsize=(12, 4))
@@ -184,7 +194,7 @@ The {meth}`~pyrealm.tmodel.TTree.reset_diameters` can be used to update an exist
 {meth}`~pyrealm.tmodel.TTree.reset_diameters` automatically resets any calculated growth
 parameters: they will need to be recalculated for the new diameters.
 
-```{code-cell}
+```{code-cell} ipython3
 tree1.reset_diameters(np.array([0.0001]))
 print(tree1.height)
 ```

@@ -31,12 +31,16 @@ repository = "https://github.com/ImperialCollegeLondon/pyrealm"
 version = "1.0.0"
 
 [tool.poetry.dependencies]
-dacite = "^1.6.0" 
-numpy = "^2.0.0" 
+dacite = "^1.6.0"
+numpy = "^2.0.0"
 python = ">=3.10"
-scipy = "^1.7.3" 
-tabulate = "^0.8.10" 
+scipy = "^1.7.3"
+tabulate = "^0.8.10"
 
+marshmallow = "^3.22.0"
+marshmallow-dataclass = "^8.7.0"
+pandas = "^2.2.2"
+pandas-stubs = "^2.2.2.240909"
 [tool.poetry.group.types.dependencies]
 pandas-stubs = "^2.2.0.240218"
 types-tabulate = "^0.9.0.0"
@@ -69,7 +73,7 @@ sphinx = "^7.0.0"
 sphinx-external-toc = "^1.0.0"
 sphinx-rtd-theme = "^2.0.0"
 sphinxcontrib-bibtex = "^2.6.1"
-xarray = "^2023.4.0"
+xarray = "^2024.6.0"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
@@ -100,10 +104,10 @@ module = "tests.*"
 addopts = """
   -v 
   -p no:warnings
-  -m "not profiling" 	
-  --cov=pyrealm  
+  -m "not profiling"
+  --cov=pyrealm
   --cov-report=html:reports/coverage
-  --doctest-modules 
+  --doctest-modules
   --ignore=pyrealm/__main__.py
   --ignore=tests/pmodel/generate_test_inputs.py
   """
@@ -128,7 +132,7 @@ select = [
   "I", # isort
   "UP", # pyupgrade
   "RUF", # RUF specific checks
-  "NPY201"
+  "NPY201",
 ]
 
 # On top of the Google convention, disable:
@@ -140,3 +144,9 @@ ignore = [
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.jupytext]
+# Stop jupytext from removing mystnb and other settings in MyST Notebook YAML headers
+notebook_metadata_filter = "settings,mystnb,language_info"
+# Also stop it from stripping cell metadata, except for specific ones to lose.
+cell_metadata_filter = "all,-trusted"

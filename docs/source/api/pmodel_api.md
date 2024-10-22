@@ -5,11 +5,21 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.3
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # The {mod}`~pyrealm.pmodel` module
@@ -46,6 +56,14 @@ kernelspec:
 
 ```{eval-rst}
 .. automodule:: pyrealm.pmodel.optimal_chi
+    :autosummary:
+    :members:
+```
+
+## The {mod}`~pyrealm.pmodel.quantum_yield` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.pmodel.quantum_yield
     :autosummary:
     :members:
 ```

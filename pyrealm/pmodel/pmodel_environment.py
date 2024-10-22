@@ -75,25 +75,29 @@ class PModelEnvironment:
 
     def __init__(
         self,
-        tc: NDArray,
-        vpd: NDArray,
-        co2: NDArray,
-        patm: NDArray,
-        theta: NDArray | None = None,
-        rootzonestress: NDArray | None = None,
+        tc: NDArray[np.float64],
+        vpd: NDArray[np.float64],
+        co2: NDArray[np.float64],
+        patm: NDArray[np.float64],
+        theta: NDArray[np.float64] | None = None,
+        rootzonestress: NDArray[np.float64] | None = None,
+        aridity_index: NDArray[np.float64] | None = None,
+        mean_growth_temperature: NDArray[np.float64] | None = None,
         pmodel_const: PModelConst = PModelConst(),
         core_const: CoreConst = CoreConst(),
     ):
         self.shape: tuple = check_input_shapes(tc, vpd, co2, patm)
 
         # Validate and store the forcing variables
-        self.tc: NDArray = bounds_checker(tc, -25, 80, "[]", "tc", "°C")
+        self.tc: NDArray[np.float64] = bounds_checker(tc, -25, 80, "[]", "tc", "°C")
         """The temperature at which to estimate photosynthesis, °C"""
-        self.vpd: NDArray = bounds_checker(vpd, 0, 10000, "[]", "vpd", "Pa")
+        self.vpd: NDArray[np.float64] = bounds_checker(vpd, 0, 10000, "[]", "vpd", "Pa")
         """Vapour pressure deficit, Pa"""
-        self.co2: NDArray = bounds_checker(co2, 0, 1000, "[]", "co2", "ppm")
+        self.co2: NDArray[np.float64] = bounds_checker(co2, 0, 1000, "[]", "co2", "ppm")
         """CO2 concentration, ppm"""
-        self.patm: NDArray = bounds_checker(patm, 30000, 110000, "[]", "patm", "Pa")
+        self.patm: NDArray[np.float64] = bounds_checker(
+            patm, 30000, 110000, "[]", "patm", "Pa"
+        )
         """Atmospheric pressure, Pa"""
 
         # Guard against calc_density issues
@@ -110,7 +114,7 @@ class PModelEnvironment:
                 "zero or explicitly set to np.nan"
             )
 
-        self.ca: NDArray = calc_co2_to_ca(self.co2, self.patm)
+        self.ca: NDArray[np.float64] = calc_co2_to_ca(self.co2, self.patm)
         """Ambient CO2 partial pressure, Pa"""
 
         self.gammastar = calc_gammastar(
@@ -132,10 +136,20 @@ class PModelEnvironment:
         temperature and pressure, unitless"""
 
         # Optional variables
-        self.theta: NDArray | None = None
+
+        # TODO - could this be done flexibly using kwargs and then setting the requires
+        #        attributes for the downstream classes that use the PModelEnvironment.
+        #        Easy to add the attributes dynamically, but bounds checking less
+        #        obvious.
+
+        self.theta: NDArray[np.float64]
         """Volumetric soil moisture (m3/m3)"""
-        self.rootzonestress: NDArray | None = None
+        self.rootzonestress: NDArray[np.float64]
         """Rootzone stress factor (experimental) (-)"""
+        self.aridity_index: NDArray[np.float64]
+        """Climatological aridity index as PET/P (-)"""
+        self.mean_growth_temperature: NDArray[np.float64]
+        """Mean temperature > 0°C during growing degree days (°C)"""
 
         if theta is not None:
             # Is the input congruent with the other variables and in bounds.
@@ -147,6 +161,20 @@ class PModelEnvironment:
             _ = check_input_shapes(tc, rootzonestress)
             self.rootzonestress = bounds_checker(
                 rootzonestress, 0, 1, "[]", "rootzonestress", "-"
+            )
+
+        if aridity_index is not None:
+            # Is the input congruent with the other variables and in bounds.
+            _ = check_input_shapes(tc, aridity_index)
+            self.aridity_index = bounds_checker(
+                aridity_index, 0, 50, "[]", "aridity_index", "-"
+            )
+
+        if mean_growth_temperature is not None:
+            # Is the input congruent with the other variables and in bounds.
+            _ = check_input_shapes(tc, mean_growth_temperature)
+            self.mean_growth_temperature = bounds_checker(
+                mean_growth_temperature, 0, 50, "[]", "mean_growth_temperature", "-"
             )
 
         # Store constant settings
@@ -185,7 +213,17 @@ class PModelEnvironment:
             ("ns_star", "-"),
         ]
 
-        if self.theta is not None:
-            attrs += [("theta", "m3/m3")]
+        # Add any optional variables - need to check here if these attributes actually
+        # exist because if they are not provided they are typed but not populated.
+        optional_vars = [
+            ("theta", "m3/m3"),
+            ("rootzonestress", "-"),
+            ("aridity_index", "-"),
+            ("mean_growth_temperature", "°C"),
+        ]
+
+        for opt_var, unit in optional_vars:
+            if getattr(self, opt_var, None) is not None:
+                attrs += [(opt_var, unit)]
 
         summarize_attrs(self, attrs, dp=dp)

@@ -12,11 +12,12 @@ from pyrealm.core.water import calc_viscosity_h2o
 
 
 def calc_ftemp_arrh(
-    tk: NDArray,
-    ha: float,
+    tk: NDArray[np.float64],
+    ha: float | NDArray,
+    tk_ref: float | NDArray | None = None,
     pmodel_const: PModelConst = PModelConst(),
     core_const: CoreConst = CoreConst(),
-) -> NDArray:
+) -> NDArray[np.float64]:
     r"""Calculate enzyme kinetics scaling factor.
 
     Calculates the temperature-scaling factor :math:`f` for enzyme kinetics following an
@@ -45,8 +46,12 @@ def calc_ftemp_arrh(
         \]
 
     Args:
-        tk: Temperature (in Kelvin)
+        tk: Temperature (K)
         ha: Activation energy (in :math:`J \text{mol}^{-1}`)
+        tk_ref: The reference temperature for the reaction (K). Optional, defaulting to
+            the value of
+            :attr:`PModelConst.plant_T_ref<pyrealm.constants.PModelConst.plant_T_ref>`
+            expressed in Kelvin.
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
@@ -60,8 +65,8 @@ def calc_ftemp_arrh(
 
     Examples:
         >>> # Relative rate change from 25 to 10 degrees Celsius (percent change)
-        >>> round((1.0-calc_ftemp_arrh( 283.15, 100000)) * 100, 4)
-        np.float64(88.1991)
+        >>> np.round((1.0-calc_ftemp_arrh( 283.15, 100000)) * 100, 4)
+        array([88.1991])
     """
 
     # Note that the following forms are equivalent:
@@ -69,15 +74,16 @@ def calc_ftemp_arrh(
     # exp( ha * (tc - 25.0)/(298.15 * kR * (tc + 273.15)) )
     # exp( (ha/kR) * (1/298.15 - 1/tk) )
 
-    tkref = pmodel_const.plant_T_ref + core_const.k_CtoK
+    if tk_ref is None:
+        tk_ref = np.array([pmodel_const.plant_T_ref + core_const.k_CtoK])
 
-    return np.exp(ha * (tk - tkref) / (tkref * core_const.k_R * tk))
+    return np.exp(ha * (tk - tk_ref) / (tk_ref * core_const.k_R * tk))
 
 
 def calc_ftemp_inst_rd(
-    tc: NDArray,
+    tc: NDArray[np.float64],
     pmodel_const: PModelConst = PModelConst(),
-) -> NDArray:
+) -> NDArray[np.float64]:
     r"""Calculate temperature scaling of dark respiration.
 
     Calculates the temperature-scaling factor for dark respiration at a given
@@ -89,7 +95,7 @@ def calc_ftemp_inst_rd(
             fr = \exp( b (T_o - T) -  c ( T_o^2 - T^2 ))
 
     Args:
-        tc: Temperature (degrees Celsius)
+        tc: Temperature (°C)
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
 
     PModel Parameters:
@@ -106,7 +112,7 @@ def calc_ftemp_inst_rd(
     Examples:
         >>> # Relative percentage instantaneous change in Rd going from 10 to 25 degrees
         >>> val = (calc_ftemp_inst_rd(25) / calc_ftemp_inst_rd(10) - 1) * 100
-        >>> round(val, 4)
+        >>> np.round(val, 4)
         np.float64(250.9593)
     """
 
@@ -116,87 +122,84 @@ def calc_ftemp_inst_rd(
     )
 
 
-def calc_ftemp_inst_vcmax(
-    tc: NDArray,
-    pmodel_const: PModelConst = PModelConst(),
+def calc_modified_arrhenius_factor(
+    tk: NDArray[np.float64],
+    Ha: float | NDArray,
+    Hd: float | NDArray,
+    deltaS: float | NDArray,
+    tk_ref: float | NDArray,
+    mode: str = "M2002",
     core_const: CoreConst = CoreConst(),
-) -> NDArray:
-    r"""Calculate temperature scaling of :math:`V_{cmax}`.
+) -> NDArray[np.float64]:
+    r"""Calculate the modified Arrhenius factor with temperature for an enzyme.
 
-    This function calculates the temperature-scaling factor :math:`f` of the
-    instantaneous temperature response of :math:`V_{cmax}`, given the temperature
-    (:math:`T`) relative to the standard reference temperature (:math:`T_0`), following
-    modified Arrhenius kinetics.
+    This function returns a temperature-determined factor expressing the rate of an
+    enzymatic process relative to the rate at a given reference temperature. This is
+    used in the calculation of :math:`V_{cmax}` but also other temperature dependent
+    enzymatic processes.
 
-    .. math::
-
-       V = f V_{ref}
-
-    The value of :math:`f` is given by :cite:t:`Kattge:2007db` (Eqn 1) as:
-
-    .. math::
-
-        f = g(T, H_a) \cdot
-                \frac{1 + \exp( (T_0 \Delta S - H_d) / (T_0 R))}
-                     {1 + \exp( (T \Delta S - H_d) / (T R))}
-
-    where :math:`g(T, H_a)` is a regular Arrhenius-type temperature response function
-    (see :func:`~pyrealm.pmodel.functions.calc_ftemp_arrh`). The term :math:`\Delta S`
-    is the entropy factor, calculated as a linear function of :math:`T` in °C following
-    :cite:t:`Kattge:2007db` (Table 3, Eqn 4):
-
-    .. math::
-
-        \Delta S = a + b T
+    The function can operate in one of two modes (``M2002`` or ``J1942``) using
+    alternative derivations of the modified Arrhenius relationship presented in
+    :cite:t:`murphy:2021a`. The ``J1942`` includes an additional factor (tk/tk_ref) that
+    is ommitted from the simpler ``M2002`` derivation.
 
     Args:
-        tc:  temperature, or in general the temperature relevant for
-            photosynthesis (°C)
+        tk: The temperature at which to calculate the factor (K)
+        Ha: The activation energy of the enzyme (:math:`H_a`)
+        Hd: The deactivation energy of the enzyme (:math:`H_d`)
+        deltaS: The entropy of the process (:math:`\Delta S`)
+        tk_ref: The reference temperature for the process (K)
+        mode: The calculation mode.
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
-        Ha: activation energy (:math:`H_a`, ``kattge_knorr_Ha``)
-        Hd: deactivation energy (:math:`H_d`, ``kattge_knorr_Hd``)
-        To: standard reference temperature expressed
-          in Kelvin (`T_0`, ``k_To``)
+        To: The standard reference temperature expressed in Kelvin (`T_0`, ``k_To``)
         R: the universal gas constant (:math:`R`, ``k_R``)
-        a: intercept of the entropy factor (:math:`a`, ``kattge_knorr_a_ent``)
-        b: slope of the entropy factor (:math:`b`, ``kattge_knorr_b_ent``)
 
     Returns:
         Values for :math:`f`
 
     Examples:
-        >>> # Relative change in Vcmax going (instantaneously, i.e. not
-        >>> # not acclimatedly) from 10 to 25 degrees (percent change):
-        >>> val = ((calc_ftemp_inst_vcmax(25)/calc_ftemp_inst_vcmax(10)-1) * 100)
-        >>> round(val, 4)
-        np.float64(283.1775)
+        >>> # Calculate the factor for the relative rate of V_cmax at 10 degrees
+        >>> # compared to the rate at the reference temperature of 25°C.
+        >>> from pyrealm.constants import PModelConst
+        >>> pmodel_const = PModelConst()
+        >>> # Get enzyme kinetics parameters
+        >>> a, b, ha, hd = pmodel_const.kattge_knorr_kinetics
+        >>> # Calculate entropy as a function of temperature _in °C_
+        >>> deltaS = a + b * 10
+        >>> # Calculate the arrhenius factor
+        >>> val = calc_modified_arrhenius_factor(
+        ...     tk= 10 + 273.15, Ha=ha, Hd=hd, deltaS=deltaS, tk_ref=25 +273.15
+        ... )
+        >>> np.round(val, 4)
+        np.float64(0.261)
     """
 
-    # Convert temperatures to Kelvin
-    tkref = pmodel_const.plant_T_ref + core_const.k_CtoK
-    tk = tc + core_const.k_CtoK
-
-    # Calculate entropy following Kattge & Knorr (2007): slope and intercept
-    # are defined using temperature in °C, not K!!! 'tcgrowth' corresponds
-    # to 'tmean' in Nicks, 'tc25' is 'to' in Nick's
-    dent = pmodel_const.kattge_knorr_a_ent + pmodel_const.kattge_knorr_b_ent * tc
-    fva = calc_ftemp_arrh(tk, pmodel_const.kattge_knorr_Ha)
-    fvb = (
-        1
-        + np.exp(
-            (tkref * dent - pmodel_const.kattge_knorr_Hd) / (core_const.k_R * tkref)
+    if mode not in ["M2002", "J1942"]:
+        raise ValueError(
+            f"Unknown mode option for calc_modified_arrhenius_factor: {mode}"
         )
-    ) / (1 + np.exp((tk * dent - pmodel_const.kattge_knorr_Hd) / (core_const.k_R * tk)))
 
-    return fva * fvb
+    # Calculate Arrhenius components
+    fva = calc_ftemp_arrh(tk=tk, ha=Ha, tk_ref=tk_ref)
+
+    fvb = (1 + np.exp((tk_ref * deltaS - Hd) / (core_const.k_R * tk_ref))) / (
+        1 + np.exp((tk * deltaS - Hd) / (core_const.k_R * tk))
+    )
+
+    if mode == "M2002":
+        # Medlyn et al. 2002 simplification
+        return fva * fvb
+
+    # Johnson et al 1942
+    return fva * (tk / tk_ref) * fvb
 
 
 def calc_ftemp_kphio(
-    tc: NDArray, c4: bool = False, pmodel_const: PModelConst = PModelConst()
-) -> NDArray:
+    tc: NDArray[np.float64], c4: bool = False, pmodel_const: PModelConst = PModelConst()
+) -> NDArray[np.float64]:
     r"""Calculate temperature dependence of quantum yield efficiency.
 
     Calculates the temperature dependence of the quantum yield efficiency, as a
@@ -254,11 +257,11 @@ def calc_ftemp_kphio(
 
 
 def calc_gammastar(
-    tc: NDArray,
-    patm: NDArray,
+    tc: NDArray[np.float64],
+    patm: NDArray[np.float64],
     pmodel_const: PModelConst = PModelConst(),
     core_const: CoreConst = CoreConst(),
-) -> NDArray:
+) -> NDArray[np.float64]:
     r"""Calculate the photorespiratory CO2 compensation point.
 
     Calculates the photorespiratory **CO2 compensation point** in absence of dark
@@ -308,10 +311,10 @@ def calc_gammastar(
 
 
 def calc_ns_star(
-    tc: NDArray,
-    patm: NDArray,
+    tc: NDArray[np.float64],
+    patm: NDArray[np.float64],
     core_const: CoreConst = CoreConst(),
-) -> NDArray:
+) -> NDArray[np.float64]:
     r"""Calculate the relative viscosity of water.
 
     Calculates the relative viscosity of water (:math:`\eta^*`), given the standard
@@ -352,11 +355,11 @@ def calc_ns_star(
 
 
 def calc_kmm(
-    tc: NDArray,
-    patm: NDArray,
+    tc: NDArray[np.float64],
+    patm: NDArray[np.float64],
     pmodel_const: PModelConst = PModelConst(),
     core_const: CoreConst = CoreConst(),
-) -> NDArray:
+) -> NDArray[np.float64]:
     r"""Calculate the Michaelis Menten coefficient of Rubisco-limited assimilation.
 
     Calculates the Michaelis Menten coefficient of Rubisco-limited assimilation
@@ -404,8 +407,8 @@ def calc_kmm(
     Examples:
         >>> # Michaelis-Menten coefficient at 20 degrees Celsius and standard
         >>> # atmosphere (in Pa):
-        >>> round(calc_kmm(20, 101325), 5)
-        np.float64(46.09928)
+        >>> np.round(calc_kmm(20, 101325), 5)
+        array([46.09928])
     """
 
     # Check inputs, return shape not used
@@ -428,11 +431,11 @@ def calc_kmm(
 
 
 def calc_kp_c4(
-    tc: NDArray,
-    patm: NDArray,
+    tc: NDArray[np.float64],
+    patm: NDArray[np.float64],
     pmodel_const: PModelConst = PModelConst(),
     core_const: CoreConst = CoreConst(),
-) -> NDArray:
+) -> NDArray[np.float64]:
     r"""Calculate the Michaelis Menten coefficient of PEPc.
 
     Calculates the Michaelis Menten coefficient of phosphoenolpyruvate carboxylase
@@ -471,10 +474,10 @@ def calc_kp_c4(
 
 
 def calc_soilmstress_stocker(
-    soilm: NDArray,
-    meanalpha: NDArray = np.array(1.0),
+    soilm: NDArray[np.float64],
+    meanalpha: NDArray[np.float64] = np.array(1.0),
     pmodel_const: PModelConst = PModelConst(),
-) -> NDArray:
+) -> NDArray[np.float64]:
     r"""Calculate Stocker's empirical soil moisture stress factor.
 
     This function calculates a penalty factor :math:`\beta(\theta)` for well-watered GPP
@@ -559,10 +562,10 @@ def calc_soilmstress_stocker(
 
 
 def calc_soilmstress_mengoli(
-    soilm: NDArray = np.array(1.0),
-    aridity_index: NDArray = np.array(1.0),
+    soilm: NDArray[np.float64] = np.array(1.0),
+    aridity_index: NDArray[np.float64] = np.array(1.0),
     pmodel_const: PModelConst = PModelConst(),
-) -> NDArray:
+) -> NDArray[np.float64]:
     r"""Calculate the Mengoli et al. empirical soil moisture stress factor.
 
     This function calculates a penalty factor :math:`\beta(\theta)` for well-watered GPP
@@ -641,7 +644,9 @@ def calc_soilmstress_mengoli(
     return np.where(soilm >= psi, y, (y / psi) * soilm)
 
 
-def calc_co2_to_ca(co2: NDArray, patm: NDArray) -> NDArray:
+def calc_co2_to_ca(
+    co2: NDArray[np.float64], patm: NDArray[np.float64]
+) -> NDArray[np.float64]:
     r"""Convert :math:`\ce{CO2}` ppm to Pa.
 
     Converts ambient :math:`\ce{CO2}` (:math:`c_a`) in part per million to Pascals,

@@ -5,11 +5,21 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.3
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Estimating acclimation
@@ -29,7 +39,7 @@ modelling approach to representing slow responses within the P Model, following
 
 * The interpolation of realised daily values back onto the subdaily timescale.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 from copy import copy
@@ -59,7 +69,7 @@ interpolating data back to subdaily timescales. In practice {cite:t}`mengoli:202
 present results using one hour windows around noon or even the single value closest to
 noon.
 
-```{code-cell}
+```{code-cell} ipython3
 # Define a set of observations at a subdaily timescale
 fast_datetimes = np.arange(
     np.datetime64("1970-01-01"), np.datetime64("1970-01-08"), np.timedelta64(30, "m")
@@ -79,7 +89,7 @@ demo_scaler.set_window(window_center=np.timedelta64(12, "h"), half_width=half_wi
 The plot below shows the rapidly changing variable and the defined daily acclimation
 windows.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 fig, ax = plt.subplots()
@@ -130,7 +140,7 @@ applies the memory effect with three different values of $\alpha$. When $\alpha 
 the realised values are identical to the daily optimum value within the acclimation
 window.
 
-```{code-cell}
+```{code-cell} ipython3
 # Extract the optimal values within the daily acclimation windows
 daily_mean = demo_scaler.get_daily_means(fast_data)
 
@@ -140,7 +150,7 @@ real_3 = memory_effect(daily_mean, alpha=1 / 3)
 real_1 = memory_effect(daily_mean, alpha=1)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 fig, ax = plt.subplots()
@@ -195,7 +205,7 @@ The code below shows how the
 used to interpolate realised values back to the subdaily scale, using different settings
 for the update point and interpolation method.
 
-```{code-cell}
+```{code-cell} ipython3
 # Fill to the subdaily scale using the default settings:
 # - update at the end of the acclimation window
 # - hold the value constant between update points
@@ -249,7 +259,7 @@ Plot D
 : The daily optimal realised value is again able to instantaneously adopt the daily
   optimal value, but the one day offset for linear interpolation is applied.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Create the figure

@@ -5,16 +5,26 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.3
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # P Model predictions
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 from itertools import product
@@ -116,7 +126,7 @@ environmental variables:
 
 All of the pairwise plots share the same legend:
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 fig, ax = pyplot.subplots(1, 1, figsize=(6, 1.2))
@@ -181,7 +191,7 @@ absorbed irradiance.
 Light use efficiency measures conversion efficiency of moles of absorbed irradiance into
 grams of Carbon ($\mathrm{g\,C}\; \mathrm{mol}^{-1}$ photons).
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 plot_fun("lue", r"LUE ($\mathrm{g\,C}\; \mathrm{mol}^{-1}$ photons).")
@@ -193,7 +203,7 @@ The intrinsic water-use efficiency is ratio of net photosynthetic CO2
 assimilation to stomatal conductance, and captures the cost of assimilation per
 unit of water, in units of $\mu\mathrm{mol}\;\mathrm{mol}^{-1}$.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 plot_fun("iwue", r"IWUE ($\mu\mathrm{mol}\;\mathrm{mol}^{-1}$)")
@@ -250,7 +260,7 @@ calculated using ``fapar=1, ppfd=1``, which are the default values to
 
 ### Gross primary productivity (``gpp``, GPP)
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 plot_fun("gpp", r"GPP   ($\mu\mathrm{g\,C}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
@@ -258,7 +268,7 @@ plot_fun("gpp", r"GPP   ($\mu\mathrm{g\,C}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
 
 ### Dark respiration (``rd``)
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 plot_fun("rd", r"$r_d$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
@@ -266,7 +276,7 @@ plot_fun("rd", r"$r_d$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
 
 ### Maximum rate of carboxylation (``vcmax``)
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 plot_fun("vcmax", r"$v_{cmax}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
@@ -274,7 +284,7 @@ plot_fun("vcmax", r"$v_{cmax}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^
 
 ### Maximum rate of carboxylation at standard temperature (``vcmax25``)
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 plot_fun(
@@ -284,7 +294,7 @@ plot_fun(
 
 ### Maximum rate of electron transport. (``jmax``)
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 plot_fun("jmax", r"$J_{max}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
@@ -299,7 +309,7 @@ instability in estimates of $g_s$. The
 {meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` method will set $g_s$ to be
 undefined (`np.nan`) when VPD is zero or when $c_a - c_i = 0$.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 plot_fun("gs", r"$g_s$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
@@ -312,7 +322,7 @@ below show how each variable changes, for a constant environment with `tc` of 20
 `patm` of 101325 Pa, `vpd` of 1000 Pa and $\ce{CO2}$ of 400 ppm, when absorbed
 irradiance changes from 0 to 2000 $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Calculate the photosynthetic environment

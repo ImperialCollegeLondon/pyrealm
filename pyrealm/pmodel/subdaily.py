@@ -31,14 +31,21 @@ from pyrealm.pmodel import (
     PModelEnvironment,
     SubdailyScaler,
     calc_ftemp_arrh,
-    calc_ftemp_kphio,
 )
-from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
+from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY, OptimalChiABC
+from pyrealm.pmodel.quantum_yield import (
+    QUANTUM_YIELD_CLASS_REGISTRY,
+    QuantumYieldABC,
+    QuantumYieldTemperature,
+)
 
 
 def memory_effect(
-    values: NDArray, alpha: float = 0.067, allow_holdover: bool = False
-) -> NDArray:
+    values: NDArray[np.float64],
+    previous_values: NDArray[np.float64] | None = None,
+    alpha: float = 0.067,
+    allow_holdover: bool = False,
+) -> NDArray[np.float64]:
     r"""Apply a memory effect to a variable.
 
     Three key photosynthetic parameters (:math:`\xi`, :math:`V_{cmax25}` and
@@ -85,6 +92,8 @@ def memory_effect(
 
     Args:
         values: The values to apply the memory effect to.
+        previous_values: Last available realised value used if model is fitted in
+            chunks and value at t=0 is not optimal.
         alpha: The relative weight applied to the most recent observation.
         allow_holdover: Allow missing values to be filled by holding over earlier
             values.
@@ -100,8 +109,11 @@ def memory_effect(
 
     # Initialise the output storage and set the first values to be a slice along the
     # first axis of the input values
-    memory_values = np.empty_like(values, dtype=np.float32)
-    memory_values[0] = values[0]
+    memory_values = np.empty_like(values, dtype=np.float64)
+    if previous_values is None:
+        memory_values[0] = values[0]
+    else:
+        memory_values[0] = previous_values * (1 - alpha) + values[0] * alpha
 
     # Handle the data if there are no missing data,
     if not nan_present:
@@ -173,12 +185,22 @@ class SubdailyPModel:
       more rapid acclimation: :math:`\alpha=1` results in immediate acclimation and
       :math:`\alpha=0` results in no acclimation at all, with values pinned to the
       initial estimates.
+    * By default, the initial realised value :math:`R_1` for each of the three slowly
+      acclimating variables is assumed to be the first optimal value :math:`O_1`, but
+      the `previous_realised` argument can be used to provide values of :math:`R_0` from
+      which to calculate :math:`R_{1} = R_{0}(1 - \alpha) + O_{1} \alpha`.
     * The realised values are then filled back onto the original subdaily timescale,
       with :math:`V_{cmax}` and :math:`J_{max}` then being calculated from the slowly
       responding :math:`V_{cmax25}` and :math:`J_{max25}` and the actual subdaily
       temperature observations and :math:`c_i` calculated using realised values of
       :math:`\xi` but subdaily values in the other parameters.
     * Predictions of GPP are then made as in the standard P Model.
+
+    As with the :class:`~pyrealm.pmodel.pmodel.PModel`, the values of the `kphio`
+    argument _can_ be provided as an array of values, potentially varying through time
+    and space. The behaviour of the daily model that drives acclimation here is to take
+    the daily mean `kphio` value for each time series within the acclimation window, as
+    for the other variables. This is an experimental solution!
 
     Missing values:
 
@@ -210,25 +232,30 @@ class SubdailyPModel:
           function be allowed to hold over values to fill missing values.
         allow_partial_data: Should estimates of daily optimal conditions be calculated
           with missing values in the acclimation window.
-        kphio: The quantum yield efficiency of photosynthesis (:math:`\phi_0`, -).
+        reference_kphio: An optional alternative reference value for the quantum yield
+          efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
+          calculation method.
         fill_kind: The approach used to fill daily realised values to the subdaily
           timescale, currently one of 'previous' or 'linear'.
+        previous_realised: A tuple of previous realised values of three NumPy arrays
+          (xi_real, vcmax25_real, jmax25_real).
     """
 
     def __init__(
         self,
         env: PModelEnvironment,
         fs_scaler: SubdailyScaler,
-        fapar: NDArray,
-        ppfd: NDArray,
-        kphio: float = 1 / 8,
-        do_ftemp_kphio: bool = True,
+        fapar: NDArray[np.float64],
+        ppfd: NDArray[np.float64],
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
+        method_kphio: str = "temperature",
+        reference_kphio: float | NDArray | None = None,
         alpha: float = 1 / 15,
         allow_holdover: bool = False,
         allow_partial_data: bool = False,
         fill_kind: str = "previous",
+        previous_realised: tuple[NDArray, NDArray, NDArray] | None = None,
     ) -> None:
         # Warn about the API
         warn(
@@ -252,23 +279,42 @@ class SubdailyPModel:
         self.datetimes = fs_scaler.datetimes
         """The datetimes of the observations used in the subdaily model."""
 
-        # Set up kphio attributes
+        # Populate PModel attributes and type unpopulated attributes
         self.env: PModelEnvironment = env
-        self.init_kphio: float = kphio
-        self.do_ftemp_kphio = do_ftemp_kphio
-        self.kphio: NDArray
+
+        # Validate the method choices for kphio and optimal chi
+        if method_optchi not in OPTIMAL_CHI_CLASS_REGISTRY:
+            raise ValueError(f"Unknown optimal chi estimation method: {method_optchi}")
+
+        self.method_optchi: str = method_optchi
+        """The method used to calculate optimal chi."""
+        self.c4: bool = OPTIMAL_CHI_CLASS_REGISTRY[method_optchi].is_c4
+        """Does the optimal chi method represent a C4 pathway."""
+
+        if method_kphio not in QUANTUM_YIELD_CLASS_REGISTRY:
+            raise ValueError(f"Unknown kphio calculation method: {method_kphio}")
+
+        self.method_kphio: str = method_kphio
+        """The method used to calculate kphio."""
 
         # 1) Generate a PModelEnvironment containing the average conditions within the
-        #    daily acclimation window, including any optional variables required by the
-        #    optimal chi calculations used in the model.
-        optimal_chi_class = OPTIMAL_CHI_CLASS_REGISTRY[method_optchi]
+        #    daily acclimation window. This daily average environment also needs to also
+        #    pass through any optional variables required by the optimal chi and kphio
+        #    method set for the model, which can be accessed via the class requires
+        #    attribute.
+
+        # Get the list of variables for which to calculate daily acclimation conditions.
         daily_environment_vars = [
             "tc",
             "co2",
             "patm",
             "vpd",
-            *optimal_chi_class.requires,
+            *OPTIMAL_CHI_CLASS_REGISTRY[method_optchi].requires,
+            *QUANTUM_YIELD_CLASS_REGISTRY[method_kphio].requires,
         ]
+
+        # Construct a dictionary of daily acclimation variables, handling optional
+        # choices which can be None.
         daily_environment: dict[str, NDArray] = {}
         for env_var_name in daily_environment_vars:
             env_var = getattr(self.env, env_var_name)
@@ -277,20 +323,45 @@ class SubdailyPModel:
                     env_var, allow_partial_data=allow_partial_data
                 )
 
-        pmodel_env_acclim = PModelEnvironment(
+        # Calculate the acclimation environment passing on the constants definitions.
+        pmodel_env_acclim: PModelEnvironment = PModelEnvironment(
             **daily_environment,
             pmodel_const=self.env.pmodel_const,
             core_const=self.env.core_const,
         )
 
+        # Handle the kphio settings. First, calculate kphio at the subdaily scale.
+        self.kphio: QuantumYieldABC = QUANTUM_YIELD_CLASS_REGISTRY[method_kphio](
+            env=env,
+            use_c4=self.c4,
+            reference_kphio=reference_kphio,
+        )
+        """Subdaily kphio values."""
+
+        # If the kphio method takes a single reference value then we can simply
+        # recalculate the kphio using the same method for the daily acclimation
+        # conditions but if the reference value is an array then the correct behaviour
+        # is not obvious: currently, use the mean calculated kphio within the window to
+        # calculate the daily acclimation value behaviour and set the kphio method to be
+        # fixed to avoid altering the inputs.
+        if self.kphio.reference_kphio.size > 1:
+            daily_reference_kphio = fs_scaler.get_daily_means(
+                self.kphio.kphio, allow_partial_data=allow_partial_data
+            )
+            daily_method_kphio = "fixed"
+        else:
+            daily_reference_kphio = self.kphio.reference_kphio
+            daily_method_kphio = self.method_kphio
+
         # 2) Fit a PModel to those environmental conditions, using the supplied settings
         #    for the original model.
+
         self.pmodel_acclim: PModel = PModel(
-            pmodel_env_acclim,
-            kphio=kphio,
-            do_ftemp_kphio=do_ftemp_kphio,
+            env=pmodel_env_acclim,
+            method_kphio=daily_method_kphio,
             method_optchi=method_optchi,
             method_jmaxlim=method_jmaxlim,
+            reference_kphio=daily_reference_kphio,
         )
         r"""P Model predictions for the daily acclimation conditions.
 
@@ -323,41 +394,95 @@ class SubdailyPModel:
             1 / calc_ftemp_arrh(tk_acclim, self.env.pmodel_const.subdaily_jmax25_ha)
         )
 
+        """Instantaneous optimal :math:`x_{i}`, :math:`V_{cmax}` and :math:`J_{max}`"""
+        # Check the shape of previous realised values are congruent with a slice across
+        # the time axis
+        if previous_realised is not None:
+            if fill_kind != "previous":
+                raise NotImplementedError(
+                    "Using previous_realised is only implemented for "
+                    "fill_kind = 'previous'"
+                )
+
+            # All variables should share the shape of a slice along the first axis of
+            # the environmental forcings
+            expected_shape = self.env.tc[0].shape
+            if not (
+                (previous_realised[0].shape == expected_shape)
+                and (previous_realised[1].shape == expected_shape)
+                and (previous_realised[2].shape == expected_shape)
+            ):
+                raise ValueError(
+                    "`previous_realised` entries have wrong shape in Subdaily PModel"
+                )
+            else:
+                previous_xi_real, previous_vcmax25_real, previous_jmax25_real = (
+                    previous_realised
+                )
+        else:
+            previous_xi_real, previous_vcmax25_real, previous_jmax25_real = [
+                None,
+                None,
+                None,
+            ]
+
         # 5) Calculate the realised daily values from the instantaneous optimal values
-        self.xi_real: NDArray = memory_effect(
-            self.pmodel_acclim.optchi.xi, alpha=alpha, allow_holdover=allow_holdover
+        self.xi_real: NDArray[np.float64] = memory_effect(
+            self.pmodel_acclim.optchi.xi,
+            previous_values=previous_xi_real,
+            alpha=alpha,
+            allow_holdover=allow_holdover,
         )
         r"""Realised daily slow responses in :math:`\xi`"""
-        self.vcmax25_real: NDArray = memory_effect(
-            self.vcmax25_opt, alpha=alpha, allow_holdover=allow_holdover
+        self.vcmax25_real: NDArray[np.float64] = memory_effect(
+            self.vcmax25_opt,
+            previous_values=previous_vcmax25_real,
+            alpha=alpha,
+            allow_holdover=allow_holdover,
         )
         r"""Realised daily slow responses in :math:`V_{cmax25}`"""
-        self.jmax25_real: NDArray = memory_effect(
-            self.jmax25_opt, alpha=alpha, allow_holdover=allow_holdover
+        self.jmax25_real: NDArray[np.float64] = memory_effect(
+            self.jmax25_opt,
+            previous_values=previous_jmax25_real,
+            alpha=alpha,
+            allow_holdover=allow_holdover,
         )
+
         r"""Realised daily slow responses in :math:`J_{max25}`"""
 
         # 6) Fill the realised xi, jmax25 and vcmax25 from daily values back to the
         # subdaily timescale.
-        self.subdaily_vcmax25 = fs_scaler.fill_daily_to_subdaily(self.vcmax25_real)
-        self.subdaily_jmax25 = fs_scaler.fill_daily_to_subdaily(self.jmax25_real)
-        self.subdaily_xi = fs_scaler.fill_daily_to_subdaily(self.xi_real)
+        self.subdaily_xi = fs_scaler.fill_daily_to_subdaily(
+            self.xi_real, previous_value=previous_xi_real
+        )
+        self.subdaily_vcmax25 = fs_scaler.fill_daily_to_subdaily(
+            self.vcmax25_real, previous_value=previous_vcmax25_real
+        )
+        self.subdaily_jmax25 = fs_scaler.fill_daily_to_subdaily(
+            self.jmax25_real, previous_value=previous_jmax25_real
+        )
 
         # 7) Adjust subdaily jmax25 and vcmax25 back to jmax and vcmax given the
         #    actual subdaily temperatures.
         subdaily_tk = self.env.tc + self.env.core_const.k_CtoK
-        self.subdaily_vcmax: NDArray = self.subdaily_vcmax25 * calc_ftemp_arrh(
-            tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_vcmax25_ha
+        self.subdaily_vcmax: NDArray[np.float64] = (
+            self.subdaily_vcmax25
+            * calc_ftemp_arrh(
+                tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_vcmax25_ha
+            )
         )
         """Estimated subdaily :math:`V_{cmax}`."""
 
-        self.subdaily_jmax: NDArray = self.subdaily_jmax25 * calc_ftemp_arrh(
-            tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_jmax25_ha
+        self.subdaily_jmax: NDArray[np.float64] = (
+            self.subdaily_jmax25
+            * calc_ftemp_arrh(
+                tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_jmax25_ha
+            )
         )
         """Estimated subdaily :math:`J_{max}`."""
 
         # 8) Recalculate chi using the OptimalChi class from the provided method.
-        self.optimal_chi = optimal_chi_class(
+        self.optimal_chi: OptimalChiABC = OPTIMAL_CHI_CLASS_REGISTRY[method_optchi](
             env=self.env, pmodel_const=env.pmodel_const
         )
         self.optimal_chi.estimate_chi(xi_values=self.subdaily_xi)
@@ -365,28 +490,22 @@ class SubdailyPModel:
         """Estimated subdaily :math:`c_i`."""
 
         # Calculate Ac, J and Aj at subdaily scale to calculate assimilation
-        if self.do_ftemp_kphio:
-            ftemp_kphio = calc_ftemp_kphio(
-                env.tc, optimal_chi_class.is_c4, pmodel_const=env.pmodel_const
-            )
-            self.kphio = self.init_kphio * ftemp_kphio
-        else:
-            self.kphio = np.array([self.init_kphio])
-
-        self.subdaily_Ac: NDArray = self.subdaily_vcmax * self.optimal_chi.mc
+        self.subdaily_Ac: NDArray[np.float64] = (
+            self.subdaily_vcmax * self.optimal_chi.mc
+        )
         """Estimated subdaily :math:`A_c`."""
 
         iabs = fapar * ppfd
 
-        subdaily_J = (4 * self.kphio * iabs) / np.sqrt(
-            1 + ((4 * self.kphio * iabs) / self.subdaily_jmax) ** 2
+        subdaily_J = (4 * self.kphio.kphio * iabs) / np.sqrt(
+            1 + ((4 * self.kphio.kphio * iabs) / self.subdaily_jmax) ** 2
         )
 
-        self.subdaily_Aj: NDArray = (subdaily_J / 4) * self.optimal_chi.mj
+        self.subdaily_Aj: NDArray[np.float64] = (subdaily_J / 4) * self.optimal_chi.mj
         """Estimated subdaily :math:`A_j`."""
 
         # Calculate GPP and convert from mol to gC
-        self.gpp: NDArray = (
+        self.gpp: NDArray[np.float64] = (
             np.minimum(self.subdaily_Aj, self.subdaily_Ac)
             * self.env.core_const.k_c_molmass
         )
@@ -426,10 +545,10 @@ def convert_pmodel_to_subdaily(
         fs_scaler=fs_scaler,
         fapar=pmodel.fapar,
         ppfd=pmodel.ppfd,
-        kphio=pmodel.init_kphio,
-        do_ftemp_kphio=pmodel.do_ftemp_kphio,
         method_optchi=pmodel.method_optchi,
         method_jmaxlim=pmodel.method_jmaxlim,
+        method_kphio=pmodel.method_kphio,
+        reference_kphio=pmodel.kphio.reference_kphio,
         alpha=alpha,
         allow_holdover=allow_holdover,
         fill_kind=fill_kind,
@@ -441,7 +560,7 @@ class SubdailyPModel_JAMES:
 
     This is alternative implementation of the P Model incorporating slow responses that
     duplicates the original implementation of the weighted-average approach of
-    {cite:t}`mengoli:2022a`.
+    {cite:t}`mengoli:2022a` for C3 plants.
 
     The key difference is that :math:`\xi` does not have a slow response, with
     :math:`c_i` calculated using the daily optimal values during the acclimation window
@@ -487,8 +606,8 @@ class SubdailyPModel_JAMES:
         self,
         env: PModelEnvironment,
         fs_scaler: SubdailyScaler,
-        ppfd: NDArray,
-        fapar: NDArray,
+        ppfd: NDArray[np.float64],
+        fapar: NDArray[np.float64],
         alpha: float = 1 / 15,
         allow_holdover: bool = False,
         kphio: float = 1 / 8,
@@ -541,7 +660,11 @@ class SubdailyPModel_JAMES:
             pmodel_const=self.env.pmodel_const,
             core_const=self.env.core_const,
         )
-        self.pmodel_acclim: PModel = PModel(pmodel_env_acclim, kphio=kphio)
+        self.pmodel_acclim: PModel = PModel(
+            env=pmodel_env_acclim,
+            reference_kphio=kphio,
+            method_kphio="temperature",
+        )
         r"""P Model predictions for the daily acclimation conditions.
 
         A :class:`~pyrealm.pmodel.pmodel.PModel` instance providing the predictions of
@@ -566,11 +689,11 @@ class SubdailyPModel_JAMES:
         )
 
         # Calculate the realised values from the instantaneous optimal values
-        self.vcmax25_real: NDArray = memory_effect(
+        self.vcmax25_real: NDArray[np.float64] = memory_effect(
             self.vcmax25_opt, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`V_{cmax25}`"""
-        self.jmax25_real: NDArray = memory_effect(
+        self.jmax25_real: NDArray[np.float64] = memory_effect(
             self.jmax25_opt, alpha=alpha, allow_holdover=allow_holdover
         )
         r"""Realised daily slow responses in :math:`J_{max25}`"""
@@ -609,32 +732,40 @@ class SubdailyPModel_JAMES:
             self.jmax25_real, fill_from=fill_from
         )
 
-        self.subdaily_vcmax: NDArray = self.subdaily_vcmax25 * calc_ftemp_arrh(
-            tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_vcmax25_ha
+        self.subdaily_vcmax: NDArray[np.float64] = (
+            self.subdaily_vcmax25
+            * calc_ftemp_arrh(
+                tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_vcmax25_ha
+            )
         )
         """Estimated subdaily :math:`V_{cmax}`."""
 
-        self.subdaily_jmax: NDArray = self.subdaily_jmax25 * calc_ftemp_arrh(
-            tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_jmax25_ha
+        self.subdaily_jmax: NDArray[np.float64] = (
+            self.subdaily_jmax25
+            * calc_ftemp_arrh(
+                tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_jmax25_ha
+            )
         )
         """Estimated subdaily :math:`J_{max}`."""
 
         # Calculate Ac, J and Aj at subdaily scale to calculate assimilation
-        self.subdaily_Ac: NDArray = (
+        self.subdaily_Ac: NDArray[np.float64] = (
             self.subdaily_vcmax
             * (self.subdaily_ci - self.env.gammastar)
             / (self.subdaily_ci + self.env.kmm)
         )
         """Estimated subdaily :math:`A_c`."""
 
-        kphio_tc = kphio * calc_ftemp_kphio(tc=self.env.tc)
+        self.kphio: QuantumYieldABC = QuantumYieldTemperature(
+            env=env, reference_kphio=kphio
+        )
         iabs = fapar * ppfd
 
-        subdaily_J = (4 * kphio_tc * iabs) / np.sqrt(
-            1 + ((4 * kphio_tc * iabs) / self.subdaily_jmax) ** 2
+        subdaily_J = (4 * self.kphio.kphio * iabs) / np.sqrt(
+            1 + ((4 * self.kphio.kphio * iabs) / self.subdaily_jmax) ** 2
         )
 
-        self.subdaily_Aj: NDArray = (
+        self.subdaily_Aj: NDArray[np.float64] = (
             (subdaily_J / 4)
             * (self.subdaily_ci - self.env.gammastar)
             / (self.subdaily_ci + 2 * self.env.gammastar)
@@ -642,7 +773,7 @@ class SubdailyPModel_JAMES:
         """Estimated subdaily :math:`A_j`."""
 
         # Calculate GPP, converting from mol m2 s1 to grams carbon m2 s1
-        self.gpp: NDArray = (
+        self.gpp: NDArray[np.float64] = (
             np.minimum(self.subdaily_Aj, self.subdaily_Ac)
             * self.env.core_const.k_c_molmass
         )
