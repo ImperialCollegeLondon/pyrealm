@@ -51,6 +51,10 @@ class TestCanopyData:
     Simple community tests
     - Three identical cohorts so community trans = (e{-k})^3 for each layer
     - Transmission profile (e{-k})^3, e{-k})^6, e{-k})^9)
+
+    Allocate fapar
+     - share fapar equally among 3 cohorts and then equally between the two stems in
+       each cohort.
     """
 
     def test_CohortCanopyData__init__(
@@ -84,6 +88,31 @@ class TestCanopyData:
         exp_f_trans, exp_trans_prof = community_expected
         assert np.allclose(instance.f_trans, exp_f_trans)
         assert np.allclose(instance.transmission_profile, exp_trans_prof)
+
+    def test_CohortCanopyData_allocate_fapar(
+        self, cohort_args, cohort_expected, community_expected
+    ):
+        """Test creation of the cohort canopy data."""
+
+        from pyrealm.demography.canopy import CohortCanopyData, CommunityCanopyData
+
+        cohort_data = CohortCanopyData(**cohort_args)
+        community_data = CommunityCanopyData(cohort_transmissivity=cohort_data.f_trans)
+
+        cohort_data.allocate_fapar(
+            community_fapar=community_data.fapar,
+            n_individuals=cohort_args["n_individuals"],
+        )
+
+        # Unpack and test expectations
+        exp_f_trans, exp_trans_prof = community_expected
+        expected_fapar = -np.diff(exp_trans_prof, prepend=1)
+        assert np.allclose(
+            cohort_data.cohort_fapar, np.tile((expected_fapar / 3)[:, None], 3)
+        )
+        assert np.allclose(
+            cohort_data.stem_fapar, np.tile((expected_fapar / 6)[:, None], 3)
+        )
 
 
 def test_Canopy__init__():
