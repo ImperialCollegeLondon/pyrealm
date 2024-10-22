@@ -52,6 +52,54 @@ def check_expected(community, expected):
     argvalues=[
         pytest.param(
             {
+                "pft_names": np.array(["broadleaf", "conifer"]),
+                "n_individuals": np.array([6, 1]),
+                "dbh_values": np.array([0.2, 0.5]),
+            },
+            does_not_raise(),
+            None,
+            id="correct",
+        ),
+        pytest.param(
+            {
+                "pft_names": False,
+                "n_individuals": np.array([6, 1]),
+                "dbh_values": np.array([0.2, 0.5]),
+            },
+            pytest.raises(ValueError),
+            "Cohort data not passed as numpy arrays",
+            id="not np array",
+        ),
+        pytest.param(
+            {
+                "pft_names": np.array(["broadleaf", "conifer"]),
+                "n_individuals": np.array([6, 1, 1]),
+                "dbh_values": np.array([0.2, 0.5]),
+            },
+            pytest.raises(ValueError),
+            "Cohort arrays are of unequal length",
+            id="not np array",
+        ),
+    ],
+)
+def test_Cohorts(args, outcome, excep_message):
+    """Test the cohorts data structure."""
+    from pyrealm.demography.community import Cohorts
+
+    with outcome as excep:
+        cohorts = Cohorts(**args)
+        # trivial test of success
+        assert len(cohorts.dbh_values) == 2
+        return
+
+    assert str(excep.value) == excep_message
+
+
+@pytest.mark.parametrize(
+    argnames="args,outcome,excep_message",
+    argvalues=[
+        pytest.param(
+            {
                 "cell_id": 1,
                 "cell_area": 100,
                 "cohort_pft_names": np.array(["broadleaf", "conifer"]),
