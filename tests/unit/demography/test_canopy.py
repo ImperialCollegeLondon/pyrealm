@@ -4,6 +4,50 @@ import numpy as np
 import pytest
 
 
+@pytest.mark.parametrize(
+    argnames="args,expected",
+    argvalues=(
+        [
+            pytest.param(
+                {
+                    "projected_leaf_area": np.array([[2, 2, 2]]),
+                    "n_individuals": np.array([2, 2, 2]),
+                    "pft_lai": np.array([2, 2, 2]),
+                    "pft_par_ext": np.array([0.5, 0.5, 0.5]),
+                    "cell_area": 8,
+                },
+                (np.full((3,), 2), np.full((3,), 1), np.full((3,), np.exp(-0.5))),
+                id="single layer",
+            ),
+            pytest.param(
+                {
+                    "projected_leaf_area": np.tile([[2], [4], [6]], 3),
+                    "n_individuals": np.array([2, 2, 2]),
+                    "pft_lai": np.array([2, 2, 2]),
+                    "pft_par_ext": np.array([0.5, 0.5, 0.5]),
+                    "cell_area": 8,
+                },
+                (np.full((3, 3), 2), np.full((3, 3), 1), np.full((3, 3), np.exp(-0.5))),
+                id="two layers",
+            ),
+        ]
+    ),
+)
+def test_CohortCanopyData__init__(args, expected):
+    """Test creation of the cohort canopy data."""
+
+    from pyrealm.demography.canopy import CohortCanopyData
+
+    # Calculate canopy components
+    instance = CohortCanopyData(**args)
+
+    # Unpack and test expectations
+    exp_stem_leaf_area, exp_lai, exp_f_trans = expected
+    assert np.allclose(instance.stem_leaf_area, exp_stem_leaf_area)
+    assert np.allclose(instance.lai, exp_lai)
+    assert np.allclose(instance.f_trans, exp_f_trans)
+
+
 def test_Canopy__init__():
     """Test happy path for initialisation.
 
@@ -49,7 +93,7 @@ def test_Canopy__init__():
             / community.cell_area
         )
     )
-    assert canopy.stem_leaf_area.shape == (
+    assert canopy.cohort_data.stem_leaf_area.shape == (
         n_layers_from_crown_area,
         canopy.n_cohorts,
     )
