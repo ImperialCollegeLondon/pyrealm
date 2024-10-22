@@ -13,10 +13,37 @@ from pyrealm.pmodel.subdaily import SubdailyPModel
 class TwoLeafIrradience:
     """Running the two leaf, two stream model within Pyrealm.
 
-    This class implements the methodology of Pury and Farquhar (1997)
-    :cite:p:`Pury&Farquhar:1997` two leaf, two stream model. This model is chosen to
-    provide a better representation than the big leaf model and to align closely to
+    This class implements the methodology of Pury and Farquhar (1997) \
+    :cite:p:`Pury&Farquhar:1997` two leaf, two stream model. This model is chosen to \
+    provide a better representation than the big leaf model and to align closely to \
     the workings of the ``BESS`` model :cite:alp:`Ryu_et_al:2011`.
+
+    The outline flow of the calculations is as follows:
+    1. Calculate the beam extinction coefficient :math:`k_{b}` using \
+    :func:`beam_extinction_coeff`
+    2. Calculate the scattered beam extinction coefficient using \
+    :func:`scattered_beam_extinction_coeff`
+    3. Calculate fraction of diffuse radiation using :func:`fraction_of_diffuse_rad`
+    4. Calculate beam irradience for horizontal leaves using \
+    :func:`beam_irradience_h_leaves`
+    5. Calculate the beam irradience for a uniform leaf angle distribution with \
+    :func:`beam_irrad_unif_leaf_angle_dist`
+    6. Calculate diffuse radiation with :func:`diffuse_radiation`
+    7. Calculate direct beam irradience with :func:`beam_irradience`
+    8. Calculate scattered beam irradience with :func:`scattered_beam_irradience`
+    9. Calculate the total canopy irradience with :func:`canopy_irradience`
+    10. Calculate the sunlit beam irradience with :func:`sunlit_beam_irrad`
+    11. Calulate the sunlit diffuse irradience with :func:`sunlit_diffuse_irrad`
+    12. Calculate the scattered irradience recieved by sunlit portion of canopy with \
+    :func:`sunlit_scattered_irrad`
+    13. Calulate total irradience absorbed by sunlit portion of canopy with \
+    :func:`sunlit_absorbed_irrad`
+    14. Calculate the irradience absorbed by the shaded farction of the canopy with 
+    :func:`shaded_absorbed_irrad`
+
+    These calculated values are used in the estimation of gross primary productivity \
+    (``GPP``). An instance of this class is accepted by the \
+    :class:`TwoLeafAssimilation`, which uses these results to calulate ``GPP``.
 
     Args:
         beta_angle (NDArray): Array of beta angles (radians).
@@ -151,21 +178,17 @@ class TwoLeafIrradience:
 class TwoLeafAssimilation:
     """A class to estimate gross primary production (``GPP``) using a two-leaf approach.
 
-    This class integrates a photosynthesis model (:class:`~pyrealm.pmodel.pmodel.PModel`
-    or :class:`~pyrealm.pmodel.subdaily.SubdailyPModel`) and irradiance data
-    (:class:`~pyrealm.pmodel.two_leaf_irradience.TwoLeafIrradience`) to compute various
-    canopy photosynthetic properties and ``GPP`` estimates.
+    This class integrates a photosynthesis model \
+    (:class:`~pyrealm.pmodel.pmodel.PModel` or \
+    :class:`~pyrealm.pmodel.subdaily.SubdailyPModel`) and irradiance data \
+    (:class:`~pyrealm.pmodel.two_leaf_irradience.TwoLeafIrradience`) to compute \
+    various canopy photosynthetic properties and ``GPP`` estimates.
 
-    Attributes:
-        pmodel (PModel | SubdailyPModel): The photosynthesis model used for
+    Args:
+        pmodel (PModel | SubdailyPModel): The photosynthesis model used for \
             assimilation.
         irrad (TwoLeafIrradience): Irradiance data required for ``GPP`` calculations.
         leaf_area_index (NDArray): Array of leaf area index values.
-        vcmax_pmod (NDArray): Maximum carboxylation rate at current conditions.
-        vcmax25_pmod (NDArray): Maximum carboxylation rate at 25°C.
-        optchi_obj (OptimalChiABC): Object containing optimization of :math:`chi`.
-        core_const (CoreConst): Core constants retrieved from the PModel.
-        gpp (NDArray): Estimated gross primary production.
     """
 
     def __init__(
