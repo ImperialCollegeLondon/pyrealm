@@ -15,7 +15,7 @@ def calc_distance_factor(nu: NDArray, k_e: float) -> NDArray:
     r"""Calculates distance factor.
 
     This function calculates the distance factor :math:`dr` using the method of \
-        :cite:t:`berger:1993a`.
+    :cite:t:`berger:1993a`.
 
     .. math::
 
@@ -45,7 +45,7 @@ def calc_declination_angle_delta(
     r"""Calculates declination angle delta.
 
     This function calculates the solar declination angle delta using the method of \
-        :cite:t:`Woolf:1968`.
+    :cite:t:`Woolf:1968`.
 
     .. math::
 
@@ -72,8 +72,8 @@ def calc_lat_delta_intermediates(
     r"""Calculates intermediate values for use in solar radiation calcs.
 
     This function calculates :math:`ru` and :math:`rv` which are dimensionless \
-        intermediate values calculated from the solar declination angle delta and the \
-        observation latitude.
+    intermediate values calculated from the solar declination angle delta and the \
+    observation latitude.
 
     .. math::
 
@@ -148,7 +148,7 @@ def calc_daily_solar_radiation(
     r"""Calculate daily extraterrestrial solar radiation (J/m^2).
 
     This function calculates the daily extraterrestrial solar radition :math:`J/m^2` \
-        using Eq. 1.10.3 :cite:t:`Duffie:2013a`.
+    using Eq. 1.10.3 :cite:t:`Duffie:2013a`.
 
     .. math::
 
@@ -179,7 +179,7 @@ def _calc_daily_solar_radiation(
     """Calculate daily extraterrestrial solar radiation (J/m^2).
 
     This function calculates the daily extraterrestrial solar radition (J/m^2) using \
-        Eq. 1.10.3, :cite:t:`Duffie:2013a`.
+    Eq. 1.10.3, :cite:t:`Duffie:2013a`.
 
     Args:
         dr: dimensionless distance factor
@@ -209,7 +209,7 @@ def calc_transmissivity(sf: NDArray, elv: NDArray, k_c: float, k_d: float) -> ND
     r"""Calculate atmospheric transmissivity, :math:`tau`.
 
     This function calculates atmospheric transmissivity using the method of Eq.11, \
-        :cite:t:`Linacre:1968a` and Eq 2, :cite:t:`allen:1996a`.
+    :cite:t:`Linacre:1968a` and Eq 2, :cite:t:`allen:1996a`.
 
     .. math::
 
@@ -236,11 +236,11 @@ def calc_ppfd_from_tau_ra_d(
     r"""Calculate photosynthetic photon flux density, :math:`PPFD`,(mol/m^2).
 
     This function calculates the :math:`PPFD` in :math:`mol/m^2` from secondary \
-        calculated variables, and constants.
+    calculated variables, and constants.
 
     .. math::
 
-        ppfd = (1.0 \times 10^{-6}) \cdot k_{fFEC} \cdot (1.0 - k_{alb}_{vis})
+        ppfd = (1.0 \times 10^{-6}) \cdot k_{fFEC} \cdot (1.0 - k_{alb_vis})
         \cdot \tau \
             \cdot ra_{d}
 
@@ -270,7 +270,7 @@ def calc_ppfd(
     r"""Calculates Photosynthetic Photon Flux Density, :math:`PPFD`, (:math:`mol/m^2`).
 
     This function calculates :math:`PPFD` (:math:`mol/m^2`) from the observation \
-        location and time using the following calculations:
+    location and time using the following calculations:
 
     - :func:`calc_heliocentric_longitudes`
     - :func:`calc_distance_factor`
@@ -346,7 +346,7 @@ def calc_net_longwave_radiation(
     r"""Calculates net longwave radiation, :math:`rnl`, :math:`W/m^2`.
 
     This function calculates net longwave radiation in :math:`W/m^2` using the methods \
-        of Eq. 11, :cite:t:`colinprentice:1993a`, Eq. 5 and 6 :cite:t:`Linacre:1968a` .
+    of Eq. 11, :cite:t:`colinprentice:1993a`, Eq. 5 and 6 :cite:t:`Linacre:1968a` .
 
     .. math::
 
@@ -372,7 +372,7 @@ def calc_rw(tau: NDArray, dr: NDArray, k_alb_sw: float, k_Gsc: float) -> NDArray
 
     .. math::
 
-        rw = (1.0 - k_{alb}_{sw}) \cdot \tau \cdot k_{Gsc} \cdot dr
+        rw = (1.0 - k_{alb_sw}) \cdot \tau \cdot k_{Gsc} \cdot dr
 
     Args:
         tau          : bulk transmissivity, unitless
@@ -400,7 +400,7 @@ def calc_net_rad_crossover_hour_angle(
     r"""Calculates the net radiation crossover hour angle, :math:`hn` degrees.
 
     This function calculates the net radiation crossover hour angle :math:`hn` in \
-        degrees.
+    degrees.
 
     .. math::
 
@@ -459,7 +459,7 @@ def calc_daytime_net_radiation(
     dr: NDArray,
     const: CoreConst,
 ) -> NDArray:
-    r"""Calculates daily net radiation, :math:`rn\d`, :math:`J/m^2`.
+    r"""Calculates daily net radiation, :math:`rn_{d}`, :math:`J/m^2`.
 
     .. math::
 
@@ -609,8 +609,8 @@ def calc_heliocentric_longitudes(
     """Calculate heliocentric longitude and anomaly.
 
     This function calculates the heliocentric true anomaly (``nu``, degrees) and true \
-        longitude (``lambda_``, degrees), given the Julian day in the year and the \
-        number of days in the year, following :cite:t:`berger:1978a`.
+    longitude (``lambda_``, degrees), given the Julian day in the year and the \
+    number of days in the year, following :cite:t:`berger:1978a`.
 
     Args:
         julian_day: day of year
@@ -673,11 +673,11 @@ def calc_solar_elevation(site_obs_data: LocationDateTime) -> NDArray:
     r"""Calculate the solar elevation angle for a specific location and times.
 
     This function calculates the solar elevation angle, which is the angle between the \
-        sun and the observer's local horizon, using the methods outlined in \
-        :cite:t:`depury:1997a`.
+    sun and the observer's local horizon, using the methods outlined in \
+    :cite:t:`depury:1997a`.
 
     NB: This implementation does not correct for the effect of local observation \
-        altitude on perceived solar elevation.
+    altitude on perceived solar elevation.
 
     This approach uses the following calculations:
 
@@ -694,8 +694,8 @@ def calc_solar_elevation(site_obs_data: LocationDateTime) -> NDArray:
             site.
 
     Returns:
-        An array of solar elevation angles in radians, representing the angular
-        height of the sun above the horizon at the specified location and time.
+        An array of solar elevation angles in radians, representing the angular height \
+        of the sun above the horizon at the specified location and time.
 
     Example:
         >>> # Calculate solar elevation at Wagga Wagga, Australia on 25th October 1995.
@@ -737,12 +737,12 @@ def elevation_from_lat_dec_hn(
     r"""Calculate the elevation angle of the sun above the horizon.
 
     The elevation angle (or solar altitude angle) is the angle between the horizon and \
-        the sun, which indicates how high the sun is in the sky at a given time. This \
-        function calculates the elevation angle based on the observer's latitude, the \
-        solar declination, and the hour angle.
+    the sun, which indicates how high the sun is in the sky at a given time. This \
+    function calculates the elevation angle based on the observer's latitude, the \
+    solar declination, and the hour angle.
 
     The calculation is based on the following trigonometric relationship based on Eqn \
-        A13, :cite:t:`depury:1997a`:
+    A13, :cite:t:`depury:1997a`:
 
     .. math::
         \sin(\alpha) = \sin(\phi) \cdot \sin(\delta) +
@@ -761,8 +761,8 @@ def elevation_from_lat_dec_hn(
         \alpha = \arcsin(\sin(\alpha))
 
     Args:
-        latitude: Array of latitudes in radians, or a single latitude value (as a
-                        float).
+        latitude: Array of latitudes in radians, or a single latitude value (as a \
+            float).
         declination: Array of solar declination angles in radians.
         hour_angle: Array of hour angles in radians.
 
@@ -785,7 +785,7 @@ def solar_declination(td: NDArray) -> NDArray:
     r"""Calculates solar declination angle.
 
     Use method described in eqn A14 of :cite:t:`depury:1997a` to calculate solar \
-        declination angle, from day of the year.
+    declination angle, from day of the year.
 
     .. math::
 
@@ -808,10 +808,10 @@ def local_hour_angle(t: NDArray, t0: NDArray) -> NDArray:
     r"""Calculate the local hour angle :math:`h` for a given time and solar noon.
 
     The local hour angle is a measure of time, expressed in angular terms, that \
-        indicates the position of the sun relative to solar noon. This function \
-        calculates the local hour angle by determining the difference between the \
-        current time (``t``) and the solar noon time (:math:`t_{0}`), and then \
-        converting this difference into an angle.
+    indicates the position of the sun relative to solar noon. This function \
+    calculates the local hour angle by determining the difference between the \
+    current time (``t``) and the solar noon time (:math:`t_{0}`), and then \
+    converting this difference into an angle.
 
     Equation implemented from A15 :cite:t:`depury:1997a`.
 
@@ -824,8 +824,8 @@ def local_hour_angle(t: NDArray, t0: NDArray) -> NDArray:
 
     Returns:
         The local hour angle in radians (as a floating-point number array), which \
-            represents the angular distance of the sun from the local meridian at the \
-            given time.
+        represents the angular distance of the sun from the local meridian at the \
+        given time.
 
     """
 
@@ -838,10 +838,10 @@ def solar_noon(L_e: float, L_s: float, E_t: NDArray) -> NDArray:
     r"""Calculate the solar noon time for a given location.
 
     The solar noon is the time of day when the sun is at its highest point in the sky \
-        for a given location. This function calculates the solar noon by adjusting the \
-        standard noon time (12:00 PM) based on the difference between the local \
-        longitude (:math:`L_{e}`) and the local standard meridian (:math:`L_{s}`) and \
-        the equation of time (:math:`E_{t}`). Based on EqA16, :cite:t:`depury:1997a`.
+    for a given location. This function calculates the solar noon by adjusting the \
+    standard noon time (12:00 PM) based on the difference between the local \
+    longitude (:math:`L_{e}`) and the local standard meridian (:math:`L_{s}`) and \
+    the equation of time (:math:`E_{t}`). Based on EqA16, :cite:t:`depury:1997a`.
 
     .. math:: t_{0} = 12 + \frac{4 \cdot -(L_{e} - L_{s}) - E_{t}}{60}
 
@@ -867,7 +867,7 @@ def equation_of_time(day_angle: NDArray) -> NDArray:
     r"""Calculates equation of time in minutes.
 
     Based on eqn 1.4.1 :cite:t:`iqbal:1983a` rather than eqn A17 \
-        :cite:t:`depury:1997a` due to incorrect reported implementation in the latter.
+    :cite:t:`depury:1997a` due to incorrect reported implementation in the latter.
 
     .. math::
 
@@ -902,8 +902,8 @@ def day_angle(t_d: NDArray) -> NDArray:
     r"""Calculates solar day angle (gamma), radians.
 
     The day angle (``gamma``) for a given day of the year ``N``, (where N=1 for \
-        January 1st and N=365 for December 31st) can be calculated using the following \
-        formula:
+    January 1st and N=365 for December 31st) can be calculated using the following \
+    formula:
 
     Based on Eqn A18, :cite:t:`depury:1997a`.
 
