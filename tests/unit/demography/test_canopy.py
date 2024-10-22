@@ -12,7 +12,7 @@ def test_Canopy__init__():
     """
 
     from pyrealm.demography.canopy import Canopy
-    from pyrealm.demography.community import Community
+    from pyrealm.demography.community import Cohorts, Community
     from pyrealm.demography.flora import Flora, PlantFunctionalType
 
     flora = Flora(
@@ -25,9 +25,11 @@ def test_Canopy__init__():
     community = Community(
         cell_id=1,
         cell_area=20,
-        cohort_pft_names=np.array(["broadleaf", "conifer"]),
-        cohort_n_individuals=np.array([6, 1]),
-        cohort_dbh_values=np.array([0.2, 0.5]),
+        cohorts=Cohorts(
+            pft_names=np.array(["broadleaf", "conifer"]),
+            n_individuals=np.array([6, 1]),
+            dbh_values=np.array([0.2, 0.5]),
+        ),
         flora=flora,
     )
 
