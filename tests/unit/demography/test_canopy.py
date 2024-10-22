@@ -40,7 +40,7 @@ def test_Canopy__init__():
             (
                 (
                     community.stem_allometry.crown_area
-                    * community.cohort_data["n_individuals"]
+                    * community.cohorts.n_individuals
                 ).sum()
                 * (1 + canopy_gap_fraction)
             )
@@ -78,7 +78,7 @@ def test_solve_canopy_area_filling_height(fixture_community):
             z=this_height,
             stem_height=fixture_community.stem_allometry.stem_height,
             crown_area=fixture_community.stem_allometry.crown_area,
-            n_individuals=fixture_community.cohort_data["n_individuals"],
+            n_individuals=fixture_community.cohorts.n_individuals,
             m=fixture_community.stem_traits.m,
             n=fixture_community.stem_traits.n,
             q_m=fixture_community.stem_traits.q_m,

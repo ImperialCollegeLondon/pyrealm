@@ -95,7 +95,7 @@ of the calculated T Model predictions:
 >>> pd.DataFrame({
 ...    'name': community.stem_traits.name,
 ...    'dbh': community.stem_allometry.dbh,
-...    'n_individuals': community.cohort_data["n_individuals"],
+...    'n_individuals': community.cohorts.n_individuals,
 ...    'stem_height': community.stem_allometry.stem_height,
 ...    'crown_area': community.stem_allometry.crown_area,
 ...    'stem_mass': community.stem_allometry.stem_mass,
@@ -257,21 +257,26 @@ class CommunityStructuredDataSchema(Schema):
     )
 
     @post_load
-    def cohort_objects_to_arrays(self, data: dict, **kwargs: Any) -> Cohorts:
+    def convert_to_community_args(self, data: dict, **kwargs: Any) -> dict[str, Any]:
         """Convert cohorts to arrays.
 
-        This post load method converts the cohort objects into arrays, which is the
-        format used to initialise a Community object.
+        This post load method converts the cohort arrays into a Cohorts objects and
+        packages the data up into the required arguments used to initialise a Community
+        object.
 
         Args:
             data: Data passed to the validator
             kwargs: Additional keyword arguments passed by marshmallow
         """
 
-        return Cohorts(
-            dbh_values=np.array([c["dbh_value"] for c in data["cohorts"]]),
-            n_individuals=np.array([c["n_individuals"] for c in data["cohorts"]]),
-            pft_names=np.array([c["pft_name"] for c in data["cohorts"]]),
+        return dict(
+            cell_id=data["cell_id"],
+            cell_area=data["cell_area"],
+            cohorts=Cohorts(
+                dbh_values=np.array([c["dbh_value"] for c in data["cohorts"]]),
+                n_individuals=np.array([c["n_individuals"] for c in data["cohorts"]]),
+                pft_names=np.array([c["pft_name"] for c in data["cohorts"]]),
+            ),
         )
 
 
@@ -329,7 +334,7 @@ class CommunityCSVDataSchema(Schema):
             raise ValueError("Cell area varies in community data")
 
     @post_load
-    def make_cell_data_scalar(self, data: dict, **kwargs: Any) -> dict:
+    def convert_to_community_args(self, data: dict, **kwargs: Any) -> dict[str, Any]:
         """Make cell data scalar.
 
         This post load method reduces the repeated cell id and cell area across CSV data
@@ -337,15 +342,15 @@ class CommunityCSVDataSchema(Schema):
         packages the data on individual cohorts into a Cohorts object.
         """
 
-        data["cell_id"] = data["cell_id"][0]
-        data["cell_area"] = data["cell_area"][0]
-        data["cohorts"] = Cohorts(
-            dbh_values=np.array(data["cohort_dbh_values"]),
-            n_individuals=np.array(data["cohort_n_individuals"]),
-            pft_names=np.array(data["cohort_pft_names"]),
+        return dict(
+            cell_id=data["cell_id"][0],
+            cell_area=data["cell_area"][0],
+            cohorts=Cohorts(
+                dbh_values=np.array(data["cohort_dbh_values"]),
+                n_individuals=np.array(data["cohort_n_individuals"]),
+                pft_names=np.array(data["cohort_pft_names"]),
+            ),
         )
-
-        return data
 
 
 @dataclass

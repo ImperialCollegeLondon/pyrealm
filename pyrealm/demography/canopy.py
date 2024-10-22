@@ -118,7 +118,7 @@ def fit_perfect_plasticity_approximation(
 
     # Calculate the number of layers to contain the total community crown area
     total_community_crown_area = (
-        community.stem_allometry.crown_area * community.cohort_data["n_individuals"]
+        community.stem_allometry.crown_area * community.cohorts.n_individuals
     ).sum()
     crown_area_per_layer = community.cell_area * (1 - canopy_gap_fraction)
     n_layers = int(np.ceil(total_community_crown_area / crown_area_per_layer))
@@ -144,7 +144,7 @@ def fit_perfect_plasticity_approximation(
                 community.stem_traits.n,
                 community.stem_traits.q_m,
                 community.stem_allometry.crown_z_max,
-                community.cohort_data["n_individuals"],
+                community.cohorts.n_individuals,
                 target_area,
                 False,  # validate
             ),
@@ -293,7 +293,7 @@ class Canopy:
         # the available community area.
         self.cohort_lai = (
             self.stem_leaf_area
-            * community.cohort_data["n_individuals"]
+            * community.cohorts.n_individuals
             * community.stem_traits.lai
         ) / community.cell_area  # self.filled_community_area
 
@@ -323,4 +323,4 @@ class Canopy:
         self.cohort_fapar = (
             self.cohort_f_abs / self.cohort_f_abs.sum(axis=1)[:, None]
         ) * self.fapar[:, None]
-        self.stem_fapar = self.cohort_fapar / community.cohort_data["n_individuals"]
+        self.stem_fapar = self.cohort_fapar / community.cohorts.n_individuals
