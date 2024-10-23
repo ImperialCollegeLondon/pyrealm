@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 from scipy.optimize import root_scalar  # type: ignore [import-untyped]
 
 from pyrealm.demography.community import Community
+from pyrealm.demography.core import PandasExporter
 from pyrealm.demography.crown import (
     CrownProfile,
     _validate_z_qz_args,
@@ -166,7 +167,7 @@ def fit_perfect_plasticity_approximation(
 
 
 @dataclass
-class CohortCanopyData:
+class CohortCanopyData(PandasExporter):
     """Dataclass holding canopy data across cohorts.
 
     The cohort canopy data consists of a set of attributes represented as two
@@ -279,7 +280,7 @@ class CohortCanopyData:
 
 
 @dataclass
-class CommunityCanopyData:
+class CommunityCanopyData(PandasExporter):
     """Dataclass holding community-wide canopy data.
 
     The community canopy data consists of a set of attributes represented as one

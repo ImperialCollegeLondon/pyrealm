@@ -124,6 +124,7 @@ from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
 from pyrealm.core.utilities import check_input_shapes
+from pyrealm.demography.core import PandasExporter
 from pyrealm.demography.flora import Flora, StemTraits
 from pyrealm.demography.t_model_functions import StemAllometry
 
@@ -136,7 +137,7 @@ else:
 
 
 @dataclass
-class Cohorts:
+class Cohorts(PandasExporter):
     """A dataclass to hold data for a set of plant cohorts.
 
     The attributes should be numpy arrays of equal length, containing an entry for each
