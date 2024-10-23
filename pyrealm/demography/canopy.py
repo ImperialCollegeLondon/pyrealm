@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import InitVar, dataclass, field
+from typing import ClassVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -209,6 +210,15 @@ class CohortCanopyData(PandasExporter):
         cell_area: A float setting the total canopy area available to the cohorts.
     """
 
+    array_attrs: ClassVar[tuple[str, ...]] = (
+        "stem_leaf_area",
+        "lai",
+        "f_trans",
+        "f_abs",
+        "cohort_fapar",
+        "stem_fapar",
+    )
+
     # Init vars
     projected_leaf_area: InitVar[NDArray[np.float64]]
     """An array of the stem projected leaf area for each cohort at each of the required
@@ -303,6 +313,14 @@ class CommunityCanopyData(PandasExporter):
             heights, as calculated as
             :attr:`CohortCanopyData.f_trans<pyrealm.demography.canopy.CohortCanopyData.f_trans>`.
     """
+
+    array_attrs: ClassVar[tuple[str, ...]] = (
+        "f_trans",
+        "f_abs",
+        "transmission_profile",
+        "extinction_profile",
+        "fapar",
+    )
 
     # Init vars
     cohort_transmissivity: InitVar[NDArray[np.float64]]
