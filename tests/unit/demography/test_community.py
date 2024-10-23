@@ -100,6 +100,13 @@ def test_Cohorts(args, outcome, excep_message):
         cohorts = Cohorts(**args)
         # trivial test of success
         assert len(cohorts.dbh_values) == 2
+
+        # test the to_pandas method
+        df = cohorts.to_pandas()
+
+        assert df.shape == (cohorts.n_cohorts, len(cohorts.array_attrs))
+        assert set(cohorts.array_attrs) == set(df.columns)
+
         return
 
     assert str(excep.value) == excep_message
@@ -215,10 +222,10 @@ def test_Community__init__(
     with outcome as excep:
         community = Community(**args, cohorts=cohorts, flora=fixture_flora)
 
-        if isinstance(outcome, does_not_raise):
-            # Simple test that data is loaded and trait and t model data calculated
-            check_expected(community=community, expected=fixture_expected)
-            return
+        # Simple test that data is loaded and trait and t model data calculated
+        check_expected(community=community, expected=fixture_expected)
+
+        return
 
     # Check exception message
     assert str(excep.value) == excep_message

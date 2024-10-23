@@ -338,7 +338,7 @@ def test_flora_get_stem_traits(fixture_flora, pft_names, outcome):
     with outcome:
         stem_traits = fixture_flora.get_stem_traits(pft_names=pft_names)
 
-        for trt in stem_traits.trait_attrs:
+        for trt in stem_traits.array_attrs:
             assert len(getattr(stem_traits, trt)) == len(pft_names)
 
 
