@@ -190,10 +190,10 @@ class CohortCanopyData:
 
     3. Allocates the community-wide absorption across cohorts. The total fraction of
        light absorbed across layers is a community-wide property
-        - each cohort contributes to the cumulative light absorption. Once the light
-        absorbed within a layer of the community is known, this can then be partitioned
-        back to cohorts and individual stems to give the fraction of canopy top
-        radiation intercepted by each stem within each layer.
+       - each cohort contributes to the cumulative light absorption. Once the light
+       absorbed within a layer of the community is known, this can then be partitioned
+       back to cohorts and individual stems to give the fraction of canopy top
+       radiation intercepted by each stem within each layer.
 
     Args:
         projected_leaf_area: A two dimensional array providing projected leaf area for a
