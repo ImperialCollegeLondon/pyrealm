@@ -182,7 +182,7 @@ class CohortCanopyData:
     Args:
         projected_leaf_area: A two dimensional array providing projected leaf area for a
             set of cohorts (columns) at a set of required heights (rows), as for example
-           calculated using the :class:`~pyrealm.demography.crown.CrownProfile` class.
+            calculated using the :class:`~pyrealm.demography.crown.CrownProfile` class.
         n_individuals: A one-dimensional array of the number of individuals in each
             cohort.
         pft_lai: A one-dimensional array giving the leaf area index trait for the plant
