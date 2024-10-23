@@ -12,7 +12,7 @@ def test_Canopy__init__():
     """
 
     from pyrealm.demography.canopy import Canopy
-    from pyrealm.demography.community import Community
+    from pyrealm.demography.community import Cohorts, Community
     from pyrealm.demography.flora import Flora, PlantFunctionalType
 
     flora = Flora(
@@ -25,9 +25,11 @@ def test_Canopy__init__():
     community = Community(
         cell_id=1,
         cell_area=20,
-        cohort_pft_names=np.array(["broadleaf", "conifer"]),
-        cohort_n_individuals=np.array([6, 1]),
-        cohort_dbh_values=np.array([0.2, 0.5]),
+        cohorts=Cohorts(
+            pft_names=np.array(["broadleaf", "conifer"]),
+            n_individuals=np.array([6, 1]),
+            dbh_values=np.array([0.2, 0.5]),
+        ),
         flora=flora,
     )
 
@@ -40,7 +42,7 @@ def test_Canopy__init__():
             (
                 (
                     community.stem_allometry.crown_area
-                    * community.cohort_data["n_individuals"]
+                    * community.cohorts.n_individuals
                 ).sum()
                 * (1 + canopy_gap_fraction)
             )
@@ -78,7 +80,7 @@ def test_solve_canopy_area_filling_height(fixture_community):
             z=this_height,
             stem_height=fixture_community.stem_allometry.stem_height,
             crown_area=fixture_community.stem_allometry.crown_area,
-            n_individuals=fixture_community.cohort_data["n_individuals"],
+            n_individuals=fixture_community.cohorts.n_individuals,
             m=fixture_community.stem_traits.m,
             n=fixture_community.stem_traits.n,
             q_m=fixture_community.stem_traits.q_m,

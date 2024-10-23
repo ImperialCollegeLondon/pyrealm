@@ -40,7 +40,7 @@ import numpy as np
 import pandas as pd
 
 from pyrealm.demography.flora import PlantFunctionalType, Flora
-from pyrealm.demography.community import Community
+from pyrealm.demography.community import Cohorts, Community
 from pyrealm.demography.crown import CrownProfile, get_crown_xy
 from pyrealm.demography.canopy import Canopy
 from pyrealm.demography.t_model_functions import StemAllometry
@@ -117,9 +117,11 @@ simple_community = Community(
     flora=simple_flora,
     cell_area=total_area,
     cell_id=1,
-    cohort_dbh_values=stem_dbh,
-    cohort_n_individuals=np.array([1]),
-    cohort_pft_names=np.array(["defaults"]),
+    cohorts=Cohorts(
+        dbh_values=stem_dbh,
+        n_individuals=np.array([1]),
+        pft_names=np.array(["defaults"]),
+    ),
 )
 
 # Get the canopy model for the simple case from the canopy top
@@ -255,9 +257,11 @@ community = Community(
     flora=flora,
     cell_area=32,
     cell_id=1,
-    cohort_dbh_values=np.array([0.1, 0.20, 0.5]),
-    cohort_n_individuals=np.array([7, 3, 2]),
-    cohort_pft_names=np.array(["short", "short", "tall"]),
+    cohorts=Cohorts(
+        dbh_values=np.array([0.1, 0.20, 0.5]),
+        n_individuals=np.array([7, 3, 2]),
+        pft_names=np.array(["short", "short", "tall"]),
+    ),
 )
 
 # Calculate the canopy profile across vertical heights
@@ -281,7 +285,7 @@ profiles = get_crown_xy(
 for idx, crown in enumerate(profiles):
 
     # Get spaced but slightly randomized stem locations
-    n_stems = community.cohort_data["n_individuals"][idx]
+    n_stems = community.cohorts.n_individuals[idx]
     stem_locations = np.linspace(0, 10, num=n_stems) + np.random.normal(size=n_stems)
 
     # Plot the crown model for each stem
@@ -298,7 +302,7 @@ vertical profile is equal to the expected value across the whole community.
 ```{code-cell} ipython3
 # Calculate L_h for each cohort
 cohort_lai = (
-    community.cohort_data["n_individuals"]
+    community.cohorts.n_individuals
     * community.stem_traits.lai
     * community.stem_allometry.crown_area
 ) / community.cell_area
@@ -439,13 +443,13 @@ individuals in each cohort.
 ```{code-cell} ipython3
 # Calculate the total projected crown area across the community at each height
 community_crown_area = np.nansum(
-    canopy.crown_profile.projected_crown_area * community.cohort_data["n_individuals"],
+    canopy.crown_profile.projected_crown_area * community.cohorts.n_individuals,
     axis=1,
 )
 
 # Do the same for the projected leaf area
 community_leaf_area = np.nansum(
-    canopy.crown_profile.projected_leaf_area * community.cohort_data["n_individuals"],
+    canopy.crown_profile.projected_leaf_area * community.cohorts.n_individuals,
     axis=1,
 )
 ```
@@ -609,6 +613,6 @@ print(cohort_fapar)
    cohort to given the $f_{APAR}$ for each stem at each height.
 
 ```{code-cell} ipython3
-stem_fapar = cohort_fapar / community.cohort_data["n_individuals"]
+stem_fapar = cohort_fapar / community.cohorts.n_individuals
 print(stem_fapar)
 ```
