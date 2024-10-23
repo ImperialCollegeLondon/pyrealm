@@ -6,6 +6,7 @@ from importlib import resources
 from json import JSONDecodeError
 
 import numpy as np
+import pandas as pd
 import pytest
 from marshmallow.exceptions import ValidationError
 from pandas.errors import ParserError
@@ -312,6 +313,11 @@ def test_flora_from_csv(filename, outcome):
                 assert nm in flora.name
 
 
+#
+# Test Flora methods
+#
+
+
 @pytest.mark.parametrize(
     argnames="pft_names,outcome",
     argvalues=[
@@ -334,3 +340,42 @@ def test_flora_get_stem_traits(fixture_flora, pft_names, outcome):
 
         for trt in stem_traits.trait_attrs:
             assert len(getattr(stem_traits, trt)) == len(pft_names)
+
+
+def test_Flora_to_pandas(fixture_flora):
+    """Test the inherited to_pandas method as applied to a Flora object."""
+
+    df = fixture_flora.to_pandas()
+
+    assert isinstance(df, pd.DataFrame)
+    assert df.shape == (fixture_flora.n_pfts, len(fixture_flora.array_attrs))
+    assert set(fixture_flora.array_attrs) == set(df.columns)
+
+
+#
+# Direct constructor for StemTraits
+#
+
+
+def test_StemTraits(fixture_flora):
+    """Basic test of StemTraits constructor and inherited to_pandas method."""
+    from pyrealm.demography.flora import StemTraits
+
+    # Construct some input data from the fixture
+    flora_df = fixture_flora.to_pandas()
+    args = {ky: np.concatenate([val, val]) for ky, val in flora_df.items()}
+
+    instance = StemTraits(**args)
+
+    # Very basic check that the result is as expected
+    assert len(instance.a_hd) == 2 * fixture_flora.n_pfts
+
+    # Test the to_pandas method here too
+    stem_traits_df = instance.to_pandas()
+
+    assert stem_traits_df.shape == (
+        2 * fixture_flora.n_pfts,
+        len(fixture_flora.array_attrs),
+    )
+
+    assert set(instance.array_attrs) == set(stem_traits_df.columns)

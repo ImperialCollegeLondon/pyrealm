@@ -728,7 +728,7 @@ def test_calculate_dbh_from_height_edge_cases():
 
 
 def test_StemAllometry(rtmodel_flora, rtmodel_data):
-    """Test the StemAllometry class."""
+    """Test the StemAllometry class and inherited methods."""
 
     from pyrealm.demography.t_model_functions import StemAllometry
 
@@ -736,14 +736,23 @@ def test_StemAllometry(rtmodel_flora, rtmodel_data):
         stem_traits=rtmodel_flora, at_dbh=rtmodel_data["dbh"][:, [0]]
     )
 
-    # Check the variables provided by the rtmodel implementation
+    # Check the values of the variables calculated against the expectations from the
+    # rtmodel implementation
     vars_to_check = (
-        v
-        for v in stem_allometry.allometry_attrs
-        if v not in ["crown_r0", "crown_z_max"]
+        v for v in stem_allometry.array_attrs if v not in ["crown_r0", "crown_z_max"]
     )
     for var in vars_to_check:
         assert np.allclose(getattr(stem_allometry, var), rtmodel_data[var])
+
+    # Test the inherited to_pandas method
+    df = stem_allometry.to_pandas()
+
+    assert df.shape == (
+        stem_allometry._n_stems * stem_allometry._n_pred,
+        len(stem_allometry.array_attrs),
+    )
+
+    assert set(stem_allometry.array_attrs) == set(df.columns)
 
 
 def test_StemAllocation(rtmodel_flora, rtmodel_data):
@@ -761,9 +770,20 @@ def test_StemAllocation(rtmodel_flora, rtmodel_data):
         at_potential_gpp=rtmodel_data["potential_gpp"],
     )
 
-    # Check the variables provided by the rtmodel implementation
+    # Check the values of the variables calculated against the expectations from the
+    # rtmodel implementation
     vars_to_check = (
-        v for v in stem_allocation.allocation_attrs if v not in ["foliar_respiration"]
+        v for v in stem_allocation.array_attrs if v not in ["foliar_respiration"]
     )
     for var in vars_to_check:
         assert np.allclose(getattr(stem_allocation, var), rtmodel_data[var])
+
+    # Test the inherited to_pandas method
+    df = stem_allocation.to_pandas()
+
+    assert df.shape == (
+        stem_allocation._n_stems * stem_allocation._n_pred,
+        len(stem_allocation.array_attrs),
+    )
+
+    assert set(stem_allocation.array_attrs) == set(df.columns)
