@@ -73,6 +73,16 @@ class TestCanopyData:
         assert np.allclose(instance.lai, exp_lai)
         assert np.allclose(instance.f_trans, exp_f_trans)
 
+        # Unpack and test expectations
+        exp_f_trans, exp_trans_prof = community_expected
+        expected_fapar = -np.diff(exp_trans_prof, prepend=1)
+        assert np.allclose(
+            instance.cohort_fapar, np.tile((expected_fapar / 3)[:, None], 3)
+        )
+        assert np.allclose(
+            instance.stem_fapar, np.tile((expected_fapar / 6)[:, None], 3)
+        )
+
     def test_CommunityCanopyData__init__(
         self, cohort_args, cohort_expected, community_expected
     ):
@@ -88,31 +98,6 @@ class TestCanopyData:
         exp_f_trans, exp_trans_prof = community_expected
         assert np.allclose(instance.f_trans, exp_f_trans)
         assert np.allclose(instance.transmission_profile, exp_trans_prof)
-
-    def test_CohortCanopyData_allocate_fapar(
-        self, cohort_args, cohort_expected, community_expected
-    ):
-        """Test creation of the cohort canopy data."""
-
-        from pyrealm.demography.canopy import CohortCanopyData, CommunityCanopyData
-
-        cohort_data = CohortCanopyData(**cohort_args)
-        community_data = CommunityCanopyData(cohort_transmissivity=cohort_data.f_trans)
-
-        cohort_data.allocate_fapar(
-            community_fapar=community_data.fapar,
-            n_individuals=cohort_args["n_individuals"],
-        )
-
-        # Unpack and test expectations
-        exp_f_trans, exp_trans_prof = community_expected
-        expected_fapar = -np.diff(exp_trans_prof, prepend=1)
-        assert np.allclose(
-            cohort_data.cohort_fapar, np.tile((expected_fapar / 3)[:, None], 3)
-        )
-        assert np.allclose(
-            cohort_data.stem_fapar, np.tile((expected_fapar / 6)[:, None], 3)
-        )
 
 
 def test_Canopy__init__():

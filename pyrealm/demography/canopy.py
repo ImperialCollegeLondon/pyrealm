@@ -1,5 +1,7 @@
 """Functionality for canopy modelling."""
 
+from __future__ import annotations
+
 from dataclasses import InitVar, dataclass, field
 
 import numpy as np
@@ -175,10 +177,24 @@ class CohortCanopyData(PandasExporter):
     required and the columns represent the different cohorts or the identical stem
     properties of individuals within cohorts.
 
-    The data class takes the projected leaf area at the required heights and then
-    partitions this into the actual leaf area within each layer, the leaf area index
-    across the whole cohort and then then light absorbtion and transmission fractions of
-    each cohort at each level.
+    The data class:
+
+    1. Takes the projected leaf area at the required heights and then partitions this
+       into the actual leaf area within each layer, the leaf area index across the whole
+       cohort and then then light absorption and transmission fractions of each cohort
+       at each level.
+
+    2. Calculates the community-wide transmission and absorption profiles. These are
+       generated as an instance of the class
+       :class:`~pyrealm.demography.canopy.CommunityCanopyData` and stored in the
+       ``community_data`` attribute.
+
+    3. Allocates the community-wide absorption across cohorts. The total fraction of
+       light absorbed across layers is a community-wide property
+       - each cohort contributes to the cumulative light absorption. Once the light
+       absorbed within a layer of the community is known, this can then be partitioned
+       back to cohorts and individual stems to give the fraction of canopy top
+       radiation intercepted by each stem within each layer.
 
     Args:
         projected_leaf_area: A two dimensional array providing projected leaf area for a
@@ -220,6 +236,9 @@ class CohortCanopyData(PandasExporter):
     stem_fapar: NDArray[np.float64] = field(init=False)
     """The fraction of absorbed radiation for each stem by layer."""
 
+    # Community wide attributes in their own class
+    community_data: CommunityCanopyData = field(init=False)
+
     def __post_init__(
         self,
         projected_leaf_area: NDArray[np.float64],
@@ -245,22 +264,8 @@ class CohortCanopyData(PandasExporter):
         self.f_trans = np.exp(-pft_par_ext * self.lai)
         self.f_abs = 1 - self.f_trans
 
-    def allocate_fapar(
-        self, community_fapar: NDArray[np.float64], n_individuals: NDArray[np.int_]
-    ) -> None:
-        """Allocate community-wide absorption across cohorts.
-
-        The total fraction of light absorbed across layers is a community-wide property
-        - each cohort contributes to the cumulative light absorption. Once the light
-        absorbed within a layer of the community is known, this can then be partitioned
-        back to cohorts and individual stems to give the fraction of canopy top
-        radiation intercepted by each stem within each layer.
-
-        Args:
-            community_fapar: The community wide fraction of light absorbed across all
-                layers and cohorts.
-            n_individuals: The number of individuals within each cohort.
-        """
+        # Calculate the community wide properties
+        self.community_data = CommunityCanopyData(cohort_transmissivity=self.f_trans)
 
         # Calculate the fapar profile across cohorts and layers
         # * The first part of the equation is calculating the relative absorption of
@@ -274,7 +279,7 @@ class CohortCanopyData(PandasExporter):
         # f_abs values
         self.cohort_fapar = (
             self.f_abs / self.f_abs.sum(axis=1)[:, None]
-        ) * community_fapar[:, None]
+        ) * self.community_data.fapar[:, None]
         # Partition cohort f_APAR between the number of stems
         self.stem_fapar = self.cohort_fapar / n_individuals
 
@@ -443,13 +448,5 @@ class Canopy:
             cell_area=community.cell_area,
         )
 
-        # Calculate the community wide canopy componennts at each layer_height
-        self.community_data = CommunityCanopyData(
-            cohort_transmissivity=self.cohort_data.f_trans
-        )
-
-        # Calculate the proportion of absorbed light intercepted by each cohort and stem
-        self.cohort_data.allocate_fapar(
-            community_fapar=self.community_data.fapar,
-            n_individuals=community.cohorts.n_individuals,
-        )
+        # Create a shorter reference to the community data
+        self.community_data = self.cohort_data.community_data
