@@ -37,39 +37,43 @@ class DailySolarFluxes:
     tc: InitVar[NDArray]
     core_const: CoreConst = field(default_factory=lambda: CoreConst())
 
-    nu: NDArray = field(init=False)
+    nu: NDArray[np.float64] = field(init=False)
     """True heliocentric anomaly, degrees"""
-    lambda_: NDArray = field(init=False)
+    lambda_: NDArray[np.float64] = field(init=False)
     """True heliocentric longitude, degrees"""
-    dr: NDArray = field(init=False)
+    dr: NDArray[np.float64] = field(init=False)
     """Distance factor, -"""
-    delta: NDArray = field(init=False)
+    delta: NDArray[np.float64] = field(init=False)
     """Declination angle, degrees"""
-    ru: NDArray = field(init=False)
+    ru: NDArray[np.float64] = field(init=False)
     """Intermediate variable, unitless"""
-    rv: NDArray = field(init=False)
+    rv: NDArray[np.float64] = field(init=False)
     """Intermediate variable, unitless"""
-    hs: NDArray = field(init=False)
+    hs: NDArray[np.float64] = field(init=False)
     """Sunset hour angle, degrees"""
-    ra_d: NDArray = field(init=False)
+    ra_d: NDArray[np.float64] = field(init=False)
     """Daily extraterrestrial solar radiation, J/m^2"""
-    tau: NDArray = field(init=False)
+    tau: NDArray[np.float64] = field(init=False)
     """Transmittivity, unitless"""
-    ppfd_d: NDArray = field(init=False)
+    ppfd_d: NDArray[np.float64] = field(init=False)
     """Daily PPFD, mol/m^2"""
-    rnl: NDArray = field(init=False)
+    rnl: NDArray[np.float64] = field(init=False)
     """Net longwave radiation, W/m^2"""
-    rw: NDArray = field(init=False)
+    rw: NDArray[np.float64] = field(init=False)
     """Intermediate variable,  W/m^2"""
-    hn: NDArray = field(init=False)
+    hn: NDArray[np.float64] = field(init=False)
     """Net radiation cross-over hour angle, degrees"""
-    rn_d: NDArray = field(init=False)
+    rn_d: NDArray[np.float64] = field(init=False)
     """Daytime net radiation, J/m^2"""
-    rnn_d: NDArray = field(init=False)
+    rnn_d: NDArray[np.float64] = field(init=False)
     """Nighttime net radiation (rnn_d), J/m^2"""
 
     def __post_init__(
-        self, lat: NDArray, elv: NDArray, sf: NDArray, tc: NDArray
+        self,
+        lat: NDArray[np.float64],
+        elv: NDArray[np.float64],
+        sf: NDArray[np.float64],
+        tc: NDArray[np.float64],
     ) -> None:
         """Populates key fluxes from input variables."""
 

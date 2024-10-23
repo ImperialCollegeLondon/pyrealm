@@ -48,8 +48,8 @@ else:
 
 
 def calculate_crown_q_m(
-    m: float | NDArray[np.float32], n: float | NDArray[np.float32]
-) -> float | NDArray[np.float32]:
+    m: float | NDArray[np.float64], n: float | NDArray[np.float64]
+) -> float | NDArray[np.float64]:
     """Calculate the crown scaling trait ``q_m``.
 
     The value of q_m is a constant crown scaling parameter derived from the ``m`` and
@@ -68,8 +68,8 @@ def calculate_crown_q_m(
 
 
 def calculate_crown_z_max_proportion(
-    m: float | NDArray[np.float32], n: float | NDArray[np.float32]
-) -> float | NDArray[np.float32]:
+    m: float | NDArray[np.float64], n: float | NDArray[np.float64]
+) -> float | NDArray[np.float64]:
     r"""Calculate the z_m trait.
 
     The z_m proportion (:math:`p_{zm}`) is the constant proportion of stem height at
@@ -269,45 +269,45 @@ class Flora(PandasExporter):
     # - trait arrays
     name: NDArray[np.str_] = field(init=False)
     r"""The name of the plant functional type."""
-    a_hd: NDArray[np.float32] = field(init=False)
+    a_hd: NDArray[np.float64] = field(init=False)
     r"""Initial slope of height-diameter relationship (:math:`a`, -)"""
-    ca_ratio: NDArray[np.float32] = field(init=False)
+    ca_ratio: NDArray[np.float64] = field(init=False)
     r"""Initial ratio of crown area to stem cross-sectional area
     (:math:`c`, -)"""
-    h_max: NDArray[np.float32] = field(init=False)
+    h_max: NDArray[np.float64] = field(init=False)
     r"""Maximum tree height (:math:`H_m`, m)"""
-    rho_s: NDArray[np.float32] = field(init=False)
+    rho_s: NDArray[np.float64] = field(init=False)
     r"""Sapwood density (:math:`\rho_s`, kg Cm-3)"""
-    lai: NDArray[np.float32] = field(init=False)
+    lai: NDArray[np.float64] = field(init=False)
     """Leaf area index within the crown (:math:`L`,  -)"""
-    sla: NDArray[np.float32] = field(init=False)
+    sla: NDArray[np.float64] = field(init=False)
     r"""Specific leaf area (:math:`\sigma`,  m2 kg-1 C)"""
-    tau_f: NDArray[np.float32] = field(init=False)
+    tau_f: NDArray[np.float64] = field(init=False)
     r"""Foliage turnover time (:math:`\tau_f`,years)"""
-    tau_r: NDArray[np.float32] = field(init=False)
+    tau_r: NDArray[np.float64] = field(init=False)
     r"""Fine-root turnover time (:math:`\tau_r`,  years)"""
-    par_ext: NDArray[np.float32] = field(init=False)
+    par_ext: NDArray[np.float64] = field(init=False)
     r"""Extinction coefficient of photosynthetically active radiation (PAR) (:math:`k`,
      -)"""
-    yld: NDArray[np.float32] = field(init=False)
+    yld: NDArray[np.float64] = field(init=False)
     r"""Yield factor (:math:`y`,  -)"""
-    zeta: NDArray[np.float32] = field(init=False)
+    zeta: NDArray[np.float64] = field(init=False)
     r"""Ratio of fine-root mass to foliage area (:math:`\zeta`, kg C m-2)"""
-    resp_r: NDArray[np.float32] = field(init=False)
+    resp_r: NDArray[np.float64] = field(init=False)
     r"""Fine-root specific respiration rate (:math:`r_r`, year-1)"""
-    resp_s: NDArray[np.float32] = field(init=False)
+    resp_s: NDArray[np.float64] = field(init=False)
     r"""Sapwood-specific respiration rate (:math:`r_s`,  year-1)"""
-    resp_f: NDArray[np.float32] = field(init=False)
+    resp_f: NDArray[np.float64] = field(init=False)
     r"""Foliage maintenance respiration fraction (:math:`r_f`,  -)"""
-    m: NDArray[np.float32] = field(init=False)
+    m: NDArray[np.float64] = field(init=False)
     r"""Crown shape parameter (:math:`m`, -)"""
-    n: NDArray[np.float32] = field(init=False)
+    n: NDArray[np.float64] = field(init=False)
     r"""Crown shape parameter (:math:`n`, -)"""
-    f_g: NDArray[np.float32] = field(init=False)
+    f_g: NDArray[np.float64] = field(init=False)
     r"""Crown gap fraction (:math:`f_g`, -)"""
-    q_m: NDArray[np.float32] = field(init=False)
+    q_m: NDArray[np.float64] = field(init=False)
     """Scaling factor to derive maximum crown radius from crown area."""
-    z_max_prop: NDArray[np.float32] = field(init=False)
+    z_max_prop: NDArray[np.float64] = field(init=False)
     """Proportion of stem height at which maximum crown radius is found."""
 
     # - other instance attributes
@@ -466,45 +466,45 @@ class StemTraits(PandasExporter):
     # Instance trait attributes
     name: NDArray[np.str_]
     r"""The name of the plant functional type."""
-    a_hd: NDArray[np.float32]
+    a_hd: NDArray[np.float64]
     r"""Initial slope of height-diameter relationship (:math:`a`, -)"""
-    ca_ratio: NDArray[np.float32]
+    ca_ratio: NDArray[np.float64]
     r"""Initial ratio of crown area to stem cross-sectional area
     (:math:`c`, -)"""
-    h_max: NDArray[np.float32]
+    h_max: NDArray[np.float64]
     r"""Maximum tree height (:math:`H_m`, m)"""
-    rho_s: NDArray[np.float32]
+    rho_s: NDArray[np.float64]
     r"""Sapwood density (:math:`\rho_s`, kg Cm-3)"""
-    lai: NDArray[np.float32]
+    lai: NDArray[np.float64]
     """Leaf area index within the crown (:math:`L`,  -)"""
-    sla: NDArray[np.float32]
+    sla: NDArray[np.float64]
     r"""Specific leaf area (:math:`\sigma`,  m2 kg-1 C)"""
-    tau_f: NDArray[np.float32]
+    tau_f: NDArray[np.float64]
     r"""Foliage turnover time (:math:`\tau_f`,years)"""
-    tau_r: NDArray[np.float32]
+    tau_r: NDArray[np.float64]
     r"""Fine-root turnover time (:math:`\tau_r`,  years)"""
-    par_ext: NDArray[np.float32]
+    par_ext: NDArray[np.float64]
     r"""Extinction coefficient of photosynthetically active radiation (PAR) (:math:`k`,
      -)"""
-    yld: NDArray[np.float32]
+    yld: NDArray[np.float64]
     r"""Yield factor (:math:`y`,  -)"""
-    zeta: NDArray[np.float32]
+    zeta: NDArray[np.float64]
     r"""Ratio of fine-root mass to foliage area (:math:`\zeta`, kg C m-2)"""
-    resp_r: NDArray[np.float32]
+    resp_r: NDArray[np.float64]
     r"""Fine-root specific respiration rate (:math:`r_r`, year-1)"""
-    resp_s: NDArray[np.float32]
+    resp_s: NDArray[np.float64]
     r"""Sapwood-specific respiration rate (:math:`r_s`,  year-1)"""
-    resp_f: NDArray[np.float32]
+    resp_f: NDArray[np.float64]
     r"""Foliage maintenance respiration fraction (:math:`r_f`,  -)"""
-    m: NDArray[np.float32]
+    m: NDArray[np.float64]
     r"""Crown shape parameter (:math:`m`, -)"""
-    n: NDArray[np.float32]
+    n: NDArray[np.float64]
     r"""Crown shape parameter (:math:`n`, -)"""
-    f_g: NDArray[np.float32]
+    f_g: NDArray[np.float64]
     r"""Crown gap fraction (:math:`f_g`, -)"""
-    q_m: NDArray[np.float32]
+    q_m: NDArray[np.float64]
     """Scaling factor to derive maximum crown radius from crown area."""
-    z_max_prop: NDArray[np.float32]
+    z_max_prop: NDArray[np.float64]
     """Proportion of stem height at which maximum crown radius is found."""
 
     # Post init attributes

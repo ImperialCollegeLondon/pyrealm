@@ -84,9 +84,11 @@ Initialize a Community into an area of 1000 square meter with the given cohort d
 ...     cell_id=1,
 ...     cell_area=1000.0,
 ...     flora=flora,
-...     cohort_dbh_values=cohort_dbh_values,
-...     cohort_n_individuals=cohort_n_individuals,
-...     cohort_pft_names=cohort_pft_names
+...     cohorts=Cohorts(
+...         dbh_values=cohort_dbh_values,
+...         n_individuals=cohort_n_individuals,
+...         pft_names=cohort_pft_names,
+...     ),
 ... )
 
 Convert some of the data to a :class:`pandas.DataFrame` for nicer display and show some
@@ -95,7 +97,7 @@ of the calculated T Model predictions:
 >>> pd.DataFrame({
 ...    'name': community.stem_traits.name,
 ...    'dbh': community.stem_allometry.dbh,
-...    'n_individuals': community.cohort_data["n_individuals"],
+...    'n_individuals': community.cohorts.n_individuals,
 ...    'stem_height': community.stem_allometry.stem_height,
 ...    'crown_area': community.stem_allometry.crown_area,
 ...    'stem_mass': community.stem_allometry.stem_mass,
@@ -111,7 +113,7 @@ from __future__ import annotations
 
 import json
 import sys
-from dataclasses import InitVar, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -131,6 +133,39 @@ if sys.version_info[:2] >= (3, 11):
 else:
     import tomli as tomllib
     from tomli import TOMLDecodeError
+
+
+@dataclass
+class Cohorts:
+    """A dataclass to hold data for a set of plant cohorts.
+
+    The attributes should be numpy arrays of equal length, containing an entry for each
+    cohort in the data class.
+    """
+
+    dbh_values: NDArray[np.float64]
+    n_individuals: NDArray[np.int_]
+    pft_names: NDArray[np.str_]
+
+    def __post_init__(self) -> None:
+        """Validation of cohorts data."""
+
+        # TODO - validation - maybe make this optional to reduce workload within
+        # simulations
+
+        # Check cohort data types
+        if not (
+            isinstance(self.dbh_values, np.ndarray)
+            and isinstance(self.n_individuals, np.ndarray)
+            and isinstance(self.pft_names, np.ndarray)
+        ):
+            raise ValueError("Cohort data not passed as numpy arrays")
+
+        # Check the cohort inputs are of equal length
+        try:
+            check_input_shapes(self.dbh_values, self.n_individuals, self.dbh_values)
+        except ValueError:
+            raise ValueError("Cohort arrays are of unequal length")
 
 
 class CohortSchema(Schema):
@@ -224,26 +259,27 @@ class CommunityStructuredDataSchema(Schema):
     )
 
     @post_load
-    def cohort_objects_to_arrays(self, data: dict, **kwargs: Any) -> dict:
+    def convert_to_community_args(self, data: dict, **kwargs: Any) -> dict[str, Any]:
         """Convert cohorts to arrays.
 
-        This post load method converts the cohort objects into arrays, which is the
-        format used to initialise a Community object.
+        This post load method converts the cohort arrays into a Cohorts objects and
+        packages the data up into the required arguments used to initialise a Community
+        object.
 
         Args:
             data: Data passed to the validator
             kwargs: Additional keyword arguments passed by marshmallow
         """
 
-        data["cohort_dbh_values"] = np.array([c["dbh_value"] for c in data["cohorts"]])
-        data["cohort_n_individuals"] = np.array(
-            [c["n_individuals"] for c in data["cohorts"]]
+        return dict(
+            cell_id=data["cell_id"],
+            cell_area=data["cell_area"],
+            cohorts=Cohorts(
+                dbh_values=np.array([c["dbh_value"] for c in data["cohorts"]]),
+                n_individuals=np.array([c["n_individuals"] for c in data["cohorts"]]),
+                pft_names=np.array([c["pft_name"] for c in data["cohorts"]]),
+            ),
         )
-        data["cohort_pft_names"] = np.array([c["pft_name"] for c in data["cohorts"]])
-
-        del data["cohorts"]
-
-        return data
 
 
 class CommunityCSVDataSchema(Schema):
@@ -300,21 +336,23 @@ class CommunityCSVDataSchema(Schema):
             raise ValueError("Cell area varies in community data")
 
     @post_load
-    def make_cell_data_scalar(self, data: dict, **kwargs: Any) -> dict:
+    def convert_to_community_args(self, data: dict, **kwargs: Any) -> dict[str, Any]:
         """Make cell data scalar.
 
         This post load method reduces the repeated cell id and cell area across CSV data
-        rows into the scalar inputs required to initialise a Community object.
+        rows into the scalar inputs required to initialise a Community object and
+        packages the data on individual cohorts into a Cohorts object.
         """
 
-        data["cell_id"] = data["cell_id"][0]
-        data["cell_area"] = data["cell_area"][0]
-
-        data["cohort_dbh_values"] = np.array(data["cohort_dbh_values"])
-        data["cohort_n_individuals"] = np.array(data["cohort_n_individuals"])
-        data["cohort_pft_names"] = np.array(data["cohort_pft_names"])
-
-        return data
+        return dict(
+            cell_id=data["cell_id"][0],
+            cell_area=data["cell_area"][0],
+            cohorts=Cohorts(
+                dbh_values=np.array(data["cohort_dbh_values"]),
+                n_individuals=np.array(data["cohort_n_individuals"]),
+                pft_names=np.array(data["cohort_pft_names"]),
+            ),
+        )
 
 
 @dataclass
@@ -353,21 +391,15 @@ class Community:
     flora: Flora
 
     # - arrays representing properties of cohorts
-    cohort_dbh_values: InitVar[NDArray[np.float32]]
-    cohort_n_individuals: InitVar[NDArray[np.int_]]
-    cohort_pft_names: InitVar[NDArray[np.str_]]
+    cohorts: Cohorts
 
     # Post init properties
     number_of_cohorts: int = field(init=False)
     stem_traits: StemTraits = field(init=False)
     stem_allometry: StemAllometry = field(init=False)
-    cohort_data: dict[str, NDArray] = field(init=False)
 
     def __post_init__(
         self,
-        cohort_dbh_values: NDArray[np.float32],
-        cohort_n_individuals: NDArray[np.int_],
-        cohort_pft_names: NDArray[np.str_],
     ) -> None:
         """Validate inputs and populate derived community attributes.
 
@@ -382,37 +414,15 @@ class Community:
         if not (isinstance(self.cell_id, int) and self.cell_id >= 0):
             raise ValueError("Community cell id must be a integer >= 0.")
 
-        # Check cohort data types
-        if not (
-            isinstance(cohort_dbh_values, np.ndarray)
-            and isinstance(cohort_n_individuals, np.ndarray)
-            and isinstance(cohort_pft_names, np.ndarray)
-        ):
-            raise ValueError("Cohort data not passed as numpy arrays.")
-
-        # Check the cohort inputs are of equal length
-        try:
-            check_input_shapes(
-                cohort_dbh_values, cohort_n_individuals, cohort_dbh_values
-            )
-        except ValueError:
-            raise ValueError("Cohort arrays are of unequal length")
-
-        # Store as a dictionary
-        self.cohort_data: dict[str, NDArray] = {
-            "name": cohort_pft_names,
-            "dbh": cohort_dbh_values,
-            "n_individuals": cohort_n_individuals,
-        }
+        # How many cohorts
+        self.number_of_cohorts = len(self.cohorts.dbh_values)
 
         # Get the stem traits for the cohorts
-        self.stem_traits = self.flora.get_stem_traits(cohort_pft_names)
-
-        self.number_of_cohorts = len(cohort_pft_names)
+        self.stem_traits = self.flora.get_stem_traits(self.cohorts.pft_names)
 
         # Populate the stem allometry
         self.stem_allometry = StemAllometry(
-            stem_traits=self.stem_traits, at_dbh=cohort_dbh_values
+            stem_traits=self.stem_traits, at_dbh=self.cohorts.dbh_values
         )
 
     @classmethod

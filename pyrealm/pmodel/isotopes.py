@@ -5,6 +5,7 @@ isotopic discrimination within the PModel
 
 from warnings import warn
 
+import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import IsotopesConst
@@ -42,8 +43,8 @@ class CalcCarbonIsotopes:
     def __init__(
         self,
         pmodel: PModel,
-        D14CO2: NDArray,
-        d13CO2: NDArray,
+        D14CO2: NDArray[np.float64],
+        d13CO2: NDArray[np.float64],
         isotopes_const: IsotopesConst = IsotopesConst(),
     ):
         # Check inputs are congruent
@@ -57,22 +58,22 @@ class CalcCarbonIsotopes:
         """Indicates if estimates calculated for C3 or C4 photosynthesis."""
 
         # Attributes defined by methods below
-        self.Delta13C_simple: NDArray
+        self.Delta13C_simple: NDArray[np.float64]
         r"""Discrimination against carbon 13 (:math:`\Delta\ce{^{13}C}`, permil)
         excluding photorespiration."""
-        self.Delta14C: NDArray
+        self.Delta14C: NDArray[np.float64]
         r"""Discrimination against carbon 13 (:math:`\Delta\ce{^{13}C}`, permil)
         including photorespiration."""
-        self.Delta13C: NDArray
+        self.Delta13C: NDArray[np.float64]
         r"""Discrimination against carbon 14 (:math:`\Delta\ce{^{14}C}`, permil)
         including photorespiration."""
-        self.d13C_leaf: NDArray
+        self.d13C_leaf: NDArray[np.float64]
         r"""Isotopic ratio of carbon 13 in leaves
         (:math:`\delta\ce{^{13}C}`, permil)."""
-        self.d14C_leaf: NDArray
+        self.d14C_leaf: NDArray[np.float64]
         r"""Isotopic ratio of carbon 14 in leaves
         (:math:`\delta\ce{^{14}C}`, permil)."""
-        self.d13C_wood: NDArray
+        self.d13C_wood: NDArray[np.float64]
         r"""Isotopic ratio of carbon 13 in wood (:math:`\delta\ce{^{13}C}`, permil),
         given a parameterized post-photosynthetic fractionation."""
 

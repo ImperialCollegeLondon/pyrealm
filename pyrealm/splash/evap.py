@@ -49,29 +49,29 @@ class DailyEvapFluxes:
     solar: DailySolarFluxes
     pa: InitVar[NDArray]
     tc: InitVar[NDArray]
-    kWm: NDArray = field(default_factory=lambda: np.array([150.0]))
+    kWm: NDArray[np.float64] = field(default_factory=lambda: np.array([150.0]))
     core_const: CoreConst = field(default_factory=lambda: CoreConst())
 
-    sat: NDArray = field(init=False)
+    sat: NDArray[np.float64] = field(init=False)
     """Slope of saturation vapour pressure temperature curve, Pa/K"""
-    lv: NDArray = field(init=False)
+    lv: NDArray[np.float64] = field(init=False)
     """Enthalpy of vaporization, J/kg"""
-    pw: NDArray = field(init=False)
+    pw: NDArray[np.float64] = field(init=False)
     """Density of water, kg/m^3"""
-    psy: NDArray = field(init=False)
+    psy: NDArray[np.float64] = field(init=False)
     """Psychrometric constant, Pa/K"""
-    econ: NDArray = field(init=False)
+    econ: NDArray[np.float64] = field(init=False)
     """Water-to-energy conversion factor"""
-    cond: NDArray = field(init=False)
+    cond: NDArray[np.float64] = field(init=False)
     """Daily condensation, mm"""
-    eet_d: NDArray = field(init=False)
+    eet_d: NDArray[np.float64] = field(init=False)
     """Daily equilibrium evapotranspiration (EET), mm"""
-    pet_d: NDArray = field(init=False)
+    pet_d: NDArray[np.float64] = field(init=False)
     """Daily potential evapotranspiration (PET), mm"""
-    rx: NDArray = field(init=False)
+    rx: NDArray[np.float64] = field(init=False)
     """Variable substitute, (mm/hr)/(W/m^2)"""
 
-    def __post_init__(self, pa: NDArray, tc: NDArray) -> None:
+    def __post_init__(self, pa: NDArray[np.float64], tc: NDArray[np.float64]) -> None:
         """Calculate invariant components of evapotranspiration.
 
         The post_init method calculates the components of the evaporative fluxes that
@@ -107,8 +107,8 @@ class DailyEvapFluxes:
         self.rx = (3.6e6) * (1.0 + self.core_const.k_w) * self.econ
 
     def estimate_aet(
-        self, wn: NDArray, day_idx: int | None = None, only_aet: bool = True
-    ) -> NDArray | tuple[NDArray, NDArray, NDArray]:
+        self, wn: NDArray[np.float64], day_idx: int | None = None, only_aet: bool = True
+    ) -> NDArray[np.float64] | tuple[NDArray, NDArray, NDArray]:
         """Estimate actual evapotranspiration.
 
         This method estimates the daily actual evapotranspiration (AET, mm/day), given
