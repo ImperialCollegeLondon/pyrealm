@@ -37,7 +37,11 @@ import pandas as pd
 from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
-from pyrealm.demography.core import CohortMethods, PandasExporter
+from pyrealm.demography.core import (
+    CohortMethods,
+    PandasExporter,
+    _validate_demography_array_arguments,
+)
 
 if sys.version_info[:2] >= (3, 11):
     import tomllib
@@ -507,9 +511,19 @@ class StemTraits(PandasExporter, CohortMethods):
     z_max_prop: NDArray[np.float64]
     """Proportion of stem height at which maximum crown radius is found."""
 
+    validate: bool = True
+    """Boolean flag to control validation of the input array sizes."""
+
     # Post init attributes
     _n_stems: int = field(init=False)
 
     def __post_init__(self) -> None:
         """Post init validation and attribute setting."""
+
+        if self.validate:
+            _validate_demography_array_arguments(
+                stem_args={k: getattr(self, k) for k in self.array_attrs},
+                size_args={},
+            )
+
         self._n_stems = len(self.a_hd)

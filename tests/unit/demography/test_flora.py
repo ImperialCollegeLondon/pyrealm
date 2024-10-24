@@ -380,6 +380,26 @@ def test_StemTraits(fixture_flora):
 
     assert set(instance.array_attrs) == set(stem_traits_df.columns)
 
+    # Now test that validation failures are triggered correctly
+    # 1. Unequal length
+    bad_args = args.copy()
+    bad_args["h_max"] = np.concat([bad_args["h_max"], bad_args["h_max"]])
+
+    with pytest.raises(ValueError) as excep:
+        _ = StemTraits(**bad_args)
+
+    assert str(excep.value).startswith("Stem arguments are not of equal length")
+
+    # 2. Not 1 dimensional
+    bad_args = {k: v.reshape(2, 2) for k, v in args.copy().items()}
+
+    with pytest.raises(ValueError) as excep:
+        _ = StemTraits(**bad_args)
+
+    assert str(excep.value).startswith(
+        "Stem arguments are not 1D arrays of trait values"
+    )
+
 
 def test_StemTraits_CohortMethods(fixture_flora):
     """Test the StemTraits inherited cohort methods."""
