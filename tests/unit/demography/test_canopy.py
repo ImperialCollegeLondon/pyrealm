@@ -73,7 +73,7 @@ class TestCanopyData:
         assert np.allclose(instance.lai, exp_lai)
         assert np.allclose(instance.f_trans, exp_f_trans)
 
-        # Unpack and test expectations
+        # Unpack and test expectations for cohort and stem fapar
         exp_f_trans, exp_trans_prof = community_expected
         expected_fapar = -np.diff(exp_trans_prof, prepend=1)
         assert np.allclose(
@@ -82,6 +82,16 @@ class TestCanopyData:
         assert np.allclose(
             instance.stem_fapar, np.tile((expected_fapar / 6)[:, None], 3)
         )
+
+        # Test the inherited to_pandas method
+        df = instance.to_pandas()
+
+        assert df.shape == (
+            np.prod(exp_stem_leaf_area.shape),
+            len(instance.array_attrs),
+        )
+
+        assert set(instance.array_attrs) == set(df.columns)
 
     def test_CommunityCanopyData__init__(
         self, cohort_args, cohort_expected, community_expected
@@ -98,6 +108,16 @@ class TestCanopyData:
         exp_f_trans, exp_trans_prof = community_expected
         assert np.allclose(instance.f_trans, exp_f_trans)
         assert np.allclose(instance.transmission_profile, exp_trans_prof)
+
+        # Test the inherited to_pandas method
+        df = instance.to_pandas()
+
+        assert df.shape == (
+            len(exp_f_trans),
+            len(instance.array_attrs),
+        )
+
+        assert set(instance.array_attrs) == set(df.columns)
 
 
 def test_Canopy__init__():

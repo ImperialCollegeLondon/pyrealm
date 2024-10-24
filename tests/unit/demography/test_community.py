@@ -100,9 +100,41 @@ def test_Cohorts(args, outcome, excep_message):
         cohorts = Cohorts(**args)
         # trivial test of success
         assert len(cohorts.dbh_values) == 2
+
+        # test the to_pandas method
+        df = cohorts.to_pandas()
+
+        assert df.shape == (cohorts.n_cohorts, len(cohorts.array_attrs))
+        assert set(cohorts.array_attrs) == set(df.columns)
+
         return
 
     assert str(excep.value) == excep_message
+
+
+def test_Cohorts_CohortMethods():
+    """Test the inherited CohortMethods methods."""
+
+    from pyrealm.demography.community import Cohorts
+
+    # Create and instance to modify using methods
+    cohorts = Cohorts(
+        pft_names=np.array(["broadleaf", "conifer"]),
+        n_individuals=np.array([6, 1]),
+        dbh_values=np.array([0.2, 0.5]),
+    )
+
+    # Check failure mode
+    with pytest.raises(ValueError) as excep:
+        cohorts.add_cohort_data(new_data=dict(a=1))
+
+    assert str(excep.value) == "Cannot add cohort data from an dict instance to Cohorts"
+
+    # Check success of adding and dropping data
+    cohorts.add_cohort_data(new_data=cohorts)
+    assert np.allclose(cohorts.dbh_values, np.array([0.2, 0.5, 0.2, 0.5]))
+    cohorts.drop_cohort_data(drop_indices=np.array([0, 2]))
+    assert np.allclose(cohorts.dbh_values, np.array([0.5, 0.5]))
 
 
 @pytest.mark.parametrize(
@@ -215,13 +247,56 @@ def test_Community__init__(
     with outcome as excep:
         community = Community(**args, cohorts=cohorts, flora=fixture_flora)
 
-        if isinstance(outcome, does_not_raise):
-            # Simple test that data is loaded and trait and t model data calculated
-            check_expected(community=community, expected=fixture_expected)
-            return
+        # Simple test that data is loaded and trait and t model data calculated
+        check_expected(community=community, expected=fixture_expected)
+
+        return
 
     # Check exception message
     assert str(excep.value) == excep_message
+
+
+def test_Community_add_and_drop(fixture_flora):
+    """Tests the add and drop cohort methods."""
+
+    from pyrealm.demography.community import Cohorts, Community
+
+    # Build the cohorts object, with two cohorts in the same order as the two PFTs in
+    # the fixture flora.
+    cohorts = Cohorts(
+        pft_names=fixture_flora.name,
+        n_individuals=np.array([6, 1]),
+        dbh_values=np.array([0.2, 0.5]),
+    )
+    community = Community(cell_id=1, cell_area=32, flora=fixture_flora, cohorts=cohorts)
+
+    # Check the initial state of the three attributes that should be modified
+    assert np.allclose(community.cohorts.n_individuals, np.array([6, 1]))
+    assert np.allclose(community.stem_traits.h_max, fixture_flora.h_max)
+    assert np.allclose(community.stem_allometry.dbh, np.array([0.2, 0.5]))
+
+    # Add a new set of cohorts
+    new_cohorts = Cohorts(
+        pft_names=fixture_flora.name,
+        n_individuals=np.array([8, 2]),
+        dbh_values=np.array([0.3, 0.6]),
+    )
+    community.add_cohorts(new_cohorts)
+
+    # Test the three attributes again to check they've all been doubled.
+    assert np.allclose(community.cohorts.n_individuals, np.array([6, 1, 8, 2]))
+    assert np.allclose(community.stem_traits.h_max, np.tile(fixture_flora.h_max, 2))
+    assert np.allclose(community.stem_allometry.dbh, np.array([0.2, 0.5, 0.3, 0.6]))
+
+    # Drop some rows
+    community.drop_cohorts(drop_indices=np.array([1, 3]))
+
+    # Test the three attributes again to check they've all been reduced.
+    assert np.allclose(community.cohorts.n_individuals, np.array([6, 8]))
+    assert np.allclose(
+        community.stem_traits.h_max, np.repeat(fixture_flora.h_max[0], 2)
+    )
+    assert np.allclose(community.stem_allometry.dbh, np.array([0.2, 0.3]))
 
 
 @pytest.mark.parametrize(
