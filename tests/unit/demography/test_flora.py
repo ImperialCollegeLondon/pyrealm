@@ -4,6 +4,7 @@ import sys
 from contextlib import nullcontext as does_not_raise
 from importlib import resources
 from json import JSONDecodeError
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -334,12 +335,29 @@ def test_flora_from_csv(filename, outcome):
     ],
 )
 def test_flora_get_stem_traits(fixture_flora, pft_names, outcome):
-    """Test Flora.get_stem_traits."""
-    with outcome:
+    """Test Flora.get_stem_traits.
+
+    This tests the method and failure mode, but also checks that the validation is
+    correctly supressed.
+    """
+    with (
+        outcome as excep,
+        patch("pyrealm.demography.core._validate_demography_array_arguments") as fmock,
+    ):
+        # Call the method
         stem_traits = fixture_flora.get_stem_traits(pft_names=pft_names)
 
+        # Check the validator function is not called
+        assert not fmock.called
+
+        # Test the length of the attributes
         for trt in stem_traits.array_attrs:
             assert len(getattr(stem_traits, trt)) == len(pft_names)
+
+        return
+
+    # Check the reporting in failure case
+    assert str(excep.value) == "Plant functional types unknown in flora: boredleaf"
 
 
 def test_Flora_to_pandas(fixture_flora):

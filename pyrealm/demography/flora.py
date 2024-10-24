@@ -438,11 +438,13 @@ class Flora(PandasExporter):
         # Get the indices for the cohort PFT names in the flora PFT data
         pft_index = [self.pft_indices[str(nm)] for nm in pft_names]
 
-        # For each trait, get that attribute from the Flora, extract the values
-        # matching the pft_names and pass that into the StemTraits constructor.
-
+        # For each trait, get that attribute from the Flora, extract the values matching
+        # the pft_names and pass that into the StemTraits constructor. Validation is
+        # turned off here, because the creation method guarantees the data is properly
+        # formatted.
         return StemTraits(
-            **{trt: getattr(self, trt)[pft_index] for trt in self.array_attrs}
+            **{trt: getattr(self, trt)[pft_index] for trt in self.array_attrs},
+            validate=False,
         )
 
 
