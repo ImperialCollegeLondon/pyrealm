@@ -1,4 +1,16 @@
-"""Core shared functionality for the {mod}`~pyrealm.demography` module."""
+"""Core shared functionality for the {mod}`~pyrealm.demography` module.
+
+This module implements two abstract base classes that are used to share core methods
+across demography classes:
+
+* {class}`~pyrealm.demography.core.PandasExporter` provides the utility
+  {meth}`~pyrealm.demography.core.PandasExporter.to_pandas` method for extracting data
+  from demography classes for plotting and exploring data.
+* {class}`~pyrealm.demography.core.CohortMethods` provides the utility
+  {meth}`~pyrealm.demography.core.CohortMethods.add_cohort_data` and
+  {meth}`~pyrealm.demography.core.CohortMethods.drop_cohort_data` methods that are used
+  to append new cohort data across some demography dataclasses.
+"""
 
 from __future__ import annotations
 

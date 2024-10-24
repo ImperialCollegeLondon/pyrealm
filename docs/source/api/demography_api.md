@@ -30,6 +30,14 @@ language_info:
     :members:
 ```
 
+## The {mod}`~pyrealm.demography.core` module
+
+```{eval-rst}
+.. automodule:: pyrealm.demography.core
+    :autosummary:
+    :members:
+```
+
 ## The {mod}`~pyrealm.demography.flora` module
 
 ```{eval-rst}

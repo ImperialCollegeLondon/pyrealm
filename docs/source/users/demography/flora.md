@@ -147,9 +147,9 @@ flora
 ```
 
 The {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
-{meth}`~pyrealm.demography.t_model_functions.StemTraits` class exports the trait data as
-a {class}`pandas.DataFrame`, making it easier to use for plotting or calculations
-outside of `pyrealm`.
+{meth}`~pyrealm.demography.flora.StemTraits` class exports the trait data as a
+{class}`pandas.DataFrame`, making it easier to use for plotting or calculations outside
+of `pyrealm`.
 
 ```{code-cell} ipython3
 flora.to_pandas()
@@ -176,8 +176,7 @@ stem_traits = flora.get_stem_traits(pft_names=stem_pfts)
 ```
 
 Again, the {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
-{meth}`~pyrealm.demography.t_model_functions.StemTraits` class can be use to extract
-the data:
+{meth}`~pyrealm.demography.flora.StemTraits` class can be use to extract the data:
 
 ```{code-cell} ipython3
 stem_traits.to_pandas()
