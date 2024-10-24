@@ -256,6 +256,49 @@ def test_Community__init__(
     assert str(excep.value) == excep_message
 
 
+def test_Community_add_and_drop(fixture_flora):
+    """Tests the add and drop cohort methods."""
+
+    from pyrealm.demography.community import Cohorts, Community
+
+    # Build the cohorts object, with two cohorts in the same order as the two PFTs in
+    # the fixture flora.
+    cohorts = Cohorts(
+        pft_names=fixture_flora.name,
+        n_individuals=np.array([6, 1]),
+        dbh_values=np.array([0.2, 0.5]),
+    )
+    community = Community(cell_id=1, cell_area=32, flora=fixture_flora, cohorts=cohorts)
+
+    # Check the initial state of the three attributes that should be modified
+    assert np.allclose(community.cohorts.n_individuals, np.array([6, 1]))
+    assert np.allclose(community.stem_traits.h_max, fixture_flora.h_max)
+    assert np.allclose(community.stem_allometry.dbh, np.array([0.2, 0.5]))
+
+    # Add a new set of cohorts
+    new_cohorts = Cohorts(
+        pft_names=fixture_flora.name,
+        n_individuals=np.array([8, 2]),
+        dbh_values=np.array([0.3, 0.6]),
+    )
+    community.add_cohorts(new_cohorts)
+
+    # Test the three attributes again to check they've all been doubled.
+    assert np.allclose(community.cohorts.n_individuals, np.array([6, 1, 8, 2]))
+    assert np.allclose(community.stem_traits.h_max, np.tile(fixture_flora.h_max, 2))
+    assert np.allclose(community.stem_allometry.dbh, np.array([0.2, 0.5, 0.3, 0.6]))
+
+    # Drop some rows
+    community.drop_cohorts(drop_indices=np.array([1, 3]))
+
+    # Test the three attributes again to check they've all been reduced.
+    assert np.allclose(community.cohorts.n_individuals, np.array([6, 8]))
+    assert np.allclose(
+        community.stem_traits.h_max, np.repeat(fixture_flora.h_max[0], 2)
+    )
+    assert np.allclose(community.stem_allometry.dbh, np.array([0.2, 0.3]))
+
+
 @pytest.mark.parametrize(
     argnames="file_data,outcome,excep_message",
     argvalues=[
