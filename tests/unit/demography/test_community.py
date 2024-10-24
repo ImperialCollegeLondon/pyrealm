@@ -112,6 +112,31 @@ def test_Cohorts(args, outcome, excep_message):
     assert str(excep.value) == excep_message
 
 
+def test_Cohorts_CohortMethods():
+    """Test the inherited CohortMethods methods."""
+
+    from pyrealm.demography.community import Cohorts
+
+    # Create and instance to modify using methods
+    cohorts = Cohorts(
+        pft_names=np.array(["broadleaf", "conifer"]),
+        n_individuals=np.array([6, 1]),
+        dbh_values=np.array([0.2, 0.5]),
+    )
+
+    # Check failure mode
+    with pytest.raises(ValueError) as excep:
+        cohorts.add_cohort_data(new_data=dict(a=1))
+
+    assert str(excep.value) == "Cannot add cohort data from an dict instance to Cohorts"
+
+    # Check success of adding and dropping data
+    cohorts.add_cohort_data(new_data=cohorts)
+    assert np.allclose(cohorts.dbh_values, np.array([0.2, 0.5, 0.2, 0.5]))
+    cohorts.drop_cohort_data(drop_indices=np.array([0, 2]))
+    assert np.allclose(cohorts.dbh_values, np.array([0.5, 0.5]))
+
+
 @pytest.mark.parametrize(
     argnames="args,cohort_data,outcome,excep_message",
     argvalues=[

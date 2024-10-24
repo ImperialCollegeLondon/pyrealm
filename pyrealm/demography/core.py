@@ -64,26 +64,31 @@ class CohortMethods(ABC):
 
     array_attrs: ClassVar[tuple[str, ...]]
 
-    def add_cohorts(self, add: CohortMethods) -> None:
+    def add_cohort_data(self, new_data: CohortMethods) -> None:
         """Add array attributes from a second instance implementing the base class.
 
         Args:
-            add: A second instance from which to add array attribute values.
+            new_data: A second instance from which to add cohort data to array attribute
+                values.
         """
 
-        if not isinstance(add, self.__class__):
+        # Check the incoming dataclass matches the calling instance.
+        if not isinstance(new_data, self.__class__):
             raise ValueError(
-                f"Cannot add {type(add).__name__} instance to {type(self).__name__}"
+                f"Cannot add cohort data from an {type(new_data).__name__} "
+                f"instance to {type(self).__name__}"
             )
 
+        # Concatenate the array attributes from the incoming instance to the calling
+        # instance.
         for trait in self.array_attrs:
             setattr(
                 self,
                 trait,
-                np.concatenate([getattr(self, trait), getattr(add, trait)]),
+                np.concatenate([getattr(self, trait), getattr(new_data, trait)]),
             )
 
-    def drop_cohorts(self, drop_indices: NDArray[np.int_]) -> None:
+    def drop_cohort_data(self, drop_indices: NDArray[np.int_]) -> None:
         """Drop array attribute values from an instance.
 
         Args:

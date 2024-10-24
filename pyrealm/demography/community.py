@@ -136,7 +136,7 @@ from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.demography.core import PandasExporter
+from pyrealm.demography.core import CohortMethods, PandasExporter
 from pyrealm.demography.flora import Flora, StemTraits
 from pyrealm.demography.t_model_functions import StemAllometry
 
@@ -149,7 +149,7 @@ else:
 
 
 @dataclass
-class Cohorts(PandasExporter):
+class Cohorts(PandasExporter, CohortMethods):
     """A dataclass to hold data for a set of plant cohorts.
 
     The attributes should be numpy arrays of equal length, containing an entry for each
@@ -537,6 +537,23 @@ class Community:
             raise excep
 
         return cls(**file_data, flora=flora)
+
+    def add_cohorts(self, new_cohorts: Cohorts) -> None:
+        """Add a new set of cohorts to the community.
+
+        This method extends the ``cohorts`` attribute with the new cohort data and then
+        also extends the ``stem_traits`` and ``stem_allometry`` to match.
+        """
+
+        self.cohorts.add_cohort_data(new_cohorts)
+
+        new_stem_traits = self.flora.get_stem_traits(new_cohorts.pft_names)
+        self.stem_traits.add_cohort_data(new_stem_traits)
+
+        new_stem_allometry = StemAllometry(
+            stem_traits=new_stem_traits, at_dbh=new_cohorts.dbh_values
+        )
+        self.stem_allometry.add_cohort_data(new_stem_allometry)
 
     # @classmethod
     # def load_communities_from_csv(

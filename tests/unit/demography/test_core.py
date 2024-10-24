@@ -11,7 +11,7 @@ import pytest
 from numpy.typing import NDArray
 
 
-def test_PandasExporter():
+def test_PandasExporter() -> None:
     """Test the PandasExporter abstract base class."""
 
     from pyrealm.demography.core import PandasExporter
@@ -26,7 +26,11 @@ def test_PandasExporter():
         e: NDArray[np.float64]
 
     # create instance and run method
-    instance = TestClass(c=np.arange(5), d=np.arange(5), e=np.arange(5))
+    instance = TestClass(
+        c=np.arange(5, dtype=np.float64),
+        d=np.arange(5, dtype=np.float64),
+        e=np.arange(5, dtype=np.float64),
+    )
     pandas_out = instance.to_pandas()
 
     # simple checks of output class and behaviour
@@ -36,7 +40,7 @@ def test_PandasExporter():
     assert np.allclose(pandas_out.sum(axis=0), np.repeat(10, 3))
 
 
-def test_Cohorts():
+def test_Cohorts() -> None:
     """Test the Cohorts abstract base class."""
 
     from pyrealm.demography.core import CohortMethods
@@ -55,17 +59,17 @@ def test_Cohorts():
     t2 = TestClass(a=np.array([4, 5, 6]), b=np.array([7, 8, 9]))
 
     # Add the t2 data into t1 and check the a and b attributes are extended
-    t1.add_cohorts(t2)
+    t1.add_cohort_data(t2)
     assert np.allclose(t1.a, np.arange(1, 7))
     assert np.allclose(t1.b, np.arange(4, 10))
 
     # Drop some indices and check the a and b attributes are truncated
-    t1.drop_cohorts(np.array([0, 5]))
+    t1.drop_cohort_data(np.array([0, 5]))
     assert np.allclose(t1.a, np.arange(2, 6))
     assert np.allclose(t1.b, np.arange(5, 9))
 
 
-def test_Cohorts_failure():
+def test_Cohorts_add_cohort_data_failure() -> None:
     """Test the Cohorts abstract base class failure mode."""
 
     from pyrealm.demography.core import CohortMethods
@@ -94,12 +98,15 @@ def test_Cohorts_failure():
 
     # Check that adding a different
     with pytest.raises(ValueError) as excep:
-        t1.add_cohorts(t2)
+        t1.add_cohort_data(t2)
 
-    assert str(excep.value) == "Cannot add NotTheSameClass instance to TestClass"
+    assert (
+        str(excep.value)
+        == "Cannot add cohort data from an NotTheSameClass instance to TestClass"
+    )
 
 
-def test_PandasExporter_Cohorts_multiple_inheritance():
+def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
     """Test the behaviour of a class inheriting both core ABCs."""
 
     from pyrealm.demography.core import CohortMethods, PandasExporter
@@ -136,7 +143,7 @@ def test_PandasExporter_Cohorts_multiple_inheritance():
     assert np.allclose(t1_out.sum(axis=0), np.repeat(15, 3) + np.array([0, 5, 10]))
 
     # Add the second set and check the results via pandas
-    t1.add_cohorts(t2)
+    t1.add_cohort_data(t2)
     t1_out_add = t1.to_pandas()
 
     # simple checks of output class and behaviour
@@ -146,7 +153,7 @@ def test_PandasExporter_Cohorts_multiple_inheritance():
     assert np.allclose(t1_out_add.sum(axis=0), np.repeat(36, 3) + np.array([0, 8, 16]))
 
     # Drop some entries and recheck
-    t1.drop_cohorts(np.array([0, 7]))
+    t1.drop_cohort_data(np.array([0, 7]))
     t1_out_drop = t1.to_pandas()
 
     # simple checks of output class and behaviour
