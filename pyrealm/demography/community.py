@@ -538,22 +538,38 @@ class Community:
 
         return cls(**file_data, flora=flora)
 
-    def add_cohorts(self, new_cohorts: Cohorts) -> None:
+    def drop_cohorts(self, drop_indices: NDArray[np.int_]) -> None:
+        """Drop cohorts from the community.
+
+        This method drops the identified cohorts from the ``cohorts`` attribute and then
+        removes their data from  the ``stem_traits`` and ``stem_allometry`` attributes
+        to match.
+        """
+
+        self.cohorts.drop_cohort_data(drop_indices=drop_indices)
+        self.stem_traits.drop_cohort_data(drop_indices=drop_indices)
+        self.stem_allometry.drop_cohort_data(drop_indices=drop_indices)
+
+    def add_cohorts(self, new_data: Cohorts) -> None:
         """Add a new set of cohorts to the community.
 
         This method extends the ``cohorts`` attribute with the new cohort data and then
         also extends the ``stem_traits`` and ``stem_allometry`` to match.
+
+        Args:
+            new_data: An instance of :class:`~pyrealm.demography.community.Cohorts`
+                containing cohort data to add to the community.
         """
 
-        self.cohorts.add_cohort_data(new_cohorts)
+        self.cohorts.add_cohort_data(new_data=new_data)
 
-        new_stem_traits = self.flora.get_stem_traits(new_cohorts.pft_names)
-        self.stem_traits.add_cohort_data(new_stem_traits)
+        new_stem_traits = self.flora.get_stem_traits(pft_names=new_data.pft_names)
+        self.stem_traits.add_cohort_data(new_data=new_stem_traits)
 
         new_stem_allometry = StemAllometry(
-            stem_traits=new_stem_traits, at_dbh=new_cohorts.dbh_values
+            stem_traits=new_stem_traits, at_dbh=new_data.dbh_values
         )
-        self.stem_allometry.add_cohort_data(new_stem_allometry)
+        self.stem_allometry.add_cohort_data(new_data=new_stem_allometry)
 
     # @classmethod
     # def load_communities_from_csv(

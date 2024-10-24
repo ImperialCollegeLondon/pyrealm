@@ -379,3 +379,34 @@ def test_StemTraits(fixture_flora):
     )
 
     assert set(instance.array_attrs) == set(stem_traits_df.columns)
+
+
+def test_StemTraits_CohortMethods(fixture_flora):
+    """Test the StemTraits inherited cohort methods."""
+
+    from pyrealm.demography.t_model_functions import StemTraits
+
+    # Construct some input data with duplicate PFTs by doubling the fixture_flora data
+    flora_df = fixture_flora.to_pandas()
+    args = {ky: np.concatenate([val, val]) for ky, val in flora_df.items()}
+
+    stem_traits = StemTraits(**args)
+
+    # Check failure mode
+    with pytest.raises(ValueError) as excep:
+        stem_traits.add_cohort_data(new_data=dict(a=1))
+
+    assert (
+        str(excep.value) == "Cannot add cohort data from an dict instance to StemTraits"
+    )
+
+    # Check success of adding and dropping data
+    # Add a copy of itself as new cohort data and check the shape
+    stem_traits.add_cohort_data(new_data=stem_traits)
+    assert stem_traits.h_max.shape == (4 * fixture_flora.n_pfts,)
+    assert stem_traits.h_max.sum() == 4 * flora_df["h_max"].sum()
+
+    # Remove all but the first two rows and what's left should be aligned with the
+    # original data
+    stem_traits.drop_cohort_data(drop_indices=np.arange(2, 8))
+    assert np.allclose(stem_traits.h_max, flora_df["h_max"])

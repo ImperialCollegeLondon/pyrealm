@@ -37,7 +37,7 @@ import pandas as pd
 from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
-from pyrealm.demography.core import PandasExporter
+from pyrealm.demography.core import CohortMethods, PandasExporter
 
 if sys.version_info[:2] >= (3, 11):
     import tomllib
@@ -443,7 +443,7 @@ class Flora(PandasExporter):
 
 
 @dataclass()
-class StemTraits(PandasExporter):
+class StemTraits(PandasExporter, CohortMethods):
     """A dataclass for stem traits.
 
     This dataclass is used to provide arrays of plant functional type (PFT) traits

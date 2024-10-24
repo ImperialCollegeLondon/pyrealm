@@ -755,6 +755,38 @@ def test_StemAllometry(rtmodel_flora, rtmodel_data):
     assert set(stem_allometry.array_attrs) == set(df.columns)
 
 
+def test_StemAllometry_CohortMethods(rtmodel_flora, rtmodel_data):
+    """Test the StemAllometry inherited cohort methods."""
+
+    from pyrealm.demography.t_model_functions import StemAllometry
+
+    stem_allometry = StemAllometry(
+        stem_traits=rtmodel_flora, at_dbh=rtmodel_data["dbh"][:, [0]]
+    )
+    check_data = stem_allometry.crown_fraction.copy()
+
+    # Check failure mode
+    with pytest.raises(ValueError) as excep:
+        stem_allometry.add_cohort_data(new_data=dict(a=1))
+
+    assert (
+        str(excep.value)
+        == "Cannot add cohort data from an dict instance to StemAllometry"
+    )
+
+    # Check success of adding and dropping data
+    n_entries = len(rtmodel_data["dbh"])
+    # Add a copy of itself as new cohort data and check the shape
+    stem_allometry.add_cohort_data(new_data=stem_allometry)
+    assert stem_allometry.crown_fraction.shape == (2 * n_entries, rtmodel_flora.n_pfts)
+    assert stem_allometry.crown_fraction.sum() == 2 * check_data.sum()
+
+    # Remove the rows from the first copy and what's left should be aligned with the
+    # original data
+    stem_allometry.drop_cohort_data(drop_indices=np.arange(n_entries))
+    assert np.allclose(stem_allometry.crown_fraction, check_data)
+
+
 def test_StemAllocation(rtmodel_flora, rtmodel_data):
     """Test the StemAllometry class."""
 

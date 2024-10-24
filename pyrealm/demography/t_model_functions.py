@@ -12,7 +12,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.demography.core import PandasExporter
+from pyrealm.demography.core import CohortMethods, PandasExporter
 from pyrealm.demography.flora import Flora, StemTraits
 
 
@@ -660,7 +660,7 @@ def calculate_growth_increments(
 
 
 @dataclass
-class StemAllometry(PandasExporter):
+class StemAllometry(PandasExporter, CohortMethods):
     """Calculate T Model allometric predictions across a set of stems.
 
     This method calculate predictions of stem allometries for stem height, crown area,

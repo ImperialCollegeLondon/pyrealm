@@ -95,5 +95,15 @@ class CohortMethods(ABC):
             drop_indices: An array of integer indices to drop from each array attribute.
         """
 
+        # TODO - Probably part of tackling #317
+        #        The delete axis=0 here is tied to the case of dropping rows from 2D
+        #        arrays, but then I'm thinking it makes more sense to _only_ support 2D
+        #        arrays rather than the current mixed bag of getting a 1D array when a
+        #        single height is provided. Promoting that kind of input to 2D and then
+        #        enforcing an identical internal structure seems better.
+        #      - But! Trait data does not have 2 dimensions!
+        #      - Also to check here - this can lead to empty instances, which probably
+        #        are a thing we want, if mortality removes all cohorts.
+
         for trait in self.array_attrs:
-            setattr(self, trait, np.delete(getattr(self, trait), drop_indices))
+            setattr(self, trait, np.delete(getattr(self, trait), drop_indices, axis=0))
