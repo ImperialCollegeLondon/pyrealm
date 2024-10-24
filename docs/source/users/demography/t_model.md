@@ -77,9 +77,9 @@ for each PFT. This then calculates a single estimate at the given size for each 
 single_allometry = StemAllometry(stem_traits=flora, at_dbh=np.array([0.1, 0.1, 0.1]))
 ```
 
-The class provides a
-{meth}`~pyrealm.demography.t_model_functions.StemAllometry.to_pandas()` method
-to export the stem data for data exploration.
+The {meth}`~pyrealm.demography.t_model_functions.StemAllometry` class provides the
+{meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method to export the stem
+data for data exploration.
 
 ```{code-cell} ipython3
 single_allometry.to_pandas()
@@ -123,8 +123,9 @@ for ax, (var, ylab) in zip(axes.flatten(), plot_details):
         ax.legend(frameon=False)
 ```
 
-The {meth}`~pyrealm.demography.t_model_functions.StemAllometry.to_pandas()` method
-can still be used, but the values are stacked into columns along with a column index
+The {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
+{meth}`~pyrealm.demography.t_model_functions.StemAllometry` class can still be used, but
+the values are stacked into columns along with a index showing the different cohorts.
 
 ```{code-cell} ipython3
 allometries.to_pandas()
@@ -144,8 +145,8 @@ single_allocation = StemAllocation(
 single_allocation
 ```
 
-The class provides the
-{meth}`~pyrealm.demography.t_model_functions.StemAllocation.to_pandas()` method to
+The {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
+{meth}`~pyrealm.demography.t_model_functions.StemAllocation` class can be used to
 export data for exploration.
 
 ```{code-cell} ipython3
@@ -227,8 +228,9 @@ for ax, (var, ylab) in zip(axes, plot_details):
 fig.delaxes(axes[-1])
 ```
 
-As before, the {meth}`~pyrealm.demography.t_model_functions.StemAllometry.to_pandas()`
-method can be used to export the data for each stem:
+As before, the {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
+{meth}`~pyrealm.demography.t_model_functions.StemAllometry` classs can be used to export
+the data for each stem:
 
 ```{code-cell} ipython3
 allocation.to_pandas()

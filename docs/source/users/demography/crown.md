@@ -274,9 +274,9 @@ above calculated at each height $z$:
 crown_profiles
 ```
 
-The {meth}`~pyrealm.demography.crown.CrownProfile.to_pandas` method can be used to
-extract the data into a table, with the separate stems identified by the column index
-field.
+The {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
+{meth}`~pyrealm.demography.crown.CrownProfile` class can be used to extract the data
+into a table, with the separate stems identified by the column index field.
 
 ```{code-cell} ipython3
 crown_profiles.to_pandas()
