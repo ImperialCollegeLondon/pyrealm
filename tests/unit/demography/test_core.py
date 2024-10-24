@@ -39,10 +39,10 @@ def test_PandasExporter():
 def test_Cohorts():
     """Test the Cohorts abstract base class."""
 
-    from pyrealm.demography.core import Cohorts
+    from pyrealm.demography.core import CohortMethods
 
     @dataclass
-    class TestClass(Cohorts):
+    class TestClass(CohortMethods):
         """Simple test class implementing the ABC."""
 
         array_attrs: ClassVar[tuple[str, ...]] = ("a", "b")
@@ -102,10 +102,10 @@ def test_Cohorts_failure():
 def test_PandasExporter_Cohorts_multiple_inheritance():
     """Test the behaviour of a class inheriting both core ABCs."""
 
-    from pyrealm.demography.core import Cohorts, PandasExporter
+    from pyrealm.demography.core import CohortMethods, PandasExporter
 
     @dataclass
-    class TestClass(Cohorts, PandasExporter):
+    class TestClass(CohortMethods, PandasExporter):
         """Test class with multiple inheritance."""
 
         array_attrs: ClassVar[tuple[str, ...]] = ("c", "d", "e")
