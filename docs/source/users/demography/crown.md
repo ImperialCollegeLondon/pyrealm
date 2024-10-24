@@ -532,7 +532,3 @@ plt.legend(
     bbox_to_anchor=(0.5, 1.15),
 )
 ```
-
-```{code-cell} ipython3
-
-```

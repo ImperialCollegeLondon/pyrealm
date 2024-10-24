@@ -34,7 +34,7 @@ def check_expected(community, expected):
     """Helper function to provide simple check of returned community objects."""
 
     assert np.allclose(
-        community.cohort_data["n_individuals"],
+        community.cohorts.n_individuals,
         expected["n_individuals"],
     )
     assert np.allclose(
@@ -52,11 +52,9 @@ def check_expected(community, expected):
     argvalues=[
         pytest.param(
             {
-                "cell_id": 1,
-                "cell_area": 100,
-                "cohort_pft_names": np.array(["broadleaf", "conifer"]),
-                "cohort_n_individuals": np.array([6, 1]),
-                "cohort_dbh_values": np.array([0.2, 0.5]),
+                "pft_names": np.array(["broadleaf", "conifer"]),
+                "n_individuals": np.array([6, 1]),
+                "dbh_values": np.array([0.2, 0.5]),
             },
             does_not_raise(),
             None,
@@ -64,107 +62,135 @@ def check_expected(community, expected):
         ),
         pytest.param(
             {
-                "cell_id": 1,
-                "cell_area": 100,
-                "cohort_pft_names": ["broadleaf", "conifer"],
-                "cohort_n_individuals": [6, 1],
-                "cohort_dbh_values": [0.2, 0.5],
+                "pft_names": False,
+                "n_individuals": np.array([6, 1]),
+                "dbh_values": np.array([0.2, 0.5]),
             },
             pytest.raises(ValueError),
-            "Cohort data not passed as numpy arrays.",
+            "Cohort data not passed as numpy arrays",
+            id="not_iterable",
+        ),
+        pytest.param(
+            {
+                "pft_names": ["broadleaf", "conifer"],
+                "n_individuals": [6, 1],
+                "dbh_values": [0.2, 0.5],
+            },
+            pytest.raises(ValueError),
+            "Cohort data not passed as numpy arrays",
             id="lists_not_arrays",
         ),
         pytest.param(
             {
-                "cell_id": 1,
-                "cell_area": 100,
-                "cohort_pft_names": np.array(["broadleaf", "conifer"]),
-                "cohort_n_individuals": np.array([6, 1]),
-                "cohort_dbh_values": np.array([0.2, 0.5, 0.9]),
+                "pft_names": np.array(["broadleaf", "conifer"]),
+                "n_individuals": np.array([6, 1, 1]),
+                "dbh_values": np.array([0.2, 0.5]),
             },
             pytest.raises(ValueError),
             "Cohort arrays are of unequal length",
-            id="unequal_cohort_arrays",
+            id="not np array",
+        ),
+    ],
+)
+def test_Cohorts(args, outcome, excep_message):
+    """Test the cohorts data structure."""
+    from pyrealm.demography.community import Cohorts
+
+    with outcome as excep:
+        cohorts = Cohorts(**args)
+        # trivial test of success
+        assert len(cohorts.dbh_values) == 2
+        return
+
+    assert str(excep.value) == excep_message
+
+
+@pytest.mark.parametrize(
+    argnames="args,cohort_data,outcome,excep_message",
+    argvalues=[
+        pytest.param(
+            {"cell_id": 1, "cell_area": 100},
+            {
+                "pft_names": np.array(["broadleaf", "conifer"]),
+                "n_individuals": np.array([6, 1]),
+                "dbh_values": np.array([0.2, 0.5]),
+            },
+            does_not_raise(),
+            None,
+            id="correct",
         ),
         pytest.param(
+            {"cell_area": 100},
             {
-                "cell_area": 100,
-                "cohort_pft_names": np.array(["broadleaf", "conifer"]),
-                "cohort_n_individuals": np.array([6, 1]),
-                "cohort_dbh_values": np.array([0.2, 0.5]),
+                "pft_names": np.array(["broadleaf", "conifer"]),
+                "n_individuals": np.array([6, 1]),
+                "dbh_values": np.array([0.2, 0.5]),
             },
             pytest.raises(TypeError),
             "Community.__init__() missing 1 required positional argument: 'cell_id'",
             id="missing_arg",
         ),
         pytest.param(
+            {"cell_id": 1, "cell_area": 100, "cell_elevation": 100},
             {
-                "cell_id": 1,
-                "cell_area": 100,
-                "cell_elevation": 100,
-                "cohort_pft_names": np.array(["broadleaf", "conifer"]),
-                "cohort_n_individuals": np.array([6, 1]),
-                "cohort_dbh_values": np.array([0.2, 0.5]),
+                "pft_names": np.array(["broadleaf", "conifer"]),
+                "n_individuals": np.array([6, 1]),
+                "dbh_values": np.array([0.2, 0.5]),
             },
             pytest.raises(TypeError),
             "Community.__init__() got an unexpected keyword argument 'cell_elevation'",
             id="extra_arg",
         ),
         pytest.param(
+            {"cell_id": 1, "cell_area": "100"},
             {
-                "cell_id": 1,
-                "cell_area": "100",
-                "cohort_pft_names": np.array(["broadleaf", "conifer"]),
-                "cohort_n_individuals": np.array([6, 1]),
-                "cohort_dbh_values": np.array([0.2, 0.5]),
+                "pft_names": np.array(["broadleaf", "conifer"]),
+                "n_individuals": np.array([6, 1]),
+                "dbh_values": np.array([0.2, 0.5]),
             },
             pytest.raises(ValueError),
             "Community cell area must be a positive number.",
             id="cell_area_as_string",
         ),
         pytest.param(
+            {"cell_id": 1, "cell_area": -100},
             {
-                "cell_id": 1,
-                "cell_area": -100,
-                "cohort_pft_names": np.array(["broadleaf", "conifer"]),
-                "cohort_n_individuals": np.array([6, 1]),
-                "cohort_dbh_values": np.array([0.2, 0.5]),
+                "pft_names": np.array(["broadleaf", "conifer"]),
+                "n_individuals": np.array([6, 1]),
+                "dbh_values": np.array([0.2, 0.5]),
             },
             pytest.raises(ValueError),
             "Community cell area must be a positive number.",
             id="cell_area_negative",
         ),
         pytest.param(
+            {"cell_id": "1", "cell_area": 100},
             {
-                "cell_id": "1",
-                "cell_area": 100,
-                "cohort_pft_names": np.array(["broadleaf", "conifer"]),
-                "cohort_n_individuals": np.array([6, 1]),
-                "cohort_dbh_values": np.array([0.2, 0.5]),
+                "pft_names": np.array(["broadleaf", "conifer"]),
+                "n_individuals": np.array([6, 1]),
+                "dbh_values": np.array([0.2, 0.5]),
             },
             pytest.raises(ValueError),
             "Community cell id must be a integer >= 0.",
             id="cell_id_as_string",
         ),
         pytest.param(
+            {"cell_id": -1, "cell_area": 100},
             {
-                "cell_id": -1,
-                "cell_area": 100,
-                "cohort_pft_names": np.array(["broadleaf", "conifer"]),
-                "cohort_n_individuals": np.array([6, 1]),
-                "cohort_dbh_values": np.array([0.2, 0.5]),
+                "pft_names": np.array(["broadleaf", "conifer"]),
+                "n_individuals": np.array([6, 1]),
+                "dbh_values": np.array([0.2, 0.5]),
             },
             pytest.raises(ValueError),
             "Community cell id must be a integer >= 0.",
             id="cell_id_negative",
         ),
         pytest.param(
+            {"cell_id": 1, "cell_area": 100},
             {
-                "cell_id": 1,
-                "cell_area": 100,
-                "cohort_pft_names": np.array(["broadleaf", "juniper"]),
-                "cohort_n_individuals": np.array([6, 1]),
-                "cohort_dbh_values": np.array([0.2, 0.5]),
+                "pft_names": np.array(["broadleaf", "juniper"]),
+                "n_individuals": np.array([6, 1]),
+                "dbh_values": np.array([0.2, 0.5]),
             },
             pytest.raises(ValueError),
             "Plant functional types unknown in flora: juniper",
@@ -173,7 +199,7 @@ def check_expected(community, expected):
     ],
 )
 def test_Community__init__(
-    fixture_flora, fixture_expected, args, outcome, excep_message
+    fixture_flora, fixture_expected, args, cohort_data, outcome, excep_message
 ):
     """Test Community initialisation.
 
@@ -181,10 +207,13 @@ def test_Community__init__(
     properties.
     """
 
-    from pyrealm.demography.community import Community
+    from pyrealm.demography.community import Cohorts, Community
+
+    # Build the cohorts object
+    cohorts = Cohorts(**cohort_data)
 
     with outcome as excep:
-        community = Community(**args, flora=fixture_flora)
+        community = Community(**args, cohorts=cohorts, flora=fixture_flora)
 
         if isinstance(outcome, does_not_raise):
             # Simple test that data is loaded and trait and t model data calculated
