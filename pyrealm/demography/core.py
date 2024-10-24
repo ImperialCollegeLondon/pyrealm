@@ -48,7 +48,7 @@ class PandasExporter(ABC):
         return pd.DataFrame(data)
 
 
-class Cohorts(ABC):
+class CohortMethods(ABC):
     """Abstract base class implementing cohort manipulation functionality.
 
     Classes inheriting from this ABC must define a class attribute ``array_attrs`` that
@@ -64,12 +64,18 @@ class Cohorts(ABC):
 
     array_attrs: ClassVar[tuple[str, ...]]
 
-    def add_cohorts(self, add: Cohorts) -> None:
-        """Add array attributes from a second instance.
+    def add_cohorts(self, add: CohortMethods) -> None:
+        """Add array attributes from a second instance implementing the base class.
 
         Args:
             add: A second instance from which to add array attribute values.
         """
+
+        if not isinstance(add, self.__class__):
+            raise ValueError(
+                f"Cannot add {type(add).__name__} instance to {type(self).__name__}"
+            )
+
         for trait in self.array_attrs:
             setattr(
                 self,

@@ -7,6 +7,7 @@ from typing import ClassVar
 
 import numpy as np
 import pandas as pd
+import pytest
 from numpy.typing import NDArray
 
 
@@ -62,6 +63,40 @@ def test_Cohorts():
     t1.drop_cohorts(np.array([0, 5]))
     assert np.allclose(t1.a, np.arange(2, 6))
     assert np.allclose(t1.b, np.arange(5, 9))
+
+
+def test_Cohorts_failure():
+    """Test the Cohorts abstract base class failure mode."""
+
+    from pyrealm.demography.core import CohortMethods
+
+    @dataclass
+    class TestClass(CohortMethods):
+        """Simple test class implementing the ABC."""
+
+        array_attrs: ClassVar[tuple[str, ...]] = ("a", "b")
+
+        a: NDArray[np.float64]
+        b: NDArray[np.float64]
+
+    @dataclass
+    class NotTheSameClass(CohortMethods):
+        """A different simple test class implementing the ABC."""
+
+        array_attrs: ClassVar[tuple[str, ...]] = ("c", "d")
+
+        c: NDArray[np.float64]
+        d: NDArray[np.float64]
+
+    # Create instances
+    t1 = TestClass(a=np.array([1, 2, 3]), b=np.array([4, 5, 6]))
+    t2 = NotTheSameClass(c=np.array([4, 5, 6]), d=np.array([7, 8, 9]))
+
+    # Check that adding a different
+    with pytest.raises(ValueError) as excep:
+        t1.add_cohorts(t2)
+
+    assert str(excep.value) == "Cannot add NotTheSameClass instance to TestClass"
 
 
 def test_PandasExporter_Cohorts_multiple_inheritance():
