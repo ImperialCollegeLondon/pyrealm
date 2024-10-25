@@ -524,7 +524,7 @@ class StemTraits(PandasExporter, CohortMethods):
 
         if self.validate:
             _validate_demography_array_arguments(
-                trait_args={k: getattr(self, k) for k in self.array_attrs},
+                trait_args={k: getattr(self, k) for k in self.array_attrs}
             )
 
         self._n_stems = len(self.a_hd)
