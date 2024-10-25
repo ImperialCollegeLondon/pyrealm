@@ -12,7 +12,12 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.demography.core import CohortMethods, PandasExporter
+from pyrealm.demography.core import (
+    CohortMethods,
+    PandasExporter,
+    _enforce_2D,
+    _validate_demography_array_arguments,
+)
 from pyrealm.demography.flora import Flora, StemTraits
 
 
@@ -79,8 +84,11 @@ def calculate_heights(
 
     if validate:
         _validate_t_model_args(pft_args=[h_max, a_hd], size_args=[dbh])
+        _validate_demography_array_arguments(
+            trait_args={"h_max": h_max, "a_hd": a_hd}, size_args={"dbh": dbh}
+        )
 
-    return h_max * (1 - np.exp(-a_hd * dbh / h_max))
+    return _enforce_2D(h_max * (1 - np.exp(-a_hd * dbh / h_max)))
 
 
 def calculate_dbh_from_height(

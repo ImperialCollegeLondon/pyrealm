@@ -205,48 +205,75 @@ def _validate_z_qz_args(
 
 
 def _validate_demography_array_arguments(
-    stem_args: dict[str, NDArray],
-    size_args: dict[str, NDArray],
+    trait_args: dict[str, NDArray],
+    size_args: dict[str, NDArray] = {},
 ) -> None:
-    """Shared validation for T model function inputs.
+    """Shared validation for demography inputs.
+
+    Trait arguments of functions should always be 1 dimensional arrays (row arrays) or
+    arrays of size 1 ('scalar'), representing a trait value that is constant within a
+    cohort and across size calculations.
 
     Args:
-        stem_args: A dictionary of row arrays representing trait values, keyed by the
+        trait_args: A dictionary of row arrays representing trait values, keyed by the
             trait names.
-        size_args: A list of arrays representing points in the stem size and growth
-            allometries at which to evaluate functions.
+        size_args: A dictionary of arrays representing size values for stem allometry or
+            canopy height at which to evaluate functions, keyed by the value name.
     """
 
-    # Check PFT inputs are all equal sized 1D row arrays.
+    # Check PFT inputs are all equal sized 1D row arrays or a mix of 1D rows and scalar
+    # values
     try:
-        pft_args_shape = check_input_shapes(*stem_args.values())
+        trait_args_shape = check_input_shapes(*trait_args.values())
     except ValueError:
         raise ValueError(
-            f"Stem arguments are not of equal length: {','.join(stem_args.keys())}"
+            f"Trait arguments are not equal shaped or "
+            f"scalar: {','.join(trait_args.keys())}"
         )
 
-    if len(pft_args_shape) > 1:
+    if len(trait_args_shape) > 1:
         raise ValueError(
-            f"Stem arguments are not 1D arrays of trait "
-            f"values {','.join(stem_args.keys())}"
+            f"Trait arguments are not 1D arrays: {','.join(trait_args.keys())}"
         )
 
-    # Check size inputs
-    try:
-        size_args_shape = check_input_shapes(*size_args.values())
-    except ValueError:
-        raise ValueError(
-            f"Arrays of size data are not congruent: {','.join(size_args.keys())}"
-        )
-
-    # Explicitly check to see if the size arrays are row arrays and - if so - enforce
-    # that they are the same length.
+    # Check size inputs if they are provided.
     if size_args:
-        if len(size_args_shape) == 1 and not pft_args_shape == size_args_shape:
-            raise ValueError("Stem and size inputs are row arrays of unequal length.")
-
-        # Otherwise use np.broadcast_shapes to catch issues
         try:
-            _ = np.broadcast_shapes(pft_args_shape, size_args_shape)
+            size_args_shape = check_input_shapes(*size_args.values())
         except ValueError:
-            raise ValueError("Stem and size inputs are not congruent.")
+            raise ValueError(
+                f"Size arguments are not equal shaped or "
+                f"scalar: {','.join(size_args.keys())}"
+            )
+
+        # Use np.broadcast_shapes to test whether the shape of the size args are
+        # compatible with the traits args
+        try:
+            _ = np.broadcast_shapes(trait_args_shape, size_args_shape)
+        except ValueError:
+            raise ValueError(
+                f"The array shapes of the trait {trait_args_shape} and "
+                f"size {size_args_shape} arguments are not congruent."
+            )
+
+
+def _enforce_2D(array: NDArray) -> NDArray:
+    """Utility conversion to force two dimensional outputs.
+
+    Depending on the input dimensions, the calculations in the T Model and othe
+    demography models can return scalar, one dimensional or two dimensional arrays. This
+    utility function is used to give a consistent output array dimensionality.
+
+    Args:
+        array: A numpy array
+    """
+
+    match array.ndim:
+        case 0:
+            return array[None, None]
+        case 1:
+            return array[None, :]
+        case 2:
+            return array
+        case _:
+            raise ValueError("Demography array of more than 2 dimensions.")

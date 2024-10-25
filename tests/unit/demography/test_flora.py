@@ -337,18 +337,20 @@ def test_flora_from_csv(filename, outcome):
 def test_flora_get_stem_traits(fixture_flora, pft_names, outcome):
     """Test Flora.get_stem_traits.
 
-    This tests the method and failure mode, but also checks that the validation is
-    correctly supressed.
+    This tests the method and failure mode, but also checks that the validation with the
+    StemTraits constructor is correctly suppressed.
     """
     with (
         outcome as excep,
-        patch("pyrealm.demography.core._validate_demography_array_arguments") as fmock,
+        patch(
+            "pyrealm.demography.core._validate_demography_array_arguments"
+        ) as val_func_patch,
     ):
         # Call the method
         stem_traits = fixture_flora.get_stem_traits(pft_names=pft_names)
 
         # Check the validator function is not called
-        assert not fmock.called
+        assert not val_func_patch.called
 
         # Test the length of the attributes
         for trt in stem_traits.array_attrs:
