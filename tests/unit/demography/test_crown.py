@@ -586,7 +586,8 @@ def test_CrownProfile(fixture_community):
     """Test the CrownProfile class.
 
     This implements a subset of the tests in the more detailed function checks above to
-    validate that this wrapper class works as intended.
+    validate that this wrapper class works as intended. It also tests the inherited
+    to_pandas method.
     """
 
     from pyrealm.demography.crown import CrownProfile
@@ -615,3 +616,13 @@ def test_CrownProfile(fixture_community):
         np.diag(crown_profile.projected_leaf_area),
         fixture_community.stem_allometry.crown_area,
     )
+
+    # Test the inherited to_pandas method
+    df = crown_profile.to_pandas()
+
+    assert df.shape == (
+        crown_profile._n_stems * crown_profile._n_pred,
+        len(crown_profile.array_attrs),
+    )
+
+    assert set(crown_profile.array_attrs) == set(df.columns)

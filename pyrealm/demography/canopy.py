@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import InitVar, dataclass, field
+from typing import ClassVar
 
 import numpy as np
 from numpy.typing import NDArray
 from scipy.optimize import root_scalar  # type: ignore [import-untyped]
 
 from pyrealm.demography.community import Community
+from pyrealm.demography.core import PandasExporter
 from pyrealm.demography.crown import (
     CrownProfile,
     _validate_z_qz_args,
@@ -168,7 +170,7 @@ def fit_perfect_plasticity_approximation(
 
 
 @dataclass
-class CohortCanopyData:
+class CohortCanopyData(PandasExporter):
     """Dataclass holding canopy data across cohorts.
 
     The cohort canopy data consists of a set of attributes represented as two
@@ -207,6 +209,15 @@ class CohortCanopyData:
             the plant functional type of each cohort.
         cell_area: A float setting the total canopy area available to the cohorts.
     """
+
+    array_attrs: ClassVar[tuple[str, ...]] = (
+        "stem_leaf_area",
+        "lai",
+        "f_trans",
+        "f_abs",
+        "cohort_fapar",
+        "stem_fapar",
+    )
 
     # Init vars
     projected_leaf_area: InitVar[NDArray[np.float64]]
@@ -284,7 +295,7 @@ class CohortCanopyData:
 
 
 @dataclass
-class CommunityCanopyData:
+class CommunityCanopyData(PandasExporter):
     """Dataclass holding community-wide canopy data.
 
     The community canopy data consists of a set of attributes represented as one
@@ -302,6 +313,14 @@ class CommunityCanopyData:
             heights, as calculated as
             :attr:`CohortCanopyData.f_trans<pyrealm.demography.canopy.CohortCanopyData.f_trans>`.
     """
+
+    array_attrs: ClassVar[tuple[str, ...]] = (
+        "f_trans",
+        "f_abs",
+        "transmission_profile",
+        "extinction_profile",
+        "fapar",
+    )
 
     # Init vars
     cohort_transmissivity: InitVar[NDArray[np.float64]]
