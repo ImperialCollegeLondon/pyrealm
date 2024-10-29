@@ -98,6 +98,7 @@ class CoreConst(ConstantsClass):
     k_d = 0.50  # angular coefficient of transmittivity (Linacre, 1968)
     k_fFEC = 2.04  # from flux to energy conversion, umol/J (Meek et al., 1984)
     k_Gsc = 1360.8  # solar constant, W/m^2 (Kopp & Lean, 2011)
+    k_secs_d = 86400  # seconds in one solar day
 
     # Paleoclimate variables:
     ke = 0.0167  # eccentricity for 2000 CE (Berger, 1978)
