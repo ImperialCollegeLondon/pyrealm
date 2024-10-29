@@ -11,7 +11,6 @@ from typing import ClassVar
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.core.utilities import check_input_shapes
 from pyrealm.demography.core import (
     CohortMethods,
     PandasExporter,
@@ -19,43 +18,6 @@ from pyrealm.demography.core import (
     _validate_demography_array_arguments,
 )
 from pyrealm.demography.flora import Flora, StemTraits
-
-
-def _validate_t_model_args(pft_args: list[NDArray], size_args: list[NDArray]) -> None:
-    """Shared validation for T model function inputs.
-
-    Args:
-        pft_args: A list of row arrays representing trait values
-        size_args: A list of arrays representing points in the stem size and growth
-            allometries at which to evaluate functions.
-    """
-
-    # Check PFT inputs all line up and are 1D (row) arrays
-    try:
-        pft_args_shape = check_input_shapes(*pft_args)
-    except ValueError:
-        raise ValueError("PFT trait values are not of equal length")
-
-    if len(pft_args_shape) > 1:
-        raise ValueError("T model functions only accept 1D arrays of PFT trait values")
-
-    # Check size and growth inputs
-    try:
-        size_args_shape = check_input_shapes(*size_args)
-    except ValueError:
-        raise ValueError("Size arrays are not of equal length")
-
-    # Explicitly check to see if the size arrays are row arrays and - if so - enforce
-    # that they are the same length.abs
-
-    if len(size_args_shape) == 1 and not pft_args_shape == size_args_shape:
-        raise ValueError("Trait and size inputs are row arrays of unequal length.")
-
-    # Otherwise use np.broadcast_shapes to catch issues
-    try:
-        _ = np.broadcast_shapes(pft_args_shape, size_args_shape)
-    except ValueError:
-        raise ValueError("PFT and size inputs to T model function are not compatible.")
 
 
 def calculate_heights(
@@ -83,7 +45,6 @@ def calculate_heights(
     """
 
     if validate:
-        _validate_t_model_args(pft_args=[h_max, a_hd], size_args=[dbh])
         _validate_demography_array_arguments(
             trait_args={"h_max": h_max, "a_hd": a_hd}, size_args={"dbh": dbh}
         )
@@ -126,7 +87,10 @@ def calculate_dbh_from_height(
     """
 
     if validate:
-        _validate_t_model_args(pft_args=[h_max, a_hd], size_args=[stem_height])
+        _validate_demography_array_arguments(
+            trait_args={"h_max": h_max, "a_hd": a_hd},
+            size_args={"stem_height": stem_height},
+        )
 
     # The equation here blows up in a couple of ways:
     # - H > h_max leads to negative logs which generates np.nan with an invalid value
@@ -138,7 +102,7 @@ def calculate_dbh_from_height(
     with np.testing.suppress_warnings() as sup:
         sup.filter(RuntimeWarning, "divide by zero encountered in divide")
         sup.filter(RuntimeWarning, "invalid value encountered in log")
-        return (h_max * np.log(h_max / (h_max - stem_height))) / a_hd
+        return _enforce_2D((h_max * np.log(h_max / (h_max - stem_height))) / a_hd)
 
 
 def calculate_crown_areas(
@@ -169,9 +133,12 @@ def calculate_crown_areas(
     """
 
     if validate:
-        _validate_t_model_args(pft_args=[ca_ratio, a_hd], size_args=[dbh, stem_height])
+        _validate_demography_array_arguments(
+            trait_args={"ca_ratio": ca_ratio, "a_hd": a_hd},
+            size_args={"dbh": dbh, "stem_height": stem_height},
+        )
 
-    return ((np.pi * ca_ratio) / (4 * a_hd)) * dbh * stem_height
+    return _enforce_2D(((np.pi * ca_ratio) / (4 * a_hd)) * dbh * stem_height)
 
 
 def calculate_crown_fractions(
@@ -198,9 +165,12 @@ def calculate_crown_fractions(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
-        _validate_t_model_args(pft_args=[a_hd], size_args=[dbh, stem_height])
+        _validate_demography_array_arguments(
+            trait_args={"a_hd": a_hd},
+            size_args={"dbh": dbh, "stem_height": stem_height},
+        )
 
-    return stem_height / (a_hd * dbh)
+    return _enforce_2D(stem_height / (a_hd * dbh))
 
 
 def calculate_stem_masses(
@@ -226,9 +196,12 @@ def calculate_stem_masses(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
-        _validate_t_model_args(pft_args=[rho_s], size_args=[dbh, stem_height])
+        _validate_demography_array_arguments(
+            trait_args={"rho_s": rho_s},
+            size_args={"dbh": dbh, "stem_height": stem_height},
+        )
 
-    return (np.pi / 8) * rho_s * (dbh**2) * stem_height
+    return _enforce_2D((np.pi / 8) * rho_s * (dbh**2) * stem_height)
 
 
 def calculate_foliage_masses(
@@ -254,9 +227,12 @@ def calculate_foliage_masses(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
-        _validate_t_model_args(pft_args=[sla, lai], size_args=[crown_area])
+        _validate_demography_array_arguments(
+            trait_args={"sla": sla, "lai": lai},
+            size_args={"crown_area": crown_area},
+        )
 
-    return crown_area * lai * (1 / sla)
+    return _enforce_2D(crown_area * lai * (1 / sla))
 
 
 def calculate_sapwood_masses(
@@ -287,12 +263,18 @@ def calculate_sapwood_masses(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
-        _validate_t_model_args(
-            pft_args=[rho_s, ca_ratio],
-            size_args=[stem_height, crown_area, crown_fraction],
+        _validate_demography_array_arguments(
+            trait_args={"rho_s": rho_s, "ca_ratio": ca_ratio},
+            size_args={
+                "stem_height": stem_height,
+                "crown_area": crown_area,
+                "crown_fraction": crown_fraction,
+            },
         )
 
-    return crown_area * rho_s * stem_height * (1 - crown_fraction / 2) / ca_ratio
+    return _enforce_2D(
+        crown_area * rho_s * stem_height * (1 - crown_fraction / 2) / ca_ratio
+    )
 
 
 def calculate_crown_z_max(
@@ -318,7 +300,8 @@ def calculate_crown_z_max(
         stem_height: Stem height of individuals
     """
 
-    return stem_height * z_max_prop
+    # TBD add validation and testing
+    return _enforce_2D(stem_height * z_max_prop)
 
 
 def calculate_crown_r0(
@@ -344,7 +327,8 @@ def calculate_crown_r0(
     # Scaling factor to give expected A_c (crown area) at
     # z_m (height of maximum crown radius)
 
-    return 1 / q_m * np.sqrt(crown_area / np.pi)
+    # TBD add validation and testing
+    return _enforce_2D(1 / q_m * np.sqrt(crown_area / np.pi))
 
 
 def calculate_whole_crown_gpp(
@@ -374,11 +358,12 @@ def calculate_whole_crown_gpp(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
-        _validate_t_model_args(
-            pft_args=[lai, par_ext], size_args=[potential_gpp, crown_area]
+        _validate_demography_array_arguments(
+            trait_args={"lai": lai, "par_ext": par_ext},
+            size_args={"potential_gpp": potential_gpp, "crown_area": crown_area},
         )
 
-    return potential_gpp * crown_area * (1 - np.exp(-(par_ext * lai)))
+    return _enforce_2D(potential_gpp * crown_area * (1 - np.exp(-(par_ext * lai))))
 
 
 def calculate_sapwood_respiration(
@@ -401,9 +386,12 @@ def calculate_sapwood_respiration(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
-        _validate_t_model_args(pft_args=[resp_s], size_args=[sapwood_mass])
+        _validate_demography_array_arguments(
+            trait_args={"resp_s": resp_s},
+            size_args={"sapwood_mass": sapwood_mass},
+        )
 
-    return sapwood_mass * resp_s
+    return _enforce_2D(sapwood_mass * resp_s)
 
 
 def calculate_foliar_respiration(
@@ -428,9 +416,12 @@ def calculate_foliar_respiration(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
-        _validate_t_model_args(pft_args=[resp_f], size_args=[whole_crown_gpp])
+        _validate_demography_array_arguments(
+            trait_args={"resp_f": resp_f},
+            size_args={"whole_crown_gpp": whole_crown_gpp},
+        )
 
-    return whole_crown_gpp * resp_f
+    return _enforce_2D(whole_crown_gpp * resp_f)
 
 
 def calculate_fine_root_respiration(
@@ -458,9 +449,16 @@ def calculate_fine_root_respiration(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
-        _validate_t_model_args(pft_args=[zeta, sla, resp_r], size_args=[foliage_mass])
+        _validate_demography_array_arguments(
+            trait_args={
+                "zeta": zeta,
+                "sla": sla,
+                "resp_r": resp_r,
+            },
+            size_args={"foliage_mass": foliage_mass},
+        )
 
-    return zeta * sla * foliage_mass * resp_r
+    return _enforce_2D(zeta * sla * foliage_mass * resp_r)
 
 
 def calculate_net_primary_productivity(
@@ -497,21 +495,24 @@ def calculate_net_primary_productivity(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
-        _validate_t_model_args(
-            pft_args=[yld],
-            size_args=[
-                whole_crown_gpp,
-                foliar_respiration,
-                fine_root_respiration,
-                sapwood_respiration,
-            ],
+        _validate_demography_array_arguments(
+            trait_args={"yld": yld},
+            size_args={
+                "whole_crown_gpp": whole_crown_gpp,
+                "foliar_respiration": foliar_respiration,
+                "fine_root_respiration": fine_root_respiration,
+                "sapwood_respiration": sapwood_respiration,
+            },
         )
 
-    return yld * (
-        whole_crown_gpp
-        - foliar_respiration
-        - fine_root_respiration
-        - sapwood_respiration
+    return _enforce_2D(
+        yld
+        * (
+            whole_crown_gpp
+            - foliar_respiration
+            - fine_root_respiration
+            - sapwood_respiration
+        )
     )
 
 
@@ -545,11 +546,12 @@ def calculate_foliage_and_fine_root_turnover(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
-        _validate_t_model_args(
-            pft_args=[sla, zeta, tau_f, tau_r], size_args=[foliage_mass]
+        _validate_demography_array_arguments(
+            trait_args={"sla": sla, "zeta": zeta, "tau_f": tau_f, "tau_r": tau_r},
+            size_args={"foliage_mass": foliage_mass},
         )
 
-    return foliage_mass * ((1 / tau_f) + (sla * zeta / tau_r))
+    return _enforce_2D(foliage_mass * ((1 / tau_f) + (sla * zeta / tau_r)))
 
 
 def calculate_growth_increments(
@@ -640,11 +642,23 @@ def calculate_growth_increments(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
-        _validate_t_model_args(
-            pft_args=[rho_s, a_hd, h_max, lai, ca_ratio, sla, zeta],
-            size_args=[npp, turnover, dbh, stem_height],
+        _validate_demography_array_arguments(
+            trait_args={
+                "rho_s": rho_s,
+                "a_hd": a_hd,
+                "h_max": h_max,
+                "lai": lai,
+                "ca_ratio": ca_ratio,
+                "sla": sla,
+                "zeta": zeta,
+            },
+            size_args={
+                "npp": npp,
+                "turnover": turnover,
+                "dbh": dbh,
+                "stem_height": stem_height,
+            },
         )
-
     # Rates of change in stem and foliar
     dWsdt = (
         np.pi
@@ -662,7 +676,7 @@ def calculate_growth_increments(
     )
 
     # Increment of diameter at breast height
-    delta_d = (npp - turnover) / (dWsdt + dWfdt)
+    delta_d = _enforce_2D((npp - turnover) / (dWsdt + dWfdt))
 
     return (delta_d, dWsdt * delta_d, dWfdt * delta_d)
 

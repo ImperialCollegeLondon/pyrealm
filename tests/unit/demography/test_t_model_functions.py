@@ -25,78 +25,6 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
 
 
 @pytest.mark.parametrize(
-    argnames="pft_args, size_args, outcome, excep_message",
-    argvalues=[
-        pytest.param(
-            [np.ones(4), np.ones(4)],
-            [np.ones(4), np.ones(4)],
-            does_not_raise(),
-            None,
-            id="all_1d_ok",
-        ),
-        pytest.param(
-            [np.ones(5), np.ones(4)],
-            [np.ones(4), np.ones(4)],
-            pytest.raises(ValueError),
-            "PFT trait values are not of equal length",
-            id="pfts_unequal",
-        ),
-        pytest.param(
-            [np.ones(4), np.ones(4)],
-            [np.ones(5), np.ones(4)],
-            pytest.raises(ValueError),
-            "Size arrays are not of equal length",
-            id="shape_unequal",
-        ),
-        pytest.param(
-            [np.ones((4, 2)), np.ones((4, 2))],
-            [np.ones(4), np.ones(4)],
-            pytest.raises(ValueError),
-            "T model functions only accept 1D arrays of PFT trait values",
-            id="pfts_not_row_arrays",
-        ),
-        pytest.param(
-            [np.ones(4), np.ones(4)],
-            [np.ones(5), np.ones(5)],
-            pytest.raises(ValueError),
-            "Trait and size inputs are row arrays of unequal length.",
-            id="sizes_row_array_of_bad_length",
-        ),
-        pytest.param(
-            [np.ones(4), np.ones(4)],
-            [np.ones((5, 1)), np.ones((5, 1))],
-            does_not_raise(),
-            None,
-            id="size_2d_columns_ok",
-        ),
-        pytest.param(
-            [np.ones(4), np.ones(4)],
-            [np.ones((5, 2)), np.ones((5, 2))],
-            pytest.raises(ValueError),
-            "PFT and size inputs to T model function are not compatible.",
-            id="size_2d_not_ok",
-        ),
-        pytest.param(
-            [np.ones(4), np.ones(4)],
-            [np.ones((5, 4)), np.ones((5, 4))],
-            does_not_raise(),
-            None,
-            id="size_2d_weird_but_ok",
-        ),
-    ],
-)
-def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
-    """Test shared input validation function."""
-    from pyrealm.demography.t_model_functions import _validate_t_model_args
-
-    with outcome as excep:
-        _validate_t_model_args(pft_args=pft_args, size_args=size_args)
-        return
-
-    assert str(excep.value).startswith(excep_message)
-
-
-@pytest.mark.parametrize(
     argnames="data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape",
     argvalues=[
         pytest.param(
@@ -105,7 +33,7 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             does_not_raise(),
             None,
             (0, slice(None)),
-            (3,),
+            (1, 3),
             id="row_0",
         ),
         pytest.param(
@@ -114,7 +42,7 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             does_not_raise(),
             None,
             (1, slice(None)),
-            (3,),
+            (1, 3),
             id="row_1",
         ),
         pytest.param(
@@ -123,7 +51,7 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             does_not_raise(),
             None,
             (2, slice(None)),
-            (3,),
+            (1, 3),
             id="row_2",
         ),
         pytest.param(
@@ -132,7 +60,7 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             does_not_raise(),
             None,
             (3, slice(None)),
-            (3,),
+            (1, 3),
             id="row_3",
         ),
         pytest.param(
@@ -141,7 +69,7 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             does_not_raise(),
             None,
             (4, slice(None)),
-            (3,),
+            (1, 3),
             id="row_4",
         ),
         pytest.param(
@@ -150,7 +78,7 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             does_not_raise(),
             None,
             (5, slice(None)),
-            (3,),
+            (1, 3),
             id="row_5",
         ),
         pytest.param(
@@ -220,7 +148,8 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             (0, slice(None)),
             [0, 1, 2, 0],
             pytest.raises(ValueError),
-            "Trait and size inputs are row arrays of unequal length.",
+            "The array shapes of the trait (4,) and size (3,) "
+            "arguments are not congruent.",
             None,
             None,
             id="fail_PFT_and_sizes_rows_but_not_equal_length",
@@ -229,7 +158,7 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             (0, slice(None)),
             np.newaxis,
             pytest.raises(ValueError),
-            "T model functions only accept 1D arrays of PFT trait values",
+            "Trait arguments are not 1D arrays",
             None,
             None,
             id="fail_2D_PFT",
@@ -238,7 +167,8 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             (slice(None), [0, 1]),
             slice(None),
             pytest.raises(ValueError),
-            "PFT and size inputs to T model function are not compatible.",
+            "The array shapes of the trait (3,) and size (6, 2) "
+            "arguments are not congruent.",
             None,
             None,
             id="fail_badly_shaped_2D",
@@ -264,7 +194,8 @@ class TestTModel:
     expected outputs to repeat the single column expectations across (6, 3).
 
     The parameterization also includes three cases that check the failure modes for
-    inputs.
+    inputs. This doesn't exhaustively test all failure modes - there is a more detailed
+    test of _validate_demography_array_arguments in tests/unit/demography/test_core.py
     """
 
     def test_calculate_heights(
@@ -651,7 +582,7 @@ class TestTModel:
 
         assert str(excep.value).startswith(excep_msg)
 
-    def test_calculate_calculate_growth_increments(
+    def test_calculate_growth_increments(
         self,
         rtmodel_data,
         rtmodel_flora,
