@@ -1,10 +1,16 @@
 """Functionality for canopy modelling."""
 
+from __future__ import annotations
+
+from dataclasses import InitVar, dataclass, field
+from typing import ClassVar
+
 import numpy as np
 from numpy.typing import NDArray
 from scipy.optimize import root_scalar  # type: ignore [import-untyped]
 
 from pyrealm.demography.community import Community
+from pyrealm.demography.core import PandasExporter
 from pyrealm.demography.crown import (
     CrownProfile,
     _validate_z_qz_args,
@@ -118,7 +124,7 @@ def fit_perfect_plasticity_approximation(
 
     # Calculate the number of layers to contain the total community crown area
     total_community_crown_area = (
-        community.stem_allometry.crown_area * community.cohort_data["n_individuals"]
+        community.stem_allometry.crown_area * community.cohorts.n_individuals
     ).sum()
     crown_area_per_layer = community.cell_area * (1 - canopy_gap_fraction)
     n_layers = int(np.ceil(total_community_crown_area / crown_area_per_layer))
@@ -144,7 +150,7 @@ def fit_perfect_plasticity_approximation(
                 community.stem_traits.n,
                 community.stem_traits.q_m,
                 community.stem_allometry.crown_z_max,
-                community.cohort_data["n_individuals"],
+                community.cohorts.n_individuals,
                 target_area,
                 False,  # validate
             ),
@@ -161,6 +167,192 @@ def fit_perfect_plasticity_approximation(
         layer_heights[layer] = upper_bound = solution.root
 
     return layer_heights[:, None]
+
+
+@dataclass
+class CohortCanopyData(PandasExporter):
+    """Dataclass holding canopy data across cohorts.
+
+    The cohort canopy data consists of a set of attributes represented as two
+    dimensional arrays. Each row is different height at which canopy properties are
+    required and the columns represent the different cohorts or the identical stem
+    properties of individuals within cohorts.
+
+    The data class:
+
+    1. Takes the projected leaf area at the required heights and then partitions this
+       into the actual leaf area within each layer, the leaf area index across the whole
+       cohort and then then light absorption and transmission fractions of each cohort
+       at each level.
+
+    2. Calculates the community-wide transmission and absorption profiles. These are
+       generated as an instance of the class
+       :class:`~pyrealm.demography.canopy.CommunityCanopyData` and stored in the
+       ``community_data`` attribute.
+
+    3. Allocates the community-wide absorption across cohorts. The total fraction of
+       light absorbed across layers is a community-wide property
+       - each cohort contributes to the cumulative light absorption. Once the light
+       absorbed within a layer of the community is known, this can then be partitioned
+       back to cohorts and individual stems to give the fraction of canopy top
+       radiation intercepted by each stem within each layer.
+
+    Args:
+        projected_leaf_area: A two dimensional array providing projected leaf area for a
+            set of cohorts (columns) at a set of required heights (rows), as for example
+            calculated using the :class:`~pyrealm.demography.crown.CrownProfile` class.
+        n_individuals: A one-dimensional array of the number of individuals in each
+            cohort.
+        pft_lai: A one-dimensional array giving the leaf area index trait for the plant
+            functional type of each cohort.
+        pft_par_ext: A one-dimensional array giving the light extinction coefficient for
+            the plant functional type of each cohort.
+        cell_area: A float setting the total canopy area available to the cohorts.
+    """
+
+    array_attrs: ClassVar[tuple[str, ...]] = (
+        "stem_leaf_area",
+        "lai",
+        "f_trans",
+        "f_abs",
+        "cohort_fapar",
+        "stem_fapar",
+    )
+
+    # Init vars
+    projected_leaf_area: InitVar[NDArray[np.float64]]
+    """An array of the stem projected leaf area for each cohort at each of the required
+    heights."""
+    n_individuals: InitVar[NDArray[np.int_]]
+    """The number of individuals for each cohort."""
+    pft_lai: InitVar[NDArray[np.float64]]
+    """The leaf area index of the plant functional type for each cohort."""
+    pft_par_ext: InitVar[NDArray[np.float64]]
+    """The extinction coefficient of the plant functional type for each cohort."""
+    cell_area: InitVar[float]
+    """The area available to the community."""
+
+    # Computed variables
+    stem_leaf_area: NDArray[np.float64] = field(init=False)
+    """The leaf area of the crown model for each cohort by layer."""
+    lai: NDArray[np.float64] = field(init=False)
+    """The leaf area index for each cohort by layer."""
+    f_trans: NDArray[np.float64] = field(init=False)
+    """The fraction of light transmitted by each cohort by layer."""
+    f_abs: NDArray[np.float64] = field(init=False)
+    """The fraction of light absorbed by each cohort by layer."""
+    cohort_fapar: NDArray[np.float64] = field(init=False)
+    """The fraction of absorbed radiation for each cohort by layer."""
+    stem_fapar: NDArray[np.float64] = field(init=False)
+    """The fraction of absorbed radiation for each stem by layer."""
+
+    # Community wide attributes in their own class
+    community_data: CommunityCanopyData = field(init=False)
+
+    def __post_init__(
+        self,
+        projected_leaf_area: NDArray[np.float64],
+        n_individuals: NDArray[np.int_],
+        pft_lai: NDArray[np.float64],
+        pft_par_ext: NDArray[np.float64],
+        cell_area: float,
+    ) -> None:
+        """Calculates cohort canopy attributes from the input data."""
+        # Partition the projected leaf area into the leaf area in each layer for each
+        # stem and then scale up to the cohort leaf area in each layer.
+        self.stem_leaf_area = np.diff(projected_leaf_area, axis=0, prepend=0)
+
+        # Calculate the leaf area index per layer per stem, using the stem
+        # specific leaf area index values. LAI is a value per m2, so scale back down by
+        # the available community area.
+        self.lai = (
+            self.stem_leaf_area * n_individuals * pft_lai
+        ) / cell_area  # self.filled_community_area
+
+        # Calculate the Beer-Lambert light transmission and absorption components per
+        # layer and cohort
+        self.f_trans = np.exp(-pft_par_ext * self.lai)
+        self.f_abs = 1 - self.f_trans
+
+        # Calculate the community wide properties
+        self.community_data = CommunityCanopyData(cohort_transmissivity=self.f_trans)
+
+        # Calculate the fapar profile across cohorts and layers
+        # * The first part of the equation is calculating the relative absorption of
+        #   each cohort within each layer
+        # * Each layer is then multiplied by fraction of the total light absorbed in the
+        #   layer
+        # * The resulting matrix can be multiplied by a canopy top PPFD to generate the
+        #   flux absorbed within each layer for each cohort.
+
+        # Divide the community wide f_APAR among the cohorts, based on their relative
+        # f_abs values
+        self.cohort_fapar = (
+            self.f_abs / self.f_abs.sum(axis=1)[:, None]
+        ) * self.community_data.fapar[:, None]
+        # Partition cohort f_APAR between the number of stems
+        self.stem_fapar = self.cohort_fapar / n_individuals
+
+
+@dataclass
+class CommunityCanopyData(PandasExporter):
+    """Dataclass holding community-wide canopy data.
+
+    The community canopy data consists of a set of attributes represented as one
+    dimensional arrays, with each entry representing a different vertical height at
+    which canopy properties are required.
+
+    The data class takes the per cohort light transmission at the required heights and
+    calculates the aggregate transmission and absorption fractions within layers across
+    the whole community. It then calculates the cumulative extinction and transmission
+    profiles across layers and the hence the actual fraction of canopy top radiation
+    intercepted across layers (:math:`f_{APAR}`).
+
+    Args:
+        cohort_transmissivity: The per cohort light transmissivity across the required
+            heights, as calculated as
+            :attr:`CohortCanopyData.f_trans<pyrealm.demography.canopy.CohortCanopyData.f_trans>`.
+    """
+
+    array_attrs: ClassVar[tuple[str, ...]] = (
+        "f_trans",
+        "f_abs",
+        "transmission_profile",
+        "extinction_profile",
+        "fapar",
+    )
+
+    # Init vars
+    cohort_transmissivity: InitVar[NDArray[np.float64]]
+    """An array providing the per cohort light transmissivity at each of the required
+    heights."""
+
+    # Calculated variables
+    f_trans: NDArray[np.float64] = field(init=False)
+    """The fraction of light transmitted by the whole community within a layer."""
+    f_abs: NDArray[np.float64] = field(init=False)
+    """The fraction of light absorbed by the whole community within a layer."""
+    transmission_profile: NDArray[np.float64] = field(init=False)
+    """The light transmission profile for the whole community by layer."""
+    extinction_profile: NDArray[np.float64] = field(init=False)
+    """The light extinction profile for the whole community by layer."""
+    fapar: NDArray[np.float64] = field(init=False)
+    """The fraction of absorbed radiation for the whole community across layers."""
+
+    def __post_init__(self, cohort_transmissivity: NDArray[np.float64]) -> None:
+        """Calculates community-wide canopy attributes from the input data."""
+
+        # Aggregate across cohorts into a layer wide transmissivity
+        self.f_trans = cohort_transmissivity.prod(axis=1)
+
+        # Calculate the canopy wide light extinction per layer
+        self.f_abs = 1 - self.f_trans
+
+        # Calculate cumulative light transmission and extinction profiles
+        self.transmission_profile = np.cumprod(self.f_trans)
+        self.extinction_profile = 1 - self.transmission_profile
+
+        self.fapar = -np.diff(self.transmission_profile, prepend=1)
 
 
 class Canopy:
@@ -214,28 +406,10 @@ class Canopy:
 
         self.crown_profile: CrownProfile
         """The crown profiles of the community stems at the provided layer heights."""
-        self.stem_leaf_area: NDArray[np.float64]
-        """The leaf area of the crown model for each cohort by layer."""
-        self.cohort_lai: NDArray[np.float64]
-        """The leaf area index for each cohort by layer."""
-        self.cohort_f_trans: NDArray[np.float64]
-        """The fraction of light transmitted by each cohort by layer."""
-        self.cohort_f_abs: NDArray[np.float64]
-        """The fraction of light absorbed by each cohort by layer."""
-        self.f_trans: NDArray[np.float64]
-        """The fraction of light transmitted by the whole community by layer."""
-        self.f_abs: NDArray[np.float64]
-        """The fraction of light absorbed by the whole community by layer."""
-        self.transmission_profile: NDArray[np.float64]
-        """The light transmission profile for the whole community by layer."""
-        self.extinction_profile: NDArray[np.float64]
-        """The light extinction profile for the whole community by layer."""
-        self.fapar: NDArray[np.float64]
-        """The fraction of absorbed radiation for the whole community by layer."""
-        self.cohort_fapar: NDArray[np.float64]
-        """The fraction of absorbed radiation for each cohort by layer."""
-        self.stem_fapar: NDArray[np.float64]
-        """The fraction of absorbed radiation for each stem by layer."""
+        self.cohort_data: CohortCanopyData
+        """The per-cohort canopy data."""
+        self.community_data: CommunityCanopyData
+        """The community-wide canopy data."""
         self.filled_community_area: float
         """The area filled by crown after accounting for the crown gap fraction."""
 
@@ -282,45 +456,15 @@ class Canopy:
             z=self.heights,
         )
 
-        # Partition the projected leaf area into the leaf area in each layer for each
-        # stem and then scale up to the cohort leaf area in each layer.
-        self.stem_leaf_area = np.diff(
-            self.crown_profile.projected_leaf_area, axis=0, prepend=0
+        # Calculate the per cohort canopy components (LAI, f_trans, f_abs) from the
+        # projected leaf area for each stem at the layer heights
+        self.cohort_data = CohortCanopyData(
+            projected_leaf_area=self.crown_profile.projected_leaf_area,
+            n_individuals=community.cohorts.n_individuals,
+            pft_lai=community.stem_traits.lai,
+            pft_par_ext=community.stem_traits.par_ext,
+            cell_area=community.cell_area,
         )
 
-        # Calculate the leaf area index per layer per stem, using the stem
-        # specific leaf area index values. LAI is a value per m2, so scale back down by
-        # the available community area.
-        self.cohort_lai = (
-            self.stem_leaf_area
-            * community.cohort_data["n_individuals"]
-            * community.stem_traits.lai
-        ) / community.cell_area  # self.filled_community_area
-
-        # Calculate the Beer-Lambert light transmission and absorption components per
-        # layer and cohort
-        self.cohort_f_trans = np.exp(-community.stem_traits.par_ext * self.cohort_lai)
-        self.cohort_f_abs = 1 - self.cohort_f_trans
-
-        # Aggregate across cohorts into a layer wide transimissivity
-        self.f_trans = self.cohort_f_trans.prod(axis=1)
-
-        # Calculate the canopy wide light extinction per layer
-        self.f_abs = 1 - self.f_trans
-
-        # Calculate cumulative light transmission and extinction profiles
-        self.transmission_profile = np.cumprod(self.f_trans)
-        self.extinction_profile = 1 - self.transmission_profile
-
-        # Calculate the fapar profile across cohorts and layers
-        # * The first part of the equation is calculating the relative absorption of
-        #   each cohort within each layer
-        # * Each layer is then multiplied by fraction of the total light absorbed in the
-        #   layer
-        # * The resulting matrix can be multiplied by a canopy top PPFD to generate the
-        #   flux absorbed within each layer for each cohort.
-        self.fapar = -np.diff(self.transmission_profile, prepend=1)
-        self.cohort_fapar = (
-            self.cohort_f_abs / self.cohort_f_abs.sum(axis=1)[:, None]
-        ) * self.fapar[:, None]
-        self.stem_fapar = self.cohort_fapar / community.cohort_data["n_individuals"]
+        # Create a shorter reference to the community data
+        self.community_data = self.cohort_data.community_data

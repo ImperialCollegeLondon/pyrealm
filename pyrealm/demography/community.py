@@ -84,36 +84,50 @@ Initialize a Community into an area of 1000 square meter with the given cohort d
 ...     cell_id=1,
 ...     cell_area=1000.0,
 ...     flora=flora,
-...     cohort_dbh_values=cohort_dbh_values,
-...     cohort_n_individuals=cohort_n_individuals,
-...     cohort_pft_names=cohort_pft_names
+...     cohorts=Cohorts(
+...         dbh_values=cohort_dbh_values,
+...         n_individuals=cohort_n_individuals,
+...         pft_names=cohort_pft_names,
+...     ),
 ... )
 
-Convert some of the data to a :class:`pandas.DataFrame` for nicer display and show some
-of the calculated T Model predictions:
+The data in the Community class is stored under three attributes, each of which stores
+an instance of a dataclass holding related parts of the community data. All have a
+``to_pandas`` method that can be used to visualise and explore the data:
 
->>> pd.DataFrame({
-...    'name': community.stem_traits.name,
-...    'dbh': community.stem_allometry.dbh,
-...    'n_individuals': community.cohort_data["n_individuals"],
-...    'stem_height': community.stem_allometry.stem_height,
-...    'crown_area': community.stem_allometry.crown_area,
-...    'stem_mass': community.stem_allometry.stem_mass,
-... })
-              name    dbh  n_individuals  stem_height  crown_area  stem_mass
-0   Evergreen Tree  0.100            100     9.890399    2.459835   8.156296
-1  Deciduous Shrub  0.030            200     2.110534    0.174049   0.134266
-2   Evergreen Tree  0.120            150    11.436498    3.413238  13.581094
-3  Deciduous Shrub  0.025            180     1.858954    0.127752   0.082126
+>>> community.cohorts.to_pandas()
+   dbh_values  n_individuals        pft_names
+0       0.100            100   Evergreen Tree
+1       0.030            200  Deciduous Shrub
+2       0.120            150   Evergreen Tree
+3       0.025            180  Deciduous Shrub
+
+>>> community.stem_allometry.to_pandas()[
+...     ["stem_height", "crown_area", "stem_mass", "crown_r0", "crown_z_max"]
+... ]
+   stem_height  crown_area  stem_mass  crown_r0  crown_z_max
+0     9.890399    2.459835   8.156296  0.339477     7.789552
+1     2.110534    0.174049   0.134266  0.083788     1.642777
+2    11.436498    3.413238  13.581094  0.399890     9.007241
+3     1.858954    0.127752   0.082126  0.071784     1.446955
+
+>>> community.stem_traits.to_pandas()[
+...     ["name", "a_hd", "ca_ratio", "sla", "par_ext", "q_m",  "z_max_prop"]
+... ]
+              name   a_hd  ca_ratio   sla  par_ext       q_m  z_max_prop
+0   Evergreen Tree  120.0     380.0  12.0      0.6  2.606561    0.787587
+1  Deciduous Shrub  100.0     350.0  15.0      0.4  2.809188    0.778371
+2   Evergreen Tree  120.0     380.0  12.0      0.6  2.606561    0.787587
+3  Deciduous Shrub  100.0     350.0  15.0      0.4  2.809188    0.778371
 """  # noqa: D205
 
 from __future__ import annotations
 
 import json
 import sys
-from dataclasses import InitVar, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import numpy as np
 import pandas as pd
@@ -122,6 +136,7 @@ from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
 from pyrealm.core.utilities import check_input_shapes
+from pyrealm.demography.core import CohortMethods, PandasExporter
 from pyrealm.demography.flora import Flora, StemTraits
 from pyrealm.demography.t_model_functions import StemAllometry
 
@@ -131,6 +146,48 @@ if sys.version_info[:2] >= (3, 11):
 else:
     import tomli as tomllib
     from tomli import TOMLDecodeError
+
+
+@dataclass
+class Cohorts(PandasExporter, CohortMethods):
+    """A dataclass to hold data for a set of plant cohorts.
+
+    The attributes should be numpy arrays of equal length, containing an entry for each
+    cohort in the data class.
+    """
+
+    # A class variable setting the attribute names of traits.
+    array_attrs: ClassVar[tuple[str, ...]] = tuple(
+        ["dbh_values", "n_individuals", "pft_names"]
+    )
+
+    # Instance attributes
+    dbh_values: NDArray[np.float64]
+    n_individuals: NDArray[np.int_]
+    pft_names: NDArray[np.str_]
+    n_cohorts: int = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Validation of cohorts data."""
+
+        # TODO - validation - maybe make this optional to reduce workload within
+        # simulations
+
+        # Check cohort data types
+        if not (
+            isinstance(self.dbh_values, np.ndarray)
+            and isinstance(self.n_individuals, np.ndarray)
+            and isinstance(self.pft_names, np.ndarray)
+        ):
+            raise ValueError("Cohort data not passed as numpy arrays")
+
+        # Check the cohort inputs are of equal length
+        try:
+            check_input_shapes(self.dbh_values, self.n_individuals, self.dbh_values)
+        except ValueError:
+            raise ValueError("Cohort arrays are of unequal length")
+
+        self.n_cohorts = len(self.dbh_values)
 
 
 class CohortSchema(Schema):
@@ -224,26 +281,27 @@ class CommunityStructuredDataSchema(Schema):
     )
 
     @post_load
-    def cohort_objects_to_arrays(self, data: dict, **kwargs: Any) -> dict:
+    def convert_to_community_args(self, data: dict, **kwargs: Any) -> dict[str, Any]:
         """Convert cohorts to arrays.
 
-        This post load method converts the cohort objects into arrays, which is the
-        format used to initialise a Community object.
+        This post load method converts the cohort arrays into a Cohorts objects and
+        packages the data up into the required arguments used to initialise a Community
+        object.
 
         Args:
             data: Data passed to the validator
             kwargs: Additional keyword arguments passed by marshmallow
         """
 
-        data["cohort_dbh_values"] = np.array([c["dbh_value"] for c in data["cohorts"]])
-        data["cohort_n_individuals"] = np.array(
-            [c["n_individuals"] for c in data["cohorts"]]
+        return dict(
+            cell_id=data["cell_id"],
+            cell_area=data["cell_area"],
+            cohorts=Cohorts(
+                dbh_values=np.array([c["dbh_value"] for c in data["cohorts"]]),
+                n_individuals=np.array([c["n_individuals"] for c in data["cohorts"]]),
+                pft_names=np.array([c["pft_name"] for c in data["cohorts"]]),
+            ),
         )
-        data["cohort_pft_names"] = np.array([c["pft_name"] for c in data["cohorts"]])
-
-        del data["cohorts"]
-
-        return data
 
 
 class CommunityCSVDataSchema(Schema):
@@ -300,21 +358,23 @@ class CommunityCSVDataSchema(Schema):
             raise ValueError("Cell area varies in community data")
 
     @post_load
-    def make_cell_data_scalar(self, data: dict, **kwargs: Any) -> dict:
+    def convert_to_community_args(self, data: dict, **kwargs: Any) -> dict[str, Any]:
         """Make cell data scalar.
 
         This post load method reduces the repeated cell id and cell area across CSV data
-        rows into the scalar inputs required to initialise a Community object.
+        rows into the scalar inputs required to initialise a Community object and
+        packages the data on individual cohorts into a Cohorts object.
         """
 
-        data["cell_id"] = data["cell_id"][0]
-        data["cell_area"] = data["cell_area"][0]
-
-        data["cohort_dbh_values"] = np.array(data["cohort_dbh_values"])
-        data["cohort_n_individuals"] = np.array(data["cohort_n_individuals"])
-        data["cohort_pft_names"] = np.array(data["cohort_pft_names"])
-
-        return data
+        return dict(
+            cell_id=data["cell_id"][0],
+            cell_area=data["cell_area"][0],
+            cohorts=Cohorts(
+                dbh_values=np.array(data["cohort_dbh_values"]),
+                n_individuals=np.array(data["cohort_n_individuals"]),
+                pft_names=np.array(data["cohort_pft_names"]),
+            ),
+        )
 
 
 @dataclass
@@ -353,21 +413,15 @@ class Community:
     flora: Flora
 
     # - arrays representing properties of cohorts
-    cohort_dbh_values: InitVar[NDArray[np.float64]]
-    cohort_n_individuals: InitVar[NDArray[np.int_]]
-    cohort_pft_names: InitVar[NDArray[np.str_]]
+    cohorts: Cohorts
 
     # Post init properties
     number_of_cohorts: int = field(init=False)
     stem_traits: StemTraits = field(init=False)
     stem_allometry: StemAllometry = field(init=False)
-    cohort_data: dict[str, NDArray] = field(init=False)
 
     def __post_init__(
         self,
-        cohort_dbh_values: NDArray[np.float64],
-        cohort_n_individuals: NDArray[np.int_],
-        cohort_pft_names: NDArray[np.str_],
     ) -> None:
         """Validate inputs and populate derived community attributes.
 
@@ -382,37 +436,15 @@ class Community:
         if not (isinstance(self.cell_id, int) and self.cell_id >= 0):
             raise ValueError("Community cell id must be a integer >= 0.")
 
-        # Check cohort data types
-        if not (
-            isinstance(cohort_dbh_values, np.ndarray)
-            and isinstance(cohort_n_individuals, np.ndarray)
-            and isinstance(cohort_pft_names, np.ndarray)
-        ):
-            raise ValueError("Cohort data not passed as numpy arrays.")
-
-        # Check the cohort inputs are of equal length
-        try:
-            check_input_shapes(
-                cohort_dbh_values, cohort_n_individuals, cohort_dbh_values
-            )
-        except ValueError:
-            raise ValueError("Cohort arrays are of unequal length")
-
-        # Store as a dictionary
-        self.cohort_data: dict[str, NDArray] = {
-            "name": cohort_pft_names,
-            "dbh": cohort_dbh_values,
-            "n_individuals": cohort_n_individuals,
-        }
+        # How many cohorts
+        self.number_of_cohorts = len(self.cohorts.dbh_values)
 
         # Get the stem traits for the cohorts
-        self.stem_traits = self.flora.get_stem_traits(cohort_pft_names)
-
-        self.number_of_cohorts = len(cohort_pft_names)
+        self.stem_traits = self.flora.get_stem_traits(self.cohorts.pft_names)
 
         # Populate the stem allometry
         self.stem_allometry = StemAllometry(
-            stem_traits=self.stem_traits, at_dbh=cohort_dbh_values
+            stem_traits=self.stem_traits, at_dbh=self.cohorts.dbh_values
         )
 
     @classmethod
@@ -505,6 +537,39 @@ class Community:
             raise excep
 
         return cls(**file_data, flora=flora)
+
+    def drop_cohorts(self, drop_indices: NDArray[np.int_]) -> None:
+        """Drop cohorts from the community.
+
+        This method drops the identified cohorts from the ``cohorts`` attribute and then
+        removes their data from  the ``stem_traits`` and ``stem_allometry`` attributes
+        to match.
+        """
+
+        self.cohorts.drop_cohort_data(drop_indices=drop_indices)
+        self.stem_traits.drop_cohort_data(drop_indices=drop_indices)
+        self.stem_allometry.drop_cohort_data(drop_indices=drop_indices)
+
+    def add_cohorts(self, new_data: Cohorts) -> None:
+        """Add a new set of cohorts to the community.
+
+        This method extends the ``cohorts`` attribute with the new cohort data and then
+        also extends the ``stem_traits`` and ``stem_allometry`` to match.
+
+        Args:
+            new_data: An instance of :class:`~pyrealm.demography.community.Cohorts`
+                containing cohort data to add to the community.
+        """
+
+        self.cohorts.add_cohort_data(new_data=new_data)
+
+        new_stem_traits = self.flora.get_stem_traits(pft_names=new_data.pft_names)
+        self.stem_traits.add_cohort_data(new_data=new_stem_traits)
+
+        new_stem_allometry = StemAllometry(
+            stem_traits=new_stem_traits, at_dbh=new_data.dbh_values
+        )
+        self.stem_allometry.add_cohort_data(new_data=new_stem_allometry)
 
     # @classmethod
     # def load_communities_from_csv(
