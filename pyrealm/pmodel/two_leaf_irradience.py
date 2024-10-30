@@ -19,7 +19,6 @@ class TwoLeafIrradience:
     the workings of the ``BESS`` model :cite:alp:`Ryu_et_al:2011`.
 
     The outline flow of the calculations is as follows:
-
     1. Calculate the beam extinction coefficient :math:`k_{b}` using \
     :func:`beam_extinction_coeff`
     2. Calculate the scattered beam extinction coefficient using \
@@ -39,7 +38,7 @@ class TwoLeafIrradience:
     :func:`sunlit_scattered_irrad`
     13. Calulate total irradience absorbed by sunlit portion of canopy with \
     :func:`sunlit_absorbed_irrad`
-    14. Calculate the irradience absorbed by the shaded farction of the canopy with \
+    14. Calculate the irradience absorbed by the shaded farction of the canopy with 
     :func:`shaded_absorbed_irrad`
 
     These calculated values are used in the estimation of gross primary productivity \
