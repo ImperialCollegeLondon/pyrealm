@@ -1,6 +1,7 @@
 """test the functions in t_model_functions.py."""
 
 from contextlib import nullcontext as does_not_raise
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -656,6 +657,54 @@ def test_calculate_dbh_from_height_edge_cases():
 
     # Undefined entries
     assert np.all(np.isnan(dbh) == np.array([[0, 0], [0, 0], [0, 0], [1, 0], [1, 1]]))
+
+
+@pytest.mark.parametrize(
+    argnames="at_dbh, outcome, excep_msg",
+    argvalues=[
+        pytest.param(np.array(1), does_not_raise(), None, id="pass_0D"),
+        pytest.param(np.ones(1), does_not_raise(), None, id="pass_1D_scalar"),
+        pytest.param(np.ones(3), does_not_raise(), None, id="pass_1D_row"),
+        pytest.param(np.ones((1, 3)), does_not_raise(), None, id="pass_2D_row"),
+        pytest.param(np.ones((4, 1)), does_not_raise(), None, id="pass_2D_col"),
+        pytest.param(np.ones((4, 3)), does_not_raise(), None, id="pass_2D_full"),
+        pytest.param(
+            np.ones(4),
+            pytest.raises(ValueError),
+            "The array shapes of the trait (3,) and size (4,) arguments",
+            id="fail_1D_row_wrong",
+        ),
+        pytest.param(
+            np.ones((4, 4)),
+            pytest.raises(ValueError),
+            "The array shapes of the trait (3,) and size (4, 4) arguments",
+            id="fail_2D_full_wrong",
+        ),
+    ],
+)
+def test_StemAllometry_validation(rtmodel_flora, at_dbh, outcome, excep_msg):
+    """Test the StemAllometry validation process.
+
+    Also checks that validation only occurs once. Note that this requires the use of the
+    wraps argument to ensure that the validation function actually _runs_ while being
+    spied on, rather than just being replaced by the patch.
+    """
+
+    from pyrealm.demography.core import _validate_demography_array_arguments
+    from pyrealm.demography.t_model_functions import StemAllometry
+
+    with (
+        outcome as excep,
+        patch(
+            "pyrealm.demography.t_model_functions._validate_demography_array_arguments",
+            wraps=_validate_demography_array_arguments,
+        ) as val_func_patch,
+    ):
+        _ = StemAllometry(stem_traits=rtmodel_flora, at_dbh=at_dbh)
+        assert val_func_patch.call_count == 1
+        return
+
+    assert str(excep.value).startswith(excep_msg)
 
 
 def test_StemAllometry(rtmodel_flora, rtmodel_data):

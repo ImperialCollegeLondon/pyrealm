@@ -278,7 +278,9 @@ def calculate_sapwood_masses(
 
 
 def calculate_crown_z_max(
-    z_max_prop: NDArray[np.float64], stem_height: NDArray[np.float64]
+    z_max_prop: NDArray[np.float64],
+    stem_height: NDArray[np.float64],
+    validate: bool = True,
 ) -> NDArray[np.float64]:
     r"""Calculate height of maximum crown radius.
 
@@ -298,14 +300,22 @@ def calculate_crown_z_max(
     Args:
         z_max_prop: Crown shape parameter of the PFT
         stem_height: Stem height of individuals
+        validate: Boolean flag to suppress argument validation
     """
 
-    # TBD add validation and testing
+    if validate:
+        _validate_demography_array_arguments(
+            trait_args={"z_max_prop": z_max_prop},
+            size_args={"stem_height": stem_height},
+        )
+
     return _enforce_2D(stem_height * z_max_prop)
 
 
 def calculate_crown_r0(
-    q_m: NDArray[np.float64], crown_area: NDArray[np.float64]
+    q_m: NDArray[np.float64],
+    crown_area: NDArray[np.float64],
+    validate: bool = True,
 ) -> NDArray[np.float64]:
     r"""Calculate scaling factor for width of maximum crown radius.
 
@@ -323,11 +333,18 @@ def calculate_crown_r0(
     Args:
         q_m: Crown shape parameter of the PFT
         crown_area: Crown area of individuals
+        validate: Boolean flag to suppress argument validation
+
     """
+
+    if validate:
+        _validate_demography_array_arguments(
+            trait_args={"q_m": q_m},
+            size_args={"crown_area": crown_area},
+        )
+
     # Scaling factor to give expected A_c (crown area) at
     # z_m (height of maximum crown radius)
-
-    # TBD add validation and testing
     return _enforce_2D(1 / q_m * np.sqrt(crown_area / np.pi))
 
 
@@ -718,6 +735,9 @@ class StemAllometry(PandasExporter, CohortMethods):
     at_dbh: InitVar[NDArray[np.float64]]
     """An array of diameter at breast height values at which to predict stem allometry 
     values."""
+    validate: InitVar[bool] = True
+    """An array of diameter at breast height values at which to predict stem allometry 
+    values."""
 
     # Post init allometry attributes
     dbh: NDArray[np.float64] = field(init=False)
@@ -746,14 +766,23 @@ class StemAllometry(PandasExporter, CohortMethods):
     """The number of stems."""
 
     def __post_init__(
-        self, stem_traits: Flora | StemTraits, at_dbh: NDArray[np.float64]
+        self,
+        stem_traits: Flora | StemTraits,
+        at_dbh: NDArray[np.float64],
+        validate: bool = True,
     ) -> None:
         """Populate the stem allometry attributes from the traits and size data."""
 
+        # If validation is required, only need to perform validation once to check that
+        # the at_dbh values are congruent with the stem_traits inputs. If they are, then
+        # all the other allometry function inputs will be too.
+        if validate:
+            _validate_demography_array_arguments(
+                trait_args={"h_max": stem_traits.h_max}, size_args={"at_dbh": at_dbh}
+            )
+
         self.stem_height = calculate_heights(
-            h_max=stem_traits.h_max,
-            a_hd=stem_traits.a_hd,
-            dbh=at_dbh,
+            h_max=stem_traits.h_max, a_hd=stem_traits.a_hd, dbh=at_dbh, validate=False
         )
 
         # Broadcast at_dbh to shape of stem height to get congruent shapes
@@ -764,24 +793,28 @@ class StemAllometry(PandasExporter, CohortMethods):
             a_hd=stem_traits.a_hd,
             dbh=self.dbh,
             stem_height=self.stem_height,
+            validate=False,
         )
 
         self.crown_fraction = calculate_crown_fractions(
             a_hd=stem_traits.a_hd,
             dbh=self.dbh,
             stem_height=self.stem_height,
+            validate=False,
         )
 
         self.stem_mass = calculate_stem_masses(
             rho_s=stem_traits.rho_s,
             dbh=self.dbh,
             stem_height=self.stem_height,
+            validate=False,
         )
 
         self.foliage_mass = calculate_foliage_masses(
             sla=stem_traits.sla,
             lai=stem_traits.lai,
             crown_area=self.crown_area,
+            validate=False,
         )
 
         self.sapwood_mass = calculate_sapwood_masses(
@@ -790,25 +823,21 @@ class StemAllometry(PandasExporter, CohortMethods):
             stem_height=self.stem_height,
             crown_area=self.crown_area,
             crown_fraction=self.crown_fraction,
+            validate=False,
         )
 
         self.crown_r0 = calculate_crown_r0(
-            q_m=stem_traits.q_m,
-            crown_area=self.crown_area,
+            q_m=stem_traits.q_m, crown_area=self.crown_area, validate=False
         )
 
         self.crown_z_max = calculate_crown_z_max(
             z_max_prop=stem_traits.z_max_prop,
             stem_height=self.stem_height,
+            validate=False,
         )
 
-        # Set the number of observations per stem (one if dbh is 1D, otherwise size of
-        # the first axis)
-        if self.dbh.ndim == 1:
-            self._n_pred = 1
-        else:
-            self._n_pred = self.dbh.shape[0]
-
+        # Set the number of observations per stem as the length of axis 1
+        self._n_pred = self.crown_z_max.shape[0]
         self._n_stems = stem_traits._n_stems
 
     def __repr__(self) -> str:
