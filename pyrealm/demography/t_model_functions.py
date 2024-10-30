@@ -595,7 +595,6 @@ def calculate_growth_increments(
     * the stem mass (:math:`\Delta W_s`), and 
     * the foliar mass (:math:`\Delta W_f`). 
         
-        
     The stem diameter increment can be calculated using the available productivity for
     growth and the rates of change in stem (:math:`\textrm{d}W_s / \textrm{d}t`) and
     foliar masses (:math:`\textrm{d}W_f / \textrm{d}t`): 
@@ -713,6 +712,7 @@ class StemAllometry(PandasExporter, CohortMethods):
             trait data for a set of stems.
         at_dbh: An array of diameter at breast height values at which to predict stem
             allometry values.
+        validate: Boolean flag to suppress argument validation
     """
 
     array_attrs: ClassVar[tuple[str, ...]] = (
@@ -736,8 +736,7 @@ class StemAllometry(PandasExporter, CohortMethods):
     """An array of diameter at breast height values at which to predict stem allometry 
     values."""
     validate: InitVar[bool] = True
-    """An array of diameter at breast height values at which to predict stem allometry 
-    values."""
+    """validate: Boolean flag to suppress argument validation."""
 
     # Post init allometry attributes
     dbh: NDArray[np.float64] = field(init=False)
@@ -849,11 +848,11 @@ class StemAllometry(PandasExporter, CohortMethods):
 
 @dataclass()
 class StemAllocation(PandasExporter):
-    """Calculate T Model allocation predictions across a set of stems.
+    """Calculate T Model GPP allocation across a set of stems.
 
-    This method calculate predictions of allocation of potential GPP for stems under the
-    T Model :cite:`Li:2014bc`, given a set of traits for those stems and the stem
-    allometries given the stem size.
+    This method calculates the predicted allocation of potential gross primary
+    productivity (GPP) for stems under the T Model :cite:`Li:2014bc`, given a set of
+    traits for those stems and the stem allometries given the stem size.
 
     Args:
         stem_traits: An instance of :class:`~pyrealm.demography.flora.Flora` or
@@ -862,8 +861,9 @@ class StemAllocation(PandasExporter):
         stem_allometry: An instance of
             :class:`~pyrealm.demography.t_model_functions.StemAllometry`
             providing the stem size data for which to calculate allocation.
-        at_potential_gpp: An array of diameter at breast height values at which to
-            predict stem allometry values.
+        at_potential_gpp: An array of potential GPP values at which to predict stem
+            allocation.
+        validate: Boolean flag to suppress argument validation
     """
 
     array_attrs: ClassVar[tuple[str, ...]] = (
@@ -890,6 +890,8 @@ class StemAllocation(PandasExporter):
     at_potential_gpp: InitVar[NDArray[np.float64]]
     """An array of potential gross primary productivity for each stem that should be
     allocated to respiration, turnover and growth."""
+    validate: InitVar[bool] = True
+    """ Boolean flag to suppress argument validation."""
 
     # Post init allometry attributes
     potential_gpp: NDArray[np.float64] = field(init=False)
@@ -924,25 +926,41 @@ class StemAllocation(PandasExporter):
         stem_traits: Flora | StemTraits,
         stem_allometry: StemAllometry,
         at_potential_gpp: NDArray[np.float64],
+        validate: bool = True,
     ) -> None:
         """Populate stem allocation attributes from the traits, allometry and GPP."""
 
-        # Broadcast potential GPP to match stem data outputs
-        self.potential_gpp = np.broadcast_to(at_potential_gpp, stem_allometry.dbh.shape)
+        if validate:
+            _validate_demography_array_arguments(
+                trait_args={"h_max": stem_traits.h_max},
+                size_args={"dbh": stem_allometry.dbh},
+                at_size_args={"at_potential_gpp": at_potential_gpp},
+            )
+
+        # Broadcast potential GPP to match trait and size data outputs
+        trait_size_shape = np.broadcast_shapes(
+            stem_traits.h_max.shape, stem_allometry.dbh.shape
+        )
+        self.potential_gpp = np.broadcast_to(at_potential_gpp, trait_size_shape)
 
         self.whole_crown_gpp = calculate_whole_crown_gpp(
             potential_gpp=self.potential_gpp,
             crown_area=stem_allometry.crown_area,
             par_ext=stem_traits.par_ext,
             lai=stem_traits.lai,
+            validate=False,
         )
 
         self.sapwood_respiration = calculate_sapwood_respiration(
-            resp_s=stem_traits.resp_s, sapwood_mass=stem_allometry.sapwood_mass
+            resp_s=stem_traits.resp_s,
+            sapwood_mass=stem_allometry.sapwood_mass,
+            validate=False,
         )
 
         self.foliar_respiration = calculate_foliar_respiration(
-            resp_f=stem_traits.resp_f, whole_crown_gpp=self.whole_crown_gpp
+            resp_f=stem_traits.resp_f,
+            whole_crown_gpp=self.whole_crown_gpp,
+            validate=False,
         )
 
         self.fine_root_respiration = calculate_fine_root_respiration(
@@ -950,6 +968,7 @@ class StemAllocation(PandasExporter):
             sla=stem_traits.sla,
             resp_r=stem_traits.resp_r,
             foliage_mass=stem_allometry.foliage_mass,
+            validate=False,
         )
 
         self.npp = calculate_net_primary_productivity(
@@ -958,6 +977,7 @@ class StemAllocation(PandasExporter):
             foliar_respiration=self.foliar_respiration,
             fine_root_respiration=self.fine_root_respiration,
             sapwood_respiration=self.sapwood_respiration,
+            validate=False,
         )
 
         self.turnover = calculate_foliage_and_fine_root_turnover(
@@ -966,6 +986,7 @@ class StemAllocation(PandasExporter):
             tau_f=stem_traits.tau_f,
             tau_r=stem_traits.tau_r,
             foliage_mass=stem_allometry.foliage_mass,
+            validate=False,
         )
 
         (self.delta_dbh, self.delta_stem_mass, self.delta_foliage_mass) = (
@@ -981,6 +1002,7 @@ class StemAllocation(PandasExporter):
                 turnover=self.turnover,
                 dbh=stem_allometry.dbh,
                 stem_height=stem_allometry.stem_height,
+                validate=False,
             )
         )
 

@@ -799,3 +799,62 @@ def test_StemAllocation(rtmodel_flora, rtmodel_data):
     )
 
     assert set(stem_allocation.array_attrs) == set(df.columns)
+
+
+@pytest.mark.parametrize(
+    argnames="pot_gpp, outcome, excep_msg",
+    argvalues=[
+        pytest.param(np.array(1), does_not_raise(), None, id="pass_0D"),
+        pytest.param(np.ones(1), does_not_raise(), None, id="pass_1D_scalar"),
+        pytest.param(np.ones(3), does_not_raise(), None, id="pass_1D_row"),
+        pytest.param(np.ones((1, 3)), does_not_raise(), None, id="pass_2D_row"),
+        pytest.param(np.ones((4, 1)), does_not_raise(), None, id="pass_2D_col"),
+        pytest.param(np.ones((4, 3)), does_not_raise(), None, id="pass_2D_full"),
+        pytest.param(
+            np.ones(4),
+            pytest.raises(ValueError),
+            "The broadcast shapes of the trait and size arguments (4, 3) are not "
+            "congruent with the shape of the at_size arguments (4,)",
+            id="fail_1D_row_wrong",
+        ),
+        pytest.param(
+            np.ones((5, 4)),
+            pytest.raises(ValueError),
+            "The broadcast shapes of the trait and size arguments (4, 3) are not "
+            "congruent with the shape of the at_size arguments (5, 4)",
+            id="fail_2D_full_wrong",
+        ),
+    ],
+)
+def test_StemAllocation_validation(rtmodel_flora, pot_gpp, outcome, excep_msg):
+    """Test the StemAllocation validation process.
+
+    The stem allometry inputs are kept constant - the validation of inputs to that
+    function is checked in the tests above.
+
+    Also checks that validation only occurs once. Note that this requires the use of the
+    wraps argument to ensure that the validation function actually _runs_ while being
+    spied on, rather than just being replaced by the patch.
+    """
+
+    from pyrealm.demography.core import _validate_demography_array_arguments
+    from pyrealm.demography.t_model_functions import StemAllocation, StemAllometry
+
+    # Calculate a constant allometry
+    allom = StemAllometry(stem_traits=rtmodel_flora, at_dbh=np.ones((4, 3)))
+
+    with (
+        outcome as excep,
+        patch(
+            "pyrealm.demography.t_model_functions._validate_demography_array_arguments",
+            wraps=_validate_demography_array_arguments,
+        ) as val_func_patch,
+    ):
+        # Check the behaviour of the validation
+        _ = StemAllocation(
+            stem_traits=rtmodel_flora, stem_allometry=allom, at_potential_gpp=pot_gpp
+        )
+        assert val_func_patch.call_count == 1
+        return
+
+    assert str(excep.value).startswith(excep_msg)

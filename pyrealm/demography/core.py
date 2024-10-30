@@ -229,7 +229,7 @@ def _validate_demography_array_arguments(
             raise ValueError(
                 f"The broadcast shapes of the trait and size arguments "
                 f"{trait_size_shape} are not congruent with the shape of the at_size "
-                f" arguments {at_size_args_shape}."
+                f"arguments {at_size_args_shape}."
             )
 
 
