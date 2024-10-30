@@ -165,10 +165,11 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
 
 
 @pytest.mark.parametrize(
-    argnames="trait_args,size_args,outcome,excep_msg",
+    argnames="trait_args,size_args,at_size_args,outcome,excep_msg",
     argvalues=[
         pytest.param(
             {"a_hd": np.ones(4), "h_max": np.ones(4)},
+            {},
             {},
             does_not_raise(),
             None,
@@ -177,12 +178,14 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         pytest.param(
             {"a_hd": np.ones(4), "h_max": np.array(1)},
             {},
+            {},
             does_not_raise(),
             None,
             id="pass_trait_data_only_row_scalar_0D",
         ),
         pytest.param(
             {"a_hd": np.ones(4), "h_max": np.ones(1)},
+            {},
             {},
             does_not_raise(),
             None,
@@ -191,12 +194,14 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         pytest.param(
             {"a_hd": np.ones((2, 2)), "h_max": np.ones((2, 2))},
             {},
+            {},
             pytest.raises(ValueError),
             "Trait arguments are not 1D arrays:",
             id="fail_trait_data_only_not_1D",
         ),
         pytest.param(
             {"a_hd": np.ones(4), "h_max": np.ones(3)},
+            {},
             {},
             pytest.raises(ValueError),
             "Trait arguments are not equal shaped or scalar",
@@ -205,6 +210,7 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         pytest.param(
             {"a_hd": np.ones(4), "h_max": np.ones(4)},
             {"dbh": np.ones(4), "stem_height": np.ones(4)},
+            {},
             does_not_raise(),
             None,
             id="pass_trait_size_equal_sized",
@@ -212,6 +218,7 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         pytest.param(
             {"a_hd": np.ones(4), "h_max": np.ones(4)},
             {"dbh": np.ones(4), "stem_height": np.ones(1)},
+            {},
             does_not_raise(),
             None,
             id="pass_trait_size_equal_or_scalar_0D",
@@ -219,6 +226,7 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         pytest.param(
             {"a_hd": np.ones(4), "h_max": np.ones(4)},
             {"dbh": np.ones(4), "stem_height": np.array([1])},
+            {},
             does_not_raise(),
             None,
             id="pass_trait_size_equal_or_scalar_1D",
@@ -226,6 +234,7 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         pytest.param(
             {"a_hd": np.ones(4), "h_max": np.ones(4)},
             {"dbh": np.ones(4), "stem_height": np.ones(3)},
+            {},
             pytest.raises(ValueError),
             "Size arguments are not equal shaped or scalar",
             id="fail_trait_size_not_equal",
@@ -233,6 +242,7 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         pytest.param(
             {"a_hd": np.ones(4), "h_max": np.ones(4)},
             {"dbh": np.array(1)},
+            {},
             does_not_raise(),
             None,
             id="pass_trait_size_congruent_0D",
@@ -240,6 +250,7 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         pytest.param(
             {"a_hd": np.ones(4), "h_max": np.ones(4)},
             {"dbh": np.ones(1)},
+            {},
             does_not_raise(),
             None,
             id="pass_trait_size_congruent_1D_scalar",
@@ -247,6 +258,7 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         pytest.param(
             {"a_hd": np.ones(4), "h_max": np.ones(4)},
             {"dbh": np.ones(4)},
+            {},
             does_not_raise(),
             None,
             id="pass_trait_size_congruent_1D",
@@ -254,6 +266,7 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         pytest.param(
             {"a_hd": np.ones(4), "h_max": np.ones(4)},
             {"dbh": np.ones((1, 4))},
+            {},
             does_not_raise(),
             None,
             id="pass_trait_size_congruent_2D_row",
@@ -261,6 +274,7 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         pytest.param(
             {"a_hd": np.ones(4), "h_max": np.ones(4)},
             {"dbh": np.ones((6, 1))},
+            {},
             does_not_raise(),
             None,
             id="pass_trait_size_congruent_2D_column",
@@ -268,6 +282,7 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         pytest.param(
             {"a_hd": np.ones(4), "h_max": np.ones(4)},
             {"dbh": np.ones((6, 4))},
+            {},
             does_not_raise(),
             None,
             id="pass_trait_size_congruent_2D_full",
@@ -275,6 +290,7 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         pytest.param(
             {"a_hd": np.ones(4), "h_max": np.ones(4)},
             {"dbh": np.ones(5)},
+            {},
             pytest.raises(ValueError),
             "The array shapes of the trait (4,) and size (5,) arguments "
             "are not congruent.",
@@ -283,6 +299,7 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         pytest.param(
             {"a_hd": np.ones(4), "h_max": np.ones(4)},
             {"dbh": np.ones((1, 5))},
+            {},
             pytest.raises(ValueError),
             "The array shapes of the trait (4,) and size (1, 5) arguments "
             "are not congruent.",
@@ -291,14 +308,117 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         pytest.param(
             {"a_hd": np.ones(4), "h_max": np.ones(4)},
             {"dbh": np.ones((5, 3))},
+            {},
             pytest.raises(ValueError),
             "The array shapes of the trait (4,) and size (5, 3) arguments "
             "are not congruent.",
             id="fail_trait_size_not_congruent_2D_full",
         ),
+        pytest.param(
+            {"a_hd": np.ones(4), "h_max": np.ones(4)},
+            {},
+            {"potential_gpp": np.array(1)},
+            pytest.raises(ValueError),
+            "Only provide `at_size_args` when `size_args` also provided.",
+            id="fail_at_size_without_size",
+        ),
+        pytest.param(
+            {"a_hd": np.ones(4), "h_max": np.ones(4)},
+            {"dbh": np.ones((6, 4))},
+            {"potential_gpp": np.ones(2), "another_value": np.ones(3)},
+            pytest.raises(ValueError),
+            "At size arguments are not equal shaped or scalar",
+            id="fail_at_size_unequal",
+        ),
+        pytest.param(
+            {"a_hd": np.ones(4), "h_max": np.ones(4)},
+            {"dbh": np.ones((6, 4))},
+            {"potential_gpp": np.array(1)},
+            does_not_raise(),
+            None,
+            id="pass_at_size_0D_scalar",
+        ),
+        pytest.param(
+            {"a_hd": np.ones(4), "h_max": np.ones(4)},
+            {"dbh": np.ones((6, 4))},
+            {"potential_gpp": np.ones(1)},
+            does_not_raise(),
+            None,
+            id="pass_at_size_1D_scalar",
+        ),
+        pytest.param(
+            {"a_hd": np.ones(4), "h_max": np.ones(4)},
+            {"dbh": np.ones((6, 4))},
+            {"potential_gpp": np.ones(4)},
+            does_not_raise(),
+            None,
+            id="pass_at_size_1D",
+        ),
+        pytest.param(
+            {"a_hd": np.ones(4), "h_max": np.ones(4)},
+            {"dbh": np.ones((6, 4))},
+            {"potential_gpp": np.ones((1, 4))},
+            does_not_raise(),
+            None,
+            id="pass_at_size_2D_row",
+        ),
+        pytest.param(
+            {"a_hd": np.ones(4), "h_max": np.ones(4)},
+            {"dbh": np.ones((6, 4))},
+            {"potential_gpp": np.ones((6, 1))},
+            does_not_raise(),
+            None,
+            id="pass_at_size_2D_col",
+        ),
+        pytest.param(
+            {"a_hd": np.ones(4), "h_max": np.ones(4)},
+            {"dbh": np.ones((6, 4))},
+            {"potential_gpp": np.ones((6, 4))},
+            does_not_raise(),
+            None,
+            id="pass_at_size_2D_full",
+        ),
+        pytest.param(
+            {"a_hd": np.ones(4), "h_max": np.ones(4)},
+            {"dbh": np.ones((6, 4))},
+            {"potential_gpp": np.ones(5)},
+            pytest.raises(ValueError),
+            "The broadcast shapes of the trait and size arguments (6, 4) are not "
+            "congruent with the shape of the at_size arguments (5,)",
+            id="fail_at_size_1D_row",
+        ),
+        pytest.param(
+            {"a_hd": np.ones(4), "h_max": np.ones(4)},
+            {"dbh": np.ones((6, 4))},
+            {"potential_gpp": np.ones((1, 5))},
+            pytest.raises(ValueError),
+            "The broadcast shapes of the trait and size arguments (6, 4) are not "
+            "congruent with the shape of the at_size arguments (1, 5)",
+            id="fail_at_size_2D_row",
+        ),
+        pytest.param(
+            {"a_hd": np.ones(4), "h_max": np.ones(4)},
+            {"dbh": np.ones((6, 4))},
+            {"potential_gpp": np.ones((7, 1))},
+            pytest.raises(ValueError),
+            "The broadcast shapes of the trait and size arguments (6, 4) are not "
+            "congruent with the shape of the at_size arguments (7, 1)",
+            id="fail_at_size_2D_col",
+        ),
+        pytest.param(
+            {"a_hd": np.ones(4), "h_max": np.ones(4)},
+            {"dbh": np.ones((6, 4))},
+            {"potential_gpp": np.ones((7, 5))},
+            pytest.raises(ValueError),
+            "The broadcast shapes of the trait and size arguments (6, 4) are not "
+            "congruent with the shape of the at_size arguments (7, 5)",
+            id="fail_at_size_2D_full",
+        ),
     ],
 )
-def test_validate_demography_array_arguments(trait_args, size_args, outcome, excep_msg):
+def test_validate_demography_array_arguments(
+    trait_args, size_args, at_size_args, outcome, excep_msg
+):
     """Test the _validate_demography_array_arguments function.
 
     The test cases:
@@ -316,7 +436,9 @@ def test_validate_demography_array_arguments(trait_args, size_args, outcome, exc
     from pyrealm.demography.core import _validate_demography_array_arguments
 
     with outcome as excep:
-        _validate_demography_array_arguments(trait_args=trait_args, size_args=size_args)
+        _validate_demography_array_arguments(
+            trait_args=trait_args, size_args=size_args, at_size_args=at_size_args
+        )
         return
 
     assert str(excep.value).startswith(excep_msg)
