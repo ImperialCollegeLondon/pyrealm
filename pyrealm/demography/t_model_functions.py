@@ -736,7 +736,7 @@ class StemAllometry(PandasExporter, CohortMethods):
     """An array of diameter at breast height values at which to predict stem allometry 
     values."""
     validate: InitVar[bool] = True
-    """validate: Boolean flag to suppress argument validation."""
+    """Boolean flag to suppress argument validation."""
 
     # Post init allometry attributes
     dbh: NDArray[np.float64] = field(init=False)
