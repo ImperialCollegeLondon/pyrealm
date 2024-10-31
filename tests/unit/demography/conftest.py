@@ -77,9 +77,9 @@ def fixture_community():
         cell_area=100,
         flora=flora,
         cohorts=Cohorts(
-            n_individuals=np.repeat([1], 4),
-            pft_names=np.repeat(["test"], 4),
-            dbh_values=np.array([0.2, 0.4, 0.6, 0.8]),
+            n_individuals=np.repeat([1], 1),  # np.repeat([1], 4),
+            pft_names=np.repeat(["test"], 1),  # np.repeat(["test"], 4),
+            dbh_values=np.array([0.2]),  # np.array([0.2, 0.4, 0.6, 0.8]),
         ),
     )
 

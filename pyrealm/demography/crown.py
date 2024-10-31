@@ -401,10 +401,6 @@ def get_crown_xy(
     if attr not in crown_profile.array_attrs:
         raise ValueError(f"Unknown crown profile attribute: {attr}")
 
-    # TODO
-    # - more validation once the dimensioning has been thought through #317
-    # - we're expecting a one d allometry and a 2D profile with multiple heights.
-
     # Get the attribute and flatten the heights from a column array to one dimensional
     attr_values = getattr(crown_profile, attr)
     z = crown_profile.z.flatten()
@@ -420,7 +416,7 @@ def get_crown_xy(
     for stem_index in np.arange(attr_values.shape[1]):
         # Find the heights and values that fall within the individual stem
         height_is_valid = np.logical_and(
-            z <= stem_allometry.stem_height[stem_index], z >= 0
+            z <= stem_allometry.stem_height[:, stem_index], z >= 0
         )
         valid_attr_values: NDArray = attr_values[height_is_valid, stem_index]
         valid_heights: NDArray = z[height_is_valid]
@@ -431,7 +427,7 @@ def get_crown_xy(
             valid_heights = np.concatenate(
                 [
                     np.flip(valid_heights),
-                    stem_allometry.stem_height[[stem_index]],
+                    stem_allometry.stem_height[:, stem_index],
                     valid_heights,
                 ]
             )
@@ -442,7 +438,7 @@ def get_crown_xy(
             # Only the zero value is added
             valid_heights = np.concatenate(
                 [
-                    stem_allometry.stem_height[[stem_index]],
+                    stem_allometry.stem_height[:, stem_index],
                     valid_heights,
                 ]
             )

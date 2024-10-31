@@ -110,7 +110,7 @@ stem_dbh = np.array([0.5])
 simple_stem = StemAllometry(stem_traits=simple_flora, at_dbh=stem_dbh)
 
 # The total area is exactly the crown area
-total_area = simple_stem.crown_area[0]
+total_area = simple_stem.crown_area[0][0]
 
 # Define a simple community
 simple_community = Community(
@@ -126,7 +126,7 @@ simple_community = Community(
 
 # Get the canopy model for the simple case from the canopy top
 # to the ground
-hghts = np.linspace(simple_stem.stem_height[0], 0, num=101)[:, None]
+hghts = np.linspace(simple_stem.stem_height[0][0], 0, num=101)[:, None]
 simple_canopy = Canopy(
     community=simple_community,
     layer_heights=hghts,

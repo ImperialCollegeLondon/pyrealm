@@ -666,3 +666,29 @@ def test_CrownProfile(fixture_community):
     )
 
     assert set(crown_profile.array_attrs) == set(df.columns)
+
+
+@pytest.mark.parametrize(argnames="as_xy", argvalues=[True, False])
+@pytest.mark.parametrize(argnames="two_sided", argvalues=[True, False])
+def test_get_crown_xy(fixture_community, as_xy, two_sided):
+    """Test the get_crown_xy helper.
+
+    This really just checks it runs at the moment.
+    """
+
+    from pyrealm.demography.crown import CrownProfile, get_crown_xy
+
+    crown_profile = CrownProfile(
+        stem_traits=fixture_community.stem_traits,
+        stem_allometry=fixture_community.stem_allometry,
+        z=np.linspace(0, 22, num=101)[:, None],
+    )
+
+    for attr in crown_profile.array_attrs:
+        _ = get_crown_xy(
+            crown_profile=crown_profile,
+            stem_allometry=fixture_community.stem_allometry,
+            attr=attr,
+            as_xy=as_xy,
+            two_sided=two_sided,
+        )
