@@ -408,7 +408,7 @@ def test_StemTraits(fixture_flora):
     with pytest.raises(ValueError) as excep:
         _ = StemTraits(**bad_args)
 
-    assert str(excep.value).startswith("Stem arguments are not of equal length")
+    assert str(excep.value).startswith("Trait arguments are not equal shaped or scalar")
 
     # 2. Not 1 dimensional
     bad_args = {k: v.reshape(2, 2) for k, v in args.copy().items()}
@@ -416,9 +416,7 @@ def test_StemTraits(fixture_flora):
     with pytest.raises(ValueError) as excep:
         _ = StemTraits(**bad_args)
 
-    assert str(excep.value).startswith(
-        "Stem arguments are not 1D arrays of trait values"
-    )
+    assert str(excep.value).startswith("Trait arguments are not 1D arrays")
 
 
 def test_StemTraits_CohortMethods(fixture_flora):

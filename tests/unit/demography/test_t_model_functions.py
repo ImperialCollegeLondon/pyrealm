@@ -540,7 +540,9 @@ class TestTModel:
             result = calculate_net_primary_productivity(
                 yld=rtmodel_flora.yld[pft_idx],
                 whole_crown_gpp=rtmodel_data["whole_crown_gpp"][data_idx],
-                foliar_respiration=0,  # Not included here in the R implementation
+                foliar_respiration=np.array(
+                    [0]
+                ),  # Not included here in the R implementation
                 fine_root_respiration=rtmodel_data["fine_root_respiration"][data_idx],
                 sapwood_respiration=rtmodel_data["sapwood_respiration"][data_idx],
             )
