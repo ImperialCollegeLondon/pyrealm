@@ -760,12 +760,12 @@ def test_StemAllometry_CohortMethods(rtmodel_flora, rtmodel_data):
     n_entries = len(rtmodel_data["dbh"])
     # Add a copy of itself as new cohort data and check the shape
     stem_allometry.add_cohort_data(new_data=stem_allometry)
-    assert stem_allometry.crown_fraction.shape == (2 * n_entries, rtmodel_flora.n_pfts)
+    assert stem_allometry.crown_fraction.shape == (n_entries, 2 * rtmodel_flora.n_pfts)
     assert stem_allometry.crown_fraction.sum() == 2 * check_data.sum()
 
     # Remove the rows from the first copy and what's left should be aligned with the
     # original data
-    stem_allometry.drop_cohort_data(drop_indices=np.arange(n_entries))
+    stem_allometry.drop_cohort_data(drop_indices=np.arange(rtmodel_flora.n_pfts))
     assert np.allclose(stem_allometry.crown_fraction, check_data)
 
 
