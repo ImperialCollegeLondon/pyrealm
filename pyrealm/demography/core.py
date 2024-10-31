@@ -21,8 +21,6 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from pyrealm.core.utilities import check_input_shapes
-
 
 class PandasExporter(ABC):
     """Abstract base class implementing pandas export.
@@ -173,10 +171,16 @@ def _validate_demography_array_arguments(
             with the value name.
     """
 
+    # NOTE - this validation deliberately does not use check_input_shapes because it is
+    # insisting on _identical_ shapes or scalar arrays is too restrictive. See
+    # discussion in https://github.com/ImperialCollegeLondon/pyrealm/pull/342
+
     # Check PFT inputs are all equal sized 1D row arrays or a mix of 1D rows and scalar
     # values
     try:
-        trait_args_shape = check_input_shapes(*trait_args.values())
+        trait_args_shape = np.broadcast_shapes(
+            *[arr.shape for arr in trait_args.values()]
+        )
     except ValueError:
         raise ValueError(
             f"Trait arguments are not equal shaped or "
@@ -188,18 +192,19 @@ def _validate_demography_array_arguments(
             f"Trait arguments are not 1D arrays: {','.join(trait_args.keys())}"
         )
 
-    # Check size inputs if they are provided.
+    # Check the size inputs are broadcastable if they are provided.
     if size_args:
         try:
-            size_args_shape = check_input_shapes(*size_args.values())
+            size_args_shape = np.broadcast_shapes(
+                *[arr.shape for arr in size_args.values()]
+            )
         except ValueError:
             raise ValueError(
                 f"Size arguments are not equal shaped or "
                 f"scalar: {','.join(size_args.keys())}"
             )
 
-        # Use np.broadcast_shapes to test whether the shape of the size args are
-        # compatible with the traits args
+        # Test whether the shape of the size args are compatible with the traits args
         try:
             trait_size_shape = np.broadcast_shapes(trait_args_shape, size_args_shape)
         except ValueError:
@@ -213,9 +218,11 @@ def _validate_demography_array_arguments(
         raise ValueError("Only provide `at_size_args` when `size_args` also provided.")
 
     if at_size_args:
-        # Are the values consistent with each other?
+        # Are the at_size values broadcastable?
         try:
-            at_size_args_shape = check_input_shapes(*at_size_args.values())
+            at_size_args_shape = np.broadcast_shapes(
+                *[arr.shape for arr in at_size_args.values()]
+            )
         except ValueError:
             raise ValueError(
                 f"At size arguments are not equal shaped or "
