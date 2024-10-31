@@ -92,12 +92,17 @@ class CohortMethods(ABC):
             )
 
         # Concatenate the array attributes from the incoming instance to the calling
-        # instance.
+        # instance. This need to respect the attribute array dimensions. If the
+        # attribute is one dimensional (e.g. traits), then concatenate on axis=0, but
+        # for 2 traits, need to concatenate on axis 1 to extend the trait axis.
         for trait in self.array_attrs:
+            current = getattr(self, trait)
             setattr(
                 self,
                 trait,
-                np.concatenate([getattr(self, trait), getattr(new_data, trait)]),
+                np.concatenate(
+                    [current, getattr(new_data, trait)], axis=(current.ndim - 1)
+                ),
             )
 
     def drop_cohort_data(self, drop_indices: NDArray[np.int_]) -> None:
@@ -107,18 +112,14 @@ class CohortMethods(ABC):
             drop_indices: An array of integer indices to drop from each array attribute.
         """
 
-        # TODO - Probably part of tackling #317
-        #        The delete axis=0 here is tied to the case of dropping rows from 2D
-        #        arrays, but then I'm thinking it makes more sense to _only_ support 2D
-        #        arrays rather than the current mixed bag of getting a 1D array when a
-        #        single height is provided. Promoting that kind of input to 2D and then
-        #        enforcing an identical internal structure seems better.
-        #      - But! Trait data does not have 2 dimensions!
-        #      - Also to check here - this can lead to empty instances, which probably
-        #        are a thing we want, if mortality removes all cohorts.
+        # Drop from each trait along the last dimension - handles 2D height x stem and
+        # 1D stem traits.
 
         for trait in self.array_attrs:
-            setattr(self, trait, np.delete(getattr(self, trait), drop_indices, axis=0))
+            current = getattr(self, trait)
+            setattr(
+                self, trait, np.delete(current, drop_indices, axis=(current.ndim - 1))
+            )
 
 
 def _validate_demography_array_arguments(
