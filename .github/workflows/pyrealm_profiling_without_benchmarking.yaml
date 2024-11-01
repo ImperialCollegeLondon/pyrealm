@@ -1,4 +1,4 @@
-name: Profiling after push
+name: Profiling without benchmarking
 
 # This runs when a PR is opened, synchronised or reopened
 on:
