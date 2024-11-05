@@ -146,8 +146,13 @@ flora = Flora([short_pft, medium_pft, tall_pft])
 flora
 ```
 
+The {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
+{meth}`~pyrealm.demography.flora.StemTraits` class exports the trait data as a
+{class}`pandas.DataFrame`, making it easier to use for plotting or calculations outside
+of `pyrealm`.
+
 ```{code-cell} ipython3
-pd.DataFrame({k: getattr(flora, k) for k in flora.trait_attrs})
+flora.to_pandas()
 ```
 
 You can also create `Flora` instances using PFT data stored TOML, JSON and CSV file
@@ -168,7 +173,11 @@ more easily created from a `Flora` object by providing a list of PFT names:
 # Get stem traits for a range of stems
 stem_pfts = ["short", "short", "short", "medium", "medium", "tall"]
 stem_traits = flora.get_stem_traits(pft_names=stem_pfts)
+```
 
-# Show the repeated values
-stem_traits.h_max
+Again, the {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
+{meth}`~pyrealm.demography.flora.StemTraits` class can be use to extract the data:
+
+```{code-cell} ipython3
+stem_traits.to_pandas()
 ```

@@ -218,12 +218,10 @@ flora = Flora([narrow_pft, medium_pft, wide_pft])
 flora
 ```
 
-The Flora object can also be used to show a table of canopy variables:
+The key canopy variables from the flora are:
 
 ```{code-cell} ipython3
-# TODO - add a Flora.to_pandas() method
-flora_data = pd.DataFrame({k: getattr(flora, k) for k in flora.trait_attrs})
-flora_data[["name", "ca_ratio", "m", "n", "f_g", "q_m", "z_max_prop"]]
+flora.to_pandas()[["name", "h_max", "ca_ratio", "m", "n", "f_g", "q_m", "z_max_prop"]]
 ```
 
 The next section of code generates the `StemAllometry` to use for the profiles.
@@ -249,14 +247,12 @@ allometry = StemAllometry(stem_traits=flora, at_dbh=stem_dbh)
 We can again use {mod}`pandas` to get a table of those allometric predictions:
 
 ```{code-cell} ipython3
-pd.DataFrame({k: getattr(allometry, k) for k in allometry.allometry_attrs})
+allometry.to_pandas()
 ```
 
 Finally, we can define a set of vertical heights. In order to calculate the
 variables for each PFT at each height, this needs to be provided as a column array,
-that is with a shape `(N, 1)`.
-
-We can then calculate the crown profiles.
+that is with a shape `(N, 1)`. We can then calculate the crown profiles:
 
 ```{code-cell} ipython3
 # Create a set of vertical heights as a column array.
@@ -276,6 +272,14 @@ above calculated at each height $z$:
 
 ```{code-cell} ipython3
 crown_profiles
+```
+
+The {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
+{meth}`~pyrealm.demography.crown.CrownProfile` class can be used to extract the data
+into a table, with the separate stems identified by the column index field.
+
+```{code-cell} ipython3
+crown_profiles.to_pandas()
 ```
 
 ### Visualising crown profiles
@@ -531,8 +535,4 @@ plt.legend(
     loc="upper center",
     bbox_to_anchor=(0.5, 1.15),
 )
-```
-
-```{code-cell} ipython3
-
 ```
