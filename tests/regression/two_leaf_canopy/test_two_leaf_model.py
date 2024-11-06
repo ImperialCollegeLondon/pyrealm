@@ -51,7 +51,7 @@ def assimilation_single_day(solar_irradience, get_data):
     )
 
     # Standard P Model
-    standard_pmod = PModel(pmod_env, kphio=1 / 8)
+    standard_pmod = PModel(pmod_env)
     standard_pmod.estimate_productivity(
         fapar=data["fapar"].to_numpy(), ppfd=data["ppfd"].to_numpy()
     )
@@ -88,21 +88,41 @@ def test_two_leaf_irradience(solar_irradience, get_data):
 def test_two_leaf_assimilation(assimilation_single_day):
     """Test."""
     assimilation = assimilation_single_day
-    assert np.allclose(assimilation.Vmax25_canopy, np.array([220.32138308]))
-    assert np.allclose(assimilation.Vmax25_sun, np.array([112.19495779]))
-    assert np.allclose(assimilation.Vmax25_shade, np.array([108.12642529]))
-    assert np.allclose(assimilation.Vmax_sun, np.array([88.33176716]))
-    assert np.allclose(assimilation.Vmax_shade, np.array([85.12858699]))
-    assert np.allclose(assimilation.Av_sun, np.array([23.7468972]))
-    assert np.allclose(assimilation.Av_shade, np.array([22.88576204]))
-    assert np.allclose(assimilation.Jmax25_sun, np.array([213.09973077]))
-    assert np.allclose(assimilation.Jmax25_shade, np.array([206.42733748]))
-    assert np.allclose(assimilation.Jmax_sun, np.array([181.16701827]))
-    assert np.allclose(assimilation.Jmax_shade, np.array([175.49447428]))
-    assert np.allclose(assimilation.J_sun, np.array([91.28498756]))
-    assert np.allclose(assimilation.J_shade, np.array([18.85937627]))
-    assert np.allclose(assimilation.Aj_sun, np.array([15.25224592]))
-    assert np.allclose(assimilation.Aj_shade, np.array([3.15109694]))
-    assert np.allclose(assimilation.Acanopy_sun, np.array([15.25224592]))
-    assert np.allclose(assimilation.Acanopy_shade, np.array([3.15109694]))
-    assert np.allclose(assimilation.gpp_estimate, np.array([186.34124706]))
+    assert np.allclose(assimilation.Vmax25_canopy, np.array([146.73080481]))
+    assert np.allclose(assimilation.Vmax25_sun, np.array([74.37653372]))
+    assert np.allclose(assimilation.Vmax25_shade, np.array([72.35427109]))
+    assert np.allclose(assimilation.Vmax_sun, np.array([58.55709373]))
+    assert np.allclose(assimilation.Vmax_shade, np.array([56.96495416]))
+    assert np.allclose(assimilation.Av_sun, np.array([15.74234649]))
+    assert np.allclose(assimilation.Av_shade, np.array([15.31431957]))
+    assert np.allclose(assimilation.Jmax25_sun, np.array([151.0775153]))
+    assert np.allclose(assimilation.Jmax25_shade, np.array([147.76100459]))
+    assert np.allclose(assimilation.Jmax_sun, np.array([128.43874966]))
+    assert np.allclose(assimilation.Jmax_shade, np.array([125.61921369]))
+    assert np.allclose(assimilation.J_sun, np.array([73.41800149]))
+    assert np.allclose(assimilation.J_shade, np.array([17.9579488]))
+    assert np.allclose(assimilation.Aj_sun, np.array([12.26696135]))
+    assert np.allclose(assimilation.Aj_shade, np.array([3.00048298]))
+    assert np.allclose(assimilation.Acanopy_sun, np.array([12.26696135]))
+    assert np.allclose(assimilation.Acanopy_shade, np.array([3.00048298]))
+    assert np.allclose(assimilation.gpp_estimate, np.array([150.33527564]))
+
+
+Vmax25_canopy = [146.73080481]
+Vmax25_sun = [74.37653372]
+Vmax25_shade = [72.35427109]
+Vmax_sun = [58.55709373]
+Vmax_shade = [56.96495416]
+Av_sun = [15.74234649]
+Av_shade = [15.31431957]
+Jmax25_sun = [151.0775153]
+Jmax25_shade = [147.76100459]
+J_sun = [73.41800149]
+J_shade = [17.9579488]
+Jmax_sun = [128.43874966]
+Jmax_shade = [125.61921369]
+Aj_sun = [12.26696135]
+Aj_shade = [3.00048298]
+Acanopy_sun = [12.26696135]
+Acanopy_shade = [3.00048298]
+gpp = [150.33527564]
