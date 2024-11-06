@@ -8,91 +8,12 @@ from typing import ClassVar
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.core.utilities import check_input_shapes
-from pyrealm.demography.core import PandasExporter
+from pyrealm.demography.core import (
+    PandasExporter,
+    _validate_demography_array_arguments,
+)
 from pyrealm.demography.flora import Flora, StemTraits
 from pyrealm.demography.t_model_functions import StemAllometry
-
-
-def _validate_z_qz_args(
-    z: NDArray[np.float64],
-    stem_properties: list[NDArray[np.float64]],
-    q_z: NDArray[np.float64] | None = None,
-) -> None:
-    """Shared validation of for crown function arguments.
-
-    Several of the crown functions in this module require a vertical height (``z``)
-    argument and, in some cases, the relative crown radius (``q_z``) at that height.
-    These arguments need to have shapes that are congruent with each other and with the
-    arrays providing stem properties for which values are calculated.
-
-    This function provides the following validation checks (see also the documentation
-    of accepted shapes for ``z`` in
-    :meth:`~pyrealm.demography.crown.calculate_relative_crown_radius_at_z`).
-
-    * Stem properties are identically shaped row (1D) arrays.
-    * The ``z`` argument is then one of:
-        * a scalar arrays (i.e. np.array(42) or np.array([42])),
-        * a row array with identical shape to the stem properties, or
-        * a column vector array (i.e. with shape ``(N, 1)``).
-    * If ``q_z`` is provided then:
-        * if ``z`` is a row array, ``q_z`` must then have identical shape, or
-        * if ``z`` is a column array ``(N, 1)``, ``q_z`` must then have shape ``(N,
-          n_stem_properties``).
-
-    Args:
-        z: An array input to the ``z`` argument of a crown function.
-        stem_properties: A list of array inputs representing stem properties.
-        q_z: An optional array input to the ``q_z`` argument of a crown function.
-    """
-
-    # Check the stem properties
-    try:
-        stem_shape = check_input_shapes(*stem_properties)
-    except ValueError:
-        raise ValueError("Stem properties are not of equal size")
-
-    if len(stem_shape) > 1:
-        raise ValueError("Stem properties are not row arrays")
-
-    # Record the number of stems
-    n_stems = stem_shape[0]
-
-    # Trap error conditions for z array
-    if z.size == 1:
-        pass
-    elif (z.ndim == 1) and (z.shape != stem_shape):
-        raise ValueError(
-            f"The z argument is a row array (shape: {z.shape}) but is not congruent "
-            f"with the cohort data (shape: {stem_shape})."
-        )
-    elif (z.ndim == 2) and (z.shape[1] != 1):
-        raise ValueError(
-            f"The z argument is two dimensional (shape: {z.shape}) but is "
-            "not a column array."
-        )
-    elif z.ndim > 2:
-        raise ValueError(
-            f"The z argument (shape: {z.shape}) is not a row or column vector array"
-        )
-
-    # Now test q_z congruence with z if provided
-    if q_z is not None:
-        if q_z.shape == z.shape:
-            pass
-        elif ((z.size == 1) or (z.ndim == 1)) and (q_z.shape != stem_shape):
-            raise ValueError(
-                f"The q_z argument (shape: {q_z.shape}) is not a row array "
-                f"matching stem properties (shape: {stem_shape})"
-            )
-        elif (z.ndim == 2) and (q_z.shape != (z.size, n_stems)):
-            raise ValueError(
-                f"The q_z argument (shape: {q_z.shape}) is not a 2D array congruent "
-                f"with the broadcasted shape of the z argument (shape: {z.shape}) "
-                f"and stem property arguments (shape: {stem_shape})"
-            )
-
-    return
 
 
 def calculate_relative_crown_radius_at_z(
@@ -136,7 +57,9 @@ def calculate_relative_crown_radius_at_z(
     """
 
     if validate:
-        _validate_z_qz_args(z=z, stem_properties=[stem_height, m, n])
+        _validate_demography_array_arguments(
+            trait_args={"m": m, "n": n}, size_args={"stem_height": stem_height, "z": z}
+        )
 
     z_over_height = z / stem_height
 
@@ -206,8 +129,15 @@ def calculate_stem_projected_crown_area_at_z(
     """
 
     if validate:
-        _validate_z_qz_args(
-            z=z, stem_properties=[stem_height, crown_area, q_m, z_max], q_z=q_z
+        _validate_demography_array_arguments(
+            trait_args={"q_m": q_m},
+            size_args={
+                "stem_height": stem_height,
+                "crown_area": crown_area,
+                "z": z,
+                "z_max": z_max,
+            },
+            at_size_args={"q_z": q_z},
         )
 
     # Calculate A_p
@@ -263,8 +193,15 @@ def calculate_stem_projected_leaf_area_at_z(
     #       lean as possible, as it used within solve_community_projected_crown_area.
 
     if validate:
-        _validate_z_qz_args(
-            z=z, stem_properties=[crown_area, stem_height, f_g, q_m, z_max], q_z=q_z
+        _validate_demography_array_arguments(
+            trait_args={"q_m": q_m, "f_g": f_g},
+            size_args={
+                "stem_height": stem_height,
+                "crown_area": crown_area,
+                "z": z,
+                "z_max": z_max,
+            },
+            at_size_args={"q_z": q_z},
         )
 
     # Calculate Ac terms
@@ -310,10 +247,7 @@ class CrownProfile(PandasExporter):
         stem_allometry: A StemAllometry instance setting the stem allometries for the
             crown profile.
         z: An array of vertical height values at which to calculate crown profiles.
-        stem_height: A row array providing expected stem height for each PFT.
-        crown_area: A row array providing expected crown area for each PFT.
-        r0: A row array providing expected r0 for each PFT.
-        z_max: A row array providing expected z_max height for each PFT.
+        validate: Boolean flag to suppress argument validation.
     """
 
     array_attrs: ClassVar[tuple[str, ...]] = (
@@ -331,6 +265,8 @@ class CrownProfile(PandasExporter):
     """A StemAllometry instance setting the stem allometries for the crown profile."""
     z: NDArray[np.float64]
     """An array of vertical height values at which to calculate crown profiles."""
+    validate: bool = True
+    """Boolean flag to suppress argument validation."""
 
     relative_crown_radius: NDArray[np.float64] = field(init=False)
     """An array of the relative crown radius of stems at z heights"""
@@ -351,19 +287,30 @@ class CrownProfile(PandasExporter):
         self,
         stem_traits: StemTraits | Flora,
         stem_allometry: StemAllometry,
+        validate: bool = True,
     ) -> None:
         """Populate crown profile attributes from the traits, allometry and height."""
+
+        # If validation is required, only need to perform validation once to check that
+        # the at_dbh values are congruent with the stem_traits inputs. If they are, then
+        # all the other allometry function inputs will be too.
+        if validate:
+            _validate_demography_array_arguments(
+                trait_args={"h_max": stem_traits.h_max}, size_args={"z": self.z}
+            )
+
         # Calculate relative crown radius
         self.relative_crown_radius = calculate_relative_crown_radius_at_z(
             z=self.z,
             m=stem_traits.m,
             n=stem_traits.n,
             stem_height=stem_allometry.stem_height,
+            validate=False,
         )
 
         # Calculate actual radius
         self.crown_radius = calculate_crown_radius(
-            q_z=self.relative_crown_radius, r0=stem_allometry.crown_r0
+            q_z=self.relative_crown_radius, r0=stem_allometry.crown_r0, validate=False
         )
 
         # Calculate projected crown area
@@ -374,6 +321,7 @@ class CrownProfile(PandasExporter):
             q_m=stem_traits.q_m,
             stem_height=stem_allometry.stem_height,
             z_max=stem_allometry.crown_z_max,
+            validate=False,
         )
 
         # Calculate projected leaf area
@@ -385,6 +333,7 @@ class CrownProfile(PandasExporter):
             crown_area=stem_allometry.crown_area,
             stem_height=stem_allometry.stem_height,
             z_max=stem_allometry.crown_z_max,
+            validate=False,
         )
 
         # Set the number of observations per stem (one if dbh is 1D, otherwise size of
@@ -452,10 +401,6 @@ def get_crown_xy(
     if attr not in crown_profile.array_attrs:
         raise ValueError(f"Unknown crown profile attribute: {attr}")
 
-    # TODO
-    # - more validation once the dimensioning has been thought through #317
-    # - we're expecting a one d allometry and a 2D profile with multiple heights.
-
     # Get the attribute and flatten the heights from a column array to one dimensional
     attr_values = getattr(crown_profile, attr)
     z = crown_profile.z.flatten()
@@ -471,7 +416,7 @@ def get_crown_xy(
     for stem_index in np.arange(attr_values.shape[1]):
         # Find the heights and values that fall within the individual stem
         height_is_valid = np.logical_and(
-            z <= stem_allometry.stem_height[stem_index], z >= 0
+            z <= stem_allometry.stem_height[:, stem_index], z >= 0
         )
         valid_attr_values: NDArray = attr_values[height_is_valid, stem_index]
         valid_heights: NDArray = z[height_is_valid]
@@ -482,7 +427,7 @@ def get_crown_xy(
             valid_heights = np.concatenate(
                 [
                     np.flip(valid_heights),
-                    stem_allometry.stem_height[[stem_index]],
+                    stem_allometry.stem_height[:, stem_index],
                     valid_heights,
                 ]
             )
@@ -493,7 +438,7 @@ def get_crown_xy(
             # Only the zero value is added
             valid_heights = np.concatenate(
                 [
-                    stem_allometry.stem_height[[stem_index]],
+                    stem_allometry.stem_height[:, stem_index],
                     valid_heights,
                 ]
             )

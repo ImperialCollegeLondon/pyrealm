@@ -104,12 +104,13 @@ an instance of a dataclass holding related parts of the community data. All have
 
 >>> community.stem_allometry.to_pandas()[
 ...     ["stem_height", "crown_area", "stem_mass", "crown_r0", "crown_z_max"]
-... ]
-   stem_height  crown_area  stem_mass  crown_r0  crown_z_max
-0     9.890399    2.459835   8.156296  0.339477     7.789552
-1     2.110534    0.174049   0.134266  0.083788     1.642777
-2    11.436498    3.413238  13.581094  0.399890     9.007241
-3     1.858954    0.127752   0.082126  0.071784     1.446955
+... ]  # doctest: +NORMALIZE_WHITESPACE
+                   stem_height  crown_area  stem_mass  crown_r0  crown_z_max
+column_stem_index
+0                     9.890399    2.459835   8.156296  0.339477     7.789552
+1                     2.110534    0.174049   0.134266  0.083788     1.642777
+2                    11.436498    3.413238  13.581094  0.399890     9.007241
+3                     1.858954    0.127752   0.082126  0.071784     1.446955
 
 >>> community.stem_traits.to_pandas()[
 ...     ["name", "a_hd", "ca_ratio", "sla", "par_ext", "q_m",  "z_max_prop"]

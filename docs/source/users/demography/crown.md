@@ -333,7 +333,7 @@ for pft_idx, offset, colour in zip((0, 1, 2), (0, 5, 12), ("r", "g", "b")):
 
     ax.plot(
         [offset - stem_rz_max, offset + stem_rz_max],
-        [allometry.crown_z_max[pft_idx]] * 2,
+        [allometry.crown_z_max[:, pft_idx]] * 2,
         color=colour,
         linewidth=1,
         linestyle=":",
@@ -452,8 +452,8 @@ for f_g in np.linspace(0, 1, num=11):
 
 # Add a horizontal line for z_max
 ax.plot(
-    [-1, allometry_f_g.crown_area[0] + 1],
-    [allometry_f_g.crown_z_max, allometry_f_g.crown_z_max],
+    [-1, allometry_f_g.crown_area[0][0] + 1],
+    [allometry_f_g.crown_z_max[0][0], allometry_f_g.crown_z_max[0][0]],
     linestyle="--",
     color="black",
     label="$z_{max}$",
@@ -462,7 +462,7 @@ ax.plot(
 
 ax.set_ylabel(r"Vertical height ($z$, m)")
 ax.set_xlabel(r"Projected leaf area ($\tilde{A}_{cp}(z)$, m2)")
-ax.legend(frameon=False)
+_ = ax.legend(frameon=False)
 ```
 
 ## Plotting tools for crown shapes
@@ -525,7 +525,7 @@ for cr_xy, (ch, cpr), (lh, lpr) in zip(
     ax.plot(lpr, lh, color="red", linewidth=1)
 
 ax.set_aspect(0.5)
-plt.legend(
+_ = plt.legend(
     handles=[
         Patch(color="lightgrey", label="Crown profile"),
         Line2D([0], [0], label="Projected crown", color="0.4", linewidth=2),
@@ -534,5 +534,6 @@ plt.legend(
     ncols=3,
     loc="upper center",
     bbox_to_anchor=(0.5, 1.15),
+    frameon=False,
 )
 ```
