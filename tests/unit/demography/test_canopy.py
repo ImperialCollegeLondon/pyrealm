@@ -189,7 +189,7 @@ def test_solve_canopy_area_filling_height(fixture_community):
         this_height,
         this_target,
     ) in zip(
-        np.flip(fixture_community.stem_allometry.crown_z_max),
+        np.flip(fixture_community.stem_allometry.crown_z_max.flatten()),
         np.cumsum(np.flip(fixture_community.stem_allometry.crown_area)),
     ):
         solved = solve_canopy_area_filling_height(

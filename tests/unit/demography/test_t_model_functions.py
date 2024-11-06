@@ -1,6 +1,7 @@
 """test the functions in t_model_functions.py."""
 
 from contextlib import nullcontext as does_not_raise
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -25,78 +26,6 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
 
 
 @pytest.mark.parametrize(
-    argnames="pft_args, size_args, outcome, excep_message",
-    argvalues=[
-        pytest.param(
-            [np.ones(4), np.ones(4)],
-            [np.ones(4), np.ones(4)],
-            does_not_raise(),
-            None,
-            id="all_1d_ok",
-        ),
-        pytest.param(
-            [np.ones(5), np.ones(4)],
-            [np.ones(4), np.ones(4)],
-            pytest.raises(ValueError),
-            "PFT trait values are not of equal length",
-            id="pfts_unequal",
-        ),
-        pytest.param(
-            [np.ones(4), np.ones(4)],
-            [np.ones(5), np.ones(4)],
-            pytest.raises(ValueError),
-            "Size arrays are not of equal length",
-            id="shape_unequal",
-        ),
-        pytest.param(
-            [np.ones((4, 2)), np.ones((4, 2))],
-            [np.ones(4), np.ones(4)],
-            pytest.raises(ValueError),
-            "T model functions only accept 1D arrays of PFT trait values",
-            id="pfts_not_row_arrays",
-        ),
-        pytest.param(
-            [np.ones(4), np.ones(4)],
-            [np.ones(5), np.ones(5)],
-            pytest.raises(ValueError),
-            "Trait and size inputs are row arrays of unequal length.",
-            id="sizes_row_array_of_bad_length",
-        ),
-        pytest.param(
-            [np.ones(4), np.ones(4)],
-            [np.ones((5, 1)), np.ones((5, 1))],
-            does_not_raise(),
-            None,
-            id="size_2d_columns_ok",
-        ),
-        pytest.param(
-            [np.ones(4), np.ones(4)],
-            [np.ones((5, 2)), np.ones((5, 2))],
-            pytest.raises(ValueError),
-            "PFT and size inputs to T model function are not compatible.",
-            id="size_2d_not_ok",
-        ),
-        pytest.param(
-            [np.ones(4), np.ones(4)],
-            [np.ones((5, 4)), np.ones((5, 4))],
-            does_not_raise(),
-            None,
-            id="size_2d_weird_but_ok",
-        ),
-    ],
-)
-def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
-    """Test shared input validation function."""
-    from pyrealm.demography.t_model_functions import _validate_t_model_args
-
-    with outcome as excep:
-        _validate_t_model_args(pft_args=pft_args, size_args=size_args)
-        return
-
-    assert str(excep.value).startswith(excep_message)
-
-
-@pytest.mark.parametrize(
     argnames="data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape",
     argvalues=[
         pytest.param(
@@ -105,7 +34,7 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             does_not_raise(),
             None,
             (0, slice(None)),
-            (3,),
+            (1, 3),
             id="row_0",
         ),
         pytest.param(
@@ -114,7 +43,7 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             does_not_raise(),
             None,
             (1, slice(None)),
-            (3,),
+            (1, 3),
             id="row_1",
         ),
         pytest.param(
@@ -123,7 +52,7 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             does_not_raise(),
             None,
             (2, slice(None)),
-            (3,),
+            (1, 3),
             id="row_2",
         ),
         pytest.param(
@@ -132,7 +61,7 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             does_not_raise(),
             None,
             (3, slice(None)),
-            (3,),
+            (1, 3),
             id="row_3",
         ),
         pytest.param(
@@ -141,7 +70,7 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             does_not_raise(),
             None,
             (4, slice(None)),
-            (3,),
+            (1, 3),
             id="row_4",
         ),
         pytest.param(
@@ -150,7 +79,7 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             does_not_raise(),
             None,
             (5, slice(None)),
-            (3,),
+            (1, 3),
             id="row_5",
         ),
         pytest.param(
@@ -220,7 +149,8 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             (0, slice(None)),
             [0, 1, 2, 0],
             pytest.raises(ValueError),
-            "Trait and size inputs are row arrays of unequal length.",
+            "The array shapes of the trait (4,) and size (3,) "
+            "arguments are not congruent.",
             None,
             None,
             id="fail_PFT_and_sizes_rows_but_not_equal_length",
@@ -229,7 +159,7 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             (0, slice(None)),
             np.newaxis,
             pytest.raises(ValueError),
-            "T model functions only accept 1D arrays of PFT trait values",
+            "Trait arguments are not 1D arrays",
             None,
             None,
             id="fail_2D_PFT",
@@ -238,7 +168,8 @@ def test__validate_t_model_args(pft_args, size_args, outcome, excep_message):
             (slice(None), [0, 1]),
             slice(None),
             pytest.raises(ValueError),
-            "PFT and size inputs to T model function are not compatible.",
+            "The array shapes of the trait (3,) and size (6, 2) "
+            "arguments are not congruent.",
             None,
             None,
             id="fail_badly_shaped_2D",
@@ -264,7 +195,8 @@ class TestTModel:
     expected outputs to repeat the single column expectations across (6, 3).
 
     The parameterization also includes three cases that check the failure modes for
-    inputs.
+    inputs. This doesn't exhaustively test all failure modes - there is a more detailed
+    test of _validate_demography_array_arguments in tests/unit/demography/test_core.py
     """
 
     def test_calculate_heights(
@@ -608,7 +540,9 @@ class TestTModel:
             result = calculate_net_primary_productivity(
                 yld=rtmodel_flora.yld[pft_idx],
                 whole_crown_gpp=rtmodel_data["whole_crown_gpp"][data_idx],
-                foliar_respiration=0,  # Not included here in the R implementation
+                foliar_respiration=np.array(
+                    [0]
+                ),  # Not included here in the R implementation
                 fine_root_respiration=rtmodel_data["fine_root_respiration"][data_idx],
                 sapwood_respiration=rtmodel_data["sapwood_respiration"][data_idx],
             )
@@ -651,7 +585,7 @@ class TestTModel:
 
         assert str(excep.value).startswith(excep_msg)
 
-    def test_calculate_calculate_growth_increments(
+    def test_calculate_growth_increments(
         self,
         rtmodel_data,
         rtmodel_flora,
@@ -727,6 +661,54 @@ def test_calculate_dbh_from_height_edge_cases():
     assert np.all(np.isnan(dbh) == np.array([[0, 0], [0, 0], [0, 0], [1, 0], [1, 1]]))
 
 
+@pytest.mark.parametrize(
+    argnames="at_dbh, outcome, excep_msg",
+    argvalues=[
+        pytest.param(np.array(1), does_not_raise(), None, id="pass_0D"),
+        pytest.param(np.ones(1), does_not_raise(), None, id="pass_1D_scalar"),
+        pytest.param(np.ones(3), does_not_raise(), None, id="pass_1D_row"),
+        pytest.param(np.ones((1, 3)), does_not_raise(), None, id="pass_2D_row"),
+        pytest.param(np.ones((4, 1)), does_not_raise(), None, id="pass_2D_col"),
+        pytest.param(np.ones((4, 3)), does_not_raise(), None, id="pass_2D_full"),
+        pytest.param(
+            np.ones(4),
+            pytest.raises(ValueError),
+            "The array shapes of the trait (3,) and size (4,) arguments",
+            id="fail_1D_row_wrong",
+        ),
+        pytest.param(
+            np.ones((4, 4)),
+            pytest.raises(ValueError),
+            "The array shapes of the trait (3,) and size (4, 4) arguments",
+            id="fail_2D_full_wrong",
+        ),
+    ],
+)
+def test_StemAllometry_validation(rtmodel_flora, at_dbh, outcome, excep_msg):
+    """Test the StemAllometry validation process.
+
+    Also checks that validation only occurs once. Note that this requires the use of the
+    wraps argument to ensure that the validation function actually _runs_ while being
+    spied on, rather than just being replaced by the patch.
+    """
+
+    from pyrealm.demography.core import _validate_demography_array_arguments
+    from pyrealm.demography.t_model_functions import StemAllometry
+
+    with (
+        outcome as excep,
+        patch(
+            "pyrealm.demography.t_model_functions._validate_demography_array_arguments",
+            wraps=_validate_demography_array_arguments,
+        ) as val_func_patch,
+    ):
+        _ = StemAllometry(stem_traits=rtmodel_flora, at_dbh=at_dbh)
+        assert val_func_patch.call_count == 1
+        return
+
+    assert str(excep.value).startswith(excep_msg)
+
+
 def test_StemAllometry(rtmodel_flora, rtmodel_data):
     """Test the StemAllometry class and inherited methods."""
 
@@ -778,12 +760,12 @@ def test_StemAllometry_CohortMethods(rtmodel_flora, rtmodel_data):
     n_entries = len(rtmodel_data["dbh"])
     # Add a copy of itself as new cohort data and check the shape
     stem_allometry.add_cohort_data(new_data=stem_allometry)
-    assert stem_allometry.crown_fraction.shape == (2 * n_entries, rtmodel_flora.n_pfts)
+    assert stem_allometry.crown_fraction.shape == (n_entries, 2 * rtmodel_flora.n_pfts)
     assert stem_allometry.crown_fraction.sum() == 2 * check_data.sum()
 
     # Remove the rows from the first copy and what's left should be aligned with the
     # original data
-    stem_allometry.drop_cohort_data(drop_indices=np.arange(n_entries))
+    stem_allometry.drop_cohort_data(drop_indices=np.arange(rtmodel_flora.n_pfts))
     assert np.allclose(stem_allometry.crown_fraction, check_data)
 
 
@@ -819,3 +801,62 @@ def test_StemAllocation(rtmodel_flora, rtmodel_data):
     )
 
     assert set(stem_allocation.array_attrs) == set(df.columns)
+
+
+@pytest.mark.parametrize(
+    argnames="pot_gpp, outcome, excep_msg",
+    argvalues=[
+        pytest.param(np.array(1), does_not_raise(), None, id="pass_0D"),
+        pytest.param(np.ones(1), does_not_raise(), None, id="pass_1D_scalar"),
+        pytest.param(np.ones(3), does_not_raise(), None, id="pass_1D_row"),
+        pytest.param(np.ones((1, 3)), does_not_raise(), None, id="pass_2D_row"),
+        pytest.param(np.ones((4, 1)), does_not_raise(), None, id="pass_2D_col"),
+        pytest.param(np.ones((4, 3)), does_not_raise(), None, id="pass_2D_full"),
+        pytest.param(
+            np.ones(4),
+            pytest.raises(ValueError),
+            "The broadcast shapes of the trait and size arguments (4, 3) are not "
+            "congruent with the shape of the at_size arguments (4,)",
+            id="fail_1D_row_wrong",
+        ),
+        pytest.param(
+            np.ones((5, 4)),
+            pytest.raises(ValueError),
+            "The broadcast shapes of the trait and size arguments (4, 3) are not "
+            "congruent with the shape of the at_size arguments (5, 4)",
+            id="fail_2D_full_wrong",
+        ),
+    ],
+)
+def test_StemAllocation_validation(rtmodel_flora, pot_gpp, outcome, excep_msg):
+    """Test the StemAllocation validation process.
+
+    The stem allometry inputs are kept constant - the validation of inputs to that
+    function is checked in the tests above.
+
+    Also checks that validation only occurs once. Note that this requires the use of the
+    wraps argument to ensure that the validation function actually _runs_ while being
+    spied on, rather than just being replaced by the patch.
+    """
+
+    from pyrealm.demography.core import _validate_demography_array_arguments
+    from pyrealm.demography.t_model_functions import StemAllocation, StemAllometry
+
+    # Calculate a constant allometry
+    allom = StemAllometry(stem_traits=rtmodel_flora, at_dbh=np.ones((4, 3)))
+
+    with (
+        outcome as excep,
+        patch(
+            "pyrealm.demography.t_model_functions._validate_demography_array_arguments",
+            wraps=_validate_demography_array_arguments,
+        ) as val_func_patch,
+    ):
+        # Check the behaviour of the validation
+        _ = StemAllocation(
+            stem_traits=rtmodel_flora, stem_allometry=allom, at_potential_gpp=pot_gpp
+        )
+        assert val_func_patch.call_count == 1
+        return
+
+    assert str(excep.value).startswith(excep_msg)

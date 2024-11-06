@@ -14,12 +14,12 @@ def test_profiling_pmodel(pmodel_profile_data):
 
     # Profiling the PModel submodule
     # Standard C3 PModel
-    pmod_c3 = PModel(env=pm_env, kphio=1 / 8)
+    pmod_c3 = PModel(env=pm_env, reference_kphio=1 / 8)
     pmod_c3.estimate_productivity(fapar=fapar, ppfd=ppfd)
     pmod_c3.summarize()
 
     # Standard C4 PModel
-    pmod_c4 = PModel(env=pm_env, kphio=1 / 8, method_optchi="c4")
+    pmod_c4 = PModel(env=pm_env, reference_kphio=1 / 8, method_optchi="c4")
     pmod_c4.estimate_productivity(fapar=fapar, ppfd=ppfd)
     pmod_c4.summarize()
 
