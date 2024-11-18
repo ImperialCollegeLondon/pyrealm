@@ -1,6 +1,16 @@
 #!/bin/bash
 
+while getopts new:old: flag
+do
+    case "${flag}" in
+        n) new_commit=${OPTARG};;
+        o) old_commit=${OPTARG};;
+        *) echo "Invalid input argument"; exit 1;;
+    esac
+done
+
 cd ..
+git checkout $new_commit
 
 # Remember where we start from
 current_repo=`pwd`
@@ -10,7 +20,7 @@ cmp_repo=$current_repo/../pyrealm_performance_check
 
 # Adding the worktree
 echo "Add worktree" $cmp_repo
-git worktree add $cmp_repo HEAD~1
+git worktree add $cmp_repo $old_commit
 
 # Go there and activate poetry environment
 cd $cmp_repo
