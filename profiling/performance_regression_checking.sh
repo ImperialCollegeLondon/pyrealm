@@ -1,9 +1,9 @@
 #!/bin/bash
 
 if [[ $# -eq 0 ]] ; then
-    echo "No input arguments, comparing HEAD to HEAD~1"
+    echo "No input arguments, comparing HEAD to origin/develop"
     new_commit=HEAD
-    old_commit=HEAD~1
+    old_commit=origin/develop
 else
     while getopts n:o: flag
     do
