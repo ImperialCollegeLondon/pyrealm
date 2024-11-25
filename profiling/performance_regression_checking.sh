@@ -1,13 +1,19 @@
 #!/bin/bash
 
-while getopts new:old: flag
-do
-    case "${flag}" in
-        n) new_commit=${OPTARG};;
-        o) old_commit=${OPTARG};;
-        *) echo "Invalid input argument"; exit 1;;
-    esac
-done
+if [[ $# -eq 0 ]] ; then
+    echo "No input arguments, comparing HEAD to HEAD~1"
+    new_commit=HEAD
+    old_commit=HEAD~1
+else
+    while getopts n:o: flag
+    do
+        case "${flag}" in
+            n) new_commit=${OPTARG};;
+            o) old_commit=${OPTARG};;
+            *) echo "Invalid input argument"; exit 1;;
+        esac
+    done
+fi
 
 cd ..
 git checkout $new_commit
@@ -30,12 +36,20 @@ poetry install
 # Run the profiling on old commit
 echo "Run profiling tests on old commit"
 poetry run /usr/bin/time -v pytest -m "profiling" --profile-svg
+if [ "$?" != "0" ]; then
+    echo "Profiling the current code went wrong."
+    exit 1
+fi
 
 # Go back into the current repo and run there
 cd $current_repo
 poetry install
 echo "Run profiling tests on new commit"
 poetry run /usr/bin/time -v pytest -m "profiling" --profile-svg
+if [ "$?" != "0" ]; then
+    echo "Profiling the new code went wrong."
+    exit 1
+fi
 
 # Compare the profiling outputs
 cd profiling
@@ -56,9 +70,9 @@ df_new = simple_benchmarking.run_simple_benchmarking(prof_path=prof_path_new)
 cumtime_new = (df_new.sum(numeric_only=True)['cumtime'])
 print('New time:', cumtime_new)
 
-if cumtime_old < cumtime_new:
+if cumtime_old < 0.95*cumtime_new:
   print('We got slower. :(')
-elif cumtime_new < cumtime_old:
+elif cumtime_new < 0.95*cumtime_old:
   print('We got quicker! :)')
 else:
   print('Times haven\'t changed')
