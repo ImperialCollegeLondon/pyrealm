@@ -57,6 +57,7 @@ python -c "
 from pathlib import Path
 import simple_benchmarking
 import pandas as pd
+import sys
 
 prof_path_old = Path('$cmp_repo'+'/prof/combined.prof')
 print(prof_path_old)
@@ -72,15 +73,24 @@ print('New time:', cumtime_new)
 
 if cumtime_old < 0.95*cumtime_new:
   print('We got slower. :(')
+  sys.exit(1)
 elif cumtime_new < 0.95*cumtime_old:
   print('We got quicker! :)')
 else:
   print('Times haven\'t changed')
 "
+
+benchmarking_out="$?"
+
 cd ..
 # Remove the working tree for the comparison commit
 echo "Clean up"
 git worktree remove --force $cmp_repo
 git worktree prune
 
-echo "Done"
+if [ $benchmarking_out != "0" ]; then
+    echo "The new code is more than 5% slower than the old one."
+    exit 1
+fi
+
+echo "No significant performance regression detected."
