@@ -99,8 +99,8 @@ details on the workflow and process.
 Even if the code works as expected and passes all our tests, it can still be slow! We
 use code profiling to work out where time is spent when using `pyrealm` and identify
 where we can improve performance. We also use benchmarking between `pyrealm` versions to
-make sure that changes to the code aren't making it slower. This is currently run manually 
-using the `performance_regression_checking.sh` script in the `profiling` directory.
+make sure that changes to the code aren't making it slower. This is currently run
+manually using the `performance_regression_checking.sh` script in the `profiling` directory.
 
 ### Documentation
 
