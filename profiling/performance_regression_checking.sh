@@ -35,7 +35,11 @@ poetry install
 
 # Run the profiling on old commit
 echo "Run profiling tests on old commit"
-poetry run /usr/bin/time -v pytest -m "profiling" --profile-svg
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then #Linux
+    poetry run /usr/bin/time -v pytest -m "profiling" --profile-svg
+elif [[ "$OSTYPE" == "darwin"* ]]; then #Mac OS
+     poetry run /usr/bin/time -l pytest -m "profiling" --profile-svg
+fi
 if [ "$?" != "0" ]; then
     echo "Profiling the current code went wrong."
     exit 1
@@ -45,7 +49,11 @@ fi
 cd $current_repo
 poetry install
 echo "Run profiling tests on new commit"
-poetry run /usr/bin/time -v pytest -m "profiling" --profile-svg
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then #Linux
+    poetry run /usr/bin/time -v pytest -m "profiling" --profile-svg
+elif [[ "$OSTYPE" == "darwin"* ]]; then #Mac OS
+     poetry run /usr/bin/time -l pytest -m "profiling" --profile-svg
+fi
 if [ "$?" != "0" ]; then
     echo "Profiling the new code went wrong."
     exit 1
