@@ -111,6 +111,7 @@ new performance is more than 5% slower than the baseline, otherwise it will succ
 a message indicating whether the new code is faster or has similar performance.
 
 To look deeper into how much time is spent in each function, the command
+
 ```bash
 poetry run pytest --profile-svg -m "profiling"
 ```
