@@ -110,6 +110,13 @@ want to compare the perfomance against). The code will fail with an error messag
 new performance is more than 5% slower than the baseline, otherwise it will succeed with
 a message indicating whether the new code is faster or has similar performance.
 
+To look deeper into how much time is spent in each function, the command 
+```bash
+poetry run pytest --profile-svg -m "profiling"
+```
+will run the profiling tests and generate a call graph and table with this information in
+the `profiling` subdirectory.
+
 ### Documentation
 
 We use:
