@@ -28,7 +28,7 @@ def test_profiling_pmodel(pmodel_profile_data):
     gpp_c3_annual = pmod_c3.gpp * (60 * 60 * 24 * 365) * 1e-6
     gpp_c4_annual = pmod_c4.gpp * (60 * 60 * 24 * 365) * 1e-6
 
-    # Fit the competition model - making some extrenely poor judgements about what
+    # Fit the competition model - making some extremely poor judgements about what
     # is cropland and what is below the minimum temperature that really should be
     # fixed.
     comp = C3C4Competition(
