@@ -10,10 +10,9 @@ from numpy.typing import NDArray
 from scipy.optimize import root_scalar  # type: ignore [import-untyped]
 
 from pyrealm.demography.community import Community
-from pyrealm.demography.core import PandasExporter
+from pyrealm.demography.core import PandasExporter, _validate_demography_array_arguments
 from pyrealm.demography.crown import (
     CrownProfile,
-    _validate_z_qz_args,
     calculate_relative_crown_radius_at_z,
     calculate_stem_projected_crown_area_at_z,
 )
@@ -66,9 +65,14 @@ def solve_canopy_area_filling_height(
     z_arr = np.array(z)
 
     if validate:
-        _validate_z_qz_args(
-            z=z_arr,
-            stem_properties=[n_individuals, crown_area, stem_height, m, n, q_m, z_max],
+        _validate_demography_array_arguments(
+            trait_args={"m": m, "n": n, "q_m": q_m, "n_individuals": n_individuals},
+            size_args={
+                "z": z_arr,
+                "crown_area": crown_area,
+                "stem_height": stem_height,
+                "z_max": z_max,
+            },
         )
 
     q_z = calculate_relative_crown_radius_at_z(
