@@ -85,7 +85,7 @@ jobs:
           retention-days: 2
 
   validate_profiling_tests:
-    needs: [qa, test]
+    needs: qa
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
