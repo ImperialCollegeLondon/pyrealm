@@ -111,3 +111,12 @@ language_info:
     :members:
     :special-members: __init__
 ```
+
+## The `phenology` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm_build_data.phenology
+    :autosummary:
+    :members:
+    :special-members: __init__
+```
