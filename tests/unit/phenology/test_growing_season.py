@@ -129,10 +129,10 @@ def test_find_cumulative_suitable_days(ts_reshape, ts_broadcast):
         pytest.param((21, 1, 1), (21, 2, 2), id="3D"),
     ],
 )
-def test_find_annual_growing_season(ts_reshape, ts_broadcast):
+def test_find_annual_growing_season_dimensions(ts_reshape, ts_broadcast):
     """Test find_annual_growing_season.
 
-    Uses a simple test case to check calculation works across inputs of differing
+    Uses a simple short test case to check calculation works across inputs of differing
     dimensions.
     """
     from pyrealm.phenology.growing_season import find_annual_growing_season
@@ -173,7 +173,7 @@ def test_find_annual_growing_season_complex():
     # Construct 4 time series
 
     dates = np.arange(
-        np.datetime64("2021-01-01"), np.datetime64("2021-12-31"), np.timedelta64(1, "D")
+        np.datetime64("2021-01-01"), np.datetime64("2022-01-01"), np.timedelta64(1, "D")
     )
 
     growing_seasons = (
@@ -213,3 +213,49 @@ def test_find_annual_growing_season_complex():
     assert_equal(season_length, expected_season_length)
     assert_equal(season_start, expected_season_start)
     assert_equal(season_end, expected_season_end)
+
+
+@pytest.mark.parametrize(
+    argnames="inputs, outcome, expected",
+    argvalues=(
+        pytest.param(
+            np.zeros(365),
+            does_not_raise(),
+            ("NaT", "NaT", 0),
+            id="no_grow",
+        ),
+        pytest.param(
+            np.ones(365),
+            does_not_raise(),
+            ("2021-01-01", "2021-12-31", 365),
+            id="all_grow",
+        ),
+        pytest.param(
+            np.ones(366),
+            pytest.raises(ValueError),
+            None,
+            id="dates_unequal",
+        ),
+    ),
+)
+def test_find_annual_growing_season_edges_and_exceptions(inputs, outcome, expected):
+    """Test edge case and exception handling in find_annual_growing_season."""
+    from pyrealm.phenology.growing_season import find_annual_growing_season
+
+    dates = np.arange(
+        np.datetime64("2021-01-01"), np.datetime64("2022-01-01"), np.timedelta64(1, "D")
+    )
+
+    with outcome:
+        season_start, season_end, season_length = find_annual_growing_season(
+            inputs, dates, return_dates=True
+        )
+
+        # Test assertions if no error
+        assert_equal(
+            season_start, np.array(np.datetime64(expected[0]), dtype="datetime64[D]")
+        )
+        assert_equal(
+            season_end, np.array(np.datetime64(expected[1]), dtype="datetime64[D]")
+        )
+        assert_equal(season_length, np.array(expected[2]))

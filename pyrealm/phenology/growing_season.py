@@ -183,6 +183,9 @@ def find_annual_growing_season(
             as well as the season length.
     """
 
+    if len(dates) != suitable.shape[0]:
+        raise ValueError("Number of dates not equal to first axis length of suitable")
+
     # Find the cumulative consecutive suitable days for the year
     year_consecutive = find_cumulative_suitable_days(suitable)
 
@@ -197,9 +200,16 @@ def find_annual_growing_season(
     if not return_dates:
         return season_length
 
+    # TODO - handle no growing season - sub in np.datetime64('NaT')
+
     # Calculate the season start and end dates if requested
     season_end = dates[year_max_consecutive_idx].squeeze()
     season_start = dates[year_max_consecutive_idx - season_length + 1].squeeze()
+
+    # Handle no growing season at all
+    if np.any(season_length == 0):
+        season_end = np.where(season_length == 0, np.datetime64("NaT"), season_end)
+        season_start = np.where(season_length == 0, np.datetime64("NaT"), season_start)
 
     return season_start, season_end, season_length
 
@@ -225,12 +235,13 @@ def find_growing_seasons(
         return_dates: Should the function return the start and end dates of the season
             as well as the season length.
     """
+
     # TODO need to add hemisphere switching
 
     # Get the dates as a Calendar object
     calendar = Calendar(dates)
 
-    if dates.shape != suitable[0].shape:
+    if len(dates) != suitable.shape[0]:
         raise ValueError("Number of dates not equal to first axis length of suitable")
 
     # Split the input arrays along the first axis to give blocks of suitability and
