@@ -198,7 +198,7 @@ def find_annual_growing_season(
 
     # Just return the season lengths
     if not return_dates:
-        return season_length
+        return np.atleast_1d(season_length)
 
     # TODO - handle no growing season - sub in np.datetime64('NaT')
 
@@ -211,7 +211,11 @@ def find_annual_growing_season(
         season_end = np.where(season_length == 0, np.datetime64("NaT"), season_end)
         season_start = np.where(season_length == 0, np.datetime64("NaT"), season_start)
 
-    return season_start, season_end, season_length
+    return (
+        np.atleast_1d(season_start),
+        np.atleast_1d(season_end),
+        np.atleast_1d(season_length),
+    )
 
 
 def find_growing_seasons(
@@ -247,8 +251,8 @@ def find_growing_seasons(
     # Split the input arrays along the first axis to give blocks of suitability and
     # dates for each year
     year_change_indices = np.where(np.diff(calendar.year) > 0)[0]
-    year_subarrays = np.split(suitable, year_change_indices)
-    date_subarrays = np.split(dates, year_change_indices)
+    year_subarrays = np.split(suitable, year_change_indices + 1)
+    date_subarrays = np.split(dates, year_change_indices + 1)
 
     # Calculate the annual growing season within each year split
     seasons = [
@@ -259,5 +263,7 @@ def find_growing_seasons(
     ]
 
     # Repackage into arrays
+    if return_dates:
+        return tuple(np.concatenate(values) for values in list(zip(*seasons)))  # type: ignore [arg-type]
 
-    return seasons
+    return np.concatenate(seasons)

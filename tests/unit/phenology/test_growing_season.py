@@ -7,6 +7,43 @@ import pytest
 from numpy.testing import assert_allclose, assert_equal
 
 
+@pytest.fixture
+def fixture_different_seasons():
+    """Different growing season length inputs.
+
+    This returns a tuple of tuples of growing season start and end dates giving
+    different season lengths, the set of dates that those seasons are defined on and the
+    resulting 365 x 2 x 2 array containing growth suitability data.
+    """
+
+    # Construct 4 time series
+
+    dates = np.arange(
+        np.datetime64("2021-01-01"), np.datetime64("2022-01-01"), np.timedelta64(1, "D")
+    )
+
+    growing_seasons = (
+        (np.datetime64("2021-06-01"), np.datetime64("2021-07-31")),
+        (np.datetime64("2021-05-01"), np.datetime64("2021-08-31")),
+        (np.datetime64("2021-04-01"), np.datetime64("2021-09-30")),
+        (np.datetime64("2021-03-01"), np.datetime64("2021-10-31")),
+    )
+
+    # Fill in ones between those dates on each time series in a 2x2 grid
+    inputs = np.zeros((365, 2, 2))
+    for (grow_start, grow_end), idx in zip(
+        growing_seasons, np.ndindex(inputs[0].shape)
+    ):
+        inputs[
+            slice(
+                np.where(dates == grow_start)[0][0], np.where(dates == grow_end)[0][0]
+            ),
+            *idx,
+        ] = 1
+
+    return growing_seasons, dates, inputs
+
+
 @pytest.mark.parametrize(
     argnames="ts_reshape, ts_broadcast",
     argvalues=[
@@ -139,7 +176,7 @@ def test_find_annual_growing_season_dimensions(ts_reshape, ts_broadcast):
 
     inputs = np.array([0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0])
     dates = np.arange(
-        np.datetime64("2024-06-01"), np.datetime64("2024-06-21"), np.timedelta64(1, "D")
+        np.datetime64("2024-06-01"), np.datetime64("2024-06-22"), np.timedelta64(1, "D")
     )
 
     # Broadcast the data into different dimensionalities
@@ -163,37 +200,15 @@ def test_find_annual_growing_season_dimensions(ts_reshape, ts_broadcast):
     assert_equal(season_end, expected_season_end)
 
 
-def test_find_annual_growing_season_complex():
+def test_find_annual_growing_season_complex(fixture_different_seasons):
     """Test find_annual_growing_season.
 
     Uses a more 3D complex input where the results should differ across the cells.
     """
     from pyrealm.phenology.growing_season import find_annual_growing_season
 
-    # Construct 4 time series
-
-    dates = np.arange(
-        np.datetime64("2021-01-01"), np.datetime64("2022-01-01"), np.timedelta64(1, "D")
-    )
-
-    growing_seasons = (
-        (np.datetime64("2021-06-01"), np.datetime64("2021-07-31")),
-        (np.datetime64("2021-05-01"), np.datetime64("2021-08-31")),
-        (np.datetime64("2021-04-01"), np.datetime64("2021-09-30")),
-        (np.datetime64("2021-03-01"), np.datetime64("2021-10-31")),
-    )
-
-    # Fill in ones between those dates on each time series in a 2x2 grid
-    inputs = np.zeros((365, 2, 2))
-    for (grow_start, grow_end), idx in zip(
-        growing_seasons, np.ndindex(inputs[0].shape)
-    ):
-        inputs[
-            slice(
-                np.where(dates == grow_start)[0][0], np.where(dates == grow_end)[0][0]
-            ),
-            *idx,
-        ] = 1
+    # Get the inputs
+    growing_seasons, dates, inputs = fixture_different_seasons
 
     # Get the expectations
     expected_season_length = np.array(
@@ -259,3 +274,45 @@ def test_find_annual_growing_season_edges_and_exceptions(inputs, outcome, expect
             season_end, np.array(np.datetime64(expected[1]), dtype="datetime64[D]")
         )
         assert_equal(season_length, np.array(expected[2]))
+
+
+def test_find_annual_growing_seasons_dimension(fixture_different_seasons):
+    """Test find_annual_growing_seasons.
+
+    Uses a simple short test case to check calculation works across inputs of differing
+    dimensions.
+    """
+    from pyrealm.phenology.growing_season import find_growing_seasons
+
+    # Reuse the different season data but flatten into a 4 year time series
+    growing_seasons, dates, inputs = fixture_different_seasons
+    inputs = inputs.T.flatten()
+
+    # Define dates along that sequence - need to avoid leap years to get a sequence the
+    # same length as the unwrapped
+    dates = np.arange(
+        np.datetime64("2100-01-01"), np.datetime64("2104-01-01"), np.timedelta64(1, "D")
+    )
+
+    assert len(dates) == len(inputs)  # == 4 * 365
+
+    season_start, season_end, season_length = find_growing_seasons(
+        inputs, dates, return_dates=True
+    )
+
+    # All integers and dates so use assert_equal
+    assert_equal(
+        season_start,
+        np.array(
+            ["2100-06-01", "2101-04-01", "2102-05-01", "2103-03-01"],
+            dtype="datetime64[D]",
+        ),
+    )
+    assert_equal(
+        season_end,
+        np.array(
+            ["2100-07-30", "2101-09-29", "2102-08-30", "2103-10-30"],
+            dtype="datetime64[D]",
+        ),
+    )
+    assert_equal(season_length, np.array([60, 182, 122, 244]))
