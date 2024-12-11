@@ -264,6 +264,6 @@ def find_growing_seasons(
 
     # Repackage into arrays
     if return_dates:
-        return tuple(np.concatenate(values) for values in list(zip(*seasons)))  # type: ignore [arg-type]
+        return tuple(np.concatenate(values) for values in list(zip(*seasons)))
 
     return np.concatenate(seasons)
