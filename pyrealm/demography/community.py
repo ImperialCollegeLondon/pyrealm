@@ -20,7 +20,7 @@ of plant cohorts.
 >>> import pandas as pd
 >>>
 >>> from pyrealm.demography.flora import PlantFunctionalType, Flora
->>> from pyrealm.demography.t_model_functions import (
+>>> from pyrealm.demography.tmodel import (
 ...     calculate_heights, calculate_crown_areas, calculate_stem_masses,
 ...     calculate_foliage_masses
 ... )
@@ -139,7 +139,7 @@ from numpy.typing import NDArray
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.demography.core import CohortMethods, PandasExporter
 from pyrealm.demography.flora import Flora, StemTraits
-from pyrealm.demography.t_model_functions import StemAllometry
+from pyrealm.demography.tmodel import StemAllometry
 
 if sys.version_info[:2] >= (3, 11):
     import tomllib

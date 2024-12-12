@@ -45,7 +45,7 @@ from pyrealm.demography.flora import (
     Flora,
 )
 
-from pyrealm.demography.t_model_functions import (
+from pyrealm.demography.tmodel import (
     calculate_dbh_from_height,
     StemAllometry,
 )
@@ -198,7 +198,7 @@ profiles for PFTs. It requires:
 
 * a {class}`~pyrealm.demography.flora.Flora` instance providing a set of PFTs to be
   compared,
-* a {class}`~pyrealm.demography.t_model_functions.StemAllometry` instance setting the
+* a {class}`~pyrealm.demography.tmodel.StemAllometry` instance setting the
   specific stem sizes for the profile, and
 * a set of heights at which to estimate the profile variables
 
@@ -226,7 +226,7 @@ flora.to_pandas()[["name", "h_max", "ca_ratio", "m", "n", "f_g", "q_m", "z_max_p
 
 The next section of code generates the `StemAllometry` to use for the profiles.
 The T Model requires DBH to define stem size - here the
-{meth}`~pyrealm.demography.t_model_functions.calculate_dbh_from_height` function
+{meth}`~pyrealm.demography.tmodel.calculate_dbh_from_height` function
 is used to back-calculate the required DBH values to give three stems with similar
 heights that are near the maximum height for each PFT.
 

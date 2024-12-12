@@ -1,4 +1,4 @@
-"""test the functions in t_model_functions.py."""
+"""test the functions in tmodel.py."""
 
 from contextlib import nullcontext as does_not_raise
 from unittest.mock import patch
@@ -17,7 +17,7 @@ import pytest
 def test_calculate_crown_r_0_values(crown_areas, expected_r0):
     """Test happy path for calculating r_0."""
 
-    from pyrealm.demography.t_model_functions import calculate_crown_r0
+    from pyrealm.demography.tmodel import calculate_crown_r0
 
     q_m = np.array([2.9038988210485766, 2.3953681843215673])
     actual_r0_values = calculate_crown_r0(q_m=q_m, crown_area=crown_areas)
@@ -211,7 +211,7 @@ class TestTModel:
         exp_shape,
     ):
         """Tests calculation of heights of tree from diameter."""
-        from pyrealm.demography.t_model_functions import calculate_heights
+        from pyrealm.demography.tmodel import calculate_heights
 
         with outcome as excep:
             result = calculate_heights(
@@ -239,7 +239,7 @@ class TestTModel:
     ):
         """Tests inverted calculation of dbh from height."""
 
-        from pyrealm.demography.t_model_functions import calculate_dbh_from_height
+        from pyrealm.demography.tmodel import calculate_dbh_from_height
 
         with outcome as excep:
             result = calculate_dbh_from_height(
@@ -267,7 +267,7 @@ class TestTModel:
     ):
         """Tests calculation of crown areas of trees."""
 
-        from pyrealm.demography.t_model_functions import calculate_crown_areas
+        from pyrealm.demography.tmodel import calculate_crown_areas
 
         with outcome as excep:
             result = calculate_crown_areas(
@@ -296,7 +296,7 @@ class TestTModel:
     ):
         """Tests calculation of crown fraction of trees."""
 
-        from pyrealm.demography.t_model_functions import calculate_crown_fractions
+        from pyrealm.demography.tmodel import calculate_crown_fractions
 
         with outcome as excep:
             result = calculate_crown_fractions(
@@ -324,7 +324,7 @@ class TestTModel:
     ):
         """Tests calculation of stem masses of trees."""
 
-        from pyrealm.demography.t_model_functions import calculate_stem_masses
+        from pyrealm.demography.tmodel import calculate_stem_masses
 
         with outcome as excep:
             result = calculate_stem_masses(
@@ -352,7 +352,7 @@ class TestTModel:
     ):
         """Tests calculation of stem masses of trees."""
 
-        from pyrealm.demography.t_model_functions import calculate_foliage_masses
+        from pyrealm.demography.tmodel import calculate_foliage_masses
 
         with outcome as excep:
             result = calculate_foliage_masses(
@@ -380,7 +380,7 @@ class TestTModel:
     ):
         """Tests calculation of stem masses of trees."""
 
-        from pyrealm.demography.t_model_functions import calculate_sapwood_masses
+        from pyrealm.demography.tmodel import calculate_sapwood_masses
 
         with outcome as excep:
             result = calculate_sapwood_masses(
@@ -410,7 +410,7 @@ class TestTModel:
     ):
         """Tests calculation of whole crown GPP."""
 
-        from pyrealm.demography.t_model_functions import calculate_whole_crown_gpp
+        from pyrealm.demography.tmodel import calculate_whole_crown_gpp
 
         with outcome as excep:
             result = calculate_whole_crown_gpp(
@@ -439,7 +439,7 @@ class TestTModel:
     ):
         """Tests calculation of sapwood respiration."""
 
-        from pyrealm.demography.t_model_functions import calculate_sapwood_respiration
+        from pyrealm.demography.tmodel import calculate_sapwood_respiration
 
         with outcome as excep:
             result = calculate_sapwood_respiration(
@@ -472,7 +472,7 @@ class TestTModel:
         broadcasting
         """
 
-        from pyrealm.demography.t_model_functions import calculate_foliar_respiration
+        from pyrealm.demography.tmodel import calculate_foliar_respiration
 
         with outcome as excep:
             result = calculate_foliar_respiration(
@@ -503,7 +503,7 @@ class TestTModel:
     ):
         """Tests calculation of fine root respiration."""
 
-        from pyrealm.demography.t_model_functions import calculate_fine_root_respiration
+        from pyrealm.demography.tmodel import calculate_fine_root_respiration
 
         with outcome as excep:
             result = calculate_fine_root_respiration(
@@ -532,7 +532,7 @@ class TestTModel:
     ):
         """Tests calculation of net primary productivity."""
 
-        from pyrealm.demography.t_model_functions import (
+        from pyrealm.demography.tmodel import (
             calculate_net_primary_productivity,
         )
 
@@ -566,7 +566,7 @@ class TestTModel:
     ):
         """Tests calculation of foliage and fine root turnover."""
 
-        from pyrealm.demography.t_model_functions import (
+        from pyrealm.demography.tmodel import (
             calculate_foliage_and_fine_root_turnover,
         )
 
@@ -598,7 +598,7 @@ class TestTModel:
     ):
         """Tests calculation of growth increments."""
 
-        from pyrealm.demography.t_model_functions import (
+        from pyrealm.demography.tmodel import (
             calculate_growth_increments,
         )
 
@@ -639,7 +639,7 @@ def test_calculate_dbh_from_height_edge_cases():
     * If H = h_max, dbh is infinite.
     """
 
-    from pyrealm.demography.t_model_functions import calculate_dbh_from_height
+    from pyrealm.demography.tmodel import calculate_dbh_from_height
 
     pft_h_max_values = np.array([20, 30])
     pft_a_hd_values = np.array([116.0, 116.0])
@@ -693,12 +693,12 @@ def test_StemAllometry_validation(rtmodel_flora, at_dbh, outcome, excep_msg):
     """
 
     from pyrealm.demography.core import _validate_demography_array_arguments
-    from pyrealm.demography.t_model_functions import StemAllometry
+    from pyrealm.demography.tmodel import StemAllometry
 
     with (
         outcome as excep,
         patch(
-            "pyrealm.demography.t_model_functions._validate_demography_array_arguments",
+            "pyrealm.demography.tmodel._validate_demography_array_arguments",
             wraps=_validate_demography_array_arguments,
         ) as val_func_patch,
     ):
@@ -712,7 +712,7 @@ def test_StemAllometry_validation(rtmodel_flora, at_dbh, outcome, excep_msg):
 def test_StemAllometry(rtmodel_flora, rtmodel_data):
     """Test the StemAllometry class and inherited methods."""
 
-    from pyrealm.demography.t_model_functions import StemAllometry
+    from pyrealm.demography.tmodel import StemAllometry
 
     stem_allometry = StemAllometry(
         stem_traits=rtmodel_flora, at_dbh=rtmodel_data["dbh"][:, [0]]
@@ -740,7 +740,7 @@ def test_StemAllometry(rtmodel_flora, rtmodel_data):
 def test_StemAllometry_CohortMethods(rtmodel_flora, rtmodel_data):
     """Test the StemAllometry inherited cohort methods."""
 
-    from pyrealm.demography.t_model_functions import StemAllometry
+    from pyrealm.demography.tmodel import StemAllometry
 
     stem_allometry = StemAllometry(
         stem_traits=rtmodel_flora, at_dbh=rtmodel_data["dbh"][:, [0]]
@@ -772,7 +772,7 @@ def test_StemAllometry_CohortMethods(rtmodel_flora, rtmodel_data):
 def test_StemAllocation(rtmodel_flora, rtmodel_data):
     """Test the StemAllometry class."""
 
-    from pyrealm.demography.t_model_functions import StemAllocation, StemAllometry
+    from pyrealm.demography.tmodel import StemAllocation, StemAllometry
 
     stem_allometry = StemAllometry(
         stem_traits=rtmodel_flora, at_dbh=rtmodel_data["dbh"][:, [0]]
@@ -840,7 +840,7 @@ def test_StemAllocation_validation(rtmodel_flora, pot_gpp, outcome, excep_msg):
     """
 
     from pyrealm.demography.core import _validate_demography_array_arguments
-    from pyrealm.demography.t_model_functions import StemAllocation, StemAllometry
+    from pyrealm.demography.tmodel import StemAllocation, StemAllometry
 
     # Calculate a constant allometry
     allom = StemAllometry(stem_traits=rtmodel_flora, at_dbh=np.ones((4, 3)))
@@ -848,7 +848,7 @@ def test_StemAllocation_validation(rtmodel_flora, pot_gpp, outcome, excep_msg):
     with (
         outcome as excep,
         patch(
-            "pyrealm.demography.t_model_functions._validate_demography_array_arguments",
+            "pyrealm.demography.tmodel._validate_demography_array_arguments",
             wraps=_validate_demography_array_arguments,
         ) as val_func_patch,
     ):

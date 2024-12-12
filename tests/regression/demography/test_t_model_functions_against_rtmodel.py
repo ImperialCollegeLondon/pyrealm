@@ -114,7 +114,7 @@ def rvalues():
 def test_calculate_heights(rvalues):
     """Test calculation of heights of tree from diameter."""
 
-    from pyrealm.demography.t_model_functions import calculate_heights
+    from pyrealm.demography.tmodel import calculate_heights
 
     for pft, _, data in rvalues:
         actual_heights = calculate_heights(
@@ -126,7 +126,7 @@ def test_calculate_heights(rvalues):
 
 def test_calculate_crown_areas(rvalues):
     """Tests calculation of crown areas of trees."""
-    from pyrealm.demography.t_model_functions import calculate_crown_areas
+    from pyrealm.demography.tmodel import calculate_crown_areas
 
     for pft, _, data in rvalues:
         actual_crown_areas = calculate_crown_areas(
@@ -142,7 +142,7 @@ def test_calculate_crown_areas(rvalues):
 def test_calculate_crown_fractions(rvalues):
     """Tests calculation of crown fractions of trees."""
 
-    from pyrealm.demography.t_model_functions import calculate_crown_fractions
+    from pyrealm.demography.tmodel import calculate_crown_fractions
 
     for pft, _, data in rvalues:
         actual_crown_fractions = calculate_crown_fractions(
@@ -158,7 +158,7 @@ def test_calculate_crown_fractions(rvalues):
 def test_calculate_stem_masses(rvalues):
     """Tests happy path for calculation of stem masses of trees."""
 
-    from pyrealm.demography.t_model_functions import calculate_stem_masses
+    from pyrealm.demography.tmodel import calculate_stem_masses
 
     for pft, _, data in rvalues:
         actual_stem_masses = calculate_stem_masses(
@@ -172,7 +172,7 @@ def test_calculate_stem_masses(rvalues):
 def test_calculate_foliage_masses(rvalues):
     """Tests calculation of foliage masses of trees."""
 
-    from pyrealm.demography.t_model_functions import calculate_foliage_masses
+    from pyrealm.demography.tmodel import calculate_foliage_masses
 
     for pft, _, data in rvalues:
         actual_foliage_masses = calculate_foliage_masses(
@@ -184,7 +184,7 @@ def test_calculate_foliage_masses(rvalues):
 def test_calculate_sapwood_masses(rvalues):
     """Tests calculation of sapwood masses of trees."""
 
-    from pyrealm.demography.t_model_functions import calculate_sapwood_masses
+    from pyrealm.demography.tmodel import calculate_sapwood_masses
 
     for pft, _, data in rvalues:
         actual_sapwood_masses = calculate_sapwood_masses(
@@ -204,7 +204,7 @@ def test_calculate_whole_crown_gpp(rvalues):
     foliar respiration.
     """
 
-    from pyrealm.demography.t_model_functions import calculate_whole_crown_gpp
+    from pyrealm.demography.tmodel import calculate_whole_crown_gpp
 
     for pft, _, data in rvalues:
         actual_whole_crown_gpp = calculate_whole_crown_gpp(
@@ -219,7 +219,7 @@ def test_calculate_whole_crown_gpp(rvalues):
 def test_calculate_sapwood_respiration(rvalues):
     """Tests calculation of sapwood respiration of trees."""
 
-    from pyrealm.demography.t_model_functions import calculate_sapwood_respiration
+    from pyrealm.demography.tmodel import calculate_sapwood_respiration
 
     for pft, _, data in rvalues:
         actual_sapwood_respiration = calculate_sapwood_respiration(
@@ -239,7 +239,7 @@ def test_calculate_foliar_respiration(rvalues):
     circular but is important to validate this difference.
     """
 
-    from pyrealm.demography.t_model_functions import calculate_foliar_respiration
+    from pyrealm.demography.tmodel import calculate_foliar_respiration
 
     for pft, _, data in rvalues:
         actual_foliar_respiration = calculate_foliar_respiration(
@@ -256,7 +256,7 @@ def test_calculate_foliar_respiration(rvalues):
 def test_calculate_fine_root_respiration(rvalues):
     """Tests calculation of fine root respiration of trees."""
 
-    from pyrealm.demography.t_model_functions import calculate_fine_root_respiration
+    from pyrealm.demography.tmodel import calculate_fine_root_respiration
 
     for pft, _, data in rvalues:
         actual_fine_root_respiration = calculate_fine_root_respiration(
@@ -279,7 +279,7 @@ def test_calculate_net_primary_productivity(rvalues):
     respiration from potential GPP before calculating crown GPP.
     """
 
-    from pyrealm.demography.t_model_functions import calculate_net_primary_productivity
+    from pyrealm.demography.tmodel import calculate_net_primary_productivity
 
     for pft, _, data in rvalues:
         actual_npp = calculate_net_primary_productivity(
@@ -299,7 +299,7 @@ def test_calculate_net_primary_productivity(rvalues):
 def test_calculate_foliage_and_fine_root_turnover(rvalues):
     """Tests calculation of fine root respiration of trees."""
 
-    from pyrealm.demography.t_model_functions import (
+    from pyrealm.demography.tmodel import (
         calculate_foliage_and_fine_root_turnover,
     )
 
@@ -321,7 +321,7 @@ def test_calculate_foliage_and_fine_root_turnover(rvalues):
 def test_calculate_growth_increments(rvalues):
     """Tests calculation of fine root respiration of trees."""
 
-    from pyrealm.demography.t_model_functions import (
+    from pyrealm.demography.tmodel import (
         calculate_growth_increments,
     )
 
