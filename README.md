@@ -4,7 +4,7 @@
   alt="The pyrealm logo: a green leaf over the shining sun."
   src="/docs/source/_static/images/pyrealm_logo.png" width=50%>
 
-# The `pyrealm` package
+---
 
 [![PyPI - Version](https://img.shields.io/pypi/v/pyrealm)](https://pypi.org/project/pyrealm/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pyrealm)
