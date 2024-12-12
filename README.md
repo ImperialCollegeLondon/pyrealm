@@ -1,6 +1,6 @@
 
 <!-- markdownlint-disable-next-line MD041-->
-![The pyrealm logo: a green leaf over the shining sun.] (/docs/source/_static/images/pyrealm_logo.png)
+![The pyrealm logo: a green leaf over the shining sun.](/docs/source/_static/images/pyrealm_logo.png)
 
 # The `pyrealm` package
 
