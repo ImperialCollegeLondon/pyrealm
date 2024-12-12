@@ -41,7 +41,7 @@ subtrees:
   - file: users/splash.md
   - file: users/constants.md
   - file: users/hygro.md 
-
+  - file: users/versions.md 
 - caption: API
   entries: 
   - glob: api/*
