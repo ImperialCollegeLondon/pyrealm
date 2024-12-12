@@ -36,7 +36,7 @@ import numpy as np
 import pandas as pd
 
 from pyrealm.demography.flora import PlantFunctionalType, Flora
-from pyrealm.demography.t_model_functions import StemAllocation, StemAllometry
+from pyrealm.demography.tmodel import StemAllocation, StemAllometry
 ```
 
 To generate predictions under the T Model, we need a Flora object providing the
@@ -55,7 +55,7 @@ flora = Flora([short_pft, medium_pft, tall_pft])
 ## Stem allometry
 
 We can visualise how the stem size, canopy size and various masses of PFTs change with
-stem diameter by using the {class}`~pyrealm.demography.t_model_functions.StemAllometry`
+stem diameter by using the {class}`~pyrealm.demography.tmodel.StemAllometry`
 class. Creating a `StemAllometry` instance needs an existing `Flora` instance and an
 array of values for diameter at breast height (DBH, metres). The returned class contains
 the predictions of the T Model for:
@@ -77,7 +77,7 @@ for each PFT. This then calculates a single estimate at the given size for each 
 single_allometry = StemAllometry(stem_traits=flora, at_dbh=np.array([0.1, 0.1, 0.1]))
 ```
 
-The {meth}`~pyrealm.demography.t_model_functions.StemAllometry` class provides the
+The {meth}`~pyrealm.demography.tmodel.StemAllometry` class provides the
 {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method to export the stem
 data for data exploration.
 
@@ -124,7 +124,7 @@ for ax, (var, ylab) in zip(axes.flatten(), plot_details):
 ```
 
 The {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
-{meth}`~pyrealm.demography.t_model_functions.StemAllometry` class can still be used, but
+{meth}`~pyrealm.demography.tmodel.StemAllometry` class can still be used, but
 the values are stacked into columns along with a index showing the different cohorts.
 
 ```{code-cell} ipython3
@@ -135,7 +135,7 @@ allometries.to_pandas()
 
 The T Model also predicts how potential GPP will be allocated to respiration, turnover
 and growth for stems with a given PFT and allometry using the
-{meth}`~pyrealm.demography.t_model_functions.StemAllometry` class. Again, a single
+{meth}`~pyrealm.demography.tmodel.StemAllometry` class. Again, a single
 value can be provided to get a single estimate of the allocation model for each stem:
 
 ```{code-cell} ipython3
@@ -146,7 +146,7 @@ single_allocation
 ```
 
 The {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
-{meth}`~pyrealm.demography.t_model_functions.StemAllocation` class can be used to
+{meth}`~pyrealm.demography.tmodel.StemAllocation` class can be used to
 export data for exploration.
 
 ```{code-cell} ipython3
@@ -229,7 +229,7 @@ fig.delaxes(axes[-1])
 ```
 
 As before, the {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
-{meth}`~pyrealm.demography.t_model_functions.StemAllometry` classs can be used to export
+{meth}`~pyrealm.demography.tmodel.StemAllometry` classs can be used to export
 the data for each stem:
 
 ```{code-cell} ipython3

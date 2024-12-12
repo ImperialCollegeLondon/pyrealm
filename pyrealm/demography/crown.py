@@ -13,7 +13,7 @@ from pyrealm.demography.core import (
     _validate_demography_array_arguments,
 )
 from pyrealm.demography.flora import Flora, StemTraits
-from pyrealm.demography.t_model_functions import StemAllometry
+from pyrealm.demography.tmodel import StemAllometry
 
 
 def calculate_relative_crown_radius_at_z(
