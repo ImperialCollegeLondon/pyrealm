@@ -17,6 +17,12 @@ def test_phenology_gpp_calculation(
     from pyrealm.pmodel import PModel, PModelEnvironment, SubdailyPModel, SubdailyScaler
     from pyrealm.pmodel.functions import calc_soilmstress_mengoli
 
+    # Calculate soil moisture stress factor
+    soilm_stress = calc_soilmstress_mengoli(
+        soilm=de_gri_daily_data["soilm"].to_numpy(),
+        aridity_index=de_gri_constants["AI_from_coords"],
+    )
+
     # Calculate the PModel photosynthetic environment
     env = PModelEnvironment(
         tc=de_gri_half_hourly_data["TA_F"].to_numpy(),
@@ -27,7 +33,7 @@ def test_phenology_gpp_calculation(
 
     de_gri_pmodel = PModel(
         env=env,
-        # reference_kphio=1 / 8,
+        reference_kphio=1 / 8,
     )
 
     de_gri_pmodel.estimate_productivity(
@@ -36,7 +42,10 @@ def test_phenology_gpp_calculation(
     )
 
     # Currently close but not exact
-    assert_allclose(de_gri_pmodel.gpp, de_gri_half_hourly_data["A0_normal"].to_numpy())
+    assert_allclose(
+        de_gri_pmodel.gpp * soilm_stress,
+        de_gri_half_hourly_data["A0_normal"].to_numpy(),
+    )
 
     # Set up the datetimes of the observations and set the acclimation window
     scaler = SubdailyScaler(datetimes=de_gri_half_hourly_data["time"].to_numpy())
@@ -52,12 +61,6 @@ def test_phenology_gpp_calculation(
         fapar=np.ones_like(env.ca),
         ppfd=de_gri_half_hourly_data["PPFD"].to_numpy(),
         reference_kphio=1 / 8,
-    )
-
-    # Calculate soil moisture stress factor
-    soilm_stress = calc_soilmstress_mengoli(
-        soilm=de_gri_daily_data["soilm"].to_numpy(),
-        aridity_index=de_gri_constants["AI_from_coords"],
     )
 
     assert np.allclose(
