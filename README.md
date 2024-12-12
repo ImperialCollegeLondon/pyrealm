@@ -1,9 +1,8 @@
 
-<!-- markdownlint-disable-next-line MD041-->
+<!-- markdownlint-disable-next-line MD041 MD033 -->
 <img
   alt="The pyrealm logo: a green leaf over the shining sun."
-  src="/docs/source/_static/images/pyrealm_logo.png" width=50%
->
+  src="/docs/source/_static/images/pyrealm_logo.png" width=50%>
 
 # The `pyrealm` package
 
