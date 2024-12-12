@@ -1,3 +1,11 @@
+
+<!-- markdownlint-disable-next-line MD041-->
+```{image} docs/source/_static/images/pyrealm_logo.png
+:width: 50%
+:align: center
+:alt: The pyrealm logo: a green leaf over the shining sun.
+```
+
 # The `pyrealm` package
 
 [![PyPI - Version](https://img.shields.io/pypi/v/pyrealm)](https://pypi.org/project/pyrealm/)

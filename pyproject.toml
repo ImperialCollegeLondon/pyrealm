@@ -71,7 +71,7 @@ netcdf4 = "^1.6.3"
 pydocstyle = "^6.1.1"
 sphinx = "^7.0.0"
 sphinx-external-toc = "^1.0.0"
-sphinx-rtd-theme = "^2.0.0"
+sphinx-rtd-theme = "^3.0.0"
 sphinxcontrib-bibtex = "^2.6.1"
 xarray = "^2024.6.0"
 
