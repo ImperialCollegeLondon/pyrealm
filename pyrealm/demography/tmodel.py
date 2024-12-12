@@ -62,7 +62,7 @@ def calculate_dbh_from_height(
 
     This function inverts the normal calculation of stem height (:math:`H`) from
     diameter at breast height (DBH, :math:`D`) in the T Model (see
-    :meth:`~pyrealm.demography.t_model_functions.calculate_heights`). This is a helper
+    :meth:`~pyrealm.demography.tmodel.calculate_heights`). This is a helper
     function to allow users to convert known stem heights for a plant functional type,
     with maximum height (:math:`H_{m}`) and initial slope of the height/diameter
     relationship (:math:`a`) into the expected DBH values.
@@ -859,7 +859,7 @@ class StemAllocation(PandasExporter):
             :class:`~pyrealm.demography.flora.StemTraits`, providing plant functional
             trait data for a set of stems.
         stem_allometry: An instance of
-            :class:`~pyrealm.demography.t_model_functions.StemAllometry`
+            :class:`~pyrealm.demography.tmodel.StemAllometry`
             providing the stem size data for which to calculate allocation.
         at_potential_gpp: An array of potential GPP values at which to predict stem
             allocation.
@@ -885,7 +885,7 @@ class StemAllocation(PandasExporter):
     :class:`~pyrealm.demography.flora.StemTraits`, providing plant functional trait data
     for a set of stems."""
     stem_allometry: InitVar[StemAllometry]
-    """An instance of :class:`~pyrealm.demography.t_model_functions.StemAllometry`
+    """An instance of :class:`~pyrealm.demography.tmodel.StemAllometry`
     providing the stem size data for which to calculate allocation."""
     at_potential_gpp: InitVar[NDArray[np.float64]]
     """An array of potential gross primary productivity for each stem that should be

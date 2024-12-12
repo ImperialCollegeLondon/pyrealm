@@ -15,7 +15,7 @@ def fixture_expected(fixture_flora):
     Community instance maintains row order and calculation as expected.
     """
 
-    from pyrealm.demography.t_model_functions import calculate_heights
+    from pyrealm.demography.tmodel import calculate_heights
 
     dbh = np.array([0.2, 0.5])
 
