@@ -108,7 +108,7 @@ conduct](./CODE_OF_CONDUCT.md) for contributing to this project.
 
 ## Support and funding
 
-Development of the `prealm` package has been supported by the following grants and
+Development of the `pyrealm` package has been supported by the following grants and
 institutions:
 
 * The [REALM project](https://prenticeclimategroup.wordpress.com/realm-team/), funded by

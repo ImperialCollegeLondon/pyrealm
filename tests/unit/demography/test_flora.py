@@ -422,7 +422,7 @@ def test_StemTraits(fixture_flora):
 def test_StemTraits_CohortMethods(fixture_flora):
     """Test the StemTraits inherited cohort methods."""
 
-    from pyrealm.demography.t_model_functions import StemTraits
+    from pyrealm.demography.tmodel import StemTraits
 
     # Construct some input data with duplicate PFTs by doubling the fixture_flora data
     flora_df = fixture_flora.to_pandas()

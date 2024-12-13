@@ -36,18 +36,27 @@ and demography.
 
 The package is in active development and currently provides the following modules:
 
+The `core` module
+: Contains fundamental utilities and physics functionality shared across the
+  package, including the [hygro](users/hygro) and the utilities submodules.
+
 The `pmodel` module
 : Fitting the [P Model](users/pmodel/module_overview), which is an ecophysiological
   model of optimal carbon dioxide uptake by plants {cite:p}`Prentice:2014bc,
   Wang:2017go,Stocker:2020dh`, along with various extensions.
 
-The `tmodel` module
-: Estimating plant allocation of gross primary productivity to growth and respiration,
-  using the [T Model](users/tmodel/tmodel) {cite:p}`Li:2014bc`.
+The `splash` module
+: Fits the [SPLASH v1 model](users/splash.md), which can be used to
+  estimate soil moisture, actual evapotranspiration and soil runoff from daily
+  temperature, precipitation and sunshine data {cite:p}`davis:2017a`.
 
-The `core` module
-: Contains fundamental utilities and physics functionality shared across the
-  package, including the [hygro](users/hygro) and the utilities submodules.
+The `demography` module
+: Provides functionality for [modelling plant allocation and growth and
+  demography](users/demography/module_overview.md), including classes to represent plant
+  functional types, cohorts and communities. This module includes an implementation of
+  the T Model for estimating plant allocation of gross primary productivity to growth
+  and respiration {cite:p}`Li:2014bc`. This module is still in active development but a
+  lot of initial functionality is present.
 
 ## Indices and tables
 

@@ -46,10 +46,10 @@ language_info:
     :members:
 ```
 
-## The {mod}`~pyrealm.demography.t_model_functions` module
+## The {mod}`~pyrealm.demography.tmodel` module
 
 ```{eval-rst}
-.. automodule:: pyrealm.demography.t_model_functions
+.. automodule:: pyrealm.demography.tmodel
     :autosummary:
     :members:
 ```
