@@ -22,13 +22,19 @@ language_info:
   version: 3.11.9
 ---
 
-# The `pyrealm` package
+<!-- markdownlint-disable-next-line MD041-->
+```{image} /_static/images/pyrealm_logo.png
+:width: 50%
+:align: center
+:alt: The pyrealm logo: a green leaf over the shining sun.
+```
 
 The `pyrealm` package provides Python implementations of models of plant productivity
-and demography. The package is in active development and currently provides the
-following modules:
+and demography.
 
-## Module overview
+# The `pyrealm` package
+
+The package is in active development and currently provides the following modules:
 
 The `core` module
 : Contains fundamental utilities and physics functionality shared across the

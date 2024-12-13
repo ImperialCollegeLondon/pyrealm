@@ -29,6 +29,8 @@ sys.path.insert(0, os.path.abspath("../"))
 # -- Project information -----------------------------------------------------
 
 project = "pyrealm: Ecosystem Models in Python"
+html_logo = "_static/images/pyrealm_logo_white_background.png"
+html_favicon = "_static/images/pyrealm_favicon.png"
 
 current_year = datetime.today().strftime("%Y")
 copyright = "2020-" + current_year + ", Pyrealm Developers"
@@ -213,11 +215,11 @@ html_theme = "sphinx_rtd_theme"
 
 # +
 html_theme_options = {
-    "logo_only": False,
-    "display_version": True,
+    "logo_only": True,
+    "version_selector": True,
     "prev_next_buttons_location": "top",
     "style_external_links": False,
-    "style_nav_header_background": "grey",
+    "style_nav_header_background": "white",
     # Toc options
     "collapse_navigation": False,
     "sticky_navigation": True,
