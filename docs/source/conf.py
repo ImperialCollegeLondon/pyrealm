@@ -219,7 +219,7 @@ html_theme_options = {
     "version_selector": True,
     "prev_next_buttons_location": "top",
     "style_external_links": False,
-    "style_nav_header_background": "white",
+    "style_nav_header_background": "grey",
     # Toc options
     "collapse_navigation": False,
     "sticky_navigation": True,
