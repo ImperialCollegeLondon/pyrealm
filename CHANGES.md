@@ -3,6 +3,42 @@
 This document provides a brief overview of the main changes to `pyrealm` at each of the
 released versions. More detail can be found at the GitHub release page for each version.
 
+## 2.0.0 release candidates
+
+A new major release is planned but will iterate through release candidates in order to
+make functionality available for testing while the new functionality and API changes are
+worked through. The changes below are provisional.
+
+- A new system for providing alternative calculations of quantum yield ($\phi_0$) in the
+  P Model, using the new `pyrealm.pmodel.quantum_yield` module. This module now provides
+  an expandable set of implementations of the quantum yield calculation, and currently
+  supports the previous fixed and temperature dependent $\phi_0$ approaches but also
+  David Sandoval's extentsion for estimating the impact of water stress on $\phi_0$.
+
+  **Breaking change** The signatures of the `PModel` and `SubdailyPModel` classes have
+  changed: the arguments `kphio` and `do_ftemp_kphio` have been replaced by
+  `method_kphio` and `reference_kphio`.
+
+- The functions `calc_ftemp_kphio` and `calc_ftemp_inst_vcmax` provided narrow use cases
+  with code duplication. They have been replaced with a broader
+  `calc_modified_arrhenius_factor` function.
+
+- The first components in the demography module, providing an integrated set of
+  submodules that provide: plant functional types, size-structured cohorts, plant
+  communities, a community canopy model and an implementation of the T Model for
+  allocation and growth.
+
+- An extension of the Subdaily P Model that allows the initial realised responses to be
+  provided rather than assuming that they are equal to the initial optimal responses.
+
+- The `pyrealm.splash` module has been heavily revised to break out functions within the
+  classes into standalone functions. This adds the `pyrealm.core.solar` module,
+  providing core solar calculations.
+
+- Restructuring of the developer tools for testing code performance to provide a simpler
+  local performance testing routine, and added a CI test to ensure the performance tests
+  are kept up to date with the package API.
+
 ## 1.0.0
 
 - Addition of a more pythonic re-implementation of the SPLASH v1.0 model with a more
@@ -51,11 +87,11 @@ released versions. More detail can be found at the GitHub release page for each 
   - Updated typing to use consistent NDArray and remove edge case code to handle scalar
     inputs. Users now expected to provide arrays.
   - Using importlib to single source package version from pyproject.toml
-  - Moved test/ to tests/ and added __init__.py - module paths in testing.
+  - Moved test/ to tests/ and added **init**.py - module paths in testing.
   - Partial restructure of TModel code and extended test suite
   - Extended test suite for hygrometric functions, bug fix in HygroConst.
   - Better definition and handling of class attributes to avoid unnecessary Optional
-    types in __init__ methods.
+    types in **init** methods.
   - Updated docstrings, particularly class attributes now docstringed in place.
   - bounds_checker module merged into utilities module
   - Huge pmodel.py file split into a pmodel module and pmodel, functions, isotopes and
@@ -177,7 +213,7 @@ released versions. More detail can be found at the GitHub release page for each 
 - Implementation of the utilities module, currently including some hygrometric
   conversions and shared utility functions.
 - Refactor of PModel and Iabs scaling
-- Better __repr__ and new summarize() functions in pmodel module.
+- Better **repr** and new summarize() functions in pmodel module.
 
 ## 0.4.0
 
