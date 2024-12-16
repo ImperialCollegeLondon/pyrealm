@@ -5,11 +5,21 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.2
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Isotopic discrimination
@@ -32,7 +42,7 @@ values of $\chi$. The sequence of $\chi$ values used is created by using the P M
 estimate $\chi$ across a temperature gradient, giving the range of $\chi$ values shown
 below for C3 and C4 plants.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 import numpy as np
@@ -82,12 +92,12 @@ The calculations differ between C3 and C4 plants, and this is set by the selecti
 the `method_optchi` argument used for the {class}`~pyrealm.pmodel.pmodel.PModel`
 instance.
 
-```{code-cell}
+```{code-cell} ipython3
 carb_c3 = CalcCarbonIsotopes(mod_c3, d13CO2=-8.4, D14CO2=19.2)
 carb_c3.summarize()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 carb_c4 = CalcCarbonIsotopes(mod_c4, d13CO2=-8.4, D14CO2=19.2)
 carb_c4.summarize()
 ```
@@ -96,7 +106,7 @@ The plots below show how the calculated values alter with $\chi$. The difference
 direction of these relationships between C3 and C4 pathways creates a predictable
 isotopic signature of relative contributions of the two pathways.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Create side by side subplots

@@ -12,33 +12,11 @@ from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
-from pyrealm.pmodel.functions import (
-    calc_ftemp_inst_rd,
-    calc_ftemp_inst_vcmax,
-    calc_ftemp_kphio,
-)
+from pyrealm.pmodel.functions import calc_ftemp_inst_rd, calc_modified_arrhenius_factor
 from pyrealm.pmodel.jmax_limitation import JmaxLimitation
 from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY, OptimalChiABC
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
-
-# Design notes on PModel (0.3.1 -> 0.4.0)
-# The PModel until 0.3.1 was a single class taking tc etc. as inputs. However
-# a common use case would be to look at how the PModel predictions change with
-# different options. I (DO) did consider retaining the single class and having
-# PModel __init__ create the environment and then have PModel.fit(), but
-# having two classes seemed to better separate the physiological model (PModel
-# class and attributes) from the environment the model is being fitted to and
-# also creates _separate_ PModel objects.
-
-# Design notes on PModel (0.4.0 -> 0.5.0)
-# In separating PPFD and FAPAR into a second step, I had created the IabsScaled
-# class to store variables that scale linearly with Iabs. That class held and
-# exposed scaled and unscaled versions of several parameteres. For a start, that
-# was a bad class name since the values could be unscaled, but also most of the
-# unscaled versions are never really used. Really (hat tip, Keith Bloomfield),
-# there are two meaningful _efficiency_ variables (LUE, IWUE) and then a set of
-# productivity variables. The new structure reflects that, removing the
-# un-needed unscaled variables and simplifying the structure.
+from pyrealm.pmodel.quantum_yield import QUANTUM_YIELD_CLASS_REGISTRY, QuantumYieldABC
 
 
 class PModel:
@@ -103,8 +81,9 @@ class PModel:
 
     * The maximum carboxylation capacity (mol C m-2) normalised to the standard
       temperature as: :math:`V_{cmax25} = V_{cmax}  / fv(t)`, where :math:`fv(t)` is the
-      instantaneous temperature response of :math:`V_{cmax}` implemented in
-      :func:`~pyrealm.pmodel.functions.calc_ftemp_inst_vcmax`
+      instantaneous temperature response of :math:`V_{cmax}` calculated using a modified
+      Arrhenius equation
+      :func:`~pyrealm.pmodel.functions.calc_modified_arrhenius_factor`.
 
     * Dark respiration, calculated as:
 
@@ -141,20 +120,20 @@ class PModel:
 
     Args:
         env: An instance of
-         :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
-        kphio: (Optional) The quantum yield efficiency of photosynthesis
-            (:math:`\phi_0`, unitless). Note that :math:`\phi_0` is sometimes used to
-            refer to the quantum yield of electron transfer, which is exactly four times
-            larger, so check definitions here.
+           :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
+        method_kphio: The method to use for calculating the quantum yield
+            efficiency of photosynthesis (:math:`\phi_0`, unitless). The method name
+            must be included in the
+            :data:`~pyrealm.pmodel.quantum_yield.QUANTUM_YIELD_CLASS_REGISTRY`.
         method_optchi: (Optional, default=`prentice14`) Selects the method to be
             used for calculating optimal :math:`chi`. The choice of method also sets the
             choice of  C3 or C4 photosynthetic pathway (see
             :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`).
         method_jmaxlim: (Optional, default=`wang17`) Method to use for
-            :math:`J_{max}` limitation
-        do_ftemp_kphio: (Optional, default=True) Include the temperature-
-            dependence of quantum yield efficiency (see
-            :func:`~pyrealm.pmodel.functions.calc_ftemp_kphio`).
+            :math:`J_{max}` limitation.
+        reference_kphio: An optional alternative reference value for the quantum yield
+            efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
+            calculation method. 
 
     Examples:
         >>> import numpy as np
@@ -186,10 +165,10 @@ class PModel:
     def __init__(
         self,
         env: PModelEnvironment,
-        kphio: float | None = None,
-        do_ftemp_kphio: bool = True,
+        method_kphio: str = "temperature",
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
+        reference_kphio: float | NDArray | None = None,
     ):
         self.shape: tuple = env.shape
         """Records the common numpy array shape of array inputs."""
@@ -204,54 +183,41 @@ class PModel:
         self.core_const: CoreConst = env.core_const
         """The CoreConst instance used to create the model environment."""
 
-        # kphio calculation:
-        self.init_kphio: float
-        r"""The initial value of :math:`\phi_0` (``kphio``)"""
-        self.kphio: NDArray
-        r"""The value of :math:`\phi_0` used with any temperature correction applied."""
-        self.do_ftemp_kphio: bool = do_ftemp_kphio
-        r"""Records if :math:`\phi_0` (``kphio``) is temperature corrected."""
-
-        # Set context specific defaults for kphio to match Stocker paper
-        if kphio is None:
-            if not self.do_ftemp_kphio:
-                self.init_kphio = 0.049977
-            else:
-                self.init_kphio = 0.081785
-        else:
-            self.init_kphio = kphio
-
         # -----------------------------------------------------------------------
-        # Optimal ci
+        # Optimal chi
         # The heart of the P-model: calculate ci:ca ratio (chi) and additional terms
         # -----------------------------------------------------------------------
-        self.method_optchi: str = method_optchi
-        """Records the method used to calculate optimal chi."""
 
-        try:
-            opt_chi_class = OPTIMAL_CHI_CLASS_REGISTRY[method_optchi]
-        except KeyError:
+        if method_optchi not in OPTIMAL_CHI_CLASS_REGISTRY:
             raise ValueError(f"Unknown optimal chi estimation method: {method_optchi}")
 
-        self.optchi: OptimalChiABC = opt_chi_class(
+        self.method_optchi: str = method_optchi
+        """The method used to calculate optimal chi."""
+
+        self.optchi: OptimalChiABC = OPTIMAL_CHI_CLASS_REGISTRY[method_optchi](
             env=env,
             pmodel_const=self.pmodel_const,
         )
-        """An subclass OptimalChi, implementing the requested chi calculation method"""
+        """A subclass of OptimalChiABC, providing optimal chi calculation."""
 
         self.c4: bool = self.optchi.is_c4
         """Does the OptimalChi method approximate a C3 or C4 pathway."""
 
         # -----------------------------------------------------------------------
-        # Temperature dependence of quantum yield efficiency
+        # Calculate the quantum yield of photosynthesis (kphio)
         # -----------------------------------------------------------------------
-        if self.do_ftemp_kphio:
-            ftemp_kphio = calc_ftemp_kphio(
-                env.tc, self.c4, pmodel_const=self.pmodel_const
-            )
-            self.kphio = self.init_kphio * ftemp_kphio
-        else:
-            self.kphio = np.array([self.init_kphio])
+        if method_kphio not in QUANTUM_YIELD_CLASS_REGISTRY:
+            raise ValueError(f"Unknown kphio calculation method: {method_kphio}")
+
+        self.method_kphio: str = method_kphio
+        """The method used to calculate kphio."""
+
+        self.kphio: QuantumYieldABC = QUANTUM_YIELD_CLASS_REGISTRY[method_kphio](
+            env=env,
+            use_c4=self.c4,
+            reference_kphio=reference_kphio,
+        )
+        """A subclass of QuantumYieldABC, providing kphio calculation."""
 
         # -----------------------------------------------------------------------
         # Calculation of Jmax limitation terms
@@ -263,6 +229,7 @@ class PModel:
             self.optchi, method=self.method_jmaxlim, pmodel_const=self.pmodel_const
         )
         """Details of the Jmax limitation calculation for the model"""
+
         # -----------------------------------------------------------------------
         # Store the two efficiency predictions
         # -----------------------------------------------------------------------
@@ -271,15 +238,18 @@ class PModel:
         # in Pascals, but more commonly reported in µmol mol-1. The standard equation
         # (ca - ci) / 1.6 expects inputs in ppm, so the pascal versions are back
         # converted here.
-        self.iwue: NDArray = (5 / 8 * (env.ca - self.optchi.ci)) / (
+        self.iwue: NDArray[np.float64] = (5 / 8 * (env.ca - self.optchi.ci)) / (
             1e-6 * self.env.patm
         )
         """Intrinsic water use efficiency (iWUE, µmol mol-1)"""
 
         # The basic calculation of LUE = phi0 * M_c * m with an added penalty term
         # for jmax limitation
-        self.lue: NDArray = (
-            self.kphio * self.optchi.mj * self.jmaxlim.f_v * self.core_const.k_c_molmass
+        self.lue: NDArray[np.float64] = (
+            self.kphio.kphio
+            * self.optchi.mj
+            * self.jmaxlim.f_v
+            * self.core_const.k_c_molmass
         )
         """Light use efficiency (LUE, g C mol-1)"""
 
@@ -288,14 +258,14 @@ class PModel:
         # no defaults and are only populated by estimate_productivity. Their getter
         # methods have a check to raise an informative error
         # -----------------------------------------------------------------------
-        self._vcmax: NDArray
-        self._vcmax25: NDArray
-        self._rd: NDArray
-        self._jmax: NDArray
-        self._gpp: NDArray
-        self._gs: NDArray
-        self._ppfd: NDArray
-        self._fapar: NDArray
+        self._vcmax: NDArray[np.float64]
+        self._vcmax25: NDArray[np.float64]
+        self._rd: NDArray[np.float64]
+        self._jmax: NDArray[np.float64]
+        self._gpp: NDArray[np.float64]
+        self._gs: NDArray[np.float64]
+        self._ppfd: NDArray[np.float64]
+        self._fapar: NDArray[np.float64]
 
     def _check_estimated(self, varname: str) -> None:
         """Raise error when accessing unpopulated parameters.
@@ -307,50 +277,50 @@ class PModel:
             raise RuntimeError(f"{varname} not calculated: use estimate_productivity")
 
     @property
-    def gpp(self) -> NDArray:
+    def gpp(self) -> NDArray[np.float64]:
         """Gross primary productivity (µg C m-2 s-1)."""
         self._check_estimated("gpp")
 
         return self._gpp
 
     @property
-    def vcmax(self) -> NDArray:
+    def vcmax(self) -> NDArray[np.float64]:
         """Maximum rate of carboxylation (µmol m-2 s-1)."""
         self._check_estimated("vcmax")
         return self._vcmax
 
     @property
-    def vcmax25(self) -> NDArray:
+    def vcmax25(self) -> NDArray[np.float64]:
         """Maximum rate of carboxylation at standard temperature (µmol m-2 s-1)."""
         self._check_estimated("vcmax25")
         return self._vcmax25
 
     @property
-    def rd(self) -> NDArray:
+    def rd(self) -> NDArray[np.float64]:
         """Dark respiration (µmol m-2 s-1)."""
         self._check_estimated("rd")
         return self._rd
 
     @property
-    def jmax(self) -> NDArray:
+    def jmax(self) -> NDArray[np.float64]:
         """Maximum rate of electron transport (µmol m-2 s-1)."""
         self._check_estimated("jmax")
         return self._jmax
 
     @property
-    def gs(self) -> NDArray:
+    def gs(self) -> NDArray[np.float64]:
         """Stomatal conductance (µmol m-2 s-1)."""
         self._check_estimated("gs")
         return self._gs
 
     @property
-    def ppfd(self) -> NDArray:
+    def ppfd(self) -> NDArray[np.float64]:
         """Photosynthetic photon flux density (PPFD, µmol m-2 s-1)."""
         self._check_estimated("gs")
         return self._ppfd
 
     @property
-    def fapar(self) -> NDArray:
+    def fapar(self) -> NDArray[np.float64]:
         """Fraction of absorbed photosynthetically active radiation
         (:math:`f_{APAR}` unitless).
         """  # noqa: D205
@@ -401,11 +371,22 @@ class PModel:
         self._gpp = self.lue * iabs
 
         # V_cmax
-        self._vcmax = self.kphio * iabs * self.optchi.mjoc * self.jmaxlim.f_v
+        self._vcmax = self.kphio.kphio * iabs * self.optchi.mjoc * self.jmaxlim.f_v
 
-        # V_cmax25 (vcmax normalized to const.k_To)
-        ftemp25_inst_vcmax = calc_ftemp_inst_vcmax(
-            self.env.tc, core_const=self.core_const, pmodel_const=self.pmodel_const
+        # Calculate the modified arrhenius factor to normalise V_cmax to V_cmax25
+        # - Get parameters
+        kk_a, kk_b, kk_ha, kk_hd = self.pmodel_const.kattge_knorr_kinetics
+        # Calculate entropy as a function of temperature _in °C_
+        kk_deltaS = kk_a + kk_b * self.env.tc
+        # Calculate the arrhenius factor
+        ftemp25_inst_vcmax = calc_modified_arrhenius_factor(
+            tk=self.env.tc + self.core_const.k_CtoK,
+            Ha=kk_ha,
+            Hd=kk_hd,
+            tk_ref=self.pmodel_const.plant_T_ref + self.core_const.k_CtoK,
+            mode=self.pmodel_const.modified_arrhenius_mode,
+            deltaS=kk_deltaS,
+            core_const=self.core_const,
         )
         self._vcmax25 = self._vcmax / ftemp25_inst_vcmax
 
@@ -418,10 +399,10 @@ class PModel:
         )
 
         # Calculate Jmax
-        self._jmax = 4 * self.kphio * iabs * self.jmaxlim.f_j
+        self._jmax = 4 * self.kphio.kphio * iabs * self.jmaxlim.f_j
 
         # AJ and AC
-        a_j = self.kphio * iabs * self.optchi.mj * self.jmaxlim.f_v
+        a_j = self.kphio.kphio * iabs * self.optchi.mj * self.jmaxlim.f_v
         a_c = self._vcmax * self.optchi.mc
 
         assim = np.minimum(a_j, a_c)
@@ -448,11 +429,10 @@ class PModel:
         return (
             f"PModel("
             f"shape={self.shape}, "
-            f"initial kphio={self.init_kphio}, "
-            f"ftemp_kphio={self.do_ftemp_kphio}, "
             f"method_optchi={self.method_optchi}, "
             f"c4={self.c4}, "
             f"method_jmaxlim={self.method_jmaxlim}, "
+            f"method_kphio={self.method_kphio}, "
         )
 
     def summarize(self, dp: int = 2) -> None:

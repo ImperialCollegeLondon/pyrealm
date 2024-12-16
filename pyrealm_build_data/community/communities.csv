@@ -1,0 +1,13 @@
+cell_id,cell_area,plant_functional_type,diameter_at_breast_height,number_of_individuals
+1,100,test1,0.2,6
+1,100,test1,0.25,6
+1,100,test1,0.3,3
+1,100,test1,0.35,1
+1,100,test2,0.5,1
+1,100,test2,0.6,1
+2,100,test1,0.2,6
+2,100,test1,0.25,6
+2,100,test1,0.3,3
+2,100,test1,0.35,1
+2,100,test2,0.5,1
+2,100,test2,0.6,1

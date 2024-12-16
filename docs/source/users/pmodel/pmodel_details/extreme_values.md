@@ -5,11 +5,21 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.2
+    jupytext_version: 1.16.4
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Extreme forcing values
@@ -52,28 +62,30 @@ settings, the roots of these quadratics are:
 
 Note that the default values for C3 photosynthesis give **non-zero values below 0°C**.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 from matplotlib import pyplot
 import numpy as np
-from pyrealm.pmodel import calc_ftemp_kphio, calc_gammastar, calc_kmm
 from pyrealm.core.water import calc_density_h2o
+from pyrealm.pmodel import calc_gammastar, calc_kmm, PModelEnvironment
+from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
 
 %matplotlib inline
 
 # Set the resolution of examples
 n_pts = 101
-# Create a range of representative values for temperature
-tc_1d = np.linspace(-80, 100, n_pts)
+
+# Create environment containing a range of representative values for temperature
+env = PModelEnvironment(tc=np.linspace(-25, 100, n_pts), patm=101325, vpd=820, co2=400)
 
 # Calculate temperature dependence of quantum yield efficiency
-fkphio_c3 = calc_ftemp_kphio(tc_1d, c4=False)
-fkphio_c4 = calc_ftemp_kphio(tc_1d, c4=True)
+fkphio_c3 = QuantumYieldTemperature(env, use_c4=False)
+fkphio_c4 = QuantumYieldTemperature(env, use_c4=True)
 
 # Create a line plot of ftemp kphio
-pyplot.plot(tc_1d, fkphio_c3, label="C3")
-pyplot.plot(tc_1d, fkphio_c4, label="C4")
+pyplot.plot(env.tc, fkphio_c3.kphio, label="C3")
+pyplot.plot(env.tc, fkphio_c4.kphio, label="C4")
 
 pyplot.title("Temperature dependence of quantum yield efficiency")
 pyplot.xlabel("Temperature °C")
@@ -89,18 +101,23 @@ The photorespiratory compensation point ($\Gamma^*$) varies with as a function o
 temperature and atmospheric pressure, and behaves smoothly with extreme inputs. Note
 that again, $\Gamma^_$ has non-zero values for sub-zero temperatures.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Calculate gammastar at different pressures
+tc_1d = np.linspace(-80, 100, n_pts)
+
+# Create a contour plot of gamma
+fig, ax = pyplot.subplots(1, 1)
+
 for patm in [3, 7, 9, 11, 13]:
     pyplot.plot(tc_1d, calc_gammastar(tc_1d, patm * 1000), label=f"{patm} kPa")
 
-# Create a contour plot of gamma
-pyplot.title("Temperature and pressure dependence of $\Gamma^*$")
-pyplot.xlabel("Temperature °C")
-pyplot.ylabel("$\Gamma^*$")
-pyplot.legend()
+ax.set_title("Temperature and pressure dependence of $\Gamma^*$")
+ax.set_xlabel("Temperature °C")
+ax.set_ylabel("$\Gamma^*$")
+ax.set_yscale("log")
+ax.legend(frameon=False)
 pyplot.show()
 ```
 
@@ -109,11 +126,10 @@ pyplot.show()
 The Michaelis-Menten coefficient for photosynthesis ($K_{mm}$)  also varies with
 temperature and atmospheric pressure and again behaves smoothly with extreme values.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
-fig = pyplot.figure()
-ax = pyplot.gca()
+fig, ax = pyplot.subplots(1, 1)
 
 # Calculate K_mm
 for patm in [3, 7, 9, 11, 13]:
@@ -134,11 +150,10 @@ The density ($\rho$) and viscosity ($\mu$) of water both vary with temperature a
 atmospheric pressure. Looking at the density of water, there is a serious numerical
 issue with low temperatures arising from the equations for the density of water.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
-fig = pyplot.figure()
-ax = pyplot.gca()
+fig, ax = pyplot.subplots(1, 1)
 
 # Calculate rho
 for patm in [3, 7, 9, 11, 13]:
@@ -159,11 +174,10 @@ Zooming in, the behaviour of this function is not reliable at extreme low temper
 leading to unstable estimates of $\eta^*$ and the P Model should not be used to make
 predictions below about -30 °C.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
-fig = pyplot.figure()
-ax = pyplot.gca()
+fig, ax = pyplot.subplots(1, 1)
 
 tc_1d = np.linspace(-40, 20, n_pts)
 

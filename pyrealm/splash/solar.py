@@ -9,7 +9,21 @@ from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
 from pyrealm.core.calendar import Calendar
-from pyrealm.core.solar import calc_heliocentric_longitudes
+from pyrealm.core.solar import (
+    calc_daily_solar_radiation,
+    calc_daytime_net_radiation,
+    calc_declination_angle_delta,
+    calc_distance_factor,
+    calc_heliocentric_longitudes,
+    calc_lat_delta_intermediates,
+    calc_net_longwave_radiation,
+    calc_net_rad_crossover_hour_angle,
+    calc_nighttime_net_radiation,
+    calc_ppfd_from_tau_ra_d,
+    calc_rw,
+    calc_sunset_hour_angle,
+    calc_transmissivity,
+)
 from pyrealm.core.utilities import check_input_shapes
 
 
@@ -37,39 +51,43 @@ class DailySolarFluxes:
     tc: InitVar[NDArray]
     core_const: CoreConst = field(default_factory=lambda: CoreConst())
 
-    nu: NDArray = field(init=False)
+    nu: NDArray[np.float64] = field(init=False)
     """True heliocentric anomaly, degrees"""
-    lambda_: NDArray = field(init=False)
+    lambda_: NDArray[np.float64] = field(init=False)
     """True heliocentric longitude, degrees"""
-    dr: NDArray = field(init=False)
+    dr: NDArray[np.float64] = field(init=False)
     """Distance factor, -"""
-    delta: NDArray = field(init=False)
+    delta: NDArray[np.float64] = field(init=False)
     """Declination angle, degrees"""
-    ru: NDArray = field(init=False)
+    ru: NDArray[np.float64] = field(init=False)
     """Intermediate variable, unitless"""
-    rv: NDArray = field(init=False)
+    rv: NDArray[np.float64] = field(init=False)
     """Intermediate variable, unitless"""
-    hs: NDArray = field(init=False)
+    hs: NDArray[np.float64] = field(init=False)
     """Sunset hour angle, degrees"""
-    ra_d: NDArray = field(init=False)
+    ra_d: NDArray[np.float64] = field(init=False)
     """Daily extraterrestrial solar radiation, J/m^2"""
-    tau: NDArray = field(init=False)
+    tau: NDArray[np.float64] = field(init=False)
     """Transmittivity, unitless"""
-    ppfd_d: NDArray = field(init=False)
+    ppfd_d: NDArray[np.float64] = field(init=False)
     """Daily PPFD, mol/m^2"""
-    rnl: NDArray = field(init=False)
+    rnl: NDArray[np.float64] = field(init=False)
     """Net longwave radiation, W/m^2"""
-    rw: NDArray = field(init=False)
+    rw: NDArray[np.float64] = field(init=False)
     """Intermediate variable,  W/m^2"""
-    hn: NDArray = field(init=False)
+    hn: NDArray[np.float64] = field(init=False)
     """Net radiation cross-over hour angle, degrees"""
-    rn_d: NDArray = field(init=False)
+    rn_d: NDArray[np.float64] = field(init=False)
     """Daytime net radiation, J/m^2"""
-    rnn_d: NDArray = field(init=False)
+    rnn_d: NDArray[np.float64] = field(init=False)
     """Nighttime net radiation (rnn_d), J/m^2"""
 
     def __post_init__(
-        self, lat: NDArray, elv: NDArray, sf: NDArray, tc: NDArray
+        self,
+        lat: NDArray[np.float64],
+        elv: NDArray[np.float64],
+        sf: NDArray[np.float64],
+        tc: NDArray[np.float64],
     ) -> None:
         """Populates key fluxes from input variables."""
 
@@ -86,20 +104,11 @@ class DailySolarFluxes:
         )
 
         # Calculate distance factor (dr), Berger et al. (1993)
-        dr = (
-            1.0
-            / (
-                (1.0 - self.core_const.k_e**2)
-                / (1.0 + self.core_const.k_e * np.cos(np.deg2rad(nu)))
-            )
-        ) ** 2
+        dr = calc_distance_factor(nu, self.core_const.k_e)
 
         # Calculate declination angle (delta), Woolf (1968)
-        delta = (
-            np.arcsin(
-                np.sin(np.deg2rad(lambda_)) * np.sin(np.deg2rad(self.core_const.k_eps))
-            )
-            / self.core_const.k_pir
+        delta = calc_declination_angle_delta(
+            lambda_, self.core_const.k_eps, self.core_const.k_pir
         )
 
         # The nu, lambda_, dr and delta attributes are all one dimensional arrays
@@ -113,78 +122,56 @@ class DailySolarFluxes:
         self.dr = np.expand_dims(dr, axis=expand_dims)
         self.delta = np.expand_dims(delta, axis=expand_dims)
 
-        # Calculate variable substitutes (u and v), unitless
-        self.ru = np.sin(np.deg2rad(self.delta)) * np.sin(np.deg2rad(lat))
-        self.rv = np.cos(np.deg2rad(self.delta)) * np.cos(np.deg2rad(lat))
+        self.ru, self.rv = calc_lat_delta_intermediates(self.delta, lat)
 
         # Calculate the sunset hour angle (hs), Eq. 3.22, Stine & Geyer (2001)
-        self.hs = (
-            np.arccos(-1.0 * np.clip(self.ru / self.rv, -1.0, 1.0))
-            / self.core_const.k_pir
-        )
+        self.hs = calc_sunset_hour_angle(self.delta, lat, self.core_const.k_pir)
 
         # Calculate daily extraterrestrial solar radiation (ra_d), J/m^2
         # Eq. 1.10.3, Duffy & Beckman (1993)
-        self.ra_d = (
-            (86400.0 / np.pi)
-            * self.core_const.k_Gsc
-            * self.dr
-            * (
-                self.ru * self.core_const.k_pir * self.hs
-                + self.rv * np.sin(np.deg2rad(self.hs))
-            )
+        self.ra_d = calc_daily_solar_radiation(
+            self.dr, self.hs, self.delta, lat, self.core_const
         )
 
         # Calculate transmittivity (tau), unitless
         # Eq. 11, Linacre (1968); Eq. 2, Allen (1996)
-        self.tau = (self.core_const.k_c + self.core_const.k_d * sf) * (
-            1.0 + (2.67e-5) * elv
+        self.tau = calc_transmissivity(
+            sf, elv, self.core_const.k_c, self.core_const.k_d
+        )
+
+        self.rw = calc_rw(
+            self.tau, self.dr, self.core_const.k_alb_sw, self.core_const.k_Gsc
         )
 
         # Calculate daily PPFD (ppfd_d), mol/m^2
-        self.ppfd_d = (
-            (1.0e-6)
-            * self.core_const.k_fFEC
-            * (1.0 - self.core_const.k_alb_vis)
-            * self.tau
-            * self.ra_d
+        self.ppfd_d = calc_ppfd_from_tau_ra_d(
+            self.tau, self.ra_d, self.core_const.k_fFEC, self.core_const.k_alb_vis
         )
 
         # Estimate net longwave radiation (rnl), W/m^2
         # Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
-        self.rnl = (self.core_const.k_b + (1.0 - self.core_const.k_b) * sf) * (
-            self.core_const.k_A - tc
-        )
-
-        # Calculate variable substitute (rw), W/m^2
-        self.rw = (
-            (1.0 - self.core_const.k_alb_sw)
-            * self.tau
-            * self.core_const.k_Gsc
-            * self.dr
+        self.rnl = calc_net_longwave_radiation(
+            sf, tc, self.core_const.k_b, self.core_const.k_A
         )
 
         # Calculate net radiation cross-over hour angle (hn), degrees
-        self.hn = (
-            np.arccos(
-                np.clip((self.rnl - self.rw * self.ru) / (self.rw * self.rv), -1.0, 1.0)
-            )
-            / self.core_const.k_pir
+        self.hn = calc_net_rad_crossover_hour_angle(
+            self.rnl, self.tau, self.dr, self.delta, lat, self.core_const
         )
 
         # Calculate daytime net radiation (rn_d), J/m^2
-        self.rn_d = (86400.0 / np.pi) * (
-            self.hn * self.core_const.k_pir * (self.rw * self.ru - self.rnl)
-            + self.rw * self.rv * np.sin(np.deg2rad(self.hn))
+        self.rn_d = calc_daytime_net_radiation(
+            self.hn, self.rnl, self.delta, lat, self.tau, self.dr, self.core_const
         )
 
         # Calculate nighttime net radiation (rnn_d), J/m^2
-        self.rnn_d = (
-            (
-                self.rw
-                * self.rv
-                * (np.sin(np.deg2rad(self.hs)) - np.sin(np.deg2rad(self.hn)))
-            )
-            + (self.rw * self.ru * self.core_const.k_pir * (self.hs - self.hn))
-            - (self.rnl * (np.pi - self.core_const.k_pir * self.hn))
-        ) * (86400.0 / np.pi)
+        self.rnn_d = calc_nighttime_net_radiation(
+            self.rnl,
+            self.hn,
+            self.hs,
+            self.delta,
+            lat,
+            self.tau,
+            self.dr,
+            self.core_const,
+        )

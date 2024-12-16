@@ -12,10 +12,10 @@ tmodel <- function(P0, year, a, cr, Hm, rho, rr,
     P0 <- P0 * (1 - 0.1)
     aa <- length(year) # simulate years
     output <- matrix()
-    output <- matrix(NA, nrow = aa, ncol = 12, byrow = T)
+    output <- matrix(NA, nrow = aa, ncol = 16, byrow = T)
     colnames(output) <- c(
-        "dD", "D", "H", "Ac", "Wf", "Ws", "Wss",
-        "GPP", "Rm1", "Rm2", "dWs", "dWfr"
+        "P0", "dD", "D", "H", "fc", "Ac", "Wf", "Ws", "Wss",
+        "GPP", "Rm1", "Rm2", "NPP", "turnover", "dWs", "dWfr"
     ) # you can decide which index you want output
     dD <- 0
     NPP1 <- NA
@@ -80,28 +80,63 @@ tmodel <- function(P0, year, a, cr, Hm, rho, rr,
             a * d * (1 - H / Hm) + H
         )) * (1 / sigma + zeta) * dD
         output[i, ] <- c(
-            dD / 2 * 1000, d, H, Ac, Wf, Ws, Wss, GPP, Rm1, Rm2, dWs, dWfr
+            P0[i], dD / 2 * 1000, d, H, fc, Ac, Wf, Ws, Wss, GPP, Rm1, Rm2, NPP1, NPP2, dWs, dWfr
         )
     }
 
     return(output)
 }
 
-tmodel_run <- tmodel(rep(7, 100), seq(100),
-    d = 0.1,
-    a = 116.0,
-    cr = 390.43,
-    Hm = 25.33,
-    rho = 200.0,
-    L = 1.8,
-    sigma = 14.0,
-    tf = 4.0,
-    tr = 1.04,
-    K = 0.5,
-    y = 0.17,
-    zeta = 0.17,
-    rr = 0.913,
-    rs = 0.044
-)
+# Load alternative plant functional types
+pfts <- read.csv("pft_definitions.csv")
 
-write.csv(tmodel_run, "rtmodel_output.csv", row.names = FALSE)
+# Generate 100 year sequences of plant growth to do fine regression testing
+for (pft_idx in seq_len(nrow(pfts))) {
+    # Get the PFT
+    pft <- as.list(pfts[pft_idx, ])
+
+    # Seperate off the name
+    name <- pft[["name"]]
+    pft[["name"]] <- NULL
+
+    # Get GPP sequence
+    n_years <- 100
+    pft[["P0"]] <- rnorm(n_years, mean = 7)
+    pft[["year"]] <- seq(n_years)
+
+    tmodel_run <- do.call(tmodel, pft)
+
+    write.csv(tmodel_run,
+        sprintf("rtmodel_output_%s.csv", name),
+        row.names = FALSE
+    )
+}
+
+# Generate some simple snapshot predictions for single years to provide
+# expectations for varying matrix inputs in unit testing.
+
+
+dbh <- c(0.01, 0.05, 0.1, 0.25, 0.5, 1.0)
+results <- list()
+
+for (pft_idx in seq_len(nrow(pfts))) {
+    # Get the PFT
+    pft <- as.list(pfts[pft_idx, ])
+
+    # Seperate off the name
+    name <- pft[["name"]]
+    pft[["name"]] <- NULL
+    pft[["P0"]] <- 7 / 0.9
+    pft[["year"]] <- 1
+
+    for (dbh_val in dbh) {
+        pft[["d"]] <- dbh_val
+        tmodel_run <- do.call(tmodel, pft)
+        these_res <- data.frame(tmodel_run)
+        these_res["pft_name"] <- name
+        results <- c(results, list(these_res))
+    }
+}
+
+results <- do.call(rbind, results)
+write.csv(results, "rtmodel_unit_testing.csv", row.names = FALSE)

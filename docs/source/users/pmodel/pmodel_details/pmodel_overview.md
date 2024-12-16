@@ -5,11 +5,21 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.2
+    jupytext_version: 1.16.4
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 <!-- markdownlint-disable-next-line MD041 -->
@@ -26,43 +36,86 @@ reference documentation](../../../api/pmodel_api)
 
 ## Overview
 
-The P Model is a model of carbon capture and water use by plants. Four forcing variables
-are used to define the environment that the plant experiences:
+The P Model is a model of carbon capture and water use by plants. There are four core
+forcing variables that define the photosynthetic environment of the plant, although
+extensions of the basic P model may add other required variables such as aridity or soil
+moisture content. The four core variables are:
 
 * temperature (`tc`, °C),
 * vapor pressure deficit (`vpd`, Pa),
 * atmospheric $\ce{CO2}$ concentration (`co2`, ppm), and
 * atmospheric pressure (`patm`, Pa).
 
-From these inputs, the model breaks down into four broad stages, each of which is
-described in more detail in the link for each stage
+Those forcing variables are then used to calculate four further variables that capture
+the [photosynthetic environment](photosynthetic_environment) of a leaf. These are the:
 
-The main steps are:
+1. photorespiratory compensation point ($\Gamma^*$),
+2. Michaelis-Menten coefficient for photosynthesis ($K_{mm}$),
+3. relative viscosity of water, given a standard at 25°C ($\eta^*$), and
+4. partial pressure of $\ce{CO2}$ in ambient air ($c_a$).
 
-* Calculation of the [photosynthetic environment](photosynthetic_environment). The
-  environmental variables are used to calculate four key variables describing the
-  photosynthetic environment of a plant.
+A P Model can then be fitted to calculate the expected optimal light use efficiency
+given the environment. The basic calculation captures how many moles of carbon can be
+captured for each mole of photosynthetically active photons captured by the leaf. In its
+simplest form, this equation is:
 
-* Calculation of [leaf $\ce{CO2}$ variables](../pmodel_details/optimal_chi). The photosynthetic
-  environment is then used to calculate the optimal ratio of internal to external CO2
-  concentration ($chi$), along with $\ce{CO2}$ partial pressures and limitation factors.
-  This step also governs the main differences between C3 and C4 photosynthesis.
+$$
+  \text{LUE} = M_C \cdot \phi_0 \cdot m_j,
+$$
 
-* Constraints on [light use efficiency (LUE)](lue_limitation). The calculation of light
-  use efficiency can be subjected to a number of constraints:
+where $M_C$ is the molar mass of carbon and $\phi_0$ (the quantum yield efficiency of
+photosynthesis) captures how many moles of photons are required to capture one mole of
+carbon dioxide.
 
-  * Theoretical limitations to the maximum rates of Rubsico regeneration
-    ($J_{max}$) and maximum carboxylation capacity ($V_{cmax}$)
+The term $m_j$ is at the heart of the P model and describes the trade off between
+[carbon dioxide capture and water loss in photosynthesis](./optimal_chi). Given the
+environmental conditions, a leaf will adjust its stomata, setting a ratio of internal to
+external carbon dioxide partial pressure ($\chi$) that optimises this trade off. Under
+adverse conditions, this limits the partial pressure of carbon dioxide within the leaf
+($c_i = c_a \chi$) and gives rise to the limitation term $m_j$ that describes the
+resulting loss in light use efficiency. This calculation also allows the P model to
+estimate the intrinsic water use efficiency of photosynthesis (IWUE) as micromoles per
+mole of photons.
 
-  * Temperature sensitivity of the quantum yield efficiency of photosynthesis
-  (`kphio`, $\phi_0$).
+There are several methods for the calculation of $\chi$ and $m_j$, which are selected
+using the `method_optchi` argument when fitting a P model. These methods specify the
+choice of C3 and C4 photosynthetic pathways but also environmental modification of
+optimal $\chi$.
 
-  * Different approaches to incorporating effects of [soil moisture
-    stress](soil_moisture) on productivity.
+The P model can optionally include further limitations to the light use efficiency of
+photosynthesis. The extended equation shows two modifications:
 
-* Estimation of [gross primary productivity](estimating-productivity). Once LUE has been
-  calculated, estimates of absorbed photosynthetically active radiation, can be used to
-  predict gross primary productivity (GPP) and other key rates within the leaf.
+$$
+  \text{LUE} = M_C \cdot \phi_0(E) \cdot  m_j \cdot f_J
+$$
+
+* The function $\phi_0(E)$ captures methods that introduce environmental modulation of
+  the [quantum yield efficiency of photosynthesis](./quantum_yield), such as variation
+  in $\phi_0$ with air temperature. These methods are selected using the `method_kphio`
+  argument when fitting a P model.
+
+* The additional term $f_j$ describes further [limitation of the electron transfer
+  rate](./jmax_limitation) of photosynthesis ($J_{max}$ limitation). These methods are
+  selected using the `method_jmaxlim` argument when fitting a P model.
+
+:::{warning}
+
+Several of the approaches implemented within the P model in `pyrealm` may be estimating
+the same underlying environmental limitation of light use efficiency via different
+pathways. As an example, there are multiple approaches to incorporating effects of [soil
+moisture stress](soil_moisture) on productivity, via modulation of $\phi_0$, $m_j$ and
+the calculation of GPP penalty factors.
+
+Some combinations of methods may therefore result in multiple corrections for the same
+limitation. At present, `pyrealm` does not automatically detect such over-correction, so
+take care when selecting methods for fitting the P model.
+
+:::
+
+As a final stage, once the LUE has been calculated, then estimates of the actual
+absorbed irradiance for a section of canopy (µmols of photons per m2 per second) can
+then be used to estimate [gross primary productivity](estimating-productivity) (GPP) and
+other key rates within the leaf.
 
 ## Variable graph
 
