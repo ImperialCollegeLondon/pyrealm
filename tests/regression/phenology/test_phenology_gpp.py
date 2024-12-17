@@ -17,12 +17,6 @@ def test_phenology_gpp_calculation(
     from pyrealm.pmodel import PModel, PModelEnvironment, SubdailyPModel, SubdailyScaler
     from pyrealm.pmodel.functions import calc_soilmstress_mengoli
 
-    # Calculate soil moisture stress factor
-    soilm_stress = calc_soilmstress_mengoli(
-        soilm=de_gri_daily_data["soilm"].to_numpy(),
-        aridity_index=de_gri_constants["AI_from_coords"],
-    )
-
     # Calculate the PModel photosynthetic environment
     env = PModelEnvironment(
         tc=de_gri_half_hourly_data["TA_F"].to_numpy(),
@@ -39,6 +33,18 @@ def test_phenology_gpp_calculation(
     de_gri_pmodel.estimate_productivity(
         fapar=np.ones_like(env.ca),
         ppfd=de_gri_half_hourly_data["SW_IN_F"].to_numpy() * 2.04,
+    )
+
+    # Load alternative soil moisture data
+    # datapath = (
+    #     resources.files("pyrealm_build_data.phenology") / "soil_moisture_data.nc"
+    # )
+    # soil_m_data = xr.load_dataset(datapath)
+
+    # Calculate soil moisture stress factor
+    soilm_stress = calc_soilmstress_mengoli(
+        soilm=de_gri_daily_data["soilm"].to_numpy(),
+        aridity_index=de_gri_constants["AI_from_coords"],
     )
 
     # Currently close but not exact
