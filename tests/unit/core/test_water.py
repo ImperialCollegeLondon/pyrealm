@@ -78,3 +78,17 @@ def test_calc_viscosity_h20_matrix(shape):
     )
 
     assert np.allclose(eta.round(7), np.full(shape, fill_value=0.0010016))
+
+
+@pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
+def test_convert_water_mm_to_moles(shape):
+    """Test the viscosity calculation."""
+    from pyrealm.core.water import convert_water_mm_to_moles
+
+    moles_water = convert_water_mm_to_moles(
+        np.full(shape, fill_value=1),
+        np.full(shape, fill_value=20),
+        np.full(shape, fill_value=101325),
+    )
+
+    assert np.allclose(moles_water, np.full(shape, fill_value=55.41713669719267))

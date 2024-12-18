@@ -64,6 +64,8 @@ class CoreConst(ConstantsClass):
     """O2 partial pressure, Standard Atmosphere (:math:`co` , 209476.0, ppm)"""
     k_c_molmass: float = 12.0107
     """Molecular mass of carbon (:math:`c_molmass` , 12.0107, g)"""
+    k_water_molmass: float = 18.01258
+    """Molecular mass of water (:math:`h2o_molmass` , 18.01258, g)"""
     k_Po: float = 101325.0
     """Standard reference atmosphere (Allen, 1973) (:math:`P_o` , 101325.0, Pa)"""
     k_To: float = 298.15
