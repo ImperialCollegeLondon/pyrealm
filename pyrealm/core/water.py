@@ -336,6 +336,9 @@ def convert_water_mm_to_moles(
         np.float64(55.417)
     """
 
+    # Check inputs, return shape not used
+    _ = check_input_shapes(water_mm, tc, patm)
+
     # Calculate density at given temperature and pressure in g/cm3
     water_density = calc_density_h2o(tc=tc, patm=patm, core_const=core_const) / 1000
     # Hence molar volume as mol/cm3 or equivalently mol/mL
