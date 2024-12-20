@@ -30,7 +30,7 @@ def calc_density_h2o_chen(
             equations.
 
     Returns:
-        Water density in kg m3
+        Water density in kg/m^3
 
     Raises:
         ValueError: if the inputs have incompatible shapes.
@@ -72,7 +72,7 @@ def calc_density_h2o_fisher(
     """Calculate water density.
 
     Calculates the density of water as a function of temperature and atmospheric
-    pressure, using the Tumlirz Equation and coefficients calculated by
+    pressure (kg/m^3), using the Tumlirz Equation and coefficients calculated by
     :cite:t:`Fisher:1975tm`.
 
     Warning:
@@ -86,7 +86,7 @@ def calc_density_h2o_fisher(
             equations.
 
     Returns:
-        Water density in kg m3.
+        Water density in kg/m^3.
 
     Raises:
         ValueError: if the inputs have incompatible shapes.
@@ -132,9 +132,9 @@ def calc_density_h2o(
     """Calculate water density.
 
     Calculates the density of water as a function of temperature and atmospheric
-    pressure. This function uses either the method provided by :cite:t:`Fisher:1975tm`
-    (:func:`~pyrealm.core.water.calc_density_h2o_fisher`) or :cite:t:`chen:2008a`
-    (:func:`~pyrealm.core.water.calc_density_h2o_chen`).
+    pressure (in kg/m^3). This function uses either the method provided by
+    :cite:t:`Fisher:1975tm` (:func:`~pyrealm.core.water.calc_density_h2o_fisher`) or
+    :cite:t:`chen:2008a` (:func:`~pyrealm.core.water.calc_density_h2o_chen`).
 
     The constants attribute
     :attr:`~pyrealm.constants.core_const.CoreConst.water_density_method` can be used to
@@ -148,7 +148,7 @@ def calc_density_h2o(
             functions are numerically unstable.
 
     Returns:
-        Water density in kg m3.
+        Water density in kg/m^3.
 
     Raises:
         ValueError: if ``tc`` contains values below -30°C and ``safe`` is True, or if
