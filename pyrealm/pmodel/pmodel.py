@@ -12,7 +12,8 @@ from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
-from pyrealm.pmodel.functions import calc_ftemp_inst_rd, calc_modified_arrhenius_factor
+from pyrealm.pmodel.arrhenius import ARRHENIUS_METHOD_REGISTRY, ArrheniusFactorABC
+from pyrealm.pmodel.functions import calc_ftemp_inst_rd
 from pyrealm.pmodel.jmax_limitation import JmaxLimitation
 from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY, OptimalChiABC
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
@@ -168,6 +169,7 @@ class PModel:
         method_kphio: str = "temperature",
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
+        method_arrhenius: str = "simple",
         reference_kphio: float | NDArray | None = None,
     ):
         self.shape: tuple = env.shape
@@ -220,6 +222,15 @@ class PModel:
         """A subclass of QuantumYieldABC, providing kphio calculation."""
 
         # -----------------------------------------------------------------------
+        # Set up the calculation of Arrhenius scaling
+        # -----------------------------------------------------------------------
+        if method_arrhenius not in ARRHENIUS_METHOD_REGISTRY:
+            raise ValueError(f"Unknown Arrhenius scaling method: {method_arrhenius}")
+
+        self.method_arrhenius: str = method_arrhenius
+        """The method used to calculate Arrhenius factors."""
+
+        # -----------------------------------------------------------------------
         # Calculation of Jmax limitation terms
         # -----------------------------------------------------------------------
         self.method_jmaxlim: str = method_jmaxlim
@@ -260,8 +271,9 @@ class PModel:
         # -----------------------------------------------------------------------
         self._vcmax: NDArray[np.float64]
         self._vcmax25: NDArray[np.float64]
-        self._rd: NDArray[np.float64]
         self._jmax: NDArray[np.float64]
+        self._jmax25: NDArray[np.float64]
+        self._rd: NDArray[np.float64]
         self._gpp: NDArray[np.float64]
         self._gs: NDArray[np.float64]
         self._ppfd: NDArray[np.float64]
@@ -370,25 +382,28 @@ class PModel:
         # GPP
         self._gpp = self.lue * iabs
 
-        # V_cmax
+        # Calculate V_cmax and J_max
         self._vcmax = self.kphio.kphio * iabs * self.optchi.mjoc * self.jmaxlim.f_v
+        self._jmax = 4 * self.kphio.kphio * iabs * self.jmaxlim.f_j
 
-        # Calculate the modified arrhenius factor to normalise V_cmax to V_cmax25
-        # - Get parameters
-        kk_a, kk_b, kk_ha, kk_hd = self.pmodel_const.kattge_knorr_kinetics
-        # Calculate entropy as a function of temperature _in °C_
-        kk_deltaS = kk_a + kk_b * self.env.tc
-        # Calculate the arrhenius factor
-        ftemp25_inst_vcmax = calc_modified_arrhenius_factor(
-            tk=self.env.tc + self.core_const.k_CtoK,
-            Ha=kk_ha,
-            Hd=kk_hd,
-            tk_ref=self.pmodel_const.plant_T_ref + self.core_const.k_CtoK,
-            mode=self.pmodel_const.modified_arrhenius_mode,
-            deltaS=kk_deltaS,
+        # Calculate V_cmax25 and J_max25
+        # - get an instance of the requested Arrhenius scaling method
+        arrh_factor_instance: ArrheniusFactorABC = ARRHENIUS_METHOD_REGISTRY[
+            self.method_arrhenius
+        ](
+            env=self.env,
+            reference_temperature=self.pmodel_const.plant_T_ref,
             core_const=self.core_const,
         )
+
+        # - Calculate and apply the scaling factors.
+        ftemp25_inst_vcmax = arrh_factor_instance.calculate_arrhenius_factor(
+            coefficients=self.pmodel_const.arrhenius_vcmax
+        )
         self._vcmax25 = self._vcmax / ftemp25_inst_vcmax
+        self._jmax25 = self._jmax / arrh_factor_instance.calculate_arrhenius_factor(
+            coefficients=self.pmodel_const.arrhenius_jmax
+        )
 
         # Dark respiration at growth temperature
         ftemp_inst_rd = calc_ftemp_inst_rd(self.env.tc, pmodel_const=self.pmodel_const)
@@ -397,9 +412,6 @@ class PModel:
             * (ftemp_inst_rd / ftemp25_inst_vcmax)
             * self._vcmax
         )
-
-        # Calculate Jmax
-        self._jmax = 4 * self.kphio.kphio * iabs * self.jmaxlim.f_j
 
         # AJ and AC
         a_j = self.kphio.kphio * iabs * self.optchi.mj * self.jmaxlim.f_v

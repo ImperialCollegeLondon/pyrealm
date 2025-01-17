@@ -204,7 +204,7 @@ class ArrheniusFactorABC(ABC):
 
     This abstract base class provides a framework for implementing Arrhenius
     calculations within a PModel or SubdailyPModel. Individual subclasses are registered
-    by a method name that can then be used with the ``arrhenius_method`` argument to
+    by a method name that can then be used with the ``method_arrhenius`` argument to
     those classes.
 
     The `__init__` method uses the PModelEnvironment to provide temperature and any
