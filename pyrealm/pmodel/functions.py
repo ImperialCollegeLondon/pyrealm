@@ -138,24 +138,43 @@ def calc_modified_arrhenius_factor(
     used in the calculation of :math:`V_{cmax}` but also other temperature dependent
     enzymatic processes.
 
+
+    .. math::
+        :nowrap:
+
+        \[
+            \begin{align*}
+
+                f  &= \exp \left( \frac{ H_a (T - T_0)}{T_0 R T}\right)
+                      \left(
+                        \frac{1 + \exp \left( \frac{T_0 \Delta S - H_d }{ R T_0}\right)}
+                             {1 + \exp \left( \frac{T \Delta S - H_d}{R T} \right)}
+                      \right)
+                      \left(\frac{T}{T_0}\right)
+            \end{align*}
+
+        \]
+
+
+
     The function can operate in one of two modes (``M2002`` or ``J1942``) using
     alternative derivations of the modified Arrhenius relationship presented in
     :cite:t:`murphy:2021a`. The ``J1942`` includes an additional factor (tk/tk_ref) that
     is ommitted from the simpler ``M2002`` derivation.
 
     Args:
-        tk: The temperature at which to calculate the factor (K)
+        tk: The temperature in Kelvin (K) at which to calculate the factor (:math:`T`)
         Ha: The activation energy of the enzyme (:math:`H_a`)
         Hd: The deactivation energy of the enzyme (:math:`H_d`)
         deltaS: The entropy of the process (:math:`\Delta S`)
-        tk_ref: The reference temperature for the process (K)
+        tk_ref: The reference temperature in Kelvin for the process (:math:`T_0`)
         mode: The calculation mode.
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
-        To: The standard reference temperature expressed in Kelvin (`T_0`, ``k_To``)
-        R: the universal gas constant (:math:`R`, ``k_R``)
+        To: The default value for the reference temperature in Kelvin (``k_To``)
+        R: The universal gas constant (:math:`R`, ``k_R``)
 
     Returns:
         Values for :math:`f`

@@ -117,6 +117,33 @@ class PModelConst(ConstantsClass):
     heskel_c: float = 0.0005
     """Quadratic coefficient of scaling of dark respiration (:math:`c`, 0.0005)"""
 
+    # Arrhenius values
+    arrhenius_vcmax: dict = field(
+        default_factory=lambda: dict(
+            simple=dict(ha=65330),
+            kattge_knorr=dict(
+                entropy_intercept=668.39,
+                entropy_slope=-1.07,
+                ha=71513,
+                hd=200000,
+            ),
+        )
+    )
+    """Coefficients of Arrhenius factor scaling for :math:`V_{cmax}`."""
+
+    arrhenius_jmax: dict = field(
+        default_factory=lambda: dict(
+            simple=dict(ha=43900),
+            kattge_knorr=dict(
+                entropy_intercept=659.70,
+                entropy_slope=-0.75,
+                ha=49884,
+                hd=200000,
+            ),
+        )
+    )
+    """Coefficients of Arrhenius factor scaling for :math:`J_{max}`."""
+
     # KattgeKnorr vcmax
     kattge_knorr_kinetics: tuple[float, float, float, float] = (
         668.39,
