@@ -58,11 +58,11 @@ def calculate_simple_arrhenius_factor(
         Estimated float values for :math:`f`
 
     Examples:
-        >>> # Relative rate change from 25 to 10 degrees Celsius (percent change)
-        >>> np.round(
-        >>>    (1.0- calculate_simple_arrhenius_factor(283.15, , 298.15, 100000)) * 100,
-        >>>    4,
-        >>> )
+        >>> # Percentage rate change from 25 to 10 degrees Celsius
+        >>> at_10C = calculate_simple_arrhenius_factor(
+        ...     np.array([283.15]) , 298.15, 100000
+        ... )
+        >>> np.round((1.0 - at_10C) * 100, 4)
         array([88.1991])
     """
 
@@ -138,20 +138,24 @@ def calculate_kattge_knorr_arrhenius_factor(
         Values for :math:`f`
 
     Examples:
-        >>> # Calculate the factor for the relative rate of V_cmax at 10 degrees
-        >>> # compared to the rate at the reference temperature of 25°C.
+        >>> # Calculate the factor for the relative rate of Vcmax at 10 °C (283.15K)
+        >>> # compared to the rate at the reference temperature of 25°C (298.15K).
         >>> from pyrealm.constants import PModelConst
         >>> pmodel_const = PModelConst()
         >>> # Get enzyme kinetics parameters
-        >>> a, b, ha, hd = pmodel_const.kattge_knorr_kinetics
-        >>> # Calculate entropy as a function of temperature _in °C_
-        >>> deltaS = a + b * 10
+        >>> coef = pmodel_const.arrhenius_vcmax['kattge_knorr']
         >>> # Calculate the arrhenius factor
-        >>> val = calc_modified_arrhenius_factor(
-        ...     tk= 10 + 273.15, Ha=ha, Hd=hd, deltaS=deltaS, tk_ref=25 +273.15
+        >>> val = calculate_kattge_knorr_arrhenius_factor(
+        ...     tk_leaf= np.array([283.15]),
+        ...     tc_growth = 10,
+        ...     tk_ref=298.15,
+        ...     ha=coef['ha'],
+        ...     hd=coef['hd'],
+        ...     entropy_intercept=coef['entropy_intercept'],
+        ...     entropy_slope=coef['entropy_slope'],
         ... )
         >>> np.round(val, 4)
-        np.float64(0.261)
+        array([0.261])
     """
 
     if mode not in ["M2002", "J1942"]:
@@ -435,7 +439,7 @@ def calc_kmm(
     Examples:
         >>> # Michaelis-Menten coefficient at 20 degrees Celsius and standard
         >>> # atmosphere (in Pa):
-        >>> np.round(calc_kmm(20, 101325), 5)
+        >>> np.round(calc_kmm(np.array([20]), 101325), 5)
         array([46.09928])
     """
 
