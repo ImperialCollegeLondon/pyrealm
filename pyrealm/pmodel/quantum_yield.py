@@ -22,7 +22,7 @@ from pyrealm.core.utilities import (
     evaluate_horner_polynomial,
     summarize_attrs,
 )
-from pyrealm.pmodel.functions import calc_modified_arrhenius_factor
+from pyrealm.pmodel.functions import calculate_kattge_knorr_arrhenius_factor
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
 QUANTUM_YIELD_CLASS_REGISTRY: dict[str, type[QuantumYieldABC]] = {}
@@ -337,12 +337,14 @@ class QuantumYieldSandoval(
         kphio_peak = self.peak_quantum_yield(aridity=self.env.aridity_index)
 
         # Calculate the modified Arrhenius factor using the
-        f_kphio = calc_modified_arrhenius_factor(
-            tk=self.env.tc + self.env.core_const.k_CtoK,
-            Ha=Ha,
-            Hd=Hd,
-            deltaS=deltaS,
+        f_kphio = calculate_kattge_knorr_arrhenius_factor(
+            tk_leaf=self.env.tc + self.env.core_const.k_CtoK,
             tk_ref=Topt,
+            tc_growth=self.env.mean_growth_temperature,
+            ha=Ha,
+            hd=Hd,  # type: ignore[arg-type]  # Not an array in this function
+            entropy_intercept=a_ent,
+            entropy_slope=b_ent,
             mode=self.env.pmodel_const.modified_arrhenius_mode,
             core_const=self.env.core_const,
         )

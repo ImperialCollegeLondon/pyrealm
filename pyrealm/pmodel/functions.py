@@ -11,18 +11,18 @@ from pyrealm.core.utilities import check_input_shapes
 from pyrealm.core.water import calc_viscosity_h2o
 
 
-def calc_ftemp_arrh(
+def calculate_simple_arrhenius_factor(
     tk: NDArray[np.float64],
-    ha: float | NDArray,
-    tk_ref: float | NDArray | None = None,
-    pmodel_const: PModelConst = PModelConst(),
+    tk_ref: float,
+    ha: float,
     core_const: CoreConst = CoreConst(),
 ) -> NDArray[np.float64]:
-    r"""Calculate enzyme kinetics scaling factor.
+    r"""Calculate an Arrhenius scaling factor using activation energy.
 
-    Calculates the temperature-scaling factor :math:`f` for enzyme kinetics following an
-    Arrhenius response for a given temperature (``tk``, :math:`T`) and activation energy
-    (``ha``, :math:`H_a`).
+    Calculates the temperature-scaling factor :math:`f` for enzyme kinetics following
+    a simple Arrhenius response governed solely by the activation energy for an enzyme
+    (``ha``, :math:`H_a`). The rate is given for a temperature :math:`T` relative to a
+    reference temperature :math:T_0`, both given in Kelvin.
 
     Arrhenius kinetics are described as:
 
@@ -47,17 +47,11 @@ def calc_ftemp_arrh(
 
     Args:
         tk: Temperature (K)
+        tk_ref: The reference temperature for the reaction (K).
         ha: Activation energy (in :math:`J \text{mol}^{-1}`)
-        tk_ref: The reference temperature for the reaction (K). Optional, defaulting to
-            the value of
-            :attr:`PModelConst.plant_T_ref<pyrealm.constants.PModelConst.plant_T_ref>`
-            expressed in Kelvin.
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
-        To: standard reference temperature for photosynthetic processes (:math:`T_0`,
-            ``k_To``)
         R: the universal gas constant (:math:`R`, ``k_R``)
 
     Returns:
@@ -65,19 +59,122 @@ def calc_ftemp_arrh(
 
     Examples:
         >>> # Relative rate change from 25 to 10 degrees Celsius (percent change)
-        >>> np.round((1.0-calc_ftemp_arrh( 283.15, 100000)) * 100, 4)
+        >>> np.round(
+        >>>    (1.0- calculate_simple_arrhenius_factor(283.15, , 298.15, 100000)) * 100,
+        >>>    4,
+        >>> )
         array([88.1991])
     """
 
-    # Note that the following forms are equivalent:
-    # exp( ha * (tk - 298.15) / (298.15 * kR * tk) )
-    # exp( ha * (tc - 25.0)/(298.15 * kR * (tc + 273.15)) )
-    # exp( (ha/kR) * (1/298.15 - 1/tk) )
-
-    if tk_ref is None:
-        tk_ref = np.array([pmodel_const.plant_T_ref + core_const.k_CtoK])
-
     return np.exp(ha * (tk - tk_ref) / (tk_ref * core_const.k_R * tk))
+
+
+def calculate_kattge_knorr_arrhenius_factor(
+    tk_leaf: NDArray[np.float64],
+    tk_ref: float,
+    tc_growth: NDArray[np.float64],
+    ha: float,
+    hd: float,
+    entropy_intercept: float,
+    entropy_slope: float,
+    core_const: CoreConst = CoreConst(),
+    mode: str = "M2002",
+) -> NDArray[np.float64]:
+    r"""Calculate an Arrhenius factor following :cite:t:`Kattge:2007db`.
+
+    This implements a "peaked" version of the Arrhenius relationship, describing a
+    decline in reaction rates at higher temperatures. In addition to the activation
+    energy (see :meth:`~pyrealm.pmodel.arrhenius.calculate_simple_arrhenius_factor`),
+    this implementation adds an entropy term and the deactivation energy of the enzyme
+    system. The rate is given for a given instantaneous temperature :math:`T` relative
+    to a reference temperature :math:T_0`, both given in Kelvin, but the entropy is
+    calculated using a separate estimate of the growth temperature for a plant,
+    expressed in °C.
+
+
+    .. math::
+        :nowrap:
+
+        \[
+            \begin{align*}
+
+                f  &= \exp \left( \frac{ H_a (T - T_0)}{T_0 R T}\right)
+                      \left(
+                        \frac{1 + \exp \left( \frac{T_0 \Delta S - H_d }{ R T_0}\right)}
+                             {1 + \exp \left( \frac{T \Delta S - H_d}{R T} \right)}
+                      \right)
+                      \left(\frac{T}{T_0}\right)
+            \end{align*}
+
+            \text{where,}
+
+            \Delta S = a + b * t_g
+
+        \]
+
+
+
+    The function can operate in one of two modes (``M2002`` or ``J1942``) using
+    alternative derivations of the modified Arrhenius relationship presented in
+    :cite:t:`murphy:2021a`. The ``J1942`` includes an additional factor (tk/tk_ref) that
+    is ommitted from the simpler ``M2002`` derivation.
+
+    Args:
+        tk_leaf: The instantaneous temperature in Kelvin (K) at which to calculate the
+            factor (:math:`T`)
+        tk_ref: The reference temperature in Kelvin for the process (:math:`T_0`)
+        tc_growth: The growth temperature of the plants in °C (:math:`t_g`)
+        ha: The activation energy of the enzyme (:math:`H_a`)
+        hd: The deactivation energy of the enzyme (:math:`H_d`)
+        entropy_intercept: The intercept of the entropy relationship (:math:`a`),
+        entropy_slope: The slope of the entropy relationship (:math:`b`),
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
+        mode: The calculation mode.
+
+    PModel Parameters:
+        R: The universal gas constant (:math:`R`, ``k_R``)
+
+    Returns:
+        Values for :math:`f`
+
+    Examples:
+        >>> # Calculate the factor for the relative rate of V_cmax at 10 degrees
+        >>> # compared to the rate at the reference temperature of 25°C.
+        >>> from pyrealm.constants import PModelConst
+        >>> pmodel_const = PModelConst()
+        >>> # Get enzyme kinetics parameters
+        >>> a, b, ha, hd = pmodel_const.kattge_knorr_kinetics
+        >>> # Calculate entropy as a function of temperature _in °C_
+        >>> deltaS = a + b * 10
+        >>> # Calculate the arrhenius factor
+        >>> val = calc_modified_arrhenius_factor(
+        ...     tk= 10 + 273.15, Ha=ha, Hd=hd, deltaS=deltaS, tk_ref=25 +273.15
+        ... )
+        >>> np.round(val, 4)
+        np.float64(0.261)
+    """
+
+    if mode not in ["M2002", "J1942"]:
+        raise ValueError(
+            f"Unknown mode option for calc_modified_arrhenius_factor: {mode}"
+        )
+
+    # Calculate entropy as a function of temperature _in °C_
+    entropy = entropy_intercept + entropy_slope * tc_growth
+
+    # Calculate Arrhenius components
+    fva = calculate_simple_arrhenius_factor(tk=tk_leaf, ha=ha, tk_ref=tk_ref)
+
+    fvb = (1 + np.exp((tk_ref * entropy - hd) / (core_const.k_R * tk_ref))) / (
+        1 + np.exp((tk_leaf * entropy - hd) / (core_const.k_R * tk_leaf))
+    )
+
+    if mode == "M2002":
+        # Medlyn et al. 2002 simplification
+        return fva * fvb
+
+    # Johnson et al 1942
+    return fva * (tk_leaf / tk_ref) * fvb
 
 
 def calc_ftemp_inst_rd(
@@ -120,100 +217,6 @@ def calc_ftemp_inst_rd(
         pmodel_const.heskel_b * (tc - pmodel_const.plant_T_ref)
         - pmodel_const.heskel_c * (tc**2 - pmodel_const.plant_T_ref**2)
     )
-
-
-def calc_modified_arrhenius_factor(
-    tk: NDArray[np.float64],
-    Ha: float | NDArray,
-    Hd: float | NDArray,
-    deltaS: float | NDArray,
-    tk_ref: float | NDArray,
-    mode: str = "M2002",
-    core_const: CoreConst = CoreConst(),
-) -> NDArray[np.float64]:
-    r"""Calculate the modified Arrhenius factor with temperature for an enzyme.
-
-    This function returns a temperature-determined factor expressing the rate of an
-    enzymatic process relative to the rate at a given reference temperature. This is
-    used in the calculation of :math:`V_{cmax}` but also other temperature dependent
-    enzymatic processes.
-
-
-    .. math::
-        :nowrap:
-
-        \[
-            \begin{align*}
-
-                f  &= \exp \left( \frac{ H_a (T - T_0)}{T_0 R T}\right)
-                      \left(
-                        \frac{1 + \exp \left( \frac{T_0 \Delta S - H_d }{ R T_0}\right)}
-                             {1 + \exp \left( \frac{T \Delta S - H_d}{R T} \right)}
-                      \right)
-                      \left(\frac{T}{T_0}\right)
-            \end{align*}
-
-        \]
-
-
-
-    The function can operate in one of two modes (``M2002`` or ``J1942``) using
-    alternative derivations of the modified Arrhenius relationship presented in
-    :cite:t:`murphy:2021a`. The ``J1942`` includes an additional factor (tk/tk_ref) that
-    is ommitted from the simpler ``M2002`` derivation.
-
-    Args:
-        tk: The temperature in Kelvin (K) at which to calculate the factor (:math:`T`)
-        Ha: The activation energy of the enzyme (:math:`H_a`)
-        Hd: The deactivation energy of the enzyme (:math:`H_d`)
-        deltaS: The entropy of the process (:math:`\Delta S`)
-        tk_ref: The reference temperature in Kelvin for the process (:math:`T_0`)
-        mode: The calculation mode.
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
-
-    PModel Parameters:
-        To: The default value for the reference temperature in Kelvin (``k_To``)
-        R: The universal gas constant (:math:`R`, ``k_R``)
-
-    Returns:
-        Values for :math:`f`
-
-    Examples:
-        >>> # Calculate the factor for the relative rate of V_cmax at 10 degrees
-        >>> # compared to the rate at the reference temperature of 25°C.
-        >>> from pyrealm.constants import PModelConst
-        >>> pmodel_const = PModelConst()
-        >>> # Get enzyme kinetics parameters
-        >>> a, b, ha, hd = pmodel_const.kattge_knorr_kinetics
-        >>> # Calculate entropy as a function of temperature _in °C_
-        >>> deltaS = a + b * 10
-        >>> # Calculate the arrhenius factor
-        >>> val = calc_modified_arrhenius_factor(
-        ...     tk= 10 + 273.15, Ha=ha, Hd=hd, deltaS=deltaS, tk_ref=25 +273.15
-        ... )
-        >>> np.round(val, 4)
-        np.float64(0.261)
-    """
-
-    if mode not in ["M2002", "J1942"]:
-        raise ValueError(
-            f"Unknown mode option for calc_modified_arrhenius_factor: {mode}"
-        )
-
-    # Calculate Arrhenius components
-    fva = calc_ftemp_arrh(tk=tk, ha=Ha, tk_ref=tk_ref)
-
-    fvb = (1 + np.exp((tk_ref * deltaS - Hd) / (core_const.k_R * tk_ref))) / (
-        1 + np.exp((tk * deltaS - Hd) / (core_const.k_R * tk))
-    )
-
-    if mode == "M2002":
-        # Medlyn et al. 2002 simplification
-        return fva * fvb
-
-    # Johnson et al 1942
-    return fva * (tk / tk_ref) * fvb
 
 
 def calc_ftemp_kphio(
@@ -291,9 +294,10 @@ def calc_gammastar(
         \Gamma^{*} = \Gamma^{*}_{0} \cdot \frac{p}{p_0} \cdot f(T, H_a)
 
     where :math:`f(T, H_a)` modifies the activation energy to the the local temperature
-    following an Arrhenius-type temperature response function implemented in
-    :func:`calc_ftemp_arrh`. Estimates of :math:`\Gamma^{*}_{0}` and :math:`H_a` are
-    taken from :cite:t:`Bernacchi:2001kg`.
+    following the Arrhenius-type temperature response function (see
+
+    :meth:`~pyrealm.pmodel.arrhenius.calculate_simple_arrhenius_factor`. Estimates of
+    :math:`\Gamma^{*}_{0}` and :math:`H_a` are taken from :cite:t:`Bernacchi:2001kg`.
 
     Args:
         tc: Temperature relevant for photosynthesis (:math:`T`, °C)
@@ -325,7 +329,11 @@ def calc_gammastar(
         pmodel_const.bernacchi_gs25_0
         * patm
         / core_const.k_Po
-        * calc_ftemp_arrh((tc + core_const.k_CtoK), ha=pmodel_const.bernacchi_dha)
+        * calculate_simple_arrhenius_factor(
+            tk=tc + core_const.k_CtoK,
+            tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
+            ha=pmodel_const.bernacchi_dha,
+        )
     )
 
 
@@ -388,9 +396,10 @@ def calc_kmm(
       .. math:: K = K_c ( 1 + p_{\ce{O2}} / K_o),
 
     where, :math:`p_{\ce{O2}} = 0.209476 \cdot p` is the partial pressure of oxygen.
-    :math:`f(T, H_a)` is an Arrhenius-type temperature response of activation energies
-    (:func:`calc_ftemp_arrh`) used to correct Michalis constants at standard temperature
-    for both :math:`\ce{CO2}` and :math:`\ce{O2}` to the local temperature (Table 1,
+    :math:`f(T, H_a)` is the simple Arrhenius temperature response of activation
+    energies (see :meth:`~pyrealm.pmodel.arrhenius.calculate_simple_arrhenius_factor`)
+    used to correct Michalis constants at standard temperature for both :math:`\ce{CO2}`
+    and :math:`\ce{O2}` to the local temperature (Table 1,
     :cite:alp:`Bernacchi:2001kg`):
 
       .. math::
@@ -436,11 +445,16 @@ def calc_kmm(
     # conversion to Kelvin
     tk = tc + core_const.k_CtoK
 
-    kc = pmodel_const.bernacchi_kc25 * calc_ftemp_arrh(
-        tk, ha=pmodel_const.bernacchi_dhac
+    kc = pmodel_const.bernacchi_kc25 * calculate_simple_arrhenius_factor(
+        tk=tk,
+        tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
+        ha=pmodel_const.bernacchi_dhac,
     )
-    ko = pmodel_const.bernacchi_ko25 * calc_ftemp_arrh(
-        tk, ha=pmodel_const.bernacchi_dhao
+
+    ko = pmodel_const.bernacchi_ko25 * calculate_simple_arrhenius_factor(
+        tk=tk,
+        tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
+        ha=pmodel_const.bernacchi_dhao,
     )
 
     # O2 partial pressure
@@ -459,7 +473,8 @@ def calc_kp_c4(
 
     Calculates the Michaelis Menten coefficient of phosphoenolpyruvate carboxylase
     (PEPc) (:math:`K`, :cite:alp:`boyd:2015a`) as a function of temperature (:math:`T`)
-    and atmospheric pressure (:math:`p`) as:
+    and atmospheric pressure (:math:`p`), following Arrhenius scaling (see
+    :meth:`~pyrealm.pmodel.arrhenius.calculate_simple_arrhenius_factor`) as:
 
     Args:
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
@@ -488,8 +503,11 @@ def calc_kp_c4(
     _ = check_input_shapes(tc, patm)
 
     # conversion to Kelvin
-    tk = tc + core_const.k_CtoK
-    return pmodel_const.boyd_kp25_c4 * calc_ftemp_arrh(tk, ha=pmodel_const.boyd_dhac_c4)
+    return pmodel_const.boyd_kp25_c4 * calculate_simple_arrhenius_factor(
+        tk=tc + core_const.k_CtoK,
+        tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
+        ha=pmodel_const.boyd_dhac_c4,
+    )
 
 
 def calc_soilmstress_stocker(
