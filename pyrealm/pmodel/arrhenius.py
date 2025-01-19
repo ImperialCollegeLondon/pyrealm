@@ -131,7 +131,7 @@ class ArrheniusFactorABC(ABC):
         if missing_coefficients:
             raise ValueError(
                 f"The coefficients for the {self.method} Arrhenius method do not "
-                f"provide: {','.join(missing_coefficients)}"
+                f"provide: {','.join(sorted(missing_coefficients))}"
             )
 
         return self._calculation_method(coefficients=coefficients[self.method])
@@ -183,7 +183,7 @@ class KattgeKnorrArrhenius(
     ArrheniusFactorABC,
     method="kattge_knorr",
     required_coefficients={"ha", "hd", "entropy_intercept", "entropy_slope"},
-    required_env_variables=[],
+    required_env_variables=[],  # TODO - add growth_temperature
 ):
     """Class providing Kattge Knorr Arrhenius scaling."""
 

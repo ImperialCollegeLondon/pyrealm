@@ -1,8 +1,82 @@
 """Tests of the ``pyrealm.pmodel.arrhenius`` module."""
 
+from contextlib import nullcontext as does_not_raise
+
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose
+
+
+@pytest.mark.parametrize(
+    argnames="classname,coef,init_raises,init_msg,call_raises,call_msg",
+    argvalues=[
+        pytest.param(
+            "SimpleArrhenius",
+            dict(no_coef=dict(ha=1)),
+            does_not_raise(),
+            None,
+            pytest.raises(ValueError),
+            "The coefficients dict does not provide a parameterisation "
+            "for the simple Arrhenius method.",
+            id="no_simple_coef",
+        ),
+        pytest.param(
+            "SimpleArrhenius",
+            dict(simple=dict(hA=1)),
+            does_not_raise(),
+            None,
+            pytest.raises(ValueError),
+            "The coefficients for the simple Arrhenius method do not provide: ha",
+            id="simple_coef_no_ha",
+        ),
+        pytest.param(
+            "KattgeKnorrArrhenius",
+            dict(no_coef=dict(ha=1)),
+            does_not_raise(),
+            None,
+            pytest.raises(ValueError),
+            "The coefficients dict does not provide a parameterisation "
+            "for the kattge_knorr Arrhenius method.",
+            id="no_kattge_knorr_coef",
+        ),
+        pytest.param(
+            "KattgeKnorrArrhenius",
+            dict(kattge_knorr=dict(hA=1)),
+            does_not_raise(),
+            None,
+            pytest.raises(ValueError),
+            "The coefficients for the kattge_knorr Arrhenius method do not provide: "
+            "entropy_intercept,entropy_slope,ha,hd",
+            id="kattge_knorr_coef_no_ha",
+        ),
+    ],
+)
+def test_ArrheniusFactorABC_init_and_call(
+    classname, coef, init_raises, init_msg, call_raises, call_msg
+):
+    """Test usage of of ArrheniusFactorABC."""
+    from pyrealm.pmodel import PModelEnvironment, arrhenius
+
+    env = PModelEnvironment(
+        tc=np.array([20]),
+        patm=np.array([101325]),
+        vpd=np.array([400]),
+        co2=np.array([400]),
+    )
+
+    class_obj = getattr(arrhenius, classname)
+
+    with init_raises as init_excep:
+        inst = class_obj(env=env, reference_temperature=25)
+
+        with call_raises as call_excep:
+            _ = inst.calculate_arrhenius_factor(coefficients=coef)
+
+        if not isinstance(call_raises, does_not_raise):
+            assert str(call_excep.value) == call_msg
+
+    if not isinstance(init_raises, does_not_raise):
+        assert str(init_excep.value) == init_msg
 
 
 @pytest.mark.parametrize(
