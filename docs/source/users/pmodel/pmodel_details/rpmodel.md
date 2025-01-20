@@ -55,8 +55,8 @@ The implementations differ in a number of ways:
    function arguments.
 
    The ``rpmodel`` package has suites of functions for calculating $J_{max}$ limitation
-   and optimal $\chi$. These have been combined into the
-   {class}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation` limitation claas and a set of
+   and optimal $\chi$. These have been implemented in the various subclasses of the
+   {class}`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC` class and a set of
    approaches to optimal chi calculated using subclasses of
    {class}`~pyrealm.pmodel.optimal_chi.OptimalChiABC`. This allows the common
    parameters and outputs of these functions to be standardised and the different
@@ -70,8 +70,8 @@ The implementations differ in a number of ways:
    are set to have no $\ce{CO2}$ limitation in
    {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4`, although the correct internal
    $\ce{CO2}$ partial pressure is calculated, and are then free to use whichever
-   $J_{max}$ method is preferred in
-   {class}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation`.
+   $J_{max}$ method is preferred using
+   {class}`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC` subclasses.
 
    The ``rpmodel`` function has a large number of arguments. This is partly
    because of some redundancy in identifying the use case. For example, using

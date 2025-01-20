@@ -69,9 +69,6 @@ class OptimalChiABC(ABC):
         env: An instance of
             :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`  providing the
             photosynthetic environment for the model.
-        rootzonestress: This is an experimental feature to supply a root zone stress
-            factor used as a direct penalty to :math:`\beta`, unitless. The default is
-            1.0, with no root zone stress applied.
         pmodel_const: An instance of
             :class:`~pyrealm.constants.pmodel_const.PModelConst`.
 

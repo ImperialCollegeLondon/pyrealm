@@ -45,7 +45,6 @@ from pyrealm.pmodel.functions import (
     calc_viscosity_h2o,
 )
 from pyrealm.pmodel.isotopes import CalcCarbonIsotopes
-from pyrealm.pmodel.jmax_limitation import JmaxLimitation
 from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 from pyrealm.pmodel.scaler import SubdailyScaler

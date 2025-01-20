@@ -1,151 +1,157 @@
-"""The module :mod:`~pyrealm.pmodel.jmax_limitation` provides the implementation of
-the following pmodel core class:
+"""The :mod:`~pyrealm.pmodel.jmax_limitation` module provides the implementation of
+classes for calculation of :math:`J_{max}` and :math:`V_{cmax}` limitation. The module
+provides an abstract base dataclass
+(:class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC`) which provides the core
+functionality for the implementation. Individual methods then are defined as subclasses
+that only need to add any additional data attributes and define the private
+:meth:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC._calculate_limitation_terms`
+method. This is automatically called by the ``__post_init__`` method of the data class and
+so the limitation terms are calculated when an instance is created.
 
-* :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation`:
-    Estimates the Jmax limitation, given a method and settings.
-
+The module defines a registry
+(:data:`~pyrealm.pmodel.jmax_limitation.JMAX_LIMITATION_CLASS_REGISTRY`) to track
+defined subclasses. Subclasses are added to this dictionary, under a string set by the
+subclass ``method`` attribute, by the ``__init_subclass`` method of the base class,
+which allows implementations to be selected by a simple string method name.
 """  # noqa D210, D415
+
+from __future__ import annotations
+
+from abc import ABCMeta, abstractmethod
+from dataclasses import dataclass, field
+from typing import ClassVar
 
 import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import PModelConst
-from pyrealm.core.utilities import check_input_shapes
+from pyrealm.core.utilities import summarize_attrs
 from pyrealm.pmodel.optimal_chi import OptimalChiABC
 
+JMAX_LIMITATION_CLASS_REGISTRY: dict[str, type[JmaxLimitationABC]] = {}
+"""A registry for subclasses of
+:class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC`. Subclasses are automatically
+included in this registry dictionary under their defined ``method`` name.
+"""
 
-class JmaxLimitation:
-    r"""Estimate Jmax limitation.
 
-    This class calculates two factors (:math:`f_v` and :math:`f_j`) used to implement
-    :math:`V_{cmax}` and :math:`J_{max}` limitation of photosynthesis. Three methods are
-    currently implemented:
+@dataclass
+class JmaxLimitationABC(metaclass=ABCMeta):
+    r"""An abstract base class for JMaxLimitation implementations.
 
-        * ``simple``: applies the 'simple' equations with no limitation. The alias
-          ``none`` is also accepted.
-        * ``wang17``: applies the framework of :cite:`Wang:2017go`.
-        * ``smith19``: applies the framework of :cite:`Smith:2019dv`
+    This base class defines the ``__init__`` arguments, common data attributes and core
+    methods for implementing JMaxLimitation methods. Subclasses should only need to
+    define any additional data attributes that should be exposed to users and define the
+    private
+    :meth:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC._calculate_limitation_terms`
+    method for the implementation. Subclass definitions should use
+    ``@dataclass(repr=False)`` to avoid overriding the base implementation of the
+    ``_repr__`` method, and also need to provide a method name string and a tuple of the
+    data attributes to include when the
+    :meth:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC.summarize` method is called
+    for the subclass.
 
-    Note that :cite:`Smith:2019dv` defines :math:`\phi_0` as the quantum efficiency of
-    electron transfer, whereas :class:`pyrealm.pmodel.pmodel.PModel` defines
-    :math:`\phi_0` as the quantum efficiency of photosynthesis, which is 4 times
-    smaller. This is why the factors here are a factor of 4 greater than Eqn 15 and 17
-    in :cite:`Smith:2019dv`.
+    See :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationWang17` for an example.
+    """
 
-    Arguments:
-        optchi: an instance of :class:`pyrealm.pmodel.optimal_chi.OptimalChiABC`
-            providing the :math:`\ce{CO2}` limitation term of light use efficiency
-            (:math:`m_j`) and the :math:`\ce{CO2}` limitation term for Rubisco
-            assimilation (:math:`m_c`).
-        method: method to apply :math:`J_{max}` limitation (default: ``wang17``,
-            or ``smith19`` or ``none``)
-        pmodel_const: An instance of
-            :class:`~pyrealm.constants.pmodel_const.PModelConst`.
+    method: ClassVar[str]
+    """A short name for the method of Jmax limitation implemented in the subclass."""
+    data_attrs: ClassVar[tuple[tuple[str, str], ...]]
+    """A tuple of names and units for the data attributes of the class to be reported 
+    by summarize."""
+    optchi: OptimalChiABC
+    """The optimal chi instance used to calculate limitation terms."""
+    pmodel_const: PModelConst = field(default_factory=lambda: PModelConst())
+    """The PModel constants instance used for the calculation."""
+    _shape: tuple[int, ...] = field(init=False)
+    """Records the common numpy array shape in the data."""
+    f_j: NDArray[np.float64] = field(init=False)
+    """:math:`J_{max}` limitation factor."""
+    f_v: NDArray[np.float64] = field(init=False)
+    """:math:`V_{cmax}` limitation factor."""
+
+    def __post_init__(self) -> None:
+        self._shape = self.optchi.mj.shape
+
+        self._calculate_limitation_terms()
+
+    def __repr__(self) -> str:
+        """Generates a string representation of a JmaxLimitation instance."""
+        return f"JmaxLimitation(method={self.method}, shape={self._shape})"
+
+    def summarize(self, dp: int = 2) -> None:
+        """Print OptimalChi summary.
+
+        Prints a summary of the variables calculated within an instance
+        of OptimalChi including the mean, range and number of nan values.
+
+        Args:
+            dp: The number of decimal places used in rounding summary stats.
+        """
+
+        summarize_attrs(self, list(self.data_attrs), dp=dp)
+
+    @abstractmethod
+    def _calculate_limitation_terms(self) -> None:
+        """Abstract method defined in subclasses to populate limitation attributes."""
+        pass
+
+    @classmethod
+    def __init_subclass__(
+        cls, method: str, data_attrs: tuple[tuple[str, str], ...]
+    ) -> None:
+        """Initialise a subclass deriving from this ABC."""
+
+        cls.method = method
+        cls.data_attrs = data_attrs
+        JMAX_LIMITATION_CLASS_REGISTRY[cls.method] = cls
+
+
+@dataclass(repr=False)
+class JmaxLimitationWang17(
+    JmaxLimitationABC,
+    method="wang17",
+    data_attrs=(("f_j", "-"), ("f_v", "-")),
+):
+    r"""Calculate limitation factors following :cite:`Wang:2017go`.
+
+    These factors are described in Equation 49 of :cite:`Wang:2017go` as the
+    square root term at the end of that equation:
+
+        .. math::
+            :nowrap:
+
+            \[
+                \begin{align*}
+                f_v &=  \sqrt{ 1 - \frac{c^*}{m} ^{2/3}} \\
+                f_j &=  \sqrt{\frac{m}{c^*} ^{2/3} -1 } \\
+                \end{align*}
+            \]
+
+    The variable :math:`c^*` is a cost parameter for maintaining :math:`J_{max}`
+    and is set in
+    :attr:`PModelConsts.wang17_c<pyrealm.constants.PModelConst.wang17_c>`. 
+    Note that both equations are undefined where :math:`m \le c^*`: where this
+    condition is true, values will be returned as ``np.nan``.
 
     Examples:
-        >>> import numpy as np
-        >>> from pyrealm.pmodel.pmodel_environment import PModelEnvironment
+        >>> from pyrealm.pmodel import PModelEnvironment
         >>> from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
         ...     co2=np.array([400]), patm=np.array([101325.0])
         ... )
-        >>> optchi = OptimalChiPrentice14(env)
-        >>> simple = JmaxLimitation(optchi, method='simple')
-        >>> simple.f_j
-        array([1.])
-        >>> simple.f_v
-        array([1.])
-        >>> wang17 = JmaxLimitation(optchi, method='wang17')
-        >>> wang17.f_j.round(5)
-        array([0.66722])
-        >>> wang17.f_v.round(5)
-        array([0.55502])
-        >>> smith19 = JmaxLimitation(optchi, method='smith19')
-        >>> smith19.f_j.round(5)
-        array([1.10204])
-        >>> smith19.f_v.round(5)
-        array([0.75442])
+        >>> optchi = OptimalChiPrentice14(env=env)
+        >>> jmaxlim = JmaxLimitationWang17(optchi=optchi)
+        >>> jmaxlim.f_j.round(4)
+        array([0.6672])
+        >>> jmaxlim.f_v.round(4)
+        array([0.555])
     """
 
-    # TODO - apparent incorrectness of wang and smith methods with _ca_ variation,
-    #        work well with varying temperature but not _ca_ variation (or
-    #        e.g. elevation gradient David Sandoval, REALM meeting, Dec 2020)
-
-    def __init__(
-        self,
-        optchi: OptimalChiABC,
-        method: str = "wang17",
-        pmodel_const: PModelConst = PModelConst(),
-    ):
-        self.shape: tuple = check_input_shapes(optchi.mj)
-        """Records the common numpy array shape of array inputs."""
-        self.optchi: OptimalChiABC = optchi
-        """Details of the optimal chi calculation for the model"""
-        self.method: str = method
-        """Records the method used to calculate Jmax limitation."""
-        self.pmodel_const: PModelConst = pmodel_const
-        """The PModelParams instance used for the calculation."""
-
-        # Attributes populated by alternative method - two should always be populated by
-        # the methods used below, but omega and omega_star only apply to smith19
-        self.f_j: NDArray[np.float64]
-        """:math:`J_{max}` limitation factor, calculated using the method."""
-        self.f_v: NDArray[np.float64]
-        """:math:`V_{cmax}` limitation factor, calculated using the method."""
-        self.omega: NDArray[np.float64] | None = None
-        """Component of :math:`J_{max}` calculation for method ``smith19``
-        (:cite:`Smith:2019dv`)."""
-        self.omega_star: NDArray[np.float64] | None = None
-        """Component of :math:`J_{max}` calculation for method ``smith19``
-        (:cite:`Smith:2019dv`)."""
-
-        all_methods = {
-            "wang17": self.wang17,
-            "smith19": self.smith19,
-            "simple": self.simple,
-            "none": self.simple,
-        }
-
-        # Catch method errors.
-        if self.method == "c4":
-            raise ValueError(
-                "This class does not implement a fixed method for C4 photosynthesis."
-                "To replicate rpmodel choose method_optchi='c4' and method='simple'"
-            )
-        elif self.method not in all_methods:
-            raise ValueError(f"JmaxLimitation: method argument '{method}' invalid.")
-
-        # Use the selected method to calculate limitation factors
-        this_method = all_methods[self.method]
-        this_method()
-
-    def __repr__(self) -> str:
-        """Generates a string representation of a JmaxLimitation instance."""
-        return f"JmaxLimitation(shape={self.shape})"
-
-    def wang17(self) -> None:
-        r"""Calculate limitation factors following :cite:`Wang:2017go`.
-
-        These factors are described in Equation 49 of :cite:`Wang:2017go` as the
-        square root term at the end of that equation:
-
-            .. math::
-                :nowrap:
-
-                \[
-                    \begin{align*}
-                    f_v &=  \sqrt{ 1 - \frac{c^*}{m} ^{2/3}} \\
-                    f_j &=  \sqrt{\frac{m}{c^*} ^{2/3} -1 } \\
-                    \end{align*}
-                \]
-
-        The variable :math:`c^*` is a cost parameter for maintaining :math:`J_{max}`
-        and is set in `pmodel_const.wang_c`.
-        """
-
-        # Calculate √ {1 - (c*/m)^(2/3)} (see Eqn 2 of Wang et al 2017) and
-        # √ {(m/c*)^(2/3) - 1} safely, both are undefined where m <= c*.
+    def _calculate_limitation_terms(self) -> None:
+        """Limitation calculations for the ``wang17`` method."""
+        # Test for m > c*
         vals_defined = np.greater(self.optchi.mj, self.pmodel_const.wang17_c)
 
         self.f_v = np.sqrt(
@@ -157,52 +163,77 @@ class JmaxLimitation:
             where=vals_defined,
         )
 
-        # Backfill undefined values - tackling float vs np.ndarray types
-        if isinstance(self.f_v, np.ndarray):
-            self.f_j[np.logical_not(vals_defined)] = np.nan  # type: ignore
-            self.f_v[np.logical_not(vals_defined)] = np.nan  # type: ignore
-        elif not vals_defined:
-            self.f_j = np.nan
-            self.f_v = np.nan
+        # Backfill undefined values
+        self.f_j[np.logical_not(vals_defined)] = np.nan
+        self.f_v[np.logical_not(vals_defined)] = np.nan
 
-    def smith19(self) -> None:
-        r"""Calculate limitation factors following :cite:`Smith:2019dv`.
 
-        The values are calculated as:
+@dataclass(repr=False)
+class JmaxLimitationSmith19(
+    JmaxLimitationABC,
+    method="smith19",
+    data_attrs=(("f_j", "-"), ("f_v", "-"), ("omega", "-"), ("omega_star", "-")),
+):
+    r"""Calculate limitation factors following :cite:`Smith:2019dv`.
 
-        .. math::
-            :nowrap:
+    The values are calculated as:
 
-            \[
-                \begin{align*}
-                f_v &=  \frac{\omega^*}{2\theta} \\
-                f_j &=  \omega\\
-                \end{align*}
-            \]
+    .. math::
+        :nowrap:
 
-        where,
+        \[
+            \begin{align*}
+            f_v &=  \frac{\omega^*}{2\theta} \\
+            f_j &=  \omega\\
+            \end{align*}
+        \]
 
-        .. math::
-            :nowrap:
+    where,
 
-            \[
-                \begin{align*}
-                \omega &= (1 - 2\theta) + \sqrt{(1-\theta)
-                    \left(\frac{1}{\frac{4c}{m}(1 -
-                    \theta\frac{4c}{m})}-4\theta\right)}\\
-                \omega^* &= 1 + \omega - \sqrt{(1 + \omega) ^2 -4\theta\omega}
-                \end{align*}
-            \]
+    .. math::
+        :nowrap:
 
-        given,
+        \[
+            \begin{align*}
+            \omega &= (1 - 2\theta) + \sqrt{(1-\theta)
+                \left(\frac{1}{\frac{4c}{m}(1 -
+                \theta\frac{4c}{m})}-4\theta\right)}\\
+            \omega^* &= 1 + \omega - \sqrt{(1 + \omega) ^2 -4\theta\omega}
+            \end{align*}
+        \]
 
-        * :math:`\theta`, (``const.smith19_theta``) captures the
-          curved relationship between light intensity and photosynthetic
-          capacity, and
-        * :math:`c`, (``const.smith19_c_cost``) as a cost parameter
-          for maintaining :math:`J_{max}`, equivalent to :math:`c^\ast = 4c`
-          in the :meth:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation.wang17` method.
-        """
+    given,
+
+    * :math:`\theta`, (``const.smith19_theta``) captures the
+        curved relationship between light intensity and photosynthetic
+        capacity, and
+    * :math:`c`, (``const.smith19_c_cost``) as a cost parameter
+        for maintaining :math:`J_{max}`, equivalent to :math:`c^\ast = 4c`
+        in the :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationWang17` limitation
+        terms.
+
+    Examples:
+        >>> from pyrealm.pmodel import PModelEnvironment
+        >>> from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
+        >>> env = PModelEnvironment(
+        ...     tc=np.array([20]), vpd=np.array([1000]),
+        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ... )
+        >>> optchi = OptimalChiPrentice14(env=env)
+        >>> jmaxlim = JmaxLimitationSmith19(optchi=optchi)
+        >>> jmaxlim.f_j.round(4)
+        array([1.102])
+        >>> jmaxlim.f_v.round(4)
+        array([0.7544])
+    """
+
+    omega: NDArray[np.float64] = field(init=False)
+    """Values of the `omega` parameter (:cite:`Smith:2019dv`)."""
+    omega_star: NDArray[np.float64] = field(init=False)
+    """Values of the `omega_star` parameter (:cite:`Smith:2019dv`)."""
+
+    def _calculate_limitation_terms(self) -> None:
+        """Limitation calculations for the ``smith19`` method."""
 
         # Adopted from Nick Smith's code:
         # Calculate omega, see Smith et al., 2019 Ecology Letters  # Eq. S4
@@ -245,18 +276,23 @@ class JmaxLimitation:
         # phi0 as as the quantum efficiency of electron transport, which is
         # 4 times our definition of phio0 as the quantum efficiency of photosynthesis.
         # So omega*/8 theta and omega / 4 are scaled down here  by a factor of 4.
-        # Ignore `mypy` here as omega_star is explicitly not None.
-        self.f_v = self.omega_star / (2.0 * theta)  # type: ignore
+        self.f_v = self.omega_star / (2.0 * theta)
         self.f_j = self.omega
 
-    def simple(self) -> None:
-        """Apply the 'simple' form of the equations.
 
-        This method allows the 'simple' form of the equations to be calculated
-        by setting :math:`f_v = f_j = 1`.
-        """
+@dataclass(repr=True)
+class JmaxLimitationNone(
+    JmaxLimitationABC, method="none", data_attrs=(("f_j", "-"), ("f_v", "-"))
+):
+    """No limitation of :math:`J_{max}` and :math:`V_{cmax}`.
 
-        # Set Jmax limitation to unity - could define as 1.0 in __init__ and
-        # pass here, but setting explicitly within the method for clarity.
-        self.f_v = np.array([1.0])
-        self.f_j = np.array([1.0])
+    This implementation simply sets :math:`f_v = f_j = 1` to remove any :math:`J_{max}`
+    and :math:`V_{cmax}` limitation.
+    """
+
+    def _calculate_limitation_terms(self) -> None:
+        """Set limitation terms to one."""
+
+        # Set limitation terms to unity
+        self.f_v = np.ones(self._shape)
+        self.f_j = np.ones(self._shape)
