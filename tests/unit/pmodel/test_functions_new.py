@@ -7,13 +7,6 @@ refactoring.
 import numpy as np
 
 
-def test_calc_ftemp_arrh(tk=np.array([300]), ha=40000):
-    """Test calc_ftemp_arrh."""
-    from pyrealm.pmodel.functions import calc_ftemp_arrh
-
-    assert np.allclose(calc_ftemp_arrh(tk, ha), 1.104622629609139)
-
-
 def test_calc_ftemp_inst_rd(tc=np.array([30.0])):
     """Test calc_ftemp_inst_rd."""
     from pyrealm.pmodel.functions import calc_ftemp_inst_rd

@@ -104,10 +104,15 @@ def test_calc_density_h2o(values, tc, patm, context_manager, expvals):
     ],
 )
 def test_calc_ftemp_arrh(values, tk, expvars):
-    """Test the calc_ftemp_arrh function."""
-    from pyrealm.pmodel import calc_ftemp_arrh
+    """Test calc_ftemp_arrh outputs.
 
-    ret = calc_ftemp_arrh(tk=values[tk], ha=values["KattgeKnorr_ha"])
+    Test against the pyrealm calculate_simple_arrhenius_factor function.
+    """
+    from pyrealm.pmodel import calculate_simple_arrhenius_factor
+
+    ret = calculate_simple_arrhenius_factor(
+        tk=values[tk], tk_ref=298.15, ha=values["KattgeKnorr_ha"]
+    )
     assert np.allclose(ret, values[expvars])
 
 
@@ -130,24 +135,23 @@ def test_calc_ftemp_inst_vcmax(values, tc, expvars):
     function, but check the predictions match to the rpmodel outputs for this component.
     """
     from pyrealm.constants import CoreConst, PModelConst
-    from pyrealm.pmodel.functions import calc_modified_arrhenius_factor
+    from pyrealm.pmodel.functions import calculate_kattge_knorr_arrhenius_factor
 
     pmodel_const = PModelConst(modified_arrhenius_mode="M2002")
     core_const = CoreConst()
 
     kk_a, kk_b, kk_ha, kk_hd = pmodel_const.kattge_knorr_kinetics
 
-    # Calculate entropy as a function of temperature _in °C_
-    kk_deltaS = kk_a + kk_b * values[tc]
-
     # Calculate the arrhenius factor
-    ret = calc_modified_arrhenius_factor(
-        tk=values[tc] + core_const.k_CtoK,
-        Ha=kk_ha,
-        Hd=kk_hd,
+    ret = calculate_kattge_knorr_arrhenius_factor(
+        tk_leaf=values[tc] + core_const.k_CtoK,
         tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
+        tc_growth=values[tc],  # This is a suspicious thing to do?
+        ha=kk_ha,
+        hd=kk_hd,
+        entropy_intercept=kk_a,
+        entropy_slope=kk_b,
         mode=pmodel_const.modified_arrhenius_mode,
-        deltaS=kk_deltaS,
         core_const=core_const,
     )
 
@@ -663,6 +667,7 @@ def test_pmodel_class_c3(
         pmodelenv[environ],
         method_kphio=method_kphio,
         method_jmaxlim=luevcmax_method,
+        method_arrhenius="kattge_knorr",
         reference_kphio=0.05,
     )
 
@@ -781,6 +786,7 @@ def test_pmodel_class_c4(
         method_kphio=method_kphio,
         method_jmaxlim="simple",  # enforced in rpmodel.
         method_optchi="c4",
+        method_arrhenius="kattge_knorr",
         reference_kphio=0.05 * kf,  # See note above
     )
 
