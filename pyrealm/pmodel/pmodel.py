@@ -80,11 +80,10 @@ class PModel:
     where  :math:`f_v, f_j` are limitation terms described in
     :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation`
 
-    * The maximum carboxylation capacity (mol C m-2) normalised to the standard
-      temperature as: :math:`V_{cmax25} = V_{cmax}  / fv(t)`, where :math:`fv(t)` is the
-      instantaneous temperature response of :math:`V_{cmax}` calculated using a modified
-      Arrhenius equation
-      :func:`~pyrealm.pmodel.functions.calc_modified_arrhenius_factor`.
+    * The values :math:`V_{cmax25}` and :math:`J_{max25}` are the expected values of 
+      :math:`V_{cmax}` and :math:`J_{cmax}` normalised to the standard temperature
+      (25°C). The rates are normalised using an Arrhenius scaling factor using the
+      specified `method_arrhenius`.
 
     * Dark respiration, calculated as:
 
@@ -228,7 +227,11 @@ class PModel:
             raise ValueError(f"Unknown Arrhenius scaling method: {method_arrhenius}")
 
         self.method_arrhenius: str = method_arrhenius
-        """The method used to calculate Arrhenius factors."""
+        """The method used to calculate Arrhenius factors.
+        
+        We currently strongly recommend the use of the default `simple` method for this
+        setting. 
+        """
 
         # -----------------------------------------------------------------------
         # Calculation of Jmax limitation terms
