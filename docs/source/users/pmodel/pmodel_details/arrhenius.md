@@ -104,13 +104,10 @@ the P Model, although `rpmodel` currently sets the growth temperature to be equa
 observed temperature (leaf or air temperature).
 
 The plot below shows some examples of Arrhenius factor curves using these different
-approaches:
-
-The plot below shows the calculated factor using both of these forms. Two separate
-growth temperatures are used with the `kattge_knorr` method. At present, the
-implementation of the standard P Model in `rpmodel` uses the form of the `kattge_knorr`
-method but sets $t_g=T$, rather than having a fixed growth temperature. This leads to
-the curve labelled `rpmodel` in the plot, which does not have a peak.
+approaches. Two separate growth temperatures are used with the `kattge_knorr` method. At
+present, the implementation of the standard P Model in `rpmodel` uses the form of the
+`kattge_knorr` method but sets $t_g=T$, rather than having a fixed growth temperature.
+This leads to the curve labelled `rpmodel` in the plot, which does not have a peak.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
@@ -170,6 +167,10 @@ plt.legend(frameon=False)
 plt.xlabel("Leaf temperature (°C)")
 plt.tight_layout()
 ```
+
+Note that we do not the additional factor $T/T_0$ in the calculation of the peaked form.
+This was initially suggested by {cite:t}`murphy:2021a`, but was later agreed to be
+unnecessary {cite:p}`stinziano:2021a,yin:2021a`
 
 ## Using different Arrhenius scaling
 

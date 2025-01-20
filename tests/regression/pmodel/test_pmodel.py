@@ -137,7 +137,7 @@ def test_calc_ftemp_inst_vcmax(values, tc, expvars):
     from pyrealm.constants import CoreConst, PModelConst
     from pyrealm.pmodel.functions import calculate_kattge_knorr_arrhenius_factor
 
-    pmodel_const = PModelConst(modified_arrhenius_mode="M2002")
+    pmodel_const = PModelConst()
     core_const = CoreConst()
 
     kk_a, kk_b, kk_ha, kk_hd = pmodel_const.kattge_knorr_kinetics
@@ -151,7 +151,6 @@ def test_calc_ftemp_inst_vcmax(values, tc, expvars):
         hd=kk_hd,
         entropy_intercept=kk_a,
         entropy_slope=kk_b,
-        mode=pmodel_const.modified_arrhenius_mode,
         core_const=core_const,
     )
 

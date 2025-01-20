@@ -10,9 +10,7 @@ def quantum_yield_env():
     from pyrealm.constants import PModelConst
     from pyrealm.pmodel import PModelEnvironment
 
-    # The referene implementation uses the J1942 derivation for the arrhenius
-    # calculation
-    pmodel_const = PModelConst(modified_arrhenius_mode="J1942")
+    pmodel_const = PModelConst()
 
     return PModelEnvironment(
         tc=np.array([5, 10, 15, 20, 25, 30]),

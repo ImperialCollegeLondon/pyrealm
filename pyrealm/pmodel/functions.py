@@ -78,7 +78,6 @@ def calculate_kattge_knorr_arrhenius_factor(
     entropy_intercept: float,
     entropy_slope: float,
     core_const: CoreConst = CoreConst(),
-    mode: str = "M2002",
 ) -> NDArray[np.float64]:
     r"""Calculate an Arrhenius factor following :cite:t:`Kattge:2007db`.
 
@@ -112,13 +111,6 @@ def calculate_kattge_knorr_arrhenius_factor(
 
         \]
 
-
-
-    The function can operate in one of two modes (``M2002`` or ``J1942``) using
-    alternative derivations of the modified Arrhenius relationship presented in
-    :cite:t:`murphy:2021a`. The ``J1942`` includes an additional factor (tk/tk_ref) that
-    is ommitted from the simpler ``M2002`` derivation.
-
     Args:
         tk_leaf: The instantaneous temperature in Kelvin (K) at which to calculate the
             factor (:math:`T`)
@@ -129,7 +121,6 @@ def calculate_kattge_knorr_arrhenius_factor(
         entropy_intercept: The intercept of the entropy relationship (:math:`a`),
         entropy_slope: The slope of the entropy relationship (:math:`b`),
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
-        mode: The calculation mode.
 
     PModel Parameters:
         R: The universal gas constant (:math:`R`, ``k_R``)
@@ -158,11 +149,6 @@ def calculate_kattge_knorr_arrhenius_factor(
         array([0.261])
     """
 
-    if mode not in ["M2002", "J1942"]:
-        raise ValueError(
-            f"Unknown mode option for calc_modified_arrhenius_factor: {mode}"
-        )
-
     # Calculate entropy as a function of temperature _in °C_
     entropy = entropy_intercept + entropy_slope * tc_growth
 
@@ -173,12 +159,7 @@ def calculate_kattge_knorr_arrhenius_factor(
         1 + np.exp((tk_leaf * entropy - hd) / (core_const.k_R * tk_leaf))
     )
 
-    if mode == "M2002":
-        # Medlyn et al. 2002 simplification
-        return fva * fvb
-
-    # Johnson et al 1942
-    return fva * (tk_leaf / tk_ref) * fvb
+    return fva * fvb
 
 
 def calc_ftemp_inst_rd(

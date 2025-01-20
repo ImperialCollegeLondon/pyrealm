@@ -345,7 +345,6 @@ class QuantumYieldSandoval(
             hd=Hd,  # type: ignore[arg-type]  # Not an array in this function
             entropy_intercept=a_ent,
             entropy_slope=b_ent,
-            mode=self.env.pmodel_const.modified_arrhenius_mode,
             core_const=self.env.core_const,
         )
 
