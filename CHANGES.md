@@ -19,9 +19,24 @@ worked through. The changes below are provisional.
   changed: the arguments `kphio` and `do_ftemp_kphio` have been replaced by
   `method_kphio` and `reference_kphio`.
 
+- The implementations of `PModel` and `SubdailyPModel` in version 1.0.0 used different
+  Arrhenius temperature scaling relationships for $V_{cmax}$ and $J_{max}$. `PModel`
+  followed `rpmodel` in using an implementation of {cite}`kattgeknorr2007`'s peaked
+  Arrhenius model, where `SubdailyPModel` used a simple unpeaked form. Both P Model
+  implementations now take an explicit setting for the `method_arrhenius` and we provide
+  the `simple` and `kattge_knorr` options. The available methods are likely to change -
+  and we only recommend `method_arrhenius=simple` at present - but this API for setting
+  this option should be stable.
+
+  **Breaking change** The API has changed as noted above - critically, using default
+  settings, the reported values for $V_{cmax25}$ and $J_{max25}$ using `PModel` will
+  change between v1 and v2, with the shift from `kattge_knorr` to `simple` as the
+  default factors.
+
 - The functions `calc_ftemp_kphio` and `calc_ftemp_inst_vcmax` provided narrow use cases
-  with code duplication. They have been replaced with a broader
-  `calc_modified_arrhenius_factor` function.
+  with code duplication. They have been replaced by two broader Arrhenius functions:
+  `calculate_simple_arrhenius_factor` and `calculate_kattge_knorr_arrhenius_factor` (see
+  also the point above).
 
 - The first components in the demography module, providing an integrated set of
   submodules that provide: plant functional types, size-structured cohorts, plant
