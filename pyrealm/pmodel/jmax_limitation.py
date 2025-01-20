@@ -63,7 +63,7 @@ class JmaxLimitationABC(metaclass=ABCMeta):
     """The optimal chi instance used to calculate limitation terms."""
     pmodel_const: PModelConst = field(default_factory=lambda: PModelConst())
     """The PModel constants instance used for the calculation."""
-    shape: tuple[int, ...] = field(init=False)
+    _shape: tuple[int, ...] = field(init=False)
     """Records the common numpy array shape in the data."""
     f_j: NDArray[np.float64] = field(init=False)
     """:math:`J_{max}` limitation factor."""
@@ -71,13 +71,13 @@ class JmaxLimitationABC(metaclass=ABCMeta):
     """:math:`V_{cmax}` limitation factor."""
 
     def __post_init__(self) -> None:
-        self.shape = self.optchi.mj.shape
+        self._shape = self.optchi.mj.shape
 
         self._calculate_limitation_terms()
 
     def __repr__(self) -> str:
         """Generates a string representation of a JmaxLimitation instance."""
-        return f"JmaxLimitation(method={self.method}, shape={self.shape})"
+        return f"JmaxLimitation(method={self.method}, shape={self._shape})"
 
     def summarize(self, dp: int = 2) -> None:
         """Print OptimalChi summary.
@@ -93,6 +93,7 @@ class JmaxLimitationABC(metaclass=ABCMeta):
 
     @abstractmethod
     def _calculate_limitation_terms(self) -> None:
+        """Abstract method defined in subclasses to populate limitation attributes."""
         pass
 
     @classmethod
@@ -129,7 +130,7 @@ class JmaxLimitationWang17(
 
     The variable :math:`c^*` is a cost parameter for maintaining :math:`J_{max}`
     and is set in
-    :attr:`PModelConsts.wang_c<pyrealm.constants.pmodel_consts.PModelConsts.wang_c>`. 
+    :attr:`PModelConsts.wang17_c<pyrealm.constants.PModelConst.wang17_c>`. 
     Note that both equations are undefined where :math:`m \le c^*`: where this
     condition is true, values will be returned as ``np.nan``.
 
@@ -149,7 +150,7 @@ class JmaxLimitationWang17(
     """
 
     def _calculate_limitation_terms(self) -> None:
-        """Limitation calculations for ``wang17`` method."""
+        """Limitation calculations for the ``wang17`` method."""
         # Test for m > c*
         vals_defined = np.greater(self.optchi.mj, self.pmodel_const.wang17_c)
 
@@ -208,7 +209,8 @@ class JmaxLimitationSmith19(
         capacity, and
     * :math:`c`, (``const.smith19_c_cost``) as a cost parameter
         for maintaining :math:`J_{max}`, equivalent to :math:`c^\ast = 4c`
-        in the :meth:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation.wang17` method.
+        in the :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationWang17` limitation
+        terms.
 
     Examples:
         >>> from pyrealm.pmodel import PModelEnvironment
@@ -231,6 +233,8 @@ class JmaxLimitationSmith19(
     """Values of the `omega_star` parameter (:cite:`Smith:2019dv`)."""
 
     def _calculate_limitation_terms(self) -> None:
+        """Limitation calculations for the ``smith19`` method."""
+
         # Adopted from Nick Smith's code:
         # Calculate omega, see Smith et al., 2019 Ecology Letters  # Eq. S4
         theta = self.pmodel_const.smith19_theta
@@ -287,6 +291,8 @@ class JmaxLimitationNone(
     """
 
     def _calculate_limitation_terms(self) -> None:
+        """Set limitation terms to one."""
+
         # Set limitation terms to unity
-        self.f_v = np.ones(self.shape)
-        self.f_j = np.ones(self.shape)
+        self.f_v = np.ones(self._shape)
+        self.f_j = np.ones(self._shape)

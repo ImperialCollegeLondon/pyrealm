@@ -34,7 +34,8 @@ class PModel:
        :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using one of the
        methods based on :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`.
     2. Estimate limitation factors to :math:`V_{cmax}` and :math:`J_{max}` using
-       :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation`.
+       one of the methods implemented using 
+       :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC`.
     3. Optionally, estimate productivity measures including GPP by supplying FAPAR and
        PPFD using the :meth:`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`
        method.
@@ -53,7 +54,7 @@ class PModel:
             \text{LUE} = \phi_0 \cdot m_j \cdot f_v \cdot M_C
 
       where :math:`f_v` is a limitation factor defined in
-      :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation` and :math:`M_C` is the
+      :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC` and :math:`M_C` is the
       molar mass
       of carbon.
 
@@ -80,7 +81,7 @@ class PModel:
             \]
 
     where  :math:`f_v, f_j` are limitation terms described in
-    :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation`
+    :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC`
 
     * The maximum carboxylation capacity (mol C m-2) normalised to the standard
       temperature as: :math:`V_{cmax25} = V_{cmax}  / fv(t)`, where :math:`fv(t)` is the
