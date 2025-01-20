@@ -13,7 +13,10 @@ from numpy.typing import NDArray
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.functions import calc_ftemp_inst_rd, calc_modified_arrhenius_factor
-from pyrealm.pmodel.jmax_limitation import JmaxLimitation
+from pyrealm.pmodel.jmax_limitation import (
+    JMAX_LIMITATION_CLASS_REGISTRY,
+    JmaxLimitationABC,
+)
 from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY, OptimalChiABC
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 from pyrealm.pmodel.quantum_yield import QUANTUM_YIELD_CLASS_REGISTRY, QuantumYieldABC
@@ -222,13 +225,16 @@ class PModel:
         # -----------------------------------------------------------------------
         # Calculation of Jmax limitation terms
         # -----------------------------------------------------------------------
+        if method_jmaxlim not in JMAX_LIMITATION_CLASS_REGISTRY:
+            raise ValueError(f"Unknown Jmax limitation method: {method_jmaxlim}")
+
         self.method_jmaxlim: str = method_jmaxlim
         """Records the method used to calculate Jmax limitation."""
 
-        self.jmaxlim: JmaxLimitation = JmaxLimitation(
-            self.optchi, method=self.method_jmaxlim, pmodel_const=self.pmodel_const
-        )
-        """Details of the Jmax limitation calculation for the model"""
+        self.jmaxlim: JmaxLimitationABC = JMAX_LIMITATION_CLASS_REGISTRY[
+            method_jmaxlim
+        ](optchi=self.optchi, pmodel_const=self.pmodel_const)
+        """The Jmax limitation terms for the model"""
 
         # -----------------------------------------------------------------------
         # Store the two efficiency predictions
