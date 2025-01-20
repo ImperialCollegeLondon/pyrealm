@@ -48,7 +48,7 @@ from pyrealm.pmodel import (
     PModel,
 )
 from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
-from pyrealm.pmodel.functions import calc_ftemp_arrh, calc_ftemp_kphio
+from pyrealm.pmodel.functions import calculate_simple_arrhenius_factor, calc_ftemp_kphio
 ```
 
 ## Example dataset
@@ -176,17 +176,22 @@ lagged response using a [memory effect](acclimation.md#estimating-realised-respo
 
 The daily optimal acclimation values are obviously calculated under a range of
 temperatures so $J_{max}$ and $V_{cmax}$ must first be standardised to expected values
-at 25°C. This is acheived by multiplying by the reciprocal of the exponential part of
-the Arrhenius equation ($h^{-1}$ in {cite}`mengoli:2022a`).
+at 25°C. This is achieved calculating an Arrhenius scaling factor for the temperature of
+the observation relative to the standard temperature, given the activation energy of the
+enzymes.
 
 ```{code-cell} ipython3
-# Are these any of the existing values in the constants?
-ha_vcmax25 = 65330
-ha_jmax25 = 43900
+pmodel_const = pmodel_subdaily.env.pmodel_const
+core_const = pmodel_subdaily.env.core_const
 
-tk_acclim = temp_acclim + pmodel_subdaily.env.core_const.k_CtoK
-vcmax25_acclim = pmodel_acclim.vcmax * (1 / calc_ftemp_arrh(tk_acclim, ha_vcmax25))
-jmax25_acclim = pmodel_acclim.jmax * (1 / calc_ftemp_arrh(tk_acclim, ha_jmax25))
+tk_acclim = temp_acclim + core_const.k_CtoK
+tk_ref = pmodel_const.plant_T_ref + core_const.k_CtoK
+vcmax25_acclim = pmodel_acclim.vcmax / calculate_simple_arrhenius_factor(
+    tk=tk_acclim, tk_ref=tk_ref, ha=pmodel_const.arrhenius_vcmax["simple"]["ha"]
+)
+jmax25_acclim = pmodel_acclim.jmax / calculate_simple_arrhenius_factor(
+    tk=tk_acclim, tk_ref=tk_ref, ha=pmodel_const.arrhenius_jmax["simple"]["ha"]
+)
 ```
 
 #### Calculation of realised values
@@ -247,8 +252,12 @@ vcmax25_subdaily = fsscaler.fill_daily_to_subdaily(vcmax25_real)
 jmax25_subdaily = fsscaler.fill_daily_to_subdaily(jmax25_real)
 
 # Adjust to actual temperature at subdaily timescale
-vcmax_subdaily = vcmax25_subdaily * calc_ftemp_arrh(tk=tk_subdaily, ha=ha_vcmax25)
-jmax_subdaily = jmax25_subdaily * calc_ftemp_arrh(tk=tk_subdaily, ha=ha_jmax25)
+vcmax_subdaily = vcmax25_subdaily * calculate_simple_arrhenius_factor(
+    tk=tk_subdaily, tk_ref=tk_ref, ha=pmodel_const.arrhenius_vcmax["simple"]["ha"]
+)
+jmax_subdaily = jmax25_subdaily * calculate_simple_arrhenius_factor(
+    tk=tk_subdaily, tk_ref=tk_ref, ha=pmodel_const.arrhenius_jmax["simple"]["ha"]
+)
 ```
 
 #### Calculation of $c_i$
@@ -306,4 +315,12 @@ GPP_subdaily = (
 # Compare to the SubdailyPModel outputs
 diff = GPP_subdaily - pmodel_subdaily.gpp
 print(np.nanmin(diff), np.nanmax(diff))
+```
+
+```{code-cell} ipython3
+plt.plot(GPP_subdaily, pmodel_subdaily.gpp)
+```
+
+```{code-cell} ipython3
+
 ```
