@@ -8,11 +8,12 @@ from numpy.testing import assert_allclose
 
 
 @pytest.mark.parametrize(
-    argnames="classname,coef,init_raises,init_msg,call_raises,call_msg",
+    argnames="classname,coef,drop,init_raises,init_msg,call_raises,call_msg",
     argvalues=[
         pytest.param(
             "SimpleArrhenius",
             dict(no_coef=dict(ha=1)),
+            [],
             does_not_raise(),
             None,
             pytest.raises(ValueError),
@@ -23,6 +24,7 @@ from numpy.testing import assert_allclose
         pytest.param(
             "SimpleArrhenius",
             dict(simple=dict(hA=1)),
+            [],
             does_not_raise(),
             None,
             pytest.raises(ValueError),
@@ -32,6 +34,7 @@ from numpy.testing import assert_allclose
         pytest.param(
             "KattgeKnorrArrhenius",
             dict(no_coef=dict(ha=1)),
+            [],
             does_not_raise(),
             None,
             pytest.raises(ValueError),
@@ -42,6 +45,7 @@ from numpy.testing import assert_allclose
         pytest.param(
             "KattgeKnorrArrhenius",
             dict(kattge_knorr=dict(hA=1)),
+            [],
             does_not_raise(),
             None,
             pytest.raises(ValueError),
@@ -49,20 +53,38 @@ from numpy.testing import assert_allclose
             "entropy_intercept,entropy_slope,ha,hd",
             id="kattge_knorr_coef_no_ha",
         ),
+        pytest.param(
+            "KattgeKnorrArrhenius",
+            dict(kattge_knorr=dict(hA=1)),
+            ["mean_growth_temperature"],
+            pytest.raises(ValueError),
+            "KattgeKnorrArrhenius (method kattge_knorr) requires "
+            "mean_growth_temperature to be provided in the PModelEnvironment.",
+            None,
+            None,
+            id="kattge_knorr_missing_t_g",
+        ),
     ],
 )
 def test_ArrheniusFactorABC_init_and_call(
-    classname, coef, init_raises, init_msg, call_raises, call_msg
+    classname, coef, drop, init_raises, init_msg, call_raises, call_msg
 ):
     """Test usage of of ArrheniusFactorABC."""
     from pyrealm.pmodel import PModelEnvironment, arrhenius
 
-    env = PModelEnvironment(
+    # Simulate a missing optional variable from the EnvironmentError
+    env_args = dict(
         tc=np.array([20]),
         patm=np.array([101325]),
         vpd=np.array([400]),
         co2=np.array([400]),
+        mean_growth_temperature=np.array([10]),
     )
+
+    for drop_var in drop:
+        _ = env_args.pop(drop_var)
+
+    env = PModelEnvironment(**env_args)
 
     class_obj = getattr(arrhenius, classname)
 
@@ -209,6 +231,7 @@ def test_pmodel_equivalence():
         patm=np.full(n_pts, 101325.0),
         vpd=np.full(n_pts, 1300.0),
         co2=np.full(n_pts, 305.945),
+        mean_growth_temperature=np.full(n_pts, 10),
     )
 
     # Constant absorbed irradation

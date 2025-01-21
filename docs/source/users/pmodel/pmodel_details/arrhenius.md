@@ -181,7 +181,12 @@ scaling of $V_{cmax}$ and $J_{max}$ to be switched between different models. At 
 * `simple`: This uses the equation shown above, implemented in the function
   {meth}`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`.
 * `kattge_knorr`: This uses a peaked form of the relationship, implemented in the
-  function {meth}`~pyrealm.pmodel.functions.calculate_kattge_knorr_arrhenius_factor`.
-  This form requires the users to specify the growth temperature $t_g$, which modulates
-  the location of the peak in the relationship. As noted at the top of the page, we **do
-  not recommend this option** for normal use in the P Model.
+  function {meth}`~pyrealm.pmodel.functions.calculate_kattge_knorr_arrhenius_factor`. To
+  use this method in a P Model, users need to provide values for the growth temperature
+  $t_g$, which modulates the location of the peak in the relationship, when creating a
+  PModelEnvironment instance. To duplicate the current behaviour of `rpmodel`, where
+  $T=t_g$, the `mean_growth_temperature` can just be set to be the same as the
+  air temperature.
+
+  As noted at the top of the page, we **do not recommend this option** for normal use in
+  the P Model.

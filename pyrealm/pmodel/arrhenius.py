@@ -183,7 +183,7 @@ class KattgeKnorrArrhenius(
     ArrheniusFactorABC,
     method="kattge_knorr",
     required_coefficients={"ha", "hd", "entropy_intercept", "entropy_slope"},
-    required_env_variables=[],  # TODO - add growth_temperature
+    required_env_variables=["growth_temperature"],
 ):
     """Class providing Kattge Knorr Arrhenius scaling."""
 
@@ -191,7 +191,7 @@ class KattgeKnorrArrhenius(
         return calculate_kattge_knorr_arrhenius_factor(
             tk_leaf=self.tk,
             tk_ref=self.tk_ref,
-            tc_growth=self.env.tc,
+            tc_growth=self.env.mean_growth_temperature,
             ha=coefficients["ha"],
             hd=coefficients["hd"],
             entropy_intercept=coefficients["entropy_intercept"],
