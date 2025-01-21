@@ -21,7 +21,7 @@ worked through. The changes below are provisional.
 
 - The implementations of `PModel` and `SubdailyPModel` in version 1.0.0 used different
   Arrhenius temperature scaling relationships for $V_{cmax}$ and $J_{max}$. `PModel`
-  followed `rpmodel` in using an implementation of {cite}`kattgeknorr2007`'s peaked
+  followed `rpmodel` in using an implementation of {cite:t}`Kattge:2007db`'s peaked
   Arrhenius model, where `SubdailyPModel` used a simple unpeaked form. Both P Model
   implementations now take an explicit setting for the `method_arrhenius` and we provide
   the `simple` and `kattge_knorr` options. The available methods are likely to change -

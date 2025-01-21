@@ -83,7 +83,7 @@ def calculate_kattge_knorr_arrhenius_factor(
 
     This implements a "peaked" version of the Arrhenius relationship, describing a
     decline in reaction rates at higher temperatures. In addition to the activation
-    energy (see :meth:`~pyrealm.pmodel.arrhenius.calculate_simple_arrhenius_factor`),
+    energy (see :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`),
     this implementation adds an entropy term and the deactivation energy of the enzyme
     system. The rate is given for a given instantaneous temperature :math:`T` relative
     to a reference temperature :math:T_0`, both given in Kelvin, but the entropy is
@@ -281,7 +281,7 @@ def calc_gammastar(
     where :math:`f(T, H_a)` modifies the activation energy to the the local temperature
     following the Arrhenius-type temperature response function (see
 
-    :meth:`~pyrealm.pmodel.arrhenius.calculate_simple_arrhenius_factor`. Estimates of
+    :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`. Estimates of
     :math:`\Gamma^{*}_{0}` and :math:`H_a` are taken from :cite:t:`Bernacchi:2001kg`.
 
     Args:
@@ -382,7 +382,7 @@ def calc_kmm(
 
     where, :math:`p_{\ce{O2}} = 0.209476 \cdot p` is the partial pressure of oxygen.
     :math:`f(T, H_a)` is the simple Arrhenius temperature response of activation
-    energies (see :meth:`~pyrealm.pmodel.arrhenius.calculate_simple_arrhenius_factor`)
+    energies (see :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`)
     used to correct Michalis constants at standard temperature for both :math:`\ce{CO2}`
     and :math:`\ce{O2}` to the local temperature (Table 1,
     :cite:alp:`Bernacchi:2001kg`):
@@ -459,7 +459,7 @@ def calc_kp_c4(
     Calculates the Michaelis Menten coefficient of phosphoenolpyruvate carboxylase
     (PEPc) (:math:`K`, :cite:alp:`boyd:2015a`) as a function of temperature (:math:`T`)
     and atmospheric pressure (:math:`p`), following Arrhenius scaling (see
-    :meth:`~pyrealm.pmodel.arrhenius.calculate_simple_arrhenius_factor`) as:
+    :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`) as:
 
     Args:
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
