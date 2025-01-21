@@ -183,9 +183,13 @@ class KattgeKnorrArrhenius(
     ArrheniusFactorABC,
     method="kattge_knorr",
     required_coefficients={"ha", "hd", "entropy_intercept", "entropy_slope"},
-    required_env_variables=["growth_temperature"],
+    required_env_variables=["mean_growth_temperature"],
 ):
-    """Class providing Kattge Knorr Arrhenius scaling."""
+    """Class providing Kattge Knorr Arrhenius scaling.
+
+    This method requires that the PModelEnvironment provide growth temperatures as
+    `mean_growth_temperature`.
+    """
 
     def _calculation_method(self, coefficients: dict) -> NDArray:
         return calculate_kattge_knorr_arrhenius_factor(
