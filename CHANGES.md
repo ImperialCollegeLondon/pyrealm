@@ -13,7 +13,7 @@ worked through. The changes below are provisional.
   P Model, using the new `pyrealm.pmodel.quantum_yield` module. This module now provides
   an expandable set of implementations of the quantum yield calculation, and currently
   supports the previous fixed and temperature dependent $\phi_0$ approaches but also
-  David Sandoval's extentsion for estimating the impact of water stress on $\phi_0$.
+  David Sandoval's extension for estimating the impact of water stress on $\phi_0$.
 
   **Breaking change** The signatures of the `PModel` and `SubdailyPModel` classes have
   changed: the arguments `kphio` and `do_ftemp_kphio` have been replaced by
