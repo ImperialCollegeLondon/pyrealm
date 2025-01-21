@@ -140,17 +140,17 @@ def test_calc_ftemp_inst_vcmax(values, tc, expvars):
     pmodel_const = PModelConst()
     core_const = CoreConst()
 
-    kk_a, kk_b, kk_ha, kk_hd = pmodel_const.kattge_knorr_kinetics
+    cf = pmodel_const.arrhenius_vcmax["kattge_knorr"]
 
     # Calculate the arrhenius factor
     ret = calculate_kattge_knorr_arrhenius_factor(
         tk_leaf=values[tc] + core_const.k_CtoK,
         tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
-        tc_growth=values[tc],  # This is a suspicious thing to do?
-        ha=kk_ha,
-        hd=kk_hd,
-        entropy_intercept=kk_a,
-        entropy_slope=kk_b,
+        tc_growth=values[tc],  # This is an odd thing for rpmodel to do
+        ha=cf["ha"],
+        hd=cf["hd"],
+        entropy_intercept=cf["entropy_intercept"],
+        entropy_slope=cf["entropy_slope"],
         core_const=core_const,
     )
 
@@ -617,7 +617,11 @@ def test_pmodelenvironment_exception(inputs, context_manager):
 
 @pytest.fixture(scope="module")
 def pmodelenv(values):
-    """Fixture to create PModelEnvironments with scalar and array inputs."""
+    """Fixture to create PModelEnvironments with scalar and array inputs.
+
+    The mean growth temperature is also set to air temperature here to mirror the use of
+    the implementation of Kattge Knorr Arrhenius scaling in rpmodel.
+    """
 
     from pyrealm.pmodel import PModelEnvironment
 
@@ -626,6 +630,7 @@ def pmodelenv(values):
         vpd=values["vpd_sc"],
         co2=values["co2_sc"],
         patm=values["patm_sc"],
+        mean_growth_temperature=values["tc_sc"],
     )
 
     ar = PModelEnvironment(
@@ -633,6 +638,7 @@ def pmodelenv(values):
         vpd=values["vpd_ar"],
         co2=values["co2_ar"],
         patm=values["patm_ar"],
+        mean_growth_temperature=values["tc_ar"],
     )
 
     return {"sc": sc, "ar": ar}
