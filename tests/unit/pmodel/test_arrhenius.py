@@ -179,3 +179,80 @@ class TestKattgeKnorrArrhenius:
         assert_allclose(
             arrh.calculate_arrhenius_factor(coefficients=args["coef"]), expected
         )
+
+
+def test_pmodel_equivalence():
+    """Test P Model Arrhenius handling.
+
+    This checks that for a constant input, the standard and subdaily PModel
+    implementation give equal Vcmax and Jmax values.
+    """
+
+    from pyrealm.pmodel import (
+        PModel,
+        PModelEnvironment,
+        SubdailyPModel,
+        SubdailyScaler,
+    )
+
+    # One year time sequence at half hour resolution
+    datetimes = np.arange(
+        np.datetime64("2023-01-01"),
+        np.datetime64("2024-01-01"),
+        np.timedelta64(30, "m"),
+    )
+    n_pts = len(datetimes)
+
+    # PModel environment
+    fixed_env = PModelEnvironment(
+        tc=np.full(n_pts, 10),
+        patm=np.full(n_pts, 101325.0),
+        vpd=np.full(n_pts, 1300.0),
+        co2=np.full(n_pts, 305.945),
+    )
+
+    # Constant absorbed irradation
+    # Potential GPP using fAPAR = 1 (unitless)
+    fapar = np.full(n_pts, 1)
+    # PPFD (Photosynthetic Photon Flux Density, µmol m⁻² s⁻¹)
+    ppfd = np.full(n_pts, 100 * 2.04)
+
+    # Setup the Subdaily Model using a 1 hour acclimation window around noon
+    fsscaler = SubdailyScaler(datetimes=datetimes)
+    fsscaler.set_window(
+        window_center=np.timedelta64(12, "h"),  # 12:00 PM
+        half_width=np.timedelta64(30, "m"),  # ±0.5 hours
+    )
+
+    # Fit the two models
+    fix_subdaily = SubdailyPModel(
+        env=fixed_env,
+        method_optchi="prentice14",
+        fapar=fapar,
+        ppfd=ppfd,
+        fs_scaler=fsscaler,
+        alpha=1 / 15,
+        allow_holdover=True,
+        reference_kphio=1 / 8,
+    )
+
+    fix_standard = PModel(
+        env=fixed_env, method_optchi="prentice14", reference_kphio=1 / 8
+    )
+    fix_standard.estimate_productivity(fapar=fapar, ppfd=ppfd)
+
+    # Assert values should be the same, excluding the initial subdaily values before the
+    # first observation
+    drop_start = slice(25, -1, 1)
+    assert_allclose(
+        fix_standard.jmax[drop_start], fix_subdaily.subdaily_jmax[drop_start]
+    )
+    assert_allclose(
+        fix_standard.jmax25[drop_start], fix_subdaily.subdaily_jmax25[drop_start]
+    )
+    assert_allclose(
+        fix_standard.vcmax[drop_start], fix_subdaily.subdaily_vcmax[drop_start]
+    )
+    assert_allclose(
+        fix_standard.vcmax25[drop_start], fix_subdaily.subdaily_vcmax25[drop_start]
+    )
