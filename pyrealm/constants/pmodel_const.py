@@ -123,8 +123,12 @@ class PModelConst(ConstantsClass):
             ),
         )
     )
-    """Coefficients of Arrhenius factor scaling for :math:`V_{cmax}`."""
-
+    """Coefficients of Arrhenius factor scaling for :math:`V_{cmax}`. The `simple`
+    method provides an estimate of the activation energy (:math:`H_a`, J/mol). The
+    `kattge_knorr` method provides the parameterisation from :cite:t:`Kattge:2007db`, 
+    providing the intercept and slope of activation entropy as a function of the mean
+    growth temperature (J/mol/K), the deactivation energy constant (:math:`H_d`, J/mol) 
+    and the activation energy (J/mol). (:math:`H_a`, J/mol)."""
     arrhenius_jmax: dict = field(
         default_factory=lambda: dict(
             simple=dict(ha=43900),
@@ -136,25 +140,12 @@ class PModelConst(ConstantsClass):
             ),
         )
     )
-    """Coefficients of Arrhenius factor scaling for :math:`J_{max}`."""
-
-    # KattgeKnorr vcmax
-    kattge_knorr_kinetics: tuple[float, float, float, float] = (
-        668.39,
-        -1.07,
-        71513,
-        200000,
-    )
-    """Enzyme kinetics parameters for estimation of V_cmax25 from Table 3 
-    of :cite:t:`Kattge:2007db`. Values are: the intercept and slope of activation
-    entropy as a function of the mean growth temperature (J/mol/K), the deactivation
-    energy constant (J/mol) and the activation energy (J/mol). """
-
-    # Subdaily activatation energy
-    subdaily_vcmax25_ha: float = 65330
-    """Activation energy for vcmax25 (:math:`H_a`, 65330, J/mol)"""
-    subdaily_jmax25_ha: float = 43900
-    """Activation energy for jmax25 (:math:`H_a`, 43900, J/mol)"""
+    """Coefficients of Arrhenius factor scaling for :math:`J_{max}`. The `simple`
+    method provides an estimate of the activation energy (:math:`H_a`, J/mol). The
+    `kattge_knorr` method provides the parameterisation from :cite:t:`Kattge:2007db`, 
+    providing the intercept and slope of activation entropy as a function of the mean
+    growth temperature (J/mol/K), the deactivation energy constant (:math:`H_d`, J/mol) 
+    and the activation energy (J/mol). (:math:`H_a`, J/mol)."""
 
     # Kphio:
     # - note that kphio_C4 has been updated to account for an unintended double
