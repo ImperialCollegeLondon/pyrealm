@@ -323,6 +323,12 @@ class PModel:
         return self._jmax
 
     @property
+    def jmax25(self) -> NDArray[np.float64]:
+        """Maximum rate of electron transport at standard temperature (µmol m-2 s-1)."""
+        self._check_estimated("jmax25")
+        return self._jmax25
+
+    @property
     def gs(self) -> NDArray[np.float64]:
         """Stomatal conductance (µmol m-2 s-1)."""
         self._check_estimated("gs")
