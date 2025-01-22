@@ -195,7 +195,13 @@ class TestKattgeKnorrArrhenius:
         from pyrealm.pmodel import PModelEnvironment
         from pyrealm.pmodel.arrhenius import KattgeKnorrArrhenius
 
-        env = PModelEnvironment(tc=args["tc_leaf"], patm=101325, vpd=400, co2=400)
+        env = PModelEnvironment(
+            tc=args["tc_leaf"],
+            patm=101325,
+            vpd=400,
+            co2=400,
+            mean_growth_temperature=args["tc_growth"],
+        )
         arrh = KattgeKnorrArrhenius(env=env, reference_temperature=args["tc_ref"])
 
         assert_allclose(
