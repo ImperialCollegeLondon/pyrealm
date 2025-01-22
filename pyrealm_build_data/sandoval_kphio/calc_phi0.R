@@ -48,9 +48,7 @@ calc_phi0 <- function(AI, tc, mGDD0 = NA, phi_o_theo = 1 / 9) {
         Top <- Hd / (dent - Rgas * log(Ha / (Hd - Ha)))
         tkleaf <- tcleaf + 273.15
 
-        # DO: removing murphy J1942 corrrection
-        # f1 <- (tkleaf / Top) * exp((Ha * (tkleaf - Top)) / (Top * Rgas * tkleaf))
-        f1 <- exp((Ha * (tkleaf - Top)) / (Top * Rgas * tkleaf))
+        f1 <- (tkleaf / Top) * exp((Ha * (tkleaf - Top)) / (Top * Rgas * tkleaf))
         f2 <- 1 + exp((Top * dent - Hd) / (Top * Rgas))
         f3 <- 1 + exp((tkleaf * dent - Hd) / (tkleaf * Rgas))
 
