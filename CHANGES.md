@@ -19,6 +19,17 @@ worked through. The changes below are provisional.
   changed: the arguments `kphio` and `do_ftemp_kphio` have been replaced by
   `method_kphio` and `reference_kphio`.
 
+- The implementation of $J_{max}$ and $V_{cmax}$ limitation has been updated to provide
+  a more flexible and expandable system.
+  
+  The changes are mostly internal, but there are two **breaking changes**:
+
+  - The PModel option `method_jmaxlim = 'c4'` has been removed - it only ever generated
+    an instruction to use the settings `method_optchi='c4'` and
+    `method_jmaxlim='simple'`  to duplicate the `rpmodel` argument `method_jmaxlim='c4'`.
+  - The PModel option `method_jmaxlim = 'simple'` has been renamed to
+    `method_jmaxlim ='none'`, which is more informative!
+
 - The functions `calc_ftemp_kphio` and `calc_ftemp_inst_vcmax` provided narrow use cases
   with code duplication. They have been replaced with a broader
   `calc_modified_arrhenius_factor` function.

@@ -41,21 +41,21 @@ tc_1d = np.linspace(-25, 50, n_pts)
 ```
 
 Environmental conditions can also lead to limitation of both the electron transfer rate
-and the carboxylation capacity ($V_{cmax}$) of leaves. The
-{class}`~pyrealm.pmodel.pmodel.PModel` implements three alternative approaches to the
-calculation of $J_{max}$ and $V_{cmax}$, using the argument `method_jmaxlim`. These
-options set the calculation of two factor ($f_j$ and $f_v$) which are applied to the
-calculation of $J_{max}$ and $V_{cmax}$. The options for this setting are:
+($J_{max})and the carboxylation capacity ($V_{cmax}$) of leaves. The
+{class}`~pyrealm.pmodel.pmodel` module implements three alternative approaches to the
+calculation of $J_{max}$ and $V_{cmax}$ and these are specified when fitting a P Model
+using the argument `method_jmaxlim`. These options implement alternative calculations of
+two factor ($f_j$ and $f_v$) which are applied to the calculation of $J_{max}$ and
+$V_{cmax}$. The options for this setting are:
 
-* `simple`: This approach implements the 'simple' formulations of the P Model, with no
-  limitations and hence $f_j  = f_v = 1$.
+* `none`: This approach implements $f_j  = f_v = 1$ and hence no modification.
 * `wang17`: This is the default setting for `method_jmaxlim` and applies the
   calculations describe in  {cite:t}`Wang:2017go`. The calculation details can be
-  seen in the {meth}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation.wang17` method.
+  seen in the {class}`~pyrealm.pmodel.jmax_limitation.JmaxLimitationWang17` method.
 
 * `smith19`: This is an alternate calculation for optimal values of $J_{max}$
   and $V_{cmax}$ described in {cite:t}`Smith:2019dv`. The calculation details can be
-  seen in the {meth}`~pyrealm.pmodel.jmax_limitation.JmaxLimitation.smith19` method.
+  seen in the {class}`~pyrealm.pmodel.jmax_limitation.JmaxLimitationSmith19` method.
 
 The plot below shows the effects of each method on the light use efficienct across a
 temperature gradient. The other forcing variables are fixed ($P=101325.0 , \ce{CO2}= 400
@@ -68,7 +68,7 @@ temperature gradient. The other forcing variables are fixed ($P=101325.0 , \ce{C
 env = PModelEnvironment(tc=tc_1d, patm=101325, vpd=820, co2=400)
 
 model_jmax_simple = PModel(
-    env, method_jmaxlim="simple", method_kphio="fixed", reference_kphio=0.08
+    env, method_jmaxlim="none", method_kphio="fixed", reference_kphio=0.08
 )
 model_jmax_wang17 = PModel(
     env, method_jmaxlim="wang17", method_kphio="fixed", reference_kphio=0.08

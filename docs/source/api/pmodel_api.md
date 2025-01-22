@@ -50,6 +50,8 @@ language_info:
 .. automodule:: pyrealm.pmodel.jmax_limitation
     :autosummary:
     :members:
+    :private-members: _calculate_limitation_terms
+    :inherited-members:
 ```
 
 ## The {mod}`~pyrealm.pmodel.optimal_chi` submodule
