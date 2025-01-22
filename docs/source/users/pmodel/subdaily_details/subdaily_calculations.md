@@ -38,6 +38,7 @@ from importlib import resources
 from matplotlib import pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
+from numpy.testing import assert_allclose
 import pandas
 
 from pyrealm.pmodel import (
@@ -114,13 +115,14 @@ fsscaler.set_window(
     half_width=np.timedelta64(30, "m"),
 )
 
-# Fit the P Model with fast and slow responses
+# Fit the Subdaily P Model with slow responses in Vcmax25, Jmax25 and xi
 pmodel_subdaily = SubdailyPModel(
     env=subdaily_env,
     fs_scaler=fsscaler,
     allow_holdover=True,
     ppfd=ppfd_subdaily,
     fapar=fapar_subdaily,
+    reference_kphio=1 / 8,
 )
 ```
 
@@ -131,7 +133,7 @@ idx = np.arange(48 * 120, 48 * 130)
 plt.figure(figsize=(10, 4))
 plt.plot(datetime_subdaily[idx], pmodel_standard.gpp[idx], label="Instantaneous model")
 plt.plot(datetime_subdaily[idx], pmodel_subdaily.gpp[idx], "r-", label="Slow responses")
-plt.ylabel = "GPP"
+plt.ylabel("GPP (gc m-2 s-1)")
 plt.legend(frameon=False)
 plt.show()
 ```
@@ -313,14 +315,19 @@ GPP_subdaily = (
 )
 
 # Compare to the SubdailyPModel outputs
-diff = GPP_subdaily - pmodel_subdaily.gpp
-print(np.nanmin(diff), np.nanmax(diff))
+fig, ax = plt.subplots()
+ax.plot(GPP_subdaily, pmodel_subdaily.gpp)
+ax.set_xlabel("Manually calculated GPP (gC m-2 s-1)")
+ax.set_ylabel("GPP from SubdailyPModel (gC m-2 s-1)")
+ax.set_aspect("equal")
+plt.tight_layout()
 ```
 
 ```{code-cell} ipython3
-plt.plot(GPP_subdaily, pmodel_subdaily.gpp)
-```
+:tags: [remove-cell]
 
-```{code-cell} ipython3
-
+# This cell is here to force a docs build failure if these values
+# are _not_ identical. The 'remove-cell' tag is applied to hide this
+# in built docs.
+assert_allclose(GPP_subdaily, pmodel_subdaily.gpp)
 ```
