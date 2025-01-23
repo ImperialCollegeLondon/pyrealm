@@ -487,7 +487,8 @@ def calc_kp_c4(
     # Check inputs, return shape not used
     _ = check_input_shapes(tc, patm)
 
-    # conversion to Kelvin
+    # Calculate rate relative to standard rate using an Arrhenius factor, converting
+    # temperatures to Kelvin
     return pmodel_const.boyd_kp25_c4 * calculate_simple_arrhenius_factor(
         tk=tc + core_const.k_CtoK,
         tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
