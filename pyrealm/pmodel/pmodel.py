@@ -14,7 +14,10 @@ from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.arrhenius import ARRHENIUS_METHOD_REGISTRY, ArrheniusFactorABC
 from pyrealm.pmodel.functions import calc_ftemp_inst_rd
-from pyrealm.pmodel.jmax_limitation import JmaxLimitation
+from pyrealm.pmodel.jmax_limitation import (
+    JMAX_LIMITATION_CLASS_REGISTRY,
+    JmaxLimitationABC,
+)
 from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY, OptimalChiABC
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 from pyrealm.pmodel.quantum_yield import QUANTUM_YIELD_CLASS_REGISTRY, QuantumYieldABC
@@ -32,7 +35,8 @@ class PModel:
        :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using one of the
        methods based on :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`.
     2. Estimate limitation factors to :math:`V_{cmax}` and :math:`J_{max}` using
-       :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation`.
+       one of the methods implemented using 
+       :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC`.
     3. Optionally, estimate productivity measures including GPP by supplying FAPAR and
        PPFD using the :meth:`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`
        method.
@@ -51,7 +55,7 @@ class PModel:
             \text{LUE} = \phi_0 \cdot m_j \cdot f_v \cdot M_C
 
       where :math:`f_v` is a limitation factor defined in
-      :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation` and :math:`M_C` is the
+      :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC` and :math:`M_C` is the
       molar mass
       of carbon.
 
@@ -78,7 +82,7 @@ class PModel:
             \]
 
     where  :math:`f_v, f_j` are limitation terms described in
-    :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitation`
+    :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC`
 
     * The values :math:`V_{cmax25}` and :math:`J_{max25}` are the expected values of 
       :math:`V_{cmax}` and :math:`J_{cmax}` normalised to the standard temperature
@@ -236,13 +240,16 @@ class PModel:
         # -----------------------------------------------------------------------
         # Calculation of Jmax limitation terms
         # -----------------------------------------------------------------------
+        if method_jmaxlim not in JMAX_LIMITATION_CLASS_REGISTRY:
+            raise ValueError(f"Unknown Jmax limitation method: {method_jmaxlim}")
+
         self.method_jmaxlim: str = method_jmaxlim
         """Records the method used to calculate Jmax limitation."""
 
-        self.jmaxlim: JmaxLimitation = JmaxLimitation(
-            self.optchi, method=self.method_jmaxlim, pmodel_const=self.pmodel_const
-        )
-        """Details of the Jmax limitation calculation for the model"""
+        self.jmaxlim: JmaxLimitationABC = JMAX_LIMITATION_CLASS_REGISTRY[
+            method_jmaxlim
+        ](optchi=self.optchi, pmodel_const=self.pmodel_const)
+        """The Jmax limitation terms for the model"""
 
         # -----------------------------------------------------------------------
         # Store the two efficiency predictions

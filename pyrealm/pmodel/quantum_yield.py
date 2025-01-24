@@ -45,7 +45,7 @@ class QuantumYieldABC(ABC):
 
     This provides an abstract base class for the implementation of alternative
     approaches to calculating the the intrinsic quantum yield of photosynthesis. All
-    implementations estimate the :math:`\phi_{0} following values, which is then stored
+    implementations estimate the :math:`\phi_{0}` following values, which is then stored
     in the ``kphio`` attribute of the resulting class instance.
 
     The abstract base class requires that implementations of specific approaches defines

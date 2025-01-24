@@ -46,7 +46,6 @@ from pyrealm.pmodel.functions import (
     calculate_simple_arrhenius_factor,
 )
 from pyrealm.pmodel.isotopes import CalcCarbonIsotopes
-from pyrealm.pmodel.jmax_limitation import JmaxLimitation
 from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 from pyrealm.pmodel.scaler import SubdailyScaler

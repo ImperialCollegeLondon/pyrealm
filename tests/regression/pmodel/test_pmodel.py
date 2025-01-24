@@ -468,7 +468,7 @@ def test_optimal_chi(values, tc, patm, co2, vpd, method, context_manager, expval
 def test_jmax_limitation(
     request, values, ftemp_kphio, jmax_method, tc, patm, co2, vpd, c4
 ):
-    """Test the JMaxLimitation class."""
+    """Test the JMaxLimitation implementation class."""
 
     # This test is tricky because the internals of rpmodel and pyrealm differ
     # - rpmodel has a set of functions lue_vcmax_xxx, which return LUE and
@@ -482,7 +482,8 @@ def test_jmax_limitation(
     # - these have all been synchronised so that anything with type 'mx' or 'ar'
     #   used the tc_ar input
 
-    from pyrealm.pmodel import JmaxLimitation, PModelEnvironment
+    from pyrealm.pmodel import PModelEnvironment
+    from pyrealm.pmodel.jmax_limitation import JMAX_LIMITATION_CLASS_REGISTRY
     from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
     from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
 
@@ -502,7 +503,7 @@ def test_jmax_limitation(
     OptChiClass = OPTIMAL_CHI_CLASS_REGISTRY[oc_method]
     optchi = OptChiClass(env)
 
-    jmax = JmaxLimitation(optchi, method=jmax_method)
+    jmax = JMAX_LIMITATION_CLASS_REGISTRY[jmax_method](optchi=optchi)
 
     # Find the expected values, extracting the combination from the request
     name = request.node.name
@@ -789,7 +790,7 @@ def test_pmodel_class_c4(
     ret = PModel(
         pmodelenv[environ],
         method_kphio=method_kphio,
-        method_jmaxlim="simple",  # enforced in rpmodel.
+        method_jmaxlim="none",  # enforced in rpmodel.
         method_optchi="c4",
         method_arrhenius="kattge_knorr",
         reference_kphio=0.05 * kf,  # See note above

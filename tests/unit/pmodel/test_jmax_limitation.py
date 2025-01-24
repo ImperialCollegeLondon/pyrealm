@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+from numpy.testing import assert_allclose
 
 
 @pytest.fixture
@@ -21,36 +22,37 @@ def mock_optimal_chi():
 
 
 @pytest.mark.parametrize(
-    "method, expected_f_j, expected_f_v",
+    "method, classname, expected_f_j, expected_f_v",
     [
-        ("simple", [1.0], [1.0]),
-        (
-            "wang17",
-            pytest.approx([0.66722], rel=1e-3),
-            pytest.approx([0.55502], rel=1e-3),
-        ),
-        (
-            "smith19",
-            pytest.approx([1.10204], rel=1e-3),
-            pytest.approx([0.75442], rel=1e-3),
-        ),
+        ("none", "JmaxLimitationNone", 1.0, 1.0),
+        ("wang17", "JmaxLimitationWang17", 0.66722, 0.55502),
+        ("smith19", "JmaxLimitationSmith19", 1.10204, 0.75442),
     ],
 )
-def test_jmax_limitation(mock_optimal_chi, method, expected_f_j, expected_f_v):
-    """Test that JmaxLimitation class works as expected."""
-    from pyrealm.pmodel.jmax_limitation import JmaxLimitation
+def test_jmax_limitation(
+    mock_optimal_chi, method, classname, expected_f_j, expected_f_v
+):
+    """Test that JmaxLimitation classes works as expected."""
+    from pyrealm.pmodel import jmax_limitation
+    from pyrealm.pmodel.jmax_limitation import JMAX_LIMITATION_CLASS_REGISTRY
 
-    # Create an instance of JmaxLimitation with mock OptimalChiABC and test method
-    jmax_limitation = JmaxLimitation(mock_optimal_chi, method=method)
-    # Assert that calculated f_j and f_v match expected values
-    assert jmax_limitation.f_j == expected_f_j
-    assert jmax_limitation.f_v == expected_f_v
+    # Check the implementation works identically directly and via registry
+    for classobj in [
+        JMAX_LIMITATION_CLASS_REGISTRY[method],
+        getattr(jmax_limitation, classname),
+    ]:
+        # Create an instance
+        jmax_limitation = classobj(optchi=mock_optimal_chi)
+
+        # Assert that calculated f_j and f_v match expected values
+        assert_allclose(jmax_limitation.f_j, expected_f_j, rtol=1e-05)
+        assert_allclose(jmax_limitation.f_v, expected_f_v, rtol=1e-05)
 
 
-def test_invalid_method(mock_optimal_chi):
+def test_invalid_method():
     """Test that JmaxLimitation raises ValueError for invalid method."""
-    from pyrealm.pmodel.jmax_limitation import JmaxLimitation
+    from pyrealm.pmodel.jmax_limitation import JMAX_LIMITATION_CLASS_REGISTRY
 
     # Test invalid method
-    with pytest.raises(ValueError):
-        JmaxLimitation(mock_optimal_chi, method="invalid_method")
+    with pytest.raises(KeyError):
+        _ = JMAX_LIMITATION_CLASS_REGISTRY["invalid_method"]
