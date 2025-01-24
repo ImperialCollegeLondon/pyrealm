@@ -101,12 +101,6 @@ class PModelConst(ConstantsClass):
     of the mean growth temperature (J/mol/K), the deactivation energy constant (J/mol)
     and the activation energy (J/mol). """
 
-    modified_arrhenius_mode: str = "M2002"
-    """The calculation mode to use with the modified Arrhenius equation in
-    :func:`~pyrealm.pmodel.functions.calc_modified_arrhenius_factor`. This mode should
-    be consistently within an analysis, so forms part of the model constants. The two
-    options are ``M2002`` and ``J1942``, see :cite:t:`murphy:2021a` for details."""
-
     plant_T_ref: float = 25.0
     """Standard baseline reference temperature of photosynthetic processes (Prentice,
     unpublished)  (:math:`T_o` , 25.0, °C)"""
@@ -117,23 +111,41 @@ class PModelConst(ConstantsClass):
     heskel_c: float = 0.0005
     """Quadratic coefficient of scaling of dark respiration (:math:`c`, 0.0005)"""
 
-    # KattgeKnorr vcmax
-    kattge_knorr_kinetics: tuple[float, float, float, float] = (
-        668.39,
-        -1.07,
-        71513,
-        200000,
+    # Arrhenius values
+    arrhenius_vcmax: dict = field(
+        default_factory=lambda: dict(
+            simple=dict(ha=65330),
+            kattge_knorr=dict(
+                entropy_intercept=668.39,
+                entropy_slope=-1.07,
+                ha=71513,
+                hd=200000,
+            ),
+        )
     )
-    """Enzyme kinetics parameters for estimation of V_cmax25 from Table 3 
-    of :cite:t:`Kattge:2007db`. Values are: the intercept and slope of activation
-    entropy as a function of the mean growth temperature (J/mol/K), the deactivation
-    energy constant (J/mol) and the activation energy (J/mol). """
-
-    # Subdaily activatation energy
-    subdaily_vcmax25_ha: float = 65330
-    """Activation energy for vcmax25 (:math:`H_a`, 65330, J/mol)"""
-    subdaily_jmax25_ha: float = 43900
-    """Activation energy for jmax25 (:math:`H_a`, 43900, J/mol)"""
+    """Coefficients of Arrhenius factor scaling for :math:`V_{cmax}`. The `simple`
+    method provides an estimate of the activation energy (:math:`H_a`, J/mol). The
+    `kattge_knorr` method provides the parameterisation from :cite:t:`Kattge:2007db`, 
+    providing the intercept and slope of activation entropy as a function of the mean
+    growth temperature (J/mol/K), the deactivation energy constant (:math:`H_d`, J/mol) 
+    and the activation energy (J/mol). (:math:`H_a`, J/mol)."""
+    arrhenius_jmax: dict = field(
+        default_factory=lambda: dict(
+            simple=dict(ha=43900),
+            kattge_knorr=dict(
+                entropy_intercept=659.70,
+                entropy_slope=-0.75,
+                ha=49884,
+                hd=200000,
+            ),
+        )
+    )
+    """Coefficients of Arrhenius factor scaling for :math:`J_{max}`. The `simple`
+    method provides an estimate of the activation energy (:math:`H_a`, J/mol). The
+    `kattge_knorr` method provides the parameterisation from :cite:t:`Kattge:2007db`, 
+    providing the intercept and slope of activation entropy as a function of the mean
+    growth temperature (J/mol/K), the deactivation energy constant (:math:`H_d`, J/mol) 
+    and the activation energy (J/mol). (:math:`H_a`, J/mol)."""
 
     # Kphio:
     # - note that kphio_C4 has been updated to account for an unintended double

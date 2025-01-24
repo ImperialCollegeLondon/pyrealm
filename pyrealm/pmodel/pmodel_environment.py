@@ -40,7 +40,7 @@ class PModelEnvironment:
     an instance of this class.
 
     In addition to the four key variables above, the PModelEnvironment class
-    is used to provide additional variables used by some methods.
+    can optionally be used to provide additional variables used by some methods.
 
     * the volumetric soil moisture content (:math:`\theta`), required to calculate
       optimal :math:`\chi` in
@@ -53,6 +53,11 @@ class PModelEnvironment:
       :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiC4RootzoneStress` and
       :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGammaRootzoneStress`.
 
+    * A unitless climatological aridity index, expressed as PET/P (-).
+
+    * The mean growth temperature, calculated as the mean temperature > 0°C during
+      growing degree days (°C).
+
     Args:
         tc: Temperature, relevant for photosynthesis (°C)
         vpd: Vapour pressure deficit (Pa)
@@ -60,6 +65,8 @@ class PModelEnvironment:
         patm: Atmospheric pressure (Pa)
         theta: Volumetric soil moisture (m3/m3)
         rootzonestress: Root zone stress factor (-)
+        aridity_index: Climatological aridity index, expressed as PET/P (-)
+        mean_growth_temperature: Mean growth temperature (°C)
         pmodel_const: An instance of
             :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: An instance of

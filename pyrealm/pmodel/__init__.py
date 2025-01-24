@@ -35,7 +35,6 @@ from pyrealm.pmodel.competition import (
 )
 from pyrealm.pmodel.functions import (
     calc_co2_to_ca,
-    calc_ftemp_arrh,
     calc_ftemp_inst_rd,
     calc_gammastar,
     calc_kmm,
@@ -43,6 +42,8 @@ from pyrealm.pmodel.functions import (
     calc_soilmstress_mengoli,
     calc_soilmstress_stocker,
     calc_viscosity_h2o,
+    calculate_kattge_knorr_arrhenius_factor,
+    calculate_simple_arrhenius_factor,
 )
 from pyrealm.pmodel.isotopes import CalcCarbonIsotopes
 from pyrealm.pmodel.pmodel import PModel
@@ -63,7 +64,6 @@ __all__ = [
     "SubdailyPModel",
     "SubdailyScaler",
     "calc_co2_to_ca",
-    "calc_ftemp_arrh",
     "calc_ftemp_inst_rd",
     "calc_ftemp_inst_vcmax",
     "calc_ftemp_kphio",
@@ -73,6 +73,8 @@ __all__ = [
     "calc_soilmstress_mengoli",
     "calc_soilmstress_stocker",
     "calc_viscosity_h2o",
+    "calculate_kattge_knorr_arrhenius_factor",
+    "calculate_simple_arrhenius_factor",
     "calculate_tree_proportion",
     "convert_gpp_advantage_to_c4_fraction",
     "convert_pmodel_to_subdaily",
