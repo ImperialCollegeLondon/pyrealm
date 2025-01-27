@@ -173,8 +173,8 @@ class PModelABC(ABC):
         
         where :math:`c_a` and :math:`c_i` are measured in Pa and :math:`P` is
         atmospheric pressure in megapascals.
-
         """
+
         self.lue: NDArray[np.float64]
         r"""Light use efficiency (LUE, g C mol-1), calculated as:
 
@@ -186,6 +186,7 @@ class PModelABC(ABC):
         :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC` and :math:`M_C` is
         the molar mass of carbon.
         """
+
         self.vcmax: NDArray[np.float64]
         r"""Maximum rate of carboxylation at the growth temperature (µmol m-2 s-1),
         calculated as:
@@ -196,10 +197,12 @@ class PModelABC(ABC):
 
         where  :math:`f_v` is a limitation term calculated via the method selected in
         `method_jmaxlim`."""
+
         self.vcmax25: NDArray[np.float64]
         """Maximum rate of carboxylation at standard temperature (µmol m-2 s-1),
         estimated from :math:`V_{cmax}` using the selected method for Arrhenius scaling.
         """
+
         self.jmax: NDArray[np.float64]
         """Maximum rate of electron transport at the growth temperature (µmol m-2
         s-1), calculated as:
@@ -210,10 +213,12 @@ class PModelABC(ABC):
 
         where  :math:`f_j` is a limitation term calculated via the method selected in
         `method_jmaxlim`."""
+
         self.jmax25: NDArray[np.float64]
         """Maximum rate of electron transport at standard temperature (µmol m-2 s-1),
         estimated from :math:`J_{max}` using the selected method for Arrhenius scaling.
         """
+
         self.rd: NDArray[np.float64]
         r"""Dark respiration (µmol m-2 s-1), , calculated as:
 
@@ -225,10 +230,12 @@ class PModelABC(ABC):
         temperature response of dark respiration implemented in
         :func:`~pyrealm.pmodel.functions.calc_ftemp_inst_rd`, and :math:`b_0` is set in
         :attr:`~pyrealm.constants.pmodel_const.PModelConst.atkin_rd_to_vcmax`."""
+
         self.gpp: NDArray[np.float64]
         r"""Gross primary productivity (µg C m-2 s-1) calculated as :math:`\text{GPP} =
          \text{LUE} \cdot I_{abs}`, where :math:`I_{abs}` is the absorbed photosynthetic
          radiation"""
+
         self.gs: NDArray[np.float64]
         r"""Stomatal conductance (µmol m-2 s-1), calculated as:
 
@@ -244,29 +251,12 @@ class PModelABC(ABC):
         \to 0` and the reported values will be set to ``np.nan`` under these
         conditions."""
 
-        # Ac	Not currently exposed	subdaily_Ac
-        # Ac	Not currently exposed	subdaily_Aj
-        # J	Not currently exposed	`Not currently exposed
-
-    # def __init_subclass__(cls: type[PModelABC], **kwargs: dict[Any, Any]) -> None:
-    #     """Extend the __init__ method of subclasses to fit the model.
-
-    #     This implementation duplicates behaviour like that of `dataclass.__post_init__`,
-    #     that allows code to be executed after the `__init__` method has run. Here we
-    #     want the subclasses to run the `super().__init__()`
-    #     """
-
-    #     def init_decorator(previous_init: Callable) -> Callable:
-    #         def new_init(
-    #             self: type[PModelABC], *args: Any, **kwargs: dict[Any, Any]
-    #         ) -> None:
-    #             previous_init(self, *args, **kwargs)
-    #             if type(self) == cls:
-    #                 self._fit_model()  # type: ignore[call-arg]
-
-    #         return new_init
-
-    #     cls.__init__ = init_decorator(cls.__init__)  # type: ignore[method-assign]
+        self.A_c: NDArray[np.float64]
+        """Maxmimum assimilation rate limited by carboxylation."""
+        self.A_j: NDArray[np.float64]
+        """Maxmimum assimilation rate limited by electron transport."""
+        self.J: NDArray[np.float64]
+        """Electron transfer rate."""
 
     @abstractmethod
     def _fit_model(self) -> None:
@@ -410,10 +400,10 @@ class PModelNew(PModelABC):
         )
 
         # AJ and AC
-        a_j = self.kphio.kphio * iabs * self.optchi.mj * self.jmaxlim.f_v
-        a_c = self.vcmax * self.optchi.mc
+        self.A_j = self.kphio.kphio * iabs * self.optchi.mj * self.jmaxlim.f_v
+        self.A_c = self.vcmax * self.optchi.mc
 
-        assim = np.minimum(a_j, a_c)
+        assim = np.minimum(self.A_j, self.A_c)
 
         if not np.allclose(
             assim, self.gpp / self.core_const.k_c_molmass, equal_nan=True
