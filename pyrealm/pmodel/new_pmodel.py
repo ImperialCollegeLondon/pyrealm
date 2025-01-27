@@ -5,6 +5,8 @@ the following pmodel core class:
     Applies the PModel to locations.
 """  # noqa D210, D415
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import Any
 from warnings import warn
@@ -246,6 +248,26 @@ class PModelABC(ABC):
         # Ac	Not currently exposed	subdaily_Aj
         # J	Not currently exposed	`Not currently exposed
 
+    # def __init_subclass__(cls: type[PModelABC], **kwargs: dict[Any, Any]) -> None:
+    #     """Extend the __init__ method of subclasses to fit the model.
+
+    #     This implementation duplicates behaviour like that of `dataclass.__post_init__`,
+    #     that allows code to be executed after the `__init__` method has run. Here we
+    #     want the subclasses to run the `super().__init__()`
+    #     """
+
+    #     def init_decorator(previous_init: Callable) -> Callable:
+    #         def new_init(
+    #             self: type[PModelABC], *args: Any, **kwargs: dict[Any, Any]
+    #         ) -> None:
+    #             previous_init(self, *args, **kwargs)
+    #             if type(self) == cls:
+    #                 self._fit_model()  # type: ignore[call-arg]
+
+    #         return new_init
+
+    #     cls.__init__ = init_decorator(cls.__init__)  # type: ignore[method-assign]
+
     @abstractmethod
     def _fit_model(self) -> None:
         pass
@@ -286,6 +308,31 @@ class PModelNew(PModelABC):
         ("jmax", "µmol m-2 s-1"),
         ("jmax25", "µmol m-2 s-1"),
     ]
+
+    def __init__(
+        self,
+        env: PModelEnvironment,
+        fapar: NDArray[np.float64],
+        ppfd: NDArray[np.float64],
+        method_optchi: str = "prentice14",
+        method_jmaxlim: str = "wang17",
+        method_kphio: str = "temperature",
+        method_arrhenius: str = "simple",
+        reference_kphio: float | NDArray | None = None,
+    ) -> None:
+        # Initialise the superclass
+        super().__init__(
+            env=env,
+            fapar=fapar,
+            ppfd=ppfd,
+            method_optchi=method_optchi,
+            method_jmaxlim=method_jmaxlim,
+            method_kphio=method_kphio,
+            method_arrhenius=method_arrhenius,
+            reference_kphio=reference_kphio,
+        )
+        # Fit the model
+        self._fit_model()
 
     def _fit_model(self) -> None:
         """Fit the model.
