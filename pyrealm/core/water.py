@@ -330,19 +330,81 @@ def convert_water_mm_to_moles(
         Moles of water (-)
 
     Examples:
-        >>> # Number of moles of water in 1 mm/m2 at 20 degrees C and
-        >>> # standard atmospheric pressure:
-        >>> round(convert_water_mm_to_moles(1, 20, 101325), 3)
-        np.float64(55.417)
+        >>> # At 0°C and 101325 Pa, one mole of water is ~18 g (18 cm3, 0.018 mm m-2).
+        >>> # So, 1 mm m2 = 1 / 0.018 = ~55 moles.
+        >>> round(convert_water_mm_to_moles(water_mm=1, tc=0, patm=101325), 3)
+        np.float64(55.508)
     """
 
     # Check inputs, return shape not used
     _ = check_input_shapes(water_mm, tc, patm)
 
+    # 1 mm per square meter is 1 litre, so convert to mL and then to moles
+    return (
+        water_mm
+        * 1000
+        / calculate_water_molar_volume(tc=tc, patm=patm, core_const=core_const)
+    )
+
+
+def convert_water_moles_to_mm(
+    water_moles: NDArray[np.float64],
+    tc: NDArray[np.float64],
+    patm: NDArray[np.float64],
+    core_const: CoreConst = CoreConst(),
+) -> NDArray[np.float64]:
+    """Convert water in moles to mm per square meter.
+
+    This function converts water volumes expressed as moles into mm per m2. It accounts
+    for the changing density of water with temperature and pressure.
+
+    Args:
+        water_moles: Water volume in moles
+        tc: air temperature (°C)
+        patm: atmospheric pressure (Pa)
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`
+
+    Returns:
+        Water volume in mm per m2
+
+    Examples:
+        >>> # At 0°C and 101325 Pa, one mole of water is ~18 g (18 cm3, 0.018 mm m-2).
+        >>> # So, 1 mol = 0.018 mm
+        >>> round(convert_water_moles_to_mm(water_moles=1, tc=0, patm=101325), 3)
+        np.float64(0.018)
+    """
+
+    # Check inputs, return shape not used
+    _ = check_input_shapes(water_moles, tc, patm)
+
+    # 1 mm per square meter is 1 litre, so convert to mL and then to moles
+    return (
+        water_moles
+        * calculate_water_molar_volume(tc=tc, patm=patm, core_const=core_const)
+    ) / 1000
+
+
+def calculate_water_molar_volume(
+    tc: NDArray[np.float64],
+    patm: NDArray[np.float64],
+    core_const: CoreConst = CoreConst(),
+) -> NDArray[np.floating]:
+    """Calculate the volume of a mole of water at a given temperature and pressure.
+
+    Args:
+        tc: air temperature (°C)
+        patm: atmospheric pressure (Pa)
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`
+
+    Returns:
+        Water molar volume in mol cm-3, or equivalently mol/mL
+
+    Examples:
+        >>> # A mole of water at standard temperature and pressure occupies ~18 cm3.
+        >>> round(calculate_water_molar_volume(0, 101235), 3)
+        np.float64(18.015)
+    """
     # Calculate density at given temperature and pressure in g/cm3
     water_density = calc_density_h2o(tc=tc, patm=patm, core_const=core_const) / 1000
     # Hence molar volume as mol/cm3 or equivalently mol/mL
-    molar_volume = core_const.k_water_molmass / water_density
-
-    # 1 mm per square meter is 1 litre, so convert to mL and then to moles
-    return water_mm * 1000 / molar_volume
+    return core_const.k_water_molmass / water_density
