@@ -135,10 +135,6 @@ class PModelABC(ABC):
         ]
         """The ArrheniusFactorABC subclass to be used in the model."""
 
-        self.arrhenius_factors: ArrheniusFactorABC
-        """A calculation engine for Arrhenius factors, using the selected
-        `method_arrhenius`."""
-
         if self.method_arrhenius != "simple":
             warn(
                 "We currently strongly recommend the use of the default `simple` "
@@ -346,17 +342,17 @@ class PModelNew(PModelABC):
             reference_kphio=self.reference_kphio,
         )
 
-        # Set up the calculation of Arrhenius scaling
-        self.arrhenius_factors = self._arrhenius_class(
-            env=self.env,
-            reference_temperature=self.env.pmodel_const.plant_T_ref,
-            core_const=self.env.core_const,
-        )
-
         # Calculation of Jmax limitation terms
         self.jmaxlim = self._jmaxlim_class(
             optchi=self.optchi,
             pmodel_const=self.env.pmodel_const,
+        )
+
+        # Get an Arrhenius instance for use in scaling rates
+        arrhenius_factors = self._arrhenius_class(
+            env=self.env,
+            reference_temperature=self.env.pmodel_const.plant_T_ref,
+            core_const=self.env.core_const,
         )
 
         # Intrinsic water use efficiency (in µmol mol-1)
@@ -383,11 +379,11 @@ class PModelNew(PModelABC):
         self.jmax = 4 * self.kphio.kphio * iabs * self.jmaxlim.f_j
 
         # - Calculate and apply the scaling factors.
-        ftemp25_inst_vcmax = self.arrhenius_factors.calculate_arrhenius_factor(
+        ftemp25_inst_vcmax = arrhenius_factors.calculate_arrhenius_factor(
             coefficients=self.pmodel_const.arrhenius_vcmax
         )
         self.vcmax25 = self.vcmax / ftemp25_inst_vcmax
-        self.jmax25 = self.jmax / self.arrhenius_factors.calculate_arrhenius_factor(
+        self.jmax25 = self.jmax / arrhenius_factors.calculate_arrhenius_factor(
             coefficients=self.pmodel_const.arrhenius_jmax
         )
 
@@ -594,13 +590,6 @@ class SubdailyPModelNew(PModelABC):
         r"""Realised daily responses in :math:`\xi`"""
 
         # xi	self.pmodel_acclim.optchi.xi - add a getter?	subdaily_xi
-
-        self.A_c: NDArray[np.float64]
-        """Estimated :math:`A_c`."""
-        self.J: NDArray[np.float64]
-        """Estimated :math:`J`."""
-        self.A_j: NDArray[np.float64]
-        """Estimated :math:`A_j`."""
 
     def _fit_model(self) -> None:
         # Check that the length of the fast slow scaler is congruent with the
