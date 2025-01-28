@@ -111,7 +111,10 @@ def check_input_shapes(*args: float | int | np.generic | np.ndarray | None) -> t
 
 
 def summarize_attrs(
-    obj: object, attrs: list, dp: int = 2, repr_head: bool = True
+    obj: object,
+    attrs: tuple[tuple[str, str], ...],
+    dp: int = 2,
+    repr_head: bool = True,
 ) -> None:
     """Print a summary table of object attributes.
 
@@ -121,35 +124,22 @@ def summarize_attrs(
 
     Args:
         obj: An object with attributes to summarize
-        attrs: A list of strings of attribute names, or a list of 2-tuples
-            giving attribute names and units.
+        attrs: A tuple of 2-tuples giving attribute names and units.
         dp: The number of decimal places used in rounding summary stats.
         repr_head: A boolean indicating whether to show the object
             representation before the summary table.
     """
 
     # Check inputs
-    if not isinstance(attrs, list):
-        raise RuntimeError("attrs input not a list")
+    if not isinstance(attrs, tuple):
+        raise RuntimeError("attrs input not a tuple")
 
     # Create a list to hold variables and summary stats
     ret = []
 
     if len(attrs):
-        first = attrs[0]
-
-        # TODO: - not much checking for consistency here!
-        if isinstance(first, str):
-            has_units = False
-            attrs = [(vl, None) for vl in attrs]
-        else:
-            has_units = True
-
         # Process the attributes
-        for attr_entry in attrs:
-            attr = attr_entry[0]
-            unit = attr_entry[1]
-
+        for attr, unit in attrs:
             data = getattr(obj, attr)
 
             # Avoid masked arrays - run into problems with edge cases with all NaN
@@ -165,15 +155,10 @@ def summarize_attrs(
                 np.round(np.nanmax(data), dp),
                 np.count_nonzero(np.isnan(data)),
             ]
-            if has_units:
-                attr_row.append(unit)
-
+            attr_row.append(unit)
             ret.append(attr_row)
 
-    if has_units:
-        hdrs = ["Attr", "Mean", "Min", "Max", "NaN", "Units"]
-    else:
-        hdrs = ["Attr", "Mean", "Min", "Max", "NaN"]
+    hdrs = ["Attr", "Mean", "Min", "Max", "NaN", "Units"]
 
     if repr_head:
         print(obj)

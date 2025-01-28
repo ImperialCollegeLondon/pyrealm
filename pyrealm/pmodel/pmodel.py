@@ -475,18 +475,20 @@ class PModel:
             dp: The number of decimal places used in rounding summary stats.
         """
 
-        attrs = [("lue", "g C mol-1"), ("iwue", "µmol mol-1")]
+        attrs: tuple[tuple[str, str], ...] = (
+            ("lue", "g C mol-1"),
+            ("iwue", "µmol mol-1"),
+        )
 
         if hasattr(self, "_gpp"):
-            attrs.extend(
-                [
-                    ("gpp", "µg C m-2 s-1"),
-                    ("vcmax", "µmol m-2 s-1"),
-                    ("vcmax25", "µmol m-2 s-1"),
-                    ("rd", "µmol m-2 s-1"),
-                    ("gs", "µmol m-2 s-1"),
-                    ("jmax", "µmol m-2 s-1"),
-                ]
+            attrs = (
+                *attrs,
+                ("gpp", "µg C m-2 s-1"),
+                ("vcmax", "µmol m-2 s-1"),
+                ("vcmax25", "µmol m-2 s-1"),
+                ("rd", "µmol m-2 s-1"),
+                ("gs", "µmol m-2 s-1"),
+                ("jmax", "µmol m-2 s-1"),
             )
 
         summarize_attrs(self, attrs, dp=dp)
