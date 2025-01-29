@@ -90,7 +90,7 @@ def test_calculate_water_molar_volume():
     assert_allclose(
         calculate_water_molar_volume(tc=0, patm=101325),
         CoreConst.k_water_molmass,
-        atol=0.01,
+        rtol=1e-3,
     )
 
 
