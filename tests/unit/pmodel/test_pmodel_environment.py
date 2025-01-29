@@ -67,12 +67,12 @@ def test_out_of_bound_output(function_test_data):
     for tc, patm, co2 in zip(tc_ar_values, patm_ar_values, co2_ar_values):
         result = calc_kmm(tc=tc, patm=patm, pmodel_const=pmodel_const)
 
-        assert np.all(
-            result >= kmm_lower_bound
-        ), f"Result for (tc={tc}, patm={patm}, co2={co2}) is out of lower bound"
-        assert np.all(
-            result <= kmm_upper_bound
-        ), f"Result for (tc={tc}, patm={patm}, co2={co2}) is out of upper bound"
+        assert np.all(result >= kmm_lower_bound), (
+            f"Result for (tc={tc}, patm={patm}, co2={co2}) is out of lower bound"
+        )
+        assert np.all(result <= kmm_upper_bound), (
+            f"Result for (tc={tc}, patm={patm}, co2={co2}) is out of upper bound"
+        )
 
 
 """Test that calc_ns_star output is within bounds"""
@@ -92,12 +92,12 @@ def test_out_of_bound_output_ns_star(function_test_data):
     for tc, patm in zip(tc_ar_values, patm_ar_values):
         result = calc_ns_star(tc=tc, patm=patm, core_const=core_const)
 
-        assert np.all(
-            result >= ns_star_lower_bound
-        ), f"Result for (tc={tc}, patm={patm}) is out of lower bound"
-        assert np.all(
-            result <= ns_star_upper_bound
-        ), f"Result for (tc={tc}, patm={patm}) is out of upper bound"
+        assert np.all(result >= ns_star_lower_bound), (
+            f"Result for (tc={tc}, patm={patm}) is out of lower bound"
+        )
+        assert np.all(result <= ns_star_upper_bound), (
+            f"Result for (tc={tc}, patm={patm}) is out of upper bound"
+        )
 
 
 """Test that calc_gammastar output is within bounds."""
@@ -120,12 +120,12 @@ def test_out_of_bound_output_gammastar(function_test_data):
             tc=tc, patm=patm, pmodel_const=pmodel_const, core_const=core_const
         )
 
-        assert np.all(
-            result >= gammastar_lower_bound
-        ), f"Result for (tc={tc}, patm={patm}) is out of lower bound"
-        assert np.all(
-            result <= gammastar_upper_bound
-        ), f"Result for (tc={tc}, patm={patm}) is out of upper bound"
+        assert np.all(result >= gammastar_lower_bound), (
+            f"Result for (tc={tc}, patm={patm}) is out of lower bound"
+        )
+        assert np.all(result <= gammastar_upper_bound), (
+            f"Result for (tc={tc}, patm={patm}) is out of upper bound"
+        )
 
 
 """Test that calc_co2_to_ca output is within bounds"""
@@ -143,9 +143,9 @@ def test_out_of_bound_output_co2_to_ca(function_test_data):
     for co2, patm in zip(co2_ar_values, patm_ar_values):
         result = calc_co2_to_ca(co2=co2, patm=patm)
 
-        assert np.all(
-            result >= co2_to_ca_lower_bound
-        ), f"Result for (co2={co2}, patm={patm}) is out of lower bound"
-        assert np.all(
-            result <= co2_to_ca_upper_bound
-        ), f"Result for (co2={co2}, patm={patm}) is out of upper bound"
+        assert np.all(result >= co2_to_ca_lower_bound), (
+            f"Result for (co2={co2}, patm={patm}) is out of lower bound"
+        )
+        assert np.all(result <= co2_to_ca_upper_bound), (
+            f"Result for (co2={co2}, patm={patm}) is out of upper bound"
+        )

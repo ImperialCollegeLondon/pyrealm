@@ -168,13 +168,13 @@ class OptimalChiABC(ABC):
             dp: The number of decimal places used in rounding summary stats.
         """
 
-        attrs = [
+        attrs = (
             ("xi", " Pa ^ (1/2)"),
             ("chi", "-"),
             ("mc", "-"),
             ("mj", "-"),
             ("mjoc", "-"),
-        ]
+        )
         summarize_attrs(self, attrs, dp=dp)
 
     @classmethod

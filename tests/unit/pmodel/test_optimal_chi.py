@@ -243,10 +243,10 @@ def test_nan_handling(subclass, extra_vars, estimable_on_missing):
 
         for pred_var in ["beta", "xi", "chi", "ci"]:
             if var in estimable_on_missing[pred_var]:
-                assert not np.isnan(
-                    getattr(instance, pred_var)
-                ), f"{pred_var} is np.nan but estimable with missing {var}"
+                assert not np.isnan(getattr(instance, pred_var)), (
+                    f"{pred_var} is np.nan but estimable with missing {var}"
+                )
             else:
-                assert np.isnan(
-                    getattr(instance, pred_var)
-                ), f"{pred_var} estimated but should not be with missing {var}"
+                assert np.isnan(getattr(instance, pred_var)), (
+                    f"{pred_var} estimated but should not be with missing {var}"
+                )

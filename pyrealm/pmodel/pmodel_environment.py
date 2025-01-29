@@ -209,7 +209,7 @@ class PModelEnvironment:
             dp: The number of decimal places used in rounding summary stats.
         """
 
-        attrs = [
+        attrs: tuple[tuple[str, str], ...] = (
             ("tc", "°C"),
             ("vpd", "Pa"),
             ("co2", "ppm"),
@@ -218,7 +218,7 @@ class PModelEnvironment:
             ("gammastar", "Pa"),
             ("kmm", "Pa"),
             ("ns_star", "-"),
-        ]
+        )
 
         # Add any optional variables - need to check here if these attributes actually
         # exist because if they are not provided they are typed but not populated.
@@ -229,8 +229,12 @@ class PModelEnvironment:
             ("mean_growth_temperature", "°C"),
         ]
 
-        for opt_var, unit in optional_vars:
-            if getattr(self, opt_var, None) is not None:
-                attrs += [(opt_var, unit)]
+        to_add = [
+            (opt_var, unit)
+            for opt_var, unit in optional_vars
+            if getattr(self, opt_var, None) is not None
+        ]
+
+        attrs = (*attrs, *to_add)
 
         summarize_attrs(self, attrs, dp=dp)
