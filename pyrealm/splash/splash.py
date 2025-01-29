@@ -115,7 +115,7 @@ class SplashModel:
         )
         """Estimated evaporative fluxes for observations"""
 
-    def estimate_initial_soil_moisture(  # noqa: max-complexity=12
+    def estimate_initial_soil_moisture(
         self,
         wn_init: NDArray[np.float64] | None = None,
         max_iter: int = 10,
