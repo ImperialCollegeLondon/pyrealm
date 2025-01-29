@@ -89,7 +89,7 @@ class JmaxLimitationABC(metaclass=ABCMeta):
             dp: The number of decimal places used in rounding summary stats.
         """
 
-        summarize_attrs(self, list(self.data_attrs), dp=dp)
+        summarize_attrs(self, self.data_attrs, dp=dp)
 
     @abstractmethod
     def _calculate_limitation_terms(self) -> None:

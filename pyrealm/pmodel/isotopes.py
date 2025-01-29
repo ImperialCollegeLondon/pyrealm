@@ -234,13 +234,13 @@ class CalcCarbonIsotopes:
             dp: The number of decimal places used in rounding summary stats.
         """
 
-        attrs = [
+        attrs = (
             ("Delta13C_simple", "permil"),  # ‰
             ("Delta13C", "permil"),
             ("Delta14C", "permil"),
             ("d13C_leaf", "permil"),
             ("d14C_leaf", "permil"),
             ("d13C_wood", "permil"),
-        ]
+        )
 
         summarize_attrs(self, attrs, dp=dp)
