@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
+    jupytext_version: 1.16.5
 kernelspec:
   display_name: Python 3
   language: python
@@ -107,6 +107,15 @@ language_info:
 
 ```{eval-rst}
 .. automodule:: pyrealm_build_data.uk_data
+    :autosummary:
+    :members:
+    :special-members: __init__
+```
+
+## The `phenology` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm_build_data.phenology
     :autosummary:
     :members:
     :special-members: __init__

@@ -39,9 +39,9 @@ def test_estimate_daily_water_balance_scalar(splash_core_constants):
 
     # Expected values are the output of __main__ in original splash.py
     evap_expected = {
-        "cond": 0.885192,
-        "eet_d": 6.405468,
-        "pet_d": 8.070889,
+        "cond": np.array([0.885192]),
+        "eet_d": np.array([6.405468]),
+        "pet_d": np.array([8.070889]),
     }
 
     for ky, val in evap_expected.items():

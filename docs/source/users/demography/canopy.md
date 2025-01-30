@@ -4,7 +4,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
+    jupytext_version: 1.16.5
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -40,10 +40,10 @@ import numpy as np
 import pandas as pd
 
 from pyrealm.demography.flora import PlantFunctionalType, Flora
-from pyrealm.demography.community import Community
+from pyrealm.demography.community import Cohorts, Community
 from pyrealm.demography.crown import CrownProfile, get_crown_xy
 from pyrealm.demography.canopy import Canopy
-from pyrealm.demography.t_model_functions import StemAllometry
+from pyrealm.demography.tmodel import StemAllometry
 ```
 
 The `canopy` module in `pyrealm` is used to calculate a model of the light environment
@@ -110,21 +110,23 @@ stem_dbh = np.array([0.5])
 simple_stem = StemAllometry(stem_traits=simple_flora, at_dbh=stem_dbh)
 
 # The total area is exactly the crown area
-total_area = simple_stem.crown_area[0]
+total_area = simple_stem.crown_area[0][0]
 
 # Define a simple community
 simple_community = Community(
     flora=simple_flora,
     cell_area=total_area,
     cell_id=1,
-    cohort_dbh_values=stem_dbh,
-    cohort_n_individuals=np.array([1]),
-    cohort_pft_names=np.array(["defaults"]),
+    cohorts=Cohorts(
+        dbh_values=stem_dbh,
+        n_individuals=np.array([1]),
+        pft_names=np.array(["defaults"]),
+    ),
 )
 
 # Get the canopy model for the simple case from the canopy top
 # to the ground
-hghts = np.linspace(simple_stem.stem_height[0], 0, num=101)[:, None]
+hghts = np.linspace(simple_stem.stem_height[0][0], 0, num=101)[:, None]
 simple_canopy = Canopy(
     community=simple_community,
     layer_heights=hghts,
@@ -137,7 +139,7 @@ should equal the whole canopy $f_{abs}$ calculated using the simple Beer-Lambert
 equation and the PFT trait values.
 
 ```{code-cell} ipython3
-print(simple_canopy.extinction_profile[-1])
+print(simple_canopy.community_data.extinction_profile[-1])
 ```
 
 ```{code-cell} ipython3
@@ -180,15 +182,15 @@ ax1.set_xlabel("Profile radius (m)")
 ax1.set_ylabel("Vertical height (m)")
 
 # Plot the leaf area between heights for stems
-ax2.plot(simple_canopy.stem_leaf_area, hghts, color="red")
+ax2.plot(simple_canopy.cohort_data.stem_leaf_area, hghts, color="red")
 ax2.set_xlabel("Leaf area (m2)")
 
 # Plot the fraction of light absorbed at different heights
-ax3.plot(simple_canopy.f_abs, hghts, color="red")
+ax3.plot(simple_canopy.cohort_data.f_abs, hghts, color="red")
 ax3.set_xlabel("Light absorption fraction (-)")
 
 # Plot the light extinction profile through the canopy.
-ax4.plot(simple_canopy.extinction_profile, hghts, color="red")
+ax4.plot(simple_canopy.community_data.extinction_profile, hghts, color="red")
 ax4.set_xlabel("Cumulative light\nabsorption fraction (-)")
 ```
 
@@ -255,9 +257,11 @@ community = Community(
     flora=flora,
     cell_area=32,
     cell_id=1,
-    cohort_dbh_values=np.array([0.1, 0.20, 0.5]),
-    cohort_n_individuals=np.array([7, 3, 2]),
-    cohort_pft_names=np.array(["short", "short", "tall"]),
+    cohorts=Cohorts(
+        dbh_values=np.array([0.1, 0.20, 0.5]),
+        n_individuals=np.array([7, 3, 2]),
+        pft_names=np.array(["short", "short", "tall"]),
+    ),
 )
 
 # Calculate the canopy profile across vertical heights
@@ -281,7 +285,7 @@ profiles = get_crown_xy(
 for idx, crown in enumerate(profiles):
 
     # Get spaced but slightly randomized stem locations
-    n_stems = community.cohort_data["n_individuals"][idx]
+    n_stems = community.cohorts.n_individuals[idx]
     stem_locations = np.linspace(0, 10, num=n_stems) + np.random.normal(size=n_stems)
 
     # Plot the crown model for each stem
@@ -298,7 +302,7 @@ vertical profile is equal to the expected value across the whole community.
 ```{code-cell} ipython3
 # Calculate L_h for each cohort
 cohort_lai = (
-    community.cohort_data["n_individuals"]
+    community.cohorts.n_individuals
     * community.stem_traits.lai
     * community.stem_allometry.crown_area
 ) / community.cell_area
@@ -308,7 +312,7 @@ print(1 - np.exp(np.sum(-community.stem_traits.par_ext * cohort_lai)))
 ```
 
 ```{code-cell} ipython3
-print(canopy.extinction_profile[-1])
+print(canopy.community_data.extinction_profile[-1])
 ```
 
 ```{code-cell} ipython3
@@ -345,16 +349,16 @@ ax1.set_xlabel("Profile radius (m)")
 ax1.set_ylabel("Vertical height (m)")
 
 # Plot the leaf area between heights for stems
-ax2.plot(canopy.stem_leaf_area, hghts)
+ax2.plot(canopy.cohort_data.stem_leaf_area, hghts)
 ax2.set_xlabel("Leaf area per stem (m2)")
 
 # Plot the fraction of light absorbed at different heights
-ax3.plot(canopy.f_abs, hghts, color="grey")
-ax3.plot(1 - canopy.cohort_f_trans, hghts)
+ax3.plot(canopy.cohort_data.f_abs, hghts, color="grey")
+ax3.plot(1 - canopy.cohort_data.f_trans, hghts)
 ax3.set_xlabel("Light absorption fraction (-)")
 
 # Plot the light extinction profile through the canopy.
-ax4.plot(canopy.extinction_profile, hghts, color="grey")
+ax4.plot(canopy.community_data.extinction_profile, hghts, color="grey")
 _ = ax4.set_xlabel("Cumulative light\nabsorption fraction (-)")
 ```
 
@@ -412,7 +416,7 @@ l_m = \left\lceil \frac{\sum_1^{N_s}{A_c}}{ A(1 - f_G)}\right\rceil
 $$
 
 ```{code-cell} ipython3
-canopy_ppa = Canopy(community=community, canopy_gap_fraction=2 / 32, fit_ppa=True)
+canopy_ppa = Canopy(community=community, canopy_gap_fraction=0 / 32, fit_ppa=True)
 ```
 
 The `canopy_ppa.heights` attribute now contains the heights at which the PPA
@@ -426,7 +430,7 @@ And the final value in the canopy extinction profile still matches the expectati
 above:
 
 ```{code-cell} ipython3
-print(canopy_ppa.extinction_profile[-1])
+print(canopy_ppa.community_data.extinction_profile[-1])
 ```
 
 ### Visualizing layer closure heights and areas
@@ -439,13 +443,13 @@ individuals in each cohort.
 ```{code-cell} ipython3
 # Calculate the total projected crown area across the community at each height
 community_crown_area = np.nansum(
-    canopy.crown_profile.projected_crown_area * community.cohort_data["n_individuals"],
+    canopy.crown_profile.projected_crown_area * community.cohorts.n_individuals,
     axis=1,
 )
 
 # Do the same for the projected leaf area
 community_leaf_area = np.nansum(
-    canopy.crown_profile.projected_leaf_area * community.cohort_data["n_individuals"],
+    canopy.crown_profile.projected_leaf_area * community.cohorts.n_individuals,
     axis=1,
 )
 ```
@@ -499,18 +503,18 @@ ax1.legend(frameon=False)
 for val in canopy_ppa.heights:
     ax2.axhline(val, color="red", linewidth=0.5, zorder=0)
 
-for val in canopy_ppa.extinction_profile:
+for val in canopy_ppa.community_data.extinction_profile:
     ax2.axvline(val, color="red", linewidth=0.5, zorder=0)
 
-ax2.plot(canopy.extinction_profile, hghts)
+ax2.plot(canopy.community_data.extinction_profile, hghts)
 
 ax2_top = ax2.twiny()
 ax2_top.set_xlim(ax2.get_xlim())
 extinction_labels = [
     f"$f_{{abs{l + 1}}}$ = {z:.3f}"
-    for l, z in enumerate(np.nditer(canopy_ppa.extinction_profile))
+    for l, z in enumerate(np.nditer(canopy_ppa.community_data.extinction_profile))
 ]
-ax2_top.set_xticks(canopy_ppa.extinction_profile)
+ax2_top.set_xticks(canopy_ppa.community_data.extinction_profile)
 ax2_top.set_xticklabels(extinction_labels, rotation=90)
 
 ax2.set_xlabel("Light extinction (-)")
@@ -544,11 +548,11 @@ The steps below show this partitioning process for the PPA layers calculated abo
 
 ```{code-cell} ipython3
 print("k = \n", community.stem_traits.par_ext, "\n")
-print("L_H = \n", canopy_ppa.cohort_lai)
+print("L_H = \n", canopy_ppa.cohort_data.lai)
 ```
 
 ```{code-cell} ipython3
-layer_cohort_f_tr = np.exp(-community.stem_traits.par_ext * canopy_ppa.cohort_lai)
+layer_cohort_f_tr = np.exp(-community.stem_traits.par_ext * canopy_ppa.cohort_data.lai)
 print(layer_cohort_f_tr)
 ```
 
@@ -609,6 +613,6 @@ print(cohort_fapar)
    cohort to given the $f_{APAR}$ for each stem at each height.
 
 ```{code-cell} ipython3
-stem_fapar = cohort_fapar / community.cohort_data["n_individuals"]
+stem_fapar = cohort_fapar / community.cohorts.n_individuals
 print(stem_fapar)
 ```

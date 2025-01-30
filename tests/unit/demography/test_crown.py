@@ -2,6 +2,7 @@
 
 from collections import namedtuple
 from contextlib import nullcontext as does_not_raise
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -10,7 +11,7 @@ ZQZInput = namedtuple(
     "ZQZInput",
     ["z", "stem", "more_stem", "q_z", "outcome", "excep_msg", "output_shape"],
 )
-"""Simple named tuple to make inputs to z and qz checking a bit clearer.
+"""Simple named tuple to make inputs to array validation a bit clearer.
 
 Contents:
 * an input value for z
@@ -31,20 +32,20 @@ example a total of 3 stem properties:
     z, stem, more_stem, q_z, outcome, excep_msg, exp_shape = (
         fixture_z_qz_stem_properties
     )
-    stem_args = [stem, * more_stem * 2]
+    stem_args = {"stem_one": stem, "stem_two": more_stem, "stem_three": more_stem}
 """
 
 
 @pytest.fixture
 def fixture_z_qz_stem_properties(request):
-    """Fixture providing test cases of z, q_z and stem properties .
+    """Fixture providing test combinations of trait, size (z) and q_z values.
 
     This fixture provides a menu of inputs that can be used by tests throught indirect
     parameterisation to share a set of test cases of inputs for the z, stem properties
     q_z arguments and expected outcome and exception message. In each case, the returned
     value is a ZQZInput instance.
 
-    The tests here are ordered in the execution order of _validate_z_qz_arg, so failing
+    The tests here are ordered in the execution order of validation, so failing
     inputs only provide non-None values for the elements required to trigger the fail.
     """
 
@@ -53,60 +54,70 @@ def fixture_z_qz_stem_properties(request):
             return ZQZInput(
                 z=None,
                 stem=np.ones(5),
-                more_stem=[np.ones(4)],
+                more_stem=np.ones(4),
                 q_z=None,
                 outcome=pytest.raises(ValueError),
-                excep_msg="Stem properties are not of equal size",
+                excep_msg="Trait arguments are not equal shaped or scalar:",
                 output_shape=None,
             )
         case "fail_stem_props_not_1D":
             return ZQZInput(
                 z=None,
                 stem=np.ones((5, 2)),
-                more_stem=[np.ones((5, 2))],
+                more_stem=np.ones((5, 2)),
                 q_z=None,
                 outcome=pytest.raises(ValueError),
-                excep_msg="Stem properties are not row arrays",
+                excep_msg="Trait arguments are not 1D arrays",
                 output_shape=None,
+            )
+        case "pass_stem_props":
+            return ZQZInput(
+                z=None,
+                stem=np.ones(4),
+                more_stem=np.ones(4),
+                q_z=None,
+                outcome=does_not_raise(),
+                excep_msg=None,
+                output_shape=(4,),
             )
         case "fail_1D_z_not_congruent_with_stem":
             return ZQZInput(
                 z=np.ones(5),
                 stem=np.ones(4),
-                more_stem=[np.ones(4)],
+                more_stem=np.ones(4),
                 q_z=None,
                 outcome=pytest.raises(ValueError),
-                excep_msg="The z argument is a row array (shape: (5,)) but is not "
-                "congruent with the cohort data (shape: (4,))",
+                excep_msg="The array shapes of the trait (4,) and "
+                "size (5,) arguments are not congruent",
                 output_shape=None,
             )
-        case "fail_2D_z_not_column_array":
+        case "fail_2D_z_not_congruent":
             return ZQZInput(
                 z=np.ones((5, 2)),
                 stem=np.ones(4),
-                more_stem=[np.ones(4)],
+                more_stem=np.ones(4),
                 q_z=None,
                 outcome=pytest.raises(ValueError),
-                excep_msg="The z argument is two dimensional (shape: (5, 2)) but is "
-                "not a column array.",
+                excep_msg="The array shapes of the trait (4,) and "
+                "size (5, 2) arguments are not congruent",
                 output_shape=None,
             )
         case "fail_z_more_than_2D":
             return ZQZInput(
                 z=np.ones((5, 2, 6)),
                 stem=np.ones(4),
-                more_stem=[np.ones(4)],
+                more_stem=np.ones(4),
                 q_z=None,
                 outcome=pytest.raises(ValueError),
-                excep_msg="The z argument (shape: (5, 2, 6)) is not "
-                "a row or column vector array",
+                excep_msg="The array shapes of the trait (4,) and "
+                "size (5, 2, 6) arguments are not congruent",
                 output_shape=None,
             )
         case "pass_0D_z":
             return ZQZInput(
                 z=np.array(1),
                 stem=np.ones(4),
-                more_stem=[np.ones(4)],
+                more_stem=np.ones(4),
                 q_z=None,
                 outcome=does_not_raise(),
                 excep_msg=None,
@@ -116,7 +127,7 @@ def fixture_z_qz_stem_properties(request):
             return ZQZInput(
                 z=np.ones(1),
                 stem=np.ones(4),
-                more_stem=[np.ones(4)],
+                more_stem=np.ones(4),
                 q_z=None,
                 outcome=does_not_raise(),
                 excep_msg=None,
@@ -126,7 +137,7 @@ def fixture_z_qz_stem_properties(request):
             return ZQZInput(
                 z=np.ones(4),
                 stem=np.ones(4),
-                more_stem=[np.ones(4)],
+                more_stem=np.ones(4),
                 q_z=None,
                 outcome=does_not_raise(),
                 excep_msg=None,
@@ -136,7 +147,7 @@ def fixture_z_qz_stem_properties(request):
             return ZQZInput(
                 z=np.ones((5, 1)),
                 stem=np.ones(4),
-                more_stem=[np.ones(4)],
+                more_stem=np.ones(4),
                 q_z=None,
                 outcome=does_not_raise(),
                 excep_msg=None,
@@ -146,53 +157,55 @@ def fixture_z_qz_stem_properties(request):
             return ZQZInput(
                 z=np.array(1),
                 stem=np.ones(4),
-                more_stem=[np.ones(4)],
+                more_stem=np.ones(4),
                 q_z=np.ones(7),
                 outcome=pytest.raises(ValueError),
-                excep_msg="The q_z argument (shape: (7,)) is not a row array "
-                "matching stem properties (shape: (4,))",
+                excep_msg="The broadcast shapes of the trait and size arguments "
+                "(4,) are not congruent with the shape of the at_size "
+                "arguments (7,)",
                 output_shape=None,
             )
         case "fail_1D_scalar_z_but_q_z_not_row":
             return ZQZInput(
                 z=np.ones(1),
                 stem=np.ones(4),
-                more_stem=[np.ones(4)],
+                more_stem=np.ones(4),
                 q_z=np.ones((6, 9)),
                 outcome=pytest.raises(ValueError),
-                excep_msg="The q_z argument (shape: (6, 9)) is not a row array "
-                "matching stem properties (shape: (4,))",
+                excep_msg="The broadcast shapes of the trait and size arguments "
+                "(4,) are not congruent with the shape of the at_size "
+                "arguments (6, 9)",
                 output_shape=None,
             )
-        case "fail_1D_row_z_but_q_z_not_row":
-            return ZQZInput(
-                z=np.ones(4),
-                stem=np.ones(4),
-                more_stem=[np.ones(4)],
-                q_z=np.array(1),
-                outcome=pytest.raises(ValueError),
-                excep_msg="The q_z argument (shape: ()) is not a row array "
-                "matching stem properties (shape: (4,))",
-                output_shape=None,
-            )
+
         case "fail_2D_column_z_but_q_z_not_congruent":
             return ZQZInput(
                 z=np.ones((5, 1)),
                 stem=np.ones(4),
-                more_stem=[np.ones(4)],
+                more_stem=np.ones(4),
                 q_z=np.ones((6, 9)),
                 outcome=pytest.raises(ValueError),
-                excep_msg="The q_z argument (shape: (6, 9)) is not a 2D array "
-                "congruent with the broadcasted shape of the z argument (shape: "
-                "(5, 1)) and stem property arguments (shape: (4,))",
+                excep_msg="The broadcast shapes of the trait and size arguments "
+                "(5, 4) are not congruent with the shape of the at_size "
+                "arguments (6, 9)",
                 output_shape=None,
             )
         case "pass_0D_z_and_q_z_row":
             return ZQZInput(
                 z=np.array(1),
                 stem=np.ones(4),
-                more_stem=[np.ones(4)],
+                more_stem=np.ones(4),
                 q_z=np.ones(4),
+                outcome=does_not_raise(),
+                excep_msg=None,
+                output_shape=(4,),
+            )
+        case "pass_1D_row_z_with_scalar_q_z":
+            return ZQZInput(
+                z=np.ones(4),
+                stem=np.ones(4),
+                more_stem=np.ones(4),
+                q_z=np.array(1),
                 outcome=does_not_raise(),
                 excep_msg=None,
                 output_shape=(4,),
@@ -201,7 +214,7 @@ def fixture_z_qz_stem_properties(request):
             return ZQZInput(
                 z=np.ones(1),
                 stem=np.ones(4),
-                more_stem=[np.ones(4)],
+                more_stem=np.ones(4),
                 q_z=np.ones(4),
                 outcome=does_not_raise(),
                 excep_msg=None,
@@ -211,7 +224,7 @@ def fixture_z_qz_stem_properties(request):
             return ZQZInput(
                 z=np.ones(4),
                 stem=np.ones(4),
-                more_stem=[np.ones(4)],
+                more_stem=np.ones(4),
                 q_z=np.ones(4),
                 outcome=does_not_raise(),
                 excep_msg=None,
@@ -221,7 +234,7 @@ def fixture_z_qz_stem_properties(request):
             return ZQZInput(
                 z=np.ones((5, 1)),
                 stem=np.ones(4),
-                more_stem=[np.ones(4)],
+                more_stem=np.ones(4),
                 q_z=np.ones((5, 4)),
                 outcome=does_not_raise(),
                 excep_msg=None,
@@ -234,8 +247,9 @@ def fixture_z_qz_stem_properties(request):
     argvalues=[
         "fail_stem_props_unequal",
         "fail_stem_props_not_1D",
+        "pass_stem_props",
         "fail_1D_z_not_congruent_with_stem",
-        "fail_2D_z_not_column_array",
+        "fail_2D_z_not_congruent",
         "fail_z_more_than_2D",
         "pass_0D_z",
         "pass_1D_scalar_z",
@@ -243,8 +257,8 @@ def fixture_z_qz_stem_properties(request):
         "pass_2D_column_array_z",
         "fail_0D_z_but_q_z_not_row",
         "fail_1D_scalar_z_but_q_z_not_row",
-        "fail_1D_row_z_but_q_z_not_row",
         "fail_2D_column_z_but_q_z_not_congruent",
+        "pass_1D_row_z_with_scalar_q_z",
         "pass_0D_z_and_q_z_row",
         "pass_1D_scalar_z_and_q_z_row",
         "pass_1D_row_z_and_q_z_row",
@@ -252,17 +266,30 @@ def fixture_z_qz_stem_properties(request):
     ],
     indirect=["fixture_z_qz_stem_properties"],
 )
-def test__validate_z_qz__args(fixture_z_qz_stem_properties):
-    """Tests the validation function for arguments to canopy functions."""
+def test__validate_demography_array_arguments_handling(fixture_z_qz_stem_properties):
+    """Tests the validation function for arguments to canopy functions.
 
-    from pyrealm.demography.crown import _validate_z_qz_args
+    This is checking the validation routine in the context of crown module functions.
+    """
+
+    from pyrealm.demography.core import _validate_demography_array_arguments
 
     # Unpack the input arguments for the test case - not testing outputs here
     z, stem, more_stem, q_z, outcome, excep_msg, _ = fixture_z_qz_stem_properties
-    stem_args = [stem, *more_stem * 2]  # length of args doesn't really matter here.
+
+    # Build up the validation function input arguments.
+    # The number of trait args doesn't really matter in this test but specific function
+    # tests below need to match an actual set of arguments.
+    args = {"trait_args": {"stem_one": stem, "stem_two": more_stem}}
+
+    if z is not None:
+        args["size_args"] = {"z": z}
+
+    if q_z is not None:
+        args["at_size_args"] = {"q_z": q_z}
 
     with outcome as excep:
-        _validate_z_qz_args(z=z, stem_properties=stem_args, q_z=q_z)
+        _validate_demography_array_arguments(**args)
         return
 
     assert str(excep.value).startswith(excep_msg)
@@ -274,7 +301,7 @@ def test__validate_z_qz__args(fixture_z_qz_stem_properties):
         "fail_stem_props_unequal",
         "fail_stem_props_not_1D",
         "fail_1D_z_not_congruent_with_stem",
-        "fail_2D_z_not_column_array",
+        "fail_2D_z_not_congruent",
         "fail_z_more_than_2D",
         "pass_0D_z",
         "pass_1D_scalar_z",
@@ -295,11 +322,12 @@ def test_calculate_relative_crown_radius_at_z_inputs(fixture_z_qz_stem_propertie
 
     # Build inputs
     z, stem, more_stem, _, outcome, excep_msg, out_shape = fixture_z_qz_stem_properties
-    stem_args = [stem, *more_stem * 2]  # Need 3 stem arguments.
 
     with outcome as excep:
         # Get the relative radius at that height
-        q_z_values = calculate_relative_crown_radius_at_z(z, *stem_args)
+        q_z_values = calculate_relative_crown_radius_at_z(
+            z=z, stem_height=z, m=stem, n=more_stem
+        )
 
         if isinstance(outcome, does_not_raise):
             assert q_z_values.shape == out_shape
@@ -340,14 +368,12 @@ def test_calculate_relative_crown_radius_at_z_values(fixture_community):
 @pytest.mark.parametrize(
     argnames="fixture_z_qz_stem_properties",
     argvalues=[
-        "fail_stem_props_unequal",
         "fail_stem_props_not_1D",
         "fail_1D_z_not_congruent_with_stem",
-        "fail_2D_z_not_column_array",
+        "fail_2D_z_not_congruent",
         "fail_z_more_than_2D",
         "fail_0D_z_but_q_z_not_row",
-        "fail_1D_scalar_z_but_q_z_not_row",
-        "fail_1D_row_z_but_q_z_not_row",
+        "pass_1D_row_z_with_scalar_q_z",
         "fail_2D_column_z_but_q_z_not_congruent",
         "pass_0D_z_and_q_z_row",
         "pass_1D_scalar_z_and_q_z_row",
@@ -366,11 +392,12 @@ def test_calculate_stem_projected_crown_area_at_z_inputs(fixture_z_qz_stem_prope
     z, stem, more_stem, q_z, outcome, excep_msg, out_shape = (
         fixture_z_qz_stem_properties
     )
-    stem_args = [stem, *more_stem * 3]  # Need 4 stem arguments.
 
     with outcome as excep:
         # Get the relative radius at that height
-        Ap_z_values = calculate_stem_projected_crown_area_at_z(z, q_z, *stem_args)
+        Ap_z_values = calculate_stem_projected_crown_area_at_z(
+            z=z, q_z=q_z, stem_height=z, crown_area=z, q_m=stem, z_max=z
+        )
 
         if isinstance(outcome, does_not_raise):
             assert Ap_z_values.shape == out_shape
@@ -452,11 +479,11 @@ def test_calculate_stem_projected_crown_area_at_z_values(
         "fail_stem_props_unequal",
         "fail_stem_props_not_1D",
         "fail_1D_z_not_congruent_with_stem",
-        "fail_2D_z_not_column_array",
+        "fail_2D_z_not_congruent",
         "fail_z_more_than_2D",
         "fail_0D_z_but_q_z_not_row",
         "fail_1D_scalar_z_but_q_z_not_row",
-        "fail_1D_row_z_but_q_z_not_row",
+        "pass_1D_row_z_with_scalar_q_z",
         "fail_2D_column_z_but_q_z_not_congruent",
         "pass_0D_z_and_q_z_row",
         "pass_1D_scalar_z_and_q_z_row",
@@ -475,11 +502,18 @@ def test_calculate_stem_projected_leaf_area_at_z_inputs(fixture_z_qz_stem_proper
     z, stem, more_stem, q_z, outcome, excep_msg, out_shape = (
         fixture_z_qz_stem_properties
     )
-    stem_args = [stem, *more_stem * 4]  # Need 5 stem arguments.
 
     with outcome as excep:
         # Get the relative radius at that height
-        Ap_z_values = calculate_stem_projected_leaf_area_at_z(z, q_z, *stem_args)
+        Ap_z_values = calculate_stem_projected_leaf_area_at_z(
+            z=z,
+            q_z=q_z,
+            stem_height=z,
+            crown_area=z,
+            f_g=stem,
+            q_m=more_stem,
+            z_max=z,
+        )
 
         if isinstance(outcome, does_not_raise):
             assert Ap_z_values.shape == out_shape
@@ -503,7 +537,7 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
 
     # Calculate the leaf areas at the locations of z_max for each stem from the lowest
     # to the highest
-    z_max = fixture_community.stem_allometry.crown_z_max[:, None]
+    z_max = fixture_community.stem_allometry.crown_z_max.T
 
     q_z = calculate_relative_crown_radius_at_z(
         z=z_max,
@@ -586,17 +620,24 @@ def test_CrownProfile(fixture_community):
     """Test the CrownProfile class.
 
     This implements a subset of the tests in the more detailed function checks above to
-    validate that this wrapper class works as intended.
+    validate that this wrapper class works as intended. It also tests the inherited
+    to_pandas method and checks that the validation routine is only called once.
     """
 
+    from pyrealm.demography.core import _validate_demography_array_arguments
     from pyrealm.demography.crown import CrownProfile
 
     # Estimate the profile at the heights of the maximum crown radii for each cohort
-    crown_profile = CrownProfile(
-        stem_traits=fixture_community.stem_traits,
-        stem_allometry=fixture_community.stem_allometry,
-        z=fixture_community.stem_allometry.crown_z_max[:, None],
-    )
+    with patch(
+        "pyrealm.demography.crown._validate_demography_array_arguments",
+        wraps=_validate_demography_array_arguments,
+    ) as val_func_patch:
+        crown_profile = CrownProfile(
+            stem_traits=fixture_community.stem_traits,
+            stem_allometry=fixture_community.stem_allometry,
+            z=fixture_community.stem_allometry.crown_z_max.T,
+        )
+        assert val_func_patch.call_count == 1
 
     # Crown radius on diagonal predicts crown area accurately
     assert np.allclose(
@@ -615,3 +656,39 @@ def test_CrownProfile(fixture_community):
         np.diag(crown_profile.projected_leaf_area),
         fixture_community.stem_allometry.crown_area,
     )
+
+    # Test the inherited to_pandas method
+    df = crown_profile.to_pandas()
+
+    assert df.shape == (
+        crown_profile._n_stems * crown_profile._n_pred,
+        len(crown_profile.array_attrs),
+    )
+
+    assert set(crown_profile.array_attrs) == set(df.columns)
+
+
+@pytest.mark.parametrize(argnames="as_xy", argvalues=[True, False])
+@pytest.mark.parametrize(argnames="two_sided", argvalues=[True, False])
+def test_get_crown_xy(fixture_community, as_xy, two_sided):
+    """Test the get_crown_xy helper.
+
+    This really just checks it runs at the moment.
+    """
+
+    from pyrealm.demography.crown import CrownProfile, get_crown_xy
+
+    crown_profile = CrownProfile(
+        stem_traits=fixture_community.stem_traits,
+        stem_allometry=fixture_community.stem_allometry,
+        z=np.linspace(0, 22, num=101)[:, None],
+    )
+
+    for attr in crown_profile.array_attrs:
+        _ = get_crown_xy(
+            crown_profile=crown_profile,
+            stem_allometry=fixture_community.stem_allometry,
+            attr=attr,
+            as_xy=as_xy,
+            two_sided=two_sided,
+        )

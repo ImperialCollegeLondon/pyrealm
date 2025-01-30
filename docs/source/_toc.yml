@@ -36,12 +36,10 @@ subtrees:
         - file: users/demography/crown.md
         - file: users/demography/community.md
         - file: users/demography/canopy.md
-  - file: users/tmodel/tmodel.md
-  - file: users/tmodel/canopy.md
   - file: users/splash.md
   - file: users/constants.md
   - file: users/hygro.md 
-
+  - file: users/versions.md 
 - caption: API
   entries: 
   - glob: api/*

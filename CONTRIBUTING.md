@@ -99,13 +99,30 @@ details on the workflow and process.
 Even if the code works as expected and passes all our tests, it can still be slow! We
 use code profiling to work out where time is spent when using `pyrealm` and identify
 where we can improve performance. We also use benchmarking between `pyrealm` versions to
-make sure that changes to the code aren't making it slower. This is run automatically
-when new code is pulled to the `develop` or `main` branches but can also be used to do
-local profiling and benchmarking.
+make sure that changes to the code aren't making it slower.
 
-See the [profiling and benchmarking
-page](https://pyrealm.readthedocs.io/en/latest/development/profiling_and_benchmarking.md)
-for more details.
+This is currently run manually using the `performance_regression_checking.sh` script in
+the `profiling` directory. When this bash script is run without an argument, the current
+`HEAD` will be compared to the `origin/develop` branch. Alternatively, the two commits
+to be compared can be provided as parameters with `-n` for the "new" commit (the current
+HEAD, or code you have changed), and `-o` for the "old" commit (the baseline code you
+want to compare the perfomance against). The code will fail with an error message if the
+new performance is more than 5% slower than the baseline, otherwise it will succeed with
+a message indicating whether the new code is faster or has similar performance.
+
+```sh
+cd profiling
+poetry run performance_regression_checking.sh
+```
+
+To look deeper into how much time is spent in each function, the command
+
+```bash
+poetry run pytest --profile-svg -m "profiling"
+```
+
+will run the profiling tests and generate a call graph and table with this information in
+the `profiling` subdirectory.
 
 ### Documentation
 

@@ -4,8 +4,10 @@ import sys
 from contextlib import nullcontext as does_not_raise
 from importlib import resources
 from json import JSONDecodeError
+from unittest.mock import patch
 
 import numpy as np
+import pandas as pd
 import pytest
 from marshmallow.exceptions import ValidationError
 from pandas.errors import ParserError
@@ -312,6 +314,11 @@ def test_flora_from_csv(filename, outcome):
                 assert nm in flora.name
 
 
+#
+# Test Flora methods
+#
+
+
 @pytest.mark.parametrize(
     argnames="pft_names,outcome",
     argvalues=[
@@ -328,9 +335,116 @@ def test_flora_from_csv(filename, outcome):
     ],
 )
 def test_flora_get_stem_traits(fixture_flora, pft_names, outcome):
-    """Test Flora.get_stem_traits."""
-    with outcome:
+    """Test Flora.get_stem_traits.
+
+    This tests the method and failure mode, but also checks that the validation with the
+    StemTraits constructor is correctly suppressed.
+    """
+    with (
+        outcome as excep,
+        patch(
+            "pyrealm.demography.core._validate_demography_array_arguments"
+        ) as val_func_patch,
+    ):
+        # Call the method
         stem_traits = fixture_flora.get_stem_traits(pft_names=pft_names)
 
-        for trt in stem_traits.trait_attrs:
+        # Check the validator function is not called
+        assert not val_func_patch.called
+
+        # Test the length of the attributes
+        for trt in stem_traits.array_attrs:
             assert len(getattr(stem_traits, trt)) == len(pft_names)
+
+        return
+
+    # Check the reporting in failure case
+    assert str(excep.value) == "Plant functional types unknown in flora: boredleaf"
+
+
+def test_Flora_to_pandas(fixture_flora):
+    """Test the inherited to_pandas method as applied to a Flora object."""
+
+    df = fixture_flora.to_pandas()
+
+    assert isinstance(df, pd.DataFrame)
+    assert df.shape == (fixture_flora.n_pfts, len(fixture_flora.array_attrs))
+    assert set(fixture_flora.array_attrs) == set(df.columns)
+
+
+#
+# Direct constructor for StemTraits
+#
+
+
+def test_StemTraits(fixture_flora):
+    """Basic test of StemTraits constructor and inherited to_pandas method."""
+    from pyrealm.demography.flora import StemTraits
+
+    # Construct some input data from the fixture
+    flora_df = fixture_flora.to_pandas()
+    args = {ky: np.concatenate([val, val]) for ky, val in flora_df.items()}
+
+    instance = StemTraits(**args)
+
+    # Very basic check that the result is as expected
+    assert len(instance.a_hd) == 2 * fixture_flora.n_pfts
+
+    # Test the to_pandas method here too
+    stem_traits_df = instance.to_pandas()
+
+    assert stem_traits_df.shape == (
+        2 * fixture_flora.n_pfts,
+        len(fixture_flora.array_attrs),
+    )
+
+    assert set(instance.array_attrs) == set(stem_traits_df.columns)
+
+    # Now test that validation failures are triggered correctly
+    # 1. Unequal length
+    bad_args = args.copy()
+    bad_args["h_max"] = np.concat([bad_args["h_max"], bad_args["h_max"]])
+
+    with pytest.raises(ValueError) as excep:
+        _ = StemTraits(**bad_args)
+
+    assert str(excep.value).startswith("Trait arguments are not equal shaped or scalar")
+
+    # 2. Not 1 dimensional
+    bad_args = {k: v.reshape(2, 2) for k, v in args.copy().items()}
+
+    with pytest.raises(ValueError) as excep:
+        _ = StemTraits(**bad_args)
+
+    assert str(excep.value).startswith("Trait arguments are not 1D arrays")
+
+
+def test_StemTraits_CohortMethods(fixture_flora):
+    """Test the StemTraits inherited cohort methods."""
+
+    from pyrealm.demography.tmodel import StemTraits
+
+    # Construct some input data with duplicate PFTs by doubling the fixture_flora data
+    flora_df = fixture_flora.to_pandas()
+    args = {ky: np.concatenate([val, val]) for ky, val in flora_df.items()}
+
+    stem_traits = StemTraits(**args)
+
+    # Check failure mode
+    with pytest.raises(ValueError) as excep:
+        stem_traits.add_cohort_data(new_data=dict(a=1))
+
+    assert (
+        str(excep.value) == "Cannot add cohort data from an dict instance to StemTraits"
+    )
+
+    # Check success of adding and dropping data
+    # Add a copy of itself as new cohort data and check the shape
+    stem_traits.add_cohort_data(new_data=stem_traits)
+    assert stem_traits.h_max.shape == (4 * fixture_flora.n_pfts,)
+    assert stem_traits.h_max.sum() == 4 * flora_df["h_max"].sum()
+
+    # Remove all but the first two rows and what's left should be aligned with the
+    # original data
+    stem_traits.drop_cohort_data(drop_indices=np.arange(2, 8))
+    assert np.allclose(stem_traits.h_max, flora_df["h_max"])

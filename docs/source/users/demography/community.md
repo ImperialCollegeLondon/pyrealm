@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
+    jupytext_version: 1.16.5
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -36,7 +36,7 @@ import numpy as np
 import pandas as pd
 
 from pyrealm.demography.flora import PlantFunctionalType, Flora
-from pyrealm.demography.community import Community
+from pyrealm.demography.community import Cohorts, Community
 ```
 
 ```{code-cell} ipython3
@@ -57,16 +57,14 @@ community = Community(
     flora=flora,
     cell_area=32,
     cell_id=1,
-    cohort_dbh_values=np.array([0.02, 0.20, 0.5]),
-    cohort_n_individuals=np.array([15, 5, 2]),
-    cohort_pft_names=np.array(["short", "short", "tall"]),
+    cohorts=Cohorts(
+        dbh_values=np.array([0.02, 0.20, 0.5]),
+        n_individuals=np.array([15, 5, 2]),
+        pft_names=np.array(["short", "short", "tall"]),
+    ),
 )
 ```
 
 ```{code-cell} ipython3
 community
-```
-
-```{code-cell} ipython3
-
 ```

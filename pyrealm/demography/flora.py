@@ -37,6 +37,12 @@ import pandas as pd
 from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
+from pyrealm.demography.core import (
+    CohortMethods,
+    PandasExporter,
+    _validate_demography_array_arguments,
+)
+
 if sys.version_info[:2] >= (3, 11):
     import tomllib
     from tomllib import TOMLDecodeError
@@ -236,7 +242,7 @@ in gaps from the default values.
 
 
 @dataclass(frozen=True)
-class Flora:
+class Flora(PandasExporter):
     """A dataclass providing trait data on collection of plant functional types.
 
     A flora provides trait data on the complete collection of plant functional types
@@ -258,10 +264,10 @@ class Flora:
     pfts: InitVar[Sequence[type[PlantFunctionalTypeStrict]]]
     r"""A sequence of plant functional type instances to include in the Flora."""
 
-    # A class variable setting the attribute names of traits.
-    trait_attrs: ClassVar[list[str]] = [
+    # A class variable setting the names of PFT traits held as arrays.
+    array_attrs: ClassVar[tuple[str, ...]] = tuple(
         f.name for f in fields(PlantFunctionalTypeStrict)
-    ]
+    )
 
     # Populated post init
     # - trait arrays
@@ -342,7 +348,7 @@ class Flora:
         object.__setattr__(self, "_n_stems", len(pfts))
 
         # Populate the trait attributes with arrays
-        for pft_field in self.trait_attrs:
+        for pft_field in self.array_attrs:
             object.__setattr__(
                 self, pft_field, np.array([getattr(pft, pft_field) for pft in pfts])
             )
@@ -432,16 +438,18 @@ class Flora:
         # Get the indices for the cohort PFT names in the flora PFT data
         pft_index = [self.pft_indices[str(nm)] for nm in pft_names]
 
-        # For each trait, get that attribute from the Flora, extract the values
-        # matching the pft_names and pass that into the StemTraits constructor.
-
+        # For each trait, get that attribute from the Flora, extract the values matching
+        # the pft_names and pass that into the StemTraits constructor. Validation is
+        # turned off here, because the creation method guarantees the data is properly
+        # formatted.
         return StemTraits(
-            **{trt: getattr(self, trt)[pft_index] for trt in self.trait_attrs}
+            **{trt: getattr(self, trt)[pft_index] for trt in self.array_attrs},
+            validate=False,
         )
 
 
 @dataclass()
-class StemTraits:
+class StemTraits(PandasExporter, CohortMethods):
     """A dataclass for stem traits.
 
     This dataclass is used to provide arrays of plant functional type (PFT) traits
@@ -457,9 +465,9 @@ class StemTraits:
     """
 
     # A class variable setting the attribute names of traits.
-    trait_attrs: ClassVar[list[str]] = [
+    array_attrs: ClassVar[tuple[str, ...]] = tuple(
         f.name for f in fields(PlantFunctionalTypeStrict)
-    ]
+    )
 
     # Instance trait attributes
     name: NDArray[np.str_]
@@ -505,9 +513,18 @@ class StemTraits:
     z_max_prop: NDArray[np.float64]
     """Proportion of stem height at which maximum crown radius is found."""
 
+    validate: bool = True
+    """Boolean flag to control validation of the input array sizes."""
+
     # Post init attributes
     _n_stems: int = field(init=False)
 
     def __post_init__(self) -> None:
         """Post init validation and attribute setting."""
+
+        if self.validate:
+            _validate_demography_array_arguments(
+                trait_args={k: getattr(self, k) for k in self.array_attrs}
+            )
+
         self._n_stems = len(self.a_hd)

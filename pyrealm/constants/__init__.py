@@ -17,8 +17,8 @@ from pyrealm.constants.pmodel_const import PModelConst
 from pyrealm.constants.tmodel_const import TModelTraits
 
 __all__ = [
-    "ConstantsClass",
     "C3C4Const",
+    "ConstantsClass",
     "CoreConst",
     "IsotopesConst",
     "PModelConst",
