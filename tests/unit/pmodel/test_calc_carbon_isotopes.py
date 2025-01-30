@@ -16,8 +16,13 @@ from numpy.testing import assert_allclose
 @pytest.mark.parametrize(
     argnames=["pmodelenv_args", "pmodel_args", "expected"],
     argvalues=[
-        (  # Single site, C3 prentice14
-            dict(tc=20, patm=101325, co2=400, vpd=1000),
+        pytest.param(
+            dict(
+                tc=np.array([20]),
+                patm=np.array([101325]),
+                co2=np.array([400]),
+                vpd=np.array([1000]),
+            ),
             dict(method_optchi="prentice14"),
             dict(
                 Delta13C_simple=21.481,
@@ -27,9 +32,16 @@ from numpy.testing import assert_allclose
                 d14C_leaf=-19.619,
                 d13C_wood=-25.551,
             ),
+            id="Single site, C3 prentice14",
         ),
-        (  # Single site, C3 lavergne20
-            dict(tc=20, patm=101325, co2=400, vpd=1000, theta=0.5),
+        pytest.param(
+            dict(
+                tc=np.array([20]),
+                patm=np.array([101325]),
+                co2=np.array([400]),
+                vpd=np.array([1000]),
+                theta=np.array([0.5]),
+            ),
             dict(method_optchi="lavergne20_c3"),
             dict(
                 Delta13C_simple=22.521,
@@ -39,9 +51,15 @@ from numpy.testing import assert_allclose
                 d14C_leaf=-21.498,
                 d13C_wood=-26.501,
             ),
+            id="Single site, C3 lavergne20",
         ),
-        (  # Single site, C4
-            dict(tc=20, patm=101325, co2=400, vpd=1000),
+        pytest.param(  # Single site, C4
+            dict(
+                tc=np.array([20]),
+                patm=np.array([101325]),
+                co2=np.array([400]),
+                vpd=np.array([1000]),
+            ),
             dict(method_optchi="c4"),
             dict(
                 Delta13C_simple=6.288,
@@ -51,9 +69,15 @@ from numpy.testing import assert_allclose
                 d14C_leaf=6.543,
                 d13C_wood=-12.496,
             ),
+            id="# Single site, C4",
         ),
-        (  # Single site, C4 no gamma
-            dict(tc=20, patm=101325, co2=400, vpd=1000),
+        pytest.param(
+            dict(
+                tc=np.array([20]),
+                patm=np.array([101325]),
+                co2=np.array([400]),
+                vpd=np.array([1000]),
+            ),
             dict(method_optchi="c4_no_gamma"),
             dict(
                 Delta13C_simple=7.272,
@@ -63,6 +87,7 @@ from numpy.testing import assert_allclose
                 d14C_leaf=4.589,
                 d13C_wood=-13.459,
             ),
+            id="Single site, C4 no gamma",
         ),
     ],
 )

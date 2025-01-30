@@ -28,8 +28,6 @@ def test_QuantumYieldSandoval(values):
     from pyrealm.pmodel import PModelEnvironment
     from pyrealm.pmodel.quantum_yield import QuantumYieldSandoval
 
-    # The reference implementation uses the J1942 derivation for the modified arrhenius
-    # equation.
     env = PModelEnvironment(
         tc=values["temp"].to_numpy(),
         patm=101325,
@@ -37,7 +35,7 @@ def test_QuantumYieldSandoval(values):
         co2=400,
         mean_growth_temperature=values["mean_gdd_temp"].to_numpy(),
         aridity_index=values["aridity_index"].to_numpy(),
-        pmodel_const=PModelConst(modified_arrhenius_mode="J1942"),
+        pmodel_const=PModelConst(),
     )
 
     # Calculate kphio for that environment

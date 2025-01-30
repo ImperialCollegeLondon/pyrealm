@@ -30,8 +30,9 @@ from pyrealm.pmodel import (
     PModel,
     PModelEnvironment,
     SubdailyScaler,
-    calc_ftemp_arrh,
 )
+from pyrealm.pmodel.arrhenius import ARRHENIUS_METHOD_REGISTRY, ArrheniusFactorABC
+from pyrealm.pmodel.functions import calculate_simple_arrhenius_factor
 from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY, OptimalChiABC
 from pyrealm.pmodel.quantum_yield import (
     QUANTUM_YIELD_CLASS_REGISTRY,
@@ -250,6 +251,7 @@ class SubdailyPModel:
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
         method_kphio: str = "temperature",
+        method_arrhenius: str = "simple",
         reference_kphio: float | NDArray | None = None,
         alpha: float = 1 / 15,
         allow_holdover: bool = False,
@@ -296,6 +298,15 @@ class SubdailyPModel:
 
         self.method_kphio: str = method_kphio
         """The method used to calculate kphio."""
+
+        # -----------------------------------------------------------------------
+        # Set up the calculation of Arrhenius scaling
+        # -----------------------------------------------------------------------
+        if method_arrhenius not in ARRHENIUS_METHOD_REGISTRY:
+            raise ValueError(f"Unknown Arrhenius scaling method: {method_arrhenius}")
+
+        self.method_arrhenius: str = method_arrhenius
+        """The method used to calculate Arrhenius factors."""
 
         # 1) Generate a PModelEnvironment containing the average conditions within the
         #    daily acclimation window. This daily average environment also needs to also
@@ -361,6 +372,7 @@ class SubdailyPModel:
             method_kphio=daily_method_kphio,
             method_optchi=method_optchi,
             method_jmaxlim=method_jmaxlim,
+            method_arrhenius=method_arrhenius,
             reference_kphio=daily_reference_kphio,
         )
         r"""P Model predictions for the daily acclimation conditions.
@@ -386,12 +398,27 @@ class SubdailyPModel:
         )
 
         # 4) Calculate the optimal jmax and vcmax at 25°C
-        tk_acclim = pmodel_env_acclim.tc + self.env.core_const.k_CtoK
-        self.vcmax25_opt = self.pmodel_acclim.vcmax * (
-            1 / calc_ftemp_arrh(tk_acclim, self.env.pmodel_const.subdaily_vcmax25_ha)
+        # - get an instance of the requested Arrhenius scaling method
+        arrhenius_daily: ArrheniusFactorABC = ARRHENIUS_METHOD_REGISTRY[
+            self.method_arrhenius
+        ](
+            env=self.pmodel_acclim.env,
+            reference_temperature=self.pmodel_acclim.env.pmodel_const.plant_T_ref,
+            core_const=self.env.core_const,
         )
-        self.jmax25_opt = self.pmodel_acclim.jmax * (
-            1 / calc_ftemp_arrh(tk_acclim, self.env.pmodel_const.subdaily_jmax25_ha)
+
+        # - Calculate and apply the scaling factors.
+        self.vcmax25_opt = (
+            self.pmodel_acclim.vcmax
+            / arrhenius_daily.calculate_arrhenius_factor(
+                coefficients=self.env.pmodel_const.arrhenius_vcmax
+            )
+        )
+        self.jmax25_opt = (
+            self.pmodel_acclim.jmax
+            / arrhenius_daily.calculate_arrhenius_factor(
+                coefficients=self.env.pmodel_const.arrhenius_jmax
+            )
         )
 
         """Instantaneous optimal :math:`x_{i}`, :math:`V_{cmax}` and :math:`J_{max}`"""
@@ -464,19 +491,26 @@ class SubdailyPModel:
 
         # 7) Adjust subdaily jmax25 and vcmax25 back to jmax and vcmax given the
         #    actual subdaily temperatures.
-        subdaily_tk = self.env.tc + self.env.core_const.k_CtoK
+        arrhenius_subdaily: ArrheniusFactorABC = ARRHENIUS_METHOD_REGISTRY[
+            self.method_arrhenius
+        ](
+            env=self.env,
+            reference_temperature=self.pmodel_acclim.env.pmodel_const.plant_T_ref,
+            core_const=self.env.core_const,
+        )
+
         self.subdaily_vcmax: NDArray[np.float64] = (
             self.subdaily_vcmax25
-            * calc_ftemp_arrh(
-                tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_vcmax25_ha
+            * arrhenius_subdaily.calculate_arrhenius_factor(
+                coefficients=self.env.pmodel_const.arrhenius_vcmax
             )
         )
         """Estimated subdaily :math:`V_{cmax}`."""
 
         self.subdaily_jmax: NDArray[np.float64] = (
             self.subdaily_jmax25
-            * calc_ftemp_arrh(
-                tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_jmax25_ha
+            * arrhenius_subdaily.calculate_arrhenius_factor(
+                coefficients=self.env.pmodel_const.arrhenius_jmax
             )
         )
         """Estimated subdaily :math:`J_{max}`."""
@@ -681,11 +715,15 @@ class SubdailyPModel_JAMES:
 
         # Calculate the optimal jmax and vcmax at 25°C
         tk_acclim = temp_acclim + self.env.core_const.k_CtoK
-        self.vcmax25_opt = self.pmodel_acclim.vcmax * (
-            1 / calc_ftemp_arrh(tk_acclim, self.env.pmodel_const.subdaily_vcmax25_ha)
+        self.vcmax25_opt = self.pmodel_acclim.vcmax / calculate_simple_arrhenius_factor(
+            tk=tk_acclim,
+            tk_ref=self.env.pmodel_const.plant_T_ref + self.env.core_const.k_CtoK,
+            ha=self.env.pmodel_const.arrhenius_vcmax["simple"]["ha"],
         )
-        self.jmax25_opt = self.pmodel_acclim.jmax * (
-            1 / calc_ftemp_arrh(tk_acclim, self.env.pmodel_const.subdaily_jmax25_ha)
+        self.jmax25_opt = self.pmodel_acclim.jmax / calculate_simple_arrhenius_factor(
+            tk=tk_acclim,
+            tk_ref=self.env.pmodel_const.plant_T_ref + self.env.core_const.k_CtoK,
+            ha=self.env.pmodel_const.arrhenius_jmax["simple"]["ha"],
         )
 
         # Calculate the realised values from the instantaneous optimal values
@@ -734,16 +772,20 @@ class SubdailyPModel_JAMES:
 
         self.subdaily_vcmax: NDArray[np.float64] = (
             self.subdaily_vcmax25
-            * calc_ftemp_arrh(
-                tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_vcmax25_ha
+            * calculate_simple_arrhenius_factor(
+                tk=subdaily_tk,
+                tk_ref=self.env.pmodel_const.plant_T_ref + self.env.core_const.k_CtoK,
+                ha=self.env.pmodel_const.arrhenius_vcmax["simple"]["ha"],
             )
         )
         """Estimated subdaily :math:`V_{cmax}`."""
 
         self.subdaily_jmax: NDArray[np.float64] = (
             self.subdaily_jmax25
-            * calc_ftemp_arrh(
-                tk=subdaily_tk, ha=self.env.pmodel_const.subdaily_jmax25_ha
+            * calculate_simple_arrhenius_factor(
+                tk=subdaily_tk,
+                tk_ref=self.env.pmodel_const.plant_T_ref + self.env.core_const.k_CtoK,
+                ha=self.env.pmodel_const.arrhenius_jmax["simple"]["ha"],
             )
         )
         """Estimated subdaily :math:`J_{max}`."""

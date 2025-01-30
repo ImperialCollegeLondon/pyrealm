@@ -11,9 +11,7 @@ def quantum_yield_env():
     from pyrealm.constants import PModelConst
     from pyrealm.pmodel import PModelEnvironment
 
-    # The referene implementation uses the J1942 derivation for the arrhenius
-    # calculation
-    pmodel_const = PModelConst(modified_arrhenius_mode="J1942")
+    pmodel_const = PModelConst()
 
     return PModelEnvironment(
         tc=np.array([5, 10, 15, 20, 25, 30]),
@@ -120,14 +118,14 @@ def test_QuantumYieldTemperature(
             np.array(
                 [0.02848466, 0.05510828, 0.06099888, 0.07537036, 0.02231382, 0.03026185]
             ),
-            id="default",
+            id="default_kphio",
         ),
         pytest.param(
             1 / 8,
             np.array(
                 [0.03204524, 0.06199681, 0.06862374, 0.08479165, 0.02510305, 0.03404458]
             ),
-            id="provided",
+            id="provided_kphio",
         ),
     ),
 )

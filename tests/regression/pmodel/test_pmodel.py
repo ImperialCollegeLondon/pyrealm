@@ -105,11 +105,16 @@ def test_calc_density_h2o(values, tc, patm, context_manager, expvals):
     ],
 )
 def test_calc_ftemp_arrh(values, tk, expvars):
-    """Test the calc_ftemp_arrh function."""
-    from pyrealm.pmodel import calc_ftemp_arrh
+    """Test calc_ftemp_arrh outputs.
 
-    ret = calc_ftemp_arrh(tk=values[tk], ha=values["KattgeKnorr_ha"])
-    assert_allclose(ret, values[expvars], rtol=1e-05)
+    Test against the pyrealm calculate_simple_arrhenius_factor function.
+    """
+    from pyrealm.pmodel import calculate_simple_arrhenius_factor
+
+    ret = calculate_simple_arrhenius_factor(
+        tk=values[tk], tk_ref=298.15, ha=values["KattgeKnorr_ha"]
+    )
+    assert np.allclose(ret, values[expvars])
 
 
 # ------------------------------------------
@@ -131,24 +136,22 @@ def test_calc_ftemp_inst_vcmax(values, tc, expvars):
     function, but check the predictions match to the rpmodel outputs for this component.
     """
     from pyrealm.constants import CoreConst, PModelConst
-    from pyrealm.pmodel.functions import calc_modified_arrhenius_factor
+    from pyrealm.pmodel.functions import calculate_kattge_knorr_arrhenius_factor
 
-    pmodel_const = PModelConst(modified_arrhenius_mode="M2002")
+    pmodel_const = PModelConst()
     core_const = CoreConst()
 
-    kk_a, kk_b, kk_ha, kk_hd = pmodel_const.kattge_knorr_kinetics
-
-    # Calculate entropy as a function of temperature _in °C_
-    kk_deltaS = kk_a + kk_b * values[tc]
+    cf = pmodel_const.arrhenius_vcmax["kattge_knorr"]
 
     # Calculate the arrhenius factor
-    ret = calc_modified_arrhenius_factor(
-        tk=values[tc] + core_const.k_CtoK,
-        Ha=kk_ha,
-        Hd=kk_hd,
+    ret = calculate_kattge_knorr_arrhenius_factor(
+        tk_leaf=values[tc] + core_const.k_CtoK,
         tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
-        mode=pmodel_const.modified_arrhenius_mode,
-        deltaS=kk_deltaS,
+        tc_growth=values[tc],  # This is an odd thing for rpmodel to do
+        ha=cf["ha"],
+        hd=cf["hd"],
+        entropy_intercept=cf["entropy_intercept"],
+        entropy_slope=cf["entropy_slope"],
         core_const=core_const,
     )
 
@@ -466,7 +469,7 @@ def test_optimal_chi(values, tc, patm, co2, vpd, method, context_manager, expval
 def test_jmax_limitation(
     request, values, ftemp_kphio, jmax_method, tc, patm, co2, vpd, c4
 ):
-    """Test the JMaxLimitation class."""
+    """Test the JMaxLimitation implementation class."""
 
     # This test is tricky because the internals of rpmodel and pyrealm differ
     # - rpmodel has a set of functions lue_vcmax_xxx, which return LUE and
@@ -480,7 +483,8 @@ def test_jmax_limitation(
     # - these have all been synchronised so that anything with type 'mx' or 'ar'
     #   used the tc_ar input
 
-    from pyrealm.pmodel import JmaxLimitation, PModelEnvironment
+    from pyrealm.pmodel import PModelEnvironment
+    from pyrealm.pmodel.jmax_limitation import JMAX_LIMITATION_CLASS_REGISTRY
     from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
     from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
 
@@ -500,7 +504,7 @@ def test_jmax_limitation(
     OptChiClass = OPTIMAL_CHI_CLASS_REGISTRY[oc_method]
     optchi = OptChiClass(env)
 
-    jmax = JmaxLimitation(optchi, method=jmax_method)
+    jmax = JMAX_LIMITATION_CLASS_REGISTRY[jmax_method](optchi=optchi)
 
     # Find the expected values, extracting the combination from the request
     name = request.node.name
@@ -615,7 +619,11 @@ def test_pmodelenvironment_exception(inputs, context_manager):
 
 @pytest.fixture(scope="module")
 def pmodelenv(values):
-    """Fixture to create PModelEnvironments with scalar and array inputs."""
+    """Fixture to create PModelEnvironments with scalar and array inputs.
+
+    The mean growth temperature is also set to air temperature here to mirror the use of
+    the implementation of Kattge Knorr Arrhenius scaling in rpmodel.
+    """
 
     from pyrealm.pmodel import PModelEnvironment
 
@@ -624,6 +632,7 @@ def pmodelenv(values):
         vpd=values["vpd_sc"],
         co2=values["co2_sc"],
         patm=values["patm_sc"],
+        mean_growth_temperature=values["tc_sc"],
     )
 
     ar = PModelEnvironment(
@@ -631,6 +640,7 @@ def pmodelenv(values):
         vpd=values["vpd_ar"],
         co2=values["co2_ar"],
         patm=values["patm_ar"],
+        mean_growth_temperature=values["tc_ar"],
     )
 
     return {"sc": sc, "ar": ar}
@@ -664,6 +674,7 @@ def test_pmodel_class_c3(
         pmodelenv[environ],
         method_kphio=method_kphio,
         method_jmaxlim=luevcmax_method,
+        method_arrhenius="kattge_knorr",
         reference_kphio=0.05,
     )
 
@@ -785,8 +796,9 @@ def test_pmodel_class_c4(
     ret = PModel(
         pmodelenv[environ],
         method_kphio=method_kphio,
-        method_jmaxlim="simple",  # enforced in rpmodel.
+        method_jmaxlim="none",  # enforced in rpmodel.
         method_optchi="c4",
+        method_arrhenius="kattge_knorr",
         reference_kphio=0.05 * kf,  # See note above
     )
 

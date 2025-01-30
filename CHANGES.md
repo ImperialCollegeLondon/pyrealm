@@ -13,15 +13,40 @@ worked through. The changes below are provisional.
   P Model, using the new `pyrealm.pmodel.quantum_yield` module. This module now provides
   an expandable set of implementations of the quantum yield calculation, and currently
   supports the previous fixed and temperature dependent $\phi_0$ approaches but also
-  David Sandoval's extentsion for estimating the impact of water stress on $\phi_0$.
+  David Sandoval's extension for estimating the impact of water stress on $\phi_0$.
 
   **Breaking change** The signatures of the `PModel` and `SubdailyPModel` classes have
   changed: the arguments `kphio` and `do_ftemp_kphio` have been replaced by
   `method_kphio` and `reference_kphio`.
 
+- The implementation of $J_{max}$ and $V_{cmax}$ limitation has been updated to provide
+  a more flexible and expandable system. The changes are mostly internal, but there are
+  two **breaking changes**:
+
+  - The PModel option `method_jmaxlim = 'c4'` has been removed - it only ever generated
+    an instruction to use the settings `method_optchi='c4'` and
+    `method_jmaxlim='simple'`  to duplicate the `rpmodel` argument `method_jmaxlim='c4'`.
+  - The PModel option `method_jmaxlim = 'simple'` has been renamed to
+    `method_jmaxlim ='none'`, which is more informative!
+
+- The implementations of `PModel` and `SubdailyPModel` in version 1.0.0 used different
+  Arrhenius temperature scaling relationships for $V_{cmax}$ and $J_{max}$. `PModel`
+  followed `rpmodel` in using an implementation of {cite:t}`Kattge:2007db`'s peaked
+  Arrhenius model, where `SubdailyPModel` used a simple unpeaked form. Both P Model
+  implementations now take an explicit setting for the `method_arrhenius` and we provide
+  the `simple` and `kattge_knorr` options. The available methods are likely to change -
+  and we only recommend `method_arrhenius=simple` at present - but this API for setting
+  this option should be stable.
+
+  **Breaking change** The API has changed as noted above - critically, using default
+  settings, the reported values for $V_{cmax25}$ and $J_{max25}$ using `PModel` will
+  change between v1 and v2, with the shift from `kattge_knorr` to `simple` as the
+  default factors.
+
 - The functions `calc_ftemp_kphio` and `calc_ftemp_inst_vcmax` provided narrow use cases
-  with code duplication. They have been replaced with a broader
-  `calc_modified_arrhenius_factor` function.
+  with code duplication. They have been replaced by two broader Arrhenius functions:
+  `calculate_simple_arrhenius_factor` and `calculate_kattge_knorr_arrhenius_factor` (see
+  also the point above).
 
 - The first components in the demography module, providing an integrated set of
   submodules that provide: plant functional types, size-structured cohorts, plant

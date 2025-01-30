@@ -22,7 +22,7 @@ from pyrealm.core.utilities import (
     evaluate_horner_polynomial,
     summarize_attrs,
 )
-from pyrealm.pmodel.functions import calc_modified_arrhenius_factor
+from pyrealm.pmodel.functions import calculate_kattge_knorr_arrhenius_factor
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
 QUANTUM_YIELD_CLASS_REGISTRY: dict[str, type[QuantumYieldABC]] = {}
@@ -45,7 +45,7 @@ class QuantumYieldABC(ABC):
 
     This provides an abstract base class for the implementation of alternative
     approaches to calculating the the intrinsic quantum yield of photosynthesis. All
-    implementations estimate the :math:`\phi_{0} following values, which is then stored
+    implementations estimate the :math:`\phi_{0}` following values, which is then stored
     in the ``kphio`` attribute of the resulting class instance.
 
     The abstract base class requires that implementations of specific approaches defines
@@ -332,20 +332,27 @@ class QuantumYieldSandoval(
         # Calculate the optimal temperature to be used as the reference temperature in
         # the modified Arrhenius calculation
         Topt = Hd / (deltaS - self.env.core_const.k_R * np.log(Ha / (Hd - Ha)))
-
+        tk_leaf = self.env.tc + self.env.core_const.k_CtoK
         # Calculate peak kphio given the aridity index
         kphio_peak = self.peak_quantum_yield(aridity=self.env.aridity_index)
 
         # Calculate the modified Arrhenius factor using the
-        f_kphio = calc_modified_arrhenius_factor(
-            tk=self.env.tc + self.env.core_const.k_CtoK,
-            Ha=Ha,
-            Hd=Hd,
-            deltaS=deltaS,
+        f_kphio = calculate_kattge_knorr_arrhenius_factor(
+            tk_leaf=tk_leaf,
             tk_ref=Topt,
-            mode=self.env.pmodel_const.modified_arrhenius_mode,
+            tc_growth=self.env.mean_growth_temperature,
+            ha=Ha,
+            hd=Hd,  # type: ignore[arg-type]  # Not an array in this function
+            entropy_intercept=a_ent,
+            entropy_slope=b_ent,
             core_const=self.env.core_const,
         )
 
         # Apply the factor and store it.
-        self.kphio = kphio_peak * f_kphio
+
+        # The Sandoval implementation currently includes an additional factor on kphio
+        # calculated as (tk_leaf / Topt). This might be the Murphy et al correction, so
+        # might be removed, but at present this term is needed to match the R regression
+        # test values
+
+        self.kphio = kphio_peak * f_kphio * (tk_leaf / Topt)
