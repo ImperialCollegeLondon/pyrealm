@@ -28,6 +28,7 @@ Constants
 # flatten the namespace for the main public components and setup.cfg applies
 # # to the whole file.
 
+from pyrealm.core.scaler import SubdailyScaler
 from pyrealm.pmodel.competition import (
     C3C4Competition,
     calculate_tree_proportion,
@@ -48,7 +49,6 @@ from pyrealm.pmodel.functions import (
 from pyrealm.pmodel.isotopes import CalcCarbonIsotopes
 from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
-from pyrealm.pmodel.scaler import SubdailyScaler
 from pyrealm.pmodel.subdaily import (
     SubdailyPModel,
     convert_pmodel_to_subdaily,
