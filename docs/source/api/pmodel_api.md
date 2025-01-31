@@ -94,15 +94,6 @@ language_info:
     :members:
 ```
 
-## The {mod}`~pyrealm.pmodel.scaler` submodule
-
-```{eval-rst}
-.. automodule:: pyrealm.pmodel.scaler
-    :autosummary:
-    :members:
-    :private-members:
-```
-
 ## The {mod}`~pyrealm.pmodel.subdaily` submodule
 
 ```{eval-rst}
