@@ -82,7 +82,7 @@ def test_FSPModel_corr(be_vie_data_components, data_args):
     """
 
     from pyrealm.pmodel import SubdailyScaler
-    from pyrealm.pmodel.subdaily import SubdailyPModel
+    from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
 
     env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components.get(**data_args)
 
@@ -94,7 +94,7 @@ def test_FSPModel_corr(be_vie_data_components, data_args):
     )
 
     # Run as a subdaily model using the kphio used in the reference implementation.
-    subdaily_pmodel = SubdailyPModel(
+    subdaily_pmodel = SubdailyPModelNew(
         env=env,
         ppfd=ppfd,
         fapar=fapar,
@@ -118,7 +118,7 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
     """Test the functionality that allows the subdaily model to restart in blocks."""
 
     from pyrealm.pmodel import SubdailyScaler
-    from pyrealm.pmodel.subdaily import SubdailyPModel
+    from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
 
     # Run all in one model
     env, ppfd, fapar, datetime, _ = be_vie_data_components.get(
@@ -133,7 +133,7 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
     )
 
     # Run as a subdaily model using the kphio used in the reference implementation.
-    all_in_one_subdaily_pmodel = SubdailyPModel(
+    all_in_one_subdaily_pmodel = SubdailyPModelNew(
         env=env,
         ppfd=ppfd,
         fapar=fapar,
@@ -155,7 +155,7 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
     )
 
     # Run as a subdaily model using the kphio used in the reference implementation.
-    part_1_subdaily_pmodel = SubdailyPModel(
+    part_1_subdaily_pmodel = SubdailyPModelNew(
         env=env1,
         ppfd=ppfd1,
         fapar=fapar1,
@@ -177,7 +177,7 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
     )
 
     # Run as a subdaily model using the kphio used in the reference implementation.
-    part_2_subdaily_pmodel = SubdailyPModel(
+    part_2_subdaily_pmodel = SubdailyPModelNew(
         env=env2,
         ppfd=ppfd2,
         fapar=fapar2,
@@ -185,9 +185,9 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
         fs_scaler=fsscaler2,
         allow_holdover=True,
         previous_realised=(
-            part_1_subdaily_pmodel.optimal_chi.xi[-1],
-            part_1_subdaily_pmodel.vcmax25_real[-1],
-            part_1_subdaily_pmodel.jmax25_real[-1],
+            part_1_subdaily_pmodel.optchi.xi[-1],
+            part_1_subdaily_pmodel.vcmax25_daily_realised[-1],
+            part_1_subdaily_pmodel.jmax25_daily_realised[-1],
         ),
     )
 
@@ -208,7 +208,7 @@ def test_FSPModel_dimensionality(be_vie_data, ndims):
     """
 
     from pyrealm.pmodel import PModelEnvironment, SubdailyScaler
-    from pyrealm.pmodel.subdaily import SubdailyPModel
+    from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
 
     datetime = be_vie_data["time"].to_numpy()
 
@@ -239,7 +239,7 @@ def test_FSPModel_dimensionality(be_vie_data, ndims):
     fapar_vals[0] = 1.0
 
     # Fast slow model
-    subdaily_pmodel = SubdailyPModel(
+    subdaily_pmodel = SubdailyPModelNew(
         env=env,
         fs_scaler=fsscaler,
         fapar=fapar_vals * np.ones(array_dims).transpose(),
@@ -263,7 +263,7 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
     """
 
     from pyrealm.pmodel import SubdailyScaler
-    from pyrealm.pmodel.subdaily import SubdailyPModel
+    from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
 
     env, ppfd, fapar, datetime, _ = be_vie_data_components.get()
 
@@ -275,7 +275,7 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
     )
 
     # Run as a subdaily model and it should complete.
-    _ = SubdailyPModel(
+    _ = SubdailyPModelNew(
         env=env,
         fs_scaler=fsscaler,
         fapar=fapar,
@@ -289,8 +289,8 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
 def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
     """Tests the convert_pmodel_to_subdaily method."""
 
-    from pyrealm.pmodel import PModel, SubdailyScaler
-    from pyrealm.pmodel.subdaily import SubdailyPModel, convert_pmodel_to_subdaily
+    from pyrealm.pmodel.new_pmodel import PModelNew, SubdailyPModelNew
+    from pyrealm.pmodel.subdaily import SubdailyScaler
 
     env, ppfd, fapar, datetime, _ = be_vie_data_components.get()
 
@@ -302,7 +302,7 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
     )
 
     # Run as a subdaily model
-    direct = SubdailyPModel(
+    direct = SubdailyPModelNew(
         env=env,
         fs_scaler=fsscaler,
         fapar=fapar,
@@ -312,15 +312,14 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
     )
 
     # Convert a standard model
-    standard_model = PModel(
+    standard_model = PModelNew(
+        fapar=fapar,
+        ppfd=ppfd,
         env=env,
         method_optchi=method_optchi,
     )
-    standard_model.estimate_productivity(fapar=fapar, ppfd=ppfd)
 
-    converted = convert_pmodel_to_subdaily(
-        pmodel=standard_model, fs_scaler=fsscaler, allow_holdover=True
-    )
+    converted = standard_model.to_subdaily(fs_scaler=fsscaler, allow_holdover=True)
 
     assert np.allclose(converted.gpp, direct.gpp, equal_nan=True)
 
@@ -438,7 +437,7 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
         ),
     ],
 )
-def test_FSPModel_incomplete_day_behaviour(
+def test_SubdailyPModel_incomplete_day_behaviour(
     mocker,
     be_vie_data_components,
     incomplete,
@@ -491,7 +490,8 @@ def test_FSPModel_incomplete_day_behaviour(
       calculations to use the actual data.
     """
 
-    from pyrealm.pmodel.subdaily import SubdailyPModel, SubdailyScaler
+    from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
+    from pyrealm.pmodel.subdaily import SubdailyScaler
 
     def model_fitter(env, ppfd, fapar, datetime):
         # Get the fast slow scaler and set window
@@ -502,7 +502,7 @@ def test_FSPModel_incomplete_day_behaviour(
         )
 
         # Run as a subdaily model
-        return SubdailyPModel(
+        return SubdailyPModelNew(
             env=env,
             ppfd=ppfd,
             fapar=fapar,
