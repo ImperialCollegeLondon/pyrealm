@@ -463,6 +463,45 @@ class PModelNew(PModelABC):
                 np.nan,
             )
 
+    def to_subdaily(
+        self,
+        fs_scaler: SubdailyScaler,
+        alpha: float = 1 / 15,
+        allow_holdover: bool = False,
+        fill_kind: str = "previous",
+    ) -> SubdailyPModelNew:
+        r"""Convert a standard PModel to a subdaily P Model.
+
+        This method converts a :class:`~pyrealm.pmodel.pmodel.PModel` instance to a
+        to a :class:`~pyrealm.pmodel.subdaily.SubdailyPModel` instance with the same
+        settings.
+
+        Args:
+            fs_scaler: A SubdailyScaler instance giving the acclimation window for the
+                subdaily model.
+            alpha: The :math:`\alpha` weight.
+            allow_holdover: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect`
+            function be allowed to hold over values to fill missing values.
+            fill_kind: The approach used to fill daily realised values to the subdaily
+            timescale, currently one of 'previous' or 'linear'.
+        """
+        # Check that productivity has been estimated
+
+        return SubdailyPModelNew(
+            env=self.env,
+            fapar=self.fapar,
+            ppfd=self.ppfd,
+            method_optchi=self.method_optchi,
+            method_arrhenius=self.method_arrhenius,
+            method_jmaxlim=self.method_jmaxlim,
+            method_kphio=self.method_kphio,
+            reference_kphio=self.kphio.reference_kphio,
+            fs_scaler=fs_scaler,
+            alpha=alpha,
+            allow_holdover=allow_holdover,
+            fill_kind=fill_kind,
+        )
+
 
 class SubdailyPModelNew(PModelABC):
     r"""Fit a P Model incorporating fast and slow photosynthetic responses.
@@ -636,6 +675,9 @@ class SubdailyPModelNew(PModelABC):
         r"""Realised daily responses in :math:`\xi`"""
 
         # xi	self.pmodel_acclim.optchi.xi - add a getter?	subdaily_xi
+
+        # Fit the model
+        self._fit_model()
 
     def _fit_model(self) -> None:
         # Check that the length of the fast slow scaler is congruent with the
