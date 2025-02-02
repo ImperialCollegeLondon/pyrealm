@@ -51,7 +51,7 @@ class PModelABC(ABC):
             calculation method.
     """
 
-    _data_attributes: list[tuple[str, str]]
+    _data_attributes: tuple[tuple[str, str], ...]
     """Data attributes included in the summarize table."""
 
     def __init__(
@@ -88,52 +88,65 @@ class PModelABC(ABC):
         (:math:`f_{APAR}`, -)."""
 
         # -----------------------------------------------------------------------
-        # Check the method options for optimal chi
+        # Optimal Chi method setup
         # -----------------------------------------------------------------------
-        if method_optchi not in OPTIMAL_CHI_CLASS_REGISTRY:
-            raise ValueError(f"Unknown optimal chi estimation method: {method_optchi}")
 
-        self.method_optchi = method_optchi
+        self.method_optchi: str
         """The method used to calculate optimal chi."""
-        self._optchi_class: type[OptimalChiABC] = OPTIMAL_CHI_CLASS_REGISTRY[
-            self.method_optchi
-        ]
+        self._optchi_class: type[OptimalChiABC]
         """The OptimalChiABC subclass to be used in the model."""
-        self.c4: bool = self._optchi_class.is_c4
-        """Boolean flag showing if the optimal chi method approximates a C3 or C4
-        pathway."""
         self.optchi: OptimalChiABC
         """The optimal chi (:math:`\chi`) calculations for the fitted P Model."""
 
-        # -----------------------------------------------------------------------
-        # Check the method options for quantum yield of photosynthesis (kphio)
-        # -----------------------------------------------------------------------
-        if method_kphio not in QUANTUM_YIELD_CLASS_REGISTRY:
-            raise ValueError(f"Unknown kphio calculation method: {method_kphio}")
+        self._method_setter(
+            method_value_attr="method_optchi",
+            method_class_attr="_optchi_class",
+            method_value=method_optchi,
+            method_registry=OPTIMAL_CHI_CLASS_REGISTRY,
+        )
 
-        self.method_kphio = method_kphio
+        # Set the C4 status
+        self.c4: bool = self._optchi_class.is_c4
+        """Boolean flag showing if the optimal chi method approximates a C3 or C4
+        pathway."""
+
+        # -----------------------------------------------------------------------
+        # Cuantum yield of photosynthesis (kphio) setup
+        # -----------------------------------------------------------------------
+
+        self.method_kphio: str
         """The method used to calculate kphio."""
-        self.reference_kphio = reference_kphio
-        """The value of the the reference kphio to be used in the model."""
-        self._kphio_class: type[QuantumYieldABC] = QUANTUM_YIELD_CLASS_REGISTRY[
-            self.method_kphio
-        ]
+        self._kphio_class: type[QuantumYieldABC]
         """The QuantumYieldABC subclass to be used in the model."""
         self.kphio: QuantumYieldABC
         """The quantum yield (:math:`\phi_0`) calculations for the fitted P Model."""
+
+        self._method_setter(
+            method_value_attr="method_kphio",
+            method_class_attr="_kphio_class",
+            method_value=method_kphio,
+            method_registry=QUANTUM_YIELD_CLASS_REGISTRY,
+        )
+
+        self.reference_kphio = reference_kphio
+        """The value of the the reference kphio to be used in the model."""
+
         # -----------------------------------------------------------------------
-        # Check the method options for Arrhenius scaling
+        # Arrhenius scaling setup
         # -----------------------------------------------------------------------
-        if method_arrhenius not in ARRHENIUS_METHOD_REGISTRY:
-            raise ValueError(f"Unknown Arrhenius scaling method: {method_arrhenius}")
 
         self.method_arrhenius = method_arrhenius
         """The method used to calculate Arrhenius factors."""
 
-        self._arrhenius_class: type[ArrheniusFactorABC] = ARRHENIUS_METHOD_REGISTRY[
-            self.method_arrhenius
-        ]
+        self._arrhenius_class: type[ArrheniusFactorABC]
         """The ArrheniusFactorABC subclass to be used in the model."""
+
+        self._method_setter(
+            method_value_attr="method_arrhenius",
+            method_class_attr="_arrhenius_class",
+            method_value=method_arrhenius,
+            method_registry=ARRHENIUS_METHOD_REGISTRY,
+        )
 
         if self.method_arrhenius != "simple":
             warn(
@@ -142,19 +155,22 @@ class PModelABC(ABC):
             )
 
         # -----------------------------------------------------------------------
-        # Check the method options for Jmax limitation terms
+        # Jmax limitation term setup
         # -----------------------------------------------------------------------
-        if method_jmaxlim not in JMAX_LIMITATION_CLASS_REGISTRY:
-            raise ValueError(f"Unknown Jmax limitation method: {method_jmaxlim}")
 
         self.method_jmaxlim = method_jmaxlim
         """Records the method used to calculate Jmax limitation."""
-        self._jmaxlim_class: type[JmaxLimitationABC] = JMAX_LIMITATION_CLASS_REGISTRY[
-            self.method_jmaxlim
-        ]
+        self._jmaxlim_class: type[JmaxLimitationABC]
         """The ArrheniusFactorABC subclass to be used in the model."""
         self.jmaxlim: JmaxLimitationABC
         """The Jmax limitation terms calculated for the model."""
+
+        self._method_setter(
+            method_value_attr="method_jmaxlim",
+            method_class_attr="_jmaxlim_class",
+            method_value=method_jmaxlim,
+            method_registry=JMAX_LIMITATION_CLASS_REGISTRY,
+        )
 
         # -----------------------------------------------------------------------
         # Define the other model attributes
@@ -279,11 +295,39 @@ class PModelABC(ABC):
 
         summarize_attrs(self, self._data_attributes, dp=dp)
 
+    def _method_setter(
+        self,
+        method_value_attr: str,
+        method_class_attr: str,
+        method_value: str,
+        method_registry: dict,
+    ) -> None:
+        """Validate and set the method class attributes for a PModel method argument.
+
+        This method checks that the provided method value is an option in the registry
+        and then stores both the value and the appropriate method implementation class
+        from the registry.
+
+        Args:
+            method_value_attr: The name of the attribute used to store the selected
+                method name (e.g. ``method_optchi``)
+            method_class_attr: The name of the attribute used to store the resulting
+                selected class that implements the method
+            method_value: The value passed to the method selection argument
+            method_registry: A method registry, providing method class implementations
+                keyed by method name values.
+        """
+        if method_value not in method_registry:
+            raise ValueError(f"Unknown option for {method_value_attr}: {method_value}")
+
+        setattr(self, method_value_attr, method_value)
+        setattr(self, method_class_attr, method_registry[method_value])
+
 
 class PModelNew(PModelABC):
     """New implementation of the PModel."""
 
-    _data_attributes = [
+    _data_attributes = (
         ("lue", "g C mol-1"),
         ("iwue", "µmol mol-1"),
         ("gpp", "µg C m-2 s-1"),
@@ -293,7 +337,7 @@ class PModelNew(PModelABC):
         ("gs", "µmol m-2 s-1"),
         ("jmax", "µmol m-2 s-1"),
         ("jmax25", "µmol m-2 s-1"),
-    ]
+    )
 
     def __init__(
         self,
@@ -510,7 +554,7 @@ class SubdailyPModelNew(PModelABC):
           (xi_real, vcmax25_real, jmax25_real).
     """
 
-    _data_attributes = [
+    _data_attributes = (
         # ("lue", "g C mol-1"),
         # ("iwue", "µmol mol-1"),
         ("gpp", "µg C m-2 s-1"),
@@ -520,7 +564,7 @@ class SubdailyPModelNew(PModelABC):
         # ("gs", "µmol m-2 s-1"),
         ("jmax", "µmol m-2 s-1"),
         ("jmax25", "µmol m-2 s-1"),
-    ]
+    )
 
     def __init__(
         self,
