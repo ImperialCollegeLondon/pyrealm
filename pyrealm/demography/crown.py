@@ -265,7 +265,7 @@ class CrownProfile(PandasExporter):
     """A StemAllometry instance setting the stem allometries for the crown profile."""
     z: NDArray[np.float64]
     """An array of vertical height values at which to calculate crown profiles."""
-    validate: bool = True
+    validate: InitVar[bool] = True
     """Boolean flag to suppress argument validation."""
 
     relative_crown_radius: NDArray[np.float64] = field(init=False)
@@ -287,7 +287,7 @@ class CrownProfile(PandasExporter):
         self,
         stem_traits: StemTraits | Flora,
         stem_allometry: StemAllometry,
-        validate: bool = True,
+        validate: bool,
     ) -> None:
         """Populate crown profile attributes from the traits, allometry and height."""
 

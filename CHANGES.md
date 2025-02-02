@@ -48,7 +48,10 @@ worked through. The changes below are provisional.
   `calculate_simple_arrhenius_factor` and `calculate_kattge_knorr_arrhenius_factor` (see
   also the point above).
 
-- The first components in the demography module, providing an integrated set of
+- The `pyrealm.core.water` module now provides `convert_water_mm_to_moles`,
+  `convert_water_moles_to_mm` and `calculate_water_molar_volume`.
+
+- The first components in the `demography` module, providing an integrated set of
   submodules that provide: plant functional types, size-structured cohorts, plant
   communities, a community canopy model and an implementation of the T Model for
   allocation and growth.

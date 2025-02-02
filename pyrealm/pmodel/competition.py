@@ -304,20 +304,19 @@ class C3C4Competition:
             dp: The number of decimal places used in rounding summary stats.
         """
 
-        attrs = [
+        attrs: tuple[tuple[str, str], ...] = (
             ("frac_c4", "-"),
             ("gpp_c3_contrib", "gC m-2 yr-1"),
             ("gpp_c4_contrib", "gC m-2 yr-1"),
-        ]
+        )
 
         if hasattr(self, "d13C_C3"):
-            attrs.extend(
-                [
-                    ("Delta13C_C3", "permil"),
-                    ("Delta13C_C4", "permil"),
-                    ("d13C_C3", "permil"),
-                    ("d13C_C4", "permil"),
-                ]
+            attrs = (
+                *attrs,
+                ("Delta13C_C3", "permil"),
+                ("Delta13C_C4", "permil"),
+                ("d13C_C3", "permil"),
+                ("d13C_C4", "permil"),
             )
 
         summarize_attrs(self, attrs, dp=dp)

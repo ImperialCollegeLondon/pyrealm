@@ -192,7 +192,7 @@ class QuantumYieldABC(ABC):
             dp: The number of decimal places used in rounding summary stats.
         """
 
-        attrs = [("kphio", "-")]
+        attrs = (("kphio", "-"),)
 
         summarize_attrs(self, attrs, dp=dp)
 
