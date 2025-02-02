@@ -3,6 +3,8 @@ the following pmodel core class:
 
 * :class:`~pyrealm.pmodel.pmodel.PModel`:
     Applies the PModel to locations.
+
+
 """  # noqa D210, D415
 
 from __future__ import annotations
@@ -30,12 +32,12 @@ from pyrealm.pmodel.subdaily import memory_effect
 
 
 class PModelABC(ABC):
-    """Abstract base class for the PModel and SubdailyPModel."""
+    r"""Abstract base class for the PModel and SubdailyPModel.
 
-    """
     Args:
-        env: An instance of
-           :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
+        env: A :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance
+        fapar: The fraction of absorbed photosynthetically active radiation (unitless)
+        ppfd: The photosynthetic photon flux density (µmol m-2 s-1).
         method_kphio: The method to use for calculating the quantum yield
             efficiency of photosynthesis (:math:`\phi_0`, unitless). The method name
             must be included in the
