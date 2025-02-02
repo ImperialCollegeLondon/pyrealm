@@ -217,11 +217,10 @@ def test_pmodel_equivalence():
     """
 
     from pyrealm.pmodel import (
-        PModel,
         PModelEnvironment,
-        SubdailyPModel,
         SubdailyScaler,
     )
+    from pyrealm.pmodel.new_pmodel import PModelNew, SubdailyPModelNew
 
     # One year time sequence at half hour resolution
     datetimes = np.arange(
@@ -254,7 +253,7 @@ def test_pmodel_equivalence():
     )
 
     # Fit the two models
-    fix_subdaily = SubdailyPModel(
+    fix_subdaily = SubdailyPModelNew(
         env=fixed_env,
         method_optchi="prentice14",
         fapar=fapar,
@@ -265,23 +264,20 @@ def test_pmodel_equivalence():
         reference_kphio=1 / 8,
     )
 
-    fix_standard = PModel(
-        env=fixed_env, method_optchi="prentice14", reference_kphio=1 / 8
+    fix_standard = PModelNew(
+        env=fixed_env,
+        fapar=fapar,
+        ppfd=ppfd,
+        method_optchi="prentice14",
+        reference_kphio=1 / 8,
     )
-    fix_standard.estimate_productivity(fapar=fapar, ppfd=ppfd)
 
     # Assert values should be the same, excluding the initial subdaily values before the
     # first observation
     drop_start = slice(25, -1, 1)
-    assert_allclose(
-        fix_standard.jmax[drop_start], fix_subdaily.subdaily_jmax[drop_start]
-    )
-    assert_allclose(
-        fix_standard.jmax25[drop_start], fix_subdaily.subdaily_jmax25[drop_start]
-    )
-    assert_allclose(
-        fix_standard.vcmax[drop_start], fix_subdaily.subdaily_vcmax[drop_start]
-    )
-    assert_allclose(
-        fix_standard.vcmax25[drop_start], fix_subdaily.subdaily_vcmax25[drop_start]
-    )
+
+    for attr in ["jmax", "jmax25", "vcmax", "vcmax25"]:
+        assert_allclose(
+            getattr(fix_standard, attr)[drop_start],
+            getattr(fix_subdaily, attr)[drop_start],
+        )
