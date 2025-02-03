@@ -51,6 +51,7 @@ class BoundsChecker:
     method.
     """
 
+    # TODO - think about these argument names - some unnecessarily terse.
     _defaults: tuple[tuple[str, float, float, str, str], ...] = (
         ("tc", -25, 80, "[]", "°C"),
         ("vpd", 0, 10000, "[]", "Pa"),
@@ -58,10 +59,15 @@ class BoundsChecker:
         ("patm", 30000, 110000, "[]", "Pa"),
         ("fapar", 0, 1, "[]", "-"),
         ("ppfd", 0, 3000, "[]", "-"),
-        ("theta", 0, 0.8, "[]", "m3/m3"),
+        ("theta", 0, 0.8, "[]", "m3 m-3"),
         ("rootzonestress", 0, 1, "[]", "-"),
         ("aridity_index", 0, 50, "[]", "-"),
         ("mean_growth_temperature", 0, 50, "[]", "-"),
+        ("rh", 0, 1, "[]", "-"),
+        ("lat", -90, 90, "[]", "°"),
+        ("sf", 0, 1, "[]", "-"),
+        ("pn", 0, 1000, "[]", "mm day-1"),
+        ("kWm", 0, 1e4, "[]", "mm"),
     )
     """Default bounds data for core forcing variables."""
 
@@ -131,7 +137,7 @@ class BoundsChecker:
         lower_func, upper_func = self._interval_types[var_bounds.interval_type]
 
         # Do the input values contain out of bound values?
-        out_of_bounds = np.logical_and(
+        out_of_bounds = np.logical_xor(
             lower_func(values, var_bounds.lower),
             upper_func(values, var_bounds.upper),
         )

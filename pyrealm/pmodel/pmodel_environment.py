@@ -9,7 +9,8 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst, PModelConst
-from pyrealm.core.utilities import bounds_checker, check_input_shapes, summarize_attrs
+from pyrealm.core.bounds import BoundsChecker
+from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.functions import (
     calc_co2_to_ca,
     calc_gammastar,
@@ -92,19 +93,21 @@ class PModelEnvironment:
         mean_growth_temperature: NDArray[np.float64] | None = None,
         pmodel_const: PModelConst = PModelConst(),
         core_const: CoreConst = CoreConst(),
+        bounds_checker: BoundsChecker = BoundsChecker(),
     ):
         self.shape: tuple = check_input_shapes(tc, vpd, co2, patm)
 
+        self._bounds_checker: BoundsChecker = bounds_checker
+        """The BoundsChecker applied to the environment data."""
+
         # Validate and store the forcing variables
-        self.tc: NDArray[np.float64] = bounds_checker(tc, -25, 80, "[]", "tc", "°C")
+        self.tc: NDArray[np.float64] = bounds_checker.check("tc", tc)
         """The temperature at which to estimate photosynthesis, °C"""
-        self.vpd: NDArray[np.float64] = bounds_checker(vpd, 0, 10000, "[]", "vpd", "Pa")
+        self.vpd: NDArray[np.float64] = bounds_checker.check("vpd", vpd)
         """Vapour pressure deficit, Pa"""
-        self.co2: NDArray[np.float64] = bounds_checker(co2, 0, 1000, "[]", "co2", "ppm")
+        self.co2: NDArray[np.float64] = bounds_checker.check("co2", co2)
         """CO2 concentration, ppm"""
-        self.patm: NDArray[np.float64] = bounds_checker(
-            patm, 30000, 110000, "[]", "patm", "Pa"
-        )
+        self.patm: NDArray[np.float64] = bounds_checker.check("patm", patm)
         """Atmospheric pressure, Pa"""
 
         # Guard against calc_density issues
@@ -161,27 +164,24 @@ class PModelEnvironment:
         if theta is not None:
             # Is the input congruent with the other variables and in bounds.
             _ = check_input_shapes(tc, theta)
-            self.theta = bounds_checker(theta, 0, 0.8, "[]", "theta", "m3/m3")
+            self.theta = bounds_checker.check("theta", theta)
 
         if rootzonestress is not None:
             # Is the input congruent with the other variables and in bounds.
             _ = check_input_shapes(tc, rootzonestress)
-            self.rootzonestress = bounds_checker(
-                rootzonestress, 0, 1, "[]", "rootzonestress", "-"
-            )
+            self.rootzonestress = bounds_checker.check("rootzonestress", rootzonestress)
 
         if aridity_index is not None:
             # Is the input congruent with the other variables and in bounds.
             _ = check_input_shapes(tc, aridity_index)
-            self.aridity_index = bounds_checker(
-                aridity_index, 0, 50, "[]", "aridity_index", "-"
-            )
+            self.aridity_index = bounds_checker.check("aridity_index", aridity_index)
 
         if mean_growth_temperature is not None:
             # Is the input congruent with the other variables and in bounds.
             _ = check_input_shapes(tc, mean_growth_temperature)
-            self.mean_growth_temperature = bounds_checker(
-                mean_growth_temperature, 0, 50, "[]", "mean_growth_temperature", "-"
+            self.mean_growth_temperature = bounds_checker.check(
+                "mean_growth_temperature",
+                mean_growth_temperature,
             )
 
         # Store constant settings

@@ -30,6 +30,14 @@ language_info:
     :members:
 ```
 
+## The {mod}`~pyrealm.core.bounds` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.core.bounds
+    :autosummary:
+    :members:
+```
+
 ## The {mod}`~pyrealm.core.calendar` submodule
 
 ```{eval-rst}
