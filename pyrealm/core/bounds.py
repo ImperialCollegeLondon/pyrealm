@@ -113,7 +113,9 @@ class BoundsChecker:
 
         Examples:
             >>> vals = np.array([-15, 20, 30, 124], dtype=float)
-            >>> vals_c = bounds_checker(vals, 0, 100, label='temperature', unit='°C')
+            >>> bounds_checker = BoundsChecker()
+            >>> bounds_checker.check("temp", vals)
+            array([-15.,  20.,  30., 124.])
         """
 
         var_bounds = self._data.get(var_name)
