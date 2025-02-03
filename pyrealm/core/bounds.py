@@ -1,18 +1,27 @@
-"""The ``bounds`` module provides the ``BoundsChecker`` class. The class maintains a
-dictionary of sensible data bounds for key input variables. The dictionary is populated
-from default values when a ``BoundsChecker`` instance is created but this can be updated
-and extended by assigning new ``Bounds`` instances to existing or new variable name
-keys.
-
-The ``check`` method can then be used to validate a set of values against the
-configured bounds for a given variable name. The ``check`` method returns the input
-variables, to allow values to be checked while being assigned to an attribute.
-
-Some functions in ``pyrealm`` are only well-behaved with given bounds but those bounds
-are often a little imprecise and real world data can contain extreme values. As a
+"""Some functions in ``pyrealm`` are only well-behaved with given bounds but those
+bounds are often a little imprecise and real world data can contain extreme values. As a
 result, the bounds checking is deliberately not that intrusive: it warns when a variable
 contains out of value issues but leaves it up to the user to assess whether there is
 real problem and to adjust input data if needed.
+
+The ``bounds`` module:
+
+* Defines a {class}`~pyrealm.core.bounds.Bounds` dataclass used to define bounds for a
+  particular variable.
+* Defines a {class}`~pyrealm.core.bounds.BoundsChecker` class with default bounds for
+  core variables that acts as a library for bounds checking.
+* The main use case is e.g. ``BoundsChecker().check("tc", np.array([10, 1000])``, which
+  will check that the alleged temperature data in °C fall within the configured bounds.
+
+A ``BoundsChecker`` class instance is created with a predefined internal dictionary of
+default variables and appropriate bounds. However, users can use the
+{meth}`~pyrealm.core.bounds.BoundsChecker.update` method to overide defaults or add new
+variables by providing a new ``Bounds`` instance.
+
+The {meth}`~pyrealm.core.bounds.BoundsChecker.check` method can then be used to validate
+a set of values against the configured bounds for a given variable name. The ``check``
+method returns the input variables, to allow values to be checked while being assigned
+to an attribute.
 """  # noqa: D205
 
 from dataclasses import dataclass
@@ -50,11 +59,12 @@ class Bounds:
 class BoundsChecker:
     """A bounds checker for input variables.
 
-    The class provides a lookup table of ``Bounds`` instances for core variables, keyed
-    by the ``var_name`` attribute. The table is populated from default values when a
-    ``BoundsChecker`` instance is created but can be updated and extended by assigning
-    new ``Bounds`` instances to existing or new variable name keys using the ``update``
-    method.
+    The class provides a library of  {class}`~pyrealm.core.bounds.Bounds` instances for
+    core variables, keyed by the
+    {attr}`Bounds.var_name<pyrealm.core.bounds.Bounds.var_name>` attribute. The table is
+    populated from default values when a ``BoundsChecker`` instance is created but can
+    be updated and extended by assigning new ``Bounds`` instances to existing or new
+    variable name keys using the ``update`` method.
     """
 
     # TODO - think about these argument names - some unnecessarily terse.
@@ -97,8 +107,9 @@ class BoundsChecker:
     def update(self, bounds: Bounds) -> None:
         """Update or add bounds data.
 
-        The ``var_name`` attribute of the provided bounds is used to update an existing
-        entry for the name or add checking for a new name.
+        The {attr}`Bounds.var_name<pyrealm.core.bounds.Bounds.var_name>` attribute of
+        the provided ``Bounds`` instance is used to update an existing entry for the
+        name or add checking for a new name.
 
         Args:
             bounds: A Bounds instance.
