@@ -9,9 +9,10 @@ import pandas as pd  # type: ignore
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
+from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.calendar import Calendar
 from pyrealm.core.pressure import calc_patm
-from pyrealm.core.utilities import bounds_checker, check_input_shapes
+from pyrealm.core.utilities import check_input_shapes
 from pyrealm.splash.evap import DailyEvapFluxes
 from pyrealm.splash.solar import DailySolarFluxes
 
@@ -65,6 +66,7 @@ class SplashModel:
         dates: Calendar,
         kWm: NDArray[np.float64] = np.array([150.0]),
         core_const: CoreConst = CoreConst(),
+        bounds_checker: BoundsChecker = BoundsChecker(),
     ):
         # Check input sizes are congurent
         # TODO - think about broadcasting lat and elv rather than forcing users to do
@@ -78,25 +80,17 @@ class SplashModel:
 
         self.elv: NDArray[np.float64] = elv
         """The elevation of sites."""
-        self.lat: NDArray[np.float64] = bounds_checker(
-            lat, -90, 90, label="lat", unit="°"
-        )
+        self.lat: NDArray[np.float64] = bounds_checker.check("lat", lat)
         """The latitude of sites."""
-        self.sf: NDArray[np.float64] = bounds_checker(sf, 0, 1, label="sf")
+        self.sf: NDArray[np.float64] = bounds_checker.check("sf", sf)
         """The sunshine fraction (0-1) of daily observations."""
-        self.tc: NDArray[np.float64] = bounds_checker(
-            tc, -25, 80, label="tc", unit="°C"
-        )
+        self.tc: NDArray[np.float64] = bounds_checker.check("tc", tc)
         """The air temperature in °C of daily observations."""
-        self.pn: NDArray[np.float64] = bounds_checker(
-            pn, 0, 1e3, label="pn", unit="mm/day"
-        )
+        self.pn: NDArray[np.float64] = bounds_checker.check("pn", pn)
         """The precipitation in mm of daily observations."""
         self.dates: Calendar = dates
         """The dates of observations along the first array axis."""
-        self.kWm: NDArray[np.float64] = bounds_checker(
-            kWm, 0, 1e4, label="kWm", unit="mm"
-        )
+        self.kWm: NDArray[np.float64] = bounds_checker.check("kWm", kWm)
         """The maximum soil water capacity for sites."""
 
         # TODO - potentially allow _actual_ climatic pressure data as an input

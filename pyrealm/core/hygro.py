@@ -9,7 +9,8 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
-from pyrealm.core.utilities import bounds_checker, evaluate_horner_polynomial
+from pyrealm.core.bounds import BoundsChecker
+from pyrealm.core.utilities import evaluate_horner_polynomial
 
 
 def calc_vp_sat(
@@ -93,6 +94,7 @@ def convert_rh_to_vpd(
     rh: NDArray[np.float64],
     ta: NDArray[np.float64],
     core_const: CoreConst = CoreConst(),
+    bounds_checker: BoundsChecker = BoundsChecker(),
 ) -> NDArray[np.float64]:
     """Convert relative humidity to vapour pressure deficit.
 
@@ -101,6 +103,7 @@ def convert_rh_to_vpd(
         ta: The air temperature in °C
         core_const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the settings to be used in conversions.
+        bounds_checker: A BoundsChecker instance used to validate inputs.
 
     Returns:
         The vapour pressure deficit in kPa
@@ -122,7 +125,7 @@ def convert_rh_to_vpd(
         array([-171.1823864])
     """
 
-    rh = bounds_checker(rh, 0, 1, "[]", "rh", "proportion")
+    rh = bounds_checker.check("rh", rh)
 
     vp_sat = calc_vp_sat(ta, core_const=core_const)
 
