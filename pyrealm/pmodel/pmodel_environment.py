@@ -21,9 +21,9 @@ from pyrealm.pmodel.functions import (
 class PModelEnvironment:
     r"""Create a PModelEnvironment instance.
 
-    This class takes the four key environmental inputs to the P Model and
-    calculates four photosynthetic variables for those environmental
-    conditions:
+    This class takes the temperature (°C), vapour pressure deficit (Pa), atmospheric
+    pressure (Pa) and ambient CO2 concentration (ppm) and uses these four drivers to
+    calculates four photosynthetic variables for those environmental conditions:
 
     * the photorespiratory :math:`\ce{CO2}` compensation point (:math:`\Gamma^{*}`,
       using :func:`~pyrealm.pmodel.functions.calc_gammastar`),
@@ -34,26 +34,37 @@ class PModelEnvironment:
     * the Michaelis Menten coefficient of Rubisco-limited assimilation
       (:math:`K`, using :func:`~pyrealm.pmodel.functions.calc_kmm`).
 
-    These variables can then be used to fit P models using different
-    configurations. Note that the underlying constants of the P Model
-    (:class:`~pyrealm.constants.pmodel_const.PModelConst`) are set when creating
-    an instance of this class.
+    It also takes the photosynthetic photon flux density (PPFD, µmol m-2 s-1) and the
+    fraction of absorbed photosynthetically active radiation (FAPAR, unitless), which is
+    used to scale light use efficiency up to gross primary productivity.
 
-    In addition to the four key variables above, the PModelEnvironment class
-    can optionally be used to provide additional variables used by some methods.
+    An instance of ``PModelEnvironment`` can then be used to fit different P Models
+    using the same environment but different method implementations. Note that the
+    underlying constants of the P Model
+    (:class:`~pyrealm.constants.pmodel_const.PModelConst`) are set when creating an
+    instance of this class and will be used on all models fitted to the instance.
+
+    In addition to the main forcing variables above, the ``PModelEnvironment`` class can
+    also be used to provide additional variables used by some methods. Any additional
+    arguments provided to a ``PModelEnvironment`` instance should provide an array of
+    data congruent with the shape of the other forcing variables. The array dimensions
+    will be checked and the argument name will be used to add the data to the instance
+    as an additional attribute.
+
+    Examples of additional variables include:
 
     * the volumetric soil moisture content (:math:`\theta`), required to calculate
       optimal :math:`\chi` in
       :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3` and
       :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3`.
 
-    * a unitless root zone stress factor, an experimental term used to optionally
-      penalise the :math:`\beta` term in the estimation of :math:`\chi` in
+    * the experimental `rootzonestress` factor used to penalise the :math:`\beta` term
+      in the estimation of :math:`\chi` in
       :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14RootzoneStress` and
       :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiC4RootzoneStress` and
       :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGammaRootzoneStress`.
 
-    * A unitless climatological aridity index, expressed as PET/P (-).
+    * The climatological aridity index, expressed as PET/P (-).
 
     * The mean growth temperature, calculated as the mean temperature > 0°C during
       growing degree days (°C).
@@ -71,6 +82,7 @@ class PModelEnvironment:
             :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: An instance of
             :class:`~pyrealm.constants.core_const.CoreConst`.
+        **kwargs: Additional data variables
 
     Examples:
         >>> import numpy as np
@@ -86,14 +98,16 @@ class PModelEnvironment:
         vpd: NDArray[np.float64],
         co2: NDArray[np.float64],
         patm: NDArray[np.float64],
-        theta: NDArray[np.float64] | None = None,
-        rootzonestress: NDArray[np.float64] | None = None,
-        aridity_index: NDArray[np.float64] | None = None,
-        mean_growth_temperature: NDArray[np.float64] | None = None,
+        fapar: NDArray[np.float64],
+        ppfd: NDArray[np.float64],
         pmodel_const: PModelConst = PModelConst(),
         core_const: CoreConst = CoreConst(),
+        **kwargs: NDArray[np.float64],
     ):
-        self.shape: tuple = check_input_shapes(tc, vpd, co2, patm)
+        # Check shapes of inputs are congruent
+        self.shape: tuple = check_input_shapes(
+            tc, vpd, co2, patm, fapar, ppfd, **kwargs
+        )
 
         # Validate and store the forcing variables
         self.tc: NDArray[np.float64] = bounds_checker(tc, -25, 80, "[]", "tc", "°C")
@@ -106,6 +120,20 @@ class PModelEnvironment:
             patm, 30000, 110000, "[]", "patm", "Pa"
         )
         """Atmospheric pressure, Pa"""
+        self.fapar: NDArray[np.float64] = bounds_checker(
+            fapar, 0, 1, "[]", "fapar", "-"
+        )
+        """The fraction of absorbed photosynthetically active radiation (FAPAR, -)"""
+        self.ppfd: NDArray[np.float64] = bounds_checker(
+            ppfd, 0, 3000, "[]", "ppfd", "-"
+        )
+        """The photosynthetic photon flux density (PPFD, µmol m-2 s-1)"""
+
+        # Store constant settings
+        self.pmodel_const = pmodel_const
+        """PModel constants used to calculate environment"""
+        self.core_const = core_const
+        """Core constants used to calculate environment"""
 
         # Guard against calc_density issues
         if np.nanmin(self.tc) < np.array([-25]):
@@ -121,6 +149,12 @@ class PModelEnvironment:
                 "zero or explicitly set to np.nan"
             )
 
+        # Internal calculations
+        self.tk = self.tc + self.core_const.k_CtoK
+        """The temperature at which to estimate photosynthesis in Kelvin (K)"""
+
+        # TODO - swap functions over to using tk as needed
+
         self.ca: NDArray[np.float64] = calc_co2_to_ca(self.co2, self.patm)
         """Ambient CO2 partial pressure, Pa"""
 
@@ -132,63 +166,26 @@ class PModelEnvironment:
         self.kmm = calc_kmm(tc, patm, pmodel_const=pmodel_const, core_const=core_const)
         """Michaelis Menten coefficient, Pa"""
 
-        # # Michaelis-Menten coef. C4 plants (Pa) NOT CHECKED. Need to think
-        # # about how many optional variables stack up in PModelEnvironment
-        # # and this is only required by C4 optimal chi Scott and Smith, which
-        # # has not yet been implemented.
-        # self.kp_c4 = calc_kp_c4(tc, patm, const=const)
-
         self.ns_star = calc_ns_star(tc, patm, core_const=core_const)
         """Viscosity correction factor realtive to standard
         temperature and pressure, unitless"""
 
-        # Optional variables
+        # Additional variables
+        for var_name, var_values in kwargs.items():
+            setattr(self, var_name, var_values)
 
-        # TODO - could this be done flexibly using kwargs and then setting the requires
-        #        attributes for the downstream classes that use the PModelEnvironment.
-        #        Easy to add the attributes dynamically, but bounds checking less
-        #        obvious.
+        self._additional_var_names: tuple(str) = tuple(kwargs.keys())
+        """A tuple containing the attribute names of additional variables passed to the
+        PModelEnivronment."""
 
-        self.theta: NDArray[np.float64]
-        """Volumetric soil moisture (m3/m3)"""
-        self.rootzonestress: NDArray[np.float64]
-        """Rootzone stress factor (experimental) (-)"""
-        self.aridity_index: NDArray[np.float64]
-        """Climatological aridity index as PET/P (-)"""
-        self.mean_growth_temperature: NDArray[np.float64]
-        """Mean temperature > 0°C during growing degree days (°C)"""
-
-        if theta is not None:
-            # Is the input congruent with the other variables and in bounds.
-            _ = check_input_shapes(tc, theta)
-            self.theta = bounds_checker(theta, 0, 0.8, "[]", "theta", "m3/m3")
-
-        if rootzonestress is not None:
-            # Is the input congruent with the other variables and in bounds.
-            _ = check_input_shapes(tc, rootzonestress)
-            self.rootzonestress = bounds_checker(
-                rootzonestress, 0, 1, "[]", "rootzonestress", "-"
-            )
-
-        if aridity_index is not None:
-            # Is the input congruent with the other variables and in bounds.
-            _ = check_input_shapes(tc, aridity_index)
-            self.aridity_index = bounds_checker(
-                aridity_index, 0, 50, "[]", "aridity_index", "-"
-            )
-
-        if mean_growth_temperature is not None:
-            # Is the input congruent with the other variables and in bounds.
-            _ = check_input_shapes(tc, mean_growth_temperature)
-            self.mean_growth_temperature = bounds_checker(
-                mean_growth_temperature, 0, 50, "[]", "mean_growth_temperature", "-"
-            )
-
-        # Store constant settings
-        self.pmodel_const = pmodel_const
-        """PModel constants used to calculate environment"""
-        self.core_const = core_const
-        """Core constants used to calculate environment"""
+        # self.theta: NDArray[np.float64]
+        # """Volumetric soil moisture (m3/m3)"""
+        # self.rootzonestress: NDArray[np.float64]
+        # """Rootzone stress factor (experimental) (-)"""
+        # self.aridity_index: NDArray[np.float64]
+        # """Climatological aridity index as PET/P (-)"""
+        # self.mean_growth_temperature: NDArray[np.float64]
+        # """Mean temperature > 0°C during growing degree days (°C)"""
 
     def __repr__(self) -> str:
         """Generates a string representation of PModelEnvironment instance."""
@@ -214,10 +211,13 @@ class PModelEnvironment:
             ("vpd", "Pa"),
             ("co2", "ppm"),
             ("patm", "Pa"),
+            ("fapar", "-"),
+            ("ppfd", "µmol m-2 s-1"),
             ("ca", "Pa"),
             ("gammastar", "Pa"),
             ("kmm", "Pa"),
             ("ns_star", "-"),
+            *self._additional_var_names,
         )
 
         # Add any optional variables - need to check here if these attributes actually
