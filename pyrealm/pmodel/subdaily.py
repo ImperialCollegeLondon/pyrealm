@@ -692,6 +692,8 @@ class SubdailyPModel_JAMES:
             vpd=vpd_acclim,
             co2=co2_acclim,
             patm=patm_acclim,
+            fapar=self.fapar_acclim,
+            ppfd=self.ppfd_acclim,
             pmodel_const=self.env.pmodel_const,
             core_const=self.env.core_const,
         )

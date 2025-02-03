@@ -326,7 +326,7 @@ class OptimalChiPrentice14RootzoneStress(
             self.xi = np.sqrt(
                 (
                     self.beta
-                    * self.env.rootzonestress
+                    * getattr(self.env, "rootzonestress")
                     * (self.env.kmm + self.env.gammastar)
                 )
                 / (1.6 * self.env.ns_star)
@@ -455,7 +455,7 @@ class OptimalChiC4RootzoneStress(
             self.xi = np.sqrt(
                 (
                     self.beta
-                    * self.env.rootzonestress
+                    * getattr(self.env, "rootzonestress")
                     * (self.env.kmm + self.env.gammastar)
                 )
                 / (1.6 * self.env.ns_star)
@@ -527,7 +527,7 @@ class OptimalChiLavergne20C3(
         # Calculate beta as a function of theta, which is guaranteed not to be None by
         # _check_requires so suppress mypy here
         self.beta = np.exp(
-            self.pmodel_const.lavergne_2020_b_c3 * self.env.theta  # type: ignore[operator]
+            self.pmodel_const.lavergne_2020_b_c3 * getattr(self.env, "theta")
             + self.pmodel_const.lavergne_2020_a_c3
         )
 
@@ -618,7 +618,7 @@ class OptimalChiLavergne20C4(
         # Calculate beta as a function of theta, which is guaranteed not to be None by
         # _check_requires so suppress mypy here
         self.beta = np.exp(
-            self.pmodel_const.lavergne_2020_b_c4 * self.env.theta  # type: ignore[operator]
+            self.pmodel_const.lavergne_2020_b_c4 * getattr(self.env, "theta")
             + self.pmodel_const.lavergne_2020_a_c4
         )
 
@@ -777,7 +777,7 @@ class OptimalChiC4NoGammaRootzoneStress(
             self.xi = xi_values
         else:
             self.xi = np.sqrt(
-                (self.beta * self.env.rootzonestress * self.env.kmm)
+                (self.beta * getattr(self.env, "rootzonestress") * self.env.kmm)
                 / (1.6 * self.env.ns_star)
             )
 

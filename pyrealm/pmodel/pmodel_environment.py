@@ -110,7 +110,7 @@ class PModelEnvironment:
     ):
         # Check shapes of inputs are congruent
         self.shape: tuple = check_input_shapes(
-            tc, vpd, co2, patm, fapar, ppfd, **kwargs
+            tc, vpd, co2, patm, fapar, ppfd, *kwargs.values()
         )
         """The shape of the environmental data arrays."""
 
@@ -168,11 +168,12 @@ class PModelEnvironment:
         """Michaelis Menten coefficient, Pa"""
 
         self.ns_star = calc_ns_star(tc, patm, core_const=core_const)
-        """Viscosity correction factor realtive to standard
+        """Viscosity correction factor relative to standard
         temperature and pressure, unitless"""
 
-        # Additional variables
+        # Additional variables - check bounds and add them to the instance
         for var_name, var_values in kwargs.items():
+            bounds_checker.check(var_name=var_name, values=var_values)
             setattr(self, var_name, var_values)
 
         self._additional_vars: tuple[str, ...] = tuple(kwargs.keys())
@@ -198,23 +199,21 @@ class PModelEnvironment:
             dp: The number of decimal places used in rounding summary stats.
         """
 
-        attr_names: tuple[str, ...] = (
-            "tc",
-            "vpd",
-            "co2",
-            "patm",
-            "fapar",
-            "ppfd",
-            "ca",
-            "gammastar",
-            "kmm",
-            "ns_star",
-            *self._additional_vars,
-        )
+        attrs: list[tuple[str, str]] = [
+            ("tc", "°C"),
+            ("vpd", "Pa"),
+            ("co2", "ppm"),
+            ("patm", "Pa"),
+            ("fapar", "-"),
+            ("ppfd", "µmol m-2 s-1"),
+            ("ca", "Pa"),
+            ("gammastar", "Pa"),
+            ("kmm", "Pa"),
+            ("ns_star", "-"),
+        ]
 
         # Add units to attribute names from bounds checker
-        attrs: list[tuple[str, str]] = []
-        for this_attr in attr_names:
+        for this_attr in self._additional_vars:
             this_bounds = self._bounds_checker._data.get(this_attr)
 
             if this_bounds is not None:

@@ -300,16 +300,18 @@ class QuantumYieldSandoval(
     defaulting to the ratio of 1/9 in the absence of a Q cycle :cite:`long:1993a`.
     """
 
-    def peak_quantum_yield(self, aridity: NDArray[np.float64]) -> NDArray[np.float64]:
+    def peak_quantum_yield(
+        self, aridity_index: NDArray[np.float64]
+    ) -> NDArray[np.float64]:
         """Calculate the peak quantum yield as a function of the aridity index.
 
         Args:
-            aridity: An array of aridity index values.
+            aridity_index: An array of aridity index values.
         """
 
         # Calculate peak kphio given the aridity index
         m, n = self.env.pmodel_const.sandoval_peak_phio
-        return self.reference_kphio / (1 + (self.env.aridity_index) ** m) ** n
+        return self.reference_kphio / (1 + aridity_index**m) ** n
 
     def _calculate_kphio(self) -> None:
         """Calculate kphio."""
@@ -321,11 +323,14 @@ class QuantumYieldSandoval(
             ExperimentalFeatureWarning,
         )
 
+        aridity_index = getattr(self.env, "aridity_index")
+        mean_growth_temperature = getattr(self.env, "mean_growth_temperature")
+
         # Calculate enzyme kinetics
         a_ent, b_ent, Hd_base, Ha = self.env.pmodel_const.sandoval_kinetics
         # Calculate activation entropy as a linear function of
         # mean growth temperature, J/mol/K
-        deltaS = a_ent + b_ent * self.env.mean_growth_temperature
+        deltaS = a_ent + b_ent * mean_growth_temperature
         # Calculate deaactivation energy J/mol
         Hd = Hd_base * deltaS
 
@@ -334,13 +339,13 @@ class QuantumYieldSandoval(
         Topt = Hd / (deltaS - self.env.core_const.k_R * np.log(Ha / (Hd - Ha)))
         tk_leaf = self.env.tc + self.env.core_const.k_CtoK
         # Calculate peak kphio given the aridity index
-        kphio_peak = self.peak_quantum_yield(aridity=self.env.aridity_index)
+        kphio_peak = self.peak_quantum_yield(aridity_index=aridity_index)
 
         # Calculate the modified Arrhenius factor using the
         f_kphio = calculate_kattge_knorr_arrhenius_factor(
             tk_leaf=tk_leaf,
             tk_ref=Topt,
-            tc_growth=self.env.mean_growth_temperature,
+            tc_growth=mean_growth_temperature,
             ha=Ha,
             hd=Hd,  # type: ignore[arg-type]  # Not an array in this function
             entropy_intercept=a_ent,
