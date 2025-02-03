@@ -7,6 +7,12 @@ keys.
 The ``check`` method can then be used to validate a set of values against the
 configured bounds for a given variable name. The ``check`` method returns the input
 variables, to allow values to be checked while being assigned to an attribute.
+
+Some functions in ``pyrealm`` are only well-behaved with given bounds but those bounds
+are often a little imprecise and real world data can contain extreme values. As a
+result, the bounds checking is deliberately not that intrusive: it warns when a variable
+contains out of value issues but leaves it up to the user to assess whether there is
+real problem and to adjust input data if needed.
 """  # noqa: D205
 
 from dataclasses import dataclass
