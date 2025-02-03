@@ -9,7 +9,8 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst, PModelConst
-from pyrealm.core.utilities import bounds_checker, check_input_shapes, summarize_attrs
+from pyrealm.core.bounds import BoundsChecker
+from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.functions import (
     calc_co2_to_ca,
     calc_gammastar,
@@ -54,9 +55,8 @@ class PModelEnvironment:
     Examples of additional variables include:
 
     * the volumetric soil moisture content (:math:`\theta`), required to calculate
-      optimal :math:`\chi` in
-      :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3` and
-      :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3`.
+      optimal :math:`\chi` in :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3`
+      and :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3`.
 
     * the experimental `rootzonestress` factor used to penalise the :math:`\beta` term
       in the estimation of :math:`\chi` in
@@ -64,10 +64,12 @@ class PModelEnvironment:
       :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiC4RootzoneStress` and
       :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGammaRootzoneStress`.
 
-    * The climatological aridity index, expressed as PET/P (-).
+    * The climatological aridity index, expressed as PET/P (-), used in
+      :meth:`~pyrealm.pmodel.quantum_yield.QuantumYieldSandoval`.
 
     * The mean growth temperature, calculated as the mean temperature > 0°C during
-      growing degree days (°C).
+      growing degree days (°C), also used in
+      :meth:`~pyrealm.pmodel.quantum_yield.QuantumYieldSandoval`.
 
     Args:
         tc: Temperature, relevant for photosynthesis (°C)
@@ -88,7 +90,8 @@ class PModelEnvironment:
         >>> import numpy as np
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
-        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ... )
     """
 
@@ -102,38 +105,36 @@ class PModelEnvironment:
         ppfd: NDArray[np.float64],
         pmodel_const: PModelConst = PModelConst(),
         core_const: CoreConst = CoreConst(),
+        bounds_checker: BoundsChecker = BoundsChecker(),
         **kwargs: NDArray[np.float64],
     ):
         # Check shapes of inputs are congruent
         self.shape: tuple = check_input_shapes(
             tc, vpd, co2, patm, fapar, ppfd, **kwargs
         )
+        """The shape of the environmental data arrays."""
 
-        # Validate and store the forcing variables
-        self.tc: NDArray[np.float64] = bounds_checker(tc, -25, 80, "[]", "tc", "°C")
+        # Validate and store the core forcing variables
+        self.tc: NDArray[np.float64] = bounds_checker.check("tc", tc)
         """The temperature at which to estimate photosynthesis, °C"""
-        self.vpd: NDArray[np.float64] = bounds_checker(vpd, 0, 10000, "[]", "vpd", "Pa")
+        self.vpd: NDArray[np.float64] = bounds_checker.check("vpd", vpd)
         """Vapour pressure deficit, Pa"""
-        self.co2: NDArray[np.float64] = bounds_checker(co2, 0, 1000, "[]", "co2", "ppm")
+        self.co2: NDArray[np.float64] = bounds_checker.check("co2", co2)
         """CO2 concentration, ppm"""
-        self.patm: NDArray[np.float64] = bounds_checker(
-            patm, 30000, 110000, "[]", "patm", "Pa"
-        )
+        self.patm: NDArray[np.float64] = bounds_checker.check("patm", patm)
         """Atmospheric pressure, Pa"""
-        self.fapar: NDArray[np.float64] = bounds_checker(
-            fapar, 0, 1, "[]", "fapar", "-"
-        )
+        self.fapar: NDArray[np.float64] = bounds_checker.check("fapar", fapar)
         """The fraction of absorbed photosynthetically active radiation (FAPAR, -)"""
-        self.ppfd: NDArray[np.float64] = bounds_checker(
-            ppfd, 0, 3000, "[]", "ppfd", "-"
-        )
+        self.ppfd: NDArray[np.float64] = bounds_checker.check("ppfd", ppfd)
         """The photosynthetic photon flux density (PPFD, µmol m-2 s-1)"""
 
-        # Store constant settings
+        # Store constant settings and bounds checker
         self.pmodel_const = pmodel_const
         """PModel constants used to calculate environment"""
         self.core_const = core_const
         """Core constants used to calculate environment"""
+        self._bounds_checker: BoundsChecker = bounds_checker
+        """The BoundsChecker applied to the environment data."""
 
         # Guard against calc_density issues
         if np.nanmin(self.tc) < np.array([-25]):
@@ -174,24 +175,15 @@ class PModelEnvironment:
         for var_name, var_values in kwargs.items():
             setattr(self, var_name, var_values)
 
-        self._additional_var_names: tuple(str) = tuple(kwargs.keys())
+        self._additional_vars: tuple[str, ...] = tuple(kwargs.keys())
         """A tuple containing the attribute names of additional variables passed to the
         PModelEnivronment."""
-
-        # self.theta: NDArray[np.float64]
-        # """Volumetric soil moisture (m3/m3)"""
-        # self.rootzonestress: NDArray[np.float64]
-        # """Rootzone stress factor (experimental) (-)"""
-        # self.aridity_index: NDArray[np.float64]
-        # """Climatological aridity index as PET/P (-)"""
-        # self.mean_growth_temperature: NDArray[np.float64]
-        # """Mean temperature > 0°C during growing degree days (°C)"""
 
     def __repr__(self) -> str:
         """Generates a string representation of PModelEnvironment instance."""
         # DESIGN NOTE: This is deliberately extremely terse. It could contain
         # a bunch of info on the environment but that would be quite spammy
-        # on screen. Having a specific summary method that provides that info
+        # on screen. Having a specific summarize method that provides that info
         # is more user friendly.
 
         return f"PModelEnvironment(shape={self.shape})"
@@ -206,35 +198,28 @@ class PModelEnvironment:
             dp: The number of decimal places used in rounding summary stats.
         """
 
-        attrs: tuple[tuple[str, str], ...] = (
-            ("tc", "°C"),
-            ("vpd", "Pa"),
-            ("co2", "ppm"),
-            ("patm", "Pa"),
-            ("fapar", "-"),
-            ("ppfd", "µmol m-2 s-1"),
-            ("ca", "Pa"),
-            ("gammastar", "Pa"),
-            ("kmm", "Pa"),
-            ("ns_star", "-"),
-            *self._additional_var_names,
+        attr_names: tuple[str, ...] = (
+            "tc",
+            "vpd",
+            "co2",
+            "patm",
+            "fapar",
+            "ppfd",
+            "ca",
+            "gammastar",
+            "kmm",
+            "ns_star",
+            *self._additional_vars,
         )
 
-        # Add any optional variables - need to check here if these attributes actually
-        # exist because if they are not provided they are typed but not populated.
-        optional_vars = [
-            ("theta", "m3/m3"),
-            ("rootzonestress", "-"),
-            ("aridity_index", "-"),
-            ("mean_growth_temperature", "°C"),
-        ]
+        # Add units to attribute names from bounds checker
+        attrs: list[tuple[str, str]] = []
+        for this_attr in attr_names:
+            this_bounds = self._bounds_checker._data.get(this_attr)
 
-        to_add = [
-            (opt_var, unit)
-            for opt_var, unit in optional_vars
-            if getattr(self, opt_var, None) is not None
-        ]
+            if this_bounds is not None:
+                attrs.append((this_attr, this_bounds.unit))
+            else:
+                attrs.append((this_attr, "unknown"))
 
-        attrs = (*attrs, *to_add)
-
-        summarize_attrs(self, attrs, dp=dp)
+        summarize_attrs(self, tuple(attrs), dp=dp)

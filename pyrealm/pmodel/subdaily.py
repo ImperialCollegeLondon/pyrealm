@@ -339,6 +339,7 @@ class SubdailyPModel:
             **daily_environment,
             pmodel_const=self.env.pmodel_const,
             core_const=self.env.core_const,
+            bounds_checker=self.env._bounds_checker,
         )
 
         # Handle the kphio settings. First, calculate kphio at the subdaily scale.
