@@ -13,20 +13,20 @@ from pyrealm.pmodel.subdaily import SubdailyPModel
 class TwoLeafIrradience:
     """Running the two leaf, two stream model within Pyrealm.
 
-    This class implements the methodology of Pury and Farquhar (1997) \
-    :cite:p:`Pury&Farquhar:1997` two leaf, two stream model. This model is chosen to \
-    provide a better representation than the big leaf model and to align closely to \
+    This class implements the methodology of Pury and Farquhar (1997)
+    :cite:p:`depury:1997a` two leaf, two stream model. This model is chosen to
+    provide a better representation than the big leaf model and to align closely to
     the workings of the ``BESS`` model :cite:alp:`Ryu_et_al:2011`.
 
     The outline flow of the calculations is as follows:
-    1. Calculate the beam extinction coefficient :math:`k_{b}` using \
+    1. Calculate the beam extinction coefficient :math:`k_{b}` using
     :func:`beam_extinction_coeff`
-    2. Calculate the scattered beam extinction coefficient using \
+    2. Calculate the scattered beam extinction coefficient using
     :func:`scattered_beam_extinction_coeff`
     3. Calculate fraction of diffuse radiation using :func:`fraction_of_diffuse_rad`
-    4. Calculate beam irradience for horizontal leaves using \
+    4. Calculate beam irradience for horizontal leaves using
     :func:`beam_irradience_h_leaves`
-    5. Calculate the beam irradience for a uniform leaf angle distribution with \
+    5. Calculate the beam irradience for a uniform leaf angle distribution with
     :func:`beam_irrad_unif_leaf_angle_dist`
     6. Calculate diffuse radiation with :func:`diffuse_radiation`
     7. Calculate direct beam irradience with :func:`beam_irradience`
@@ -34,15 +34,15 @@ class TwoLeafIrradience:
     9. Calculate the total canopy irradience with :func:`canopy_irradience`
     10. Calculate the sunlit beam irradience with :func:`sunlit_beam_irrad`
     11. Calulate the sunlit diffuse irradience with :func:`sunlit_diffuse_irrad`
-    12. Calculate the scattered irradience recieved by sunlit portion of canopy with \
+    12. Calculate the scattered irradience recieved by sunlit portion of canopy with
     :func:`sunlit_scattered_irrad`
-    13. Calulate total irradience absorbed by sunlit portion of canopy with \
+    13. Calulate total irradience absorbed by sunlit portion of canopy with
     :func:`sunlit_absorbed_irrad`
-    14. Calculate the irradience absorbed by the shaded farction of the canopy with 
+    14. Calculate the irradience absorbed by the shaded farction of the canopy with
     :func:`shaded_absorbed_irrad`
 
-    These calculated values are used in the estimation of gross primary productivity \
-    (``GPP``). An instance of this class is accepted by the \
+    These calculated values are used in the estimation of gross primary productivity
+    (``GPP``). An instance of this class is accepted by the
     :class:`TwoLeafAssimilation`, which uses these results to calulate ``GPP``.
 
     Args:
@@ -705,7 +705,7 @@ def sunlit_absorbed_irrad(
 
     .. math::
 
-        I_{csun} = I_{sun\_beam} + I_{sun\_diffuse} + I_{sun\_scattered}
+        I_{csun} = I_{sun-beam} + I_{sun-diffuse} + I_{sun-scattered}
 
     Args:
         Isun_beam (NDArray): Array of sunlit beam irradiance values.
@@ -725,13 +725,13 @@ def shaded_absorbed_irrad(
 ) -> NDArray:
     r"""Calculate the irradiance absorbed by the shaded fraction of the canopy.
 
-    The irradiance absorbed by the shaded fraction of the canopy :math:`I_cshade`is
+    The irradiance absorbed by the shaded fraction of the canopy :math:`I_cshade` is
     calculated by subtracting the sunlit absorbed irradiance from the total canopy
     irradiance.
 
     .. math::
 
-        I_{cshade} = \max(0, I_c - I_{csun})
+        I_{cshade} = \operatorname{max}(0, I_c - I_{csun})
 
     Args:
         beta_angle (NDArray): Array of solar elevation angles.
