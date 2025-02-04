@@ -101,7 +101,9 @@ co2_1d = np.array([280, 410])
 tc_4d, patm_4d, vpd_4d, co2_4d = np.meshgrid(tc_1d, patm_1d, vpd_1d, co2_1d)
 
 # Calculate the photosynthetic environment
-pmodel_env = PModelEnvironment(tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d)
+pmodel_env = PModelEnvironment(
+    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, fapar=1, ppfd=1
+)
 
 
 # A plotter function for a model
@@ -281,7 +283,7 @@ variation in $\beta$ with $\theta$ is shown below.
 from pyrealm.pmodel.optimal_chi import OptimalChiLavergne20C3, OptimalChiLavergne20C4
 
 pmodel_env_theta_range = PModelEnvironment(
-    tc=25, patm=101325, vpd=0, co2=400, theta=np.linspace(0, 0.8, 81)
+    tc=25, patm=101325, vpd=0, co2=400, fapar=1, ppfd=1, theta=np.linspace(0, 0.8, 81)
 )
 opt_chi_lavergne20_c3 = OptimalChiLavergne20C3(pmodel_env_theta_range)
 opt_chi_lavergne20_c4 = OptimalChiLavergne20C4(pmodel_env_theta_range)
@@ -309,10 +311,10 @@ values of VPD and soil moisture, with constant atmospheric pressure (101325 Pa) 
 theta_hi = 0.6
 theta_lo = 0.1
 pmodel_env_hi = PModelEnvironment(
-    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, theta=theta_hi
+    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, fapar=1, ppfd=1, theta=theta_hi
 )
 pmodel_env_lo = PModelEnvironment(
-    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, theta=theta_lo
+    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, fapar=1, ppfd=1, theta=theta_lo
 )
 
 # Run the P Model and plot predictions
@@ -480,6 +482,8 @@ pmodel_env_rootzonestress = PModelEnvironment(
     patm=np.repeat(101325, 101),
     vpd=np.repeat(1000, 101),
     co2=np.repeat(400, 101),
+    fapar=np.repeat(1, 101),
+    ppfd=np.repeat(1, 101),
     rootzonestress=np.linspace(0, 1, 101),
 )
 
@@ -519,10 +523,22 @@ rzs_low = 0.75
 rzs_high = 0.25
 
 pmodel_env_hi = PModelEnvironment(
-    tc=tc_4d, patm=101325, vpd=vpd_4d, co2=co2_4d, rootzonestress=rzs_high
+    tc=tc_4d,
+    patm=101325,
+    vpd=vpd_4d,
+    co2=co2_4d,
+    fapar=1,
+    ppfd=1,
+    rootzonestress=rzs_high,
 )
 pmodel_env_lo = PModelEnvironment(
-    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, rootzonestress=rzs_low
+    tc=tc_4d,
+    patm=patm_4d,
+    vpd=vpd_4d,
+    co2=co2_4d,
+    fapar=1,
+    ppfd=1,
+    rootzonestress=rzs_low,
 )
 
 # Run the P Model and plot predictions

@@ -86,6 +86,8 @@ subdaily_env = PModelEnvironment(
     vpd=vpd_subdaily,
     co2=co2_subdaily,
     patm=patm_subdaily,
+    ppfd=ppfd_subdaily,
+    fapar=fapar_subdaily,
 )
 
 # Fit the standard P Model
@@ -161,7 +163,12 @@ fapar_acclim = fsscaler.get_daily_means(fapar_subdaily)
 
 # Fit the P Model to the acclimation conditions
 daily_acclim_env = PModelEnvironment(
-    tc=temp_acclim, vpd=vpd_acclim, co2=co2_acclim, patm=patm_acclim
+    tc=temp_acclim,
+    vpd=vpd_acclim,
+    co2=co2_acclim,
+    patm=patm_acclim,
+    fapar=fapar_acclim,
+    ppfd=ppfd_acclim,
 )
 
 pmodel_acclim = PModel(daily_acclim_env, reference_kphio=1 / 8)

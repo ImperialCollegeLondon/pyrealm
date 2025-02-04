@@ -142,7 +142,7 @@ ppfd = 450
 fapar = 0.9
 
 # Fit C3 and C4 P models
-env = PModelEnvironment(tc=tc_1d, patm=101325, co2=400, vpd=1000)
+env = PModelEnvironment(tc=tc_1d, patm=101325, co2=400, vpd=1000, ppfd=450, fapar=0.9)
 
 mod_c3 = PModel(env, method_optchi="prentice14")
 mod_c3.estimate_productivity(fapar=fapar, ppfd=ppfd)
