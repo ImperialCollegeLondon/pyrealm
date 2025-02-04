@@ -78,6 +78,8 @@ def test_ArrheniusFactorABC_init_and_call(
         patm=np.array([101325]),
         vpd=np.array([400]),
         co2=np.array([400]),
+        fapar=np.array([1]),
+        ppfd=np.array([1]),
         mean_growth_temperature=np.array([10]),
     )
 
@@ -134,7 +136,9 @@ class TestSimpleArrhenius:
         from pyrealm.pmodel import PModelEnvironment
         from pyrealm.pmodel.arrhenius import SimpleArrhenius
 
-        env = PModelEnvironment(tc=args["tc"], patm=101325, vpd=400, co2=400)
+        env = PModelEnvironment(
+            tc=args["tc"], patm=101325, vpd=400, co2=400, fapar=1, ppfd=1
+        )
         arrh = SimpleArrhenius(env=env, reference_temperature=args["tc_ref"])
 
         assert_allclose(
@@ -200,6 +204,8 @@ class TestKattgeKnorrArrhenius:
             patm=101325,
             vpd=400,
             co2=400,
+            fapar=np.array([1]),
+            ppfd=np.array([1]),
             mean_growth_temperature=args["tc_growth"],
         )
         arrh = KattgeKnorrArrhenius(env=env, reference_temperature=args["tc_ref"])
@@ -237,6 +243,8 @@ def test_pmodel_equivalence():
         patm=np.full(n_pts, 101325.0),
         vpd=np.full(n_pts, 1300.0),
         co2=np.full(n_pts, 305.945),
+        fapar=np.full(n_pts, 1),
+        ppfd=np.full(n_pts, 100 * 2.04),
         mean_growth_temperature=np.full(n_pts, 10),
     )
 

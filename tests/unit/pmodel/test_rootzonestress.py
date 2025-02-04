@@ -42,6 +42,8 @@ def test_rootzonestress(method, expected_chi):
         vpd=np.repeat(820, n_vals),
         co2=np.repeat(400, n_vals),
         rootzonestress=np.linspace(0, 1, n_vals),
+        fapar=np.repeat(1, n_vals),
+        ppfd=np.repeat(800, n_vals),
     )
 
     optchi_class = OPTIMAL_CHI_CLASS_REGISTRY[method]

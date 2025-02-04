@@ -17,6 +17,8 @@ def quantum_yield_env():
         patm=101325,
         vpd=820,
         co2=400,
+        fapar=1,
+        ppfd=1,
         mean_growth_temperature=np.array([10, 20, 10, 20, 10, 20]),
         aridity_index=np.array([0.9, 0.9, 2, 2, 5, 5]),
         pmodel_const=pmodel_const,

@@ -17,6 +17,8 @@ def mock_optimal_chi():
         vpd=np.array([1000]),
         co2=np.array([400]),
         patm=np.array([101325.0]),
+        fapar=1,
+        ppfd=1,
     )
     return OptimalChiPrentice14(env)
 
