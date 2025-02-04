@@ -1,8 +1,7 @@
 """The module :mod:`~pyrealm.pmodel.pmodel_environment` provides the implementation of
-the following pmodel core class:
-
-* :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`:
-    Calculates the photosynthetic environment for locations.
+the :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` class, which is used
+to check the data required to fit a P Model and calculates the key photosynthetic
+environment variables for the observations.
 """  # noqa D210, D415
 
 import numpy as np
