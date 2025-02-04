@@ -77,7 +77,7 @@ def test_rootzonestress(method, expected_chi):
         ),
     ],
 )
-def test_CalcOptimalChiNew_requires(method, context_manager, message):
+def test_CalcOptimalChi_requires(method, context_manager, message):
     """Tests the _check_requires mechanism for methods with requires set."""
     from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
     from pyrealm.pmodel.pmodel_environment import PModelEnvironment
@@ -88,6 +88,8 @@ def test_CalcOptimalChiNew_requires(method, context_manager, message):
         patm=np.repeat(101325.0, n_vals),
         vpd=np.repeat(820, n_vals),
         co2=np.repeat(400, n_vals),
+        fapar=np.repeat(1, n_vals),
+        ppfd=np.repeat(800, n_vals),
     )
 
     optchi_class = OPTIMAL_CHI_CLASS_REGISTRY[method]

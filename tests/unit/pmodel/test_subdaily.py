@@ -67,7 +67,7 @@ def test_SubdailyPModel_JAMES(be_vie_data_components):
         pytest.param({"mode": "pad", "start": 12, "end": 12}, id="pad both"),
     ],
 )
-def test_FSPModel_corr(be_vie_data_components, data_args):
+def test_SubdailyPModel_corr(be_vie_data_components, data_args):
     """Test SubdailyPModel.
 
     This tests that the pyrealm implementation including acclimating xi at least
@@ -199,7 +199,7 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
 
 
 @pytest.mark.parametrize("ndims", [2, 3, 4])
-def test_FSPModel_dimensionality(be_vie_data, ndims):
+def test_SubdailyPModel_dimensionality(be_vie_data, ndims):
     """Tests that the SubdailyPModel handles dimensions correctly.
 
     This broadcasts the BE-Vie onto more dimensions and checks that the code iterates
@@ -219,12 +219,18 @@ def test_FSPModel_dimensionality(be_vie_data, ndims):
     extra_dims = [3] * (ndims - 1)
     array_dims = tuple([*extra_dims, len(datetime)])
 
+    # Apply a different random value of fAPAR for each time series
+    fapar_vals = np.random.random(extra_dims)
+    fapar_vals[0] = 1.0
+
     # Create the environment
     env = PModelEnvironment(
         tc=np.broadcast_to(be_vie_data["ta"], array_dims).transpose(),
         vpd=np.broadcast_to(be_vie_data["vpd"], array_dims).transpose(),
         co2=np.broadcast_to(be_vie_data["co2"], array_dims).transpose(),
         patm=np.broadcast_to(be_vie_data["patm"], array_dims).transpose(),
+        fapar=fapar_vals * np.ones(array_dims).transpose(),
+        ppfd=np.ones(array_dims).transpose(),
     )
 
     # Get the fast slow scaler and set window
@@ -438,7 +444,7 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
         ),
     ],
 )
-def test_FSPModel_incomplete_day_behaviour(
+def test_SubdailyPModel_incomplete_day_behaviour(
     mocker,
     be_vie_data_components,
     incomplete,

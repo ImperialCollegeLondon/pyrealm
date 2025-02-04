@@ -228,8 +228,9 @@ class OptimalChiPrentice14(
     Examples:
         >>> import numpy as np
         >>> env = PModelEnvironment(
-        ...     tc=np.array([20]), vpd=np.array([1000]),
-        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ...     tc=np.array([20]), vpd=np.array([1000]), 
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ... )
         >>> vals = OptimalChiPrentice14(env=env)
         >>> vals.chi.round(5)
@@ -296,6 +297,7 @@ class OptimalChiPrentice14RootzoneStress(
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
         ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ...     rootzonestress=0.5
         ... )
         >>> vals = OptimalChiPrentice14RootzoneStress(env=env)
@@ -363,7 +365,8 @@ class OptimalChiC4(
         >>> import numpy as np
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
-        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ... )
         >>> vals = OptimalChiC4(env=env)
         >>> vals.chi.round(5)
@@ -430,6 +433,7 @@ class OptimalChiC4RootzoneStress(
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
         ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ...     rootzonestress=0.5
         ... )
         >>> vals = OptimalChiC4RootzoneStress(env=env)
@@ -505,8 +509,10 @@ class OptimalChiLavergne20C3(
     Examples:
         >>> import numpy as np
         >>> env = PModelEnvironment(
-        ...     tc=np.array([20]), vpd=np.array([1000]), co2=np.array([400]),
-        ...     patm=np.array([101325.0]), theta=np.array([0.5])
+        ...     tc=np.array([20]), vpd=np.array([1000]),
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
+        ...     theta=np.array([0.5])
         ... )
         >>> vals = OptimalChiLavergne20C3(env=env)
         >>> vals.beta.round(5)
@@ -589,8 +595,10 @@ class OptimalChiLavergne20C4(
     Examples:
         >>> import numpy as np
         >>> env = PModelEnvironment(
-        ...     tc=np.array([20]), vpd=np.array([1000]), co2=np.array([400]),
-        ...     patm=np.array([101325.0]), theta=np.array([0.5])
+        ...     tc=np.array([20]), vpd=np.array([1000]),
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
+        ...     theta=np.array([0.5])
         ... )
         >>> vals = OptimalChiLavergne20C4(env=env)
         >>> vals.beta.round(5)
@@ -680,7 +688,8 @@ class OptimalChiC4NoGamma(
         >>> import numpy as np
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
-        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ... )
         >>> vals = OptimalChiC4NoGamma(env=env)
         >>> vals.chi.round(5)
@@ -749,6 +758,7 @@ class OptimalChiC4NoGammaRootzoneStress(
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
         ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ...     rootzonestress=np.array([0.5])
         ... )
         >>> vals = OptimalChiC4NoGammaRootzoneStress(env=env)
