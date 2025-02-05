@@ -328,15 +328,15 @@ class QuantumYieldSandoval(
 
         # Calculate enzyme kinetics
         a_ent, b_ent, Hd_base, Ha = self.env.pmodel_const.sandoval_kinetics
-        # Calculate activation entropy as a linear function of
+        # Calculate change in activation entropy as a linear function of
         # mean growth temperature, J/mol/K
-        deltaS = a_ent + b_ent * mean_growth_temperature
+        delta_entropy = a_ent + b_ent * mean_growth_temperature
         # Calculate deaactivation energy J/mol
-        Hd = Hd_base * deltaS
+        Hd = Hd_base * delta_entropy
 
         # Calculate the optimal temperature to be used as the reference temperature in
         # the modified Arrhenius calculation
-        Topt = Hd / (deltaS - self.env.core_const.k_R * np.log(Ha / (Hd - Ha)))
+        Topt = Hd / (delta_entropy - self.env.core_const.k_R * np.log(Ha / (Hd - Ha)))
         tk_leaf = self.env.tc + self.env.core_const.k_CtoK
         # Calculate peak kphio given the aridity index
         kphio_peak = self.peak_quantum_yield(aridity_index=aridity_index)
