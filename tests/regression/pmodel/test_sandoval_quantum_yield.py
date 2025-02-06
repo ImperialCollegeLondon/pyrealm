@@ -32,8 +32,6 @@ def test_QuantumYieldSandoval(values):
         patm=101325,
         vpd=820,
         co2=400,
-        fapar=1,
-        ppfd=400,
         mean_growth_temperature=values["mean_gdd_temp"].to_numpy(),
         aridity_index=values["aridity_index"].to_numpy(),
         pmodel_const=PModelConst(),

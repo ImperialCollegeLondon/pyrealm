@@ -24,8 +24,6 @@ def photo_env():
         vpd=np.array([1000]),
         co2=np.array([400]),
         patm=np.array([101325.0]),
-        fapar=np.array([1]),
-        ppfd=np.array([1]),
         rootzonestress=np.array([1]),
         theta=np.array([0.5]),
     )
@@ -126,8 +124,6 @@ def test_subclasses(pmodelenv_args, subclass, expected):
     """Test that subclasses work as expected."""
     env = PModelEnvironment(
         **pmodelenv_args,
-        fapar=np.array([1]),
-        ppfd=np.array([1]),
     )
     instance = subclass(env)
     for key, value in expected.items():

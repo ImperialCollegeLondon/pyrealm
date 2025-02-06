@@ -183,9 +183,7 @@ def test_calc_ftemp_kphio(values, tc, c4, expvars):
     from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
 
     # Only tc is used from this environment
-    env = PModelEnvironment(
-        tc=values[tc], patm=101325, vpd=820, co2=400, fapar=1, ppfd=1
-    )
+    env = PModelEnvironment(tc=values[tc], patm=101325, vpd=820, co2=400)
 
     ret = QuantumYieldTemperature(env=env, use_c4=c4)
 
@@ -433,8 +431,6 @@ def test_optimal_chi(values, tc, patm, co2, vpd, method, context_manager, expval
             patm=values[patm],
             vpd=values[vpd],
             co2=values[co2],
-            fapar=1,
-            ppfd=1,
         )
 
         OptChiClass = OPTIMAL_CHI_CLASS_REGISTRY[method]
@@ -502,8 +498,6 @@ def test_jmax_limitation(
         patm=values[patm],
         vpd=values[vpd],
         co2=values[co2],
-        fapar=1,
-        ppfd=1,
     )
 
     if not ftemp_kphio:
@@ -581,8 +575,6 @@ def test_pmodelenvironment(values, tc, vpd, co2, patm, ca, kmm, gammastar, ns_st
         patm=values[patm],
         vpd=values[vpd],
         co2=values[co2],
-        fapar=1,
-        ppfd=1,
     )
 
     assert np.allclose(ret.gammastar, values[gammastar])
@@ -617,7 +609,7 @@ def test_pmodelenvironment_exception(inputs, context_manager):
     from pyrealm.pmodel import PModelEnvironment
 
     with context_manager:
-        _ = PModelEnvironment(**inputs, fapar=1, ppfd=1)
+        _ = PModelEnvironment(**inputs)
 
 
 # ------------------------------------------
@@ -802,9 +794,7 @@ def test_pmodel_class_c4(
     if method_kphio == "temperature":
         kf = 1
     else:
-        bug_env = PModelEnvironment(
-            tc=15, patm=101325, vpd=800, co2=400, fapar=1, ppfd=1
-        )
+        bug_env = PModelEnvironment(tc=15, patm=101325, vpd=800, co2=400)
         correction = QuantumYieldTemperature(
             env=bug_env, reference_kphio=0.05, use_c4=True
         )
@@ -943,8 +933,6 @@ def test_lavergne_equivalence(tc, theta, variable_method, fixed_method, is_C4):
         patm=np.array([101325]),
         vpd=np.array([100]),
         co2=np.array([400]),
-        fapar=1,
-        ppfd=1,
     )
 
     # lavergne method
@@ -962,8 +950,6 @@ def test_lavergne_equivalence(tc, theta, variable_method, fixed_method, is_C4):
         patm=np.array([101325]),
         vpd=np.array([100]),
         co2=np.array([400]),
-        fapar=1,
-        ppfd=1,
         pmodel_const=const,
     )
 

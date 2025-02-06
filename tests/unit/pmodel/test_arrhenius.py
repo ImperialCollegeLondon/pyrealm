@@ -78,8 +78,6 @@ def test_ArrheniusFactorABC_init_and_call(
         patm=np.array([101325]),
         vpd=np.array([400]),
         co2=np.array([400]),
-        fapar=np.array([1]),
-        ppfd=np.array([1]),
         mean_growth_temperature=np.array([10]),
     )
 
@@ -204,8 +202,6 @@ class TestKattgeKnorrArrhenius:
             patm=101325,
             vpd=400,
             co2=400,
-            fapar=np.array([1]),
-            ppfd=np.array([1]),
             mean_growth_temperature=args["tc_growth"],
         )
         arrh = KattgeKnorrArrhenius(env=env, reference_temperature=args["tc_ref"])

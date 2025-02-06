@@ -34,9 +34,11 @@ class PModelEnvironment:
     * the Michaelis Menten coefficient of Rubisco-limited assimilation
       (:math:`K`, using :func:`~pyrealm.pmodel.functions.calc_kmm`).
 
-    It also takes the photosynthetic photon flux density (PPFD, µmol m-2 s-1) and the
-    fraction of absorbed photosynthetically active radiation (FAPAR, unitless), which is
-    used to scale light use efficiency up to gross primary productivity.
+    The ``PModelEnvironment`` will also accept values for the photosynthetic photon flux
+    density (PPFD, µmol m-2 s-1) and the  fraction of absorbed photosynthetically active
+    radiation (FAPAR, unitless). These values are used to calculate the absorbed
+    incident radiation, which is used to scale light use efficiency up to gross primary
+    productivity.
 
     An instance of ``PModelEnvironment`` can then be used to fit different P Models
     using the same environment but different method implementations. Note that the
@@ -70,6 +72,13 @@ class PModelEnvironment:
       growing degree days (°C), also used in
       :meth:`~pyrealm.pmodel.quantum_yield.QuantumYieldSandoval`.
 
+    .. note::
+
+        Although the ``PModelEnvironment`` is typically used to estimate gross primary
+        productivity using the P Model, not all uses require the estimation of absorbed
+        incident radiation. The ``ppfd`` and ``fapar`` arguments both default to one,
+        and you will need to input actual values to estimate gross primary productivity.
+
     Args:
         tc: Temperature, relevant for photosynthesis (°C)
         vpd: Vapour pressure deficit (Pa)
@@ -100,8 +109,8 @@ class PModelEnvironment:
         vpd: NDArray[np.float64],
         co2: NDArray[np.float64],
         patm: NDArray[np.float64],
-        fapar: NDArray[np.float64],
-        ppfd: NDArray[np.float64],
+        fapar: NDArray[np.float64] = np.array([1.0]),
+        ppfd: NDArray[np.float64] = np.array([1.0]),
         pmodel_const: PModelConst = PModelConst(),
         core_const: CoreConst = CoreConst(),
         bounds_checker: BoundsChecker = BoundsChecker(),
