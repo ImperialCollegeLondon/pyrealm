@@ -17,7 +17,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst, PModelConst
-from pyrealm.core.utilities import check_input_shapes, summarize_attrs
+from pyrealm.core.utilities import summarize_attrs
 from pyrealm.pmodel.arrhenius import ARRHENIUS_METHOD_REGISTRY, ArrheniusFactorABC
 from pyrealm.pmodel.functions import calc_ftemp_inst_rd
 from pyrealm.pmodel.jmax_limitation import (
@@ -59,8 +59,6 @@ class PModelABC(ABC):
     def __init__(
         self,
         env: PModelEnvironment,
-        fapar: NDArray[np.float64] = np.array([1.0]),
-        ppfd: NDArray[np.float64] = np.array([1.0]),
         method_kphio: str = "temperature",
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
@@ -79,15 +77,6 @@ class PModelABC(ABC):
         """The PModelConst instance used to create the model environment."""
         self.core_const: CoreConst = env.core_const
         """The CoreConst instance used to create the model environment."""
-
-        # Check input shapes against each other and an existing calculated value
-        _ = check_input_shapes(ppfd, fapar, self.env.tc)
-
-        self.ppfd = fapar
-        """Photosynthetic photon flux density (PPFD, µmol m-2 s-1)."""
-        self.fapar = ppfd
-        """Fraction of absorbed photosynthetically active radiation 
-        (:math:`f_{APAR}`, -)."""
 
         # -----------------------------------------------------------------------
         # Optimal Chi method setup
@@ -344,8 +333,6 @@ class PModelNew(PModelABC):
     def __init__(
         self,
         env: PModelEnvironment,
-        fapar: NDArray[np.float64],
-        ppfd: NDArray[np.float64],
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
         method_kphio: str = "temperature",
@@ -355,8 +342,6 @@ class PModelNew(PModelABC):
         # Initialise the superclass
         super().__init__(
             env=env,
-            fapar=fapar,
-            ppfd=ppfd,
             method_optchi=method_optchi,
             method_jmaxlim=method_jmaxlim,
             method_kphio=method_kphio,
@@ -415,7 +400,7 @@ class PModelNew(PModelABC):
         )
 
         # Calculate absorbed irradiance
-        iabs = self.fapar * self.ppfd
+        iabs = self.env.fapar * self.env.ppfd
 
         # GPP
         self.gpp = self.lue * iabs
@@ -489,8 +474,6 @@ class PModelNew(PModelABC):
 
         return SubdailyPModelNew(
             env=self.env,
-            fapar=self.fapar,
-            ppfd=self.ppfd,
             method_optchi=self.method_optchi,
             method_arrhenius=self.method_arrhenius,
             method_jmaxlim=self.method_jmaxlim,
@@ -579,8 +562,6 @@ class SubdailyPModelNew(PModelABC):
           :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
         fs_scaler: An instance of
           :class:`~pyrealm.pmodel.scaler.SubdailyScaler`.
-        fapar: The :math:`f_{APAR}` for each observation.
-        ppfd: The PPDF for each observation.
         alpha: The :math:`\alpha` weight.
         allow_holdover: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect`
           function be allowed to hold over values to fill missing values.
@@ -610,8 +591,6 @@ class SubdailyPModelNew(PModelABC):
     def __init__(
         self,
         env: PModelEnvironment,
-        fapar: NDArray[np.float64],
-        ppfd: NDArray[np.float64],
         fs_scaler: SubdailyScaler,
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
@@ -627,8 +606,6 @@ class SubdailyPModelNew(PModelABC):
         # Initialise the superclass
         super().__init__(
             env=env,
-            fapar=fapar,
-            ppfd=ppfd,
             method_optchi=method_optchi,
             method_jmaxlim=method_jmaxlim,
             method_kphio=method_kphio,
@@ -658,7 +635,7 @@ class SubdailyPModelNew(PModelABC):
         responses to acclimation.
         """
 
-        # TODO - maybe encapsulate these in dataclass?
+        # TODO - maybe encapsulate these in a dataclass?
         self.vcmax25_daily_optimal: NDArray[np.float64]
         r"""Daily optimal values in acclimation window for :math:`V_{cmax}`, scaled to
          standard temperature (:math:`V_{cmax25}`)."""
@@ -725,6 +702,7 @@ class SubdailyPModelNew(PModelABC):
         # Calculate the acclimation environment passing on the constants definitions.
         pmodel_env_acclim: PModelEnvironment = PModelEnvironment(
             **daily_environment,
+            bounds_checker=self.env._bounds_checker,
             pmodel_const=self.env.pmodel_const,
             core_const=self.env.core_const,
         )
@@ -752,14 +730,6 @@ class SubdailyPModelNew(PModelABC):
             daily_reference_kphio = self.kphio.reference_kphio
             daily_method_kphio = self.method_kphio
 
-        # 3) Estimate productivity to calculate jmax and vcmax
-        ppfd_acclim = self.fs_scaler.get_daily_means(
-            self.ppfd, allow_partial_data=self.allow_partial_data
-        )
-        fapar_acclim = self.fs_scaler.get_daily_means(
-            self.fapar, allow_partial_data=self.allow_partial_data
-        )
-
         # 2) Fit a PModel to those environmental conditions, using the supplied settings
         #    for the original model.
         self.pmodel_acclim = PModelNew(
@@ -769,8 +739,6 @@ class SubdailyPModelNew(PModelABC):
             method_jmaxlim=self.method_jmaxlim,
             method_arrhenius=self.method_arrhenius,
             reference_kphio=daily_reference_kphio,
-            fapar=fapar_acclim,
-            ppfd=ppfd_acclim,
         )
         self.pmodel_acclim._fit_model()
 
@@ -897,7 +865,7 @@ class SubdailyPModelNew(PModelABC):
         # Calculate Ac, J and Aj at subdaily scale to calculate assimilation
         self.A_c = self.vcmax * self.optchi.mc
 
-        iabs = self.fapar * self.ppfd
+        iabs = self.env.fapar * self.env.ppfd
 
         self.J = (4 * self.kphio.kphio * iabs) / np.sqrt(
             1 + ((4 * self.kphio.kphio * iabs) / self.jmax) ** 2
