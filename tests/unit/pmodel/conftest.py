@@ -93,6 +93,8 @@ def be_vie_data_components(be_vie_data):
                 vpd=data["vpd"].to_numpy(),
                 co2=data["co2"].to_numpy(),
                 patm=data["patm"].to_numpy(),
+                ppfd=ppfd_subdaily,
+                fapar=fapar_subdaily,
                 theta=rng.uniform(low=0.5, high=0.8, size=ppfd_subdaily.shape),
                 rootzonestress=rng.uniform(low=0.7, high=1.0, size=ppfd_subdaily.shape),
             )

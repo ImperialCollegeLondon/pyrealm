@@ -9,6 +9,17 @@ A new major release is planned but will iterate through release candidates in or
 make functionality available for testing while the new functionality and API changes are
 worked through. The changes below are provisional.
 
+- The `PModelEnvironment` class has been updated. It now requires that the user also
+  provides `fapar` and `ppfd` data, currently with no default values. The provision of
+  additional variables has also been made more flexible, allowing users to provide
+  arbitary extra variables to the environment. This makes it easier to adopt new PModel
+  methods implementations with new required variables.
+
+  **Breaking change**: Need to specify `fapar` and `ppfd` in `PModelEnvironment`.
+
+- The `bounds_checker` function has been retired and replaced with the `BoundsChecker`
+  class, which provides more flexible and user-configurable bounds checking.
+
 - A new system for providing alternative calculations of quantum yield ($\phi_0$) in the
   P Model, using the new `pyrealm.pmodel.quantum_yield` module. This module now provides
   an expandable set of implementations of the quantum yield calculation, and currently

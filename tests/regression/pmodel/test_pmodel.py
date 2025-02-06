@@ -427,7 +427,10 @@ def test_optimal_chi(values, tc, patm, co2, vpd, method, context_manager, expval
 
     with context_manager:
         env = PModelEnvironment(
-            tc=values[tc], patm=values[patm], vpd=values[vpd], co2=values[co2]
+            tc=values[tc],
+            patm=values[patm],
+            vpd=values[vpd],
+            co2=values[co2],
         )
 
         OptChiClass = OPTIMAL_CHI_CLASS_REGISTRY[method]
@@ -491,7 +494,10 @@ def test_jmax_limitation(
 
     # Optimal Chi
     env = PModelEnvironment(
-        tc=values[tc], patm=values[patm], vpd=values[vpd], co2=values[co2]
+        tc=values[tc],
+        patm=values[patm],
+        vpd=values[vpd],
+        co2=values[co2],
     )
 
     if not ftemp_kphio:
@@ -565,7 +571,10 @@ def test_pmodelenvironment(values, tc, vpd, co2, patm, ca, kmm, gammastar, ns_st
     from pyrealm.pmodel import PModelEnvironment
 
     ret = PModelEnvironment(
-        tc=values[tc], patm=values[patm], vpd=values[vpd], co2=values[co2]
+        tc=values[tc],
+        patm=values[patm],
+        vpd=values[vpd],
+        co2=values[co2],
     )
 
     assert np.allclose(ret.gammastar, values[gammastar])
@@ -631,6 +640,8 @@ def pmodelenv(values):
         vpd=values["vpd_sc"],
         co2=values["co2_sc"],
         patm=values["patm_sc"],
+        fapar=values["fapar_sc"],
+        ppfd=values["ppfd_sc"],
         mean_growth_temperature=values["tc_sc"],
     )
 
@@ -639,6 +650,8 @@ def pmodelenv(values):
         vpd=values["vpd_ar"],
         co2=values["co2_ar"],
         patm=values["patm_ar"],
+        fapar=values["fapar_ar"],
+        ppfd=values["ppfd_ar"],
         mean_growth_temperature=values["tc_ar"],
     )
 

@@ -139,7 +139,8 @@ class JmaxLimitationWang17(
         >>> from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
-        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ... )
         >>> optchi = OptimalChiPrentice14(env=env)
         >>> jmaxlim = JmaxLimitationWang17(optchi=optchi)
@@ -217,7 +218,8 @@ class JmaxLimitationSmith19(
         >>> from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
-        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ... )
         >>> optchi = OptimalChiPrentice14(env=env)
         >>> jmaxlim = JmaxLimitationSmith19(optchi=optchi)

@@ -55,8 +55,8 @@ from pyrealm.pmodel import PModel, PModelEnvironment, CalcCarbonIsotopes
 n_pts = 31
 tc_1d = np.linspace(-10, 40, n_pts)
 
-# Fit models
-env = PModelEnvironment(tc=tc_1d, patm=101325, co2=400, vpd=1000)
+# Fit models - GPP estimation not needed so fapar and ppfd set to unity
+env = PModelEnvironment(tc=tc_1d, patm=101325, co2=400, vpd=1000, fapar=1, ppfd=1)
 mod_c3 = PModel(env, method_optchi="prentice14")
 mod_c4 = PModel(env, method_optchi="c4")
 

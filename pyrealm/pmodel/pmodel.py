@@ -144,7 +144,8 @@ class PModel:
         >>> from pyrealm.pmodel.pmodel_environment import PModelEnvironment
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
-        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ... )
         >>> # Predictions from C3 P model
         >>> mod_c3 = PModel(env)

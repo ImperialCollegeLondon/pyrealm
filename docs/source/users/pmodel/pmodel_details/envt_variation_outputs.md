@@ -49,7 +49,9 @@ co2_1d = np.array([280, 410])
 tc_4d, patm_4d, vpd_4d, co2_4d = np.meshgrid(tc_1d, patm_1d, vpd_1d, co2_1d)
 
 # Calculate the photosynthetic environment
-pmodel_env = PModelEnvironment(tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d)
+pmodel_env = PModelEnvironment(
+    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, fapar=0.91, ppfd=600
+)
 
 # Run the P Models
 pmodel_c3 = PModel(pmodel_env)
@@ -326,7 +328,10 @@ irradiance changes from 0 to 2000 $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}
 :tags: [hide-input]
 
 # Calculate the photosynthetic environment
-pmodel_env = PModelEnvironment(tc=20, patm=101325, vpd=1000, co2=400)
+ppfd_vals = np.arange(2000)
+pmodel_env = PModelEnvironment(
+    tc=20, patm=101325, vpd=1000, co2=400, fapar=1, ppfd=ppfd_vals
+)
 
 # Run the P Models
 pmodel_c3 = PModel(pmodel_env)

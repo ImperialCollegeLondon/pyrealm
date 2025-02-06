@@ -337,6 +337,8 @@ class SubdailyPModel:
         # Calculate the acclimation environment passing on the constants definitions.
         pmodel_env_acclim: PModelEnvironment = PModelEnvironment(
             **daily_environment,
+            fapar=np.array([1]),  # TODO, this are placeholder values
+            ppfd=np.array([1]),
             pmodel_const=self.env.pmodel_const,
             core_const=self.env.core_const,
             bounds_checker=self.env._bounds_checker,
@@ -692,6 +694,8 @@ class SubdailyPModel_JAMES:
             vpd=vpd_acclim,
             co2=co2_acclim,
             patm=patm_acclim,
+            fapar=self.fapar_acclim,
+            ppfd=self.ppfd_acclim,
             pmodel_const=self.env.pmodel_const,
             core_const=self.env.core_const,
         )
