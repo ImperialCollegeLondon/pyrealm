@@ -16,9 +16,8 @@ class TwoLeafIrradience:
     This class implements the methodology of Pury and Farquhar (1997)
     :cite:p:`depury:1997a` two leaf, two stream model. This model is chosen to
     provide a better representation than the big leaf model and to align closely to
-    the workings of the ``BESS`` model :cite:alp:`Ryu_et_al:2011`.
+    the workings of the ``BESS`` model :cite:alp:`ryu:2011a`.
 
-    The outline flow of the calculations is as follows:
     1. Calculate the beam extinction coefficient :math:`k_{b}` using
     :func:`beam_extinction_coeff`
     2. Calculate the scattered beam extinction coefficient using
@@ -41,7 +40,7 @@ class TwoLeafIrradience:
     14. Calculate the irradience absorbed by the shaded farction of the canopy with
     :func:`shaded_absorbed_irrad`
 
-    These calculated values are used in the estimation of gross primary productivity
+    The calculated values are used in the estimation of gross primary productivity
     (``GPP``). An instance of this class is accepted by the
     :class:`TwoLeafAssimilation`, which uses these results to calulate ``GPP``.
 
@@ -132,7 +131,46 @@ class TwoLeafIrradience:
             return False
 
     def calc_absorbed_irradience(self) -> None:
-        """Calculate absorbed irradiance for sunlit and shaded leaves."""
+        r"""Calculate absorbed irradiance for sunlit and shaded leaves.
+
+        The internal function calls are as follows:
+
+        1. Calculate the beam extinction coefficient :math:`k_{b}` using
+        :func:`beam_extinction_coeff`
+
+        2. Calculate the scattered beam extinction coefficient using
+        :func:`scattered_beam_extinction_coeff`
+
+        3. Calculate fraction of diffuse radiation using :func:`fraction_of_diffuse_rad`
+
+        4. Calculate beam irradience for horizontal leaves using
+        :func:`beam_irradience_h_leaves`
+
+        5. Calculate the beam irradience for a uniform leaf angle distribution with
+        :func:`beam_irrad_unif_leaf_angle_dist`
+
+        6. Calculate diffuse radiation with :func:`diffuse_radiation`
+
+        7. Calculate direct beam irradience with :func:`beam_irradience`
+
+        8. Calculate scattered beam irradience with :func:`scattered_beam_irradience`
+
+        9. Calculate the total canopy irradience with :func:`canopy_irradience`
+
+        10. Calculate the sunlit beam irradience with :func:`sunlit_beam_irrad`
+
+        11. Calulate the sunlit diffuse irradience with :func:`sunlit_diffuse_irrad`
+
+        12. Calculate the scattered irradience recieved by sunlit portion of canopy with
+        :func:`sunlit_scattered_irrad`
+
+        13. Calulate total irradience absorbed by sunlit portion of canopy with
+        :func:`sunlit_absorbed_irrad`
+
+        14. Calculate the irradience absorbed by the shaded farction of the canopy with
+        :func:`shaded_absorbed_irrad`
+
+        """
 
         self.kb = beam_extinction_coeff(self.beta_angle, self.k_sol_obs_angle)
         self.kb_prime = scattered_beam_extinction_coeff(
@@ -272,12 +310,51 @@ class TwoLeafAssimilation:
     def gpp_estimator(self) -> None:
         """Estimate the gross primary production (``GPP``) using the two-leaf model.
 
-        This method calculates various parameters related to photosynthesis, including
-        carboxylation rates, assimilation rates, and electron transport rates for sunlit
-        and shaded leaves, ultimately leading to the estimation of ``GPP``.
+        This method uses the following functions to calculate the ``GPP`` estimate,
+        including carboxylation rates, assimilation rates, and electron transport
+        rates for sunlit and shaded leaves. Ultimately leading to the estimation of
+        ``GPP``.
 
-        Sets:
-            gpp_estimate (NDArray): Estimated gross primary production.
+        **Calculation Steps:**
+
+        1. Calculate the canopy extinction coefficient with
+        :func:`beam_extinction_coeff`
+
+        2. Calculate the canopy carboxylation rate with
+        :func:`Vmax25_canopy`
+
+        3. Calculate the carboxylation rate in sunlit areas
+        :func:`Vmax25_sun`
+
+        4. Calculate the carboxylation rate in shaded areas
+        :func:`Vmax25_shade`
+
+        5. Calculate the sunlit and shaded carboxylation rates scaled by temperature
+        with :func:`carboxylation_scaling_to_T`
+
+        6. Calculate the sunlit and shaded photosynthetic rate
+        with :func:`photosynthetic_estimate`
+
+        7. Calculate the sunlit and shaded maximum rate of electron transport
+        with :func:`Jmax25`
+
+        8. Calculate the sunlit and shaded temperature corrected rate of electron
+        transport with :func:`Jmax25_temp_correction`
+
+        9. Calculate the sunlit and shaded electron transport rate
+        :func:`electron_transport_rate`
+
+        10. Calculate the sunlit and shaded assimilation rate driven by electron
+        transport with :func:`assimilation_rate`
+
+        11. Calculate the sunlit and shaded canopy assimilation
+        with :func:`assimilation_canopy`
+
+        12. Calculate the gross primary productivity
+        with :func:`gross_primary_product`
+
+        **Sets:**
+        gpp_estimate (NDArray): Estimated gross primary production.
         """
         self.kv_Lloyd = canopy_extinction_coefficient(self.vcmax_pmod)
 
