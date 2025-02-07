@@ -84,11 +84,8 @@ def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
         ppfd=np.array([800]),
     )
 
-    fapar = 1
-    ppfd = 800
-
-    pmodel_c3 = PModelNew(env, fapar=fapar, ppfd=ppfd, **pmodel_c3_args)
-    pmodel_c4 = PModelNew(env, fapar=fapar, ppfd=ppfd, **pmodel_c4_args)
+    pmodel_c3 = PModelNew(env, **pmodel_c3_args)
+    pmodel_c4 = PModelNew(env, **pmodel_c4_args)
 
     comp = C3C4Competition(
         pmodel_c3.gpp,

@@ -36,8 +36,6 @@ class PModelABC(ABC):
 
     Args:
         env: A :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance
-        fapar: The fraction of absorbed photosynthetically active radiation (unitless)
-        ppfd: The photosynthetic photon flux density (µmol m-2 s-1).
         method_kphio: The method to use for calculating the quantum yield
             efficiency of photosynthesis (:math:`\phi_0`, unitless). The method name
             must be included in the
@@ -684,6 +682,8 @@ class SubdailyPModelNew(PModelABC):
             "co2",
             "patm",
             "vpd",
+            "fapar",
+            "ppfd",
             *self._optchi_class.requires,
             *self._kphio_class.requires,
         ]

@@ -243,12 +243,6 @@ def test_pmodel_equivalence():
         mean_growth_temperature=np.full(n_pts, 10),
     )
 
-    # Constant absorbed irradation
-    # Potential GPP using fAPAR = 1 (unitless)
-    fapar = np.full(n_pts, 1)
-    # PPFD (Photosynthetic Photon Flux Density, µmol m⁻² s⁻¹)
-    ppfd = np.full(n_pts, 100 * 2.04)
-
     # Setup the Subdaily Model using a 1 hour acclimation window around noon
     fsscaler = SubdailyScaler(datetimes=datetimes)
     fsscaler.set_window(
@@ -260,8 +254,6 @@ def test_pmodel_equivalence():
     fix_subdaily = SubdailyPModelNew(
         env=fixed_env,
         method_optchi="prentice14",
-        fapar=fapar,
-        ppfd=ppfd,
         fs_scaler=fsscaler,
         alpha=1 / 15,
         allow_holdover=True,
@@ -270,8 +262,6 @@ def test_pmodel_equivalence():
 
     fix_standard = PModelNew(
         env=fixed_env,
-        fapar=fapar,
-        ppfd=ppfd,
         method_optchi="prentice14",
         reference_kphio=1 / 8,
     )

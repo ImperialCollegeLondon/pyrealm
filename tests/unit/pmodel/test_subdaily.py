@@ -18,7 +18,7 @@ def test_SubdailyPModel_JAMES(be_vie_data_components):
     from pyrealm.pmodel import SubdailyScaler
     from pyrealm.pmodel.subdaily import SubdailyPModel_JAMES
 
-    env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components.get()
+    env, datetime, expected_gpp = be_vie_data_components.get()
 
     # Get the fast slow scaler and set window
     fsscaler = SubdailyScaler(datetime)
@@ -36,11 +36,11 @@ def test_SubdailyPModel_JAMES(be_vie_data_components):
     # - Jmax and Vcmax filling from midday not window end
     fs_pmodel_james = SubdailyPModel_JAMES(
         env=env,
+        fapar=env.fapar,
+        ppfd=env.ppfd,
         fs_scaler=fsscaler,
         allow_holdover=True,
         kphio=1 / 8,
-        fapar=fapar,
-        ppfd=ppfd,
         vpd_scaler=vpdscaler,
         fill_from=np.timedelta64(12, "h"),
     )
@@ -84,7 +84,7 @@ def test_SubdailyPModel_corr(be_vie_data_components, data_args):
     from pyrealm.pmodel import SubdailyScaler
     from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
 
-    env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components.get(**data_args)
+    env, datetime, expected_gpp = be_vie_data_components.get(**data_args)
 
     # Get the fast slow scaler and set window
     fsscaler = SubdailyScaler(datetime)
@@ -96,8 +96,6 @@ def test_SubdailyPModel_corr(be_vie_data_components, data_args):
     # Run as a subdaily model using the kphio used in the reference implementation.
     subdaily_pmodel = SubdailyPModelNew(
         env=env,
-        ppfd=ppfd,
-        fapar=fapar,
         reference_kphio=1 / 8,
         fs_scaler=fsscaler,
         allow_holdover=True,
@@ -121,9 +119,7 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
     from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
 
     # Run all in one model
-    env, ppfd, fapar, datetime, _ = be_vie_data_components.get(
-        mode="crop", start=0, end=17520
-    )
+    env, datetime, _ = be_vie_data_components.get(mode="crop", start=0, end=17520)
 
     # Get the fast slow scaler and set window
     fsscaler = SubdailyScaler(datetime)
@@ -135,17 +131,13 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
     # Run as a subdaily model using the kphio used in the reference implementation.
     all_in_one_subdaily_pmodel = SubdailyPModelNew(
         env=env,
-        ppfd=ppfd,
-        fapar=fapar,
         reference_kphio=1 / 8,
         fs_scaler=fsscaler,
         allow_holdover=True,
     )
 
     # Run first half of year
-    env1, ppfd1, fapar1, datetime1, _ = be_vie_data_components.get(
-        mode="crop", start=0, end=182 * 48
-    )
+    env1, datetime1, _ = be_vie_data_components.get(mode="crop", start=0, end=182 * 48)
 
     # Get the fast slow scaler and set window
     fsscaler1 = SubdailyScaler(datetime1)
@@ -157,15 +149,13 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
     # Run as a subdaily model using the kphio used in the reference implementation.
     part_1_subdaily_pmodel = SubdailyPModelNew(
         env=env1,
-        ppfd=ppfd1,
-        fapar=fapar1,
         reference_kphio=1 / 8,
         fs_scaler=fsscaler1,
         allow_holdover=True,
     )
 
     # Run second year
-    env2, ppfd2, fapar2, datetime2, _ = be_vie_data_components.get(
+    env2, datetime2, _ = be_vie_data_components.get(
         mode="crop", start=182 * 48, end=365 * 48
     )
 
@@ -179,8 +169,6 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
     # Run as a subdaily model using the kphio used in the reference implementation.
     part_2_subdaily_pmodel = SubdailyPModelNew(
         env=env2,
-        ppfd=ppfd2,
-        fapar=fapar2,
         reference_kphio=1 / 8,
         fs_scaler=fsscaler2,
         allow_holdover=True,
@@ -240,16 +228,10 @@ def test_SubdailyPModel_dimensionality(be_vie_data, ndims):
         half_width=np.timedelta64(30, "m"),
     )
 
-    # Apply a different random value of fAPAR for each time series
-    fapar_vals = np.random.random(extra_dims)
-    fapar_vals[0] = 1.0
-
     # Fast slow model
     subdaily_pmodel = SubdailyPModelNew(
         env=env,
         fs_scaler=fsscaler,
-        fapar=fapar_vals * np.ones(array_dims).transpose(),
-        ppfd=np.ones(array_dims).transpose(),
         allow_holdover=True,
     )
 
@@ -271,7 +253,7 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
     from pyrealm.pmodel import SubdailyScaler
     from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
 
-    env, ppfd, fapar, datetime, _ = be_vie_data_components.get()
+    env, datetime, _ = be_vie_data_components.get()
 
     # Get the fast slow scaler and set window
     fsscaler = SubdailyScaler(datetime)
@@ -284,8 +266,6 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
     _ = SubdailyPModelNew(
         env=env,
         fs_scaler=fsscaler,
-        fapar=fapar,
-        ppfd=ppfd,
         method_optchi=method_optchi,
         allow_holdover=True,
     )
@@ -298,7 +278,7 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
     from pyrealm.pmodel.new_pmodel import PModelNew, SubdailyPModelNew
     from pyrealm.pmodel.subdaily import SubdailyScaler
 
-    env, ppfd, fapar, datetime, _ = be_vie_data_components.get()
+    env, datetime, _ = be_vie_data_components.get()
 
     # Get the fast slow scaler and set window
     fsscaler = SubdailyScaler(datetime)
@@ -311,16 +291,12 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
     direct = SubdailyPModelNew(
         env=env,
         fs_scaler=fsscaler,
-        fapar=fapar,
-        ppfd=ppfd,
         method_optchi=method_optchi,
         allow_holdover=True,
     )
 
     # Convert a standard model
     standard_model = PModelNew(
-        fapar=fapar,
-        ppfd=ppfd,
         env=env,
         method_optchi=method_optchi,
     )
@@ -499,7 +475,7 @@ def test_SubdailyPModel_incomplete_day_behaviour(
     from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
     from pyrealm.pmodel.subdaily import SubdailyScaler
 
-    def model_fitter(env, ppfd, fapar, datetime):
+    def model_fitter(env, datetime):
         # Get the fast slow scaler and set window
         fsscaler = SubdailyScaler(datetime)
         fsscaler.set_window(
@@ -510,8 +486,6 @@ def test_SubdailyPModel_incomplete_day_behaviour(
         # Run as a subdaily model
         return SubdailyPModelNew(
             env=env,
-            ppfd=ppfd,
-            fapar=fapar,
             fs_scaler=fsscaler,
             allow_holdover=allow_holdover,
             allow_partial_data=allow_partial_data,
@@ -526,15 +500,15 @@ def test_SubdailyPModel_incomplete_day_behaviour(
         if patch_means:
             # Patch the return values for `get_daily_means` to be the same as the
             # complete model - these have to to be in the same order that they are
-            # calculated within the model, so the each call gets patched with the right
+            # calculated within the model, so that each call gets patched with the right
             # values.
             patched_means = [
                 complete_mod.pmodel_acclim.env.tc,
                 complete_mod.pmodel_acclim.env.co2,
                 complete_mod.pmodel_acclim.env.patm,
                 complete_mod.pmodel_acclim.env.vpd,
-                complete_mod.pmodel_acclim.fapar,
-                complete_mod.pmodel_acclim.ppfd,
+                complete_mod.pmodel_acclim.env.fapar,
+                complete_mod.pmodel_acclim.env.ppfd,
             ]
 
             with mocker.patch.object(
