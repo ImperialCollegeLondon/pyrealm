@@ -167,7 +167,7 @@ soil moisture factor.
 tc = np.array([20] * 101)
 sm_gradient = np.linspace(0, 1.0, 101)
 
-env = PModelEnvironment(tc=tc, patm=101325.0, vpd=820, co2=400)
+env = PModelEnvironment(tc=tc, patm=101325.0, vpd=820, co2=400, fapar=1, ppfd=1000)
 model = PModel(env)
 model.estimate_productivity(fapar=1, ppfd=1000)
 

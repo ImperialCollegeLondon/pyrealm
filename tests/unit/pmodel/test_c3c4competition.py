@@ -80,6 +80,8 @@ def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
         co2=np.array([400]),
         vpd=np.array([1000]),
         theta=np.array([0.5]),
+        fapar=np.array([1]),
+        ppfd=np.array([800]),
     )
 
     pmodel_c3 = PModel(env, **pmodel_c3_args)

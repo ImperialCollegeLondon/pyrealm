@@ -195,7 +195,7 @@ class KattgeKnorrArrhenius(
         return calculate_kattge_knorr_arrhenius_factor(
             tk_leaf=self.tk,
             tk_ref=self.tk_ref,
-            tc_growth=self.env.mean_growth_temperature,
+            tc_growth=getattr(self.env, "mean_growth_temperature"),
             ha=coefficients["ha"],
             hd=coefficients["hd"],
             entropy_intercept=coefficients["entropy_intercept"],

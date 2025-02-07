@@ -111,7 +111,7 @@ The code below then calculates the photosynthetic environment.
 
 ```{code-cell} ipython3
 # Generate and check the PModelEnvironment
-pm_env = PModelEnvironment(tc=tc, patm=patm, vpd=vpd, co2=co2)
+pm_env = PModelEnvironment(tc=tc, patm=patm, vpd=vpd, co2=co2, fapar=fapar, ppfd=ppfd)
 pm_env.summarize()
 ```
 

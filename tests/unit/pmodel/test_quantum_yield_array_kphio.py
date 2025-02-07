@@ -43,7 +43,12 @@ def test_scalar_kphio(basic_inputs_and_expected):
     inputs, expected = basic_inputs_and_expected
 
     env = PModelEnvironment(
-        tc=inputs.tc, patm=inputs.patm, co2=inputs.co2, vpd=inputs.vpd
+        tc=inputs.tc,
+        patm=inputs.patm,
+        co2=inputs.co2,
+        vpd=inputs.vpd,
+        fapar=inputs.fapar,
+        ppfd=inputs.ppfd,
     )
     mod = PModel(env, method_kphio="fixed", reference_kphio=0.05)
     mod.estimate_productivity(fapar=inputs.fapar, ppfd=inputs.ppfd)
@@ -72,7 +77,12 @@ def variable_kphio(basic_inputs_and_expected):
 
     for idx, kph in enumerate(kphio_values):
         env = PModelEnvironment(
-            tc=inputs.tc, patm=inputs.patm, co2=inputs.co2, vpd=inputs.vpd
+            tc=inputs.tc,
+            patm=inputs.patm,
+            co2=inputs.co2,
+            vpd=inputs.vpd,
+            fapar=inputs.fapar,
+            ppfd=inputs.ppfd,
         )
         mod = PModel(env, method_kphio="fixed", reference_kphio=kph)
         mod.estimate_productivity(fapar=inputs.fapar, ppfd=inputs.ppfd)
@@ -143,6 +153,8 @@ def test_kphio_arrays_failure_modes(
         patm=np.full((5, 5), inputs.patm),
         co2=np.full((5, 5), inputs.co2),
         vpd=np.full((5, 5), inputs.vpd),
+        fapar=np.full((5, 5), inputs.fapar),
+        ppfd=np.full((5, 5), inputs.ppfd),
         aridity_index=np.full((5, 5), inputs.aridity_index),
         mean_growth_temperature=np.full((5, 5), inputs.mean_growth_temperature),
     )
@@ -165,6 +177,8 @@ def test_kphio_arrays(basic_inputs_and_expected, variable_kphio, shape):
         patm=np.broadcast_to(inputs.patm, shape),
         co2=np.broadcast_to(inputs.co2, shape),
         vpd=np.broadcast_to(inputs.vpd, shape),
+        fapar=np.broadcast_to(inputs.fapar, shape),
+        ppfd=np.broadcast_to(inputs.ppfd, shape),
     )
     mod = PModel(env, reference_kphio=kphio_vals.reshape(shape), method_kphio="fixed")
     mod.estimate_productivity(fapar=inputs.fapar, ppfd=inputs.ppfd)
@@ -241,6 +255,8 @@ def test_kphio_arrays_subdaily(
         patm=np.broadcast_to(np.expand_dims(env.patm, axis=new_dims), shape),
         co2=np.broadcast_to(np.expand_dims(env.co2, axis=new_dims), shape),
         vpd=np.broadcast_to(np.expand_dims(env.vpd, axis=new_dims), shape),
+        ppfd=np.broadcast_to(np.expand_dims(ppfd, axis=new_dims), shape),
+        fapar=np.broadcast_to(np.expand_dims(fapar, axis=new_dims), shape),
     )
 
     subdaily_pmodel = SubdailyPModel(

@@ -94,7 +94,7 @@ $\phi_0 = 0.081785$, following the BRC parameterisation in Table 1. of
 :tags: [hide-input]
 
 # Calculate temperature dependence of quantum yield efficiency
-env = PModelEnvironment(tc=tc_1d, patm=101325, vpd=820, co2=400)
+env = PModelEnvironment(tc=tc_1d, patm=101325, vpd=820, co2=40, fapar=1, ppfd=1)
 
 fkphio_c3 = QuantumYieldTemperature(env=env, use_c4=False)
 fkphio_c4 = QuantumYieldTemperature(env=env, use_c4=True)
@@ -140,6 +140,8 @@ env = PModelEnvironment(
     patm=np.repeat(101325, n_vals),
     vpd=np.repeat(820, n_vals),
     co2=np.repeat(400, n_vals),
+    fapar=np.repeat(1, n_vals),
+    ppfd=np.repeat(1, n_vals),
 )
 model_var_kphio = PModel(env, method_kphio="fixed", reference_kphio=kphio_values)
 
@@ -179,6 +181,8 @@ env = PModelEnvironment(
     patm=np.repeat(101325, n_vals),
     vpd=np.repeat(820, n_vals),
     co2=np.repeat(400, n_vals),
+    fapar=np.repeat(1, n_vals),
+    ppfd=np.repeat(1, n_vals),
     aridity_index=aridity_index,
     mean_growth_temperature=np.repeat(20, n_vals),
 )
@@ -217,6 +221,8 @@ env = PModelEnvironment(
     patm=np.full(shape, 101325),
     vpd=np.full(shape, 820),
     co2=np.full(shape, 400),
+    fapar=np.full(shape, 1),
+    ppfd=np.full(shape, 1),
     aridity_index=ai3,
     mean_growth_temperature=mg3,
 )

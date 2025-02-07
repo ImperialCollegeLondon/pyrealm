@@ -64,8 +64,9 @@ temperature gradient. The other forcing variables are fixed ($P=101325.0 , \ce{C
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-# Calculate variation in m_jlim with temperature
-env = PModelEnvironment(tc=tc_1d, patm=101325, vpd=820, co2=400)
+# Calculate variation in m_jlim with temperature - no estimation of GPP needed
+# so set fapar and ppfd to unity
+env = PModelEnvironment(tc=tc_1d, patm=101325, vpd=820, co2=400, fapar=1, ppfd=1)
 
 model_jmax_simple = PModel(
     env, method_jmaxlim="none", method_kphio="fixed", reference_kphio=0.08

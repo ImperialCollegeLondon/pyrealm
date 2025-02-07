@@ -76,8 +76,11 @@ from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
 # Set the resolution of examples
 n_pts = 101
 
-# Create environment containing a range of representative values for temperature
-env = PModelEnvironment(tc=np.linspace(-25, 100, n_pts), patm=101325, vpd=820, co2=400)
+# Create environment containing a range of representative values for temperature. No
+# estimation of GPP needed so fapar and ppfd set to unity
+env = PModelEnvironment(
+    tc=np.linspace(-25, 100, n_pts), patm=101325, vpd=820, co2=400, fapar=1, ppfd=1
+)
 
 # Calculate temperature dependence of quantum yield efficiency
 fkphio_c3 = QuantumYieldTemperature(env, use_c4=False)

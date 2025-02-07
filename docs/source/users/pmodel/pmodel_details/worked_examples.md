@@ -60,7 +60,7 @@ from pyrealm.pmodel import PModel, PModelEnvironment
 from pyrealm.core.pressure import calc_patm
 
 # Calculate the PModelEnvironment
-env = PModelEnvironment(tc=20.0, patm=101325.0, vpd=820, co2=400)
+env = PModelEnvironment(tc=20.0, patm=101325.0, vpd=820, co2=400, fapar=0.91, ppfd=834)
 ```
 
 The `env` object now holds the photosynthetic environment, which can be re-used
@@ -189,7 +189,7 @@ temp[temp < -25] = np.nan
 vpd = np.clip(vpd, 0, np.inf)
 
 # Calculate the photosynthetic environment
-env = PModelEnvironment(tc=temp, co2=co2, patm=patm, vpd=vpd)
+env = PModelEnvironment(tc=temp, co2=co2, patm=patm, vpd=vpd, fapar=fapar, ppfd=ppfd)
 env.summarize()
 ```
 

@@ -228,8 +228,9 @@ class OptimalChiPrentice14(
     Examples:
         >>> import numpy as np
         >>> env = PModelEnvironment(
-        ...     tc=np.array([20]), vpd=np.array([1000]),
-        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ...     tc=np.array([20]), vpd=np.array([1000]), 
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ... )
         >>> vals = OptimalChiPrentice14(env=env)
         >>> vals.chi.round(5)
@@ -296,6 +297,7 @@ class OptimalChiPrentice14RootzoneStress(
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
         ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ...     rootzonestress=0.5
         ... )
         >>> vals = OptimalChiPrentice14RootzoneStress(env=env)
@@ -326,7 +328,7 @@ class OptimalChiPrentice14RootzoneStress(
             self.xi = np.sqrt(
                 (
                     self.beta
-                    * self.env.rootzonestress
+                    * getattr(self.env, "rootzonestress")
                     * (self.env.kmm + self.env.gammastar)
                 )
                 / (1.6 * self.env.ns_star)
@@ -363,7 +365,8 @@ class OptimalChiC4(
         >>> import numpy as np
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
-        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ... )
         >>> vals = OptimalChiC4(env=env)
         >>> vals.chi.round(5)
@@ -430,6 +433,7 @@ class OptimalChiC4RootzoneStress(
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
         ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ...     rootzonestress=0.5
         ... )
         >>> vals = OptimalChiC4RootzoneStress(env=env)
@@ -455,7 +459,7 @@ class OptimalChiC4RootzoneStress(
             self.xi = np.sqrt(
                 (
                     self.beta
-                    * self.env.rootzonestress
+                    * getattr(self.env, "rootzonestress")
                     * (self.env.kmm + self.env.gammastar)
                 )
                 / (1.6 * self.env.ns_star)
@@ -505,8 +509,10 @@ class OptimalChiLavergne20C3(
     Examples:
         >>> import numpy as np
         >>> env = PModelEnvironment(
-        ...     tc=np.array([20]), vpd=np.array([1000]), co2=np.array([400]),
-        ...     patm=np.array([101325.0]), theta=np.array([0.5])
+        ...     tc=np.array([20]), vpd=np.array([1000]),
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
+        ...     theta=np.array([0.5])
         ... )
         >>> vals = OptimalChiLavergne20C3(env=env)
         >>> vals.beta.round(5)
@@ -524,10 +530,9 @@ class OptimalChiLavergne20C3(
     def set_beta(self) -> None:
         """Set ``beta`` with soil moisture corrections."""
 
-        # Calculate beta as a function of theta, which is guaranteed not to be None by
-        # _check_requires so suppress mypy here
+        # Calculate beta as a function of theta
         self.beta = np.exp(
-            self.pmodel_const.lavergne_2020_b_c3 * self.env.theta  # type: ignore[operator]
+            self.pmodel_const.lavergne_2020_b_c3 * getattr(self.env, "theta")
             + self.pmodel_const.lavergne_2020_a_c3
         )
 
@@ -590,8 +595,10 @@ class OptimalChiLavergne20C4(
     Examples:
         >>> import numpy as np
         >>> env = PModelEnvironment(
-        ...     tc=np.array([20]), vpd=np.array([1000]), co2=np.array([400]),
-        ...     patm=np.array([101325.0]), theta=np.array([0.5])
+        ...     tc=np.array([20]), vpd=np.array([1000]),
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
+        ...     theta=np.array([0.5])
         ... )
         >>> vals = OptimalChiLavergne20C4(env=env)
         >>> vals.beta.round(5)
@@ -615,10 +622,9 @@ class OptimalChiLavergne20C4(
             ExperimentalFeatureWarning,
         )
 
-        # Calculate beta as a function of theta, which is guaranteed not to be None by
-        # _check_requires so suppress mypy here
+        # Calculate beta as a function of theta
         self.beta = np.exp(
-            self.pmodel_const.lavergne_2020_b_c4 * self.env.theta  # type: ignore[operator]
+            self.pmodel_const.lavergne_2020_b_c4 * getattr(self.env, "theta")
             + self.pmodel_const.lavergne_2020_a_c4
         )
 
@@ -682,7 +688,8 @@ class OptimalChiC4NoGamma(
         >>> import numpy as np
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
-        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ... )
         >>> vals = OptimalChiC4NoGamma(env=env)
         >>> vals.chi.round(5)
@@ -751,6 +758,7 @@ class OptimalChiC4NoGammaRootzoneStress(
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
         ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ...     rootzonestress=np.array([0.5])
         ... )
         >>> vals = OptimalChiC4NoGammaRootzoneStress(env=env)
@@ -777,7 +785,7 @@ class OptimalChiC4NoGammaRootzoneStress(
             self.xi = xi_values
         else:
             self.xi = np.sqrt(
-                (self.beta * self.env.rootzonestress * self.env.kmm)
+                (self.beta * getattr(self.env, "rootzonestress") * self.env.kmm)
                 / (1.6 * self.env.ns_star)
             )
 
