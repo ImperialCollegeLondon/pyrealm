@@ -750,7 +750,7 @@ class Test_AcclimationModel_get_daily_means_window_and_include:
 
         assert np.allclose(calculated_means, expected_means, equal_nan=True)
 
-    def test_SubdailyScaler_get_daily_means_with_set_include(
+    def test_AcclimationModel_get_daily_means_with_set_include(
         self, fixture_AcclimationModel, values, expected_means, allow_partial_data
     ):
         """Test get_daily_means with set_include."""
@@ -907,7 +907,7 @@ def test_AcclimationModel_get_daily_means_with_set_nearest(
     ],
 )
 @pytest.mark.parametrize(
-    argnames=["input_values", "exp_values", "initial_values"],
+    argnames=["input_values", "exp_values", "previous_values"],
     argvalues=[
         pytest.param(
             np.array([1, 2, 3]),
@@ -975,7 +975,7 @@ def test_AcclimationModel_fill_daily_to_subdaily_previous(
     update_point,
     input_values,
     exp_values,
-    initial_values,
+    previous_values,
 ):
     """Test AcclimationModel.fill_daily_to_subdaily using method previous.
 
@@ -1001,7 +1001,7 @@ def test_AcclimationModel_fill_daily_to_subdaily_previous(
 
     # Call fill daily to subdaily
     res = acclim_model.fill_daily_to_subdaily(
-        values=input_values, initial_values=initial_values
+        values=input_values, previous_values=previous_values
     )
 
     assert np.allclose(res, exp_values, equal_nan=True)
@@ -1063,91 +1063,117 @@ def test_AcclimationModel_fill_daily_to_subdaily_previous(
         ),
     ],
 )
-def test_SubdailyScaler_fill_daily_to_subdaily_linear(
-    fixture_SubdailyScaler,
+def test_AcclimationModel_fill_daily_to_subdaily_linear(
     update_point,
     input_values,
     exp_values,
 ):
-    """Test fill_daily_to_subdaily using SubdailyScaler with method linear."""
+    """Test fill_daily_to_subdaily using AcclimationModel with method linear."""
+
+    from pyrealm.pmodel.acclimation import AcclimationModel
+
+    # Setup the acclimation model
+
+    acclim_model = AcclimationModel(
+        datetimes=DATES,
+        update_point=update_point,
+        fill_method="linear",
+    )
 
     # Set the included observations
-    fixture_SubdailyScaler.set_window(
+    acclim_model.set_window(
         window_center=np.timedelta64(13, "h"), half_width=np.timedelta64(1, "h")
     )
 
-    res = fixture_SubdailyScaler.fill_daily_to_subdaily(
-        input_values, update_point=update_point, kind="linear"
-    )
+    res = acclim_model.fill_daily_to_subdaily(input_values)
 
     assert np.allclose(res, exp_values, equal_nan=True)
 
 
 @pytest.mark.parametrize(
-    argnames="inputs, outcome, msg",
+    argnames="ac_mod_args, fill_args, outcome, msg",
     argvalues=[
         pytest.param(
+            {},
             {"values": np.arange(12)},
             pytest.raises(ValueError),
-            "Values is not of length n_days on its first axis",
+            "Acclimation model covers 3 days, input values has "
+            "length 12 on its first axis",
             id="values wrong shape",
         ),
         pytest.param(
-            {"values": np.arange(3), "fill_from": 3},
+            {},
+            {
+                "values": np.arange(12).reshape(-1, 2, 2),
+                "previous_values": np.ones((3, 3)),
+            },
             pytest.raises(ValueError),
-            "The fill_from argument must be a timedelta64 value",
-            id="fill_from not timedelta64",
+            "The shape of previous_values (3, 3) is not congruent with a "
+            "time slice across the values (2, 2)",
+            id="values and previous not congruent",
         ),
         pytest.param(
-            {"values": np.arange(3), "fill_from": np.timedelta64(12, "D")},
-            pytest.raises(ValueError),
-            "The fill_from argument is not >= 0 and < 24 hours",
-            id="fill_from too large",
-        ),
-        pytest.param(
-            {"values": np.arange(3), "fill_from": np.timedelta64(-1, "s")},
-            pytest.raises(ValueError),
-            "The fill_from argument is not >= 0 and < 24 hours",
-            id="fill_from negative",
-        ),
-        pytest.param(
-            {"values": np.arange(3), "update_point": "noon"},
-            pytest.raises(ValueError),
-            "Unknown update point",
-            id="unknown update point",
-        ),
-        pytest.param(
-            {"values": np.arange(3), "previous_value": np.array(1), "kind": "linear"},
+            {"fill_method": "linear"},
+            {"values": np.arange(3), "previous_values": np.array(1)},
             pytest.raises(NotImplementedError),
-            "Using previous value with kind='linear' is not implemented",
+            "Using previous_values with fill_method='linear' is not implemented",
             id="previous_value with linear",
-        ),
-        pytest.param(
-            {"values": np.arange(3), "previous_value": np.ones(4)},
-            pytest.raises(ValueError),
-            "The input to previous_value is not congruent with "
-            "the shape of the observed data",
-            id="previous_value shape issue",
-        ),
-        pytest.param(
-            {"values": np.arange(3), "kind": "quadratic"},
-            pytest.raises(ValueError),
-            "Unsupported interpolation option",
-            id="unsupported interpolation",
         ),
     ],
 )
-def test_SubdailyScaler_fill_daily_to_subdaily_failure_modes(
-    fixture_SubdailyScaler, inputs, outcome, msg
+def test_AcclimationModel_fill_daily_to_subdaily_failure_modes(
+    ac_mod_args, fill_args, outcome, msg
 ):
     """Test fill_daily_to_subdaily using SubdailyScaler with method linear."""
 
+    from pyrealm.pmodel.acclimation import AcclimationModel
+
+    # Setup the acclimation model
+
+    acclim_model = AcclimationModel(datetimes=DATES, **ac_mod_args)
+
     # Set the included observations
-    fixture_SubdailyScaler.set_window(
+    acclim_model.set_window(
         window_center=np.timedelta64(13, "h"), half_width=np.timedelta64(1, "h")
     )
 
     with outcome as excep:
-        _ = fixture_SubdailyScaler.fill_daily_to_subdaily(**inputs)
+        _ = acclim_model.fill_daily_to_subdaily(**fill_args)
 
     assert str(excep.value) == msg
+
+
+@pytest.mark.parametrize(
+    argnames="alpha,values,expected",
+    argvalues=[
+        pytest.param(0, np.arange(3), np.zeros(3), id="no acclimation"),
+        pytest.param(1, np.arange(3), np.arange(3), id="instant acclimation"),
+        pytest.param(
+            1 / 8,
+            np.arange(3),
+            np.array(
+                [
+                    0,
+                    ((7 / 8) * 0 + (1 / 8) * 1),
+                    ((7 / 8) * ((7 / 8) * 0 + (1 / 8) * 1)) + ((1 / 8) * 2),
+                ]
+            ),
+            id="slow acclimation",
+        ),
+    ],
+)
+def test_AcclimationModel_apply_acclimation(alpha, values, expected):
+    """Test AcclimationModel_apply_acclimation.
+
+    Note more extensive testing in tests/unit/core/test_exponential_moving_average.py,
+    apply_acclimation is just a thin wrapper around that function.
+    """
+    from pyrealm.pmodel.acclimation import AcclimationModel
+
+    # Setup the acclimation model
+
+    acclim_model = AcclimationModel(datetimes=DATES, alpha=alpha)
+
+    res = acclim_model.apply_acclimation(values)
+
+    assert_allclose(res, expected)

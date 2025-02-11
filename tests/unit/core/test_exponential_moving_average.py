@@ -70,7 +70,7 @@ def test_exponential_moving_average(inputs, alpha):
     ],
 )
 @pytest.mark.parametrize(argnames="alpha", argvalues=(0.0, 0.5, 1.0))
-def test_memory_effect_chunked(inputs_whole, alpha):
+def test_exponential_moving_average_chunked(inputs_whole, alpha):
     """Test the implementation of initial values in exponential_moving_average.
 
     This compares the output of a single run to the same data fed in as two sequential

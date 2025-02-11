@@ -518,7 +518,7 @@ class AcclimationModel:
     def fill_daily_to_subdaily(
         self,
         values: NDArray[np.float64],
-        initial_values: NDArray[np.float64],
+        previous_values: NDArray[np.float64] | None = None,
     ) -> NDArray[np.float64]:
         """Resample daily variables onto the subdaily time scale.
 
@@ -544,21 +544,26 @@ class AcclimationModel:
           conditions.
 
         Subdaily observations before the update point on the first day of the time
-        series are filled with ``np.nan``. The ``initial_values`` argument can be used
-        to provide alternative initial values, allowing time series to be processed in
-        blocks, but this option is only currently implemented for the ``previous``
-        interpolation method.
+        series are filled with ``np.nan``. The ``previous_values`` argument can be used
+        to provide estimates of previous values of the variable at the start of the time
+        series. These values can be used to avoid initial `np.nan` values and allow time
+        series to be processed in blocks. This option is only currently implemented for
+        interpolation using the ``fill_method='previous'`` option.
 
         Args:
             values: An array with the first dimension matching the number of days in the
                 instances :class:`~pyrealm.pmodel.scaler.SubdailyScaler` object.
-            initial_values: An array of initial values for the first value.
+            previous_values: An array of previous values from which to fill the
+                variable.
         """
 
         self._raise_if_sampling_times_unset()
 
         if values.shape[0] != self.n_days:
-            raise ValueError(f"Values is not of length {self.n_days} on its first axis")
+            raise ValueError(
+                f"Acclimation model covers {self.n_days} days, input values has "
+                f"length {values.shape[0]} on its first axis"
+            )
 
         if self.update_point == "max":
             update_time = self.sample_datetimes_max
@@ -567,20 +572,20 @@ class AcclimationModel:
 
         # Check initial values settings - only allow with previous interpolation and
         # check the previous value shape matches
-        if initial_values is not None:
+        if previous_values is not None:
             if self.fill_method == "linear":
                 raise NotImplementedError(
-                    "Using initial_values with kind='linear' is not implemented"
+                    "Using previous_values with fill_method='linear' is not implemented"
                 )
 
             # Use np.broadcast_shapes here to handle checking array shapes. This is
             # mostly to catch the fact that () and (1,) are equivalent.
             try:
-                np.broadcast_shapes(initial_values.shape, values.shape)
+                np.broadcast_shapes(previous_values.shape, values.shape)
             except ValueError:
                 raise ValueError(
-                    "The input to initial_values is not congruent with "
-                    "the shape of the observed data"
+                    f"The shape of previous_values {previous_values.shape} is not "
+                    f"congruent with a time slice across the values {values[0].shape}"
                 )
 
         # Use fill_value to handle extrapolation before or after update point:
@@ -596,7 +601,7 @@ class AcclimationModel:
             # values for subdaily observations _before_ the first daily value. If
             # the default previous value of None is supplied, this inserts np.nan as
             # expected.
-            fill_value = (initial_values, values[-1])
+            fill_value = (previous_values, values[-1])
         elif self.fill_method == "linear":
             # Shift the values forward by a day, inserting a copy of the first day at
             # the start. This then avoids plants seeing the future and provides values
