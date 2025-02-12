@@ -737,31 +737,44 @@ class Test_AcclimationModel_get_daily_means_window_and_include:
     """
 
     def test_AcclimationModel_get_daily_means_with_set_window(
-        self, fixture_AcclimationModel, values, expected_means, allow_partial_data
+        self, values, expected_means, allow_partial_data
     ):
         """Test get_daily_means with set_window."""
-        fixture_AcclimationModel.set_window(
+        from pyrealm.pmodel.acclimation import AcclimationModel
+
+        # Setup the acclimation model
+
+        acclim_model = AcclimationModel(
+            datetimes=DATES, allow_partial_data=allow_partial_data
+        )
+
+        """Test get_daily_means with set_window."""
+        acclim_model.set_window(
             window_center=np.timedelta64(12, "h"),
             half_width=np.timedelta64(2, "h"),
         )
-        calculated_means = fixture_AcclimationModel.get_daily_means(
-            values, allow_partial_data=allow_partial_data
-        )
+        calculated_means = acclim_model.get_daily_means(values)
 
         assert np.allclose(calculated_means, expected_means, equal_nan=True)
 
     def test_AcclimationModel_get_daily_means_with_set_include(
-        self, fixture_AcclimationModel, values, expected_means, allow_partial_data
+        self, values, expected_means, allow_partial_data
     ):
         """Test get_daily_means with set_include."""
+
+        from pyrealm.pmodel.acclimation import AcclimationModel
+
+        # Setup the acclimation model
+
+        acclim_model = AcclimationModel(
+            datetimes=DATES, allow_partial_data=allow_partial_data
+        )
 
         # This duplicates the selection of the window test but using direct include
         inc = np.zeros(48, dtype=np.bool_)
         inc[20:29] = True
-        fixture_AcclimationModel.set_include(inc)
-        calculated_means = fixture_AcclimationModel.get_daily_means(
-            values, allow_partial_data=allow_partial_data
-        )
+        acclim_model.set_include(inc)
+        calculated_means = acclim_model.get_daily_means(values)
 
         assert np.allclose(calculated_means, expected_means, equal_nan=True)
 

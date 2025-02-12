@@ -1,46 +1,8 @@
 """The :mod:`~pyrealm.pmodel.acclimation` module provides the
 :class:`~pyrealm.pmodel.acclimation.AcclimationModel` class, which is a required input
 to the :class:`~pyrealm.pmodel.new_pmodel.SubdailyPModelNew` class for fitting the P
-Model at subdaily time scales. The class is used as follows:
-
-* A :class:`~pyrealm.pmodel.acclimation.AcclimationModel` instance is created using
-  the time series of the observations for the subdaily data being used within a model.
-  The acclimation behaviour can be modified through other arguments to the class
-  constructor.
-
-* An acclimation window is then set, defining a period of the day representing the
-  environmental conditions that plants will acclimate to. This will typically by the
-  time of day with highest productivity - usually around noon - when the light use
-  efficiency of the plant can best make use of high levels of sunlight. The window can
-  be set using one of three methods:
-
-  * The
-    :meth:`AcclimationModel.set_window<~pyrealm.pmodel.acclimation.AcclimationModel.set_window>`
-    method sets a window centred on a given time during the day with a fixed width.
-  * The
-    :meth:`AcclimationModel.set_nearest<~pyrealm.pmodel.acclimation.AcclimationModel.set_nearest>`
-    method sets the acclimation window as the single observation closest to a given time
-    of day.
-  * The
-    :meth:`AcclimationModel.set_include<~pyrealm.pmodel.acclimation.AcclimationModel.set_include>`
-    method allows the user to set an arbitrary selection of observations during the day
-    as the acclimation window.
-
-  If new ``set_`` functions are defined, then they will need to call the
-  :meth:`~pyrealm.pmodel.acclimation.AcclimationModel._set_sampling_times` method to
-  update the instance attributes used to set the acclimation window.
-
-* The :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.get_daily_means` method
-  can then be used to get the average value of a variable within the acclimation window
-  for each day. Alternatively, the
-  :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.get_window_values` method can
-  be used to get the actual values observed during each daily window.
-
-* The :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.fill_daily_to_subdaily`
-  reverses this process: it takes an array of daily values and fills those values back
-  onto the faster timescale used to create the
-  :class:`~pyrealm.pmodel.acclimation.AcclimationModel` instance.
-"""  # noqa: D205, D415
+Model at subdaily time scales.
+"""  # noqa: D205
 
 import numpy as np
 from numpy.typing import NDArray
@@ -59,76 +21,105 @@ class AcclimationModel:
     plants will acclimate to changing conditions.
 
     An instance of this class is created using an array of :class:`numpy.datetime64`
-    values that provide the observation datetimes for a dataset sampled on a 'fast'
-    timescale. The datetimes must:
+    values that provide the observation datetimes for a dataset to be used in a
+    :class:`~pyrealm.pmodel.new_pmodel.SubdailyPModelNew`. These datetimes need to be:
 
+    * sampled at a subdaily frequency,
     * be strictly increasing,
-    * be evenly spaced, using a spacing that evenly divides a day, and
-    * completely cover a set of days.
+    * be evenly spaced, using a spacing that evenly divides a day.
 
-    The additional arguments to the class set:
+    The model can handle incomplete days at the start and end of the time series and
+    will internally pad the datetimes to complete days in order to ensure correct
+    sampling. The values in ``datetimes`` are assumed to be the precise times of the
+    observations. If the datetimes are represent the start or end of a sampling time
+    span, then they should first be converted to a reasonable choice of observation
+    time, such as the midpoint of the timespan.
 
-    * The weighting (``alpha``) that sets the speed of acclimation. This value must be
-      between 0 and 1 and is used as the weight term in an exponential moving average of
-      daily values. Values closer to 1 lead to faster acclimation, with 1 giving
-      instantaneous acclimation and 0 giving no acclimation.
+    An acclimation window must then be set, defining a period of the day representing
+    the environmental conditions that plants will acclimate to. This will typically by
+    the time of day with highest productivity - usually around noon - when the light use
+    efficiency of the plant can best make use of high levels of sunlight. This window is
+    set using one of the following methods:
 
-    * The update point sets the point on the subdaily scale at which the plant updates
-      acclimating variables to the new daily realised value. TODO describe
+    * The :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.set_window` method sets a
+      window centred on a given time during the day with a fixed width.
+    * The :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.set_nearest` method sets
+      the acclimation window as the single observation closest to a given time of day.
+    * The :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.set_include` method
+      allows the user to set an arbitrary selection of observations during the day as
+      the acclimation window.
 
-    *
+    Once a ``set_`` method has been applied then the other methods of the class can be
+    used to:
 
-    .. info::
+    * Extract conditions within the acclimation window from time series for subdaily
+      data  as either mean daily values
+      (:meth:`~pyrealm.pmodel.acclimation.AcclimationModel.get_daily_means`) or as
+      individual observations
+      ( :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.get_window_values`)
 
-        The values in ``datetimes`` are assumed to be the precise times of the
-        observations and are converted to second precision for internal calculations. If
-        the datetimes are at a _coarser_ precision and represent a sampling time span,
-        then they should first be converted to a reasonable choice of observation time,
-        such as the midpoint of the timespan.
+    * Apply acclimation lags
+      (:meth:`~pyrealm.pmodel.acclimation.AcclimationModel.apply_acclimation`) to
+      generate daily realised values of acclimating variables
+      from the daily optimal values.
+
+    * Fill daily realised values for an acclimating variable back on to the subdaily
+      scale
+      (:meth:`~pyrealm.pmodel.acclimation.AcclimationModel.fill_daily_to_subdaily`),
+      giving the actual acclimated responses used to calculate GPP at the subdaily
+      scale.
+
+    .. important::
+
+        Many of the arguments to the ``AcclimationModel`` instance are used to control
+        the behaviour of the methods described above. They are set as attributes of the
+        ``AcclimationModel`` rather than as method arguments to ensure that the same
+        settings are shared for all variables to which the given Acclimation model is
+        applied.
 
     Args:
         datetimes: A sequence of datetimes for observations at a subdaily scale.
-        alpha: A weighting used to set the speed of acclimation
-        allow_holdover:
-        allow_partial_data:
-        fill_method:
-        previous_realised:
-
-        previous_value: An array with dimensions equal to a slice across the first
-            axis of the values array.
-        update_point: The point in the acclimation window at which the plant updates
-            to the new daily value: one of 'mean' or 'max'.
-        kind: The kind of interpolation to use to fill between daily values: one of
-            'previous' or 'linear',
-
-
+        allow_partial_data: See
+            :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.get_daily_means`
+        alpha: See
+            :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.apply_acclimation`
+        allow_holdover: See
+            :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.apply_acclimation`
+        update_point: See
+            :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.fill_daily_to_subdaily`
+        fill_method: See
+            :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.fill_daily_to_subdaily`
     """
 
     def __init__(
         self,
         datetimes: NDArray[np.datetime64],
+        allow_partial_data: bool = False,
         alpha: float = 1 / 15,
+        allow_holdover: bool = False,
         update_point: str = "max",
         fill_method: str = "previous",
-        allow_holdover: bool = False,
-        allow_partial_data: bool = False,
-        # initial_values: dict[str, NDArray] | None = None,
     ) -> None:
         # __init__ arguments
         self.datetimes: NDArray[np.datetime64]
         """The datetimes used to create the instance."""
-        self.alpha: float = alpha
-        """The weighting term for estimation of acclimated values."""
-        self.allow_holdover: bool = allow_holdover
-        """TODO."""
         self.allow_partial_data: bool = allow_partial_data
-        """TODO."""
+        """Sets whether
+        :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.get_daily_means` will ignore
+        missing data."""
+        self.alpha: float = alpha
+        """Sets the speed of acclimation in
+        :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.apply_acclimation`."""
+        self.allow_holdover: bool = allow_holdover
+        """Sets whether
+        :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.apply_acclimation` will
+        attempt to handle missing data."""
         self.fill_method: str = fill_method
-        """TODO."""
-        # self.initial_values: dict[str, NDArray] | None = initial_values
-        # """TODO."""
+        """The interpolation method to be used in 
+        :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.fill_daily_to_subdaily`"""
         self.update_point: str = update_point
-        """TODO."""
+        """The update point to be used
+        :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.fill_daily_to_subdaily`."""
 
         # Validation of __init__ arguments
 
@@ -147,17 +138,6 @@ class AcclimationModel:
                 f"'linear' or 'previous', not: '{self.fill_method}'"
             )
 
-        # if self.initial_values is not None:
-        #     missing_initial_vars = set(["xi", "jmax25", "vcmax25"]).difference(
-        #         self.initial_values.keys()
-        #     )
-
-        #     if missing_initial_vars:
-        #         raise ValueError(
-        #             f"The initial_values dictionary does not provide values for: "
-        #             f"{', '.join(missing_initial_vars)}"
-        #         )
-
         # Attributes populated during initialisation by _validate_and_set_datetimes()
         self.spacing: np.timedelta64
         """The time interval between observations"""
@@ -175,7 +155,7 @@ class AcclimationModel:
         Provides the number of observations to add to the start and end of the provided
         datetime sequence to give complete days."""
         self.padded_datetimes: NDArray[np.datetime64]
-        """TODO."""
+        """The datetime sequence padded to complete days."""
 
         # Run the initialisation logic steps
         self._validate_and_set_datetimes(datetimes=datetimes)
@@ -281,7 +261,7 @@ class AcclimationModel:
     def _set_sampling_times(self) -> None:
         """Sets the times at which representative values are sampled.
 
-        This private method should be called by all ``set_`` methods. It is used to
+        This private method must be called by all ``set_`` methods. It is used to
         update the instance to populate the following attributes:
 
         * :attr:`~pyrealm.pmodel.scaler.SubdailyScaler.sample_datetimes`: An
@@ -316,7 +296,7 @@ class AcclimationModel:
     def set_window(
         self, window_center: np.timedelta64, half_width: np.timedelta64
     ) -> None:
-        """Set a daily window to sample.
+        """Set the acclimation conditions to a daily time window.
 
         This method sets the daily values to sample using a time window, given the time
         of the window centre and its width. Both of these values must be provided as
@@ -353,7 +333,7 @@ class AcclimationModel:
         self._set_sampling_times()
 
     def set_include(self, include: NDArray[np.bool_]) -> None:
-        """Set a sequence of daily values to sample.
+        """Set the acclimation conditions using a logical array.
 
         This method sets which daily values will be sampled directly, by providing a
         boolean array for the daily observation times. The ``include`` array must be of
@@ -374,7 +354,7 @@ class AcclimationModel:
         self._set_sampling_times()
 
     def set_nearest(self, time: np.timedelta64) -> None:
-        """Sets a single observation closest to a target time to be sampled.
+        """Set the acclimation conditions to a single value closest to a target time.
 
         This method finds the daily observation time closest to a value provided as a
         :class:`~numpy.timedelta64` value since midnight. If the provided time is
@@ -476,31 +456,28 @@ class AcclimationModel:
         return values_by_day[:, self.include, ...]
 
     def get_daily_means(
-        self, values: NDArray[np.float64], allow_partial_data: bool = False
+        self,
+        values: NDArray[np.float64],
     ) -> NDArray[np.float64]:
         """Get the daily means of a variable during the acclimation window.
 
         This method extracts values from a given variable during a defined acclimation
         window set using one of the ``set_`` methods, and then calculates the daily mean
-        of those values.
+        of those values. The values can have any number of dimensions, but the first
+        dimension must represent the time axis and have the same length as the original
+        set of observation times.
 
-        The `allow_partial_data` option switches between using :func:`numpy.mean` and
-        :func:`numpy.nanmean`, so that daily mean values can be calculated even if the
-        data in the acclimation window is incomplete. Note that this will still return
-        `np.nan` if _no_ data is present in the acclimation window. It also has no
-        effect if the
-        :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.set_nearest` method has
-        been used to set the acclimation observations, because this method only ever
-        sets a single observation.
+        One attribute of the ``AcclimationModel`` class is used to tune the behaviour
+        of this method:
 
-        The values can have any number of dimensions, but the first dimension must
-        represent the time axis and have the same length as the original set of
-        observation times.
+        *  The ``allow_partial_data`` attribute allows the method to switch between
+           using :func:`numpy.mean` and :func:`numpy.nanmean`, so that daily mean values
+           can be calculated even if the data in the acclimation window is incomplete.
+           Note that this will still return `np.nan` if _no_ data is present in the
+           acclimation window.
 
         Args:
             values: An array of values to reduce to daily averages.
-            allow_partial_data: Exclude missing data from the calculation of the daily
-                average value.
 
         Returns:
             An array of mean daily values during the acclimation window
@@ -510,10 +487,59 @@ class AcclimationModel:
 
         daily_values = self.get_window_values(values)
 
-        if allow_partial_data:
+        if self.allow_partial_data:
             return np.nanmean(daily_values, axis=1)
 
         return daily_values.mean(axis=1)
+
+    def apply_acclimation(
+        self,
+        values: NDArray[np.float64],
+        initial_values: NDArray[np.float64] | None = None,
+    ) -> NDArray[np.float64]:
+        r"""Apply acclimation to optimal values.
+
+        Three key photosynthetic parameters (:math:`\xi`, :math:`V_{cmax25}` and
+        :math:`J_{max25}`) show slow responses to changing environmental conditions and
+        do not instantaneously adopt optimal values. This function applies exponential
+        weighted averaging to the input values in order to calculate a lagged response.
+
+        Two attributes of the ``AcclimationModel`` class are used to tune the behaviour
+        of this method:
+
+        * The ``alpha``attribute controls the speed of acclimation. This value must be
+          between 0 and 1 and is used as the weight term in an exponential moving
+          average of daily values. Values closer to 1 lead to faster acclimation, with 1
+          giving instantaneous acclimation and 0 giving no acclimation.
+
+        * The ``allow_holdover`` attribute is used to allow the exponential weighted
+          average function to handle missing data. Incomplete forcing data is common and
+          both :math:`V_{cmax}` and :math:`J_{max}` are not estimable in some conditions
+          (namely when :math:`m \le c^{\ast}`, see
+          :class:`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`) and so missing
+          values in P Model predictions can arise even when the forcing data is
+          complete. Since the weighted average process iterates over daily observations,
+          it cannot normally be calculated with missing data but, with
+          ``allow_holdover=True``, the underlying
+          :func:`~pyrealm.core.utilities.exponential_moving_average` attempts to fill
+          gaps within the daily time series.
+
+        Args:
+            values: An array of daily optimal values
+            initial_values: Alternative starting values for the acclimated values
+        """
+
+        try:
+            return exponential_moving_average(
+                values=values,
+                initial_values=initial_values,
+                alpha=self.alpha,
+                allow_holdover=self.allow_holdover,
+            )
+        except ValueError:
+            raise ValueError(
+                "Missing data in input values, try setting allow_holdover=True"
+            )
 
     def fill_daily_to_subdaily(
         self,
@@ -524,24 +550,34 @@ class AcclimationModel:
 
         This method takes an array representing daily values and interpolates those
         values back onto the subdaily timescale used to create the
-        :class:`~pyrealm.pmodel.scaler.SubdailyScaler` instance. The first
-        axis of the `values` must be the same length as the number of days used to
-        create the instance.
+        :class:`~pyrealm.pmodel.acclimation.AcclimationModel` instance. The first
+        axis of the `values` must be the same length as the number of days in the time
+        series used to create the instance.
 
-        The update point defaults to the maximum time of day during the acclimation
-        window. It can also be set to the mean time of day during the acclimation
-        period, but note that this implies that the plant can predict the daily values
-        between the mean and max observation time.
+        Two attributes of the ``AcclimationModel`` class are used to tune the behaviour
+        of this method:
 
-        Two interpolation kinds are currently implemented:
+        * The ``update_point`` attribute sets the point on the subdaily scale at which
+          the plant updates acclimating variables to the new daily realised value. The
+          default is ``max`` - the plant starts to acclimate to a new value at the end
+          of the acclimation window - but this can also be set to ``mean`` to start
+          acclimation from the middle of the acclimation  window. Note that this setting
+          implies the plant can predict the daily values between the mean and max
+          observation time.
 
-        * ``previous`` interpolates the daily value as a constant, until updating to the
-          next daily value. This option will fill values until the end of the time
-          series. The
-        * ``linear`` interpolates linearly between the update points of the daily
-          values. The interpolated values are held constant for the first day and then
-          interpolated linearly: this is to avoid plants adapting optimally to future
-          conditions.
+        * The ``fill_method`` attribute controls the interpolation used when filling
+          data from daily to subdaily scales. Two interpolation kinds are currently
+          implemented:
+
+            1. The default option of ``previous`` interpolates the daily value as a
+               constant, until updating to the next daily value. This option will fill
+               values until the end of the time series.
+            2. The alternative ``linear`` interpolates linearly between the update
+               points of the daily values. The interpolated values are held constant for
+               the first day and then interpolated linearly: this is to avoid plants
+               adapting optimally to future conditions. Values will also not be filled
+               beyond the end of the last window as the subsequent daily acclimated
+               value is unknown.
 
         Subdaily observations before the update point on the first day of the time
         series are filled with ``np.nan``. The ``previous_values`` argument can be used
@@ -624,53 +660,4 @@ class AcclimationModel:
             assume_sorted=True,
         )
 
-        # TODO - The kind "previous" might be replaceable with bottleneck.push
-        #
-        # v = np.empty_like(tk)
-        # v[:] = np.nan
-
-        # v[values_idx] = values
-        # v = bn.push(v)
-
         return interp_fun(self.datetimes.astype("int"))
-
-    def apply_acclimation(
-        self,
-        values: NDArray[np.float64],
-        initial_values: NDArray[np.float64] | None = None,
-    ) -> NDArray[np.float64]:
-        r"""Apply acclimation to optimal values.
-
-        Three key photosynthetic parameters (:math:`\xi`, :math:`V_{cmax25}` and
-        :math:`J_{max25}`) show slow responses to changing environmental conditions and
-        do not instantaneously adopt optimal values. This function applies exponential
-        weighted averaging to the input values in order to calculate a lagged response.
-        The ``alpha`` parameter of the ``AcclimationModel`` is used to control the speed
-        of acclimation.
-
-        The weighted average process iterates over daily observations and so cannot
-        normally be calculated with missing data. However, missing forcing data is
-        common and both :math:`V_{cmax}` and :math:`J_{max}` are not estimable in some
-        conditions (namely when :math:`m \le c^{\ast}`, see
-        :class:`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`) and so missing values
-        in P Model predictions can arise even when the forcing data is complete. The
-        ``allow_holdover`` setting for the ``AcclimationModel` is used to allow the
-        exponential weighted average function to handle missing data (see
-        :func:`~pyrealm.core.utilities.exponential_moving_average` for details).
-
-        Args:
-            values: An array of daily optimal values
-            initial_values: Alternative starting values for the acclimated values
-        """
-
-        try:
-            return exponential_moving_average(
-                values=values,
-                initial_values=initial_values,
-                alpha=self.alpha,
-                allow_holdover=self.allow_holdover,
-            )
-        except ValueError:
-            raise ValueError(
-                "Missing data in input values, try setting allow_holdover=True"
-            )
