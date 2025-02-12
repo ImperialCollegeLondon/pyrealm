@@ -204,65 +204,6 @@ def calc_ftemp_inst_rd(
     )
 
 
-def calc_ftemp_kphio(
-    tc: NDArray[np.float64], c4: bool = False, pmodel_const: PModelConst = PModelConst()
-) -> NDArray[np.float64]:
-    r"""Calculate temperature dependence of quantum yield efficiency.
-
-    Calculates the temperature dependence of the quantum yield efficiency, as a
-    quadratic function of temperature (:math:`T`). The values of the coefficients depend
-    on whether C3 or C4 photosynthesis is being modelled
-
-    .. math::
-
-        \phi(T) = a + b T - c T^2
-
-    The factor :math:`\phi(T)` is to be multiplied with leaf absorptance and the
-    fraction of absorbed light that reaches photosystem II. In the P-model these
-    additional factors are lumped into a single apparent quantum yield efficiency
-    parameter (argument `kphio` to the class :class:`~pyrealm.pmodel.pmodel.PModel`).
-
-    Args:
-        tc: Temperature, relevant for photosynthesis (°C)
-        c4: Boolean specifying whether fitted temperature response for C4 plants
-            is used. Defaults to ``False`` to estimate :math:`\phi(T)` for C3 plants.
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-
-    PModel Parameters:
-        C3: the parameters (:math:`a,b,c`, ``kphio_C3``) are taken from the
-            temperature dependence of the maximum quantum yield of photosystem
-            II in light-adapted tobacco leaves determined by :cite:t:`Bernacchi:2003dc`.
-        C4: the parameters (:math:`a,b,c`, ``kphio_C4``) are taken from
-            :cite:t:`cai:2020a`.
-
-    Returns:
-        Values for :math:`\phi(T)`
-
-    Examples:
-        >>> # Relative change in the quantum yield efficiency between 5 and 25
-        >>> # degrees celsius (percent change):
-        >>> val = (calc_ftemp_kphio(25.0) / calc_ftemp_kphio(5.0) - 1) * 100
-        >>> round(val, 5)
-        np.float64(52.03969)
-        >>> # Relative change in the quantum yield efficiency between 5 and 25
-        >>> # degrees celsius (percent change) for a C4 plant:
-        >>> val = (calc_ftemp_kphio(25.0, c4=True) /
-        ...        calc_ftemp_kphio(5.0, c4=True) - 1) * 100
-        >>> round(val, 5)
-        np.float64(432.25806)
-    """
-
-    if c4:
-        coef = pmodel_const.kphio_C4
-    else:
-        coef = pmodel_const.kphio_C3
-
-    ftemp = coef[0] + coef[1] * tc + coef[2] * tc**2
-    ftemp = np.clip(ftemp, 0.0, None)
-
-    return ftemp
-
-
 def calc_gammastar(
     tc: NDArray[np.float64],
     patm: NDArray[np.float64],
