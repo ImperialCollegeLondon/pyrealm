@@ -1,8 +1,15 @@
-"""The module :mod:`~pyrealm.pmodel.pmodel` provides the implementation of
-the following pmodel core class:
+"""The module :mod:`~pyrealm.pmodel.new_pmodel` provides the implementation of
+the following  classes:
 
-* :class:`~pyrealm.pmodel.pmodel.PModel`:
-    Applies the PModel to locations.
+* :class:`~pyrealm.pmodel.new_pmodel.PModelABC`: An abstract base class providing some
+     of the core functionality for initialising PModel subclasses.
+
+* :class:`~pyrealm.pmodel.new_pmodel.PModelNew`: A subclass providing the standard
+     implementation of the P Model.
+
+* :class:`~pyrealm.pmodel.new_pmodel.SubdailyPModelNew`: A subclass providing the
+     subdaily implementation of the P Model, which accounts for slow acclimation of core
+     photosynthetic processes.
 
 
 """  # noqa D210, D415
@@ -18,6 +25,7 @@ from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import summarize_attrs
+from pyrealm.pmodel.acclimation import AcclimationModel
 from pyrealm.pmodel.arrhenius import ARRHENIUS_METHOD_REGISTRY, ArrheniusFactorABC
 from pyrealm.pmodel.functions import calc_ftemp_inst_rd
 from pyrealm.pmodel.jmax_limitation import (
@@ -27,12 +35,19 @@ from pyrealm.pmodel.jmax_limitation import (
 from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY, OptimalChiABC
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 from pyrealm.pmodel.quantum_yield import QUANTUM_YIELD_CLASS_REGISTRY, QuantumYieldABC
-from pyrealm.pmodel.scaler import SubdailyScaler
-from pyrealm.pmodel.subdaily import memory_effect
 
 
 class PModelABC(ABC):
     r"""Abstract base class for the PModel and SubdailyPModel.
+
+    The base class __init__ implements the core arguments to the PModel subclasses: the
+    forcing data to be used for the model and various methodological options for the
+    calculation of the model parameters.
+
+    Subclasses should define an `__init__` method that first calls
+    `super().__init__(...)` to run the shared core functionality and then define any
+    model specific attributes. The abstract base method `_fit_model` should then be
+    defined and used to execute the model specific logic of the base class.
 
     Args:
         env: A :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance
@@ -260,7 +275,7 @@ class PModelABC(ABC):
         """Electron transfer rate."""
 
     @abstractmethod
-    def _fit_model(self) -> None:
+    def _fit_model(self, *args: Any, **kwargs: Any) -> None:
         pass
 
     def __repr__(self) -> str:
@@ -448,10 +463,8 @@ class PModelNew(PModelABC):
 
     def to_subdaily(
         self,
-        fs_scaler: SubdailyScaler,
-        alpha: float = 1 / 15,
-        allow_holdover: bool = False,
-        fill_kind: str = "previous",
+        acclim_model: AcclimationModel,
+        previous_realised: tuple[NDArray, NDArray, NDArray] | None = None,
     ) -> SubdailyPModelNew:
         r"""Convert a standard PModel to a subdaily P Model.
 
@@ -460,15 +473,10 @@ class PModelNew(PModelABC):
         settings.
 
         Args:
-            fs_scaler: A SubdailyScaler instance giving the acclimation window for the
-                subdaily model.
-            alpha: The :math:`\alpha` weight.
-            allow_holdover: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect`
-            function be allowed to hold over values to fill missing values.
-            fill_kind: The approach used to fill daily realised values to the subdaily
-            timescale, currently one of 'previous' or 'linear'.
+            acclim_model: An AcclimationModel instance for the subdaily model.
+            previous_realised: An optional set of arrays giving previous realised values
+                for `xi`, `vcmax25` and `jmax25`.
         """
-        # Check that productivity has been estimated
 
         return SubdailyPModelNew(
             env=self.env,
@@ -477,10 +485,7 @@ class PModelNew(PModelABC):
             method_jmaxlim=self.method_jmaxlim,
             method_kphio=self.method_kphio,
             reference_kphio=self.kphio.reference_kphio,
-            fs_scaler=fs_scaler,
-            alpha=alpha,
-            allow_holdover=allow_holdover,
-            fill_kind=fill_kind,
+            acclim_model=acclim_model,
         )
 
 
@@ -589,17 +594,13 @@ class SubdailyPModelNew(PModelABC):
     def __init__(
         self,
         env: PModelEnvironment,
-        fs_scaler: SubdailyScaler,
+        acclim_model: AcclimationModel,
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
         method_kphio: str = "temperature",
         method_arrhenius: str = "simple",
         reference_kphio: float | NDArray | None = None,
-        alpha: float = 1 / 15,
-        allow_holdover: bool = False,
-        allow_partial_data: bool = False,
-        fill_kind: str = "previous",
-        previous_realised: tuple[NDArray, NDArray, NDArray] | None = None,
+        previous_realised: dict[str, NDArray] | None = None,
     ) -> None:
         # Initialise the superclass
         super().__init__(
@@ -611,13 +612,13 @@ class SubdailyPModelNew(PModelABC):
             reference_kphio=reference_kphio,
         )
 
-        # Subclass specific arguments
-        self.fs_scaler = fs_scaler
-        self.alpha = alpha
-        self.allow_holdover = allow_holdover
-        self.allow_partial_data = allow_partial_data
-        self.fill_kind = fill_kind
-        self.previous_realised = previous_realised
+        # Subclass specific attributes
+        self.acclim_model: AcclimationModel
+        """The acclimation model used in the subdaily P Model."""
+        self.previous_realised: dict[str, NDArray | None]
+        """A dictionary of arrays of previous realised values for the acclimating
+        variables 'xi', 'jmax25' and 'vcmax25'. If none were provided, the dictionary
+        values are None."""
 
         # Other attributes
         self.datetimes: NDArray[np.datetime64]
@@ -652,23 +653,73 @@ class SubdailyPModelNew(PModelABC):
         # xi	self.pmodel_acclim.optchi.xi - add a getter?	subdaily_xi
 
         # Fit the model
-        self._fit_model()
+        self._fit_model(acclim_model=acclim_model, previous_realised=previous_realised)
 
-    def _fit_model(self) -> None:
-        # Check that the length of the fast slow scaler is congruent with the
-        # first axis of the photosynthetic environment
-        n_datetimes = self.fs_scaler.datetimes.shape[0]
+    def _fit_model(
+        self,
+        acclim_model: AcclimationModel,
+        previous_realised: dict[str, NDArray] | None,
+    ) -> None:
+        # Validate subdaily model specific arguments
+
+        # * Check that the length of the fast slow scaler is congruent with the
+        #   first axis of the photosynthetic environment and that the one of the set
+        #   methods has been run on the acclimation model.
+        n_datetimes = self.acclim_model.datetimes.shape[0]
         n_env_first_axis = self.env.tc.shape[0]
 
         if n_datetimes != n_env_first_axis:
             raise ValueError("env and fs_scaler do not have congruent dimensions")
 
-        # Has a set method been run on the fast slow scaler
-        if not hasattr(self.fs_scaler, "include"):
+        if not hasattr(self.acclim_model, "include"):
             raise ValueError("The daily sampling window has not been set on fs_scaler")
 
         # Store the datetimes for reference
-        self.datetimes = self.fs_scaler.datetimes
+        self.datetimes = self.acclim_model.datetimes
+
+        # * Validate the previous realised values
+        if self.previous_realised is None:
+            self.previous_realised = {"xi": None, "jmax25": None, "vcmax25": None}
+        else:
+            # Is the fill method set to previous
+            if self.acclim_model.fill_method != "previous":
+                raise NotImplementedError(
+                    "Using previous_realised is only implemented for "
+                    "fill_method = 'previous'"
+                )
+
+            # Check it is a dictionary of numpy arrays for the three required variables
+            if not (
+                isinstance(self.previous_realised, dict)
+                and (set(["xi", "jmax25", "vcmax25"]) == self.previous_realised.keys())
+                and all(
+                    [
+                        isinstance(val, np.ndarray)
+                        for val in self.previous_realised.values()
+                    ]
+                )
+            ):
+                raise ValueError(
+                    "previous_realised must be a dictionary of arrays, with entries "
+                    "for 'xi', 'jmax25' and 'vcmax25'."
+                )
+
+            # All variables should share the shape of a slice along the first axis of
+            # the environmental forcings. Need to tell mypy to shut up - it does not
+            # know that the values in previous_realised are confirmed to be arrays by
+
+            # the code above
+            expected_shape = self.env.tc[0].shape
+
+            if not all(
+                [
+                    arr[0].shape == expected_shape  # type: ignore[index]
+                    for arr in self.previous_realised.values()
+                ]
+            ):
+                raise ValueError(
+                    "`previous_realised` entries have wrong shape in Subdaily PModel"
+                )
 
         # 1) Generate a PModelEnvironment containing the average conditions within the
         #    daily acclimation window. This daily average environment also needs to also
@@ -694,9 +745,8 @@ class SubdailyPModelNew(PModelABC):
         for env_var_name in daily_environment_vars:
             env_var = getattr(self.env, env_var_name)
             if env_var is not None:
-                daily_environment[env_var_name] = self.fs_scaler.get_daily_means(
+                daily_environment[env_var_name] = self.acclim_model.get_daily_means(
                     values=env_var,
-                    allow_partial_data=self.allow_partial_data,
                 )
 
         # Calculate the acclimation environment passing on the constants definitions.
@@ -721,10 +771,7 @@ class SubdailyPModelNew(PModelABC):
         # calculate the daily acclimation value behaviour and set the kphio method to be
         # fixed to avoid altering the inputs.
         if self.kphio.reference_kphio.size > 1:
-            daily_reference_kphio = self.fs_scaler.get_daily_means(
-                self.kphio.kphio,
-                allow_partial_data=self.allow_partial_data,
-            )
+            daily_reference_kphio = self.acclim_model.get_daily_means(self.kphio.kphio)
             daily_method_kphio = "fixed"
         else:
             daily_reference_kphio = self.kphio.reference_kphio
@@ -742,15 +789,18 @@ class SubdailyPModelNew(PModelABC):
         )
         self.pmodel_acclim._fit_model()
 
-        # 4) Calculate the optimal jmax and vcmax at 25°C
-        # - get an instance of the requested Arrhenius scaling method
+        # 4) Calculate the daily optimal values. Xi is simply the value from the optimal
+        #   chi calculation but jmax and vcmax are scaled to values at 25°C using an
+        #   instance of the requested Arrhenius scaling method .
+
+        self.xi_daily_optimal = self.pmodel_acclim.optchi.xi
+
         arrhenius_daily = self._arrhenius_class(
             env=self.pmodel_acclim.env,
             reference_temperature=self.pmodel_acclim.env.pmodel_const.plant_T_ref,
             core_const=self.env.core_const,
         )
 
-        # - Calculate and apply the scaling factors.
         self.vcmax25_daily_optimal = (
             self.pmodel_acclim.vcmax
             / arrhenius_daily.calculate_arrhenius_factor(
@@ -764,73 +814,36 @@ class SubdailyPModelNew(PModelABC):
             )
         )
 
-        """Instantaneous optimal :math:`x_{i}`, :math:`V_{cmax}` and :math:`J_{max}`"""
-        # Check the shape of previous realised values are congruent with a slice across
-        # the time axis
-        if self.previous_realised is not None:
-            if self.fill_kind != "previous":
-                raise NotImplementedError(
-                    "Using previous_realised is only implemented for "
-                    "fill_kind = 'previous'"
-                )
-
-            # All variables should share the shape of a slice along the first axis of
-            # the environmental forcings
-            expected_shape = self.env.tc[0].shape
-            if not (
-                (self.previous_realised[0].shape == expected_shape)
-                and (self.previous_realised[1].shape == expected_shape)
-                and (self.previous_realised[2].shape == expected_shape)
-            ):
-                raise ValueError(
-                    "`previous_realised` entries have wrong shape in Subdaily PModel"
-                )
-            else:
-                previous_xi_real, previous_vcmax25_real, previous_jmax25_real = (
-                    self.previous_realised
-                )
-        else:
-            previous_xi_real, previous_vcmax25_real, previous_jmax25_real = [
-                None,
-                None,
-                None,
-            ]
-
         # 5) Calculate the realised daily values from the instantaneous optimal values
-        self.xi_daily_optimal = self.pmodel_acclim.optchi.xi
-        self.xi_daily_realised = memory_effect(
+
+        self.xi_daily_realised = self.acclim_model.apply_acclimation(
             values=self.xi_daily_optimal,
-            previous_values=previous_xi_real,
-            alpha=self.alpha,
-            allow_holdover=self.allow_holdover,
+            initial_values=self.previous_realised["xi"],
         )
 
-        self.vcmax25_daily_realised = memory_effect(
+        self.vcmax25_daily_realised = self.acclim_model.apply_acclimation(
             values=self.vcmax25_daily_optimal,
-            previous_values=previous_vcmax25_real,
-            alpha=self.alpha,
-            allow_holdover=self.allow_holdover,
+            initial_values=self.previous_realised["vcmax25"],
         )
-        self.jmax25_daily_realised = memory_effect(
+
+        self.jmax25_daily_realised = self.acclim_model.apply_acclimation(
             values=self.jmax25_daily_optimal,
-            previous_values=previous_jmax25_real,
-            alpha=self.alpha,
-            allow_holdover=self.allow_holdover,
+            initial_values=self.previous_realised["jmax25"],
         )
 
         # 6) Fill the realised xi, jmax25 and vcmax25 from daily values back to the
         # subdaily timescale.
-        self.xi = self.fs_scaler.fill_daily_to_subdaily(
-            self.xi_daily_realised,
-            previous_value=previous_xi_real,
+        self.xi = self.acclim_model.fill_daily_to_subdaily(
+            values=self.xi_daily_realised,
+            previous_values=self.previous_realised["xi"],
         )
-        self.vcmax25 = self.fs_scaler.fill_daily_to_subdaily(
+        self.vcmax25 = self.acclim_model.fill_daily_to_subdaily(
             self.vcmax25_daily_realised,
-            previous_value=previous_vcmax25_real,
+            previous_values=self.previous_realised["vcmax25"],
         )
-        self.jmax25 = self.fs_scaler.fill_daily_to_subdaily(
+        self.jmax25 = self.acclim_model.fill_daily_to_subdaily(
             self.jmax25_daily_realised,
-            previous_value=previous_jmax25_real,
+            previous_values=self.previous_realised["jmax25"],
         )
 
         # 7) Adjust subdaily jmax25 and vcmax25 back to jmax and vcmax given the
