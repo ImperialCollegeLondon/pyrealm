@@ -17,6 +17,7 @@ the following  classes:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from typing import Any
 from warnings import warn
 
@@ -615,14 +616,12 @@ class SubdailyPModelNew(PModelABC):
         # Subclass specific attributes
         self.acclim_model: AcclimationModel
         """The acclimation model used in the subdaily P Model."""
-        self.previous_realised: dict[str, NDArray | None]
+        self.previous_realised: Mapping[str, NDArray | None]
         """A dictionary of arrays of previous realised values for the acclimating
         variables 'xi', 'jmax25' and 'vcmax25'. If none were provided, the dictionary
         values are None."""
 
         # Other attributes
-        self.datetimes: NDArray[np.datetime64]
-        """The datetimes of the observations used in the subdaily model."""
         self.pmodel_acclim: PModelNew
         r"""P Model predictions for the daily acclimation conditions.
 
@@ -650,8 +649,6 @@ class SubdailyPModelNew(PModelABC):
         self.xi_daily_realised: NDArray[np.float64]
         r"""Realised daily responses in :math:`\xi`"""
 
-        # xi	self.pmodel_acclim.optchi.xi - add a getter?	subdaily_xi
-
         # Fit the model
         self._fit_model(acclim_model=acclim_model, previous_realised=previous_realised)
 
@@ -660,25 +657,30 @@ class SubdailyPModelNew(PModelABC):
         acclim_model: AcclimationModel,
         previous_realised: dict[str, NDArray] | None,
     ) -> None:
+        """Calculation logic of the subdaily P Model."""
+
         # Validate subdaily model specific arguments
+        # * Check that the number of datetimes in the AcclimationModel is the same as
+        #   the length of the first axis of the photosynthetic environment and that the
+        #   one of the set_ methods has been run on the AcclimationModel.
 
-        # * Check that the length of the fast slow scaler is congruent with the
-        #   first axis of the photosynthetic environment and that the one of the set
-        #   methods has been run on the acclimation model.
-        n_datetimes = self.acclim_model.datetimes.shape[0]
-        n_env_first_axis = self.env.tc.shape[0]
+        # Store the acclimation model
+        self.acclim_model = acclim_model
 
-        if n_datetimes != n_env_first_axis:
-            raise ValueError("env and fs_scaler do not have congruent dimensions")
+        if self.acclim_model.datetimes.shape[0] != self.env.tc.shape[0]:
+            raise ValueError(
+                "The PModelEnvironment data and AcclimationModel datetimes "
+                "are of different lengths."
+            )
 
         if not hasattr(self.acclim_model, "include"):
-            raise ValueError("The daily sampling window has not been set on fs_scaler")
+            raise ValueError(
+                "The daily sampling window has not been set in the AcclimationModel"
+            )
 
-        # Store the datetimes for reference
-        self.datetimes = self.acclim_model.datetimes
-
-        # * Validate the previous realised values
-        if self.previous_realised is None:
+        # * Validate the previous realised values and standardise the internal
+        #   representation as a dictionary.
+        if previous_realised is None:
             self.previous_realised = {"xi": None, "jmax25": None, "vcmax25": None}
         else:
             # Is the fill method set to previous
@@ -690,13 +692,10 @@ class SubdailyPModelNew(PModelABC):
 
             # Check it is a dictionary of numpy arrays for the three required variables
             if not (
-                isinstance(self.previous_realised, dict)
-                and (set(["xi", "jmax25", "vcmax25"]) == self.previous_realised.keys())
+                isinstance(previous_realised, dict)
+                and (set(["xi", "jmax25", "vcmax25"]) == previous_realised.keys())
                 and all(
-                    [
-                        isinstance(val, np.ndarray)
-                        for val in self.previous_realised.values()
-                    ]
+                    [isinstance(val, np.ndarray) for val in previous_realised.values()]
                 )
             ):
                 raise ValueError(
@@ -714,12 +713,14 @@ class SubdailyPModelNew(PModelABC):
             if not all(
                 [
                     arr[0].shape == expected_shape  # type: ignore[index]
-                    for arr in self.previous_realised.values()
+                    for arr in previous_realised.values()
                 ]
             ):
                 raise ValueError(
                     "`previous_realised` entries have wrong shape in Subdaily PModel"
                 )
+
+            self.previous_realised = previous_realised
 
         # 1) Generate a PModelEnvironment containing the average conditions within the
         #    daily acclimation window. This daily average environment also needs to also

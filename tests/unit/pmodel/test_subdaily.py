@@ -81,14 +81,14 @@ def test_SubdailyPModel_corr(be_vie_data_components, data_args):
     to differ.
     """
 
-    from pyrealm.pmodel import SubdailyScaler
+    from pyrealm.pmodel.acclimation import AcclimationModel
     from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
 
     env, datetime, expected_gpp = be_vie_data_components.get(**data_args)
 
     # Get the fast slow scaler and set window
-    fsscaler = SubdailyScaler(datetime)
-    fsscaler.set_window(
+    acclim_model = AcclimationModel(datetime, allow_holdover=True)
+    acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
@@ -97,8 +97,7 @@ def test_SubdailyPModel_corr(be_vie_data_components, data_args):
     subdaily_pmodel = SubdailyPModelNew(
         env=env,
         reference_kphio=1 / 8,
-        fs_scaler=fsscaler,
-        allow_holdover=True,
+        acclim_model=acclim_model,
     )
 
     valid = np.logical_not(
@@ -115,15 +114,15 @@ def test_SubdailyPModel_corr(be_vie_data_components, data_args):
 def test_SubdailyPModel_previous_realised(be_vie_data_components):
     """Test the functionality that allows the subdaily model to restart in blocks."""
 
-    from pyrealm.pmodel import SubdailyScaler
+    from pyrealm.pmodel.acclimation import AcclimationModel
     from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
 
     # Run all in one model
     env, datetime, _ = be_vie_data_components.get(mode="crop", start=0, end=17520)
 
     # Get the fast slow scaler and set window
-    fsscaler = SubdailyScaler(datetime)
-    fsscaler.set_window(
+    acclim_model = AcclimationModel(datetime, allow_holdover=True)
+    acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
@@ -132,16 +131,15 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
     all_in_one_subdaily_pmodel = SubdailyPModelNew(
         env=env,
         reference_kphio=1 / 8,
-        fs_scaler=fsscaler,
-        allow_holdover=True,
+        acclim_model=acclim_model,
     )
 
     # Run first half of year
     env1, datetime1, _ = be_vie_data_components.get(mode="crop", start=0, end=182 * 48)
 
-    # Get the fast slow scaler and set window
-    fsscaler1 = SubdailyScaler(datetime1)
-    fsscaler1.set_window(
+    # Get the acclimation model
+    acclim_model1 = AcclimationModel(datetime1, allow_holdover=True)
+    acclim_model1.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
@@ -150,8 +148,7 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
     part_1_subdaily_pmodel = SubdailyPModelNew(
         env=env1,
         reference_kphio=1 / 8,
-        fs_scaler=fsscaler1,
-        allow_holdover=True,
+        acclim_model=acclim_model1,
     )
 
     # Run second year
@@ -159,24 +156,24 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
         mode="crop", start=182 * 48, end=365 * 48
     )
 
-    # Get the fast slow scaler and set window
-    fsscaler2 = SubdailyScaler(datetime2)
-    fsscaler2.set_window(
+    # Get the acclimation model
+    acclim_model2 = AcclimationModel(datetime2, allow_holdover=True)
+    acclim_model2.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
 
     # Run as a subdaily model using the kphio used in the reference implementation.
+    # Note the explicit use of [[-1]] to give array values, not scalar np.floating
     part_2_subdaily_pmodel = SubdailyPModelNew(
         env=env2,
         reference_kphio=1 / 8,
-        fs_scaler=fsscaler2,
-        allow_holdover=True,
-        previous_realised=(
-            part_1_subdaily_pmodel.optchi.xi[-1],
-            part_1_subdaily_pmodel.vcmax25_daily_realised[-1],
-            part_1_subdaily_pmodel.jmax25_daily_realised[-1],
-        ),
+        acclim_model=acclim_model2,
+        previous_realised={
+            "xi": part_1_subdaily_pmodel.xi_daily_realised[[-1]],
+            "vcmax25": part_1_subdaily_pmodel.vcmax25_daily_realised[[-1]],
+            "jmax25": part_1_subdaily_pmodel.jmax25_daily_realised[[-1]],
+        },
     )
 
     assert np.allclose(
