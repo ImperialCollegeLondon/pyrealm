@@ -25,9 +25,9 @@ import pytest
 def test_exponential_moving_average(inputs, alpha):
     """Test the exponential_moving_average.
 
-    This uses matrix maths to calculate expected by calculating the coefficients of the
-    recursive equation. Does not scale well, but a useful parallel implementation for
-    testing.
+    This uses matrix maths to calculate expected values by calculating the coefficients
+    of the recursive equation. Does not scale well, but a useful parallel implementation
+    for testing.
     """
     from pyrealm.core.utilities import exponential_moving_average
 

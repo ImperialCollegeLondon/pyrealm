@@ -57,15 +57,19 @@ worked through. The changes below are provisional.
 
 - Many of the arguments to `SubdailyPModel` have been brought together into a new
   `AcclimationModel` class. This replaces `SubdailyScaler` and bundles all of the
-  settings for acclimation into a single class. The following **breaking change**:
+  settings for acclimation into a single class. The following is therefore a **breaking
+  change**:
   
-  - `SubdailyScaler` has been replaced with `AcclimationModel`.
+  - `SubdailyScaler` has been replaced with `AcclimationModel`, and the following
+    arguments to `SubdailyPModel` are now arguments to `AcclimationModel`: `alpha`,
+    `allow_holdover`, `allow_partial_data`, `update_point`, `fill_kind` (as
+    `fill_method`).
 
 - The legacy implementation `SubdailyPModel_JAMES` has been deprecated. This
   implementation duplicated the original Mengoli et al JAMES code. This was largely a
   proof of concept implementation, misses some key parts of the acclimation model and
   the internal calculations are sufficiently different that there is a high maintenance
-  cost to updating it the new API in version 2.0.0.
+  cost to updating it to the new API in version 2.0.0.
 
   - The `fill_from` argument to `fill_daily_to_subdaily` was only required for
     `SubdailyPModel_JAMES` and so this has also been deprecated.

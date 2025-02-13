@@ -31,12 +31,12 @@ class AcclimationModel:
     The model can handle incomplete days at the start and end of the time series and
     will internally pad the datetimes to complete days in order to ensure correct
     sampling. The values in ``datetimes`` are assumed to be the precise times of the
-    observations. If the datetimes are represent the start or end of a sampling time
-    span, then they should first be converted to a reasonable choice of observation
-    time, such as the midpoint of the timespan.
+    observations. If the datetimes represent the start or end of a sampling time span,
+    then they should first be converted to a reasonable choice of observation time, such
+    as the midpoint of the timespan.
 
     An acclimation window must then be set, defining a period of the day representing
-    the environmental conditions that plants will acclimate to. This will typically by
+    the environmental conditions that plants will acclimate to. This will typically be
     the time of day with highest productivity - usually around noon - when the light use
     efficiency of the plant can best make use of high levels of sunlight. This window is
     set using one of the following methods:
@@ -77,18 +77,31 @@ class AcclimationModel:
         settings are shared for all variables to which the given Acclimation model is
         applied.
 
+        The argument description below describes the role of each setting but more
+        details are also provided in the linked method descriptions.
+
     Args:
         datetimes: A sequence of datetimes for observations at a subdaily scale.
-        allow_partial_data: See
+        allow_partial_data: Allows the
             :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.get_daily_means`
-        alpha: See
+            method to switch between using :func:`numpy.mean` and :func:`numpy.nanmean`,
+            so that daily mean values can be calculated even if the data in the
+            acclimation window is incomplete.
+        alpha: A float value that controls the speed of acclimation in the
             :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.apply_acclimation`
-        allow_holdover: See
+            method. The value must be in the range [0, 1], with smaller values giving
+            slower acclimation and larger values giving quicker acclimation.
+        allow_holdover: Allows the
             :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.apply_acclimation`
-        update_point: See
+            method to adapt to missing values in the acclimation time series.
+        update_point: Used in the
             :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.fill_daily_to_subdaily`
-        fill_method: See
+            method to set when plant behaviour updates to the conditions within the
+            acclimation window. One of ``max`` (default) or ``mean``.
+        fill_method: Used in the
             :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.fill_daily_to_subdaily`
+            method to set the interpolation method used to fill subdaily observations.
+            One of ``previous`` (default) or ``linear``.
     """
 
     def __init__(
@@ -359,7 +372,7 @@ class AcclimationModel:
         This method finds the daily observation time closest to a value provided as a
         :class:`~numpy.timedelta64` value since midnight. If the provided time is
         exactly between two observation times, the earlier observation will be used.
-        The resulting single observation will then as the daily sample.
+        The resulting single observation will then be used as the daily sample.
 
         Args:
             time: A :class:`~numpy.timedelta64` value.
@@ -561,7 +574,7 @@ class AcclimationModel:
           the plant updates acclimating variables to the new daily realised value. The
           default is ``max`` - the plant starts to acclimate to a new value at the end
           of the acclimation window - but this can also be set to ``mean`` to start
-          acclimation from the middle of the acclimation  window. Note that this setting
+          acclimation from the middle of the acclimation window. Note that this setting
           implies the plant can predict the daily values between the mean and max
           observation time.
 
