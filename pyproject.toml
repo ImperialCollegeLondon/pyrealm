@@ -1,15 +1,39 @@
-[tool.poetry]
-authors = [
-  "David Orme <d.orme@imperial.ac.uk>",
-  "Alienor Lavergne <alienor.lavergne@springernature.com>",
-  "Vivienne Groner <v.groner@imperial.ac.uk>",
-  "Marion Weinzierl <mw925@cam.ac.uk>",
-  "Tianzhang Cai <tc684@cam.ac.uk>",
-  "Surbhi Goel <sg2147@cam.ac.uk>",
-  "Alexander Smith <as3402@cam.ac.uk>",
-  "James Emberton <je484@cam.ac.uk>",
-  "Amy Pike <ap766@cam.ac.uk>",
+
+[project]
+description = "Python tools for modelling plant productivity and demography."
+license = "MIT"
+name = "pyrealm"
+version = "2.0.0-rc.1"
+
+dependencies = [
+  "dacite (>1.6.0)",
+  "numpy (>=2.1, < 2.2)", # pinning below 2.2.0 at the moment, issue with float typing.
+  "scipy (>=1.7.3)",
+  "tabulate (>=0.8.10)",
+  "marshmallow (>=3.22.0)",
+  "marshmallow-dataclass (>=8.7.0)",
+  "pandas (>=2.2.2)",
 ]
+
+requires-python = ">=3.10"
+
+authors = [
+  {name = "David Orme", email = "d.orme@imperial.ac.uk"},
+  {name = "Alienor Lavergne", email = "alienor.lavergne@springernature.com"},
+  {name = "Vivienne Groner", email = "v.groner@imperial.ac.uk"},
+  {name = "Marion Weinzierl", email = "mw925@cam.ac.uk"},
+  {name = "Tianzhang Cai", email = "tc684@cam.ac.uk"},
+  {name = "Surbhi Goel", email = "sg2147@cam.ac.uk"},
+  {name = "Alexander Smith", email = "as3402@cam.ac.uk"},
+  {name = "James Emberton", email = "je484@cam.ac.uk"},
+  {name = "Amy Pike", email = "ap766@cam.ac.uk"},
+]
+
+packages = [
+  {include = "pyrealm"},
+  {include = "pyrealm_build_data", format = "sdist"},
+]
+
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
@@ -18,29 +42,21 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Development Status :: 4 - Beta",
 ]
-description = "Python tools for modelling plant productivity and demography."
-homepage = "https://pyrealm.readthedocs.io/"
-license = "MIT"
-name = "pyrealm"
-packages = [
-  {include = "pyrealm"},
-  {include = "pyrealm_build_data", format = "sdist"},
+
+keywords = ["gross primary productivity", "demography", "eco-evolutionary optimality"]
+license-files = ["LICENSE"]
+maintainers = [
+  {name = "David Orme", email = "d.orme@imperial.ac.uk"},
 ]
 readme = "README.md"
+
+[project.urls]
+homepage = "https://pyrealm.readthedocs.io/"
 repository = "https://github.com/ImperialCollegeLondon/pyrealm"
-version = "2.0.0-rc.1"
 
-[tool.poetry.dependencies]
-dacite = "^1.6.0" 
-numpy = "~2.1" # pinning below 2.2.0 at the moment, issue with float typing.
-python = ">=3.10" 
-scipy = "^1.7.3" 
-tabulate = "^0.8.10" 
+[tool.poetry]
+requires-poetry = ">=2.0"
 
-marshmallow = "^3.22.0"
-marshmallow-dataclass = "^8.7.0"
-pandas = "^2.2.2"
-pandas-stubs = "^2.2.2.240909"
 [tool.poetry.group.types.dependencies]
 pandas-stubs = "^2.2.0.240218"
 types-tabulate = "^0.9.0.0"
