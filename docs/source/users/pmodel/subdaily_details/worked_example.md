@@ -55,7 +55,7 @@ fitting basically takes all of the same arguments as the standard
 {class}`~pyrealm.pmodel.pmodel.PModel` class. There are three additional things to set:
 
 * The timing of the observations and the daily window that should be used to estimate
-  [acclimation of slow responses](acclimation.md#the-acclimation-window).
+  [acclimation of slow responses](acclimation.md#the-acclimation-model).
 * How rapidly plants [acclimate to daily optimal
   conditions](./acclimation.md#estimating-realised-responses).
 * Approaches to handling any [missing data](./subdaily_model_and_missing_data.md): since

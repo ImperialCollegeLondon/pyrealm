@@ -2,14 +2,14 @@
 the following  classes:
 
 * :class:`~pyrealm.pmodel.new_pmodel.PModelABC`: An abstract base class providing some
-     of the core functionality for initialising PModel subclasses.
+  of the core functionality for initialising PModel subclasses.
 
 * :class:`~pyrealm.pmodel.new_pmodel.PModelNew`: A subclass providing the standard
-     implementation of the P Model.
+  implementation of the P Model.
 
 * :class:`~pyrealm.pmodel.new_pmodel.SubdailyPModelNew`: A subclass providing the
-     subdaily implementation of the P Model, which accounts for slow acclimation of core
-     photosynthetic processes.
+  subdaily implementation of the P Model, which accounts for slow acclimation of core
+  photosynthetic processes.
 
 
 """  # noqa D210, D415
@@ -41,13 +41,13 @@ from pyrealm.pmodel.quantum_yield import QUANTUM_YIELD_CLASS_REGISTRY, QuantumYi
 class PModelABC(ABC):
     r"""Abstract base class for the PModel and SubdailyPModel.
 
-    The base class __init__ implements the core arguments to the PModel subclasses: the
-    forcing data to be used for the model and various methodological options for the
+    The base class ``__init__`` implements the core arguments to the PModel subclasses:
+    the forcing data to be used for the model and various methodological options for the
     calculation of the model parameters.
 
-    Subclasses should define an `__init__` method that first calls
-    `super().__init__(...)` to run the shared core functionality and then define any
-    model specific attributes. The abstract base method `_fit_model` should then be
+    Subclasses should define an ``__init__`` method that first calls
+    ``super().__init__(...)`` to run the shared core functionality and then define any
+    model specific attributes. The abstract base method ``_fit_model`` should then be
     defined and used to execute the model specific logic of the base class.
 
     Args:
@@ -62,6 +62,8 @@ class PModelABC(ABC):
             :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`).
         method_jmaxlim: (Optional, default=`wang17`) Method to use for
             :math:`J_{max}` limitation.
+        method_arrhenius: (Optional, default=`simple`) Method to set the form of
+            Arrhenius scaling used for `vcmax` and `jmax`.
         reference_kphio: An optional alternative reference value for the quantum yield
             efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
             calculation method.
@@ -210,7 +212,7 @@ class PModelABC(ABC):
 
         .. math::
 
-            V_{cmax} &= \phi_{0} I_{abs} \frac{m}{m_c} f_{v} 
+            V_{cmax} = \phi_{0} I_{abs} \frac{m}{m_c} f_{v} 
 
         where  :math:`f_v` is a limitation term calculated via the method selected in
         `method_jmaxlim`."""
@@ -226,7 +228,7 @@ class PModelABC(ABC):
         
         .. math::
 
-            J_{max} &= 4 \phi_{0} I_{abs} f_{j}
+            J_{max} = 4 \phi_{0} I_{abs} f_{j}
 
         where  :math:`f_j` is a limitation term calculated via the method selected in
         `method_jmaxlim`."""
@@ -237,21 +239,26 @@ class PModelABC(ABC):
         """
 
         self.rd: NDArray[np.float64]
-        r"""Dark respiration (µmol m-2 s-1), , calculated as:
+        r"""Dark respiration (µmol m-2 s-1) calculated as:
 
         .. math::
 
             R_d = b_0 \frac{fr(t)}{fv(t)} V_{cmax},
 
-        following :cite:`Atkin:2015hk`, where :math:`fr(t)` is the instantaneous
+        following :cite:t:`Atkin:2015hk`, where :math:`fr(t)` is the instantaneous
         temperature response of dark respiration implemented in
         :func:`~pyrealm.pmodel.functions.calc_ftemp_inst_rd`, and :math:`b_0` is set in
         :attr:`~pyrealm.constants.pmodel_const.PModelConst.atkin_rd_to_vcmax`."""
 
         self.gpp: NDArray[np.float64]
-        r"""Gross primary productivity (µg C m-2 s-1) calculated as :math:`\text{GPP} =
-         \text{LUE} \cdot I_{abs}`, where :math:`I_{abs}` is the absorbed photosynthetic
-         radiation"""
+        r"""Gross primary productivity (µg C m-2 s-1) calculated as:
+        
+        .. math::
+
+            \text{GPP} = \text{LUE} \cdot I_{abs}
+            
+        where :math:`I_{abs}` is the absorbed photosynthetic radiation.
+        """
 
         self.gs: NDArray[np.float64]
         r"""Stomatal conductance (µmol m-2 s-1), calculated as:

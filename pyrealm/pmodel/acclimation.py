@@ -519,7 +519,7 @@ class AcclimationModel:
         Two attributes of the ``AcclimationModel`` class are used to tune the behaviour
         of this method:
 
-        * The ``alpha``attribute controls the speed of acclimation. This value must be
+        * The ``alpha`` attribute controls the speed of acclimation. This value must be
           between 0 and 1 and is used as the weight term in an exponential moving
           average of daily values. Values closer to 1 lead to faster acclimation, with 1
           giving instantaneous acclimation and 0 giving no acclimation.

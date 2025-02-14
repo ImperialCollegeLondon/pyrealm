@@ -60,6 +60,16 @@ language_info:
 .. automodule:: pyrealm.pmodel.optimal_chi
     :autosummary:
     :members:
+    :inherited-members:
+```
+
+## The {mod}`~pyrealm.pmodel.arrhenius` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.pmodel.arrhenius
+    :autosummary:
+    :members:
+    :inherited-members:
 ```
 
 ## The {mod}`~pyrealm.pmodel.quantum_yield` submodule
@@ -68,6 +78,7 @@ language_info:
 .. automodule:: pyrealm.pmodel.quantum_yield
     :autosummary:
     :members:
+    :inherited-members:
 ```
 
 ## The {mod}`~pyrealm.pmodel.functions` submodule
@@ -109,4 +120,21 @@ language_info:
 .. automodule:: pyrealm.pmodel.subdaily
     :autosummary:
     :members:
+```
+
+## The {mod}`~pyrealm.pmodel.acclimation` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.pmodel.acclimation
+    :autosummary:
+    :members:
+```
+
+## The {mod}`~pyrealm.pmodel.new_pmodel` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.pmodel.new_pmodel
+    :autosummary:
+    :members:
+    :inherited-members:
 ```
