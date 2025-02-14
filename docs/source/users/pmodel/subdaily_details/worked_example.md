@@ -34,13 +34,9 @@ from matplotlib.colors import Normalize
 import matplotlib.cm as cm
 import matplotlib.dates as mdates
 
-from pyrealm.pmodel import (
-    PModel,
-    PModelEnvironment,
-    SubdailyScaler,
-    SubdailyPModel,
-    convert_pmodel_to_subdaily,
-)
+from pyrealm.pmodel.new_pmodel import PModelNew, SubdailyPModelNew
+from pyrealm.pmodel.pmodel_environment import PModelEnvironment
+from pyrealm.pmodel.acclimation import AcclimationModel
 
 from pyrealm.core.hygro import convert_sh_to_vpd
 ```
@@ -122,18 +118,17 @@ instantaneously adopt optimal behaviour.
 
 ```{code-cell} ipython3
 # Standard PModels
-pmodC3 = PModel(
+pmodC3 = PModelNew(
     env=pm_env, method_kphio="fixed", reference_kphio=1 / 8, method_optchi="prentice14"
 )
-pmodC3.estimate_productivity(fapar=fapar, ppfd=ppfd)
 pmodC3.summarize()
 ```
 
 ```{code-cell} ipython3
-pmodC4 = PModel(
+pmodC4 = PModelNew(
     env=pm_env, method_kphio="fixed", reference_kphio=1 / 8, method_optchi="c4_no_gamma"
 )
-pmodC4.estimate_productivity(fapar=fapar, ppfd=ppfd)
+
 pmodC4.summarize()
 ```
 
@@ -147,34 +142,26 @@ calculated again to update those realised estimates.
 
 ```{code-cell} ipython3
 # Set the acclimation window to an hour either side of noon
-fsscaler = SubdailyScaler(datetimes)
-fsscaler.set_window(
+acclim_model = AcclimationModel(datetimes, alpha=1 / 15, allow_holdover=True)
+acclim_model.set_window(
     window_center=np.timedelta64(12, "h"),
     half_width=np.timedelta64(1, "h"),
 )
 
 # Fit C3 and C4 with the new implementation
-subdailyC3 = SubdailyPModel(
+subdailyC3 = SubdailyPModelNew(
     env=pm_env,
-    method_kphio="fixed",
-    reference_kphio=1 / 8,
     method_optchi="prentice14",
-    fapar=fapar,
-    ppfd=ppfd,
-    fs_scaler=fsscaler,
-    alpha=1 / 15,
-    allow_holdover=True,
-)
-subdailyC4 = SubdailyPModel(
-    env=pm_env,
     method_kphio="fixed",
     reference_kphio=1 / 8,
+    acclim_model=acclim_model,
+)
+subdailyC4 = SubdailyPModelNew(
+    env=pm_env,
     method_optchi="c4_no_gamma",
-    fapar=fapar,
-    ppfd=ppfd,
-    fs_scaler=fsscaler,
-    alpha=1 / 15,
-    allow_holdover=True,
+    method_kphio="fixed",
+    reference_kphio=1 / 8,
+    acclim_model=acclim_model,
 )
 ```
 
@@ -239,24 +226,14 @@ plt.tight_layout()
 ## Converting models
 
 The subdaily models can also be obtained directly from the standard models, using the
-`convert_pmodel_to_subdaily` method:
+{meth}`PModelNew.to_subdaily<pyrealm.pmodel.new_pmodel.PModelNew.to_subdaily>` method:
 
 ```{code-cell} ipython3
 # Convert standard C3 model
-converted_C3 = convert_pmodel_to_subdaily(
-    pmodel=pmodC3,
-    fs_scaler=fsscaler,
-    alpha=1 / 15,
-    allow_holdover=True,
-)
+converted_C3 = pmodC3.to_subdaily(acclim_model=acclim_model)
 
 # Convert standard C4 model
-converted_C4 = convert_pmodel_to_subdaily(
-    pmodel=pmodC4,
-    fs_scaler=fsscaler,
-    alpha=1 / 15,
-    allow_holdover=True,
-)
+converted_C4 = pmodC4.to_subdaily(acclim_model=acclim_model)
 ```
 
 This produces the same outputs as the `SubdailyPModel` class, but is convenient and more
@@ -266,4 +243,8 @@ compact when the two models are going to be compared.
 # Models have identical GPP - maximum absolute difference is zero.
 print(np.nanmax(abs(subdailyC3.gpp.flatten() - converted_C3.gpp.flatten())))
 print(np.nanmax(abs(subdailyC4.gpp.flatten() - converted_C4.gpp.flatten())))
+```
+
+```{code-cell} ipython3
+
 ```

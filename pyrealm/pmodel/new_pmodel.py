@@ -330,7 +330,45 @@ class PModelABC(ABC):
 
 
 class PModelNew(PModelABC):
-    """New implementation of the PModel."""
+    r"""Fit a standard P Model.
+
+    This class fits the P Model to a given set of environmental and photosynthetic
+    parameters. An extended description with typical use cases is given in
+    :any:`pmodel_overview` but the basic flow of the model is:
+
+    1. Estimate :math:`\ce{CO2}` limitation factors and optimal internal to ambient
+       :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using one of the
+       methods based on :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`.
+    2. Estimate limitation factors to :math:`V_{cmax}` and :math:`J_{max}` using
+       one of the methods implemented using
+       :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC`.
+
+    Soil moisture effects:
+        The `lavergne20_c3`, `lavergne20_c4`, ``prentice14_rootzonestress``,
+        ``c4_rootzonestress`` and ``c4_no_gamma_rootzonestress`` options to
+        ``method_optchi`` implement different approaches to soil moisture effects on
+        photosynthesis. See also the alternative GPP penalty factors that can be applied
+        after fitting the P Model
+        (:func:`pyrealm.pmodel.functions.calc_soilmstress_stocker` and
+        :func:`pyrealm.pmodel.functions.calc_soilmstress_mengoli`).
+
+    Args:
+        env: An instance of
+           :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
+        method_kphio: The method to use for calculating the quantum yield
+            efficiency of photosynthesis (:math:`\phi_0`, unitless). The method name
+            must be included in the
+            :data:`~pyrealm.pmodel.quantum_yield.QUANTUM_YIELD_CLASS_REGISTRY`.
+        method_optchi: (Optional, default=`prentice14`) Selects the method to be
+            used for calculating optimal :math:`chi`. The choice of method also sets the
+            choice of  C3 or C4 photosynthetic pathway (see
+            :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`).
+        method_jmaxlim: (Optional, default=`wang17`) Method to use for
+            :math:`J_{max}` limitation.
+        reference_kphio: An optional alternative reference value for the quantum yield
+            efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
+            calculation method.
+    """
 
     _data_attributes = (
         ("lue", "g C mol-1"),
@@ -560,34 +598,37 @@ class SubdailyPModelNew(PModelABC):
         acclimation window for the day, or undefined values in P Model predictions. Some
         options include:
 
-        * The ``allow_partial_data`` argument is passed on to
-          :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.get_daily_means` to
+        * The ``allow_partial_data`` argument is passed on to the
+          :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.get_daily_means` method to
           allow daily optimum conditions to be calculated when the data in the
           acclimation window is incomplete. This does not fix problems when no data is
           present in the window or when the P Model predictions for a day are undefined.
 
-        * The ``allow_holdover`` argument is passed on to
-          :meth:`~pyrealm.pmodel.subdaily.memory_effect` to set whether missing values
-          in the optimal predictions can be filled by holding over previous valid
-          values.
+        * The ``allow_holdover`` argument is passed on to the
+          :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.apply_acclimation` method
+          to set whether missing values in the optimal predictions can be filled by
+          holding over previous valid values.
 
     Args:
         env: An instance of
-          :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
-        fs_scaler: An instance of
-          :class:`~pyrealm.pmodel.scaler.SubdailyScaler`.
-        alpha: The :math:`\alpha` weight.
-        allow_holdover: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect`
-          function be allowed to hold over values to fill missing values.
-        allow_partial_data: Should estimates of daily optimal conditions be calculated
-          with missing values in the acclimation window.
+           :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
+        method_kphio: The method to use for calculating the quantum yield
+            efficiency of photosynthesis (:math:`\phi_0`, unitless). The method name
+            must be included in the
+            :data:`~pyrealm.pmodel.quantum_yield.QUANTUM_YIELD_CLASS_REGISTRY`.
+        method_optchi: (Optional, default=`prentice14`) Selects the method to be
+            used for calculating optimal :math:`chi`. The choice of method also sets the
+            choice of  C3 or C4 photosynthetic pathway (see
+            :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`).
+        method_jmaxlim: (Optional, default=`wang17`) Method to use for
+            :math:`J_{max}` limitation.
         reference_kphio: An optional alternative reference value for the quantum yield
-          efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
-          calculation method.
-        fill_kind: The approach used to fill daily realised values to the subdaily
-          timescale, currently one of 'previous' or 'linear'.
+            efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
+            calculation method.
+        acclim_model: An instance of
+            :class:`~pyrealm.pmodel.acclimation.AcclimationModel`
         previous_realised: A tuple of previous realised values of three NumPy arrays
-          (xi_real, vcmax25_real, jmax25_real).
+            (xi_real, vcmax25_real, jmax25_real).
     """
 
     _data_attributes = (
