@@ -716,18 +716,14 @@ class SubdailyPModelNew(PModelABC):
             # All variables should share the shape of a slice along the first axis of
             # the environmental forcings. Need to tell mypy to shut up - it does not
             # know that the values in previous_realised are confirmed to be arrays by
-
             # the code above
-            expected_shape = self.env.tc[0].shape
 
-            if not all(
-                [
-                    arr[0].shape == expected_shape  # type: ignore[index]
-                    for arr in previous_realised.values()
-                ]
-            ):
+            try:
+                for values in previous_realised.values():
+                    _ = np.broadcast_shapes(self.env.tc.shape, values.shape)
+            except ValueError:
                 raise ValueError(
-                    "`previous_realised` entries have wrong shape in Subdaily PModel"
+                    "`previous_realised` arrays have wrong shape in SubdailyPModel"
                 )
 
             self.previous_realised = previous_realised

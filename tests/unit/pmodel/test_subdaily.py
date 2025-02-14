@@ -111,6 +111,73 @@ def test_SubdailyPModel_corr(be_vie_data_components, data_args):
     assert np.all(r_vals > 0.995)
 
 
+@pytest.mark.parametrize(
+    argnames="previous_realised, outcome, msg",
+    argvalues=[
+        pytest.param(
+            {"xi": np.ones(1), "jmax25": np.ones(1), "vcmax25": np.ones(1)},
+            does_not_raise(),
+            None,
+            id="good",
+        ),
+        pytest.param(
+            (np.ones(1), np.ones(1), np.ones(1)),
+            pytest.raises(ValueError),
+            "previous_realised must be a dictionary of arrays, with entries "
+            "for 'xi', 'jmax25' and 'vcmax25'.",
+            id="not a dict",
+        ),
+        pytest.param(
+            {"xi": np.ones(1), "j_max25": np.ones(1), "v_cmax25": np.ones(1)},
+            pytest.raises(ValueError),
+            "previous_realised must be a dictionary of arrays, with entries "
+            "for 'xi', 'jmax25' and 'vcmax25'.",
+            id="dict with wrong keys",
+        ),
+        pytest.param(
+            {"xi": 1, "j_max25": 1, "v_cmax25": 1},
+            pytest.raises(ValueError),
+            "previous_realised must be a dictionary of arrays, with entries "
+            "for 'xi', 'jmax25' and 'vcmax25'.",
+            id="dict with non array values",
+        ),
+        pytest.param(
+            {"xi": np.ones(2), "jmax25": np.ones(2), "vcmax25": np.ones(2)},
+            pytest.raises(ValueError),
+            "`previous_realised` arrays have wrong shape in SubdailyPModel",
+            id="dict with badly sized arrays",
+        ),
+    ],
+)
+def test_SubdailyPModel_previous_realised_validation(
+    be_vie_data_components, previous_realised, outcome, msg
+):
+    """Test the functionality that allows the subdaily model to restart in blocks."""
+
+    from pyrealm.pmodel.acclimation import AcclimationModel
+    from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
+
+    env, datetime, expected_gpp = be_vie_data_components.get()
+
+    # Get the acclimation model and set window
+    acclim_model = AcclimationModel(datetime, allow_holdover=True)
+    acclim_model.set_window(
+        window_center=np.timedelta64(12, "h"),
+        half_width=np.timedelta64(30, "m"),
+    )
+
+    # Run as a subdaily model
+    with outcome as excep:
+        _ = SubdailyPModelNew(
+            env=env,
+            acclim_model=acclim_model,
+            previous_realised=previous_realised,
+        )
+
+    if not isinstance(outcome, does_not_raise):
+        assert str(excep.value) == msg
+
+
 def test_SubdailyPModel_previous_realised(be_vie_data_components):
     """Test the functionality that allows the subdaily model to restart in blocks."""
 
