@@ -491,7 +491,7 @@ class PModelNew(PModelABC):
 
 
 class SubdailyPModelNew(PModelABC):
-    r"""Fit a P Model incorporating fast and slow photosynthetic responses.
+    r"""Fit a P Model incorporating acclimation in photosynthetic responses.
 
     The :class:`~pyrealm.pmodel.pmodel.PModel` implementation of the P Model assumes
     that plants instantaneously adopt optimal behaviour, which is reasonable where the
@@ -506,35 +506,45 @@ class SubdailyPModelNew(PModelABC):
 
     * The first dimension of the data arrays used to create the
       :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance must
-      represent the time axis of the observations. The ``fs_scaler`` argument is used to
-      provide :class:`~pyrealm.pmodel.scaler.SubdailyScaler` instance which
-      sets the dates and time of those observations and sets which daily observations
-      form the daily acclimation window that will be used to estimate the optimal daily
-      behaviour, using one of the ``set_`` methods to that class.
-    * The :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.get_daily_means` method
-      is then used to extract daily average values for forcing variables from within the
-      acclimation window, setting the conditions that the plant will optimise to.
+      represent the time axis of the observations. The ``acclim_model`` argument is used
+      to provide a :class:`~pyrealm.pmodel.acclimation.AcclimationModel` instance that
+      sets the dates and time of those observations. One of the ``set_`` methods to that
+      class must also be used to define a daily acclimation window that will be used to
+      estimate the optimal daily behaviour of the plant
+    * The
+      :meth:`AcclimationModel.get_daily_means<pyrealm.pmodel.acclimation.AcclimationModel.get_daily_means>`
+      method is then used to extract daily average values for forcing variables from
+      within the acclimation window, setting the conditions that the plant will optimise
+      to.
     * A standard P Model is then run on those daily forcing values to generate predicted
       states for photosynthetic parameters that give rise to optimal productivity in
       that window.
-    * The :meth:`~pyrealm.pmodel.subdaily.memory_effect` function is then used to
-      calculate realised slowly responding values for :math:`\xi`, :math:`V_{cmax25}`
-      and :math:`J_{max25}`, given a weight :math:`\alpha \in [0,1]` that sets the speed
-      of acclimation using :math:`R_{t} = R_{t-1}(1 - \alpha) + O_{t} \alpha`, where
-      :math:`O` is the optimal value and :math:`R` is the realised value after
-      acclimation along a time series (:math:`t = 1..n`). Higher values of `alpha` give
-      more rapid acclimation: :math:`\alpha=1` results in immediate acclimation and
-      :math:`\alpha=0` results in no acclimation at all, with values pinned to the
-      initial estimates.
-    * By default, the initial realised value :math:`R_1` for each of the three slowly
-      acclimating variables is assumed to be the first optimal value :math:`O_1`, but
-      the `previous_realised` argument can be used to provide values of :math:`R_0` from
-      which to calculate :math:`R_{1} = R_{0}(1 - \alpha) + O_{1} \alpha`.
+    * The
+      :meth:`AcclimationModel.apply_acclimation<pyrealm.pmodel.acclimation.AcclimationModel.apply_acclimation>`
+      method is then used to calculate acclimating values for
+      :math:`\xi`, :math:`V_{cmax25}` and :math:`J_{max25}`. These values are the actual
+      realised values that will be used in calculating the P Model and which reflect the
+      slow responses of those parameters to changing conditions. The speed of
+      acclimation is controlled by the
+      :attr:`AcclimationModel.alpha<pyrealm.pmodel.acclimation.AcclimationModel.alpha>`
+      attribute, which sets the weight :math:`\alpha \in [0,1]` for an exponential
+      moving average (see :meth:`pyrealm.core.utilities.exponential_moving_average`)
+      Higher values of `alpha` give more rapid acclimation: :math:`\alpha=1`
+      results in immediate acclimation and :math:`\alpha=0` results in no acclimation at
+      all, with values pinned to the initial estimates.
+    * By default, the initial values of the acclimated variables are taken to be the
+      same as the initial optimal values. The `previous_realised` argument can be used
+      to provide alternative initial realised values. This allows subdaily P models to
+      be `restarted` using estimates of acclimated values.
     * The realised values are then filled back onto the original subdaily timescale,
-      with :math:`V_{cmax}` and :math:`J_{max}` then being calculated from the slowly
-      responding :math:`V_{cmax25}` and :math:`J_{max25}` and the actual subdaily
-      temperature observations and :math:`c_i` calculated using realised values of
-      :math:`\xi` but subdaily values in the other parameters.
+      using the
+      :meth:`AcclimationModel.fill_daily_to_subdaily<pyrealm.pmodel.acclimation.AcclimationModel.fill_daily_to_subdaily>`
+      method. The subdaily values of :math:`V_{cmax}` and :math:`J_{max}` are calculated
+      by using Arrhenius scaling to convert the acclimated values of :math:`V_{cmax25}`
+      and :math:`J_{max25}` to the actual subdaily
+      temperature observations. The value of :math:`c_i` is calculated using the
+      acclimating values of :math:`\xi` but the actual subdaily values of temperature
+      and vapour pressure deficit.
     * Predictions of GPP are then made as in the standard P Model.
 
     As with the :class:`~pyrealm.pmodel.pmodel.PModel`, the values of the `kphio`

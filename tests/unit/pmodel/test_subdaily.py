@@ -120,7 +120,7 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
     # Run all in one model
     env, datetime, _ = be_vie_data_components.get(mode="crop", start=0, end=17520)
 
-    # Get the fast slow scaler and set window
+    # Get the acclimation model and set window
     acclim_model = AcclimationModel(datetime, allow_holdover=True)
     acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),
