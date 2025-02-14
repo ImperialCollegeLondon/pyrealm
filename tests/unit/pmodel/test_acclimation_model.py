@@ -304,7 +304,7 @@ def fixture_AcclimationModel():
 def test_AcclimationModel_set_window(
     fixture_AcclimationModel, ctext_mngr, msg, kwargs, samp_mean, samp_max
 ):
-    """Test the SubdailyScaler set_window method."""
+    """Test the AcclimationModel set_window method."""
 
     with ctext_mngr as cman:
         fixture_AcclimationModel.set_window(**kwargs)
@@ -371,7 +371,7 @@ def test_AcclimationModel_set_window(
 def test_AcclimationModel_set_include(
     fixture_AcclimationModel, ctext_mngr, msg, include, samp_mean, samp_max
 ):
-    """Test the SubdailyScaler set_include method."""
+    """Test the AcclimationModel set_include method."""
     with ctext_mngr as cman:
         fixture_AcclimationModel.set_include(include)
 
@@ -436,7 +436,7 @@ def test_AcclimationModel_set_include(
 def test_AcclimationModel_set_nearest(
     fixture_AcclimationModel, ctext_mngr, msg, time, samp_mean, samp_max
 ):
-    """Test the SubdailyScaler set_nearest method."""
+    """Test the AcclimationModel set_nearest method."""
     with ctext_mngr as cman:
         fixture_AcclimationModel.set_nearest(time)
 
@@ -548,7 +548,7 @@ def test_AcclimationModel_get_window_values_errors(
     values,
     set_window,
 ):
-    """Test errors arising in the SubdailyScaler get_window_value method."""
+    """Test errors arising in the AcclimationModel get_window_value method."""
 
     if set_window:
         fixture_AcclimationModel.set_window(
@@ -1137,7 +1137,7 @@ def test_AcclimationModel_fill_daily_to_subdaily_linear(
 def test_AcclimationModel_fill_daily_to_subdaily_failure_modes(
     ac_mod_args, fill_args, outcome, msg
 ):
-    """Test fill_daily_to_subdaily using SubdailyScaler with method linear."""
+    """Test fill_daily_to_subdaily using AcclimationModel with method linear."""
 
     from pyrealm.pmodel.acclimation import AcclimationModel
 

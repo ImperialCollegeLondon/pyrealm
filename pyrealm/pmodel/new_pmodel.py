@@ -561,21 +561,21 @@ class SubdailyPModelNew(PModelABC):
         options include:
 
         * The ``allow_partial_data`` argument is passed on to
-          :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.get_daily_means` to
+          :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.get_daily_means` to
           allow daily optimum conditions to be calculated when the data in the
           acclimation window is incomplete. This does not fix problems when no data is
           present in the window or when the P Model predictions for a day are undefined.
 
         * The ``allow_holdover`` argument is passed on to
-          :meth:`~pyrealm.pmodel.subdaily.memory_effect` to set whether missing values
-          in the optimal predictions can be filled by holding over previous valid
-          values.
+          :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.apply_acclimation` to set
+          whether missing values in the optimal predictions can be filled by holding
+          over previous valid values.
 
     Args:
         env: An instance of
           :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
-        fs_scaler: An instance of
-          :class:`~pyrealm.pmodel.scaler.SubdailyScaler`.
+        acclim_nodel: An instance of
+          :class:`~pyrealm.pmodel.acclimation.AcclimationModel`.
         alpha: The :math:`\alpha` weight.
         allow_holdover: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect`
           function be allowed to hold over values to fill missing values.

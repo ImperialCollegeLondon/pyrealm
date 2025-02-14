@@ -277,12 +277,12 @@ class AcclimationModel:
         This private method must be called by all ``set_`` methods. It is used to
         update the instance to populate the following attributes:
 
-        * :attr:`~pyrealm.pmodel.scaler.SubdailyScaler.sample_datetimes`: An
+        * :attr:`~pyrealm.pmodel.acclimation.AcclimationModel.sample_datetimes`: An
           array of the datetimes of observations included in daily samples of shape
           (n_day, n_sample).
-        * :attr:`~pyrealm.pmodel.scaler.SubdailyScaler.sample_datetimes_mean`:
+        * :attr:`~pyrealm.pmodel.acclimation.AcclimationModel.sample_datetimes_mean`:
           An array of the mean daily datetime of observations included in daily samples.
-        * :attr:`~pyrealm.pmodel.scaler.SubdailyScaler.sample_datetimes_max`:
+        * :attr:`~pyrealm.pmodel.acclimation.AcclimationModel.sample_datetimes_max`:
           An array of the maximum daily datetime of observations included in daily
           samples.
         """
@@ -419,8 +419,7 @@ class AcclimationModel:
         Args:
             values: An array containing the sample values. The first dimension should be
               matching the number of measurements, i.e., the first dimension of
-              datetimes in
-              :class:`~pyrealm.pmodel.scaler.SubdailyScaler`.
+              datetimes in :class:`~pyrealm.pmodel.acclimation.AcclimationModel`.
         """
 
         if self.padding == (0, 0):
@@ -601,7 +600,7 @@ class AcclimationModel:
 
         Args:
             values: An array with the first dimension matching the number of days in the
-                instances :class:`~pyrealm.pmodel.scaler.SubdailyScaler` object.
+               :class:`~pyrealm.pmodel.acclimation.AcclimationModel` instance.
             previous_values: An array of previous values from which to fill the
                 variable.
         """
