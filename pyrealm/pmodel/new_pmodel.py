@@ -510,7 +510,7 @@ class SubdailyPModelNew(PModelABC):
       to provide a :class:`~pyrealm.pmodel.acclimation.AcclimationModel` instance that
       sets the dates and time of those observations. One of the ``set_`` methods to that
       class must also be used to define a daily acclimation window that will be used to
-      estimate the optimal daily behaviour of the plant
+      estimate the optimal daily behaviour of the plant.
     * The
       :meth:`AcclimationModel.get_daily_means<pyrealm.pmodel.acclimation.AcclimationModel.get_daily_means>`
       method is then used to extract daily average values for forcing variables from
