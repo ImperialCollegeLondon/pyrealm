@@ -34,7 +34,7 @@ def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
 
     # check that we have the right number of leap days
     if year_remainder > no_leapyears:
-        raise ValueError("Datetimes to not cover full years.")
+        raise ValueError("Datetimes do not cover full years.")
 
     if obs_per_date > 1:
         # subdaily
