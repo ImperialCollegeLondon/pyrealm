@@ -365,6 +365,8 @@ class PModelNew(PModelABC):
             :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`).
         method_jmaxlim: (Optional, default=`wang17`) Method to use for
             :math:`J_{max}` limitation.
+        method_arrhenius: (Optional, default=`simple`) Method to set the form of
+            Arrhenius scaling used for `vcmax` and `jmax`.
         reference_kphio: An optional alternative reference value for the quantum yield
             efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
             calculation method.
@@ -548,7 +550,7 @@ class SubdailyPModelNew(PModelABC):
       to provide a :class:`~pyrealm.pmodel.acclimation.AcclimationModel` instance that
       sets the dates and time of those observations. One of the ``set_`` methods to that
       class must also be used to define a daily acclimation window that will be used to
-      estimate the optimal daily behaviour of the plant
+      estimate the optimal daily behaviour of the plant.
     * The
       :meth:`AcclimationModel.get_daily_means<pyrealm.pmodel.acclimation.AcclimationModel.get_daily_means>`
       method is then used to extract daily average values for forcing variables from
@@ -612,6 +614,8 @@ class SubdailyPModelNew(PModelABC):
     Args:
         env: An instance of
            :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
+        acclim_model: An instance of
+            :class:`~pyrealm.pmodel.acclimation.AcclimationModel`
         method_kphio: The method to use for calculating the quantum yield
             efficiency of photosynthesis (:math:`\phi_0`, unitless). The method name
             must be included in the
@@ -622,11 +626,11 @@ class SubdailyPModelNew(PModelABC):
             :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`).
         method_jmaxlim: (Optional, default=`wang17`) Method to use for
             :math:`J_{max}` limitation.
+        method_arrhenius: (Optional, default=`simple`) Method to set the form of
+            Arrhenius scaling used for `vcmax` and `jmax`.
         reference_kphio: An optional alternative reference value for the quantum yield
             efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
             calculation method.
-        acclim_model: An instance of
-            :class:`~pyrealm.pmodel.acclimation.AcclimationModel`
         previous_realised: A tuple of previous realised values of three NumPy arrays
             (xi_real, vcmax25_real, jmax25_real).
     """

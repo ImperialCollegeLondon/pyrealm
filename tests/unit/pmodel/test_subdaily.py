@@ -231,7 +231,7 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
     )
 
     # Run as a subdaily model using the kphio used in the reference implementation.
-    # Note the explicit use of [[-1]] to give array values, not scalar np.floating
+    # Note the explicit use of [[-1]] to give array values, not scalar np.float
     part_2_subdaily_pmodel = SubdailyPModelNew(
         env=env2,
         reference_kphio=1 / 8,
