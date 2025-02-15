@@ -57,7 +57,7 @@ from pyrealm.pmodel.acclimation import AcclimationModel
 ## The acclimation model
 
 Defining the model to be used for estimating acclimation uses the
-{class}`~pyrealm.pmodel.acclimation.AcclimationModel`. This class is used to:
+{class}`~pyrealm.pmodel.acclimation import AcclimationModel`. This class is used to:
 
 * define the timing of observations on a subdaily scale,
 * define an daily acclimation window that sets the daily conditions that plants will
@@ -223,46 +223,45 @@ subdaily predictions. The interpolation process sets two things:
     interpolation between the update points. This one day offset in the realised values
     is _always_ applied to avoid interpolating to a value that is not yet known.
 
-The code below shows how the
-{meth}`~pyrealm.pmodel.acclimation.AcclimationModel.fill_daily_to_subdaily` method is
-used to interpolate realised values back to the subdaily scale, using different settings
-for the update point and interpolation method.
-
-+++
-
-The plots below show the resulting interpolated values along with the instantaneous
-daily optimal values (grey circles):
-
-Plot A
-: The daily optimal realised value acclimates slowly ($\alpha = \frac{1}{8}$) and
-  is held constant from the end ('maximum') of one acclimation window until the end of
-  the next.
-
-Plot B
-: The daily optimal realised value acclimates more rapidly ($\alpha = \frac{1}{3}$) and
-  is linearly interpolated to the subdaily timescale from the end of one acclimation
-  window to the next, _after_ a one day offset is applied. The cross shows the daily
-  realised value and the triangle shows those values with the offset applied.
-
-Plot C
-: The daily optimal realised value is able to instantaneously adopt the the daily
-  optimal value in the acclimation window ($\alpha = 1$). The realised value at the
-  subdaily scale is held constant from the middle('mean') of one acclimation window
-  until the next.
-
-Plot D
-: The daily optimal realised value is again able to instantaneously adopt the daily
-  optimal value, but the one day offset for linear interpolation is applied.
+The code below defines four different scenarios for generating realised subdaily values
+using the {meth}`~pyrealm.pmodel.acclimation.AcclimationModel.fill_daily_to_subdaily`
+method.
 
 ```{code-cell} ipython3
-:tags: [hide-input]
-
 scenarios = {
     "A": dict(alpha=1 / 8, fill_method="previous", update_point="max"),
     "B": dict(alpha=1 / 3, fill_method="linear", update_point="max"),
     "C": dict(alpha=1, fill_method="previous", update_point="mean"),
     "D": dict(alpha=1, fill_method="linear", update_point="mean"),
 }
+```
+
+These scenarios are described below and then the results of applying these scenarios
+on the example data are shown in the plots:
+
+Scenario A
+: The daily optimal realised value acclimates slowly ($\alpha = \frac{1}{8}$) and
+  is held constant from the end ('maximum') of one acclimation window until the end of
+  the next.
+
+Scenario B
+: The daily optimal realised value acclimates more rapidly ($\alpha = \frac{1}{3}$) and
+  is linearly interpolated to the subdaily timescale from the end of one acclimation
+  window to the next, _after_ a one day offset is applied. The cross shows the daily
+  realised value and the triangle shows those values with the offset applied.
+
+Scenario C
+: The daily optimal realised value is able to instantaneously adopt the the daily
+  optimal value in the acclimation window ($\alpha = 1$). The realised value at the
+  subdaily scale is held constant from the middle('mean') of one acclimation window
+  until the next.
+
+Scenario D
+: The daily optimal realised value is again able to instantaneously adopt the daily
+  optimal value, but the one day offset for linear interpolation is applied.
+
+```{code-cell} ipython3
+:tags: [hide-input]
 
 # Create the figure
 fig, axes = plt.subplots(4, 1, figsize=(6, 8), sharex=True)
@@ -276,11 +275,17 @@ for (scenario_id, scenario_details), axis in zip(scenarios.items(), axes):
     model = AcclimationModel(subdaily_datetimes, **scenario_details)
     model.set_window(window_center=window_center, half_width=half_width)
 
+    # Get the daily optimal values within the window, apply acclimation
+    # to get the daily realised values and then fill back onto the subdaily
+    # scale, using the return_interpolation_inputs option to get the
+    # inputs to the interpolation process
     daily_optimal = model.get_daily_means(subdaily_data)
     daily_realised = model.apply_acclimation(daily_mean)
-    subdaily_realised = model.fill_daily_to_subdaily(daily_realised)
+    subdaily_realised, interp_y, interp_x = model.fill_daily_to_subdaily(
+        daily_realised, return_interpolation_inputs=True
+    )
 
-    # Show the variable at the subdaily timescale and the daily optimal value
+    # Show the variable at the subdaily timescale and the daily optimal values
     axis.plot(subdaily_datetimes, subdaily_data, "-", color="0.4", linewidth=0.7)
     axis.scatter(
         model.sample_datetimes_mean,
@@ -291,118 +296,54 @@ for (scenario_id, scenario_details), axis in zip(scenarios.items(), axes):
         linewidth=1,
     )
 
+    # Add the filled subdaily values, along with the interpolation inputs, showing
+    # the realised daily values at the point at which the interpolation values update.
+    axis.plot(model.datetimes, subdaily_realised)
     axis.scatter(
-        model.sample_datetimes_max,  # change to sample_update_time?
-        daily_realised,
+        interp_x,
+        interp_y,
         marker="d",
         edgecolor="C0",
         facecolor="none",
     )
-    axis.plot(model.datetimes, subdaily_realised)
 
+    # Add a scenario label
     axis.text(0.95, 0.95, scenario_id, ha="right", va="top", transform=axis.transAxes)
 
     # Format date axis
     myFmt = mdates.DateFormatter("%m/%d\n%H:%M")
     axis.xaxis.set_major_formatter(myFmt)
 
-    # Add scenario label
-# # Show the alpha = 1/8 update point and fill back to the fast scale
-# ax1.scatter(
-#     demo_scaler.sample_datetimes_max,
-#     real_8,
-#     marker="d",
-#     edgecolor="C0",
-#     facecolor="none",
-# )
-# ax1.plot(demo_scaler.datetimes, fast_real_8, linewidth=0.5)
-# ax1.text(0.95, 0.95, "(A)", ha="right", va="top", transform=ax1.transAxes)
-
-# # Show the alpha = 1/3 update point and fill back to the fast scale
-# ax2.scatter(
-#     demo_scaler.sample_datetimes_max,
-#     real_3,
-#     marker="d",
-#     edgecolor="C0",
-#     facecolor="none",
-# )
-# ax2.scatter(
-#     demo_scaler.sample_datetimes_max + np.timedelta64(1, "D"),
-#     real_3,
-#     edgecolor="C1",
-#     facecolor="none",
-#     marker="s",
-# )
-# ax2.plot(demo_scaler.datetimes, fast_real_3, linewidth=0.5)
-# ax2.text(0.95, 0.95, "(B)", ha="right", va="top", transform=ax2.transAxes)
-
-# # Show the alpha = 1 update point and fill back to the fast scale using constant
-# ax3.scatter(
-#     demo_scaler.sample_datetimes_mean,
-#     real_1,
-#     marker="d",
-#     edgecolor="C0",
-#     facecolor="none",
-# )
-# ax3.plot(demo_scaler.datetimes, fast_real_1_prev, linewidth=0.5)
-# ax3.text(0.95, 0.95, "(C)", ha="right", va="top", transform=ax3.transAxes)
-
-# # Show the alpha = 1 update point and fill back to the fast scale
-# ax4.scatter(
-#     demo_scaler.sample_datetimes_mean,
-#     real_1,
-#     marker="d",
-#     edgecolor="C0",
-#     facecolor="none",
-# )
-# ax4.scatter(
-#     demo_scaler.sample_datetimes_mean + np.timedelta64(1, "D"),
-#     real_1,
-#     edgecolor="C1",
-#     facecolor="none",
-#     marker="s",
-# )
-# ax4.plot(demo_scaler.datetimes, fast_real_1_lin, linewidth=0.5)
-# ax4.text(0.95, 0.95, "(D)", ha="right", va="top", transform=ax4.transAxes)
-
-# ax1.legend(
-#     loc="lower center",
-#     bbox_to_anchor=[0.5, 1],
-#     ncols=3,
-#     frameon=False,
-#     handles=[
-#         Line2D([0], [0], label="Instantaneous response", color="0.4", linewidth=0.7),
-#         Patch(color="salmon", alpha=0.3, label="Acclimation window"),
-#         Line2D(
-#             [0],
-#             [0],
-#             label="Daily optimal value",
-#             color="C3",
-#             linestyle="none",
-#             marker="x",
-#         ),
-#         Line2D(
-#             [0],
-#             [0],
-#             label="Daily realised value",
-#             markeredgecolor="C0",
-#             linestyle="none",
-#             marker="d",
-#             markerfacecolor="none",
-#         ),
-#         Line2D(
-#             [0],
-#             [0],
-#             label="Offset daily realised value",
-#             markeredgecolor="C1",
-#             linestyle="none",
-#             marker="s",
-#             markerfacecolor="none",
-#         ),
-#         Line2D([0], [0], label="Slow response", color="C0", linewidth=0.7),
-#     ],
-# )
-# plt.tight_layout()
+# Add a shared legend
+axes[0].legend(
+    loc="lower center",
+    bbox_to_anchor=[0.5, 1],
+    ncols=3,
+    frameon=False,
+    handles=[
+        Line2D([0], [0], label="Instantaneous response", color="0.4", linewidth=0.7),
+        Patch(color="salmon", alpha=0.3, label="Acclimation window"),
+        Line2D(
+            [0],
+            [0],
+            label="Daily optimal value",
+            color="C3",
+            linestyle="none",
+            marker="x",
+        ),
+        Line2D(
+            [0],
+            [0],
+            label="Daily realised value",
+            markeredgecolor="C0",
+            linestyle="none",
+            marker="d",
+            markerfacecolor="none",
+        ),
+        Line2D([0], [0], label="Slow response", color="C0", linewidth=0.7),
+    ],
+)
+plt.tight_layout()
 ```
 
 ```{code-cell} ipython3

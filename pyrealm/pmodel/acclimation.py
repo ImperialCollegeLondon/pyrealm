@@ -557,7 +557,11 @@ class AcclimationModel:
         self,
         values: NDArray[np.float64],
         previous_values: NDArray[np.float64] | None = None,
-    ) -> NDArray[np.float64]:
+        return_interpolation_inputs: bool = False,
+    ) -> (
+        NDArray[np.float64]
+        | tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.datetime64]]
+    ):
         """Resample daily variables onto the subdaily time scale.
 
         This method takes an array representing daily values and interpolates those
@@ -598,11 +602,19 @@ class AcclimationModel:
         series to be processed in blocks. This option is only currently implemented for
         interpolation using the ``fill_method='previous'`` option.
 
+        The method returns an array of the daily values interpolated onto the subdaily
+        observation times. If ``return_interpolation_inputs=True`` is used, the method
+        returns a tuple of three arrays: the interpolated values and then arrays of the
+        values and times passed to the interpolation function. These are mostly of use
+        for plotting interpolation outputs.
+
         Args:
             values: An array with the first dimension matching the number of days in the
                :class:`~pyrealm.pmodel.acclimation.AcclimationModel` instance.
             previous_values: An array of previous values from which to fill the
                 variable.
+            return_interpolation_inputs: Also return input arrays to interpolation
+                function.
         """
 
         self._raise_if_sampling_times_unset()
@@ -671,5 +683,8 @@ class AcclimationModel:
             fill_value=fill_value,
             assume_sorted=True,
         )
+
+        if return_interpolation_inputs:
+            return (interp_fun(self.datetimes.astype("int")), values, update_time)
 
         return interp_fun(self.datetimes.astype("int"))
