@@ -198,14 +198,14 @@ def variable_kphio_subdaily(be_vie_data_components):
     of a subdaily model.
     """
 
-    from pyrealm.pmodel import SubdailyScaler
+    from pyrealm.pmodel.acclimation import AcclimationModel
     from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
 
     env, datetime, expected_gpp = be_vie_data_components.get()
 
-    # Get the fast slow scaler and set window
-    fsscaler = SubdailyScaler(datetime)
-    fsscaler.set_window(
+    # Get the acclimation model and set window
+    acclim_model = AcclimationModel(datetime, allow_holdover=True)
+    acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
@@ -220,8 +220,7 @@ def variable_kphio_subdaily(be_vie_data_components):
             env=env,
             method_kphio="fixed",
             reference_kphio=kphio,
-            fs_scaler=fsscaler,
-            allow_holdover=True,
+            acclim_model=acclim_model,
         )
         gpp[:, idx] = subdaily_pmodel.gpp
 
@@ -237,15 +236,16 @@ def test_kphio_arrays_subdaily(
 ):
     """Check behaviour with array inputs of kphio."""
 
-    from pyrealm.pmodel import PModelEnvironment, SubdailyScaler
+    from pyrealm.pmodel import PModelEnvironment
+    from pyrealm.pmodel.acclimation import AcclimationModel
     from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
 
     env, datetime, expected_gpp = be_vie_data_components.get()
     kphio_vals, expected_gpp = variable_kphio_subdaily
 
-    # Get the fast slow scaler and set window
-    fsscaler = SubdailyScaler(datetime)
-    fsscaler.set_window(
+    # Get the acclimation model and set window
+    acclim_model = AcclimationModel(datetime, allow_holdover=True)
+    acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
@@ -265,8 +265,7 @@ def test_kphio_arrays_subdaily(
         env=env,
         method_kphio="fixed",
         reference_kphio=np.broadcast_to(kphio_vals.reshape(shape[1:]), shape),
-        fs_scaler=fsscaler,
-        allow_holdover=True,
+        acclim_model=acclim_model,
     )
 
     assert np.allclose(subdaily_pmodel.gpp, expected_gpp.reshape(shape), equal_nan=True)

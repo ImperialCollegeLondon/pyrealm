@@ -9,7 +9,8 @@ import pytest
 def test_phenology_gpp_calculation(de_gri_half_hourly_data):
     """Test the provided GPP values for phenology can be recreated."""
 
-    from pyrealm.pmodel import PModelEnvironment, SubdailyScaler
+    from pyrealm.pmodel import PModelEnvironment
+    from pyrealm.pmodel.acclimation import AcclimationModel
     from pyrealm.pmodel.new_pmodel import PModelNew, SubdailyPModelNew
 
     # Calculate the PModel photosynthetic environment
@@ -24,8 +25,10 @@ def test_phenology_gpp_calculation(de_gri_half_hourly_data):
     )
 
     # Set up the datetimes of the observations and set the acclimation window
-    scaler = SubdailyScaler(datetimes=de_gri_half_hourly_data["time"].to_numpy())
-    scaler.set_window(
+    acclim_model = AcclimationModel(
+        datetimes=de_gri_half_hourly_data["time"].to_numpy()
+    )
+    acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(31, "m"),
     )
@@ -33,7 +36,7 @@ def test_phenology_gpp_calculation(de_gri_half_hourly_data):
     # Fit the potential GPP: fAPAR = 1 and phi0 = 1/8
     de_gri_subdaily_pmodel = SubdailyPModelNew(
         env=env,
-        fs_scaler=scaler,
+        acclim_model=acclim_model,
         reference_kphio=1 / 8,
     )
 
