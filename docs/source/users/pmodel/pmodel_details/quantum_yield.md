@@ -37,7 +37,7 @@ language_info:
 import matplotlib.pyplot as plt
 import numpy as np
 from pyrealm.pmodel import PModelEnvironment
-from pyrealm.pmodel.new_pmodel import PModelNew
+from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature, QuantumYieldSandoval
 
 # Set the resolution of examples
@@ -75,7 +75,7 @@ a parameter representing canopy-scale effective quantum yield.
 * The maximum quantum yield can vary with environmental conditions, such as temperature
 variation in $\phi_0$ {cite}`Bernacchi:2003dc`.
 
-For these reasons, the {class}`~pyrealm.pmodel.new_pmodel.PModelNew` provides alternative
+For these reasons, the {class}`~pyrealm.pmodel.pmodel.PModel` provides alternative
 approaches to estimating the value of $\phi{0}$, using the `method_kphio` argument. The
 currently implemented approaches are described below. Note that each approach has a
 specific **reference value for $\phi_{0}$**, which is used as the baseline for further
@@ -142,7 +142,7 @@ env = PModelEnvironment(
     fapar=np.repeat(1, n_vals),
     ppfd=np.repeat(1, n_vals),
 )
-model_var_kphio = PModelNew(env, method_kphio="fixed", reference_kphio=kphio_values)
+model_var_kphio = PModel(env, method_kphio="fixed", reference_kphio=kphio_values)
 
 # Create a line plot of ftemp kphio
 plt.plot(kphio_values, model_var_kphio.lue)

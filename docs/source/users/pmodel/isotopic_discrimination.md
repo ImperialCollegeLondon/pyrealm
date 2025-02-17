@@ -33,7 +33,7 @@ depends on the photosynthetic pathway.
 The {mod}`~pyrealm.pmodel` module provides the
 {class}`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes` class, which takes the predicted
 optimal chi ($\chi$) and photosynthetic pathway from a fitted
-{class}`~pyrealm.pmodel.new_pmodel.PModelNew` instance and predicts various isotopic
+{class}`~pyrealm.pmodel.pmodel.PModel` instance and predicts various isotopic
 discrimination and composition values.
 
 The predictions from the {class}`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes` class are
@@ -49,7 +49,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
-from pyrealm.pmodel.new_pmodel import PModelNew
+from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel import PModelEnvironment, CalcCarbonIsotopes
 
 # Use a simple temperature sequence to generate a range of optimal chi values
@@ -59,8 +59,8 @@ tc_1d = np.linspace(-10, 40, n_pts)
 # Fit models. Since only relative light use efficiency is needed,
 # fAPAR and PPFD are set to unity.
 env = PModelEnvironment(tc=tc_1d, patm=101325, co2=400, vpd=1000, fapar=1, ppfd=1)
-mod_c3 = PModelNew(env, method_optchi="prentice14")
-mod_c4 = PModelNew(env, method_optchi="c4")
+mod_c3 = PModel(env, method_optchi="prentice14")
+mod_c4 = PModel(env, method_optchi="c4")
 
 plt.plot(tc_1d, mod_c3.optchi.chi.flatten(), label="C3", marker=".")
 plt.plot(tc_1d, mod_c4.optchi.chi.flatten(), label="C4", marker=".")
@@ -74,7 +74,7 @@ plt.show()
 ## Calculation of values
 
 The {class}`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes` class takes a
-{class}`~pyrealm.pmodel.new_pmodel.PModelNew` instance, along with estimates of the atmospheric
+{class}`~pyrealm.pmodel.pmodel.PModel` instance, along with estimates of the atmospheric
 isotopic ratios for Carbon 13 ($\delta13C$, permil) and Carbon 14 ($\Delta14C$, permil)
 and calculates the following predictions:
 
@@ -92,7 +92,7 @@ and calculates the following predictions:
   permil), given a parameterized post-photosynthetic fractionation.
 
 The calculations differ between C3 and C4 plants, and this is set by the selection of
-the `method_optchi` argument used for the {class}`~pyrealm.pmodel.new_pmodel.PModelNew`
+the `method_optchi` argument used for the {class}`~pyrealm.pmodel.pmodel.PModel`
 instance.
 
 ```{code-cell} ipython3

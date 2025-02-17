@@ -11,7 +11,7 @@ def test_phenology_gpp_calculation(de_gri_half_hourly_data):
 
     from pyrealm.pmodel import PModelEnvironment
     from pyrealm.pmodel.acclimation import AcclimationModel
-    from pyrealm.pmodel.new_pmodel import PModelNew, SubdailyPModelNew
+    from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 
     # Calculate the PModel photosynthetic environment
     env = PModelEnvironment(
@@ -34,13 +34,13 @@ def test_phenology_gpp_calculation(de_gri_half_hourly_data):
     )
 
     # Fit the potential GPP: fAPAR = 1 and phi0 = 1/8
-    de_gri_subdaily_pmodel = SubdailyPModelNew(
+    de_gri_subdaily_pmodel = SubdailyPModel(
         env=env,
         acclim_model=acclim_model,
         reference_kphio=1 / 8,
     )
 
-    de_gri_pmodel = PModelNew(
+    de_gri_pmodel = PModel(
         env=env,
         reference_kphio=1 / 8,
     )

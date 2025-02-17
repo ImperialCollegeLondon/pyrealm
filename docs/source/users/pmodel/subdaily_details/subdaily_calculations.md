@@ -41,7 +41,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 import pandas
 
-from pyrealm.pmodel.new_pmodel import PModelNew, SubdailyPModelNew
+from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 from pyrealm.pmodel.acclimation import AcclimationModel
 from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
@@ -87,7 +87,7 @@ subdaily_env = PModelEnvironment(
 )
 
 # Fit the standard P Model
-pmodel_standard = PModelNew(subdaily_env, method_kphio="fixed", reference_kphio=1 / 8)
+pmodel_standard = PModel(subdaily_env, method_kphio="fixed", reference_kphio=1 / 8)
 pmodel_standard.summarize()
 ```
 
@@ -113,7 +113,7 @@ acclim_model.set_window(
 )
 
 # Fit the Subdaily P Model
-pmodel_subdaily = SubdailyPModelNew(
+pmodel_subdaily = SubdailyPModel(
     env=subdaily_env,
     acclim_model=acclim_model,
     reference_kphio=1 / 8,
@@ -134,7 +134,7 @@ plt.show()
 
 ## Calculation of GPP using fast and slow responses
 
-The {class}`~pyrealm.pmodel.new_pmodel.SubdailyPModelNew` implements the calculations
+The {class}`~pyrealm.pmodel.pmodel.SubdailyPModel` implements the calculations
 used to estimate GPP using slow responses, but the details of these calculations are
 shown below.
 
@@ -163,7 +163,7 @@ daily_acclim_env = PModelEnvironment(
     ppfd=ppfd_acclim,
 )
 
-pmodel_acclim = PModelNew(daily_acclim_env, reference_kphio=1 / 8)
+pmodel_acclim = PModel(daily_acclim_env, reference_kphio=1 / 8)
 ```
 
 ### Slow responses of $\xi$, $J_{max25}$ and $V_{cmax25}$

@@ -28,7 +28,7 @@ language_info:
 :tags: [hide-input]
 
 from itertools import product
-from pyrealm.pmodel.new_pmodel import PModelNew
+from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 import numpy as np
 import matplotlib.pyplot as plt
@@ -56,8 +56,8 @@ pmodel_env = PModelEnvironment(
 )
 
 # Run the P Models
-pmodel_c3 = PModelNew(pmodel_env)
-pmodel_c4 = PModelNew(pmodel_env, method_optchi="c4")
+pmodel_c3 = PModel(pmodel_env)
+pmodel_c4 = PModel(pmodel_env, method_optchi="c4")
 
 
 # Create line plots of optimal chi
@@ -313,8 +313,8 @@ pmodel_env = PModelEnvironment(
 )
 
 # Run the P Models
-pmodel_c3 = PModelNew(pmodel_env)
-pmodel_c4 = PModelNew(pmodel_env, method_optchi="c4")
+pmodel_c3 = PModel(pmodel_env)
+pmodel_c4 = PModel(pmodel_env, method_optchi="c4")
 
 
 def plot_iabs(ax, estvar, estvarlab):

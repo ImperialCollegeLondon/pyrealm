@@ -40,7 +40,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import xarray
 
-from pyrealm.pmodel.new_pmodel import PModelNew
+from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel import PModelEnvironment
 from pyrealm.core.pressure import calc_patm
 ```
@@ -103,10 +103,10 @@ env.summarize()
 ### Fitting the P Model
 
 Next, the P Model can be fitted to the photosynthetic environment using the
-({class}`~pyrealm.pmodel.new_pmodel.PModelNew`) class:
+({class}`~pyrealm.pmodel.pmodel.PModel`) class:
 
 ```{code-cell} ipython3
-model = PModelNew(env)
+model = PModel(env)
 ```
 
 The returned model object holds a lot of information. The representation of the
@@ -116,8 +116,8 @@ model object shows a terse display of the settings used to run the model:
 model
 ```
 
-A {class}`~pyrealm.pmodel.new_pmodel.PModelNew` instance also has a
-{meth}`~pyrealm.pmodel.new_pmodel.PModelNew.summarize` method that summarizes settings and
+A {class}`~pyrealm.pmodel.pmodel.PModel` instance also has a
+{meth}`~pyrealm.pmodel.pmodel.PModel.summarize` method that summarizes settings and
 displays a summary of calculated predictions. Initially, this shows two measures of
 photosynthetic efficiency: the intrinsic water use efficiency (``iwue``) and the light
 use efficiency (``lue``).
@@ -191,7 +191,7 @@ That environment can then be run to calculate the P model predictions for GPP:
 
 ```{code-cell} ipython3
 # Run the P model
-model = PModelNew(env)
+model = PModel(env)
 
 fig, (ax1, ax2) = plt.subplots(2, 1)
 

@@ -45,7 +45,7 @@ The  {class}`~pyrealm.pmodel.optimal_chi` module provides the following methods 
 calculating these values, providing options to handle C3 and C4 photosynthesis and
 different implementations of water stress. In normal practice, a given method is
 selected using the `method_optchi` argument when fitting a
-{class}`~pyrealm.pmodel.new_pmodel.PModelNew`. In the background, those method names are
+{class}`~pyrealm.pmodel.pmodel.PModel`. In the background, those method names are
 used to select from a set of classes that implement the different calculations. Some of
 the examples below show these classes being used directly. The methods and classes built
 into `pyrealm` are shown below, but it is possible for users to add alternative methods
@@ -85,7 +85,7 @@ from matplotlib.lines import Line2D
 
 from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
 from pyrealm.pmodel import PModelEnvironment
-from pyrealm.pmodel.new_pmodel import PModelNew
+from pyrealm.pmodel.pmodel import PModel
 
 # Create inputs for a temperature curve at:
 # - two atmospheric pressures
@@ -214,7 +214,7 @@ This **C3 method** follows the approach detailed in {cite:t}`Prentice:2014bc`, s
 :tags: [hide-input]
 
 # Run the P Model and plot predictions
-pmodel_c3 = PModelNew(pmodel_env, method_optchi="prentice14")
+pmodel_c3 = PModel(pmodel_env, method_optchi="prentice14")
 plot_opt_chi(pmodel_c3)
 ```
 
@@ -228,7 +228,7 @@ See {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4` for details.
 :tags: [hide-input]
 
 # Run the P Model and plot predictions
-pmodel_c4 = PModelNew(pmodel_env, method_optchi="c4")
+pmodel_c4 = PModel(pmodel_env, method_optchi="c4")
 plot_opt_chi(pmodel_c4)
 ```
 
@@ -246,7 +246,7 @@ and also also sets $m_j = 1$, but $m_c$ is calculated as in
 :tags: [hide-input]
 
 # Run the P Model and plot predictions
-pmodel_c4 = PModelNew(pmodel_env, method_optchi="c4_no_gamma")
+pmodel_c4 = PModel(pmodel_env, method_optchi="c4_no_gamma")
 plot_opt_chi(pmodel_c4)
 ```
 

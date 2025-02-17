@@ -1,13 +1,13 @@
-"""The module :mod:`~pyrealm.pmodel.new_pmodel` provides the implementation of
+"""The module :mod:`~pyrealm.pmodel.pmodel` provides the implementation of
 the following  classes:
 
-* :class:`~pyrealm.pmodel.new_pmodel.PModelABC`: An abstract base class providing some
+* :class:`~pyrealm.pmodel.pmodel.PModelABC`: An abstract base class providing some
   of the core functionality for initialising PModel subclasses.
 
-* :class:`~pyrealm.pmodel.new_pmodel.PModelNew`: A subclass providing the standard
+* :class:`~pyrealm.pmodel.pmodel.PModel`: A subclass providing the standard
   implementation of the P Model.
 
-* :class:`~pyrealm.pmodel.new_pmodel.SubdailyPModelNew`: A subclass providing the
+* :class:`~pyrealm.pmodel.pmodel.SubdailyPModel`: A subclass providing the
   subdaily implementation of the P Model, which accounts for slow acclimation of core
   photosynthetic processes.
 
@@ -336,7 +336,7 @@ class PModelABC(ABC):
         setattr(self, method_class_attr, method_registry[method_value])
 
 
-class PModelNew(PModelABC):
+class PModel(PModelABC):
     r"""Fit a standard P Model.
 
     This class fits the P Model to a given set of environmental and photosynthetic
@@ -513,11 +513,11 @@ class PModelNew(PModelABC):
         self,
         acclim_model: AcclimationModel,
         previous_realised: tuple[NDArray, NDArray, NDArray] | None = None,
-    ) -> SubdailyPModelNew:
+    ) -> SubdailyPModel:
         r"""Convert a standard PModel to a subdaily P Model.
 
-        This method converts a :class:`~pyrealm.pmodel.new_pmodel.PModelNew` instance to
-        a to a :class:`~pyrealm.pmodel.new_pmodel.SubdailyPModelNew` instance with the
+        This method converts a :class:`~pyrealm.pmodel.pmodel.PModel` instance to
+        a to a :class:`~pyrealm.pmodel.pmodel.SubdailyPModel` instance with the
         same settings.
 
         Args:
@@ -526,7 +526,7 @@ class PModelNew(PModelABC):
                 for `xi`, `vcmax25` and `jmax25`.
         """
 
-        return SubdailyPModelNew(
+        return SubdailyPModel(
             env=self.env,
             method_optchi=self.method_optchi,
             method_arrhenius=self.method_arrhenius,
@@ -537,10 +537,10 @@ class PModelNew(PModelABC):
         )
 
 
-class SubdailyPModelNew(PModelABC):
+class SubdailyPModel(PModelABC):
     r"""Fit a P Model incorporating acclimation in photosynthetic responses.
 
-    The :class:`~pyrealm.pmodel.new_pmodel.PModelNew` implementation of the P Model
+    The :class:`~pyrealm.pmodel.pmodel.PModel` implementation of the P Model
     assumes that plants instantaneously adopt optimal behaviour, which is reasonable
     where the data represents average conditions over longer timescales and the plants
     can be assumed to have acclimated to optimal behaviour. Over shorter timescales,
@@ -594,7 +594,7 @@ class SubdailyPModelNew(PModelABC):
       and vapour pressure deficit.
     * Predictions of GPP are then made as in the standard P Model.
 
-    As with the :class:`~pyrealm.pmodel.new_pmodel.PModelNew`, the values of the `kphio`
+    As with the :class:`~pyrealm.pmodel.pmodel.PModel`, the values of the `kphio`
     argument _can_ be provided as an array of values, potentially varying through time
     and space. The behaviour of the daily model that drives acclimation here is to take
     the daily mean `kphio` value for each time series within the acclimation window, as
@@ -684,10 +684,10 @@ class SubdailyPModelNew(PModelABC):
         values are None."""
 
         # Other attributes
-        self.pmodel_acclim: PModelNew
+        self.pmodel_acclim: PModel
         r"""P Model predictions for the daily acclimation conditions.
 
-        A :class:`~pyrealm.pmodel.new_pmodel.PModelNew` instance providing the
+        A :class:`~pyrealm.pmodel.pmodel.PModel` instance providing the
         predictions of the P Model for the daily acclimation conditions set for the
         SubdailyPModel. The model is used to obtain predictions of the instantaneous
         optimal estimates of :math:`V_{cmax}`, :math:`J_{max}` and :math:`\xi` during
@@ -838,7 +838,7 @@ class SubdailyPModelNew(PModelABC):
 
         # 2) Fit a PModel to those environmental conditions, using the supplied settings
         #    for the original model.
-        self.pmodel_acclim = PModelNew(
+        self.pmodel_acclim = PModel(
             env=pmodel_env_acclim,
             method_kphio=daily_method_kphio,
             method_optchi=self.method_optchi,

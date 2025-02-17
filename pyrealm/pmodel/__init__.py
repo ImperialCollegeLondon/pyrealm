@@ -1,6 +1,6 @@
 """The :mod:`~pyrealm.pmodel` module includes the following submodules:
 
-* :mod:`~pyrealm.pmodel.new_pmodel`,
+* :mod:`~pyrealm.pmodel.pmodel`,
 * :mod:`~pyrealm.pmodel.pmodel_environment`,
 * :mod:`~pyrealm.pmodel.optimal_chi` and
 * :mod:`~pyrealm.pmodel.jmax_limitation` provide classes implementing the core
@@ -46,16 +46,16 @@ from pyrealm.pmodel.functions import (
     calculate_simple_arrhenius_factor,
 )
 from pyrealm.pmodel.isotopes import CalcCarbonIsotopes
-from pyrealm.pmodel.new_pmodel import PModelNew, SubdailyPModelNew
+from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
 __all__ = [
     "C3C4Competition",
     "CalcCarbonIsotopes",
     "JmaxLimitation",
+    "PModel",
     "PModelEnvironment",
-    "PModelNew",
-    "SubdailyPModelNew",
+    "SubdailyPModel",
     "SubdailyScaler",
     "calc_co2_to_ca",
     "calc_ftemp_inst_rd",

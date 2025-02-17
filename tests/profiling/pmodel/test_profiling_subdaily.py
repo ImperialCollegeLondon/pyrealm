@@ -8,7 +8,7 @@ import pytest
 def test_profiling_subdaily(pmodel_profile_data):
     """Profiling the subdaily submodule."""
     from pyrealm.pmodel.acclimation import AcclimationModel
-    from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
+    from pyrealm.pmodel.pmodel import SubdailyPModel
 
     # Unpack feature components
     pm_env, local_time = pmodel_profile_data
@@ -18,7 +18,7 @@ def test_profiling_subdaily(pmodel_profile_data):
     acclim_model.set_window(
         window_center=np.timedelta64(12, "h"), half_width=np.timedelta64(1, "h")
     )
-    subdaily_pmod = SubdailyPModelNew(
+    subdaily_pmod = SubdailyPModel(
         env=pm_env,
         acclim_model=acclim_model,
     )

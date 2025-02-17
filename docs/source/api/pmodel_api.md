@@ -105,10 +105,10 @@ language_info:
     :members:
 ```
 
-## The {mod}`~pyrealm.pmodel.new_pmodel` submodule
+## The {mod}`~pyrealm.pmodel.pmodel` submodule
 
 ```{eval-rst}
-.. automodule:: pyrealm.pmodel.new_pmodel
+.. automodule:: pyrealm.pmodel.pmodel
     :autosummary:
     :members:
     :inherited-members:

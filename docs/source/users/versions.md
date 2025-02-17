@@ -33,8 +33,8 @@ the API of `pyrealm` code.
 
 There are two major API changes to existing code.
 
-1. The signatures for both the {class}`~pyrealm.pmodel.new_pmodel.PModelNew` and
-   {class}`~pyrealm.pmodel.new_pmodel.SubdailyPModelNew` classes have changed the way in
+1. The signatures for both the {class}`~pyrealm.pmodel.pmodel.PModel` and
+   {class}`~pyrealm.pmodel.pmodel.SubdailyPModel` classes have changed the way in
    which the quantum yield parameter ($\phi_0$) is set. The classes now require a
    specific named method for setting $\phi_0$. Each method has an associated default
    reference value of $\phi_0$, but these can be overridden. This new API makes it

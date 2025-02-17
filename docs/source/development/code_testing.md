@@ -61,7 +61,7 @@ We have configured `pytest` to automatically also run `doctest`, but you can man
 check the tests in files using, for example:
 
 ```bash
-poetry run python -m doctest pyrealm/pmodel/new_pmodel.py
+poetry run python -m doctest pyrealm/pmodel/pmodel.py
 ```
 
 Normally, `doctest` is just used to test a return value: the value tested is the value

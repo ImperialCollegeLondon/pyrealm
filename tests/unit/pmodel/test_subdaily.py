@@ -32,7 +32,7 @@ def test_SubdailyPModel_corr(be_vie_data_components, data_args):
     """
 
     from pyrealm.pmodel.acclimation import AcclimationModel
-    from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
+    from pyrealm.pmodel.pmodel import SubdailyPModel
 
     env, datetime, expected_gpp = be_vie_data_components.get(**data_args)
 
@@ -44,7 +44,7 @@ def test_SubdailyPModel_corr(be_vie_data_components, data_args):
     )
 
     # Run as a subdaily model using the kphio used in the reference implementation.
-    subdaily_pmodel = SubdailyPModelNew(
+    subdaily_pmodel = SubdailyPModel(
         env=env,
         reference_kphio=1 / 8,
         acclim_model=acclim_model,
@@ -105,7 +105,7 @@ def test_SubdailyPModel_previous_realised_validation(
     """Test the functionality that allows the subdaily model to restart in blocks."""
 
     from pyrealm.pmodel.acclimation import AcclimationModel
-    from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
+    from pyrealm.pmodel.pmodel import SubdailyPModel
 
     env, datetime, expected_gpp = be_vie_data_components.get()
 
@@ -118,7 +118,7 @@ def test_SubdailyPModel_previous_realised_validation(
 
     # Run as a subdaily model
     with outcome as excep:
-        _ = SubdailyPModelNew(
+        _ = SubdailyPModel(
             env=env,
             acclim_model=acclim_model,
             previous_realised=previous_realised,
@@ -132,7 +132,7 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
     """Test the functionality that allows the subdaily model to restart in blocks."""
 
     from pyrealm.pmodel.acclimation import AcclimationModel
-    from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
+    from pyrealm.pmodel.pmodel import SubdailyPModel
 
     # Run all in one model
     env, datetime, _ = be_vie_data_components.get(mode="crop", start=0, end=17520)
@@ -145,7 +145,7 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
     )
 
     # Run as a subdaily model using the kphio used in the reference implementation.
-    all_in_one_subdaily_pmodel = SubdailyPModelNew(
+    all_in_one_subdaily_pmodel = SubdailyPModel(
         env=env,
         reference_kphio=1 / 8,
         acclim_model=acclim_model,
@@ -162,7 +162,7 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
     )
 
     # Run as a subdaily model using the kphio used in the reference implementation.
-    part_1_subdaily_pmodel = SubdailyPModelNew(
+    part_1_subdaily_pmodel = SubdailyPModel(
         env=env1,
         reference_kphio=1 / 8,
         acclim_model=acclim_model1,
@@ -182,7 +182,7 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
 
     # Run as a subdaily model using the kphio used in the reference implementation.
     # Note the explicit use of [[-1]] to give array values, not scalar np.float
-    part_2_subdaily_pmodel = SubdailyPModelNew(
+    part_2_subdaily_pmodel = SubdailyPModel(
         env=env2,
         reference_kphio=1 / 8,
         acclim_model=acclim_model2,
@@ -211,7 +211,7 @@ def test_SubdailyPModel_dimensionality(be_vie_data, ndims):
 
     from pyrealm.pmodel import PModelEnvironment
     from pyrealm.pmodel.acclimation import AcclimationModel
-    from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
+    from pyrealm.pmodel.pmodel import SubdailyPModel
 
     datetime = be_vie_data["time"].to_numpy()
 
@@ -244,7 +244,7 @@ def test_SubdailyPModel_dimensionality(be_vie_data, ndims):
     )
 
     # Fast slow model
-    subdaily_pmodel = SubdailyPModelNew(
+    subdaily_pmodel = SubdailyPModel(
         env=env,
         acclim_model=acclim_model,
     )
@@ -265,7 +265,7 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
     """
 
     from pyrealm.pmodel.acclimation import AcclimationModel
-    from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
+    from pyrealm.pmodel.pmodel import SubdailyPModel
 
     env, datetime, _ = be_vie_data_components.get()
 
@@ -277,7 +277,7 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
     )
 
     # Run as a subdaily model and it should complete.
-    _ = SubdailyPModelNew(
+    _ = SubdailyPModel(
         env=env,
         acclim_model=acclim_model,
         method_optchi=method_optchi,
@@ -289,7 +289,7 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
     """Tests the convert_pmodel_to_subdaily method."""
 
     from pyrealm.pmodel.acclimation import AcclimationModel
-    from pyrealm.pmodel.new_pmodel import PModelNew, SubdailyPModelNew
+    from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 
     env, datetime, _ = be_vie_data_components.get()
 
@@ -301,14 +301,14 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
     )
 
     # Run as a subdaily model
-    direct = SubdailyPModelNew(
+    direct = SubdailyPModel(
         env=env,
         acclim_model=acclim_model,
         method_optchi=method_optchi,
     )
 
     # Convert a standard model
-    standard_model = PModelNew(
+    standard_model = PModel(
         env=env,
         method_optchi=method_optchi,
     )
@@ -485,7 +485,7 @@ def test_SubdailyPModel_incomplete_day_behaviour(
     """
 
     from pyrealm.pmodel.acclimation import AcclimationModel
-    from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
+    from pyrealm.pmodel.pmodel import SubdailyPModel
 
     def model_fitter(env, datetime):
         # Get the acclimation model and set window
@@ -500,7 +500,7 @@ def test_SubdailyPModel_incomplete_day_behaviour(
         )
 
         # Run as a subdaily model
-        return SubdailyPModelNew(env=env, acclim_model=acclim_model)
+        return SubdailyPModel(env=env, acclim_model=acclim_model)
 
     # Feed the arguments for complete and incomplete days into DataFactory and then feed
     # the returned values (except the last element containing GPP) into the model fitter

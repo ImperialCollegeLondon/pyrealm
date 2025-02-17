@@ -1,6 +1,6 @@
 """The :mod:`~pyrealm.pmodel.acclimation` module provides the
 :class:`~pyrealm.pmodel.acclimation.AcclimationModel` class, which is a required input
-to the :class:`~pyrealm.pmodel.new_pmodel.SubdailyPModelNew` class for fitting the P
+to the :class:`~pyrealm.pmodel.pmodel.SubdailyPModel` class for fitting the P
 Model at subdaily time scales.
 """  # noqa: D205
 
@@ -22,7 +22,7 @@ class AcclimationModel:
 
     An instance of this class is created using an array of :class:`numpy.datetime64`
     values that provide the observation datetimes for a dataset to be used in a
-    :class:`~pyrealm.pmodel.new_pmodel.SubdailyPModelNew`. These datetimes need to be:
+    :class:`~pyrealm.pmodel.pmodel.SubdailyPModel`. These datetimes need to be:
 
     * sampled at a subdaily frequency,
     * be strictly increasing,
