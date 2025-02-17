@@ -7,7 +7,7 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.16.6
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 language_info:
@@ -84,7 +84,8 @@ from matplotlib import pyplot
 from matplotlib.lines import Line2D
 
 from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
-from pyrealm.pmodel import PModelEnvironment, PModel
+from pyrealm.pmodel import PModelEnvironment
+from pyrealm.pmodel.new_pmodel import PModelNew
 
 # Create inputs for a temperature curve at:
 # - two atmospheric pressures
@@ -213,7 +214,7 @@ This **C3 method** follows the approach detailed in {cite:t}`Prentice:2014bc`, s
 :tags: [hide-input]
 
 # Run the P Model and plot predictions
-pmodel_c3 = PModel(pmodel_env, method_optchi="prentice14")
+pmodel_c3 = PModelNew(pmodel_env, method_optchi="prentice14")
 plot_opt_chi(pmodel_c3)
 ```
 
@@ -227,7 +228,7 @@ See {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4` for details.
 :tags: [hide-input]
 
 # Run the P Model and plot predictions
-pmodel_c4 = PModel(pmodel_env, method_optchi="c4")
+pmodel_c4 = PModelNew(pmodel_env, method_optchi="c4")
 plot_opt_chi(pmodel_c4)
 ```
 
@@ -245,7 +246,7 @@ and also also sets $m_j = 1$, but $m_c$ is calculated as in
 :tags: [hide-input]
 
 # Run the P Model and plot predictions
-pmodel_c4 = PModel(pmodel_env, method_optchi="c4_no_gamma")
+pmodel_c4 = PModelNew(pmodel_env, method_optchi="c4_no_gamma")
 plot_opt_chi(pmodel_c4)
 ```
 

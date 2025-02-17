@@ -27,9 +27,10 @@ language_info:
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-from matplotlib import pyplot
+import matplotlib.pyplot as plt
 import numpy as np
-from pyrealm.pmodel import PModel, PModelEnvironment
+from pyrealm.pmodel.new_pmodel import PModelNew
+from pyrealm.pmodel import PModelEnvironment
 
 %matplotlib inline
 
@@ -41,7 +42,7 @@ tc_1d = np.linspace(-25, 50, n_pts)
 ```
 
 Environmental conditions can also lead to limitation of both the electron transfer rate
-($J_{max})and the carboxylation capacity ($V_{cmax}$) of leaves. The
+($J_{max}$)and the carboxylation capacity ($V_{cmax}$) of leaves. The
 {class}`~pyrealm.pmodel.pmodel` module implements three alternative approaches to the
 calculation of $J_{max}$ and $V_{cmax}$ and these are specified when fitting a P Model
 using the argument `method_jmaxlim`. These options implement alternative calculations of
@@ -68,24 +69,24 @@ temperature gradient. The other forcing variables are fixed ($P=101325.0 , \ce{C
 # so set fapar and ppfd to unity
 env = PModelEnvironment(tc=tc_1d, patm=101325, vpd=820, co2=400, fapar=1, ppfd=1)
 
-model_jmax_simple = PModel(
+model_jmax_simple = PModelNew(
     env, method_jmaxlim="none", method_kphio="fixed", reference_kphio=0.08
 )
-model_jmax_wang17 = PModel(
+model_jmax_wang17 = PModelNew(
     env, method_jmaxlim="wang17", method_kphio="fixed", reference_kphio=0.08
 )
-model_jmax_smith19 = PModel(
+model_jmax_smith19 = PModelNew(
     env, method_jmaxlim="smith19", method_kphio="fixed", reference_kphio=0.08
 )
 
 # Create a line plot of the resulting values of m_j
-pyplot.plot(tc_1d, model_jmax_simple.lue, label="simple")
-pyplot.plot(tc_1d, model_jmax_wang17.lue, label="wang17")
-pyplot.plot(tc_1d, model_jmax_smith19.lue, label="smith19")
+plt.plot(tc_1d, model_jmax_simple.lue, label="simple")
+plt.plot(tc_1d, model_jmax_wang17.lue, label="wang17")
+plt.plot(tc_1d, model_jmax_smith19.lue, label="smith19")
 
-pyplot.title("Effects of J_max limitation")
-pyplot.xlabel("Temperature °C")
-pyplot.ylabel("Light Use Efficiency (g C mol-1)")
-pyplot.legend()
-pyplot.show()
+plt.title("Effects of J_max limitation")
+plt.xlabel("Temperature °C")
+plt.ylabel("Light Use Efficiency (g C mol-1)")
+plt.legend()
+plt.show()
 ```

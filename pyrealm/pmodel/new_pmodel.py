@@ -103,7 +103,7 @@ class PModelABC(ABC):
         self._optchi_class: type[OptimalChiABC]
         """The OptimalChiABC subclass to be used in the model."""
         self.optchi: OptimalChiABC
-        """The optimal chi (:math:`\chi`) calculations for the fitted P Model."""
+        r"""The optimal chi (:math:`\chi`) calculations for the fitted P Model."""
 
         self._method_setter(
             method_value_attr="method_optchi",
@@ -126,7 +126,7 @@ class PModelABC(ABC):
         self._kphio_class: type[QuantumYieldABC]
         """The QuantumYieldABC subclass to be used in the model."""
         self.kphio: QuantumYieldABC
-        """The quantum yield (:math:`\phi_0`) calculations for the fitted P Model."""
+        r"""The quantum yield (:math:`\phi_0`) calculations for the fitted P Model."""
 
         self._method_setter(
             method_value_attr="method_kphio",
@@ -223,8 +223,8 @@ class PModelABC(ABC):
         """
 
         self.jmax: NDArray[np.float64]
-        """Maximum rate of electron transport at the growth temperature (µmol m-2
-        s-1), calculated as:
+        r"""Maximum rate of electron transport at the growth temperature (µmol m-2 s-1),
+        calculated as:
         
         .. math::
 
@@ -899,6 +899,7 @@ class SubdailyPModelNew(PModelABC):
         self.vcmax25 = self.acclim_model.fill_daily_to_subdaily(
             self.vcmax25_daily_realised,
             previous_values=self.previous_realised["vcmax25"],
+            return_interpolation_inputs=False,
         )
         self.jmax25 = self.acclim_model.fill_daily_to_subdaily(
             self.jmax25_daily_realised,
