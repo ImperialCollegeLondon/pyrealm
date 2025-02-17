@@ -22,6 +22,9 @@ def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
 
     dates = datetimes.astype("datetime64[D]")
     unique_dates, date_counts = np.unique(dates, return_counts=True)
+    if not date_counts.max() == date_counts.min():
+        raise ValueError("Differing date counts per day")
+
     obs_per_date = date_counts.max()
 
     # Data needs to start in northern or southern hemisphere midwinter
@@ -42,9 +45,8 @@ def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
     if obs_per_date > 1:
         # subdaily
 
-        # Get the maximum number of observations per day and check it is evenly
-        # divisible by the number of seconds in a day.
-        obs_per_date = date_counts.max()
+        # Check that the number of observations per day is evenly divisible by the
+        # number of seconds in a day (should already have led to differing date counts).
         day_remainder = (24 * 60 * 60) % obs_per_date
         if day_remainder:
             raise ValueError("Datetime spacing is not evenly divisible into a day.")

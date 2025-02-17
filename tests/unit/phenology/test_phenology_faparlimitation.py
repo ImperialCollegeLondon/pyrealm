@@ -13,17 +13,25 @@ from pyrealm.phenology.fapar_limitation import check_datetimes, get_annual
     argvalues=[
         (
             np.arange(
-                np.datetime64("2010-02-01T00:00"),
-                np.datetime64("2011-01-31T23:30"),
+                np.datetime64("2010-01-01T00:00"),
+                np.datetime64("2011-01-01T00:00"),
                 np.timedelta64(30, "m"),
             ),
             does_not_raise(),
         ),
         (
             np.arange(
-                np.datetime64("2010-02-01T00:00"),
-                np.datetime64("2010-12-31T23:30"),
+                np.datetime64("2010-01-01T00:00"),
+                np.datetime64("2010-11-30T23:30"),
                 np.timedelta64(30, "m"),
+            ),
+            pytest.raises(ValueError),
+        ),
+        (
+            np.arange(
+                np.datetime64("2010-01-01T00:00"),
+                np.datetime64("2010-12-31T23:30"),
+                np.timedelta64(61, "m"),
             ),
             pytest.raises(ValueError),
         ),
@@ -31,7 +39,7 @@ from pyrealm.phenology.fapar_limitation import check_datetimes, get_annual
             np.arange(
                 np.datetime64("2010-02-01T00:00"),
                 np.datetime64("2010-12-31T23:30"),
-                np.timedelta64(61, "m"),
+                np.timedelta64(30, "m"),
             ),
             pytest.raises(ValueError),
         ),
