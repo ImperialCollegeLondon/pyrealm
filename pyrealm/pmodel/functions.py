@@ -221,7 +221,7 @@ def calc_ftemp_kphio(
     fraction of absorbed light that reaches photosystem II. In the P-model these
     additional factors are lumped into a single apparent quantum yield efficiency
     parameter (argument `kphio` to the class
-    :class:`~pyrealm.pmodel.new_pmodel.PModelNew`).
+    :class:`~pyrealm.pmodel.pmodel.PModel`).
 
     Args:
         tc: Temperature, relevant for photosynthesis (°C)

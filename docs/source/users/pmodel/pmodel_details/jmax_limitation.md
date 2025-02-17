@@ -29,7 +29,7 @@ language_info:
 
 import matplotlib.pyplot as plt
 import numpy as np
-from pyrealm.pmodel.new_pmodel import PModelNew
+from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel import PModelEnvironment
 
 %matplotlib inline
@@ -69,13 +69,13 @@ temperature gradient. The other forcing variables are fixed ($P=101325.0 , \ce{C
 # so set fapar and ppfd to unity
 env = PModelEnvironment(tc=tc_1d, patm=101325, vpd=820, co2=400, fapar=1, ppfd=1)
 
-model_jmax_simple = PModelNew(
+model_jmax_simple = PModel(
     env, method_jmaxlim="none", method_kphio="fixed", reference_kphio=0.08
 )
-model_jmax_wang17 = PModelNew(
+model_jmax_wang17 = PModel(
     env, method_jmaxlim="wang17", method_kphio="fixed", reference_kphio=0.08
 )
-model_jmax_smith19 = PModelNew(
+model_jmax_smith19 = PModel(
     env, method_jmaxlim="smith19", method_kphio="fixed", reference_kphio=0.08
 )
 

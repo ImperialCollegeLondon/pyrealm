@@ -36,7 +36,7 @@ from matplotlib import pyplot as plt
 from pvlib.location import Location
 
 from pyrealm.pmodel import PModelEnvironment
-from pyrealm.pmodel.new_pmodel import PModelNew, SubdailyPModelNew
+from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 from pyrealm.pmodel.acclimation import AcclimationModel
 ```
 
@@ -251,14 +251,14 @@ pmod_env = PModelEnvironment(
 )
 
 # Standard P Model
-standard_pmod = PModelNew(pmod_env, reference_kphio=1 / 8)
+standard_pmod = PModel(pmod_env, reference_kphio=1 / 8)
 
 
 # Subdaily P Model
 acclim_model = AcclimationModel(datetimes=forcing_data["time"].to_numpy().astype("datetime64"))
 acclim_model.set_window(np.timedelta64("12", "h"), half_width=np.timedelta64("15", "m"))
 
-subdaily_pmod = SubdailyPModelNew(
+subdaily_pmod = SubdailyPModel(
     env=pmod_env,
     acclim_model=acclim_model,
 )
@@ -271,12 +271,12 @@ The code below is a draft implementation of the Two Leaf conversion class.
 ```{code-cell} ipython3
 class TwoLeafAssimilation:
     def __init__(
-        self, pmodel: PModelNew | SubdailyPModelNew, irrad: TwoLeafIrradiance, LAI: np.array
+        self, pmodel: PModel | SubdailyPModel, irrad: TwoLeafIrradiance, LAI: np.array
     ):
 
         # A load of needless inconsistencies in the object attribute names - to be resolved!
         # vcmax_pmod = (
-        #     pmodel.vcmax if isinstance(pmodel, PModelNew) else pmodel.subdaily_vcmax
+        #     pmodel.vcmax if isinstance(pmodel, PModel) else pmodel.subdaily_vcmax
         # )
         # vcmax25_pmod = (
         #     pmodel.vcmax25 if isinstance(pmodel, PModel) else pmodel.subdaily_vcmax25

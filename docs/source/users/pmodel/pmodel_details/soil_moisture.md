@@ -102,7 +102,7 @@ the examples below, the default $\theta_0 = 0$ has been changed to $\theta_0 =
 from matplotlib import pyplot as plt
 import numpy as np
 from pyrealm import pmodel
-from pyrealm.pmodel.new_pmodel import PModelNew
+from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 from pyrealm.constants import PModelConst
 
@@ -155,7 +155,7 @@ plt.show()
 
 The factor can be applied to the P Model by using
 {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` to calculate the factor
-values and then multiplying calculated GPP ({attr}`~pyrealm.pmodel.new_pmodel.PModelNew.gpp`)
+values and then multiplying calculated GPP ({attr}`~pyrealm.pmodel.pmodel.PModel.gpp`)
 by the resulting factor. The example below shows how the predicted light use
 efficiency from the P Model changes across an aridity gradient both with and without the
 soil moisture factor.
@@ -166,7 +166,7 @@ tc = np.array([20] * 101)
 sm_gradient = np.linspace(0, 1.0, 101)
 
 env = PModelEnvironment(tc=tc, patm=101325.0, vpd=820, co2=400, fapar=1, ppfd=1000)
-model = PModelNew(env)
+model = PModel(env)
 
 
 # Calculate the soil moisture stress factor across a soil moisture gradient
@@ -304,7 +304,7 @@ under drier conditions.
 
 As with  {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker`, the factor is first
 calculated and then applied to the GPP calculated for a model
-({attr}`~pyrealm.pmodel.new_pmodel.PModelNew.gpp`). In the example below, the result is
+({attr}`~pyrealm.pmodel.pmodel.PModel.gpp`). In the example below, the result is
 obviously just $\beta(\theta)$ from above scaled to the constant GPP.
 
 ```{code-cell} ipython3

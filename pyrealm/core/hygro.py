@@ -1,7 +1,7 @@
 """The :mod:`~pyrealm.core.hygro` submodule provides conversion functions for
 common hygrometric variables. The module provides conversions to vapour pressure
 deficit, which is the required input for the
-:class:`~pyrealm.pmodel.new_pmodel.PModelNew` from vapour pressure, specific humidity
+:class:`~pyrealm.pmodel.pmodel.PModel` from vapour pressure, specific humidity
 and relative humidity. The implementation is drawn from and validated against the
 ``bigleaf`` R package.
 """  # noqa: D205

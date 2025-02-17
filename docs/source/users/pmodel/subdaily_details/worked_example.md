@@ -34,7 +34,7 @@ from matplotlib.colors import Normalize
 import matplotlib.cm as cm
 import matplotlib.dates as mdates
 
-from pyrealm.pmodel.new_pmodel import PModelNew, SubdailyPModelNew
+from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 from pyrealm.pmodel.acclimation import AcclimationModel
 
@@ -52,7 +52,7 @@ fAPAR data is interpolated to the same spatial and temporal resolution from MODI
 
 This notebook demonstrates fitting subdaily P Models in the `pyrealm` package. Model
 fitting basically takes all of the same arguments as the standard
-{class}`~pyrealm.pmodel.new_pmodel.PModelNew` class. There are three additional things
+{class}`~pyrealm.pmodel.pmodel.PModel` class. There are three additional things
 to set:
 
 * The timing of the observations and the daily window that should be used to estimate
@@ -119,14 +119,14 @@ instantaneously adopt optimal behaviour.
 
 ```{code-cell} ipython3
 # Standard PModels
-pmodC3 = PModelNew(
+pmodC3 = PModel(
     env=pm_env, method_kphio="fixed", reference_kphio=1 / 8, method_optchi="prentice14"
 )
 pmodC3.summarize()
 ```
 
 ```{code-cell} ipython3
-pmodC4 = PModelNew(
+pmodC4 = PModel(
     env=pm_env, method_kphio="fixed", reference_kphio=1 / 8, method_optchi="c4_no_gamma"
 )
 
@@ -150,14 +150,14 @@ acclim_model.set_window(
 )
 
 # Fit C3 and C4 with the new implementation
-subdailyC3 = SubdailyPModelNew(
+subdailyC3 = SubdailyPModel(
     env=pm_env,
     method_optchi="prentice14",
     method_kphio="fixed",
     reference_kphio=1 / 8,
     acclim_model=acclim_model,
 )
-subdailyC4 = SubdailyPModelNew(
+subdailyC4 = SubdailyPModel(
     env=pm_env,
     method_optchi="c4_no_gamma",
     method_kphio="fixed",
@@ -227,7 +227,7 @@ plt.tight_layout()
 ## Converting models
 
 The subdaily models can also be obtained directly from the standard models, using the
-{meth}`PModelNew.to_subdaily<pyrealm.pmodel.new_pmodel.PModelNew.to_subdaily>` method:
+{meth}`PModel.to_subdaily<pyrealm.pmodel.pmodel.PModel.to_subdaily>` method:
 
 ```{code-cell} ipython3
 # Convert standard C3 model

@@ -125,7 +125,7 @@ class C3C4Competition:
     This class provides an implementation of the calculations of C3/C4 competition,
     described by :cite:t:`lavergne:2020a`. The key inputs ``ggp_c3`` and ``gpp_c4`` are
     gross primary productivity (GPP) estimates for C3 or C4 pathways `alone`  using the
-    :class:`~pyrealm.pmodel.new_pmodel.PModelNew`
+    :class:`~pyrealm.pmodel.pmodel.PModel`
 
     These estimates are used to calculate the relative advantage of C4 over C3
     photosynthesis (:math:`A_4`), the expected fraction of C4 plants in the community
@@ -257,7 +257,7 @@ class C3C4Competition:
         r"""Estimate CO2 isotopic discrimination values.
 
         Creating an instance of :class:`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes`
-        from a :class:`~pyrealm.pmodel.new_pmodel.PModelNew` instance provides estimated
+        from a :class:`~pyrealm.pmodel.pmodel.PModel` instance provides estimated
         total annual descrimination against Carbon 13 (:math:`\Delta\ce{^13C}`) for a
         single photosynthetic pathway.
 

@@ -35,7 +35,7 @@ This gives C4 plants a substantial competitive advantage in warm, dry and low CO
 environments. The {class}`~pyrealm.pmodel.competition.C3C4Competition` class provides an
 implementation of a model {cite:p}`lavergne:2022a` that estimates the expected fraction
 of GPP from C4 plants. It uses predictions of GPP from the
-{class}`~pyrealm.pmodel.new_pmodel.PModelNew` assuming communities consisting solely of
+{class}`~pyrealm.pmodel.pmodel.PModel` assuming communities consisting solely of
 C3 or C4 plants to calculate the expected fraction of C4 plants in the community and the
 contributions to GPP from C3 and C4 plants at each site.
 
@@ -59,7 +59,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
-from pyrealm.pmodel.new_pmodel import PModelNew
+from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel import (
     PModelEnvironment,
     CalcCarbonIsotopes,
@@ -144,9 +144,9 @@ tc_1d = np.linspace(-10, 45, n_pts)
 # Fit C3 and C4 P models
 env = PModelEnvironment(tc=tc_1d, patm=101325, co2=400, vpd=1000, ppfd=450, fapar=0.9)
 
-mod_c3 = PModelNew(env, method_optchi="prentice14")
+mod_c3 = PModel(env, method_optchi="prentice14")
 
-mod_c4 = PModelNew(env, method_optchi="c4")
+mod_c4 = PModel(env, method_optchi="c4")
 
 # Competition, using annual GPP from µgC m2 s to g m2 yr
 gpp_c3_annual = mod_c3.gpp * (60 * 60 * 24 * 365) * 1e-6

@@ -1,6 +1,6 @@
 """The :mod:`~pyrealm.pmodel` module includes the following submodules:
 
-* :mod:`~pyrealm.pmodel.new_pmodel`,
+* :mod:`~pyrealm.pmodel.pmodel`,
 * :mod:`~pyrealm.pmodel.pmodel_environment`,
 * :mod:`~pyrealm.pmodel.optimal_chi` and
 * :mod:`~pyrealm.pmodel.jmax_limitation` provide classes implementing the core
@@ -46,16 +46,8 @@ from pyrealm.pmodel.functions import (
     calculate_simple_arrhenius_factor,
 )
 from pyrealm.pmodel.isotopes import CalcCarbonIsotopes
-
-# from pyrealm.pmodel.new_pmodel import PModelNew, SubdailyPModelNew
-from pyrealm.pmodel.pmodel import PModel
+from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
-from pyrealm.pmodel.scaler import SubdailyScaler
-from pyrealm.pmodel.subdaily import (
-    SubdailyPModel,
-    convert_pmodel_to_subdaily,
-    memory_effect,
-)
 
 __all__ = [
     "C3C4Competition",
@@ -64,8 +56,6 @@ __all__ = [
     "PModel",
     "PModelEnvironment",
     "SubdailyPModel",
-    # "PModelNew",
-    # "SubdailyPModelNew",
     "SubdailyScaler",
     "calc_co2_to_ca",
     "calc_ftemp_inst_rd",
@@ -81,6 +71,4 @@ __all__ = [
     "calculate_simple_arrhenius_factor",
     "calculate_tree_proportion",
     "convert_gpp_advantage_to_c4_fraction",
-    "convert_pmodel_to_subdaily",
-    "memory_effect",
 ]

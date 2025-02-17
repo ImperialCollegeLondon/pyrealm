@@ -220,7 +220,7 @@ def test_pmodel_equivalence():
 
     from pyrealm.pmodel import PModelEnvironment
     from pyrealm.pmodel.acclimation import AcclimationModel
-    from pyrealm.pmodel.new_pmodel import PModelNew, SubdailyPModelNew
+    from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 
     # One year time sequence at half hour resolution
     datetimes = np.arange(
@@ -253,14 +253,14 @@ def test_pmodel_equivalence():
     )
 
     # Fit the two models
-    fix_subdaily = SubdailyPModelNew(
+    fix_subdaily = SubdailyPModel(
         env=fixed_env,
         acclim_model=acclim_model,
         method_optchi="prentice14",
         reference_kphio=1 / 8,
     )
 
-    fix_standard = PModelNew(
+    fix_standard = PModel(
         env=fixed_env,
         method_optchi="prentice14",
         reference_kphio=1 / 8,
