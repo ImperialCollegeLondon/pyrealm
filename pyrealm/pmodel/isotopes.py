@@ -151,7 +151,7 @@ class CalcCarbonIsotopes:
         Examples:
             >>> import numpy as np
             >>> from pyrealm.pmodel.new_pmodel import PModelNew
-            >>> from pyrealm.pmodel import PModel, PModelEnvironment
+            >>> from pyrealm.pmodel import PModelEnvironment
             >>> from pyrealm.constants import PModelConst
             >>> pmodel_const = PModelConst(beta_cost_ratio_c4=35)
             >>> env = PModelEnvironment(

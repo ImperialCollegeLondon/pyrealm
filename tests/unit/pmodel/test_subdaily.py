@@ -8,56 +8,6 @@ import pytest
 from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
 
 
-def test_SubdailyPModel_JAMES(be_vie_data_components):
-    """Test SubdailyPModel_JAMES.
-
-    This tests the legacy calculations from the Mengoli et al JAMES paper, using that
-    version of the weighted average calculations without acclimating xi.
-    """
-
-    from pyrealm.pmodel import SubdailyScaler
-    from pyrealm.pmodel.subdaily import SubdailyPModel_JAMES
-
-    env, datetime, expected_gpp = be_vie_data_components.get()
-
-    # Get the fast slow scaler and set window
-    fsscaler = SubdailyScaler(datetime)
-    fsscaler.set_window(
-        window_center=np.timedelta64(12, "h"),
-        half_width=np.timedelta64(30, "m"),
-    )
-
-    # Alternate scalar used to duplicate VPD settings in JAMES implementation
-    vpdscaler = SubdailyScaler(datetime)
-    vpdscaler.set_nearest(time=np.timedelta64(12, "h"))
-
-    # Fast slow model without acclimating xi with best fit adaptations to the original
-    # - VPD in daily optimum using different window
-    # - Jmax and Vcmax filling from midday not window end
-    fs_pmodel_james = SubdailyPModel_JAMES(
-        env=env,
-        fapar=env.fapar,
-        ppfd=env.ppfd,
-        fs_scaler=fsscaler,
-        allow_holdover=True,
-        kphio=1 / 8,
-        vpd_scaler=vpdscaler,
-        fill_from=np.timedelta64(12, "h"),
-    )
-
-    valid = np.logical_not(
-        np.logical_or(np.isnan(expected_gpp), np.isnan(fs_pmodel_james.gpp))
-    )
-
-    # Test that non-NaN predictions are within 0.5% - slight differences in constants
-    # and rounding of outputs prevent a closer match between the implementations
-    assert np.allclose(
-        fs_pmodel_james.gpp[valid],
-        expected_gpp[valid] * env.core_const.k_c_molmass,
-        rtol=0.005,
-    )
-
-
 @pytest.mark.parametrize(
     argnames="data_args",
     argvalues=[
