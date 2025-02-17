@@ -557,11 +557,7 @@ class AcclimationModel:
         self,
         values: NDArray[np.float64],
         previous_values: NDArray[np.float64] | None = None,
-        return_interpolation_inputs: bool = False,
-    ) -> (
-        NDArray[np.float64]
-        | tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.datetime64]]
-    ):
+    ) -> NDArray[np.float64]:
         """Resample daily variables onto the subdaily time scale.
 
         This method takes an array representing daily values and interpolates those
@@ -602,19 +598,60 @@ class AcclimationModel:
         series to be processed in blocks. This option is only currently implemented for
         interpolation using the ``fill_method='previous'`` option.
 
-        The method returns an array of the daily values interpolated onto the subdaily
-        observation times. If ``return_interpolation_inputs=True`` is used, the method
-        returns a tuple of three arrays: the interpolated values and then arrays of the
-        values and times passed to the interpolation function. These are mostly of use
-        for plotting interpolation outputs.
+        Args:
+            values: An array with the first dimension matching the number of days in the
+               :class:`~pyrealm.pmodel.acclimation.AcclimationModel` instance.
+            previous_values: An array of previous values from which to fill the
+                variable.
+        """
+
+        interp_x_datetimes, interp_y_values, fill_value = self._get_interpolation_data(
+            values=values, previous_values=previous_values
+        )
+
+        # Note that interp1d cannot handle datetime64 inputs, so need to interpolate
+        # using datetimes cast to integer types
+        interp_fun = interp1d(
+            interp_x_datetimes.astype("int"),
+            interp_y_values,
+            axis=0,
+            kind=self.fill_method,
+            bounds_error=False,
+            fill_value=fill_value,
+            assume_sorted=True,
+        )
+
+        return interp_fun(self.datetimes.astype("int"))
+
+    def _get_interpolation_data(
+        self,
+        values: NDArray[np.float64],
+        previous_values: NDArray[np.float64] | None = None,
+    ) -> tuple[
+        NDArray[np.datetime64],
+        NDArray[np.float64],
+        tuple[NDArray[np.float64] | None, NDArray[np.float64] | None],
+    ]:
+        """Generate the interpolation data used to fill subdaily values.
+
+        This private method is used to adjust the interpolation data used by
+        :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.fill_daily_to_subdaily` to
+        the interpolation settings for the class.
+
+        It returns a tuple containing:
+
+        * An array of the update times to be used for interpolation (the x values in the
+          interpolation).
+        * An array of the values to be used at those time (the y values in the
+          interpolation), and
+        * A tuple of two arrays giving the fill values to be applied at the start and
+          end of the time axis.
 
         Args:
             values: An array with the first dimension matching the number of days in the
                :class:`~pyrealm.pmodel.acclimation.AcclimationModel` instance.
             previous_values: An array of previous values from which to fill the
                 variable.
-            return_interpolation_inputs: Also return input arrays to interpolation
-                function.
         """
 
         self._raise_if_sampling_times_unset()
@@ -672,19 +709,4 @@ class AcclimationModel:
             )
             fill_value = (np.array(np.nan), np.array(np.nan))
 
-        # Note that interp1d cannot handle datetime64 inputs, so need to interpolate
-        # using datetimes cast to integer types
-        interp_fun = interp1d(
-            update_time.astype("int"),
-            values,
-            axis=0,
-            kind=self.fill_method,
-            bounds_error=False,
-            fill_value=fill_value,
-            assume_sorted=True,
-        )
-
-        if return_interpolation_inputs:
-            return (interp_fun(self.datetimes.astype("int")), values, update_time)
-
-        return interp_fun(self.datetimes.astype("int"))
+        return update_time, values, fill_value
