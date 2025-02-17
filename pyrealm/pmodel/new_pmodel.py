@@ -2,14 +2,14 @@
 the following  classes:
 
 * :class:`~pyrealm.pmodel.new_pmodel.PModelABC`: An abstract base class providing some
-     of the core functionality for initialising PModel subclasses.
+  of the core functionality for initialising PModel subclasses.
 
 * :class:`~pyrealm.pmodel.new_pmodel.PModelNew`: A subclass providing the standard
-     implementation of the P Model.
+  implementation of the P Model.
 
 * :class:`~pyrealm.pmodel.new_pmodel.SubdailyPModelNew`: A subclass providing the
-     subdaily implementation of the P Model, which accounts for slow acclimation of core
-     photosynthetic processes.
+  subdaily implementation of the P Model, which accounts for slow acclimation of core
+  photosynthetic processes.
 
 
 """  # noqa D210, D415
@@ -41,13 +41,13 @@ from pyrealm.pmodel.quantum_yield import QUANTUM_YIELD_CLASS_REGISTRY, QuantumYi
 class PModelABC(ABC):
     r"""Abstract base class for the PModel and SubdailyPModel.
 
-    The base class __init__ implements the core arguments to the PModel subclasses: the
-    forcing data to be used for the model and various methodological options for the
+    The base class ``__init__`` implements the core arguments to the PModel subclasses:
+    the forcing data to be used for the model and various methodological options for the
     calculation of the model parameters.
 
-    Subclasses should define an `__init__` method that first calls
-    `super().__init__(...)` to run the shared core functionality and then define any
-    model specific attributes. The abstract base method `_fit_model` should then be
+    Subclasses should define an ``__init__`` method that first calls
+    ``super().__init__(...)`` to run the shared core functionality and then define any
+    model specific attributes. The abstract base method ``_fit_model`` should then be
     defined and used to execute the model specific logic of the base class.
 
     Args:
@@ -62,6 +62,8 @@ class PModelABC(ABC):
             :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`).
         method_jmaxlim: (Optional, default=`wang17`) Method to use for
             :math:`J_{max}` limitation.
+        method_arrhenius: (Optional, default=`simple`) Method to set the form of
+            Arrhenius scaling used for `vcmax` and `jmax`.
         reference_kphio: An optional alternative reference value for the quantum yield
             efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
             calculation method.
@@ -101,7 +103,7 @@ class PModelABC(ABC):
         self._optchi_class: type[OptimalChiABC]
         """The OptimalChiABC subclass to be used in the model."""
         self.optchi: OptimalChiABC
-        """The optimal chi (:math:`\chi`) calculations for the fitted P Model."""
+        r"""The optimal chi (:math:`\chi`) calculations for the fitted P Model."""
 
         self._method_setter(
             method_value_attr="method_optchi",
@@ -124,7 +126,7 @@ class PModelABC(ABC):
         self._kphio_class: type[QuantumYieldABC]
         """The QuantumYieldABC subclass to be used in the model."""
         self.kphio: QuantumYieldABC
-        """The quantum yield (:math:`\phi_0`) calculations for the fitted P Model."""
+        r"""The quantum yield (:math:`\phi_0`) calculations for the fitted P Model."""
 
         self._method_setter(
             method_value_attr="method_kphio",
@@ -210,7 +212,7 @@ class PModelABC(ABC):
 
         .. math::
 
-            V_{cmax} &= \phi_{0} I_{abs} \frac{m}{m_c} f_{v} 
+            V_{cmax} = \phi_{0} I_{abs} \frac{m}{m_c} f_{v} 
 
         where  :math:`f_v` is a limitation term calculated via the method selected in
         `method_jmaxlim`."""
@@ -221,12 +223,12 @@ class PModelABC(ABC):
         """
 
         self.jmax: NDArray[np.float64]
-        """Maximum rate of electron transport at the growth temperature (µmol m-2
-        s-1), calculated as:
+        r"""Maximum rate of electron transport at the growth temperature (µmol m-2 s-1),
+        calculated as:
         
         .. math::
 
-            J_{max} &= 4 \phi_{0} I_{abs} f_{j}
+            J_{max} = 4 \phi_{0} I_{abs} f_{j}
 
         where  :math:`f_j` is a limitation term calculated via the method selected in
         `method_jmaxlim`."""
@@ -237,21 +239,26 @@ class PModelABC(ABC):
         """
 
         self.rd: NDArray[np.float64]
-        r"""Dark respiration (µmol m-2 s-1), , calculated as:
+        r"""Dark respiration (µmol m-2 s-1) calculated as:
 
         .. math::
 
             R_d = b_0 \frac{fr(t)}{fv(t)} V_{cmax},
 
-        following :cite:`Atkin:2015hk`, where :math:`fr(t)` is the instantaneous
+        following :cite:t:`Atkin:2015hk`, where :math:`fr(t)` is the instantaneous
         temperature response of dark respiration implemented in
         :func:`~pyrealm.pmodel.functions.calc_ftemp_inst_rd`, and :math:`b_0` is set in
         :attr:`~pyrealm.constants.pmodel_const.PModelConst.atkin_rd_to_vcmax`."""
 
         self.gpp: NDArray[np.float64]
-        r"""Gross primary productivity (µg C m-2 s-1) calculated as :math:`\text{GPP} =
-         \text{LUE} \cdot I_{abs}`, where :math:`I_{abs}` is the absorbed photosynthetic
-         radiation"""
+        r"""Gross primary productivity (µg C m-2 s-1) calculated as:
+        
+        .. math::
+
+            \text{GPP} = \text{LUE} \cdot I_{abs}
+            
+        where :math:`I_{abs}` is the absorbed photosynthetic radiation.
+        """
 
         self.gs: NDArray[np.float64]
         r"""Stomatal conductance (µmol m-2 s-1), calculated as:
@@ -330,7 +337,47 @@ class PModelABC(ABC):
 
 
 class PModelNew(PModelABC):
-    """New implementation of the PModel."""
+    r"""Fit a standard P Model.
+
+    This class fits the P Model to a given set of environmental and photosynthetic
+    parameters. An extended description with typical use cases is given in
+    :any:`pmodel_overview` but the basic flow of the model is:
+
+    1. Estimate :math:`\ce{CO2}` limitation factors and optimal internal to ambient
+       :math:`\ce{CO2}` partial pressure ratios (:math:`\chi`), using one of the
+       methods based on :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`.
+    2. Estimate limitation factors to :math:`V_{cmax}` and :math:`J_{max}` using
+       one of the methods implemented using
+       :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC`.
+
+    Soil moisture effects:
+        The `lavergne20_c3`, `lavergne20_c4`, ``prentice14_rootzonestress``,
+        ``c4_rootzonestress`` and ``c4_no_gamma_rootzonestress`` options to
+        ``method_optchi`` implement different approaches to soil moisture effects on
+        photosynthesis. See also the alternative GPP penalty factors that can be applied
+        after fitting the P Model
+        (:func:`pyrealm.pmodel.functions.calc_soilmstress_stocker` and
+        :func:`pyrealm.pmodel.functions.calc_soilmstress_mengoli`).
+
+    Args:
+        env: An instance of
+           :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
+        method_kphio: The method to use for calculating the quantum yield
+            efficiency of photosynthesis (:math:`\phi_0`, unitless). The method name
+            must be included in the
+            :data:`~pyrealm.pmodel.quantum_yield.QUANTUM_YIELD_CLASS_REGISTRY`.
+        method_optchi: (Optional, default=`prentice14`) Selects the method to be
+            used for calculating optimal :math:`chi`. The choice of method also sets the
+            choice of  C3 or C4 photosynthetic pathway (see
+            :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`).
+        method_jmaxlim: (Optional, default=`wang17`) Method to use for
+            :math:`J_{max}` limitation.
+        method_arrhenius: (Optional, default=`simple`) Method to set the form of
+            Arrhenius scaling used for `vcmax` and `jmax`.
+        reference_kphio: An optional alternative reference value for the quantum yield
+            efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
+            calculation method.
+    """
 
     _data_attributes = (
         ("lue", "g C mol-1"),
@@ -469,9 +516,9 @@ class PModelNew(PModelABC):
     ) -> SubdailyPModelNew:
         r"""Convert a standard PModel to a subdaily P Model.
 
-        This method converts a :class:`~pyrealm.pmodel.pmodel.PModel` instance to a
-        to a :class:`~pyrealm.pmodel.subdaily.SubdailyPModel` instance with the same
-        settings.
+        This method converts a :class:`~pyrealm.pmodel.new_pmodel.PModelNew` instance to
+        a to a :class:`~pyrealm.pmodel.new_pmodel.SubdailyPModelNew` instance with the
+        same settings.
 
         Args:
             acclim_model: An AcclimationModel instance for the subdaily model.
@@ -493,14 +540,14 @@ class PModelNew(PModelABC):
 class SubdailyPModelNew(PModelABC):
     r"""Fit a P Model incorporating acclimation in photosynthetic responses.
 
-    The :class:`~pyrealm.pmodel.pmodel.PModel` implementation of the P Model assumes
-    that plants instantaneously adopt optimal behaviour, which is reasonable where the
-    data represents average conditions over longer timescales and the plants can be
-    assumed to have acclimated to optimal behaviour. Over shorter timescales, this
-    assumption is unwarranted and photosynthetic slow responses need to be included.
-    This class implements the weighted-average approach of {cite:t}`mengoli:2022a`, but
-    is extended to include the slow response of :math:`\xi` in addition to
-    :math:`V_{cmax25}` and :math:`J_{max25}`.
+    The :class:`~pyrealm.pmodel.new_pmodel.PModelNew` implementation of the P Model
+    assumes that plants instantaneously adopt optimal behaviour, which is reasonable
+    where the data represents average conditions over longer timescales and the plants
+    can be assumed to have acclimated to optimal behaviour. Over shorter timescales,
+    this assumption is unwarranted and photosynthetic slow responses need to be
+    included. This class implements the weighted-average approach of
+    {cite:t}`mengoli:2022a`, but is extended to include the slow response of :math:`\xi`
+    in addition to :math:`V_{cmax25}` and :math:`J_{max25}`.
 
     The workflow of the model:
 
@@ -547,7 +594,7 @@ class SubdailyPModelNew(PModelABC):
       and vapour pressure deficit.
     * Predictions of GPP are then made as in the standard P Model.
 
-    As with the :class:`~pyrealm.pmodel.pmodel.PModel`, the values of the `kphio`
+    As with the :class:`~pyrealm.pmodel.new_pmodel.PModelNew`, the values of the `kphio`
     argument _can_ be provided as an array of values, potentially varying through time
     and space. The behaviour of the daily model that drives acclimation here is to take
     the daily mean `kphio` value for each time series within the acclimation window, as
@@ -560,34 +607,39 @@ class SubdailyPModelNew(PModelABC):
         acclimation window for the day, or undefined values in P Model predictions. Some
         options include:
 
-        * The ``allow_partial_data`` argument is passed on to
-          :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.get_daily_means` to
+        * The ``allow_partial_data`` argument is passed on to the
+          :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.get_daily_means` method to
           allow daily optimum conditions to be calculated when the data in the
           acclimation window is incomplete. This does not fix problems when no data is
           present in the window or when the P Model predictions for a day are undefined.
 
-        * The ``allow_holdover`` argument is passed on to
-          :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.apply_acclimation` to set
-          whether missing values in the optimal predictions can be filled by holding
-          over previous valid values.
+        * The ``allow_holdover`` argument is passed on to the
+          :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.apply_acclimation` method
+          to set whether missing values in the optimal predictions can be filled by
+          holding over previous valid values.
 
     Args:
         env: An instance of
-          :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
-        acclim_nodel: An instance of
-          :class:`~pyrealm.pmodel.acclimation.AcclimationModel`.
-        alpha: The :math:`\alpha` weight.
-        allow_holdover: Should the :func:`~pyrealm.pmodel.subdaily.memory_effect`
-          function be allowed to hold over values to fill missing values.
-        allow_partial_data: Should estimates of daily optimal conditions be calculated
-          with missing values in the acclimation window.
+           :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
+        acclim_model: An instance of
+            :class:`~pyrealm.pmodel.acclimation.AcclimationModel`
+        method_kphio: The method to use for calculating the quantum yield
+            efficiency of photosynthesis (:math:`\phi_0`, unitless). The method name
+            must be included in the
+            :data:`~pyrealm.pmodel.quantum_yield.QUANTUM_YIELD_CLASS_REGISTRY`.
+        method_optchi: (Optional, default=`prentice14`) Selects the method to be
+            used for calculating optimal :math:`chi`. The choice of method also sets the
+            choice of  C3 or C4 photosynthetic pathway (see
+            :class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC`).
+        method_jmaxlim: (Optional, default=`wang17`) Method to use for
+            :math:`J_{max}` limitation.
+        method_arrhenius: (Optional, default=`simple`) Method to set the form of
+            Arrhenius scaling used for `vcmax` and `jmax`.
         reference_kphio: An optional alternative reference value for the quantum yield
-          efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
-          calculation method.
-        fill_kind: The approach used to fill daily realised values to the subdaily
-          timescale, currently one of 'previous' or 'linear'.
+            efficiency of photosynthesis (:math:`\phi_0`, -) to be passed to the kphio
+            calculation method.
         previous_realised: A tuple of previous realised values of three NumPy arrays
-          (xi_real, vcmax25_real, jmax25_real).
+            (xi_real, vcmax25_real, jmax25_real).
     """
 
     _data_attributes = (
@@ -635,12 +687,12 @@ class SubdailyPModelNew(PModelABC):
         self.pmodel_acclim: PModelNew
         r"""P Model predictions for the daily acclimation conditions.
 
-        A :class:`~pyrealm.pmodel.pmodel.PModel` instance providing the predictions of
-        the P Model for the daily acclimation conditions set for the SubdailyPModel. The
-        model is used to obtain predictions of the instantaneous optimal estimates of
-        :math:`V_{cmax}`, :math:`J_{max}` and :math:`\xi` during the acclimation window.
-        These are then used to estimate realised values of those parameters given slow
-        responses to acclimation.
+        A :class:`~pyrealm.pmodel.new_pmodel.PModelNew` instance providing the
+        predictions of the P Model for the daily acclimation conditions set for the
+        SubdailyPModel. The model is used to obtain predictions of the instantaneous
+        optimal estimates of :math:`V_{cmax}`, :math:`J_{max}` and :math:`\xi` during
+        the acclimation window. These are then used to estimate realised values of those
+        parameters given slow responses to acclimation.
         """
 
         # TODO - maybe encapsulate these in a dataclass?

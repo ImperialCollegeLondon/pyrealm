@@ -41,13 +41,9 @@ import numpy as np
 from numpy.testing import assert_allclose
 import pandas
 
-from pyrealm.pmodel import (
-    SubdailyScaler,
-    memory_effect,
-    SubdailyPModel,
-    PModelEnvironment,
-    PModel,
-)
+from pyrealm.pmodel.new_pmodel import PModelNew, SubdailyPModelNew
+from pyrealm.pmodel.pmodel_environment import PModelEnvironment
+from pyrealm.pmodel.acclimation import AcclimationModel
 from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
 from pyrealm.pmodel.functions import calculate_simple_arrhenius_factor, calc_ftemp_kphio
 ```
@@ -91,8 +87,7 @@ subdaily_env = PModelEnvironment(
 )
 
 # Fit the standard P Model
-pmodel_standard = PModel(subdaily_env, method_kphio="fixed", reference_kphio=1 / 8)
-pmodel_standard.estimate_productivity(ppfd=ppfd_subdaily, fapar=fapar_subdaily)
+pmodel_standard = PModelNew(subdaily_env, method_kphio="fixed", reference_kphio=1 / 8)
 pmodel_standard.summarize()
 ```
 
@@ -108,22 +103,19 @@ conditions at the observation closest to noon, or the mean environmental conditi
 window around noon.
 
 ```{code-cell} ipython3
-# Create the fast slow scaler
-fsscaler = SubdailyScaler(datetime_subdaily)
+# Create the acclimation model
+acclim_model = AcclimationModel(datetime_subdaily, allow_holdover=True, alpha=1 / 15)
 
 # Set the acclimation window as the values within a one hour window centred on noon
-fsscaler.set_window(
+acclim_model.set_window(
     window_center=np.timedelta64(12, "h"),
     half_width=np.timedelta64(30, "m"),
 )
 
-# Fit the Subdaily P Model with slow responses in Vcmax25, Jmax25 and xi
-pmodel_subdaily = SubdailyPModel(
+# Fit the Subdaily P Model
+pmodel_subdaily = SubdailyPModelNew(
     env=subdaily_env,
-    fs_scaler=fsscaler,
-    allow_holdover=True,
-    ppfd=ppfd_subdaily,
-    fapar=fapar_subdaily,
+    acclim_model=acclim_model,
     reference_kphio=1 / 8,
 )
 ```
@@ -142,9 +134,9 @@ plt.show()
 
 ## Calculation of GPP using fast and slow responses
 
-The {class}`~pyrealm.pmodel.subdaily.SubdailyPModel` implements the calculations used to
-estimate GPP using slow responses, but the details of these calculations are shown
-below.
+The {class}`~pyrealm.pmodel.new_pmodel.SubdailyPModelNew` implements the calculations
+used to estimate GPP using slow responses, but the details of these calculations are
+shown below.
 
 ### Optimal responses during the acclimation window
 
@@ -154,12 +146,12 @@ conditions.
 
 ```{code-cell} ipython3
 # Get the daily acclimation conditions for the forcing variables
-temp_acclim = fsscaler.get_daily_means(temp_subdaily)
-co2_acclim = fsscaler.get_daily_means(co2_subdaily)
-vpd_acclim = fsscaler.get_daily_means(vpd_subdaily)
-patm_acclim = fsscaler.get_daily_means(patm_subdaily)
-ppfd_acclim = fsscaler.get_daily_means(ppfd_subdaily)
-fapar_acclim = fsscaler.get_daily_means(fapar_subdaily)
+temp_acclim = acclim_model.get_daily_means(temp_subdaily)
+co2_acclim = acclim_model.get_daily_means(co2_subdaily)
+vpd_acclim = acclim_model.get_daily_means(vpd_subdaily)
+patm_acclim = acclim_model.get_daily_means(patm_subdaily)
+ppfd_acclim = acclim_model.get_daily_means(ppfd_subdaily)
+fapar_acclim = acclim_model.get_daily_means(fapar_subdaily)
 
 # Fit the P Model to the acclimation conditions
 daily_acclim_env = PModelEnvironment(
@@ -171,8 +163,7 @@ daily_acclim_env = PModelEnvironment(
     ppfd=ppfd_acclim,
 )
 
-pmodel_acclim = PModel(daily_acclim_env, reference_kphio=1 / 8)
-pmodel_acclim.estimate_productivity(fapar=fapar_acclim, ppfd=ppfd_acclim)
+pmodel_acclim = PModelNew(daily_acclim_env, reference_kphio=1 / 8)
 ```
 
 ### Slow responses of $\xi$, $J_{max25}$ and $V_{cmax25}$
@@ -210,9 +201,9 @@ responses to calculate realised values, here using the default 15 day window.
 
 ```{code-cell} ipython3
 # Calculation of memory effect in xi, vcmax25 and jmax25
-xi_real = memory_effect(pmodel_acclim.optchi.xi, alpha=1 / 15)
-vcmax25_real = memory_effect(vcmax25_acclim, alpha=1 / 15, allow_holdover=True)
-jmax25_real = memory_effect(jmax25_acclim, alpha=1 / 15, allow_holdover=True)
+xi_real = acclim_model.apply_acclimation(pmodel_acclim.optchi.xi)
+vcmax25_real = acclim_model.apply_acclimation(vcmax25_acclim)
+jmax25_real = acclim_model.apply_acclimation(jmax25_acclim)
 ```
 
 The plots below show the instantaneously acclimated values for  $J_{max25}$,
@@ -222,7 +213,7 @@ application of the memory effect.
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+fig, axes = plt.subplots(1, 3, figsize=(12, 4))
 
 for ax, inst, mem, title in zip(
     axes,
@@ -231,10 +222,13 @@ for ax, inst, mem, title in zip(
     (r"$V_{cmax25}$", r"$J_{max25}$", r"$\xi$"),
 ):
 
-    ax.plot(fsscaler.observation_dates, inst, "0.8", label="Optimal")
-    ax.plot(fsscaler.observation_dates, mem, "r-", label="Realised")
+    ax.plot(acclim_model.observation_dates, inst, "0.8", label="Optimal")
+    ax.plot(acclim_model.observation_dates, mem, "r-", label="Realised")
     ax.set_title(title)
     ax.legend(frameon=False)
+
+    myFmt = mdates.DateFormatter("%b\n%Y")
+    ax.xaxis.set_major_formatter(myFmt)
 ```
 
 ### Subdaily model including fast and slow responses
@@ -257,8 +251,8 @@ temperature at fast scales:
 tk_subdaily = subdaily_env.tc + pmodel_subdaily.env.core_const.k_CtoK
 
 # Fill the realised jmax and vcmax from subdaily to daily
-vcmax25_subdaily = fsscaler.fill_daily_to_subdaily(vcmax25_real)
-jmax25_subdaily = fsscaler.fill_daily_to_subdaily(jmax25_real)
+vcmax25_subdaily = acclim_model.fill_daily_to_subdaily(vcmax25_real)
+jmax25_subdaily = acclim_model.fill_daily_to_subdaily(jmax25_real)
 
 # Adjust to actual temperature at subdaily timescale
 vcmax_subdaily = vcmax25_subdaily * calculate_simple_arrhenius_factor(
@@ -279,7 +273,7 @@ as is the case in the standard P Model.
 
 ```{code-cell} ipython3
 # Interpolate xi to subdaily scale
-xi_subdaily = fsscaler.fill_daily_to_subdaily(xi_real)
+xi_subdaily = acclim_model.fill_daily_to_subdaily(xi_real)
 
 # Calculate the optimal chi, imposing the realised xi values
 subdaily_chi = OptimalChiPrentice14(env=subdaily_env)

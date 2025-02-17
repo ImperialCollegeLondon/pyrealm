@@ -220,7 +220,8 @@ def calc_ftemp_kphio(
     The factor :math:`\phi(T)` is to be multiplied with leaf absorptance and the
     fraction of absorbed light that reaches photosystem II. In the P-model these
     additional factors are lumped into a single apparent quantum yield efficiency
-    parameter (argument `kphio` to the class :class:`~pyrealm.pmodel.pmodel.PModel`).
+    parameter (argument `kphio` to the class
+    :class:`~pyrealm.pmodel.new_pmodel.PModelNew`).
 
     Args:
         tc: Temperature, relevant for photosynthesis (°C)

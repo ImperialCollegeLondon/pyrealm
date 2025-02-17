@@ -7,7 +7,7 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.16.6
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 language_info:
@@ -102,7 +102,7 @@ the examples below, the default $\theta_0 = 0$ has been changed to $\theta_0 =
 from matplotlib import pyplot as plt
 import numpy as np
 from pyrealm import pmodel
-from pyrealm.pmodel.pmodel import PModel
+from pyrealm.pmodel.new_pmodel import PModelNew
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 from pyrealm.constants import PModelConst
 
@@ -151,13 +151,11 @@ ax2.set_ylabel(r"Empirical soil moisture factor, $\beta(\theta)$")
 plt.show()
 ```
 
-+++ {"user_expressions": []}
-
 ### Application of the {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` factor
 
 The factor can be applied to the P Model by using
 {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` to calculate the factor
-values and then multiplying calculated GPP ({attr}`~pyrealm.pmodel.pmodel.PModel.gpp`)
+values and then multiplying calculated GPP ({attr}`~pyrealm.pmodel.new_pmodel.PModelNew.gpp`)
 by the resulting factor. The example below shows how the predicted light use
 efficiency from the P Model changes across an aridity gradient both with and without the
 soil moisture factor.
@@ -168,8 +166,8 @@ tc = np.array([20] * 101)
 sm_gradient = np.linspace(0, 1.0, 101)
 
 env = PModelEnvironment(tc=tc, patm=101325.0, vpd=820, co2=400, fapar=1, ppfd=1000)
-model = PModel(env)
-model.estimate_productivity(fapar=1, ppfd=1000)
+model = PModelNew(env)
+
 
 # Calculate the soil moisture stress factor across a soil moisture gradient
 # at differing aridities
@@ -306,7 +304,7 @@ under drier conditions.
 
 As with  {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker`, the factor is first
 calculated and then applied to the GPP calculated for a model
-({attr}`~pyrealm.pmodel.pmodel.PModel.gpp`). In the example below, the result is
+({attr}`~pyrealm.pmodel.new_pmodel.PModelNew.gpp`). In the example below, the result is
 obviously just $\beta(\theta)$ from above scaled to the constant GPP.
 
 ```{code-cell} ipython3
@@ -318,8 +316,4 @@ plt.xlabel(r"Relative soil moisture $\theta$")
 plt.ylabel("GPP")
 plt.legend()
 plt.show()
-```
-
-```{code-cell} ipython3
-
 ```

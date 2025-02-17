@@ -7,7 +7,7 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.16.6
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 language_info:
@@ -33,7 +33,7 @@ depends on the photosynthetic pathway.
 The {mod}`~pyrealm.pmodel` module provides the
 {class}`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes` class, which takes the predicted
 optimal chi ($\chi$) and photosynthetic pathway from a fitted
-{class}`~pyrealm.pmodel.pmodel.PModel` instance and predicts various isotopic
+{class}`~pyrealm.pmodel.new_pmodel.PModelNew` instance and predicts various isotopic
 discrimination and composition values.
 
 The predictions from the {class}`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes` class are
@@ -46,32 +46,35 @@ below for C3 and C4 plants.
 :tags: [hide-input]
 
 import numpy as np
-from matplotlib import pyplot
+import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
-from pyrealm.pmodel import PModel, PModelEnvironment, CalcCarbonIsotopes
+from pyrealm.pmodel.new_pmodel import PModelNew
+from pyrealm.pmodel import PModelEnvironment, CalcCarbonIsotopes
 
 # Use a simple temperature sequence to generate a range of optimal chi values
 n_pts = 31
 tc_1d = np.linspace(-10, 40, n_pts)
 
-# Fit models - GPP estimation not needed so fapar and ppfd set to unity
+# Fit models. Since only relative light use efficiency is needed,
+# fAPAR and PPFD are set to unity.
 env = PModelEnvironment(tc=tc_1d, patm=101325, co2=400, vpd=1000, fapar=1, ppfd=1)
-mod_c3 = PModel(env, method_optchi="prentice14")
-mod_c4 = PModel(env, method_optchi="c4")
+mod_c3 = PModelNew(env, method_optchi="prentice14")
+mod_c4 = PModelNew(env, method_optchi="c4")
 
-pyplot.scatter(tc_1d, mod_c3.optchi.chi.flatten(), label="C3")
-pyplot.scatter(tc_1d, mod_c4.optchi.chi.flatten(), label="C4")
-pyplot.title(r"Variation in $\chi$ with temperature")
-pyplot.xlabel("Temperature (°C)")
-pyplot.ylabel(r"Predicted optimal $\chi$")
-pyplot.legend()
+plt.plot(tc_1d, mod_c3.optchi.chi.flatten(), label="C3", marker=".")
+plt.plot(tc_1d, mod_c4.optchi.chi.flatten(), label="C4", marker=".")
+plt.title(r"Variation in $\chi$ with temperature")
+plt.xlabel("Temperature (°C)")
+plt.ylabel(r"Predicted optimal $\chi$")
+plt.legend(frameon=False)
+plt.show()
 ```
 
 ## Calculation of values
 
 The {class}`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes` class takes a
-{class}`~pyrealm.pmodel.pmodel.PModel` instance, along with estimates of the atmospheric
+{class}`~pyrealm.pmodel.new_pmodel.PModelNew` instance, along with estimates of the atmospheric
 isotopic ratios for Carbon 13 ($\delta13C$, permil) and Carbon 14 ($\Delta14C$, permil)
 and calculates the following predictions:
 
@@ -89,7 +92,7 @@ and calculates the following predictions:
   permil), given a parameterized post-photosynthetic fractionation.
 
 The calculations differ between C3 and C4 plants, and this is set by the selection of
-the `method_optchi` argument used for the {class}`~pyrealm.pmodel.pmodel.PModel`
+the `method_optchi` argument used for the {class}`~pyrealm.pmodel.new_pmodel.PModelNew`
 instance.
 
 ```{code-cell} ipython3
@@ -110,7 +113,7 @@ isotopic signature of relative contributions of the two pathways.
 :tags: [hide-input]
 
 # Create side by side subplots
-fig, axes = pyplot.subplots(2, 3, figsize=(12, 8))
+fig, axes = plt.subplots(2, 3, figsize=(12, 8))
 
 attrs = [
     "Delta13C_simple",
@@ -128,7 +131,7 @@ for attr, ax in zip(attrs, axes.flatten()):
     ax.set_title(attr)
     ax.set_ylabel(attr)
     ax.set_xlabel("Optimal Chi (-)")
-    ax.legend()
+    ax.legend(frameon=False)
 
 fig.tight_layout()
 ```

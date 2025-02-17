@@ -34,12 +34,11 @@ language_info:
 # arrays of repeating values (`_2d`) to generate response surfaces for functions
 # with multuple inputs.
 
-from matplotlib import pyplot
+import matplotlib.pyplot as plt
 import numpy as np
-from pyrealm.pmodel import PModel, PModelEnvironment
+from pyrealm.pmodel import PModelEnvironment
+from pyrealm.pmodel.new_pmodel import PModelNew
 from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature, QuantumYieldSandoval
-
-%matplotlib inline
 
 # Set the resolution of examples
 n_pts = 201
@@ -76,7 +75,7 @@ a parameter representing canopy-scale effective quantum yield.
 * The maximum quantum yield can vary with environmental conditions, such as temperature
 variation in $\phi_0$ {cite}`Bernacchi:2003dc`.
 
-For these reasons, the {class}`~pyrealm.pmodel.pmodel.PModel` provides alternative
+For these reasons, the {class}`~pyrealm.pmodel.new_pmodel.PModelNew` provides alternative
 approaches to estimating the value of $\phi{0}$, using the `method_kphio` argument. The
 currently implemented approaches are described below. Note that each approach has a
 specific **reference value for $\phi_{0}$**, which is used as the baseline for further
@@ -100,14 +99,14 @@ fkphio_c3 = QuantumYieldTemperature(env=env, use_c4=False)
 fkphio_c4 = QuantumYieldTemperature(env=env, use_c4=True)
 
 # Create a line plot of ftemp kphio
-pyplot.plot(tc_1d, fkphio_c3.kphio, label="C3")
-pyplot.plot(tc_1d, fkphio_c4.kphio, label="C4")
+plt.plot(tc_1d, fkphio_c3.kphio, label="C3")
+plt.plot(tc_1d, fkphio_c4.kphio, label="C4")
 
-pyplot.title("Temperature dependence of quantum yield efficiency")
-pyplot.xlabel("Temperature °C")
-pyplot.ylabel("Quantum yield efficiency ($\phi_0$)")
-pyplot.legend()
-pyplot.show()
+plt.title("Temperature dependence of quantum yield efficiency")
+plt.xlabel("Temperature °C")
+plt.ylabel("Quantum yield efficiency ($\phi_0$)")
+plt.legend()
+plt.show()
 ```
 
 ## Fixed $\phi_0$
@@ -143,14 +142,14 @@ env = PModelEnvironment(
     fapar=np.repeat(1, n_vals),
     ppfd=np.repeat(1, n_vals),
 )
-model_var_kphio = PModel(env, method_kphio="fixed", reference_kphio=kphio_values)
+model_var_kphio = PModelNew(env, method_kphio="fixed", reference_kphio=kphio_values)
 
 # Create a line plot of ftemp kphio
-pyplot.plot(kphio_values, model_var_kphio.lue)
-pyplot.title("Variation in LUE with changing $\phi_0$")
-pyplot.xlabel("$\phi_0$")
-pyplot.ylabel("LUE")
-pyplot.show()
+plt.plot(kphio_values, model_var_kphio.lue)
+plt.title("Variation in LUE with changing $\phi_0$")
+plt.xlabel("$\phi_0$")
+plt.ylabel("LUE")
+plt.show()
 ```
 
 ## Temperature and aridity effects on $\phi_0$
@@ -189,13 +188,13 @@ env = PModelEnvironment(
 
 sandoval_kphio = QuantumYieldSandoval(env)
 
-fig, ax = pyplot.subplots(1, 1)
+fig, ax = plt.subplots(1, 1)
 ax.plot(aridity_index, sandoval_kphio.kphio)
 ax.set_title("Change in $\phi_0$ with aridity index (P/PET).")
 ax.set_ylabel("$\phi_0$")
 ax.set_xlabel("Aridity Index")
 ax.set_xscale("log")
-pyplot.show()
+plt.show()
 ```
 
 In addition to capping the peak $\phi_0$ as a function of the aridity index, this
@@ -229,7 +228,7 @@ env = PModelEnvironment(
 
 sandoval_kphio = QuantumYieldSandoval(env)
 
-fig, axes = pyplot.subplots(ncols=3, nrows=1, sharey=True, figsize=(10, 6))
+fig, axes = plt.subplots(ncols=3, nrows=1, sharey=True, figsize=(10, 6))
 
 for ai_idx, (ax, ai_val) in enumerate(zip(axes, aridity_values)):
 
@@ -245,5 +244,5 @@ for ai_idx, (ax, ai_val) in enumerate(zip(axes, aridity_values)):
 
 
 ax.legend(frameon=False)
-pyplot.show()
+plt.show()
 ```

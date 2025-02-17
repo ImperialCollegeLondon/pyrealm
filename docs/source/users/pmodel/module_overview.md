@@ -41,7 +41,7 @@ ecophysiological model of optimal carbon dioxide uptake by plants
   * estimation of [electron transfer rate limitation](pmodel_details/jmax_limitation),
     and
   * the estimation of [gross primary
-    productivity](pmodel_details/envt_variation_outputs.md#estimating-productivity).
+    productivity](pmodel_details/envt_variation_outputs.md#productivity-outputs).
 
 * Approaches to the impacts of [soil moisture stress](pmodel_details/soil_moisture).
 * The behaviour of P Model equations with [extreme forcing
