@@ -73,7 +73,7 @@ Here we are using:
 
 ```{warning}
 
-In the {meth}`~pyrealm.pmodel.pmodel.PModelEnvironment`, the estimated PPFD
+In the {meth}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`, the estimated PPFD
 must be expressed as **µmol m-2 s-1**.
 
 Estimates of PPFD sometimes use different temporal or spatial scales - for

@@ -899,7 +899,6 @@ class SubdailyPModelNew(PModelABC):
         self.vcmax25 = self.acclim_model.fill_daily_to_subdaily(
             self.vcmax25_daily_realised,
             previous_values=self.previous_realised["vcmax25"],
-            return_interpolation_inputs=False,
         )
         self.jmax25 = self.acclim_model.fill_daily_to_subdaily(
             self.jmax25_daily_realised,

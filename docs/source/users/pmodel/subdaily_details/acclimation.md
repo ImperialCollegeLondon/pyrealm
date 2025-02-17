@@ -57,7 +57,7 @@ from pyrealm.pmodel.acclimation import AcclimationModel
 ## The acclimation model
 
 Defining the model to be used for estimating acclimation uses the
-{class}`~pyrealm.pmodel.acclimation import AcclimationModel`. This class is used to:
+{class}`~pyrealm.pmodel.acclimation.AcclimationModel`. This class is used to:
 
 * define the timing of observations on a subdaily scale,
 * define an daily acclimation window that sets the daily conditions that plants will

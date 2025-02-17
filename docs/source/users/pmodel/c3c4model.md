@@ -56,7 +56,7 @@ $F_4$ changes with $A_4$, given differing estimates of tree cover.
 :tags: [hide-input]
 
 import numpy as np
-import matplotlib.plt as plt
+import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
 from pyrealm.pmodel.new_pmodel import PModelNew
