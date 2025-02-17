@@ -605,8 +605,10 @@ class AcclimationModel:
                 variable.
         """
 
-        interp_x_datetimes, interp_y_values, fill_value = self._get_interpolation_data(
-            values=values, previous_values=previous_values
+        interp_x_datetimes, interp_y_values, fill_value = (
+            self._get_subdaily_interpolation_xy(
+                values=values, previous_values=previous_values
+            )
         )
 
         # Note that interp1d cannot handle datetime64 inputs, so need to interpolate
@@ -623,7 +625,7 @@ class AcclimationModel:
 
         return interp_fun(self.datetimes.astype("int"))
 
-    def _get_interpolation_data(
+    def _get_subdaily_interpolation_xy(
         self,
         values: NDArray[np.float64],
         previous_values: NDArray[np.float64] | None = None,

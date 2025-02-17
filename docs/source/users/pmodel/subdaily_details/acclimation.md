@@ -281,9 +281,8 @@ for (scenario_id, scenario_details), axis in zip(scenarios.items(), axes):
     # inputs to the interpolation process
     daily_optimal = model.get_daily_means(subdaily_data)
     daily_realised = model.apply_acclimation(daily_mean)
-    subdaily_realised, interp_y, interp_x = model.fill_daily_to_subdaily(
-        daily_realised, return_interpolation_inputs=True
-    )
+    interp_x, interp_y, _ = model._get_subdaily_interpolation_xy(daily_realised)
+    subdaily_realised = model.fill_daily_to_subdaily(daily_realised)
 
     # Show the variable at the subdaily timescale and the daily optimal values
     axis.plot(subdaily_datetimes, subdaily_data, "-", color="0.4", linewidth=0.7)
