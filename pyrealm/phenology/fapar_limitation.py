@@ -16,6 +16,7 @@ def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
     deltas = datetimes[1:] - datetimes[:-1]
     unique_deltas = np.unique(deltas)
 
+    # check that we have uniformly sampled data
     if np.size(unique_deltas) > 1:
         raise ValueError("datetimes are not evenly spaced.")
 
@@ -23,17 +24,19 @@ def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
     unique_dates, date_counts = np.unique(dates, return_counts=True)
     obs_per_date = date_counts.max()
 
-    # all_years = datetimes.astype("datetime64[Y]")
-    # unique_years = np.unique(all_years)
+    # Data needs to start in northern or southern hemisphere midwinter
+    first_month = unique_dates[0].astype("datetime64[M]").astype(str)
+    if not (first_month.endswith("01") | first_month.endswith("07")):
+        raise ValueError("Data does not start in January or July.")
 
-    no_leapyears = leapdays(
+    no_leapdays = leapdays(
         int(str(datetimes[0].astype("datetime64[Y]"))),
         int(str(datetimes[-1].astype("datetime64[Y]"))),
     )
     year_remainder = len(unique_dates) % 365
 
     # check that we have the right number of leap days
-    if year_remainder > no_leapyears:
+    if year_remainder > no_leapdays:
         raise ValueError("Datetimes do not cover full years.")
 
     if obs_per_date > 1:
