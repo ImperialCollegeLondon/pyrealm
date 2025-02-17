@@ -10,7 +10,7 @@ from numpy.typing import NDArray
 
 from pyrealm.constants import IsotopesConst
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
-from pyrealm.pmodel.pmodel import PModel
+from pyrealm.pmodel.new_pmodel import PModelNew
 
 
 class CalcCarbonIsotopes:
@@ -18,7 +18,7 @@ class CalcCarbonIsotopes:
 
     This class estimates the fractionation of atmospheric CO2 by photosynthetic
     pathways to calculate the isotopic compositions and discrimination given the
-    predicted optimal chi from a :class:`~pyrealm.pmodel.pmodel.PModel` instance.
+    predicted optimal chi from a :class:`~pyrealm.pmodel.new_pmodel.PModelNew` instance.
 
     Discrimination against carbon 13 (:math:`\Delta\ce{^{13}C}`)  is calculated
     using C3 and C4 pathways specific methods, and then discrimination against
@@ -29,7 +29,7 @@ class CalcCarbonIsotopes:
     also reports the isotopic composition of leaves and wood.
 
     Args:
-        pmodel: A :class:`~pyrealm.pmodel.pmodel.PModel` instance providing the
+        pmodel: A :class:`~pyrealm.pmodel.new_pmodel.PModelNew` instance providing the
             photosynthetic pathway and estimated optimal chi.
         d13CO2: Atmospheric isotopic ratio for Carbon 13
             (:math:`\delta\ce{^{13}C}`, permil).
@@ -42,7 +42,7 @@ class CalcCarbonIsotopes:
 
     def __init__(
         self,
-        pmodel: PModel,
+        pmodel: PModelNew,
         D14CO2: NDArray[np.float64],
         d13CO2: NDArray[np.float64],
         isotopes_const: IsotopesConst = IsotopesConst(),
@@ -100,7 +100,7 @@ class CalcCarbonIsotopes:
         """Generates a string representation of a CalcCarbonIsotopes instance."""
         return f"CalcCarbonIsotopes(shape={self.shape}, method={self.c4})"
 
-    def calc_c4_discrimination(self, pmodel: PModel) -> None:
+    def calc_c4_discrimination(self, pmodel: PModelNew) -> None:
         r"""Calculate C4 isotopic discrimination.
 
         In this method, :math:`\delta\ce{^{13}C}` is calculated from optimal
@@ -137,7 +137,7 @@ class CalcCarbonIsotopes:
         )
         self.Delta13C = self.Delta13C_simple
 
-    def calc_c4_discrimination_vonC(self, pmodel: PModel) -> None:
+    def calc_c4_discrimination_vonC(self, pmodel: PModelNew) -> None:
         r"""Calculate C4 isotopic discrimination.
 
         In this method, :math:`\delta\ce{^{13}C}` is calculated from optimal
@@ -191,7 +191,7 @@ class CalcCarbonIsotopes:
 
         self.Delta13C = self.Delta13C_simple
 
-    def calc_c3_discrimination(self, pmodel: PModel) -> None:
+    def calc_c3_discrimination(self, pmodel: PModelNew) -> None:
         r"""Calculate C3 isotopic discrimination.
 
         This method calculates the isotopic discrimination for
@@ -200,7 +200,7 @@ class CalcCarbonIsotopes:
 
         Examples:
             >>> import numpy as np
-            >>> from pyrealm.pmodel import PModel, PModelEnvironment
+            >>> from pyrealm.pmodel import PModelEnvironment
             >>> from pyrealm.pmodel.new_pmodel import PModelNew
             >>> env = PModelEnvironment(
             ...              tc=np.array([20]), patm=np.array([101325]),

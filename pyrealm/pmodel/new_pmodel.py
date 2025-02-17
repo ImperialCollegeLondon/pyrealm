@@ -516,9 +516,9 @@ class PModelNew(PModelABC):
     ) -> SubdailyPModelNew:
         r"""Convert a standard PModel to a subdaily P Model.
 
-        This method converts a :class:`~pyrealm.pmodel.pmodel.PModel` instance to a
-        to a :class:`~pyrealm.pmodel.subdaily.SubdailyPModel` instance with the same
-        settings.
+        This method converts a :class:`~pyrealm.pmodel.new_pmodel.PModelNew` instance to
+        a to a :class:`~pyrealm.pmodel.new_pmodel.SubdailyPModelNew` instance with the
+        same settings.
 
         Args:
             acclim_model: An AcclimationModel instance for the subdaily model.
@@ -540,14 +540,14 @@ class PModelNew(PModelABC):
 class SubdailyPModelNew(PModelABC):
     r"""Fit a P Model incorporating acclimation in photosynthetic responses.
 
-    The :class:`~pyrealm.pmodel.pmodel.PModel` implementation of the P Model assumes
-    that plants instantaneously adopt optimal behaviour, which is reasonable where the
-    data represents average conditions over longer timescales and the plants can be
-    assumed to have acclimated to optimal behaviour. Over shorter timescales, this
-    assumption is unwarranted and photosynthetic slow responses need to be included.
-    This class implements the weighted-average approach of {cite:t}`mengoli:2022a`, but
-    is extended to include the slow response of :math:`\xi` in addition to
-    :math:`V_{cmax25}` and :math:`J_{max25}`.
+    The :class:`~pyrealm.pmodel.new_pmodel.PModelNew` implementation of the P Model
+    assumes that plants instantaneously adopt optimal behaviour, which is reasonable
+    where the data represents average conditions over longer timescales and the plants
+    can be assumed to have acclimated to optimal behaviour. Over shorter timescales,
+    this assumption is unwarranted and photosynthetic slow responses need to be
+    included. This class implements the weighted-average approach of
+    {cite:t}`mengoli:2022a`, but is extended to include the slow response of :math:`\xi`
+    in addition to :math:`V_{cmax25}` and :math:`J_{max25}`.
 
     The workflow of the model:
 
@@ -594,7 +594,7 @@ class SubdailyPModelNew(PModelABC):
       and vapour pressure deficit.
     * Predictions of GPP are then made as in the standard P Model.
 
-    As with the :class:`~pyrealm.pmodel.pmodel.PModel`, the values of the `kphio`
+    As with the :class:`~pyrealm.pmodel.new_pmodel.PModelNew`, the values of the `kphio`
     argument _can_ be provided as an array of values, potentially varying through time
     and space. The behaviour of the daily model that drives acclimation here is to take
     the daily mean `kphio` value for each time series within the acclimation window, as
@@ -687,12 +687,12 @@ class SubdailyPModelNew(PModelABC):
         self.pmodel_acclim: PModelNew
         r"""P Model predictions for the daily acclimation conditions.
 
-        A :class:`~pyrealm.pmodel.pmodel.PModel` instance providing the predictions of
-        the P Model for the daily acclimation conditions set for the SubdailyPModel. The
-        model is used to obtain predictions of the instantaneous optimal estimates of
-        :math:`V_{cmax}`, :math:`J_{max}` and :math:`\xi` during the acclimation window.
-        These are then used to estimate realised values of those parameters given slow
-        responses to acclimation.
+        A :class:`~pyrealm.pmodel.new_pmodel.PModelNew` instance providing the
+        predictions of the P Model for the daily acclimation conditions set for the
+        SubdailyPModel. The model is used to obtain predictions of the instantaneous
+        optimal estimates of :math:`V_{cmax}`, :math:`J_{max}` and :math:`\xi` during
+        the acclimation window. These are then used to estimate realised values of those
+        parameters given slow responses to acclimation.
         """
 
         # TODO - maybe encapsulate these in a dataclass?

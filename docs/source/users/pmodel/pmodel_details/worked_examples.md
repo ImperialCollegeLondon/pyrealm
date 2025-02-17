@@ -103,7 +103,7 @@ env.summarize()
 ### Fitting the P Model
 
 Next, the P Model can be fitted to the photosynthetic environment using the
-({class}`~pyrealm.pmodel.pmodel.PModel`) class:
+({class}`~pyrealm.pmodel.new_pmodel.PModelNew`) class:
 
 ```{code-cell} ipython3
 model = PModelNew(env)
@@ -116,8 +116,8 @@ model object shows a terse display of the settings used to run the model:
 model
 ```
 
-A {class}`~pyrealm.pmodel.pmodel.PModel` instance also has a
-{meth}`~pyrealm.pmodel.pmodel.PModel.summarize` method that summarizes settings and
+A {class}`~pyrealm.pmodel.new_pmodel.PModelNew` instance also has a
+{meth}`~pyrealm.pmodel.new_pmodel.PModelNew.summarize` method that summarizes settings and
 displays a summary of calculated predictions. Initially, this shows two measures of
 photosynthetic efficiency: the intrinsic water use efficiency (``iwue``) and the light
 use efficiency (``lue``).

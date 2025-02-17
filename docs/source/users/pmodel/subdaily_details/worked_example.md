@@ -52,7 +52,8 @@ fAPAR data is interpolated to the same spatial and temporal resolution from MODI
 
 This notebook demonstrates fitting subdaily P Models in the `pyrealm` package. Model
 fitting basically takes all of the same arguments as the standard
-{class}`~pyrealm.pmodel.pmodel.PModel` class. There are three additional things to set:
+{class}`~pyrealm.pmodel.new_pmodel.PModelNew` class. There are three additional things
+to set:
 
 * The timing of the observations and the daily window that should be used to estimate
   [acclimation of slow responses](acclimation.md#the-acclimation-model).

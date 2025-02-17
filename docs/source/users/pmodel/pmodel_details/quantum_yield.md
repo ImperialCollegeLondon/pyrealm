@@ -75,7 +75,7 @@ a parameter representing canopy-scale effective quantum yield.
 * The maximum quantum yield can vary with environmental conditions, such as temperature
 variation in $\phi_0$ {cite}`Bernacchi:2003dc`.
 
-For these reasons, the {class}`~pyrealm.pmodel.pmodel.PModel` provides alternative
+For these reasons, the {class}`~pyrealm.pmodel.new_pmodel.PModelNew` provides alternative
 approaches to estimating the value of $\phi{0}$, using the `method_kphio` argument. The
 currently implemented approaches are described below. Note that each approach has a
 specific **reference value for $\phi_{0}$**, which is used as the baseline for further

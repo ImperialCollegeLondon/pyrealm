@@ -45,9 +45,9 @@ The  {class}`~pyrealm.pmodel.optimal_chi` module provides the following methods 
 calculating these values, providing options to handle C3 and C4 photosynthesis and
 different implementations of water stress. In normal practice, a given method is
 selected using the `method_optchi` argument when fitting a
-{class}`~pyrealm.pmodel.pmodel.PModel`. In the background, those method names are used
-to select from a set of classes that implement the different calculations. Some of the
-examples below show these classes being used directly. The methods and classes built
+{class}`~pyrealm.pmodel.new_pmodel.PModelNew`. In the background, those method names are
+used to select from a set of classes that implement the different calculations. Some of
+the examples below show these classes being used directly. The methods and classes built
 into `pyrealm` are shown below, but it is possible for users to add alternative methods
 for use within a P Model.
 

@@ -28,14 +28,6 @@ language_info:
 .. automodule:: pyrealm.pmodel
 ```
 
-## The {mod}`~pyrealm.pmodel.pmodel` submodule
-
-```{eval-rst}
-.. automodule:: pyrealm.pmodel.pmodel
-    :autosummary:
-    :members:
-```
-
 ## The {mod}`~pyrealm.pmodel.pmodel_environment` submodule
 
 ```{eval-rst}
@@ -101,23 +93,6 @@ language_info:
 
 ```{eval-rst}
 .. automodule:: pyrealm.pmodel.competition
-    :autosummary:
-    :members:
-```
-
-## The {mod}`~pyrealm.pmodel.scaler` submodule
-
-```{eval-rst}
-.. automodule:: pyrealm.pmodel.scaler
-    :autosummary:
-    :members:
-    :private-members:
-```
-
-## The {mod}`~pyrealm.pmodel.subdaily` submodule
-
-```{eval-rst}
-.. automodule:: pyrealm.pmodel.subdaily
     :autosummary:
     :members:
 ```

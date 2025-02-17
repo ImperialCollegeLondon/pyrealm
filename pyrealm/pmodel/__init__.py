@@ -1,6 +1,6 @@
 """The :mod:`~pyrealm.pmodel` module includes the following submodules:
 
-* :mod:`~pyrealm.pmodel.pmodel`,
+* :mod:`~pyrealm.pmodel.new_pmodel`,
 * :mod:`~pyrealm.pmodel.pmodel_environment`,
 * :mod:`~pyrealm.pmodel.optimal_chi` and
 * :mod:`~pyrealm.pmodel.jmax_limitation` provide classes implementing the core

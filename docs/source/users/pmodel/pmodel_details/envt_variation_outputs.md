@@ -124,9 +124,11 @@ environmental variables:
 * Vapour pressure deficit: 500 Pa and 2000 Pa
 * $\ce{CO2}$ concentration: 280 ppm and 410 ppm.
 
-All of the predictions are made using the same estimate of absorbed irradiance,
-calculate as the product of the fraction of absorbed photosynthetically active radiation
-($f_{APAR}= 0.91$) and photosynetic photon flux density (PPFD =  600 µmol m-2 s-1).
+For the plots below, productivity has been estimated using a representative
+irradiance values at the top of a tropical rainforest canopy:
+
+* $f_{APAR}$: 0.91 (unitless)
+* PPFD: 600 µmol m-2 s-1
 
 ```{warning}
 
@@ -220,15 +222,11 @@ unit of water, in units of $\mu\mathrm{mol}\;\mathrm{mol}^{-1}$.
 plot_fun("iwue", r"IWUE ($\mu\mathrm{mol}\;\mathrm{mol}^{-1}$)")
 ```
 
-(estimating-productivity)=
-
-## Estimating productivity
+## Productivity outputs
 
 The remaining key outputs are measures of photosynthetic productivity, such as
-GPP, which are calculated by providing the P Model with estimates of the
-fraction of absorbed photosynthetically active radiation (`fapar`) and the
-photosynthetic photon flux density (`ppfd`). The product of these two variables
-is an estimate of absorbed irradiance ($I_{abs}$).
+GPP, which are calculated using the provided estimates of PPFD and FAPAR and the
+resulting absorbed irradiance ($I_{abs}$).
 
 The productivity variables and their units are:
 
@@ -241,16 +239,6 @@ The productivity variables and their units are:
 * Maximum rate of electron transport.
     (``jmax``, $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
 * Stomatal conductance (``gs``, $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
-
-For the plots below, productivity has been estimated using a representative
-irradiance values at the top of a tropical rainforest canopy:
-
-* $f_{APAR}$: 0.91 (unitless)
-* PPFD: 600 $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$
-
-If required, productivity estimates per unit absorbed irradiance can be simply
-calculated using ``fapar=1, ppfd=1``, which are the default values to
-{meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`.
 
 ### Gross primary productivity (``gpp``, GPP)
 
@@ -299,9 +287,8 @@ plot_fun("jmax", r"$J_{max}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-
 Stomatal conductance is estimated using the difference between ambient and optimal
 internal leaf $\ce{CO2}$ concentration. When vapour pressure deficit is zero, the
 difference between $c_a$ and $c_i$ will tend to zero, which leads to numerical
-instability in estimates of $g_s$. The
-{meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` method will set $g_s$ to be
-undefined (`np.nan`) when VPD is zero or when $c_a - c_i = 0$.
+instability in estimates of $g_s$, which will be set as undefined (`np.nan`) when VPD is
+zero or when $c_a - c_i = 0$.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
