@@ -121,6 +121,8 @@ worked through. The changes below are provisional.
   local performance testing routine, and added a CI test to ensure the performance tests
   are kept up to date with the package API.
 
+- Update to using `poetry 2.0`
+
 ## 1.0.0
 
 - Addition of a more pythonic re-implementation of the SPLASH v1.0 model with a more
