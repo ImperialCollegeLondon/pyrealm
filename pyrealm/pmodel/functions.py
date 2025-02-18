@@ -205,7 +205,7 @@ def calc_ftemp_inst_rd(
 
 
 def calc_gammastar(
-    tc: NDArray[np.float64],
+    tk: NDArray[np.float64],
     patm: NDArray[np.float64],
     pmodel_const: PModelConst = PModelConst(),
     core_const: CoreConst = CoreConst(),
@@ -220,13 +220,12 @@ def calc_gammastar(
         \Gamma^{*} = \Gamma^{*}_{0} \cdot \frac{p}{p_0} \cdot f(T, H_a)
 
     where :math:`f(T, H_a)` modifies the activation energy to the the local temperature
-    following the Arrhenius-type temperature response function (see
-
-    :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`. Estimates of
+    in Kelvin following the Arrhenius-type temperature response function (see
+    :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`). Estimates of
     :math:`\Gamma^{*}_{0}` and :math:`H_a` are taken from :cite:t:`Bernacchi:2001kg`.
 
     Args:
-        tc: Temperature relevant for photosynthesis (:math:`T`, °C)
+        tk: Temperature relevant for photosynthesis in Kelvin(:math:`T`, K)
         patm: Atmospheric pressure (:math:`p`, Pascals)
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
@@ -249,14 +248,14 @@ def calc_gammastar(
     """
 
     # check inputs, return shape not used
-    _ = check_input_shapes(tc, patm)
+    _ = check_input_shapes(tk, patm)
 
     return (
         pmodel_const.bernacchi_gs25_0
         * patm
         / core_const.k_Po
         * calculate_simple_arrhenius_factor(
-            tk=tc + core_const.k_CtoK,
+            tk=tk + core_const.k_CtoK,
             tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
             ha=pmodel_const.bernacchi_dha,
         )
@@ -308,7 +307,7 @@ def calc_ns_star(
 
 
 def calc_kmm(
-    tc: NDArray[np.float64],
+    tk: NDArray[np.float64],
     patm: NDArray[np.float64],
     pmodel_const: PModelConst = PModelConst(),
     core_const: CoreConst = CoreConst(),
@@ -316,8 +315,8 @@ def calc_kmm(
     r"""Calculate the Michaelis Menten coefficient of Rubisco-limited assimilation.
 
     Calculates the Michaelis Menten coefficient of Rubisco-limited assimilation
-    (:math:`K`, :cite:alp:`Farquhar:1980ft`) as a function of temperature (:math:`T`)
-    and atmospheric pressure (:math:`p`) as:
+    (:math:`K`, :cite:alp:`Farquhar:1980ft`) as a function of temperature (:math:`T,
+    Kelvin) and atmospheric pressure (:math:`p`, Pa) as:
 
       .. math:: K = K_c ( 1 + p_{\ce{O2}} / K_o),
 
@@ -341,7 +340,7 @@ def calc_kmm(
               for the same conversion for a value in the same table.
 
     Args:
-        tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
+        tk: Temperature relevant for photosynthesis in Kelvin (:math:`T`, K)
         patm: Atmospheric pressure (:math:`p`, Pa)
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
@@ -366,10 +365,7 @@ def calc_kmm(
     """
 
     # Check inputs, return shape not used
-    _ = check_input_shapes(tc, patm)
-
-    # conversion to Kelvin
-    tk = tc + core_const.k_CtoK
+    _ = check_input_shapes(tk, patm)
 
     kc = pmodel_const.bernacchi_kc25 * calculate_simple_arrhenius_factor(
         tk=tk,
@@ -390,7 +386,7 @@ def calc_kmm(
 
 
 def calc_kp_c4(
-    tc: NDArray[np.float64],
+    tk: NDArray[np.float64],
     patm: NDArray[np.float64],
     pmodel_const: PModelConst = PModelConst(),
     core_const: CoreConst = CoreConst(),
@@ -403,7 +399,7 @@ def calc_kp_c4(
     :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`) as:
 
     Args:
-        tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
+        tk: Temperature, relevant for photosynthesis (:math:`T`, K)
         patm: Atmospheric pressure (:math:`p`, Pa)
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
@@ -426,12 +422,12 @@ def calc_kp_c4(
     """
 
     # Check inputs, return shape not used
-    _ = check_input_shapes(tc, patm)
+    _ = check_input_shapes(tk, patm)
 
     # Calculate rate relative to standard rate using an Arrhenius factor, converting
     # temperatures to Kelvin
     return pmodel_const.boyd_kp25_c4 * calculate_simple_arrhenius_factor(
-        tk=tc + core_const.k_CtoK,
+        tk=tk,
         tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
         ha=pmodel_const.boyd_dhac_c4,
     )

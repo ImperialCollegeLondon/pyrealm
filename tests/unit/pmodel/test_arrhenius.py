@@ -218,11 +218,9 @@ def test_pmodel_equivalence():
     implementation give equal Vcmax and Jmax values.
     """
 
-    from pyrealm.pmodel import (
-        PModelEnvironment,
-        SubdailyScaler,
-    )
-    from pyrealm.pmodel.new_pmodel import PModelNew, SubdailyPModelNew
+    from pyrealm.pmodel import PModelEnvironment
+    from pyrealm.pmodel.acclimation import AcclimationModel
+    from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 
     # One year time sequence at half hour resolution
     datetimes = np.arange(
@@ -244,23 +242,25 @@ def test_pmodel_equivalence():
     )
 
     # Setup the Subdaily Model using a 1 hour acclimation window around noon
-    fsscaler = SubdailyScaler(datetimes=datetimes)
-    fsscaler.set_window(
+    acclim_model = AcclimationModel(
+        datetimes=datetimes,
+        alpha=1 / 15,
+        allow_holdover=True,
+    )
+    acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),  # 12:00 PM
         half_width=np.timedelta64(30, "m"),  # ±0.5 hours
     )
 
     # Fit the two models
-    fix_subdaily = SubdailyPModelNew(
+    fix_subdaily = SubdailyPModel(
         env=fixed_env,
+        acclim_model=acclim_model,
         method_optchi="prentice14",
-        fs_scaler=fsscaler,
-        alpha=1 / 15,
-        allow_holdover=True,
         reference_kphio=1 / 8,
     )
 
-    fix_standard = PModelNew(
+    fix_standard = PModel(
         env=fixed_env,
         method_optchi="prentice14",
         reference_kphio=1 / 8,

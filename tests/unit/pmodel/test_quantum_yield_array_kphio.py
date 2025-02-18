@@ -39,7 +39,7 @@ def test_scalar_kphio(basic_inputs_and_expected):
     """Test that the basic test inputs give the correct answer."""
 
     from pyrealm.pmodel import PModelEnvironment
-    from pyrealm.pmodel.new_pmodel import PModelNew
+    from pyrealm.pmodel.pmodel import PModel
 
     inputs, expected = basic_inputs_and_expected
 
@@ -51,7 +51,7 @@ def test_scalar_kphio(basic_inputs_and_expected):
         fapar=inputs.fapar,
         ppfd=inputs.ppfd,
     )
-    mod = PModelNew(env, method_kphio="fixed", reference_kphio=0.05)
+    mod = PModel(env, method_kphio="fixed", reference_kphio=0.05)
 
     assert np.allclose(mod.gpp, expected.gpp)
     assert np.allclose(mod.optchi.chi, expected.chi)
@@ -68,7 +68,7 @@ def variable_kphio(basic_inputs_and_expected):
     """
 
     from pyrealm.pmodel import PModelEnvironment
-    from pyrealm.pmodel.new_pmodel import PModelNew
+    from pyrealm.pmodel.pmodel import PModel
 
     inputs, _ = basic_inputs_and_expected
 
@@ -85,7 +85,7 @@ def variable_kphio(basic_inputs_and_expected):
             fapar=inputs.fapar,
             ppfd=inputs.ppfd,
         )
-        mod = PModelNew(env, method_kphio="fixed", reference_kphio=kph)
+        mod = PModel(env, method_kphio="fixed", reference_kphio=kph)
         gpp[idx] = mod.gpp
 
     return kphio_values, gpp
@@ -144,7 +144,7 @@ def test_kphio_arrays_failure_modes(
     """Check behaviour with array inputs of kphio."""
 
     from pyrealm.pmodel import PModelEnvironment
-    from pyrealm.pmodel.new_pmodel import PModelNew
+    from pyrealm.pmodel.pmodel import PModel
 
     inputs, _ = basic_inputs_and_expected
 
@@ -161,7 +161,7 @@ def test_kphio_arrays_failure_modes(
     )
 
     with raises:
-        _ = PModelNew(env, reference_kphio=kphio_vals, method_kphio=method)
+        _ = PModel(env, reference_kphio=kphio_vals, method_kphio=method)
 
 
 @pytest.mark.parametrize(argnames="shape", argvalues=[(125,), (25, 5), (5, 5, 5)])
@@ -169,7 +169,7 @@ def test_kphio_arrays(basic_inputs_and_expected, variable_kphio, shape):
     """Check behaviour with array inputs of kphio."""
 
     from pyrealm.pmodel import PModelEnvironment
-    from pyrealm.pmodel.new_pmodel import PModelNew
+    from pyrealm.pmodel.pmodel import PModel
 
     inputs, _ = basic_inputs_and_expected
     kphio_vals, expected_gpp = variable_kphio
@@ -182,9 +182,7 @@ def test_kphio_arrays(basic_inputs_and_expected, variable_kphio, shape):
         fapar=np.broadcast_to(inputs.fapar, shape),
         ppfd=np.broadcast_to(inputs.ppfd, shape),
     )
-    mod = PModelNew(
-        env, reference_kphio=kphio_vals.reshape(shape), method_kphio="fixed"
-    )
+    mod = PModel(env, reference_kphio=kphio_vals.reshape(shape), method_kphio="fixed")
 
     assert np.allclose(mod.gpp, expected_gpp.reshape(shape))
 
@@ -198,14 +196,14 @@ def variable_kphio_subdaily(be_vie_data_components):
     of a subdaily model.
     """
 
-    from pyrealm.pmodel import SubdailyScaler
-    from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
+    from pyrealm.pmodel.acclimation import AcclimationModel
+    from pyrealm.pmodel.pmodel import SubdailyPModel
 
     env, datetime, expected_gpp = be_vie_data_components.get()
 
-    # Get the fast slow scaler and set window
-    fsscaler = SubdailyScaler(datetime)
-    fsscaler.set_window(
+    # Get the acclimation model and set window
+    acclim_model = AcclimationModel(datetime, allow_holdover=True)
+    acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
@@ -216,12 +214,11 @@ def variable_kphio_subdaily(be_vie_data_components):
 
     for idx, kphio in enumerate(kphio_values):
         # Run as a subdaily model
-        subdaily_pmodel = SubdailyPModelNew(
+        subdaily_pmodel = SubdailyPModel(
             env=env,
             method_kphio="fixed",
             reference_kphio=kphio,
-            fs_scaler=fsscaler,
-            allow_holdover=True,
+            acclim_model=acclim_model,
         )
         gpp[:, idx] = subdaily_pmodel.gpp
 
@@ -237,15 +234,16 @@ def test_kphio_arrays_subdaily(
 ):
     """Check behaviour with array inputs of kphio."""
 
-    from pyrealm.pmodel import PModelEnvironment, SubdailyScaler
-    from pyrealm.pmodel.new_pmodel import SubdailyPModelNew
+    from pyrealm.pmodel import PModelEnvironment
+    from pyrealm.pmodel.acclimation import AcclimationModel
+    from pyrealm.pmodel.pmodel import SubdailyPModel
 
     env, datetime, expected_gpp = be_vie_data_components.get()
     kphio_vals, expected_gpp = variable_kphio_subdaily
 
-    # Get the fast slow scaler and set window
-    fsscaler = SubdailyScaler(datetime)
-    fsscaler.set_window(
+    # Get the acclimation model and set window
+    acclim_model = AcclimationModel(datetime, allow_holdover=True)
+    acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
@@ -261,12 +259,11 @@ def test_kphio_arrays_subdaily(
         fapar=np.broadcast_to(np.expand_dims(env.fapar, axis=new_dims), shape),
     )
 
-    subdaily_pmodel = SubdailyPModelNew(
+    subdaily_pmodel = SubdailyPModel(
         env=env,
         method_kphio="fixed",
         reference_kphio=np.broadcast_to(kphio_vals.reshape(shape[1:]), shape),
-        fs_scaler=fsscaler,
-        allow_holdover=True,
+        acclim_model=acclim_model,
     )
 
     assert np.allclose(subdaily_pmodel.gpp, expected_gpp.reshape(shape), equal_nan=True)

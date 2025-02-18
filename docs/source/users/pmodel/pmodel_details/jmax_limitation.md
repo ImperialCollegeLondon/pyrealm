@@ -27,9 +27,10 @@ language_info:
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-from matplotlib import pyplot
+import matplotlib.pyplot as plt
 import numpy as np
-from pyrealm.pmodel import PModel, PModelEnvironment
+from pyrealm.pmodel.pmodel import PModel
+from pyrealm.pmodel import PModelEnvironment
 
 %matplotlib inline
 
@@ -41,12 +42,12 @@ tc_1d = np.linspace(-25, 50, n_pts)
 ```
 
 Environmental conditions can also lead to limitation of both the electron transfer rate
-($J_{max})and the carboxylation capacity ($V_{cmax}$) of leaves. The
-{class}`~pyrealm.pmodel.pmodel` module implements three alternative approaches to the
-calculation of $J_{max}$ and $V_{cmax}$ and these are specified when fitting a P Model
-using the argument `method_jmaxlim`. These options implement alternative calculations of
-two factor ($f_j$ and $f_v$) which are applied to the calculation of $J_{max}$ and
-$V_{cmax}$. The options for this setting are:
+($J_{max}$)and the carboxylation capacity ($V_{cmax}$) of leaves. The
+{class}`~pyrealm.pmodel.jmax_limitation` module implements three alternative approaches
+to the calculation of $J_{max}$ and $V_{cmax}$ and these are specified when fitting a P
+Model using the argument `method_jmaxlim`. These options implement alternative
+calculations of two factor ($f_j$ and $f_v$) which are applied to the calculation of
+$J_{max}$ and $V_{cmax}$. The options for this setting are:
 
 * `none`: This approach implements $f_j  = f_v = 1$ and hence no modification.
 * `wang17`: This is the default setting for `method_jmaxlim` and applies the
@@ -79,13 +80,13 @@ model_jmax_smith19 = PModel(
 )
 
 # Create a line plot of the resulting values of m_j
-pyplot.plot(tc_1d, model_jmax_simple.lue, label="simple")
-pyplot.plot(tc_1d, model_jmax_wang17.lue, label="wang17")
-pyplot.plot(tc_1d, model_jmax_smith19.lue, label="smith19")
+plt.plot(tc_1d, model_jmax_simple.lue, label="simple")
+plt.plot(tc_1d, model_jmax_wang17.lue, label="wang17")
+plt.plot(tc_1d, model_jmax_smith19.lue, label="smith19")
 
-pyplot.title("Effects of J_max limitation")
-pyplot.xlabel("Temperature °C")
-pyplot.ylabel("Light Use Efficiency (g C mol-1)")
-pyplot.legend()
-pyplot.show()
+plt.title("Effects of J_max limitation")
+plt.xlabel("Temperature °C")
+plt.ylabel("Light Use Efficiency (g C mol-1)")
+plt.legend()
+plt.show()
 ```

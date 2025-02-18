@@ -41,7 +41,8 @@ worked through. The changes below are provisional.
   **Breaking change**: Need to specify `fapar` and `ppfd` in `PModelEnvironment`.
 
 - The `bounds_checker` function has been retired and replaced with the `BoundsChecker`
-  class, which provides more flexible and user-configurable bounds checking.
+  class, which provides more flexible and user-configurable bounds checking. This
+  functionality is used within other classes and does not introduce breaking changes.
 
 - A new system for providing alternative calculations of quantum yield ($\phi_0$) in the
   P Model, using the new `pyrealm.pmodel.quantum_yield` module. This module now provides
@@ -77,6 +78,25 @@ worked through. The changes below are provisional.
   change between v1 and v2, with the shift from `kattge_knorr` to `simple` as the
   default factors.
 
+- Many of the arguments to `SubdailyPModel` have been brought together into a new
+  `AcclimationModel` class. This replaces `SubdailyScaler` and bundles all of the
+  settings for acclimation into a single class. The following is therefore a **breaking
+  change**:
+  
+  - `SubdailyScaler` has been replaced with `AcclimationModel`, and the following
+    arguments to `SubdailyPModel` are now arguments to `AcclimationModel`: `alpha`,
+    `allow_holdover`, `allow_partial_data`, `update_point`, `fill_kind` (as
+    `fill_method`).
+
+- The legacy implementation `SubdailyPModel_JAMES` has been deprecated. This
+  implementation duplicated the original Mengoli et al JAMES code. This was largely a
+  proof of concept implementation, misses some key parts of the acclimation model and
+  the internal calculations are sufficiently different that there is a high maintenance
+  cost to updating it to the new API in version 2.0.0.
+
+  - The `fill_from` argument to `fill_daily_to_subdaily` was only required for
+    `SubdailyPModel_JAMES` and so this has also been deprecated.
+
 - The functions `calc_ftemp_kphio` and `calc_ftemp_inst_vcmax` provided narrow use cases
   with code duplication. They have been replaced by two broader Arrhenius functions:
   `calculate_simple_arrhenius_factor` and `calculate_kattge_knorr_arrhenius_factor` (see
@@ -100,6 +120,8 @@ worked through. The changes below are provisional.
 - Restructuring of the developer tools for testing code performance to provide a simpler
   local performance testing routine, and added a CI test to ensure the performance tests
   are kept up to date with the package API.
+
+- Update to using `poetry 2.0`
 
 ## 1.0.0
 

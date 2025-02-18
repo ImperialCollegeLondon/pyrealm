@@ -34,13 +34,9 @@ from matplotlib.colors import Normalize
 import matplotlib.cm as cm
 import matplotlib.dates as mdates
 
-from pyrealm.pmodel import (
-    PModel,
-    PModelEnvironment,
-    SubdailyScaler,
-    SubdailyPModel,
-    convert_pmodel_to_subdaily,
-)
+from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
+from pyrealm.pmodel.pmodel_environment import PModelEnvironment
+from pyrealm.pmodel.acclimation import AcclimationModel
 
 from pyrealm.core.hygro import convert_sh_to_vpd
 ```
@@ -56,10 +52,11 @@ fAPAR data is interpolated to the same spatial and temporal resolution from MODI
 
 This notebook demonstrates fitting subdaily P Models in the `pyrealm` package. Model
 fitting basically takes all of the same arguments as the standard
-{class}`~pyrealm.pmodel.pmodel.PModel` class. There are three additional things to set:
+{class}`~pyrealm.pmodel.pmodel.PModel` class. There are three additional things
+to set:
 
 * The timing of the observations and the daily window that should be used to estimate
-  [acclimation of slow responses](acclimation.md#the-acclimation-window).
+  [acclimation of slow responses](acclimation.md#the-acclimation-model).
 * How rapidly plants [acclimate to daily optimal
   conditions](./acclimation.md#estimating-realised-responses).
 * Approaches to handling any [missing data](./subdaily_model_and_missing_data.md): since
@@ -125,7 +122,6 @@ instantaneously adopt optimal behaviour.
 pmodC3 = PModel(
     env=pm_env, method_kphio="fixed", reference_kphio=1 / 8, method_optchi="prentice14"
 )
-pmodC3.estimate_productivity(fapar=fapar, ppfd=ppfd)
 pmodC3.summarize()
 ```
 
@@ -133,7 +129,7 @@ pmodC3.summarize()
 pmodC4 = PModel(
     env=pm_env, method_kphio="fixed", reference_kphio=1 / 8, method_optchi="c4_no_gamma"
 )
-pmodC4.estimate_productivity(fapar=fapar, ppfd=ppfd)
+
 pmodC4.summarize()
 ```
 
@@ -147,8 +143,8 @@ calculated again to update those realised estimates.
 
 ```{code-cell} ipython3
 # Set the acclimation window to an hour either side of noon
-fsscaler = SubdailyScaler(datetimes)
-fsscaler.set_window(
+acclim_model = AcclimationModel(datetimes, alpha=1 / 15, allow_holdover=True)
+acclim_model.set_window(
     window_center=np.timedelta64(12, "h"),
     half_width=np.timedelta64(1, "h"),
 )
@@ -156,25 +152,17 @@ fsscaler.set_window(
 # Fit C3 and C4 with the new implementation
 subdailyC3 = SubdailyPModel(
     env=pm_env,
+    method_optchi="prentice14",
     method_kphio="fixed",
     reference_kphio=1 / 8,
-    method_optchi="prentice14",
-    fapar=fapar,
-    ppfd=ppfd,
-    fs_scaler=fsscaler,
-    alpha=1 / 15,
-    allow_holdover=True,
+    acclim_model=acclim_model,
 )
 subdailyC4 = SubdailyPModel(
     env=pm_env,
+    method_optchi="c4_no_gamma",
     method_kphio="fixed",
     reference_kphio=1 / 8,
-    method_optchi="c4_no_gamma",
-    fapar=fapar,
-    ppfd=ppfd,
-    fs_scaler=fsscaler,
-    alpha=1 / 15,
-    allow_holdover=True,
+    acclim_model=acclim_model,
 )
 ```
 
@@ -239,24 +227,14 @@ plt.tight_layout()
 ## Converting models
 
 The subdaily models can also be obtained directly from the standard models, using the
-`convert_pmodel_to_subdaily` method:
+{meth}`PModel.to_subdaily<pyrealm.pmodel.pmodel.PModel.to_subdaily>` method:
 
 ```{code-cell} ipython3
 # Convert standard C3 model
-converted_C3 = convert_pmodel_to_subdaily(
-    pmodel=pmodC3,
-    fs_scaler=fsscaler,
-    alpha=1 / 15,
-    allow_holdover=True,
-)
+converted_C3 = pmodC3.to_subdaily(acclim_model=acclim_model)
 
 # Convert standard C4 model
-converted_C4 = convert_pmodel_to_subdaily(
-    pmodel=pmodC4,
-    fs_scaler=fsscaler,
-    alpha=1 / 15,
-    allow_holdover=True,
-)
+converted_C4 = pmodC4.to_subdaily(acclim_model=acclim_model)
 ```
 
 This produces the same outputs as the `SubdailyPModel` class, but is convenient and more
@@ -266,4 +244,8 @@ compact when the two models are going to be compared.
 # Models have identical GPP - maximum absolute difference is zero.
 print(np.nanmax(abs(subdailyC3.gpp.flatten() - converted_C3.gpp.flatten())))
 print(np.nanmax(abs(subdailyC4.gpp.flatten() - converted_C4.gpp.flatten())))
+```
+
+```{code-cell} ipython3
+
 ```

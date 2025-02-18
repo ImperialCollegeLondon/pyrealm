@@ -135,13 +135,13 @@ started.
 
 We use [`poetry`](https://python-poetry.org/docs/#installation) for dependency
 management and for managing development environments and you will need to install it.
-The `pyrealm` package currently uses `poetry` version 1.8.2 and you should specify this
+The `pyrealm` package currently uses `poetry` version 2.0.1 and you should specify this
 when installing to avoid conflicts with the package management process.
 
 For the typical installation process, this would be as simple as:
 
 ```sh
-curl -SSL https://install.python-poetry.org | python3 - --version 1.8.2
+curl -SSL https://install.python-poetry.org | python3 - --version 2.0.1
 ```
 
 ### Installing `pyrealm`
@@ -173,9 +173,13 @@ two options to do this:
 
 1. You can add `poetry run` before a command to make sure that single command is run
    using the `poetry` environment. This approach is used in the example commands below.
-1. You can use `poetry shell` to start a new shell that uses this environment: you can
-   then run commands without needing `poetry run` and they should use the correct
-   enviroment. This is usually more convenient.
+1. You can also activate the Python environment so that commands can be run without
+   having to use `poetry run`. This is usually more convenient.
+
+   The command `poetry env activate` can be used to print out the command needed to
+   activate the environment. You can simply copy and paste this command, but you can use
+   commands to activate it automatically. For the details for your system, see
+   [](https://python-poetry.org/docs/managing-environments/#activating-the-environment).
 
 You should now be able to run the following command to see that `pyrealm` is installed
 and is showing the current version.

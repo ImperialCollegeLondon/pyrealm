@@ -83,10 +83,10 @@ The implementations differ in a number of ways:
    core of inputs and methods and functions reproduce the rest of the
    functionality in the P Model.
 
-   One key difference here is that the ``rpmodel`` function extended the
-   implementation of the empirical soil moisture factor $\beta(\theta)$ from a simple
-   factor on light use efficiency (LUE) to estimate the underlying values of $J_{max}$
-   and $V_{cmax}$. In the {mod}`~pyrealm.pmodel` module, the $\beta(\theta)$ is _only_
-   applied as a post-hoc penalty factor to {attr}`~pyrealm.pmodel.pmodel.PModel.gpp` and
-   so does not implement any correction of $J_{max}$ and $V_{cmax}$ for soil moisture
+   One key difference here is that the ``rpmodel`` function extended the implementation
+   of the empirical soil moisture factor $\beta(\theta)$ from a simple factor on light
+   use efficiency (LUE) to estimate the underlying values of $J_{max}$ and $V_{cmax}$.
+   In the {mod}`~pyrealm.pmodel` module, the $\beta(\theta)$ is _only_ applied as a
+   post-hoc penalty factor to {attr}`~pyrealm.pmodel.pmodel.PModel.gpp` and so
+   does not implement any correction of $J_{max}$ and $V_{cmax}$ for soil moisture
    effects.

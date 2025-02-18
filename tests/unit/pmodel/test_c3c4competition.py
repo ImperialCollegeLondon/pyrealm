@@ -72,7 +72,7 @@ def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
         CalcCarbonIsotopes,
         PModelEnvironment,
     )
-    from pyrealm.pmodel.new_pmodel import PModelNew
+    from pyrealm.pmodel.pmodel import PModel
 
     env = PModelEnvironment(
         tc=np.array([20, 35]),
@@ -84,8 +84,8 @@ def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
         ppfd=np.array([800]),
     )
 
-    pmodel_c3 = PModelNew(env, **pmodel_c3_args)
-    pmodel_c4 = PModelNew(env, **pmodel_c4_args)
+    pmodel_c3 = PModel(env, **pmodel_c3_args)
+    pmodel_c4 = PModel(env, **pmodel_c4_args)
 
     comp = C3C4Competition(
         pmodel_c3.gpp,
