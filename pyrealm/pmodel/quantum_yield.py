@@ -17,6 +17,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm import ExperimentalFeatureWarning
+from pyrealm.core.experimental import experimental
 from pyrealm.core.utilities import (
     check_input_shapes,
     evaluate_horner_polynomial,
@@ -280,6 +281,7 @@ class QuantumYieldTemperature(
         self.kphio = ftemp * self.reference_kphio
 
 
+@experimental()
 class QuantumYieldSandoval(
     QuantumYieldABC,
     method="sandoval",
