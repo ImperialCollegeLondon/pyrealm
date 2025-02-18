@@ -242,9 +242,9 @@ def calc_gammastar(
         A float value or values for :math:`\Gamma^{*}` (in Pa)
 
     Examples:
-        >>> # CO2 compensation point at 20 degrees Celsius and standard
-        >>> # atmosphere (in Pa) >>> round(calc_gammastar(20, 101325), 5)
-        3.33925
+        >>> # CO2 compensation point at 20 °C  (293.15 K) and standard presssure
+        >>> calc_gammastar(np.array([293.15]), np.array([101325])).round(5)
+        array([3.33925])
     """
 
     # check inputs, return shape not used
@@ -255,7 +255,7 @@ def calc_gammastar(
         * patm
         / core_const.k_Po
         * calculate_simple_arrhenius_factor(
-            tk=tk + core_const.k_CtoK,
+            tk=tk,
             tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
             ha=pmodel_const.bernacchi_dha,
         )
@@ -358,9 +358,8 @@ def calc_kmm(
         A numeric value for :math:`K` (in Pa)
 
     Examples:
-        >>> # Michaelis-Menten coefficient at 20 degrees Celsius and standard
-        >>> # atmosphere (in Pa):
-        >>> np.round(calc_kmm(np.array([20]), 101325), 5)
+        >>> # Michaelis-Menten coefficient at 20°C (293.15K) and standard pressure (Pa)
+        >>> calc_kmm(np.array([293.15]), np.array([101325])).round(5)
         array([46.09928])
     """
 
@@ -414,10 +413,9 @@ def calc_kp_c4(
         A numeric value for :math:`K` (in Pa)
 
     Examples:
-        >>> # Michaelis-Menten coefficient at 20 degrees Celsius and standard
-        >>> # atmosphere (in Pa):
+        >>> # Michaelis-Menten coefficient at 20°C (293.15K) and standard pressure (Pa)
         >>> import numpy as np
-        >>> calc_kp_c4(np.array([20]), np.array([101325])).round(5)
+        >>> calc_kp_c4(np.array([293.15]), np.array([101325])).round(5)
         array([12.46385])
     """
 

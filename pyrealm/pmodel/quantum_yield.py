@@ -337,7 +337,7 @@ class QuantumYieldSandoval(
         # Calculate the optimal temperature to be used as the reference temperature in
         # the modified Arrhenius calculation
         Topt = Hd / (delta_entropy - self.env.core_const.k_R * np.log(Ha / (Hd - Ha)))
-        tk_leaf = self.env.tc + self.env.core_const.k_CtoK
+        tk_leaf = self.env.tk
         # Calculate peak kphio given the aridity index
         kphio_peak = self.peak_quantum_yield(aridity_index=aridity_index)
 
