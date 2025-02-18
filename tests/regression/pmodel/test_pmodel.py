@@ -211,7 +211,7 @@ def test_calc_gammastar(values, tc, patm, context_manager, expvals):
     from pyrealm.pmodel import calc_gammastar
 
     with context_manager:
-        ret = calc_gammastar(tc=values[tc], patm=values[patm])
+        ret = calc_gammastar(tk=values[tc] + 273.15, patm=values[patm])
         if expvals is not None:
             assert np.allclose(ret, values[expvals])
 
@@ -236,7 +236,7 @@ def test_calc_kmm(values, tc, patm, context_manager, expvals):
     from pyrealm.pmodel import calc_kmm
 
     with context_manager:
-        ret = calc_kmm(tc=values[tc], patm=values[patm])
+        ret = calc_kmm(tk=values[tc] + 273.15, patm=values[patm])
         if expvals:
             assert np.allclose(ret, values[expvals])
 

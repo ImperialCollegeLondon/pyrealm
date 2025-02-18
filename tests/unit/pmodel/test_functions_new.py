@@ -14,11 +14,11 @@ def test_calc_ftemp_inst_rd(tc=np.array([30.0])):
     assert np.allclose(calc_ftemp_inst_rd(tc), 1.4455646406287255)
 
 
-def test_calc_gammastar(tc=np.array([30.0]), patm=np.array([123456])):
+def test_calc_gammastar(tk=np.array([273.15 + 30.0]), patm=np.array([123456])):
     """Test calc_ftemp_inst_rd."""
     from pyrealm.pmodel.functions import calc_gammastar
 
-    assert np.allclose(calc_gammastar(tc, patm), 6.7888247955597)
+    assert np.allclose(calc_gammastar(tk, patm), 6.7888247955597)
 
 
 def test_calc_ns_star(tc=np.array([30.0]), patm=np.array([123456])):
@@ -28,11 +28,11 @@ def test_calc_ns_star(tc=np.array([30.0]), patm=np.array([123456])):
     assert np.allclose(calc_ns_star(tc, patm), 0.8957314409463492)
 
 
-def test_calc_kmm(tc=np.array([30.0]), patm=np.array([123456])):
+def test_calc_kmm(tk=np.array([273.15 + 30.0]), patm=np.array([123456])):
     """Test calc_kmm."""
     from pyrealm.pmodel.functions import calc_kmm
 
-    assert np.allclose(calc_kmm(tc, patm), 117.8937532160903)
+    assert np.allclose(calc_kmm(tk, patm), 117.8937532160903)
 
 
 def test_calc_soilmstress_stocker(soilm=np.array([0.3])):

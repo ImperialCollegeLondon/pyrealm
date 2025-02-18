@@ -144,7 +144,7 @@ def test_out_of_bound_output(function_test_data):
     kmm_upper_bound = 1000
 
     for tc, patm, co2 in zip(tc_ar_values, patm_ar_values, co2_ar_values):
-        result = calc_kmm(tc=tc, patm=patm, pmodel_const=pmodel_const)
+        result = calc_kmm(tk=tc + 273.15, patm=patm, pmodel_const=pmodel_const)
 
         assert np.all(result >= kmm_lower_bound), (
             f"Result for (tc={tc}, patm={patm}, co2={co2}) is out of lower bound"
@@ -196,7 +196,7 @@ def test_out_of_bound_output_gammastar(function_test_data):
 
     for tc, patm in zip(tc_ar_values, patm_ar_values):
         result = calc_gammastar(
-            tc=tc, patm=patm, pmodel_const=pmodel_const, core_const=core_const
+            tk=tc + 273.15, patm=patm, pmodel_const=pmodel_const, core_const=core_const
         )
 
         assert np.all(result >= gammastar_lower_bound), (
