@@ -205,13 +205,10 @@ class PModelConst(ConstantsClass):
     from  :cite:t:`Wang:2017go` (:math:`c`, 0.41, )."""
 
     # Smith19
-    smith19_theta: float = 0.85
-    r"""Scaling factor theta for Jmax limitation (:math:`\theta`, 0.85)"""
-    smith19_c_cost: float = 0.05336251
-    r"""Scaling factor c for Jmax limitation (:math:`c`, 0.05336251)"""
-
-    # * **Calculation of omega**. Values for estimating the scaling factor in J max
-    #   limitation method of :cite:t:`Smith:2019dv`.
+    smith19_coef: tuple[float, float] = (0.85, 0.05336251)
+    r"""Scaling factors ``theta`` (:math:`\theta`, 0.85) and ``c`` (:math:`c`,
+     0.05336251) used in the calculation of J_max limitation using the method of 
+    :cite:t:`Smith:2019dv`."""
 
     # Atkin
     atkin_rd_to_vcmax: float = 0.015
