@@ -432,7 +432,7 @@ def calc_kp_c4(
 def calc_soilmstress_stocker(
     soilm: NDArray[np.float64],
     meanalpha: NDArray[np.float64] = np.array(1.0),
-    coef: dict[str, float] = PModelConst.soilmstress_stocker,
+    coef: dict[str, float] = PModelConst().soilmstress_stocker,
 ) -> NDArray[np.float64]:
     r"""Calculate Stocker's empirical soil moisture stress factor.
 
@@ -512,7 +512,7 @@ def calc_soilmstress_stocker(
 def calc_soilmstress_mengoli(
     soilm: NDArray[np.float64] = np.array(1.0),
     aridity_index: NDArray[np.float64] = np.array(1.0),
-    coef: dict[str, float] = PModelConst.soilmstress_mengoli,
+    coef: dict[str, float] = PModelConst().soilmstress_mengoli,
 ) -> NDArray[np.float64]:
     r"""Calculate the Mengoli et al. empirical soil moisture stress factor.
 
