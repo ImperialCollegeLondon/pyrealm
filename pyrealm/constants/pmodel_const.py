@@ -204,7 +204,7 @@ class PModelConst(ConstantsClass):
     # Smith19
     smith19_coef: tuple[float, float] = (0.85, 0.05336251)
     r"""Scaling factors ``theta`` (:math:`\theta`, 0.85) and ``c`` (:math:`c`,
-     0.05336251) used in the calculation of J_max limitation using the method of 
+    0.05336251) used in the calculation of J_max limitation using the method of 
     :cite:t:`Smith:2019dv`."""
 
     # Atkin

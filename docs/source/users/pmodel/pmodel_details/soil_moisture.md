@@ -106,13 +106,14 @@ from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 from pyrealm.constants import PModelConst
 
 # change default theta0 parameter
-const = PModelConst(soilmstress_theta0=0.1)
+coef = PModelConst().soilmstress_stocker
+coef["theta0"] = 0.1
 
 # Calculate q
 mean_alpha_seq = np.linspace(0, 1, 101)
 
-q = (1 - (const.soilmstress_a + const.soilmstress_b * mean_alpha_seq)) / (
-    const.soilmstress_thetastar - const.soilmstress_theta0
+q = (1 - (coef["a"] + coef["b"] * mean_alpha_seq)) / (
+    coef["thetastar"] - coef["theta0"]
 ) ** 2
 
 # Create a 1x2 plot
@@ -129,16 +130,16 @@ soilm = np.linspace(0, 0.7, 101)
 for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
 
     soilmstress = pmodel.calc_soilmstress_stocker(
-        soilm=soilm, meanalpha=mean_alpha, pmodel_const=const
+        soilm=soilm, meanalpha=mean_alpha, coef=coef
     )
     ax2.plot(soilm, soilmstress, label=r"$\bar{{\alpha}}$ = {}".format(mean_alpha))
 
-ax2.axvline(x=const.soilmstress_thetastar, linestyle="--", color="black")
-ax2.axvline(x=const.soilmstress_theta0, linestyle="--", color="black")
+ax2.axvline(x=coef["thetastar"], linestyle="--", color="black")
+ax2.axvline(x=coef["theta0"], linestyle="--", color="black")
 
 secax = ax2.secondary_xaxis("top")
 secax.set_xticks(
-    ticks=[const.soilmstress_thetastar, const.soilmstress_theta0],
+    ticks=[coef["thetastar"], coef["theta0"]],
     labels=[r"$\theta^\ast$", r"$\theta_0$"],
 )
 
@@ -176,7 +177,7 @@ gpp_stressed = {}
 for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
     # Calculate the stress for this aridity
     sm_stress = pmodel.calc_soilmstress_stocker(
-        soilm=soilm, meanalpha=mean_alpha, pmodel_const=const
+        soilm=soilm, meanalpha=mean_alpha, coef=coef
     )
     # Apply the penalty factor
     gpp_stressed[mean_alpha] = model.gpp * sm_stress
@@ -245,16 +246,14 @@ $$
 ```{code-cell} ipython3
 from pyrealm.constants import PModelConst
 
-const = PModelConst()
+coef = PModelConst().soilmstress_mengoli
 aridity_index = np.arange(0.35, 7, 0.1)
 
-y = np.minimum(
-    const.soilm_mengoli_y_a * np.power(aridity_index, const.soilm_mengoli_y_b), 1
-)
+y = np.minimum(coef["y_a"] * np.power(aridity_index, coef["y_b"]), 1)
 
 
 psi = np.minimum(
-    const.soilm_mengoli_psi_a * np.power(aridity_index, const.soilm_mengoli_psi_b),
+    coef["psi_a"] * np.power(aridity_index, coef["psi_b"]),
     1,
 )
 

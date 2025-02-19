@@ -498,9 +498,9 @@ class OptimalChiLavergne20C3(
 
     The coefficients are experimentally derived values with defaults taken from
     Figure 6a of :cite:`lavergne:2020a` (:math:`a`,
-    :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_a_c3`;
+    :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_c3`;
     :math:`b`,
-    :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c3`).
+    :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_c3`).
 
     Values of :math:`\chi` and other predictions are then calculated as in
     :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`. This method
@@ -575,10 +575,10 @@ class OptimalChiLavergne20C4(
     C3 plants are adjusted to match the theoretical expectation that :math:`\beta`
     for C4 plants is nine times smaller than :math:`\beta` for C3 plants (see
     :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiC4`): :math:`b`
-    (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c4`) is
+    (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_c4`) is
     unchanged but
     :math:`a_{C4} = a_{C3} - log(9)`
-    (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_a_c4`) .
+    (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_c4`) .
 
     Following the calculation of :math:`\beta`, this method then follows the
     calculations described in
