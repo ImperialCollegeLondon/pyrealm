@@ -44,15 +44,7 @@ class PModelConst(ConstantsClass):
       (:attr:`~pyrealm.constants.pmodel_const.PModelConst.beta_cost_ratio_prentice14`,
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.beta_cost_ratio_c4`)
 
-    * **Unit cost ratios (beta) response to soil moisture**. These constants set the
-      response of beta to soil moisture for the
-      :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3`
-      method and for
-      :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C4`.
-      (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c3`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_a_c3`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c4`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_a_c4`)
+
 
     * **Electron transport capacity maintenance cost** Value taken from
       :cite:t:`Wang:2017go`
@@ -175,7 +167,6 @@ class PModelConst(ConstantsClass):
     * Upper bound in relative soil moisture (``b``).
     """
 
-    # Mengoli 2023 soil moisture stress
     soilmstress_mengoli: dict[str, float] = field(
         default_factory=lambda: dict(psi_a=0.34, psi_b=-0.6, y_a=0.62, y_b=-0.45)
     )
@@ -197,14 +188,14 @@ class PModelConst(ConstantsClass):
         default_factory=lambda: np.array([146.0 / 9])
     )
     r"""Unit cost ratio for C4 plants (:math:`\beta`, 16.222)."""
-    lavergne_2020_b_c3: float = 1.73
-    """Slope of soil moisture effects on beta for C3 plants"""
-    lavergne_2020_a_c3: float = 4.55
-    """Intercept of soil moisture effects on beta for C3 plants"""
-    lavergne_2020_b_c4: float = 1.73
-    """Slope of soil moisture effects on beta for C4 plants"""
-    lavergne_2020_a_c4: float = 4.55 - np.log(9)
-    """Slope of soil moisture effects on beta for C4 plants"""
+
+    lavergne_2020_c3: tuple[float, float] = (4.55, 1.73)
+    """Intercept and slope coefficients for the effects of soil moisture on optimal chi
+    estimates for C3 plants, following :cite:`lavergne:2020a`."""
+
+    lavergne_2020_c4: tuple[float, float] = (4.55 - np.log(9), 1.73)
+    """Intercept and slope coefficients for the effects of soil moisture on optimal chi
+    estimates for C4 plants, following :cite:`lavergne:2020a`."""
 
     # Wang17
     wang17_c: float = 0.41

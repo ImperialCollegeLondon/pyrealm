@@ -532,8 +532,8 @@ class OptimalChiLavergne20C3(
 
         # Calculate beta as a function of theta
         self.beta = np.exp(
-            self.pmodel_const.lavergne_2020_b_c3 * getattr(self.env, "theta")
-            + self.pmodel_const.lavergne_2020_a_c3
+            self.pmodel_const.lavergne_2020_c3[1] * getattr(self.env, "theta")
+            + self.pmodel_const.lavergne_2020_c3[0]
         )
 
     def estimate_chi(self, xi_values: NDArray[np.float64] | None = None) -> None:
@@ -587,7 +587,8 @@ class OptimalChiLavergne20C4(
     because photorespiration is negligible, but :math:`m_c` and hence
     :math:`m_{joc}` are calculated.
 
-    Note:
+    .. NOTE::
+
         This is an **experimental approach**. The research underlying
         :cite:`lavergne:2020a`, found **no relationship** between C4 :math:`\beta`
         values and soil moisture in leaf gas exchange measurements.
@@ -624,8 +625,8 @@ class OptimalChiLavergne20C4(
 
         # Calculate beta as a function of theta
         self.beta = np.exp(
-            self.pmodel_const.lavergne_2020_b_c4 * getattr(self.env, "theta")
-            + self.pmodel_const.lavergne_2020_a_c4
+            self.pmodel_const.lavergne_2020_c4[1] * getattr(self.env, "theta")
+            + self.pmodel_const.lavergne_2020_c4[0]
         )
 
     def estimate_chi(self, xi_values: NDArray[np.float64] | None = None) -> None:
