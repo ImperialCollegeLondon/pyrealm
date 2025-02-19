@@ -482,7 +482,7 @@ class PModel(PModelABC):
         # Dark respiration at growth temperature
         ftemp_inst_rd = calc_ftemp_inst_rd(
             tc=self.env.tc,
-            t_ref=self.pmodel_const.plant_T_ref,
+            tc_ref=self.pmodel_const.plant_T_ref,
             coef=self.pmodel_const.heskel_rd,
         )
         self.rd = (

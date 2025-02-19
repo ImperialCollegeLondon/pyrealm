@@ -96,7 +96,7 @@ class PModelConst(ConstantsClass):
     unpublished)  (:math:`T_o` , 25.0, °C)"""
 
     # Heskel
-    heskel_rd: tuple[float, float] = (0.1012, 0.005)
+    heskel_rd: tuple[float, float] = (0.1012, 0.0005)
     """Linear (:math:`b`, 0.1012) and quadratic  (:math:`c`, 0.0005) coefficients of the
     temperature scaling of dark respiration. Values taken from
     :cite:t:`Heskel:2016fg`:."""

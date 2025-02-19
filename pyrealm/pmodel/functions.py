@@ -164,7 +164,7 @@ def calculate_kattge_knorr_arrhenius_factor(
 
 def calc_ftemp_inst_rd(
     tc: NDArray[np.float64],
-    t_ref: float,
+    tc_ref: float,
     coef: tuple[float, float],
 ) -> NDArray[np.float64]:
     r"""Calculate temperature scaling of dark respiration.
@@ -179,18 +179,27 @@ def calc_ftemp_inst_rd(
 
     Args:
         tc: Temperature (:math:`T`, °C)
-        t_ref: standard reference temperature for photosynthetic processes (:math:`T_o`,
-            °C)
+        tc_ref: standard reference temperature for photosynthetic processes
+            (:math:`T_o`,°C)
         coef: A two tuple of floats providing the linear and quadratic coefficients
             (:math:`b` and :math:`c`)
 
     Examples:
         >>> # Relative instantaneous change in Rd going from 10 to 25 degrees
-        >>> ((calc_ftemp_inst_rd(25) / calc_ftemp_inst_rd(10) - 1)).round(4)
+        >>> pmod_consts = PModelConst()
+        >>> (
+        ...     calc_ftemp_inst_rd(
+        ...         tc=25, tc_ref=pmod_consts.plant_T_ref, coef=pmod_consts.heskel_rd
+        ...     )
+        ...     / calc_ftemp_inst_rd(
+        ...         tc=10, tc_ref=pmod_consts.plant_T_ref, coef=pmod_consts.heskel_rd
+        ...     )
+        ...     - 1
+        ... ).round(4)
         np.float64(2.5096)
     """
 
-    return np.exp(coef[0] * (t_ref - tc) - coef[1] * (t_ref**2 - tc**2))
+    return np.exp(coef[0] * (tc - tc_ref) - coef[1] * (tc**2 - tc_ref**2))
 
 
 def calc_gammastar(
