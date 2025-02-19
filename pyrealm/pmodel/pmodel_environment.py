@@ -162,8 +162,6 @@ class PModelEnvironment:
         self.tk = self.tc + self.core_const.k_CtoK
         """The temperature at which to estimate photosynthesis in Kelvin (K)"""
 
-        # TODO - swap functions over to using tk as needed
-
         self.ca: NDArray[np.float64] = calc_co2_to_ca(co2=self.co2, patm=self.patm)
         """Ambient CO2 partial pressure, Pa"""
 
