@@ -33,11 +33,6 @@ class PModelConst(ConstantsClass):
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.bernacchi_ko25`,
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.bernacchi_gs25_0`)
 
-    * **Soil moisture stress**. Parameterisation from :cite:t:`Stocker:2020dh`
-      (:attr:`~pyrealm.constants.pmodel_const.PModelConst.soilmstress_theta0`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilmstress_thetastar`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilmstress_a`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilmstress_b`)
 
     * **Soil moisture stress**. Parameterisation from :cite:t:`mengoli:2023a`
       (:attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_y_a`,
@@ -173,15 +168,12 @@ class PModelConst(ConstantsClass):
     # boyd_ko25_c4: float = 28210
     # boyd_gs25_0_c4: float = 2.6
 
-    # Stocker 2020 soil moisture stress
-    soilmstress_theta0: float = 0.0
-    """Lower bound in relative soil moisture"""
-    soilmstress_thetastar: float = 0.6
-    """Upper bound in relative soil moisture"""
-    soilmstress_a: float = 0.0
-    """Intercept of aridity sensitivity function for soil moisture"""
-    soilmstress_b: float = 0.733
-    """Slope of aridity sensitivity function for soil moisture"""
+    soilmstress_stocker: dict[str, float] = field(
+        default_factory=lambda: dict(theta0=0, thetastar=0.6, a=0.0, b=0.733)
+    )
+    """Parameterisation of the soil moisture stress function of
+    :cite:t:`Stocker:2020dh`. A dictionary providing values for ``theta0``,
+    ``thetastar``, ``a`` and ``b``."""
 
     # Mengoli 2023 soil moisture stress
     soilm_mengoli_y_a: float = 0.62

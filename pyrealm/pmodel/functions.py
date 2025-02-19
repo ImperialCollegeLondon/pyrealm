@@ -432,7 +432,7 @@ def calc_kp_c4(
 def calc_soilmstress_stocker(
     soilm: NDArray[np.float64],
     meanalpha: NDArray[np.float64] = np.array(1.0),
-    pmodel_const: PModelConst = PModelConst(),
+    coef: dict[str, float] = PModelConst.soilmstress_stocker,
 ) -> NDArray[np.float64]:
     r"""Calculate Stocker's empirical soil moisture stress factor.
 
@@ -476,15 +476,7 @@ def calc_soilmstress_stocker(
             (unitless). Defaults to 1.0 (no soil moisture stress).
         meanalpha: Local annual mean ratio of actual over potential
             evapotranspiration, measure for average aridity. Defaults to 1.0.
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-
-    PModel Parameters:
-        theta0: lower bound of soil moisture
-            (:math:`\theta_0`, ``soilmstress_theta0``).
-        thetastar: upper bound of soil moisture
-            (:math:`\theta^{*}`, ``soilmstress_thetastar``).
-        a: aridity parameter (:math:`a`, ``soilmstress_a``).
-        b: aridity parameter (:math:`b`, ``soilmstress_b``).
+        coef: A dictionary providing values of the coefficients 
 
     Returns:
         A numeric value or values for :math:`\beta`
@@ -502,14 +494,12 @@ def calc_soilmstress_stocker(
     _ = check_input_shapes(soilm, meanalpha)
 
     # Calculate outstress
-    y0 = pmodel_const.soilmstress_a + pmodel_const.soilmstress_b * meanalpha
-    beta = (1.0 - y0) / (
-        pmodel_const.soilmstress_theta0 - pmodel_const.soilmstress_thetastar
-    ) ** 2
-    outstress = 1.0 - beta * (soilm - pmodel_const.soilmstress_thetastar) ** 2
+    y0 = coef["a"] + coef["b"] * meanalpha
+    beta = (1.0 - y0) / (coef["theta0"] - coef["thetastar"]) ** 2
+    outstress = 1.0 - beta * (soilm - coef["thetastar"]) ** 2
 
     # Filter wrt to thetastar
-    outstress = np.where(soilm <= pmodel_const.soilmstress_thetastar, outstress, 1.0)
+    outstress = np.where(soilm <= coef["thetastar"], outstress, 1.0)
 
     # Clip
     outstress = np.clip(outstress, 0.0, 1.0)
