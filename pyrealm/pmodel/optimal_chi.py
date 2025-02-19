@@ -246,7 +246,7 @@ class OptimalChiPrentice14(
     def set_beta(self) -> None:
         """Set ``beta`` to a constant C3 specific value."""
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.beta = self.pmodel_const.beta_cost_ratio_prentice14
+        self.beta = self.pmodel_const.beta_cost_ratio_c3
 
     def estimate_chi(self, xi_values: NDArray[np.float64] | None = None) -> None:
         """Estimate ``chi`` for C3 plants."""
@@ -316,7 +316,7 @@ class OptimalChiPrentice14RootzoneStress(
         )
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.beta = self.pmodel_const.beta_cost_ratio_prentice14
+        self.beta = self.pmodel_const.beta_cost_ratio_c3
 
     def estimate_chi(self, xi_values: NDArray[np.float64] | None = None) -> None:
         """Estimate ``chi`` for C3 plants."""

@@ -104,8 +104,8 @@ class PModelConst(ConstantsClass):
         default_factory=lambda: dict(
             dhac=79430.0,
             dhao=36380.0,
-            kc25=39.97,  # Reported as 404.9 µmol mol-1
-            ko25=27480.0,  # Reported as 278.4 mmol mol-1
+            kc25=39.97,
+            ko25=27480.0,
         )
     )
     """Coefficients for the estimation of the Michaelis Menten coefficient of
@@ -152,7 +152,7 @@ class PModelConst(ConstantsClass):
         default_factory=lambda: dict(theta0=0, thetastar=0.6, a=0.0, b=0.733)
     )
     """Parameterisation of the soil moisture stress function of
-    :cite:t:`Stocker:2020dh` as a dictionary providing values for the:
+    :cite:t:`Stocker:2020dh` as a dictionary providing values for the: 
     
     * intercept of the aridity sensitivity function (``theta0``),
     * slope of the aridity sensitivity function (``thetastar``),
@@ -172,25 +172,22 @@ class PModelConst(ConstantsClass):
     * exponent of the threshold function (``psi_b``).
     """
 
-    # Unit cost ratio (beta) values for different CalcOptimalChi methods
-    beta_cost_ratio_prentice14: NDArray[np.float64] = field(
+    beta_cost_ratio_c3: NDArray[np.float64] = field(
         default_factory=lambda: np.array([146.0])
     )
-    r"""Unit cost ratio for C3 plants (:math:`\beta`, 146.0)."""
+    r"""Unit cost ratio for C3 plants (:math:`\beta`, 146.0) taken from
+     :cite:t:`Stocker:2020dh`."""
 
     beta_cost_ratio_c4: NDArray[np.float64] = field(
         default_factory=lambda: np.array([146.0 / 9])
     )
-    r"""Unit cost ratio for C4 plants (:math:`\beta`, 16.222)."""
-
-    # * **Unit cost ratios (beta)**. The value for C3 plants is taken from
-    #   :cite:t:`Stocker:2020dh`. For C4 plants, we follow the estimates of the
-    #   :math:`g_1` parameter for C3 and C4 plants in :cite:t:`Lin:2015wh`  and
-    #   :cite:t:`DeKauwe:2015im`, which have a C3/C4 ratio of around 3. Given that
-    #   :math:`g_1 \equiv \xi \propto \surd\beta`, a reasonable default for C4 plants is
-    #   that :math:`\beta_{C4} \approx \beta_{C3} / 9 \approx 146 /  9 \approx 16.222`.
-    #   (:attr:`~pyrealm.constants.pmodel_const.PModelConst.beta_cost_ratio_prentice14`,
-    #   :attr:`~pyrealm.constants.pmodel_const.PModelConst.beta_cost_ratio_c4`)
+    r"""Unit cost ratio for C4 plants (:math:`\beta`, 16.222).
+    
+    For C4 plants, we follow the estimates of the   :math:`g_1` parameter for C3 and C4
+    plants in :cite:t:`Lin:2015wh`  and :cite:t:`DeKauwe:2015im`, which have a C3/C4
+    ratio of around 3. Given that :math:`g_1 \equiv \xi \propto \surd\beta`, a
+    reasonable default for C4 plants is that :math:`\beta_{C4} \approx \beta_{C3} / 9
+    \approx 146 /  9 \approx 16.222`."""
 
     lavergne_2020_c3: tuple[float, float] = (4.55, 1.73)
     """Intercept and slope coefficients for the effects of soil moisture on optimal chi

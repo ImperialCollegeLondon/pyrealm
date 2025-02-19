@@ -913,7 +913,7 @@ def test_lavergne_equivalence(tc, theta, variable_method, fixed_method, is_C4):
     if is_C4:
         const = PModelConst(beta_cost_ratio_c4=mod_theta.optchi.beta)
     else:
-        const = PModelConst(beta_cost_ratio_prentice14=mod_theta.optchi.beta)
+        const = PModelConst(beta_cost_ratio_c3=mod_theta.optchi.beta)
 
     env = PModelEnvironment(
         tc=tc,
