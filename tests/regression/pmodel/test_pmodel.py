@@ -208,10 +208,12 @@ def test_calc_ftemp_kphio(values, tc, c4, expvars):
 )
 def test_calc_gammastar(values, tc, patm, context_manager, expvals):
     """Test the calc_gammastar function."""
+    from pyrealm.constants.core_const import CoreConst
     from pyrealm.pmodel import calc_gammastar
 
+    core_const = CoreConst()
     with context_manager:
-        ret = calc_gammastar(tk=values[tc] + 273.15, patm=values[patm])
+        ret = calc_gammastar(tk=values[tc] + core_const.k_CtoK, patm=values[patm])
         if expvals is not None:
             assert np.allclose(ret, values[expvals])
 
@@ -233,10 +235,13 @@ def test_calc_gammastar(values, tc, patm, context_manager, expvals):
 def test_calc_kmm(values, tc, patm, context_manager, expvals):
     """Test the calc_kmm function."""
 
+    from pyrealm.constants.core_const import CoreConst
     from pyrealm.pmodel import calc_kmm
 
+    core_const = CoreConst()
+
     with context_manager:
-        ret = calc_kmm(tk=values[tc] + 273.15, patm=values[patm])
+        ret = calc_kmm(tk=values[tc] + core_const.k_CtoK, patm=values[patm])
         if expvals:
             assert np.allclose(ret, values[expvals])
 
