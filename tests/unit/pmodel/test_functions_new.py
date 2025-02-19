@@ -23,7 +23,7 @@ def test_calc_ftemp_inst_rd(tc=TC):
 
     assert np.allclose(
         calc_ftemp_inst_rd(
-            tc, t_ref=pmodel_const.plant_T_ref, coef=pmodel_const.heskel_rd
+            tc=tc, tc_ref=pmodel_const.plant_T_ref, coef=pmodel_const.heskel_rd
         ),
         1.4455646406287255,
     )
