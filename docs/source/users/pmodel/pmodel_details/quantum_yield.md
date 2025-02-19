@@ -80,9 +80,9 @@ currently implemented approaches are described below.
 
 All of the approaches share the same baseline reference value of $\phi{0}= 1/8$ as the
 theoretical maximum quantum yield of photosynthesis. This can be overridden got all
-analsyes using a given {class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironmen` by
+analsyes using a given {class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` by
 changing the value of
-{attr}`PModelConst.maximum_phi0<pyrealm.constants.pmodel_const.PModelConst.maximum_phi0`,
+{attr}`PModelConst.maximum_phi0<pyrealm.constants.pmodel_const.PModelConst.maximum_phi0>`,
 but it can also be overriden for a single P Model using the `reference_kphio` argument.
 This can be needed when specific methods have been calibrated using a 'tuned' value for
 $\phi_0$: an example here is the soil moisture stress corrected GPP estimates of
