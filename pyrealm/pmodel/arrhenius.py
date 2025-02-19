@@ -164,6 +164,7 @@ class SimpleArrhenius(
     constant, :math:`H_a`, J/mol).
 
     Examples:
+        >>> import numpy as np
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]),
         ...     patm=np.array([101325]),
@@ -206,6 +207,7 @@ class KattgeKnorrArrhenius(
     * the activation energy constant (``ha``, :math:`H_a`, J/mol).
 
     Examples:
+        >>> import numpy as np
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]),
         ...     patm=np.array([101325]),
