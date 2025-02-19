@@ -34,11 +34,6 @@ class PModelConst(ConstantsClass):
       :attr:`~pyrealm.constants.pmodel_const.PModelConst.bernacchi_gs25_0`)
 
 
-    * **Soil moisture stress**. Parameterisation from :cite:t:`mengoli:2023a`
-      (:attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_y_a`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_y_b`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_psi_a`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_psi_b`)
 
     * **Unit cost ratios (beta)**. The value for C3 plants is taken from
       :cite:t:`Stocker:2020dh`. For C4 plants, we follow the estimates of the
@@ -172,18 +167,26 @@ class PModelConst(ConstantsClass):
         default_factory=lambda: dict(theta0=0, thetastar=0.6, a=0.0, b=0.733)
     )
     """Parameterisation of the soil moisture stress function of
-    :cite:t:`Stocker:2020dh`. A dictionary providing values for ``theta0``,
-    ``thetastar``, ``a`` and ``b``."""
+    :cite:t:`Stocker:2020dh` as a dictionary providing values for the:
+    
+    * Intercept of the aridity sensitivity function (``theta0``),
+    * Slope of the aridity sensitivity function (``thetastar``),
+    * Lower bound in relative soil moisture  (``a``), and
+    * Upper bound in relative soil moisture (``b``).
+    """
 
     # Mengoli 2023 soil moisture stress
-    soilm_mengoli_y_a: float = 0.62
-    """Coefficient of the maximal level function for Mengoli soil moisture"""
-    soilm_mengoli_y_b: float = -0.45
-    """Exponent of the maximal level function for Mengoli soil moisture"""
-    soilm_mengoli_psi_a: float = 0.34
-    """Coefficient of the threshold function for Mengoli soil moisture"""
-    soilm_mengoli_psi_b: float = -0.60
-    """Exponent of the threshold function for Mengoli soil moisture"""
+    soilmstress_mengoli: dict[str, float] = field(
+        default_factory=lambda: dict(psi_a=0.34, psi_b=-0.6, y_a=0.62, y_b=-0.45)
+    )
+    """Parameterisation of the soil moisture stress function of
+    :cite:t:`mengoli:2023a` as a dictionary providing values for the:
+
+    * coefficient of the maximal level function  (``y_a``),
+    * exponent of the maximal level function  (``y_b``),
+    * coefficient of the threshold function  (``psi_a``), and
+    * exponent of the threshold function (``psi_b``).
+    """
 
     # Unit cost ratio (beta) values for different CalcOptimalChi methods
     beta_cost_ratio_prentice14: NDArray[np.float64] = field(

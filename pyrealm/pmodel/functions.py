@@ -476,7 +476,9 @@ def calc_soilmstress_stocker(
             (unitless). Defaults to 1.0 (no soil moisture stress).
         meanalpha: Local annual mean ratio of actual over potential
             evapotranspiration, measure for average aridity. Defaults to 1.0.
-        coef: A dictionary providing values of the coefficients 
+        coef: A dictionary providing values of the coefficients ``theta0``,
+            ``thetastar``, ``a`` and ``b``, , with default values from 
+            attr:`~pyrealm.constants.pmodel_const.PModelConst.soilmstress_stocker`.
 
     Returns:
         A numeric value or values for :math:`\beta`
@@ -510,7 +512,7 @@ def calc_soilmstress_stocker(
 def calc_soilmstress_mengoli(
     soilm: NDArray[np.float64] = np.array(1.0),
     aridity_index: NDArray[np.float64] = np.array(1.0),
-    pmodel_const: PModelConst = PModelConst(),
+    coef: dict[str, float] = PModelConst.soilmstress_mengoli,
 ) -> NDArray[np.float64]:
     r"""Calculate the Mengoli et al. empirical soil moisture stress factor.
 
@@ -543,18 +545,9 @@ def calc_soilmstress_mengoli(
     Args:
         soilm: Relative soil moisture (unitless).
         aridity_index: The climatological aridity index.
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-
-    PModel Parameters:
-
-        y_a: Coefficient of the maximal level (:math:`y`,
-            :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_y_a`)
-        y_b: Exponent of the maximal level (:math:`y`,
-            :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_y_b`)
-        psi_a: Coefficient of the threshold (:math:`\psi`,
-            :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_psi_a`)
-        psi_b: Exponent of the threshold (:math:`\psi`,
-            :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_psi_b`)
+        coef: A dictionary providing values of the coefficients ``y_a``, ``y_b``,
+            ``psi_a`` and ``psi_b``, with default values from 
+            attr:`~pyrealm.constants.pmodel_const.PModelConst.soilmstress_mengoli`.
 
     Returns:
         A numeric value or values for :math:`f(\theta)`
@@ -575,14 +568,12 @@ def calc_soilmstress_mengoli(
 
     # Calculate maximal level and threshold
     y = np.minimum(
-        pmodel_const.soilm_mengoli_y_a
-        * np.power(aridity_index, pmodel_const.soilm_mengoli_y_b),
+        coef["y_a"] * np.power(aridity_index, coef["y_b"]),
         1,
     )
 
     psi = np.minimum(
-        pmodel_const.soilm_mengoli_psi_a
-        * np.power(aridity_index, pmodel_const.soilm_mengoli_psi_b),
+        coef["psi_a"] * np.power(aridity_index, coef["psi_b"]),
         1,
     )
 
