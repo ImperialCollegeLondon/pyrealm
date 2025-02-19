@@ -37,7 +37,6 @@ from importlib import resources
 from matplotlib import pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
-from numpy.testing import assert_allclose
 import pandas
 
 from pyrealm.pmodel import (
@@ -342,5 +341,7 @@ plt.tight_layout()
 # This cell is here to force a docs build failure if these values
 # are _not_ identical. The 'remove-cell' tag is applied to hide this
 # in built docs.
+from numpy.testing import assert_allclose
+
 assert_allclose(GPP_subdaily, pmodel_subdaily.gpp)
 ```

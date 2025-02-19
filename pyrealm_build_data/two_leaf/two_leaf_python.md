@@ -251,7 +251,7 @@ pmod_env = PModelEnvironment(
 )
 
 # Standard P Model
-standard_pmod = PModel(pmod_env, reference_kphio=1 / 8)
+standard_pmod = PModel(pmod_env)
 
 
 # Subdaily P Model
