@@ -162,20 +162,20 @@ class PModelEnvironment:
         self.tk = self.tc + self.core_const.k_CtoK
         """The temperature at which to estimate photosynthesis in Kelvin (K)"""
 
-        # TODO - swap functions over to using tk as needed
-
-        self.ca: NDArray[np.float64] = calc_co2_to_ca(self.co2, self.patm)
+        self.ca: NDArray[np.float64] = calc_co2_to_ca(co2=self.co2, patm=self.patm)
         """Ambient CO2 partial pressure, Pa"""
 
         self.gammastar = calc_gammastar(
-            tc, patm, pmodel_const=pmodel_const, core_const=core_const
+            tk=self.tk, patm=patm, pmodel_const=pmodel_const, core_const=core_const
         )
         r"""Photorespiratory compensation point (:math:`\Gamma^\ast`, Pa)"""
 
-        self.kmm = calc_kmm(tc, patm, pmodel_const=pmodel_const, core_const=core_const)
+        self.kmm = calc_kmm(
+            tk=self.tk, patm=patm, pmodel_const=pmodel_const, core_const=core_const
+        )
         """Michaelis Menten coefficient, Pa"""
 
-        self.ns_star = calc_ns_star(tc, patm, core_const=core_const)
+        self.ns_star = calc_ns_star(tc=tc, patm=patm, core_const=core_const)
         """Viscosity correction factor relative to standard
         temperature and pressure, unitless"""
 

@@ -204,68 +204,8 @@ def calc_ftemp_inst_rd(
     )
 
 
-def calc_ftemp_kphio(
-    tc: NDArray[np.float64], c4: bool = False, pmodel_const: PModelConst = PModelConst()
-) -> NDArray[np.float64]:
-    r"""Calculate temperature dependence of quantum yield efficiency.
-
-    Calculates the temperature dependence of the quantum yield efficiency, as a
-    quadratic function of temperature (:math:`T`). The values of the coefficients depend
-    on whether C3 or C4 photosynthesis is being modelled
-
-    .. math::
-
-        \phi(T) = a + b T - c T^2
-
-    The factor :math:`\phi(T)` is to be multiplied with leaf absorptance and the
-    fraction of absorbed light that reaches photosystem II. In the P-model these
-    additional factors are lumped into a single apparent quantum yield efficiency
-    parameter (argument `kphio` to the class
-    :class:`~pyrealm.pmodel.pmodel.PModel`).
-
-    Args:
-        tc: Temperature, relevant for photosynthesis (°C)
-        c4: Boolean specifying whether fitted temperature response for C4 plants
-            is used. Defaults to ``False`` to estimate :math:`\phi(T)` for C3 plants.
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-
-    PModel Parameters:
-        C3: the parameters (:math:`a,b,c`, ``kphio_C3``) are taken from the
-            temperature dependence of the maximum quantum yield of photosystem
-            II in light-adapted tobacco leaves determined by :cite:t:`Bernacchi:2003dc`.
-        C4: the parameters (:math:`a,b,c`, ``kphio_C4``) are taken from
-            :cite:t:`cai:2020a`.
-
-    Returns:
-        Values for :math:`\phi(T)`
-
-    Examples:
-        >>> # Relative change in the quantum yield efficiency between 5 and 25
-        >>> # degrees celsius (percent change):
-        >>> val = (calc_ftemp_kphio(25.0) / calc_ftemp_kphio(5.0) - 1) * 100
-        >>> round(val, 5)
-        np.float64(52.03969)
-        >>> # Relative change in the quantum yield efficiency between 5 and 25
-        >>> # degrees celsius (percent change) for a C4 plant:
-        >>> val = (calc_ftemp_kphio(25.0, c4=True) /
-        ...        calc_ftemp_kphio(5.0, c4=True) - 1) * 100
-        >>> round(val, 5)
-        np.float64(432.25806)
-    """
-
-    if c4:
-        coef = pmodel_const.kphio_C4
-    else:
-        coef = pmodel_const.kphio_C3
-
-    ftemp = coef[0] + coef[1] * tc + coef[2] * tc**2
-    ftemp = np.clip(ftemp, 0.0, None)
-
-    return ftemp
-
-
 def calc_gammastar(
-    tc: NDArray[np.float64],
+    tk: NDArray[np.float64],
     patm: NDArray[np.float64],
     pmodel_const: PModelConst = PModelConst(),
     core_const: CoreConst = CoreConst(),
@@ -280,13 +220,12 @@ def calc_gammastar(
         \Gamma^{*} = \Gamma^{*}_{0} \cdot \frac{p}{p_0} \cdot f(T, H_a)
 
     where :math:`f(T, H_a)` modifies the activation energy to the the local temperature
-    following the Arrhenius-type temperature response function (see
-
-    :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`. Estimates of
+    in Kelvin following the Arrhenius-type temperature response function (see
+    :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`). Estimates of
     :math:`\Gamma^{*}_{0}` and :math:`H_a` are taken from :cite:t:`Bernacchi:2001kg`.
 
     Args:
-        tc: Temperature relevant for photosynthesis (:math:`T`, °C)
+        tk: Temperature relevant for photosynthesis in Kelvin(:math:`T`, K)
         patm: Atmospheric pressure (:math:`p`, Pascals)
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
@@ -303,20 +242,20 @@ def calc_gammastar(
         A float value or values for :math:`\Gamma^{*}` (in Pa)
 
     Examples:
-        >>> # CO2 compensation point at 20 degrees Celsius and standard
-        >>> # atmosphere (in Pa) >>> round(calc_gammastar(20, 101325), 5)
-        3.33925
+        >>> # CO2 compensation point at 20 °C  (293.15 K) and standard presssure
+        >>> calc_gammastar(np.array([293.15]), np.array([101325])).round(5)
+        array([3.33925])
     """
 
     # check inputs, return shape not used
-    _ = check_input_shapes(tc, patm)
+    _ = check_input_shapes(tk, patm)
 
     return (
         pmodel_const.bernacchi_gs25_0
         * patm
         / core_const.k_Po
         * calculate_simple_arrhenius_factor(
-            tk=tc + core_const.k_CtoK,
+            tk=tk,
             tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
             ha=pmodel_const.bernacchi_dha,
         )
@@ -368,7 +307,7 @@ def calc_ns_star(
 
 
 def calc_kmm(
-    tc: NDArray[np.float64],
+    tk: NDArray[np.float64],
     patm: NDArray[np.float64],
     pmodel_const: PModelConst = PModelConst(),
     core_const: CoreConst = CoreConst(),
@@ -376,8 +315,8 @@ def calc_kmm(
     r"""Calculate the Michaelis Menten coefficient of Rubisco-limited assimilation.
 
     Calculates the Michaelis Menten coefficient of Rubisco-limited assimilation
-    (:math:`K`, :cite:alp:`Farquhar:1980ft`) as a function of temperature (:math:`T`)
-    and atmospheric pressure (:math:`p`) as:
+    (:math:`K`, :cite:alp:`Farquhar:1980ft`) as a function of temperature (:math:`T,
+    Kelvin) and atmospheric pressure (:math:`p`, Pa) as:
 
       .. math:: K = K_c ( 1 + p_{\ce{O2}} / K_o),
 
@@ -401,7 +340,7 @@ def calc_kmm(
               for the same conversion for a value in the same table.
 
     Args:
-        tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
+        tk: Temperature relevant for photosynthesis in Kelvin (:math:`T`, K)
         patm: Atmospheric pressure (:math:`p`, Pa)
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
@@ -419,17 +358,13 @@ def calc_kmm(
         A numeric value for :math:`K` (in Pa)
 
     Examples:
-        >>> # Michaelis-Menten coefficient at 20 degrees Celsius and standard
-        >>> # atmosphere (in Pa):
-        >>> np.round(calc_kmm(np.array([20]), 101325), 5)
+        >>> # Michaelis-Menten coefficient at 20°C (293.15K) and standard pressure (Pa)
+        >>> calc_kmm(np.array([293.15]), np.array([101325])).round(5)
         array([46.09928])
     """
 
     # Check inputs, return shape not used
-    _ = check_input_shapes(tc, patm)
-
-    # conversion to Kelvin
-    tk = tc + core_const.k_CtoK
+    _ = check_input_shapes(tk, patm)
 
     kc = pmodel_const.bernacchi_kc25 * calculate_simple_arrhenius_factor(
         tk=tk,
@@ -450,7 +385,7 @@ def calc_kmm(
 
 
 def calc_kp_c4(
-    tc: NDArray[np.float64],
+    tk: NDArray[np.float64],
     patm: NDArray[np.float64],
     pmodel_const: PModelConst = PModelConst(),
     core_const: CoreConst = CoreConst(),
@@ -463,7 +398,7 @@ def calc_kp_c4(
     :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`) as:
 
     Args:
-        tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
+        tk: Temperature, relevant for photosynthesis (:math:`T`, K)
         patm: Atmospheric pressure (:math:`p`, Pa)
         pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
@@ -478,20 +413,19 @@ def calc_kp_c4(
         A numeric value for :math:`K` (in Pa)
 
     Examples:
-        >>> # Michaelis-Menten coefficient at 20 degrees Celsius and standard
-        >>> # atmosphere (in Pa):
+        >>> # Michaelis-Menten coefficient at 20°C (293.15K) and standard pressure (Pa)
         >>> import numpy as np
-        >>> calc_kp_c4(np.array([20]), np.array([101325])).round(5)
+        >>> calc_kp_c4(np.array([293.15]), np.array([101325])).round(5)
         array([12.46385])
     """
 
     # Check inputs, return shape not used
-    _ = check_input_shapes(tc, patm)
+    _ = check_input_shapes(tk, patm)
 
     # Calculate rate relative to standard rate using an Arrhenius factor, converting
     # temperatures to Kelvin
     return pmodel_const.boyd_kp25_c4 * calculate_simple_arrhenius_factor(
-        tk=tc + core_const.k_CtoK,
+        tk=tk,
         tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
         ha=pmodel_const.boyd_dhac_c4,
     )

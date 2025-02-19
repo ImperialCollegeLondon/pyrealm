@@ -44,7 +44,8 @@ from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 from pyrealm.pmodel.acclimation import AcclimationModel
 from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
-from pyrealm.pmodel.functions import calculate_simple_arrhenius_factor, calc_ftemp_kphio
+from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
+from pyrealm.pmodel.functions import calculate_simple_arrhenius_factor
 ```
 
 ## Example dataset
@@ -298,10 +299,12 @@ Ac_subdaily = (
 )
 
 # Calculate J and Aj
-phi = (1 / 8) * calc_ftemp_kphio(tc=temp_subdaily)
+phi = QuantumYieldTemperature(env=subdaily_env, reference_kphio=1 / 8)
 iabs = fapar_subdaily * ppfd_subdaily
 
-J_subdaily = (4 * phi * iabs) / np.sqrt(1 + ((4 * phi * iabs) / jmax_subdaily) ** 2)
+J_subdaily = (4 * phi.kphio * iabs) / np.sqrt(
+    1 + ((4 * phi.kphio * iabs) / jmax_subdaily) ** 2
+)
 
 Aj_subdaily = (
     (J_subdaily / 4)

@@ -67,10 +67,10 @@ Note that the default values for C3 photosynthesis give **non-zero values below 
 from matplotlib import pyplot
 import numpy as np
 from pyrealm.core.water import calc_density_h2o
+from pyrealm.constants import CoreConst
 from pyrealm.pmodel import calc_gammastar, calc_kmm, PModelEnvironment
 from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
 
-%matplotlib inline
 
 # Set the resolution of examples
 n_pts = 101
@@ -106,14 +106,16 @@ that again, $\Gamma^_$ has non-zero values for sub-zero temperatures.
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-# Calculate gammastar at different pressures
+# Calculate gammastar at different temperatures
+core_const = CoreConst()
 tc_1d = np.linspace(-80, 100, n_pts)
+tk_1d = tc_1d + core_const.k_CtoK
 
 # Create a contour plot of gamma
 fig, ax = pyplot.subplots(1, 1)
 
 for patm in [3, 7, 9, 11, 13]:
-    pyplot.plot(tc_1d, calc_gammastar(tc_1d, patm * 1000), label=f"{patm} kPa")
+    pyplot.plot(tc_1d, calc_gammastar(tk=tk_1d, patm=patm * 1000), label=f"{patm} kPa")
 
 ax.set_title("Temperature and pressure dependence of $\Gamma^*$")
 ax.set_xlabel("Temperature °C")
@@ -135,7 +137,7 @@ fig, ax = pyplot.subplots(1, 1)
 
 # Calculate K_mm
 for patm in [3, 7, 9, 11, 13]:
-    ax.plot(tc_1d, calc_kmm(tc_1d, patm * 1000), label=f"{patm} kPa")
+    ax.plot(tc_1d, calc_kmm(tk=tk_1d, patm=patm * 1000), label=f"{patm} kPa")
 
 # Create a contour plot of gamma
 ax.set_title("Temperature and pressure dependence of KMM")
