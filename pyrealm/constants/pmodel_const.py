@@ -36,13 +36,14 @@ class PModelConst(ConstantsClass):
     """Standard baseline reference temperature of photosynthetic processes in °C 
     (:math:`T_o` , 25.0, °C)"""
 
+    tk_ref: float = 298.15
+    """Standard baseline reference temperature of photosynthetic processes in Kelvin 
+    (298.15, K)"""
+
     # NOTE that tk_ref might be a considered a duplication of CoreConst.k_To but that
     # refers explicitly to the physical standard temperature and this is a reference
     # temperature for photosynthesis. It is _vanishingly_ unlikely that this will
     # change but they could _in theory_ be different.
-    tk_ref: float = 298.15
-    """Standard baseline reference temperature of photosynthetic processes in Kelvin 
-    (298.15, K)"""
 
     heskel_rd: tuple[float, float] = (0.1012, 0.0005)
     """Linear (:math:`b`, 0.1012) and quadratic  (:math:`c`, 0.0005) coefficients of the
@@ -146,16 +147,6 @@ class PModelConst(ConstantsClass):
     at an elevation of 227.076 metres and standard  atmospheric pressure for that
     elevation (98716.403 Pa).
     """
-
-    # Boyd
-    boyd_kp25_c4: float = 16  # Pa  from Boyd et al. (2015)
-    boyd_dhac_c4: float = 36300  # J mol-1
-    # boyd_dhac_c4: float = 79430
-    # boyd_dhao_c4: float = 36380
-    # boyd_dha_c4: float = 37830
-    # boyd_kc25_c4: float = 41.03
-    # boyd_ko25_c4: float = 28210
-    # boyd_gs25_0_c4: float = 2.6
 
     soilmstress_stocker: dict[str, float] = field(
         default_factory=lambda: dict(theta0=0, thetastar=0.6, a=0.0, b=0.733)

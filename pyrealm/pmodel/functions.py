@@ -362,53 +362,6 @@ def calc_kmm(
     return kc * (1.0 + po / ko)
 
 
-def calc_kp_c4(
-    tk: NDArray[np.float64],
-    patm: NDArray[np.float64],
-    pmodel_const: PModelConst = PModelConst(),
-    core_const: CoreConst = CoreConst(),
-) -> NDArray[np.float64]:
-    r"""Calculate the Michaelis Menten coefficient of PEPc.
-
-    Calculates the Michaelis Menten coefficient of phosphoenolpyruvate carboxylase
-    (PEPc) (:math:`K`, :cite:alp:`boyd:2015a`) as a function of temperature (:math:`T`)
-    and atmospheric pressure (:math:`p`), following Arrhenius scaling (see
-    :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`) as:
-
-    Args:
-        tk: Temperature, relevant for photosynthesis (:math:`T`, K)
-        patm: Atmospheric pressure (:math:`p`, Pa)
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
-
-    PModel Parameters:
-        hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`,
-             ``boyd_dhac_c4``)
-        kc25: Michelis constant for :math:`\ce{CO2}` at standard temperature
-            (:math:`K_{c25}`, ``boyd_kp25_c4``)
-
-    Returns:
-        A numeric value for :math:`K` (in Pa)
-
-    Examples:
-        >>> # Michaelis-Menten coefficient at 20°C (293.15K) and standard pressure (Pa)
-        >>> import numpy as np
-        >>> calc_kp_c4(np.array([293.15]), np.array([101325])).round(5)
-        array([12.46385])
-    """
-
-    # Check inputs, return shape not used
-    _ = check_input_shapes(tk, patm)
-
-    # Calculate rate relative to standard rate using an Arrhenius factor, converting
-    # temperatures to Kelvin
-    return pmodel_const.boyd_kp25_c4 * calculate_simple_arrhenius_factor(
-        tk=tk,
-        tk_ref=pmodel_const.tc_ref + core_const.k_CtoK,
-        ha=pmodel_const.boyd_dhac_c4,
-    )
-
-
 def calc_soilmstress_stocker(
     soilm: NDArray[np.float64],
     meanalpha: NDArray[np.float64] = np.array(1.0),
