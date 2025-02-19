@@ -119,7 +119,7 @@ tc = np.arange(0, 40, 0.1)
 # Calculate the simple scaling factor
 simple = calculate_simple_arrhenius_factor(
     tk=tc + core_const.k_CtoK,
-    tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
+    tk_ref=pmodel_const.tc_ref + core_const.k_CtoK,
     ha=pmodel_const.arrhenius_vcmax["simple"]["ha"],
 )
 
@@ -129,7 +129,7 @@ coef = pmodel_const.arrhenius_vcmax["kattge_knorr"]
 kattge_knorr_10 = calculate_kattge_knorr_arrhenius_factor(
     tk_leaf=tc + core_const.k_CtoK,
     tc_growth=10,
-    tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
+    tk_ref=pmodel_const.tc_ref + core_const.k_CtoK,
     ha=coef["ha"],
     hd=coef["hd"],
     entropy_intercept=coef["entropy_intercept"],
@@ -140,7 +140,7 @@ kattge_knorr_10 = calculate_kattge_knorr_arrhenius_factor(
 kattge_knorr_20 = calculate_kattge_knorr_arrhenius_factor(
     tk_leaf=tc + core_const.k_CtoK,
     tc_growth=20,
-    tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
+    tk_ref=pmodel_const.tc_ref + core_const.k_CtoK,
     ha=coef["ha"],
     hd=coef["hd"],
     entropy_intercept=coef["entropy_intercept"],
@@ -151,7 +151,7 @@ kattge_knorr_20 = calculate_kattge_knorr_arrhenius_factor(
 rpmodel = calculate_kattge_knorr_arrhenius_factor(
     tk_leaf=tc + core_const.k_CtoK,
     tc_growth=tc + core_const.k_CtoK,
-    tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
+    tk_ref=pmodel_const.tc_ref + core_const.k_CtoK,
     ha=coef["ha"],
     hd=coef["hd"],
     entropy_intercept=coef["entropy_intercept"],

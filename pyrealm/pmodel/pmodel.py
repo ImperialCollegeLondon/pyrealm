@@ -443,7 +443,7 @@ class PModel(PModelABC):
         # Get an Arrhenius instance for use in scaling rates
         arrhenius_factors = self._arrhenius_class(
             env=self.env,
-            reference_temperature=self.env.pmodel_const.plant_T_ref,
+            reference_temperature=self.env.pmodel_const.tc_ref,
             core_const=self.env.core_const,
         )
 
@@ -482,7 +482,7 @@ class PModel(PModelABC):
         # Dark respiration at growth temperature
         ftemp_inst_rd = calc_ftemp_inst_rd(
             tc=self.env.tc,
-            tc_ref=self.pmodel_const.plant_T_ref,
+            tc_ref=self.pmodel_const.tc_ref,
             coef=self.pmodel_const.heskel_rd,
         )
         self.rd = (
@@ -860,7 +860,7 @@ class SubdailyPModel(PModelABC):
 
         arrhenius_daily = self._arrhenius_class(
             env=self.pmodel_acclim.env,
-            reference_temperature=self.pmodel_acclim.env.pmodel_const.plant_T_ref,
+            reference_temperature=self.pmodel_acclim.env.pmodel_const.tc_ref,
             core_const=self.env.core_const,
         )
 
@@ -913,7 +913,7 @@ class SubdailyPModel(PModelABC):
         #    actual subdaily temperatures.
         arrhenius_subdaily = self._arrhenius_class(
             env=self.env,
-            reference_temperature=self.pmodel_acclim.env.pmodel_const.plant_T_ref,
+            reference_temperature=self.pmodel_acclim.env.pmodel_const.tc_ref,
             core_const=self.env.core_const,
         )
 

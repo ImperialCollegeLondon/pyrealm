@@ -145,7 +145,7 @@ def test_calc_ftemp_inst_vcmax(values, tc, expvars):
     # Calculate the arrhenius factor
     ret = calculate_kattge_knorr_arrhenius_factor(
         tk_leaf=values[tc] + core_const.k_CtoK,
-        tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
+        tk_ref=pmodel_const.tc_ref + core_const.k_CtoK,
         tc_growth=values[tc],  # This is an odd thing for rpmodel to do
         ha=cf["ha"],
         hd=cf["hd"],

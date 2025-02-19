@@ -23,7 +23,7 @@ def test_calc_ftemp_inst_rd(tc=TC):
 
     assert np.allclose(
         calc_ftemp_inst_rd(
-            tc=tc, tc_ref=pmodel_const.plant_T_ref, coef=pmodel_const.heskel_rd
+            tc=tc, tc_ref=pmodel_const.tc_ref, coef=pmodel_const.heskel_rd
         ),
         1.4455646406287255,
     )
@@ -31,9 +31,17 @@ def test_calc_ftemp_inst_rd(tc=TC):
 
 def test_calc_gammastar(tk=TK, patm=PATM):
     """Test calc_ftemp_inst_rd."""
+    from pyrealm.constants.core_const import CoreConst
+    from pyrealm.constants.pmodel_const import PModelConst
     from pyrealm.pmodel.functions import calc_gammastar
 
-    assert np.allclose(calc_gammastar(tk, patm), 6.7888247955597)
+    pmodel_const = PModelConst()
+    core_const = CoreConst()
+
+    assert np.allclose(
+        calc_gammastar(tk, patm, tk_ref=pmodel_const.tc_ref + core_const.k_CtoK),
+        6.7888247955597,
+    )
 
 
 def test_calc_ns_star(tc=TC, patm=PATM):
