@@ -164,7 +164,8 @@ def calculate_kattge_knorr_arrhenius_factor(
 
 def calc_ftemp_inst_rd(
     tc: NDArray[np.float64],
-    pmodel_const: PModelConst = PModelConst(),
+    t_ref: float,
+    coef: tuple[float, float],
 ) -> NDArray[np.float64]:
     r"""Calculate temperature scaling of dark respiration.
 
@@ -177,31 +178,19 @@ def calc_ftemp_inst_rd(
             fr = \exp( b (T_o - T) -  c ( T_o^2 - T^2 ))
 
     Args:
-        tc: Temperature (°C)
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-
-    PModel Parameters:
-        To: standard reference temperature for photosynthetic processes (:math:`T_o`,
-            ``k_To``)
-        b: empirically derived global mean coefficient
-            (:math:`b`, ``heskel_b``)
-        c: empirically derived global mean coefficient
-            (:math:`c`, ``heskel_c``)
-
-    Returns:
-        Values for :math:`fr`
+        tc: Temperature (:math:`T`, °C)
+        t_ref: standard reference temperature for photosynthetic processes (:math:`T_o`,
+            °C)
+        coef: A two tuple of floats providing the linear and quadratic coefficients
+            (:math:`b` and :math:`c`)
 
     Examples:
-        >>> # Relative percentage instantaneous change in Rd going from 10 to 25 degrees
-        >>> val = (calc_ftemp_inst_rd(25) / calc_ftemp_inst_rd(10) - 1) * 100
-        >>> np.round(val, 4)
-        np.float64(250.9593)
+        >>> # Relative instantaneous change in Rd going from 10 to 25 degrees
+        >>> ((calc_ftemp_inst_rd(25) / calc_ftemp_inst_rd(10) - 1)).round(4)
+        np.float64(2.5096)
     """
 
-    return np.exp(
-        pmodel_const.heskel_b * (tc - pmodel_const.plant_T_ref)
-        - pmodel_const.heskel_c * (tc**2 - pmodel_const.plant_T_ref**2)
-    )
+    return np.exp(coef[0] * (t_ref - tc) - coef[1] * (t_ref**2 - tc**2))
 
 
 def calc_gammastar(

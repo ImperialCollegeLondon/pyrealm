@@ -13,24 +13,14 @@ class PModelConst(ConstantsClass):
     r"""Constants for the P Model.
 
     This dataclass provides the following underlying constants used in calculating the
-    predictions of the P Model. Values are shown with mathematical notation, default
-    value and units shown in brackets and the sources for default parameterisations are
-    given below:
+    predictions of the P Model.
 
-    * **Temperature scaling of dark respiration**. Values taken from
-      :cite:t:`Heskel:2016fg`:
-      (:attr:`~pyrealm.constants.pmodel_const.PModelConst.heskel_b`,
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.heskel_c`)
+
 
     * **Enzyme kinetics for VCMax**. Values taken from Table 3 of
       :cite:t:`Kattge:2007db`.
 
-    * **Scaling of Kphio with temperature**. The parameters of quadratic functions for
-      the temperature dependence of Kphio are:
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.kphio_C4`, C4 plants, Eqn 5 of
-      :cite:t:`cai:2020a`; and
-      :attr:`~pyrealm.constants.pmodel_const.PModelConst.kphio_C3`, C3 plants, Table 2
-      of :cite:t:`Bernacchi:2003dc`.
+
 
     * **Temperature responses of photosynthetic enzymes**. Values taken from Table 1 of
       :cite:t:`Bernacchi:2001kg`. `kc_25` and `ko_25` are converted from µmol mol-1 and
@@ -106,10 +96,10 @@ class PModelConst(ConstantsClass):
     unpublished)  (:math:`T_o` , 25.0, °C)"""
 
     # Heskel
-    heskel_b: float = 0.1012
-    """Linear coefficient of scaling of dark respiration (:math:`b`, 0.1012)"""
-    heskel_c: float = 0.0005
-    """Quadratic coefficient of scaling of dark respiration (:math:`c`, 0.0005)"""
+    heskel_rd: tuple[float, float] = (0.1012, 0.005)
+    """Linear (:math:`b`, 0.1012) and quadratic  (:math:`c`, 0.0005) coefficients of the
+    temperature scaling of dark respiration. Values taken from
+    :cite:t:`Heskel:2016fg`:."""
 
     # Arrhenius values
     arrhenius_vcmax: dict = field(
@@ -147,18 +137,17 @@ class PModelConst(ConstantsClass):
     growth temperature (J/mol/K), the deactivation energy constant (:math:`H_d`, J/mol) 
     and the activation energy (J/mol). (:math:`H_a`, J/mol)."""
 
-    # Kphio:
-    # - note that kphio_C4 has been updated to account for an unintended double
-    #   8 fold downscaling to account for the fraction of light reaching PS2.
-    #   from original values of [-0.008, 0.00375, -0.58e-4]
-    kphio_C4: NDArray[np.float64] = field(
-        default_factory=lambda: np.array((-0.064, 0.03, -0.000464))
-    )
-    """Quadratic scaling of Kphio with temperature for C4 plants"""
-    kphio_C3: NDArray[np.float64] = field(
-        default_factory=lambda: np.array((0.352, 0.022, -0.00034))
-    )
-    """Quadratic scaling of Kphio with temperature for C3 plants"""
+    kphio_C4: tuple[float, float, float] = (-0.064, 0.03, -0.000464)
+    """Coefficients of the quadratic scaling of the quantum yield of photosynthesis
+    (``phi_0``, :math:`\phi_0`) with temperature for C4 plants, taken from Eqn 5 of
+    :cite:t:`cai:2020a`, and adjusted from the original values (-0.008, 0.00375,
+    -0.58e-4) to account for an unintentional double scaling to account for the fraction
+    of light reaching PS2."""
+
+    kphio_C3: tuple[float, float, float] = (0.352, 0.022, -0.00034)
+    """Coefficients of the quadratic scaling of the quantum yield of photosynthesis
+    (``phi_0``, :math:`\phi_0`) with temperature for C3 plants, taken from Table 2 of
+    :cite:t:`Bernacchi:2003dc`"""
 
     # Bernachhi
     bernacchi_dhac: float = 79430
