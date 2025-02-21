@@ -76,17 +76,24 @@ variation in $\phi_0$ {cite}`Bernacchi:2003dc`.
 
 For these reasons, the {class}`~pyrealm.pmodel.pmodel.PModel` provides alternative
 approaches to estimating the value of $\phi{0}$, using the `method_kphio` argument. The
-currently implemented approaches are described below. Note that each approach has a
-specific **reference value for $\phi_{0}$**, which is used as the baseline for further
-calculations. This value can be altered via the `reference_kphio` argument.
+currently implemented approaches are described below.
+
+All of the approaches share the same baseline reference value of $\phi{0}= 1/8$ as the
+theoretical maximum quantum yield of photosynthesis. This can be overridden got all
+analsyes using a given {class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` by
+changing the value of
+{attr}`PModelConst.maximum_phi0<pyrealm.constants.pmodel_const.PModelConst.maximum_phi0>`,
+but it can also be overriden for a single P Model using the `reference_kphio` argument.
+This can be needed when specific methods have been calibrated using a 'tuned' value for
+$\phi_0$: an example here is the soil moisture stress corrected GPP estimates of
+:cite:t:`Stocker:2020dh` which use different $\phi_0$ values (see
+{meth}`~pyrealm.pmodel.functions.calc_soilmstress_stocker`).
 
 ## Temperature dependent $\phi_0$
 
 The default approach (`method_kphio='temperature'`) applies a temperature dependent
 estimate of $\phi_0$, following {cite:t}`Bernacchi:2003dc` for C3 plants and
-{cite:t}`cai:2020a` for C4 plants. The default reference value for this approach is
-$\phi_0 = 0.081785$, following the BRC parameterisation in Table 1. of
-{cite:t}`Stocker:2020dh`.
+{cite:t}`cai:2020a` for C4 plants.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
@@ -111,9 +118,7 @@ plt.show()
 ## Fixed $\phi_0$
 
 This approach (`method_kphio='fixed'`) applies a fixed value of $\phi_0$ in the
-calculation of light use efficiency. The default reference value used in this case is
-$\phi_0 = 0.049977$, following the ORG settings parameterisation in Table 1. of
-{cite:t}`Stocker:2020dh`.
+calculation of light use efficiency.
 
 However, the fixed method will also accept $\phi_0$ values for each observation being
 fitted in the PModel. This option is provided to allow users to experiment with
@@ -155,8 +160,7 @@ plt.show()
 
 The option `method_kphio='sandoval'` implements an experimental calculation
 {cite}`sandoval:in_prep` of $\phi_0$ as a function of a local aridity index (P/PET), the
-mean growth temperature and the air temperature {cite}`sandoval:in_prep`. This approach
-uses the theoretical maximum value of $\phi_0 = 1/9$ as the reference value. You will
+mean growth temperature and the air temperature {cite}`sandoval:in_prep`. You will
 need to provide the aridity index and mean growing temperature for observations when
 creating the `PModelEnvironment`.
 

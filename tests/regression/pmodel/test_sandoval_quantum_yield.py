@@ -34,7 +34,7 @@ def test_QuantumYieldSandoval(values):
         co2=400,
         mean_growth_temperature=values["mean_gdd_temp"].to_numpy(),
         aridity_index=values["aridity_index"].to_numpy(),
-        pmodel_const=PModelConst(),
+        pmodel_const=PModelConst(maximum_phi0=1 / 9),
     )
 
     # Calculate kphio for that environment

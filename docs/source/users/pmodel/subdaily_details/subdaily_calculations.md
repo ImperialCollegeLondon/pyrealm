@@ -37,15 +37,18 @@ from importlib import resources
 from matplotlib import pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
-from numpy.testing import assert_allclose
 import pandas
 
-from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
-from pyrealm.pmodel.pmodel_environment import PModelEnvironment
-from pyrealm.pmodel.acclimation import AcclimationModel
+from pyrealm.pmodel import (
+    PModel,
+    SubdailyPModel,
+    PModelEnvironment,
+    AcclimationModel,
+    calculate_simple_arrhenius_factor,
+)
 from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
 from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
-from pyrealm.pmodel.functions import calculate_simple_arrhenius_factor
+from pyrealm.pmodel.arrhenius import SimpleArrhenius
 ```
 
 ## Example dataset
@@ -87,7 +90,7 @@ subdaily_env = PModelEnvironment(
 )
 
 # Fit the standard P Model
-pmodel_standard = PModel(subdaily_env, method_kphio="fixed", reference_kphio=1 / 8)
+pmodel_standard = PModel(subdaily_env)
 pmodel_standard.summarize()
 ```
 
@@ -116,7 +119,6 @@ acclim_model.set_window(
 pmodel_subdaily = SubdailyPModel(
     env=subdaily_env,
     acclim_model=acclim_model,
-    reference_kphio=1 / 8,
 )
 ```
 
@@ -163,7 +165,7 @@ daily_acclim_env = PModelEnvironment(
     ppfd=ppfd_acclim,
 )
 
-pmodel_acclim = PModel(daily_acclim_env, reference_kphio=1 / 8)
+pmodel_acclim = PModel(daily_acclim_env)
 ```
 
 ### Slow responses of $\xi$, $J_{max25}$ and $V_{cmax25}$
@@ -184,13 +186,15 @@ enzymes.
 pmodel_const = pmodel_subdaily.env.pmodel_const
 core_const = pmodel_subdaily.env.core_const
 
-tk_acclim = temp_acclim + core_const.k_CtoK
-tk_ref = pmodel_const.plant_T_ref + core_const.k_CtoK
-vcmax25_acclim = pmodel_acclim.vcmax / calculate_simple_arrhenius_factor(
-    tk=tk_acclim, tk_ref=tk_ref, ha=pmodel_const.arrhenius_vcmax["simple"]["ha"]
+arrh_daily = SimpleArrhenius(
+    env=daily_acclim_env, reference_temperature=25, core_const=core_const
 )
-jmax25_acclim = pmodel_acclim.jmax / calculate_simple_arrhenius_factor(
-    tk=tk_acclim, tk_ref=tk_ref, ha=pmodel_const.arrhenius_jmax["simple"]["ha"]
+
+vcmax25_acclim = pmodel_acclim.vcmax / arrh_daily.calculate_arrhenius_factor(
+    pmodel_const.arrhenius_vcmax
+)
+jmax25_acclim = pmodel_acclim.jmax / arrh_daily.calculate_arrhenius_factor(
+    pmodel_const.arrhenius_jmax
 )
 ```
 
@@ -248,18 +252,23 @@ temperature at fast scales:
   responses of $J_{max}$ and $V_{cmax}$.
 
 ```{code-cell} ipython3
-tk_subdaily = subdaily_env.tc + pmodel_subdaily.env.core_const.k_CtoK
-
 # Fill the realised jmax and vcmax from subdaily to daily
 vcmax25_subdaily = acclim_model.fill_daily_to_subdaily(vcmax25_real)
 jmax25_subdaily = acclim_model.fill_daily_to_subdaily(jmax25_real)
 
-# Adjust to actual temperature at subdaily timescale
-vcmax_subdaily = vcmax25_subdaily * calculate_simple_arrhenius_factor(
-    tk=tk_subdaily, tk_ref=tk_ref, ha=pmodel_const.arrhenius_vcmax["simple"]["ha"]
+# Get the Arrhenius scaler
+
+arrh_subdaily = SimpleArrhenius(
+    env=subdaily_env, reference_temperature=25, core_const=core_const
 )
-jmax_subdaily = jmax25_subdaily * calculate_simple_arrhenius_factor(
-    tk=tk_subdaily, tk_ref=tk_ref, ha=pmodel_const.arrhenius_jmax["simple"]["ha"]
+
+
+# Adjust to actual temperature at subdaily timescale
+vcmax_subdaily = vcmax25_subdaily * arrh_subdaily.calculate_arrhenius_factor(
+    coefficients=pmodel_const.arrhenius_vcmax
+)
+jmax_subdaily = jmax25_subdaily * arrh_subdaily.calculate_arrhenius_factor(
+    coefficients=pmodel_const.arrhenius_jmax
 )
 ```
 
@@ -299,7 +308,7 @@ Ac_subdaily = (
 )
 
 # Calculate J and Aj
-phi = QuantumYieldTemperature(env=subdaily_env, reference_kphio=1 / 8)
+phi = QuantumYieldTemperature(env=subdaily_env)
 iabs = fapar_subdaily * ppfd_subdaily
 
 J_subdaily = (4 * phi.kphio * iabs) / np.sqrt(
@@ -332,5 +341,7 @@ plt.tight_layout()
 # This cell is here to force a docs build failure if these values
 # are _not_ identical. The 'remove-cell' tag is applied to hide this
 # in built docs.
+from numpy.testing import assert_allclose
+
 assert_allclose(GPP_subdaily, pmodel_subdaily.gpp)
 ```

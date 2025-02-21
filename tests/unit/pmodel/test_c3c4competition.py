@@ -84,8 +84,9 @@ def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
         ppfd=np.array([800]),
     )
 
-    pmodel_c3 = PModel(env, **pmodel_c3_args)
-    pmodel_c4 = PModel(env, **pmodel_c4_args)
+    # The test values were calculated when PModel still used the Stocker default phi0
+    pmodel_c3 = PModel(env, **pmodel_c3_args, reference_kphio=0.081785)
+    pmodel_c4 = PModel(env, **pmodel_c4_args, reference_kphio=0.081785)
 
     comp = C3C4Competition(
         pmodel_c3.gpp,

@@ -28,6 +28,7 @@ Constants
 # flatten the namespace for the main public components and setup.cfg applies
 # # to the whole file.
 
+from pyrealm.pmodel.acclimation import AcclimationModel
 from pyrealm.pmodel.competition import (
     C3C4Competition,
     calculate_tree_proportion,
@@ -50,17 +51,16 @@ from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
 __all__ = [
+    "AcclimationModel",
     "C3C4Competition",
     "CalcCarbonIsotopes",
     "JmaxLimitation",
     "PModel",
     "PModelEnvironment",
     "SubdailyPModel",
-    "SubdailyScaler",
     "calc_co2_to_ca",
     "calc_ftemp_inst_rd",
     "calc_ftemp_inst_vcmax",
-    "calc_ftemp_kphio",
     "calc_gammastar",
     "calc_kmm",
     "calc_ns_star",

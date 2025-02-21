@@ -463,15 +463,47 @@ def calc_soilmstress_stocker(
 
     .. math:: q=(1 - (a + b \bar{\alpha}))/(\theta^{*} - \theta_{0})^2
 
-    Default parameters of :math:`a=0` and :math:`b=0.7330` are as described in Table 1
-    of :cite:t:`Stocker:2020dh` specifically for the 'FULL' use case, with
-    ``method_jmaxlim="wang17"``, ``do_ftemp_kphio=TRUE``.
+    .. IMPORTANT::
 
-    Note that it is possible to use the empirical soil moisture stress factor effect on
-    GPP to back calculate realistic Jmax and Vcmax values within the calculations of the
-    P Model. This is applied, for example, in the `rpmodel` implementation.
+        The default parameterisation of this water stress penalty (:math:`a=0`,
+        :math:`b=0.7330`)  was estimated from empirical data using the **standard form
+        of the PModel**  (:class:`~pyrealm.pmodel.pmodel.PModel` in ``pyrealm``).
+
+        These parameters were then further calibrated against empirical data by tuning
+        the quantum yield of photosynthesis. This tuning aimed to capture include
+        incomplete leaf absorption in the realised value of :math:`\phi_0`, and
+        :cite:t:`Stocker:2020dh` argue that, within their model representation,
+        :math:`\phi_0` should be treated as a parameter representing canopy-scale 
+        effective quantum yield. To duplicate the model settings used with this soil
+        moisture correction in from Table 1 of :cite:t:`Stocker:2020dh`, use the
+        following settings:
+
+        .. code-block:: python
+
+            # The 'BRC' model setup
+            PModel(
+                ...
+                method_kphio="temperature",
+                method_arrhenius="simple",
+                method_jmaxlim="wang17",
+                method_optchi="prentice14",
+                reference_kphio=0.081785,
+            )
+
+            # The 'ORG' model setup
+            PModel(
+                ...
+                method_kphio="fixed",
+                method_arrhenius="simple",
+                method_jmaxlim="wang17",
+                method_optchi="prentice14",
+                reference_kphio=0.049977,
+            )
+
     The :mod:`pyrealm.pmodel` module treats this factor purely as a penalty that can be
-    applied after the estimation of GPP.
+    applied after the estimation of GPP. In contrast, the `rpmodel` implementation uses
+    the penalised GPP to back-calculate realistic :math:`J_{max}` and :math:`V_{cmax}`
+    values that would give rise to the penalised GPP.
 
     Args:
         soilm: Relative soil moisture as a fraction of field capacity
@@ -551,6 +583,33 @@ def calc_soilmstress_mengoli(
                 \end{cases}\\
             \end{align*}
         \]
+
+    .. IMPORTANT::
+
+        The parameterisation of this water stress penalty was estimated from empirical
+        data using the **subdaily form of the PModel**
+        (:class:`~pyrealm.pmodel.pmodel.SubdailyPModel` in ``pyrealm``) with
+        temperature dependence of the standard maximum quantum yield of photosynthesis
+        (``phi_0``, :math:`\phi_0=1/8`). 
+        
+        There are minor differences in the implementation of the Subdaily P Model in
+        ``pyrealm`` from that used to calibrate this function in
+        :cite:p:`mengoli:2023a`. To get the closest match when applying this
+        soil moisture correction, use the following settings:
+
+        .. code-block:: python
+
+            SubdailyPModel(
+                ...
+                method_kphio="temperature",
+                method_arrhenius="simple",
+                method_jmaxlim="wang17",
+                method_optchi="prentice14",
+                reference_kphio=1/8,
+            )
+
+        The ``reference_kphio=1/8`` value here is in fact the default value used when
+        ``method_kphio="temperature"`` but is restated here for clarity.
 
     Args:
         soilm: Relative soil moisture (unitless).
