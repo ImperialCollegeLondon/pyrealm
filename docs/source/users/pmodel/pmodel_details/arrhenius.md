@@ -9,16 +9,6 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  codemirror_mode:
-    name: ipython
-    version: 3
-  file_extension: .py
-  mimetype: text/x-python
-  name: python
-  nbconvert_exporter: python
-  pygments_lexer: ipython3
-  version: 3.11.9
 ---
 
 # Arrhenius scaling in the P Model
@@ -33,14 +23,13 @@ when fitting a P Model. The `kattge_knorr` method scaling is implemented for
 experimental purposes only.
 :::
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from pyrealm.constants.core_const import CoreConst
-from pyrealm.constants.pmodel_const import PModelConst
+from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.pmodel.functions import (
     calculate_simple_arrhenius_factor,
     calculate_kattge_knorr_arrhenius_factor,
@@ -108,7 +97,7 @@ present, the implementation of the standard P Model in `rpmodel` uses the form o
 `kattge_knorr` method but sets $t_g=T$, rather than having a fixed growth temperature.
 This leads to the curve labelled `rpmodel` in the plot, which does not have a peak.
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 # Define constants and a temperature range
@@ -131,10 +120,7 @@ kattge_knorr_10 = calculate_kattge_knorr_arrhenius_factor(
     tk_leaf=tk,
     tc_growth=10,
     tk_ref=pmodel_const.tk_ref,
-    ha=coef["ha"],
-    hd=coef["hd"],
-    entropy_intercept=coef["entropy_intercept"],
-    entropy_slope=coef["entropy_slope"],
+    coef=coef,
 )
 
 # 2) t_g = 20°C
@@ -142,10 +128,7 @@ kattge_knorr_20 = calculate_kattge_knorr_arrhenius_factor(
     tk_leaf=tk,
     tc_growth=20,
     tk_ref=pmodel_const.tk_ref,
-    ha=coef["ha"],
-    hd=coef["hd"],
-    entropy_intercept=coef["entropy_intercept"],
-    entropy_slope=coef["entropy_slope"],
+    coef=coef,
 )
 
 # 3) rpmodel: t_g == T_leaf
@@ -153,16 +136,15 @@ rpmodel = calculate_kattge_knorr_arrhenius_factor(
     tk_leaf=tk,
     tc_growth=tk,
     tk_ref=pmodel_const.tk_ref,
-    ha=coef["ha"],
-    hd=coef["hd"],
-    entropy_intercept=coef["entropy_intercept"],
-    entropy_slope=coef["entropy_slope"],
+    coef=coef,
 )
 
 plt.plot(tc, simple, label="Simple")
 plt.plot(tc, kattge_knorr_10, label="Kattge Knorr ($t_g=10$°C)")
 plt.plot(tc, kattge_knorr_20, label="Kattge Knorr ($t_g=20$°C)")
-plt.plot(tc, rpmodel, linestyle="--", color="grey", label="rpmodel ($t_g=T$)")
+plt.plot(
+    tc, rpmodel, linestyle="--", color="grey", label="Kattge Knorr in rpmodel ($t_g=T$)"
+)
 plt.legend(frameon=False)
 plt.xlabel("Leaf temperature (°C)")
 plt.tight_layout()

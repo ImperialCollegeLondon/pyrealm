@@ -218,18 +218,18 @@ def calc_gammastar(
     :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`). By default,
     estimates of  :math:`\Gamma^{*}_{0}` and :math:`H_a` are taken from
     :cite:t:`Bernacchi:2001kg` (see
-    attr:`PModelConst.bernacchi_gs<pyrealm.constants.pmodel_const.PModelConst.bernacchi_gs>`)
+    :attr:`PModelConst.bernacchi_gs<pyrealm.constants.pmodel_const.PModelConst.bernacchi_gs>`)
 
     Args:
         tk: Temperature relevant for photosynthesis in Kelvin(:math:`T`, K)
         patm: Atmospheric pressure (:math:`p`, Pascals)
         tk_ref: The reference temperature of the coefficients in Kelvin.
         k_Po: The standard atmospheric pressure, defaulting to the value
-            from attr:`~pyrealm.constants.core_const.CoreConst.k_Po`.
+            from :attr:`~pyrealm.constants.core_const.CoreConst.k_Po`.
         k_R: The universal gas constant, defaulting to the value from
-            attr:`~pyrealm.constants.core_const.CoreConst.k_R`.
+            :attr:`~pyrealm.constants.core_const.CoreConst.k_R`.
         coef: A dictionary providing the enzyme kinetic coefficients for the reaction
-        (``dha`` and ``gs25_0``).
+            (``dha`` and ``gs25_0``).
 
     Returns:
         A float value or values for :math:`\Gamma^{*}` (in Pa)

@@ -64,12 +64,12 @@ class PModelConst(ConstantsClass):
             ),
         )
     )
-    """Coefficients of Arrhenius factor scaling for :math:`V_{cmax}`. The `simple`
+    """Coefficients of Arrhenius factor scaling for :math:`V_{cmax}`. The ``simple``
     method provides an estimate of the activation energy (:math:`H_a`, J/mol). The
-    `kattge_knorr` method provides the parameterisation from :cite:t:`Kattge:2007db`, 
+    ``kattge_knorr`` method provides the parameterisation from :cite:t:`Kattge:2007db`, 
     providing the intercept and slope of activation entropy as a function of the mean
     growth temperature (J/mol/K), the deactivation energy constant (:math:`H_d`, J/mol) 
-    and the activation energy (J/mol). (:math:`H_a`, J/mol)."""
+    and the activation energy (:math:`H_a`, J/mol)."""
 
     arrhenius_jmax: dict = field(
         default_factory=lambda: dict(
@@ -82,12 +82,12 @@ class PModelConst(ConstantsClass):
             ),
         )
     )
-    """Coefficients of Arrhenius factor scaling for :math:`J_{max}`. The `simple`
+    """Coefficients of Arrhenius factor scaling for :math:`J_{max}`. The ``simple``
     method provides an estimate of the activation energy (:math:`H_a`, J/mol). The
-    `kattge_knorr` method provides the parameterisation from :cite:t:`Kattge:2007db`, 
+    ``kattge_knorr`` method provides the parameterisation from :cite:t:`Kattge:2007db`, 
     providing the intercept and slope of activation entropy as a function of the mean
     growth temperature (J/mol/K), the deactivation energy constant (:math:`H_d`, J/mol) 
-    and the activation energy (J/mol). (:math:`H_a`, J/mol)."""
+    and the activation energy (:math:`H_a`, J/mol)."""
 
     kphio_C4: tuple[float, float, float] = (-0.064, 0.03, -0.000464)
     """Coefficients of the quadratic scaling of the quantum yield of photosynthesis
