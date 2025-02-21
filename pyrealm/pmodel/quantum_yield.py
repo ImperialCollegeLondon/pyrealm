@@ -307,8 +307,10 @@ class QuantumYieldSandoval(
         aridity_index = getattr(self.env, "aridity_index")
         mean_growth_temperature = getattr(self.env, "mean_growth_temperature")
 
-        # Calculate enzyme kinetics
-        coef = self.env.pmodel_const.sandoval_kinetics
+        # Calculate enzyme kinetic. This needs to use a copy because the Hd value is
+        # modified below.
+        coef = self.env.pmodel_const.sandoval_kinetics.copy()
+
         # Calculate change in activation entropy as a linear function of
         # mean growth temperature, J/mol/K
         delta_entropy = (
@@ -327,12 +329,15 @@ class QuantumYieldSandoval(
         # Calculate peak kphio given the aridity index
         kphio_peak = self.peak_quantum_yield(aridity_index=aridity_index)
 
+        # Pass the modified Hd back into the calculation of the Arrhenius factor
+        coef["hd"] = Hd
+
         # Calculate the modified Arrhenius factor using the
         f_kphio = calculate_kattge_knorr_arrhenius_factor(
             tk_leaf=tk_leaf,
             tk_ref=Topt,
             tc_growth=mean_growth_temperature,
-            coef=self.env.pmodel_const.sandoval_kinetics,
+            coef=coef,
             k_R=self.env.core_const.k_R,
         )
 

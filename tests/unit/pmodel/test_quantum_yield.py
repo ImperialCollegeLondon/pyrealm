@@ -113,18 +113,18 @@ def test_QuantumYieldTemperature(
     argnames="reference_kphio, expected_kphio",
     argvalues=(
         pytest.param(
-            1 / 9,
+            None,
             np.array(
                 [0.02848466, 0.05510828, 0.06099888, 0.07537036, 0.02231382, 0.03026185]
             ),
-            id="provided_kphio",
+            id="default_kphio",
         ),
         pytest.param(
-            None,
+            1 / 9,
             np.array(
                 [0.03204524, 0.06199681, 0.06862374, 0.08479165, 0.02510305, 0.03404458]
             ),
-            id="default_kphio",
+            id="provided_kphio",
         ),
     ),
 )

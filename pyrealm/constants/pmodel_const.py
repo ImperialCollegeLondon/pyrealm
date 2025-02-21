@@ -24,8 +24,8 @@ class PModelConst(ConstantsClass):
         default_factory=lambda: dict(
             entropy_intercept=1558.853,
             entropy_slope=-50.223,
-            hd=75000.0,
-            ha=294.804,
+            ha=75000.0,
+            hd=294.804,
         )
     )
     """Enzyme kinetics parameters for estimation of kphio from mean growth temperature
