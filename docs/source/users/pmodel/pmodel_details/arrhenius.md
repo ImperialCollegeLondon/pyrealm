@@ -9,6 +9,16 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Arrhenius scaling in the P Model
@@ -23,7 +33,7 @@ when fitting a P Model. The `kattge_knorr` method scaling is implemented for
 experimental purposes only.
 :::
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 import matplotlib.pyplot as plt
@@ -97,7 +107,7 @@ present, the implementation of the standard P Model in `rpmodel` uses the form o
 `kattge_knorr` method but sets $t_g=T$, rather than having a fixed growth temperature.
 This leads to the curve labelled `rpmodel` in the plot, which does not have a peak.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # Define constants and a temperature range
