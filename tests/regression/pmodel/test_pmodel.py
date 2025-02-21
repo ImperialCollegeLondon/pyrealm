@@ -140,18 +140,13 @@ def test_calc_ftemp_inst_vcmax(values, tc, expvars):
     pmodel_const = PModelConst()
     core_const = CoreConst()
 
-    cf = pmodel_const.arrhenius_vcmax["kattge_knorr"]
-
     # Calculate the arrhenius factor
     ret = calculate_kattge_knorr_arrhenius_factor(
         tk_leaf=values[tc] + core_const.k_CtoK,
         tk_ref=pmodel_const.tc_ref + core_const.k_CtoK,
         tc_growth=values[tc],  # This is an odd thing for rpmodel to do
-        ha=cf["ha"],
-        hd=cf["hd"],
-        entropy_intercept=cf["entropy_intercept"],
-        entropy_slope=cf["entropy_slope"],
-        core_const=core_const,
+        coef=pmodel_const.arrhenius_vcmax["kattge_knorr"],
+        k_R=core_const.k_R,
     )
 
     assert np.allclose(ret, values[expvars])

@@ -175,7 +175,7 @@ class SimpleArrhenius(
             tk=self.tk,
             tk_ref=self.tk_ref,
             ha=coefficients["ha"],
-            core_const=self.core_const,
+            k_R=self.core_const.k_R,
         )
 
 
@@ -196,9 +196,6 @@ class KattgeKnorrArrhenius(
             tk_leaf=self.tk,
             tk_ref=self.tk_ref,
             tc_growth=getattr(self.env, "mean_growth_temperature"),
-            ha=coefficients["ha"],
-            hd=coefficients["hd"],
-            entropy_intercept=coefficients["entropy_intercept"],
-            entropy_slope=coefficients["entropy_slope"],
-            core_const=self.core_const,
+            coef=coefficients,
+            k_R=self.core_const.k_R,
         )

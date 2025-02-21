@@ -20,11 +20,13 @@ class PModelConst(ConstantsClass):
     """Curvature parameters for calculation of peak phio in the Sandoval method for
     estimation of quantum yield efficiency."""
 
-    sandoval_kinetics: tuple[float, float, float, float] = (
-        1558.853,
-        -50.223,
-        294.804,
-        75000.0,
+    sandoval_kinetics: dict[str, float] = field(
+        default_factory=lambda: dict(
+            entropy_intercept=1558.853,
+            entropy_slope=-50.223,
+            hd=75000.0,
+            ha=294.804,
+        )
     )
     """Enzyme kinetics parameters for estimation of kphio from mean growth temperature
     in the Sandoval method :cite:t:`sandoval:in_prep` for estimation of quantum yield

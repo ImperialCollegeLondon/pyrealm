@@ -15,7 +15,7 @@ def calculate_simple_arrhenius_factor(
     tk: NDArray[np.float64],
     tk_ref: float,
     ha: float,
-    core_const: CoreConst = CoreConst(),
+    k_R: float = CoreConst().k_R,
 ) -> NDArray[np.float64]:
     r"""Calculate an Arrhenius scaling factor using activation energy.
 
@@ -49,14 +49,9 @@ def calculate_simple_arrhenius_factor(
         tk: Temperature (K)
         tk_ref: The reference temperature for the reaction (K).
         ha: Activation energy (in :math:`J \text{mol}^{-1}`)
-        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
-
-    PModel Parameters:
-        R: the universal gas constant (:math:`R`, ``k_R``)
-
-    Returns:
-        Estimated float values for :math:`f`
-
+        k_R: The universal gas constant, defaulting to the value from
+            attr:`~pyrealm.constants.core_const.CoreConst.k_R`. 
+    
     Examples:
         >>> # Percentage rate change from 25 to 10 degrees Celsius
         >>> at_10C = calculate_simple_arrhenius_factor(
@@ -66,18 +61,15 @@ def calculate_simple_arrhenius_factor(
         array([88.1991])
     """
 
-    return np.exp(ha * (tk - tk_ref) / (tk_ref * core_const.k_R * tk))
+    return np.exp(ha * (tk - tk_ref) / (tk_ref * k_R * tk))
 
 
 def calculate_kattge_knorr_arrhenius_factor(
     tk_leaf: NDArray[np.float64],
     tk_ref: float,
     tc_growth: NDArray[np.float64],
-    ha: float,
-    hd: float,
-    entropy_intercept: float,
-    entropy_slope: float,
-    core_const: CoreConst = CoreConst(),
+    coef: dict[str, float],
+    k_R: float = CoreConst().k_R,
 ) -> NDArray[np.float64]:
     r"""Calculate an Arrhenius factor following :cite:t:`Kattge:2007db`.
 
@@ -111,19 +103,22 @@ def calculate_kattge_knorr_arrhenius_factor(
 
         \]
 
+    The coefficients dictionary must provide entries for:
+
+    * ha: The activation energy of the enzyme (:math:`H_a`)
+    * hd: The deactivation energy of the enzyme (:math:`H_d`)
+    * entropy_intercept: The intercept of the entropy relationship (:math:`a`)
+    * entropy_slope: The slope of the entropy relationship (:math:`b`)
+
     Args:
         tk_leaf: The instantaneous temperature in Kelvin (K) at which to calculate the
             factor (:math:`T`)
         tk_ref: The reference temperature in Kelvin for the process (:math:`T_0`)
         tc_growth: The growth temperature of the plants in °C (:math:`t_g`)
-        ha: The activation energy of the enzyme (:math:`H_a`)
-        hd: The deactivation energy of the enzyme (:math:`H_d`)
-        entropy_intercept: The intercept of the entropy relationship (:math:`a`),
-        entropy_slope: The slope of the entropy relationship (:math:`b`),
-        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
-
-    PModel Parameters:
-        R: The universal gas constant (:math:`R`, ``k_R``)
+        coef: A dictionary providing values of the coefficients ``ha``,
+            ``hd``, ``entropy_intercept`` and ``entropy_slope``.
+        k_R: The universal gas constant, defaulting to the value from
+            attr:`~pyrealm.constants.core_const.CoreConst.k_R`.
 
     Returns:
         Values for :math:`f`
@@ -140,23 +135,22 @@ def calculate_kattge_knorr_arrhenius_factor(
         ...     tk_leaf= np.array([283.15]),
         ...     tc_growth = 10,
         ...     tk_ref=298.15,
-        ...     ha=coef['ha'],
-        ...     hd=coef['hd'],
-        ...     entropy_intercept=coef['entropy_intercept'],
-        ...     entropy_slope=coef['entropy_slope'],
+        ...     coef=coef,
         ... )
         >>> np.round(val, 4)
         array([0.261])
     """
 
     # Calculate entropy as a function of temperature _in °C_
-    entropy = entropy_intercept + entropy_slope * tc_growth
+    entropy = coef["entropy_intercept"] + coef["entropy_slope"] * tc_growth
 
     # Calculate Arrhenius components
-    fva = calculate_simple_arrhenius_factor(tk=tk_leaf, ha=ha, tk_ref=tk_ref)
+    fva = calculate_simple_arrhenius_factor(
+        tk=tk_leaf, ha=coef["ha"], tk_ref=tk_ref, k_R=k_R
+    )
 
-    fvb = (1 + np.exp((tk_ref * entropy - hd) / (core_const.k_R * tk_ref))) / (
-        1 + np.exp((tk_leaf * entropy - hd) / (core_const.k_R * tk_leaf))
+    fvb = (1 + np.exp((tk_ref * entropy - coef["hd"]) / (k_R * tk_ref))) / (
+        1 + np.exp((tk_leaf * entropy - coef["hd"]) / (k_R * tk_leaf))
     )
 
     return fva * fvb
@@ -207,6 +201,7 @@ def calc_gammastar(
     patm: NDArray[np.float64],
     tk_ref: float = PModelConst().tk_ref,
     k_Po: float = CoreConst().k_Po,
+    k_R: float = CoreConst().k_R,
     coef: dict[str, float] = PModelConst().bernacchi_gs,
 ) -> NDArray[np.float64]:
     r"""Calculate the photorespiratory CO2 compensation point.
@@ -220,8 +215,10 @@ def calc_gammastar(
 
     where :math:`f(T, H_a)` modifies the activation energy to the the local temperature
     in Kelvin following the Arrhenius-type temperature response function (see
-    :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`). Estimates of
-    :math:`\Gamma^{*}_{0}` and :math:`H_a` are taken from :cite:t:`Bernacchi:2001kg`.
+    :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`). By default,
+    estimates of  :math:`\Gamma^{*}_{0}` and :math:`H_a` are taken from
+    :cite:t:`Bernacchi:2001kg` (see
+    attr:`PModelConst.bernacchi_gs<pyrealm.constants.pmodel_const.PModelConst.bernacchi_gs>`)
 
     Args:
         tk: Temperature relevant for photosynthesis in Kelvin(:math:`T`, K)
@@ -229,8 +226,10 @@ def calc_gammastar(
         tk_ref: The reference temperature of the coefficients in Kelvin.
         k_Po: The standard atmospheric pressure, defaulting to the value
             from attr:`~pyrealm.constants.core_const.CoreConst.k_Po`.
-        coef: The enzyme kinetic coefficients for the reaction, defaulting to the values
-            from attr:`~pyrealm.constants.pmodel_const.PModelConst.bernacchi_gs`
+        k_R: The universal gas constant, defaulting to the value from
+            attr:`~pyrealm.constants.core_const.CoreConst.k_R`.
+        coef: A dictionary providing the enzyme kinetic coefficients for the reaction
+        (``dha`` and ``gs25_0``).
 
     Returns:
         A float value or values for :math:`\Gamma^{*}` (in Pa)
@@ -248,7 +247,9 @@ def calc_gammastar(
         coef["gs25_0"]
         * patm
         / k_Po
-        * calculate_simple_arrhenius_factor(tk=tk, tk_ref=tk_ref, ha=coef["dha"])
+        * calculate_simple_arrhenius_factor(
+            tk=tk, tk_ref=tk_ref, ha=coef["dha"], k_R=k_R
+        )
     )
 
 
@@ -301,6 +302,7 @@ def calc_kmm(
     patm: NDArray[np.float64],
     tk_ref: float = PModelConst().tk_ref,
     k_co: float = CoreConst().k_co,
+    k_R: float = CoreConst().k_R,
     coef: dict[str, float] = PModelConst().bernacchi_kmm,
 ) -> NDArray[np.float64]:
     r"""Calculate the Michaelis Menten coefficient of Rubisco-limited assimilation.
@@ -315,8 +317,9 @@ def calc_kmm(
     :math:`f(T, H_a)` is the simple Arrhenius temperature response of activation
     energies (see :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`)
     used to correct Michalis constants at standard temperature for both :math:`\ce{CO2}`
-    and :math:`\ce{O2}` to the local temperature (Table 1,
-    :cite:alp:`Bernacchi:2001kg`):
+    and :math:`\ce{O2}` to the local temperature. The default values for the enzyme
+    coefficients are taken from Table 1 of :cite:t:`Bernacchi:2001kg` (see
+    attr:`PModelConst.bernacchi_kmm<pyrealm.constants.pmodel_const.PModelConst.bernacchi_kmm>`)
 
       .. math::
         :nowrap:
@@ -333,8 +336,10 @@ def calc_kmm(
         tk_ref: The reference temperature of the coefficients in Kelvin.
         k_co: The partial pressure of :math:`\ce{O2}` at standard pressure, defaulting
             to the values from  attr:`~pyrealm.constants.core_const.CoreConst.k_co`.
-        coef: The enzyme kinetic coefficients for the reaction, defaulting to the values
-            from attr:`~pyrealm.constants.pmodel_const.PModelConst.bernacchi_kmm`
+        k_R: The universal gas constant, defaulting to the value from
+            attr:`~pyrealm.constants.core_const.CoreConst.k_R`.
+        coef: A dictionary providing the enzyme kinetic coefficients for the reaction
+            (``kc25``, ``ko25``, ``dhac``, ``dhao``).
 
     Returns:
         A numeric value for :math:`K` (in Pa)
@@ -349,11 +354,11 @@ def calc_kmm(
     _ = check_input_shapes(tk, patm)
 
     kc = coef["kc25"] * calculate_simple_arrhenius_factor(
-        tk=tk, tk_ref=tk_ref, ha=coef["dhac"]
+        tk=tk, tk_ref=tk_ref, ha=coef["dhac"], k_R=k_R
     )
 
     ko = coef["ko25"] * calculate_simple_arrhenius_factor(
-        tk=tk, tk_ref=tk_ref, ha=coef["dhao"]
+        tk=tk, tk_ref=tk_ref, ha=coef["dhao"], k_R=k_R
     )
 
     # O2 partial pressure
