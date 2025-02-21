@@ -441,11 +441,7 @@ class PModel(PModelABC):
         )
 
         # Get an Arrhenius instance for use in scaling rates
-        arrhenius_factors = self._arrhenius_class(
-            env=self.env,
-            reference_temperature=self.env.pmodel_const.plant_T_ref,
-            core_const=self.env.core_const,
-        )
+        arrhenius_factors = self._arrhenius_class(env=self.env)
 
         # Intrinsic water use efficiency (in µmol mol-1)
         self.iwue: NDArray[np.float64] = (5 / 8 * (self.env.ca - self.optchi.ci)) / (
@@ -854,11 +850,7 @@ class SubdailyPModel(PModelABC):
 
         self.xi_daily_optimal = self.pmodel_acclim.optchi.xi
 
-        arrhenius_daily = self._arrhenius_class(
-            env=self.pmodel_acclim.env,
-            reference_temperature=self.pmodel_acclim.env.pmodel_const.plant_T_ref,
-            core_const=self.env.core_const,
-        )
+        arrhenius_daily = self._arrhenius_class(env=self.pmodel_acclim.env)
 
         self.vcmax25_daily_optimal = (
             self.pmodel_acclim.vcmax
@@ -907,11 +899,7 @@ class SubdailyPModel(PModelABC):
 
         # 7) Adjust subdaily jmax25 and vcmax25 back to jmax and vcmax given the
         #    actual subdaily temperatures.
-        arrhenius_subdaily = self._arrhenius_class(
-            env=self.env,
-            reference_temperature=self.pmodel_acclim.env.pmodel_const.plant_T_ref,
-            core_const=self.env.core_const,
-        )
+        arrhenius_subdaily = self._arrhenius_class(env=self.env)
 
         self.vcmax: NDArray[np.float64] = (
             self.vcmax25
