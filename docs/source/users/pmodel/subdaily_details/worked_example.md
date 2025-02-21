@@ -119,14 +119,18 @@ instantaneously adopt optimal behaviour.
 ```{code-cell} ipython3
 # Standard PModels
 pmodC3 = PModel(
-    env=pm_env, method_kphio="fixed", reference_kphio=1 / 8, method_optchi="prentice14"
+    env=pm_env,
+    method_kphio="fixed",
+    method_optchi="prentice14",
 )
 pmodC3.summarize()
 ```
 
 ```{code-cell} ipython3
 pmodC4 = PModel(
-    env=pm_env, method_kphio="fixed", reference_kphio=1 / 8, method_optchi="c4_no_gamma"
+    env=pm_env,
+    method_kphio="fixed",
+    method_optchi="c4_no_gamma",
 )
 
 pmodC4.summarize()
@@ -148,20 +152,18 @@ acclim_model.set_window(
     half_width=np.timedelta64(1, "h"),
 )
 
-# Fit C3 and C4 with the new implementation
+# Fit C3 and C4 with the Subdaily P Model
 subdailyC3 = SubdailyPModel(
     env=pm_env,
+    acclim_model=acclim_model,
     method_optchi="prentice14",
     method_kphio="fixed",
-    reference_kphio=1 / 8,
-    acclim_model=acclim_model,
 )
 subdailyC4 = SubdailyPModel(
     env=pm_env,
+    acclim_model=acclim_model,
     method_optchi="c4_no_gamma",
     method_kphio="fixed",
-    reference_kphio=1 / 8,
-    acclim_model=acclim_model,
 )
 ```
 
@@ -240,11 +242,13 @@ This produces the same outputs as the `SubdailyPModel` class, but is convenient 
 compact when the two models are going to be compared.
 
 ```{code-cell} ipython3
-# Models have identical GPP - maximum absolute difference is zero.
-print(np.nanmax(abs(subdailyC3.gpp.flatten() - converted_C3.gpp.flatten())))
-print(np.nanmax(abs(subdailyC4.gpp.flatten() - converted_C4.gpp.flatten())))
-```
+:tags: [remove-cell]
 
-```{code-cell} ipython3
+# This cell is here to force a docs build failure if these values
+# are _not_ identical. The 'remove-cell' tag is applied to hide this
+# in built docs.
+from numpy.testing import assert_allclose
 
+assert_allclose(subdailyC3.gpp, converted_C3.gpp)
+assert_allclose(subdailyC4.gpp, converted_C4.gpp)
 ```

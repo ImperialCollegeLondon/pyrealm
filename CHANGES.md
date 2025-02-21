@@ -50,9 +50,18 @@ worked through. The changes below are provisional.
   supports the previous fixed and temperature dependent $\phi_0$ approaches but also
   David Sandoval's extension for estimating the impact of water stress on $\phi_0$.
 
-  **Breaking change** The signatures of the `PModel` and `SubdailyPModel` classes have
-  changed: the arguments `kphio` and `do_ftemp_kphio` have been replaced by
-  `method_kphio` and `reference_kphio`.
+  **Breaking changes**:
+  
+  - The signatures of the `PModel` and `SubdailyPModel` classes have
+    changed: the arguments `kphio` and `do_ftemp_kphio` have been replaced by
+    `method_kphio` and `reference_kphio`.
+  - In addition to changing the implementation, the **default values** of $\phi_0$ have
+    changed. In `1.0.0`, the `PModel` followed {cite:t}`Stocker:2020dh` in using default
+    values of either 0.081785 or 0.049977, depending on whether the model applied
+    temperature correction to $\phi_0$. These values were tuned to the particular model
+    setup and the application of a water stress penalty. The `PModel` and
+    `SubdailyPModel` now both default to the theoretical maximum quantum yield of
+    photosynthesis ($\phi_0 = 1/8$).
 
 - The implementation of $J_{max}$ and $V_{cmax}$ limitation has been updated to provide
   a more flexible and expandable system. The changes are mostly internal, but there are

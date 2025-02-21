@@ -128,6 +128,11 @@ class PModelConst(ConstantsClass):
     elevation (98716.403 Pa).
     """
 
+    maximum_phi0: float = 1.0 / 8.0
+    """The theoretical maximum intrinsic quantum yield efficiency of photosynthesis
+    (:math:`\phi_0`, unitless). This value defaults to 1/8 but could be set to 1/9 to
+    capture the absence of a Q cycle :cite:`long:1993a`."""
+
     bernacchi_gs: dict[str, float] = field(
         default_factory=lambda: dict(
             dha=37830.0,

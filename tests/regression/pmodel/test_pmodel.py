@@ -669,13 +669,17 @@ def pmodelenv(values):
 def test_pmodel_class_c3(
     request, values, pmodelenv, soilmstress, method_kphio, luevcmax_method, environ
 ):
-    """Test the PModel class for C3 plants."""
+    """Test the PModel class for C3 plants.
+
+    Note that the values generated here do not use the recommended settings from
+    :cite:t:`Stocker:2020dh` for the BRC and ORG approaches for the reference values of
+    phi0.
+    """
 
     from pyrealm.pmodel import calc_soilmstress_stocker
     from pyrealm.pmodel.pmodel import PModel
 
-    # TODO - this is a bit odd as rpmodel embeds stocker soilm in model where in pyrealm
-    #        it is only applied post-GPP calculation. Maybe disentangle these.
+    # Calculate the soil moisture factor to apply post hoc
     if soilmstress:
         soilmstress = calc_soilmstress_stocker(
             values["soilm_sc"], values["meanalpha_sc"]

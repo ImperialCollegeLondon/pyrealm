@@ -89,7 +89,7 @@ def test_ArrheniusFactorABC_init_and_call(
     class_obj = getattr(arrhenius, classname)
 
     with init_raises as init_excep:
-        inst = class_obj(env=env, reference_temperature=25)
+        inst = class_obj(env=env)
 
         with call_raises as call_excep:
             _ = inst.calculate_arrhenius_factor(coefficients=coef)
@@ -137,7 +137,7 @@ class TestSimpleArrhenius:
         env = PModelEnvironment(
             tc=args["tc"], patm=101325, vpd=400, co2=400, fapar=1, ppfd=1
         )
-        arrh = SimpleArrhenius(env=env, reference_temperature=args["tc_ref"])
+        arrh = SimpleArrhenius(env=env)
 
         assert_allclose(
             arrh.calculate_arrhenius_factor(coefficients=args["coef"]), expected
@@ -200,7 +200,7 @@ class TestKattgeKnorrArrhenius:
             co2=400,
             mean_growth_temperature=args["tc_growth"],
         )
-        arrh = KattgeKnorrArrhenius(env=env, reference_temperature=args["tc_ref"])
+        arrh = KattgeKnorrArrhenius(env=env)
 
         assert_allclose(
             arrh.calculate_arrhenius_factor(coefficients=args["coef"]), expected
