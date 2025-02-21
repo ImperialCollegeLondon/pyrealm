@@ -31,15 +31,14 @@ def test_calc_ftemp_inst_rd(tc=TC):
 
 def test_calc_gammastar(tk=TK, patm=PATM):
     """Test calc_ftemp_inst_rd."""
-    from pyrealm.constants.core_const import CoreConst
+
     from pyrealm.constants.pmodel_const import PModelConst
     from pyrealm.pmodel.functions import calc_gammastar
 
     pmodel_const = PModelConst()
-    core_const = CoreConst()
 
     assert np.allclose(
-        calc_gammastar(tk, patm, tk_ref=pmodel_const.tc_ref + core_const.k_CtoK),
+        calc_gammastar(tk, patm, tk_ref=pmodel_const.tk_ref),
         6.7888247955597,
     )
 

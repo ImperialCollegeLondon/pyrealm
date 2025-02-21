@@ -79,9 +79,6 @@ class ArrheniusFactorABC(ABC):
         """The PModelEnvironment containing the photosynthetic environment for the
         model."""
 
-        self.tk_ref = self.env.pmodel_const.tc_ref + self.env.core_const.k_CtoK
-        """The reference temperature in Kelvins, calculated internally."""
-
         # Run the calculation methods after checking for any required variables
         self._check_required_env_variables()
 
@@ -182,7 +179,7 @@ class SimpleArrhenius(
     def _calculation_method(self, coefficients: dict) -> NDArray:
         return calculate_simple_arrhenius_factor(
             tk=self.env.tk,
-            tk_ref=self.tk_ref,
+            tk_ref=self.env.pmodel_const.tk_ref,
             ha=coefficients["ha"],
             k_R=self.env.core_const.k_R,
         )
@@ -233,7 +230,7 @@ class KattgeKnorrArrhenius(
     def _calculation_method(self, coefficients: dict) -> NDArray:
         return calculate_kattge_knorr_arrhenius_factor(
             tk_leaf=self.env.tk,
-            tk_ref=self.tk_ref,
+            tk_ref=self.env.pmodel_const.tk_ref,
             tc_growth=getattr(self.env, "mean_growth_temperature"),
             coef=coefficients,
             k_R=self.env.core_const.k_R,

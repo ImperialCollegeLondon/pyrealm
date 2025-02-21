@@ -198,7 +198,7 @@ def test_out_of_bound_output_gammastar(function_test_data):
         result = calc_gammastar(
             tk=tc + core_const.k_CtoK,
             patm=patm,
-            tk_ref=pmodel_const.tc_ref + core_const.k_CtoK,
+            tk_ref=pmodel_const.tk_ref,
         )
 
         assert np.all(result >= gammastar_lower_bound), (

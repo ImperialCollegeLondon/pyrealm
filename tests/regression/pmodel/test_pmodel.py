@@ -143,7 +143,7 @@ def test_calc_ftemp_inst_vcmax(values, tc, expvars):
     # Calculate the arrhenius factor
     ret = calculate_kattge_knorr_arrhenius_factor(
         tk_leaf=values[tc] + core_const.k_CtoK,
-        tk_ref=pmodel_const.tc_ref + core_const.k_CtoK,
+        tk_ref=pmodel_const.tk_ref,
         tc_growth=values[tc],  # This is an odd thing for rpmodel to do
         coef=pmodel_const.arrhenius_vcmax["kattge_knorr"],
         k_R=core_const.k_R,

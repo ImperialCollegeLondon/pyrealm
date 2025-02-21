@@ -187,7 +187,8 @@ pmodel_const = pmodel_subdaily.env.pmodel_const
 core_const = pmodel_subdaily.env.core_const
 
 tk_acclim = temp_acclim + core_const.k_CtoK
-tk_ref = pmodel_const.tc_ref + core_const.k_CtoK
+tk_ref = pmodel_const.tk_ref
+
 vcmax25_acclim = pmodel_acclim.vcmax / calculate_simple_arrhenius_factor(
     tk=tk_acclim, tk_ref=tk_ref, ha=pmodel_const.arrhenius_vcmax["simple"]["ha"]
 )

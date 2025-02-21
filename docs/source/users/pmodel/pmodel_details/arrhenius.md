@@ -115,11 +115,12 @@ This leads to the curve labelled `rpmodel` in the plot, which does not have a pe
 pmodel_const = PModelConst()
 core_const = CoreConst()
 tc = np.arange(0, 40, 0.1)
+tk = tc + core_const.k_CtoK
 
 # Calculate the simple scaling factor
 simple = calculate_simple_arrhenius_factor(
-    tk=tc + core_const.k_CtoK,
-    tk_ref=pmodel_const.tc_ref + core_const.k_CtoK,
+    tk=tk,
+    tk_ref=pmodel_const.tk_ref,
     ha=pmodel_const.arrhenius_vcmax["simple"]["ha"],
 )
 
@@ -127,9 +128,9 @@ simple = calculate_simple_arrhenius_factor(
 # 1) t_g = 10°C
 coef = pmodel_const.arrhenius_vcmax["kattge_knorr"]
 kattge_knorr_10 = calculate_kattge_knorr_arrhenius_factor(
-    tk_leaf=tc + core_const.k_CtoK,
+    tk_leaf=tk,
     tc_growth=10,
-    tk_ref=pmodel_const.tc_ref + core_const.k_CtoK,
+    tk_ref=pmodel_const.tk_ref,
     ha=coef["ha"],
     hd=coef["hd"],
     entropy_intercept=coef["entropy_intercept"],
@@ -138,9 +139,9 @@ kattge_knorr_10 = calculate_kattge_knorr_arrhenius_factor(
 
 # 2) t_g = 20°C
 kattge_knorr_20 = calculate_kattge_knorr_arrhenius_factor(
-    tk_leaf=tc + core_const.k_CtoK,
+    tk_leaf=tk,
     tc_growth=20,
-    tk_ref=pmodel_const.tc_ref + core_const.k_CtoK,
+    tk_ref=pmodel_const.tk_ref,
     ha=coef["ha"],
     hd=coef["hd"],
     entropy_intercept=coef["entropy_intercept"],
@@ -149,9 +150,9 @@ kattge_knorr_20 = calculate_kattge_knorr_arrhenius_factor(
 
 # 3) rpmodel: t_g == T_leaf
 rpmodel = calculate_kattge_knorr_arrhenius_factor(
-    tk_leaf=tc + core_const.k_CtoK,
-    tc_growth=tc + core_const.k_CtoK,
-    tk_ref=pmodel_const.tc_ref + core_const.k_CtoK,
+    tk_leaf=tk,
+    tc_growth=tk,
+    tk_ref=pmodel_const.tk_ref,
     ha=coef["ha"],
     hd=coef["hd"],
     entropy_intercept=coef["entropy_intercept"],
