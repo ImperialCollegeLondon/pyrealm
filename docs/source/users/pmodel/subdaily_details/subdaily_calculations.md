@@ -9,6 +9,16 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Subdaily P Model calculations
@@ -19,7 +29,7 @@ steps used in the estimation process in order to show intermediates results but 
 practice, as shown in the [worked example](worked_example), most of these calculations
 are handled internally by the model fitting in `pyrealm`.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 from importlib import resources
@@ -47,7 +57,7 @@ The code below uses half hourly data from 2014 for the [BE-Vie FluxNET
 site](https://fluxnet.org/doi/FLUXNET2015/BE-Vie), which was also used as a
 demonstration in {cite:t}`mengoli:2022a`.
 
-```{code-cell}
+```{code-cell} ipython3
 data_path = resources.files("pyrealm_build_data.subdaily") / "subdaily_BE_Vie_2014.csv"
 
 data = pandas.read_csv(str(data_path))
@@ -68,7 +78,7 @@ This dataset can then be used to calculate the photosynthetic environment at the
 subdaily timescale. The code below also estimates GPP under the standard P Model with no
 slow responses for comparison.
 
-```{code-cell}
+```{code-cell} ipython3
 # Calculate the photosynthetic environment
 subdaily_env = PModelEnvironment(
     tc=temp_subdaily,
@@ -95,7 +105,7 @@ best to sample those conditions. Typically those might be the observed environme
 conditions at the observation closest to noon, or the mean environmental conditions in a
 window around noon.
 
-```{code-cell}
+```{code-cell} ipython3
 # Create the acclimation model
 acclim_model = AcclimationModel(datetime_subdaily, allow_holdover=True, alpha=1 / 15)
 
@@ -112,7 +122,7 @@ pmodel_subdaily = SubdailyPModel(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 idx = np.arange(48 * 120, 48 * 130)
@@ -136,7 +146,7 @@ The daily average conditions during the acclimation window can be sampled and us
 inputs to the standard P Model to calculate the optimal behaviour of plants under those
 conditions.
 
-```{code-cell}
+```{code-cell} ipython3
 # Get the daily acclimation conditions for the forcing variables
 temp_acclim = acclim_model.get_daily_means(temp_subdaily)
 co2_acclim = acclim_model.get_daily_means(co2_subdaily)
@@ -172,7 +182,7 @@ at 25°C. This is achieved calculating an Arrhenius scaling factor for the tempe
 the observation relative to the standard temperature, given the activation energy of the
 enzymes.
 
-```{code-cell}
+```{code-cell} ipython3
 pmodel_const = pmodel_subdaily.env.pmodel_const
 core_const = pmodel_subdaily.env.core_const
 
@@ -194,7 +204,7 @@ jmax25_acclim = pmodel_acclim.jmax / arrh_daily.calculate_arrhenius_factor(
 The memory effect can now be applied to the three parameters with slow
 responses to calculate realised values, here using the default 15 day window.
 
-```{code-cell}
+```{code-cell} ipython3
 # Calculation of memory effect in xi, vcmax25 and jmax25
 xi_real = acclim_model.apply_acclimation(pmodel_acclim.optchi.xi)
 vcmax25_real = acclim_model.apply_acclimation(vcmax25_acclim)
@@ -205,7 +215,7 @@ The plots below show the instantaneously acclimated values for  $J_{max25}$,
 $V_{cmax25}$ and $\xi$ in grey along with the realised slow reponses, after
 application of the memory effect.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 fig, axes = plt.subplots(1, 3, figsize=(12, 4))
@@ -242,7 +252,7 @@ temperature at fast scales:
 * These values are adjusted to the actual half hourly temperatures to give the fast
   responses of $J_{max}$ and $V_{cmax}$.
 
-```{code-cell}
+```{code-cell} ipython3
 # Fill the realised jmax and vcmax from subdaily to daily
 vcmax25_subdaily = acclim_model.fill_daily_to_subdaily(vcmax25_real)
 jmax25_subdaily = acclim_model.fill_daily_to_subdaily(jmax25_real)
@@ -267,7 +277,7 @@ passing the realised values of $\xi$ as a fixed constraint to the calculation of
 optimal $\chi$, rather than calculating the instantaneously optimal values of $\xi$
 as is the case in the standard P Model.
 
-```{code-cell}
+```{code-cell} ipython3
 # Interpolate xi to subdaily scale
 xi_subdaily = acclim_model.fill_daily_to_subdaily(xi_real)
 
@@ -286,7 +296,7 @@ Model, where $c_i$ includes the slow responses of $\xi$ and $V_{cmax}$ and $J_{m
 include the slow responses of $V_{cmax25}$ and $J_{max25}$ and fast responses to
 temperature.
 
-```{code-cell}
+```{code-cell} ipython3
 # Calculate Ac
 Ac_subdaily = (
     vcmax_subdaily
@@ -322,7 +332,7 @@ ax.set_aspect("equal")
 plt.tight_layout()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [remove-cell]
 
 # This cell is here to force a docs build failure if these values

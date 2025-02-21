@@ -9,6 +9,16 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Soil moisture effects
@@ -61,7 +71,7 @@ set created below. The data set consists of 5 days of observations of a constant
 environment that can be used to show the effects of changing soil moisture input values
 on the resulting GPP.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 from matplotlib import pyplot as plt
@@ -149,7 +159,7 @@ varies with changing soil moisture for differing values of mean aridity. In
 the examples below, the default $\theta_0 = 0$ has been changed to $\theta_0 =
 0.1$ to make the lower bound more obvious.
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 # change default theta0 parameter
@@ -226,7 +236,7 @@ correction is only implemented as a post-hoc penalty to GPP.
   for details.
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 # Configure the PModel to use the 'BRC' model setup of Stocker et al. (2020)
 model = PModel(
     env=env,
@@ -251,7 +261,7 @@ for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
     gpp_stressed[mean_alpha] = model.gpp * sm_stress
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 plt.plot(sm_gradient, model.gpp, label="No soil moisture penalty")
@@ -321,17 +331,17 @@ Given the default values, this critical level as around 0.3457: plants can only 
 the predicted GPP from the P Model in locations where the aridity index is less than
 this value.
 
-```{code-cell}
+```{code-cell} ipython3
 coef = PModelConst().soilmstress_mengoli
 print(coef)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 AI_crit_y = np.exp(-np.log(coef["y_a"]) / coef["y_b"])
 round(AI_crit_y, 4)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 aridity_index = np.sort(np.concatenate([[AI_crit_y], np.linspace(0.2, 7, n_obs)]))
 
 y = np.minimum(coef["y_a"] * np.power(aridity_index, coef["y_b"]), 1)
@@ -374,7 +384,7 @@ ax2.legend(frameon=False)
 plt.tight_layout()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 np.exp(-np.log(0.62) / -0.45)
 ```
 
@@ -402,7 +412,7 @@ obviously just $\beta(\theta)$ from above scaled to the constant GPP.
   see {func}`~pyrealm.pmodel.functions.calc_soilmstress_mengoli` for details.
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 acclim_model = AcclimationModel(datetimes=datetimes)
 acclim_model.set_window(
     window_center=np.timedelta64(12, "h"), half_width=np.timedelta64(1, "h")
@@ -428,6 +438,6 @@ plt.legend(frameon=False)
 plt.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 
 ```
