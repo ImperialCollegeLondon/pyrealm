@@ -21,10 +21,7 @@ from sphinxcontrib.bibtex.style.referencing.author_year import AuthorYearReferen
 
 from pyrealm import __version__ as pyrealm_version
 
-# +
 sys.path.insert(0, os.path.abspath("../"))
-# -
-
 
 # -- Project information -----------------------------------------------------
 
@@ -52,6 +49,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.todo",
     "sphinxcontrib.bibtex",
     "myst_nb",
     "sphinx_rtd_theme",
@@ -62,11 +60,11 @@ extensions = [
 external_toc_path = "_toc.yml"  # optional, default: _toc.yml
 external_toc_exclude_missing = False  # optional, default: False
 
-# + [markdown]
+# Include TODOs
+todo_include_todos = True
+
+
 # Citation styling
-# -
-
-
 def bracket_style() -> BracketStyle:
     """Custom citation parenthesis style."""
     return BracketStyle(
@@ -156,7 +154,6 @@ nitpick_ignore = [
     ("py:class", "pandas.core.frame.DataFrame"),
 ]
 
-# +
 intersphinx_mapping = {
     "pytest": ("https://docs.pytest.org/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
@@ -166,7 +163,6 @@ intersphinx_mapping = {
     "shapely": ("https://shapely.readthedocs.io/en/stable/", None),
     "marshmallow": ("https://marshmallow.readthedocs.io/en/stable/", None),
 }
-# -
 
 
 autodoc_default_flags = ["members"]
@@ -213,7 +209,6 @@ exclude_patterns = ["maxime*", "**.ipynb_checkpoints"]
 # html_theme = 'sphinx_material'
 html_theme = "sphinx_rtd_theme"
 
-# +
 html_theme_options = {
     "logo_only": True,
     "version_selector": True,
@@ -227,7 +222,6 @@ html_theme_options = {
     "includehidden": True,
     "titles_only": False,
 }
-# -
 
 
 # Add any paths that contain custom static files (such as style sheets) here,

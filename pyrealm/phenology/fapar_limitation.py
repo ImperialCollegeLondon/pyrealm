@@ -62,13 +62,13 @@ def get_annual(
 
     Args:
         x: Array of values to be converted to annual values. Should be either daily (
-        same datetimes as growing_season) or subdaily (same datetimes as datetimes
-        array)
+            same datetimes as growing_season) or subdaily (same datetimes as datetimes
+            array)
         datetimes: Datetimes of the measurements as np.datetime64 arrays.
         growing_season: Bool array of days, indicating whether they are ain growing
-        season or not.
+            season or not.
         method: Either "total" (sum all values of the year) or "mean" (take the mean
-        of all values of the year)
+            of all values of the year)
     """
 
     # Extract years from datetimes
@@ -151,11 +151,12 @@ class FaparLimitation:
     the annual peak fractional absorbed photosynthetically active radiation (
     fAPAR_max) and annual peak Leaf Area Index (LAI).
 
-    Todo:
-      - Allow for other timescales than daily or subdaily (e.g. monthly)
-      - Daily conditions are taken as noon values - might need to relax this.
-      - Growing season definition -  users currently need to provide their own growing
-      season definition in `from_pmodel`
+    .. todo::
+
+        * Allow for other timescales than daily or subdaily (e.g. monthly)
+        * Daily conditions are taken as noon values - might need to relax this.
+        * Growing season definition -  users currently need to provide their own growing
+          season definition in `from_pmodel`
     """
 
     def _check_shapes(self) -> None:
