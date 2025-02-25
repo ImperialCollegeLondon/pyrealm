@@ -203,9 +203,7 @@ class FaparLimitation:
         #  f_0 is the ratio of annual total transpiration of annual total
         #  precipitation, which is an empirical function of the climatic Aridity Index
         #  (AI).
-        a = self.phenology_const.f0_coefficients[0]
-        b = self.phenology_const.f0_coefficients[1]
-        c = self.phenology_const.f0_coefficients[2]
+        a, b, c = self.phenology_const.f0_coefficients
         f_0 = a * np.exp(-b * np.log(aridity_index / c))
 
         fapar_energylim = 1.0 - self.phenology_const.z / (
