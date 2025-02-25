@@ -150,6 +150,12 @@ class FaparLimitation:
     mean CA, Chi and VPD, as well as the aridity index and some constants to compute
     the annual peak fractional absorbed photosynthetically active radiation (
     fAPAR_max) and annual peak Leaf Area Index (LAI).
+
+    Todo:
+      - Allow for other timescales than daily or subdaily (e.g. monthly)
+      - Daily conditions are taken as noon values - might need to relax this.
+      - Growing season definition -  users currently need to provide their own growing
+      season definition in `from_pmodel`
     """
 
     def _check_shapes(self) -> None:
@@ -190,14 +196,22 @@ class FaparLimitation:
         """
 
         self.annual_total_potential_gpp = annual_total_potential_gpp
+        """Aka A_0, the annual sum of potential GPP. [mol m^{-2} year^{-1}]"""
         self.annual_mean_ca = annual_mean_ca
+        """Ambient CO2 partial pressure. [Pa]"""
         self.annual_mean_chi = annual_mean_chi
+        """Annual mean ratio of leaf-internal CO2 partial pressure to c_a during the 
+        growing season (>0℃). [Pa]"""
         self.annual_mean_vpd = annual_mean_vpd
+        """Annual mean vapour pressure deficit (VPD) during the growing season [Pa]"""
         self.annual_total_precip = annual_total_precip
+        """Annual total precipitation. [mol m^{-2} year^{-1}]"""
         self.aridity_index = aridity_index
+        """Climatological estimate of local aridity index."""
 
         self._check_shapes()
 
+        # Constants used for phenology computations
         self.phenology_const = PhenologyConst()
 
         #  f_0 is the ratio of annual total transpiration of annual total
