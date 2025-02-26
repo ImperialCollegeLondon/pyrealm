@@ -60,10 +60,13 @@ transfer, which is exactly four times larger than the quantum yield of photosynt
 
 :::
 
-The value of $\phi_0$ captures the conversion rate of moles photosynthetically active
-photons into moles of $\ce{CO2}$. The theoretical maximum for this value is 1/9, in the
-absence of a Q cycle, or 1/8 when a Q cycle is operating {cite}`long:1993a`. These
-theoretical maxima are not necessarily directly used in calculating light use
+The value of $\phi_0$ captures the conversion rate of moles of photosynthetically active
+photons into moles of $\ce{CO2}$. The theoretical maximum for this value is 1/8: eight
+moles of light photons are required to capture 1 mole of carbon. In some cases, this
+value may be reduced to 1/9, when a Q cycle is not operating within the plant cell
+{cite}`long:1993a`.
+
+These theoretical maxima are not necessarily directly used in calculating light use
 efficiency:
 
 * The values of $\phi_0$ are often adjusted to include other components of light
@@ -79,15 +82,16 @@ approaches to estimating the value of $\phi{0}$, using the `method_kphio` argume
 currently implemented approaches are described below.
 
 All of the approaches share the same baseline reference value of $\phi{0}= 1/8$ as the
-theoretical maximum quantum yield of photosynthesis. This can be overridden got all
-analsyes using a given {class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` by
-changing the value of
-{attr}`PModelConst.maximum_phi0<pyrealm.constants.pmodel_const.PModelConst.maximum_phi0>`,
-but it can also be overriden for a single P Model using the `reference_kphio` argument.
-This can be needed when specific methods have been calibrated using a 'tuned' value for
-$\phi_0$: an example here is the soil moisture stress corrected GPP estimates of
-:cite:t:`Stocker:2020dh` which use different $\phi_0$ values (see
-{meth}`~pyrealm.pmodel.functions.calc_soilmstress_stocker`).
+theoretical maximum quantum yield of photosynthesis. The default value can be set using
+the
+{attr}`PModelConst.maximum_phi0<pyrealm.constants.pmodel_const.PModelConst.maximum_phi0>`
+attribute, which can then be passed into a
+{class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`. However, the `PModel` and
+`SubdailyPModel` both provide the `reference_kphio` argument to override the default
+value for a specific model. This can be needed when specific methods have been
+calibrated using a 'tuned' value for $\phi_0$: an example here is the soil moisture
+stress corrected GPP estimates of :cite:t:`Stocker:2020dh` which use different $\phi_0$
+values (see {meth}`~pyrealm.pmodel.functions.calc_soilmstress_stocker`).
 
 ## Temperature dependent $\phi_0$
 

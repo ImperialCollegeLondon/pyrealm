@@ -23,7 +23,8 @@ language_info:
 
 # Optimal $\chi$ and leaf $\ce{CO2}$
 
-The next step is to estimate the following parameters:
+Once the key [photosynthetic environment variables](./photosynthetic_environment.md)
+have been calculated, the next step is to estimate the following parameters:
 
 * The ratio of carboxylation to transpiration cost factors (``beta``, $\beta$).
   In some approaches, this is taken as a fixed value, but other approaches apply
@@ -35,20 +36,22 @@ The next step is to estimate the following parameters:
     $\xi$. This factor is not currently estimated within `pyrealm`.
 * The value $\chi = c_i/c_a$, which is the unitless ratio of leaf internal $\ce{CO2}$
   partial pressure ($c_i$, Pa) to ambient $\ce{CO2}$ partial pressure ($c_a$, Pa).
-* A parameter ($\xi$) describing the sensitivity of $\chi$ to vapour pressure deficit
-  (VPD).
+* The parameter $\xi$, which captures the sensitivity of $\chi$ to vapour pressure
+  deficit (VPD). This is a critical variable in the subdaily form of the P Model as it
+  is expected to show slow responses to environmental change and should acclimate
+  towards optimal behaviour on a time scale of days or weeks.
 * $\ce{CO2}$ limitation factors to both light assimilation ($m_j$) and carboxylation
   ($m_c$) along with their ratio ($m_{joc} = m_j / m_c$).
 
-The  {class}`~pyrealm.pmodel.optimal_chi` module provides the following methods for
-calculating these values, providing options to handle C3 and C4 photosynthesis and
-different implementations of water stress. In normal practice, a given method is
-selected using the `method_optchi` argument when fitting a
-{class}`~pyrealm.pmodel.pmodel.PModel`. In the background, those method names are
-used to select from a set of classes that implement the different calculations. Some of
-the examples below show these classes being used directly. The methods and classes built
-into `pyrealm` are shown below, but it is possible for users to add alternative methods
-for use within a P Model.
+The {mod}`~pyrealm.pmodel.optimal_chi` module provides a range of methods for
+calculating optimal $\chi$ and the other key values. The table below gives the method
+names, which are used to select a particular approach when fitting a P Model using the
+`method_optchi` argument.
+
+In the background, those method names are used to select from a set of classes that
+implement the different calculations. Some of the examples below show these classes
+being used directly. The methods and classes built into `pyrealm` are shown below, but
+it is possible for users to add alternative methods for use within a P Model.
 
 ```{list-table}
 :header-rows: 1
@@ -72,6 +75,9 @@ for use within a P Model.
 * - `c4_no_gamma_rootzonestress`
   - {class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGammaRootzoneStress`
 ```
+
+The sections and plots below show how optimal $\chi$, $m_j$ and $m_c$ vary with
+differing methods and environmental conditions.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
