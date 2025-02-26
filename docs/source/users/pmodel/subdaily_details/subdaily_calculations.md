@@ -186,9 +186,10 @@ enzymes.
 pmodel_const = pmodel_subdaily.env.pmodel_const
 core_const = pmodel_subdaily.env.core_const
 
-arrh_daily = SimpleArrhenius(
-    env=daily_acclim_env, reference_temperature=25, core_const=core_const
-)
+tk_acclim = temp_acclim + core_const.k_CtoK
+tk_ref = pmodel_const.tk_ref
+
+arrh_daily = SimpleArrhenius(env=daily_acclim_env)
 
 vcmax25_acclim = pmodel_acclim.vcmax / arrh_daily.calculate_arrhenius_factor(
     pmodel_const.arrhenius_vcmax
@@ -257,11 +258,7 @@ vcmax25_subdaily = acclim_model.fill_daily_to_subdaily(vcmax25_real)
 jmax25_subdaily = acclim_model.fill_daily_to_subdaily(jmax25_real)
 
 # Get the Arrhenius scaler
-
-arrh_subdaily = SimpleArrhenius(
-    env=subdaily_env, reference_temperature=25, core_const=core_const
-)
-
+arrh_subdaily = SimpleArrhenius(env=subdaily_env)
 
 # Adjust to actual temperature at subdaily timescale
 vcmax_subdaily = vcmax25_subdaily * arrh_subdaily.calculate_arrhenius_factor(

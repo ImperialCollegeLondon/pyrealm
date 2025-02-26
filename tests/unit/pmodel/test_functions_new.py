@@ -16,16 +16,31 @@ PATM = np.array([123456])
 
 def test_calc_ftemp_inst_rd(tc=TC):
     """Test calc_ftemp_inst_rd."""
+    from pyrealm.constants.pmodel_const import PModelConst
     from pyrealm.pmodel.functions import calc_ftemp_inst_rd
 
-    assert np.allclose(calc_ftemp_inst_rd(tc), 1.4455646406287255)
+    pmodel_const = PModelConst()
+
+    assert np.allclose(
+        calc_ftemp_inst_rd(
+            tc=tc, tc_ref=pmodel_const.tc_ref, coef=pmodel_const.heskel_rd
+        ),
+        1.4455646406287255,
+    )
 
 
 def test_calc_gammastar(tk=TK, patm=PATM):
     """Test calc_ftemp_inst_rd."""
+
+    from pyrealm.constants.pmodel_const import PModelConst
     from pyrealm.pmodel.functions import calc_gammastar
 
-    assert np.allclose(calc_gammastar(tk, patm), 6.7888247955597)
+    pmodel_const = PModelConst()
+
+    assert np.allclose(
+        calc_gammastar(tk, patm, tk_ref=pmodel_const.tk_ref),
+        6.7888247955597,
+    )
 
 
 def test_calc_ns_star(tc=TC, patm=PATM):

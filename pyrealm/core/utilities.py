@@ -7,6 +7,8 @@ used to:
   calculation.
 """  # noqa: D205, D415
 
+from collections.abc import Sequence
+
 import numpy as np
 import tabulate
 from numpy.typing import NDArray
@@ -130,7 +132,7 @@ def summarize_attrs(
 
 
 def evaluate_horner_polynomial(
-    x: NDArray[np.float64], cf: list | NDArray
+    x: NDArray[np.float64], cf: Sequence | NDArray
 ) -> NDArray[np.float64]:
     r"""Evaluates a polynomial with coefficients `cf` at `x` using Horner's method.
 

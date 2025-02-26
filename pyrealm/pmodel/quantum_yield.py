@@ -307,31 +307,38 @@ class QuantumYieldSandoval(
         aridity_index = getattr(self.env, "aridity_index")
         mean_growth_temperature = getattr(self.env, "mean_growth_temperature")
 
-        # Calculate enzyme kinetics
-        a_ent, b_ent, Hd_base, Ha = self.env.pmodel_const.sandoval_kinetics
+        # Calculate enzyme kinetic. This needs to use a copy because the Hd value is
+        # modified below.
+        coef = self.env.pmodel_const.sandoval_kinetics.copy()
+
         # Calculate change in activation entropy as a linear function of
         # mean growth temperature, J/mol/K
-        delta_entropy = a_ent + b_ent * mean_growth_temperature
-        # Calculate deaactivation energy J/mol
-        Hd = Hd_base * delta_entropy
+        delta_entropy = (
+            coef["entropy_intercept"] + coef["entropy_slope"] * mean_growth_temperature
+        )
+        # Calculate de-activation energy J/mol
+        Hd = coef["hd"] * delta_entropy
 
         # Calculate the optimal temperature to be used as the reference temperature in
         # the modified Arrhenius calculation
-        Topt = Hd / (delta_entropy - self.env.core_const.k_R * np.log(Ha / (Hd - Ha)))
+        Topt = Hd / (
+            delta_entropy
+            - self.env.core_const.k_R * np.log(coef["ha"] / (Hd - coef["ha"]))
+        )
         tk_leaf = self.env.tk
         # Calculate peak kphio given the aridity index
         kphio_peak = self.peak_quantum_yield(aridity_index=aridity_index)
+
+        # Pass the modified Hd back into the calculation of the Arrhenius factor
+        coef["hd"] = Hd
 
         # Calculate the modified Arrhenius factor using the
         f_kphio = calculate_kattge_knorr_arrhenius_factor(
             tk_leaf=tk_leaf,
             tk_ref=Topt,
             tc_growth=mean_growth_temperature,
-            ha=Ha,
-            hd=Hd,  # type: ignore[arg-type]  # Not an array in this function
-            entropy_intercept=a_ent,
-            entropy_slope=b_ent,
-            core_const=self.env.core_const,
+            coef=coef,
+            k_R=self.env.core_const.k_R,
         )
 
         # Apply the factor and store it.

@@ -28,37 +28,86 @@ very open area and a number of different methods are implemented in ``pyrealm``.
 different approaches reflect uncertainty about the most appropriate way to modulate
 predictions.
 
-1. Effects on [optimal chi](./optimal_chi). The `pyrealm` package includes two separate
-   approaches that affect optimal chi:
+## Alternative approaches
 
-   * The `lavergne20_c3` ({class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3`)
-     and `lavergne20_c4` ({class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C4`)
-     methods , which use an empirical model of the change in the ratio of the
-     photosynthetic costs of carboxilation and transpiration.
+### Effects on [optimal chi](./optimal_chi)
 
-   * The experimental optimal chi methods that impose a direct rootzone stress penalty
-     on the $\beta$ term in calculating optimal chi: `prentice14_rootzonestress`
-     ({class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14RootzoneStress`),
-     `c4_rootzonestress`
-     ({class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4RootzoneStress`), and
-     `c4_no_gamma_rootzonestress`
-     ({class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGammaRootzoneStress`)
+The `pyrealm` package includes two separate approaches that affect optimal chi:
 
-2. Effects on the [quantum yield of photosynthesis](./quantum_yield):
+* The `lavergne20_c3` ({class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3`)
+ and `lavergne20_c4` ({class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C4`)
+ methods , which use an empirical model of the change in the ratio of the
+ photosynthetic costs of carboxilation and transpiration.
 
-   * The `sandoval` method ({class}`~pyrealm.pmodel.quantum_yield.QuantumYieldSandoval`)
-     implements an experimental calculation that modulates $\phi_0$ as a function of the
-     temperature and a local aridity index.
+* The experimental optimal chi methods that impose a direct rootzone stress penalty
+ on the $\beta$ term in calculating optimal chi: `prentice14_rootzonestress`
+ ({class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14RootzoneStress`),
+ `c4_rootzonestress`
+ ({class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4RootzoneStress`), and
+ `c4_no_gamma_rootzonestress`
+ ({class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGammaRootzoneStress`)
 
-3. Post-hoc penalties on gross primary productivity. These approaches both use empirical
-   functions of soil moisture and aridity  data that have been parameterised to align
-   raw predictions from a P Model with field observations of GPP. Two penalty function
-   are available that calculate the fraction of potential GPP that is realised given the
-   effects of soil moisture stress:
-   * {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` {cite:p}`Stocker:2020dh`.
-   * {func}`~pyrealm.pmodel.functions.calc_soilmstress_mengoli` {cite:p}`mengoli:2023a`.
+### Effects on the [quantum yield of photosynthesis](./quantum_yield)
 
-The GPP penalty functions are described in more detail below.
+* The `sandoval` method ({class}`~pyrealm.pmodel.quantum_yield.QuantumYieldSandoval`)
+ implements an experimental calculation that modulates $\phi_0$ as a function of the
+ temperature and a local aridity index.
+
+### Post-hoc penalties on gross primary productivity
+
+These approaches both use empirical
+functions of soil moisture and aridity data that have been parameterised to align
+raw predictions from a P Model with field observations of GPP. Two penalty function
+are available that calculate the fraction of potential GPP that is realised given the
+effects of soil moisture stress:
+
+* The {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` function implements the
+  {cite:t}`Stocker:2020dh` GPP penalty for use with the standard P Model.
+* {func}`~pyrealm.pmodel.functions.calc_soilmstress_mengoli` function implements the
+  {cite:t}`mengoli:2023a` GPP penalty for use with the subdaily P Model.
+
+The GPP penalty functions are described in more detail below, using the artificial data
+set created below. The data set consists of 5 days of observations of a constant
+environment that can be used to show the effects of changing soil moisture input values
+on the resulting GPP.
+
+```{code-cell} ipython3
+:tags: [hide-input]
+
+from matplotlib import pyplot as plt
+import numpy as np
+
+from pyrealm.pmodel import (
+    PModelEnvironment,
+    PModel,
+    calc_soilmstress_stocker,
+    calc_soilmstress_mengoli,
+    SubdailyPModel,
+    AcclimationModel,
+)
+from pyrealm.constants import PModelConst
+
+# Create a test data set consisting of 5 days of observations of a constant environment
+# that can be used to show the effects of changing soil moisture input values on the
+# resulting GPP
+n_obs = 48 * 5
+obs_minutes = 30
+time_offsets = np.arange(0, n_obs * obs_minutes, obs_minutes).astype("timedelta64[m]")
+datetimes = np.datetime64("2000-01-01 00:00") + time_offsets
+
+# Constant P Model enviroment
+env = PModelEnvironment(
+    tc=np.full(n_obs, fill_value=20),
+    patm=np.full(n_obs, fill_value=101325),
+    vpd=np.full(n_obs, fill_value=820),
+    co2=np.full(n_obs, fill_value=400),
+    fapar=np.full(n_obs, fill_value=1),
+    ppfd=np.full(n_obs, fill_value=1000),
+)
+
+# Soil moisture gradient across the observations
+sm_gradient = np.linspace(0, 1.0, n_obs)
+```
 
 ## The {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` penalty factor
 
@@ -106,34 +155,22 @@ $$
 
 The figures below shows how the aridity sensitivity parameter ($q$) changes with
 differing aridity measures and then how the soil moisture factor $\beta(\theta)$
-varies with changing soil moisture for some different values of mean aridity. In
+varies with changing soil moisture for differing values of mean aridity. In
 the examples below, the default $\theta_0 = 0$ has been changed to $\theta_0 =
 0.1$ to make the lower bound more obvious.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-from matplotlib import pyplot as plt
-import numpy as np
-
-from pyrealm.pmodel import (
-    PModelEnvironment,
-    PModel,
-    calc_soilmstress_stocker,
-    calc_soilmstress_mengoli,
-    SubdailyPModel,
-    AcclimationModel,
-)
-from pyrealm.constants import PModelConst
-
 # change default theta0 parameter
-const = PModelConst(soilmstress_theta0=0.1)
+coef = PModelConst().soilmstress_stocker
+coef["theta0"] = 0.1
 
 # Calculate q
-mean_alpha_seq = np.linspace(0, 1, 101)
+mean_alpha_seq = np.linspace(0, 1, n_obs)
 
-q = (1 - (const.soilmstress_a + const.soilmstress_b * mean_alpha_seq)) / (
-    const.soilmstress_thetastar - const.soilmstress_theta0
+q = (1 - (coef["a"] + coef["b"] * mean_alpha_seq)) / (
+    coef["thetastar"] - coef["theta0"]
 ) ** 2
 
 # Create a 1x2 plot
@@ -144,31 +181,30 @@ ax1.plot(mean_alpha_seq, q)
 ax1.set_xlabel(r"Mean aridity, $\bar{\alpha}$")
 ax1.set_ylabel(r"Aridity sensitivity parameter, $q$")
 
-# Plot beta(theta) ~ m_s for 5 values of mean alpha
-soilm = np.linspace(0, 0.7, 101)
 
 for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
 
     soilmstress = calc_soilmstress_stocker(
-        soilm=soilm, meanalpha=mean_alpha, pmodel_const=const
+        soilm=sm_gradient, meanalpha=mean_alpha, coef=coef
     )
-    ax2.plot(soilm, soilmstress, label=r"$\bar{{\alpha}}$ = {}".format(mean_alpha))
+    ax2.plot(
+        sm_gradient, soilmstress, label=r"$\bar{{\alpha}}$ = {}".format(mean_alpha)
+    )
 
-ax2.axvline(x=const.soilmstress_thetastar, linestyle="--", color="black")
-ax2.axvline(x=const.soilmstress_theta0, linestyle="--", color="black")
+ax2.axvline(x=coef["thetastar"], linestyle="--", color="black")
+ax2.axvline(x=coef["theta0"], linestyle="--", color="black")
 
 secax = ax2.secondary_xaxis("top")
 secax.set_xticks(
-    ticks=[const.soilmstress_thetastar, const.soilmstress_theta0],
+    ticks=[coef["thetastar"], coef["theta0"]],
     labels=[r"$\theta^\ast$", r"$\theta_0$"],
 )
 
-ax2.legend()
+ax2.legend(frameon=False)
 ax2.set_xlabel(r"Relative soil moisture, $m_s$")
 ax2.set_ylabel(r"Empirical soil moisture factor, $\beta(\theta)$")
 
-
-plt.show()
+plt.tight_layout()
 ```
 
 ### Application of the {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` factor
@@ -201,23 +237,6 @@ correction is only implemented as a post-hoc penalty to GPP.
 ```
 
 ```{code-cell} ipython3
-# Calculate the P Model in a constant environment
-n_obs = 48 * 5
-obs_minutes = 30
-time_offsets = np.arange(0, n_obs * obs_minutes, obs_minutes).astype("timedelta64[m]")
-datetimes = np.datetime64("2000-01-01 00:00") + time_offsets
-
-sm_gradient = np.linspace(0, 1.0, n_obs)
-
-env = PModelEnvironment(
-    tc=np.full(n_obs, fill_value=20),
-    patm=np.full(n_obs, fill_value=101325),
-    vpd=np.full(n_obs, fill_value=820),
-    co2=np.full(n_obs, fill_value=400),
-    fapar=np.full(n_obs, fill_value=1),
-    ppfd=np.full(n_obs, fill_value=1000),
-)
-
 # Configure the PModel to use the 'BRC' model setup of Stocker et al. (2020)
 model = PModel(
     env=env,
@@ -236,7 +255,7 @@ gpp_stressed = {}
 for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
     # Calculate the stress for this aridity
     sm_stress = calc_soilmstress_stocker(
-        soilm=sm_gradient, meanalpha=mean_alpha, pmodel_const=const
+        soilm=sm_gradient, meanalpha=mean_alpha, coef=coef
     )
     # Apply the penalty factor
     gpp_stressed[mean_alpha] = model.gpp * sm_stress
@@ -277,11 +296,11 @@ the total soil capacity. The soil water estimated using CRU data in SPLASH v1 mo
 soil moisture calculated in the same way should be used with this approach.
 ```
 
-The calculation of $\beta(\theta)$ is based on two functions of the aridity index: both
-power laws, constrained to take a maximum of 1 (no soil moisture stress penalty). The
-first function describes the maximal attainable level ($y$) and the second function
-describes a threshold ($\psi$) at which that level is reached. The parameters of these
-power laws are derived from experimental data and set in
+The calculation of $\beta(\theta)$ is based on two functions of the aridity index. Both
+functions are power laws, constrained to take a maximum of 1 (no soil moisture stress
+penalty). The first function describes the maximal attainable level ($y$) and the second
+function describes a threshold ($\psi$) at which that level is reached. The parameters
+of these power laws are derived from experimental data and set in
 {class}`~pyrealm.constants.pmodel_const.PModelConst`.
 
 $$
@@ -290,28 +309,6 @@ y &= \min( a  \textrm{AI} ^ {b}, 1)\\
 \psi &= \min( a  \textrm{AI} ^ {b}, 1)\\
 \end{align*}
 $$
-
-```{code-cell} ipython3
-const = PModelConst()
-aridity_index = np.arange(0.35, 7, 0.1)
-
-y = np.minimum(
-    const.soilm_mengoli_y_a * np.power(aridity_index, const.soilm_mengoli_y_b), 1
-)
-
-
-psi = np.minimum(
-    const.soilm_mengoli_psi_a * np.power(aridity_index, const.soilm_mengoli_psi_b),
-    1,
-)
-
-plt.plot(aridity_index, y, label="Maximum level ($y$)")
-plt.plot(aridity_index, psi, label="Critical threshold ($\psi$)")
-plt.xlabel(r"Aridity Index (AI)")
-plt.ylabel(r"$\beta(\theta)$")
-plt.legend()
-plt.show()
-```
 
 The penalty factor $\beta(\theta)$ is then calculated given the relative soil moisture
 $\theta$, the threshold $\psi$ and the maximum level:
@@ -324,23 +321,74 @@ $$
     \end{cases}
 $$
 
+The function for the maximum attainable level $y$ reaches the maximum value of 1 at:
+
+$$
+\textrm{AI} = e^{-log(a)/b}
+$$
+
+Given the default values, this critical level is around 0.3457: plants can only realise
+the predicted GPP from the P Model in locations where the aridity index is less than
+this value.
+
 ```{code-cell} ipython3
+coef = PModelConst().soilmstress_mengoli
+print(coef)
+```
+
+```{code-cell} ipython3
+AI_crit_y = np.exp(-np.log(coef["y_a"]) / coef["y_b"])
+round(AI_crit_y, 4)
+```
+
+```{code-cell} ipython3
+aridity_index = np.sort(np.concatenate([[AI_crit_y], np.linspace(0.2, 7, n_obs)]))
+
+y = np.minimum(coef["y_a"] * np.power(aridity_index, coef["y_b"]), 1)
+
+psi = np.minimum(
+    coef["psi_a"] * np.power(aridity_index, coef["psi_b"]),
+    1,
+)
+
+# Create a 1x2 plot
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+
+ax1.plot(aridity_index, y, label="Maximum level ($y$)")
+ax1.plot(aridity_index, psi, label="Critical threshold ($\psi$)")
+ax1.plot(
+    [AI_crit_y, AI_crit_y],
+    [0, 1],
+    linestyle=":",
+    color="0.7",
+    label="Upper limit to attain 100% of predicted GPP",
+)
+ax1.set_xlabel(r"Aridity Index (AI)")
+ax1.set_ylabel(r"Function value ($y$ or $\psi$)")
+ax1.legend(frameon=False)
+
+
 # Calculate the soil moisture stress factor across a soil moisture
 # gradient for different aridity index values
 beta = {}
-ai_vals = [0.3, 1, 3, 6]
+ai_vals = [AI_crit_y.round(4), 1, 3, 6]
 
 for ai in ai_vals:
     beta[ai] = calc_soilmstress_mengoli(soilm=sm_gradient, aridity_index=np.array(ai))
     plt.plot(sm_gradient, beta[ai], label=f"AI = {ai}")
 
-plt.xlabel(r"Relative soil moisture $\theta$")
-plt.ylabel(r"$\beta(\theta)$")
-plt.legend()
-plt.show()
+ax2.set_xlabel(r"Relative soil moisture ($\theta$)")
+ax2.set_ylabel(r"$\beta(\theta)$")
+ax2.legend(frameon=False)
+
+plt.tight_layout()
 ```
 
-As the plot above shows, plants in arid conditions have severely constrained maximum
+```{code-cell} ipython3
+np.exp(-np.log(0.62) / -0.45)
+```
+
+As the plots above show, plants in arid conditions have severely constrained maximum
 levels, but have lower critical thresholds, allowing them to maintain the maximum level
 under drier conditions.
 
@@ -370,8 +418,6 @@ acclim_model.set_window(
     window_center=np.timedelta64(12, "h"), half_width=np.timedelta64(1, "h")
 )
 
-acclim_model.get_window_values(env.tc)
-
 subdaily_model = SubdailyPModel(
     env=env,
     acclim_model=acclim_model,
@@ -386,9 +432,9 @@ for ai in ai_vals:
 
     plt.plot(sm_gradient, subdaily_model.gpp * beta[ai], label=f"AI = {ai}")
 
-plt.xlabel(r"Relative soil moisture $\theta$")
+plt.xlabel(r"Relative soil moisture ($\theta$)")
 plt.ylabel("GPP")
-plt.legend()
+plt.legend(frameon=False)
 plt.show()
 ```
 

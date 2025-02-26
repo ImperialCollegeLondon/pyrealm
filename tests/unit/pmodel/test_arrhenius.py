@@ -176,17 +176,13 @@ class TestKattgeKnorrArrhenius:
 
         tk = args["tc_leaf"] + 273.15
         tk_ref = args["tc_ref"] + 273.15
-        cf = args["coef"]["kattge_knorr"]
 
         assert_allclose(
             calculate_kattge_knorr_arrhenius_factor(
                 tk_leaf=tk,
                 tk_ref=tk_ref,
                 tc_growth=args["tc_growth"],
-                ha=cf["ha"],
-                hd=cf["hd"],
-                entropy_intercept=cf["entropy_intercept"],
-                entropy_slope=cf["entropy_slope"],
+                coef=args["coef"]["kattge_knorr"],
             ),
             expected,
         )

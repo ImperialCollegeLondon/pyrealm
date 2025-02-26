@@ -137,9 +137,9 @@ class PModelEnvironment:
         """The photosynthetic photon flux density (PPFD, µmol m-2 s-1)"""
 
         # Store constant settings and bounds checker
-        self.pmodel_const = pmodel_const
+        self.pmodel_const: PModelConst = pmodel_const
         """PModel constants used to calculate environment"""
-        self.core_const = core_const
+        self.core_const: CoreConst = core_const
         """Core constants used to calculate environment"""
         self._bounds_checker: BoundsChecker = bounds_checker
         """The BoundsChecker applied to the environment data."""
@@ -159,19 +159,27 @@ class PModelEnvironment:
             )
 
         # Internal calculations
-        self.tk = self.tc + self.core_const.k_CtoK
+        self.tk: NDArray[np.float64] = self.tc + self.core_const.k_CtoK
         """The temperature at which to estimate photosynthesis in Kelvin (K)"""
 
         self.ca: NDArray[np.float64] = calc_co2_to_ca(co2=self.co2, patm=self.patm)
         """Ambient CO2 partial pressure, Pa"""
 
-        self.gammastar = calc_gammastar(
-            tk=self.tk, patm=patm, pmodel_const=pmodel_const, core_const=core_const
+        self.gammastar: NDArray[np.float64] = calc_gammastar(
+            tk=self.tk,
+            patm=patm,
+            tk_ref=self.pmodel_const.tk_ref,
+            k_Po=self.core_const.k_Po,
+            coef=self.pmodel_const.bernacchi_gs,
         )
         r"""Photorespiratory compensation point (:math:`\Gamma^\ast`, Pa)"""
 
-        self.kmm = calc_kmm(
-            tk=self.tk, patm=patm, pmodel_const=pmodel_const, core_const=core_const
+        self.kmm: NDArray[np.float64] = calc_kmm(
+            tk=self.tk,
+            patm=patm,
+            tk_ref=self.pmodel_const.tk_ref,
+            k_co=self.core_const.k_co,
+            coef=self.pmodel_const.bernacchi_kmm,
         )
         """Michaelis Menten coefficient, Pa"""
 
