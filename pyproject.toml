@@ -13,6 +13,7 @@ dependencies = [
   "marshmallow (>=3.22.0)",
   "marshmallow-dataclass (>=8.7.0)",
   "pandas (>=2.2.2)",
+  "sphinx-design (>=0.6.1,<0.7.0)",
 ]
 
 requires-python = ">=3.10"
