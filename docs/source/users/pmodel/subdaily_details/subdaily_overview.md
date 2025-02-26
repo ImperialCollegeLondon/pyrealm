@@ -87,3 +87,12 @@ This implementation largely follows the weighted average method of
 {cite:t}`mengoli:2022a`, but is modified to include slow responses in $\xi$. It has also
 been extended to allow calculations of optimal $\chi$ for C4 plants and for other
 extensions to the calculation of $\chi$ (see [here](../pmodel_details/optimal_chi.md)).
+
+<!-- markdownlint-disable MD033 -->
+<!--
+The iframe below is generated from the File > Embed menu in drawio. It has the
+advantage of providing a zoomable cleaner interface for the diagram that supports
+tooltips
+-->
+
+<iframe frameborder="0" style="width:100%;height:800px;" src="https://viewer.diagrams.net/?lightbox=0&highlight=0000ff&nav=1&title=pmodel.drawio&dark=auto#Uhttps%3A%2F%2Fraw.githubusercontent.com%2FImperialCollegeLondon%2Fpyrealm%2F438-revise-the-p-model-documentation%2Fdocs%2Fsource%2Fusers%2Fpmodel%2Fsubdaily_details%2Fsubdaily_pmodel.drawio"></iframe>

@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="-oCUCwP6wYOgCgVxbVAS" name="Page-1">
-        <mxGraphModel dx="1368" dy="805" grid="1" gridSize="7.874" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="1" shadow="0">
+        <mxGraphModel dx="1368" dy="497" grid="1" gridSize="7.874" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="1" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -119,7 +119,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="12" value="\(\nu^*\)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" parent="1" vertex="1">
+                <mxCell id="12" value="\(\eta^*\)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="125.98000000000002" y="78.74" width="78.74" height="31.496" as="geometry"/>
                 </mxCell>
                 <mxCell id="32" style="edgeStyle=none;html=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="13" target="14" edge="1">
@@ -174,7 +174,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <UserObject label="Optimal Chi&lt;div&gt;Calculation&lt;/div&gt;" tooltip="Testing testing" id="14">
+                <UserObject label="Optimal Chi&lt;div&gt;Calculation&lt;/div&gt;" tooltip="Testing testing" title="Does this work?" id="14">
                     <mxCell style="whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1" parent="1" vertex="1">
                         <mxGeometry x="-78.34599999999999" y="141.736" width="125.984" height="31.496" as="geometry"/>
                     </mxCell>
@@ -286,7 +286,7 @@
                 <mxCell id="38" value="\(m_j\)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="23.61999999999999" y="204.71999999999997" width="78.74" height="31.496" as="geometry"/>
                 </mxCell>
-                <mxCell id="54" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" parent="1" source="39" edge="1" target="120">
+                <mxCell id="54" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" parent="1" source="39" target="120" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="-134" y="394"/>
@@ -444,10 +444,10 @@
                         <mxPoint x="102.29500000000007" y="598.504" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="121" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="120" target="53">
+                <mxCell id="121" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="120" target="53" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="120" value="LUE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" vertex="1" parent="1">
+                <mxCell id="120" value="LUE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="228.344" y="283.46399999999994" width="78.74" height="31.496" as="geometry"/>
                 </mxCell>
             </root>
