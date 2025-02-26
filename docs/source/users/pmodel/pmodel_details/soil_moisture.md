@@ -56,7 +56,7 @@ The `pyrealm` package includes two separate approaches that affect optimal chi:
 ### Post-hoc penalties on gross primary productivity
 
 These approaches both use empirical
-functions of soil moisture and aridity  data that have been parameterised to align
+functions of soil moisture and aridity data that have been parameterised to align
 raw predictions from a P Model with field observations of GPP. Two penalty function
 are available that calculate the fraction of potential GPP that is realised given the
 effects of soil moisture stress:
@@ -64,7 +64,7 @@ effects of soil moisture stress:
 * The {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` function implements the
   {cite:t}`Stocker:2020dh` GPP penalty for use with the standard P Model.
 * {func}`~pyrealm.pmodel.functions.calc_soilmstress_mengoli` function implements the
-  {cite:t}`mengoli:2023a` GPP penalty for use with the subdaily P Model..
+  {cite:t}`mengoli:2023a` GPP penalty for use with the subdaily P Model.
 
 The GPP penalty functions are described in more detail below, using the artificial data
 set created below. The data set consists of 5 days of observations of a constant
@@ -327,7 +327,7 @@ $$
 \textrm{AI} = e^{-log(a)/b}
 $$
 
-Given the default values, this critical level as around 0.3457: plants can only realise
+Given the default values, this critical level is around 0.3457: plants can only realise
 the predicted GPP from the P Model in locations where the aridity index is less than
 this value.
 
