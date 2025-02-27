@@ -155,4 +155,5 @@ def test_calc_soil_moisture(splash_model):
         aet + wn + ro,
         wn_prev + splash_model.pn + splash_model.evap.cond,
         equal_nan=True,
+        rtol=1e-6,
     )

@@ -11,8 +11,8 @@ from numpy.testing import assert_allclose
 @pytest.mark.parametrize(
     argnames="crown_areas, expected_r0",
     argvalues=(
-        (np.array([20, 30]), np.array([0.86887756, 1.29007041])),
-        (np.array([30, 40]), np.array([1.06415334, 1.489645])),
+        (np.array([20, 30]), np.array([[0.86887756, 1.29007041]])),
+        (np.array([30, 40]), np.array([[1.06415334, 1.489645]])),
     ),
 )
 def test_calculate_crown_r_0_values(crown_areas, expected_r0):
@@ -34,7 +34,7 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
             slice(None),
             does_not_raise(),
             None,
-            (0, slice(None)),
+            [0],
             (1, 3),
             id="row_0",
         ),
@@ -43,7 +43,7 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
             slice(None),
             does_not_raise(),
             None,
-            (1, slice(None)),
+            [1],
             (1, 3),
             id="row_1",
         ),
@@ -52,7 +52,7 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
             slice(None),
             does_not_raise(),
             None,
-            (2, slice(None)),
+            [2],
             (1, 3),
             id="row_2",
         ),
@@ -61,7 +61,7 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
             slice(None),
             does_not_raise(),
             None,
-            (3, slice(None)),
+            [3],
             (1, 3),
             id="row_3",
         ),
@@ -70,7 +70,7 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
             slice(None),
             does_not_raise(),
             None,
-            (4, slice(None)),
+            [4],
             (1, 3),
             id="row_4",
         ),
@@ -79,7 +79,7 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
             slice(None),
             does_not_raise(),
             None,
-            (5, slice(None)),
+            [5],
             (1, 3),
             id="row_5",
         ),
@@ -484,7 +484,7 @@ class TestTModel:
             assert result.shape == exp_shape
             assert_allclose(
                 result,
-                rtmodel_data["whole_crown_gpp"][data_idx]
+                rtmodel_data["whole_crown_gpp"][out_idx]
                 * rtmodel_flora.resp_f[pft_idx],
             )
             return
