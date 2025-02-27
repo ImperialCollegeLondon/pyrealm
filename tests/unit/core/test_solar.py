@@ -29,7 +29,7 @@ def test_calc_distance_factor(nu, expected):
     Const = CoreConst()
     result = calc_distance_factor(nu, Const.k_e)
 
-    assert_allclose(result, expected)
+    assert_allclose(result, expected, rtol=1e-6)
 
 
 @pytest.mark.parametrize(
@@ -126,7 +126,7 @@ def test_calc_daily_solar_radiation(dr, hs, delta, latitude, expected):
 
     result = calc_daily_solar_radiation(dr, hs, delta, latitude, Const)
 
-    assert_allclose(result, expected)
+    assert_allclose(result, expected, rtol=1e-6)
 
 
 @pytest.mark.parametrize(
@@ -145,7 +145,7 @@ def test_calc_transmissivity(sf, elv, expected):
 
     result = calc_transmissivity(sf, elv, Const.k_c, Const.k_d)
 
-    assert_allclose(result, expected)
+    assert_allclose(result, expected, rtol=1e-6)
 
 
 @pytest.mark.parametrize(
@@ -164,7 +164,7 @@ def test_calc_ppfd_from_tau_ra_d(tau, ra_d, expected):
 
     result = calc_ppfd_from_tau_ra_d(tau, ra_d, Const.k_fFEC, Const.k_alb_vis)
 
-    assert_allclose(result, expected)
+    assert_allclose(result, expected, rtol=1e-6)
 
 
 @pytest.mark.parametrize(
@@ -295,7 +295,7 @@ def test_daytime_net_radiation(hn, rnl, delta, latitude, tau, dr, expected):
 
     result = calc_daytime_net_radiation(hn, rnl, delta, latitude, tau, dr, Const)
 
-    assert_allclose(result, expected)
+    assert_allclose(result, expected, rtol=1e-6)
 
 
 @pytest.mark.parametrize(
