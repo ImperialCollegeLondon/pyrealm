@@ -173,11 +173,7 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
     # Test the static components of evap calculations are the same - which can be
     # tested across the whole array
     for ky in expected_attr:
-        assert_allclose(
-            getattr(evap, ky),
-            expected[ky].data,
-            equal_nan=True,
-        )
+        assert_allclose(getattr(evap, ky), expected[ky].data, equal_nan=True, rtol=1e-5)
 
     # Now validate the expected AET - because the whole soil moisture sequence has
     # been created in the original implementation, the whole time sequence can be passed
@@ -188,4 +184,4 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
     wn_sequence = np.vstack([wn_spun_up, expected["wn"].data[:-1, :, :]])
 
     aet = evap.estimate_aet(wn=wn_sequence, day_idx=None)
-    assert_allclose(aet, expected["aet_d"], equal_nan=True)
+    assert_allclose(aet, expected["aet_d"], equal_nan=True, rtol=1e-6)

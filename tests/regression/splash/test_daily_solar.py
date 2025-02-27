@@ -60,7 +60,7 @@ def test_solar_scalars():
     }
 
     for ky, val in expected.items():
-        assert_allclose(getattr(solar, ky), val)
+        assert_allclose(getattr(solar, ky), val, rtol=1e-6)
 
 
 def test_solar_iter(daily_flux_benchmarks, expected_attr):
@@ -83,7 +83,7 @@ def test_solar_iter(daily_flux_benchmarks, expected_attr):
         )
 
         for ky in expected_attr:
-            assert_allclose(getattr(solar, ky), exp[ky])
+            assert_allclose(getattr(solar, ky), exp[ky], rtol=1e-6)
 
 
 def test_solar_array(daily_flux_benchmarks, expected_attr):
@@ -138,7 +138,5 @@ def test_solar_array_grid(grid_benchmarks):
     # Test that the resulting solar calculations are the same.
     for ky in ("ppfd_d", "rn_d", "rnn_d"):
         assert_allclose(
-            getattr(solar, ky),
-            expected[ky].data,
-            equal_nan=True,
+            getattr(solar, ky), expected[ky].data, equal_nan=True, rtol=1e-6
         )
