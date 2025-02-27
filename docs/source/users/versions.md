@@ -95,14 +95,14 @@ used the theoretical maximum value of 1/8.
 ### Arrhenius scaling of $J_{max}$ and $V_{cmax}$
 
 In 1.0.0, {class}`~pyrealm.pmodel.pmodel.PModel` used an Arrhenius relationship with a
-peaked at intermediate temperatures :cite:`Kattge:2007db` to calculate $J_{max25}$ and
+peak at intermediate temperatures :cite:`Kattge:2007db` to calculate $J_{max25}$ and
 $V_{cmax25}$, although in practice the implementation did not exhibit the correct peaked
 form. In contrast, the {class}`~pyrealm.pmodel.pmodel.SubdailyPModel` used a simple
 Arrhenius scaling without a peak.
 
 * Both classes now take the `method_arrhenius` argument to specify the form of this
   scaling.
-* Both class now default to using the `simple` method of Arrhenius scaling. We
+* Both classes now default to using the `simple` method of Arrhenius scaling. We
   **strongly** recommend the use of this method over the experimental `kattge_knorr`
   method.
 
@@ -214,7 +214,7 @@ acclim_model.set_window(
     half_width=np.timedelta64(1, "h"),
 )
 
-# Fit the subdaily model - which can now accepts all of the alternative method
+# Fit the subdaily model - which now accepts all of the alternative method
 # arguments  used by the PModel class.
 subdaily_model = SubdailyPModel(
     env=pm_env,
