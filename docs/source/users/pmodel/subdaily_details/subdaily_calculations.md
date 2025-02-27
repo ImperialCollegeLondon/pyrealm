@@ -25,9 +25,10 @@ language_info:
 
 The code below works through the separate calculations used to include the acclimation
 of slow reponses into the predictions of the P Model. The code separates out individual
-steps used in the estimation process in order to show intermediates results but in
-practice, as shown in the [worked example](worked_example), most of these calculations
-are handled internally by the model fitting in `pyrealm`.
+steps used in the estimation process in order to show intermediate results and provides
+an "exploded diagram" of the model. In practice, these calculations are handled
+internally by the model fitting in `pyrealm`, as shown in the [worked
+example](worked_example).
 
 ```{code-cell} ipython3
 :tags: [hide-input]

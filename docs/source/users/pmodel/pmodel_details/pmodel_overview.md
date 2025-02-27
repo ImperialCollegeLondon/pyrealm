@@ -24,105 +24,33 @@ language_info:
 <!-- markdownlint-disable-next-line MD041 -->
 (pmodel_overview)=
 
-# The P Model
+# The Standard P Model
 
-This page provides an overview of the P Model {cite:p}`Prentice:2014bc,Wang:2017go`
-along with links to further details of the theory and the code implementation. See also:
+This page gives an overview of the calculations for the standard form of the P Model
+{cite:p}`Prentice:2014bc,Wang:2017go` along with links to further details of the core
+components of the model. It may be useful to read this alongside:
 
-* The details of calculations and the API for the package code are shown in the [module
-reference documentation](../../../api/pmodel_api)
-* The [worked examples](worked_examples) of using `pyrealm` to fitting the P Model.
+* The [worked examples](worked_examples) of using `pyrealm` to fitting the Standard P
+  Model.
+* The overview of the [expected predictions](./envt_variation_outputs.md) of the model,
+  given forcing data within normal bounds.
+* The descriptions of the key Python classes used to fit the standard P Model:
+  {class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` and
+  {class}`~pyrealm.pmodel.pmodel.PModel`.
 
-## Overview
+:::{important}
 
-The P Model is a model of carbon capture and water use by plants. There are four core
-forcing variables that define the photosynthetic environment of the plant, although
-extensions of the basic P model may add other required variables such as aridity or soil
-moisture content. The four core variables are:
-
-* temperature (`tc`, °C),
-* vapor pressure deficit (`vpd`, Pa),
-* atmospheric $\ce{CO2}$ concentration (`co2`, ppm), and
-* atmospheric pressure (`patm`, Pa).
-
-Those forcing variables are then used to calculate four further variables that capture
-the [photosynthetic environment](photosynthetic_environment) of a leaf. These are the:
-
-1. photorespiratory compensation point ($\Gamma^*$),
-2. Michaelis-Menten coefficient for photosynthesis ($K_{mm}$),
-3. relative viscosity of water, given a standard at 25°C ($\eta^*$), and
-4. partial pressure of $\ce{CO2}$ in ambient air ($c_a$).
-
-A P Model can then be fitted to calculate the expected optimal light use efficiency
-given the environment. The basic calculation captures how many moles of carbon can be
-captured for each mole of photosynthetically active photons captured by the leaf. In its
-simplest form, this equation is:
-
-$$
-  \text{LUE} = M_C \cdot \phi_0 \cdot m_j,
-$$
-
-where $M_C$ is the molar mass of carbon and $\phi_0$ (the quantum yield efficiency of
-photosynthesis) captures how many moles of photons are required to capture one mole of
-carbon dioxide.
-
-The term $m_j$ is at the heart of the P model and describes the trade off between
-[carbon dioxide capture and water loss in photosynthesis](./optimal_chi). Given the
-environmental conditions, a leaf will adjust its stomata, setting a ratio of internal to
-external carbon dioxide partial pressure ($\chi$) that optimises this trade off. Under
-adverse conditions, this limits the partial pressure of carbon dioxide within the leaf
-($c_i = c_a \chi$) and gives rise to the limitation term $m_j$ that describes the
-resulting loss in light use efficiency. This calculation also allows the P model to
-estimate the intrinsic water use efficiency of photosynthesis (IWUE) as micromoles per
-mole of photons.
-
-There are several methods for the calculation of $\chi$ and $m_j$, which are selected
-using the `method_optchi` argument when fitting a P model. These methods specify the
-choice of C3 and C4 photosynthetic pathways but also environmental modification of
-optimal $\chi$.
-
-The P model can optionally include further limitations to the light use efficiency of
-photosynthesis. The extended equation shows two modifications:
-
-$$
-  \text{LUE} = M_C \cdot \phi_0(E) \cdot  m_j \cdot f_J
-$$
-
-* The function $\phi_0(E)$ captures methods that introduce environmental modulation of
-  the [quantum yield efficiency of photosynthesis](./quantum_yield), such as variation
-  in $\phi_0$ with air temperature. These methods are selected using the `method_kphio`
-  argument when fitting a P model.
-
-* The additional term $f_j$ describes further [limitation of the electron transfer
-  rate](./jmax_limitation) of photosynthesis ($J_{max}$ limitation). These methods are
-  selected using the `method_jmaxlim` argument when fitting a P model.
-
-:::{warning}
-
-Several of the approaches implemented within the P model in `pyrealm` may be estimating
-the same underlying environmental limitation of light use efficiency via different
-pathways. As an example, there are multiple approaches to incorporating effects of [soil
-moisture stress](soil_moisture) on productivity, via modulation of $\phi_0$, $m_j$ and
-the calculation of GPP penalty factors.
-
-Some combinations of methods may therefore result in multiple corrections for the same
-limitation. At present, `pyrealm` does not automatically detect such over-correction, so
-take care when selecting methods for fitting the P model.
+The standard form of the P Model is intended to work with data on greater than weekly
+timescales, where the plants are assumed to be roughly at equilibrium with their
+environment. At faster time scales, the [subdaily form of the P
+Model](../subdaily_details/subdaily_overview.md) accounts for more slowly responding
+systems that introduce acclimation lags into the model calculations.
 
 :::
 
-Once the LUE has been calculated, then estimates of the actual absorbed irradiance
-(µmols of photons per m2 per second) are used to estimate [gross primary
-productivity](./envt_variation_outputs.md#productivity-outputs) (GPP) and other key
-rates within the leaf.
-
-## Variable graph
-
-The graph below shows these broad model areas in terms of model inputs (blue) and
-modelled outputs (red) used in the P Model. Optional inputs and internal variables are
-shown with a dashed edge.
-
-![pmodel.drawio.svg](pmodel.drawio.svg)
+The diagram below shows the workflow used for the calculation of the standard P Model:
+the input forcing data is show in blue, internal variables are shown in green and the
+core shared calculations are shown in red.
 
 <!-- markdownlint-disable MD033 -->
 <!--
@@ -131,4 +59,66 @@ advantage of providing a zoomable cleaner interface for the diagram that support
 tooltips
 -->
 
-<iframe frameborder="0" style="width:100%;height:800px;" src="https://viewer.diagrams.net/?lightbox=0&highlight=0000ff&nav=1&title=pmodel.drawio&dark=auto#Uhttps%3A%2F%2Fraw.githubusercontent.com%2FImperialCollegeLondon%2Fpyrealm%2F438-revise-the-p-model-documentation%2Fdocs%2Fsource%2Fusers%2Fpmodel%2Fpmodel_details%2Fpmodel.drawio"></iframe>
+<iframe frameborder="0" style="width:100%;height:650px;" src="https://viewer.diagrams.net/?lightbox=0&highlight=0000ff&nav=1&title=pmodel.drawio&dark=auto#Uhttps%3A%2F%2Fraw.githubusercontent.com%2FImperialCollegeLondon%2Fpyrealm%2F438-revise-the-p-model-documentation%2Fdocs%2Fsource%2Fusers%2Fpmodel%2Fpmodel_details%2Fpmodel.drawio"></iframe>
+
+<!-- markdownlint-enable MD033 -->
+
+In overview:
+
+1. The forcing variables are used to calculate the [photosynthetic
+  environment](../shared_components/photosynthetic_environment.md) for the model,
+  including the:
+
+    * photorespiratory compensation point ($\Gamma^*$),
+    * Michaelis-Menten coefficient for photosynthesis ($K_{mm}$),
+    * relative viscosity of water ($\eta^*$),
+    * the partial pressure of $\ce{CO2}$ in ambient air ($c_a$), and
+    * the absorbed irradiance ($I_{abs}$)
+
+2. The photosynthetic ennvironment is then used to calculate [optimal
+   chi](../shared_components/optimal_chi.md), given the method set by the
+   `method_optchi` argument, to calculate:
+
+    * the ratio of internal to ambient $\ce{CO2}$ partial pressure ($\chi$),
+    * the internal $\ce{CO2}$ partial pressure ($\c_i$),
+    * the $\ce{CO2}$ limitation factors to both light assimilation ($m_j$) and
+      carboxylation ($m_c$) along with their ratio ($m_j / m_c$).
+
+    The term $m_j$ is at the heart of the P model and describes the trade off between
+    carbon dioxide capture and water loss in photosynthesis. Given the environmental
+    conditions, a leaf will adjust its stomata to a value of ($\chi$) that optimises
+    this trade off. When $\chi$ is less than one, the partial pressure inside of
+    $\ce{CO2}$ inside the leaf is lowered and $m_j$ captures the resulting loss in light
+    use efficiency.
+
+3. The photosynthetic environment is also used to calculate the [quantum
+   yield](../shared_components/quantum_yield.md) of photosynthesis ($\phi_0$), given the
+   method set by the `method_kphio` argument.
+
+4. Theory suggests that $m_j$ and $m_c$ should be further limited ($J_max$ limitation),
+   with different approaches proposed :cite:`Wang:2017go,Smith2019dv`. The calculation
+   of [limitation factors](../shared_components/jmax_limitation.md), given the
+   method set by the `method_jmaxlim` argument, represents these alternative corrections
+   as:
+
+    * a limitation term on the electron transfer rate ($f_j$), and
+    * a similar limitation term on the carboxylation capacity ($f_v$).
+
+5. From these values, and the molar mass of carbon ($M_C$), the light use efficiency of
+   photosynthesis can then be calculated as:
+
+    $$
+      \text{LUE} = M_C \cdot \phi_0 \cdot  m_j \cdot f_v
+    $$
+
+    The gross primary productivity (GPP) is then simply the product of LUE and the
+    absorbed irradiation ($I_abs = f_{APAR} \cdot PPFD$).
+
+6. The approach above is equivalent to directly calculating the minimum of the
+   assimilation rates given limitation of the electron transfer pathway ($A_j$) and
+   limitation of the carboxylation pathway ($A_c$). However the model does still
+   estimate the maximum rates of electron transfer ($J_{max}$) and carboxylation
+   capacity ($V_{cmax}$) and then uses [Arrhenius
+   scaling](../shared_components/arrhenius.md) to estimate those values at standard
+   temperature  ($J_{max25}$) and carboxylation
+   capacity ($V_{cmax25}$).

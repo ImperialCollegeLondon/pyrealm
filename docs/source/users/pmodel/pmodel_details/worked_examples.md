@@ -26,7 +26,7 @@ language_info:
 This page shows two worked examples of how to use `pyrealm` to make predictions using
 the P Model.
 
-The first example uses a single point but the second shows howthe package can be used
+The first example uses a single point but the second shows how the package can be used
 with array data. The `pyrealm` package uses the `numpy` package and expects arrays of
 data to be be passed to all inputs. Input arrays can be a single scalar value, but all
 non-scalar inputs must be **arrays with the same shape**: the `pyrealm` packages does
@@ -43,6 +43,22 @@ from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel import PModelEnvironment
 from pyrealm.core.pressure import calc_patm
 ```
+
+:::{warning}
+
+The `pyrealm` package uses a modular approach to define many of the [shared
+components](../shared_components/overview.md) of the standard and subdaily P Model.
+Some combinations of the methods implemented may modify the same aspect of the model
+using different approaches.
+
+As an example, there are multiple approaches to incorporating effects of
+[soil moisture stress](../shared_components/soil_moisture.md) on productivity, via
+modulation of $\phi_0$, $m_j$ and the calculation of GPP penalty factors.
+
+At present, `pyrealm` does not automatically check the compatibility of method
+selection, so take care when setting methods options for fitting a P Model.
+
+:::
 
 ## Simple point estimate
 
@@ -129,7 +145,8 @@ model.summarize()
 
 The instance also contains a {class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`
 object,
-recording key parameters from the [calculation of $\chi$](./optimal_chi).
+recording key parameters from the [calculation of
+$\chi$](../shared_components/optimal_chi).
 This object also has a {meth}`~pyrealm.pmodel.optimal_chi.OptimalChiABC.summarize`
 method:
 
@@ -204,8 +221,4 @@ plt.colorbar(im, fraction=0.022, pad=0.03, ax=ax2)
 ax2.set_title("GPP")
 
 plt.tight_layout()
-```
-
-```{code-cell} ipython3
-
 ```
