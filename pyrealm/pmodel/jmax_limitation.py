@@ -237,14 +237,12 @@ class JmaxLimitationSmith19(
     def _calculate_limitation_terms(self) -> None:
         """Limitation calculations for the ``smith19`` method."""
 
-        # Adopted from Nick Smith's code:
         # Calculate omega, see Smith et al., 2019 Ecology Letters  # Eq. S4
-        theta = self.pmodel_const.smith19_theta
-        c_cost = self.pmodel_const.smith19_c_cost
+        theta, c_cost = self.pmodel_const.smith19_coef
 
         # simplification terms for omega calculation
         cm = 4 * c_cost / self.optchi.mj
-        v = 1 / (cm * (1 - self.pmodel_const.smith19_theta * cm)) - 4 * theta
+        v = 1 / (cm * (1 - theta * cm)) - 4 * theta
 
         # account for non-linearities at low m values. This code finds
         # the roots of a quadratic function that is defined purely from

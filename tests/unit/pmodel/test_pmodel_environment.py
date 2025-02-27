@@ -134,20 +134,17 @@ def function_test_data():
 
 def test_out_of_bound_output(function_test_data):
     """Function to calculate kmm."""
-    from pyrealm.constants import CoreConst, PModelConst
+    from pyrealm.constants import CoreConst
     from pyrealm.pmodel.functions import calc_kmm
 
     tc_ar_values, patm_ar_values, co2_ar_values = function_test_data
 
-    pmodel_const = PModelConst()
     core_const = CoreConst()
     kmm_lower_bound = 0
     kmm_upper_bound = 1000
 
     for tc, patm, co2 in zip(tc_ar_values, patm_ar_values, co2_ar_values):
-        result = calc_kmm(
-            tk=tc + core_const.k_CtoK, patm=patm, pmodel_const=pmodel_const
-        )
+        result = calc_kmm(tk=tc + core_const.k_CtoK, patm=patm)
 
         assert np.all(result >= kmm_lower_bound), (
             f"Result for (tc={tc}, patm={patm}, co2={co2}) is out of lower bound"
@@ -192,8 +189,8 @@ def test_out_of_bound_output_gammastar(function_test_data):
 
     tc_ar_values, patm_ar_values, _ = function_test_data
 
-    core_const = CoreConst(k_To=298.15, k_Po=101325)
-    pmodel_const = PModelConst(bernacchi_gs25_0=4.332, bernacchi_dha=37830)
+    core_const = CoreConst()
+    pmodel_const = PModelConst()
     gammastar_lower_bound = 0
     gammastar_upper_bound = 30
 
@@ -201,8 +198,7 @@ def test_out_of_bound_output_gammastar(function_test_data):
         result = calc_gammastar(
             tk=tc + core_const.k_CtoK,
             patm=patm,
-            pmodel_const=pmodel_const,
-            core_const=core_const,
+            tk_ref=pmodel_const.tk_ref,
         )
 
         assert np.all(result >= gammastar_lower_bound), (
