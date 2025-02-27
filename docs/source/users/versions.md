@@ -32,7 +32,7 @@ the API of `pyrealm` code.
 
 The versions of `PModel` and `SubdailyPModel` in `pyrealm` version 1.0.0 were based on
 the original implementation of the `rpmodel` package {cite}`Stocker:2020dh` and the R
-code supporting {cite}`mengoli:2022a` respectively. The two implementations:
+code supporting {cite}`mengoli:2022a`, respectively. The two implementations:
 
 * were inconsistent in the names used for attributes common across the two models,
 * contained duplicated internal code, and
@@ -56,8 +56,8 @@ new functionality.
 
 ```
 
-The main user facing changes are shown below, but do also look at the more detailed
-[log of changes](#changes-log) for more detail.
+The main user facing changes are shown below, but do also look at the [log of
+changes](#changes-log) for more detail.
 
 ### The PModelEnvironment class
 
