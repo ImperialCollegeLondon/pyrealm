@@ -73,14 +73,14 @@ In overview:
     * Michaelis-Menten coefficient for photosynthesis ($K_{mm}$),
     * relative viscosity of water ($\eta^*$),
     * the partial pressure of $\ce{CO2}$ in ambient air ($c_a$), and
-    * the absorbed irradiance ($I_{abs}$)
+    * the absorbed irradiance ($I_{abs}$).
 
-2. The photosynthetic ennvironment is then used to calculate [optimal
+2. The photosynthetic environment is then used to calculate [optimal
    chi](../shared_components/optimal_chi.md), given the method set by the
    `method_optchi` argument, to calculate:
 
     * the ratio of internal to ambient $\ce{CO2}$ partial pressure ($\chi$),
-    * the internal $\ce{CO2}$ partial pressure ($\c_i$),
+    * the internal $\ce{CO2}$ partial pressure ($c_i$),
     * the $\ce{CO2}$ limitation factors to both light assimilation ($m_j$) and
       carboxylation ($m_c$) along with their ratio ($m_j / m_c$).
 
@@ -96,7 +96,7 @@ In overview:
    method set by the `method_kphio` argument.
 
 4. Theory suggests that $m_j$ and $m_c$ should be further limited ($J_max$ limitation),
-   with different approaches proposed :cite:`Wang:2017go,Smith2019dv`. The calculation
+   with different approaches proposed {cite}`Wang:2017go,Smith2019dv`. The calculation
    of [limitation factors](../shared_components/jmax_limitation.md), given the
    method set by the `method_jmaxlim` argument, represents these alternative corrections
    as:
