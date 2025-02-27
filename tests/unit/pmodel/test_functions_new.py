@@ -17,7 +17,6 @@ PATM = np.array([123456])
 
 def test_calc_ftemp_inst_rd(tc=TC):
     """Test calc_ftemp_inst_rd."""
-    from pyrealm.constants.pmodel_const import PModelConst
     from pyrealm.pmodel.functions import calc_ftemp_inst_rd
 
     assert_allclose(
@@ -31,7 +30,6 @@ def test_calc_ftemp_inst_rd(tc=TC):
 def test_calc_gammastar(tk=TK, patm=PATM):
     """Test calc_ftemp_inst_rd."""
 
-    from pyrealm.constants.pmodel_const import PModelConst
     from pyrealm.pmodel.functions import calc_gammastar
 
     assert_allclose(
