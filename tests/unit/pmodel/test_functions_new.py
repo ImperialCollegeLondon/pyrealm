@@ -20,6 +20,8 @@ def test_calc_ftemp_inst_rd(tc=TC):
     from pyrealm.constants.pmodel_const import PModelConst
     from pyrealm.pmodel.functions import calc_ftemp_inst_rd
 
+    pmodel_const = PModelConst()
+
     assert_allclose(
         calc_ftemp_inst_rd(
             tc=tc, tc_ref=pmodel_const.tc_ref, coef=pmodel_const.heskel_rd
@@ -34,6 +36,7 @@ def test_calc_gammastar(tk=TK, patm=PATM):
     from pyrealm.constants.pmodel_const import PModelConst
     from pyrealm.pmodel.functions import calc_gammastar
 
+    pmodel_const = PModelConst()
     assert_allclose(
         calc_gammastar(tk, patm, tk_ref=pmodel_const.tk_ref),
         6.7888247955597,
