@@ -465,4 +465,4 @@ def test_enforce_2D(input_array, expected, outcome):
         result = _enforce_2D(input_array)
 
         assert result.ndim == 2
-        assert_allclose(input_array, expected)
+        assert_allclose(result, expected)
