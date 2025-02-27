@@ -34,7 +34,7 @@ and demography.
 # The `pyrealm` package
 
 :::{admonition} Version 2.0.0
-The `pyrealm` package has just updated to version 2. There are a quite a few breaking
+The `pyrealm` package has just been updated to version 2.0.0. There are a quite a few breaking
 changes to the previous version, documented in the [migration guide](users/versions.md)
 to help update existing code. We strongly recommend upgrading to the new version.
 :::

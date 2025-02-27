@@ -42,7 +42,7 @@ In addition, several core methods used within the calculations of both models ha
 rewritten to provide a more flexible and extensible framework for new research methods.
 So, version 2.0.0 provides a complete reworking of the package, with a particular focus
 on better integrating the  {class}`~pyrealm.pmodel.pmodel.PModel` and
-{class}`~pyrealm.pmodel.pmodel.SubdailyPModel` classes. This has lead to a large
+{class}`~pyrealm.pmodel.pmodel.SubdailyPModel` classes. This has led to a large
 number of breaking changes in the API. As the package uses [semantic
 versioning](https://semver.org/), these changes to the API require that new releases be
 made under a new major version.
