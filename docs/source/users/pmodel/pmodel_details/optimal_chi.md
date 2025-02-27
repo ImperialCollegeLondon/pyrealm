@@ -5,9 +5,8 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.5
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 language_info:
@@ -45,9 +44,9 @@ The  {class}`~pyrealm.pmodel.optimal_chi` module provides the following methods 
 calculating these values, providing options to handle C3 and C4 photosynthesis and
 different implementations of water stress. In normal practice, a given method is
 selected using the `method_optchi` argument when fitting a
-{class}`~pyrealm.pmodel.pmodel.PModel`. In the background, those method names are used
-to select from a set of classes that implement the different calculations. Some of the
-examples below show these classes being used directly. The methods and classes built
+{class}`~pyrealm.pmodel.pmodel.PModel`. In the background, those method names are
+used to select from a set of classes that implement the different calculations. Some of
+the examples below show these classes being used directly. The methods and classes built
 into `pyrealm` are shown below, but it is possible for users to add alternative methods
 for use within a P Model.
 
@@ -84,7 +83,8 @@ from matplotlib import pyplot
 from matplotlib.lines import Line2D
 
 from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
-from pyrealm.pmodel import PModelEnvironment, PModel
+from pyrealm.pmodel import PModelEnvironment
+from pyrealm.pmodel.pmodel import PModel
 
 # Create inputs for a temperature curve at:
 # - two atmospheric pressures
@@ -101,7 +101,9 @@ co2_1d = np.array([280, 410])
 tc_4d, patm_4d, vpd_4d, co2_4d = np.meshgrid(tc_1d, patm_1d, vpd_1d, co2_1d)
 
 # Calculate the photosynthetic environment
-pmodel_env = PModelEnvironment(tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d)
+pmodel_env = PModelEnvironment(
+    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, fapar=1, ppfd=1
+)
 
 
 # A plotter function for a model
@@ -281,7 +283,7 @@ variation in $\beta$ with $\theta$ is shown below.
 from pyrealm.pmodel.optimal_chi import OptimalChiLavergne20C3, OptimalChiLavergne20C4
 
 pmodel_env_theta_range = PModelEnvironment(
-    tc=25, patm=101325, vpd=0, co2=400, theta=np.linspace(0, 0.8, 81)
+    tc=25, patm=101325, vpd=0, co2=400, fapar=1, ppfd=1, theta=np.linspace(0, 0.8, 81)
 )
 opt_chi_lavergne20_c3 = OptimalChiLavergne20C3(pmodel_env_theta_range)
 opt_chi_lavergne20_c4 = OptimalChiLavergne20C4(pmodel_env_theta_range)
@@ -309,10 +311,10 @@ values of VPD and soil moisture, with constant atmospheric pressure (101325 Pa) 
 theta_hi = 0.6
 theta_lo = 0.1
 pmodel_env_hi = PModelEnvironment(
-    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, theta=theta_hi
+    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, fapar=1, ppfd=1, theta=theta_hi
 )
 pmodel_env_lo = PModelEnvironment(
-    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, theta=theta_lo
+    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, fapar=1, ppfd=1, theta=theta_lo
 )
 
 # Run the P Model and plot predictions
@@ -480,6 +482,8 @@ pmodel_env_rootzonestress = PModelEnvironment(
     patm=np.repeat(101325, 101),
     vpd=np.repeat(1000, 101),
     co2=np.repeat(400, 101),
+    fapar=np.repeat(1, 101),
+    ppfd=np.repeat(1, 101),
     rootzonestress=np.linspace(0, 1, 101),
 )
 
@@ -519,10 +523,22 @@ rzs_low = 0.75
 rzs_high = 0.25
 
 pmodel_env_hi = PModelEnvironment(
-    tc=tc_4d, patm=101325, vpd=vpd_4d, co2=co2_4d, rootzonestress=rzs_high
+    tc=tc_4d,
+    patm=101325,
+    vpd=vpd_4d,
+    co2=co2_4d,
+    fapar=1,
+    ppfd=1,
+    rootzonestress=rzs_high,
 )
 pmodel_env_lo = PModelEnvironment(
-    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, rootzonestress=rzs_low
+    tc=tc_4d,
+    patm=patm_4d,
+    vpd=vpd_4d,
+    co2=co2_4d,
+    fapar=1,
+    ppfd=1,
+    rootzonestress=rzs_low,
 )
 
 # Run the P Model and plot predictions

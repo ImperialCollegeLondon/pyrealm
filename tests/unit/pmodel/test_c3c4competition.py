@@ -71,9 +71,9 @@ def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
     from pyrealm.pmodel import (
         C3C4Competition,
         CalcCarbonIsotopes,
-        PModel,
         PModelEnvironment,
     )
+    from pyrealm.pmodel.pmodel import PModel
 
     env = PModelEnvironment(
         tc=np.array([20, 35]),
@@ -81,15 +81,13 @@ def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
         co2=np.array([400]),
         vpd=np.array([1000]),
         theta=np.array([0.5]),
+        fapar=np.array([1]),
+        ppfd=np.array([800]),
     )
 
-    pmodel_c3 = PModel(env, **pmodel_c3_args)
-    pmodel_c4 = PModel(env, **pmodel_c4_args)
-
-    fapar = 1
-    ppfd = 800
-    pmodel_c3.estimate_productivity(fapar=fapar, ppfd=ppfd)
-    pmodel_c4.estimate_productivity(fapar=fapar, ppfd=ppfd)
+    # The test values were calculated when PModel still used the Stocker default phi0
+    pmodel_c3 = PModel(env, **pmodel_c3_args, reference_kphio=0.081785)
+    pmodel_c4 = PModel(env, **pmodel_c4_args, reference_kphio=0.081785)
 
     comp = C3C4Competition(
         pmodel_c3.gpp,

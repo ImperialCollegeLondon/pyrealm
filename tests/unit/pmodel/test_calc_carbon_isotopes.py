@@ -93,7 +93,8 @@ from numpy.testing import assert_allclose
 )
 def test_CalcCarbonIsotopes(pmodelenv_args, pmodel_args, expected):
     """Tests the CalcCarbonIsotopes class."""
-    from pyrealm.pmodel import CalcCarbonIsotopes, PModel, PModelEnvironment
+    from pyrealm.pmodel import CalcCarbonIsotopes, PModelEnvironment
+    from pyrealm.pmodel.pmodel import PModel
 
     env = PModelEnvironment(**pmodelenv_args)
     pmodel = PModel(env, **pmodel_args)

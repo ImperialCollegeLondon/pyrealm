@@ -5,7 +5,6 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.5
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -112,10 +111,10 @@ take care when selecting methods for fitting the P model.
 
 :::
 
-As a final stage, once the LUE has been calculated, then estimates of the actual
-absorbed irradiance for a section of canopy (µmols of photons per m2 per second) can
-then be used to estimate [gross primary productivity](estimating-productivity) (GPP) and
-other key rates within the leaf.
+Once the LUE has been calculated, then estimates of the actual absorbed irradiance
+(µmols of photons per m2 per second) are used to estimate [gross primary
+productivity](./envt_variation_outputs.md#productivity-outputs) (GPP) and other key
+rates within the leaf.
 
 ## Variable graph
 

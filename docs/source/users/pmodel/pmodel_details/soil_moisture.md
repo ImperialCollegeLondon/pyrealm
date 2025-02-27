@@ -5,9 +5,8 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.5
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 language_info:
@@ -24,32 +23,47 @@ language_info:
 
 # Soil moisture effects
 
-At present, there are four approaches for incorporating soil moisture effects on
-photosynthesis:
+Approaches to modelling the impact of soil moisture conditions on photosynthesis are a
+very open area and a number of different methods are implemented in ``pyrealm``. These
+different approaches reflect uncertainty about the most appropriate way to modulate
+predictions.
 
-* Two soil moisture stress functions, both of which estimate a penalty factor to
-  calculated GPP based on soil moisture conditions and aridity.
-  * {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` calculates
-    $\beta(\theta)$ {cite:p}`Stocker:2020dh`.
-  * {func}`~pyrealm.pmodel.functions.calc_soilmstress_mengoli` calculates
-  * $\beta(\theta)$ {cite:p}`mengoli:2023a`.
-* The experimental `rootzonestress` methods for
-  {class}`~pyrealm.pmodel.optimal_chi.OptimalChiABC`, which impose a direct stress
-  penalty on $\beta$.
-* The `lavergne20_c3` and `lavergne20_c4` methods for
-  {class}`~pyrealm.pmodel.optimal_chi.OptimalChiABC`, which use an empirical model
-  of the
-  change in the ratio of the photosynthetic costs of carboxilation and transpiration.
-  Altering this cost ratio - inconveniently also called $\beta$ - for soil moisture
-  stress provides a more complete picture of plant responses than GPP penalty factors.
+1. Effects on [optimal chi](./optimal_chi). The `pyrealm` package includes two separate
+   approaches that affect optimal chi:
 
-The GPP penalty functions are described here, but see the [optimal chi](./optimal_chi)
-documentation for details of the other methods.
+   * The `lavergne20_c3` ({class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C3`)
+     and `lavergne20_c4` ({class}`~pyrealm.pmodel.optimal_chi.OptimalChiLavergne20C4`)
+     methods , which use an empirical model of the change in the ratio of the
+     photosynthetic costs of carboxilation and transpiration.
+
+   * The experimental optimal chi methods that impose a direct rootzone stress penalty
+     on the $\beta$ term in calculating optimal chi: `prentice14_rootzonestress`
+     ({class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14RootzoneStress`),
+     `c4_rootzonestress`
+     ({class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4RootzoneStress`), and
+     `c4_no_gamma_rootzonestress`
+     ({class}`~pyrealm.pmodel.optimal_chi.OptimalChiC4NoGammaRootzoneStress`)
+
+2. Effects on the [quantum yield of photosynthesis](./quantum_yield):
+
+   * The `sandoval` method ({class}`~pyrealm.pmodel.quantum_yield.QuantumYieldSandoval`)
+     implements an experimental calculation that modulates $\phi_0$ as a function of the
+     temperature and a local aridity index.
+
+3. Post-hoc penalties on gross primary productivity. These approaches both use empirical
+   functions of soil moisture and aridity  data that have been parameterised to align
+   raw predictions from a P Model with field observations of GPP. Two penalty function
+   are available that calculate the fraction of potential GPP that is realised given the
+   effects of soil moisture stress:
+   * {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` {cite:p}`Stocker:2020dh`.
+   * {func}`~pyrealm.pmodel.functions.calc_soilmstress_mengoli` {cite:p}`mengoli:2023a`.
+
+The GPP penalty functions are described in more detail below.
 
 ## The {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` penalty factor
 
 This is an empirically derived factor ($\beta(\theta) \in [0,1]$,
-{cite:p}`Stocker:2018be,Stocker:2020dh` that describes a penalty to gross primary
+{cite:p}`Stocker:2018be,Stocker:2020dh`) that describes a penalty to gross primary
 productivity (GPP)  resulting from soil moisture stress.
 
 The factor requires estimates of:
@@ -101,9 +115,15 @@ the examples below, the default $\theta_0 = 0$ has been changed to $\theta_0 =
 
 from matplotlib import pyplot as plt
 import numpy as np
-from pyrealm import pmodel
-from pyrealm.pmodel.pmodel import PModel
-from pyrealm.pmodel.pmodel_environment import PModelEnvironment
+
+from pyrealm.pmodel import (
+    PModelEnvironment,
+    PModel,
+    calc_soilmstress_stocker,
+    calc_soilmstress_mengoli,
+    SubdailyPModel,
+    AcclimationModel,
+)
 from pyrealm.constants import PModelConst
 
 # change default theta0 parameter
@@ -129,7 +149,7 @@ soilm = np.linspace(0, 0.7, 101)
 
 for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
 
-    soilmstress = pmodel.calc_soilmstress_stocker(
+    soilmstress = calc_soilmstress_stocker(
         soilm=soilm, meanalpha=mean_alpha, pmodel_const=const
     )
     ax2.plot(soilm, soilmstress, label=r"$\bar{{\alpha}}$ = {}".format(mean_alpha))
@@ -151,8 +171,6 @@ ax2.set_ylabel(r"Empirical soil moisture factor, $\beta(\theta)$")
 plt.show()
 ```
 
-+++ {"user_expressions": []}
-
 ### Application of the {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` factor
 
 The factor can be applied to the P Model by using
@@ -162,14 +180,53 @@ by the resulting factor. The example below shows how the predicted light use
 efficiency from the P Model changes across an aridity gradient both with and without the
 soil moisture factor.
 
+In the `rpmodel` implementation, the soil moisture factor is applied within the
+calculation of the P Model and the penalised GPP is used to modify $V_{cmax}$ and
+$J_{max}$, so that these values are congruent with the resulting penalised LUE and GPP.
+This is **not** implemented in the {mod}`~pyrealm.pmodel` module, where
+correction is only implemented as a post-hoc penalty to GPP.
+
+```{caution}
+* This soil moisture stress function was parameterised using the standard P Model
+  (:class:`~pyrealm.pmodel.pmodel.PModel`) and is unlikely to transfer well to GPP
+  predictions from the subdaily form of the model
+  (:class:`~pyrealm.pmodel.pmodel.SubdailyPModel`).
+
+* The parameterisation of this soil moisture stress function formed part of a wider
+  model tuning in {cite:t}`Stocker:2020dh` that also adjusted the value of the
+  quantum yield of photosynthesis to capture canopy scale efficiency. To match this
+  calibration process, the correction should be applied to outputs of a `PModel` with
+  matching settings: see {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker`
+  for details.
+```
+
 ```{code-cell} ipython3
 # Calculate the P Model in a constant environment
-tc = np.array([20] * 101)
-sm_gradient = np.linspace(0, 1.0, 101)
+n_obs = 48 * 5
+obs_minutes = 30
+time_offsets = np.arange(0, n_obs * obs_minutes, obs_minutes).astype("timedelta64[m]")
+datetimes = np.datetime64("2000-01-01 00:00") + time_offsets
 
-env = PModelEnvironment(tc=tc, patm=101325.0, vpd=820, co2=400)
-model = PModel(env)
-model.estimate_productivity(fapar=1, ppfd=1000)
+sm_gradient = np.linspace(0, 1.0, n_obs)
+
+env = PModelEnvironment(
+    tc=np.full(n_obs, fill_value=20),
+    patm=np.full(n_obs, fill_value=101325),
+    vpd=np.full(n_obs, fill_value=820),
+    co2=np.full(n_obs, fill_value=400),
+    fapar=np.full(n_obs, fill_value=1),
+    ppfd=np.full(n_obs, fill_value=1000),
+)
+
+# Configure the PModel to use the 'BRC' model setup of Stocker et al. (2020)
+model = PModel(
+    env=env,
+    method_kphio="temperature",
+    method_arrhenius="simple",
+    method_jmaxlim="wang17",
+    method_optchi="prentice14",
+    reference_kphio=0.081785,
+)
 
 # Calculate the soil moisture stress factor across a soil moisture gradient
 # at differing aridities
@@ -178,8 +235,8 @@ gpp_stressed = {}
 
 for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
     # Calculate the stress for this aridity
-    sm_stress = pmodel.calc_soilmstress_stocker(
-        soilm=soilm, meanalpha=mean_alpha, pmodel_const=const
+    sm_stress = calc_soilmstress_stocker(
+        soilm=sm_gradient, meanalpha=mean_alpha, pmodel_const=const
     )
     # Apply the penalty factor
     gpp_stressed[mean_alpha] = model.gpp * sm_stress
@@ -191,23 +248,12 @@ for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
 plt.plot(sm_gradient, model.gpp, label="No soil moisture penalty")
 
 for ky, val in gpp_stressed.items():
-    plt.plot(soilm, val, label=r"$\bar{{\alpha}}$ = {}".format(ky))
+    plt.plot(sm_gradient, val, label=r"$\bar{{\alpha}}$ = {}".format(ky))
 
 plt.xlabel(r"Relative soil moisture, $m_s$, -")
 plt.ylabel(r"GPP")
 plt.legend()
 plt.show()
-```
-
-```{warning}
-In the `rpmodel` implementation, the soil moisture factor is applied within the
-calculation of the P Model and the penalised GPP is used to modify $V_{cmax}$ and
-$J_{max}$, so that these values are congruent with the resulting penalised LUE and GPP.
-
-This is **not** implemented in the {mod}`~pyrealm.pmodel` module. The empirical
-correction is only as a post-hoc penalty to GPP, which facilitates the comparison of
-different penalty factors applied to the same P Model instance.
-
 ```
 
 ## The {func}`~pyrealm.pmodel.functions.calc_soilmstress_mengoli` penalty factor
@@ -246,8 +292,6 @@ y &= \min( a  \textrm{AI} ^ {b}, 1)\\
 $$
 
 ```{code-cell} ipython3
-from pyrealm.constants import PModelConst
-
 const = PModelConst()
 aridity_index = np.arange(0.35, 7, 0.1)
 
@@ -287,9 +331,7 @@ beta = {}
 ai_vals = [0.3, 1, 3, 6]
 
 for ai in ai_vals:
-    beta[ai] = pmodel.calc_soilmstress_mengoli(
-        soilm=sm_gradient, aridity_index=np.array(ai)
-    )
+    beta[ai] = calc_soilmstress_mengoli(soilm=sm_gradient, aridity_index=np.array(ai))
     plt.plot(sm_gradient, beta[ai], label=f"AI = {ai}")
 
 plt.xlabel(r"Relative soil moisture $\theta$")
@@ -309,10 +351,40 @@ calculated and then applied to the GPP calculated for a model
 ({attr}`~pyrealm.pmodel.pmodel.PModel.gpp`). In the example below, the result is
 obviously just $\beta(\theta)$ from above scaled to the constant GPP.
 
+```{caution}
+* This soil moisture stress function was parameterised using the subdaily P Model
+  (:class:`~pyrealm.pmodel.pmodel.SubdailyPModel`) and is unlikely to transfer well
+  to GPP predictions from the standard form of the model
+  (:class:`~pyrealm.pmodel.pmodel.PModel`).
+
+* The parameterisation of this soil moisture stress function was estimated using
+  predictions from a particular parameterisation of the subdaily PModel. To match
+  the parameterisation settings, the correction should be applied to outputs of a
+  `SubdailyPModel` with matching settings:
+  see {func}`~pyrealm.pmodel.functions.calc_soilmstress_mengoli` for details.
+```
+
 ```{code-cell} ipython3
+acclim_model = AcclimationModel(datetimes=datetimes)
+acclim_model.set_window(
+    window_center=np.timedelta64(12, "h"), half_width=np.timedelta64(1, "h")
+)
+
+acclim_model.get_window_values(env.tc)
+
+subdaily_model = SubdailyPModel(
+    env=env,
+    acclim_model=acclim_model,
+    method_kphio="temperature",
+    method_arrhenius="simple",
+    method_jmaxlim="wang17",
+    method_optchi="prentice14",
+    reference_kphio=1 / 8,
+)
+
 for ai in ai_vals:
 
-    plt.plot(sm_gradient, model.gpp * beta[ai], label=f"AI = {ai}")
+    plt.plot(sm_gradient, subdaily_model.gpp * beta[ai], label=f"AI = {ai}")
 
 plt.xlabel(r"Relative soil moisture $\theta$")
 plt.ylabel("GPP")

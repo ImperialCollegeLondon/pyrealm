@@ -209,10 +209,12 @@ def test_calc_ftemp_kphio(values, tc, c4, expvars):
 )
 def test_calc_gammastar(values, tc, patm, context_manager, expvals):
     """Test the calc_gammastar function."""
+    from pyrealm.constants.core_const import CoreConst
     from pyrealm.pmodel import calc_gammastar
 
+    core_const = CoreConst()
     with context_manager:
-        ret = calc_gammastar(tc=values[tc], patm=values[patm])
+        ret = calc_gammastar(tk=values[tc] + core_const.k_CtoK, patm=values[patm])
         if expvals is not None:
             assert_allclose(ret, values[expvals])
 
@@ -234,10 +236,13 @@ def test_calc_gammastar(values, tc, patm, context_manager, expvals):
 def test_calc_kmm(values, tc, patm, context_manager, expvals):
     """Test the calc_kmm function."""
 
+    from pyrealm.constants.core_const import CoreConst
     from pyrealm.pmodel import calc_kmm
 
+    core_const = CoreConst()
+
     with context_manager:
-        ret = calc_kmm(tc=values[tc], patm=values[patm])
+        ret = calc_kmm(tk=values[tc] + core_const.k_CtoK, patm=values[patm])
         if expvals:
             assert_allclose(ret, values[expvals])
 
@@ -428,7 +433,10 @@ def test_optimal_chi(values, tc, patm, co2, vpd, method, context_manager, expval
 
     with context_manager:
         env = PModelEnvironment(
-            tc=values[tc], patm=values[patm], vpd=values[vpd], co2=values[co2]
+            tc=values[tc],
+            patm=values[patm],
+            vpd=values[vpd],
+            co2=values[co2],
         )
 
         OptChiClass = OPTIMAL_CHI_CLASS_REGISTRY[method]
@@ -492,7 +500,10 @@ def test_jmax_limitation(
 
     # Optimal Chi
     env = PModelEnvironment(
-        tc=values[tc], patm=values[patm], vpd=values[vpd], co2=values[co2]
+        tc=values[tc],
+        patm=values[patm],
+        vpd=values[vpd],
+        co2=values[co2],
     )
 
     if not ftemp_kphio:
@@ -566,7 +577,10 @@ def test_pmodelenvironment(values, tc, vpd, co2, patm, ca, kmm, gammastar, ns_st
     from pyrealm.pmodel import PModelEnvironment
 
     ret = PModelEnvironment(
-        tc=values[tc], patm=values[patm], vpd=values[vpd], co2=values[co2]
+        tc=values[tc],
+        patm=values[patm],
+        vpd=values[vpd],
+        co2=values[co2],
     )
 
     assert_allclose(ret.gammastar, values[gammastar])
@@ -632,6 +646,8 @@ def pmodelenv(values):
         vpd=values["vpd_sc"],
         co2=values["co2_sc"],
         patm=values["patm_sc"],
+        fapar=values["fapar_sc"],
+        ppfd=values["ppfd_sc"],
         mean_growth_temperature=values["tc_sc"],
     )
 
@@ -640,6 +656,8 @@ def pmodelenv(values):
         vpd=values["vpd_ar"],
         co2=values["co2_ar"],
         patm=values["patm_ar"],
+        fapar=values["fapar_ar"],
+        ppfd=values["ppfd_ar"],
         mean_growth_temperature=values["tc_ar"],
     )
 
@@ -657,12 +675,17 @@ def pmodelenv(values):
 def test_pmodel_class_c3(
     request, values, pmodelenv, soilmstress, method_kphio, luevcmax_method, environ
 ):
-    """Test the PModel class for C3 plants."""
+    """Test the PModel class for C3 plants.
 
-    from pyrealm.pmodel import PModel, calc_soilmstress_stocker
+    Note that the values generated here do not use the recommended settings from
+    :cite:t:`Stocker:2020dh` for the BRC and ORG approaches for the reference values of
+    phi0.
+    """
 
-    # TODO - this is a bit odd as rpmodel embeds stocker soilm in model where in pyrealm
-    #        it is only applied post-GPP calculation. Maybe disentangle these.
+    from pyrealm.pmodel import calc_soilmstress_stocker
+    from pyrealm.pmodel.pmodel import PModel
+
+    # Calculate the soil moisture factor to apply post hoc
     if soilmstress:
         soilmstress = calc_soilmstress_stocker(
             values["soilm_sc"], values["meanalpha_sc"]
@@ -677,16 +700,6 @@ def test_pmodel_class_c3(
         method_arrhenius="kattge_knorr",
         reference_kphio=0.05,
     )
-
-    # Estimate productivity
-    if environ == "sc":
-        fapar = values["fapar_sc"]
-        ppfd = values["ppfd_sc"]
-    elif environ == "ar":
-        fapar = values["fapar_ar"]
-        ppfd = values["ppfd_ar"]
-
-    ret.estimate_productivity(fapar=fapar, ppfd=ppfd)
 
     # Find the expected values, extracting the combination from the request
     name = request.node.name
@@ -767,10 +780,10 @@ def test_pmodel_class_c4(
     """Test the PModel class for C4 plants."""
 
     from pyrealm.pmodel import (
-        PModel,
         PModelEnvironment,
         calc_soilmstress_stocker,
     )
+    from pyrealm.pmodel.pmodel import PModel
     from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
 
     if soilmstress:
@@ -801,16 +814,6 @@ def test_pmodel_class_c4(
         method_arrhenius="kattge_knorr",
         reference_kphio=0.05 * kf,  # See note above
     )
-
-    # Estimate productivity
-    if environ == "sc":
-        fapar = values["fapar_sc"]
-        ppfd = values["ppfd_sc"]
-    elif environ == "ar":
-        fapar = values["fapar_ar"]
-        ppfd = values["ppfd_ar"]
-
-    ret.estimate_productivity(fapar=fapar, ppfd=ppfd)
 
     # Find the expected values, extracting the combination from the request
     name = request.node.name
@@ -864,26 +867,10 @@ def test_pmodel_class_c4(
 def test_pmodel_summarise(capsys, values, pmodelenv):
     """Test the PModel summarize method."""
 
-    from pyrealm.pmodel import PModel
+    from pyrealm.pmodel.pmodel import PModel
 
     ret = PModel(pmodelenv["sc"], reference_kphio=0.05)
 
-    # Test what comes back before estimate_productivity
-    ret.summarize()
-
-    out = capsys.readouterr().out
-
-    assert all(["\n" + var in out for var in ("lue", "iwue")])
-    assert not any(
-        ["\n" + var in out for var in ("gpp", "vcmax", "vcmax25", "rd", "gs", "jmax")]
-    )
-
-    fapar = values["fapar_sc"]
-    ppfd = values["ppfd_sc"]
-
-    ret.estimate_productivity(fapar=fapar, ppfd=ppfd)
-
-    # Test what comes back after estimate_productivity
     ret.summarize()
 
     out = capsys.readouterr().out
@@ -918,7 +905,8 @@ def test_lavergne_equivalence(tc, theta, variable_method, fixed_method, is_C4):
     # of temperature and soil moisture.
 
     from pyrealm.constants import PModelConst
-    from pyrealm.pmodel import PModel, PModelEnvironment
+    from pyrealm.pmodel import PModelEnvironment
+    from pyrealm.pmodel.pmodel import PModel
 
     env = PModelEnvironment(
         tc=tc,

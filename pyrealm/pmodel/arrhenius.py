@@ -16,10 +16,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.constants.core_const import CoreConst
 from pyrealm.pmodel.functions import (
     calculate_kattge_knorr_arrhenius_factor,
     calculate_simple_arrhenius_factor,
@@ -48,9 +46,9 @@ class ArrheniusFactorABC(ABC):
     by a method name that can then be used with the ``method_arrhenius`` argument to
     those classes.
 
-    The `__init__` method uses the PModelEnvironment to provide temperature and any
-    other required variable to the calculation, along with the reference temperature to
-    be used. The `calculate_arrhenius_factor` method provides validation to check that
+    The ``__init__`` method uses the PModelEnvironment to provide temperature and any
+    other required variables to the calculation, along with the reference temperature to
+    be used. The ``calculate_arrhenius_factor`` method provides validation to check that
     the coefficients required by a particular implementation are provided.
 
     Subclasses only need to implement the private abstract method `_calculate_values`,
@@ -76,26 +74,13 @@ class ArrheniusFactorABC(ABC):
     def __init__(
         self,
         env: PModelEnvironment,
-        reference_temperature: float,
-        core_const: CoreConst = CoreConst(),
     ):
         self.env: PModelEnvironment = env
         """The PModelEnvironment containing the photosynthetic environment for the
         model."""
 
-        self.core_const = core_const
-        """The core constants to be used in the calculation"""
-
-        self.tk_ref = reference_temperature + self.core_const.k_CtoK
+        self.tk_ref = self.env.pmodel_const.plant_T_ref + self.env.core_const.k_CtoK
         """The reference temperature in Kelvins, calculated internally."""
-
-        self.tk = self.env.tc + self.core_const.k_CtoK
-        """The temperature in Kelvings, calculated internally from the temperature in
-        the `env` argument."""
-
-        # Declare attributes populated by methods.
-        self.arrhenius_factor: NDArray[np.float64]
-        """The calculated Arrhenius factor."""
 
         # Run the calculation methods after checking for any required variables
         self._check_required_env_variables()
@@ -106,6 +91,9 @@ class ArrheniusFactorABC(ABC):
 
     def calculate_arrhenius_factor(self, coefficients: dict) -> NDArray:
         """Calculate the Arrhenius factor.
+
+        This method calculates the Arrhenius factor for the model environment, given a
+        dictionary providing the required enzyme coefficients.
 
         Args:
             coefficients: A dictionary providing any required coefficients for a given
@@ -168,14 +156,35 @@ class SimpleArrhenius(
     required_coefficients={"ha"},
     required_env_variables=[],
 ):
-    """Class providing simple Arrhenius scaling."""
+    """Class providing simple Arrhenius scaling.
+
+    This class provides an implementation of simple Arrhenius scaling for the data in a
+    PModelEnvironment. It requires no variables other than the standard temperature and
+    requires that a coefficient dictionary providing only ``ha`` (the activation energy
+    constant, :math:`H_a`, J/mol).
+
+    Examples:
+        >>> import numpy as np
+        >>> env = PModelEnvironment(
+        ...     tc=np.array([20]),
+        ...     patm=np.array([101325]),
+        ...     co2=np.array([400]),
+        ...     vpd=np.array([1000]),
+        ... )
+        >>> arrh = SimpleArrhenius(env=env)
+        >>> # Simple Arrhenius scaling factor using V_cmax coefficients
+        >>> arrh.calculate_arrhenius_factor(
+        ...     coefficients={'simple': {'ha': 65330}}
+        ... ).round(5)
+        array([0.63795])
+    """
 
     def _calculation_method(self, coefficients: dict) -> NDArray:
         return calculate_simple_arrhenius_factor(
-            tk=self.tk,
+            tk=self.env.tk,
             tk_ref=self.tk_ref,
             ha=coefficients["ha"],
-            core_const=self.core_const,
+            core_const=self.env.core_const,
         )
 
 
@@ -187,18 +196,48 @@ class KattgeKnorrArrhenius(
 ):
     """Class providing Kattge Knorr Arrhenius scaling.
 
-    This method requires that the PModelEnvironment provide growth temperatures as
-    `mean_growth_temperature`.
+    This method implements the peaked Arrhenius scaling model of
+    :cite:t:`Kattge:2007db`. It requires that the PModelEnvironment also provides values
+    for the mean growth temperature of plants as ``mean_growth_temperature`` in °C. It
+    also requires a coefficients dictionary providing:
+
+    * the intercept (``entropy_intercept``) and slope (``entropy_slope``) of activation
+      entropy as a function of the mean growth temperature in °C (J/mol/°C),
+    * the deactivation energy constant  (``hd``, :math:`H_d`, J/mol) and
+    * the activation energy constant (``ha``, :math:`H_a`, J/mol).
+
+    Examples:
+        >>> import numpy as np
+        >>> env = PModelEnvironment(
+        ...     tc=np.array([20]),
+        ...     patm=np.array([101325]),
+        ...     co2=np.array([400]),
+        ...     vpd=np.array([1000]),
+        ...     mean_growth_temperature=np.array([10]),
+        ... )
+        >>> arrh = KattgeKnorrArrhenius(env=env)
+        >>> # Kattge and Knorr Arrhenius scaling factor using V_cmax coefficients
+        >>> arrh.calculate_arrhenius_factor(
+        ...     coefficients={"kattge_knorr":
+        ...         {
+        ...             'entropy_intercept': 668.39,
+        ...             'entropy_slope': -1.07,
+        ...             'ha': 71513,
+        ...             'hd': 200000,
+        ...         }
+        ...     }
+        ...  ).round(5)
+        array([0.70109])
     """
 
     def _calculation_method(self, coefficients: dict) -> NDArray:
         return calculate_kattge_knorr_arrhenius_factor(
-            tk_leaf=self.tk,
+            tk_leaf=self.env.tk,
             tk_ref=self.tk_ref,
-            tc_growth=self.env.mean_growth_temperature,
+            tc_growth=getattr(self.env, "mean_growth_temperature"),
             ha=coefficients["ha"],
             hd=coefficients["hd"],
             entropy_intercept=coefficients["entropy_intercept"],
             entropy_slope=coefficients["entropy_slope"],
-            core_const=self.core_const,
+            core_const=self.env.core_const,
         )

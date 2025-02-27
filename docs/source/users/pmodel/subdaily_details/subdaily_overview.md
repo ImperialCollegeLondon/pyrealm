@@ -5,7 +5,6 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.5
 kernelspec:
   display_name: Python 3
   language: python
@@ -60,10 +59,11 @@ The implementation has the following steps:
   data is calculated as for the standard P Model. This estimates the fast responses of
   $\Gamma^*$, $K_{mm}$, $\eta^*$, and $c_a$.
 
-* A [daily window](acclimation.md#the-acclimation-window) is then set to define the
-  conditions towards which the slow responses will acclimate, typically noon conditions
-  that optimise light use efficiency during the daily period of highest photosynthetic
-  photon flux density (PPFD). This is used to calculate a daily time series of average
+* An [acclimation model](acclimation.md#the-acclimation-model) is then defined that sets
+  a window of observations during the day that define the conditions that the slow
+  responses will acclimate towards. Thease are typically noon conditions that optimise
+  light use efficiency during the daily period of highest photosynthetic photon flux
+  density (PPFD). This model is used to calculate a daily time series of average
   conditions during this acclimation window.
 
 * A standard P model is used to estimate *optimal* behaviour during the daily

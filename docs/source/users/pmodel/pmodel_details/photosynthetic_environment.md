@@ -5,9 +5,8 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.5
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 language_info:
@@ -63,11 +62,13 @@ n_pts = 101
 
 # Create a range of representative values for key inputs.
 tc_1d = np.linspace(0, 50, n_pts)
+tk_1d = tc_1d + const.k_CtoK
 patm_1d = np.linspace(60000, 106000, n_pts)  # ~ tropical tree line
 co2_1d = np.linspace(200, 500, n_pts)
 
 # Broadcast the range into arrays with repeated values.
 tc_2d = np.broadcast_to(tc_1d, (n_pts, n_pts))
+tk_2d = np.broadcast_to(tk_1d, (n_pts, n_pts))
 patm_2d = np.broadcast_to(patm_1d, (n_pts, n_pts))
 co2_2d = np.broadcast_to(co2_1d, (n_pts, n_pts))
 ```
@@ -83,7 +84,7 @@ of temperature and atmospheric pressure:
 :tags: [hide-input]
 
 # Calculate gammastar
-gammastar = calc_gammastar(tc_2d, patm_2d.transpose())
+gammastar = calc_gammastar(tk=tk_2d, patm=patm_2d.transpose())
 
 # Create a contour plot of gamma
 fig, ax = pyplot.subplots()
@@ -106,7 +107,7 @@ temperature and atmospheric pressure:
 :tags: [hide-input]
 
 # Calculate K_mm
-kmm = calc_kmm(tc_2d, patm_2d.transpose())
+kmm = calc_kmm(tk=tk_2d, patm=patm_2d.transpose())
 
 # Contour plot of calculated values
 fig, ax = pyplot.subplots()

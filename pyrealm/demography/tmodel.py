@@ -768,7 +768,7 @@ class StemAllometry(PandasExporter, CohortMethods):
         self,
         stem_traits: Flora | StemTraits,
         at_dbh: NDArray[np.float64],
-        validate: bool = True,
+        validate: bool,
     ) -> None:
         """Populate the stem allometry attributes from the traits and size data."""
 
@@ -926,7 +926,7 @@ class StemAllocation(PandasExporter):
         stem_traits: Flora | StemTraits,
         stem_allometry: StemAllometry,
         at_potential_gpp: NDArray[np.float64],
-        validate: bool = True,
+        validate: bool,
     ) -> None:
         """Populate stem allocation attributes from the traits, allometry and GPP."""
 

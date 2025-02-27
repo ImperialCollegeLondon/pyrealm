@@ -10,7 +10,9 @@ from numpy.testing import assert_allclose
 def test_phenology_gpp_calculation(de_gri_half_hourly_data):
     """Test the provided GPP values for phenology can be recreated."""
 
-    from pyrealm.pmodel import PModel, PModelEnvironment, SubdailyPModel, SubdailyScaler
+    from pyrealm.pmodel import PModelEnvironment
+    from pyrealm.pmodel.acclimation import AcclimationModel
+    from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 
     # Calculate the PModel photosynthetic environment
     env = PModelEnvironment(
@@ -18,11 +20,16 @@ def test_phenology_gpp_calculation(de_gri_half_hourly_data):
         vpd=de_gri_half_hourly_data["VPD_F"].to_numpy(),
         co2=de_gri_half_hourly_data["CO2_F_MDS"].to_numpy(),
         patm=de_gri_half_hourly_data["PA_F"].to_numpy(),
+        fapar=np.ones(de_gri_half_hourly_data.shape[0]),
+        # ppfd=de_gri_half_hourly_data["PPFD"].to_numpy(),
+        ppfd=de_gri_half_hourly_data["SW_IN_F_MDS"].to_numpy() * 2.04,
     )
 
     # Set up the datetimes of the observations and set the acclimation window
-    scaler = SubdailyScaler(datetimes=de_gri_half_hourly_data["time"].to_numpy())
-    scaler.set_window(
+    acclim_model = AcclimationModel(
+        datetimes=de_gri_half_hourly_data["time"].to_numpy()
+    )
+    acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(31, "m"),
     )
@@ -30,20 +37,13 @@ def test_phenology_gpp_calculation(de_gri_half_hourly_data):
     # Fit the potential GPP: fAPAR = 1 and phi0 = 1/8
     de_gri_subdaily_pmodel = SubdailyPModel(
         env=env,
-        fs_scaler=scaler,
-        fapar=np.ones_like(env.ca),
-        ppfd=de_gri_half_hourly_data["PPFD"].to_numpy(),
+        acclim_model=acclim_model,
         reference_kphio=1 / 8,
     )
 
     de_gri_pmodel = PModel(
         env=env,
         reference_kphio=1 / 8,
-    )
-
-    de_gri_pmodel.estimate_productivity(
-        fapar=np.ones_like(env.ca),
-        ppfd=de_gri_half_hourly_data["SW_IN_F_MDS"].to_numpy() * 2.04,
     )
 
     # Currently close but not exact

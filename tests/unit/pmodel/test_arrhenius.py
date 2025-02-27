@@ -89,7 +89,7 @@ def test_ArrheniusFactorABC_init_and_call(
     class_obj = getattr(arrhenius, classname)
 
     with init_raises as init_excep:
-        inst = class_obj(env=env, reference_temperature=25)
+        inst = class_obj(env=env)
 
         with call_raises as call_excep:
             _ = inst.calculate_arrhenius_factor(coefficients=coef)
@@ -134,8 +134,10 @@ class TestSimpleArrhenius:
         from pyrealm.pmodel import PModelEnvironment
         from pyrealm.pmodel.arrhenius import SimpleArrhenius
 
-        env = PModelEnvironment(tc=args["tc"], patm=101325, vpd=400, co2=400)
-        arrh = SimpleArrhenius(env=env, reference_temperature=args["tc_ref"])
+        env = PModelEnvironment(
+            tc=args["tc"], patm=101325, vpd=400, co2=400, fapar=1, ppfd=1
+        )
+        arrh = SimpleArrhenius(env=env)
 
         assert_allclose(
             arrh.calculate_arrhenius_factor(coefficients=args["coef"]), expected
@@ -202,7 +204,7 @@ class TestKattgeKnorrArrhenius:
             co2=400,
             mean_growth_temperature=args["tc_growth"],
         )
-        arrh = KattgeKnorrArrhenius(env=env, reference_temperature=args["tc_ref"])
+        arrh = KattgeKnorrArrhenius(env=env)
 
         assert_allclose(
             arrh.calculate_arrhenius_factor(coefficients=args["coef"]), expected
@@ -216,12 +218,9 @@ def test_pmodel_equivalence():
     implementation give equal Vcmax and Jmax values.
     """
 
-    from pyrealm.pmodel import (
-        PModel,
-        PModelEnvironment,
-        SubdailyPModel,
-        SubdailyScaler,
-    )
+    from pyrealm.pmodel import PModelEnvironment
+    from pyrealm.pmodel.acclimation import AcclimationModel
+    from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 
     # One year time sequence at half hour resolution
     datetimes = np.arange(
@@ -237,18 +236,18 @@ def test_pmodel_equivalence():
         patm=np.full(n_pts, 101325.0),
         vpd=np.full(n_pts, 1300.0),
         co2=np.full(n_pts, 305.945),
+        fapar=np.full(n_pts, 1),
+        ppfd=np.full(n_pts, 100 * 2.04),
         mean_growth_temperature=np.full(n_pts, 10),
     )
 
-    # Constant absorbed irradation
-    # Potential GPP using fAPAR = 1 (unitless)
-    fapar = np.full(n_pts, 1)
-    # PPFD (Photosynthetic Photon Flux Density, µmol m⁻² s⁻¹)
-    ppfd = np.full(n_pts, 100 * 2.04)
-
     # Setup the Subdaily Model using a 1 hour acclimation window around noon
-    fsscaler = SubdailyScaler(datetimes=datetimes)
-    fsscaler.set_window(
+    acclim_model = AcclimationModel(
+        datetimes=datetimes,
+        alpha=1 / 15,
+        allow_holdover=True,
+    )
+    acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),  # 12:00 PM
         half_width=np.timedelta64(30, "m"),  # ±0.5 hours
     )
@@ -256,32 +255,23 @@ def test_pmodel_equivalence():
     # Fit the two models
     fix_subdaily = SubdailyPModel(
         env=fixed_env,
+        acclim_model=acclim_model,
         method_optchi="prentice14",
-        fapar=fapar,
-        ppfd=ppfd,
-        fs_scaler=fsscaler,
-        alpha=1 / 15,
-        allow_holdover=True,
         reference_kphio=1 / 8,
     )
 
     fix_standard = PModel(
-        env=fixed_env, method_optchi="prentice14", reference_kphio=1 / 8
+        env=fixed_env,
+        method_optchi="prentice14",
+        reference_kphio=1 / 8,
     )
-    fix_standard.estimate_productivity(fapar=fapar, ppfd=ppfd)
 
     # Assert values should be the same, excluding the initial subdaily values before the
     # first observation
     drop_start = slice(25, -1, 1)
-    assert_allclose(
-        fix_standard.jmax[drop_start], fix_subdaily.subdaily_jmax[drop_start]
-    )
-    assert_allclose(
-        fix_standard.jmax25[drop_start], fix_subdaily.subdaily_jmax25[drop_start]
-    )
-    assert_allclose(
-        fix_standard.vcmax[drop_start], fix_subdaily.subdaily_vcmax[drop_start]
-    )
-    assert_allclose(
-        fix_standard.vcmax25[drop_start], fix_subdaily.subdaily_vcmax25[drop_start]
-    )
+
+    for attr in ["jmax", "jmax25", "vcmax", "vcmax25"]:
+        assert_allclose(
+            getattr(fix_standard, attr)[drop_start],
+            getattr(fix_subdaily, attr)[drop_start],
+        )

@@ -174,6 +174,12 @@ class PModelConst(ConstantsClass):
     bernacchi_gs25_0: float = 4.332  # Reported as 42.75 µmol mol-1
     """Bernacchi estimate of gs25_0"""
 
+    # Quantum yield efficiency of photosynthesis
+    maximum_phi0: float = 1.0 / 8.0
+    """The theoretical maximum intrinsic quantum yield efficiency of photosynthesis
+    (:math:`\phi_0`, unitless). This value defaults to 1/8 but could be set to 1/9 to
+    capture the absence of a Q cycle :cite:`long:1993a`."""
+
     # Boyd
     boyd_kp25_c4: float = 16  # Pa  from Boyd et al. (2015)
     boyd_dhac_c4: float = 36300  # J mol-1
