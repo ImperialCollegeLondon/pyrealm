@@ -36,8 +36,14 @@ series.
 
 # The `pyrealm` package
 
-The package currently provides the following modules. It is in active development and
-new functionality is frequently added.
+:::{admonition} Version 2.0.0
+The `pyrealm` package has just been updated to version 2.0.0. There are a quite a few
+breaking changes to the previous version, documented in the [migration
+guide](users/versions.md) to help update existing code. We strongly recommend upgrading
+to the new version.
+:::
+
+The package currently provides the following modules:
 
 The `core` module
 : Contains fundamental utilities and physics functionality shared across the
@@ -60,23 +66,6 @@ The `demography` module
   the T Model for estimating plant allocation of gross primary productivity to growth
   and respiration {cite:p}`Li:2014bc`. This module is still in active development but a
   lot of initial functionality is present.
-
-## Version 2.0.0 development
-
-New functionality being implemented after version 1.0.0 has lead to some immediate
-breaking changes in the API, for example in the handling of quantum yield settings in
-the class signatures for the `PModel` and `SubdailyPModel`. As the package uses
-[semantic versioning](https://semver.org/), these changes to the API require that new
-releases be made under a new major version.
-
-We will be publishing a series of "release candidates" of the 2.0.0 package. These will
-be used to identify issues with the current API and try to stabilise a new API. The
-content of version 2.0.0 is not yet finalised, so these release candidates may also add
-new functionality.
-
-We recommend that you update to the most recent release candidate of version 2.0.0. The
-documentation now includes a [migration guide](users/versions.md) to help update
-existing code.
 
 ## Indices and tables
 

@@ -108,8 +108,9 @@ worked through. The changes below are provisional.
 
 - The functions `calc_ftemp_kphio` and `calc_ftemp_inst_vcmax` provided narrow use cases
   with code duplication. They have been replaced by two broader Arrhenius functions:
-  `calculate_simple_arrhenius_factor` and `calculate_kattge_knorr_arrhenius_factor` (see
-  also the point above).
+  `calculate_simple_arrhenius_factor` and `calculate_kattge_knorr_arrhenius_factor` .
+  The functions in {mod}`pyrealm.pmodel.functions` have been updated to take specific
+  arguments rather than just taking `PModelConsts` and `CoreConsts` objects.
 
 - The `pyrealm.core.water` module now provides `convert_water_mm_to_moles`,
   `convert_water_moles_to_mm` and `calculate_water_molar_volume`.
