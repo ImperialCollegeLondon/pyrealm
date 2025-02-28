@@ -94,7 +94,7 @@ In overview:
    method set by the `method_kphio` argument.
 
 4. Theory suggests that $m_j$ and $m_c$ should be further limited ($J_max$ limitation),
-   with different approaches proposed {cite}`Wang:2017go,Smith2019dv`. The calculation
+   with different approaches proposed {cite}`Wang:2017go,Smith:2019dv`. The calculation
    of [limitation factors](../shared_components/jmax_limitation.md), given the
    method set by the `method_jmaxlim` argument, represents these alternative corrections
    as:
