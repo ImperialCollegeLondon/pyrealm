@@ -640,21 +640,21 @@ def test_CrownProfile(fixture_community):
         )
         assert val_func_patch.call_count == 1
 
-    # Crown radius on diagonal predicts crown area accurately
+    # Crown radius on diagonal predicts crown area accurately - needs to made 2D again.
     assert_allclose(
-        np.diag(crown_profile.crown_radius) ** 2 * np.pi,
+        np.diag(crown_profile.crown_radius)[None, :] ** 2 * np.pi,
         fixture_community.stem_allometry.crown_area,
     )
 
     # Same is true for projected crown area at z_max heights
     assert_allclose(
-        np.diag(crown_profile.projected_crown_area),
+        np.diag(crown_profile.projected_crown_area)[None, :],
         fixture_community.stem_allometry.crown_area,
     )
 
     # And since f_g=0, so is projected leaf area
     assert_allclose(
-        np.diag(crown_profile.projected_leaf_area),
+        np.diag(crown_profile.projected_leaf_area)[None, :],
         fixture_community.stem_allometry.crown_area,
     )
 

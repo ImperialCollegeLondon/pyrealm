@@ -17,7 +17,7 @@ from numpy.testing import assert_allclose
                     "pft_par_ext": np.array([0.5, 0.5, 0.5]),
                     "cell_area": 8,
                 },
-                (np.full((3,), 2), np.full((3,), 1), np.full((3,), np.exp(-0.5))),
+                (np.full((1, 3), 2), np.full((1, 3), 1), np.full((1, 3), np.exp(-0.5))),
                 (
                     np.full((1,), np.exp(-0.5)) ** 3,
                     np.full((1,), np.exp(-0.5)) ** 3,

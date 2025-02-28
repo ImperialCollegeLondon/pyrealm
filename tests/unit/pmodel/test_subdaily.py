@@ -223,9 +223,10 @@ def test_SubdailyPModel_dimensionality(be_vie_data, ndims):
     extra_dims = [3] * (ndims - 1)
     array_dims = tuple([*extra_dims, len(datetime)])
 
-    # Apply a different random value of fAPAR for each time series
+    # Apply a different random value of fAPAR for each time series, but set a single
+    # element to 1.0 as a reference value
     fapar_vals = np.random.random(extra_dims)
-    fapar_vals[0] = 1.0
+    fapar_vals.flat[0] = 1.0
 
     # Create the environment
     env = PModelEnvironment(
@@ -254,7 +255,9 @@ def test_SubdailyPModel_dimensionality(be_vie_data, ndims):
     # proportional to the random fapar values and hence GPP/FAPAR should all equal the
     # value when it is set to 1
     timeaxis_mean = np.nansum(subdaily_pmodel.gpp, axis=0)
-    assert_allclose(timeaxis_mean / fapar_vals, timeaxis_mean[0])
+    assert_allclose(
+        timeaxis_mean / fapar_vals, np.full_like(timeaxis_mean, timeaxis_mean.flat[0])
+    )
 
 
 @pytest.mark.parametrize("method_optchi", OPTIMAL_CHI_CLASS_REGISTRY.keys())

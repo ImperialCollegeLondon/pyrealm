@@ -58,6 +58,8 @@ def test_daily_values(de_gri_half_hourly_data, de_gri_daily_data):
 
     This is just to validate that daily and annual values in the de_gri_daily_data
     inputs can be correctly derived from the original half hourly inputs.
+
+    The tolerances on this are very coarse because the source file has rounding issues.
     """
 
     # Set the time as the index to enable temporal resampling.
@@ -67,9 +69,13 @@ def test_daily_values(de_gri_half_hourly_data, de_gri_daily_data):
     de_gri_daily_resampler = de_gri_half_hourly_data.resample("D")
 
     # Mean daily conditions - temperature, VPD and pressure
-    for daily_mean_var in ["TA_F", "VPD_F", "PA_F"]:
+    for daily_mean_var, tols in [
+        ("TA_F", {"atol": 0.001}),  # Temperatures rounded to 3 dp
+        ("VPD_F", {"atol": 0.001}),  # VPD rounded to 3 dp
+        ("PA_F", {"atol": 1}),  # Atmospheric pressure rounded to 0 dp
+    ]:
         daily_means = de_gri_daily_resampler[daily_mean_var].mean().to_numpy()
-        assert_allclose(daily_means, de_gri_daily_data[daily_mean_var], atol=0.001)
+        assert_allclose(daily_means, de_gri_daily_data[daily_mean_var], **tols)
 
     # Total precipitation
     daily_precip = de_gri_daily_resampler["P_F"].sum().to_numpy()

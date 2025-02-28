@@ -1052,7 +1052,7 @@ def test_AcclimationModel_fill_daily_to_subdaily_previous(
         pytest.param(
             "max",
             np.array([[0, 0], [48, -48], [0, 0]]),
-            np.dstack(
+            np.concatenate(
                 [
                     np.concatenate(
                         [
@@ -1061,7 +1061,7 @@ def test_AcclimationModel_fill_daily_to_subdaily_previous(
                             np.arange(0, 49),
                             np.arange(47, 28, -1),
                         ]
-                    ),
+                    )[:, None],
                     np.concatenate(
                         [
                             np.repeat([np.nan], 28),
@@ -1069,8 +1069,9 @@ def test_AcclimationModel_fill_daily_to_subdaily_previous(
                             np.arange(0, -49, -1),
                             np.arange(-47, -28, 1),
                         ]
-                    ),
-                ]
+                    )[:, None],
+                ],
+                axis=1,
             ),
             id="2D test max",
         ),

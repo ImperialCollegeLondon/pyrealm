@@ -274,7 +274,7 @@ def test_Community_add_and_drop(fixture_flora):
     # Check the initial state of the three attributes that should be modified
     assert_allclose(community.cohorts.n_individuals, np.array([6, 1]))
     assert_allclose(community.stem_traits.h_max, fixture_flora.h_max)
-    assert_allclose(community.stem_allometry.dbh, np.array([0.2, 0.5]))
+    assert_allclose(community.stem_allometry.dbh, np.array([[0.2, 0.5]]))
 
     # Add a new set of cohorts
     new_cohorts = Cohorts(
@@ -287,7 +287,7 @@ def test_Community_add_and_drop(fixture_flora):
     # Test the three attributes again to check they've all been doubled.
     assert_allclose(community.cohorts.n_individuals, np.array([6, 1, 8, 2]))
     assert_allclose(community.stem_traits.h_max, np.tile(fixture_flora.h_max, 2))
-    assert_allclose(community.stem_allometry.dbh, np.array([0.2, 0.5, 0.3, 0.6]))
+    assert_allclose(community.stem_allometry.dbh, np.array([[0.2, 0.5, 0.3, 0.6]]))
 
     # Drop some rows
     community.drop_cohorts(drop_indices=np.array([1, 3]))
@@ -295,7 +295,7 @@ def test_Community_add_and_drop(fixture_flora):
     # Test the three attributes again to check they've all been reduced.
     assert_allclose(community.cohorts.n_individuals, np.array([6, 8]))
     assert_allclose(community.stem_traits.h_max, np.repeat(fixture_flora.h_max[0], 2))
-    assert_allclose(community.stem_allometry.dbh, np.array([0.2, 0.3]))
+    assert_allclose(community.stem_allometry.dbh, np.array([[0.2, 0.3]]))
 
 
 @pytest.mark.parametrize(
