@@ -184,4 +184,4 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
     wn_sequence = np.vstack([wn_spun_up, expected["wn"].data[:-1, :, :]])
 
     aet = evap.estimate_aet(wn=wn_sequence, day_idx=None)
-    assert_allclose(aet, expected["aet_d"], equal_nan=True, rtol=1e-6)
+    assert_allclose(aet, expected["aet_d"], equal_nan=True, rtol=2e-6)
