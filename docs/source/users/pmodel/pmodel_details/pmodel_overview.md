@@ -30,8 +30,7 @@ This page gives an overview of the calculations for the standard form of the P M
 {cite:p}`Prentice:2014bc,Wang:2017go` along with links to further details of the core
 components of the model. It may be useful to read this alongside:
 
-* The [worked examples](worked_examples) of using `pyrealm` to fitting the Standard P
-  Model.
+* The [worked examples](worked_examples) of using `pyrealm` to fit the Standard P Model.
 * The overview of the [expected predictions](./envt_variation_outputs.md) of the model,
   given forcing data within normal bounds.
 * The descriptions of the key Python classes used to fit the standard P Model:
@@ -86,10 +85,9 @@ In overview:
 
     The term $m_j$ is at the heart of the P model and describes the trade off between
     carbon dioxide capture and water loss in photosynthesis. Given the environmental
-    conditions, a leaf will adjust its stomata to a value of ($\chi$) that optimises
-    this trade off. When $\chi$ is less than one, the partial pressure inside of
-    $\ce{CO2}$ inside the leaf is lowered and $m_j$ captures the resulting loss in light
-    use efficiency.
+    conditions, a leaf will adjust its stomata to a value of $\chi$ that optimises this
+    trade off. When $\chi$ is less than one, the partial pressure of $\ce{CO2}$ inside
+    the leaf is lowered and $m_j$ captures the resulting loss in light use efficiency.
 
 3. The photosynthetic environment is also used to calculate the [quantum
    yield](../shared_components/quantum_yield.md) of photosynthesis ($\phi_0$), given the

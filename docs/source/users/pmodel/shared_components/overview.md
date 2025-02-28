@@ -39,11 +39,11 @@ concepts and tools used for fitting both forms of the P Model. These components 
 * Estimation of [rate limitation](./jmax_limitation) on the maximum
   values of the electron transfer rate and carboxylation capacity, sometimes called
   $J_{max}$ limitation.
-* The form of the [Arrhenius scaling](./arrhenius) used to
-  calculate the electron transfer rate and carboxylation capacity at standard
-  temperatures. This is central to the Subdaily P Model as the variables $J_{max}$ and
-  $V_{cmax}$ need converted to a standard temperature to map predictions from the daily
-  scale back to the subdaily scale.
+* The form of the [Arrhenius scaling](./arrhenius) used to calculate the electron
+  transfer rate and carboxylation capacity at standard temperatures. This is central to
+  the Subdaily P Model as the variables $J_{max}$ and $V_{cmax}$ need to be converted to
+  a standard temperature to map predictions from the daily scale back to the subdaily
+  scale.
 * Approaches to the impacts of [soil moisture stress](./soil_moisture).
 * The behaviour of core P Model equations with [extreme forcing
   values](./extreme_values).

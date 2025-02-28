@@ -37,7 +37,7 @@ The two specific model implementations are then:
   {cite:p}`Prentice:2014bc,Wang:2017go,Stocker:2020dh`.
 
 * The [subdaily P Model](subdaily_details/subdaily_overview), extends the P Model to
-  incorporates acclimation of photosynthetic pathways to changing environmental
+  incorporate acclimation of photosynthetic pathways to changing environmental
   conditions {cite}`mengoli:2022a`. This improves the performance of the P Model at fine
   temporal resolutions, by accounting for lags in the adoption of optimal behaviour.
 
@@ -51,4 +51,4 @@ build on the P Model:
 
 * The relative advantages of the C3 and C4 photosynthetic pathways differ with
   environmental conditions. The [C3 / C4 plant competition](c3c4model) model uses the
-  relative advantage to estimates the expected fraction of C4 plants in a community.
+  relative advantage to estimate the expected fraction of C4 plants in a community.
