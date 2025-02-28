@@ -755,7 +755,7 @@ class Test_AcclimationModel_get_daily_means_window_and_include:
         )
         calculated_means = acclim_model.get_daily_means(values)
 
-        assert np.allclose(calculated_means, expected_means, equal_nan=True)
+        assert_allclose(calculated_means, expected_means, equal_nan=True)
 
     def test_AcclimationModel_get_daily_means_with_set_include(
         self, values, expected_means, allow_partial_data
@@ -776,7 +776,7 @@ class Test_AcclimationModel_get_daily_means_window_and_include:
         acclim_model.set_include(inc)
         calculated_means = acclim_model.get_daily_means(values)
 
-        assert np.allclose(calculated_means, expected_means, equal_nan=True)
+        assert_allclose(calculated_means, expected_means, equal_nan=True)
 
 
 @pytest.mark.parametrize(
@@ -861,7 +861,7 @@ def test_AcclimationModel_get_daily_means_with_set_nearest(
     fixture_AcclimationModel.set_nearest(np.timedelta64(11 * 60 + 29, "m"))
     calculated_means = fixture_AcclimationModel.get_daily_means(values)
 
-    assert np.allclose(calculated_means, expected_means, equal_nan=True)
+    assert_allclose(calculated_means, expected_means, equal_nan=True)
 
 
 @pytest.mark.parametrize(
@@ -1017,7 +1017,7 @@ def test_AcclimationModel_fill_daily_to_subdaily_previous(
         values=input_values, previous_values=previous_values
     )
 
-    assert np.allclose(res, exp_values, equal_nan=True)
+    assert_allclose(res, exp_values, equal_nan=True)
 
 
 @pytest.mark.parametrize(
@@ -1052,7 +1052,7 @@ def test_AcclimationModel_fill_daily_to_subdaily_previous(
         pytest.param(
             "max",
             np.array([[0, 0], [48, -48], [0, 0]]),
-            np.dstack(
+            np.concatenate(
                 [
                     np.concatenate(
                         [
@@ -1061,7 +1061,7 @@ def test_AcclimationModel_fill_daily_to_subdaily_previous(
                             np.arange(0, 49),
                             np.arange(47, 28, -1),
                         ]
-                    ),
+                    )[:, None],
                     np.concatenate(
                         [
                             np.repeat([np.nan], 28),
@@ -1069,8 +1069,9 @@ def test_AcclimationModel_fill_daily_to_subdaily_previous(
                             np.arange(0, -49, -1),
                             np.arange(-47, -28, 1),
                         ]
-                    ),
-                ]
+                    )[:, None],
+                ],
+                axis=1,
             ),
             id="2D test max",
         ),
@@ -1100,7 +1101,7 @@ def test_AcclimationModel_fill_daily_to_subdaily_linear(
 
     res = acclim_model.fill_daily_to_subdaily(input_values)
 
-    assert np.allclose(res, exp_values, equal_nan=True)
+    assert_allclose(res, exp_values, equal_nan=True)
 
 
 @pytest.mark.parametrize(

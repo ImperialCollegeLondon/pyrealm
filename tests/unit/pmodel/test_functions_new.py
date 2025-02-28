@@ -5,6 +5,7 @@ refactoring.
 """  # D210, D415
 
 import numpy as np
+from numpy.testing import assert_allclose
 
 from pyrealm.constants.core_const import CoreConst
 
@@ -16,15 +17,11 @@ PATM = np.array([123456])
 
 def test_calc_ftemp_inst_rd(tc=TC):
     """Test calc_ftemp_inst_rd."""
-    from pyrealm.constants.pmodel_const import PModelConst
+
     from pyrealm.pmodel.functions import calc_ftemp_inst_rd
 
-    pmodel_const = PModelConst()
-
-    assert np.allclose(
-        calc_ftemp_inst_rd(
-            tc=tc, tc_ref=pmodel_const.tc_ref, coef=pmodel_const.heskel_rd
-        ),
+    assert_allclose(
+        calc_ftemp_inst_rd(tc=tc),
         1.4455646406287255,
     )
 
@@ -32,13 +29,10 @@ def test_calc_ftemp_inst_rd(tc=TC):
 def test_calc_gammastar(tk=TK, patm=PATM):
     """Test calc_ftemp_inst_rd."""
 
-    from pyrealm.constants.pmodel_const import PModelConst
     from pyrealm.pmodel.functions import calc_gammastar
 
-    pmodel_const = PModelConst()
-
-    assert np.allclose(
-        calc_gammastar(tk, patm, tk_ref=pmodel_const.tk_ref),
+    assert_allclose(
+        calc_gammastar(tk, patm),
         6.7888247955597,
     )
 
@@ -47,32 +41,32 @@ def test_calc_ns_star(tc=TC, patm=PATM):
     """Test calc_ns_star."""
     from pyrealm.pmodel.functions import calc_ns_star
 
-    assert np.allclose(calc_ns_star(tc, patm), 0.8957314409463492)
+    assert_allclose(calc_ns_star(tc, patm), 0.8957314409463492)
 
 
 def test_calc_kmm(tk=TK, patm=PATM):
     """Test calc_kmm."""
     from pyrealm.pmodel.functions import calc_kmm
 
-    assert np.allclose(calc_kmm(tk, patm), 117.8937532160903)
+    assert_allclose(calc_kmm(tk, patm), 117.8937532160903)
 
 
 def test_calc_soilmstress_stocker(soilm=np.array([0.3])):
     """Test calc_soilmstress_stocker."""
     from pyrealm.pmodel.functions import calc_soilmstress_stocker
 
-    assert np.allclose(calc_soilmstress_stocker(soilm), 0.93325)
+    assert_allclose(calc_soilmstress_stocker(soilm), 0.93325)
 
 
 def test_calc_soilmstress_mengoli(soilm=np.array([0.3])):
     """Test calc_soilmstress_mengoli."""
     from pyrealm.pmodel.functions import calc_soilmstress_mengoli
 
-    assert np.allclose(calc_soilmstress_mengoli(soilm), 0.54705882)
+    assert_allclose(calc_soilmstress_mengoli(soilm), 0.54705882)
 
 
 def test_calc_co2_to_ca(co2=np.array([400]), patm=PATM):
     """Test calc_co2_to_ca."""
     from pyrealm.pmodel.functions import calc_co2_to_ca
 
-    assert np.allclose(calc_co2_to_ca(co2, patm), 49.3824)
+    assert_allclose(calc_co2_to_ca(co2, patm), 49.3824)

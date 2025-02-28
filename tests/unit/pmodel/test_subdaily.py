@@ -4,6 +4,7 @@ from contextlib import nullcontext as does_not_raise
 
 import numpy as np
 import pytest
+from numpy.testing import assert_allclose
 
 from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
 
@@ -56,7 +57,7 @@ def test_SubdailyPModel_corr(be_vie_data_components, data_args):
 
     # Test that non-NaN predictions correlate well and are approximately the same
     gpp_in_micromols = subdaily_pmodel.gpp[valid] / env.core_const.k_c_molmass
-    assert np.allclose(gpp_in_micromols, expected_gpp[valid], rtol=0.2)
+    assert_allclose(gpp_in_micromols, expected_gpp[valid], rtol=0.2)
     r_vals = np.corrcoef(gpp_in_micromols, expected_gpp[valid])
     assert np.all(r_vals > 0.995)
 
@@ -193,7 +194,7 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
         },
     )
 
-    assert np.allclose(
+    assert_allclose(
         all_in_one_subdaily_pmodel.gpp,
         np.concat([part_1_subdaily_pmodel.gpp, part_2_subdaily_pmodel.gpp]),
         equal_nan=True,
@@ -222,9 +223,10 @@ def test_SubdailyPModel_dimensionality(be_vie_data, ndims):
     extra_dims = [3] * (ndims - 1)
     array_dims = tuple([*extra_dims, len(datetime)])
 
-    # Apply a different random value of fAPAR for each time series
+    # Apply a different random value of fAPAR for each time series, but set a single
+    # element to 1.0 as a reference value
     fapar_vals = np.random.random(extra_dims)
-    fapar_vals[0] = 1.0
+    fapar_vals.flat[0] = 1.0
 
     # Create the environment
     env = PModelEnvironment(
@@ -253,7 +255,9 @@ def test_SubdailyPModel_dimensionality(be_vie_data, ndims):
     # proportional to the random fapar values and hence GPP/FAPAR should all equal the
     # value when it is set to 1
     timeaxis_mean = np.nansum(subdaily_pmodel.gpp, axis=0)
-    assert np.allclose(timeaxis_mean / fapar_vals, timeaxis_mean[0])
+    assert_allclose(
+        timeaxis_mean / fapar_vals, np.full_like(timeaxis_mean, timeaxis_mean.flat[0])
+    )
 
 
 @pytest.mark.parametrize("method_optchi", OPTIMAL_CHI_CLASS_REGISTRY.keys())
@@ -315,7 +319,7 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
 
     converted = standard_model.to_subdaily(acclim_model=acclim_model)
 
-    assert np.allclose(converted.gpp, direct.gpp, equal_nan=True)
+    assert_allclose(converted.gpp, direct.gpp, equal_nan=True)
 
 
 @pytest.mark.parametrize(
@@ -551,4 +555,4 @@ def test_SubdailyPModel_incomplete_day_behaviour(
         ]
 
         # Check the predictions are close
-        assert np.allclose(incomplete_gpp, complete_gpp, equal_nan=True)
+        assert_allclose(incomplete_gpp, complete_gpp, equal_nan=True)
