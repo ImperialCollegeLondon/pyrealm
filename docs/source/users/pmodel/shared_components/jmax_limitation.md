@@ -41,14 +41,16 @@ tc_1d = np.linspace(-25, 50, n_pts)
 ```
 
 Environmental conditions can also lead to limitation of both the electron transfer rate
-($J_{max}$)and the carboxylation capacity ($V_{cmax}$) of leaves. The
+($J_{max}$) and the carboxylation capacity ($V_{cmax}$) of leaves. The
 {class}`~pyrealm.pmodel.jmax_limitation` module implements three alternative approaches
 to the calculation of $J_{max}$ and $V_{cmax}$ and these are specified when fitting a P
-Model using the argument `method_jmaxlim`. These options implement alternative
-calculations of two factor ($f_j$ and $f_v$) which are applied to the calculation of
-$J_{max}$ and $V_{cmax}$. The options for this setting are:
+Model using the argument `method_jmaxlim`.
 
-* `none`: This approach implements $f_j  = f_v = 1$ and hence no modification.
+These options implement alternative calculations of two factor ($f_j$ and $f_v$) which
+are applied to the calculation of $J_{max}$ and $V_{cmax}$. The options for this setting
+are:
+
+* `none`: This approach implements $f_j  = f_v = 1$ and hence no limitation.
 * `wang17`: This is the default setting for `method_jmaxlim` and applies the
   calculations describe in  {cite:t}`Wang:2017go`. The calculation details can be
   seen in the {class}`~pyrealm.pmodel.jmax_limitation.JmaxLimitationWang17` method.

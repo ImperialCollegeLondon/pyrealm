@@ -77,21 +77,22 @@ enzyme systems:
 ## Scaling of $V_{cmax}$ and $J_{max}$
 
 The simple scaling factor above is also used in the original description of the P Model
-{cite:p}`Prentice:2014bc,Wang:2017go` for calculating Arrhenius scaling with temperature
-of $V_{cmax}$ and $J_{max}$. This scaling is not required to calculate GPP, but *is*
-used to calculate representative values of those rates at standard temperatures
-($V_{cmax25}$ and $J_{max25}$) when required.
+{cite:p}`Prentice:2014bc,Wang:2017go` for calculating Arrhenius scaling of $V_{cmax}$
+and $J_{max}$. This scaling is not required to calculate GPP in the standard P Model,
+but *is* used to calculate representative values of those rates at standard temperatures
+($V_{cmax25}$ and $J_{max25}$).
 
-The simple scaling is also used in the original description of the subdaily P Model
-{cite}`mengoli:2022a`. Here, the scaling is more central as Arrhenius scaling is used to
-convert between realised daily estimates of acclimating $V_{cmax}$ and $J_{max}$ and the
-values of $V_{cmax}$ and $J_{max}$ for subdaily observations:
+Arrhenius scaling is however central to the Subdaily P Model {cite}`mengoli:2022a`.
+Here, the scaling is used to convert between realised daily estimates of acclimating
+$V_{cmax}$ and $J_{max}$ and the values of $V_{cmax}$ and $J_{max}$ for subdaily
+observations:
 
 1. Daily realised rates at daily representative temperatures are converted to daily
    realised rates **at standard temperatures** (daily realised $V_{cmax25}$ and
    $J_{max25}$).
-2. Resulting predicted subdaily estimates at standard temperatures back to **observed
-   temperature** ($V_{cmax}$ and $J_{max}$ at subdaily scales).
+2. The daily realised values at standard temperatures are then mapped back on to the
+   subdaily scale and converted back to the appropriate values at the **observed
+   subdaily temperature** ($V_{cmax}$ and $J_{max}$ at subdaily scales).
 
 However, there is some discussion about the form of the scaling of reaction rates of
 $V_{cmax}$ and $J_{max}$ with temperature, particularly the suggestion that these rates
@@ -103,9 +104,10 @@ observed temperature (leaf or air temperature).
 
 The plot below shows some examples of Arrhenius factor curves using these different
 approaches. Two separate growth temperatures are used with the `kattge_knorr` method. At
-present, the implementation of the standard P Model in `rpmodel` uses the form of the
-`kattge_knorr` method but sets $t_g=T$, rather than having a fixed growth temperature.
-This leads to the curve labelled `rpmodel` in the plot, which does not have a peak.
+present, the implementation of the standard P Model in the `rpmodel` package uses the
+form of the `kattge_knorr` method but sets $t_g=T$, rather than having a fixed growth
+temperature. This leads to the curve labelled `rpmodel` in the plot, which does not have
+a peak.
 
 ```{code-cell} ipython3
 :tags: [hide-input]

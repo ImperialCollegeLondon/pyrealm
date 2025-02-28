@@ -24,9 +24,16 @@ language_info:
 # Soil moisture effects
 
 Approaches to modelling the impact of soil moisture conditions on photosynthesis are a
-very open area and a number of different methods are implemented in ``pyrealm``. These
+very open area and a number of different methods are implemented in `pyrealm`. These
 different approaches reflect uncertainty about the most appropriate way to modulate
 predictions.
+
+```{warning}
+The soil moisture approaches described on this page should not be combined with each
+other. In addition, some of these methods were calibrated for a particular form of the
+P Model or with particular settings and so should be used with models that follow those
+particular settings.
+```
 
 ## Alternative approaches
 

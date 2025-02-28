@@ -29,14 +29,18 @@ language_info:
 ```
 
 The `pyrealm` package provides Python implementations of models of plant productivity
-and demography.
+and demography. All of the functionality within the package is built to accept arrays of
+data and uses the {mod}`numpy` package to efficiently calculate values across datasets
+with multiple dimensions, up to analyses of global spatial datasets of long-running time
+series.
 
 # The `pyrealm` package
 
 :::{admonition} Version 2.0.0
-The `pyrealm` package has just been updated to version 2.0.0. There are a quite a few breaking
-changes to the previous version, documented in the [migration guide](users/versions.md)
-to help update existing code. We strongly recommend upgrading to the new version.
+The `pyrealm` package has just been updated to version 2.0.0. There are a quite a few
+breaking changes to the previous version, documented in the [migration
+guide](users/versions.md) to help update existing code. We strongly recommend upgrading
+to the new version.
 :::
 
 The package currently provides the following modules:

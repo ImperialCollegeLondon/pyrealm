@@ -35,6 +35,13 @@ provides an overview of the behaviour of the initial functions calculating the
 photosynthetic environment when given extreme inputs, to help guide when inputs should
 be filter or clipped to remove problem values.
 
+```{note}
+The {class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` implements some simple
+bounds checking to help guard against extreme values or errors with the units of
+forcing variables (see the {class}`~pyrealm.core.bounds.BoundsChecker` class for
+details).
+```
+
 ## Realistic input values
 
 - Temperature (°C): the range of air temperatures in global datasets can easily include
