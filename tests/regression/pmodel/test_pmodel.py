@@ -526,7 +526,7 @@ def test_jmax_limitation(
     expected_lue = (
         (0.05 * ftemp_kphio) * optchi.mj * jmax.f_v * xf * env.core_const.k_c_molmass
     )
-    assert_allclose(expected_lue, expected["lue"], equal_nan=True, rtol=1e6)
+    assert_allclose(expected_lue, expected["lue"], equal_nan=True, rtol=1e-5)
 
     if jmax_method == "smith19":
         assert_allclose(jmax.omega, expected["omega"], equal_nan=True)
