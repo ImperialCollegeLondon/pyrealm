@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
+from faparlim_data_io import write_faparlim_input
 from numpy.typing import NDArray
 from pandas import DataFrame
 from scipy.special import lambertw
@@ -240,6 +241,10 @@ annual_values = xr.merge(
         ann_mean_vpd_gs.rename("annual_mean_VPD_in_GS"),
     ],
     join="left",
+)
+
+write_faparlim_input(
+    ann_total_A0_subdaily_penalised, ann_total_P_fnet, aridity_index, annual_values
 )
 
 # Calculate fapar_max and LAI_max
