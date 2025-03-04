@@ -10,6 +10,7 @@ Runs a simple scalar test for each of the different optchi methods.
 
 import numpy as np
 import pytest
+from numpy.testing import assert_allclose
 
 
 @pytest.mark.parametrize(
@@ -92,11 +93,12 @@ import pytest
 )
 def test_CalcCarbonIsotopes(pmodelenv_args, pmodel_args, expected):
     """Tests the CalcCarbonIsotopes class."""
-    from pyrealm.pmodel import CalcCarbonIsotopes, PModel, PModelEnvironment
+    from pyrealm.pmodel import CalcCarbonIsotopes, PModelEnvironment
+    from pyrealm.pmodel.pmodel import PModel
 
     env = PModelEnvironment(**pmodelenv_args)
     pmodel = PModel(env, **pmodel_args)
     cci = CalcCarbonIsotopes(pmodel, d13CO2=np.array([-8.4]), D14CO2=np.array([19.2]))
 
     for attr in expected:
-        assert np.allclose(getattr(cci, attr), expected[attr], atol=0.001)
+        assert_allclose(getattr(cci, attr), expected[attr], atol=0.001)

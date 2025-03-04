@@ -109,7 +109,8 @@ class CalcCarbonIsotopes:
 
         Examples:
             >>> import numpy as np
-            >>> from pyrealm.pmodel import PModel, PModelEnvironment
+            >>> from pyrealm.pmodel.pmodel import PModel
+            >>> from pyrealm.pmodel import PModelEnvironment
             >>> from pyrealm.constants import PModelConst
             >>> pmodel_const = PModelConst(beta_cost_ratio_c4=35)
             >>> env = PModelEnvironment(
@@ -117,6 +118,8 @@ class CalcCarbonIsotopes:
             ...     patm=np.array([101325]),
             ...     co2=np.array([400]),
             ...     vpd=np.array([1000]),
+            ...     fapar=np.array([1]),
+            ...     ppfd=np.array([800]),
             ...     pmodel_const=pmodel_const
             ... )
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
@@ -147,7 +150,8 @@ class CalcCarbonIsotopes:
 
         Examples:
             >>> import numpy as np
-            >>> from pyrealm.pmodel import PModel, PModelEnvironment
+            >>> from pyrealm.pmodel.pmodel import PModel
+            >>> from pyrealm.pmodel import PModelEnvironment
             >>> from pyrealm.constants import PModelConst
             >>> pmodel_const = PModelConst(beta_cost_ratio_c4=35)
             >>> env = PModelEnvironment(
@@ -155,6 +159,8 @@ class CalcCarbonIsotopes:
             ...     patm=np.array([101325]),
             ...     co2=np.array([400]),
             ...     vpd=np.array([1000]),
+            ...     fapar=np.array([1]),
+            ...     ppfd=np.array([800]),
             ...     pmodel_const=pmodel_const
             ... )
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
@@ -194,10 +200,12 @@ class CalcCarbonIsotopes:
 
         Examples:
             >>> import numpy as np
-            >>> from pyrealm.pmodel import PModel, PModelEnvironment
+            >>> from pyrealm.pmodel import PModelEnvironment
+            >>> from pyrealm.pmodel.pmodel import PModel
             >>> env = PModelEnvironment(
             ...              tc=np.array([20]), patm=np.array([101325]),
             ...              co2=np.array([400]), vpd=np.array([1000]),
+            ...              fapar=np.array([1]), ppfd=np.array([800]),
             ...              theta=np.array([0.4])
             ... )
             >>> mod_c3 = PModel(env, method_optchi='lavergne20_c3')
