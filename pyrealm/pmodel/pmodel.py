@@ -420,6 +420,14 @@ class PModel(PModelABC):
         :math:`V_{cmax}` are also in µmol m-2 s-1.
         """
 
+        warn(
+            """
+    Pyrealm 2.0.0 uses a new default for the quantum yield of photosynthesis (phi0=1/8).
+    You may need to change settings to duplicate results from pyrealm 1.0.0.
+            """,
+            category=UserWarning,
+        )
+
         # Calculate optimal chi
         self.optchi: OptimalChiABC = self._optchi_class(
             env=self.env,

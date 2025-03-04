@@ -66,7 +66,7 @@ import matplotlib.dates as mdates
 
 from pyrealm.pmodel.acclimation import AcclimationModel
 
-# A five day time series running from noon until noon
+# A five day time series running from noon until midnight
 datetimes = np.arange(
     np.datetime64("2012-05-01 00:00"),
     np.datetime64("2012-05-05 23:30"),

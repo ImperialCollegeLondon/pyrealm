@@ -92,6 +92,9 @@ used the theoretical maximum value of 1/8.
 * All of the available method choices to `PModel` and `SubdailyPModel` now use $\phi_0 =
   1/8$ as the default value but this can be overriden using `reference_kphio`.
 
+Since this involves a change in the default behaviour that leads to different
+predictions, the `PModel` class in version 2.0.0 issues a warning to alert users.
+
 ### Arrhenius scaling of $J_{max}$ and $V_{cmax}$
 
 In 1.0.0, {class}`~pyrealm.pmodel.pmodel.PModel` used an Arrhenius relationship with a
