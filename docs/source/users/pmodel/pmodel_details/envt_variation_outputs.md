@@ -5,9 +5,8 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.5
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 language_info:
@@ -31,7 +30,7 @@ from itertools import product
 from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 import numpy as np
-from matplotlib import pyplot
+import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
 # Create inputs for a temperature curve at:
@@ -48,17 +47,17 @@ co2_1d = np.array([280, 410])
 
 tc_4d, patm_4d, vpd_4d, co2_4d = np.meshgrid(tc_1d, patm_1d, vpd_1d, co2_1d)
 
-# Calculate the photosynthetic environment
-pmodel_env = PModelEnvironment(tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d)
+# Calculate the photosynthetic environment including approximate
+# average canopy top light conditions for dry season tropical forest.
+# https://doi.org/10.2307/2260066
+pmodel_env = PModelEnvironment(
+    tc=tc_4d, patm=patm_4d, vpd=vpd_4d, co2=co2_4d, fapar=0.91, ppfd=600
+)
 
 # Run the P Models
 pmodel_c3 = PModel(pmodel_env)
 pmodel_c4 = PModel(pmodel_env, method_optchi="c4")
 
-# Estimate productivity for tropical forest conditions
-# PPFD https://doi.org/10.2307/2260066 rough average canopy top in dry season.
-pmodel_c3.estimate_productivity(fapar=0.91, ppfd=600)
-pmodel_c4.estimate_productivity(fapar=0.91, ppfd=600)
 
 # Create line plots of optimal chi
 
@@ -84,7 +83,7 @@ def plot_fun(estvar, estvarlab):
     """
 
     # Create side by side subplots
-    fig, (ax1, ax2) = pyplot.subplots(1, 2, figsize=(12, 5), sharey=True, sharex=True)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), sharey=True, sharex=True)
 
     # Loop over the envnt combinations for c3 and c4 models
     for this_mod, this_axs in zip((pmodel_c3, pmodel_c4), (ax1, ax2)):
@@ -112,7 +111,7 @@ def plot_fun(estvar, estvarlab):
     ax1.set_title(f"C3 variation in estimated {estvarlab}")
     ax2.set_title(f"C4 variation in {estvarlab}")
 
-    pyplot.show()
+    plt.show()
 ```
 
 This page shows how the main output variables from the P Model vary under differing
@@ -124,12 +123,29 @@ environmental variables:
 * Vapour pressure deficit: 500 Pa and 2000 Pa
 * $\ce{CO2}$ concentration: 280 ppm and 410 ppm.
 
+For the plots below, productivity has been estimated using a representative
+irradiance values at the top of a tropical rainforest canopy:
+
+* $f_{APAR}$: 0.91 (unitless)
+* PPFD: 600 µmol m-2 s-1
+
+```{warning}
+
+The estimated PPFD must be expressed as **µmol m-2 s-1**.
+
+Estimates of PPFD sometimes use different temporal or spatial scales - for
+example daily moles of photons per hectare. Although GPP can also be expressed
+with different units, many other predictions of the P Model ($J_{max}$,
+$V_{cmax}$, $g_s$ and $r_d$) _must_ be expressed as
+µmol m-2 s-1 and so this standard unit must also be used for PPFD.
+```
+
 All of the pairwise plots share the same legend:
 
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-fig, ax = pyplot.subplots(1, 1, figsize=(6, 1.2))
+fig, ax = plt.subplots(1, 1, figsize=(6, 1.2))
 
 # create a legend showing the combinations
 blnk = Line2D([], [], color="none")
@@ -177,14 +193,10 @@ ax.legend(
 
 ax.axis("off")
 
-pyplot.show()
+plt.show()
 ```
 
 ## Efficiency outputs
-
-Two of the key outputs are measures of efficiency and are estimated simply by creating a
-{class}`~pyrealm.pmodel.pmodel.PModel` instance without needing to provide estimates of
-absorbed irradiance.
 
 ### Light use efficiency (``lue``, LUE)
 
@@ -209,32 +221,11 @@ unit of water, in units of $\mu\mathrm{mol}\;\mathrm{mol}^{-1}$.
 plot_fun("iwue", r"IWUE ($\mu\mathrm{mol}\;\mathrm{mol}^{-1}$)")
 ```
 
-(estimating-productivity)=
-
-## Estimating productivity
+## Productivity outputs
 
 The remaining key outputs are measures of photosynthetic productivity, such as
-GPP, which are calculated by providing the P Model with estimates of the
-fraction of absorbed photosynthetically active radiation (`fapar`) and the
-photosynthetic photon flux density (`ppfd`). The product of these two variables
-is an estimate of absorbed irradiance ($I_{abs}$).
-
-The {meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` method is
-used to provide these estimates to the P Model instance. Once this has been run,
-the following additional variables are populated.
-
-```{warning}
-
-To use {meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`, the estimated PPFD
-must be expressed as $\boldsymbol{\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}}$.
-
-Estimates of PPFD sometimes use different temporal or spatial scales - for
-example daily moles of photons per hectare. Although GPP can also be expressed
-with different units, many other predictions of the P Model ($J_{max}$,
-$V_{cmax}$, $g_s$ and $r_d$) _must_ be expressed as
-$\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$ and so this
-standard unit must also be used for PPFD.
-```
+GPP, which are calculated using the provided estimates of PPFD and FAPAR and the
+resulting absorbed irradiance ($I_{abs}$).
 
 The productivity variables and their units are:
 
@@ -247,16 +238,6 @@ The productivity variables and their units are:
 * Maximum rate of electron transport.
     (``jmax``, $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
 * Stomatal conductance (``gs``, $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
-
-For the plots below, productivity has been estimated using a representative
-irradiance values at the top of a tropical rainforest canopy:
-
-* $f_{APAR}$: 0.91 (unitless)
-* PPFD: 600 $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$
-
-If required, productivity estimates per unit absorbed irradiance can be simply
-calculated using ``fapar=1, ppfd=1``, which are the default values to
-{meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`.
 
 ### Gross primary productivity (``gpp``, GPP)
 
@@ -305,9 +286,8 @@ plot_fun("jmax", r"$J_{max}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-
 Stomatal conductance is estimated using the difference between ambient and optimal
 internal leaf $\ce{CO2}$ concentration. When vapour pressure deficit is zero, the
 difference between $c_a$ and $c_i$ will tend to zero, which leads to numerical
-instability in estimates of $g_s$. The
-{meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` method will set $g_s$ to be
-undefined (`np.nan`) when VPD is zero or when $c_a - c_i = 0$.
+instability in estimates of $g_s$, which will be set as undefined (`np.nan`) when VPD is
+zero or when $c_a - c_i = 0$.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
@@ -326,16 +306,14 @@ irradiance changes from 0 to 2000 $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}
 :tags: [hide-input]
 
 # Calculate the photosynthetic environment
-pmodel_env = PModelEnvironment(tc=20, patm=101325, vpd=1000, co2=400)
+ppfd_vals = np.arange(2000)
+pmodel_env = PModelEnvironment(
+    tc=20, patm=101325, vpd=1000, co2=400, fapar=1, ppfd=ppfd_vals
+)
 
 # Run the P Models
 pmodel_c3 = PModel(pmodel_env)
 pmodel_c4 = PModel(pmodel_env, method_optchi="c4")
-
-# Estimate productivity for tropical forest conditions (micromols m2 s)
-ppfd_vals = np.arange(2000)
-pmodel_c3.estimate_productivity(fapar=1, ppfd=ppfd_vals)
-pmodel_c4.estimate_productivity(fapar=1, ppfd=ppfd_vals)
 
 
 def plot_iabs(ax, estvar, estvarlab):
@@ -359,7 +337,7 @@ def plot_iabs(ax, estvar, estvarlab):
     ax.set_ylabel(f"Estimated {estvarlab}")
 
 
-fig, axs = pyplot.subplots(2, 3, figsize=(12, 8), sharex=True)
+fig, axs = plt.subplots(2, 3, figsize=(12, 8), sharex=True)
 
 plot_iabs(
     axs[0, 0], "gpp", r"GPP ($\mu\mathrm{g\,C}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
@@ -397,5 +375,5 @@ axs[0, 0].legend(
 )
 
 fig.tight_layout()
-pyplot.show()
+plt.show()
 ```

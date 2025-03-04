@@ -5,9 +5,8 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.5
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 language_info:
@@ -42,52 +41,75 @@ The subdaily model provides two options to help deal with missing data.
    calculation of daily average values by ignoring missing data and taking the average
    of the available observations (`allow_partial_data`).
 
-   However, allowing partial data cannot solve the issue where no data is
-   present in the acclimation window for a day or where the P Model calculations are
-   undefined for the optimal behaviour on a day. Both of these cases will lead to a
-   missing value in the time series of daily optimal values, which would then be
+   However, allowing partial data cannot solve the issue where the forcing data is
+   missing throughout the acclimation window for a day or where the P Model
+   calculations are undefined throughout that window on a day. Both of these cases
+   give a missing value in the time series of daily optimal values, which would then be
    propagated through the calculation of realised values using weighted averages.
 
-1. Hence the second option is to allow the iterated calculation of daily realised values
-   to hold over the last valid value until the next valid daily optimal value is found
-   (`allow_holdover`). If the first value is missing, this is held over until the first
-   valid observation.
+1. Hence the second option is to allow the iterated calculation of daily realised
+   values to **hold over the last valid value** until the next valid daily optimal
+   value is found (`allow_holdover`). Note that this cannot fill missing values at
+   the start of  time series.
 
 The code below gives a concrete example - a time series that starts and ends during in
 the middle of a one hour acclimation window around noon. Only two of the three
 observations are provided for the first and last day
 
 ```{code-cell} ipython3
+from copy import copy
+
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle, Patch
+import matplotlib.dates as mdates
 
-from pyrealm.pmodel.scaler import SubdailyScaler
-from pyrealm.pmodel.subdaily import memory_effect
+from pyrealm.pmodel.acclimation import AcclimationModel
 
-# A five day time series running from noon until noon
+# A five day time series running from noon until midnight
 datetimes = np.arange(
-    np.datetime64("2012-05-06 12:00"),
-    np.datetime64("2012-05-12 12:00"),
+    np.datetime64("2012-05-01 00:00"),
+    np.datetime64("2012-05-05 23:30"),
     np.timedelta64(30, "m"),
 )
 
 # Example data with missing values
-data = np.arange(len(datetimes), dtype="float")
-data[datetimes == np.datetime64("2012-05-08 11:30")] = np.nan
+scale_trig = (60 * 24) / (2 * np.pi)
+amplitude = 5
+trend = 5
+complete_data = np.round(
+    (-amplitude * np.cos((datetimes - datetimes[0]).astype(np.float64) / scale_trig))
+    + amplitude,
+    2,
+) + np.linspace(0, trend, len(datetimes))
+
+data = complete_data.copy()
+
+data[datetimes <= np.datetime64("2012-05-01 15:30")] = np.nan
 data[
     np.logical_and(
-        datetimes >= np.datetime64("2012-05-10 11:30"),
-        datetimes <= np.datetime64("2012-05-10 12:30"),
+        datetimes >= np.datetime64("2012-05-03 11:00"),
+        datetimes <= np.datetime64("2012-05-03 13:00"),
+    )
+] = np.nan
+data[
+    np.logical_and(
+        datetimes >= np.datetime64("2012-05-04 09:30"),
+        datetimes <= np.datetime64("2012-05-04 15:30"),
     )
 ] = np.nan
 
-# Create the acclimation window sampler
-fsscaler = SubdailyScaler(datetimes)
-fsscaler.set_window(
-    window_center=np.timedelta64(12, "h"), half_width=np.timedelta64(30, "m")
-)
+
+# Create a first default acclimation model
+acclim_model = AcclimationModel(datetimes)
+
+window_center = np.timedelta64(12, "h")
+half_width = np.timedelta64(150, "m")
+
+acclim_model.set_window(window_center=window_center, half_width=half_width)
 ```
 
-The :meth:`~pyrealm.pmodel.scaler.SubdailyScaler.get_daily_values` method
+The :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.get_daily_values` method
 extracts the values within the acclimation window for each day. With the half hourly
 data and the window set above, these are the observations at 11:30, 12:00 and 12:30.
 This method is typically used internally and not directly by users, but it shows the
@@ -100,55 +122,94 @@ problem of the missing data clearly:
 * One day has no data within the acclimation window.
 
 ```{code-cell} ipython3
-fsscaler.get_window_values(data)
+fig, ax = plt.subplots()
+
+# Add the acclimation windows for each day
+acclim_windows = [
+    Rectangle(
+        (win_center - half_width, 0),
+        2 * half_width,
+        2 * amplitude + trend,
+        facecolor="salmon",
+        alpha=0.3,
+    )
+    for win_center in acclim_model.sample_datetimes_mean
+]
+
+[ax.add_patch(copy(p)) for p in acclim_windows]
+
+ax.plot(datetimes, complete_data, color="grey", linewidth=0.5, linestyle="dashed")
+ax.plot(datetimes, data, marker=".")
+
+# Format date axis
+myFmt = mdates.DateFormatter("%m/%d\n%H:%M")
+_ = ax.xaxis.set_major_formatter(myFmt)
+```
+
+```{code-cell} ipython3
+acclim_model.get_window_values(data).round(1)
 ```
 
 The daily average conditions are calculated using the
-:meth:`~pyrealm.pmodel.scaler.SubdailyScaler.get_daily_means` method. If
+:meth:`~pyrealm.pmodel.acclimation.AcclimationModel.get_daily_means` method. If
 partial data are not allowed - which is the default - the daily average conditions for
 all days with missing data is also missing (`np.nan`).
 
 ```{code-cell} ipython3
-partial_not_allowed = fsscaler.get_daily_means(data)
-partial_not_allowed
+partial_not_allowed = acclim_model.get_daily_means(data)
+partial_not_allowed.round(2)
 ```
 
-Setting `allow_partial_data = True` allows the daily average conditions to be calculated
-from the partial available information. This does not solve the problem for the day with
-no data in the acclimation window, which still results in a missing value.
+Using an acclimation model that sets `allow_partial_data = True` allows the daily
+average conditions to be calculated from the partial available information. This does
+not solve the problem for days with no data in the acclimation window, which still
+results in a missing value and also generates a warning.
 
 ```{code-cell} ipython3
-partial_allowed = fsscaler.get_daily_means(data, allow_partial_data=True)
-partial_allowed
+# Create an acclimation model that allows partial data
+acclim_model_partial = AcclimationModel(datetimes, allow_partial_data=True)
+acclim_model_partial.set_window(window_center=window_center, half_width=half_width)
+
+partial_allowed = acclim_model_partial.get_daily_means(data)
+partial_allowed.round(2)
 ```
 
-The :func:`~pyrealm.pmodel.subdaily.memory_effect` function is used to calculate
-realised values of a variable from the optimal values. By default, this function *will
-raise an error* when missing data are present:
+The :func:`~pyrealm.pmodel.acclimation.AcclimationModel.apply_acclimation` method is
+used to calculate realised acclimated values of a variable from the optimal values. By
+default, this function *will raise an error* when missing data are present:
 
 ```{code-cell} ipython3
 :tags: [raises-exception]
 
-memory_effect(partial_not_allowed)
+try:
+    acclim_model_partial.apply_acclimation(partial_not_allowed)
+except ValueError as excep:
+    print("Error message: ", excep)
 ```
 
-The `allow_holdover` option allows the function to be run - the value for the first day
-is still `np.nan` but the missing observations on day 3, 5 and 7 are filled by holding
-over the valid observations from the previous day.
+Using an acclimation model set with `allow_holdover=True` allows the function to be run.
+If the input to `apply_acclimation` *does not* allow partial data, then the gaps on day
+3 and 4 are filled by holding over the value from day 2.
 
 ```{code-cell} ipython3
-memory_effect(partial_not_allowed, allow_holdover=True)
+acclim_model_partial_and_holdover = AcclimationModel(datetimes, allow_holdover=True)
+acclim_model_partial_and_holdover.set_window(
+    window_center=window_center, half_width=half_width
+)
+
+acclim_model_partial_and_holdover.apply_acclimation(partial_not_allowed).round(3)
 ```
 
-When the partial data is allowed, the `allow_holdover` is still required to fill the
-gap on day 5 by holding over the data from day 4.
+When partial data is allowed, the `allow_holdover` uses the value estimated from partial
+data on day 3 to fill the completely missing data on day 4.
 
 ```{code-cell} ipython3
-memory_effect(partial_allowed, allow_holdover=True)
+acclim_model_partial_and_holdover.apply_acclimation(partial_allowed).round(3)
 ```
 
-These options do not fix all problems: the best way forward depends partly on the source
-of the missing data and how common it is, as discussed below.
+These options do not fix all problems, such as the gap on day 1 that cannot be filled by
+holding over earlier values. The best way forward depends partly on the source of the
+missing data and how common it is, as discussed below.
 
 ## Sources of missing data
 
@@ -191,7 +252,10 @@ acclimation data.
 
 ### Undefined behaviour in the P Model
 
-The P Model itself can generate undefined values as part of the calculation of optimal
-$\chi$, resulting in missing values in the daily model of optimal behaviour. This can
-occur even when the data is complete and can only be fixed by using the `allow_holdover`
-option.
+Two critical variables in the P Model (:math:`V_{cmax}` and :math:`J_{max}`) are not
+estimable under some environmental conditions (see
+:class:`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14` for the details). As a result,
+even with complete forcing data, the P Model can generate undefined values as part of
+the calculation of optimal $\chi$. Under these conditions, missing values arise in the
+daily model of optimal behaviour and the `allow_holdover=True`option is required to
+generate predictions.

@@ -5,7 +5,6 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.5
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -26,9 +25,10 @@ language_info:
 
 The code below works through the separate calculations used to include the acclimation
 of slow reponses into the predictions of the P Model. The code separates out individual
-steps used in the estimation process in order to show intermediates results but in
-practice, as shown in the [worked example](worked_example), most of these calculations
-are handled internally by the model fitting in `pyrealm`.
+steps used in the estimation process in order to show intermediate results and provides
+an "exploded diagram" of the model. In practice, these calculations are handled
+internally by the model fitting in `pyrealm`, as shown in the [worked
+example](worked_example).
 
 ```{code-cell} ipython3
 :tags: [hide-input]
@@ -41,14 +41,15 @@ import numpy as np
 import pandas
 
 from pyrealm.pmodel import (
-    SubdailyScaler,
-    memory_effect,
+    PModel,
     SubdailyPModel,
     PModelEnvironment,
-    PModel,
+    AcclimationModel,
+    calculate_simple_arrhenius_factor,
 )
 from pyrealm.pmodel.optimal_chi import OptimalChiPrentice14
-from pyrealm.pmodel.functions import calc_ftemp_arrh, calc_ftemp_kphio
+from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
+from pyrealm.pmodel.arrhenius import SimpleArrhenius
 ```
 
 ## Example dataset
@@ -85,11 +86,12 @@ subdaily_env = PModelEnvironment(
     vpd=vpd_subdaily,
     co2=co2_subdaily,
     patm=patm_subdaily,
+    ppfd=ppfd_subdaily,
+    fapar=fapar_subdaily,
 )
 
 # Fit the standard P Model
-pmodel_standard = PModel(subdaily_env, method_kphio="fixed", reference_kphio=1 / 8)
-pmodel_standard.estimate_productivity(ppfd=ppfd_subdaily, fapar=fapar_subdaily)
+pmodel_standard = PModel(subdaily_env)
 pmodel_standard.summarize()
 ```
 
@@ -105,22 +107,19 @@ conditions at the observation closest to noon, or the mean environmental conditi
 window around noon.
 
 ```{code-cell} ipython3
-# Create the fast slow scaler
-fsscaler = SubdailyScaler(datetime_subdaily)
+# Create the acclimation model
+acclim_model = AcclimationModel(datetime_subdaily, allow_holdover=True, alpha=1 / 15)
 
 # Set the acclimation window as the values within a one hour window centred on noon
-fsscaler.set_window(
+acclim_model.set_window(
     window_center=np.timedelta64(12, "h"),
     half_width=np.timedelta64(30, "m"),
 )
 
-# Fit the P Model with fast and slow responses
+# Fit the Subdaily P Model
 pmodel_subdaily = SubdailyPModel(
     env=subdaily_env,
-    fs_scaler=fsscaler,
-    allow_holdover=True,
-    ppfd=ppfd_subdaily,
-    fapar=fapar_subdaily,
+    acclim_model=acclim_model,
 )
 ```
 
@@ -131,16 +130,16 @@ idx = np.arange(48 * 120, 48 * 130)
 plt.figure(figsize=(10, 4))
 plt.plot(datetime_subdaily[idx], pmodel_standard.gpp[idx], label="Instantaneous model")
 plt.plot(datetime_subdaily[idx], pmodel_subdaily.gpp[idx], "r-", label="Slow responses")
-plt.ylabel = "GPP"
+plt.ylabel("GPP (gc m-2 s-1)")
 plt.legend(frameon=False)
 plt.show()
 ```
 
 ## Calculation of GPP using fast and slow responses
 
-The {class}`~pyrealm.pmodel.subdaily.SubdailyPModel` implements the calculations used to
-estimate GPP using slow responses, but the details of these calculations are shown
-below.
+The {class}`~pyrealm.pmodel.pmodel.SubdailyPModel` implements the calculations
+used to estimate GPP using slow responses, but the details of these calculations are
+shown below.
 
 ### Optimal responses during the acclimation window
 
@@ -150,20 +149,24 @@ conditions.
 
 ```{code-cell} ipython3
 # Get the daily acclimation conditions for the forcing variables
-temp_acclim = fsscaler.get_daily_means(temp_subdaily)
-co2_acclim = fsscaler.get_daily_means(co2_subdaily)
-vpd_acclim = fsscaler.get_daily_means(vpd_subdaily)
-patm_acclim = fsscaler.get_daily_means(patm_subdaily)
-ppfd_acclim = fsscaler.get_daily_means(ppfd_subdaily)
-fapar_acclim = fsscaler.get_daily_means(fapar_subdaily)
+temp_acclim = acclim_model.get_daily_means(temp_subdaily)
+co2_acclim = acclim_model.get_daily_means(co2_subdaily)
+vpd_acclim = acclim_model.get_daily_means(vpd_subdaily)
+patm_acclim = acclim_model.get_daily_means(patm_subdaily)
+ppfd_acclim = acclim_model.get_daily_means(ppfd_subdaily)
+fapar_acclim = acclim_model.get_daily_means(fapar_subdaily)
 
 # Fit the P Model to the acclimation conditions
 daily_acclim_env = PModelEnvironment(
-    tc=temp_acclim, vpd=vpd_acclim, co2=co2_acclim, patm=patm_acclim
+    tc=temp_acclim,
+    vpd=vpd_acclim,
+    co2=co2_acclim,
+    patm=patm_acclim,
+    fapar=fapar_acclim,
+    ppfd=ppfd_acclim,
 )
 
-pmodel_acclim = PModel(daily_acclim_env, reference_kphio=1 / 8)
-pmodel_acclim.estimate_productivity(fapar=fapar_acclim, ppfd=ppfd_acclim)
+pmodel_acclim = PModel(daily_acclim_env)
 ```
 
 ### Slow responses of $\xi$, $J_{max25}$ and $V_{cmax25}$
@@ -176,17 +179,25 @@ lagged response using a [memory effect](acclimation.md#estimating-realised-respo
 
 The daily optimal acclimation values are obviously calculated under a range of
 temperatures so $J_{max}$ and $V_{cmax}$ must first be standardised to expected values
-at 25°C. This is acheived by multiplying by the reciprocal of the exponential part of
-the Arrhenius equation ($h^{-1}$ in {cite}`mengoli:2022a`).
+at 25°C. This is achieved calculating an Arrhenius scaling factor for the temperature of
+the observation relative to the standard temperature, given the activation energy of the
+enzymes.
 
 ```{code-cell} ipython3
-# Are these any of the existing values in the constants?
-ha_vcmax25 = 65330
-ha_jmax25 = 43900
+pmodel_const = pmodel_subdaily.env.pmodel_const
+core_const = pmodel_subdaily.env.core_const
 
-tk_acclim = temp_acclim + pmodel_subdaily.env.core_const.k_CtoK
-vcmax25_acclim = pmodel_acclim.vcmax * (1 / calc_ftemp_arrh(tk_acclim, ha_vcmax25))
-jmax25_acclim = pmodel_acclim.jmax * (1 / calc_ftemp_arrh(tk_acclim, ha_jmax25))
+tk_acclim = temp_acclim + core_const.k_CtoK
+tk_ref = pmodel_const.tk_ref
+
+arrh_daily = SimpleArrhenius(env=daily_acclim_env)
+
+vcmax25_acclim = pmodel_acclim.vcmax / arrh_daily.calculate_arrhenius_factor(
+    pmodel_const.arrhenius_vcmax
+)
+jmax25_acclim = pmodel_acclim.jmax / arrh_daily.calculate_arrhenius_factor(
+    pmodel_const.arrhenius_jmax
+)
 ```
 
 #### Calculation of realised values
@@ -196,9 +207,9 @@ responses to calculate realised values, here using the default 15 day window.
 
 ```{code-cell} ipython3
 # Calculation of memory effect in xi, vcmax25 and jmax25
-xi_real = memory_effect(pmodel_acclim.optchi.xi, alpha=1 / 15)
-vcmax25_real = memory_effect(vcmax25_acclim, alpha=1 / 15, allow_holdover=True)
-jmax25_real = memory_effect(jmax25_acclim, alpha=1 / 15, allow_holdover=True)
+xi_real = acclim_model.apply_acclimation(pmodel_acclim.optchi.xi)
+vcmax25_real = acclim_model.apply_acclimation(vcmax25_acclim)
+jmax25_real = acclim_model.apply_acclimation(jmax25_acclim)
 ```
 
 The plots below show the instantaneously acclimated values for  $J_{max25}$,
@@ -208,7 +219,7 @@ application of the memory effect.
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+fig, axes = plt.subplots(1, 3, figsize=(12, 4))
 
 for ax, inst, mem, title in zip(
     axes,
@@ -217,10 +228,13 @@ for ax, inst, mem, title in zip(
     (r"$V_{cmax25}$", r"$J_{max25}$", r"$\xi$"),
 ):
 
-    ax.plot(fsscaler.observation_dates, inst, "0.8", label="Optimal")
-    ax.plot(fsscaler.observation_dates, mem, "r-", label="Realised")
+    ax.plot(acclim_model.observation_dates, inst, "0.8", label="Optimal")
+    ax.plot(acclim_model.observation_dates, mem, "r-", label="Realised")
     ax.set_title(title)
     ax.legend(frameon=False)
+
+    myFmt = mdates.DateFormatter("%b\n%Y")
+    ax.xaxis.set_major_formatter(myFmt)
 ```
 
 ### Subdaily model including fast and slow responses
@@ -240,15 +254,20 @@ temperature at fast scales:
   responses of $J_{max}$ and $V_{cmax}$.
 
 ```{code-cell} ipython3
-tk_subdaily = subdaily_env.tc + pmodel_subdaily.env.core_const.k_CtoK
-
 # Fill the realised jmax and vcmax from subdaily to daily
-vcmax25_subdaily = fsscaler.fill_daily_to_subdaily(vcmax25_real)
-jmax25_subdaily = fsscaler.fill_daily_to_subdaily(jmax25_real)
+vcmax25_subdaily = acclim_model.fill_daily_to_subdaily(vcmax25_real)
+jmax25_subdaily = acclim_model.fill_daily_to_subdaily(jmax25_real)
+
+# Get the Arrhenius scaler
+arrh_subdaily = SimpleArrhenius(env=subdaily_env)
 
 # Adjust to actual temperature at subdaily timescale
-vcmax_subdaily = vcmax25_subdaily * calc_ftemp_arrh(tk=tk_subdaily, ha=ha_vcmax25)
-jmax_subdaily = jmax25_subdaily * calc_ftemp_arrh(tk=tk_subdaily, ha=ha_jmax25)
+vcmax_subdaily = vcmax25_subdaily * arrh_subdaily.calculate_arrhenius_factor(
+    coefficients=pmodel_const.arrhenius_vcmax
+)
+jmax_subdaily = jmax25_subdaily * arrh_subdaily.calculate_arrhenius_factor(
+    coefficients=pmodel_const.arrhenius_jmax
+)
 ```
 
 #### Calculation of $c_i$
@@ -261,7 +280,7 @@ as is the case in the standard P Model.
 
 ```{code-cell} ipython3
 # Interpolate xi to subdaily scale
-xi_subdaily = fsscaler.fill_daily_to_subdaily(xi_real)
+xi_subdaily = acclim_model.fill_daily_to_subdaily(xi_real)
 
 # Calculate the optimal chi, imposing the realised xi values
 subdaily_chi = OptimalChiPrentice14(env=subdaily_env)
@@ -287,10 +306,12 @@ Ac_subdaily = (
 )
 
 # Calculate J and Aj
-phi = (1 / 8) * calc_ftemp_kphio(tc=temp_subdaily)
+phi = QuantumYieldTemperature(env=subdaily_env)
 iabs = fapar_subdaily * ppfd_subdaily
 
-J_subdaily = (4 * phi * iabs) / np.sqrt(1 + ((4 * phi * iabs) / jmax_subdaily) ** 2)
+J_subdaily = (4 * phi.kphio * iabs) / np.sqrt(
+    1 + ((4 * phi.kphio * iabs) / jmax_subdaily) ** 2
+)
 
 Aj_subdaily = (
     (J_subdaily / 4)
@@ -304,6 +325,21 @@ GPP_subdaily = (
 )
 
 # Compare to the SubdailyPModel outputs
-diff = GPP_subdaily - pmodel_subdaily.gpp
-print(np.nanmin(diff), np.nanmax(diff))
+fig, ax = plt.subplots()
+ax.plot(GPP_subdaily, pmodel_subdaily.gpp)
+ax.set_xlabel("Manually calculated GPP (gC m-2 s-1)")
+ax.set_ylabel("GPP from SubdailyPModel (gC m-2 s-1)")
+ax.set_aspect("equal")
+plt.tight_layout()
+```
+
+```{code-cell} ipython3
+:tags: [remove-cell]
+
+# This cell is here to force a docs build failure if these values
+# are _not_ identical. The 'remove-cell' tag is applied to hide this
+# in built docs.
+from numpy.testing import assert_allclose
+
+assert_allclose(GPP_subdaily, pmodel_subdaily.gpp)
 ```

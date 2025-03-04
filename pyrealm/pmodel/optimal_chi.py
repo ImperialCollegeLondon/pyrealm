@@ -69,9 +69,6 @@ class OptimalChiABC(ABC):
         env: An instance of
             :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`  providing the
             photosynthetic environment for the model.
-        rootzonestress: This is an experimental feature to supply a root zone stress
-            factor used as a direct penalty to :math:`\beta`, unitless. The default is
-            1.0, with no root zone stress applied.
         pmodel_const: An instance of
             :class:`~pyrealm.constants.pmodel_const.PModelConst`.
 
@@ -171,13 +168,13 @@ class OptimalChiABC(ABC):
             dp: The number of decimal places used in rounding summary stats.
         """
 
-        attrs = [
+        attrs = (
             ("xi", " Pa ^ (1/2)"),
             ("chi", "-"),
             ("mc", "-"),
             ("mj", "-"),
             ("mjoc", "-"),
-        ]
+        )
         summarize_attrs(self, attrs, dp=dp)
 
     @classmethod
@@ -231,8 +228,9 @@ class OptimalChiPrentice14(
     Examples:
         >>> import numpy as np
         >>> env = PModelEnvironment(
-        ...     tc=np.array([20]), vpd=np.array([1000]),
-        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ...     tc=np.array([20]), vpd=np.array([1000]), 
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ... )
         >>> vals = OptimalChiPrentice14(env=env)
         >>> vals.chi.round(5)
@@ -248,7 +246,7 @@ class OptimalChiPrentice14(
     def set_beta(self) -> None:
         """Set ``beta`` to a constant C3 specific value."""
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.beta = self.pmodel_const.beta_cost_ratio_prentice14
+        self.beta = self.pmodel_const.beta_cost_ratio_c3
 
     def estimate_chi(self, xi_values: NDArray[np.float64] | None = None) -> None:
         """Estimate ``chi`` for C3 plants."""
@@ -299,6 +297,7 @@ class OptimalChiPrentice14RootzoneStress(
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
         ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ...     rootzonestress=0.5
         ... )
         >>> vals = OptimalChiPrentice14RootzoneStress(env=env)
@@ -317,7 +316,7 @@ class OptimalChiPrentice14RootzoneStress(
         )
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-        self.beta = self.pmodel_const.beta_cost_ratio_prentice14
+        self.beta = self.pmodel_const.beta_cost_ratio_c3
 
     def estimate_chi(self, xi_values: NDArray[np.float64] | None = None) -> None:
         """Estimate ``chi`` for C3 plants."""
@@ -329,7 +328,7 @@ class OptimalChiPrentice14RootzoneStress(
             self.xi = np.sqrt(
                 (
                     self.beta
-                    * self.env.rootzonestress
+                    * getattr(self.env, "rootzonestress")
                     * (self.env.kmm + self.env.gammastar)
                 )
                 / (1.6 * self.env.ns_star)
@@ -366,7 +365,8 @@ class OptimalChiC4(
         >>> import numpy as np
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
-        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ... )
         >>> vals = OptimalChiC4(env=env)
         >>> vals.chi.round(5)
@@ -433,6 +433,7 @@ class OptimalChiC4RootzoneStress(
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
         ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ...     rootzonestress=0.5
         ... )
         >>> vals = OptimalChiC4RootzoneStress(env=env)
@@ -458,7 +459,7 @@ class OptimalChiC4RootzoneStress(
             self.xi = np.sqrt(
                 (
                     self.beta
-                    * self.env.rootzonestress
+                    * getattr(self.env, "rootzonestress")
                     * (self.env.kmm + self.env.gammastar)
                 )
                 / (1.6 * self.env.ns_star)
@@ -497,9 +498,9 @@ class OptimalChiLavergne20C3(
 
     The coefficients are experimentally derived values with defaults taken from
     Figure 6a of :cite:`lavergne:2020a` (:math:`a`,
-    :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_a_c3`;
+    :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_c3`;
     :math:`b`,
-    :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c3`).
+    :attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_c3`).
 
     Values of :math:`\chi` and other predictions are then calculated as in
     :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`. This method
@@ -508,8 +509,10 @@ class OptimalChiLavergne20C3(
     Examples:
         >>> import numpy as np
         >>> env = PModelEnvironment(
-        ...     tc=np.array([20]), vpd=np.array([1000]), co2=np.array([400]),
-        ...     patm=np.array([101325.0]), theta=np.array([0.5])
+        ...     tc=np.array([20]), vpd=np.array([1000]),
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
+        ...     theta=np.array([0.5])
         ... )
         >>> vals = OptimalChiLavergne20C3(env=env)
         >>> vals.beta.round(5)
@@ -527,11 +530,10 @@ class OptimalChiLavergne20C3(
     def set_beta(self) -> None:
         """Set ``beta`` with soil moisture corrections."""
 
-        # Calculate beta as a function of theta, which is guaranteed not to be None by
-        # _check_requires so suppress mypy here
+        # Calculate beta as a function of theta
         self.beta = np.exp(
-            self.pmodel_const.lavergne_2020_b_c3 * self.env.theta  # type: ignore[operator]
-            + self.pmodel_const.lavergne_2020_a_c3
+            self.pmodel_const.lavergne_2020_c3[1] * getattr(self.env, "theta")
+            + self.pmodel_const.lavergne_2020_c3[0]
         )
 
     def estimate_chi(self, xi_values: NDArray[np.float64] | None = None) -> None:
@@ -573,10 +575,10 @@ class OptimalChiLavergne20C4(
     C3 plants are adjusted to match the theoretical expectation that :math:`\beta`
     for C4 plants is nine times smaller than :math:`\beta` for C3 plants (see
     :meth:`~pyrealm.pmodel.optimal_chi.OptimalChiC4`): :math:`b`
-    (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_b_c4`) is
+    (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_c4`) is
     unchanged but
     :math:`a_{C4} = a_{C3} - log(9)`
-    (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_a_c4`) .
+    (:attr:`~pyrealm.constants.pmodel_const.PModelConst.lavergne_2020_c4`) .
 
     Following the calculation of :math:`\beta`, this method then follows the
     calculations described in
@@ -585,7 +587,8 @@ class OptimalChiLavergne20C4(
     because photorespiration is negligible, but :math:`m_c` and hence
     :math:`m_{joc}` are calculated.
 
-    Note:
+    .. NOTE::
+
         This is an **experimental approach**. The research underlying
         :cite:`lavergne:2020a`, found **no relationship** between C4 :math:`\beta`
         values and soil moisture in leaf gas exchange measurements.
@@ -593,8 +596,10 @@ class OptimalChiLavergne20C4(
     Examples:
         >>> import numpy as np
         >>> env = PModelEnvironment(
-        ...     tc=np.array([20]), vpd=np.array([1000]), co2=np.array([400]),
-        ...     patm=np.array([101325.0]), theta=np.array([0.5])
+        ...     tc=np.array([20]), vpd=np.array([1000]),
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
+        ...     theta=np.array([0.5])
         ... )
         >>> vals = OptimalChiLavergne20C4(env=env)
         >>> vals.beta.round(5)
@@ -618,11 +623,10 @@ class OptimalChiLavergne20C4(
             ExperimentalFeatureWarning,
         )
 
-        # Calculate beta as a function of theta, which is guaranteed not to be None by
-        # _check_requires so suppress mypy here
+        # Calculate beta as a function of theta
         self.beta = np.exp(
-            self.pmodel_const.lavergne_2020_b_c4 * self.env.theta  # type: ignore[operator]
-            + self.pmodel_const.lavergne_2020_a_c4
+            self.pmodel_const.lavergne_2020_c4[1] * getattr(self.env, "theta")
+            + self.pmodel_const.lavergne_2020_c4[0]
         )
 
     def estimate_chi(self, xi_values: NDArray[np.float64] | None = None) -> None:
@@ -685,7 +689,8 @@ class OptimalChiC4NoGamma(
         >>> import numpy as np
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
-        ...     co2=np.array([400]), patm=np.array([101325.0])
+        ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ... )
         >>> vals = OptimalChiC4NoGamma(env=env)
         >>> vals.chi.round(5)
@@ -754,6 +759,7 @@ class OptimalChiC4NoGammaRootzoneStress(
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]), vpd=np.array([1000]),
         ...     co2=np.array([400]), patm=np.array([101325.0]),
+        ...     fapar=np.array([1]), ppfd=np.array([800]),
         ...     rootzonestress=np.array([0.5])
         ... )
         >>> vals = OptimalChiC4NoGammaRootzoneStress(env=env)
@@ -780,7 +786,7 @@ class OptimalChiC4NoGammaRootzoneStress(
             self.xi = xi_values
         else:
             self.xi = np.sqrt(
-                (self.beta * self.env.rootzonestress * self.env.kmm)
+                (self.beta * getattr(self.env, "rootzonestress") * self.env.kmm)
                 / (1.6 * self.env.ns_star)
             )
 

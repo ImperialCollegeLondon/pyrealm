@@ -257,9 +257,9 @@ class C3C4Competition:
         r"""Estimate CO2 isotopic discrimination values.
 
         Creating an instance of :class:`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes`
-        from a :class:`~pyrealm.pmodel.pmodel.PModel` instance provides estimated total
-        annual descrimination against Carbon 13 (:math:`\Delta\ce{^13C}`) for a single
-        photosynthetic pathway.
+        from a :class:`~pyrealm.pmodel.pmodel.PModel` instance provides estimated
+        total annual descrimination against Carbon 13 (:math:`\Delta\ce{^13C}`) for a
+        single photosynthetic pathway.
 
         This method allows predictions from C3 and C4 pathways to be combined to
         calculate the contribution from C3 and C4 plants given the estimated fraction of
@@ -304,20 +304,19 @@ class C3C4Competition:
             dp: The number of decimal places used in rounding summary stats.
         """
 
-        attrs = [
+        attrs: tuple[tuple[str, str], ...] = (
             ("frac_c4", "-"),
             ("gpp_c3_contrib", "gC m-2 yr-1"),
             ("gpp_c4_contrib", "gC m-2 yr-1"),
-        ]
+        )
 
         if hasattr(self, "d13C_C3"):
-            attrs.extend(
-                [
-                    ("Delta13C_C3", "permil"),
-                    ("Delta13C_C4", "permil"),
-                    ("d13C_C3", "permil"),
-                    ("d13C_C4", "permil"),
-                ]
+            attrs = (
+                *attrs,
+                ("Delta13C_C3", "permil"),
+                ("Delta13C_C4", "permil"),
+                ("d13C_C3", "permil"),
+                ("d13C_C4", "permil"),
             )
 
         summarize_attrs(self, attrs, dp=dp)

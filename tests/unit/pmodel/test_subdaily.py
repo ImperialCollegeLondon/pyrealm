@@ -4,58 +4,9 @@ from contextlib import nullcontext as does_not_raise
 
 import numpy as np
 import pytest
+from numpy.testing import assert_allclose
 
 from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
-
-
-def test_SubdailyPModel_JAMES(be_vie_data_components):
-    """Test SubdailyPModel_JAMES.
-
-    This tests the legacy calculations from the Mengoli et al JAMES paper, using that
-    version of the weighted average calculations without acclimating xi.
-    """
-
-    from pyrealm.pmodel import SubdailyScaler
-    from pyrealm.pmodel.subdaily import SubdailyPModel_JAMES
-
-    env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components.get()
-
-    # Get the fast slow scaler and set window
-    fsscaler = SubdailyScaler(datetime)
-    fsscaler.set_window(
-        window_center=np.timedelta64(12, "h"),
-        half_width=np.timedelta64(30, "m"),
-    )
-
-    # Alternate scalar used to duplicate VPD settings in JAMES implementation
-    vpdscaler = SubdailyScaler(datetime)
-    vpdscaler.set_nearest(time=np.timedelta64(12, "h"))
-
-    # Fast slow model without acclimating xi with best fit adaptations to the original
-    # - VPD in daily optimum using different window
-    # - Jmax and Vcmax filling from midday not window end
-    fs_pmodel_james = SubdailyPModel_JAMES(
-        env=env,
-        fs_scaler=fsscaler,
-        allow_holdover=True,
-        kphio=1 / 8,
-        fapar=fapar,
-        ppfd=ppfd,
-        vpd_scaler=vpdscaler,
-        fill_from=np.timedelta64(12, "h"),
-    )
-
-    valid = np.logical_not(
-        np.logical_or(np.isnan(expected_gpp), np.isnan(fs_pmodel_james.gpp))
-    )
-
-    # Test that non-NaN predictions are within 0.5% - slight differences in constants
-    # and rounding of outputs prevent a closer match between the implementations
-    assert np.allclose(
-        fs_pmodel_james.gpp[valid],
-        expected_gpp[valid] * env.core_const.k_c_molmass,
-        rtol=0.005,
-    )
 
 
 @pytest.mark.parametrize(
@@ -67,7 +18,7 @@ def test_SubdailyPModel_JAMES(be_vie_data_components):
         pytest.param({"mode": "pad", "start": 12, "end": 12}, id="pad both"),
     ],
 )
-def test_FSPModel_corr(be_vie_data_components, data_args):
+def test_SubdailyPModel_corr(be_vie_data_components, data_args):
     """Test SubdailyPModel.
 
     This tests that the pyrealm implementation including acclimating xi at least
@@ -81,14 +32,14 @@ def test_FSPModel_corr(be_vie_data_components, data_args):
     to differ.
     """
 
-    from pyrealm.pmodel import SubdailyScaler
-    from pyrealm.pmodel.subdaily import SubdailyPModel
+    from pyrealm.pmodel.acclimation import AcclimationModel
+    from pyrealm.pmodel.pmodel import SubdailyPModel
 
-    env, ppfd, fapar, datetime, expected_gpp = be_vie_data_components.get(**data_args)
+    env, datetime, expected_gpp = be_vie_data_components.get(**data_args)
 
-    # Get the fast slow scaler and set window
-    fsscaler = SubdailyScaler(datetime)
-    fsscaler.set_window(
+    # Get the acclimation model and set window
+    acclim_model = AcclimationModel(datetime, allow_holdover=True)
+    acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
@@ -96,11 +47,8 @@ def test_FSPModel_corr(be_vie_data_components, data_args):
     # Run as a subdaily model using the kphio used in the reference implementation.
     subdaily_pmodel = SubdailyPModel(
         env=env,
-        ppfd=ppfd,
-        fapar=fapar,
         reference_kphio=1 / 8,
-        fs_scaler=fsscaler,
-        allow_holdover=True,
+        acclim_model=acclim_model,
     )
 
     valid = np.logical_not(
@@ -109,25 +57,90 @@ def test_FSPModel_corr(be_vie_data_components, data_args):
 
     # Test that non-NaN predictions correlate well and are approximately the same
     gpp_in_micromols = subdaily_pmodel.gpp[valid] / env.core_const.k_c_molmass
-    assert np.allclose(gpp_in_micromols, expected_gpp[valid], rtol=0.2)
+    assert_allclose(gpp_in_micromols, expected_gpp[valid], rtol=0.2)
     r_vals = np.corrcoef(gpp_in_micromols, expected_gpp[valid])
     assert np.all(r_vals > 0.995)
+
+
+@pytest.mark.parametrize(
+    argnames="previous_realised, outcome, msg",
+    argvalues=[
+        pytest.param(
+            {"xi": np.ones(1), "jmax25": np.ones(1), "vcmax25": np.ones(1)},
+            does_not_raise(),
+            None,
+            id="good",
+        ),
+        pytest.param(
+            (np.ones(1), np.ones(1), np.ones(1)),
+            pytest.raises(ValueError),
+            "previous_realised must be a dictionary of arrays, with entries "
+            "for 'xi', 'jmax25' and 'vcmax25'.",
+            id="not a dict",
+        ),
+        pytest.param(
+            {"xi": np.ones(1), "j_max25": np.ones(1), "v_cmax25": np.ones(1)},
+            pytest.raises(ValueError),
+            "previous_realised must be a dictionary of arrays, with entries "
+            "for 'xi', 'jmax25' and 'vcmax25'.",
+            id="dict with wrong keys",
+        ),
+        pytest.param(
+            {"xi": 1, "j_max25": 1, "v_cmax25": 1},
+            pytest.raises(ValueError),
+            "previous_realised must be a dictionary of arrays, with entries "
+            "for 'xi', 'jmax25' and 'vcmax25'.",
+            id="dict with non array values",
+        ),
+        pytest.param(
+            {"xi": np.ones(2), "jmax25": np.ones(2), "vcmax25": np.ones(2)},
+            pytest.raises(ValueError),
+            "`previous_realised` arrays have wrong shape in SubdailyPModel",
+            id="dict with badly sized arrays",
+        ),
+    ],
+)
+def test_SubdailyPModel_previous_realised_validation(
+    be_vie_data_components, previous_realised, outcome, msg
+):
+    """Test the functionality that allows the subdaily model to restart in blocks."""
+
+    from pyrealm.pmodel.acclimation import AcclimationModel
+    from pyrealm.pmodel.pmodel import SubdailyPModel
+
+    env, datetime, expected_gpp = be_vie_data_components.get()
+
+    # Get the acclimation model and set window
+    acclim_model = AcclimationModel(datetime, allow_holdover=True)
+    acclim_model.set_window(
+        window_center=np.timedelta64(12, "h"),
+        half_width=np.timedelta64(30, "m"),
+    )
+
+    # Run as a subdaily model
+    with outcome as excep:
+        _ = SubdailyPModel(
+            env=env,
+            acclim_model=acclim_model,
+            previous_realised=previous_realised,
+        )
+
+    if not isinstance(outcome, does_not_raise):
+        assert str(excep.value) == msg
 
 
 def test_SubdailyPModel_previous_realised(be_vie_data_components):
     """Test the functionality that allows the subdaily model to restart in blocks."""
 
-    from pyrealm.pmodel import SubdailyScaler
-    from pyrealm.pmodel.subdaily import SubdailyPModel
+    from pyrealm.pmodel.acclimation import AcclimationModel
+    from pyrealm.pmodel.pmodel import SubdailyPModel
 
     # Run all in one model
-    env, ppfd, fapar, datetime, _ = be_vie_data_components.get(
-        mode="crop", start=0, end=17520
-    )
+    env, datetime, _ = be_vie_data_components.get(mode="crop", start=0, end=17520)
 
-    # Get the fast slow scaler and set window
-    fsscaler = SubdailyScaler(datetime)
-    fsscaler.set_window(
+    # Get the acclimation model and set window
+    acclim_model = AcclimationModel(datetime, allow_holdover=True)
+    acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
@@ -135,21 +148,16 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
     # Run as a subdaily model using the kphio used in the reference implementation.
     all_in_one_subdaily_pmodel = SubdailyPModel(
         env=env,
-        ppfd=ppfd,
-        fapar=fapar,
         reference_kphio=1 / 8,
-        fs_scaler=fsscaler,
-        allow_holdover=True,
+        acclim_model=acclim_model,
     )
 
     # Run first half of year
-    env1, ppfd1, fapar1, datetime1, _ = be_vie_data_components.get(
-        mode="crop", start=0, end=182 * 48
-    )
+    env1, datetime1, _ = be_vie_data_components.get(mode="crop", start=0, end=182 * 48)
 
-    # Get the fast slow scaler and set window
-    fsscaler1 = SubdailyScaler(datetime1)
-    fsscaler1.set_window(
+    # Get the acclimation model
+    acclim_model1 = AcclimationModel(datetime1, allow_holdover=True)
+    acclim_model1.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
@@ -157,41 +165,36 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
     # Run as a subdaily model using the kphio used in the reference implementation.
     part_1_subdaily_pmodel = SubdailyPModel(
         env=env1,
-        ppfd=ppfd1,
-        fapar=fapar1,
         reference_kphio=1 / 8,
-        fs_scaler=fsscaler1,
-        allow_holdover=True,
+        acclim_model=acclim_model1,
     )
 
     # Run second year
-    env2, ppfd2, fapar2, datetime2, _ = be_vie_data_components.get(
+    env2, datetime2, _ = be_vie_data_components.get(
         mode="crop", start=182 * 48, end=365 * 48
     )
 
-    # Get the fast slow scaler and set window
-    fsscaler2 = SubdailyScaler(datetime2)
-    fsscaler2.set_window(
+    # Get the acclimation model
+    acclim_model2 = AcclimationModel(datetime2, allow_holdover=True)
+    acclim_model2.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
 
     # Run as a subdaily model using the kphio used in the reference implementation.
+    # Note the explicit use of [[-1]] to give array values, not scalar np.float
     part_2_subdaily_pmodel = SubdailyPModel(
         env=env2,
-        ppfd=ppfd2,
-        fapar=fapar2,
         reference_kphio=1 / 8,
-        fs_scaler=fsscaler2,
-        allow_holdover=True,
-        previous_realised=(
-            part_1_subdaily_pmodel.optimal_chi.xi[-1],
-            part_1_subdaily_pmodel.vcmax25_real[-1],
-            part_1_subdaily_pmodel.jmax25_real[-1],
-        ),
+        acclim_model=acclim_model2,
+        previous_realised={
+            "xi": part_1_subdaily_pmodel.xi_daily_realised[[-1]],
+            "vcmax25": part_1_subdaily_pmodel.vcmax25_daily_realised[[-1]],
+            "jmax25": part_1_subdaily_pmodel.jmax25_daily_realised[[-1]],
+        },
     )
 
-    assert np.allclose(
+    assert_allclose(
         all_in_one_subdaily_pmodel.gpp,
         np.concat([part_1_subdaily_pmodel.gpp, part_2_subdaily_pmodel.gpp]),
         equal_nan=True,
@@ -199,7 +202,7 @@ def test_SubdailyPModel_previous_realised(be_vie_data_components):
 
 
 @pytest.mark.parametrize("ndims", [2, 3, 4])
-def test_FSPModel_dimensionality(be_vie_data, ndims):
+def test_SubdailyPModel_dimensionality(be_vie_data, ndims):
     """Tests that the SubdailyPModel handles dimensions correctly.
 
     This broadcasts the BE-Vie onto more dimensions and checks that the code iterates
@@ -207,8 +210,9 @@ def test_FSPModel_dimensionality(be_vie_data, ndims):
     dimensions to check the results scale as expected.
     """
 
-    from pyrealm.pmodel import PModelEnvironment, SubdailyScaler
-    from pyrealm.pmodel.subdaily import SubdailyPModel
+    from pyrealm.pmodel import PModelEnvironment
+    from pyrealm.pmodel.acclimation import AcclimationModel
+    from pyrealm.pmodel.pmodel import SubdailyPModel
 
     datetime = be_vie_data["time"].to_numpy()
 
@@ -219,39 +223,41 @@ def test_FSPModel_dimensionality(be_vie_data, ndims):
     extra_dims = [3] * (ndims - 1)
     array_dims = tuple([*extra_dims, len(datetime)])
 
+    # Apply a different random value of fAPAR for each time series, but set a single
+    # element to 1.0 as a reference value
+    fapar_vals = np.random.random(extra_dims)
+    fapar_vals.flat[0] = 1.0
+
     # Create the environment
     env = PModelEnvironment(
         tc=np.broadcast_to(be_vie_data["ta"], array_dims).transpose(),
         vpd=np.broadcast_to(be_vie_data["vpd"], array_dims).transpose(),
         co2=np.broadcast_to(be_vie_data["co2"], array_dims).transpose(),
         patm=np.broadcast_to(be_vie_data["patm"], array_dims).transpose(),
+        fapar=fapar_vals * np.ones(array_dims).transpose(),
+        ppfd=np.ones(array_dims).transpose(),
     )
 
-    # Get the fast slow scaler and set window
-    fsscaler = SubdailyScaler(datetime)
-    fsscaler.set_window(
+    # Get the acclimation model and set window
+    acclim_model = AcclimationModel(datetime, allow_holdover=True)
+    acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
 
-    # Apply a different random value of fAPAR for each time series
-    fapar_vals = np.random.random(extra_dims)
-    fapar_vals[0] = 1.0
-
     # Fast slow model
     subdaily_pmodel = SubdailyPModel(
         env=env,
-        fs_scaler=fsscaler,
-        fapar=fapar_vals * np.ones(array_dims).transpose(),
-        ppfd=np.ones(array_dims).transpose(),
-        allow_holdover=True,
+        acclim_model=acclim_model,
     )
 
     # The GPP along the timescale of the different dimensions should be directly
     # proportional to the random fapar values and hence GPP/FAPAR should all equal the
     # value when it is set to 1
     timeaxis_mean = np.nansum(subdaily_pmodel.gpp, axis=0)
-    assert np.allclose(timeaxis_mean / fapar_vals, timeaxis_mean[0])
+    assert_allclose(
+        timeaxis_mean / fapar_vals, np.full_like(timeaxis_mean, timeaxis_mean.flat[0])
+    )
 
 
 @pytest.mark.parametrize("method_optchi", OPTIMAL_CHI_CLASS_REGISTRY.keys())
@@ -262,14 +268,14 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
     implementations of the OptimalChi ABC.
     """
 
-    from pyrealm.pmodel import SubdailyScaler
-    from pyrealm.pmodel.subdaily import SubdailyPModel
+    from pyrealm.pmodel.acclimation import AcclimationModel
+    from pyrealm.pmodel.pmodel import SubdailyPModel
 
-    env, ppfd, fapar, datetime, _ = be_vie_data_components.get()
+    env, datetime, _ = be_vie_data_components.get()
 
-    # Get the fast slow scaler and set window
-    fsscaler = SubdailyScaler(datetime)
-    fsscaler.set_window(
+    # Get the acclimation model and set window
+    acclim_model = AcclimationModel(datetime, allow_holdover=True)
+    acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
@@ -277,11 +283,8 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
     # Run as a subdaily model and it should complete.
     _ = SubdailyPModel(
         env=env,
-        fs_scaler=fsscaler,
-        fapar=fapar,
-        ppfd=ppfd,
+        acclim_model=acclim_model,
         method_optchi=method_optchi,
-        allow_holdover=True,
     )
 
 
@@ -289,14 +292,14 @@ def test_Subdaily_opt_chi_methods(be_vie_data_components, method_optchi):
 def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
     """Tests the convert_pmodel_to_subdaily method."""
 
-    from pyrealm.pmodel import PModel, SubdailyScaler
-    from pyrealm.pmodel.subdaily import SubdailyPModel, convert_pmodel_to_subdaily
+    from pyrealm.pmodel.acclimation import AcclimationModel
+    from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 
-    env, ppfd, fapar, datetime, _ = be_vie_data_components.get()
+    env, datetime, _ = be_vie_data_components.get()
 
-    # Get the fast slow scaler and set window
-    fsscaler = SubdailyScaler(datetime)
-    fsscaler.set_window(
+    # Get the acclimation model and set window
+    acclim_model = AcclimationModel(datetime, allow_holdover=True)
+    acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
     )
@@ -304,11 +307,8 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
     # Run as a subdaily model
     direct = SubdailyPModel(
         env=env,
-        fs_scaler=fsscaler,
-        fapar=fapar,
-        ppfd=ppfd,
+        acclim_model=acclim_model,
         method_optchi=method_optchi,
-        allow_holdover=True,
     )
 
     # Convert a standard model
@@ -316,13 +316,10 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
         env=env,
         method_optchi=method_optchi,
     )
-    standard_model.estimate_productivity(fapar=fapar, ppfd=ppfd)
 
-    converted = convert_pmodel_to_subdaily(
-        pmodel=standard_model, fs_scaler=fsscaler, allow_holdover=True
-    )
+    converted = standard_model.to_subdaily(acclim_model=acclim_model)
 
-    assert np.allclose(converted.gpp, direct.gpp, equal_nan=True)
+    assert_allclose(converted.gpp, direct.gpp, equal_nan=True)
 
 
 @pytest.mark.parametrize(
@@ -438,7 +435,7 @@ def test_convert_pmodel_to_subdaily(be_vie_data_components, method_optchi):
         ),
     ],
 )
-def test_FSPModel_incomplete_day_behaviour(
+def test_SubdailyPModel_incomplete_day_behaviour(
     mocker,
     be_vie_data_components,
     incomplete,
@@ -491,25 +488,23 @@ def test_FSPModel_incomplete_day_behaviour(
       calculations to use the actual data.
     """
 
-    from pyrealm.pmodel.subdaily import SubdailyPModel, SubdailyScaler
+    from pyrealm.pmodel.acclimation import AcclimationModel
+    from pyrealm.pmodel.pmodel import SubdailyPModel
 
-    def model_fitter(env, ppfd, fapar, datetime):
-        # Get the fast slow scaler and set window
-        fsscaler = SubdailyScaler(datetime)
-        fsscaler.set_window(
+    def model_fitter(env, datetime):
+        # Get the acclimation model and set window
+        acclim_model = AcclimationModel(
+            datetime,
+            allow_holdover=allow_holdover,
+            allow_partial_data=allow_partial_data,
+        )
+        acclim_model.set_window(
             window_center=np.timedelta64(12, "h"),
             half_width=np.timedelta64(30, "m"),
         )
 
         # Run as a subdaily model
-        return SubdailyPModel(
-            env=env,
-            ppfd=ppfd,
-            fapar=fapar,
-            fs_scaler=fsscaler,
-            allow_holdover=allow_holdover,
-            allow_partial_data=allow_partial_data,
-        )
+        return SubdailyPModel(env=env, acclim_model=acclim_model)
 
     # Feed the arguments for complete and incomplete days into DataFactory and then feed
     # the returned values (except the last element containing GPP) into the model fitter
@@ -520,19 +515,19 @@ def test_FSPModel_incomplete_day_behaviour(
         if patch_means:
             # Patch the return values for `get_daily_means` to be the same as the
             # complete model - these have to to be in the same order that they are
-            # calculated within the model, so the each call gets patched with the right
+            # calculated within the model, so that each call gets patched with the right
             # values.
             patched_means = [
                 complete_mod.pmodel_acclim.env.tc,
                 complete_mod.pmodel_acclim.env.co2,
                 complete_mod.pmodel_acclim.env.patm,
                 complete_mod.pmodel_acclim.env.vpd,
-                complete_mod.pmodel_acclim.fapar,
-                complete_mod.pmodel_acclim.ppfd,
+                complete_mod.pmodel_acclim.env.fapar,
+                complete_mod.pmodel_acclim.env.ppfd,
             ]
 
             with mocker.patch.object(
-                SubdailyScaler,
+                AcclimationModel,
                 "get_daily_means",
                 side_effect=patched_means,
             ):
@@ -547,11 +542,17 @@ def test_FSPModel_incomplete_day_behaviour(
     if isinstance(raises, does_not_raise):
         # Reduce the GPP values to those with matching timestamps
         incomplete_gpp = incomplete_mod.gpp[
-            np.isin(incomplete_mod.datetimes, complete_mod.datetimes)
+            np.isin(
+                incomplete_mod.acclim_model.datetimes,
+                complete_mod.acclim_model.datetimes,
+            )
         ]
         complete_gpp = complete_mod.gpp[
-            np.isin(complete_mod.datetimes, incomplete_mod.datetimes)
+            np.isin(
+                complete_mod.acclim_model.datetimes,
+                incomplete_mod.acclim_model.datetimes,
+            )
         ]
 
         # Check the predictions are close
-        assert np.allclose(incomplete_gpp, complete_gpp, equal_nan=True)
+        assert_allclose(incomplete_gpp, complete_gpp, equal_nan=True)

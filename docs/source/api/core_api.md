@@ -5,7 +5,6 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.5
 kernelspec:
   display_name: Python 3
   language: python
@@ -26,6 +25,14 @@ language_info:
 
 ```{eval-rst}
 .. automodule:: pyrealm.core
+    :autosummary:
+    :members:
+```
+
+## The {mod}`~pyrealm.core.bounds` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.core.bounds
     :autosummary:
     :members:
 ```
