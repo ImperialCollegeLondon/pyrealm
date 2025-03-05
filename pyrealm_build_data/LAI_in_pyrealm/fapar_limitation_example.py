@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-from faparlim_data_io import write_faparlim_input
+from faparlim_data_io import write_faparlim_input, write_pmodel_faparlim_input
 from numpy.typing import NDArray
 from pandas import DataFrame
 from scipy.special import lambertw
@@ -245,6 +245,18 @@ annual_values = xr.merge(
 
 write_faparlim_input(
     ann_total_A0_subdaily_penalised, ann_total_P_fnet, aridity_index, annual_values
+)
+
+write_pmodel_faparlim_input(
+    de_gri_hh_xr["TA_F"].to_numpy(),
+    de_gri_hh_xr["VPD_F"].to_numpy(),
+    de_gri_hh_xr["CO2_F_MDS"].to_numpy(),
+    de_gri_hh_xr["PA_F"].to_numpy(),
+    de_gri_daily_values["growing_day"].to_numpy(),
+    de_gri_hh_pd.axes[0].to_numpy(),
+    de_gri_daily_values["pre"].data,
+    aridity_index.data,
+    de_gri_hh_xr["PPFD"].to_numpy(),
 )
 
 # Calculate fapar_max and LAI_max
