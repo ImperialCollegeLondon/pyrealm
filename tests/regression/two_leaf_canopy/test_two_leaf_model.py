@@ -52,9 +52,6 @@ def assimilation_single_day(solar_irradience, get_data):
 
     # Standard P Model
     standard_pmod = PModel(pmod_env)
-    standard_pmod.estimate_productivity(
-        fapar=data["fapar"].to_numpy(), ppfd=data["ppfd"].to_numpy()
-    )
 
     solar_irradience.calc_absorbed_irradience()
 
