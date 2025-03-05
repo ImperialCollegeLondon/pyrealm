@@ -31,8 +31,8 @@ def solar_irradience(solar_elevation, get_data):
 
     data = get_data.loc[(get_data["time"] == "2014-08-01 12:30:00")]
 
-    PPFD = (data["ppfd"].to_numpy(),)
-    LAI = (data["LAI"].to_numpy(),)
+    PPFD = data["ppfd"].to_numpy()
+    LAI = data["LAI"].to_numpy()
     PATM = data["patm"].to_numpy()
     result = TwoLeafIrradience(solar_elevation, PPFD, LAI, PATM)
 
@@ -45,15 +45,17 @@ def assimilation_single_day(solar_irradience, get_data):
     data = get_data.loc[(get_data["time"] == "2014-08-01 12:30:00")]
     pmod_env = PModelEnvironment(
         tc=data["tc"].to_numpy(),
+        mean_growth_temperature=data["tc"].to_numpy(),
         patm=data["patm"].to_numpy(),
         co2=data["co2"].to_numpy(),
         vpd=data["vpd"].to_numpy(),
+        fapar=data["fapar"].to_numpy(),
+        ppfd=data["ppfd"].to_numpy(),
     )
 
     # Standard P Model
-    standard_pmod = PModel(pmod_env)
-    standard_pmod.estimate_productivity(
-        fapar=data["fapar"].to_numpy(), ppfd=data["ppfd"].to_numpy()
+    standard_pmod = PModel(
+        pmod_env, method_arrhenius="kattge_knorr", reference_kphio=0.081785
     )
 
     solar_irradience.calc_absorbed_irradience()

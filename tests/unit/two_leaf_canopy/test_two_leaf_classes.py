@@ -117,13 +117,6 @@ def mock_pmodel():
             "MockCoreConst", (), {"k_c_molmass": 12.0, "core_const": CoreConst()}
         )()
 
-        # only required to allow test to work
-        subdaily_vcmax = np.array([50.0])
-        subdaily_vcmax25 = np.array([45.0])
-        optimal_chi = type(
-            "MockOptimalChiABC", (), {"mc": np.array([0.9]), "mj": np.array([0.8])}
-        )()
-
     return MockPModel()
 
 

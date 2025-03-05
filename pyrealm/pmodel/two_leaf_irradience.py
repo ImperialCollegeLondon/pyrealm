@@ -5,9 +5,8 @@ from numpy.typing import NDArray
 
 from pyrealm.constants.core_const import CoreConst
 from pyrealm.constants.two_leaf_canopy import TwoLeafConst
-from pyrealm.pmodel import PModel
 from pyrealm.pmodel.optimal_chi import OptimalChiABC
-from pyrealm.pmodel.subdaily import SubdailyPModel
+from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 
 
 class TwoLeafIrradience:
@@ -218,7 +217,7 @@ class TwoLeafAssimilation:
 
     This class integrates a photosynthesis model \
     (:class:`~pyrealm.pmodel.pmodel.PModel` or \
-    :class:`~pyrealm.pmodel.subdaily.SubdailyPModel`) and irradiance data \
+    :class:`~pyrealm.pmodel.pmodel.SubdailyPModel`) and irradiance data \
     (:class:`~pyrealm.pmodel.two_leaf_irradience.TwoLeafIrradience`) to compute \
     various canopy photosynthetic properties and ``GPP`` estimates.
 
@@ -246,66 +245,12 @@ class TwoLeafAssimilation:
         self.irrad = irrad
         self.leaf_area_index = leaf_area_index
 
-        self.vcmax_pmod: NDArray
-        self.vcmax25_pmod: NDArray
-        self.optchi_obj: OptimalChiABC
-        self.core_const = self._get_core_const()
+        self.vcmax_pmod: NDArray = self.pmodel.vcmax
+        self.vcmax25_pmod: NDArray = self.pmodel.vcmax25
+        self.optchi_obj: OptimalChiABC = self.pmodel.optchi
+        self.core_const: CoreConst = self.pmodel.core_const
+
         self.gpp: NDArray
-
-        self._get_vcmax_pmod()
-        self._get_vcmax_25_pmod()
-        self._get_optchi_obj()
-
-    def _get_vcmax_pmod(self) -> None:
-        """Retrieve the maximum carboxylation rate from the photosynthesis model.
-
-        Sets:
-            vcmax_pmod (NDArray): Maximum carboxylation rate based on the model type.
-        """
-        self.vcmax_pmod = (
-            self.pmodel.vcmax
-            if isinstance(self.pmodel, PModel)
-            else self.pmodel.subdaily_vcmax
-        )
-
-    def _get_vcmax_25_pmod(self) -> None:
-        """Retrieve the max carboxylation rate at 25°C from the photosynthesis model.
-
-        Sets:
-            vcmax25_pmod (NDArray): Maximum carboxylation rate at 25°C based on the
-            model type.
-        """
-        self.vcmax25_pmod = (
-            self.pmodel.vcmax25
-            if isinstance(self.pmodel, PModel)
-            else self.pmodel.subdaily_vcmax25
-        )
-
-    def _get_optchi_obj(self) -> None:
-        """Retrieve the optimal chi object from the photosynthesis model.
-
-        Sets:
-            optchi_obj (:class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC'): Optimal chi
-            object based on the model type.
-        """
-        self.optchi_obj = (
-            self.pmodel.optchi
-            if isinstance(self.pmodel, PModel)
-            else self.pmodel.optimal_chi
-        )
-
-    def _get_core_const(self) -> CoreConst:
-        """Retrieve the core constants from the photosynthesis model.
-
-        Returns:
-            CoreConst: The core constants from the
-            :class:`~pyrealm.pmodel.pmodel.PModel` or
-            :class:`~pyrealm.pmodel.subdaily.SubdailyPModel`.
-        """
-        if isinstance(self.pmodel, PModel):
-            return self.pmodel.core_const
-        else:
-            return self.pmodel.env.core_const
 
     def gpp_estimator(self) -> None:
         """Estimate the gross primary production (``GPP``) using the two-leaf model.
