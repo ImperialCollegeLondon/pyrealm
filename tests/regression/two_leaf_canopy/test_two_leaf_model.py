@@ -1,4 +1,4 @@
-"""TBC."""
+"""This module contains regression tests for the two leaf model code."""
 
 import numpy as np
 import pandas as pd
@@ -11,7 +11,7 @@ from pyrealm.pmodel.two_leaf_irradience import TwoLeafAssimilation, TwoLeafIrrad
 
 @pytest.fixture
 def get_data():
-    """Docstring."""
+    """Reads in data to assess tests against."""
     forcing_data = pd.read_csv("pyrealm_build_data/two_leaf/merged_BE-Vie_data.csv")
     forcing_data["time"] = pd.to_datetime(forcing_data["time"])
 
@@ -20,14 +20,13 @@ def get_data():
 
 @pytest.fixture
 def solar_elevation():
-    """Docstring."""
-    # from Keiths code 0.982121, 0.9820922045388
+    """Defines solar elevation value derived from R code supplied by D. Orme."""
     return np.array([0.98212117])
 
 
 @pytest.fixture
 def solar_irradience(solar_elevation, get_data):
-    """Test."""
+    """Creates instace of TwoLeafIrradience class."""
 
     data = get_data.loc[(get_data["time"] == "2014-08-01 12:30:00")]
 
@@ -41,7 +40,7 @@ def solar_irradience(solar_elevation, get_data):
 
 @pytest.fixture
 def assimilation_single_day(solar_irradience, get_data):
-    """Test."""
+    """Tests TwoLeafAssimilation gpp_estimator method against reference data."""
     data = get_data.loc[(get_data["time"] == "2014-08-01 12:30:00")]
     pmod_env = PModelEnvironment(
         tc=data["tc"].to_numpy(),
@@ -70,7 +69,7 @@ def assimilation_single_day(solar_irradience, get_data):
 
 
 def test_two_leaf_irradience(solar_irradience, get_data):
-    """Docstring."""
+    """Tests calc_absorbed_irradice method."""
     solar_irradience.calc_absorbed_irradience()
 
     assert np.allclose(solar_irradience.kb, np.array([0.6011949063494533]))
@@ -88,7 +87,7 @@ def test_two_leaf_irradience(solar_irradience, get_data):
 
 
 def test_two_leaf_assimilation(assimilation_single_day):
-    """Test."""
+    """Tests TwoLeafAssimilation class against reference data."""
     assimilation = assimilation_single_day
     assert np.allclose(assimilation.Vmax25_canopy, np.array([146.73080481]))
     assert np.allclose(assimilation.Vmax25_sun, np.array([74.37653372]))
@@ -108,23 +107,3 @@ def test_two_leaf_assimilation(assimilation_single_day):
     assert np.allclose(assimilation.Acanopy_sun, np.array([12.26696135]))
     assert np.allclose(assimilation.Acanopy_shade, np.array([3.00048298]))
     assert np.allclose(assimilation.gpp_estimate, np.array([150.33527564]))
-
-
-Vmax25_canopy = [146.73080481]
-Vmax25_sun = [74.37653372]
-Vmax25_shade = [72.35427109]
-Vmax_sun = [58.55709373]
-Vmax_shade = [56.96495416]
-Av_sun = [15.74234649]
-Av_shade = [15.31431957]
-Jmax25_sun = [151.0775153]
-Jmax25_shade = [147.76100459]
-J_sun = [73.41800149]
-J_shade = [17.9579488]
-Jmax_sun = [128.43874966]
-Jmax_shade = [125.61921369]
-Aj_sun = [12.26696135]
-Aj_shade = [3.00048298]
-Acanopy_sun = [12.26696135]
-Acanopy_shade = [3.00048298]
-gpp = [150.33527564]
