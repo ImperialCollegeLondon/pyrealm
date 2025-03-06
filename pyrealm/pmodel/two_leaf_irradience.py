@@ -348,8 +348,8 @@ def beam_extinction_coeff(
 
         \text{kb} = 
         \begin{cases} 
-        \frac{\text{kb_numerator}}{\sin({beta_angle})} & \text{if } \beta_angle > 
-        \text{k_sol_obs_angle} \\
+        \frac{\text{kb_numerator}}{\text{sin({beta_angle})}} & \text{if } 
+        \text{beta_angle} > \text{k_sol_obs_angle} \\
         \text{clip_angle} & \text{otherwise}
         \end{cases}
 
@@ -407,7 +407,7 @@ def fraction_of_diffuse_rad(
 
     .. math::
 
-        m = \frac{\text{patm}}{\text{pa0}} \cdot \frac{1}{\sin(\beta_angle)}
+        m = \frac{\text{patm}}{\text{pa0}} \cdot \frac{1}{\sin(\text{beta_angle})}
         fd = \frac{1 - 0.72^m}{1 + 0.72^m \cdot \left(\frac{1}{k_fa} - 1\right)}
 
     Args:
@@ -457,7 +457,7 @@ def beam_irrad_unif_leaf_angle_dist(rho_h: float, kb: NDArray) -> NDArray:
 
     .. math::
 
-        rho_{cb} = 1 - \exp\left(-\frac{2 \rho_h kb}{1 + kb}\right)
+        rho_{cb} = 1 - \exp\left(-\frac{2 \text{rho_h} kb}{1 + kb}\right)
 
     Args:
         rho_h (NDArray): Array of beam irradiances for horizontal leaves.
@@ -534,8 +534,8 @@ def scattered_beam_irradience(
     .. math::
 
         I_{bs} = I_b \cdot (1 - \rho_{cb}) \cdot kb_{prime} \cdot \exp(-kb_{prime} \cdot
-        leaf_area_index) - (1 - k_{sigma}) \cdot kb \cdot \exp(-kb \cdot
-        leaf_area_index)
+        \text{leaf_area_index}) - (1 - k_{sigma}) \cdot kb \cdot \exp(-kb \cdot
+        \text{leaf_area_index})
 
     Args:
         I_b (NDArray): Array of beam irradiance values.
@@ -573,8 +573,9 @@ def canopy_irradience(
     .. math::
 
         I_c = (1 - \rho_{cb}) \cdot I_b \cdot
-        (1 - \exp(-kb_{prime} \cdot leaf_area_index)) +
-        (1 - k_rho_cd) \cdot I_d \cdot (1 - \exp(-kb_{prime} \cdot leaf_area_index))
+        (1 - \exp(-kb_{prime} \cdot \text{leaf_area_index})) +
+        (1 - k_rho_cd) \cdot I_d \cdot (1 - \exp(-kb_{prime} \cdot
+        \text{leaf_area_index}))
 
     Args:
         rho_cb (NDArray): Array of beam irradiances with uniform leaf angle
@@ -606,7 +607,7 @@ def sunlit_beam_irrad(
     .. math::
 
         I_{sun_beam} = I_b \cdot (1 - k_{sigma}) \cdot (1 - \exp(-kb \cdot
-        leaf_area_index))
+        \text{leaf_area_index}))
 
     Args:
         I_b (NDArray): Array of beam irradiance values.
@@ -636,9 +637,9 @@ def sunlit_diffuse_irrad(
 
     .. math::
 
-        I_{sun_diffuse} = I_d \cdot (1 - k_rho_cd) \cdot
-        (1 - \exp(-(k_kd_prime + kb) \cdot
-        leaf_area_index)) \cdot \frac{k_kd_prime}{k_kd_prime + kb}
+        I_{sun_diffuse} = I_d \cdot (1 - \text{k_{rho_cd}}) \cdot
+        (1 - \exp(-(k_{kd_prime} + kb) \cdot
+        \text{leaf_area_index})) \cdot \frac{k_{kd_prime}}{k_{kd_prime} + kb}
 
     Args:
         I_d (NDArray): Array of diffuse radiation values.
@@ -1023,7 +1024,8 @@ def assimilation_canopy(
 
     .. math::
 
-        ew_{minima} = \min(A_{j}, A_v) \\
+        ew_{minima} = \min(A_{j}, A_{v}) \\
+        
         A_{canopy} = \begin{cases} 
         0 & \text{if } \beta_{\text{angle}} < \text{solar_obscurity_angle} \\ 
         ew_{minima} & \text{otherwise} 
@@ -1052,11 +1054,11 @@ def gross_primary_product(
 
     This function calculates the ``GPP`` by combining the assimilation rates of sunlit
     (:math:`Acanopy_{sun}`) and shaded (:math:`Acanopy_{shade}`) portions of the canopy,
-    scaled by a molar mass constant, :math:`k_c_molmass`.
+    scaled by a molar mass constant, :math:`k_{c_molmass}`.
 
     .. math::
 
-        \text{gpp} = k_{\text{c\_molmass}} \cdot A_{\text{canopy\_sun}} +
+        \text{gpp} = k_{\text{c_molmass}} \cdot A_{\text{canopy_sun}} +
         A_{\text{canopy\_shade}}
 
     Args:

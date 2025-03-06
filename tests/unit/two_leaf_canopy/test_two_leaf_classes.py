@@ -1,7 +1,4 @@
-"""TBC.
-
-TBC.
-"""
+"""Provides unit tests for teh Two Leaf method."""
 
 import numpy as np
 import pytest
