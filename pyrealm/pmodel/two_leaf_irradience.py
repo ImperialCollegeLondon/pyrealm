@@ -679,8 +679,9 @@ def sunlit_scattered_irrad(
 
         I_{sun_scattered} = I_b \cdot ((1 - \rho_{cb}) \cdot
         (1 - \exp(-(kb_{prime} + kb) \cdot
-        leaf_area_index)) \cdot \frac{kb_{prime}}{kb_{prime} + kb} - (1 - k_{sigma})
-        \cdot (1 - \exp(-2 \cdot kb \cdot leaf_area_index)) / 2)
+        \text{leaf_area_index})) \cdot \frac{kb_{prime}}{kb_{prime} + kb}
+        - (1 - k_{sigma})
+        \cdot (1 - \exp(-2 \cdot kb \cdot \text{leaf_area_index})) / 2)
 
     Args:
         I_b (NDArray): Array of beam irradiance values.
