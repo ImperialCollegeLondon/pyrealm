@@ -947,3 +947,10 @@ class SubdailyPModel(PModelABC):
 
         # Calculate GPP and convert from mol to gC
         self.gpp = np.minimum(self.A_j, self.A_c) * self.env.core_const.k_c_molmass
+
+    # @property
+    # def lue(self) -> None:
+
+    #     raise AttributeError(
+    #         "The subdaily P model does not predict light use efficiency"
+    #     )

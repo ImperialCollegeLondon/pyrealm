@@ -287,7 +287,7 @@ class OptimalChiPrentice14RootzoneStress(
 
     .. math::
 
-        \xi &= \sqrt{(\beta f_{rz} (K+ \Gamma^{*}) / (1.6 \eta^{*}))}
+        \xi = \sqrt{(\beta f_{rz} (K+ \Gamma^{*}) / (1.6 \eta^{*}))}
 
     Calculation of the root zone stress factor is not currently part of the `pyrealm`
     package.
@@ -423,7 +423,7 @@ class OptimalChiC4RootzoneStress(
 
     .. math::
 
-        \xi &= \sqrt{(\beta f_{rz} (K+ \Gamma^{*}) / (1.6 \eta^{*}))}
+        \xi = \sqrt{(\beta f_{rz} (K+ \Gamma^{*}) / (1.6 \eta^{*}))}
 
     Calculation of the root zone stress factor is not currently part of the `pyrealm`
     package.
@@ -668,8 +668,8 @@ class OptimalChiC4NoGamma(
 
         \[
             \begin{align*}
-                \chi &= \xi / (\xi + \sqrt D ), \text{where}\\ \xi &= \sqrt{(\beta
-                K) / (1.6 \eta^{*}))}
+                \chi &= \xi / (\xi + \sqrt D ), \text{where}\\ 
+                \xi &= \sqrt{(\beta K) / (1.6 \eta^{*}))}
             \end{align*}
         \]
 
@@ -677,13 +677,9 @@ class OptimalChiC4NoGamma(
     photosynthesis, but :math:`m_c` and hence :math:`m_{joc}` are calculated, not
     set to one.
 
-    .. math:: :nowrap:
+    .. math::
 
-        \[
-            \begin{align*}
-                m_c &= \dfrac{\chi}{\chi + \frac{K}{c_a}}
-            \end{align*}
-        \]
+        m_c = \dfrac{\chi}{\chi + \frac{K}{c_a}}
 
     Examples:
         >>> import numpy as np
@@ -749,7 +745,7 @@ class OptimalChiC4NoGammaRootzoneStress(
 
     .. math::
 
-        \xi &= \sqrt{(\beta f_{rz} K) / (1.6 \eta^{*}))}
+        \xi = \sqrt{(\beta f_{rz} K) / (1.6 \eta^{*}))}
 
     Calculation of the root zone stress factor is not currently part of the `pyrealm`
     package.
