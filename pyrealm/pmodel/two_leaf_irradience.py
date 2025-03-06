@@ -23,7 +23,7 @@ class TwoLeafIrradience:
     provide a better representation than the big leaf model and to align closely to
     the workings of the ``BESS`` model :cite:alp:`ryu:2011a`.
 
-    The public :method:`calc_absorbed_irradience` is used to generate values for the
+    The public :meth:`calc_absorbed_irradience` is used to generate values for the
     variables associated with irradience.
 
     The calculated values are used in the estimation of gross primary productivity
@@ -357,9 +357,9 @@ def beam_extinction_coeff(
         beta_angle (NDArray): Array of ``solar elevation`` angles.
         k_sol_obs_angle (float): Solar angle threshold for calculating the extinction 
                                  coefficient.
-        clip_angle (float, optional): Angle used when solar elevation is below the 
+        clip_angle (float): Angle used when solar elevation is below the 
                                       threshold. Defaults to 30.
-        kb_numerator (float, optional): Numerator used in the calculation of the 
+        kb_numerator (float): Numerator used in the calculation of the 
                                         extinction coefficient. Defaults to 0.5.
 
     Returns:
