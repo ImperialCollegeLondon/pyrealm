@@ -1,4 +1,10 @@
-"""To do."""
+"""Implements a two-leaf, two-stream canopy model for Pyrealm.
+
+This module provides functionality to partition irradiance into sunlit and shaded
+fractions of the canopy (via ``TwoLeafIrradience``) and to estimate gross primary
+productivity (via ``TwoLeafAssimilation``). The approach follows De Pury and Farquhar
+(1997) and aligns closely with the two-leaf methodology used in the BESS model.
+"""
 
 import numpy as np
 from numpy.typing import NDArray
@@ -17,27 +23,8 @@ class TwoLeafIrradience:
     provide a better representation than the big leaf model and to align closely to
     the workings of the ``BESS`` model :cite:alp:`ryu:2011a`.
 
-    1. Calculate the beam extinction coefficient :math:`k_{b}` using
-    :func:`beam_extinction_coeff`
-    2. Calculate the scattered beam extinction coefficient using
-    :func:`scattered_beam_extinction_coeff`
-    3. Calculate fraction of diffuse radiation using :func:`fraction_of_diffuse_rad`
-    4. Calculate beam irradience for horizontal leaves using
-    :func:`beam_irradience_h_leaves`
-    5. Calculate the beam irradience for a uniform leaf angle distribution with
-    :func:`beam_irrad_unif_leaf_angle_dist`
-    6. Calculate diffuse radiation with :func:`diffuse_radiation`
-    7. Calculate direct beam irradience with :func:`beam_irradience`
-    8. Calculate scattered beam irradience with :func:`scattered_beam_irradience`
-    9. Calculate the total canopy irradience with :func:`canopy_irradience`
-    10. Calculate the sunlit beam irradience with :func:`sunlit_beam_irrad`
-    11. Calulate the sunlit diffuse irradience with :func:`sunlit_diffuse_irrad`
-    12. Calculate the scattered irradience recieved by sunlit portion of canopy with
-    :func:`sunlit_scattered_irrad`
-    13. Calulate total irradience absorbed by sunlit portion of canopy with
-    :func:`sunlit_absorbed_irrad`
-    14. Calculate the irradience absorbed by the shaded farction of the canopy with
-    :func:`shaded_absorbed_irrad`
+    The public :method:`calc_absorbed_irradience` is used to generate values for the
+    variables associated with irradience.
 
     The calculated values are used in the estimation of gross primary productivity
     (``GPP``). An instance of this class is accepted by the
@@ -215,14 +202,14 @@ class TwoLeafIrradience:
 class TwoLeafAssimilation:
     """A class to estimate gross primary production (``GPP``) using a two-leaf approach.
 
-    This class integrates a photosynthesis model \
-    (:class:`~pyrealm.pmodel.pmodel.PModel` or \
-    :class:`~pyrealm.pmodel.pmodel.SubdailyPModel`) and irradiance data \
-    (:class:`~pyrealm.pmodel.two_leaf_irradience.TwoLeafIrradience`) to compute \
+    This class integrates a photosynthesis model
+    (:class:`~pyrealm.pmodel.pmodel.PModel` or
+    :class:`~pyrealm.pmodel.pmodel.SubdailyPModel`) and irradiance data
+    (:class:`~pyrealm.pmodel.two_leaf_irradience.TwoLeafIrradience`) to compute
     various canopy photosynthetic properties and ``GPP`` estimates.
 
     Args:
-        pmodel (PModel | SubdailyPModel): The photosynthesis model used for \
+        pmodel (PModel | SubdailyPModel): The photosynthesis model used for
             assimilation.
         irrad (TwoLeafIrradience): Irradiance data required for ``GPP`` calculations.
         leaf_area_index (NDArray): Array of leaf area index values.
@@ -361,9 +348,9 @@ def beam_extinction_coeff(
 
         \text{kb} = 
         \begin{cases} 
-        \frac{\text{kb\_numerator}}{\sin(\beta\_angle)} & \text{if } \beta\_angle > 
-        \text{k\_sol\_obs\_angle} \\
-        \text{clip\_angle} & \text{otherwise}
+        \frac{\text{kb_numerator}}{\sin({beta_angle})} & \text{if } \beta_angle > 
+        \text{k_sol_obs_angle} \\
+        \text{clip_angle} & \text{otherwise}
         \end{cases}
 
     Args:
@@ -393,8 +380,8 @@ def scattered_beam_extinction_coeff(
     scattered sunlight in the canopy.
 
     .. math::
-        \text{kb\_prime} = \text{beam\_extinction\_coeff}(\beta\_angle,
-        \text{k\_sol\_obs\_angle}, 27, 0.46)
+        kb_{prime} = \text{beam_extinction_coeff}(beta\_angle,
+        \text{k_sol_obs_angle}, 27, 0.46)
 
     Args:
         beta_angle (NDArray): Array of solar elevation angles.
@@ -420,8 +407,8 @@ def fraction_of_diffuse_rad(
 
     .. math::
 
-        m = \frac{\text{patm}}{\text{pa0}} \cdot \frac{1}{\sin(\beta\_angle)}
-        fd = \frac{1 - 0.72^m}{1 + 0.72^m \cdot \left(\frac{1}{k\_fa} - 1\right)}
+        m = \frac{\text{patm}}{\text{pa0}} \cdot \frac{1}{\sin(\beta_angle)}
+        fd = \frac{1 - 0.72^m}{1 + 0.72^m \cdot \left(\frac{1}{k_fa} - 1\right)}
 
     Args:
         patm (NDArray): Array of atmospheric pressure values.
@@ -447,7 +434,7 @@ def beam_irradience_h_leaves(k_sigma: float) -> float:
 
     .. math::
 
-        \rho_h = \frac{1 - \sqrt{1 - k\_sigma}}{1 + \sqrt{1 - k\_sigma}}
+        rho_h = \frac{1 - \sqrt{1 - k_{sigma}}}{1 + \sqrt{1 - k_{sigma}}}
 
     Args:
         k_sigma (float): Parameter representing the fraction of light intercepted by
@@ -470,7 +457,7 @@ def beam_irrad_unif_leaf_angle_dist(rho_h: float, kb: NDArray) -> NDArray:
 
     .. math::
 
-        \rho_{cb} = 1 - \exp\left(-\frac{2 \rho_h kb}{1 + kb}\right)
+        rho_{cb} = 1 - \exp\left(-\frac{2 \rho_h kb}{1 + kb}\right)
 
     Args:
         rho_h (NDArray): Array of beam irradiances for horizontal leaves.
@@ -546,9 +533,9 @@ def scattered_beam_irradience(
 
     .. math::
 
-        I_{bs} = I_b \cdot (1 - \rho_{cb}) \cdot kb\_prime \cdot \exp(-kb\_prime \cdot
-        leaf\_area\_index) - (1 - k\_sigma) \cdot kb \cdot \exp(-kb \cdot
-        leaf\_area\_index)
+        I_{bs} = I_b \cdot (1 - \rho_{cb}) \cdot kb_{prime} \cdot \exp(-kb_{prime} \cdot
+        leaf_area_index) - (1 - k_{sigma}) \cdot kb \cdot \exp(-kb \cdot
+        leaf_area_index)
 
     Args:
         I_b (NDArray): Array of beam irradiance values.
@@ -586,8 +573,8 @@ def canopy_irradience(
     .. math::
 
         I_c = (1 - \rho_{cb}) \cdot I_b \cdot
-        (1 - \exp(-kb\_prime \cdot leaf\_area\_index)) +
-        (1 - k\_rho\_cd) \cdot I_d \cdot (1 - \exp(-kb\_prime \cdot leaf\_area\_index))
+        (1 - \exp(-kb_{prime} \cdot leaf_area_index)) +
+        (1 - k_rho_cd) \cdot I_d \cdot (1 - \exp(-kb_{prime} \cdot leaf_area_index))
 
     Args:
         rho_cb (NDArray): Array of beam irradiances with uniform leaf angle
@@ -618,8 +605,8 @@ def sunlit_beam_irrad(
 
     .. math::
 
-        I_{sun\_beam} = I_b \cdot (1 - k\_sigma) \cdot (1 - \exp(-kb \cdot
-        leaf\_area\_index))
+        I_{sun_beam} = I_b \cdot (1 - k_{sigma}) \cdot (1 - \exp(-kb \cdot
+        leaf_area_index))
 
     Args:
         I_b (NDArray): Array of beam irradiance values.
@@ -649,9 +636,9 @@ def sunlit_diffuse_irrad(
 
     .. math::
 
-        I_{sun\_diffuse} = I_d \cdot (1 - k\_rho\_cd) \cdot
-        (1 - \exp(-(k\_kd\_prime + kb) \cdot
-        leaf\_area\_index)) \cdot \frac{k\_kd\_prime}{k\_kd\_prime + kb}
+        I_{sun_diffuse} = I_d \cdot (1 - k_rho_cd) \cdot
+        (1 - \exp(-(k_kd_prime + kb) \cdot
+        leaf_area_index)) \cdot \frac{k_kd_prime}{k_kd_prime + kb}
 
     Args:
         I_d (NDArray): Array of diffuse radiation values.
@@ -689,10 +676,10 @@ def sunlit_scattered_irrad(
 
     .. math::
 
-        I_{sun\_scattered} = I_b \cdot ((1 - \rho_{cb}) \cdot
-        (1 - \exp(-(kb\_prime + kb) \cdot
-        leaf\_area\_index)) \cdot \frac{kb\_prime}{kb\_prime + kb} - (1 - k\_sigma)
-        \cdot (1 - \exp(-2 \cdot kb \cdot leaf\_area\_index)) / 2)
+        I_{sun_scattered} = I_b \cdot ((1 - \rho_{cb}) \cdot
+        (1 - \exp(-(kb_{prime} + kb) \cdot
+        leaf_area_index)) \cdot \frac{kb_{prime}}{kb_{prime} + kb} - (1 - k_{sigma})
+        \cdot (1 - \exp(-2 \cdot kb \cdot leaf_area_index)) / 2)
 
     Args:
         I_b (NDArray): Array of beam irradiance values.
@@ -780,7 +767,7 @@ def canopy_extinction_coefficient(vcmax_pmod: NDArray) -> NDArray:
     Equation is sourced from Figure 10 of Lloyd et al. (2010).
 
     .. math::
-        \text{kv\_Lloyd} = \exp(0.00963 \cdot \text{vcmax\_pmod} - 2.43)
+        kv_{Lloyd} = \exp(0.00963 \cdot vcmax_{pmod} - 2.43)
 
     Note:
         ``Vcmax`` is used here rather than ``Vcmax_25``.
@@ -806,7 +793,7 @@ def Vmax25_canopy(
     extinction coefficient for light.
 
     .. math::
-        \text{Vmax25\_canopy} = \text{LAI} \cdot \text{vcmax25\_pmod} \cdot
+        Vmax25_{canopy} = \text{LAI} \cdot vcmax25_{pmod} \cdot
         \left(\frac{1 - \exp(-\text{kv})}{\text{kv}}\right)
 
 
@@ -834,12 +821,12 @@ def Vmax25_sun(
 
     .. math::
 
-        \text{Vmax25\_sun} = \text{leaf\_area\_index} \cdot \text{vcmax25\_pmod} \cdot
-        \left( \frac{1 - \exp(-\text{kv} - \text{kb} \cdot \text{leaf\_area\_index})}
-        {\text{kv} + \text{kb} \cdot \text{leaf\_area\_index}} \right)
+        Vmax25_{sun} = \text{leaf_area_index} \cdot vcmax25_{pmod} \cdot
+        \left( \frac{1 - \exp(-\text{kv} - \text{kb} \cdot \text{leaf_area_index})}
+        {\text{kv} + \text{kb} \cdot \text{leaf_area_index}} \right)
 
     Args:
-        leaf_area_index (NDArray): The leaf area index.
+        leaf_area_index (NDArray): The leaf area index (LAI).
         vcmax25_pmod (NDArray): The Vcmax25 parameter for the pmodel.
         kv (NDArray): The kv parameter.
         kb (NDArray): The irradiation kb parameter.
@@ -865,7 +852,7 @@ def Vmax25_shade(Vmax25_canopy: NDArray, Vmax_25_sun: NDArray) -> NDArray:
 
     .. math::
 
-        \text{Vmax25\_shade} = \text{Vmax25\_canopy} - \text{Vmax25\_sun}
+        Vmax25_{shade} = Vmax25_{canopy} - Vmax25_{sun}
 
     Args:
         Vmax25_canopy (NDArray): The ``Vmax25`` parameter for the canopy.
@@ -887,7 +874,7 @@ def carboxylation_scaling_to_T(Vmax25: NDArray, tc: NDArray) -> NDArray:
     temperature dependence of enzymatic reactions.
 
     .. math::
-        \text{Vmax\_sun} = \text{Vmax25} \cdot \exp \left(\frac{64800 \cdot (\text{tc}
+        Vmax_{sun} = \text{Vmax25} \cdot \exp \left(\frac{64800 \cdot (\text{tc}
         - 25)}{298 \cdot 8.314 \cdot (\text{tc} + 273)}\right)
 
     Args:
@@ -911,7 +898,7 @@ def photosynthetic_estimate(Vmax: NDArray, mc: NDArray) -> NDArray:
 
     .. math::
 
-        A_v = V_{max} \cdot m_c
+        A_v = V_{max} \cdot mc
 
     Args:
         Vmax (NDArray): The ``Vmax`` parameter.
@@ -1036,10 +1023,10 @@ def assimilation_canopy(
 
     .. math::
 
-        \text{ew\_minima} = \min(A_j, A_v) \\
-        A_{\text{canopy}} = \begin{cases} 
-        0 & \text{if } \beta_{\text{angle}} < \text{solar\_obscurity\_angle} \\ 
-        \text{ew\_minima} & \text{otherwise} 
+        ew_{minima} = \min(A_{j}, A_v) \\
+        A_{canopy} = \begin{cases} 
+        0 & \text{if } \beta_{\text{angle}} < \text{solar_obscurity_angle} \\ 
+        ew_{minima} & \text{otherwise} 
         \end{cases}
 
     Args:
@@ -1064,7 +1051,7 @@ def gross_primary_product(
     r"""Calculate gross primary productivity (``GPP``).
 
     This function calculates the ``GPP`` by combining the assimilation rates of sunlit
-    (:math:`Acanopy_sun`) and shaded (:math:`Acanopy_shade`) portions of the canopy,
+    (:math:`Acanopy_{sun}`) and shaded (:math:`Acanopy_{shade}`) portions of the canopy,
     scaled by a molar mass constant, :math:`k_c_molmass`.
 
     .. math::
