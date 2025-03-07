@@ -24,7 +24,6 @@ from pyrealm import __version__ as pyrealm_version
 
 sys.path.insert(0, os.path.abspath("../"))
 
-
 # Suppress the 2.0.0 user warnings in the documentation
 warnings.filterwarnings(
     "ignore", category=UserWarning, message="Pyrealm 2.0.0 uses a uses default value"
@@ -56,6 +55,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.todo",
     "sphinxcontrib.bibtex",
     "myst_nb",
     "sphinx_rtd_theme",
@@ -67,10 +67,11 @@ extensions = [
 external_toc_path = "_toc.yml"  # optional, default: _toc.yml
 external_toc_exclude_missing = False  # optional, default: False
 
-# + [markdown]
+# Include TODOs
+todo_include_todos = True
+
+
 # Citation styling
-
-
 def bracket_style() -> BracketStyle:
     """Custom citation parenthesis style."""
     return BracketStyle(
