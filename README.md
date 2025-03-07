@@ -79,14 +79,12 @@ from pyrealm.pmodel import PModelEnvironment, PModel
 # Calculate the photosynthetic environment given the conditions
 env = PModelEnvironment(
     tc=np.array([20]), vpd=np.array([1000]),
-    co2=np.array([400]), patm=np.array([101325.0])
+    co2=np.array([400]), patm=np.array([101325.0],
+    fapar=1, ppfd=300)
 )
 
 # Calculate the predictions of the P Model for a C3 plant
 pmodel_c3 = PModel(env)
-
-# Estimate the GPP from the model given the absorbed photosynthetically active light
-pmodel_c3.estimate_productivity(fapar=1, ppfd=300)
 
 # Report the GPP in micrograms of carbon per m2 per second.
 pmodel_c3.gpp

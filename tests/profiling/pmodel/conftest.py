@@ -68,9 +68,11 @@ def pmodel_profile_data(pytestconfig):
     local_time = ds["local_time"].to_numpy().squeeze()
 
     # Generate and check the PModelEnvironment
-    pm_env = PModelEnvironment(tc=tc, patm=patm, vpd=vpd, co2=co2)
+    pm_env = PModelEnvironment(
+        tc=tc, patm=patm, vpd=vpd, co2=co2, fapar=fapar, ppfd=ppfd
+    )
 
-    yield pm_env, fapar, ppfd, local_time
+    yield pm_env, local_time
 
     print("\n***\nTearing down\n***\n")
 

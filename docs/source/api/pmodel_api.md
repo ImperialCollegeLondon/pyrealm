@@ -27,14 +27,6 @@ language_info:
 .. automodule:: pyrealm.pmodel
 ```
 
-## The {mod}`~pyrealm.pmodel.pmodel` submodule
-
-```{eval-rst}
-.. automodule:: pyrealm.pmodel.pmodel
-    :autosummary:
-    :members:
-```
-
 ## The {mod}`~pyrealm.pmodel.pmodel_environment` submodule
 
 ```{eval-rst}
@@ -59,6 +51,16 @@ language_info:
 .. automodule:: pyrealm.pmodel.optimal_chi
     :autosummary:
     :members:
+    :inherited-members:
+```
+
+## The {mod}`~pyrealm.pmodel.arrhenius` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.pmodel.arrhenius
+    :autosummary:
+    :members:
+    :inherited-members:
 ```
 
 ## The {mod}`~pyrealm.pmodel.quantum_yield` submodule
@@ -67,6 +69,7 @@ language_info:
 .. automodule:: pyrealm.pmodel.quantum_yield
     :autosummary:
     :members:
+    :inherited-members:
 ```
 
 ## The {mod}`~pyrealm.pmodel.functions` submodule
@@ -93,19 +96,27 @@ language_info:
     :members:
 ```
 
-## The {mod}`~pyrealm.pmodel.scaler` submodule
+## The {mod}`~pyrealm.pmodel.acclimation` submodule
 
 ```{eval-rst}
-.. automodule:: pyrealm.pmodel.scaler
+.. automodule:: pyrealm.pmodel.acclimation
     :autosummary:
     :members:
-    :private-members:
 ```
 
-## The {mod}`~pyrealm.pmodel.subdaily` submodule
+## The {mod}`~pyrealm.pmodel.two_leaf_irradience` submodule
 
 ```{eval-rst}
-.. automodule:: pyrealm.pmodel.subdaily
+.. automodule:: pyrealm.pmodel.two_leaf_irradience
     :autosummary:
     :members:
+```
+
+## The {mod}`~pyrealm.pmodel.pmodel` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.pmodel.pmodel
+    :autosummary:
+    :members:
+    :inherited-members:
 ```

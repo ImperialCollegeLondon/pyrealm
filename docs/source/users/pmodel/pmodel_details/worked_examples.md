@@ -26,11 +26,39 @@ language_info:
 This page shows two worked examples of how to use `pyrealm` to make predictions using
 the P Model.
 
-The first example uses a single point but the second shows howthe package can be used
+The first example uses a single point but the second shows how the package can be used
 with array data. The `pyrealm` package uses the `numpy` package and expects arrays of
 data to be be passed to all inputs. Input arrays can be a single scalar value, but all
 non-scalar inputs must be **arrays with the same shape**: the `pyrealm` packages does
 not attempt to resolve the broadcasting of array dimensions.
+
+```{code-cell} ipython3
+from importlib import resources
+
+from matplotlib import pyplot as plt
+import numpy as np
+import xarray
+
+from pyrealm.pmodel.pmodel import PModel
+from pyrealm.pmodel import PModelEnvironment
+from pyrealm.core.pressure import calc_patm
+```
+
+:::{warning}
+
+The `pyrealm` package uses a modular approach to define many of the [shared
+components](../shared_components/overview.md) of the standard and subdaily P Model.
+Some combinations of the methods implemented may modify the same aspect of the model
+using different approaches.
+
+As an example, there are multiple approaches to incorporating effects of
+[soil moisture stress](../shared_components/soil_moisture.md) on productivity, via
+modulation of $\phi_0$, $m_j$ and the calculation of GPP penalty factors.
+
+At present, `pyrealm` does not automatically check the compatibility of method
+selection, so take care when setting methods options for fitting a P Model.
+
+:::
 
 ## Simple point estimate
 
@@ -46,31 +74,42 @@ The example shows the steps required using a single site with:
 * a vapour pressure deficit of 0.82 kPa (~ 65% relative humidity), and
 * an atmospheric $\ce{CO2}$ concentration of 400 ppm.
 
-### Estimate photosynthetic environment
+### Estimating productivity
 
-```{code-cell} ipython3
-from importlib import resources
+The {class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` also accepts estimates
+of the fraction of absorbed photosynthetically active radiation ($f_{APAR}$, `fapar`,
+unitless) and the photosynthetic photon flux density (PPFD,`ppfd`, µmol m-2 s-1).
+Together these are used to calculate the asorbed irradiance, which is used to scale up
+the estimated light use efficiency to estimate the actual productivity of the model.
+Here we are using:
 
-from matplotlib import pyplot as plt
-import numpy as np
-import xarray
+* An absorption fraction of 0.91 (-), and
+* a PPFD of 834 µmol m-2 s-1.
 
-from pyrealm.pmodel import PModel, PModelEnvironment
-from pyrealm.core.pressure import calc_patm
+```{warning}
 
-# Calculate the PModelEnvironment
-env = PModelEnvironment(tc=20.0, patm=101325.0, vpd=820, co2=400)
+In the {meth}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`, the estimated PPFD
+must be expressed as **µmol m-2 s-1**.
+
+Estimates of PPFD sometimes use different temporal or spatial scales - for
+example daily moles of photons per hectare. Although GPP can also be expressed
+with different units, many other predictions of the P Model ($J_{max}$,
+$V_{cmax}$, $g_s$ and $r_d$) _must_ be expressed as µmol m-2 s-1 and so this
+standard unit must also be used for PPFD.
 ```
 
-The `env` object now holds the photosynthetic environment, which can be re-used
-with different P Model settings. The representation of `env` is deliberately
-terse - just the shape of the data - but the
-{meth}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment.summarize` method provides a
-more detailed summary of the attributes.
-
 ```{code-cell} ipython3
+# Calculate the PModelEnvironment
+env = PModelEnvironment(tc=20.0, patm=101325.0, vpd=820, co2=400, fapar=0.91, ppfd=834)
 env
 ```
+
+The `env` object now holds the photosynthetic environment, which can be re-used with
+different P Model settings. The representation of a
+{class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` object (`env`) is
+deliberately terse - just the shape of the data - but the
+{class}`PModelEnvironment.summarize<pyrealm.pmodel.pmodel_environment.PModelEnvironment.summarize>`
+method provides a more detailed summary of the attributes.
 
 ```{code-cell} ipython3
 env.summarize()
@@ -106,41 +145,13 @@ model.summarize()
 
 The instance also contains a {class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14`
 object,
-recording key parameters from the [calculation of $\chi$](./optimal_chi).
+recording key parameters from the [calculation of
+$\chi$](../shared_components/optimal_chi).
 This object also has a {meth}`~pyrealm.pmodel.optimal_chi.OptimalChiABC.summarize`
 method:
 
 ```{code-cell} ipython3
 model.optchi.summarize()
-```
-
-### Estimating productivity outputs
-
-The productivity of the model can be calculated using estimates of the fraction
-of absorbed photosynthetically active radiation ($f_{APAR}$, `fapar`, unitless)
-and the photosynthetic photon flux density (PPFD,`ppfd`, µmol m-2 s-1), using the
-{meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity` method.
-
-Here we are using:
-
-* An absorption fraction of 0.91 (-), and
-* a PPFD of 834 µmol m-2 s-1.
-
-```{code-cell} ipython3
-model.estimate_productivity(fapar=0.91, ppfd=834)
-model.summarize()
-```
-
-```{warning}
-
-To use {meth}`~pyrealm.pmodel.pmodel.PModel.estimate_productivity`, the estimated PPFD
-must be expressed as **µmol m-2 s-1**.
-
-Estimates of PPFD sometimes use different temporal or spatial scales - for
-example daily moles of photons per hectare. Although GPP can also be expressed
-with different units, many other predictions of the P Model ($J_{max}$,
-$V_{cmax}$, $g_s$ and $r_d$) _must_ be expressed as µmol m-2 s-1 and so this
-standard unit must also be used for PPFD.
 ```
 
 ## 3D grid example
@@ -188,31 +199,26 @@ temp[temp < -25] = np.nan
 vpd = np.clip(vpd, 0, np.inf)
 
 # Calculate the photosynthetic environment
-env = PModelEnvironment(tc=temp, co2=co2, patm=patm, vpd=vpd)
+env = PModelEnvironment(tc=temp, co2=co2, patm=patm, vpd=vpd, fapar=fapar, ppfd=ppfd)
 env.summarize()
 ```
 
-That environment can then be run to calculate the P model predictions for light use
-efficiency:
+That environment can then be run to calculate the P model predictions for GPP:
 
 ```{code-cell} ipython3
 # Run the P model
 model = PModel(env)
 
+fig, (ax1, ax2) = plt.subplots(2, 1)
+
 # Plot LUE for first month
-im = plt.imshow(model.lue[0, :, :], origin="lower", extent=[-180, 180, -90, 90])
-plt.colorbar(im, fraction=0.022, pad=0.03)
-plt.title("Light use efficiency")
-```
+im = ax1.imshow(model.lue[0, :, :], origin="lower", extent=[-180, 180, -90, 90])
+plt.colorbar(im, fraction=0.022, pad=0.03, ax=ax1)
+ax1.set_title("LUE")
 
-Finally, the light use efficiency can be used to calculate GPP given the
-photosynthetic photon flux density and fAPAR.
+im = ax2.imshow(model.gpp[0, :, :], origin="lower", extent=[-180, 180, -90, 90])
+plt.colorbar(im, fraction=0.022, pad=0.03, ax=ax2)
+ax2.set_title("GPP")
 
-```{code-cell} ipython3
-# Scale the outputs from values per unit iabs to realised values
-model.estimate_productivity(fapar, ppfd)
-
-im = plt.imshow(model.gpp[0, :, :], origin="lower", extent=[-180, 180, -90, 90])
-plt.colorbar(im, fraction=0.022, pad=0.03)
-plt.title("GPP")
+plt.tight_layout()
 ```

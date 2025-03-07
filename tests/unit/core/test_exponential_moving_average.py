@@ -1,9 +1,10 @@
-"""Tests the application of the memory effect in the subdaily model."""
+"""Tests the implementation of the exponential moving average function."""
 
 from contextlib import nullcontext as does_not_raise
 
 import numpy as np
 import pytest
+from numpy.testing import assert_allclose
 
 
 @pytest.mark.parametrize(
@@ -22,16 +23,16 @@ import pytest
     ],
 )
 @pytest.mark.parametrize(argnames="alpha", argvalues=(0.0, 0.2, 0.4, 0.6, 0.8, 1.0))
-def test_memory_effect(inputs, alpha):
-    """Test the memory effect.
+def test_exponential_moving_average(inputs, alpha):
+    """Test the exponential_moving_average.
 
-    This uses matrix maths to calculate expected by calculating the coefficients of the
-    recursive equation. Does not scale well, but a useful parallel implementation for
-    testing.
+    This uses matrix maths to calculate expected values by calculating the coefficients
+    of the recursive equation. Does not scale well, but a useful parallel implementation
+    for testing.
     """
-    from pyrealm.pmodel import memory_effect
+    from pyrealm.core.utilities import exponential_moving_average
 
-    result = memory_effect(inputs, alpha=alpha)
+    result = exponential_moving_average(inputs, alpha=alpha)
 
     # Calculate the coefficients for product sum of the elements along the time axis
     one_minus_alpha = 1 - alpha
@@ -51,7 +52,7 @@ def test_memory_effect(inputs, alpha):
     # first (time) axis.
     expected = np.tensordot(coef, inputs, axes=1)
 
-    assert np.allclose(result, expected)
+    assert_allclose(result, expected)
 
 
 @pytest.mark.parametrize(
@@ -70,25 +71,25 @@ def test_memory_effect(inputs, alpha):
     ],
 )
 @pytest.mark.parametrize(argnames="alpha", argvalues=(0.0, 0.5, 1.0))
-def test_memory_effect_chunked(inputs_whole, alpha):
-    """Test that the memory effect works when chunking the time series up.
+def test_exponential_moving_average_chunked(inputs_whole, alpha):
+    """Test the implementation of initial values in exponential_moving_average.
 
-    This compares the output of `test_memory_effect` with the output of
-    `memory_effect` which gets the two time chunks fed sequentially.,
+    This compares the output of a single run to the same data fed in as two sequential
+    time chunks but with the second one set to use the correct initial conditions.
     """
-    from pyrealm.pmodel import memory_effect
+    from pyrealm.core.utilities import exponential_moving_average
 
-    result_whole = memory_effect(inputs_whole, alpha=alpha)
+    result_whole = exponential_moving_average(inputs_whole, alpha=alpha)
 
     [inputs_chunk1, inputs_chunk2] = np.split(inputs_whole, [5], axis=0)
 
-    result_chunk1 = memory_effect(inputs_chunk1, alpha=alpha)
+    result_chunk1 = exponential_moving_average(inputs_chunk1, alpha=alpha)
 
-    result_chunk2 = memory_effect(
-        inputs_chunk2, previous_values=result_chunk1[-1], alpha=alpha
+    result_chunk2 = exponential_moving_average(
+        inputs_chunk2, initial_values=result_chunk1[-1], alpha=alpha
     )
 
-    assert np.allclose(result_whole[-1], result_chunk2[-1])
+    assert_allclose(result_whole[-1], result_chunk2[-1])
 
 
 @pytest.mark.parametrize(
@@ -118,9 +119,11 @@ def test_memory_effect_chunked(inputs_whole, alpha):
     ],
 )
 @pytest.mark.parametrize(argnames="ndim", argvalues=(1, 2, 3))
-def test_memory_effect_inputs(inputs, allow_holdover, context_manager, expected, ndim):
+def test_exponential_moving_average_inputs(
+    inputs, allow_holdover, context_manager, expected, ndim
+):
     """Simple testing of nan handling and predictions across multiple dimensions."""
-    from pyrealm.pmodel.subdaily import memory_effect
+    from pyrealm.core.utilities import exponential_moving_average
 
     if ndim == 2:
         inputs = np.broadcast_to(inputs[:, np.newaxis], (7, 2))
@@ -133,6 +136,8 @@ def test_memory_effect_inputs(inputs, allow_holdover, context_manager, expected,
             expected = np.broadcast_to(expected[:, np.newaxis, np.newaxis], (7, 2, 2))
 
     with context_manager:
-        results = memory_effect(inputs, allow_holdover=allow_holdover, alpha=0.1)
+        results = exponential_moving_average(
+            inputs, allow_holdover=allow_holdover, alpha=0.1
+        )
 
-        assert np.allclose(results, expected)
+        assert_allclose(results, expected)

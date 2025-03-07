@@ -9,15 +9,59 @@ A new major release is planned but will iterate through release candidates in or
 make functionality available for testing while the new functionality and API changes are
 worked through. The changes below are provisional.
 
+- The `PModel` and `SubdailyPModel` classes have been extensively restructured to align
+  the attributes and methods and to remove repeated code. Many of these changes are
+  internal but the model signatures have changed and several of the attributes have been
+  renamed.
+
+  **Breaking changes**:
+
+  - The `SubdailyPModel` attributes giving actual predicted estimates of $V_{cmax}$ and
+    $J_{max}$ for observations (`subdaily_vcmax`, `subdaily_vcmax25`, `subdaily_jmax`
+    and `subdaily_jmax25`) have been renamed to simply `vcmax`, `vcmax25`, `jmax` and
+    `jmax25` to align with the observation estimates in `PModel`.
+  - The `SubdailyPModel` attributes giving the daily optimum and realised values for
+    $V_{cmax25}$, $J_{max25}$ and $\xi$ have been renamed for more clarity: `vcmax25_opt`,
+    `vcmax25_real`, `jmax25_opt`, `jmax25_real`, `xi_opt` and `xi_real` have changed to
+    `vcmax25_daily_optimal`,  `vcmax25_daily_realised`, `jmax25_daily_optimal`,
+    `jmax25_daily_realised`, `xi_daily_optimal` and `xi_daily_realised`.
+  - The `PModel.estimate_productivity` method was required to pass in FAPAR and PPFD to
+    scale up LUE predictions to GPP and to estimate other predictions. This has been
+    deprecated with addition of FAPAR and PPFD to the `PModelEnvironment` and GPP is now
+    calculated automatically.
+  - The `convert_pmodel_to_subdaily` function has been deprecated in favour of the new
+    `PModel.to_subdaily` method.
+
+- The `PModelEnvironment` class has been updated. It now requires that the user also
+  provides `fapar` and `ppfd` data, currently with no default values. The provision of
+  additional variables has also been made more flexible, allowing users to provide
+  arbitary extra variables to the environment. This makes it easier to adopt new PModel
+  methods implementations with new required variables.
+
+  **Breaking change**: Need to specify `fapar` and `ppfd` in `PModelEnvironment`.
+
+- The `bounds_checker` function has been retired and replaced with the `BoundsChecker`
+  class, which provides more flexible and user-configurable bounds checking. This
+  functionality is used within other classes and does not introduce breaking changes.
+
 - A new system for providing alternative calculations of quantum yield ($\phi_0$) in the
   P Model, using the new `pyrealm.pmodel.quantum_yield` module. This module now provides
   an expandable set of implementations of the quantum yield calculation, and currently
   supports the previous fixed and temperature dependent $\phi_0$ approaches but also
   David Sandoval's extension for estimating the impact of water stress on $\phi_0$.
 
-  **Breaking change** The signatures of the `PModel` and `SubdailyPModel` classes have
-  changed: the arguments `kphio` and `do_ftemp_kphio` have been replaced by
-  `method_kphio` and `reference_kphio`.
+  **Breaking changes**:
+  
+  - The signatures of the `PModel` and `SubdailyPModel` classes have
+    changed: the arguments `kphio` and `do_ftemp_kphio` have been replaced by
+    `method_kphio` and `reference_kphio`.
+  - In addition to changing the implementation, the **default values** of $\phi_0$ have
+    changed. In `1.0.0`, the `PModel` followed {cite:t}`Stocker:2020dh` in using default
+    values of either 0.081785 or 0.049977, depending on whether the model applied
+    temperature correction to $\phi_0$. These values were tuned to the particular model
+    setup and the application of a water stress penalty. The `PModel` and
+    `SubdailyPModel` now both default to the theoretical maximum quantum yield of
+    photosynthesis ($\phi_0 = 1/8$).
 
 - The implementation of $J_{max}$ and $V_{cmax}$ limitation has been updated to provide
   a more flexible and expandable system. The changes are mostly internal, but there are
@@ -43,10 +87,30 @@ worked through. The changes below are provisional.
   change between v1 and v2, with the shift from `kattge_knorr` to `simple` as the
   default factors.
 
+- Many of the arguments to `SubdailyPModel` have been brought together into a new
+  `AcclimationModel` class. This replaces `SubdailyScaler` and bundles all of the
+  settings for acclimation into a single class. The following is therefore a **breaking
+  change**:
+  
+  - `SubdailyScaler` has been replaced with `AcclimationModel`, and the following
+    arguments to `SubdailyPModel` are now arguments to `AcclimationModel`: `alpha`,
+    `allow_holdover`, `allow_partial_data`, `update_point`, `fill_kind` (as
+    `fill_method`).
+
+- The legacy implementation `SubdailyPModel_JAMES` has been deprecated. This
+  implementation duplicated the original Mengoli et al JAMES code. This was largely a
+  proof of concept implementation, misses some key parts of the acclimation model and
+  the internal calculations are sufficiently different that there is a high maintenance
+  cost to updating it to the new API in version 2.0.0.
+
+  - The `fill_from` argument to `fill_daily_to_subdaily` was only required for
+    `SubdailyPModel_JAMES` and so this has also been deprecated.
+
 - The functions `calc_ftemp_kphio` and `calc_ftemp_inst_vcmax` provided narrow use cases
   with code duplication. They have been replaced by two broader Arrhenius functions:
-  `calculate_simple_arrhenius_factor` and `calculate_kattge_knorr_arrhenius_factor` (see
-  also the point above).
+  `calculate_simple_arrhenius_factor` and `calculate_kattge_knorr_arrhenius_factor` .
+  The functions in {mod}`pyrealm.pmodel.functions` have been updated to take specific
+  arguments rather than just taking `PModelConsts` and `CoreConsts` objects.
 
 - The `pyrealm.core.water` module now provides `convert_water_mm_to_moles`,
   `convert_water_moles_to_mm` and `calculate_water_molar_volume`.

@@ -3,13 +3,16 @@
 import numpy as np
 import pandas as pd
 import pytest
+from numpy.testing import assert_allclose
 
 
 @pytest.mark.skip("Need to resolve calculation process - currently not matching")
 def test_phenology_gpp_calculation(de_gri_half_hourly_data):
     """Test the provided GPP values for phenology can be recreated."""
 
-    from pyrealm.pmodel import PModel, PModelEnvironment, SubdailyPModel, SubdailyScaler
+    from pyrealm.pmodel import PModelEnvironment
+    from pyrealm.pmodel.acclimation import AcclimationModel
+    from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 
     # Calculate the PModel photosynthetic environment
     env = PModelEnvironment(
@@ -17,11 +20,16 @@ def test_phenology_gpp_calculation(de_gri_half_hourly_data):
         vpd=de_gri_half_hourly_data["VPD_F"].to_numpy(),
         co2=de_gri_half_hourly_data["CO2_F_MDS"].to_numpy(),
         patm=de_gri_half_hourly_data["PA_F"].to_numpy(),
+        fapar=np.ones(de_gri_half_hourly_data.shape[0]),
+        # ppfd=de_gri_half_hourly_data["PPFD"].to_numpy(),
+        ppfd=de_gri_half_hourly_data["SW_IN_F_MDS"].to_numpy() * 2.04,
     )
 
     # Set up the datetimes of the observations and set the acclimation window
-    scaler = SubdailyScaler(datetimes=de_gri_half_hourly_data["time"].to_numpy())
-    scaler.set_window(
+    acclim_model = AcclimationModel(
+        datetimes=de_gri_half_hourly_data["time"].to_numpy()
+    )
+    acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(31, "m"),
     )
@@ -29,9 +37,7 @@ def test_phenology_gpp_calculation(de_gri_half_hourly_data):
     # Fit the potential GPP: fAPAR = 1 and phi0 = 1/8
     de_gri_subdaily_pmodel = SubdailyPModel(
         env=env,
-        fs_scaler=scaler,
-        fapar=np.ones_like(env.ca),
-        ppfd=de_gri_half_hourly_data["PPFD"].to_numpy(),
+        acclim_model=acclim_model,
         reference_kphio=1 / 8,
     )
 
@@ -40,16 +46,9 @@ def test_phenology_gpp_calculation(de_gri_half_hourly_data):
         reference_kphio=1 / 8,
     )
 
-    de_gri_pmodel.estimate_productivity(
-        fapar=np.ones_like(env.ca),
-        ppfd=de_gri_half_hourly_data["SW_IN_F_MDS"].to_numpy() * 2.04,
-    )
-
     # Currently close but not exact
-    assert np.allclose(
-        de_gri_pmodel.gpp, de_gri_half_hourly_data["A0_normal"].to_numpy()
-    )
-    assert np.allclose(
+    assert_allclose(de_gri_pmodel.gpp, de_gri_half_hourly_data["A0_normal"].to_numpy())
+    assert_allclose(
         de_gri_subdaily_pmodel.gpp, de_gri_half_hourly_data["A0_slow"].to_numpy()
     )
 
@@ -59,6 +58,8 @@ def test_daily_values(de_gri_half_hourly_data, de_gri_daily_data):
 
     This is just to validate that daily and annual values in the de_gri_daily_data
     inputs can be correctly derived from the original half hourly inputs.
+
+    The tolerances on this are very coarse because the source file has rounding issues.
     """
 
     # Set the time as the index to enable temporal resampling.
@@ -68,13 +69,17 @@ def test_daily_values(de_gri_half_hourly_data, de_gri_daily_data):
     de_gri_daily_resampler = de_gri_half_hourly_data.resample("D")
 
     # Mean daily conditions - temperature, VPD and pressure
-    for daily_mean_var in ["TA_F", "VPD_F", "PA_F"]:
+    for daily_mean_var, tols in [
+        ("TA_F", {"atol": 0.001}),  # Temperatures rounded to 3 dp
+        ("VPD_F", {"atol": 0.001}),  # VPD rounded to 3 dp
+        ("PA_F", {"atol": 1}),  # Atmospheric pressure rounded to 0 dp
+    ]:
         daily_means = de_gri_daily_resampler[daily_mean_var].mean().to_numpy()
-        assert np.allclose(daily_means, de_gri_daily_data[daily_mean_var], atol=0.001)
+        assert_allclose(daily_means, de_gri_daily_data[daily_mean_var], **tols)
 
     # Total precipitation
     daily_precip = de_gri_daily_resampler["P_F"].sum().to_numpy()
-    assert np.allclose(daily_precip, de_gri_daily_data["P_F"], atol=0.01)
+    assert_allclose(daily_precip, de_gri_daily_data["P_F"], atol=0.01)
 
     # Annual values for mean CO2 and total precipitation
     de_gri_annual_resampler = de_gri_half_hourly_data.resample("YE")
@@ -91,10 +96,10 @@ def test_daily_values(de_gri_half_hourly_data, de_gri_daily_data):
     de_gri_daily_data["year"] = de_gri_daily_data["date"].dt.year
     de_gri_daily_data = de_gri_daily_data.merge(annual)
 
-    assert np.allclose(
-        de_gri_daily_data["CO2_F_MDS"], de_gri_daily_data["CO2_F_MDS_validation"]
+    assert_allclose(
+        de_gri_daily_data["CO2_F_MDS"],
+        de_gri_daily_data["CO2_F_MDS_validation"],
+        atol=1,
     )
 
-    assert np.allclose(
-        de_gri_daily_data["P"], de_gri_daily_data["P_F_validation"], atol=0.01
-    )
+    assert_allclose(de_gri_daily_data["P"], de_gri_daily_data["P_F_validation"], atol=1)

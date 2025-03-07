@@ -28,6 +28,7 @@ Constants
 # flatten the namespace for the main public components and setup.cfg applies
 # # to the whole file.
 
+from pyrealm.pmodel.acclimation import AcclimationModel
 from pyrealm.pmodel.competition import (
     C3C4Competition,
     calculate_tree_proportion,
@@ -46,27 +47,20 @@ from pyrealm.pmodel.functions import (
     calculate_simple_arrhenius_factor,
 )
 from pyrealm.pmodel.isotopes import CalcCarbonIsotopes
-from pyrealm.pmodel.pmodel import PModel
+from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
-from pyrealm.pmodel.scaler import SubdailyScaler
-from pyrealm.pmodel.subdaily import (
-    SubdailyPModel,
-    convert_pmodel_to_subdaily,
-    memory_effect,
-)
 
 __all__ = [
+    "AcclimationModel",
     "C3C4Competition",
     "CalcCarbonIsotopes",
     "JmaxLimitation",
     "PModel",
     "PModelEnvironment",
     "SubdailyPModel",
-    "SubdailyScaler",
     "calc_co2_to_ca",
     "calc_ftemp_inst_rd",
     "calc_ftemp_inst_vcmax",
-    "calc_ftemp_kphio",
     "calc_gammastar",
     "calc_kmm",
     "calc_ns_star",
@@ -77,6 +71,4 @@ __all__ = [
     "calculate_simple_arrhenius_factor",
     "calculate_tree_proportion",
     "convert_gpp_advantage_to_c4_fraction",
-    "convert_pmodel_to_subdaily",
-    "memory_effect",
 ]

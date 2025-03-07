@@ -10,7 +10,7 @@ import xarray
 def splash_core_constants():
     """Provide constants using SPLASH original defaults.
 
-    SPLASH v1 uses 15°C / 288.1 5 K in the standard atmosphere definition and uses the
+    SPLASH v1 uses 15°C / 288.15 K in the standard atmosphere definition and uses the
     Chen method for calculating water density.
     """
 

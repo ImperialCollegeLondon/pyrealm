@@ -5,11 +5,21 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.13.8
+    jupytext_version: 1.16.4
 kernelspec:
-  display_name: pyrealm_python3
+  display_name: Python 3 (ipykernel)
   language: python
-  name: pyrealm_python3
+  name: python3
+language_info:
+  codemirror_mode:
+    name: ipython
+    version: 3
+  file_extension: .py
+  mimetype: text/x-python
+  name: python
+  nbconvert_exporter: python
+  pygments_lexer: ipython3
+  version: 3.11.9
 ---
 
 # Two leaf radiative transfer model
@@ -25,7 +35,9 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from pvlib.location import Location
 
-from pyrealm.pmodel import PModelEnvironment, PModel, SubdailyPModel, SubdailyScaler
+from pyrealm.pmodel import PModelEnvironment
+from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
+from pyrealm.pmodel.acclimation import AcclimationModel
 ```
 
 ## Test data
@@ -234,23 +246,21 @@ pmod_env = PModelEnvironment(
     patm=forcing_data["patm"].to_numpy(),
     co2=forcing_data["co2"].to_numpy(),
     vpd=forcing_data["vpd"].to_numpy(),
+    fapar=forcing_data["fapar"].to_numpy(), 
+    ppfd=forcing_data["ppfd"].to_numpy()
 )
 
 # Standard P Model
-standard_pmod = PModel(pmod_env, kphio=1 / 8)
-standard_pmod.estimate_productivity(
-    fapar=forcing_data["fapar"].to_numpy(), ppfd=forcing_data["ppfd"].to_numpy()
-)
+standard_pmod = PModel(pmod_env)
+
 
 # Subdaily P Model
-sd_scaler = SubdailyScaler(forcing_data["time"].to_numpy().astype("datetime64"))
-sd_scaler.set_window(np.timedelta64("12", "h"), half_width=np.timedelta64("15", "m"))
+acclim_model = AcclimationModel(datetimes=forcing_data["time"].to_numpy().astype("datetime64"))
+acclim_model.set_window(np.timedelta64("12", "h"), half_width=np.timedelta64("15", "m"))
 
 subdaily_pmod = SubdailyPModel(
     env=pmod_env,
-    fs_scaler=sd_scaler,
-    fapar=forcing_data["fapar"].to_numpy(),
-    ppfd=forcing_data["ppfd"].to_numpy(),
+    acclim_model=acclim_model,
 )
 ```
 
@@ -265,29 +275,29 @@ class TwoLeafAssimilation:
     ):
 
         # A load of needless inconsistencies in the object attribute names - to be resolved!
-        vcmax_pmod = (
-            pmodel.vcmax if isinstance(pmodel, PModel) else pmodel.subdaily_vcmax
-        )
-        vcmax25_pmod = (
-            pmodel.vcmax25 if isinstance(pmodel, PModel) else pmodel.subdaily_vcmax25
-        )
-        optchi_obj = pmodel.optchi if isinstance(pmodel, PModel) else pmodel.optimal_chi
-        core_const = (
-            pmodel.core_const if isinstance(pmodel, PModel) else pmodel.env.core_const
-        )
+        # vcmax_pmod = (
+        #     pmodel.vcmax if isinstance(pmodel, PModel) else pmodel.subdaily_vcmax
+        # )
+        # vcmax25_pmod = (
+        #     pmodel.vcmax25 if isinstance(pmodel, PModel) else pmodel.subdaily_vcmax25
+        # )
+        # optchi_obj = pmodel.optchi if isinstance(pmodel, PModel) else pmodel.optimal_chi
+        # core_const = (
+        #     pmodel.core_const if isinstance(pmodel, PModel) else pmodel.env.core_const
+        # )
 
         # Generate extinction coefficients to express the vertical gradient in photosynthetic
         # capacity after the equation provided in Figure 10 of Lloyd et al. (2010):
 
         kv_Lloyd = np.exp(
-            0.00963 * vcmax_pmod - 2.43
+            0.00963 * pmodel.vcmax - 2.43
         )  # KB: Here I opt for vcmax rather than Vcmax25
 
         # Calculate carboxylation in the two partitions at standard conditions
-        self.Vmax25_canopy = LAI * vcmax25_pmod * ((1 - np.exp(-kv_Lloyd)) / kv_Lloyd)
+        self.Vmax25_canopy = LAI * pmodel.vcmax25 * ((1 - np.exp(-kv_Lloyd)) / kv_Lloyd)
         self.Vmax25_sun = (
             LAI
-            * vcmax25_pmod
+            * pmodel.vcmax25
             * ((1 - np.exp(-kv_Lloyd - irrad.kb * LAI)) / (kv_Lloyd + irrad.kb * LAI))
         )
         self.Vmax25_shade = self.Vmax25_canopy - self.Vmax25_sun
@@ -301,8 +311,8 @@ class TwoLeafAssimilation:
         )
 
         # Now the photosynthetic estimates as V_cmax * mc
-        self.Av_sun = self.Vmax_sun * optchi_obj.mc
-        self.Av_shade = self.Vmax_shade * optchi_obj.mc
+        self.Av_sun = self.Vmax_sun * pmodel.optchi.mc
+        self.Av_shade = self.Vmax_shade * pmodel.optchi.mc
 
         ## Jmax estimates for sun and shade;
         self.Jmax25_sun = 29.1 + 1.64 * self.Vmax25_sun  # Eqn 31, after Wullschleger
@@ -325,8 +335,8 @@ class TwoLeafAssimilation:
             / (irrad.I_cshade + 2.2 * self.Jmax_shade)
         )
 
-        self.Aj_sun = (self.J_sun / 4) * optchi_obj.mj
-        self.Aj_shade = (self.J_shade / 4) * optchi_obj.mj
+        self.Aj_sun = (self.J_sun / 4) * pmodel.optchi.mj
+        self.Aj_shade = (self.J_shade / 4) * pmodel.optchi.mj
 
         # Calculate the assimilation in each partition as the minimum of Aj and Av,
         # in both cases clipping when the sun is below the angle of obscurity
@@ -339,7 +349,7 @@ class TwoLeafAssimilation:
             irrad.beta_angle < irrad.solar_obscurity_angle, 0, Acanopy_shade
         )
 
-        self.gpp = core_const.k_c_molmass * self.Acanopy_sun + self.Acanopy_shade
+        self.gpp = pmodel.env.core_const.k_c_molmass * self.Acanopy_sun + self.Acanopy_shade
 
         # # and we account for canopy respiration
         # gpp_canopy = if_else(sEa > 0.02,
@@ -545,7 +555,7 @@ plt.tight_layout()
 ```{code-cell} ipython3
 plt.plot(
     forcing_data["time"][plot_slice],
-    subdaily_pmod.subdaily_vcmax[plot_slice],
+    subdaily_pmod.vcmax[plot_slice],
     label="Subdaily Vcmax",
 )
 plt.plot(
@@ -575,10 +585,10 @@ python_outputs = pd.DataFrame({
     ),
     "gammastar_pmod": subdaily_pmod.env.gammastar,
     "kmm_pmod": subdaily_pmod.env.kmm,
-    "ci_pmod": subdaily_pmod.optimal_chi.ci,
-    "vcmax_pmod": subdaily_pmod.subdaily_vcmax,
-    "jmax_pmod": subdaily_pmod.subdaily_jmax,
-    "vcmax25_pmod": subdaily_pmod.subdaily_vcmax25,
+    "ci_pmod": subdaily_pmod.optchi.ci,
+    "vcmax_pmod": subdaily_pmod.vcmax,
+    "jmax_pmod": subdaily_pmod.jmax,
+    "vcmax25_pmod": subdaily_pmod.vcmax25,
     # "rd_pmod": subdaily_pmod.rd,
     # "kv_Lloyd": ,
     "Icsun": two_leaf_irrad.I_csun,

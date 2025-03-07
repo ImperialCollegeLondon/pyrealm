@@ -9,6 +9,7 @@ documentation root, use os.path.abspath to make it absolute, like shown here.
 
 import os
 import sys
+import warnings
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -22,6 +23,11 @@ from sphinxcontrib.bibtex.style.referencing.author_year import AuthorYearReferen
 from pyrealm import __version__ as pyrealm_version
 
 sys.path.insert(0, os.path.abspath("../"))
+
+# Suppress the 2.0.0 user warnings in the documentation
+warnings.filterwarnings(
+    "ignore", category=UserWarning, message="Pyrealm 2.0.0 uses a uses default value"
+)
 
 # -- Project information -----------------------------------------------------
 
@@ -53,6 +59,7 @@ extensions = [
     "sphinxcontrib.bibtex",
     "myst_nb",
     "sphinx_rtd_theme",
+    "sphinx_design",
     "sphinx_external_toc",
 ]
 
@@ -62,7 +69,6 @@ external_toc_exclude_missing = False  # optional, default: False
 
 # Include TODOs
 todo_include_todos = True
-
 
 # Citation styling
 def bracket_style() -> BracketStyle:

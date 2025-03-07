@@ -19,7 +19,7 @@ def test_calc_density_h20_fisher(shape):
         np.full(shape, fill_value=20), np.full(shape, fill_value=101325)
     )
 
-    assert np.allclose(rho.round(3), np.full(shape, fill_value=998.206))
+    assert_allclose(rho.round(3), np.full(shape, fill_value=998.206))
 
 
 @pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
@@ -31,7 +31,7 @@ def test_calc_density_h20_chen(shape):
         np.full(shape, fill_value=20), np.full(shape, fill_value=101325)
     )
 
-    assert np.allclose(rho.round(3), np.full(shape, fill_value=998.25))
+    assert_allclose(rho.round(3), np.full(shape, fill_value=998.25))
 
 
 @pytest.mark.parametrize(
@@ -66,7 +66,7 @@ def test_calc_viscosity_h20(shape):
         np.full(shape, fill_value=20), np.full(shape, fill_value=101325)
     )
 
-    assert np.allclose(eta.round(7), np.full(shape, fill_value=0.0010016))
+    assert_allclose(eta.round(7), np.full(shape, fill_value=0.0010016))
 
 
 @pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
@@ -78,7 +78,7 @@ def test_calc_viscosity_h20_matrix(shape):
         np.full(shape, fill_value=20), np.full(shape, fill_value=101325)
     )
 
-    assert np.allclose(eta.round(7), np.full(shape, fill_value=0.0010016))
+    assert_allclose(eta.round(7), np.full(shape, fill_value=0.0010016))
 
 
 def test_calculate_water_molar_volume():
@@ -147,7 +147,7 @@ def test_convert_water_values(water_mm, tc, patm, expected_fisher, expected_chen
     )
 
     # Test forward and back conversion
-    assert np.allclose(moles_water_fisher, expected_fisher, rtol=1e-5)
+    assert_allclose(moles_water_fisher, expected_fisher, rtol=1e-5)
     assert_allclose(
         convert_water_moles_to_mm(
             moles_water_fisher, tc, patm, core_const=fisher_const
@@ -164,7 +164,7 @@ def test_convert_water_values(water_mm, tc, patm, expected_fisher, expected_chen
     )
 
     # Test forward and back conversion
-    assert np.allclose(moles_water_chen, expected_chen, rtol=1e-5)
+    assert_allclose(moles_water_chen, expected_chen, rtol=1e-5)
     assert_allclose(
         convert_water_moles_to_mm(moles_water_fisher, tc, patm, core_const=chen_const),
         water_mm,
@@ -183,7 +183,7 @@ def test_convert_water(shape):
 
     # Test mm to moles
     moles_water = convert_water_mm_to_moles(water_mm=water_mm, tc=tc, patm=patm)
-    assert np.allclose(moles_water, np.full(shape, fill_value=55.41713669719267))
+    assert_allclose(moles_water, np.full(shape, fill_value=55.41713669719267))
 
     # Test reverse direction
     assert_allclose(convert_water_moles_to_mm(moles_water, tc=tc, patm=patm), water_mm)

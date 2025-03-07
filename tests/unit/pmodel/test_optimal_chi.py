@@ -122,7 +122,9 @@ def test_estimate_chi(optimal_chi_class, photo_env):
 )
 def test_subclasses(pmodelenv_args, subclass, expected):
     """Test that subclasses work as expected."""
-    env = PModelEnvironment(**pmodelenv_args)
+    env = PModelEnvironment(
+        **pmodelenv_args,
+    )
     instance = subclass(env)
     for key, value in expected.items():
         assert getattr(instance, key) == pytest.approx(value, rel=1e-3)
@@ -238,7 +240,11 @@ def test_nan_handling(subclass, extra_vars, estimable_on_missing):
     for var in vars:
         pmodelenv_args_copy = vars.copy()
         pmodelenv_args_copy[var] = np.array([np.nan])
-        env = PModelEnvironment(**pmodelenv_args_copy)
+        env = PModelEnvironment(
+            **pmodelenv_args_copy,
+            fapar=np.array([1]),
+            ppfd=np.array([800]),
+        )
         instance = subclass(env)
 
         for pred_var in ["beta", "xi", "chi", "ci"]:
