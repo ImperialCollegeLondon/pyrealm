@@ -70,6 +70,7 @@ external_toc_exclude_missing = False  # optional, default: False
 # Include TODOs
 todo_include_todos = True
 
+
 # Citation styling
 def bracket_style() -> BracketStyle:
     """Custom citation parenthesis style."""
