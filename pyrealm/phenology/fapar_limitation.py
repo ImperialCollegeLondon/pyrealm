@@ -7,7 +7,7 @@ from numpy.typing import NDArray
 from typing_extensions import Self
 
 from pyrealm.constants import PhenologyConst
-from pyrealm.pmodel import PModel, SubdailyScaler
+from pyrealm.pmodel import AcclimationModel, PModel
 
 
 def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
@@ -82,7 +82,7 @@ def get_annual(
         years_by_day.shape = tuple([n_days, obs_per_day, *list(all_years.shape[1:])])
     elif len(x) == len(datetimes):  # this is subdaily data
         # Create scaler object to handle conversion between scales
-        scaler = SubdailyScaler(datetimes)
+        scaler = AcclimationModel(datetimes)
         scaler.set_nearest(np.timedelta64(12, "h"))
         # Convert values to daily to match with growing_season
         daily_x = scaler.get_daily_means(x)

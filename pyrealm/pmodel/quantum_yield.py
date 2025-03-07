@@ -61,7 +61,6 @@ class QuantumYieldABC(ABC):
             QuantumYieldABC,
             method="method_name",
             requires=["an_environment_variable"],
-            default_reference_kphio=0.049977,
             array_reference_kphio_ok=True,
         ):
 
@@ -72,10 +71,6 @@ class QuantumYieldABC(ABC):
       :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` to use this
       approach. The core ``tc``, ``vpd``, ``patm`` and ``co2`` variables do not need to
       be included in this list.
-    * The ``default_reference_kphio`` argument sets the default value for :math:`\phi_0`
-      that will be used by the implementation. The ``__init__`` method will then check
-      whether array values are accepted and that the shape of an array is congruent with
-      the other data.
     * The ``array_reference_kphio_ok`` argument sets whether the method can accept an
       array of :math:`\phi_0` values or whether a single global reference value should
       be used.
@@ -88,9 +83,9 @@ class QuantumYieldABC(ABC):
         env: An instance of
             :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`  providing the
             photosynthetic environment for the model.
-        reference_kphio: An optional value to be used instead of the default reference
-            kphio for the subclass. This is typically a single float but some approaches
-            may support an array of values here.
+        reference_kphio: An optional value to be used instead of the global constant
+            value . This is typically a single float but some approaches may support an
+            array of values here.
         use_c4: Should the calculation use parameterisation for C4 photosynthesis rather
             than C3 photosynthesis.
 
@@ -108,9 +103,6 @@ class QuantumYieldABC(ABC):
     :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` that must be populated
     to use a method.
     """
-    default_reference_kphio: float
-    """A default value for the reference kphio value for use with a given
-    implementation."""
     array_reference_kphio_ok: bool
     """Does the implementation handle arrays inputs to the reference_kphio __init__
     argument."""
@@ -130,7 +122,7 @@ class QuantumYieldABC(ABC):
         # Set the reference kphio to the class default value if not provided and convert
         # the value to np.array if needed
         if reference_kphio is None:
-            reference_kphio = self.default_reference_kphio
+            reference_kphio = self.env.pmodel_const.maximum_phi0
         if isinstance(reference_kphio, float | int):
             reference_kphio = np.array([reference_kphio])
 
@@ -201,14 +193,12 @@ class QuantumYieldABC(ABC):
         cls,
         method: str,
         requires: list[str],
-        default_reference_kphio: float,
         array_reference_kphio_ok: bool,
     ) -> None:
         """Initialise a subclass deriving from this ABC."""
 
         cls.method = method
         cls.requires = requires
-        cls.default_reference_kphio = default_reference_kphio
         cls.array_reference_kphio_ok = array_reference_kphio_ok
         QUANTUM_YIELD_CLASS_REGISTRY[cls.method] = cls
 
@@ -217,17 +207,13 @@ class QuantumYieldFixed(
     QuantumYieldABC,
     method="fixed",
     requires=[],
-    default_reference_kphio=0.049977,
     array_reference_kphio_ok=True,
 ):
     r"""Apply a fixed value for :math:`\phi_0`.
 
     This implementation applies a fixed value for the quantum yield without any
-    environmental variation. The default value used is :math:`\phi_0 = 0.049977`,
-    following the ORG settings parameterisation in Table 1. of {cite:t}`Stocker:2020dh`.
-
-    This implementation will accept an array of values to allow externally estimated
-    values to be passed to a P model.
+    environmental variation. It will accept an array of values to allow externally
+    estimated values of `phi_0` to be passed to a P Model.
     """
 
     def _calculate_kphio(self) -> None:
@@ -240,7 +226,6 @@ class QuantumYieldTemperature(
     QuantumYieldABC,
     method="temperature",
     requires=[],
-    default_reference_kphio=0.081785,
     array_reference_kphio_ok=False,
 ):
     r"""Calculate temperature dependent of quantum yield efficiency.
@@ -257,9 +242,6 @@ class QuantumYieldTemperature(
     the temperature dependence of the maximum quantum yield of photosystem II in
     light-adapted tobacco leaves determined by :cite:t:`Bernacchi:2003dc`. For C4
     photosynthesis, the default values are taken from :cite:t:`cai:2020a`.
-
-    The default reference value for this approach is :math:`\phi_0 = 0.081785` following
-    the BRC parameterisation in Table 1. of {cite:t}`Stocker:2020dh`.
     """
 
     def _calculate_kphio(
@@ -284,7 +266,6 @@ class QuantumYieldSandoval(
     QuantumYieldABC,
     method="sandoval",
     requires=["aridity_index", "mean_growth_temperature"],
-    default_reference_kphio=1.0 / 9.0,
     array_reference_kphio_ok=False,
 ):
     r"""Calculate aridity and mean growth temperature effects on quantum yield.
@@ -300,16 +281,18 @@ class QuantumYieldSandoval(
     defaulting to the ratio of 1/9 in the absence of a Q cycle :cite:`long:1993a`.
     """
 
-    def peak_quantum_yield(self, aridity: NDArray[np.float64]) -> NDArray[np.float64]:
+    def peak_quantum_yield(
+        self, aridity_index: NDArray[np.float64]
+    ) -> NDArray[np.float64]:
         """Calculate the peak quantum yield as a function of the aridity index.
 
         Args:
-            aridity: An array of aridity index values.
+            aridity_index: An array of aridity index values.
         """
 
         # Calculate peak kphio given the aridity index
         m, n = self.env.pmodel_const.sandoval_peak_phio
-        return self.reference_kphio / (1 + (self.env.aridity_index) ** m) ** n
+        return self.reference_kphio / (1 + aridity_index**m) ** n
 
     def _calculate_kphio(self) -> None:
         """Calculate kphio."""
@@ -321,31 +304,41 @@ class QuantumYieldSandoval(
             ExperimentalFeatureWarning,
         )
 
-        # Calculate enzyme kinetics
-        a_ent, b_ent, Hd_base, Ha = self.env.pmodel_const.sandoval_kinetics
-        # Calculate activation entropy as a linear function of
+        aridity_index = getattr(self.env, "aridity_index")
+        mean_growth_temperature = getattr(self.env, "mean_growth_temperature")
+
+        # Calculate enzyme kinetic. This needs to use a copy because the Hd value is
+        # modified below.
+        coef = self.env.pmodel_const.sandoval_kinetics.copy()
+
+        # Calculate change in activation entropy as a linear function of
         # mean growth temperature, J/mol/K
-        deltaS = a_ent + b_ent * self.env.mean_growth_temperature
-        # Calculate deaactivation energy J/mol
-        Hd = Hd_base * deltaS
+        delta_entropy = (
+            coef["entropy_intercept"] + coef["entropy_slope"] * mean_growth_temperature
+        )
+        # Calculate de-activation energy J/mol
+        Hd = coef["hd"] * delta_entropy
 
         # Calculate the optimal temperature to be used as the reference temperature in
         # the modified Arrhenius calculation
-        Topt = Hd / (deltaS - self.env.core_const.k_R * np.log(Ha / (Hd - Ha)))
-        tk_leaf = self.env.tc + self.env.core_const.k_CtoK
+        Topt = Hd / (
+            delta_entropy
+            - self.env.core_const.k_R * np.log(coef["ha"] / (Hd - coef["ha"]))
+        )
+        tk_leaf = self.env.tk
         # Calculate peak kphio given the aridity index
-        kphio_peak = self.peak_quantum_yield(aridity=self.env.aridity_index)
+        kphio_peak = self.peak_quantum_yield(aridity_index=aridity_index)
+
+        # Pass the modified Hd back into the calculation of the Arrhenius factor
+        coef["hd"] = Hd
 
         # Calculate the modified Arrhenius factor using the
         f_kphio = calculate_kattge_knorr_arrhenius_factor(
             tk_leaf=tk_leaf,
             tk_ref=Topt,
-            tc_growth=self.env.mean_growth_temperature,
-            ha=Ha,
-            hd=Hd,  # type: ignore[arg-type]  # Not an array in this function
-            entropy_intercept=a_ent,
-            entropy_slope=b_ent,
-            core_const=self.env.core_const,
+            tc_growth=mean_growth_temperature,
+            coef=coef,
+            k_R=self.env.core_const.k_R,
         )
 
         # Apply the factor and store it.

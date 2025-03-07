@@ -11,14 +11,9 @@ from numpy.typing import NDArray
 from pandas import DataFrame
 from scipy.special import lambertw
 
+from pyrealm.core.utilities import exponential_moving_average
 from pyrealm.phenology.fapar_limitation import FaparLimitation
-from pyrealm.pmodel import (
-    PModel,
-    PModelEnvironment,
-    SubdailyPModel,
-    SubdailyScaler,
-    memory_effect,
-)
+from pyrealm.pmodel import AcclimationModel, PModel, PModelEnvironment, SubdailyPModel
 from pyrealm.pmodel.functions import calc_soilmstress_mengoli
 
 
@@ -110,6 +105,8 @@ env = PModelEnvironment(
     vpd=de_gri_hh_xr["VPD_F"].to_numpy(),
     co2=de_gri_hh_xr["CO2_F_MDS"].to_numpy(),
     patm=de_gri_hh_xr["PA_F"].to_numpy(),
+    fapar=np.array([1.0]),
+    ppfd=de_gri_hh_xr["PPFD"].to_numpy(),
 )
 
 # Standard Model using potential GPP
@@ -119,13 +116,9 @@ de_gri_pmodel = PModel(
     method_kphio="temperature",
 )
 
-de_gri_pmodel.estimate_productivity(
-    fapar=np.ones_like(env.ca), ppfd=de_gri_hh_xr["PPFD"].to_numpy()
-)
-
 # Set up the datetimes of the observations and set the acclimation window
-scaler = SubdailyScaler(datetimes=de_gri_hh_xr["time"].to_numpy())
-scaler.set_window(
+acclim_model = AcclimationModel(datetimes=de_gri_hh_xr["time"].to_numpy())
+acclim_model.set_window(
     window_center=np.timedelta64(12, "h"),
     half_width=np.timedelta64(30, "m"),
 )
@@ -133,9 +126,7 @@ scaler.set_window(
 # Fit the subdaily potential GPP: fAPAR = 1 and phi0 = 1/8
 de_gri_subdaily_pmodel = SubdailyPModel(
     env=env,
-    fs_scaler=scaler,
-    fapar=np.ones_like(env.ca),
-    ppfd=de_gri_hh_xr["PPFD"].to_numpy(),
+    acclim_model=acclim_model,
     reference_kphio=1 / 8,
     method_kphio="temperature",
 )
@@ -146,8 +137,8 @@ de_gri_hh_outputs = xr.Dataset(
     data_vars=dict(
         PMod_A0=("time", de_gri_pmodel.gpp),
         PMod_sub_A0=("time", de_gri_subdaily_pmodel.gpp),
-        PMod_sub_chi=("time", de_gri_subdaily_pmodel.optimal_chi.chi),
-        PMod_sub_ci=("time", de_gri_subdaily_pmodel.optimal_chi.ci),
+        PMod_sub_chi=("time", de_gri_subdaily_pmodel.optchi.chi),
+        PMod_sub_ci=("time", de_gri_subdaily_pmodel.optchi.ci),
         ca=("time", env.ca),
         ta=("time", de_gri_hh_xr["TA_F"].data),
         vpd=("time", de_gri_hh_xr["VPD_F"].data),
@@ -325,7 +316,7 @@ Ls_term_1 = np.clip(np.real(Ls_term_1), a_min=0, a_max=None)
 Ls_daily = xr.ufuncs.minimum(Ls_term_1, de_gri_daily_values["annual_lai_max"])
 
 # Apply lagging
-Ls_daily_lagged = memory_effect(Ls_daily, alpha=1 / 15)
+Ls_daily_lagged = exponential_moving_average(Ls_daily, alpha=1 / 15)
 
 # Save predicted daily time series for L
 de_gri_daily_values["Ls_daily"] = Ls_daily

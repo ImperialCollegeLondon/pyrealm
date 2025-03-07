@@ -33,12 +33,11 @@ language_info:
 # arrays of repeating values (`_2d`) to generate response surfaces for functions
 # with multuple inputs.
 
-from matplotlib import pyplot
+import matplotlib.pyplot as plt
 import numpy as np
-from pyrealm.pmodel import PModel, PModelEnvironment
+from pyrealm.pmodel import PModelEnvironment
+from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature, QuantumYieldSandoval
-
-%matplotlib inline
 
 # Set the resolution of examples
 n_pts = 201
@@ -61,10 +60,13 @@ transfer, which is exactly four times larger than the quantum yield of photosynt
 
 :::
 
-The value of $\phi_0$ captures the conversion rate of moles photosynthetically active
-photons into moles of $\ce{CO2}$. The theoretical maximum for this value is 1/9, in the
-absence of a Q cycle, or 1/8 when a Q cycle is operating {cite}`long:1993a`. These
-theoretical maxima are not necessarily directly used in calculating light use
+The value of $\phi_0$ captures the conversion rate of moles of photosynthetically active
+photons into moles of $\ce{CO2}$. The theoretical maximum for this value is 1/8: eight
+moles of light photons are required to capture 1 mole of carbon. In some cases, this
+value may be reduced to 1/9, when a Q cycle is not operating within the plant cell
+{cite}`long:1993a`.
+
+These theoretical maxima are not necessarily directly used in calculating light use
 efficiency:
 
 * The values of $\phi_0$ are often adjusted to include other components of light
@@ -77,44 +79,50 @@ variation in $\phi_0$ {cite}`Bernacchi:2003dc`.
 
 For these reasons, the {class}`~pyrealm.pmodel.pmodel.PModel` provides alternative
 approaches to estimating the value of $\phi{0}$, using the `method_kphio` argument. The
-currently implemented approaches are described below. Note that each approach has a
-specific **reference value for $\phi_{0}$**, which is used as the baseline for further
-calculations. This value can be altered via the `reference_kphio` argument.
+currently implemented approaches are described below.
+
+All of the approaches share the same baseline reference value of $\phi{0}= 1/8$ as the
+theoretical maximum quantum yield of photosynthesis. The default value can be set using
+the
+{attr}`PModelConst.maximum_phi0<pyrealm.constants.pmodel_const.PModelConst.maximum_phi0>`
+attribute, which can then be passed into a
+{class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`. However, the `PModel` and
+`SubdailyPModel` both provide the `reference_kphio` argument to override the default
+value for a specific model. This can be needed when specific methods have been
+calibrated using a 'tuned' value for $\phi_0$: an example here is the soil moisture
+stress corrected GPP estimates of :cite:t:`Stocker:2020dh` which use different $\phi_0$
+values (see {meth}`~pyrealm.pmodel.functions.calc_soilmstress_stocker`).
 
 ## Temperature dependent $\phi_0$
 
 The default approach (`method_kphio='temperature'`) applies a temperature dependent
 estimate of $\phi_0$, following {cite:t}`Bernacchi:2003dc` for C3 plants and
-{cite:t}`cai:2020a` for C4 plants. The default reference value for this approach is
-$\phi_0 = 0.081785$, following the BRC parameterisation in Table 1. of
-{cite:t}`Stocker:2020dh`.
+{cite:t}`cai:2020a` for C4 plants.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
 
 # Calculate temperature dependence of quantum yield efficiency
-env = PModelEnvironment(tc=tc_1d, patm=101325, vpd=820, co2=400)
+env = PModelEnvironment(tc=tc_1d, patm=101325, vpd=820, co2=40, fapar=1, ppfd=1)
 
 fkphio_c3 = QuantumYieldTemperature(env=env, use_c4=False)
 fkphio_c4 = QuantumYieldTemperature(env=env, use_c4=True)
 
 # Create a line plot of ftemp kphio
-pyplot.plot(tc_1d, fkphio_c3.kphio, label="C3")
-pyplot.plot(tc_1d, fkphio_c4.kphio, label="C4")
+plt.plot(tc_1d, fkphio_c3.kphio, label="C3")
+plt.plot(tc_1d, fkphio_c4.kphio, label="C4")
 
-pyplot.title("Temperature dependence of quantum yield efficiency")
-pyplot.xlabel("Temperature °C")
-pyplot.ylabel("Quantum yield efficiency ($\phi_0$)")
-pyplot.legend()
-pyplot.show()
+plt.title("Temperature dependence of quantum yield efficiency")
+plt.xlabel("Temperature °C")
+plt.ylabel("Quantum yield efficiency ($\phi_0$)")
+plt.legend()
+plt.show()
 ```
 
 ## Fixed $\phi_0$
 
 This approach (`method_kphio='fixed'`) applies a fixed value of $\phi_0$ in the
-calculation of light use efficiency. The default reference value used in this case is
-$\phi_0 = 0.049977$, following the ORG settings parameterisation in Table 1. of
-{cite:t}`Stocker:2020dh`.
+calculation of light use efficiency.
 
 However, the fixed method will also accept $\phi_0$ values for each observation being
 fitted in the PModel. This option is provided to allow users to experiment with
@@ -139,23 +147,24 @@ env = PModelEnvironment(
     patm=np.repeat(101325, n_vals),
     vpd=np.repeat(820, n_vals),
     co2=np.repeat(400, n_vals),
+    fapar=np.repeat(1, n_vals),
+    ppfd=np.repeat(1, n_vals),
 )
 model_var_kphio = PModel(env, method_kphio="fixed", reference_kphio=kphio_values)
 
 # Create a line plot of ftemp kphio
-pyplot.plot(kphio_values, model_var_kphio.lue)
-pyplot.title("Variation in LUE with changing $\phi_0$")
-pyplot.xlabel("$\phi_0$")
-pyplot.ylabel("LUE")
-pyplot.show()
+plt.plot(kphio_values, model_var_kphio.lue)
+plt.title("Variation in LUE with changing $\phi_0$")
+plt.xlabel("$\phi_0$")
+plt.ylabel("LUE")
+plt.show()
 ```
 
 ## Temperature and aridity effects on $\phi_0$
 
 The option `method_kphio='sandoval'` implements an experimental calculation
 {cite}`sandoval:in_prep` of $\phi_0$ as a function of a local aridity index (P/PET), the
-mean growth temperature and the air temperature {cite}`sandoval:in_prep`. This approach
-uses the theoretical maximum value of $\phi_0 = 1/9$ as the reference value. You will
+mean growth temperature and the air temperature {cite}`sandoval:in_prep`. You will
 need to provide the aridity index and mean growing temperature for observations when
 creating the `PModelEnvironment`.
 
@@ -178,19 +187,21 @@ env = PModelEnvironment(
     patm=np.repeat(101325, n_vals),
     vpd=np.repeat(820, n_vals),
     co2=np.repeat(400, n_vals),
+    fapar=np.repeat(1, n_vals),
+    ppfd=np.repeat(1, n_vals),
     aridity_index=aridity_index,
     mean_growth_temperature=np.repeat(20, n_vals),
 )
 
 sandoval_kphio = QuantumYieldSandoval(env)
 
-fig, ax = pyplot.subplots(1, 1)
+fig, ax = plt.subplots(1, 1)
 ax.plot(aridity_index, sandoval_kphio.kphio)
 ax.set_title("Change in $\phi_0$ with aridity index (P/PET).")
 ax.set_ylabel("$\phi_0$")
 ax.set_xlabel("Aridity Index")
 ax.set_xscale("log")
-pyplot.show()
+plt.show()
 ```
 
 In addition to capping the peak $\phi_0$ as a function of the aridity index, this
@@ -216,13 +227,15 @@ env = PModelEnvironment(
     patm=np.full(shape, 101325),
     vpd=np.full(shape, 820),
     co2=np.full(shape, 400),
+    fapar=np.full(shape, 1),
+    ppfd=np.full(shape, 1),
     aridity_index=ai3,
     mean_growth_temperature=mg3,
 )
 
 sandoval_kphio = QuantumYieldSandoval(env)
 
-fig, axes = pyplot.subplots(ncols=3, nrows=1, sharey=True, figsize=(10, 6))
+fig, axes = plt.subplots(ncols=3, nrows=1, sharey=True, figsize=(10, 6))
 
 for ai_idx, (ax, ai_val) in enumerate(zip(axes, aridity_values)):
 
@@ -238,5 +251,5 @@ for ai_idx, (ax, ai_val) in enumerate(zip(axes, aridity_values)):
 
 
 ax.legend(frameon=False)
-pyplot.show()
+plt.show()
 ```

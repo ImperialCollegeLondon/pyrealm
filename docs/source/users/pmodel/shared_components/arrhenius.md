@@ -39,8 +39,7 @@ experimental purposes only.
 import matplotlib.pyplot as plt
 import numpy as np
 
-from pyrealm.constants.core_const import CoreConst
-from pyrealm.constants.pmodel_const import PModelConst
+from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.pmodel.functions import (
     calculate_simple_arrhenius_factor,
     calculate_kattge_knorr_arrhenius_factor,
@@ -78,21 +77,22 @@ enzyme systems:
 ## Scaling of $V_{cmax}$ and $J_{max}$
 
 The simple scaling factor above is also used in the original description of the P Model
-{cite:p}`Prentice:2014bc,Wang:2017go` for calculating Arrhenius scaling with temperature
-of $V_{cmax}$ and $J_{max}$. This scaling is not required to calculate GPP, but *is*
-used to calculate representative values of those rates at standard temperatures
-($V_{cmax25}$ and $J_{max25}$) when required.
+{cite:p}`Prentice:2014bc,Wang:2017go` for calculating Arrhenius scaling of $V_{cmax}$
+and $J_{max}$. This scaling is not required to calculate GPP in the standard P Model,
+but *is* used to calculate representative values of those rates at standard temperatures
+($V_{cmax25}$ and $J_{max25}$).
 
-The simple scaling is also used in the original description of the subdaily P Model
-{cite}`mengoli:2022a`. Here, the scaling is more central as Arrhenius scaling is used to
-convert between realised daily estimates of acclimating $V_{cmax}$ and $J_{max}$ and the
-values of $V_{cmax}$ and $J_{max}$ for subdaily observations:
+Arrhenius scaling is however central to the Subdaily P Model {cite}`mengoli:2022a`.
+Here, the scaling is used to convert between realised daily estimates of acclimating
+$V_{cmax}$ and $J_{max}$ and the values of $V_{cmax}$ and $J_{max}$ for subdaily
+observations:
 
 1. Daily realised rates at daily representative temperatures are converted to daily
    realised rates **at standard temperatures** (daily realised $V_{cmax25}$ and
    $J_{max25}$).
-2. Resulting predicted subdaily estimates at standard temperatures back to **observed
-   temperature** ($V_{cmax}$ and $J_{max}$ at subdaily scales).
+2. The daily realised values at standard temperatures are then mapped back on to the
+   subdaily scale and converted back to the appropriate values at the **observed
+   subdaily temperature** ($V_{cmax}$ and $J_{max}$ at subdaily scales).
 
 However, there is some discussion about the form of the scaling of reaction rates of
 $V_{cmax}$ and $J_{max}$ with temperature, particularly the suggestion that these rates
@@ -104,9 +104,10 @@ observed temperature (leaf or air temperature).
 
 The plot below shows some examples of Arrhenius factor curves using these different
 approaches. Two separate growth temperatures are used with the `kattge_knorr` method. At
-present, the implementation of the standard P Model in `rpmodel` uses the form of the
-`kattge_knorr` method but sets $t_g=T$, rather than having a fixed growth temperature.
-This leads to the curve labelled `rpmodel` in the plot, which does not have a peak.
+present, the implementation of the standard P Model in the `rpmodel` package uses the
+form of the `kattge_knorr` method but sets $t_g=T$, rather than having a fixed growth
+temperature. This leads to the curve labelled `rpmodel` in the plot, which does not have
+a peak.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
@@ -115,11 +116,12 @@ This leads to the curve labelled `rpmodel` in the plot, which does not have a pe
 pmodel_const = PModelConst()
 core_const = CoreConst()
 tc = np.arange(0, 40, 0.1)
+tk = tc + core_const.k_CtoK
 
 # Calculate the simple scaling factor
 simple = calculate_simple_arrhenius_factor(
-    tk=tc + core_const.k_CtoK,
-    tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
+    tk=tk,
+    tk_ref=pmodel_const.tk_ref,
     ha=pmodel_const.arrhenius_vcmax["simple"]["ha"],
 )
 
@@ -127,41 +129,34 @@ simple = calculate_simple_arrhenius_factor(
 # 1) t_g = 10°C
 coef = pmodel_const.arrhenius_vcmax["kattge_knorr"]
 kattge_knorr_10 = calculate_kattge_knorr_arrhenius_factor(
-    tk_leaf=tc + core_const.k_CtoK,
+    tk_leaf=tk,
     tc_growth=10,
-    tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
-    ha=coef["ha"],
-    hd=coef["hd"],
-    entropy_intercept=coef["entropy_intercept"],
-    entropy_slope=coef["entropy_slope"],
+    tk_ref=pmodel_const.tk_ref,
+    coef=coef,
 )
 
 # 2) t_g = 20°C
 kattge_knorr_20 = calculate_kattge_knorr_arrhenius_factor(
-    tk_leaf=tc + core_const.k_CtoK,
+    tk_leaf=tk,
     tc_growth=20,
-    tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
-    ha=coef["ha"],
-    hd=coef["hd"],
-    entropy_intercept=coef["entropy_intercept"],
-    entropy_slope=coef["entropy_slope"],
+    tk_ref=pmodel_const.tk_ref,
+    coef=coef,
 )
 
 # 3) rpmodel: t_g == T_leaf
 rpmodel = calculate_kattge_knorr_arrhenius_factor(
-    tk_leaf=tc + core_const.k_CtoK,
-    tc_growth=tc + core_const.k_CtoK,
-    tk_ref=pmodel_const.plant_T_ref + core_const.k_CtoK,
-    ha=coef["ha"],
-    hd=coef["hd"],
-    entropy_intercept=coef["entropy_intercept"],
-    entropy_slope=coef["entropy_slope"],
+    tk_leaf=tk,
+    tc_growth=tk,
+    tk_ref=pmodel_const.tk_ref,
+    coef=coef,
 )
 
 plt.plot(tc, simple, label="Simple")
 plt.plot(tc, kattge_knorr_10, label="Kattge Knorr ($t_g=10$°C)")
 plt.plot(tc, kattge_knorr_20, label="Kattge Knorr ($t_g=20$°C)")
-plt.plot(tc, rpmodel, linestyle="--", color="grey", label="rpmodel ($t_g=T$)")
+plt.plot(
+    tc, rpmodel, linestyle="--", color="grey", label="Kattge Knorr in rpmodel ($t_g=T$)"
+)
 plt.legend(frameon=False)
 plt.xlabel("Leaf temperature (°C)")
 plt.tight_layout()

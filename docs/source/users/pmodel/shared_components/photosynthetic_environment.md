@@ -6,7 +6,7 @@ jupytext:
     format_name: myst
     format_version: 0.13
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 language_info:
@@ -23,18 +23,29 @@ language_info:
 
 # Photosynthetic environment
 
-The provided values of temperature, pressure and $\ce{CO2}$ concentration are
-used to calculate values for four key environmentally determined photosynthetic
-variables:
+The P Model is a model of carbon capture and water use by plants. There are six core
+forcing variables that define the photosynthetic environment of the plant:
 
-1. photorespiratory compensation point ($\Gamma^*$),
-2. Michaelis-Menten coefficient for photosynthesis ($K_{mm}$),
-3. relative viscosity of water, given a standard at 25°C ($\eta^*$), and
-4. partial pressure of $\ce{CO2}$ in ambient air ($c_a$).
+* the temperature (`tc`, °C),
+* the vapor pressure deficit (`vpd`, Pa),
+* the atmospheric $\ce{CO2}$ concentration (`co2`, ppm), and
+* the atmospheric pressure (`patm`, Pa),
+* the fraction of absorbed photosynthetically active radiation ($f_{APAR}$, `fapar`,
+unitless), and
+* the photosynthetic photon flux density (PPFD, `ppfd`, µmol m-2 s-1)
+
+Those forcing variables are then used to calculate further variables that capture
+the [photosynthetic environment](photosynthetic_environment) of a leaf. These are:
+
+1. the photorespiratory compensation point ($\Gamma^*$, Pascals),
+2. the Michaelis-Menten coefficient for photosynthesis ($K_{mm}$, Pascals),
+3. the relative viscosity of water, given a standard at 25°C ($\eta^*$, unitless),
+4. the partial pressure of $\ce{CO2}$ in ambient air ($c_a$, Pascals), and
+5. the absorbed irradiance ($I_{abs}$, µmol m-2 s-1)
 
 The descriptions below show the typical ranges of these values under common
-environmental inputs along with links to the more detailed documentation of
-the key functions.
+environmental inputs along with links to the more detailed documentation of the key
+functions.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
@@ -62,11 +73,13 @@ n_pts = 101
 
 # Create a range of representative values for key inputs.
 tc_1d = np.linspace(0, 50, n_pts)
+tk_1d = tc_1d + const.k_CtoK
 patm_1d = np.linspace(60000, 106000, n_pts)  # ~ tropical tree line
 co2_1d = np.linspace(200, 500, n_pts)
 
 # Broadcast the range into arrays with repeated values.
 tc_2d = np.broadcast_to(tc_1d, (n_pts, n_pts))
+tk_2d = np.broadcast_to(tk_1d, (n_pts, n_pts))
 patm_2d = np.broadcast_to(patm_1d, (n_pts, n_pts))
 co2_2d = np.broadcast_to(co2_1d, (n_pts, n_pts))
 ```
@@ -82,7 +95,7 @@ of temperature and atmospheric pressure:
 :tags: [hide-input]
 
 # Calculate gammastar
-gammastar = calc_gammastar(tc_2d, patm_2d.transpose())
+gammastar = calc_gammastar(tk=tk_2d, patm=patm_2d.transpose())
 
 # Create a contour plot of gamma
 fig, ax = pyplot.subplots()
@@ -105,7 +118,7 @@ temperature and atmospheric pressure:
 :tags: [hide-input]
 
 # Calculate K_mm
-kmm = calc_kmm(tc_2d, patm_2d.transpose())
+kmm = calc_kmm(tk=tk_2d, patm=patm_2d.transpose())
 
 # Contour plot of calculated values
 fig, ax = pyplot.subplots()
@@ -170,3 +183,7 @@ ax.set_xlabel("Atmospheric CO2 (ppm)")
 ax.set_ylabel("Atmospheric pressure (Pa)")
 pyplot.show()
 ```
+
+## Absorbed irradiation ($I_{abs}$)
+
+This value is simply the product of FAPAR and PPFD.

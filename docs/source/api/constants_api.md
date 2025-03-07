@@ -69,3 +69,10 @@ language_info:
 .. autoclass:: pyrealm.constants.competition_const.C3C4Const
     :members:
 ```
+
+## Two leaf model constants
+
+```{eval-rst}
+.. autoclass:: pyrealm.constants.two_leaf_canopy.TwoLeafConst
+    :members:
+```
