@@ -152,15 +152,15 @@ def test_faparlimitation_frompmodel(pmodel_data, exp_faparmax, exp_laimax):
         ppfd,
     ) = pmodel_data
 
-    env = PModelEnvironment(tc=tc, vpd=vpd, co2=co2, patm=patm)
+    env = PModelEnvironment(
+        tc=tc, vpd=vpd, co2=co2, patm=patm, fapar=np.ones_like(tc), ppfd=ppfd
+    )
 
     pmodel = PModel(
         env=env,
         reference_kphio=1 / 8,
         method_kphio="temperature",
     )
-
-    pmodel.estimate_productivity(fapar=np.ones_like(env.ca), ppfd=ppfd)
 
     faparlim = FaparLimitation.from_pmodel(
         pmodel, growing_season, datetimes, precipitation, aridity_index

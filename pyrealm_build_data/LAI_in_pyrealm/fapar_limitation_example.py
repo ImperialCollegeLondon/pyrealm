@@ -105,7 +105,7 @@ env = PModelEnvironment(
     vpd=de_gri_hh_xr["VPD_F"].to_numpy(),
     co2=de_gri_hh_xr["CO2_F_MDS"].to_numpy(),
     patm=de_gri_hh_xr["PA_F"].to_numpy(),
-    fapar=np.array([1.0]),
+    fapar=np.ones_like(de_gri_hh_xr["TA_F"]),
     ppfd=de_gri_hh_xr["PPFD"].to_numpy(),
 )
 
