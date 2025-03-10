@@ -65,6 +65,8 @@ class AnnualValueCalculator:
         if growing_season.dtype != np.bool_:
             raise ValueError("not a bool")
 
+        self.growing_season = growing_season
+
         # Create scaler object to handle conversion between scales
         self.scaler = AcclimationModel(datetimes)
         self.scaler.set_nearest(np.timedelta64(12, "h"))
@@ -89,11 +91,14 @@ class AnnualValueCalculator:
         Could possibly pass the function itself but can't work out the typing right now!
         """
 
-        if len(values) != len(self.scaler.datetimes):
-            raise ValueError("values don't match datetimes")
-
-        # Reduce to daily observations
-        daily_values = self.scaler.get_daily_means(values)
+        if len(values) == len(self.scaler.datetimes):
+            # Reduce to daily observations
+            daily_values = self.scaler.get_daily_means(values)
+        elif len(values) == len(self.growing_season):
+            # all good
+            daily_values = values
+        else:
+            raise ValueError("values don't match datetimes or growing season")
 
         # Split the daily values into subarrays using the year breaks
         values_by_year = np.split(daily_values, self.year_breaks)
@@ -332,16 +337,16 @@ class FaparLimitation:
 
         check_datetimes(datetimes)
 
-        annual_total_potential_gpp = get_annual(
-            pmodel.gpp, datetimes, growing_season, "total"
+        annual = AnnualValueCalculator(datetimes, growing_season.astype(np.bool))
+
+        annual_total_potential_gpp = annual.get_annual_values(pmodel.gpp, "sum", True)
+        annual_mean_ca = annual.get_annual_values(pmodel.env.ca, "mean", True)
+        annual_mean_chi = annual.get_annual_values(
+            pmodel.optchi.chi.round(5), "mean", True
         )
-        annual_mean_ca = get_annual(pmodel.env.ca, datetimes, growing_season, "mean")
-        annual_mean_chi = get_annual(
-            pmodel.optchi.chi.round(5), datetimes, growing_season, "mean"
-        )
-        annual_mean_vpd = get_annual(pmodel.env.vpd, datetimes, growing_season, "mean")
-        annual_total_precip = compute_annual_total_precip(
-            precip, datetimes, growing_season
+        annual_mean_vpd = annual.get_annual_values(pmodel.env.vpd, "mean", True)
+        annual_total_precip = convert_precipitation_to_molar(
+            annual.get_annual_values(precip, "sum", True)
         )
 
         return cls(
