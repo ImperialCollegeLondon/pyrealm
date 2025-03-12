@@ -65,8 +65,6 @@ def de_gri_hh_outputs():
     de_gri_data["time"] = pd.to_datetime(
         de_gri_data["time"], format="%Y-%m-%d %H:%M:%S"
     )
-    # # Pressure from kPa to Pa
-    # de_gri_data["PA_F"] = de_gri_data["PA_F"].to_numpy() * 1000
 
     return de_gri_data
 
@@ -84,8 +82,6 @@ def de_gri_daily_outputs():
 
     # Calculate time as np.datetime64 and scale other vars
     de_gri_data["date"] = pd.to_datetime(de_gri_data["time"], format="%Y-%m-%d")
-    # # Pressure from kPa to Pa
-    # de_gri_data["PA_F"] = de_gri_data["PA_F"].to_numpy() * 1000
 
     return de_gri_data
 
