@@ -1,21 +1,38 @@
-"""This submodule provides regression test data from the initial implentation of LAI
-phenology calculations, provided by Boya Zhou. The original provided data consisted of
-two files:
+"""This submodule provides regression test data from the initial implementation of LAI
+phenology calculations, provided by Boya Zhou. The input data consists of three files:
 
-* **FLX_DE-Gri_FLUXNET2015_FULLSET_HH_2004-2014_1-4.csv**: This contained the complete
-  FluxNET data set for the 'DE-Gri' site at half hourly resolution and was around 350
-  MB. It has been reduced to remove fields not used in the calculations to reduce file
-  size, creating the file `` FLX_DE-Gri_FLUXNET2015_phenology_inputs.csv``. The file
-  also includes some half-hourly predictions from the subdaily P Model implementation to
-  validate the subdaily calculations.
+* **DE_GRI_hh_fluxnet_simple.csv**: This file is a subset of the original FluxNET
+  dataset for the site (``FLX_DE-Gri_FLUXNET2015_FULLSET_HH_2004-2014_1-4.csv``). This
+  original file contained the complete FluxNET data set for the 'DE-Gri' site at half
+  hourly resolution, which includes 242 fields and is around 350 MB. The
+  ``fluxnet_reducer.py`` script was used to remove fields not used in the calculations
+  to reduce file size, creating the file ``DE_GRI_hh_fluxnet_simple.csv``.
 
-* **DE_Gri_Grassland_example.xlsx**: This contained daily calculations from the half
-  hourly data, along with predictions of various phenological variables. This file has
-  also been reduced to remove un-needed fields, creating the file
-  ``DE_Gri_Grassland_example_subset.csv``.
+* **DE_gri_splash_cru_ts4.07_2000_2019.nc**: This contains soil moisture data
+  for the site, extracted from a global run of the pyrealm SPLASH model on the CRU TS
+  4.07 data set (daily inputs, 0.5° resolution). The script ``splash_extractor.py`` was
+  used to extract data from the global outputs for the single  cell containing the site
+  coordinates.
 
-* In addition, both files contained required data that is constant across all
-  observations, such as the site coordinates and aridity index. These constants have
-  been extracted into the file ``DE-GRI_site_data.json``.
+* **DE-GRI_site_data.json**:  This contains required site data that is constant across
+  all observations.
 
+The script file ``python_implementation.py`` contains a pure Python reimplementation of
+Boya Zhou's original workflow, put together by David Orme and Boya Zhou to bring all of
+the calculations into Python using agreed inputs to create a repeatable regression test
+dataset.
+
+The script creates three output files to allow regression testing at three time scales:
+
+* **python_hh_outputs.csv**: The predictions from the P Model of GPP at the half hourly
+  scale, along with optimal chi and ci values
+
+* **python_daily_outputs.csv**: Daily total GPP along with soil moisture stress factors
+  and resulting penalised daily GPP, growing season definition and resulting time series
+  in LAI and lagged LAI.
+
+* **python_annual_outputs.csv**:  Annual values used in calculations including total
+  annual assimilation, precipitation, number of growing days, mean carbon chi and VPD
+  within the growing season and then annual values for maximum FAPAR, LAI and the m
+  parameter.
 """  # noqa: D205, D415

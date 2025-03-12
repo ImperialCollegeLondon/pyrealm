@@ -1,11 +1,1 @@
-{
-  "Dataset": "Flux2015",
-  "Site": "DE-Gri",
-  "Lat": 50.95,
-  "Lon": 13.5126,
-  "Vegetation": "GRA",
-  "Elev": 385,
-  "AI": 1.094517,
-  "f0": 0.540873739473232,
-  "AI_from_coords": 1.187241792678833
-}
+{"Dataset": "Flux2015", "Site": "DE-Gri", "Lat": 50.95, "Lon": 13.5126, "Vegetation": "GRA", "Elev": 385, "AI": 1.094517, "f0": 0.540873739473232, "AI_from_cruts": 1.172257090219922}
