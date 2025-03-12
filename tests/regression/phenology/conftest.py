@@ -24,9 +24,6 @@ def de_gri_half_hourly_inputs():
         de_gri_data["TIMESTAMP_START"], format="%Y%m%d%H%M"
     )
 
-    # # Blank out temperatures under 25°C
-    # de_gri_data["TA_F"] = de_gri_data["VPD_F"].where(de_gri_data["VPD_F"] >= -25)
-
     # # VPD from hPa to Pa
     de_gri_data["VPD_F"] = de_gri_data["VPD_F"].to_numpy() * 100
     # Pressure from kPa to Pa
