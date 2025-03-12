@@ -11,10 +11,10 @@ phenology calculations, provided by Boya Zhou. The input data consists of three 
 * **DE_gri_splash_cru_ts4.07_2000_2019.nc**: This contains soil moisture data
   for the site, extracted from a global run of the pyrealm SPLASH model on the CRU TS
   4.07 data set (daily inputs, 0.5° resolution). The script ``splash_extractor.py`` was
-  used to extract data from the global outputs for the single  cell containing the site
+  used to extract data from the global outputs for the single cell containing the site
   coordinates.
 
-* **DE-GRI_site_data.json**:  This contains required site data that is constant across
+* **DE-GRI_site_data.json**: This contains required site data that is constant across
   all observations.
 
 The script file ``python_implementation.py`` contains a pure Python reimplementation of
