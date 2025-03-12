@@ -5,7 +5,6 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3
   language: python
@@ -68,5 +67,12 @@ language_info:
 
 ```{eval-rst}
 .. autoclass:: pyrealm.constants.competition_const.C3C4Const
+    :members:
+```
+
+## Two leaf model constants
+
+```{eval-rst}
+.. autoclass:: pyrealm.constants.two_leaf_canopy.TwoLeafConst
     :members:
 ```

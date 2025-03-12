@@ -1,28 +1,29 @@
-"""test the functions in t_model_functions.py."""
+"""test the functions in tmodel.py."""
 
 from contextlib import nullcontext as does_not_raise
 from unittest.mock import patch
 
 import numpy as np
 import pytest
+from numpy.testing import assert_allclose
 
 
 @pytest.mark.parametrize(
     argnames="crown_areas, expected_r0",
     argvalues=(
-        (np.array([20, 30]), np.array([0.86887756, 1.29007041])),
-        (np.array([30, 40]), np.array([1.06415334, 1.489645])),
+        (np.array([20, 30]), np.array([[0.86887756, 1.29007041]])),
+        (np.array([30, 40]), np.array([[1.06415334, 1.489645]])),
     ),
 )
 def test_calculate_crown_r_0_values(crown_areas, expected_r0):
     """Test happy path for calculating r_0."""
 
-    from pyrealm.demography.t_model_functions import calculate_crown_r0
+    from pyrealm.demography.tmodel import calculate_crown_r0
 
     q_m = np.array([2.9038988210485766, 2.3953681843215673])
     actual_r0_values = calculate_crown_r0(q_m=q_m, crown_area=crown_areas)
 
-    assert np.allclose(actual_r0_values, expected_r0)
+    assert_allclose(actual_r0_values, expected_r0)
 
 
 @pytest.mark.parametrize(
@@ -33,7 +34,7 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
             slice(None),
             does_not_raise(),
             None,
-            (0, slice(None)),
+            [0],
             (1, 3),
             id="row_0",
         ),
@@ -42,7 +43,7 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
             slice(None),
             does_not_raise(),
             None,
-            (1, slice(None)),
+            [1],
             (1, 3),
             id="row_1",
         ),
@@ -51,7 +52,7 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
             slice(None),
             does_not_raise(),
             None,
-            (2, slice(None)),
+            [2],
             (1, 3),
             id="row_2",
         ),
@@ -60,7 +61,7 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
             slice(None),
             does_not_raise(),
             None,
-            (3, slice(None)),
+            [3],
             (1, 3),
             id="row_3",
         ),
@@ -69,7 +70,7 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
             slice(None),
             does_not_raise(),
             None,
-            (4, slice(None)),
+            [4],
             (1, 3),
             id="row_4",
         ),
@@ -78,7 +79,7 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
             slice(None),
             does_not_raise(),
             None,
-            (5, slice(None)),
+            [5],
             (1, 3),
             id="row_5",
         ),
@@ -211,7 +212,7 @@ class TestTModel:
         exp_shape,
     ):
         """Tests calculation of heights of tree from diameter."""
-        from pyrealm.demography.t_model_functions import calculate_heights
+        from pyrealm.demography.tmodel import calculate_heights
 
         with outcome as excep:
             result = calculate_heights(
@@ -221,7 +222,7 @@ class TestTModel:
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["stem_height"][out_idx])
+            assert_allclose(result, rtmodel_data["stem_height"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -239,7 +240,7 @@ class TestTModel:
     ):
         """Tests inverted calculation of dbh from height."""
 
-        from pyrealm.demography.t_model_functions import calculate_dbh_from_height
+        from pyrealm.demography.tmodel import calculate_dbh_from_height
 
         with outcome as excep:
             result = calculate_dbh_from_height(
@@ -249,7 +250,7 @@ class TestTModel:
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["dbh"][out_idx])
+            assert_allclose(result, rtmodel_data["dbh"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -267,7 +268,7 @@ class TestTModel:
     ):
         """Tests calculation of crown areas of trees."""
 
-        from pyrealm.demography.t_model_functions import calculate_crown_areas
+        from pyrealm.demography.tmodel import calculate_crown_areas
 
         with outcome as excep:
             result = calculate_crown_areas(
@@ -278,7 +279,7 @@ class TestTModel:
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["crown_area"][out_idx])
+            assert_allclose(result, rtmodel_data["crown_area"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -296,7 +297,7 @@ class TestTModel:
     ):
         """Tests calculation of crown fraction of trees."""
 
-        from pyrealm.demography.t_model_functions import calculate_crown_fractions
+        from pyrealm.demography.tmodel import calculate_crown_fractions
 
         with outcome as excep:
             result = calculate_crown_fractions(
@@ -306,7 +307,7 @@ class TestTModel:
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["crown_fraction"][out_idx])
+            assert_allclose(result, rtmodel_data["crown_fraction"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -324,7 +325,7 @@ class TestTModel:
     ):
         """Tests calculation of stem masses of trees."""
 
-        from pyrealm.demography.t_model_functions import calculate_stem_masses
+        from pyrealm.demography.tmodel import calculate_stem_masses
 
         with outcome as excep:
             result = calculate_stem_masses(
@@ -334,7 +335,7 @@ class TestTModel:
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["stem_mass"][out_idx])
+            assert_allclose(result, rtmodel_data["stem_mass"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -352,7 +353,7 @@ class TestTModel:
     ):
         """Tests calculation of stem masses of trees."""
 
-        from pyrealm.demography.t_model_functions import calculate_foliage_masses
+        from pyrealm.demography.tmodel import calculate_foliage_masses
 
         with outcome as excep:
             result = calculate_foliage_masses(
@@ -362,7 +363,7 @@ class TestTModel:
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["foliage_mass"][out_idx])
+            assert_allclose(result, rtmodel_data["foliage_mass"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -380,7 +381,7 @@ class TestTModel:
     ):
         """Tests calculation of stem masses of trees."""
 
-        from pyrealm.demography.t_model_functions import calculate_sapwood_masses
+        from pyrealm.demography.tmodel import calculate_sapwood_masses
 
         with outcome as excep:
             result = calculate_sapwood_masses(
@@ -392,7 +393,7 @@ class TestTModel:
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["sapwood_mass"][out_idx])
+            assert_allclose(result, rtmodel_data["sapwood_mass"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -410,7 +411,7 @@ class TestTModel:
     ):
         """Tests calculation of whole crown GPP."""
 
-        from pyrealm.demography.t_model_functions import calculate_whole_crown_gpp
+        from pyrealm.demography.tmodel import calculate_whole_crown_gpp
 
         with outcome as excep:
             result = calculate_whole_crown_gpp(
@@ -421,7 +422,7 @@ class TestTModel:
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["whole_crown_gpp"][out_idx])
+            assert_allclose(result, rtmodel_data["whole_crown_gpp"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -439,7 +440,7 @@ class TestTModel:
     ):
         """Tests calculation of sapwood respiration."""
 
-        from pyrealm.demography.t_model_functions import calculate_sapwood_respiration
+        from pyrealm.demography.tmodel import calculate_sapwood_respiration
 
         with outcome as excep:
             result = calculate_sapwood_respiration(
@@ -448,7 +449,7 @@ class TestTModel:
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["sapwood_respiration"][out_idx])
+            assert_allclose(result, rtmodel_data["sapwood_respiration"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -472,7 +473,7 @@ class TestTModel:
         broadcasting
         """
 
-        from pyrealm.demography.t_model_functions import calculate_foliar_respiration
+        from pyrealm.demography.tmodel import calculate_foliar_respiration
 
         with outcome as excep:
             result = calculate_foliar_respiration(
@@ -481,9 +482,9 @@ class TestTModel:
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(
+            assert_allclose(
                 result,
-                rtmodel_data["whole_crown_gpp"][data_idx]
+                rtmodel_data["whole_crown_gpp"][out_idx]
                 * rtmodel_flora.resp_f[pft_idx],
             )
             return
@@ -503,7 +504,7 @@ class TestTModel:
     ):
         """Tests calculation of fine root respiration."""
 
-        from pyrealm.demography.t_model_functions import calculate_fine_root_respiration
+        from pyrealm.demography.tmodel import calculate_fine_root_respiration
 
         with outcome as excep:
             result = calculate_fine_root_respiration(
@@ -514,7 +515,7 @@ class TestTModel:
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["fine_root_respiration"][out_idx])
+            assert_allclose(result, rtmodel_data["fine_root_respiration"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -532,7 +533,7 @@ class TestTModel:
     ):
         """Tests calculation of net primary productivity."""
 
-        from pyrealm.demography.t_model_functions import (
+        from pyrealm.demography.tmodel import (
             calculate_net_primary_productivity,
         )
 
@@ -548,7 +549,7 @@ class TestTModel:
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["npp"][out_idx])
+            assert_allclose(result, rtmodel_data["npp"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -566,7 +567,7 @@ class TestTModel:
     ):
         """Tests calculation of foliage and fine root turnover."""
 
-        from pyrealm.demography.t_model_functions import (
+        from pyrealm.demography.tmodel import (
             calculate_foliage_and_fine_root_turnover,
         )
 
@@ -580,7 +581,7 @@ class TestTModel:
             )
 
             assert result.shape == exp_shape
-            assert np.allclose(result, rtmodel_data["turnover"][out_idx])
+            assert_allclose(result, rtmodel_data["turnover"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -598,7 +599,7 @@ class TestTModel:
     ):
         """Tests calculation of growth increments."""
 
-        from pyrealm.demography.t_model_functions import (
+        from pyrealm.demography.tmodel import (
             calculate_growth_increments,
         )
 
@@ -618,15 +619,13 @@ class TestTModel:
             )
 
             assert delta_d.shape == exp_shape
-            assert np.allclose(delta_d, rtmodel_data["delta_dbh"][out_idx])
+            assert_allclose(delta_d, rtmodel_data["delta_dbh"][out_idx])
 
             assert delta_mass_stm.shape == exp_shape
-            assert np.allclose(delta_mass_stm, rtmodel_data["delta_stem_mass"][out_idx])
+            assert_allclose(delta_mass_stm, rtmodel_data["delta_stem_mass"][out_idx])
 
             assert delta_mass_frt.shape == exp_shape
-            assert np.allclose(
-                delta_mass_frt, rtmodel_data["delta_foliage_mass"][out_idx]
-            )
+            assert_allclose(delta_mass_frt, rtmodel_data["delta_foliage_mass"][out_idx])
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -639,7 +638,7 @@ def test_calculate_dbh_from_height_edge_cases():
     * If H = h_max, dbh is infinite.
     """
 
-    from pyrealm.demography.t_model_functions import calculate_dbh_from_height
+    from pyrealm.demography.tmodel import calculate_dbh_from_height
 
     pft_h_max_values = np.array([20, 30])
     pft_a_hd_values = np.array([116.0, 116.0])
@@ -693,12 +692,12 @@ def test_StemAllometry_validation(rtmodel_flora, at_dbh, outcome, excep_msg):
     """
 
     from pyrealm.demography.core import _validate_demography_array_arguments
-    from pyrealm.demography.t_model_functions import StemAllometry
+    from pyrealm.demography.tmodel import StemAllometry
 
     with (
         outcome as excep,
         patch(
-            "pyrealm.demography.t_model_functions._validate_demography_array_arguments",
+            "pyrealm.demography.tmodel._validate_demography_array_arguments",
             wraps=_validate_demography_array_arguments,
         ) as val_func_patch,
     ):
@@ -712,7 +711,7 @@ def test_StemAllometry_validation(rtmodel_flora, at_dbh, outcome, excep_msg):
 def test_StemAllometry(rtmodel_flora, rtmodel_data):
     """Test the StemAllometry class and inherited methods."""
 
-    from pyrealm.demography.t_model_functions import StemAllometry
+    from pyrealm.demography.tmodel import StemAllometry
 
     stem_allometry = StemAllometry(
         stem_traits=rtmodel_flora, at_dbh=rtmodel_data["dbh"][:, [0]]
@@ -724,7 +723,7 @@ def test_StemAllometry(rtmodel_flora, rtmodel_data):
         v for v in stem_allometry.array_attrs if v not in ["crown_r0", "crown_z_max"]
     )
     for var in vars_to_check:
-        assert np.allclose(getattr(stem_allometry, var), rtmodel_data[var])
+        assert_allclose(getattr(stem_allometry, var), rtmodel_data[var])
 
     # Test the inherited to_pandas method
     df = stem_allometry.to_pandas()
@@ -740,7 +739,7 @@ def test_StemAllometry(rtmodel_flora, rtmodel_data):
 def test_StemAllometry_CohortMethods(rtmodel_flora, rtmodel_data):
     """Test the StemAllometry inherited cohort methods."""
 
-    from pyrealm.demography.t_model_functions import StemAllometry
+    from pyrealm.demography.tmodel import StemAllometry
 
     stem_allometry = StemAllometry(
         stem_traits=rtmodel_flora, at_dbh=rtmodel_data["dbh"][:, [0]]
@@ -766,13 +765,13 @@ def test_StemAllometry_CohortMethods(rtmodel_flora, rtmodel_data):
     # Remove the rows from the first copy and what's left should be aligned with the
     # original data
     stem_allometry.drop_cohort_data(drop_indices=np.arange(rtmodel_flora.n_pfts))
-    assert np.allclose(stem_allometry.crown_fraction, check_data)
+    assert_allclose(stem_allometry.crown_fraction, check_data)
 
 
 def test_StemAllocation(rtmodel_flora, rtmodel_data):
     """Test the StemAllometry class."""
 
-    from pyrealm.demography.t_model_functions import StemAllocation, StemAllometry
+    from pyrealm.demography.tmodel import StemAllocation, StemAllometry
 
     stem_allometry = StemAllometry(
         stem_traits=rtmodel_flora, at_dbh=rtmodel_data["dbh"][:, [0]]
@@ -790,7 +789,7 @@ def test_StemAllocation(rtmodel_flora, rtmodel_data):
         v for v in stem_allocation.array_attrs if v not in ["foliar_respiration"]
     )
     for var in vars_to_check:
-        assert np.allclose(getattr(stem_allocation, var), rtmodel_data[var])
+        assert_allclose(getattr(stem_allocation, var), rtmodel_data[var])
 
     # Test the inherited to_pandas method
     df = stem_allocation.to_pandas()
@@ -840,7 +839,7 @@ def test_StemAllocation_validation(rtmodel_flora, pot_gpp, outcome, excep_msg):
     """
 
     from pyrealm.demography.core import _validate_demography_array_arguments
-    from pyrealm.demography.t_model_functions import StemAllocation, StemAllometry
+    from pyrealm.demography.tmodel import StemAllocation, StemAllometry
 
     # Calculate a constant allometry
     allom = StemAllometry(stem_traits=rtmodel_flora, at_dbh=np.ones((4, 3)))
@@ -848,7 +847,7 @@ def test_StemAllocation_validation(rtmodel_flora, pot_gpp, outcome, excep_msg):
     with (
         outcome as excep,
         patch(
-            "pyrealm.demography.t_model_functions._validate_demography_array_arguments",
+            "pyrealm.demography.tmodel._validate_demography_array_arguments",
             wraps=_validate_demography_array_arguments,
         ) as val_func_patch,
     ):

@@ -30,7 +30,7 @@ def calc_density_h2o_chen(
             equations.
 
     Returns:
-        Water density as a float in (g cm^-3)
+        Water density in kg/m^3
 
     Raises:
         ValueError: if the inputs have incompatible shapes.
@@ -72,7 +72,7 @@ def calc_density_h2o_fisher(
     """Calculate water density.
 
     Calculates the density of water as a function of temperature and atmospheric
-    pressure, using the Tumlirz Equation and coefficients calculated by
+    pressure (kg/m^3), using the Tumlirz Equation and coefficients calculated by
     :cite:t:`Fisher:1975tm`.
 
     Warning:
@@ -86,7 +86,7 @@ def calc_density_h2o_fisher(
             equations.
 
     Returns:
-        Water density as a float in (g cm^-3)
+        Water density in kg/m^3.
 
     Raises:
         ValueError: if the inputs have incompatible shapes.
@@ -117,7 +117,7 @@ def calc_density_h2o_fisher(
     # Calculate the specific volume (cm^3 g^-1):
     spec_vol = vinf_val + lambda_val / (po_val + pbar)
 
-    # Convert to density (g cm^-3) -> 1000 g/kg; 1000000 cm^3/m^3 -> kg/m^3:
+    # Convert to density in kg/m^3
     rho = 1e3 / spec_vol
 
     return rho
@@ -132,9 +132,9 @@ def calc_density_h2o(
     """Calculate water density.
 
     Calculates the density of water as a function of temperature and atmospheric
-    pressure. This function uses either the method provided by :cite:t:`Fisher:1975tm`
-    (:func:`~pyrealm.core.water.calc_density_h2o_fisher`) or :cite:t:`chen:2008a`
-    (:func:`~pyrealm.core.water.calc_density_h2o_chen`).
+    pressure (in kg/m^3). This function uses either the method provided by
+    :cite:t:`Fisher:1975tm` (:func:`~pyrealm.core.water.calc_density_h2o_fisher`) or
+    :cite:t:`chen:2008a` (:func:`~pyrealm.core.water.calc_density_h2o_chen`).
 
     The constants attribute
     :attr:`~pyrealm.constants.core_const.CoreConst.water_density_method` can be used to
@@ -148,7 +148,7 @@ def calc_density_h2o(
             functions are numerically unstable.
 
     Returns:
-        Water density as a float in (g cm^-3)
+        Water density in kg/m^3.
 
     Raises:
         ValueError: if ``tc`` contains values below -30°C and ``safe`` is True, or if
@@ -267,7 +267,7 @@ def calc_viscosity_h2o_matrix(
         A float giving the viscosity of water (mu, Pa s)
 
     Examples:
-        >>> # Density of water at 20 degrees C and standard atmospheric pressure:
+        >>> # Viscosity of water at 20 degrees C and standard atmospheric pressure:
         >>> round(calc_viscosity_h2o(20, 101325), 7)
         np.float64(0.0010016)
     """
@@ -306,3 +306,105 @@ def calc_viscosity_h2o_matrix(
 
     # Calculate mu (Eq. 1, Huber et al., 2009)
     return mu_bar * core_const.huber_mu_ast  # Pa s
+
+
+def convert_water_mm_to_moles(
+    water_mm: NDArray[np.float64],
+    tc: NDArray[np.float64],
+    patm: NDArray[np.float64],
+    core_const: CoreConst = CoreConst(),
+) -> NDArray[np.float64]:
+    """Convert water in mm per square meter to moles.
+
+    This function converts water volumes expressed as mm per m2 into a number of moles
+    of water. It accounts for the changing density of water with temperature and
+    pressure.
+
+    Args:
+        water_mm: Water volume in mm per square meter
+        tc: air temperature (°C)
+        patm: atmospheric pressure (Pa)
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`
+
+    Returns:
+        Moles of water (-)
+
+    Examples:
+        >>> # At 0°C and 101325 Pa, one mole of water is ~18 g (18 cm3, 0.018 mm m-2).
+        >>> # So, 1 mm m2 = 1 / 0.018 = ~55 moles.
+        >>> round(convert_water_mm_to_moles(water_mm=1, tc=0, patm=101325), 3)
+        np.float64(55.508)
+    """
+
+    # Check inputs, return shape not used
+    _ = check_input_shapes(water_mm, tc, patm)
+
+    # 1 mm per square meter is 1 litre, so convert to mL and then to moles
+    return (
+        water_mm
+        * 1000
+        / calculate_water_molar_volume(tc=tc, patm=patm, core_const=core_const)
+    )
+
+
+def convert_water_moles_to_mm(
+    water_moles: NDArray[np.float64],
+    tc: NDArray[np.float64],
+    patm: NDArray[np.float64],
+    core_const: CoreConst = CoreConst(),
+) -> NDArray[np.float64]:
+    """Convert water in moles to mm per square meter.
+
+    This function converts water volumes expressed as moles into mm per m2. It accounts
+    for the changing density of water with temperature and pressure.
+
+    Args:
+        water_moles: Water volume in moles
+        tc: air temperature (°C)
+        patm: atmospheric pressure (Pa)
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`
+
+    Returns:
+        Water volume in mm per m2
+
+    Examples:
+        >>> # At 0°C and 101325 Pa, one mole of water is ~18 g (18 cm3, 0.018 mm m-2).
+        >>> # So, 1 mol = 0.018 mm
+        >>> round(convert_water_moles_to_mm(water_moles=1, tc=0, patm=101325), 3)
+        np.float64(0.018)
+    """
+
+    # Check inputs, return shape not used
+    _ = check_input_shapes(water_moles, tc, patm)
+
+    # 1 mm per square meter is 1 litre, so convert to mL and then to moles
+    return (
+        water_moles
+        * calculate_water_molar_volume(tc=tc, patm=patm, core_const=core_const)
+    ) / 1000
+
+
+def calculate_water_molar_volume(
+    tc: NDArray[np.float64],
+    patm: NDArray[np.float64],
+    core_const: CoreConst = CoreConst(),
+) -> NDArray[np.floating]:
+    """Calculate the volume of a mole of water at a given temperature and pressure.
+
+    Args:
+        tc: air temperature (°C)
+        patm: atmospheric pressure (Pa)
+        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`
+
+    Returns:
+        Water molar volume in mol cm-3, or equivalently mol/mL
+
+    Examples:
+        >>> # A mole of water at standard temperature and pressure occupies ~18 cm3.
+        >>> round(calculate_water_molar_volume(0, 101235), 3)
+        np.float64(18.015)
+    """
+    # Calculate density at given temperature and pressure in g/cm3
+    water_density = calc_density_h2o(tc=tc, patm=patm, core_const=core_const) / 1000
+    # Hence molar volume as mol/cm3 or equivalently mol/mL
+    return core_const.k_water_molmass / water_density

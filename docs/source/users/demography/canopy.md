@@ -4,7 +4,6 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -43,7 +42,7 @@ from pyrealm.demography.flora import PlantFunctionalType, Flora
 from pyrealm.demography.community import Cohorts, Community
 from pyrealm.demography.crown import CrownProfile, get_crown_xy
 from pyrealm.demography.canopy import Canopy
-from pyrealm.demography.t_model_functions import StemAllometry
+from pyrealm.demography.tmodel import StemAllometry
 ```
 
 The `canopy` module in `pyrealm` is used to calculate a model of the light environment

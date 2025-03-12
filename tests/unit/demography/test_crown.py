@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+from numpy.testing import assert_allclose
 
 ZQZInput = namedtuple(
     "ZQZInput",
@@ -359,7 +360,7 @@ def test_calculate_relative_crown_radius_at_z_values(fixture_community):
 
     # Now test that the circular crown area from that radius is equivalent to the direct
     # prediction from the T model allometric equations.
-    assert np.allclose(
+    assert_allclose(
         fixture_community.stem_allometry.crown_area,
         np.pi * (q_z_values * fixture_community.stem_allometry.crown_r0) ** 2,
     )
@@ -412,22 +413,22 @@ def test_calculate_stem_projected_crown_area_at_z_inputs(fixture_z_qz_stem_prope
     argvalues=[
         pytest.param(
             np.array([15.19414157, 21.27411267, 23.70702725, 24.68056368]) + 0.01,
-            np.repeat(0, 4),
+            np.array([[0, 0, 0, 0]]),
             id="one_cm_above_stem_top",
         ),
         pytest.param(
             np.array([12.91932028, 18.08901635, 20.15768226, 20.98546374]) + 1.00,
-            np.array([5.94793264, 19.6183899, 33.77430339, 47.31340371]),
+            np.array([[5.94793264, 19.6183899, 33.77430339, 47.31340371]]),
             id="one_metre_above_z_max",
         ),
         pytest.param(
             np.array([12.91932028, 18.08901635, 20.15768226, 20.98546374]),
-            np.array([8.03306419, 22.49502702, 37.60134866, 52.19394627]),
+            np.array([[8.03306419, 22.49502702, 37.60134866, 52.19394627]]),
             id="at_z_max",
         ),
         pytest.param(
             np.array([12.91932028, 18.08901635, 20.15768226, 20.98546374]) - 1.00,
-            np.array([8.03306419, 22.49502702, 37.60134866, 52.19394627]),
+            np.array([[8.03306419, 22.49502702, 37.60134866, 52.19394627]]),
             id="one_metre_below_z_max",
         ),
     ],
@@ -467,7 +468,7 @@ def test_calculate_stem_projected_crown_area_at_z_values(
         z_max=fixture_community.stem_allometry.crown_z_max,
     )
 
-    assert np.allclose(
+    assert_allclose(
         Ap_z_values,
         expected_Ap_z,
     )
@@ -566,15 +567,15 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
         ]
     )
 
-    assert np.allclose(leaf_area_fg0, expected_leaf_area_fg0)
+    assert_allclose(leaf_area_fg0, expected_leaf_area_fg0)
 
     # More rigourous check - with f_g = 0, the projected leaf area of each stem in the
     # lowest layer must equal the crown area (all the crown is now accounted for).
-    assert np.allclose(leaf_area_fg0[0, :], fixture_community.stem_allometry.crown_area)
+    assert_allclose(leaf_area_fg0[[0]], fixture_community.stem_allometry.crown_area)
     # Also the diagonal of the resulting matrix (4 heights for 4 cohorts) should _also_
     # match the crown areas as the leaf area is all accounted for exactly at z_max.
-    assert np.allclose(
-        np.diag(leaf_area_fg0), fixture_community.stem_allometry.crown_area
+    assert_allclose(
+        np.diag(leaf_area_fg0)[None, :], fixture_community.stem_allometry.crown_area
     )
 
     # Introduce some crown gap fraction and recalculate
@@ -599,7 +600,7 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
         ]
     )
 
-    assert np.allclose(leaf_area_fg002, expected_leaf_area_fg002)
+    assert_allclose(leaf_area_fg002, expected_leaf_area_fg002)
 
     # More rigorous checks:
     # - All leaf areas with f_g = 0.02 should be lower than with f_g = 0, accounting for
@@ -610,8 +611,8 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
 
     # - The diagonal should be exactly (1 - f_g) times the crown area: at the z_max for
     #   the stem all but the crown gap fraction should be accounted for
-    assert np.allclose(
-        np.diag(leaf_area_fg002),
+    assert_allclose(
+        np.diag(leaf_area_fg002)[None, :],
         fixture_community.stem_allometry.crown_area * 0.98,
     )
 
@@ -639,21 +640,21 @@ def test_CrownProfile(fixture_community):
         )
         assert val_func_patch.call_count == 1
 
-    # Crown radius on diagonal predicts crown area accurately
-    assert np.allclose(
-        np.diag(crown_profile.crown_radius) ** 2 * np.pi,
+    # Crown radius on diagonal predicts crown area accurately - needs to made 2D again.
+    assert_allclose(
+        np.diag(crown_profile.crown_radius)[None, :] ** 2 * np.pi,
         fixture_community.stem_allometry.crown_area,
     )
 
     # Same is true for projected crown area at z_max heights
-    assert np.allclose(
-        np.diag(crown_profile.projected_crown_area),
+    assert_allclose(
+        np.diag(crown_profile.projected_crown_area)[None, :],
         fixture_community.stem_allometry.crown_area,
     )
 
     # And since f_g=0, so is projected leaf area
-    assert np.allclose(
-        np.diag(crown_profile.projected_leaf_area),
+    assert_allclose(
+        np.diag(crown_profile.projected_leaf_area)[None, :],
         fixture_community.stem_allometry.crown_area,
     )
 

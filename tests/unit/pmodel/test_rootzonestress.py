@@ -8,6 +8,7 @@ from contextlib import nullcontext as does_not_raise
 
 import numpy as np
 import pytest
+from numpy.testing import assert_allclose
 
 
 @pytest.mark.parametrize(
@@ -42,12 +43,14 @@ def test_rootzonestress(method, expected_chi):
         vpd=np.repeat(820, n_vals),
         co2=np.repeat(400, n_vals),
         rootzonestress=np.linspace(0, 1, n_vals),
+        fapar=np.repeat(1, n_vals),
+        ppfd=np.repeat(800, n_vals),
     )
 
     optchi_class = OPTIMAL_CHI_CLASS_REGISTRY[method]
     optchi = optchi_class(env=env)
 
-    assert np.allclose(optchi.chi, expected_chi)
+    assert_allclose(optchi.chi, expected_chi)
 
 
 @pytest.mark.parametrize(
@@ -75,7 +78,7 @@ def test_rootzonestress(method, expected_chi):
         ),
     ],
 )
-def test_CalcOptimalChiNew_requires(method, context_manager, message):
+def test_CalcOptimalChi_requires(method, context_manager, message):
     """Tests the _check_requires mechanism for methods with requires set."""
     from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
     from pyrealm.pmodel.pmodel_environment import PModelEnvironment
@@ -86,6 +89,8 @@ def test_CalcOptimalChiNew_requires(method, context_manager, message):
         patm=np.repeat(101325.0, n_vals),
         vpd=np.repeat(820, n_vals),
         co2=np.repeat(400, n_vals),
+        fapar=np.repeat(1, n_vals),
+        ppfd=np.repeat(800, n_vals),
     )
 
     optchi_class = OPTIMAL_CHI_CLASS_REGISTRY[method]

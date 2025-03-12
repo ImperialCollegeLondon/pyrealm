@@ -5,7 +5,6 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3
   language: python
@@ -152,9 +151,9 @@ docstrings. The `sphinx` building process requires some extra packages, but thes
 included in the `docs` group in `pyproject.toml` and should be installed.
 
 In order to build the package documentation, Jupyter needs to be able to associate the
-documentation files with the Python environment managed by `poetry`. Fortunately, the
-`poetry shell` and `poetry run` commands update the Jupyter kernel specifications so
-that the `python3` kernel name points to the `poetry` environment. For example:
+documentation files with the Python environment managed by `poetry`. Fortunately,
+`poetry run` can be used to update the Jupyter kernel specifications so that the
+`python3` kernel name points to the `poetry` environment. For example:
 
 ```bash
 $ poetry run jupyter kernelspec list

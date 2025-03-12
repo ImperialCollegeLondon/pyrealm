@@ -5,9 +5,8 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 language_info:
@@ -35,8 +34,8 @@ This gives C4 plants a substantial competitive advantage in warm, dry and low CO
 environments. The {class}`~pyrealm.pmodel.competition.C3C4Competition` class provides an
 implementation of a model {cite:p}`lavergne:2022a` that estimates the expected fraction
 of GPP from C4 plants. It uses predictions of GPP from the
-{class}`~pyrealm.pmodel.pmodel.PModel` assuming communities consisting solely of C3 or
-C4 plants to calculate the expected fraction of C4 plants in the community and the
+{class}`~pyrealm.pmodel.pmodel.PModel` assuming communities consisting solely of
+C3 or C4 plants to calculate the expected fraction of C4 plants in the community and the
 contributions to GPP from C3 and C4 plants at each site.
 
 ## Step 1: Proportional GPP advantage
@@ -56,11 +55,11 @@ $F_4$ changes with $A_4$, given differing estimates of tree cover.
 :tags: [hide-input]
 
 import numpy as np
-from matplotlib import pyplot
+import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
+from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel import (
-    PModel,
     PModelEnvironment,
     CalcCarbonIsotopes,
     C3C4Competition,
@@ -78,13 +77,14 @@ frac_c4 = convert_gpp_advantage_to_c4_fraction(gpp_adv_c4_2d, treecover_2d)
 
 # Plot the results
 for idx, lev in enumerate(treecover_1d):
-    pyplot.plot(gpp_adv_c4_2d[idx, :], frac_c4[idx, :], label=f"{int(lev)}%")
+    plt.plot(gpp_adv_c4_2d[idx, :], frac_c4[idx, :], label=f"{int(lev)}%")
 
-pyplot.legend(title="Forest cover", frameon=False)
-pyplot.title(r"Initial C4 fraction prediction from $A_4$ and tree cover")
-pyplot.xlabel("Proportion C4 GPP advantage $A_4$")
-pyplot.ylabel("Expected C4 fraction ($F_4$)")
-pyplot.axvline(0, ls="--", c="grey")
+plt.legend(title="Forest cover", frameon=False)
+plt.title(r"Initial C4 fraction prediction from $A_4$ and tree cover")
+plt.xlabel("Proportion C4 GPP advantage $A_4$")
+plt.ylabel("Expected C4 fraction ($F_4$)")
+plt.axvline(0, ls="--", c="grey")
+plt.show()
 ```
 
 ## Step 3: Account for shading by C3 trees
@@ -104,12 +104,13 @@ shading of C4 plants.
 # Just use the competition model to predict h across a GPP gradient
 gpp_c3_kg = np.linspace(0, 5, 101)
 prop_trees = calculate_tree_proportion(gpp_c3_kg)
-pyplot.plot(gpp_c3_kg, prop_trees)
-pyplot.axvline(2.8, ls="--", c="grey")
+plt.plot(gpp_c3_kg, prop_trees)
+plt.axvline(2.8, ls="--", c="grey")
 
-pyplot.title("Proportion of GPP from C3 trees")
-pyplot.xlabel("GPP from C3 plants (kg m-2 yr-1)")
-pyplot.ylabel("Proportion of GPP from C3 trees (h, -)")
+plt.title("Proportion of GPP from C3 trees")
+plt.xlabel("GPP from C3 plants (kg m-2 yr-1)")
+plt.ylabel("Proportion of GPP from C3 trees (h, -)")
+plt.show()
 ```
 
 ## Step 4: Filtering cold areas and cropland
@@ -138,17 +139,13 @@ cover of 0.5.
 # Use a simple temperature sequence to generate a range of optimal chi values
 n_pts = 51
 tc_1d = np.linspace(-10, 45, n_pts)
-ppfd = 450
-fapar = 0.9
 
 # Fit C3 and C4 P models
-env = PModelEnvironment(tc=tc_1d, patm=101325, co2=400, vpd=1000)
+env = PModelEnvironment(tc=tc_1d, patm=101325, co2=400, vpd=1000, ppfd=450, fapar=0.9)
 
 mod_c3 = PModel(env, method_optchi="prentice14")
-mod_c3.estimate_productivity(fapar=fapar, ppfd=ppfd)
 
 mod_c4 = PModel(env, method_optchi="c4")
-mod_c4.estimate_productivity(fapar=fapar, ppfd=ppfd)
 
 # Competition, using annual GPP from µgC m2 s to g m2 yr
 gpp_c3_annual = mod_c3.gpp * (60 * 60 * 24 * 365) * 1e-6
@@ -216,7 +213,7 @@ Panel F
 :tags: [hide-input]
 
 # Generate the plots
-fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = pyplot.subplots(3, 2, figsize=(10, 12))
+fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2, figsize=(10, 12))
 
 # GPP predictions
 ax1.plot(tc_1d, gpp_c3_annual, label="C3 alone")
@@ -280,5 +277,5 @@ for letter, ax in zip(("A", "B", "C", "D", "E", "F"), (ax1, ax2, ax3, ax4, ax5, 
         backgroundcolor="w",
     )
 
-pyplot.tight_layout()
+plt.tight_layout()
 ```

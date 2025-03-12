@@ -11,18 +11,18 @@ from pyrealm.core.utilities import check_input_shapes
 from pyrealm.core.water import calc_viscosity_h2o
 
 
-def calc_ftemp_arrh(
+def calculate_simple_arrhenius_factor(
     tk: NDArray[np.float64],
-    ha: float | NDArray,
-    tk_ref: float | NDArray | None = None,
-    pmodel_const: PModelConst = PModelConst(),
-    core_const: CoreConst = CoreConst(),
+    tk_ref: float,
+    ha: float,
+    k_R: float = CoreConst().k_R,
 ) -> NDArray[np.float64]:
-    r"""Calculate enzyme kinetics scaling factor.
+    r"""Calculate an Arrhenius scaling factor using activation energy.
 
-    Calculates the temperature-scaling factor :math:`f` for enzyme kinetics following an
-    Arrhenius response for a given temperature (``tk``, :math:`T`) and activation energy
-    (``ha``, :math:`H_a`).
+    Calculates the temperature-scaling factor :math:`f` for enzyme kinetics following
+    a simple Arrhenius response governed solely by the activation energy for an enzyme
+    (``ha``, :math:`H_a`). The rate is given for a temperature :math:`T` relative to a
+    reference temperature :math:T_0`, both given in Kelvin.
 
     Arrhenius kinetics are described as:
 
@@ -47,42 +47,119 @@ def calc_ftemp_arrh(
 
     Args:
         tk: Temperature (K)
+        tk_ref: The reference temperature for the reaction (K).
         ha: Activation energy (in :math:`J \text{mol}^{-1}`)
-        tk_ref: The reference temperature for the reaction (K). Optional, defaulting to
-            the value of
-            :attr:`PModelConst.plant_T_ref<pyrealm.constants.PModelConst.plant_T_ref>`
-            expressed in Kelvin.
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
-
-    PModel Parameters:
-        To: standard reference temperature for photosynthetic processes (:math:`T_0`,
-            ``k_To``)
-        R: the universal gas constant (:math:`R`, ``k_R``)
-
-    Returns:
-        Estimated float values for :math:`f`
-
+        k_R: The universal gas constant, defaulting to the value from
+            attr:`~pyrealm.constants.core_const.CoreConst.k_R`. 
+    
     Examples:
-        >>> # Relative rate change from 25 to 10 degrees Celsius (percent change)
-        >>> np.round((1.0-calc_ftemp_arrh( 283.15, 100000)) * 100, 4)
+        >>> # Percentage rate change from 25 to 10 degrees Celsius
+        >>> at_10C = calculate_simple_arrhenius_factor(
+        ...     np.array([283.15]) , 298.15, 100000
+        ... )
+        >>> np.round((1.0 - at_10C) * 100, 4)
         array([88.1991])
     """
 
-    # Note that the following forms are equivalent:
-    # exp( ha * (tk - 298.15) / (298.15 * kR * tk) )
-    # exp( ha * (tc - 25.0)/(298.15 * kR * (tc + 273.15)) )
-    # exp( (ha/kR) * (1/298.15 - 1/tk) )
+    return np.exp(ha * (tk - tk_ref) / (tk_ref * k_R * tk))
 
-    if tk_ref is None:
-        tk_ref = np.array([pmodel_const.plant_T_ref + core_const.k_CtoK])
 
-    return np.exp(ha * (tk - tk_ref) / (tk_ref * core_const.k_R * tk))
+def calculate_kattge_knorr_arrhenius_factor(
+    tk_leaf: NDArray[np.float64],
+    tk_ref: float,
+    tc_growth: NDArray[np.float64],
+    coef: dict[str, float],
+    k_R: float = CoreConst().k_R,
+) -> NDArray[np.float64]:
+    r"""Calculate an Arrhenius factor following :cite:t:`Kattge:2007db`.
+
+    This implements a "peaked" version of the Arrhenius relationship, describing a
+    decline in reaction rates at higher temperatures. In addition to the activation
+    energy (see :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`),
+    this implementation adds an entropy term and the deactivation energy of the enzyme
+    system. The rate is given for a given instantaneous temperature :math:`T` relative
+    to a reference temperature :math:T_0`, both given in Kelvin, but the entropy is
+    calculated using a separate estimate of the growth temperature for a plant,
+    expressed in °C.
+
+
+    .. math::
+        :nowrap:
+
+        \[
+            \begin{align*}
+
+                f  &= \exp \left( \frac{ H_a (T - T_0)}{T_0 R T}\right)
+                      \left(
+                        \frac{1 + \exp \left( \frac{T_0 \Delta S - H_d }{ R T_0}\right)}
+                             {1 + \exp \left( \frac{T \Delta S - H_d}{R T} \right)}
+                      \right)
+                      \left(\frac{T}{T_0}\right)
+            \end{align*}
+
+            \text{where,}
+
+            \Delta S = a + b * t_g
+
+        \]
+
+    The coefficients dictionary must provide entries for:
+
+    * ha: The activation energy of the enzyme (:math:`H_a`)
+    * hd: The deactivation energy of the enzyme (:math:`H_d`)
+    * entropy_intercept: The intercept of the entropy relationship (:math:`a`)
+    * entropy_slope: The slope of the entropy relationship (:math:`b`)
+
+    Args:
+        tk_leaf: The instantaneous temperature in Kelvin (K) at which to calculate the
+            factor (:math:`T`)
+        tk_ref: The reference temperature in Kelvin for the process (:math:`T_0`)
+        tc_growth: The growth temperature of the plants in °C (:math:`t_g`)
+        coef: A dictionary providing values of the coefficients ``ha``,
+            ``hd``, ``entropy_intercept`` and ``entropy_slope``.
+        k_R: The universal gas constant, defaulting to the value from
+            attr:`~pyrealm.constants.core_const.CoreConst.k_R`.
+
+    Returns:
+        Values for :math:`f`
+
+    Examples:
+        >>> # Calculate the factor for the relative rate of Vcmax at 10 °C (283.15K)
+        >>> # compared to the rate at the reference temperature of 25°C (298.15K).
+        >>> from pyrealm.constants import PModelConst
+        >>> pmodel_const = PModelConst()
+        >>> # Get enzyme kinetics parameters
+        >>> coef = pmodel_const.arrhenius_vcmax['kattge_knorr']
+        >>> # Calculate the arrhenius factor
+        >>> val = calculate_kattge_knorr_arrhenius_factor(
+        ...     tk_leaf= np.array([283.15]),
+        ...     tc_growth = 10,
+        ...     tk_ref=298.15,
+        ...     coef=coef,
+        ... )
+        >>> np.round(val, 4)
+        array([0.261])
+    """
+
+    # Calculate entropy as a function of temperature _in °C_
+    entropy = coef["entropy_intercept"] + coef["entropy_slope"] * tc_growth
+
+    # Calculate Arrhenius components
+    fva = calculate_simple_arrhenius_factor(
+        tk=tk_leaf, ha=coef["ha"], tk_ref=tk_ref, k_R=k_R
+    )
+
+    fvb = (1 + np.exp((tk_ref * entropy - coef["hd"]) / (k_R * tk_ref))) / (
+        1 + np.exp((tk_leaf * entropy - coef["hd"]) / (k_R * tk_leaf))
+    )
+
+    return fva * fvb
 
 
 def calc_ftemp_inst_rd(
     tc: NDArray[np.float64],
-    pmodel_const: PModelConst = PModelConst(),
+    tc_ref: float = PModelConst().tc_ref,
+    coef: tuple[float, float] = PModelConst().heskel_rd,
 ) -> NDArray[np.float64]:
     r"""Calculate temperature scaling of dark respiration.
 
@@ -95,172 +172,37 @@ def calc_ftemp_inst_rd(
             fr = \exp( b (T_o - T) -  c ( T_o^2 - T^2 ))
 
     Args:
-        tc: Temperature (°C)
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-
-    PModel Parameters:
-        To: standard reference temperature for photosynthetic processes (:math:`T_o`,
-            ``k_To``)
-        b: empirically derived global mean coefficient
-            (:math:`b`, ``heskel_b``)
-        c: empirically derived global mean coefficient
-            (:math:`c`, ``heskel_c``)
-
-    Returns:
-        Values for :math:`fr`
+        tc: Temperature (:math:`T`, °C)
+        tc_ref: standard reference temperature for photosynthetic processes
+            (:math:`T_o`,°C)
+        coef: A two tuple of floats providing the linear and quadratic coefficients
+            (:math:`b` and :math:`c`)
 
     Examples:
-        >>> # Relative percentage instantaneous change in Rd going from 10 to 25 degrees
-        >>> val = (calc_ftemp_inst_rd(25) / calc_ftemp_inst_rd(10) - 1) * 100
-        >>> np.round(val, 4)
-        np.float64(250.9593)
+        >>> # Relative instantaneous change in Rd going from 10 to 25 degrees
+        >>> pmod_consts = PModelConst()
+        >>> (
+        ...     calc_ftemp_inst_rd(
+        ...         tc=25, tc_ref=pmod_consts.tc_ref, coef=pmod_consts.heskel_rd
+        ...     )
+        ...     / calc_ftemp_inst_rd(
+        ...         tc=10, tc_ref=pmod_consts.tc_ref, coef=pmod_consts.heskel_rd
+        ...     )
+        ...     - 1
+        ... ).round(4)
+        np.float64(2.5096)
     """
 
-    return np.exp(
-        pmodel_const.heskel_b * (tc - pmodel_const.plant_T_ref)
-        - pmodel_const.heskel_c * (tc**2 - pmodel_const.plant_T_ref**2)
-    )
-
-
-def calc_modified_arrhenius_factor(
-    tk: NDArray[np.float64],
-    Ha: float | NDArray,
-    Hd: float | NDArray,
-    deltaS: float | NDArray,
-    tk_ref: float | NDArray,
-    mode: str = "M2002",
-    core_const: CoreConst = CoreConst(),
-) -> NDArray[np.float64]:
-    r"""Calculate the modified Arrhenius factor with temperature for an enzyme.
-
-    This function returns a temperature-determined factor expressing the rate of an
-    enzymatic process relative to the rate at a given reference temperature. This is
-    used in the calculation of :math:`V_{cmax}` but also other temperature dependent
-    enzymatic processes.
-
-    The function can operate in one of two modes (``M2002`` or ``J1942``) using
-    alternative derivations of the modified Arrhenius relationship presented in
-    :cite:t:`murphy:2021a`. The ``J1942`` includes an additional factor (tk/tk_ref) that
-    is ommitted from the simpler ``M2002`` derivation.
-
-    Args:
-        tk: The temperature at which to calculate the factor (K)
-        Ha: The activation energy of the enzyme (:math:`H_a`)
-        Hd: The deactivation energy of the enzyme (:math:`H_d`)
-        deltaS: The entropy of the process (:math:`\Delta S`)
-        tk_ref: The reference temperature for the process (K)
-        mode: The calculation mode.
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
-
-    PModel Parameters:
-        To: The standard reference temperature expressed in Kelvin (`T_0`, ``k_To``)
-        R: the universal gas constant (:math:`R`, ``k_R``)
-
-    Returns:
-        Values for :math:`f`
-
-    Examples:
-        >>> # Calculate the factor for the relative rate of V_cmax at 10 degrees
-        >>> # compared to the rate at the reference temperature of 25°C.
-        >>> from pyrealm.constants import PModelConst
-        >>> pmodel_const = PModelConst()
-        >>> # Get enzyme kinetics parameters
-        >>> a, b, ha, hd = pmodel_const.kattge_knorr_kinetics
-        >>> # Calculate entropy as a function of temperature _in °C_
-        >>> deltaS = a + b * 10
-        >>> # Calculate the arrhenius factor
-        >>> val = calc_modified_arrhenius_factor(
-        ...     tk= 10 + 273.15, Ha=ha, Hd=hd, deltaS=deltaS, tk_ref=25 +273.15
-        ... )
-        >>> np.round(val, 4)
-        np.float64(0.261)
-    """
-
-    if mode not in ["M2002", "J1942"]:
-        raise ValueError(
-            f"Unknown mode option for calc_modified_arrhenius_factor: {mode}"
-        )
-
-    # Calculate Arrhenius components
-    fva = calc_ftemp_arrh(tk=tk, ha=Ha, tk_ref=tk_ref)
-
-    fvb = (1 + np.exp((tk_ref * deltaS - Hd) / (core_const.k_R * tk_ref))) / (
-        1 + np.exp((tk * deltaS - Hd) / (core_const.k_R * tk))
-    )
-
-    if mode == "M2002":
-        # Medlyn et al. 2002 simplification
-        return fva * fvb
-
-    # Johnson et al 1942
-    return fva * (tk / tk_ref) * fvb
-
-
-def calc_ftemp_kphio(
-    tc: NDArray[np.float64], c4: bool = False, pmodel_const: PModelConst = PModelConst()
-) -> NDArray[np.float64]:
-    r"""Calculate temperature dependence of quantum yield efficiency.
-
-    Calculates the temperature dependence of the quantum yield efficiency, as a
-    quadratic function of temperature (:math:`T`). The values of the coefficients depend
-    on whether C3 or C4 photosynthesis is being modelled
-
-    .. math::
-
-        \phi(T) = a + b T - c T^2
-
-    The factor :math:`\phi(T)` is to be multiplied with leaf absorptance and the
-    fraction of absorbed light that reaches photosystem II. In the P-model these
-    additional factors are lumped into a single apparent quantum yield efficiency
-    parameter (argument `kphio` to the class :class:`~pyrealm.pmodel.pmodel.PModel`).
-
-    Args:
-        tc: Temperature, relevant for photosynthesis (°C)
-        c4: Boolean specifying whether fitted temperature response for C4 plants
-            is used. Defaults to ``False`` to estimate :math:`\phi(T)` for C3 plants.
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-
-    PModel Parameters:
-        C3: the parameters (:math:`a,b,c`, ``kphio_C3``) are taken from the
-            temperature dependence of the maximum quantum yield of photosystem
-            II in light-adapted tobacco leaves determined by :cite:t:`Bernacchi:2003dc`.
-        C4: the parameters (:math:`a,b,c`, ``kphio_C4``) are taken from
-            :cite:t:`cai:2020a`.
-
-    Returns:
-        Values for :math:`\phi(T)`
-
-    Examples:
-        >>> # Relative change in the quantum yield efficiency between 5 and 25
-        >>> # degrees celsius (percent change):
-        >>> val = (calc_ftemp_kphio(25.0) / calc_ftemp_kphio(5.0) - 1) * 100
-        >>> round(val, 5)
-        np.float64(52.03969)
-        >>> # Relative change in the quantum yield efficiency between 5 and 25
-        >>> # degrees celsius (percent change) for a C4 plant:
-        >>> val = (calc_ftemp_kphio(25.0, c4=True) /
-        ...        calc_ftemp_kphio(5.0, c4=True) - 1) * 100
-        >>> round(val, 5)
-        np.float64(432.25806)
-    """
-
-    if c4:
-        coef = pmodel_const.kphio_C4
-    else:
-        coef = pmodel_const.kphio_C3
-
-    ftemp = coef[0] + coef[1] * tc + coef[2] * tc**2
-    ftemp = np.clip(ftemp, 0.0, None)
-
-    return ftemp
+    return np.exp(coef[0] * (tc - tc_ref) - coef[1] * (tc**2 - tc_ref**2))
 
 
 def calc_gammastar(
-    tc: NDArray[np.float64],
+    tk: NDArray[np.float64],
     patm: NDArray[np.float64],
-    pmodel_const: PModelConst = PModelConst(),
-    core_const: CoreConst = CoreConst(),
+    tk_ref: float = PModelConst().tk_ref,
+    k_Po: float = CoreConst().k_Po,
+    k_R: float = CoreConst().k_R,
+    coef: dict[str, float] = PModelConst().bernacchi_gs,
 ) -> NDArray[np.float64]:
     r"""Calculate the photorespiratory CO2 compensation point.
 
@@ -272,41 +214,42 @@ def calc_gammastar(
         \Gamma^{*} = \Gamma^{*}_{0} \cdot \frac{p}{p_0} \cdot f(T, H_a)
 
     where :math:`f(T, H_a)` modifies the activation energy to the the local temperature
-    following an Arrhenius-type temperature response function implemented in
-    :func:`calc_ftemp_arrh`. Estimates of :math:`\Gamma^{*}_{0}` and :math:`H_a` are
-    taken from :cite:t:`Bernacchi:2001kg`.
+    in Kelvin following the Arrhenius-type temperature response function (see
+    :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`). By default,
+    estimates of  :math:`\Gamma^{*}_{0}` and :math:`H_a` are taken from
+    :cite:t:`Bernacchi:2001kg` (see
+    :attr:`PModelConst.bernacchi_gs<pyrealm.constants.pmodel_const.PModelConst.bernacchi_gs>`)
 
     Args:
-        tc: Temperature relevant for photosynthesis (:math:`T`, °C)
+        tk: Temperature relevant for photosynthesis in Kelvin(:math:`T`, K)
         patm: Atmospheric pressure (:math:`p`, Pascals)
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
-
-    PModel Parameters:
-        To: the standard reference temperature (:math:`T_0`. ``k_To``)
-        Po: the standard pressure (:math:`p_0`, ``k_Po`` )
-        gs_0: the reference value of :math:`\Gamma^{*}` at standard temperature
-            (:math:`T_0`) and pressure (:math:`P_0`)  (:math:`\Gamma^{*}_{0}`,
-            ``bernacchi_gs25_0``)
-        ha: the activation energy (:math:`\Delta H_a`, ``bernacchi_dha``)
+        tk_ref: The reference temperature of the coefficients in Kelvin.
+        k_Po: The standard atmospheric pressure, defaulting to the value
+            from :attr:`~pyrealm.constants.core_const.CoreConst.k_Po`.
+        k_R: The universal gas constant, defaulting to the value from
+            :attr:`~pyrealm.constants.core_const.CoreConst.k_R`.
+        coef: A dictionary providing the enzyme kinetic coefficients for the reaction
+            (``dha`` and ``gs25_0``).
 
     Returns:
         A float value or values for :math:`\Gamma^{*}` (in Pa)
 
     Examples:
-        >>> # CO2 compensation point at 20 degrees Celsius and standard
-        >>> # atmosphere (in Pa) >>> round(calc_gammastar(20, 101325), 5)
-        3.33925
+        >>> # CO2 compensation point at 20 °C  (293.15 K) and standard presssure
+        >>> calc_gammastar(np.array([293.15]), np.array([101325])).round(5)
+        array([3.33925])
     """
 
     # check inputs, return shape not used
-    _ = check_input_shapes(tc, patm)
+    _ = check_input_shapes(tk, patm)
 
     return (
-        pmodel_const.bernacchi_gs25_0
+        coef["gs25_0"]
         * patm
-        / core_const.k_Po
-        * calc_ftemp_arrh((tc + core_const.k_CtoK), ha=pmodel_const.bernacchi_dha)
+        / k_Po
+        * calculate_simple_arrhenius_factor(
+            tk=tk, tk_ref=tk_ref, ha=coef["dha"], k_R=k_R
+        )
     )
 
 
@@ -355,24 +298,28 @@ def calc_ns_star(
 
 
 def calc_kmm(
-    tc: NDArray[np.float64],
+    tk: NDArray[np.float64],
     patm: NDArray[np.float64],
-    pmodel_const: PModelConst = PModelConst(),
-    core_const: CoreConst = CoreConst(),
+    tk_ref: float = PModelConst().tk_ref,
+    k_co: float = CoreConst().k_co,
+    k_R: float = CoreConst().k_R,
+    coef: dict[str, float] = PModelConst().bernacchi_kmm,
 ) -> NDArray[np.float64]:
     r"""Calculate the Michaelis Menten coefficient of Rubisco-limited assimilation.
 
     Calculates the Michaelis Menten coefficient of Rubisco-limited assimilation
-    (:math:`K`, :cite:alp:`Farquhar:1980ft`) as a function of temperature (:math:`T`)
-    and atmospheric pressure (:math:`p`) as:
+    (:math:`K`, :cite:alp:`Farquhar:1980ft`) as a function of temperature (:math:`T,
+    Kelvin) and atmospheric pressure (:math:`p`, Pa) as:
 
       .. math:: K = K_c ( 1 + p_{\ce{O2}} / K_o),
 
     where, :math:`p_{\ce{O2}} = 0.209476 \cdot p` is the partial pressure of oxygen.
-    :math:`f(T, H_a)` is an Arrhenius-type temperature response of activation energies
-    (:func:`calc_ftemp_arrh`) used to correct Michalis constants at standard temperature
-    for both :math:`\ce{CO2}` and :math:`\ce{O2}` to the local temperature (Table 1,
-    :cite:alp:`Bernacchi:2001kg`):
+    :math:`f(T, H_a)` is the simple Arrhenius temperature response of activation
+    energies (see :meth:`~pyrealm.pmodel.functions.calculate_simple_arrhenius_factor`)
+    used to correct Michalis constants at standard temperature for both :math:`\ce{CO2}`
+    and :math:`\ce{O2}` to the local temperature. The default values for the enzyme
+    coefficients are taken from Table 1 of :cite:t:`Bernacchi:2001kg` (see
+    attr:`PModelConst.bernacchi_kmm<pyrealm.constants.pmodel_const.PModelConst.bernacchi_kmm>`)
 
       .. math::
         :nowrap:
@@ -383,100 +330,47 @@ def calc_kmm(
             \end{align*}
         \]
 
-    .. TODO - why this height? Inconsistent with calc_gammastar which uses P_0
-              for the same conversion for a value in the same table.
-
     Args:
-        tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
+        tk: Temperature relevant for photosynthesis in Kelvin (:math:`T`, K)
         patm: Atmospheric pressure (:math:`p`, Pa)
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
-
-    PModel Parameters:
-        hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`, ``bernacchi_dhac``)
-        hao:  activation energy for :math:`\ce{O2}` (:math:`\Delta H_{ko}`,
-            ``bernacchi_dhao``)
-        kc25: Michelis constant for :math:`\ce{CO2}` at standard temperature
-            (:math:`K_{c25}`, ``bernacchi_kc25``)
-        ko25: Michelis constant for :math:`\ce{O2}` at standard temperature
-            (:math:`K_{o25}`, ``bernacchi_ko25``)
+        tk_ref: The reference temperature of the coefficients in Kelvin.
+        k_co: The partial pressure of :math:`\ce{O2}` at standard pressure, defaulting
+            to the values from  attr:`~pyrealm.constants.core_const.CoreConst.k_co`.
+        k_R: The universal gas constant, defaulting to the value from
+            attr:`~pyrealm.constants.core_const.CoreConst.k_R`.
+        coef: A dictionary providing the enzyme kinetic coefficients for the reaction
+            (``kc25``, ``ko25``, ``dhac``, ``dhao``).
 
     Returns:
         A numeric value for :math:`K` (in Pa)
 
     Examples:
-        >>> # Michaelis-Menten coefficient at 20 degrees Celsius and standard
-        >>> # atmosphere (in Pa):
-        >>> np.round(calc_kmm(20, 101325), 5)
+        >>> # Michaelis-Menten coefficient at 20°C (293.15K) and standard pressure (Pa)
+        >>> calc_kmm(np.array([293.15]), np.array([101325])).round(5)
         array([46.09928])
     """
 
     # Check inputs, return shape not used
-    _ = check_input_shapes(tc, patm)
+    _ = check_input_shapes(tk, patm)
 
-    # conversion to Kelvin
-    tk = tc + core_const.k_CtoK
-
-    kc = pmodel_const.bernacchi_kc25 * calc_ftemp_arrh(
-        tk, ha=pmodel_const.bernacchi_dhac
+    kc = coef["kc25"] * calculate_simple_arrhenius_factor(
+        tk=tk, tk_ref=tk_ref, ha=coef["dhac"], k_R=k_R
     )
-    ko = pmodel_const.bernacchi_ko25 * calc_ftemp_arrh(
-        tk, ha=pmodel_const.bernacchi_dhao
+
+    ko = coef["ko25"] * calculate_simple_arrhenius_factor(
+        tk=tk, tk_ref=tk_ref, ha=coef["dhao"], k_R=k_R
     )
 
     # O2 partial pressure
-    po = core_const.k_co * 1e-6 * patm
+    po = k_co * 1e-6 * patm
 
     return kc * (1.0 + po / ko)
-
-
-def calc_kp_c4(
-    tc: NDArray[np.float64],
-    patm: NDArray[np.float64],
-    pmodel_const: PModelConst = PModelConst(),
-    core_const: CoreConst = CoreConst(),
-) -> NDArray[np.float64]:
-    r"""Calculate the Michaelis Menten coefficient of PEPc.
-
-    Calculates the Michaelis Menten coefficient of phosphoenolpyruvate carboxylase
-    (PEPc) (:math:`K`, :cite:alp:`boyd:2015a`) as a function of temperature (:math:`T`)
-    and atmospheric pressure (:math:`p`) as:
-
-    Args:
-        tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
-        patm: Atmospheric pressure (:math:`p`, Pa)
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-        core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
-
-    PModel Parameters:
-        hac: activation energy for :math:`\ce{CO2}` (:math:`H_{kc}`,
-             ``boyd_dhac_c4``)
-        kc25: Michelis constant for :math:`\ce{CO2}` at standard temperature
-            (:math:`K_{c25}`, ``boyd_kp25_c4``)
-
-    Returns:
-        A numeric value for :math:`K` (in Pa)
-
-    Examples:
-        >>> # Michaelis-Menten coefficient at 20 degrees Celsius and standard
-        >>> # atmosphere (in Pa):
-        >>> import numpy as np
-        >>> calc_kp_c4(np.array([20]), np.array([101325])).round(5)
-        array([12.46385])
-    """
-
-    # Check inputs, return shape not used
-    _ = check_input_shapes(tc, patm)
-
-    # conversion to Kelvin
-    tk = tc + core_const.k_CtoK
-    return pmodel_const.boyd_kp25_c4 * calc_ftemp_arrh(tk, ha=pmodel_const.boyd_dhac_c4)
 
 
 def calc_soilmstress_stocker(
     soilm: NDArray[np.float64],
     meanalpha: NDArray[np.float64] = np.array(1.0),
-    pmodel_const: PModelConst = PModelConst(),
+    coef: dict[str, float] = PModelConst().soilmstress_stocker,
 ) -> NDArray[np.float64]:
     r"""Calculate Stocker's empirical soil moisture stress factor.
 
@@ -505,30 +399,56 @@ def calc_soilmstress_stocker(
 
     .. math:: q=(1 - (a + b \bar{\alpha}))/(\theta^{*} - \theta_{0})^2
 
-    Default parameters of :math:`a=0` and :math:`b=0.7330` are as described in Table 1
-    of :cite:t:`Stocker:2020dh` specifically for the 'FULL' use case, with
-    ``method_jmaxlim="wang17"``, ``do_ftemp_kphio=TRUE``.
+    .. IMPORTANT::
 
-    Note that it is possible to use the empirical soil moisture stress factor effect on
-    GPP to back calculate realistic Jmax and Vcmax values within the calculations of the
-    P Model. This is applied, for example, in the `rpmodel` implementation.
+        The default parameterisation of this water stress penalty (:math:`a=0`,
+        :math:`b=0.7330`)  was estimated from empirical data using the **standard form
+        of the PModel**  (:class:`~pyrealm.pmodel.pmodel.PModel` in ``pyrealm``).
+
+        These parameters were then further calibrated against empirical data by tuning
+        the quantum yield of photosynthesis. This tuning aimed to capture include
+        incomplete leaf absorption in the realised value of :math:`\phi_0`, and
+        :cite:t:`Stocker:2020dh` argue that, within their model representation,
+        :math:`\phi_0` should be treated as a parameter representing canopy-scale 
+        effective quantum yield. To duplicate the model settings used with this soil
+        moisture correction in from Table 1 of :cite:t:`Stocker:2020dh`, use the
+        following settings:
+
+        .. code-block:: python
+
+            # The 'BRC' model setup
+            PModel(
+                ...
+                method_kphio="temperature",
+                method_arrhenius="simple",
+                method_jmaxlim="wang17",
+                method_optchi="prentice14",
+                reference_kphio=0.081785,
+            )
+
+            # The 'ORG' model setup
+            PModel(
+                ...
+                method_kphio="fixed",
+                method_arrhenius="simple",
+                method_jmaxlim="wang17",
+                method_optchi="prentice14",
+                reference_kphio=0.049977,
+            )
+
     The :mod:`pyrealm.pmodel` module treats this factor purely as a penalty that can be
-    applied after the estimation of GPP.
+    applied after the estimation of GPP. In contrast, the `rpmodel` implementation uses
+    the penalised GPP to back-calculate realistic :math:`J_{max}` and :math:`V_{cmax}`
+    values that would give rise to the penalised GPP.
 
     Args:
         soilm: Relative soil moisture as a fraction of field capacity
             (unitless). Defaults to 1.0 (no soil moisture stress).
         meanalpha: Local annual mean ratio of actual over potential
             evapotranspiration, measure for average aridity. Defaults to 1.0.
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-
-    PModel Parameters:
-        theta0: lower bound of soil moisture
-            (:math:`\theta_0`, ``soilmstress_theta0``).
-        thetastar: upper bound of soil moisture
-            (:math:`\theta^{*}`, ``soilmstress_thetastar``).
-        a: aridity parameter (:math:`a`, ``soilmstress_a``).
-        b: aridity parameter (:math:`b`, ``soilmstress_b``).
+        coef: A dictionary providing values of the coefficients ``theta0``,
+            ``thetastar``, ``a`` and ``b``, defaulting to the values from 
+            attr:`~pyrealm.constants.pmodel_const.PModelConst.soilmstress_stocker`.
 
     Returns:
         A numeric value or values for :math:`\beta`
@@ -546,14 +466,12 @@ def calc_soilmstress_stocker(
     _ = check_input_shapes(soilm, meanalpha)
 
     # Calculate outstress
-    y0 = pmodel_const.soilmstress_a + pmodel_const.soilmstress_b * meanalpha
-    beta = (1.0 - y0) / (
-        pmodel_const.soilmstress_theta0 - pmodel_const.soilmstress_thetastar
-    ) ** 2
-    outstress = 1.0 - beta * (soilm - pmodel_const.soilmstress_thetastar) ** 2
+    y0 = coef["a"] + coef["b"] * meanalpha
+    beta = (1.0 - y0) / (coef["theta0"] - coef["thetastar"]) ** 2
+    outstress = 1.0 - beta * (soilm - coef["thetastar"]) ** 2
 
     # Filter wrt to thetastar
-    outstress = np.where(soilm <= pmodel_const.soilmstress_thetastar, outstress, 1.0)
+    outstress = np.where(soilm <= coef["thetastar"], outstress, 1.0)
 
     # Clip
     outstress = np.clip(outstress, 0.0, 1.0)
@@ -564,7 +482,7 @@ def calc_soilmstress_stocker(
 def calc_soilmstress_mengoli(
     soilm: NDArray[np.float64] = np.array(1.0),
     aridity_index: NDArray[np.float64] = np.array(1.0),
-    pmodel_const: PModelConst = PModelConst(),
+    coef: dict[str, float] = PModelConst().soilmstress_mengoli,
 ) -> NDArray[np.float64]:
     r"""Calculate the Mengoli et al. empirical soil moisture stress factor.
 
@@ -594,21 +512,39 @@ def calc_soilmstress_mengoli(
             \end{align*}
         \]
 
+    .. IMPORTANT::
+
+        The parameterisation of this water stress penalty was estimated from empirical
+        data using the **subdaily form of the PModel**
+        (:class:`~pyrealm.pmodel.pmodel.SubdailyPModel` in ``pyrealm``) with
+        temperature dependence of the standard maximum quantum yield of photosynthesis
+        (``phi_0``, :math:`\phi_0=1/8`). 
+        
+        There are minor differences in the implementation of the Subdaily P Model in
+        ``pyrealm`` from that used to calibrate this function in
+        :cite:p:`mengoli:2023a`. To get the closest match when applying this
+        soil moisture correction, use the following settings:
+
+        .. code-block:: python
+
+            SubdailyPModel(
+                ...
+                method_kphio="temperature",
+                method_arrhenius="simple",
+                method_jmaxlim="wang17",
+                method_optchi="prentice14",
+                reference_kphio=1/8,
+            )
+
+        The ``reference_kphio=1/8`` value here is in fact the default value used when
+        ``method_kphio="temperature"`` but is restated here for clarity.
+
     Args:
         soilm: Relative soil moisture (unitless).
         aridity_index: The climatological aridity index.
-        pmodel_const: Instance of :class:`~pyrealm.constants.pmodel_const.PModelConst`.
-
-    PModel Parameters:
-
-        y_a: Coefficient of the maximal level (:math:`y`,
-            :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_y_a`)
-        y_b: Exponent of the maximal level (:math:`y`,
-            :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_y_b`)
-        psi_a: Coefficient of the threshold (:math:`\psi`,
-            :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_psi_a`)
-        psi_b: Exponent of the threshold (:math:`\psi`,
-            :attr:`~pyrealm.constants.pmodel_const.PModelConst.soilm_mengoli_psi_b`)
+        coef: A dictionary providing values of the coefficients ``y_a``, ``y_b``,
+            ``psi_a`` and ``psi_b``, defaulting to the values from 
+            attr:`~pyrealm.constants.pmodel_const.PModelConst.soilmstress_mengoli`.
 
     Returns:
         A numeric value or values for :math:`f(\theta)`
@@ -629,14 +565,12 @@ def calc_soilmstress_mengoli(
 
     # Calculate maximal level and threshold
     y = np.minimum(
-        pmodel_const.soilm_mengoli_y_a
-        * np.power(aridity_index, pmodel_const.soilm_mengoli_y_b),
+        coef["y_a"] * np.power(aridity_index, coef["y_b"]),
         1,
     )
 
     psi = np.minimum(
-        pmodel_const.soilm_mengoli_psi_a
-        * np.power(aridity_index, pmodel_const.soilm_mengoli_psi_b),
+        coef["psi_a"] * np.power(aridity_index, coef["psi_b"]),
         1,
     )
 

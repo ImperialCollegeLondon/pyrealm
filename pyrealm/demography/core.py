@@ -244,7 +244,7 @@ def _validate_demography_array_arguments(
 def _enforce_2D(array: NDArray) -> NDArray:
     """Utility conversion to force two dimensional outputs.
 
-    Depending on the input dimensions, the calculations in the T Model and othe
+    Depending on the input dimensions, the calculations in the T Model and other
     demography models can return scalar, one dimensional or two dimensional arrays. This
     utility function is used to give a consistent output array dimensionality.
 

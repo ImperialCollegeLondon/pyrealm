@@ -5,7 +5,6 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3
   language: python
@@ -46,10 +45,10 @@ language_info:
     :members:
 ```
 
-## The {mod}`~pyrealm.demography.t_model_functions` module
+## The {mod}`~pyrealm.demography.tmodel` module
 
 ```{eval-rst}
-.. automodule:: pyrealm.demography.t_model_functions
+.. automodule:: pyrealm.demography.tmodel
     :autosummary:
     :members:
 ```

@@ -13,7 +13,7 @@ from pyrealm.demography.core import (
     _validate_demography_array_arguments,
 )
 from pyrealm.demography.flora import Flora, StemTraits
-from pyrealm.demography.t_model_functions import StemAllometry
+from pyrealm.demography.tmodel import StemAllometry
 
 
 def calculate_relative_crown_radius_at_z(
@@ -265,7 +265,7 @@ class CrownProfile(PandasExporter):
     """A StemAllometry instance setting the stem allometries for the crown profile."""
     z: NDArray[np.float64]
     """An array of vertical height values at which to calculate crown profiles."""
-    validate: bool = True
+    validate: InitVar[bool] = True
     """Boolean flag to suppress argument validation."""
 
     relative_crown_radius: NDArray[np.float64] = field(init=False)
@@ -287,7 +287,7 @@ class CrownProfile(PandasExporter):
         self,
         stem_traits: StemTraits | Flora,
         stem_allometry: StemAllometry,
-        validate: bool = True,
+        validate: bool,
     ) -> None:
         """Populate crown profile attributes from the traits, allometry and height."""
 

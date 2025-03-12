@@ -1,4 +1,10 @@
-# The `pyrealm` package
+
+<!-- markdownlint-disable-next-line MD041 MD033 -->
+<img
+  alt="The pyrealm logo: a green leaf over the shining sun."
+  src="/docs/source/_static/images/pyrealm_logo.png" width=50%>
+
+---
 
 [![PyPI - Version](https://img.shields.io/pypi/v/pyrealm)](https://pypi.org/project/pyrealm/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pyrealm)
@@ -22,14 +28,33 @@ The `pyrealm` package currently includes:
   between carbon capture and water loss. This includes recent extensions to incorporate
   the effects of water stress, slow acclimation processes, models of C3/C4 competition
   and carbon isotope fractionation.
-* The T Model of the allocation of gross primary productivity to estimate net primary
-  productivity and hence plant growth.
 * The SPLASH model for calculating soil moisture and actual evapotranspiration.
+* Initial components of a demography module for modelling plant functional types,
+  cohorts, communities and canopies, including allocation calculations using the T
+  Model.
 * A suite of core physics functions and other utilities used to support the modules
   above.
 
 For more details, see the package website:
 [https://pyrealm.readthedocs.io/](https://pyrealm.readthedocs.io/).
+
+## Version 2.0.0 development
+
+New functionality being implemented after version 1.0.0 has lead to some immediate
+breaking changes in the API, for example in the handling of quantum yield settings in
+the class signatures for the `PModel` and `SubdailyPModel`. As the package uses
+[semantic versioning](https://semver.org/), these changes to the API require that new
+releases be made under a new major version.
+
+We will be publishing a series of "release candidates" of the 2.0.0 package. These will
+be used to identify issues with the current API and try to stabilise a new API. The
+content of version 2.0.0 is not yet finalised, so these release candidates may also add
+new functionality.
+
+We recommend that you update to the most recent release candidate of version 2.0.0. The
+documentation now includes a [migration
+guide](https://pyrealm.readthedocs.io/en/develop/users/versions.html) to help update
+existing code.
 
 ## Using `pyrealm`
 
@@ -54,14 +79,12 @@ from pyrealm.pmodel import PModelEnvironment, PModel
 # Calculate the photosynthetic environment given the conditions
 env = PModelEnvironment(
     tc=np.array([20]), vpd=np.array([1000]),
-    co2=np.array([400]), patm=np.array([101325.0])
+    co2=np.array([400]), patm=np.array([101325.0],
+    fapar=1, ppfd=300)
 )
 
 # Calculate the predictions of the P Model for a C3 plant
 pmodel_c3 = PModel(env)
-
-# Estimate the GPP from the model given the absorbed photosynthetically active light
-pmodel_c3.estimate_productivity(fapar=1, ppfd=300)
 
 # Report the GPP in micrograms of carbon per m2 per second.
 pmodel_c3.gpp
@@ -102,7 +125,7 @@ conduct](./CODE_OF_CONDUCT.md) for contributing to this project.
 
 ## Support and funding
 
-Development of the `prealm` package has been supported by the following grants and
+Development of the `pyrealm` package has been supported by the following grants and
 institutions:
 
 * The [REALM project](https://prenticeclimategroup.wordpress.com/realm-team/), funded by

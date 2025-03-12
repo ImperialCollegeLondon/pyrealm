@@ -9,6 +9,7 @@ documentation root, use os.path.abspath to make it absolute, like shown here.
 
 import os
 import sys
+import warnings
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -21,14 +22,19 @@ from sphinxcontrib.bibtex.style.referencing.author_year import AuthorYearReferen
 
 from pyrealm import __version__ as pyrealm_version
 
-# +
 sys.path.insert(0, os.path.abspath("../"))
-# -
 
+
+# Suppress the 2.0.0 user warnings in the documentation
+warnings.filterwarnings(
+    "ignore", category=UserWarning, message="Pyrealm 2.0.0 uses a uses default value"
+)
 
 # -- Project information -----------------------------------------------------
 
 project = "pyrealm: Ecosystem Models in Python"
+html_logo = "_static/images/pyrealm_logo_white_background.png"
+html_favicon = "_static/images/pyrealm_favicon.png"
 
 current_year = datetime.today().strftime("%Y")
 copyright = "2020-" + current_year + ", Pyrealm Developers"
@@ -53,6 +59,7 @@ extensions = [
     "sphinxcontrib.bibtex",
     "myst_nb",
     "sphinx_rtd_theme",
+    "sphinx_design",
     "sphinx_external_toc",
 ]
 
@@ -62,7 +69,6 @@ external_toc_exclude_missing = False  # optional, default: False
 
 # + [markdown]
 # Citation styling
-# -
 
 
 def bracket_style() -> BracketStyle:
@@ -154,7 +160,6 @@ nitpick_ignore = [
     ("py:class", "pandas.core.frame.DataFrame"),
 ]
 
-# +
 intersphinx_mapping = {
     "pytest": ("https://docs.pytest.org/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
@@ -164,7 +169,6 @@ intersphinx_mapping = {
     "shapely": ("https://shapely.readthedocs.io/en/stable/", None),
     "marshmallow": ("https://marshmallow.readthedocs.io/en/stable/", None),
 }
-# -
 
 
 autodoc_default_flags = ["members"]
@@ -211,10 +215,9 @@ exclude_patterns = ["maxime*", "**.ipynb_checkpoints"]
 # html_theme = 'sphinx_material'
 html_theme = "sphinx_rtd_theme"
 
-# +
 html_theme_options = {
-    "logo_only": False,
-    "display_version": True,
+    "logo_only": True,
+    "version_selector": True,
     "prev_next_buttons_location": "top",
     "style_external_links": False,
     "style_nav_header_background": "grey",
@@ -225,7 +228,6 @@ html_theme_options = {
     "includehidden": True,
     "titles_only": False,
 }
-# -
 
 
 # Add any paths that contain custom static files (such as style sheets) here,
