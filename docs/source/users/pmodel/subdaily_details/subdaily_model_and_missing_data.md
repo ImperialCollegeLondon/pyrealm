@@ -109,7 +109,7 @@ half_width = np.timedelta64(150, "m")
 acclim_model.set_window(window_center=window_center, half_width=half_width)
 ```
 
-The {meth}`~pyrealm.pmodel.acclimation.AcclimationModel.get_daily_values` method
+The {meth}`~pyrealm.pmodel.acclimation.AcclimationModel.get_window_values` method
 extracts the values within the acclimation window for each day. With the half hourly
 data and the window set above, these are the observations at 11:30, 12:00 and 12:30.
 This method is typically used internally and not directly by users, but it shows the
