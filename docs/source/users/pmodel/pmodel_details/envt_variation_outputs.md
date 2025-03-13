@@ -230,7 +230,6 @@ resulting absorbed irradiance ($I_{abs}$).
 The productivity variables and their units are:
 
 * Gross primary productivity (``gpp``, $\mu\text{gC}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
-* Dark respiration (``rd``, $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
 * Maximum rate of carboxylation
     (``vcmax``, $\mu\text{mol}\,\mathrm{m}^{-2}\,\text{s}^{-1}$)
 * Maximum rate of carboxylation at standard temperature
@@ -245,14 +244,6 @@ The productivity variables and their units are:
 :tags: [hide-input]
 
 plot_fun("gpp", r"GPP   ($\mu\mathrm{g\,C}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
-```
-
-### Dark respiration (``rd``)
-
-```{code-cell} ipython3
-:tags: [hide-input]
-
-plot_fun("rd", r"$r_d$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)")
 ```
 
 ### Maximum rate of carboxylation (``vcmax``)
@@ -342,26 +333,24 @@ fig, axs = plt.subplots(2, 3, figsize=(12, 8), sharex=True)
 plot_iabs(
     axs[0, 0], "gpp", r"GPP ($\mu\mathrm{g\,C}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
 )
+
 plot_iabs(
-    axs[0, 1], "rd", r"$r_d$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
-)
-plot_iabs(
-    axs[0, 2],
+    axs[0, 1],
     "vcmax",
     r"$v_{cmax}$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)",
 )
 plot_iabs(
-    axs[1, 0],
+    axs[0, 2],
     "vcmax25",
     r"$v_{cmax25}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)",
 )
 plot_iabs(
-    axs[1, 1],
+    axs[1, 0],
     "jmax",
     r"$J_{max}$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)",
 )
 plot_iabs(
-    axs[1, 2], "gs", r"$g_s$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
+    axs[1, 1], "gs", r"$g_s$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
 )
 
 axs[0, 0].legend(
