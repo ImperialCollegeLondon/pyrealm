@@ -23,6 +23,7 @@ from pyrealm import __version__ as pyrealm_version
 
 # +
 sys.path.insert(0, os.path.abspath("../"))
+sys.path.insert(0, os.path.abspath("sphinx_extensions"))
 # -
 
 
@@ -56,6 +57,7 @@ extensions = [
     "myst_nb",
     "sphinx_rtd_theme",
     "sphinx_external_toc",
+    "experimental",
 ]
 
 # External table of contents

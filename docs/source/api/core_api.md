@@ -85,3 +85,11 @@ language_info:
     :autosummary:
     :members:
 ```
+
+## The {mod}`~pyrealm.core.experimental` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.core.experimental
+    :autosummary:
+    :members:
+```
