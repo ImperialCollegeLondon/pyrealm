@@ -408,9 +408,9 @@ obviously just $\beta(\theta)$ from above scaled to the constant GPP.
 
 ```{caution}
 * This soil moisture stress function was parameterised using the subdaily P Model
-  (:class:`~pyrealm.pmodel.pmodel.SubdailyPModel`) and is unlikely to transfer well
+  ({class}`~pyrealm.pmodel.pmodel.SubdailyPModel`) and is unlikely to transfer well
   to GPP predictions from the standard form of the model
-  (:class:`~pyrealm.pmodel.pmodel.PModel`).
+  ({class}`~pyrealm.pmodel.pmodel.PModel`).
 
 * The parameterisation of this soil moisture stress function was estimated using
   predictions from a particular parameterisation of the subdaily PModel. To match

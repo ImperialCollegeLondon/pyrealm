@@ -109,7 +109,7 @@ half_width = np.timedelta64(150, "m")
 acclim_model.set_window(window_center=window_center, half_width=half_width)
 ```
 
-The :meth:`~pyrealm.pmodel.acclimation.AcclimationModel.get_daily_values` method
+The {meth}`~pyrealm.pmodel.acclimation.AcclimationModel.get_daily_values` method
 extracts the values within the acclimation window for each day. With the half hourly
 data and the window set above, these are the observations at 11:30, 12:00 and 12:30.
 This method is typically used internally and not directly by users, but it shows the
@@ -151,7 +151,7 @@ acclim_model.get_window_values(data).round(1)
 ```
 
 The daily average conditions are calculated using the
-:meth:`~pyrealm.pmodel.acclimation.AcclimationModel.get_daily_means` method. If
+{meth}`~pyrealm.pmodel.acclimation.AcclimationModel.get_daily_means` method. If
 partial data are not allowed - which is the default - the daily average conditions for
 all days with missing data is also missing (`np.nan`).
 
@@ -174,7 +174,7 @@ partial_allowed = acclim_model_partial.get_daily_means(data)
 partial_allowed.round(2)
 ```
 
-The :func:`~pyrealm.pmodel.acclimation.AcclimationModel.apply_acclimation` method is
+The {func}`~pyrealm.pmodel.acclimation.AcclimationModel.apply_acclimation` method is
 used to calculate realised acclimated values of a variable from the optimal values. By
 default, this function *will raise an error* when missing data are present:
 
@@ -233,7 +233,7 @@ You can fix this problem in a few ways:
   the realised values cannot be calculated. In this case, the `allow_holdover` option
   may help resolve the problem.
 * It may also be easier to interpolate your missing data, possibly using methods from
-  the :mod:`scipy.interpolate` module, and avoid having to use these options.
+  the {mod}`scipy.interpolate` module, and avoid having to use these options.
 
 ### Incomplete start and end days
 
@@ -252,9 +252,9 @@ acclimation data.
 
 ### Undefined behaviour in the P Model
 
-Two critical variables in the P Model (:math:`V_{cmax}` and :math:`J_{max}`) are not
-estimable under some environmental conditions (see
-:class:`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14` for the details). As a result,
+Two critical variables in the P Model ($V_{cmax}$ and $J_{max}$) are not estimable under
+some environmental conditions (see
+{class}`~pyrealm.pmodel.optimal_chi.OptimalChiPrentice14` for the details). As a result,
 even with complete forcing data, the P Model can generate undefined values as part of
 the calculation of optimal $\chi$. Under these conditions, missing values arise in the
 daily model of optimal behaviour and the `allow_holdover=True`option is required to

@@ -90,7 +90,7 @@ attribute, which can then be passed into a
 `SubdailyPModel` both provide the `reference_kphio` argument to override the default
 value for a specific model. This can be needed when specific methods have been
 calibrated using a 'tuned' value for $\phi_0$: an example here is the soil moisture
-stress corrected GPP estimates of :cite:t:`Stocker:2020dh` which use different $\phi_0$
+stress corrected GPP estimates of {cite:t}`Stocker:2020dh` which use different $\phi_0$
 values (see {meth}`~pyrealm.pmodel.functions.calc_soilmstress_stocker`).
 
 ## Temperature dependent $\phi_0$
