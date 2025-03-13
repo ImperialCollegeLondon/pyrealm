@@ -51,11 +51,11 @@ details on fitting instantaneous responses see, for example, the R package
 Instead, the P Model follows the coordination hypothesis
 {cite}`haxeltine:1996a,maire:2012a`, which asserts that plants coordinate investment in
 those two assimilation rates, such that $A_c = A_j$. Note that this coordination
-requires time and so the standard P Model is typically to make predictions under average
-conditions on the scale of weeks to months. The subdaily P Model _also_ follows the
-coordination hypothesis, but coordinates on the specific conditions encountered during a
-daytime acclimation window and also experiences lags in how quickly coordination can
-occur.
+requires time and so the standard P Model is typically used to make predictions from
+average conditions on the scale of weeks to months. The subdaily P Model _also_ follows
+the coordination hypothesis, but coordinates on the specific conditions encountered
+during a daytime acclimation window and includes lags in how quickly the coordinated
+investment adjusts to changing conditions.
 
 In addition to the two P Model forms, this module also provides two extensions that
 build on the P Model:

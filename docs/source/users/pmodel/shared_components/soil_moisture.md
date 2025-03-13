@@ -118,7 +118,7 @@ sm_gradient = np.linspace(0, 1.0, n_obs)
 
 ## The {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` penalty factor
 
-This calculate an empirically derived penalty factor based on soil moisture ($\theta$)
+This calculates an empirically derived penalty factor based on soil moisture ($\theta$)
 {cite:p}`Stocker:2018be,Stocker:2020dh` that captures the loss of gross primary
 productivity (GPP) resulting from soil moisture stress.
 
