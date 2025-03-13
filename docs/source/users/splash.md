@@ -34,7 +34,9 @@ precipitation, temperature and cloud cover to estimate how the daily water balan
 changes with incoming precipitation , condensation and AET. The water balance
 equation is:
 
-$W_{n[t]} = W_{n[t-1]} + P_{[t]} + C_{[t]} - \textrm{AET}_{[t]}$,
+$$
+W_{n[t]} = W_{n[t-1]} + P_{[t]} + C_{[t]} - \textrm{AET}_{[t]},
+$$
 
 where the current soil moisture (mm, $W_{n[t]}$) is calculated from the previous day's
 soil moisture (mm, $W_{n[t-1]}$),  given the expected AET (mm d-1,
@@ -61,6 +63,7 @@ from importlib import resources
 import numpy as np
 import xarray
 from matplotlib import pyplot as plt
+import matplotlib.dates as mdates
 
 from pyrealm.splash.splash import SplashModel
 from pyrealm.core.calendar import Calendar
@@ -246,7 +249,7 @@ data["wn"] = xarray.DataArray(wn_out, dims=("time", "lat", "lon"))
 data["ro"] = xarray.DataArray(ro_out, dims=("time", "lat", "lon"))
 site_data = data.sel(sites, method="nearest")
 
-fig, axes = plt.subplots(1, 3, figsize=(9, 3))
+fig, axes = plt.subplots(3, 1, figsize=(6, 12), sharex=True)
 
 for ax, var_name, ax_label in zip(
     axes, ["wn", "aet", "ro"], ["Soil moisture (mm)", "Daily AET (mm)", "Runoff (mm)"]
@@ -255,11 +258,16 @@ for ax, var_name, ax_label in zip(
         ax.plot(
             site_data["time"].data,
             site_data[var_name].data[:, idx],
-            linewidth=0.4,
+            linewidth=0.5,
             label=site_name,
         )
     ax.set_xlabel("Date")
     ax.set_ylabel(ax_label)
+
+    # Format date axis
+    myFmt = mdates.DateFormatter("%b\n%Y")
+    ax.xaxis.set_major_formatter(myFmt)
+
 
 plt.legend()
 plt.tight_layout()
