@@ -41,6 +41,22 @@ The two specific model implementations are then:
   conditions {cite}`mengoli:2022a`. This improves the performance of the P Model at fine
   temporal resolutions, by accounting for lags in the adoption of optimal behaviour.
 
+Note that the predictions of these models differ from instantaneous models of leaf level
+ecophysiology, where the overall assimilation rate is found as the minimum of the
+assimilation rate limited by carboxylation ($A_c$) and the assimilation rate limited by
+electron transport $A_j$, given the internal $\ce{CO2}$ concentration ($c_i$). For more
+details on fitting instantaneous responses see, for example, the R package
+[`plantecophys`](https://remkoduursma.github.io/plantecophys/articles/Introduction_to_fitaci.html).
+
+Instead, the P Model follows the coordination hypothesis
+{cite}`haxeltine:1996a,maire:2012a`, which asserts that plants coordinate investment in
+those two assimilation rates, such that $A_c = A_j$. Note that this coordination
+requires time and so the standard P Model is typically to make predictions under average
+conditions on the scale of weeks to months. The subdaily P Model _also_ follows the
+coordination hypothesis, but coordinates on the specific conditions encountered during a
+daytime acclimation window and also experiences lags in how quickly coordination can
+occur.
+
 In addition to the two P Model forms, this module also provides two extensions that
 build on the P Model:
 
