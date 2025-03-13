@@ -263,9 +263,9 @@ class PModelABC(ABC):
         conditions."""
 
         self.A_c: NDArray[np.float64]
-        """Maxmimum assimilation rate limited by carboxylation."""
+        """Maximum assimilation rate limited by carboxylation."""
         self.A_j: NDArray[np.float64]
-        """Maxmimum assimilation rate limited by electron transport."""
+        """Maximum assimilation rate limited by electron transport."""
         self.J: NDArray[np.float64]
         """Electron transfer rate."""
 

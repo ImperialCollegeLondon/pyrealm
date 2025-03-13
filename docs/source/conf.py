@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.abspath("../"))
 
 # Suppress the 2.0.0 user warnings in the documentation
 warnings.filterwarnings(
-    "ignore", category=UserWarning, message="Pyrealm 2.0.0 uses a uses default value"
+    "ignore", category=UserWarning, message="Pyrealm 2.0.0 uses a new default value"
 )
 
 # -- Project information -----------------------------------------------------
@@ -163,6 +163,7 @@ nitpick_ignore = [
 intersphinx_mapping = {
     "pytest": ("https://docs.pytest.org/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
     "pandas": ("http://pandas.pydata.org/pandas-docs/dev/", None),
