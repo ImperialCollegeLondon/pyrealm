@@ -28,7 +28,6 @@ from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import summarize_attrs
 from pyrealm.pmodel.acclimation import AcclimationModel
 from pyrealm.pmodel.arrhenius import ARRHENIUS_METHOD_REGISTRY, ArrheniusFactorABC
-from pyrealm.pmodel.functions import calc_ftemp_inst_rd
 from pyrealm.pmodel.jmax_limitation import (
     JMAX_LIMITATION_CLASS_REGISTRY,
     JmaxLimitationABC,
@@ -237,18 +236,6 @@ class PModelABC(ABC):
         """Maximum rate of electron transport at standard temperature (µmol m-2 s-1),
         estimated from :math:`J_{max}` using the selected method for Arrhenius scaling.
         """
-
-        self.rd: NDArray[np.float64]
-        r"""Dark respiration (µmol m-2 s-1) calculated as:
-
-        .. math::
-
-            R_d = b_0 \frac{fr(t)}{fv(t)} V_{cmax},
-
-        following :cite:t:`Atkin:2015hk`, where :math:`fr(t)` is the instantaneous
-        temperature response of dark respiration implemented in
-        :func:`~pyrealm.pmodel.functions.calc_ftemp_inst_rd`, and :math:`b_0` is set in
-        :attr:`~pyrealm.constants.pmodel_const.PModelConst.atkin_rd_to_vcmax`."""
 
         self.gpp: NDArray[np.float64]
         r"""Gross primary productivity (µg C m-2 s-1) calculated as:
@@ -481,18 +468,6 @@ class PModel(PModelABC):
         self.vcmax25 = self.vcmax / ftemp25_inst_vcmax
         self.jmax25 = self.jmax / arrhenius_factors.calculate_arrhenius_factor(
             coefficients=self.pmodel_const.arrhenius_jmax
-        )
-
-        # Dark respiration at growth temperature
-        ftemp_inst_rd = calc_ftemp_inst_rd(
-            tc=self.env.tc,
-            tc_ref=self.pmodel_const.tc_ref,
-            coef=self.pmodel_const.heskel_rd,
-        )
-        self.rd = (
-            self.pmodel_const.atkin_rd_to_vcmax
-            * (ftemp_inst_rd / ftemp25_inst_vcmax)
-            * self.vcmax
         )
 
         # AJ and AC
