@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.abspath("../"))
 
 # Suppress the 2.0.0 user warnings in the documentation
 warnings.filterwarnings(
-    "ignore", category=UserWarning, message="Pyrealm 2.0.0 uses a uses default value"
+    "ignore", category=UserWarning, message="Pyrealm 2.0.0 uses a new default value"
 )
 
 # -- Project information -----------------------------------------------------

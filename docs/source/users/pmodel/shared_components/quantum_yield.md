@@ -78,10 +78,10 @@ a parameter representing canopy-scale effective quantum yield.
 variation in $\phi_0$ {cite}`Bernacchi:2003dc`.
 
 For these reasons, the {class}`~pyrealm.pmodel.pmodel.PModel` provides alternative
-approaches to estimating the value of $\phi{0}$, using the `method_kphio` argument. The
+approaches to estimating the value of $\phi_{0}$, using the `method_kphio` argument. The
 currently implemented approaches are described below.
 
-All of the approaches share the same baseline reference value of $\phi{0}= 1/8$ as the
+All of the approaches share the same baseline reference value of $\phi_{0}= 1/8$ as the
 theoretical maximum quantum yield of photosynthesis. The default value can be set using
 the
 {attr}`PModelConst.maximum_phi0<pyrealm.constants.pmodel_const.PModelConst.maximum_phi0>`
@@ -172,7 +172,9 @@ First, the aridity index is used to adjust the reference value ($\phi_{0R}$) usi
 double exponential function to calculate a new maximum value given the climatological
 aridity ($\phi_{0A}$):
 
-$\phi_{0A} = \dfrac{\phi_{0R}}{(1 + \textrm{AI}^m) ^ n}$
+$$
+\phi_{0A} = \dfrac{\phi_{0R}}{(1 + \textrm{AI}^m) ^ n}
+$$
 
 This captures a decrease in maximum $\phi_0$ in arid conditions, as shown below.
 

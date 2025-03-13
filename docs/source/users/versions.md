@@ -98,7 +98,7 @@ predictions, the `PModel` class in version 2.0.0 issues a warning to alert users
 ### Arrhenius scaling of $J_{max}$ and $V_{cmax}$
 
 In 1.0.0, {class}`~pyrealm.pmodel.pmodel.PModel` used an Arrhenius relationship with a
-peak at intermediate temperatures :cite:`Kattge:2007db` to calculate $J_{max25}$ and
+peak at intermediate temperatures {cite}`Kattge:2007db` to calculate $J_{max25}$ and
 $V_{cmax25}$, although in practice the implementation did not exhibit the correct peaked
 form. In contrast, the {class}`~pyrealm.pmodel.pmodel.SubdailyPModel` used a simple
 Arrhenius scaling without a peak.
@@ -229,6 +229,44 @@ subdaily_model = SubdailyPModel(
 ```
 ````
 `````
+
+### Duplication of results from version 1.0
+
+The default settings in version 2.0 have been chosen to give appropriate and consistent
+predictions. If you do need to duplicate the exact values calculated under version 1.0,
+then follow the code examples below. We **do not recommend** using these settings but
+they may be useful in validating code migration. Note that setting
+``method_arrhenius="kattge_knorr"` is only required to duplicate predictions of
+$V_{cmax25}$ and $J_{max25}$.
+
+```{code-block} ipython3
+# Create the PModelEnvironment
+pm_env = PModelEnvironment(
+    tc=tc,
+    patm=patm,
+    vpd=vpd,
+    co2=co2
+    fapar=fapar,
+    ppfd=ppfd,
+    mean_growth_temperature=tc,
+)
+
+# With temperature dependent phi_0
+ret = PModel(
+    env = pm_env,
+    method_kphio="temperature",
+    method_arrhenius="kattge_knorr",
+    reference_kphio=0.081785,
+)
+
+# Without temperature dependent phi_0
+ret = PModel(
+    env = pm_env,
+    method_kphio="fixed",
+    method_arrhenius="kattge_knorr",
+    reference_kphio=0.049977,
+)
+```
 
 ### Supporting functions for the P Model
 

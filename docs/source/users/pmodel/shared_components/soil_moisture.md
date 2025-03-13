@@ -118,11 +118,11 @@ sm_gradient = np.linspace(0, 1.0, n_obs)
 
 ## The {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` penalty factor
 
-This is an empirically derived factor ($\beta(\theta) \in [0,1]$,
-{cite:p}`Stocker:2018be,Stocker:2020dh`) that describes a penalty to gross primary
-productivity (GPP)  resulting from soil moisture stress.
+This calculate an empirically derived penalty factor based on soil moisture ($\theta$)
+{cite:p}`Stocker:2018be,Stocker:2020dh` that captures the loss of gross primary
+productivity (GPP) resulting from soil moisture stress.
 
-The factor requires estimates of:
+The factor $\beta(\theta) \in [0,1]$ requires estimates of:
 
 * relative soil moisture ($m_s$, `soilm`), as the fraction of field capacity, and
 * a measure of local mean aridity ($\bar{\alpha}$, `meanalpha`), as the average annual
@@ -151,7 +151,7 @@ parameter ($q$), which sets the speed with which $\beta(\theta) \to 0$ as $m_s$
 decreases.
 
 $$
-    q = (1 - (a + b \bar{\alpha}))/(\theta^\ast - \theta_{0})^2
+    q = \frac{(1 - (a + b \bar{\alpha}))}{(\theta^\ast - \theta_{0})^2}
 $$
 
 Then, relative soil moisture ($m_s$) is used to calculate the soil moisture factor:
@@ -231,9 +231,9 @@ correction is only implemented as a post-hoc penalty to GPP.
 
 ```{caution}
 * This soil moisture stress function was parameterised using the standard P Model
-  (:class:`~pyrealm.pmodel.pmodel.PModel`) and is unlikely to transfer well to GPP
+  ({class}`~pyrealm.pmodel.pmodel.PModel`) and is unlikely to transfer well to GPP
   predictions from the subdaily form of the model
-  (:class:`~pyrealm.pmodel.pmodel.SubdailyPModel`).
+  ({class}`~pyrealm.pmodel.pmodel.SubdailyPModel`).
 
 * The parameterisation of this soil moisture stress function formed part of a wider
   model tuning in {cite:t}`Stocker:2020dh` that also adjusted the value of the
