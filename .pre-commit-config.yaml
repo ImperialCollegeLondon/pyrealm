@@ -30,7 +30,12 @@ repos:
     - id: jupytext
       args: [--pipe, black]
       files: docs/source
-      exclude: docs/source/conf.py
+      exclude: |
+            (?x)^(
+                docs/source/conf.py|
+                docs/source/sphinx_extensions/__init__.py|
+                docs/source/sphinx_extensions/experimental.py
+            )$
       additional_dependencies:
         - black==24.4.2 # Matches hook
       
