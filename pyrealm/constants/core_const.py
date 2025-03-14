@@ -102,19 +102,26 @@ class CoreConst(ConstantsClass):
     k_Gsc = 1360.8  # solar constant, W/m^2 (Kopp & Lean, 2011)
     k_secs_d = 86400  # seconds in one solar day
 
-    # Paleoclimate variables:
-    ke = 0.0167  # eccentricity for 2000 CE (Berger, 1978)
-    keps = 23.44  # obliquity for 2000 CE, degrees (Berger, 1978)
-    komega = 283.0  # longitude of perihelion for 2000 CE, degrees (Berger, 1978)
+    equation_of_time_coef: tuple[float, ...] = (
+        0.000075,
+        +0.001868,
+        -0.032077,
+        -0.014615,
+        -0.04089,
+        229.18,
+    )
+    """Coefficients of the equation of time :cite:t:`iqbal:1983a`"""
 
     # Paleoclimate variables:
-    k_e: float = 0.0167
-    """Solar eccentricity, using default value for 2000 CE :cite:t:`berger:1978a`."""
-    k_eps: float = 23.44
-    """Solar obliquity, using default value for 2000 CE :cite:t:`berger:1978a`."""
-    k_omega = 283.0
-    """Solar longitude of perihelion, using default value for 2000 CE
+    solar_eccentricity: float = 0.0167
+    """Solar eccentricity (:math:`e`), using default value for 2000 CE 
     :cite:t:`berger:1978a`."""
+    solar_obliquity: float = 23.44
+    """Solar obliquity in degrees (:math:`\epsilon`), using default value for 2000 CE
+    :cite:t:`berger:1978a`."""
+    solar_perihelion: float = 283.0
+    """Solar longitude of perihelion in degrees (:math:`\omega`), using default value
+    for 2000 CE :cite:t:`berger:1978a`."""
 
     # Hygro constants
     magnus_coef: NDArray[np.float64] = field(

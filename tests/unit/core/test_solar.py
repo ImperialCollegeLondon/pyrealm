@@ -334,16 +334,16 @@ def test_nightime_net_radiation(rnl, hn, hs, delta, latitude, tau, dr, expected)
         (120, 364, (116.42440153600026, 39.42440153600026)),
     ],
 )
-def test_calc_heliocentric_longitudes(day, n_day, expected):
-    """Tests calc_heliocentric_longitudes.
+def test_calculate_heliocentric_longitudes(day, n_day, expected):
+    """Tests calculate_heliocentric_longitudes.
 
     The test values here are a small selection of values taken from feeding the inputs
     into the original function implementation. This test is primarily about ensuring the
     refactoring into pyrealm.core works.
     """
-    from pyrealm.core.solar import calc_heliocentric_longitudes
+    from pyrealm.core.solar import calculate_heliocentric_longitudes
 
-    result = calc_heliocentric_longitudes(day, n_day)
+    result = calculate_heliocentric_longitudes(day, n_day)
     assert_allclose(result, expected)
 
 
@@ -382,19 +382,19 @@ def test_calc_solar_elevation(latitude, longitude, year_date_time, expected):
     argnames="td, expected",
     argvalues=[(np.array([298]), -0.22708144)],
 )
-def test_calc_declination(td, expected):
-    """Tests calc_declination.
+def test_calculate_solar_declination(td, expected):
+    """Tests calculate_solar_declination.
 
     This test is intended to verify the implemented maths.
     """
 
     # This test is intended to verify the implemented maths.
 
-    from pyrealm.core.solar import solar_declination
+    from pyrealm.core.solar import calculate_solar_declination
 
     # Const = CoreConst()
 
-    result = solar_declination(td)
+    result = calculate_solar_declination(td)
 
     assert_allclose(result, expected)
 
@@ -403,15 +403,15 @@ def test_calc_declination(td, expected):
     argnames="julian_day, expected",
     argvalues=[(np.array([298]), 5.11261928)],
 )
-def test_calc_day_angle(julian_day, expected):
-    """Tests calc_day_angle.
+def test_calculate_day_angle(julian_day, expected):
+    """Tests calculate_day_angle.
 
     This test is intended to verify the implemented maths.
     """
 
-    from pyrealm.core.solar import day_angle
+    from pyrealm.core.solar import calculate_day_angle
 
-    result = day_angle(julian_day)
+    result = calculate_day_angle(julian_day)
 
     assert_allclose(result, expected)
 
@@ -420,15 +420,15 @@ def test_calc_day_angle(julian_day, expected):
     argnames="day_angle, expected",
     argvalues=[(np.array([5.11]), 15.99711625)],
 )
-def test_equation_of_time(day_angle, expected):
-    """Tests equation_of_time.
+def test_calculate_equation_of_time(day_angle, expected):
+    """Tests calculate_equation_of_time.
 
     This test is intended to verify the implemented maths.
     """
 
-    from pyrealm.core.solar import equation_of_time
+    from pyrealm.core.solar import calculate_equation_of_time
 
-    result = equation_of_time(day_angle)
+    result = calculate_equation_of_time(day_angle)
 
     assert_allclose(result, expected)
 
@@ -437,15 +437,15 @@ def test_equation_of_time(day_angle, expected):
     argnames="longitude, standard_meridian, E_t, expected",
     argvalues=[(147.34167, 150, 16.01, np.array([11.910388666666668]))],
 )
-def test_solar_noon(longitude, standard_meridian, E_t, expected):
-    """Tests solar_noon.
+def test_calculate_solar_noon(longitude, standard_meridian, E_t, expected):
+    """Tests calculate_solar_noon.
 
     This test is intended to verify the implemented maths.
     """
 
-    from pyrealm.core.solar import solar_noon
+    from pyrealm.core.solar import calculate_solar_noon
 
-    result = solar_noon(longitude, standard_meridian, E_t)
+    result = calculate_solar_noon(longitude, E_t, standard_meridian)
 
     assert_allclose(result, expected)
 
@@ -454,15 +454,15 @@ def test_solar_noon(longitude, standard_meridian, E_t, expected):
     argnames="t, t0, expected",
     argvalues=[(np.array([10.5]), np.array([11.91]), np.array([-0.36913714]))],
 )
-def test_local_hour_angle(t, t0, expected):
-    """Tests local_hour_angle.
+def test_calculate_local_hour_angle(t, t0, expected):
+    """Tests calculate_local_hour_angle.
 
     This test is intended to verify the implemented maths.
     """
 
-    from pyrealm.core.solar import local_hour_angle
+    from pyrealm.core.solar import calculate_local_hour_angle
 
-    result = local_hour_angle(t, t0)
+    result = calculate_local_hour_angle(t, t0)
 
     assert_allclose(result, expected)
 
@@ -473,14 +473,14 @@ def test_local_hour_angle(t, t0, expected):
         (np.array([-0.61]), np.array([-0.23]), np.array([-0.37]), np.array([1.0647289]))
     ],
 )
-def test_elevation_from_lat_dec_hn(latitude, declination, hour_angle, expected):
-    """Tests elevation_from_lat_dec_hn.
+def test_calculate_solar_elevation_angle(latitude, declination, hour_angle, expected):
+    """Tests calculate_solar_elevation_angle.
 
     This test is intended to verify the implemented maths.
     """
 
-    from pyrealm.core.solar import elevation_from_lat_dec_hn
+    from pyrealm.core.solar import calculate_solar_elevation_angle
 
-    result = elevation_from_lat_dec_hn(latitude, declination, hour_angle)
+    result = calculate_solar_elevation_angle(latitude, declination, hour_angle)
 
     assert_allclose(result, expected)

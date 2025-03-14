@@ -1,5 +1,5 @@
 """The :mod:`~pyrealm.core.solar` submodule provides functions to calculate
-photosynthetic photon flux density (ppfd), daily solar radiation fluxes and other
+photosynthetic photon flux density (PPFD), daily solar radiation fluxes and other
 radiative values.
 """  # noqa: D205
 
@@ -315,12 +315,17 @@ def calc_ppfd(
 
     # Calculate intermediate values
 
-    nu, lambda_ = calc_heliocentric_longitudes(julian_day=julian_day, n_days=n_days)
+    nu, lambda_ = calc_heliocentric_longitudes(
+        ordinal_date=julian_day,
+        n_days=n_days,
+        solar_eccentricity=const.solar_eccentricity,
+        solar_perihelion=const.solar_perihelion,
+    )
 
-    dr = calc_distance_factor(nu=nu, k_e=const.k_e)
+    dr = calc_distance_factor(nu=nu, k_e=const.solar_eccentricity)
 
     delta = calc_declination_angle_delta(
-        lambda_=lambda_, k_eps=const.k_eps, k_pir=const.k_pir
+        lambda_=lambda_, k_eps=const.solar_obliquity, k_pir=const.k_pir
     )
 
     tau = calc_transmissivity(sf=sf, elv=elv, k_c=const.k_c, k_d=const.k_d)
@@ -601,70 +606,78 @@ def _calc_nighttime_net_radiation(
     return rnn_d
 
 
-def calc_heliocentric_longitudes(
-    julian_day: NDArray[np.float64],
+def calculate_heliocentric_longitudes(
+    ordinal_date: NDArray[np.float64],
     n_days: NDArray[np.float64],
-    core_const: CoreConst = CoreConst(),
+    solar_eccentricity: float = CoreConst().solar_eccentricity,
+    solar_perihelion: float = CoreConst().solar_perihelion,
 ) -> tuple[NDArray, NDArray]:
-    """Calculate heliocentric longitude and anomaly.
+    r"""Calculate heliocentric longitude and anomaly.
 
     This function calculates the heliocentric true anomaly (``nu``, degrees) and true
     longitude (``lambda_``, degrees), given the Julian day in the year and the
     number of days in the year, following :cite:t:`berger:1978a`.
 
     Args:
-        julian_day: day of year
-        n_days: number of days in year
-        core_const: An instance of CoreConst.
+        ordinal_date: The ordinal date
+        n_days: The number of days in the year
+        solar_eccentricity: The solar eccentricity (:math:`e`), defaulting to
+            :attr:`~pyrealm.constants.CoreConst.solar_eccentricity`.
+        solar_perihelion: The solar perihelion (:math:`\omega`), defaulting to
+            :attr:`~pyrealm.constants.CoreConst.solar_perihelion`.
 
     Returns:
         A tuple of NDArrays containing ``nu`` and ``lambda_``.
     """
 
     # Variable substitutes:
-    xee = core_const.k_e**2
-    xec = core_const.k_e**3
-    xse = np.sqrt(1.0 - xee)
+    eccen_sq = solar_eccentricity**2
+    eccen_cb = solar_eccentricity**3
+    xse = np.sqrt(1.0 - eccen_sq)
 
-    # Mean longitude for vernal equinox:
-    xlam = (
+    # Mean longitude for vernal equinox in degrees:
+    xlam = np.rad2deg(
         (
             (
-                (core_const.k_e / 2.0 + xec / 8.0)
+                (solar_eccentricity / 2.0 + eccen_cb / 8.0)
                 * (1.0 + xse)
-                * np.sin(np.deg2rad(core_const.k_omega))
+                * np.sin(np.deg2rad(solar_perihelion))
             )
-            - (xee / 4.0 * (0.5 + xse) * np.sin(np.deg2rad(2.0 * core_const.k_omega)))
+            - (
+                eccen_sq
+                / 4.0
+                * (0.5 + xse)
+                * np.sin(np.deg2rad(2.0 * solar_perihelion))
+            )
             + (
-                xec
+                eccen_cb
                 / 8.0
                 * (1.0 / 3.0 + xse)
-                * np.sin(np.deg2rad(3.0 * core_const.k_omega))
+                * np.sin(np.deg2rad(3.0 * solar_perihelion))
             )
         )
         * 2.0
-        / core_const.k_pir
     )
 
-    # Mean longitude for day of year:
-    dlamm = xlam + (julian_day - 80.0) * (360.0 / n_days)
+    # Mean longitude for day of year in degrees:
+    dlamm = xlam + (ordinal_date - 80.0) * (360.0 / n_days)
 
-    # Mean anomaly:
-    ranm = (dlamm - core_const.k_omega) * core_const.k_pir
+    # Mean anomaly in radians:
+    ranm = np.deg2rad(dlamm - solar_eccentricity)
 
-    # True anomaly:
+    # True anomaly in radians:
     ranv = (
         ranm
-        + ((2.0 * core_const.k_e - xec / 4.0) * np.sin(ranm))
-        + (5.0 / 4.0 * xee * np.sin(2.0 * ranm))
-        + (13.0 / 12.0 * xec * np.sin(3.0 * ranm))
+        + ((2.0 * solar_eccentricity - eccen_cb / 4.0) * np.sin(ranm))
+        + (5.0 / 4.0 * eccen_sq * np.sin(2.0 * ranm))
+        + (13.0 / 12.0 * eccen_cb * np.sin(3.0 * ranm))
     )
 
     # True longitude in degrees constrained to 0 - 360
-    lambda_ = ((ranv / core_const.k_pir) + core_const.k_omega) % 360
+    lambda_ = (np.rad2deg(ranv) + solar_perihelion) % 360
 
     # True anomaly in degrees constrained to 0 - 360
-    nu = (lambda_ - core_const.k_omega) % 360
+    nu = (lambda_ - solar_perihelion) % 360
 
     return (nu, lambda_)
 
@@ -681,11 +694,11 @@ def calc_solar_elevation(site_obs_data: LocationDateTime) -> NDArray:
 
     This approach uses the following calculations:
 
-        - :func:`day_angle`
-        - :func:`equation_of_time`
-        - :func:`solar_noon`
-        - :func:`local_hour_angle`
-        - :func:`solar_declination`
+        - :func:`calculate_day_angle`
+        - :func:`calculate_equation_of_time`
+        - :func:`calculate_solar_noon`
+        - :func:`calculate_local_hour_angle`
+        - :func:`calculate_solar_declination`
         - :func:`elevation_from_lat_dec_hn`
 
     Args:
@@ -715,15 +728,17 @@ def calc_solar_elevation(site_obs_data: LocationDateTime) -> NDArray:
 
     """
 
-    G_d = day_angle(site_obs_data.julian_days)
+    G_d = calculate_day_angle(site_obs_data.julian_days)
 
-    E_t = equation_of_time(G_d)
+    E_t = calculate_equation_of_time(G_d)
 
-    t0 = solar_noon(site_obs_data.longitude, site_obs_data.local_standard_meridian, E_t)
+    t0 = calculate_solar_noon(
+        site_obs_data.longitude, site_obs_data.local_standard_meridian, E_t
+    )
 
-    hour_angle = local_hour_angle(site_obs_data.decimal_time, t0)
+    hour_angle = calculate_local_hour_angle(site_obs_data.decimal_time, t0)
 
-    declination = solar_declination(site_obs_data.julian_days)
+    declination = calculate_solar_declination(site_obs_data.julian_days)
 
     elevation = elevation_from_lat_dec_hn(
         site_obs_data.latitude_rad, declination, hour_angle
@@ -731,29 +746,23 @@ def calc_solar_elevation(site_obs_data: LocationDateTime) -> NDArray:
     return elevation
 
 
-def elevation_from_lat_dec_hn(
-    latitude: NDArray | float, declination: NDArray, hour_angle: NDArray
-) -> NDArray:
-    r"""Calculate the elevation angle of the sun above the horizon.
+def calculate_solar_elevation_angle(
+    latitude: NDArray[np.float64],
+    declination: NDArray[np.float64],
+    hour_angle: NDArray[np.float64],
+) -> NDArray[np.float64]:
+    r"""Calculate the solar elevation angle.
 
-    The elevation angle (or solar altitude angle) is the angle between the horizon and 
-    the sun, which indicates how high the sun is in the sky at a given time. This 
-    function calculates the elevation angle based on the observer's latitude, the 
-    solar declination, and the hour angle.
-
-    The calculation is based on the following trigonometric relationship based on Eqn 
-    A13, :cite:t:`depury:1997a`:
+    The solar elevation angle (:math:`\alpha`) is the angle between the horizon and the
+    sun, giving the height of the sun in the sky at a given time. This function
+    calculates the elevation angle based on the observer's latitude (:math:`\phi`) , the
+    solar declination (:math:`\delta`), and the hour angle (:math:`h`), following Eqn
+    A13 of :cite:t:`depury:1997a`:
 
     .. math::
-        \sin(\alpha) = \sin(\phi) \cdot \sin(\delta) +
-        \cos(\phi) \cdot \cos(\delta) \cdot \cos(h)
 
-    where,
+        \sin(\alpha) = \sin(\phi)  \sin(\delta) + \cos(\phi) \cos(\delta) \cos(h)
 
-    - :math:`\alpha` is the elevation angle,
-    - :math:`\phi` is the latitude of the observer,
-    - :math:`\delta` is the solar declination, and
-    - :math:`h` is the hour angle.
 
     The elevation angle is then given by:
 
@@ -761,96 +770,92 @@ def elevation_from_lat_dec_hn(
         \alpha = \arcsin(\sin(\alpha))
 
     Args:
-        latitude: Array of latitudes in radians, or a single latitude value (as a \
-            float).
+        latitude: Array of latitudes in radians.
         declination: Array of solar declination angles in radians.
         hour_angle: Array of hour angles in radians.
 
     Returns:
-        An array of elevation angles in radians (as a floating-point number array),
-        representing the angular height of the sun above the horizon.
+        Solar elevation angles in radians.
 
     """
 
-    sin_alpha = np.sin(latitude) * np.sin(declination) + np.cos(latitude) * np.cos(
-        declination
-    ) * np.cos(hour_angle)
-
-    elevation = np.arcsin(sin_alpha)
-
-    return elevation
+    return np.arcsin(
+        np.sin(latitude) * np.sin(declination)
+        + np.cos(latitude) * np.cos(declination) * np.cos(hour_angle)
+    )
 
 
-def solar_declination(td: NDArray) -> NDArray:
-    r"""Calculates solar declination angle.
+def calculate_solar_declination(
+    ordinal_date: NDArray[np.float64],
+) -> NDArray[np.float64]:
+    r"""Calculate solar declination angle.
 
-    Use method described in eqn A14 of :cite:t:`depury:1997a` to calculate solar
-    declination angle, from day of the year.
+    Calculates the solar declination angle (:math:`\delta`, rad) from the ordinal date,
+    following Eqn A14 of :cite:t:`depury:1997a`.
 
     .. math::
 
-        \text{declination} = -23.4 \cdot \left(\frac{1}{k\_pir}\right) \cdot \cos\left
-        (\frac{2 \cdot \pi \cdot (td + 10)}{365}\right)
+        \delta = -23.4 \frac{\pi}{180} \cos \left(\frac{2 \pi  (td + 10)}{365}\right)
 
     Args:
-        td: Julian day of the year
+        ordinal_date: The ordinal dates of observations.
 
     Returns:
-        Array of solar declination angles (radians)
+        Solar declination angles in radians.
     """
 
-    declination = -23.4 * (np.pi / 180) * np.cos((2 * np.pi * (td + 10)) / 365)
-
-    return declination
+    return -23.4 * (np.pi / 180) * np.cos((2 * np.pi * (ordinal_date + 10)) / 365)
 
 
-def local_hour_angle(t: NDArray, t0: NDArray) -> NDArray:
-    r"""Calculate the local hour angle :math:`h` for a given time and solar noon.
+def calculate_local_hour_angle(
+    current_time: NDArray[np.float64], solar_noon: NDArray[np.float64]
+) -> NDArray[np.float64]:
+    r"""Calculate the local hour angle (:math:`h`).
 
-    The local hour angle is a measure of time, expressed in angular terms, that
-    indicates the position of the sun relative to solar noon. This function
-    calculates the local hour angle by determining the difference between the
-    current time (``t``) and the solar noon time (:math:`t_{0}`), and then
-    converting this difference into an angle.
-
-    Equation implemented from A15 :cite:t:`depury:1997a`.
+    The local hour angle (:math:`h`) is a measure of time, expressed as an angle in
+    radians, that indicates the position of the sun relative to solar noon. This
+    function calculates the local hour angle following equation A15 of
+    :cite:t:`depury:1997a`.
 
     .. math::
-        h = \pi \cdot \frac{t - t_{0}}{12}
+
+        h = \pi \frac{t - t_{0}}{12}
 
     Args:
-        t: Array of current time values in hours (as a floating-point number).
-        t0: Array of solar noon time values in hours (as a floating-point number).
+        current_time: Current time values in decimal hours (:math:`t`).
+        solar_noon: Solar noon time values in decimal hours (:math`t_0`).
 
     Returns:
-        The local hour angle in radians (as a floating-point number array), which
-        represents the angular distance of the sun from the local meridian at the
-        given time.
+        The local hour angle in radians
 
     """
 
-    h = np.pi * (t - t0) / 12
-
-    return h
+    return np.pi * (current_time - solar_noon) / 12
 
 
-def solar_noon(L_e: float, L_s: float, E_t: NDArray) -> NDArray:
-    r"""Calculate the solar noon time for a given location.
+def calculate_solar_noon(
+    longitude: NDArray[np.float64],
+    equation_of_time: NDArray[np.float64],
+    standard_longitude: float = 0,
+) -> NDArray:
+    r"""Calculate the solar noon  for a given location.
 
-    The solar noon is the time of day when the sun is at its highest point in the sky 
-    for a given location. This function calculates the solar noon by adjusting the 
-    standard noon time (12:00 PM) based on the difference between the local 
-    longitude (:math:`L_{e}`) and the local standard meridian (:math:`L_{s}`) and 
-    the equation of time (:math:`E_{t}`). Based on EqA16, :cite:t:`depury:1997a`.
+    The solar noon (:math:`t_0`) is the time of day when the sun is at its highest point
+    in the sky for a given location. This function calculates the solar noon by
+    adjusting the standard noon time (12:00 PM) given the local longitude and the
+    equation of time for the day of observation, following EqA16,
+    :cite:t:`depury:1997a`.
 
-    .. math:: t_{0} = 12 + \frac{4 \cdot -(L_{e} - L_{s}) - E_{t}}{60}
+    .. math::
+
+        t_{0} = 12 + \frac{4 \cdot -(L_{e} - L_{s}) - E_{t}}{60}
 
     Args:
-        L_e: Local longitude of the observer in degrees (positive for east,negative \
-            for west).
-        L_s: Longitude of the standard meridian for the observer's time zone in degrees.
-        E_t: Equation of time in minutes, accounting for the irregularity of the \
-            Earth's orbit and axial tilt.
+        longitude: The local longitude in degrees (:math:`L_e`).
+        equation_of_time: The equation of time given the ordinal date of the
+            observation (:math:`E_t`).
+        standard_longitude: The standard meridian for the observation degrees,
+            defaulting to the Greenwich meridan (:math:`L_s`).
 
     Returns:
         The solar noon time in hours (as a floating-point number), which can be
@@ -858,67 +863,62 @@ def solar_noon(L_e: float, L_s: float, E_t: NDArray) -> NDArray:
 
     """
 
-    t0 = 12 + (4 * -(L_e - L_s) - E_t) / 60
-
-    return t0
+    return 12 + (4 * -(longitude - standard_longitude) - equation_of_time) / 60
 
 
-def equation_of_time(day_angle: NDArray) -> NDArray:
-    r"""Calculates equation of time in minutes.
+def calculate_equation_of_time(
+    day_angle: NDArray[np.float64],
+    coef: tuple[float, ...] = CoreConst.equation_of_time_coef,
+) -> NDArray[np.float64]:
+    r"""Calculate the equation of time.
 
-    Based on eqn 1.4.1 :cite:t:`iqbal:1983a` rather than eqn A17
-    :cite:t:`depury:1997a` due to incorrect reported implementation in the latter.
-
-    .. math::
-
-        E_t = \left( 0.000075
-            + 0.001868 \cdot \cos(\Gamma)
-            - 0.032077 \cdot \sin(\Gamma)
-            - 0.014615 \cdot \cos(2\Gamma)
-            - 0.04089 \cdot \sin(2\Gamma) \right)
-            \times 229.18
-
-    Where gamma is the day angle.
-
-    Args:
-        day_angle: day angle in radians
-
-    Returns:
-        An array of Equation of time values
-
-    """
-    E_t = (
-        0.000075
-        + 0.001868 * np.cos(day_angle)
-        - 0.032077 * np.sin(day_angle)
-        - 0.014615 * np.cos(2 * day_angle)
-        - 0.04089 * np.sin(2 * day_angle)
-    ) * 229.18
-
-    return E_t
-
-
-def day_angle(t_d: NDArray) -> NDArray:
-    r"""Calculates solar day angle (gamma), radians.
-
-    The day angle (``gamma``) for a given day of the year ``N``, (where N=1 for
-    January 1st and N=365 for December 31st) can be calculated using the following
-    formula:
-
-    Based on Eqn A18, :cite:t:`depury:1997a`.
+    Calculates the equation of time in minutes from the day angle (:math:$\Gamma$, rad).
 
     .. math::
 
-    \gamma = \frac{2\pi (N - 1)}{365}
+        E_t = f \left(
+            a + b \cos(\Gamma) + c \sin(\Gamma) + d \cos(2\Gamma) + e \sin(2\Gamma)
+            \right),
+
+    where :math:`a,b,c,d,e,f` are the coefficients of the equation, defaulting to the
+    values in :attr:`~pyrealm.constants.CoreConst.equation_of_time_coef` taken from
+    Eqn 1.4.1 of :cite:t:`iqbal:1983a`. Note that Eqn A17 of :cite:t:`depury:1997a`
+    provides an implementation that contains errors.
 
     Args:
-        t_d: Julian day of the year
+        day_angle: The day angle in radians
+        coef: A tuple of coefficients for the equation of time.
 
     Returns:
-        An array of solar day angles
-
+        An array of equation of time values (minutes)
     """
 
-    day_angle = 2 * np.pi * (t_d - 1) / 365
+    a, b, c, d, e, f = coef
 
-    return day_angle
+    return (
+        a
+        + b * np.cos(day_angle)
+        + c * np.sin(day_angle)
+        + d * np.cos(2 * day_angle)
+        + e * np.sin(2 * day_angle)
+    ) * f
+
+
+def calculate_day_angle(ordinal_date: NDArray[np.float64]) -> NDArray[np.float64]:
+    r"""Calculate the solar day angle.
+
+    Calculates the solar day angle (``gamma``, :math:`\Gamma`, rad) for ordinal dates
+    ('Julian dates') using Eqn A18 of :cite:t:`depury:1997a`.
+
+    .. math::
+
+        \Gamma = \frac{2\pi (N - 1)}{365}
+
+    Args:
+        ordinal_date: The ordinal date for which to calculate the day angle.
+
+    Returns:
+        An array of solar day angles in radians.
+    """
+
+    return 2 * np.pi * (ordinal_date - 1) / 365
