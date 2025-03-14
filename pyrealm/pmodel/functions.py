@@ -409,10 +409,10 @@ def calc_soilmstress_stocker(
         the quantum yield of photosynthesis. This tuning aimed to capture include
         incomplete leaf absorption in the realised value of :math:`\phi_0`, and
         :cite:t:`Stocker:2020dh` argue that, within their model representation,
-        :math:`\phi_0` should be treated as a parameter representing canopy-scale 
+        :math:`\phi_0` should be treated as a parameter representing canopy-scale
         effective quantum yield. To duplicate the model settings used with this soil
-        moisture correction in from Table 1 of :cite:t:`Stocker:2020dh`, use the
-        following settings:
+        moisture correction in Table 1 of :cite:t:`Stocker:2020dh`, use the following
+        code:
 
         .. code-block:: python
 

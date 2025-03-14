@@ -86,7 +86,7 @@ advantage of providing a zoomable cleaner interface for the diagram that support
 tooltips
 -->
 
-<iframe frameborder="0" style="width:100%;height:800px;" src="https://viewer.diagrams.net/?lightbox=0&highlight=0000ff&nav=1&title=pmodel.drawio&dark=auto#Uhttps%3A%2F%2Fraw.githubusercontent.com%2FImperialCollegeLondon%2Fpyrealm%2F438-revise-the-p-model-documentation%2Fdocs%2Fsource%2Fusers%2Fpmodel%2Fsubdaily_details%2Fsubdaily_pmodel.drawio"></iframe>
+<iframe frameborder="0" style="width:100%;height:800px;" src="https://viewer.diagrams.net/?lightbox=0&highlight=0000ff&nav=1&title=pmodel.drawio&dark=auto#Uhttps%3A%2F%2Fraw.githubusercontent.com%2FImperialCollegeLondon%2Fpyrealm%2Fdevelop%2Fdocs%2Fsource%2Fusers%2Fpmodel%2Fsubdaily_details%2Fsubdaily_pmodel.drawio"></iframe>
 
 The implementation has the following steps:
 

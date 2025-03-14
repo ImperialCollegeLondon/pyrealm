@@ -337,7 +337,7 @@ def plot_iabs(ax, estvar, estvarlab):
     ax.set_ylabel(f"Estimated {estvarlab}")
 
 
-fig, axs = plt.subplots(2, 3, figsize=(12, 8), sharex=True)
+fig, axs = plt.subplots(3, 2, figsize=(12, 15), sharex=True)
 
 plot_iabs(
     axs[0, 0], "gpp", r"GPP ($\mu\mathrm{g\,C}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
@@ -346,22 +346,22 @@ plot_iabs(
     axs[0, 1], "rd", r"$r_d$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
 )
 plot_iabs(
-    axs[0, 2],
+    axs[1, 0],
     "vcmax",
     r"$v_{cmax}$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)",
 )
 plot_iabs(
-    axs[1, 0],
+    axs[1, 1],
     "vcmax25",
     r"$v_{cmax25}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)",
 )
 plot_iabs(
-    axs[1, 1],
+    axs[2, 0],
     "jmax",
     r"$J_{max}$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)",
 )
 plot_iabs(
-    axs[1, 2], "gs", r"$g_s$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
+    axs[2, 1], "gs", r"$g_s$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)"
 )
 
 axs[0, 0].legend(

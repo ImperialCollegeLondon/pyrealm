@@ -1,27 +1,31 @@
 """Shared fixtures for phenology testing."""
 
+import json
 from importlib import resources
 
 import pandas as pd
 import pytest
+import xarray as xr
 
 
 @pytest.fixture
-def de_gri_half_hourly_data():
+def de_gri_half_hourly_inputs():
     """Loads the half hourly fluxnet data."""
 
     # Load the data
     datapath = (
-        resources.files("pyrealm_build_data.phenology")
-        / "FLX_DE-Gri_FLUXNET2015_phenology_inputs.csv"
+        resources.files("pyrealm_build_data.phenology") / "DE_GRI_hh_fluxnet_simple.csv"
     )
 
-    de_gri_data = pd.read_csv(datapath, na_values=[-9999])
+    de_gri_data = pd.read_csv(datapath, na_values=[-9999, -9999.0])
 
     # Calculate time as np.datetime64 and scale other vars
     de_gri_data["time"] = pd.to_datetime(
         de_gri_data["TIMESTAMP_START"], format="%Y%m%d%H%M"
     )
+
+    # # VPD from hPa to Pa
+    de_gri_data["VPD_F"] = de_gri_data["VPD_F"].to_numpy() * 100
     # Pressure from kPa to Pa
     de_gri_data["PA_F"] = de_gri_data["PA_F"].to_numpy() * 1000
     # PPFD from SWDOWN
@@ -31,20 +35,62 @@ def de_gri_half_hourly_data():
 
 
 @pytest.fixture
-def de_gri_daily_data():
-    """Loads the daily phenology data."""
+def de_gri_splash_inputs():
+    """Loads the daily splash inputs."""
 
     # Load the data
     datapath = (
         resources.files("pyrealm_build_data.phenology")
-        / "DE_Gri_Grassland_example_subset.csv"
+        / "DE_gri_splash_cru_ts4.07_2000_2019.nc"
+    )
+
+    de_gri_data = xr.load_dataset(datapath)
+
+    return de_gri_data
+
+
+@pytest.fixture
+def de_gri_hh_outputs():
+    """Loads the half hourly phenology outputs."""
+
+    # Load the data
+    datapath = resources.files("pyrealm_build_data.phenology") / "python_hh_outputs.csv"
+
+    de_gri_data = pd.read_csv(datapath, na_values=[-9999])
+
+    # Calculate time as np.datetime64 and scale other vars
+    de_gri_data["time"] = pd.to_datetime(
+        de_gri_data["time"], format="%Y-%m-%d %H:%M:%S"
+    )
+
+    return de_gri_data
+
+
+@pytest.fixture
+def de_gri_daily_outputs():
+    """Loads the daily phenology data."""
+
+    # Load the data
+    datapath = (
+        resources.files("pyrealm_build_data.phenology") / "python_daily_outputs.csv"
     )
 
     de_gri_data = pd.read_csv(datapath, na_values=[-9999])
 
     # Calculate time as np.datetime64 and scale other vars
-    de_gri_data["date"] = pd.to_datetime(de_gri_data["date"], format="%Y-%m-%d")
-    # Pressure from kPa to Pa
-    de_gri_data["PA_F"] = de_gri_data["PA_F"].to_numpy() * 1000
+    de_gri_data["date"] = pd.to_datetime(de_gri_data["time"], format="%Y-%m-%d")
 
     return de_gri_data
+
+
+@pytest.fixture
+def de_gri_constants():
+    """Load the site constants."""
+
+    # Load the data
+    datapath = resources.files("pyrealm_build_data.phenology") / "DE-GRI_site_data.json"
+
+    with open(datapath, "rb") as site_file:
+        constants = json.load(site_file)
+
+    return constants
