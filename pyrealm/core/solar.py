@@ -11,32 +11,37 @@ from pyrealm.core.calendar import LocationDateTime
 from pyrealm.core.utilities import check_input_shapes
 
 
-def calc_distance_factor(nu: NDArray, k_e: float) -> NDArray:
+def calculate_distance_factor(
+    nu: NDArray[np.float64], solar_eccentricity: float = CoreConst().solar_eccentricity
+) -> NDArray[np.float64]:
     r"""Calculates distance factor.
 
-    This function calculates the distance factor :math:`dr` using the method of
+    This function calculates the distance factor :math:`d_r` using the method of
     :cite:t:`berger:1993a`.
 
     .. math::
 
-        dr = \left( 1.0 \mathbin{/}
-               \left(\frac{1.0 - k_{e}^2}
-                          {1.0 + k_{e} \cos\left(\nu \cdot \pi \mathbin{/}
-                          180)\right)}
+        d_r = \left( 1.0 \mathbin{/}
+               \left(\frac{1.0 - e^2}
+                          {1.0 + e \cos\left(\nu) \right)}
                \right)
              \right)^2
 
     Args:
-        nu: Heliocentric true anomaly (degrees)
-        k_e: Solar eccentricity
+        nu: Heliocentric true anomaly (:math:`\nu`, degrees)
+        solar_eccentricity: Solar eccentricity (:math:`e`)
 
     Returns:
         An array of distance factors
     """
 
-    dr = (1.0 / ((1.0 - k_e**2) / (1.0 + k_e * np.cos(np.deg2rad(nu))))) ** 2
-
-    return dr
+    return (
+        1.0
+        / (
+            (1.0 - solar_eccentricity**2)
+            / (1.0 + solar_eccentricity * np.cos(np.deg2rad(nu)))
+        )
+    ) ** 2
 
 
 def calc_declination_angle_delta(
@@ -66,33 +71,34 @@ def calc_declination_angle_delta(
     return delta
 
 
-def calc_lat_delta_intermediates(
-    delta: NDArray, latitude: NDArray
-) -> tuple[NDArray, NDArray]:
+def calculate_ru_rv_intermediates(
+    declination: NDArray[np.float64], latitude: NDArray[np.float64]
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     r"""Calculates intermediate values for use in solar radiation calcs.
 
-    This function calculates :math:`ru` and :math:`rv` which are dimensionless
-    intermediate values calculated from the solar declination angle delta and the
-    observation latitude.
+    This function calculates :math:`r_u` and :math:`r_v` which are dimensionless
+    intermediate values calculated from the solar declination angle (:math:`\delta`) and
+    the observation latitude (:math:`\phi`).
 
     .. math::
+        :nowrap:
 
-        ru = \sin(\deg2rad(\delta)) \cdot \sin(\deg2rad(\text{latitude}))
-
-    .. math::
-
-        rv = \cos(\deg2rad(\delta)) \cdot \cos(\deg2rad(\text{latitude}))
+        \[
+            \begin{align*}
+                r_u &= \sin(\delta) \sin(\phi) \\
+                r_v &= \cos(\delta) \cos(\phi)
+            \end{align*}
+        \]
 
     Args:
-        delta: solar declination delta
-        latitude: observation latitude (degrees)
+        declination: Solar declination (:math:`\delta`, degrees)
+        latitude: Observation latitude (:math:`\phi`, degrees)
 
     Returns:
-        A Tuple of :math:`ru` and :math:`rv`, calculation intermediates, unitless
-
+        A tuple of :math:`r_u` and :math:`r_v`.
     """
-    ru = np.sin(np.deg2rad(delta)) * np.sin(np.deg2rad(latitude))
-    rv = np.cos(np.deg2rad(delta)) * np.cos(np.deg2rad(latitude))
+    ru = np.sin(np.deg2rad(declination)) * np.sin(np.deg2rad(latitude))
+    rv = np.cos(np.deg2rad(declination)) * np.cos(np.deg2rad(latitude))
 
     return ru, rv
 
@@ -117,7 +123,7 @@ def calc_sunset_hour_angle(delta: NDArray, latitude: NDArray, k_pir: float) -> N
         An array of local hour angle, degrees
     """
 
-    ru, rv = calc_lat_delta_intermediates(delta=delta, latitude=latitude)
+    ru, rv = calculate_ru_rv_intermediates(declination=delta, latitude=latitude)
 
     return _calc_sunset_hour_angle_from_ru_rv(ru, rv, k_pir)
 
@@ -168,7 +174,7 @@ def calc_daily_solar_radiation(
         NDArray: An array of daily solar radiation, J/m^2
     """
 
-    ru, rv = calc_lat_delta_intermediates(delta=delta, latitude=latitude)
+    ru, rv = calculate_ru_rv_intermediates(declination=delta, latitude=latitude)
 
     return _calc_daily_solar_radiation(dr=dr, ru=ru, rv=rv, hs=hs, const=const)
 
@@ -192,8 +198,8 @@ def _calc_daily_solar_radiation(
         An array of daily solar radiation, J/m^2
     """
     k_pir = const.k_pir
-    k_secs_d = const.k_secs_d
-    k_Gsc = const.k_Gsc
+    k_secs_d = const.day_seconds
+    k_Gsc = const.solar_constant
 
     ra_d = (
         (k_secs_d / np.pi)
@@ -315,14 +321,14 @@ def calc_ppfd(
 
     # Calculate intermediate values
 
-    nu, lambda_ = calc_heliocentric_longitudes(
+    nu, lambda_ = calculate_heliocentric_longitudes(
         ordinal_date=julian_day,
         n_days=n_days,
         solar_eccentricity=const.solar_eccentricity,
         solar_perihelion=const.solar_perihelion,
     )
 
-    dr = calc_distance_factor(nu=nu, k_e=const.solar_eccentricity)
+    dr = calculate_distance_factor(nu=nu, solar_eccentricity=const.solar_eccentricity)
 
     delta = calc_declination_angle_delta(
         lambda_=lambda_, k_eps=const.solar_obliquity, k_pir=const.k_pir
@@ -372,26 +378,32 @@ def calc_net_longwave_radiation(
     return rnl
 
 
-def calc_rw(tau: NDArray, dr: NDArray, k_alb_sw: float, k_Gsc: float) -> NDArray:
-    r"""Calculates variable substitute :math:`rw`, :math:`W/m^2`.
+def calculate_rw_intermediate(
+    transmissivity: NDArray[np.float64],
+    distance_ratio: NDArray[np.float64],
+    shortwave_albedo: float = CoreConst().shortwave_albedo,
+    solar_constant: float = CoreConst().solar_constant,
+) -> NDArray[np.float64]:
+    r"""Calculate the rw intermediate variable.
+
+    This function calculates the widely used variable substitute ``rw`` (:math:`r_w`, W
+    m^-2) as:
 
     .. math::
 
-        rw = (1.0 - k_{alb_sw}) \cdot \tau \cdot k_{Gsc} \cdot dr
+        r_w = (1.0 - k_{alb_sw}) \tau  k_{Gsc} d_r
 
     Args:
-        tau          : bulk transmissivity, unitless
-        dr           : distance ration, unitless
-        k_alb_sw     : shortwave albedo
-        k_Gsc        : solar constant, W/m^2
+        transmissivity: Bulk transmissivity, (:math:`\tau`, unitless).
+        distance_ratio: Distance ratio, unitless
+        shortwave_albedo: The shortwave albedo
+        solar_constant: The solar constant, W/m^2
 
     Returns:
         An array of intermediate variable rw, :math:`W/m^2`.
     """
 
-    rw = (1.0 - k_alb_sw) * tau * k_Gsc * dr
-
-    return rw
+    return (1.0 - shortwave_albedo) * transmissivity * solar_constant * distance_ratio
 
 
 def calc_net_rad_crossover_hour_angle(
@@ -424,8 +436,13 @@ def calc_net_rad_crossover_hour_angle(
         _calc_net_rad_crossover_hour_angle
     """
 
-    ru, rv = calc_lat_delta_intermediates(delta=delta, latitude=latitude)
-    rw = calc_rw(tau=tau, dr=dr, k_alb_sw=const.k_alb_sw, k_Gsc=const.k_Gsc)
+    ru, rv = calculate_ru_rv_intermediates(declination=delta, latitude=latitude)
+    rw = calculate_rw_intermediate(
+        transmissivity=tau,
+        distance_ratio=dr,
+        shortwave_albedo=const.shortwave_albedo,
+        solar_constant=const.solar_constant,
+    )
 
     return _calc_net_rad_crossover_hour_angle(
         rnl=rnl, rw=rw, ru=ru, rv=rv, k_pir=const.k_pir
@@ -455,155 +472,194 @@ def _calc_net_rad_crossover_hour_angle(
     return hn
 
 
-def calc_daytime_net_radiation(
-    hn: NDArray,
-    rnl: NDArray,
-    delta: NDArray,
-    latitude: NDArray,
-    tau: NDArray,
-    dr: NDArray,
-    const: CoreConst,
+def calculate_daytime_net_radiation(
+    net_longwave_radiation: NDArray[np.float64],
+    crossover_hour_angle: NDArray[np.float64],
+    sunset_hour_angle: NDArray[np.float64],
+    declination: NDArray[np.float64],
+    latitude: NDArray[np.float64],
+    transmissivity: NDArray[np.float64],
+    distance_ratio: NDArray[np.float64],
+    shortwave_albedo: float = CoreConst().shortwave_albedo,
+    solar_constant: float = CoreConst().solar_constant,
+    day_seconds: float = CoreConst().day_seconds,
 ) -> NDArray:
-    r"""Calculates daily net radiation, :math:`rn_{d}`, :math:`J/m^2`.
+    r"""Calculate daily net radiation.
+
+    Calculates the daily net radiation , :math:`R_{nd}`, :math:`J/m^2` as:
 
     .. math::
 
-        rn_{d} = \left( \frac{secs_{d}}{\pi} \right) \cdot \
-        \left( hn \cdot k_{pir} \cdot (rw \cdot ru - rnl) + rw \cdot rv \cdot \
-        sin(\deg2rad(hn)) \right)
+        R_{d} = \left( \frac{n_s}}{\pi} \right)
+            \left( h_n  (r_w \cdot r_u - R_{nl}) + r_w  r_v  sin(h_n)) \right)
 
     Args:
-        hn: crossover hour angle, degrees
-        rnl: net longwave radiation, W/m^2
-        delta: solar declination delta
-        latitude: site latitude(s)
-        tau: bulk transmissivity, unitless
-        dr: distance ration, unitless
-        const: CoreConst object
+        net_longwave_radiation: Net longwave radiation, (:math:`R_{nl}`, W m-2)
+        crossover_hour_angle: Crossover hour angle, (:math:`h_n`, degrees)
+        sunset_hour_angle: sunset hour angle, (:math:`h_s`, degrees)
+        declination: solar declination (:math:`\delta`, degrees)
+        latitude: Site latitude (:math:`\phi`, degrees)
+        transmissivity: Bulk transmissivity (:math:`\tau`, unitless)
+        distance_ratio: distance ratio (:math:`d_r`, unitless)
+        shortwave_albedo: The shortwave albedo
+        solar_constant: The solar constant, W/m^2
+        day_seconds: Number of seconds in one solar day (:math:`n_s`, seconds)
 
     Result:
         _calc_daytime_net_radiation
     """
-    ru, rv = calc_lat_delta_intermediates(delta=delta, latitude=latitude)
-    rw = calc_rw(tau=tau, dr=dr, k_alb_sw=const.k_alb_sw, k_Gsc=const.k_Gsc)
+    ru, rv = calculate_ru_rv_intermediates(declination=declination, latitude=latitude)
+    rw = calculate_rw_intermediate(
+        transmissivity=transmissivity,
+        distance_ratio=distance_ratio,
+        shortwave_albedo=shortwave_albedo,
+        solar_constant=solar_constant,
+    )
 
-    return _calc_daytime_net_radiation(
-        hn=hn, rw=rw, ru=ru, rv=rv, rnl=rnl, k_pir=const.k_pir, k_secs_d=const.k_secs_d
+    return _calculate_daytime_net_radiation(
+        rw=rw,
+        rv=ru,
+        ru=rv,
+        crossover_hour_angle=crossover_hour_angle,
+        net_longwave_radiation=net_longwave_radiation,
+        day_seconds=day_seconds,
     )
 
 
-def _calc_daytime_net_radiation(
-    hn: NDArray,
-    rw: NDArray,
-    ru: NDArray,
-    rv: NDArray,
-    rnl: NDArray,
-    k_pir: float,
-    k_secs_d: int,
+def _calculate_daytime_net_radiation(
+    rw: NDArray[np.float64],
+    rv: NDArray[np.float64],
+    ru: NDArray[np.float64],
+    crossover_hour_angle: NDArray[np.float64],
+    net_longwave_radiation: NDArray[np.float64],
+    day_seconds: float = CoreConst().day_seconds,
 ) -> NDArray:
     """Calculates daily net radiation, :math:`J/m^2`.
 
     Args:
-        hn: crossover hour angle, degrees
         rw: dimensionless variable substitute
-        ru: dimensionless variable substitute
         rv: dimensionless variable substitute
-        rnl: net longwave radiation, W/m^2
-        k_pir: conversion factor from radians to degrees
-        k_secs_d: seconds in one solar day
+        ru: dimensionless variable substitute
+        crossover_hour_angle: crossover hour angle, degrees
+        net_longwave_radiation: net longwave radiation, W/m^2
+        day_seconds: seconds in one solar day
 
     Result:
         An array of daily net radiation, J/m^2
     """
 
-    rn_d = (k_secs_d / np.pi) * (
-        hn * k_pir * (rw * ru - rnl) + rw * rv * np.sin(np.deg2rad(hn))
+    rn_d = (day_seconds / np.pi) * (
+        np.deg2rad(crossover_hour_angle) * (rw * ru - net_longwave_radiation)
+        + rw * rv * np.sin(np.deg2rad(crossover_hour_angle))
     )
 
     return rn_d
 
 
-def calc_nighttime_net_radiation(
-    rnl: NDArray,
-    hn: NDArray,
-    hs: NDArray,
-    delta: NDArray,
-    latitude: NDArray,
-    tau: NDArray,
-    dr: NDArray,
-    const: CoreConst,
-) -> NDArray:
-    r"""Calculates nightime net radiation, :math:`rnn_{d}` :math:`J/m^2`.
+def calculate_nighttime_net_radiation(
+    net_longwave_radiation: NDArray[np.float64],
+    crossover_hour_angle: NDArray[np.float64],
+    sunset_hour_angle: NDArray[np.float64],
+    declination: NDArray[np.float64],
+    latitude: NDArray[np.float64],
+    transmissivity: NDArray[np.float64],
+    distance_ratio: NDArray[np.float64],
+    shortwave_albedo: float = CoreConst().shortwave_albedo,
+    solar_constant: float = CoreConst().solar_constant,
+    day_seconds: float = CoreConst().day_seconds,
+) -> NDArray[np.float64]:
+    r"""Calculates nightime net radiation.
+
+    This function calculates nighttime net radiation (:math:`R_{nn}`, J m-2) as:
 
     .. math::
 
-        rnn_{d} = \left( 
-        rw \cdot rv \cdot (\sin(\deg2rad(hs)) - \sin(\deg2rad(hn))) \
-        + rw \cdot ru \cdot k_{pir} \cdot (hs - hn)
-        - rnl \cdot (\pi - k_{pir} \cdot hn)
-        \right) \cdot \left( \frac{secs_{d}}{\pi} \right)
+        R_{nn} = \left(
+            r_w  r_v (\sin(h_s) - \sin(h_n))
+            + r_w  r_u  (h_s - h_n)
+            - R_{nl} (\pi -  h_n)
+            \right)  \left( \frac{n_s}{\pi} \right),
+
+    where :math:`r_u`, :math:`r_v` and :math:`r_w` are the outputs of
+    :meth:`calculate_ru_rv_intermediates` and :meth:`calculate_rw_intermediate`.
 
     Args:
-        rnl: net longwave radiation, rnl, :math:`W/m^2`
-        hs: sunset hour angle, degrees
-        hn: crossover hour angle, degrees
-        delta: solar declination delta
-        latitude: site latitude(s)
-        tau: bulk transmissivity, unitless
-        dr: distance ration, unitless
-        const: CoreConst object
+        net_longwave_radiation: Net longwave radiation, (:math:`R_{nl}`, W m-2)
+        crossover_hour_angle: Crossover hour angle, (:math:`h_n`, degrees)
+        sunset_hour_angle: sunset hour angle, (:math:`h_s`, degrees)
+        declination: solar declination (:math:`\delta`, degrees)
+        latitude: Site latitude (:math:`\phi`, degrees)
+        transmissivity: Bulk transmissivity (:math:`\tau`, unitless)
+        distance_ratio: distance ratio (:math:`d_r`, unitless)
+        shortwave_albedo: The shortwave albedo
+        solar_constant: The solar constant, W/m^2
+        day_seconds: Number of seconds in one solar day (:math:`n_s`, seconds)
 
     Returns:
-        _calc_nighttime_net_radiation
+        An array of nighttime net radiation, :math:`J/m^2`
     """
-    ru, rv = calc_lat_delta_intermediates(delta=delta, latitude=latitude)
-    rw = calc_rw(tau=tau, dr=dr, k_alb_sw=const.k_alb_sw, k_Gsc=const.k_Gsc)
+    ru, rv = calculate_ru_rv_intermediates(declination=declination, latitude=latitude)
+    rw = calculate_rw_intermediate(
+        transmissivity=transmissivity,
+        distance_ratio=distance_ratio,
+        shortwave_albedo=shortwave_albedo,
+        solar_constant=solar_constant,
+    )
 
-    return _calc_nighttime_net_radiation(
+    return _calculate_nighttime_net_radiation(
         rw=rw,
         rv=rv,
         ru=ru,
-        hs=hs,
-        hn=hn,
-        rnl=rnl,
-        k_pir=const.k_pir,
-        k_secs_d=const.k_secs_d,
+        sunset_hour_angle=sunset_hour_angle,
+        crossover_hour_angle=crossover_hour_angle,
+        net_longwave_radiation=net_longwave_radiation,
+        day_seconds=day_seconds,
     )
 
 
-def _calc_nighttime_net_radiation(
-    rw: NDArray,
-    rv: NDArray,
-    ru: NDArray,
-    hs: NDArray,
-    hn: NDArray,
-    rnl: NDArray,
-    k_pir: float,
-    k_secs_d: int,
-) -> NDArray:
-    """Calculates nightime net radiation, :math:`J/m^2`.
+def _calculate_nighttime_net_radiation(
+    rw: NDArray[np.float64],
+    rv: NDArray[np.float64],
+    ru: NDArray[np.float64],
+    sunset_hour_angle: NDArray[np.float64],
+    crossover_hour_angle: NDArray[np.float64],
+    net_longwave_radiation: NDArray[np.float64],
+    day_seconds: float = CoreConst().day_seconds,
+) -> NDArray[np.float64]:
+    """Calculates nightime net radiation using precalculated intermediates.
+
+    This function calculates nighttime net radiation (:math:`R_{nn}` :math:`J/m^2`),
+    and differs from :math:`calculate_nighttime_net_radiation` in requiring
+    precalculated values of :math:`r_u`, :math:`r_v` and :math:`r_w` using
+    :meth:`calculate_ru_rv_intermediates` and :meth:`calculate_rw_intermediate`. These
+    values are shared across several solar functions and so it is more efficient to be
+    able to provide these as precalculated inputs.
 
     Args:
-        rw: dimensionless variable substitute
-        rv: dimensionless variable substitute
-        ru: dimensionless variable substitute
-        hs: sunset hour angle, degrees
-        hn: crossover hour angle, degrees
-        rnl: net longwave radiation, rnl, :math:`W/m^2`
-        k_pir: conversion factor from radians to degrees
-        k_secs_d: seconds in one solar day
+        rw: intermediate variable (:math:`r_w`, dimensionless)
+        rv: intermediate variable (:math:`r_v`, dimensionless)
+        ru: intermediate variable (:math:`r_u`, dimensionless)
+        sunset_hour_angle: Sunset hour angle (:math:`h_s`, degrees).
+        crossover_hour_angle: Crossover hour angle (:math:`h_n`, degrees)
+        net_longwave_radiation: Net longwave radiation, (:math:`r_n`, W m-2)
+        day_seconds: Seconds in one solar day (:math:`d_s`, seconds)
 
     Returns:
         An array of nighttime net radiation, :math:`J/m^2`
     """
 
-    rnn_d = (
-        (rw * rv * (np.sin(np.deg2rad(hs)) - np.sin(np.deg2rad(hn))))
-        + (rw * ru * k_pir * (hs - hn))
-        - (rnl * (np.pi - k_pir * hn))
-    ) * (k_secs_d / np.pi)
-
-    return rnn_d
+    return (
+        (
+            rw
+            * rv
+            * (
+                np.sin(np.deg2rad(sunset_hour_angle))
+                - np.sin(np.deg2rad(crossover_hour_angle))
+            )
+        )
+        + (rw * ru * np.deg2rad(sunset_hour_angle - crossover_hour_angle))
+        - (net_longwave_radiation * (np.pi - np.deg2rad(crossover_hour_angle)))
+    ) * (day_seconds / np.pi)
 
 
 def calculate_heliocentric_longitudes(
@@ -629,6 +685,9 @@ def calculate_heliocentric_longitudes(
     Returns:
         A tuple of NDArrays containing ``nu`` and ``lambda_``.
     """
+
+    # TODO - a lot of wildly unnecessary unit changing here. Can we just work in radians
+    #        from the constants up?
 
     # Variable substitutes:
     eccen_sq = solar_eccentricity**2
@@ -663,7 +722,7 @@ def calculate_heliocentric_longitudes(
     dlamm = xlam + (ordinal_date - 80.0) * (360.0 / n_days)
 
     # Mean anomaly in radians:
-    ranm = np.deg2rad(dlamm - solar_eccentricity)
+    ranm = np.deg2rad(dlamm - solar_perihelion)
 
     # True anomaly in radians:
     ranv = (
@@ -679,7 +738,7 @@ def calculate_heliocentric_longitudes(
     # True anomaly in degrees constrained to 0 - 360
     nu = (lambda_ - solar_perihelion) % 360
 
-    return (nu, lambda_)
+    return nu, lambda_
 
 
 def calc_solar_elevation(site_obs_data: LocationDateTime) -> NDArray:

@@ -93,14 +93,21 @@ class CoreConst(ConstantsClass):
 
     # Solar constants
     k_A = 107.0  # constant for Rnl (Monteith & Unsworth, 1990)
-    k_alb_sw = 0.17  # shortwave albedo (Federer, 1968)
     k_alb_vis = 0.03  # visible light albedo (Sellers, 1985)
     k_b = 0.20  # constant for Rnl (Linacre, 1968)
     k_c = 0.25  # cloudy transmittivity (Linacre, 1968)
     k_d = 0.50  # angular coefficient of transmittivity (Linacre, 1968)
     k_fFEC = 2.04  # from flux to energy conversion, umol/J (Meek et al., 1984)
-    k_Gsc = 1360.8  # solar constant, W/m^2 (Kopp & Lean, 2011)
-    k_secs_d = 86400  # seconds in one solar day
+
+    shortwave_albedo: float = 0.17
+    """The shortwave albedo (Federer, 1968)."""
+
+    solar_constant: float = 1360.8
+    """The solar constant (SC, W/m^2, Kopp & Lean, 2011) - the long term mean total
+    solar irradiance."""
+
+    day_seconds: float = 86400
+    """The number of seconds in one solar day."""
 
     equation_of_time_coef: tuple[float, ...] = (
         0.000075,

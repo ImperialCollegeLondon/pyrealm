@@ -19,15 +19,14 @@ from pyrealm.constants import CoreConst
         (np.array([166.097934]), np.array([0.968381])),
     ],
 )
-def test_calc_distance_factor(nu, expected):
-    """Tests calc_distance_factor.
+def test_calculate_distance_factor(nu, expected):
+    """Tests test_calculate_distance_factor.
 
     This tests aims to confirm the correct implementation of the maths.
     """
-    from pyrealm.core.solar import calc_distance_factor
+    from pyrealm.core.solar import calculate_distance_factor
 
-    Const = CoreConst()
-    result = calc_distance_factor(nu, Const.k_e)
+    result = calculate_distance_factor(nu)
 
     assert_allclose(result, expected, rtol=1e-6)
 
@@ -65,15 +64,15 @@ def test_calc_declination_angle_delta(lambda_, expected):
         ),
     ],
 )
-def test_calc_lat_delta_intermediates(delta, latitude, expected):
-    """Tests calc_lat_delta_intermediates.
+def test_calculate_ru_rv_intermediates(delta, latitude, expected):
+    """Tests calculate_ru_rv_intermediates.
 
     This tests aims to confirm the correct implementation of the maths.
     """
 
-    from pyrealm.core.solar import calc_lat_delta_intermediates
+    from pyrealm.core.solar import calculate_ru_rv_intermediates
 
-    result = calc_lat_delta_intermediates(delta, latitude)
+    result = calculate_ru_rv_intermediates(delta, latitude)
 
     assert_allclose(result, expected)
 
@@ -230,16 +229,14 @@ def test_calc_net_longwave_radiation(sf, tc, expected):
         )
     ],
 )
-def test_calc_rw(tau, dr, expected):
-    """Test calc_rw.
+def test_calculate_rw_intermediate(tau, dr, expected):
+    """Test calculate_rw_intermediate.
 
     This test is intended to verify the implemented maths.
     """
-    from pyrealm.core.solar import calc_rw
+    from pyrealm.core.solar import calculate_rw_intermediate
 
-    Const = CoreConst()
-
-    result = calc_rw(tau, dr, Const.k_alb_sw, Const.k_Gsc)
+    result = calculate_rw_intermediate(transmissivity=tau, distance_ratio=dr)
 
     assert_allclose(result, expected)
 
@@ -273,54 +270,78 @@ def test_calc_net_rad_crossover_hour_angle(rnl, tau, dr, delta, latitude, expect
 
 
 @pytest.mark.parametrize(
-    argnames="hn,rnl,delta,latitude,tau,dr,expected",
+    argnames="inputs, expected",
     argvalues=[
         (
-            np.array([101.217016]),
-            np.array([84.000000]),
-            np.array([23.436921]),
-            np.array([37.7]),
-            np.array([0.752844]),
-            np.array([0.968381]),
+            {
+                "net_longwave_radiation": np.array([84.000000]),
+                "crossover_hour_angle": np.array([101.217016]),
+                "sunset_hour_angle": np.array([109.575573]),
+                "declination": np.array([23.436921]),
+                "latitude": np.array([37.7]),
+                "transmissivity": np.array([0.752844]),
+                "distance_ratio": np.array([0.968381]),
+            },
             np.array([21774953]),
         )
     ],
 )
-def test_daytime_net_radiation(hn, rnl, delta, latitude, tau, dr, expected):
+def test_daytime_net_radiation(inputs, expected):
     """Tests calculation of net daytime radiation."""
 
-    from pyrealm.core.solar import calc_daytime_net_radiation
+    from pyrealm.core.solar import calculate_daytime_net_radiation
 
-    Const = CoreConst()
-
-    result = calc_daytime_net_radiation(hn, rnl, delta, latitude, tau, dr, Const)
+    result = calculate_daytime_net_radiation(**inputs)
 
     assert_allclose(result, expected, rtol=1e-6)
 
 
 @pytest.mark.parametrize(
-    argnames="rnl, hn, hs, delta, latitude, tau, dr, expected",
+    argnames="inputs, expected",
     argvalues=[
         (
-            np.array([84.000000]),
-            np.array([101.217016]),
-            np.array([109.575573]),
-            np.array([23.436921]),
-            np.array([37.7]),
-            np.array([0.752844]),
-            np.array([0.968381]),
+            {
+                "net_longwave_radiation": np.array([84.000000]),
+                "crossover_hour_angle": np.array([101.217016]),
+                "sunset_hour_angle": np.array([109.575573]),
+                "declination": np.array([23.436921]),
+                "latitude": np.array([37.7]),
+                "transmissivity": np.array([0.752844]),
+                "distance_ratio": np.array([0.968381]),
+            },
             np.array([-3009150]),
-        )
+        ),
     ],
 )
-def test_nightime_net_radiation(rnl, hn, hs, delta, latitude, tau, dr, expected):
+def test_nightime_net_radiation(inputs, expected):
     """Tests calculation of net nighttime radiation."""
 
-    from pyrealm.core.solar import calc_nighttime_net_radiation
+    from pyrealm.core.solar import (
+        _calculate_nighttime_net_radiation,
+        calculate_nighttime_net_radiation,
+        calculate_ru_rv_intermediates,
+        calculate_rw_intermediate,
+    )
 
-    Const = CoreConst()
+    result = calculate_nighttime_net_radiation(**inputs)
 
-    result = calc_nighttime_net_radiation(rnl, hn, hs, delta, latitude, tau, dr, Const)
+    assert_allclose(result, expected)
+
+    ru, rv = calculate_ru_rv_intermediates(
+        declination=inputs["declination"], latitude=inputs["latitude"]
+    )
+    rw = calculate_rw_intermediate(
+        transmissivity=inputs["transmissivity"], distance_ratio=inputs["distance_ratio"]
+    )
+
+    result = _calculate_nighttime_net_radiation(
+        ru=ru,
+        rv=rv,
+        rw=rw,
+        sunset_hour_angle=inputs["sunset_hour_angle"],
+        crossover_hour_angle=inputs["crossover_hour_angle"],
+        net_longwave_radiation=inputs["net_longwave_radiation"],
+    )
 
     assert_allclose(result, expected)
 
