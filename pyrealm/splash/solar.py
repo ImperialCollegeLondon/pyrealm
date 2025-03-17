@@ -58,7 +58,7 @@ class DailySolarFluxes:
     distance_factor: NDArray[np.float64] = field(init=False)
     """Distance factor (:math:`d_r`, -)"""
     declination: NDArray[np.float64] = field(init=False)
-    r"""Declination angle (:math:`\delta, degrees)"""
+    r"""Declination angle (:math:`\delta`, degrees)"""
     ru: NDArray[np.float64] = field(init=False)
     """Intermediate variable (:math:`r_u`, unitless)"""
     rv: NDArray[np.float64] = field(init=False)
@@ -78,9 +78,9 @@ class DailySolarFluxes:
     crossover_hour_angle: NDArray[np.float64] = field(init=False)
     """Net radiation cross-over hour angle, (:math:`h_n`, degrees)"""
     daytime_net_radiation: NDArray[np.float64] = field(init=False)
-    """Daytime net radiation (:math:`R_{d}, J m-2)"""
+    """Daytime net radiation (:math:`R_{d}`, J m-2)"""
     nighttime_net_radiation: NDArray[np.float64] = field(init=False)
-    """Nighttime net radiation (:math:`R_{nn}, J m-2)"""
+    """Nighttime net radiation (:math:`R_{nn}`, J m-2)"""
 
     def __post_init__(
         self,
