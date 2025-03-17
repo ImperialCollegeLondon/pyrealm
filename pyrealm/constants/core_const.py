@@ -93,7 +93,7 @@ class CoreConst(ConstantsClass):
 
     # Solar constants
     visible_light_albedo: float = 0.03
-    """The visible light albedo (Sellers, 1985)."""
+    """The visible light albedo (:math:`A_{vis}`, unitless, Sellers, 1985)."""
 
     swdown_to_ppfd_factor: float = 2.04
     """Conversion factor from shortwave downwelling radiation (W m-2) to photosynthetic
@@ -111,7 +111,7 @@ class CoreConst(ConstantsClass):
     1 of :cite:t:`colinprentice:1993a`"""
 
     shortwave_albedo: float = 0.17
-    """The shortwave albedo (Federer, 1968)."""
+    """The shortwave albedo (:math:`A_{sw}`, unitless, Federer, 1968)."""
 
     solar_constant: float = 1360.8
     """The solar constant (:math:`G_{sc}`, W/m^2, Kopp & Lean, 2011) - the long term
