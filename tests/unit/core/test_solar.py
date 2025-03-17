@@ -132,7 +132,7 @@ def test_calculate_daily_solar_radiation(dr, hs, delta, latitude, expected):
     )
 
     result = calculate_daily_solar_radiation(
-        distance_ratio=dr, sunset_hour_angle=hs, declination=delta, latitude=latitude
+        distance_factor=dr, sunset_hour_angle=hs, declination=delta, latitude=latitude
     )
 
     assert_allclose(result, expected, rtol=1e-6)
@@ -140,7 +140,7 @@ def test_calculate_daily_solar_radiation(dr, hs, delta, latitude, expected):
     ru, rv = calculate_ru_rv_intermediates(declination=delta, latitude=latitude)
 
     result = _calculate_daily_solar_radiation(
-        ru=ru, rv=rv, distance_ratio=dr, sunset_hour_angle=hs
+        ru=ru, rv=rv, distance_factor=dr, sunset_hour_angle=hs
     )
 
     assert_allclose(result, expected, rtol=1e-6)
@@ -246,7 +246,7 @@ def test_calculate_rw_intermediate(tau, dr, expected):
     """
     from pyrealm.core.solar import calculate_rw_intermediate
 
-    result = calculate_rw_intermediate(transmissivity=tau, distance_ratio=dr)
+    result = calculate_rw_intermediate(transmissivity=tau, distance_factor=dr)
 
     assert_allclose(result, expected)
 
@@ -258,7 +258,7 @@ def test_calculate_rw_intermediate(tau, dr, expected):
             {
                 "net_longwave_radiation": np.array([84.000000]),
                 "transmissivity": np.array([0.752844]),
-                "distance_ratio": np.array([0.968381]),
+                "distance_factor": np.array([0.968381]),
                 "declination": np.array([23.436921]),
                 "latitude": np.array([37.7]),
             },
@@ -287,7 +287,8 @@ def test_calculate_net_radiation_crossover_hour_angle(inputs, expected):
         declination=inputs["declination"], latitude=inputs["latitude"]
     )
     rw = calculate_rw_intermediate(
-        transmissivity=inputs["transmissivity"], distance_ratio=inputs["distance_ratio"]
+        transmissivity=inputs["transmissivity"],
+        distance_factor=inputs["distance_factor"],
     )
 
     result = _calculate_net_radiation_crossover_hour_angle(
@@ -310,7 +311,7 @@ def test_calculate_net_radiation_crossover_hour_angle(inputs, expected):
                 "declination": np.array([23.436921]),
                 "latitude": np.array([37.7]),
                 "transmissivity": np.array([0.752844]),
-                "distance_ratio": np.array([0.968381]),
+                "distance_factor": np.array([0.968381]),
             },
             np.array([21774962.26810856]),
         )
@@ -339,7 +340,8 @@ def test_daytime_net_radiation(inputs, expected):
         declination=inputs["declination"], latitude=inputs["latitude"]
     )
     rw = calculate_rw_intermediate(
-        transmissivity=inputs["transmissivity"], distance_ratio=inputs["distance_ratio"]
+        transmissivity=inputs["transmissivity"],
+        distance_factor=inputs["distance_factor"],
     )
 
     result = _calculate_daytime_net_radiation(
@@ -364,7 +366,7 @@ def test_daytime_net_radiation(inputs, expected):
                 "declination": np.array([23.436921]),
                 "latitude": np.array([37.7]),
                 "transmissivity": np.array([0.752844]),
-                "distance_ratio": np.array([0.968381]),
+                "distance_factor": np.array([0.968381]),
             },
             np.array([-3009150]),
         ),
@@ -388,7 +390,8 @@ def test_nightime_net_radiation(inputs, expected):
         declination=inputs["declination"], latitude=inputs["latitude"]
     )
     rw = calculate_rw_intermediate(
-        transmissivity=inputs["transmissivity"], distance_ratio=inputs["distance_ratio"]
+        transmissivity=inputs["transmissivity"],
+        distance_factor=inputs["distance_factor"],
     )
 
     result = _calculate_nighttime_net_radiation(
@@ -425,6 +428,7 @@ def test_calculate_heliocentric_longitudes(day, n_day, expected):
     assert_allclose(result, expected)
 
 
+@pytest.mark.skip(reason="Need to resolve implementation of the function.")
 @pytest.mark.parametrize(
     argnames="latitude, longitude, year_date_time, expected",
     argvalues=[

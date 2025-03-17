@@ -17,7 +17,7 @@ def expected_attr():
         "sunset_hour_angle",
         "daily_solar_radiation",
         "transmissivity",
-        "ppfd_d",
+        "daily_ppfd",
         "net_longwave_radiation",
         "crossover_hour_angle",
         "daytime_net_radiation",
