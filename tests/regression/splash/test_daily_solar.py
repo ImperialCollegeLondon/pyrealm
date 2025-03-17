@@ -75,11 +75,17 @@ def test_solar_iter(daily_flux_benchmarks, expected_attr):
 
     inputs, expected = daily_flux_benchmarks
 
-    for day, inp, exp in zip(inputs["dates"], inputs, expected):
+    for day, (_, inp), (_, exp) in zip(
+        inputs["dates"], inputs.iterrows(), expected.iterrows()
+    ):
         cal = Calendar(np.array([day]).astype("datetime64[D]"))
 
         solar = DailySolarFluxes(
-            lat=inp["lat"], elv=inp["elv"], dates=cal, sf=inp["sf"], tc=inp["tc"]
+            dates=cal,
+            latitude=np.array([inp["lat"]]),
+            elevation=np.array([inp["elv"]]),
+            sunshine_fraction=np.array([inp["sf"]]),
+            temperature=np.array([inp["tc"]]),
         )
 
         for ky in expected_attr:
@@ -97,14 +103,14 @@ def test_solar_array(daily_flux_benchmarks, expected_attr):
     from pyrealm.splash.solar import DailySolarFluxes
 
     inputs, expected = daily_flux_benchmarks
-    cal = Calendar(inputs["dates"].astype("datetime64[D]"))
+    cal = Calendar(inputs["dates"].to_numpy().astype("datetime64[D]"))
 
     solar = DailySolarFluxes(
-        lat=inputs["lat"],
-        elv=inputs["elv"],
         dates=cal,
-        sf=inputs["sf"],
-        tc=inputs["tc"],
+        latitude=inputs["lat"].to_numpy(),
+        elevation=inputs["elv"].to_numpy(),
+        sunshine_fraction=inputs["sf"].to_numpy(),
+        temperature=inputs["tc"].to_numpy(),
     )
 
     for ky in expected_attr:
@@ -128,15 +134,19 @@ def test_solar_array_grid(grid_benchmarks):
     lat = np.broadcast_to(inputs.lat.data[None, :, None], inputs.sf.data.shape)
 
     solar = DailySolarFluxes(
-        lat=lat,
-        elv=elev,
+        latitude=lat,
+        elevation=elev,
         dates=cal,
-        sf=inputs["sf"].data,
-        tc=inputs["tmp"].data,
+        sunshine_fraction=inputs["sf"].data,
+        temperature=inputs["tmp"].data,
     )
 
     # Test that the resulting solar calculations are the same.
-    for ky in ("ppfd_d", "rn_d", "rnn_d"):
+    for src_key, solar_key in (
+        ("ppfd_d", "daily_ppfd"),
+        ("rn_d", "daytime_net_radiation"),
+        ("rnn_d", "nighttime_net_radiation"),
+    ):
         assert_allclose(
-            getattr(solar, ky), expected[ky].data, equal_nan=True, rtol=1e-6
+            getattr(solar, solar_key), expected[src_key].data, equal_nan=True, rtol=1e-6
         )

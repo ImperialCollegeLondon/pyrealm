@@ -2,9 +2,37 @@
 
 from importlib import resources
 
-import numpy as np
+import pandas as pd
 import pytest
 import xarray
+
+EXPECTED_NAME_MAP: dict[str, str] = {
+    "my_nu": "nu",
+    "my_lambda": "lambda_",
+    "dr": "distance_factor",
+    "delta": "declination",
+    "hs": "sunset_hour_angle",
+    "ra_d": "daily_solar_radiation",
+    "tau": "transmissivity",
+    "ppfd_d": "ppfd_d",
+    "rnl": "net_longwave_radiation",
+    "hn": "crossover_hour_angle",
+    "rn_d": "daytime_net_radiation",
+    "rnn_d": "nighttime_net_radiation",
+    "sat": "sat",
+    "lv": "lv",
+    "pw": "pw",
+    "psy": "psy",
+    "econ": "econ",
+    "rx": "rx",
+    "hi": "hi",
+    "cond": "cond",
+    "eet_d": "eet_d",
+    "pet_d": "pet_d",
+    "aet_d": "aet_d",
+    "wn": "wn",
+    "ro": "ro",
+}
 
 
 @pytest.fixture
@@ -21,7 +49,7 @@ def splash_core_constants():
 
 
 @pytest.fixture()
-def daily_flux_benchmarks() -> tuple[np.ndarray, np.ndarray]:
+def daily_flux_benchmarks() -> tuple[pd.DataFrame, pd.DataFrame]:
     """Test daily values.
 
     Loads an input file and SPLASH outputs for 100 random locations with a wide range of
@@ -29,30 +57,13 @@ def daily_flux_benchmarks() -> tuple[np.ndarray, np.ndarray]:
     daily predictions of all core variables.
     """
 
-    dpath = resources.files("pyrealm_build_data.splash")
+    dpath = resources.files("pyrealm_build_data.splash.data")
+    inputs = pd.read_csv(str(dpath / "daily_flux_benchmark_inputs.csv"))
+    expected = pd.read_csv(str(dpath / "daily_flux_benchmark_outputs.csv"))
 
-    inputs = np.genfromtxt(
-        str(dpath / "data/daily_flux_benchmark_inputs.csv"),
-        dtype=None,
-        delimiter=",",
-        names=True,
-        encoding="UTF-8",
-    )
-
-    expected = np.genfromtxt(
-        str(dpath / "data/daily_flux_benchmark_outputs.csv"),
-        dtype=None,
-        delimiter=",",
-        names=True,
-        encoding="UTF-8",
-    )
-
-    # rename a couple of fields to match new implementation
-    assert expected.dtype.names is not None
-    exp_fields = list(expected.dtype.names)
-    exp_fields[exp_fields.index("my_nu")] = "nu"
-    exp_fields[exp_fields.index("my_lambda")] = "lambda_"
-    expected.dtype.names = tuple(exp_fields)
+    # rename fields to match new implementation
+    inputs["dates"] = pd.to_datetime(inputs["dates"])
+    expected = expected.rename(columns=EXPECTED_NAME_MAP)
 
     return inputs, expected
 
@@ -87,10 +98,10 @@ def grid_benchmarks() -> tuple[xarray.Dataset, xarray.Dataset]:
     time series gives identical results.
     """
 
-    dpath = resources.files("pyrealm_build_data.splash")
+    dpath = resources.files("pyrealm_build_data.splash.data")
 
-    inputs = xarray.load_dataset(dpath / "data/splash_nw_us_grid_data.nc")
+    inputs = xarray.load_dataset(dpath / "splash_nw_us_grid_data.nc")
 
-    expected = xarray.load_dataset(dpath / "data/splash_nw_us_grid_data_outputs.nc")
+    expected = xarray.load_dataset(dpath / "splash_nw_us_grid_data_outputs.nc")
 
     return inputs, expected

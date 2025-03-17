@@ -69,7 +69,7 @@ class DailySolarFluxes:
     """Daily extraterrestrial solar radiation (:math:`R_d`, J m-2)"""
     transmissivity: NDArray[np.float64] = field(init=False)
     r"""Transmittivity (:math:`\tau`, unitless)"""
-    ppfd_d: NDArray[np.float64] = field(init=False)
+    daily_ppfd: NDArray[np.float64] = field(init=False)
     """Daily photosynthetic photon flux density (PPFD, µmol m-2 s-1)"""
     net_longwave_radiation: NDArray[np.float64] = field(init=False)
     """Net longwave radiation (:math:`R_{nl}`, W m-2)"""
@@ -159,7 +159,7 @@ class DailySolarFluxes:
         )
 
         # Calculate daily PPFD (ppfd_d), mol/m^2
-        self.ppfd_d = calculate_ppfd_from_tau_rd(
+        self.daily_ppfd = calculate_ppfd_from_tau_rd(
             transmissivity=self.transmissivity,
             daily_solar_radiation=self.daily_solar_radiation,
             swdown_to_ppfd_factor=self.core_const.swdown_to_ppfd_factor,
