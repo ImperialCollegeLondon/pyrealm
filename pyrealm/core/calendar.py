@@ -137,8 +137,8 @@ class LocationDateTime:
         ...     longitude=147.34167,
         ...     year_date_time=np.array([np.datetime64("2024-08-12T10:30")]),
         ... )
-        >>> print(ldt.latitude_rad)
-        -0.6118833411105811
+        >>> print(round(ldt.latitude_rad, 5))
+        -0.61188
         >>> print(ldt.decimal_time)
         [10.5]
         >>> print(ldt.local_standard_meridian)

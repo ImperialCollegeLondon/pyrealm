@@ -332,14 +332,13 @@ def calculate_ppfd(
 
     Example:
         >>> # Define variable values
-        >>> sf = np.array([1.0])
-        >>> elv = np.array([142])
-        >>> latitude = np.array([37.7])
-        >>> julian_day = np.array([172])
-        >>> n_days = np.array([366])
         >>> # Evaluate function
-        >>> calc_ppfd(
-        ...    sf=sf, elv=elv, latitude=latitude, julian_day=julian_day, n_days=n_days
+        >>> calculate_ppfd(
+        ...    sunshine_fraction=np.array([1.0]),
+        ...    elevation=np.array([142]),
+        ...    latitude=np.array([37.7]),
+        ...    ordinal_date=np.array([172]),
+        ...    n_days=np.array([366])
         ... )
         array([62.04230021])
     """

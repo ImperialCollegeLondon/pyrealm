@@ -14,7 +14,7 @@ EXPECTED_NAME_MAP: dict[str, str] = {
     "hs": "sunset_hour_angle",
     "ra_d": "daily_solar_radiation",
     "tau": "transmissivity",
-    "ppfd_d": "ppfd_d",
+    "ppfd_d": "daily_ppfd",
     "rnl": "net_longwave_radiation",
     "hn": "crossover_hour_angle",
     "rn_d": "daytime_net_radiation",

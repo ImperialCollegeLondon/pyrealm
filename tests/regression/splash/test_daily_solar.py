@@ -52,7 +52,7 @@ def test_solar_scalars():
         "sunset_hour_angle": 109.575573,
         "daily_solar_radiation": 41646763,
         "transmissivity": 0.752844,
-        "ppfd_d": 62.042300,
+        "daily_ppfd": 62.042300,
         "net_longwave_radiation": 84.000000,
         "crossover_hour_angle": 101.217016,
         "daytime_net_radiation": 21774953,
