@@ -92,19 +92,30 @@ class CoreConst(ConstantsClass):
     """Supply constant, mm/hr (Federer, 1982)"""
 
     # Solar constants
-    k_A = 107.0  # constant for Rnl (Monteith & Unsworth, 1990)
-    k_alb_vis = 0.03  # visible light albedo (Sellers, 1985)
-    k_b = 0.20  # constant for Rnl (Linacre, 1968)
-    k_c = 0.25  # cloudy transmittivity (Linacre, 1968)
-    k_d = 0.50  # angular coefficient of transmittivity (Linacre, 1968)
-    k_fFEC = 2.04  # from flux to energy conversion, umol/J (Meek et al., 1984)
+    visible_light_albedo: float = 0.03
+    """The visible light albedo (Sellers, 1985)."""
+
+    swdown_to_ppfd_factor: float = 2.04
+    """Conversion factor from shortwave downwelling radiation (W m-2) to photosynthetic
+    photon flux density (PPFD, µmol m-2 s-1): one W m-2 of sunlight is roughly 4.57 µmol
+    m-2 s-1 of full spectrum sunlight, of which about 46% (2.04 / 4.57) is PPFD. (Meek
+    et al., 1984)."""
+
+    transmissivity_coef: tuple[float, float, float] = (0.25, 0.5, 2.67e-5)
+    """Coefficients for calculating transmissivity from :cite:t:`Linacre:1968a`: cloudy
+    transmissivity (:math:`c=0.25`),  angular coefficient of transmittivity
+    (:math:`d=0.5`) and elevation factor (:math:`f`=2.67e-5`)."""
+
+    net_longwave_radiation_coef: tuple[float, float] = (0.2, 107.0)
+    """Coefficients (:math:`b, A`) of net longwave radiation function, Eqn. 11 and Table
+    1 of :cite:t:`colinprentice:1993a`"""
 
     shortwave_albedo: float = 0.17
     """The shortwave albedo (Federer, 1968)."""
 
     solar_constant: float = 1360.8
-    """The solar constant (SC, W/m^2, Kopp & Lean, 2011) - the long term mean total
-    solar irradiance."""
+    """The solar constant (:math:`G_{sc}`, W/m^2, Kopp & Lean, 2011) - the long term
+    mean total solar irradiance."""
 
     day_seconds: float = 86400
     """The number of seconds in one solar day."""

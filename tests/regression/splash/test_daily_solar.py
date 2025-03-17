@@ -12,16 +12,16 @@ def expected_attr():
     return (
         "nu",
         "lambda_",
-        "dr",
-        "delta",
-        "hs",
-        "ra_d",
-        "tau",
+        "distance_factor",
+        "declination",
+        "sunset_hour_angle",
+        "daily_solar_radiation",
+        "transmissivity",
         "ppfd_d",
-        "rnl",
-        "hn",
-        "rn_d",
-        "rnn_d",
+        "net_longwave_radiation",
+        "crossover_hour_angle",
+        "daytime_net_radiation",
+        "nighttime_net_radiation",
     )
 
 
@@ -36,27 +36,27 @@ def test_solar_scalars():
     cal = Calendar(np.array(["2000-06-20"], dtype="<M8[D]"))
 
     solar = DailySolarFluxes(
-        lat=np.array([37.7]),
-        elv=np.array([142]),
+        latitude=np.array([37.7]),
+        elevation=np.array([142]),
         dates=cal,
-        sf=np.array([1.0]),
-        tc=np.array([23.0]),
+        sunshine_fraction=np.array([1.0]),
+        temperature=np.array([23.0]),
     )
 
     # Output of the __main__ code of original solar.py
     expected = {
         "nu": 166.097934,
         "lambda_": 89.097934,
-        "dr": 0.968381,
-        "delta": 23.436921,
-        "hs": 109.575573,
-        "ra_d": 41646763,
-        "tau": 0.752844,
+        "distance_factor": 0.968381,
+        "declination": 23.436921,
+        "sunset_hour_angle": 109.575573,
+        "daily_solar_radiation": 41646763,
+        "transmissivity": 0.752844,
         "ppfd_d": 62.042300,
-        "rnl": 84.000000,
-        "hn": 101.217016,
-        "rn_d": 21774953,
-        "rnn_d": -3009150,
+        "net_longwave_radiation": 84.000000,
+        "crossover_hour_angle": 101.217016,
+        "daytime_net_radiation": 21774953,
+        "nighttime_net_radiation": -3009150,
     }
 
     for ky, val in expected.items():
