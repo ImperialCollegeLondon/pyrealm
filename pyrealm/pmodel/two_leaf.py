@@ -219,7 +219,6 @@ class TwoLeafAssimilation:
         self,
         pmodel: PModel | SubdailyPModel,
         irrad: TwoLeafIrradience,
-        leaf_area_index: NDArray,
     ):
         """Initialize the ``TwoLeafAssimilation`` class.
 
@@ -230,7 +229,6 @@ class TwoLeafAssimilation:
         """
         self.pmodel = pmodel
         self.irrad = irrad
-        self.leaf_area_index = leaf_area_index
 
         self.vcmax_pmod: NDArray = self.pmodel.vcmax
         self.vcmax25_pmod: NDArray = self.pmodel.vcmax25
@@ -291,10 +289,10 @@ class TwoLeafAssimilation:
         self.kv_Lloyd = canopy_extinction_coefficient(self.vcmax_pmod)
 
         self.Vmax25_canopy = Vmax25_canopy(
-            self.leaf_area_index, self.vcmax25_pmod, self.kv_Lloyd
+            self.irrad.leaf_area_index, self.vcmax25_pmod, self.kv_Lloyd
         )
         self.Vmax25_sun = Vmax25_sun(
-            self.leaf_area_index, self.vcmax25_pmod, self.kv_Lloyd, self.irrad.kb
+            self.irrad.leaf_area_index, self.vcmax25_pmod, self.kv_Lloyd, self.irrad.kb
         )
         self.Vmax25_shade = Vmax25_shade(self.Vmax25_canopy, self.Vmax25_sun)
 

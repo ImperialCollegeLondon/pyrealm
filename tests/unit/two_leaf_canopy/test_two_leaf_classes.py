@@ -118,7 +118,8 @@ def mock_pmodel():
 def two_leaf_assimilation(mock_pmodel, two_leaf):
     """Fixture to create a TwoLeafAssimilation instance."""
     TLA = TwoLeafAssimilation(
-        pmodel=mock_pmodel, irrad=two_leaf, leaf_area_index=np.array([2.0])
+        pmodel=mock_pmodel,
+        irrad=two_leaf,
     )
     return TLA
 
@@ -164,5 +165,5 @@ def test_gpp_estimator(two_leaf_assimilation, two_leaf):
         assert hasattr(two_leaf_assimilation, attr)
         assert (
             getattr(two_leaf_assimilation, attr).shape
-            == two_leaf_assimilation.leaf_area_index.shape
+            == two_leaf_assimilation.irrad.leaf_area_index.shape
         )

@@ -57,10 +57,11 @@ def assimilation_single_day(solar_irradience, get_data):
         pmod_env, method_arrhenius="kattge_knorr", reference_kphio=0.081785
     )
 
-    solar_irradience
+    solar_irradience.calc_absorbed_irradience()
 
     assim = TwoLeafAssimilation(
-        standard_pmod, solar_irradience, leaf_area_index=data["LAI"].to_numpy()
+        pmodel=standard_pmod,
+        irrad=solar_irradience,
     )
 
     assim.gpp_estimator()
@@ -68,7 +69,7 @@ def assimilation_single_day(solar_irradience, get_data):
     return assim
 
 
-def test_two_leaf(solar_irradience, get_data):
+def test_two_leaf_irradience(solar_irradience, get_data):
     """Tests calc_absorbed_irradice method."""
     solar_irradience.calc_absorbed_irradience()
 
