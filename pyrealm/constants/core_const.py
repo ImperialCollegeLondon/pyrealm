@@ -122,7 +122,7 @@ class CoreConst(ConstantsClass):
 
     equation_of_time_coef: tuple[float, ...] = (
         0.000075,
-        +0.001868,
+        0.001868,
         -0.032077,
         -0.014615,
         -0.04089,
