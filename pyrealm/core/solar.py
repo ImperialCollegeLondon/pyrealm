@@ -829,15 +829,15 @@ def calculate_heliocentric_longitudes(
     return nu, lambda_
 
 
-def calculate_solar_elevation_angle(
+def calculate_solar_elevation(
     latitude: NDArray[np.float64],
     declination: NDArray[np.float64],
     hour_angle: NDArray[np.float64],
 ) -> NDArray[np.float64]:
     r"""Calculate the solar elevation angle.
 
-    The solar elevation angle (:math:`\alpha`) is the angle between the horizon and the
-    sun, giving the height of the sun in the sky at a given time, following Eqn
+    The solar elevation angle (:math:`\alpha`, radians) is the angle between the horizon
+    and the sun, giving the height of the sun in the sky at a given time, following Eqn
     A13 of :cite:t:`depury:1997a`:
 
     .. math::
@@ -909,7 +909,7 @@ def calculate_local_hour_angle(
 def calculate_solar_noon(
     longitude: NDArray[np.float64],
     equation_of_time: NDArray[np.float64],
-    standard_longitude: float = 0,
+    standard_longitude: NDArray[np.float64] = np.array([0]),
 ) -> NDArray[np.float64]:
     r"""Calculate the solar noon  for a given location.
 
@@ -1042,16 +1042,17 @@ class SolarPositions:
     """An array of local meridians given the longitude."""
 
     day_angle: NDArray[np.float64] = field(init=False)
-
+    """The solar day angle of the observations (:math:`\Gamma`, radians)."""
     equation_of_time: NDArray[np.float64] = field(init=False)
-
+    """The equation of time value for the observations (:math:`E_t`, minutes)."""
     solar_noon: NDArray[np.float64] = field(init=False)
-
+    """The solar noon for the observations (:math:`t_0`, decimal hour)."""
     hour_angle: NDArray[np.float64] = field(init=False)
-
+    """The local hour angle for the observations (:math:`h`, radians)."""
     declination: NDArray[np.float64] = field(init=False)
-
+    """The declination for the observations ( (:math:`\delta`, radians)."""
     solar_elevation: NDArray[np.float64] = field(init=False)
+    r"""The solar elevation for the observations (:math:`\alpha`, radians) ."""
 
     def __post_init__(self) -> None:
         """Initialise calculated attributes."""
@@ -1091,7 +1092,7 @@ class SolarPositions:
 
         self.declination = calculate_solar_declination(ordinal_date=self.ordinal_date)
 
-        self.solar_elevation = calculate_solar_elevation_angle(
+        self.solar_elevation = calculate_solar_elevation(
             latitude=self.latitude_rad,
             declination=self.declination,
             hour_angle=self.hour_angle,
