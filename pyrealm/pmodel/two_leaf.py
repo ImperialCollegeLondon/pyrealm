@@ -205,7 +205,7 @@ class TwoLeafAssimilation:
     This class integrates a photosynthesis model
     (:class:`~pyrealm.pmodel.pmodel.PModel` or
     :class:`~pyrealm.pmodel.pmodel.SubdailyPModel`) and irradiance data
-    (:class:`~pyrealm.pmodel.two_leaf_irradience.TwoLeafIrradience`) to compute
+    (:class:`~pyrealm.pmodel.two_leaf.TwoLeafIrradience`) to compute
     various canopy photosynthetic properties and ``GPP`` estimates.
 
     Args:

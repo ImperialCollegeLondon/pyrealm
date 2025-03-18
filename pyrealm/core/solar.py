@@ -1012,12 +1012,12 @@ class SolarPositions:
         >>> sp = SolarPositions(
         ...     latitude=-35.058333,
         ...     longitude=147.34167,
-        ...     year_date_time=np.array([np.datetime64("2024-08-12T10:30:32")]),
+        ...     datetime=np.array([np.datetime64("2024-08-12T10:30:32")]),
         ... )
         >>> sp.decimal_time.round(5)
-        array([10.5])
+        array([10.50889])
         >>> sp.solar_elevation.round(5)
-        array([0.60153])
+        array([0.60252])
     """
 
     latitude: NDArray[np.float64]

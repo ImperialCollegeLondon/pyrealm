@@ -6,7 +6,7 @@ import pytest
 
 from pyrealm.pmodel import PModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
-from pyrealm.pmodel.two_leaf_irradience import TwoLeafAssimilation, TwoLeafIrradience
+from pyrealm.pmodel.two_leaf import TwoLeafAssimilation, TwoLeafIrradience
 
 
 @pytest.fixture
@@ -57,7 +57,7 @@ def assimilation_single_day(solar_irradience, get_data):
         pmod_env, method_arrhenius="kattge_knorr", reference_kphio=0.081785
     )
 
-    solar_irradience.calc_absorbed_irradience()
+    solar_irradience
 
     assim = TwoLeafAssimilation(
         standard_pmod, solar_irradience, leaf_area_index=data["LAI"].to_numpy()
@@ -68,7 +68,7 @@ def assimilation_single_day(solar_irradience, get_data):
     return assim
 
 
-def test_two_leaf_irradience(solar_irradience, get_data):
+def test_two_leaf(solar_irradience, get_data):
     """Tests calc_absorbed_irradice method."""
     solar_irradience.calc_absorbed_irradience()
 

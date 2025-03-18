@@ -5,7 +5,7 @@ import pytest
 
 from pyrealm.constants.core_const import CoreConst
 from pyrealm.constants.two_leaf_canopy import TwoLeafConst
-from pyrealm.pmodel.two_leaf_irradience import (
+from pyrealm.pmodel.two_leaf import (
     TwoLeafAssimilation,
     TwoLeafIrradience,
 )
@@ -18,7 +18,7 @@ def two_leaf_constants():
 
 
 @pytest.fixture
-def two_leaf_irradience(two_leaf_constants):
+def two_leaf(two_leaf_constants):
     """Fixture to create a TwoLeafIrradience instance."""
     return TwoLeafIrradience(
         beta_angle=np.array([0.6]),
@@ -29,48 +29,48 @@ def two_leaf_irradience(two_leaf_constants):
     )
 
 
-def test_check_input_consistency(two_leaf_irradience):
+def test_check_input_consistency(two_leaf):
     """Test the _check_input_consistency method."""
     # Consistent shapes
-    assert two_leaf_irradience._check_input_consistency() is True
+    assert two_leaf._check_input_consistency() is True
 
     # Inconsistent shapes
-    two_leaf_irradience.patm = np.array([101325, 101300])
-    assert two_leaf_irradience._check_input_consistency() is False
+    two_leaf.patm = np.array([101325, 101300])
+    assert two_leaf._check_input_consistency() is False
 
 
-def test_check_for_NaN(two_leaf_irradience):
+def test_check_for_NaN(two_leaf):
     """Test the _check_for_NaN method to identify NaN values."""
     # No NaNs
-    assert two_leaf_irradience._check_for_NaN() is True
+    assert two_leaf._check_for_NaN() is True
 
     # NaN in beta_angle
-    two_leaf_irradience.beta_angle = np.array([np.nan])
-    assert two_leaf_irradience._check_for_NaN() is False
+    two_leaf.beta_angle = np.array([np.nan])
+    assert two_leaf._check_for_NaN() is False
 
 
-def test_check_for_negative_values(two_leaf_irradience):
+def test_check_for_negative_values(two_leaf):
     """Test the _check_for_negative_values method to identify negative values."""
     # No negative values
-    assert two_leaf_irradience._check_for_negative_values() is True
+    assert two_leaf._check_for_negative_values() is True
 
     # Negative value in leaf_area_index
-    two_leaf_irradience.leaf_area_index = np.array([-2.0])
-    assert two_leaf_irradience._check_for_negative_values() is False
+    two_leaf.leaf_area_index = np.array([-2.0])
+    assert two_leaf._check_for_negative_values() is False
 
 
-def test_initialization(two_leaf_irradience, two_leaf_constants):
+def test_initialization(two_leaf, two_leaf_constants):
     """Test initialization of the TwoLeafIrradience class."""
-    assert two_leaf_irradience.beta_angle.shape == (1,)
-    assert two_leaf_irradience.ppfd.shape == (1,)
-    assert two_leaf_irradience.leaf_area_index.shape == (1,)
-    assert two_leaf_irradience.patm.shape == (1,)
-    assert two_leaf_irradience.pass_checks is True
+    assert two_leaf.beta_angle.shape == (1,)
+    assert two_leaf.ppfd.shape == (1,)
+    assert two_leaf.leaf_area_index.shape == (1,)
+    assert two_leaf.patm.shape == (1,)
+    assert two_leaf.pass_checks is True
 
 
-def test_calc_absorbed_irradience(two_leaf_irradience):
+def test_calc_absorbed_irradience(two_leaf):
     """Test the calc_absorbed_irradience method."""
-    two_leaf_irradience.calc_absorbed_irradience()
+    two_leaf.calc_absorbed_irradience()
 
     # Check if all attributes are calculated
     attributes = [
@@ -92,11 +92,8 @@ def test_calc_absorbed_irradience(two_leaf_irradience):
         if attr == "rho_h":
             pass
         else:
-            assert hasattr(two_leaf_irradience, attr)
-            assert (
-                getattr(two_leaf_irradience, attr).shape
-                == two_leaf_irradience.beta_angle.shape
-            )
+            assert hasattr(two_leaf, attr)
+            assert getattr(two_leaf, attr).shape == two_leaf.beta_angle.shape
 
 
 @pytest.fixture(scope="session")
@@ -118,10 +115,10 @@ def mock_pmodel():
 
 
 @pytest.fixture
-def two_leaf_assimilation(mock_pmodel, two_leaf_irradience):
+def two_leaf_assimilation(mock_pmodel, two_leaf):
     """Fixture to create a TwoLeafAssimilation instance."""
     TLA = TwoLeafAssimilation(
-        pmodel=mock_pmodel, irrad=two_leaf_irradience, leaf_area_index=np.array([2.0])
+        pmodel=mock_pmodel, irrad=two_leaf, leaf_area_index=np.array([2.0])
     )
     return TLA
 
@@ -136,9 +133,9 @@ def test_initialization_assim(two_leaf_assimilation):
     assert isinstance(two_leaf_assimilation.irrad, TwoLeafIrradience)
 
 
-def test_gpp_estimator(two_leaf_assimilation, two_leaf_irradience):
+def test_gpp_estimator(two_leaf_assimilation, two_leaf):
     """Test the gpp_estimator method."""
-    two_leaf_irradience.calc_absorbed_irradience()
+    two_leaf.calc_absorbed_irradience()
     two_leaf_assimilation.gpp_estimator()
 
     # Check if all GPP-related attributes are calculated
