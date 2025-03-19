@@ -130,6 +130,9 @@ de_gri_hh_outputs = xr.Dataset(
         ca=("time", env.ca),
         ta=("time", de_gri_hh_xr["TA_F"].data),
         vpd=("time", de_gri_hh_xr["VPD_F"].data),
+        ppfd=("time", de_gri_hh_xr["PPFD"].data),
+        co2=("time", de_gri_hh_xr["CO2_F_MDS"].data),
+        pa_f=("time", de_gri_hh_xr["PA_F"].data),
     ),
     coords=dict(time=de_gri_hh_xr["time"]),
 )
@@ -154,6 +157,7 @@ de_gri_splash = xr.load_dataset("DE_gri_splash_cru_ts4.07_2000_2019.nc")
 
 # Calculate 20 year aridity index (2000 - 2020) as PET/P
 aridity_index = de_gri_splash["pet"].mean() / de_gri_splash["pre"].mean()
+
 
 # Store that in the site data
 with open("DE-GRI_site_data.json", "w") as dpath:
@@ -277,6 +281,9 @@ de_gri_daily_values["annual_m"] = m.sel(year=de_gri_daily_values["time"].dt.year
 de_gri_daily_values["annual_lai_max"] = lai_max.sel(
     year=de_gri_daily_values["time"].dt.year
 )
+de_gri_daily_values["annual_fapar_max"] = fapar_max.sel(
+    year=de_gri_daily_values["time"].dt.year
+)
 
 # Calculate daily mu value
 mu = (
@@ -308,7 +315,7 @@ de_gri_daily_values = de_gri_daily_values.assign(
 # Save data to CSV - would use NetCDF for > 1 site.
 # - Use float format to reduce file size and remove spurious precision.
 # - Remove duplicated variables to save size
-de_gri_hh_outputs = de_gri_hh_outputs.drop_vars(["ca", "ta", "vpd"])
+# de_gri_hh_outputs = de_gri_hh_outputs.drop_vars(["ca", "ta", "vpd"])
 de_gri_hh_outputs.to_pandas().to_csv("python_hh_outputs.csv", float_format="%0.7g")
 
 de_gri_daily_values = de_gri_daily_values.drop_vars(
@@ -322,13 +329,13 @@ de_gri_daily_values = de_gri_daily_values.drop_vars(
         "vpd",
         "aet",
         "wn",
-        "pre",
+        #        "pre",
         "pet",
         "lat",
         "lon",
         "year",
         "annual_m",
-        "annual_lai_max",
+        #        "annual_lai_max",
     ]
 )
 de_gri_daily_values.to_pandas().to_csv("python_daily_outputs.csv", float_format="%0.7g")
