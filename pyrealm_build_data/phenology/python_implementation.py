@@ -315,7 +315,6 @@ de_gri_daily_values = de_gri_daily_values.assign(
 # Save data to CSV - would use NetCDF for > 1 site.
 # - Use float format to reduce file size and remove spurious precision.
 # - Remove duplicated variables to save size
-# de_gri_hh_outputs = de_gri_hh_outputs.drop_vars(["ca", "ta", "vpd"])
 de_gri_hh_outputs.to_pandas().to_csv("python_hh_outputs.csv", float_format="%0.7g")
 
 de_gri_daily_values = de_gri_daily_values.drop_vars(
@@ -329,13 +328,11 @@ de_gri_daily_values = de_gri_daily_values.drop_vars(
         "vpd",
         "aet",
         "wn",
-        #        "pre",
         "pet",
         "lat",
         "lon",
         "year",
         "annual_m",
-        #        "annual_lai_max",
     ]
 )
 de_gri_daily_values.to_pandas().to_csv("python_daily_outputs.csv", float_format="%0.7g")
