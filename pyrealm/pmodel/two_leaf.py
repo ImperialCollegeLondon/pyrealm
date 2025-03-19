@@ -19,13 +19,14 @@ from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 class TwoLeafIrradience:
     """Running the two leaf, two stream model within Pyrealm.
 
-    This class implements the :cite:t:`depury:1997a` two leaf, two stream model. This
-    model is chosen to
-    provide a better representation than the big leaf model and to align closely to
-    the workings of the ``BESS`` model :cite:alp:`ryu:2011a`.
+    This class implements the two leaf, two stream model of :cite:t:`depury:1997a`. This
+    model is chosen to provide a better representation than the big leaf model and to
+    align closely to the workings of the ``BESS`` model :cite:alp:`ryu:2011a`.
 
-    The public :meth:`calc_absorbed_irradiance` is used to generate values for the
-    variables associated with irradiance.
+    When an instance of this class is created it calculates:
+
+    * the diffuse and beam irradiances
+
 
     The calculated values are used in the estimation of gross primary productivity
     (``GPP``). An instance of this class is accepted by the
@@ -89,9 +90,9 @@ class TwoLeafIrradience:
         self.sunlit_scattered_irradiance: NDArray[np.float64]
         """The sunlit scattered irradiance (:math:`I_{ss}`)."""
         self.sunlit_absorbed_irradiance: NDArray[np.float64]
-        """The sunlit leaf absorbed irradiance (:math:`I_{csun})."""
+        """The sunlit leaf absorbed irradiance (:math:`I_{csun}`)."""
         self.shaded_absorbed_irradiance: NDArray[np.float64]
-        """The shaded leaf absorbed irradiance (:math:`I_{cshade})."""
+        """The shaded leaf absorbed irradiance (:math:`I_{cshade}`)."""
 
     #     self.no_NaNs: bool = self._check_for_NaN()
     #     self.no_negatives: bool = self._check_for_negative_values()
@@ -120,46 +121,7 @@ class TwoLeafIrradience:
     #         return False
 
     def calc_absorbed_irradiance(self) -> None:
-        r"""Calculate absorbed irradiance for sunlit and shaded leaves.
-
-        The internal function calls are as follows:
-
-        1. Calculate the beam extinction coefficient :math:`k_{b}` using
-        :func:`beam_extinction_coeff`
-
-        2. Calculate the scattered beam extinction coefficient using
-        :func:`scattered_beam_extinction_coeff`
-
-        3. Calculate fraction of diffuse radiation using :func:`fraction_of_diffuse_rad`
-
-        4. Calculate beam irradience for horizontal leaves using
-        :func:`beam_irradience_h_leaves`
-
-        5. Calculate the beam irradience for a uniform leaf angle distribution with
-        :func:`beam_irrad_unif_leaf_angle_dist`
-
-        6. Calculate diffuse radiation with :func:`diffuse_radiation`
-
-        7. Calculate direct beam irradience with :func:`beam_irradience`
-
-        8. Calculate scattered beam irradience with :func:`scattered_beam_irradience`
-
-        9. Calculate the total canopy irradience with :func:`canopy_irradience`
-
-        10. Calculate the sunlit beam irradience with :func:`sunlit_beam_irrad`
-
-        11. Calulate the sunlit diffuse irradience with :func:`sunlit_diffuse_irrad`
-
-        12. Calculate the scattered irradience recieved by sunlit portion of canopy with
-        :func:`sunlit_scattered_irrad`
-
-        13. Calulate total irradience absorbed by sunlit portion of canopy with
-        :func:`sunlit_absorbed_irrad`
-
-        14. Calculate the irradience absorbed by the shaded farction of the canopy with
-        :func:`shaded_absorbed_irrad`
-
-        """
+        r"""Calculate absorbed irradiance for sunlit and shaded leaves."""
 
         # Calculate the beam extinction coefficient for direct light
         self.beam_extinction_coefficient = calculate_beam_extinction_coefficient(
@@ -217,39 +179,42 @@ class TwoLeafIrradience:
 
         # Calculate fractions of the sunlit leaf irradiance
         self.sunlit_beam_irradiance = calculate_sunlit_beam_irradiance(
-            self.beam_irradiance,
-            self.two_leaf_constants.leaf_scattering_coefficient,
-            self.beam_extinction_coefficient,
-            self.leaf_area_index,
+            beam_irradiance=self.beam_irradiance,
+            beam_extinction_coefficient=self.beam_extinction_coefficient,
+            leaf_area_index=self.leaf_area_index,
+            leaf_scattering_coefficient=self.two_leaf_constants.leaf_scattering_coefficient,
         )
 
         self.sunlit_diffuse_irradiance = calculate_sunlit_diffuse_irradiance(
-            self.diffuse_irradiance,
-            self.two_leaf_constants.canopy_reflection_coefficient,
-            self.two_leaf_constants.diffuse_extinction_coefficient,
-            self.beam_extinction_coefficient,
-            self.leaf_area_index,
+            diffuse_irradiance=self.diffuse_irradiance,
+            beam_extinction_coefficient=self.beam_extinction_coefficient,
+            leaf_area_index=self.leaf_area_index,
+            canopy_reflection_coefficient=self.two_leaf_constants.canopy_reflection_coefficient,
+            diffuse_extinction_coefficient=self.two_leaf_constants.diffuse_extinction_coefficient,
         )
 
         self.sunlit_scattered_irradiance = calculate_sunlit_scattered_irradiance(
-            self.beam_irradiance,
-            self.uniform_leaf_beam_irradiance,
-            self.scattered_beam_extinction_coefficient,
-            self.beam_extinction_coefficient,
-            self.leaf_area_index,
-            self.two_leaf_constants.canopy_reflection_coefficient,
+            beam_irradiance=self.beam_irradiance,
+            uniform_leaf_beam_irradiance=self.uniform_leaf_beam_irradiance,
+            scattered_beam_extinction_coefficient=self.scattered_beam_extinction_coefficient,
+            beam_extinction_coefficient=self.beam_extinction_coefficient,
+            leaf_area_index=self.leaf_area_index,
+            leaf_scattering_coefficient=self.two_leaf_constants.leaf_scattering_coefficient,
         )
 
+        # And hence the total sunlit irradiance
         self.sunlit_absorbed_irradiance = calculate_sunlit_absorbed_irradiance(
-            self.sunlit_beam_irradiance,
-            self.sunlit_diffuse_irradiance,
-            self.sunlit_scattered_irradiance,
+            sunlit_beam_irradiance=self.sunlit_beam_irradiance,
+            sunlit_diffuse_irradiance=self.sunlit_diffuse_irradiance,
+            sunlit_scattered_irradiance=self.sunlit_scattered_irradiance,
         )
+
+        # Now calculate the irradiance absorbed by shaded leaves
         self.shaded_absorbed_irradiance = calculate_shaded_absorbed_irradiance(
-            self.solar_elevation,
-            self.two_leaf_constants.solar_obscurity_angle,
-            self.canopy_irradiance,
-            self.sunlit_absorbed_irradiance,
+            solar_elevation=self.solar_elevation,
+            canopy_irradiance=self.canopy_irradiance,
+            sunlit_absorbed_irradiance=self.sunlit_absorbed_irradiance,
+            solar_obscurity_angle=self.two_leaf_constants.solar_obscurity_angle,
         )
 
 
@@ -398,7 +363,7 @@ def calculate_beam_extinction_coefficient(
 
     .. math::
 
-        k_b = \frac{n}{\sin \max{\beta, \beta_{ob}}}
+        k_b = \frac{n}{\sin\left(\max\left(\beta, \beta_{ob} \right)\right)}
 
     Args:
         solar_elevation: Array of solar elevation angles (:math:`\beta`)
@@ -442,8 +407,8 @@ def calculate_fraction_of_diffuse_radiation(
 
         \[
             \begin{align*}
-                m &= \left(P / P_0\right) / \sin \beta \\
-                f_d &= \frac{1 - a^m}{1 + a^m \, \left(1 / f_a - 1\right)
+                m &= \left(P / P_0 \right) / \sin \beta \\
+                f_d &= \frac{1 - a^m}{1 + a^m \left(1 / f_a - 1\right)}
             \end{align*}
         \]
 
@@ -529,7 +494,7 @@ def calculate_diffuse_irradiance(diffuse_fraction: NDArray, ppfd: NDArray) -> ND
 
     .. math::
 
-        I_d = \max{0, \textrm{PPFD} \cdot f_d}
+        I_d = \max\left(0,  f_d \, \textrm{PPFD}\right)
 
     Args:
         diffuse_fraction: The fraction of diffuse irradiance (:math:`f_d`).
@@ -550,11 +515,11 @@ def calculate_beam_irradiance(diffuse_fraction: NDArray, ppfd: NDArray) -> NDArr
 
     .. math::
 
-        I_b = \text{ppfd} \cdot (1 - \text{fd})
+        I_b = \textrm{PPFD} \cdot (1 - \text{f_d})
 
     Args:
         diffuse_fraction: The fraction of diffuse radiation (:math:`f_d`).
-        ppfd: The photosynthetic photon flux density.
+        ppfd: The photosynthetic photon flux density (PPFD).
 
     Returns:
         Array of direct beam irradiance values.
@@ -578,9 +543,7 @@ def calculate_scattered_beam_irradiance(
 
     .. math::
 
-        I_{bs} = I_b \cdot (1 - \rho_{cb}) \cdot kb_{prime} \cdot \exp(-kb_{prime} \cdot
-        \text{leaf_area_index}) - (1 - k_{sigma}) \cdot kb \cdot \exp(-kb \cdot
-        \text{leaf_area_index})
+        I_{bs} = I_b  (1 - \rho_{cb}) k_b' \exp(-k_b'L) - (1 - \sigma) k_b \exp(-k_b L)
 
     Args:
         I_b (NDArray): Array of beam irradiance values.
@@ -618,7 +581,7 @@ def calculate_canopy_irradiance(
     .. math::
 
         I_c = (1 - \rho_{cb})  I_b   (1 - \exp(-k_b' L)) +
-            (1 - \rho{cd})  I_d  (1 - \exp(-k_b' L))
+            (1 - \rho_{cd})  I_d  (1 - \exp(-k_b' L))
 
     Args:
         uniform_leaf_beam_irradiance : Array of beam irradiances with uniform leaf angle
@@ -643,156 +606,200 @@ def calculate_canopy_irradiance(
 
 
 def calculate_sunlit_beam_irradiance(
-    I_b: NDArray, k_sigma: float, kb: NDArray, leaf_area_index: NDArray
+    beam_irradiance: NDArray,
+    beam_extinction_coefficient: NDArray,
+    leaf_area_index: NDArray,
+    leaf_scattering_coefficient: float = TwoLeafConst().leaf_scattering_coefficient,
 ) -> NDArray:
     r"""Calculate the sunlit beam irradiance.
 
-    The sunlit beam irradiance (:math:`Isun_beam`) is the direct sunlight received by
+    The sunlit beam irradiance (:math:`I_{sun_beam}`) is the direct sunlight received by
     the sunlit portion of the canopy.
 
     .. math::
 
-        I_{sun_beam} = I_b \cdot (1 - k_{sigma}) \cdot (1 - \exp(-kb \cdot
-        \text{leaf_area_index}))
+        I_{sun\_beam} = I_b (1 - \sigma) (1 - \exp{-k_b L})
 
     Args:
-        I_b (NDArray): Array of beam irradiance values.
-        k_sigma (float): Constant for calculating the sunlit beam irradiance.
-        kb (NDArray): Array of beam extinction coefficients.
-        leaf_area_index (NDArray): Array of leaf area index values.
+        beam_irradiance: Array of beam irradiance values (:math:`I_b`)
+        leaf_scattering_coefficient: Constant for calculating the sunlit beam irradiance
+            (:math:`\sigma`)
+        beam_extinction_coefficient: Array of beam extinction coefficients (:math:`k_b`)
+        leaf_area_index: Array of leaf area index values (:math:`L`)
 
     Returns:
         NDArray: Array of sunlit beam irradiance values.
     """
-    return I_b * (1 - k_sigma) * (1 - np.exp(-kb * leaf_area_index))
+    return (
+        beam_irradiance
+        * (1 - leaf_scattering_coefficient)
+        * (1 - np.exp(-beam_extinction_coefficient * leaf_area_index))
+    )
 
 
 def calculate_sunlit_diffuse_irradiance(
-    I_d: NDArray,
-    k_rho_cd: float,
-    k_kd_prime: float,
-    kb: NDArray,
+    diffuse_irradiance: NDArray,
+    beam_extinction_coefficient: NDArray,
     leaf_area_index: NDArray,
+    canopy_reflection_coefficient: float = TwoLeafConst().canopy_reflection_coefficient,
+    diffuse_extinction_coefficient: float = TwoLeafConst().diffuse_extinction_coefficient,
 ) -> NDArray:
     r"""Calculate the sunlit diffuse irradiance.
 
-    The sunlit diffuse irradiance (:math:`Isun_diffuse`) is the diffuse radiation
+    The sunlit diffuse irradiance (:math:`I_{sun_diffuse}`) is the diffuse radiation
     received by the sunlit portion of the canopy.
 
     .. math::
 
-        I_{sun_diffuse} = I_d \cdot (1 - \text{k_{rho_cd}}) \cdot
-        (1 - \exp(-(k_{kd_prime} + kb) \cdot
-        \text{leaf_area_index})) \cdot \frac{k_{kd_prime}}{k_{kd_prime} + kb}
+        I_{sun\_diffuse} = I_d  (1 - \rho_{cd}) (1 - \exp(-(k_d' + k_b)
+            L \frac{k_d'}{k_d' + k_b}
 
     Args:
-        I_d (NDArray): Array of diffuse radiation values.
-        k_rho_cd (float): Constant rho_cd value.
-        k_kd_prime (float): Constant for calculating the sunlit diffuse irradiance.
-        kb (NDArray): Array of beam extinction coefficients.
-        leaf_area_index (NDArray): Array of leaf area index values.
+        diffuse_irradiance: Array of diffuse radiation values (:math:`I_d`)
+        canopy_reflection_coefficient: Constant rho_cd value (:math:`\rho_{cd}`)
+        diffuse_extinction_coefficient: Constant for calculating the sunlit diffuse
+            irradiance (:math:`k_d'`)
+        beam_extinction_coefficient: Array of beam extinction coefficients (:math:`k_b`)
+        leaf_area_index: Array of leaf area index values (:math:`L`)
 
     Returns:
         NDArray: Array of sunlit diffuse irradiance values.
     """
     return (
-        I_d
-        * (1 - k_rho_cd)
-        * (1 - np.exp(-(k_kd_prime + kb) * leaf_area_index))
-        * k_kd_prime
-        / (k_kd_prime + kb)
+        diffuse_irradiance
+        * (1 - canopy_reflection_coefficient)
+        * (
+            1
+            - np.exp(
+                -(diffuse_extinction_coefficient + beam_extinction_coefficient)
+                * leaf_area_index
+            )
+        )
+        * diffuse_extinction_coefficient
+        / (diffuse_extinction_coefficient + beam_extinction_coefficient)
     )
 
 
 def calculate_sunlit_scattered_irradiance(
-    I_b: NDArray,
-    rho_cb: NDArray,
-    kb_prime: NDArray,
-    kb: NDArray,
+    beam_irradiance: NDArray,
+    uniform_leaf_beam_irradiance: NDArray,
+    scattered_beam_extinction_coefficient: NDArray,
+    beam_extinction_coefficient: NDArray,
     leaf_area_index: NDArray,
-    k_sigma: float,
+    leaf_scattering_coefficient: float = TwoLeafConst().leaf_scattering_coefficient,
 ) -> NDArray:
     r"""Calculate the sunlit scattered irradiance.
 
-    The sunlit scattered irradiance (:math:`Isun_scattered`) is the scattered radiation
-    received by the sunlit portion of the canopy.
+    The sunlit scattered irradiance (:math:`I_{sun_scattered}`) is the scattered
+    radiation received by the sunlit portion of the canopy.
 
     .. math::
 
-        I_{sun_scattered} = I_b \cdot ((1 - \rho_{cb}) \cdot
-        (1 - \exp(-(kb_{prime} + kb) \cdot
-        \text{leaf_area_index})) \cdot \frac{kb_{prime}}{kb_{prime} + kb}
-        - (1 - k_{sigma})
-        \cdot (1 - \exp(-2 \cdot kb \cdot \text{leaf_area_index})) / 2)
+        I_{sun\_scattered} = I_b  ((1 - \rho_{cb}) (1 - \exp(-(k_b' + k_b) L))
+            \frac{k_b'}{k_b' + k_b} - (1 - \sigma) (1 - \exp(-2 k_b  L)) / 2)
 
     Args:
-        I_b (NDArray): Array of beam irradiance values.
-        rho_cb (NDArray): Array of beam irradiances with uniform leaf angle
-            distribution.
-        kb_prime (NDArray): Array of scattered beam extinction coefficients.
-        kb (NDArray): Array of beam extinction coefficients.
-        leaf_area_index (NDArray): Array of leaf area index values.
-        k_sigma (float): Constant for calculating the sunlit scattered irradiance.
+        beam_irradiance: Array of beam irradiance values (:math:`I_b`)
+        uniform_leaf_beam_irradiance: Array of beam irradiances with uniform leaf angle
+            distribution (:math:`\rho_{cb}`).
+        scattered_beam_extinction_coefficient: Array of scattered beam extinction
+            coefficients (:math:`k_b'`)
+        beam_extinction_coefficient: Array of beam extinction coefficients (:math:`k_b`)
+        leaf_area_index: Array of leaf area index values (:math:`L`)
+        leaf_scattering_coefficient: Constant for calculating the sunlit scattered
+            irradiance (:math:`\sigma`).
 
     Returns:
         NDArray: Array of sunlit scattered irradiance values.
     """
 
-    return I_b * (
-        (1 - rho_cb)
-        * (1 - np.exp(-(kb_prime + kb) * leaf_area_index))
-        * kb_prime
-        / (kb_prime + kb)
-        - (1 - k_sigma) * (1 - np.exp(-2 * kb * leaf_area_index)) / 2
+    return beam_irradiance * (
+        (1 - uniform_leaf_beam_irradiance)
+        * (
+            1
+            - np.exp(
+                -(scattered_beam_extinction_coefficient + beam_extinction_coefficient)
+                * leaf_area_index
+            )
+        )
+        * scattered_beam_extinction_coefficient
+        / (scattered_beam_extinction_coefficient + beam_extinction_coefficient)
+        - (1 - leaf_scattering_coefficient)
+        * (1 - np.exp(-2 * beam_extinction_coefficient * leaf_area_index))
+        / 2
     )
 
 
 def calculate_sunlit_absorbed_irradiance(
-    Isun_beam: NDArray, Isun_diffuse: NDArray, Isun_scattered: NDArray
+    sunlit_beam_irradiance: NDArray,
+    sunlit_diffuse_irradiance: NDArray,
+    sunlit_scattered_irradiance: NDArray,
 ) -> NDArray:
     r"""Calculate the sunlit absorbed irradiance.
 
-    The sunlit absorbed irradiance (:math:`I_csun`) is the total irradiance absorbed by
-    the sunlit portion of the canopy, combining beam, diffuse, and scattered irradiance.
+    The sunlit absorbed irradiance (:math:`I_{csun}`) is the total irradiance absorbed
+    by the sunlit portion of the canopy, combining beam, diffuse, and scattered
+    irradiance.
 
     .. math::
 
-        I_{csun} = I_{sun-beam} + I_{sun-diffuse} + I_{sun-scattered}
+        I_{csun} = I_{sun\_beam} + I_{sun\_diffuse} + I_{sun\_scattered}
 
     Args:
-        Isun_beam (NDArray): Array of sunlit beam irradiance values.
-        Isun_diffuse (NDArray): Array of sunlit diffuse irradiance values.
-        Isun_scattered (NDArray): Array of sunlit scattered irradiance values.
+        sunlit_beam_irradiance: Array of sunlit beam irradiance values.
+        sunlit_diffuse_irradiance: Array of sunlit diffuse irradiance values.
+        sunlit_scattered_irradiance: Array of sunlit scattered irradiance values.
 
     Returns:
         NDArray: Array of sunlit absorbed irradiance values.
     """
-    return Isun_beam + Isun_scattered + Isun_diffuse
+    return (
+        sunlit_beam_irradiance + sunlit_diffuse_irradiance + sunlit_scattered_irradiance
+    )
 
 
 def calculate_shaded_absorbed_irradiance(
-    beta_angle: NDArray, k_sol_obs_angle: float, I_c: NDArray, I_csun: NDArray
+    solar_elevation: NDArray,
+    canopy_irradiance: NDArray,
+    sunlit_absorbed_irradiance: NDArray,
+    solar_obscurity_angle: float = TwoLeafConst().solar_obscurity_angle,
 ) -> NDArray:
     r"""Calculate the irradiance absorbed by the shaded fraction of the canopy.
 
     The irradiance absorbed by the shaded fraction of the canopy (:math:`I_cshade`) is
     calculated by subtracting the sunlit absorbed irradiance from the total canopy
-    irradiance.
+    irradiance. When the solar elevation is less than the solar obscurity angle, the
+    shaded absorbed irradiance is zero.
 
     .. math::
+        :nowrap:
 
-        I_{cshade} = \operatorname{max}(0, I_c - I_{csun})
+            \[
+                \begin{align}
+                      I_{cshade} = \left\{
+                        \begin{array}{ll}
+                            I_c - I_{csun}, & \text{if } \beta > \beta_{ob},\\
+                            0,              & \text{otherwise}
+                        \end{array} 
+                    \right.
+                \end{align}
+            \]
 
     Args:
-        beta_angle (NDArray): Array of solar elevation angles.
-        k_sol_obs_angle (float): Solar angle threshold.
-        I_c (NDArray): Array of canopy irradiance values.
-        I_csun (NDArray): Array of sunlit absorbed irradiance values.
+        solar_elevation: Array of solar elevation angles (:math:`\beta`)
+        canopy_irradiance: Array of canopy irradiance values (:math:`I_c`)
+        sunlit_absorbed_irradiance: Array of sunlit absorbed irradiance values
+            (:math:`I_{csun}`).
+        solar_obscurity_angle: Solar angle threshold (:math:`\beta_{ob}`)
 
     Returns:
-        NDArray: Array of irradiance absorbed by the shaded fraction of the canopy.
+        Irradiance absorbed by the shaded fraction of the canopy.
     """
-    return np.where(beta_angle > k_sol_obs_angle, I_c - I_csun, 0)
+    return np.where(
+        solar_elevation > solar_obscurity_angle,
+        canopy_irradiance - sunlit_absorbed_irradiance,
+        0,
+    )
 
 
 def calculate_canopy_extinction_coefficient(vcmax_pmod: NDArray) -> NDArray:
