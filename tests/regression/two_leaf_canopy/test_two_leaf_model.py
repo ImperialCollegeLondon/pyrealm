@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+from numpy.testing import assert_allclose
 
 from pyrealm.pmodel import PModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
@@ -25,7 +26,7 @@ def solar_elevation():
 
 
 @pytest.fixture
-def solar_irradience(solar_elevation, get_data):
+def solar_irradiance(solar_elevation, get_data):
     """Creates instace of TwoLeafIrradience class."""
 
     data = get_data.loc[(get_data["time"] == "2014-08-01 12:30:00")]
@@ -39,7 +40,7 @@ def solar_irradience(solar_elevation, get_data):
 
 
 @pytest.fixture
-def assimilation_single_day(solar_irradience, get_data):
+def assimilation_single_day(solar_irradiance, get_data):
     """Tests TwoLeafAssimilation gpp_estimator method against reference data."""
     data = get_data.loc[(get_data["time"] == "2014-08-01 12:30:00")]
     pmod_env = PModelEnvironment(
@@ -57,11 +58,11 @@ def assimilation_single_day(solar_irradience, get_data):
         pmod_env, method_arrhenius="kattge_knorr", reference_kphio=0.081785
     )
 
-    solar_irradience.calc_absorbed_irradience()
+    solar_irradiance.calc_absorbed_irradiance()
 
     assim = TwoLeafAssimilation(
         pmodel=standard_pmod,
-        irrad=solar_irradience,
+        irrad=solar_irradiance,
     )
 
     assim.gpp_estimator()
@@ -69,22 +70,29 @@ def assimilation_single_day(solar_irradience, get_data):
     return assim
 
 
-def test_two_leaf_irradience(solar_irradience, get_data):
-    """Tests calc_absorbed_irradice method."""
-    solar_irradience.calc_absorbed_irradience()
+def test_two_leaf_irradiance(solar_irradiance, get_data):
+    """Tests calc_absorbed_irradiance method."""
+    solar_irradiance.calc_absorbed_irradiance()
 
-    assert np.allclose(solar_irradience.kb, np.array([0.6011949063494533]))
-    assert np.allclose(solar_irradience.kb_prime, np.array([0.55309931]))
-    assert np.allclose(solar_irradience.rho_h, np.array([0.04060739027615024]))
-    assert np.allclose(solar_irradience.rho_cb, np.array([0.03003319]))
-    assert np.allclose(solar_irradience.I_d, np.array([136.29450038]))
-    assert np.allclose(solar_irradience.I_b, np.array([714.70549962]))
-    assert np.allclose(solar_irradience.I_c, np.array([636.08707023]))
-    assert np.allclose(solar_irradience.Isun_beam, np.array([485.32862357]))
-    assert np.allclose(solar_irradience.Isun_diffuse, np.array([69.44255865]))
-    assert np.allclose(solar_irradience.Isun_scattered, np.array([25.43894747]))
-    assert np.allclose(solar_irradience.I_cshade, np.array([55.876940533221614]))
-    assert np.allclose(solar_irradience.I_csun, np.array([580.2101296936461]))
+    test_values = (
+        ("beam_extinction_coefficient", np.array([0.6011949063494533])),
+        ("scattered_beam_extinction_coefficient", np.array([0.55309931])),
+        ("horizontal_leaf_beam_irradiance", np.array([0.04060739027615024])),
+        ("uniform_leaf_beam_irradiance", np.array([0.03003319])),
+        ("diffuse_irradiance", np.array([136.29450038])),
+        ("beam_irradiance", np.array([714.70549962])),
+        ("canopy_irradiance", np.array([636.08707023])),
+        ("sunlit_beam_irradiance", np.array([485.32862357])),
+        ("sunlit_diffuse_irradiance", np.array([69.44255865])),
+        ("sunlit_scattered_irradiance", np.array([25.43894747])),
+        ("shaded_absorbed_irradiance", np.array([55.876940533221614])),
+        ("sunlit_absorbed_irradiance", np.array([580.2101296936461])),
+    )
+
+    for attr, expected_value in test_values:
+        value = getattr(solar_irradiance, attr, None)
+        assert value is not None
+        assert_allclose(value, expected_value)
 
 
 def test_two_leaf_assimilation(assimilation_single_day):

@@ -9,20 +9,27 @@ from pyrealm.constants import ConstantsClass
 
 @dataclass(frozen=True)
 class TwoLeafConst(ConstantsClass):
-    """Pyrealm two leaf canopy model constants dataclass."""
+    """Constants for the two leaf, two stream model."""
 
-    # two leaf canopy model constants
-    k_PA0 = 101325
-    """Reference standard pressure"""
-    k_fa: float = 0.426  # needs citation
-    """scattering coefficient of PAR in the atmosphere, dimensionless"""
-    k_sigma: float = 0.15  # needs citation
-    """leaf scattering coefficient of PAR (relections and transmissivity),
-     dimensionless"""
-    k_rho_cd: float = 0.036  # needs citation
-    """canopy reflection coefficient for diffuse PAR, dimensionless"""
-    k_kd_prime: float = 0.719  # needs citation
-    """diffuse and scattered diffuse PAR extinction coefficient, dimensionless"""
-
-    k_sol_obs_angle: float = 1 / (2 * np.pi)  # 1 degree in rads, needs a citation
-    """ solar obscurity angle, radians"""
+    atmospheric_scattering_coefficient: float = 0.426  # needs citation
+    """Scattering coefficient of PAR in the atmosphere (:math:`f_a`, dimensionless)"""
+    leaf_scattering_coefficient: float = 0.15
+    """Scattering coefficient of PAR by leaves by reflection and transmission
+    (:math:`\sigma`, dimensionless, Table 2. of :cite:t:`depury:1997a`)"""
+    canopy_reflection_coefficient: float = 0.036  # needs citation
+    r"""Canopy reflection coefficient for diffuse PAR,(:math:`\rho_{cd}`,
+    dimensionless)."""
+    diffuse_extinction_coefficient: float = 0.719  # needs citation
+    """Diffuse and scattered diffuse PAR extinction coefficient (:math:`k_d'`,
+    dimensionless)."""
+    solar_obscurity_angle: float = np.pi / 180  # 1 degree in rads, needs a citation
+    r"""Solar obscurity angle (:math:`\beta_{ob}` radians)"""
+    direct_beam_extinction_numerator: float = 0.5
+    r"""Numerator of the extinction beam coefficient calculation (:math:`n`) for direct
+     light."""
+    scattered_beam_extinction_numerator: float = 0.46
+    r"""Numerator of the extinction beam coefficient calculation (:math:`n`) for
+     scattered light."""
+    leaf_diffusion_factor: float = 0.72
+    """Leaf derived factor used in calculation of fraction of diffuse light (:math:`a`,
+    Table 5. of :cite:t:`depury:1997a`)."""

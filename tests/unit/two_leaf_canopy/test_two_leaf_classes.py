@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 from pyrealm.constants.core_const import CoreConst
-from pyrealm.constants.two_leaf_canopy import TwoLeafConst
 from pyrealm.pmodel.two_leaf import (
     TwoLeafAssimilation,
     TwoLeafIrradience,
@@ -12,20 +11,16 @@ from pyrealm.pmodel.two_leaf import (
 
 
 @pytest.fixture
-def two_leaf_constants():
-    """Fixture to provide the default constants."""
-    return TwoLeafConst()
-
-
-@pytest.fixture
-def two_leaf(two_leaf_constants):
+def two_leaf():
     """Fixture to create a TwoLeafIrradience instance."""
+
+    from pyrealm.pmodel.two_leaf import TwoLeafIrradience
+
     return TwoLeafIrradience(
-        beta_angle=np.array([0.6]),
+        solar_elevation=np.array([0.6]),
         ppfd=np.array([1000]),
         leaf_area_index=np.array([2.0]),
         patm=np.array([101325]),
-        constants=two_leaf_constants,
     )
 
 
@@ -59,7 +54,7 @@ def test_check_for_negative_values(two_leaf):
     assert two_leaf._check_for_negative_values() is False
 
 
-def test_initialization(two_leaf, two_leaf_constants):
+def test_initialization(two_leaf):
     """Test initialization of the TwoLeafIrradience class."""
     assert two_leaf.beta_angle.shape == (1,)
     assert two_leaf.ppfd.shape == (1,)
@@ -69,16 +64,18 @@ def test_initialization(two_leaf, two_leaf_constants):
 
 
 def test_calc_absorbed_irradience(two_leaf):
-    """Test the calc_absorbed_irradience method."""
-    two_leaf.calc_absorbed_irradience()
+    """Test the calc_absorbed_irradiance method."""
+    two_leaf.calc_absorbed_irradiance()
 
     # Check if all attributes are calculated
+    # One is a scalar
+    assert hasattr(two_leaf, "horizontal_leaf_beam_irradiance")
+    # The others are arrays, so check shape
     attributes = [
-        "kb",
-        "kb_prime",
-        "fd",
-        "rho_h",
-        "rho_cb",
+        "beam_extinction_coefficient",
+        "scattered_beam_extinction_coefficient",
+        "fraction_of_diffuse_radiation",
+        "uniform_leaf_beam_irradiance",
         "I_d",
         "I_b",
         "I_c",
@@ -89,11 +86,7 @@ def test_calc_absorbed_irradience(two_leaf):
         "I_cshade",
     ]
     for attr in attributes:
-        if attr == "rho_h":
-            pass
-        else:
-            assert hasattr(two_leaf, attr)
-            assert getattr(two_leaf, attr).shape == two_leaf.beta_angle.shape
+        assert getattr(two_leaf, attr).shape == two_leaf.solar_elevation.shape
 
 
 @pytest.fixture(scope="session")
