@@ -9,9 +9,9 @@ productivity (via ``TwoLeafAssimilation``). The approach follows De Pury and Far
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.core.utilities import check_input_shapes
 from pyrealm.constants.core_const import CoreConst
 from pyrealm.constants.two_leaf_canopy import TwoLeafConst
+from pyrealm.core.utilities import check_input_shapes
 from pyrealm.pmodel.optimal_chi import OptimalChiABC
 from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 
