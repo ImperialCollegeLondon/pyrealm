@@ -36,3 +36,7 @@ class TwoLeafConst(ConstantsClass):
     vcmax_lloyd_coef: tuple[float, float] = (0.00963, 2.43)
     """Coefficients of the canopy extinction coefficient (:math:`k_v`) function, taken
     from Figure 10 of :cite:`lloyd:2010a`"""
+    jmax25_wullschleger_coef: tuple[float, float] = (29.1, 1.64)
+    r"""Coefficients of the empirical relationship between the maximum rate of electron
+     transport (:math:`J_{max25}`) and the carboxylation rate (:math:`V_{cmax25}`),
+     values taken from :cite:`wullschleger:1993a`."""

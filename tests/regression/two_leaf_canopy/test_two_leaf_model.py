@@ -119,7 +119,7 @@ def test_two_leaf_assimilation(assimilation_single_day):
         "Aj_shade": np.array([3.15084055]),
         "Acanopy_sun": np.array([15.24637566]),
         "Acanopy_shade": np.array([3.15084055]),
-        "gpp_estimate": np.array([186.27048471]),
+        "gpp": np.array([220.963445]),
     }
 
     for attr, expected_value in test_values.items():

@@ -31,8 +31,7 @@ class TwoLeafIrradience:
 
     * the diffuse and beam irradiances
 
-    TODO
-
+    Todo:
     The calculated values are used in the estimation of gross primary productivity
     (``GPP``). An instance of this class is accepted by the
     :class:`TwoLeafAssimilation`, which uses these results to calulate ``GPP``.
@@ -336,7 +335,7 @@ def calculate_beam_irradiance_uniform_leaves(
         Array of beam irradiances.
     """
 
-    return 1 - np.exp(
+    return 1.0 - np.exp(
         -2 * beam_irradiance_horizontal_leaves * beam_extinction / (1 + beam_extinction)
     )
 
@@ -706,11 +705,6 @@ class TwoLeafAssimilation:
         #        a custom __eq__ dunder method to handle the structures inside the
         #        classes.
 
-        # self.vcmax_pmod: NDArray = self.pmodel.vcmax
-        # self.vcmax25_pmod: NDArray = self.pmodel.vcmax25
-        # self.optchi_obj: OptimalChiABC = self.pmodel.optchi
-        # self.core_const: CoreConst = self.pmodel.core_const
-
         self.kv_Lloyd: NDArray[np.float64]
         self.Vmax25_canopy: NDArray[np.float64]
         self.Vmax25_sun: NDArray[np.float64]
@@ -802,11 +796,12 @@ class TwoLeafAssimilation:
             beam_extinction_coefficient=self.irrad.beam_extinction_coefficient,
         )
 
-        self.Vmax25_shade = Vmax25_shade(self.Vmax25_canopy, self.Vmax25_sun)
+        self.Vmax25_shade = self.Vmax25_canopy - self.Vmax25_sun
 
-        # Calculate Jmax25 for sunlit and shaded leaves
-        self.Jmax25_sun = Jmax25(self.Vmax25_sun)
-        self.Jmax25_shade = Jmax25(self.Vmax25_shade)
+        # Calculate Jmax25 for sunlit and shaded leaves as an empirical function of
+        # Vcmax25
+        self.Jmax25_sun = calculate_jmax25(self.Vmax25_sun)
+        self.Jmax25_shade = calculate_jmax25(self.Vmax25_shade)
 
         # Set up Arrhenius scaling to get rates at environmental temperatures using the
         # Arrhenius method selected in the original P Model.
@@ -825,35 +820,36 @@ class TwoLeafAssimilation:
         self.Jmax_sun = self.Jmax25_sun * arrhenius_jmax
         self.Jmax_shade = self.Jmax25_shade * arrhenius_jmax
 
-        # Calculate the assimilation rates of sun and shaded leave
-        self.Av_sun = photosynthetic_estimate(self.Vmax_sun, self.pmodel.optchi.mc)
-        self.Av_shade = photosynthetic_estimate(self.Vmax_shade, self.pmodel.optchi.mc)
+        # Calculate Av and Aj for both sun and shaded leaves
+        self.Av_sun = self.Vmax_sun * self.pmodel.optchi.mc
+        self.Av_shade = self.Vmax_shade * self.pmodel.optchi.mc
 
-        self.J_sun = electron_transport_rate(
-            self.Jmax_sun, self.irrad.sunlit_absorbed_irradiance
+        self.J_sun = calculate_electron_transport_rate(
+            jmax=self.Jmax_sun,
+            absorbed_irradiance=self.irrad.sunlit_absorbed_irradiance,
         )
-        self.J_shade = electron_transport_rate(
-            self.Jmax_shade, self.irrad.shaded_absorbed_irradiance
-        )
-
-        self.Aj_sun = assimilation_rate(self.pmodel.optchi.mj, self.J_sun)
-        self.Aj_shade = assimilation_rate(self.pmodel.optchi.mj, self.J_shade)
-
-        self.Acanopy_sun = assimilation_canopy(
-            self.Aj_sun,
-            self.Av_sun,
-            self.irrad.solar_elevation,
-            self.irrad.two_leaf_constants.solar_obscurity_angle,
-        )
-        self.Acanopy_shade = assimilation_canopy(
-            self.Aj_shade,
-            self.Av_shade,
-            self.irrad.solar_elevation,
-            self.irrad.two_leaf_constants.solar_obscurity_angle,
+        self.J_shade = calculate_electron_transport_rate(
+            jmax=self.Jmax_shade,
+            absorbed_irradiance=self.irrad.shaded_absorbed_irradiance,
         )
 
-        self.gpp_estimate = gross_primary_product(
-            self.irrad.core_constants.k_c_molmass, self.Acanopy_sun, self.Acanopy_shade
+        self.Aj_sun = self.pmodel.optchi.mj * self.J_sun / 4
+        self.Aj_shade = self.pmodel.optchi.mj * self.J_shade / 4
+
+        # Calculate the sun and shaded leaf assimilation as the minimum of Ac and Aj for
+        # each component
+        self.Acanopy_sun = np.minimum(self.Aj_sun, self.Av_sun)
+        self.Acanopy_shade = np.minimum(self.Aj_shade, self.Av_shade)
+
+        # Calculate GPP in gC m-2 s-1 as the sum of the sunlit and shaded components,
+        # but explicitly setting to zero where the solar elevation is below the solar
+        # obscurity angle.
+        self.gpp = np.where(
+            self.irrad.solar_elevation
+            > self.irrad.two_leaf_constants.solar_obscurity_angle,
+            (self.Acanopy_shade + self.Acanopy_sun)
+            * self.irrad.core_constants.k_c_molmass,
+            0,
         )
 
 
@@ -964,130 +960,65 @@ def calculate_sun_vcmax25(
     return Vmax25_sun
 
 
-def Vmax25_shade(
-    Vmax25_canopy: NDArray[np.float64], Vmax_25_sun: NDArray[np.float64]
+def calculate_jmax25(
+    vcmax25: NDArray[np.float64],
+    coef: tuple[float, float] = TwoLeafConst().jmax25_wullschleger_coef,
 ) -> NDArray[np.float64]:
-    r"""Calculate carboxylation in shaded areas, :math:`Vmax25_shade` at 25C.
+    r"""Calculate the maximum rate of electron transport.
 
-    This function calculates the maximum carboxylation rate for the shaded portions of
-    the canopy by subtracting the sunlit carboxylation rate from the total canopy
-    carboxylation rate.
+    This function calculates the maximum rate of electron transport (:math:`J_{max25}`)
+    at 25°C as an linear function of the carboxylation rate (:math:`V_{cmax25}`),
+    following the fitted model in Figure 2 of :cite:`wullschleger:1993a`.
 
-    .. math::
-
-        Vmax25_{shade} = Vmax25_{canopy} - Vmax25_{sun}
-
-    Args:
-        Vmax25_canopy (NDArray): The ``Vmax25`` parameter for the canopy.
-        Vmax_25_sun (NDArray): The ``Vmax25`` parameter for the sunlit areas.
-
-    Returns:
-        NDArray: The calculated Vmax25 shade values.
-    """
-    Vmax25_shade = Vmax25_canopy - Vmax_25_sun
-
-    return Vmax25_shade
-
-
-def photosynthetic_estimate(
-    Vmax: NDArray[np.float64], mc: NDArray[np.float64]
-) -> NDArray[np.float64]:
-    r"""Calculate photosynthetic rate estimate, :math:`Av`.
-
-    This function estimates photosynthetic rates by multiplying the carboxylation
-    capacity by mc, the limitation term for Rubisco-limited assimilation.
-
-    .. math::
-
-        A_v = V_{max} \cdot mc
-
-    Args:
-        Vmax (NDArray): The ``Vmax`` parameter.
-        mc (NDArray): limitation term for Rubisco-limited assimilation
-
-    Returns:
-        NDArray: The calculated photosynthetic estimates.
-    """
-
-    Av = Vmax * mc
-
-    return Av
-
-
-def Jmax25(Vmax25: NDArray[np.float64]) -> NDArray[np.float64]:
-    r"""Calculate the maximum rate of electron transport :math:`Jmax25`.
-
-    This function calculates the maximum rate of electron transport :math:`Jmax25`
-    at 25°C, which is related to the capacity for light-driven electron transport in
-    photosynthesis.
 
     Uses Eqn 31, after Wullschleger.
 
     .. math::
 
-        J_{max25} = 29.1 + 1.64 \cdot V_{max25}
+        J_{max25} = 29.1 + 1.64 \cdot V_{cmax25}
 
 
     Args:
-        Vmax25 (NDArray): The ``Vmax25`` parameter.
+        vcmax25: An estimate of :math:`V_{cmax25}`.
+        coef: The coefficients of the empirical relationship between :math:`V_{cmax25}`
+            and :math:`J_{max25}`.
 
     Returns:
-        NDArray: The calculated ``Jmax25`` values.
+        The calculated values of :math:`J_{max25}`.
     """
 
-    Jmax25 = 29.1 + 1.64 * Vmax25
+    a, b = coef
+    return a + b * vcmax25
 
-    return Jmax25
 
-
-def electron_transport_rate(
-    Jmax: NDArray[np.float64], I_c: NDArray[np.float64]
+def calculate_electron_transport_rate(
+    jmax: NDArray[np.float64], absorbed_irradiance: NDArray[np.float64]
 ) -> NDArray[np.float64]:
-    r"""Calculate electron transport rate :math:`J`.
+    r"""Calculate electron transport rate.
 
-    This function calculates the electron transport rate :math:`J`,considering the
-    irradiance :math:`I_c` and the maximum electron transport rate :math:`Jmax`.
+    This function calculates the electron transport rate (:math:`J`), given absorbed
+    irradiance and the maximum electron transport rate :math:`J_{max25}`.
 
     .. math::
 
-        J = J_{max} \cdot I_c \cdot \frac{(1 - 0.15)}{(I_c + 2.2 \cdot J_{max})}
+        J = J_{max}  I_c \frac{(1 - 0.15)}{(I_c + 2.2  J_{max})}
+
+    .. todo::
+
+        What is the source of this parameterisation?
+
 
     Args:
-        Jmax (NDArray): maximum rate of electron transport.
-        I_c (NDArray): The irradiance parameter.
+        jmax: The maximum rate of electron transport (:math:`J_{max}`).
+        absorbed_irradiance (NDArray): The abbsorbed irradiance (:math:`I_c`)
 
     Returns:
-        NDArray: The calculated J values.
+        The calculated J values.
     """
 
-    J = Jmax * I_c * (1 - 0.15) / (I_c + 2.2 * Jmax)
+    J = jmax * absorbed_irradiance * (1 - 0.15) / (absorbed_irradiance + 2.2 * jmax)
 
     return J
-
-
-def assimilation_rate(
-    mj: NDArray[np.float64], J: NDArray[np.float64]
-) -> NDArray[np.float64]:
-    r"""Calculate assimilation rate :math:`A`.
-
-    This function calculates the assimilation rate driven by electron transport,
-    :math:`Aj`, using the parameter :math:`mj` and the electron transport rate
-    :math:`J`.
-
-    .. math::
-
-        A = m_j \cdot \frac{J}{4}
-
-    Args:
-        mj (NDArray): The ``mj`` parameter.
-        J (NDArray): The ``J`` parameter.
-
-    Returns:
-        NDArray: The calculated Aj values.
-    """
-    A = mj * J / 4
-
-    return A
 
 
 def assimilation_canopy(
