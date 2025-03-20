@@ -259,11 +259,17 @@ ann_total_A0_subdaily_penalised_mol = (
     ann_total_A0_subdaily_penalised / env.core_const.k_c_molmass
 )
 
-fapar_max = np.minimum(
-    1 - z / (k * ann_total_A0_subdaily_penalised_mol),
-    (ann_mean_ca_gs * (1 - ann_mean_chi_gs) / 1.6 * ann_mean_vpd_gs)
-    * ((f_0 * ann_total_P_molar) / ann_total_A0_subdaily_penalised_mol),
+fapar_energylim = 1.0 - z / (k * ann_total_A0_subdaily_penalised_mol)
+
+fapar_waterlim = (
+    ann_mean_ca_gs
+    * (1 - ann_mean_chi_gs)
+    / (1.6 * ann_mean_vpd_gs)
+    * ((f_0 * ann_total_P_molar) / ann_total_A0_subdaily_penalised_mol)
 )
+
+
+fapar_max = np.minimum(fapar_energylim, fapar_waterlim)
 lai_max = -(1 / k) * np.log(1 - fapar_max)
 
 
