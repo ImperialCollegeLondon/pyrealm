@@ -106,7 +106,9 @@ class TwoLeafIrradience:
         self.shaded_absorbed_irradiance: NDArray[np.float64]
         """The shaded leaf absorbed irradiance (:math:`I_{cshade}`)."""
 
-    def calc_absorbed_irradiance(self) -> None:
+        self._calculate_absorbed_irradiances()
+
+    def _calculate_absorbed_irradiances(self) -> None:
         r"""Calculate absorbed irradiance for sunlit and shaded leaves."""
 
         # Calculate the beam extinction coefficient for direct light
@@ -229,17 +231,10 @@ def calculate_beam_extinction_coefficient(
         An array of beam extinction coefficients.
     """
 
-    # TODO - checking this with Keith
-    # max_val = extinction_numerator / np.sin(solar_obscurity_angle)
-    if extinction_numerator == 0.5:
-        max_val = np.array([30])
-    elif extinction_numerator == 0.46:
-        max_val = np.array([27])
-
     return np.where(
         solar_elevation > solar_obscurity_angle,
         extinction_numerator / np.sin(solar_elevation),
-        max_val,  # extinction_numerator / np.sin(solar_obscurity_angle)
+        extinction_numerator / np.sin(solar_obscurity_angle),
     )
 
 
@@ -674,59 +669,7 @@ class TwoLeafAssimilation:
     (:class:`~pyrealm.pmodel.two_leaf.TwoLeafIrradience`) to compute
     various canopy photosynthetic properties and ``GPP`` estimates.
 
-    Args:
-        pmodel (PModel | SubdailyPModel): The photosynthesis model used for
-            assimilation.
-        irrad (TwoLeafIrradience): Irradiance data required for ``GPP`` calculations.
-        leaf_area_index (NDArray): Array of leaf area index values.
-    """
-
-    def __init__(
-        self,
-        pmodel: PModel | SubdailyPModel,
-        irrad: TwoLeafIrradience,
-    ):
-        """Initialize the ``TwoLeafAssimilation`` class.
-
-        Args:
-            pmodel (PModel | SubdailyPModel): The photosynthesis model.
-            irrad (TwoLeafIrradience): The irradiance data.
-            leaf_area_index (NDArray): Array of leaf area index values.
-        """
-        self.pmodel = pmodel
-        """A PModel or SubdailyPModel instance."""
-        self.irrad = irrad
-        """A TwoLeafIrradiance instance """
-
-        # TODO - both the pmodel and irrad instances have their own independent
-        #        CoreConst instances. Would be good to check they are the same. Because
-        #        we want to able to use the irrad object with multiple models, it would
-        #        be convoluted to force them to be the same instance. We'd need to write
-        #        a custom __eq__ dunder method to handle the structures inside the
-        #        classes.
-
-        self.kv_Lloyd: NDArray[np.float64]
-        self.Vmax25_canopy: NDArray[np.float64]
-        self.Vmax25_sun: NDArray[np.float64]
-        self.Vmax25_shade: NDArray[np.float64]
-        self.Vmax_sun: NDArray[np.float64]
-        self.Vmax_shade: NDArray[np.float64]
-        self.Av_sun: NDArray[np.float64]
-        self.Av_shade: NDArray[np.float64]
-        self.Jmax25_sun: NDArray[np.float64]
-        self.Jmax25_shade: NDArray[np.float64]
-        self.Jmax_sun: NDArray[np.float64]
-        self.Jmax_shade: NDArray[np.float64]
-        self.J_sun: NDArray[np.float64]
-        self.J_shade: NDArray[np.float64]
-        self.Aj_sun: NDArray[np.float64]
-        self.Aj_shade: NDArray[np.float64]
-        self.Acanopy_sun: NDArray[np.float64]
-        self.Acanopy_shade: NDArray[np.float64]
-        self.gpp: NDArray[np.float64]
-
-    def gpp_estimator(self) -> None:
-        """Estimate the gross primary production (``GPP``) using the two-leaf model.
+        Estimate the gross primary production (``GPP``) using the two-leaf model.
 
         This method uses the following functions to calculate the ``GPP`` estimate,
         including carboxylation rates, assimilation rates, and electron transport
@@ -773,7 +716,60 @@ class TwoLeafAssimilation:
 
         **Sets:**
         gpp_estimate (NDArray): Estimated gross primary production.
+
+    Args:
+        pmodel: A PModel providing estimates of `m_j` `m_c`
+        irrad: Irradiance data required for ``GPP`` calculations.
+    """
+
+    def __init__(
+        self,
+        pmodel: PModel | SubdailyPModel,
+        irrad: TwoLeafIrradience,
+    ):
+        """Initialize the ``TwoLeafAssimilation`` class.
+
+        Args:
+            pmodel (PModel | SubdailyPModel): The photosynthesis model.
+            irrad (TwoLeafIrradience): The irradiance data.
+            leaf_area_index (NDArray): Array of leaf area index values.
         """
+        self.pmodel = pmodel
+        """A PModel or SubdailyPModel instance."""
+        self.irrad = irrad
+        """A TwoLeafIrradiance instance """
+
+        # TODO - both the pmodel and irrad instances have their own independent
+        #        CoreConst instances. Would be good to check they are the same. Because
+        #        we want to able to use the irrad object with multiple models, it would
+        #        be convoluted to force them to be the same instance. We'd need to write
+        #        a custom __eq__ dunder method to handle the structures inside the
+        #        classes.
+
+        self.kv_Lloyd: NDArray[np.float64]
+        self.Vmax25_canopy: NDArray[np.float64]
+        self.Vmax25_sun: NDArray[np.float64]
+        self.Vmax25_shade: NDArray[np.float64]
+        self.Vmax_sun: NDArray[np.float64]
+        self.Vmax_shade: NDArray[np.float64]
+        self.Av_sun: NDArray[np.float64]
+        self.Av_shade: NDArray[np.float64]
+        self.Jmax25_sun: NDArray[np.float64]
+        self.Jmax25_shade: NDArray[np.float64]
+        self.Jmax_sun: NDArray[np.float64]
+        self.Jmax_shade: NDArray[np.float64]
+        self.J_sun: NDArray[np.float64]
+        self.J_shade: NDArray[np.float64]
+        self.Aj_sun: NDArray[np.float64]
+        self.Aj_shade: NDArray[np.float64]
+        self.Acanopy_sun: NDArray[np.float64]
+        self.Acanopy_shade: NDArray[np.float64]
+        self.gpp: NDArray[np.float64]
+
+        self._calculate_two_leaf_two_stream_gpp()
+
+    def _calculate_two_leaf_two_stream_gpp(self) -> None:
+        """Internal calculations for the two leaf, two stream model."""
 
         # Calculate the canopy extinction coefficient given the big leaf estimate of
         # V_cmax

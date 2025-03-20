@@ -65,7 +65,6 @@ def test_initialization(two_leaf):
 
 def test_calc_absorbed_irradience(two_leaf):
     """Test the calc_absorbed_irradiance method."""
-    two_leaf.calc_absorbed_irradiance()
 
     # Check if all attributes are calculated
     # One is a scalar
@@ -129,8 +128,6 @@ def test_initialization_assim(two_leaf_assimilation):
 
 def test_gpp_estimator(two_leaf_assimilation, two_leaf):
     """Test the gpp_estimator method."""
-    two_leaf.calc_absorbed_irradience()
-    two_leaf_assimilation.gpp_estimator()
 
     # Check if all GPP-related attributes are calculated
     attributes = [

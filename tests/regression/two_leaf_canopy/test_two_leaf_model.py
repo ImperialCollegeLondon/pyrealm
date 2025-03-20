@@ -42,7 +42,9 @@ def solar_irradiance(solar_elevation, get_data):
 @pytest.fixture
 def assimilation_single_day(solar_irradiance, get_data):
     """Tests TwoLeafAssimilation gpp_estimator method against reference data."""
+
     data = get_data.loc[(get_data["time"] == "2014-08-01 12:30:00")]
+
     pmod_env = PModelEnvironment(
         tc=data["tc"].to_numpy(),
         mean_growth_temperature=data["tc"].to_numpy(),
@@ -56,21 +58,16 @@ def assimilation_single_day(solar_irradiance, get_data):
     # Standard P Model, simple Arrhenius scaling, phi_0 = 1/8
     standard_pmod = PModel(pmod_env)
 
-    solar_irradiance.calc_absorbed_irradiance()
-
     assim = TwoLeafAssimilation(
         pmodel=standard_pmod,
         irrad=solar_irradiance,
     )
-
-    assim.gpp_estimator()
 
     return assim
 
 
 def test_two_leaf_irradiance(solar_irradiance, get_data):
     """Tests calc_absorbed_irradiance method."""
-    solar_irradiance.calc_absorbed_irradiance()
 
     test_values = {
         "beam_extinction_coefficient": np.array([0.6011949063494533]),
