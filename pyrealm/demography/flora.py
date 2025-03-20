@@ -131,6 +131,8 @@ class PlantFunctionalTypeStrict:
     r"""Specific leaf area (:math:`\sigma`,  m2 kg-1 C)"""
     tau_f: float
     r"""Foliage turnover time (:math:`\tau_f`,years)"""
+    tau_rt: float
+    r"""Reproductive tissue turnover time (:math:`\tau_rt`,years)"""
     tau_r: float
     r"""Fine-root turnover time (:math:`\tau_r`,  years)"""
     par_ext: float
@@ -142,6 +144,8 @@ class PlantFunctionalTypeStrict:
     r"""Ratio of fine-root mass to foliage area (:math:`\zeta`, kg C m-2)"""
     resp_r: float
     r"""Fine-root specific respiration rate (:math:`r_r`, year-1)"""
+    resp_rt: float
+    r"""Reproductive tissue respiration rate (:math:`r_{rt}`, year-1)"""
     resp_s: float
     r"""Sapwood-specific respiration rate (:math:`r_s`,  year-1)"""
     resp_f: float
@@ -157,6 +161,11 @@ class PlantFunctionalTypeStrict:
     """Scaling factor to derive maximum crown radius from crown area."""
     z_max_prop: float = field(init=False)
     """Proportion of stem height at which maximum crown radius is found."""
+
+    p_foliage_for_reproductive_tissue: float
+    """Proportion of foliage used to calculate reproductive tissue."""
+    p_gpp_for_root_exudation: float
+    """Proportion of GPP used to calculate root exudation."""
 
     def __post_init__(self) -> None:
         """Populate derived attributes.
@@ -218,6 +227,7 @@ class PlantFunctionalType(PlantFunctionalTypeStrict):
     lai: float = 1.8
     sla: float = 14.0
     tau_f: float = 4.0
+    tau_rt: float = 4.0
     tau_r: float = 1.04
     par_ext: float = 0.5
     yld: float = 0.6
@@ -225,9 +235,12 @@ class PlantFunctionalType(PlantFunctionalTypeStrict):
     resp_r: float = 0.913
     resp_s: float = 0.044
     resp_f: float = 0.1
+    resp_rt: float = 0
     m: float = 2
     n: float = 5
     f_g: float = 0.05
+    p_foliage_for_reproductive_tissue: float = 0.05
+    p_gpp_for_root_exudation: float = 0.05
 
 
 PlantFunctionalTypeSchema = marshmallow_dataclass.class_schema(
@@ -290,6 +303,8 @@ class Flora(PandasExporter):
     r"""Foliage turnover time (:math:`\tau_f`,years)"""
     tau_r: NDArray[np.float64] = field(init=False)
     r"""Fine-root turnover time (:math:`\tau_r`,  years)"""
+    tau_rt: NDArray[np.float64] = field(init=False)
+    r"""Reproductive tissue turnover time (:math:`\tau_rt`,years)"""
     par_ext: NDArray[np.float64] = field(init=False)
     r"""Extinction coefficient of photosynthetically active radiation (PAR) (:math:`k`,
      -)"""
@@ -303,6 +318,8 @@ class Flora(PandasExporter):
     r"""Sapwood-specific respiration rate (:math:`r_s`,  year-1)"""
     resp_f: NDArray[np.float64] = field(init=False)
     r"""Foliage maintenance respiration fraction (:math:`r_f`,  -)"""
+    resp_rt: NDArray[np.float64] = field(init=False)
+    r"""Reproductive tissue respiration rate (:math:`r_rt`,  -)"""
     m: NDArray[np.float64] = field(init=False)
     r"""Crown shape parameter (:math:`m`, -)"""
     n: NDArray[np.float64] = field(init=False)
@@ -323,6 +340,11 @@ class Flora(PandasExporter):
     """The number of plant functional types in the Flora instance."""
     _n_stems: int = field(init=False)
     """Private attribute for compatibility with StemTraits API."""
+
+    p_foliage_for_reproductive_tissue: NDArray[np.float64] = field(init=False)
+    """Proportion of foliage used to calculate reproductive tissue."""
+    p_gpp_for_root_exudation: NDArray[np.float64] = field(init=False)
+    """Proportion of GPP used to calculate root exudation."""
 
     def __post_init__(self, pfts: Sequence[type[PlantFunctionalTypeStrict]]) -> None:
         # Check the PFT data
@@ -487,6 +509,8 @@ class StemTraits(PandasExporter, CohortMethods):
     r"""Specific leaf area (:math:`\sigma`,  m2 kg-1 C)"""
     tau_f: NDArray[np.float64]
     r"""Foliage turnover time (:math:`\tau_f`,years)"""
+    tau_rt: NDArray[np.float64]
+    r"""Reproductive tissue turnover time (:math:`\tau_rt`,years)"""
     tau_r: NDArray[np.float64]
     r"""Fine-root turnover time (:math:`\tau_r`,  years)"""
     par_ext: NDArray[np.float64]
@@ -502,6 +526,8 @@ class StemTraits(PandasExporter, CohortMethods):
     r"""Sapwood-specific respiration rate (:math:`r_s`,  year-1)"""
     resp_f: NDArray[np.float64]
     r"""Foliage maintenance respiration fraction (:math:`r_f`,  -)"""
+    resp_rt: NDArray[np.float64]
+    r"""Reproductive tissue respiration rate (:math:`r_rt`,  -)"""
     m: NDArray[np.float64]
     r"""Crown shape parameter (:math:`m`, -)"""
     n: NDArray[np.float64]
