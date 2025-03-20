@@ -53,10 +53,8 @@ def assimilation_single_day(solar_irradiance, get_data):
         ppfd=data["ppfd"].to_numpy(),
     )
 
-    # Standard P Model
-    standard_pmod = PModel(
-        pmod_env, method_arrhenius="kattge_knorr", reference_kphio=0.081785
-    )
+    # Standard P Model, simple Arrhenius scaling, phi_0 = 1/8
+    standard_pmod = PModel(pmod_env)
 
     solar_irradiance.calc_absorbed_irradiance()
 
@@ -74,45 +72,57 @@ def test_two_leaf_irradiance(solar_irradiance, get_data):
     """Tests calc_absorbed_irradiance method."""
     solar_irradiance.calc_absorbed_irradiance()
 
-    test_values = (
-        ("beam_extinction_coefficient", np.array([0.6011949063494533])),
-        ("scattered_beam_extinction_coefficient", np.array([0.55309931])),
-        ("horizontal_leaf_beam_irradiance", np.array([0.04060739027615024])),
-        ("uniform_leaf_beam_irradiance", np.array([0.03003319])),
-        ("diffuse_irradiance", np.array([136.29450038])),
-        ("beam_irradiance", np.array([714.70549962])),
-        ("canopy_irradiance", np.array([636.08707023])),
-        ("sunlit_beam_irradiance", np.array([485.32862357])),
-        ("sunlit_diffuse_irradiance", np.array([69.44255865])),
-        ("sunlit_scattered_irradiance", np.array([25.43894747])),
-        ("shaded_absorbed_irradiance", np.array([55.876940533221614])),
-        ("sunlit_absorbed_irradiance", np.array([580.2101296936461])),
-    )
+    test_values = {
+        "beam_extinction_coefficient": np.array([0.6011949063494533]),
+        "scattered_beam_extinction_coefficient": np.array([0.55309931]),
+        "horizontal_leaf_beam_irradiance": np.array([0.04060739027615024]),
+        "uniform_leaf_beam_irradiance": np.array([0.03003319]),
+        "diffuse_irradiance": np.array([136.29450038]),
+        "beam_irradiance": np.array([714.70549962]),
+        "canopy_irradiance": np.array([636.08707023]),
+        "sunlit_beam_irradiance": np.array([485.32862357]),
+        "sunlit_diffuse_irradiance": np.array([69.44255865]),
+        "sunlit_scattered_irradiance": np.array([25.43894747]),
+        "shaded_absorbed_irradiance": np.array([55.876940533221614]),
+        "sunlit_absorbed_irradiance": np.array([580.2101296936461]),
+    }
 
-    for attr, expected_value in test_values:
+    for attr, expected_value in test_values.items():
         value = getattr(solar_irradiance, attr, None)
         assert value is not None
         assert_allclose(value, expected_value)
 
 
 def test_two_leaf_assimilation(assimilation_single_day):
-    """Tests TwoLeafAssimilation class against reference data."""
-    assimilation = assimilation_single_day
-    assert np.allclose(assimilation.Vmax25_canopy, np.array([146.73080481]))
-    assert np.allclose(assimilation.Vmax25_sun, np.array([74.37653372]))
-    assert np.allclose(assimilation.Vmax25_shade, np.array([72.35427109]))
-    assert np.allclose(assimilation.Vmax_sun, np.array([58.55709373]))
-    assert np.allclose(assimilation.Vmax_shade, np.array([56.96495416]))
-    assert np.allclose(assimilation.Av_sun, np.array([15.74234649]))
-    assert np.allclose(assimilation.Av_shade, np.array([15.31431957]))
-    assert np.allclose(assimilation.Jmax25_sun, np.array([151.0775153]))
-    assert np.allclose(assimilation.Jmax25_shade, np.array([147.76100459]))
-    assert np.allclose(assimilation.Jmax_sun, np.array([128.43874966]))
-    assert np.allclose(assimilation.Jmax_shade, np.array([125.61921369]))
-    assert np.allclose(assimilation.J_sun, np.array([73.41800149]))
-    assert np.allclose(assimilation.J_shade, np.array([17.9579488]))
-    assert np.allclose(assimilation.Aj_sun, np.array([12.26696135]))
-    assert np.allclose(assimilation.Aj_shade, np.array([3.00048298]))
-    assert np.allclose(assimilation.Acanopy_sun, np.array([12.26696135]))
-    assert np.allclose(assimilation.Acanopy_shade, np.array([3.00048298]))
-    assert np.allclose(assimilation.gpp_estimate, np.array([150.33527564]))
+    """Tests TwoLeafAssimilation class against reference data.
+
+    TODO - this reference data is currently circular. I'm not sure we have a sensible
+    golden dataset to validate against.
+    """
+
+    test_values = {
+        "kv_Lloyd": np.array([0.17377901]),
+        "Vmax25_canopy": np.array([220.02686435]),
+        "Vmax25_sun": np.array([112.04497916]),
+        "Vmax25_shade": np.array([107.98188519]),
+        "Jmax25_sun": np.array([212.85376583]),
+        "Jmax25_shade": np.array([206.19029171]),
+        "Vmax_sun": np.array([88.0640465]),
+        "Vmax_shade": np.array([84.87057456]),
+        "Jmax_sun": np.array([181.04942389]),
+        "Jmax_shade": np.array([175.38159769]),
+        "Av_sun": np.array([23.67492383]),
+        "Av_shade": np.array([22.81639861]),
+        "J_sun": np.array([91.24985393]),
+        "J_shade": np.array([18.85784176]),
+        "Aj_sun": np.array([15.24637566]),
+        "Aj_shade": np.array([3.15084055]),
+        "Acanopy_sun": np.array([15.24637566]),
+        "Acanopy_shade": np.array([3.15084055]),
+        "gpp_estimate": np.array([186.27048471]),
+    }
+
+    for attr, expected_value in test_values.items():
+        value = getattr(assimilation_single_day, attr, None)
+        assert value is not None
+        assert_allclose(value, expected_value)

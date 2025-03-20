@@ -33,3 +33,6 @@ class TwoLeafConst(ConstantsClass):
     leaf_diffusion_factor: float = 0.72
     """Leaf derived factor used in calculation of fraction of diffuse light (:math:`a`,
     Table 5. of :cite:t:`depury:1997a`)."""
+    vcmax_lloyd_coef: tuple[float, float] = (0.00963, 2.43)
+    """Coefficients of the canopy extinction coefficient (:math:`k_v`) function, taken
+    from Figure 10 of :cite:`lloyd:2010a`"""
