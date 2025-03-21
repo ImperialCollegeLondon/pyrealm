@@ -72,7 +72,7 @@ def test_two_leaf_irradiance(solar_irradiance, get_data):
     test_values = {
         "beam_extinction_coefficient": np.array([0.6011949063494533]),
         "scattered_beam_extinction_coefficient": np.array([0.55309931]),
-        "uniform_leaf_beam_irradiance": np.array([0.03003319]),
+        "beam_reflectance": np.array([0.03003319]),
         "diffuse_irradiance": np.array([136.29450038]),
         "beam_irradiance": np.array([714.70549962]),
         "canopy_irradiance": np.array([636.08707023]),

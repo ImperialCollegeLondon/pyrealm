@@ -11,14 +11,13 @@ from pyrealm.constants import ConstantsClass
 class TwoLeafConst(ConstantsClass):
     r"""Constants for the two leaf, two stream model.
 
-    The derived constant for the beam irradiance for horizontal leaves (:math:`\rho_h`)
-    is calculated automatically from the leaf scattering coefficient (:math:`\sigma`), ,
+    The derived constant for the reflectance of horizontal leaves (:math:`\rho_h`)
+    is calculated automatically from the leaf scattering coefficient (:math:`\sigma`),
     following equation A20 of :cite:t:`depury:1997a`.
 
     .. math::
 
         \rho_h = \frac{1 - \sqrt{1 - \sigma}}{1 + \sqrt{1 - \sigma}}
-
     """
 
     atmospheric_scattering_coefficient: float = 0.426  # needs citation
@@ -40,9 +39,9 @@ class TwoLeafConst(ConstantsClass):
     scattered_beam_extinction_numerator: float = 0.46
     r"""Numerator of the extinction beam coefficient calculation (:math:`n`) for
      scattered light."""
-    leaf_diffusion_factor: float = 0.72
-    """Leaf derived factor used in calculation of fraction of diffuse light (:math:`a`,
-    Table 5. of :cite:t:`depury:1997a`)."""
+    diffusion_factor_a: float = 0.72
+    """Factor used in calculation of fraction of diffuse light reaching the canopy
+    (:math:`a`, Table 5. of :cite:t:`depury:1997a`)."""
     vcmax_lloyd_coef: tuple[float, float] = (0.00963, 2.43)
     """Coefficients of the canopy extinction coefficient (:math:`k_v`) function, taken
     from Figure 10 of :cite:`lloyd:2010a`"""
@@ -51,8 +50,8 @@ class TwoLeafConst(ConstantsClass):
      transport (:math:`J_{max25}`) and the carboxylation rate (:math:`V_{cmax25}`),
      values taken from :cite:`wullschleger:1993a`."""
 
-    horizontal_leaf_beam_irradiance: float = field(init=False)
-    r"""The beam irradiance for horizontal leaves (:math:`\rho_h`)."""
+    horizontal_leaf_reflectance: float = field(init=False)
+    r"""The reflectance coefficient for horizontal leaves (:math:`\rho_h`)."""
 
     def __post_init__(self) -> None:
         """Set derived constants.
@@ -62,7 +61,7 @@ class TwoLeafConst(ConstantsClass):
 
         object.__setattr__(
             self,
-            "horizontal_leaf_beam_irradiance",
+            "horizontal_leaf_reflectance",
             (1 - np.sqrt(1 - self.leaf_scattering_coefficient))
             / (1 + np.sqrt(1 - self.leaf_scattering_coefficient)),
         )
