@@ -48,6 +48,10 @@ class TwoLeafIrradience:
       (:math:`\rho_{cd}`) is a constant property of the canopy
       (:attr:`~pyrealm.constants.two_leaf_canopy.TwoLeafConst.diffuse_reflectance`).
 
+    * The irradiances for sunlit leaves are then calculated, including components from
+      direct beam (:math:`I_{sb}`), scattered (:math:`I_{ss}`) and diffuse
+      (:math:`I_{sd}`) light. The total radiation absorbed by the sunlit leaves is the
+      sum of these three components.
 
     This
     model is chosen to provide a better representation than the big leaf model and to
@@ -396,11 +400,11 @@ def calculate_sunlit_beam_irradiance(
         I_{sun\_beam} = I_b (1 - \sigma) (1 - \exp{-k_b L})
 
     Args:
-        beam_irradiance: Array of beam irradiance values (:math:`I_b`)
-        leaf_scattering_coef: Constant for calculating the sunlit beam irradiance
-            (:math:`\sigma`)
-        beam_extinction_coef: Array of beam extinction coefficients (:math:`k_b`)
-        leaf_area_index: Array of leaf area index values (:math:`L`)
+        beam_irradiance: The irradiance by direct beam light (:math:`I_b`)
+        beam_extinction_coef: Beam extinction coefficients (:math:`k_b`)
+        leaf_area_index: The leaf area index for the canopy (:math:`L`)
+        leaf_scattering_coef: The scattering coefficient of PAR by leaves
+            (:math:`\sigma`).
 
     Returns:
         Array of sunlit beam irradiance values.
@@ -421,12 +425,12 @@ def calculate_sunlit_diffuse_irradiance(
 ) -> NDArray[np.float64]:
     r"""Calculate the sunlit diffuse irradiance.
 
-    The sunlit diffuse irradiance (:math:`I_{sun_diffuse}`) is the diffuse radiation
+    The sunlit diffuse irradiance (:math:`I_{s_d}`) is the diffuse radiation
     received by the sunlit portion of the canopy.
 
     .. math::
 
-        I_{sun\_diffuse} = I_d  (1 - \rho_{cd}) (1 - \exp(-(k_d' + k_b)
+        I_{sd} = I_d  (1 - \rho_{cd}) (1 - \exp(-(k_d' + k_b)
             L \frac{k_d'}{k_d' + k_b}
 
     Args:
@@ -465,12 +469,12 @@ def calculate_sunlit_scattered_irradiance(
 ) -> NDArray[np.float64]:
     r"""Calculate the sunlit scattered irradiance.
 
-    The sunlit scattered irradiance (:math:`I_{sun_scattered}`) is the scattered
+    The sunlit scattered irradiance (:math:`I_{ss}`) is the scattered
     radiation received by the sunlit portion of the canopy.
 
     .. math::
 
-        I_{sun\_scattered} = I_b  ((1 - \rho_{cb}) (1 - \exp(-(k_b' + k_b) L))
+        I_{ss} = I_b  ((1 - \rho_{cb}) (1 - \exp(-(k_b' + k_b) L))
             \frac{k_b'}{k_b' + k_b} - (1 - \sigma) (1 - \exp(-2 k_b  L)) / 2)
 
     Args:
@@ -481,8 +485,8 @@ def calculate_sunlit_scattered_irradiance(
             coefficients (:math:`k_b'`)
         beam_extinction_coef: Array of beam extinction coefficients (:math:`k_b`)
         leaf_area_index: Array of leaf area index values (:math:`L`)
-        leaf_scattering_coef: Constant for calculating the sunlit scattered
-            irradiance (:math:`\sigma`).
+        leaf_scattering_coef: The scattering coefficient of PAR by leaves
+            (:math:`\sigma`).
 
     Returns:
         Array of sunlit scattered irradiance values.
