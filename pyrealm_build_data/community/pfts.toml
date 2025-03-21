@@ -17,6 +17,10 @@ tau_f = 4.0
 tau_r = 1.04
 yld = 0.17
 zeta = 0.17
+tau_rt = 1
+resp_rt = 0
+p_foliage_for_reproductive_tissue = 0
+p_gpp_for_root_exudation = 0
 
 [[pft]]
 a_hd = 116.0
@@ -37,3 +41,7 @@ tau_f = 4.0
 tau_r = 1.04
 yld = 0.17
 zeta = 0.17
+tau_rt = 1
+resp_rt = 0
+p_foliage_for_reproductive_tissue = 0
+p_gpp_for_root_exudation = 0
