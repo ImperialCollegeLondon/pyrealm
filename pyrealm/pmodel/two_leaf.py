@@ -6,6 +6,8 @@ productivity (via ``TwoLeafAssimilation``). The approach follows :cite:t:`depury
 and aligns closely with the two-leaf methodology used in the BESS model.
 """
 
+from warnings import warn
+
 import numpy as np
 from numpy.typing import NDArray
 
@@ -31,8 +33,10 @@ class TwoLeafIrradience:
     then the solar elevation (:math:`\beta`), photosynthetic photon flux density (PPFD)
     and atmospheric pressure (:math:`P`) as follows:
 
-    * Beam extinction coefficients are calculated for both direct and scattered light,
-      given :math:`\beta`
+    * Beam extinction coefficients are calculated for both direct and scattered light
+      reaching the canopy, given :math:`\beta`.
+    * The fraction of diffuse light within the canopy is calculated.
+    *
 
     This
     model is chosen to provide a better representation than the big leaf model and to
@@ -113,6 +117,7 @@ class TwoLeafIrradience:
         self.shaded_absorbed_irradiance: NDArray[np.float64]
         """The shaded leaf absorbed irradiance (:math:`I_{cshade}`)."""
 
+        # Automatically calculate the absorbed irradiances.
         self._calculate_absorbed_irradiances()
 
     def _calculate_absorbed_irradiances(self) -> None:
@@ -153,14 +158,8 @@ class TwoLeafIrradience:
         )
 
         # Calculate the diffuse and beam irradiance reaching the canopy
-        self.diffuse_irradiance = calculate_diffuse_irradiance(
-            diffuse_fraction=self.fraction_of_diffuse_radiation,
-            ppfd=self.ppfd,
-        )
-        self.beam_irradiance = calculate_beam_irradiance(
-            diffuse_fraction=self.fraction_of_diffuse_radiation,
-            ppfd=self.ppfd,
-        )
+        self.diffuse_irradiance = self.fraction_of_diffuse_radiation * self.ppfd
+        self.beam_irradiance = (1 - self.fraction_of_diffuse_radiation) * self.ppfd
 
         # Calculate canopy irradiance
         self.canopy_irradiance = calculate_canopy_irradiance(
@@ -283,9 +282,19 @@ def calculate_fraction_of_diffuse_radiation(
     # Optical air mass
     m = (patm / standard_pressure) / np.sin(solar_elevation)
 
-    return (1 - leaf_diffusion_factor**m) / (
+    # Diffuse fraction
+    f_d = (1 - leaf_diffusion_factor**m) / (
         1 + (leaf_diffusion_factor**m * (1 / atmospheric_scattering - 1))
     )
+
+    # Test for negative values - it isn't clear that this actually occurs but the
+    # reference implementation clipped the resulting irradiances at zero, so this is
+    # here to safeguard and inform.
+    if np.any(f_d < 0):
+        f_d = np.clip(a=f_d, a_min=0, a_max=None)
+        warn("Negative diffuse radiation fractions clamped to zero.")
+
+    return f_d
 
 
 def calculate_beam_irradiance_horizontal_leaves(
@@ -340,52 +349,6 @@ def calculate_beam_irradiance_uniform_leaves(
     return 1.0 - np.exp(
         -2 * beam_irradiance_horizontal_leaves * beam_extinction / (1 + beam_extinction)
     )
-
-
-def calculate_diffuse_irradiance(
-    diffuse_fraction: NDArray[np.float64], ppfd: NDArray[np.float64]
-) -> NDArray[np.float64]:
-    r"""Calculate the diffuse radiation.
-
-    The diffuse irradiance (:math:`I_d`) is the portion of sunlight that is scattered in
-    the atmosphere before reaching the canopy.
-
-    .. math::
-
-        I_d = \max\left(0,  f_d \, \textrm{PPFD}\right)
-
-    Args:
-        diffuse_fraction: The fraction of diffuse irradiance (:math:`f_d`).
-        ppfd: The photosynthetic photon flux density.
-
-    Returns:
-        Array of diffuse light irradiance values.
-    """
-
-    return np.clip(ppfd * diffuse_fraction, a_min=0, a_max=np.inf)
-
-
-def calculate_beam_irradiance(
-    diffuse_fraction: NDArray[np.float64], ppfd: NDArray[np.float64]
-) -> NDArray[np.float64]:
-    r"""Calculate the beam irradiance.
-
-    The beam irradiance (`:math:`I_b`)is the direct component of sunlight that reaches
-    the canopy without being scattered.
-
-    .. math::
-
-        I_b = \textrm{PPFD} \cdot (1 - \text{f_d})
-
-    Args:
-        diffuse_fraction: The fraction of diffuse radiation (:math:`f_d`).
-        ppfd: The photosynthetic photon flux density (PPFD).
-
-    Returns:
-        Array of direct beam irradiance values.
-    """
-
-    return ppfd * (1 - diffuse_fraction)
 
 
 def calculate_scattered_beam_irradiance(
