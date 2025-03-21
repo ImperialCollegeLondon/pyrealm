@@ -50,17 +50,12 @@ class TwoLeafIrradience:
 
     * The irradiances for sunlit leaves are then calculated, including components from
       direct beam (:math:`I_{sb}`), scattered (:math:`I_{ss}`) and diffuse
-      (:math:`I_{sd}`) light. The total radiation absorbed by the sunlit leaves is the
-      sum of these three components.
+      (:math:`I_{sd}`) light. The total radiation absorbed by the sunlit leaves
+      (:math:`I_csun`) is the sum of these three components.
 
-    This
-    model is chosen to provide a better representation than the big leaf model and to
-    align closely to the workings of the ``BESS`` model :cite:alp:`ryu:2011a`.
-
-    When an instance of this class is created it calculates:
-
-    * the diffuse and beam irradiances
-
+    * The irradiance for shaded leaves (:math:`I_cshade`) is then calculated as the
+      difference between the total canopy irradiance (:math:`I_c`) and the sunlit
+      absorbed irradiance (:math:`I_csun`).
 
     Args:
         solar_elevation: Array of solar elevation angles (radians).
@@ -210,7 +205,6 @@ class TwoLeafIrradience:
 
         # Now calculate the irradiance absorbed by shaded leaves
         # Calculate canopy irradiance
-        # TODO - this is WRONG it needs to be using k_d'
         self.canopy_irradiance = calculate_canopy_irradiance(
             beam_reflectance=self.beam_reflectance,
             beam_irradiance=self.beam_irradiance,
@@ -218,13 +212,13 @@ class TwoLeafIrradience:
             diffuse_radiation=self.diffuse_irradiance,
             leaf_area_index=self.leaf_area_index,
             diffuse_reflectance=self.two_leaf_constants.diffuse_reflectance,
+            diffuse_extinction_coef=self.two_leaf_constants.diffuse_extinction_coef,
         )
 
-        self.shaded_absorbed_irradiance = calculate_shaded_absorbed_irradiance(
-            solar_elevation=self.solar_elevation,
-            canopy_irradiance=self.canopy_irradiance,
-            sunlit_absorbed_irradiance=self.sunlit_absorbed_irradiance,
-            solar_obscurity_angle=self.two_leaf_constants.solar_obscurity_angle,
+        self.shaded_absorbed_irradiance = np.where(
+            self.solar_elevation > self.two_leaf_constants.solar_obscurity_angle,
+            self.canopy_irradiance - self.sunlit_absorbed_irradiance,
+            0,
         )
 
 
@@ -349,6 +343,7 @@ def calculate_canopy_irradiance(
     diffuse_radiation: NDArray[np.float64],
     leaf_area_index: NDArray[np.float64],
     diffuse_reflectance: float = TwoLeafConst().diffuse_reflectance,
+    diffuse_extinction_coef: float = TwoLeafConst().diffuse_extinction_coef,
 ) -> NDArray[np.float64]:
     r"""Calculate the canopy irradiance.
 
@@ -358,29 +353,29 @@ def calculate_canopy_irradiance(
     .. math::
 
         I_c = (1 - \rho_{cb})  I_b   (1 - \exp(-k_b' L)) +
-            (1 - \rho_{cd})  I_d  (1 - \exp(-k_b' L))
+            (1 - \rho_{cd})  I_d  (1 - \exp(-k_d' L))
 
     Args:
         beam_reflectance : The beam reflectance of leaves with uniform angle
             distribution  (:math:`\rho_{cb}`).
-        beam_irradiance : Array of beam irradiance values (:math:`I_b`).
-        scattered_beam_extinction_coef : Array of scattered beam extinction
+        beam_irradiance : Beam irradiance values (:math:`I_b`).
+        scattered_beam_extinction_coef : Scattered beam extinction
             coefficients (:math:`k_b'`).
-        diffuse_radiation : Array of diffuse radiation values (:math:`I_d`).
-        leaf_area_index : Array of leaf area index values (:math:`L`).
+        diffuse_radiation : Diffuse radiation values (:math:`I_d`).
+        leaf_area_index : The leaf area index  (:math:`L`).
         diffuse_reflectance : The canopy reflectance of diffuse radiation
             (:math:`\rho_{cd}`).
+        diffuse_extinction_coef : The diffuse light extinction coefficients
+            (:math:`k_d'`).
 
     Returns:
-        Array of canopy irradiance values.
+        Canopy irradiance values.
     """
-
-    # TODO - this is WRONG it needs to be using k_d' in the second term
 
     return (1 - beam_reflectance) * beam_irradiance * (
         1 - np.exp(-scattered_beam_extinction_coef * leaf_area_index)
     ) + (1 - diffuse_reflectance) * diffuse_radiation * (
-        1 - np.exp(-scattered_beam_extinction_coef * leaf_area_index)
+        1 - np.exp(-diffuse_extinction_coef * leaf_area_index)
     )
 
 
@@ -506,50 +501,6 @@ def calculate_sunlit_scattered_irradiance(
         - (1 - leaf_scattering_coef)
         * (1 - np.exp(-2 * beam_extinction_coef * leaf_area_index))
         / 2
-    )
-
-
-def calculate_shaded_absorbed_irradiance(
-    solar_elevation: NDArray[np.float64],
-    canopy_irradiance: NDArray[np.float64],
-    sunlit_absorbed_irradiance: NDArray[np.float64],
-    solar_obscurity_angle: float = TwoLeafConst().solar_obscurity_angle,
-) -> NDArray[np.float64]:
-    r"""Calculate the irradiance absorbed by the shaded fraction of the canopy.
-
-    The irradiance absorbed by the shaded fraction of the canopy (:math:`I_cshade`) is
-    calculated by subtracting the sunlit absorbed irradiance from the total canopy
-    irradiance. When the solar elevation is less than the solar obscurity angle, the
-    shaded absorbed irradiance is zero.
-
-    .. math::
-        :nowrap:
-
-            \[
-                \begin{align}
-                      I_{cshade} = \left\{
-                        \begin{array}{ll}
-                            I_c - I_{csun}, & \text{if } \beta > \beta_{ob},\\
-                            0,              & \text{otherwise}
-                        \end{array} 
-                    \right.
-                \end{align}
-            \]
-
-    Args:
-        solar_elevation: Array of solar elevation angles (:math:`\beta`)
-        canopy_irradiance: Array of canopy irradiance values (:math:`I_c`)
-        sunlit_absorbed_irradiance: Array of sunlit absorbed irradiance values
-            (:math:`I_{csun}`).
-        solar_obscurity_angle: Solar angle threshold (:math:`\beta_{ob}`)
-
-    Returns:
-        Irradiance absorbed by the shaded fraction of the canopy.
-    """
-    return np.where(
-        solar_elevation > solar_obscurity_angle,
-        canopy_irradiance - sunlit_absorbed_irradiance,
-        0,
     )
 
 
