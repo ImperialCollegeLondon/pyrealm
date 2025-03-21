@@ -98,14 +98,14 @@ def test_two_leaf_assimilation(assimilation_single_day):
     """
 
     test_values = {
-        "kv_Lloyd": np.array([0.17377901]),
-        "Vmax25_canopy": np.array([220.02686435]),
-        "Vmax25_sun": np.array([112.04497916]),
-        "Vmax25_shade": np.array([107.98188519]),
+        "canopy_extinction_coefficient": np.array([0.17377901]),
+        "Vcmax25_canopy": np.array([220.02686435]),
+        "Vcmax25_sun": np.array([112.04497916]),
+        "Vcmax25_shade": np.array([107.98188519]),
         "Jmax25_sun": np.array([212.85376583]),
         "Jmax25_shade": np.array([206.19029171]),
-        "Vmax_sun": np.array([88.0640465]),
-        "Vmax_shade": np.array([84.87057456]),
+        "Vcmax_sun": np.array([88.0640465]),
+        "Vcmax_shade": np.array([84.87057456]),
         "Jmax_sun": np.array([181.04942389]),
         "Jmax_shade": np.array([175.38159769]),
         "Av_sun": np.array([23.67492383]),
