@@ -38,8 +38,15 @@ class TwoLeafIrradience:
       into the beam (:math:`I_b`) and diffuse (:math:`I_d`) irradiances reaching the
       canopy.
 
-    * Extinction coefficients are calculated for both beam and scattered light
-      reaching the canopy, given the solar elevation :math:`\beta`.
+    * Extinction coefficients are calculated for both beam (:math:`k_b`) and scattered
+      light (:math:`k_b'`) reaching the canopy, given the solar elevation :math:`\beta`
+      (see :meth:`calculate_beam_extinction_coefficient`).
+
+    * Canopy reflectance coefficients are calculated for both beam and diffuse light.
+      The beam reflectance (:math:`\rho_{cb}`) varies with solar elevation through the
+      beam extinction coefficient (:math:`k_b`) but diffuse reflectance
+      (:math:`\rho_{cd}`) is a constant property of the canopy
+      (:attr:`~pyrealm.constants.two_leaf_canopy.TwoLeafConst.diffuse_reflectance`).
 
     * The fraction of diffuse light within the canopy is calculated.
     *
@@ -174,7 +181,7 @@ class TwoLeafIrradience:
             scattered_beam_extinction_coefficient=self.scattered_beam_extinction_coefficient,
             diffuse_radiation=self.diffuse_irradiance,
             leaf_area_index=self.leaf_area_index,
-            canopy_reflection_coefficient=self.two_leaf_constants.canopy_reflection_coefficient,
+            diffuse_reflectance=self.two_leaf_constants.diffuse_reflectance,
         )
 
         # Calculate fractions of the sunlit leaf irradiance
@@ -189,7 +196,7 @@ class TwoLeafIrradience:
             diffuse_irradiance=self.diffuse_irradiance,
             beam_extinction_coefficient=self.beam_extinction_coefficient,
             leaf_area_index=self.leaf_area_index,
-            canopy_reflection_coefficient=self.two_leaf_constants.canopy_reflection_coefficient,
+            diffuse_reflectance=self.two_leaf_constants.diffuse_reflectance,
             diffuse_extinction_coefficient=self.two_leaf_constants.diffuse_extinction_coefficient,
         )
 
@@ -319,7 +326,7 @@ def calculate_beam_reflectance(
 
     Args:
         beam_extinction: Array of beam extinction coefficients (:math:`k_b`).
-        beam_irradiance_horizontal_leaves: The beam irradiance for horizontal leaves
+        horizontal_leaf_reflectance: The reflectance coefficient horizontal leaves
             (:math:`\rho_h`).
 
     Returns:
@@ -374,7 +381,7 @@ def calculate_canopy_irradiance(
     scattered_beam_extinction_coefficient: NDArray[np.float64],
     diffuse_radiation: NDArray[np.float64],
     leaf_area_index: NDArray[np.float64],
-    canopy_reflection_coefficient: float = TwoLeafConst().canopy_reflection_coefficient,
+    diffuse_reflectance: float = TwoLeafConst().diffuse_reflectance,
 ) -> NDArray[np.float64]:
     r"""Calculate the canopy irradiance.
 
@@ -394,16 +401,18 @@ def calculate_canopy_irradiance(
             coefficients (:math:`k_b'`).
         diffuse_radiation : Array of diffuse radiation values (:math:`I_d`).
         leaf_area_index : Array of leaf area index values (:math:`L`).
-        canopy_reflection_coefficient : Canopy_reflection_coefficient
+        diffuse_reflectance : The canopy reflectance of diffuse radiation
             (:math:`\rho_{cd}`).
 
     Returns:
         Array of canopy irradiance values.
     """
 
+    # TODO - this is WRONG it needs to be using k_d' in the second term
+
     return (1 - beam_reflectance) * beam_irradiance * (
         1 - np.exp(-scattered_beam_extinction_coefficient * leaf_area_index)
-    ) + (1 - canopy_reflection_coefficient) * diffuse_radiation * (
+    ) + (1 - diffuse_reflectance) * diffuse_radiation * (
         1 - np.exp(-scattered_beam_extinction_coefficient * leaf_area_index)
     )
 
@@ -444,7 +453,7 @@ def calculate_sunlit_diffuse_irradiance(
     diffuse_irradiance: NDArray[np.float64],
     beam_extinction_coefficient: NDArray[np.float64],
     leaf_area_index: NDArray[np.float64],
-    canopy_reflection_coefficient: float = TwoLeafConst().canopy_reflection_coefficient,
+    diffuse_reflectance: float = TwoLeafConst().diffuse_reflectance,
     diffuse_extinction_coefficient: float = TwoLeafConst().diffuse_extinction_coefficient,
 ) -> NDArray[np.float64]:
     r"""Calculate the sunlit diffuse irradiance.
@@ -459,18 +468,19 @@ def calculate_sunlit_diffuse_irradiance(
 
     Args:
         diffuse_irradiance: Array of diffuse radiation values (:math:`I_d`)
-        canopy_reflection_coefficient: Constant rho_cd value (:math:`\rho_{cd}`)
+        diffuse_reflectance : The canopy reflectance of diffuse radiation
+            (:math:`\rho_{cd}`).
+        leaf_area_index: Array of leaf area index values (:math:`L`)
         diffuse_extinction_coefficient: Constant for calculating the sunlit diffuse
             irradiance (:math:`k_d'`)
         beam_extinction_coefficient: Array of beam extinction coefficients (:math:`k_b`)
-        leaf_area_index: Array of leaf area index values (:math:`L`)
 
     Returns:
         Array of sunlit diffuse irradiance values.
     """
     return (
         diffuse_irradiance
-        * (1 - canopy_reflection_coefficient)
+        * (1 - diffuse_reflectance)
         * (
             1
             - np.exp(
@@ -700,11 +710,11 @@ class TwoLeafAssimilation:
         """The total canopy carboxylation capacity at standard temperature
         :math:`V_{cmax25\_C}`"""
         self.Vcmax25_sun: NDArray[np.float64]
-        """The maximum rate of carboxylation at standard temperature within sunlit leaves
-        (:math:`V_{cmax25\_Sn}`)"""
+        """The maximum rate of carboxylation at standard temperature within sunlit 
+        leaves (:math:`V_{cmax25\_Sn}`)"""
         self.Vcmax25_shade: NDArray[np.float64]
-        """The maximum rate of carboxylation at standard temperature within shaded leaves
-        (:math:`V_{cmax25\_Sd}`)"""
+        """The maximum rate of carboxylation at standard temperature within shaded 
+        leaves (:math:`V_{cmax25\_Sd}`)"""
         self.Vcmax_sun: NDArray[np.float64]
         """The maximum rate of carboxylation at the observed temperature within sunlit
         leaves (:math:`V_{cmax\_Sn}`)"""

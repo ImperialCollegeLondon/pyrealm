@@ -25,7 +25,7 @@ class TwoLeafConst(ConstantsClass):
     leaf_scattering_coefficient: float = 0.15
     """Scattering coefficient of PAR by leaves by reflection and transmission
     (:math:`\sigma`, dimensionless, Table 2. of :cite:t:`depury:1997a`)"""
-    canopy_reflection_coefficient: float = 0.036  # needs citation
+    diffuse_reflectance: float = 0.036  # needs citation
     r"""Canopy reflection coefficient for diffuse PAR,(:math:`\rho_{cd}`,
     dimensionless)."""
     diffuse_extinction_coefficient: float = 0.719  # needs citation
