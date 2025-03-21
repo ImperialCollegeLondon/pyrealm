@@ -48,8 +48,6 @@ class TwoLeafIrradience:
       (:math:`\rho_{cd}`) is a constant property of the canopy
       (:attr:`~pyrealm.constants.two_leaf_canopy.TwoLeafConst.diffuse_reflectance`).
 
-    * The fraction of diffuse light within the canopy is calculated.
-    *
 
     This
     model is chosen to provide a better representation than the big leaf model and to
@@ -144,7 +142,7 @@ class TwoLeafIrradience:
             solar_elevation=self.solar_elevation,
             standard_pressure=self.core_constants.k_Po,
             atmospheric_scattering=self.two_leaf_constants.atmospheric_scattering_coefficient,
-            diffusion_factor_a=self.two_leaf_constants.diffusion_factor_a,
+            atmos_transmission_par=self.two_leaf_constants.atmos_transmission_par,
         )
 
         # The diffuse and beam irradiance reaching the canopy: I_b, I_d
@@ -262,7 +260,7 @@ def calculate_fraction_of_diffuse_radiation(
     solar_elevation: NDArray[np.float64],
     standard_pressure: float = CoreConst().k_Po,
     atmospheric_scattering: float = TwoLeafConst().atmospheric_scattering_coefficient,
-    diffusion_factor_a: float = TwoLeafConst().diffusion_factor_a,
+    atmos_transmission_par: float = TwoLeafConst().atmos_transmission_par,
 ) -> NDArray[np.float64]:
     r"""Calculate the fraction of diffuse radiation.
 
@@ -286,7 +284,8 @@ def calculate_fraction_of_diffuse_radiation(
         solar_elevation: Solar elevation angles (:math:\beta`, radians).
         standard_pressure: Standard atmospheric pressure (:math:`P_0`, pascals).
         atmospheric_scattering: Atmospheric scattering factor (:math:`f_a`).
-        diffusion_factor_a: Leaf derived diffusion factor (:math:`a`).
+        atmos_transmission_par:  The atmospheric transmission coefficient of
+            photosynthetically active radiation (:math:`a`).
 
     Returns:
         Array of fractions of diffuse radiation.
@@ -296,8 +295,8 @@ def calculate_fraction_of_diffuse_radiation(
     m = (patm / standard_pressure) / np.sin(solar_elevation)
 
     # Diffuse fraction
-    f_d = (1 - diffusion_factor_a**m) / (
-        1 + (diffusion_factor_a**m * (1 / atmospheric_scattering - 1))
+    f_d = (1 - atmos_transmission_par**m) / (
+        1 + (atmos_transmission_par**m * (1 / atmospheric_scattering - 1))
     )
 
     # Test for negative values - it isn't clear that this actually occurs but the

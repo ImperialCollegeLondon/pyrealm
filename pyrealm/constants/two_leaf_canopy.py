@@ -39,8 +39,9 @@ class TwoLeafConst(ConstantsClass):
     scattered_beam_extinction_numerator: float = 0.46
     r"""Numerator of the extinction beam coefficient calculation (:math:`n`) for
      scattered light."""
-    diffusion_factor_a: float = 0.72
-    """Factor used in calculation of fraction of diffuse light reaching the canopy
+    atmos_transmission_par: float = 0.72
+    """The atmospheric transmission coefficient of photosynthetically active radiation,
+    used in the calculation of fraction of diffuse light reaching the canopy
     (:math:`a`, Table 5. of :cite:t:`depury:1997a`)."""
     vcmax_lloyd_coef: tuple[float, float] = (0.00963, 2.43)
     """Coefficients of the canopy extinction coefficient (:math:`k_v`) function, taken

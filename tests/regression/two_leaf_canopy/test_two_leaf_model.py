@@ -70,11 +70,11 @@ def test_two_leaf_irradiance(solar_irradiance, get_data):
     """Tests calc_absorbed_irradiance method."""
 
     test_values = {
+        "diffuse_irradiance": np.array([136.29450038]),
+        "beam_irradiance": np.array([714.70549962]),
         "beam_extinction_coefficient": np.array([0.6011949063494533]),
         "scattered_beam_extinction_coefficient": np.array([0.55309931]),
         "beam_reflectance": np.array([0.03003319]),
-        "diffuse_irradiance": np.array([136.29450038]),
-        "beam_irradiance": np.array([714.70549962]),
         "canopy_irradiance": np.array([636.08707023]),
         "sunlit_beam_irradiance": np.array([485.32862357]),
         "sunlit_diffuse_irradiance": np.array([69.44255865]),
