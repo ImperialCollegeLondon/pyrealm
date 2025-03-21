@@ -95,8 +95,6 @@ class TwoLeafIrradience:
         """The scattered beam extinction coefficient (:math:`k_{b}`)"""
         self.fraction_of_diffuse_radiation: NDArray[np.float64]
         """The fraction of diffuse radiation (:math:`f_d`)"""
-        self.horizontal_leaf_beam_irradiance: float
-        r"""The beam irradiance for horizontal leaves (:math:`\rho_h`)"""
         self.uniform_leaf_beam_irradiance: NDArray[np.float64]
         r"""The beam irradiance for leaves with uniform angle distribution
          (:math:`\rho_{cb}`)"""
@@ -146,15 +144,9 @@ class TwoLeafIrradience:
             leaf_diffusion_factor=self.two_leaf_constants.leaf_diffusion_factor,
         )
 
-        # Calculate the horizontal leaf beam irradiance and hence the beam irradiance
-        # for leaves following a uniform angle distribution.
-        self.horizontal_leaf_beam_irradiance = calculate_beam_irradiance_horizontal_leaves(
-            scattering_coefficient=self.two_leaf_constants.leaf_scattering_coefficient
-        )
-
         self.uniform_leaf_beam_irradiance = calculate_beam_irradiance_uniform_leaves(
             beam_extinction=self.beam_extinction_coefficient,
-            beam_irradiance_horizontal_leaves=self.horizontal_leaf_beam_irradiance,
+            beam_irradiance_horizontal_leaves=self.two_leaf_constants.horizontal_leaf_beam_irradiance,
         )
 
         # Calculate the diffuse and beam irradiance reaching the canopy
@@ -297,35 +289,9 @@ def calculate_fraction_of_diffuse_radiation(
     return f_d
 
 
-def calculate_beam_irradiance_horizontal_leaves(
-    scattering_coefficient: float = TwoLeafConst.leaf_scattering_coefficient,
-) -> float:
-    r"""Calculate the beam irradiance for horizontal leaves.
-
-    The beam irradiance for horizontal leaves (:math:`\rho_h`) considers the leaf
-    orientation and the direct sunlight received, following equation A20 of
-    :cite:t:`depury:1997a`.
-
-    .. math::
-
-        \rho_h = \frac{1 - \sqrt{1 - \sigma}}{1 + \sqrt{1 - \sigma}}
-
-    Args:
-        scattering_coefficient: Scattering coefficient associated with horizontal
-            leaves (:math:`\sigma`).
-
-    Returns:
-        A float constant giving the beam irradiances for horizontal leaves.
-    """
-
-    return (1 - np.sqrt(1 - scattering_coefficient)) / (
-        1 + np.sqrt(1 - scattering_coefficient)
-    )
-
-
 def calculate_beam_irradiance_uniform_leaves(
     beam_extinction: NDArray[np.float64],
-    beam_irradiance_horizontal_leaves: float,
+    beam_irradiance_horizontal_leaves: float = TwoLeafConst().horizontal_leaf_beam_irradiance,
 ) -> NDArray[np.float64]:
     r"""Calculate the beam irradiance for leaves with a uniform angle distribution.
 

@@ -1,6 +1,6 @@
 """To do."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -9,7 +9,17 @@ from pyrealm.constants import ConstantsClass
 
 @dataclass(frozen=True)
 class TwoLeafConst(ConstantsClass):
-    """Constants for the two leaf, two stream model."""
+    r"""Constants for the two leaf, two stream model.
+
+    The derived constant for the beam irradiance for horizontal leaves (:math:`\rho_h`)
+    is calculated automatically from the leaf scattering coefficient (:math:`\sigma`), ,
+    following equation A20 of :cite:t:`depury:1997a`.
+
+    .. math::
+
+        \rho_h = \frac{1 - \sqrt{1 - \sigma}}{1 + \sqrt{1 - \sigma}}
+
+    """
 
     atmospheric_scattering_coefficient: float = 0.426  # needs citation
     """Scattering coefficient of PAR in the atmosphere (:math:`f_a`, dimensionless)"""
@@ -40,3 +50,19 @@ class TwoLeafConst(ConstantsClass):
     r"""Coefficients of the empirical relationship between the maximum rate of electron
      transport (:math:`J_{max25}`) and the carboxylation rate (:math:`V_{cmax25}`),
      values taken from :cite:`wullschleger:1993a`."""
+
+    horizontal_leaf_beam_irradiance: float = field(init=False)
+    r"""The beam irradiance for horizontal leaves (:math:`\rho_h`)."""
+
+    def __post_init__(self) -> None:
+        """Set derived constants.
+
+        This requires setattr because the dataclass is frozen.
+        """
+
+        object.__setattr__(
+            self,
+            "horizontal_leaf_beam_irradiance",
+            (1 - np.sqrt(1 - self.leaf_scattering_coefficient))
+            / (1 + np.sqrt(1 - self.leaf_scattering_coefficient)),
+        )
