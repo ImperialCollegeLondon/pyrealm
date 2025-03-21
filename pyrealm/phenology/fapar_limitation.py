@@ -218,10 +218,10 @@ def convert_precipitation_to_molar(precip_mm: NDArray) -> NDArray:
 class FaparLimitation:
     r"""FaparLimitation class to compute fAPAR_max and LAI.
 
-    This class takes the annual total potential GPP and precipitation, the annual
-    mean CA, Chi and VPD, as well as the aridity index and some constants to compute
-    the annual peak fractional absorbed photosynthetically active radiation (
-    fAPAR_max) and annual peak Leaf Area Index (LAI).
+    This class takes the annual total potential GPP and precipitation, the annual mean
+    CA, Chi and VPD during the growing season, as well as the aridity index and some
+    constants to compute the annual peak fractional absorbed photosynthetically active
+    radiation ( fAPAR_max) and annual peak Leaf Area Index (LAI).
 
     .. todo::
 
@@ -291,7 +291,7 @@ class FaparLimitation:
         #  precipitation, which is an empirical function of the climatic Aridity Index
         #  (AI).
         a, b, c = self.phenology_const.f0_coefficients
-        f_0 = a * np.exp(-b * np.log(aridity_index / c))
+        f_0 = a * np.exp(-b * np.log(aridity_index / c) ** 2)
 
         fapar_energylim = 1.0 - self.phenology_const.z / (
             self.phenology_const.k * annual_total_potential_gpp
