@@ -201,11 +201,11 @@ class TwoLeafIrradience:
             leaf_scattering_coef=self.two_leaf_constants.leaf_scattering_coef,
         )
 
-        # And hence the total sunlit irradiance
-        self.sunlit_absorbed_irradiance = calculate_sunlit_absorbed_irradiance(
-            sunlit_beam_irradiance=self.sunlit_beam_irradiance,
-            sunlit_diffuse_irradiance=self.sunlit_diffuse_irradiance,
-            sunlit_scattered_irradiance=self.sunlit_scattered_irradiance,
+        # And hence the total sunlit irradiance as the sum of those three components
+        self.sunlit_absorbed_irradiance = (
+            self.sunlit_beam_irradiance
+            + self.sunlit_diffuse_irradiance
+            + self.sunlit_scattered_irradiance
         )
 
         # Now calculate the irradiance absorbed by shaded leaves
@@ -506,34 +506,6 @@ def calculate_sunlit_scattered_irradiance(
         - (1 - leaf_scattering_coef)
         * (1 - np.exp(-2 * beam_extinction_coef * leaf_area_index))
         / 2
-    )
-
-
-def calculate_sunlit_absorbed_irradiance(
-    sunlit_beam_irradiance: NDArray[np.float64],
-    sunlit_diffuse_irradiance: NDArray[np.float64],
-    sunlit_scattered_irradiance: NDArray[np.float64],
-) -> NDArray[np.float64]:
-    r"""Calculate the sunlit absorbed irradiance.
-
-    The sunlit absorbed irradiance (:math:`I_{csun}`) is the total irradiance absorbed
-    by the sunlit portion of the canopy, combining beam, diffuse, and scattered
-    irradiance.
-
-    .. math::
-
-        I_{csun} = I_{sun\_beam} + I_{sun\_diffuse} + I_{sun\_scattered}
-
-    Args:
-        sunlit_beam_irradiance: Array of sunlit beam irradiance values.
-        sunlit_diffuse_irradiance: Array of sunlit diffuse irradiance values.
-        sunlit_scattered_irradiance: Array of sunlit scattered irradiance values.
-
-    Returns:
-        Array of sunlit absorbed irradiance values.
-    """
-    return (
-        sunlit_beam_irradiance + sunlit_diffuse_irradiance + sunlit_scattered_irradiance
     )
 
 
