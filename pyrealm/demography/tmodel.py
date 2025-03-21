@@ -451,7 +451,7 @@ def calculate_reproductive_tissue_respiration(
     Calculates the total reproductive tissue respiration (:math:`R_{rt}`) given the
     individual crown GPP (:math:`P`) and the reproductive tissue respiration rate of the
     plant functional type (:math:`r_{rt}`).
-    
+
     NOTE: This function is not part of the original T Model, but is included here to
     allow for the calculation of reproductive tissue respiration in the same way as
     foliar and sapwood respiration.
@@ -637,7 +637,6 @@ def calculate_reproductive_tissue_turnover(
         )
 
     return _enforce_2D(m_rt * (1 / tau_rt))
-
 
 
 def calculate_growth_increments(
@@ -894,8 +893,7 @@ class StemAllometry(PandasExporter, CohortMethods):
         )
 
         self.reproductive_tissue_mass = (
-            self.foliage_mass
-            * stem_traits.p_foliage_for_reproductive_tissue
+            self.foliage_mass * stem_traits.p_foliage_for_reproductive_tissue
         )
 
         self.sapwood_mass = calculate_sapwood_masses(
