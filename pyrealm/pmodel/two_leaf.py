@@ -337,43 +337,6 @@ def calculate_beam_reflectance(
     )
 
 
-def calculate_scattered_beam_irradiance(
-    I_b: NDArray[np.float64],
-    kb: NDArray[np.float64],
-    kb_prime: NDArray[np.float64],
-    rho_cb: NDArray[np.float64],
-    leaf_area_index: NDArray[np.float64],
-    k_sigma: NDArray[np.float64],
-) -> NDArray[np.float64]:
-    r"""Calculate the scattered beam irradiance.
-
-    The scattered beam irradiance (:math:`I_bs`) is the portion of direct sunlight that
-    is scattered within the canopy.
-
-    .. math::
-
-        I_{bs} = I_b  (1 - \rho_{cb}) k_b' \exp(-k_b'L) - (1 - \sigma) k_b \exp(-k_b L)
-
-    Args:
-        I_b: Array of beam irradiance values.
-        kb: Array of beam extinction coefficients.
-        kb_prime: Array of scattered beam extinction coefficients.
-        rho_cb: Array of beam irradiances with uniform leaf angle
-            distribution.
-        leaf_area_index: Array of leaf area index values.
-        k_sigma: Array of sigma values.
-
-    Returns:
-        NDArray: Array of scattered beam irradiance values.
-    """
-
-    I_bs = I_b * (1 - rho_cb) * kb_prime * np.exp(-kb_prime * leaf_area_index) - (
-        1 - k_sigma
-    ) * kb * np.exp(-kb * leaf_area_index)
-
-    return I_bs
-
-
 def calculate_canopy_irradiance(
     beam_reflectance: NDArray[np.float64],
     beam_irradiance: NDArray[np.float64],
