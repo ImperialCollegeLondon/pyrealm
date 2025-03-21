@@ -227,7 +227,7 @@ class PlantFunctionalType(PlantFunctionalTypeStrict):
     lai: float = 1.8
     sla: float = 14.0
     tau_f: float = 4.0
-    tau_rt: float = 1.0 # Default value 1 as this is a denominator
+    tau_rt: float = 1.0  # Default value 1 as this is a denominator
     tau_r: float = 1.04
     par_ext: float = 0.5
     yld: float = 0.6
