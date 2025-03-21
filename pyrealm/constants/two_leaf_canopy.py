@@ -20,15 +20,15 @@ class TwoLeafConst(ConstantsClass):
         \rho_h = \frac{1 - \sqrt{1 - \sigma}}{1 + \sqrt{1 - \sigma}}
     """
 
-    atmospheric_scattering_coefficient: float = 0.426  # needs citation
+    atmospheric_scattering_coef: float = 0.426  # needs citation
     """Scattering coefficient of PAR in the atmosphere (:math:`f_a`, dimensionless)"""
-    leaf_scattering_coefficient: float = 0.15
+    leaf_scattering_coef: float = 0.15
     """Scattering coefficient of PAR by leaves by reflection and transmission
     (:math:`\sigma`, dimensionless, Table 2. of :cite:t:`depury:1997a`)"""
     diffuse_reflectance: float = 0.036  # needs citation
     r"""Canopy reflection coefficient for diffuse PAR,(:math:`\rho_{cd}`,
     dimensionless)."""
-    diffuse_extinction_coefficient: float = 0.719  # needs citation
+    diffuse_extinction_coef: float = 0.719  # needs citation
     """Diffuse and scattered diffuse PAR extinction coefficient (:math:`k_d'`,
     dimensionless)."""
     solar_obscurity_angle: float = np.pi / 180  # 1 degree in rads, needs a citation
@@ -63,6 +63,6 @@ class TwoLeafConst(ConstantsClass):
         object.__setattr__(
             self,
             "horizontal_leaf_reflectance",
-            (1 - np.sqrt(1 - self.leaf_scattering_coefficient))
-            / (1 + np.sqrt(1 - self.leaf_scattering_coefficient)),
+            (1 - np.sqrt(1 - self.leaf_scattering_coef))
+            / (1 + np.sqrt(1 - self.leaf_scattering_coef)),
         )

@@ -40,7 +40,7 @@ class TwoLeafIrradience:
 
     * Extinction coefficients are calculated for both beam (:math:`k_b`) and scattered
       light (:math:`k_b'`) reaching the canopy, given the solar elevation :math:`\beta`
-      (see :meth:`calculate_beam_extinction_coefficient`).
+      (see :meth:`calculate_beam_extinction_coef`).
 
     * Canopy reflectance coefficients are calculated for both beam and diffuse light.
       The beam reflectance (:math:`\rho_{cb}`) varies with solar elevation through the
@@ -108,23 +108,25 @@ class TwoLeafIrradience:
         self.beam_irradiance: NDArray[np.float64]
         """The beam irradiance (:math:`I_b`) reaching the canopy."""
 
-        self.beam_extinction_coefficient: NDArray[np.float64]
+        self.beam_extinction_coef: NDArray[np.float64]
         """The beam extinction coefficient (:math:`k_{b}`)"""
-        self.scattered_beam_extinction_coefficient: NDArray[np.float64]
+        self.scattered_beam_extinction_coef: NDArray[np.float64]
         """The scattered beam extinction coefficient (:math:`k_{b}'`)"""
 
         self.beam_reflectance: NDArray[np.float64]
         r"""The canopy beam reflectance for leaves with uniform angle distribution
          (:math:`\rho_{cb}`)"""
 
-        self.canopy_irradiance: NDArray[np.float64]
-        """The total canopy irradiance (:math:`I_c`)."""
         self.sunlit_beam_irradiance: NDArray[np.float64]
         """The sunlit beam irradiance (:math:`I_{sb}`)."""
         self.sunlit_diffuse_irradiance: NDArray[np.float64]
         """The sunlit diffuse irradiance (:math:`I_{sd}`)."""
         self.sunlit_scattered_irradiance: NDArray[np.float64]
         """The sunlit scattered irradiance (:math:`I_{ss}`)."""
+
+        self.canopy_irradiance: NDArray[np.float64]
+        """The total canopy irradiance (:math:`I_c`)."""
+
         self.sunlit_absorbed_irradiance: NDArray[np.float64]
         """The sunlit leaf absorbed irradiance (:math:`I_{csun}`)."""
         self.shaded_absorbed_irradiance: NDArray[np.float64]
@@ -141,7 +143,7 @@ class TwoLeafIrradience:
             patm=self.patm,
             solar_elevation=self.solar_elevation,
             standard_pressure=self.core_constants.k_Po,
-            atmospheric_scattering=self.two_leaf_constants.atmospheric_scattering_coefficient,
+            atmospheric_scattering=self.two_leaf_constants.atmospheric_scattering_coef,
             atmos_transmission_par=self.two_leaf_constants.atmos_transmission_par,
         )
 
@@ -150,14 +152,14 @@ class TwoLeafIrradience:
         self.diffuse_irradiance = self.fraction_of_diffuse_radiation * self.ppfd
 
         # The beam extinction coefficient for direct light: k_b
-        self.beam_extinction_coefficient = calculate_beam_extinction_coefficient(
+        self.beam_extinction_coef = calculate_beam_extinction_coef(
             solar_elevation=self.solar_elevation,
             solar_obscurity_angle=self.two_leaf_constants.solar_obscurity_angle,
             extinction_numerator=self.two_leaf_constants.direct_beam_extinction_numerator,
         )
 
         # The extinction coefficient for scattered light: k_b'
-        self.scattered_beam_extinction_coefficient = calculate_beam_extinction_coefficient(
+        self.scattered_beam_extinction_coef = calculate_beam_extinction_coef(
             solar_elevation=self.solar_elevation,
             solar_obscurity_angle=self.two_leaf_constants.solar_obscurity_angle,
             extinction_numerator=self.two_leaf_constants.scattered_beam_extinction_numerator,
@@ -166,45 +168,33 @@ class TwoLeafIrradience:
         # The canopy beam reflectance for leaves with a uniform angle distribution:
         # rho_cb
         self.beam_reflectance = calculate_beam_reflectance(
-            beam_extinction=self.beam_extinction_coefficient,
+            beam_extinction=self.beam_extinction_coef,
             horizontal_leaf_reflectance=self.two_leaf_constants.horizontal_leaf_reflectance,
-        )
-
-        # Calculate canopy irradiance
-
-        # TODO - this is WRONG it needs to be using k_d'
-        self.canopy_irradiance = calculate_canopy_irradiance(
-            beam_reflectance=self.beam_reflectance,
-            beam_irradiance=self.beam_irradiance,
-            scattered_beam_extinction_coefficient=self.scattered_beam_extinction_coefficient,
-            diffuse_radiation=self.diffuse_irradiance,
-            leaf_area_index=self.leaf_area_index,
-            diffuse_reflectance=self.two_leaf_constants.diffuse_reflectance,
         )
 
         # Calculate fractions of the sunlit leaf irradiance
         self.sunlit_beam_irradiance = calculate_sunlit_beam_irradiance(
             beam_irradiance=self.beam_irradiance,
-            beam_extinction_coefficient=self.beam_extinction_coefficient,
+            beam_extinction_coef=self.beam_extinction_coef,
             leaf_area_index=self.leaf_area_index,
-            leaf_scattering_coefficient=self.two_leaf_constants.leaf_scattering_coefficient,
+            leaf_scattering_coef=self.two_leaf_constants.leaf_scattering_coef,
         )
 
         self.sunlit_diffuse_irradiance = calculate_sunlit_diffuse_irradiance(
             diffuse_irradiance=self.diffuse_irradiance,
-            beam_extinction_coefficient=self.beam_extinction_coefficient,
+            beam_extinction_coef=self.beam_extinction_coef,
             leaf_area_index=self.leaf_area_index,
             diffuse_reflectance=self.two_leaf_constants.diffuse_reflectance,
-            diffuse_extinction_coefficient=self.two_leaf_constants.diffuse_extinction_coefficient,
+            diffuse_extinction_coef=self.two_leaf_constants.diffuse_extinction_coef,
         )
 
         self.sunlit_scattered_irradiance = calculate_sunlit_scattered_irradiance(
             beam_irradiance=self.beam_irradiance,
             beam_reflectance=self.beam_reflectance,
-            scattered_beam_extinction_coefficient=self.scattered_beam_extinction_coefficient,
-            beam_extinction_coefficient=self.beam_extinction_coefficient,
+            scattered_beam_extinction_coef=self.scattered_beam_extinction_coef,
+            beam_extinction_coef=self.beam_extinction_coef,
             leaf_area_index=self.leaf_area_index,
-            leaf_scattering_coefficient=self.two_leaf_constants.leaf_scattering_coefficient,
+            leaf_scattering_coef=self.two_leaf_constants.leaf_scattering_coef,
         )
 
         # And hence the total sunlit irradiance
@@ -215,6 +205,17 @@ class TwoLeafIrradience:
         )
 
         # Now calculate the irradiance absorbed by shaded leaves
+        # Calculate canopy irradiance
+        # TODO - this is WRONG it needs to be using k_d'
+        self.canopy_irradiance = calculate_canopy_irradiance(
+            beam_reflectance=self.beam_reflectance,
+            beam_irradiance=self.beam_irradiance,
+            scattered_beam_extinction_coef=self.scattered_beam_extinction_coef,
+            diffuse_radiation=self.diffuse_irradiance,
+            leaf_area_index=self.leaf_area_index,
+            diffuse_reflectance=self.two_leaf_constants.diffuse_reflectance,
+        )
+
         self.shaded_absorbed_irradiance = calculate_shaded_absorbed_irradiance(
             solar_elevation=self.solar_elevation,
             canopy_irradiance=self.canopy_irradiance,
@@ -223,7 +224,7 @@ class TwoLeafIrradience:
         )
 
 
-def calculate_beam_extinction_coefficient(
+def calculate_beam_extinction_coef(
     solar_elevation: NDArray[np.float64],
     solar_obscurity_angle: float = TwoLeafConst().solar_obscurity_angle,
     extinction_numerator: float = TwoLeafConst().direct_beam_extinction_numerator,
@@ -259,7 +260,7 @@ def calculate_fraction_of_diffuse_radiation(
     patm: NDArray[np.float64],
     solar_elevation: NDArray[np.float64],
     standard_pressure: float = CoreConst().k_Po,
-    atmospheric_scattering: float = TwoLeafConst().atmospheric_scattering_coefficient,
+    atmospheric_scattering: float = TwoLeafConst().atmospheric_scattering_coef,
     atmos_transmission_par: float = TwoLeafConst().atmos_transmission_par,
 ) -> NDArray[np.float64]:
     r"""Calculate the fraction of diffuse radiation.
@@ -340,7 +341,7 @@ def calculate_beam_reflectance(
 def calculate_canopy_irradiance(
     beam_reflectance: NDArray[np.float64],
     beam_irradiance: NDArray[np.float64],
-    scattered_beam_extinction_coefficient: NDArray[np.float64],
+    scattered_beam_extinction_coef: NDArray[np.float64],
     diffuse_radiation: NDArray[np.float64],
     leaf_area_index: NDArray[np.float64],
     diffuse_reflectance: float = TwoLeafConst().diffuse_reflectance,
@@ -359,7 +360,7 @@ def calculate_canopy_irradiance(
         beam_reflectance : The beam reflectance of leaves with uniform angle
             distribution  (:math:`\rho_{cb}`).
         beam_irradiance : Array of beam irradiance values (:math:`I_b`).
-        scattered_beam_extinction_coefficient : Array of scattered beam extinction
+        scattered_beam_extinction_coef : Array of scattered beam extinction
             coefficients (:math:`k_b'`).
         diffuse_radiation : Array of diffuse radiation values (:math:`I_d`).
         leaf_area_index : Array of leaf area index values (:math:`L`).
@@ -373,17 +374,17 @@ def calculate_canopy_irradiance(
     # TODO - this is WRONG it needs to be using k_d' in the second term
 
     return (1 - beam_reflectance) * beam_irradiance * (
-        1 - np.exp(-scattered_beam_extinction_coefficient * leaf_area_index)
+        1 - np.exp(-scattered_beam_extinction_coef * leaf_area_index)
     ) + (1 - diffuse_reflectance) * diffuse_radiation * (
-        1 - np.exp(-scattered_beam_extinction_coefficient * leaf_area_index)
+        1 - np.exp(-scattered_beam_extinction_coef * leaf_area_index)
     )
 
 
 def calculate_sunlit_beam_irradiance(
     beam_irradiance: NDArray[np.float64],
-    beam_extinction_coefficient: NDArray[np.float64],
+    beam_extinction_coef: NDArray[np.float64],
     leaf_area_index: NDArray[np.float64],
-    leaf_scattering_coefficient: float = TwoLeafConst().leaf_scattering_coefficient,
+    leaf_scattering_coef: float = TwoLeafConst().leaf_scattering_coef,
 ) -> NDArray[np.float64]:
     r"""Calculate the sunlit beam irradiance.
 
@@ -396,9 +397,9 @@ def calculate_sunlit_beam_irradiance(
 
     Args:
         beam_irradiance: Array of beam irradiance values (:math:`I_b`)
-        leaf_scattering_coefficient: Constant for calculating the sunlit beam irradiance
+        leaf_scattering_coef: Constant for calculating the sunlit beam irradiance
             (:math:`\sigma`)
-        beam_extinction_coefficient: Array of beam extinction coefficients (:math:`k_b`)
+        beam_extinction_coef: Array of beam extinction coefficients (:math:`k_b`)
         leaf_area_index: Array of leaf area index values (:math:`L`)
 
     Returns:
@@ -406,17 +407,17 @@ def calculate_sunlit_beam_irradiance(
     """
     return (
         beam_irradiance
-        * (1 - leaf_scattering_coefficient)
-        * (1 - np.exp(-beam_extinction_coefficient * leaf_area_index))
+        * (1 - leaf_scattering_coef)
+        * (1 - np.exp(-beam_extinction_coef * leaf_area_index))
     )
 
 
 def calculate_sunlit_diffuse_irradiance(
     diffuse_irradiance: NDArray[np.float64],
-    beam_extinction_coefficient: NDArray[np.float64],
+    beam_extinction_coef: NDArray[np.float64],
     leaf_area_index: NDArray[np.float64],
     diffuse_reflectance: float = TwoLeafConst().diffuse_reflectance,
-    diffuse_extinction_coefficient: float = TwoLeafConst().diffuse_extinction_coefficient,
+    diffuse_extinction_coef: float = TwoLeafConst().diffuse_extinction_coef,
 ) -> NDArray[np.float64]:
     r"""Calculate the sunlit diffuse irradiance.
 
@@ -433,9 +434,9 @@ def calculate_sunlit_diffuse_irradiance(
         diffuse_reflectance : The canopy reflectance of diffuse radiation
             (:math:`\rho_{cd}`).
         leaf_area_index: Array of leaf area index values (:math:`L`)
-        diffuse_extinction_coefficient: Constant for calculating the sunlit diffuse
+        diffuse_extinction_coef: Constant for calculating the sunlit diffuse
             irradiance (:math:`k_d'`)
-        beam_extinction_coefficient: Array of beam extinction coefficients (:math:`k_b`)
+        beam_extinction_coef: Array of beam extinction coefficients (:math:`k_b`)
 
     Returns:
         Array of sunlit diffuse irradiance values.
@@ -446,22 +447,21 @@ def calculate_sunlit_diffuse_irradiance(
         * (
             1
             - np.exp(
-                -(diffuse_extinction_coefficient + beam_extinction_coefficient)
-                * leaf_area_index
+                -(diffuse_extinction_coef + beam_extinction_coef) * leaf_area_index
             )
         )
-        * diffuse_extinction_coefficient
-        / (diffuse_extinction_coefficient + beam_extinction_coefficient)
+        * diffuse_extinction_coef
+        / (diffuse_extinction_coef + beam_extinction_coef)
     )
 
 
 def calculate_sunlit_scattered_irradiance(
     beam_irradiance: NDArray[np.float64],
     beam_reflectance: NDArray[np.float64],
-    scattered_beam_extinction_coefficient: NDArray[np.float64],
-    beam_extinction_coefficient: NDArray[np.float64],
+    scattered_beam_extinction_coef: NDArray[np.float64],
+    beam_extinction_coef: NDArray[np.float64],
     leaf_area_index: NDArray[np.float64],
-    leaf_scattering_coefficient: float = TwoLeafConst().leaf_scattering_coefficient,
+    leaf_scattering_coef: float = TwoLeafConst().leaf_scattering_coef,
 ) -> NDArray[np.float64]:
     r"""Calculate the sunlit scattered irradiance.
 
@@ -477,11 +477,11 @@ def calculate_sunlit_scattered_irradiance(
         beam_irradiance: Array of beam irradiance values (:math:`I_b`)
         beam_reflectance : The beam reflectance of leaves with uniform angle
             distribution  (:math:`\rho_{cb}`).
-        scattered_beam_extinction_coefficient: Array of scattered beam extinction
+        scattered_beam_extinction_coef: Array of scattered beam extinction
             coefficients (:math:`k_b'`)
-        beam_extinction_coefficient: Array of beam extinction coefficients (:math:`k_b`)
+        beam_extinction_coef: Array of beam extinction coefficients (:math:`k_b`)
         leaf_area_index: Array of leaf area index values (:math:`L`)
-        leaf_scattering_coefficient: Constant for calculating the sunlit scattered
+        leaf_scattering_coef: Constant for calculating the sunlit scattered
             irradiance (:math:`\sigma`).
 
     Returns:
@@ -493,14 +493,14 @@ def calculate_sunlit_scattered_irradiance(
         * (
             1
             - np.exp(
-                -(scattered_beam_extinction_coefficient + beam_extinction_coefficient)
+                -(scattered_beam_extinction_coef + beam_extinction_coef)
                 * leaf_area_index
             )
         )
-        * scattered_beam_extinction_coefficient
-        / (scattered_beam_extinction_coefficient + beam_extinction_coefficient)
-        - (1 - leaf_scattering_coefficient)
-        * (1 - np.exp(-2 * beam_extinction_coefficient * leaf_area_index))
+        * scattered_beam_extinction_coef
+        / (scattered_beam_extinction_coef + beam_extinction_coef)
+        - (1 - leaf_scattering_coef)
+        * (1 - np.exp(-2 * beam_extinction_coef * leaf_area_index))
         / 2
     )
 
@@ -665,7 +665,7 @@ class TwoLeafAssimilation:
         #        a custom __eq__ dunder method to handle the structures inside the
         #        classes.
 
-        self.canopy_extinction_coefficient: NDArray[np.float64]
+        self.canopy_extinction_coef: NDArray[np.float64]
         """An extinction coefficient capturing the vertical structure of carboxylation
         capacity within the canopy (:math:`k_v`)."""
         self.Vcmax25_canopy: NDArray[np.float64]
@@ -728,7 +728,7 @@ class TwoLeafAssimilation:
 
         # Calculate the canopy extinction coefficient given the big leaf estimate of
         # V_cmax
-        self.canopy_extinction_coefficient = calculate_canopy_extinction_coefficient(
+        self.canopy_extinction_coef = calculate_canopy_extinction_coef(
             vcmax=self.pmodel.vcmax, coef=self.irrad.two_leaf_constants.vcmax_lloyd_coef
         )
 
@@ -737,14 +737,14 @@ class TwoLeafAssimilation:
         self.Vcmax25_canopy = calculate_canopy_vcmax25(
             leaf_area_index=self.irrad.leaf_area_index,
             vcmax25=self.pmodel.vcmax25,
-            canopy_extinction_coefficient=self.canopy_extinction_coefficient,
+            canopy_extinction_coef=self.canopy_extinction_coef,
         )
 
         self.Vcmax25_sun = calculate_sun_vcmax25(
             leaf_area_index=self.irrad.leaf_area_index,
             vcmax25=self.pmodel.vcmax25,
-            canopy_extinction_coefficient=self.canopy_extinction_coefficient,
-            beam_extinction_coefficient=self.irrad.beam_extinction_coefficient,
+            canopy_extinction_coef=self.canopy_extinction_coef,
+            beam_extinction_coef=self.irrad.beam_extinction_coef,
         )
 
         self.Vcmax25_shade = self.Vcmax25_canopy - self.Vcmax25_sun
@@ -804,7 +804,7 @@ class TwoLeafAssimilation:
         )
 
 
-def calculate_canopy_extinction_coefficient(
+def calculate_canopy_extinction_coef(
     vcmax: NDArray[np.float64],
     coef: tuple[float, float] = TwoLeafConst().vcmax_lloyd_coef,
 ) -> NDArray[np.float64]:
@@ -835,7 +835,7 @@ def calculate_canopy_extinction_coefficient(
 def calculate_canopy_vcmax25(
     leaf_area_index: NDArray[np.float64],
     vcmax25: NDArray[np.float64],
-    canopy_extinction_coefficient: NDArray[np.float64],
+    canopy_extinction_coef: NDArray[np.float64],
 ) -> NDArray[np.float64]:
     r"""Calculate standardised carboxylation rate in the canopy.
 
@@ -843,7 +843,7 @@ def calculate_canopy_vcmax25(
     temperature of 25°C (:math:`V_{cmax25\_C}`), given the depth of the canopy as
     estimated using leaf area index and the rate of decrease in carboxylation rate
     through the canopy, as calculated using
-    :meth:`calculate_canopy_extinction_coefficient`.
+    :meth:`calculate_canopy_extinction_coef`.
 
     .. math::
         V_{cmax25\_C} = L \, V_{cmax25}  \left(\frac{1 - \exp(-k_v)}{k_v}\right)
@@ -851,7 +851,7 @@ def calculate_canopy_vcmax25(
     Args:
         leaf_area_index: The leaf area index (:math:`L`).
         vcmax25: The ``vcmax25`` parameter from a P Model (:math:`V_{cmax25}`).
-        canopy_extinction_coefficient: The canopy extinction coefficient (:math:`k_v`).
+        canopy_extinction_coef: The canopy extinction coefficient (:math:`k_v`).
 
     Returns:
         NDArray: The calculated Vmax25 canopy values.
@@ -859,15 +859,15 @@ def calculate_canopy_vcmax25(
     return (
         leaf_area_index
         * vcmax25
-        * ((1 - np.exp(-canopy_extinction_coefficient)) / canopy_extinction_coefficient)
+        * ((1 - np.exp(-canopy_extinction_coef)) / canopy_extinction_coef)
     )
 
 
 def calculate_sun_vcmax25(
     leaf_area_index: NDArray[np.float64],
     vcmax25: NDArray[np.float64],
-    canopy_extinction_coefficient: NDArray[np.float64],
-    beam_extinction_coefficient: NDArray[np.float64],
+    canopy_extinction_coef: NDArray[np.float64],
+    beam_extinction_coef: NDArray[np.float64],
 ) -> NDArray[np.float64]:
     r"""Calculate standardised carboxylation rate of sunlit leaves.
 
@@ -883,8 +883,8 @@ def calculate_sun_vcmax25(
     Args:
         leaf_area_index: The leaf area index (LAI, :math:`L`).
         vcmax25: The ``vcmax25`` parameter from a P Model (:math:`V_{cmax25}`).
-        canopy_extinction_coefficient: The canopy extinction coefficient (:math:`k_v`).
-        beam_extinction_coefficient: The beam extinction coefficient from the irradiance
+        canopy_extinction_coef: The canopy extinction coefficient (:math:`k_v`).
+        beam_extinction_coef: The beam extinction coefficient from the irradiance
             model (:math:`k_b`).
 
     Returns:
@@ -897,14 +897,10 @@ def calculate_sun_vcmax25(
             (
                 1
                 - np.exp(
-                    -canopy_extinction_coefficient
-                    - beam_extinction_coefficient * leaf_area_index
+                    -canopy_extinction_coef - beam_extinction_coef * leaf_area_index
                 )
             )
-            / (
-                canopy_extinction_coefficient
-                + beam_extinction_coefficient * leaf_area_index
-            )
+            / (canopy_extinction_coef + beam_extinction_coef * leaf_area_index)
         )
     )
 
