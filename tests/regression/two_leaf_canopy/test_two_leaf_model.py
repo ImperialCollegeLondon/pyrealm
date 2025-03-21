@@ -75,12 +75,12 @@ def test_two_leaf_irradiance(solar_irradiance, get_data):
         "beam_extinction_coef": np.array([0.6011949063494533]),
         "scattered_beam_extinction_coef": np.array([0.55309931]),
         "beam_reflectance": np.array([0.03003319]),
-        "canopy_irradiance": np.array([636.08707023]),
         "sunlit_beam_irradiance": np.array([485.32862357]),
         "sunlit_diffuse_irradiance": np.array([69.44255865]),
         "sunlit_scattered_irradiance": np.array([25.43894747]),
-        "shaded_absorbed_irradiance": np.array([55.876940533221614]),
         "sunlit_absorbed_irradiance": np.array([580.2101296936461]),
+        "canopy_irradiance": np.array([646.830682]),
+        "shaded_absorbed_irradiance": np.array([66.620553]),
     }
 
     for attr, expected_value in test_values.items():

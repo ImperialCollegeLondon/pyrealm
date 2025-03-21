@@ -35,8 +35,8 @@ class TwoLeafIrradience:
 
     * The fraction of diffuse light (:math:`f_d`) is calculated (see
       :meth:`calculate_diffuse_light_fraction`) and used to partition the incoming PPFD
-      into the beam (:math:`I_b`) and diffuse (:math:`I_d`) irradiances reaching the
-      canopy.
+      into the beam (:math:`I_b = \textrm{PPFD}(1-f_d)`) and diffuse (:math:`I_d=PPFD
+      f_d`) irradiances reaching the canopy.
 
     * Extinction coefficients are calculated for both beam (:math:`k_b`) and scattered
       light (:math:`k_b'`) reaching the canopy, given the solar elevation :math:`\beta`
@@ -49,7 +49,7 @@ class TwoLeafIrradience:
       (:attr:`~pyrealm.constants.two_leaf_canopy.TwoLeafConst.diffuse_reflectance`).
 
     * The irradiances for sunlit leaves are then calculated, including components from
-      direct beam (:math:`I_{sb}`), scattered (:math:`I_{ss}`) and diffuse
+      direct beam (:math:`I_{sb}`, see :meth:`), scattered (:math:`I_{ss}`) and diffuse
       (:math:`I_{sd}`) light. The total radiation absorbed by the sunlit leaves
       (:math:`I_csun`) is the sum of these three components.
 
