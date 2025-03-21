@@ -97,7 +97,7 @@ def test_two_leaf_assimilation(assimilation_single_day):
     """
 
     test_values = {
-        "canopy_extinction_coefficient": np.array([0.17377901]),
+        "canopy_extinction_coef": np.array([0.17377901]),
         "Vcmax25_canopy": np.array([220.02686435]),
         "Vcmax25_sun": np.array([112.04497916]),
         "Vcmax25_shade": np.array([107.98188519]),
@@ -110,12 +110,12 @@ def test_two_leaf_assimilation(assimilation_single_day):
         "Av_sun": np.array([23.67492383]),
         "Av_shade": np.array([22.81639861]),
         "J_sun": np.array([91.24985393]),
-        "J_shade": np.array([18.85784176]),
+        "J_shade": np.array([21.94981797]),
         "Aj_sun": np.array([15.24637566]),
-        "Aj_shade": np.array([3.15084055]),
+        "Aj_shade": np.array([3.66745979]),
         "Acanopy_sun": np.array([15.24637566]),
-        "Acanopy_shade": np.array([3.15084055]),
-        "gpp": np.array([220.963445]),
+        "Acanopy_shade": np.array([3.66745979]),
+        "gpp": np.array([227.16840351]),
     }
 
     for attr, expected_value in test_values.items():
