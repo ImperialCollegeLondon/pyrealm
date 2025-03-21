@@ -227,7 +227,7 @@ class PlantFunctionalType(PlantFunctionalTypeStrict):
     lai: float = 1.8
     sla: float = 14.0
     tau_f: float = 4.0
-    tau_rt: float = 4.0
+    tau_rt: float = 1.0 # Default value 1 as this is a denominator
     tau_r: float = 1.04
     par_ext: float = 0.5
     yld: float = 0.6
@@ -235,12 +235,12 @@ class PlantFunctionalType(PlantFunctionalTypeStrict):
     resp_r: float = 0.913
     resp_s: float = 0.044
     resp_f: float = 0.1
-    resp_rt: float = 0
+    resp_rt: float = 0.0
     m: float = 2
     n: float = 5
     f_g: float = 0.05
-    p_foliage_for_reproductive_tissue: float = 0.05
-    p_gpp_for_root_exudation: float = 0.05
+    p_foliage_for_reproductive_tissue: float = 0.0
+    p_gpp_for_root_exudation: float = 0.0
 
 
 PlantFunctionalTypeSchema = marshmallow_dataclass.class_schema(
@@ -538,6 +538,11 @@ class StemTraits(PandasExporter, CohortMethods):
     """Scaling factor to derive maximum crown radius from crown area."""
     z_max_prop: NDArray[np.float64]
     """Proportion of stem height at which maximum crown radius is found."""
+
+    p_foliage_for_reproductive_tissue: NDArray[np.float64]
+    """Proportion of foliage used to calculate reproductive tissue."""
+    p_gpp_for_root_exudation: NDArray[np.float64]
+    """Proportion of GPP used to calculate root exudation."""
 
     validate: bool = True
     """Boolean flag to control validation of the input array sizes."""

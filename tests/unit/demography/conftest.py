@@ -55,6 +55,12 @@ def rtmodel_flora():
     # estimating whole crown gpp in rtmodel
     pft_definitions["resp_f"] = 0
 
+    # Set reproductive tissue parameters to zero as they are not in the original T model
+    pft_definitions["resp_rt"] = 0
+    pft_definitions["tau_rt"] = 1
+    pft_definitions["p_foliage_for_reproductive_tissue"] = 0
+    pft_definitions["p_gpp_for_root_exudation"] = 0
+
     return Flora(
         pfts=[
             PlantFunctionalType(**args)
