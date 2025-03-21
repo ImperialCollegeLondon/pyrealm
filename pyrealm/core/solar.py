@@ -11,6 +11,8 @@ functions can be used to avoid repeated calculation of intermediate values where
 multiple functions need to be run.
 """  # noqa: D205
 
+from dataclasses import dataclass, field
+
 import numpy as np
 from numpy.typing import NDArray
 
@@ -827,84 +829,15 @@ def calculate_heliocentric_longitudes(
     return nu, lambda_
 
 
-# TODO - @davidorme commented this out - issues with typing of usage, which is aimed at
-#        single sites. Not currently being used in other functions so parking it while
-#        working through revision of the rest of the module and splash.
-
-# def calculate_solar_elevation(
-#     site_obs_data: LocationDateTime, const: CoreConst = CoreConst()
-# ) -> NDArray[np.float64]:
-#     r"""Calculate the solar elevation angle for a specific location and times.
-
-#     This function calculates the solar elevation angle, which is the angle between the
-#     sun and the observer's local horizon, using the methods outlined in
-#     :cite:t:`depury:1997a`.
-
-#     .. note::
-
-#         This implementation does not correct for the effect of local observation
-#         altitude on perceived solar elevation.
-
-#     Args:
-#         site_obs_data: A :class:`~pyrealm.core.calendar.LocationDateTime` instance
-#             containing the location and time-specific information for the observation
-#             site.
-#         const: The core constants to be used in calculations.
-
-#     Returns:
-#         An array of solar elevation angles in radians, representing the angular height
-#         of the sun above the horizon at the specified location and time.
-
-#     Example:
-#         >>> # Calculate solar elevation at Wagga Wagga, Australia.
-#         >>> # Worked example taken from dePury and Farquhar (1997)
-#         >>> from pyrealm.core.calendar import LocationDateTime
-#         >>> from pyrealm.core.solar import calculate_solar_elevation
-#         >>> # Create instance of LocationDateTime dataclass
-#         >>> ldt = LocationDateTime(
-#         ...     latitude=-35.058333,
-#         ...     longitude=147.34167,
-#         ...     year_date_time=np.array([np.datetime64("1995-10-25T10:30")]),
-#         ... )
-#         >>> # Run solar elevation calculation
-#         >>> calculate_solar_elevation(ldt)
-#         array([1.0615713])
-
-#     """
-
-#     G_d = calculate_day_angle(ordinal_date=site_obs_data.julian_days)
-
-#     E_t = calculate_equation_of_time(day_angle=G_d, coef=const.equation_of_time_coef)
-
-#     t0 = calculate_solar_noon(
-#         longitude=site_obs_data.longitude,
-#         equation_of_time=E_t,
-#         standard_longitude=site_obs_data.local_standard_meridian,
-#     )
-
-#     hour_angle = calculate_local_hour_angle(
-#         current_time=site_obs_data.decimal_time, solar_noon=t0
-#     )
-
-#     declination = calculate_solar_declination(ordinal_date=site_obs_data.julian_days)
-
-#     elevation = calculate_solar_elevation_angle(
-#         latitude=site_obs_data.latitude_rad,
-#         declination=declination,
-#         hour_angle=hour_angle,
-#     )
-#     return elevation
-
-
-def calculate_solar_elevation_angle(
+def calculate_solar_elevation(
     latitude: NDArray[np.float64],
     declination: NDArray[np.float64],
     hour_angle: NDArray[np.float64],
 ) -> NDArray[np.float64]:
     r"""Calculate the solar elevation angle.
 
-    The solar elevation angle (:math:`\alpha`) is the angle between the horizon and the
-    sun, giving the height of the sun in the sky at a given time, following Eqn
+    The solar elevation angle (:math:`\alpha`, radians) is the angle between the horizon
+    and the sun, giving the height of the sun in the sky at a given time, following Eqn
     A13 of :cite:t:`depury:1997a`:
 
     .. math::
@@ -976,7 +909,7 @@ def calculate_local_hour_angle(
 def calculate_solar_noon(
     longitude: NDArray[np.float64],
     equation_of_time: NDArray[np.float64],
-    standard_longitude: float = 0,
+    standard_longitude: NDArray[np.float64] = np.array([0]),
 ) -> NDArray[np.float64]:
     r"""Calculate the solar noon  for a given location.
 
@@ -1064,3 +997,113 @@ def calculate_day_angle(ordinal_date: NDArray[np.int_]) -> NDArray[np.float64]:
     """
 
     return 2 * np.pi * (ordinal_date - 1) / 365
+
+
+@dataclass
+class SolarPositions:
+    """Solar values for observation locations and times.
+
+    This class encapsulates the calculation of key solar position data for observations
+    given arrays of the latitude and longitudes of locations and the datetimes of
+    observation.
+
+    Example:
+        >>> import numpy as np
+        >>> sp = SolarPositions(
+        ...     latitude=-35.058333,
+        ...     longitude=147.34167,
+        ...     datetime=np.array([np.datetime64("2024-08-12T10:30:32")]),
+        ... )
+        >>> sp.decimal_time.round(5)
+        array([10.50889])
+        >>> sp.solar_elevation.round(5)
+        array([0.60252])
+    """
+
+    latitude: NDArray[np.float64]
+    """The latitude of the location in degrees."""
+    longitude: NDArray[np.float64]
+    """The longitude of the location in degrees."""
+    datetime: NDArray[np.datetime64]
+    """An array of np.datetime64 values corresponding to observations at the location
+    (local time)."""
+    core_const: CoreConst = field(default_factory=lambda: CoreConst())
+    """A core constants instance."""
+
+    latitude_rad: NDArray[np.float64] = field(init=False)
+    """The latitude of the location in radians, calculated automatically."""
+    longitude_rad: NDArray[np.float64] = field(init=False)
+    """The longitude of the location in radians, calculated automatically."""
+    ordinal_date: NDArray[np.int_] = field(init=False)
+    """An array of ordinal dates calculated from the datetimes."""
+    decimal_time: NDArray[np.float64] = field(init=False)
+    """An array of decimal hour values calculated from the datetimes."""
+    local_standard_meridian: NDArray[np.float64] = field(init=False)
+    """An array of local meridians given the longitude."""
+
+    day_angle: NDArray[np.float64] = field(init=False)
+    """The solar day angle of the observations (:math:`\Gamma`, radians)."""
+    equation_of_time: NDArray[np.float64] = field(init=False)
+    """The equation of time value for the observations (:math:`E_t`, minutes)."""
+    solar_noon: NDArray[np.float64] = field(init=False)
+    """The solar noon for the observations (:math:`t_0`, decimal hour)."""
+    hour_angle: NDArray[np.float64] = field(init=False)
+    """The local hour angle for the observations (:math:`h`, radians)."""
+    declination: NDArray[np.float64] = field(init=False)
+    """The declination for the observations ( (:math:`\delta`, radians)."""
+    solar_elevation: NDArray[np.float64] = field(init=False)
+    r"""The solar elevation for the observations (:math:`\alpha`, radians) ."""
+
+    def __post_init__(self) -> None:
+        """Initialise calculated attributes."""
+
+        # Truncate all datetimes to their year to get the first day of each year and
+        # then find the difference from the original value to  get the ordinal date
+        self.ordinal_date = (
+            self.datetime
+            - self.datetime.astype("datetime64[Y]").astype("datetime64[D]")
+        ).astype("timedelta64[D]").astype("int") + 1
+
+        # Truncate all datetimes to the day to get midnight and then find the difference
+        # in seconds and divide through to get decimal hours
+        self.decimal_time = (
+            self.datetime - self.datetime.astype("datetime64[D]")
+        ).astype("timedelta64[s]").astype("int") / 3600
+
+        self.latitude_rad = np.deg2rad(self.latitude)
+        self.longitude_rad = np.deg2rad(self.longitude)
+        self.local_standard_meridian = self.get_local_standard_meridian()
+
+        self.day_angle = calculate_day_angle(ordinal_date=self.ordinal_date)
+
+        self.equation_of_time = calculate_equation_of_time(
+            day_angle=self.day_angle, coef=self.core_const.equation_of_time_coef
+        )
+
+        self.solar_noon = calculate_solar_noon(
+            longitude=self.longitude,
+            equation_of_time=self.equation_of_time,
+            standard_longitude=self.local_standard_meridian,
+        )
+
+        self.hour_angle = calculate_local_hour_angle(
+            current_time=self.decimal_time, solar_noon=self.solar_noon
+        )
+
+        self.declination = calculate_solar_declination(ordinal_date=self.ordinal_date)
+
+        self.solar_elevation = calculate_solar_elevation(
+            latitude=self.latitude_rad,
+            declination=self.declination,
+            hour_angle=self.hour_angle,
+        )
+
+    def get_local_standard_meridian(self) -> NDArray[np.float64]:
+        """Calculate local meridian from longitude.
+
+        This calculates the approximate local standard meridian given the longitude. The
+        longitudes are simply mapped to the central longitude of the 15° band in which
+        they fall. This is a _very_ approximate estimate of the local time zone.
+        """
+
+        return np.floor((self.longitude - -187.5) / 15) * 15 + (-180)

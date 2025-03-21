@@ -5,7 +5,6 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -47,6 +46,10 @@ Mengoli et al.). The data is loaded from a file that combines a range of sources
 `BE-Vie_merge.py`).
 
 ```{code-cell} ipython3
+---
+jupyter:
+  source_hidden: true
+---
 forcing_data = pd.read_csv('merged_BE-Vie_data.csv')
 forcing_data["time"] = pd.to_datetime(forcing_data["time"])
 forcing_data

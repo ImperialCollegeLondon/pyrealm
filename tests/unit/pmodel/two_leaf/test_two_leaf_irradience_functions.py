@@ -1,4 +1,4 @@
-"""test_two_leaf_irradience_functions.
+"""test_two_leaf_functions.
 
 This module contains pytest unit tests for validating the correctness of various
 functions involved in the calculation of photosynthetic parameters and canopy
@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal
 
-from pyrealm.pmodel.two_leaf_irradience import (
+from pyrealm.pmodel.two_leaf import (
     Jmax25,
     Jmax25_temp_correction,
     Vmax25_canopy,

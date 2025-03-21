@@ -84,6 +84,8 @@ class BoundsChecker:
         ("sf", 0, 1, "[]", "-"),
         ("pn", 0, 1000, "[]", "mm day-1"),
         ("kWm", 0, 1e4, "[]", "mm"),
+        ("leaf_area_index", 0, 20, "[]", "-"),
+        ("solar_elevation", -90, 90, "[]", "degrees"),
     )
     """Default bounds data for core forcing variables."""
 

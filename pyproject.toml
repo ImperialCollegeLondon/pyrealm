@@ -78,7 +78,7 @@ multiprocess = "^0.70.16"
 mypy = "^1.0"
 pandas = "^2.2.0"
 pre-commit = "^3.2.0"
-ruff = "^0.4.1"
+ruff = "^0.5"
 
 [tool.poetry.group.docs.dependencies]
 autodocsumm = "^0.2.8"
