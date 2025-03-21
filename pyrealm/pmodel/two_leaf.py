@@ -1,6 +1,4 @@
-"""Implements the two-leaf, two-stream canopy model.
-
-This module implements a version of the two leaf, two stream model of assimilation
+"""This module implements a version of the two leaf, two stream model of assimilation
 :cite:p:`depury:1997a`. The implementation is intended to align closely with the similar
 implementation in the BESS model.
 
@@ -20,7 +18,7 @@ The module provides two core classes:
 The irradiance calculations are independent of the subsequent calculation of
 assimilation, so these classes are separated to allow the same irradiance estimates to
 be reused with different assimilation models.
-"""
+"""  # noqa D210, D415
 
 from warnings import warn
 
@@ -28,7 +26,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants.core_const import CoreConst
-from pyrealm.constants.two_leaf_canopy import TwoLeafConst
+from pyrealm.constants.two_leaf import TwoLeafConst
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
@@ -50,9 +48,9 @@ class TwoLeafIrradience:
     and atmospheric pressure (:math:`P`) as follows:
 
     * The fraction of diffuse light (:math:`f_d`) is calculated (see
-      :meth:`calculate_diffuse_light_fraction`) and used to partition the incoming PPFD
-      into the beam (:math:`I_b = \textrm{PPFD}(1-f_d)`) and diffuse (:math:`I_d=PPFD
-      f_d`) irradiances reaching the canopy.
+      :meth:`calculate_fraction_of_diffuse_radiation`) and used to partition the
+      incoming PPFD into the beam (:math:`I_b = \textrm{PPFD}(1-f_d)`) and diffuse
+      (:math:`I_d=PPFD f_d`) irradiances reaching the canopy.
 
     * Extinction coefficients are calculated for both beam (:math:`k_b`) and scattered
       light (:math:`k_b'`) reaching the canopy, given the solar elevation :math:`\beta`
@@ -62,12 +60,14 @@ class TwoLeafIrradience:
       The beam reflectance (:math:`\rho_{cb}`) varies with solar elevation through the
       beam extinction coefficient (:math:`k_b`) but diffuse reflectance
       (:math:`\rho_{cd}`) is a constant property of the canopy
-      (:attr:`~pyrealm.constants.two_leaf_canopy.TwoLeafConst.diffuse_reflectance`).
+      (:attr:`~pyrealm.constants.two_leaf.TwoLeafConst.diffuse_reflectance`).
 
     * The irradiances for sunlit leaves are then calculated, including components from
-      direct beam (:math:`I_{sb}`, see :meth:`), scattered (:math:`I_{ss}`) and diffuse
-      (:math:`I_{sd}`) light. The total radiation absorbed by the sunlit leaves
-      (:math:`I_csun`) is the sum of these three components.
+      direct beam (:math:`I_{sb}`, see :meth:`calculate_sunlit_beam_irradiance`),
+      scattered (:math:`I_{ss}`, see :meth:`calculate_sunlit_scattered_irradiance`) and
+      diffuse (:math:`I_{sd}`, see :meth:`calculate_sunlit_diffuse_irradiance`) light.
+      The total radiation absorbed by the sunlit leaves (:math:`I_csun`) is the sum of
+      these three components.
 
     * The irradiance for shaded leaves (:math:`I_cshade`) is then calculated as the
       difference between the total canopy irradiance (:math:`I_c`) and the sunlit
@@ -540,17 +540,17 @@ class TwoLeafAssimilation:
 
     * the maximum carboxylation rate (:math:`V_{cmax}`),
     * the maximum carboxylation rate at standard temperature (:math:`V_{cmax25}`),
-    * the math:`\ce{CO2}` limitation factor for RuBisCO-limited assimilation
+    * the :math:`\ce{CO2}` limitation factor for RuBisCO-limited assimilation
       (:math:`m_c`), and
     * the :math:`\ce{CO2}` limitation factor for light-limited assimilation
-        (:math:`m_j`).
+      (:math:`m_j`).
 
     The model then calculate assimilation as follows:
 
     * An extinction coefficient (:math:`k_v`) is calculated to account for changes in
       :math:`V_{cmax}` with depth in the canopy, following an empirical function in
-      :cite:`lloyd:2010a` (see :meth:`calculate_canopy_extinction_coef`) and using leaf
-      area index (:math:`L`) as a proxy for canopy depth.
+      :cite:t:`lloyd:2010a` (see :meth:`calculate_canopy_extinction_coef`) and using
+      leaf area index (:math:`L`) as a proxy for canopy depth.
 
     * The value for :math:`V_{cmax25}` from the P Model is adjusted to give a
       representative through the canopy (:math:`V_{cmax25\_C}`) using :math:`L` and
@@ -560,7 +560,7 @@ class TwoLeafAssimilation:
       V_{cmax25\_C} - V_{cmax25\_Sn}`.
 
     * Values for :math:`J_{max25}` are then calculated using an empirical function of
-      :math:`V_{cmax25`} for both sunlit (:math:`J_{max25\_Sn}`) and shaded
+      :math:`V_{cmax25`}` for both sunlit (:math:`J_{max25\_Sn}`) and shaded
       (:math:`J_{max25\_Sd}`) leaves (see :meth:`calculate_jmax25`).
 
     * The Arrhenius scaling method used with the P Model is then used to adjust these
@@ -578,6 +578,7 @@ class TwoLeafAssimilation:
 
     * The realised assimilation is the minimum of  :math:`A_{c}` and :math:`A_{j}` for
       each leaf type, giving:
+
         * :math:`A_{Sn} = \min \left( A_{v\_Sn}, A_{j\_Sn} \right)`,
         * :math:`A_{Sd} = \min \left( A_{v\_Sd}, A_{j\_Sd} \right)`.
 
@@ -815,12 +816,12 @@ def calculate_sun_vcmax25(
     r"""Calculate standardised carboxylation rate of sunlit leaves.
 
     Calcultes the maximum carboxylation rate for sunlit leaves at the standard
-    temperature of 25°C  (:math:`V_{cmax25\_Sn`}) as:
+    temperature of 25°C  (:math:`V_{cmax25\_Sn}`) as:
 
     .. math::
 
         V_{cmax25\_Sn} = L \, V_{cmax25} \left(
-            \frac{1 - \exp(-k_v - k_b}  L )} {k_v + k_b L}
+            \frac{1 - \exp{-k_v - k_b}  L )} {k_v + k_b L}
             \right)
 
     Args:
@@ -890,10 +891,6 @@ def calculate_electron_transport_rate(
 
         J = J_{max}  I_c \frac{(1 - 0.15)}{(I_c + 2.2  J_{max})}
 
-    .. todo::
-
-        What is the source of this parameterisation?
-
     Args:
         jmax: The maximum rate of electron transport (:math:`J_{max}`).
         absorbed_irradiance: The abbsorbed irradiance (:math:`I_c`)
@@ -901,6 +898,8 @@ def calculate_electron_transport_rate(
     Returns:
         The calculated J values.
     """
+
+    # TODO  What is the source of this parameterisation?
 
     J = jmax * absorbed_irradiance * (1 - 0.15) / (absorbed_irradiance + 2.2 * jmax)
 

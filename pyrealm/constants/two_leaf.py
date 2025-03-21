@@ -1,4 +1,7 @@
-"""To do."""
+"""This module defines a constant class for use with the two leaf, two stream model
+:cite:t:`depury:1997a` of assimilation, implemented in the
+:mod:`~pyrealm.pmodel.two_leaf` module.
+"""  # noqa D210, D415
 
 from dataclasses import dataclass, field
 
