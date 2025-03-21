@@ -1,9 +1,25 @@
-"""Implements the two-leaf, two-stream canopy model for Pyrealm.
+"""Implements the two-leaf, two-stream canopy model.
 
-This module provides functionality to partition irradiance into sunlit and shaded
-fractions of the canopy (via ``TwoLeafIrradience``) and to estimate gross primary
-productivity (via ``TwoLeafAssimilation``). The approach follows :cite:t:`depury:1997a`
-and aligns closely with the two-leaf methodology used in the BESS model.
+This module implements a version of the two leaf, two stream model of assimilation
+:cite:p:`depury:1997a`. The implementation is intended to align closely with the similar
+implementation in the BESS model.
+
+The module provides two core classes:
+
+* The :class:`~pyrealm.pmodel.two_leaf.TwoLeafIrradience` class can be used to estimate
+  the irradiance absorbed by sunlit and shaded leaves, given the solar elevation angle,
+  the atmospheric pressure, the leaf area index and the photosynthetic photon flux
+  density.
+
+* The :class:`~pyrealm.pmodel.two_leaf.TwoLeafAssimilation` then takes an instance of
+  the irradiance class and a fitted  :class:`~pyrealm.pmodel.pmodel.PModel` or
+  :class:`~pyrealm.pmodel.pmodel.SubdailyPModel`. The carboxylation rate and optimal chi
+  calculations from the P Model are then used to calculate the total assimilation by
+  sunlit and shaded leaves.
+
+The irradiance calculations are independent of the subsequent calculation of
+assimilation, so these classes are separated to allow the same irradiance estimates to
+be reused with different assimilation models.
 """
 
 from warnings import warn
@@ -510,67 +526,67 @@ def calculate_sunlit_scattered_irradiance(
 
 
 class TwoLeafAssimilation:
-    """Estimate gross primary production using the two-leaf, two-stream model.
+    r"""Estimate gross primary production using the two-leaf, two-stream model.
 
-    The two leaf, two stream model of
+    The two leaf, two stream model of :cite:t:`depury:1997a` estimates irradiance within
+    the canopy from diffuse, scattered and direct beam light radiation and then
+    separately estimates the assimilation by sunlit and shaded leaves.
 
-    This class integrates a photosynthesis model
-    (:class:`~pyrealm.pmodel.pmodel.PModel` or
-    :class:`~pyrealm.pmodel.pmodel.SubdailyPModel`) and irradiance data
-    (:class:`~pyrealm.pmodel.two_leaf.TwoLeafIrradience`) to compute
-    various canopy photosynthetic properties and ``GPP`` estimates.
+    The class requires an estimate of the irradiances absorbed by the sunlit and shaded
+    leaves, calculated using the :class:`~pyrealm.pmodel.two_leaf.TwoLeafIrradience`
+    class. It also requires a :class:`~pyrealm.pmodel.pmodel.PModel` or
+    :class:`~pyrealm.pmodel.pmodel.SubdailyPModel` instance, which is used to provide
+    estimates of four parameters:
 
-        Estimate the gross primary production (``GPP``) using the two-leaf model.
+    * the maximum carboxylation rate (:math:`V_{cmax}`),
+    * the maximum carboxylation rate at standard temperature (:math:`V_{cmax25}`),
+    * the math:`\ce{CO2}` limitation factor for RuBisCO-limited assimilation
+      (:math:`m_c`), and
+    * the :math:`\ce{CO2}` limitation factor for light-limited assimilation
+        (:math:`m_j`).
 
-        This method uses the following functions to calculate the ``GPP`` estimate,
-        including carboxylation rates, assimilation rates, and electron transport
-        rates for sunlit and shaded leaves. Ultimately leading to the estimation of
-        ``GPP``.
+    The model then calculate assimilation as follows:
 
-        **Calculation Steps:**
+    * An extinction coefficient (:math:`k_v`) is calculated to account for changes in
+      :math:`V_{cmax}` with depth in the canopy, following an empirical function in
+      :cite:`lloyd:2010a` (see :meth:`calculate_canopy_extinction_coef`) and using leaf
+      area index (:math:`L`) as a proxy for canopy depth.
 
-        1. Calculate the canopy extinction coefficient with
-        :func:`beam_extinction_coeff`
+    * The value for :math:`V_{cmax25}` from the P Model is adjusted to give a
+      representative through the canopy (:math:`V_{cmax25\_C}`) using :math:`L` and
+      :math:`k_v` (see :meth:`calculate_canopy_vcmax25`). This carboxylation capacity is
+      then partitioned between sunlit and shaded leaves: :math:`V_{cmax25\_Sn}` is
+      estimated using :meth:`calculate_sun_vcmax25` and then :math:`V_{cmax25\_Sd} =
+      V_{cmax25\_C} - V_{cmax25\_Sn}`.
 
-        2. Calculate the canopy carboxylation rate with
-        :func:`Vmax25_canopy`
+    * Values for :math:`J_{max25}` are then calculated using an empirical function of
+      :math:`V_{cmax25`} for both sunlit (:math:`J_{max25\_Sn}`) and shaded
+      (:math:`J_{max25\_Sd}`) leaves (see :meth:`calculate_jmax25`).
 
-        3. Calculate the carboxylation rate in sunlit areas
-        :func:`Vmax25_sun`
+    * The Arrhenius scaling method used with the P Model is then used to adjust these
+      estimates to the observed temperatures, giving :math:`V_{cmax\_Sn}, V_{cmax\_Sd},
+      J_{max\_Sn}, J_{max\_Sd}`.
 
-        4. Calculate the carboxylation rate in shaded areas
-        :func:`Vmax25_shade`
+    * The maximum assimilation rate via the carboxylation pathway is then found as
+      :math:`A_v = V_{cmax} m_c` for each leaf type, giving :math:`A_{v\_Sn}` and
+      :math:`A_{v\_Sd}`.
 
-        5. Calculate the sunlit and shaded carboxylation rates scaled by temperature
-        with :func:`carboxylation_scaling_to_T`
+    * The realised electron transport rate :math:`J` is calculated using an
+      epmirical function (see :meth:`calculate_electron_transport_rate`) and then used
+      to calculate the maximum assimilation rate via the electron transfer pathway as
+      :math:`A_j = m_j J / 4`, giving  :math:`A_{j\_Sn}` and :math:`A_{j\_Sd}`.
 
-        6. Calculate the sunlit and shaded photosynthetic rate
-        with :func:`photosynthetic_estimate`
+    * The realised assimilation is the minimum of  :math:`A_{c}` and :math:`A_{j}` for
+      each leaf type, giving:
+        * :math:`A_{Sn} = \min \left( A_{v\_Sn}, A_{j\_Sn} \right)`,
+        * :math:`A_{Sd} = \min \left( A_{v\_Sd}, A_{j\_Sd} \right)`.
 
-        7. Calculate the sunlit and shaded maximum rate of electron transport
-        with :func:`Jmax25`
-
-        8. Calculate the sunlit and shaded temperature corrected rate of electron
-        transport with :func:`Jmax25_temp_correction`
-
-        9. Calculate the sunlit and shaded electron transport rate
-        :func:`electron_transport_rate`
-
-        10. Calculate the sunlit and shaded assimilation rate driven by electron
-        transport with :func:`assimilation_rate`
-
-        11. Calculate the sunlit and shaded canopy assimilation
-        with :func:`assimilation_canopy`
-
-        12. Calculate the gross primary productivity
-        with :func:`gross_primary_product`
-
-        **Sets:**
-        gpp_estimate: Estimated gross primary production.
+    *  The gross primary productivity (gC m-2 s-1) is then calculated as :math:`(A_{Sn}
+       + A_{Sd}) * M_C`, where :math:`M_C` is the molar mass of carbon.
 
     Args:
-        pmodel: A PModel providing estimates of `m_j` `m_c`
-        irrad: Irradiance data required for ``GPP`` calculations.
+        pmodel: A PModel or SubdailyPModel.
+        irrad: An instance of TwoLeafIrradiance.
     """
 
     def __init__(
@@ -630,20 +646,20 @@ class TwoLeafAssimilation:
         (:math:`J_{Sd}`"""
         self.Av_sun: NDArray[np.float64]
         """The potential rate of assimilation associated with carboxylation in sunlit
-        leaves (:math:`A_{v\_Sn})."""
+        leaves (:math:`A_{v\_Sn}`)."""
         self.Av_shade: NDArray[np.float64]
         """The potential rate of assimilation associated with carboxylation in shaded
-        leaves (:math:`A_{v\_Sd})."""
+        leaves (:math:`A_{v\_Sd}`)."""
         self.Aj_sun: NDArray[np.float64]
         """The potential rate of assimilation associated with electron transfer in
-        sunlit leaves (:math:`A_{j\_Sn})."""
+        sunlit leaves (:math:`A_{j\_Sn}`)."""
         self.Aj_shade: NDArray[np.float64]
         """The potential rate of assimilation associated with electron transfer in
-        shaded leaves (:math:`A_{j\_Sn})."""
+        shaded leaves (:math:`A_{j\_Sn}`)."""
         self.A_sun: NDArray[np.float64]
-        """The realised assimilation rate for sunlit leaves (:math:`A_{Sn})."""
+        """The realised assimilation rate for sunlit leaves (:math:`A_{Sn}`)."""
         self.A_shade: NDArray[np.float64]
-        """The realised assimilation rate for shaded leaves (:math:`A_{Sd})."""
+        """The realised assimilation rate for shaded leaves (:math:`A_{Sd}`)."""
         self.gpp: NDArray[np.float64]
         """The gross primary productivity across the sunlit and shaded leaves."""
 
