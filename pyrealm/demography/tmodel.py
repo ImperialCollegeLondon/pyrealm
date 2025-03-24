@@ -644,17 +644,18 @@ def calculate_reproductive_tissue_mass(
     p_foliage_for_reproductive_tissue: NDArray[np.float64],
 ) -> NDArray[np.float64]:
     r"""Calculate reproductive tissue mass.
-    
+
     This function calculates the mass of reproductive tissue (:math:`m_rt`) as a fixed
     proportion of the total foliage mass (:math:`W_f`) of individuals.
 
     .. math::
-    
+
         m_rt = p_{f_rt} W_f
 
     Args:
         foliage_mass: The foliage mass
-        p_foliage_for_reproductive_tissue: The proportion of foliage mass that is reproductive tissue
+        p_foliage_for_reproductive_tissue: The proportion of foliage mass that is
+            reproductive tissue
         validate: Boolean flag to suppress argument validation
     """
 
@@ -915,8 +916,7 @@ class StemAllometry(PandasExporter, CohortMethods):
         )
 
         self.reproductive_tissue_mass = calculate_reproductive_tissue_mass(
-            self.foliage_mass,
-            stem_traits.p_foliage_for_reproductive_tissue
+            self.foliage_mass, stem_traits.p_foliage_for_reproductive_tissue
         )
 
         self.sapwood_mass = calculate_sapwood_masses(

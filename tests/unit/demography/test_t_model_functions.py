@@ -27,7 +27,7 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
 
 
 def test_calculate_reproductive_tissue_mass():
-    """Tests calculation of reproductive tissue mass."""        
+    """Tests calculation of reproductive tissue mass."""
 
     from pyrealm.demography.tmodel import calculate_reproductive_tissue_mass
 
@@ -40,7 +40,7 @@ def test_calculate_reproductive_tissue_mass():
 
 
 def test_calculate_reproductive_tissue_respiration():
-    """Tests calculation of reproductive tissue respiration."""        
+    """Tests calculation of reproductive tissue respiration."""
 
     from pyrealm.demography.tmodel import calculate_reproductive_tissue_respiration
 
@@ -53,7 +53,7 @@ def test_calculate_reproductive_tissue_respiration():
 
 
 def test_calculate_reproductive_tissue_turnover():
-    """Tests calculation of reproductive tissue turnover."""        
+    """Tests calculation of reproductive tissue turnover."""
 
     from pyrealm.demography.tmodel import calculate_reproductive_tissue_turnover
 
@@ -63,7 +63,7 @@ def test_calculate_reproductive_tissue_turnover():
     )
 
     assert result == np.array([2.5])
-    
+
 
 @pytest.mark.parametrize(
     argnames="data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape",
@@ -627,7 +627,6 @@ class TestTModel:
             return
 
         assert str(excep.value).startswith(excep_msg)
-
 
     def test_calculate_growth_increments(
         self,
