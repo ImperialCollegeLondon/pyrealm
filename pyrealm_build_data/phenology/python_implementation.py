@@ -374,7 +374,6 @@ subdaily_daily_values = subdaily_daily_values.drop_vars(
         "ppfd",
         "vpd",
         "aet",
-        "wn",
         "pre",
         "pet",
         "lat",
