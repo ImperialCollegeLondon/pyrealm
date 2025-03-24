@@ -443,34 +443,34 @@ def calculate_foliar_respiration(
 
 def calculate_reproductive_tissue_respiration(
     resp_rt: NDArray[np.float64],
-    whole_crown_gpp: NDArray[np.float64],
+    reproductive_tissue_mass: NDArray[np.float64],
     validate: bool = True,
 ) -> NDArray[np.float64]:
     r"""Calculate reproductive tissue respiration.
 
     Calculates the total reproductive tissue respiration (:math:`R_{rt}`) given the
-    individual crown GPP (:math:`P`) and the reproductive tissue respiration rate of the
-    plant functional type (:math:`r_{rt}`).
+    reproductive tissue mass (:math:`M_rt`) and the reproductive tissue respiration rate
+    of the plant functional type (:math:`r_{rt}`).
 
     NOTE: This function is not part of the original T Model, but is included here to
     allow for the calculation of reproductive tissue respiration in the same way as
-    foliar and sapwood respiration.
+    sapwood respiration.
 
     .. math::
-         R_{rt} = P \, r_rt
+         R_{rt} = M_rt \, r_rt
 
     Args:
         resp_rt: The reproductive tissue respiration rate
-        whole_crown_gpp: The individual whole crown GPP.
+        reproductive_tissue_mass: The stem reproductive tissue mass.
         validate: Boolean flag to suppress argument validation
     """
     if validate:
         _validate_demography_array_arguments(
             trait_args={"resp_rt": resp_rt},
-            size_args={"whole_crown_gpp": whole_crown_gpp},
+            size_args={"reproductive_tissue_mass": reproductive_tissue_mass},
         )
 
-    return _enforce_2D(whole_crown_gpp * resp_rt)
+    return _enforce_2D(reproductive_tissue_mass * resp_rt)
 
 
 def calculate_fine_root_respiration(
@@ -1073,7 +1073,7 @@ class StemAllocation(PandasExporter):
         self.reproductive_tissue_respiration = (
             calculate_reproductive_tissue_respiration(
                 resp_rt=stem_traits.resp_rt,
-                whole_crown_gpp=self.whole_crown_gpp,
+                reproductive_tissue_mass=stem_allometry.reproductive_tissue_mass,
                 validate=False,
             )
         )

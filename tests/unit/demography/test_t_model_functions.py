@@ -38,6 +38,20 @@ def test_calculate_reproductive_tissue_mass():
 
     assert result == np.array([2.5])
 
+
+def test_calculate_reproductive_tissue_respiration():
+    """Tests calculation of reproductive tissue mass."""        
+
+    from pyrealm.demography.tmodel import calculate_reproductive_tissue_respiration
+
+    result = calculate_reproductive_tissue_respiration(
+        resp_rt=np.array([10]),
+        reproductive_tissue_mass=np.array([0.25]),
+    )
+
+    assert result == np.array([2.5])
+
+
 @pytest.mark.parametrize(
     argnames="data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape",
     argvalues=[
