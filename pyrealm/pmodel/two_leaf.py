@@ -593,13 +593,13 @@ class TwoLeafAssimilation:
     def __init__(
         self,
         pmodel: PModel | SubdailyPModel,
-        irrad: TwoLeafIrradience,
+        irradiance: TwoLeafIrradience,
     ):
         """Initialize the TwoLeafAssimilation class."""
 
         self.pmodel = pmodel
         """A PModel or SubdailyPModel instance."""
-        self.irrad = irrad
+        self.irradiance = irradiance
         """A TwoLeafIrradiance instance """
 
         # TODO - both the pmodel and irrad instances have their own independent
@@ -673,22 +673,23 @@ class TwoLeafAssimilation:
         # Calculate the canopy extinction coefficient given the big leaf estimate of
         # V_cmax
         self.canopy_extinction_coef = calculate_canopy_extinction_coef(
-            vcmax=self.pmodel.vcmax, coef=self.irrad.two_leaf_constants.vcmax_lloyd_coef
+            vcmax=self.pmodel.vcmax,
+            coef=self.irradiance.two_leaf_constants.vcmax_lloyd_coef,
         )
 
         # Calculate overall Vcmax25 for the canopy and then partition between sunlit and
         # shaded leaves
         self.Vcmax25_canopy = calculate_canopy_vcmax25(
-            leaf_area_index=self.irrad.leaf_area_index,
+            leaf_area_index=self.irradiance.leaf_area_index,
             vcmax25=self.pmodel.vcmax25,
             canopy_extinction_coef=self.canopy_extinction_coef,
         )
 
         self.Vcmax25_sun = calculate_sun_vcmax25(
-            leaf_area_index=self.irrad.leaf_area_index,
+            leaf_area_index=self.irradiance.leaf_area_index,
             vcmax25=self.pmodel.vcmax25,
             canopy_extinction_coef=self.canopy_extinction_coef,
-            beam_extinction_coef=self.irrad.beam_extinction_coef,
+            beam_extinction_coef=self.irradiance.beam_extinction_coef,
         )
 
         self.Vcmax25_shade = self.Vcmax25_canopy - self.Vcmax25_sun
@@ -721,11 +722,11 @@ class TwoLeafAssimilation:
 
         self.J_sun = calculate_electron_transport_rate(
             jmax=self.Jmax_sun,
-            absorbed_irradiance=self.irrad.sunlit_absorbed_irradiance,
+            absorbed_irradiance=self.irradiance.sunlit_absorbed_irradiance,
         )
         self.J_shade = calculate_electron_transport_rate(
             jmax=self.Jmax_shade,
-            absorbed_irradiance=self.irrad.shaded_absorbed_irradiance,
+            absorbed_irradiance=self.irradiance.shaded_absorbed_irradiance,
         )
 
         self.Aj_sun = self.pmodel.optchi.mj * self.J_sun / 4
@@ -740,10 +741,10 @@ class TwoLeafAssimilation:
         # but explicitly setting to zero where the solar elevation is below the solar
         # obscurity angle.
         self.gpp = np.where(
-            self.irrad.solar_elevation
-            > self.irrad.two_leaf_constants.solar_obscurity_angle,
+            self.irradiance.solar_elevation
+            > self.irradiance.two_leaf_constants.solar_obscurity_angle,
             (self.Acanopy_shade + self.Acanopy_sun)
-            * self.irrad.core_constants.k_c_molmass,
+            * self.irradiance.core_constants.k_c_molmass,
             0,
         )
 
