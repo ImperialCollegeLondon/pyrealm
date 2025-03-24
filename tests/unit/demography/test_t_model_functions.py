@@ -26,6 +26,18 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
     assert_allclose(actual_r0_values, expected_r0)
 
 
+def test_calculate_reproductive_tissue_mass():
+    """Tests calculation of reproductive tissue mass."""        
+
+    from pyrealm.demography.tmodel import calculate_reproductive_tissue_mass
+
+    result = calculate_reproductive_tissue_mass(
+        p_foliage_for_reproductive_tissue=np.array([10]),
+        foliage_mass=np.array([0.25]),
+    )
+
+    assert result == np.array([2.5])
+
 @pytest.mark.parametrize(
     argnames="data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape",
     argvalues=[
@@ -588,6 +600,7 @@ class TestTModel:
             return
 
         assert str(excep.value).startswith(excep_msg)
+
 
     def test_calculate_growth_increments(
         self,
