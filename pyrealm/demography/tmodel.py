@@ -441,6 +441,34 @@ def calculate_foliar_respiration(
     return _enforce_2D(whole_crown_gpp * resp_f)
 
 
+def calculate_root_exudates(
+    p_exudates: NDArray[np.float64],
+    whole_crown_gpp: NDArray[np.float64],
+    validate: bool = True,
+) -> NDArray[np.float64]:
+    r"""Calculate foliar respiration.
+
+    Calculates a fixed proportion of the total GPP for the crown that is allocated to
+    root exudates given the individual whole crown GPP and the proportion of GPP
+    allocated to root exudates (:math:`p_{ex}`).
+
+    NOTE: This is a naieve calculation method that is not part of the T model. This
+    simply is used to topslice GPP and allocate a fixed proportion to root exudates.
+
+    Args:
+        p_exudates: The portion of GPP allocated to root exudates.
+        whole_crown_gpp: The individual whole crown GPP.
+        validate: Boolean flag to suppress argument validation
+    """
+    if validate:
+        _validate_demography_array_arguments(
+            trait_args={"p_exudates": p_exudates},
+            size_args={"whole_crown_gpp": whole_crown_gpp},
+        )
+
+    return _enforce_2D(whole_crown_gpp * p_exudates)
+
+
 def calculate_reproductive_tissue_respiration(
     resp_rt: NDArray[np.float64],
     reproductive_tissue_mass: NDArray[np.float64],
@@ -1009,6 +1037,8 @@ class StemAllocation(PandasExporter):
     """Allocation to reproductive tissue respiration (g C)"""
     fine_root_respiration: NDArray[np.float64] = field(init=False)
     """Allocation to fine root respiration (g C)"""
+    root_exudates: NDArray[np.float64] = field(init=False)
+    """Allocation to root exudates (g C)"""
     npp: NDArray[np.float64] = field(init=False)
     """Net primary productivity (g C)"""
     turnover: NDArray[np.float64] = field(init=False)
@@ -1057,6 +1087,15 @@ class StemAllocation(PandasExporter):
             lai=stem_traits.lai,
             validate=False,
         )
+
+        self.root_exudates = calculate_root_exudates(
+            p_exudates=stem_traits.p_gpp_for_root_exudation,
+            whole_crown_gpp=self.whole_crown_gpp,
+            validate=False,
+        )
+
+        # Topslice GPP to remove allocation for root exudates
+        self.whole_crown_gpp = self.whole_crown_gpp - self.root_exudates
 
         self.sapwood_respiration = calculate_sapwood_respiration(
             resp_s=stem_traits.resp_s,
