@@ -40,7 +40,7 @@ def test_calculate_reproductive_tissue_mass():
 
 
 def test_calculate_reproductive_tissue_respiration():
-    """Tests calculation of reproductive tissue mass."""        
+    """Tests calculation of reproductive tissue respiration."""        
 
     from pyrealm.demography.tmodel import calculate_reproductive_tissue_respiration
 
@@ -51,6 +51,19 @@ def test_calculate_reproductive_tissue_respiration():
 
     assert result == np.array([2.5])
 
+
+def test_calculate_reproductive_tissue_turnover():
+    """Tests calculation of reproductive tissue turnover."""        
+
+    from pyrealm.demography.tmodel import calculate_reproductive_tissue_turnover
+
+    result = calculate_reproductive_tissue_turnover(
+        m_rt=np.array([10]),
+        tau_rt=np.array([4]),
+    )
+
+    assert result == np.array([2.5])
+    
 
 @pytest.mark.parametrize(
     argnames="data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape",
