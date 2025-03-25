@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
+from numpy.typing import NDArray
 
 
 @dataclass
@@ -77,13 +78,13 @@ class Calendar(Sized):
         CalendarDay(date=2001-12-31, year=2001, julian_day=365, days_in_year=365)
     """
 
-    dates: np.ndarray
+    dates: NDArray[np.datetime64]
     """A numpy array containing :class:`numpy.datetime64` values."""
-    year: np.ndarray = field(init=False)
+    year: NDArray[np.int_] = field(init=False)
     """A numpy array giving the year of each datetime."""
-    julian_day: np.ndarray = field(init=False)
+    julian_day: NDArray[np.int_] = field(init=False)
     """A numpy array giving the julian day of each datetime."""
-    days_in_year: np.ndarray = field(init=False)
+    days_in_year: NDArray[np.int_] = field(init=False)
     """A numpy array giving the number of days in the year for each datetime."""
 
     def __post_init__(self) -> None:
@@ -136,8 +137,8 @@ class LocationDateTime:
         ...     longitude=147.34167,
         ...     year_date_time=np.array([np.datetime64("2024-08-12T10:30")]),
         ... )
-        >>> print(ldt.latitude_rad)
-        -0.6118833411105811
+        >>> print(round(ldt.latitude_rad, 5))
+        -0.61188
         >>> print(ldt.decimal_time)
         [10.5]
         >>> print(ldt.local_standard_meridian)
@@ -152,13 +153,13 @@ class LocationDateTime:
     """The longitude of the location in degrees."""
     longitude_rad: float = field(init=False)
     """The longitude of the location in radians, calculated automatically."""
-    year_date_time: np.ndarray
+    year_date_time: NDArray[np.datetime64]
     """An array of np.datetime64 values corresponding to observations at the 
     location (local time)."""
-    julian_days: np.ndarray = field(init=False)
+    julian_days: NDArray[np.int_] = field(init=False)
     """An array of Julian day of the year numbers calculated from the
     ``year_date_time``."""
-    decimal_time: np.ndarray = field(init=False)
+    decimal_time: NDArray[np.float64] = field(init=False)
     """An array of decimal hour values calculated from local ``year_date_time``."""
     local_standard_meridian: int = field(init=False)
     """An int describing time offset from local meridian to Greenwich meridian
@@ -173,8 +174,8 @@ class LocationDateTime:
 
         self.julian_days = Calendar(self.year_date_time).julian_day
         self.decimal_time = self.decimal_hour()
-        self.latitude_rad = self.latitude * np.pi / 180
-        self.longitude_rad = self.longitude * np.pi / 180
+        self.latitude_rad = np.deg2rad(self.latitude)
+        self.longitude_rad = np.deg2rad(self.longitude)
         self.local_standard_meridian = self.get_local_standard_meridian()
 
     def decimal_hour(self) -> np.ndarray:

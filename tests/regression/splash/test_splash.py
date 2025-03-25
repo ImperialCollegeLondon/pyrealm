@@ -65,9 +65,9 @@ def test_estimate_daily_water_balance_iter(
     from pyrealm.splash.splash import SplashModel
 
     inputs, expected = daily_flux_benchmarks
-    days = inputs["dates"].astype("datetime64[D]")
+    days = inputs["dates"].to_numpy().astype("datetime64[D]")
 
-    for day, inp, exp in zip(days, inputs, expected):
+    for day, (_, inp), (_, exp) in zip(days, inputs.iterrows(), expected.iterrows()):
         # initialise splash and calculate the evaporative flux and soil moisture
         splash = SplashModel(
             lat=np.array([inp["lat"]]),
@@ -96,17 +96,17 @@ def test_estimate_daily_water_balance_array(
     inputs, expected = daily_flux_benchmarks
 
     splash = SplashModel(
-        lat=inputs["lat"],
-        elv=inputs["elv"],
-        sf=inputs["sf"],
-        tc=inputs["tc"],
-        pn=inputs["pn"],
-        dates=Calendar(inputs["dates"]),
+        lat=inputs["lat"].to_numpy(),
+        elv=inputs["elv"].to_numpy(),
+        sf=inputs["sf"].to_numpy(),
+        tc=inputs["tc"].to_numpy(),
+        pn=inputs["pn"].to_numpy(),
+        dates=Calendar(inputs["dates"].to_numpy()),
         core_const=splash_core_constants,
     )
 
     aet, sm, ro = splash.estimate_daily_water_balance(
-        previous_wn=inputs["wn"], day_idx=None
+        previous_wn=inputs["wn"].to_numpy(), day_idx=None
     )
 
     assert_allclose(aet, expected["aet_d"], rtol=1e-6)

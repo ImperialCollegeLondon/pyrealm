@@ -136,6 +136,14 @@ pmodC4 = PModel(
 pmodC4.summarize()
 ```
 
+```{code-cell} ipython3
+np.nanmean(pmodC3.iwue)
+```
+
+```{code-cell} ipython3
+np.nanmean((pmodC3.gpp / pmodC3.env.core_const.k_c_molmass) / pmodC3.gs)
+```
+
 ## Subdaily P Models
 
 The code below then refits these models, with slow responses in $\xi$, $V_{cmax25}$ and

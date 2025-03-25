@@ -27,11 +27,11 @@ def test_evap_scalar(splash_core_constants):
 
     cal = Calendar(np.array(["2000-06-20"], dtype="<M8[D]"))
     solar = DailySolarFluxes(
-        lat=np.array([37.7]),
-        elv=np.array([142]),
+        latitude=np.array([37.7]),
+        elevation=np.array([142]),
         dates=cal,
-        sf=np.array([1.0]),
-        tc=np.array([23.0]),
+        sunshine_fraction=np.array([1.0]),
+        temperature=np.array([23.0]),
     )
 
     evap = DailyEvapFluxes(
@@ -79,17 +79,23 @@ def test_evap_iter(splash_core_constants, daily_flux_benchmarks, expected_attr):
 
     inputs, expected = daily_flux_benchmarks
 
-    for day, inp, exp in zip(inputs["dates"], inputs, expected):
-        # Convert the input row into a dictionary of 1D arrays
-        inp = {nm: np.array([inp[nm]]) for nm in inputs.dtype.names}
-
-        cal = Calendar(np.array([day]).astype("datetime64[D]"))
+    for day, (_, inp), (_, exp) in zip(
+        inputs["dates"], inputs.iterrows(), expected.iterrows()
+    ):
+        cal = Calendar(dates=np.array([day]).astype("datetime64[D]"))
         solar = DailySolarFluxes(
-            lat=inp["lat"], elv=inp["elv"], dates=cal, sf=inp["sf"], tc=inp["tc"]
+            dates=cal,
+            latitude=np.array([inp["lat"]]),
+            elevation=np.array([inp["elv"]]),
+            sunshine_fraction=np.array([inp["sf"]]),
+            temperature=np.array([inp["tc"]]),
         )
 
         evap = DailyEvapFluxes(
-            solar, pa=inp["pa"], tc=inp["tc"], core_const=splash_core_constants
+            solar=solar,
+            pa=np.array([inp["pa"]]),
+            tc=np.array([inp["tc"]]),
+            core_const=splash_core_constants,
         )
         aet, hi, sw = evap.estimate_aet(wn=inp["wn"], only_aet=False)
 
@@ -113,20 +119,23 @@ def test_evap_array(splash_core_constants, daily_flux_benchmarks, expected_attr)
     from pyrealm.splash.solar import DailySolarFluxes
 
     inputs, expected = daily_flux_benchmarks
-    cal = Calendar(inputs["dates"].astype("datetime64[D]"))
+    cal = Calendar(inputs["dates"].to_numpy().astype("datetime64[D]"))
 
     solar = DailySolarFluxes(
-        lat=inputs["lat"],
-        elv=inputs["elv"],
         dates=cal,
-        sf=inputs["sf"],
-        tc=inputs["tc"],
+        latitude=inputs["lat"].to_numpy(),
+        elevation=inputs["elv"].to_numpy(),
+        sunshine_fraction=inputs["sf"].to_numpy(),
+        temperature=inputs["tc"].to_numpy(),
     )
 
     evap = DailyEvapFluxes(
-        solar, pa=inputs["pa"], tc=inputs["tc"], core_const=splash_core_constants
+        solar=solar,
+        pa=inputs["pa"].to_numpy(),
+        tc=inputs["tc"].to_numpy(),
+        core_const=splash_core_constants,
     )
-    aet, hi, sw = evap.estimate_aet(wn=inputs["wn"], only_aet=False)
+    aet, hi, sw = evap.estimate_aet(wn=inputs["wn"].to_numpy(), only_aet=False)
 
     for ky in expected_attr:
         assert_allclose(getattr(evap, ky), expected[ky])
@@ -156,11 +165,11 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
     elev = np.broadcast_to(inputs.elev.data[None, :, :], inputs.sf.data.shape)
 
     solar = DailySolarFluxes(
-        lat=lat,
-        elv=elev,
+        latitude=lat,
+        elevation=elev,
         dates=cal,
-        sf=inputs["sf"].data,
-        tc=inputs["tmp"].data,
+        sunshine_fraction=inputs["sf"].data,
+        temperature=inputs["tmp"].data,
         core_const=splash_core_constants,
     )
 
