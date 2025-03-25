@@ -446,12 +446,12 @@ def calculate_sunlit_diffuse_irradiance(
 
     Args:
         diffuse_irradiance: Array of diffuse radiation values (:math:`I_d`)
+        beam_extinction_coef: Array of beam extinction coefficients (:math:`k_b`)
+        leaf_area_index: Array of leaf area index values (:math:`L`)
         diffuse_reflectance : The canopy reflectance of diffuse radiation
             (:math:`\rho_{cd}`).
-        leaf_area_index: Array of leaf area index values (:math:`L`)
         diffuse_extinction_coef: Constant for calculating the sunlit diffuse
             irradiance (:math:`k_d'`)
-        beam_extinction_coef: Array of beam extinction coefficients (:math:`k_b`)
 
     Returns:
         Array of sunlit diffuse irradiance values.
@@ -608,6 +608,11 @@ class TwoLeafAssimilation:
         #        be convoluted to force them to be the same instance. We'd need to write
         #        a custom __eq__ dunder method to handle the structures inside the
         #        classes.
+        #      - Similarly, both the PModel and TwoLeafIrradiance require PPFD and PATM
+        #        and those should be the same between the two objects.
+        #      - Ideally we want to avoid these dual definitions, which we could do if
+        #        the PModel is used as input to the TwoLeafIrradiance. Less reusable
+        #        class, but removes the parallel arguments.
 
         self.canopy_extinction_coef: NDArray[np.float64]
         """An extinction coefficient capturing the vertical structure of carboxylation

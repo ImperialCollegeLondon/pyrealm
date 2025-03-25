@@ -1,159 +1,99 @@
-"""Provides unit tests for teh Two Leaf method."""
+"""Provides some simple initialisation tests for the TwoLeaf classes."""
+
+from contextlib import nullcontext as does_not_raise
 
 import numpy as np
 import pytest
 
-from pyrealm.constants.core_const import CoreConst
-from pyrealm.pmodel.two_leaf import (
-    TwoLeafAssimilation,
-    TwoLeafIrradience,
+
+@pytest.mark.parametrize(
+    argnames="args,outcome,msg",
+    argvalues=(
+        pytest.param(
+            dict(
+                solar_elevation=np.array([0.6]),
+                ppfd=np.array([1000]),
+                leaf_area_index=np.array([2.0]),
+                patm=np.array([101325]),
+            ),
+            does_not_raise(),
+            None,
+            id="all good single site",
+        ),
+        pytest.param(
+            dict(
+                solar_elevation=np.array([0.6, 0.7]),
+                ppfd=np.array([1000, 1600]),
+                leaf_area_index=np.array([2.0, 5.0]),
+                patm=np.array([101325, 95608]),
+            ),
+            does_not_raise(),
+            None,
+            id="all good two sites",
+        ),
+        pytest.param(
+            dict(
+                solar_elevation=np.array([0.6, 0.7]),
+                ppfd=np.array([1000, 1600]),
+                leaf_area_index=np.array([2.0, 5.0]),
+                patm=np.array([101.325, 95.608]),
+            ),
+            pytest.warns(UserWarning, match=r"values outside the expected"),
+            None,
+            id="out of bounds",
+        ),
+        pytest.param(
+            dict(
+                solar_elevation=np.array([0.6, 0.7]),
+                ppfd=np.array([1000, 1600, 4567]),
+                leaf_area_index=np.array([2.0, 5.0]),
+                patm=np.array([101.325, 95.608]),
+            ),
+            pytest.raises(ValueError),
+            "Inputs contain arrays of different shapes.",
+            id="shape mismatch",
+        ),
+    ),
 )
-
-
-@pytest.fixture
-def two_leaf():
-    """Fixture to create a TwoLeafIrradience instance."""
-
+def test_TwoLeafIrradience(args, outcome, msg):
+    """Tests initialisation conditions of TwoLeafIrradience."""
     from pyrealm.pmodel.two_leaf import TwoLeafIrradience
 
-    return TwoLeafIrradience(
-        solar_elevation=np.array([0.6]),
-        ppfd=np.array([1000]),
-        leaf_area_index=np.array([2.0]),
-        patm=np.array([101325]),
-    )
+    with outcome as outc:
+        two_leaf = TwoLeafIrradience(**args)
+
+        # Check the calculated attributes have been populated and have the right shape
+        assert hasattr(two_leaf, "sunlit_absorbed_irradiance")
+        assert two_leaf.sunlit_absorbed_irradiance.shape == args["ppfd"].shape
+
+        return
+
+    # Handle exception messages
+    assert str(outc.value) == msg
 
 
-def test_check_input_consistency(two_leaf):
-    """Test the _check_input_consistency method."""
-    # Consistent shapes
-    assert two_leaf._check_input_consistency() is True
+def test_TwoLeafAssimilation():
+    """Test the creation of a TwoLeafAssimilation instance."""
 
-    # Inconsistent shapes
-    two_leaf.patm = np.array([101325, 101300])
-    assert two_leaf._check_input_consistency() is False
+    from pyrealm.pmodel import PModel, PModelEnvironment
+    from pyrealm.pmodel.two_leaf import TwoLeafAssimilation, TwoLeafIrradience
 
-
-def test_check_for_NaN(two_leaf):
-    """Test the _check_for_NaN method to identify NaN values."""
-    # No NaNs
-    assert two_leaf._check_for_NaN() is True
-
-    # NaN in beta_angle
-    two_leaf.beta_angle = np.array([np.nan])
-    assert two_leaf._check_for_NaN() is False
-
-
-def test_check_for_negative_values(two_leaf):
-    """Test the _check_for_negative_values method to identify negative values."""
-    # No negative values
-    assert two_leaf._check_for_negative_values() is True
-
-    # Negative value in leaf_area_index
-    two_leaf.leaf_area_index = np.array([-2.0])
-    assert two_leaf._check_for_negative_values() is False
-
-
-def test_initialization(two_leaf):
-    """Test initialization of the TwoLeafIrradience class."""
-    assert two_leaf.beta_angle.shape == (1,)
-    assert two_leaf.ppfd.shape == (1,)
-    assert two_leaf.leaf_area_index.shape == (1,)
-    assert two_leaf.patm.shape == (1,)
-    assert two_leaf.pass_checks is True
-
-
-def test_calc_absorbed_irradience(two_leaf):
-    """Test the calc_absorbed_irradiance method."""
-
-    # Check if all attributes are calculated
-    # One is a scalar
-    assert hasattr(two_leaf, "horizontal_leaf_beam_irradiance")
-    # The others are arrays, so check shape
-    attributes = [
-        "beam_extinction_coefficient",
-        "scattered_beam_extinction_coefficient",
-        "fraction_of_diffuse_radiation",
-        "uniform_leaf_beam_irradiance",
-        "I_d",
-        "I_b",
-        "I_c",
-        "Isun_beam",
-        "Isun_diffuse",
-        "Isun_scattered",
-        "I_csun",
-        "I_cshade",
-    ]
-    for attr in attributes:
-        assert getattr(two_leaf, attr).shape == two_leaf.solar_elevation.shape
-
-
-@pytest.fixture(scope="session")
-def mock_pmodel():
-    """Fixture to mock a PModel instance."""
-
-    class MockPModel:
-        vcmax = np.array([50.0])
-        vcmax25 = np.array([45.0])
-        optchi = type(
-            "MockOptimalChiABC", (), {"mc": np.array([0.9]), "mj": np.array([0.8])}
-        )()
-        env = type("MockEnv", (), {"tc": np.array([25.0]), "core_const": CoreConst()})()
-        core_const = type(
-            "MockCoreConst", (), {"k_c_molmass": 12.0, "core_const": CoreConst()}
-        )()
-
-    return MockPModel()
-
-
-@pytest.fixture
-def two_leaf_assimilation(mock_pmodel, two_leaf):
-    """Fixture to create a TwoLeafAssimilation instance."""
-    TLA = TwoLeafAssimilation(
-        pmodel=mock_pmodel,
-        irrad=two_leaf,
-    )
-    return TLA
-
-
-def test_initialization_assim(two_leaf_assimilation):
-    """Test initialization of the TwoLeafAssimilation class."""
-    assert hasattr(two_leaf_assimilation, "vcmax_pmod")
-    assert hasattr(two_leaf_assimilation, "vcmax_pmod")
-    assert hasattr(two_leaf_assimilation, "vcmax25_pmod")
-    assert hasattr(two_leaf_assimilation, "optchi_obj")
-    assert hasattr(two_leaf_assimilation, "core_const")
-    assert isinstance(two_leaf_assimilation.irrad, TwoLeafIrradience)
-
-
-def test_gpp_estimator(two_leaf_assimilation, two_leaf):
-    """Test the gpp_estimator method."""
-
-    # Check if all GPP-related attributes are calculated
-    attributes = [
-        "kv_Lloyd",
-        "Vmax25_canopy",
-        "Vmax25_sun",
-        "Vmax25_shade",
-        "Vmax_sun",
-        "Vmax_shade",
-        "Av_sun",
-        "Av_shade",
-        "Jmax25_sun",
-        "Jmax25_shade",
-        "Jmax_sun",
-        "Jmax_shade",
-        "J_sun",
-        "J_shade",
-        "Aj_sun",
-        "Aj_shade",
-        "Acanopy_sun",
-        "Acanopy_shade",
-        "gpp_estimate",
-    ]
-    for attr in attributes:
-        assert hasattr(two_leaf_assimilation, attr)
-        assert (
-            getattr(two_leaf_assimilation, attr).shape
-            == two_leaf_assimilation.irrad.leaf_area_index.shape
+    model = PModel(
+        env=PModelEnvironment(
+            tc=np.array([20]),
+            vpd=np.array([800]),
+            patm=np.array([100000]),
+            co2=np.array([400]),
+            fapar=np.array([1]),
+            ppfd=np.array([1500]),
         )
+    )
+
+    irrad = TwoLeafIrradience(
+        solar_elevation=np.array([0.7]),
+        patm=np.array([100000]),
+        ppfd=np.array([1500]),
+        leaf_area_index=np.array([3]),
+    )
+
+    _ = TwoLeafAssimilation(pmodel=model, irradiance=irrad)

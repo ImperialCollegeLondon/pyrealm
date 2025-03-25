@@ -60,7 +60,7 @@ def assimilation_single_day(solar_irradiance, get_data):
 
     assim = TwoLeafAssimilation(
         pmodel=standard_pmod,
-        irrad=solar_irradiance,
+        irradiance=solar_irradiance,
     )
 
     return assim
