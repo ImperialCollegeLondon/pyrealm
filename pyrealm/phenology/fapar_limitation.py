@@ -117,12 +117,12 @@ def get_annual(
 
     return annual_x
 
+
 def daily_to_subdaily(
     x: NDArray,
     datetimes: NDArray[np.datetime64],
 ) -> NDArray:
-    """Broadcasts an array of the entity x from daily values to subdaily values,
-    given subdaily datetimes.
+    """Broadcasts an array of the entity x from daily values to subdaily values.
 
     Args:
         x: Array of daily values.
@@ -132,12 +132,12 @@ def daily_to_subdaily(
     subdaily_x = np.zeros(len(datetimes))
 
     n_days = len(x)
-    datetimes_by_day = datetimes.view()
     obs_per_day = int(len(datetimes) / n_days)
-    datetimes_by_day.shape = tuple([n_days, obs_per_day, *list(datetimes.shape[1:])])
 
-    for i in range(len(datetimes)):
-        subdaily_x[i] = x[]
+    for i in range(n_days):
+        subdaily_x[i * obs_per_day : i * obs_per_day + obs_per_day] = x[i]
+
+    return subdaily_x
 
 
 def compute_annual_total_precip(
@@ -290,7 +290,7 @@ class FaparLimitation:
         check_datetimes(datetimes)
 
         annual_total_potential_gpp = get_annual(
-            pmodel.gpp*soil_moisture_stress, datetimes, growing_season, "total"
+            pmodel.gpp * soil_moisture_stress, datetimes, growing_season, "total"
         )
         annual_mean_ca = get_annual(pmodel.env.ca, datetimes, growing_season, "mean")
         annual_mean_chi = get_annual(
@@ -309,7 +309,6 @@ class FaparLimitation:
             annual_total_precip,
             aridity_index,
         )
-
 
     @classmethod
     def from_subdailypmodel(
@@ -337,15 +336,25 @@ class FaparLimitation:
 
         check_datetimes(datetimes)
 
-        annual_total_potential_gpp = get_annual(
-            subdaily_pmodel.gpp*soil_moisture_stress, datetimes, growing_season, "total"
+        soil_moisture_stress_subdaily = daily_to_subdaily(
+            soil_moisture_stress, datetimes
         )
-        annual_mean_ca = get_annual(subdaily_pmodel.env.ca, datetimes,
-                                    growing_season, "mean")
+
+        annual_total_potential_gpp = get_annual(
+            subdaily_pmodel.gpp * soil_moisture_stress_subdaily,
+            datetimes,
+            growing_season,
+            "total",
+        )
+        annual_mean_ca = get_annual(
+            subdaily_pmodel.env.ca, datetimes, growing_season, "mean"
+        )
         annual_mean_chi = get_annual(
             subdaily_pmodel.optchi.chi.round(5), datetimes, growing_season, "mean"
         )
-        annual_mean_vpd = get_annual(subdaily_pmodel.env.vpd, datetimes, growing_season, "mean")
+        annual_mean_vpd = get_annual(
+            subdaily_pmodel.env.vpd, datetimes, growing_season, "mean"
+        )
         annual_total_precip = get_annual(precip, datetimes, growing_season, "total")
 
         return cls(
