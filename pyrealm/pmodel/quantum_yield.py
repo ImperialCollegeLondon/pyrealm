@@ -11,12 +11,11 @@ transfer, which is exactly four times larger, so check definitions here.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from warnings import warn
 
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm import ExperimentalFeatureWarning
+from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.utilities import (
     check_input_shapes,
     evaluate_horner_polynomial,
@@ -281,6 +280,8 @@ class QuantumYieldSandoval(
     defaulting to the ratio of 1/9 in the absence of a Q cycle :cite:`long:1993a`.
     """
 
+    __experimental__: bool = True
+
     def peak_quantum_yield(
         self, aridity_index: NDArray[np.float64]
     ) -> NDArray[np.float64]:
@@ -298,11 +299,7 @@ class QuantumYieldSandoval(
         """Calculate kphio."""
 
         # Warn that this is an experimental feature.
-        warn(
-            "The sandoval method for calculating kphio is experimental, "
-            "see the class documentation",
-            ExperimentalFeatureWarning,
-        )
+        warn_experimental("QuantumYieldSandoval._calculate_kphio")
 
         aridity_index = getattr(self.env, "aridity_index")
         mean_growth_temperature = getattr(self.env, "mean_growth_temperature")

@@ -22,17 +22,37 @@ Boya Zhou's original workflow, put together by David Orme and Boya Zhou to bring
 the calculations into Python using agreed inputs to create a repeatable regression test
 dataset.
 
-The script creates three output files to allow regression testing at three time scales:
+The script creates outputs from fitting two P Models.
 
-* **python_hh_outputs.csv**: The predictions from the P Model of GPP at the half hourly
-  scale, along with optimal chi and ci values
+1. A subdaily P Model at 30 minute resolution including daily soil moisture penalties.
+   The outputs of this model are stored in the `subdaily_example` directory and includes
+   three output files to allow regression testing at three time scales:
 
-* **python_daily_outputs.csv**: Daily total GPP along with soil moisture stress factors
-  and resulting penalised daily GPP, growing season definition and resulting time series
-  in LAI and lagged LAI.
+  * **half_hourly_data.csv**: The predictions from the P Model of GPP at the half hourly
+    scale, along with optimal chi and ci values. The file also includes the forcing data
+    used to fit the model and the precipitation data.
 
-* **python_annual_outputs.csv**:  Annual values used in calculations including total
-  annual assimilation, precipitation, number of growing days, mean carbon chi and VPD
-  within the growing season and then annual values for maximum FAPAR, LAI and the m
-  parameter.
+  * **daily_outputs.csv**: Daily total GPP along with soil moisture stress factors and
+    resulting penalised daily GPP, growing season definition and resulting time series
+    in LAI and lagged LAI.
+
+  * **annual_outputs.csv**:  Annual values used in calculations including total annual
+    assimilation, precipitation, number of growing days, mean carbon chi and VPD within
+    the growing season and then annual values for maximum FAPAR, LAI and the m
+    parameter. These values are then used to calculate the daily LAI predictions.
+
+2. A standard P Model calculated using fortnightly averages, excepting precipitation,
+   which is calculated from the sum of half hourly FluxNET precipitation converted from
+   mm to moles. The outputs from this model are stored in the `fortnightly_example`
+   directory and includes:
+
+  * **fortnightly_data.csv**: The predictions from the P Model of GPP at the fortnightly
+    scale, along with optimal chi and ci values. The file also includes the forcing data
+    used to fit the model and the precipitation data.
+
+  * **annual_outputs.csv**:  Annual values used in calculations including total annual
+    assimilation, precipitation, number of growing days, mean carbon chi and VPD within
+    the growing season and then annual values for maximum FAPAR, LAI and the m
+    parameter. These values are then used to calculate the daily LAI predictions.
+
 """  # noqa: D205, D415

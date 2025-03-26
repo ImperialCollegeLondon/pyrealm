@@ -213,8 +213,3 @@ class PModelConst(ConstantsClass):
     r"""Scaling factors ``theta`` (:math:`\theta`, 0.85) and ``c`` (:math:`c`,
     0.05336251) used in the calculation of J_max limitation using the method of 
     :cite:t:`Smith:2019dv`."""
-
-    # Atkin
-    atkin_rd_to_vcmax: float = 0.015
-    """Ratio of Dark respiration to Vcmax25. Value taken from :cite:t:`Atkin:2015hk` for
-    C3 herbaceous plants."""
