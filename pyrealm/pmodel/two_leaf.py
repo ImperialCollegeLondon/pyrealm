@@ -613,6 +613,7 @@ class TwoLeafAssimilation:
         #      - Ideally we want to avoid these dual definitions, which we could do if
         #        the PModel is used as input to the TwoLeafIrradiance. Less reusable
         #        class, but removes the parallel arguments.
+        #      - See https://github.com/ImperialCollegeLondon/pyrealm/issues/469
 
         self.canopy_extinction_coef: NDArray[np.float64]
         """An extinction coefficient capturing the vertical structure of carboxylation
@@ -821,7 +822,7 @@ def calculate_sun_vcmax25(
 ) -> NDArray[np.float64]:
     r"""Calculate standardised carboxylation rate of sunlit leaves.
 
-    Calcultes the maximum carboxylation rate for sunlit leaves at the standard
+    Calculates the maximum carboxylation rate for sunlit leaves at the standard
     temperature of 25°C  (:math:`V_{cmax25\_Sn}`) as:
 
     .. math::
