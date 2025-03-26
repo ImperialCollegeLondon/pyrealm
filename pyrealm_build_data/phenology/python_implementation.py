@@ -261,7 +261,6 @@ subdaily_annual_values = xr.merge(
     join="left",
 )
 
-
 # Constants
 z = 12.227  # leaf costs, mol m2 year
 k = 0.5  # light extinction coefficient, -

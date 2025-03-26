@@ -27,6 +27,33 @@ def test_phenology_gpp_calculation(
         ppfd=de_gri_subdaily_data["ppfd"].to_numpy(),
     )
 
+    # Calculate soil moisture stress factor
+    # - double check the aridity index across 20 years matches the inputs
+    aridity_index = float(
+        de_gri_splash_inputs["pet"].sum() / de_gri_splash_inputs["pre"].sum()
+    )
+
+    assert_allclose(de_gri_constants["AI_from_cruts"], aridity_index)
+
+    # reduce to match time series
+    de_gri_splash_inputs = de_gri_splash_inputs.sel(
+        time=slice("2004-01-01", "2014-12-31")
+    )
+
+    soilm_stress = calc_soilmstress_mengoli(
+        soilm=de_gri_splash_inputs["wn"].to_numpy() / 150,
+        aridity_index=de_gri_constants["AI_from_cruts"],
+    )
+
+    assert_allclose(soilm_stress, de_gri_daily_outputs["soilm_stress"], rtol=1e-6)
+
+    # Standard PModel - not used in further calculations but should agree
+    de_gri_pmodel = PModel(
+        env=env,
+        reference_kphio=1 / 8,
+    )
+    assert_allclose(de_gri_pmodel.gpp, de_gri_hh_outputs["PMod_A0"], rtol=1e-6)
+
     # Set up the datetimes of the observations and set the acclimation window
     acclim_model = AcclimationModel(datetimes=de_gri_subdaily_data["time"].to_numpy())
     acclim_model.set_window(
