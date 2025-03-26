@@ -7,11 +7,11 @@ add these directories to sys.path here. If the directory is relative to the
 documentation root, use os.path.abspath to make it absolute, like shown here.
 """
 
-import os
 import sys
 import warnings
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 
 # Import Matplotlib to avoid this message in notebooks:
 # "Matplotlib is building the font cache; this may take a moment."
@@ -22,11 +22,12 @@ from sphinxcontrib.bibtex.style.referencing.author_year import AuthorYearReferen
 
 from pyrealm import __version__ as pyrealm_version
 
-sys.path.insert(0, os.path.abspath("../"))
+sys.path.insert(0, str(Path("../").resolve()))
+sys.path.append(str(Path("./sphinx_extensions").resolve()))
 
 # Suppress the 2.0.0 user warnings in the documentation
 warnings.filterwarnings(
-    "ignore", category=UserWarning, message="Pyrealm 2.0.0 uses a uses default value"
+    "ignore", category=UserWarning, message="Pyrealm 2.0.0 uses a new default value"
 )
 
 # -- Project information -----------------------------------------------------
@@ -61,6 +62,7 @@ extensions = [
     "sphinx_rtd_theme",
     "sphinx_design",
     "sphinx_external_toc",
+    "experimental",
 ]
 
 # External table of contents
@@ -101,6 +103,7 @@ bibtex_default_style = "plain"
 # Cross-reference checking
 # TODO - find some better solution than this to all of these bizarre cross reference
 #        problems.
+
 nitpicky = True
 nitpick_ignore = [
     ("py:class", "numpy._typing._array_like._ScalarType_co"),
@@ -164,6 +167,7 @@ nitpick_ignore = [
 intersphinx_mapping = {
     "pytest": ("https://docs.pytest.org/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
     "pandas": ("http://pandas.pydata.org/pandas-docs/dev/", None),
@@ -213,7 +217,7 @@ exclude_patterns = ["maxime*", "**.ipynb_checkpoints"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 
-# html_theme = 'sphinx_material'
+# html_theme = "sphinx_material"
 html_theme = "sphinx_rtd_theme"
 
 html_theme_options = {

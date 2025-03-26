@@ -58,7 +58,7 @@ advantage of providing a zoomable cleaner interface for the diagram that support
 tooltips
 -->
 
-<iframe frameborder="0" style="width:100%;height:650px;" src="https://viewer.diagrams.net/?lightbox=0&highlight=0000ff&nav=1&title=pmodel.drawio&dark=auto#Uhttps%3A%2F%2Fraw.githubusercontent.com%2FImperialCollegeLondon%2Fpyrealm%2F438-revise-the-p-model-documentation%2Fdocs%2Fsource%2Fusers%2Fpmodel%2Fpmodel_details%2Fpmodel.drawio"></iframe>
+<iframe frameborder="0" style="width:100%;height:650px;" src="https://viewer.diagrams.net/?lightbox=0&highlight=0000ff&nav=1&title=pmodel.drawio&dark=auto#Uhttps%3A%2F%2Fraw.githubusercontent.com%2FImperialCollegeLondon%2Fpyrealm%2Fdevelop%2Fdocs%2Fsource%2Fusers%2Fpmodel%2Fpmodel_details%2Fpmodel.drawio"></iframe>
 
 <!-- markdownlint-enable MD033 -->
 
@@ -110,7 +110,7 @@ In overview:
     $$
 
     The gross primary productivity (GPP) is then simply the product of LUE and the
-    absorbed irradiation ($I_abs = f_{APAR} \cdot PPFD$).
+    absorbed irradiation ($I_abs = f_{APAR} \cdot \text{PPFD}$).
 
 6. The approach above is equivalent to directly calculating the minimum of the
    assimilation rates given limitation of the electron transfer pathway ($A_j$) and
