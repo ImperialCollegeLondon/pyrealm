@@ -7,7 +7,7 @@ from numpy.typing import NDArray
 from typing_extensions import Self
 
 from pyrealm.constants import PhenologyConst
-from pyrealm.pmodel import AcclimationModel, PModel
+from pyrealm.pmodel import AcclimationModel, PModel, SubdailyPModel
 
 
 def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
@@ -116,6 +116,28 @@ def get_annual(
         raise ValueError("No valid method given for annual values")
 
     return annual_x
+
+def daily_to_subdaily(
+    x: NDArray,
+    datetimes: NDArray[np.datetime64],
+) -> NDArray:
+    """Broadcasts an array of the entity x from daily values to subdaily values,
+    given subdaily datetimes.
+
+    Args:
+        x: Array of daily values.
+        datetimes: Subdaily datetimes as np.datetime64 array.
+    """
+
+    subdaily_x = np.zeros(len(datetimes))
+
+    n_days = len(x)
+    datetimes_by_day = datetimes.view()
+    obs_per_day = int(len(datetimes) / n_days)
+    datetimes_by_day.shape = tuple([n_days, obs_per_day, *list(datetimes.shape[1:])])
+
+    for i in range(len(datetimes)):
+        subdaily_x[i] = x[]
 
 
 def compute_annual_total_precip(
@@ -249,6 +271,7 @@ class FaparLimitation:
         datetimes: NDArray[np.datetime64],
         precip: NDArray[np.float64],
         aridity_index: NDArray[np.float64],
+        soil_moisture_stress: NDArray[np.float64],
     ) -> Self:
         r"""Get FaparLimitation from PModel input.
 
@@ -261,12 +284,13 @@ class FaparLimitation:
             datetimes: Array of datetimes to consider.
             precip: Precipitation for given datetimes.
             aridity_index: Climatological estimate of local aridity index.
+            soil_moisture_stress: soil moisture stress factor
         """
 
         check_datetimes(datetimes)
 
         annual_total_potential_gpp = get_annual(
-            pmodel.gpp, datetimes, growing_season, "total"
+            pmodel.gpp*soil_moisture_stress, datetimes, growing_season, "total"
         )
         annual_mean_ca = get_annual(pmodel.env.ca, datetimes, growing_season, "mean")
         annual_mean_chi = get_annual(
@@ -276,6 +300,53 @@ class FaparLimitation:
         annual_total_precip = compute_annual_total_precip(
             precip, datetimes, growing_season
         )
+
+        return cls(
+            annual_total_potential_gpp,
+            annual_mean_ca,
+            annual_mean_chi,
+            annual_mean_vpd,
+            annual_total_precip,
+            aridity_index,
+        )
+
+
+    @classmethod
+    def from_subdailypmodel(
+        cls,
+        subdaily_pmodel: SubdailyPModel,
+        growing_season: NDArray[np.bool],
+        datetimes: NDArray[np.datetime64],
+        precip: NDArray[np.float64],
+        aridity_index: NDArray[np.float64],
+        soil_moisture_stress: NDArray[np.float64],
+    ) -> Self:
+        r"""Get FaparLimitation from SubdailyPModel input.
+
+        Computes the input for fAPAR_max from a Subdaily P Model and additional inputs.
+
+        Args:
+            subdaily_pmodel: pyrealm.pmodel.SubdailyPModel
+            growing_season: Bool array indicating which times are within growing
+              season by some definition and implementation.
+            datetimes: Array of datetimes to consider.
+            precip: Precipitation for given datetimes.
+            aridity_index: Climatological estimate of local aridity index.
+            soil_moisture_stress: soil moisture stress factor
+        """
+
+        check_datetimes(datetimes)
+
+        annual_total_potential_gpp = get_annual(
+            subdaily_pmodel.gpp*soil_moisture_stress, datetimes, growing_season, "total"
+        )
+        annual_mean_ca = get_annual(subdaily_pmodel.env.ca, datetimes,
+                                    growing_season, "mean")
+        annual_mean_chi = get_annual(
+            subdaily_pmodel.optchi.chi.round(5), datetimes, growing_season, "mean"
+        )
+        annual_mean_vpd = get_annual(subdaily_pmodel.env.vpd, datetimes, growing_season, "mean")
+        annual_total_precip = get_annual(precip, datetimes, growing_season, "total")
 
         return cls(
             annual_total_potential_gpp,

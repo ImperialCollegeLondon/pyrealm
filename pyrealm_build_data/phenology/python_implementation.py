@@ -511,3 +511,28 @@ fortnightly_outputs.to_pandas().to_csv(
 fortnightly_annual_values.to_pandas().to_csv(
     "fortnightly_example/annual_outputs.csv", float_format="%0.7g"
 )
+
+
+from pyrealm.phenology.fapar_limitation import FaparLimitation
+
+faparlim = FaparLimitation.from_subdailypmodel(
+    subdaily_pmodel,
+    subdaily_daily_values["growing_day"].data,
+    de_gri_hh_pd.axes[0].to_numpy(),
+    subdaily_daily_values["precip_molar"].data,
+    aridity_index.data,
+    subdaily_daily_values["soilm_stress"].data
+)
+
+
+fapar_max = xr.DataArray(faparlim.fapar_max, dims="year",
+                         coords=subdaily_annual_values.coords)
+
+lai_max = xr.DataArray(faparlim.lai_max, dims="year",
+                       coords=subdaily_annual_values.coords)
+
+print(fapar_max)
+print(subdaily_annual_values["fapar_max"])
+
+print(lai_max)
+print(subdaily_annual_values["lai_max"])
