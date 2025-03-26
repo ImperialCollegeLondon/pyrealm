@@ -28,7 +28,6 @@ from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import summarize_attrs
 from pyrealm.pmodel.acclimation import AcclimationModel
 from pyrealm.pmodel.arrhenius import ARRHENIUS_METHOD_REGISTRY, ArrheniusFactorABC
-from pyrealm.pmodel.functions import calc_ftemp_inst_rd
 from pyrealm.pmodel.jmax_limitation import (
     JMAX_LIMITATION_CLASS_REGISTRY,
     JmaxLimitationABC,
@@ -238,18 +237,6 @@ class PModelABC(ABC):
         estimated from :math:`J_{max}` using the selected method for Arrhenius scaling.
         """
 
-        self.rd: NDArray[np.float64]
-        r"""Dark respiration (µmol m-2 s-1) calculated as:
-
-        .. math::
-
-            R_d = b_0 \frac{fr(t)}{fv(t)} V_{cmax},
-
-        following :cite:t:`Atkin:2015hk`, where :math:`fr(t)` is the instantaneous
-        temperature response of dark respiration implemented in
-        :func:`~pyrealm.pmodel.functions.calc_ftemp_inst_rd`, and :math:`b_0` is set in
-        :attr:`~pyrealm.constants.pmodel_const.PModelConst.atkin_rd_to_vcmax`."""
-
         self.gpp: NDArray[np.float64]
         r"""Gross primary productivity (µg C m-2 s-1) calculated as:
         
@@ -276,9 +263,9 @@ class PModelABC(ABC):
         conditions."""
 
         self.A_c: NDArray[np.float64]
-        """Maxmimum assimilation rate limited by carboxylation."""
+        """Maximum assimilation rate limited by carboxylation."""
         self.A_j: NDArray[np.float64]
-        """Maxmimum assimilation rate limited by electron transport."""
+        """Maximum assimilation rate limited by electron transport."""
         self.J: NDArray[np.float64]
         """Electron transfer rate."""
 
@@ -385,7 +372,6 @@ class PModel(PModelABC):
         ("gpp", "µg C m-2 s-1"),
         ("vcmax", "µmol m-2 s-1"),
         ("vcmax25", "µmol m-2 s-1"),
-        ("rd", "µmol m-2 s-1"),
         ("gs", "µmol m-2 s-1"),
         ("jmax", "µmol m-2 s-1"),
         ("jmax25", "µmol m-2 s-1"),
@@ -452,9 +438,7 @@ class PModel(PModelABC):
         arrhenius_factors = self._arrhenius_class(env=self.env)
 
         # Intrinsic water use efficiency (in µmol mol-1)
-        self.iwue: NDArray[np.float64] = (5 / 8 * (self.env.ca - self.optchi.ci)) / (
-            1e-6 * self.env.patm
-        )
+        self.iwue = (5 / 8 * (self.env.ca - self.optchi.ci)) / (1e-6 * self.env.patm)
 
         # Light use efficiency g Carbon per mol-1 of photons.
         self.lue = (
@@ -483,28 +467,14 @@ class PModel(PModelABC):
             coefficients=self.pmodel_const.arrhenius_jmax
         )
 
-        # Dark respiration at growth temperature
-        ftemp_inst_rd = calc_ftemp_inst_rd(
-            tc=self.env.tc,
-            tc_ref=self.pmodel_const.tc_ref,
-            coef=self.pmodel_const.heskel_rd,
-        )
-        self.rd = (
-            self.pmodel_const.atkin_rd_to_vcmax
-            * (ftemp_inst_rd / ftemp25_inst_vcmax)
-            * self.vcmax
-        )
-
         # AJ and AC
         self.A_j = self.kphio.kphio * iabs * self.optchi.mj * self.jmaxlim.f_v
         self.A_c = self.vcmax * self.optchi.mc
 
-        assim = np.minimum(self.A_j, self.A_c)
-
-        if not np.allclose(
-            assim, self.gpp / self.core_const.k_c_molmass, equal_nan=True
-        ):
-            warn("Assimilation and GPP are not identical")
+        if not np.allclose(self.A_j, self.A_c, equal_nan=True):
+            raise RuntimeError(
+                "Violation of coordination hypothesis: A_c is not equal to A_j"
+            )
 
         # Stomatal conductance - do not estimate when VPD = 0 or when floating point
         # errors give rise to (ca - ci) < 0 and deliberately ignore the numpy divide by
@@ -513,7 +483,7 @@ class PModel(PModelABC):
         with np.errstate(divide="ignore", invalid="ignore"):
             self.gs = np.where(
                 np.logical_and(self.env.vpd > 0, ca_ci_diff > 0),
-                assim / ca_ci_diff,
+                self.A_c / ca_ci_diff,
                 np.nan,
             )
 
@@ -651,13 +621,11 @@ class SubdailyPModel(PModelABC):
     """
 
     _data_attributes = (
-        # ("lue", "g C mol-1"),
-        # ("iwue", "µmol mol-1"),
+        ("iwue", "µmol mol-1"),
         ("gpp", "µg C m-2 s-1"),
         ("vcmax", "µmol m-2 s-1"),
         ("vcmax25", "µmol m-2 s-1"),
-        # ("rd", "µmol m-2 s-1"),
-        # ("gs", "µmol m-2 s-1"),
+        ("gs", "µmol m-2 s-1"),
         ("jmax", "µmol m-2 s-1"),
         ("jmax25", "µmol m-2 s-1"),
     )
@@ -946,11 +914,26 @@ class SubdailyPModel(PModelABC):
         self.A_j = (self.J / 4) * self.optchi.mj
 
         # Calculate GPP and convert from mol to gC
-        self.gpp = np.minimum(self.A_j, self.A_c) * self.env.core_const.k_c_molmass
+        assimilation = np.minimum(self.A_j, self.A_c)
+        self.gpp = assimilation * self.env.core_const.k_c_molmass
 
-    # @property
-    # def lue(self) -> None:
+        # Stomatal conductance - do not estimate when VPD = 0 or when floating point
+        # errors give rise to (ca - ci) < 0 and deliberately ignore the numpy divide by
+        # zero warnings in those cases.
+        ca_ci_diff = self.env.ca - self.optchi.ci
+        with np.errstate(divide="ignore", invalid="ignore"):
+            self.gs = np.where(
+                np.logical_and(self.env.vpd > 0, ca_ci_diff > 0),
+                self.A_c / ca_ci_diff,
+                np.nan,
+            )
 
-    #     raise AttributeError(
-    #         "The subdaily P model does not predict light use efficiency"
-    #     )
+        # Intrinsic water use efficiency (in µmol mol-1)
+        self.iwue = (5 / 8 * (self.env.ca - self.optchi.ci)) / (1e-6 * self.env.patm)
+
+    @property
+    def lue(self) -> None:  # type: ignore[override]
+        """The Subdaily P Model does not predict light use efficiency."""
+        raise AttributeError(
+            "The Subdaily P Model does not predict light use efficiency."
+        )

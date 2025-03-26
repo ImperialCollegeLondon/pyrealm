@@ -63,8 +63,8 @@ The quadratic equations describing the temperature dependence of quantum yield e
 are automatically clipped to convert negative values to zero. With the default constant
 settings, the roots of these quadratics are:
 
-- C4: $-0.064 + 0.03  x - 0.000464 x^2$ has roots at 2.21 °C and 62.4 °C
-- C3: $0.352 + 0.022  x - 0.00034* x^2$ has roots at -13.3 °C and 78.0 °C
+- C4: $-0.064 + 0.03 \cdot x - 0.000464 \cdot x^2$ has roots at 2.21 °C and 62.4 °C
+- C3: $0.352 + 0.022 \cdot x - 0.00034 \cdot x^2$ has roots at -13.3 °C and 78.0 °C
 
 Note that the default values for C3 photosynthesis give **non-zero values below 0°C**.
 
@@ -108,7 +108,7 @@ pyplot.show()
 <!-- markdownlint-disable-next-line MD049 -->
 The photorespiratory compensation point ($\Gamma^*$) varies with as a function of
 temperature and atmospheric pressure, and behaves smoothly with extreme inputs. Note
-that again, $\Gamma^_$ has non-zero values for sub-zero temperatures.
+that again, $\Gamma^*$ has non-zero values for sub-zero temperatures.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
@@ -182,8 +182,8 @@ pyplot.show()
 ```
 
 Zooming in, the behaviour of this function is not reliable at extreme low temperatures
-leading to unstable estimates of $\eta^*$ and the P Model should not be used to make
-predictions below about -30 °C.
+leading to unstable estimates of $\eta^*$ and the P Model cannot be used to make
+predictions below -25°C.
 
 ```{code-cell} ipython3
 :tags: [hide-input]

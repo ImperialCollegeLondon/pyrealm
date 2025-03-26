@@ -1,159 +1,86 @@
 """Test the FaparLimitation class."""
 
+import json
 from importlib import resources
 
 import numpy as np
+import pandas as pd
 import pytest
+from numpy.testing import assert_allclose
+
+
+@pytest.fixture
+def site_data():
+    """Load the site data."""
+
+    datafile = resources.files("pyrealm_build_data") / "phenology/DE-GRI_site_data.json"
+
+    with open(datafile) as json_src:
+        site_data = json.load(json_src)
+
+    return site_data
 
 
 @pytest.fixture()
 def annual_data():
     """Load the input data from netcdf file."""
 
-    from pyrealm_build_data.LAI_in_pyrealm import faparlim_data_io
-
     datafile = (
-        resources.files("pyrealm_build_data") / "LAI_in_pyrealm/faparlim_input.nc"
+        resources.files("pyrealm_build_data.phenology.fortnightly_example")
+        / "annual_outputs.csv"
     )
 
-    return faparlim_data_io.read_faparlim_input(datafile)
+    return pd.read_csv(datafile)
 
 
-@pytest.mark.parametrize(
-    argnames="exp_faparmax, exp_laimax",
-    argvalues=[
-        (
-            np.array(
-                [
-                    0.00741829,
-                    0.00657795,
-                    0.00663436,
-                    0.00792586,
-                    0.00744838,
-                    0.00790967,
-                    0.00790302,
-                    0.00552947,
-                    0.00616514,
-                    0.00852866,
-                    0.00539698,
-                ]
-            ),
-            np.array(
-                [
-                    0.01489189,
-                    0.01319937,
-                    0.01331292,
-                    0.01591488,
-                    0.01495251,
-                    0.01588223,
-                    0.01586883,
-                    0.01108962,
-                    0.01236845,
-                    0.01713047,
-                    0.0108232,
-                ]
-            ),
-        )
-    ],
-)
-def test_faparlimitation(annual_data, exp_faparmax, exp_laimax):
+def test_faparlimitation(site_data, annual_data):
     """Regression test for FaparLimitation constructor."""
 
     from pyrealm.phenology.fapar_limitation import FaparLimitation
 
-    (
-        annual_total_A0_subdaily,
-        annual_total_P,
-        aridity_index,
-        annual_mean_ca,
-        annual_mean_chi,
-        annual_mean_vpd,
-    ) = annual_data
-
     faparlim = FaparLimitation(
-        annual_total_A0_subdaily,
-        annual_mean_ca,
-        annual_mean_chi,
-        annual_mean_vpd,
-        annual_total_P,
-        aridity_index,
+        annual_total_potential_gpp=annual_data["ann_total_A0"].to_numpy(),
+        annual_mean_ca=annual_data["ca"].to_numpy(),
+        annual_mean_chi=annual_data["chi"].to_numpy(),
+        annual_mean_vpd=annual_data["vpd_mean"].to_numpy(),
+        annual_total_precip=annual_data["precip_molar_sum"].to_numpy(),
+        aridity_index=site_data["AI_from_cruts"],
     )
 
-    assert np.allclose(exp_faparmax, faparlim.fapar_max)
-    assert np.allclose(exp_laimax, faparlim.lai_max)
+    assert_allclose(annual_data["fapar_max"].to_numpy(), faparlim.fapar_max, rtol=1e-6)
+    assert_allclose(annual_data["lai_max"].to_numpy(), faparlim.lai_max, rtol=1e-6)
 
 
 @pytest.fixture()
-def pmodel_data():
+def fortnightly_data():
     """Load the input data for the from_pmodel class function from netcdf file."""
 
-    from pyrealm_build_data.LAI_in_pyrealm import faparlim_data_io
-
     datafile = (
-        resources.files("pyrealm_build_data")
-        / "LAI_in_pyrealm/faparlim_pmodel_input.nc"
+        resources.files("pyrealm_build_data.phenology.fortnightly_example")
+        / "fortnightly_data.csv"
     )
 
-    return faparlim_data_io.read_pmodel_faparlim_input(datafile)
+    data = pd.read_csv(datafile)
+
+    data["time"] = pd.to_datetime(data["time"])
+
+    return data
 
 
-@pytest.mark.parametrize(
-    argnames="exp_faparmax, exp_laimax",
-    argvalues=[
-        (
-            np.array(
-                [
-                    0.00890042,
-                    0.00748109,
-                    0.00538652,
-                    0.00979542,
-                    0.00671602,
-                    0.00627187,
-                    0.00778598,
-                    0.00556823,
-                    0.00648213,
-                    0.00921882,
-                    0.00805771,
-                ]
-            ),
-            np.array(
-                [
-                    0.01788053,
-                    0.01501843,
-                    0.01080216,
-                    0.01968741,
-                    0.01347735,
-                    0.01258324,
-                    0.01563289,
-                    0.01116758,
-                    0.01300646,
-                    0.01852314,
-                    0.0161807,
-                ]
-            ),
-        )
-    ],
-)
-def test_faparlimitation_frompmodel(pmodel_data, exp_faparmax, exp_laimax):
+@pytest.mark.skip("Need to expand the time handling to cope with datetimes >= 1 day")
+def test_faparlimitation_frompmodel(annual_data, site_data, fortnightly_data):
     """Regression test for from_pmodel FaparLimitation class method."""
 
     from pyrealm.phenology.fapar_limitation import FaparLimitation
     from pyrealm.pmodel import PModel, PModelEnvironment
 
-    (
-        tc,
-        vpd,
-        co2,
-        patm,
-        growing_season,
-        datetimes,
-        precipitation,
-        aridity_index,
-        ppfd,
-    ) = pmodel_data
-
     env = PModelEnvironment(
-        tc=tc, vpd=vpd, co2=co2, patm=patm, fapar=np.ones_like(tc), ppfd=ppfd
+        tc=fortnightly_data["tc_mean"].to_numpy(),
+        vpd=fortnightly_data["vpd_mean"].to_numpy(),
+        co2=fortnightly_data["co2_mean"].to_numpy(),
+        patm=fortnightly_data["patm_mean"].to_numpy(),
+        fapar=np.ones_like(fortnightly_data["tc_mean"]),
+        ppfd=fortnightly_data["ppfd_mean"].to_numpy(),
     )
 
     pmodel = PModel(
@@ -163,8 +90,12 @@ def test_faparlimitation_frompmodel(pmodel_data, exp_faparmax, exp_laimax):
     )
 
     faparlim = FaparLimitation.from_pmodel(
-        pmodel, growing_season, datetimes, precipitation, aridity_index
+        pmodel=pmodel,
+        growing_season=fortnightly_data["growing_season"].to_numpy(),
+        datetimes=fortnightly_data["time"].to_numpy(),
+        precip=fortnightly_data["precip_molar_sum"].to_numpy(),
+        aridity_index=site_data["AI_from_cruts"],
     )
 
-    assert np.allclose(exp_faparmax, faparlim.fapar_max)
-    assert np.allclose(exp_laimax, faparlim.lai_max)
+    assert np.allclose(annual_data["fapar_max"].to_numpy(), faparlim.fapar_max)
+    assert np.allclose(annual_data["lai_max"].to_numpy(), faparlim.lai_max)

@@ -29,7 +29,7 @@ have been calculated, the next step is to estimate the following parameters:
 * The ratio of carboxylation to transpiration cost factors (``beta``, $\beta$).
   In some approaches, this is taken as a fixed value, but other approaches apply
   penalties to $\beta$ based on environmental conditions:
-  * Two methods follow `{cite:t}`lavergne:2020a` in using a statistical model of the
+  * Two methods follow {cite:t}`lavergne:2020a` in using a statistical model of the
       variation of $\beta$ with local soil moisture content (``theta``, $\theta$)
   * The experimental rootzone stress approaches apply a user-provided local rootzone
     stress factor directly to a fixed value of $\beta$ during the calculation of
