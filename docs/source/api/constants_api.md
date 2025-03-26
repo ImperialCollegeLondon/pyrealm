@@ -73,6 +73,6 @@ language_info:
 ## Two leaf model constants
 
 ```{eval-rst}
-.. autoclass:: pyrealm.constants.two_leaf_canopy.TwoLeafConst
+.. autoclass:: pyrealm.constants.two_leaf.TwoLeafConst
     :members:
 ```

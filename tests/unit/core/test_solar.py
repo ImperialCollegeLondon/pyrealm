@@ -428,38 +428,6 @@ def test_calculate_heliocentric_longitudes(day, n_day, expected):
     assert_allclose(result, expected)
 
 
-@pytest.mark.skip(reason="Need to resolve implementation of the function.")
-@pytest.mark.parametrize(
-    argnames="latitude, longitude, year_date_time, expected",
-    argvalues=[
-        (
-            -35.058333,
-            147.34167,
-            np.array([np.datetime64("1995-10-25T10:30")]),
-            np.array([1.0615713]),
-        )
-    ],
-)
-def test_calculate_solar_elevation(latitude, longitude, year_date_time, expected):
-    """Tests calculate_solar_elevation.
-
-    This test is intended to verify the implemented maths.
-    """
-
-    from pyrealm.core.calendar import LocationDateTime
-    from pyrealm.core.solar import calculate_solar_elevation
-
-    site_obs_data = LocationDateTime(
-        latitude=latitude,
-        longitude=longitude,
-        year_date_time=year_date_time,
-    )
-
-    result = calculate_solar_elevation(site_obs_data)
-
-    assert_allclose(result, expected)
-
-
 @pytest.mark.parametrize(
     argnames="td, expected",
     argvalues=[(np.array([298]), -0.22708144)],
@@ -555,14 +523,14 @@ def test_calculate_local_hour_angle(t, t0, expected):
         (np.array([-0.61]), np.array([-0.23]), np.array([-0.37]), np.array([1.0647289]))
     ],
 )
-def test_calculate_solar_elevation_angle(latitude, declination, hour_angle, expected):
-    """Tests calculate_solar_elevation_angle.
+def test_calculate_solar_elevation(latitude, declination, hour_angle, expected):
+    """Tests calculate_solar_elevation.
 
     This test is intended to verify the implemented maths.
     """
 
-    from pyrealm.core.solar import calculate_solar_elevation_angle
+    from pyrealm.core.solar import calculate_solar_elevation
 
-    result = calculate_solar_elevation_angle(latitude, declination, hour_angle)
+    result = calculate_solar_elevation(latitude, declination, hour_angle)
 
     assert_allclose(result, expected)

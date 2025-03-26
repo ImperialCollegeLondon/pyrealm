@@ -104,10 +104,10 @@ language_info:
     :members:
 ```
 
-## The {mod}`~pyrealm.pmodel.two_leaf_irradience` submodule
+## The {mod}`~pyrealm.pmodel.two_leaf` submodule
 
 ```{eval-rst}
-.. automodule:: pyrealm.pmodel.two_leaf_irradience
+.. automodule:: pyrealm.pmodel.two_leaf
     :autosummary:
     :members:
 ```
