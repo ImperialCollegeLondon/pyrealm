@@ -1,13 +1,4 @@
 ---
-jupytext:
-  text_representation:
-    extension: .md
-    format_name: myst
-    format_version: 0.13
-kernelspec:
-  display_name: Python 3 (ipykernel)
-  language: python
-  name: python3
 language_info:
   codemirror_mode:
     name: ipython
@@ -20,6 +11,15 @@ language_info:
   version: 3.11.9
 settings:
   output_matplotlib_strings: remove
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+kernelspec:
+  display_name: Python 3 (ipykernel)
+  language: python
+  name: python3
 ---
 
 # The canopy model
