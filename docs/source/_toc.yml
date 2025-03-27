@@ -17,6 +17,7 @@ subtrees:
               - file: users/pmodel/shared_components/arrhenius.md
               - file: users/pmodel/shared_components/soil_moisture.md
               - file: users/pmodel/shared_components/extreme_values.md
+              - file: users/pmodel/shared_components/two_leaf_model.md
       - entries:
         - file: users/pmodel/pmodel_details/pmodel_overview.md
           subtrees:
