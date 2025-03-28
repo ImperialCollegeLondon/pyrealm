@@ -1,14 +1,4 @@
 ---
-jupytext:
-  formats: md:myst
-  text_representation:
-    extension: .md
-    format_name: myst
-    format_version: 0.13
-kernelspec:
-  display_name: Python 3
-  language: python
-  name: python3
 language_info:
   codemirror_mode:
     name: ipython
@@ -19,6 +9,16 @@ language_info:
   nbconvert_exporter: python
   pygments_lexer: ipython3
   version: 3.11.9
+jupytext:
+  formats: md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+kernelspec:
+  display_name: Python 3
+  language: python
+  name: python3
 ---
 
 # The {mod}`~pyrealm.constants` module
@@ -73,6 +73,6 @@ language_info:
 ## Two leaf model constants
 
 ```{eval-rst}
-.. autoclass:: pyrealm.constants.two_leaf_canopy.TwoLeafConst
+.. autoclass:: pyrealm.constants.two_leaf.TwoLeafConst
     :members:
 ```

@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
+from numpy.typing import NDArray
 
 
 @dataclass
@@ -77,13 +78,13 @@ class Calendar(Sized):
         CalendarDay(date=2001-12-31, year=2001, julian_day=365, days_in_year=365)
     """
 
-    dates: np.ndarray
+    dates: NDArray[np.datetime64]
     """A numpy array containing :class:`numpy.datetime64` values."""
-    year: np.ndarray = field(init=False)
+    year: NDArray[np.int_] = field(init=False)
     """A numpy array giving the year of each datetime."""
-    julian_day: np.ndarray = field(init=False)
+    julian_day: NDArray[np.int_] = field(init=False)
     """A numpy array giving the julian day of each datetime."""
-    days_in_year: np.ndarray = field(init=False)
+    days_in_year: NDArray[np.int_] = field(init=False)
     """A numpy array giving the number of days in the year for each datetime."""
 
     def __post_init__(self) -> None:
@@ -118,90 +119,3 @@ class Calendar(Sized):
         """Representation of a Calendar instance."""
 
         return f"Calendar({self.dates[0]!s}, {self.dates[-1]!s})"
-
-
-@dataclass
-class LocationDateTime:
-    """A data class representing an observation location and date and time information.
-
-    This class encapsulates the latitude and longitude of a location along with a
-    corresponding time array. It automatically calculates the latitude and longitude in
-    radians, the Julian days from the date-time information, and a decimal
-    representation of the local time.
-
-    Example:
-        >>> import numpy as np
-        >>> ldt = LocationDateTime(
-        ...     latitude=-35.058333,
-        ...     longitude=147.34167,
-        ...     year_date_time=np.array([np.datetime64("2024-08-12T10:30")]),
-        ... )
-        >>> print(ldt.latitude_rad)
-        -0.6118833411105811
-        >>> print(ldt.decimal_time)
-        [10.5]
-        >>> print(ldt.local_standard_meridian)
-        150
-    """
-
-    latitude: float
-    """The latitude of the location in degrees."""
-    latitude_rad: float = field(init=False)
-    """The latitude of the location in radians, calculated automatically."""
-    longitude: float
-    """The longitude of the location in degrees."""
-    longitude_rad: float = field(init=False)
-    """The longitude of the location in radians, calculated automatically."""
-    year_date_time: np.ndarray
-    """An array of np.datetime64 values corresponding to observations at the 
-    location (local time)."""
-    julian_days: np.ndarray = field(init=False)
-    """An array of Julian day of the year numbers calculated from the
-    ``year_date_time``."""
-    decimal_time: np.ndarray = field(init=False)
-    """An array of decimal hour values calculated from local ``year_date_time``."""
-    local_standard_meridian: int = field(init=False)
-    """An int describing time offset from local meridian to Greenwich meridian
-    in hours."""
-
-    def __post_init__(self) -> None:
-        """Initialise calculated attributes.
-
-        Initializes calculated attributes like ``latitude_rad``, ``longitude_rad``,
-        ``julian_days``, and ``local_time`` after the object is instantiated.
-        """
-
-        self.julian_days = Calendar(self.year_date_time).julian_day
-        self.decimal_time = self.decimal_hour()
-        self.latitude_rad = self.latitude * np.pi / 180
-        self.longitude_rad = self.longitude * np.pi / 180
-        self.local_standard_meridian = self.get_local_standard_meridian()
-
-    def decimal_hour(self) -> np.ndarray:
-        """Convert ``year_date_time`` to a decimal representation of hours.
-
-        This method extracts the hours and minutes from the `year_date_time` attribute
-        and converts them into a decimal representation of hours.
-
-        Returns:
-            An array of decimal hour values.
-        """
-
-        # Extract hours
-        hours = self.year_date_time.astype("datetime64[h]").astype(int) % 24
-
-        # Extract minutes
-        minutes = self.year_date_time.astype("datetime64[m]").astype(int) % 60
-
-        # Convert to decimal hours
-        return hours + minutes / 60
-
-    def get_local_standard_meridian(self) -> int:
-        """Calculates local meridian from longitude.
-
-        Returns:
-            An integer in degrees format representing local meridian offset from
-            Greenwich.
-        """
-
-        return 30 * round(self.longitude / 30)

@@ -1,14 +1,4 @@
 ---
-jupytext:
-  formats: md:myst
-  text_representation:
-    extension: .md
-    format_name: myst
-    format_version: 0.13
-kernelspec:
-  display_name: Python 3
-  language: python
-  name: python3
 language_info:
   codemirror_mode:
     name: ipython
@@ -19,6 +9,16 @@ language_info:
   nbconvert_exporter: python
   pygments_lexer: ipython3
   version: 3.11.9
+jupytext:
+  formats: md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+kernelspec:
+  display_name: Python 3
+  language: python
+  name: python3
 ---
 
 # The P Model module
@@ -56,6 +56,16 @@ average conditions on the scale of weeks to months. The subdaily P Model _also_ 
 the coordination hypothesis, but coordinates on the specific conditions encountered
 during a daytime acclimation window and includes lags in how quickly the coordinated
 investment adjusts to changing conditions.
+
+Both the standard and subdaily P Model implementations use the "big leaf" approximation
+to approximate assimilation rates at a canopy scale. The {mod}`~pyrealm.pmodel.two_leaf`
+module provides an alternative model of canopy assimilation, using the "two leaf, two
+stream" model of :cite:p:`depury:1997a`. This explicitly models a canopy layer with
+depth and partitions incoming radiation into direct and scattered light streams that can
+be absorbed by sunlit and shaded leaves. This assimilation model can be fitted using an
+existing instance of either the standard or subdaily P Model: a worked example is shown
+in the [user documentation for the two leaf
+model](./shared_components/two_leaf_model.md).
 
 In addition to the two P Model forms, this module also provides two extensions that
 build on the P Model:

@@ -6,7 +6,7 @@ repos:
       - id: debug-statements
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.11.0
+    rev: v0.11.2
     hooks:
       # Run the linter.
       - id: ruff
@@ -25,12 +25,17 @@ repos:
     hooks:
     - id: markdownlint
   - repo: https://github.com/mwouts/jupytext
-    rev: v1.16.7
+    rev: v1.17.0rc1
     hooks:
     - id: jupytext
       args: [--pipe, black]
       files: docs/source
-      exclude: docs/source/conf.py
+      exclude: |
+            (?x)^(
+                docs/source/conf.py|
+                docs/source/sphinx_extensions/__init__.py|
+                docs/source/sphinx_extensions/experimental.py
+            )$
       additional_dependencies:
         - black==24.4.2 # Matches hook
       
