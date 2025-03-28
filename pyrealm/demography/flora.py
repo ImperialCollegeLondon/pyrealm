@@ -163,10 +163,9 @@ class PlantFunctionalTypeStrict:
     """Proportion of stem height at which maximum crown radius is found."""
 
     p_foliage_for_reproductive_tissue: float
-    """Proportion of foliage used to calculate reproductive tissue."""
+    """Mass of reproductive tissue as a proportion of foliage mass (:math:`p_{rt}`, -)."""
     p_gpp_for_root_exudation: float
-    """Proportion of GPP used to calculate root exudation."""
-
+    """Allocation to root exudates as a proportion of GPP (:math:`p_{ex}`, -)"""
     def __post_init__(self) -> None:
         """Populate derived attributes.
 
@@ -319,7 +318,7 @@ class Flora(PandasExporter):
     resp_f: NDArray[np.float64] = field(init=False)
     r"""Foliage maintenance respiration fraction (:math:`r_f`,  -)"""
     resp_rt: NDArray[np.float64] = field(init=False)
-    r"""Reproductive tissue respiration rate (:math:`r_rt`,  -)"""
+    r"""Reproductive tissue respiration rate (:math:`r_{rt}`,  -)"""
     m: NDArray[np.float64] = field(init=False)
     r"""Crown shape parameter (:math:`m`, -)"""
     n: NDArray[np.float64] = field(init=False)
@@ -527,7 +526,7 @@ class StemTraits(PandasExporter, CohortMethods):
     resp_f: NDArray[np.float64]
     r"""Foliage maintenance respiration fraction (:math:`r_f`,  -)"""
     resp_rt: NDArray[np.float64]
-    r"""Reproductive tissue respiration rate (:math:`r_rt`,  -)"""
+    r"""Reproductive tissue respiration rate (:math:`r_{rt}`,  -)"""
     m: NDArray[np.float64]
     r"""Crown shape parameter (:math:`m`, -)"""
     n: NDArray[np.float64]
