@@ -448,7 +448,7 @@ def calculate_fine_root_respiration(
     foliage_mass: NDArray[np.float64],
     validate: bool = True,
 ) -> NDArray[np.float64]:
-    r"""Calculate foliar respiration.
+    r"""Calculate fine root respiration.
 
     Calculates the total fine root respiration (:math:`R_{r}`) given the individual
     foliage mass (:math:`W_f`), along with the fine root respiration rate (:math:`r_r`),
