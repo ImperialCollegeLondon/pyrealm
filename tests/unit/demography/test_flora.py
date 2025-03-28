@@ -41,7 +41,7 @@ STRICT_PFT_ARGS = dict(
     m=2,
     n=5,
     p_foliage_for_reproductive_tissue=0,
-    p_gpp_for_root_exudation=0,
+    gpp_topslice=0,
 )
 """A dictionary of the full set of arguments needed for PlantFunctionalTypeStrict."""
 

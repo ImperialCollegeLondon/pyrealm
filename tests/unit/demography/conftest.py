@@ -59,7 +59,7 @@ def rtmodel_flora():
     pft_definitions["resp_rt"] = 0
     pft_definitions["tau_rt"] = 1
     pft_definitions["p_foliage_for_reproductive_tissue"] = 0
-    pft_definitions["p_gpp_for_root_exudation"] = 0
+    pft_definitions["gpp_topslice"] = 0
 
     return Flora(
         pfts=[

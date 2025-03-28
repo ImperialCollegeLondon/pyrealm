@@ -39,13 +39,13 @@ def test_calculate_reproductive_tissue_mass():
     assert result == np.array([2.5])
 
 
-def test_calculate_root_exudates():
-    """Tests calculation of root exudates."""
+def test_calculate_gpp_topslice():
+    """Tests calculation of gpp_topslice."""
 
-    from pyrealm.demography.tmodel import calculate_root_exudates
+    from pyrealm.demography.tmodel import calculate_gpp_topslice
 
-    result = calculate_root_exudates(
-        p_exudates=np.array([10]),
+    result = calculate_gpp_topslice(
+        gpp_topslice=np.array([10]),
         whole_crown_gpp=np.array([0.25]),
     )
 

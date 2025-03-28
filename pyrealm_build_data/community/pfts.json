@@ -22,7 +22,7 @@
       "tau_rt": 1,
       "resp_rt": 0,
       "p_foliage_for_reproductive_tissue": 0,
-      "p_gpp_for_root_exudation": 0
+      "gpp_topslice": 0
     },
     {
       "name": "test2",
@@ -46,7 +46,7 @@
       "tau_rt": 1,
       "resp_rt": 0,
       "p_foliage_for_reproductive_tissue": 0,
-      "p_gpp_for_root_exudation": 0
+      "gpp_topslice": 0
     }
   ]
 }

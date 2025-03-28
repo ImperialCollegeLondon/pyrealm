@@ -163,9 +163,11 @@ class PlantFunctionalTypeStrict:
     """Proportion of stem height at which maximum crown radius is found."""
 
     p_foliage_for_reproductive_tissue: float
-    """Mass of reproductive tissue as a proportion of foliage mass (:math:`p_{rt}`, -)."""
-    p_gpp_for_root_exudation: float
-    """Allocation to root exudates as a proportion of GPP (:math:`p_{ex}`, -)"""
+    """Mass of reproductive tissue as a proportion of foliage mass (:math:`p_{rt}`, -).
+    """
+    gpp_topslice: float
+    """Proportion of GPP to topslice before allocation."""
+
     def __post_init__(self) -> None:
         """Populate derived attributes.
 
@@ -239,7 +241,7 @@ class PlantFunctionalType(PlantFunctionalTypeStrict):
     n: float = 5
     f_g: float = 0.05
     p_foliage_for_reproductive_tissue: float = 0.0
-    p_gpp_for_root_exudation: float = 0.0
+    gpp_topslice: float = 0.0
 
 
 PlantFunctionalTypeSchema = marshmallow_dataclass.class_schema(
@@ -342,8 +344,8 @@ class Flora(PandasExporter):
 
     p_foliage_for_reproductive_tissue: NDArray[np.float64] = field(init=False)
     """Proportion of foliage used to calculate reproductive tissue."""
-    p_gpp_for_root_exudation: NDArray[np.float64] = field(init=False)
-    """Proportion of GPP used to calculate root exudation."""
+    gpp_topslice: NDArray[np.float64] = field(init=False)
+    """Proportion of GPP to topslice before allocation."""
 
     def __post_init__(self, pfts: Sequence[type[PlantFunctionalTypeStrict]]) -> None:
         # Check the PFT data
@@ -540,8 +542,8 @@ class StemTraits(PandasExporter, CohortMethods):
 
     p_foliage_for_reproductive_tissue: NDArray[np.float64]
     """Proportion of foliage used to calculate reproductive tissue."""
-    p_gpp_for_root_exudation: NDArray[np.float64]
-    """Proportion of GPP used to calculate root exudation."""
+    gpp_topslice: NDArray[np.float64]
+    """Proportion of GPP to topslice before allocation."""
 
     validate: bool = True
     """Boolean flag to control validation of the input array sizes."""
