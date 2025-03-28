@@ -9,10 +9,12 @@ def test_phenology_gpp_calculation(
     de_gri_subdaily_data,
     de_gri_daily_outputs,
     de_gri_constants,
+    de_gri_splash_inputs,
+    de_gri_hh_outputs,
 ):
     """Test the provided GPP values for phenology can be recreated."""
 
-    from pyrealm.pmodel import PModelEnvironment
+    from pyrealm.pmodel import PModel, PModelEnvironment
     from pyrealm.pmodel.acclimation import AcclimationModel
     from pyrealm.pmodel.functions import calc_soilmstress_mengoli
     from pyrealm.pmodel.pmodel import SubdailyPModel
