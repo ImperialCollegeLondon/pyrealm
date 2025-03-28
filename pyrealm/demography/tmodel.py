@@ -149,14 +149,14 @@ def calculate_crown_fractions(
 ) -> NDArray[np.float64]:
     r"""Calculate tree crown fraction under the T Model.
 
-    The crown fraction (:math:`f_{c}`)is calculated from individual diameters at breast
-    height and stem height (:math:`D`), along with the initial slope of the height /
+    The crown fraction (:math:`f_{c}`) is calculated from individual diameters at breast
+    height (:math:`D`) and stem height (:math:`H`), along with the initial slope of the height /
     diameter relationship (:math:`a`) of the plant functional type
     :cite:p:`{Equation 11, }Li:2014bc`:
 
     .. math::
 
-        \frac{H}{a D}
+        f_{c} =\frac{H}{a D}
 
     Args:
         a_hd: Initial slope of the height/diameter relationship of the PFT
