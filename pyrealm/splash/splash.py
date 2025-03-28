@@ -99,13 +99,17 @@ class SplashModel:
 
         # Calculate the daily solar fluxes - these are invariant across the simulation
         self.solar: DailySolarFluxes = DailySolarFluxes(
-            lat=lat, elv=elv, dates=dates, sf=sf, tc=tc
+            latitude=lat,
+            elevation=elv,
+            dates=dates,
+            sunshine_fraction=sf,
+            temperature=tc,
         )
         """Estimated solar fluxes for observations"""
 
         # Initialise the evaporative flux class
         self.evap: DailyEvapFluxes = DailyEvapFluxes(
-            self.solar, pa=self.pa, tc=tc, core_const=core_const
+            solar=self.solar, pa=self.pa, tc=tc, core_const=core_const
         )
         """Estimated evaporative fluxes for observations"""
 

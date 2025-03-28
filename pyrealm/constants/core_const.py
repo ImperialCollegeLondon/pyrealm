@@ -92,29 +92,54 @@ class CoreConst(ConstantsClass):
     """Supply constant, mm/hr (Federer, 1982)"""
 
     # Solar constants
-    k_A = 107.0  # constant for Rnl (Monteith & Unsworth, 1990)
-    k_alb_sw = 0.17  # shortwave albedo (Federer, 1968)
-    k_alb_vis = 0.03  # visible light albedo (Sellers, 1985)
-    k_b = 0.20  # constant for Rnl (Linacre, 1968)
-    k_c = 0.25  # cloudy transmittivity (Linacre, 1968)
-    k_d = 0.50  # angular coefficient of transmittivity (Linacre, 1968)
-    k_fFEC = 2.04  # from flux to energy conversion, umol/J (Meek et al., 1984)
-    k_Gsc = 1360.8  # solar constant, W/m^2 (Kopp & Lean, 2011)
-    k_secs_d = 86400  # seconds in one solar day
+    visible_light_albedo: float = 0.03
+    """The visible light albedo (:math:`A_{vis}`, unitless, Sellers, 1985)."""
+
+    swdown_to_ppfd_factor: float = 2.04
+    """Conversion factor from shortwave downwelling radiation (W m-2) to photosynthetic
+    photon flux density (PPFD, µmol m-2 s-1): one W m-2 of sunlight is roughly 4.57 µmol
+    m-2 s-1 of full spectrum sunlight, of which about 46% (2.04 / 4.57) is PPFD. (Meek
+    et al., 1984)."""
+
+    transmissivity_coef: tuple[float, float, float] = (0.25, 0.5, 2.67e-5)
+    """Coefficients for calculating transmissivity from :cite:t:`Linacre:1968a`: cloudy
+    transmissivity (:math:`c=0.25`),  angular coefficient of transmittivity
+    (:math:`d=0.5`) and elevation factor (:math:`f`=2.67e-5`)."""
+
+    net_longwave_radiation_coef: tuple[float, float] = (0.2, 107.0)
+    """Coefficients (:math:`b, A`) of net longwave radiation function, Eqn. 11 and Table
+    1 of :cite:t:`colinprentice:1993a`"""
+
+    shortwave_albedo: float = 0.17
+    """The shortwave albedo (:math:`A_{sw}`, unitless, Federer, 1968)."""
+
+    solar_constant: float = 1360.8
+    """The solar constant (:math:`G_{sc}`, W/m^2, Kopp & Lean, 2011) - the long term
+    mean total solar irradiance."""
+
+    day_seconds: float = 86400
+    """The number of seconds in one solar day."""
+
+    equation_of_time_coef: tuple[float, ...] = (
+        0.000075,
+        0.001868,
+        -0.032077,
+        -0.014615,
+        -0.04089,
+        229.18,
+    )
+    """Coefficients of the equation of time :cite:t:`iqbal:1983a`"""
 
     # Paleoclimate variables:
-    ke = 0.0167  # eccentricity for 2000 CE (Berger, 1978)
-    keps = 23.44  # obliquity for 2000 CE, degrees (Berger, 1978)
-    komega = 283.0  # longitude of perihelion for 2000 CE, degrees (Berger, 1978)
-
-    # Paleoclimate variables:
-    k_e: float = 0.0167
-    """Solar eccentricity, using default value for 2000 CE :cite:t:`berger:1978a`."""
-    k_eps: float = 23.44
-    """Solar obliquity, using default value for 2000 CE :cite:t:`berger:1978a`."""
-    k_omega = 283.0
-    """Solar longitude of perihelion, using default value for 2000 CE
+    solar_eccentricity: float = 0.0167
+    """Solar eccentricity (:math:`e`), using default value for 2000 CE 
     :cite:t:`berger:1978a`."""
+    solar_obliquity: float = 23.44
+    """Solar obliquity in degrees (:math:`\epsilon`), using default value for 2000 CE
+    :cite:t:`berger:1978a`."""
+    solar_perihelion: float = 283.0
+    """Solar longitude of perihelion in degrees (:math:`\omega`), using default value
+    for 2000 CE :cite:t:`berger:1978a`."""
 
     # Hygro constants
     magnus_coef: NDArray[np.float64] = field(

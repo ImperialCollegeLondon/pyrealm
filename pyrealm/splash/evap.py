@@ -95,10 +95,10 @@ class DailyEvapFluxes:
         self.econ = self.sat / (self.lv * self.pw * (self.sat + self.psy))
 
         # Calculate daily condensation (cn), mm
-        self.cond = (1e3) * self.econ * np.abs(self.solar.rnn_d)
+        self.cond = (1e3) * self.econ * np.abs(self.solar.nighttime_net_radiation)
 
         # Estimate daily equilibrium evapotranspiration (eet_d), mm
-        self.eet_d = (1e3) * self.econ * self.solar.rn_d
+        self.eet_d = (1e3) * self.econ * self.solar.daytime_net_radiation
 
         # Estimate daily potential evapotranspiration (pet_d), mm
         self.pet_d = (1.0 + self.core_const.k_w) * self.eet_d
@@ -154,7 +154,8 @@ class DailyEvapFluxes:
         # values from np.arccos(v > 1), setting this directly to 1
         hi_pre = (
             sw / (self.solar.rw[didx] * self.solar.rv[didx] * self.rx[didx])
-            + self.solar.rnl[didx] / (self.solar.rw[didx] * self.solar.rv[didx])
+            + self.solar.net_longwave_radiation[didx]
+            / (self.solar.rw[didx] * self.solar.rv[didx])
             - self.solar.ru[didx] / self.solar.rv[didx]
         )
         hi = np.arccos(np.clip(hi_pre, -np.inf, 1)) / self.core_const.k_pir
@@ -166,14 +167,17 @@ class DailyEvapFluxes:
                 self.rx[didx]
                 * self.solar.rw[didx]
                 * self.solar.rv[didx]
-                * (np.sin(np.deg2rad(self.solar.hn[didx])) - np.sin(np.deg2rad(hi)))
+                * (
+                    np.sin(np.deg2rad(self.solar.crossover_hour_angle[didx]))
+                    - np.sin(np.deg2rad(hi))
+                )
             )
             + (
                 (
                     self.rx[didx] * self.solar.rw[didx] * self.solar.ru[didx]
-                    - self.rx[didx] * self.solar.rnl[didx]
+                    - self.rx[didx] * self.solar.net_longwave_radiation[didx]
                 )
-                * (self.solar.hn[didx] - hi)
+                * (self.solar.crossover_hour_angle[didx] - hi)
                 * self.core_const.k_pir
             )
         ) * (24.0 / np.pi)
