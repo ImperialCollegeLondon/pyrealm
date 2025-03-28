@@ -1,5 +1,5 @@
 """The ``t_model`` module provides the basic scaling relationships of the T Model
-:cite:`Li:2014bc`:. This provides scaling relationships using the plant functional type
+:cite:`Li:2014bc`. This provides scaling relationships using the plant functional type
 traits defined in the :mod:`~pyrealm.demography.flora` module and the diameter at breast
 height of individual stems to define the stem geometry, masses, respiration and hence
 calculate stem growth given net primary productivity.
