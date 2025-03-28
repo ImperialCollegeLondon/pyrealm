@@ -702,6 +702,7 @@ def calculate_growth_increments(
     npp: NDArray[np.float64],
     turnover: NDArray[np.float64],
     reproductive_tissue_turnover: NDArray[np.float64],
+    p_foliage_for_reproductive_tissue: NDArray[np.float64],
     dbh: NDArray[np.float64],
     stem_height: NDArray[np.float64],
     validate: bool = True,
@@ -764,6 +765,9 @@ def calculate_growth_increments(
         \end{align*}
       \]
 
+    NOTE: Reproductive tissue is included as an optional additional cost of turnover.
+    If the default values are set to zero, it will not impact T Model calculations.
+
     Args:
         rho_s: Wood density of the PFT
         a_hd: Initial slope of the height/diameter relationship of the PFT
@@ -774,6 +778,8 @@ def calculate_growth_increments(
         zeta: The ratio of fine root mass to foliage area of the PFT
         npp: Net primary productivity of individuals
         turnover: Fine root and foliage turnover cost of individuals
+        p_foliage_for_reproductive_tissue: Proportion of foliage mass that is
+            reproductive tissue.
         reproductive_tissue_turnover: Reproductive tissue turnover cost of individuals
         dbh: Diameter at breast height of individuals
         stem_height: Stem height of individuals
@@ -794,6 +800,7 @@ def calculate_growth_increments(
                 "npp": npp,
                 "turnover": turnover,
                 "reproductive_tissue_turnover": reproductive_tissue_turnover,
+                "p_foliage_for_reproductive_tissue": p_foliage_for_reproductive_tissue,
                 "dbh": dbh,
                 "stem_height": stem_height,
             },
@@ -811,7 +818,7 @@ def calculate_growth_increments(
         lai
         * ((np.pi * ca_ratio) / (4 * a_hd))
         * (a_hd * dbh * (1 - stem_height / h_max) + stem_height)
-        * (1 / sla + zeta)
+        * ((1 + p_foliage_for_reproductive_tissue) / sla + zeta)
     )
 
     # Increment of diameter at breast height
@@ -1163,6 +1170,7 @@ class StemAllocation(PandasExporter):
                 npp=self.npp,
                 turnover=self.turnover,
                 reproductive_tissue_turnover=self.reproductive_tissue_turnover,
+                p_foliage_for_reproductive_tissue=stem_traits.p_foliage_for_reproductive_tissue,
                 dbh=stem_allometry.dbh,
                 stem_height=stem_allometry.stem_height,
                 validate=False,

@@ -338,6 +338,7 @@ def test_calculate_growth_increments(rvalues):
             npp=data["NPP"],
             turnover=data["turnover"],
             reproductive_tissue_turnover=np.zeros(np.shape(data["turnover"])),
+            p_foliage_for_reproductive_tissue=np.zeros(np.shape(data["turnover"])),
             dbh=data["diameter"],
             stem_height=data["height"],
         )

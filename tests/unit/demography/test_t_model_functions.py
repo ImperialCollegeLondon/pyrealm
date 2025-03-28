@@ -672,6 +672,9 @@ class TestTModel:
                 reproductive_tissue_turnover=np.zeros(
                     np.shape(rtmodel_data["turnover"][data_idx])
                 ),
+                p_foliage_for_reproductive_tissue=np.zeros(
+                    np.shape(rtmodel_data["npp"][data_idx])
+                ),
                 dbh=rtmodel_data["dbh"][data_idx],
                 stem_height=rtmodel_data["stem_height"][data_idx],
             )
