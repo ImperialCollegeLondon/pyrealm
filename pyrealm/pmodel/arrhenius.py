@@ -18,6 +18,7 @@ from abc import ABC, abstractmethod
 
 from numpy.typing import NDArray
 
+from pyrealm.core.experimental import warn_experimental
 from pyrealm.pmodel.functions import (
     calculate_kattge_knorr_arrhenius_factor,
     calculate_simple_arrhenius_factor,
@@ -227,7 +228,11 @@ class KattgeKnorrArrhenius(
         array([0.70109])
     """
 
+    __experimental__ = True
+
     def _calculation_method(self, coefficients: dict) -> NDArray:
+        warn_experimental("KattgeKnorrArrhenius")
+
         return calculate_kattge_knorr_arrhenius_factor(
             tk_leaf=self.env.tk,
             tk_ref=self.env.pmodel_const.tk_ref,
