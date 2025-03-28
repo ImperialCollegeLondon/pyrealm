@@ -183,7 +183,7 @@ def calculate_stem_masses(
 
     The stem mass (:math:`W_{s}`) is calculated from individual diameters at breast
     height (:math:`D`) and stem height (:math:`H`), along with the wood density
-    (:math:`\rho_s`)of the plant functional type :cite:p:`{Equation 6, }Li:2014bc`:
+    (:math:`\rho_s`) of the plant functional type :cite:p:`{Equation 6, }Li:2014bc`:
 
     .. math::
 
@@ -357,8 +357,8 @@ def calculate_whole_crown_gpp(
 ) -> NDArray[np.float64]:
     r"""Calculate whole crown gross primary productivity.
 
-    This function calculates individual GPP across the whole crown, given the individual
-    potential gross primary productivity (GPP) per metre squared (:math:`P_0`) and crown
+    This function calculates individual gross primary productivity (GPP) across the whole crown, given the individual
+    potential GPP per metre squared (:math:`P_0`) and crown
     area (:math:`A_c`), along with the leaf area index (:math:`L`) and the extinction
     coefficient (:math:`k`) of the plant functional type :cite:p:`{Equation 12,
     }Li:2014bc`.
