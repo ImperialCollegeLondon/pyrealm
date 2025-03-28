@@ -909,7 +909,7 @@ class StemAllocation(PandasExporter):
     turnover: NDArray[np.float64] = field(init=False)
     """Allocation to leaf and fine root turnover (g C)"""
     delta_dbh: NDArray[np.float64] = field(init=False)
-    """Predicted increase in stem diameter from growth allocation (g C)"""
+    """Predicted increase in stem diameter from growth allocation (m)"""
     delta_stem_mass: NDArray[np.float64] = field(init=False)
     """Predicted increase in stem mass from growth allocation (g C)"""
     delta_foliage_mass: NDArray[np.float64] = field(init=False)
