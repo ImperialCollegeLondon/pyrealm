@@ -8,6 +8,7 @@ from typing import ClassVar
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm.core.experimental import warn_experimental
 from pyrealm.demography.core import (
     PandasExporter,
     _validate_demography_array_arguments,
@@ -283,6 +284,8 @@ class CrownProfile(PandasExporter):
     _n_stems: int = field(init=False)
     """The number of stems."""
 
+    __experimental__ = True
+
     def __post_init__(
         self,
         stem_traits: StemTraits | Flora,
@@ -290,6 +293,8 @@ class CrownProfile(PandasExporter):
         validate: bool,
     ) -> None:
         """Populate crown profile attributes from the traits, allometry and height."""
+
+        warn_experimental("CrownProfile")
 
         # If validation is required, only need to perform validation once to check that
         # the at_dbh values are congruent with the stem_traits inputs. If they are, then

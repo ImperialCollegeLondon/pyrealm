@@ -299,7 +299,7 @@ class QuantumYieldSandoval(
         """Calculate kphio."""
 
         # Warn that this is an experimental feature.
-        warn_experimental("QuantumYieldSandoval._calculate_kphio")
+        warn_experimental("QuantumYieldSandoval")
 
         aridity_index = getattr(self.env, "aridity_index")
         mean_growth_temperature = getattr(self.env, "mean_growth_temperature")

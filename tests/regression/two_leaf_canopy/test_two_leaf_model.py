@@ -7,7 +7,7 @@ from numpy.testing import assert_allclose
 
 from pyrealm.pmodel import PModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
-from pyrealm.pmodel.two_leaf import TwoLeafAssimilation, TwoLeafIrradience
+from pyrealm.pmodel.two_leaf import TwoLeafAssimilation, TwoLeafIrradiance
 
 
 @pytest.fixture
@@ -27,14 +27,14 @@ def solar_elevation():
 
 @pytest.fixture
 def solar_irradiance(solar_elevation, get_data):
-    """Creates instace of TwoLeafIrradience class."""
+    """Creates instace of TwoLeafIrradiance class."""
 
     data = get_data.loc[(get_data["time"] == "2014-08-01 12:30:00")]
 
     PPFD = data["ppfd"].to_numpy()
     LAI = data["LAI"].to_numpy()
     PATM = data["patm"].to_numpy()
-    result = TwoLeafIrradience(solar_elevation, PPFD, LAI, PATM)
+    result = TwoLeafIrradiance(solar_elevation, PPFD, LAI, PATM)
 
     return result
 

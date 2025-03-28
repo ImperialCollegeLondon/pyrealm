@@ -55,12 +55,12 @@ import pytest
         ),
     ),
 )
-def test_TwoLeafIrradience(args, outcome, msg):
-    """Tests initialisation conditions of TwoLeafIrradience."""
-    from pyrealm.pmodel.two_leaf import TwoLeafIrradience
+def test_TwoLeafIrradiance(args, outcome, msg):
+    """Tests initialisation conditions of TwoLeafIrradiance."""
+    from pyrealm.pmodel.two_leaf import TwoLeafIrradiance
 
     with outcome as outc:
-        two_leaf = TwoLeafIrradience(**args)
+        two_leaf = TwoLeafIrradiance(**args)
 
         # Check the calculated attributes have been populated and have the right shape
         assert hasattr(two_leaf, "sunlit_absorbed_irradiance")
@@ -76,7 +76,7 @@ def test_TwoLeafAssimilation():
     """Test the creation of a TwoLeafAssimilation instance."""
 
     from pyrealm.pmodel import PModel, PModelEnvironment
-    from pyrealm.pmodel.two_leaf import TwoLeafAssimilation, TwoLeafIrradience
+    from pyrealm.pmodel.two_leaf import TwoLeafAssimilation, TwoLeafIrradiance
 
     model = PModel(
         env=PModelEnvironment(
@@ -89,7 +89,7 @@ def test_TwoLeafAssimilation():
         )
     )
 
-    irrad = TwoLeafIrradience(
+    irrad = TwoLeafIrradiance(
         solar_elevation=np.array([0.7]),
         patm=np.array([100000]),
         ppfd=np.array([1500]),

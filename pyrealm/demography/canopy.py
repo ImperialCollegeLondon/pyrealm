@@ -9,6 +9,7 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.optimize import root_scalar  # type: ignore [import-untyped]
 
+from pyrealm.core.experimental import warn_experimental
 from pyrealm.demography.community import Community
 from pyrealm.demography.core import PandasExporter, _validate_demography_array_arguments
 from pyrealm.demography.crown import (
@@ -253,6 +254,8 @@ class CohortCanopyData(PandasExporter):
     # Community wide attributes in their own class
     community_data: CommunityCanopyData = field(init=False)
 
+    __experimental__ = True
+
     def __post_init__(
         self,
         projected_leaf_area: NDArray[np.float64],
@@ -262,6 +265,9 @@ class CohortCanopyData(PandasExporter):
         cell_area: float,
     ) -> None:
         """Calculates cohort canopy attributes from the input data."""
+
+        warn_experimental("CohortCanopyData")
+
         # Partition the projected leaf area into the leaf area in each layer for each
         # stem and then scale up to the cohort leaf area in each layer.
         self.stem_leaf_area = np.diff(projected_leaf_area, axis=0, prepend=0)
@@ -343,8 +349,12 @@ class CommunityCanopyData(PandasExporter):
     fapar: NDArray[np.float64] = field(init=False)
     """The fraction of absorbed radiation for the whole community across layers."""
 
+    __experimental__ = True
+
     def __post_init__(self, cohort_transmissivity: NDArray[np.float64]) -> None:
         """Calculates community-wide canopy attributes from the input data."""
+
+        warn_experimental("CommunityCanopyData")
 
         # Aggregate across cohorts into a layer wide transmissivity
         self.f_trans = cohort_transmissivity.prod(axis=1)
@@ -384,6 +394,8 @@ class Canopy:
             closure heights (default: 0.001 metres)
     """
 
+    __experimental__ = True
+
     def __init__(
         self,
         community: Community,
@@ -392,6 +404,9 @@ class Canopy:
         canopy_gap_fraction: float = 0,
         solver_tolerance: float = 0.001,
     ) -> None:
+        # Warn that this is an experimental feature
+        warn_experimental("Canopy")
+
         # Store required init vars
         self.canopy_gap_fraction: float = canopy_gap_fraction
         """Canopy gap fraction."""
