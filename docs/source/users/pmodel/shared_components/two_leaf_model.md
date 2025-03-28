@@ -88,7 +88,7 @@ the atmospheric CO2 concentration.
 tc = (ds["Tair"] - 273.15).to_numpy()
 # Atmospheric pressure in Pascals
 patm = ds["PSurf"].to_numpy()
-# Convert specific huidity to VPD and remove negative values
+# Convert specific humidity to VPD and remove negative values
 vpd = convert_sh_to_vpd(sh=ds["Qair"].to_numpy(), ta=tc, patm=patm / 1000) * 1000
 vpd = np.clip(vpd, 0, np.inf)
 # Extract fAPAR (unitless)
@@ -291,7 +291,7 @@ the calculations are given in the API documentation for the class, but in brief:
 
 * The Arrhenius scaling method used with the P Model is then used to adjust these
   estimates at standard temperature to the actual temperature. estimates to the observed
-  temperatures
+  temperatures.
 
 * Separately for sunlit and shaded leaves, the limitation terms from the calculation of
   optimal $\chi$ are then used to calculate the actual maximum assimilation via the
