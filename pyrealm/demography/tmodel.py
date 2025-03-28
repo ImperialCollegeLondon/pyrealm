@@ -246,8 +246,8 @@ def calculate_sapwood_masses(
     r"""Calculate sapwood mass under the T Model.
 
     The sapwood mass (:math:`W_{\cdot s}`) is calculated from the individual crown area
-    (:math:`A_{c}`), height :math:`H` and canopy fraction (:math:`f_{c}`) along with the
-    wood density (:math:`\rho_s`) and crown area ratio :math:`A_{c}` of the  plant
+    (:math:`A_{c}`), stem height (:math:`H`) and canopy fraction (:math:`f_{c}`) along with the
+    wood density (:math:`\rho_s`) and crown area ratio (:math:`c`) of the  plant
     functional type :cite:p:`{Equation 14, }Li:2014bc`.
 
     .. math::
