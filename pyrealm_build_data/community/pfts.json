@@ -18,7 +18,11 @@
       "zeta": 0.17,
       "f_g": 0.02,
       "m": 2,
-      "n": 5
+      "n": 5,
+      "tau_rt": 1,
+      "resp_rt": 0,
+      "p_foliage_for_reproductive_tissue": 0,
+      "gpp_topslice": 0
     },
     {
       "name": "test2",
@@ -38,7 +42,11 @@
       "zeta": 0.17,
       "f_g": 0.02,
       "m": 2,
-      "n": 5
+      "n": 5,
+      "tau_rt": 1,
+      "resp_rt": 0,
+      "p_foliage_for_reproductive_tissue": 0,
+      "gpp_topslice": 0
     }
   ]
 }
