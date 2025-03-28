@@ -552,7 +552,7 @@ def calculate_foliage_and_fine_root_turnover(
 
     .. math::
 
-        T = W_f \left( \frac{1}{\tau_f} + \frac{\sigma \zeta}{\tau_f} \right)
+        T = W_f \left( \frac{1}{\tau_f} + \frac{\sigma \zeta}{\tau_r} \right)
 
     Args:
         sla: The specific leaf area
