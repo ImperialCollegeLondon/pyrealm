@@ -5,7 +5,6 @@ from importlib import resources
 
 import pandas as pd
 import pytest
-import xarray as xr
 
 
 @pytest.fixture
@@ -38,7 +37,7 @@ def de_gri_daily_outputs():
         / "daily_outputs.csv"
     )
 
-    de_gri_data = xr.load_dataset(datapath)
+    de_gri_data = pd.read_csv(datapath, na_values=[-9999])
 
     return de_gri_data
 
