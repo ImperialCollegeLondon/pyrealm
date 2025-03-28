@@ -495,7 +495,7 @@ def calculate_net_primary_productivity(
     (:math:`R_s`).
 
     .. math::
-        P_{net} = y (P - R_m) = y (P - W_{\cdot s} r_s - \zeta \sigma W_f r_r - P r_f)
+        P_{net} = y (P - R_m) = y (P - W_{\cdot s} r_s - \zeta \sigma W_f r_r - W_f r_f)
 
     Note that this differs from Equation 13 of :cite:t:`Li:2014bc`, which does not
     include a term for foliar respiration. This is because :cite:t:`Li:2014bc` remove
