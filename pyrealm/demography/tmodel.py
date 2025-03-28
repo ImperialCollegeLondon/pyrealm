@@ -114,9 +114,9 @@ def calculate_crown_areas(
 ) -> NDArray[np.float64]:
     r"""Calculate tree crown area under the T Model.
 
-    The tree crown area (:math:`A_{c}`)is calculated from individual diameters at breast
+    The tree crown area (:math:`A_{c}`) is calculated from individual diameters at breast
     height (:math:`D`) and stem height (:math:`H`), along with the crown area ratio
-    (:math:`c`)and the initial slope of the height/diameter relationship (:math:`a`) of
+    (:math:`c`) and the initial slope of the height/diameter relationship (:math:`a`) of
     the plant functional type :cite:p:`{Equation 8, }Li:2014bc`:
 
     .. math::
@@ -701,7 +701,7 @@ def calculate_growth_increments(
 class StemAllometry(PandasExporter, CohortMethods):
     """Calculate T Model allometric predictions across a set of stems.
 
-    This method calculate predictions of stem allometries for stem height, crown area,
+    This method calculates predictions of stem allometries for stem height, crown area,
     crown fraction, stem mass, foliage mass and sapwood mass under the T Model
     :cite:`Li:2014bc`, given diameters at breast height for a set of plant functional
     traits.
@@ -740,11 +740,11 @@ class StemAllometry(PandasExporter, CohortMethods):
 
     # Post init allometry attributes
     dbh: NDArray[np.float64] = field(init=False)
-    """Diameter at breast height (metres)"""
+    """Diameter at breast height (m)"""
     stem_height: NDArray[np.float64] = field(init=False)
-    """Stem height (metres)"""
+    """Stem height (m)"""
     crown_area: NDArray[np.float64] = field(init=False)
-    """Crown area (square metres)"""
+    """Crown area (m2)"""
     crown_fraction: NDArray[np.float64] = field(init=False)
     """Vertical fraction of the stem covered by the crown (-)"""
     stem_mass: NDArray[np.float64] = field(init=False)
@@ -756,7 +756,7 @@ class StemAllometry(PandasExporter, CohortMethods):
     crown_r0: NDArray[np.float64] = field(init=False)
     """Crown radius scaling factor (-)"""
     crown_z_max: NDArray[np.float64] = field(init=False)
-    """Height of maximum crown radius (metres)"""
+    """Height of maximum crown radius (m)"""
 
     # Information attributes
     _n_pred: int = field(init=False)
