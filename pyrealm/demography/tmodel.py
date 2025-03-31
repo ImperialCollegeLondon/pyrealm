@@ -2,7 +2,8 @@
 :cite:`Li:2014bc`. This provides scaling relationships using the plant functional type
 traits defined in the :mod:`~pyrealm.demography.flora` module and the diameter at breast
 height of individual stems to define the stem geometry, masses, respiration and hence
-calculate stem growth given net primary productivity.
+calculate stem growth given net primary productivity. Note that :mod:`~pyrealm.demography.stem_height` denotes the
+total tree height, following Li et al. (2014), where 'stem' and 'tree' are used interchangeably.
 """  # noqa: D205
 
 from dataclasses import InitVar, dataclass, field
