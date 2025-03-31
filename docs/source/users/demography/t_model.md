@@ -68,6 +68,10 @@ the predictions of the T Model for:
 * Crown radius scaling factor (`crown_r0`, -), and
 * Height of maximum crown radius (`crown_z_max`, m).
 
+Note that :mod:`~pyrealm.demography.stem_height` denotes the total tree height,
+as used interchangeable in Li et al. (2014), rather than just the height of the trunk 
+below the canopy.
+
 The DBH input can be a scalar array or a one dimensional array providing a single value
 for each PFT. This then calculates a single estimate at the given size for each stem.
 
