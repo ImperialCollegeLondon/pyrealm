@@ -37,16 +37,16 @@ from pyrealm.core.solar import SolarPositions
 from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 from pyrealm.pmodel.acclimation import AcclimationModel
-from pyrealm.pmodel.two_leaf import TwoLeafIrradience, TwoLeafAssimilation
+from pyrealm.pmodel.two_leaf import TwoLeafIrradiance, TwoLeafAssimilation
 
 from pyrealm.core.hygro import convert_sh_to_vpd
 ```
 
 This page shows how to use the two leaf, two stream model of assimilation
-:cite:`depury:1997a` in `pyrealm`. The standard and subdaily P Model use the big leaf
+{cite}`depury:1997a` in `pyrealm`. The standard and subdaily P Model use the big leaf
 approximation of the canopy structure: assimilation is estimated as if all the available
 light falls directly as a beam onto a single large leaf. In the two leaf, two stream
-model, :cite:t:`depury:1997a` differentiate the absorbance of light into sunlit and
+model, {cite:t}`depury:1997a` differentiate the absorbance of light into sunlit and
 shaded leaves ('two leaf') and also into direct and scattered radiation ('two streams').
 Within the canopy, the model separates out beam, scattered and diffuse irradiation and
 estimates how much of each stream is absorbed by the sunlit and shaded leaves.
@@ -212,7 +212,7 @@ multiple P Models. The irradiance calculation requires:
 * the atmospheric pressure.
 
 ```{code-cell} ipython3
-irradiances = TwoLeafIrradience(
+irradiances = TwoLeafIrradiance(
     solar_elevation=solar_pos.solar_elevation,
     ppfd=ppfd,
     leaf_area_index=2,

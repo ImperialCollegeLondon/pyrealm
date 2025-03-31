@@ -4,7 +4,7 @@ implementation in the BESS model.
 
 The module provides two core classes:
 
-* The :class:`~pyrealm.pmodel.two_leaf.TwoLeafIrradience` class can be used to estimate
+* The :class:`~pyrealm.pmodel.two_leaf.TwoLeafIrradiance` class can be used to estimate
   the irradiance absorbed by sunlit and shaded leaves, given the solar elevation angle,
   the atmospheric pressure, the leaf area index and the photosynthetic photon flux
   density.
@@ -28,6 +28,7 @@ from numpy.typing import NDArray
 from pyrealm.constants.core_const import CoreConst
 from pyrealm.constants.two_leaf import TwoLeafConst
 from pyrealm.core.bounds import BoundsChecker
+from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 
@@ -36,7 +37,7 @@ from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 # ------------------------------
 
 
-class TwoLeafIrradience:
+class TwoLeafIrradiance:
     r"""Calculate the irradiance absorbed by sunlit and shaded leaves.
 
     The two leaf, two stream model of :cite:t:`depury:1997a` partitions the irradiance
@@ -83,6 +84,8 @@ class TwoLeafIrradience:
         bounds_checker: A bounds checker instance used to validate the input data.
     """
 
+    __experimental__ = True
+
     def __init__(
         self,
         solar_elevation: NDArray[np.float64],
@@ -93,6 +96,8 @@ class TwoLeafIrradience:
         two_leaf_constants: TwoLeafConst = TwoLeafConst(),
         bounds_checker: BoundsChecker = BoundsChecker(),
     ):
+        warn_experimental("TwoLeafIrradiance")
+
         # Check shapes are consistent
         check_input_shapes(solar_elevation, ppfd, leaf_area_index, patm)
 
@@ -533,7 +538,7 @@ class TwoLeafAssimilation:
     separately estimates the assimilation by sunlit and shaded leaves.
 
     The class requires an estimate of the irradiances absorbed by the sunlit and shaded
-    leaves, calculated using the :class:`~pyrealm.pmodel.two_leaf.TwoLeafIrradience`
+    leaves, calculated using the :class:`~pyrealm.pmodel.two_leaf.TwoLeafIrradiance`
     class. It also requires a :class:`~pyrealm.pmodel.pmodel.PModel` or
     :class:`~pyrealm.pmodel.pmodel.SubdailyPModel` instance, which is used to provide
     estimates of four parameters:
@@ -590,12 +595,16 @@ class TwoLeafAssimilation:
         irrad: An instance of TwoLeafIrradiance.
     """
 
+    __experimental__ = True
+
     def __init__(
         self,
         pmodel: PModel | SubdailyPModel,
-        irradiance: TwoLeafIrradience,
+        irradiance: TwoLeafIrradiance,
     ):
         """Initialize the TwoLeafAssimilation class."""
+
+        warn_experimental("TwoLeafAssimilation")
 
         self.pmodel = pmodel
         """A PModel or SubdailyPModel instance."""

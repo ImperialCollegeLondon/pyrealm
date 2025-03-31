@@ -136,6 +136,7 @@ from marshmallow import Schema, fields, post_load, validate, validates_schema
 from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
+from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.demography.core import CohortMethods, PandasExporter
 from pyrealm.demography.flora import Flora, StemTraits
@@ -168,11 +169,15 @@ class Cohorts(PandasExporter, CohortMethods):
     pft_names: NDArray[np.str_]
     n_cohorts: int = field(init=False)
 
+    __experimental__ = True
+
     def __post_init__(self) -> None:
         """Validation of cohorts data."""
 
         # TODO - validation - maybe make this optional to reduce workload within
         # simulations
+
+        warn_experimental("Cohorts")
 
         # Check cohort data types
         if not (
@@ -421,6 +426,8 @@ class Community:
     stem_traits: StemTraits = field(init=False)
     stem_allometry: StemAllometry = field(init=False)
 
+    __experimental__ = True
+
     def __post_init__(
         self,
     ) -> None:
@@ -429,6 +436,8 @@ class Community:
         The ``__post_init__`` builds a pandas dataframe of PFT values and T model
         predictions across the validated initial cohort data.
         """
+
+        warn_experimental("Community")
 
         # Check cell area and cell id
         if not (isinstance(self.cell_area, float | int) and self.cell_area > 0):

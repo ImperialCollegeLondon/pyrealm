@@ -8,6 +8,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import C3C4Const
+from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 
 
@@ -181,6 +182,8 @@ class C3C4Competition:
     #      - Axis argument to aggregate values along a time axis?
     #        nansum for gpp  and nanmean for  DeltaC13/4_alone.
 
+    __experimental__ = True
+
     def __init__(
         self,
         gpp_c3: NDArray[np.float64],
@@ -190,6 +193,8 @@ class C3C4Competition:
         cropland: NDArray[np.float64],
         c3c4_const: C3C4Const = C3C4Const(),
     ):
+        warn_experimental("C3C4Competition")
+
         # Check inputs are congruent
         self.shape: tuple = check_input_shapes(
             gpp_c3, gpp_c4, treecover, cropland, below_t_min
