@@ -3,8 +3,8 @@
 traits defined in the :mod:`~pyrealm.demography.flora` module and the diameter at breast
 height of individual stems to define the stem geometry, masses, respiration and hence
 calculate stem growth given net primary productivity. Note that :mod:`~pyrealm.demography.stem_height` denotes the
-total tree height, as used interchangeable with 'tree' in Li et al. (2014),
-rather than just the height of the trunk below the canopy.
+total tree height, as used interchangeable in Li et al. (2014), rather than just the height
+of the trunk below the canopy.
 """  # noqa: D205
 
 from dataclasses import InitVar, dataclass, field
