@@ -609,7 +609,7 @@ class TestTModel:
 
         assert str(excep.value).startswith(excep_msg)
 
-    def test_calculate_foliage_and_fine_root_turnover(
+    def test_calculate_turnover(
         self,
         rtmodel_data,
         rtmodel_flora,
@@ -623,17 +623,24 @@ class TestTModel:
         """Tests calculation of foliage and fine root turnover."""
 
         from pyrealm.demography.tmodel import (
-            calculate_foliage_and_fine_root_turnover,
+            calculate_fine_root_turnover,
+            calculate_foliage_turnover,
         )
 
         with outcome as excep:
-            result = calculate_foliage_and_fine_root_turnover(
+            result1 = calculate_fine_root_turnover(
                 sla=rtmodel_flora.sla[pft_idx],
                 zeta=rtmodel_flora.zeta[pft_idx],
-                tau_f=rtmodel_flora.tau_f[pft_idx],
                 tau_r=rtmodel_flora.tau_r[pft_idx],
                 foliage_mass=rtmodel_data["foliage_mass"][data_idx],
             )
+
+            result2 = calculate_foliage_turnover(
+                tau_f=rtmodel_flora.tau_f[pft_idx],
+                foliage_mass=rtmodel_data["foliage_mass"][data_idx],
+            )
+
+            result = result1 + result2
 
             assert result.shape == exp_shape
             assert_allclose(result, rtmodel_data["turnover"][out_idx])

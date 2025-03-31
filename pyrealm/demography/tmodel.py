@@ -600,42 +600,69 @@ def calculate_net_primary_productivity(
     )
 
 
-def calculate_foliage_and_fine_root_turnover(
+def calculate_foliage_turnover(
+    tau_f: NDArray[np.float64],
+    foliage_mass: NDArray[np.float64],
+    validate: bool = True,
+) -> NDArray[np.float64]:
+    r"""Calculate turnover costs for foliage.
+
+    This function calculates the costs associated with the turnover of foliage. This is
+    calculated from the total foliage mass of individuals (:math:`W_f`), and the
+    turnover times of foliage (:math:`\tau_f`) of the plant functional type
+    :cite:p:`{see Equation 15, }Li:2014bc`.
+
+    .. math::
+
+        T = W_f \left( \frac{1}{\tau_f} \right)
+
+    Args:
+        tau_f: The turnover time of foliage
+        foliage_mass: The foliage mass
+        validate: Boolean flag to suppress argument validation
+    """
+    if validate:
+        _validate_demography_array_arguments(
+            trait_args={"tau_f": tau_f},
+            size_args={"foliage_mass": foliage_mass},
+        )
+
+    return _enforce_2D(foliage_mass * (1 / tau_f))
+
+
+def calculate_fine_root_turnover(
     sla: NDArray[np.float64],
     zeta: NDArray[np.float64],
-    tau_f: NDArray[np.float64],
     tau_r: NDArray[np.float64],
     foliage_mass: NDArray[np.float64],
     validate: bool = True,
 ) -> NDArray[np.float64]:
     r"""Calculate turnover costs.
 
-    This function calculates the costs associated with the turnover of fine roots and
-    foliage. This is calculated from the total foliage mass of individuals
-    (:math:`W_f`), along with the specific leaf area (:math:`\sigma`) and fine root mass
-    to foliar area ratio (:math:`\zeta`) and the turnover times of foliage
-    (:math:`\tau_f`) and fine roots (:math:`\tau_r`) of the plant functional type
-    :cite:p:`{see Equation 15, }Li:2014bc`.
+    This function calculates the costs associated with the turnover of fine roots. This
+    is calculated from the total foliage mass of individuals (:math:`W_f`), along with
+    the specific leaf area (:math:`\sigma`) and fine root mass to foliar area ratio
+    (:math:`\zeta`) and the turnover time of fine roots (:math:`\tau_r`) of the plant
+    functional type :cite:p:`{see Equation 15, }Li:2014bc`.
 
     .. math::
 
-        T = W_f \left( \frac{1}{\tau_f} + \frac{\sigma \zeta}{\tau_f} \right)
+        T = W_f \left(\frac{\sigma \zeta}{\tau_f} \right)
 
     Args:
         sla: The specific leaf area
         zeta: The ratio of fine root mass to foliage area.
-        tau_f: The turnover time of foliage
         tau_r: The turnover time of fine roots
         foliage_mass: The foliage mass
         validate: Boolean flag to suppress argument validation
     """
     if validate:
         _validate_demography_array_arguments(
-            trait_args={"sla": sla, "zeta": zeta, "tau_f": tau_f, "tau_r": tau_r},
+            trait_args={"sla": sla, "zeta": zeta, "tau_r": tau_r},
             size_args={"foliage_mass": foliage_mass},
         )
 
-    return _enforce_2D(foliage_mass * ((1 / tau_f) + (sla * zeta / tau_r)))
+    return _enforce_2D(foliage_mass * (sla * zeta / tau_r))
 
 
 def calculate_reproductive_tissue_turnover(
@@ -1051,6 +1078,10 @@ class StemAllocation(PandasExporter):
     """Net primary productivity (g C)"""
     turnover: NDArray[np.float64] = field(init=False)
     """Allocation to leaf and fine root turnover (g C)"""
+    leaf_turnover: NDArray[np.float64] = field(init=False)
+    """Allocation to leaf turnover (g C)"""
+    fine_root_turnover: NDArray[np.float64] = field(init=False)
+    """Allocation to fine root turnover"""
     reproductive_tissue_turnover: NDArray[np.float64] = field(init=False)
     """Allocation to reproductive tissue turnover (g C)"""
     delta_dbh: NDArray[np.float64] = field(init=False)
@@ -1143,14 +1174,21 @@ class StemAllocation(PandasExporter):
             validate=False,
         )
 
-        self.turnover = calculate_foliage_and_fine_root_turnover(
+        self.foliage_turnover = calculate_foliage_turnover(
+            tau_f=stem_traits.tau_f,
+            foliage_mass=stem_allometry.foliage_mass,
+            validate=False,
+        )
+
+        self.fine_root_turnover = calculate_fine_root_turnover(
             sla=stem_traits.sla,
             zeta=stem_traits.zeta,
-            tau_f=stem_traits.tau_f,
             tau_r=stem_traits.tau_r,
             foliage_mass=stem_allometry.foliage_mass,
             validate=False,
         )
+
+        self.turnover = self.foliage_turnover + self.fine_root_turnover
 
         self.reproductive_tissue_turnover = calculate_reproductive_tissue_turnover(
             m_rt=stem_allometry.reproductive_tissue_mass,
