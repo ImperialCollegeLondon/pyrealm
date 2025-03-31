@@ -2,9 +2,10 @@
 :cite:`Li:2014bc`. This provides scaling relationships using the plant functional type
 traits defined in the :mod:`~pyrealm.demography.flora` module and the diameter at breast
 height of individual stems to define the stem geometry, masses, respiration and hence
-calculate stem growth given net primary productivity. Note that :mod:`~pyrealm.demography.stem_height` denotes the
-total tree height, as used interchangeable in Li et al. (2014), rather than just the height
-of the trunk below the canopy.
+calculate stem growth given net primary productivity. Note that
+:attr:`~pyrealm.demography.tmodel.StemAllometry.stem_height` denotes the total tree
+height, as used interchangeable in :cite:`Li:2014bc`, rather than just the height of the
+trunk below the canopy.
 """  # noqa: D205
 
 from dataclasses import InitVar, dataclass, field
@@ -117,10 +118,10 @@ def calculate_crown_areas(
 ) -> NDArray[np.float64]:
     r"""Calculate tree crown area under the T Model.
 
-    The tree crown area (:math:`A_{c}`) is calculated from individual diameters at breast
-    height (:math:`D`) and stem height (:math:`H`), along with the crown area ratio
-    (:math:`c`) and the initial slope of the height/diameter relationship (:math:`a`) of
-    the plant functional type :cite:p:`{Equation 8, }Li:2014bc`:
+    The tree crown area (:math:`A_{c}`) is calculated from individual diameters at
+    breast height (:math:`D`) and stem height (:math:`H`), along with the crown area
+    ratio (:math:`c`) and the initial slope of the height/diameter relationship
+    (:math:`a`) of the plant functional type :cite:p:`{Equation 8, }Li:2014bc`:
 
     .. math::
 
@@ -153,8 +154,8 @@ def calculate_crown_fractions(
     r"""Calculate tree crown fraction under the T Model.
 
     The crown fraction (:math:`f_{c}`) is calculated from individual diameters at breast
-    height (:math:`D`) and stem height (:math:`H`), along with the initial slope of the height /
-    diameter relationship (:math:`a`) of the plant functional type
+    height (:math:`D`) and stem height (:math:`H`), along with the initial slope of the
+    height / diameter relationship (:math:`a`) of the plant functional type
     :cite:p:`{Equation 11, }Li:2014bc`:
 
     .. math::
@@ -249,9 +250,9 @@ def calculate_sapwood_masses(
     r"""Calculate sapwood mass under the T Model.
 
     The sapwood mass (:math:`W_{\cdot s}`) is calculated from the individual crown area
-    (:math:`A_{c}`), stem height (:math:`H`) and canopy fraction (:math:`f_{c}`) along with the
-    wood density (:math:`\rho_s`) and crown area ratio (:math:`c`) of the  plant
-    functional type :cite:p:`{Equation 14, }Li:2014bc`.
+    (:math:`A_{c}`), stem height (:math:`H`) and canopy fraction (:math:`f_{c}`) along
+    with the wood density (:math:`\rho_s`) and crown area ratio (:math:`c`) of the
+    plant functional type :cite:p:`{Equation 14, }Li:2014bc`.
 
     .. math::
 
@@ -360,11 +361,11 @@ def calculate_whole_crown_gpp(
 ) -> NDArray[np.float64]:
     r"""Calculate whole crown gross primary productivity.
 
-    This function calculates individual gross primary productivity (GPP) across the whole crown, given the individual
-    potential GPP per metre squared (:math:`P_0`) and crown
-    area (:math:`A_c`), along with the leaf area index (:math:`L`) and the extinction
-    coefficient (:math:`k`) of the plant functional type :cite:p:`{Equation 12,
-    }Li:2014bc`.
+    This function calculates individual gross primary productivity (GPP) across the
+    whole crown, given the individual potential GPP per metre squared (:math:`P_0`) and
+    crown area (:math:`A_c`), along with the leaf area index (:math:`L`) and the
+    extinction coefficient (:math:`k`) of the plant functional type :cite:p:`{Equation
+    12, }Li:2014bc`.
 
     .. math::
 
