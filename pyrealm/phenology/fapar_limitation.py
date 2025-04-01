@@ -368,10 +368,8 @@ class FaparLimitation:
         annual_mean_chi = get_annual(
             pmodel.optchi.chi.round(5), datetimes, growing_season, "mean"
         )
-        annual_mean_vpd = annual.get_annual_values(pmodel.env.vpd, "mean", True)
-        annual_total_precip = convert_precipitation_to_molar(
-            annual.get_annual_values(precip, "sum", True)
-        )
+        annual_mean_vpd = get_annual(pmodel.env.vpd, datetimes, growing_season, "mean")
+        annual_total_precip = get_annual(precip, datetimes, growing_season, "total")
 
         return cls(
             annual_total_potential_gpp,
