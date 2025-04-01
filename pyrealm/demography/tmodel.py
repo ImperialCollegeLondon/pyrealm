@@ -457,8 +457,8 @@ def calculate_gpp_topslice(
     simulate processes not included in the T Model such as root exudation or active
     nutrient servicing for mycorriza fungi.
 
-    .. NOTE:: 
-        
+    .. NOTE::
+
         This is a naive calculation method that is not part of the T model. If values
         for GPP topslice are zero it will have no impact on the T Model calculations.
 
