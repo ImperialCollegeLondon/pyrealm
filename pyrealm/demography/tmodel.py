@@ -561,8 +561,8 @@ def calculate_net_primary_productivity(
     (:math:`R_s`), and reproductive tissue (:math:`R_{rt}`).
 
     .. math::
-        P_{net} = y (P - R_m) = y (P - W_{\cdot s} r_s - \zeta \sigma W_f r_r - W_f r_f -
-        P r_{rt})
+        P_{net} = y (P - R_m) = y (P - W_{\cdot s} r_s - \zeta \sigma W_f r_r - W_f r_f
+        - P r_{rt})
 
     Note that this differs from Equation 13 of :cite:t:`Li:2014bc`, which does not
     include a term for foliar respiration or reproductive tissue respiration.
