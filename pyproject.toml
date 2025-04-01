@@ -3,11 +3,11 @@
 description = "Python tools for modelling plant productivity and demography."
 license = "MIT"
 name = "pyrealm"
-version = "2.0.0-rc.1"
+version = "2.0.0-rc.2"
 
 dependencies = [
   "dacite (>1.6.0)",
-  "numpy (>=2.1, < 2.2)", # pinning below 2.2.0 at the moment, issue with float typing.
+  "numpy (>=2.1)",
   "scipy (>=1.7.3)",
   "tabulate (>=0.8.10)",
   "marshmallow (>=3.22.0)",
@@ -27,6 +27,8 @@ authors = [
   {name = "Alexander Smith", email = "as3402@cam.ac.uk"},
   {name = "James Emberton", email = "je484@cam.ac.uk"},
   {name = "Amy Pike", email = "ap766@cam.ac.uk"},
+  {name = "Arne Scheire", email = "scheirearne@gmail.com"},
+  {name = "Sally Matson", email = "sally.matson21@imperial.ac.uk"},
 ]
 
 packages = [
