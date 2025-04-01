@@ -1039,7 +1039,8 @@ class StemAllocation(PandasExporter):
         "foliar_respiration",
         "fine_root_respiration",
         "npp",
-        "turnover",
+        "foliage_turnover",
+        "fine_root_turnover",
         "delta_dbh",
         "delta_stem_mass",
         "delta_foliage_mass",
@@ -1076,8 +1077,6 @@ class StemAllocation(PandasExporter):
     """GPP removed before allocation for various biological functions (g C)"""
     npp: NDArray[np.float64] = field(init=False)
     """Net primary productivity (g C)"""
-    turnover: NDArray[np.float64] = field(init=False)
-    """Allocation to leaf and fine root turnover (g C)"""
     leaf_turnover: NDArray[np.float64] = field(init=False)
     """Allocation to leaf turnover (g C)"""
     fine_root_turnover: NDArray[np.float64] = field(init=False)
@@ -1188,8 +1187,6 @@ class StemAllocation(PandasExporter):
             validate=False,
         )
 
-        self.turnover = self.foliage_turnover + self.fine_root_turnover
-
         self.reproductive_tissue_turnover = calculate_reproductive_tissue_turnover(
             m_rt=stem_allometry.reproductive_tissue_mass,
             tau_rt=stem_traits.tau_rt,
@@ -1206,7 +1203,7 @@ class StemAllocation(PandasExporter):
                 sla=stem_traits.sla,
                 zeta=stem_traits.zeta,
                 npp=self.npp,
-                turnover=self.turnover,
+                turnover=self.foliage_turnover + self.fine_root_turnover,
                 reproductive_tissue_turnover=self.reproductive_tissue_turnover,
                 p_foliage_for_reproductive_tissue=stem_traits.p_foliage_for_reproductive_tissue,
                 dbh=stem_allometry.dbh,

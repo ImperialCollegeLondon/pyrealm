@@ -856,7 +856,9 @@ def test_StemAllocation(rtmodel_flora, rtmodel_data):
     # Check the values of the variables calculated against the expectations from the
     # rtmodel implementation
     vars_to_check = (
-        v for v in stem_allocation.array_attrs if v not in ["foliar_respiration"]
+        v
+        for v in stem_allocation.array_attrs
+        if v not in ["foliar_respiration", "foliage_turnover", "fine_root_turnover"]
     )
     for var in vars_to_check:
         assert_allclose(getattr(stem_allocation, var), rtmodel_data[var])
