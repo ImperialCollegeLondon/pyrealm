@@ -52,6 +52,78 @@ def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
             raise ValueError("Datetime spacing is not evenly divisible into a day.")
 
 
+class AnnualValueCalculator:
+    """Annual value calculation class.
+
+    This is currently subdaily specific, but I guess could run in two different modes
+    with switching in __init__.
+    """
+
+    def __init__(
+        self, datetimes: NDArray[np.datetime64], growing_season: NDArray[np.bool_]
+    ):
+        if growing_season.dtype != np.bool_:
+            raise ValueError("not a bool")
+
+        self.growing_season = growing_season
+
+        # Create scaler object to handle conversion between scales
+        self.scaler = AcclimationModel(datetimes)
+        self.scaler.set_nearest(np.timedelta64(12, "h"))
+
+        # Get the points along the time axis at which year changes
+        self.year_breaks = (
+            np.where(np.diff(self.scaler.observation_dates.astype("datetime64[Y]")))[0]
+            + 1
+        )
+
+        # Split the growing season up into a list of subarrays by year
+        self.growing_season_by_year = np.split(growing_season, self.year_breaks)
+
+    def get_annual_values(
+        self,
+        values: NDArray[np.float64],
+        function: str = "mean",
+        within_growing_season: bool = True,
+    ) -> NDArray[np.float64]:
+        """Get annual values.
+
+        Could possibly pass the function itself but can't work out the typing right now!
+        """
+
+        if len(values) == len(self.scaler.datetimes):
+            # Reduce to daily observations
+            daily_values = self.scaler.get_daily_means(values)
+        elif len(values) == len(self.growing_season):
+            # all good
+            daily_values = values
+        else:
+            raise ValueError("values don't match datetimes or growing season")
+
+        # Split the daily values into subarrays using the year breaks
+        values_by_year = np.split(daily_values, self.year_breaks)
+
+        match function:
+            case "mean":
+                ufunc = np.mean
+            case "sum":
+                ufunc = np.sum
+            case _:
+                raise ValueError("unknown function error")
+
+        if not within_growing_season:
+            return np.array([ufunc(vals) for vals in values_by_year])
+
+        # Iterate over the paired subarrays of values and growing season, applying the
+        # function to each subset of values within the growing season.
+        return np.array(
+            [
+                ufunc(vals[gs])
+                for vals, gs in zip(values_by_year, self.growing_season_by_year)
+            ]
+        )
+
+
 def get_annual(
     x: NDArray,
     datetimes: NDArray[np.datetime64],
@@ -168,10 +240,10 @@ def convert_precipitation_to_molar(precip_mm: NDArray) -> NDArray:
 class FaparLimitation:
     r"""FaparLimitation class to compute fAPAR_max and LAI.
 
-    This class takes the annual total potential GPP and precipitation, the annual
-    mean CA, Chi and VPD, as well as the aridity index and some constants to compute
-    the annual peak fractional absorbed photosynthetically active radiation (
-    fAPAR_max) and annual peak Leaf Area Index (LAI).
+    This class takes the annual total potential GPP and precipitation, the annual mean
+    CA, Chi and VPD during the growing season, as well as the aridity index and some
+    constants to compute the annual peak fractional absorbed photosynthetically active
+    radiation ( fAPAR_max) and annual peak Leaf Area Index (LAI).
 
     .. todo::
 
@@ -241,7 +313,7 @@ class FaparLimitation:
         #  precipitation, which is an empirical function of the climatic Aridity Index
         #  (AI).
         a, b, c = self.phenology_const.f0_coefficients
-        f_0 = a * np.exp(-b * np.log(aridity_index / c))
+        f_0 = a * np.exp(-b * np.log(aridity_index / c) ** 2)
 
         fapar_energylim = 1.0 - self.phenology_const.z / (
             self.phenology_const.k * annual_total_potential_gpp
@@ -296,9 +368,9 @@ class FaparLimitation:
         annual_mean_chi = get_annual(
             pmodel.optchi.chi.round(5), datetimes, growing_season, "mean"
         )
-        annual_mean_vpd = get_annual(pmodel.env.vpd, datetimes, growing_season, "mean")
-        annual_total_precip = compute_annual_total_precip(
-            precip, datetimes, growing_season
+        annual_mean_vpd = annual.get_annual_values(pmodel.env.vpd, "mean", True)
+        annual_total_precip = convert_precipitation_to_molar(
+            annual.get_annual_values(precip, "sum", True)
         )
 
         return cls(

@@ -380,7 +380,6 @@ subdaily_daily_values = subdaily_daily_values.drop_vars(
         "lon",
         "year",
         "annual_m",
-        "annual_lai_max",
     ]
 )
 subdaily_daily_values.to_pandas().to_csv(
