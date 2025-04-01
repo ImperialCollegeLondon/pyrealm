@@ -56,6 +56,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.todo",
     "sphinxcontrib.bibtex",
     "myst_nb",
     "sphinx_rtd_theme",
@@ -68,9 +69,11 @@ extensions = [
 external_toc_path = "_toc.yml"  # optional, default: _toc.yml
 external_toc_exclude_missing = False  # optional, default: False
 
+# Include TODOs
+todo_include_todos = True
+
+
 # Citation styling
-
-
 def bracket_style() -> BracketStyle:
     """Custom citation parenthesis style."""
     return BracketStyle(
