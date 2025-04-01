@@ -92,11 +92,6 @@ def test_calc_density_h2o(values, tc, patm, context_manager, expvals):
             assert_allclose(ret, values[expvals])
 
 
-# ------------------------------------------
-# Testing calc_ftemp_inst_rd - temp only but in Kelvin!
-# ------------------------------------------
-
-
 @pytest.mark.parametrize(
     "tk, expvars",
     [
@@ -730,7 +725,7 @@ def test_pmodel_class_c3(
 
     if "sm-on" in name:
         warnings.warn(
-            "Skipping jmax, vcmax,rd and gs testing when using soil moisture stress"
+            "Skipping jmax, vcmax and gs testing when using soil moisture stress"
         )
         return
 
@@ -750,10 +745,7 @@ def test_pmodel_class_c3(
     assert_allclose(ret.vcmax, sc * expected["vcmax"], equal_nan=True, rtol=1e-06)
     assert_allclose(ret.vcmax25, sc * expected["vcmax25"], equal_nan=True, rtol=1e-06)
 
-    # rd and g_s are calcualted using vcmax
-    # TODO - tolerance turned up here to pass one of the Smith tests - remove later?
-
-    assert_allclose(ret.rd, sc * expected["rd"], equal_nan=True, atol=1e07)
+    # g_s  calculated using vcmax
     # Some algo issues with getting 0 and na in g_s
     # Fill na values with 0 in both inputs
     assert_allclose(
@@ -826,16 +818,16 @@ def test_pmodel_class_c4(
 
     # Test exclusions:
     # - rpmodel adjusts vcmax and jmax when Stocker empirical soil moisture
-    #   stress β(θ) is used and hence the predictions of g_s and rd.
+    #   stress β(θ) is used and hence the predictions of g_s.
     #   pyrealm.PModel _only_ adjusts the resulting LUE so skip tests of
-    #   jmax, vcmax, rd and gs when sm is used.
+    #   jmax, vcmax and gs when sm is used.
     # - Also skip tests of jmax when no Jmax limitation is applied (none-) as the
     #   calculation in rpmodel leads to numerical instablity
     # - Also skip tests of Jmax for Smith et al - unresolved coding differences.
 
     if "sm-on" in name:
         warnings.warn(
-            "Skipping jmax, vcmax,rd and gs testing when using soil moisture stress"
+            "Skipping jmax, vcmax and gs testing when using soil moisture stress"
         )
         return
 
@@ -848,9 +840,6 @@ def test_pmodel_class_c4(
     # pyrealm and pmodel do different things with jmax and vcmax
     assert_allclose(ret.vcmax, expected["vcmax"], equal_nan=True, rtol=1e-06)
     assert_allclose(ret.vcmax25, expected["vcmax25"], equal_nan=True, rtol=1e-06)
-
-    # rd and g_s are calcualted using vcmax
-    assert_allclose(ret.rd, expected["rd"], equal_nan=True, rtol=3e-05)
 
     # Some algo issues with getting 0 and na in g_s
     # Fill na values with 0 in both inputs
@@ -873,7 +862,7 @@ def test_pmodel_summarise(capsys, values, pmodelenv):
     assert all(
         [
             "\n" + var in out
-            for var in ("lue", "iwue", "gpp", "vcmax", "vcmax25", "rd", "gs", "jmax")
+            for var in ("lue", "iwue", "gpp", "vcmax", "vcmax25", "gs", "jmax")
         ]
     )
 
