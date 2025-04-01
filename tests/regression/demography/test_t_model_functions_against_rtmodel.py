@@ -288,6 +288,7 @@ def test_calculate_net_primary_productivity(rvalues):
             foliar_respiration=data["crown_gpp"] / (1 - pft["resp_f"]) * pft["resp_f"],
             fine_root_respiration=data["resp_frt"],
             sapwood_respiration=data["resp_swd"],
+            reproductive_tissue_respiration=np.zeros(np.shape(data["resp_swd"])),
         )
         assert_array_almost_equal(
             actual_npp,
@@ -300,17 +301,22 @@ def test_calculate_foliage_and_fine_root_turnover(rvalues):
     """Tests calculation of fine root respiration of trees."""
 
     from pyrealm.demography.tmodel import (
-        calculate_foliage_and_fine_root_turnover,
+        calculate_fine_root_turnover,
+        calculate_foliage_turnover,
     )
 
     for pft, _, data in rvalues:
-        actual_turnover = calculate_foliage_and_fine_root_turnover(
+        fine_root_turnover = calculate_fine_root_turnover(
             sla=pft["sla"],
-            tau_f=pft["tau_f"],
             zeta=pft["zeta"],
             tau_r=pft["tau_r"],
             foliage_mass=data["mass_fol"],
         )
+        foliage_turnover = calculate_foliage_turnover(
+            tau_f=pft["tau_f"],
+            foliage_mass=data["mass_fol"],
+        )
+        actual_turnover = fine_root_turnover + foliage_turnover
         assert_array_almost_equal(
             actual_turnover,
             data["turnover"],
@@ -336,6 +342,8 @@ def test_calculate_growth_increments(rvalues):
             zeta=pft["zeta"],
             npp=data["NPP"],
             turnover=data["turnover"],
+            reproductive_tissue_turnover=np.zeros(np.shape(data["turnover"])),
+            p_foliage_for_reproductive_tissue=np.zeros(np.shape(data["turnover"])),
             dbh=data["diameter"],
             stem_height=data["height"],
         )
