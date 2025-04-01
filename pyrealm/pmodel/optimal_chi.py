@@ -6,13 +6,12 @@ which is used to support different implementations of the calculation of optimal
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from warnings import warn
 
 import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import PModelConst
-from pyrealm.core.experimental import ExperimentalFeatureWarning
+from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
@@ -305,15 +304,13 @@ class OptimalChiPrentice14RootzoneStress(
         array([0.62016])
     """  # noqa D210, D415 - long but sane title line.
 
+    __experimental__ = True
+
     def set_beta(self) -> None:
         """Set ``beta`` to a constant C3 specific value."""
 
         # Warn that this is an experimental feature.
-        warn(
-            "The prentice14_rootzonestress method is experimental, "
-            "see the class documentation",
-            ExperimentalFeatureWarning,
-        )
+        warn_experimental("OptimalChiPrentice14RootzoneStress")
 
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.beta = self.pmodel_const.beta_cost_ratio_c3
@@ -589,9 +586,10 @@ class OptimalChiLavergne20C4(
 
     .. NOTE::
 
-        This is an **experimental approach**. The research underlying
-        :cite:`lavergne:2020a`, found **no relationship** between C4 :math:`\beta`
-        values and soil moisture in leaf gas exchange measurements.
+        The research underlying :cite:`lavergne:2020a`, found **no relationship**
+        between C4 :math:`\beta` values and soil moisture in leaf gas exchange
+        measurements. This implementation asserts that there is a relationship and that
+        the relationship is consistent with the patterns found for C3 plants.
 
     Examples:
         >>> import numpy as np
@@ -614,14 +612,12 @@ class OptimalChiLavergne20C4(
         array([3.55989])
     """
 
+    __experimental__ = True
+
     def set_beta(self) -> None:
         """Set ``beta`` with soil moisture corrections."""
 
-        # Warn that this is an experimental feature.
-        warn(
-            "The lavergne20_c4 method is experimental, see the method documentation",
-            ExperimentalFeatureWarning,
-        )
+        warn_experimental("OptimalChiLavergne20C4")
 
         # Calculate beta as a function of theta
         self.beta = np.exp(
@@ -767,8 +763,12 @@ class OptimalChiC4NoGammaRootzoneStress(
         array([0.21583])
     """  # noqa D210, D415 - long but sane title line.
 
+    __experimental__ = True
+
     def set_beta(self) -> None:
         """Set constant ``beta`` for C4 plants."""
+
+        warn_experimental("OptimalChiC4NoGammaRootzoneStress")
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
         self.beta = self.pmodel_const.beta_cost_ratio_c4
