@@ -362,10 +362,10 @@ def calculate_whole_crown_gpp(
     r"""Calculate whole crown gross primary productivity.
 
     This function calculates individual gross primary productivity (GPP) across the
-    whole crown, given the individual potential GPP per metre squared (:math:`P_0`) and
-    crown area (:math:`A_c`), along with the leaf area index (:math:`L`) and the
-    extinction coefficient (:math:`k`) of the plant functional type :cite:p:`{Equation
-    12, }Li:2014bc`.
+    whole crown, given the individual potential GPP per metre squared (:math:`P_0`, kg C
+    m-2) and crown area (:math:`A_c`, m2), along with the leaf area index (:math:`L`)
+    and the extinction coefficient (:math:`k`) of the plant functional type
+    :cite:p:`{Equation 12, }Li:2014bc`.
 
     .. math::
 
@@ -1037,13 +1037,12 @@ class StemAllocation(PandasExporter):
         stem_allometry: An instance of
             :class:`~pyrealm.demography.tmodel.StemAllometry`
             providing the stem size data for which to calculate allocation.
-        at_potential_gpp: An array of potential GPP values at which to predict stem
-            allocation.
+        gpp: An array of GPP values available to a stem at which to model allocation (kg
+            C).
         validate: Boolean flag to suppress argument validation
     """
 
     array_attrs: ClassVar[tuple[str, ...]] = (
-        "potential_gpp",
         "whole_crown_gpp",
         "sapwood_respiration",
         "foliar_respiration",
@@ -1064,17 +1063,15 @@ class StemAllocation(PandasExporter):
     stem_allometry: InitVar[StemAllometry]
     """An instance of :class:`~pyrealm.demography.tmodel.StemAllometry`
     providing the stem size data for which to calculate allocation."""
-    at_potential_gpp: InitVar[NDArray[np.float64]]
-    """An array of potential gross primary productivity for each stem that should be
-    allocated to respiration, turnover and growth."""
+    whole_crown_gpp: NDArray[np.float64]
+    """An array of gross primary productivity values (kg C) across the whole of the
+    crown of each stem to be allocated to respiration, turnover and growth."""
     validate: InitVar[bool] = True
     """ Boolean flag to suppress argument validation."""
 
     # Post init allometry attributes
-    potential_gpp: NDArray[np.float64] = field(init=False)
-    """Potential GPP per unit area (g C m2)"""
-    whole_crown_gpp: NDArray[np.float64] = field(init=False)
-    """Estimated GPP across the whole crown (g C)"""
+    topslice_whole_crown_gpp: NDArray[np.float64] = field(init=False)
+    """The available stem GPP after any topslicing (g C)"""
     sapwood_respiration: NDArray[np.float64] = field(init=False)
     """Allocation to sapwood respiration (g C)"""
     foliar_respiration: NDArray[np.float64] = field(init=False)
@@ -1112,7 +1109,6 @@ class StemAllocation(PandasExporter):
         self,
         stem_traits: Flora | StemTraits,
         stem_allometry: StemAllometry,
-        at_potential_gpp: NDArray[np.float64],
         validate: bool,
     ) -> None:
         """Populate stem allocation attributes from the traits, allometry and GPP."""
@@ -1123,22 +1119,14 @@ class StemAllocation(PandasExporter):
             _validate_demography_array_arguments(
                 trait_args={"h_max": stem_traits.h_max},
                 size_args={"dbh": stem_allometry.dbh},
-                at_size_args={"at_potential_gpp": at_potential_gpp},
+                at_size_args={"whole_crown_gpp": self.whole_crown_gpp},
             )
 
         # Broadcast potential GPP to match trait and size data outputs
         trait_size_shape = np.broadcast_shapes(
             stem_traits.h_max.shape, stem_allometry.dbh.shape
         )
-        self.potential_gpp = np.broadcast_to(at_potential_gpp, trait_size_shape)
-
-        self.whole_crown_gpp = calculate_whole_crown_gpp(
-            potential_gpp=self.potential_gpp,
-            crown_area=stem_allometry.crown_area,
-            par_ext=stem_traits.par_ext,
-            lai=stem_traits.lai,
-            validate=False,
-        )
+        self.whole_crown_gpp = np.broadcast_to(self.whole_crown_gpp, trait_size_shape)
 
         self.gpp_topslice = calculate_gpp_topslice(
             gpp_topslice=stem_traits.gpp_topslice,
@@ -1147,7 +1135,7 @@ class StemAllocation(PandasExporter):
         )
 
         # Topslice GPP
-        self.whole_crown_gpp = self.whole_crown_gpp - self.gpp_topslice
+        self.topslice_whole_crown_gpp = self.whole_crown_gpp - self.gpp_topslice
 
         self.sapwood_respiration = calculate_sapwood_respiration(
             resp_s=stem_traits.resp_s,
@@ -1157,7 +1145,7 @@ class StemAllocation(PandasExporter):
 
         self.foliar_respiration = calculate_foliar_respiration(
             resp_f=stem_traits.resp_f,
-            whole_crown_gpp=self.whole_crown_gpp,
+            whole_crown_gpp=self.topslice_whole_crown_gpp,
             validate=False,
         )
 
@@ -1179,7 +1167,7 @@ class StemAllocation(PandasExporter):
 
         self.npp = calculate_net_primary_productivity(
             yld=stem_traits.yld,
-            whole_crown_gpp=self.whole_crown_gpp,
+            whole_crown_gpp=self.topslice_whole_crown_gpp,
             foliar_respiration=self.foliar_respiration,
             fine_root_respiration=self.fine_root_respiration,
             sapwood_respiration=self.sapwood_respiration,
@@ -1228,10 +1216,10 @@ class StemAllocation(PandasExporter):
 
         # Set the number of observations per stem (one if dbh is 1D, otherwise size of
         # the first axis)
-        if self.potential_gpp.ndim == 1:
+        if self.whole_crown_gpp.ndim == 1:
             self._n_pred = 1
         else:
-            self._n_pred = self.potential_gpp.shape[0]
+            self._n_pred = self.whole_crown_gpp.shape[0]
 
         self._n_stems = stem_traits._n_stems
 
