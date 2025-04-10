@@ -63,17 +63,22 @@ class CohortMethods(ABC):
     """Abstract base class implementing cohort manipulation functionality.
 
     Classes inheriting from this ABC must define a class attribute ``array_attrs`` that
-    names a set of class attributes that are all numpy arrays of equal length. The class
-    then inherit:
+    names a set of instance attributes that are all numpy arrays of equal length. They
+    must also define the class attribute ``count_attr`` that identifies an instance
+    attribute used to records the number of cohorts or stems in the class.
+
+    The class then inherit:
 
     * The `add_cohorts` method, which allows a second instance of the same class to be
       joined to the calling instance, concatenting each of the array attributes from
-      the second instance onto the calling instance.
+      the second instance onto the calling instance and updating ``n_cohorts``.
     * The `drop_cohorts` method, which takes a set of indices onto the array attributes
-      and drops the values from those indices for each array attribute.
+      and drops the values from those indices for each array attribute and updating
+      ``n_cohorts``.
     """
 
     array_attrs: ClassVar[tuple[str, ...]]
+    count_attr: ClassVar[str]
 
     def add_cohort_data(self, new_data: CohortMethods) -> None:
         """Add array attributes from a second instance implementing the base class.
@@ -104,6 +109,13 @@ class CohortMethods(ABC):
                 ),
             )
 
+        # Update the count attribute
+        setattr(
+            self,
+            self.count_attr,
+            getattr(self, self.count_attr) + getattr(new_data, self.count_attr),
+        )
+
     def drop_cohort_data(self, drop_indices: NDArray[np.int_]) -> None:
         """Drop array attribute values from an instance.
 
@@ -119,6 +131,13 @@ class CohortMethods(ABC):
             setattr(
                 self, trait, np.delete(current, drop_indices, axis=(current.ndim - 1))
             )
+
+        # Update the count attribute
+        setattr(
+            self,
+            self.count_attr,
+            getattr(self, self.count_attr) - len(drop_indices),
+        )
 
 
 def _validate_demography_array_arguments(

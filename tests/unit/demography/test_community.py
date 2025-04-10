@@ -134,8 +134,11 @@ def test_Cohorts_CohortMethods():
     # Check success of adding and dropping data
     cohorts.add_cohort_data(new_data=cohorts)
     assert_allclose(cohorts.dbh_values, np.array([0.2, 0.5, 0.2, 0.5]))
+    assert cohorts.n_cohorts == 4
+
     cohorts.drop_cohort_data(drop_indices=np.array([0, 2]))
     assert_allclose(cohorts.dbh_values, np.array([0.5, 0.5]))
+    assert cohorts.n_cohorts == 2
 
 
 @pytest.mark.parametrize(
