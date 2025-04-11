@@ -17,7 +17,7 @@ def de_gri_subdaily_data():
         / "half_hourly_data.csv"
     )
 
-    de_gri_data = pd.read_csv(datapath, na_values=[-9999, -9999.0])
+    de_gri_data = pd.read_csv(datapath, na_values=[-9999])
 
     # Calculate time as np.datetime64 and scale other vars
     de_gri_data["time"] = pd.to_datetime(
@@ -36,18 +36,6 @@ def de_gri_daily_outputs():
         resources.files("pyrealm_build_data.phenology.subdaily_example")
         / "daily_outputs.csv"
     )
-
-    de_gri_data = pd.read_csv(datapath, na_values=[-9999])
-
-    return de_gri_data
-
-
-@pytest.fixture
-def de_gri_hh_outputs():
-    """Loads the half hourly phenology outputs."""
-
-    # Load the data
-    datapath = resources.files("pyrealm_build_data.phenology") / "python_hh_outputs.csv"
 
     de_gri_data = pd.read_csv(datapath, na_values=[-9999])
 
