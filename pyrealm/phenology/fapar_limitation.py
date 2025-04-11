@@ -207,7 +207,7 @@ def daily_to_subdaily(
     obs_per_day = int(len(datetimes) / n_days)
 
     for i in range(n_days):
-        subdaily_x[i * obs_per_day : i * obs_per_day + obs_per_day] = x[i]
+        subdaily_x = np.repeat(x, obs_per_day)
 
     return subdaily_x
 
@@ -343,7 +343,7 @@ class FaparLimitation:
         datetimes: NDArray[np.datetime64],
         precip: NDArray[np.float64],
         aridity_index: NDArray[np.float64],
-        soil_moisture_stress: NDArray[np.float64],
+        gpp_penalty_factor: NDArray[np.float64],
     ) -> Self:
         r"""Get FaparLimitation from PModel input.
 
@@ -356,13 +356,13 @@ class FaparLimitation:
             datetimes: Array of datetimes to consider.
             precip: Precipitation for given datetimes.
             aridity_index: Climatological estimate of local aridity index.
-            soil_moisture_stress: soil moisture stress factor
+            gpp_penalty_factor: Penalty factor to be applied to pmodel.gpp
         """
 
         check_datetimes(datetimes)
 
         annual_total_potential_gpp = get_annual(
-            pmodel.gpp * soil_moisture_stress, datetimes, growing_season, "total"
+            pmodel.gpp * gpp_penalty_factor, datetimes, growing_season, "total"
         )
         annual_mean_ca = get_annual(pmodel.env.ca, datetimes, growing_season, "mean")
         annual_mean_chi = get_annual(
@@ -388,7 +388,7 @@ class FaparLimitation:
         datetimes: NDArray[np.datetime64],
         precip: NDArray[np.float64],
         aridity_index: NDArray[np.float64],
-        soil_moisture_stress: NDArray[np.float64],
+        gpp_penalty_factor: NDArray[np.float64],
     ) -> Self:
         r"""Get FaparLimitation from SubdailyPModel input.
 
@@ -401,17 +401,13 @@ class FaparLimitation:
             datetimes: Array of datetimes to consider.
             precip: Precipitation for given datetimes.
             aridity_index: Climatological estimate of local aridity index.
-            soil_moisture_stress: soil moisture stress factor
+            gpp_penalty_factor: Penalty factor to be applied to subdaily_pmodel.gpp
         """
 
         check_datetimes(datetimes)
 
-        soil_moisture_stress_subdaily = daily_to_subdaily(
-            soil_moisture_stress, datetimes
-        )
-
         annual_total_potential_gpp = get_annual(
-            subdaily_pmodel.gpp * soil_moisture_stress_subdaily,
+            subdaily_pmodel.gpp * gpp_penalty_factor,
             datetimes,
             growing_season,
             "total",
