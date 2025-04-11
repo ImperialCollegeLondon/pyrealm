@@ -35,7 +35,11 @@ import numpy as np
 import pandas as pd
 
 from pyrealm.demography.flora import PlantFunctionalType, Flora
-from pyrealm.demography.tmodel import StemAllocation, StemAllometry
+from pyrealm.demography.tmodel import (
+    StemAllocation,
+    StemAllometry,
+    calculate_whole_crown_gpp,
+)
 ```
 
 To generate predictions under the T Model, we need a Flora object providing the
@@ -136,14 +140,38 @@ allometries.to_pandas()
 
 ## Productivity allocation
 
-The T Model also predicts how potential GPP will be allocated to respiration, turnover
+The T Model also predicts how GPP will be allocated to respiration, turnover
 and growth for stems with a given PFT and allometry using the
-{meth}`~pyrealm.demography.tmodel.StemAllometry` class. Again, a single
-value can be provided to get a single estimate of the allocation model for each stem:
+{meth}`~pyrealm.demography.tmodel.StemAllometry` class.
+
+This requires an estimate of the GPP available to a stem. The original implementation of
+the T Model implemented this (Equation 12, {cite:alp}`Li:2014bc`)using an estimate of
+the potential GPP per square metre ($P_0$), scaled up to the crown area of the stem
+($A_c$) and using the Beer-Lambert equation to estimate the proportion of potential GPP
+captured by the crown as a function of the canopy light extinction coefficient ($k$) and
+the canopy leaf area index ($L$):
+
+$$
+\textrm{GPP} =  P_0 A_c (1 - e^{-kL})
+$$
+
+This is implemented in the function `calculate_whole_crown_gpp`:
+
+```{code-cell} ipython3
+whole_crown_gpp = calculate_whole_crown_gpp(
+    potential_gpp=np.array([55]),
+    crown_area=single_allometry.crown_area,
+    par_ext=flora.par_ext,
+    lai=flora.lai,
+)
+print(whole_crown_gpp)
+```
+
+Those realised stem GPP values can then be provided to the `StemAllocation` class:
 
 ```{code-cell} ipython3
 single_allocation = StemAllocation(
-    stem_traits=flora, stem_allometry=single_allometry, at_potential_gpp=np.array([55])
+    stem_traits=flora, stem_allometry=single_allometry, whole_crown_gpp=whole_crown_gpp
 )
 single_allocation
 ```
@@ -162,9 +190,19 @@ from above and calculates the GPP allocation for stems of varying size with the 
 potential GPP:
 
 ```{code-cell} ipython3
+# Calculate the stem GPP from potential GPP following the Li et al model
 potential_gpp = np.repeat(5, dbh_col.size)[:, None]
+
+whole_crown_gpp = calculate_whole_crown_gpp(
+    potential_gpp=potential_gpp,
+    crown_area=single_allometry.crown_area,
+    par_ext=flora.par_ext,
+    lai=flora.lai,
+)
+
+# Calculate the T Model allocation of that GPP
 allocation = StemAllocation(
-    stem_traits=flora, stem_allometry=allometries, at_potential_gpp=potential_gpp
+    stem_traits=flora, stem_allometry=allometries, whole_crown_gpp=whole_crown_gpp
 )
 ```
 
@@ -202,16 +240,27 @@ An alternative calculation is to make allocation predictions for varying potenti
 for constant allometries:
 
 ```{code-cell} ipython3
-# Column array of DBH values from 0 to 1.6 metres
+# Column array of identical DBH values
 dbh_constant = np.repeat(0.2, 50)[:, None]
-# Get the allometric predictions
+
+# Get the allometric predictions for those stems
 constant_allometries = StemAllometry(stem_traits=flora, at_dbh=dbh_constant)
 
+# Calculate the stem GPP with _varying_ potential GPP
 potential_gpp_varying = np.linspace(1, 10, num=50)[:, None]
+
+whole_crown_gpp_varying = calculate_whole_crown_gpp(
+    potential_gpp=potential_gpp_varying,
+    crown_area=constant_allometries.crown_area,
+    par_ext=flora.par_ext,
+    lai=flora.lai,
+)
+
+# Calculate the resulting changes in the allocation with varying productivity
 allocation_2 = StemAllocation(
     stem_traits=flora,
     stem_allometry=constant_allometries,
-    at_potential_gpp=potential_gpp_varying,
+    whole_crown_gpp=whole_crown_gpp_varying,
 )
 ```
 

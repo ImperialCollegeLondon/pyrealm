@@ -846,16 +846,28 @@ def test_StemAllometry_CohortMethods(rtmodel_flora, rtmodel_data):
 def test_StemAllocation(rtmodel_flora, rtmodel_data):
     """Test the StemAllometry class."""
 
-    from pyrealm.demography.tmodel import StemAllocation, StemAllometry
+    from pyrealm.demography.tmodel import (
+        StemAllocation,
+        StemAllometry,
+        calculate_whole_crown_gpp,
+    )
 
     stem_allometry = StemAllometry(
         stem_traits=rtmodel_flora, at_dbh=rtmodel_data["dbh"][:, [0]]
     )
 
+    # Calculate the Li et al Equation 12 GPP from the P0 values
+    whole_crown_gpp = calculate_whole_crown_gpp(
+        potential_gpp=rtmodel_data["potential_gpp"],
+        crown_area=stem_allometry.crown_area,
+        par_ext=rtmodel_flora.par_ext,
+        lai=rtmodel_flora.lai,
+    )
+
     stem_allocation = StemAllocation(
         stem_traits=rtmodel_flora,
         stem_allometry=stem_allometry,
-        at_potential_gpp=rtmodel_data["potential_gpp"],
+        whole_crown_gpp=whole_crown_gpp,
     )
 
     # Check the values of the variables calculated against the expectations from the
@@ -880,7 +892,7 @@ def test_StemAllocation(rtmodel_flora, rtmodel_data):
 
 
 @pytest.mark.parametrize(
-    argnames="pot_gpp, outcome, excep_msg",
+    argnames="whole_crown_gpp, outcome, excep_msg",
     argvalues=[
         pytest.param(np.array(1), does_not_raise(), None, id="pass_0D"),
         pytest.param(np.ones(1), does_not_raise(), None, id="pass_1D_scalar"),
@@ -904,7 +916,7 @@ def test_StemAllocation(rtmodel_flora, rtmodel_data):
         ),
     ],
 )
-def test_StemAllocation_validation(rtmodel_flora, pot_gpp, outcome, excep_msg):
+def test_StemAllocation_validation(rtmodel_flora, whole_crown_gpp, outcome, excep_msg):
     """Test the StemAllocation validation process.
 
     The stem allometry inputs are kept constant - the validation of inputs to that
@@ -930,7 +942,9 @@ def test_StemAllocation_validation(rtmodel_flora, pot_gpp, outcome, excep_msg):
     ):
         # Check the behaviour of the validation
         _ = StemAllocation(
-            stem_traits=rtmodel_flora, stem_allometry=allom, at_potential_gpp=pot_gpp
+            stem_traits=rtmodel_flora,
+            stem_allometry=allom,
+            whole_crown_gpp=whole_crown_gpp,
         )
         assert val_func_patch.call_count == 1
         return
