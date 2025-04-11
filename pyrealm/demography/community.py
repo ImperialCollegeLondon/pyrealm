@@ -162,6 +162,7 @@ class Cohorts(PandasExporter, CohortMethods):
     array_attrs: ClassVar[tuple[str, ...]] = tuple(
         ["dbh_values", "n_individuals", "pft_names"]
     )
+    count_attr: ClassVar[str] = "n_cohorts"
 
     # Instance attributes
     dbh_values: NDArray[np.float64]
@@ -422,7 +423,7 @@ class Community:
     cohorts: Cohorts
 
     # Post init properties
-    number_of_cohorts: int = field(init=False)
+    n_cohorts: int = field(init=False)
     stem_traits: StemTraits = field(init=False)
     stem_allometry: StemAllometry = field(init=False)
 
@@ -447,7 +448,7 @@ class Community:
             raise ValueError("Community cell id must be a integer >= 0.")
 
         # How many cohorts
-        self.number_of_cohorts = len(self.cohorts.dbh_values)
+        self.n_cohorts = self.cohorts.n_cohorts
 
         # Get the stem traits for the cohorts
         self.stem_traits = self.flora.get_stem_traits(self.cohorts.pft_names)
@@ -560,6 +561,8 @@ class Community:
         self.stem_traits.drop_cohort_data(drop_indices=drop_indices)
         self.stem_allometry.drop_cohort_data(drop_indices=drop_indices)
 
+        self.n_cohorts = self.cohorts.n_cohorts
+
     def add_cohorts(self, new_data: Cohorts) -> None:
         """Add a new set of cohorts to the community.
 
@@ -580,6 +583,8 @@ class Community:
             stem_traits=new_stem_traits, at_dbh=new_data.dbh_values
         )
         self.stem_allometry.add_cohort_data(new_data=new_stem_allometry)
+
+        self.n_cohorts = self.cohorts.n_cohorts
 
     # @classmethod
     # def load_communities_from_csv(

@@ -892,6 +892,7 @@ class StemAllometry(PandasExporter, CohortMethods):
         "crown_r0",
         "crown_z_max",
     )
+    count_attr: ClassVar[str] = "_n_stems"
 
     # Init vars
     stem_traits: InitVar[Flora | StemTraits]

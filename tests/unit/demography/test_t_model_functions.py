@@ -816,6 +816,9 @@ def test_StemAllometry_CohortMethods(rtmodel_flora, rtmodel_data):
     )
     check_data = stem_allometry.crown_fraction.copy()
 
+    # Check the count attribute
+    assert stem_allometry._n_stems == rtmodel_flora.n_pfts
+
     # Check failure mode
     with pytest.raises(ValueError) as excep:
         stem_allometry.add_cohort_data(new_data=dict(a=1))
@@ -831,11 +834,13 @@ def test_StemAllometry_CohortMethods(rtmodel_flora, rtmodel_data):
     stem_allometry.add_cohort_data(new_data=stem_allometry)
     assert stem_allometry.crown_fraction.shape == (n_entries, 2 * rtmodel_flora.n_pfts)
     assert stem_allometry.crown_fraction.sum() == 2 * check_data.sum()
+    assert stem_allometry._n_stems == 2 * rtmodel_flora.n_pfts
 
     # Remove the rows from the first copy and what's left should be aligned with the
     # original data
     stem_allometry.drop_cohort_data(drop_indices=np.arange(rtmodel_flora.n_pfts))
     assert_allclose(stem_allometry.crown_fraction, check_data)
+    assert stem_allometry._n_stems == rtmodel_flora.n_pfts
 
 
 def test_StemAllocation(rtmodel_flora, rtmodel_data):

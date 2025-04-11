@@ -491,6 +491,7 @@ class StemTraits(PandasExporter, CohortMethods):
     array_attrs: ClassVar[tuple[str, ...]] = tuple(
         f.name for f in fields(PlantFunctionalTypeStrict)
     )
+    count_attr: ClassVar[str] = "_n_stems"
 
     # Instance trait attributes
     name: NDArray[np.str_]

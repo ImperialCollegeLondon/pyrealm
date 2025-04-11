@@ -434,6 +434,7 @@ def test_StemTraits_CohortMethods(fixture_flora):
     args = {ky: np.concatenate([val, val]) for ky, val in flora_df.items()}
 
     stem_traits = StemTraits(**args)
+    assert stem_traits._n_stems == 2 * fixture_flora.n_pfts
 
     # Check failure mode
     with pytest.raises(ValueError) as excep:
@@ -448,8 +449,10 @@ def test_StemTraits_CohortMethods(fixture_flora):
     stem_traits.add_cohort_data(new_data=stem_traits)
     assert stem_traits.h_max.shape == (4 * fixture_flora.n_pfts,)
     assert stem_traits.h_max.sum() == 4 * flora_df["h_max"].sum()
+    assert stem_traits._n_stems == 4 * fixture_flora.n_pfts
 
     # Remove all but the first two rows and what's left should be aligned with the
     # original data
     stem_traits.drop_cohort_data(drop_indices=np.arange(2, 8))
     assert_allclose(stem_traits.h_max, flora_df["h_max"])
+    assert stem_traits._n_stems == fixture_flora.n_pfts
