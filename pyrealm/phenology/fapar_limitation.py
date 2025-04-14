@@ -206,8 +206,7 @@ def daily_to_subdaily(
     n_days = len(x)
     obs_per_day = int(len(datetimes) / n_days)
 
-    for i in range(n_days):
-        subdaily_x = np.repeat(x, obs_per_day)
+    subdaily_x = np.repeat(x, obs_per_day)
 
     return subdaily_x
 
