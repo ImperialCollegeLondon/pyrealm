@@ -201,8 +201,6 @@ def daily_to_subdaily(
         datetimes: Subdaily datetimes as np.datetime64 array.
     """
 
-    subdaily_x = np.zeros(len(datetimes))
-
     n_days = len(x)
     obs_per_day = int(len(datetimes) / n_days)
 
