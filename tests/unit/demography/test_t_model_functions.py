@@ -26,6 +26,58 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
     assert_allclose(actual_r0_values, expected_r0)
 
 
+def test_calculate_reproductive_tissue_mass():
+    """Tests calculation of reproductive tissue mass."""
+
+    from pyrealm.demography.tmodel import calculate_reproductive_tissue_mass
+
+    result = calculate_reproductive_tissue_mass(
+        p_foliage_for_reproductive_tissue=np.array([10]),
+        foliage_mass=np.array([0.25]),
+    )
+
+    assert result == np.array([2.5])
+
+
+def test_calculate_gpp_topslice():
+    """Tests calculation of gpp_topslice."""
+
+    from pyrealm.demography.tmodel import calculate_gpp_topslice
+
+    result = calculate_gpp_topslice(
+        gpp_topslice=np.array([10]),
+        whole_crown_gpp=np.array([0.25]),
+    )
+
+    assert result == np.array([2.5])
+
+
+def test_calculate_reproductive_tissue_respiration():
+    """Tests calculation of reproductive tissue respiration."""
+
+    from pyrealm.demography.tmodel import calculate_reproductive_tissue_respiration
+
+    result = calculate_reproductive_tissue_respiration(
+        resp_rt=np.array([10]),
+        reproductive_tissue_mass=np.array([0.25]),
+    )
+
+    assert result == np.array([2.5])
+
+
+def test_calculate_reproductive_tissue_turnover():
+    """Tests calculation of reproductive tissue turnover."""
+
+    from pyrealm.demography.tmodel import calculate_reproductive_tissue_turnover
+
+    result = calculate_reproductive_tissue_turnover(
+        m_rt=np.array([10]),
+        tau_rt=np.array([4]),
+    )
+
+    assert result == np.array([2.5])
+
+
 @pytest.mark.parametrize(
     argnames="data_idx, pft_idx, outcome, excep_msg, out_idx, exp_shape",
     argvalues=[
@@ -546,6 +598,9 @@ class TestTModel:
                 ),  # Not included here in the R implementation
                 fine_root_respiration=rtmodel_data["fine_root_respiration"][data_idx],
                 sapwood_respiration=rtmodel_data["sapwood_respiration"][data_idx],
+                reproductive_tissue_respiration=np.zeros(
+                    np.shape(rtmodel_data["sapwood_respiration"][data_idx])
+                ),
             )
 
             assert result.shape == exp_shape
@@ -554,7 +609,7 @@ class TestTModel:
 
         assert str(excep.value).startswith(excep_msg)
 
-    def test_calculate_foliage_and_fine_root_turnover(
+    def test_calculate_turnover(
         self,
         rtmodel_data,
         rtmodel_flora,
@@ -568,17 +623,24 @@ class TestTModel:
         """Tests calculation of foliage and fine root turnover."""
 
         from pyrealm.demography.tmodel import (
-            calculate_foliage_and_fine_root_turnover,
+            calculate_fine_root_turnover,
+            calculate_foliage_turnover,
         )
 
         with outcome as excep:
-            result = calculate_foliage_and_fine_root_turnover(
+            result1 = calculate_fine_root_turnover(
                 sla=rtmodel_flora.sla[pft_idx],
                 zeta=rtmodel_flora.zeta[pft_idx],
-                tau_f=rtmodel_flora.tau_f[pft_idx],
                 tau_r=rtmodel_flora.tau_r[pft_idx],
                 foliage_mass=rtmodel_data["foliage_mass"][data_idx],
             )
+
+            result2 = calculate_foliage_turnover(
+                tau_f=rtmodel_flora.tau_f[pft_idx],
+                foliage_mass=rtmodel_data["foliage_mass"][data_idx],
+            )
+
+            result = result1 + result2
 
             assert result.shape == exp_shape
             assert_allclose(result, rtmodel_data["turnover"][out_idx])
@@ -614,6 +676,12 @@ class TestTModel:
                 zeta=rtmodel_flora.zeta[pft_idx],
                 npp=rtmodel_data["npp"][data_idx],
                 turnover=rtmodel_data["turnover"][data_idx],
+                reproductive_tissue_turnover=np.zeros(
+                    np.shape(rtmodel_data["turnover"][data_idx])
+                ),
+                p_foliage_for_reproductive_tissue=np.zeros(
+                    np.shape(rtmodel_data["npp"][data_idx])
+                ),
                 dbh=rtmodel_data["dbh"][data_idx],
                 stem_height=rtmodel_data["stem_height"][data_idx],
             )
@@ -720,7 +788,9 @@ def test_StemAllometry(rtmodel_flora, rtmodel_data):
     # Check the values of the variables calculated against the expectations from the
     # rtmodel implementation
     vars_to_check = (
-        v for v in stem_allometry.array_attrs if v not in ["crown_r0", "crown_z_max"]
+        v
+        for v in stem_allometry.array_attrs
+        if v not in ["crown_r0", "crown_z_max", "reproductive_tissue_mass"]
     )
     for var in vars_to_check:
         assert_allclose(getattr(stem_allometry, var), rtmodel_data[var])
@@ -746,6 +816,9 @@ def test_StemAllometry_CohortMethods(rtmodel_flora, rtmodel_data):
     )
     check_data = stem_allometry.crown_fraction.copy()
 
+    # Check the count attribute
+    assert stem_allometry._n_stems == rtmodel_flora.n_pfts
+
     # Check failure mode
     with pytest.raises(ValueError) as excep:
         stem_allometry.add_cohort_data(new_data=dict(a=1))
@@ -761,32 +834,48 @@ def test_StemAllometry_CohortMethods(rtmodel_flora, rtmodel_data):
     stem_allometry.add_cohort_data(new_data=stem_allometry)
     assert stem_allometry.crown_fraction.shape == (n_entries, 2 * rtmodel_flora.n_pfts)
     assert stem_allometry.crown_fraction.sum() == 2 * check_data.sum()
+    assert stem_allometry._n_stems == 2 * rtmodel_flora.n_pfts
 
     # Remove the rows from the first copy and what's left should be aligned with the
     # original data
     stem_allometry.drop_cohort_data(drop_indices=np.arange(rtmodel_flora.n_pfts))
     assert_allclose(stem_allometry.crown_fraction, check_data)
+    assert stem_allometry._n_stems == rtmodel_flora.n_pfts
 
 
 def test_StemAllocation(rtmodel_flora, rtmodel_data):
     """Test the StemAllometry class."""
 
-    from pyrealm.demography.tmodel import StemAllocation, StemAllometry
+    from pyrealm.demography.tmodel import (
+        StemAllocation,
+        StemAllometry,
+        calculate_whole_crown_gpp,
+    )
 
     stem_allometry = StemAllometry(
         stem_traits=rtmodel_flora, at_dbh=rtmodel_data["dbh"][:, [0]]
     )
 
+    # Calculate the Li et al Equation 12 GPP from the P0 values
+    whole_crown_gpp = calculate_whole_crown_gpp(
+        potential_gpp=rtmodel_data["potential_gpp"],
+        crown_area=stem_allometry.crown_area,
+        par_ext=rtmodel_flora.par_ext,
+        lai=rtmodel_flora.lai,
+    )
+
     stem_allocation = StemAllocation(
         stem_traits=rtmodel_flora,
         stem_allometry=stem_allometry,
-        at_potential_gpp=rtmodel_data["potential_gpp"],
+        whole_crown_gpp=whole_crown_gpp,
     )
 
     # Check the values of the variables calculated against the expectations from the
     # rtmodel implementation
     vars_to_check = (
-        v for v in stem_allocation.array_attrs if v not in ["foliar_respiration"]
+        v
+        for v in stem_allocation.array_attrs
+        if v not in ["foliar_respiration", "foliage_turnover", "fine_root_turnover"]
     )
     for var in vars_to_check:
         assert_allclose(getattr(stem_allocation, var), rtmodel_data[var])
@@ -803,7 +892,7 @@ def test_StemAllocation(rtmodel_flora, rtmodel_data):
 
 
 @pytest.mark.parametrize(
-    argnames="pot_gpp, outcome, excep_msg",
+    argnames="whole_crown_gpp, outcome, excep_msg",
     argvalues=[
         pytest.param(np.array(1), does_not_raise(), None, id="pass_0D"),
         pytest.param(np.ones(1), does_not_raise(), None, id="pass_1D_scalar"),
@@ -827,7 +916,7 @@ def test_StemAllocation(rtmodel_flora, rtmodel_data):
         ),
     ],
 )
-def test_StemAllocation_validation(rtmodel_flora, pot_gpp, outcome, excep_msg):
+def test_StemAllocation_validation(rtmodel_flora, whole_crown_gpp, outcome, excep_msg):
     """Test the StemAllocation validation process.
 
     The stem allometry inputs are kept constant - the validation of inputs to that
@@ -853,7 +942,9 @@ def test_StemAllocation_validation(rtmodel_flora, pot_gpp, outcome, excep_msg):
     ):
         # Check the behaviour of the validation
         _ = StemAllocation(
-            stem_traits=rtmodel_flora, stem_allometry=allom, at_potential_gpp=pot_gpp
+            stem_traits=rtmodel_flora,
+            stem_allometry=allom,
+            whole_crown_gpp=whole_crown_gpp,
         )
         assert val_func_patch.call_count == 1
         return

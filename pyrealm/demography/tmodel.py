@@ -1,8 +1,11 @@
 """The ``t_model`` module provides the basic scaling relationships of the T Model
-:cite:`Li:2014bc`:. This provides scaling relationships using the plant functional type
+:cite:`Li:2014bc`. This provides scaling relationships using the plant functional type
 traits defined in the :mod:`~pyrealm.demography.flora` module and the diameter at breast
 height of individual stems to define the stem geometry, masses, respiration and hence
-calculate stem growth given net primary productivity.
+calculate stem growth given net primary productivity. Note that
+:attr:`~pyrealm.demography.tmodel.StemAllometry.stem_height` denotes the total tree
+height, as used interchangeable in :cite:`Li:2014bc`, rather than just the height of the
+trunk below the canopy.
 """  # noqa: D205
 
 from dataclasses import InitVar, dataclass, field
@@ -11,6 +14,7 @@ from typing import ClassVar
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm.core.experimental import warn_experimental
 from pyrealm.demography.core import (
     CohortMethods,
     PandasExporter,
@@ -114,10 +118,10 @@ def calculate_crown_areas(
 ) -> NDArray[np.float64]:
     r"""Calculate tree crown area under the T Model.
 
-    The tree crown area (:math:`A_{c}`)is calculated from individual diameters at breast
-    height (:math:`D`) and stem height (:math:`H`), along with the crown area ratio
-    (:math:`c`)and the initial slope of the height/diameter relationship (:math:`a`) of
-    the plant functional type :cite:p:`{Equation 8, }Li:2014bc`:
+    The tree crown area (:math:`A_{c}`) is calculated from individual diameters at
+    breast height (:math:`D`) and stem height (:math:`H`), along with the crown area
+    ratio (:math:`c`) and the initial slope of the height/diameter relationship
+    (:math:`a`) of the plant functional type :cite:p:`{Equation 8, }Li:2014bc`:
 
     .. math::
 
@@ -149,14 +153,14 @@ def calculate_crown_fractions(
 ) -> NDArray[np.float64]:
     r"""Calculate tree crown fraction under the T Model.
 
-    The crown fraction (:math:`f_{c}`)is calculated from individual diameters at breast
-    height and stem height (:math:`D`), along with the initial slope of the height /
-    diameter relationship (:math:`a`) of the plant functional type
+    The crown fraction (:math:`f_{c}`) is calculated from individual diameters at breast
+    height (:math:`D`) and stem height (:math:`H`), along with the initial slope of the
+    height / diameter relationship (:math:`a`) of the plant functional type
     :cite:p:`{Equation 11, }Li:2014bc`:
 
     .. math::
 
-        \frac{H}{a D}
+        f_{c} =\frac{H}{a D}
 
     Args:
         a_hd: Initial slope of the height/diameter relationship of the PFT
@@ -183,7 +187,7 @@ def calculate_stem_masses(
 
     The stem mass (:math:`W_{s}`) is calculated from individual diameters at breast
     height (:math:`D`) and stem height (:math:`H`), along with the wood density
-    (:math:`\rho_s`)of the plant functional type :cite:p:`{Equation 6, }Li:2014bc`:
+    (:math:`\rho_s`) of the plant functional type :cite:p:`{Equation 6, }Li:2014bc`:
 
     .. math::
 
@@ -246,9 +250,9 @@ def calculate_sapwood_masses(
     r"""Calculate sapwood mass under the T Model.
 
     The sapwood mass (:math:`W_{\cdot s}`) is calculated from the individual crown area
-    (:math:`A_{c}`), height :math:`H` and canopy fraction (:math:`f_{c}`) along with the
-    wood density (:math:`\rho_s`) and crown area ratio :math:`A_{c}` of the  plant
-    functional type :cite:p:`{Equation 14, }Li:2014bc`.
+    (:math:`A_{c}`), stem height (:math:`H`) and canopy fraction (:math:`f_{c}`) along
+    with the wood density (:math:`\rho_s`) and crown area ratio (:math:`c`) of the
+    plant functional type :cite:p:`{Equation 14, }Li:2014bc`.
 
     .. math::
 
@@ -357,11 +361,11 @@ def calculate_whole_crown_gpp(
 ) -> NDArray[np.float64]:
     r"""Calculate whole crown gross primary productivity.
 
-    This function calculates individual GPP across the whole crown, given the individual
-    potential gross primary productivity (GPP) per metre squared (:math:`P_0`) and crown
-    area (:math:`A_c`), along with the leaf area index (:math:`L`) and the extinction
-    coefficient (:math:`k`) of the plant functional type :cite:p:`{Equation 12,
-    }Li:2014bc`.
+    This function calculates individual gross primary productivity (GPP) across the
+    whole crown, given the individual potential GPP per metre squared (:math:`P_0`, kg C
+    m-2) and crown area (:math:`A_c`, m2), along with the leaf area index (:math:`L`)
+    and the extinction coefficient (:math:`k`) of the plant functional type
+    :cite:p:`{Equation 12, }Li:2014bc`.
 
     .. math::
 
@@ -441,6 +445,69 @@ def calculate_foliar_respiration(
     return _enforce_2D(whole_crown_gpp * resp_f)
 
 
+def calculate_gpp_topslice(
+    gpp_topslice: NDArray[np.float64],
+    whole_crown_gpp: NDArray[np.float64],
+    validate: bool = True,
+) -> NDArray[np.float64]:
+    r"""Calculate gpp topslice.
+
+    Calculates a fixed proportion of the total GPP for the crown that is removed before
+    further GPP allocation. This is intended as a helper variable for T Model users to
+    simulate processes not included in the T Model such as root exudation or active
+    nutrient servicing for mycorriza fungi.
+
+    .. NOTE::
+
+        This is a naive calculation method that is not part of the T model. If values
+        for GPP topslice are zero it will have no impact on the T Model calculations.
+
+    Args:
+        gpp_topslice: The portion of GPP to remove before allocation.
+        whole_crown_gpp: The individual whole crown GPP.
+        validate: Boolean flag to suppress argument validation
+    """
+    if validate:
+        _validate_demography_array_arguments(
+            trait_args={"gpp_topslice": gpp_topslice},
+            size_args={"whole_crown_gpp": whole_crown_gpp},
+        )
+
+    return _enforce_2D(whole_crown_gpp * gpp_topslice)
+
+
+def calculate_reproductive_tissue_respiration(
+    resp_rt: NDArray[np.float64],
+    reproductive_tissue_mass: NDArray[np.float64],
+    validate: bool = True,
+) -> NDArray[np.float64]:
+    r"""Calculate reproductive tissue respiration.
+
+    Calculates the total reproductive tissue respiration (:math:`R_{rt}`) given the
+    reproductive tissue mass (:math:`M_rt`) and the reproductive tissue respiration rate
+    of the plant functional type (:math:`r_{rt}`).
+
+    NOTE: This function is not part of the original T Model, but is included here to
+    allow for the calculation of reproductive tissue respiration in the same way as
+    sapwood respiration.
+
+    .. math::
+         R_{rt} = M_rt \, r_rt
+
+    Args:
+        resp_rt: The reproductive tissue respiration rate
+        reproductive_tissue_mass: The stem reproductive tissue mass.
+        validate: Boolean flag to suppress argument validation
+    """
+    if validate:
+        _validate_demography_array_arguments(
+            trait_args={"resp_rt": resp_rt},
+            size_args={"reproductive_tissue_mass": reproductive_tissue_mass},
+        )
+
+    return _enforce_2D(reproductive_tissue_mass * resp_rt)
+
+
 def calculate_fine_root_respiration(
     zeta: NDArray[np.float64],
     sla: NDArray[np.float64],
@@ -448,7 +515,7 @@ def calculate_fine_root_respiration(
     foliage_mass: NDArray[np.float64],
     validate: bool = True,
 ) -> NDArray[np.float64]:
-    r"""Calculate foliar respiration.
+    r"""Calculate fine root respiration.
 
     Calculates the total fine root respiration (:math:`R_{r}`) given the individual
     foliage mass (:math:`W_f`), along with the fine root respiration rate (:math:`r_r`),
@@ -484,6 +551,7 @@ def calculate_net_primary_productivity(
     foliar_respiration: NDArray[np.float64],
     fine_root_respiration: NDArray[np.float64],
     sapwood_respiration: NDArray[np.float64],
+    reproductive_tissue_respiration: NDArray[np.float64],
     validate: bool = True,
 ) -> NDArray[np.float64]:
     r"""Calculate net primary productivity.
@@ -491,17 +559,19 @@ def calculate_net_primary_productivity(
     The net primary productivity (NPP, :math:`P_{net}`) is calculated as a plant
     functional type specific yield proportion (:math:`y`) of the total GPP (:math:`P`)
     for the individual minus respiration (:math:`R_m`), as the sum of the respiration
-    costs for foliage  (:math:`R_f`), fine roots  (:math:`R_r`) and sapwood
-    (:math:`R_s`).
+    costs for foliage  (:math:`R_f`), fine roots  (:math:`R_r`), sapwood
+    (:math:`R_s`), and reproductive tissue (:math:`R_{rt}`).
 
     .. math::
-        P_{net} = y (P - R_m) = y (P - W_{\cdot s} r_s - \zeta \sigma W_f r_r - P r_f)
+        P_{net} = y (P - R_m) = y (P - W_{\cdot s} r_s - \zeta \sigma W_f r_r - W_f r_f
+        - P r_{rt})
 
     Note that this differs from Equation 13 of :cite:t:`Li:2014bc`, which does not
-    include a term for foliar respiration. This is because :cite:t:`Li:2014bc` remove
-    foliar respiration as a fixed proportion of potential GPP as the first step in their
-    calculations. The approach here is equivalent but allows the foliar respiration to
-    vary between plant functional types.
+    include a term for foliar respiration or reproductive tissue respiration.
+    :cite:t:`Li:2014bc` remove foliar respiration as a fixed proportion of potential GPP
+    as the first step in their calculations. The approach here is equivalent but allows
+    the foliar respiration to vary between plant functional types. :cite:t:`Li:2014bc`
+    do not include reproductive tissue respiration in their calculations.
 
     Args:
         yld: The yield proportion.
@@ -509,6 +579,7 @@ def calculate_net_primary_productivity(
         foliar_respiration: The total foliar respiration.
         fine_root_respiration: The total fine root respiration
         sapwood_respiration: The total sapwood respiration.
+        reproductive_tissue_respiration: The total reproductive tissue respiration.
         validate: Boolean flag to suppress argument validation
     """
     if validate:
@@ -519,6 +590,7 @@ def calculate_net_primary_productivity(
                 "foliar_respiration": foliar_respiration,
                 "fine_root_respiration": fine_root_respiration,
                 "sapwood_respiration": sapwood_respiration,
+                "reproductive_tissue_respiration": reproductive_tissue_respiration,
             },
         )
 
@@ -529,46 +601,127 @@ def calculate_net_primary_productivity(
             - foliar_respiration
             - fine_root_respiration
             - sapwood_respiration
+            - reproductive_tissue_respiration
         )
     )
 
 
-def calculate_foliage_and_fine_root_turnover(
+def calculate_foliage_turnover(
+    tau_f: NDArray[np.float64],
+    foliage_mass: NDArray[np.float64],
+    validate: bool = True,
+) -> NDArray[np.float64]:
+    r"""Calculate turnover costs for foliage.
+
+    This function calculates the costs associated with the turnover of foliage. This is
+    calculated from the total foliage mass of individuals (:math:`W_f`), and the
+    turnover times of foliage (:math:`\tau_f`) of the plant functional type
+    :cite:p:`{see Equation 15, }Li:2014bc`.
+
+    .. math::
+
+        T = W_f \left( \frac{1}{\tau_f} \right)
+
+    Args:
+        tau_f: The turnover time of foliage
+        foliage_mass: The foliage mass
+        validate: Boolean flag to suppress argument validation
+    """
+    if validate:
+        _validate_demography_array_arguments(
+            trait_args={"tau_f": tau_f},
+            size_args={"foliage_mass": foliage_mass},
+        )
+
+    return _enforce_2D(foliage_mass * (1 / tau_f))
+
+
+def calculate_fine_root_turnover(
     sla: NDArray[np.float64],
     zeta: NDArray[np.float64],
-    tau_f: NDArray[np.float64],
     tau_r: NDArray[np.float64],
     foliage_mass: NDArray[np.float64],
     validate: bool = True,
 ) -> NDArray[np.float64]:
     r"""Calculate turnover costs.
 
-    This function calculates the costs associated with the turnover of fine roots and
-    foliage. This is calculated from the total foliage mass of individuals
-    (:math:`W_f`), along with the specific leaf area (:math:`\sigma`) and fine root mass
-    to foliar area ratio (:math:`\zeta`) and the turnover times of foliage
-    (:math:`\tau_f`) and fine roots (:math:`\tau_r`) of the plant functional type
-    :cite:p:`{see Equation 15, }Li:2014bc`.
+    This function calculates the costs associated with the turnover of fine roots. This
+    is calculated from the total foliage mass of individuals (:math:`W_f`), along with
+    the specific leaf area (:math:`\sigma`) and fine root mass to foliar area ratio
+    (:math:`\zeta`) and the turnover time of fine roots (:math:`\tau_r`) of the plant
+    functional type :cite:p:`{see Equation 15, }Li:2014bc`.
 
     .. math::
 
-        T = W_f \left( \frac{1}{\tau_f} + \frac{\sigma \zeta}{\tau_f} \right)
+        T = W_f \left(\frac{ \sigma \zeta}{\tau_f} \right)
 
     Args:
         sla: The specific leaf area
         zeta: The ratio of fine root mass to foliage area.
-        tau_f: The turnover time of foliage
         tau_r: The turnover time of fine roots
         foliage_mass: The foliage mass
         validate: Boolean flag to suppress argument validation
     """
     if validate:
         _validate_demography_array_arguments(
-            trait_args={"sla": sla, "zeta": zeta, "tau_f": tau_f, "tau_r": tau_r},
+            trait_args={"sla": sla, "zeta": zeta, "tau_r": tau_r},
             size_args={"foliage_mass": foliage_mass},
         )
 
-    return _enforce_2D(foliage_mass * ((1 / tau_f) + (sla * zeta / tau_r)))
+    return _enforce_2D(foliage_mass * (sla * zeta / tau_r))
+
+
+def calculate_reproductive_tissue_turnover(
+    m_rt: NDArray[np.float64],
+    tau_rt: NDArray[np.float64],
+    validate: bool = True,
+) -> NDArray[np.float64]:
+    r"""Calculate reproductive tissue turnover costs.
+
+    This function calculates the costs associated with the turnover of reproductive
+    tissue. This is calculated from the total reproductive tissue mass
+    (:math:`m_rt`), along with the turnover time of reproductive tissue
+    (:math:`\tau_rt`).
+
+    .. math::
+
+        T_rt = m_rt \left( \frac{1}{\tau_rt}\right)
+
+    Args:
+        m_rt: The mass of reproductive tissue
+        tau_rt: The turnover time of reproductive tissue
+        validate: Boolean flag to suppress argument validation
+    """
+    if validate:
+        _validate_demography_array_arguments(
+            trait_args={"tau_rt": tau_rt},
+            size_args={"m_rt": m_rt},
+        )
+
+    return _enforce_2D(m_rt * (1 / tau_rt))
+
+
+def calculate_reproductive_tissue_mass(
+    foliage_mass: NDArray[np.float64],
+    p_foliage_for_reproductive_tissue: NDArray[np.float64],
+) -> NDArray[np.float64]:
+    r"""Calculate reproductive tissue mass.
+
+    This function calculates the mass of reproductive tissue (:math:`m_rt`) as a fixed
+    proportion of the total foliage mass (:math:`W_f`) of individuals.
+
+    .. math::
+
+        m_rt = p_{f_rt} W_f
+
+    Args:
+        foliage_mass: The foliage mass
+        p_foliage_for_reproductive_tissue: The proportion of foliage mass that is
+            reproductive tissue
+        validate: Boolean flag to suppress argument validation
+    """
+
+    return _enforce_2D(p_foliage_for_reproductive_tissue * foliage_mass)
 
 
 def calculate_growth_increments(
@@ -581,6 +734,8 @@ def calculate_growth_increments(
     zeta: NDArray[np.float64],
     npp: NDArray[np.float64],
     turnover: NDArray[np.float64],
+    reproductive_tissue_turnover: NDArray[np.float64],
+    p_foliage_for_reproductive_tissue: NDArray[np.float64],
     dbh: NDArray[np.float64],
     stem_height: NDArray[np.float64],
     validate: bool = True,
@@ -643,6 +798,9 @@ def calculate_growth_increments(
         \end{align*}
       \]
 
+    NOTE: Reproductive tissue is included as an optional additional cost of turnover.
+    If the default values are set to zero, it will not impact T Model calculations.
+
     Args:
         rho_s: Wood density of the PFT
         a_hd: Initial slope of the height/diameter relationship of the PFT
@@ -653,6 +811,9 @@ def calculate_growth_increments(
         zeta: The ratio of fine root mass to foliage area of the PFT
         npp: Net primary productivity of individuals
         turnover: Fine root and foliage turnover cost of individuals
+        p_foliage_for_reproductive_tissue: Proportion of foliage mass that is
+            reproductive tissue.
+        reproductive_tissue_turnover: Reproductive tissue turnover cost of individuals
         dbh: Diameter at breast height of individuals
         stem_height: Stem height of individuals
         validate: Boolean flag to suppress argument validation
@@ -671,6 +832,8 @@ def calculate_growth_increments(
             size_args={
                 "npp": npp,
                 "turnover": turnover,
+                "reproductive_tissue_turnover": reproductive_tissue_turnover,
+                "p_foliage_for_reproductive_tissue": p_foliage_for_reproductive_tissue,
                 "dbh": dbh,
                 "stem_height": stem_height,
             },
@@ -688,11 +851,13 @@ def calculate_growth_increments(
         lai
         * ((np.pi * ca_ratio) / (4 * a_hd))
         * (a_hd * dbh * (1 - stem_height / h_max) + stem_height)
-        * (1 / sla + zeta)
+        * ((1 + p_foliage_for_reproductive_tissue) / sla + zeta)
     )
 
     # Increment of diameter at breast height
-    delta_d = _enforce_2D((npp - turnover) / (dWsdt + dWfdt))
+    delta_d = _enforce_2D(
+        (npp - turnover - reproductive_tissue_turnover) / (dWsdt + dWfdt)
+    )
 
     return (delta_d, dWsdt * delta_d, dWfdt * delta_d)
 
@@ -701,7 +866,7 @@ def calculate_growth_increments(
 class StemAllometry(PandasExporter, CohortMethods):
     """Calculate T Model allometric predictions across a set of stems.
 
-    This method calculate predictions of stem allometries for stem height, crown area,
+    This method calculates predictions of stem allometries for stem height, crown area,
     crown fraction, stem mass, foliage mass and sapwood mass under the T Model
     :cite:`Li:2014bc`, given diameters at breast height for a set of plant functional
     traits.
@@ -722,10 +887,12 @@ class StemAllometry(PandasExporter, CohortMethods):
         "crown_fraction",
         "stem_mass",
         "foliage_mass",
+        "reproductive_tissue_mass",
         "sapwood_mass",
         "crown_r0",
         "crown_z_max",
     )
+    count_attr: ClassVar[str] = "_n_stems"
 
     # Init vars
     stem_traits: InitVar[Flora | StemTraits]
@@ -740,29 +907,33 @@ class StemAllometry(PandasExporter, CohortMethods):
 
     # Post init allometry attributes
     dbh: NDArray[np.float64] = field(init=False)
-    """Diameter at breast height (metres)"""
+    """Diameter at breast height (m)"""
     stem_height: NDArray[np.float64] = field(init=False)
-    """Stem height (metres)"""
+    """Stem height (m)"""
     crown_area: NDArray[np.float64] = field(init=False)
-    """Crown area (square metres)"""
+    """Crown area (m2)"""
     crown_fraction: NDArray[np.float64] = field(init=False)
     """Vertical fraction of the stem covered by the crown (-)"""
     stem_mass: NDArray[np.float64] = field(init=False)
     """Stem mass (kg)"""
     foliage_mass: NDArray[np.float64] = field(init=False)
     """Foliage mass (kg)"""
+    reproductive_tissue_mass: NDArray[np.float64] = field(init=False)
+    """Reproductive tissue mass (kg)"""
     sapwood_mass: NDArray[np.float64] = field(init=False)
     """Sapwood mass (kg)"""
     crown_r0: NDArray[np.float64] = field(init=False)
     """Crown radius scaling factor (-)"""
     crown_z_max: NDArray[np.float64] = field(init=False)
-    """Height of maximum crown radius (metres)"""
+    """Height of maximum crown radius (m)"""
 
     # Information attributes
     _n_pred: int = field(init=False)
     """The number of predictions per stem."""
     _n_stems: int = field(init=False)
     """The number of stems."""
+
+    __experimental__ = True
 
     def __post_init__(
         self,
@@ -771,6 +942,8 @@ class StemAllometry(PandasExporter, CohortMethods):
         validate: bool,
     ) -> None:
         """Populate the stem allometry attributes from the traits and size data."""
+
+        warn_experimental("StemAllometry")
 
         # If validation is required, only need to perform validation once to check that
         # the at_dbh values are congruent with the stem_traits inputs. If they are, then
@@ -814,6 +987,10 @@ class StemAllometry(PandasExporter, CohortMethods):
             lai=stem_traits.lai,
             crown_area=self.crown_area,
             validate=False,
+        )
+
+        self.reproductive_tissue_mass = calculate_reproductive_tissue_mass(
+            self.foliage_mass, stem_traits.p_foliage_for_reproductive_tissue
         )
 
         self.sapwood_mass = calculate_sapwood_masses(
@@ -861,19 +1038,19 @@ class StemAllocation(PandasExporter):
         stem_allometry: An instance of
             :class:`~pyrealm.demography.tmodel.StemAllometry`
             providing the stem size data for which to calculate allocation.
-        at_potential_gpp: An array of potential GPP values at which to predict stem
-            allocation.
+        gpp: An array of GPP values available to a stem at which to model allocation (kg
+            C).
         validate: Boolean flag to suppress argument validation
     """
 
     array_attrs: ClassVar[tuple[str, ...]] = (
-        "potential_gpp",
         "whole_crown_gpp",
         "sapwood_respiration",
         "foliar_respiration",
         "fine_root_respiration",
         "npp",
-        "turnover",
+        "foliage_turnover",
+        "fine_root_turnover",
         "delta_dbh",
         "delta_stem_mass",
         "delta_foliage_mass",
@@ -887,29 +1064,35 @@ class StemAllocation(PandasExporter):
     stem_allometry: InitVar[StemAllometry]
     """An instance of :class:`~pyrealm.demography.tmodel.StemAllometry`
     providing the stem size data for which to calculate allocation."""
-    at_potential_gpp: InitVar[NDArray[np.float64]]
-    """An array of potential gross primary productivity for each stem that should be
-    allocated to respiration, turnover and growth."""
+    whole_crown_gpp: NDArray[np.float64]
+    """An array of gross primary productivity values (kg C) across the whole of the
+    crown of each stem to be allocated to respiration, turnover and growth."""
     validate: InitVar[bool] = True
     """ Boolean flag to suppress argument validation."""
 
     # Post init allometry attributes
-    potential_gpp: NDArray[np.float64] = field(init=False)
-    """Potential GPP per unit area (g C m2)"""
-    whole_crown_gpp: NDArray[np.float64] = field(init=False)
-    """Estimated GPP across the whole crown (g C)"""
+    topslice_whole_crown_gpp: NDArray[np.float64] = field(init=False)
+    """The available stem GPP after any topslicing (g C)"""
     sapwood_respiration: NDArray[np.float64] = field(init=False)
     """Allocation to sapwood respiration (g C)"""
     foliar_respiration: NDArray[np.float64] = field(init=False)
     """Allocation to foliar respiration (g C)"""
+    reproductive_tissue_respiration: NDArray[np.float64] = field(init=False)
+    """Allocation to reproductive tissue respiration (g C)"""
     fine_root_respiration: NDArray[np.float64] = field(init=False)
     """Allocation to fine root respiration (g C)"""
+    gpp_topslice: NDArray[np.float64] = field(init=False)
+    """GPP removed before allocation for various biological functions (g C)"""
     npp: NDArray[np.float64] = field(init=False)
     """Net primary productivity (g C)"""
-    turnover: NDArray[np.float64] = field(init=False)
-    """Allocation to leaf and fine root turnover (g C)"""
+    leaf_turnover: NDArray[np.float64] = field(init=False)
+    """Allocation to leaf turnover (g C)"""
+    fine_root_turnover: NDArray[np.float64] = field(init=False)
+    """Allocation to fine root turnover"""
+    reproductive_tissue_turnover: NDArray[np.float64] = field(init=False)
+    """Allocation to reproductive tissue turnover (g C)"""
     delta_dbh: NDArray[np.float64] = field(init=False)
-    """Predicted increase in stem diameter from growth allocation (g C)"""
+    """Predicted increase in stem diameter from growth allocation (m)"""
     delta_stem_mass: NDArray[np.float64] = field(init=False)
     """Predicted increase in stem mass from growth allocation (g C)"""
     delta_foliage_mass: NDArray[np.float64] = field(init=False)
@@ -921,35 +1104,39 @@ class StemAllocation(PandasExporter):
     _n_stems: int = field(init=False)
     """The number of stems."""
 
+    __experimental__ = True
+
     def __post_init__(
         self,
         stem_traits: Flora | StemTraits,
         stem_allometry: StemAllometry,
-        at_potential_gpp: NDArray[np.float64],
         validate: bool,
     ) -> None:
         """Populate stem allocation attributes from the traits, allometry and GPP."""
+
+        warn_experimental("StemAllocation")
 
         if validate:
             _validate_demography_array_arguments(
                 trait_args={"h_max": stem_traits.h_max},
                 size_args={"dbh": stem_allometry.dbh},
-                at_size_args={"at_potential_gpp": at_potential_gpp},
+                at_size_args={"whole_crown_gpp": self.whole_crown_gpp},
             )
 
         # Broadcast potential GPP to match trait and size data outputs
         trait_size_shape = np.broadcast_shapes(
             stem_traits.h_max.shape, stem_allometry.dbh.shape
         )
-        self.potential_gpp = np.broadcast_to(at_potential_gpp, trait_size_shape)
+        self.whole_crown_gpp = np.broadcast_to(self.whole_crown_gpp, trait_size_shape)
 
-        self.whole_crown_gpp = calculate_whole_crown_gpp(
-            potential_gpp=self.potential_gpp,
-            crown_area=stem_allometry.crown_area,
-            par_ext=stem_traits.par_ext,
-            lai=stem_traits.lai,
+        self.gpp_topslice = calculate_gpp_topslice(
+            gpp_topslice=stem_traits.gpp_topslice,
+            whole_crown_gpp=self.whole_crown_gpp,
             validate=False,
         )
+
+        # Topslice GPP
+        self.topslice_whole_crown_gpp = self.whole_crown_gpp - self.gpp_topslice
 
         self.sapwood_respiration = calculate_sapwood_respiration(
             resp_s=stem_traits.resp_s,
@@ -959,8 +1146,16 @@ class StemAllocation(PandasExporter):
 
         self.foliar_respiration = calculate_foliar_respiration(
             resp_f=stem_traits.resp_f,
-            whole_crown_gpp=self.whole_crown_gpp,
+            whole_crown_gpp=self.topslice_whole_crown_gpp,
             validate=False,
+        )
+
+        self.reproductive_tissue_respiration = (
+            calculate_reproductive_tissue_respiration(
+                resp_rt=stem_traits.resp_rt,
+                reproductive_tissue_mass=stem_allometry.reproductive_tissue_mass,
+                validate=False,
+            )
         )
 
         self.fine_root_respiration = calculate_fine_root_respiration(
@@ -973,19 +1168,31 @@ class StemAllocation(PandasExporter):
 
         self.npp = calculate_net_primary_productivity(
             yld=stem_traits.yld,
-            whole_crown_gpp=self.whole_crown_gpp,
+            whole_crown_gpp=self.topslice_whole_crown_gpp,
             foliar_respiration=self.foliar_respiration,
             fine_root_respiration=self.fine_root_respiration,
             sapwood_respiration=self.sapwood_respiration,
+            reproductive_tissue_respiration=self.reproductive_tissue_respiration,
             validate=False,
         )
 
-        self.turnover = calculate_foliage_and_fine_root_turnover(
+        self.foliage_turnover = calculate_foliage_turnover(
+            tau_f=stem_traits.tau_f,
+            foliage_mass=stem_allometry.foliage_mass,
+            validate=False,
+        )
+
+        self.fine_root_turnover = calculate_fine_root_turnover(
             sla=stem_traits.sla,
             zeta=stem_traits.zeta,
-            tau_f=stem_traits.tau_f,
             tau_r=stem_traits.tau_r,
             foliage_mass=stem_allometry.foliage_mass,
+            validate=False,
+        )
+
+        self.reproductive_tissue_turnover = calculate_reproductive_tissue_turnover(
+            m_rt=stem_allometry.reproductive_tissue_mass,
+            tau_rt=stem_traits.tau_rt,
             validate=False,
         )
 
@@ -999,7 +1206,9 @@ class StemAllocation(PandasExporter):
                 sla=stem_traits.sla,
                 zeta=stem_traits.zeta,
                 npp=self.npp,
-                turnover=self.turnover,
+                turnover=self.foliage_turnover + self.fine_root_turnover,
+                reproductive_tissue_turnover=self.reproductive_tissue_turnover,
+                p_foliage_for_reproductive_tissue=stem_traits.p_foliage_for_reproductive_tissue,
                 dbh=stem_allometry.dbh,
                 stem_height=stem_allometry.stem_height,
                 validate=False,
@@ -1008,10 +1217,10 @@ class StemAllocation(PandasExporter):
 
         # Set the number of observations per stem (one if dbh is 1D, otherwise size of
         # the first axis)
-        if self.potential_gpp.ndim == 1:
+        if self.whole_crown_gpp.ndim == 1:
             self._n_pred = 1
         else:
-            self._n_pred = self.potential_gpp.shape[0]
+            self._n_pred = self.whole_crown_gpp.shape[0]
 
         self._n_stems = stem_traits._n_stems
 

@@ -42,8 +42,8 @@ def test_PandasExporter() -> None:
     assert_allclose(pandas_out.sum(axis=0), np.repeat(10, 3))
 
 
-def test_Cohorts() -> None:
-    """Test the Cohorts abstract base class."""
+def test_CohortMethods() -> None:
+    """Test the CohortMethods abstract base class."""
 
     from pyrealm.demography.core import CohortMethods
 
@@ -52,23 +52,27 @@ def test_Cohorts() -> None:
         """Simple test class implementing the ABC."""
 
         array_attrs: ClassVar[tuple[str, ...]] = ("a", "b")
+        count_attr: ClassVar[str] = "n_cohorts"
 
+        n_cohorts: int
         a: NDArray[np.float64]
         b: NDArray[np.float64]
 
     # Create instances
-    t1 = TestClass(a=np.array([1, 2, 3]), b=np.array([4, 5, 6]))
-    t2 = TestClass(a=np.array([4, 5, 6]), b=np.array([7, 8, 9]))
+    t1 = TestClass(n_cohorts=3, a=np.array([1, 2, 3]), b=np.array([4, 5, 6]))
+    t2 = TestClass(n_cohorts=3, a=np.array([4, 5, 6]), b=np.array([7, 8, 9]))
 
     # Add the t2 data into t1 and check the a and b attributes are extended
     t1.add_cohort_data(t2)
     assert_allclose(t1.a, np.arange(1, 7))
     assert_allclose(t1.b, np.arange(4, 10))
+    assert t1.n_cohorts == 6
 
     # Drop some indices and check the a and b attributes are truncated
     t1.drop_cohort_data(np.array([0, 5]))
     assert_allclose(t1.a, np.arange(2, 6))
     assert_allclose(t1.b, np.arange(5, 9))
+    assert t1.n_cohorts == 4
 
 
 def test_Cohorts_add_cohort_data_failure() -> None:
@@ -118,6 +122,7 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         """Test class with multiple inheritance."""
 
         array_attrs: ClassVar[tuple[str, ...]] = ("c", "d", "e")
+        count_attr: ClassVar[str] = "n_foobars"
 
         n: InitVar[int]
         start_vals: InitVar[NDArray[np.int_]]
@@ -125,11 +130,13 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         c: NDArray[np.float64] = field(init=False)
         d: NDArray[np.int_] = field(init=False)
         e: NDArray[np.float64] = field(init=False)
+        n_foobars: int = field(init=False)
 
         def __post_init__(self, n: int, start_vals: NDArray[np.int_]) -> None:
             self.c = np.arange(start_vals[0], start_vals[0] + n)
             self.d = np.arange(start_vals[1], start_vals[1] + n)
             self.e = np.arange(start_vals[2], start_vals[2] + n)
+            self.n_foobars = n
 
     # Create instances
     t1 = TestClass(n=5, start_vals=np.array([1, 2, 3]))
@@ -141,6 +148,7 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
     # simple checks of output class and behaviour
     assert isinstance(t1_out, pd.DataFrame)
     assert t1_out.shape == (5, 3)
+    assert t1.n_foobars == 5
     assert_allclose(t1_out.sum(axis=1), np.array([6, 9, 12, 15, 18]))
     assert_allclose(t1_out.sum(axis=0), np.repeat(15, 3) + np.array([0, 5, 10]))
 
@@ -151,6 +159,7 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
     # simple checks of output class and behaviour
     assert isinstance(t1_out_add, pd.DataFrame)
     assert t1_out_add.shape == (8, 3)
+    assert t1.n_foobars == 8
     assert_allclose(t1_out_add.sum(axis=1), np.array([6, 9, 12, 15, 18, 21, 24, 27]))
     assert_allclose(t1_out_add.sum(axis=0), np.repeat(36, 3) + np.array([0, 8, 16]))
 
@@ -161,6 +170,8 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
     # simple checks of output class and behaviour
     assert isinstance(t1_out_drop, pd.DataFrame)
     assert t1_out_drop.shape == (6, 3)
+    assert t1.n_foobars == 6
+
     assert_allclose(t1_out_drop.sum(axis=1), np.array([9, 12, 15, 18, 21, 24]))
     assert_allclose(t1_out_drop.sum(axis=0), np.repeat(27, 3) + np.array([0, 6, 12]))
 

@@ -118,7 +118,10 @@ worked through. The changes below are provisional.
 - The first components in the `demography` module, providing an integrated set of
   submodules that provide: plant functional types, size-structured cohorts, plant
   communities, a community canopy model and an implementation of the T Model for
-  allocation and growth.
+  allocation and growth. Release 2.0.0-rc.3 fixes some details of updating cohort counts
+  when adding or dropping cohorts from a community (#481) and moves calculation of per
+  stem GPP outside of StemAllocation rather than pinning it to use the big leaf
+  approximation (#480).
 
 - An extension of the Subdaily P Model that allows the initial realised responses to be
   provided rather than assuming that they are equal to the initial optimal responses.

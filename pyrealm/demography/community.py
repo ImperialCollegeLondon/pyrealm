@@ -136,6 +136,7 @@ from marshmallow import Schema, fields, post_load, validate, validates_schema
 from marshmallow.exceptions import ValidationError
 from numpy.typing import NDArray
 
+from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.demography.core import CohortMethods, PandasExporter
 from pyrealm.demography.flora import Flora, StemTraits
@@ -161,6 +162,7 @@ class Cohorts(PandasExporter, CohortMethods):
     array_attrs: ClassVar[tuple[str, ...]] = tuple(
         ["dbh_values", "n_individuals", "pft_names"]
     )
+    count_attr: ClassVar[str] = "n_cohorts"
 
     # Instance attributes
     dbh_values: NDArray[np.float64]
@@ -168,11 +170,15 @@ class Cohorts(PandasExporter, CohortMethods):
     pft_names: NDArray[np.str_]
     n_cohorts: int = field(init=False)
 
+    __experimental__ = True
+
     def __post_init__(self) -> None:
         """Validation of cohorts data."""
 
         # TODO - validation - maybe make this optional to reduce workload within
         # simulations
+
+        warn_experimental("Cohorts")
 
         # Check cohort data types
         if not (
@@ -417,9 +423,11 @@ class Community:
     cohorts: Cohorts
 
     # Post init properties
-    number_of_cohorts: int = field(init=False)
+    n_cohorts: int = field(init=False)
     stem_traits: StemTraits = field(init=False)
     stem_allometry: StemAllometry = field(init=False)
+
+    __experimental__ = True
 
     def __post_init__(
         self,
@@ -430,6 +438,8 @@ class Community:
         predictions across the validated initial cohort data.
         """
 
+        warn_experimental("Community")
+
         # Check cell area and cell id
         if not (isinstance(self.cell_area, float | int) and self.cell_area > 0):
             raise ValueError("Community cell area must be a positive number.")
@@ -438,7 +448,7 @@ class Community:
             raise ValueError("Community cell id must be a integer >= 0.")
 
         # How many cohorts
-        self.number_of_cohorts = len(self.cohorts.dbh_values)
+        self.n_cohorts = self.cohorts.n_cohorts
 
         # Get the stem traits for the cohorts
         self.stem_traits = self.flora.get_stem_traits(self.cohorts.pft_names)
@@ -551,6 +561,8 @@ class Community:
         self.stem_traits.drop_cohort_data(drop_indices=drop_indices)
         self.stem_allometry.drop_cohort_data(drop_indices=drop_indices)
 
+        self.n_cohorts = self.cohorts.n_cohorts
+
     def add_cohorts(self, new_data: Cohorts) -> None:
         """Add a new set of cohorts to the community.
 
@@ -571,6 +583,8 @@ class Community:
             stem_traits=new_stem_traits, at_dbh=new_data.dbh_values
         )
         self.stem_allometry.add_cohort_data(new_data=new_stem_allometry)
+
+        self.n_cohorts = self.cohorts.n_cohorts
 
     # @classmethod
     # def load_communities_from_csv(
