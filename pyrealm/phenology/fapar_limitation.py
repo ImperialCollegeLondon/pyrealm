@@ -1,7 +1,5 @@
 """Class to compute the fAPAR_max and annual peak Leaf Area Index (LAI)."""
 
-from calendar import leapdays
-
 import numpy as np
 from numpy.typing import NDArray
 from typing_extensions import Self
@@ -32,15 +30,16 @@ def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
     if not (first_month.endswith("01") | first_month.endswith("07")):
         raise ValueError("Data does not start in January or July.")
 
-    no_leapdays = leapdays(
-        int(str(datetimes[0].astype("datetime64[Y]"))),
-        int(str(datetimes[-1].astype("datetime64[Y]"))),
-    )
-    year_remainder = len(unique_dates) % 365
-
+    ## This does not work for fortnightly data
+    # no_leapdays = leapdays(
+    #    int(str(datetimes[0].astype("datetime64[Y]"))),
+    #    int(str(datetimes[-1].astype("datetime64[Y]"))),
+    # )
+    #
+    # year_remainder = len(unique_dates) % 365
     # check that we have the right number of leap days
-    if year_remainder > no_leapdays:
-        raise ValueError("Datetimes do not cover full years.")
+    #    if year_remainder > no_leapdays:
+    #        raise ValueError("Datetimes do not cover full years.")
 
     if obs_per_date > 1:
         # subdaily
@@ -207,16 +206,6 @@ def daily_to_subdaily(
     subdaily_x = np.repeat(x, obs_per_day)
 
     return subdaily_x
-
-
-def compute_annual_total_precip(
-    precip: NDArray, datetimes: NDArray[np.datetime64], growing_season: NDArray[np.bool]
-) -> NDArray:
-    """Returns the sum of annual precipitation."""
-
-    annual_precip = get_annual(precip, datetimes, growing_season, "total")
-
-    return convert_precipitation_to_molar(annual_precip)
 
 
 def convert_precipitation_to_molar(precip_mm: NDArray) -> NDArray:

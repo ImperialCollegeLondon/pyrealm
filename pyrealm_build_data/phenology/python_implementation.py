@@ -400,6 +400,8 @@ subdaily_annual_values.to_pandas().to_csv(
 fortnight_resampler = subdaily_outputs.resample(time="2W")
 fortnight_means = fortnight_resampler.mean()
 fortnight_sum = fortnight_resampler.sum()
+fortnight_resampler_from_daily = subdaily_daily_values.resample(time="2W")
+fortnightly_gpp_smstress = fortnight_resampler_from_daily.mean()["PMod_gpp_smstress"]
 
 # Extract the variables needed to run the model
 fortnightly_outputs = xr.Dataset(
@@ -411,6 +413,7 @@ fortnightly_outputs = xr.Dataset(
         "ppfd_mean": fortnight_means["ppfd"],
         "precip_molar_sum": fortnight_sum["precip_molar"],
         "year": fortnight_means.time.dt.year,
+        "PMod_gpp_smstress": fortnightly_gpp_smstress,
     }
 )
 
