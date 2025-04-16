@@ -22,8 +22,24 @@ def site_data():
 
 
 @pytest.fixture()
+def splash_data():
+    """Load the input data from nc file into xarray."""
+
+    import xarray as xr
+
+    datafile = (
+        resources.files("pyrealm_build_data.phenology")
+        / "DE_gri_splash_cru_ts4.07_2000_2019.nc"
+    )
+
+    splash_data = xr.load_dataset(datafile)
+
+    return splash_data
+
+
+@pytest.fixture()
 def annual_data():
-    """Load the input data from netcdf file."""
+    """Load the input data from csv file."""
 
     datafile = (
         resources.files("pyrealm_build_data.phenology.fortnightly_example")
@@ -67,6 +83,36 @@ def fortnightly_data():
     return data
 
 
+@pytest.fixture()
+def subdaily_data():
+    """Load the input data from data file."""
+
+    datafile = (
+        resources.files("pyrealm_build_data.phenology.subdaily_example")
+        / "half_hourly_data.csv"
+    )
+
+    # Load the half hourly data
+    subdaily_data = pd.read_csv(datafile)
+
+    return subdaily_data
+
+
+@pytest.fixture()
+def daily_data():
+    """Load the input data from data file."""
+
+    datafile = (
+        resources.files("pyrealm_build_data.phenology.subdaily_example")
+        / "daily_outputs.csv"
+    )
+
+    # Load the half hourly data
+    daily_data = pd.read_csv(datafile)
+
+    return daily_data
+
+
 @pytest.mark.skip("Need to expand the time handling to cope with datetimes >= 1 day")
 def test_faparlimitation_frompmodel(annual_data, site_data, fortnightly_data):
     """Regression test for from_pmodel FaparLimitation class method."""
@@ -99,3 +145,62 @@ def test_faparlimitation_frompmodel(annual_data, site_data, fortnightly_data):
 
     assert np.allclose(annual_data["fapar_max"].to_numpy(), faparlim.fapar_max)
     assert np.allclose(annual_data["lai_max"].to_numpy(), faparlim.lai_max)
+
+
+@pytest.mark.skip("This test is still failing with current fapar implementation")
+def test_faparlimitation_fromsubdailypmodel(site_data, subdaily_data, daily_data):
+    """Regression test for from_subdailypmodel FaparLimitation class method."""
+
+    from pyrealm.phenology.fapar_limitation import FaparLimitation, daily_to_subdaily
+    from pyrealm.pmodel import AcclimationModel, PModelEnvironment, SubdailyPModel
+
+    env = PModelEnvironment(
+        tc=subdaily_data["tc"].to_numpy(),
+        vpd=subdaily_data["vpd"].to_numpy(),
+        co2=subdaily_data["co2"].to_numpy(),
+        patm=subdaily_data["patm"].to_numpy(),
+        fapar=np.ones_like(subdaily_data["tc"]),
+        ppfd=subdaily_data["ppfd"].to_numpy(),
+    )
+
+    datetimes = subdaily_data["time"].to_numpy().astype("datetime64[ns]")
+
+    # Set up the datetimes of the observations and set the acclimation window
+    acclim = AcclimationModel(
+        datetimes=datetimes,
+        alpha=1 / 15,
+    )
+    acclim.set_window(
+        window_center=np.timedelta64(12, "h"),
+        half_width=np.timedelta64(30, "m"),
+    )
+
+    # Fit the subdaily potential GPP: fAPAR = 1 as set above and phi0 = 1/8
+    subdaily_pmodel = SubdailyPModel(
+        env=env,
+        acclim_model=acclim,
+        reference_kphio=1 / 8,
+        method_kphio="temperature",
+    )
+
+    aridity_index = site_data["AI_from_cruts"]
+
+    # Find growing season
+    growing_season = daily_to_subdaily(daily_data["growing_day"].to_numpy(), datetimes)
+
+    # Get soil moisture stress for gpp penalty
+    soil_moisture_stress = daily_to_subdaily(
+        daily_data["PMod_gpp_smstress"].to_numpy(), datetimes
+    )
+
+    faparlim = FaparLimitation.from_subdailypmodel(
+        subdaily_pmodel,
+        growing_season,
+        datetimes,
+        subdaily_data["precip_molar"],
+        aridity_index,
+        soil_moisture_stress,
+    )
+
+    annual_lai_max = np.unique(daily_data["annual_lai_max"].to_numpy())
+    assert np.allclose(annual_lai_max, faparlim.lai_max)

@@ -340,12 +340,12 @@ plot_iabs(
     r"$v_{cmax}$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)",
 )
 plot_iabs(
-    axs[1, 1],
+    axs[1, 0],
     "vcmax25",
     r"$v_{cmax25}$   ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)",
 )
 plot_iabs(
-    axs[2, 0],
+    axs[1, 1],
     "jmax",
     r"$J_{max}$ ($\mu\mathrm{mol}\,\mathrm{m}^{-2}\,\mathrm{s}^{-1}$)",
 )
