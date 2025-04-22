@@ -172,16 +172,12 @@ def get_annual(
     if method == "total":
         for i in range(len(years)):
             annual_x[i] = sum(
-                daily_x[growing_season & (years_by_day[:, 0] == years[i])].astype(
-                    np.int64
-                )
+                daily_x[growing_season & (years_by_day[:, 0] == years[i])]
             )
     elif method == "mean":
         for i in range(len(years)):
             annual_x[i] = np.mean(
-                daily_x[growing_season & (years_by_day[:, 0] == years[i])].astype(
-                    np.int64
-                )
+                daily_x[growing_season & (years_by_day[:, 0] == years[i])]
             )
     else:
         raise ValueError("No valid method given for annual values")
@@ -352,7 +348,7 @@ class FaparLimitation:
         )
         annual_mean_ca = get_annual(pmodel.env.ca, datetimes, growing_season, "mean")
         annual_mean_chi = get_annual(
-            pmodel.optchi.chi.round(5), datetimes, growing_season, "mean"
+            pmodel.optchi.chi, datetimes, growing_season, "mean"
         )
         annual_mean_vpd = get_annual(pmodel.env.vpd, datetimes, growing_season, "mean")
         annual_total_precip = get_annual(precip, datetimes, growing_season, "total")
