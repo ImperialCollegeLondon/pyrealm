@@ -107,7 +107,7 @@ def daily_data():
         / "daily_outputs.csv"
     )
 
-    # Load the half hourly data
+    # Load the daily data
     daily_data = pd.read_csv(datafile)
 
     return daily_data
@@ -188,18 +188,12 @@ def test_faparlimitation_fromsubdailypmodel(site_data, subdaily_data, daily_data
     # Find growing season
     growing_season = daily_to_subdaily(daily_data["growing_day"].to_numpy(), datetimes)
 
-    # Get soil moisture stress for gpp penalty
-    soil_moisture_stress = daily_to_subdaily(
-        daily_data["PMod_gpp_smstress"].to_numpy(), datetimes
-    )
-
     faparlim = FaparLimitation.from_subdailypmodel(
         subdaily_pmodel,
         growing_season,
         datetimes,
         subdaily_data["precip_molar"],
         aridity_index,
-        soil_moisture_stress,
     )
 
     annual_lai_max = np.unique(daily_data["annual_lai_max"].to_numpy())

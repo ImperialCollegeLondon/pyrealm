@@ -5,6 +5,7 @@ from numpy.typing import NDArray
 from typing_extensions import Self
 
 from pyrealm.constants import PhenologyConst
+from pyrealm.core.utilities import check_input_shapes
 from pyrealm.pmodel import AcclimationModel, PModel, SubdailyPModel
 
 
@@ -204,21 +205,6 @@ def daily_to_subdaily(
     return subdaily_x
 
 
-def convert_precipitation_to_molar(precip_mm: NDArray) -> NDArray:
-    """Convert precipitation from mm/m2 to mol/m2.
-
-    - 1 mm/m2 = 1000000 mm3 = 1000 mL = 1 L
-    - Molar mass of water = 18g
-    - Assuming density = 1 (but really temp varying), molar volume = 18mL
-    - So 1 mm/m2 = 1000 / 18 ~ 55.55 mols/m2
-    """
-
-    water_mm_to_mol = 1000 / 18
-    precip_molar = precip_mm * water_mm_to_mol
-
-    return precip_molar
-
-
 class FaparLimitation:
     r"""FaparLimitation class to compute fAPAR_max and LAI.
 
@@ -238,12 +224,21 @@ class FaparLimitation:
     def _check_shapes(self) -> None:
         """Internal class to check all the input arrays have the same size."""
 
-        assert len(self.annual_total_potential_gpp) == len(self.annual_mean_ca)
-        assert len(self.annual_mean_ca) == len(self.annual_mean_chi)
-        assert len(self.annual_mean_chi) == len(self.annual_mean_vpd)
-        assert len(self.annual_mean_vpd) == len(self.annual_total_precip)
-        if np.shape(self.aridity_index) != ():
-            assert len(self.annual_total_precip) == len(self.aridity_index)
+        check_input_shapes(
+            self.annual_total_potential_gpp,
+            self.annual_mean_ca,
+            self.annual_mean_chi,
+            self.annual_mean_vpd,
+            self.annual_total_precip,
+            self.aridity_index,
+        )
+
+        # assert len(self.annual_total_potential_gpp) == len(self.annual_mean_ca)
+        # assert len(self.annual_mean_ca) == len(self.annual_mean_chi)
+        # assert len(self.annual_mean_chi) == len(self.annual_mean_vpd)
+        # assert len(self.annual_mean_vpd) == len(self.annual_total_precip)
+        # if np.shape(self.aridity_index) != ():
+        #     assert len(self.annual_total_precip) == len(self.aridity_index)
 
     def __init__(
         self,
@@ -325,7 +320,7 @@ class FaparLimitation:
         datetimes: NDArray[np.datetime64],
         precip: NDArray[np.float64],
         aridity_index: NDArray[np.float64],
-        gpp_penalty_factor: NDArray[np.float64],
+        gpp_penalty_factor: NDArray[np.float64] | None = None,
     ) -> Self:
         r"""Get FaparLimitation from PModel input.
 
@@ -344,8 +339,11 @@ class FaparLimitation:
         check_datetimes(datetimes)
 
         annual_total_potential_gpp = get_annual(
-            pmodel.gpp * gpp_penalty_factor, datetimes, growing_season, "total"
+            pmodel.gpp, datetimes, growing_season, "total"
         )
+        if gpp_penalty_factor is not None:
+            annual_total_potential_gpp *= gpp_penalty_factor
+
         annual_mean_ca = get_annual(pmodel.env.ca, datetimes, growing_season, "mean")
         annual_mean_chi = get_annual(
             pmodel.optchi.chi, datetimes, growing_season, "mean"
@@ -370,7 +368,7 @@ class FaparLimitation:
         datetimes: NDArray[np.datetime64],
         precip: NDArray[np.float64],
         aridity_index: NDArray[np.float64],
-        gpp_penalty_factor: NDArray[np.float64],
+        gpp_penalty_factor: NDArray[np.float64] | None = None,
     ) -> Self:
         r"""Get FaparLimitation from SubdailyPModel input.
 
@@ -389,11 +387,14 @@ class FaparLimitation:
         check_datetimes(datetimes)
 
         annual_total_potential_gpp = get_annual(
-            subdaily_pmodel.gpp * gpp_penalty_factor,
+            subdaily_pmodel.gpp,
             datetimes,
             growing_season,
             "total",
         )
+        if gpp_penalty_factor is not None:
+            annual_total_potential_gpp *= gpp_penalty_factor
+
         annual_mean_ca = get_annual(
             subdaily_pmodel.env.ca, datetimes, growing_season, "mean"
         )
