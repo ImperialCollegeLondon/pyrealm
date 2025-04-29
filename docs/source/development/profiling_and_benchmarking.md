@@ -27,10 +27,10 @@ We use code profiling to assess the performance of `pyrealm` code and compare it
 previous code versions to identify bottlenecks and guard against degraded performance
 when code changes.
 
-Profiling and benchmarking can be run manually - which is useful if you are working on
-code and want to check it doesn't impact performance - but are also run as part of the
-continuous integration process when code is to be merged into the `develop` or `main`
-branches. TODO: Remove CI
+Profiling and benchmarking can be run manually when you have made changes to the code
+and want to check it doesn't impact performance. The tools listed below can highlight
+where there may be issues in the code which should be fixed prior to integration by a
+pull request.
 
 ## Latest performance results
 
@@ -251,13 +251,13 @@ information for each commit. The SHA is 40 characters long, but is usually trunc
 the first 7 characters. This can be shown for the last commit using `git rev-parse
 --short HEAD`.
 
-#### Resolving failed benchmarking
+### Resolving failed benchmarking
 
 If benchmarking fails then the incoming code has introduced possibly troublesome
 performance issues. If the code can be made more efficient, then submit commits to fix
 the performance and re-run the benchmarking.
 
-### Updating performance results
+## Updating performance results
 
 The results shown [above](#latest-performance-results) can be updated by:
 
