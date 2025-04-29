@@ -1,5 +1,7 @@
 """Class to compute the fAPAR_max and annual peak Leaf Area Index (LAI)."""
 
+from collections.abc import Callable
+
 import numpy as np
 from numpy.typing import NDArray
 from typing_extensions import Self
@@ -53,31 +55,151 @@ def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
 
 
 class AnnualValueCalculator:
-    """Annual value calculation class.
+    """An annual value calculation class.
 
-    This is currently subdaily specific, but I guess could run in two different modes
-    with switching in __init__.
+    This class is used to calculate annual mean and sum values from time series data. An
+    instance is created using either an array of datetimes for time series data or an
+    AcclimationModel instance that has been used to fit a SubdailyPModel, which provides
+    an already validated set of datetimes at subdaily temporal resolutions. These
+    datetimes are used to calculates indices along the time dimension that will split
+    data arrays into annual blocks, allowing the instance to be used to calculate annual
+    values for multiple variables.
+
+    When created, the class also takes a boolean array indicating which observations are
+    part of the growing season.
+
+    Temporal resolution
+    -------------------
+
+    The datetimes provided to the the class are taken to indicate the start time of each
+    observation period, and the total durations of these observations are used to check
+    that complete data is provided for a set of years. Where the temporal resolution is
+    a number of days (e.g. weekly or dekadal data), which may not map precisely onto
+    year boundaries, a tolerance equal to the length of one interval is allowed in
+    matching observation durations within a year to the actual year duration. However,
+    where the datetimes suggest a monthly, daily or subdaily resolution, the total
+    duration of observations within a year expected to map precisely onto the length of
+    each year.
+
+
+    .. TODO::
+
+        * Should this be more precise about year ends - calculate the actual weighted
+          values across years so that weekly data also has to be complete.
+
     """
 
     def __init__(
-        self, datetimes: NDArray[np.datetime64], growing_season: NDArray[np.bool_]
+        self,
+        timing: AcclimationModel | NDArray[np.datetime64],
+        growing_season: NDArray[np.bool_],
     ):
-        if growing_season.dtype != np.bool_:
-            raise ValueError("not a bool")
+        # Attribute definitions
+        self.datetimes: NDArray[np.datetime64]
+        """TBD"""
+        self.year_breaks: NDArray[np.int_]
+        """TBD"""
+        self.duration_seconds: NDArray[np.timedelta64]
+        """TBD"""
+        self.growing_season: NDArray[np.bool_]
+        """TBD"""
+        self.growing_season_by_year: list[NDArray[np.bool_]]
+        """TBD"""
 
-        self.growing_season = growing_season
+        # Sanity checks on datetimes
+        if not (
+            isinstance(timing, AcclimationModel)
+            or (
+                isinstance(timing, np.ndarray)
+                and np.issubdtype(timing.dtype, np.datetime64)
+            )
+        ):
+            raise ValueError(
+                "The timings argument must be an AcclimationModel "
+                "or an array of datetime64 values"
+            )
 
-        # Create scaler object to handle conversion between scales
-        self.scaler = AcclimationModel(datetimes)
-        self.scaler.set_nearest(np.timedelta64(12, "h"))
+        # Check the coverage of years and set the required precision
+        if isinstance(timing, AcclimationModel):
+            # AcclimationModel provides subdaily data, so need full days with no
+            # tolerance of partial annual data.
+            self.datetimes = timing.datetimes
+            datetimes_seconds = self.datetimes.astype("datetime64[s]")
+            self.duration_seconds = np.append(
+                np.diff(datetimes_seconds), timing.spacing
+            )
+            year_tolerance_seconds = 0
+        else:
+            # Datetime inputs could be any frequency from subdaily to monthly.
+            # Convert time to seconds precision
+            self.datetimes = timing
+            datetimes_seconds = timing.astype("datetime64[s]")
 
-        # Get the points along the time axis at which year changes
-        self.year_breaks = (
-            np.where(np.diff(self.scaler.observation_dates.astype("datetime64[Y]")))[0]
-            + 1
+            # Get the intervals and figure out the duration of the last observation
+            duration_seconds = np.diff(datetimes_seconds)
+            intervals: NDArray = np.unique(duration_seconds)
+
+            # Check for constant gaps _or_ months
+            if len(intervals) == 1:
+                # Constant intervals - TODO check here for daily?
+                duration_last_observation = duration_seconds[0]
+                year_tolerance_seconds = duration_last_observation
+            elif (len(intervals) > 1) and {
+                2419200,
+                2505600,
+                2592000,
+                2678400,
+            }.issuperset(intervals.astype("int")):
+                # Dealing with monthly data so calculate the length of the last month
+                next_month = (
+                    self.datetimes[-1].astype("datetime64[M]") + np.timedelta64(1, "M")
+                ).astype("datetime64[s]")
+                duration_last_observation = next_month - datetimes_seconds[-1]
+                year_tolerance_seconds = 0
+            else:
+                # TODO - how to handle bimonthly or quarterly observations.
+                raise ValueError(
+                    "Datetimes must be monthly or use a constant interval."
+                )
+
+            self.duration_seconds = np.append(
+                duration_seconds, duration_last_observation
+            )
+
+        # Calculate the expected number of seconds in each year appearing in the time
+        # series to calculate the year coverage
+        datetimes_by_year = self.datetimes.astype("datetime64[Y]")
+        years = np.unique(datetimes_by_year)
+        expected_year_duration_seconds = np.diff(
+            np.append(years, years[-1] + np.timedelta64(1, "Y")).astype("datetime64[s]")
         )
 
+        # Get the points along the time axis at which year changes
+        self.year_breaks = np.where(np.diff(datetimes_by_year))[0] + 1
+
+        actual_year_duration_seconds = np.array(
+            [v.sum() for v in np.split(self.duration_seconds, self.year_breaks)]
+        )
+        if not np.allclose(
+            actual_year_duration_seconds,
+            expected_year_duration_seconds,
+            atol=year_tolerance_seconds,
+        ):
+            raise ValueError(
+                "Data timings do not cover complete years to within tolerance"
+            )
+
+        # Sanity checks on growing season
+        if not np.issubdtype(growing_season.dtype, np.bool_):
+            raise ValueError("Growing season data is not an array of boolean values")
+
+        if not self.datetimes.shape == growing_season.shape:
+            raise ValueError(
+                "Growing season data is not the same shape as the timing data"
+            )
+
         # Split the growing season up into a list of subarrays by year
+        self.growing_season = growing_season
         self.growing_season_by_year = np.split(growing_season, self.year_breaks)
 
     def get_annual_values(
@@ -86,30 +208,33 @@ class AnnualValueCalculator:
         function: str = "mean",
         within_growing_season: bool = True,
     ) -> NDArray[np.float64]:
-        """Get annual values.
+        """Get annual summary stats from an array of values.
 
-        Could possibly pass the function itself but can't work out the typing right now!
+        Args:
+            values: The data to summarize by year
+            function: The required summary statistic
+            within_growing_season: Should the statistic only include values within the
+                growing season.
         """
 
-        if len(values) == len(self.scaler.datetimes):
-            # Reduce to daily observations
-            daily_values = self.scaler.get_daily_means(values)
-        elif len(values) == len(self.growing_season):
-            # all good
-            daily_values = values
-        else:
-            raise ValueError("values don't match datetimes or growing season")
+        if values.shape != self.datetimes.shape:
+            raise ValueError("Values array shape does not match datetimes")
 
         # Split the daily values into subarrays using the year breaks
-        values_by_year = np.split(daily_values, self.year_breaks)
+        values_by_year = np.split(values, self.year_breaks)
 
+        # TODO - could possibly pass a ufunc in directly as the function argument - more
+        # general and cleaner - but I can't work out the typing right now! Could simply
+        # use Callable as below, but really we want to specifically restrict to unary
+        # ufuncs.
+        ufunc: Callable
         match function:
             case "mean":
                 ufunc = np.mean
             case "sum":
                 ufunc = np.sum
             case _:
-                raise ValueError("unknown function error")
+                raise ValueError("The function argument '{function}' is not known")
 
         if not within_growing_season:
             return np.array([ufunc(vals) for vals in values_by_year])

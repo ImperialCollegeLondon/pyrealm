@@ -1,8 +1,167 @@
 """Testing the annual value calculator."""
 
+from contextlib import nullcontext as does_not_raise
+
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose
+
+
+@pytest.mark.parametrize(
+    argnames="datetimes, growing_season,  as_acclim, context_manager, error_message",
+    argvalues=(
+        pytest.param(
+            np.arange(
+                np.datetime64("2000-01-01"),
+                np.datetime64("2010-01-01"),
+                np.timedelta64(30, "m"),
+            ),
+            np.ones(
+                (365 * 7 + 366 * 3) * 48, dtype=np.bool_
+            ),  # 10 years of 30 min obs, with 3 leap years
+            True,
+            does_not_raise(),
+            None,
+            id="acclim_model_good",
+        ),
+        pytest.param(
+            np.arange(
+                np.datetime64("2000-01-01"),
+                np.datetime64("2010-01-01"),
+                np.timedelta64(30, "m"),
+            ),
+            np.ones(
+                (365 * 7 + 366 * 3) * 48, dtype=np.bool_
+            ),  # 10 years of 30 min obs, with 3 leap years
+            False,
+            does_not_raise(),
+            None,
+            id="datetimes_half_hourly_good",
+        ),
+        pytest.param(
+            np.arange(
+                np.datetime64("2000-01-01"),
+                np.datetime64("2010-01-01"),
+                np.timedelta64(30, "m"),
+            ).astype(np.int_),
+            np.ones(
+                (365 * 5 + 366 * 3) * 48, dtype=np.bool_
+            ),  # 10 years of 30 min obs, with 3 leap years
+            False,
+            pytest.raises(ValueError),
+            "The timings argument must be an AcclimationModel "
+            "or an array of datetime64 values",
+            id="timings_not_acclim_or_datetimes",
+        ),
+        pytest.param(
+            np.arange(
+                np.datetime64("2000-01-01"),
+                np.datetime64("2010-01-01"),
+                np.timedelta64(30, "m"),
+            ),
+            np.ones(
+                (365 * 5 + 366 * 3) * 48, dtype=np.bool_
+            ),  # 10 years of 30 min obs, with 3 leap years
+            False,
+            pytest.raises(ValueError),
+            "Growing season data is not the same shape as the timing data",
+            id="bad_growing_season_shape",
+        ),
+        pytest.param(
+            np.arange(
+                np.datetime64("2000-01-01"),
+                np.datetime64("2010-01-01"),
+                np.timedelta64(30, "m"),
+            ),
+            np.ones(
+                (365 * 7 + 366 * 3) * 48,
+            ),  # 10 years of 30 min obs, with 3 leap years
+            False,
+            pytest.raises(ValueError),
+            "Growing season data is not an array of boolean values",
+            id="bad_growing_season_dtype",
+        ),
+        pytest.param(
+            np.arange(
+                np.datetime64("2000-01-31"),
+                np.datetime64("2009-11-30"),
+                np.timedelta64(30, "m"),
+            ),
+            np.ones(
+                (365 * 7 + 366 * 3) * 48, dtype=np.bool_
+            ),  # 10 years of 30 min obs, with 3 leap years
+            True,
+            pytest.raises(ValueError),
+            "Data timings do not cover complete years to within tolerance",
+            id="acclim_model_incomplete_years",
+        ),
+        pytest.param(
+            np.arange(
+                np.datetime64("2000-01-01"),
+                np.datetime64("2010-01-01"),
+                np.timedelta64(1, "D"),
+            ),
+            np.ones(
+                (365 * 7 + 366 * 3), dtype=np.bool_
+            ),  # 10 years of daily obs, with 3 leap years
+            False,
+            does_not_raise(),
+            None,
+            id="datetimes_daily_good",
+        ),
+        pytest.param(
+            np.arange(
+                np.datetime64("2000-01-01"),
+                np.datetime64("2010-01-01"),
+                np.timedelta64(1, "W"),
+            ),
+            np.ones(522, dtype=np.bool_),  # 10 years of weekly obs
+            False,
+            does_not_raise(),
+            None,
+            id="datetimes_weekly_good",
+        ),
+        pytest.param(
+            np.arange(
+                np.datetime64("2000-01-05"),
+                np.datetime64("2010-01-01"),
+                np.timedelta64(1, "W"),
+            ),
+            np.ones(522, dtype=np.bool_),  # 10 years of weekly obs
+            False,
+            does_not_raise(),
+            None,
+            id="datetimes_weekly_short_but_inside_tolerance_good",
+        ),
+        pytest.param(
+            np.arange(
+                np.datetime64("2000-01-08"),
+                np.datetime64("2010-01-01"),
+                np.timedelta64(1, "W"),
+            ),
+            np.ones(522, dtype=np.bool_),  # 10 years of weekly obs
+            False,
+            does_not_raise(),
+            None,
+            id="datetimes_weekly_short_outside_tolerance",
+        ),
+    ),
+)
+def test_AnnualValueCalculator_init(
+    datetimes, as_acclim, growing_season, context_manager, error_message
+):
+    """Test failure modes and success modes for initialising AVC instances."""
+    from pyrealm.phenology.fapar_limitation import AnnualValueCalculator
+    from pyrealm.pmodel.acclimation import AcclimationModel
+
+    if as_acclim:
+        datetimes = AcclimationModel(datetimes=datetimes)
+
+    with context_manager as cmgr:
+        _ = AnnualValueCalculator(timing=datetimes, growing_season=growing_season)
+        return
+
+    assert str(cmgr.value) == error_message
 
 
 @pytest.mark.parametrize(
@@ -56,7 +215,7 @@ def test_AnnualValueCalculator(function, within_growing_season, expected):
     values = np.tile(np.repeat((0, 1, 0), (24, 1, 23)), 3653)
 
     # Create the calculator instance
-    avc = AnnualValueCalculator(datetimes=datetimes, growing_season=growing_season)
+    avc = AnnualValueCalculator(timing=datetimes, growing_season=growing_season)
 
     # Apply the method and check the outcome.
     result = avc.get_annual_values(
