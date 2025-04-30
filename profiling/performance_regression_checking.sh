@@ -15,7 +15,7 @@ else
     done
 fi
 
-cd ..
+cd $(git rev-parse --show-toplevel)
 git checkout $new_commit
 
 # Remember where we start from

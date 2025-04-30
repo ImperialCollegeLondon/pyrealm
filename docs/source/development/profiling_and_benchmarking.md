@@ -27,10 +27,10 @@ We use code profiling to assess the performance of `pyrealm` code and compare it
 previous code versions to identify bottlenecks and guard against degraded performance
 when code changes.
 
-Profiling and benchmarking can be run manually - which is useful if you are working on
-code and want to check it doesn't impact performance - but are also run as part of the
-continuous integration process when code is to be merged into the `develop` or `main`
-branches.
+Profiling and benchmarking can be run manually when you have made changes to the code
+and want to check it doesn't impact performance. The tools listed below can highlight
+where there may be issues in the code which should be fixed prior to integration by a
+pull request.
 
 ## Latest performance results
 
@@ -137,31 +137,39 @@ defaults of  `--splash-profile-scaleup 125` and `--pmodel-profile-scaleup 6`.
 
 ## Benchmarking code performance
 
+### Simple benchmarking
+
+The `profiling` directory contains a tool for performing simple regression testing,
+`performance_regression_checking.sh`. This can identify if changes have affected the
+speed of the code by comparing the overall time taken to run the profiling test
+functions.
+
+The script can be run without arguments to compare the current `HEAD` with the
+`origin/develop` branch. Alternatively, command line arguments can be used to compare
+any two commits:
+
+```bash
+./performance_regression_checking -n [NEW-COMMIT] -o [OLD-COMMIT]
+```
+
+### Advanced benchmarking
+
 When `pytest-profiling` runs, the resulting `prof/combined.prof` file contains detailed
 information on all the calls invoked in the test code, including the number of times
 each call is made and the time spent on each call. The `prof/combined.svg` shows where
 time is spent during the test runs, which identifies bottlenecks, but it is also useful
-to check that the time spent on a call has not increased markedly when code is revised.
+to check that the time spent on each function call has not increased markedly when code
+is revised.
 
-The `profiling` directory contains a database of previous profiling results
-(`profiling-database.csv`) and the `run_benchmarking.py` tool, which can be used to
-benchmark new profiling data. The basic process is:
-
-* read the current `prof/combined.prof` file and convert it to human-readable CSV data,
-* find the best performance for each call over recent previous runs, and
-* check if the relative performance of the incoming code is notably slower than that
-  best performance.
-
-By default, we use the 5 most recent code versions and the threshold performance is 5%
-slower than the previous best performance. The report tool consists of a command line
-wrapper around a set of profiling functions, which can be imported for programatic use.
-for use.
+To do this, the `profiling` directory also contains the `run_benchmarking.py` tool. This
+will check if any function is more than a certain tolerance (5% by default) slower than
+a previous run.
 
 The usage of the tool is:
 
 ```text
 usage: run_benchmarking.py [-h] [--exclude EXCLUDE] [--n-runs N_RUNS]
-                           [--tolerance TOLERANCE] [--append-on-pass] [--new-database]
+                           [--tolerance TOLERANCE] [--update-on-pass]
                            [--plot-path PLOT_PATH]
                            prof_path database_path fail_data_path label
 
@@ -190,95 +198,71 @@ options:
                          (default: ['{.*}', '<.*>', '/lib/'])
   --n-runs N_RUNS        Number of most recent runs to use in benchmarking (default: 5)
   --tolerance TOLERANCE  Tolerance of time cost increase in benchmarking (default: 0.05)
-  --append-on-pass       Add incoming data to the database when benchmarking passes
-                         (default: False)
-  --new-database         Use the incoming data to start a new profiling database
-                         (default: False)
+  --update-on-pass       Update the profiling database if benchmarking passes (default:
+                         False)
   --plot-path PLOT_PATH  Generate a benchmarking plot to this path (default: None)
 ```
 
-### Manual benchmarking
+To perform the comparison it is necessary to first generate a performance database for
+at least one previous version. This is likely to be `origin/develop` for incorporating
+changes. The workflow is therefore:
 
-Once you have run the `pytest-profiling` test suite and generated `prof/combined.prof`
-for some new code, you can run the following code to benchmark those results. In the
-code below, `incoming` is used as a label for the new code, but it is more useful to use
-the commit SHA to identify the profiled code more explicitly. The SHA is a unique hash
-calculated from summary information for each commit. The SHA is 40 characters long (e.g.
-`4413a1954447497ee8a236eb447520646437519f`), but is usually truncated to the first 7
-characters (`4413a19`): this can be shown for the last commit using
-`git rev-parse --short HEAD`.
+* Checkout the previous commit to be used for comparison: `git checkout origin/develop`
 
-```bash
-poetry run python profiling/run_benchmarking.py \
-       prof/combined.prof profiling/profiling-database.csv \
-       profiling/benchmark-fails.csv incoming
-```
+* Perform the profiling: `poetry run pytest --profile -m "profiling"`
 
-This command will run the benchmark checks and print a success or failure message to the
-screen. If the benchmarking fails, then the file `benchmark-fails.csv` will be created
-and will contain the incoming and database performance data for all processes that have
-failed benchmarks. You can alter the benchmark tolerance and number of most recent
-versions used for comparison, and also generate a plot of relative performance.
+* Run `run_benchmarking.py` to generate the performance database,
+  `profiling/profiling-database.csv` (Remove it first if it already exists).
 
-```bash
-poetry run python profiling/run_benchmarking.py \
-       prof/combined.prof profiling/profiling-database.csv \
-       profiling/benchmark-fails.csv incoming \
-       --n-runs 4 --tolerance 0.06 \
-       --plot-path profiling/performance-plot.png
-```
+  ```bash
+  poetry run python profiling/run_benchmarking.py \
+         prof/combined.prof profiling/profiling-database.csv \
+         profiling/benchmark-fails.csv PREVIOUS
+  ```
 
-If benchmarking passes, the incoming data _can_ be added to the main
-`profiling-database.csv` database using the `--update-on-pass` option, but this database
-should generally **only be updated by the continuous integration process** . If you do
-want to compare profiles for multiple local versions of code, you can provide a new path
-and this will be used to create a separate local database. The `--update-on-pass` option
-can then be used to add data to that local file for testing purposes.
+* Return to the commit to be benchmarked: `git checkout -`
 
-```bash
-poetry run python profiling/run_benchmarking.py \
-       prof/combined.prof profiling/local-database.csv \
-       profiling/benchmark-fails.csv incoming
-```
+* Perform the profiling: `poetry run pytest --profile -m "profiling"`
 
-### Continuous integration benchmarking
+* Re-run `run_benchmarking.py` to benchmark the new code.
 
-The continuous integration process runs the profiling test suite and then runs the
-benchmarking with the following settings, where `8c2cbfe` is the commit SHA of the code
-being profiled and using the default number of previous runs (5) and tolerance (0.05):
+  ```bash
+  poetry run python profiling/run_benchmarking.py \
+         prof/combined.prof profiling/profiling-database.csv \
+         profiling/benchmark-fails.csv INCOMING \
+         --plot-path profiling/performance-plot.png
+  ```
 
-```bash
-poetry run python profiling/run_benchmarking.py \
-       prof/combined.prof profiling/profiling-database.csv \
-       profiling/benchmark-fails.csv 8c2cbfe \
-       --plot-path profiling/performance-plot.png --update-on-pass
-```
+* Check the results to see if the relative performance of the incoming code is notably
+  slower than the previous performance.
 
-The continuous integration process automatically commits the results of benchmarking
-into the repository. If the benchmarking **passes**, these commits will be:
+The second call to `run_benchmarking.py` will run the benchmark checks and print a
+success or failure message to the screen depending upon if any functions have increased
+by more than the tolerance.  It will also create `performance-plot.png` which shows how
+the relative performance of each function has changed, and highlights any functions
+which have slowed down by more than the tolerance.  If the benchmarking fails, then the
+file `benchmark-fails.csv` is created, containing the incoming and database performance
+data for all processes that have failed benchmarks.
 
-* an update to `profiling/profiling-database.csv` to add the new performance data,
-* a new version of `profiling/performance-plot.png`, and
-* a copy of the call graph generated by profiling (`prof/combined.svg` is copied to
-  `profiling/call-graph.svg`)
-
-If the benchmarking **fails**, two files are updated to identify the processes
-responsible for the failure:
-
-* a new version of `profiling/performance-plot.png` to help see what has failed.
-* an update to `profiling/benchmark-fails.csv`, which gives data on the failed process
-  and recent versions it has been compared to.
+In the above code `PREVIOUS` and `INCOMING` are used as labels for the old and new
+code, respectively. But it can be more useful to use the commit SHA to identify the
+profiled code more explicitly. The SHA is a unique hash calculated from summary
+information for each commit. The SHA is 40 characters long, but is usually truncated to
+the first 7 characters. This can be shown for the last commit using `git rev-parse
+--short HEAD`.
 
 ### Resolving failed benchmarking
 
 If benchmarking fails then the incoming code has introduced possibly troublesome
 performance issues. If the code can be made more efficient, then submit commits to fix
-the performance, which will re-run the CI process and benchmarking.
+the performance and re-run the benchmarking.
 
-However, if the code cannot be made more efficient, or does something new that is
-inherently more time-consuming, then the `profiling-database.csv` can be updated to
-exclude performance targets that are now expected to fail. Find the rows in the database
-for the most recent 5 versions for the failing code and change the `ignore_result` field
-to `True` if that row sets an unachievable target for the new code. You should also
-provide a brief comment in the `ignore_justification` field to explain which commit is
-being passed as a result and why.
+## Updating performance results
+
+The results shown [above](#latest-performance-results) can be updated by:
+
+* Copying the call graph generated by profiling (`prof/combined.svg`) to
+  `profiling/call-graph.svg`
+
+* Committing the new version of `profiling/performance-plot.png` to show what has
+  changed.
