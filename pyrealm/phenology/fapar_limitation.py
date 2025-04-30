@@ -350,6 +350,15 @@ class AnnualValueCalculatorMarkII:
                     "timedelta64[s]"
                 )
 
+        # Sanity checks on growing season
+        if not np.issubdtype(growing_season.dtype, np.bool_):
+            raise ValueError("Growing season data is not an array of boolean values")
+
+        if not self.datetimes.shape == growing_season.shape:
+            raise ValueError(
+                "Growing season data is not the same shape as the timing data"
+            )
+
         # Record the endpoint to get the total timespan of the data and hence the
         # duration of each observation
         self.endpoint = self.datetimes[-1] + duration_last_observation
@@ -364,9 +373,11 @@ class AnnualValueCalculatorMarkII:
         year_change_indices = np.searchsorted(timespan, years)
 
         # Now assign the duration of each observation across years, allowing for year
-        # changes that occur during an observation.
+        # changes that occur during an observation, storing the indices of subsets and
+        # the weighting to be used with values.
         self.indexing: list[tuple[int, int]] = []
-        self.weights: list[NDArray[np.float64]] = []
+        self.fractional_weights: list[NDArray[np.float64]] = []
+        self.duration_weights: list[NDArray[np.float64]] = []
 
         # Iterate over pairs of year dates and indices
         for (lower, upper), (lower_index, upper_index) in zip(
@@ -393,17 +404,10 @@ class AnnualValueCalculatorMarkII:
                 internal_year_durations / observation_durations[lower_index:upper_index]
             )
 
+            # Store the indices and weights
             self.indexing.append((int(lower_index), int(upper_index)))
-            self.weights.append(fractional_duration)
-
-        # Sanity checks on growing season
-        if not np.issubdtype(growing_season.dtype, np.bool_):
-            raise ValueError("Growing season data is not an array of boolean values")
-
-        if not self.datetimes.shape == growing_season.shape:
-            raise ValueError(
-                "Growing season data is not the same shape as the timing data"
-            )
+            self.duration_weights.append(internal_year_durations)
+            self.fractional_weights.append(fractional_duration)
 
         # Split the growing season up into a list of subarrays by year
         self.growing_season = growing_season
@@ -411,10 +415,10 @@ class AnnualValueCalculatorMarkII:
             growing_season[lower:upper] for lower, upper in self.indexing
         ]
 
-        # Calculate the weights accounting for growing season
-        self.growing_season_weights = [
-            w * gs for w, gs in zip(self.weights, self.growing_season_by_year)
-        ]
+        # # Calculate the weights accounting for growing season
+        # self.growing_season_weights = [
+        #     w * gs for w, gs in zip(self.weights, self.growing_season_by_year)
+        # ]
 
     def _split_values_by_year(
         self, values: NDArray[np.float64]
@@ -438,6 +442,11 @@ class AnnualValueCalculatorMarkII:
     ) -> NDArray[np.floating]:
         """Get annual means from an array of values.
 
+        The values are weighted by the duration of each observation, including weighting
+        partial observations across year boundaries. If ``within_growing_season`` is
+        ``True``, the weights for observations not identified as growing season values
+        are set to zero.
+
         Args:
             values: The data to summarize by year
             within_growing_season: Should the mean only include values within the
@@ -445,7 +454,15 @@ class AnnualValueCalculatorMarkII:
         """
 
         values_by_year = self._split_values_by_year(values)
-        weights = self.growing_season_weights if within_growing_season else self.weights
+
+        # Averages use _duration_ weights
+        if within_growing_season:
+            weights = [
+                wght * gs
+                for wght, gs in zip(self.duration_weights, self.growing_season_by_year)
+            ]
+        else:
+            weights = self.duration_weights
 
         return np.array(
             [
@@ -455,9 +472,16 @@ class AnnualValueCalculatorMarkII:
         )
 
     def get_annual_totals(
-        self, values: NDArray[np.float64], within_growing_season: bool = True
+        self,
+        values: NDArray[np.float64],
+        within_growing_season: bool = True,
     ) -> NDArray[np.floating]:
-        """Get annual means from an array of values.
+        """Get annual totals from an array of values.
+
+        The contribution of each observation to the total is weighted by the fractional
+        duration of each observation within each year. If ``within_growing_season`` is
+        ``True``, the weights for observations not identified as growing season values
+        are set to zero.
 
         Args:
             values: The data to summarize by year
@@ -466,7 +490,17 @@ class AnnualValueCalculatorMarkII:
         """
 
         values_by_year = self._split_values_by_year(values)
-        weights = self.growing_season_weights if within_growing_season else self.weights
+
+        # Totals use _fractional_ weights
+        if within_growing_season:
+            weights = [
+                wght * gs
+                for wght, gs in zip(
+                    self.fractional_weights, self.growing_season_by_year
+                )
+            ]
+        else:
+            weights = self.fractional_weights
 
         return np.array(
             [np.sum(vals * wghts) for vals, wghts in zip(values_by_year, weights)]
