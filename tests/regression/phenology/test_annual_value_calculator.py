@@ -227,26 +227,21 @@ def test_AnnualValueCalculator(function, within_growing_season, expected):
 
 @pytest.mark.parametrize(
     argnames="datetimes, growing_season,  as_acclim, endpoint,"
-    " context_manager, error_message",
+    " context_manager, error_message, year_completeness",
     argvalues=(
         pytest.param(
-            np.arange(
-                np.datetime64("2000-01-01"),
-                np.datetime64("2010-01-01"),
-                np.timedelta64(30, "m"),
-            ).astype(np.int_),
-            np.ones(
-                (365 * 5 + 366 * 3) * 48, dtype=np.bool_
-            ),  # 10 years of 30 min obs, with 3 leap years
+            "a",
+            None,
             False,
             None,
             pytest.raises(ValueError),
             "The timings argument must be an AcclimationModel "
             "or an array of datetime64 values",
+            None,
             id="timings_not_acclim_or_datetimes",
         ),
         pytest.param(
-            np.concat(
+            np.concat(  # 10 years of 30 min obs with duplicate to give 0s duration
                 [
                     [np.datetime64("2000-01-01 00:00:00")],
                     np.arange(
@@ -256,13 +251,12 @@ def test_AnnualValueCalculator(function, within_growing_season, expected):
                     ),
                 ]
             ),
-            np.ones(
-                (365 * 5 + 366 * 3) * 48 + 1, dtype=np.bool_
-            ),  # 10 years of 30 min obs, with 3 leap years with a duplicate at start
+            np.ones((365 * 5 + 366 * 3) * 48 + 1, dtype=np.bool_),
             False,
             None,
             pytest.raises(ValueError),
             "The timing values are not strictly increasing",
+            None,
             id="timings_not_strictly_increasing",
         ),
         pytest.param(
@@ -278,6 +272,7 @@ def test_AnnualValueCalculator(function, within_growing_season, expected):
             None,
             pytest.raises(ValueError),
             "The timings values are not equally spaced: provide an explicit endpoint",
+            None,
             id="unequal_no_endpoint",
         ),
         pytest.param(
@@ -293,6 +288,7 @@ def test_AnnualValueCalculator(function, within_growing_season, expected):
             np.datetime64("2005-06"),
             pytest.raises(ValueError),
             "The end_datetime value must be greater than the last timing value",
+            None,
             id="endpoint_not_after_timings",
         ),
         pytest.param(
@@ -308,6 +304,7 @@ def test_AnnualValueCalculator(function, within_growing_season, expected):
             None,
             pytest.raises(ValueError),
             "Growing season data is not the same shape as the timing data",
+            None,
             id="bad_growing_season_shape",
         ),
         pytest.param(
@@ -323,118 +320,61 @@ def test_AnnualValueCalculator(function, within_growing_season, expected):
             None,
             pytest.raises(ValueError),
             "Growing season data is not an array of boolean values",
+            None,
             id="bad_growing_season_dtype",
         ),
-        # pytest.param(
-        #     np.arange(
-        #         np.datetime64("2000-01-31"),
-        #         np.datetime64("2009-11-30"),
-        #         np.timedelta64(30, "m"),
-        #     ),
-        #     np.ones(
-        #         (365 * 7 + 366 * 3) * 48, dtype=np.bool_
-        #     ),  # 10 years of 30 min obs, with 3 leap years
-        #     True,
-        #     pytest.raises(ValueError),
-        #     "Data timings do not cover complete years to within tolerance",
-        #     id="acclim_model_incomplete_years",
-        # ),
-        # pytest.param(
-        #     np.arange(
-        #         np.datetime64("2000-01-01"),
-        #         np.datetime64("2010-01-01"),
-        #         np.timedelta64(1, "D"),
-        #     ),
-        #     np.ones(
-        #         (365 * 7 + 366 * 3), dtype=np.bool_
-        #     ),  # 10 years of daily obs, with 3 leap years
-        #     False,
-        #     does_not_raise(),
-        #     None,
-        #     id="datetimes_daily_good",
-        # ),
-        # pytest.param(
-        #     np.arange(
-        #         np.datetime64("2000-01-01"),
-        #         np.datetime64("2010-01-01"),
-        #         np.timedelta64(1, "W"),
-        #     ),
-        #     np.ones(522, dtype=np.bool_),  # 10 years of weekly obs
-        #     False,
-        #     does_not_raise(),
-        #     None,
-        #     id="datetimes_weekly_good",
-        # ),
         pytest.param(
-            np.arange(
+            np.arange(  # 10 years of fortnightly obs
                 np.datetime64("2000-01-01"),
                 np.datetime64("2010-01-01"),
                 np.timedelta64(2, "W"),
             ),
-            np.ones(261, dtype=np.bool_),  # 10 years of fortnightly obs
+            None,
             False,
             None,
             does_not_raise(),
             None,
+            np.ones(10),
             id="fortnightly",
         ),
         pytest.param(
-            np.arange(
+            np.arange(  # 10 years of monthly obs
                 np.datetime64("2000-01"),
                 np.datetime64("2010-01"),
                 np.timedelta64(1, "M"),
             ),
-            np.ones(120, dtype=np.bool_),  # 10 years of monthly obs
+            None,
+            False,
+            np.datetime64("2010-01"),
+            does_not_raise(),
+            None,
+            np.ones(10),
+            id="monthly",
+        ),
+        pytest.param(
+            np.arange(  # 10 years of fortnightly obs but offset by half a year
+                np.datetime64("2000-06-01"),
+                np.datetime64("2010-06-01"),
+                np.timedelta64(2, "W"),
+            ),
+            None,
             False,
             None,
             does_not_raise(),
             None,
-            id="monthly",
+            np.ones(10),
+            id="monthly_offset",
         ),
-        # pytest.param(
-        #     np.arange(
-        #         np.datetime64("2000-01-08"),
-        #         np.datetime64("2010-01-01"),
-        #         np.timedelta64(1, "W"),
-        #     ),
-        #     np.ones(522, dtype=np.bool_),  # 10 years of weekly obs
-        #     False,
-        #     does_not_raise(),
-        #     None,
-        #     id="datetimes_weekly_short_outside_tolerance",
-        # ),
-        #         pytest.param(
-        #     np.arange(
-        #         np.datetime64("2000-01-01"),
-        #         np.datetime64("2010-01-01"),
-        #         np.timedelta64(30, "m"),
-        #     ),
-        #     np.ones(
-        #         (365 * 7 + 366 * 3) * 48, dtype=np.bool_
-        #     ),  # 10 years of 30 min obs, with 3 leap years
-        #     True,
-        #     does_not_raise(),
-        #     None,
-        #     id="acclim_model_good",
-        # ),
-        # pytest.param(
-        #     np.arange(
-        #         np.datetime64("2000-01-01"),
-        #         np.datetime64("2010-01-01"),
-        #         np.timedelta64(30, "m"),
-        #     ),
-        #     np.ones(
-        #         (365 * 7 + 366 * 3) * 48, dtype=np.bool_
-        #     ),  # 10 years of 30 min obs, with 3 leap years
-        #     False,
-        #     does_not_raise(),
-        #     None,
-        #     id="datetimes_half_hourly_good",
-        # ),
     ),
 )
 def test_AnnualValueCalculatorMarkII_init(
-    datetimes, as_acclim, growing_season, endpoint, context_manager, error_message
+    datetimes,
+    as_acclim,
+    growing_season,
+    endpoint,
+    context_manager,
+    error_message,
+    year_completeness,
 ):
     """Test failure modes and success modes for initialising AVC instances."""
     from pyrealm.phenology.fapar_limitation import AnnualValueCalculatorMarkII
@@ -444,9 +384,11 @@ def test_AnnualValueCalculatorMarkII_init(
         datetimes = AcclimationModel(datetimes=datetimes)
 
     with context_manager as cmgr:
-        _ = AnnualValueCalculatorMarkII(
+        avc = AnnualValueCalculatorMarkII(
             timing=datetimes, growing_season=growing_season, endpoint=endpoint
         )
+
+        assert_allclose(avc.year_completeness, year_completeness)
         return
 
     assert str(cmgr.value) == error_message
