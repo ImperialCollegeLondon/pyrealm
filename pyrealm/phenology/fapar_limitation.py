@@ -1,6 +1,7 @@
 """Class to compute the fAPAR_max and annual peak Leaf Area Index (LAI)."""
 
 from collections.abc import Callable
+from itertools import pairwise
 
 import numpy as np
 from numpy.typing import NDArray
@@ -246,6 +247,229 @@ class AnnualValueCalculator:
                 ufunc(vals[gs])
                 for vals, gs in zip(values_by_year, self.growing_season_by_year)
             ]
+        )
+
+
+class AnnualValueCalculatorMarkII:
+    """An annual value calculation class.
+
+    This class is used to calculate annual means and totals from time series data. An
+    instance is created by providing a set of timings for the times series data, either
+    as an an array of datetimes or as an AcclimationModel instance from a
+    SubdailyPModel, which provides validated datetimes at subdaily temporal resolutions.
+    The instance also takes a boolean array indicating which observations are part of
+    the growing season, and this can be used to modify which values are included in
+    calculating annual means and totals.
+
+    The calculation process accounts for observations that span year boundaries, such as
+    fortnightly data, by calculating fractional weights to partition the contribution of
+    spanning observations between years.
+
+    The processing also handles unequal sampling intervals, such as monthly data,
+    weighting the observations according to their time total time. Since the class
+    cannot infer the endpoint of the last observation from unevenly spaced data, an
+    explicit endpoint must be provided.
+
+    The indexing of annual subsets of observations and the appropriate weights are
+    calculated when the class is created and then used by the get_annual_means and
+    get_annual_totals methods.
+    """
+
+    def __init__(
+        self,
+        timing: AcclimationModel | NDArray[np.datetime64],
+        growing_season: NDArray[np.bool_],
+        endpoint: np.datetime64 | None = None,
+    ):
+        # Attribute definitions
+        self.datetimes: NDArray[np.datetime64]
+        """TBD"""
+        self.endpoint: np.datetime64
+        """TBD"""
+        self.year_breaks: NDArray[np.int_]
+        """TBD"""
+        self.duration_seconds: NDArray[np.timedelta64]
+        """TBD"""
+        self.growing_season: NDArray[np.bool_]
+        """TBD"""
+        self.growing_season_by_year: list[NDArray[np.bool_]]
+        """TBD"""
+
+        # Sanity checks on datetimes
+        if not (
+            isinstance(timing, AcclimationModel)
+            or (
+                isinstance(timing, np.ndarray)
+                and np.issubdtype(timing.dtype, np.datetime64)
+            )
+        ):
+            raise ValueError(
+                "The timings argument must be an AcclimationModel "
+                "or an array of datetime64 values"
+            )
+
+        if isinstance(timing, AcclimationModel):
+            # AcclimationModel by construction provides subdaily data with equal spacing
+            self.datetimes = timing.datetimes.astype("datetime64[s]")
+            duration_last_observation = timing.spacing.astype("datetime64[s]")
+        else:
+            # Pure datetime inputs could be any frequency from subdaily to monthly, and
+            # some frequencies could be of differing lengths (monthly being a good
+            # example)
+
+            # Convert time to seconds precision
+            self.datetimes = timing.astype("datetime64[s]")
+
+            # Get the intervals in seconds and see if they are strictly increasing and
+            # then if the spaing is consistent. If the spacing is not consistent, then
+            # require an endpoint for the observations.
+            duration_seconds = np.diff(self.datetimes)
+
+            if not np.all(duration_seconds > 0):
+                raise ValueError("The timing values are not strictly increasing")
+
+            intervals: NDArray = np.unique(duration_seconds)
+
+            if len(intervals) == 1:
+                # Constant intervals
+                duration_last_observation = duration_seconds[0]
+            else:
+                if endpoint is None:
+                    raise ValueError(
+                        "The timings values are not equally spaced: provide an "
+                        "explicit endpoint"
+                    )
+
+                if endpoint <= timing[-1]:
+                    raise ValueError(
+                        "The end_datetime value must be greater than the "
+                        "last timing value"
+                    )
+
+                duration_last_observation = (endpoint - self.datetimes[-1]).astype(
+                    "timedelta64[s]"
+                )
+
+        # Record the endpoint to get the total timespan of the data and hence the
+        # duration of each observation
+        self.endpoint = self.datetimes[-1] + duration_last_observation
+        timespan = np.append(self.datetimes, self.endpoint)
+        observation_durations = np.diff(timespan)
+
+        # Now get the datetimes of the start of each of year included in the data and
+        # find where they occur in the timespan
+        years: NDArray[np.datetime64] = np.unique(
+            timespan.astype("datetime64[Y]")
+        ).astype("datetime64[s]")
+        year_change_indices = np.searchsorted(timespan, years)
+
+        # Now assign the duration of each observation across years, allowing for year
+        # changes that occur during an observation.
+        self.indexing: list[tuple[int, int]] = []
+        self.weights: list[NDArray[np.float64]] = []
+
+        # Iterate over pairs of year dates and indices
+        for (lower, upper), (lower_index, upper_index) in zip(
+            pairwise(years), pairwise(year_change_indices)
+        ):
+            # Sandwich the observation datetimes within the year between the actual year
+            # start and end. If the first observation is not the precise start of the
+            # year, then we need to shift lower_index down to include partial data from
+            # the previous observation.
+            internal_year_datetimes = np.concat(
+                [timespan[(lower_index):upper_index], [upper]]
+            )
+
+            if internal_year_datetimes[0] != lower:
+                lower_index -= 1
+                internal_year_datetimes = np.concat([[lower], internal_year_datetimes])
+
+            # Calculate the duration of the observations within the year span
+            internal_year_durations = np.diff(internal_year_datetimes)
+
+            # Divide the internal duration through by the actual observation durations
+            # to get fractional weights.
+            fractional_duration = (
+                internal_year_durations / observation_durations[lower_index:upper_index]
+            )
+
+            self.indexing.append((int(lower_index), int(upper_index)))
+            self.weights.append(fractional_duration)
+
+        # Sanity checks on growing season
+        if not np.issubdtype(growing_season.dtype, np.bool_):
+            raise ValueError("Growing season data is not an array of boolean values")
+
+        if not self.datetimes.shape == growing_season.shape:
+            raise ValueError(
+                "Growing season data is not the same shape as the timing data"
+            )
+
+        # Split the growing season up into a list of subarrays by year
+        self.growing_season = growing_season
+        self.growing_season_by_year = [
+            growing_season[lower:upper] for lower, upper in self.indexing
+        ]
+
+        # Calculate the weights accounting for growing season
+        self.growing_season_weights = [
+            w * gs for w, gs in zip(self.weights, self.growing_season_by_year)
+        ]
+
+    def _split_values_by_year(
+        self, values: NDArray[np.float64]
+    ) -> list[NDArray[np.float64]]:
+        """Validates and splits value arrays.
+
+        Args:
+            values: An array of values.
+        """
+
+        if values.shape != self.datetimes.shape:
+            raise ValueError("Values array shape does not match datetimes")
+
+        # Split the daily values into subarrays for each year
+        return [values[lower:upper] for lower, upper in self.indexing]
+
+    def get_annual_means(
+        self,
+        values: NDArray[np.float64],
+        within_growing_season: bool = True,
+    ) -> NDArray[np.floating]:
+        """Get annual means from an array of values.
+
+        Args:
+            values: The data to summarize by year
+            within_growing_season: Should the mean only include values within the
+                growing season.
+        """
+
+        values_by_year = self._split_values_by_year(values)
+        weights = self.growing_season_weights if within_growing_season else self.weights
+
+        return np.array(
+            [
+                np.average(vals, weights=wghts)
+                for vals, wghts in zip(values_by_year, weights)
+            ]
+        )
+
+    def get_annual_totals(
+        self, values: NDArray[np.float64], within_growing_season: bool = True
+    ) -> NDArray[np.floating]:
+        """Get annual means from an array of values.
+
+        Args:
+            values: The data to summarize by year
+            within_growing_season: Should the mean only include values within the
+                growing season.
+        """
+
+        values_by_year = self._split_values_by_year(values)
+        weights = self.growing_season_weights if within_growing_season else self.weights
+
+        return np.array(
+            [np.sum(vals * wghts) for vals, wghts in zip(values_by_year, weights)]
         )
 
 
