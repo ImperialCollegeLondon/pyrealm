@@ -393,20 +393,29 @@ class AnnualValueCalculatorMarkII:
         for (lower, upper), (lower_index, upper_index) in zip(
             pairwise(years), pairwise(year_change_indices)
         ):
-            # Sandwich the observation datetimes within the year between the actual year
-            # start and end. If the first observation is not the precise start of the
-            # year, then we need to shift lower_index down to include partial data from
-            # the previous observation.
-            internal_year_datetimes = np.concat(
-                [timespan[(lower_index):upper_index], [upper]]
-            )
+            # Get the initial set of datetimes within the year
+            year_datetimes = timespan[lower_index:upper_index]
 
-            if internal_year_datetimes[0] != lower:
+            # If the upper index is not to the end of the time series, then append the
+            # the closing time for the current year at the end and extend the sample to
+            # include the next value.
+            #
+            # Note here that the indexing of the final observation does not require
+            # special handling because np.searchsorted returns a last index _beyond_ the
+            # end of the timespan, so will automatically include the last observation.
+            if upper_index < len(timespan):
+                year_datetimes = np.append(year_datetimes, upper)
+
+            # If the first observation is not the precise start of the year _and_ we are
+            # not on the first year of data, then we also need to shift lower_index down
+            # to include partial data from the previous observation and add the year
+            # start to the internal datetimes
+            if (year_datetimes[0] != lower) and (lower_index > 0):
                 lower_index -= 1
-                internal_year_datetimes = np.concat([[lower], internal_year_datetimes])
+                year_datetimes = np.insert(year_datetimes, 0, lower)
 
             # Calculate the duration of the observations within the year span
-            internal_year_durations = np.diff(internal_year_datetimes)
+            internal_year_durations = np.diff(year_datetimes)
 
             # Divide the internal duration through by the actual observation durations
             # to get fractional weights.
@@ -425,9 +434,9 @@ class AnnualValueCalculatorMarkII:
         ]
 
         # Populate the year completeness
-        self.year_completeness = np.diff(years) / np.array(
+        self.year_completeness = np.array(
             [np.sum(v) for v in self.duration_weights]
-        )
+        ) / np.diff(years)
 
     def _split_values_by_year(
         self, values: NDArray[np.float64]

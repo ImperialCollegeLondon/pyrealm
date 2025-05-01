@@ -362,8 +362,27 @@ def test_AnnualValueCalculator(function, within_growing_season, expected):
             None,
             does_not_raise(),
             None,
-            np.ones(10),
-            id="monthly_offset",
+            np.concat(
+                [
+                    np.diff(
+                        [
+                            np.datetime64("2000-06-01 00:00:00"),
+                            np.datetime64("2001-01-01 00:00:00"),
+                        ]
+                    ).astype("int")
+                    / (366 * 60 * 60 * 24),
+                    np.ones(9),
+                    np.diff(
+                        [
+                            np.datetime64("2010-01-01 00:00:00"),
+                            np.datetime64("2010-05-20 00:00:00")
+                            + np.timedelta64(2, "W"),
+                        ]
+                    ).astype("int")
+                    / (365 * 60 * 60 * 24),
+                ]
+            ),
+            id="monthly_offset_both_ends",
         ),
     ),
 )
