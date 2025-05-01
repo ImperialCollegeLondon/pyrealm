@@ -1,4 +1,5 @@
 """Class to compute the fAPAR_max and annual peak Leaf Area Index (LAI)."""
+
 import calendar
 
 import numpy as np
@@ -6,9 +7,10 @@ from numpy.ma.core import ones_like
 from numpy.typing import NDArray
 from typing_extensions import Self
 
-from pyrealm.constants import PhenologyConst, CoreConst
+from pyrealm.constants import CoreConst, PhenologyConst
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.pmodel import AcclimationModel, PModel, SubdailyPModel
+
 
 def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
     """Check that the datetimes are in a valid format."""
@@ -332,9 +334,7 @@ class FaparLimitation:
 
         check_datetimes(datetimes)
 
-        annual_total_potential_gpp = get_annual(
-            pmodel.gpp, datetimes, True, "total"
-        )
+        annual_total_potential_gpp = get_annual(pmodel.gpp, datetimes, True, "total")
         if gpp_penalty_factor is not None:
             annual_total_potential_gpp *= gpp_penalty_factor
 
@@ -392,14 +392,16 @@ class FaparLimitation:
         if gpp_penalty_factor is not None:
             annual_total_potential_gpp *= gpp_penalty_factor
 
-        years = np.unique((datetimes.astype("datetime64[Y]")))
+        years = np.unique(datetimes.astype("datetime64[Y]"))
         for i in range(len(years)):
             if calendar.isleap(int(str(years[i]))):
-                annual_total_potential_gpp[i] *= (366 * 24 * 60 *60 /
-                                                  CoreConst.k_c_molmass)
+                annual_total_potential_gpp[i] *= (
+                    366 * 24 * 60 * 60 / CoreConst.k_c_molmass
+                )
             else:
-                annual_total_potential_gpp[i] *= (365 * 24 * 60 * 60 /
-                                                  CoreConst.k_c_molmass)
+                annual_total_potential_gpp[i] *= (
+                    365 * 24 * 60 * 60 / CoreConst.k_c_molmass
+                )
 
         annual_mean_ca = get_annual(
             subdaily_pmodel.env.ca, datetimes, growing_season, "mean"
@@ -410,7 +412,9 @@ class FaparLimitation:
         annual_mean_vpd = get_annual(
             subdaily_pmodel.env.vpd, datetimes, growing_season, "mean"
         )
-        annual_total_precip = get_annual(precip, datetimes, ones_like(growing_season), "total")
+        annual_total_precip = get_annual(
+            precip, datetimes, ones_like(growing_season), "total"
+        )
 
         return cls(
             annual_total_potential_gpp,
