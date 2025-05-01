@@ -715,16 +715,6 @@ class SubdailyPModel(PModelABC):
             raise ValueError(
                 "The daily sampling window has not been set in the AcclimationModel"
             )
-
-        # Validate that we are dealing indeed with subdaily data
-        timesteps = max(
-            self.acclim_model.datetimes[1:-1] - self.acclim_model.datetimes[0:-2]
-        )
-        if timesteps > np.timedelta64(1, "D"):
-            raise ValueError(
-                "The AcclimationModel data for SubdailyPModel is not subdaily."
-            )
-
         # * Validate the previous realised values and standardise the internal
         #   representation as a dictionary.
         if previous_realised is None:
