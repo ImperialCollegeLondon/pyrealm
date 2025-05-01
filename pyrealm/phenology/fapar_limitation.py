@@ -375,10 +375,11 @@ class AnnualValueCalculatorMarkII:
         observation_durations = np.diff(timespan)
 
         # Now get the datetimes of the start of each of year included in the data
-        years = np.unique(self.datetimes.astype("datetime64[Y]"))
+        years = np.unique(timespan.astype("datetime64[Y]"))
 
-        # Add trailing year to handle partial data at the end.
-        if years[-1] < self.datetimes[-1]:
+        # Unless the last timespan value is exactly equal to the end of the previous
+        # year, add the next year to the list of years to handle trailing data.
+        if not (years[-1] == timespan[-1]):
             years = np.append(years, years[-1] + np.timedelta64(1, "Y"))
 
         # Convert to second precision and find where they occur in the timespan

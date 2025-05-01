@@ -334,7 +334,7 @@ def test_AnnualValueCalculator(function, within_growing_season, expected):
             None,
             does_not_raise(),
             None,
-            np.ones(10),
+            np.concat([np.ones(10), [1 / 365]]),
             id="fortnightly",
         ),
         pytest.param(
@@ -382,7 +382,65 @@ def test_AnnualValueCalculator(function, within_growing_season, expected):
                     / (365 * 60 * 60 * 24),
                 ]
             ),
-            id="monthly_offset_both_ends",
+            id="fortnightly_offset_both_ends",
+        ),
+        pytest.param(
+            np.concat(  # 10 years of monthly obs with one second overlaps
+                [
+                    [np.datetime64("1999-12-31 23:59:59")],  # party over, out of time
+                    np.arange(
+                        np.datetime64("2000-01"),
+                        np.datetime64("2010-02"),
+                        np.timedelta64(1, "M"),
+                    ),
+                ]
+            ),
+            None,
+            False,
+            np.datetime64("2010-01-01 00:00:01"),
+            does_not_raise(),
+            None,
+            np.concat(
+                [[1 / (365 * 60 * 60 * 24)], np.ones(10), [1 / (365 * 60 * 60 * 24)]]
+            ),
+            id="second_on_each_end",
+        ),
+        pytest.param(
+            np.concat(  # 10 years of monthly obs with one second overlaps
+                [
+                    [np.datetime64("1999-12-31")],  # party over, out of time
+                    np.arange(
+                        np.datetime64("2000"),
+                        np.datetime64("2010"),
+                        np.timedelta64(1, "Y"),
+                    ),
+                ]
+            ),
+            None,
+            False,
+            np.datetime64("2010"),
+            does_not_raise(),
+            None,
+            np.concat([[1 / 365], np.ones(10)]),
+            id="day_at_the_start",
+        ),
+        pytest.param(
+            np.concat(  # 10 years of monthly obs with one second overlaps
+                [
+                    np.arange(
+                        np.datetime64("2000"),
+                        np.datetime64("2010"),
+                        np.timedelta64(1, "Y"),
+                    ),
+                ]
+            ),
+            None,
+            False,
+            np.datetime64("2010-01-02"),
+            does_not_raise(),
+            None,
+            np.concat([np.ones(10), [1 / 365]]),
+            id="day_at_the_end",
         ),
     ),
 )
