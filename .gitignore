@@ -35,3 +35,4 @@ pyrealm_build_data/eda.py
 # Profiling
 prof/
 profiling/profiling-database.csv
+profiling/benchmark-fails.csv

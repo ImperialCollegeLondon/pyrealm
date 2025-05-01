@@ -123,6 +123,10 @@ poetry run pytest --profile-svg -m "profiling"
 
 will run the profiling tests and generate a call graph and table with this information in
 the `profiling` subdirectory.
+The results of the profiling can also be compared to an earlier version to see
+which functions may have slowed down, see the [documentation
+page](https://pyrealm.readthedocs.io/en/develop/development/profiling_and_benchmarking.html#advanced-benchmarking)
+for details on how to do this.
 
 ### Documentation
 
