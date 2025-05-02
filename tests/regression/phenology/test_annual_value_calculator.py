@@ -5,6 +5,7 @@ from contextlib import nullcontext as does_not_raise
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose
+from numpy.typing import NDArray
 
 
 @pytest.mark.parametrize(
@@ -469,3 +470,153 @@ def test_AnnualValueCalculatorMarkII_init(
         return
 
     assert str(cmgr.value) == error_message
+
+
+# Global definition of 10 years of monthly data and a growing season sequence
+MONTHLY: NDArray = np.arange(
+    np.datetime64("2000-01"),
+    np.datetime64("2010-01"),
+    np.timedelta64(1, "M"),
+)
+GROWING_SEASON = np.tile(np.repeat([0, 1, 0], [3, 6, 3]), 10).astype(np.bool_)
+
+
+@pytest.mark.parametrize(
+    argnames="init, values, total_expected, total_expected_within_gs, "
+    "mean_expected, mean_expected_within_gs",
+    argvalues=(
+        pytest.param(
+            # - 10 complete years of monthly obs
+            # - The test values are +0.1 in the growing season and -0.1 in the
+            #   off-season to introduce explicit differences in the expected values for
+            #   "within_growing_season" modes.
+            # - The overall expected means including off season are slightly higher in
+            #   non-leap years because there is _one more day_ in the growing season and
+            #   the means are weighted by _actual duration. The two seasons are equal
+            #   size in leap years.
+            {
+                "timing": MONTHLY,
+                "endpoint": np.datetime64("2010-01"),
+                "growing_season": GROWING_SEASON,
+            },
+            np.repeat(np.arange(1, 11), 12) + (GROWING_SEASON - 0.5) / 5,
+            np.arange(1, 11) * 12,
+            np.arange(1, 11) * 6 + 0.6,
+            np.arange(1, 11)
+            + (1 / 365 * 0.1) * np.array([0, 1, 1, 1, 0, 1, 1, 1, 0, 1]),
+            np.arange(1, 11) + 0.1,
+            id="monthly_complete_years",
+        ),
+        pytest.param(
+            # - Roll the monthly data forward by 6 months to get 9 complete years of
+            #   monthly obs with six months either side
+            # - Seasonal value adjustments as above.
+            # - Non-leap year tweaks to expected means as above, plus the trailing
+            #   partial year has one more day (91) in the growing season than in the off
+            #   season (90), so is 1/181th larger. The leading partial year is 90/90
+            {
+                "timing": MONTHLY + np.timedelta64(6, "M"),
+                "endpoint": np.datetime64("2010-07"),
+                "growing_season": np.roll(GROWING_SEASON, 6),
+            },
+            np.repeat(np.arange(1, 12), [6, *[12] * 9, 6])
+            + (np.roll(GROWING_SEASON, 6) - 0.5) / 5,
+            np.arange(1, 12) * [6, *[12] * 9, 6],
+            np.arange(1, 12) * [3, *[6] * 9, 3]
+            + 0.3 * np.array([1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1]),
+            np.arange(1, 12)
+            + 0.1
+            * np.array(
+                [
+                    0,
+                    1 / 365,
+                    1 / 365,
+                    1 / 365,
+                    0,
+                    1 / 365,
+                    1 / 365,
+                    1 / 365,
+                    0,
+                    1 / 365,
+                    1 / 181,
+                ]
+            ),
+            np.arange(1, 12) + 0.1,
+            id="offset_monthly",
+        ),
+        pytest.param(
+            # - 4 sequential non-leap years (note 1900 start) split into 10 blocks of
+            #   146 days. This lengths is used because the prime factors of 365 are 5,
+            #   73 and hence 146 day blocks helpfully evenly divides the spanning blocks
+            #   in two for a duration weight of 0.2 years and fractional weight of 0.5.
+            # - Growing season follows a simple on/off sequence. Not biologically
+            #   sensible but generates good testing variation across the four years.
+            {
+                "timing": np.arange(
+                    np.datetime64("1900-01-01"),
+                    np.datetime64("1904-01-01"),
+                    np.timedelta64(146, "D"),
+                ),
+                "growing_season": np.tile([0, 1], 5).astype(np.bool_),
+            },
+            np.arange(1, 11),
+            np.array(
+                [
+                    1 + 2 + 3 * 0.5,
+                    3 * 0.5 + 4 + 5,
+                    6 + 7 + 8 * 0.5,
+                    8 * 0.5 + 9 + 10,
+                ]
+            ),
+            np.array(
+                [
+                    2,
+                    4,
+                    6 + 8 * 0.5,
+                    8 * 0.5 + 10,
+                ]
+            ),
+            np.array(
+                [
+                    (1 + 2 + 3 * 0.5) / 2.5,
+                    (3 * 0.5 + 4 + 5) / 2.5,
+                    (6 + 7 + 8 * 0.5) / 2.5,
+                    (8 * 0.5 + 9 + 10) / 2.5,
+                ]
+            ),
+            np.array(
+                [
+                    2 / 1,
+                    4 / 1,
+                    (6 + 8 * 0.5) / 1.5,
+                    (8 * 0.5 + 10) / 1.5,
+                ]
+            ),
+            id="spanning_years",
+        ),
+    ),
+)
+def test_AnnualValueCalculatorMarkII_get_annual(
+    init,
+    values,
+    total_expected,
+    total_expected_within_gs,
+    mean_expected,
+    mean_expected_within_gs,
+):
+    """Test the calculation of annual totals and means."""
+    from pyrealm.phenology.fapar_limitation import AnnualValueCalculatorMarkII
+
+    avc = AnnualValueCalculatorMarkII(**init)
+
+    calculated = avc.get_annual_totals(values, within_growing_season=False)
+    assert_allclose(calculated, total_expected)
+
+    calculated = avc.get_annual_totals(values, within_growing_season=True)
+    assert_allclose(calculated, total_expected_within_gs)
+
+    calculated = avc.get_annual_means(values, within_growing_season=False)
+    assert_allclose(calculated, mean_expected)
+
+    calculated = avc.get_annual_means(values, within_growing_season=True)
+    assert_allclose(calculated, mean_expected_within_gs)

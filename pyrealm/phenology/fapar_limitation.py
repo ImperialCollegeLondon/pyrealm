@@ -278,6 +278,8 @@ class AnnualValueCalculatorMarkII:
         # Attribute definitions
         self.datetimes: NDArray[np.datetime64]
         """The datetimes of observations taking from the initial timings"""
+        self.n_obs: int
+        """The number of observations in the time series."""
         self.endpoint: np.datetime64
         """A datetime giving of the end of the last observation."""
         self.growing_season: NDArray[np.bool_]
@@ -286,7 +288,7 @@ class AnnualValueCalculatorMarkII:
         self.indexing: list[tuple[int, int]] = []
         """Pairs of integers giving start and end indices to extract consecutive years
         of data from the time series."""
-        self.duration_weights: list[NDArray[np.float64]] = []
+        self.duration_weights: list[NDArray[np.int_]] = []
         """A list of arrays giving the number of seconds that each observation
         within a year contributes to that year."""
         self.fractional_weights: list[NDArray[np.float64]] = []
@@ -296,6 +298,8 @@ class AnnualValueCalculatorMarkII:
         """A list of arrays giving the growing season subarrays for each year."""
         self.year_completeness: NDArray[np.float64]
         """Provides the fractional coverage of observations for each year."""
+        self.year_total_seconds: NDArray[np.int_]
+        """The total number of seconds for each year in the time series."""
 
         # Sanity checks on datetimes
         if not (
@@ -351,6 +355,8 @@ class AnnualValueCalculatorMarkII:
                 duration_last_observation = (endpoint - self.datetimes[-1]).astype(
                     "timedelta64[s]"
                 )
+
+        self.n_obs = self.datetimes.size
 
         # Sanity checks on growing season
         if growing_season is None:
@@ -426,7 +432,7 @@ class AnnualValueCalculatorMarkII:
 
             # Store the indices and weights
             self.indexing.append((int(lower_index), int(upper_index)))
-            self.duration_weights.append(internal_year_durations)
+            self.duration_weights.append(internal_year_durations.astype(np.int_))
             self.fractional_weights.append(fractional_duration)
 
         # Split the growing season up into a list of subarrays by year
@@ -435,9 +441,11 @@ class AnnualValueCalculatorMarkII:
         ]
 
         # Populate the year completeness
-        self.year_completeness = np.array(
-            [np.sum(v) for v in self.duration_weights]
-        ) / np.diff(years)
+        self.year_total_seconds = np.diff(years).astype(np.int_)
+        self.year_completeness = (
+            np.array([np.sum(v) for v in self.duration_weights])
+            / self.year_total_seconds
+        )
 
     def _split_values_by_year(
         self, values: NDArray[np.float64]
@@ -448,8 +456,10 @@ class AnnualValueCalculatorMarkII:
             values: An array of values.
         """
 
-        if values.shape != self.datetimes.shape:
-            raise ValueError("Values array shape does not match datetimes")
+        if values.shape[0] != self.n_obs:
+            raise ValueError(
+                "First axis of values shape does not match number of observations."
+            )
 
         # Split the daily values into subarrays for each year
         return [values[lower:upper] for lower, upper in self.indexing]
@@ -457,14 +467,14 @@ class AnnualValueCalculatorMarkII:
     def get_annual_means(
         self,
         values: NDArray[np.float64],
-        within_growing_season: bool = True,
+        within_growing_season: bool = False,
     ) -> NDArray[np.floating]:
         """Get annual means from an array of values.
 
         Average values are calculated weighted by the __duration__ of each observation,
-        including weighting partial observations across year boundaries. If
-        ``within_growing_season`` is ``True``, the weights for observations not
-        identified as growing season values are set to zero.
+        including weighting partial observations than span year boundaries. If
+        ``within_growing_season`` is ``True``, the weights for observations outside of
+        the observations marked as the growing season are are set to zero.
 
         Args:
             values: The data to summarize by year
@@ -493,7 +503,7 @@ class AnnualValueCalculatorMarkII:
     def get_annual_totals(
         self,
         values: NDArray[np.float64],
-        within_growing_season: bool = True,
+        within_growing_season: bool = False,
     ) -> NDArray[np.floating]:
         """Get annual totals from an array of values.
 
