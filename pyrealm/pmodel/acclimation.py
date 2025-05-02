@@ -225,7 +225,8 @@ class AcclimationModel:
         # Validate that we are dealing indeed with subdaily data
         if spacing > np.timedelta64(1, "D"):
             raise ValueError(
-                "The AcclimationModel requires datetimes sampled at daily frequency or faster."
+                "The AcclimationModel requires datetimes sampled at daily frequency "
+                "or faster."
             )
 
         # Work out observations by date and look for incomplete dates at the start and
