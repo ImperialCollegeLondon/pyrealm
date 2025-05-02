@@ -164,7 +164,7 @@ class AnnualValueCalculator:
         timespan = np.append(self.datetimes, self.endpoint)
         observation_durations = np.diff(timespan)
 
-        # Now get the datetimes of the start of each of year included in the data
+        # Now get the datetimes of the start of each year included in the data
         years = np.unique(timespan.astype("datetime64[Y]"))
 
         # Unless the last timespan value is exactly equal to the end of the previous
@@ -188,7 +188,7 @@ class AnnualValueCalculator:
             year_datetimes = timespan[lower_index:upper_index]
 
             # If the upper index is not to the end of the time series, then append the
-            # the closing time for the current year at the end and extend the sample to
+            # closing time for the current year at the end and extend the sample to
             # include the next value.
             #
             # Note here that the indexing of the final observation does not require
@@ -258,7 +258,7 @@ class AnnualValueCalculator:
         Average values are calculated weighted by the __duration__ of each observation,
         including weighting partial observations than span year boundaries. If
         ``within_growing_season`` is ``True``, the weights for observations outside of
-        the observations marked as the growing season are are set to zero.
+        the observations marked as the growing season are set to zero.
 
         Example:
             >>> # Three years of monthly data
