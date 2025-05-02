@@ -715,7 +715,6 @@ class SubdailyPModel(PModelABC):
             raise ValueError(
                 "The daily sampling window has not been set in the AcclimationModel"
             )
-
         # * Validate the previous realised values and standardise the internal
         #   representation as a dictionary.
         if previous_realised is None:

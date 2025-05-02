@@ -222,6 +222,13 @@ class AcclimationModel:
         if spacing < 0:
             raise ValueError("Datetime sequence must be increasing")
 
+        # Validate that we are dealing indeed with subdaily data
+        if spacing > np.timedelta64(1, "D"):
+            raise ValueError(
+                "The AcclimationModel requires datetimes sampled at daily frequency "
+                "or faster."
+            )
+
         # Work out observations by date and look for incomplete dates at the start and
         # end of the time sequence
         dates = datetimes.astype("datetime64[D]")
