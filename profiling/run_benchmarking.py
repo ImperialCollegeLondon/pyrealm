@@ -340,7 +340,7 @@ def create_benchmark_plot(
 
     # Plot the incoming data as open circles, blue points when inside tolerance and red
     # if outside tolerance.
-    fail = [False if val <= threshold else True for val in incoming[f"relative_{kpi}"]]
+    fail = [True if val > threshold else False for val in incoming[f"relative_{kpi}"]]
     plt.scatter(
         incoming[f"relative_{kpi}"],
         incoming["process_id"]
@@ -358,9 +358,12 @@ def create_benchmark_plot(
     plt.tight_layout()
 
     # Colour the labels of failing rows.
-    for idx, val in enumerate(fail):
-        if val:
-            plt.gca().get_yticklabels()[idx].set_color("firebrick")
+    labels = plt.gca().get_yticklabels()
+    labels = np.array([label.get_text().split()[0] for label in labels])
+    for idx_incoming, process_id in enumerate(incoming["process_id"]):
+        if fail[idx_incoming]:
+            idx_label = np.argwhere(labels == process_id).squeeze()
+            plt.gca().get_yticklabels()[idx_label].set_color("firebrick")
 
     # Save to file
     plt.savefig(plot_path, dpi=600)

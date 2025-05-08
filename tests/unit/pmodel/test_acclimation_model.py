@@ -67,6 +67,20 @@ from numpy.testing import assert_allclose
         ),
         pytest.param(
             pytest.raises(ValueError),
+            "The AcclimationModel requires datetimes sampled at daily frequency "
+            "or faster.",
+            dict(
+                datetimes=np.arange(
+                    np.datetime64("2014-06-01 00:00"),
+                    np.datetime64("2014-07-01 00:00"),
+                    np.timedelta64(2, "D"),
+                    dtype="datetime64[s]",
+                )
+            ),
+            id="Not subdaily",
+        ),
+        pytest.param(
+            pytest.raises(ValueError),
             "Datetime spacing is not evenly divisible into a day",
             dict(
                 datetimes=np.arange(
