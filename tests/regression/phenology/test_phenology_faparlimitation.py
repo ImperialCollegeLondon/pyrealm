@@ -135,12 +135,16 @@ def test_faparlimitation_frompmodel(annual_data, site_data, fortnightly_data):
         method_kphio="temperature",
     )
 
+    # Check the GPP predictions
+    assert_allclose(pmodel.gpp, fortnightly_data["gpp"], rtol=1e-6)
+
     faparlim = FaparLimitation.from_pmodel(
         pmodel=pmodel,
         growing_season=fortnightly_data["growing_season"].to_numpy(),
         datetimes=fortnightly_data["time"].to_numpy(),
         precip=fortnightly_data["precip_molar_sum"].to_numpy(),
         aridity_index=site_data["AI_from_cruts"],
+        gpp_penalty_factor=np.ones_like(pmodel.gpp),
     )
 
     assert np.allclose(annual_data["fapar_max"].to_numpy(), faparlim.fapar_max)

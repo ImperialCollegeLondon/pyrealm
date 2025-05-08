@@ -397,7 +397,7 @@ subdaily_annual_values.to_pandas().to_csv(
 # --------------------------------------------------------------------------------------
 
 # Resample half hourly data to fortnightly means
-fortnight_resampler = subdaily_outputs.resample(time="2W")
+fortnight_resampler = de_gri_hh_xr.resample(time="2W")
 fortnight_means = fortnight_resampler.mean()
 fortnight_sum = fortnight_resampler.sum()
 fortnight_resampler_from_daily = subdaily_daily_values.resample(time="2W")
@@ -406,14 +406,14 @@ fortnightly_gpp_smstress = fortnight_resampler_from_daily.mean()["PMod_gpp_smstr
 # Extract the variables needed to run the model
 fortnightly_outputs = xr.Dataset(
     data_vars={
-        "tc_mean": fortnight_means["tc"],
-        "vpd_mean": fortnight_means["vpd"],
-        "patm_mean": fortnight_means["patm"],
-        "co2_mean": fortnight_means["co2"],
-        "ppfd_mean": fortnight_means["ppfd"],
-        "precip_molar_sum": fortnight_sum["precip_molar"],
+        "tc_mean": fortnight_means["TA_F"],
+        "vpd_mean": fortnight_means["VPD_F"],
+        "patm_mean": fortnight_means["PA_F"],
+        "co2_mean": fortnight_means["CO2_F_MDS"],
+        "ppfd_mean": fortnight_means["PPFD"],
+        "precip_molar_sum": fortnight_sum["P_F_MOLAR"],
         "year": fortnight_means.time.dt.year,
-        "PMod_gpp_smstress": fortnightly_gpp_smstress,
+        # "PMod_gpp_smstress": fortnightly_gpp_smstress,
     }
 )
 
