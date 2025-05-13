@@ -27,6 +27,7 @@ from pyrealm.pmodel import (
     PModelEnvironment,
     SubdailyPModel,
 )
+from pyrealm.core.time_series import AnnualValueCalculator
 from pyrealm.pmodel.functions import calc_soilmstress_mengoli
 
 
@@ -219,21 +220,31 @@ subdaily_daily_values = subdaily_daily_values.assign(
 # Calculate annual values
 
 # Precipitation and number of growing days
+subdaily_growing_season = np.repeat(subdaily_daily_values["growing_day"].to_numpy(), 48)
+avc = AnnualValueCalculator(
+    timing=acclim,
+    growing_season=subdaily_growing_season,
+    #endpoint=endpoint
+)
+ann_total_P_molar = avc.get_annual_totals(de_gri_hh_xr["P_F_MOLAR"])
+ann_total_GD = avc.get_annual_totals(subdaily_growing_season)
 
-ann_total_P_molar = de_gri_hh_xr["P_F_MOLAR"].groupby("time.year").sum()
-ann_total_GD = subdaily_daily_values["growing_day_filtered"].groupby("time.year").sum()
 ann_days_in_year = (
     subdaily_daily_values["growing_day_filtered"].groupby("time.year").count()
 )
 
 # Average annual GPP ± soil moisture stress
 # GPP, precipitation and growing day totals across the whole year.
-ann_mean_subdaily_gpp = subdaily_daily_values["PMod_gpp"].groupby("time.year").mean()
-ann_mean_subdaily_gpp_smstress = (
-    subdaily_daily_values["PMod_gpp_smstress"].groupby("time.year").mean()
+# Should we go back to subdaily values here, instead of repeating the subdaily daily
+# values?
+ann_mean_subdaily_gpp = avc.get_annual_means(
+    np.repeat(subdaily_daily_values["PMod_gpp"], 48))
+ann_mean_subdaily_gpp_smstress = avc.get_annual_means(
+    np.repeat(subdaily_daily_values["PMod_gpp_smstress"], 48)
 )
 
 # Average conditions within growing days
+# Do we also want to use the AVC here?
 growing_conditions = (
     subdaily_daily_values[["ca", "PMod_chi", "vpd", "time"]]
     .where(subdaily_daily_values["growing_day_filtered"], drop=True)
@@ -251,10 +262,10 @@ growing_conditions = (
 # Create an annual dataset, joining on site data to drop extra CRU years
 subdaily_annual_values = xr.merge(
     [
-        ann_mean_subdaily_gpp_smstress.rename("ann_mean_subdaily_gpp_smstress"),
-        ann_mean_subdaily_gpp.rename("ann_mean_subdaily_gpp"),
-        ann_total_P_molar.rename("annual_precip_molar"),
-        ann_total_GD.rename("N_growing_days"),
+        {"ann_mean_subdaily_gpp_smstress": ann_mean_subdaily_gpp_smstress},
+        {"ann_mean_subdaily_gpp": ann_mean_subdaily_gpp},
+        {"annual_precip_molar": ann_total_P_molar},
+        {"N_growing_days": ann_total_GD},
         ann_days_in_year.rename("N_days"),
         growing_conditions,
     ],
@@ -402,6 +413,12 @@ fortnight_means = fortnight_resampler.mean()
 fortnight_sum = fortnight_resampler.sum()
 fortnight_resampler_from_daily = subdaily_daily_values.resample(time="2W")
 fortnightly_gpp_smstress = fortnight_resampler_from_daily.mean()["PMod_gpp_smstress"]
+avc2 = AnnualValueCalculator(
+    timing=fortnight_resampler["time"].to_numpy() ,
+    growing_season=subdaily_growing_season,
+    endpoint=acclim.datetimes[-1].as_type("datetime64")
+)
+
 
 # Extract the variables needed to run the model
 fortnightly_outputs = xr.Dataset(

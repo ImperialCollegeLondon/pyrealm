@@ -101,7 +101,7 @@ class AnnualValueCalculator:
         if isinstance(timing, AcclimationModel):
             # AcclimationModel by construction provides subdaily data with equal spacing
             self.datetimes = timing.datetimes.astype("datetime64[s]")
-            duration_last_observation = timing.spacing.astype("datetime64[s]")
+            duration_last_observation = timing.spacing.astype("timedelta64")
         else:
             # Pure datetime inputs could be any frequency from subdaily to monthly, and
             # some frequencies could be of differing lengths (monthly being a good
