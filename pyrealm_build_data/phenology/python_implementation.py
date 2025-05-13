@@ -20,6 +20,7 @@ import xarray as xr
 from numpy.typing import NDArray
 from scipy.special import lambertw  # type: ignore[import-untyped]
 
+from pyrealm.core.time_series import AnnualValueCalculator
 from pyrealm.core.water import convert_water_mm_to_moles
 from pyrealm.pmodel import (
     AcclimationModel,
@@ -27,7 +28,6 @@ from pyrealm.pmodel import (
     PModelEnvironment,
     SubdailyPModel,
 )
-from pyrealm.core.time_series import AnnualValueCalculator
 from pyrealm.pmodel.functions import calc_soilmstress_mengoli
 
 
@@ -224,7 +224,7 @@ subdaily_growing_season = np.repeat(subdaily_daily_values["growing_day"].to_nump
 avc = AnnualValueCalculator(
     timing=acclim,
     growing_season=subdaily_growing_season,
-    #endpoint=endpoint
+    # endpoint=endpoint
 )
 ann_total_P_molar = avc.get_annual_totals(de_gri_hh_xr["P_F_MOLAR"])
 ann_total_GD = avc.get_annual_totals(subdaily_growing_season)
@@ -238,7 +238,8 @@ ann_days_in_year = (
 # Should we go back to subdaily values here, instead of repeating the subdaily daily
 # values?
 ann_mean_subdaily_gpp = avc.get_annual_means(
-    np.repeat(subdaily_daily_values["PMod_gpp"], 48))
+    np.repeat(subdaily_daily_values["PMod_gpp"], 48)
+)
 ann_mean_subdaily_gpp_smstress = avc.get_annual_means(
     np.repeat(subdaily_daily_values["PMod_gpp_smstress"], 48)
 )
@@ -414,9 +415,9 @@ fortnight_sum = fortnight_resampler.sum()
 fortnight_resampler_from_daily = subdaily_daily_values.resample(time="2W")
 fortnightly_gpp_smstress = fortnight_resampler_from_daily.mean()["PMod_gpp_smstress"]
 avc2 = AnnualValueCalculator(
-    timing=fortnight_resampler["time"].to_numpy() ,
+    timing=fortnight_resampler["time"].to_numpy(),
     growing_season=subdaily_growing_season,
-    endpoint=acclim.datetimes[-1].as_type("datetime64")
+    endpoint=acclim.datetimes[-1].as_type("datetime64"),
 )
 
 
