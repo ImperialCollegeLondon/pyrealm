@@ -10,6 +10,7 @@ from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import bounds_checker, check_input_shapes, summarize_attrs
+from pyrealm.core.xarray import xarray_inputs
 from pyrealm.pmodel.functions import (
     calc_co2_to_ca,
     calc_gammastar,
@@ -73,6 +74,7 @@ class PModelEnvironment:
         ... )
     """
 
+    @xarray_inputs
     def __init__(
         self,
         tc: NDArray[np.float64],
