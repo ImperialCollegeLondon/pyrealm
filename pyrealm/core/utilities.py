@@ -17,9 +17,10 @@ from numpy.typing import NDArray
 def check_input_shapes(*args: float | int | np.generic | np.ndarray | None) -> tuple:
     """Check sets of input variables have congruent shapes.
 
-    This helper function validates inputs to check that they are either scalars or
-    arrays and then that any arrays of the same shape. It returns a tuple of the common
-    shape of the arguments, which is (1,) if all the arguments are scalar.
+    This helper function validates inputs to check that they are either scalars
+    or arrays and that any arrays are of (or broadcastable to) the same
+    shape. It returns a tuple of the common shape of the arguments, which is
+    (1,) if all the arguments are scalar.
 
     Parameters:
         *args: A set of numpy arrays or scalar values
@@ -64,10 +65,13 @@ def check_input_shapes(*args: float | int | np.generic | np.ndarray | None) -> t
         else:
             raise ValueError(f"Unexpected input to check_input_shapes: {type(val)}")
 
-    # shapes can be an empty set (all scalars) or contain one common shape
-    # otherwise raise an error
+    # shapes can be an empty set (all scalars) or (broadcastable to) one common
+    # shape, otherwise raise an error
     if len(shapes) > 1:
-        raise ValueError("Inputs contain arrays of different shapes.")
+        try:
+            return np.broadcast_shapes(*shapes)
+        except ValueError:
+            raise ValueError("Inputs contain arrays of different shapes.")
 
     if len(shapes) == 1:
         return shapes.pop()
