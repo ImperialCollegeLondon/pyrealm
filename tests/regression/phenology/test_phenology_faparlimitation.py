@@ -56,10 +56,10 @@ def test_faparlimitation(site_data, annual_data):
 
     faparlim = FaparLimitation(
         annual_total_potential_gpp=annual_data["ann_total_A0"].to_numpy(),
-        annual_mean_ca=annual_data["ca"].to_numpy(),
-        annual_mean_chi=annual_data["chi"].to_numpy(),
-        annual_mean_vpd=annual_data["vpd_mean"].to_numpy(),
-        annual_total_precip=annual_data["precip_molar_sum"].to_numpy(),
+        annual_mean_ca=annual_data["annual_mean_ca_in_GS"].to_numpy(),
+        annual_mean_chi=annual_data["annual_mean_chi_in_GS"].to_numpy(),
+        annual_mean_vpd=annual_data["annual_mean_VPD_in_GS"].to_numpy(),
+        annual_total_precip=annual_data["annual_precip_molar"].to_numpy(),
         aridity_index=site_data["AI_from_cruts"],
     )
 

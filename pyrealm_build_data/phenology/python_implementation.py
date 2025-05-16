@@ -406,12 +406,12 @@ fortnight_resampler_from_daily = subdaily_daily_values.resample(time="2W")
 # Extract the variables needed to run the model
 fortnightly_outputs = xr.Dataset(
     data_vars={
-        "tc_mean": ("time", fortnight_means["TA_F"]),
-        "vpd_mean": ("time", fortnight_means["VPD_F"]),
-        "patm_mean": ("time", fortnight_means["PA_F"]),
-        "co2_mean": ("time", fortnight_means["CO2_F_MDS"]),
-        "ppfd_mean": ("time", fortnight_means["PPFD"]),
-        "precip_molar_sum": ("time", fortnight_sum["P_F_MOLAR"]),
+        "tc_mean": ("time", fortnight_means["TA_F"].data),
+        "vpd_mean": ("time", fortnight_means["VPD_F"].data),
+        "patm_mean": ("time", fortnight_means["PA_F"].data),
+        "co2_mean": ("time", fortnight_means["CO2_F_MDS"].data),
+        "ppfd_mean": ("time", fortnight_means["PPFD"].data),
+        "precip_molar_sum": ("time", fortnight_sum["P_F_MOLAR"].data),
     },
     coords={"time": fortnight_means.time},
 )
@@ -448,7 +448,6 @@ avc2 = AnnualValueCalculator(
     # endpoint=np.datetime64("2015-01-01"),
 )
 
-
 # Annual values - total precipitation and mean GPP
 fortnightly_annual_precip = avc2.get_annual_totals(
     fortnightly_outputs["precip_molar_sum"].to_numpy()
@@ -476,20 +475,20 @@ fortnightly_annual_mean_ca_gs = avc2.get_annual_means(
 # Create an annual dataset
 fortnightly_annual_values = xr.Dataset(
     data_vars=dict(
-        ann_mean_subdaily_gpp=("time", fortnightly_annual_mean_gpp),
+        annual_mean_gpp=("time", fortnightly_annual_mean_gpp),
         annual_precip_molar=("time", fortnightly_annual_precip),
-        # N_growing_days=("time", ann_total_GD),
-        # N_days=("time", n_days.to_numpy()),
+        N_growing_days=("time", avc2.year_n_growing_days),
+        N_days=("time", avc2.year_n_days),
         annual_mean_ca_in_GS=("time", fortnightly_annual_mean_ca_gs),
         annual_mean_chi_in_GS=("time", fortnightly_annual_mean_chi_gs),
         annual_mean_VPD_in_GS=("time", fortnightly_annual_mean_vpd_gs),
     ),
-    # coords=dict(time=n_days.time.dt.year.to_numpy()),
+    coords=dict(time=avc2.years),
 )
 
 # Convert mean GPP from µg C m-2 s-1 to annual moles
 fortnightly_annual_values["ann_total_A0"] = (
-    fortnightly_annual_values["gpp"]
+    fortnightly_annual_values["annual_mean_gpp"]
     * (fortnightly_annual_values["N_days"] * 24 * 60 * 60 * 1e-6)
     / env.core_const.k_c_molmass
 )
@@ -500,10 +499,13 @@ fortnightly_annual_values["energy_limited_fapar"] = 1 - z / (
     k * fortnightly_annual_values["ann_total_A0"]
 )
 fortnightly_annual_values["water_limited_fapar"] = (
-    (fortnightly_annual_values["ca"] * (1 - fortnightly_annual_values["chi"]))
-    / (1.6 * fortnightly_annual_values["vpd_mean"])
+    (
+        fortnightly_annual_values["annual_mean_ca_in_GS"]
+        * (1 - fortnightly_annual_values["annual_mean_chi_in_GS"])
+    )
+    / (1.6 * fortnightly_annual_values["annual_mean_VPD_in_GS"])
     * (
-        (f_0 * fortnightly_annual_values["precip_molar_sum"])
+        (f_0 * fortnightly_annual_values["annual_precip_molar"])
         / fortnightly_annual_values["ann_total_A0"]
     )
 )
