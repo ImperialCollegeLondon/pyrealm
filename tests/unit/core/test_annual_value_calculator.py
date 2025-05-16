@@ -4,14 +4,13 @@ from contextlib import nullcontext as does_not_raise
 
 import numpy as np
 import pytest
-from numpy.testing import assert_allclose
+from numpy.testing import assert_allclose, assert_equal
 from numpy.typing import NDArray
 
 
 @pytest.mark.parametrize(
     argnames="datetimes, growing_season,  as_acclim, endpoint,"
-    " context_manager, error_message, year_completeness, "
-    " year_n_days, year_n_growing_days",
+    " context_manager, error_message, expected",
     argvalues=(
         pytest.param(
             "a",
@@ -21,8 +20,6 @@ from numpy.typing import NDArray
             pytest.raises(ValueError),
             "The timings argument must be an AcclimationModel "
             "or an array of datetime64 values",
-            None,
-            None,
             None,
             id="timings_not_acclim_or_datetimes",
         ),
@@ -43,8 +40,6 @@ from numpy.typing import NDArray
             pytest.raises(ValueError),
             "The timing values are not strictly increasing",
             None,
-            None,
-            None,
             id="timings_not_strictly_increasing",
         ),
         pytest.param(
@@ -60,8 +55,6 @@ from numpy.typing import NDArray
             None,
             pytest.raises(ValueError),
             "The timings values are not equally spaced: provide an explicit endpoint",
-            None,
-            None,
             None,
             id="unequal_no_endpoint",
         ),
@@ -79,8 +72,6 @@ from numpy.typing import NDArray
             pytest.raises(ValueError),
             "The end_datetime value must be greater than the last timing value",
             None,
-            None,
-            None,
             id="endpoint_not_after_timings",
         ),
         pytest.param(
@@ -96,8 +87,6 @@ from numpy.typing import NDArray
             None,
             pytest.raises(ValueError),
             "Growing season data is not the same shape as the timing data",
-            None,
-            None,
             None,
             id="bad_growing_season_shape",
         ),
@@ -115,8 +104,6 @@ from numpy.typing import NDArray
             pytest.raises(ValueError),
             "Growing season data is not an array of boolean values",
             None,
-            None,
-            None,
             id="bad_growing_season_dtype",
         ),
         pytest.param(
@@ -130,9 +117,14 @@ from numpy.typing import NDArray
             None,
             does_not_raise(),
             None,
-            np.concat([np.ones(10), [1 / 365]]),
-            np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 2]),
-            np.repeat([366, 365, 366, 365, 366, 365, 1], [1, 3, 1, 3, 1, 1, 1]),
+            (
+                np.concat([np.ones(10), [1 / 365]]),
+                np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 2]),
+                np.repeat([366, 365, 366, 365, 366, 365, 1], [1, 3, 1, 3, 1, 1, 1]),
+                np.arange(
+                    np.datetime64("2000"), np.datetime64("2012"), np.timedelta64(1, "Y")
+                ),
+            ),
             id="fortnightly",
         ),
         pytest.param(
@@ -146,9 +138,14 @@ from numpy.typing import NDArray
             np.datetime64("2010-01"),
             does_not_raise(),
             None,
-            np.ones(10),
-            np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 1]),
-            np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 1]),
+            (
+                np.ones(10),
+                np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 1]),
+                np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 1]),
+                np.arange(
+                    np.datetime64("2000"), np.datetime64("2011"), np.timedelta64(1, "Y")
+                ),
+            ),
             id="monthly",
         ),
         pytest.param(
@@ -164,28 +161,33 @@ from numpy.typing import NDArray
             None,
             does_not_raise(),
             None,
-            np.concat(
-                [
-                    np.diff(
-                        [
-                            np.datetime64("2000-06-01 00:00:00"),
-                            np.datetime64("2001-01-01 00:00:00"),
-                        ]
-                    ).astype("int")
-                    / (366 * 60 * 60 * 24),
-                    np.ones(9),
-                    np.diff(
-                        [
-                            np.datetime64("2010-01-01 00:00:00"),
-                            np.datetime64("2010-05-20 00:00:00")
-                            + np.timedelta64(2, "W"),
-                        ]
-                    ).astype("int")
-                    / (365 * 60 * 60 * 24),
-                ]
+            (
+                np.concat(
+                    [
+                        np.diff(
+                            [
+                                np.datetime64("2000-06-01 00:00:00"),
+                                np.datetime64("2001-01-01 00:00:00"),
+                            ]
+                        ).astype("int")
+                        / (366 * 60 * 60 * 24),
+                        np.ones(9),
+                        np.diff(
+                            [
+                                np.datetime64("2010-01-01 00:00:00"),
+                                np.datetime64("2010-05-20 00:00:00")
+                                + np.timedelta64(2, "W"),
+                            ]
+                        ).astype("int")
+                        / (365 * 60 * 60 * 24),
+                    ]
+                ),
+                np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 2]),
+                np.repeat([214, 365, 366, 365, 366, 365, 153], [1, 3, 1, 3, 1, 1, 1]),
+                np.arange(
+                    np.datetime64("2000"), np.datetime64("2012"), np.timedelta64(1, "Y")
+                ),
             ),
-            np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 2]),
-            np.repeat([214, 365, 366, 365, 366, 365, 153], [1, 3, 1, 3, 1, 1, 1]),
             id="fortnightly_offset_both_ends",
         ),
         pytest.param(
@@ -206,13 +208,22 @@ from numpy.typing import NDArray
             np.datetime64("2010-01-01 00:00:01"),
             does_not_raise(),
             None,
-            np.concat(
-                [[1 / (365 * 60 * 60 * 24)], np.ones(10), [1 / (365 * 60 * 60 * 24)]]
-            ),
-            np.repeat([365, 366, 365, 366, 365, 366, 365], [1, 1, 3, 1, 3, 1, 2]),
-            np.repeat(
-                [1 / 86400, 366, 365, 366, 365, 366, 365, 1 / 86400],
-                [1, 1, 3, 1, 3, 1, 1, 1],
+            (
+                np.concat(
+                    [
+                        [1 / (365 * 60 * 60 * 24)],
+                        np.ones(10),
+                        [1 / (365 * 60 * 60 * 24)],
+                    ]
+                ),
+                np.repeat([365, 366, 365, 366, 365, 366, 365], [1, 1, 3, 1, 3, 1, 2]),
+                np.repeat(
+                    [1 / 86400, 366, 365, 366, 365, 366, 365, 1 / 86400],
+                    [1, 1, 3, 1, 3, 1, 1, 1],
+                ),
+                np.arange(
+                    np.datetime64("1999"), np.datetime64("2012"), np.timedelta64(1, "Y")
+                ),
             ),
             id="second_on_each_end",
         ),
@@ -233,9 +244,14 @@ from numpy.typing import NDArray
             np.datetime64("2010"),
             does_not_raise(),
             None,
-            np.concat([[1 / 365], np.ones(10)]),
-            np.repeat([365, 366, 365, 366, 365, 366, 365], [1, 1, 3, 1, 3, 1, 1]),
-            np.repeat([1, 366, 365, 366, 365, 366, 365], [1, 1, 3, 1, 3, 1, 1]),
+            (
+                np.concat([[1 / 365], np.ones(10)]),
+                np.repeat([365, 366, 365, 366, 365, 366, 365], [1, 1, 3, 1, 3, 1, 1]),
+                np.repeat([1, 366, 365, 366, 365, 366, 365], [1, 1, 3, 1, 3, 1, 1]),
+                np.arange(
+                    np.datetime64("1999"), np.datetime64("2011"), np.timedelta64(1, "Y")
+                ),
+            ),
             id="day_at_the_start",
         ),
         pytest.param(
@@ -254,9 +270,14 @@ from numpy.typing import NDArray
             np.datetime64("2010-01-02"),
             does_not_raise(),
             None,
-            np.concat([np.ones(10), [1 / 365]]),
-            np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 2]),
-            np.repeat([366, 365, 366, 365, 366, 365, 1], [1, 3, 1, 3, 1, 1, 1]),
+            (
+                np.concat([np.ones(10), [1 / 365]]),
+                np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 2]),
+                np.repeat([366, 365, 366, 365, 366, 365, 1], [1, 3, 1, 3, 1, 1, 1]),
+                np.arange(
+                    np.datetime64("2000"), np.datetime64("2012"), np.timedelta64(1, "Y")
+                ),
+            ),
             id="day_at_the_end",
         ),
         pytest.param(
@@ -270,9 +291,14 @@ from numpy.typing import NDArray
             np.datetime64("2010-01"),
             does_not_raise(),
             None,
-            np.ones(10),
-            np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 1]),
-            np.repeat(183, 10),  # April- September 30 + 31 + 30 + 31 + 31 + 30
+            (
+                np.ones(10),
+                np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 1]),
+                np.repeat(183, 10),  # April- September 30 + 31 + 30 + 31 + 31 + 30
+                np.arange(
+                    np.datetime64("2000"), np.datetime64("2011"), np.timedelta64(1, "Y")
+                ),
+            ),
             id="monthly_summer_growing_season",
         ),
     ),
@@ -284,9 +310,7 @@ def test_AnnualValueCalculator_init(
     endpoint,
     context_manager,
     error_message,
-    year_completeness,
-    year_n_days,
-    year_n_growing_days,
+    expected,
 ):
     """Test failure modes and success modes for initialising AVC instances.
 
@@ -304,9 +328,12 @@ def test_AnnualValueCalculator_init(
             timing=datetimes, growing_season=growing_season, endpoint=endpoint
         )
 
+        year_completeness, year_n_days, year_n_growing_days, years = expected
+
         assert_allclose(avc.year_completeness, year_completeness)
         assert_allclose(avc.year_n_days, year_n_days)
         assert_allclose(avc.year_n_growing_days, year_n_growing_days)
+        assert_equal(avc.years, years)
         return
 
     assert str(cmgr.value) == error_message

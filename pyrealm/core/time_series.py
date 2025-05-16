@@ -82,6 +82,8 @@ class AnnualValueCalculator:
         """A list of arrays giving the growing season subarrays for each year."""
         self.year_completeness: NDArray[np.float64]
         """Provides the fractional coverage of observations for each year."""
+        self.years: NDArray[np.datetime64]
+        """The covered years as np.datetime64 at year precision."""
         self.year_total_seconds: NDArray[np.int_]
         """The total number of seconds for each year in the time series."""
         self.year_n_days: NDArray[np.floating]
@@ -177,6 +179,8 @@ class AnnualValueCalculator:
         # year, add the next year to the list of years to handle trailing data.
         if not (years[-1] == timespan[-1]):
             years = np.append(years, years[-1] + np.timedelta64(1, "Y"))
+
+        self.years = np.copy(years)
 
         # Convert to second precision and find where they occur in the timespan
         years = years.astype("datetime64[s]")
