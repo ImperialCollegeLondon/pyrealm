@@ -122,7 +122,7 @@ from numpy.typing import NDArray
                 np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 2]),
                 np.repeat([366, 365, 366, 365, 366, 365, 1], [1, 3, 1, 3, 1, 1, 1]),
                 np.arange(
-                    np.datetime64("2000"), np.datetime64("2012"), np.timedelta64(1, "Y")
+                    np.datetime64("2000"), np.datetime64("2011"), np.timedelta64(1, "Y")
                 ),
             ),
             id="fortnightly",
@@ -143,7 +143,7 @@ from numpy.typing import NDArray
                 np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 1]),
                 np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 1]),
                 np.arange(
-                    np.datetime64("2000"), np.datetime64("2011"), np.timedelta64(1, "Y")
+                    np.datetime64("2000"), np.datetime64("2010"), np.timedelta64(1, "Y")
                 ),
             ),
             id="monthly",
@@ -185,7 +185,7 @@ from numpy.typing import NDArray
                 np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 2]),
                 np.repeat([214, 365, 366, 365, 366, 365, 153], [1, 3, 1, 3, 1, 1, 1]),
                 np.arange(
-                    np.datetime64("2000"), np.datetime64("2012"), np.timedelta64(1, "Y")
+                    np.datetime64("2000"), np.datetime64("2011"), np.timedelta64(1, "Y")
                 ),
             ),
             id="fortnightly_offset_both_ends",
@@ -222,7 +222,7 @@ from numpy.typing import NDArray
                     [1, 1, 3, 1, 3, 1, 1, 1],
                 ),
                 np.arange(
-                    np.datetime64("1999"), np.datetime64("2012"), np.timedelta64(1, "Y")
+                    np.datetime64("1999"), np.datetime64("2011"), np.timedelta64(1, "Y")
                 ),
             ),
             id="second_on_each_end",
@@ -249,7 +249,7 @@ from numpy.typing import NDArray
                 np.repeat([365, 366, 365, 366, 365, 366, 365], [1, 1, 3, 1, 3, 1, 1]),
                 np.repeat([1, 366, 365, 366, 365, 366, 365], [1, 1, 3, 1, 3, 1, 1]),
                 np.arange(
-                    np.datetime64("1999"), np.datetime64("2011"), np.timedelta64(1, "Y")
+                    np.datetime64("1999"), np.datetime64("2010"), np.timedelta64(1, "Y")
                 ),
             ),
             id="day_at_the_start",
@@ -275,7 +275,7 @@ from numpy.typing import NDArray
                 np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 2]),
                 np.repeat([366, 365, 366, 365, 366, 365, 1], [1, 3, 1, 3, 1, 1, 1]),
                 np.arange(
-                    np.datetime64("2000"), np.datetime64("2012"), np.timedelta64(1, "Y")
+                    np.datetime64("2000"), np.datetime64("2011"), np.timedelta64(1, "Y")
                 ),
             ),
             id="day_at_the_end",
@@ -296,7 +296,7 @@ from numpy.typing import NDArray
                 np.repeat([366, 365, 366, 365, 366, 365], [1, 3, 1, 3, 1, 1]),
                 np.repeat(183, 10),  # April- September 30 + 31 + 30 + 31 + 31 + 30
                 np.arange(
-                    np.datetime64("2000"), np.datetime64("2011"), np.timedelta64(1, "Y")
+                    np.datetime64("2000"), np.datetime64("2010"), np.timedelta64(1, "Y")
                 ),
             ),
             id="monthly_summer_growing_season",
@@ -334,6 +334,12 @@ def test_AnnualValueCalculator_init(
         assert_allclose(avc.year_n_days, year_n_days)
         assert_allclose(avc.year_n_growing_days, year_n_growing_days)
         assert_equal(avc.years, years)
+
+        # Check the lengths of the by year lists of arrays
+        assert len(avc.years) == len(avc.growing_season_by_year)
+        assert len(avc.years) == len(avc.duration_weights)
+        assert len(avc.years) == len(avc.fractional_weights)
+
         return
 
     assert str(cmgr.value) == error_message

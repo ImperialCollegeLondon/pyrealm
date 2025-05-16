@@ -177,10 +177,14 @@ class AnnualValueCalculator:
 
         # Unless the last timespan value is exactly equal to the end of the previous
         # year, add the next year to the list of years to handle trailing data.
+        # Also record the identity of each year in a way that handles years ending
+        # exactly on the year change (and which therefore end with a year that has no
+        # data)
         if not (years[-1] == timespan[-1]):
+            self.years = np.copy(years)
             years = np.append(years, years[-1] + np.timedelta64(1, "Y"))
-
-        self.years = np.copy(years)
+        else:
+            self.years = np.copy(years[:-1])
 
         # Convert to second precision and find where they occur in the timespan
         years = years.astype("datetime64[s]")
