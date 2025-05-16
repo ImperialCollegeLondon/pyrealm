@@ -84,6 +84,12 @@ class AnnualValueCalculator:
         """Provides the fractional coverage of observations for each year."""
         self.year_total_seconds: NDArray[np.int_]
         """The total number of seconds for each year in the time series."""
+        self.year_n_days: NDArray[np.floating]
+        """The total number of days in each year in the time series."""
+        self.year_n_growing_days: NDArray[np.floating]
+        """The total number of growing days for each year in the time series. If the
+        growing_season input varies within days, these values can contain non-integer
+        values."""
 
         # Sanity checks on datetimes
         if not (
@@ -224,11 +230,19 @@ class AnnualValueCalculator:
             growing_season[lower:upper] for lower, upper in self.indexing
         ]
 
-        # Populate the year completeness
+        # Populate the year completeness and day counts
         self.year_total_seconds = np.diff(years).astype(np.int_)
         self.year_completeness = (
             np.array([np.sum(v) for v in self.duration_weights])
             / self.year_total_seconds
+        )
+        day_seconds = np.array([86400], dtype=np.int_)
+        self.year_n_days = self.year_total_seconds / day_seconds
+        self.year_n_growing_days = np.array(
+            [
+                np.sum(x * y) / day_seconds
+                for x, y in zip(self.duration_weights, self.growing_season_by_year)
+            ]
         )
 
     def _split_values_by_year(
@@ -258,7 +272,8 @@ class AnnualValueCalculator:
         Average values are calculated weighted by the __duration__ of each observation,
         including weighting partial observations than span year boundaries. If
         ``within_growing_season`` is ``True``, the weights for observations outside of
-        the observations marked as the growing season are set to zero.
+        the observations marked as the growing season are set to zero. The calculation
+        handles missing values.
 
         Example:
             >>> # Three years of monthly data
@@ -292,9 +307,12 @@ class AnnualValueCalculator:
         else:
             weights = self.duration_weights
 
+        # Calculate the weighted mean in a np.nan friendly way: the product of np.nan
+        # and a weight is np.nan and the isnan term omits the weights of nan
+        # observations from the weighted average.
         return np.array(
             [
-                np.average(vals, weights=wghts)
+                np.nansum(vals * wghts) / np.nansum(~np.isnan(vals) * wghts)
                 for vals, wghts in zip(values_by_year, weights)
             ]
         )
@@ -310,7 +328,8 @@ class AnnualValueCalculator:
         __fractional__ duration of each observation within each year in order to
         partition the sum across years correctly. If ``within_growing_season`` is
         ``True``, the weights for observations not identified as growing season values
-        are set to zero.
+        are set to zero. The method handles missing data (`np.nan`) but obviously the
+        resulting annual total will be reduced.
 
         Example:
             >>> # Three years of monthly data with incomplete years at start and end
@@ -350,5 +369,5 @@ class AnnualValueCalculator:
             weights = self.fractional_weights
 
         return np.array(
-            [np.sum(vals * wghts) for vals, wghts in zip(values_by_year, weights)]
+            [np.nansum(vals * wghts) for vals, wghts in zip(values_by_year, weights)]
         )
