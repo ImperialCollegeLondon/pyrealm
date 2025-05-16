@@ -262,7 +262,9 @@ class FaparLimitation:
 
         check_datetimes(datetimes)
 
-        annual_total_potential_gpp = get_annual(pmodel.gpp, datetimes, True, "total")
+        annual_total_potential_gpp = get_annual(
+            pmodel.gpp, datetimes, np.array([np.True_]), "total"
+        )
         if gpp_penalty_factor is not None:
             annual_total_potential_gpp *= gpp_penalty_factor
 
@@ -271,7 +273,9 @@ class FaparLimitation:
             pmodel.optchi.chi, datetimes, growing_season, "mean"
         )
         annual_mean_vpd = get_annual(pmodel.env.vpd, datetimes, growing_season, "mean")
-        annual_total_precip = get_annual(precip, datetimes, True, "total")
+        annual_total_precip = get_annual(
+            precip, datetimes, np.array([np.True_]), "total"
+        )
 
         return cls(
             annual_total_potential_gpp,
