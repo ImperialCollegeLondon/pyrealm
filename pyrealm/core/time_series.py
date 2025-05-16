@@ -236,7 +236,7 @@ class AnnualValueCalculator:
             np.array([np.sum(v) for v in self.duration_weights])
             / self.year_total_seconds
         )
-        day_seconds = np.array([86400], dtype=np.int_)
+        day_seconds = 86400
         self.year_n_days = self.year_total_seconds / day_seconds
         self.year_n_growing_days = np.array(
             [
