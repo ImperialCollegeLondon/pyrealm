@@ -439,8 +439,6 @@ fortnightly_outputs = fortnightly_outputs.assign(
     )
 )
 
-fortnightly_outputs = fortnightly_outputs.set_coords("year")
-
 # TODO - allow endpoint to truncate.
 avc2 = AnnualValueCalculator(
     timing=fortnightly_outputs["time"].to_numpy(),
