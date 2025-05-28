@@ -3,11 +3,11 @@
 import calendar
 
 import numpy as np
-from numpy.ma.core import ones_like
 from numpy.typing import NDArray
 from typing_extensions import Self
 
 from pyrealm.constants import CoreConst, PhenologyConst
+from pyrealm.core.time_series import AnnualValueCalculator
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.pmodel import AcclimationModel, PModel, SubdailyPModel
 
@@ -262,20 +262,20 @@ class FaparLimitation:
 
         check_datetimes(datetimes)
 
-        annual_total_potential_gpp = get_annual(
-            pmodel.gpp, datetimes, np.array([np.True_]), "total"
+        avc = AnnualValueCalculator(
+            timing=datetimes,
+            growing_season=growing_season,
         )
+
+        annual_total_potential_gpp = avc.get_annual_totals(pmodel.gpp)
+
         if gpp_penalty_factor is not None:
             annual_total_potential_gpp *= gpp_penalty_factor
 
-        annual_mean_ca = get_annual(pmodel.env.ca, datetimes, growing_season, "mean")
-        annual_mean_chi = get_annual(
-            pmodel.optchi.chi, datetimes, growing_season, "mean"
-        )
-        annual_mean_vpd = get_annual(pmodel.env.vpd, datetimes, growing_season, "mean")
-        annual_total_precip = get_annual(
-            precip, datetimes, np.array([np.True_]), "total"
-        )
+        annual_mean_ca = avc.get_annual_means(pmodel.env.ca)
+        annual_mean_chi = avc.get_annual_means(pmodel.optchi.chi)
+        annual_mean_vpd = avc.get_annual_means(pmodel.env.vpd)
+        annual_total_precip = avc.get_annual_totals(precip)
 
         return cls(
             annual_total_potential_gpp,
@@ -312,14 +312,12 @@ class FaparLimitation:
 
         check_datetimes(datetimes)
 
-        annual_total_potential_gpp = get_annual(
-            subdaily_pmodel.gpp,
-            datetimes,
-            ones_like(growing_season),
-            "total",
+        avc = AnnualValueCalculator(
+            timing=datetimes,
+            growing_season=growing_season,
         )
-        # annual_total_potential_gpp = AnnualValueCalculator.get_annual_values(
-        #     subdaily_pmodel.gpp, "total", True)
+
+        annual_total_potential_gpp = avc.get_annual_totals(subdaily_pmodel.gpp)
 
         if gpp_penalty_factor is not None:
             annual_total_potential_gpp *= gpp_penalty_factor
@@ -335,18 +333,10 @@ class FaparLimitation:
                     365 * 24 * 60 * 60 / CoreConst.k_c_molmass
                 )
 
-        annual_mean_ca = get_annual(
-            subdaily_pmodel.env.ca, datetimes, growing_season, "mean"
-        )
-        annual_mean_chi = get_annual(
-            subdaily_pmodel.optchi.chi.round(5), datetimes, growing_season, "mean"
-        )
-        annual_mean_vpd = get_annual(
-            subdaily_pmodel.env.vpd, datetimes, growing_season, "mean"
-        )
-        annual_total_precip = get_annual(
-            precip, datetimes, ones_like(growing_season), "total"
-        )
+        annual_mean_ca = avc.get_annual_means(subdaily_pmodel.env.ca)
+        annual_mean_chi = avc.get_annual_means(subdaily_pmodel.optchi.chi.round(5))
+        annual_mean_vpd = avc.get_annual_means(subdaily_pmodel.env.vpd)
+        annual_total_precip = avc.get_annual_totals(precip)
 
         return cls(
             annual_total_potential_gpp,

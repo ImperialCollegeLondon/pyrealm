@@ -162,11 +162,11 @@ def test_faparlimitation_frompmodel(
         datetimes=fortnightly_data["time"].to_numpy(),
         precip=fortnightly_data["precip_molar_sum"].to_numpy(),
         aridity_index=site_data["AI_from_cruts"],
-        gpp_penalty_factor=np.ones_like(pmodel.gpp),
+        gpp_penalty_factor=None,  # np.ones_like(pmodel.gpp),
     )
 
     assert np.allclose(
-        annual_fortnightly_data["fapar_max"].to_numpy(), faparlim.fapar_max
+        annual_fortnightly_data["fapar_max"].to_numpy(), faparlim.fapar_max, rtol=1e-6
     )
     assert np.allclose(annual_fortnightly_data["lai_max"].to_numpy(), faparlim.lai_max)
 
