@@ -273,13 +273,14 @@ class FaparLimitation:
             pmodel.gpp * avc.duration_seconds * 1e-6
         ) / pmodel.core_const.k_c_molmass
 
+        # Apply any observation level penalty factor
+        if gpp_penalty_factor is not None:
+            total_gpp *= gpp_penalty_factor
+
         # Calculate annual total potential GPP
         annual_total_potential_gpp = avc.get_annual_totals(total_gpp)
 
         # Calculate annual mean ca, chi and VPD within growing season
-        if gpp_penalty_factor is not None:
-            annual_total_potential_gpp *= gpp_penalty_factor
-
         annual_mean_ca = avc.get_annual_means(pmodel.env.ca, within_growing_season=True)
         annual_mean_chi = avc.get_annual_means(
             pmodel.optchi.chi, within_growing_season=True

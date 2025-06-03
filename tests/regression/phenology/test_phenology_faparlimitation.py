@@ -161,7 +161,7 @@ def test_faparlimitation_frompmodel(
         datetimes=fortnightly_data["time"].to_numpy(),
         precip=fortnightly_data["precip_molar_sum"].to_numpy(),
         aridity_index=site_data["AI_from_cruts"],
-        gpp_penalty_factor=None,  # np.ones_like(pmodel.gpp),
+        gpp_penalty_factor=None,
     )
 
     assert_allclose(
@@ -172,7 +172,6 @@ def test_faparlimitation_frompmodel(
     )
 
 
-@pytest.mark.skip("This test is still failing with current fapar implementation")
 def test_faparlimitation_fromsubdailypmodel(
     site_data, subdaily_data, annual_subdaily_data
 ):
@@ -210,17 +209,17 @@ def test_faparlimitation_fromsubdailypmodel(
         method_kphio="temperature",
     )
 
-    aridity_index = site_data["AI_from_cruts"]
+    # Check the GPP predictions
+    assert_allclose(subdaily_pmodel.gpp, subdaily_data["PMod_gpp"], rtol=1e-6)
 
-    faparlim = FaparLimitation.from_subdailypmodel(
-        subdaily_pmodel,
-        subdaily_data["growing_day"],
-        datetimes,
-        subdaily_data["precip_molar"],
-        aridity_index,
+    faparlim = FaparLimitation.from_pmodel(
+        pmodel=subdaily_pmodel,
+        growing_season=subdaily_data["growing_day"],
+        datetimes=datetimes,
+        precip=subdaily_data["precip_molar"],
+        aridity_index=site_data["AI_from_cruts"],
+        gpp_penalty_factor=subdaily_data["soilm_stress"],
     )
 
-    annual_lai_max = annual_subdaily_data["lai_max"]
-    annual_fapar_max = annual_subdaily_data["fapar_max"]
-    assert np.allclose(annual_lai_max, faparlim.lai_max)
-    assert np.allclose(annual_fapar_max, faparlim.fapar_mx)
+    assert_allclose(annual_subdaily_data["lai_max"], faparlim.lai_max, rtol=1e-6)
+    assert_allclose(annual_subdaily_data["fapar_max"], faparlim.fapar_max, rtol=1e-6)
