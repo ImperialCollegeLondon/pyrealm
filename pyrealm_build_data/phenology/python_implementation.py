@@ -398,10 +398,10 @@ subdaily_annual_values.to_pandas().to_csv(
 # --------------------------------------------------------------------------------------
 
 # Resample half hourly data to fortnightly means
-fortnight_resampler = de_gri_hh_xr.resample(time="2W")
+fortnight_resampler = de_gri_hh_xr.resample(time="14D")
 fortnight_means = fortnight_resampler.mean()
 fortnight_sum = fortnight_resampler.sum()
-fortnight_resampler_from_daily = subdaily_daily_values.resample(time="2W")
+fortnight_resampler_from_daily = subdaily_daily_values.resample(time="14D")
 
 # Extract the variables needed to run the model
 fortnightly_outputs = xr.Dataset(
