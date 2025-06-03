@@ -61,14 +61,15 @@ class AnnualValueCalculator:
     ):
         # Attribute definitions
         self.datetimes: NDArray[np.datetime64]
-        """The datetimes of observations taking from the initial timings"""
+        """The start datetime of observations taking from the initial timings"""
         self.n_obs: int
         """The number of observations in the time series."""
         self.endpoint: np.datetime64
         """A datetime giving of the end of the last observation."""
         self.growing_season: NDArray[np.bool_]
         """The initial input array of growing season data."""
-
+        self.duration_seconds: NDArray[np.int_]
+        """The duration of each observation in seconds."""
         self.indexing: list[tuple[int, int]] = []
         """Pairs of integers giving start and end indices to extract consecutive years
         of data from the time series."""
@@ -170,7 +171,7 @@ class AnnualValueCalculator:
         # duration of each observation
         self.endpoint = self.datetimes[-1] + duration_last_observation
         timespan = np.append(self.datetimes, self.endpoint)
-        observation_durations = np.diff(timespan)
+        self.duration_seconds = np.diff(timespan).astype(np.int_)
 
         # Now get the datetimes of the start of each year included in the data
         years = np.unique(timespan.astype("datetime64[Y]"))
@@ -220,17 +221,17 @@ class AnnualValueCalculator:
                 year_datetimes = np.insert(year_datetimes, 0, lower)
 
             # Calculate the duration of the observations within the year span
-            internal_year_durations = np.diff(year_datetimes)
+            internal_year_durations = np.diff(year_datetimes).astype(np.int_)
 
             # Divide the internal duration through by the actual observation durations
             # to get fractional weights.
             fractional_duration = (
-                internal_year_durations / observation_durations[lower_index:upper_index]
+                internal_year_durations / self.duration_seconds[lower_index:upper_index]
             )
 
             # Store the indices and weights
             self.indexing.append((int(lower_index), int(upper_index)))
-            self.duration_weights.append(internal_year_durations.astype(np.int_))
+            self.duration_weights.append(internal_year_durations)
             self.fractional_weights.append(fractional_duration)
 
         # Split the growing season up into a list of subarrays by year

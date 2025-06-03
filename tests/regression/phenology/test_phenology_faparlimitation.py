@@ -129,7 +129,6 @@ def daily_data():
     return daily_data
 
 
-@pytest.mark.skip("Need to expand the time handling to cope with datetimes >= 1 day")
 def test_faparlimitation_frompmodel(
     annual_fortnightly_data, site_data, fortnightly_data
 ):
@@ -165,10 +164,12 @@ def test_faparlimitation_frompmodel(
         gpp_penalty_factor=None,  # np.ones_like(pmodel.gpp),
     )
 
-    assert np.allclose(
+    assert_allclose(
         annual_fortnightly_data["fapar_max"].to_numpy(), faparlim.fapar_max, rtol=1e-6
     )
-    assert np.allclose(annual_fortnightly_data["lai_max"].to_numpy(), faparlim.lai_max)
+    assert_allclose(
+        annual_fortnightly_data["lai_max"].to_numpy(), faparlim.lai_max, rtol=1e-6
+    )
 
 
 @pytest.mark.skip("This test is still failing with current fapar implementation")
