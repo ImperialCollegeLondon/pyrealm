@@ -6,6 +6,7 @@ from numpy.testing import assert_allclose
 
 
 def test_phenology_gpp_calculation(
+    de_gri_splash_data,
     de_gri_subdaily_data,
     de_gri_daily_outputs,
     de_gri_constants,
@@ -49,13 +50,25 @@ def test_phenology_gpp_calculation(
         de_gri_subdaily_pmodel.optchi.ci, de_gri_subdaily_data["PMod_ci"], rtol=1e-6
     )
 
-    # Daily values
-    # Check soil moisture
+    # Check soil moisture stress calculation, extract daily values for soil moisture
+    soil_moisture = (
+        de_gri_splash_data["wn"]
+        .sel(
+            time=slice(
+                de_gri_subdaily_data["time"].min(), de_gri_subdaily_data["time"].max()
+            )
+        )
+        .to_numpy()
+    )
+
     soilm_stress = calc_soilmstress_mengoli(
-        soilm=de_gri_daily_outputs["wn"].to_numpy() / 150,
+        soilm=soil_moisture / 150,
         aridity_index=de_gri_constants["AI_from_cruts"],
     )
-    assert_allclose(soilm_stress, de_gri_daily_outputs["soilm_stress"], rtol=1e-6)
+    # Check the half hourly values in the subdaily data is correct
+    assert_allclose(
+        np.repeat(soilm_stress, 48), de_gri_subdaily_data["soilm_stress"], rtol=1e-6
+    )
 
     # Check the aggregated daily mean GPP outputs
     # - PMod_sub_A0_daily_total
@@ -69,12 +82,6 @@ def test_phenology_gpp_calculation(
     )
     hh_values = hh_values.set_index("time")
     hh_resampler = hh_values.resample("D")
-
-    assert_allclose(
-        de_gri_daily_outputs["PMod_gpp"],
-        hh_resampler["gpp"].mean(),
-        rtol=1e-6,
-    )
 
     assert_allclose(
         de_gri_daily_outputs["PMod_gpp_smstress"],

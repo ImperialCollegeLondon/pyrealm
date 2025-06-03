@@ -5,6 +5,20 @@ from importlib import resources
 
 import pandas as pd
 import pytest
+import xarray
+
+
+@pytest.fixture
+def de_gri_splash_data():
+    """Loads the splash data."""
+
+    # Load the data
+    datapath = (
+        resources.files("pyrealm_build_data.phenology")
+        / "DE_gri_splash_cru_ts4.07_2000_2019.nc"
+    )
+
+    return xarray.load_dataset(datapath)
 
 
 @pytest.fixture
