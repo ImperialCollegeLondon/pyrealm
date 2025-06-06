@@ -41,6 +41,7 @@ subtrees:
         - file: users/demography/crown.md
         - file: users/demography/community.md
         - file: users/demography/canopy.md
+        - file: users/demography/light_capture.md
   - file: users/splash.md
   - file: users/constants.md
   - file: users/hygro.md 

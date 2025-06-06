@@ -178,6 +178,8 @@ closed, with the stem leaf area within each layer equal to the community area of
 The last layer is not completely filled.
 
 ```{code-cell} ipython3
+:tags: [hide-input]
+
 fig, (ax1, ax2) = plt.subplots(ncols=2, width_ratios=[1, 2], figsize=(8, 4))
 
 # Extract the crown profiles as XY arrays for plotting
@@ -267,6 +269,8 @@ As with the simple example, we can show the crown shape of the individuals formi
 community and the accumulation of crown area with height.
 
 ```{code-cell} ipython3
+:tags: [hide-input]
+
 fig, (ax1, ax2) = plt.subplots(
     ncols=2, sharey=True, width_ratios=[1, 2], figsize=(8, 4)
 )
@@ -335,11 +339,11 @@ gappy_short_pft = PlantFunctionalType(
     h_max=15,
     m=1.5,
     n=1.5,
-    f_g=0.4,
+    f_g=0.1,
     ca_ratio=380,
 )
 gappy_tall_pft = PlantFunctionalType(
-    name="tall", h_max=30, m=3, n=1.5, par_ext=0.6, f_g=0.4, ca_ratio=500
+    name="tall", h_max=30, m=3, n=1.5, par_ext=0.6, f_g=0.1, ca_ratio=500
 )
 
 # Create the flora
@@ -359,8 +363,10 @@ gappy_community = Community(
 
 # Calculate the canopy profile across vertical heights
 hghts = np.linspace(community.stem_allometry.stem_height.max(), 0, num=101)[:, None]
-gappy_canopy = Canopy(community=community, layer_heights=hghts)
-gappy_canopy_ppa = Canopy(community=community, fit_ppa=True, canopy_gap_fraction=1 / 8)
+gappy_canopy = Canopy(community=gappy_community, layer_heights=hghts)
+gappy_canopy_ppa = Canopy(
+    community=gappy_community, fit_ppa=True, canopy_gap_fraction=1 / 8
+)
 ```
 
 We can now calculate the cumulative projected crown and leaf areas with height ($A_p(z)$
@@ -394,22 +400,24 @@ gappy_leaf_area = np.nansum(
 ```
 
 The plots below show the cumulative leaf and crown areas across the communities along
-with the PPA layer closure heights. The first thing to note is that the cumulative crown
+with the PPA layer closure heights. The first thing to note is that the projected crown
 area for the communities is identical: the cohorts have the same crown shapes, stem
-heights and number of individuals. However:
+heights and number of individuals. For the non-gappy community, the projected leaf area
+is also identical. However:
 
 * The gappy community has a canopy gap fraction of 1/8, reducing the available total
   crown area within a single layer to 28 m2. The layer closure heights under the PPA
   model are displaced upwards and an extra closed canopy layer is needed to fit the
   community crown area into the available area.
+
 * The crown gap fractions in the gappy community are not zero and so the projected leaf
   area is displaced downwards within the canopy. Note that this does not affect the
   location of the canopy layer closure heights, but it _does_ affect the location of
   leaf area for the purposes of [light capture](./light_capture.md).
 
-TODO - this is wrong - the leaf area is _not_ being displaced.
-
 ```{code-cell} ipython3
+:tags: [hide-input]
+
 fig, (ax1, ax2) = plt.subplots(nrows=2, sharex=True, figsize=(6, 8))
 
 # Non gappy community
@@ -437,11 +445,11 @@ ax1.text(128, 25, "Non-gappy community", ha="right", va="top", backgroundcolor="
 # Gappy community
 area_values = np.arange(1, 5) * 28
 
-ax2.plot(gappy_crown_area, hghts)
-ax2.plot(gappy_leaf_area, hghts, linestyle="--", color="red")
+ax2.plot(gappy_crown_area, hghts, label="Crown area")
+ax2.plot(gappy_leaf_area, hghts, linestyle="--", color="red", label="Leaf area")
 ax2.hlines(gappy_canopy_ppa.heights, 0, 128, color="black", linewidth=0.5)
 ax2.vlines(area_values, 0, 25, color="black", linewidth=0.5)
-_ = ax2.set_xlabel("Cumulative crown area (m2)")
+ax2.set_xlabel("Projected area (m2)")
 
 # Add secondary ticks showing the layer heights and closure areas.
 z_star_labels = [
@@ -456,6 +464,7 @@ secaxx = ax2.secondary_xaxis("top")
 secaxx.set_xticks(area_values, labels=area_labels)
 
 ax2.text(128, 25, "Gappy community", ha="right", va="top", backgroundcolor="white")
+ax2.legend()
 
 plt.tight_layout()
 ```
