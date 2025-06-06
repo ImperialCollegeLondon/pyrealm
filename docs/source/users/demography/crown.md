@@ -246,7 +246,7 @@ allometry = StemAllometry(stem_traits=flora, at_dbh=stem_dbh)
 We can again use {mod}`pandas` to get a table of those allometric predictions:
 
 ```{code-cell} ipython3
-allometry.to_pandas()
+allometry.to_pandas().transpose()
 ```
 
 Finally, we can define a set of vertical heights. In order to calculate the
