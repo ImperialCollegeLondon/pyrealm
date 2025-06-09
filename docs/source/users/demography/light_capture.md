@@ -39,6 +39,8 @@ from pyrealm.demography.flora import PlantFunctionalType, Flora
 from pyrealm.demography.community import Cohorts, Community
 
 from pyrealm.demography.canopy import Canopy, CohortCanopyData
+
+import matplotlib.pyplot as plt
 ```
 
 ## Light capture in a simple model
@@ -363,7 +365,7 @@ if np.allclose(simulated_total_capture, total_capture):
     print("\U00002705 Total capture matches")
 ```
 
-## Implementation in `pyrealm`
+## Implementation in pyrealm
 
 The calculation above can be directly repeated using the `CohortCanopyData` class: this
 data class is not typically used directly but is designed for use with the input data
@@ -422,6 +424,60 @@ gappy_flora = Flora([gappy_short_pft, gappy_tall_pft])
 # Define community with three cohorts
 gappy_community = Community(
     flora=gappy_flora,
+    cell_area=150,
+    cell_id=1,
+    cohorts=Cohorts(
+        dbh_values=np.array([0.1, 0.20, 0.5]),
+        n_individuals=np.array([7, 3, 2]),
+        pft_names=np.array(["short", "short", "tall"]),
+    ),
+)
+```
+
+We can use the community object directly to calculate the big leaf approximation of
+light capture.
+
+```{code-cell} ipython3
+(
+    initial_ppfd
+    * gappy_community.stem_allometry.crown_area
+    * (
+        1
+        - np.exp(-gappy_community.stem_traits.par_ext * gappy_community.stem_traits.lai)
+    )
+).round(2)
+```
+
+Because the cell area of the community has been set to be greater than the total crown
+area of the community, a canopy model fitted to the community gives the same estimates:
+there is a single canopy layer with no shading of any of the stem canopies.
+
+```{code-cell} ipython3
+# Calculate the canopy profile across vertical heights
+gappy_canopy_ppa = Canopy(community=gappy_community, fit_ppa=True)
+
+# Layer closure heights
+gappy_canopy_ppa.heights
+```
+
+The canopy model then contains the data required to calculate the absorbed irradiance
+within each layer for a stem in each cohort.
+
+```{code-cell} ipython3
+i_abs = (
+    initial_ppfd
+    * gappy_canopy_ppa.cohort_data.fapar
+    * gappy_canopy_ppa.cohort_data.stem_leaf_area
+)
+i_abs.sum(axis=0).round(2)
+```
+
+However, when the community is growing in a cell with a smaller area, the canopies of
+each stem are forced into four overlapping layers and light capture decreases.
+
+```{code-cell} ipython3
+gappy_community = Community(
+    flora=gappy_flora,
     cell_area=32,
     cell_id=1,
     cohorts=Cohorts(
@@ -430,16 +486,28 @@ gappy_community = Community(
         pft_names=np.array(["short", "short", "tall"]),
     ),
 )
-
-# Calculate the canopy profile across vertical heights
-gappy_canopy_ppa = Canopy(
-    community=gappy_community, fit_ppa=True, canopy_gap_fraction=1 / 8
-)
 ```
 
-The canopy model then contains the data required to calculate the absorbed irradiance
-within each layer for each cohort.
+```{code-cell} ipython3
+# Recalculate the canopy profile across vertical heights
+gappy_canopy_ppa = Canopy(community=gappy_community, fit_ppa=True)
+
+# Layer closure heights
+gappy_canopy_ppa.heights
+```
 
 ```{code-cell} ipython3
-initial_ppfd * gappy_canopy_ppa.cohort_data.fapar * gappy_canopy_ppa.cohort_data.stem_leaf_area
+i_abs = (
+    initial_ppfd
+    * gappy_canopy_ppa.cohort_data.fapar
+    * gappy_canopy_ppa.cohort_data.stem_leaf_area
+)
+i_abs.sum(axis=0).round(2)
+```
+
+This is particularly marked in the smaller stems, which are growing under the shade of
+multiple layers:
+
+```{code-cell} ipython3
+gappy_canopy_ppa.cohort_data.stem_leaf_area.round(2)
 ```
