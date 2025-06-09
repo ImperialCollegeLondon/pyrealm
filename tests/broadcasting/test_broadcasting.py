@@ -156,11 +156,15 @@ def initialise_type_default(typ, shape):
 manual_test_parameters = {
     # 'Bounds.lower': 0,
     # 'Bounds.interval_type': '[]',
-    'Cohorts.__init__.dbh_values': np.zeros(3),
-    'Cohorts.__init__.n_individuals': np.ones(3),
-    'Cohorts.__init__.pft_names': np.array(['Tree1', 'Tree2', 'Tree3'], dtype=np.str_),
-    'Flora.__init__.pfts': [PlantFunctionalType(name='Tree1'), PlantFunctionalType(name='Tree2'), PlantFunctionalType(name='Tree3')],
-    'Canopy.__init__.fit_ppa': True,
+    "Cohorts.__init__.dbh_values": np.zeros(3),
+    "Cohorts.__init__.n_individuals": np.ones(3),
+    "Cohorts.__init__.pft_names": np.array(["Tree1", "Tree2", "Tree3"], dtype=np.str_),
+    "Flora.__init__.pfts": [
+        PlantFunctionalType(name="Tree1"),
+        PlantFunctionalType(name="Tree2"),
+        PlantFunctionalType(name="Tree3"),
+    ],
+    "Canopy.__init__.fit_ppa": True,
 }
 
 
