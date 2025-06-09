@@ -1,15 +1,13 @@
 """Class to compute the fAPAR_max and annual peak Leaf Area Index (LAI)."""
 
-import calendar
-
 import numpy as np
 from numpy.typing import NDArray
 from typing_extensions import Self
 
-from pyrealm.constants import CoreConst, PhenologyConst
+from pyrealm.constants import PhenologyConst
 from pyrealm.core.time_series import AnnualValueCalculator
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.pmodel import AcclimationModel, PModel, SubdailyPModel
+from pyrealm.pmodel import AcclimationModel, PModel
 
 
 def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
@@ -299,65 +297,4 @@ class FaparLimitation:
             annual_mean_vpd=annual_mean_vpd,
             annual_total_precip=annual_total_precip,
             aridity_index=aridity_index,
-        )
-
-    @classmethod
-    def from_subdailypmodel(
-        cls,
-        subdaily_pmodel: SubdailyPModel,
-        growing_season: NDArray[np.bool],
-        datetimes: NDArray[np.datetime64],
-        precip: NDArray[np.float64],
-        aridity_index: NDArray[np.float64],
-        gpp_penalty_factor: NDArray[np.float64] | None = None,
-    ) -> Self:
-        r"""Get FaparLimitation from SubdailyPModel input.
-
-        Computes the input for fAPAR_max from a Subdaily P Model and additional inputs.
-
-        Args:
-            subdaily_pmodel: pyrealm.pmodel.SubdailyPModel
-            growing_season: Bool array indicating which times are within growing
-              season by some definition and implementation.
-            datetimes: Array of datetimes to consider.
-            precip: Precipitation for given datetimes.
-            aridity_index: Climatological estimate of local aridity index.
-            gpp_penalty_factor: Penalty factor to be applied to subdaily_pmodel.gpp
-        """
-
-        check_datetimes(datetimes)
-
-        avc = AnnualValueCalculator(
-            timing=datetimes,
-            growing_season=growing_season,
-        )
-
-        annual_total_potential_gpp = avc.get_annual_totals(subdaily_pmodel.gpp)
-
-        if gpp_penalty_factor is not None:
-            annual_total_potential_gpp *= gpp_penalty_factor
-
-        years = np.unique(datetimes.astype("datetime64[Y]"))
-        for i in range(len(years)):
-            if calendar.isleap(int(str(years[i]))):
-                annual_total_potential_gpp[i] *= (
-                    366 * 24 * 60 * 60 / CoreConst.k_c_molmass
-                )
-            else:
-                annual_total_potential_gpp[i] *= (
-                    365 * 24 * 60 * 60 / CoreConst.k_c_molmass
-                )
-
-        annual_mean_ca = avc.get_annual_means(subdaily_pmodel.env.ca)
-        annual_mean_chi = avc.get_annual_means(subdaily_pmodel.optchi.chi.round(5))
-        annual_mean_vpd = avc.get_annual_means(subdaily_pmodel.env.vpd)
-        annual_total_precip = avc.get_annual_totals(precip)
-
-        return cls(
-            annual_total_potential_gpp,
-            annual_mean_ca,
-            annual_mean_chi,
-            annual_mean_vpd,
-            annual_total_precip,
-            aridity_index,
         )

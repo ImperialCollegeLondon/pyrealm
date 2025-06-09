@@ -129,7 +129,7 @@ def daily_data():
     return daily_data
 
 
-def test_faparlimitation_frompmodel(
+def test_faparlimitation_frompmodel_fortnightly(
     annual_fortnightly_data, site_data, fortnightly_data
 ):
     """Regression test for from_pmodel FaparLimitation class method."""
@@ -172,7 +172,7 @@ def test_faparlimitation_frompmodel(
     )
 
 
-def test_faparlimitation_fromsubdailypmodel(
+def test_faparlimitation_frompmodel_subdaily(
     site_data, subdaily_data, annual_subdaily_data
 ):
     """Regression test for from_subdailypmodel FaparLimitation class method."""
