@@ -135,10 +135,10 @@ class CoreConst(ConstantsClass):
     """Solar eccentricity (:math:`e`), using default value for 2000 CE 
     :cite:t:`berger:1978a`."""
     solar_obliquity: float = 23.44
-    """Solar obliquity in degrees (:math:`\epsilon`), using default value for 2000 CE
+    r"""Solar obliquity in degrees (:math:`\epsilon`), using default value for 2000 CE
     :cite:t:`berger:1978a`."""
     solar_perihelion: float = 283.0
-    """Solar longitude of perihelion in degrees (:math:`\omega`), using default value
+    r"""Solar longitude of perihelion in degrees (:math:`\omega`), using default value
     for 2000 CE :cite:t:`berger:1978a`."""
 
     # Hygro constants
