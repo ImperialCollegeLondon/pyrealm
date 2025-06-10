@@ -108,9 +108,15 @@ $$
 
 ```{attention}
 The calculation of $A_{fl}$ uses the **projected leaf area** and not the projected crown
-area: the projected crown area dictates how the crown of a given stem occupies space in
-the canopy actual light capture uses the leaf area, which can be vertically displaced in
-the canopy by the canopy gap fraction.
+area.
+
+* The projected crown area dictates how each stem occupies space in canopy layers:
+  competition for space in the canopy layers use crown area.
+* When the canopy gap fraction ($f_g$) is one, then the projected crown area and
+  projected leaf area are equal. However then $f_g < 1$, the individual tree crown has
+  holes within their crown and projected leaf area is vertically displaced down into the
+  canopy. Because projected leaf area dictates where the actual leaves are located in
+  the canopy, this is what is used to calculate absorbance in the light capture model.
 ```
 
 ### Calculation of light transmission terms
@@ -344,8 +350,8 @@ if np.allclose(simulated_per_stem_f_abs, per_stem_f_abs):
 ```
 
 We can now calculate the total absorption in each layer for each stem. This is the key
-result for use in most cases: **how much light flux is absorbed by each stem in the leaf area of
-each layer**.
+result for use in most cases: **how much light flux is absorbed by each stem in the leaf
+area of each layer**.
 
 ```{code-cell} ipython3
 per_stem_absorption = per_stem_f_abs * layer_leaf_area * initial_ppfd
