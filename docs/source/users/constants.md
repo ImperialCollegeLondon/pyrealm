@@ -39,7 +39,7 @@ estimate or explore sensitivity to variation.
 
 For this reason, the `pyrealm` package provides data classes that contain sets
 of default model constants. The core API and details for each class can be seen
-[here](../api/constants_api).
+in the [constants API documentation.](../api/constants_api).
 
 ## Creating constant class instances
 
