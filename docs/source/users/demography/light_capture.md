@@ -448,7 +448,7 @@ light capture.
 ).round(2)
 ```
 
-Because the cell area of the community has been set to be greater than the total crown
+If the cell area of the community is set to be greater than the total crown
 area of the community, a canopy model fitted to the community gives the same estimates:
 there is a single canopy layer with no shading of any of the stem canopies.
 
@@ -472,8 +472,9 @@ i_abs = (
 i_abs.sum(axis=0).round(2)
 ```
 
-However, when the community is growing in a cell with a smaller area, the canopies of
-each stem are forced into four overlapping layers and light capture decreases.
+The example code below places the same community of cohorts into a much smaller area:
+the tree crowns cannot all fit into a single layer and so are arranged under the PPA
+model into layers.
 
 ```{code-cell} ipython3
 gappy_community = Community(
@@ -486,15 +487,28 @@ gappy_community = Community(
         pft_names=np.array(["short", "short", "tall"]),
     ),
 )
-```
 
-```{code-cell} ipython3
 # Recalculate the canopy profile across vertical heights
 gappy_canopy_ppa = Canopy(community=gappy_community, fit_ppa=True)
+```
 
+The PPA solution for this community finds four layers and we can show the canopy closure
+heights of those layers and the amount of leaf area present in each layer for each of
+the three cohorts.
+
+```{code-cell} ipython3
 # Layer closure heights
 gappy_canopy_ppa.heights
 ```
+
+```{code-cell} ipython3
+gappy_canopy_ppa.cohort_data.stem_leaf_area.round(2)
+```
+
+All of the first layer is occupied by the crowns of the two individuals in the tallest
+cohort and the rest of the leaf area is shaded, reducing the overall light absorbed by
+each stem below the big leaf prediction. This is most marked in the smallest stems,
+which only have leaf area in the very lowest layer.
 
 ```{code-cell} ipython3
 i_abs = (
@@ -503,11 +517,4 @@ i_abs = (
     * gappy_canopy_ppa.cohort_data.stem_leaf_area
 )
 i_abs.sum(axis=0).round(2)
-```
-
-This is particularly marked in the smaller stems, which are growing under the shade of
-multiple layers:
-
-```{code-cell} ipython3
-gappy_canopy_ppa.cohort_data.stem_leaf_area.round(2)
 ```
