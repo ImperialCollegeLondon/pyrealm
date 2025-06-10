@@ -100,10 +100,10 @@ layers. That is, given the function from the crown model for the projected leaf 
 height $z$ ($\tilde{A}_{cp}(z)$) and a sequence of layer heights $z_l$:
 
 $$
-\begin{align}
-A_{fl} &= \tilde{A}_{cp}(z_l), \textrm{if} \; l=1 \\
-       &= \tilde{A}_{cp}(z_l) - \tilde{A}_{cp}(z_{l-1}), \textrm{otherwise}
-\end{align}
+A_{fl} =  \begin{cases}
+  \tilde{A}_{cp}(z_l), & \textrm{if } l=1 \\
+  \tilde{A}_{cp}(z_l) - \tilde{A}_{cp}(z_{l-1}) & \textrm{otherwise}
+\end{cases}
 $$
 
 ```{attention}
