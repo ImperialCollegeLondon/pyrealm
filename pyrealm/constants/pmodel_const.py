@@ -90,14 +90,14 @@ class PModelConst(ConstantsClass):
     and the activation energy (:math:`H_a`, J/mol)."""
 
     kphio_C4: tuple[float, float, float] = (-0.064, 0.03, -0.000464)
-    """Coefficients of the quadratic scaling of the quantum yield of photosynthesis
+    r"""Coefficients of the quadratic scaling of the quantum yield of photosynthesis
     (``phi_0``, :math:`\phi_0`) with temperature for C4 plants, taken from Eqn 5 of
     :cite:t:`cai:2020a`, and adjusted from the original values (-0.008, 0.00375,
     -0.58e-4) to account for an unintentional double scaling to account for the fraction
     of light reaching PS2."""
 
     kphio_C3: tuple[float, float, float] = (0.352, 0.022, -0.00034)
-    """Coefficients of the quadratic scaling of the quantum yield of photosynthesis
+    r"""Coefficients of the quadratic scaling of the quantum yield of photosynthesis
     (``phi_0``, :math:`\phi_0`) with temperature for C3 plants, taken from Table 2 of
     :cite:t:`Bernacchi:2003dc`"""
 
@@ -110,7 +110,7 @@ class PModelConst(ConstantsClass):
             ko25=27480.0,
         )
     )
-    """Coefficients for the estimation of the Michaelis Menten coefficient of
+    r"""Coefficients for the estimation of the Michaelis Menten coefficient of
     Rubisco-limited assimilation. Values are taken from Table 1 of
     :cite:t:`Bernacchi:2001kg` and provide a dictionary of:
     
@@ -129,7 +129,7 @@ class PModelConst(ConstantsClass):
     """
 
     maximum_phi0: float = 1.0 / 8.0
-    """The theoretical maximum intrinsic quantum yield efficiency of photosynthesis
+    r"""The theoretical maximum intrinsic quantum yield efficiency of photosynthesis
     (:math:`\phi_0`, unitless). This value defaults to 1/8 but could be set to 1/9 to
     capture the absence of a Q cycle :cite:`long:1993a`."""
 
@@ -139,7 +139,7 @@ class PModelConst(ConstantsClass):
             gs25_0=4.332,
         )
     )
-    """Coefficients for the estimation of the photorespiratory CO2 compensation point.
+    r"""Coefficients for the estimation of the photorespiratory CO2 compensation point.
     Values are taken from Table 1 of :cite:t:`Bernacchi:2001kg` and provide a dictionary
     of: 
     

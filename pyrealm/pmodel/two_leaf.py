@@ -628,56 +628,56 @@ class TwoLeafAssimilation:
         """An extinction coefficient capturing the vertical structure of carboxylation
         capacity within the canopy (:math:`k_v`)."""
         self.Vcmax25_canopy: NDArray[np.float64]
-        """The total canopy carboxylation capacity at standard temperature
+        r"""The total canopy carboxylation capacity at standard temperature
         :math:`V_{cmax25\_C}`"""
         self.Vcmax25_sun: NDArray[np.float64]
-        """The maximum rate of carboxylation at standard temperature within sunlit 
+        r"""The maximum rate of carboxylation at standard temperature within sunlit 
         leaves (:math:`V_{cmax25\_Sn}`)"""
         self.Vcmax25_shade: NDArray[np.float64]
-        """The maximum rate of carboxylation at standard temperature within shaded 
+        r"""The maximum rate of carboxylation at standard temperature within shaded 
         leaves (:math:`V_{cmax25\_Sd}`)"""
         self.Vcmax_sun: NDArray[np.float64]
-        """The maximum rate of carboxylation at the observed temperature within sunlit
+        r"""The maximum rate of carboxylation at the observed temperature within sunlit
         leaves (:math:`V_{cmax\_Sn}`)"""
         self.Vcmax_shade: NDArray[np.float64]
-        """The maximum rate of carboxylation at the observed temperature within shaded
+        r"""The maximum rate of carboxylation at the observed temperature within shaded
         leaves (:math:`V_{cmax\_Sd}`)"""
         self.Jmax25_sun: NDArray[np.float64]
-        """The maximum rate of electron transfer at standard temperature within sunlit
+        r"""The maximum rate of electron transfer at standard temperature within sunlit
         leaves (:math:`J_{max25\_Sn}`)"""
         self.Jmax25_shade: NDArray[np.float64]
-        """The maximum rate of electron transfer at standard temperature within shaded
+        r"""The maximum rate of electron transfer at standard temperature within shaded
         leaves (:math:`J_{max25\_Sd}`)"""
         self.Jmax_sun: NDArray[np.float64]
-        """The maximum rate of electron transfer at the observed temperature within
+        r"""The maximum rate of electron transfer at the observed temperature within
         sunlit leaves (:math:`J_{max\_Sn}`)"""
         self.Jmax_shade: NDArray[np.float64]
-        """The maximum rate of electron transfer at the observed temperature within
+        r"""The maximum rate of electron transfer at the observed temperature within
         shaded leaves (:math:`J_{max25\_Sn}`)"""
         self.J_sun: NDArray[np.float64]
-        """The realised rate of electron transfer within sunlit leaves
+        r"""The realised rate of electron transfer within sunlit leaves
         (:math:`J_{Sn}`"""
         self.J_shade: NDArray[np.float64]
-        """The realised rate of electron transfer within sunlit leaves
+        r"""The realised rate of electron transfer within sunlit leaves
         (:math:`J_{Sd}`"""
         self.Av_sun: NDArray[np.float64]
-        """The potential rate of assimilation associated with carboxylation in sunlit
+        r"""The potential rate of assimilation associated with carboxylation in sunlit
         leaves (:math:`A_{v\_Sn}`)."""
         self.Av_shade: NDArray[np.float64]
-        """The potential rate of assimilation associated with carboxylation in shaded
+        r"""The potential rate of assimilation associated with carboxylation in shaded
         leaves (:math:`A_{v\_Sd}`)."""
         self.Aj_sun: NDArray[np.float64]
-        """The potential rate of assimilation associated with electron transfer in
+        r"""The potential rate of assimilation associated with electron transfer in
         sunlit leaves (:math:`A_{j\_Sn}`)."""
         self.Aj_shade: NDArray[np.float64]
-        """The potential rate of assimilation associated with electron transfer in
+        r"""The potential rate of assimilation associated with electron transfer in
         shaded leaves (:math:`A_{j\_Sn}`)."""
         self.A_sun: NDArray[np.float64]
-        """The realised assimilation rate for sunlit leaves (:math:`A_{Sn}`)."""
+        r"""The realised assimilation rate for sunlit leaves (:math:`A_{Sn}`)."""
         self.A_shade: NDArray[np.float64]
-        """The realised assimilation rate for shaded leaves (:math:`A_{Sd}`)."""
+        r"""The realised assimilation rate for shaded leaves (:math:`A_{Sd}`)."""
         self.gpp: NDArray[np.float64]
-        """The gross primary productivity across the sunlit and shaded leaves."""
+        r"""The gross primary productivity across the sunlit and shaded leaves."""
 
         # Automatically run the
         self._calculate_two_leaf_two_stream_gpp()

@@ -21,14 +21,18 @@ from sphinxcontrib.bibtex.style.referencing import BracketStyle
 from sphinxcontrib.bibtex.style.referencing.author_year import AuthorYearReferenceStyle
 
 from pyrealm import __version__ as pyrealm_version
+from pyrealm.core.experimental import ExperimentalFeatureWarning
 
 sys.path.insert(0, str(Path("../").resolve()))
 sys.path.append(str(Path("./sphinx_extensions").resolve()))
 
-# Suppress the 2.0.0 user warnings in the documentation
+# Suppress the 2.0.0 user warnings in the documentation and also suppress the
+# experimental feature warnings.
 warnings.filterwarnings(
     "ignore", category=UserWarning, message="Pyrealm 2.0.0 uses a new default value"
 )
+warnings.filterwarnings("ignore", category=ExperimentalFeatureWarning)
+
 
 # -- Project information -----------------------------------------------------
 

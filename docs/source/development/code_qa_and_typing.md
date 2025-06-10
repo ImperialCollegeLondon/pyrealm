@@ -160,5 +160,6 @@ This should not be done lightly: we are using these QA tools for a reason.
 * `markdownlint` catches issues in Markdown files and uses a range of [HTML comment
   tags](https://github.com/DavidAnson/markdownlint?tab=readme-ov-file#configuration) to
   suppress format warnings. An example is `<!-- markdownlint-disable-line MD001 -->` and
-  a list of the rule codes can be found
-  [here](https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md).
+  the tool homepage provides [a list of the MD rule0
+  codes](https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md) that can be
+  used to surpress warnings.
