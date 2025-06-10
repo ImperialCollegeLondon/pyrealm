@@ -81,7 +81,7 @@ def test_CohortCanopyData__init__(
     data creation, that dataclass is implicitly tested by checking the CohortCanopyData
     class.
 
-    The simple four layer test three identical cohorts to give some easily defined
+    The simple four layer test uses three identical cohorts to give some easily defined
     expected values. The simulation test data is a simple example used in the light
     capture model documentation notebook. This test includes:
 

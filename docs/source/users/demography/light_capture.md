@@ -108,7 +108,7 @@ $$
 
 ```{attention}
 The calculation of $A_{fl}$ uses the **projected leaf area** and not the projected crown
-area: the projected crown area dicates how the crown of a given stem occupies space in
+area: the projected crown area dictates how the crown of a given stem occupies space in
 the canopy actual light capture uses the leaf area, which can be vertically displaced in
 the canopy by the canopy gap fraction.
 ```
@@ -130,7 +130,7 @@ arise in incompletely closed layers at the bottom of the canopy or where a canop
 crown gap fraction is set. Because the absorbance of empty space is zero, the
 calculation of average absorbance implicitly accounts for unfilled space.
 
-The same is not true for transmission, wher unfilled area would need to be included
+The same is not true for transmission, where unfilled area would need to be included
 in the summation with a transmittance value of one.
 ```
 
@@ -344,7 +344,7 @@ if np.allclose(simulated_per_stem_f_abs, per_stem_f_abs):
 ```
 
 We can now calculate the total absorption in each layer for each stem. This is the key
-result for use in most cases: **how much light flux is by each stem in the leaf area of
+result for use in most cases: **how much light flux is absorbed by each stem in the leaf area of
 each layer**.
 
 ```{code-cell} ipython3

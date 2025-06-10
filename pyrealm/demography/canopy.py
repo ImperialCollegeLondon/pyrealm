@@ -331,7 +331,7 @@ class CommunityCanopyData(PandasExporter):
     average_layer_absorption: NDArray[np.float64] = field(init=False)
     """The average absorption within layers across the community."""
     average_layer_lai: NDArray[np.float64] = field(init=False)
-    """The average leaf area index of the the community within layers."""
+    """The average leaf area index of the community within layers."""
     transmission_profile: NDArray[np.float64] = field(init=False)
     """The light transmission profile through the canopy by layer."""
     transmission_to_ground: NDArray[np.float64] = field(init=False)
