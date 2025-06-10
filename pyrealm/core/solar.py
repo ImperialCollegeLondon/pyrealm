@@ -1042,7 +1042,7 @@ class SolarPositions:
     """An array of local meridians given the longitude."""
 
     day_angle: NDArray[np.float64] = field(init=False)
-    """The solar day angle of the observations (:math:`\Gamma`, radians)."""
+    r"""The solar day angle of the observations (:math:`\Gamma`, radians)."""
     equation_of_time: NDArray[np.float64] = field(init=False)
     """The equation of time value for the observations (:math:`E_t`, minutes)."""
     solar_noon: NDArray[np.float64] = field(init=False)
@@ -1050,7 +1050,7 @@ class SolarPositions:
     hour_angle: NDArray[np.float64] = field(init=False)
     """The local hour angle for the observations (:math:`h`, radians)."""
     declination: NDArray[np.float64] = field(init=False)
-    """The declination for the observations ( (:math:`\delta`, radians)."""
+    r"""The declination for the observations ( (:math:`\delta`, radians)."""
     solar_elevation: NDArray[np.float64] = field(init=False)
     r"""The solar elevation for the observations (:math:`\alpha`, radians) ."""
 
