@@ -265,18 +265,23 @@ class FaparLimitation:
             growing_season=growing_season,
         )
 
-        # Get the total GPP for each observation: convert P Model GPP in µg C m-2 s-1
-        # into total moles of Carbon per observation.
-        total_gpp = (
-            pmodel.gpp * avc.duration_seconds * 1e-6
-        ) / pmodel.core_const.k_c_molmass
+        # Get the total GPP for each observation
+        # - need to convert P Model GPP in µg C m-2 s-1 into moles C m-2 y-1
+        # - also need to handle missing values, easier to take _mean_ annual value
+        #   and scale it up to an annual total
+        # - TODO - handle incompleteness - when do we stop estimating annual values from
+        #   partial years (or at least warn about it)
 
-        # Apply any observation level penalty factor
+        # Extract GPP and apply any observation level penalty factor
+        total_gpp = pmodel.gpp
         if gpp_penalty_factor is not None:
             total_gpp *= gpp_penalty_factor
 
-        # Calculate annual total potential GPP
-        annual_total_potential_gpp = avc.get_annual_totals(total_gpp)
+        # Calculate annual mean potential GPP and scale up to the year
+        annual_mean_potential_gpp = avc.get_annual_means(total_gpp)
+        annual_total_potential_gpp = (
+            annual_mean_potential_gpp * (avc.year_n_days) * 86400 * 1e-6
+        ) / pmodel.core_const.k_c_molmass
 
         # Calculate annual mean ca, chi and VPD within growing season
         annual_mean_ca = avc.get_annual_means(pmodel.env.ca, within_growing_season=True)
