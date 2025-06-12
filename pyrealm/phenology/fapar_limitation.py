@@ -5,6 +5,7 @@ from numpy.typing import NDArray
 from typing_extensions import Self
 
 from pyrealm.constants import PhenologyConst
+from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.time_series import AnnualValueCalculator
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.pmodel import AcclimationModel, PModel
@@ -151,6 +152,8 @@ class FaparLimitation:
           season definition in `from_pmodel`
     """
 
+    __experimental__ = True
+
     def _check_shapes(self) -> None:
         """Internal class to check all the input arrays have the same size."""
 
@@ -189,6 +192,8 @@ class FaparLimitation:
              year^{-1}]
             aridity_index: Aka AI, climatological estimate of local aridity index.
         """
+
+        warn_experimental("FaparLimitation")
 
         self.annual_total_potential_gpp = annual_total_potential_gpp
         """Aka A_0, the annual sum of potential GPP. [mol m^{-2} year^{-1}]"""
