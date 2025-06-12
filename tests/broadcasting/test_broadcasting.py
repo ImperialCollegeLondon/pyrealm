@@ -3,7 +3,7 @@ import inspect
 import numpy as np
 
 import pyrealm
-from pyrealm.demography.flora import PlantFunctionalType, PlantFunctionalTypeStrict
+from pyrealm.demography.flora import PlantFunctionalType, PlantFunctionalTypeStrict, StemTraits
 
 
 def get_package_modules(pkg):
@@ -26,7 +26,10 @@ def get_module_callables(module):
             yield name, obj, None
         elif inspect.isclass(obj):
             for mname, method in inspect.getmembers(obj, predicate=inspect.isfunction):
-                yield f"{name}.{mname}", method, obj
+                if mname in ["__init__", "__post_init__"]:
+                    yield name, method, obj
+                else:
+                    yield f"{name}.{mname}", method, obj
 
 
 def is_instance_method(cls, name):
@@ -107,12 +110,29 @@ def extract_numpy_dtype(typ) -> np.dtype:
     return dtype
 
 
+# Demography parameters
+n_pft = 3
+n_heights = 2
+pft_names = [f"Tree{i+1}" for i in range(n_pft)]
+crown_m = np.arange(n_pft)
+crown_n = np.arange(n_pft)
+crown_z = np.linspace(5, 15, n_heights)[:,np.newaxis]
+crown_stem_height = np.full(n_pft, 10)
+crown_area = np.full(n_pft, 10)
+crown_q_m = np.full(n_pft, 3)
+crown_z_max = np.full(n_pft, 10)
+crown_q_z = np.full((n_heights,n_pft), 10)
+crown_n_ind = np.full(n_pft, 2)
+
 def initialise_type_default(typ, shape):
     """Define the default value for each type."""
     from collections.abc import Sequence
     from dataclasses import InitVar
     from random import randint
-    from typing import Any, get_args, get_origin
+    from typing import Any, Union, get_args, get_origin
+    from types import UnionType
+
+    from pyrealm.demography.flora import Flora, StemTraits, PlantFunctionalTypeStrict
 
     # Handle any wrapped types
     # InitVar[T]
@@ -127,6 +147,14 @@ def initialise_type_default(typ, shape):
     # Type[T]
     if origin is type:
         return initialise_type_default(args[0], shape)
+    # Union[...] or X | Y
+    if origin in (Union, UnionType):
+        # Use an array if an option
+        for arg in args:
+            if is_array_type(arg):
+                return initialise_type_default(arg, shape)
+        # Otherwise first type in list
+        return initialise_type_default(args[0], shape)
 
     # Numpy arrays
     if is_array_type(typ):
@@ -139,6 +167,8 @@ def initialise_type_default(typ, shape):
     # Other types
     elif typ == str:
         return ""
+    elif typ == bool:
+        return True
     elif typ == int:
         return 1
     elif typ == float:
@@ -147,24 +177,85 @@ def initialise_type_default(typ, shape):
         return None
     elif typ == PlantFunctionalTypeStrict:
         return PlantFunctionalType(name=f"default.{randint(1, 10000)}")
+    elif typ == Flora:
+        return Flora([PlantFunctionalType(name=name) for name in pft_names])
+    elif typ == StemTraits:
+        return initialise_type_default(Flora, shape).get_stem_traits(pft_names)
     elif len(inspect.signature(typ).parameters) > 0:
         return initialise_class(typ, shape)
     else:
         return typ()
 
 
+# These methods are not relevant or are incompatible without additional work
+skip_methods = [
+    # PModel
+    "AcclimationModel.set_include",
+    # Demography
+    "CohortMethods.drop_cohort_data",
+    "StemTraits",
+    "StemTraits.drop_cohort_data",
+    "_enforce_2D",
+    "calculate_stem_projected_leaf_area_at_z",
+    "get_crown_xy",
+    "calculate_relative_crown_radius_at_z",
+    "calculate_stem_projected_crown_area_at_z",
+    "solve_canopy_area_filling_height",
+    "calculate_crown_areas",
+    "calculate_crown_fractions",
+    "calculate_crown_r0",
+    "calculate_crown_z_max",
+    "calculate_dbh_from_height",
+    "calculate_fine_root_respiration",
+    "calculate_fine_root_turnover",
+    "calculate_foliage_masses",
+    "calculate_foliage_turnover",
+    "calculate_foliar_respiration",
+    "calculate_gpp_topslice",
+    "calculate_growth_increments",
+    "calculate_heights",
+    "calculate_net_primary_productivity",
+    "calculate_reproductive_tissue_mass",
+    "calculate_reproductive_tissue_respiration",
+    "calculate_reproductive_tissue_turnover",
+    "calculate_sapwood_masses",
+    "calculate_sapwood_respiration",
+    "calculate_stem_masses",
+    "calculate_whole_crown_gpp",
+]
+
+# These methods require specific arguments
 manual_test_parameters = {
-    # 'Bounds.lower': 0,
-    # 'Bounds.interval_type': '[]',
-    "Cohorts.__init__.dbh_values": np.zeros(3),
-    "Cohorts.__init__.n_individuals": np.ones(3),
-    "Cohorts.__init__.pft_names": np.array(["Tree1", "Tree2", "Tree3"], dtype=np.str_),
-    "Flora.__init__.pfts": [
-        PlantFunctionalType(name="Tree1"),
-        PlantFunctionalType(name="Tree2"),
-        PlantFunctionalType(name="Tree3"),
-    ],
-    "Canopy.__init__.fit_ppa": True,
+    ## PModel
+    # "AcclimationModel.datetimes": np.full(3, np.datetime64("2000-01-01")),
+    "AcclimationModel.datetimes": np.arange(0, 48, dtype="datetime64[h]"),
+    "AcclimationModel.set_nearest.time": np.timedelta64(12, "h"),
+    "AcclimationModel._validate_and_set_datetimes.datetimes": np.arange(0, 48, dtype="datetime64[h]"),
+    "AcclimationModel._get_subdaily_interpolation_xy.values": np.ones(2),
+    "AcclimationModel.fill_daily_to_subdaily.values": np.ones(2),
+    "AcclimationModel.get_window_values.values": np.ones(48),
+    "AcclimationModel.get_daily_means.values": np.ones(48),
+    "calculate_kattge_knorr_arrhenius_factor.coef": {'ha': 1, 'hd': 1, 'entropy_intercept': 1, 'entropy_slope': 1},
+    ## Demography uses 1D arrays
+    "Cohorts.dbh_values": np.zeros(n_pft),
+    "Cohorts.n_individuals": np.ones(n_pft),
+    "Cohorts.pft_names": np.array(pft_names, dtype=np.str_),
+    "Flora.pfts": [PlantFunctionalType(name=name) for name in pft_names],
+    "Flora.get_stem_traits.pft_names": pft_names,
+    "Canopy.fit_ppa": True,
+    "CohortCanopyData.projected_leaf_area": np.ones((n_heights,n_pft)),
+    "CohortCanopyData.n_individuals": np.ones(n_pft),
+    "CohortCanopyData.pft_lai": np.ones(n_pft),
+    "CohortCanopyData.pft_par_ext": np.ones(n_pft),
+    "CommunityCanopyData.cohort_transmissivity": np.ones((n_heights,n_pft)),
+    "StemAllometry.at_dbh": np.full(n_pft, 0.5),
+    "StemAllocation.whole_crown_gpp": np.full(n_pft, 0.5),
+    "CrownProfile.z": crown_z,
+}
+
+# Call additional methods when initialising these classes
+additional_init_methods = {
+    "AcclimationModel": "set_nearest",
 }
 
 
@@ -207,14 +298,21 @@ def generate_args(name, method, shape):
 
 
 def initialise_class(cls, shape):
-    init_name = f"{cls.__name__}.__init__"
-    print("Initialising:", init_name)
-    args = generate_args(init_name, cls.__init__, shape)
-    return cls(**args)
+    name = cls.__name__
+    print("Initialising:", name)
+    args = generate_args(name, cls.__init__, shape)
+    instance = cls(**args)
+    if name in additional_init_methods:
+        mname = additional_init_methods[name]
+        method = getattr(instance, mname)
+        args = generate_args(name+"."+mname, method, shape)
+        method(**args)
+    return instance
 
 
 def is_equal(val1, val2):
     if isinstance(val1, np.ndarray):
+        if (val1.shape != val2.shape): return False
         return np.all(val1 == val2)
 
     elif isinstance(val1, tuple) and isinstance(val2, tuple):
@@ -242,8 +340,10 @@ shape = (3, 1, 1)
 shape_full = (3, 2, 2)
 
 for mod in get_package_modules(pyrealm):
+    print(mod)
+    print()
     for name, method, cls in get_module_callables(mod):
-        if not has_array_input(method):
+        if not has_array_input(method) or name in skip_methods:
             continue
 
         print(name)
