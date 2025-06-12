@@ -46,8 +46,8 @@ def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
     if obs_per_date > 1:
         # subdaily
 
-        # Check that the number of observations per day is evenly divisible by the
-        # number of seconds in a day (should already have led to differing date counts).
+        # Check that the number of seconds in a day is evenly divisible by the
+        # number of observations per day (should already have led to differing date counts).
         day_remainder = (24 * 60 * 60) % obs_per_date
         if day_remainder:
             raise ValueError("Datetime spacing is not evenly divisible into a day.")
