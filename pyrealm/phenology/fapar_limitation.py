@@ -140,7 +140,7 @@ class FaparLimitation:
     This class takes the annual total potential GPP and precipitation, the annual mean
     CA, Chi and VPD during the growing season, as well as the aridity index and some
     constants to compute the annual peak fractional absorbed photosynthetically active
-    radiation ( fAPAR_max) and annual peak Leaf Area Index (LAI).
+    radiation (fAPAR_max) and annual peak Leaf Area Index (LAI).
 
     .. todo::
 
