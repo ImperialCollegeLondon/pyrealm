@@ -206,6 +206,10 @@ class FaparLimitation:
 
         self._check_shapes()
 
+        # Make sure the aridity index is not zero
+        if aridity_index == 0:
+            raise ValueError("The aridity index has to be non-zero")
+
         # Constants used for phenology computations
         self.phenology_const = PhenologyConst()
 
