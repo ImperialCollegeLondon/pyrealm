@@ -226,11 +226,11 @@ class FaparLimitation:
         )
 
         self.fapar_max = np.minimum(fapar_waterlim, fapar_energylim)
-        """Maximum fapar given water or energy limitation."""
+        """Maximum fapar given water or energy limitation for each year."""
         self.energy_limited = fapar_energylim < fapar_waterlim
-        """Is fapar_max limited by water or energy."""
+        """Is fapar_max limited by water or energy for each year."""
         self.annual_precip_molar = annual_total_precip
-        """The annual precipitation in moles."""
+        """The annual precipitation in moles for each year."""
 
         self.lai_max = -(1 / self.phenology_const.k) * np.log(1.0 - self.fapar_max)
 
