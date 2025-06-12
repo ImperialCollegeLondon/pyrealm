@@ -189,8 +189,8 @@ class C3C4Competition:
         gpp_c3: NDArray[np.float64],
         gpp_c4: NDArray[np.float64],
         treecover: NDArray[np.float64],
-        below_t_min: NDArray[np.float64],
-        cropland: NDArray[np.float64],
+        below_t_min: NDArray[np.bool],
+        cropland: NDArray[np.bool],
         c3c4_const: C3C4Const = C3C4Const(),
     ):
         warn_experimental("C3C4Competition")
