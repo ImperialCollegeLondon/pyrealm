@@ -101,7 +101,7 @@ def get_annual(
 
     if method == "total":
         for i in range(len(years)):
-            annual_x[i] = sum(
+            annual_x[i] = np.sum(
                 daily_x[growing_season & (years_by_day[:, 0] == years[i])]
             )
     elif method == "mean":
