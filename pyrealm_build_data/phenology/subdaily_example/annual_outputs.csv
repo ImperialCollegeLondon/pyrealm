@@ -1,5 +1,5 @@
-year,ann_mean_subdaily_gpp_smstress,ann_mean_subdaily_gpp,annual_precip_molar,N_growing_days,N_days,annual_mean_ca_in_GS,annual_mean_chi_in_GS,annual_mean_VPD_in_GS,ann_total_A0_subdaily_smstress,ann_total_A0_subdaily,energy_limited_fapar,water_limited_fapar,fapar_max,lai_max,m
-2004,44.46287,80.13313,45072.5,286,366,37.01621,0.7635512,370.6888,117.0642,210.9787,0.791106,3.207806,0.791106,3.131857,7.456991
+time,ann_mean_subdaily_gpp_smstress,ann_mean_subdaily_gpp,annual_precip_molar,N_growing_days,N_days,annual_mean_ca_in_GS,annual_mean_chi_in_GS,annual_mean_VPD_in_GS,ann_total_A0_subdaily_smstress,ann_total_A0_subdaily,energy_limited_fapar,water_limited_fapar,fapar_max,lai_max,m
+2004,44.51745,80.23211,45072.5,286,366,37.01621,0.7635512,370.6888,117.2079,211.2393,0.7913622,3.203873,0.7913622,3.134311,7.451271
 2005,48.84269,85.68481,43302.94,285,365,38.75064,0.7696945,373.8606,128.2442,224.9791,0.809317,2.844159,0.809317,3.314286,7.016696
 2006,45.29774,86.99478,47716.19,281,365,38.74116,0.7635585,452.0964,118.9364,228.4186,0.7943943,2.86825,0.7943943,3.16359,7.254208
 2007,57.86437,100.249,60463.09,336,365,38.80415,0.7710365,364.0628,151.9321,263.2195,0.8390465,3.426965,0.8390465,3.65328,7.424052
