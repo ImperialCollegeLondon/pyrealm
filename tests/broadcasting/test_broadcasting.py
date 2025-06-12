@@ -3,7 +3,11 @@ import inspect
 import numpy as np
 
 import pyrealm
-from pyrealm.demography.flora import PlantFunctionalType, PlantFunctionalTypeStrict, StemTraits
+from pyrealm.demography.flora import (
+    PlantFunctionalType,
+    PlantFunctionalTypeStrict,
+    StemTraits,
+)
 
 
 def get_package_modules(pkg):
@@ -113,26 +117,27 @@ def extract_numpy_dtype(typ) -> np.dtype:
 # Demography parameters
 n_pft = 3
 n_heights = 2
-pft_names = [f"Tree{i+1}" for i in range(n_pft)]
+pft_names = [f"Tree{i + 1}" for i in range(n_pft)]
 crown_m = np.arange(n_pft)
 crown_n = np.arange(n_pft)
-crown_z = np.linspace(5, 15, n_heights)[:,np.newaxis]
+crown_z = np.linspace(5, 15, n_heights)[:, np.newaxis]
 crown_stem_height = np.full(n_pft, 10)
 crown_area = np.full(n_pft, 10)
 crown_q_m = np.full(n_pft, 3)
 crown_z_max = np.full(n_pft, 10)
-crown_q_z = np.full((n_heights,n_pft), 10)
+crown_q_z = np.full((n_heights, n_pft), 10)
 crown_n_ind = np.full(n_pft, 2)
+
 
 def initialise_type_default(typ, shape):
     """Define the default value for each type."""
     from collections.abc import Sequence
     from dataclasses import InitVar
     from random import randint
-    from typing import Any, Union, get_args, get_origin
     from types import UnionType
+    from typing import Any, Union, get_args, get_origin
 
-    from pyrealm.demography.flora import Flora, StemTraits, PlantFunctionalTypeStrict
+    from pyrealm.demography.flora import Flora
 
     # Handle any wrapped types
     # InitVar[T]
@@ -230,12 +235,19 @@ manual_test_parameters = {
     # "AcclimationModel.datetimes": np.full(3, np.datetime64("2000-01-01")),
     "AcclimationModel.datetimes": np.arange(0, 48, dtype="datetime64[h]"),
     "AcclimationModel.set_nearest.time": np.timedelta64(12, "h"),
-    "AcclimationModel._validate_and_set_datetimes.datetimes": np.arange(0, 48, dtype="datetime64[h]"),
+    "AcclimationModel._validate_and_set_datetimes.datetimes": np.arange(
+        0, 48, dtype="datetime64[h]"
+    ),
     "AcclimationModel._get_subdaily_interpolation_xy.values": np.ones(2),
     "AcclimationModel.fill_daily_to_subdaily.values": np.ones(2),
     "AcclimationModel.get_window_values.values": np.ones(48),
     "AcclimationModel.get_daily_means.values": np.ones(48),
-    "calculate_kattge_knorr_arrhenius_factor.coef": {'ha': 1, 'hd': 1, 'entropy_intercept': 1, 'entropy_slope': 1},
+    "calculate_kattge_knorr_arrhenius_factor.coef": {
+        "ha": 1,
+        "hd": 1,
+        "entropy_intercept": 1,
+        "entropy_slope": 1,
+    },
     ## Demography uses 1D arrays
     "Cohorts.dbh_values": np.zeros(n_pft),
     "Cohorts.n_individuals": np.ones(n_pft),
@@ -243,11 +255,11 @@ manual_test_parameters = {
     "Flora.pfts": [PlantFunctionalType(name=name) for name in pft_names],
     "Flora.get_stem_traits.pft_names": pft_names,
     "Canopy.fit_ppa": True,
-    "CohortCanopyData.projected_leaf_area": np.ones((n_heights,n_pft)),
+    "CohortCanopyData.projected_leaf_area": np.ones((n_heights, n_pft)),
     "CohortCanopyData.n_individuals": np.ones(n_pft),
     "CohortCanopyData.pft_lai": np.ones(n_pft),
     "CohortCanopyData.pft_par_ext": np.ones(n_pft),
-    "CommunityCanopyData.cohort_transmissivity": np.ones((n_heights,n_pft)),
+    "CommunityCanopyData.cohort_transmissivity": np.ones((n_heights, n_pft)),
     "StemAllometry.at_dbh": np.full(n_pft, 0.5),
     "StemAllocation.whole_crown_gpp": np.full(n_pft, 0.5),
     "CrownProfile.z": crown_z,
@@ -305,14 +317,15 @@ def initialise_class(cls, shape):
     if name in additional_init_methods:
         mname = additional_init_methods[name]
         method = getattr(instance, mname)
-        args = generate_args(name+"."+mname, method, shape)
+        args = generate_args(name + "." + mname, method, shape)
         method(**args)
     return instance
 
 
 def is_equal(val1, val2):
     if isinstance(val1, np.ndarray):
-        if (val1.shape != val2.shape): return False
+        if val1.shape != val2.shape:
+            return False
         return np.all(val1 == val2)
 
     elif isinstance(val1, tuple) and isinstance(val2, tuple):
