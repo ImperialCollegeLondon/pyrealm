@@ -61,6 +61,22 @@ language_info:
     :members:
 ```
 
+## The {mod}`~pyrealm.core.solar` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.core.solar
+    :autosummary:
+    :members:
+```
+
+## The {mod}`~pyrealm.core.time_series` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.core.time_series
+    :autosummary:
+    :members:
+```
+
 ## The {mod}`~pyrealm.core.utilities` submodule
 
 ```{eval-rst}
@@ -73,14 +89,6 @@ language_info:
 
 ```{eval-rst}
 .. automodule:: pyrealm.core.water
-    :autosummary:
-    :members:
-```
-
-## The {mod}`~pyrealm.core.solar` submodule
-
-```{eval-rst}
-.. automodule:: pyrealm.core.solar
     :autosummary:
     :members:
 ```
