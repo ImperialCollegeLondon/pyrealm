@@ -75,11 +75,43 @@ Effectively the crown is treated as a single flat area - hence the "big leaf".
 
 ## Light capture in a vertically structured canopy
 
-Instead of the big leaf model, the canopy model uses the vertical distribution of leaf
-area for individual stems described in the [crown model](./crown.md) to partition crown
-area to give a [canopy model](./canopy.md) that partitions the crown area of individual
-stems into canopy layers at different vertical heights. Light capture then needs to
-account for the shading of lower canopy sections by the leaf area in layers above.
+Instead of the big leaf model, the [canopy model](./canopy.md) uses the vertical
+distribution of leaf area for individual stems, as described in the [crown
+model](./crown.md), to partition all of crown area of individuals in a community into
+layers. The light capture model needs to account for light absorption through the canopy
+layers to calculate how much light is absorbed by different individuals within the
+different layers.
+
+The canopy model defines a set of canopy closure heights ($z^*_l$ for layers $l = 1,
+..., m$) that define the  canopy layers, but what are these layers exactly? Each layer:
+
+* has a depth that extends from the closure height of the layer above (or the top of the
+  canopy for the first layer), down to the layer's closure height.
+* contains projected crown and leaf area from at least one individual in the community.
+* absorbs light, following the projected leaf area of the individuals in the layer and
+  the leaf area index (LAI, $L$).
+
+Each successive layer therefore has access to less and less light as it is filtered out
+by the layers above.
+
+```{admonition} Projected leaf area, leaf area index and layer depth
+
+The projected leaf area and leaf area index sound similar but represent very different
+things:
+
+* The projected leaf area is a simple two dimensional measure of how much of the total
+  crown area is found at different heights.
+* The actual amount of leaf area within the layer is the projected leaf area multiplied
+  by the LAI. Two individuals can have the same crown area and vertical distribution of
+  projected leaf area, but still differ in their LAI. A stem with a larger LAI will
+  have denser canopy that can capture more light.
+* The LAI is effectively the "depth" of leaf area within a layer, because as $L$
+  increases, more light is captured within those leaves because $L$ is included in the
+  Beer-Lambert law.
+* The actual vertical depth of a layer - the distance between two successive canopy
+  closure heights - is not actually used in the light capture model.
+
+```
 
 For a single individual within the community, the light absorbed in a particular layer
 $l$ of the canopy is described as:
@@ -145,10 +177,10 @@ the cumulative transmission $T_l$ can be calculated as the cumulative product of
 transmission values after setting $t_1 = 1$:
 
 $$
-\begin{align}
-T_{l} &= 1 \; l=1 \\
-       &= T_{l-1} \cdot t_l, \textrm{otherwise}
-\end{align}
+T_{l} =  \begin{cases}
+  1 & \textrm{if } l=1 \\
+  T_{l-1} \cdot t_l & \textrm{otherwise}
+\end{cases}
 $$
 
 The last value of $T_l$ is the fraction of canopy top radiation passing through the

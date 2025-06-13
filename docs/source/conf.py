@@ -31,8 +31,12 @@ sys.path.append(str(Path("./sphinx_extensions").resolve()))
 warnings.filterwarnings(
     "ignore", category=UserWarning, message="Pyrealm 2.0.0 uses a new default value"
 )
-warnings.filterwarnings("ignore", category=ExperimentalFeatureWarning)
+warnings.filterwarnings(
+    "ignore",
+    category=ExperimentalFeatureWarning,
+)
 
+warnings.filterwarnings("ignore")
 
 # -- Project information -----------------------------------------------------
 

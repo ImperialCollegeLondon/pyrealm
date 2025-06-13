@@ -136,12 +136,19 @@ $$
 That is, the projected crown area is zero above the top of the stem, increases to the
 expected crown area at $z_max$ and is then constant to ground level.
 
-The projected leaf area $\tilde{A}_{cp}(z)$ models how the vertical distribution of
-leaf area within the crown is modified by the crown gap fraction $f_g$. This trait
-models how leaf gaps higher in the crown are filled by leaf area at lower heights:
-it does not change the profile of the crown but allows leaf area in the crown to be
-displaced downwards. When $f_g = 0$, the projected crown and leaf areas are identical,
-but as $f_g \to 1$ the projected leaf area is pushed downwards.
+The projected leaf area $\tilde{A}_{cp}(z)$ models how the vertical distribution of leaf
+area within the crown is modified by the crown gap fraction ($f_g$). This trait captures
+the relative canopy openness of different plant functional types. Some PFTs occupy a
+large space in the canopy but have relatively open crowns that let light pass down into
+canopy more. Other PFTs form compact crowns that are arranged a more closed surface.
+
+If we compare two PFTs that only differ in $f_g$, then they will have exactly the same
+projected crown areas at a given height, and this drives how the tree takes up space
+within the canopy. However the PFT with the larger $f_g$ will have a more open canopy,
+with leaf area over a wider vertical range within the canopy shape because of the
+increased openness of the canopy.  When $f_g = 0$, the projected crown and leaf areas
+are identical, but as $f_g \to 1$ the projected leaf area is pushed downwards.
+
 The calculation of $\tilde{A}_{cp}(z)$ is defined as:
 
 $$
@@ -157,7 +164,7 @@ $$
 
 The {class}`~pyrealm.demography.flora.PlantFunctionalType` class is typically
 used to set specific PFTs, but the functions to calculate $q_m$ and $p_{zm}$
-are used directly below to provides a demonstration of the impacts of each trait.
+are used directly below to provide a demonstration of the impacts of each trait.
 
 ```{code-cell} ipython3
 # Set a range of values for m and n traits
@@ -287,7 +294,7 @@ The code below generates a plot of the vertical shape profiles of the crowns for
 stem. For each stem:
 
 * the dashed line shows how the relative crown radius $q(z)$ varies with height $z$,
-* the solid line shows the actual crown radius $r(z)$ varies with height, and
+* the solid line shows how the actual crown radius $r(z)$ varies with height, and
 * the dotted horizontal line shows the height at which the maximum crown radius is
   found ($z_{max}$).
 
@@ -307,6 +314,8 @@ restricted to actual valid heights for that stem and is demonstrated in the
 :::
 
 ```{code-cell} ipython3
+:tags: [hide-input]
+
 fig, ax = plt.subplots(ncols=1)
 
 # Find the maximum of the actual and relative maximum crown widths
@@ -401,6 +410,8 @@ lines) change with height along the stem.
   within the crown.
 
 ```{code-cell} ipython3
+:tags: [hide-input]
+
 fig, ax = plt.subplots(ncols=1)
 
 for pft_idx, offset, colour in zip((0, 1, 2), (0, 5, 10), ("r", "g", "b")):
@@ -418,9 +429,11 @@ for pft_idx, offset, colour in zip((0, 1, 2), (0, 5, 10), ("r", "g", "b")):
 
 We can also generate predictions for a single PFT with varying crown gap fraction. In
 the plot below, note that all leaf area is above $z_{max}$ when $f_g=1$ and all leaf
-area is *below*
+area is *below* $z_{max}$ when $f_g=0$.
 
 ```{code-cell} ipython3
+:tags: [hide-input]
+
 fig, ax = plt.subplots(ncols=1)
 
 # Loop over f_g values
