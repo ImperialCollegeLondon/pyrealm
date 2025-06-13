@@ -367,6 +367,59 @@ def test_calculate_relative_crown_radius_at_z_values(fixture_community):
 
 
 @pytest.mark.parametrize(
+    argnames="m,n",
+    argvalues=[
+        pytest.param(2, 5, id="default"),
+        pytest.param(3, 1, id="conifer"),
+        pytest.param(3, 1.5, id="tulip"),
+        pytest.param(1, 3, id="inverse_conifer"),
+        pytest.param(1.5, 3, id="inverse_tulip"),
+    ],
+)
+def test_calculate_relative_crown_radius_at_z_values_clipping(m, n):
+    """Test the clipping in calculate_relative_crown_radius_at_z.
+
+    This test validates the expectation that the canopy shape model correctly
+    predicts the crown area from the T Model equations at the predicted height of
+    maximum crown radius.
+    """
+
+    from pyrealm.demography.crown import (
+        calculate_relative_crown_radius_at_z,
+    )
+    from pyrealm.demography.flora import PlantFunctionalType
+
+    # Default PFT settings
+    pft = PlantFunctionalType(name="test", m=m, n=n)
+
+    # Get the relative radius at that heights of the crown z_max values
+    q_z_values = calculate_relative_crown_radius_at_z(
+        z=np.array(
+            [
+                11,  # Above the stem height
+                10 * pft.z_max_prop + 0.01,  # Just above the maximum width
+                10 * pft.z_max_prop,  # At the maximum width
+                10 * pft.z_max_prop + 0.01,  # Just below the maximum width
+                -1,  # Below ground level
+            ]
+        ),
+        stem_height=np.array([10]),
+        m=np.array([pft.m]),
+        n=np.array([pft.n]),
+    )
+
+    # Where z < 0 or z > H, q(z) should be zero
+    assert_allclose(q_z_values[[0, 4]], np.zeros(2))
+
+    # Where z = H * z_max_prop, q(z) should be q_m
+    assert q_z_values[2] == pft.q_m
+
+    # Either side of that, values should be >= 0 and < q_m
+    assert np.all(np.less(q_z_values[[1, 3]], pft.q_m))
+    assert np.all(np.greater_equal(q_z_values[[1, 3]], 0))
+
+
+@pytest.mark.parametrize(
     argnames="fixture_z_qz_stem_properties",
     argvalues=[
         "fail_stem_props_not_1D",
