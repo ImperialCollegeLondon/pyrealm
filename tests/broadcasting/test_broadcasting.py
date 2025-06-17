@@ -3,6 +3,7 @@ import inspect
 import numpy as np
 
 import pyrealm
+from pyrealm.core.calendar import Calendar
 from pyrealm.demography.flora import (
     PlantFunctionalType,
     PlantFunctionalTypeStrict,
@@ -118,15 +119,6 @@ def extract_numpy_dtype(typ) -> np.dtype:
 n_pft = 3
 n_heights = 2
 pft_names = [f"Tree{i + 1}" for i in range(n_pft)]
-crown_m = np.arange(n_pft)
-crown_n = np.arange(n_pft)
-crown_z = np.linspace(5, 15, n_heights)[:, np.newaxis]
-crown_stem_height = np.full(n_pft, 10)
-crown_area = np.full(n_pft, 10)
-crown_q_m = np.full(n_pft, 3)
-crown_z_max = np.full(n_pft, 10)
-crown_q_z = np.full((n_heights, n_pft), 10)
-crown_n_ind = np.full(n_pft, 2)
 
 
 def initialise_type_default(typ, shape):
@@ -164,7 +156,7 @@ def initialise_type_default(typ, shape):
     # Numpy arrays
     if is_array_type(typ):
         dtype = extract_numpy_dtype(typ)
-        if dtype == np.datetime64:
+        if np.issubdtype(dtype, np.datetime64):
             return np.full(shape, np.datetime64("2000-01-01"), dtype=dtype)
         else:
             return np.ones(shape, dtype=dtype)
@@ -187,7 +179,7 @@ def initialise_type_default(typ, shape):
     elif typ == StemTraits:
         return initialise_type_default(Flora, shape).get_stem_traits(pft_names)
     elif len(inspect.signature(typ).parameters) > 0:
-        return initialise_class(typ, shape)
+        return initialise_class(typ, {}, shape)
     else:
         return typ()
 
@@ -196,7 +188,17 @@ def initialise_type_default(typ, shape):
 skip_methods = [
     # PModel
     "AcclimationModel.set_include",
-    # Demography
+    "PModelABC",  # Cannot init ABC
+    "QuantumYieldABC",  # Cannot init ABC
+    "OptimalChiABC.estimate_chi",  # Cannot init ABC
+    "OptimalChiC4RootzoneStress.estimate_chi",  # Requires rootzonestress in PME
+    "OptimalChiC4NoGammaRootzoneStress.estimate_chi",  # Requires rootzonestress in PME
+    "OptimalChiPrentice14RootzoneStress.estimate_chi",  # Requires rootzonestress in PME
+    "OptimalChiLavergne20C3.estimate_chi",  # Requires theta in PME
+    "OptimalChiLavergne20C4.estimate_chi",  # Requires theta in PME
+    "QuantumYieldSandoval",  # Requires aridity_index in PME
+    "QuantumYieldSandoval.peak_quantum_yield",  # Requires aridity_index in PME
+    # Demography - mostly 1d arrays (dataframes)
     "CohortMethods.drop_cohort_data",
     "StemTraits",
     "StemTraits.drop_cohort_data",
@@ -229,41 +231,81 @@ skip_methods = [
     "calculate_whole_crown_gpp",
 ]
 
+
 # These methods require specific arguments
-manual_test_parameters = {
-    ## PModel
-    # "AcclimationModel.datetimes": np.full(3, np.datetime64("2000-01-01")),
-    "AcclimationModel.datetimes": np.arange(0, 48, dtype="datetime64[h]"),
-    "AcclimationModel.set_nearest.time": np.timedelta64(12, "h"),
-    "AcclimationModel._validate_and_set_datetimes.datetimes": np.arange(
-        0, 48, dtype="datetime64[h]"
-    ),
-    "AcclimationModel._get_subdaily_interpolation_xy.values": np.ones(2),
-    "AcclimationModel.fill_daily_to_subdaily.values": np.ones(2),
-    "AcclimationModel.get_window_values.values": np.ones(48),
-    "AcclimationModel.get_daily_means.values": np.ones(48),
-    "calculate_kattge_knorr_arrhenius_factor.coef": {
-        "ha": 1,
-        "hd": 1,
-        "entropy_intercept": 1,
-        "entropy_slope": 1,
-    },
-    ## Demography uses 1D arrays
-    "Cohorts.dbh_values": np.zeros(n_pft),
-    "Cohorts.n_individuals": np.ones(n_pft),
-    "Cohorts.pft_names": np.array(pft_names, dtype=np.str_),
-    "Flora.pfts": [PlantFunctionalType(name=name) for name in pft_names],
-    "Flora.get_stem_traits.pft_names": pft_names,
-    "Canopy.fit_ppa": True,
-    "CohortCanopyData.projected_leaf_area": np.ones((n_heights, n_pft)),
-    "CohortCanopyData.n_individuals": np.ones(n_pft),
-    "CohortCanopyData.pft_lai": np.ones(n_pft),
-    "CohortCanopyData.pft_par_ext": np.ones(n_pft),
-    "CommunityCanopyData.cohort_transmissivity": np.ones((n_heights, n_pft)),
-    "StemAllometry.at_dbh": np.full(n_pft, 0.5),
-    "StemAllocation.whole_crown_gpp": np.full(n_pft, 0.5),
-    "CrownProfile.z": crown_z,
-}
+def manual_arguments(method_name, shape):
+    method_arguments = {
+        ## PModel
+        # "AcclimationModel.datetimes": np.full(3, np.datetime64("2000-01-01")),
+        # Subdaily data needs more than 1 day of times (uses 48 hours)
+        "AcclimationModel": {"datetimes": np.arange(0, 48, dtype="datetime64[h]")},
+        "AcclimationModel.set_nearest": {"time": np.timedelta64(12, "h")},
+        "AcclimationModel._validate_and_set_datetimes": {
+            "datetimes": np.arange(0, 48, dtype="datetime64[h]")
+        },
+        "AcclimationModel._get_subdaily_interpolation_xy": {"values": np.ones(2)},
+        "AcclimationModel.fill_daily_to_subdaily": {"values": np.ones(2)},
+        "AcclimationModel.get_window_values": {"values": np.ones(48)},
+        "AcclimationModel.get_daily_means": {"values": np.ones(48)},
+        "calculate_kattge_knorr_arrhenius_factor": {
+            "coef": {"ha": 1, "hd": 1, "entropy_intercept": 1, "entropy_slope": 1}
+        },
+        "SplashModel": {"dates": Calendar(np.arange(0, 3, dtype="datetime64[D]"))},
+        ## Demography uses 1D arrays
+        "Cohorts": {
+            "dbh_values": np.zeros(n_pft),
+            "n_individuals": np.ones(n_pft),
+            "pft_names": np.array(pft_names, dtype=np.str_),
+        },
+        "Flora": {"pfts": [PlantFunctionalType(name=name) for name in pft_names]},
+        "Flora.get_stem_traits": {"pft_names": pft_names},
+        "Canopy": {"fit_ppa": True},
+        "CohortCanopyData": {
+            "projected_leaf_area": np.ones((n_heights, n_pft)),
+            "n_individuals": np.ones(n_pft),
+            "pft_lai": np.ones(n_pft),
+            "pft_par_ext": np.ones(n_pft),
+        },
+        "CommunityCanopyData": {"cohort_transmissivity": np.ones((n_heights, n_pft))},
+        "StemAllometry": {"at_dbh": np.full(n_pft, 0.5)},
+        "StemAllocation": {"whole_crown_gpp": np.full(n_pft, 0.5)},
+        "CrownProfile": {"z": np.linspace(5, 15, n_heights)[:, np.newaxis]},
+    }
+    if method_name == "SplashModel.calculate_soil_moisture":
+        return {"wn_init": np.full(shape[1:], 10)}
+    if method_name == "SubdailyPModel":
+        # Need a PModelEnvironment with 48 hour times
+        envShape = (1 if shape[0] == 1 else 48, *shape[1:])
+        return {
+            "env": pyrealm.pmodel.PModelEnvironment(
+                tc=np.full(envShape, 20),
+                vpd=np.full(envShape, 40),
+                co2=np.full(envShape, 1000),
+                patm=np.full(envShape, 101325),
+                fapar=np.full(envShape, 1),
+                ppfd=np.full(envShape, 8000),
+            )
+        }
+
+    return method_arguments.get(method_name, {})
+
+
+# These methods need specific class initialisation parameters
+def method_class_arguments(method_name, shape):
+    if method_name == "SplashModel.estimate_initial_soil_moisture":
+        # Requires at least 1 year of data
+        nTime = 366
+        timeShape = (nTime if shape[0] != 1 else 1, *shape[1:])
+        return {
+            "dates": Calendar(np.arange(0, nTime, dtype="datetime64[D]")),
+            "lat": np.full(timeShape, 0),
+            "elv": np.full(timeShape, 10),
+            "sf": np.full(timeShape, 0.5),
+            "tc": np.full(timeShape, 25),
+            "pn": np.full(timeShape, 10),
+        }
+    return {}
+
 
 # Call additional methods when initialising these classes
 additional_init_methods = {
@@ -271,7 +313,7 @@ additional_init_methods = {
 }
 
 
-def generate_args(name, method, shape):
+def generate_args(name, method, manual_args, shape):
     """Generate the arguments needed for a function. Requires type hinting.
     Numpy arrays are defined using the shape argument.
     """
@@ -280,10 +322,9 @@ def generate_args(name, method, shape):
     kwargs = {}
     sig = inspect.signature(method)
     for param_name, param in sig.parameters.items():
-        method_arg_name = f"{name}.{param_name}"
         # Set manually defined values
-        if method_arg_name in manual_test_parameters:
-            kwargs[param_name] = manual_test_parameters[method_arg_name]
+        if param_name in manual_args:
+            kwargs[param_name] = manual_args[param_name]
         # Skip unnecesary arguments
         elif param_name == "self" or param.kind in (
             param.VAR_POSITIONAL,
@@ -296,7 +337,7 @@ def generate_args(name, method, shape):
         # Initialise any other arguments
         else:
             if param.annotation is param.empty:
-                raise Exception(f"Missing annotation for {method_arg_name}")
+                raise Exception(f"Missing annotation for {name}:{param_name}")
             # Get the contexts of the pyrealm classes to pass to get_type_hints
             globalns = {}
             for module in get_package_modules(pyrealm):
@@ -309,15 +350,18 @@ def generate_args(name, method, shape):
     return kwargs
 
 
-def initialise_class(cls, shape):
+def initialise_class(cls, method_class_args, shape):
     name = cls.__name__
-    print("Initialising:", name)
-    args = generate_args(name, cls.__init__, shape)
+    # print("Initialising:", name)
+    manual_args = manual_arguments(name, shape) | method_class_args
+    args = generate_args(name, cls.__init__, manual_args, shape)
     instance = cls(**args)
+    # If there are any additional methods required for initialisation call these
     if name in additional_init_methods:
         mname = additional_init_methods[name]
         method = getattr(instance, mname)
-        args = generate_args(name + "." + mname, method, shape)
+        manual_method_args = manual_arguments(name + "." + mname, shape)
+        args = generate_args(name + "." + mname, method, manual_method_args, shape)
         method(**args)
     return instance
 
@@ -353,8 +397,6 @@ shape = (3, 1, 1)
 shape_full = (3, 2, 2)
 
 for mod in get_package_modules(pyrealm):
-    print(mod)
-    print()
     for name, method, cls in get_module_callables(mod):
         if not has_array_input(method) or name in skip_methods:
             continue
@@ -362,14 +404,15 @@ for mod in get_package_modules(pyrealm):
         print(name)
 
         # Generate the arguments for the method
-        args = generate_args(name, method, shape)
-        args_full = generate_args(name, method, shape_full)
+        manual_args = manual_arguments(name, shape)
+        args = generate_args(name, method, manual_args, shape)
+        args_full = generate_args(name, method, manual_args, shape_full)
 
         if is_instance_method(cls, method.__name__):
-            print("CM", name)
             # First initialise class and get bound methods
-            instance1 = initialise_class(cls, shape)
-            instance2 = initialise_class(cls, shape_full)
+            method_class_args = method_class_arguments(name, shape)
+            instance1 = initialise_class(cls, method_class_args, shape)
+            instance2 = initialise_class(cls, method_class_args, shape_full)
             method1 = getattr(instance1, method.__name__)
             method2 = getattr(instance2, method.__name__)
             # Run the method
@@ -379,16 +422,15 @@ for mod in get_package_modules(pyrealm):
             is_correct = is_equal(result, result_full) and compare_instances(
                 instance1, instance2
             )
-            print("CM", name, is_correct)
+            print("Correct?", is_correct)
 
         else:
-            print("FN", name)
             # Run the method
             result = method(**args)
             result_full = method(**args_full)
             # Compare results
             is_correct = is_equal(result, result_full)
-            print("FN", name, is_correct)
+            print("Correct?", is_correct)
 
         print()
         # # Compare the results to see if they are identical
