@@ -20,6 +20,7 @@ import xarray as xr
 from numpy.typing import NDArray
 from scipy.special import lambertw  # type: ignore[import-untyped]
 
+from pyrealm.core.time_series import AnnualValueCalculator
 from pyrealm.core.water import convert_water_mm_to_moles
 from pyrealm.pmodel import (
     AcclimationModel,
@@ -141,8 +142,7 @@ env = PModelEnvironment(
 
 # Set up the datetimes of the observations and set the acclimation window
 acclim = AcclimationModel(
-    datetimes=de_gri_hh_xr["time"].to_numpy(),
-    alpha=1 / 15,
+    datetimes=de_gri_hh_xr["time"].to_numpy(), alpha=1 / 15, allow_holdover=True
 )
 acclim.set_window(
     window_center=np.timedelta64(12, "h"),
@@ -157,8 +157,7 @@ subdaily_pmodel = SubdailyPModel(
     method_kphio="temperature",
 )
 
-# Get an xarray dataset of the required outputs at half hourly scale to be resampled to
-# the daily scale and also the input variables required to fit the model
+# Get an xarray dataset of the required outputs at half hourly scale
 subdaily_outputs = xr.Dataset(
     data_vars=dict(
         PMod_gpp=("time", subdaily_pmodel.gpp),
@@ -175,97 +174,105 @@ subdaily_outputs = xr.Dataset(
     coords=dict(time=de_gri_hh_xr["time"]),
 )
 
-# Resample those pmodel outputs to daily frequency and get mean values
-subdaily_daily_resampler = subdaily_outputs.resample(time="1D")
-subdaily_daily_values = subdaily_daily_resampler.mean()
-
-# Add splash data to the daily data, using left join to subset 20 year time series to
-# only the observed site days.
-subdaily_daily_values = subdaily_daily_values.merge(de_gri_splash, join="left")
-
-# Calculate soil moisture stress factor using SPLASH soil moisture / bucket size
-soilm_stress = calc_soilmstress_mengoli(
-    soilm=subdaily_daily_values["wn"].to_numpy() / 150,
-    aridity_index=aridity_index.to_numpy(),
-)
-
-subdaily_daily_values = subdaily_daily_values.assign(
-    soilm_stress=("time", soilm_stress)
-)
-
-# Apply the soil moisture penalty to the daily mean GPP
-subdaily_daily_values["PMod_gpp_smstress"] = (
-    subdaily_daily_values["PMod_gpp"] * subdaily_daily_values["soilm_stress"]
-)
-
-# Calculate growing seasons - note that this is operating over the _whole_ timespan, so
-# includes blocks that cross year boundaries
+# To calculate the fAPAR and LAI max, we need a definition of growing season. We don't
+# have good methods for this yet, but the example in the demo code was any day with a
+# mean temperature of greater than freezing, and where that continued for at least 5
+# days.
 
 # Get the growing days
-subdaily_daily_values["growing_day"] = subdaily_daily_values["tc"] > 0
+growing_day = subdaily_outputs["tc"].resample(time="1D").mean() > 0
 
 # Eliminate short chunks of growth
-gsl_lengths, gsl_values = run_length_encode(
-    subdaily_daily_values["growing_day"].to_numpy()
-)
+gsl_lengths, gsl_values = run_length_encode(growing_day.to_numpy())
 gsl_values[np.logical_and(gsl_values == 1, gsl_lengths < 5)] = 0
-gsl_filtered = np.repeat(gsl_values, gsl_lengths)
+growing_day.data = np.repeat(gsl_values, gsl_lengths)
 
-# Save filtered growing days
-subdaily_daily_values = subdaily_daily_values.assign(
-    growing_day_filtered=("time", gsl_filtered)
+# Now assign those daily values at the subdaily frequency
+subdaily_outputs = subdaily_outputs.assign(
+    growing_day=("time", np.repeat(growing_day.to_numpy(), 48))
 )
 
-# Calculate annual values
-
-# Precipitation and number of growing days
-
-ann_total_P_molar = de_gri_hh_xr["P_F_MOLAR"].groupby("time.year").sum()
-ann_total_GD = subdaily_daily_values["growing_day_filtered"].groupby("time.year").sum()
-ann_days_in_year = (
-    subdaily_daily_values["growing_day_filtered"].groupby("time.year").count()
-)
-
-# Average annual GPP ± soil moisture stress
-# GPP, precipitation and growing day totals across the whole year.
-ann_mean_subdaily_gpp = subdaily_daily_values["PMod_gpp"].groupby("time.year").mean()
-ann_mean_subdaily_gpp_smstress = (
-    subdaily_daily_values["PMod_gpp_smstress"].groupby("time.year").mean()
-)
-
-# Average conditions within growing days
-growing_conditions = (
-    subdaily_daily_values[["ca", "PMod_chi", "vpd", "time"]]
-    .where(subdaily_daily_values["growing_day_filtered"], drop=True)
-    .groupby("time.year")
-    .mean()
-    .rename(
-        {
-            "ca": "annual_mean_ca_in_GS",
-            "PMod_chi": "annual_mean_chi_in_GS",
-            "vpd": "annual_mean_VPD_in_GS",
-        }
+# We also want to support posthoc GPP penalties, so calculate the Mengoli daily stress
+# factors using SPLASH soil moisture / bucket size
+de_gri_splash = de_gri_splash.assign(
+    soilm_stress=(
+        "time",
+        calc_soilmstress_mengoli(
+            soilm=de_gri_splash["wn"].to_numpy() / 150,
+            aridity_index=aridity_index.to_numpy(),
+        ),
     )
 )
 
-# Create an annual dataset, joining on site data to drop extra CRU years
-subdaily_annual_values = xr.merge(
-    [
-        ann_mean_subdaily_gpp_smstress.rename("ann_mean_subdaily_gpp_smstress"),
-        ann_mean_subdaily_gpp.rename("ann_mean_subdaily_gpp"),
-        ann_total_P_molar.rename("annual_precip_molar"),
-        ann_total_GD.rename("N_growing_days"),
-        ann_days_in_year.rename("N_days"),
-        growing_conditions,
-    ],
-    join="left",
+# Reduce to GPP timeseries length
+de_gri_splash = de_gri_splash.sel(time=slice("2004-01-01", "2014-12-31"))
+
+# Duplicate penalty factor to half hourly intervals in subdaily data
+subdaily_outputs = subdaily_outputs.assign(
+    soilm_stress=("time", np.repeat(de_gri_splash["soilm_stress"].to_numpy(), 48))
+)
+
+# Calculate penalised GPP
+subdaily_outputs = subdaily_outputs.assign(
+    PMod_gpp_smstress=subdaily_outputs["PMod_gpp"] * subdaily_outputs["soilm_stress"],
+)
+
+# Calculate annual values
+avc = AnnualValueCalculator(
+    timing=acclim,
+    growing_season=subdaily_outputs["growing_day"].to_numpy(),
+)
+
+
+# Average annual GPP ± soil moisture stress
+# GPP, precipitation and growing day totals across the whole year.
+
+ann_mean_subdaily_gpp = avc.get_annual_means(subdaily_outputs["PMod_gpp"].to_numpy())
+
+ann_mean_subdaily_gpp_smstress = avc.get_annual_means(
+    subdaily_outputs["PMod_gpp_smstress"].to_numpy()
+)
+
+ann_total_P_molar = avc.get_annual_totals(subdaily_outputs["precip_molar"].to_numpy())
+
+# Chi, ca and VPD in growing season
+annual_mean_ca_in_GS = avc.get_annual_means(
+    subdaily_outputs["ca"].to_numpy(), within_growing_season=True
+)
+
+annual_mean_chi_in_GS = avc.get_annual_means(
+    subdaily_outputs["PMod_chi"].to_numpy(), within_growing_season=True
+)
+
+annual_mean_vpd_in_GS = avc.get_annual_means(
+    subdaily_outputs["vpd"].to_numpy(), within_growing_season=True
+)
+
+# Create an annual dataset
+subdaily_annual_values = xr.Dataset(
+    data_vars=dict(
+        ann_mean_subdaily_gpp_smstress=("time", ann_mean_subdaily_gpp_smstress),
+        ann_mean_subdaily_gpp=("time", ann_mean_subdaily_gpp),
+        annual_precip_molar=("time", ann_total_P_molar),
+        N_growing_days=("time", avc.year_n_growing_days),
+        N_days=("time", avc.year_n_days),
+        annual_mean_ca_in_GS=("time", annual_mean_ca_in_GS),
+        annual_mean_chi_in_GS=("time", annual_mean_chi_in_GS),
+        annual_mean_VPD_in_GS=("time", annual_mean_vpd_in_GS),
+    ),
+    coords=dict(time=avc.years),
+)
+
+# Reduce time coords to annual precision
+subdaily_annual_values = subdaily_annual_values.assign_coords(
+    time=subdaily_annual_values["time"].dt.year
 )
 
 
 # Constants
 z = 12.227  # leaf costs, mol m2 year
 k = 0.5  # light extinction coefficient, -
-f_0 = 0.65 * np.exp(-0.604169 * np.log(aridity_index / 1.9) ** 2)
+f_0 = 0.65 * np.exp(-0.604169 * np.log(aridity_index.to_numpy() / 1.9) ** 2)
 sigma = 0.771
 
 # Convert mean GPP from µg C m-2 s-1 to annual moles
@@ -294,7 +301,6 @@ subdaily_annual_values["water_limited_fapar"] = (
     (f_0 * ann_total_P_molar) / subdaily_annual_values["ann_total_A0_subdaily_smstress"]
 )
 
-
 subdaily_annual_values["fapar_max"] = np.minimum(
     subdaily_annual_values["energy_limited_fapar"],
     subdaily_annual_values["water_limited_fapar"],
@@ -303,53 +309,66 @@ subdaily_annual_values["lai_max"] = -(1 / k) * np.log(
     1 - subdaily_annual_values["fapar_max"]
 )
 
-
 # Calculate ratio of steady state LAI to steady state GPP
 subdaily_annual_values["m"] = (
-    sigma * ann_total_GD * subdaily_annual_values["lai_max"]
+    sigma * subdaily_annual_values["N_growing_days"] * subdaily_annual_values["lai_max"]
 ) / (
     subdaily_annual_values["ann_total_A0_subdaily_smstress"]
     * subdaily_annual_values["fapar_max"]
 )
 
-
-# Calculate steady state LAI, using principal branch of Lambert W function
-#  - Map annual m and LAI values onto each year
-subdaily_daily_values["annual_m"] = subdaily_annual_values["m"].sel(
-    year=subdaily_daily_values["time"].dt.year
-)
-subdaily_daily_values["annual_lai_max"] = subdaily_annual_values["lai_max"].sel(
-    year=subdaily_daily_values["time"].dt.year
+# Now calculate the daily time series of LAI, which needs the daily assimilation
+subdaily_daily_values = (
+    subdaily_outputs[["PMod_gpp_smstress"]].resample(time="1D").mean()
 )
 
-# Calculate daily mu value as m * daily molar assimilation:
-#   mean gpp µC m-2 s-1 --> mol Cm-2 day)
-mu = (
-    subdaily_daily_values["annual_m"]
-    * subdaily_daily_values["PMod_gpp_smstress"]
+# daily molar assimilation: mean gpp µC m-2 s-1 --> mol C m-2 day)
+subdaily_daily_values["daily_A0"] = (
+    subdaily_daily_values["PMod_gpp_smstress"]
     * (24 * 60 * 60 * 1e-6)
     / env.core_const.k_c_molmass
 )
 
-# Calculate the Lambert W0 value, screen for non-zero imaginary parts, clip at zero
+# Calculate steady state LAI, using principal branch of Lambert W function
+#  - Map annual m and LAI values onto daily values of assimilation for each year
+subdaily_daily_values = subdaily_daily_values.assign(
+    annual_m=(
+        "time",
+        subdaily_annual_values["m"]
+        .sel(time=subdaily_daily_values["time"].dt.year)
+        .to_numpy(),
+    ),
+    annual_lai_max=(
+        "time",
+        subdaily_annual_values["lai_max"]
+        .sel(time=subdaily_daily_values["time"].dt.year)
+        .to_numpy(),
+    ),
+)
+
+# Calculate daily mu value as m * daily molar assimilation:
+mu = (subdaily_daily_values["annual_m"] * subdaily_daily_values["daily_A0"]).data
+
+# Calculate the Lambert W0 value
 Ls_term_1 = mu + (1 / k) * lambertw(-k * mu * np.exp(-k * mu), k=0)
 
-if not np.all(np.imag(Ls_term_1.data) == 0):
+# Check that all imaginary parts are zero or np.nan
+if not np.all(np.logical_or(np.imag(Ls_term_1) == 0, np.isnan(Ls_term_1))):
     raise ValueError("Imaginary parts of Lambert W calculation are not zero")
 
+# Clip the real parts at zero
 Ls_term_1 = np.clip(np.real(Ls_term_1), a_min=0, a_max=None)
 
 # Find the daily minimum of the lambert term and annual maximum LAI
-# Ls_daily = xr.ufuncs.minimum(Ls_term_1, de_gri_daily_values["annual_lai_max"])
-Ls_daily = np.minimum(Ls_term_1, subdaily_daily_values["annual_lai_max"])
+Ls_daily = np.minimum(Ls_term_1, subdaily_daily_values["annual_lai_max"].data)
 
 # Apply lagging
 Ls_daily_lagged = acclim.apply_acclimation(Ls_daily)
 
 # Save predicted daily time series for L
-subdaily_daily_values["Ls_daily"] = Ls_daily
 subdaily_daily_values = subdaily_daily_values.assign(
-    Ls_daily_lagged=("time", Ls_daily_lagged)
+    Ls_daily=("time", Ls_daily),
+    Ls_daily_lagged=("time", Ls_daily_lagged),
 )
 
 # Save data to CSV - would use NetCDF for > 1 site.
@@ -364,30 +383,11 @@ subdaily_outputs.to_pandas().to_csv(
 
 # Reduce the daily values to the core values to check.
 
-subdaily_daily_values = subdaily_daily_values.drop_vars(
-    [
-        "PMod_chi",
-        "PMod_ci",
-        "ca",
-        "tc",
-        "co2",
-        "ppfd",
-        "vpd",
-        "aet",
-        "pre",
-        "pet",
-        "lat",
-        "lon",
-        "year",
-        "annual_m",
-        "annual_lai_max",
-    ]
-)
+subdaily_daily_values = subdaily_daily_values.drop_vars(["annual_m", "annual_lai_max"])
 subdaily_daily_values.to_pandas().to_csv(
     "subdaily_example/daily_outputs.csv", float_format="%0.7g"
 )
 
-subdaily_annual_values = subdaily_annual_values.drop_vars(["lat", "lon"])
 subdaily_annual_values.to_pandas().to_csv(
     "subdaily_example/annual_outputs.csv", float_format="%0.7g"
 )
@@ -398,26 +398,22 @@ subdaily_annual_values.to_pandas().to_csv(
 # --------------------------------------------------------------------------------------
 
 # Resample half hourly data to fortnightly means
-fortnight_resampler = subdaily_outputs.resample(time="2W")
+fortnight_resampler = de_gri_hh_xr.resample(time="14D")
 fortnight_means = fortnight_resampler.mean()
 fortnight_sum = fortnight_resampler.sum()
+fortnight_resampler_from_daily = subdaily_daily_values.resample(time="14D")
 
 # Extract the variables needed to run the model
 fortnightly_outputs = xr.Dataset(
     data_vars={
-        "tc_mean": fortnight_means["tc"],
-        "vpd_mean": fortnight_means["vpd"],
-        "patm_mean": fortnight_means["patm"],
-        "co2_mean": fortnight_means["co2"],
-        "ppfd_mean": fortnight_means["ppfd"],
-        "precip_molar_sum": fortnight_sum["precip_molar"],
-        "year": fortnight_means.time.dt.year,
-    }
-)
-
-# Drop 2015 week
-fortnightly_outputs = fortnightly_outputs.where(
-    fortnightly_outputs.year < 2015, drop=True
+        "tc_mean": ("time", fortnight_means["TA_F"].data),
+        "vpd_mean": ("time", fortnight_means["VPD_F"].data),
+        "patm_mean": ("time", fortnight_means["PA_F"].data),
+        "co2_mean": ("time", fortnight_means["CO2_F_MDS"].data),
+        "ppfd_mean": ("time", fortnight_means["PPFD"].data),
+        "precip_molar_sum": ("time", fortnight_sum["P_F_MOLAR"].data),
+    },
+    coords={"time": fortnight_means.time},
 )
 
 env_fortnight = PModelEnvironment(
@@ -431,6 +427,7 @@ env_fortnight = PModelEnvironment(
 
 pmod_fortnight = PModel(env=env_fortnight)
 
+
 # Save PModel variables and assign an arbitrary growing season vector
 fortnightly_outputs = fortnightly_outputs.assign(
     dict(
@@ -442,38 +439,54 @@ fortnightly_outputs = fortnightly_outputs.assign(
     )
 )
 
-fortnightly_outputs = fortnightly_outputs.set_coords("year")
-
-# Annual values - total precipitation and mean GPP
-fortnightly_annual_precip = (
-    fortnightly_outputs[["precip_molar_sum", "year"]].groupby("year").sum()
+# TODO - allow endpoint to truncate.
+avc2 = AnnualValueCalculator(
+    timing=fortnightly_outputs["time"].to_numpy(),
+    growing_season=fortnightly_outputs["growing_season"].to_numpy(),
+    # endpoint=np.datetime64("2015-01-01"),
 )
 
-fortnightly_annual_mean_gpp = (
-    fortnightly_outputs[["gpp", "year"]].groupby("year").mean()
+# Annual values - total precipitation and mean GPP
+fortnightly_annual_precip = avc2.get_annual_totals(
+    fortnightly_outputs["precip_molar_sum"].to_numpy()
+)
+
+fortnightly_annual_mean_gpp = avc2.get_annual_means(
+    fortnightly_outputs["gpp"].to_numpy()
 )
 
 # Growing season means
-fortnightly_growing_season = fortnightly_outputs.where(
-    fortnightly_outputs.growing_season, drop=True
+
+fortnightly_annual_mean_vpd_gs = avc2.get_annual_means(
+    fortnightly_outputs["vpd_mean"].to_numpy(), within_growing_season=True
 )
 
-fortnightly_annual_gs_means = (
-    fortnightly_growing_season[["vpd_mean", "ca", "chi", "year"]].groupby("year").mean()
+fortnightly_annual_mean_chi_gs = avc2.get_annual_means(
+    fortnightly_outputs["chi"].to_numpy(), within_growing_season=True
 )
 
-fortnightly_annual_values = xr.merge(
-    [
-        fortnightly_annual_precip,
-        fortnightly_annual_mean_gpp,
-        fortnightly_annual_gs_means,
-        subdaily_annual_values["N_days"],
-    ]
+fortnightly_annual_mean_ca_gs = avc2.get_annual_means(
+    fortnightly_outputs["ca"].to_numpy(), within_growing_season=True
+)
+
+
+# Create an annual dataset
+fortnightly_annual_values = xr.Dataset(
+    data_vars=dict(
+        annual_mean_gpp=("time", fortnightly_annual_mean_gpp),
+        annual_precip_molar=("time", fortnightly_annual_precip),
+        N_growing_days=("time", avc2.year_n_growing_days),
+        N_days=("time", avc2.year_n_days),
+        annual_mean_ca_in_GS=("time", fortnightly_annual_mean_ca_gs),
+        annual_mean_chi_in_GS=("time", fortnightly_annual_mean_chi_gs),
+        annual_mean_VPD_in_GS=("time", fortnightly_annual_mean_vpd_gs),
+    ),
+    coords=dict(time=avc2.years),
 )
 
 # Convert mean GPP from µg C m-2 s-1 to annual moles
 fortnightly_annual_values["ann_total_A0"] = (
-    fortnightly_annual_values["gpp"]
+    fortnightly_annual_values["annual_mean_gpp"]
     * (fortnightly_annual_values["N_days"] * 24 * 60 * 60 * 1e-6)
     / env.core_const.k_c_molmass
 )
@@ -484,10 +497,13 @@ fortnightly_annual_values["energy_limited_fapar"] = 1 - z / (
     k * fortnightly_annual_values["ann_total_A0"]
 )
 fortnightly_annual_values["water_limited_fapar"] = (
-    (fortnightly_annual_values["ca"] * (1 - fortnightly_annual_values["chi"]))
-    / (1.6 * fortnightly_annual_values["vpd_mean"])
+    (
+        fortnightly_annual_values["annual_mean_ca_in_GS"]
+        * (1 - fortnightly_annual_values["annual_mean_chi_in_GS"])
+    )
+    / (1.6 * fortnightly_annual_values["annual_mean_VPD_in_GS"])
     * (
-        (f_0 * fortnightly_annual_values["precip_molar_sum"])
+        (f_0 * fortnightly_annual_values["annual_precip_molar"])
         / fortnightly_annual_values["ann_total_A0"]
     )
 )
