@@ -17,7 +17,7 @@ language_info:
   name: python
   nbconvert_exporter: python
   pygments_lexer: ipython3
-  version: 3.11.9
+  version: 3.12.3
 settings:
   output_matplotlib_strings: remove
 ---
@@ -100,11 +100,15 @@ The projected leaf area and leaf area index sound similar but represent very dif
 things:
 
 * The projected leaf area is a simple two dimensional measure of how much of the total
-  crown area is found at different heights.
-* The actual amount of leaf area within the layer is the projected leaf area multiplied
-  by the LAI. Two individuals can have the same crown area and vertical distribution of
-  projected leaf area, but still differ in their LAI. A stem with a larger LAI will
-  have denser canopy that can capture more light.
+  crown area is found at different heights. Like the projected crown area, the projected
+  leaf area is the **cumulative area** from the top of the crown down to a height $z$.
+* To calculate the amount of crown or leaf area between two heights - such as the amount
+  of area within a closed canopy layer - you need to find the difference in projected
+  crown or leaf area between the heights of the layer top and bottom.
+* The total area **actual leaf surface** within the layer is the leaf area within the
+  layer multiplied by the LAI. Two individuals can have the same crown area and vertical
+  distribution of projected leaf area, but still differ in their LAI. A stem with a
+  larger LAI will have denser canopy that can capture more light.
 * The LAI is effectively the "depth" of leaf area within a layer, because as $L$
   increases, more light is captured within those leaves because $L$ is included in the
   Beer-Lambert law.
@@ -283,7 +287,7 @@ for layer in np.arange(5):
     simulated_transmission[layer + 1, 0] = ppfd / initial_ppfd
 ```
 
-The resulting transmission start with the fraction of light reaching the first layer
+The resulting transmission starts with the fraction of light reaching the first layer
 (always 1) and ends with the fraction of light passing through the last layer to the
 ground.
 
@@ -294,7 +298,7 @@ simulated_transmission
 The per stem fraction absorbed gives the fraction of the canopy top incident light
 absorbed by stem leaf area for each cohort in each layer.
 
-Critically these values **do not** assume any steam leaf area is actually present in the
+Critically these values **do not** assume any stem leaf area is actually present in the
 layer. They are what the leaves **could achieve** if present and so need to be
 multiplied by stem leaf area to give actual absorbance.
 
