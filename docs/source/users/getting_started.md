@@ -44,10 +44,19 @@ shows you how to install `pip`.
 
 ## Installing `pyrealm`
 
-When the above prerequisites are fullfilled, you can simply install `pyrealm` by
-typing the command `pip install pyrealm` into the command line. However, it is
-good practice to use a virtual environment for this, to not pollute your python
-environment with packages and versions you might not need for other work.
+When the above prerequisites are fulfilled, you can simply install `pyrealm` by
+typing the command `pip install pyrealm` into the command line.
+
+However, it is good practice to use a virtual environment for this, to not
+pollute your python environment with packages and versions you might not need
+for other work. Detailed information on how to do this can be found on the
+[Python Packaging User Guide](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/).
+In short, you can create a virtual environment typing `python3 -m venv .venv`
+(or `py -m venv .venv` on Windows) and activate it with
+`source .venv/bin/activate` (`.venv\Scripts\activate` on Windows). Then do
+`pip install pyrealm` and install everything else you might want to use. When
+you are done with your `pyrealm` work just type `deactivate`. You can
+re-activate and alter your environment anytime once it is set up.
 
 ## `pyrealm` developers
 
