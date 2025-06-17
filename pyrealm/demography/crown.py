@@ -23,6 +23,7 @@ def calculate_relative_crown_radius_at_z(
     m: NDArray[np.float64],
     n: NDArray[np.float64],
     validate: bool = True,
+    clip: bool = True,
 ) -> NDArray[np.float64]:
     r"""Calculate relative crown radius at a given height.
 
@@ -49,12 +50,17 @@ def calculate_relative_crown_radius_at_z(
        (:math:`J`, 1). This allows :math:`q(z)` to be calculated efficiently for a set
        of heights for all stems and return a 2D array of shape (:math:`J`, :math:`I`).
 
+    By default, this function clips :math:`q(z)`: the value is set to zero for values of
+    :math:`z < 0` or :math:`z > H`.
+
     Args:
         z: Height at which to calculate relative radius
         stem_height: Total height of individual stem
         m: Canopy shape parameter of PFT
         n: Canopy shape parameter of PFT
         validate: Boolean flag to suppress argument validation.
+        clip: Boolean flag to set :math:`q(z) = 0` where the :math:`z` is below zero or
+            above the stem height.
     """
 
     if validate:
@@ -63,8 +69,13 @@ def calculate_relative_crown_radius_at_z(
         )
 
     z_over_height = z / stem_height
+    q_z = m * n * z_over_height ** (n - 1) * (1 - z_over_height**n) ** (m - 1)
 
-    return m * n * z_over_height ** (n - 1) * (1 - z_over_height**n) ** (m - 1)
+    # Set predictions to zero where z is below zero or above the stem height.
+    if clip:
+        q_z = np.where(np.logical_and(z >= 0, z <= stem_height), q_z, 0)
+
+    return q_z
 
 
 def calculate_crown_radius(

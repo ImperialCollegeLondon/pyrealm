@@ -54,7 +54,7 @@ class DailySolarFluxes:
     nu: NDArray[np.float64] = field(init=False)
     r"""True heliocentric anomaly (:math:`\nu`, degrees)"""
     lambda_: NDArray[np.float64] = field(init=False)
-    """True heliocentric longitude, (:math:`\lambda`, degrees)"""
+    r"""True heliocentric longitude, (:math:`\lambda`, degrees)"""
     distance_factor: NDArray[np.float64] = field(init=False)
     """Distance factor (:math:`d_r`, -)"""
     declination: NDArray[np.float64] = field(init=False)

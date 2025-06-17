@@ -6,117 +6,123 @@ from numpy.testing import assert_allclose
 
 
 @pytest.mark.parametrize(
-    argnames="cohort_args, cohort_expected, community_expected",
+    argnames="""
+    cohort_args, 
+    cohort_fapar, 
+    community_lai, 
+    community_transmission,
+    transmission_to_ground
+    """,
     argvalues=(
         [
             pytest.param(
                 {
-                    "projected_leaf_area": np.array([[2, 2, 2]]),
+                    "projected_leaf_area": np.tile([[2], [4], [6], [8]], 3),
                     "n_individuals": np.array([2, 2, 2]),
-                    "pft_lai": np.array([2, 2, 2]),
-                    "pft_par_ext": np.array([0.5, 0.5, 0.5]),
-                    "cell_area": 8,
+                    "lai": np.array([2, 2, 2]),
+                    "par_ext": np.array([0.5, 0.5, 0.5]),
+                    "cell_area": 12,
                 },
-                (np.full((1, 3), 2), np.full((1, 3), 1), np.full((1, 3), np.exp(-0.5))),
-                (
-                    np.full((1,), np.exp(-0.5)) ** 3,
-                    np.full((1,), np.exp(-0.5)) ** 3,
+                np.outer(
+                    np.cumprod(np.concat([[1], np.repeat(np.exp(-1), 3)])),
+                    1 - np.repeat(np.exp(-1), 3),
                 ),
-                id="single layer",
+                np.repeat(2, 4),
+                np.cumprod(np.concat([[1], np.repeat(np.exp(-1), 3)])),
+                np.exp(-1) ** 4,
+                id="four_layers",
             ),
             pytest.param(
                 {
-                    "projected_leaf_area": np.tile([[2], [4], [6]], 3),
-                    "n_individuals": np.array([2, 2, 2]),
-                    "pft_lai": np.array([2, 2, 2]),
-                    "pft_par_ext": np.array([0.5, 0.5, 0.5]),
+                    "projected_leaf_area": np.cumsum(
+                        np.array(
+                            [
+                                [6, 2, 0],
+                                [4, 4, 0],
+                                [3, 3, 1],
+                                [0, 2, 3],
+                                [0, 0, 1],
+                            ]
+                        ),
+                        axis=0,
+                    ),
+                    "lai": np.array([2, 1, 2]),
+                    "par_ext": np.array([0.5, 0.5, 0.6]),
+                    "n_individuals": np.array([1, 1, 2]),
                     "cell_area": 8,
                 },
-                (np.full((3, 3), 2), np.full((3, 3), 1), np.full((3, 3), np.exp(-0.5))),
-                (
-                    np.full((3,), np.exp(-0.5)) ** 3,
-                    np.power(np.exp(-0.5), np.array([3, 6, 9])),
+                np.array(
+                    [
+                        [0.632121, 0.393469, 0.698806],
+                        [0.270258, 0.168225, 0.298769],
+                        [0.131671, 0.08196, 0.145562],
+                        [0.058028, 0.03612, 0.064149],
+                        [0.021907, 0.013636, 0.024218],
+                    ]
                 ),
-                id="three layers",
+                np.array([1.75, 1.5, 1.625, 1.75, 0.5]),
+                np.array([1.0, 0.427542, 0.208301, 0.091799, 0.034657]),
+                np.array([0.028602]),
+                id="simulation_outputs",
             ),
         ]
     ),
 )
-class TestCanopyData:
+def test_CohortCanopyData__init__(
+    cohort_args,
+    cohort_fapar,
+    community_lai,
+    community_transmission,
+    transmission_to_ground,
+):
     """Shared testing of the cohort and community canopy dataclasses.
 
-    Simple cohort tests:
-    - LAI = (2 leaf area * 2 individuals * 2 LAI) / 8 area = 1
-    - trans = e ^ {-k L}, and since L = 1, trans = e^{-k}
+    Since the creation of the community canopy data is built into the cohort canopy
+    data creation, that dataclass is implicitly tested by checking the CohortCanopyData
+    class.
 
-    Simple community tests
-    - Three identical cohorts so community trans = (e{-k})^3 for each layer
-    - Transmission profile (e{-k})^3, e{-k})^6, e{-k})^9)
+    The simple four layer test uses three identical cohorts to give some easily defined
+    expected values. The simulation test data is a simple example used in the light
+    capture model documentation notebook. This test includes:
 
-    Allocate fapar
-     - share fapar equally among 3 cohorts and then equally between the two stems in
-       each cohort.
+    * varying PFT values in LAI and extinction coefficient
+    * differing numbers of individuals and
+    * includes an incomplete final layer
     """
 
-    def test_CohortCanopyData__init__(
-        self, cohort_args, cohort_expected, community_expected
-    ):
-        """Test creation of the cohort canopy data."""
+    from pyrealm.demography.canopy import CohortCanopyData
 
-        from pyrealm.demography.canopy import CohortCanopyData
+    # Calculate canopy components
+    instance = CohortCanopyData(**cohort_args)
 
-        # Calculate canopy components
-        instance = CohortCanopyData(**cohort_args)
+    # Test cohort expected fapar
+    assert_allclose(instance.fapar, cohort_fapar, atol=1e-6)
 
-        # Unpack and test expectations
-        exp_stem_leaf_area, exp_lai, exp_f_trans = cohort_expected
-        assert_allclose(instance.stem_leaf_area, exp_stem_leaf_area)
-        assert_allclose(instance.lai, exp_lai)
-        assert_allclose(instance.f_trans, exp_f_trans)
+    # Test community expected lai and transmission
+    assert_allclose(
+        instance.community_data.transmission_profile, community_transmission, atol=1e-6
+    )
+    assert_allclose(instance.community_data.average_layer_lai, community_lai, atol=1e-6)
 
-        # Unpack and test expectations for cohort and stem fapar
-        exp_f_trans, exp_trans_prof = community_expected
-        expected_fapar = -np.diff(exp_trans_prof, prepend=1)
-        assert_allclose(
-            instance.cohort_fapar, np.tile((expected_fapar / 3)[:, None], 3)
-        )
-        assert_allclose(instance.stem_fapar, np.tile((expected_fapar / 6)[:, None], 3))
+    # Test the inherited to_pandas method of the cohort canopy data
+    df = instance.to_pandas()
 
-        # Test the inherited to_pandas method
-        df = instance.to_pandas()
+    assert df.shape == (
+        np.prod(cohort_args["projected_leaf_area"].shape),
+        len(instance.array_attrs),
+    )
 
-        assert df.shape == (
-            np.prod(exp_stem_leaf_area.shape),
-            len(instance.array_attrs),
-        )
+    assert set(instance.array_attrs) == set(df.columns)
 
-        assert set(instance.array_attrs) == set(df.columns)
+    # Test the inherited to_pandas method of the community canopy data
+    df = instance.community_data.to_pandas()
 
-    def test_CommunityCanopyData__init__(
-        self, cohort_args, cohort_expected, community_expected
-    ):
-        """Test creation of the community canopy data."""
+    assert df.shape == (
+        len(instance.community_data.transmission_profile),
+        len(instance.community_data.array_attrs),
+    )
 
-        from pyrealm.demography.canopy import CohortCanopyData, CommunityCanopyData
-
-        cohort_data = CohortCanopyData(**cohort_args)
-
-        instance = CommunityCanopyData(cohort_transmissivity=cohort_data.f_trans)
-
-        # Unpack and test expectations
-        exp_f_trans, exp_trans_prof = community_expected
-        assert_allclose(instance.f_trans, exp_f_trans)
-        assert_allclose(instance.transmission_profile, exp_trans_prof)
-
-        # Test the inherited to_pandas method
-        df = instance.to_pandas()
-
-        assert df.shape == (
-            len(exp_f_trans),
-            len(instance.array_attrs),
-        )
-
-        assert set(instance.array_attrs) == set(df.columns)
+    assert set(instance.community_data.array_attrs) == set(df.columns)
 
 
 def test_Canopy__init__():
