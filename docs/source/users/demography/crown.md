@@ -18,7 +18,7 @@ language_info:
   name: python
   nbconvert_exporter: python
   pygments_lexer: ipython3
-  version: 3.11.9
+  version: 3.12.3
 ---
 
 # The tree crown model
@@ -148,6 +148,14 @@ within the canopy. However the PFT with the larger $f_g$ will have a more open c
 with leaf area over a wider vertical range within the canopy shape because of the
 increased openness of the canopy.  When $f_g = 0$, the projected crown and leaf areas
 are identical, but as $f_g \to 1$ the projected leaf area is pushed downwards.
+
+Put another way, a stem has a total leaf surface area defined by the crown area and the
+characteristic leaf area index of the plant functional type. The crown gap fraction
+effectively tunes where vertically in the crown shape of the tree that LAI is deployed:
+when $f_g = 0$ the leaf area is concentrated exactly at the upper surface of the crown
+but, as $f_g \to 1$, more and more of leaf surface is deployed more deeply through the
+broader shape of the tree crown. Crown gaps do not extend all the way to the ground,
+just to other parts of the crown further down in the crown.
 
 The calculation of $\tilde{A}_{cp}(z)$ is defined as:
 

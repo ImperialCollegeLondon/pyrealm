@@ -17,7 +17,7 @@ language_info:
   name: python
   nbconvert_exporter: python
   pygments_lexer: ipython3
-  version: 3.11.9
+  version: 3.12.3
 settings:
   output_matplotlib_strings: remove
 ---
@@ -105,8 +105,8 @@ $$
 C_p(z) = \sum_{j=1}^{N_s}{A_{p}(z)_i}
 $$
 
-To demonstrate this, the code below creates a plant community: there are 12 individual
-stems, grouped into 3 cohorts with different stem sizes and crown shapes.
+To demonstrate this, the code below creates a plant community that contains 12
+individual stems, grouped into 3 cohorts with different stem sizes and crown shapes.
 
 ```{code-cell} ipython3
 # Define PFTs
@@ -149,10 +149,10 @@ total_crown_area = np.sum(
 total_crown_area
 ```
 
-So, the maximum projected community crown area is around 120 m2. The plot below shows
-how $C_p(z)$ changes with height for this community from zero at the top of the canopy
-to around 120 m2 at ground level. The horizontal dashed lines show the stem heights of
-the individuals, where the crown area of each individual starts contributing to the
+So, the total community crown area is around 120 m2. The plot below shows how $C_p(z)$
+changes with height for this community from zero at the top of the canopy to around 120
+m2 at ground level. The horizontal dashed lines show the stem heights of the
+individuals, where the crown area of each individual starts contributing to the
 community wide projected crown area.
 
 ```{code-cell} ipython3
@@ -237,10 +237,13 @@ of the community, creating a vertical structure.
 
 The canopy module implements the **perfect plasticity approximation (PPA)** model
 {cite}`purves:2008a` to generate this structure. The PPA model assumes that all the
-individuals within the community are able to plastically arrange their crown at each height
-within the broader canopy of the community to fill available space. When the available
-space ($A$) is filled, crown area lower in the canopy forms another layer until another
-area $A$ is filled and this repeats down to the ground.
+individuals within the community are able to plastically arrange their crown at each
+height within the broader canopy of the community to fill available space. When the
+available horizontal space ($A$) is filled by the cumulative crown area across all
+individuals at a height $z$, that canopy at that height forms a layer that is considered
+"full" (or "closed"). The remaining crown area below this layer then begins to
+accumulate into a new layer. This process repeats downward until the entire canopy
+structure is formed down to the ground.
 
 To fit this model, we need to find the heights $z^*_l$ at which the projected community
 crown area occupies multiples of the available area $A$. This gives the heights at which
@@ -288,8 +291,8 @@ We plot those layer heights below. The vertical dashed lines in the right hand p
 the values $lA$ at which the cumulative space across layers forms closed layers: that is
 $32 \times 1 = 32$, $32 \times 2 = 64$, etc. . The horizontal dashed lines then show
 those calculated vertical heights. These are the canopy heights at which the vertical
-lines intersect the cumulativecommunity projected crown area: where the total crown area
-across the individuals in the community fills each available layer.
+lines intersect the cumulative community projected crown area: where the total crown
+area across the individuals in the community fills each available layer.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
@@ -331,16 +334,18 @@ plt.tight_layout()
 
 We can look in detail at the how much crown area is in each layer from each individual.
 The canopy model object contains a crown profile which records the projected crown
-area at each height:
+area at each height. Note how the bottom row - the total projected (i.e. cumulative)
+crown for the individuals in each cohort - matches the values above from the stem
+allometry calculations for the community.
 
 ```{code-cell} ipython3
 canopy_ppa.crown_profile.projected_crown_area
 ```
 
-Those values are the projected *individual* crown areas: the accumulating crown area
-from the top of the canopy down to the ground. We can take the differences between
-vertical layers to give the actual amount of crown area in each layer for each
-individual.
+Those values are the projected crown areas of each individual within the cohorts: the
+accumulating crown area from the top of the canopy down to the ground. We can take the
+differences between vertical layers to give the actual amount of crown area in each
+layer for each individual within a cohort.
 
 ```{code-cell} ipython3
 individual_crown_in_layer = np.diff(
@@ -349,11 +354,11 @@ individual_crown_in_layer = np.diff(
 individual_crown_in_layer
 ```
 
-To bring those values back to the community model: each column represents a cohort, so
-we can multiply those values by the number of individuals and then find the row sums
-to show the amount of crown area in each layer. As expected, the crown area in each
-layer matches the 32 m2 of available space, except for the last layer that is not
-completely filled.
+To bring those values back to the community model: since each value represents a cohort,
+we can multiply those values by the number of individuals and then find the row sums to
+show the total amount of crown area in each layer across all individuals and cohorts. As
+expected, the crown area in each layer matches the 32 m2 of available space, except for
+the last layer that is not completely filled.
 
 ```{code-cell} ipython3
 np.sum(individual_crown_in_layer * community.cohorts.n_individuals, axis=1)
@@ -363,12 +368,13 @@ np.sum(individual_crown_in_layer * community.cohorts.n_individuals, axis=1)
 
 The canopy and crown models are extended by providing two gap fractions:
 
-* the crown gap fraction ($f_g$) is described in detail in the [crown
+* The crown gap fraction ($f_g$) is described in detail in the [crown
   model](./crown.md) and captures how an individual tree crown may contain holes that
-  displace leaf area further down into the canopy.
-* the canopy gap fraction ($f_G$) is described above and captures how the canopy across
-  the whole community may leave space unfilled in the canopy leaving light gaps that
-  reach down to the ground.
+  displace leaf area further down into the canopy. Crown gaps do not push all the way
+  down  to the ground - they only allow light to penetrate more deeply into the crown.
+* The canopy gap fraction ($f_G$) is described above and captures how the canopy across
+  the whole community may leave space unfilled in the canopy. Light passing throught
+  canopy gaps passes unimpeded from the top of the canopy down to the ground.
 
 The code below alters the community and canopy model used above to include both crown
 and canopy gap fractions.
