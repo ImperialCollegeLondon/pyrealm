@@ -313,6 +313,7 @@ class CommunityCanopyData(PandasExporter):
 
     array_attrs: ClassVar[tuple[str, ...]] = (
         "average_layer_absorption",
+        "average_layer_fapar",
         "average_layer_lai",
         "transmission_profile",
     )
@@ -330,6 +331,8 @@ class CommunityCanopyData(PandasExporter):
     # Calculated variables
     average_layer_absorption: NDArray[np.float64] = field(init=False)
     """The average absorption within layers across the community."""
+    average_layer_fapar: NDArray[np.float64] = field(init=False)
+    """The average fAPAR of the community for each layer."""
     average_layer_lai: NDArray[np.float64] = field(init=False)
     """The average leaf area index of the community within layers."""
     transmission_profile: NDArray[np.float64] = field(init=False)
@@ -366,6 +369,10 @@ class CommunityCanopyData(PandasExporter):
         full_transmission = np.cumprod(
             np.concat([[1], (1 - self.average_layer_absorption)])
         )
+        # Record the fapar as the difference between layers and then store the
+        # transmission profile, moving the last value into a separate property to
+        # maintain the layer data frame.
+        self.average_layer_fapar = np.diff(-full_transmission)
         self.transmission_profile = full_transmission[:-1]
         self.transmission_to_ground = full_transmission[-1]
 
