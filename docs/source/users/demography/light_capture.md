@@ -17,7 +17,7 @@ language_info:
   name: python
   nbconvert_exporter: python
   pygments_lexer: ipython3
-  version: 3.12.3
+  version: 3.11.9
 settings:
   output_matplotlib_strings: remove
 ---
@@ -370,8 +370,25 @@ if np.allclose(simulated_transmission, transmission_profile):
     print("\U00002705 Transmission matches")
 ```
 
-Next, calculate a matrix of stem fractional absorption as the product of the per
-layer stem absorptions and the per layer average transmission
+We can also calculate the average fraction of absorbed photosynthetic radiation
+($f_{APAR}$) absorbed by each layer. This is simply the differences between the
+transmission profiles
+
+```{code-cell} ipython3
+fapar = np.diff(-transmission_profile, axis=0)
+fapar
+```
+
+Note that the sum of the average layer $f_{APAR}$ and the last value in the
+transmission profile, which is the light fraction transmitted to the ground,
+equals one: all light is absorbed by layers or reaches the ground.
+
+```{code-cell} ipython3
+fapar.sum() + transmission_profile[-1]
+```
+
+Next, we can calculate a matrix of per stem $f_{APAR}$ values as the product of the per
+layer stem absorptions and the per layer average transmission.
 
 ```{code-cell} ipython3
 per_stem_f_abs = stem_absorption * transmission_profile[:-1]
@@ -385,7 +402,15 @@ if np.allclose(simulated_per_stem_f_abs, per_stem_f_abs):
     print("\U00002705 Per stem fraction absorbed matches")
 ```
 
-We can now calculate the total absorption in each layer for each stem. This is the key
+We can check that matches the average layer $f_{APAR}$: if we take the per layer sums
+of the per stem $f_{APAR}$, weighted by the cohort leaf areas, and divide through by
+the available cell area, we recreate the average per layer values:
+
+```{code-cell} ipython3
+(per_stem_f_abs * cohort_leaf_area).sum(axis=1, keepdims=True) / cell_area
+```
+
+Last, we can calculate the total absorption in each layer for each stem. This is the key
 result for use in most cases: **how much light flux is absorbed by each stem in the leaf
 area of each layer**.
 
@@ -534,13 +559,19 @@ gappy_community = Community(
 gappy_canopy_ppa = Canopy(community=gappy_community, fit_ppa=True)
 ```
 
-The PPA solution for this community finds four layers and we can show the canopy closure
-heights of those layers and the amount of leaf area present in each layer for each of
-the three cohorts.
+The PPA solution for this community finds four layers and we can show:
+
+* the canopy closure heights of those layers,
+* the average $f_{APAR}$ of each layer, and
+* the amount of leaf area present in each layer for each of the three cohorts.
 
 ```{code-cell} ipython3
 # Layer closure heights
 gappy_canopy_ppa.heights
+```
+
+```{code-cell} ipython3
+gappy_canopy_ppa.community_data.average_layer_fapar
 ```
 
 ```{code-cell} ipython3
