@@ -93,9 +93,11 @@ Initialize a Community into an area of 1000 square meter with the given cohort d
 
 The data in the Community class is stored under three attributes, each of which stores
 an instance of a dataclass holding related parts of the community data. All have a
-``to_pandas`` method that can be used to visualise and explore the data:
+``to_pandas`` method that can be used to visualise and explore the data. Note that the
+`Cohorts` class automatically adds a unique internal ID to each cohort which is not
+shown here:
 
->>> community.cohorts.to_pandas()
+>>> community.cohorts.to_pandas().drop(columns="cohort_id")
    dbh_values  n_individuals        pft_names
 0       0.100            100   Evergreen Tree
 1       0.030            200  Deciduous Shrub
@@ -126,6 +128,7 @@ from __future__ import annotations
 
 import json
 import sys
+import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar
@@ -155,12 +158,17 @@ class Cohorts(PandasExporter, CohortMethods):
     """A dataclass to hold data for a set of plant cohorts.
 
     The attributes should be numpy arrays of equal length, containing an entry for each
-    cohort in the data class.
+    cohort in the data class. The class automatically populates each cohort with a
+    unique id in the `cohort_id` property, using UUID4 values. The setter for this
+    property enforces unique values in this property. The most likely source of this
+    error would be if the
+    :meth:`CohortMethods.add_cohort_data<pyrealm.demography.core.CohortMethods.add_cohort_data>`
+    method was used to add a Cohorts instance to itself.
     """
 
     # A class variable setting the attribute names of traits.
     array_attrs: ClassVar[tuple[str, ...]] = tuple(
-        ["dbh_values", "n_individuals", "pft_names"]
+        ["dbh_values", "n_individuals", "pft_names", "cohort_id"]
     )
     count_attr: ClassVar[str] = "n_cohorts"
 
@@ -168,6 +176,7 @@ class Cohorts(PandasExporter, CohortMethods):
     dbh_values: NDArray[np.float64]
     n_individuals: NDArray[np.int_]
     pft_names: NDArray[np.str_]
+    _cohort_id: NDArray[np.str_] = field(init=False)
     n_cohorts: int = field(init=False)
 
     __experimental__ = True
@@ -194,7 +203,20 @@ class Cohorts(PandasExporter, CohortMethods):
         except ValueError:
             raise ValueError("Cohort arrays are of unequal length")
 
-        self.n_cohorts = len(self.dbh_values)
+        self.n_cohorts = self.dbh_values.size
+        self._cohort_id = np.array([str(uuid.uuid4()) for _ in range(self.n_cohorts)])
+
+    @property
+    def cohort_id(self) -> NDArray[np.str_]:
+        """Automatically populated with a UUID4 id for each cohort."""
+        return self._cohort_id
+
+    @cohort_id.setter
+    def cohort_id(self, values: NDArray[np.str_]) -> None:
+        if len(set(values)) < len(values):
+            raise ValueError("Cohort object with duplicated cohort ids")
+
+        self._cohort_id = values
 
 
 class CohortSchema(Schema):
