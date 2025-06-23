@@ -11,12 +11,25 @@ from numpy.testing import assert_allclose
 
 
 @contextmanager
-def not_raises(exception):
-    """Simple context manager for checking a test does not raise."""
+def not_raises():
+    """Simple context manager for checking a statement does not raise."""
     try:
         yield
-    except exception:
-        raise pytest.fail(f"DID RAISE {exception}")
+    except Exception as excep:
+        raise excep
+
+
+def test_not_raises():
+    """Check of the not_raises context manager."""
+    with pytest.raises(ValueError):
+        raise ValueError()
+
+    with not_raises():
+        pass
+
+    with pytest.raises(ValueError):
+        with not_raises():
+            raise ValueError()
 
 
 @pytest.fixture
@@ -117,8 +130,11 @@ def test_Cohorts(args, outcome, excep_message):
         # Test IDs assigned
         cohort_ids = getattr(cohorts, "cohort_id", None)
         assert cohort_ids is not None
-        for id_value in cohort_ids:
-            assert not_raises(uuid.UUID(id_value))
+
+        # This could be tested implictly by just running the line, but this is to
+        # clarify that this conversion must complete successfully as part of the test.
+        with not_raises():
+            _ = [uuid.UUID(id_value) for id_value in cohort_ids]
 
         # test the to_pandas method
         df = cohorts.to_pandas()
