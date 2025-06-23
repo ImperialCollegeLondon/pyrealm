@@ -152,7 +152,7 @@ def test_Cohorts_CohortMethods():
 
     from pyrealm.demography.community import Cohorts
 
-    # Create and instances to modify using methods
+    # Create instances to modify using methods
     cohorts = Cohorts(
         pft_names=np.array(["broadleaf", "conifer"]),
         n_individuals=np.array([6, 1]),
