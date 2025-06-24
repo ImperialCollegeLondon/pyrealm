@@ -87,6 +87,16 @@ def check_expected(community, expected):
         ),
         pytest.param(
             {
+                "pft_names": np.array(["broadleaf", "conifer"]),
+                "n_individuals": np.array([6, 1]),
+                "dbh_values": np.array([0.2, -0.5]),
+            },
+            pytest.raises(ValueError),
+            "Negative DBH values passed to Cohorts instance.",
+            id="negative dbh",
+        ),
+        pytest.param(
+            {
                 "pft_names": False,
                 "n_individuals": np.array([6, 1]),
                 "dbh_values": np.array([0.2, 0.5]),
@@ -161,6 +171,28 @@ def test_Cohorts_duplicate_id_detection():
 
     with pytest.raises(ValueError):
         _ = cohorts.add_cohort_data(new_data=cohorts)
+
+
+def test_Cohorts_no_negative_dbh():
+    """Test setting negative DBH fails."""
+
+    from pyrealm.demography.community import Cohorts
+
+    # Create and instances to modify using methods
+    cohorts = Cohorts(
+        pft_names=np.array(["broadleaf", "conifer"]),
+        n_individuals=np.array([6, 1]),
+        dbh_values=np.array([0.2, 0.5]),
+    )
+
+    # This should be OK...
+    cohorts.dbh_values = np.array([0, 0])
+
+    # ... but this should fail
+    with pytest.raises(ValueError) as excep:
+        cohorts.dbh_values = np.array([-1, -1])
+
+    assert str(excep.value) == "Cannot set negative DBH values in Cohorts instance."
 
 
 def test_Cohorts_CohortMethods():

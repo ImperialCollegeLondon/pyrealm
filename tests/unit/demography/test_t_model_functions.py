@@ -1005,3 +1005,29 @@ def test_t_model_behaviour_zero_dbh(rtmodel_flora):
                 assert_allclose(vals, gpp * rtmodel_flora.yld)
             else:
                 assert_allclose(vals, np.zeros((3, 3)))
+
+
+@pytest.mark.parametrize(
+    argnames="dbh, outcome, msg",
+    argvalues=(
+        pytest.param(np.array([3, 3, 3]), does_not_raise(), None, id="positive"),
+        pytest.param(np.array([0, 0, 3]), does_not_raise(), None, id="zero"),
+        pytest.param(
+            np.array([-3, -2, 3]),
+            pytest.raises(ValueError),
+            "Negative DBH values passed to StemAllometry",
+            id="positive",
+        ),
+    ),
+)
+def test_stem_allocation_negative_dbh(rtmodel_flora, dbh, outcome, msg):
+    """Test that StemAllometry handles negative DBH."""
+
+    from pyrealm.demography.tmodel import StemAllometry
+
+    with outcome as excep:
+        # Calculate allometry for zero DBH stems of each PFT
+        _ = StemAllometry(stem_traits=rtmodel_flora, at_dbh=dbh)
+        return
+
+    assert str(excep.value) == msg
