@@ -1,11 +1,35 @@
 """test the community object in community.py initialises as expected."""
 
+import uuid
+from contextlib import contextmanager
 from contextlib import nullcontext as does_not_raise
 
 import numpy as np
 import pytest
 from marshmallow.exceptions import ValidationError
 from numpy.testing import assert_allclose
+
+
+@contextmanager
+def not_raises():
+    """Simple context manager for checking a statement does not raise."""
+    try:
+        yield
+    except Exception as excep:
+        raise excep
+
+
+def test_not_raises():
+    """Check of the not_raises context manager."""
+    with pytest.raises(ValueError):
+        raise ValueError()
+
+    with not_raises():
+        pass
+
+    with pytest.raises(ValueError):
+        with not_raises():
+            raise ValueError()
 
 
 @pytest.fixture
@@ -89,7 +113,7 @@ def check_expected(community, expected):
             },
             pytest.raises(ValueError),
             "Cohort arrays are of unequal length",
-            id="not np array",
+            id="unequal length",
         ),
     ],
 )
@@ -99,8 +123,18 @@ def test_Cohorts(args, outcome, excep_message):
 
     with outcome as excep:
         cohorts = Cohorts(**args)
+
         # trivial test of success
         assert len(cohorts.dbh_values) == 2
+
+        # Test IDs assigned
+        cohort_ids = getattr(cohorts, "cohort_id", None)
+        assert cohort_ids is not None
+
+        # This could be tested implictly by just running the line, but this is to
+        # clarify that this conversion must complete successfully as part of the test.
+        with not_raises():
+            _ = [uuid.UUID(id_value) for id_value in cohort_ids]
 
         # test the to_pandas method
         df = cohorts.to_pandas()
@@ -113,13 +147,35 @@ def test_Cohorts(args, outcome, excep_message):
     assert str(excep.value) == excep_message
 
 
+def test_Cohorts_duplicate_id_detection():
+    """Test the property checking for duplicate cohort ids."""
+
+    from pyrealm.demography.community import Cohorts
+
+    # Create and instances to modify using methods
+    cohorts = Cohorts(
+        pft_names=np.array(["broadleaf", "conifer"]),
+        n_individuals=np.array([6, 1]),
+        dbh_values=np.array([0.2, 0.5]),
+    )
+
+    with pytest.raises(ValueError):
+        _ = cohorts.add_cohort_data(new_data=cohorts)
+
+
 def test_Cohorts_CohortMethods():
     """Test the inherited CohortMethods methods."""
 
     from pyrealm.demography.community import Cohorts
 
-    # Create and instance to modify using methods
+    # Create instances to modify using methods
     cohorts = Cohorts(
+        pft_names=np.array(["broadleaf", "conifer"]),
+        n_individuals=np.array([6, 1]),
+        dbh_values=np.array([0.2, 0.5]),
+    )
+
+    new_cohorts = Cohorts(
         pft_names=np.array(["broadleaf", "conifer"]),
         n_individuals=np.array([6, 1]),
         dbh_values=np.array([0.2, 0.5]),
@@ -132,7 +188,7 @@ def test_Cohorts_CohortMethods():
     assert str(excep.value) == "Cannot add cohort data from an dict instance to Cohorts"
 
     # Check success of adding and dropping data
-    cohorts.add_cohort_data(new_data=cohorts)
+    cohorts.add_cohort_data(new_data=new_cohorts)
     assert_allclose(cohorts.dbh_values, np.array([0.2, 0.5, 0.2, 0.5]))
     assert cohorts.n_cohorts == 4
 
