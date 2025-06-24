@@ -103,9 +103,7 @@ def calculate_dbh_from_height(
     # - H = h_max generates a divide by zero which returns inf with a warning. Here the
     #   answer should be h_max so that needs trapping.
 
-    with np.testing.suppress_warnings() as sup:
-        sup.filter(RuntimeWarning, "divide by zero encountered in divide")
-        sup.filter(RuntimeWarning, "invalid value encountered in log")
+    with np.errstate(divide="ignore", invalid="ignore"):
         return _enforce_2D((h_max * np.log(h_max / (h_max - stem_height))) / a_hd)
 
 
@@ -162,6 +160,9 @@ def calculate_crown_fractions(
 
         f_{c} =\frac{H}{a D}
 
+    Note that when :math:`D = 0` - and hence also :math:`H = 0` - the crown fraction is
+    undefined.
+
     Args:
         a_hd: Initial slope of the height/diameter relationship of the PFT
         stem_height: Stem height of individuals
@@ -174,7 +175,12 @@ def calculate_crown_fractions(
             size_args={"dbh": dbh, "stem_height": stem_height},
         )
 
-    return _enforce_2D(stem_height / (a_hd * dbh))
+    # Calculate crown fraction, explicitly ignore divide by zero warnings when DBH is
+    # zero. Does not attempt to set an alternative value as there is no biological
+    # meaningful value and it is only used in further calculation in
+    # calculate_sapwood_mass, where DBH = 0 is handled.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return _enforce_2D(stem_height / (a_hd * dbh))
 
 
 def calculate_stem_masses(
@@ -251,12 +257,27 @@ def calculate_sapwood_masses(
 
     The sapwood mass (:math:`W_{\cdot s}`) is calculated from the individual crown area
     (:math:`A_{c}`), stem height (:math:`H`) and canopy fraction (:math:`f_{c}`) along
-    with the wood density (:math:`\rho_s`) and crown area ratio (:math:`c`) of the
-    plant functional type :cite:p:`{Equation 14, }Li:2014bc`.
+    with the wood density (:math:`\rho_s`) and crown area ratio (:math:`c`) of the plant
+    functional type. The calculation follows Equation 14 of :cite:`Li:2014bc`, except to
+    explicitly set :math:`W_{\cdot s} = 0` where :math:`D = 0` and hence :math:`H = 0`
+    and :math:`f_c` is undefined.
 
     .. math::
 
         W_{\cdot s} = \frac{A_c \rho_s H (1 - f_c / 2)}{c}
+
+
+      .. math::
+        :nowrap:
+
+        \[
+            W_{\cdot s} =
+                \begin{cases}
+                    \frac{A_c \rho_s H (1 - f_c / 2)}{c},  & H > 0 \\
+                    0, &  otherwise,
+                \end{cases}
+        \]
+
 
     Args:
         rho_s: Wood density of the PFT
@@ -277,7 +298,11 @@ def calculate_sapwood_masses(
         )
 
     return _enforce_2D(
-        crown_area * rho_s * stem_height * (1 - crown_fraction / 2) / ca_ratio
+        np.where(
+            stem_height == 0,
+            0,
+            crown_area * rho_s * stem_height * (1 - crown_fraction / 2) / ca_ratio,
+        )
     )
 
 
@@ -742,9 +767,9 @@ def calculate_growth_increments(
 ) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     r"""Calculate growth increments.
 
-    Given an estimate of net primary productivity (:math:`P_{net}`), less associated  
-    turnover costs (:math:`T`), the remaining productivity can be allocated to growth
-    and hence estimate resulting increments :cite:`Li:2014bc` in:
+    Given an estimate of net primary productivity (NPP, :math:`P_{net}`), less
+    associated turnover costs (:math:`T`), the remaining productivity can be allocated
+    to growth and hence estimate resulting increments :cite:`Li:2014bc` in:
     
     * the stem diameter (:math:`\Delta D`),
     * the stem mass (:math:`\Delta W_s`), and 
@@ -785,6 +810,13 @@ def calculate_growth_increments(
     * the crown area ratio (:math:`c`), and
     * the ratio of fine root mass to leaf area (:math:`\zeta`).
 
+    The value of :math`\Delta D` is unstable when :math:`D = 0` and hence :math:`H = 0`
+    and the rates of change in stem and foliar mass are also zero. If :math:`P_{net} - T
+    = 0` then :math`\Delta D` is undefined, otherwise :math`\Delta D = \pm \inf`
+    depending on whether then turnover costs exceed the available NPP. Under these
+    conditions, this function explicitly sets :math`\Delta D = 0`: **stems with zero
+    height cannot grow**.
+
     The resulting incremental changes in stem mass and foliar mass can then be
     calculated as:
 
@@ -798,8 +830,15 @@ def calculate_growth_increments(
         \end{align*}
       \]
 
-    NOTE: Reproductive tissue is included as an optional additional cost of turnover.
-    If the default values are set to zero, it will not impact T Model calculations.
+    .. NOTE::
+
+        The original equations have been extended to include a term to model the costs
+        of maintaining reproductive tissue mass as a fraction of foliage mass. These
+        values can be set to zero to reproduce the predictions of the original T Model
+        calculations. 
+
+
+
 
     Args:
         rho_s: Wood density of the PFT
@@ -854,10 +893,16 @@ def calculate_growth_increments(
         * ((1 + p_foliage_for_reproductive_tissue) / sla + zeta)
     )
 
-    # Increment of diameter at breast height
-    delta_d = _enforce_2D(
-        (npp - turnover - reproductive_tissue_turnover) / (dWsdt + dWfdt)
-    )
+    # Increment of diameter at breast height, ignoring potential zero divides resulting
+    # from stems with zero DBH, which are then explicitly set to have Delta D of zero.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        delta_d = _enforce_2D(
+            np.where(
+                dbh == 0,
+                0,
+                (npp - turnover - reproductive_tissue_turnover) / (dWsdt + dWfdt),
+            )
+        )
 
     return (delta_d, dWsdt * delta_d, dWfdt * delta_d)
 

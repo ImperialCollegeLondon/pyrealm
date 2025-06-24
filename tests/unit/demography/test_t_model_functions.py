@@ -1,5 +1,6 @@
 """test the functions in tmodel.py."""
 
+import warnings
 from contextlib import nullcontext as does_not_raise
 from unittest.mock import patch
 
@@ -950,3 +951,57 @@ def test_StemAllocation_validation(rtmodel_flora, whole_crown_gpp, outcome, exce
         return
 
     assert str(excep.value).startswith(excep_msg)
+
+
+def test_t_model_behaviour_zero_dbh(rtmodel_flora):
+    """Test the edge case of zero DBH.
+
+    This test is to check that the T Model calculations behave properly with DBH = 0:
+    * All allometries are zero, except crown fraction which is undefined.
+    * All allocation is zero, except for the input whole crown gpp and NPP, which is
+      simply GPP times the yield trait
+    """
+
+    from pyrealm.demography.tmodel import StemAllocation, StemAllometry
+
+    # With DBH=0 and GPP=0, the equations under these classes will get divide by zero
+    # and invalid values in calculations, but these should have been successfully muted
+    # for the specific equations where they occur.
+    #
+    # With the warnings setup to convert warnings to errors, this will lead to test
+    # failure if any warnings are raised. The message regex is to specifically avoid
+    # the pyrealm ExperimentalFeatureWarning causing a test failure.
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("error", message="^(Be aware that)")
+
+        # Calculate allometry for zero DBH stems of each PFT
+        allom = StemAllometry(stem_traits=rtmodel_flora, at_dbh=np.zeros((3, 3)))
+
+        # Calculate stem allocation forcing negative NPP, zero NPP and positive NPP for
+        # each PFT
+        gpp = np.tile(np.array([[-5], [0], [5]]), 3)
+
+        alloc = StemAllocation(
+            stem_traits=rtmodel_flora,
+            stem_allometry=allom,
+            whole_crown_gpp=gpp,
+        )
+
+        # Test the allometry values
+        for attr in allom.array_attrs:
+            vals = getattr(allom, attr)
+            if attr == "crown_fraction":
+                assert np.all(np.isnan(vals))
+            else:
+                assert_allclose(vals, np.zeros((3, 3)))
+
+        # Test the allocation values
+        for attr in alloc.array_attrs:
+            vals = getattr(alloc, attr)
+            if attr == "whole_crown_gpp":
+                assert_allclose(vals, gpp)
+            elif attr == "npp":
+                assert_allclose(vals, gpp * rtmodel_flora.yld)
+            else:
+                assert_allclose(vals, np.zeros((3, 3)))
