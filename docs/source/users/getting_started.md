@@ -27,6 +27,19 @@ This page helps you to get started with using `pyrealm` from the ground up.
 
 ## Prerequisites
 
+### Using the command line
+
+The following instructions expect the user to use the command line, by which we
+mean, depending on the operating system, a terminal (Linux, macOS) or
+PowerShell/Cygwin Bash Shell or similar (Windows).
+Please see this
+[Medium article](https://medium.com/@Ilaeria/command-line-scripting-options-for-mixed-os-teams-7077a849e75f)
+and
+[this Software Carpentries course](https://swcarpentry.github.io/shell-novice/)
+if you need further instructions.
+
+### Installing prerequisites
+
 Before installing `pyrealm`, make sure you have python installed. Here are the
 versions for
 
@@ -57,6 +70,24 @@ In short, you can create a virtual environment typing `python3 -m venv .venv`
 `pip install pyrealm` and install everything else you might want to use. When
 you are done with your `pyrealm` work just type `deactivate`. You can
 re-activate and alter your environment anytime once it is set up.
+
+## Running the worked examples
+
+The easiest way to get started with using `pyrealm` is going through the worked
+examples in this documentation.
+Each example can be run in a [jupyter notebook](https://jupyter.org/). For this,
+it can be opened using a jupyter hub cloud service such as
+[Google Colab](https://colab.research.google.com/) or a locally hosted jupyter
+hub. It is also straightforward to install and run it locally on your machine
+following these steps:
+
+- Install [JupyterLab](https://jupyterlab.readthedocs.io/en/stable/) by running
+`pip install jupyterlab`.
+- Start JupyterLab by running `jupyter lab` from the same directory where your
+jupyter notebooks are located.
+- Open your jupyter notebook -- have a look at the
+[JupyterLab documentation](https://jupyterlab.readthedocs.io/en/stable/user/interface.html)
+for a detailed description of the user interface.
 
 ## `pyrealm` developers
 
