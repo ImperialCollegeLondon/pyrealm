@@ -93,9 +93,10 @@ class DailySolarFluxes:
 
         # Validate the inputs
         shapes = check_input_shapes(latitude, elevation, sunshine_fraction, temperature)
-        if len(self.dates) != shapes[0]:
+        if shapes[0] not in (len(self.dates), 1):
             raise ValueError(
-                "The calendar is not the same length as the first axis of inputs "
+                "The first axis of inputs is neither the same as the calendar or length"
+                " one (constant in time)"
             )
 
         # Calculate heliocentric longitudes (nu and lambda), Berger (1978)
@@ -118,7 +119,7 @@ class DailySolarFluxes:
         # the other inputs. These need to be broadcastable to the shape of the other
         # inputs. The expand_dims variable gets a list of the axes to expand onto -
         # which will be an empty list when ndim=1, leaving the targets unchanged.
-        expand_dims = list(np.arange(1, elevation.ndim))
+        expand_dims = list(np.arange(1, len(shapes)))
         self.nu = np.expand_dims(nu, axis=expand_dims)
         self.lambda_ = np.expand_dims(lambda_, axis=expand_dims)
         self.distance_factor = np.expand_dims(distance_factor, axis=expand_dims)

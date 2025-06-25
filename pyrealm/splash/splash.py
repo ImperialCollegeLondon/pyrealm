@@ -75,8 +75,24 @@ class SplashModel:
         self.shape: tuple = check_input_shapes(elv, lat, sf, tc, pn)
         """The array shape of the input variables"""
 
-        if len(dates) != self.shape[0]:
-            raise ValueError("Number of dates must match the first dimension of inputs")
+        if self.shape[0] not in (len(dates), 1):
+            raise ValueError(
+                "The first dimension of inputs must either match the number of dates or"
+                " have a length of one."
+            )
+
+        # Broadcast all the inputs over time to simplify the daily indexing if any
+        # inputs are constant over time
+        def bcast_time(var: NDArray) -> NDArray:
+            shape = (1,) * (len(self.shape) - len(var.shape)) + var.shape
+            bcast_shape = (len(dates), *shape[1:])
+            return np.broadcast_to(var, bcast_shape)
+
+        elv = bcast_time(elv)
+        lat = bcast_time(lat)
+        sf = bcast_time(sf)
+        tc = bcast_time(tc)
+        pn = bcast_time(pn)
 
         self.elv: NDArray[np.float64] = elv
         """The elevation of sites."""
@@ -178,7 +194,7 @@ class SplashModel:
         date_end = date_start + pd.DateOffset(years=1)
         num_days = (date_end - date_start).days
 
-        if self.shape[0] < num_days:
+        if len(self.dates) < num_days:
             raise ValueError("Cannot equilibrate - less than one year of data")
 
         # Run the equilibration loop
