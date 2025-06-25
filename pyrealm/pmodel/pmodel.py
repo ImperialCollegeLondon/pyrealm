@@ -598,7 +598,9 @@ class SubdailyPModel(PModelABC):
 
     Args:
         env: An instance of
-           :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`
+           :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`. The first
+           dimension of the data must be time with an equal length to the acclimation
+           model or a length of 1 if constant in time.
         acclim_model: An instance of
             :class:`~pyrealm.pmodel.acclimation.AcclimationModel`
         method_kphio: The method to use for calculating the quantum yield
@@ -705,10 +707,11 @@ class SubdailyPModel(PModelABC):
         # Store the acclimation model
         self.acclim_model = acclim_model
 
-        if self.acclim_model.datetimes.shape[0] != self.env.tc.shape[0]:
+        datetimes = self.acclim_model.datetimes
+        if self.shape[0] not in (datetimes.shape[0], 1):
             raise ValueError(
-                "The PModelEnvironment data and AcclimationModel datetimes "
-                "are of different lengths."
+                "The first dimension of the PModelEnvironment data is a different "
+                "length to the number of AcclimationModel datetimes."
             )
 
         if not hasattr(self.acclim_model, "include"):
@@ -747,7 +750,7 @@ class SubdailyPModel(PModelABC):
 
             try:
                 for values in previous_realised.values():
-                    _ = np.broadcast_shapes(self.env.tc.shape, values.shape)
+                    _ = np.broadcast_shapes(self.shape, values.shape)
             except ValueError:
                 raise ValueError(
                     "`previous_realised` arrays have wrong shape in SubdailyPModel"
@@ -779,8 +782,15 @@ class SubdailyPModel(PModelABC):
         for env_var_name in daily_environment_vars:
             env_var = getattr(self.env, env_var_name)
             if env_var is not None:
+                # Broadcast the first dimension (if constant) since the acclimation
+                # model requires this dimension to be equal to the number of times
+                env_var_shape = (1,) * (len(self.shape) - env_var.ndim) + env_var.shape
+                env_var_bcast = np.broadcast_to(
+                    env_var,
+                    [datetimes.shape[0], *env_var_shape[1:]],
+                )
                 daily_environment[env_var_name] = self.acclim_model.get_daily_means(
-                    values=env_var,
+                    values=env_var_bcast,
                 )
 
         # Calculate the acclimation environment passing on the constants definitions.
