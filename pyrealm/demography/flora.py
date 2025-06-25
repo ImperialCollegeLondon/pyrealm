@@ -275,7 +275,7 @@ class Flora(PandasExporter):
     """
 
     # The only init argument.
-    pfts: InitVar[Sequence[type[PlantFunctionalTypeStrict]]]
+    pfts: InitVar[Sequence[PlantFunctionalTypeStrict]]
     r"""A sequence of plant functional type instances to include in the Flora."""
 
     # A class variable setting the names of PFT traits held as arrays.
@@ -333,7 +333,7 @@ class Flora(PandasExporter):
     """Proportion of stem height at which maximum crown radius is found."""
 
     # - other instance attributes
-    pft_dict: dict[str, type[PlantFunctionalTypeStrict]] = field(init=False)
+    pft_dict: dict[str, PlantFunctionalTypeStrict] = field(init=False)
     """A dictionary of the original plant functional type instances, keyed by name."""
     pft_indices: dict[str, int] = field(init=False)
     """An dictionary giving the index of each PFT name in the trait array attributes."""
@@ -347,7 +347,7 @@ class Flora(PandasExporter):
     gpp_topslice: NDArray[np.float64] = field(init=False)
     """Proportion of GPP to topslice before allocation."""
 
-    def __post_init__(self, pfts: Sequence[type[PlantFunctionalTypeStrict]]) -> None:
+    def __post_init__(self, pfts: Sequence[PlantFunctionalTypeStrict]) -> None:
         # Check the PFT data
         if (not isinstance(pfts, Sequence)) or (
             not all([isinstance(v, PlantFunctionalTypeStrict) for v in pfts])
