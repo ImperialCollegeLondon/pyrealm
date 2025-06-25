@@ -999,8 +999,10 @@ class StemAllometry(PandasExporter, CohortMethods):
             )
 
         # Fail if any DBH values are negative
-        if np.any(at_dbh < 0):
-            raise ValueError("Negative DBH values passed to StemAllometry")
+        if np.any(at_dbh <= 0):
+            raise ValueError(
+                "DBH values passed to StemAllometry must be strictly positive"
+            )
 
         self.stem_height = calculate_heights(
             h_max=stem_traits.h_max, a_hd=stem_traits.a_hd, dbh=at_dbh, validate=False

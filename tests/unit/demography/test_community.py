@@ -173,26 +173,64 @@ def test_Cohorts_duplicate_id_detection():
         _ = cohorts.add_cohort_data(new_data=cohorts)
 
 
-def test_Cohorts_no_negative_dbh():
-    """Test setting negative DBH fails."""
+@pytest.mark.parametrize(
+    argnames="values, outcome, message",
+    argvalues=(
+        pytest.param(np.array([1, 1]), does_not_raise(), None, id="positive"),
+        pytest.param(
+            np.array([1e-12, 1e-12]),
+            does_not_raise(),
+            None,
+            id="tiny but not zero",
+        ),
+        pytest.param(
+            np.array([1e-350, 1e-350]),
+            pytest.raises(ValueError),
+            "DBH values must be strictly positive",
+            id="functionally zero",
+        ),
+        pytest.param(
+            np.array([0, 0]),
+            pytest.raises(ValueError),
+            "DBH values must be strictly positive",
+            id="zero",
+        ),
+        pytest.param(
+            np.array([-1, -1]),
+            pytest.raises(ValueError),
+            "DBH values must be strictly positive",
+            id="negative",
+        ),
+    ),
+)
+def test_Cohorts_dbh_strictly_positive(values, outcome, message):
+    """Test setting negative or zero DBH fails."""
 
     from pyrealm.demography.community import Cohorts
 
-    # Create and instances to modify using methods
+    # Test __init__
+    with outcome as excep:
+        cohorts = Cohorts(
+            pft_names=np.array(["broadleaf", "conifer"]),
+            n_individuals=np.array([6, 1]),
+            dbh_values=values,
+        )
+
+    if excep:
+        assert str(excep.value) == message
+
+    # Test setter
     cohorts = Cohorts(
         pft_names=np.array(["broadleaf", "conifer"]),
         n_individuals=np.array([6, 1]),
-        dbh_values=np.array([0.2, 0.5]),
+        dbh_values=np.array([1, 1]),
     )
 
-    # This should be OK...
-    cohorts.dbh_values = np.array([0, 0])
+    with outcome as excep:
+        cohorts.dbh_values = values
 
-    # ... but this should fail
-    with pytest.raises(ValueError) as excep:
-        cohorts.dbh_values = np.array([-1, -1])
-
-    assert str(excep.value) == "Cannot set negative DBH values in Cohorts instance."
+    if excep:
+        assert str(excep.value) == message
 
 
 def test_Cohorts_CohortMethods():

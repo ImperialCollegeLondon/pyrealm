@@ -204,10 +204,10 @@ class Cohorts(PandasExporter, CohortMethods):
         except ValueError:
             raise ValueError("Cohort arrays are of unequal length")
 
-        if np.any(dbh_values < 0):
-            raise ValueError("Negative DBH values passed to Cohorts instance.")
+        # Set the DBH values to trigger validation
+        setattr(self, "dbh_values", dbh_values)
 
-        self._dbh_values = dbh_values
+        # Additional attributes
         self.n_cohorts = dbh_values.size
         self._cohort_id = np.array([str(uuid.uuid4()) for _ in range(self.n_cohorts)])
 
@@ -234,8 +234,9 @@ class Cohorts(PandasExporter, CohortMethods):
 
     @dbh_values.setter
     def dbh_values(self, values: NDArray[np.float64]) -> None:
-        if np.any(values < 0):
-            raise ValueError("Cannot set negative DBH values in Cohorts instance.")
+        """Setter function for DBH values, enforcing strictly positive values."""
+        if np.any(values <= 0):
+            raise ValueError("DBH values must be strictly positive")
 
         self._dbh_values = values
 
