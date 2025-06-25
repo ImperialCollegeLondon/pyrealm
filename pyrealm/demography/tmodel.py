@@ -1040,13 +1040,11 @@ class StemAllometry(PandasExporter, CohortMethods):
         # the at_dbh values are congruent with the stem_traits inputs. If they are, then
         # all the other allometry function inputs will be too.
         if validate:
+            size_args = {"at_dbh": at_dbh}
             _validate_demography_array_arguments(
-                trait_args={"h_max": stem_traits.h_max}, size_args={"at_dbh": at_dbh}
+                trait_args={"h_max": stem_traits.h_max}, size_args=size_args
             )
-
-        # Fail if any DBH values are negative
-        if np.any(at_dbh <= 0):
-            raise ValueError("DBH values must be strictly positive")
+            _enforce_positive_sizes(size_args=size_args, function_name="StemAllometry")
 
         self.stem_height = calculate_heights(
             h_max=stem_traits.h_max, a_hd=stem_traits.a_hd, dbh=at_dbh, validate=False
