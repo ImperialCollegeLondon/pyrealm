@@ -10,6 +10,55 @@ from numpy.testing import assert_allclose
 
 
 @pytest.mark.parametrize(
+    argnames="size_args, outcome, message",
+    argvalues=(
+        pytest.param(
+            {"dbh": np.array([1, 1, 1])}, does_not_raise(), None, id="one var ok"
+        ),
+        pytest.param(
+            {"dbh": np.array([1, 1, 1]), "stem_height": np.array([1, 1, 1])},
+            does_not_raise(),
+            None,
+            id="two vars ok",
+        ),
+        pytest.param(
+            {"dbh": np.array([-1, -1, -1])},
+            pytest.raises(ValueError),
+            "Allometry values in NA not strictly positive: dbh",
+            id="negative",
+        ),
+        pytest.param(
+            {"dbh": np.array([0, 0, 0])},
+            pytest.raises(ValueError),
+            "Allometry values in NA not strictly positive: dbh",
+            id="zero",
+        ),
+        pytest.param(
+            {"dbh": np.array([-1, 0, 1]), "stem_height": np.array([-1, 0, 1])},
+            pytest.raises(ValueError),
+            "Allometry values in NA not strictly positive: dbh, stem_height",
+            id="two vars, both fail",
+        ),
+        pytest.param(
+            {"dbh": np.array([1, 1, 1]), "stem_height": np.array([-1, 0, 1])},
+            pytest.raises(ValueError),
+            "Allometry values in NA not strictly positive: stem_height",
+            id="two vars, one fails",
+        ),
+    ),
+)
+def test_enforce_positive_sizes(size_args, outcome, message):
+    """Test the enforce positive sizes function."""
+    from pyrealm.demography.tmodel import enforce_positive_sizes
+
+    with outcome as excep:
+        enforce_positive_sizes(size_args=size_args, function_name="NA")
+
+    if excep:
+        assert str(excep.value) == message
+
+
+@pytest.mark.parametrize(
     argnames="crown_areas, expected_r0",
     argvalues=(
         (np.array([20, 30]), np.array([[0.86887756, 1.29007041]])),

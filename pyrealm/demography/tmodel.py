@@ -24,6 +24,18 @@ from pyrealm.demography.core import (
 from pyrealm.demography.flora import Flora, StemTraits
 
 
+def enforce_positive_sizes(size_args: dict[str, NDArray], function_name: str) -> None:
+    """Simple function to trap allometry inputs that are not strictly positive."""
+
+    failing = [vname for vname, values in size_args.items() if np.any(values <= 0)]
+
+    if failing:
+        raise ValueError(
+            f"Allometry values in {function_name} not strictly "
+            f"positive: {', '.join(failing)}"
+        )
+
+
 def calculate_heights(
     h_max: NDArray[np.float64],
     a_hd: NDArray[np.float64],
@@ -49,8 +61,9 @@ def calculate_heights(
     """
 
     if validate:
+        size_args = {"dbh": dbh}
         _validate_demography_array_arguments(
-            trait_args={"h_max": h_max, "a_hd": a_hd}, size_args={"dbh": dbh}
+            trait_args={"h_max": h_max, "a_hd": a_hd}, size_args=size_args
         )
 
     return _enforce_2D(h_max * (1 - np.exp(-a_hd * dbh / h_max)))
@@ -1000,9 +1013,7 @@ class StemAllometry(PandasExporter, CohortMethods):
 
         # Fail if any DBH values are negative
         if np.any(at_dbh <= 0):
-            raise ValueError(
-                "DBH values passed to StemAllometry must be strictly positive"
-            )
+            raise ValueError("DBH values must be strictly positive")
 
         self.stem_height = calculate_heights(
             h_max=stem_traits.h_max, a_hd=stem_traits.a_hd, dbh=at_dbh, validate=False
