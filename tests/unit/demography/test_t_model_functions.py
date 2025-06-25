@@ -2,6 +2,7 @@
 
 import warnings
 from contextlib import nullcontext as does_not_raise
+from inspect import signature
 from unittest.mock import patch
 
 import numpy as np
@@ -49,10 +50,10 @@ from numpy.testing import assert_allclose
 )
 def test_enforce_positive_sizes(size_args, outcome, message):
     """Test the enforce positive sizes function."""
-    from pyrealm.demography.tmodel import enforce_positive_sizes
+    from pyrealm.demography.tmodel import _enforce_positive_sizes
 
     with outcome as excep:
-        enforce_positive_sizes(size_args=size_args, function_name="NA")
+        _enforce_positive_sizes(size_args=size_args, function_name="NA")
 
     if excep:
         assert str(excep.value) == message
@@ -747,6 +748,93 @@ class TestTModel:
             return
 
         assert str(excep.value).startswith(excep_msg)
+
+
+@pytest.mark.parametrize(
+    argnames="values, outcome",
+    argvalues=(
+        pytest.param(np.array([1, 1, 1]), does_not_raise(), id="positive"),
+        pytest.param(np.array([0, 0, 0]), pytest.raises(ValueError), id="zero"),
+        pytest.param(np.array([-1, -1, -1]), pytest.raises(ValueError), id="negative"),
+    ),
+)
+@pytest.mark.parametrize(
+    argnames="fname, size_args",
+    argvalues=(
+        ("calculate_heights", ("dbh",)),
+        ("calculate_dbh_from_height", ("stem_height",)),
+        ("calculate_crown_areas", ("dbh", "stem_height")),
+        ("calculate_crown_fractions", ("dbh", "stem_height")),
+        ("calculate_stem_masses", ("dbh", "stem_height")),
+        ("calculate_foliage_masses", ("crown_area",)),
+        ("calculate_sapwood_masses", ("stem_height", "crown_area", "crown_fraction")),
+        ("calculate_crown_z_max", ("stem_height",)),
+        ("calculate_crown_r0", ("crown_area",)),
+        ("calculate_whole_crown_gpp", ("potential_gpp", "crown_area")),
+        ("calculate_sapwood_respiration", ("sapwood_mass",)),
+        ("calculate_foliar_respiration", ("whole_crown_gpp",)),
+        ("calculate_gpp_topslice", ("whole_crown_gpp",)),
+        ("calculate_reproductive_tissue_respiration", ("reproductive_tissue_mass",)),
+        ("calculate_fine_root_respiration", ("foliage_mass",)),
+        (
+            "calculate_net_primary_productivity",
+            (
+                "whole_crown_gpp",
+                "foliar_respiration",
+                "fine_root_respiration",
+                "sapwood_respiration",
+                "reproductive_tissue_respiration",
+            ),
+        ),
+        ("calculate_foliage_turnover", ("foliage_mass",)),
+        ("calculate_fine_root_turnover", ("foliage_mass",)),
+        ("calculate_reproductive_tissue_turnover", ("m_rt",)),
+        (
+            "calculate_growth_increments",
+            (
+                "npp",
+                "turnover",
+                "reproductive_tissue_turnover",
+                "p_foliage_for_reproductive_tissue",
+                "dbh",
+                "stem_height",
+            ),
+        ),
+    ),
+)
+def test_tmodel_enforce_positive_sizes(
+    rtmodel_flora, values, outcome, fname, size_args
+):
+    """Test the validation of positive size values in T model functions.
+
+    The function call is assembled programatically.
+    """
+    from pyrealm.demography import tmodel
+
+    # Get the function from the model
+    func = getattr(tmodel, fname)
+    func_signature = signature(func)
+
+    # Get a dictionary of traits as numpy array
+    all_traits = {
+        k: np.array(v) for k, v in rtmodel_flora.to_pandas().to_dict("list").items()
+    }
+
+    # Reduce the trait arguments to those in the function signature
+    func_args = {k: v for k, v in all_traits.items() if k in func_signature.parameters}
+
+    # Add the size arguments
+    for arg in size_args:
+        func_args[arg] = values
+
+    with outcome as excep:
+        # Call the function with the assembled arguments
+        func(**func_args)
+
+    if excep:
+        assert str(excep.value) == (
+            f"Allometry values in {fname} not strictly positive: {', '.join(size_args)}"
+        )
 
 
 def test_calculate_dbh_from_height_edge_cases():
