@@ -226,9 +226,11 @@ class C3C4Competition:
         # Step 4: remove areas below minimum temperature
         # mypy - this is a short term fix awaiting better resolution of mixed scalar and
         #        array inputs.
+        below_t_min = np.broadcast_to(below_t_min, self.shape)
         frac_c4[below_t_min] = 0  # type: ignore
 
         # Step 5: remove cropland areas
+        cropland = np.broadcast_to(cropland, self.shape)
         frac_c4[cropland] = np.nan  # type: ignore
 
         self.frac_c4: NDArray[np.float64] = frac_c4
