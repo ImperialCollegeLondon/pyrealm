@@ -646,6 +646,12 @@ def calculate_net_primary_productivity(
         _validate_demography_array_arguments(
             trait_args={"yld": yld}, size_args=size_args
         )
+        # Allow reproductive tissue terms to be zero
+        size_args = {
+            k: v
+            for k, v in size_args.items()
+            if k not in ("reproductive_tissue_respiration")
+        }
         _enforce_positive_sizes(
             size_args=size_args, function_name="calculate_net_primary_productivity"
         )
@@ -756,13 +762,11 @@ def calculate_reproductive_tissue_turnover(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
-        size_args = {"m_rt": m_rt}
         _validate_demography_array_arguments(
-            trait_args={"tau_rt": tau_rt}, size_args=size_args
+            trait_args={"tau_rt": tau_rt}, size_args={"m_rt": m_rt}
         )
-        _enforce_positive_sizes(
-            size_args=size_args, function_name="calculate_reproductive_tissue_turnover"
-        )
+        if np.any(m_rt < 0):
+            raise ValueError("The reproductive tissue mass cannot be negative.")
 
     return _enforce_2D(m_rt * (1 / tau_rt))
 
@@ -919,6 +923,13 @@ def calculate_growth_increments(
             },
             size_args=size_args,
         )
+        # Allow reproductive tissue terms to be zero
+        size_args = {
+            k: v
+            for k, v in size_args.items()
+            if k
+            not in ("reproductive_tissue_turnover", "p_foliage_for_reproductive_tissue")
+        }
         _enforce_positive_sizes(
             size_args=size_args, function_name="calculate_growth_increments"
         )

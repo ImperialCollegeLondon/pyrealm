@@ -92,8 +92,18 @@ def check_expected(community, expected):
                 "dbh_values": np.array([0.2, -0.5]),
             },
             pytest.raises(ValueError),
-            "Negative DBH values passed to Cohorts instance.",
+            "DBH values must be strictly positive",
             id="negative dbh",
+        ),
+        pytest.param(
+            {
+                "pft_names": np.array(["broadleaf", "conifer"]),
+                "n_individuals": np.array([6, 1]),
+                "dbh_values": np.array([0.2, 0]),
+            },
+            pytest.raises(ValueError),
+            "DBH values must be strictly positive",
+            id="zero dbh",
         ),
         pytest.param(
             {
