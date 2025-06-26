@@ -121,7 +121,7 @@ def test_calculate_reproductive_tissue_turnover():
     from pyrealm.demography.tmodel import calculate_reproductive_tissue_turnover
 
     result = calculate_reproductive_tissue_turnover(
-        m_rt=np.array([10]),
+        reproductive_tissue_mass=np.array([10]),
         tau_rt=np.array([4]),
     )
 
@@ -780,11 +780,6 @@ class TestTModel:
         ("calculate_sapwood_respiration", ("sapwood_mass",), tuple()),
         ("calculate_foliar_respiration", ("whole_crown_gpp",), tuple()),
         ("calculate_gpp_topslice", ("whole_crown_gpp",), tuple()),
-        (
-            "calculate_reproductive_tissue_respiration",
-            ("reproductive_tissue_mass",),
-            tuple(),
-        ),
         ("calculate_fine_root_respiration", ("foliage_mass",), tuple()),
         (
             "calculate_net_primary_productivity",
@@ -818,7 +813,8 @@ def test_tmodel_enforce_positive_sizes(
 ):
     """Test the validation of positive size values in T model functions.
 
-    The function call is assembled programatically.
+    The function call is assembled programatically. It excludes testing of reproductive
+    tissue respiration and turnover because these do allow zero values.
     """
     from pyrealm.demography import tmodel
 

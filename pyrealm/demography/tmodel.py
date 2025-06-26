@@ -553,10 +553,8 @@ def calculate_reproductive_tissue_respiration(
         _validate_demography_array_arguments(
             trait_args={"resp_rt": resp_rt}, size_args=size_args
         )
-        _enforce_positive_sizes(
-            size_args=size_args,
-            function_name="calculate_reproductive_tissue_respiration",
-        )
+        if np.any(reproductive_tissue_mass < 0):
+            raise ValueError("The reproductive tissue mass cannot be negative.")
 
     return _enforce_2D(reproductive_tissue_mass * resp_rt)
 
@@ -741,7 +739,7 @@ def calculate_fine_root_turnover(
 
 
 def calculate_reproductive_tissue_turnover(
-    m_rt: NDArray[np.float64],
+    reproductive_tissue_mass: NDArray[np.float64],
     tau_rt: NDArray[np.float64],
     validate: bool = True,
 ) -> NDArray[np.float64]:
@@ -749,26 +747,27 @@ def calculate_reproductive_tissue_turnover(
 
     This function calculates the costs associated with the turnover of reproductive
     tissue. This is calculated from the total reproductive tissue mass
-    (:math:`m_rt`), along with the turnover time of reproductive tissue
-    (:math:`\tau_rt`).
+    (:math:`m_{rt}`), along with the turnover time of reproductive tissue
+    (:math:`\tau_{rt}`).
 
     .. math::
 
-        T_rt = m_rt \left( \frac{1}{\tau_rt}\right)
+        T_{rt} = m_{rt} \left( \frac{1}{\tau_{rt}}\right)
 
     Args:
-        m_rt: The mass of reproductive tissue
+        reproductive_tissue_mass: The mass of reproductive tissue
         tau_rt: The turnover time of reproductive tissue
         validate: Boolean flag to suppress argument validation
     """
     if validate:
         _validate_demography_array_arguments(
-            trait_args={"tau_rt": tau_rt}, size_args={"m_rt": m_rt}
+            trait_args={"tau_rt": tau_rt},
+            size_args={"reproductive_tissue_mass": reproductive_tissue_mass},
         )
-        if np.any(m_rt < 0):
+        if np.any(reproductive_tissue_mass < 0):
             raise ValueError("The reproductive tissue mass cannot be negative.")
 
-    return _enforce_2D(m_rt * (1 / tau_rt))
+    return _enforce_2D(reproductive_tissue_mass * (1 / tau_rt))
 
 
 def calculate_reproductive_tissue_mass(
@@ -777,12 +776,12 @@ def calculate_reproductive_tissue_mass(
 ) -> NDArray[np.float64]:
     r"""Calculate reproductive tissue mass.
 
-    This function calculates the mass of reproductive tissue (:math:`m_rt`) as a fixed
+    This function calculates the mass of reproductive tissue (:math:`m_{rt}`) as a fixed
     proportion of the total foliage mass (:math:`W_f`) of individuals.
 
     .. math::
 
-        m_rt = p_{f_rt} W_f
+        m_{rt} = p_{f_{rt}} W_f
 
     Args:
         foliage_mass: The foliage mass
@@ -1295,7 +1294,7 @@ class StemAllocation(PandasExporter):
         )
 
         self.reproductive_tissue_turnover = calculate_reproductive_tissue_turnover(
-            m_rt=stem_allometry.reproductive_tissue_mass,
+            reproductive_tissue_mass=stem_allometry.reproductive_tissue_mass,
             tau_rt=stem_traits.tau_rt,
             validate=False,
         )
