@@ -855,11 +855,11 @@ def calculate_growth_increments(
     * the crown area ratio (:math:`c`), and
     * the ratio of fine root mass to leaf area (:math:`\zeta`).
 
-    The value of :math`\Delta D` is unstable when :math:`D = 0` and hence :math:`H = 0`
+    The value of :math:`\Delta D` is unstable when :math:`D = 0` and hence :math:`H = 0`
     and the rates of change in stem and foliar mass are also zero. If :math:`P_{net} - T
-    = 0` then :math`\Delta D` is undefined, otherwise :math`\Delta D = \pm \inf`
+    = 0` then :math:`\Delta D` is undefined, otherwise :math:`\Delta D = \pm \inf`
     depending on whether then turnover costs exceed the available NPP. Under these
-    conditions, this function explicitly sets :math`\Delta D = 0`: **stems with zero
+    conditions, this function explicitly sets :math:`\Delta D = 0`: **stems with zero
     height cannot grow**.
 
     The resulting incremental changes in stem mass and foliar mass can then be
