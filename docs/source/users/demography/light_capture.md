@@ -64,8 +64,8 @@ f_{abs} = 1 - e^{-kL}
 $$
 
 In the big leaf model of a tree canopy, the entire crown area $A_c$ is exposed to the
-downwelling photosynthetic photon flux density (PPFD) at the top of the canopy and hence
-the absorbed radiation ($I_{abs}$) is:
+downwelling {term}`photosynthetic photon flux density (PPFD)<PPFD>` at the top of the
+canopy and hence the absorbed radiation ($I_{abs}$) is:
 
 $$
 I_{abs} = \textrm{PPFD} \cdot A_c  (1 - e^{-kL})
