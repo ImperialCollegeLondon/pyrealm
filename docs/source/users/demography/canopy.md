@@ -82,7 +82,7 @@ that are growing together in a location. The community structure groups individu
 together into cohorts that are defined as:
 
 * a number of individuals,
-* with identical diameter at breast height (DBH, $D$),
+* with identical {term}`diameter at breast height<DBH>` (DBH, $D$),
 * of the same [plant functional type (PFT)](./flora.md),
 * and hence have the same [stem allometry](./t_model.md) and [crown model](./crown.md).
 
