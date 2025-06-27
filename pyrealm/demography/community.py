@@ -129,7 +129,7 @@ from __future__ import annotations
 import json
 import sys
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import InitVar, dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -173,15 +173,16 @@ class Cohorts(PandasExporter, CohortMethods):
     count_attr: ClassVar[str] = "n_cohorts"
 
     # Instance attributes
-    dbh_values: NDArray[np.float64]
     n_individuals: NDArray[np.int_]
     pft_names: NDArray[np.str_]
     _cohort_id: NDArray[np.str_] = field(init=False)
+    _dbh_values: NDArray[np.float64] = field(init=False)
     n_cohorts: int = field(init=False)
+    dbh_values: InitVar[NDArray[np.float64]]
 
     __experimental__ = True
 
-    def __post_init__(self) -> None:
+    def __post_init__(self, dbh_values: NDArray[np.float64]) -> None:
         """Validation of cohorts data."""
 
         # TODO - validation - maybe make this optional to reduce workload within
@@ -191,7 +192,7 @@ class Cohorts(PandasExporter, CohortMethods):
 
         # Check cohort data types
         if not (
-            isinstance(self.dbh_values, np.ndarray)
+            isinstance(dbh_values, np.ndarray)
             and isinstance(self.n_individuals, np.ndarray)
             and isinstance(self.pft_names, np.ndarray)
         ):
@@ -199,11 +200,15 @@ class Cohorts(PandasExporter, CohortMethods):
 
         # Check the cohort inputs are of equal length
         try:
-            check_input_shapes(self.dbh_values, self.n_individuals, self.dbh_values)
+            check_input_shapes(self.pft_names, self.n_individuals, dbh_values)
         except ValueError:
             raise ValueError("Cohort arrays are of unequal length")
 
-        self.n_cohorts = self.dbh_values.size
+        # Set the DBH values to trigger validation
+        setattr(self, "dbh_values", dbh_values)
+
+        # Additional attributes
+        self.n_cohorts = dbh_values.size
         self._cohort_id = np.array([str(uuid.uuid4()) for _ in range(self.n_cohorts)])
 
     @property
@@ -217,6 +222,23 @@ class Cohorts(PandasExporter, CohortMethods):
             raise ValueError("Cohort object with duplicated cohort ids")
 
         self._cohort_id = values
+
+    # Ignoring this redefinition - the name is used above as an init-only argument that
+    # is then redefined as a class property with a setter protecting from negative
+    # values.
+
+    @property  # type: ignore [no-redef]
+    def dbh_values(self) -> NDArray[np.float64]:
+        """The diameter at breast height of the cohorts (m)."""
+        return self._dbh_values
+
+    @dbh_values.setter
+    def dbh_values(self, values: NDArray[np.float64]) -> None:
+        """Setter function for DBH values, enforcing strictly positive values."""
+        if np.any(values <= 0):
+            raise ValueError("DBH values must be strictly positive")
+
+        self._dbh_values = values
 
 
 class CohortSchema(Schema):
@@ -477,7 +499,7 @@ class Community:
 
         # Populate the stem allometry
         self.stem_allometry = StemAllometry(
-            stem_traits=self.stem_traits, at_dbh=self.cohorts.dbh_values
+            stem_traits=self.stem_traits, at_dbh=self.cohorts._dbh_values
         )
 
     @classmethod
@@ -602,7 +624,7 @@ class Community:
         self.stem_traits.add_cohort_data(new_data=new_stem_traits)
 
         new_stem_allometry = StemAllometry(
-            stem_traits=new_stem_traits, at_dbh=new_data.dbh_values
+            stem_traits=new_stem_traits, at_dbh=new_data._dbh_values
         )
         self.stem_allometry.add_cohort_data(new_data=new_stem_allometry)
 

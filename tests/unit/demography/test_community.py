@@ -87,6 +87,26 @@ def check_expected(community, expected):
         ),
         pytest.param(
             {
+                "pft_names": np.array(["broadleaf", "conifer"]),
+                "n_individuals": np.array([6, 1]),
+                "dbh_values": np.array([0.2, -0.5]),
+            },
+            pytest.raises(ValueError),
+            "DBH values must be strictly positive",
+            id="negative dbh",
+        ),
+        pytest.param(
+            {
+                "pft_names": np.array(["broadleaf", "conifer"]),
+                "n_individuals": np.array([6, 1]),
+                "dbh_values": np.array([0.2, 0]),
+            },
+            pytest.raises(ValueError),
+            "DBH values must be strictly positive",
+            id="zero dbh",
+        ),
+        pytest.param(
+            {
                 "pft_names": False,
                 "n_individuals": np.array([6, 1]),
                 "dbh_values": np.array([0.2, 0.5]),
@@ -161,6 +181,66 @@ def test_Cohorts_duplicate_id_detection():
 
     with pytest.raises(ValueError):
         _ = cohorts.add_cohort_data(new_data=cohorts)
+
+
+@pytest.mark.parametrize(
+    argnames="values, outcome, message",
+    argvalues=(
+        pytest.param(np.array([1, 1]), does_not_raise(), None, id="positive"),
+        pytest.param(
+            np.array([1e-12, 1e-12]),
+            does_not_raise(),
+            None,
+            id="tiny but not zero",
+        ),
+        pytest.param(
+            np.array([1e-350, 1e-350]),
+            pytest.raises(ValueError),
+            "DBH values must be strictly positive",
+            id="functionally zero",
+        ),
+        pytest.param(
+            np.array([0, 0]),
+            pytest.raises(ValueError),
+            "DBH values must be strictly positive",
+            id="zero",
+        ),
+        pytest.param(
+            np.array([-1, -1]),
+            pytest.raises(ValueError),
+            "DBH values must be strictly positive",
+            id="negative",
+        ),
+    ),
+)
+def test_Cohorts_dbh_strictly_positive(values, outcome, message):
+    """Test setting negative or zero DBH fails."""
+
+    from pyrealm.demography.community import Cohorts
+
+    # Test __init__
+    with outcome as excep:
+        cohorts = Cohorts(
+            pft_names=np.array(["broadleaf", "conifer"]),
+            n_individuals=np.array([6, 1]),
+            dbh_values=values,
+        )
+
+    if excep:
+        assert str(excep.value) == message
+
+    # Test setter
+    cohorts = Cohorts(
+        pft_names=np.array(["broadleaf", "conifer"]),
+        n_individuals=np.array([6, 1]),
+        dbh_values=np.array([1, 1]),
+    )
+
+    with outcome as excep:
+        cohorts.dbh_values = values
+
+    if excep:
+        assert str(excep.value) == message
 
 
 def test_Cohorts_CohortMethods():
