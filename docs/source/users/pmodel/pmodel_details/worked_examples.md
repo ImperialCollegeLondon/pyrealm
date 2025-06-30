@@ -28,13 +28,17 @@ the P Model.
 
 These worked examples [can be downloaded as Jupyter notebook here](https://github.com/ImperialCollegeLondon/pyrealm/raw/506-getting-started-with-pyrealm/jupyter_notebooks/StandardPModel.ipynb).
 
-<!-- These worked examples
-<a
-href=
-"https://raw.githubusercontent.com/ImperialCollegeLondon/pyrealm/
-506-getting-started-with-pyrealm/jupyter_notebook/StandardPModel.ipynb"
-download="StandardPModel.ipynb">can be downloaded as Jupyter notebook here</a>.
--->
+<!-- markdownlint-disable-next-line MD033 -->
+These worked examples <a href="../../../_static/StandardPModel.ipynb"
+download="StandardPModel.ipynb"> can bedownloaded as Jupyter notebook here</a>.
+
+See {download}`this example script <../../../_static/StandardPModel.ipynb>`.
+
+```{eval-rst}
+
+:download:`this example script <../../../_static/StandardPModel.py>`.
+
+```
 
 The first example uses a single point but the second shows how the package can be used
 with array data. The `pyrealm` package uses the `numpy` package and expects arrays of

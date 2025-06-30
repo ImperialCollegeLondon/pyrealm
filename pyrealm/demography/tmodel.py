@@ -1038,8 +1038,8 @@ class StemAllocation(PandasExporter):
         stem_allometry: An instance of
             :class:`~pyrealm.demography.tmodel.StemAllometry`
             providing the stem size data for which to calculate allocation.
-        gpp: An array of GPP values available to a stem at which to model allocation (kg
-            C).
+        whole_crown_gpp: An array of GPP values available to a stem at which to model
+            allocation (kg C).
         validate: Boolean flag to suppress argument validation
     """
 
