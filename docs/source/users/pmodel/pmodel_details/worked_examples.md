@@ -28,6 +28,8 @@ the P Model.
 
 These worked examples [can be downloaded as Jupyter notebook here](https://github.com/ImperialCollegeLondon/pyrealm/raw/506-getting-started-with-pyrealm/jupyter_notebooks/StandardPModel.ipynb).
 
+These worked examples {download}`can be downloaded as Jupyter notebook here <https://github.com/ImperialCollegeLondon/pyrealm/raw/506-getting-started-with-pyrealm/jupyter_notebooks/StandardPModel.ipynb>`.
+
 <!-- These worked examples
 <a
 href=
