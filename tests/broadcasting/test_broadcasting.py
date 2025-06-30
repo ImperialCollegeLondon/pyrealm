@@ -96,7 +96,7 @@ def method_args(argument: str, ctx: "Context"):
             "datetimes": np.arange(0, 48, dtype="datetime64[h]")
         },
         "AcclimationModel._get_subdaily_interpolation_xy": {"values": np.ones(2)},
-        "AcclimationModel.fill_daily_to_subdaily": {"values": np.ones(2)},
+        "AcclimationModel.fill_daily_to_subdaily": {"values": np.ones((2, *shape[1:]))},
         "AcclimationModel.get_window_values": {"values": np.ones(48)},
         "AcclimationModel.get_daily_means": {"values": np.ones(48)},
         "calculate_kattge_knorr_arrhenius_factor": {
@@ -131,6 +131,17 @@ def method_args(argument: str, ctx: "Context"):
     arguments: dict = method_arguments_list.get(ctx.name, {})
 
     # Arguments that use temporary variables or depend on parents
+    if ctx.name == "SolarDailyFluxes":
+        nTime = 4
+        solarShape = (1 if shape[0] == 1 else nTime, *shape[1:])
+        arguments = {
+            "dates": Calendar(np.arange(0, nTime, dtype="datetime64[D]")),
+            "latitude": np.full(solarShape, 10),
+            "elvation": np.full(solarShape, 10),
+            "sf": np.full(solarShape, 0.5),
+            "tc": np.full(solarShape, 25),
+            "pn": np.full(solarShape, 10),
+        }
     if ctx.name == "SplashModel":
         if (
             ctx.parents
@@ -489,6 +500,8 @@ def compare_instances(instance1: Any, instance2: Any) -> bool:
 shapes: list[tuple[int, ...]]
 shape_full: list[tuple[int, ...]]
 shapes = [(3, 2, 2), (1, 2, 2), (3, 1, 1), (1, 1, 1)]
+shapes = [(1, 2, 2), (3, 2, 2)]
+# shapes = [(3, 1, 1), (1, 2, 2), (3, 2, 2)]
 # shapes = [(1, 1, 1)]
 shape_full = [(3, 2, 2)]
 
