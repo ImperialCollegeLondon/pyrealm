@@ -26,6 +26,16 @@ language_info:
 This page shows two worked examples of how to use `pyrealm` to make predictions using
 the P Model.
 
+These worked examples [can be downloaded as Jupyter notebook here](https://github.com/ImperialCollegeLondon/pyrealm/raw/506-getting-started-with-pyrealm/jupyter_notebooks/StandardPModel.ipynb).
+
+<!-- These worked examples
+<a
+href=
+"https://raw.githubusercontent.com/ImperialCollegeLondon/pyrealm/
+506-getting-started-with-pyrealm/jupyter_notebook/StandardPModel.ipynb"
+download="StandardPModel.ipynb">can be downloaded as Jupyter notebook here</a>.
+-->
+
 The first example uses a single point but the second shows how the package can be used
 with array data. The `pyrealm` package uses the `numpy` package and expects arrays of
 data to be be passed to all inputs. Input arrays can be a single scalar value, but all
