@@ -90,15 +90,23 @@ jupyter notebooks are located.
 [JupyterLab documentation](https://jupyterlab.readthedocs.io/en/stable/user/interface.html)
 for a detailed description of the user interface.
 
+There are also a number of Python packages which are necessary for running the
+examples, namely `wget` to download example data, `matplotlib`, for plotting,
+ `xarray` as a data structure for handling the data and `netCDF4` as file format
+ in which the example data is stored.
+
 The following code block (run from the `jupyter_notebooks` directory of
   `pyrealm`) sets everything up for running the notebooks on Linux:
 
 ```bash
 pip install virtualenv
-python3 -m venv .virtualenv
+python3 -m venv .venv
 source .venv/bin/activate
 
+# install the necessary packages
 pip install jupyterlab
+pip install wget matplotlib xarray netCDF4
+
 jupyter lab
 
 ```
