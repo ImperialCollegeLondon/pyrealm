@@ -36,7 +36,7 @@ See {download}`this example script <../../../_static/StandardPModel.ipynb>`.
 
 ```{eval-rst}
 
-:download:`this example script <../../../_static/StandardPModel.py>`.
+:download:`this example script <../../../_static/StandardPModel.ipynb>`.
 
 ```
 
