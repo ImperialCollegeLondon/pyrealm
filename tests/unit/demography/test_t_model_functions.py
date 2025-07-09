@@ -1,11 +1,61 @@
 """test the functions in tmodel.py."""
 
 from contextlib import nullcontext as does_not_raise
+from inspect import signature
 from unittest.mock import patch
 
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose
+
+
+@pytest.mark.parametrize(
+    argnames="size_args, outcome, message",
+    argvalues=(
+        pytest.param(
+            {"dbh": np.array([1, 1, 1])}, does_not_raise(), None, id="one var ok"
+        ),
+        pytest.param(
+            {"dbh": np.array([1, 1, 1]), "stem_height": np.array([1, 1, 1])},
+            does_not_raise(),
+            None,
+            id="two vars ok",
+        ),
+        pytest.param(
+            {"dbh": np.array([-1, -1, -1])},
+            pytest.raises(ValueError),
+            "Allometry values in NA not strictly positive: dbh",
+            id="negative",
+        ),
+        pytest.param(
+            {"dbh": np.array([0, 0, 0])},
+            pytest.raises(ValueError),
+            "Allometry values in NA not strictly positive: dbh",
+            id="zero",
+        ),
+        pytest.param(
+            {"dbh": np.array([-1, 0, 1]), "stem_height": np.array([-1, 0, 1])},
+            pytest.raises(ValueError),
+            "Allometry values in NA not strictly positive: dbh, stem_height",
+            id="two vars, both fail",
+        ),
+        pytest.param(
+            {"dbh": np.array([1, 1, 1]), "stem_height": np.array([-1, 0, 1])},
+            pytest.raises(ValueError),
+            "Allometry values in NA not strictly positive: stem_height",
+            id="two vars, one fails",
+        ),
+    ),
+)
+def test_enforce_positive_sizes(size_args, outcome, message):
+    """Test the enforce positive sizes function."""
+    from pyrealm.demography.tmodel import _enforce_positive_sizes
+
+    with outcome as excep:
+        _enforce_positive_sizes(size_args=size_args, function_name="NA")
+
+    if excep:
+        assert str(excep.value) == message
 
 
 @pytest.mark.parametrize(
@@ -71,7 +121,7 @@ def test_calculate_reproductive_tissue_turnover():
     from pyrealm.demography.tmodel import calculate_reproductive_tissue_turnover
 
     result = calculate_reproductive_tissue_turnover(
-        m_rt=np.array([10]),
+        reproductive_tissue_mass=np.array([10]),
         tau_rt=np.array([4]),
     )
 
@@ -590,12 +640,15 @@ class TestTModel:
         )
 
         with outcome as excep:
+            # Note that foliar respiration was handled externally to the T Model
+            # calculations in the original R implementation. In pyrealm it is part of
+            # the PFT traits and the validation for allometry forces it to be non-zero,
+            # but here it is set very small to both pass input validation and to avoid
+            # altering the results given the precision of the tests.
             result = calculate_net_primary_productivity(
                 yld=rtmodel_flora.yld[pft_idx],
                 whole_crown_gpp=rtmodel_data["whole_crown_gpp"][data_idx],
-                foliar_respiration=np.array(
-                    [0]
-                ),  # Not included here in the R implementation
+                foliar_respiration=np.array([1e-10]),  # see above
                 fine_root_respiration=rtmodel_data["fine_root_respiration"][data_idx],
                 sapwood_respiration=rtmodel_data["sapwood_respiration"][data_idx],
                 reproductive_tissue_respiration=np.zeros(
@@ -699,6 +752,100 @@ class TestTModel:
         assert str(excep.value).startswith(excep_msg)
 
 
+@pytest.mark.parametrize(
+    argnames="values, outcome",
+    argvalues=(
+        pytest.param(np.array([1, 1, 1]), does_not_raise(), id="positive"),
+        pytest.param(np.array([0, 0, 0]), pytest.raises(ValueError), id="zero"),
+        pytest.param(np.array([-1, -1, -1]), pytest.raises(ValueError), id="negative"),
+    ),
+)
+@pytest.mark.parametrize(
+    argnames="fname, strict_size_args, non_strict_size_args",
+    argvalues=(
+        ("calculate_heights", ("dbh",), tuple()),
+        ("calculate_dbh_from_height", ("stem_height",), tuple()),
+        ("calculate_crown_areas", ("dbh", "stem_height"), tuple()),
+        ("calculate_crown_fractions", ("dbh", "stem_height"), tuple()),
+        ("calculate_stem_masses", ("dbh", "stem_height"), tuple()),
+        ("calculate_foliage_masses", ("crown_area",), tuple()),
+        (
+            "calculate_sapwood_masses",
+            ("stem_height", "crown_area", "crown_fraction"),
+            tuple(),
+        ),
+        ("calculate_crown_z_max", ("stem_height",), tuple()),
+        ("calculate_crown_r0", ("crown_area",), tuple()),
+        ("calculate_whole_crown_gpp", ("potential_gpp", "crown_area"), tuple()),
+        ("calculate_sapwood_respiration", ("sapwood_mass",), tuple()),
+        ("calculate_foliar_respiration", ("whole_crown_gpp",), tuple()),
+        ("calculate_gpp_topslice", ("whole_crown_gpp",), tuple()),
+        ("calculate_fine_root_respiration", ("foliage_mass",), tuple()),
+        (
+            "calculate_net_primary_productivity",
+            (
+                "whole_crown_gpp",
+                "foliar_respiration",
+                "fine_root_respiration",
+                "sapwood_respiration",
+            ),
+            ("reproductive_tissue_respiration",),
+        ),
+        ("calculate_foliage_turnover", ("foliage_mass",), tuple()),
+        ("calculate_fine_root_turnover", ("foliage_mass",), tuple()),
+        (
+            "calculate_growth_increments",
+            (
+                "npp",
+                "turnover",
+                "dbh",
+                "stem_height",
+            ),
+            (
+                "reproductive_tissue_turnover",
+                "p_foliage_for_reproductive_tissue",
+            ),
+        ),
+    ),
+)
+def test_tmodel_enforce_positive_sizes(
+    rtmodel_flora, values, outcome, fname, strict_size_args, non_strict_size_args
+):
+    """Test the validation of positive size values in T model functions.
+
+    The function call is assembled programatically. It excludes testing of reproductive
+    tissue respiration and turnover because these do allow zero values.
+    """
+    from pyrealm.demography import tmodel
+
+    # Get the function from the model
+    func = getattr(tmodel, fname)
+    func_signature = signature(func)
+
+    # Get a dictionary of traits as numpy array
+    all_traits = {
+        k: np.array(v) for k, v in rtmodel_flora.to_pandas().to_dict("list").items()
+    }
+
+    # Reduce the trait arguments to those in the function signature
+    func_args = {k: v for k, v in all_traits.items() if k in func_signature.parameters}
+
+    # Add all the size arguments to run the function
+    for arg in (*strict_size_args, *non_strict_size_args):
+        func_args[arg] = values
+
+    with outcome as excep:
+        # Call the function with the assembled arguments
+        func(**func_args)
+
+    if excep:
+        # The exception should only complain about the strict size args
+        assert str(excep.value) == (
+            f"Allometry values in {fname} not strictly "
+            f"positive: {', '.join(strict_size_args)}"
+        )
+
+
 def test_calculate_dbh_from_height_edge_cases():
     """Test inverted calculation of dbh from height handles edges cases.
 
@@ -710,7 +857,7 @@ def test_calculate_dbh_from_height_edge_cases():
 
     pft_h_max_values = np.array([20, 30])
     pft_a_hd_values = np.array([116.0, 116.0])
-    stem_heights = np.array([[0], [10], [20], [30], [40]])
+    stem_heights = np.array([[10], [20], [30], [40]])
 
     dbh = calculate_dbh_from_height(
         h_max=pft_h_max_values,
@@ -718,14 +865,11 @@ def test_calculate_dbh_from_height_edge_cases():
         stem_height=stem_heights,
     )
 
-    # first row should be all zeros (zero height gives zero diameter)
-    assert np.all(dbh[0, :] == 0)
-
     # Infinite entries
-    assert np.all(np.isinf(dbh) == np.array([[0, 0], [0, 0], [1, 0], [0, 1], [0, 0]]))
+    assert np.all(np.isinf(dbh) == np.array([[0, 0], [1, 0], [0, 1], [0, 0]]))
 
     # Undefined entries
-    assert np.all(np.isnan(dbh) == np.array([[0, 0], [0, 0], [0, 0], [1, 0], [1, 1]]))
+    assert np.all(np.isnan(dbh) == np.array([[0, 0], [0, 0], [1, 0], [1, 1]]))
 
 
 @pytest.mark.parametrize(
@@ -950,3 +1094,34 @@ def test_StemAllocation_validation(rtmodel_flora, whole_crown_gpp, outcome, exce
         return
 
     assert str(excep.value).startswith(excep_msg)
+
+
+@pytest.mark.parametrize(
+    argnames="dbh, outcome, msg",
+    argvalues=(
+        pytest.param(np.array([3, 3, 3]), does_not_raise(), None, id="positive"),
+        pytest.param(
+            np.array([0, 0, 3]),
+            pytest.raises(ValueError),
+            "Allometry values in StemAllometry not strictly positive: at_dbh",
+            id="zero",
+        ),
+        pytest.param(
+            np.array([-3, -2, 3]),
+            pytest.raises(ValueError),
+            "Allometry values in StemAllometry not strictly positive: at_dbh",
+            id="negative",
+        ),
+    ),
+)
+def test_stem_allocation_strictly_positive_sizes(rtmodel_flora, dbh, outcome, msg):
+    """Test that StemAllometry handles zero and negative DBH."""
+
+    from pyrealm.demography.tmodel import StemAllometry
+
+    with outcome as excep:
+        # Calculate allometry for zero DBH stems of each PFT
+        _ = StemAllometry(stem_traits=rtmodel_flora, at_dbh=dbh)
+        return
+
+    assert str(excep.value) == msg

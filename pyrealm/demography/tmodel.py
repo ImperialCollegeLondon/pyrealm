@@ -24,6 +24,18 @@ from pyrealm.demography.core import (
 from pyrealm.demography.flora import Flora, StemTraits
 
 
+def _enforce_positive_sizes(size_args: dict[str, NDArray], function_name: str) -> None:
+    """Simple function to trap allometry inputs that are not strictly positive."""
+
+    failing = [vname for vname, values in size_args.items() if np.any(values <= 0)]
+
+    if failing:
+        raise ValueError(
+            f"Allometry values in {function_name} not strictly "
+            f"positive: {', '.join(failing)}"
+        )
+
+
 def calculate_heights(
     h_max: NDArray[np.float64],
     a_hd: NDArray[np.float64],
@@ -49,9 +61,11 @@ def calculate_heights(
     """
 
     if validate:
+        size_args = {"dbh": dbh}
         _validate_demography_array_arguments(
-            trait_args={"h_max": h_max, "a_hd": a_hd}, size_args={"dbh": dbh}
+            trait_args={"h_max": h_max, "a_hd": a_hd}, size_args=size_args
         )
+        _enforce_positive_sizes(size_args=size_args, function_name="calculate_heights")
 
     return _enforce_2D(h_max * (1 - np.exp(-a_hd * dbh / h_max)))
 
@@ -91,9 +105,12 @@ def calculate_dbh_from_height(
     """
 
     if validate:
+        size_args = {"stem_height": stem_height}
         _validate_demography_array_arguments(
-            trait_args={"h_max": h_max, "a_hd": a_hd},
-            size_args={"stem_height": stem_height},
+            trait_args={"h_max": h_max, "a_hd": a_hd}, size_args=size_args
+        )
+        _enforce_positive_sizes(
+            size_args=size_args, function_name="calculate_dbh_from_height"
         )
 
     # The equation here blows up in a couple of ways:
@@ -103,9 +120,7 @@ def calculate_dbh_from_height(
     # - H = h_max generates a divide by zero which returns inf with a warning. Here the
     #   answer should be h_max so that needs trapping.
 
-    with np.testing.suppress_warnings() as sup:
-        sup.filter(RuntimeWarning, "divide by zero encountered in divide")
-        sup.filter(RuntimeWarning, "invalid value encountered in log")
+    with np.errstate(divide="ignore", invalid="ignore"):
         return _enforce_2D((h_max * np.log(h_max / (h_max - stem_height))) / a_hd)
 
 
@@ -137,9 +152,13 @@ def calculate_crown_areas(
     """
 
     if validate:
+        size_args = {"dbh": dbh, "stem_height": stem_height}
+
         _validate_demography_array_arguments(
-            trait_args={"ca_ratio": ca_ratio, "a_hd": a_hd},
-            size_args={"dbh": dbh, "stem_height": stem_height},
+            trait_args={"ca_ratio": ca_ratio, "a_hd": a_hd}, size_args=size_args
+        )
+        _enforce_positive_sizes(
+            size_args=size_args, function_name="calculate_crown_areas"
         )
 
     return _enforce_2D(((np.pi * ca_ratio) / (4 * a_hd)) * dbh * stem_height)
@@ -154,9 +173,9 @@ def calculate_crown_fractions(
     r"""Calculate tree crown fraction under the T Model.
 
     The crown fraction (:math:`f_{c}`) is calculated from individual diameters at breast
-    height (:math:`D`) and stem height (:math:`H`), along with the initial slope of the
-    height / diameter relationship (:math:`a`) of the plant functional type
-    :cite:p:`{Equation 11, }Li:2014bc`:
+    height (:math:`D` for :math:`D > 0`) and stem height (:math:`H`), along with the
+    initial slope of the height / diameter relationship (:math:`a`) of the plant
+    functional type :cite:p:`{Equation 11, }Li:2014bc`:
 
     .. math::
 
@@ -169,11 +188,15 @@ def calculate_crown_fractions(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
+        size_args = {"dbh": dbh, "stem_height": stem_height}
         _validate_demography_array_arguments(
-            trait_args={"a_hd": a_hd},
-            size_args={"dbh": dbh, "stem_height": stem_height},
+            trait_args={"a_hd": a_hd}, size_args=size_args
+        )
+        _enforce_positive_sizes(
+            size_args=size_args, function_name="calculate_crown_fractions"
         )
 
+    # Calculate crown fraction
     return _enforce_2D(stem_height / (a_hd * dbh))
 
 
@@ -200,9 +223,12 @@ def calculate_stem_masses(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
+        size_args = {"dbh": dbh, "stem_height": stem_height}
         _validate_demography_array_arguments(
-            trait_args={"rho_s": rho_s},
-            size_args={"dbh": dbh, "stem_height": stem_height},
+            trait_args={"rho_s": rho_s}, size_args=size_args
+        )
+        _enforce_positive_sizes(
+            size_args=size_args, function_name="calculate_stem_masses"
         )
 
     return _enforce_2D((np.pi / 8) * rho_s * (dbh**2) * stem_height)
@@ -231,9 +257,12 @@ def calculate_foliage_masses(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
+        size_args = {"crown_area": crown_area}
         _validate_demography_array_arguments(
-            trait_args={"sla": sla, "lai": lai},
-            size_args={"crown_area": crown_area},
+            trait_args={"sla": sla, "lai": lai}, size_args=size_args
+        )
+        _enforce_positive_sizes(
+            size_args=size_args, function_name="calculate_foliage_masses"
         )
 
     return _enforce_2D(crown_area * lai * (1 / sla))
@@ -251,8 +280,9 @@ def calculate_sapwood_masses(
 
     The sapwood mass (:math:`W_{\cdot s}`) is calculated from the individual crown area
     (:math:`A_{c}`), stem height (:math:`H`) and canopy fraction (:math:`f_{c}`) along
-    with the wood density (:math:`\rho_s`) and crown area ratio (:math:`c`) of the
-    plant functional type :cite:p:`{Equation 14, }Li:2014bc`.
+    with the wood density (:math:`\rho_s`) and crown area ratio (:math:`c`) of the plant
+    functional type, following Equation 14 of :cite:`Li:2014bc`. The function is
+    undefined for negative or zero heights.
 
     .. math::
 
@@ -267,17 +297,20 @@ def calculate_sapwood_masses(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
+        size_args = {
+            "stem_height": stem_height,
+            "crown_area": crown_area,
+            "crown_fraction": crown_fraction,
+        }
         _validate_demography_array_arguments(
-            trait_args={"rho_s": rho_s, "ca_ratio": ca_ratio},
-            size_args={
-                "stem_height": stem_height,
-                "crown_area": crown_area,
-                "crown_fraction": crown_fraction,
-            },
+            trait_args={"rho_s": rho_s, "ca_ratio": ca_ratio}, size_args=size_args
+        )
+        _enforce_positive_sizes(
+            size_args=size_args, function_name="calculate_sapwood_masses"
         )
 
     return _enforce_2D(
-        crown_area * rho_s * stem_height * (1 - crown_fraction / 2) / ca_ratio
+        crown_area * rho_s * stem_height * (1 - crown_fraction / 2) / ca_ratio,
     )
 
 
@@ -308,9 +341,12 @@ def calculate_crown_z_max(
     """
 
     if validate:
+        size_args = {"stem_height": stem_height}
         _validate_demography_array_arguments(
-            trait_args={"z_max_prop": z_max_prop},
-            size_args={"stem_height": stem_height},
+            trait_args={"z_max_prop": z_max_prop}, size_args=size_args
+        )
+        _enforce_positive_sizes(
+            size_args=size_args, function_name="calculate_crown_z_max"
         )
 
     return _enforce_2D(stem_height * z_max_prop)
@@ -342,10 +378,11 @@ def calculate_crown_r0(
     """
 
     if validate:
+        size_args = {"crown_area": crown_area}
         _validate_demography_array_arguments(
-            trait_args={"q_m": q_m},
-            size_args={"crown_area": crown_area},
+            trait_args={"q_m": q_m}, size_args=size_args
         )
+        _enforce_positive_sizes(size_args=size_args, function_name="calculate_crown_r0")
 
     # Scaling factor to give expected A_c (crown area) at
     # z_m (height of maximum crown radius)
@@ -379,9 +416,12 @@ def calculate_whole_crown_gpp(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
+        size_args = {"potential_gpp": potential_gpp, "crown_area": crown_area}
         _validate_demography_array_arguments(
-            trait_args={"lai": lai, "par_ext": par_ext},
-            size_args={"potential_gpp": potential_gpp, "crown_area": crown_area},
+            trait_args={"lai": lai, "par_ext": par_ext}, size_args=size_args
+        )
+        _enforce_positive_sizes(
+            size_args=size_args, function_name="calculate_whole_crown_gpp"
         )
 
     return _enforce_2D(potential_gpp * crown_area * (1 - np.exp(-(par_ext * lai))))
@@ -407,9 +447,12 @@ def calculate_sapwood_respiration(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
+        size_args = {"sapwood_mass": sapwood_mass}
         _validate_demography_array_arguments(
-            trait_args={"resp_s": resp_s},
-            size_args={"sapwood_mass": sapwood_mass},
+            trait_args={"resp_s": resp_s}, size_args=size_args
+        )
+        _enforce_positive_sizes(
+            size_args=size_args, function_name="calculate_sapwood_respiration"
         )
 
     return _enforce_2D(sapwood_mass * resp_s)
@@ -437,9 +480,12 @@ def calculate_foliar_respiration(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
+        size_args = {"whole_crown_gpp": whole_crown_gpp}
         _validate_demography_array_arguments(
-            trait_args={"resp_f": resp_f},
-            size_args={"whole_crown_gpp": whole_crown_gpp},
+            trait_args={"resp_f": resp_f}, size_args=size_args
+        )
+        _enforce_positive_sizes(
+            size_args=size_args, function_name="calculate_foliar_respiration"
         )
 
     return _enforce_2D(whole_crown_gpp * resp_f)
@@ -468,9 +514,12 @@ def calculate_gpp_topslice(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
+        size_args = {"whole_crown_gpp": whole_crown_gpp}
         _validate_demography_array_arguments(
-            trait_args={"gpp_topslice": gpp_topslice},
-            size_args={"whole_crown_gpp": whole_crown_gpp},
+            trait_args={"gpp_topslice": gpp_topslice}, size_args=size_args
+        )
+        _enforce_positive_sizes(
+            size_args=size_args, function_name="calculate_gpp_topslice"
         )
 
     return _enforce_2D(whole_crown_gpp * gpp_topslice)
@@ -500,10 +549,12 @@ def calculate_reproductive_tissue_respiration(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
+        size_args = {"reproductive_tissue_mass": reproductive_tissue_mass}
         _validate_demography_array_arguments(
-            trait_args={"resp_rt": resp_rt},
-            size_args={"reproductive_tissue_mass": reproductive_tissue_mass},
+            trait_args={"resp_rt": resp_rt}, size_args=size_args
         )
+        if np.any(reproductive_tissue_mass < 0):
+            raise ValueError("The reproductive tissue mass cannot be negative.")
 
     return _enforce_2D(reproductive_tissue_mass * resp_rt)
 
@@ -533,13 +584,13 @@ def calculate_fine_root_respiration(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
+        size_args = {"foliage_mass": foliage_mass}
         _validate_demography_array_arguments(
-            trait_args={
-                "zeta": zeta,
-                "sla": sla,
-                "resp_r": resp_r,
-            },
-            size_args={"foliage_mass": foliage_mass},
+            trait_args={"zeta": zeta, "sla": sla, "resp_r": resp_r},
+            size_args=size_args,
+        )
+        _enforce_positive_sizes(
+            size_args=size_args, function_name="calculate_fine_root_respiration"
         )
 
     return _enforce_2D(zeta * sla * foliage_mass * resp_r)
@@ -583,15 +634,24 @@ def calculate_net_primary_productivity(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
+        size_args = {
+            "whole_crown_gpp": whole_crown_gpp,
+            "foliar_respiration": foliar_respiration,
+            "fine_root_respiration": fine_root_respiration,
+            "sapwood_respiration": sapwood_respiration,
+            "reproductive_tissue_respiration": reproductive_tissue_respiration,
+        }
         _validate_demography_array_arguments(
-            trait_args={"yld": yld},
-            size_args={
-                "whole_crown_gpp": whole_crown_gpp,
-                "foliar_respiration": foliar_respiration,
-                "fine_root_respiration": fine_root_respiration,
-                "sapwood_respiration": sapwood_respiration,
-                "reproductive_tissue_respiration": reproductive_tissue_respiration,
-            },
+            trait_args={"yld": yld}, size_args=size_args
+        )
+        # Allow reproductive tissue terms to be zero
+        size_args = {
+            k: v
+            for k, v in size_args.items()
+            if k not in ("reproductive_tissue_respiration")
+        }
+        _enforce_positive_sizes(
+            size_args=size_args, function_name="calculate_net_primary_productivity"
         )
 
     return _enforce_2D(
@@ -628,9 +688,13 @@ def calculate_foliage_turnover(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
+        size_args = {"foliage_mass": foliage_mass}
         _validate_demography_array_arguments(
             trait_args={"tau_f": tau_f},
-            size_args={"foliage_mass": foliage_mass},
+            size_args=size_args,
+        )
+        _enforce_positive_sizes(
+            size_args=size_args, function_name="calculate_foliage_turnover"
         )
 
     return _enforce_2D(foliage_mass * (1 / tau_f))
@@ -663,16 +727,19 @@ def calculate_fine_root_turnover(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
+        size_args = {"foliage_mass": foliage_mass}
         _validate_demography_array_arguments(
-            trait_args={"sla": sla, "zeta": zeta, "tau_r": tau_r},
-            size_args={"foliage_mass": foliage_mass},
+            trait_args={"sla": sla, "zeta": zeta, "tau_r": tau_r}, size_args=size_args
+        )
+        _enforce_positive_sizes(
+            size_args=size_args, function_name="calculate_fine_root_turnover"
         )
 
     return _enforce_2D(foliage_mass * (sla * zeta / tau_r))
 
 
 def calculate_reproductive_tissue_turnover(
-    m_rt: NDArray[np.float64],
+    reproductive_tissue_mass: NDArray[np.float64],
     tau_rt: NDArray[np.float64],
     validate: bool = True,
 ) -> NDArray[np.float64]:
@@ -680,25 +747,27 @@ def calculate_reproductive_tissue_turnover(
 
     This function calculates the costs associated with the turnover of reproductive
     tissue. This is calculated from the total reproductive tissue mass
-    (:math:`m_rt`), along with the turnover time of reproductive tissue
-    (:math:`\tau_rt`).
+    (:math:`m_{rt}`), along with the turnover time of reproductive tissue
+    (:math:`\tau_{rt}`).
 
     .. math::
 
-        T_rt = m_rt \left( \frac{1}{\tau_rt}\right)
+        T_{rt} = m_{rt} \left( \frac{1}{\tau_{rt}}\right)
 
     Args:
-        m_rt: The mass of reproductive tissue
+        reproductive_tissue_mass: The mass of reproductive tissue
         tau_rt: The turnover time of reproductive tissue
         validate: Boolean flag to suppress argument validation
     """
     if validate:
         _validate_demography_array_arguments(
             trait_args={"tau_rt": tau_rt},
-            size_args={"m_rt": m_rt},
+            size_args={"reproductive_tissue_mass": reproductive_tissue_mass},
         )
+        if np.any(reproductive_tissue_mass < 0):
+            raise ValueError("The reproductive tissue mass cannot be negative.")
 
-    return _enforce_2D(m_rt * (1 / tau_rt))
+    return _enforce_2D(reproductive_tissue_mass * (1 / tau_rt))
 
 
 def calculate_reproductive_tissue_mass(
@@ -707,12 +776,12 @@ def calculate_reproductive_tissue_mass(
 ) -> NDArray[np.float64]:
     r"""Calculate reproductive tissue mass.
 
-    This function calculates the mass of reproductive tissue (:math:`m_rt`) as a fixed
+    This function calculates the mass of reproductive tissue (:math:`m_{rt}`) as a fixed
     proportion of the total foliage mass (:math:`W_f`) of individuals.
 
     .. math::
 
-        m_rt = p_{f_rt} W_f
+        m_{rt} = p_{f_{rt}} W_f
 
     Args:
         foliage_mass: The foliage mass
@@ -742,9 +811,9 @@ def calculate_growth_increments(
 ) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     r"""Calculate growth increments.
 
-    Given an estimate of net primary productivity (:math:`P_{net}`), less associated  
-    turnover costs (:math:`T`), the remaining productivity can be allocated to growth
-    and hence estimate resulting increments :cite:`Li:2014bc` in:
+    Given an estimate of net primary productivity (NPP, :math:`P_{net}`), less
+    associated turnover costs (:math:`T`), the remaining productivity can be allocated
+    to growth and hence estimate resulting increments :cite:`Li:2014bc` in:
     
     * the stem diameter (:math:`\Delta D`),
     * the stem mass (:math:`\Delta W_s`), and 
@@ -785,6 +854,13 @@ def calculate_growth_increments(
     * the crown area ratio (:math:`c`), and
     * the ratio of fine root mass to leaf area (:math:`\zeta`).
 
+    The value of :math:`\Delta D` is unstable when :math:`D = 0` and hence :math:`H = 0`
+    and the rates of change in stem and foliar mass are also zero. If :math:`P_{net} - T
+    = 0` then :math:`\Delta D` is undefined, otherwise :math:`\Delta D = \pm \inf`
+    depending on whether then turnover costs exceed the available NPP. Under these
+    conditions, this function explicitly sets :math:`\Delta D = 0`: **stems with zero
+    height cannot grow**.
+
     The resulting incremental changes in stem mass and foliar mass can then be
     calculated as:
 
@@ -798,8 +874,15 @@ def calculate_growth_increments(
         \end{align*}
       \]
 
-    NOTE: Reproductive tissue is included as an optional additional cost of turnover.
-    If the default values are set to zero, it will not impact T Model calculations.
+    .. NOTE::
+
+        The original equations have been extended to include a term to model the costs
+        of maintaining reproductive tissue mass as a fraction of foliage mass. These
+        values can be set to zero to reproduce the predictions of the original T Model
+        calculations. 
+
+
+
 
     Args:
         rho_s: Wood density of the PFT
@@ -819,6 +902,14 @@ def calculate_growth_increments(
         validate: Boolean flag to suppress argument validation
     """
     if validate:
+        size_args = {
+            "npp": npp,
+            "turnover": turnover,
+            "reproductive_tissue_turnover": reproductive_tissue_turnover,
+            "p_foliage_for_reproductive_tissue": p_foliage_for_reproductive_tissue,
+            "dbh": dbh,
+            "stem_height": stem_height,
+        }
         _validate_demography_array_arguments(
             trait_args={
                 "rho_s": rho_s,
@@ -829,15 +920,19 @@ def calculate_growth_increments(
                 "sla": sla,
                 "zeta": zeta,
             },
-            size_args={
-                "npp": npp,
-                "turnover": turnover,
-                "reproductive_tissue_turnover": reproductive_tissue_turnover,
-                "p_foliage_for_reproductive_tissue": p_foliage_for_reproductive_tissue,
-                "dbh": dbh,
-                "stem_height": stem_height,
-            },
+            size_args=size_args,
         )
+        # Allow reproductive tissue terms to be zero
+        size_args = {
+            k: v
+            for k, v in size_args.items()
+            if k
+            not in ("reproductive_tissue_turnover", "p_foliage_for_reproductive_tissue")
+        }
+        _enforce_positive_sizes(
+            size_args=size_args, function_name="calculate_growth_increments"
+        )
+
     # Rates of change in stem and foliar
     dWsdt = (
         np.pi
@@ -854,10 +949,16 @@ def calculate_growth_increments(
         * ((1 + p_foliage_for_reproductive_tissue) / sla + zeta)
     )
 
-    # Increment of diameter at breast height
-    delta_d = _enforce_2D(
-        (npp - turnover - reproductive_tissue_turnover) / (dWsdt + dWfdt)
-    )
+    # Increment of diameter at breast height, ignoring potential zero divides resulting
+    # from stems with zero DBH, which are then explicitly set to have Delta D of zero.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        delta_d = _enforce_2D(
+            np.where(
+                dbh == 0,
+                0,
+                (npp - turnover - reproductive_tissue_turnover) / (dWsdt + dWfdt),
+            )
+        )
 
     return (delta_d, dWsdt * delta_d, dWfdt * delta_d)
 
@@ -949,9 +1050,11 @@ class StemAllometry(PandasExporter, CohortMethods):
         # the at_dbh values are congruent with the stem_traits inputs. If they are, then
         # all the other allometry function inputs will be too.
         if validate:
+            size_args = {"at_dbh": at_dbh}
             _validate_demography_array_arguments(
-                trait_args={"h_max": stem_traits.h_max}, size_args={"at_dbh": at_dbh}
+                trait_args={"h_max": stem_traits.h_max}, size_args=size_args
             )
+            _enforce_positive_sizes(size_args=size_args, function_name="StemAllometry")
 
         self.stem_height = calculate_heights(
             h_max=stem_traits.h_max, a_hd=stem_traits.a_hd, dbh=at_dbh, validate=False
@@ -1191,7 +1294,7 @@ class StemAllocation(PandasExporter):
         )
 
         self.reproductive_tissue_turnover = calculate_reproductive_tissue_turnover(
-            m_rt=stem_allometry.reproductive_tissue_mass,
+            reproductive_tissue_mass=stem_allometry.reproductive_tissue_mass,
             tau_rt=stem_traits.tau_rt,
             validate=False,
         )

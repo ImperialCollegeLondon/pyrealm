@@ -89,7 +89,7 @@ The {meth}`~pyrealm.demography.tmodel.StemAllometry` class provides the
 data for data exploration.
 
 ```{code-cell} ipython3
-single_allometry.to_pandas()
+single_allometry.to_pandas().transpose()
 ```
 
 However, the DBH values can also be a column array (an `N` x 1 array). In this case, the
@@ -98,8 +98,8 @@ predictions arranged with each PFT as a column and each DBH prediction as a row.
 makes them convenient to plot using `matplotlib`.
 
 ```{code-cell} ipython3
-# Column array of DBH values from 0 to 1.6 metres
-dbh_col = np.arange(0, 1.6, 0.01)[:, None]
+# Column array of DBH values from 0.01 to 1.6 metres
+dbh_col = np.arange(0.01, 1.6, 0.01)[:, None]
 # Get the predictions
 allometries = StemAllometry(stem_traits=flora, at_dbh=dbh_col)
 ```
@@ -135,7 +135,7 @@ The {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
 the values are stacked into columns along with a index showing the different cohorts.
 
 ```{code-cell} ipython3
-allometries.to_pandas()
+allometries.to_pandas().transpose()
 ```
 
 ## Productivity allocation
@@ -181,7 +181,7 @@ The {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
 export data for exploration.
 
 ```{code-cell} ipython3
-single_allocation.to_pandas()
+single_allocation.to_pandas().transpose()
 ```
 
 Using a column array of potential GPP values can be used to predict multiple estimates of
@@ -286,5 +286,5 @@ As before, the {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` metho
 the data for each stem:
 
 ```{code-cell} ipython3
-allocation.to_pandas()
+allocation.to_pandas().transpose()
 ```
