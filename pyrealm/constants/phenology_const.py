@@ -42,7 +42,7 @@ class PhenologyConst(ConstantsClass):
 
         .. math::
 
-                f_0 = a \exp{-b \left(\frac{AI}{c}\right)^2}
+                f_0 = a \exp{\left(-b \left(\frac{AI}{c}\right)^2\right)}
 
         where :math:`a,b,c` are defined in the
         :attr:`~pyrealm.constants.phenology_const.PhenologyConst.f0_coefficients`

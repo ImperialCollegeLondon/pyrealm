@@ -145,17 +145,17 @@ class FaparLimitation:
 
     .. math::
 
-        f_{APAR_{max}} = \min{
+        fAPAR_{max} = \min{
                 \left(1 - z / \left(k A_0 \right) \right),
                 \left( c_a \left( 1 - \chi \right) / 1.6 D \right)
                 \left( f_0 P / A_0 \right)
             }
 
-    The maximum annual LAI is then calculated using the inverse of Beer's law:
+    The maximum annual LAI is then calculated using Beer's law:
 
     .. math::
 
-        $LAI_{max} = - ( 1 / k ) \ln {1 - f_{APAR_{max}}}
+        LAI_{max} = - ( 1 / k ) \ln {1 - fAPAR_{max}}
 
     The :class:`~pyrealm.constants.phenology_const.PhenologyConst` class provides values
     for the following constants:
@@ -163,7 +163,8 @@ class FaparLimitation:
     * :math:`z` accounts for the growth and maintenance costs of leaves.
     * :math:`k` is the light extinction coefficient.
     * :math:`f_0` is is the ratio of annual total transpiration of annual total
-      precipitation, calculated from the climatological aridity index (AI).
+      precipitation, calculated from the climatological aridity index (AI) (see
+      :class:`PhenologyConst.calculate_f0<pyrealm.constants.phenology_const.PhenologyConst.calculate_f0>`).
 
     The other variables are the required arguments to the class defined below. The most
     common source of these variables is from a P Model, and the
@@ -171,16 +172,16 @@ class FaparLimitation:
     be used to create an instance directly from a fitted P Model.
 
     Args:
-        annual_total_potential_gpp: The annual sum of potential GPP (:math:`A_0`, mol C
-            m^{-2} year^{-1})
+        annual_total_potential_gpp: The annual sum of potential GPP (:math:`A_0,
+            \text{mol C m}^{-2} \text{year}^{-1}`)
         annual_mean_ca: The ambient CO2 partial pressure during the growing season
             (:math:`c_a`, Pa)
         annual_mean_chi: The annual mean ratio of ambient to leaf CO2 partial during the
             growing season (:math:`\chi`, Pa)
         annual_mean_vpd: The annual mean vapour pressure deficit during the growing
             season (:math:`D`, Pa)
-        annual_total_precip: The annual total precipitation (:math:`P`, mol
-            m^{-2} year^{-1})
+        annual_total_precip: The annual total precipitation (:math:`P, \text{mol m}^{-2}
+            \text{year}^{-1}`)
         aridity_index: A climatological estimate of the local aridity index, calculated
             as the long term (typically 20 years) total PET over total precipitation
             (:math:`AI`, unitlesss)
@@ -216,19 +217,21 @@ class FaparLimitation:
         warn_experimental("FaparLimitation")
 
         self.annual_total_potential_gpp = annual_total_potential_gpp
-        """The annual sum of potential GPP (:math:`A_0`, mol C m^{-2} year^{-1})"""
+        r"""The annual sum of potential GPP 
+        (:math:`A_0, \text{mol C m}^{-2} \text{year}^{-1}`)"""
         self.annual_mean_ca = annual_mean_ca
-        """Ambient CO2 partial pressure during the growing season (:math:`c_a`, Pa)"""
+        r"""Ambient CO2 partial pressure during the growing season (:math:`c_a`, Pa)"""
         self.annual_mean_chi = annual_mean_chi
-        """Annual mean ratio of ambient to leaf CO2 partial during the 
+        r"""Annual mean ratio of ambient to leaf CO2 partial during the 
         growing season (:math:`\chi`, Pa)"""
         self.annual_mean_vpd = annual_mean_vpd
-        """Annual mean vapour pressure deficit during the growing season (:math:`D`,
+        r"""Annual mean vapour pressure deficit during the growing season (:math:`D`,
         Pa)"""
         self.annual_total_precip = annual_total_precip
-        """Annual total precipitation. (:math:`P`, mol m^{-2} year^{-1})"""
+        r"""Annual total precipitation
+        (:math:`P, \text{mol m}^{-2} \text{year}^{-1}`)"""
         self.aridity_index = aridity_index
-        """Climatological estimate of local aridity index (AI, unitless)"""
+        r"""Climatological estimate of local aridity index (AI, unitless)"""
 
         self._check_shapes()
 
@@ -256,14 +259,20 @@ class FaparLimitation:
             / (1.6 * annual_mean_vpd * annual_total_potential_gpp)
         )
 
-        self.fapar_max = np.minimum(fapar_waterlim, fapar_energylim)
-        """Maximum fapar given water or energy limitation for each year."""
-        self.energy_limited = fapar_energylim < fapar_waterlim
-        """Is fapar_max limited by water or energy for each year."""
-        self.annual_precip_molar = annual_total_precip
-        """The annual precipitation in moles for each year."""
+        self.fapar_max: NDArray[np.floating] = np.minimum(
+            fapar_waterlim, fapar_energylim
+        )
+        """Estimated annual maximum fAPAR (unitless)."""
+        self.energy_limited: NDArray[np.bool_] = fapar_energylim < fapar_waterlim
+        """Boolean array showing if annual :math:`fAPAR_{max}` is water or energy
+        limited."""
+        self.annual_precip_molar: NDArray[np.floating] = annual_total_precip
+        """The annual total precipitation for each year (moles year-1)."""
 
-        self.lai_max = -(1 / self.phenology_const.k) * np.log(1.0 - self.fapar_max)
+        self.lai_max: NDArray[np.floating] = -(1 / self.phenology_const.k) * np.log(
+            1.0 - self.fapar_max
+        )
+        """Estimated annual maximum LAI (unitless)"""
 
     @classmethod
     def from_pmodel(
@@ -284,7 +293,7 @@ class FaparLimitation:
         the required data from a fitted P Model and returns a ``FaparLimitation``
         instance.
 
-        .. NOTE:
+        .. NOTE::
 
           The calculation of fAPAR limitation requires estimates of **potential** GPP,
           so the :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance
