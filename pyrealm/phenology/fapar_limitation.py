@@ -174,6 +174,7 @@ class FaparLimitation:
         annual_mean_vpd: NDArray[np.float64],
         annual_total_precip: NDArray[np.float64],
         aridity_index: NDArray[np.float64],
+        phenology_const: PhenologyConst = PhenologyConst(),
     ) -> None:
         r"""Annual peak fractional absorbed photosynthetically active radiation (fAPAR).
 
@@ -191,6 +192,8 @@ class FaparLimitation:
             annual_total_precip: Aka P, annual total precipitation. [mol m^{-2}
              year^{-1}]
             aridity_index: Aka AI, climatological estimate of local aridity index.
+            phenology_const: An instance of
+                :class:`~pyrealm.constants.phenology_const.PhenologyConst`
         """
 
         warn_experimental("FaparLimitation")
@@ -216,7 +219,7 @@ class FaparLimitation:
             raise ValueError("The aridity index has to be positive.")
 
         # Constants used for phenology computations
-        self.phenology_const = PhenologyConst()
+        self.phenology_const = phenology_const
 
         #  f_0 is the ratio of annual total transpiration of annual total
         #  precipitation, which is an empirical function of the climatic Aridity Index
@@ -253,6 +256,7 @@ class FaparLimitation:
         precip: NDArray[np.float64],
         aridity_index: NDArray[np.float64],
         gpp_penalty_factor: NDArray[np.float64] | None = None,
+        phenology_const: PhenologyConst = PhenologyConst(),
     ) -> Self:
         r"""Get FaparLimitation from PModel input.
 
@@ -266,6 +270,8 @@ class FaparLimitation:
             precip: Precipitation for given datetimes.
             aridity_index: Climatological estimate of local aridity index.
             gpp_penalty_factor: Penalty factor to be applied to pmodel.gpp
+            phenology_const: An instance of
+                :class:`~pyrealm.constants.phenology_const.PhenologyConst`
         """
 
         check_datetimes(datetimes)
@@ -312,4 +318,5 @@ class FaparLimitation:
             annual_mean_vpd=annual_mean_vpd,
             annual_total_precip=annual_total_precip,
             aridity_index=aridity_index,
+            phenology_const=phenology_const,
         )
