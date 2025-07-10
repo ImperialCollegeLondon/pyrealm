@@ -8,51 +8,7 @@ from pyrealm.constants import PhenologyConst
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.time_series import AnnualValueCalculator
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.pmodel import PModel
-
-
-def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
-    """Check that the datetimes are in a valid format."""
-
-    deltas = datetimes[1:] - datetimes[:-1]
-    unique_deltas = np.unique(deltas)
-
-    # check that we have uniformly sampled data
-    if np.size(unique_deltas) > 1:
-        raise ValueError("datetimes are not evenly spaced.")
-
-    dates = datetimes.astype("datetime64[D]")
-    unique_dates, date_counts = np.unique(dates, return_counts=True)
-    if not date_counts.max() == date_counts.min():
-        raise ValueError("Differing date counts per day")
-
-    obs_per_date = date_counts.max()
-
-    # Data needs to start in northern or southern hemisphere midwinter
-    first_month = unique_dates[0].astype("datetime64[M]").astype(str)
-    if not (first_month.endswith("01") | first_month.endswith("07")):
-        raise ValueError("Data does not start in January or July.")
-
-    ## This does not work for fortnightly data
-    # no_leapdays = leapdays(
-    #    int(str(datetimes[0].astype("datetime64[Y]"))),
-    #    int(str(datetimes[-1].astype("datetime64[Y]"))),
-    # )
-    #
-    # year_remainder = len(unique_dates) % 365
-    # check that we have the right number of leap days
-    #    if year_remainder > no_leapdays:
-    #        raise ValueError("Datetimes do not cover full years.")
-
-    if obs_per_date > 1:
-        # subdaily
-
-        # Check that the number of seconds in a day is evenly divisible by the
-        # number of observations per day (should already have led to differing date
-        # counts).
-        day_remainder = (24 * 60 * 60) % obs_per_date
-        if day_remainder:
-            raise ValueError("Datetime spacing is not evenly divisible into a day.")
+from pyrealm.pmodel.pmodel import PModel, PModelABC, SubdailyPModel
 
 
 class FaparLimitation:
@@ -196,11 +152,11 @@ class FaparLimitation:
     @classmethod
     def from_pmodel(
         cls,
-        pmodel: PModel,
-        datetimes: NDArray[np.datetime64],
+        pmodel: PModelABC,
         growing_season: NDArray[np.bool],
         precip: NDArray[np.float64],
         aridity_index: NDArray[np.float64],
+        datetimes: NDArray[np.datetime64] | None = None,
         gpp_penalty_factor: NDArray[np.float64] | None = None,
         phenology_const: PhenologyConst = PhenologyConst(),
     ) -> Self:
@@ -261,10 +217,26 @@ class FaparLimitation:
                 :class:`~pyrealm.constants.phenology_const.PhenologyConst`
         """
 
-        check_datetimes(datetimes)
+        # Check the datetimes - should they be taken from the AcclimationModel of the
+        # SubdailyPModel or are they required for standard PModels?
+        if isinstance(pmodel, SubdailyPModel):
+            if datetimes is not None:
+                raise ValueError(
+                    "Observation datetimes are not required with SubdailyPModel "
+                    "inputs, the acclimation model datetimes are used."
+                )
+            datetimes = pmodel.acclim_model.datetimes
 
+        elif isinstance(pmodel, PModel):
+            if datetimes is None:
+                raise ValueError(
+                    "Observation datetimes are required with PModel inputs."
+                )
+
+        # Create the annual value calculator
+        # - the code above guards against datetimes being None
         avc = AnnualValueCalculator(
-            timing=datetimes,
+            timing=datetimes,  # type: ignore [arg-type]
             growing_season=growing_season,
         )
 
