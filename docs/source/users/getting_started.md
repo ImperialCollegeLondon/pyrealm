@@ -58,7 +58,10 @@ shows you how to install `pip`.
 ## Installing `pyrealm`
 
 When the above prerequisites are fulfilled, you can simply install `pyrealm` by
-typing the command `pip install pyrealm` into the command line.
+typing the command `pip install pyrealm` into the command line. This will, at
+this point in time, install pyrealm version 1.0.0. If a different version is
+required, this can be specified in the command, e.g.:
+`pip install pyrealm==2.0.0`.
 
 However, it is good practice to use a virtual environment for this, to not
 pollute your python environment with packages and versions you might not need
@@ -104,6 +107,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 
 # install the necessary packages
+pip install pyrealm==2.0.0rc4
 pip install jupyterlab
 pip install wget matplotlib xarray netCDF4
 
