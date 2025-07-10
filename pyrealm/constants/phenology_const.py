@@ -16,7 +16,7 @@ class PhenologyConst(ConstantsClass):
     """
 
     z: float = 12.227
-    """The constant :math:`z` (mol C m^{-2} year^{-1}) accounts for the carbon costs of
+    r"""The constant :math:`z` (mol C m^{-2} year^{-1}) accounts for the carbon costs of
     building and maintaining leaves and the total below-ground allocation required to
     support the nutrient demand of those leaves. The default is an empirical estimate
     from global data."""
@@ -25,11 +25,17 @@ class PhenologyConst(ConstantsClass):
     """The canopy light extinction coefficient (unitless)"""
 
     f0_coefficients: tuple[float, float, float] = (0.65, 0.604169, 1.9)
-    """Coefficients :math:`a,b,c` to calculate :math:`f_0` from the local aridity index
+    r"""Coefficients :math:`a,b,c` to calculate :math:`f_0` from the local aridity index
     (AI), where :math:`a` is the maximum value, :math:`b` is the slope of the
     relationship with AI and :math:`c` is the AI value at which the maximum value
     :math:`a` is reached.
     """
+
+    sigma: float = 0.771
+    r"""The :math:`\sigma` parameter is a proportion that captures the opportunity costs
+    to maintaining a canopy of the time taken to deploy a canopy through processes such
+    as budburst and leaf growth at the start of the growing season and nutrient
+    resorption and leaf sensescence at the end of growing season."""
 
     def calculate_f0(self, aridity_index: NDArray[np.floating]) -> NDArray[np.floating]:
         r"""Calculate the :math:`f_0` parameter.

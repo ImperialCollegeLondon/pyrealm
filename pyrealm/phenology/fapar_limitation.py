@@ -145,7 +145,7 @@ class FaparLimitation:
 
     .. math::
 
-        fAPAR_{max} = \min{
+        \text{fAPAR}_{max} = \min{
                 \left(1 - z / \left(k A_0 \right) \right),
                 \left( c_a \left( 1 - \chi \right) / 1.6 D \right)
                 \left( f_0 P / A_0 \right)
@@ -155,7 +155,14 @@ class FaparLimitation:
 
     .. math::
 
-        LAI_{max} = - ( 1 / k ) \ln {1 - fAPAR_{max}}
+        \text{LAI}_{max} = - ( 1 / k ) \ln {1 - \text{fAPAR}_{max}}
+
+    The class also calculates the parameter :math:`m`, which is the steady state annual
+    ratio of leaf area index to GPP:
+
+    .. math::
+
+        m = \frac{ \sigma G \text{LAI}_{max}}{A_0 \text{fAPAR}_{max}}
 
     The :class:`~pyrealm.constants.phenology_const.PhenologyConst` class provides values
     for the following constants:
@@ -165,6 +172,9 @@ class FaparLimitation:
     * :math:`f_0` is is the ratio of annual total transpiration of annual total
       precipitation, calculated from the climatological aridity index (AI) (see
       :class:`PhenologyConst.calculate_f0<pyrealm.constants.phenology_const.PhenologyConst.calculate_f0>`).
+    * :math:`\sigma` is a proportion that captures the departure of :math:`m` from the
+      maximum due to biological delays in deploying and dropping the canopy during the
+      growing season.
 
     The other variables are the required arguments to the class defined below. The most
     common source of these variables is from a P Model, and the
@@ -182,9 +192,11 @@ class FaparLimitation:
             season (:math:`D`, Pa)
         annual_total_precip: The annual total precipitation (:math:`P, \text{mol m}^{-2}
             \text{year}^{-1}`)
+        annual_growing_season_length: The length of the growing season in days for each
+            year (:math:`G`, days)
         aridity_index: A climatological estimate of the local aridity index, calculated
             as the long term (typically 20 years) total PET over total precipitation
-            (:math:`AI`, unitlesss)
+            (:math:`AI`, unitless)
         phenology_const: An instance of
             :class:`~pyrealm.constants.phenology_const.PhenologyConst`
     """
@@ -201,6 +213,7 @@ class FaparLimitation:
             self.annual_mean_vpd,
             self.annual_total_precip,
             self.aridity_index,
+            self.annual_growing_season_length,
         )
 
     def __init__(
@@ -210,6 +223,7 @@ class FaparLimitation:
         annual_mean_chi: NDArray[np.float64],
         annual_mean_vpd: NDArray[np.float64],
         annual_total_precip: NDArray[np.float64],
+        annual_growing_season_length: NDArray[np.float64],
         aridity_index: NDArray[np.float64],
         phenology_const: PhenologyConst = PhenologyConst(),
     ) -> None:
@@ -230,6 +244,8 @@ class FaparLimitation:
         self.annual_total_precip = annual_total_precip
         r"""Annual total precipitation
         (:math:`P, \text{mol m}^{-2} \text{year}^{-1}`)"""
+        self.annual_growing_season_length = annual_growing_season_length
+        r"""Annual growing season length (:math:`G`, days)"""
         self.aridity_index = aridity_index
         r"""Climatological estimate of local aridity index (AI, unitless)"""
 
@@ -273,6 +289,13 @@ class FaparLimitation:
             1.0 - self.fapar_max
         )
         """Estimated annual maximum LAI (unitless)"""
+
+        self.lai_to_gpp_ratio_m = (
+            self.phenology_const.sigma
+            * self.annual_growing_season_length
+            * self.lai_max
+        ) / (self.annual_total_potential_gpp * self.fapar_max)
+        """The steady state ratio of leaf area index to potential GPP (:math:`m`)"""
 
     @classmethod
     def from_pmodel(
@@ -384,6 +407,7 @@ class FaparLimitation:
             annual_mean_chi=annual_mean_chi,
             annual_mean_vpd=annual_mean_vpd,
             annual_total_precip=annual_total_precip,
+            annual_growing_season_length=avc.year_n_growing_days,
             aridity_index=aridity_index,
             phenology_const=phenology_const,
         )
