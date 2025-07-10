@@ -55,25 +55,6 @@ def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
             raise ValueError("Datetime spacing is not evenly divisible into a day.")
 
 
-def daily_to_subdaily(
-    x: NDArray,
-    datetimes: NDArray[np.datetime64],
-) -> NDArray:
-    """Broadcasts an array of the entity x from daily values to subdaily values.
-
-    Args:
-        x: Array of daily values.
-        datetimes: Subdaily datetimes as np.datetime64 array.
-    """
-
-    n_days = len(x)
-    obs_per_day = int(len(datetimes) / n_days)
-
-    subdaily_x = np.repeat(x, obs_per_day)
-
-    return subdaily_x
-
-
 class FaparLimitation:
     r"""Compute maximum annual fAPAR and LAI.
 
