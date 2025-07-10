@@ -5,7 +5,7 @@ from contextlib import nullcontext as does_not_raise
 import numpy as np
 import pytest
 
-from pyrealm.phenology.fapar_limitation import check_datetimes, get_annual
+from pyrealm.phenology.fapar_limitation import check_datetimes
 
 
 @pytest.mark.parametrize(
@@ -50,43 +50,3 @@ def test_datetime_check(datetimes, raises):
 
     with raises:
         check_datetimes(datetimes)
-
-
-@pytest.mark.parametrize(
-    argnames="inputs, raises, result",
-    argvalues=[
-        (
-            (
-                np.ones(365),
-                np.arange(
-                    np.datetime64("2010-01-01"),
-                    np.datetime64("2011-01-01"),
-                    np.timedelta64(1, "D"),
-                ),
-                np.ones(365).astype(bool),
-                "total",
-            ),
-            does_not_raise(),
-            [365],
-        ),
-        (
-            (
-                np.ones(365),
-                np.arange(
-                    np.datetime64("2010-01-01"),
-                    np.datetime64("2011-01-01"),
-                    np.timedelta64(1, "D"),
-                ),
-                np.ones(365).astype(bool),
-                "mean",
-            ),
-            does_not_raise(),
-            [1],
-        ),
-    ],
-)
-def test_get_annual(inputs, raises, result):
-    """Checks that the get_annual function does the right thing."""
-
-    with raises:
-        assert np.allclose(result, get_annual(*inputs))

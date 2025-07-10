@@ -8,7 +8,7 @@ from pyrealm.constants import PhenologyConst
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.time_series import AnnualValueCalculator
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.pmodel import AcclimationModel, PModel
+from pyrealm.pmodel import PModel
 
 
 def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
@@ -53,68 +53,6 @@ def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
         day_remainder = (24 * 60 * 60) % obs_per_date
         if day_remainder:
             raise ValueError("Datetime spacing is not evenly divisible into a day.")
-
-
-def get_annual(
-    x: NDArray,
-    datetimes: NDArray[np.datetime64],
-    growing_season: NDArray[np.bool],
-    method: str,
-) -> NDArray:
-    """Computes an array of the annual total or mean of an entity x given datetimes.
-
-    Args:
-        x: Array of values to be converted to annual values. Should be either daily (
-            same datetimes as growing_season) or subdaily (same datetimes as datetimes
-            array)
-        datetimes: Datetimes of the measurements as np.datetime64 arrays.
-        growing_season: Bool array of days, indicating whether they are ain growing
-            season or not.
-        method: Either "total" (sum all values of the year) or "mean" (take the mean
-            of all values of the year)
-    """
-
-    # Extract years from datetimes
-    all_years = datetimes.astype("datetime64[Y]")
-
-    if len(x) == len(growing_season):  # this is daily data
-        daily_x = x
-        n_days = len(x)
-        years_by_day = all_years.view()
-        obs_per_day = int(len(datetimes) / n_days)
-        years_by_day.shape = tuple([n_days, obs_per_day, *list(all_years.shape[1:])])
-    elif len(x) == len(datetimes):  # this is subdaily data
-        # Create scaler object to handle conversion between scales
-        scaler = AcclimationModel(datetimes)
-        scaler.set_nearest(np.timedelta64(12, "h"))
-        # Convert values to daily to match with growing_season
-        daily_x = scaler.get_daily_means(x)
-        years_by_day = scaler.get_window_values(np.asarray(all_years))
-    else:
-        raise ValueError("Input array does not fit datetimes nor growing_season array")
-
-    # Which years are present?
-    years = np.unique(all_years)
-
-    # Compute annual totals or means, only taking into account the days which are in
-    # growing season.
-
-    annual_x = np.zeros(len(years))
-
-    if method == "total":
-        for i in range(len(years)):
-            annual_x[i] = np.sum(
-                daily_x[growing_season & (years_by_day[:, 0] == years[i])]
-            )
-    elif method == "mean":
-        for i in range(len(years)):
-            annual_x[i] = np.mean(
-                daily_x[growing_season & (years_by_day[:, 0] == years[i])]
-            )
-    else:
-        raise ValueError("No valid method given for annual values")
-
-    return annual_x
 
 
 def daily_to_subdaily(
