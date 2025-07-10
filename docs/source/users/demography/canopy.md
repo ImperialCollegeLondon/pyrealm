@@ -17,7 +17,7 @@ language_info:
   name: python
   nbconvert_exporter: python
   pygments_lexer: ipython3
-  version: 3.12.3
+  version: 3.11.9
 settings:
   output_matplotlib_strings: remove
 ---
@@ -110,11 +110,9 @@ individual stems, grouped into 3 cohorts with different stem sizes and crown sha
 
 ```{code-cell} ipython3
 # Define PFTs
-short_pft = PlantFunctionalType(
-    name="short", h_max=15, m=1.5, n=1.5, f_g=0, ca_ratio=380
-)
+short_pft = PlantFunctionalType(name="short", h_max=15, m=2, n=4, f_g=0, ca_ratio=380)
 tall_pft = PlantFunctionalType(
-    name="tall", h_max=30, m=1.5, n=2, par_ext=0.6, f_g=0, ca_ratio=500
+    name="tall", h_max=30, m=2, n=3, par_ext=0.6, f_g=0, ca_ratio=500
 )
 
 # Create the flora

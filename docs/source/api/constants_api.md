@@ -76,3 +76,10 @@ language_info:
 .. autoclass:: pyrealm.constants.two_leaf.TwoLeafConst
     :members:
 ```
+
+## Phenology constants
+
+```{eval-rst}
+.. autoclass:: pyrealm.constants.phenology_const.PhenologyConst
+    :members:
+```
