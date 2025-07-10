@@ -137,19 +137,56 @@ def daily_to_subdaily(
 
 
 class FaparLimitation:
-    r"""FaparLimitation class to compute fAPAR_max and LAI.
+    r"""Compute maximum annual fAPAR and LAI.
 
-    This class takes the annual total potential GPP and precipitation, the annual mean
-    CA, Chi and VPD during the growing season, as well as the aridity index and some
-    constants to compute the annual peak fractional absorbed photosynthetically active
-    radiation (fAPAR_max) and annual peak Leaf Area Index (LAI).
+    This class calculates maximum annual fAPAR and LAI, following :cite:`cai:2025a`.
+    The maximum annual fAPAR is calculated as the minimum of two terms capturing
+    energy-limited and water limited fAPAR:
 
-    .. todo::
+    .. math::
 
-        * Allow for other timescales than daily or subdaily (e.g. monthly)
-        * Daily conditions are taken as noon values - might need to relax this.
-        * Growing season definition -  users currently need to provide their own growing
-          season definition in `from_pmodel`
+        fAPAR_{max} = \min{
+                \left(1 - z / \left(k A_0 \right) \right),
+                \left( c_a \left( 1 - \chi \right) / 1.6 D \right)
+                \left( f_0 P / A_0 \right)
+            }
+
+    The maximum annual LAI is then calculated using Beer's law:
+
+    .. math::
+
+        LAI_{max} = - ( 1 / k ) \ln {1 - fAPAR_{max}}
+
+    The :class:`~pyrealm.constants.phenology_const.PhenologyConst` class provides values
+    for the following constants:
+
+    * :math:`z` accounts for the growth and maintenance costs of leaves.
+    * :math:`k` is the light extinction coefficient.
+    * :math:`f_0` is is the ratio of annual total transpiration of annual total
+      precipitation, calculated from the climatological aridity index (AI) (see
+      :class:`PhenologyConst.calculate_f0<pyrealm.constants.phenology_const.PhenologyConst.calculate_f0>`).
+
+    The other variables are the required arguments to the class defined below. The most
+    common source of these variables is from a P Model, and the
+    :meth:`~pyrealm.phenology.fapar_limitation.FaparLimitation.from_pmodel` method can
+    be used to create an instance directly from a fitted P Model.
+
+    Args:
+        annual_total_potential_gpp: The annual sum of potential GPP (:math:`A_0,
+            \text{mol C m}^{-2} \text{year}^{-1}`)
+        annual_mean_ca: The ambient CO2 partial pressure during the growing season
+            (:math:`c_a`, Pa)
+        annual_mean_chi: The annual mean ratio of ambient to leaf CO2 partial during the
+            growing season (:math:`\chi`, Pa)
+        annual_mean_vpd: The annual mean vapour pressure deficit during the growing
+            season (:math:`D`, Pa)
+        annual_total_precip: The annual total precipitation (:math:`P, \text{mol m}^{-2}
+            \text{year}^{-1}`)
+        aridity_index: A climatological estimate of the local aridity index, calculated
+            as the long term (typically 20 years) total PET over total precipitation
+            (:math:`AI`, unitlesss)
+        phenology_const: An instance of
+            :class:`~pyrealm.constants.phenology_const.PhenologyConst`
     """
 
     __experimental__ = True
@@ -176,41 +213,25 @@ class FaparLimitation:
         aridity_index: NDArray[np.float64],
         phenology_const: PhenologyConst = PhenologyConst(),
     ) -> None:
-        r"""Annual peak fractional absorbed photosynthetically active radiation (fAPAR).
-
-        Computes fAPAR_max as minimum of a water-limited and an energy-limited
-        quantity.
-
-        Args:
-            annual_total_potential_gpp: Aka A_0, the annual sum of potential GPP.
-              Potential GPP would be achieved if fAPAR = 1. [mol m^{-2} year^{-1}]
-            annual_mean_ca: Ambient CO2 partial pressure. [Pa]
-            annual_mean_chi: Annual mean ratio of leaf-internal CO2 partial pressure to
-               c_a during the growing season (>0℃). [Pa]
-            annual_mean_vpd: Aka D, annual mean vapour pressure deficit (VPD) during the
-              growing season (>0℃). [Pa]
-            annual_total_precip: Aka P, annual total precipitation. [mol m^{-2}
-             year^{-1}]
-            aridity_index: Aka AI, climatological estimate of local aridity index.
-            phenology_const: An instance of
-                :class:`~pyrealm.constants.phenology_const.PhenologyConst`
-        """
-
+        # Experimental class
         warn_experimental("FaparLimitation")
 
         self.annual_total_potential_gpp = annual_total_potential_gpp
-        """Aka A_0, the annual sum of potential GPP. [mol m^{-2} year^{-1}]"""
+        r"""The annual sum of potential GPP 
+        (:math:`A_0, \text{mol C m}^{-2} \text{year}^{-1}`)"""
         self.annual_mean_ca = annual_mean_ca
-        """Ambient CO2 partial pressure. [Pa]"""
+        r"""Ambient CO2 partial pressure during the growing season (:math:`c_a`, Pa)"""
         self.annual_mean_chi = annual_mean_chi
-        """Annual mean ratio of leaf-internal CO2 partial pressure to c_a during the 
-        growing season (>0℃). [Pa]"""
+        r"""Annual mean ratio of ambient to leaf CO2 partial during the 
+        growing season (:math:`\chi`, Pa)"""
         self.annual_mean_vpd = annual_mean_vpd
-        """Annual mean vapour pressure deficit (VPD) during the growing season [Pa]"""
+        r"""Annual mean vapour pressure deficit during the growing season (:math:`D`,
+        Pa)"""
         self.annual_total_precip = annual_total_precip
-        """Annual total precipitation. [mol m^{-2} year^{-1}]"""
+        r"""Annual total precipitation
+        (:math:`P, \text{mol m}^{-2} \text{year}^{-1}`)"""
         self.aridity_index = aridity_index
-        """Climatological estimate of local aridity index."""
+        r"""Climatological estimate of local aridity index (AI, unitless)"""
 
         self._check_shapes()
 
@@ -224,9 +245,9 @@ class FaparLimitation:
         #  f_0 is the ratio of annual total transpiration of annual total
         #  precipitation, which is an empirical function of the climatic Aridity Index
         #  (AI).
-        a, b, c = self.phenology_const.f0_coefficients
-        f_0 = a * np.exp(-b * np.log(aridity_index / c) ** 2)
+        f_0 = self.phenology_const.calculate_f0(aridity_index=self.aridity_index)
 
+        # Calculate the energy and water limited terms.
         fapar_energylim = 1.0 - self.phenology_const.z / (
             self.phenology_const.k * annual_total_potential_gpp
         )
@@ -238,38 +259,85 @@ class FaparLimitation:
             / (1.6 * annual_mean_vpd * annual_total_potential_gpp)
         )
 
-        self.fapar_max = np.minimum(fapar_waterlim, fapar_energylim)
-        """Maximum fapar given water or energy limitation for each year."""
-        self.energy_limited = fapar_energylim < fapar_waterlim
-        """Is fapar_max limited by water or energy for each year."""
-        self.annual_precip_molar = annual_total_precip
-        """The annual precipitation in moles for each year."""
+        self.fapar_max: NDArray[np.floating] = np.minimum(
+            fapar_waterlim, fapar_energylim
+        )
+        """Estimated annual maximum fAPAR (unitless)."""
+        self.energy_limited: NDArray[np.bool_] = fapar_energylim < fapar_waterlim
+        """Boolean array showing if annual :math:`fAPAR_{max}` is water or energy
+        limited."""
+        self.annual_precip_molar: NDArray[np.floating] = annual_total_precip
+        """The annual total precipitation for each year (moles year-1)."""
 
-        self.lai_max = -(1 / self.phenology_const.k) * np.log(1.0 - self.fapar_max)
+        self.lai_max: NDArray[np.floating] = -(1 / self.phenology_const.k) * np.log(
+            1.0 - self.fapar_max
+        )
+        """Estimated annual maximum LAI (unitless)"""
 
     @classmethod
     def from_pmodel(
         cls,
         pmodel: PModel,
-        growing_season: NDArray[np.bool],
         datetimes: NDArray[np.datetime64],
+        growing_season: NDArray[np.bool],
         precip: NDArray[np.float64],
         aridity_index: NDArray[np.float64],
         gpp_penalty_factor: NDArray[np.float64] | None = None,
         phenology_const: PhenologyConst = PhenologyConst(),
     ) -> Self:
-        r"""Get FaparLimitation from PModel input.
+        r"""Create a FaparLimitation instance from a P Model and other inputs.
 
-        Computes the input for fAPAR_max from the P Model and additional inputs.
+        The annual summary values of :math:`A_0, c_a, \chi` and :math:`D` used by the
+        :meth:`~pyrealm.phenology.fapar_limitation.FaparLimitation` class can be taken
+        directly from the predictions of a P Model. This method automatically extracts
+        the required data from a fitted P Model and returns a ``FaparLimitation``
+        instance.
+
+        .. NOTE::
+
+          The calculation of fAPAR limitation requires estimates of **potential** GPP,
+          so the :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance
+          used to fit the model **must** set ``fapar`` to be one.
+
+        Some additional information is needed:
+
+        * The calculation requires annual summaries of variables, so the ``datetimes``
+          argument must be used to provide an array of datetimes for each observation.
+
+        * The annual mean values :math:`c_a, \chi` and :math:`D` should be estimated
+          during the growing season, so the ``growing_season`` argument must be used to
+          provide a boolean value indicating which observations should be treated as in
+          the growing season.
+
+        * The calculation requires estimates of precipitation, so the ``precipitation``
+          argument must provide estimates of total precipitation during each
+          observations in moles of water per metre squared.
+
+        * The calculation of the :math:`f_0` parameter requires estimates of site
+          specific aridity index.
+
+        The method accepts both standard and subdaily P Models and automatically uses
+        the actual time intervals between observations to calculate the required
+        weighted annual means and sums. This might lead to unexpected values: the yearly
+        mean of monthly values :math:`1, 2, \dots, 12` would not be 6.5 because the
+        monthly values are weighted according to the length of the month.
+
+        Lastly, potential GPP is taken directly from the P Model instance. If you want
+        to apply a post-hoc penalty factor to GPP (e.g. a water limitation factor), then
+        you can optionally provide per-observation penalty estimates and they will be
+        applied when calculating annual total potential assimilation.
 
         Args:
-            pmodel: pyrealm.pmodel.PModel
-            growing_season: Bool array indicating which times are within growing
-              season by some definition and implementation.
-            datetimes: Array of datetimes to consider.
-            precip: Precipitation for given datetimes.
-            aridity_index: Climatological estimate of local aridity index.
-            gpp_penalty_factor: Penalty factor to be applied to pmodel.gpp
+            pmodel: A :class:`pyrealm.pmodel.pmodel.PModel` or
+                :class:`pyrealm.pmodel.pmodel.SubdailyPModel` instance, fitted with
+                ``fapar`` fixed at one.
+            datetimes: An array giving the datetimes of observations.
+            growing_season: A boolean array indicating which observations are to be
+                considered as part of the growing season.
+            precip: An array of precipitation for each observation.
+            aridity_index: A climatological estimate of local aridity index.
+            gpp_penalty_factor: A post-hoc penalty factor to be applied to estimated
+                GPP.
             phenology_const: An instance of
                 :class:`~pyrealm.constants.phenology_const.PhenologyConst`
         """
@@ -282,7 +350,6 @@ class FaparLimitation:
         )
 
         # Get the total GPP for each observation
-        # - need to convert P Model GPP in µg C m-2 s-1 into moles C m-2 y-1
         # - also need to handle missing values, easier to take _mean_ annual value
         #   and scale it up to an annual total
         # - TODO - handle incompleteness - when do we stop estimating annual values from
