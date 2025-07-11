@@ -23,6 +23,8 @@ language_info:
 
 # Extreme forcing values
 
+The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/ExtremeForcingValues.ipynb>`.
+
 The four photosynthetic environment variables and the effect of temperature on the
 temperature dependence of quantum yield efficiency are all calculated directly from the
 input forcing variables. While the majority of those calculations behave smoothly with
