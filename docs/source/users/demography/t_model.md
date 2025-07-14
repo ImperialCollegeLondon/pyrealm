@@ -25,8 +25,8 @@ language_info:
 
 The T Model {cite}`Li:2014bc` provides a model of both:
 
-* stem allometry, given a set of [stem traits](./flora.md) for a plant functional type
-  (PFT), and
+* stem :term:`allometry`, given a set of [stem traits](./flora.md) for a plant
+  functional type (PFT), and
 * a carbon allocation model, given stem allometry and potential GPP.
 
 ```{code-cell} ipython3
@@ -149,7 +149,7 @@ the T Model implemented this (Equation 12, {cite:alp}`Li:2014bc`)using an estima
 the potential GPP per square metre ($P_0$), scaled up to the crown area of the stem
 ($A_c$) and using the Beer-Lambert equation to estimate the proportion of potential GPP
 captured by the crown as a function of the canopy light extinction coefficient ($k$) and
-the canopy leaf area index ($L$):
+the canopy {term}`leaf area index<LAI>` ($L$):
 
 $$
 \textrm{GPP} =  P_0 A_c (1 - e^{-kL})
