@@ -264,7 +264,11 @@ class AnnualValueCalculator:
             values: An array of values.
         """
 
-        if values.shape[0] != self.n_obs:
+        if values.shape[0] == 1:
+            # Broadcast to match the number of observations if constant
+            values = np.broadcast_to(values, (self.n_obs, *values.shape[1:]))
+
+        elif values.shape[0] != self.n_obs:
             raise ValueError(
                 "First axis of values shape does not match number of observations."
             )
@@ -328,7 +332,8 @@ class AnnualValueCalculator:
         # observations from the weighted average.
         return np.array(
             [
-                np.nansum(vals * wghts) / np.nansum(~np.isnan(vals) * wghts)
+                np.nansum(vals * wghts, axis=0)
+                / np.nansum(~np.isnan(vals) * wghts, axis=0)
                 for vals, wghts in zip(values_by_year, weights)
             ]
         )
@@ -391,5 +396,8 @@ class AnnualValueCalculator:
                 weights[i] = wghts.reshape(shape)
 
         return np.array(
-            [np.nansum(vals * wghts) for vals, wghts in zip(values_by_year, weights)]
+            [
+                np.nansum(vals * wghts, axis=0)
+                for vals, wghts in zip(values_by_year, weights)
+            ]
         )

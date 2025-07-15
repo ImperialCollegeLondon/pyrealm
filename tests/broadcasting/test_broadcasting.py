@@ -162,7 +162,8 @@ def defined_method_args(argument: str, ctx: "Context") -> Any | None:
             "AnnualValueCalculator.get_annual_means",
             "AnnualValueCalculator.get_annual_totals",
         ]:
-            arguments = {"values": np.ones((nTime, *shape[1:]))}
+            shape2 = (1 if shape[0] == 1 else nTime, *shape[1:])
+            arguments = {"values": np.ones(shape2)}
     if ctx.name == "SolarDailyFluxes":
         nTime = 4
         solarShape = (1 if shape[0] == 1 else nTime, *shape[1:])
@@ -506,7 +507,8 @@ def is_equal(val1: Any, val2: Any) -> bool:
         return all(is_equal(v1, v2) for v1, v2 in zip(val1, val2))
 
     elif hasattr(val1, "__dict__") and hasattr(val2, "__dict__"):
-        return compare_instances(val1, val2)
+        compare_instances(val1, val2)  # Raises if not equal
+        return True
 
     else:
         return val1 == val2
