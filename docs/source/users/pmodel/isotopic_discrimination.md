@@ -23,6 +23,9 @@ language_info:
 
 # Isotopic discrimination
 
+The worked example from this page
+{download}`can be downloaded as Jupyter notebook here </_static/IsotopicDiscrimination.ipynb>`.
+
 C3 and C4 plants assimilate the heavier atmospheric $\ce{^{13}CO2}$ and $\ce{^{14}CO2}$
 molecules less easily than $\ce{^{12}CO2}$, leading to a discrimination against carbon
 13 and carbon 14 and alteration of the resulting isotopic composition of plant tissues.

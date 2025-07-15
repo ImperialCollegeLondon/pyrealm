@@ -23,6 +23,8 @@ language_info:
 
 # Plant Functional Types and Traits
 
+The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/Flora.ipynb>`.
+
 :::{admonition} Warning
 
 This area of `pyrealm` is in active development and this notebook currently contains

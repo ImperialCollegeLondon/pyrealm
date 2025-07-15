@@ -23,6 +23,8 @@ language_info:
 
 # Arrhenius scaling in the P Model
 
+The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/Arrhenius.ipynb>`.
+
 :::{warning}
 This document discusses the form of the Arrhenius scaling used for estimating
 temperature scaling of $V_{cmax}$ and $J_{max}$ in the P Model. Although `pyrealm`

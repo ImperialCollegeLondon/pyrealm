@@ -23,6 +23,9 @@ language_info:
 
 # C3 / C4 Competition
 
+The worked example from the bottom of this page
+{download}`can be downloaded as Jupyter notebook here </_static/C3C4Model.ipynb>`.
+
 Compared to C3 plants, plants using the C4 photosynthetic pathway:
 
 * cope well in arid areas, operating with lower stomatal conductance and lower leaf
