@@ -131,6 +131,18 @@ def method_args(argument: str, ctx: "Context"):
     arguments: dict = method_arguments_list.get(ctx.name, {})
 
     # Arguments that use temporary variables or depend on parents
+
+    if ctx.name.split(".")[0] == "AnnualValueCalculator":
+        # Needs one-dimensional times
+        nTime = 3
+        if ctx.name == "AnnualValueCalculator":
+            arguments = {"timing": np.arange(0, nTime, dtype="datetime64[D]")}
+        elif ctx.name in [
+            "AnnualValueCalculator._split_values_by_year",
+            "AnnualValueCalculator.get_annual_means",
+            "AnnualValueCalculator.get_annual_totals",
+        ]:
+            arguments = {"values": np.ones((nTime, *shape[1:]))}
     if ctx.name == "SolarDailyFluxes":
         nTime = 4
         solarShape = (1 if shape[0] == 1 else nTime, *shape[1:])

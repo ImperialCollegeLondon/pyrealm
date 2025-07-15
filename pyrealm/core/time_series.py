@@ -16,7 +16,7 @@ class AnnualValueCalculator:
 
     This class is used to calculate annual means and totals from time series data. An
     instance is created by providing a set of timings for the times series data, either
-    as an an array of datetimes or as an AcclimationModel instance from a
+    as a one-dimensional array of datetimes or as an AcclimationModel instance from a
     SubdailyPModel, which provides validated datetimes at subdaily temporal resolutions.
 
     The calculation process accounts for observations that span year boundaries, such as
@@ -100,11 +100,12 @@ class AnnualValueCalculator:
             or (
                 isinstance(timing, np.ndarray)
                 and np.issubdtype(timing.dtype, np.datetime64)
+                and timing.ndim == 1
             )
         ):
             raise ValueError(
                 "The timings argument must be an AcclimationModel "
-                "or an array of datetime64 values"
+                "or a one-dimensional array of datetime64 values"
             )
 
         if isinstance(timing, AcclimationModel):
@@ -316,6 +317,12 @@ class AnnualValueCalculator:
         else:
             weights = self.duration_weights
 
+        # Make weights broadcastable in case vals is multidimensional
+        if values.ndim > 1:
+            for i, wghts in enumerate(weights):
+                shape = (wghts.shape[0],) + (1,) * (values.ndim - 1)
+                weights[i] = wghts.reshape(shape)
+
         # Calculate the weighted mean in a np.nan friendly way: the product of np.nan
         # and a weight is np.nan and the isnan term omits the weights of nan
         # observations from the weighted average.
@@ -376,6 +383,12 @@ class AnnualValueCalculator:
             ]
         else:
             weights = self.fractional_weights
+
+        # Make weights broadcastable in case vals is multidimensional
+        if values.ndim > 1:
+            for i, wghts in enumerate(weights):
+                shape = (wghts.shape[0],) + (1,) * (values.ndim - 1)
+                weights[i] = wghts.reshape(shape)
 
         return np.array(
             [np.nansum(vals * wghts) for vals, wghts in zip(values_by_year, weights)]
