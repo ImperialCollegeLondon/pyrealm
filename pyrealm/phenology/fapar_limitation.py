@@ -8,132 +8,7 @@ from pyrealm.constants import PhenologyConst
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.time_series import AnnualValueCalculator
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.pmodel import AcclimationModel, PModel
-
-
-def check_datetimes(datetimes: NDArray[np.datetime64]) -> None:
-    """Check that the datetimes are in a valid format."""
-
-    deltas = datetimes[1:] - datetimes[:-1]
-    unique_deltas = np.unique(deltas)
-
-    # check that we have uniformly sampled data
-    if np.size(unique_deltas) > 1:
-        raise ValueError("datetimes are not evenly spaced.")
-
-    dates = datetimes.astype("datetime64[D]")
-    unique_dates, date_counts = np.unique(dates, return_counts=True)
-    if not date_counts.max() == date_counts.min():
-        raise ValueError("Differing date counts per day")
-
-    obs_per_date = date_counts.max()
-
-    # Data needs to start in northern or southern hemisphere midwinter
-    first_month = unique_dates[0].astype("datetime64[M]").astype(str)
-    if not (first_month.endswith("01") | first_month.endswith("07")):
-        raise ValueError("Data does not start in January or July.")
-
-    ## This does not work for fortnightly data
-    # no_leapdays = leapdays(
-    #    int(str(datetimes[0].astype("datetime64[Y]"))),
-    #    int(str(datetimes[-1].astype("datetime64[Y]"))),
-    # )
-    #
-    # year_remainder = len(unique_dates) % 365
-    # check that we have the right number of leap days
-    #    if year_remainder > no_leapdays:
-    #        raise ValueError("Datetimes do not cover full years.")
-
-    if obs_per_date > 1:
-        # subdaily
-
-        # Check that the number of seconds in a day is evenly divisible by the
-        # number of observations per day (should already have led to differing date
-        # counts).
-        day_remainder = (24 * 60 * 60) % obs_per_date
-        if day_remainder:
-            raise ValueError("Datetime spacing is not evenly divisible into a day.")
-
-
-def get_annual(
-    x: NDArray,
-    datetimes: NDArray[np.datetime64],
-    growing_season: NDArray[np.bool],
-    method: str,
-) -> NDArray:
-    """Computes an array of the annual total or mean of an entity x given datetimes.
-
-    Args:
-        x: Array of values to be converted to annual values. Should be either daily (
-            same datetimes as growing_season) or subdaily (same datetimes as datetimes
-            array)
-        datetimes: Datetimes of the measurements as np.datetime64 arrays.
-        growing_season: Bool array of days, indicating whether they are ain growing
-            season or not.
-        method: Either "total" (sum all values of the year) or "mean" (take the mean
-            of all values of the year)
-    """
-
-    # Extract years from datetimes
-    all_years = datetimes.astype("datetime64[Y]")
-
-    if len(x) == len(growing_season):  # this is daily data
-        daily_x = x
-        n_days = len(x)
-        years_by_day = all_years.view()
-        obs_per_day = int(len(datetimes) / n_days)
-        years_by_day.shape = tuple([n_days, obs_per_day, *list(all_years.shape[1:])])
-    elif len(x) == len(datetimes):  # this is subdaily data
-        # Create scaler object to handle conversion between scales
-        scaler = AcclimationModel(datetimes)
-        scaler.set_nearest(np.timedelta64(12, "h"))
-        # Convert values to daily to match with growing_season
-        daily_x = scaler.get_daily_means(x)
-        years_by_day = scaler.get_window_values(np.asarray(all_years))
-    else:
-        raise ValueError("Input array does not fit datetimes nor growing_season array")
-
-    # Which years are present?
-    years = np.unique(all_years)
-
-    # Compute annual totals or means, only taking into account the days which are in
-    # growing season.
-
-    annual_x = np.zeros(len(years))
-
-    if method == "total":
-        for i in range(len(years)):
-            annual_x[i] = np.sum(
-                daily_x[growing_season & (years_by_day[:, 0] == years[i])]
-            )
-    elif method == "mean":
-        for i in range(len(years)):
-            annual_x[i] = np.mean(
-                daily_x[growing_season & (years_by_day[:, 0] == years[i])]
-            )
-    else:
-        raise ValueError("No valid method given for annual values")
-
-    return annual_x
-
-
-def daily_to_subdaily(
-    x: NDArray,
-    datetimes: NDArray[np.datetime64],
-) -> NDArray:
-    """Broadcasts an array of the entity x from daily values to subdaily values.
-
-    Args:
-        x: Array of daily values.
-        datetimes: Subdaily datetimes as np.datetime64 array.
-    """
-
-    n_days = len(x)
-    obs_per_day = int(len(datetimes) / n_days)
-
-    subdaily_x = np.repeat(x, obs_per_day)
-
-    return subdaily_x
+from pyrealm.pmodel.pmodel import PModel, PModelABC, SubdailyPModel
 
 
 class FaparLimitation:
@@ -300,11 +175,11 @@ class FaparLimitation:
     @classmethod
     def from_pmodel(
         cls,
-        pmodel: PModel,
-        datetimes: NDArray[np.datetime64],
+        pmodel: PModelABC,
         growing_season: NDArray[np.bool],
         precip: NDArray[np.float64],
         aridity_index: NDArray[np.float64],
+        datetimes: NDArray[np.datetime64] | None = None,
         gpp_penalty_factor: NDArray[np.float64] | None = None,
         phenology_const: PhenologyConst = PhenologyConst(),
     ) -> Self:
@@ -365,10 +240,26 @@ class FaparLimitation:
                 :class:`~pyrealm.constants.phenology_const.PhenologyConst`
         """
 
-        check_datetimes(datetimes)
+        # Check the datetimes - should they be taken from the AcclimationModel of the
+        # SubdailyPModel or are they required for standard PModels?
+        if isinstance(pmodel, SubdailyPModel):
+            if datetimes is not None:
+                raise ValueError(
+                    "Observation datetimes are not required with SubdailyPModel "
+                    "inputs, the acclimation model datetimes are used."
+                )
+            datetimes = pmodel.acclim_model.datetimes
 
+        elif isinstance(pmodel, PModel):
+            if datetimes is None:
+                raise ValueError(
+                    "Observation datetimes are required with PModel inputs."
+                )
+
+        # Create the annual value calculator
+        # - the code above guards against datetimes being None
         avc = AnnualValueCalculator(
-            timing=datetimes,
+            timing=datetimes,  # type: ignore [arg-type]
             growing_season=growing_season,
         )
 
