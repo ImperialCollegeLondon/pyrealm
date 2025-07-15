@@ -93,10 +93,13 @@ jupyter notebooks are located.
 [JupyterLab documentation](https://jupyterlab.readthedocs.io/en/stable/user/interface.html)
 for a detailed description of the user interface.
 
-There are also a number of Python packages which are necessary for running the
-examples, namely `wget` to download example data, `matplotlib`, for plotting,
- `xarray` as a data structure for handling the data and `netCDF4` as file format
- in which the example data is stored.
+There are a number of Python packages which are necessary for running the
+examples, namely `wget` to download example data (note that this is different
+in the jupyter notebooks from the worked examples in the documentation, which
+access the data directly from the github repository without downloading it
+separately), `matplotlib`, for plotting, `xarray` as a data structure for
+handling the data and `netCDF4` as file format in which the example data is
+stored.
 
 The following code block (run from the `jupyter_notebooks` directory of
   `pyrealm`) sets everything up for running the notebooks on Linux:
@@ -114,6 +117,12 @@ pip install wget matplotlib xarray netCDF4
 jupyter lab
 
 ```
+
+Good notebooks to get started with are
+
+- {download}`the Standard P Model worked example </_static/StandardPModel.ipynb>`
+- {download}`the Subdaily P Model worked example </_static/SubdailyPModel.ipynb>`
+- {download}`the Splash Model worked example </_static/Splash.ipynb>`.
 
 ## `pyrealm` developers
 
