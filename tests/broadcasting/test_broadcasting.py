@@ -8,11 +8,13 @@ import dataclasses
 import inspect
 import warnings
 from collections.abc import Callable, Iterator
-from types import ModuleType
-from typing import Any, Union, cast
+from dataclasses import InitVar
+from types import ModuleType, UnionType
+from typing import Any, Union, cast, get_args, get_origin
 
 import numpy as np
 import numpy.typing as npt
+import pytest
 
 import pyrealm
 from pyrealm.core.calendar import Calendar
@@ -76,8 +78,26 @@ skip_methods = [
 
 
 # These methods require specific arguments
-def method_args(argument: str, ctx: "Context"):
-    """Return any manually defined arguments for the current callable in the context."""
+def defined_method_args(argument: str, ctx: "Context") -> Any | None:
+    """Return any manually defined arguments for the current function / method.
+
+    This is done by defining an `arguments` dictionary for the function and then
+    returning the value (if any) of the specific `argument`.
+
+    Parameters
+    ----------
+    argument : str
+        The name of the input argument to define.
+    ctx : Context
+        The context containing the name of the function (`ctx.name`) and the parent
+        classes / class method being tested (`ctx.parents`).
+
+    Returns:
+    -------
+    Any | None
+        The manually defined value for the argument, or `None` if it can be set by the
+        defaults.
+    """
     shape = ctx.shape()
 
     # PModel parameters
@@ -206,6 +226,7 @@ def get_package_modules(pkg: ModuleType) -> list[ModuleType]:
     ):
         if not ispkg:
             modules.append(importlib.import_module(modname))
+
     return modules
 
 
@@ -242,21 +263,27 @@ def is_instance_method(cls: type | None, method_name: str) -> bool:
 
 
 ## Functions to get the argument datatypes
+def strip_wrapped_types(typ: Any) -> Any:
+    """Handle basic wrapped types to get the inner type."""
+    # InitVar[T] -> T
+    if isinstance(typ, InitVar):
+        strip_wrapped_types(typ.type)
+    # Type[T] -> T
+    if get_origin(typ) is type:
+        args = get_args(typ)
+
+        return strip_wrapped_types(args[0])
+    return typ
+
+
 def is_array_type(typ: Any) -> bool:
     """Returns True if the type is a numpy array."""
-    from dataclasses import InitVar
-    from types import UnionType
-    from typing import get_args, get_origin
+    typ = strip_wrapped_types(typ)
 
-    origin = get_origin(typ)  # Get the unannotated type, i.e. X from X[...]
-
-    # Handle Union[...] or X | Y
+    # If Union[...] or X | Y then check both types
+    origin = get_origin(typ)  # Get the unannotated type, i.e. X[...] -> X
     if origin in (Union, UnionType):
         return any(is_array_type(arg) for arg in get_args(typ))
-
-    # Handle dataclasses.InitVar[...]
-    if isinstance(typ, InitVar):
-        return is_array_type(typ.type)
 
     try:
         # Handle annotated types like NDArray[np.float32]
@@ -285,8 +312,6 @@ def has_array_input(method: Callable) -> bool:
 
 def extract_numpy_dtype(typ: Any) -> npt.DTypeLike:
     """Extract a numpy dtype from NDArray annotation."""
-    from typing import get_args, get_origin
-
     dtype: npt.DTypeLike = np.float64
 
     args = get_args(typ)
@@ -348,33 +373,25 @@ class Context:
 def initialise_type_default(typ: Any, ctx: Context) -> Any:
     """Define the default value for each type."""
     from collections.abc import Sequence
-    from dataclasses import InitVar
     from random import randint
-    from types import UnionType
-    from typing import get_args, get_origin
 
     from pyrealm.demography.flora import Flora
 
-    # Handle any wrapped types
-    # InitVar[T]
-    if isinstance(typ, InitVar):
-        typ = typ.type
-    # Sequence[T] (create a sequence of 2)
+    # Handle basic wrapped types
+    typ = strip_wrapped_types(typ)
+
+    # If Sequence[T]: create a list of 2 objects
     origin = get_origin(typ)
     args = get_args(typ)
     if origin is Sequence:
         inner_type = args[0] if args else Any
         return [initialise_type_default(inner_type, ctx) for _ in range(2)]
-    # Type[T]
-    if origin is type:
-        return initialise_type_default(args[0], ctx)
-    # Union[...] or X | Y
+
+    # If Union[...] or X | Y: Create an array if an option, otherwise use the first type
     if origin in (Union, UnionType):
-        # Use an array if an option
         for arg in args:
             if is_array_type(arg):
                 return initialise_type_default(arg, ctx)
-        # Otherwise first type in list
         return initialise_type_default(args[0], ctx)
 
     pft_names = ["Tree1", "Tree2", "Tree3"]
@@ -384,7 +401,7 @@ def initialise_type_default(typ: Any, ctx: Context) -> Any:
         dtype = extract_numpy_dtype(typ)
         shape = ctx.shape()
         if np.issubdtype(dtype, np.datetime64):
-            return np.full(shape, np.datetime64("2000-01-01"), dtype=dtype)
+            return np.arange(0, np.prod(shape), dtype="datetime64[D]").reshape(shape)
         else:
             return np.ones(shape, dtype=dtype)
 
@@ -425,7 +442,7 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
         ctx.i_arg += 1
 
         # Set manually defined values
-        manual_arg = method_args(param_name, ctx)
+        manual_arg = defined_method_args(param_name, ctx)
         if manual_arg is not None:
             kwargs[param_name] = manual_arg
 
@@ -483,7 +500,7 @@ def is_equal(val1: Any, val2: Any) -> bool:
         both_nan = np.isnan(val1_b) & np.isnan(val2_b)
         return bool(np.all(equal | both_nan))
 
-    elif isinstance(val1, tuple) and isinstance(val2, tuple):
+    elif isinstance(val1, list | tuple) and isinstance(val2, list | tuple):
         if len(val1) != len(val2):
             return False
         return all(is_equal(v1, v2) for v1, v2 in zip(val1, val2))
@@ -495,71 +512,77 @@ def is_equal(val1: Any, val2: Any) -> bool:
         return val1 == val2
 
 
-def compare_instances(instance1: Any, instance2: Any) -> bool:
-    """Compare if two class instances have equal attributes."""
+def compare_instances(instance1: Any, instance2: Any):
+    """Raises ValueError if the two class instances do not have equal attributes."""
     dict1 = instance1.__dict__
     dict2 = instance2.__dict__
     for key in dict1:
         if not is_equal(dict1[key], dict2[key]):
-            print(f"{instance1.__class__.__name__}: {key} not equal")
-            # print(dict1[key])
-            # print(dict2[key])
-            # raise ValueError
-            return False
-    return True
+            raise ValueError(f"{instance1.__class__.__name__}: {key} not equal")
 
 
-shapes: list[tuple[int, ...]]
-shape_full: list[tuple[int, ...]]
-shapes = [(3, 2, 2), (1, 2, 2), (3, 1, 1), (1, 1, 1)]
-shapes = [(1, 2, 2), (3, 2, 2)]
-# shapes = [(3, 1, 1), (1, 2, 2), (3, 2, 2)]
-# shapes = [(1, 1, 1)]
-shape_full = [(3, 2, 2)]
-
+method_list = []
 for mod in get_package_modules(pyrealm):
     for name, method, cls in get_module_callables(mod):
-        if not has_array_input(method) or name in skip_methods:
-            continue
+        if has_array_input(method) and name not in skip_methods:
+            method_list.append((name, method, cls))
 
-        is_correct = True
+shape_full: list[tuple[int, ...]]
+shape_full = [(3, 2, 2)]
+shapes_list = [
+    [(3, 2, 2), (1, 2, 2), (3, 1, 1), (1, 1, 1)],
+    [(1, 2, 2), (3, 2, 2)],
+    [(3, 1, 1), (1, 2, 2), (3, 2, 2)],
+    [(1, 1, 1)],
+]
 
-        # Generate the arguments for the method
-        ctx = Context(name, shapes)
-        ctx_full = Context(name, shape_full)
-        args = generate_args(method, ctx)
-        args_full = generate_args(method, ctx_full)
 
-        if is_instance_method(cls, method.__name__):
-            cls = cast(type, cls)  # Make mypy aware this cannot be None
-            # First initialise class and get bound methods
-            instance1 = initialise_class(cls, ctx)
-            instance2 = initialise_class(cls, ctx_full)
-            method1 = getattr(instance1, method.__name__)
-            method2 = getattr(instance2, method.__name__)
-            # Run the method
-            result = method1(**args)
-            result_full = method2(**args_full)
-            # Compare results
-            is_correct = is_equal(result, result_full)
-            if not is_correct:
-                print(name, ": Result not equal")
-            is_correct = is_equal(result, result_full) and compare_instances(
-                instance1, instance2
-            )
+@pytest.mark.parametrize("shapes", shapes_list)
+@pytest.mark.parametrize("method_info", method_list, ids=[m[0] for m in method_list])
+def test_array_input_broadcasting(
+    method_info: tuple[str, Callable, type | None],
+    shapes: list[tuple[int, ...]],
+):
+    """Test to run all module callables to check if broadcasting affects the results.
 
-        else:
-            # Run the method
-            result = method(**args)
-            result_full = method(**args_full)
-            # Compare results
-            is_correct = is_equal(result, result_full)
-            if not is_correct:
-                print(name, ": Result not equal")
+    Each method / function is run twice. Once with all array inputs in their full
+    broadcasted shape, and another with equivalent, broadcastable inputs. Then compare
+    the outputs (and all class attributes for class methods). Raises a ValueError if
+    incorrect.
+    """
+    name, method, cls = method_info
 
-        # if (not is_correct):
-        #     print(name)
-        #     print()
-        # # Compare the results to see if they are identical
-        # if (not is_correct):
-        # raise Error(f'Results do not match in {name}')
+    # Generate the arguments for the function / method
+    ctx = Context(name, shapes)
+    ctx_full = Context(name, shape_full)
+    args = generate_args(method, ctx)
+    args_full = generate_args(method, ctx_full)
+
+    # If a class method (initialises class and compares attributes)
+    if is_instance_method(cls, method.__name__):
+        cls = cast(type, cls)  # Make mypy aware this cannot be None
+        # First initialise class and get bound methods
+        instance1 = initialise_class(cls, ctx)
+        instance2 = initialise_class(cls, ctx_full)
+        method1 = getattr(instance1, method.__name__)
+        method2 = getattr(instance2, method.__name__)
+        # Run the method
+        result = method1(**args)
+        result_full = method2(**args_full)
+        compare_instances(instance1, instance2)  # Fail if attributes not equal
+
+    # If a function / static method
+    else:
+        # Run the method
+        result = method(**args)
+        result_full = method(**args_full)
+
+    # Fail if function outputs not equal
+    if not is_equal(result, result_full):
+        raise RuntimeError(f"Results do not match in {name}")
+
+
+if __name__ == "__main__":
+    shapes = shapes_list[0]
+    for method_info in method_list:
+        test_array_input_broadcasting(method_info, shapes)
