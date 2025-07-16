@@ -69,13 +69,14 @@ class SplashModel:
         bounds_checker: BoundsChecker = BoundsChecker(),
     ):
         # Check input sizes are congurent
-        # TODO - think about broadcasting lat and elv rather than forcing users to do
-        #        this in advance. xarray would be good here for identifying axes and
+        # TODO - xarray would be good here for identifying axes and
         #        checking congruence more widely.
         self.shape: tuple = check_input_shapes(elv, lat, sf, tc, pn)
         """The array shape of the input variables"""
 
-        if self.shape[0] not in (len(dates), 1):
+        if self.shape[0] == 1:
+            self.shape = (len(dates), *self.shape[1:])
+        elif self.shape[0] != len(dates):
             raise ValueError(
                 "The first dimension of inputs must either match the number of dates or"
                 " have a length of one."
