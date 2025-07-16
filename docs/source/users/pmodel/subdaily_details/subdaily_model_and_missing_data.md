@@ -23,6 +23,8 @@ language_info:
 
 # Missing data in the subdaily model
 
+The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/SubdailyMissingData.ipynb>`.
+
 The acclimation process in the subdaily model uses a weighted mean of the daily
 acclimation conditions with preceeding daily conditions. When there are missing data,
 this results in problems in the estimation of the realised daily values for $\xi$,
