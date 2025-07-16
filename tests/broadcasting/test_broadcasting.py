@@ -29,8 +29,12 @@ warnings.filterwarnings("ignore", category=ExperimentalFeatureWarning)
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
+
+## Lists / functions to manually define arguments, methods or outputs to ignore, etc.
+
 # These methods are not relevant or are incompatible without additional work
 skip_methods = [
+    "evaluate_horner_polynomial",  # Coefficients are 1D
     # PModel
     "AcclimationModel.set_include",
     "PModelABC",  # Cannot init ABC
@@ -74,6 +78,26 @@ skip_methods = [
     "calculate_sapwood_respiration",
     "calculate_stem_masses",
     "calculate_whole_crown_gpp",
+]
+
+
+# Ignore these outputs, they are not expected to be equal.
+# Formats: [fn name] for function results, [class]:[attr] for class attributes
+ignore_outputs = [
+    "Cohorts:_cohort_id",
+    "Calendar:n_dates",
+    "C3C4Competition:shape",
+    "CalcCarbonIsotopes:shape",
+    "PModelEnvironment:shape",
+    "PModel:shape",
+    "SubdailyPModel:shape",
+    "OptimalChiC4:shape",
+    "OptimalChiC4NoGamma:shape",
+    "OptimalChiPrentice14:shape",
+    "QuantumYieldTemperature:shape",
+    "QuantumYieldFixed:shape",
+    "JmaxLimitationWang17:_shape",
+    "SplashModel:shape",
 ]
 
 
@@ -128,9 +152,9 @@ def defined_method_args(argument: str, ctx: "Context") -> Any | None:
         "SplashModel.calculate_soil_moisture": {"wn_init": np.full(shape[1:], 10)},
         "PModelEnvironment": {"patm": np.full(shape, 100000)},
         "TwoLeafIrradiance": {"patm": np.full(shape, 100000)},
-        ## Demography uses 1D arrays
+        ## Demography uses 1D arrays (a lot of these could probably be skipped)
         "Cohorts": {
-            "dbh_values": np.zeros(n_pft),
+            "dbh_values": np.full(n_pft, 2),
             "n_individuals": np.ones(n_pft),
             "pft_names": np.array(pft_names, dtype=np.str_),
         },
@@ -140,13 +164,20 @@ def defined_method_args(argument: str, ctx: "Context") -> Any | None:
         "CohortCanopyData": {
             "projected_leaf_area": np.ones((n_heights, n_pft)),
             "n_individuals": np.ones(n_pft),
-            "pft_lai": np.ones(n_pft),
-            "pft_par_ext": np.ones(n_pft),
+            "lai": np.ones(n_pft),
+            "par_ext": np.ones(n_pft),
         },
-        "CommunityCanopyData": {"cohort_transmissivity": np.ones((n_heights, n_pft))},
+        "CommunityCanopyData": {
+            "absorption": np.full((n_heights, n_pft), 0.5),
+            "leaf_area_index": np.full((n_heights, n_pft), 0.5),
+            "cohort_leaf_area": np.full((n_heights, n_pft), 1),
+        },
         "StemAllometry": {"at_dbh": np.full(n_pft, 0.5)},
         "StemAllocation": {"whole_crown_gpp": np.full(n_pft, 0.5)},
         "CrownProfile": {"z": np.linspace(5, 15, n_heights)[:, np.newaxis]},
+        "Cohorts.drop_cohort_data": {"drop_indices": [0, 1]},
+        "StemAllometry.drop_cohort_data": {"drop_indices": [0, 1]},
+        "Community.drop_cohorts": {"drop_indices": [0, 1]},
     }
     arguments: dict = method_arguments_list.get(ctx.name, {})
 
@@ -164,17 +195,28 @@ def defined_method_args(argument: str, ctx: "Context") -> Any | None:
         ]:
             shape2 = (1 if shape[0] == 1 else nTime, *shape[1:])
             arguments = {"values": np.ones(shape2)}
-    if ctx.name == "SolarDailyFluxes":
+
+    if ctx.name.split(".")[0] in ["DailySolarFluxes", "DailyEvapFluxes"]:
+        # Needs first dimension to match the dates
         nTime = 4
-        solarShape = (1 if shape[0] == 1 else nTime, *shape[1:])
-        arguments = {
-            "dates": Calendar(np.arange(0, nTime, dtype="datetime64[D]")),
-            "latitude": np.full(solarShape, 10),
-            "elvation": np.full(solarShape, 10),
-            "sf": np.full(solarShape, 0.5),
-            "tc": np.full(solarShape, 25),
-            "pn": np.full(solarShape, 10),
-        }
+        shape2 = (1 if shape[0] == 1 else nTime, *shape[1:])
+        if ctx.name == "DailySolarFluxes":
+            arguments = {
+                "dates": Calendar(np.arange(0, nTime, dtype="datetime64[D]")),
+                "latitude": np.full(shape2, 10),
+                "elevation": np.full(shape2, 10),
+                "sunshine_fraction": np.full(shape2, 0.5),
+                "temperature": np.full(shape2, 25),
+            }
+        elif ctx.name == "DailyEvapFluxes":
+            arguments = {
+                "pa": np.full(shape2, 10),
+                "tc": np.full(shape2, 25),
+                "kWm": np.full(shape2, 150),
+            }
+        elif ctx.name == "DailyEvapFluxes.estimate_aet":
+            arguments = {"wn": np.full(shape2, 10)}
+
     if ctx.name == "SplashModel":
         if (
             ctx.parents
@@ -193,6 +235,7 @@ def defined_method_args(argument: str, ctx: "Context") -> Any | None:
             "tc": np.full(splashShape, 25),
             "pn": np.full(splashShape, 10),
         }
+
     if ctx.name == "PModelEnvironment":
         if ctx.parents and ctx.parents[-1] == "SubdailyPModel":
             # SubdailyPModel needs more than 1 day (uses 48 hourly times)
@@ -268,7 +311,7 @@ def strip_wrapped_types(typ: Any) -> Any:
     """Handle basic wrapped types to get the inner type."""
     # InitVar[T] -> T
     if isinstance(typ, InitVar):
-        strip_wrapped_types(typ.type)
+        return strip_wrapped_types(typ.type)
     # Type[T] -> T
     if get_origin(typ) is type:
         args = get_args(typ)
@@ -402,7 +445,7 @@ def initialise_type_default(typ: Any, ctx: Context) -> Any:
         dtype = extract_numpy_dtype(typ)
         shape = ctx.shape()
         if np.issubdtype(dtype, np.datetime64):
-            return np.arange(0, np.prod(shape), dtype="datetime64[D]").reshape(shape)
+            return np.full(shape, 1, dtype="datetime64[D]")
         else:
             return np.ones(shape, dtype=dtype)
 
@@ -514,13 +557,29 @@ def is_equal(val1: Any, val2: Any) -> bool:
         return val1 == val2
 
 
+def _comparison_string(val1: Any, val2: Any) -> str:
+    def value_string(val: Any) -> str:
+        if isinstance(val, np.ndarray) and val.size > 5:
+            val_str = f"<array> {val.shape}"
+        else:
+            val_str = str(val).replace("\n", " ")
+        val_str = val_str[:30] + ".." if len(val_str) > 30 else val_str
+        return val_str
+
+    return value_string(val1) + " != " + value_string(val2)
+
+
 def compare_instances(instance1: Any, instance2: Any):
     """Raises ValueError if the two class instances do not have equal attributes."""
     dict1 = instance1.__dict__
     dict2 = instance2.__dict__
+    class_name = instance1.__class__.__name__
     for key in dict1:
+        if f"{class_name}:{key}" in ignore_outputs:
+            continue
         if not is_equal(dict1[key], dict2[key]):
-            raise ValueError(f"{instance1.__class__.__name__}: {key} not equal")
+            attr_comparison = _comparison_string(dict1[key], dict2[key])
+            raise ValueError(f"{class_name}: {key} not equal ({attr_comparison})")
 
 
 method_list = []
@@ -581,10 +640,11 @@ def test_array_input_broadcasting(
 
     # Fail if function outputs not equal
     if not is_equal(result, result_full):
-        raise RuntimeError(f"Results do not match in {name}")
+        result_comparison = _comparison_string(result, result_full)
+        raise ValueError(f"Results do not match in {name} ({result_comparison})")
 
 
 if __name__ == "__main__":
-    shapes = shapes_list[0]
     for method_info in method_list:
-        test_array_input_broadcasting(method_info, shapes)
+        for shapes in shapes_list:
+            test_array_input_broadcasting(method_info, shapes)
