@@ -212,10 +212,10 @@ def test_faparlimitation_frompmodel_subdaily(
     # Check the GPP predictions
     assert_allclose(subdaily_pmodel.gpp, subdaily_data["PMod_gpp"], rtol=1e-6)
 
+    # Does not require datetimes - taken from acclimation model
     faparlim = FaparLimitation.from_pmodel(
         pmodel=subdaily_pmodel,
         growing_season=subdaily_data["growing_day"],
-        datetimes=datetimes,
         precip=subdaily_data["precip_molar"],
         aridity_index=site_data["AI_from_cruts"],
         gpp_penalty_factor=subdaily_data["soilm_stress"],
