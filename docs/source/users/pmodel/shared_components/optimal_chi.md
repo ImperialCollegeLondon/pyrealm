@@ -23,6 +23,8 @@ language_info:
 
 # Optimal $\chi$ and leaf $\ce{CO2}$
 
+The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/OptimalChi.ipynb>`.
+
 Once the key [photosynthetic environment variables](./photosynthetic_environment.md)
 have been calculated, the next step is to estimate the following parameters:
 

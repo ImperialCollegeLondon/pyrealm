@@ -67,6 +67,11 @@ The `demography` module
   and respiration {cite:p}`Li:2014bc`. This module is still in active development but a
   lot of initial functionality is present.
 
+# Getting started with `pyrealm`
+
+The [Getting Started](users/getting_started) page gives a short introduction
+how to install and run `pyrealm`.
+
 ## Indices and tables
 
 * {ref}`genindex`

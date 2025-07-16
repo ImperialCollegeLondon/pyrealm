@@ -23,8 +23,10 @@ language_info:
 
 # The `splash` submodule
 
+The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/Splash.ipynb>`.
+
 The {mod}`~pyrealm.splash` module provides the SPLASH v1.0 model for estimating **soil
-moisture, actual evapotranspiration (AET) and surface water runoff** for sites
+moisture, actual evapotranspiration ({term}`AET`) and surface water runoff** for sites
 {cite:p}`davis:2017a`. The module in `pyrealm` completely reimplements the original
 SPLASH code (see [the api notes](../api/splash_api.md) for details) but the outputs are
 benchmarked against outputs from the original code in the `pyrealm` code testing.

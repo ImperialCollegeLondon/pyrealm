@@ -23,6 +23,8 @@ language_info:
 
 # Using the Two Leaf, Two Stream model
 
+The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/TwoLeafTwoStream.ipynb>`.
+
 ```{code-cell} ipython3
 from importlib import resources
 
@@ -207,8 +209,8 @@ independent of the type of P Model being used, so the calculations can be used a
 multiple P Models. The irradiance calculation requires:
 
 * the solar elevation ($\beta$) in radians,
-* the photosynthetic photon flux density (PPFD) in µmol m-2 s-1,
-* the leaf area index ($L$) of the canopy, and
+* the {term}`photosynthetic photon flux density<PPFD>` (PPFD) in µmol m-2 s-1,
+* the {term}`leaf area index<LAI>` ($L$) of the canopy, and
 * the atmospheric pressure.
 
 ```{code-cell} ipython3

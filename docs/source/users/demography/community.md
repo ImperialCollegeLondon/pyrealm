@@ -23,6 +23,8 @@ language_info:
 
 # Plant Communities
 
+The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/Communities.ipynb>`.
+
 :::{admonition} Warning
 
 This area of `pyrealm` is in active development.

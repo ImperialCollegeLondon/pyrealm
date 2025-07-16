@@ -23,6 +23,8 @@ language_info:
 
 # Soil moisture effects
 
+The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/SoilMoisture.ipynb>`.
+
 Approaches to modelling the impact of soil moisture conditions on photosynthesis are a
 very open area and a number of different methods are implemented in `pyrealm`. These
 different approaches reflect uncertainty about the most appropriate way to modulate
@@ -58,7 +60,7 @@ The `pyrealm` package includes two separate approaches that affect optimal chi:
 
 * The `sandoval` method ({class}`~pyrealm.pmodel.quantum_yield.QuantumYieldSandoval`)
  implements an experimental calculation that modulates $\phi_0$ as a function of the
- temperature and a local aridity index.
+ temperature and a local {term}`aridity index<AI>`.
 
 ### Post-hoc penalties on gross primary productivity
 
@@ -126,7 +128,7 @@ The factor $\beta(\theta) \in [0,1]$ requires estimates of:
 
 * relative soil moisture ($m_s$, `soilm`), as the fraction of field capacity, and
 * a measure of local mean aridity ($\bar{\alpha}$, `meanalpha`), as the average annual
-  ratio of AET to PET.
+  ratio of {term}`AET` to PET.
 
 ```{admonition} Soil moisture
 The parameters used in the calculation of this factor were estimated using the

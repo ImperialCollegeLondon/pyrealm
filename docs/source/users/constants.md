@@ -23,6 +23,8 @@ language_info:
 
 # Package constants
 
+The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/Constants.ipynb>`.
+
 The models presented in this package rely on a relatively large number of underlying
 constants. In order to keep the argument lists of functions and classes as simple as
 possible, the `pyrealm` package discriminates between two kinds of variables.

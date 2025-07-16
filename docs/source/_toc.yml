@@ -3,7 +3,8 @@ subtrees:
 
 
 - caption: Users
-  entries: 
+  entries:
+  - file: users/getting_started.md  
   - file: users/pmodel/module_overview.md
     subtrees:
       - entries:
@@ -44,10 +45,10 @@ subtrees:
         - file: users/demography/light_capture.md
   - file: users/splash.md
   - file: users/constants.md
-  - file: users/hygro.md 
-  - file: users/versions.md 
+  - file: users/hygro.md
+  - file: users/versions.md
 - caption: API
-  entries: 
+  entries:
   - glob: api/*
 
 - caption: Development
@@ -61,6 +62,8 @@ subtrees:
   - file: development/release_process.md
   - file: development/pyrealm_build_data.md
 
-- caption: Bibliography
+- caption: Reference
   entries:
-  - file: z_bibliography.rst
+  - file: z_bibliography
+  - file: glossary
+
