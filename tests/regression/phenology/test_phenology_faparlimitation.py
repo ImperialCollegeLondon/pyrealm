@@ -190,6 +190,8 @@ def test_faparlimitation_frompmodel_subdaily(
     from pyrealm.phenology.fapar_limitation import FaparLimitation
     from pyrealm.pmodel import AcclimationModel, PModelEnvironment, SubdailyPModel
 
+    # PATM is read in as integer - and this isn't compatible with the SubdailyPModel,
+    # because it does not support np.nan values.
     env = PModelEnvironment(
         tc=subdaily_data["tc"].to_numpy(),
         vpd=subdaily_data["vpd"].to_numpy(),

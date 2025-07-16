@@ -32,10 +32,14 @@ class PhenologyConst(ConstantsClass):
     """
 
     sigma: float = 0.771
-    r"""The :math:`\sigma` parameter is a proportion that captures the opportunity costs
-    to maintaining a canopy of the time taken to deploy a canopy through processes such
-    as budburst and leaf growth at the start of the growing season and nutrient
-    resorption and leaf sensescence at the end of growing season."""
+    r"""The :math:`\sigma` parameter captures the ability of plants to maintain maximum
+    :term:`LAI` throughout the growing season. If a canopy with maximum LAI grows
+    instantaneously and is present until the end of the growing season, then the
+    potential LAI profile forms a square wave (:math:`\sigma = 1`). However real plants
+    require time to deploy a canopy at the start of the growing season, through bud
+    formation, budburst and leaf growth. Time is also needed at the end of the season
+    for processes such as nutrient resorption and leaf sensescence. These processes
+    round off that square wave and this is captured by values of :math:`\sigma < 1`."""
 
     def calculate_f0(self, aridity_index: NDArray[np.floating]) -> NDArray[np.floating]:
         r"""Calculate the :math:`f_0` parameter.
