@@ -79,6 +79,19 @@ class DailyEvapFluxes:
         state when iterating over time.
         """
 
+        # Check input shapes are valid and broadcast along the time axis
+        # This is necessary because of the indexing in estimate_aet
+        # solar.nu is used because it should have the full time length
+        shape = check_input_shapes(pa, tc, self.solar.nu)
+
+        def bcast_time(var: NDArray) -> NDArray:
+            full_shape = (1,) * (len(shape) - len(var.shape)) + var.shape
+            bcast_shape = (len(self.solar.dates), *full_shape[1:])
+            return np.broadcast_to(var, bcast_shape)
+
+        pa = bcast_time(pa)
+        tc = bcast_time(tc)
+
         # Slope of saturation vap press temp curve, Pa/K
         self.sat = calc_saturation_vapour_pressure_slope(tc)
 
