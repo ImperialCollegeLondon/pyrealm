@@ -72,6 +72,9 @@ def test_faparlimitation(site_data, annual_fortnightly_data):
         annual_mean_chi=annual_fortnightly_data["annual_mean_chi_in_GS"].to_numpy(),
         annual_mean_vpd=annual_fortnightly_data["annual_mean_VPD_in_GS"].to_numpy(),
         annual_total_precip=annual_fortnightly_data["annual_precip_molar"].to_numpy(),
+        annual_growing_season_length=annual_fortnightly_data[
+            "N_growing_days"
+        ].to_numpy(),
         aridity_index=site_data["AI_from_cruts"],
     )
 
@@ -80,6 +83,10 @@ def test_faparlimitation(site_data, annual_fortnightly_data):
     )
     assert_allclose(
         annual_fortnightly_data["lai_max"].to_numpy(), faparlim.lai_max, rtol=1e-6
+    )
+
+    assert_allclose(
+        annual_fortnightly_data["m"].to_numpy(), faparlim.lai_to_gpp_ratio_m, rtol=1e-6
     )
 
 
@@ -170,6 +177,9 @@ def test_faparlimitation_frompmodel_fortnightly(
     assert_allclose(
         annual_fortnightly_data["lai_max"].to_numpy(), faparlim.lai_max, rtol=1e-6
     )
+    assert_allclose(
+        annual_fortnightly_data["m"], faparlim.lai_to_gpp_ratio_m, rtol=1e-6
+    )
 
 
 def test_faparlimitation_frompmodel_subdaily(
@@ -180,11 +190,13 @@ def test_faparlimitation_frompmodel_subdaily(
     from pyrealm.phenology.fapar_limitation import FaparLimitation
     from pyrealm.pmodel import AcclimationModel, PModelEnvironment, SubdailyPModel
 
+    # PATM is read in as integer - and this isn't compatible with the SubdailyPModel,
+    # because it does not support np.nan values.
     env = PModelEnvironment(
         tc=subdaily_data["tc"].to_numpy(),
         vpd=subdaily_data["vpd"].to_numpy(),
         co2=subdaily_data["co2"].to_numpy(),
-        patm=subdaily_data["patm"].to_numpy(),
+        patm=subdaily_data["patm"].to_numpy().astype(float),
         fapar=np.ones_like(subdaily_data["tc"]),
         ppfd=subdaily_data["ppfd"].to_numpy(),
     )
@@ -223,3 +235,4 @@ def test_faparlimitation_frompmodel_subdaily(
 
     assert_allclose(annual_subdaily_data["lai_max"], faparlim.lai_max, rtol=1e-6)
     assert_allclose(annual_subdaily_data["fapar_max"], faparlim.fapar_max, rtol=1e-6)
+    assert_allclose(annual_subdaily_data["m"], faparlim.lai_to_gpp_ratio_m, rtol=1e-6)

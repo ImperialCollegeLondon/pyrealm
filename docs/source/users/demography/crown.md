@@ -63,8 +63,8 @@ shape in the Plant-FATE model {cite}`joshi:2022a`.
 
 ## Crown traits
 
-The crown model for a plant functional type (PFT) is driven by four traits within
-the {class}`~pyrealm.demography.flora.PlantFunctionalType` class:
+The crown model for a {term}`plant functional type<PFT>` (PFT) is driven by four traits
+within the {class}`~pyrealm.demography.flora.PlantFunctionalType` class:
 
 * The `m` and `n` ($m, n$) traits set the vertical shape of the crown profile.
 * The `ca_ratio` trait sets the area of the crown ($A_c$) relative to the stem size.
@@ -152,12 +152,12 @@ increased openness of the canopy.  When $f_g = 0$, the projected crown and leaf 
 are identical, but as $f_g \to 1$ the projected leaf area is pushed downwards.
 
 Put another way, a stem has a total leaf surface area defined by the crown area and the
-characteristic leaf area index of the plant functional type. The crown gap fraction
-effectively tunes where vertically in the crown shape of the tree that LAI is deployed:
-when $f_g = 0$ the leaf area is concentrated exactly at the upper surface of the crown
-but, as $f_g \to 1$, more and more of leaf surface is deployed more deeply through the
-broader shape of the tree crown. Crown gaps do not extend all the way to the ground,
-just to other parts of the crown further down in the crown.
+characteristic {term}`leaf area index<LAI>` of the plant functional type. The crown gap
+fraction effectively tunes where vertically in the crown shape of the tree that LAI is
+deployed: when $f_g = 0$ the leaf area is concentrated exactly at the upper surface of
+the crown but, as $f_g \to 1$, more and more of leaf surface is deployed more deeply
+through the broader shape of the tree crown. Crown gaps do not extend all the way to the
+ground, just to other parts of the crown further down in the crown.
 
 The calculation of $\tilde{A}_{cp}(z)$ is defined as:
 

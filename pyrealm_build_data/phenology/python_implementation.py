@@ -362,6 +362,12 @@ Ls_term_1 = np.clip(np.real(Ls_term_1), a_min=0, a_max=None)
 # Find the daily minimum of the lambert term and annual maximum LAI
 Ls_daily = np.minimum(Ls_term_1, subdaily_daily_values["annual_lai_max"].data)
 
+# There are floating point issues here that create some spuriously close to zero values,
+# so round these off - rounding at 5 dp loses no meaningful information
+# >>> Ls_daily[Ls_daily < 1e-5].max()
+# np.float64(5.024869409453459e-13)
+Ls_daily = Ls_daily.round(5)
+
 # Apply lagging
 Ls_daily_lagged = acclim.apply_acclimation(Ls_daily)
 
@@ -382,7 +388,6 @@ subdaily_outputs.to_pandas().to_csv(
 )
 
 # Reduce the daily values to the core values to check.
-
 subdaily_daily_values = subdaily_daily_values.drop_vars(["annual_m", "annual_lai_max"])
 subdaily_daily_values.to_pandas().to_csv(
     "subdaily_example/daily_outputs.csv", float_format="%0.7g"
@@ -515,6 +520,13 @@ fortnightly_annual_values["fapar_max"] = np.minimum(
 fortnightly_annual_values["lai_max"] = -(1 / k) * np.log(
     1 - fortnightly_annual_values["fapar_max"]
 )
+
+# Calculate ratio of steady state LAI to steady state GPP
+fortnightly_annual_values["m"] = (
+    sigma
+    * fortnightly_annual_values["N_growing_days"]
+    * fortnightly_annual_values["lai_max"]
+) / (fortnightly_annual_values["ann_total_A0"] * fortnightly_annual_values["fapar_max"])
 
 # Save data to files
 
