@@ -34,11 +34,11 @@ class PModelEnvironment:
     * the Michaelis Menten coefficient of Rubisco-limited assimilation
       (:math:`K`, using :func:`~pyrealm.pmodel.functions.calc_kmm`).
 
-    The ``PModelEnvironment`` will also accept values for the photosynthetic photon flux
-    density (PPFD, µmol m-2 s-1) and the  fraction of absorbed photosynthetically active
-    radiation (FAPAR, unitless). These values are used to calculate the absorbed
-    incident radiation, which is used to scale light use efficiency up to gross primary
-    productivity.
+    The ``PModelEnvironment`` will also accept values for the :term:`photosynthetic
+    photon flux density<PPFD>` (PPFD, µmol m-2 s-1) and the  fraction of absorbed
+    photosynthetically active radiation (FAPAR, unitless). These values are used to
+    calculate the absorbed incident radiation, which is used to scale light use
+    efficiency up to gross primary productivity.
 
     An instance of ``PModelEnvironment`` can then be used to fit different P Models
     using the same environment but different method implementations. Note that the

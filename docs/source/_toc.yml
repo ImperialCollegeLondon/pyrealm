@@ -62,6 +62,8 @@ subtrees:
   - file: development/release_process.md
   - file: development/pyrealm_build_data.md
 
-- caption: Bibliography
+- caption: Reference
   entries:
-  - file: z_bibliography.rst
+  - file: z_bibliography
+  - file: glossary
+

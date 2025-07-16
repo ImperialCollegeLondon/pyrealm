@@ -51,10 +51,10 @@ The big leaf model provides a simple model of the light absorption by a tree. Th
 variables in determining the light absorption are:
 
 * The tree has a crown area $A_c$.
-* The leaf area index $L$ for the plant functional type is a simple factor that sets the
-  leaf density of the crown, allowing stems with identical crown area to vary in the
-  density of actual leaf surface for light capture. Values of $L$ are always expressed
-  as the area of leaf surface per square meter.
+* The {term}`leaf area index<LAI>` $L$ for the plant functional type is a simple factor
+  that sets the leaf density of the crown, allowing stems with identical crown area to
+  vary in the density of actual leaf surface for light capture. Values of $L$ are always
+  expressed as the area of leaf surface per square meter of canopy area.
 * The extinction coefficient $k$ for a PFT sets how much light is absorbed when passing
   through the leaf surface of that PFT.
 
@@ -66,8 +66,8 @@ f_{abs} = 1 - e^{-kL}
 $$
 
 In the big leaf model of a tree canopy, the entire crown area $A_c$ is exposed to the
-downwelling photosynthetic photon flux density (PPFD) at the top of the canopy and hence
-the absorbed radiation ($I_{abs}$) is:
+downwelling {term}`photosynthetic photon flux density (PPFD)<PPFD>` at the top of the
+canopy and hence the absorbed radiation ($I_{abs}$) is:
 
 $$
 I_{abs} = \textrm{PPFD} \cdot A_c  (1 - e^{-kL})
