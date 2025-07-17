@@ -315,6 +315,8 @@ class FaparLimitation:
 class Phenology:
     """Phenology calculation."""
 
+    __experimental__ = True
+
     def __init__(
         self,
         daily_gpp: NDArray[np.floating],
@@ -323,6 +325,9 @@ class Phenology:
         alpha: float = 1 / 15,
         phenology_const: PhenologyConst = PhenologyConst(),
     ):
+        # Experimental class
+        warn_experimental(self.__class__.__name__)
+
         # Check the array input shapes
         check_input_shapes(daily_gpp, datetimes)
 

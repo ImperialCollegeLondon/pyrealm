@@ -121,7 +121,7 @@ def test_faparlimitation_fortnightly(site_data, annual_fortnightly_data):
         annual_growing_season_length=annual_fortnightly_data[
             "N_growing_days"
         ].to_numpy(),
-        years=annual_fortnightly_data["time"].to_numpy(),
+        years=annual_fortnightly_data["time"].to_numpy().astype("datetime64[Y]"),
         aridity_index=site_data["AI_from_cruts"],
     )
 
@@ -151,7 +151,7 @@ def test_faparlimitation_subdaily(site_data, annual_subdaily_data):
         annual_mean_vpd=annual_subdaily_data["annual_mean_VPD_in_GS"].to_numpy(),
         annual_total_precip=annual_subdaily_data["annual_precip_molar"].to_numpy(),
         annual_growing_season_length=annual_subdaily_data["N_growing_days"].to_numpy(),
-        years=annual_subdaily_data["time"].to_numpy(),
+        years=annual_subdaily_data["time"].to_numpy().astype("datetime64[Y]"),
         aridity_index=site_data["AI_from_cruts"],
     )
 
