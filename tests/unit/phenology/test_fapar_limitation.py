@@ -29,5 +29,6 @@ def test_aridity_index_check(aridity_index, raises):
             annual_mean_chi=np.ones(shape),
             annual_mean_vpd=np.ones(shape),
             annual_total_precip=np.ones(shape),
+            annual_growing_season_length=np.ones(shape),
             aridity_index=aridity_index,
         )

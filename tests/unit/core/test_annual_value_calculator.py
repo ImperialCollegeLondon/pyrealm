@@ -19,7 +19,7 @@ from numpy.typing import NDArray
             None,
             pytest.raises(ValueError),
             "The timings argument must be an AcclimationModel "
-            "or an array of datetime64 values",
+            "or a one-dimensional array of datetime64 values",
             None,
             id="timings_not_acclim_or_datetimes",
         ),

@@ -26,11 +26,6 @@ from utils import (
 
 from pyrealm.core.experimental import ExperimentalFeatureWarning
 
-warnings.filterwarnings("ignore", category=ExperimentalFeatureWarning)
-warnings.filterwarnings("ignore", category=RuntimeWarning)
-warnings.filterwarnings("ignore", category=UserWarning)
-
-
 shape_full: list[tuple[int, ...]]
 shape_full = [(3, 2, 2)]
 shapes_list = [
@@ -56,6 +51,10 @@ def test_array_input_broadcasting(
     the outputs (and all class attributes for class methods). Raises a ValueError if
     incorrect.
     """
+    warnings.filterwarnings("ignore", category=ExperimentalFeatureWarning)
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+    warnings.filterwarnings("ignore", category=UserWarning)
+
     name, method, cls = method_info
 
     # Generate the arguments for the function / method

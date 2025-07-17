@@ -40,11 +40,11 @@ def check_input_shapes(
         (3,)
         >>> check_input_shapes(4, 5)
         (1,)
-        >>> check_input_shapes(np.array([1,2,3]), np.array([1,2,4]))
+        >>> check_input_shapes(np.ones((1,2,3)), np.ones((1,2,4)))
         Traceback (most recent call last):
         ...
         ValueError: Inputs contain arrays of different shapes.
-        >>> check_input_shapes(np.array([1,2,3]), np.array([2,3]))
+        >>> check_input_shapes(np.ones((1,2,3)), np.ones((2,3)))
         Traceback (most recent call last):
         ...
         ValueError: Inputs contain arrays of different dimensions.
