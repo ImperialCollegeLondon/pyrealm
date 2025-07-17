@@ -356,6 +356,8 @@ class Phenology:
         magnitude of the lagging between realised LAI and the steady state values."""
         self.phenology_const = phenology_const
         """The phenology constants used in the model."""
+        self.fapar_limitation = fapar_limitation
+        """The annual maximum fAPAR and LAI data used in the model."""
 
         # Calculate the index of each observation in the FaparLimitation years.
         # This uses a shortcut to avoid looking up using np.where or np.searchsorted:
