@@ -61,35 +61,6 @@ def annual_subdaily_data():
     return pd.read_csv(datafile)
 
 
-def test_faparlimitation(site_data, annual_fortnightly_data):
-    """Regression test for FaparLimitation constructor."""
-
-    from pyrealm.phenology.fapar_limitation import FaparLimitation
-
-    faparlim = FaparLimitation(
-        annual_total_potential_gpp=annual_fortnightly_data["ann_total_A0"].to_numpy(),
-        annual_mean_ca=annual_fortnightly_data["annual_mean_ca_in_GS"].to_numpy(),
-        annual_mean_chi=annual_fortnightly_data["annual_mean_chi_in_GS"].to_numpy(),
-        annual_mean_vpd=annual_fortnightly_data["annual_mean_VPD_in_GS"].to_numpy(),
-        annual_total_precip=annual_fortnightly_data["annual_precip_molar"].to_numpy(),
-        annual_growing_season_length=annual_fortnightly_data[
-            "N_growing_days"
-        ].to_numpy(),
-        aridity_index=site_data["AI_from_cruts"],
-    )
-
-    assert_allclose(
-        annual_fortnightly_data["fapar_max"].to_numpy(), faparlim.fapar_max, rtol=1e-6
-    )
-    assert_allclose(
-        annual_fortnightly_data["lai_max"].to_numpy(), faparlim.lai_max, rtol=1e-6
-    )
-
-    assert_allclose(
-        annual_fortnightly_data["m"].to_numpy(), faparlim.lai_to_gpp_ratio_m, rtol=1e-6
-    )
-
-
 @pytest.fixture()
 def fortnightly_data():
     """Load the input data for the from_pmodel class function from netcdf file."""
@@ -134,6 +105,66 @@ def daily_data():
     daily_data = pd.read_csv(datafile)
 
     return daily_data
+
+
+def test_faparlimitation_fortnightly(site_data, annual_fortnightly_data):
+    """Regression test for FaparLimitation constructor."""
+
+    from pyrealm.phenology.fapar_limitation import FaparLimitation
+
+    faparlim = FaparLimitation(
+        annual_total_potential_gpp=annual_fortnightly_data["ann_total_A0"].to_numpy(),
+        annual_mean_ca=annual_fortnightly_data["annual_mean_ca_in_GS"].to_numpy(),
+        annual_mean_chi=annual_fortnightly_data["annual_mean_chi_in_GS"].to_numpy(),
+        annual_mean_vpd=annual_fortnightly_data["annual_mean_VPD_in_GS"].to_numpy(),
+        annual_total_precip=annual_fortnightly_data["annual_precip_molar"].to_numpy(),
+        annual_growing_season_length=annual_fortnightly_data[
+            "N_growing_days"
+        ].to_numpy(),
+        years=annual_fortnightly_data["time"].to_numpy(),
+        aridity_index=site_data["AI_from_cruts"],
+    )
+
+    assert_allclose(
+        annual_fortnightly_data["fapar_max"].to_numpy(), faparlim.fapar_max, rtol=1e-6
+    )
+    assert_allclose(
+        annual_fortnightly_data["lai_max"].to_numpy(), faparlim.lai_max, rtol=1e-6
+    )
+
+    assert_allclose(
+        annual_fortnightly_data["m"].to_numpy(), faparlim.lai_to_gpp_ratio_m, rtol=1e-6
+    )
+
+
+def test_faparlimitation_subdaily(site_data, annual_subdaily_data):
+    """Regression test for FaparLimitation constructor using subdaily inputs."""
+
+    from pyrealm.phenology.fapar_limitation import FaparLimitation
+
+    faparlim = FaparLimitation(
+        annual_total_potential_gpp=annual_subdaily_data[
+            "ann_total_A0_subdaily_smstress"
+        ].to_numpy(),
+        annual_mean_ca=annual_subdaily_data["annual_mean_ca_in_GS"].to_numpy(),
+        annual_mean_chi=annual_subdaily_data["annual_mean_chi_in_GS"].to_numpy(),
+        annual_mean_vpd=annual_subdaily_data["annual_mean_VPD_in_GS"].to_numpy(),
+        annual_total_precip=annual_subdaily_data["annual_precip_molar"].to_numpy(),
+        annual_growing_season_length=annual_subdaily_data["N_growing_days"].to_numpy(),
+        years=annual_subdaily_data["time"].to_numpy(),
+        aridity_index=site_data["AI_from_cruts"],
+    )
+
+    assert_allclose(
+        annual_subdaily_data["fapar_max"].to_numpy(), faparlim.fapar_max, rtol=1e-6
+    )
+    assert_allclose(
+        annual_subdaily_data["lai_max"].to_numpy(), faparlim.lai_max, rtol=1e-6
+    )
+
+    assert_allclose(
+        annual_subdaily_data["m"].to_numpy(), faparlim.lai_to_gpp_ratio_m, rtol=1e-6
+    )
 
 
 def test_faparlimitation_frompmodel_fortnightly(
@@ -236,3 +267,35 @@ def test_faparlimitation_frompmodel_subdaily(
     assert_allclose(annual_subdaily_data["lai_max"], faparlim.lai_max, rtol=1e-6)
     assert_allclose(annual_subdaily_data["fapar_max"], faparlim.fapar_max, rtol=1e-6)
     assert_allclose(annual_subdaily_data["m"], faparlim.lai_to_gpp_ratio_m, rtol=1e-6)
+
+
+def test_phenology_subdaily(site_data, annual_subdaily_data, daily_data):
+    """Regression test of the Phenology class on subdaily data."""
+    from pyrealm.phenology.fapar_limitation import FaparLimitation, Phenology
+
+    # Create fapar limitation - this is tested separately
+    faparlim = FaparLimitation(
+        annual_total_potential_gpp=annual_subdaily_data[
+            "ann_total_A0_subdaily_smstress"
+        ].to_numpy(),
+        annual_mean_ca=annual_subdaily_data["annual_mean_ca_in_GS"].to_numpy(),
+        annual_mean_chi=annual_subdaily_data["annual_mean_chi_in_GS"].to_numpy(),
+        annual_mean_vpd=annual_subdaily_data["annual_mean_VPD_in_GS"].to_numpy(),
+        annual_total_precip=annual_subdaily_data["annual_precip_molar"].to_numpy(),
+        annual_growing_season_length=annual_subdaily_data["N_growing_days"].to_numpy(),
+        years=annual_subdaily_data["time"]
+        .to_numpy()
+        .astype("str")
+        .astype("datetime64[Y]"),
+        aridity_index=site_data["AI_from_cruts"],
+    )
+
+    pheno = Phenology(
+        daily_gpp=daily_data["daily_A0"].to_numpy(),
+        datetimes=daily_data["time"].to_numpy(),
+        fapar_limitation=faparlim,
+    )
+
+    # Check the LAI time series to tolerance of data in file.
+    assert_allclose(pheno.steady_state_LAI, daily_data["Ls_daily"], atol=1e-5)
+    assert_allclose(pheno.realised_LAI, daily_data["Ls_daily_lagged"], atol=1e-5)

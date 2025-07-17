@@ -1,13 +1,15 @@
 """Class to compute the fAPAR_max and annual peak Leaf Area Index (LAI)."""
 
+from __future__ import annotations
+
 import numpy as np
 from numpy.typing import NDArray
-from typing_extensions import Self
+from scipy.special import lambertw  # type: ignore[import-untyped]
 
 from pyrealm.constants import PhenologyConst
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.time_series import AnnualValueCalculator
-from pyrealm.core.utilities import check_input_shapes
+from pyrealm.core.utilities import check_input_shapes, exponential_moving_average
 from pyrealm.pmodel.pmodel import PModel, PModelABC, SubdailyPModel
 
 
@@ -78,19 +80,6 @@ class FaparLimitation:
 
     __experimental__ = True
 
-    def _check_shapes(self) -> None:
-        """Internal class to check all the input arrays have the same size."""
-
-        check_input_shapes(
-            self.annual_total_potential_gpp,
-            self.annual_mean_ca,
-            self.annual_mean_chi,
-            self.annual_mean_vpd,
-            self.annual_total_precip,
-            self.aridity_index,
-            self.annual_growing_season_length,
-        )
-
     def __init__(
         self,
         annual_total_potential_gpp: NDArray[np.float64],
@@ -99,12 +88,32 @@ class FaparLimitation:
         annual_mean_vpd: NDArray[np.float64],
         annual_total_precip: NDArray[np.float64],
         annual_growing_season_length: NDArray[np.float64],
+        years: NDArray[np.datetime64],
         aridity_index: NDArray[np.float64],
         phenology_const: PhenologyConst = PhenologyConst(),
     ) -> None:
         # Experimental class
         warn_experimental("FaparLimitation")
 
+        # Validate the input shapes.
+        check_input_shapes(
+            annual_total_potential_gpp,
+            annual_mean_ca,
+            annual_mean_chi,
+            annual_mean_vpd,
+            annual_total_precip,
+            aridity_index,
+            annual_growing_season_length,
+            years,
+        )
+
+        # Check the years values - must be datetime64[Y].
+        # TODO - this is a bit stringent, but is more robust
+        if not years.dtype == "<M8[Y]":
+            raise ValueError("The years argument must provide np.datetime64[Y] values")
+
+        self.years = years
+        r"""The year of each observation."""
         self.annual_total_potential_gpp = annual_total_potential_gpp
         r"""The annual sum of potential GPP 
         (:math:`A_0, \text{mol C m}^{-2} \text{year}^{-1}`)"""
@@ -123,8 +132,6 @@ class FaparLimitation:
         r"""Annual growing season length (:math:`G`, days)"""
         self.aridity_index = aridity_index
         r"""Climatological estimate of local aridity index (AI, unitless)"""
-
-        self._check_shapes()
 
         # Make sure the aridity index is not zero
         if aridity_index <= 0:
@@ -182,7 +189,7 @@ class FaparLimitation:
         datetimes: NDArray[np.datetime64] | None = None,
         gpp_penalty_factor: NDArray[np.float64] | None = None,
         phenology_const: PhenologyConst = PhenologyConst(),
-    ) -> Self:
+    ) -> FaparLimitation:
         r"""Create a FaparLimitation instance from a P Model and other inputs.
 
         The annual summary values of :math:`A_0, c_a, \chi` and :math:`D` used by the
@@ -299,6 +306,93 @@ class FaparLimitation:
             annual_mean_vpd=annual_mean_vpd,
             annual_total_precip=annual_total_precip,
             annual_growing_season_length=avc.year_n_growing_days,
+            years=avc.years,
             aridity_index=aridity_index,
             phenology_const=phenology_const,
         )
+
+
+class Phenology:
+    """Phenology calculation."""
+
+    def __init__(
+        self,
+        daily_gpp: NDArray[np.floating],
+        datetimes: NDArray[np.datetime64],
+        fapar_limitation: FaparLimitation,
+        alpha: float = 1 / 15,
+        phenology_const: PhenologyConst = PhenologyConst(),
+    ):
+        # Check the array input shapes
+        check_input_shapes(daily_gpp, datetimes)
+
+        # Check the datetimes provide ordered daily resolution observations - don't
+        # insist on daily precision but check that second level representations of the
+        # days is consistent with daily observations and strictly increases.
+        datetimes = datetimes.astype("datetime64[s]")
+        datetime_spacing = np.diff(datetimes)
+
+        if not np.all(np.equal(datetime_spacing, 86400)):
+            raise ValueError(
+                "The datetimes argument must provide timestamps of a "
+                "complete increasing daily time series"
+            )
+
+        # Get the years of observations and check they are all represnted in the
+        # FaparLimitation object
+        datetimes_year = datetimes.astype("datetime64[Y]")
+        observation_years = np.unique(datetimes_year)
+
+        missing_years = set(observation_years).difference(fapar_limitation.years)
+        if missing_years:
+            raise ValueError(
+                f"The observation datetimes include years that are not included in the "
+                f"fapar_limitation data: {', '.join([str(y) for y in missing_years])}"
+            )
+
+        # Store values
+        self.alpha = alpha
+        """The alpha value used with the exponential weighted average to set the
+        magnitude of the lagging between realised LAI and the steady state values."""
+        self.phenology_const = phenology_const
+        """The phenology constants used in the model."""
+
+        # Calculate the index of each observation in the FaparLimitation years.
+        # This uses a shortcut to avoid looking up using np.where or np.searchsorted:
+        # * The FaparLimitation.years are a sequence of values: N, N+1, N+2, ..., N+M
+        # * The datetime_years are now validated to lie in N, ..., N+M
+        # * If we take the first year in FaparLimitation.years as an integer then that
+        #   provides an offset from zero for the indexing of the year sequence, and we
+        #   can subtract that from the observation years to get the index of each
+        #   observation.
+        year_index = datetimes_year.astype("int") - fapar_limitation.years[0].astype(
+            "int"
+        )
+
+        # Calculate daily mu value as m * daily molar assimilation:
+        mu = fapar_limitation.lai_to_gpp_ratio_m[year_index] * daily_gpp
+
+        # Calculate the Lambert W0 value
+        daily_LAI = mu + (1 / self.phenology_const.k) * lambertw(
+            -self.phenology_const.k * mu * np.exp(-self.phenology_const.k * mu), k=0
+        )
+
+        # Check that all imaginary parts are zero or np.nan
+        if not np.all(np.logical_or(np.imag(daily_LAI) == 0, np.isnan(daily_LAI))):
+            raise ValueError("Imaginary parts of Lambert W calculation are not zero")
+
+        # Clip the real parts at zero
+        daily_LAI = np.clip(np.real(daily_LAI), a_min=0, a_max=None)
+
+        # Find the daily minimum of the lambert term and annual maximum LAI as the
+        # steady state LAI
+        self.steady_state_LAI = np.minimum(
+            daily_LAI, fapar_limitation.lai_max[year_index]
+        )
+        """The steady state leaf area index for each day."""
+        # Calculate the lagged value
+        self.realised_LAI = exponential_moving_average(
+            self.steady_state_LAI, alpha=alpha
+        )
+        """The realised leaf area index for each day given the modelled lag in responses
+        to changing assimilation."""

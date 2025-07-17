@@ -87,9 +87,9 @@ class AnnualValueCalculator:
         """The covered years as np.datetime64 at year precision."""
         self.year_total_seconds: NDArray[np.int_]
         """The total number of seconds for each year in the time series."""
-        self.year_n_days: NDArray[np.floating]
+        self.year_n_days: NDArray[np.float64]
         """The total number of days in each year in the time series."""
-        self.year_n_growing_days: NDArray[np.floating]
+        self.year_n_growing_days: NDArray[np.float64]
         """The total number of growing days for each year in the time series. If the
         growing_season input varies within days, these values can contain non-integer
         values."""
@@ -275,7 +275,7 @@ class AnnualValueCalculator:
         self,
         values: NDArray[np.float64],
         within_growing_season: bool = False,
-    ) -> NDArray[np.floating]:
+    ) -> NDArray[np.float64]:
         """Get annual means from an array of values.
 
         Average values are calculated weighted by the __duration__ of each observation,
@@ -330,7 +330,7 @@ class AnnualValueCalculator:
         self,
         values: NDArray[np.float64],
         within_growing_season: bool = False,
-    ) -> NDArray[np.floating]:
+    ) -> NDArray[np.float64]:
         """Get annual totals from an array of values.
 
         The contribution of each observation to the total is weighted by the
