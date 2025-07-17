@@ -42,6 +42,7 @@ shapes_list = [
 method_list = get_method_list()
 
 
+@pytest.mark.broadcasting
 @pytest.mark.parametrize("shapes", shapes_list)
 @pytest.mark.parametrize("method_info", method_list, ids=[m[0] for m in method_list])
 def test_array_input_broadcasting(
