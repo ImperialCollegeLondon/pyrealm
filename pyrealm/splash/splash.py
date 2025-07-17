@@ -85,8 +85,8 @@ class SplashModel:
         # Broadcast all the inputs over time to simplify the daily indexing if any
         # inputs are constant over time
         def bcast_time(var: NDArray) -> NDArray:
-            shape = (1,) * (len(self.shape) - len(var.shape)) + var.shape
-            bcast_shape = (len(dates), *shape[1:])
+            full_shape = (1,) * (len(self.shape) - len(var.shape)) + var.shape
+            bcast_shape = (self.shape[0], *full_shape[1:])
             return np.broadcast_to(var, bcast_shape)
 
         elv = bcast_time(elv)
@@ -283,10 +283,10 @@ class SplashModel:
         # Check day_idx inputs to map either the single time index given in day_idx or
         # the whole dataset.
         if day_idx is None:
-            check_input_shapes(previous_wn, self.pn)
+            check_input_shapes(previous_wn, shape=self.shape)
             didx: int | slice = slice(self.shape[0])
         else:
-            check_input_shapes(previous_wn, self.pn[day_idx])
+            check_input_shapes(previous_wn, shape=self.shape[1:])
             didx = day_idx
 
         # Calculate the expected aet_d given the previous wn
@@ -327,7 +327,7 @@ class SplashModel:
             A tuple of numpy arrays containing predicted AET, soil moisture and runoff.
         """
 
-        # TODO - check input shapes
+        check_input_shapes(wn_init, shape=self.shape[1:])
 
         # Create storage for outputs
         aet_out = np.full_like(self.tc, np.nan)

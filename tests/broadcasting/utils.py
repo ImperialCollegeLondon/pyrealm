@@ -86,6 +86,8 @@ ignore_outputs = [
     "QuantumYieldFixed:shape",
     "JmaxLimitationWang17:_shape",
     "SplashModel:shape",
+    "DailySolarFluxes:shape",
+    "DailyEvapFluxes:shape",
 ]
 
 
@@ -135,7 +137,7 @@ def defined_method_args(argument: str, ctx: "Context") -> Any | None:
             "coef": {"ha": 1, "hd": 1, "entropy_intercept": 1, "entropy_slope": 1}
         },
         "SplashModel.estimate_daily_water_balance": {
-            "previous_wn": np.full(shape[1:], splashDatesLen),
+            "previous_wn": np.full((splashDatesLen, *shape[1:]), 10),
         },
         "SplashModel.calculate_soil_moisture": {"wn_init": np.full(shape[1:], 10)},
         "PModelEnvironment": {"patm": np.full(shape, 100000)},

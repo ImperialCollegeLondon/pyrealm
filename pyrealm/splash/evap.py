@@ -79,14 +79,13 @@ class DailyEvapFluxes:
         state when iterating over time.
         """
 
-        # Check input shapes are valid and broadcast along the time axis
-        # This is necessary because of the indexing in estimate_aet
-        # solar.nu is used because it should have the full time length
-        shape = check_input_shapes(pa, tc, self.solar.nu)
+        self.shape: tuple = check_input_shapes(pa, tc, shape=self.solar.shape)
+        """The array shape of the input variables"""
 
+        # Broadcast along the time axis (necessary for the indexing in estimate_aet)
         def bcast_time(var: NDArray) -> NDArray:
-            full_shape = (1,) * (len(shape) - len(var.shape)) + var.shape
-            bcast_shape = (len(self.solar.dates), *full_shape[1:])
+            full_shape = (1,) * (len(self.shape) - len(var.shape)) + var.shape
+            bcast_shape = (self.shape[0], *full_shape[1:])
             return np.broadcast_to(var, bcast_shape)
 
         pa = bcast_time(pa)
@@ -148,10 +147,10 @@ class DailyEvapFluxes:
         # subset the calculations to particular request days or use the entire array of
         # soil moisture. The slice here is used to programatically select `array[:]`.
         if day_idx is None:
-            check_input_shapes(wn, self.sat)
-            didx: int | slice = slice(self.sat.shape[0])
+            check_input_shapes(wn, shape=self.shape)
+            didx: int | slice = slice(self.shape[0])
         else:
-            check_input_shapes(wn, self.sat[day_idx])
+            check_input_shapes(wn, shape=self.shape[1:])
             didx = day_idx
 
         # Calculate evaporative supply rate (sw), mm/h
