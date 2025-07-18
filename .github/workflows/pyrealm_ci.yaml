@@ -45,6 +45,8 @@ jobs:
 
     - name: Run tests
       run: poetry run pytest -m "not profiling and not broadcasting" --cov-report xml
+
+    - name: Run broadcasting tests
       run: poetry run pytest -m "broadcasting"
 
     - name: Upload coverage reports to Codecov
