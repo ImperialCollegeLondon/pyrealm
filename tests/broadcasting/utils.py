@@ -98,19 +98,14 @@ def defined_method_args(argument: str, ctx: "Context") -> Any | None:
     This is done by defining an `arguments` dictionary for the function and then
     returning the value (if any) of the specific `argument`.
 
-    Parameters
-    ----------
-    argument : str
-        The name of the input argument to define.
-    ctx : Context
-        The context containing the name of the function (`ctx.name`) and the parent
-        classes / class method being tested (`ctx.parents`).
+    Args:
+        argument (str): The name of the input argument to define.
+        ctx (Context): The context containing the name of the function (`ctx.name`) and
+        the parent classes / class method being tested (`ctx.parents`).
 
     Returns:
-    -------
-    Any | None
-        The manually defined value for the argument, or `None` if it can be set by the
-        defaults.
+        Any | None: The manually defined value for the argument, or `None` if it can be
+        set by the defaults.
     """
     shape = ctx.shape()
 
@@ -280,8 +275,9 @@ def _get_module_callables(
 ) -> Iterator[tuple[str, Callable, type | None]]:
     """Get the callables contained within a module.
 
-    Returns an iterable including the function/method name, callable, and (if a method)
-    class.
+    Returns:
+        An iterable including the function/method name, callable, and (if a method)
+        class.
     """
     for name, obj in inspect.getmembers(module):
         if getattr(obj, "__module__", None) != module.__name__:
@@ -307,8 +303,6 @@ def get_method_list() -> list[tuple[str, Callable, type | None]]:
     """Get a list of callables that take array inputs in the Pyrelam package.
 
     Returns:
-    --------
-    list[tuple[str, Callable, type | None]
         A list of callables, each containing the name ([function] or [class].[method]),
         the callable object, and the type of the class (for class instance methods).
     """
@@ -489,7 +483,15 @@ def _initialise_type_default(typ: Any, ctx: Context) -> Any:
 def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
     """Generate the arguments needed for a function.
 
-    Requires type hinting. Numpy arrays are defined using the shapes argument.
+    Requires type hinting. Numpy arrays are defined using the shapes information in the
+    Context.
+
+    Args:
+        method (Callable): The function or method to generate arguments for.
+        ctx (Context): The context for shape and parent information.
+
+    Returns:
+        dict[str, Any]: The generated arguments for the function/method.
     """
     from typing import get_type_hints
 
@@ -533,7 +535,15 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
 
 
 def initialise_class(cls: type, ctx: Context) -> Any:
-    """Initialise class input arguments and then the class."""
+    """Initialise class input arguments and then the class.
+
+    Args:
+        cls (type): The class to initialise.
+        ctx (Context): The context for shape and parent information.
+
+    Returns:
+        Any: The initialised class instance.
+    """
     name = cls.__name__
     ctx_class = ctx.new(name)
     args = generate_args(cls.__init__, ctx_class)  # type: ignore[misc]
