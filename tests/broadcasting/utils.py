@@ -349,6 +349,11 @@ def _is_array_type(typ: Any) -> bool:
         return False
 
 
+# Resolve issue with get_type_hints failing for InitVars in py3.10
+# Define a stub to make InitVar callable (https://stackoverflow.com/questions/70400639)
+InitVar.__call__ = lambda *args: None  # type: ignore[method-assign]
+
+
 def _has_array_input(method: Callable) -> bool:
     """Returns True if any of the method arguments are a numpy array."""
     from typing import get_type_hints
