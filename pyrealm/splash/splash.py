@@ -12,6 +12,7 @@ from pyrealm.constants import CoreConst
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.calendar import Calendar
 from pyrealm.core.pressure import calc_patm
+from pyrealm.core.time_series import broadcast_time
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.splash.evap import DailyEvapFluxes
 from pyrealm.splash.solar import DailySolarFluxes
@@ -84,16 +85,11 @@ class SplashModel:
 
         # Broadcast all the inputs over time to simplify the daily indexing if any
         # inputs are constant over time
-        def bcast_time(var: NDArray) -> NDArray:
-            full_shape = (1,) * (len(self.shape) - len(var.shape)) + var.shape
-            bcast_shape = (self.shape[0], *full_shape[1:])
-            return np.broadcast_to(var, bcast_shape)
-
-        elv = bcast_time(elv)
-        lat = bcast_time(lat)
-        sf = bcast_time(sf)
-        tc = bcast_time(tc)
-        pn = bcast_time(pn)
+        elv = broadcast_time(elv, self.shape)
+        lat = broadcast_time(lat, self.shape)
+        sf = broadcast_time(sf, self.shape)
+        tc = broadcast_time(tc, self.shape)
+        pn = broadcast_time(pn, self.shape)
 
         self.elv: NDArray[np.float64] = elv
         """The elevation of sites."""

@@ -1,6 +1,7 @@
 """This module provides general tools for working with time series data. It currently
 provides the :class:`AnnualValueCalculator`, which is used to calculate annual means and
-totals of time series data.
+totals of time series data, and :func:`broadcast_time`, which is used to broadcast
+arrays over the time axis.
 """  # noqa : D205
 
 from itertools import pairwise
@@ -411,3 +412,32 @@ class AnnualValueCalculator:
                 for vals, wghts in zip(values_by_year, weights)
             ]
         )
+
+
+def broadcast_time(values: NDArray, shape: tuple[int, ...]) -> NDArray:
+    """Broadcast an array along the time (zeroth) axis.
+
+    The ``values`` array must be broadcastable to the full shape, however it does not
+    need the full set of dimensions as defined by ``shape``. The returned array will
+    have the full set of dimensions, and be broadcast along just the zeroth axis.
+
+    Example:
+        >>> broadcast_time(np.ones((1,3)), (2,3))
+        array([[1., 1., 1.],
+               [1., 1., 1.]])
+        >>> broadcast_time(np.ones(3), (2,2,3)).shape
+        (2, 1, 3)
+
+    Args:
+        values: The array to broadcast.
+        shape: The full n-dimensional shape, where the first value is the length of the
+            time axis to broadcast over.
+    """
+    if values.ndim > len(shape):
+        raise ValueError("The input array has more dimensions than the broadcast shape")
+    # Get any missing axes
+    full_shape = (1,) * (len(shape) - len(values.shape)) + values.shape
+    # Define the shape to broadcast to
+    bcast_shape = (shape[0], *full_shape[1:])
+    # Return the broadcasted array
+    return np.broadcast_to(values, bcast_shape)

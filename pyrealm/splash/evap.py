@@ -13,6 +13,7 @@ from pyrealm.core.hygro import (
     calc_psychrometric_constant,
     calc_saturation_vapour_pressure_slope,
 )
+from pyrealm.core.time_series import broadcast_time
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.core.water import calc_density_h2o
 from pyrealm.splash.solar import DailySolarFluxes
@@ -83,13 +84,8 @@ class DailyEvapFluxes:
         """The array shape of the input variables"""
 
         # Broadcast along the time axis (necessary for the indexing in estimate_aet)
-        def bcast_time(var: NDArray) -> NDArray:
-            full_shape = (1,) * (len(self.shape) - len(var.shape)) + var.shape
-            bcast_shape = (self.shape[0], *full_shape[1:])
-            return np.broadcast_to(var, bcast_shape)
-
-        pa = bcast_time(pa)
-        tc = bcast_time(tc)
+        pa = broadcast_time(pa, self.shape)
+        tc = broadcast_time(tc, self.shape)
 
         # Slope of saturation vap press temp curve, Pa/K
         self.sat = calc_saturation_vapour_pressure_slope(tc)
