@@ -4,10 +4,10 @@ This ensures that the outputs/attributes of any functions/methods are unchanged 
 broadcastable array inputs are used in place of the full size arrays.
 
 To resolve failing tests there are a few options to use in utils.py:
-    - `skip_methods`: For irrelevant methods (e.g. 1D inputs only).
-    - `ignore_outputs`: To ignore comparing specific outputs or class attributes.
+    - `SKIP_METHODS`: For irrelevant methods (e.g. 1D inputs only).
+    - `IGNORE_OUTPUTS`: To ignore comparing specific outputs or class attributes.
     - `defined_method_args`: To manually define specific arguments for methods.
-    - `additional_init_methods`: For classes needing to call additional methods.
+    - `ADDITIONAL_INIT_METHODS`: For classes needing to call additional methods.
 """
 
 import warnings
@@ -26,20 +26,20 @@ from utils import (
 
 from pyrealm.core.experimental import ExperimentalFeatureWarning
 
-shape_full: list[tuple[int, ...]]
-shape_full = [(3, 2, 2)]
-shapes_list = [
+SHAPE_FULL: list[tuple[int, ...]]
+SHAPE_FULL = [(3, 2, 2)]
+SHAPES_LIST = [
     [(3, 2, 2), (1, 2, 2), (3, 1, 1), (1, 1, 1)],
     [(1, 2, 2), (3, 2, 2)],
     [(3, 1, 1), (1, 2, 2), (3, 2, 2)],
     [(1, 1, 1)],
 ]
-method_list = get_method_list()
+METHOD_LIST = get_method_list()
 
 
 @pytest.mark.broadcasting
-@pytest.mark.parametrize("shapes", shapes_list)
-@pytest.mark.parametrize("method_info", method_list, ids=[m[0] for m in method_list])
+@pytest.mark.parametrize("shapes", SHAPES_LIST)
+@pytest.mark.parametrize("method_info", METHOD_LIST, ids=[m[0] for m in METHOD_LIST])
 def test_array_input_broadcasting(
     method_info: tuple[str, Callable, type | None],
     shapes: list[tuple[int, ...]],
@@ -59,7 +59,7 @@ def test_array_input_broadcasting(
 
     # Generate the arguments for the function / method
     ctx = Context(name, shapes)
-    ctx_full = Context(name, shape_full)
+    ctx_full = Context(name, SHAPE_FULL)
     args = generate_args(method, ctx)
     args_full = generate_args(method, ctx_full)
 
@@ -86,9 +86,3 @@ def test_array_input_broadcasting(
     if not is_equal(result, result_full):
         result_comparison = comparison_string(result, result_full)
         raise ValueError(f"Results do not match in {name} ({result_comparison})")
-
-
-if __name__ == "__main__":
-    for method_info in method_list:
-        for shapes in shapes_list:
-            test_array_input_broadcasting(method_info, shapes)

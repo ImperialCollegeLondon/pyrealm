@@ -1,4 +1,37 @@
-"""Contains utility functions used in test_broadcasting.py."""
+"""Contains utility functions used in test_broadcasting.py.
+
+The structure of the test is:
+- Iterate through the methods / functions of the library.
+- Generate input arguments according to their type hint, with the shape of array
+  arguments defined. This may be called recursively for some types.
+- Check if the function is a class method, if so instantiate the class using the
+  same approach.
+- Call the function once with broadcastable array shapes and once with the fully
+  broadcast inputs. And check the result is the same (but not necessarily the shape).
+- For class methods also check the class attributes are equivalent.
+
+The functions / objects in this file are broadly split into five sections. With the main
+functions listed below:
+1. To manually define function arguments / which functions to ignore, etc in order to
+   fix errors.
+   - `SKIP_METHODS`
+   - `IGNORE_OUTPUTS`
+   - `ADDITIONAL_INIT_METHODS`
+   - `defined_method_args`
+2. To get the list of functions / methods in the library.
+   - `get_method_list`
+3. To get the argument datatypes from the annotations. These are used in section 4.
+4. To initialise function arguments and classes.
+   - `generate_args`
+   - `initialise_class`
+   - `Context` - To keep track of the array shapes and when checking values in section 1
+5. To compare the function outputs / class attributes.
+   - `is_equal`
+   - `compare_instances`
+
+The functions that are not used in `test_broadcasting` and are only used within this
+file are marked private.
+"""
 
 import dataclasses
 import inspect
@@ -21,7 +54,7 @@ from pyrealm.demography.flora import (
 ## Lists / functions to manually define arguments, methods or outputs to ignore, etc.
 
 # These methods are not relevant or are incompatible without additional work
-skip_methods = [
+SKIP_METHODS = [
     "evaluate_horner_polynomial",  # Coefficients are 1D
     # PModel
     "AcclimationModel.set_include",
@@ -71,7 +104,7 @@ skip_methods = [
 
 # Ignore these outputs, they are not expected to be equal.
 # Formats: [fn name] for function results, [class]:[attr] for class attributes
-ignore_outputs = [
+IGNORE_OUTPUTS = [
     "Cohorts:_cohort_id",
     "Calendar:n_dates",
     "C3C4Competition:shape",
@@ -239,7 +272,7 @@ def defined_method_args(argument: str, ctx: "Context") -> Any | None:
 
 
 # Call additional methods when initialising these classes
-additional_init_methods = {
+ADDITIONAL_INIT_METHODS = {
     "AcclimationModel": "set_nearest",
 }
 
@@ -310,7 +343,7 @@ def get_method_list() -> list[tuple[str, Callable, type | None]]:
     method_list = []
     for mod in _get_package_modules(pyrealm):
         for name, method, cls in _get_module_callables(mod):
-            if _has_array_input(method) and name not in skip_methods:
+            if _has_array_input(method) and name not in SKIP_METHODS:
                 method_list.append((name, method, cls))
     return method_list
 
@@ -400,8 +433,8 @@ def _extract_numpy_dtype(typ: Any) -> npt.DTypeLike:
 class Context:
     """Context class to pass between functions.
 
-    Used to initialise of arguments that depend on array shapes and the heirarchical
-    function/argument class structure.
+    Used to initialise arguments that depend on array shapes or for manual overrides
+    that rely upon the heirarchy of function/argument definitions.
 
     Attributes:
         name (str): Name of the current method/function/class.
@@ -555,8 +588,8 @@ def initialise_class(cls: type, ctx: Context) -> Any:
     args = generate_args(cls.__init__, ctx_class)  # type: ignore[misc]
     instance = cls(**args)
     # If there are any additional methods required for initialisation call these
-    if name in additional_init_methods:
-        mname = additional_init_methods[name]
+    if name in ADDITIONAL_INIT_METHODS:
+        mname = ADDITIONAL_INIT_METHODS[name]
         method = getattr(instance, mname)
         args = generate_args(method, ctx_class.new(name + "." + mname))
         method(**args)
@@ -607,7 +640,7 @@ def compare_instances(instance1: Any, instance2: Any):
     dict2 = instance2.__dict__
     class_name = instance1.__class__.__name__
     for key in dict1:
-        if f"{class_name}:{key}" in ignore_outputs:
+        if f"{class_name}:{key}" in IGNORE_OUTPUTS:
             continue
         if not is_equal(dict1[key], dict2[key]):
             attr_comparison = comparison_string(dict1[key], dict2[key])
