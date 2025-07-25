@@ -33,7 +33,7 @@ class AnnualValueCalculator:
     the ``year_completeness`` attribute records what fraction of a year has been sampled
     to give a particular value.
 
-    .. Note:
+    .. Note::
 
         The class handles a wide range of different possible sampling frequencies and
         calculates weights for observations using the duration of observations with
@@ -289,6 +289,10 @@ class AnnualValueCalculator:
         the observations marked as the growing season are set to zero. The calculation
         handles missing values.
 
+        The annual means can be computed for a range of different sites by using n-D
+        array for ``values``. In this case time is assumed along axis 0 and so an n-D
+        array will be returned with annual values along axis 0.
+
         Example:
             >>> # Three years of monthly data
             >>> datetimes = np.arange(
@@ -330,6 +334,7 @@ class AnnualValueCalculator:
         # Calculate the weighted mean in a np.nan friendly way: the product of np.nan
         # and a weight is np.nan and the isnan term omits the weights of nan
         # observations from the weighted average.
+        # The mean is computed along just the time (0) axis.
         return np.array(
             [
                 np.nansum(vals * wghts, axis=0)
@@ -351,6 +356,10 @@ class AnnualValueCalculator:
         ``True``, the weights for observations not identified as growing season values
         are set to zero. The method handles missing data (`np.nan`) but obviously the
         resulting annual total will be reduced.
+
+        The annual totals can be computed for a range of different sites by using an n-D
+        array for ``values``. In this case time is assumed along axis 0 and so an n-D
+        array will be returned with annual values along axis 0.
 
         Example:
             >>> # Three years of monthly data with incomplete years at start and end
@@ -395,6 +404,7 @@ class AnnualValueCalculator:
                 shape = (wghts.shape[0],) + (1,) * (values.ndim - 1)
                 weights[i] = wghts.reshape(shape)
 
+        # The total is computed along just the time (0) axis.
         return np.array(
             [
                 np.nansum(vals * wghts, axis=0)
