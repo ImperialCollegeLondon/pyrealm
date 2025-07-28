@@ -80,8 +80,15 @@ class DailyEvapFluxes:
         state when iterating over time.
         """
 
-        self.shape: tuple = check_input_shapes(pa, tc, shape=self.solar.shape)
-        """The array shape of the input variables"""
+        try:
+            self.shape: tuple = check_input_shapes(pa, tc, shape=self.solar.shape)
+            """The array shape of the input variables"""
+        except ValueError:
+            msg = (
+                "The shape of DailyEvapFluxes inputs are inconsistent with each other "
+                "or the DailySolarFluxes data"
+            )
+            raise ValueError(msg)
 
         # Broadcast along the time axis (necessary for the indexing in estimate_aet)
         pa = broadcast_time(pa, self.shape)
@@ -143,11 +150,16 @@ class DailyEvapFluxes:
         # subset the calculations to particular request days or use the entire array of
         # soil moisture. The slice here is used to programatically select `array[:]`.
         if day_idx is None:
-            check_input_shapes(wn, shape=self.shape)
+            splash_shape = self.shape
             didx: int | slice = slice(self.shape[0])
         else:
-            check_input_shapes(wn, shape=self.shape[1:])
+            splash_shape = self.shape[1:]
             didx = day_idx
+        try:
+            check_input_shapes(wn, shape=splash_shape)
+        except ValueError:
+            msg = "The shape of wn does not match the existing SPLASH model data"
+            raise ValueError(msg)
 
         # Calculate evaporative supply rate (sw), mm/h
         sw = self.core_const.k_Cw * wn / self.kWm

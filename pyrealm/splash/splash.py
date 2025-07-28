@@ -279,11 +279,18 @@ class SplashModel:
         # Check day_idx inputs to map either the single time index given in day_idx or
         # the whole dataset.
         if day_idx is None:
-            check_input_shapes(previous_wn, shape=self.shape)
+            splash_shape = self.shape
             didx: int | slice = slice(self.shape[0])
         else:
-            check_input_shapes(previous_wn, shape=self.shape[1:])
+            splash_shape = self.shape[1:]
             didx = day_idx
+        try:
+            check_input_shapes(previous_wn, shape=splash_shape)
+        except ValueError:
+            msg = (
+                "The shape of previous_wn does not match the existing SPLASH model data"
+            )
+            raise ValueError(msg)
 
         # Calculate the expected aet_d given the previous wn
         if np.any((previous_wn < 0) | (previous_wn > self.kWm)):
@@ -323,7 +330,11 @@ class SplashModel:
             A tuple of numpy arrays containing predicted AET, soil moisture and runoff.
         """
 
-        check_input_shapes(wn_init, shape=self.shape[1:])
+        try:
+            check_input_shapes(wn_init, shape=self.shape[1:])
+        except ValueError:
+            msg = "The shape of wn_init does not match the existing SPLASH model data"
+            raise ValueError(msg)
 
         # Create storage for outputs
         aet_out = np.full_like(self.tc, np.nan)
