@@ -10,7 +10,6 @@ To resolve failing tests there are a few options to use in utils.py:
     - `ADDITIONAL_INIT_METHODS`: For classes needing to call additional methods.
 """
 
-import warnings
 from collections.abc import Callable
 
 import pytest
@@ -23,8 +22,6 @@ from utils import (
     initialise_class,
     is_equal,
 )
-
-from pyrealm.core.experimental import ExperimentalFeatureWarning
 
 SHAPE_FULL: list[tuple[int, ...]]
 SHAPE_FULL = [(3, 2, 2)]
@@ -40,6 +37,9 @@ METHOD_LIST = get_method_list()
 @pytest.mark.broadcasting
 @pytest.mark.parametrize("shapes", SHAPES_LIST)
 @pytest.mark.parametrize("method_info", METHOD_LIST, ids=[m[0] for m in METHOD_LIST])
+@pytest.mark.filterwarnings("ignore::ExperimentalFeatureWarning")
+@pytest.mark.filterwarnings("ignore::RuntimeWarning")
+@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_array_input_broadcasting(
     method_info: tuple[str, Callable, type | None],
     shapes: list[tuple[int, ...]],
@@ -51,10 +51,6 @@ def test_array_input_broadcasting(
     the outputs (and all class attributes for class methods). Raises a ValueError if
     incorrect.
     """
-    warnings.filterwarnings("ignore", category=ExperimentalFeatureWarning)
-    warnings.filterwarnings("ignore", category=RuntimeWarning)
-    warnings.filterwarnings("ignore", category=UserWarning)
-
     name, method, cls = method_info
 
     # Generate the arguments for the function / method

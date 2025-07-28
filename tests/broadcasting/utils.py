@@ -150,7 +150,7 @@ def defined_method_args(argument: str, ctx: "Context") -> Any | None:
     pft_names = [f"Tree{i + 1}" for i in range(n_pft)]
 
     method_arguments_list: dict[str, dict] = {
-        "broadcast_time": {"shape": (3, shape[1:])},
+        "broadcast_time": {"shape": (3, *shape[1:])},
         ## PModel
         # Subdaily data needs more than 1 day of times (uses 48 hours)
         "AcclimationModel": {"datetimes": np.arange(0, 48, dtype="datetime64[h]")},
