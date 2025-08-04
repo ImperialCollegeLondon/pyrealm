@@ -1019,7 +1019,14 @@ def test_StemAllocation(rtmodel_flora, rtmodel_data):
     vars_to_check = (
         v
         for v in stem_allocation.array_attrs
-        if v not in ["foliar_respiration", "foliage_turnover", "fine_root_turnover"]
+        if v
+        not in [
+            "foliar_respiration",
+            "foliage_turnover",
+            "fine_root_turnover",
+            "reproductive_tissue_respiration",
+            "reproductive_tissue_turnover",
+        ]
     )
     for var in vars_to_check:
         assert_allclose(getattr(stem_allocation, var), rtmodel_data[var])
