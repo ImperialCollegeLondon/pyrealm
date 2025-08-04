@@ -127,10 +127,11 @@ column_stem_index
 from __future__ import annotations
 
 import json
-import sys
+import tomllib
 import uuid
 from dataclasses import InitVar, dataclass, field
 from pathlib import Path
+from tomllib import TOMLDecodeError
 from typing import Any, ClassVar
 
 import numpy as np
@@ -144,13 +145,6 @@ from pyrealm.core.utilities import check_input_shapes
 from pyrealm.demography.core import CohortMethods, PandasExporter
 from pyrealm.demography.flora import Flora, StemTraits
 from pyrealm.demography.tmodel import StemAllometry
-
-if sys.version_info[:2] >= (3, 11):
-    import tomllib
-    from tomllib import TOMLDecodeError
-else:
-    import tomli as tomllib
-    from tomli import TOMLDecodeError
 
 
 @dataclass

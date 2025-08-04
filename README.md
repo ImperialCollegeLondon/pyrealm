@@ -15,6 +15,7 @@ Status](https://readthedocs.org/projects/pyrealm/badge/?version=latest)](https:/
 [![Test and
 build](https://github.com/ImperialCollegeLondon/pyrealm/actions/workflows/pyrealm_ci.yaml/badge.svg?branch=develop)](https://github.com/ImperialCollegeLondon/pyrealm/actions/workflows/pyrealm_ci.yaml)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/ImperialCollegeLondon/pyrealm/develop.svg)](https://results.pre-commit.ci/latest/github/ImperialCollegeLondon/pyrealm/develop)
+[![SPEC 0 — Minimum Supported Dependencies](https://img.shields.io/badge/SPEC-0-green?labelColor=%23004811&color=%235CA038)](https://scientific-python.org/specs/spec-0000/)
 
 The `pyrealm` package provides a toolbox implementing some key models for estimating
 plant productivity, growth and demography in Python. The outputs of different models
