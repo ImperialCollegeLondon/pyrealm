@@ -3,7 +3,7 @@
 description = "Python tools for modelling plant productivity and demography."
 license = "MIT"
 name = "pyrealm"
-version = "2.0.0-rc.4"
+version = "2.0.0-rc.5"
 
 dependencies = [
   "dacite (>1.6.0)",
@@ -15,7 +15,7 @@ dependencies = [
   "pandas (>=2.2.2)",
 ]
 
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 authors = [
   {name = "David Orme", email = "d.orme@imperial.ac.uk"},
@@ -29,6 +29,7 @@ authors = [
   {name = "Amy Pike", email = "ap766@cam.ac.uk"},
   {name = "Arne Scheire", email = "scheirearne@gmail.com"},
   {name = "Sally Matson", email = "sally.matson21@imperial.ac.uk"},
+  {name = "Sam Avis", email = "sa2329@cam.ac.uk"},
 ]
 
 packages = [
@@ -71,11 +72,11 @@ pytest-mock = "^3.8.1"
 pytest-profiling = "^1.7.0"
 
 [tool.poetry.group.dev.dependencies]
-ipython = "^8.9.0"
+ipython = "^8.17"
 jupyterlab = "^4.2.1"
 jupyterlab-myst = "^2.4.2"
 jupytext = "^1.16.2"
-matplotlib = "^3.5.2"
+matplotlib = "^3.8"
 multiprocess = "^0.70.16"
 mypy = "^1.0"
 pandas = "^2.2.0"
@@ -138,7 +139,7 @@ testpaths = ['tests', 'pyrealm']
 exclude = [
   "pyrealm_build_data/splash/splash_py_version/*", # Legacy code used for building golden datasets
 ]
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 # Enable all `pydocstyle` rules, limiting to those that adhere to the

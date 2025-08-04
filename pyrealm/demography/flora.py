@@ -24,11 +24,12 @@
 from __future__ import annotations
 
 import json
-import sys
+import tomllib
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import InitVar, dataclass, field, fields
 from pathlib import Path
+from tomllib import TOMLDecodeError
 from typing import ClassVar
 
 import marshmallow_dataclass
@@ -42,13 +43,6 @@ from pyrealm.demography.core import (
     PandasExporter,
     _validate_demography_array_arguments,
 )
-
-if sys.version_info[:2] >= (3, 11):
-    import tomllib
-    from tomllib import TOMLDecodeError
-else:
-    import tomli as tomllib
-    from tomli import TOMLDecodeError
 
 
 def calculate_crown_q_m(
