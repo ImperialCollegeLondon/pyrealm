@@ -1,1 +1,4 @@
-"""Init for the tests.broadcasting module."""
+"""The broadcasting tests module.
+
+This file is required to make a module.
+"""
