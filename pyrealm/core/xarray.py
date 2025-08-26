@@ -1,14 +1,14 @@
 """Utilities for handling xarray inputs to functions that expect arrays."""
 
 import functools
-from collections.abc import Callable
+from collections.abc import Callable, Hashable
 from typing import Any
 
-import numpy as np
 import xarray as xr
+from numpy.typing import NDArray
 
 
-def _get_dims(args: list[xr.DataArray]) -> list[str]:
+def _get_dims(args: list[xr.DataArray]) -> list[Hashable]:
     """Get the full list of dimensions across all DataArray arguments."""
     dims = []
     for arg in args:
@@ -17,7 +17,7 @@ def _get_dims(args: list[xr.DataArray]) -> list[str]:
     return dims
 
 
-def _convert_arg(da: xr.DataArray, dims: list[str]) -> np.ndarray:
+def _convert_arg(da: xr.DataArray, dims: list[Hashable]) -> NDArray:
     """Expand DataArray to include all the dimensions and return the numpy array."""
     # Ensure the DataArray includes all of the dimensions in the correct order
     missing = {d: 1 for d in dims if d not in da.dims}

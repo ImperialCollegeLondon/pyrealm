@@ -8,7 +8,7 @@ from pyrealm.core.xarray import xarray_inputs
 
 
 @pytest.fixture
-def dataset():
+def dataset() -> xr.Dataset:
     """Fixture to load the pmodel_global dataset for testing inputs."""
 
     from importlib import resources
@@ -74,7 +74,7 @@ def test_xarray_inputs_decorator_dimensions():
     assert out_c.shape == (2, 1, 4)
 
 
-def test_xarray_pmodel_environment(dataset):
+def test_xarray_pmodel_environment(dataset: xr.Dataset):
     """Test PModelEnvironment can be initialised using xarray inputs without issue."""
     from pyrealm.core.pressure import calc_patm
     from pyrealm.pmodel import PModelEnvironment
