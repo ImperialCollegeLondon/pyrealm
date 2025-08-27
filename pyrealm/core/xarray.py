@@ -2,7 +2,7 @@
 
 import functools
 from collections.abc import Callable, Hashable
-from typing import Any
+from typing import ParamSpec, TypeVar
 
 import xarray as xr
 from numpy.typing import NDArray
@@ -28,7 +28,11 @@ def _convert_arg(da: xr.DataArray, dims: list[Hashable]) -> NDArray:
     return da.to_numpy()
 
 
-def xarray_inputs(fn: Callable) -> Callable:
+P = ParamSpec("P")
+T = TypeVar("T")
+
+
+def xarray_inputs(fn: Callable[P, T]) -> Callable[P, T]:
     """Decorator that converts any `xarray.DataArray` inputs to numpy arrays.
 
     This allows functions that expect numpy arrays to be used directly with
@@ -43,7 +47,7 @@ def xarray_inputs(fn: Callable) -> Callable:
     """
 
     @functools.wraps(fn)
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         # Get the list of DataArrays (if any)
         inputs = [*args, *kwargs.values()]
         data_arrays = [arg for arg in inputs if isinstance(arg, xr.DataArray)]
@@ -54,11 +58,11 @@ def xarray_inputs(fn: Callable) -> Callable:
             args = tuple(
                 _convert_arg(a, dims) if isinstance(a, xr.DataArray) else a
                 for a in args
-            )
+            )  # type: ignore[reportAssignmentType, assignment]
             kwargs = {
                 k: _convert_arg(v, dims) if isinstance(v, xr.DataArray) else v
                 for k, v in kwargs.items()
-            }
+            }  # type: ignore[reportAssignmentType, assignment]
         return fn(*args, **kwargs)
 
     return wrapper
