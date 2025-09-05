@@ -1,0 +1,18 @@
+{% extends '!layout.html' %}
+
+{% block document %}
+
+<div class="admonition-attention admonition">
+<p class="admonition-title">Attention</p>
+<p>
+    After <code>pyrealm</code> version 1.0, there have been some major changes to the
+    API and changes to some of the default recommended settings. We strongly recommend
+    upgrading to the latest version of <code>pyrealm</code> and looking at the <a
+    href="https://pyrealm.readthedocs.io/en/latest/users/versions.html" >migration
+    guide</a> to update your code. 
+
+</p>
+</div>
+
+{{ super() }}
+{% endblock %}
