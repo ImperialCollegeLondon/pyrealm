@@ -70,6 +70,8 @@ sphinx-external-toc = "^1.0.0"
 sphinx-rtd-theme = "^2.0.0"
 sphinxcontrib-bibtex = "^2.6.1"
 xarray = "^2023.4.0"
+sphinx-version-warning = "^1.1.2"
+
 
 [build-system]
 build-backend = "poetry.core.masonry.api"

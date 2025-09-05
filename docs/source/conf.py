@@ -46,7 +46,12 @@ extensions = [
     "myst_nb",
     "sphinx_rtd_theme",
     "sphinx_external_toc",
+    "versionwarning.extension",
 ]
+
+# Configure for version warning
+versionwarning_project_version = "0.0.1"
+versionwarning_project_slug = "sphinx-version-warning"
 
 # External table of contents
 external_toc_path = "_toc.yml"  # optional, default: _toc.yml
