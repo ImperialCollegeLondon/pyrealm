@@ -75,9 +75,13 @@ extensions = [
     "versionwarning.extension",
 ]
 
-# Configure for version warning
-versionwarning_project_version = "0.0.1"
-versionwarning_project_slug = "sphinx-version-warning"
+
+rst_prolog = """.. attention::
+    After Pyrealm version 1.0.0, there have been some major changes to the API.
+    We recommend using the latest version of PyRealm. 
+    See https://pyrealm.readthedocs.io/en/latest/users/versions.html 
+    for details. 
+"""
 
 # External table of contents
 external_toc_path = "_toc.yml"  # optional, default: _toc.yml
