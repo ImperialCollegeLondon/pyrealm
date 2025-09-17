@@ -5,6 +5,7 @@ subtrees:
 - caption: Users
   entries:
   - file: users/getting_started.md  
+  - file: users/array_inputs.md
   - file: users/pmodel/module_overview.md
     subtrees:
       - entries:
