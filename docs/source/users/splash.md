@@ -160,7 +160,7 @@ The data for the sunshine fraction (`sf`), temperature (`tc`) and precipitation 
 are three dimensional arrays providing values along time, latitude and longitude axes.
 The latitude (`lat`) values obviously only add coordinates along the latitude axis and
 the elevation (`elv`) is constant through time. So before the model can be fitted, we
-need to make these arrays compatible (see the [array inputs](../array_inputs.md)
+need to make these arrays compatible (see the [array inputs](../users/array_inputs.md)
 documentation) by making them use the same dimensions.
 
 ```{code-cell} ipython3
