@@ -47,6 +47,11 @@ number of breaking changes in the API. As the package uses [semantic
 versioning](https://semver.org/), these changes to the API require that new releases be
 made under a new major version.
 
+One general change is that array inputs are no longer required to have identical shapes.
+This was often an issue when one input was constant over a particular axis - like
+elevation over a time series. Most functionality in `pyrealm` now requires only that
+the shapes of the inputs can be [broadcast to each other](./array_inputs.md).
+
 ```{warning}
 
 We will be publishing a series of "release candidates" of the 2.0.0 package. These will
