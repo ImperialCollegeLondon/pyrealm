@@ -97,7 +97,7 @@ def test_evap_iter(splash_core_constants, daily_flux_benchmarks, expected_attr):
             tc=np.array([inp["tc"]]),
             core_const=splash_core_constants,
         )
-        aet, hi, sw = evap.estimate_aet(wn=inp["wn"], only_aet=False)
+        aet, hi, _sw = evap.estimate_aet(wn=inp["wn"], only_aet=False)
 
         for ky in expected_attr:
             assert_allclose(getattr(evap, ky), exp[ky])
@@ -135,7 +135,7 @@ def test_evap_array(splash_core_constants, daily_flux_benchmarks, expected_attr)
         tc=inputs["tc"].to_numpy(),
         core_const=splash_core_constants,
     )
-    aet, hi, sw = evap.estimate_aet(wn=inputs["wn"].to_numpy(), only_aet=False)
+    aet, hi, _sw = evap.estimate_aet(wn=inputs["wn"].to_numpy(), only_aet=False)
 
     for ky in expected_attr:
         assert_allclose(getattr(evap, ky), expected[ky])
