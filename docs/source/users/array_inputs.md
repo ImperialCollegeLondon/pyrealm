@@ -28,17 +28,17 @@ have multiple dimensions. The input data can be single scalar values - represent
 point estimate - or multi-dimensional inputs - such as a time-series on a spatial grid.
 When inputs have multiple dimensions, these can be thought of as **axes**: a 3D array
 might have a time axis, an X axis and a Y axis. The **shape** of an array is then just
-the number of observations along each axis
+the number of observations along each axis.
 
 If all of the inputs vary over all of the axes, then the input data all will need to
 have the same shape. However if one of the inputs is constant along one of the axes then
-that data can be repeated across the other axes. As an example, a function might need
-the following two inputs:
+its shape only needs to match the other inputs along the axes that it varies over. As
+an example, a function might need the following two inputs:
 
 * The temperature, which is a 5 x 5 spatial grid on a time series with five
   observations and therefore has the shape `(5, 5, 5)`.
 * The elevation, which uses the same 5 x 5 spatial grid but is constant with time and so
-  has the shape `(5, 5)`
+  has the shape `(5, 5)`.
 
 Any calculation with these inputs has a problem: which two axes in the temperature data
 does the elevation map onto? In earlier versions of `pyrealm` (<=`1.0.0`), users were
@@ -47,14 +47,15 @@ However, from `pyrealm 2.0.0`, users just need to make sure that inputs have com
 shapes, as described below.
 
 Note that **scalar inputs** (a single value) are a special case and are automatically
-assumed to be constant across all the other inputs
+assumed to be constant across all the other inputs.
 
 ## Array shapes
 
 In `pyrealm`, we make use of the [array broadcasting
 rules](https://numpy.org/doc/stable/user/basics.broadcasting.html) of the `numpy`
-package. All array inputs to a `pyrealm` function then must be **mutually
-broadcastable**. It is worth reading that link but, in summary, the arrays must:
+package, with an additional restriction on the number of dimensions. It is worth reading
+that link but, in summary, all array inputs to a `pyrealm` function must be **mutually
+broadcastable** by satisfying the following rules:
 
 * have the same number of dimensions, and
 * have the same shape in each dimension or only a single observation in that dimension.
@@ -89,7 +90,7 @@ wanted to repeat pairs of values along a dimension, then you will need to do so 
 
 As an example of how to do this in practice, in the following example most of the
 arguments to {class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` are
-2-dimensional in time and position. But the pressure 1-dimensional --- constant in time.
+2-dimensional in time and position. But the pressure is 1-dimensional --- constant in time.
 Therefore, the time axis is added before passing it to
 {class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`.
 
@@ -114,8 +115,8 @@ patm = np.full(n_position, 101325)
 patm = patm[np.newaxis, :]
 
 # Show the shapes for comparison
-print(temp.shape)
-print(patm.shape)
+print("temp shape:", temp.shape)
+print("patm shape:", patm.shape)
 
 # Call PModelEnvironment with all the inputs
 env = PModelEnvironment(tc=temp, co2=co2, patm=patm, vpd=vpd, fapar=fapar, ppfd=ppfd)
