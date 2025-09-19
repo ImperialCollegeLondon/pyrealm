@@ -8,8 +8,6 @@
   series.
 """
 
-from itertools import product
-
 import numpy as np
 from numpy.testing import assert_allclose
 
@@ -125,15 +123,15 @@ def test_run_spin_up_oned(splash_core_constants, one_d_benchmark):
     inputs, expected = one_d_benchmark
 
     # Need to reshape the inputs so they have a time and 1 observation axis and
-    # duplicate lat and elev to same shape as sf, tc, pc (TODO - avoid this!)
+    # duplicate lat and elev to same shape as sf, tc, pc
 
     splash = SplashModel(
-        lat=np.broadcast_to(inputs.lat.data, inputs.sf.shape),
-        elv=np.broadcast_to(inputs.elev.data, inputs.sf.shape),
-        dates=Calendar(inputs.time.data),
-        sf=inputs.sf.data,
-        tc=inputs.tmp.data,
-        pn=inputs.pre.data,
+        lat=inputs.lat.to_numpy()[None, :, None],
+        elv=inputs.elev.to_numpy()[None, :, :],
+        dates=Calendar(inputs.time.to_numpy()),
+        sf=inputs.sf.to_numpy(),
+        tc=inputs.tmp.to_numpy(),
+        pn=inputs.pre.to_numpy(),
         core_const=splash_core_constants,
     )
 
@@ -141,48 +139,6 @@ def test_run_spin_up_oned(splash_core_constants, one_d_benchmark):
 
     # Check against the spun up value from the original implementation
     assert_allclose(wn, expected["wn_spun_up"])
-
-
-def test_run_spin_up_iter(splash_core_constants, grid_benchmarks):
-    """Test the spin up process using the grid.
-
-    This test iterates over cells, following the cell by cell calculation in the
-    original implementation.
-
-    This is a slow test.
-    """
-
-    from pyrealm.core.calendar import Calendar
-    from pyrealm.splash.splash import SplashModel
-
-    inputs, expected = grid_benchmarks
-
-    cal = Calendar(inputs.time.data)
-
-    for lat, lon in product(inputs.lat.data, inputs.lon.data):
-        # Subset Dataset to cell - note use of singleton lists to preserve the resulting
-        # singleton lat and lon dimensions
-        cell_inputs = inputs.sel(lat=[lat], lon=[lon])
-        cell_expected = expected.sel(lat=[lat], lon=[lon])
-
-        # Test for sea cells (elevation is nan) and skip
-        if np.isnan(cell_inputs.elev.data[0]):
-            continue
-
-        splash = SplashModel(
-            lat=np.broadcast_to(cell_inputs.lat.data, cell_inputs.sf.shape),
-            elv=np.broadcast_to(cell_inputs.elev.data, cell_inputs.sf.shape),
-            dates=cal,
-            sf=cell_inputs.sf.data,
-            tc=cell_inputs.tmp.data,
-            pn=cell_inputs.pre.data,
-            core_const=splash_core_constants,
-        )
-
-        wn = splash.estimate_initial_soil_moisture()
-
-        # Check against the spun up value from the original implementation
-        assert_allclose(wn, cell_expected.wn_spun_up, rtol=1e-6)
 
 
 def test_run_spin_up_gridded(splash_core_constants, grid_benchmarks):
@@ -194,12 +150,12 @@ def test_run_spin_up_gridded(splash_core_constants, grid_benchmarks):
     inputs, expected = grid_benchmarks
 
     splash = SplashModel(
-        lat=np.broadcast_to(inputs.lat.data[None, :, None], inputs.sf.data.shape),
-        elv=np.broadcast_to(inputs.elev.data[None, :, :], inputs.sf.data.shape),
-        dates=Calendar(inputs.time.data),
-        sf=inputs.sf.data,
-        tc=inputs.tmp.data,
-        pn=inputs.pre.data,
+        lat=inputs.lat.to_numpy()[None, :, None],
+        elv=inputs.elev.to_numpy()[None, :, :],
+        dates=Calendar(inputs.time.to_numpy()),
+        sf=inputs.sf.to_numpy(),
+        tc=inputs.tmp.to_numpy(),
+        pn=inputs.pre.to_numpy(),
         core_const=splash_core_constants,
     )
 
@@ -226,13 +182,13 @@ def test_calculate_soil_moisture_oned(splash_core_constants, one_d_benchmark):
     # Need to reshape the inputs so they have a time and 1 observation axis and
     # duplicate lat and elev to same shape as sf, tc, pc (TODO - avoid this!)
 
-    splash = SplashModel(
-        lat=np.broadcast_to(inputs.lat.data, inputs.sf.shape),
-        elv=np.broadcast_to(inputs.elev.data, inputs.sf.shape),
-        dates=Calendar(inputs.time.data),
-        sf=inputs.sf.data,
-        tc=inputs.tmp.data,
-        pn=inputs.pre.data,
+    splash = splash = SplashModel(
+        lat=inputs.lat.to_numpy()[None, :, None],
+        elv=inputs.elev.to_numpy()[None, :, :],
+        dates=Calendar(inputs.time.to_numpy()),
+        sf=inputs.sf.to_numpy(),
+        tc=inputs.tmp.to_numpy(),
+        pn=inputs.pre.to_numpy(),
         core_const=splash_core_constants,
     )
 
@@ -263,12 +219,12 @@ def test_calculate_soil_moisture_grid(splash_core_constants, grid_benchmarks):
     # duplicate lat and elev to same shape as sf, tc, pc (TODO - avoid this!)
 
     splash = SplashModel(
-        lat=np.broadcast_to(inputs.lat.data[None, :, None], inputs.sf.data.shape),
-        elv=np.broadcast_to(inputs.elev.data[None, :, :], inputs.sf.data.shape),
-        dates=Calendar(inputs.time.data),
-        sf=inputs.sf.data,
-        tc=inputs.tmp.data,
-        pn=inputs.pre.data,
+        lat=inputs.lat.to_numpy()[None, :, None],
+        elv=inputs.elev.to_numpy()[None, :, :],
+        dates=Calendar(inputs.time.to_numpy()),
+        sf=inputs.sf.to_numpy(),
+        tc=inputs.tmp.to_numpy(),
+        pn=inputs.pre.to_numpy(),
         core_const=splash_core_constants,
     )
 
