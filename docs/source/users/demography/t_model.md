@@ -193,7 +193,7 @@ potential GPP:
 
 ```{code-cell} ipython3
 # Calculate the stem GPP from potential GPP following the Li et al model
-potential_gpp = np.repeat(5, dbh_col.size)[:, None]
+potential_gpp = np.full((dbh_col.size, 1), fill_value=5)
 
 whole_crown_gpp = calculate_whole_crown_gpp(
     potential_gpp=potential_gpp,
@@ -243,7 +243,7 @@ for constant allometries:
 
 ```{code-cell} ipython3
 # Column array of identical DBH values
-dbh_constant = np.repeat(0.2, 50)[:, None]
+dbh_constant = np.full((50, 1), fill_value=0.2)
 
 # Get the allometric predictions for those stems
 constant_allometries = StemAllometry(stem_traits=flora, at_dbh=dbh_constant)

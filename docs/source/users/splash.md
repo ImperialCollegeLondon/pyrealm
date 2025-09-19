@@ -6,19 +6,19 @@ jupytext:
     format_name: myst
     format_version: 0.13
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 language_info:
+  name: python
+  version: 3.12.3
+  mimetype: text/x-python
   codemirror_mode:
     name: ipython
     version: 3
-  file_extension: .py
-  mimetype: text/x-python
-  name: python
-  nbconvert_exporter: python
   pygments_lexer: ipython3
-  version: 3.11.9
+  nbconvert_exporter: python
+  file_extension: .py
 ---
 
 # The `splash` submodule
@@ -156,22 +156,27 @@ Before calculating water balances, you need to create a
 the solar and evaporative calculations for the time series - none of these calculations
 rely on the soil moisture and so are calculated once when the `SplashModel` is created.
 
-```{note}
-The `SplashModel` code currently requires that the latitude (`lat`) and elevation
-(`elv`) data have the same shape as the sunshine fraction (`sf`), temperature (`tc`) and
-precipitation (`pn`). These values are obviously constant through time - and latitude
-may well be constant across the longitude dimension for gridded data - but, at the
-moment, you need to broadcast these variables to match.
-```
+The data for the sunshine fraction (`sf`), temperature (`tc`) and precipitation (`pn`)
+are three dimensional arrays providing values along time, latitude and longitude axes.
+The latitude (`lat`) values obviously only add coordinates along the latitude axis and
+the elevation (`elv`) is constant through time. So before the model can be fitted, we
+need to make these arrays compatible (see the [array inputs](../array_inputs.md)
+documentation) by making them use the same dimensions.
 
 ```{code-cell} ipython3
+# Convert latitude from (Y) to (1, Y, 1)
+lat = data.lat.to_numpy()[np.newaxis, :, np.newaxis]
+# Convert elevation from (Y, X) to (1, Y, X)
+elv = data.elev.to_numpy()[np.newaxis, :, :]
+
+# Fit the model
 splash = SplashModel(
-    lat=np.broadcast_to(data.lat.data[None, :, None], data.sf.data.shape),
-    elv=np.broadcast_to(data.elev.data[None, :, :], data.sf.data.shape),
-    dates=Calendar(data.time.data),
-    sf=data.sf.data,
-    tc=data.tmp.data,
-    pn=data.pre.data,
+    lat=lat,
+    elv=elv,
+    dates=Calendar(data.time.to_numpy()),
+    sf=data.sf.to_numpy(),
+    tc=data.tmp.to_numpy(),
+    pn=data.pre.to_numpy(),
 )
 ```
 
