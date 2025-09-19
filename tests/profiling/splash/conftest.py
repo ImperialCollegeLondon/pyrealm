@@ -47,8 +47,8 @@ def splash_profile_data(pytestconfig):
     pn = _scale_up(data.pre.to_numpy(), scaling_factor=scaling_factor)
 
     elv = np.tile(data.elev.to_numpy(), (1, scaling_factor))
-    elv = np.broadcast_to(elv[None, :, :], sf.shape)
-    lat = np.broadcast_to(data.lat.to_numpy()[None, :, None], sf.shape)
+    elv = elv[None, :, :]
+    lat = data.lat.to_numpy()[None, :, None]
 
     dates = Calendar(data.time.data)
 

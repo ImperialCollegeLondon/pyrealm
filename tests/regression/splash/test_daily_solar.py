@@ -129,16 +129,16 @@ def test_solar_array_grid(grid_benchmarks):
 
     cal = Calendar(inputs.time.values.astype("datetime64[D]"))
 
-    # Duplicate lat and elev to same shape as sf and tc (TODO - avoid this!)
-    elev = np.broadcast_to(inputs.elev.data[None, :, :], inputs.sf.data.shape)
-    lat = np.broadcast_to(inputs.lat.data[None, :, None], inputs.sf.data.shape)
+    # Make lat and elev broadcastable to sf and tc
+    lat = inputs.lat.to_numpy()[None, :, None]
+    elev = inputs.elev.to_numpy()[None, :, :]
 
     solar = DailySolarFluxes(
         latitude=lat,
         elevation=elev,
         dates=cal,
-        sunshine_fraction=inputs["sf"].data,
-        temperature=inputs["tmp"].data,
+        sunshine_fraction=inputs["sf"].to_numpy(),
+        temperature=inputs["tmp"].to_numpy(),
     )
 
     # Test that the resulting solar calculations are the same.

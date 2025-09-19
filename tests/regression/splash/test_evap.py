@@ -160,16 +160,16 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
 
     cal = Calendar(inputs.time.values.astype("datetime64[D]"))
 
-    # Duplicate lat and elev to same shape as sf and tc (TODO - avoid this!)
-    lat = np.broadcast_to(inputs.lat.data[None, :, None], inputs.sf.data.shape)
-    elev = np.broadcast_to(inputs.elev.data[None, :, :], inputs.sf.data.shape)
+    # Make lat and elev broadcastable to sf and tc
+    lat = inputs.lat.to_numpy()[None, :, None]
+    elev = inputs.elev.to_numpy()[None, :, :]
 
     solar = DailySolarFluxes(
         latitude=lat,
         elevation=elev,
         dates=cal,
-        sunshine_fraction=inputs["sf"].data,
-        temperature=inputs["tmp"].data,
+        sunshine_fraction=inputs["sf"].to_numpy(),
+        temperature=inputs["tmp"].to_numpy(),
         core_const=splash_core_constants,
     )
 
