@@ -443,7 +443,7 @@ def test_calculate_stem_projected_crown_area_at_z_inputs(fixture_z_qz_stem_prope
     )
 
     # Build inputs
-    z, stem, more_stem, q_z, outcome, excep_msg, out_shape = (
+    z, stem, _more_stem, q_z, outcome, excep_msg, out_shape = (
         fixture_z_qz_stem_properties
     )
 

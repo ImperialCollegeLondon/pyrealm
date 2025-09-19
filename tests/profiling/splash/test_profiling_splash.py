@@ -31,4 +31,4 @@ def test_profile_splash(splash_profile_data):
 
     # Run the initial soil calculation and then the time series.
     init_soil_moisture = splash.estimate_initial_soil_moisture(verbose=False)
-    aet_out, wn_out, ro_out = splash.calculate_soil_moisture(init_soil_moisture)
+    _ = splash.calculate_soil_moisture(init_soil_moisture)
