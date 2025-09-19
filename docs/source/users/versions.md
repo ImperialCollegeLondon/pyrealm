@@ -44,17 +44,8 @@ So, version 2.0.0 provides a complete reworking of the package, with a particula
 on better integrating the  {class}`~pyrealm.pmodel.pmodel.PModel` and
 {class}`~pyrealm.pmodel.pmodel.SubdailyPModel` classes. This has led to a large
 number of breaking changes in the API. As the package uses [semantic
-versioning](https://semver.org/), these changes to the API require that new releases be
-made under a new major version.
-
-```{warning}
-
-We will be publishing a series of "release candidates" of the 2.0.0 package. These will
-be used to identify issues with the current API and try to stabilise a new API. The
-content of version 2.0.0 is not yet finalised, so these release candidates may also add
-new functionality.
-
-```
+versioning](https://semver.org/), these changes to the API required that we move to
+`pyrealm 2.0.0`.
 
 The main user facing changes are shown below, but do also look at the [log of
 changes](#changes-log) for more detail.

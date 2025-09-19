@@ -3,11 +3,10 @@
 This document provides a brief overview of the main changes to `pyrealm` at each of the
 released versions. More detail can be found at the GitHub release page for each version.
 
-## 2.0.0 release candidates
+## 2.0.0
 
-A new major release is planned but will iterate through release candidates in order to
-make functionality available for testing while the new functionality and API changes are
-worked through. The changes below are provisional.
+Version 2.0.0 introduces major breaking changes in the structure of some functionality,
+notably the API of the `pmodel` module, as well as introducing new functionality.
 
 - The `PModel` and `SubdailyPModel` classes have been extensively restructured to align
   the attributes and methods and to remove repeated code. Many of these changes are
@@ -118,18 +117,24 @@ worked through. The changes below are provisional.
 - The first components in the experimental `demography` module, providing an integrated
   set of submodules that provide: plant functional types, size-structured cohorts, plant
   communities, a community canopy model and an implementation of the T Model for
-  allocation and growth. Release 2.0.0-rc.3 fixes some details of updating cohort counts
-  when adding or dropping cohorts from a community (#481) and moves calculation of per
-  stem GPP outside of StemAllocation rather than pinning it to use the big leaf
-  approximation (#480). Release 2.0.0-rc.4 replaces the canopy and light capture model,
-  which had been incorrectly implemented.
+  allocation and growth. Release `2.0.0-rc.3` fixed some details of updating cohort
+  counts when adding or dropping cohorts from a community (#481) and moves calculation
+  of per stem GPP outside of StemAllocation rather than pinning it to use the big leaf
+  approximation (#480). Release `2.0.0-rc.4` replaced the canopy and light capture
+  model, which had been incorrectly implemented.
+
+- An initial implementation of the "two leaf, two stream" model of light interception.
+  This is still in experimental form, but provides an extension to the default big-leaf
+  approximation used to model light interception for the P Model.
 
 - The first components of the experimental `phenology` module have been added. The main
-  functionalty as of 2.0.0-rc.4 is the `FaparLimitation` class that calculates annual
+  functionality in version `2.0.0` is the `FaparLimitation` class that calculates annual
   limits to $f_{APAR}$ and $LAI$ based on energy and water limitation of GPP. The module
   includes a new golden dataset in `pyrealm_build_data.phenology`. This module is
   supported by the new `core.time_series.AnnualValueCalculator` class, which is designed
   to calculate annual values over time series data with varying temporal resolution.
+  Later releases will extend this module to implement the calculation of daily
+  predictions of leaf area index and fAPAR from annual limitations and productivity.
 
 - An extension of the Subdaily P Model that allows the initial realised responses to be
   provided rather than assuming that they are equal to the initial optimal responses.
