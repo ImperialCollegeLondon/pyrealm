@@ -57,32 +57,29 @@ shows you how to install `pip`.
 
 ## Installing `pyrealm`
 
-When the above prerequisites are fulfilled, you can simply install `pyrealm` by
-typing the command `pip install pyrealm` into the command line. This will, at
-this point in time, install pyrealm version 1.0.0. If a different version is
-required, this can be specified in the command, e.g.:
-`pip install pyrealm==2.0.0`.
+When the above prerequisites are fulfilled, you can simply install `pyrealm` by typing
+the command `pip install pyrealm` into the command line. This will, at this point in
+time, install pyrealm version 1.0.0. If a different version is required, this can be
+specified in the command, e.g.: `pip install pyrealm==2.0.0`.
 
-However, it is good practice to use a virtual environment for this, to not
-pollute your python environment with packages and versions you might not need
-for other work. Detailed information on how to do this can be found on the
-[Python Packaging User Guide](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/).
-In short, install `virtualenv`: `pip install virtualenv`, and
-then you can create a virtual environment typing `python3 -m venv .venv`
-(or `py -m venv .venv` on Windows) and activate it with
-`source .venv/bin/activate` (`.venv\Scripts\activate` on Windows). Then do
-`pip install pyrealm` and install everything else you might want to use. When
-you are done with your `pyrealm` work just type `deactivate`. You can
-re-activate and alter your environment anytime once it is set up.
+However, it is good practice to use a virtual environment for this, to not pollute your
+python environment with packages and versions you might not need for other work.
+Detailed information on how to do this can be found on the [Python Packaging User
+Guide](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/).
+In short, install `virtualenv`: `pip install virtualenv`, and then you can create a
+virtual environment typing `python3 -m venv .venv` (or `py -m venv .venv` on Windows)
+and activate it with `source .venv/bin/activate` (`.venv\Scripts\activate` on Windows).
+Then do `pip install pyrealm` and install everything else you might want to use. When
+you are done with your `pyrealm` work just type `deactivate`. You can re-activate and
+alter your environment anytime once it is set up.
 
 ## Running the worked examples
 
-The easiest way to get started with using `pyrealm` is going through the worked
-examples in this documentation.
-Each example can be run in a [jupyter notebook](https://jupyter.org/). For this,
-it can be opened using a jupyter hub cloud service such as
-[Google Colab](https://colab.research.google.com/) or a locally hosted jupyter
-hub. It is also straightforward to install and run it locally on your machine
+The easiest way to get started with using `pyrealm` is going through the worked examples
+in this documentation. Each example can be run in a [jupyter
+notebook](https://jupyter.org/). For this, it can be opened using a jupyter hub cloud
+service such as [Google Colab](https://colab.research.google.com/) or a locally hosted
+jupyter hub. It is also straightforward to install and run it locally on your machine
 following these steps:
 
 - Install [JupyterLab](https://jupyterlab.readthedocs.io/en/stable/) by running
@@ -93,16 +90,18 @@ jupyter notebooks are located.
 [JupyterLab documentation](https://jupyterlab.readthedocs.io/en/stable/user/interface.html)
 for a detailed description of the user interface.
 
-There are a number of Python packages which are necessary for running the
-examples, namely `wget` to download example data (note that this is different
-in the jupyter notebooks from the worked examples in the documentation, which
-access the data directly from the github repository without downloading it
-separately), `matplotlib`, for plotting, `xarray` as a data structure for
-handling the data and `netCDF4` as file format in which the example data is
-stored.
+There are a number of Python packages which are necessary for running the examples,
+namely `wget` to download example data (note that this is different in the jupyter
+notebooks from the worked examples in the documentation, which access the data directly
+from the github repository without downloading it separately), `matplotlib`, for
+plotting, `xarray` as a data structure for handling the data and `netCDF4` as file
+format in which the example data is stored.
 
-The following code block (run from the `jupyter_notebooks` directory of
-  `pyrealm`) sets everything up for running the notebooks on Linux:
+The `pyrealm` package is also designed to work with multi-dimensional inputs to support
+efficient calculations - please review the overview of [array inputs](./array_inputs.md).
+
+The following code block (run from the `jupyter_notebooks` directory of `pyrealm`) sets
+  everything up for running the notebooks on Linux:
 
 ```bash
 pip install virtualenv
@@ -126,8 +125,7 @@ Good notebooks to get started with are
 
 ## `pyrealm` developers
 
-We welcome contributions to improving and extending the `pyrealm` package. The
-code for `pyrealm` can be found
-[on Github](https://github.com/ImperialCollegeLondon/pyrealm/). A guide how to
-develop for `pyrealm` can be found in the
-[`CONTRIBUTING.md` file](https://github.com/ImperialCollegeLondon/pyrealm/blob/develop/CONTRIBUTING.md).
+We welcome contributions to improving and extending the `pyrealm` package. The code for
+`pyrealm` can be found [on Github](https://github.com/ImperialCollegeLondon/pyrealm/). A
+guide how to develop for `pyrealm` can be found in the [`CONTRIBUTING.md`
+file](https://github.com/ImperialCollegeLondon/pyrealm/blob/develop/CONTRIBUTING.md).
