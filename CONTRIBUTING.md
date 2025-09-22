@@ -28,8 +28,8 @@ for more details.
 The `pyrealm` package uses the `poetry` tool for package management. Getting a simple
 development environment should involve:
 
-* Installing `python`: `pyrealm` requires `python >3.10` and we currently support
-  versions `python <=3.13`.
+* Installing `python`: `pyrealm` requires `python >3.10` and we currently run continuous
+  testing against versions `python >3.10, <=3.13`.
 * Installing `poetry`: although the `poetry` tool manages the versions of all the
   package requirements, the version of `poetry` itself is not managed. Developers should
   all ensure that they install the **same version of poetry** to avoid version

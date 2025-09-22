@@ -39,31 +39,28 @@ The `pyrealm` package currently includes:
 For more details, see the package website:
 [https://pyrealm.readthedocs.io/](https://pyrealm.readthedocs.io/).
 
-## Version 2.0.0 development
+## Version overview
 
-New functionality being implemented after version 1.0.0 has lead to some immediate
-breaking changes in the API, for example in the handling of quantum yield settings in
-the class signatures for the `PModel` and `SubdailyPModel`. As the package uses
-[semantic versioning](https://semver.org/), these changes to the API require that new
-releases be made under a new major version.
+The `pyrealm` package uses [semantic versioning](https://semver.org/) and the list below
+summarise the major changes:
 
-We will be publishing a series of "release candidates" of the 2.0.0 package. These will
-be used to identify issues with the current API and try to stabilise a new API. The
-content of version 2.0.0 is not yet finalised, so these release candidates may also add
-new functionality.
+* Version `1.0.0`: initial implementation of the P Model and associated functionality
+* Version `2.0.0`: wide refactor of P Model code to a new API, extension of the package
+  functionality to include the SPLASH v1 model and experimental modules developing
+  functionality for plant demography and phenology.
 
-We recommend that you update to the most recent release candidate of version 2.0.0. The
-documentation now includes a [migration
+We **strongly** recommend that you update to version `2.0.0`. The documentation
+includes a [migration
 guide](https://pyrealm.readthedocs.io/en/develop/users/versions.html) to help update
-existing code.
+existing code using version `1.0.0`.
 
 ## Using `pyrealm`
 
-The `pyrealm` package requires Python 3 and the currently supported Python versions are:
-3.10, 3.11 and 3.12. We make released package versions available via
-[PyPi](https://pypi.org/project/pyrealm/) and also generate DOIs for each release via
-[Zenodo](https://doi.org/10.5281/zenodo.8366847). You can install the most recent
-release using `pip`:
+The `pyrealm` package requires Python 3.11 or greater and we currently test all
+`pyrealm` code using Python 3.11, 3.12 and 3.13. We make released package versions
+available via [PyPi](https://pypi.org/project/pyrealm/) and also generate DOIs for each
+release via [Zenodo](https://doi.org/10.5281/zenodo.8366847). You can install the most
+recent release using `pip`:
 
 ```sh
 pip install pyrealm

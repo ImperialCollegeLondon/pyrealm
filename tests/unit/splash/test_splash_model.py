@@ -20,7 +20,7 @@ def calendar(request, grid_benchmarks):
     """Provide the dates with a random start date."""
     from pyrealm.core.calendar import Calendar
 
-    dates = grid_benchmarks[0].time.data
+    dates = grid_benchmarks[0].time.to_numpy()
     start, end = request.param
     yield Calendar(dates[start:end])
 
@@ -44,7 +44,7 @@ def test_splash_model_init(splash_core_constants, grid_benchmarks, var, flag):
     )
 
     ds = grid_benchmarks[0].sel(time=slice("2000-01-01", "2000-04-01")).copy()
-    dates = ds.time.data
+    dates = ds.time.to_numpy()
 
     # ensure raising error if calendar size is more or less than timestamps
     if var == "dates":
@@ -56,7 +56,7 @@ def test_splash_model_init(splash_core_constants, grid_benchmarks, var, flag):
     # ensure warning if variable is out of bounds
     else:
         vmin, vmax = bounds[var]
-        arr = ds[var].data
+        arr = ds[var].to_numpy()
         if flag < 0:  # out of lower bound
             arr.flat[np.random.choice(arr.size)] = vmin - 1e-4
         else:  # out of upper bound
@@ -64,14 +64,19 @@ def test_splash_model_init(splash_core_constants, grid_benchmarks, var, flag):
         context = pytest.warns(UserWarning)
 
     with context:
+        # Convert latitude from (Y) to (1, Y, 1)
+        lat = ds.lat.to_numpy()[np.newaxis, :, np.newaxis]
+        # Convert elevation from (Y, X) to (1, Y, X)
+        elv = ds.elev.to_numpy()[np.newaxis, :, :]
+
+        # Fit the model
         SplashModel(
-            lat=np.broadcast_to(ds.lat.data[None, :, None], ds.sf.data.shape),
-            elv=np.broadcast_to(ds.elev.data[None, :, :], ds.sf.data.shape),
+            lat=lat,
+            elv=elv,
             dates=Calendar(dates),
-            sf=ds.sf.data,
-            tc=ds.tmp.data,
-            pn=ds.pre.data,
-            core_const=splash_core_constants,
+            sf=ds.sf.to_numpy(),
+            tc=ds.tmp.to_numpy(),
+            pn=ds.pre.to_numpy(),
         )
 
 
@@ -84,12 +89,12 @@ def splash_model(grid_benchmarks, splash_core_constants, calendar):
     ds = grid_benchmarks[0].sel(time=calendar.dates)
 
     splash = SplashModel(
-        lat=np.broadcast_to(ds.lat.data[None, :, None], ds.sf.data.shape),
-        elv=np.broadcast_to(ds.elev.data[None, :, :], ds.sf.data.shape),
+        lat=ds.lat.to_numpy()[None, :, None],
+        elv=ds.elev.to_numpy()[None, :, :],
         dates=calendar,
-        sf=ds.sf.data,
-        tc=ds.tmp.data,
-        pn=ds.pre.data,
+        sf=ds.sf.to_numpy(),
+        tc=ds.tmp.to_numpy(),
+        pn=ds.pre.to_numpy(),
         core_const=splash_core_constants,
     )
 
