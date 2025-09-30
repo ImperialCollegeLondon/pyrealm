@@ -1,14 +1,14 @@
 """Utilities for handling xarray inputs to functions that expect arrays."""
 
-import functools
-from collections.abc import Callable, Hashable
-from typing import ParamSpec, TypeVar
+from collections.abc import Hashable
+from typing import TypeVar
 
+import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 
 
-def _get_dims(args: list[xr.DataArray]) -> list[Hashable]:
+def _get_dims(*args: NDArray | xr.DataArray) -> list[Hashable]:
     """Get the full list of dimensions across all DataArray arguments."""
     dims = []
     for arg in args:
@@ -28,12 +28,11 @@ def _convert_arg(da: xr.DataArray, dims: list[Hashable]) -> NDArray:
     return da.to_numpy()
 
 
-P = ParamSpec("P")
-T = TypeVar("T")
+T = TypeVar("T", bound=np.generic)
 
 
-def xarray_inputs(fn: Callable[P, T]) -> Callable[P, T]:
-    """Decorator that converts any `xarray.DataArray` inputs to numpy arrays.
+def xarray_inputs(*arrays: NDArray[T] | xr.DataArray) -> tuple[NDArray[T], ...]:
+    """Converts any `xarray.DataArray` inputs to numpy arrays.
 
     This allows functions that expect numpy arrays to be used directly with
     xarray DataArrays, simplifying compatibility between data types.
@@ -46,23 +45,28 @@ def xarray_inputs(fn: Callable[P, T]) -> Callable[P, T]:
     No checking of shape consistency is performed - use check_input_shapes for this.
     """
 
-    @functools.wraps(fn)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-        # Get the list of DataArrays (if any)
-        inputs = [*args, *kwargs.values()]
-        data_arrays = [arg for arg in inputs if isinstance(arg, xr.DataArray)]
-        if data_arrays:
-            # Get the dimensions
-            dims = _get_dims(data_arrays)
-            # Convert the DataArray inputs and expand their dimensions
-            args = tuple(
-                _convert_arg(a, dims) if isinstance(a, xr.DataArray) else a
-                for a in args
-            )  # type: ignore[reportAssignmentType, assignment]
-            kwargs = {
-                k: _convert_arg(v, dims) if isinstance(v, xr.DataArray) else v
-                for k, v in kwargs.items()
-            }  # type: ignore[reportAssignmentType, assignment]
-        return fn(*args, **kwargs)
+    dims = _get_dims(*arrays)
+    return tuple(
+        _convert_arg(a, dims) if isinstance(a, xr.DataArray) else a for a in arrays
+    )
 
-    return wrapper
+
+def xarray_inputs_kw(
+    *arrays: NDArray[T] | xr.DataArray,
+    **kwargs: NDArray[T] | xr.DataArray,
+) -> tuple[*tuple[NDArray[T], ...], dict[str, NDArray[T]]]:
+    """Converts any `xarray.DataArray` inputs to numpy arrays.
+
+    Performs the same functionality as :func:`xarray_inputs` but can also take - and
+    return - a kwargs dictionary.
+    """
+
+    dims = _get_dims(*arrays, *kwargs.values())
+    new_arrays = tuple(
+        _convert_arg(a, dims) if isinstance(a, xr.DataArray) else a for a in arrays
+    )
+    new_kwargs = {
+        k: _convert_arg(v, dims) if isinstance(v, xr.DataArray) else v
+        for k, v in kwargs.items()
+    }
+    return (*new_arrays, new_kwargs)

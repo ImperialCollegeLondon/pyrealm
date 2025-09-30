@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from pyrealm.core.xarray import xarray_inputs
+from pyrealm.core.xarray import xarray_inputs, xarray_inputs_kw
 
 
 @pytest.fixture
@@ -20,52 +20,83 @@ def dataset() -> xr.Dataset:
     return dataset.sel(latitude=slice(-40, 40))
 
 
-@xarray_inputs
-def xarray_inputs_dummy_func(*args, **kwargs):
-    """Dummy function that just returns arguments for inspection."""
-    return [*args, *kwargs.values()]
-
-
-def test_xarray_inputs_decorator():
-    """Test the xarray_inputs decorator correctly converts xarray inputs."""
+def test_xarray_inputs():
+    """Test xarray_inputs correctly converts xr.DataArrays into np.arrays."""
 
     # Single input
     in_a = xr.DataArray(np.array([1, 2, 3]))
-    (out_a,) = xarray_inputs_dummy_func(in_a)
+    out_a = xarray_inputs(in_a)
     assert isinstance(out_a, np.ndarray)
     np.testing.assert_array_equal(out_a, in_a.values)
 
     # Multiple inputs
     in_a = xr.DataArray(np.array([1, 2, 3]))
-    in_b = "string"
-    in_c = xr.DataArray(np.ones((2, 3)))
-    out_a, out_b, out_c = xarray_inputs_dummy_func(in_a, in_b, c=in_c)
+    in_b = xr.DataArray(np.ones((2, 3)))
+    out_a, out_b = xarray_inputs(in_a, in_b)
     assert isinstance(out_a, np.ndarray)
-    assert isinstance(out_b, str)
-    assert isinstance(out_c, np.ndarray)
+    assert isinstance(out_b, np.ndarray)
     np.testing.assert_array_equal(out_a.ravel(), in_a.values.ravel())
-    np.testing.assert_array_equal(out_c.ravel(), in_c.values.ravel())
+    np.testing.assert_array_equal(out_b.ravel(), in_b.values.ravel())
 
-    # No inputs - check for no error
-    xarray_inputs_dummy_func()
+    # No inputs
+    out_none = xarray_inputs()
+    assert out_none == ()
 
     # No DataArray inputs - check inputs unchanged
     in_a = np.ones((2, 2))
     in_b = np.ones(3)
-    in_c = "string"
-    out_a, out_b, out_c = xarray_inputs_dummy_func(in_a, in_b, in_c)
+    out_a, out_b = xarray_inputs(in_a, in_b)
     np.testing.assert_array_equal(out_a, in_a)
     np.testing.assert_array_equal(out_b, in_b)
-    assert out_c == in_c
 
 
-def test_xarray_inputs_decorator_dimensions():
-    """Test the xarray_inputs decorator correctly expands missing dimensions."""
+def test_xarray_inputs_kw():
+    """Test xarray_inputs_kw correctly converts xr.DataArrays into np.arrays."""
 
-    in_a = xr.DataArray(np.ones((2, 3)), dims=["a", "b"])
-    in_b = xr.DataArray(np.ones(3), dims=["b"])
-    in_c = xr.DataArray(np.ones((4, 2)), dims=["c", "a"])
-    out_a, out_b, out_c = xarray_inputs_dummy_func(in_a, in_b, c=in_c)
+    # Single input
+    in_a = xr.DataArray(np.array([1, 2, 3]))
+    (kwargs,) = xarray_inputs_kw(a=in_a)
+    out_a = kwargs["a"]
+    assert isinstance(out_a, np.ndarray)
+    np.testing.assert_array_equal(out_a, in_a.values)
+
+    # Multiple inputs
+    in_a = xr.DataArray(np.array([1, 2, 3]))
+    in_b = xr.DataArray(np.ones((2, 3)))
+    in_c = xr.DataArray(np.ones(1))
+    in_d = xr.DataArray(np.ones(1))
+    out_a, out_b, kwargs = xarray_inputs_kw(in_a, in_b, c=in_c, d=in_d)
+    out_c = kwargs["c"]
+    out_d = kwargs["d"]
+    assert isinstance(out_a, np.ndarray)
+    assert isinstance(out_b, np.ndarray)
+    assert isinstance(out_c, np.ndarray)
+    assert isinstance(out_d, np.ndarray)
+    np.testing.assert_array_equal(out_a.ravel(), in_a.values.ravel())
+    np.testing.assert_array_equal(out_b.ravel(), in_b.values.ravel())
+    np.testing.assert_array_equal(out_c.ravel(), in_c.values.ravel())
+    np.testing.assert_array_equal(out_d.ravel(), in_d.values.ravel())
+
+
+def test_xarray_inputs_dimensions():
+    """Test xarray_inputs correctly expands missing dimensions."""
+
+    in_a = xr.DataArray(np.ones((2, 3)), dims=["1", "2"])
+    in_b = xr.DataArray(np.ones(3), dims=["2"])
+    in_c = xr.DataArray(np.ones((4, 2)), dims=["3", "1"])
+
+    # xarray_inputs
+    out_a, out_b, out_c = xarray_inputs(in_a, in_b, in_c)
+    assert isinstance(out_a, np.ndarray)
+    assert isinstance(out_b, np.ndarray)
+    assert isinstance(out_c, np.ndarray)
+    assert out_a.shape == (2, 3, 1)
+    assert out_b.shape == (1, 3, 1)
+    assert out_c.shape == (2, 1, 4)
+
+    # xarray_inputs_kw
+    out_a, out_b, out_c_dict = xarray_inputs_kw(in_a, in_b, c=in_c)
+    out_c = out_c_dict["c"]
     assert isinstance(out_a, np.ndarray)
     assert isinstance(out_b, np.ndarray)
     assert isinstance(out_c, np.ndarray)
