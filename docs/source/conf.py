@@ -175,6 +175,10 @@ nitpick_ignore = [
     ),
     ("py:class", "pandas.core.frame.DataFrame"),
 ]
+# Ignore TypeVars (anything named 'T')
+nitpick_ignore_regex = [
+    ("py:class", r".*\.T"),
+]
 
 intersphinx_mapping = {
     "pytest": ("https://docs.pytest.org/en/stable/", None),
