@@ -3,6 +3,13 @@
 This document provides a brief overview of the main changes to `pyrealm` at each of the
 released versions. More detail can be found at the GitHub release page for each version.
 
+## 1.0.1
+
+With version 1.0.1, we are freezing development of the version 1.0 branch. Version 1.0.1
+is purely a documentation release to add an obsolescence warnings banner to all pages,
+update this file, and make some cosmetic changes to the webpage layout to make it easier
+to navigate versions.
+
 ## 1.0.0
 
 - Addition of a more pythonic re-implementation of the SPLASH v1.0 model with a more

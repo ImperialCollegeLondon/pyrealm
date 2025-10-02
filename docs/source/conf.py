@@ -7,24 +7,32 @@ add these directories to sys.path here. If the directory is relative to the
 documentation root, use os.path.abspath to make it absolute, like shown here.
 """
 
-import os
 import sys
 from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
 
+# Import Matplotlib to avoid this message in notebooks:
+# "Matplotlib is building the font cache; this may take a moment."
+import matplotlib.pyplot  # noqa: F401
 import sphinxcontrib.bibtex.plugin
 from sphinxcontrib.bibtex.style.referencing import BracketStyle
 from sphinxcontrib.bibtex.style.referencing.author_year import AuthorYearReferenceStyle
 
 from pyrealm import __version__ as pyrealm_version
 
-sys.path.insert(0, os.path.abspath("../"))
+sys.path.insert(0, str(Path("../").resolve()))
 
 
 # -- Project information -----------------------------------------------------
 
 project = "pyrealm: Ecosystem Models in Python"
-copyright = "2020, David Orme"
-author = "David Orme"
+html_logo = "_static/images/pyrealm_logo_white_background.png"
+html_favicon = "_static/images/pyrealm_favicon.png"
+
+current_year = datetime.today().strftime("%Y")
+copyright = "2020-" + current_year + ", Pyrealm Developers"
+author = "Pyrealm Developers"
 
 # The full version, including alpha/beta/rc tags
 version = pyrealm_version
@@ -42,9 +50,11 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.todo",
     "sphinxcontrib.bibtex",
     "myst_nb",
     "sphinx_rtd_theme",
+    "sphinx_design",
     "sphinx_external_toc",
 ]
 
@@ -52,9 +62,11 @@ extensions = [
 external_toc_path = "_toc.yml"  # optional, default: _toc.yml
 external_toc_exclude_missing = False  # optional, default: False
 
+# Include TODOs
+todo_include_todos = True
+
+
 # Citation styling
-
-
 def bracket_style() -> BracketStyle:
     """Custom citation parenthesis style."""
     return BracketStyle(
@@ -79,23 +91,29 @@ sphinxcontrib.bibtex.plugin.register_plugin(
 )
 
 bibtex_reference_style = "author_year_round"
-
+bibtex_default_style = "plain"
 
 # Cross-reference checking
 # TODO - find some better solution than this to all of these bizarre cross reference
 #        problems.
+
 nitpicky = True
 nitpick_ignore = [
     ("py:class", "numpy._typing._array_like._ScalarType_co"),
     ("py:class", "numpy._typing._generic_alias.ScalarType"),
     ("py:class", "numpy.float32"),
+    ("py:class", "numpy.float64"),
+    ("py:class", "numpy.int64"),
     ("py:class", "numpy.timedelta64"),
     ("py:class", "numpy.bool_"),
     ("py:class", "numpy.ndarray"),
     ("py:class", "numpy.dtype"),
     ("py:class", "numpy.dtype[+ScalarType]"),
     ("py:class", "numpy.typing.NDArray"),
+    ("py:class", "numpy.NDArray"),
+    ("py:class", "NDArray"),
     ("py:class", "dataclasses.InitVar"),
+    ("py:class", "numpy._typing._array_like._ScalarT"),
     (
         "py:class",
         "dataclasses.InitVar[numpy.ndarray[typing.Any, numpy.dtype[+ScalarType]]]",
@@ -137,14 +155,18 @@ nitpick_ignore = [
             "numpy.ndarray[typing.Any, numpy.dtype[+ScalarType]]]"
         ),
     ),
+    ("py:class", "pandas.core.frame.DataFrame"),
 ]
 
 intersphinx_mapping = {
     "pytest": ("https://docs.pytest.org/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
+    "pandas": ("http://pandas.pydata.org/pandas-docs/dev/", None),
     "shapely": ("https://shapely.readthedocs.io/en/stable/", None),
+    "marshmallow": ("https://marshmallow.readthedocs.io/en/stable/", None),
 }
 
 
@@ -189,12 +211,12 @@ exclude_patterns = ["maxime*", "**.ipynb_checkpoints"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 
-# html_theme = 'sphinx_material'
+# html_theme = "sphinx_material"
 html_theme = "sphinx_rtd_theme"
 
 html_theme_options = {
-    "logo_only": False,
-    "display_version": True,
+    "logo_only": True,
+    "version_selector": True,
     "prev_next_buttons_location": "top",
     "style_external_links": False,
     "style_nav_header_background": "grey",
