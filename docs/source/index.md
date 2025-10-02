@@ -12,13 +12,18 @@ kernelspec:
   name: python3
 ---
 
-# The `pyrealm` package
+<!-- markdownlint-disable-next-line MD041-->
+```{image} /_static/images/pyrealm_logo.png
+:width: 50%
+:align: center
+:alt: The pyrealm logo: a green leaf over the shining sun.
+```
 
 The `pyrealm` package provides Python implementations of models of plant productivity
 and demography. The package is in active development and currently provides the
 following modules:
 
-## Module overview
+# Module overview
 
 The `pmodel` module
 : Fitting the [P Model](users/pmodel/module_overview), which is an ecophysiological
@@ -32,12 +37,6 @@ The `tmodel` module
 The `core` module
 : Contains fundamental utilities and physics functionality shared across the
   package, including the [hygro](users/hygro) and the utilities submodules.
-
-```{warning} Warning
-
-This is a warning
-
-```
 
 ## Indices and tables
 
