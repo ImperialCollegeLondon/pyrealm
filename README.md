@@ -8,7 +8,9 @@
 [![Test and build](https://github.com/ImperialCollegeLondon/pyrealm/actions/workflows/pyrealm_ci.yaml/badge.svg?branch=develop)](https://github.com/ImperialCollegeLondon/pyrealm/actions/workflows/pyrealm_ci.yaml)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/ImperialCollegeLondon/pyrealm/develop.svg)](https://results.pre-commit.ci/latest/github/ImperialCollegeLondon/pyrealm/develop)
 
-:::{warning} Outdated version
+---
+
+## Outdated version
 
 This is documentation for version 1.0 of `pyrealm`, which should now be considered
 obsolete. Version 2.0 introduced major changes to the API and to default recommended
@@ -18,7 +20,7 @@ We **strongly recommend you upgrade**  to the latest stable version of `pyrealm`
 update your code to the new API using the [migration
 guide](https://pyrealm.readthedocs.io/en/stable/users/versions.html).
 
-:::
+---
 
 The `pyrealm` package provides a toolbox implementing some key models for estimating
 plant productivity, growth and demography in Python. The outputs of different models
