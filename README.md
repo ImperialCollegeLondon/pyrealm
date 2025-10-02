@@ -3,12 +3,22 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/pyrealm)](https://pypi.org/project/pyrealm/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pyrealm)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8366847.svg)](https://doi.org/10.5281/zenodo.8366847)
-[![Documentation
-Status](https://readthedocs.org/projects/pyrealm/badge/?version=latest)](https://pyrealm.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://app.readthedocs.org/projects/pyrealm/badge/?version=stable)](https://pyrealm.readthedocs.io/en/stable/)
 [![codecov](https://codecov.io/gh/ImperialCollegeLondon/pyrealm/branch/develop/graph/badge.svg)](https://codecov.io/gh/ImperialCollegeLondon/pyrealm)
-[![Test and
-build](https://github.com/ImperialCollegeLondon/pyrealm/actions/workflows/pyrealm_ci.yaml/badge.svg?branch=develop)](https://github.com/ImperialCollegeLondon/pyrealm/actions/workflows/pyrealm_ci.yaml)
+[![Test and build](https://github.com/ImperialCollegeLondon/pyrealm/actions/workflows/pyrealm_ci.yaml/badge.svg?branch=develop)](https://github.com/ImperialCollegeLondon/pyrealm/actions/workflows/pyrealm_ci.yaml)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/ImperialCollegeLondon/pyrealm/develop.svg)](https://results.pre-commit.ci/latest/github/ImperialCollegeLondon/pyrealm/develop)
+
+:::{warning} Outdated version
+
+This is documentation for version 1.0 of `pyrealm`, which should now be considered
+obsolete. Version 2.0 introduced major changes to the API and to default recommended
+settings and we do not plan to backport any of these changes to this version branch.
+
+We **strongly recommend you upgrade**  to the latest stable version of `pyrealm` and
+update your code to the new API using the [migration
+guide](https://pyrealm.readthedocs.io/en/stable/users/versions.html).
+
+:::
 
 The `pyrealm` package provides a toolbox implementing some key models for estimating
 plant productivity, growth and demography in Python. The outputs of different models
