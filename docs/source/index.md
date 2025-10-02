@@ -33,12 +33,6 @@ The `core` module
 : Contains fundamental utilities and physics functionality shared across the
   package, including the [hygro](users/hygro) and the utilities submodules.
 
-```{warning} Warning
-
-This is a warning
-
-```
-
 ## Indices and tables
 
 * {ref}`genindex`
