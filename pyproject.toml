@@ -28,14 +28,14 @@ packages = [
 ]
 readme = "README.md"
 repository = "https://github.com/ImperialCollegeLondon/pyrealm"
-version = "1.0.0"
+version = "1.0.1"
 
 [tool.poetry.dependencies]
-dacite = "^1.6.0" 
-numpy = "^2.0.0" 
+dacite = "^1.6.0"
+numpy = "^2.0.0"
 python = ">=3.10"
-scipy = "^1.7.3" 
-tabulate = "^0.8.10" 
+scipy = "^1.7.3"
+tabulate = "^0.8.10"
 
 [tool.poetry.group.types.dependencies]
 pandas-stubs = "^2.2.0.240218"
@@ -128,7 +128,7 @@ select = [
   "I", # isort
   "UP", # pyupgrade
   "RUF", # RUF specific checks
-  "NPY201"
+  "NPY201",
 ]
 
 # On top of the Google convention, disable:
