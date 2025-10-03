@@ -44,50 +44,50 @@ class DailySolarFluxes:
         temperature: Daily temperature of observations (°C)
     """
 
-    latitude: InitVar[NDArray[np.float64]]
-    elevation: InitVar[NDArray[np.float64]]
+    latitude: InitVar[NDArray[np.floating]]
+    elevation: InitVar[NDArray[np.floating]]
     dates: Calendar
-    sunshine_fraction: InitVar[NDArray[np.float64]]
-    temperature: InitVar[NDArray[np.float64]]
+    sunshine_fraction: InitVar[NDArray[np.floating]]
+    temperature: InitVar[NDArray[np.floating]]
     core_const: CoreConst = field(default_factory=lambda: CoreConst())
 
-    nu: NDArray[np.float64] = field(init=False)
+    nu: NDArray[np.floating] = field(init=False)
     r"""True heliocentric anomaly (:math:`\nu`, degrees)"""
-    lambda_: NDArray[np.float64] = field(init=False)
+    lambda_: NDArray[np.floating] = field(init=False)
     r"""True heliocentric longitude, (:math:`\lambda`, degrees)"""
-    distance_factor: NDArray[np.float64] = field(init=False)
+    distance_factor: NDArray[np.floating] = field(init=False)
     """Distance factor (:math:`d_r`, -)"""
-    declination: NDArray[np.float64] = field(init=False)
+    declination: NDArray[np.floating] = field(init=False)
     r"""Declination angle (:math:`\delta`, degrees)"""
-    ru: NDArray[np.float64] = field(init=False)
+    ru: NDArray[np.floating] = field(init=False)
     """Intermediate variable (:math:`r_u`, unitless)"""
-    rv: NDArray[np.float64] = field(init=False)
+    rv: NDArray[np.floating] = field(init=False)
     """Intermediate variable (:math:`r_v`, unitless)"""
-    sunset_hour_angle: NDArray[np.float64] = field(init=False)
+    sunset_hour_angle: NDArray[np.floating] = field(init=False)
     """Sunset hour angle (:math:`h_s`, degrees)"""
-    daily_solar_radiation: NDArray[np.float64] = field(init=False)
+    daily_solar_radiation: NDArray[np.floating] = field(init=False)
     """Daily extraterrestrial solar radiation (:math:`R_d`, J m-2)"""
-    transmissivity: NDArray[np.float64] = field(init=False)
+    transmissivity: NDArray[np.floating] = field(init=False)
     r"""Transmittivity (:math:`\tau`, unitless)"""
-    daily_ppfd: NDArray[np.float64] = field(init=False)
+    daily_ppfd: NDArray[np.floating] = field(init=False)
     """Daily photosynthetic photon flux density (PPFD, µmol m-2 s-1)"""
-    net_longwave_radiation: NDArray[np.float64] = field(init=False)
+    net_longwave_radiation: NDArray[np.floating] = field(init=False)
     """Net longwave radiation (:math:`R_{nl}`, W m-2)"""
-    rw: NDArray[np.float64] = field(init=False)
+    rw: NDArray[np.floating] = field(init=False)
     """Intermediate variable (:math:`r_w`,  W m-2)"""
-    crossover_hour_angle: NDArray[np.float64] = field(init=False)
+    crossover_hour_angle: NDArray[np.floating] = field(init=False)
     """Net radiation cross-over hour angle, (:math:`h_n`, degrees)"""
-    daytime_net_radiation: NDArray[np.float64] = field(init=False)
+    daytime_net_radiation: NDArray[np.floating] = field(init=False)
     """Daytime net radiation (:math:`R_{d}`, J m-2)"""
-    nighttime_net_radiation: NDArray[np.float64] = field(init=False)
+    nighttime_net_radiation: NDArray[np.floating] = field(init=False)
     """Nighttime net radiation (:math:`R_{nn}`, J m-2)"""
 
     def __post_init__(
         self,
-        latitude: NDArray[np.float64],
-        elevation: NDArray[np.float64],
-        sunshine_fraction: NDArray[np.float64],
-        temperature: NDArray[np.float64],
+        latitude: NDArray[np.floating],
+        elevation: NDArray[np.floating],
+        sunshine_fraction: NDArray[np.floating],
+        temperature: NDArray[np.floating],
     ) -> None:
         """Populates key fluxes from input variables."""
 

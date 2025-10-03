@@ -21,16 +21,16 @@ from pyrealm.demography.crown import (
 
 def solve_canopy_area_filling_height(
     z: float,
-    stem_height: NDArray[np.float64],
-    crown_area: NDArray[np.float64],
-    m: NDArray[np.float64],
-    n: NDArray[np.float64],
-    q_m: NDArray[np.float64],
-    z_max: NDArray[np.float64],
-    n_individuals: NDArray[np.float64],
+    stem_height: NDArray[np.floating],
+    crown_area: NDArray[np.floating],
+    m: NDArray[np.floating],
+    n: NDArray[np.floating],
+    q_m: NDArray[np.floating],
+    z_max: NDArray[np.floating],
+    n_individuals: NDArray[np.floating],
     target_area: float = 0,
     validate: bool = True,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     """Solver function for finding the height where a canopy occupies a given area.
 
     This function takes the number of individuals in each cohort along with the stem
@@ -98,7 +98,7 @@ def fit_perfect_plasticity_approximation(
     canopy_gap_fraction: float,
     max_stem_height: float,
     solver_tolerance: float,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Find canopy layer heights under the PPA model.
 
     Finds the closure heights of the canopy layers under the perfect plasticity
@@ -221,22 +221,22 @@ class CohortCanopyData(PandasExporter):
     )
 
     # Init vars
-    projected_leaf_area: InitVar[NDArray[np.float64]]
+    projected_leaf_area: InitVar[NDArray[np.floating]]
     """An array of the stem projected leaf area for each cohort at each of the required
     heights."""
     n_individuals: InitVar[NDArray[np.int_]]
     """The number of individuals for each cohort."""
-    lai: InitVar[NDArray[np.float64]]
+    lai: InitVar[NDArray[np.floating]]
     """The leaf area index of the plant functional type for each cohort."""
-    par_ext: InitVar[NDArray[np.float64]]
+    par_ext: InitVar[NDArray[np.floating]]
     """The extinction coefficient of the plant functional type for each cohort."""
     cell_area: InitVar[float]
     """The area available to the community."""
 
     # Computed variables
-    stem_leaf_area: NDArray[np.float64] = field(init=False)
+    stem_leaf_area: NDArray[np.floating] = field(init=False)
     """The leaf area of the crown model for each cohort by layer."""
-    cohort_absorption: NDArray[np.float64] = field(init=False)
+    cohort_absorption: NDArray[np.floating] = field(init=False)
     """The Beer-Lambert absorption fraction for each cohort."""
     fapar: NDArray[np.floating] = field(init=False)
     """The across layer fractions of absorbed radiation for each cohort by layer."""
@@ -249,10 +249,10 @@ class CohortCanopyData(PandasExporter):
 
     def __post_init__(
         self,
-        projected_leaf_area: NDArray[np.float64],
+        projected_leaf_area: NDArray[np.floating],
         n_individuals: NDArray[np.int_],
-        lai: NDArray[np.float64],
-        par_ext: NDArray[np.float64],
+        lai: NDArray[np.floating],
+        par_ext: NDArray[np.floating],
         cell_area: float,
     ) -> None:
         """Calculates cohort canopy attributes from the input data."""
@@ -264,7 +264,7 @@ class CohortCanopyData(PandasExporter):
         self.stem_leaf_area = np.diff(projected_leaf_area, axis=0, prepend=0)
 
         # Calculate Beer-Lambert light absorption coefficient for each cohort
-        self.cohort_absorption = 1 - np.exp(-par_ext * lai)
+        self.cohort_absorption = 1.0 - np.exp(-par_ext * lai)
 
         # Calculate the community wide properties across cohorts:
         # - average light transmission through each layer
@@ -319,34 +319,34 @@ class CommunityCanopyData(PandasExporter):
     )
 
     # Init vars
-    absorption: InitVar[NDArray[np.float64]]
+    absorption: InitVar[NDArray[np.floating]]
     """The Beer Lambert light absorption fraction for each cohort."""
-    leaf_area_index: InitVar[NDArray[np.float64]]
+    leaf_area_index: InitVar[NDArray[np.floating]]
     """The leaf area index for each cohort."""
-    cohort_leaf_area: InitVar[NDArray[np.float64]]
+    cohort_leaf_area: InitVar[NDArray[np.floating]]
     """The total leaf area per cohort for each layer."""
     cell_area: InitVar[float]
     """The total area within the community."""
 
     # Calculated variables
-    average_layer_absorption: NDArray[np.float64] = field(init=False)
+    average_layer_absorption: NDArray[np.floating] = field(init=False)
     """The average absorption within layers across the community."""
-    average_layer_fapar: NDArray[np.float64] = field(init=False)
+    average_layer_fapar: NDArray[np.floating] = field(init=False)
     """The average fAPAR of the community for each layer."""
-    average_layer_lai: NDArray[np.float64] = field(init=False)
+    average_layer_lai: NDArray[np.floating] = field(init=False)
     """The average leaf area index of the community within layers."""
-    transmission_profile: NDArray[np.float64] = field(init=False)
+    transmission_profile: NDArray[np.floating] = field(init=False)
     """The light transmission profile through the canopy by layer."""
-    transmission_to_ground: NDArray[np.float64] = field(init=False)
+    transmission_to_ground: NDArray[np.floating] = field(init=False)
     """The fraction of light reaching the ground below the canopy."""
 
     __experimental__ = True
 
     def __post_init__(
         self,
-        absorption: NDArray[np.float64],
-        leaf_area_index: NDArray[np.float64],
-        cohort_leaf_area: NDArray[np.float64],
+        absorption: NDArray[np.floating],
+        leaf_area_index: NDArray[np.floating],
+        cohort_leaf_area: NDArray[np.floating],
         cell_area: float,
     ) -> None:
         """Calculates community-wide canopy attributes from the input data."""
@@ -407,7 +407,7 @@ class Canopy:
     def __init__(
         self,
         community: Community,
-        layer_heights: NDArray[np.float64] | None = None,
+        layer_heights: NDArray[np.floating] | None = None,
         fit_ppa: bool = False,
         canopy_gap_fraction: float = 0,
         solver_tolerance: float = 0.001,
@@ -428,7 +428,7 @@ class Canopy:
         """Total number of canopy layers."""
         self.n_cohorts: int
         """Total number of cohorts in the canopy."""
-        self.heights: NDArray[np.float64]
+        self.heights: NDArray[np.floating]
         """The vertical heights at which the canopy structure is calculated."""
 
         self.crown_profile: CrownProfile

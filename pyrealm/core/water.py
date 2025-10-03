@@ -10,10 +10,10 @@ from pyrealm.core.utilities import check_input_shapes, evaluate_horner_polynomia
 
 
 def calc_density_h2o_chen(
-    tc: NDArray[np.float64],
-    p: NDArray[np.float64],
+    tc: NDArray[np.floating],
+    p: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     """Calculate the density of water using Chen et al 2008.
 
     This function calculates the density of water at a given temperature and pressure
@@ -65,10 +65,10 @@ def calc_density_h2o_chen(
 
 
 def calc_density_h2o_fisher(
-    tc: NDArray[np.float64],
-    patm: NDArray[np.float64],
+    tc: NDArray[np.floating],
+    patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     """Calculate water density.
 
     Calculates the density of water as a function of temperature and atmospheric
@@ -124,11 +124,11 @@ def calc_density_h2o_fisher(
 
 
 def calc_density_h2o(
-    tc: NDArray[np.float64],
-    patm: NDArray[np.float64],
+    tc: NDArray[np.floating],
+    patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
     safe: bool = True,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     """Calculate water density.
 
     Calculates the density of water as a function of temperature and atmospheric
@@ -179,11 +179,11 @@ def calc_density_h2o(
 
 
 def calc_viscosity_h2o(
-    tc: NDArray[np.float64],
-    patm: NDArray[np.float64],
+    tc: NDArray[np.floating],
+    patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
     simple: bool = False,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate the viscosity of water.
 
     Calculates the viscosity of water (:math:`\eta`) as a function of temperature and
@@ -247,11 +247,11 @@ def calc_viscosity_h2o(
 
 
 def calc_viscosity_h2o_matrix(
-    tc: NDArray[np.float64],
-    patm: NDArray[np.float64],
+    tc: NDArray[np.floating],
+    patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
     simple: bool = False,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate the viscosity of water.
 
     Calculates the viscosity of water (:math:`\eta`) as a function of temperature and
@@ -309,11 +309,11 @@ def calc_viscosity_h2o_matrix(
 
 
 def convert_water_mm_to_moles(
-    water_mm: NDArray[np.float64],
-    tc: NDArray[np.float64],
-    patm: NDArray[np.float64],
+    water_mm: NDArray[np.floating],
+    tc: NDArray[np.floating],
+    patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     """Convert water in mm per square meter to moles.
 
     This function converts water volumes expressed as mm per m2 into a number of moles
@@ -348,11 +348,11 @@ def convert_water_mm_to_moles(
 
 
 def convert_water_moles_to_mm(
-    water_moles: NDArray[np.float64],
-    tc: NDArray[np.float64],
-    patm: NDArray[np.float64],
+    water_moles: NDArray[np.floating],
+    tc: NDArray[np.floating],
+    patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     """Convert water in moles to mm per square meter.
 
     This function converts water volumes expressed as moles into mm per m2. It accounts
@@ -385,8 +385,8 @@ def convert_water_moles_to_mm(
 
 
 def calculate_water_molar_volume(
-    tc: NDArray[np.float64],
-    patm: NDArray[np.float64],
+    tc: NDArray[np.floating],
+    patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
 ) -> NDArray[np.floating]:
     """Calculate the volume of a mole of water at a given temperature and pressure.

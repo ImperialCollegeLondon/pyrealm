@@ -119,7 +119,9 @@ class BoundsChecker:
 
         self._data[bounds.var_name] = bounds
 
-    def check(self, var_name: str, values: NDArray) -> NDArray:
+    def check(
+        self, var_name: str, values: NDArray[np.floating]
+    ) -> NDArray[np.floating]:
         r"""Check inputs fall within bounds.
 
         This method checks whether the provided values fall within the bounds specified

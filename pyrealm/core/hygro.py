@@ -15,8 +15,8 @@ from pyrealm.core.utilities import evaluate_horner_polynomial
 
 
 def calc_vp_sat(
-    ta: NDArray[np.float64], core_const: CoreConst = CoreConst()
-) -> NDArray[np.float64]:
+    ta: NDArray[np.floating], core_const: CoreConst = CoreConst()
+) -> NDArray[np.floating]:
     r"""Calculate vapour pressure of saturated air.
 
     This function calculates the vapour pressure of saturated air in kPa at a given
@@ -60,10 +60,10 @@ def calc_vp_sat(
 
 
 def convert_vp_to_vpd(
-    vp: NDArray[np.float64],
-    ta: NDArray[np.float64],
+    vp: NDArray[np.floating],
+    ta: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     """Convert vapour pressure to vapour pressure deficit.
 
     Args:
@@ -92,11 +92,11 @@ def convert_vp_to_vpd(
 
 
 def convert_rh_to_vpd(
-    rh: NDArray[np.float64],
-    ta: NDArray[np.float64],
+    rh: NDArray[np.floating],
+    ta: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
     bounds_checker: BoundsChecker = BoundsChecker(),
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     """Convert relative humidity to vapour pressure deficit.
 
     Args:
@@ -134,10 +134,10 @@ def convert_rh_to_vpd(
 
 
 def convert_sh_to_vp(
-    sh: NDArray[np.float64],
-    patm: NDArray[np.float64],
+    sh: NDArray[np.floating],
+    patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     """Convert specific humidity to vapour pressure.
 
     Args:
@@ -161,11 +161,11 @@ def convert_sh_to_vp(
 
 
 def convert_sh_to_vpd(
-    sh: NDArray[np.float64],
-    ta: NDArray[np.float64],
-    patm: NDArray[np.float64],
+    sh: NDArray[np.floating],
+    ta: NDArray[np.floating],
+    patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     """Convert specific humidity to vapour pressure deficit.
 
     Args:
@@ -201,8 +201,8 @@ def convert_sh_to_vpd(
 
 
 def calc_saturation_vapour_pressure_slope(
-    tc: NDArray[np.float64],
-) -> NDArray[np.float64]:
+    tc: NDArray[np.floating],
+) -> NDArray[np.floating]:
     """Calculate the slope of the saturation vapour pressure curve.
 
     Calculates the slope of the saturation pressure temperature curve, following
@@ -224,7 +224,7 @@ def calc_saturation_vapour_pressure_slope(
     )
 
 
-def calc_enthalpy_vaporisation(tc: NDArray[np.float64]) -> NDArray[np.float64]:
+def calc_enthalpy_vaporisation(tc: NDArray[np.floating]) -> NDArray[np.floating]:
     """Calculate the enthalpy of vaporization.
 
     Calculates the latent heat of vaporization of water as a function of
@@ -241,7 +241,7 @@ def calc_enthalpy_vaporisation(tc: NDArray[np.float64]) -> NDArray[np.float64]:
     return 1.91846e6 * ((tc + 273.15) / (tc + 273.15 - 33.91)) ** 2
 
 
-def calc_specific_heat(tc: NDArray[np.float64]) -> NDArray[np.float64]:
+def calc_specific_heat(tc: NDArray[np.floating]) -> NDArray[np.floating]:
     """Calculate the specific heat of air.
 
     Calculates the specific heat of air at a constant pressure (:math:`c_{pm}`, J/kg/K)
@@ -274,8 +274,10 @@ def calc_specific_heat(tc: NDArray[np.float64]) -> NDArray[np.float64]:
 
 
 def calc_psychrometric_constant(
-    tc: NDArray[np.float64], p: NDArray[np.float64], core_const: CoreConst = CoreConst()
-) -> NDArray[np.float64]:
+    tc: NDArray[np.floating],
+    p: NDArray[np.floating],
+    core_const: CoreConst = CoreConst(),
+) -> NDArray[np.floating]:
     r"""Calculate the psychrometric constant.
 
     Calculates the psychrometric constant (:math:`\lambda`, Pa/K) given the temperature

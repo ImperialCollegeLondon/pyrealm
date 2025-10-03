@@ -416,7 +416,7 @@ class AcclimationModel:
                 "are used for acclimation"
             )
 
-    def _pad_values(self, values: NDArray[np.float64]) -> NDArray[np.float64]:
+    def _pad_values(self, values: NDArray[np.floating]) -> NDArray[np.floating]:
         """Pad values array to full days.
 
         This method takes an array representing daily values and pads the first and
@@ -438,7 +438,7 @@ class AcclimationModel:
 
         return np.pad(values, padding_dims, constant_values=(np.nan, np.nan))
 
-    def get_window_values(self, values: NDArray[np.float64]) -> NDArray[np.float64]:
+    def get_window_values(self, values: NDArray[np.floating]) -> NDArray[np.floating]:
         """Extract acclimation window values for a variable.
 
         This method takes an array of values which has the same shape along the first
@@ -476,8 +476,8 @@ class AcclimationModel:
 
     def get_daily_means(
         self,
-        values: NDArray[np.float64],
-    ) -> NDArray[np.float64]:
+        values: NDArray[np.floating],
+    ) -> NDArray[np.floating]:
         """Get the daily means of a variable during the acclimation window.
 
         This method extracts values from a given variable during a defined acclimation
@@ -513,9 +513,9 @@ class AcclimationModel:
 
     def apply_acclimation(
         self,
-        values: NDArray[np.float64],
-        initial_values: NDArray[np.float64] | None = None,
-    ) -> NDArray[np.float64]:
+        values: NDArray[np.floating],
+        initial_values: NDArray[np.floating] | None = None,
+    ) -> NDArray[np.floating]:
         r"""Apply acclimation to optimal values.
 
         Three key photosynthetic parameters (:math:`\xi`, :math:`V_{cmax25}` and
@@ -562,9 +562,9 @@ class AcclimationModel:
 
     def fill_daily_to_subdaily(
         self,
-        values: NDArray[np.float64],
-        previous_values: NDArray[np.float64] | None = None,
-    ) -> NDArray[np.float64]:
+        values: NDArray[np.floating],
+        previous_values: NDArray[np.floating] | None = None,
+    ) -> NDArray[np.floating]:
         """Resample daily variables onto the subdaily time scale.
 
         This method takes an array representing daily values and interpolates those
@@ -634,12 +634,12 @@ class AcclimationModel:
 
     def _get_subdaily_interpolation_xy(
         self,
-        values: NDArray[np.float64],
-        previous_values: NDArray[np.float64] | None = None,
+        values: NDArray[np.floating],
+        previous_values: NDArray[np.floating] | None = None,
     ) -> tuple[
         NDArray[np.datetime64],
-        NDArray[np.float64],
-        tuple[NDArray[np.float64] | None, NDArray[np.float64] | None],
+        NDArray[np.floating],
+        tuple[NDArray[np.floating] | None, NDArray[np.floating] | None],
     ]:
         """Generate the interpolation data used to fill subdaily values.
 

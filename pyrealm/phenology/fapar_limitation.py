@@ -84,14 +84,14 @@ class FaparLimitation:
 
     def __init__(
         self,
-        annual_total_potential_gpp: NDArray[np.float64],
-        annual_mean_ca: NDArray[np.float64],
-        annual_mean_chi: NDArray[np.float64],
-        annual_mean_vpd: NDArray[np.float64],
-        annual_total_precip: NDArray[np.float64],
-        annual_growing_season_length: NDArray[np.float64],
+        annual_total_potential_gpp: NDArray[np.floating],
+        annual_mean_ca: NDArray[np.floating],
+        annual_mean_chi: NDArray[np.floating],
+        annual_mean_vpd: NDArray[np.floating],
+        annual_total_precip: NDArray[np.floating],
+        annual_growing_season_length: NDArray[np.floating],
+        aridity_index: NDArray[np.floating],
         years: NDArray[np.datetime64],
-        aridity_index: NDArray[np.float64],
         phenology_const: PhenologyConst = PhenologyConst(),
     ) -> None:
         # Experimental class
@@ -208,10 +208,10 @@ class FaparLimitation:
         cls,
         pmodel: PModelABC,
         growing_season: NDArray[np.bool],
-        precip: NDArray[np.float64],
-        aridity_index: NDArray[np.float64],
+        precip: NDArray[np.floating],
+        aridity_index: NDArray[np.floating],
         datetimes: NDArray[np.datetime64] | None = None,
-        gpp_penalty_factor: NDArray[np.float64] | None = None,
+        gpp_penalty_factor: NDArray[np.floating] | None = None,
         phenology_const: PhenologyConst = PhenologyConst(),
     ) -> FaparLimitation:
         r"""Create a FaparLimitation instance from a P Model and other inputs.

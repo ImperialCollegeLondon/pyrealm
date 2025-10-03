@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
+import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.core.experimental import warn_experimental
@@ -84,10 +85,10 @@ class ArrheniusFactorABC(ABC):
         self._check_required_env_variables()
 
     @abstractmethod
-    def _calculation_method(self, coefficients: dict) -> NDArray:
+    def _calculation_method(self, coefficients: dict) -> NDArray[np.floating]:
         pass
 
-    def calculate_arrhenius_factor(self, coefficients: dict) -> NDArray:
+    def calculate_arrhenius_factor(self, coefficients: dict) -> NDArray[np.floating]:
         """Calculate the Arrhenius factor.
 
         This method calculates the Arrhenius factor for the model environment, given a
@@ -177,7 +178,7 @@ class SimpleArrhenius(
         array([0.63795])
     """
 
-    def _calculation_method(self, coefficients: dict) -> NDArray:
+    def _calculation_method(self, coefficients: dict) -> NDArray[np.floating]:
         return calculate_simple_arrhenius_factor(
             tk=self.env.tk,
             tk_ref=self.env.pmodel_const.tk_ref,
@@ -230,7 +231,7 @@ class KattgeKnorrArrhenius(
 
     __experimental__ = True
 
-    def _calculation_method(self, coefficients: dict) -> NDArray:
+    def _calculation_method(self, coefficients: dict) -> NDArray[np.floating]:
         warn_experimental("KattgeKnorrArrhenius")
 
         return calculate_kattge_knorr_arrhenius_factor(

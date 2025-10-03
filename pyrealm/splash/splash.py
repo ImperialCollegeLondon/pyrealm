@@ -59,13 +59,13 @@ class SplashModel:
 
     def __init__(
         self,
-        lat: NDArray[np.float64],
-        elv: NDArray[np.float64],
-        sf: NDArray[np.float64],
-        tc: NDArray[np.float64],
-        pn: NDArray[np.float64],
+        lat: NDArray[np.floating],
+        elv: NDArray[np.floating],
+        sf: NDArray[np.floating],
+        tc: NDArray[np.floating],
+        pn: NDArray[np.floating],
         dates: Calendar,
-        kWm: NDArray[np.float64] = np.array([150.0]),
+        kWm: NDArray[np.floating] = np.array([150.0]),
         core_const: CoreConst = CoreConst(),
         bounds_checker: BoundsChecker = BoundsChecker(),
     ):
@@ -91,23 +91,23 @@ class SplashModel:
         tc = broadcast_time(tc, self.shape)
         pn = broadcast_time(pn, self.shape)
 
-        self.elv: NDArray[np.float64] = elv
+        self.elv: NDArray[np.floating] = elv
         """The elevation of sites."""
-        self.lat: NDArray[np.float64] = bounds_checker.check("lat", lat)
+        self.lat: NDArray[np.floating] = bounds_checker.check("lat", lat)
         """The latitude of sites."""
-        self.sf: NDArray[np.float64] = bounds_checker.check("sf", sf)
+        self.sf: NDArray[np.floating] = bounds_checker.check("sf", sf)
         """The sunshine fraction (0-1) of daily observations."""
-        self.tc: NDArray[np.float64] = bounds_checker.check("tc", tc)
+        self.tc: NDArray[np.floating] = bounds_checker.check("tc", tc)
         """The air temperature in °C of daily observations."""
-        self.pn: NDArray[np.float64] = bounds_checker.check("pn", pn)
+        self.pn: NDArray[np.floating] = bounds_checker.check("pn", pn)
         """The precipitation in mm of daily observations."""
         self.dates: Calendar = dates
         """The dates of observations along the first array axis."""
-        self.kWm: NDArray[np.float64] = bounds_checker.check("kWm", kWm)
+        self.kWm: NDArray[np.floating] = bounds_checker.check("kWm", kWm)
         """The maximum soil water capacity for sites."""
 
         # TODO - potentially allow _actual_ climatic pressure data as an input
-        self.pa: NDArray[np.float64] = calc_patm(elv, core_const=core_const)
+        self.pa: NDArray[np.floating] = calc_patm(elv, core_const=core_const)
         """The atmospheric pressure at sites, derived from elevation"""
 
         # Calculate the daily solar fluxes - these are invariant across the simulation
@@ -128,12 +128,12 @@ class SplashModel:
 
     def estimate_initial_soil_moisture(
         self,
-        wn_init: NDArray[np.float64] | None = None,
+        wn_init: NDArray[np.floating] | None = None,
         max_iter: int = 10,
         max_diff: float = 1.0,
         return_convergence: bool = False,
         verbose: bool = False,
-    ) -> NDArray[np.float64]:
+    ) -> NDArray[np.floating]:
         """Estimate initial soil moisture.
 
         This method uses the first year of data provided to a SplashModel instance to
@@ -241,8 +241,8 @@ class SplashModel:
             return wn_start
 
     def estimate_daily_water_balance(
-        self, previous_wn: NDArray[np.float64], day_idx: int | None = None
-    ) -> tuple[NDArray, NDArray, NDArray]:
+        self, previous_wn: NDArray[np.floating], day_idx: int | None = None
+    ) -> tuple[NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]]:
         r"""Estimate the daily water balance.
 
         This function estimates the daily water balance within observations. The
@@ -312,8 +312,8 @@ class SplashModel:
 
     def calculate_soil_moisture(
         self,
-        wn_init: NDArray[np.float64],
-    ) -> tuple[NDArray, NDArray, NDArray]:
+        wn_init: NDArray[np.floating],
+    ) -> tuple[NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]]:
         """Calculate the soil moisture, AET and runoff from a SplashModel.
 
         This function takes an initial array of soil moisture values for the first

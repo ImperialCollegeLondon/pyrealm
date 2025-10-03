@@ -137,7 +137,7 @@ class QuantumYieldABC(ABC):
                     "of reference kphio values"
                 )
 
-        self.reference_kphio: NDArray[np.float64] = reference_kphio
+        self.reference_kphio: NDArray[np.floating] = reference_kphio
         """The kphio reference value for the method."""
         self.use_c4: bool = use_c4
         """Use a C4 parameterisation if available."""
@@ -145,7 +145,7 @@ class QuantumYieldABC(ABC):
         # Declare attributes populated by methods. These are typed but not assigned a
         # default value as they must are populated by the subclass specific
         # calculate_kphio method, which is called below to populate the values.
-        self.kphio: NDArray[np.float64]
+        self.kphio: NDArray[np.floating]
         """The calculated intrinsic quantum yield of photosynthesis."""
 
         # Run the calculation methods after checking for any required variables
@@ -283,8 +283,8 @@ class QuantumYieldSandoval(
     __experimental__: bool = True
 
     def peak_quantum_yield(
-        self, aridity_index: NDArray[np.float64]
-    ) -> NDArray[np.float64]:
+        self, aridity_index: NDArray[np.floating]
+    ) -> NDArray[np.floating]:
         """Calculate the peak quantum yield as a function of the aridity index.
 
         Args:

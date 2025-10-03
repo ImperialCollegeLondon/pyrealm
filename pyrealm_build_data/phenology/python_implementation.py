@@ -32,7 +32,9 @@ from pyrealm.pmodel.functions import calc_soilmstress_mengoli
 
 
 # Local RLE function - will be in pyrealm.demography.growing_season
-def run_length_encode(values: NDArray) -> tuple[NDArray[np.int_], NDArray]:
+def run_length_encode(
+    values: NDArray[np.bool_ | np.int_],
+) -> tuple[NDArray[np.int_], NDArray[np.int_]]:
     """Calculate run length encoding of 1D arrays.
 
     The function returns a tuple containing an array of the run lengths and an array of
