@@ -330,6 +330,7 @@ class FaparLimitation:
             annual_mean_vpd=annual_mean_vpd,
             annual_total_precip=annual_total_precip,
             annual_growing_season_length=avc.year_n_growing_days,
+            years=avc.years,
             aridity_index=aridity_index,
             phenology_const=phenology_const,
         )
