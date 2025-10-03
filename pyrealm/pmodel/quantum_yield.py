@@ -109,7 +109,7 @@ class QuantumYieldABC(ABC):
     def __init__(
         self,
         env: PModelEnvironment,
-        reference_kphio: float | NDArray | None = None,
+        reference_kphio: float | NDArray[np.floating] | None = None,
         use_c4: bool = False,
     ):
         self.env: PModelEnvironment = env

@@ -106,13 +106,19 @@ class FaparLimitation:
             annual_total_precip,
             aridity_index,
             annual_growing_season_length,
-            years,
         )
 
-        # Check the years values - must be datetime64[Y].
+        # Check the years values - must be datetime64[Y] and be one dimensional,
+        # matching the first dimension of the other inputs
         # TODO - this is a bit stringent, but is more robust
         if not years.dtype == "<M8[Y]":
             raise ValueError("The years argument must provide np.datetime64[Y] values")
+
+        if years.shape != (self.shape[0],):
+            raise ValueError(
+                "The years argument must be one dimensional and match the length "
+                "of the first axis of the other arguments"
+            )
 
         self.years = years
         r"""The year of each observation."""
