@@ -149,7 +149,7 @@ def summarize_attrs(
 
 
 def evaluate_horner_polynomial(
-    x: NDArray[np.floating], cf: Sequence | NDArray
+    x: NDArray[np.floating], cf: Sequence | NDArray[np.floating]
 ) -> NDArray[np.floating]:
     r"""Evaluates a polynomial with coefficients `cf` at `x` using Horner's method.
 

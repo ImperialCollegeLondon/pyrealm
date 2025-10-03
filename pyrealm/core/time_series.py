@@ -129,7 +129,7 @@ class AnnualValueCalculator:
             if not np.all(duration_seconds > 0):
                 raise ValueError("The timing values are not strictly increasing")
 
-            intervals: NDArray = np.unique(duration_seconds)
+            intervals: NDArray[np.floating] = np.unique(duration_seconds)
 
             if len(intervals) == 1:
                 # Constant intervals

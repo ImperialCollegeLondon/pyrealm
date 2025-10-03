@@ -242,7 +242,7 @@ class SplashModel:
 
     def estimate_daily_water_balance(
         self, previous_wn: NDArray[np.floating], day_idx: int | None = None
-    ) -> tuple[NDArray, NDArray, NDArray]:
+    ) -> tuple[NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]]:
         r"""Estimate the daily water balance.
 
         This function estimates the daily water balance within observations. The
@@ -313,7 +313,7 @@ class SplashModel:
     def calculate_soil_moisture(
         self,
         wn_init: NDArray[np.floating],
-    ) -> tuple[NDArray, NDArray, NDArray]:
+    ) -> tuple[NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]]:
         """Calculate the soil moisture, AET and runoff from a SplashModel.
 
         This function takes an initial array of soil moisture values for the first

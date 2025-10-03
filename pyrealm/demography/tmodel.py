@@ -24,7 +24,9 @@ from pyrealm.demography.core import (
 from pyrealm.demography.flora import Flora, StemTraits
 
 
-def _enforce_positive_sizes(size_args: dict[str, NDArray], function_name: str) -> None:
+def _enforce_positive_sizes(
+    size_args: dict[str, NDArray[np.floating]], function_name: str
+) -> None:
     """Simple function to trap allometry inputs that are not strictly positive."""
 
     failing = [vname for vname, values in size_args.items() if np.any(values <= 0)]

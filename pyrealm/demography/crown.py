@@ -385,7 +385,9 @@ def get_crown_xy(
     stem_offsets: NDArray[np.float32] | None = None,
     two_sided: bool = True,
     as_xy: bool = False,
-) -> list[tuple[NDArray, NDArray]] | list[NDArray]:
+) -> (
+    list[tuple[NDArray[np.floating], NDArray[np.floating]]] | list[NDArray[np.floating]]
+):
     """Extract plotting data from crown profiles.
 
     A CrownProfile instance contains crown radius and projected area data for a set of
@@ -434,8 +436,10 @@ def get_crown_xy(
         height_is_valid = np.logical_and(
             z <= stem_allometry.stem_height[:, stem_index], z >= 0
         )
-        valid_attr_values: NDArray = attr_values[height_is_valid, stem_index]
-        valid_heights: NDArray = z[height_is_valid]
+        valid_attr_values: NDArray[np.floating] = attr_values[
+            height_is_valid, stem_index
+        ]
+        valid_heights: NDArray[np.floating] = z[height_is_valid]
 
         if two_sided:
             # The values are extended to include the reverse profile as well as the zero

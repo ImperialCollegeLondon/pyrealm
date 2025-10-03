@@ -78,7 +78,7 @@ class PModelABC(ABC):
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
         method_arrhenius: str = "simple",
-        reference_kphio: float | NDArray | None = None,
+        reference_kphio: float | NDArray[np.floating] | None = None,
         **kwargs: dict[str, Any],
     ):
         self.shape: tuple = env.shape
@@ -384,7 +384,7 @@ class PModel(PModelABC):
         method_jmaxlim: str = "wang17",
         method_kphio: str = "temperature",
         method_arrhenius: str = "simple",
-        reference_kphio: float | NDArray | None = None,
+        reference_kphio: float | NDArray[np.floating] | None = None,
     ) -> None:
         # Initialise the superclass
         super().__init__(
@@ -490,7 +490,10 @@ class PModel(PModelABC):
     def to_subdaily(
         self,
         acclim_model: AcclimationModel,
-        previous_realised: tuple[NDArray, NDArray, NDArray] | None = None,
+        previous_realised: tuple[
+            NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]
+        ]
+        | None = None,
     ) -> SubdailyPModel:
         r"""Convert a standard PModel to a subdaily P Model.
 
@@ -640,8 +643,8 @@ class SubdailyPModel(PModelABC):
         method_jmaxlim: str = "wang17",
         method_kphio: str = "temperature",
         method_arrhenius: str = "simple",
-        reference_kphio: float | NDArray | None = None,
-        previous_realised: dict[str, NDArray] | None = None,
+        reference_kphio: float | NDArray[np.floating] | None = None,
+        previous_realised: dict[str, NDArray[np.floating]] | None = None,
     ) -> None:
         # Initialise the superclass
         super().__init__(

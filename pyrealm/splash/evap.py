@@ -48,8 +48,8 @@ class DailyEvapFluxes:
     """
 
     solar: DailySolarFluxes
-    pa: InitVar[NDArray]
-    tc: InitVar[NDArray]
+    pa: InitVar[NDArray[np.floating]]
+    tc: InitVar[NDArray[np.floating]]
     kWm: NDArray[np.floating] = field(default_factory=lambda: np.array([150.0]))
     core_const: CoreConst = field(default_factory=lambda: CoreConst())
 
@@ -126,7 +126,10 @@ class DailyEvapFluxes:
         wn: NDArray[np.floating],
         day_idx: int | None = None,
         only_aet: bool = True,
-    ) -> NDArray[np.floating] | tuple[NDArray, NDArray, NDArray]:
+    ) -> (
+        NDArray[np.floating]
+        | tuple[NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]]
+    ):
         """Estimate actual evapotranspiration.
 
         This method estimates the daily actual evapotranspiration (AET, mm/day), given
