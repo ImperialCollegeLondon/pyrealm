@@ -1,6 +1,6 @@
 """Class to compute the fAPAR_max and annual peak Leaf Area Index (LAI)."""
 
-from typing import Self
+from __future__ import annotations
 
 import numpy as np
 from numpy.typing import NDArray
@@ -82,19 +82,6 @@ class FaparLimitation:
 
     __experimental__ = True
 
-    def _check_shapes(self) -> None:
-        """Internal class to check all the input arrays have the same size."""
-
-        check_input_shapes(
-            self.annual_total_potential_gpp,
-            self.annual_mean_ca,
-            self.annual_mean_chi,
-            self.annual_mean_vpd,
-            self.annual_total_precip,
-            self.aridity_index,
-            self.annual_growing_season_length,
-        )
-
     def __init__(
         self,
         annual_total_potential_gpp: NDArray[np.float64],
@@ -103,6 +90,7 @@ class FaparLimitation:
         annual_mean_vpd: NDArray[np.float64],
         annual_total_precip: NDArray[np.float64],
         annual_growing_season_length: NDArray[np.float64],
+        years: NDArray[np.datetime64],
         aridity_index: NDArray[np.float64],
         phenology_const: PhenologyConst = PhenologyConst(),
     ) -> None:
@@ -146,8 +134,6 @@ class FaparLimitation:
         r"""Annual growing season length (:math:`G`, days)"""
         self.aridity_index = aridity_index
         r"""Climatological estimate of local aridity index (AI, unitless)"""
-
-        self._check_shapes()
 
         # Make sure the aridity index is not zero
         if np.any(aridity_index <= 0):
@@ -227,7 +213,7 @@ class FaparLimitation:
         datetimes: NDArray[np.datetime64] | None = None,
         gpp_penalty_factor: NDArray[np.float64] | None = None,
         phenology_const: PhenologyConst = PhenologyConst(),
-    ) -> Self:
+    ) -> FaparLimitation:
         r"""Create a FaparLimitation instance from a P Model and other inputs.
 
         The annual summary values of :math:`A_0, c_a, \chi` and :math:`D` used by the
