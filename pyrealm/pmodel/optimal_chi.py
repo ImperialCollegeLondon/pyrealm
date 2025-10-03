@@ -106,23 +106,23 @@ class OptimalChiABC(ABC):
         # default value as they must be populated by the set_beta and estimate_chi
         # methods, which are called below, and so will be populated before __init__
         # returns.
-        self.beta: NDArray[np.float64]
+        self.beta: NDArray[np.floating]
         """The ratio of carboxylation to transpiration cost factors."""
-        self.xi: NDArray[np.float64]
+        self.xi: NDArray[np.floating]
         r"""Defines the sensitivity of :math:`\chi` to the vapour pressure deficit,
         related to the carbon cost of water (Medlyn et al. 2011; Prentice et 2014)."""
-        self.chi: NDArray[np.float64]
+        self.chi: NDArray[np.floating]
         r"""The ratio of leaf internal to ambient :math:`\ce{CO2}` partial pressure
         (:math:`\chi`)."""
-        self.mc: NDArray[np.float64]
+        self.mc: NDArray[np.floating]
         r""":math:`\ce{CO2}` limitation factor for RuBisCO-limited assimilation
         (:math:`m_c`)."""
-        self.mj: NDArray[np.float64]
+        self.mj: NDArray[np.floating]
         r""":math:`\ce{CO2}` limitation factor for light-limited assimilation
         (:math:`m_j`)."""
-        self.ci: NDArray[np.float64]
+        self.ci: NDArray[np.floating]
         r"""The leaf internal :math:`\ce{CO2}` partial pressure (:math:`c_i`)."""
-        self.mjoc: NDArray[np.float64]
+        self.mjoc: NDArray[np.floating]
         r"""Ratio of :math:`m_j/m_c`."""
 
         # Run the calculation methods after checking for any required variables
@@ -140,7 +140,7 @@ class OptimalChiABC(ABC):
         """Set the beta values."""
 
     @abstractmethod
-    def estimate_chi(self, xi_values: NDArray[np.float64] | None = None) -> None:
+    def estimate_chi(self, xi_values: NDArray[np.floating] | None = None) -> None:
         """Estimate xi, chi and other variables."""
 
     def _check_requires(self) -> None:
@@ -247,7 +247,7 @@ class OptimalChiPrentice14(
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.beta = self.pmodel_const.beta_cost_ratio_c3
 
-    def estimate_chi(self, xi_values: NDArray[np.float64] | None = None) -> None:
+    def estimate_chi(self, xi_values: NDArray[np.floating] | None = None) -> None:
         """Estimate ``chi`` for C3 plants."""
 
         if xi_values is not None:
@@ -315,7 +315,7 @@ class OptimalChiPrentice14RootzoneStress(
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.beta = self.pmodel_const.beta_cost_ratio_c3
 
-    def estimate_chi(self, xi_values: NDArray[np.float64] | None = None) -> None:
+    def estimate_chi(self, xi_values: NDArray[np.floating] | None = None) -> None:
         """Estimate ``chi`` for C3 plants."""
 
         if xi_values is not None:
@@ -379,7 +379,7 @@ class OptimalChiC4(
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.beta = self.pmodel_const.beta_cost_ratio_c4
 
-    def estimate_chi(self, xi_values: NDArray[np.float64] | None = None) -> None:
+    def estimate_chi(self, xi_values: NDArray[np.floating] | None = None) -> None:
         """Estimate ``chi`` for C4 plants, setting ``mj`` and ``mc`` to 1."""
         if xi_values is not None:
             _ = check_input_shapes(self.env.ca, xi_values)
@@ -447,7 +447,7 @@ class OptimalChiC4RootzoneStress(
         # leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
         self.beta = self.pmodel_const.beta_cost_ratio_c4
 
-    def estimate_chi(self, xi_values: NDArray[np.float64] | None = None) -> None:
+    def estimate_chi(self, xi_values: NDArray[np.floating] | None = None) -> None:
         """Estimate ``chi`` for C4 plants, setting ``mj`` and ``mc`` to 1."""
         if xi_values is not None:
             _ = check_input_shapes(self.env.ca, xi_values)
@@ -533,7 +533,7 @@ class OptimalChiLavergne20C3(
             + self.pmodel_const.lavergne_2020_c3[0]
         )
 
-    def estimate_chi(self, xi_values: NDArray[np.float64] | None = None) -> None:
+    def estimate_chi(self, xi_values: NDArray[np.floating] | None = None) -> None:
         """Estimate ``chi`` for C3 plants."""
 
         if xi_values is not None:
@@ -625,7 +625,7 @@ class OptimalChiLavergne20C4(
             + self.pmodel_const.lavergne_2020_c4[0]
         )
 
-    def estimate_chi(self, xi_values: NDArray[np.float64] | None = None) -> None:
+    def estimate_chi(self, xi_values: NDArray[np.floating] | None = None) -> None:
         """Estimate ``chi`` for C4 plants excluding photorespiration."""
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
@@ -699,7 +699,7 @@ class OptimalChiC4NoGamma(
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
         self.beta = self.pmodel_const.beta_cost_ratio_c4
 
-    def estimate_chi(self, xi_values: NDArray[np.float64] | None = None) -> None:
+    def estimate_chi(self, xi_values: NDArray[np.floating] | None = None) -> None:
         """Estimate ``chi`` for C4 plants excluding photorespiration."""
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
@@ -773,7 +773,7 @@ class OptimalChiC4NoGammaRootzoneStress(
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
         self.beta = self.pmodel_const.beta_cost_ratio_c4
 
-    def estimate_chi(self, xi_values: NDArray[np.float64] | None = None) -> None:
+    def estimate_chi(self, xi_values: NDArray[np.floating] | None = None) -> None:
         """Estimate ``chi`` for C4 plants excluding photorespiration."""
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.

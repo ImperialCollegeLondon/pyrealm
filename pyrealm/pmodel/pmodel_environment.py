@@ -105,16 +105,16 @@ class PModelEnvironment:
 
     def __init__(
         self,
-        tc: NDArray[np.float64],
-        vpd: NDArray[np.float64],
-        co2: NDArray[np.float64],
-        patm: NDArray[np.float64],
-        fapar: NDArray[np.float64] = np.array([1.0]),
-        ppfd: NDArray[np.float64] = np.array([1.0]),
+        tc: NDArray[np.floating],
+        vpd: NDArray[np.floating],
+        co2: NDArray[np.floating],
+        patm: NDArray[np.floating],
+        fapar: NDArray[np.floating] = np.array([1.0]),
+        ppfd: NDArray[np.floating] = np.array([1.0]),
         pmodel_const: PModelConst = PModelConst(),
         core_const: CoreConst = CoreConst(),
         bounds_checker: BoundsChecker = BoundsChecker(),
-        **kwargs: NDArray[np.float64],
+        **kwargs: NDArray[np.floating],
     ):
         # Check shapes of inputs are congruent
         self.shape: tuple = check_input_shapes(
@@ -123,17 +123,17 @@ class PModelEnvironment:
         """The shape of the environmental data arrays."""
 
         # Validate and store the core forcing variables
-        self.tc: NDArray[np.float64] = bounds_checker.check("tc", tc)
+        self.tc: NDArray[np.floating] = bounds_checker.check("tc", tc)
         """The temperature at which to estimate photosynthesis, °C"""
-        self.vpd: NDArray[np.float64] = bounds_checker.check("vpd", vpd)
+        self.vpd: NDArray[np.floating] = bounds_checker.check("vpd", vpd)
         """Vapour pressure deficit, Pa"""
-        self.co2: NDArray[np.float64] = bounds_checker.check("co2", co2)
+        self.co2: NDArray[np.floating] = bounds_checker.check("co2", co2)
         """CO2 concentration, ppm"""
-        self.patm: NDArray[np.float64] = bounds_checker.check("patm", patm)
+        self.patm: NDArray[np.floating] = bounds_checker.check("patm", patm)
         """Atmospheric pressure, Pa"""
-        self.fapar: NDArray[np.float64] = bounds_checker.check("fapar", fapar)
+        self.fapar: NDArray[np.floating] = bounds_checker.check("fapar", fapar)
         """The fraction of absorbed photosynthetically active radiation (FAPAR, -)"""
-        self.ppfd: NDArray[np.float64] = bounds_checker.check("ppfd", ppfd)
+        self.ppfd: NDArray[np.floating] = bounds_checker.check("ppfd", ppfd)
         """The photosynthetic photon flux density (PPFD, µmol m-2 s-1)"""
 
         # Store constant settings and bounds checker
@@ -159,13 +159,13 @@ class PModelEnvironment:
             )
 
         # Internal calculations
-        self.tk: NDArray[np.float64] = self.tc + self.core_const.k_CtoK
+        self.tk: NDArray[np.floating] = self.tc + self.core_const.k_CtoK
         """The temperature at which to estimate photosynthesis in Kelvin (K)"""
 
-        self.ca: NDArray[np.float64] = calc_co2_to_ca(co2=self.co2, patm=self.patm)
+        self.ca: NDArray[np.floating] = calc_co2_to_ca(co2=self.co2, patm=self.patm)
         """Ambient CO2 partial pressure, Pa"""
 
-        self.gammastar: NDArray[np.float64] = calc_gammastar(
+        self.gammastar: NDArray[np.floating] = calc_gammastar(
             tk=self.tk,
             patm=patm,
             tk_ref=self.pmodel_const.tk_ref,
@@ -174,7 +174,7 @@ class PModelEnvironment:
         )
         r"""Photorespiratory compensation point (:math:`\Gamma^\ast`, Pa)"""
 
-        self.kmm: NDArray[np.float64] = calc_kmm(
+        self.kmm: NDArray[np.floating] = calc_kmm(
             tk=self.tk,
             patm=patm,
             tk_ref=self.pmodel_const.tk_ref,

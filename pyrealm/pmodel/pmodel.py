@@ -182,7 +182,7 @@ class PModelABC(ABC):
         # Define the other model attributes
         # -----------------------------------------------------------------------
 
-        self.iwue: NDArray[np.float64]
+        self.iwue: NDArray[np.floating]
         """Intrinsic water use efficiency (iWUE, µmol mol-1), calculated as:
 
         .. math::
@@ -193,7 +193,7 @@ class PModelABC(ABC):
         atmospheric pressure in megapascals.
         """
 
-        self.lue: NDArray[np.float64]
+        self.lue: NDArray[np.floating]
         r"""Light use efficiency (LUE, g C mol-1), calculated as:
 
         .. math::
@@ -205,7 +205,7 @@ class PModelABC(ABC):
         the molar mass of carbon.
         """
 
-        self.vcmax: NDArray[np.float64]
+        self.vcmax: NDArray[np.floating]
         r"""Maximum rate of carboxylation at the growth temperature (µmol m-2 s-1),
         calculated as:
 
@@ -216,12 +216,12 @@ class PModelABC(ABC):
         where  :math:`f_v` is a limitation term calculated via the method selected in
         `method_jmaxlim`."""
 
-        self.vcmax25: NDArray[np.float64]
+        self.vcmax25: NDArray[np.floating]
         """Maximum rate of carboxylation at standard temperature (µmol m-2 s-1),
         estimated from :math:`V_{cmax}` using the selected method for Arrhenius scaling.
         """
 
-        self.jmax: NDArray[np.float64]
+        self.jmax: NDArray[np.floating]
         r"""Maximum rate of electron transport at the growth temperature (µmol m-2 s-1),
         calculated as:
         
@@ -232,12 +232,12 @@ class PModelABC(ABC):
         where  :math:`f_j` is a limitation term calculated via the method selected in
         `method_jmaxlim`."""
 
-        self.jmax25: NDArray[np.float64]
+        self.jmax25: NDArray[np.floating]
         """Maximum rate of electron transport at standard temperature (µmol m-2 s-1),
         estimated from :math:`J_{max}` using the selected method for Arrhenius scaling.
         """
 
-        self.gpp: NDArray[np.float64]
+        self.gpp: NDArray[np.floating]
         r"""Gross primary productivity (µg C m-2 s-1) calculated as:
         
         .. math::
@@ -247,7 +247,7 @@ class PModelABC(ABC):
         where :math:`I_{abs}` is the absorbed photosynthetic radiation.
         """
 
-        self.gs: NDArray[np.float64]
+        self.gs: NDArray[np.floating]
         r"""Stomatal conductance (µmol m-2 s-1), calculated as:
 
         .. math::
@@ -262,11 +262,11 @@ class PModelABC(ABC):
         \to 0` and the reported values will be set to ``np.nan`` under these
         conditions."""
 
-        self.A_c: NDArray[np.float64]
+        self.A_c: NDArray[np.floating]
         """Maximum assimilation rate limited by carboxylation."""
-        self.A_j: NDArray[np.float64]
+        self.A_j: NDArray[np.floating]
         """Maximum assimilation rate limited by electron transport."""
-        self.J: NDArray[np.float64]
+        self.J: NDArray[np.floating]
         """Electron transfer rate."""
 
     @abstractmethod
@@ -674,19 +674,19 @@ class SubdailyPModel(PModelABC):
         """
 
         # TODO - maybe encapsulate these in a dataclass?
-        self.vcmax25_daily_optimal: NDArray[np.float64]
+        self.vcmax25_daily_optimal: NDArray[np.floating]
         r"""Daily optimal values in acclimation window for :math:`V_{cmax}`, scaled to
          standard temperature (:math:`V_{cmax25}`)."""
-        self.vcmax25_daily_realised: NDArray[np.float64]
+        self.vcmax25_daily_realised: NDArray[np.floating]
         r"""Realised daily responses in :math:`V_{cmax25}`"""
-        self.jmax25_daily_optimal: NDArray[np.float64]
+        self.jmax25_daily_optimal: NDArray[np.floating]
         r"""Daily optimal values in acclimation window for :math:`J_{max}`, scaled to
          standard temperature (:math:`J_{max25}`)."""
-        self.jmax25_daily_realised: NDArray[np.float64]
+        self.jmax25_daily_realised: NDArray[np.floating]
         r"""Realised daily responses in :math:`J_{max25}`"""
-        self.xi_daily_optimal: NDArray[np.float64]
+        self.xi_daily_optimal: NDArray[np.floating]
         r"""Daily optimal values in acclimation window for :math:`\xi`"""
-        self.xi_daily_realised: NDArray[np.float64]
+        self.xi_daily_realised: NDArray[np.floating]
         r"""Realised daily responses in :math:`\xi`"""
 
         # Fit the model
@@ -890,14 +890,14 @@ class SubdailyPModel(PModelABC):
         #    actual subdaily temperatures.
         arrhenius_subdaily = self._arrhenius_class(env=self.env)
 
-        self.vcmax: NDArray[np.float64] = (
+        self.vcmax: NDArray[np.floating] = (
             self.vcmax25
             * arrhenius_subdaily.calculate_arrhenius_factor(
                 coefficients=self.env.pmodel_const.arrhenius_vcmax
             )
         )
 
-        self.jmax: NDArray[np.float64] = (
+        self.jmax: NDArray[np.floating] = (
             self.jmax25
             * arrhenius_subdaily.calculate_arrhenius_factor(
                 coefficients=self.env.pmodel_const.arrhenius_jmax

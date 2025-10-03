@@ -18,13 +18,13 @@ from pyrealm.demography.tmodel import StemAllometry
 
 
 def calculate_relative_crown_radius_at_z(
-    z: NDArray[np.float64],
-    stem_height: NDArray[np.float64],
-    m: NDArray[np.float64],
-    n: NDArray[np.float64],
+    z: NDArray[np.floating],
+    stem_height: NDArray[np.floating],
+    m: NDArray[np.floating],
+    n: NDArray[np.floating],
     validate: bool = True,
     clip: bool = True,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate relative crown radius at a given height.
 
     The crown shape parameters ``m`` and ``n`` define the vertical distribution of
@@ -79,10 +79,10 @@ def calculate_relative_crown_radius_at_z(
 
 
 def calculate_crown_radius(
-    q_z: NDArray[np.float64],
-    r0: NDArray[np.float64],
+    q_z: NDArray[np.floating],
+    r0: NDArray[np.floating],
     validate: bool = True,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate crown radius from relative crown radius and crown r0.
 
     The relative crown radius (:math:`q(z)`) at a given height :math:`z` describes the
@@ -111,14 +111,14 @@ def calculate_crown_radius(
 
 
 def calculate_stem_projected_crown_area_at_z(
-    z: NDArray[np.float64],
-    q_z: NDArray[np.float64],
-    stem_height: NDArray[np.float64],
-    crown_area: NDArray[np.float64],
-    q_m: NDArray[np.float64],
-    z_max: NDArray[np.float64],
+    z: NDArray[np.floating],
+    q_z: NDArray[np.floating],
+    stem_height: NDArray[np.floating],
+    crown_area: NDArray[np.floating],
+    q_m: NDArray[np.floating],
+    z_max: NDArray[np.floating],
     validate: bool = True,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     """Calculate stem projected crown area above a given height.
 
     This function calculates the projected crown area of a set of stems with given
@@ -164,15 +164,15 @@ def calculate_stem_projected_crown_area_at_z(
 
 
 def calculate_stem_projected_leaf_area_at_z(
-    z: NDArray[np.float64],
-    q_z: NDArray[np.float64],
-    stem_height: NDArray[np.float64],
-    crown_area: NDArray[np.float64],
-    f_g: NDArray[np.float64],
-    q_m: NDArray[np.float64],
-    z_max: NDArray[np.float64],
+    z: NDArray[np.floating],
+    q_z: NDArray[np.floating],
+    stem_height: NDArray[np.floating],
+    crown_area: NDArray[np.floating],
+    f_g: NDArray[np.floating],
+    q_m: NDArray[np.floating],
+    z_max: NDArray[np.floating],
     validate: bool = True,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     """Calculate projected leaf area above a given height.
 
     This function calculates the projected leaf area of a set of stems with given
@@ -275,18 +275,18 @@ class CrownProfile(PandasExporter):
     """A Flora or StemTraits instance providing plant functional trait data."""
     stem_allometry: InitVar[StemAllometry]
     """A StemAllometry instance setting the stem allometries for the crown profile."""
-    z: NDArray[np.float64]
+    z: NDArray[np.floating]
     """An array of vertical height values at which to calculate crown profiles."""
     validate: InitVar[bool] = True
     """Boolean flag to suppress argument validation."""
 
-    relative_crown_radius: NDArray[np.float64] = field(init=False)
+    relative_crown_radius: NDArray[np.floating] = field(init=False)
     """An array of the relative crown radius of stems at z heights"""
-    crown_radius: NDArray[np.float64] = field(init=False)
+    crown_radius: NDArray[np.floating] = field(init=False)
     """An array of the actual crown radius of stems at z heights"""
-    projected_crown_area: NDArray[np.float64] = field(init=False)
+    projected_crown_area: NDArray[np.floating] = field(init=False)
     """An array of the projected crown area of stems at z heights"""
-    projected_leaf_area: NDArray[np.float64] = field(init=False)
+    projected_leaf_area: NDArray[np.floating] = field(init=False)
     """An array of the projected leaf area of stems at z heights"""
 
     # Information attributes

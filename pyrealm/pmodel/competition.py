@@ -13,10 +13,10 @@ from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 
 
 def convert_gpp_advantage_to_c4_fraction(
-    gpp_adv_c4: NDArray[np.float64],
-    treecover: NDArray[np.float64],
+    gpp_adv_c4: NDArray[np.floating],
+    treecover: NDArray[np.floating],
     c3c4_const: C3C4Const = C3C4Const(),
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Convert C4 GPP advantage to C4 fraction.
 
     This function calculates an initial estimate of the fraction of C4 plants based on
@@ -63,8 +63,8 @@ def convert_gpp_advantage_to_c4_fraction(
 
 
 def calculate_tree_proportion(
-    gppc3: NDArray[np.float64], c3c4_const: C3C4Const = C3C4Const()
-) -> NDArray[np.float64]:
+    gppc3: NDArray[np.floating], c3c4_const: C3C4Const = C3C4Const()
+) -> NDArray[np.floating]:
     r"""Calculate the proportion of GPP from C3 trees.
 
     This function estimates the proportion of C3 trees in the community, which can then
@@ -186,9 +186,9 @@ class C3C4Competition:
 
     def __init__(
         self,
-        gpp_c3: NDArray[np.float64],
-        gpp_c4: NDArray[np.float64],
-        treecover: NDArray[np.float64],
+        gpp_c3: NDArray[np.floating],
+        gpp_c4: NDArray[np.floating],
+        treecover: NDArray[np.floating],
         below_t_min: NDArray[np.bool],
         cropland: NDArray[np.bool],
         c3c4_const: C3C4Const = C3C4Const(),
@@ -205,7 +205,7 @@ class C3C4Competition:
         # annual total GPP estimates for C3 and C4 plants. This uses use
         # np.full to handle division by zero without raising warnings
         gpp_adv_c4 = np.full(self.shape, np.nan)
-        self.gpp_adv_c4: NDArray[np.float64] = np.divide(
+        self.gpp_adv_c4: NDArray[np.floating] = np.divide(
             gpp_c4 - gpp_c3, gpp_c3, out=gpp_adv_c4, where=gpp_c3 > 0
         )
         """The proportional advantage in GPP of C4 over C3 plants"""
@@ -233,22 +233,22 @@ class C3C4Competition:
         cropland = np.broadcast_to(cropland, self.shape)
         frac_c4[cropland] = np.nan  # type: ignore
 
-        self.frac_c4: NDArray[np.float64] = frac_c4
+        self.frac_c4: NDArray[np.floating] = frac_c4
         """The estimated fraction of C4 plants."""
 
-        self.gpp_c3_contrib: NDArray[np.float64] = gpp_c3 * (1 - self.frac_c4)
+        self.gpp_c3_contrib: NDArray[np.floating] = gpp_c3 * (1 - self.frac_c4)
         """The estimated contribution of C3 plants to GPP (gC m-2 yr-1)"""
         self.gpp_c4_contrib = gpp_c4 * self.frac_c4
         """The estimated contribution of C4 plants to GPP (gC m-2 yr-1)"""
 
         # Define attributes used elsewhere
-        self.Delta13C_C3: NDArray[np.float64]
+        self.Delta13C_C3: NDArray[np.floating]
         r"""Contribution from C3 plants to (:math:`\Delta\ce{^13C}`, permil)."""
-        self.Delta13C_C4: NDArray[np.float64]
+        self.Delta13C_C4: NDArray[np.floating]
         r"""Contribution from C4 plants to (:math:`\Delta\ce{^13C}`, permil)."""
-        self.d13C_C3: NDArray[np.float64]
+        self.d13C_C3: NDArray[np.floating]
         r"""Contribution from C3 plants to (:math:`d\ce{^13C}`, permil)."""
-        self.d13C_C4: NDArray[np.float64]
+        self.d13C_C4: NDArray[np.floating]
         r"""Contribution from C3 plants to (:math:`d\ce{^13C}`, permil)."""
 
     def __repr__(self) -> str:
@@ -257,9 +257,9 @@ class C3C4Competition:
 
     def estimate_isotopic_discrimination(
         self,
-        d13CO2: NDArray[np.float64],
-        Delta13C_C3_alone: NDArray[np.float64],
-        Delta13C_C4_alone: NDArray[np.float64],
+        d13CO2: NDArray[np.floating],
+        Delta13C_C3_alone: NDArray[np.floating],
+        Delta13C_C4_alone: NDArray[np.floating],
     ) -> None:
         r"""Estimate CO2 isotopic discrimination values.
 

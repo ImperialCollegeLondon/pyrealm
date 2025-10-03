@@ -142,7 +142,7 @@ class CoreConst(ConstantsClass):
     for 2000 CE :cite:t:`berger:1978a`."""
 
     # Hygro constants
-    magnus_coef: NDArray[np.float64] = field(
+    magnus_coef: NDArray[np.floating] = field(
         default_factory=lambda: np.array((611.2, 17.62, 243.12))
     )
     """Three coefficients of the Magnus equation for saturated vapour pressure,
@@ -160,7 +160,7 @@ class CoreConst(ConstantsClass):
     """Set the method used for calculating water density ('fisher' or 'chen')."""
 
     # Fisher Dial
-    fisher_dial_lambda: NDArray[np.float64] = field(
+    fisher_dial_lambda: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
             [1788.316, 21.55053, -0.4695911, 0.003096363, -7.341182e-06]
         )
@@ -168,7 +168,7 @@ class CoreConst(ConstantsClass):
     r"""Coefficients of the temperature dependent polynomial for :math:`\lambda`
      in the Tumlirz equation."""
 
-    fisher_dial_Po: NDArray[np.float64] = field(
+    fisher_dial_Po: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
             [5918.499, 58.05267, -1.1253317, 0.0066123869, -1.4661625e-05]
         )
@@ -176,7 +176,7 @@ class CoreConst(ConstantsClass):
     """Coefficients of the temperature dependent polynomial for :math:`P_0` in the
     Tumlirz equation."""
 
-    fisher_dial_Vinf: NDArray[np.float64] = field(
+    fisher_dial_Vinf: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
             [
                 0.6980547,
@@ -196,7 +196,7 @@ class CoreConst(ConstantsClass):
     in the Tumlirz equation."""
 
     # Chen water density
-    chen_po: NDArray[np.float64] = field(
+    chen_po: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
             [
                 0.99983952,
@@ -214,7 +214,7 @@ class CoreConst(ConstantsClass):
     r"""Coefficients of the polynomial relationship of water density with temperature at
     1 atm (:math:`P^0`, kg/m^3) from :cite:t:`chen:2008a`."""
 
-    chen_ko: NDArray[np.float64] = field(
+    chen_ko: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
             [19652.17, 148.1830, -2.29995, 0.01281, -4.91564e-5, 1.035530e-7]
         )
@@ -222,7 +222,7 @@ class CoreConst(ConstantsClass):
     r"""Polynomial relationship of bulk modulus of water with temperature at 1 atm
      (:math:`K^0`, kg/m^3) from :cite:t:`chen:2008a`."""
 
-    chen_ca: NDArray[np.float64] = field(
+    chen_ca: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
             [3.26138, 5.223e-4, 1.324e-4, -7.655e-7, 8.584e-10]
         )
@@ -230,7 +230,7 @@ class CoreConst(ConstantsClass):
     r"""Coefficients of the polynomial temperature dependent coefficient :math:`A` from
      :cite:t:`chen:2008a`."""
 
-    chen_cb: NDArray[np.float64] = field(
+    chen_cb: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
             [7.2061e-5, -5.8948e-6, 8.69900e-8, -1.0100e-9, 4.3220e-12]
         )
@@ -248,11 +248,11 @@ class CoreConst(ConstantsClass):
     huber_mu_ast: float = 1e-06
     r"""Huber reference pressure (:math:`\mu_{ast}` 1.0e-6, Pa s)"""
 
-    huber_H_i: NDArray[np.float64] = field(
+    huber_H_i: NDArray[np.floating] = field(
         default_factory=lambda: np.array([1.67752, 2.20462, 0.6366564, -0.241605])
     )
     """Temperature dependent parameterisation of Hi in Huber."""
-    huber_H_ij: NDArray[np.float64] = field(
+    huber_H_ij: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
             [
                 [0.520094, 0.0850895, -1.08374, -0.289555, 0.0, 0.0],

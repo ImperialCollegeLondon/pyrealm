@@ -77,12 +77,12 @@ class AnnualValueCalculator:
         self.duration_weights: list[NDArray[np.int_]] = []
         """A list of arrays giving the number of seconds that each observation
         within a year contributes to that year."""
-        self.fractional_weights: list[NDArray[np.float64]] = []
+        self.fractional_weights: list[NDArray[np.floating]] = []
         """A list of arrays giving the fraction of each observation within a year that
         falls in the year."""
         self.growing_season_by_year: list[NDArray[np.bool_]]
         """A list of arrays giving the growing season subarrays for each year."""
-        self.year_completeness: NDArray[np.float64]
+        self.year_completeness: NDArray[np.floating]
         """Provides the fractional coverage of observations for each year."""
         self.years: NDArray[np.datetime64]
         """The covered years as np.datetime64 at year precision."""
@@ -257,8 +257,8 @@ class AnnualValueCalculator:
         )
 
     def _split_values_by_year(
-        self, values: NDArray[np.float64]
-    ) -> list[NDArray[np.float64]]:
+        self, values: NDArray[np.floating]
+    ) -> list[NDArray[np.floating]]:
         """Validates and splits value arrays.
 
         Args:
@@ -279,7 +279,7 @@ class AnnualValueCalculator:
 
     def get_annual_means(
         self,
-        values: NDArray[np.float64],
+        values: NDArray[np.floating],
         within_growing_season: bool = False,
     ) -> NDArray[np.floating]:
         """Get annual means from an array of values.
@@ -346,7 +346,7 @@ class AnnualValueCalculator:
 
     def get_annual_totals(
         self,
-        values: NDArray[np.float64],
+        values: NDArray[np.floating],
         within_growing_season: bool = False,
     ) -> NDArray[np.floating]:
         """Get annual totals from an array of values.

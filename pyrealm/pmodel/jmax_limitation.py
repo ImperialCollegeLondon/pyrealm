@@ -65,9 +65,9 @@ class JmaxLimitationABC(metaclass=ABCMeta):
     """The PModel constants instance used for the calculation."""
     _shape: tuple[int, ...] = field(init=False)
     """Records the common numpy array shape in the data."""
-    f_j: NDArray[np.float64] = field(init=False)
+    f_j: NDArray[np.floating] = field(init=False)
     """:math:`J_{max}` limitation factor."""
-    f_v: NDArray[np.float64] = field(init=False)
+    f_v: NDArray[np.floating] = field(init=False)
     """:math:`V_{cmax}` limitation factor."""
 
     def __post_init__(self) -> None:
@@ -229,9 +229,9 @@ class JmaxLimitationSmith19(
         array([0.7544])
     """
 
-    omega: NDArray[np.float64] = field(init=False)
+    omega: NDArray[np.floating] = field(init=False)
     """Values of the `omega` parameter (:cite:`Smith:2019dv`)."""
-    omega_star: NDArray[np.float64] = field(init=False)
+    omega_star: NDArray[np.floating] = field(init=False)
     """Values of the `omega_star` parameter (:cite:`Smith:2019dv`)."""
 
     def _calculate_limitation_terms(self) -> None:

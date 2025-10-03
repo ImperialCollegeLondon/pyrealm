@@ -149,8 +149,8 @@ def summarize_attrs(
 
 
 def evaluate_horner_polynomial(
-    x: NDArray[np.float64], cf: Sequence | NDArray
-) -> NDArray[np.float64]:
+    x: NDArray[np.floating], cf: Sequence | NDArray
+) -> NDArray[np.floating]:
     r"""Evaluates a polynomial with coefficients `cf` at `x` using Horner's method.
 
     Horner's method is a fast way to evaluate polynomials, especially for large degrees,
@@ -179,11 +179,11 @@ def evaluate_horner_polynomial(
 
 
 def exponential_moving_average(
-    values: NDArray[np.float64],
-    initial_values: NDArray[np.float64] | None = None,
+    values: NDArray[np.floating],
+    initial_values: NDArray[np.floating] | None = None,
     alpha: float = 0.067,
     allow_holdover: bool = False,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Apply an exponential moving average to a variable.
 
     This function implements an exponential moving average for an input array, using
