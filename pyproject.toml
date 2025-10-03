@@ -84,7 +84,6 @@ exclude = [
 ]
 ignore_missing_imports = false
 no_implicit_optional = true
-plugins = 'numpy.typing.mypy_plugin'
 strict_optional = true
 
 [tool.mypy-setup]

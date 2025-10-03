@@ -852,8 +852,8 @@ def test_lavergne_equivalence(tc, theta, variable_method, fixed_method, is_C4):
     from pyrealm.pmodel import PModel, PModelEnvironment
 
     env = PModelEnvironment(
-        tc=tc,
-        theta=theta,
+        tc=np.array([tc]),
+        theta=np.array([theta]),
         patm=np.array([101325]),
         vpd=np.array([100]),
         co2=np.array([400]),
@@ -869,8 +869,8 @@ def test_lavergne_equivalence(tc, theta, variable_method, fixed_method, is_C4):
         const = PModelConst(beta_cost_ratio_prentice14=mod_theta.optchi.beta)
 
     env = PModelEnvironment(
-        tc=tc,
-        theta=theta,
+        tc=np.array([tc]),
+        theta=np.array([theta]),
         patm=np.array([101325]),
         vpd=np.array([100]),
         co2=np.array([400]),

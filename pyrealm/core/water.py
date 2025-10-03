@@ -227,7 +227,7 @@ def calc_viscosity_h2o(
 
     # Calculate mu1 (Eq. 12 & Table 3, Huber et al., 2009):
     ctbar = (1.0 / tbar) - 1.0
-    mu1 = 0.0
+    mu1 = np.zeros_like(ctbar)
 
     # Iterate over the rows of the H_ij core_constants matrix
     for row_idx in np.arange(core_const.huber_H_ij.shape[1]):
