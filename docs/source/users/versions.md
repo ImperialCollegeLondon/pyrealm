@@ -44,17 +44,13 @@ So, version 2.0.0 provides a complete reworking of the package, with a particula
 on better integrating the  {class}`~pyrealm.pmodel.pmodel.PModel` and
 {class}`~pyrealm.pmodel.pmodel.SubdailyPModel` classes. This has led to a large
 number of breaking changes in the API. As the package uses [semantic
-versioning](https://semver.org/), these changes to the API require that new releases be
-made under a new major version.
+versioning](https://semver.org/), these changes to the API required that we move to a new
+major version.
 
-```{warning}
-
-We will be publishing a series of "release candidates" of the 2.0.0 package. These will
-be used to identify issues with the current API and try to stabilise a new API. The
-content of version 2.0.0 is not yet finalised, so these release candidates may also add
-new functionality.
-
-```
+One general change is that array inputs are no longer required to have identical shapes.
+This was often an issue when one input was constant over a particular axis - like
+elevation over a time series. Most functionality in `pyrealm` now requires only that
+the shapes of the inputs can be [broadcast to each other](./array_inputs.md).
 
 The main user facing changes are shown below, but do also look at the [log of
 changes](#changes-log) for more detail.

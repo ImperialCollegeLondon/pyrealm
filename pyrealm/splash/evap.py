@@ -13,6 +13,7 @@ from pyrealm.core.hygro import (
     calc_psychrometric_constant,
     calc_saturation_vapour_pressure_slope,
 )
+from pyrealm.core.time_series import broadcast_time
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.core.water import calc_density_h2o
 from pyrealm.splash.solar import DailySolarFluxes
@@ -79,6 +80,20 @@ class DailyEvapFluxes:
         state when iterating over time.
         """
 
+        try:
+            self.shape: tuple = check_input_shapes(pa, tc, shape=self.solar.shape)
+            """The array shape of the input variables"""
+        except ValueError:
+            msg = (
+                "The shape of DailyEvapFluxes inputs are inconsistent with each other "
+                "or the DailySolarFluxes data"
+            )
+            raise ValueError(msg)
+
+        # Broadcast along the time axis (necessary for the indexing in estimate_aet)
+        pa = broadcast_time(pa, self.shape)
+        tc = broadcast_time(tc, self.shape)
+
         # Slope of saturation vap press temp curve, Pa/K
         self.sat = calc_saturation_vapour_pressure_slope(tc)
 
@@ -135,11 +150,16 @@ class DailyEvapFluxes:
         # subset the calculations to particular request days or use the entire array of
         # soil moisture. The slice here is used to programatically select `array[:]`.
         if day_idx is None:
-            check_input_shapes(wn, self.sat)
-            didx: int | slice = slice(self.sat.shape[0])
+            splash_shape = self.shape
+            didx: int | slice = slice(self.shape[0])
         else:
-            check_input_shapes(wn, self.sat[day_idx])
+            splash_shape = self.shape[1:]
             didx = day_idx
+        try:
+            check_input_shapes(wn, shape=splash_shape)
+        except ValueError:
+            msg = "The shape of wn does not match the existing SPLASH model data"
+            raise ValueError(msg)
 
         # Calculate evaporative supply rate (sw), mm/h
         sw = self.core_const.k_Cw * wn / self.kWm

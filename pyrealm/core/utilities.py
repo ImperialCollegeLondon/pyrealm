@@ -14,35 +14,46 @@ import tabulate
 from numpy.typing import NDArray
 
 
-def check_input_shapes(*args: float | int | np.generic | np.ndarray | None) -> tuple:
-    """Check sets of input variables have congruent shapes.
+def check_input_shapes(
+    *args: float | int | np.generic | np.ndarray | None,
+    shape: tuple[int, ...] | None = None,
+) -> tuple:
+    """Check sets of input variables have congruent shapes with equal dimensions.
 
     This helper function validates inputs to check that they are either scalars or
-    arrays and then that any arrays of the same shape. It returns a tuple of the common
-    shape of the arguments, which is (1,) if all the arguments are scalar.
+    arrays and that any arrays have the same number of dimensions and are broadcastable
+    to the same shape. It returns a tuple of the common shape of the arguments, which is
+    (1,) if all the arguments are scalar.
 
     Parameters:
         *args: A set of numpy arrays or scalar values
+        shape: An optional expected result for the common shape.
 
     Returns:
         The common shape of any array inputs or 1 if all inputs are scalar.
 
     Raises:
-        ValueError: if the inputs contain arrays of differing shapes.
+        ValueError: if the inputs contain arrays of differing shapes or dimensions.
 
     Examples:
         >>> check_input_shapes(np.array([1,2,3]), 5)
         (3,)
         >>> check_input_shapes(4, 5)
         (1,)
-        >>> check_input_shapes(np.array([1,2,3]), np.array([1,2]))
+        >>> check_input_shapes(np.ones((1,2,3)), np.ones((1,2,4)))
         Traceback (most recent call last):
         ...
         ValueError: Inputs contain arrays of different shapes.
+        >>> check_input_shapes(np.ones((1,2,3)), np.ones((2,3)))
+        Traceback (most recent call last):
+        ...
+        ValueError: Inputs contain arrays of different dimensions.
     """
 
     # Collect the shapes of the inputs
     shapes = set()
+    if shape:
+        shapes.add(shape)
 
     # DESIGN NOTES - currently allow:
     #   - scalars,
@@ -53,7 +64,7 @@ def check_input_shapes(*args: float | int | np.generic | np.ndarray | None) -> t
         if isinstance(val, np.ndarray):
             # Note that 0-dim ndarrays (which are scalars) pass through as do
             # one dimensional arrays with a single value (also a scalar)
-            if val.size > 1:
+            if val.size > 1 or val.ndim > 1:
                 shapes.add(val.shape)
         # elif isinstance(val, Series):
         #    # Note that 0-dim ndarrays (which are scalars) pass through
@@ -64,10 +75,16 @@ def check_input_shapes(*args: float | int | np.generic | np.ndarray | None) -> t
         else:
             raise ValueError(f"Unexpected input to check_input_shapes: {type(val)}")
 
-    # shapes can be an empty set (all scalars) or contain one common shape
-    # otherwise raise an error
+    # shapes can be an empty set (all scalars) or (broadcastable to) one common
+    # shape, otherwise raise an error
     if len(shapes) > 1:
-        raise ValueError("Inputs contain arrays of different shapes.")
+        ndims = {len(shape) for shape in shapes}
+        if len(ndims) > 1:
+            raise ValueError("Inputs contain arrays of different dimensions.")
+        try:
+            return np.broadcast_shapes(*shapes)
+        except ValueError:
+            raise ValueError("Inputs contain arrays of different shapes.")
 
     if len(shapes) == 1:
         return shapes.pop()

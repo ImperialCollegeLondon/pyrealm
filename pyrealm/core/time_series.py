@@ -1,6 +1,7 @@
 """This module provides general tools for working with time series data. It currently
 provides the :class:`AnnualValueCalculator`, which is used to calculate annual means and
-totals of time series data.
+totals of time series data, and :func:`broadcast_time`, which is used to broadcast
+arrays over the time axis.
 """  # noqa : D205
 
 from itertools import pairwise
@@ -16,7 +17,7 @@ class AnnualValueCalculator:
 
     This class is used to calculate annual means and totals from time series data. An
     instance is created by providing a set of timings for the times series data, either
-    as an an array of datetimes or as an AcclimationModel instance from a
+    as a one-dimensional array of datetimes or as an AcclimationModel instance from a
     SubdailyPModel, which provides validated datetimes at subdaily temporal resolutions.
 
     The calculation process accounts for observations that span year boundaries, such as
@@ -33,7 +34,7 @@ class AnnualValueCalculator:
     the ``year_completeness`` attribute records what fraction of a year has been sampled
     to give a particular value.
 
-    .. Note:
+    .. Note::
 
         The class handles a wide range of different possible sampling frequencies and
         calculates weights for observations using the duration of observations with
@@ -100,11 +101,12 @@ class AnnualValueCalculator:
             or (
                 isinstance(timing, np.ndarray)
                 and np.issubdtype(timing.dtype, np.datetime64)
+                and timing.ndim == 1
             )
         ):
             raise ValueError(
                 "The timings argument must be an AcclimationModel "
-                "or an array of datetime64 values"
+                "or a one-dimensional array of datetime64 values"
             )
 
         if isinstance(timing, AcclimationModel):
@@ -263,7 +265,11 @@ class AnnualValueCalculator:
             values: An array of values.
         """
 
-        if values.shape[0] != self.n_obs:
+        if values.shape[0] == 1:
+            # Broadcast to match the number of observations if constant
+            values = np.broadcast_to(values, (self.n_obs, *values.shape[1:]))
+
+        elif values.shape[0] != self.n_obs:
             raise ValueError(
                 "First axis of values shape does not match number of observations."
             )
@@ -283,6 +289,10 @@ class AnnualValueCalculator:
         ``within_growing_season`` is ``True``, the weights for observations outside of
         the observations marked as the growing season are set to zero. The calculation
         handles missing values.
+
+        The annual means can be computed for a range of different sites by using n-D
+        array for ``values``. In this case time is assumed along axis 0 and so an n-D
+        array will be returned with annual values along axis 0.
 
         Example:
             >>> # Three years of monthly data
@@ -316,12 +326,20 @@ class AnnualValueCalculator:
         else:
             weights = self.duration_weights
 
+        # Make weights broadcastable in case vals is multidimensional
+        if values.ndim > 1:
+            for i, wghts in enumerate(weights):
+                shape = (wghts.shape[0],) + (1,) * (values.ndim - 1)
+                weights[i] = wghts.reshape(shape)
+
         # Calculate the weighted mean in a np.nan friendly way: the product of np.nan
         # and a weight is np.nan and the isnan term omits the weights of nan
         # observations from the weighted average.
+        # The mean is computed along just the time (0) axis.
         return np.array(
             [
-                np.nansum(vals * wghts) / np.nansum(~np.isnan(vals) * wghts)
+                np.nansum(vals * wghts, axis=0)
+                / np.nansum(~np.isnan(vals) * wghts, axis=0)
                 for vals, wghts in zip(values_by_year, weights)
             ]
         )
@@ -339,6 +357,10 @@ class AnnualValueCalculator:
         ``True``, the weights for observations not identified as growing season values
         are set to zero. The method handles missing data (`np.nan`) but obviously the
         resulting annual total will be reduced.
+
+        The annual totals can be computed for a range of different sites by using an n-D
+        array for ``values``. In this case time is assumed along axis 0 and so an n-D
+        array will be returned with annual values along axis 0.
 
         Example:
             >>> # Three years of monthly data with incomplete years at start and end
@@ -377,6 +399,45 @@ class AnnualValueCalculator:
         else:
             weights = self.fractional_weights
 
+        # Make weights broadcastable in case vals is multidimensional
+        if values.ndim > 1:
+            for i, wghts in enumerate(weights):
+                shape = (wghts.shape[0],) + (1,) * (values.ndim - 1)
+                weights[i] = wghts.reshape(shape)
+
+        # The total is computed along just the time (0) axis.
         return np.array(
-            [np.nansum(vals * wghts) for vals, wghts in zip(values_by_year, weights)]
+            [
+                np.nansum(vals * wghts, axis=0)
+                for vals, wghts in zip(values_by_year, weights)
+            ]
         )
+
+
+def broadcast_time(values: NDArray, shape: tuple[int, ...]) -> NDArray:
+    """Broadcast an array along the time (zeroth) axis.
+
+    The ``values`` array must be broadcastable to the full shape, however it does not
+    need the full set of dimensions as defined by ``shape``. The returned array will
+    have the full set of dimensions, and be broadcast along just the zeroth axis.
+
+    Example:
+        >>> broadcast_time(np.ones((1,3)), (2,3))
+        array([[1., 1., 1.],
+               [1., 1., 1.]])
+        >>> broadcast_time(np.ones(3), (2,2,3)).shape
+        (2, 1, 3)
+
+    Args:
+        values: The array to broadcast.
+        shape: The full n-dimensional shape, where the first value is the length of the
+            time axis to broadcast over.
+    """
+    if values.ndim > len(shape):
+        raise ValueError("The input array has more dimensions than the broadcast shape")
+    # Get any missing axes
+    full_shape = (1,) * (len(shape) - len(values.shape)) + values.shape
+    # Define the shape to broadcast to
+    bcast_shape = (shape[0], *full_shape[1:])
+    # Return the broadcasted array
+    return np.broadcast_to(values, bcast_shape)

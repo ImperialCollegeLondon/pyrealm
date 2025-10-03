@@ -12,6 +12,7 @@ from pyrealm.constants import CoreConst
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.calendar import Calendar
 from pyrealm.core.pressure import calc_patm
+from pyrealm.core.time_series import broadcast_time
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.splash.evap import DailyEvapFluxes
 from pyrealm.splash.solar import DailySolarFluxes
@@ -69,14 +70,26 @@ class SplashModel:
         bounds_checker: BoundsChecker = BoundsChecker(),
     ):
         # Check input sizes are congurent
-        # TODO - think about broadcasting lat and elv rather than forcing users to do
-        #        this in advance. xarray would be good here for identifying axes and
+        # TODO - xarray would be good here for identifying axes and
         #        checking congruence more widely.
         self.shape: tuple = check_input_shapes(elv, lat, sf, tc, pn)
         """The array shape of the input variables"""
 
-        if len(dates) != self.shape[0]:
-            raise ValueError("Number of dates must match the first dimension of inputs")
+        if self.shape[0] == 1:
+            self.shape = (len(dates), *self.shape[1:])
+        elif self.shape[0] != len(dates):
+            raise ValueError(
+                "The first dimension of inputs must either match the number of dates or"
+                " have a length of one."
+            )
+
+        # Broadcast all the inputs over time to simplify the daily indexing if any
+        # inputs are constant over time
+        elv = broadcast_time(elv, self.shape)
+        lat = broadcast_time(lat, self.shape)
+        sf = broadcast_time(sf, self.shape)
+        tc = broadcast_time(tc, self.shape)
+        pn = broadcast_time(pn, self.shape)
 
         self.elv: NDArray[np.float64] = elv
         """The elevation of sites."""
@@ -178,7 +191,7 @@ class SplashModel:
         date_end = date_start + pd.DateOffset(years=1)
         num_days = (date_end - date_start).days
 
-        if self.shape[0] < num_days:
+        if len(self.dates) < num_days:
             raise ValueError("Cannot equilibrate - less than one year of data")
 
         # Run the equilibration loop
@@ -266,11 +279,18 @@ class SplashModel:
         # Check day_idx inputs to map either the single time index given in day_idx or
         # the whole dataset.
         if day_idx is None:
-            check_input_shapes(previous_wn, self.pn)
+            splash_shape = self.shape
             didx: int | slice = slice(self.shape[0])
         else:
-            check_input_shapes(previous_wn, self.pn[day_idx])
+            splash_shape = self.shape[1:]
             didx = day_idx
+        try:
+            check_input_shapes(previous_wn, shape=splash_shape)
+        except ValueError:
+            msg = (
+                "The shape of previous_wn does not match the existing SPLASH model data"
+            )
+            raise ValueError(msg)
 
         # Calculate the expected aet_d given the previous wn
         if np.any((previous_wn < 0) | (previous_wn > self.kWm)):
@@ -310,7 +330,11 @@ class SplashModel:
             A tuple of numpy arrays containing predicted AET, soil moisture and runoff.
         """
 
-        # TODO - check input shapes
+        try:
+            check_input_shapes(wn_init, shape=self.shape[1:])
+        except ValueError:
+            msg = "The shape of wn_init does not match the existing SPLASH model data"
+            raise ValueError(msg)
 
         # Create storage for outputs
         aet_out = np.full_like(self.tc, np.nan)

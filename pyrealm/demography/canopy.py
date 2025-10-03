@@ -305,8 +305,8 @@ class CommunityCanopyData(PandasExporter):
     ground below the canopy is stored as the `transmission_to_ground` attribute.
 
     Args:
-        layer_absorption: The expected light absorption for cohorts within each layer.
-        layer_leaf_area_index: The leaf area index of cohorts within layers.
+        absorption: The expected light absorption for cohorts within each layer.
+        leaf_area_index: The leaf area index of cohorts within layers.
         cohort_leaf_area: The total leaf area of each cohort in each layer.
         cell_area: The area of the cell containing the community.
     """

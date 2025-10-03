@@ -200,7 +200,7 @@ def variable_kphio_subdaily(be_vie_data_components):
     from pyrealm.pmodel.acclimation import AcclimationModel
     from pyrealm.pmodel.pmodel import SubdailyPModel
 
-    env, datetime, expected_gpp = be_vie_data_components.get()
+    env, datetime, _expected_gpp = be_vie_data_components.get()
 
     # Get the acclimation model and set window
     acclim_model = AcclimationModel(datetime, allow_holdover=True)

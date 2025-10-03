@@ -1,9 +1,9 @@
 """Test flora methods."""
 
-import sys
 from contextlib import nullcontext as does_not_raise
 from importlib import resources
 from json import JSONDecodeError
+from tomllib import TOMLDecodeError
 from unittest.mock import patch
 
 import numpy as np
@@ -12,12 +12,6 @@ import pytest
 from marshmallow.exceptions import ValidationError
 from numpy.testing import assert_allclose
 from pandas.errors import ParserError
-
-if sys.version_info[:2] >= (3, 11):
-    from tomllib import TOMLDecodeError
-else:
-    from tomli import TOMLDecodeError
-
 
 STRICT_PFT_ARGS = dict(
     a_hd=116.0,

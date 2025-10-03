@@ -189,8 +189,8 @@ class C3C4Competition:
         gpp_c3: NDArray[np.float64],
         gpp_c4: NDArray[np.float64],
         treecover: NDArray[np.float64],
-        below_t_min: NDArray[np.float64],
-        cropland: NDArray[np.float64],
+        below_t_min: NDArray[np.bool],
+        cropland: NDArray[np.bool],
         c3c4_const: C3C4Const = C3C4Const(),
     ):
         warn_experimental("C3C4Competition")
@@ -226,9 +226,11 @@ class C3C4Competition:
         # Step 4: remove areas below minimum temperature
         # mypy - this is a short term fix awaiting better resolution of mixed scalar and
         #        array inputs.
+        below_t_min = np.broadcast_to(below_t_min, self.shape)
         frac_c4[below_t_min] = 0  # type: ignore
 
         # Step 5: remove cropland areas
+        cropland = np.broadcast_to(cropland, self.shape)
         frac_c4[cropland] = np.nan  # type: ignore
 
         self.frac_c4: NDArray[np.float64] = frac_c4

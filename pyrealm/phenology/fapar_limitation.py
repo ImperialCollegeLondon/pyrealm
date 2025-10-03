@@ -134,7 +134,7 @@ class FaparLimitation:
         r"""Climatological estimate of local aridity index (AI, unitless)"""
 
         # Make sure the aridity index is not zero
-        if aridity_index <= 0:
+        if np.any(aridity_index <= 0):
             raise ValueError("The aridity index has to be positive.")
 
         # Constants used for phenology computations

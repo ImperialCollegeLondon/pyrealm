@@ -47,7 +47,7 @@ def run_one_cell(
     """Run a time series extracted from one cell of the input data."""
 
     # Get the coords
-    lat_idx, lat, lon_idx, lon, cell_elev = coords
+    _lat_idx, lat, _lon_idx, lon, cell_elev = coords
 
     # date and time variables - repetitious, could move outside but meh.
 
