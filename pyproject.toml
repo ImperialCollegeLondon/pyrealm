@@ -32,11 +32,6 @@ authors = [
   {name = "Sam Avis", email = "sa2329@cam.ac.uk"},
 ]
 
-packages = [
-  {include = "pyrealm"},
-  {include = "pyrealm_build_data", format = "sdist"},
-]
-
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
@@ -58,6 +53,10 @@ homepage = "https://pyrealm.readthedocs.io/"
 repository = "https://github.com/ImperialCollegeLondon/pyrealm"
 
 [tool.poetry]
+packages = [
+  {include = "pyrealm"},
+  {include = "pyrealm_build_data", format = "sdist"},
+]
 requires-poetry = ">=2.0"
 
 [tool.poetry.group.types.dependencies]

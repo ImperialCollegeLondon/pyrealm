@@ -8,7 +8,10 @@ from numpy.typing import NDArray
 from pyrealm.constants import PhenologyConst
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.time_series import AnnualValueCalculator
-from pyrealm.core.utilities import check_input_shapes
+from pyrealm.core.utilities import (
+    check_input_shapes,
+    summarize_attrs,
+)
 from pyrealm.pmodel.pmodel import PModel, PModelABC, SubdailyPModel
 
 
@@ -106,6 +109,25 @@ class FaparLimitation:
         # Experimental class
         warn_experimental("FaparLimitation")
 
+        # Validate the input shapes.
+        self.shape: tuple[int, ...] = check_input_shapes(
+            annual_total_potential_gpp,
+            annual_mean_ca,
+            annual_mean_chi,
+            annual_mean_vpd,
+            annual_total_precip,
+            aridity_index,
+            annual_growing_season_length,
+            years,
+        )
+
+        # Check the years values - must be datetime64[Y].
+        # TODO - this is a bit stringent, but is more robust
+        if not years.dtype == "<M8[Y]":
+            raise ValueError("The years argument must provide np.datetime64[Y] values")
+
+        self.years = years
+        r"""The year of each observation."""
         self.annual_total_potential_gpp = annual_total_potential_gpp
         r"""The annual sum of potential GPP 
         (:math:`A_0, \text{mol C m}^{-2} \text{year}^{-1}`)"""
@@ -172,6 +194,28 @@ class FaparLimitation:
             * self.lai_max
         ) / (self.annual_total_potential_gpp * self.fapar_max)
         """The steady state ratio of leaf area index to potential GPP (:math:`m`)"""
+
+    def __repr__(self) -> str:
+        """Simple representation of class instance."""
+        return f"FaparLimitation(shape={self.shape})"
+
+    def summarize(self, dp: int = 2) -> None:
+        """Print summary of estimates of fAPAR limitation.
+
+        Prints a summary of the calculated values in a FaparLimitation instance
+        including the mean, range and number of nan values.
+
+        Args:
+            dp: The number of decimal places used in rounding summary stats.
+        """
+
+        attrs: tuple[tuple[str, str], ...] = (
+            ("lai_max", "-"),
+            ("fapar_max", "-"),
+            ("lai_to_gpp_ratio_m", "-"),
+        )
+
+        summarize_attrs(self, attrs, dp=dp)
 
     @classmethod
     def from_pmodel(
