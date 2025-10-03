@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - uses: pre-commit/action@v3.0.0
+      - uses: pre-commit/action@v3.0.1
 
   test:
     needs: qa
@@ -38,7 +38,7 @@ jobs:
     - name: Install Poetry
       uses: abatilo/actions-poetry@v2.1.6
       with:
-        poetry-version: 1.2.2
+        poetry-version: 2.0.1
 
     - name: Install dependencies
       run: poetry install
@@ -66,7 +66,7 @@ jobs:
       - name: Install Poetry
         uses: abatilo/actions-poetry@v2.1.6
         with:
-          poetry-version: 1.2.2
+          poetry-version: 2.0.1
 
       - name: Install dependencies
         run: poetry install
@@ -78,7 +78,7 @@ jobs:
 
       - name: Archive built docs for error checking on failure
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: built-docs
           path: docs/build
