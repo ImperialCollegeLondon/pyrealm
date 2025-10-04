@@ -25,7 +25,6 @@ class FaparLimitation:
     ($f_{APAR_{w}}$). The maximum annual fAPAR is calculated as the minimum of those two
     terms. The equations are:
 
-
     .. math::
         :nowrap:
 

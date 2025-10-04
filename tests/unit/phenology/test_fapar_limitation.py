@@ -67,7 +67,11 @@ def test_aridity_index_check(aridity_index, raises):
 
 @pytest.mark.parametrize(argnames="extra_dims", argvalues=(0, 1, 2, 3))
 def test_FaparLimitation_dimensionality(site_data, annual_inputs, extra_dims):
-    """Test FaparLimitation works with different input dimensionality."""
+    """Test FaparLimitation works with different input dimensionality.
+
+    This test also checks that various dimensions of the aridity index also work as
+    intended.
+    """
     from pyrealm.phenology.fapar_limitation import FaparLimitation
 
     # Set up the dimensionality for the test - create a shape tuple with extra
@@ -99,15 +103,47 @@ def test_FaparLimitation_dimensionality(site_data, annual_inputs, extra_dims):
         for arg_name, data_name in array_input_vars
     }
 
+    # Expected values
+    expected_faparmax = np.broadcast_to(
+        annual_inputs["fapar_max"][:, *([np.newaxis] * extra_dims)],
+        target_shape,
+    )
+
+    # Scalar AI value
     faparlim = FaparLimitation(
         years=annual_inputs["time"],
         aridity_index=site_data["AI"],
         **array_inputs,
     )
 
-    expected_faparmax = np.broadcast_to(
-        annual_inputs["fapar_max"][:, *([np.newaxis] * extra_dims)],
-        target_shape,
+    assert_allclose(faparlim.fapar_max, expected_faparmax)
+
+    # Full rank AI - repeating values across years.
+    faparlim_ai_fullsize = FaparLimitation(
+        years=annual_inputs["time"],
+        aridity_index=np.broadcast_to(
+            site_data["AI"],
+            target_shape,
+        ),
+        **array_inputs,
     )
 
-    assert_allclose(faparlim.fapar_max, expected_faparmax)
+    assert_allclose(faparlim_ai_fullsize.fapar_max, expected_faparmax)
+
+    # AI matches shape of non-year dimensions - held constant across years - this
+    # creates AI arrays with target_shape, ai_shape pairs as below to comply with
+    # broadcasting rules.
+    # (11,) (1,)
+    # (11, 3) (1, 3)
+    # (11, 3, 3) (1, 3, 3)
+    # (11, 3, 3, 3) (1, 3, 3, 3)
+    ai_constant = np.broadcast_to(site_data["AI"], tuple([3] * extra_dims))
+    ai_constant = ai_constant[np.newaxis, ...]
+
+    faparlim_ai_constant = FaparLimitation(
+        years=annual_inputs["time"],
+        aridity_index=ai_constant,
+        **array_inputs,
+    )
+
+    assert_allclose(faparlim_ai_constant.fapar_max, expected_faparmax)
