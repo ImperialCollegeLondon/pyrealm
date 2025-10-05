@@ -3,6 +3,7 @@
 import json
 from contextlib import nullcontext as does_not_raise
 from importlib import resources
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -21,6 +22,20 @@ def annual_inputs():
     data = pd.read_csv(str(datapath))
     data_dict = {k: v.to_numpy() for k, v in data.items()}
     data_dict["time"] = data_dict["time"].astype("datetime64[Y]")
+    return data_dict
+
+
+@pytest.fixture
+def fortnightly_inputs():
+    """Fortnightly data from the regression dataset as a dictionary of numpy arrays."""
+    datapath = (
+        resources.files("pyrealm_build_data.phenology.fortnightly_example")
+        / "fortnightly_data.csv"
+    )
+
+    data = pd.read_csv(str(datapath))
+    data_dict = {k: v.to_numpy() for k, v in data.items()}
+    data_dict["time"] = data_dict["time"].astype("datetime64[s]")
     return data_dict
 
 
@@ -65,8 +80,41 @@ def test_aridity_index_check(aridity_index, raises):
         )
 
 
+def resize_aridity_index_arrays(
+    ai_value,
+    shape,
+    mode=Literal["scalar", "constant", "full"],
+):
+    """Utility function to generate AI inputs with varying dimensionality.
+
+    The modes provide different potential ways of scaling AI values for other inputs of
+    differing dimensionality. Scalar uses a single value for all sites, full provides an
+    observation for each observation, and constant provides a single value for each site
+    (which would be the usual way of working).
+
+    dims  scalar   full           constant
+    1     (1,)     (11,)          (1,)
+    2     (1,)     (11, 3)        (1, 3)
+    3     (1,)     (11, 3, 3)     (1, 3, 3)
+    4     (1,)     (11, 3, 3, 3)  (1, 3, 3, 3)
+    """
+
+    if mode == "scalar":
+        # Scalar array - return a 0D
+        shape = ()
+
+    if mode == "constant":
+        # Constant across time - return an array that has a singleton dimension on first
+        # axis
+        shape = (1, *shape[1:])
+
+    # Otherwise the full shape is returned
+    return np.broadcast_to(ai_value, shape)
+
+
+@pytest.mark.parametrize(argnames="ai_mode", argvalues=("scalar", "constant", "full"))
 @pytest.mark.parametrize(argnames="extra_dims", argvalues=(0, 1, 2, 3))
-def test_FaparLimitation_dimensionality(site_data, annual_inputs, extra_dims):
+def test_FaparLimitation_dimensionality(site_data, annual_inputs, ai_mode, extra_dims):
     """Test FaparLimitation works with different input dimensionality.
 
     This test also checks that various dimensions of the aridity index also work as
@@ -109,41 +157,91 @@ def test_FaparLimitation_dimensionality(site_data, annual_inputs, extra_dims):
         target_shape,
     )
 
+    ai_inputs = resize_aridity_index_arrays(
+        site_data["AI"], shape=target_shape, mode=ai_mode
+    )
     # Scalar AI value
     faparlim = FaparLimitation(
         years=annual_inputs["time"],
-        aridity_index=site_data["AI"],
+        aridity_index=ai_inputs,
         **array_inputs,
     )
 
     assert_allclose(faparlim.fapar_max, expected_faparmax)
 
-    # Full rank AI - repeating values across years.
-    faparlim_ai_fullsize = FaparLimitation(
-        years=annual_inputs["time"],
-        aridity_index=np.broadcast_to(
-            site_data["AI"],
+
+@pytest.mark.parametrize(argnames="ai_mode", argvalues=("scalar", "constant", "full"))
+@pytest.mark.parametrize(argnames="extra_dims", argvalues=(0, 1, 2, 3))
+def test_FaparLimitation_from_pmodel(
+    site_data, fortnightly_inputs, annual_inputs, ai_mode, extra_dims
+):
+    """Test FaparLimitation works with different input dimensionality.
+
+    This test also checks that various dimensions of the aridity index also work as
+    intended.
+    """
+    from pyrealm.phenology.fapar_limitation import FaparLimitation
+    from pyrealm.pmodel import PModel, PModelEnvironment
+
+    # Set up the dimensionality for the test - create a shape tuple with extra
+    # dimensions and then broadcast the model inputs onto it. When extra_dims = 0, the
+    # data are passed as is.
+    n_obs = len(fortnightly_inputs["time"])
+    n_years = len(annual_inputs["time"])
+
+    # Create a target shape with the values along the first axis repeated 3 times along
+    # each of the new dimensions
+    target_shape = tuple([n_obs, *([3] * extra_dims)])
+    target_shape_expected = tuple([n_years, *([3] * extra_dims)])
+
+    array_input_vars = (
+        ("tc", "tc_mean"),
+        ("vpd", "vpd_mean"),
+        ("patm", "patm_mean"),
+        ("co2", "co2_mean"),
+        ("ppfd", "ppfd_mean"),
+        ("precip", "precip_molar_sum"),
+        ("growing_season", "growing_season"),
+    )
+
+    # The code below takes the argument names and input data names and then:
+    # - adds extra dimensions to the 1D inputs: e.g. (11,) -> (11, 1, 1)
+    # - broadcasts that data to the target shape: e.g. (11, 1, 1) -> (11, 3, 3)
+    array_inputs = {
+        arg_name: np.broadcast_to(
+            fortnightly_inputs[data_name][:, *([np.newaxis] * extra_dims)],
             target_shape,
-        ),
-        **array_inputs,
+        )
+        for arg_name, data_name in array_input_vars
+    }
+
+    # Extract the array vars needed for the P Model and run
+    pmodel_vars = ("tc", "vpd", "patm", "co2", "ppfd")
+    pmodel_inputs = {k: v for k, v in array_inputs.items() if k in pmodel_vars}
+    pmodel_env = PModelEnvironment(
+        fapar=np.array(1),
+        **pmodel_inputs,
+    )
+    pmodel = PModel(pmodel_env)
+
+    # Extract the array vars need for the from_pmodel method
+    from_pmodel_inputs = {k: v for k, v in array_inputs.items() if k not in pmodel_vars}
+
+    ai_inputs = resize_aridity_index_arrays(
+        site_data["AI"], shape=target_shape, mode=ai_mode
     )
 
-    assert_allclose(faparlim_ai_fullsize.fapar_max, expected_faparmax)
-
-    # AI matches shape of non-year dimensions - held constant across years - this
-    # creates AI arrays with target_shape, ai_shape pairs as below to comply with
-    # broadcasting rules.
-    # (11,) (1,)
-    # (11, 3) (1, 3)
-    # (11, 3, 3) (1, 3, 3)
-    # (11, 3, 3, 3) (1, 3, 3, 3)
-    ai_constant = np.broadcast_to(site_data["AI"], tuple([3] * extra_dims))
-    ai_constant = ai_constant[np.newaxis, ...]
-
-    faparlim_ai_constant = FaparLimitation(
-        years=annual_inputs["time"],
-        aridity_index=ai_constant,
-        **array_inputs,
+    # Scalar AI value
+    faparlim = FaparLimitation.from_pmodel(
+        pmodel=pmodel,
+        datetimes=fortnightly_inputs["time"],
+        aridity_index=ai_inputs,
+        **from_pmodel_inputs,
     )
 
-    assert_allclose(faparlim_ai_constant.fapar_max, expected_faparmax)
+    # Expected values
+    expected_faparmax = np.broadcast_to(
+        annual_inputs["fapar_max"][:, *([np.newaxis] * extra_dims)],
+        target_shape_expected,
+    )
+    assert_allclose(faparlim.fapar_max, expected_faparmax)
