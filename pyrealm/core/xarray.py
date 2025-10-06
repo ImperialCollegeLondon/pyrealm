@@ -7,6 +7,15 @@ import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 
+ArrayTypeVar = TypeVar("ArrayTypeVar", NDArray[np.floating], xr.DataArray)
+"""Either a :class:`numpy.NDArray` or :class:`xarray.DataArray`.
+
+This is used to define functions that can accept and then return
+:class:`xarray.DataArray`.
+"""
+
+ArrayType = NDArray[np.floating] | xr.DataArray
+
 
 def _get_dims(*args: NDArray | xr.DataArray) -> list[Hashable]:
     """Get the full list of dimensions across all DataArray arguments."""
