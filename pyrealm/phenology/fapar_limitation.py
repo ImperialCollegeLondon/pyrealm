@@ -1,4 +1,23 @@
-"""Class to compute the fAPAR_max and annual peak Leaf Area Index (LAI)."""
+"""Class to compute the fAPAR_max and annual peak Leaf Area Index (LAI).
+
+The :class:`FaparLimitation` class and the :meth:`FaparLimitation.from_pmodel` are
+designed to work with inputs that can have multiple dimensions. The first axis is
+_always_ assumed to represent a time series of annual observations. If the inputs
+are one dimensional, then this is a time series for a single site; if they are three
+dimnsional then these are observations for a grid of sites. Usually all array inputs
+will have the same shape but note the following instances where you might need to
+take care with array broadcasting.
+
+* Growing season length might well be constant across sites. If so - for example
+    with 3D data - the input would need shape `(N, 1, 1)` to broadcast N years of
+    data over the array of sites.
+* The climatological aridity index is very likely to be constant through time.
+    If so, the array should have a singleton first dimension to broadcast an
+    observation per site across observations. For example, with `(10, 3, 3)` data
+    (10 years for a 3x3 grid of sites), the aridity index could be provided as
+    `(1,3,3)` to broadcast the aridity index across each year. It could also use a
+    single scalar value to use the same aridity index for all sites.
+"""
 
 from __future__ import annotations
 
@@ -67,6 +86,7 @@ class FaparLimitation:
     :meth:`~pyrealm.phenology.fapar_limitation.FaparLimitation.from_pmodel` method can
     be used to create an instance directly from a fitted P Model.
 
+
     Args:
         annual_total_potential_gpp: The annual sum of potential GPP (:math:`A_0,
             \text{mol C m}^{-2} \text{year}^{-1}`)
@@ -82,7 +102,7 @@ class FaparLimitation:
             year (:math:`G`, days)
         aridity_index: A climatological estimate of the local aridity index, calculated
             as the long term (typically 20 years) total PET over total precipitation
-            (:math:`AI`, unitless)
+            (:math:`AI`, unitless).
         phenology_const: An instance of
             :class:`~pyrealm.constants.phenology_const.PhenologyConst`
     """
