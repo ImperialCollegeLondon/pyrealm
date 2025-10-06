@@ -651,7 +651,7 @@ class Community:
     #     for cell_id in data_grouped_by_community.groups:
     #         community_dataframe = data_grouped_by_community.get_group(cell_id)
     #         dbh_values = community_dataframe["diameter_at_breast_height"].to_numpy(
-    #             dtype=np.float32
+    #             dtype=np.floating
     #         )
     #         number_of_individuals = community_dataframe[
     #             "number_of_individuals"
