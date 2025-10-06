@@ -368,12 +368,12 @@ class CrownProfile(PandasExporter):
         )
 
     @property
-    def projected_crown_radius(self) -> NDArray[np.float32]:
+    def projected_crown_radius(self) -> NDArray[np.floating]:
         """An array of the projected crown radius of stems at z heights."""
         return np.sqrt(self.projected_crown_area / np.pi)
 
     @property
-    def projected_leaf_radius(self) -> NDArray[np.float32]:
+    def projected_leaf_radius(self) -> NDArray[np.floating]:
         """An array of the projected leaf radius of stems at z heights."""
         return np.sqrt(self.projected_leaf_area / np.pi)
 
@@ -382,7 +382,7 @@ def get_crown_xy(
     crown_profile: CrownProfile,
     stem_allometry: StemAllometry,
     attr: str,
-    stem_offsets: NDArray[np.float32] | None = None,
+    stem_offsets: NDArray[np.floating] | None = None,
     two_sided: bool = True,
     as_xy: bool = False,
 ) -> (
