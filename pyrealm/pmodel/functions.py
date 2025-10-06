@@ -12,11 +12,11 @@ from pyrealm.core.water import calc_viscosity_h2o
 
 
 def calculate_simple_arrhenius_factor(
-    tk: NDArray[np.float64],
+    tk: NDArray[np.floating],
     tk_ref: float,
     ha: float,
     k_R: float = CoreConst().k_R,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate an Arrhenius scaling factor using activation energy.
 
     Calculates the temperature-scaling factor :math:`f` for enzyme kinetics following
@@ -65,12 +65,12 @@ def calculate_simple_arrhenius_factor(
 
 
 def calculate_kattge_knorr_arrhenius_factor(
-    tk_leaf: NDArray[np.float64],
+    tk_leaf: NDArray[np.floating],
     tk_ref: float,
-    tc_growth: NDArray[np.float64],
+    tc_growth: NDArray[np.floating],
     coef: dict[str, float],
     k_R: float = CoreConst().k_R,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate an Arrhenius factor following :cite:t:`Kattge:2007db`.
 
     This implements a "peaked" version of the Arrhenius relationship, describing a
@@ -157,10 +157,10 @@ def calculate_kattge_knorr_arrhenius_factor(
 
 
 def calc_ftemp_inst_rd(
-    tc: NDArray[np.float64],
+    tc: NDArray[np.floating],
     tc_ref: float = PModelConst().tc_ref,
     coef: tuple[float, float] = PModelConst().heskel_rd,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate temperature scaling of dark respiration.
 
     Calculates the temperature-scaling factor for dark respiration at a given
@@ -197,13 +197,13 @@ def calc_ftemp_inst_rd(
 
 
 def calc_gammastar(
-    tk: NDArray[np.float64],
-    patm: NDArray[np.float64],
+    tk: NDArray[np.floating],
+    patm: NDArray[np.floating],
     tk_ref: float = PModelConst().tk_ref,
     k_Po: float = CoreConst().k_Po,
     k_R: float = CoreConst().k_R,
     coef: dict[str, float] = PModelConst().bernacchi_gs,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate the photorespiratory CO2 compensation point.
 
     Calculates the photorespiratory **CO2 compensation point** in absence of dark
@@ -254,10 +254,10 @@ def calc_gammastar(
 
 
 def calc_ns_star(
-    tc: NDArray[np.float64],
-    patm: NDArray[np.float64],
+    tc: NDArray[np.floating],
+    patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate the relative viscosity of water.
 
     Calculates the relative viscosity of water (:math:`\eta^*`), given the standard
@@ -298,13 +298,13 @@ def calc_ns_star(
 
 
 def calc_kmm(
-    tk: NDArray[np.float64],
-    patm: NDArray[np.float64],
+    tk: NDArray[np.floating],
+    patm: NDArray[np.floating],
     tk_ref: float = PModelConst().tk_ref,
     k_co: float = CoreConst().k_co,
     k_R: float = CoreConst().k_R,
     coef: dict[str, float] = PModelConst().bernacchi_kmm,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate the Michaelis Menten coefficient of Rubisco-limited assimilation.
 
     Calculates the Michaelis Menten coefficient of Rubisco-limited assimilation
@@ -368,10 +368,10 @@ def calc_kmm(
 
 
 def calc_soilmstress_stocker(
-    soilm: NDArray[np.float64],
-    meanalpha: NDArray[np.float64] = np.array(1.0),
+    soilm: NDArray[np.floating],
+    meanalpha: NDArray[np.floating] = np.array(1.0),
     coef: dict[str, float] = PModelConst().soilmstress_stocker,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate Stocker's empirical soil moisture stress factor.
 
     This function calculates a penalty factor :math:`\beta(\theta)` for well-watered GPP
@@ -480,10 +480,10 @@ def calc_soilmstress_stocker(
 
 
 def calc_soilmstress_mengoli(
-    soilm: NDArray[np.float64] = np.array(1.0),
-    aridity_index: NDArray[np.float64] = np.array(1.0),
+    soilm: NDArray[np.floating] = np.array(1.0),
+    aridity_index: NDArray[np.floating] = np.array(1.0),
     coef: dict[str, float] = PModelConst().soilmstress_mengoli,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate the Mengoli et al. empirical soil moisture stress factor.
 
     This function calculates a penalty factor :math:`\beta(\theta)` for well-watered GPP
@@ -579,8 +579,8 @@ def calc_soilmstress_mengoli(
 
 
 def calc_co2_to_ca(
-    co2: NDArray[np.float64], patm: NDArray[np.float64]
-) -> NDArray[np.float64]:
+    co2: NDArray[np.floating], patm: NDArray[np.floating]
+) -> NDArray[np.floating]:
     r"""Convert :math:`\ce{CO2}` ppm to Pa.
 
     Converts ambient :math:`\ce{CO2}` (:math:`c_a`) in part per million to Pascals,

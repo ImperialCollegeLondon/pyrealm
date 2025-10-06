@@ -88,10 +88,10 @@ class TwoLeafIrradiance:
 
     def __init__(
         self,
-        solar_elevation: NDArray[np.float64],
-        ppfd: NDArray[np.float64],
-        leaf_area_index: NDArray[np.float64],
-        patm: NDArray[np.float64],
+        solar_elevation: NDArray[np.floating],
+        ppfd: NDArray[np.floating],
+        leaf_area_index: NDArray[np.floating],
+        patm: NDArray[np.floating],
         core_constants: CoreConst = CoreConst(),
         two_leaf_constants: TwoLeafConst = TwoLeafConst(),
         bounds_checker: BoundsChecker = BoundsChecker(),
@@ -102,17 +102,17 @@ class TwoLeafIrradiance:
         check_input_shapes(solar_elevation, ppfd, leaf_area_index, patm)
 
         # Check bounds and store input variables
-        self.solar_elevation: NDArray[np.float64] = bounds_checker.check(
+        self.solar_elevation: NDArray[np.floating] = bounds_checker.check(
             "solar_elevation", solar_elevation
         )
         r"""The solar elevation inputs (:math:`\beta`, radians)"""
-        self.ppfd: NDArray[np.float64] = bounds_checker.check("ppfd", ppfd)
+        self.ppfd: NDArray[np.floating] = bounds_checker.check("ppfd", ppfd)
         """The photosynthetic photon flux density inputs (PPFD, µmol m-2 s-1)"""
-        self.leaf_area_index: NDArray[np.float64] = bounds_checker.check(
+        self.leaf_area_index: NDArray[np.floating] = bounds_checker.check(
             "leaf_area_index", leaf_area_index
         )
         """The leaf area index inputs (:math:`L`, unitless)"""
-        self.patm: NDArray[np.float64] = bounds_checker.check("patm", patm)
+        self.patm: NDArray[np.floating] = bounds_checker.check("patm", patm)
         """The atmospheric pressure (:math:`P`, pascals)"""
         self.core_constants: CoreConst = core_constants
         """An instance of the core constants class."""
@@ -121,35 +121,35 @@ class TwoLeafIrradiance:
 
         # Define instance attributes
 
-        self.fraction_of_diffuse_radiation: NDArray[np.float64]
+        self.fraction_of_diffuse_radiation: NDArray[np.floating]
         """The fraction of diffuse radiation (:math:`f_d`)"""
-        self.diffuse_irradiance: NDArray[np.float64]
+        self.diffuse_irradiance: NDArray[np.floating]
         """The diffuse irradiance (:math:`I_d`) reaching the canopy."""
-        self.beam_irradiance: NDArray[np.float64]
+        self.beam_irradiance: NDArray[np.floating]
         """The beam irradiance (:math:`I_b`) reaching the canopy."""
 
-        self.beam_extinction_coef: NDArray[np.float64]
+        self.beam_extinction_coef: NDArray[np.floating]
         """The beam extinction coefficient (:math:`k_{b}`)"""
-        self.scattered_beam_extinction_coef: NDArray[np.float64]
+        self.scattered_beam_extinction_coef: NDArray[np.floating]
         """The scattered beam extinction coefficient (:math:`k_{b}'`)"""
 
-        self.beam_reflectance: NDArray[np.float64]
+        self.beam_reflectance: NDArray[np.floating]
         r"""The canopy beam reflectance for leaves with uniform angle distribution
          (:math:`\rho_{cb}`)"""
 
-        self.sunlit_beam_irradiance: NDArray[np.float64]
+        self.sunlit_beam_irradiance: NDArray[np.floating]
         """The sunlit beam irradiance (:math:`I_{sb}`)."""
-        self.sunlit_diffuse_irradiance: NDArray[np.float64]
+        self.sunlit_diffuse_irradiance: NDArray[np.floating]
         """The sunlit diffuse irradiance (:math:`I_{sd}`)."""
-        self.sunlit_scattered_irradiance: NDArray[np.float64]
+        self.sunlit_scattered_irradiance: NDArray[np.floating]
         """The sunlit scattered irradiance (:math:`I_{ss}`)."""
 
-        self.canopy_irradiance: NDArray[np.float64]
+        self.canopy_irradiance: NDArray[np.floating]
         """The total canopy irradiance (:math:`I_c`)."""
 
-        self.sunlit_absorbed_irradiance: NDArray[np.float64]
+        self.sunlit_absorbed_irradiance: NDArray[np.floating]
         """The sunlit leaf absorbed irradiance (:math:`I_{csun}`)."""
-        self.shaded_absorbed_irradiance: NDArray[np.float64]
+        self.shaded_absorbed_irradiance: NDArray[np.floating]
         """The shaded leaf absorbed irradiance (:math:`I_{cshade}`)."""
 
         # Automatically calculate the absorbed irradiances.
@@ -244,10 +244,10 @@ class TwoLeafIrradiance:
 
 
 def calculate_beam_extinction_coef(
-    solar_elevation: NDArray[np.float64],
+    solar_elevation: NDArray[np.floating],
     solar_obscurity_angle: float = TwoLeafConst().solar_obscurity_angle,
     extinction_numerator: float = TwoLeafConst().direct_beam_extinction_numerator,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate the beam extinction coefficient.
 
     The beam extinction coefficient (:math:`k_b`) captures changes in the the
@@ -276,12 +276,12 @@ def calculate_beam_extinction_coef(
 
 
 def calculate_fraction_of_diffuse_radiation(
-    patm: NDArray[np.float64],
-    solar_elevation: NDArray[np.float64],
+    patm: NDArray[np.floating],
+    solar_elevation: NDArray[np.floating],
     standard_pressure: float = CoreConst().k_Po,
     atmospheric_scattering: float = TwoLeafConst().atmospheric_scattering_coef,
     atmos_transmission_par: float = TwoLeafConst().atmos_transmission_par,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate the fraction of diffuse radiation.
 
     The fraction of diffuse radiation (:math:`f_d`) captures the proportion of
@@ -330,9 +330,9 @@ def calculate_fraction_of_diffuse_radiation(
 
 
 def calculate_beam_reflectance(
-    beam_extinction: NDArray[np.float64],
+    beam_extinction: NDArray[np.floating],
     horizontal_leaf_reflectance: float = TwoLeafConst().horizontal_leaf_reflectance,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate the beam irradiance for leaves with a uniform angle distribution.
 
     The beam irradiance with a uniform leaf angle distribution (:math:`\rho_{cb}`)
@@ -358,14 +358,14 @@ def calculate_beam_reflectance(
 
 
 def calculate_canopy_irradiance(
-    beam_reflectance: NDArray[np.float64],
-    beam_irradiance: NDArray[np.float64],
-    scattered_beam_extinction_coef: NDArray[np.float64],
-    diffuse_radiation: NDArray[np.float64],
-    leaf_area_index: NDArray[np.float64],
+    beam_reflectance: NDArray[np.floating],
+    beam_irradiance: NDArray[np.floating],
+    scattered_beam_extinction_coef: NDArray[np.floating],
+    diffuse_radiation: NDArray[np.floating],
+    leaf_area_index: NDArray[np.floating],
     diffuse_reflectance: float = TwoLeafConst().diffuse_reflectance,
     diffuse_extinction_coef: float = TwoLeafConst().diffuse_extinction_coef,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate the canopy irradiance.
 
     The canopy irradiance (:math:`I_c`) is the total irradiance within the canopy,
@@ -401,11 +401,11 @@ def calculate_canopy_irradiance(
 
 
 def calculate_sunlit_beam_irradiance(
-    beam_irradiance: NDArray[np.float64],
-    beam_extinction_coef: NDArray[np.float64],
-    leaf_area_index: NDArray[np.float64],
+    beam_irradiance: NDArray[np.floating],
+    beam_extinction_coef: NDArray[np.floating],
+    leaf_area_index: NDArray[np.floating],
     leaf_scattering_coef: float = TwoLeafConst().leaf_scattering_coef,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate the sunlit beam irradiance.
 
     The sunlit beam irradiance (:math:`I_{sun_beam}`) is the direct sunlight received by
@@ -433,12 +433,12 @@ def calculate_sunlit_beam_irradiance(
 
 
 def calculate_sunlit_diffuse_irradiance(
-    diffuse_irradiance: NDArray[np.float64],
-    beam_extinction_coef: NDArray[np.float64],
-    leaf_area_index: NDArray[np.float64],
+    diffuse_irradiance: NDArray[np.floating],
+    beam_extinction_coef: NDArray[np.floating],
+    leaf_area_index: NDArray[np.floating],
     diffuse_reflectance: float = TwoLeafConst().diffuse_reflectance,
     diffuse_extinction_coef: float = TwoLeafConst().diffuse_extinction_coef,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate the sunlit diffuse irradiance.
 
     The sunlit diffuse irradiance (:math:`I_{s_d}`) is the diffuse radiation
@@ -476,13 +476,13 @@ def calculate_sunlit_diffuse_irradiance(
 
 
 def calculate_sunlit_scattered_irradiance(
-    beam_irradiance: NDArray[np.float64],
-    beam_reflectance: NDArray[np.float64],
-    scattered_beam_extinction_coef: NDArray[np.float64],
-    beam_extinction_coef: NDArray[np.float64],
-    leaf_area_index: NDArray[np.float64],
+    beam_irradiance: NDArray[np.floating],
+    beam_reflectance: NDArray[np.floating],
+    scattered_beam_extinction_coef: NDArray[np.floating],
+    beam_extinction_coef: NDArray[np.floating],
+    leaf_area_index: NDArray[np.floating],
     leaf_scattering_coef: float = TwoLeafConst().leaf_scattering_coef,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate the sunlit scattered irradiance.
 
     The sunlit scattered irradiance (:math:`I_{ss}`) is the scattered
@@ -624,59 +624,59 @@ class TwoLeafAssimilation:
         #        class, but removes the parallel arguments.
         #      - See https://github.com/ImperialCollegeLondon/pyrealm/issues/469
 
-        self.canopy_extinction_coef: NDArray[np.float64]
+        self.canopy_extinction_coef: NDArray[np.floating]
         """An extinction coefficient capturing the vertical structure of carboxylation
         capacity within the canopy (:math:`k_v`)."""
-        self.Vcmax25_canopy: NDArray[np.float64]
+        self.Vcmax25_canopy: NDArray[np.floating]
         r"""The total canopy carboxylation capacity at standard temperature
         :math:`V_{cmax25\_C}`"""
-        self.Vcmax25_sun: NDArray[np.float64]
+        self.Vcmax25_sun: NDArray[np.floating]
         r"""The maximum rate of carboxylation at standard temperature within sunlit 
         leaves (:math:`V_{cmax25\_Sn}`)"""
-        self.Vcmax25_shade: NDArray[np.float64]
+        self.Vcmax25_shade: NDArray[np.floating]
         r"""The maximum rate of carboxylation at standard temperature within shaded 
         leaves (:math:`V_{cmax25\_Sd}`)"""
-        self.Vcmax_sun: NDArray[np.float64]
+        self.Vcmax_sun: NDArray[np.floating]
         r"""The maximum rate of carboxylation at the observed temperature within sunlit
         leaves (:math:`V_{cmax\_Sn}`)"""
-        self.Vcmax_shade: NDArray[np.float64]
+        self.Vcmax_shade: NDArray[np.floating]
         r"""The maximum rate of carboxylation at the observed temperature within shaded
         leaves (:math:`V_{cmax\_Sd}`)"""
-        self.Jmax25_sun: NDArray[np.float64]
+        self.Jmax25_sun: NDArray[np.floating]
         r"""The maximum rate of electron transfer at standard temperature within sunlit
         leaves (:math:`J_{max25\_Sn}`)"""
-        self.Jmax25_shade: NDArray[np.float64]
+        self.Jmax25_shade: NDArray[np.floating]
         r"""The maximum rate of electron transfer at standard temperature within shaded
         leaves (:math:`J_{max25\_Sd}`)"""
-        self.Jmax_sun: NDArray[np.float64]
+        self.Jmax_sun: NDArray[np.floating]
         r"""The maximum rate of electron transfer at the observed temperature within
         sunlit leaves (:math:`J_{max\_Sn}`)"""
-        self.Jmax_shade: NDArray[np.float64]
+        self.Jmax_shade: NDArray[np.floating]
         r"""The maximum rate of electron transfer at the observed temperature within
         shaded leaves (:math:`J_{max25\_Sn}`)"""
-        self.J_sun: NDArray[np.float64]
+        self.J_sun: NDArray[np.floating]
         r"""The realised rate of electron transfer within sunlit leaves
         (:math:`J_{Sn}`"""
-        self.J_shade: NDArray[np.float64]
+        self.J_shade: NDArray[np.floating]
         r"""The realised rate of electron transfer within sunlit leaves
         (:math:`J_{Sd}`"""
-        self.Av_sun: NDArray[np.float64]
+        self.Av_sun: NDArray[np.floating]
         r"""The potential rate of assimilation associated with carboxylation in sunlit
         leaves (:math:`A_{v\_Sn}`)."""
-        self.Av_shade: NDArray[np.float64]
+        self.Av_shade: NDArray[np.floating]
         r"""The potential rate of assimilation associated with carboxylation in shaded
         leaves (:math:`A_{v\_Sd}`)."""
-        self.Aj_sun: NDArray[np.float64]
+        self.Aj_sun: NDArray[np.floating]
         r"""The potential rate of assimilation associated with electron transfer in
         sunlit leaves (:math:`A_{j\_Sn}`)."""
-        self.Aj_shade: NDArray[np.float64]
+        self.Aj_shade: NDArray[np.floating]
         r"""The potential rate of assimilation associated with electron transfer in
         shaded leaves (:math:`A_{j\_Sn}`)."""
-        self.A_sun: NDArray[np.float64]
+        self.A_sun: NDArray[np.floating]
         r"""The realised assimilation rate for sunlit leaves (:math:`A_{Sn}`)."""
-        self.A_shade: NDArray[np.float64]
+        self.A_shade: NDArray[np.floating]
         r"""The realised assimilation rate for shaded leaves (:math:`A_{Sd}`)."""
-        self.gpp: NDArray[np.float64]
+        self.gpp: NDArray[np.floating]
         r"""The gross primary productivity across the sunlit and shaded leaves."""
 
         # Automatically run the
@@ -765,9 +765,9 @@ class TwoLeafAssimilation:
 
 
 def calculate_canopy_extinction_coef(
-    vcmax: NDArray[np.float64],
+    vcmax: NDArray[np.floating],
     coef: tuple[float, float] = TwoLeafConst().vcmax_lloyd_coef,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate the canopy extinction coefficient.
 
     The extinction coefficient (:math:`k_v`) captures the decrease in photosynthetic
@@ -793,10 +793,10 @@ def calculate_canopy_extinction_coef(
 
 
 def calculate_canopy_vcmax25(
-    leaf_area_index: NDArray[np.float64],
-    vcmax25: NDArray[np.float64],
-    canopy_extinction_coef: NDArray[np.float64],
-) -> NDArray[np.float64]:
+    leaf_area_index: NDArray[np.floating],
+    vcmax25: NDArray[np.floating],
+    canopy_extinction_coef: NDArray[np.floating],
+) -> NDArray[np.floating]:
     r"""Calculate standardised carboxylation rate in the canopy.
 
     This function calculates the maximum carboxylation rate of the canopy at a reference
@@ -824,11 +824,11 @@ def calculate_canopy_vcmax25(
 
 
 def calculate_sun_vcmax25(
-    leaf_area_index: NDArray[np.float64],
-    vcmax25: NDArray[np.float64],
-    canopy_extinction_coef: NDArray[np.float64],
-    beam_extinction_coef: NDArray[np.float64],
-) -> NDArray[np.float64]:
+    leaf_area_index: NDArray[np.floating],
+    vcmax25: NDArray[np.floating],
+    canopy_extinction_coef: NDArray[np.floating],
+    beam_extinction_coef: NDArray[np.floating],
+) -> NDArray[np.floating]:
     r"""Calculate standardised carboxylation rate of sunlit leaves.
 
     Calculates the maximum carboxylation rate for sunlit leaves at the standard
@@ -868,9 +868,9 @@ def calculate_sun_vcmax25(
 
 
 def calculate_jmax25(
-    vcmax25: NDArray[np.float64],
+    vcmax25: NDArray[np.floating],
     coef: tuple[float, float] = TwoLeafConst().jmax25_wullschleger_coef,
-) -> NDArray[np.float64]:
+) -> NDArray[np.floating]:
     r"""Calculate the maximum rate of electron transport.
 
     This function calculates the maximum rate of electron transport (:math:`J_{max25}`)
@@ -896,8 +896,8 @@ def calculate_jmax25(
 
 
 def calculate_electron_transport_rate(
-    jmax: NDArray[np.float64], absorbed_irradiance: NDArray[np.float64]
-) -> NDArray[np.float64]:
+    jmax: NDArray[np.floating], absorbed_irradiance: NDArray[np.floating]
+) -> NDArray[np.floating]:
     r"""Calculate electron transport rate.
 
     This function calculates the realised electron transport rate (:math:`J`), given

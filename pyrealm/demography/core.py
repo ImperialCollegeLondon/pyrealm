@@ -141,9 +141,9 @@ class CohortMethods(ABC):
 
 
 def _validate_demography_array_arguments(
-    trait_args: dict[str, NDArray],
-    size_args: dict[str, NDArray] = {},
-    at_size_args: dict[str, NDArray] = {},
+    trait_args: dict[str, NDArray[np.floating]],
+    size_args: dict[str, NDArray[np.floating]] = {},
+    at_size_args: dict[str, NDArray[np.floating]] = {},
 ) -> None:
     """Shared validation for demography inputs.
 

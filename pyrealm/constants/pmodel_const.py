@@ -179,13 +179,13 @@ class PModelConst(ConstantsClass):
     * exponent of the threshold function (``psi_b``).
     """
 
-    beta_cost_ratio_c3: NDArray[np.float64] = field(
+    beta_cost_ratio_c3: NDArray[np.floating] = field(
         default_factory=lambda: np.array([146.0])
     )
     r"""Unit cost ratio for C3 plants (:math:`\beta`, 146.0) taken from
      :cite:t:`Stocker:2020dh`."""
 
-    beta_cost_ratio_c4: NDArray[np.float64] = field(
+    beta_cost_ratio_c4: NDArray[np.floating] = field(
         default_factory=lambda: np.array([146.0 / 9])
     )
     r"""Unit cost ratio for C4 plants (:math:`\beta`, 16.222).

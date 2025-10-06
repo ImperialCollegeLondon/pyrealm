@@ -48,31 +48,31 @@ class DailyEvapFluxes:
     """
 
     solar: DailySolarFluxes
-    pa: InitVar[NDArray]
-    tc: InitVar[NDArray]
-    kWm: NDArray[np.float64] = field(default_factory=lambda: np.array([150.0]))
+    pa: InitVar[NDArray[np.floating]]
+    tc: InitVar[NDArray[np.floating]]
+    kWm: NDArray[np.floating] = field(default_factory=lambda: np.array([150.0]))
     core_const: CoreConst = field(default_factory=lambda: CoreConst())
 
-    sat: NDArray[np.float64] = field(init=False)
+    sat: NDArray[np.floating] = field(init=False)
     """Slope of saturation vapour pressure temperature curve, Pa/K"""
-    lv: NDArray[np.float64] = field(init=False)
+    lv: NDArray[np.floating] = field(init=False)
     """Enthalpy of vaporization, J/kg"""
-    pw: NDArray[np.float64] = field(init=False)
+    pw: NDArray[np.floating] = field(init=False)
     """Density of water, kg/m^3"""
-    psy: NDArray[np.float64] = field(init=False)
+    psy: NDArray[np.floating] = field(init=False)
     """Psychrometric constant, Pa/K"""
-    econ: NDArray[np.float64] = field(init=False)
+    econ: NDArray[np.floating] = field(init=False)
     """Water-to-energy conversion factor"""
-    cond: NDArray[np.float64] = field(init=False)
+    cond: NDArray[np.floating] = field(init=False)
     """Daily condensation, mm"""
-    eet_d: NDArray[np.float64] = field(init=False)
+    eet_d: NDArray[np.floating] = field(init=False)
     """Daily equilibrium evapotranspiration (EET), mm"""
-    pet_d: NDArray[np.float64] = field(init=False)
+    pet_d: NDArray[np.floating] = field(init=False)
     """Daily potential evapotranspiration (PET), mm"""
-    rx: NDArray[np.float64] = field(init=False)
+    rx: NDArray[np.floating] = field(init=False)
     """Variable substitute, (mm/hr)/(W/m^2)"""
 
-    def __post_init__(self, pa: NDArray[np.float64], tc: NDArray[np.float64]) -> None:
+    def __post_init__(self, pa: NDArray[np.floating], tc: NDArray[np.floating]) -> None:
         """Calculate invariant components of evapotranspiration.
 
         The post_init method calculates the components of the evaporative fluxes that
@@ -122,8 +122,14 @@ class DailyEvapFluxes:
         self.rx = (3.6e6) * (1.0 + self.core_const.k_w) * self.econ
 
     def estimate_aet(
-        self, wn: NDArray[np.float64], day_idx: int | None = None, only_aet: bool = True
-    ) -> NDArray[np.float64] | tuple[NDArray, NDArray, NDArray]:
+        self,
+        wn: NDArray[np.floating],
+        day_idx: int | None = None,
+        only_aet: bool = True,
+    ) -> (
+        NDArray[np.floating]
+        | tuple[NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]]
+    ):
         """Estimate actual evapotranspiration.
 
         This method estimates the daily actual evapotranspiration (AET, mm/day), given

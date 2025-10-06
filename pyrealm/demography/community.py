@@ -170,13 +170,13 @@ class Cohorts(PandasExporter, CohortMethods):
     n_individuals: NDArray[np.int_]
     pft_names: NDArray[np.str_]
     _cohort_id: NDArray[np.str_] = field(init=False)
-    _dbh_values: NDArray[np.float64] = field(init=False)
+    _dbh_values: NDArray[np.floating] = field(init=False)
     n_cohorts: int = field(init=False)
-    dbh_values: InitVar[NDArray[np.float64]]
+    dbh_values: InitVar[NDArray[np.floating]]
 
     __experimental__ = True
 
-    def __post_init__(self, dbh_values: NDArray[np.float64]) -> None:
+    def __post_init__(self, dbh_values: NDArray[np.floating]) -> None:
         """Validation of cohorts data."""
 
         # TODO - validation - maybe make this optional to reduce workload within
@@ -222,12 +222,12 @@ class Cohorts(PandasExporter, CohortMethods):
     # values.
 
     @property  # type: ignore [no-redef]
-    def dbh_values(self) -> NDArray[np.float64]:
+    def dbh_values(self) -> NDArray[np.floating]:
         """The diameter at breast height of the cohorts (m)."""
         return self._dbh_values
 
     @dbh_values.setter
-    def dbh_values(self, values: NDArray[np.float64]) -> None:
+    def dbh_values(self, values: NDArray[np.floating]) -> None:
         """Setter function for DBH values, enforcing strictly positive values."""
         if np.any(values <= 0):
             raise ValueError("DBH values must be strictly positive")
@@ -651,7 +651,7 @@ class Community:
     #     for cell_id in data_grouped_by_community.groups:
     #         community_dataframe = data_grouped_by_community.get_group(cell_id)
     #         dbh_values = community_dataframe["diameter_at_breast_height"].to_numpy(
-    #             dtype=np.float32
+    #             dtype=np.floating
     #         )
     #         number_of_individuals = community_dataframe[
     #             "number_of_individuals"

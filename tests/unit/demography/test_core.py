@@ -23,9 +23,9 @@ def test_PandasExporter() -> None:
         """Simple test dataclass implementing the ABC."""
 
         array_attrs: ClassVar[tuple[str, ...]] = ("c", "d", "e")
-        c: NDArray[np.float64]
-        d: NDArray[np.float64]
-        e: NDArray[np.float64]
+        c: NDArray[np.floating]
+        d: NDArray[np.floating]
+        e: NDArray[np.floating]
 
     # create instance and run method
     instance = TestClass(
@@ -55,8 +55,8 @@ def test_CohortMethods() -> None:
         count_attr: ClassVar[str] = "n_cohorts"
 
         n_cohorts: int
-        a: NDArray[np.float64]
-        b: NDArray[np.float64]
+        a: NDArray[np.floating]
+        b: NDArray[np.floating]
 
     # Create instances
     t1 = TestClass(n_cohorts=3, a=np.array([1, 2, 3]), b=np.array([4, 5, 6]))
@@ -86,8 +86,8 @@ def test_Cohorts_add_cohort_data_failure() -> None:
 
         array_attrs: ClassVar[tuple[str, ...]] = ("a", "b")
 
-        a: NDArray[np.float64]
-        b: NDArray[np.float64]
+        a: NDArray[np.floating]
+        b: NDArray[np.floating]
 
     @dataclass
     class NotTheSameClass(CohortMethods):
@@ -95,8 +95,8 @@ def test_Cohorts_add_cohort_data_failure() -> None:
 
         array_attrs: ClassVar[tuple[str, ...]] = ("c", "d")
 
-        c: NDArray[np.float64]
-        d: NDArray[np.float64]
+        c: NDArray[np.floating]
+        d: NDArray[np.floating]
 
     # Create instances
     t1 = TestClass(a=np.array([1, 2, 3]), b=np.array([4, 5, 6]))
@@ -127,9 +127,9 @@ def test_PandasExporter_Cohorts_multiple_inheritance() -> None:
         n: InitVar[int]
         start_vals: InitVar[NDArray[np.int_]]
 
-        c: NDArray[np.float64] = field(init=False)
+        c: NDArray[np.floating] = field(init=False)
         d: NDArray[np.int_] = field(init=False)
-        e: NDArray[np.float64] = field(init=False)
+        e: NDArray[np.floating] = field(init=False)
         n_foobars: int = field(init=False)
 
         def __post_init__(self, n: int, start_vals: NDArray[np.int_]) -> None:
