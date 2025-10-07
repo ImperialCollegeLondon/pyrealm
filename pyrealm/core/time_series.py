@@ -53,14 +53,18 @@ class AnnualValueCalculator:
     for example in estimating values only during a growing season.
 
     Example:
-        >>> # Three years of monthly data
+        >>> # Three years of monthly data - 36 observations
         >>> datetimes = np.arange(
         ...     np.datetime64('2000-01'),
         ...     np.datetime64('2003-01'),
         ...     np.timedelta64(1, "M")
         ... )
         >>> # Monthly data is uneven - requires an explicit endpoint.
-        >>> avc = AnnualValueCalculator(datetimes, endpoint=np.datetime64('2003-01'))
+        >>> avc = AnnualValueCalculator(
+        ...    data_shape=(36,),
+        ...    timing=datetimes,
+        ...    endpoint=np.datetime64('2003-01')
+        ... )
         >>> avc.year_completeness
         array([1., 1., 1.])
 
@@ -301,7 +305,7 @@ class AnnualValueCalculator:
         )
 
         # Calculate the year length in days and the number of days within the subset
-        # mask per year. The first one has to be constant across extra dimensions, but
+        # mask per year. The first one _has_ to be constant across extra dimensions, but
         # the subset mask could be variable. Having different dimensionality on these
         # two attributes is confusing, so broadcast year_n_days to the data shape.
         day_seconds = 86400
@@ -310,7 +314,7 @@ class AnnualValueCalculator:
 
         self.year_n_days_subset = np.array(
             [
-                np.sum(wght * mask) / day_seconds
+                np.sum(wght * mask, axis=0) / day_seconds
                 for wght, mask in zip(self.duration_weights, self.subset_mask_by_year)
             ]
         )
@@ -369,7 +373,9 @@ class AnnualValueCalculator:
             ... )
             >>> # Monthly data is uneven - requires an explicit endpoint.
             >>> avc = AnnualValueCalculator(
-            ...     datetimes, endpoint=np.datetime64('2003-01')
+            ...    data_shape=(36,),
+            ...    timing=datetimes,
+            ...    endpoint=np.datetime64('2003-01')
             ... )
             >>> # Note that the means are weighted by the actual durations of months.
             >>> avc.get_annual_means(np.arange(0, 36)).round(4)
@@ -432,7 +438,9 @@ class AnnualValueCalculator:
             ... )
             >>> # Monthly data is uneven - requires an explicit endpoint.
             >>> avc = AnnualValueCalculator(
-            ...     datetimes, endpoint=np.datetime64('2003-07')
+            ...    data_shape=(36,),
+            ...    timing=datetimes,
+            ...    endpoint=np.datetime64('2003-07')
             ... )
             >>> # Note that the means are weighted by the actual durations of months.
             >>> avc.get_annual_totals(np.arange(0, 36)).round(4)

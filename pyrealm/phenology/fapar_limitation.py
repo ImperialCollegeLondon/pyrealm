@@ -103,6 +103,7 @@ class FaparLimitation:
         aridity_index: A climatological estimate of the local aridity index, calculated
             as the long term (typically 20 years) total PET over total precipitation
             (:math:`AI`, unitless).
+        years: An array of year datetimes for the observations.
         phenology_const: An instance of
             :class:`~pyrealm.constants.phenology_const.PhenologyConst`
     """

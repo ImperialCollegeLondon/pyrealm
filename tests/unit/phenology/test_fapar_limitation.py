@@ -100,8 +100,8 @@ def resize_aridity_index_arrays(
     """
 
     if mode == "scalar":
-        # Scalar array - return a 0D
-        shape = ()
+        # Scalar array - return a 1D
+        shape = (1,)
 
     if mode == "constant":
         # Constant across time - return an array that has a singleton dimension on first
@@ -228,7 +228,7 @@ def test_FaparLimitation_from_pmodel(
     from_pmodel_inputs = {k: v for k, v in array_inputs.items() if k not in pmodel_vars}
 
     ai_inputs = resize_aridity_index_arrays(
-        site_data["AI"], shape=target_shape, mode=ai_mode
+        site_data["AI"], shape=target_shape_expected, mode=ai_mode
     )
 
     # Scalar AI value
