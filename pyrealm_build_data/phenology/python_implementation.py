@@ -221,8 +221,9 @@ subdaily_outputs = subdaily_outputs.assign(
 
 # Calculate annual values
 avc = AnnualValueCalculator(
+    data_shape=env.tc.shape,
     timing=acclim,
-    growing_season=subdaily_outputs["growing_day"].to_numpy(),
+    subset_mask=subdaily_outputs["growing_day"].to_numpy(),
 )
 
 
@@ -239,15 +240,15 @@ ann_total_P_molar = avc.get_annual_totals(subdaily_outputs["precip_molar"].to_nu
 
 # Chi, ca and VPD in growing season
 annual_mean_ca_in_GS = avc.get_annual_means(
-    subdaily_outputs["ca"].to_numpy(), within_growing_season=True
+    subdaily_outputs["ca"].to_numpy(), within_subset=True
 )
 
 annual_mean_chi_in_GS = avc.get_annual_means(
-    subdaily_outputs["PMod_chi"].to_numpy(), within_growing_season=True
+    subdaily_outputs["PMod_chi"].to_numpy(), within_subset=True
 )
 
 annual_mean_vpd_in_GS = avc.get_annual_means(
-    subdaily_outputs["vpd"].to_numpy(), within_growing_season=True
+    subdaily_outputs["vpd"].to_numpy(), within_subset=True
 )
 
 # Create an annual dataset
@@ -448,8 +449,9 @@ fortnightly_outputs = fortnightly_outputs.assign(
 
 # TODO - allow endpoint to truncate.
 avc2 = AnnualValueCalculator(
+    data_shape=pmod_fortnight.env.shape,
     timing=fortnightly_outputs["time"].to_numpy(),
-    growing_season=fortnightly_outputs["growing_season"].to_numpy(),
+    subset_mask=fortnightly_outputs["growing_season"].to_numpy(),
     # endpoint=np.datetime64("2015-01-01"),
 )
 
@@ -465,15 +467,15 @@ fortnightly_annual_mean_gpp = avc2.get_annual_means(
 # Growing season means
 
 fortnightly_annual_mean_vpd_gs = avc2.get_annual_means(
-    fortnightly_outputs["vpd_mean"].to_numpy(), within_growing_season=True
+    fortnightly_outputs["vpd_mean"].to_numpy(), within_subset=True
 )
 
 fortnightly_annual_mean_chi_gs = avc2.get_annual_means(
-    fortnightly_outputs["chi"].to_numpy(), within_growing_season=True
+    fortnightly_outputs["chi"].to_numpy(), within_subset=True
 )
 
 fortnightly_annual_mean_ca_gs = avc2.get_annual_means(
-    fortnightly_outputs["ca"].to_numpy(), within_growing_season=True
+    fortnightly_outputs["ca"].to_numpy(), within_subset=True
 )
 
 
