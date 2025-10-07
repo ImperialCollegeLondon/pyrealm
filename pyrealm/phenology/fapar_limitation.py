@@ -268,8 +268,8 @@ class FaparLimitation:
 
         * The annual mean values :math:`c_a, \chi` and :math:`D` should be estimated
           during the growing season, so the ``growing_season`` argument must be used to
-          provide a boolean value indicating which observations should be treated as in
-          the growing season.
+          provide an array of boolean value indicating which observations should be
+          treated as in the growing season.
 
         * The calculation requires estimates of precipitation, so the ``precipitation``
           argument must provide estimates of total precipitation during each
@@ -323,8 +323,9 @@ class FaparLimitation:
         # Create the annual value calculator
         # - the code above guards against datetimes being None
         avc = AnnualValueCalculator(
+            data_shape=pmodel.shape,
             timing=datetimes,  # type: ignore [arg-type]
-            growing_season=growing_season,
+            subset_mask=growing_season,
         )
 
         # Get the total GPP for each observation
@@ -345,13 +346,9 @@ class FaparLimitation:
         ) / pmodel.core_const.k_c_molmass
 
         # Calculate annual mean ca, chi and VPD within growing season
-        annual_mean_ca = avc.get_annual_means(pmodel.env.ca, within_growing_season=True)
-        annual_mean_chi = avc.get_annual_means(
-            pmodel.optchi.chi, within_growing_season=True
-        )
-        annual_mean_vpd = avc.get_annual_means(
-            pmodel.env.vpd, within_growing_season=True
-        )
+        annual_mean_ca = avc.get_annual_means(pmodel.env.ca, within_subset=True)
+        annual_mean_chi = avc.get_annual_means(pmodel.optchi.chi, within_subset=True)
+        annual_mean_vpd = avc.get_annual_means(pmodel.env.vpd, within_subset=True)
 
         # Calculate total annual precipitation
         annual_total_precip = avc.get_annual_totals(precip)
@@ -362,7 +359,7 @@ class FaparLimitation:
             annual_mean_chi=annual_mean_chi,
             annual_mean_vpd=annual_mean_vpd,
             annual_total_precip=annual_total_precip,
-            annual_growing_season_length=avc.year_n_growing_days,
+            annual_growing_season_length=avc.year_n_days_subset,
             years=avc.years,
             aridity_index=aridity_index,
             phenology_const=phenology_const,
