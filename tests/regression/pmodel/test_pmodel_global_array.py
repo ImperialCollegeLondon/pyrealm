@@ -117,7 +117,7 @@ def test_pmodel_global_array(dataset, ctrl):
     #                       kphio=0.05, do_ftemp_kphio=False)
     # scaled = model.unit_iabs.scale_iabs(fapar=0.3468055, ppfd=74848.94)
     #
-    # ## Run the P model in a loction with missing data
+    # ## Run the P model in a location with missing data
     #
     # idx = (0, 176, 653)
     #

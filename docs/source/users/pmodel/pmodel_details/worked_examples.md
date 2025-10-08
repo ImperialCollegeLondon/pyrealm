@@ -81,7 +81,7 @@ The example shows the steps required using a single site with:
 The {class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` also accepts estimates
 of the fraction of absorbed photosynthetically active radiation ($f_{APAR}$, `fapar`,
 unitless) and the photosynthetic photon flux density (PPFD,`ppfd`, µmol m-2 s-1).
-Together these are used to calculate the asorbed irradiance, which is used to scale up
+Together these are used to calculate the absorbed irradiance, which is used to scale up
 the estimated light use efficiency to estimate the actual productivity of the model.
 Here we are using:
 
@@ -106,7 +106,7 @@ env = PModelEnvironment(tc=20.0, patm=101325.0, vpd=820, co2=400, fapar=0.91, pp
 env
 ```
 
-The `env` object now holds the photosynthetic environment, which can be re-used with
+The `env` object now holds the photosynthetic environment, which can be reused with
 different P Model settings. The representation of a
 {class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` object (`env`) is
 deliberately terse - just the shape of the data - but the

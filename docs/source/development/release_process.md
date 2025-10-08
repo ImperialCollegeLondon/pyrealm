@@ -54,10 +54,10 @@ The steps of the process are:
    Log in to [https://readthedocs.org](https://readthedocs.org) which is the admin site
    controlling the build process. From the Versions tab, activate the `release/X.Y.Z`
    branch and wait for it to build. Check the Builds tab to see that it has built
-   successfully! If it has built succesfully, do check pages to make sure that page code
-   has executed successfully, and then go back to the Versions tab and deactivate and
-   hide the branch. If the release branch needs any changes, do come back and check that
-   those changes have also built successfully.
+   successfully! If it has built successfully, do check pages to make sure that page
+   code has executed successfully, and then go back to the Versions tab and deactivate
+   and hide the branch. If the release branch needs any changes, do come back and check
+   that those changes have also built successfully.
 
 1. **Start a pull request against the `main` branch**. The PR will transfer all of the
    changes to the `develop` branch since the last release on to the `main` branch. The
@@ -159,7 +159,7 @@ twine upload --repository testpypi --config-file .pypirc dist/*
 twine upload --repository pypi --config-file .pypirc dist/*
 ```
 
-The tricky bit is that you need to provide a config file containining authentication
+The tricky bit is that you need to provide a config file containing authentication
 tokens to permit publication. Those tokens **must not be included in the repository**
 and so need to be carefully shared with developers who make releases. If this is being
 used the `.pypirc` file contents will look something like:

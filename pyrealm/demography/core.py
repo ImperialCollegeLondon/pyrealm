@@ -50,7 +50,7 @@ class PandasExporter(ABC):
             stacked_data = {
                 "column_stem_index": np.repeat(np.arange(data_shape[1]), data_shape[0])
             }
-            # Ravel the attribute data using column-major Fortan style
+            # Ravel the attribute data using column-major Fortran style
             for ky, vl in data.items():
                 stacked_data[ky] = np.ravel(vl, order="F")
 

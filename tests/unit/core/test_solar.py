@@ -320,9 +320,9 @@ def test_calculate_net_radiation_crossover_hour_angle(inputs, expected):
 def test_daytime_net_radiation(inputs, expected):
     """Tests calculation of net daytime radiation.
 
-    This test orginally had an expected value of [21774953], which required rtol=1e-6 in
-    the assertions. It isn't clear where that test value came from, but the current one
-    allows for more exact tests, which is probably better for trapping small errors.
+    This test originally had an expected value of [21774953], which required rtol=1e-6
+    in the assertions. It isn't clear where that test value came from, but the current
+    one allows for more exact tests, which is probably better for trapping small errors.
     """
 
     from pyrealm.core.solar import (

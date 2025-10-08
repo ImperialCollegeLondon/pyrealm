@@ -45,3 +45,4 @@ repos:
       args: ["--toml", "pyproject.toml"]
       additional_dependencies:
         - tomli
+

@@ -27,7 +27,7 @@ def solar_elevation():
 
 @pytest.fixture
 def solar_irradiance(solar_elevation, get_data):
-    """Creates instace of TwoLeafIrradiance class."""
+    """Creates an instance of TwoLeafIrradiance class."""
 
     data = get_data.loc[(get_data["time"] == "2014-08-01 12:30:00")]
 

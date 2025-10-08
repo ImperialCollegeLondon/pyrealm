@@ -40,7 +40,7 @@ class SplashModel:
       these calculations, given an initial estimate of soil moisture in observed sites.
       This method simply iterates over the days, applying the
       :meth:`~pyrealm.splash.splash.SplashModel.estimate_daily_water_balance` method to
-      calculate the daily water balance, given the soil moisture of the preceeding day.
+      calculate the daily water balance, given the soil moisture of the preceding day.
 
     * The :meth:`~pyrealm.splash.splash.SplashModel.estimate_initial_soil_moisture`
       method can be used to estimate an initial soil moisture for a time series from the
@@ -247,7 +247,7 @@ class SplashModel:
 
         This function estimates the daily water balance within observations. The
         function first calculates the expected actual evapotranspiration (mm d-1,
-        :math:`\textrm{AET}_{[t]}`), given the soil moisture from the preceeding day
+        :math:`\textrm{AET}_{[t]}`), given the soil moisture from the preceding day
         (mm, :math:`W_{n[t-1]}`). Those are then used, along with the precipitation (mm
         d-1, :math:`P_{[t]}`) and condensation (mm d-1, :math:`C_{[t]}`) for the current
         day, to calculate the current soil moisture (mm, :math:`W_{n[t]}`) as:
@@ -269,7 +269,7 @@ class SplashModel:
         Args:
             day_idx: Optionally, the index of the date for which to calculate water
                 balance.
-            previous_wn: Soil moisture estimates for the preceeding day (mm)
+            previous_wn: Soil moisture estimates for the preceding day (mm)
 
         Returns:
             A tuple of numpy arrays containing estimated  AET, daily soil moisture and

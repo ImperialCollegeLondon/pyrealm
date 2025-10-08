@@ -41,7 +41,7 @@ example a total of 3 stem properties:
 def fixture_z_qz_stem_properties(request):
     """Fixture providing test combinations of trait, size (z) and q_z values.
 
-    This fixture provides a menu of inputs that can be used by tests throught indirect
+    This fixture provides a menu of inputs that can be used by tests through indirect
     parameterisation to share a set of test cases of inputs for the z, stem properties
     q_z arguments and expected outcome and exception message. In each case, the returned
     value is a ZQZInput instance.
@@ -622,7 +622,7 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
 
     assert_allclose(leaf_area_fg0, expected_leaf_area_fg0)
 
-    # More rigourous check - with f_g = 0, the projected leaf area of each stem in the
+    # More rigorous check - with f_g = 0, the projected leaf area of each stem in the
     # lowest layer must equal the crown area (all the crown is now accounted for).
     assert_allclose(leaf_area_fg0[[0]], fixture_community.stem_allometry.crown_area)
     # Also the diagonal of the resulting matrix (4 heights for 4 cohorts) should _also_

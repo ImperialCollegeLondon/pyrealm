@@ -16,7 +16,7 @@ class AcclimationModel:
 
     This class provides methods that allow data to be converted between
     photsynthetically 'fast' and 'slow' timescales. Many plant responses to changing
-    enviroments are 'fast' - on the scale of minutes to seconds - but other responses
+    environments are 'fast' - on the scale of minutes to seconds - but other responses
     are slow - over the scale of days or weeks, capturing the timescales over which
     plants will acclimate to changing conditions.
 

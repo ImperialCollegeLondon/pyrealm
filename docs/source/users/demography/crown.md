@@ -207,7 +207,7 @@ ax2.set_aspect("equal")
 
 The examples below show the calculation of crown variables in `pyrealm`.
 
-### Calculting crown profiles
+### Calculating crown profiles
 
 The  {class}`~pyrealm.demography.crown.CrownProfile` class is used to calculate crown
 profiles for PFTs. It requires:

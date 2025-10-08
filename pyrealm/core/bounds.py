@@ -15,7 +15,7 @@ The ``bounds`` module:
 
 A ``BoundsChecker`` class instance is created with a predefined internal dictionary of
 default variables and appropriate bounds. However, users can use the
-{meth}`~pyrealm.core.bounds.BoundsChecker.update` method to overide defaults or add new
+{meth}`~pyrealm.core.bounds.BoundsChecker.update` method to override defaults or add new
 variables by providing a new ``Bounds`` instance.
 
 The {meth}`~pyrealm.core.bounds.BoundsChecker.check` method can then be used to validate

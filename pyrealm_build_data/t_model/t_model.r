@@ -22,7 +22,7 @@ tmodel <- function(P0, year, a, cr, Hm, rho, rr, rs, L, zeta, y, sigma, tf, tr, 
         gpp <- P0[i] * (1 - exp(-(K * L))) # GPP fixed per m2 of crown
         Rm1 <- Wss * rs # sapwood respiration
         Rm2 <- zeta * sigma * Wf * rr # fine root respiration
-        NPP1 <- y * (GPP - Rm1 - Rm2) # NPP after multiplied by the yeild factor
+        NPP1 <- y * (GPP - Rm1 - Rm2) # NPP after multiplied by the yield factor
         NPP2 <- (Ac * L * ((1 / (sigma * tf)) + (zeta / tr))) # turnover of foliage and fine root
         # 		NPP3 <- (L * ((pi * cr)/(4 * a)) * (a * d * (1 - H/Hm) + H)) * (1/sigma + zeta)
         # 		dD <- (NPP1 - NPP2)/(NPP3 + dWs)
@@ -30,7 +30,7 @@ tmodel <- function(P0, year, a, cr, Hm, rho, rr, rs, L, zeta, y, sigma, tf, tr, 
         den <- (a / (2 * cr)) * rho * (a * d * (1 / H - 1 / Hm) + 2) + (L / d) * (a * d * (1 / H - 1 / Hm) + 1) * (1 / sigma + zeta)
         dD <- num / den # increment of diameter
         dWs <- (pi / 8 * rho * d * (a * d * (1 - (H / Hm)) + 2 * H)) * dD # increment of wood
-        dWfr <- (L * ((pi * cr) / (4 * a)) * (a * d * (1 - (H / Hm) + H)) * (1 / sigma + zeta)) * dD # increament of foliage and fine root
+        dWfr <- (L * ((pi * cr) / (4 * a)) * (a * d * (1 - (H / Hm) + H)) * (1 / sigma + zeta)) * dD # increment of foliage and fine root
         output[i, ] <- c(dD / 2 * 1000, d, H, Ac)
     }
     output

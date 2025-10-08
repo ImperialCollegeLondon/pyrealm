@@ -100,7 +100,7 @@ class ArrheniusFactorABC(ABC):
 
         Raises:
             ValueError: where the method name is not found in the coefficients
-                dictionary or the required coefficents are not found in that matched
+                dictionary or the required coefficients are not found in that matched
                 dictionary.
         """
 

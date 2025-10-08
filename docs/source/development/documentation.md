@@ -132,8 +132,8 @@ custom Author/Year citation style. The reference library in `source/refs.bib` ne
 be kept up to date with the literature for the project.
 
 The three common use cases are shown below using a couple of reference tags
-(`Prentice:2014bc` and `Wang:2017go`) that are inclued provided in the current
-[reference library](../refs.bib).
+(`Prentice:2014bc` and `Wang:2017go`) that are provided in the current [reference
+library](../refs.bib).
 
 * Cite with date in parentheses (``{cite:t}`Prentice:2014bc` ``): the model implemented
   in {cite:p}`Prentice:2014bc`.

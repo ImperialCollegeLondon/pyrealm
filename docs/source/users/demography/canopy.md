@@ -373,7 +373,7 @@ The canopy and crown models are extended by providing two gap fractions:
   displace leaf area further down into the canopy. Crown gaps do not push all the way
   down  to the ground - they only allow light to penetrate more deeply into the crown.
 * The canopy gap fraction ($f_G$) is described above and captures how the canopy across
-  the whole community may leave space unfilled in the canopy. Light passing throught
+  the whole community may leave space unfilled in the canopy. Light passing through
   canopy gaps passes unimpeded from the top of the canopy down to the ground.
 
 The code below alters the community and canopy model used above to include both crown
