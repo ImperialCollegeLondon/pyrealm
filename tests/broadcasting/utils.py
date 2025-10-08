@@ -121,6 +121,7 @@ IGNORE_OUTPUTS = [
     "SplashModel:shape",
     "DailySolarFluxes:shape",
     "DailyEvapFluxes:shape",
+    "AnnualValueCalculator:data_shape",
     "FaparLimitation:shape",
 ]
 
@@ -207,17 +208,20 @@ def defined_method_args(argument: str, ctx: "Context") -> Any | None:
     # Arguments that use temporary variables or depend on parents
 
     if ctx.name.split(".")[0] == "AnnualValueCalculator":
-        # Needs one-dimensional times
+        # The shapes of many of the inputs are required to match `data_shape`
         nTime = 3
+        data_shape = (nTime, *bcast_shape[1:])
         if ctx.name == "AnnualValueCalculator":
-            arguments = {"timing": np.arange(0, nTime, dtype="datetime64[D]")}
+            arguments = {
+                "data_shape": data_shape,
+                "timing": np.arange(0, nTime, dtype="datetime64[D]"),
+            }
         elif ctx.name in [
             "AnnualValueCalculator._split_values_by_year",
             "AnnualValueCalculator.get_annual_means",
             "AnnualValueCalculator.get_annual_totals",
         ]:
-            shape2 = (1 if shape[0] == 1 else nTime, *shape[1:])
-            arguments = {"values": np.ones(shape2)}
+            arguments = {"values": np.ones(data_shape)}
 
     if ctx.name.split(".")[0] in ["DailySolarFluxes", "DailyEvapFluxes"]:
         # Needs first dimension to match the dates
