@@ -121,6 +121,7 @@ IGNORE_OUTPUTS = [
     "SplashModel:shape",
     "DailySolarFluxes:shape",
     "DailyEvapFluxes:shape",
+    "FaparLimitation:shape",
 ]
 
 
@@ -141,6 +142,7 @@ def defined_method_args(argument: str, ctx: "Context") -> Any | None:
         set by the defaults.
     """
     shape = ctx.shape()
+    bcast_shape = ctx.bcast_shape()
 
     # PModel parameters
     splashDatesLen = 10
@@ -197,6 +199,8 @@ def defined_method_args(argument: str, ctx: "Context") -> Any | None:
         "Cohorts.drop_cohort_data": {"drop_indices": [0, 1]},
         "StemAllometry.drop_cohort_data": {"drop_indices": [0, 1]},
         "Community.drop_cohorts": {"drop_indices": [0, 1]},
+        ## Phenology
+        "FaparLimitation": {"years": np.ones(bcast_shape[0], dtype="datetime64[Y]")},
     }
     arguments: dict = method_arguments_list.get(ctx.name, {})
 
@@ -459,6 +463,10 @@ class Context:
     def shape(self) -> tuple[int, ...]:
         """Return the shape for index `i_arg`."""
         return self.shapes[self.i_arg % len(self.shapes)]
+
+    def bcast_shape(self) -> tuple[int, ...]:
+        """The broadcast shape of all inputs (not the full shape being tested)."""
+        return np.broadcast_shapes(*self.shapes)
 
 
 def _initialise_type_default(typ: Any, ctx: Context) -> Any:
