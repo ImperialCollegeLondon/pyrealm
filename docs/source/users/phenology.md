@@ -14,6 +14,8 @@ kernelspec:
 # Estimating maximum annual $f_{APAR}$
 
 ```{code-cell} ipython3
+:tags: [hide-input]
+
 from importlib import resources
 
 import numpy as np
@@ -91,7 +93,8 @@ phenology_constants
 
 The example below uses a time series of 11 years of annual values from the [`DE_Gri`
 Fluxnet site](https://fluxnet.org/doi/FLUXNET2015/DE-Gri). The code below loads some
-site constants and then a data frame of annual values for the required variables.
+site constants and then a data frame of annual values for the required variables,
+including $A_0$ and $\chi$ from a P Model.
 
 ```{code-cell} ipython3
 # Load site data
@@ -110,27 +113,27 @@ annual_data = pd.read_csv(annual_data_path).iloc[:, 0:9]
 annual_data["time"] = annual_data["time"].to_numpy().astype("datetime64[Y]")
 ```
 
+The `site_data` provides the following constants, including aridity index estimates (AI).
+
 ```{code-cell} ipython3
 site_data
 ```
 
-```{code-cell} ipython3
-annual_data
-```
-
-The plots below show the annual variation in these inputs:
+The plots below show the time series for the annual variables:
 
 ```{code-cell} ipython3
+:tags: [hide-input]
+
 fig, axes = plt.subplots(ncols=2, nrows=3, sharex=True, figsize=(10, 8))
 axis_fmt_year = mdates.DateFormatter("%Y")
 
 plot_vars = (
-    ("annual_precip_molar", "TBD"),
-    ("N_growing_days", "TBD"),
-    ("annual_mean_ca_in_GS", "TBD"),
-    ("annual_mean_chi_in_GS", "TBD"),
-    ("annual_mean_VPD_in_GS", "TBD"),
-    ("ann_total_A0", "TBD"),
+    ("annual_precip_molar", r"Total annual precipitation (moles)"),
+    ("N_growing_days", r"Number of growing days"),
+    ("annual_mean_ca_in_GS", r"Mean $c_a$ in growing season (Pa)"),
+    ("annual_mean_chi_in_GS", r"Mean $\chi$ in growing season"),
+    ("annual_mean_VPD_in_GS", r"Mean VPD in growing season"),
+    ("ann_total_A0", "Total annual potential GPP (moles)"),
 )
 
 for (input_var, axis_label), axis in zip(plot_vars, axes.flatten()):
@@ -143,8 +146,9 @@ for (input_var, axis_label), axis in zip(plot_vars, axes.flatten()):
 plt.tight_layout()
 ```
 
-The code below then uses the  {class}`~pyrealm.phenology.fapar_limitation.FaparLimitation`
-class to calculate $f_{APAR_{max}}, L_{max}, m$.
+The code below then shows the use of the
+{class}`~pyrealm.phenology.fapar_limitation.FaparLimitation` class to calculate
+$f_{APAR_{max}}, L_{max}, m$ and prints a summary of the calculated values.
 
 ```{code-cell} ipython3
 faparlim = FaparLimitation(
@@ -157,38 +161,45 @@ faparlim = FaparLimitation(
     years=annual_data["time"].to_numpy().astype("datetime64[Y]"),
     aridity_index=site_data["AI_from_cruts"],
 )
-```
 
-```{code-cell} ipython3
 faparlim.summarize()
 ```
 
 The resulting time series of annual values of $f_{APAR_{max}}, L_{max}, m$ are shown below:
 
 ```{code-cell} ipython3
-fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(
-    ncols=2, nrows=2, sharex=True, figsize=(8, 6)
+:tags: [hide-input]
+
+fig, axes = plt.subplots(ncols=1, nrows=3, sharex=True, figsize=(5, 8))
+
+plot_vars = (
+    (faparlim.fapar_max, r"$f_{APAR_{max}}$", "Maximum annual fAPAR"),
+    (faparlim.lai_max, r"$L_{max}$", "Maximum annual LAI"),
+    (faparlim.lai_to_gpp_ratio_m, r"$m$", "LAI to GPP ratio"),
 )
-ax1.plot(faparlim.years, faparlim.fapar_max)
-ax2.plot(faparlim.years, faparlim.lai_max)
-ax3.plot(faparlim.years, faparlim.lai_to_gpp_ratio_m)
+
+for (input_var, axis_label, title), axis in zip(plot_vars, axes.flatten()):
+
+    axis.plot(faparlim.years, input_var)
+    axis.set_ylabel(axis_label)
+    axis.set_title(title)
+    axis.xaxis.set_major_formatter(axis_fmt_year)
+
 plt.tight_layout()
 ```
 
 ## Fapar limitation from a PModel
 
-To make it easier to calculate $f_{APAR}$ limitation, the
+Calculating maximum $f_{APAR}$ requires predictions of $A_0$ and $\chi$ from a P Model.
+Since fitting a P Model _also_ requires estimates of VPD and CO2 concentration, much of
+the data required to calculate maximum $f_{APAR}$ is stored within a fitted P Model. The
 {meth}`FaparLimitation.from_pmodel<pyrealm.phenology.fapar_limitation.FaparLimitation.from_pmodel>`
-method calculates the values above directly from an existing P Model. The P Model
-provides estimates of GPP for use in calculating $A_0$ and values of $\chi$ for
-calculating mean annual $\chi$. In addition, fitting a P Model requires estimates of
-vapor pressure deficit and ambient CO2 concentration, so  annual mean $D$ and $c_a$ can
-also be calculated from a P Model.
+method is provided to automatically calculate annual values directly from an existing P
+Model.
 
-Fitting a P Model does not require estimates of precipitation, so this needs to be
-provided for each observation in the P Model.
-
-The code below loads fortnightly summary data for the `DE_Gri` dataset:
+The example here uses fortnightly summary data for the `DE_Gri` dataset to fit a P
+Model. The data provides 287 observations of fortnightly average conditions for the site
+over 11 years.
 
 ```{code-cell} ipython3
 # Load fortnightly data
@@ -202,12 +213,14 @@ fn_data["time"] = pd.to_datetime(fn_data["time"])
 fn_data.info()
 ```
 
-The data provides 287 observations of fortnightly average conditions for the site over
-11 years. The plot below shows the temperature values.
+The plot below shows the time series for temperature.
 
 ```{code-cell} ipython3
+:tags: [hide-input]
+
 plt.plot(fn_data["time"], fn_data["tc_mean"])
-_ = plt.axhline(0, linewidth=0.4, color="red")
+plt.axhline(0, linewidth=0.4, color="red")
+_ = plt.ylabel("Temperature (°C)")
 ```
 
 That data can then be used to fit a P model for the site, setting $f_{APAR} = 1$ to
@@ -223,30 +236,32 @@ pmodel_env = PModelEnvironment(
     fapar=np.array(1),
 )
 pmodel = PModel(pmodel_env)
-```
 
-```{code-cell} ipython3
 pmodel.summarize()
 ```
 
-The plot below shows the resulting predictions of mean GPP in µg C m2 s-1 for each
+The plot below shows the resulting predictions of mean GPP in µg C m-2 s-1 for each
 fortnight.
 
 ```{code-cell} ipython3
-_ = plt.plot(fn_data["time"], pmodel.gpp)
+:tags: [hide-input]
+
+plt.plot(fn_data["time"], pmodel.gpp)
+_ = plt.ylabel("Potential GPP (µg C m-2 s-1)")
 ```
 
 The P model contains most of the information needed to estimate maximum $f_{APAR}$ for
 each year, but some additional data is needed.
 
 1. The calculation of $f_{APAR_{max}}$ requires estimates of $D, c_a$ and $\chi$
-   **during the growing season**. The function therefore needs an additional
-   `growing_season` argument that indicates - for each observation - if that observation
-   was during the growing season. This needs to be provide a boolean (`TRUE` or `FALSE`)
-   value for each observation. There are different approaches for estimating the start
-   and end of the growing season and so you need to create this variable according to
-   the approach you want to use - it is often simply if the temperature exceeds a
-   certain threshold.
+   **during the growing season**. The
+   {meth}`FaparLimitation.from_pmodel<pyrealm.phenology.fapar_limitation.FaparLimitation.from_pmodel>`
+   method therefore has an additional `growing_season` argument that indicates - for
+   each observation - if that observation was during the growing season. This needs to
+   be provide a boolean (`TRUE` or `FALSE`) value for each observation. There are
+   different approaches for estimating the start and end of the growing season and so
+   you need to create this variable according to the approach you want to use - it is
+   often simply if the temperature exceeds a certain threshold.
 
 1. The calculation also requires precipitation data: you will need to compile data for
    the total precipitation during each observation, expressed as moles of water per m2.
@@ -276,11 +291,26 @@ below and are basically identical to the calculations from the pre-calculated an
 values shown above
 
 ```{code-cell} ipython3
-fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(
-    ncols=2, nrows=2, sharex=True, figsize=(8, 6)
+:tags: [hide-input]
+
+fig, axes = plt.subplots(ncols=1, nrows=3, sharex=True, figsize=(5, 8))
+
+plot_vars = (
+    (faparlim_pmodel.fapar_max, r"$f_{APAR_{max}}$", "Maximum annual fAPAR"),
+    (faparlim_pmodel.lai_max, r"$L_{max}$", "Maximum annual LAI"),
+    (faparlim_pmodel.lai_to_gpp_ratio_m, r"$m$", "LAI to GPP ratio"),
 )
-ax1.plot(faparlim_pmodel.years, faparlim_pmodel.fapar_max)
-ax2.plot(faparlim_pmodel.years, faparlim_pmodel.lai_max)
-ax3.plot(faparlim_pmodel.years, faparlim_pmodel.lai_to_gpp_ratio_m)
+
+for (input_var, axis_label, title), axis in zip(plot_vars, axes.flatten()):
+
+    axis.plot(faparlim_pmodel.years, input_var)
+    axis.set_ylabel(axis_label)
+    axis.set_title(title)
+    axis.xaxis.set_major_formatter(axis_fmt_year)
+
 plt.tight_layout()
+```
+
+```{code-cell} ipython3
+
 ```
