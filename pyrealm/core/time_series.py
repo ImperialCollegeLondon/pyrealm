@@ -35,7 +35,9 @@ class AnnualValueCalculator:
     ``timings`` argument then sets the timing of observations along that axis. Lastly,
     the optional ``subset_mask`` argument can be used to define a subset of observations
     to be used when calculating totals and means. This subset mask must be an array that
-    can be broadcast to the data shape.
+    can be broadcast to the data shape. The datetimes do not have to completely sample
+    all years: the ``year_completeness`` attribute records what fraction of a year is
+    covered by the datetimes.
 
     As an example, 10 years of monthly data for a 5 x 5 spatial grid of sites could
     have:
@@ -43,13 +45,11 @@ class AnnualValueCalculator:
     * a data shape of ``(120, 5, 5)``,
     * a timings array with shape ``(120,)``, and then
     * a subset mask with shape ``(120, 1, 1)``, providing a single subset mask for use
-      at all 25  grid cells. A ``(120, 5, 5)`` mask would provide site specific subsets.
+      at all 25  grid cells. Alternatively, a subset mask with shape ``(120, 5, 5)``
+      would provide site specific subsets.
 
-    With uneven sampling - such as montly - an explicit endpoint must be provided to
+    With uneven sampling - such as monthly - an explicit endpoint must be provided to
     set the duration of the final observation.
-
-    The datetimes do not have to completely sample all years: the ``year_completeness``
-    attribute records what fraction of a year is covered by the datetimes.
 
     Once an instance is created, then the
     :meth:`AnnualValueCalculator.get_annual_totals` and
@@ -356,22 +356,27 @@ class AnnualValueCalculator:
     ) -> NDArray[np.floating]:
         """Get annual means from an array of values.
 
-        Average values are calculated weighted by the __duration__ of each observation,
-        including weighting partial observations that span year boundaries.
+        Annual mean values are calculated using a weighted mean of values falling within
+        each year, using the total __duration__ of each observation within the year as a
+        weight. If an observation spans two years, the observation is included in the
+        mean for both years, weighted by the total duration within the year. The method
+        handles missing data (`np.nan`).
 
-        Annual means can be computed across different locations by providing arrays with
-        multiple dimensions. The length of the first ``values`` axis must always match
-        the number of datetimes passed when creating the calculator instance, but then
-        annual means are calculated only along this first axis, preserving the other
-        dimensions. For example, monthly data values over 10 years for a 3x3 grid of
-        cells might have shape `(120, 3, 3)` - the resulting array of mean values would
-        have shape `(10, 3, 3)`.
+        The input values must be an array with a shape that matches the ``data_shape``
+        used to create the :class:`AnnualValueCalculator` instance. Annual means are
+        calculated along the first axis of the input array and array dimensions are
+        preserved along all but that first axis. For example, monthly data values over
+        10 years for a 3 x 3 grid of cells might have shape `(120, 3, 3)` - the
+        resulting array of mean values would have shape `(10, 3, 3)`.
 
-        Users can optionally provide a boolean masking array, which must be
-        broadcastable to the shape of the input values. When a mask is provided,
-        values with a mask value of ``False`` are excluded from the calculation of the
-        mean values. This can be used, for example, to calculate mean values within a
-        growing season.
+        The ``within_subset`` argument can be used to calculate mean values only from
+        observations included in the ``subset_mask`` defined when creating the
+        :class:`AnnualValueCalculator` instance.
+
+        .. NOTE::
+
+            The method returns values for incomplete years, but obviously these may be
+            be biased as a result.
 
         Example:
             >>> # Three years of monthly data
@@ -394,8 +399,13 @@ class AnnualValueCalculator:
             values: The data to summarize by year
             within_subset: Should the mean only include values within the subset mask.
         """
-        if values.shape:
-            pass
+
+        # Enforce shape
+        if values.shape != self.data_shape:
+            raise ValueError(
+                f"Input values shape {values.shape} does not match "
+                f"configured data shape {self.data_shape}"
+            )
 
         values_by_year = self._split_values_by_year(values)
 
@@ -427,16 +437,29 @@ class AnnualValueCalculator:
     ) -> NDArray[np.floating]:
         """Get annual totals from an array of values.
 
-        The contribution of each observation to the total is weighted by the
-        __fractional__ duration of each observation within each year in order to
-        partition the sum across years correctly. If ``within_growing_season`` is
-        ``True``, the weights for observations not identified as growing season values
-        are set to zero. The method handles missing data (`np.nan`) but obviously the
+        Annual totals are calculated by splitting the values into subarrays of values by
+        year and then calculating the sum along the first axis. When observations span
+        two years, they are included in both sets of annual data, but the sum is
+        weighted by the fraction of the observation in each year to partition the value
+        between years. The method handles missing data (`np.nan`) but obviously the
         resulting annual total will be reduced.
 
-        The annual totals can be computed for a range of different sites by using an n-D
-        array for ``values``. In this case time is assumed along axis 0 and so an n-D
-        array will be returned with annual values along axis 0.
+        The input values must be an array with a shape that matches the ``data_shape``
+        used to create the :class:`AnnualValueCalculator` instance. Annual totals are
+        calculated along the first axis of the input array and array dimensions are
+        preserved along all but that first axis. For example, monthly data values over
+        10 years for a 3 x 3 grid of cells might have shape `(120, 3, 3)` - the
+        resulting array of total values would have shape `(10, 3, 3)`.
+
+        The ``within_subset`` argument can be used to calculate totals values only from
+        observations included in the ``subset_mask`` defined when creating the
+        :class:`AnnualValueCalculator` instance.
+
+        .. NOTE::
+
+            The method returns values for incomplete years, but obviously these will
+            be an underestimate. A simple correction would be to divide the totals by
+            the year completeness to scale back up to full annual values.
 
         Example:
             >>> # Three years of monthly data with incomplete years at start and end
@@ -462,6 +485,13 @@ class AnnualValueCalculator:
             values: The data to summarize by year
             within_subset: Should the mean only include values within the subset mask.
         """
+
+        # Enforce shape
+        if values.shape != self.data_shape:
+            raise ValueError(
+                f"Input values shape {values.shape} does not match "
+                f"configured data shape {self.data_shape}"
+            )
 
         values_by_year = self._split_values_by_year(values)
 
