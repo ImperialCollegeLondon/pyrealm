@@ -15,42 +15,51 @@ from pyrealm.pmodel import AcclimationModel
 class AnnualValueCalculator:
     """Annual means and totals from time series data.
 
-    This class is used to calculate annual means and totals from time series data. The
-    class is created using a set of datetimes that define sampling of observations of
-    data values and then the :meth:`AnnualValueCalculator.get_annual_totals` and
-    :meth:`AnnualValueCalculator.get_annual_means` methods can be used to calculate
-    those summary statistics variables sampled at those datetimes.
+    This class calculates annual means and totals from time series data and is designed
+    to handle time series data sampled at a wide range of intervals. If time series are
+    sampled at intervals that do not map neatly onto years - such as weekly or
+    fortnightly data - or do not have precisely uneven sampling - such as monthly data,
+    then calculating annual means and sums becomes awkward.
 
-    This calculator is designed to work with observation frequencies that are not
-    necessarily of even duration (such as months) or map unambigously onto years (such
-    as fortnights). Internally, the class defines two sets of weights for observations:
+    This class handles the issue by taking a set of datetimes for observations and
+    mapping them onto years. Observations that span year boundaries are included in both
+    years and the class calculates two forms of weightings:
 
-    * duration weights, that provide relative weights for use in calculating means
-      weighted by the actual lengths of observations, and
-    * proportion weights, that provide the proportional contribution of observations to
-      a given year.
+    * Duration weights provide the actual duration of each observation within a year,
+      and are used to calculate weighted means
+    * Proportion weights provide the proportion of an observation in a given year and
+      are used to calculate annual sums.
 
-    When an observation spans year breaks, the observation values are included in the
-    calculation of summary statistics for both years, but are weighted to give
-    appropriate contributions to the mean and total values in the two years. Note that,
-    as a result, mean values from uneven sampling - such as monthly data - give slightly
-    different values to simple means assuming equal durations.
+    The class must be created for a specific target dataset with a known array shape
+    (the ``data_shape`` argument), with the first axis representing time. The
+    ``timings`` argument then sets the timing of observations along that axis. Lastly,
+    the optional ``subset_mask`` argument can be used to define a subset of observations
+    to be used when calculating totals and means. This subset mask must be an array that
+    can be broadcast to the data shape.
 
-    The observation datetimes must be a one-dimensional array of
-    :class:`numpy.datetime64` values, either provided directly or as an
-    :class:`~pyrealm.pmodel.acclimation.AcclimationModel` object containing datetimes.
-    If the datetimes are not evenly spaced, then an explicit endpoint for the last
-    observation must be provided in order calculate complete weights. The datetimes do
-    not have to completely sample all years: the ``year_completeness`` attribute records
-    what fraction of a year is covered by the datetimes.
+    As an example, 10 years of monthly data for a 5 x 5 spatial grid of sites could
+    have:
 
-    All data provided to the summary statistic methods are then assumed to be sampled at
-    these datetimes and the first axis of any such data array must have the same length
-    as the provided datetimes.
+    * a data shape of ``(120, 5, 5)``,
+    * a timings array with shape ``(120,)``, and then
+    * a subset mask with shape ``(120, 1, 1)``, providing a single subset mask for use
+      at all 25  grid cells. A ``(120, 5, 5)`` mask would provide site specific subsets.
 
-    In addition, users can define a subsetting mask for observations. This can then be
-    used to calculate means and totals only for a subset of observations within a year,
-    for example in estimating values only during a growing season.
+    With uneven sampling - such as montly - an explicit endpoint must be provided to
+    set the duration of the final observation.
+
+    The datetimes do not have to completely sample all years: the ``year_completeness``
+    attribute records what fraction of a year is covered by the datetimes.
+
+    Once an instance is created, then the
+    :meth:`AnnualValueCalculator.get_annual_totals` and
+    :meth:`AnnualValueCalculator.get_annual_means` methods can be used to calculate the
+    actual summary statistics for arrays of values that match the data shape.
+
+    The ``timings`` argument can either directly provide an array of
+    :class:`numpy.datetime64` values, or use an existing
+    :class:`~pyrealm.pmodel.acclimation.AcclimationModel` object, which contains such an
+    array. The ``subset_mask`` argument must be a boolean array.
 
     Example:
         >>> # Three years of monthly data - 36 observations
