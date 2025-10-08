@@ -1,0 +1,3 @@
+    This function calculates daytime net radiation (:math:`R_{nd}` :math:`J/m^2`), using
+        R_{nd} = \left( \frac{n_s}{\pi} \right)
+    Calculates the daily net radiation (:math:`R_{nd}`, J m-2) as:
