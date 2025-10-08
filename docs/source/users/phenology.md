@@ -9,16 +9,6 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  name: python
-  version: 3.12.3
-  mimetype: text/x-python
-  codemirror_mode:
-    name: ipython
-    version: 3
-  pygments_lexer: ipython3
-  nbconvert_exporter: python
-  file_extension: .py
 ---
 
 # Estimating maximum annual $f_{APAR}$
@@ -216,19 +206,20 @@ The data provides 287 observations of fortnightly average conditions for the sit
 11 years. The plot below shows the temperature values.
 
 ```{code-cell} ipython3
-plt.plot(data["time"], data["tc_mean"])
+plt.plot(fn_data["time"], fn_data["tc_mean"])
 _ = plt.axhline(0, linewidth=0.4, color="red")
 ```
 
-That data can then be used to fit a P model for the site:
+That data can then be used to fit a P model for the site, setting $f_{APAR} = 1$ to
+calculate potential GPP.
 
 ```{code-cell} ipython3
 pmodel_env = PModelEnvironment(
-    tc=data["tc_mean"].to_numpy(),
-    vpd=data["vpd_mean"].to_numpy(),
-    patm=data["patm_mean"].to_numpy(),
-    co2=data["co2_mean"].to_numpy(),
-    ppfd=data["ppfd_mean"].to_numpy(),
+    tc=fn_data["tc_mean"].to_numpy(),
+    vpd=fn_data["vpd_mean"].to_numpy(),
+    patm=fn_data["patm_mean"].to_numpy(),
+    co2=fn_data["co2_mean"].to_numpy(),
+    ppfd=fn_data["ppfd_mean"].to_numpy(),
     fapar=np.array(1),
 )
 pmodel = PModel(pmodel_env)
@@ -242,7 +233,7 @@ The plot below shows the resulting predictions of mean GPP in µg C m2 s-1 for e
 fortnight.
 
 ```{code-cell} ipython3
-_ = plt.plot(data["time"], pmodel.gpp)
+_ = plt.plot(fn_data["time"], pmodel.gpp)
 ```
 
 The P model contains most of the information needed to estimate maximum $f_{APAR}$ for
@@ -251,32 +242,32 @@ each year, but some additional data is needed.
 1. The calculation of $f_{APAR_{max}}$ requires estimates of $D, c_a$ and $\chi$
    **during the growing season**. The function therefore needs an additional
    `growing_season` argument that indicates - for each observation - if that observation
-   was during the growing season. This needs to be provide a boolean (or logical) value
-   for each observation. There are different approaches for estimating the start and end
-   of the growing season and so you need to create this variable according to the
-   approach you want to use - it is often simply if the temperature exceeds a certain
-   threshold.
+   was during the growing season. This needs to be provide a boolean (`TRUE` or `FALSE`)
+   value for each observation. There are different approaches for estimating the start
+   and end of the growing season and so you need to create this variable according to
+   the approach you want to use - it is often simply if the temperature exceeds a
+   certain threshold.
 
-2. The calculation also requires precipitation data: you will need to compile data for
+1. The calculation also requires precipitation data: you will need to compile data for
    the total precipitation during each observation, expressed as moles of water per m2.
 
-3. If you are using a standard PModel, rather than a SubdailyPModel, you will also need
+1. If you are using a standard PModel, rather than a SubdailyPModel, you will also need
    to provide datetimes for the observations. These values are used to map the
    observations onto years and to scale per second rates from the P Model up to the
    annual time scale. The SubdailyPModel requires datetimes for observations, so these
    are already defined for SubdailyPModel inputs.
 
-4. Lastly, the aridity index is needed for sites.
+1. Lastly, a climatological aridity index estimate is needed for sites.
 
 The code below then calculates $f_{APAR_{max}}$ for the observations.
 
 ```{code-cell} ipython3
 faparlim_pmodel = FaparLimitation.from_pmodel(
     pmodel=pmodel,
-    growing_season=data["growing_season"].to_numpy(),
-    precip=data["precip_molar_sum"].to_numpy(),
+    growing_season=fn_data["growing_season"].to_numpy(),
+    precip=fn_data["precip_molar_sum"].to_numpy(),
     aridity_index=site_data["AI"],
-    datetimes=data["time"].to_numpy(),
+    datetimes=fn_data["time"].to_numpy(),
 )
 ```
 
