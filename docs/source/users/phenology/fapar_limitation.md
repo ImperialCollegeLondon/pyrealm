@@ -194,8 +194,18 @@ Calculating maximum $f_{APAR}$ requires predictions of $A_0$ and $\chi$ from a P
 Since fitting a P Model _also_ requires estimates of VPD and CO2 concentration, much of
 the data required to calculate maximum $f_{APAR}$ is stored within a fitted P Model. The
 {meth}`FaparLimitation.from_pmodel<pyrealm.phenology.fapar_limitation.FaparLimitation.from_pmodel>`
-method is provided to automatically calculate annual values directly from an existing P
+method is provided to calculate maximum $f_{APAR}$ directly from an existing P
 Model.
+
+P models are typically fitted to observations at faster temporal scales: typically
+monthly to weekly observations for the [standard P
+Model](./pmodel/pmodel_details/pmodel_overview.md)
+and subdaily observations for the [subdaily P
+Model](./pmodel/subdaily_details/subdaily_overview.md). The
+{meth}`~pyrealm.phenology.fapar_limitation.FaparLimitation.from_pmodel` method
+automates the calculation of the required annual summary statistics using the dates and
+times of the observations used in the P Model (see the
+{class}`~pyrealm.core.time_series.AnnualValueCalculator` class for details).
 
 The example here uses fortnightly summary data for the `DE_Gri` dataset to fit a P
 Model. The data provides 287 observations of fortnightly average conditions for the site
@@ -251,28 +261,29 @@ _ = plt.ylabel("Potential GPP (µg C m-2 s-1)")
 ```
 
 The P model contains most of the information needed to estimate maximum $f_{APAR}$ for
-each year, but some additional data is needed.
+each year, but the method requires four additional arguments:
 
-1. The calculation of $f_{APAR_{max}}$ requires estimates of $D, c_a$ and $\chi$
-   **during the growing season**. The
-   {meth}`FaparLimitation.from_pmodel<pyrealm.phenology.fapar_limitation.FaparLimitation.from_pmodel>`
-   method therefore has an additional `growing_season` argument that indicates - for
-   each observation - if that observation was during the growing season. This needs to
-   be provide a boolean (`TRUE` or `FALSE`) value for each observation. There are
-   different approaches for estimating the start and end of the growing season and so
-   you need to create this variable according to the approach you want to use - it is
-   often simply if the temperature exceeds a certain threshold.
+`growing_season`
+: The calculation of $f_{APAR_{max}}$ requires estimates of $D, c_a$ and $\chi$ **during
+  the growing season**. The `growing_season` input is an array of boolean (`TRUE` or
+  `FALSE`) values that indicates if each observation was during the growing season.
+  There are different approaches for estimating the start and end of the growing season
+  and so you need to create this variable according to the approach you want to use -
+  it is often simply if the temperature exceeds a certain threshold.
 
-1. The calculation also requires precipitation data: you will need to compile data for
-   the total precipitation during each observation, expressed as moles of water per m2.
+`precip`
+: The P Model does not require precipitation data, so this must be added when using
+  `from_pmodel`. You will need to compile data for the total precipitation during each
+  observation, expressed as moles of water per m2.
 
-1. If you are using a standard PModel, rather than a SubdailyPModel, you will also need
-   to provide datetimes for the observations. These values are used to map the
-   observations onto years and to scale per second rates from the P Model up to the
-   annual time scale. The SubdailyPModel requires datetimes for observations, so these
-   are already defined for SubdailyPModel inputs.
+`aridity_index`
+: You need to provide a climatological aridity index estimates for sites. This could be
+  a single value or an array of site specific values.
 
-1. Lastly, a climatological aridity index estimate is needed for sites.
+`datetimes`
+: This is only needed if you are using a standard PModel, as the SubdailyPModel already
+  includes observation datetimes. These values are used to map the observations onto
+   years and to scale per second rates from the P Model up to the annual time scale.
 
 The code below then calculates $f_{APAR_{max}}$ for the observations.
 

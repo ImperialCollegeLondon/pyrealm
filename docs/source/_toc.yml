@@ -45,7 +45,10 @@ subtrees:
         - file: users/demography/canopy.md
         - file: users/demography/light_capture.md
   - file: users/splash.md
-  - file: users/phenology.md
+  - file: users/phenology/overview.md
+    subtrees:
+      - entries:
+        - file: users/phenology/fapar_limitation.md
   - file: users/constants.md
   - file: users/hygro.md
   - file: users/versions.md
