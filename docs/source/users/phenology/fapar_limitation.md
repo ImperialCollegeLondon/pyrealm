@@ -199,9 +199,9 @@ Model.
 
 P models are typically fitted to observations at faster temporal scales: typically
 monthly to weekly observations for the [standard P
-Model](./pmodel/pmodel_details/pmodel_overview.md)
+Model](../pmodel/pmodel_details/pmodel_overview.md)
 and subdaily observations for the [subdaily P
-Model](./pmodel/subdaily_details/subdaily_overview.md). The
+Model](../pmodel/subdaily_details/subdaily_overview.md). The
 {meth}`~pyrealm.phenology.fapar_limitation.FaparLimitation.from_pmodel` method
 automates the calculation of the required annual summary statistics using the dates and
 times of the observations used in the P Model (see the

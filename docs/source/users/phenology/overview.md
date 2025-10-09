@@ -20,7 +20,7 @@ series of {term}`FAPAR` and {term}`LAI`. There are two main stages in this proce
    constraints on potential gross primary productivity arising from either water
    limitation or energy limitation {cite:p}`cai:2025a`. This is implemented in `pyrealm`
    as the {class}`~pyrealm.phenology.fapar_limitation.FaparLimitation` class and is
-   described in the [introduction to calculating maximum FAPAR](./fapar_limitation.py).
+   described in the [introduction to calculating maximum FAPAR](./fapar_limitation.md).
 
 2. The maximum annual FAPAR and LAI can then be combined with daily predictions of
    potential GPP to predict time series of realised FAPAR and LAI through the year,
