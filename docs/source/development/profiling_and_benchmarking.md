@@ -67,11 +67,11 @@ poetry run pytest --profile-svg -m "profiling"
 
 This selects _only_ the profiling tests and runs them using `pytest-profiling`. The
 `--profile-svg` both runs the profiling _and_ generates a figure showing the call
-hierachy of code objects and the time spent in each call. Generating this graph requires
-the [graphviz](https://pypi.org/project/graphviz/) command line library, which provides
-the `dot` command for generating SVG graph diagrams. You will need to install `graphviz`
-to use this option. Alternatively, you can use the following command to only generate
-the profile data.
+hierarchy of code objects and the time spent in each call. Generating this graph
+requires the [graphviz](https://pypi.org/project/graphviz/) command line library, which
+provides the `dot` command for generating SVG graph diagrams. You will need to install
+`graphviz` to use this option. Alternatively, you can use the following command to only
+generate the profile data.
 
 ```bash
 poetry run pytest --profile -m "profiling"

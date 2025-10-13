@@ -42,7 +42,7 @@ def test_evap_scalar(splash_core_constants):
     )
 
     # The original implementation provided sw=0.9 here, but that is now calculated
-    # internally from the wn value. Check that it is recreated succesfully.
+    # internally from the wn value. Check that it is recreated successfully.
     aet, hi, sw = evap.estimate_aet(wn=np.array([128.571429]), only_aet=False)
 
     # Output of __main__ code in original evap.py
@@ -187,7 +187,7 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
     # Now validate the expected AET - because the whole soil moisture sequence has
     # been created in the original implementation, the whole time sequence can be passed
     # in as a single array and calculated without daily iteration, *but* the soil
-    # moisture used to calculate AET is from the preceeding day, so need to shift the wn
+    # moisture used to calculate AET is from the preceding day, so need to shift the wn
     # sequence to start with the spun up values and drop the last day.
     wn_spun_up = np.expand_dims(expected["wn_spun_up"].data, axis=0)
     wn_sequence = np.vstack([wn_spun_up, expected["wn"].data[:-1, :, :]])

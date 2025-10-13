@@ -6,5 +6,5 @@ The Python script ``create_2D_uk_inputs.py``  is used to generate the NetCDF out
 ``UK_WFDE5_FAPAR_2018_JuneJuly.nc``. The script is currently written with a hard-coded
 set of paths to key source data - the WFDE5 v2 climate data and a separate source of
 interpolated hourly fAPAR. This should probably be rewritten to generate reproducible
-content from publically available sources of these datasets.
+content from publicly available sources of these datasets.
 """  # noqa: D205

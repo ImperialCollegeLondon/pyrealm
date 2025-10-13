@@ -26,7 +26,7 @@ language_info:
 The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/SubdailyCalculations.ipynb>`.
 
 The code below works through the separate calculations used to include the acclimation
-of slow reponses into the predictions of the P Model. The code separates out individual
+of slow responses into the predictions of the P Model. The code separates out individual
 steps used in the estimation process in order to show intermediate results and provides
 an "exploded diagram" of the model. In practice, these calculations are handled
 internally by the model fitting in `pyrealm`, as shown in the [worked
@@ -215,7 +215,7 @@ jmax25_real = acclim_model.apply_acclimation(jmax25_acclim)
 ```
 
 The plots below show the instantaneously acclimated values for  $J_{max25}$,
-$V_{cmax25}$ and $\xi$ in grey along with the realised slow reponses, after
+$V_{cmax25}$ and $\xi$ in grey along with the realised slow responses, after
 application of the memory effect.
 
 ```{code-cell} ipython3
@@ -247,7 +247,7 @@ the realised slow responses for $\xi$, $J_{max25}$ and $V_{cmax25}$.
 #### Calculation of fast responses in $J_{max}$ and $V_{cmax}$
 
 Although the maximum rates at standard temperature $J_{max25}$ and $V_{cmax25}$ exhibit
-slow reponses, the values of $J_{max}$ and $V_{cmax}$ will respond to changes in
+slow responses, the values of $J_{max}$ and $V_{cmax}$ will respond to changes in
 temperature at fast scales:
 
 * The realised daily values of $J_{max25}$ and $V_{cmax25}$ are interpolated from the
@@ -274,7 +274,7 @@ jmax_subdaily = jmax25_subdaily * arrh_subdaily.calculate_arrhenius_factor(
 
 #### Calculation of $c_i$
 
-The subdaily variation in $c_i$ can now be calculated using $c_a$ and fast reponses in
+The subdaily variation in $c_i$ can now be calculated using $c_a$ and fast responses in
 $\Gamma^\ast$ with the realised slow responses of $\xi$. This is achieved by
 passing the realised values of $\xi$ as a fixed constraint to the calculation of
 optimal $\chi$, rather than calculating the instantaneously optimal values of $\xi$

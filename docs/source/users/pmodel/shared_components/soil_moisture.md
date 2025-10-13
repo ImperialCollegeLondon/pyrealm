@@ -104,7 +104,7 @@ obs_minutes = 30
 time_offsets = np.arange(0, n_obs * obs_minutes, obs_minutes).astype("timedelta64[m]")
 datetimes = np.datetime64("2000-01-01 00:00") + time_offsets
 
-# Constant P Model enviroment
+# Constant P Model environment
 env = PModelEnvironment(
     tc=np.full(n_obs, fill_value=20),
     patm=np.full(n_obs, fill_value=101325),

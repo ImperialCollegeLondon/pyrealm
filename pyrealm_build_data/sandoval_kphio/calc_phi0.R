@@ -17,7 +17,7 @@ calc_phi0 <- function(AI, tc, mGDD0 = NA, phi_o_theo = 1 / 9) {
     # 01.define the parameters/constants
     ###############################################################################################
 
-    # DO change here to avoid imprecision in theoretical maxmimum and to allow alternatives
+    # DO change here to avoid imprecision in theoretical maximum and to allow alternatives
     # phi_o_theo <- 0.111 # theoretical maximum phi0 (Long, 1993;Sandoval et al., in.prep.)
 
     m <- 6.8681 # curvature parameter phio max (Sandoval et al., in.prep.)

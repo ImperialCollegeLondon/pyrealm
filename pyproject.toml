@@ -171,3 +171,8 @@ convention = "google"
 notebook_metadata_filter = "settings,mystnb,language_info,-jupytext.text_representation.jupytext_version"
 # Also stop it from stripping cell metadata, except for specific ones to lose.
 cell_metadata_filter = "all,-trusted"
+
+[tool.codespell]
+exclude-file = ".codespellexclude.txt"
+ignore-words = ".codespellignore.txt"
+skip = "*.js,*.html,*.css,*.ipynb,*.bib,*.svg,poetry.lock,./docs/build,pyrealm_build_data/splash/splash_py_version/*"

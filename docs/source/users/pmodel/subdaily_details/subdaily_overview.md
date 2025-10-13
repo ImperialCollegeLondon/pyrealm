@@ -97,7 +97,7 @@ The implementation has the following steps:
 
 2. An [acclimation model](acclimation.md#the-acclimation-model) is then defined that
   sets a window of observations during the day that define the conditions that the slow
-  responses will acclimate towards. Thease are typically noon conditions that optimise
+  responses will acclimate towards. These are typically noon conditions that optimise
   light use efficiency during the daily period of highest photosynthetic photon flux
   density (PPFD). This model is used to calculate a daily time series of average
   conditions during this acclimation window.

@@ -284,7 +284,7 @@ fig.delaxes(axes[-1])
 ```
 
 As before, the {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
-{meth}`~pyrealm.demography.tmodel.StemAllometry` classs can be used to export
+{meth}`~pyrealm.demography.tmodel.StemAllometry` class can be used to export
 the data for each stem:
 
 ```{code-cell} ipython3

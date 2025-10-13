@@ -1,7 +1,7 @@
 """This module tests the main methods in the SplashModel.
 
 - estimate_daily_water_balance, which estimates soil moisture and run off given
-  preceeding soil moisture
+  preceding soil moisture
 - estimate_initial_soil_moisture, which assumes a stationary relationship over an
   annual cycle to estimate a starting soil moisture.
 - calculate_soil_moisture, which iterates an initial soil moisture forward over a time

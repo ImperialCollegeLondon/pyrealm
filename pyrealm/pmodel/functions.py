@@ -235,7 +235,7 @@ def calc_gammastar(
         A float value or values for :math:`\Gamma^{*}` (in Pa)
 
     Examples:
-        >>> # CO2 compensation point at 20 °C  (293.15 K) and standard presssure
+        >>> # CO2 compensation point at 20 °C  (293.15 K) and standard pressure
         >>> calc_gammastar(np.array([293.15]), np.array([101325])).round(5)
         array([3.33925])
     """

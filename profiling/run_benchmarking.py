@@ -31,7 +31,7 @@ def get_function_map(root: Path) -> dict[tuple[str, int, str], str]:
     values are strings that identify functions within source files and methods within
     classes within source files.
 
-    One added difficulty is that the line numbering differs betwen the two approaches.
+    One added difficulty is that the line numbering differs between the two approaches.
     The line numbers reported by `ast` nodes are the _actual_ line where the `def` or
     `class` statement is found. The line numbers reported by `pstats` are offset if the
     callable has decorators, so this mapping function has to find the lowest line number

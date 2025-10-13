@@ -69,7 +69,7 @@ def calculate_tree_proportion(
 
     This function estimates the proportion of C3 trees in the community, which can then
     be used to penalise the fraction of C4 plants due to shading of C4 plants by canopy
-    closure, even when C4 photosynthesis is advantagious. The estimated tree cover
+    closure, even when C4 photosynthesis is advantageous. The estimated tree cover
     function is:
 
         .. math::

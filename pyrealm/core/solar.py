@@ -587,7 +587,7 @@ def calculate_daytime_net_radiation(
 
     Result:
         An array of daily net radiation.
-    """
+    """  # codespell:ignore nd
     ru, rv = calculate_ru_rv_intermediates(declination=declination, latitude=latitude)
     rw = calculate_rw_intermediate(
         transmissivity=transmissivity,
@@ -653,7 +653,7 @@ def calculate_nighttime_net_radiation(
     solar_constant: float = CoreConst().solar_constant,
     day_seconds: float = CoreConst().day_seconds,
 ) -> NDArray[np.floating]:
-    r"""Calculates nightime net radiation.
+    r"""Calculates nighttime net radiation.
 
     This function calculates nighttime net radiation (:math:`R_{nn}`, J m-2) as:
 
@@ -715,7 +715,7 @@ def _calculate_nighttime_net_radiation(
     net_longwave_radiation: NDArray[np.floating],
     day_seconds: float = CoreConst().day_seconds,
 ) -> NDArray[np.floating]:
-    """Calculates nightime net radiation using precalculated intermediates.
+    """Calculates nighttime net radiation using precalculated intermediates.
 
     This function calculates nighttime net radiation (:math:`R_{nn}` :math:`J/m^2`), a
     using precalculated intermediate values (see :meth:`calculate_ru_rv_intermediates`

@@ -151,7 +151,7 @@ def test_Cohorts(args, outcome, excep_message):
         cohort_ids = getattr(cohorts, "cohort_id", None)
         assert cohort_ids is not None
 
-        # This could be tested implictly by just running the line, but this is to
+        # This could be tested implicitly by just running the line, but this is to
         # clarify that this conversion must complete successfully as part of the test.
         with not_raises():
             _ = [uuid.UUID(id_value) for id_value in cohort_ids]

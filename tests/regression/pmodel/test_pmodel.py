@@ -59,7 +59,7 @@ def values():
 # Test structure
 # The basic structure of these tests  is to use a pytest.mark.parameterise
 # to pass in the variables to be passed to the function along with the key
-# for sets of expected ouputs and any context managers.
+# for sets of expected outputs and any context managers.
 #
 # A separate R file is used to read in the same inputs to R and run them through
 # rpmodel to generate the output file.
@@ -885,7 +885,7 @@ def test_lavergne_equivalence(tc, theta, variable_method, fixed_method, is_C4):
     the equivalent non-soil moisture versions.
     """
     # Cannot do this test using N-D inputs because the PModelConst expect scalar values
-    # for paramaterizing beta - you can't set an array of values. So, test combinations
+    # for parameterizing beta - you can't set an array of values. So, test combinations
     # of temperature and soil moisture.
 
     from pyrealm.constants import PModelConst

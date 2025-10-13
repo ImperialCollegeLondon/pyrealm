@@ -256,7 +256,7 @@ Exception) is generated.
 Again, the `pytest` package and plugins are installed by `poetry`. See the [code testing
 page](./code_testing.md) for more details but you should be able to check the tests run
 using the following command. Be warned that the `mypy` steps can be very time consuming
-on the first run, but `pytest` does some cacheing that makes them quicker when they next
+on the first run, but `pytest` does some caching that makes them quicker when they next
 run.
 
 ```sh
@@ -313,7 +313,7 @@ page](./release_process.md) for details.
 ## Setup script example
 
 The scripts below bundle all the commands together to show the set up process, including
-using `pyenv` to mangage `python` versions, ending by running the unit tests. This sets
+using `pyenv` to manage `python` versions, ending by running the unit tests. This sets
 up everything you need, ready to start developing on pyrealm.
 
 :::{admonition} Setup script

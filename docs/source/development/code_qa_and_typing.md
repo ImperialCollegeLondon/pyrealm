@@ -50,7 +50,7 @@ contains the pre-commit hooks used by `pyrealm`. The configuration file contains
 to each individual hook but in overview:
 
 `check for merge conflicts`
-: Checks for remaning `git` merge conflict markers in code files.
+: Checks for remaining `git` merge conflict markers in code files.
 
 `debug statements (python)`
 : Checks for debugger imports and `breakpoint()` calls, which should not end up in
@@ -137,7 +137,7 @@ developed to help support clear and consistent typing. We use
 bit of getting used to but is a key tool in maintaining clear code and variable
 structures.
 
-## Supressing checking
+## Suppressing checking
 
 The `pre-commit` tools sometimes complain about things that we do not want to change.
 Almost all of the tools can be told to suppress checking, using comments with a set
@@ -162,4 +162,4 @@ This should not be done lightly: we are using these QA tools for a reason.
   suppress format warnings. An example is `<!-- markdownlint-disable-line MD001 -->` and
   the tool homepage provides [a list of the MD rule0
   codes](https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md) that can be
-  used to surpress warnings.
+  used to suppress warnings.

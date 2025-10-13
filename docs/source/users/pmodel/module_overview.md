@@ -70,7 +70,7 @@ model](./shared_components/two_leaf_model.md).
 In addition to the two P Model forms, this module also provides two extensions that
 build on the P Model:
 
-* The process of photosynthesis discriminates between the carbon isotopes occuring in
+* The process of photosynthesis discriminates between the carbon isotopes occurring in
   air, leaving characteristic isotopic signatures. The [Isotopic
   discrimination](isotopic_discrimination) module estimates the isotopic signatures from
   different P Models.
