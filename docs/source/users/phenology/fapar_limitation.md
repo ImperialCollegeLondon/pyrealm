@@ -33,7 +33,7 @@ calculate annual maximum values for both $f_{APAR}$ and leaf area index ($L$), f
 the method described by {cite:t}`cai:2025a`.
 
 The maximum annual fAPAR is limited by the ability of plants to assimilate carbon for
-constucting leaves and this can be limited either by the availability of light energy
+constructing leaves and this can be limited either by the availability of light energy
 ($f_{APAR_{c}}$) or by the availability of water ($f_{APAR_{w}}$). The maximum annual
 fAPAR is calculated as the minimum of those two terms. The equations are:
 
