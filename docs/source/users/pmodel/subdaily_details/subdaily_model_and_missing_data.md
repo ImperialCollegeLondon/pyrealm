@@ -26,7 +26,7 @@ language_info:
 The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/SubdailyMissingData.ipynb>`.
 
 The acclimation process in the subdaily model uses a weighted mean of the daily
-acclimation conditions with preceeding daily conditions. When there are missing data,
+acclimation conditions with preceding daily conditions. When there are missing data,
 this results in problems in the estimation of the realised daily values for $\xi$,
 $V_{cmax25}$ and $J_{max25}$.
 

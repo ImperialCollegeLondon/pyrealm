@@ -43,7 +43,7 @@ tmodel <- function(P0, year, a, cr, Hm, rho, rr,
         Rm1 <- Wss * rs
         # fine root respiration
         Rm2 <- zeta * sigma * Wf * rr
-        # NPP after multiplied by the yeild factor
+        # NPP after multiplied by the yield factor
         NPP1 <- y * (GPP - Rm1 - Rm2)
         # turnover of foliage and fine root
         NPP2 <- (Ac * L * ((1 / (sigma * tf)) + (zeta / tr)))
@@ -69,11 +69,11 @@ tmodel <- function(P0, year, a, cr, Hm, rho, rr,
         # final scaling to dD but the brackets differ. I've replaced
         # it with code that matches NPP3
 
-        # increament of foliage and fine root
+        # increment of foliage and fine root
         # dWfr <- (L * ((pi * cr)/(4 * a)) * (a * d * (1 - (H/Hm) + H)) *
         #  (1/sigma + zeta)) * dD
 
-        # increament of foliage and fine root
+        # increment of foliage and fine root
         dWfr <- (L * (
             (pi * cr) / (4 * a)
         ) * (
@@ -95,7 +95,7 @@ for (pft_idx in seq_len(nrow(pfts))) {
     # Get the PFT
     pft <- as.list(pfts[pft_idx, ])
 
-    # Seperate off the name
+    # Separate off the name
     name <- pft[["name"]]
     pft[["name"]] <- NULL
 
@@ -123,7 +123,7 @@ for (pft_idx in seq_len(nrow(pfts))) {
     # Get the PFT
     pft <- as.list(pfts[pft_idx, ])
 
-    # Seperate off the name
+    # Separate off the name
     name <- pft[["name"]]
     pft[["name"]] <- NULL
     pft[["P0"]] <- 7 / 0.9

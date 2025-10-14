@@ -86,7 +86,7 @@ used the theoretical maximum value of 1/8.
   'fixed' and 'temperature' along with an experimental 'sandoval' method that models the
   effects of growth temperature and aridity on $\phi_0$.
 * All of the available method choices to `PModel` and `SubdailyPModel` now use $\phi_0 =
-  1/8$ as the default value but this can be overriden using `reference_kphio`.
+  1/8$ as the default value but this can be overridden using `reference_kphio`.
 
 Since this involves a change in the default behaviour that leads to different
 predictions, the `PModel` class in version 2.0.0 issues a warning to alert users.

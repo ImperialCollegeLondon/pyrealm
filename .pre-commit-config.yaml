@@ -38,4 +38,11 @@ repos:
             )$
       additional_dependencies:
         - black==24.4.2 # Matches hook
-      
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+    - id: codespell
+      args: ["--toml", "pyproject.toml"]
+      additional_dependencies:
+        - tomli
+

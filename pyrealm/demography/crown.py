@@ -250,7 +250,7 @@ class CrownProfile(PandasExporter):
     In addition to the variables above, the class can also has properties the calculate
     the projected crown radius and projected leaf radius. These are simply the radii
     that would result in the two projected areas: the values are not directly meaningful
-    for calculating canopy models, but can be useful for exploring the behavour of
+    for calculating canopy models, but can be useful for exploring the behaviour of
     projected area on the same linear scale as the crown radius.
 
     Args:

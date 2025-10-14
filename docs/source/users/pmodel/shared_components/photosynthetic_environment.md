@@ -57,7 +57,7 @@ functions.
 #
 # Note that the ranges are created (`_1d`) but are also cast to two dimensional
 # arrays of repeating values (`_2d`) to generate response surfaces for functions
-# with multuple inputs.
+# with multiple inputs.
 
 from matplotlib import pyplot
 import numpy as np

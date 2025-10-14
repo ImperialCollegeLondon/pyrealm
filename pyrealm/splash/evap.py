@@ -35,7 +35,7 @@ class DailyEvapFluxes:
     SPLASH model to estimate initial equilibrium soil moisture, or the daily calculation
     of soil moisture along a time series. These quantities are estimated using the
     :meth:`~pyrealm.splash.evap.DailyEvapFluxes.estimate_aet` method, given an estimate
-    of soil moisture from the preceeding day.
+    of soil moisture from the preceding day.
 
     Args:
         solar: A :class:`~pyrealm.splash.solar.DailySolarFluxes` instance from which to
@@ -154,7 +154,7 @@ class DailyEvapFluxes:
 
         # Check day_idx inputs and create the indexing object `didx`, used to either
         # subset the calculations to particular request days or use the entire array of
-        # soil moisture. The slice here is used to programatically select `array[:]`.
+        # soil moisture. The slice here is used to programmatically select `array[:]`.
         if day_idx is None:
             splash_shape = self.shape
             didx: int | slice = slice(self.shape[0])

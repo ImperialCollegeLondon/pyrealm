@@ -1007,7 +1007,7 @@ def test_AcclimationModel_fill_daily_to_subdaily_previous(
     """Test AcclimationModel.fill_daily_to_subdaily using method previous.
 
     The first parameterisation sets the exact same acclimation windows in a bunch of
-    different ways. The second paramaterisation provides inputs with different
+    different ways. The second parameterisation provides inputs with different
     dimensionality.
     """
 

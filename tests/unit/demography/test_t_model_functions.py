@@ -813,7 +813,7 @@ def test_tmodel_enforce_positive_sizes(
 ):
     """Test the validation of positive size values in T model functions.
 
-    The function call is assembled programatically. It excludes testing of reproductive
+    The function call is assembled programmatically. It excludes testing of reproductive
     tissue respiration and turnover because these do allow zero values.
     """
     from pyrealm.demography import tmodel

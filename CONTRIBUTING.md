@@ -77,8 +77,8 @@ details.
 
 The package includes configuration for a set of `pre-commit` hooks to ensure code
 commits meet common community quality standards. The `pre-commit` tool blocks `git`
-commits until all hooks pass. You should install these to ensure that your commited code
-meets these standards.
+commits until all hooks pass. You should install these to ensure that your committed
+code meets these standards.
 
 See the [pre-commit configuration
 page](https://pyrealm.readthedocs.io/en/latest/development/code_qa_and_typing.md) for
@@ -106,9 +106,9 @@ the `profiling` directory. When this bash script is run without an argument, the
 `HEAD` will be compared to the `origin/develop` branch. Alternatively, the two commits
 to be compared can be provided as parameters with `-n` for the "new" commit (the current
 HEAD, or code you have changed), and `-o` for the "old" commit (the baseline code you
-want to compare the perfomance against). The code will fail with an error message if the
-new performance is more than 5% slower than the baseline, otherwise it will succeed with
-a message indicating whether the new code is faster or has similar performance.
+want to compare the performance against). The code will fail with an error message if
+the new performance is more than 5% slower than the baseline, otherwise it will succeed
+with a message indicating whether the new code is faster or has similar performance.
 
 ```sh
 cd profiling

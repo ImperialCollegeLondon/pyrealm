@@ -34,7 +34,7 @@ notably the API of the `pmodel` module, as well as introducing new functionality
 - The `PModelEnvironment` class has been updated. It now requires that the user also
   provides `fapar` and `ppfd` data, currently with no default values. The provision of
   additional variables has also been made more flexible, allowing users to provide
-  arbitary extra variables to the environment. This makes it easier to adopt new PModel
+  arbitrary extra variables to the environment. This makes it easier to adopt new PModel
   methods implementations with new required variables.
 
   **Breaking change**: Need to specify `fapar` and `ppfd` in `PModelEnvironment`.
@@ -181,7 +181,7 @@ notably the API of the `pmodel` module, as well as introducing new functionality
 
 ## 0.9.0
 
-- Draft implementation of slow reponses in P Model using weighted average approach
+- Draft implementation of slow responses in P Model using weighted average approach
 - Substantial maintenance review
 - User facing breaking changes:
   - Support for scalar inputs removed - numpy arrays now expected as inputs.

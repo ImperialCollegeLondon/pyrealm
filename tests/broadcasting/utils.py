@@ -442,7 +442,7 @@ class Context:
     """Context class to pass between functions.
 
     Used to initialise arguments that depend on array shapes or for manual overrides
-    that rely upon the heirarchy of function/argument definitions.
+    that rely upon the hierarchy of function/argument definitions.
 
     Attributes:
         name (str): Name of the current method/function/class.
@@ -461,7 +461,7 @@ class Context:
     """A list of the superior function / classes for the current context."""
 
     def new(self, name: str) -> "Context":
-        """Generate a context for a new function/class, updating the heirarchy."""
+        """Generate a context for a new function/class, updating the hierarchy."""
         return Context(name, self.shapes, self.i_arg, [*self.parents, self.name])
 
     def shape(self) -> tuple[int, ...]:
@@ -557,7 +557,7 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
         if manual_arg is not None:
             kwargs[param_name] = manual_arg
 
-        # Skip unnecesary arguments
+        # Skip unnecessary arguments
         elif param_name == "self" or param.kind in (
             param.VAR_POSITIONAL,
             param.VAR_KEYWORD,
