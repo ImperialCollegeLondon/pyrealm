@@ -4,7 +4,7 @@ The :class:`FaparLimitation` class and the :meth:`FaparLimitation.from_pmodel` a
 designed to work with inputs that can have multiple dimensions. The first axis is
 _always_ assumed to represent a time series of annual observations. If the inputs
 are one dimensional, then this is a time series for a single site; if they are three
-dimnsional then these are observations for a grid of sites. Usually all array inputs
+dimensional then these are observations for a grid of sites. Usually all array inputs
 will have the same shape but note the following instances where you might need to
 take care with array broadcasting.
 
@@ -269,7 +269,7 @@ class FaparLimitation:
 
         * The annual mean values :math:`c_a, \chi` and :math:`D` should be estimated
           during the growing season, so the ``growing_season`` argument must be used to
-          provide an array of boolean value indicating which observations should be
+          provide an array of boolean values indicating which observations should be
           treated as in the growing season.
 
         * The calculation requires estimates of precipitation, so the ``precipitation``
