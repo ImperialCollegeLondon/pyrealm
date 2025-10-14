@@ -7,6 +7,7 @@ add these directories to sys.path here. If the directory is relative to the
 documentation root, use os.path.abspath to make it absolute, like shown here.
 """
 
+import os
 import sys
 import warnings
 from dataclasses import dataclass, field
@@ -253,6 +254,10 @@ html_static_path = ["_static"]
 # Configure hoverxref
 hoverxref_roles = ["term"]
 hoverxref_role_types = {"term": "tooltip"}
+
+# Set the PYREALM_USE_LOCAL_DATA environment variable, to force get_pyrealm_data to use
+# importlib.resources on pyrealm_build_data, rather than fetching the files from GitHub.
+os.environ["PYREALM_USE_LOCAL_DATA"] = "SET"
 
 
 def setup(app):  # type: ignore
