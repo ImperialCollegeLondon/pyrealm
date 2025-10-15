@@ -785,7 +785,7 @@ def calculate_canopy_extinction_coef(
         coef: The coefficients of the exponential momdel.
 
     Returns:
-        NDArray: The calculated :math:`kv_Lloyd` values.
+        The calculated :math:`kv_Lloyd` values.
     """
 
     a, b = coef
@@ -814,7 +814,7 @@ def calculate_canopy_vcmax25(
         canopy_extinction_coef: The canopy extinction coefficient (:math:`k_v`).
 
     Returns:
-        NDArray: The calculated Vmax25 canopy values.
+        The calculated Vmax25 canopy values.
     """
     return (
         leaf_area_index
@@ -848,7 +848,7 @@ def calculate_sun_vcmax25(
             model (:math:`k_b`).
 
     Returns:
-        NDArray: The calculated Vmax25 sun values.
+        The calculated Vmax25 sun values.
     """
     Vmax25_sun = (
         leaf_area_index

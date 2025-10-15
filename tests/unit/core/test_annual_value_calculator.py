@@ -9,10 +9,33 @@ from numpy.typing import NDArray
 
 
 @pytest.mark.parametrize(
-    argnames="datetimes, growing_season,  as_acclim, endpoint,"
+    argnames="data_shape, datetimes, subset_mask, as_acclim, endpoint,"
     " context_manager, error_message, expected",
     argvalues=(
         pytest.param(
+            "not_a_tuple",
+            None,
+            None,
+            False,
+            None,
+            pytest.raises(ValueError),
+            "The data_shape argument must a tuple of integers",
+            None,
+            id="data_shape_not_tuple",
+        ),
+        pytest.param(
+            ("not", "a", "tuple", "of", "ints"),
+            None,
+            None,
+            False,
+            None,
+            pytest.raises(ValueError),
+            "The data_shape argument must a tuple of integers",
+            None,
+            id="data_shape_not_tuple_of_ints",
+        ),
+        pytest.param(
+            (1,),
             "a",
             None,
             False,
@@ -24,6 +47,7 @@ from numpy.typing import NDArray
             id="timings_not_acclim_or_datetimes",
         ),
         pytest.param(
+            (1,),
             np.concat(  # 10 years of 30 min obs with duplicate to give 0s duration
                 [
                     [np.datetime64("2000-01-01 00:00:00")],
@@ -34,7 +58,7 @@ from numpy.typing import NDArray
                     ),
                 ]
             ),
-            np.ones((365 * 5 + 366 * 3) * 48 + 1, dtype=np.bool_),
+            None,
             False,
             None,
             pytest.raises(ValueError),
@@ -43,14 +67,13 @@ from numpy.typing import NDArray
             id="timings_not_strictly_increasing",
         ),
         pytest.param(
+            (1,),
             np.arange(
                 np.datetime64("2000-01"),
                 np.datetime64("2010-01"),
                 np.timedelta64(1, "M"),
             ),
-            np.ones(
-                (365 * 5 + 366 * 3) * 48, dtype=np.bool_
-            ),  # 10 years of 30 min obs, with 3 leap years with a duplicate at start
+            None,
             False,
             None,
             pytest.raises(ValueError),
@@ -59,14 +82,13 @@ from numpy.typing import NDArray
             id="unequal_no_endpoint",
         ),
         pytest.param(
+            (1,),
             np.arange(
                 np.datetime64("2000-01"),
                 np.datetime64("2010-01"),
                 np.timedelta64(1, "M"),
             ),
-            np.ones(
-                (365 * 5 + 366 * 3) * 48, dtype=np.bool_
-            ),  # 10 years of 30 min obs, with 3 leap years with a duplicate at start
+            None,
             False,
             np.datetime64("2005-06"),
             pytest.raises(ValueError),
@@ -75,38 +97,56 @@ from numpy.typing import NDArray
             id="endpoint_not_after_timings",
         ),
         pytest.param(
+            (
+                175344,  # (365*7+366*3)*48  10 years of 30 min obs, with 3 leap years
+            ),
+            np.arange(
+                np.datetime64("2000-01-01"),
+                np.datetime64("2009-01-01"),  # only 9 years
+                np.timedelta64(30, "m"),
+            ),
+            None,
+            False,
+            None,
+            pytest.raises(ValueError),
+            "The number of observation timings does not match the first "
+            "axis of the data shape",
+            None,
+            id="timings_do_not_match_data_shape",
+        ),
+        pytest.param(
+            (175344,),
             np.arange(
                 np.datetime64("2000-01-01"),
                 np.datetime64("2010-01-01"),
                 np.timedelta64(30, "m"),
             ),
-            np.ones(
-                (365 * 5 + 366 * 3) * 48, dtype=np.bool_
-            ),  # 10 years of 30 min obs, with 3 leap years
+            np.ones((175344,)),  # integer not boolean
             False,
             None,
             pytest.raises(ValueError),
-            "Growing season data is not the same shape as the timing data",
+            "Subset mask data is not an array of boolean values",
             None,
-            id="bad_growing_season_shape",
+            id="bad_subset_mask_dtype",
         ),
         pytest.param(
+            (175344, 3),
             np.arange(
                 np.datetime64("2000-01-01"),
                 np.datetime64("2010-01-01"),
                 np.timedelta64(30, "m"),
             ),
-            np.ones(
-                (365 * 7 + 366 * 3) * 48,
-            ),  # 10 years of 30 min obs, with 3 leap years
+            np.ones((175344,), dtype=np.bool_),
             False,
             None,
             pytest.raises(ValueError),
-            "Growing season data is not an array of boolean values",
+            "The subset mask shape (175344,) and "
+            "data shape (175344, 3) are not congruent",
             None,
-            id="bad_growing_season_dtype",
+            id="2d_data_1d_mask",
         ),
         pytest.param(
+            (261,),
             np.arange(  # 10 years of fortnightly obs with default growing season
                 np.datetime64("2000-01-01"),
                 np.datetime64("2010-01-01"),
@@ -128,6 +168,7 @@ from numpy.typing import NDArray
             id="fortnightly",
         ),
         pytest.param(
+            (120,),
             np.arange(  # 10 years of monthly obs with default growing season
                 np.datetime64("2000-01"),
                 np.datetime64("2010-01"),
@@ -151,6 +192,7 @@ from numpy.typing import NDArray
         pytest.param(
             # 10 years of fortnightly obs but offset by half a year with default
             # growing season
+            (261,),
             np.arange(
                 np.datetime64("2000-06-01"),
                 np.datetime64("2010-06-01"),
@@ -193,6 +235,7 @@ from numpy.typing import NDArray
         pytest.param(
             # 10 years of monthly obs with one second overlaps with default
             # growing season
+            (122,),
             np.concat(
                 [
                     [np.datetime64("1999-12-31 23:59:59")],  # party over, out of time
@@ -229,6 +272,7 @@ from numpy.typing import NDArray
         ),
         pytest.param(
             # 10 years of yearly data with one day at start with default growing season
+            (11,),
             np.concat(
                 [
                     [np.datetime64("1999-12-31")],  # party over, out of time
@@ -256,6 +300,7 @@ from numpy.typing import NDArray
         ),
         pytest.param(
             # 10 years of yearly data with one day at end with default growing season
+            (10,),
             np.concat(
                 [
                     np.arange(
@@ -281,6 +326,7 @@ from numpy.typing import NDArray
             id="day_at_the_end",
         ),
         pytest.param(
+            (120,),
             np.arange(  # 10 years of monthly obs with summer growing season
                 np.datetime64("2000-01"),
                 np.datetime64("2010-01"),
@@ -299,14 +345,15 @@ from numpy.typing import NDArray
                     np.datetime64("2000"), np.datetime64("2010"), np.timedelta64(1, "Y")
                 ),
             ),
-            id="monthly_summer_growing_season",
+            id="monthly_summer_subset_mask",
         ),
     ),
 )
 def test_AnnualValueCalculator_init(
+    data_shape,
     datetimes,
     as_acclim,
-    growing_season,
+    subset_mask,
     endpoint,
     context_manager,
     error_message,
@@ -325,18 +372,21 @@ def test_AnnualValueCalculator_init(
 
     with context_manager as cmgr:
         avc = AnnualValueCalculator(
-            timing=datetimes, growing_season=growing_season, endpoint=endpoint
+            data_shape=data_shape,
+            timing=datetimes,
+            subset_mask=subset_mask,
+            endpoint=endpoint,
         )
 
-        year_completeness, year_n_days, year_n_growing_days, years = expected
+        year_completeness, year_n_days, year_n_days_subset, years = expected
 
         assert_allclose(avc.year_completeness, year_completeness)
         assert_allclose(avc.year_n_days, year_n_days)
-        assert_allclose(avc.year_n_growing_days, year_n_growing_days)
+        assert_allclose(avc.year_n_days_subset, year_n_days_subset)
         assert_equal(avc.years, years)
 
         # Check the lengths of the by year lists of arrays
-        assert len(avc.years) == len(avc.growing_season_by_year)
+        assert len(avc.years) == len(avc.subset_mask_by_year)
         assert len(avc.years) == len(avc.duration_weights)
         assert len(avc.years) == len(avc.fractional_weights)
 
@@ -368,9 +418,10 @@ GROWING_SEASON = np.tile(np.repeat([0, 1, 0], [3, 6, 3]), 10).astype(np.bool_)
             #   the means are weighted by _actual duration. The two seasons are equal
             #   size in leap years.
             {
+                "data_shape": (120,),
                 "timing": MONTHLY,
                 "endpoint": np.datetime64("2010-01"),
-                "growing_season": GROWING_SEASON,
+                "subset_mask": GROWING_SEASON,
             },
             np.repeat(np.arange(1, 11), 12) + (GROWING_SEASON - 0.5) / 5,
             np.arange(1, 11) * 12,
@@ -388,9 +439,10 @@ GROWING_SEASON = np.tile(np.repeat([0, 1, 0], [3, 6, 3]), 10).astype(np.bool_)
             #   partial year has one more day (91) in the growing season than in the off
             #   season (90), so is 1/181th larger. The leading partial year is 90/90
             {
+                "data_shape": (120,),
                 "timing": MONTHLY + np.timedelta64(6, "M"),
                 "endpoint": np.datetime64("2010-07"),
-                "growing_season": np.roll(GROWING_SEASON, 6),
+                "subset_mask": np.roll(GROWING_SEASON, 6),
             },
             np.repeat(np.arange(1, 12), [6, *[12] * 9, 6])
             + (np.roll(GROWING_SEASON, 6) - 0.5) / 5,
@@ -425,12 +477,13 @@ GROWING_SEASON = np.tile(np.repeat([0, 1, 0], [3, 6, 3]), 10).astype(np.bool_)
             # - Growing season follows a simple on/off sequence. Not biologically
             #   sensible but generates good testing variation across the four years.
             {
+                "data_shape": (10,),
                 "timing": np.arange(
                     np.datetime64("1900-01-01"),
                     np.datetime64("1904-01-01"),
                     np.timedelta64(146, "D"),
                 ),
-                "growing_season": np.tile([0, 1], 5).astype(np.bool_),
+                "subset_mask": np.tile([0, 1], 5).astype(np.bool_),
             },
             np.arange(1, 11),
             np.array(
@@ -476,9 +529,10 @@ GROWING_SEASON = np.tile(np.repeat([0, 1, 0], [3, 6, 3]), 10).astype(np.bool_)
             #   fewer day in the valued parts of the data, so an extra 0.1 across 303
             #   days with values.
             {
+                "data_shape": (120,),
                 "timing": MONTHLY,
                 "endpoint": np.datetime64("2010-01"),
-                "growing_season": GROWING_SEASON,
+                "subset_mask": GROWING_SEASON,
             },
             (np.repeat(np.arange(1, 11), 12) + (GROWING_SEASON - 0.5) / 5)
             * np.tile(np.repeat([np.nan, 1, np.nan, 1], [1, 3, 1, 7]), 10),
@@ -503,14 +557,68 @@ def test_AnnualValueCalculator_get_annual(
 
     avc = AnnualValueCalculator(**init)
 
-    calculated = avc.get_annual_totals(values, within_growing_season=False)
+    calculated = avc.get_annual_totals(values, within_subset=False)
     assert_allclose(calculated, total_expected)
 
-    calculated = avc.get_annual_totals(values, within_growing_season=True)
+    calculated = avc.get_annual_totals(values, within_subset=True)
     assert_allclose(calculated, total_expected_within_gs)
 
-    calculated = avc.get_annual_means(values, within_growing_season=False)
+    calculated = avc.get_annual_means(values, within_subset=False)
     assert_allclose(calculated, mean_expected)
 
-    calculated = avc.get_annual_means(values, within_growing_season=True)
+    calculated = avc.get_annual_means(values, within_subset=True)
     assert_allclose(calculated, mean_expected_within_gs)
+
+
+@pytest.mark.parametrize(argnames="subset_broadcast", argvalues=(True, False))
+@pytest.mark.parametrize(argnames="extra_dims", argvalues=(0, 1, 2, 3))
+def test_AnnualValueCalculator_dimensionality(subset_broadcast, extra_dims):
+    """Test the calculation of annual totals and means with differing dimensions.
+
+    The test varies the input data shapes:
+    (120,), (120, 3), (120, 3, 3) and (120, 3, 3, 3)
+    And also swaps the subset mask between full size to match above or broadcastable:
+    (120,), (120, 1), (120, 1, 1) and (120, 1, 1, 1)
+
+    The offsets matrix is used to assign different values to each time series across the
+    dimensions to verify that the annual summaries are correct.
+    """
+    from pyrealm.core.time_series import AnnualValueCalculator
+
+    extra_dim_sizes = [3] * extra_dims
+    input_shape = tuple([len(MONTHLY), *extra_dim_sizes])
+    output_shape = tuple([int(len(MONTHLY) / 12), *extra_dim_sizes])
+
+    if extra_dims == 0:
+        offsets = np.array([0])
+    else:
+        offsets = np.arange(np.prod(extra_dim_sizes)).reshape((1, *extra_dim_sizes))
+
+    input_values = np.zeros(input_shape) + offsets
+
+    # make growing season broadcastable
+    subset_mask = GROWING_SEASON[:, *[np.newaxis] * extra_dims]
+    if subset_broadcast:
+        subset_mask = np.broadcast_to(subset_mask, input_shape)
+
+    avc = AnnualValueCalculator(
+        data_shape=input_shape,
+        timing=MONTHLY,
+        endpoint=np.datetime64("2010-01"),
+        subset_mask=subset_mask,
+    )
+
+    # Totals for whole year: 12 months * offset value
+    calculated = avc.get_annual_totals(input_values, within_subset=False)
+    assert_allclose(calculated, np.broadcast_to((offsets * 12), output_shape))
+
+    # Totals for subset: 6 months * offset value
+    calculated = avc.get_annual_totals(input_values, within_subset=True)
+    assert_allclose(calculated, np.broadcast_to((offsets * 6), output_shape))
+
+    # Means are the same for both
+    calculated = avc.get_annual_means(input_values, within_subset=False)
+    assert_allclose(calculated, np.broadcast_to((offsets), output_shape))
+
+    calculated = avc.get_annual_means(input_values, within_subset=True)
+    assert_allclose(calculated, np.broadcast_to((offsets), output_shape))

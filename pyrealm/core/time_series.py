@@ -13,62 +13,98 @@ from pyrealm.pmodel import AcclimationModel
 
 
 class AnnualValueCalculator:
-    """A calculator class for annual means and totals from time series data.
+    """Annual means and totals from time series data.
 
-    This class is used to calculate annual means and totals from time series data. An
-    instance is created by providing a set of timings for the times series data, either
-    as a one-dimensional array of datetimes or as an AcclimationModel instance from a
-    SubdailyPModel, which provides validated datetimes at subdaily temporal resolutions.
+    This class calculates annual means and totals from time series data and is designed
+    to handle time series data sampled at a wide range of intervals. If time series are
+    sampled at intervals that do not map neatly onto years - such as weekly or
+    fortnightly data - or do not have precisely uneven sampling - such as monthly data,
+    then calculating annual means and sums becomes awkward.
 
-    The calculation process accounts for observations that span year boundaries, such as
-    fortnightly data, by calculating the duration of each observation within each year.
-    The process also handles unequal sampling intervals - such as monthly data - by
-    calculating the actual duration of observations. However, with uneven sampling, the
-    duration of the last interval is unknown and so an explicit endpoint must be
-    provided.
+    This class handles the issue by taking a set of datetimes for observations and
+    mapping them onto years. Observations that span year boundaries are included in both
+    years and the class calculates two forms of weightings:
 
-    The indexing of annual subsets of observations, along with the appropriate
-    weightings for observations values in calculating annual values, are calculated when
-    the class is created and then used by the ``get_annual_means`` and
-    ``get_annual_totals`` methods. Both methods return values for all years sampled:
-    the ``year_completeness`` attribute records what fraction of a year has been sampled
-    to give a particular value.
+    * Duration weights provide the actual duration of each observation within a year,
+      and are used to calculate weighted means
+    * Proportion weights provide the proportion of an observation in a given year and
+      are used to calculate annual sums.
 
-    .. Note::
+    The class must be created for a specific target dataset with a known array shape
+    (the ``data_shape`` argument), with the first axis representing time. The
+    ``timings`` argument then sets the timing of observations along that axis. Lastly,
+    the optional ``subset_mask`` argument can be used to define a subset of observations
+    to be used when calculating totals and means. This subset mask must be an array that
+    can be broadcast to the data shape. The datetimes do not have to completely sample
+    all years: the ``year_completeness`` attribute records what fraction of a year is
+    covered by the datetimes.
 
-        The class handles a wide range of different possible sampling frequencies and
-        calculates weights for observations using the duration of observations with
-        second precision. With uneven durations - such as monthly data - this will give
-        slightly different values to simple means assuming equal duration.
+    As an example, 10 years of monthly data for a 5 x 5 spatial grid of sites could
+    have:
+
+    * a data shape of ``(120, 5, 5)``,
+    * a timings array with shape ``(120,)``, and then
+    * a subset mask with shape ``(120, 1, 1)``, providing a single subset mask for use
+      at all 25  grid cells. Alternatively, a subset mask with shape ``(120, 5, 5)``
+      would provide site specific subsets.
+
+    With uneven sampling - such as monthly - an explicit endpoint must be provided to
+    set the duration of the final observation.
+
+    Once an instance is created, then the
+    :meth:`AnnualValueCalculator.get_annual_totals` and
+    :meth:`AnnualValueCalculator.get_annual_means` methods can be used to calculate the
+    actual summary statistics for arrays of values that match the data shape.
+
+    The ``timings`` argument can either directly provide an array of
+    :class:`numpy.datetime64` values, or use an existing
+    :class:`~pyrealm.pmodel.acclimation.AcclimationModel` object, which contains such an
+    array. The ``subset_mask`` argument must be a boolean array.
 
     Example:
-        >>> # Three years of monthly data
+        >>> # Three years of monthly data - 36 observations
         >>> datetimes = np.arange(
         ...     np.datetime64('2000-01'),
         ...     np.datetime64('2003-01'),
         ...     np.timedelta64(1, "M")
         ... )
         >>> # Monthly data is uneven - requires an explicit endpoint.
-        >>> avc = AnnualValueCalculator(datetimes, endpoint=np.datetime64('2003-01'))
+        >>> avc = AnnualValueCalculator(
+        ...    data_shape=(36,),
+        ...    timing=datetimes,
+        ...    endpoint=np.datetime64('2003-01')
+        ... )
         >>> avc.year_completeness
         array([1., 1., 1.])
+
+    Args:
+        timing: A :class:`~pyrealm.pmodel.acclimation.AcclimationModel` instance or a
+            one-dimensional array of :class:`numpy.datetime64` values.
+        data_shape: A tuple giving the shape of the data to be used with an instance.
+        subset: An array of :class:`numpy.bool_` values to be used in excluding
+            observations from summary stat calculations within a year.
+        endpoint: A single :class:`numpy.datetime64` value, required to provide an
+            explicit endpoint for observations with uneven frequency.
     """
 
     def __init__(
         self,
+        data_shape: tuple[int, ...],
         timing: AcclimationModel | NDArray[np.datetime64],
-        growing_season: NDArray[np.bool_] | None = None,
+        subset_mask: NDArray[np.bool_] | None = None,
         endpoint: np.datetime64 | None = None,
     ):
         # Attribute definitions
+        self.data_shape: tuple[int, ...]
+        """The shape of data value arrays accepted by an instance."""
         self.datetimes: NDArray[np.datetime64]
         """The start datetime of observations taking from the initial timings"""
         self.n_obs: int
         """The number of observations in the time series."""
         self.endpoint: np.datetime64
         """A datetime giving of the end of the last observation."""
-        self.growing_season: NDArray[np.bool_]
-        """The initial input array of growing season data."""
+        self.subset_mask: NDArray[np.bool_]
+        """The initial input array for the subset mask."""
         self.duration_seconds: NDArray[np.int_]
         """The duration of each observation in seconds."""
         self.indexing: list[tuple[int, int]] = []
@@ -80,8 +116,8 @@ class AnnualValueCalculator:
         self.fractional_weights: list[NDArray[np.floating]] = []
         """A list of arrays giving the fraction of each observation within a year that
         falls in the year."""
-        self.growing_season_by_year: list[NDArray[np.bool_]]
-        """A list of arrays giving the growing season subarrays for each year."""
+        self.subset_mask_by_year: list[NDArray[np.bool_]]
+        """A list of arrays giving the subset mask subarrays for each year."""
         self.year_completeness: NDArray[np.floating]
         """Provides the fractional coverage of observations for each year."""
         self.years: NDArray[np.datetime64]
@@ -94,6 +130,19 @@ class AnnualValueCalculator:
         """The total number of growing days for each year in the time series. If the
         growing_season input varies within days, these values can contain non-integer
         values."""
+
+        # Check data shape
+        if not (
+            isinstance(data_shape, tuple)
+            and all(isinstance(v, int) for v in data_shape)
+        ):
+            raise ValueError("The data_shape argument must a tuple of integers")
+
+        self.data_shape = data_shape
+
+        # Calculate a list of additional dimensions that can be used to broadcast 1D
+        # arrays to the data shape
+        extra_dims = [np.newaxis] * (len(self.data_shape) - 1)
 
         # Sanity checks on datetimes
         if not (
@@ -151,23 +200,37 @@ class AnnualValueCalculator:
                     "timedelta64[s]"
                 )
 
+        # Get the number of observations and check it matches the declared data shape
         self.n_obs = self.datetimes.size
+        if self.n_obs != self.data_shape[0]:
+            raise ValueError(
+                "The number of observation timings does not match the first "
+                "axis of the data shape"
+            )
 
-        # Sanity checks on growing season
-        if growing_season is None:
-            growing_season = np.ones_like(self.datetimes, dtype=np.bool_)
-        else:
-            if not np.issubdtype(growing_season.dtype, np.bool_):
-                raise ValueError(
-                    "Growing season data is not an array of boolean values"
-                )
+        # Sanity checks on subset
+        if subset_mask is None:
+            # Default is an array with the same dimensions as the data shape, but with
+            # singleton dimensions on all but time axis: broadcasts across shape
+            mask_shape = [1] * len(self.data_shape)
+            mask_shape[0] = self.n_obs
+            subset_mask = np.ones(mask_shape, dtype=np.bool_)
 
-            if not self.datetimes.shape == growing_season.shape:
-                raise ValueError(
-                    "Growing season data is not the same shape as the timing data"
-                )
-        # Store the growing season data
-        self.growing_season = growing_season
+        # Must be boolean
+        if not np.issubdtype(subset_mask.dtype, np.bool_):
+            raise ValueError("Subset mask data is not an array of boolean values")
+
+        # Must be congruent with the data shape
+        try:
+            np.broadcast_shapes(subset_mask.shape, self.data_shape)
+        except ValueError:
+            raise ValueError(
+                f"The subset mask shape {subset_mask.shape} and "
+                f"data shape {self.data_shape} are not congruent"
+            )
+
+        # Store the growing season data, which is now not None
+        self.subset_mask = subset_mask
 
         # Record the endpoint to get the total timespan of the data and hence the
         # duration of each observation
@@ -233,12 +296,14 @@ class AnnualValueCalculator:
 
             # Store the indices and weights
             self.indexing.append((int(lower_index), int(upper_index)))
-            self.duration_weights.append(internal_year_durations)
-            self.fractional_weights.append(fractional_duration)
 
-        # Split the growing season up into a list of subarrays by year
-        self.growing_season_by_year = [
-            growing_season[lower:upper] for lower, upper in self.indexing
+            # Lastly, make the weights broadcastable to the data shape and store them
+            self.duration_weights.append(internal_year_durations[:, *extra_dims])
+            self.fractional_weights.append(fractional_duration[:, *extra_dims])
+
+        # Split the subset mask up into a list of subarrays by year
+        self.subset_mask_by_year = [
+            self.subset_mask[lower:upper] for lower, upper in self.indexing
         ]
 
         # Populate the year completeness and day counts
@@ -247,12 +312,19 @@ class AnnualValueCalculator:
             np.array([np.sum(v) for v in self.duration_weights])
             / self.year_total_seconds
         )
+
+        # Calculate the year length in days and the number of days within the subset
+        # mask per year. The first one _has_ to be constant across extra dimensions, but
+        # the subset mask could be variable. Having different dimensionality on these
+        # two attributes is confusing, so broadcast year_n_days to the data shape.
         day_seconds = 86400
-        self.year_n_days = self.year_total_seconds / day_seconds
-        self.year_n_growing_days = np.array(
+
+        self.year_n_days = (self.year_total_seconds / day_seconds)[:, *extra_dims]
+
+        self.year_n_days_subset = np.array(
             [
-                np.sum(x * y) / day_seconds
-                for x, y in zip(self.duration_weights, self.growing_season_by_year)
+                np.sum(wght * mask, axis=0) / day_seconds
+                for wght, mask in zip(self.duration_weights, self.subset_mask_by_year)
             ]
         )
 
@@ -280,19 +352,31 @@ class AnnualValueCalculator:
     def get_annual_means(
         self,
         values: NDArray[np.floating],
-        within_growing_season: bool = False,
+        within_subset: bool = False,
     ) -> NDArray[np.floating]:
         """Get annual means from an array of values.
 
-        Average values are calculated weighted by the __duration__ of each observation,
-        including weighting partial observations than span year boundaries. If
-        ``within_growing_season`` is ``True``, the weights for observations outside of
-        the observations marked as the growing season are set to zero. The calculation
-        handles missing values.
+        Annual mean values are calculated using a weighted mean of values falling within
+        each year, using the total __duration__ of each observation within the year as a
+        weight. If an observation spans two years, the observation is included in the
+        mean for both years, weighted by the total duration within the year. The method
+        handles missing data (`np.nan`).
 
-        The annual means can be computed for a range of different sites by using n-D
-        array for ``values``. In this case time is assumed along axis 0 and so an n-D
-        array will be returned with annual values along axis 0.
+        The input values must be an array with a shape that matches the ``data_shape``
+        used to create the :class:`AnnualValueCalculator` instance. Annual means are
+        calculated along the first axis of the input array and array dimensions are
+        preserved along all but that first axis. For example, monthly data values over
+        10 years for a 3 x 3 grid of cells might have shape `(120, 3, 3)` - the
+        resulting array of mean values would have shape `(10, 3, 3)`.
+
+        The ``within_subset`` argument can be used to calculate mean values only from
+        observations included in the ``subset_mask`` defined when creating the
+        :class:`AnnualValueCalculator` instance.
+
+        .. NOTE::
+
+            The method returns values for incomplete years, but obviously these may be
+            be biased as a result.
 
         Example:
             >>> # Three years of monthly data
@@ -303,7 +387,9 @@ class AnnualValueCalculator:
             ... )
             >>> # Monthly data is uneven - requires an explicit endpoint.
             >>> avc = AnnualValueCalculator(
-            ...     datetimes, endpoint=np.datetime64('2003-01')
+            ...    data_shape=(36,),
+            ...    timing=datetimes,
+            ...    endpoint=np.datetime64('2003-01')
             ... )
             >>> # Note that the means are weighted by the actual durations of months.
             >>> avc.get_annual_means(np.arange(0, 36)).round(4)
@@ -311,26 +397,26 @@ class AnnualValueCalculator:
 
         Args:
             values: The data to summarize by year
-            within_growing_season: Should the mean only include values within the
-                growing season.
+            within_subset: Should the mean only include values within the subset mask.
         """
+
+        # Enforce shape
+        if values.shape != self.data_shape:
+            raise ValueError(
+                f"Input values shape {values.shape} does not match "
+                f"configured data shape {self.data_shape}"
+            )
 
         values_by_year = self._split_values_by_year(values)
 
         # Averages use _duration_ weights
-        if within_growing_season:
+        if within_subset:
             weights = [
-                wght * gs
-                for wght, gs in zip(self.duration_weights, self.growing_season_by_year)
+                wght * sub
+                for wght, sub in zip(self.duration_weights, self.subset_mask_by_year)
             ]
         else:
             weights = self.duration_weights
-
-        # Make weights broadcastable in case vals is multidimensional
-        if values.ndim > 1:
-            for i, wghts in enumerate(weights):
-                shape = (wghts.shape[0],) + (1,) * (values.ndim - 1)
-                weights[i] = wghts.reshape(shape)
 
         # Calculate the weighted mean in a np.nan friendly way: the product of np.nan
         # and a weight is np.nan and the isnan term omits the weights of nan
@@ -347,20 +433,33 @@ class AnnualValueCalculator:
     def get_annual_totals(
         self,
         values: NDArray[np.floating],
-        within_growing_season: bool = False,
+        within_subset: bool = False,
     ) -> NDArray[np.floating]:
         """Get annual totals from an array of values.
 
-        The contribution of each observation to the total is weighted by the
-        __fractional__ duration of each observation within each year in order to
-        partition the sum across years correctly. If ``within_growing_season`` is
-        ``True``, the weights for observations not identified as growing season values
-        are set to zero. The method handles missing data (`np.nan`) but obviously the
+        Annual totals are calculated by splitting the values into subarrays of values by
+        year and then calculating the sum along the first axis. When observations span
+        two years, they are included in both sets of annual data, but the sum is
+        weighted by the fraction of the observation in each year to partition the value
+        between years. The method handles missing data (`np.nan`) but obviously the
         resulting annual total will be reduced.
 
-        The annual totals can be computed for a range of different sites by using an n-D
-        array for ``values``. In this case time is assumed along axis 0 and so an n-D
-        array will be returned with annual values along axis 0.
+        The input values must be an array with a shape that matches the ``data_shape``
+        used to create the :class:`AnnualValueCalculator` instance. Annual totals are
+        calculated along the first axis of the input array and array dimensions are
+        preserved along all but that first axis. For example, monthly data values over
+        10 years for a 3 x 3 grid of cells might have shape `(120, 3, 3)` - the
+        resulting array of total values would have shape `(10, 3, 3)`.
+
+        The ``within_subset`` argument can be used to calculate totals values only from
+        observations included in the ``subset_mask`` defined when creating the
+        :class:`AnnualValueCalculator` instance.
+
+        .. NOTE::
+
+            The method returns values for incomplete years, but obviously these will
+            be an underestimate. A simple correction would be to divide the totals by
+            the year completeness to scale back up to full annual values.
 
         Example:
             >>> # Three years of monthly data with incomplete years at start and end
@@ -371,7 +470,9 @@ class AnnualValueCalculator:
             ... )
             >>> # Monthly data is uneven - requires an explicit endpoint.
             >>> avc = AnnualValueCalculator(
-            ...     datetimes, endpoint=np.datetime64('2003-07')
+            ...    data_shape=(36,),
+            ...    timing=datetimes,
+            ...    endpoint=np.datetime64('2003-07')
             ... )
             >>> # Note that the means are weighted by the actual durations of months.
             >>> avc.get_annual_totals(np.arange(0, 36)).round(4)
@@ -382,28 +483,26 @@ class AnnualValueCalculator:
 
         Args:
             values: The data to summarize by year
-            within_growing_season: Should the mean only include values within the
-                growing season.
+            within_subset: Should the mean only include values within the subset mask.
         """
+
+        # Enforce shape
+        if values.shape != self.data_shape:
+            raise ValueError(
+                f"Input values shape {values.shape} does not match "
+                f"configured data shape {self.data_shape}"
+            )
 
         values_by_year = self._split_values_by_year(values)
 
         # Totals use _fractional_ weights
-        if within_growing_season:
+        if within_subset:
             weights = [
                 wght * gs
-                for wght, gs in zip(
-                    self.fractional_weights, self.growing_season_by_year
-                )
+                for wght, gs in zip(self.fractional_weights, self.subset_mask_by_year)
             ]
         else:
             weights = self.fractional_weights
-
-        # Make weights broadcastable in case vals is multidimensional
-        if values.ndim > 1:
-            for i, wghts in enumerate(weights):
-                shape = (wghts.shape[0],) + (1,) * (values.ndim - 1)
-                weights[i] = wghts.reshape(shape)
 
         # The total is computed along just the time (0) axis.
         return np.array(

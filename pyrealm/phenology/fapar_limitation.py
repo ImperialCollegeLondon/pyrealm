@@ -1,6 +1,25 @@
-"""Class to compute the fAPAR_max and annual peak Leaf Area Index (LAI)."""
+"""Class to compute the fAPAR_max and annual peak Leaf Area Index (LAI).
 
-from typing import Self
+The :class:`FaparLimitation` class and the :meth:`FaparLimitation.from_pmodel` are
+designed to work with inputs that can have multiple dimensions. The first axis is
+_always_ assumed to represent a time series of annual observations. If the inputs
+are one dimensional, then this is a time series for a single site; if they are three
+dimensional then these are observations for a grid of sites. Usually all array inputs
+will have the same shape but note the following instances where you might need to
+take care with array broadcasting.
+
+* Growing season length might well be constant across sites. If so - for example
+    with 3D data - the input would need shape `(N, 1, 1)` to broadcast N years of
+    data over the array of sites.
+* The climatological aridity index is very likely to be constant through time.
+    If so, the array should have a singleton first dimension to broadcast an
+    observation per site across observations. For example, with `(10, 3, 3)` data
+    (10 years for a 3x3 grid of sites), the aridity index could be provided as
+    `(1,3,3)` to broadcast the aridity index across each year. It could also use a
+    single scalar value to use the same aridity index for all sites.
+"""
+
+from __future__ import annotations
 
 import numpy as np
 from numpy.typing import NDArray
@@ -8,44 +27,54 @@ from numpy.typing import NDArray
 from pyrealm.constants import PhenologyConst
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.time_series import AnnualValueCalculator
-from pyrealm.core.utilities import check_input_shapes
+from pyrealm.core.utilities import (
+    check_input_shapes,
+    summarize_attrs,
+)
 from pyrealm.pmodel.pmodel import PModel, PModelABC, SubdailyPModel
 
 
 class FaparLimitation:
     r"""Compute maximum annual fAPAR and LAI.
 
-    This class calculates maximum annual fAPAR and LAI, following :cite:`cai:2025a`.
-    The maximum annual fAPAR is calculated as the minimum of two terms capturing
-    energy-limited and water limited fAPAR:
+    This class calculates maximum annual fAPAR and LAI ($L$), following
+    :cite:`cai:2025a`. The maximum annual fAPAR is limited by the ability of plants to
+    assimilate carbon for constructing leaves and this can be limited either by the
+    availability of light energy ($f_{APAR_{c}}$) or by the availability of water
+    ($f_{APAR_{w}}$). The maximum annual fAPAR is calculated as the minimum of those two
+    terms. The equations are:
 
     .. math::
+        :nowrap:
 
-        \text{fAPAR}_{max} = \min{
-                \left(1 - z / \left(k A_0 \right) \right),
-                \left( c_a \left( 1 - \chi \right) / 1.6 D \right)
-                \left( f_0 P / A_0 \right)
-            }
+        \[    
+          \begin{align*}
+            f_{APAR_{c}} &= 1 - \frac{z}{k A_0}\\
+            f_{APAR_{w}} &= \left(\frac{ c_a \left( 1 - \chi \right)}{ 1.6 D }\right)
+                            \left(\frac{ f_0 P }{ A_0 }\right) \\
+            f_{APAR_{max}} &= \min{\left(f_{APAR_{c}}, f_{APAR_{w}}\right)}
+          \end{align*}
+        \]
 
     The maximum annual LAI is then calculated using Beer's law:
 
     .. math::
 
-        \text{LAI}_{max} = - ( 1 / k ) \ln {1 - \text{fAPAR}_{max}}
+        L_{max} = - ( 1 / k ) \ln {1 -f_{APAR_{max}}}
 
     The class also calculates the parameter :math:`m`, which is the steady state annual
     ratio of leaf area index to GPP:
 
     .. math::
 
-        m = \frac{ \sigma G \text{LAI}_{max}}{A_0 \text{fAPAR}_{max}}
+        m = \frac{ \sigma G L_{max}}{A_0 f_{APAR_{max}}
 
     The :class:`~pyrealm.constants.phenology_const.PhenologyConst` class provides values
     for the following constants:
 
     * :math:`z` accounts for the growth and maintenance costs of leaves.
     * :math:`k` is the light extinction coefficient.
-    * :math:`f_0` is is the ratio of annual total transpiration of annual total
+    * :math:`f_0` is is the ratio of annual total transpiration to annual total
       precipitation, calculated from the climatological aridity index (AI) (see
       :class:`PhenologyConst.calculate_f0<pyrealm.constants.phenology_const.PhenologyConst.calculate_f0>`).
     * :math:`\sigma` is a proportion that captures the departure of :math:`m` from the
@@ -56,6 +85,7 @@ class FaparLimitation:
     common source of these variables is from a P Model, and the
     :meth:`~pyrealm.phenology.fapar_limitation.FaparLimitation.from_pmodel` method can
     be used to create an instance directly from a fitted P Model.
+
 
     Args:
         annual_total_potential_gpp: The annual sum of potential GPP (:math:`A_0,
@@ -72,25 +102,13 @@ class FaparLimitation:
             year (:math:`G`, days)
         aridity_index: A climatological estimate of the local aridity index, calculated
             as the long term (typically 20 years) total PET over total precipitation
-            (:math:`AI`, unitless)
+            (:math:`AI`, unitless).
+        years: An array of year datetimes for the observations.
         phenology_const: An instance of
             :class:`~pyrealm.constants.phenology_const.PhenologyConst`
     """
 
     __experimental__ = True
-
-    def _check_shapes(self) -> None:
-        """Internal class to check all the input arrays have the same size."""
-
-        check_input_shapes(
-            self.annual_total_potential_gpp,
-            self.annual_mean_ca,
-            self.annual_mean_chi,
-            self.annual_mean_vpd,
-            self.annual_total_precip,
-            self.aridity_index,
-            self.annual_growing_season_length,
-        )
 
     def __init__(
         self,
@@ -101,11 +119,37 @@ class FaparLimitation:
         annual_total_precip: NDArray[np.floating],
         annual_growing_season_length: NDArray[np.floating],
         aridity_index: NDArray[np.floating],
+        years: NDArray[np.datetime64],
         phenology_const: PhenologyConst = PhenologyConst(),
     ) -> None:
         # Experimental class
         warn_experimental("FaparLimitation")
 
+        # Validate the input shapes.
+        self.shape: tuple[int, ...] = check_input_shapes(
+            annual_total_potential_gpp,
+            annual_mean_ca,
+            annual_mean_chi,
+            annual_mean_vpd,
+            annual_total_precip,
+            aridity_index,
+            annual_growing_season_length,
+        )
+
+        # Check the years values - must be datetime64[Y] and be one dimensional,
+        # matching the first dimension of the other inputs
+        # TODO - this is a bit stringent, but is more robust
+        if not years.dtype == "<M8[Y]":
+            raise ValueError("The years argument must provide np.datetime64[Y] values")
+
+        if years.shape != (self.shape[0],):
+            raise ValueError(
+                "The years argument must be one dimensional and match the length "
+                "of the first axis of the other arguments"
+            )
+
+        self.years = years
+        r"""The year of each observation."""
         self.annual_total_potential_gpp = annual_total_potential_gpp
         r"""The annual sum of potential GPP 
         (:math:`A_0, \text{mol C m}^{-2} \text{year}^{-1}`)"""
@@ -124,8 +168,6 @@ class FaparLimitation:
         r"""Annual growing season length (:math:`G`, days)"""
         self.aridity_index = aridity_index
         r"""Climatological estimate of local aridity index (AI, unitless)"""
-
-        self._check_shapes()
 
         # Make sure the aridity index is not zero
         if np.any(aridity_index <= 0):
@@ -173,6 +215,28 @@ class FaparLimitation:
         ) / (self.annual_total_potential_gpp * self.fapar_max)
         """The steady state ratio of leaf area index to potential GPP (:math:`m`)"""
 
+    def __repr__(self) -> str:
+        """Simple representation of class instance."""
+        return f"FaparLimitation(shape={self.shape})"
+
+    def summarize(self, dp: int = 2) -> None:
+        """Print summary of estimates of fAPAR limitation.
+
+        Prints a summary of the calculated values in a FaparLimitation instance
+        including the mean, range and number of nan values.
+
+        Args:
+            dp: The number of decimal places used in rounding summary stats.
+        """
+
+        attrs: tuple[tuple[str, str], ...] = (
+            ("lai_max", "-"),
+            ("fapar_max", "-"),
+            ("lai_to_gpp_ratio_m", "-"),
+        )
+
+        summarize_attrs(self, attrs, dp=dp)
+
     @classmethod
     def from_pmodel(
         cls,
@@ -183,7 +247,7 @@ class FaparLimitation:
         datetimes: NDArray[np.datetime64] | None = None,
         gpp_penalty_factor: NDArray[np.floating] | None = None,
         phenology_const: PhenologyConst = PhenologyConst(),
-    ) -> Self:
+    ) -> FaparLimitation:
         r"""Create a FaparLimitation instance from a P Model and other inputs.
 
         The annual summary values of :math:`A_0, c_a, \chi` and :math:`D` used by the
@@ -205,8 +269,8 @@ class FaparLimitation:
 
         * The annual mean values :math:`c_a, \chi` and :math:`D` should be estimated
           during the growing season, so the ``growing_season`` argument must be used to
-          provide a boolean value indicating which observations should be treated as in
-          the growing season.
+          provide an array of boolean values indicating which observations should be
+          treated as in the growing season.
 
         * The calculation requires estimates of precipitation, so the ``precipitation``
           argument must provide estimates of total precipitation during each
@@ -260,8 +324,9 @@ class FaparLimitation:
         # Create the annual value calculator
         # - the code above guards against datetimes being None
         avc = AnnualValueCalculator(
+            data_shape=pmodel.shape,
             timing=datetimes,  # type: ignore [arg-type]
-            growing_season=growing_season,
+            subset_mask=growing_season,
         )
 
         # Get the total GPP for each observation
@@ -282,13 +347,9 @@ class FaparLimitation:
         ) / pmodel.core_const.k_c_molmass
 
         # Calculate annual mean ca, chi and VPD within growing season
-        annual_mean_ca = avc.get_annual_means(pmodel.env.ca, within_growing_season=True)
-        annual_mean_chi = avc.get_annual_means(
-            pmodel.optchi.chi, within_growing_season=True
-        )
-        annual_mean_vpd = avc.get_annual_means(
-            pmodel.env.vpd, within_growing_season=True
-        )
+        annual_mean_ca = avc.get_annual_means(pmodel.env.ca, within_subset=True)
+        annual_mean_chi = avc.get_annual_means(pmodel.optchi.chi, within_subset=True)
+        annual_mean_vpd = avc.get_annual_means(pmodel.env.vpd, within_subset=True)
 
         # Calculate total annual precipitation
         annual_total_precip = avc.get_annual_totals(precip)
@@ -299,7 +360,8 @@ class FaparLimitation:
             annual_mean_chi=annual_mean_chi,
             annual_mean_vpd=annual_mean_vpd,
             annual_total_precip=annual_total_precip,
-            annual_growing_season_length=avc.year_n_growing_days,
+            annual_growing_season_length=avc.year_n_days_subset,
+            years=avc.years,
             aridity_index=aridity_index,
             phenology_const=phenology_const,
         )

@@ -76,6 +76,7 @@ def test_faparlimitation(site_data, annual_fortnightly_data):
             "N_growing_days"
         ].to_numpy(),
         aridity_index=site_data["AI_from_cruts"],
+        years=annual_fortnightly_data["time"].to_numpy().astype("datetime64[Y]"),
     )
 
     assert_allclose(

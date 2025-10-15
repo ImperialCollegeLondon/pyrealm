@@ -659,7 +659,7 @@ class SubdailyPModel(PModelABC):
         # Subclass specific attributes
         self.acclim_model: AcclimationModel
         """The acclimation model used in the subdaily P Model."""
-        self.previous_realised: Mapping[str, NDArray | None]
+        self.previous_realised: Mapping[str, NDArray[np.floating] | None]
         """A dictionary of arrays of previous realised values for the acclimating
         variables 'xi', 'jmax25' and 'vcmax25'. If none were provided, the dictionary
         values are None."""
@@ -698,7 +698,7 @@ class SubdailyPModel(PModelABC):
     def _fit_model(
         self,
         acclim_model: AcclimationModel,
-        previous_realised: dict[str, NDArray] | None,
+        previous_realised: dict[str, NDArray[np.floating]] | None,
     ) -> None:
         """Calculation logic of the subdaily P Model."""
 
@@ -781,7 +781,7 @@ class SubdailyPModel(PModelABC):
 
         # Construct a dictionary of daily acclimation variables, handling optional
         # choices which can be None.
-        daily_environment: dict[str, NDArray] = {}
+        daily_environment: dict[str, NDArray[np.floating]] = {}
         for env_var_name in daily_environment_vars:
             env_var = getattr(self.env, env_var_name)
             if env_var is not None:
