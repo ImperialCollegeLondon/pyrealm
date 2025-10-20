@@ -8,6 +8,7 @@ dimensional then these are observations for a grid of sites. Usually all array i
 will have the same shape but note the following instances where you might need to
 take care with array broadcasting.
 
+from __future__ import annotations
 * Growing season length might well be constant across sites. If so - for example
     with 3D data - the input would need shape `(N, 1, 1)` to broadcast N years of
     data over the array of sites.
@@ -21,8 +22,6 @@ take care with array broadcasting.
 
 from __future__ import annotations
 
-from __future__ import annotations
-
 import numpy as np
 from numpy.typing import NDArray
 from scipy.special import lambertw  # type: ignore[import-untyped]
@@ -32,6 +31,7 @@ from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.time_series import AnnualValueCalculator
 from pyrealm.core.utilities import (
     check_input_shapes,
+    exponential_moving_average,
     summarize_attrs,
 )
 from pyrealm.pmodel.pmodel import PModel, PModelABC, SubdailyPModel
@@ -121,12 +121,32 @@ class FaparLimitation:
         annual_mean_vpd: NDArray[np.float64],
         annual_total_precip: NDArray[np.float64],
         annual_growing_season_length: NDArray[np.float64],
+        years: NDArray[np.datetime64],
         aridity_index: NDArray[np.float64],
         phenology_const: PhenologyConst = PhenologyConst(),
     ) -> None:
         # Experimental class
         warn_experimental("FaparLimitation")
 
+        # Validate the input shapes.
+        check_input_shapes(
+            annual_total_potential_gpp,
+            annual_mean_ca,
+            annual_mean_chi,
+            annual_mean_vpd,
+            annual_total_precip,
+            aridity_index,
+            annual_growing_season_length,
+            years,
+        )
+
+        # Check the years values - must be datetime64[Y].
+        # TODO - this is a bit stringent, but is more robust
+        if not years.dtype == "<M8[Y]":
+            raise ValueError("The years argument must provide np.datetime64[Y] values")
+
+        self.years = years
+        r"""The year of each observation."""
         # Validate the input shapes.
         check_input_shapes(
             annual_total_potential_gpp,
@@ -381,7 +401,7 @@ class FaparLimitation:
             annual_mean_chi=annual_mean_chi,
             annual_mean_vpd=annual_mean_vpd,
             annual_total_precip=annual_total_precip,
-            annual_growing_season_length=avc.year_n_days_subset,
+            annual_growing_season_length=avc.year_n_growing_days,
             years=avc.years,
             aridity_index=aridity_index,
             phenology_const=phenology_const,
@@ -419,7 +439,7 @@ class Phenology:
                 "complete increasing daily time series"
             )
 
-        # Get the years of observations and check they are all represnted in the
+        # Get the years of observations and check they are all represented in the
         # FaparLimitation object
         datetimes_year = datetimes.astype("datetime64[Y]")
         observation_years = np.unique(datetimes_year)

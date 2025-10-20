@@ -178,7 +178,7 @@ class AnnualValueCalculator:
             if not np.all(duration_seconds > 0):
                 raise ValueError("The timing values are not strictly increasing")
 
-            intervals: NDArray[np.floating] = np.unique(duration_seconds)
+            intervals: NDArray[np.float64] = np.unique(duration_seconds)
 
             if len(intervals) == 1:
                 # Constant intervals
@@ -353,7 +353,7 @@ class AnnualValueCalculator:
         self,
         values: NDArray[np.float64],
         within_subset: bool = False,
-    ) -> NDArray[np.floating]:
+    ) -> NDArray[np.float64]:
         """Get annual means from an array of values.
 
         Annual mean values are calculated using a weighted mean of values falling within
