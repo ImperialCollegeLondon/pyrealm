@@ -1,7 +1,7 @@
 """Utilities for handling xarray inputs to functions that expect arrays."""
 
 from collections.abc import Hashable
-from typing import TypeVar
+from typing import TypeVar, overload
 
 import numpy as np
 import xarray as xr
@@ -31,7 +31,20 @@ def _convert_arg(da: xr.DataArray, dims: list[Hashable]) -> NDArray:
 T = TypeVar("T", bound=np.generic)
 
 
-def xarray_inputs(*arrays: NDArray[T] | xr.DataArray) -> tuple[NDArray[T], ...]:
+@overload
+def xarray_inputs(array1: NDArray[T] | xr.DataArray, /) -> NDArray[T]: ...
+@overload
+def xarray_inputs(
+    array1: NDArray[T] | xr.DataArray,
+    array2: NDArray[T] | xr.DataArray,
+    /,
+    *other_arrays: NDArray[T] | xr.DataArray,
+) -> tuple[NDArray[T], ...]: ...
+
+
+def xarray_inputs(
+    *arrays: NDArray[T] | xr.DataArray,
+) -> NDArray[T] | tuple[NDArray[T], ...]:
     """Converts any `xarray.DataArray` inputs to numpy arrays.
 
     This allows functions that expect numpy arrays to be used directly with
@@ -43,12 +56,31 @@ def xarray_inputs(*arrays: NDArray[T] | xr.DataArray) -> tuple[NDArray[T], ...]:
     and additional dimensions in later inputs will be appended.
 
     No checking of shape consistency is performed - use check_input_shapes for this.
+
+    Args:
+        *arrays: The variables to convert into numpy arrays.
+
+    Returns:
+        The stripped array(s).
+
+    Examples:
+        >>> input = xr.DataArray([1, 2, 3])
+        >>> array = xarray_inputs(input)
+        >>> type(array)
+        <class 'numpy.ndarray'>
+        >>> array
+        array([1, 2, 3])
     """
 
-    dims = _get_dims(*arrays)
-    return tuple(
-        _convert_arg(a, dims) if isinstance(a, xr.DataArray) else a for a in arrays
-    )
+    if len(arrays) == 1:
+        a = arrays[0]
+        return a.to_numpy() if isinstance(a, xr.DataArray) else a
+
+    else:
+        dims = _get_dims(*arrays)
+        return tuple(
+            _convert_arg(a, dims) if isinstance(a, xr.DataArray) else a for a in arrays
+        )
 
 
 def xarray_inputs_kw(
