@@ -124,9 +124,9 @@ class AnnualValueCalculator:
         """The covered years as np.datetime64 at year precision."""
         self.year_total_seconds: NDArray[np.int_]
         """The total number of seconds for each year in the time series."""
-        self.year_n_days: NDArray[np.float64]
+        self.year_n_days: NDArray[np.floating]
         """The total number of days in each year in the time series."""
-        self.year_n_growing_days: NDArray[np.float64]
+        self.year_n_growing_days: NDArray[np.floating]
         """The total number of growing days for each year in the time series. If the
         growing_season input varies within days, these values can contain non-integer
         values."""
