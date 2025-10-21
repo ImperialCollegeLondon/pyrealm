@@ -433,7 +433,6 @@ class AnnualValueCalculator:
     def get_annual_totals(
         self,
         values: NDArray[np.floating],
-        within_growing_season: bool = False,
         within_subset: bool = False,
     ) -> NDArray[np.floating]:
         """Get annual totals from an array of values.
@@ -484,7 +483,6 @@ class AnnualValueCalculator:
 
         Args:
             values: The data to summarize by year
-            within_growing_season: Which values are within the growing season.
             within_subset: Should the mean only include values within the subset mask.
         """
 

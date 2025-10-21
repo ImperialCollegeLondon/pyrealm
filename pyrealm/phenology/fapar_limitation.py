@@ -136,7 +136,6 @@ class FaparLimitation:
             annual_total_precip,
             aridity_index,
             annual_growing_season_length,
-            years,
         )
 
         # Check the years values - must be datetime64[Y], and be one dimensional,
