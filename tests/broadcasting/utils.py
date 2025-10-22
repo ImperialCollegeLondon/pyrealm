@@ -50,6 +50,7 @@ from pyrealm.demography.flora import (
     PlantFunctionalTypeStrict,
     StemTraits,
 )
+from pyrealm.phenology.fapar_limitation import FaparLimitation, PhenologyConst
 
 ## Lists / functions to manually define arguments, methods or outputs to ignore, etc.
 
@@ -152,6 +153,20 @@ def defined_method_args(argument: str, ctx: "Context") -> Any | None:
     n_heights = 2
     pft_names = [f"Tree{i + 1}" for i in range(n_pft)]
 
+    fapar_limitation = FaparLimitation(
+        annual_total_potential_gpp=np.ones(48),
+        annual_mean_ca=np.ones(48),
+        annual_mean_chi=np.ones(48),
+        annual_mean_vpd=np.ones(48),
+        annual_total_precip=np.ones(48),
+        annual_growing_season_length=np.ones(48),
+        aridity_index=np.ones(48),
+        years=np.zeros((48,), dtype="datetime64[Y]"),
+        phenology_const=PhenologyConst(
+            z=12.227, k=0.5, f0_coefficients=(0.65, 0.604169, 1.9), sigma=0.771
+        ),
+    )
+
     method_arguments_list: dict[str, dict] = {
         "broadcast_time": {"shape": (3, *shape[1:])},
         ## PModel
@@ -202,6 +217,11 @@ def defined_method_args(argument: str, ctx: "Context") -> Any | None:
         "Community.drop_cohorts": {"drop_indices": [0, 1]},
         ## Phenology
         "FaparLimitation": {"years": np.ones(bcast_shape[0], dtype="datetime64[Y]")},
+        "Phenology": {
+            "daily_gpp": np.full((48,), 0.5),
+            "datetimes": np.arange(0, 48, dtype="datetime64[D]"),
+            "fapar_limitation": fapar_limitation,
+        },
     }
     arguments: dict = method_arguments_list.get(ctx.name, {})
 
