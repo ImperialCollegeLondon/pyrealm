@@ -4,8 +4,10 @@ from contextlib import nullcontext as does_not_raise
 
 import numpy as np
 import pytest
+import xarray as xr
 
 
+@pytest.mark.parametrize("array_type", [np.array, xr.DataArray])
 @pytest.mark.parametrize(
     argnames="inputs, shape, raises",
     argvalues=[
@@ -28,10 +30,14 @@ import pytest
         ([np.ones((1, 2)), np.ones((3, 1))], (1, 3, 2), pytest.raises(ValueError)),
     ],
 )
-def test_check_input_shapes(inputs, shape, raises):
+def test_check_input_shapes(array_type, inputs, shape, raises):
     """Tests if the inputs satisfy check_input_shapes."""
 
     from pyrealm.core.utilities import check_input_shapes
+
+    for i, val in enumerate(inputs):
+        if isinstance(val, np.ndarray):
+            inputs[i] = array_type(val)
 
     with raises:
         check_input_shapes(*inputs, shape=shape)

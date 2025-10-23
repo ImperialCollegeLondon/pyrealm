@@ -11,11 +11,12 @@ from collections.abc import Sequence
 
 import numpy as np
 import tabulate
+import xarray as xr
 from numpy.typing import NDArray
 
 
 def check_input_shapes(
-    *args: float | int | np.generic | np.ndarray | None,
+    *args: float | int | np.generic | np.ndarray | xr.DataArray | None,
     shape: tuple[int, ...] | None = None,
 ) -> tuple:
     """Check sets of input variables have congruent shapes with equal dimensions.
@@ -61,7 +62,7 @@ def check_input_shapes(
     #   - 1 dim ndarrays with only a single value
 
     for val in args:
-        if isinstance(val, np.ndarray):
+        if isinstance(val, (np.ndarray | xr.DataArray)):
             # Note that 0-dim ndarrays (which are scalars) pass through as do
             # one dimensional arrays with a single value (also a scalar)
             if val.size > 1 or val.ndim > 1:
