@@ -8,6 +8,7 @@ used to:
 """  # noqa: D205, D415
 
 from collections.abc import Sequence
+from typing import overload
 
 import numpy as np
 import tabulate
@@ -149,9 +150,21 @@ def summarize_attrs(
     print(tabulate.tabulate(ret, headers=hdrs))
 
 
+@overload
 def evaluate_horner_polynomial(
     x: NDArray[np.floating], cf: Sequence | NDArray[np.floating]
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def evaluate_horner_polynomial(
+    x: xr.DataArray, cf: Sequence | NDArray[np.floating]
+) -> xr.DataArray: ...
+
+
+def evaluate_horner_polynomial(
+    x: NDArray[np.floating] | xr.DataArray, cf: Sequence | NDArray[np.floating]
+) -> NDArray[np.floating] | xr.DataArray:
     r"""Evaluates a polynomial with coefficients `cf` at `x` using Horner's method.
 
     Horner's method is a fast way to evaluate polynomials, especially for large degrees,
@@ -173,18 +186,36 @@ def evaluate_horner_polynomial(
         cf: The coefficients of the polynomial, ordered from the
             lowest (constant) to the highest degree.
     """
-    y = np.zeros_like(x)
+    y = xr.zeros_like(x) if isinstance(x, xr.DataArray) else np.zeros_like(x)
     for c in reversed(cf):
         y = x * y + c
     return y
 
 
+@overload
 def exponential_moving_average(
     values: NDArray[np.floating],
     initial_values: NDArray[np.floating] | None = None,
     alpha: float = 0.067,
     allow_holdover: bool = False,
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def exponential_moving_average(
+    values: xr.DataArray,
+    initial_values: NDArray[np.floating] | None = None,
+    alpha: float = 0.067,
+    allow_holdover: bool = False,
+) -> xr.DataArray: ...
+
+
+def exponential_moving_average(
+    values: NDArray[np.floating] | xr.DataArray,
+    initial_values: NDArray[np.floating] | None = None,
+    alpha: float = 0.067,
+    allow_holdover: bool = False,
+) -> NDArray[np.floating] | xr.DataArray:
     r"""Apply an exponential moving average to a variable.
 
     This function implements an exponential moving average for an input array, using
@@ -236,6 +267,8 @@ def exponential_moving_average(
     # Initialise the output storage and set the first values to be a slice along the
     # first axis of the input values
     smoothed_values = np.empty_like(values, dtype=np.float64)
+    if isinstance(values, xr.DataArray):
+        smoothed_values = xr.DataArray(smoothed_values)  # type: ignore [assignment]
     if initial_values is None:
         smoothed_values[0] = values[0]
     else:

@@ -6,17 +6,17 @@ and relative humidity. The implementation is drawn from and validated against th
 ``bigleaf`` R package.
 """  # noqa: D205
 
+from typing import cast
+
 import numpy as np
-from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.utilities import evaluate_horner_polynomial
+from pyrealm.core.xarray import ArrayTypeVar
 
 
-def calc_vp_sat(
-    ta: NDArray[np.floating], core_const: CoreConst = CoreConst()
-) -> NDArray[np.floating]:
+def calc_vp_sat(ta: ArrayTypeVar, core_const: CoreConst = CoreConst()) -> ArrayTypeVar:
     r"""Calculate vapour pressure of saturated air.
 
     This function calculates the vapour pressure of saturated air in kPa at a given
@@ -60,10 +60,10 @@ def calc_vp_sat(
 
 
 def convert_vp_to_vpd(
-    vp: NDArray[np.floating],
-    ta: NDArray[np.floating],
+    vp: ArrayTypeVar,
+    ta: ArrayTypeVar,
     core_const: CoreConst = CoreConst(),
-) -> NDArray[np.floating]:
+) -> ArrayTypeVar:
     """Convert vapour pressure to vapour pressure deficit.
 
     Args:
@@ -92,11 +92,11 @@ def convert_vp_to_vpd(
 
 
 def convert_rh_to_vpd(
-    rh: NDArray[np.floating],
-    ta: NDArray[np.floating],
+    rh: ArrayTypeVar,
+    ta: ArrayTypeVar,
     core_const: CoreConst = CoreConst(),
     bounds_checker: BoundsChecker = BoundsChecker(),
-) -> NDArray[np.floating]:
+) -> ArrayTypeVar:
     """Convert relative humidity to vapour pressure deficit.
 
     Args:
@@ -134,10 +134,10 @@ def convert_rh_to_vpd(
 
 
 def convert_sh_to_vp(
-    sh: NDArray[np.floating],
-    patm: NDArray[np.floating],
+    sh: ArrayTypeVar,
+    patm: ArrayTypeVar,
     core_const: CoreConst = CoreConst(),
-) -> NDArray[np.floating]:
+) -> ArrayTypeVar:
     """Convert specific humidity to vapour pressure.
 
     Args:
@@ -161,11 +161,11 @@ def convert_sh_to_vp(
 
 
 def convert_sh_to_vpd(
-    sh: NDArray[np.floating],
-    ta: NDArray[np.floating],
-    patm: NDArray[np.floating],
+    sh: ArrayTypeVar,
+    ta: ArrayTypeVar,
+    patm: ArrayTypeVar,
     core_const: CoreConst = CoreConst(),
-) -> NDArray[np.floating]:
+) -> ArrayTypeVar:
     """Convert specific humidity to vapour pressure deficit.
 
     Args:
@@ -201,8 +201,8 @@ def convert_sh_to_vpd(
 
 
 def calc_saturation_vapour_pressure_slope(
-    tc: NDArray[np.floating],
-) -> NDArray[np.floating]:
+    tc: ArrayTypeVar,
+) -> ArrayTypeVar:
     """Calculate the slope of the saturation vapour pressure curve.
 
     Calculates the slope of the saturation pressure temperature curve, following
@@ -220,11 +220,14 @@ def calc_saturation_vapour_pressure_slope(
         17.269
         * 237.3
         * 610.78
-        * (np.exp(tc * 17.269 / (tc + 237.3)) / ((tc + 237.3) ** 2))
+        * cast(ArrayTypeVar, np.exp(tc * 17.269 / (tc + 237.3)))
+        / ((tc + 237.3) ** 2)
     )
 
 
-def calc_enthalpy_vaporisation(tc: NDArray[np.floating]) -> NDArray[np.floating]:
+def calc_enthalpy_vaporisation(
+    tc: ArrayTypeVar,
+) -> ArrayTypeVar:
     """Calculate the enthalpy of vaporization.
 
     Calculates the latent heat of vaporization of water as a function of
@@ -241,7 +244,9 @@ def calc_enthalpy_vaporisation(tc: NDArray[np.floating]) -> NDArray[np.floating]
     return 1.91846e6 * ((tc + 273.15) / (tc + 273.15 - 33.91)) ** 2
 
 
-def calc_specific_heat(tc: NDArray[np.floating]) -> NDArray[np.floating]:
+def calc_specific_heat(
+    tc: ArrayTypeVar,
+) -> ArrayTypeVar:
     """Calculate the specific heat of air.
 
     Calculates the specific heat of air at a constant pressure (:math:`c_{pm}`, J/kg/K)
@@ -257,7 +262,7 @@ def calc_specific_heat(tc: NDArray[np.floating]) -> NDArray[np.floating]:
 
     # TODO move these coefficients into constants?
 
-    tc = np.clip(tc, 0, 100)
+    tc = cast(ArrayTypeVar, np.clip(tc, 0, 100))
     cp = 1e3 * evaluate_horner_polynomial(
         tc,
         [
@@ -274,10 +279,10 @@ def calc_specific_heat(tc: NDArray[np.floating]) -> NDArray[np.floating]:
 
 
 def calc_psychrometric_constant(
-    tc: NDArray[np.floating],
-    p: NDArray[np.floating],
+    tc: ArrayTypeVar,
+    p: ArrayTypeVar,
     core_const: CoreConst = CoreConst(),
-) -> NDArray[np.floating]:
+) -> ArrayTypeVar:
     r"""Calculate the psychrometric constant.
 
     Calculates the psychrometric constant (:math:`\lambda`, Pa/K) given the temperature

@@ -4,6 +4,7 @@ from contextlib import nullcontext as does_not_raise
 
 import numpy as np
 import pytest
+import xarray as xr
 from numpy.testing import assert_allclose
 
 
@@ -92,6 +93,7 @@ def test_exponential_moving_average_chunked(inputs_whole, alpha):
     assert_allclose(result_whole[-1], result_chunk2[-1])
 
 
+@pytest.mark.parametrize("array_type", [np.array, xr.DataArray])
 @pytest.mark.parametrize(
     argnames="inputs,allow_holdover,context_manager,expected",
     argvalues=[
@@ -120,7 +122,7 @@ def test_exponential_moving_average_chunked(inputs_whole, alpha):
 )
 @pytest.mark.parametrize(argnames="ndim", argvalues=(1, 2, 3))
 def test_exponential_moving_average_inputs(
-    inputs, allow_holdover, context_manager, expected, ndim
+    array_type, inputs, allow_holdover, context_manager, expected, ndim
 ):
     """Simple testing of nan handling and predictions across multiple dimensions."""
     from pyrealm.core.utilities import exponential_moving_average
@@ -135,9 +137,14 @@ def test_exponential_moving_average_inputs(
         if expected is not None:
             expected = np.broadcast_to(expected[:, np.newaxis, np.newaxis], (7, 2, 2))
 
+    if array_type != np.array:
+        inputs = array_type(inputs)
+        expected = array_type(expected)
+
     with context_manager:
         results = exponential_moving_average(
             inputs, allow_holdover=allow_holdover, alpha=0.1
         )
 
+        assert isinstance(results, type(expected))
         assert_allclose(results, expected)

@@ -2,18 +2,20 @@
 density and viscosity of water given the air temperature and atmospheric pressure.
 """  # noqa D210, D415
 
+from typing import cast
+
 import numpy as np
-from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
 from pyrealm.core.utilities import check_input_shapes, evaluate_horner_polynomial
+from pyrealm.core.xarray import ArrayTypeVar
 
 
 def calc_density_h2o_chen(
-    tc: NDArray[np.floating],
-    p: NDArray[np.floating],
+    tc: ArrayTypeVar,
+    p: ArrayTypeVar,
     core_const: CoreConst = CoreConst(),
-) -> NDArray[np.floating]:
+) -> ArrayTypeVar:
     """Calculate the density of water using Chen et al 2008.
 
     This function calculates the density of water at a given temperature and pressure
@@ -65,10 +67,10 @@ def calc_density_h2o_chen(
 
 
 def calc_density_h2o_fisher(
-    tc: NDArray[np.floating],
-    patm: NDArray[np.floating],
+    tc: ArrayTypeVar,
+    patm: ArrayTypeVar,
     core_const: CoreConst = CoreConst(),
-) -> NDArray[np.floating]:
+) -> ArrayTypeVar:
     """Calculate water density.
 
     Calculates the density of water as a function of temperature and atmospheric
@@ -124,11 +126,11 @@ def calc_density_h2o_fisher(
 
 
 def calc_density_h2o(
-    tc: NDArray[np.floating],
-    patm: NDArray[np.floating],
+    tc: ArrayTypeVar,
+    patm: ArrayTypeVar,
     core_const: CoreConst = CoreConst(),
     safe: bool = True,
-) -> NDArray[np.floating]:
+) -> ArrayTypeVar:
     """Calculate water density.
 
     Calculates the density of water as a function of temperature and atmospheric
@@ -179,11 +181,11 @@ def calc_density_h2o(
 
 
 def calc_viscosity_h2o(
-    tc: NDArray[np.floating],
-    patm: NDArray[np.floating],
+    tc: ArrayTypeVar,
+    patm: ArrayTypeVar,
     core_const: CoreConst = CoreConst(),
     simple: bool = False,
-) -> NDArray[np.floating]:
+) -> ArrayTypeVar:
     r"""Calculate the viscosity of water.
 
     Calculates the viscosity of water (:math:`\eta`) as a function of temperature and
@@ -210,7 +212,7 @@ def calc_viscosity_h2o(
     if simple or core_const.simple_viscosity:
         # The reference for this is unknown, but is used in some implementations
         # so is included here to allow intercomparison.
-        return np.exp(-3.719 + 580 / ((tc + 273) - 138))
+        return cast(ArrayTypeVar, np.exp(-3.719 + 580 / ((tc + 273) - 138)))
 
     # Get the density of water, kg/m^3
     rho = calc_density_h2o(tc, patm, core_const=core_const)
@@ -247,11 +249,11 @@ def calc_viscosity_h2o(
 
 
 def calc_viscosity_h2o_matrix(
-    tc: NDArray[np.floating],
-    patm: NDArray[np.floating],
+    tc: ArrayTypeVar,
+    patm: ArrayTypeVar,
     core_const: CoreConst = CoreConst(),
     simple: bool = False,
-) -> NDArray[np.floating]:
+) -> ArrayTypeVar:
     r"""Calculate the viscosity of water.
 
     Calculates the viscosity of water (:math:`\eta`) as a function of temperature and
@@ -278,7 +280,7 @@ def calc_viscosity_h2o_matrix(
     if simple or core_const.simple_viscosity:
         # The reference for this is unknown, but is used in some implementations
         # so is included here to allow intercomparison.
-        return np.exp(-3.719 + 580 / ((tc + 273) - 138))
+        return cast(ArrayTypeVar, np.exp(-3.719 + 580 / ((tc + 273) - 138)))
 
     # Get the density of water, kg/m^3
     rho = calc_density_h2o(tc, patm, core_const=core_const)
@@ -288,7 +290,7 @@ def calc_viscosity_h2o_matrix(
     rbar = rho / core_const.huber_rho_ast
 
     # Calculate mu0 (Eq. 11 & Table 2, Huber et al., 2009):
-    tbar_pow = np.power.outer(tbar, np.arange(0, 4))
+    tbar_pow = np.power.outer(np.asarray(tbar), np.arange(0, 4))
     mu0 = (1e2 * np.sqrt(tbar)) / np.sum(
         np.array(core_const.huber_H_i) / tbar_pow, axis=-1
     )
@@ -297,8 +299,8 @@ def calc_viscosity_h2o_matrix(
     h_array = np.array(core_const.huber_H_ij)
     ctbar = (1.0 / tbar) - 1.0
     row_j, _ = np.indices(h_array.shape)
-    mu1 = h_array * np.power.outer(rbar - 1.0, row_j)
-    mu1 = np.power.outer(ctbar, np.arange(0, 6)) * np.sum(mu1, axis=(-2))
+    mu1 = h_array * np.power.outer(np.asarray(rbar) - 1.0, row_j)
+    mu1 = np.power.outer(np.asarray(ctbar), np.arange(0, 6)) * np.sum(mu1, axis=(-2))
     mu1 = np.exp(rbar * mu1.sum(axis=-1))
 
     # Calculate mu_bar (Eq. 2, Huber et al., 2009), assumes mu2 = 1
@@ -309,11 +311,11 @@ def calc_viscosity_h2o_matrix(
 
 
 def convert_water_mm_to_moles(
-    water_mm: NDArray[np.floating],
-    tc: NDArray[np.floating],
-    patm: NDArray[np.floating],
+    water_mm: ArrayTypeVar,
+    tc: ArrayTypeVar,
+    patm: ArrayTypeVar,
     core_const: CoreConst = CoreConst(),
-) -> NDArray[np.floating]:
+) -> ArrayTypeVar:
     """Convert water in mm per square meter to moles.
 
     This function converts water volumes expressed as mm per m2 into a number of moles
@@ -348,11 +350,11 @@ def convert_water_mm_to_moles(
 
 
 def convert_water_moles_to_mm(
-    water_moles: NDArray[np.floating],
-    tc: NDArray[np.floating],
-    patm: NDArray[np.floating],
+    water_moles: ArrayTypeVar,
+    tc: ArrayTypeVar,
+    patm: ArrayTypeVar,
     core_const: CoreConst = CoreConst(),
-) -> NDArray[np.floating]:
+) -> ArrayTypeVar:
     """Convert water in moles to mm per square meter.
 
     This function converts water volumes expressed as moles into mm per m2. It accounts
@@ -385,10 +387,10 @@ def convert_water_moles_to_mm(
 
 
 def calculate_water_molar_volume(
-    tc: NDArray[np.floating],
-    patm: NDArray[np.floating],
+    tc: ArrayTypeVar,
+    patm: ArrayTypeVar,
     core_const: CoreConst = CoreConst(),
-) -> NDArray[np.floating]:
+) -> ArrayTypeVar:
     """Calculate the volume of a mole of water at a given temperature and pressure.
 
     Args:

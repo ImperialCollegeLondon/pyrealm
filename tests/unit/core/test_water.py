@@ -7,30 +7,35 @@ check the size of outputs and that the results meet a simple benchmark value.
 
 import numpy as np
 import pytest
+import xarray as xr
 from numpy.testing import assert_allclose
 
 
+@pytest.mark.parametrize("array_type", [np.array, xr.DataArray])
 @pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
-def test_calc_density_h20_fisher(shape):
+def test_calc_density_h20_fisher(array_type, shape):
     """Test the fisher method."""
     from pyrealm.core.water import calc_density_h2o_fisher
 
-    rho = calc_density_h2o_fisher(
-        np.full(shape, fill_value=20), np.full(shape, fill_value=101325)
-    )
+    tc = array_type(np.full(shape, fill_value=20))
+    patm = array_type(np.full(shape, fill_value=101325))
+    rho = calc_density_h2o_fisher(tc, patm)
 
+    assert isinstance(rho, type(array_type([])))
     assert_allclose(rho.round(3), np.full(shape, fill_value=998.206))
 
 
+@pytest.mark.parametrize("array_type", [np.array, xr.DataArray])
 @pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
-def test_calc_density_h20_chen(shape):
+def test_calc_density_h20_chen(array_type, shape):
     """Test the chen method."""
     from pyrealm.core.water import calc_density_h2o_chen
 
-    rho = calc_density_h2o_chen(
-        np.full(shape, fill_value=20), np.full(shape, fill_value=101325)
-    )
+    tc = array_type(np.full(shape, fill_value=20))
+    patm = array_type(np.full(shape, fill_value=101325))
+    rho = calc_density_h2o_chen(tc, patm)
 
+    assert isinstance(rho, type(array_type([])))
     assert_allclose(rho.round(3), np.full(shape, fill_value=998.25))
 
 
@@ -57,27 +62,31 @@ def test_calc_density_h20(const_args, exp):
     assert rho.round(3) == exp
 
 
+@pytest.mark.parametrize("array_type", [np.array, xr.DataArray])
 @pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
-def test_calc_viscosity_h20(shape):
+def test_calc_viscosity_h20(array_type, shape):
     """Test the viscosity calculation."""
     from pyrealm.core.water import calc_viscosity_h2o
 
-    eta = calc_viscosity_h2o(
-        np.full(shape, fill_value=20), np.full(shape, fill_value=101325)
-    )
+    tc = array_type(np.full(shape, fill_value=20))
+    patm = array_type(np.full(shape, fill_value=101325))
+    eta = calc_viscosity_h2o(tc, patm)
 
+    assert isinstance(eta, type(array_type([])))
     assert_allclose(eta.round(7), np.full(shape, fill_value=0.0010016))
 
 
+@pytest.mark.parametrize("array_type", [np.array, xr.DataArray])
 @pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
-def test_calc_viscosity_h20_matrix(shape):
+def test_calc_viscosity_h20_matrix(array_type, shape):
     """Test the viscosity calculation."""
     from pyrealm.core.water import calc_viscosity_h2o_matrix
 
-    eta = calc_viscosity_h2o_matrix(
-        np.full(shape, fill_value=20), np.full(shape, fill_value=101325)
-    )
+    tc = array_type(np.full(shape, fill_value=20))
+    patm = array_type(np.full(shape, fill_value=101325))
+    eta = calc_viscosity_h2o_matrix(tc, patm)
 
+    assert isinstance(eta, type(array_type([])))
     assert_allclose(eta.round(7), np.full(shape, fill_value=0.0010016))
 
 
@@ -172,21 +181,25 @@ def test_convert_water_values(water_mm, tc, patm, expected_fisher, expected_chen
     )
 
 
+@pytest.mark.parametrize("array_type", [np.array, xr.DataArray])
 @pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
-def test_convert_water(shape):
+def test_convert_water(array_type, shape):
     """Test the water conversion functions with different shapes."""
     from pyrealm.core.water import convert_water_mm_to_moles, convert_water_moles_to_mm
 
-    water_mm = np.full(shape, fill_value=1)
-    tc = np.full(shape, fill_value=20)
-    patm = np.full(shape, fill_value=101325)
+    water_mm = array_type(np.full(shape, fill_value=1))
+    tc = array_type(np.full(shape, fill_value=20))
+    patm = array_type(np.full(shape, fill_value=101325))
 
     # Test mm to moles
     moles_water = convert_water_mm_to_moles(water_mm=water_mm, tc=tc, patm=patm)
+    assert isinstance(moles_water, type(array_type([])))
     assert_allclose(moles_water, np.full(shape, fill_value=55.41713669719267))
 
     # Test reverse direction
-    assert_allclose(convert_water_moles_to_mm(moles_water, tc=tc, patm=patm), water_mm)
+    water_mm_reverse = convert_water_moles_to_mm(moles_water, tc=tc, patm=patm)
+    assert isinstance(water_mm_reverse, type(array_type([])))
+    assert_allclose(water_mm_reverse, water_mm)
 
 
 def test_convert_water_invalid_input():

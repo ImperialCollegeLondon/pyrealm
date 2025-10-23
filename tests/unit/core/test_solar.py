@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+import xarray as xr
 from numpy.testing import assert_allclose
 
 # @pytest.fixture(scope="module")
@@ -15,6 +16,7 @@ from numpy.testing import assert_allclose
     argnames="nu, expected",
     argvalues=[
         (np.array([166.097934]), np.array([0.968381])),
+        (xr.DataArray([166.097934]), xr.DataArray([0.968381])),
     ],
 )
 def test_calculate_distance_factor(nu, expected):
@@ -26,16 +28,15 @@ def test_calculate_distance_factor(nu, expected):
 
     result = calculate_distance_factor(nu)
 
+    assert isinstance(result, type(expected))
     assert_allclose(result, expected, rtol=1e-6)
 
 
 @pytest.mark.parametrize(
     argnames="lambda_, expected",
     argvalues=[
-        (
-            np.array([89.097934]),
-            np.array([23.436921]),
-        )
+        (np.array([89.097934]), np.array([23.436921])),
+        (xr.DataArray([89.097934]), xr.DataArray([23.436921])),
     ],
 )
 def test_calculate_solar_declination_angle(lambda_, expected):
@@ -48,6 +49,7 @@ def test_calculate_solar_declination_angle(lambda_, expected):
 
     result = calculate_solar_declination_angle(lambda_)
 
+    assert isinstance(result, type(expected))
     assert_allclose(result, expected)
 
 
@@ -58,6 +60,11 @@ def test_calculate_solar_declination_angle(lambda_, expected):
             np.array([23.436921]),
             np.array([37.7]),
             (np.array([0.243228277]), np.array([0.725946417])),
+        ),
+        (
+            xr.DataArray([23.436921]),
+            np.array([37.7]),
+            (xr.DataArray([0.243228277]), xr.DataArray([0.725946417])),
         ),
     ],
 )
@@ -71,17 +78,17 @@ def test_calculate_ru_rv_intermediates(delta, latitude, expected):
 
     result = calculate_ru_rv_intermediates(delta, latitude)
 
+    assert isinstance(result[0], type(expected[0]))
+    assert isinstance(result[1], type(expected[1]))
     assert_allclose(result, expected)
 
 
 @pytest.mark.parametrize(
     argnames="delta, latitude, expected",
     argvalues=[
-        (
-            np.array([23.436921]),
-            np.array([37.7]),
-            np.array([109.575573]),
-        )
+        (np.array([23.436921]), np.array([37.7]), np.array([109.575573])),
+        (xr.DataArray([23.436921]), np.array([37.7]), xr.DataArray([109.575573])),
+        (np.array([23.436921]), xr.DataArray([37.7]), xr.DataArray([109.575573])),
     ],
 )
 def test_calc_sunset_hour_angle(delta, latitude, expected):
@@ -98,12 +105,14 @@ def test_calc_sunset_hour_angle(delta, latitude, expected):
 
     result = calculate_sunset_hour_angle(declination=delta, latitude=latitude)
 
+    assert isinstance(result, type(expected))
     assert_allclose(result, expected)
 
     ru, rv = calculate_ru_rv_intermediates(declination=delta, latitude=latitude)
 
     result = _calculate_sunset_hour_angle(ru=ru, rv=rv)
 
+    assert isinstance(result, type(expected))
     assert_allclose(result, expected)
 
 
@@ -116,7 +125,14 @@ def test_calc_sunset_hour_angle(delta, latitude, expected):
             np.array([23.436921]),
             np.array([37.7]),
             np.array([41646763]),
-        )
+        ),
+        (
+            xr.DataArray([0.968381]),
+            np.array([109.575573]),
+            np.array([23.436921]),
+            np.array([37.7]),
+            xr.DataArray([41646763]),
+        ),
     ],
 )
 def test_calculate_daily_solar_radiation(dr, hs, delta, latitude, expected):
@@ -135,6 +151,7 @@ def test_calculate_daily_solar_radiation(dr, hs, delta, latitude, expected):
         distance_factor=dr, sunset_hour_angle=hs, declination=delta, latitude=latitude
     )
 
+    assert isinstance(result, type(expected))
     assert_allclose(result, expected, rtol=1e-6)
 
     ru, rv = calculate_ru_rv_intermediates(declination=delta, latitude=latitude)
@@ -143,12 +160,17 @@ def test_calculate_daily_solar_radiation(dr, hs, delta, latitude, expected):
         ru=ru, rv=rv, distance_factor=dr, sunset_hour_angle=hs
     )
 
+    assert isinstance(result, type(expected))
     assert_allclose(result, expected, rtol=1e-6)
 
 
 @pytest.mark.parametrize(
     argnames="sf, elv, expected",
-    argvalues=[(np.array([1.0]), np.array([142]), np.array([0.752844]))],
+    argvalues=[
+        (np.array([1.0]), np.array([142]), np.array([0.752844])),
+        (xr.DataArray([1.0]), np.array([142]), xr.DataArray([0.752844])),
+        (np.array([1.0]), xr.DataArray([142]), xr.DataArray([0.752844])),
+    ],
 )
 def test_calculate_transmissivity(sf, elv, expected):
     """Tests calculate_transmissivity.
@@ -160,12 +182,17 @@ def test_calculate_transmissivity(sf, elv, expected):
 
     result = calculate_transmissivity(sf, elv)
 
+    assert isinstance(result, type(expected))
     assert_allclose(result, expected, rtol=1e-6)
 
 
 @pytest.mark.parametrize(
     argnames="tau, ra_d, expected",
-    argvalues=[(np.array([0.752844]), np.array([41646763]), np.array([62.042300]))],
+    argvalues=[
+        (np.array([0.752844]), np.array([41646763]), np.array([62.042300])),
+        (xr.DataArray([0.752844]), np.array([41646763]), xr.DataArray([62.042300])),
+        (np.array([0.752844]), xr.DataArray([41646763]), xr.DataArray([62.042300])),
+    ],
 )
 def test_calculate_ppfd_from_tau_rd(tau, ra_d, expected):
     """Tests calc_ppfd_from_tau_ra_d.
@@ -177,6 +204,7 @@ def test_calculate_ppfd_from_tau_rd(tau, ra_d, expected):
 
     result = calculate_ppfd_from_tau_rd(transmissivity=tau, daily_solar_radiation=ra_d)
 
+    assert isinstance(result, type(expected))
     assert_allclose(result, expected, rtol=1e-6)
 
 
@@ -190,17 +218,34 @@ def test_calculate_ppfd_from_tau_rd(tau, ra_d, expected):
             np.array([172]),
             np.array([366]),
             np.array([62.042300]),
-        )
+        ),
+        (
+            xr.DataArray([1.0]),
+            np.array([142]),
+            np.array([37.7]),
+            np.array([172]),
+            np.array([366]),
+            xr.DataArray([62.042300]),
+        ),
+        (
+            np.array([1.0]),
+            np.array([142]),
+            np.array([37.7]),
+            xr.DataArray([172]),
+            np.array([366]),
+            xr.DataArray([62.042300]),
+        ),
+        (
+            np.array([1.0]),
+            np.array([142]),
+            np.array([37.7]),
+            np.array([172]),
+            xr.DataArray([366]),
+            xr.DataArray([62.042300]),
+        ),
     ],
 )
-def test_calculate_ppfd(
-    sf,
-    elv,
-    latitude,
-    julian_day,
-    n_days,
-    expected,
-):
+def test_calculate_ppfd(sf, elv, latitude, julian_day, n_days, expected):
     """Tests calculate_ppfd.
 
     This test is intended to verify the implemented maths.
@@ -210,12 +255,17 @@ def test_calculate_ppfd(
 
     result = calculate_ppfd(sf, elv, latitude, julian_day, n_days)
 
+    assert isinstance(result, type(expected))
     assert_allclose(result, expected)
 
 
 @pytest.mark.parametrize(
     argnames="sf, tc, expected",
-    argvalues=[(np.array([1.0]), np.array([23.0]), np.array([84.000000]))],
+    argvalues=[
+        (np.array([1.0]), np.array([23.0]), np.array([84.000000])),
+        (xr.DataArray([1.0]), np.array([23.0]), xr.DataArray([84.000000])),
+        (np.array([1.0]), xr.DataArray([23.0]), xr.DataArray([84.000000])),
+    ],
 )
 def test_calculate_net_longwave_radiation(sf, tc, expected):
     """Tests calc_net_longwave_radiation.
@@ -226,17 +276,16 @@ def test_calculate_net_longwave_radiation(sf, tc, expected):
 
     result = calculate_net_longwave_radiation(sf, tc)
 
+    assert isinstance(result, type(expected))
     assert_allclose(result, expected)
 
 
 @pytest.mark.parametrize(
     argnames="tau, dr, expected",
     argvalues=[
-        (
-            np.array([0.752844]),
-            np.array([0.968381]),
-            np.array([823.4242375]),
-        )
+        (np.array([0.752844]), np.array([0.968381]), np.array([823.4242375])),
+        (xr.DataArray([0.752844]), np.array([0.968381]), xr.DataArray([823.4242375])),
+        (np.array([0.752844]), xr.DataArray([0.968381]), xr.DataArray([823.4242375])),
     ],
 )
 def test_calculate_rw_intermediate(tau, dr, expected):
@@ -248,9 +297,11 @@ def test_calculate_rw_intermediate(tau, dr, expected):
 
     result = calculate_rw_intermediate(transmissivity=tau, distance_factor=dr)
 
+    assert isinstance(result, type(expected))
     assert_allclose(result, expected)
 
 
+@pytest.mark.parametrize("array_type", [np.array, xr.DataArray])
 @pytest.mark.parametrize(
     argnames="inputs, expected",
     argvalues=[
@@ -266,7 +317,7 @@ def test_calculate_rw_intermediate(tau, dr, expected):
         )
     ],
 )
-def test_calculate_net_radiation_crossover_hour_angle(inputs, expected):
+def test_calculate_net_radiation_crossover_hour_angle(array_type, inputs, expected):
     """Tests calculate_net_radiation_crossover_hour_angle.
 
     This test is intended to verify the implemented maths.
@@ -279,8 +330,11 @@ def test_calculate_net_radiation_crossover_hour_angle(inputs, expected):
         calculate_rw_intermediate,
     )
 
+    inputs = {k: array_type(v) for k, v in inputs.items()}
+
     result = calculate_net_radiation_crossover_hour_angle(**inputs)
 
+    assert isinstance(result, type(array_type(expected)))
     assert_allclose(result, expected)
 
     ru, rv = calculate_ru_rv_intermediates(
@@ -298,9 +352,11 @@ def test_calculate_net_radiation_crossover_hour_angle(inputs, expected):
         net_longwave_radiation=inputs["net_longwave_radiation"],
     )
 
+    assert isinstance(result, type(array_type(expected)))
     assert_allclose(result, expected)
 
 
+@pytest.mark.parametrize("array_type", [np.array, xr.DataArray])
 @pytest.mark.parametrize(
     argnames="inputs, expected",
     argvalues=[
@@ -317,7 +373,7 @@ def test_calculate_net_radiation_crossover_hour_angle(inputs, expected):
         )
     ],
 )
-def test_daytime_net_radiation(inputs, expected):
+def test_daytime_net_radiation(array_type, inputs, expected):
     """Tests calculation of net daytime radiation.
 
     This test originally had an expected value of [21774953], which required rtol=1e-6
@@ -332,8 +388,11 @@ def test_daytime_net_radiation(inputs, expected):
         calculate_rw_intermediate,
     )
 
+    inputs = {k: array_type(v) for k, v in inputs.items()}
+
     result = calculate_daytime_net_radiation(**inputs)
 
+    assert isinstance(result, type(array_type(expected)))
     assert_allclose(result, expected)
 
     ru, rv = calculate_ru_rv_intermediates(
@@ -352,9 +411,11 @@ def test_daytime_net_radiation(inputs, expected):
         net_longwave_radiation=inputs["net_longwave_radiation"],
     )
 
+    assert isinstance(result, type(array_type(expected)))
     assert_allclose(result, expected)
 
 
+@pytest.mark.parametrize("array_type", [np.array, xr.DataArray])
 @pytest.mark.parametrize(
     argnames="inputs, expected",
     argvalues=[
@@ -372,7 +433,7 @@ def test_daytime_net_radiation(inputs, expected):
         ),
     ],
 )
-def test_nightime_net_radiation(inputs, expected):
+def test_nightime_net_radiation(array_type, inputs, expected):
     """Tests calculation of net nighttime radiation."""
 
     from pyrealm.core.solar import (
@@ -382,8 +443,11 @@ def test_nightime_net_radiation(inputs, expected):
         calculate_rw_intermediate,
     )
 
+    inputs = {k: array_type(v) for k, v in inputs.items()}
+
     result = calculate_nighttime_net_radiation(**inputs)
 
+    assert isinstance(result, type(array_type(expected)))
     assert_allclose(result, expected)
 
     ru, rv = calculate_ru_rv_intermediates(
@@ -403,6 +467,7 @@ def test_nightime_net_radiation(inputs, expected):
         net_longwave_radiation=inputs["net_longwave_radiation"],
     )
 
+    assert isinstance(result, type(array_type(expected)))
     assert_allclose(result, expected)
 
 
@@ -412,7 +477,16 @@ def test_nightime_net_radiation(inputs, expected):
         (240, 365, (231.44076437634416, 154.44076437634416)),
         (120, 365, (116.31757407861224, 39.31757407861224)),
         (240, 364, (231.86554398548128, 154.86554398548128)),
-        (120, 364, (116.42440153600026, 39.42440153600026)),
+        (
+            xr.DataArray(120),
+            364,
+            (xr.DataArray(116.42440153600026), xr.DataArray(39.42440153600026)),
+        ),
+        (
+            120,
+            xr.DataArray(364),
+            (xr.DataArray(116.42440153600026), xr.DataArray(39.42440153600026)),
+        ),
     ],
 )
 def test_calculate_heliocentric_longitudes(day, n_day, expected):
@@ -425,12 +499,19 @@ def test_calculate_heliocentric_longitudes(day, n_day, expected):
     from pyrealm.core.solar import calculate_heliocentric_longitudes
 
     result = calculate_heliocentric_longitudes(day, n_day)
-    assert_allclose(result, expected)
+
+    assert isinstance(result[0], type(expected[0]))
+    assert isinstance(result[1], type(expected[1]))
+    assert_allclose(result[0], expected[0])
+    assert_allclose(result[1], expected[1])
 
 
 @pytest.mark.parametrize(
     argnames="td, expected",
-    argvalues=[(np.array([298]), -0.22708144)],
+    argvalues=[
+        (np.array([298]), np.array(-0.22708144)),
+        (xr.DataArray([298]), xr.DataArray(-0.22708144)),
+    ],
 )
 def test_calculate_solar_declination(td, expected):
     """Tests calculate_solar_declination.
@@ -446,12 +527,16 @@ def test_calculate_solar_declination(td, expected):
 
     result = calculate_solar_declination(td)
 
+    assert isinstance(result, type(expected))
     assert_allclose(result, expected)
 
 
 @pytest.mark.parametrize(
     argnames="julian_day, expected",
-    argvalues=[(np.array([298]), 5.11261928)],
+    argvalues=[
+        (np.array([298]), np.array(5.11261928)),
+        (xr.DataArray([298]), xr.DataArray(5.11261928)),
+    ],
 )
 def test_calculate_day_angle(julian_day, expected):
     """Tests calculate_day_angle.
@@ -463,12 +548,16 @@ def test_calculate_day_angle(julian_day, expected):
 
     result = calculate_day_angle(julian_day)
 
+    assert isinstance(result, type(expected))
     assert_allclose(result, expected)
 
 
 @pytest.mark.parametrize(
     argnames="day_angle, expected",
-    argvalues=[(np.array([5.11]), 15.99711625)],
+    argvalues=[
+        (np.array([5.11]), np.array(15.99711625)),
+        (xr.DataArray([5.11]), xr.DataArray(15.99711625)),
+    ],
 )
 def test_calculate_equation_of_time(day_angle, expected):
     """Tests calculate_equation_of_time.
@@ -480,12 +569,18 @@ def test_calculate_equation_of_time(day_angle, expected):
 
     result = calculate_equation_of_time(day_angle)
 
+    assert isinstance(result, type(expected))
     assert_allclose(result, expected)
 
 
 @pytest.mark.parametrize(
     argnames="longitude, standard_meridian, E_t, expected",
-    argvalues=[(147.34167, 150, 16.01, np.array([11.910388666666668]))],
+    argvalues=[
+        (147.34167, 150, 16.01, 11.910388666666668),
+        (xr.DataArray([147.34167]), 150, 16.01, xr.DataArray([11.910388666666668])),
+        (147.34167, xr.DataArray([150]), 16.01, xr.DataArray([11.910388666666668])),
+        (147.34167, 150, xr.DataArray([16.01]), xr.DataArray([11.910388666666668])),
+    ],
 )
 def test_calculate_solar_noon(longitude, standard_meridian, E_t, expected):
     """Tests calculate_solar_noon.
@@ -497,12 +592,16 @@ def test_calculate_solar_noon(longitude, standard_meridian, E_t, expected):
 
     result = calculate_solar_noon(longitude, E_t, standard_meridian)
 
+    assert isinstance(result, type(expected))
     assert_allclose(result, expected)
 
 
 @pytest.mark.parametrize(
     argnames="t, t0, expected",
-    argvalues=[(np.array([10.5]), np.array([11.91]), np.array([-0.36913714]))],
+    argvalues=[
+        (np.array([10.5]), np.array([11.91]), np.array([-0.36913714])),
+        (xr.DataArray([10.5]), np.array([11.91]), xr.DataArray([-0.36913714])),
+    ],
 )
 def test_calculate_local_hour_angle(t, t0, expected):
     """Tests calculate_local_hour_angle.
@@ -514,13 +613,25 @@ def test_calculate_local_hour_angle(t, t0, expected):
 
     result = calculate_local_hour_angle(t, t0)
 
+    assert isinstance(result, type(expected))
     assert_allclose(result, expected)
 
 
 @pytest.mark.parametrize(
     argnames="latitude, declination, hour_angle, expected",
     argvalues=[
-        (np.array([-0.61]), np.array([-0.23]), np.array([-0.37]), np.array([1.0647289]))
+        (
+            np.array([-0.61]),
+            np.array([-0.23]),
+            np.array([-0.37]),
+            np.array([1.0647289]),
+        ),
+        (
+            xr.DataArray([-0.61]),
+            np.array([-0.23]),
+            np.array([-0.37]),
+            xr.DataArray([1.0647289]),
+        ),
     ],
 )
 def test_calculate_solar_elevation(latitude, declination, hour_angle, expected):
@@ -533,4 +644,5 @@ def test_calculate_solar_elevation(latitude, declination, hour_angle, expected):
 
     result = calculate_solar_elevation(latitude, declination, hour_angle)
 
+    assert isinstance(result, type(expected))
     assert_allclose(result, expected)

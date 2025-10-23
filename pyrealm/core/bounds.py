@@ -29,7 +29,8 @@ from typing import Any, ClassVar
 from warnings import warn
 
 import numpy as np
-from numpy.typing import NDArray
+
+from pyrealm.core.xarray import ArrayTypeVar
 
 
 @dataclass
@@ -119,9 +120,7 @@ class BoundsChecker:
 
         self._data[bounds.var_name] = bounds
 
-    def check(
-        self, var_name: str, values: NDArray[np.floating]
-    ) -> NDArray[np.floating]:
+    def check(self, var_name: str, values: ArrayTypeVar) -> ArrayTypeVar:
         r"""Check inputs fall within bounds.
 
         This method checks whether the provided values fall within the bounds specified

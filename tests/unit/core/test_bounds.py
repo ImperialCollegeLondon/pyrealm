@@ -4,6 +4,7 @@ from contextlib import nullcontext as does_not_raise
 
 import numpy as np
 import pytest
+import xarray as xr
 
 
 @pytest.mark.parametrize(
@@ -77,6 +78,8 @@ def test_Bounds(lower, upper, interval_type, raises, msg):
         pytest.param("test", "[)", np.array([1, 3]), False, id="at_lower_[)"),
         pytest.param("test", "[)", np.array([2, 4]), True, id="at_upper_[)"),
         pytest.param("unknown", "[)", np.array([2, 4]), True, id="no_var_bounds"),
+        pytest.param("test", "[]", xr.DataArray([1, 3]), False, id="xarray_in"),
+        pytest.param("test", "[]", xr.DataArray([1, 5]), True, id="xarray_out"),
     ],
 )
 def test_BoundsChecker(var_name, interval_arg, values, warns):

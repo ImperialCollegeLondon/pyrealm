@@ -12,17 +12,32 @@ multiple functions need to be run.
 """  # noqa: D205
 
 from dataclasses import dataclass, field
+from typing import overload
 
 import numpy as np
+import xarray as xr
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
 from pyrealm.core.utilities import check_input_shapes
+from pyrealm.core.xarray import ArrayType
+
+
+@overload
+def calculate_distance_factor(
+    nu: NDArray[np.floating], solar_eccentricity: float = CoreConst().solar_eccentricity
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def calculate_distance_factor(
+    nu: xr.DataArray, solar_eccentricity: float = CoreConst().solar_eccentricity
+) -> xr.DataArray: ...
 
 
 def calculate_distance_factor(
-    nu: NDArray[np.floating], solar_eccentricity: float = CoreConst().solar_eccentricity
-) -> NDArray[np.floating]:
+    nu: ArrayType, solar_eccentricity: float = CoreConst().solar_eccentricity
+) -> ArrayType:
     r"""Calculates distance factor.
 
     This function calculates the distance factor :math:`d_r` using the method of
@@ -54,10 +69,24 @@ def calculate_distance_factor(
     ) ** 2
 
 
+@overload
 def calculate_solar_declination_angle(
     lambda_: NDArray[np.floating],
     solar_obliquity: float = CoreConst().solar_obliquity,
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def calculate_solar_declination_angle(
+    lambda_: xr.DataArray,
+    solar_obliquity: float = CoreConst().solar_obliquity,
+) -> xr.DataArray: ...
+
+
+def calculate_solar_declination_angle(
+    lambda_: ArrayType,
+    solar_obliquity: float = CoreConst().solar_obliquity,
+) -> ArrayType:
     r"""Calculate the solar declination angle.
 
     This function calculates the solar declination angle (:math:`\delta`, degrees)
@@ -81,9 +110,21 @@ def calculate_solar_declination_angle(
     )
 
 
-def calculate_ru_rv_intermediates(
+@overload
+def calculate_ru_rv_intermediates(  # type: ignore[overload-overlap]
     declination: NDArray[np.floating], latitude: NDArray[np.floating]
-) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
+) -> tuple[NDArray[np.floating], NDArray[np.floating]]: ...
+
+
+@overload
+def calculate_ru_rv_intermediates(
+    declination: ArrayType, latitude: ArrayType
+) -> tuple[xr.DataArray, xr.DataArray]: ...
+
+
+def calculate_ru_rv_intermediates(
+    declination: ArrayType, latitude: ArrayType
+) -> tuple[ArrayType, ArrayType]:
     r"""Calculates intermediate values for use in solar radiation calcs.
 
     This function calculates :math:`r_u` and :math:`r_v` which are dimensionless
@@ -113,9 +154,21 @@ def calculate_ru_rv_intermediates(
     return ru, rv
 
 
-def calculate_sunset_hour_angle(
+@overload
+def calculate_sunset_hour_angle(  # type: ignore[overload-overlap]
     declination: NDArray[np.floating], latitude: NDArray[np.floating]
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def calculate_sunset_hour_angle(
+    declination: ArrayType, latitude: ArrayType
+) -> xr.DataArray: ...
+
+
+def calculate_sunset_hour_angle(
+    declination: ArrayType, latitude: ArrayType
+) -> ArrayType:
     r"""Calculate the sunset hour angle.
 
     This function calculates the sunset hour angle :math:`h_s` in degrees following Eq.
@@ -142,10 +195,24 @@ def calculate_sunset_hour_angle(
     return _calculate_sunset_hour_angle(ru, rv)
 
 
-def _calculate_sunset_hour_angle(
+@overload
+def _calculate_sunset_hour_angle(  # type: ignore[overload-overlap]
     ru: NDArray[np.floating],
     rv: NDArray[np.floating],
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def _calculate_sunset_hour_angle(
+    ru: ArrayType,
+    rv: ArrayType,
+) -> xr.DataArray: ...
+
+
+def _calculate_sunset_hour_angle(
+    ru: ArrayType,
+    rv: ArrayType,
+) -> ArrayType:
     """Calculate sunset hour angle from intermediates.
 
     This function calculates the sunset hour angle using Eq3.22,
@@ -163,14 +230,36 @@ def _calculate_sunset_hour_angle(
     return np.rad2deg(np.arccos(-1.0 * np.clip(ru / rv, -1.0, 1.0)))
 
 
-def calculate_daily_solar_radiation(
+@overload
+def calculate_daily_solar_radiation(  # type: ignore[overload-overlap]
     distance_factor: NDArray[np.floating],
     sunset_hour_angle: NDArray[np.floating],
     declination: NDArray[np.floating],
     latitude: NDArray[np.floating],
     day_seconds: float = CoreConst().day_seconds,
     solar_constant: float = CoreConst().solar_constant,
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def calculate_daily_solar_radiation(
+    distance_factor: ArrayType,
+    sunset_hour_angle: ArrayType,
+    declination: ArrayType,
+    latitude: ArrayType,
+    day_seconds: float = CoreConst().day_seconds,
+    solar_constant: float = CoreConst().solar_constant,
+) -> xr.DataArray: ...
+
+
+def calculate_daily_solar_radiation(
+    distance_factor: ArrayType,
+    sunset_hour_angle: ArrayType,
+    declination: ArrayType,
+    latitude: ArrayType,
+    day_seconds: float = CoreConst().day_seconds,
+    solar_constant: float = CoreConst().solar_constant,
+) -> ArrayType:
     r"""Calculate daily extraterrestrial solar radiation.
 
     This function calculates the daily extraterrestrial solar radition (:math:`R_d`, J
@@ -213,14 +302,36 @@ def calculate_daily_solar_radiation(
     )
 
 
-def _calculate_daily_solar_radiation(
+@overload
+def _calculate_daily_solar_radiation(  # type: ignore[overload-overlap]
     ru: NDArray[np.floating],
     rv: NDArray[np.floating],
     distance_factor: NDArray[np.floating],
     sunset_hour_angle: NDArray[np.floating],
     day_seconds: float = CoreConst().day_seconds,
     solar_constant: float = CoreConst().solar_constant,
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def _calculate_daily_solar_radiation(
+    ru: ArrayType,
+    rv: ArrayType,
+    distance_factor: ArrayType,
+    sunset_hour_angle: ArrayType,
+    day_seconds: float = CoreConst().day_seconds,
+    solar_constant: float = CoreConst().solar_constant,
+) -> xr.DataArray: ...
+
+
+def _calculate_daily_solar_radiation(
+    ru: ArrayType,
+    rv: ArrayType,
+    distance_factor: ArrayType,
+    sunset_hour_angle: ArrayType,
+    day_seconds: float = CoreConst().day_seconds,
+    solar_constant: float = CoreConst().solar_constant,
+) -> ArrayType:
     """Calculate daily extraterrestrial solar radiation from intermediate values.
 
     This function calculates the daily extraterrestrial solar radition (:math:R_d`, J
@@ -253,11 +364,27 @@ def _calculate_daily_solar_radiation(
     )
 
 
-def calculate_transmissivity(
+@overload
+def calculate_transmissivity(  # type: ignore[overload-overlap]
     sunshine_fraction: NDArray[np.floating],
     elevation: NDArray[np.floating],
     coef: tuple[float, ...] = CoreConst.transmissivity_coef,
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def calculate_transmissivity(
+    sunshine_fraction: ArrayType,
+    elevation: ArrayType,
+    coef: tuple[float, ...] = CoreConst.transmissivity_coef,
+) -> xr.DataArray: ...
+
+
+def calculate_transmissivity(
+    sunshine_fraction: ArrayType,
+    elevation: ArrayType,
+    coef: tuple[float, ...] = CoreConst.transmissivity_coef,
+) -> ArrayType:
     r"""Calculate atmospheric transmissivity.
 
     This function calculates atmospheric transmissivity (:math:`\tau`, unitless)
@@ -281,12 +408,30 @@ def calculate_transmissivity(
     return (c + d * sunshine_fraction) * (1.0 + f * elevation)
 
 
-def calculate_ppfd_from_tau_rd(
+@overload
+def calculate_ppfd_from_tau_rd(  # type: ignore[overload-overlap]
     transmissivity: NDArray[np.floating],
     daily_solar_radiation: NDArray[np.floating],
     visible_light_albedo: float = CoreConst().visible_light_albedo,
     swdown_to_ppfd_factor: float = CoreConst().swdown_to_ppfd_factor,
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def calculate_ppfd_from_tau_rd(
+    transmissivity: ArrayType,
+    daily_solar_radiation: ArrayType,
+    visible_light_albedo: float = CoreConst().visible_light_albedo,
+    swdown_to_ppfd_factor: float = CoreConst().swdown_to_ppfd_factor,
+) -> xr.DataArray: ...
+
+
+def calculate_ppfd_from_tau_rd(
+    transmissivity: ArrayType,
+    daily_solar_radiation: ArrayType,
+    visible_light_albedo: float = CoreConst().visible_light_albedo,
+    swdown_to_ppfd_factor: float = CoreConst().swdown_to_ppfd_factor,
+) -> ArrayType:
     r"""Calculate photosynthetic photon flux density from intermediates.
 
     This function calculates photosynthetic photon flux density (PPFD, µmol m-2 s-1)
@@ -321,14 +466,36 @@ def calculate_ppfd_from_tau_rd(
     return ppfd
 
 
-def calculate_ppfd(
+@overload
+def calculate_ppfd(  # type: ignore[overload-overlap]
     sunshine_fraction: NDArray[np.floating],
     elevation: NDArray[np.floating],
     latitude: NDArray[np.floating],
     ordinal_date: NDArray[np.int_],
     n_days: NDArray[np.int_],
     const: CoreConst = CoreConst(),
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def calculate_ppfd(
+    sunshine_fraction: ArrayType,
+    elevation: ArrayType,
+    latitude: ArrayType,
+    ordinal_date: NDArray[np.int_] | xr.DataArray,
+    n_days: NDArray[np.int_] | xr.DataArray,
+    const: CoreConst = CoreConst(),
+) -> xr.DataArray: ...
+
+
+def calculate_ppfd(
+    sunshine_fraction: ArrayType,
+    elevation: ArrayType,
+    latitude: ArrayType,
+    ordinal_date: NDArray[np.int_] | xr.DataArray,
+    n_days: NDArray[np.int_] | xr.DataArray,
+    const: CoreConst = CoreConst(),
+) -> ArrayType:
     r"""Calculates photosynthetic photon flux density (PPFD).
 
     This function calculates photosynthetic photon flux density (PPFD, mol m-2) for a
@@ -410,11 +577,27 @@ def calculate_ppfd(
     )
 
 
-def calculate_net_longwave_radiation(
+@overload
+def calculate_net_longwave_radiation(  # type: ignore[overload-overlap]
     sunshine_fraction: NDArray[np.floating],
     temperature: NDArray[np.floating],
     coef: tuple[float, float] = CoreConst().net_longwave_radiation_coef,
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def calculate_net_longwave_radiation(
+    sunshine_fraction: ArrayType,
+    temperature: ArrayType,
+    coef: tuple[float, float] = CoreConst().net_longwave_radiation_coef,
+) -> xr.DataArray: ...
+
+
+def calculate_net_longwave_radiation(
+    sunshine_fraction: ArrayType,
+    temperature: ArrayType,
+    coef: tuple[float, float] = CoreConst().net_longwave_radiation_coef,
+) -> ArrayType:
     r"""Calculate net longwave radiation.
 
     This function calculates the net longwave radiation (:math:`R_{nl}`, W m-2)
@@ -437,12 +620,30 @@ def calculate_net_longwave_radiation(
     return (b + (1.0 - b) * sunshine_fraction) * (A - temperature)
 
 
-def calculate_rw_intermediate(
+@overload
+def calculate_rw_intermediate(  # type: ignore[overload-overlap]
     transmissivity: NDArray[np.floating],
     distance_factor: NDArray[np.floating],
     shortwave_albedo: float = CoreConst().shortwave_albedo,
     solar_constant: float = CoreConst().solar_constant,
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def calculate_rw_intermediate(
+    transmissivity: ArrayType,
+    distance_factor: ArrayType,
+    shortwave_albedo: float = CoreConst().shortwave_albedo,
+    solar_constant: float = CoreConst().solar_constant,
+) -> xr.DataArray: ...
+
+
+def calculate_rw_intermediate(
+    transmissivity: ArrayType,
+    distance_factor: ArrayType,
+    shortwave_albedo: float = CoreConst().shortwave_albedo,
+    solar_constant: float = CoreConst().solar_constant,
+) -> ArrayType:
     r"""Calculate the rw intermediate variable.
 
     This function calculates the widely used variable substitute ``rw`` (:math:`r_w`, W
@@ -467,7 +668,8 @@ def calculate_rw_intermediate(
     return (1.0 - shortwave_albedo) * transmissivity * solar_constant * distance_factor
 
 
-def calculate_net_radiation_crossover_hour_angle(
+@overload
+def calculate_net_radiation_crossover_hour_angle(  # type: ignore[oveload-overlap]
     net_longwave_radiation: NDArray[np.floating],
     transmissivity: NDArray[np.floating],
     distance_factor: NDArray[np.floating],
@@ -475,7 +677,30 @@ def calculate_net_radiation_crossover_hour_angle(
     latitude: NDArray[np.floating],
     shortwave_albedo: float = CoreConst().shortwave_albedo,
     solar_constant: float = CoreConst().solar_constant,
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def calculate_net_radiation_crossover_hour_angle(
+    net_longwave_radiation: ArrayType,
+    transmissivity: ArrayType,
+    distance_factor: ArrayType,
+    declination: ArrayType,
+    latitude: ArrayType,
+    shortwave_albedo: float = CoreConst().shortwave_albedo,
+    solar_constant: float = CoreConst().solar_constant,
+) -> NDArray[np.floating]: ...
+
+
+def calculate_net_radiation_crossover_hour_angle(
+    net_longwave_radiation: ArrayType,
+    transmissivity: ArrayType,
+    distance_factor: ArrayType,
+    declination: ArrayType,
+    latitude: ArrayType,
+    shortwave_albedo: float = CoreConst().shortwave_albedo,
+    solar_constant: float = CoreConst().solar_constant,
+) -> ArrayType:
     r"""Calculates the net radiation crossover hour angle.
 
     This function calculates the net radiation crossover hour angle (:math:`h_n`,
@@ -520,12 +745,30 @@ def calculate_net_radiation_crossover_hour_angle(
     )
 
 
-def _calculate_net_radiation_crossover_hour_angle(
+@overload
+def _calculate_net_radiation_crossover_hour_angle(  # type: ignore[overload-overlap]
     net_longwave_radiation: NDArray[np.floating],
     rw: NDArray[np.floating],
     ru: NDArray[np.floating],
     rv: NDArray[np.floating],
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def _calculate_net_radiation_crossover_hour_angle(
+    net_longwave_radiation: ArrayType,
+    rw: ArrayType,
+    ru: ArrayType,
+    rv: ArrayType,
+) -> xr.DataArray: ...
+
+
+def _calculate_net_radiation_crossover_hour_angle(
+    net_longwave_radiation: ArrayType,
+    rw: ArrayType,
+    ru: ArrayType,
+    rv: ArrayType,
+) -> ArrayType:
     """Calculate net radiation crossover hour angle using intermediate values.
 
     This function calculates the net radiation crossover hour angle (:math:`h_n`
@@ -547,7 +790,8 @@ def _calculate_net_radiation_crossover_hour_angle(
     )
 
 
-def calculate_daytime_net_radiation(
+@overload
+def calculate_daytime_net_radiation(  # type: ignore[overload-overlap]
     net_longwave_radiation: NDArray[np.floating],
     crossover_hour_angle: NDArray[np.floating],
     declination: NDArray[np.floating],
@@ -557,7 +801,34 @@ def calculate_daytime_net_radiation(
     shortwave_albedo: float = CoreConst().shortwave_albedo,
     solar_constant: float = CoreConst().solar_constant,
     day_seconds: float = CoreConst().day_seconds,
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def calculate_daytime_net_radiation(
+    net_longwave_radiation: ArrayType,
+    crossover_hour_angle: ArrayType,
+    declination: ArrayType,
+    latitude: ArrayType,
+    transmissivity: ArrayType,
+    distance_factor: ArrayType,
+    shortwave_albedo: float = CoreConst().shortwave_albedo,
+    solar_constant: float = CoreConst().solar_constant,
+    day_seconds: float = CoreConst().day_seconds,
+) -> xr.DataArray: ...
+
+
+def calculate_daytime_net_radiation(
+    net_longwave_radiation: ArrayType,
+    crossover_hour_angle: ArrayType,
+    declination: ArrayType,
+    latitude: ArrayType,
+    transmissivity: ArrayType,
+    distance_factor: ArrayType,
+    shortwave_albedo: float = CoreConst().shortwave_albedo,
+    solar_constant: float = CoreConst().solar_constant,
+    day_seconds: float = CoreConst().day_seconds,
+) -> ArrayType:
     r"""Calculate daily net radiation.
 
     Calculates the daily net radiation (:math:`R_{nd}`, J m-2) as:
@@ -606,14 +877,36 @@ def calculate_daytime_net_radiation(
     )
 
 
-def _calculate_daytime_net_radiation(
+@overload
+def _calculate_daytime_net_radiation(  # type: ignore[overload-overlap]
     rw: NDArray[np.floating],
     rv: NDArray[np.floating],
     ru: NDArray[np.floating],
     crossover_hour_angle: NDArray[np.floating],
     net_longwave_radiation: NDArray[np.floating],
     day_seconds: float = CoreConst().day_seconds,
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def _calculate_daytime_net_radiation(
+    rw: ArrayType,
+    rv: ArrayType,
+    ru: ArrayType,
+    crossover_hour_angle: ArrayType,
+    net_longwave_radiation: ArrayType,
+    day_seconds: float = CoreConst().day_seconds,
+) -> xr.DataArray: ...
+
+
+def _calculate_daytime_net_radiation(
+    rw: ArrayType,
+    rv: ArrayType,
+    ru: ArrayType,
+    crossover_hour_angle: ArrayType,
+    net_longwave_radiation: ArrayType,
+    day_seconds: float = CoreConst().day_seconds,
+) -> ArrayType:
     """Calculates daily net radiation using precalculated intermediates.
 
     This function calculates daytime net radiation (:math:`R_{nd}` :math:`J/m^2`), using
@@ -641,7 +934,8 @@ def _calculate_daytime_net_radiation(
     return rn_d
 
 
-def calculate_nighttime_net_radiation(
+@overload
+def calculate_nighttime_net_radiation(  # type: ignore[overload-overlap]
     net_longwave_radiation: NDArray[np.floating],
     crossover_hour_angle: NDArray[np.floating],
     sunset_hour_angle: NDArray[np.floating],
@@ -652,7 +946,36 @@ def calculate_nighttime_net_radiation(
     shortwave_albedo: float = CoreConst().shortwave_albedo,
     solar_constant: float = CoreConst().solar_constant,
     day_seconds: float = CoreConst().day_seconds,
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def calculate_nighttime_net_radiation(
+    net_longwave_radiation: ArrayType,
+    crossover_hour_angle: ArrayType,
+    sunset_hour_angle: ArrayType,
+    declination: ArrayType,
+    latitude: ArrayType,
+    transmissivity: ArrayType,
+    distance_factor: ArrayType,
+    shortwave_albedo: float = CoreConst().shortwave_albedo,
+    solar_constant: float = CoreConst().solar_constant,
+    day_seconds: float = CoreConst().day_seconds,
+) -> xr.DataArray: ...
+
+
+def calculate_nighttime_net_radiation(
+    net_longwave_radiation: ArrayType,
+    crossover_hour_angle: ArrayType,
+    sunset_hour_angle: ArrayType,
+    declination: ArrayType,
+    latitude: ArrayType,
+    transmissivity: ArrayType,
+    distance_factor: ArrayType,
+    shortwave_albedo: float = CoreConst().shortwave_albedo,
+    solar_constant: float = CoreConst().solar_constant,
+    day_seconds: float = CoreConst().day_seconds,
+) -> ArrayType:
     r"""Calculates nighttime net radiation.
 
     This function calculates nighttime net radiation (:math:`R_{nn}`, J m-2) as:
@@ -706,7 +1029,8 @@ def calculate_nighttime_net_radiation(
     )
 
 
-def _calculate_nighttime_net_radiation(
+@overload
+def _calculate_nighttime_net_radiation(  # type: ignore[overload-overlap]
     rw: NDArray[np.floating],
     rv: NDArray[np.floating],
     ru: NDArray[np.floating],
@@ -714,7 +1038,30 @@ def _calculate_nighttime_net_radiation(
     crossover_hour_angle: NDArray[np.floating],
     net_longwave_radiation: NDArray[np.floating],
     day_seconds: float = CoreConst().day_seconds,
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def _calculate_nighttime_net_radiation(
+    rw: ArrayType,
+    rv: ArrayType,
+    ru: ArrayType,
+    sunset_hour_angle: ArrayType,
+    crossover_hour_angle: ArrayType,
+    net_longwave_radiation: ArrayType,
+    day_seconds: float = CoreConst().day_seconds,
+) -> xr.DataArray: ...
+
+
+def _calculate_nighttime_net_radiation(
+    rw: ArrayType,
+    rv: ArrayType,
+    ru: ArrayType,
+    sunset_hour_angle: ArrayType,
+    crossover_hour_angle: ArrayType,
+    net_longwave_radiation: ArrayType,
+    day_seconds: float = CoreConst().day_seconds,
+) -> ArrayType:
     """Calculates nighttime net radiation using precalculated intermediates.
 
     This function calculates nighttime net radiation (:math:`R_{nn}` :math:`J/m^2`), a
@@ -749,12 +1096,30 @@ def _calculate_nighttime_net_radiation(
     ) * (day_seconds / np.pi)
 
 
-def calculate_heliocentric_longitudes(
+@overload
+def calculate_heliocentric_longitudes(  # type: ignore[overload-overlap]
     ordinal_date: NDArray[np.int_],
     n_days: NDArray[np.int_],
     solar_eccentricity: float = CoreConst().solar_eccentricity,
     solar_perihelion: float = CoreConst().solar_perihelion,
-) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
+) -> tuple[NDArray[np.floating], NDArray[np.floating]]: ...
+
+
+@overload
+def calculate_heliocentric_longitudes(
+    ordinal_date: NDArray[np.int_] | xr.DataArray,
+    n_days: NDArray[np.int_] | xr.DataArray,
+    solar_eccentricity: float = CoreConst().solar_eccentricity,
+    solar_perihelion: float = CoreConst().solar_perihelion,
+) -> tuple[xr.DataArray, xr.DataArray]: ...
+
+
+def calculate_heliocentric_longitudes(
+    ordinal_date: NDArray[np.int_] | xr.DataArray,
+    n_days: NDArray[np.int_] | xr.DataArray,
+    solar_eccentricity: float = CoreConst().solar_eccentricity,
+    solar_perihelion: float = CoreConst().solar_perihelion,
+) -> tuple[ArrayType, ArrayType]:
     r"""Calculate heliocentric longitude and anomaly.
 
     This function calculates the heliocentric true anomaly (``nu``, :math:`\nu`,
@@ -829,11 +1194,27 @@ def calculate_heliocentric_longitudes(
     return nu, lambda_
 
 
-def calculate_solar_elevation(
+@overload
+def calculate_solar_elevation(  # type: ignore[overload-overlap]
     latitude: NDArray[np.floating],
     declination: NDArray[np.floating],
     hour_angle: NDArray[np.floating],
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def calculate_solar_elevation(
+    latitude: ArrayType,
+    declination: ArrayType,
+    hour_angle: ArrayType,
+) -> xr.DataArray: ...
+
+
+def calculate_solar_elevation(
+    latitude: ArrayType,
+    declination: ArrayType,
+    hour_angle: ArrayType,
+) -> ArrayType:
     r"""Calculate the solar elevation angle.
 
     The solar elevation angle (:math:`\alpha`, radians) is the angle between the horizon
@@ -859,9 +1240,19 @@ def calculate_solar_elevation(
     )
 
 
-def calculate_solar_declination(
+@overload
+def calculate_solar_declination(  # type: ignore[overload-overlap]
     ordinal_date: NDArray[np.int_],
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def calculate_solar_declination(ordinal_date: xr.DataArray) -> xr.DataArray: ...
+
+
+def calculate_solar_declination(
+    ordinal_date: NDArray[np.int_] | xr.DataArray,
+) -> ArrayType:
     r"""Calculate solar declination angle.
 
     Calculates the solar declination angle (:math:`\delta`, radians) from the ordinal
@@ -881,9 +1272,21 @@ def calculate_solar_declination(
     return -23.4 * (np.pi / 180) * np.cos((2 * np.pi * (ordinal_date + 10)) / 365)
 
 
-def calculate_local_hour_angle(
+@overload
+def calculate_local_hour_angle(  # type: ignore[overload-overlap]
     current_time: NDArray[np.floating], solar_noon: NDArray[np.floating]
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def calculate_local_hour_angle(
+    current_time: ArrayType, solar_noon: ArrayType
+) -> xr.DataArray: ...
+
+
+def calculate_local_hour_angle(
+    current_time: ArrayType, solar_noon: ArrayType
+) -> ArrayType:
     r"""Calculate the local hour angle.
 
     The local hour angle (:math:`h`, radians) is a measure of time, expressed as an
@@ -906,11 +1309,27 @@ def calculate_local_hour_angle(
     return np.pi * (current_time - solar_noon) / 12
 
 
-def calculate_solar_noon(
+@overload
+def calculate_solar_noon(  # type: ignore[overload-overlap]
     longitude: NDArray[np.floating],
     equation_of_time: NDArray[np.floating],
     standard_longitude: NDArray[np.floating] = np.array([0]),
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def calculate_solar_noon(
+    longitude: ArrayType,
+    equation_of_time: ArrayType,
+    standard_longitude: ArrayType = np.array([0]),
+) -> xr.DataArray: ...
+
+
+def calculate_solar_noon(
+    longitude: ArrayType,
+    equation_of_time: ArrayType,
+    standard_longitude: ArrayType = np.array([0]),
+) -> ArrayType:
     r"""Calculate the solar noon  for a given location.
 
     The solar noon (:math:`t_0`, decimal hour) is the time of day when the sun is at its
@@ -938,10 +1357,24 @@ def calculate_solar_noon(
     return 12 + (4 * -(longitude - standard_longitude) - equation_of_time) / 60
 
 
-def calculate_equation_of_time(
+@overload
+def calculate_equation_of_time(  # type: ignore[overload-overlap]
     day_angle: NDArray[np.floating],
     coef: tuple[float, ...] = CoreConst.equation_of_time_coef,
-) -> NDArray[np.floating]:
+) -> NDArray[np.floating]: ...
+
+
+@overload
+def calculate_equation_of_time(
+    day_angle: ArrayType,
+    coef: tuple[float, ...] = CoreConst.equation_of_time_coef,
+) -> xr.DataArray: ...
+
+
+def calculate_equation_of_time(
+    day_angle: ArrayType,
+    coef: tuple[float, ...] = CoreConst.equation_of_time_coef,
+) -> ArrayType:
     r"""Calculate the equation of time.
 
     Calculates values of the equation of time (:math:`E_t`, minutes) from the day angle
@@ -979,7 +1412,15 @@ def calculate_equation_of_time(
     ) * f
 
 
-def calculate_day_angle(ordinal_date: NDArray[np.int_]) -> NDArray[np.floating]:
+@overload
+def calculate_day_angle(ordinal_date: NDArray[np.int_]) -> NDArray[np.floating]: ...  # type: ignore[overload-overlap]
+
+
+@overload
+def calculate_day_angle(ordinal_date: xr.DataArray) -> xr.DataArray: ...
+
+
+def calculate_day_angle(ordinal_date: NDArray[np.int_] | xr.DataArray) -> ArrayType:
     r"""Calculate the solar day angle.
 
     Calculates the solar day angle (:math:`\Gamma`, radians) for ordinal dates
