@@ -23,7 +23,13 @@ language_info:
 
 # The `splash` submodule
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/Splash.ipynb>`.
+```{admonition} Run this notebook
+:class: hint
+
+* Read the guide on setting up your computer to [run Jupyter notebooks](../getting_started.md)
+* Download {nb-download}`this notebook<./splash.ipynb>` as a Jupyter notebook.
+
+```
 
 The {mod}`~pyrealm.splash` module provides the SPLASH v1.0 model for estimating **soil
 moisture, actual evapotranspiration ({term}`AET`) and surface water runoff** for sites

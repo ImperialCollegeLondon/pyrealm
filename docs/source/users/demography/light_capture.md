@@ -24,7 +24,13 @@ settings:
 
 # Light capture in the canopy
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/LightCapture.ipynb>`.
+```{admonition} Run this notebook
+:class: hint
+
+* Read the guide on setting up your computer to [run Jupyter notebooks](../getting_started.md)
+* Download {nb-download}`this notebook<./light_capture.ipynb>` as a Jupyter notebook.
+
+```
 
 :::{admonition} Warning
 
