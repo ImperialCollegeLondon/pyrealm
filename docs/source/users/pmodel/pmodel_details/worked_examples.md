@@ -29,7 +29,8 @@ the P Model.
 ```{admonition} Run this notebook
 :class: hint
 
-* Read the guide on setting up your computer to [run Jupyter notebooks](../getting_started.md)
+* Read the guide on setting up your computer to [run Jupyter notebooks](../../
+getting_started.md)
 * Download {nb-download}`this notebook<./worked_examples.ipynb>` as a Jupyter notebook.
 
 ```
