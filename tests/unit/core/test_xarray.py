@@ -4,7 +4,23 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from pyrealm.core.xarray import xarray_inputs, xarray_inputs_kw
+from pyrealm.core.xarray import is_arraytype, xarray_inputs, xarray_inputs_kw
+
+
+@pytest.mark.parametrize(
+    "value, result",
+    [
+        pytest.param(np.array([1, 2]), True, id="np.array"),
+        pytest.param(xr.DataArray([1, 2]), True, id="xr.DataArray"),
+        pytest.param([1, 2], False, id="list"),
+        pytest.param(2, False, id="scalar"),
+        pytest.param({"a": 2}, False, id="dict"),
+        pytest.param(None, False, id="None"),
+    ],
+)
+def test_is_arraytype(value, result):
+    """Check is_arraytype correctly identifies if objects are `ArrayType`s."""
+    assert is_arraytype(value) is result
 
 
 @pytest.fixture

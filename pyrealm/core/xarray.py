@@ -1,11 +1,22 @@
 """Utilities for handling xarray inputs to functions that expect arrays."""
 
 from collections.abc import Hashable
-from typing import TypeVar, overload
+from typing import Any, TypeAlias, TypeGuard, TypeVar, overload
 
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
+
+T = TypeVar("T", bound=np.generic)
+
+ArrayType: TypeAlias = NDArray[T] | xr.DataArray
+
+
+def is_arraytype(var: Any) -> TypeGuard[ArrayType]:
+    """Checks if a variable is an instance of ArrayType."""
+    if not isinstance(var, np.ndarray | xr.DataArray):
+        return False
+    return True
 
 
 def _get_dims(*args: NDArray | xr.DataArray) -> list[Hashable]:
@@ -28,23 +39,18 @@ def _convert_arg(da: xr.DataArray, dims: list[Hashable]) -> NDArray:
     return da.to_numpy()
 
 
-T = TypeVar("T", bound=np.generic)
-
-
 @overload
-def xarray_inputs(array1: NDArray[T] | xr.DataArray, /) -> NDArray[T]: ...
+def xarray_inputs(array1: ArrayType[T], /) -> NDArray[T]: ...
 @overload
 def xarray_inputs(
-    array1: NDArray[T] | xr.DataArray,
-    array2: NDArray[T] | xr.DataArray,
+    array1: ArrayType[T],
+    array2: ArrayType[T],
     /,
-    *other_arrays: NDArray[T] | xr.DataArray,
+    *other_arrays: ArrayType[T],
 ) -> tuple[NDArray[T], ...]: ...
 
 
-def xarray_inputs(
-    *arrays: NDArray[T] | xr.DataArray,
-) -> NDArray[T] | tuple[NDArray[T], ...]:
+def xarray_inputs(*arrays: ArrayType[T]) -> NDArray[T] | tuple[NDArray[T], ...]:
     """Converts any `xarray.DataArray` inputs to numpy arrays.
 
     This allows functions that expect numpy arrays to be used directly with
@@ -84,8 +90,8 @@ def xarray_inputs(
 
 
 def xarray_inputs_kw(
-    *arrays: NDArray[T] | xr.DataArray,
-    **kwargs: NDArray[T] | xr.DataArray,
+    *arrays: ArrayType[T],
+    **kwargs: ArrayType[T],
 ) -> tuple[*tuple[NDArray[T], ...], dict[str, NDArray[T]]]:
     """Converts any `xarray.DataArray` inputs to numpy arrays.
 

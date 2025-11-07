@@ -5,13 +5,12 @@ environment variables for the observations.
 """  # noqa D210, D415
 
 import numpy as np
-import xarray as xr
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
-from pyrealm.core.xarray import xarray_inputs_kw
+from pyrealm.core.xarray import ArrayType, xarray_inputs_kw
 from pyrealm.pmodel.functions import (
     calculate_co2_to_ca,
     calculate_gammastar,
@@ -107,16 +106,16 @@ class PModelEnvironment:
 
     def __init__(
         self,
-        tc: NDArray[np.floating] | xr.DataArray,
-        vpd: NDArray[np.floating] | xr.DataArray,
-        co2: NDArray[np.floating] | xr.DataArray,
-        patm: NDArray[np.floating] | xr.DataArray,
-        fapar: NDArray[np.floating] | xr.DataArray = np.array([1.0]),
-        ppfd: NDArray[np.floating] | xr.DataArray = np.array([1.0]),
+        tc: ArrayType[np.floating],
+        vpd: ArrayType[np.floating],
+        co2: ArrayType[np.floating],
+        patm: ArrayType[np.floating],
+        fapar: ArrayType[np.floating] = np.array([1.0]),
+        ppfd: ArrayType[np.floating] = np.array([1.0]),
         pmodel_const: PModelConst = PModelConst(),
         core_const: CoreConst = CoreConst(),
         bounds_checker: BoundsChecker = BoundsChecker(),
-        **kwargs: NDArray[np.floating] | xr.DataArray,
+        **kwargs: ArrayType[np.floating],
     ):
         # Convert any xr.DataArrays to numpy arrays
         *args, kw_arrays = xarray_inputs_kw(tc, vpd, co2, patm, fapar, ppfd, **kwargs)
