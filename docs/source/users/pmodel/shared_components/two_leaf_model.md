@@ -23,7 +23,13 @@ language_info:
 
 # Using the Two Leaf, Two Stream model
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/TwoLeafTwoStream.ipynb>`.
+```{admonition} Run this notebook
+:class: hint
+
+* Read the guide on setting up your computer to [run Jupyter notebooks](../../getting_started.md)
+* Download {nb-download}`this notebook<./two_leaf_model.ipynb>` as a Jupyter notebook.
+
+```
 
 ```{code-cell} ipython3
 from importlib import resources

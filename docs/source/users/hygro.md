@@ -23,7 +23,13 @@ language_info:
 
 # Hygrometric functions
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/Hygro.ipynb>`.
+```{admonition} Run this notebook
+:class: hint
+
+* Read the guide on setting up your computer to [run Jupyter notebooks](./getting_started.md)
+* Download {nb-download}`this notebook<./hygro.ipynb>` as a Jupyter notebook.
+
+```
 
 ```{code-cell} ipython3
 # This code loads required packages and then creates a representative range of

@@ -1,6 +1,6 @@
 ---
 jupytext:
-  formats: ipynb,md:myst
+  formats: md:myst
   text_representation:
     extension: .md
     format_name: myst
@@ -23,8 +23,14 @@ language_info:
 
 # Isotopic discrimination
 
-The worked example from this page
-{download}`can be downloaded as Jupyter notebook here </_static/IsotopicDiscrimination.ipynb>`.
+```{admonition} Run this notebook
+:class: hint
+
+* Read the guide on setting up your computer to [run Jupyter notebooks](../getting_started.md)
+* Download {nb-download}`this notebook<./isotopic_discrimination.ipynb>` as a Jupyter
+notebook.
+
+```
 
 C3 and C4 plants assimilate the heavier atmospheric $\ce{^{13}CO2}$ and $\ce{^{14}CO2}$
 molecules less easily than $\ce{^{12}CO2}$, leading to a discrimination against carbon

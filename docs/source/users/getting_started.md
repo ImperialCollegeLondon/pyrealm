@@ -119,9 +119,9 @@ jupyter lab
 
 Good notebooks to get started with are
 
-- {download}`the Standard P Model worked example </_static/StandardPModel.ipynb>`
-- {download}`the Subdaily P Model worked example </_static/SubdailyPModel.ipynb>`
-- {download}`the Splash Model worked example </_static/Splash.ipynb>`.
+- [the Standard P Model worked example](./pmodel/pmodel_details/worked_examples.md)
+- [the Subdaily P Model worked example](./pmodel/subdaily_details/worked_example.md)
+- [the Splash Model worked example](./splash.md).
 
 ## `pyrealm` developers
 
