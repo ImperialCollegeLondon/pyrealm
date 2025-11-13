@@ -9,6 +9,7 @@ from numpy.typing import NDArray
 from scipy.interpolate import interp1d  # type: ignore
 
 from pyrealm.core.utilities import exponential_moving_average
+from pyrealm.core.xarray import ArrayType, xarray_inputs
 
 
 class AcclimationModel:
@@ -416,7 +417,7 @@ class AcclimationModel:
                 "are used for acclimation"
             )
 
-    def _pad_values(self, values: NDArray[np.floating]) -> NDArray[np.floating]:
+    def _pad_values(self, values: ArrayType[np.floating]) -> NDArray[np.floating]:
         """Pad values array to full days.
 
         This method takes an array representing daily values and pads the first and
@@ -429,6 +430,8 @@ class AcclimationModel:
               datetimes in :class:`~pyrealm.pmodel.acclimation.AcclimationModel`.
         """
 
+        values = xarray_inputs(values)
+
         if self.padding == (0, 0):
             return values
 
@@ -438,7 +441,7 @@ class AcclimationModel:
 
         return np.pad(values, padding_dims, constant_values=(np.nan, np.nan))
 
-    def get_window_values(self, values: NDArray[np.floating]) -> NDArray[np.floating]:
+    def get_window_values(self, values: ArrayType[np.floating]) -> NDArray[np.floating]:
         """Extract acclimation window values for a variable.
 
         This method takes an array of values which has the same shape along the first
@@ -453,6 +456,8 @@ class AcclimationModel:
         """
 
         self._raise_if_sampling_times_unset()
+
+        values = xarray_inputs(values)
 
         # Check that the first axis has the same shape as the number of
         # datetimes in the init
@@ -476,7 +481,7 @@ class AcclimationModel:
 
     def get_daily_means(
         self,
-        values: NDArray[np.floating],
+        values: ArrayType[np.floating],
     ) -> NDArray[np.floating]:
         """Get the daily means of a variable during the acclimation window.
 
@@ -504,7 +509,7 @@ class AcclimationModel:
 
         self._raise_if_sampling_times_unset()
 
-        daily_values = self.get_window_values(values)
+        daily_values = self.get_window_values(xarray_inputs(values))
 
         if self.allow_partial_data:
             return np.nanmean(daily_values, axis=1)
@@ -513,8 +518,8 @@ class AcclimationModel:
 
     def apply_acclimation(
         self,
-        values: NDArray[np.floating],
-        initial_values: NDArray[np.floating] | None = None,
+        values: ArrayType[np.floating],
+        initial_values: ArrayType[np.floating] | None = None,
     ) -> NDArray[np.floating]:
         r"""Apply acclimation to optimal values.
 
@@ -548,6 +553,12 @@ class AcclimationModel:
             initial_values: Alternative starting values for the acclimated values
         """
 
+        # Convert any xarray inputs
+        if initial_values is None:
+            values = xarray_inputs(values)
+        else:
+            values, initial_values = xarray_inputs(values, initial_values)
+
         try:
             return exponential_moving_average(
                 values=values,
@@ -565,8 +576,8 @@ class AcclimationModel:
 
     def fill_daily_to_subdaily(
         self,
-        values: NDArray[np.floating],
-        previous_values: NDArray[np.floating] | None = None,
+        values: ArrayType[np.floating],
+        previous_values: ArrayType[np.floating] | None = None,
     ) -> NDArray[np.floating]:
         """Resample daily variables onto the subdaily time scale.
 
@@ -615,6 +626,12 @@ class AcclimationModel:
                 variable.
         """
 
+        # Convert any xarray inputs
+        if previous_values is None:
+            values = xarray_inputs(values)
+        else:
+            values, previous_values = xarray_inputs(values, previous_values)
+
         interp_x_datetimes, interp_y_values, fill_value = (
             self._get_subdaily_interpolation_xy(
                 values=values, previous_values=previous_values
@@ -637,8 +654,8 @@ class AcclimationModel:
 
     def _get_subdaily_interpolation_xy(
         self,
-        values: NDArray[np.floating],
-        previous_values: NDArray[np.floating] | None = None,
+        values: ArrayType[np.floating],
+        previous_values: ArrayType[np.floating] | None = None,
     ) -> tuple[
         NDArray[np.datetime64],
         NDArray[np.floating],
@@ -667,6 +684,12 @@ class AcclimationModel:
         """
 
         self._raise_if_sampling_times_unset()
+
+        # Convert any xarray inputs
+        if previous_values is None:
+            values = xarray_inputs(values)
+        else:
+            values, previous_values = xarray_inputs(values, previous_values)
 
         if values.shape[0] != self.n_days:
             raise ValueError(

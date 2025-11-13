@@ -27,6 +27,7 @@ from scipy.interpolate import interp1d
 
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
+from pyrealm.core.xarray import ArrayType, is_arraytype, xarray_inputs
 from pyrealm.pmodel.acclimation import AcclimationModel
 from pyrealm.pmodel.arrhenius import ARRHENIUS_METHOD_REGISTRY, ArrheniusFactorABC
 from pyrealm.pmodel.jmax_limitation import (
@@ -79,7 +80,7 @@ class PModelABC(ABC):
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
         method_arrhenius: str = "simple",
-        reference_kphio: float | NDArray[np.floating] | None = None,
+        reference_kphio: float | ArrayType[np.floating] | None = None,
         **kwargs: dict[str, Any],
     ):
         self.shape: tuple = env.shape
@@ -143,6 +144,8 @@ class PModelABC(ABC):
             method_registry=QUANTUM_YIELD_CLASS_REGISTRY,
         )
 
+        if is_arraytype(reference_kphio):
+            reference_kphio = xarray_inputs(reference_kphio)
         self.reference_kphio = reference_kphio
         """The value of the the reference kphio to be used in the model."""
 
@@ -452,7 +455,7 @@ class PModel(PModelABC):
         method_jmaxlim: str = "wang17",
         method_kphio: str = "temperature",
         method_arrhenius: str = "simple",
-        reference_kphio: float | NDArray[np.floating] | None = None,
+        reference_kphio: float | ArrayType[np.floating] | None = None,
     ) -> None:
         # Initialise the superclass
         super().__init__(
@@ -586,7 +589,7 @@ class PModel(PModelABC):
         self,
         acclim_model: AcclimationModel,
         previous_realised: tuple[
-            NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]
+            ArrayType[np.floating], ArrayType[np.floating], ArrayType[np.floating]
         ]
         | None = None,
     ) -> SubdailyPModel:
@@ -740,8 +743,8 @@ class SubdailyPModel(PModelABC):
         method_jmaxlim: str = "wang17",
         method_kphio: str = "temperature",
         method_arrhenius: str = "simple",
-        reference_kphio: float | NDArray[np.floating] | None = None,
-        previous_realised: dict[str, NDArray[np.floating]] | None = None,
+        reference_kphio: float | ArrayType[np.floating] | None = None,
+        previous_realised: dict[str, ArrayType[np.floating]] | None = None,
     ) -> None:
         # Initialise the superclass
         super().__init__(
@@ -795,7 +798,7 @@ class SubdailyPModel(PModelABC):
     def _fit_model(
         self,
         acclim_model: AcclimationModel,
-        previous_realised: dict[str, NDArray[np.floating]] | None,
+        previous_realised: dict[str, ArrayType[np.floating]] | None,
     ) -> None:
         """Calculation logic of the subdaily P Model."""
 
@@ -834,9 +837,7 @@ class SubdailyPModel(PModelABC):
             if not (
                 isinstance(previous_realised, dict)
                 and (set(["xi", "jmax25", "vcmax25"]) == previous_realised.keys())
-                and all(
-                    [isinstance(val, np.ndarray) for val in previous_realised.values()]
-                )
+                and all([is_arraytype(val) for val in previous_realised.values()])
             ):
                 raise ValueError(
                     "previous_realised must be a dictionary of arrays, with entries "
@@ -856,7 +857,9 @@ class SubdailyPModel(PModelABC):
                     "`previous_realised` arrays have wrong shape in SubdailyPModel"
                 )
 
-            self.previous_realised = previous_realised
+            self.previous_realised = {
+                key: xarray_inputs(val) for key, val in previous_realised.items()
+            }
 
         # 1) Generate a PModelEnvironment containing the average conditions within the
         #    daily acclimation window. This daily average environment also needs to also

@@ -10,6 +10,7 @@ from numpy.typing import NDArray
 
 from pyrealm.constants import IsotopesConst
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
+from pyrealm.core.xarray import ArrayType, xarray_inputs
 from pyrealm.pmodel.pmodel import PModel
 
 
@@ -43,10 +44,12 @@ class CalcCarbonIsotopes:
     def __init__(
         self,
         pmodel: PModel,
-        D14CO2: NDArray[np.floating],
-        d13CO2: NDArray[np.floating],
+        D14CO2: ArrayType[np.floating],
+        d13CO2: ArrayType[np.floating],
         isotopes_const: IsotopesConst = IsotopesConst(),
     ):
+        d13CO2, D14CO2 = xarray_inputs(d13CO2, D14CO2)
+
         # Check inputs are congruent
         _ = check_input_shapes(pmodel.env.tc, d13CO2, D14CO2)
 
