@@ -287,9 +287,21 @@ def strip_jupytext(app, exception):  # type: ignore
     systematically removes the `jupytext` metadata from all `.ipynb` notebooks in the
     downloads folder.
     """
+
+    # Handle local versus RTD build directory locations
+    if os.getenv("READTHEDOCS"):
+        rtd_base = os.getenv("READTHEDOCS_OUTPUT")
+        if rtd_base is not None:
+            html_path = Path(rtd_base)
+        else:
+            raise RuntimeError("Could not read RTD output directory.")
+    else:
+        html_path = Path("build")
+
     # Get the paths of iPython notebooks within the built HTML downloads folder.
     # If this path doesn't exist, the generator returns an empty list.
-    ipynb_downloads = list(Path("build/html/_downloads").rglob("*.ipynb"))
+
+    ipynb_downloads = list((html_path / "html/_downloads").rglob("*.ipynb"))
     bold_start_text = "\033[1mJupytext stripping:\033[0m"
     if not ipynb_downloads:
         print(bold_start_text + " no ipynb files found.")
