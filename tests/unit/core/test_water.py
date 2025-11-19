@@ -5,80 +5,181 @@ rpmodel outputs and test a wider range of inputs. Those could be moved here. The
 check the size of outputs and that the results meet a simple benchmark value.
 """
 
+from __future__ import annotations
+
+from contextlib import nullcontext as does_not_raise
+
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose
+from numpy.typing import NDArray
 
 
-@pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
-def test_calc_density_h20_fisher(shape):
-    """Test the fisher method."""
-    from pyrealm.core.water import calc_density_h2o_fisher
+def test_density_registration():
+    """Test density registration checks signatures and extends registry."""
 
-    rho = calc_density_h2o_fisher(
-        np.full(shape, fill_value=20), np.full(shape, fill_value=101325)
-    )
+    from pyrealm.constants import CoreConst
+    from pyrealm.core.water import DENSITY_METHODS, register_density_method
 
-    assert_allclose(rho.round(3), np.full(shape, fill_value=998.206))
+    with pytest.raises(RuntimeError):
+
+        @register_density_method("bad_param_name")
+        def bad_param_name(
+            tk: NDArray[np.floating], patm: NDArray[np.floating], core_const: CoreConst
+        ) -> NDArray[np.floating]:
+            return np.ones(1)
+
+        assert "bad_param_name" not in DENSITY_METHODS
+
+    with pytest.raises(RuntimeError):
+
+        @register_density_method("bad_annotation")
+        def bad_annotation(
+            tc: NDArray[np.integer], patm: NDArray[np.integer], core_const: CoreConst
+        ) -> NDArray[np.floating]:
+            return np.ones(1)
+
+        assert "bad_annotation" not in DENSITY_METHODS
+
+    with does_not_raise():
+
+        @register_density_method("good")
+        def good(
+            tc: NDArray[np.floating], patm: NDArray[np.floating], core_const: CoreConst
+        ) -> NDArray[np.floating]:
+            return np.ones(1)
+
+        assert "good" in DENSITY_METHODS
 
 
-@pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
-def test_calc_density_h20_chen(shape):
-    """Test the chen method."""
-    from pyrealm.core.water import calc_density_h2o_chen
+def test_viscosity_registration():
+    """Test viscosity registration checks signatures and extends registry."""
 
-    rho = calc_density_h2o_chen(
-        np.full(shape, fill_value=20), np.full(shape, fill_value=101325)
-    )
+    from pyrealm.constants import CoreConst
+    from pyrealm.core.water import VISCOSITY_METHODS, register_viscosity_method
 
-    assert_allclose(rho.round(3), np.full(shape, fill_value=998.25))
+    with pytest.raises(RuntimeError):
+
+        @register_viscosity_method("bad_param_name")
+        def bad_param_name(
+            tc: NDArray[np.floating], patm: NDArray[np.floating], core_const: CoreConst
+        ) -> NDArray[np.floating]:
+            return np.ones(1)
+
+        assert "bad_param_name" not in VISCOSITY_METHODS
+
+    with pytest.raises(RuntimeError):
+
+        @register_viscosity_method("bad_annotation")
+        def bad_annotation(
+            tk: NDArray[np.integer], patm: NDArray[np.integer], core_const: CoreConst
+        ) -> NDArray[np.floating]:
+            return np.ones(1)
+
+        assert "bad_annotation" not in VISCOSITY_METHODS
+
+    with does_not_raise():
+
+        @register_viscosity_method("good")
+        def good(
+            tk: NDArray[np.floating], patm: NDArray[np.floating], core_const: CoreConst
+        ) -> NDArray[np.floating]:
+            return np.ones(1)
+
+        assert "good" in VISCOSITY_METHODS
 
 
 @pytest.mark.parametrize(
-    argnames="const_args, exp",
+    argnames="method, expected",
+    argvalues=(
+        pytest.param("fisher", 998.206, id="fisher"),
+        pytest.param("chen", 998.25, id="chen"),
+        pytest.param("jones_harris_eq8", 998.201, id="jones_harris_eq8"),
+        pytest.param("jones_harris_eq6", 998.201, id="jones_harris_eq6"),
+        pytest.param("kell", 997.936, id="kell"),
+    ),
+)
+@pytest.mark.parametrize(
+    argnames="shape",
     argvalues=[
-        pytest.param(None, 998.206, id="defaults"),
-        pytest.param("fisher", 998.206, id="fisher_via_const"),
-        pytest.param("chen", 998.25, id="chen_via_const"),
+        pytest.param((1,), id="1D"),
+        pytest.param((6, 9), id="2D"),
+        pytest.param((4, 7, 3), id="3D"),
     ],
 )
-def test_calc_density_h20(const_args, exp):
-    """Test the wrapper method dispatches as expected."""
+def test_calc_density_h20_methods(method, expected, shape):
+    """Test the density methods.
+
+    The test runs both directly using the function from the registry and via the core
+    constants setting.
+    """
+
     from pyrealm.constants import CoreConst
-    from pyrealm.core.water import calc_density_h2o
+    from pyrealm.core.water import DENSITY_METHODS, calc_density_h2o
 
-    args = {}
+    # Get the function directly from the registry and run it
+    func = DENSITY_METHODS[method]
 
-    if const_args is not None:
-        args["core_const"] = CoreConst(water_density_method=const_args)
+    rho = func(tc=np.full(shape, fill_value=20), patm=np.full(shape, fill_value=101325))
 
-    rho = calc_density_h2o(20, 101325, **args)
+    assert_allclose(rho.round(3), np.full(shape, fill_value=expected))
 
-    assert rho.round(3) == exp
-
-
-@pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
-def test_calc_viscosity_h20(shape):
-    """Test the viscosity calculation."""
-    from pyrealm.core.water import calc_viscosity_h2o
-
-    eta = calc_viscosity_h2o(
-        np.full(shape, fill_value=20), np.full(shape, fill_value=101325)
+    # Configure the method through CoreConst and run the wrapper function.
+    rho = calc_density_h2o(
+        tc=np.full(shape, fill_value=20),
+        patm=np.full(shape, fill_value=101325),
+        core_const=CoreConst(water_density_method=method),
     )
 
-    assert_allclose(eta.round(7), np.full(shape, fill_value=0.0010016))
+    assert_allclose(rho.round(3), np.full(shape, fill_value=expected))
 
 
-@pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
-def test_calc_viscosity_h20_matrix(shape):
-    """Test the viscosity calculation."""
-    from pyrealm.core.water import calc_viscosity_h2o_matrix
+@pytest.mark.parametrize(
+    argnames="method, expected",
+    argvalues=(
+        pytest.param("vogel", 0.00100353, id="vogel"),
+        pytest.param("viswanath_natarajan", 0.00100576, id="viswanath_natarajan"),
+        pytest.param("girifalco", 0.00100742, id="girifalco"),
+        pytest.param("reid", 0.00101766, id="reid"),
+        pytest.param("daubert_danner", 0.00103321, id="daubert_danner"),
+        pytest.param("huber", 0.00100157, id="huber"),
+    ),
+)
+@pytest.mark.parametrize(
+    argnames="shape",
+    argvalues=[
+        pytest.param((1,), id="1D"),
+        pytest.param((6, 9), id="2D"),
+        pytest.param((4, 7, 3), id="3D"),
+    ],
+)
+def test_calc_viscosity_h20_methods(method, expected, shape):
+    """Test the viscosity methods.
 
-    eta = calc_viscosity_h2o_matrix(
-        np.full(shape, fill_value=20), np.full(shape, fill_value=101325)
+    The test runs both directly using the function from the registry and via the core
+    constants setting.
+    """
+
+    from pyrealm.constants import CoreConst
+    from pyrealm.core.water import VISCOSITY_METHODS, calc_viscosity_h2o
+
+    # Get the function directly from the registry and run it
+    func = VISCOSITY_METHODS[method]
+
+    mu = func(
+        tk=np.full(shape, fill_value=293.15), patm=np.full(shape, fill_value=101325)
     )
 
-    assert_allclose(eta.round(7), np.full(shape, fill_value=0.0010016))
+    assert_allclose(mu.round(8), np.full(shape, fill_value=expected))
+
+    # Configure the method through CoreConst and run the wrapper function.
+    mu = calc_viscosity_h2o(
+        tk=np.full(shape, fill_value=293.15),
+        patm=np.full(shape, fill_value=101325),
+        core_const=CoreConst(water_viscosity_method=method),
+    )
+
+    assert_allclose(mu.round(8), np.full(shape, fill_value=expected))
 
 
 def test_calculate_water_molar_volume():
@@ -88,7 +189,7 @@ def test_calculate_water_molar_volume():
     from pyrealm.core.water import calculate_water_molar_volume
 
     assert_allclose(
-        calculate_water_molar_volume(tc=0, patm=101325),
+        calculate_water_molar_volume(tc=np.array([0]), patm=np.array([101325])),
         CoreConst.k_water_molmass,
         rtol=1e-3,
     )
@@ -107,7 +208,9 @@ def test_convert_water_benchmark():
     # At 0°C and 101325 Pa, one mole of water is ~18 g (18 cm3, 0.018 mm m-2).
     # So, 1 mm m2 = 1 / 0.018 = ~55 moles.
     assert_allclose(
-        convert_water_mm_to_moles(water_mm=1, tc=0, patm=101325),
+        convert_water_mm_to_moles(
+            water_mm=np.array([1]), tc=np.array([0]), patm=np.array([101325])
+        ),
         55.508,
         rtol=1e-5,
     )
@@ -115,7 +218,9 @@ def test_convert_water_benchmark():
     # At 0°C and 101325 Pa, one mole of water is ~18 g (18 cm3, 0.018 mm m-2).
     # So, 1 mol = 0.018 mm
     assert_allclose(
-        convert_water_moles_to_mm(water_moles=1, tc=0, patm=101325),
+        convert_water_moles_to_mm(
+            water_moles=np.array([1]), tc=np.array([0]), patm=np.array([101325])
+        ),
         0.018015,
         rtol=1e-4,
     )
@@ -197,7 +302,7 @@ def test_convert_water_invalid_input():
     water_mm = np.array([1, 2])
     water_moles = np.array([1, 2])
     tc = np.array([0, 5, 20])
-    patm = 101325
+    patm = np.array([101325])
 
     with pytest.raises(ValueError):
         convert_water_mm_to_moles(water_mm, tc, patm)

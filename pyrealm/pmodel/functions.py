@@ -262,11 +262,11 @@ def calc_ns_star(
 
     Calculates the relative viscosity of water (:math:`\eta^*`), given the standard
     temperature and pressure, using :func:`~pyrealm.core.water.calc_viscosity_h2o`
-    (:math:`v(t,p)`) as:
+    (:math:`\nu(t,p)`) as:
 
     .. math::
 
-        \eta^* = \frac{v(t,p)}{v(t_0,p_0)}
+        \eta^* = \frac{\nu(t,p)}{\nu(t_0,p_0)}
 
     Args:
         tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
