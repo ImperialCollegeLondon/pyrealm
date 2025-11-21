@@ -8,7 +8,7 @@ from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.core.water import calc_viscosity_h2o
+from pyrealm.core.water import calculate_viscosity_h2o
 
 
 def calculate_simple_arrhenius_factor(
@@ -254,43 +254,42 @@ def calc_gammastar(
 
 
 def calc_ns_star(
-    tc: NDArray[np.floating],
+    tk: NDArray[np.floating],
     patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
 ) -> NDArray[np.floating]:
     r"""Calculate the relative viscosity of water.
 
-    Calculates the relative viscosity of water (:math:`\eta^*`), given the standard
-    temperature and pressure, using :func:`~pyrealm.core.water.calc_viscosity_h2o`
-    (:math:`\nu(t,p)`) as:
+    Calculates the relative viscosity of water (:math:`\mu^*`), given the standard
+    temperature and pressure, using :func:`~pyrealm.core.water.calculate_viscosity_h2o`
+    (:math:`\mu(t,p)`) as:
 
     .. math::
 
-        \eta^* = \frac{\nu(t,p)}{\nu(t_0,p_0)}
+        \eta^* = \frac{\mu(t,p)}{\mu(t_0,p_0)}
 
     Args:
-        tc: Temperature, relevant for photosynthesis (:math:`T`, °C)
+        tk: Temperature, relevant for photosynthesis (:math:`T`, K)
         patm: Atmospheric pressure (:math:`p`, Pa)
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     PModel Parameters:
-        To: standard temperature (:math:`t0`, ``k_To``)
-        Po: standard pressure (:math:`p_0`, ``k_Po``)
+        To: standard temperature (:math:`t0`, ``k_To``, 298.15 K, 25 °C)
+        Po: standard pressure (:math:`p_0`, ``k_Po``, 101325 Pa)
 
     Returns:
         A numeric value for :math:`\eta^*` (a unitless ratio)
 
     Examples:
-        >>> # Relative viscosity at 20 degrees Celsius and standard
-        >>> # atmosphere (in Pa):
-        >>> round(calc_ns_star(20, 101325), 5)
+        >>> # Relative viscosity at 293.15 K (20°C):
+        >>> round(calc_ns_star(293.15, 101325), 5)
         np.float64(1.12536)
     """
 
-    visc_env = calc_viscosity_h2o(tc, patm, core_const=core_const)
-    visc_std = calc_viscosity_h2o(
-        np.array(core_const.k_To) - np.array(core_const.k_CtoK),
-        np.array(core_const.k_Po),
+    visc_env = calculate_viscosity_h2o(tk=tk, patm=patm, core_const=core_const)
+    visc_std = calculate_viscosity_h2o(
+        tk=np.array(core_const.k_To),
+        patm=np.array(core_const.k_Po),
         core_const=core_const,
     )
 

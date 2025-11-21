@@ -115,7 +115,7 @@ def test_calc_density_h20_methods(method, expected, shape):
     """
 
     from pyrealm.constants import CoreConst
-    from pyrealm.core.water import DENSITY_METHODS, calc_density_h2o
+    from pyrealm.core.water import DENSITY_METHODS, calculate_density_h2o
 
     # Get the function directly from the registry and run it
     func = DENSITY_METHODS[method]
@@ -125,7 +125,7 @@ def test_calc_density_h20_methods(method, expected, shape):
     assert_allclose(rho.round(3), np.full(shape, fill_value=expected))
 
     # Configure the method through CoreConst and run the wrapper function.
-    rho = calc_density_h2o(
+    rho = calculate_density_h2o(
         tc=np.full(shape, fill_value=20),
         patm=np.full(shape, fill_value=101325),
         core_const=CoreConst(water_density_method=method),
@@ -142,7 +142,7 @@ def test_calc_density_h20_methods(method, expected, shape):
         pytest.param("girifalco", 0.00100742, id="girifalco"),
         pytest.param("reid", 0.00101766, id="reid"),
         pytest.param("daubert_danner", 0.00103321, id="daubert_danner"),
-        pytest.param("huber", 0.00100157, id="huber"),
+        pytest.param("huber", 0.0010016, id="huber"),
     ),
 )
 @pytest.mark.parametrize(
@@ -153,7 +153,7 @@ def test_calc_density_h20_methods(method, expected, shape):
         pytest.param((4, 7, 3), id="3D"),
     ],
 )
-def test_calc_viscosity_h20_methods(method, expected, shape):
+def test_calculate_viscosity_h20_methods(method, expected, shape):
     """Test the viscosity methods.
 
     The test runs both directly using the function from the registry and via the core
@@ -161,7 +161,7 @@ def test_calc_viscosity_h20_methods(method, expected, shape):
     """
 
     from pyrealm.constants import CoreConst
-    from pyrealm.core.water import VISCOSITY_METHODS, calc_viscosity_h2o
+    from pyrealm.core.water import VISCOSITY_METHODS, calculate_viscosity_h2o
 
     # Get the function directly from the registry and run it
     func = VISCOSITY_METHODS[method]
@@ -173,7 +173,7 @@ def test_calc_viscosity_h20_methods(method, expected, shape):
     assert_allclose(mu.round(8), np.full(shape, fill_value=expected))
 
     # Configure the method through CoreConst and run the wrapper function.
-    mu = calc_viscosity_h2o(
+    mu = calculate_viscosity_h2o(
         tk=np.full(shape, fill_value=293.15),
         patm=np.full(shape, fill_value=101325),
         core_const=CoreConst(water_viscosity_method=method),

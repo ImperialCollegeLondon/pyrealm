@@ -66,7 +66,7 @@ def register_density_method(method_name: str) -> Callable:
 
 
 @register_density_method("kell")
-def calculate_density_h20_kell(
+def calculate_density_h2o_kell(
     tc: NDArray[np.floating],
     patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
@@ -90,15 +90,15 @@ def calculate_density_h20_kell(
         core_const: An instance of CoreConst providing coefficients
 
     Examples:
-        >>> round(calculate_density_h20_kell(20, 101325), 3)
-        np.float64(998.201)
+        >>> calculate_density_h2o_kell(np.array([20]), np.array([101325])).round(3)
+        array([997.936])
     """
     poly, denom = core_const.density_kell
     return evaluate_horner_polynomial(tc, poly) / (1 + denom * tc)
 
 
 @register_density_method("jones_harris_eq6")
-def calculate_density_h20_jones_harris_eq6(
+def calculate_density_h2o_jones_harris_eq6(
     tc: NDArray[np.floating],
     patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
@@ -124,14 +124,16 @@ def calculate_density_h20_jones_harris_eq6(
         core_const: An instance of CoreConst providing coefficients
 
     Examples:
-        >>> round(calculate_density_h20_jones_harris_eq6(20, 101325), 3)
-        np.float64(998.201)
+        >>> calculate_density_h2o_jones_harris_eq6(
+        ...     np.array([20]), np.array([101325])
+        ... ).round(3)
+        array([998.201])
     """
     return evaluate_horner_polynomial(tc, core_const.density_jones_harris_rho)
 
 
 @register_density_method("jones_harris_eq8")
-def calculate_density_h20_jones_harris_eq8(
+def calculate_density_h2o_jones_harris_eq8(
     tc: NDArray[np.floating],
     patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
@@ -147,7 +149,7 @@ def calculate_density_h20_jones_harris_eq8(
         \rho_{asc} = \rho_{as}( 1+ \kappa_T(P / 1000 - 101.325))
 
     where :math:`\rho_{as}` is calculated as in
-    :meth:`calculate_density_h20_jones_harris_eq6` and:
+    :meth:`calculate_density_h2o_jones_harris_eq6` and:
 
     .. math::
 
@@ -164,10 +166,12 @@ def calculate_density_h20_jones_harris_eq8(
         core_const: An instance of CoreConst providing coefficients
 
     Examples:
-        >>> round(calculate_density_h20_jones_harris_eq8(20, 101325), 3)
-        np.float64(998.201)
+        >>> calculate_density_h2o_jones_harris_eq8(
+        ...     np.array([20]), np.array([101325])
+        ... ).round(3)
+        array([998.201])
     """
-    rho_as = calculate_density_h20_jones_harris_eq6(
+    rho_as = calculate_density_h2o_jones_harris_eq6(
         tc=tc, patm=patm, core_const=core_const
     )
     kappa_t = evaluate_horner_polynomial(tc, core_const.density_jones_harris_kappa)
@@ -198,8 +202,10 @@ def calculate_density_h2o_chen(
             equations.
 
     Examples:
-        >>> round(calc_density_h2o_chen(20, 101325), 3)
-        np.float64(998.25)
+        >>> calculate_density_h2o_chen(
+        ...     np.array([20]), np.array([101325])
+        ... ).round(3)
+        array([998.25])
     """
 
     # Calculate density at 1 atm (kg/m^3):
@@ -244,7 +250,7 @@ def calculate_density_h2o_fisher(
             equations.
 
     Examples:
-        >>> round(calc_density_h2o_fisher(20, 101325), 3)
+        >>> calculate_density_h2o_fisher(20, 101325).round(3)
         np.float64(998.206)
     """
 
@@ -275,7 +281,7 @@ def calculate_density_h2o_fisher(
     return rho
 
 
-def calc_density_h2o(
+def calculate_density_h2o(
     tc: NDArray[np.floating],
     patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
@@ -302,7 +308,7 @@ def calc_density_h2o(
             the inputs have incompatible shapes.
 
     Examples:
-        >>> round(calc_density_h2o(20, 101325), 3)
+        >>> calculate_density_h2o(20, 101325).round(3)
         np.float64(998.206)
     """
 
@@ -310,7 +316,7 @@ def calc_density_h2o(
     if safe and np.nanmin(tc) < np.array([-30]):
         raise ValueError(
             "Water density calculations below about -30°C are "
-            "unstable. See argument safe to calc_density_h2o"
+            "unstable. See argument safe to calculate_density_h2o"
         )
 
     # Check input shapes, shape not used
@@ -321,7 +327,7 @@ def calc_density_h2o(
     except KeyError:
         raise ValueError(
             f"Unknown density method '{core_const.water_density_method}' "
-            "used with calc_density_h2o"
+            "used with calculate_density_h2o"
         )
 
     return func(tc=tc, patm=patm, core_const=core_const)
@@ -391,8 +397,10 @@ def calculate_viscosity_h2o_vogel(
         core_const: An instance of CoreConst providing coefficients
 
     Examples:
-        >>> round(calculate_viscosity_h2o_vogel(293.15, 101325), 8)
-        np.float64(0.00100353)
+        >>> calculate_viscosity_h2o_vogel(
+        ...     tk=np.array([293.15]), patm=np.array([101325])
+        ... ).round(8)
+        array([0.00100353])
     """
 
     A, B, C = core_const.viscosity_vogel
@@ -400,7 +408,7 @@ def calculate_viscosity_h2o_vogel(
 
 
 @register_viscosity_method("viswanath_natarajan")
-def calc_viscosity_h2o_viswanath_natarajan(
+def calculate_viscosity_h2o_viswanath_natarajan(
     tk: NDArray[np.floating],
     patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
@@ -426,8 +434,10 @@ def calc_viscosity_h2o_viswanath_natarajan(
         core_const: An instance of CoreConst providing coefficients
 
     Examples:
-        >>> round(calc_viscosity_h2o_viswanath_natarajan(293.15, 101325), 8)
-        np.float64(0.00100576)
+        >>> calculate_viscosity_h2o_viswanath_natarajan(
+        ...     tk=np.array([293.15]), patm=np.array([101325])
+        ... ).round(8)
+        array([0.00100576])
     """
 
     A, B, C = core_const.viscosity_viswanath_natarajan
@@ -435,7 +445,7 @@ def calc_viscosity_h2o_viswanath_natarajan(
 
 
 @register_viscosity_method("girifalco")
-def calc_viscosity_h2o_girifalco(
+def calculate_viscosity_h2o_girifalco(
     tk: NDArray[np.floating],
     patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
@@ -461,8 +471,10 @@ def calc_viscosity_h2o_girifalco(
         core_const: An instance of CoreConst providing coefficients
 
     Examples:
-        >>> round(calc_viscosity_h2o_girifalco(293.15, 101325), 8)
-        np.float64(0.00100742)
+        >>> calculate_viscosity_h2o_girifalco(
+        ...    tk=np.array([293.15]), patm=np.array([101325])
+        ... ).round(8)
+        array([0.00100742])
     """
 
     A, B, C = core_const.viscosity_girifalco
@@ -470,7 +482,7 @@ def calc_viscosity_h2o_girifalco(
 
 
 @register_viscosity_method("reid")
-def calc_viscosity_h2o_reid(
+def calculate_viscosity_h2o_reid(
     tk: NDArray[np.floating],
     patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
@@ -496,8 +508,10 @@ def calc_viscosity_h2o_reid(
         core_const: An instance of CoreConst providing coefficients
 
     Examples:
-        >>> round(calc_viscosity_h2o_reid(293.15, 101325), 8)
-        np.float64(0.00101766)
+        >>> calculate_viscosity_h2o_reid(
+        ...    tk=np.array([293.15]), patm=np.array([101325])
+        ... ).round(8)
+        array([0.00101766])
     """
 
     A, B, C, D = core_const.viscosity_reid
@@ -505,7 +519,7 @@ def calc_viscosity_h2o_reid(
 
 
 @register_viscosity_method("daubert_danner")
-def calc_viscosity_h2o_daubert_danner(
+def calculate_viscosity_h2o_daubert_danner(
     tk: NDArray[np.floating],
     patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
@@ -531,8 +545,10 @@ def calc_viscosity_h2o_daubert_danner(
         core_const: An instance of CoreConst providing coefficients
 
     Examples:
-        >>> round(calc_viscosity_h2o_daubert_danner(293.15, 101325), 8)
-        np.float64(0.00103321)
+        >>> calculate_viscosity_h2o_daubert_danner(
+        ...    tk=np.array([293.15]), patm=np.array([101325])
+        ... ).round(8)
+        array([0.00103321])
     """
 
     A, B, C, D = core_const.viscosity_daubert_danner
@@ -540,7 +556,7 @@ def calc_viscosity_h2o_daubert_danner(
 
 
 @register_viscosity_method("huber")
-def calc_viscosity_h2o_huber(
+def calculate_viscosity_h2o_huber(
     tk: NDArray[np.floating],
     patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
@@ -558,17 +574,17 @@ def calc_viscosity_h2o_huber(
 
     Examples:
         >>> # Density of water at 20 degrees C and standard atmospheric pressure:
-        >>> round(calc_viscosity_h2o_huber(293.15, 101325), 8)
-        np.float64(0.00100157)
+        >>> calculate_viscosity_h2o_huber(
+        ...    tk=np.array([293.15]), patm=np.array([101325])
+        ... ).round(8)
+        array([0.0010016])
     """
 
     # Check inputs, return shape not used
     _ = check_input_shapes(tk, patm)
 
     # Get the density of water, kg/m^3
-    rho = calculate_density_h2o_chen(
-        tk - core_const.k_CtoK, patm, core_const=core_const
-    )
+    rho = calculate_density_h2o(tk - core_const.k_CtoK, patm, core_const=core_const)
 
     # Calculate dimensionless parameters:
     tbar = tk / core_const.huber_tk_ast
@@ -582,12 +598,12 @@ def calc_viscosity_h2o_huber(
 
     # Calculate mu1 (Eq. 12 & Table 3, Huber et al., 2009):
     ctbar = (1.0 / tbar) - 1.0
-    mu1 = np.zeros_like(tbar)
+    mu1 = np.zeros_like(rbar)
 
     # Iterate over the rows of the H_ij core_constants matrix
     for row_idx in np.arange(core_const.huber_H_ij.shape[1]):
         cf1 = ctbar**row_idx
-        cf2 = 0.0
+        cf2 = np.zeros_like(rbar)
         for col_idx in np.arange(core_const.huber_H_ij.shape[0]):
             cf2 += core_const.huber_H_ij[col_idx, row_idx] * (rbar - 1.0) ** col_idx
         mu1 += cf1 * cf2
@@ -601,7 +617,7 @@ def calc_viscosity_h2o_huber(
     return mu_bar * core_const.huber_mu_ast  # Pa s
 
 
-def calc_viscosity_h2o(
+def calculate_viscosity_h2o(
     tk: NDArray[np.floating],
     patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
@@ -619,8 +635,8 @@ def calc_viscosity_h2o(
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`
 
     Examples:
-        >>> # Density of water at 20 degrees C and standard atmospheric pressure:
-        >>> round(calc_viscosity_h2o(20, 101325), 7)
+        >>> # Density of water at 20 °C and standard atmospheric pressure:
+        >>> calculate_viscosity_h2o(293.15, 101325).round(7)
         np.float64(0.0010016)
     """
 
@@ -632,7 +648,7 @@ def calc_viscosity_h2o(
     except KeyError:
         raise ValueError(
             f"Unknown viscosity method '{core_const.water_viscosity_method}' "
-            "used with calc_viscosity_h2o"
+            "used with calculate_viscosity_h2o"
         )
 
     return func(tk=tk, patm=patm, core_const=core_const)
@@ -662,7 +678,7 @@ def convert_water_mm_to_moles(
     Examples:
         >>> # At 0°C and 101325 Pa, one mole of water is ~18 g (18 cm3, 0.018 mm m-2).
         >>> # So, 1 mm m2 = 1 / 0.018 = ~55 moles.
-        >>> round(convert_water_mm_to_moles(water_mm=1, tc=0, patm=101325), 3)
+        >>> convert_water_mm_to_moles(water_mm=1, tc=0, patm=101325).round(3)
         np.float64(55.508)
     """
 
@@ -700,7 +716,7 @@ def convert_water_moles_to_mm(
     Examples:
         >>> # At 0°C and 101325 Pa, one mole of water is ~18 g (18 cm3, 0.018 mm m-2).
         >>> # So, 1 mol = 0.018 mm
-        >>> round(convert_water_moles_to_mm(water_moles=1, tc=0, patm=101325), 3)
+        >>> convert_water_moles_to_mm(water_moles=1, tc=0, patm=101325).round(3)
         np.float64(0.018)
     """
 
@@ -731,10 +747,12 @@ def calculate_water_molar_volume(
 
     Examples:
         >>> # A mole of water at standard temperature and pressure occupies ~18 cm3.
-        >>> round(calculate_water_molar_volume(0, 101235), 3)
+        >>> calculate_water_molar_volume(0, 101235).round(3)
         np.float64(18.015)
     """
     # Calculate density at given temperature and pressure in g/cm3
-    water_density = calc_density_h2o(tc=tc, patm=patm, core_const=core_const) / 1000
+    water_density = (
+        calculate_density_h2o(tc=tc, patm=patm, core_const=core_const) / 1000
+    )
     # Hence molar volume as mol/cm3 or equivalently mol/mL
     return core_const.k_water_molmass / water_density
