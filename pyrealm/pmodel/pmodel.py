@@ -22,6 +22,7 @@ from typing import Any
 from warnings import warn
 
 import numpy as np
+import pandas as pd
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst, PModelConst
@@ -93,6 +94,14 @@ class PModelABC(ABC):
         self.core_const: CoreConst = env.core_const
         """The CoreConst instance used to create the model environment."""
 
+        self.gpp_penalty = (
+            (
+                (24 * 60 * 60)  # seconds to day
+                * 1e-6
+            )  # micrograms to grams
+            / self.core_const.k_c_molmass
+        )
+        """Penalty to apply to gpp when moving to daily gpp"""
         # -----------------------------------------------------------------------
         # Optimal Chi method setup
         # -----------------------------------------------------------------------
@@ -117,7 +126,7 @@ class PModelABC(ABC):
         pathway."""
 
         # -----------------------------------------------------------------------
-        # Cuantum yield of photosynthesis (kphio) setup
+        # Quantum yield of photosynthesis (kphio) setup
         # -----------------------------------------------------------------------
 
         self.method_kphio: str
@@ -273,6 +282,10 @@ class PModelABC(ABC):
     def _fit_model(self, *args: Any, **kwargs: Any) -> None:
         pass
 
+    @abstractmethod
+    def _get_daily_gpp(self, *arg: Any, **kwargs: Any) -> NDArray[Any]:
+        pass
+
     def __repr__(self) -> str:
         """Generates a string representation of PModel instance."""
 
@@ -293,6 +306,10 @@ class PModelABC(ABC):
         """
 
         summarize_attrs(self, self._data_attributes, dp=dp)
+
+    def apply_gpp_penalty(self, daily_mean_pmodel_gpp: NDArray) -> NDArray:
+        """Apply the gpp penalty to the input daily gpp."""
+        return daily_mean_pmodel_gpp * self.gpp_penalty
 
     def _method_setter(
         self,
@@ -486,6 +503,33 @@ class PModel(PModelABC):
                 self.A_c / ca_ci_diff,
                 np.nan,
             )
+
+    def _get_daily_gpp(self, datetimes: NDArray[np.datetime64]) -> NDArray[Any]:
+        """Interpolate gpp values to daily intervals.
+
+        Args: datetimes: Array with datetimes of observations
+        """
+
+        # Check spacings between datetimes are all equal
+        all_spacings = set(np.diff(datetimes))
+        if len(all_spacings) > 1:
+            raise ValueError("Datetime sequence not evenly spaced")
+
+        spacing = all_spacings.pop()
+
+        if spacing < 0:
+            raise ValueError("Datetime sequence must be increasing")
+
+        # Validate that we are not dealing with subdaily data.
+        if spacing < np.timedelta64(1, "D"):
+            raise ValueError("This function expects datetime intervals > 1 day.")
+
+        gpp_data = pd.DataFrame(data={"gpp": self.gpp}, index=pd.to_datetime(datetimes))
+
+        # Interpolate to daily values
+        daily_gpp = gpp_data.resample("D").interpolate(method="linear")
+
+        return np.array(daily_gpp["gpp"].values)
 
     def to_subdaily(
         self,
@@ -949,3 +993,21 @@ class SubdailyPModel(PModelABC):
         raise AttributeError(
             "The Subdaily P Model does not predict light use efficiency."
         )
+
+    def _get_daily_gpp(self) -> NDArray[Any]:
+        """Average gpp values to daily means - does not apply penalty."""
+
+        # Reshape gpp array by day
+        gpp_by_day = self.gpp.view()
+        gpp_by_day.shape = tuple(
+            [
+                self.acclim_model.n_days,
+                self.acclim_model.n_obs,
+                *list(self.gpp.shape[1:]),
+            ]
+        )
+
+        # Take mean (allowing for missing values)
+        daily_mean_gpp = np.nanmean(gpp_by_day, axis=1)
+
+        return daily_mean_gpp
