@@ -99,7 +99,7 @@ def test_pmodel_get_daily_gpp(datetimes, gpp_in, expected_gpp_out, test_pmodel):
     ],
 )
 def test_subdailypmodel_get_daily_gpp(
-    gpp_in, datetimes, expected_gpp_out, de_gri_subdaily_data, test_subdailypmodel
+    gpp_in, datetimes, expected_gpp_out, test_subdailypmodel
 ):
     """Tests that the averaging from subdaily gpp to daily gpp works correctly."""
 
