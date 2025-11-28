@@ -69,6 +69,8 @@ SKIP_METHODS = [
     "OptimalChiLavergne20C4.estimate_chi",  # Requires theta in PME
     "QuantumYieldSandoval",  # Requires aridity_index in PME
     "QuantumYieldSandoval.peak_quantum_yield",  # Requires aridity_index in PME
+    "PModel._get_daily_gpp",
+    "PModelABC.apply_gpp_penalty",
     # Demography - mostly 1d arrays (dataframes)
     "CohortMethods.drop_cohort_data",
     "StemTraits",
@@ -100,7 +102,6 @@ SKIP_METHODS = [
     "calculate_sapwood_respiration",
     "calculate_stem_masses",
     "calculate_whole_crown_gpp",
-    "_get_daily_gpp",
 ]
 
 
