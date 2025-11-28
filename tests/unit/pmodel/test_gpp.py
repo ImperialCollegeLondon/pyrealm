@@ -25,7 +25,7 @@ def test_pmodel():
 
 
 @pytest.fixture
-def test_subdailypmodel(de_gri_subdaily_data):
+def test_subdailypmodel(datetimes):
     """Parameters to subdaily to daily gpp test."""
     from pyrealm.pmodel import PModelEnvironment
     from pyrealm.pmodel.acclimation import AcclimationModel
@@ -33,16 +33,16 @@ def test_subdailypmodel(de_gri_subdaily_data):
 
     # Calculate the PModel photosynthetic environment
     env = PModelEnvironment(
-        tc=de_gri_subdaily_data["tc"].to_numpy(),
-        vpd=de_gri_subdaily_data["vpd"].to_numpy(),
-        co2=de_gri_subdaily_data["co2"].to_numpy(),
-        patm=de_gri_subdaily_data["patm"].to_numpy(),
-        fapar=np.ones(de_gri_subdaily_data.shape[0]),
-        ppfd=de_gri_subdaily_data["ppfd"].to_numpy(),
+        tc=np.array([20]),
+        vpd=np.array([2000]),
+        co2=np.array([400]),
+        patm=np.array([101325.0]),
+        fapar=np.array([1]),
+        ppfd=np.array([800]),
     )
 
     # Set up the datetimes of the observations and set the acclimation window
-    acclim_model = AcclimationModel(datetimes=de_gri_subdaily_data["time"].to_numpy())
+    acclim_model = AcclimationModel(datetimes=np.array(datetimes).ravel())
     acclim_model.set_window(
         window_center=np.timedelta64(12, "h"),
         half_width=np.timedelta64(30, "m"),
@@ -98,13 +98,10 @@ def test_pmodel_get_daily_gpp(datetimes, gpp_in, expected_gpp_out, test_pmodel):
         )
     ],
 )
-def test_subdailypmodel_get_daily_gpp(
-    gpp_in, datetimes, expected_gpp_out, test_subdailypmodel
-):
+def test_subdailypmodel_get_daily_gpp(gpp_in, expected_gpp_out, test_subdailypmodel):
     """Tests that the averaging from subdaily gpp to daily gpp works correctly."""
 
     test_subdailypmodel.gpp = gpp_in
-    test_subdailypmodel.acclim_model.datetimes = datetimes
     test_subdailypmodel.acclim_model.n_days = 31
     test_subdailypmodel.acclim_model.n_obs = 4
     assert_allclose(test_subdailypmodel._get_daily_gpp(), expected_gpp_out)
