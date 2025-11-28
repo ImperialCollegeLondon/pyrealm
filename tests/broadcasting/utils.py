@@ -100,6 +100,7 @@ SKIP_METHODS = [
     "calculate_sapwood_respiration",
     "calculate_stem_masses",
     "calculate_whole_crown_gpp",
+    "_get_daily_gpp",
 ]
 
 
