@@ -1,7 +1,6 @@
 """Test the input values for GPP for the phenology data."""
 
 import numpy as np
-import pandas as pd
 from numpy.testing import assert_allclose
 
 
@@ -74,17 +73,10 @@ def test_phenology_gpp_calculation(
     # - PMod_sub_A0_daily_total
     # - PMod_sub_A0_daily_total_penalised
 
-    hh_values = pd.DataFrame(
-        dict(
-            time=de_gri_subdaily_data["time"],
-            gpp=de_gri_subdaily_pmodel.gpp,
-        ),
-    )
-    hh_values = hh_values.set_index("time")
-    hh_resampler = hh_values.resample("D")
+    daily_gpp = de_gri_subdaily_pmodel._get_daily_gpp()
 
     assert_allclose(
         de_gri_daily_outputs["PMod_gpp_smstress"],
-        hh_resampler["gpp"].mean() * soilm_stress,
+        daily_gpp * soilm_stress,
         rtol=1e-6,
     )
