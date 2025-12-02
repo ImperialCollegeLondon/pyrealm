@@ -16,64 +16,62 @@ else
 fi
 
 cd $(git rev-parse --show-toplevel)
-git checkout $new_commit
 
 # Remember where we start from
 current_repo=`pwd`
 
-#This is the where we want to check the other worktree out to
-cmp_repo=$current_repo/../pyrealm_performance_check
+# Perform the profiling. First on the old commit, then the new commit
+for version in "old" "new"; do
+    repo=$current_repo/../pyrealm_performance_check_$version
+    commit_var=${version}_commit
+    commit=${!commit_var}
 
-# Adding the worktree
-echo "Add worktree" $cmp_repo
-git worktree add $cmp_repo $old_commit
+    # Adding the worktree
+    echo "Add worktree" $repo
+    git worktree add $repo $commit
 
-# Go there and activate poetry environment
-cd $cmp_repo
-poetry install
-#source .venv/bin/activate
+    # Go there and activate poetry environment
+    cd $repo
+    unset VIRTUAL_ENV
+    export POETRY_VIRTUALENVS_IN_PROJECT=1
+    poetry install
 
-# Run the profiling on old commit
-echo "Run profiling tests on old commit"
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then #Linux
-    poetry run /usr/bin/time -v pytest -m "profiling" --profile-svg
-elif [[ "$OSTYPE" == "darwin"* ]]; then #Mac OS
-     poetry run /usr/bin/time -l pytest -m "profiling" --profile-svg
-fi
-if [ "$?" != "0" ]; then
-    echo "Profiling the current code went wrong."
-    exit 1
-fi
+    # Run the profiling
+    echo "Run profiling tests on $version commit"
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then #Linux
+        poetry run /usr/bin/time -v pytest -m "profiling" --profile-svg
+    elif [[ "$OSTYPE" == "darwin"* ]]; then #Mac OS
+         poetry run /usr/bin/time -l pytest -m "profiling" --profile-svg
+    fi
+    if [ "$?" != "0" ]; then
+        echo "Profiling the current code went wrong."
+        exit 1
+    fi
 
-# Go back into the current repo and run there
-cd $current_repo
-poetry install
-echo "Run profiling tests on new commit"
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then #Linux
-    poetry run /usr/bin/time -v pytest -m "profiling" --profile-svg
-elif [[ "$OSTYPE" == "darwin"* ]]; then #Mac OS
-     poetry run /usr/bin/time -l pytest -m "profiling" --profile-svg
-fi
-if [ "$?" != "0" ]; then
-    echo "Profiling the new code went wrong."
-    exit 1
-fi
+    # Copy output and go back to the current repo
+    cp "prof/combined.prof" "$current_repo/prof/combined-$version.prof"
+    cd $current_repo
+
+    # Remove the worktree
+    git worktree remove --force $repo
+    git worktree prune
+done
 
 # Compare the profiling outputs
 cd profiling
-python -c "
+poetry run python -c "
 from pathlib import Path
 import simple_benchmarking
 import pandas as pd
 import sys
 
-prof_path_old = Path('$cmp_repo'+'/prof/combined.prof')
+prof_path_old = Path('$current_repo'+'/prof/combined-old.prof')
 print(prof_path_old)
 df_old = simple_benchmarking.run_simple_benchmarking(prof_path=prof_path_old)
 cumtime_old = (df_old.sum(numeric_only=True)['cumtime'])
 print('Old time:', cumtime_old)
 
-prof_path_new = Path('$current_repo'+'/prof/combined.prof')
+prof_path_new = Path('$current_repo'+'/prof/combined-new.prof')
 print(prof_path_new)
 df_new = simple_benchmarking.run_simple_benchmarking(prof_path=prof_path_new)
 cumtime_new = (df_new.sum(numeric_only=True)['cumtime'])
@@ -91,10 +89,9 @@ else:
 benchmarking_out="$?"
 
 cd ..
-# Remove the working tree for the comparison commit
-echo "Clean up"
-git worktree remove --force $cmp_repo
-git worktree prune
+# Remove the profiling outputs
+rm "$current_repo/prof/combined-old.prof"
+rm "$current_repo/prof/combined-new.prof"
 
 if [ $benchmarking_out != "0" ]; then
     echo "The new code is more than 5% slower than the old one."
