@@ -5,11 +5,12 @@ if [[ $# -eq 0 ]] ; then
     new_commit=HEAD
     old_commit=origin/develop
 else
-    while getopts n:o: flag
+    while getopts n:o:a flag
     do
         case "${flag}" in
             n) new_commit=${OPTARG};;
             o) old_commit=${OPTARG};;
+            a) advanced=true;;
             *) echo "Invalid input argument"; exit 1;;
         esac
     done
@@ -46,6 +47,34 @@ for version in "old" "new"; do
     if [ "$?" != "0" ]; then
         echo "Profiling the current code went wrong."
         exit 1
+    fi
+
+    # Perform the advanced function-by-function analysis
+    if [ "$advanced" = true ]; then
+        if [ "$version" = "old" ]; then
+            rm $current_repo/profiling/profiling-database.csv
+            rm $current_repo/prof/performance-plot.png
+            # Initialise the database
+            echo "Advanced regression test: Initialising database"
+            poetry run python $current_repo/profiling/run_benchmarking.py \
+                prof/combined.prof \
+                $current_repo/profiling/profiling-database.csv \
+                $current_repo/profiling/benchmark-fails.csv \
+                $commit \
+            ||
+            advanced_failed=true
+        else
+            # Compare the new times against the database
+            echo "Advanced regression test: Comparing new profiling results"
+            poetry run python $current_repo/profiling/run_benchmarking.py \
+                prof/combined.prof \
+                $current_repo/profiling/profiling-database.csv \
+                $current_repo/profiling/benchmark-fails.csv \
+                $commit \
+                --plot-path $current_repo/prof/performance-plot.png \
+            ||
+            advanced_failed=true
+        fi
     fi
 
     # Copy output and go back to the current repo
@@ -85,10 +114,22 @@ elif cumtime_new < 0.95*cumtime_old:
 else:
   print('Times haven\'t changed')
 "
-
 benchmarking_out="$?"
 
-cd ..
+# Report the results of the advanced regression test
+if [ "$advanced" = true ]; then
+    echo
+    if [ "$advanced_failed" = true ]; then
+        echo "Advanced regression test failed."
+    else
+        echo "Advanced regression test succeeded."
+    fi
+    if [ -f $current_repo/prof/performance-plot.png ]; then
+      echo "View the results in: prof/performance-plot.png"
+    fi
+    echo
+fi
+
 # Remove the profiling outputs
 rm "$current_repo/prof/combined-old.prof"
 rm "$current_repo/prof/combined-new.prof"
