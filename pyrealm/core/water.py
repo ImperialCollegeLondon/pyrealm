@@ -46,7 +46,7 @@ def register_density_method(method_name: str) -> Callable:
     """Registration decorator for water density functions.
 
     Functions decorated with ``register_density_method`` are automatically added to the
-    ``DENSITY_METHODS`` registry when imported, using the the provide name as a key.
+    ``DENSITY_METHODS`` registry when imported, using the provided name as a key.
 
     Args:
         method_name: A short name used as a key for the function in the registry.
@@ -342,7 +342,7 @@ VISCOSITY_FUNCTION_SIGNATURE: tuple[tuple[str, str], ...] = (
     ("patm", "NDArray[np.floating]"),
     ("core_const", "CoreConst"),
 )
-"""The expected signature for registered water density functions, as tuples of parameter
+"""The expected signature for registered water viscosity functions, as tuples of parameter
 name and type annotation."""
 
 
@@ -350,8 +350,7 @@ def register_viscosity_method(method_name: str) -> Callable:
     """Registration decorator for water viscosity functions.
 
     Functions decorated with ``register_viscosity_method`` are automatically added to
-    the ``VISCOSITY_METHODS`` registry when imported, using the the provide name as a
-    key.
+    the ``VISCOSITY_METHODS`` registry when imported, using the provided name as a key.
 
     Args:
         method_name: A short name used as a key for the function in the registry.
@@ -532,7 +531,7 @@ def calculate_viscosity_h2o_daubert_danner(
 
     .. math::
 
-        \mu =  \exp \left( a + \frac{b}{T} + c \ln T  + dT^10 \right
+        \mu =  \exp \left( a + \frac{b}{T} + c \ln T  + dT^10 \right)
 
     with coefficients :math:`a,b,c,d` defined in
     :attr:`CoreConst.viscosity_daubert_danner<pyrealm.constants.CoreConst.viscosity_daubert_danner>`
