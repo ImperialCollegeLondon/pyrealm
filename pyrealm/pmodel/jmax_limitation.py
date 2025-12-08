@@ -18,8 +18,7 @@ which allows implementations to be selected by a simple string method name.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import ClassVar
+from dataclasses import field
 
 import numpy as np
 from numpy.typing import NDArray
@@ -35,7 +34,6 @@ included in this registry dictionary under their defined ``method`` name.
 """
 
 
-@dataclass
 class JmaxLimitationABC(ABC):
     r"""An abstract base class for JMaxLimitation implementations.
 
@@ -54,21 +52,30 @@ class JmaxLimitationABC(ABC):
     See :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationWang17` for an example.
     """
 
-    method: ClassVar[str]
+    method: str
     """A short name for the method of Jmax limitation implemented in the subclass."""
-    data_attrs: ClassVar[tuple[tuple[str, str], ...]]
+    data_attrs: tuple[tuple[str, str], ...]
     """A tuple of names and units for the data attributes of the class to be reported 
     by summarize."""
-    optchi: OptimalChiABC
-    """The optimal chi instance used to calculate limitation terms."""
-    pmodel_const: PModelConst = field(default_factory=lambda: PModelConst())
-    """The PModel constants instance used for the calculation."""
-    _shape: tuple[int, ...] = field(init=False)
-    """Records the common numpy array shape in the data."""
-    f_j: NDArray[np.floating] = field(init=False)
-    """:math:`J_{max}` limitation factor."""
-    f_v: NDArray[np.floating] = field(init=False)
-    """:math:`V_{cmax}` limitation factor."""
+    required_env_variables: tuple[str, ...]
+    """A tuple of names of additional variables that must be included in a 
+    :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance to use a
+    particular method.
+    """
+
+    def __init__(
+        self, optchi: OptimalChiABC, pmodel_const: PModelConst = PModelConst()
+    ):
+        self.optchi = optchi
+        """The optimal chi instance used to calculate limitation terms."""
+        self.pmodel_const = pmodel_const
+        """The PModel constants instance used for the calculation."""
+        self._shape: tuple[int, ...] = self.optchi.mj.shape
+        """Records the common numpy array shape in the data."""
+        self.f_j: NDArray[np.floating]
+        """:math:`J_{max}` limitation factor."""
+        self.f_v: NDArray[np.floating]
+        """:math:`V_{cmax}` limitation factor."""
 
     def __post_init__(self) -> None:
         self._shape = self.optchi.mj.shape
@@ -107,7 +114,6 @@ class JmaxLimitationABC(ABC):
         JMAX_LIMITATION_CLASS_REGISTRY[cls.method] = cls
 
 
-@dataclass(repr=False)
 class JmaxLimitationWang17(
     JmaxLimitationABC,
     method="wang17",
@@ -169,7 +175,6 @@ class JmaxLimitationWang17(
         self.f_v[np.logical_not(vals_defined)] = np.nan
 
 
-@dataclass(repr=False)
 class JmaxLimitationSmith19(
     JmaxLimitationABC,
     method="smith19",
@@ -280,7 +285,6 @@ class JmaxLimitationSmith19(
         self.f_j = self.omega
 
 
-@dataclass(repr=True)
 class JmaxLimitationNone(
     JmaxLimitationABC, method="none", data_attrs=(("f_j", "-"), ("f_v", "-"))
 ):

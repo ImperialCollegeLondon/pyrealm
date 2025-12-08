@@ -191,9 +191,7 @@ class KattgeKnorrArrhenius(
     ArrheniusFactorABC,
     method="kattge_knorr",
     required_coefficients={"ha", "hd", "entropy_intercept", "entropy_slope"},
-    required_env_variables=tuple(
-        "mean_growth_temperature",
-    ),
+    required_env_variables=("mean_growth_temperature",),
 ):
     """Class providing Kattge Knorr Arrhenius scaling.
 

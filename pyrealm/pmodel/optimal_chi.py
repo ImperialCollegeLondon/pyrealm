@@ -731,9 +731,7 @@ class OptimalChiC4NoGammaRootzoneStress(
     OptimalChiABC,
     method="c4_no_gamma_rootzonestress",
     is_c4=True,
-    required_env_variables=tuple(
-        "rootzonestress",
-    ),
+    required_env_variables=("rootzonestress",),
 ):
     r"""Calculate optimal chi for C4 plants assuming negligible photorespiration with
      root zone stress penalty.
