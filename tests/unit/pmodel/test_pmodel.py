@@ -26,6 +26,8 @@ def test_pmodel_method_combination_checking():
     from pyrealm.pmodel.quantum_yield import QUANTUM_YIELD_CLASS_REGISTRY
 
     # Get all the variables possibly required across all the methods
+    # NOTE: JMaxLim does not use the PModelEnv as an input - currently has no methods
+    #       that require additional env variables.
     required_vars = (
         [v.required_env_variables for v in ARRHENIUS_METHOD_REGISTRY.values()]
         + [v.required_env_variables for v in OPTIMAL_CHI_CLASS_REGISTRY.values()]
