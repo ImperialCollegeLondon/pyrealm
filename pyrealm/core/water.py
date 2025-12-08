@@ -342,8 +342,8 @@ VISCOSITY_FUNCTION_SIGNATURE: tuple[tuple[str, str], ...] = (
     ("patm", "NDArray[np.floating]"),
     ("core_const", "CoreConst"),
 )
-"""The expected signature for registered water viscosity functions, as tuples of parameter
-name and type annotation."""
+"""The expected signature for registered water viscosity functions, as tuples of 
+parameter name and type annotation."""
 
 
 def register_viscosity_method(method_name: str) -> Callable:
