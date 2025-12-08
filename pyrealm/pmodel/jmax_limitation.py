@@ -5,13 +5,13 @@ provides an abstract base dataclass
 functionality for the implementation. Individual methods then are defined as subclasses
 that only need to add any additional data attributes and define the private
 :meth:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC._calculate_limitation_terms`
-method. This is automatically called by the ``__post_init__`` method of the data class and
+method. This is automatically called by the ``__init__`` method of the class and
 so the limitation terms are calculated when an instance is created.
 
 The module defines a registry
 (:data:`~pyrealm.pmodel.jmax_limitation.JMAX_LIMITATION_CLASS_REGISTRY`) to track
 defined subclasses. Subclasses are added to this dictionary, under a string set by the
-subclass ``method`` attribute, by the ``__init_subclass`` method of the base class,
+subclass ``method`` attribute, by the ``__init_subclass__`` method of the base class,
 which allows implementations to be selected by a simple string method name.
 """  # noqa D210, D415
 
@@ -42,10 +42,8 @@ class JmaxLimitationABC(ABC):
     define any additional data attributes that should be exposed to users and define the
     private
     :meth:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC._calculate_limitation_terms`
-    method for the implementation. Subclass definitions should use
-    ``@dataclass(repr=False)`` to avoid overriding the base implementation of the
-    ``_repr__`` method, and also need to provide a method name string and a tuple of the
-    data attributes to include when the
+    method for the implementation. Subclass definitions should provide a method name
+    string and a tuple of the data attributes to include when the
     :meth:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC.summarize` method is called
     for the subclass.
 
@@ -57,11 +55,6 @@ class JmaxLimitationABC(ABC):
     data_attrs: tuple[tuple[str, str], ...]
     """A tuple of names and units for the data attributes of the class to be reported 
     by summarize."""
-    required_env_variables: tuple[str, ...]
-    """A tuple of names of additional variables that must be included in a 
-    :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance to use a
-    particular method.
-    """
 
     def __init__(
         self, optchi: OptimalChiABC, pmodel_const: PModelConst = PModelConst()
@@ -76,9 +69,6 @@ class JmaxLimitationABC(ABC):
         """:math:`J_{max}` limitation factor."""
         self.f_v: NDArray[np.floating]
         """:math:`V_{cmax}` limitation factor."""
-
-    def __post_init__(self) -> None:
-        self._shape = self.optchi.mj.shape
 
         self._calculate_limitation_terms()
 
