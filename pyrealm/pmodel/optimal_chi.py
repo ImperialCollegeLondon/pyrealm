@@ -82,10 +82,10 @@ class OptimalChiABC(ABC):
     """
     is_c4: bool
     """A flag indicating if the method captures the C4 photosynthetic pathway."""
-    requires: list[str]
-    """A list of names of optional attributes of
-    :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` that must be populated
-    to use a method.
+    required_env_variables: tuple[str, ...]
+    """A tuple of names of additional variables that must be included in a 
+    :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance to use a
+    particular method.
     """
 
     def __init__(
@@ -126,7 +126,7 @@ class OptimalChiABC(ABC):
         r"""Ratio of :math:`m_j/m_c`."""
 
         # Run the calculation methods after checking for any required variables
-        self._check_requires()
+        self._check_required_env_variables()
         self.set_beta()
         self.estimate_chi()
 
@@ -143,10 +143,10 @@ class OptimalChiABC(ABC):
     def estimate_chi(self, xi_values: NDArray[np.floating] | None = None) -> None:
         """Estimate xi, chi and other variables."""
 
-    def _check_requires(self) -> None:
+    def _check_required_env_variables(self) -> None:
         """Check additional required variables are present."""
 
-        for required_var in self.requires:
+        for required_var in self.required_env_variables:
             if not hasattr(self.env, required_var):
                 raise ValueError(
                     f"{self.__class__.__name__} (method {self.method}) requires "
@@ -177,12 +177,14 @@ class OptimalChiABC(ABC):
         summarize_attrs(self, attrs, dp=dp)
 
     @classmethod
-    def __init_subclass__(cls, method: str, is_c4: bool, requires: list[str]) -> None:
+    def __init_subclass__(
+        cls, method: str, is_c4: bool, required_env_variables: tuple[str, ...]
+    ) -> None:
         """Initialise a subclass deriving from this ABC."""
 
         cls.method = method
         cls.is_c4 = is_c4
-        cls.requires = requires
+        cls.required_env_variables = required_env_variables
         OPTIMAL_CHI_CLASS_REGISTRY[cls.method] = cls
 
 
@@ -190,7 +192,7 @@ class OptimalChiPrentice14(
     OptimalChiABC,
     method="prentice14",
     is_c4=False,
-    requires=[],
+    required_env_variables=tuple(),
 ):
     r"""Calculate :math:`\chi` for C3 plants following :cite:`Prentice:2014bc`.
 
@@ -274,7 +276,7 @@ class OptimalChiPrentice14RootzoneStress(
     OptimalChiABC,
     method="prentice14_rootzonestress",
     is_c4=False,
-    requires=["rootzonestress"],
+    required_env_variables=("rootzonestress",),
 ):
     r"""Calculate :math:`\chi` for C3 plants following :cite:`Prentice:2014bc` with root
     zone stress penalty.
@@ -346,7 +348,7 @@ class OptimalChiC4(
     OptimalChiABC,
     method="c4",
     is_c4=True,
-    requires=[],
+    required_env_variables=tuple(),
 ):
     r"""Estimate :math:`\chi` for C4 plants following :cite:`Prentice:2014bc`.
 
@@ -408,7 +410,7 @@ class OptimalChiC4RootzoneStress(
     OptimalChiABC,
     method="c4_rootzonestress",
     is_c4=True,
-    requires=["rootzonestress"],
+    required_env_variables=("rootzonestress",),
 ):
     r"""Estimate :math:`\chi` for C4 plants following :cite:`Prentice:2014bc` with
      root zone stress penalty.
@@ -480,7 +482,7 @@ class OptimalChiLavergne20C3(
     OptimalChiABC,
     method="lavergne20_c3",
     is_c4=False,
-    requires=["theta"],
+    required_env_variables=("theta",),
 ):
     r"""Estimate :math:`\chi` for C3 plants using soil moisture corrected :math:`\beta`.
 
@@ -560,7 +562,7 @@ class OptimalChiLavergne20C4(
     OptimalChiABC,
     method="lavergne20_c4",
     is_c4=True,
-    requires=["theta"],
+    required_env_variables=("theta",),
 ):
     r"""Calculate soil moisture corrected :math:`\chi` for C4 plants.
 
@@ -650,7 +652,7 @@ class OptimalChiC4NoGamma(
     OptimalChiABC,
     method="c4_no_gamma",
     is_c4=True,
-    requires=[],
+    required_env_variables=tuple(),
 ):
     r"""Calculate optimal chi for C4 plants assuming negligible photorespiration.
 
@@ -729,7 +731,9 @@ class OptimalChiC4NoGammaRootzoneStress(
     OptimalChiABC,
     method="c4_no_gamma_rootzonestress",
     is_c4=True,
-    requires=["rootzonestress"],
+    required_env_variables=tuple(
+        "rootzonestress",
+    ),
 ):
     r"""Calculate optimal chi for C4 plants assuming negligible photorespiration with
      root zone stress penalty.

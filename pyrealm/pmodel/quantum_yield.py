@@ -59,17 +59,17 @@ class QuantumYieldABC(ABC):
         class QuantumYieldFixed(
             QuantumYieldABC,
             method="method_name",
-            requires=["an_environment_variable"],
+            required_env_variables=("an_environment_variable",),
             array_reference_kphio_ok=True,
         ):
 
     * The ``method`` argument sets the name of the method, which can then be used to
       select the implemented class from the
       :data:`~pyrealm.pmodel.quantum_yield.QUANTUM_YIELD_CLASS_REGISTRY`.
-    * The `requires` argument sets a list of variables that must be present in the
-      :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` to use this
-      approach. The core ``tc``, ``vpd``, ``patm`` and ``co2`` variables do not need to
-      be included in this list.
+    * The `required_env_variables` argument sets a list of variables that must be
+      present in the :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` to
+      use this approach. The core ``tc``, ``vpd``, ``patm`` and ``co2`` variables do not
+      need to be included in this list.
     * The ``array_reference_kphio_ok`` argument sets whether the method can accept an
       array of :math:`\phi_0` values or whether a single global reference value should
       be used.
@@ -97,10 +97,10 @@ class QuantumYieldABC(ABC):
     """A short method name used to identify the class in
     :data:`~pyrealm.pmodel.quantum_yield.QUANTUM_YIELD_CLASS_REGISTRY`.
     """
-    requires: list[str]
-    """A list of names of optional attributes of
-    :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` that must be populated
-    to use a method.
+    required_env_variables: tuple[str, ...]
+    """A tuple of names of additional variables that must be included in a 
+    :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance to use a
+    particular method.
     """
     array_reference_kphio_ok: bool
     """Does the implementation handle arrays inputs to the reference_kphio __init__
@@ -149,7 +149,7 @@ class QuantumYieldABC(ABC):
         """The calculated intrinsic quantum yield of photosynthesis."""
 
         # Run the calculation methods after checking for any required variables
-        self._check_requires()
+        self._check_required_env_variables()
         self._calculate_kphio()
 
         # Validate that the subclass methods populate the attributes correctly.
@@ -159,10 +159,10 @@ class QuantumYieldABC(ABC):
     def _calculate_kphio(self) -> None:
         """Calculate the intrinsic quantum yield of photosynthesis."""
 
-    def _check_requires(self) -> None:
+    def _check_required_env_variables(self) -> None:
         """Check additional required variables are present."""
 
-        for required_var in self.requires:
+        for required_var in self.required_env_variables:
             if not hasattr(self.env, required_var):
                 raise ValueError(
                     f"{self.__class__.__name__} (method {self.method}) requires "
@@ -191,13 +191,13 @@ class QuantumYieldABC(ABC):
     def __init_subclass__(
         cls,
         method: str,
-        requires: list[str],
+        required_env_variables: tuple[str, ...],
         array_reference_kphio_ok: bool,
     ) -> None:
         """Initialise a subclass deriving from this ABC."""
 
         cls.method = method
-        cls.requires = requires
+        cls.required_env_variables = required_env_variables
         cls.array_reference_kphio_ok = array_reference_kphio_ok
         QUANTUM_YIELD_CLASS_REGISTRY[cls.method] = cls
 
@@ -205,7 +205,7 @@ class QuantumYieldABC(ABC):
 class QuantumYieldFixed(
     QuantumYieldABC,
     method="fixed",
-    requires=[],
+    required_env_variables=tuple(),
     array_reference_kphio_ok=True,
 ):
     r"""Apply a fixed value for :math:`\phi_0`.
@@ -224,7 +224,7 @@ class QuantumYieldFixed(
 class QuantumYieldTemperature(
     QuantumYieldABC,
     method="temperature",
-    requires=[],
+    required_env_variables=tuple(),
     array_reference_kphio_ok=False,
 ):
     r"""Calculate temperature dependent of quantum yield efficiency.
@@ -264,7 +264,7 @@ class QuantumYieldTemperature(
 class QuantumYieldSandoval(
     QuantumYieldABC,
     method="sandoval",
-    requires=["aridity_index", "mean_growth_temperature"],
+    required_env_variables=("aridity_index", "mean_growth_temperature"),
     array_reference_kphio_ok=False,
 ):
     r"""Calculate aridity and mean growth temperature effects on quantum yield.

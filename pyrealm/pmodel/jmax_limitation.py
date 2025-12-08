@@ -17,7 +17,7 @@ which allows implementations to be selected by a simple string method name.
 
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import ClassVar
 
@@ -36,7 +36,7 @@ included in this registry dictionary under their defined ``method`` name.
 
 
 @dataclass
-class JmaxLimitationABC(metaclass=ABCMeta):
+class JmaxLimitationABC(ABC):
     r"""An abstract base class for JMaxLimitation implementations.
 
     This base class defines the ``__init__`` arguments, common data attributes and core
