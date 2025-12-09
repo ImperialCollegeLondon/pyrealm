@@ -13,7 +13,8 @@ To resolve failing tests there are a few options to use in utils.py:
 from collections.abc import Callable
 
 import pytest
-from utils import (
+
+from tests.broadcasting.utils import (
     Context,
     compare_instances,
     comparison_string,
