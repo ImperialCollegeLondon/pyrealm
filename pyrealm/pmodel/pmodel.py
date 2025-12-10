@@ -94,7 +94,7 @@ class PModelABC(ABC):
         self.core_const: CoreConst = env.core_const
         """The CoreConst instance used to create the model environment."""
 
-        self.gpp_penalty = (
+        self.gpp_conversion_factor = (
             (
                 (24 * 60 * 60)  # seconds to day
                 * 1e-6
@@ -307,9 +307,9 @@ class PModelABC(ABC):
 
         summarize_attrs(self, self._data_attributes, dp=dp)
 
-    def apply_gpp_penalty(self, daily_mean_pmodel_gpp: NDArray) -> NDArray:
-        """Apply the gpp penalty to the input daily gpp."""
-        return daily_mean_pmodel_gpp * self.gpp_penalty
+    def apply_gpp_conversion_factor(self, daily_mean_pmodel_gpp: NDArray) -> NDArray:
+        """Apply the gpp conversion factor to the input daily gpp."""
+        return daily_mean_pmodel_gpp * self.gpp_conversion_factor
 
     def _method_setter(
         self,
