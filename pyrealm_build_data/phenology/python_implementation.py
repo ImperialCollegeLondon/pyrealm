@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
+from scipy.interpolate import interp1d
 from scipy.special import lambertw  # type: ignore[import-untyped]
 
 from pyrealm.core.time_series import AnnualValueCalculator
@@ -160,7 +161,7 @@ subdaily_pmodel = SubdailyPModel(
 )
 
 # Get an xarray dataset of the required outputs at half hourly scale
-subdaily_outputs = xr.Dataset(
+subfortnightly_daily_values = xr.Dataset(
     data_vars=dict(
         PMod_gpp=("time", subdaily_pmodel.gpp),
         PMod_chi=("time", subdaily_pmodel.optchi.chi),
@@ -182,7 +183,7 @@ subdaily_outputs = xr.Dataset(
 # days.
 
 # Get the growing days
-growing_day = subdaily_outputs["tc"].resample(time="1D").mean() > 0
+growing_day = subfortnightly_daily_values["tc"].resample(time="1D").mean() > 0
 
 # Eliminate short chunks of growth
 gsl_lengths, gsl_values = run_length_encode(growing_day.to_numpy())
@@ -190,7 +191,7 @@ gsl_values[np.logical_and(gsl_values == 1, gsl_lengths < 5)] = 0
 growing_day.data = np.repeat(gsl_values, gsl_lengths)
 
 # Now assign those daily values at the subdaily frequency
-subdaily_outputs = subdaily_outputs.assign(
+subfortnightly_daily_values = subfortnightly_daily_values.assign(
     growing_day=("time", np.repeat(growing_day.to_numpy(), 48))
 )
 
@@ -210,45 +211,50 @@ de_gri_splash = de_gri_splash.assign(
 de_gri_splash = de_gri_splash.sel(time=slice("2004-01-01", "2014-12-31"))
 
 # Duplicate penalty factor to half hourly intervals in subdaily data
-subdaily_outputs = subdaily_outputs.assign(
+subfortnightly_daily_values = subfortnightly_daily_values.assign(
     soilm_stress=("time", np.repeat(de_gri_splash["soilm_stress"].to_numpy(), 48))
 )
 
 # Calculate penalised GPP
-subdaily_outputs = subdaily_outputs.assign(
-    PMod_gpp_smstress=subdaily_outputs["PMod_gpp"] * subdaily_outputs["soilm_stress"],
+subfortnightly_daily_values = subfortnightly_daily_values.assign(
+    PMod_gpp_smstress=subfortnightly_daily_values["PMod_gpp"]
+    * subfortnightly_daily_values["soilm_stress"],
 )
 
 # Calculate annual values
 avc = AnnualValueCalculator(
     data_shape=env.tc.shape,
     timing=acclim,
-    subset_mask=subdaily_outputs["growing_day"].to_numpy(),
+    subset_mask=subfortnightly_daily_values["growing_day"].to_numpy(),
 )
 
 
 # Average annual GPP ± soil moisture stress
 # GPP, precipitation and growing day totals across the whole year.
 
-ann_mean_subdaily_gpp = avc.get_annual_means(subdaily_outputs["PMod_gpp"].to_numpy())
-
-ann_mean_subdaily_gpp_smstress = avc.get_annual_means(
-    subdaily_outputs["PMod_gpp_smstress"].to_numpy()
+ann_mean_subdaily_gpp = avc.get_annual_means(
+    subfortnightly_daily_values["PMod_gpp"].to_numpy()
 )
 
-ann_total_P_molar = avc.get_annual_totals(subdaily_outputs["precip_molar"].to_numpy())
+ann_mean_subdaily_gpp_smstress = avc.get_annual_means(
+    subfortnightly_daily_values["PMod_gpp_smstress"].to_numpy()
+)
+
+ann_total_P_molar = avc.get_annual_totals(
+    subfortnightly_daily_values["precip_molar"].to_numpy()
+)
 
 # Chi, ca and VPD in growing season
 annual_mean_ca_in_GS = avc.get_annual_means(
-    subdaily_outputs["ca"].to_numpy(), within_subset=True
+    subfortnightly_daily_values["ca"].to_numpy(), within_subset=True
 )
 
 annual_mean_chi_in_GS = avc.get_annual_means(
-    subdaily_outputs["PMod_chi"].to_numpy(), within_subset=True
+    subfortnightly_daily_values["PMod_chi"].to_numpy(), within_subset=True
 )
 
 annual_mean_vpd_in_GS = avc.get_annual_means(
-    subdaily_outputs["vpd"].to_numpy(), within_subset=True
+    subfortnightly_daily_values["vpd"].to_numpy(), within_subset=True
 )
 
 # Create an annual dataset
@@ -257,7 +263,7 @@ subdaily_annual_values = xr.Dataset(
         ann_mean_subdaily_gpp_smstress=("time", ann_mean_subdaily_gpp_smstress),
         ann_mean_subdaily_gpp=("time", ann_mean_subdaily_gpp),
         annual_precip_molar=("time", ann_total_P_molar),
-        N_growing_days=("time", avc.year_n_growing_days),
+        N_growing_days=("time", avc.year_n_days_subset),
         N_days=("time", avc.year_n_days),
         annual_mean_ca_in_GS=("time", annual_mean_ca_in_GS),
         annual_mean_chi_in_GS=("time", annual_mean_chi_in_GS),
@@ -322,7 +328,7 @@ subdaily_annual_values["m"] = (
 
 # Now calculate the daily time series of LAI, which needs the daily assimilation
 subdaily_daily_values = (
-    subdaily_outputs[["PMod_gpp_smstress"]].resample(time="1D").mean()
+    subfortnightly_daily_values[["PMod_gpp_smstress"]].resample(time="1D").mean()
 )
 
 # daily molar assimilation: mean gpp µC m-2 s-1 --> mol C m-2 day)
@@ -386,7 +392,7 @@ subdaily_daily_values = subdaily_daily_values.assign(
 
 Path("subdaily_example").mkdir(exist_ok=True)
 
-subdaily_outputs.to_pandas().to_csv(
+subfortnightly_daily_values.to_pandas().to_csv(
     "subdaily_example/half_hourly_data.csv", float_format="%0.7g"
 )
 
@@ -484,7 +490,7 @@ fortnightly_annual_values = xr.Dataset(
     data_vars=dict(
         annual_mean_gpp=("time", fortnightly_annual_mean_gpp),
         annual_precip_molar=("time", fortnightly_annual_precip),
-        N_growing_days=("time", avc2.year_n_growing_days),
+        N_growing_days=("time", avc2.year_n_days_subset),
         N_days=("time", avc2.year_n_days),
         annual_mean_ca_in_GS=("time", fortnightly_annual_mean_ca_gs),
         annual_mean_chi_in_GS=("time", fortnightly_annual_mean_chi_gs),
@@ -492,6 +498,12 @@ fortnightly_annual_values = xr.Dataset(
     ),
     coords=dict(time=avc2.years),
 )
+
+# Reduce time coords to annual precision
+fortnightly_annual_values = fortnightly_annual_values.assign_coords(
+    time=fortnightly_annual_values["time"].dt.year
+)
+
 
 # Convert mean GPP from µg C m-2 s-1 to annual moles
 fortnightly_annual_values["ann_total_A0"] = (
@@ -532,6 +544,85 @@ fortnightly_annual_values["m"] = (
     * fortnightly_annual_values["lai_max"]
 ) / (fortnightly_annual_values["ann_total_A0"] * fortnightly_annual_values["fapar_max"])
 
+
+# Get a daily phenology time series by interpolation
+
+gpp = fortnightly_outputs["gpp"].to_numpy()
+time = fortnightly_outputs["time"].to_numpy()
+time_int = fortnightly_outputs["time"].to_numpy().astype(np.int_)
+
+
+# The interp1d object cannot be called with datetime64 values as new_x
+interpolator = interp1d(time_int, gpp)
+daily_timestamps = np.arange(time[0], time[-1], np.timedelta64(1, "D"))
+daily_timestamps_int = daily_timestamps.astype(np.int_)
+daily_gpp = interpolator(daily_timestamps_int)
+
+
+# Start compiling a dataset
+fortnightly_daily_values = xr.Dataset(
+    data_vars={
+        "daily_gpp": ("time", daily_gpp),
+    },
+    coords={"time": daily_timestamps},
+)
+
+
+# daily molar assimilation: mean gpp µC m-2 s-1 --> mol C m-2 day)
+fortnightly_daily_values["daily_A0"] = (
+    fortnightly_daily_values["daily_gpp"]
+    * (24 * 60 * 60 * 1e-6)
+    / env.core_const.k_c_molmass
+)
+
+# Calculate steady state LAI, using principal branch of Lambert W function
+#  - Map annual m and LAI values onto daily values of assimilation for each year
+fortnightly_daily_values = fortnightly_daily_values.assign(
+    annual_m=(
+        "time",
+        fortnightly_annual_values["m"]
+        .sel(time=fortnightly_daily_values["time"].dt.year)
+        .to_numpy(),
+    ),
+    annual_lai_max=(
+        "time",
+        fortnightly_annual_values["lai_max"]
+        .sel(time=fortnightly_daily_values["time"].dt.year)
+        .to_numpy(),
+    ),
+)
+
+# Calculate daily mu value as m * daily molar assimilation:
+mu = (fortnightly_daily_values["annual_m"] * fortnightly_daily_values["daily_A0"]).data
+
+# Calculate the Lambert W0 value
+Ls_term_1 = mu + (1 / k) * lambertw(-k * mu * np.exp(-k * mu), k=0)
+
+# Check that all imaginary parts are zero or np.nan
+if not np.all(np.logical_or(np.imag(Ls_term_1) == 0, np.isnan(Ls_term_1))):
+    raise ValueError("Imaginary parts of Lambert W calculation are not zero")
+
+# Clip the real parts at zero
+Ls_term_1 = np.clip(np.real(Ls_term_1), a_min=0, a_max=None)
+
+# Find the daily minimum of the lambert term and annual maximum LAI
+Ls_daily = np.minimum(Ls_term_1, fortnightly_daily_values["annual_lai_max"].data)
+
+# There are floating point issues here that create some spuriously close to zero values,
+# so round these off - rounding at 5 dp loses no meaningful information
+# >>> Ls_daily[Ls_daily < 1e-5].max()
+# np.float64(5.024869409453459e-13)
+Ls_daily = Ls_daily.round(5)
+
+# Apply lagging
+Ls_daily_lagged = acclim.apply_acclimation(Ls_daily)
+
+# Save predicted daily time series for L
+fortnightly_daily_values = fortnightly_daily_values.assign(
+    Ls_daily=("time", Ls_daily),
+    Ls_daily_lagged=("time", Ls_daily_lagged),
+)
+
 # Save data to files
 
 Path("fortnightly_example").mkdir(exist_ok=True)
@@ -542,4 +633,8 @@ fortnightly_outputs.to_pandas().to_csv(
 
 fortnightly_annual_values.to_pandas().to_csv(
     "fortnightly_example/annual_outputs.csv", float_format="%0.7g"
+)
+
+fortnightly_daily_values.to_pandas().to_csv(
+    "fortnightly_example/daily_outputs.csv", float_format="%0.7g"
 )
