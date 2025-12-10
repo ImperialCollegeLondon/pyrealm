@@ -70,7 +70,7 @@ SKIP_METHODS = [
     "QuantumYieldSandoval",  # Requires aridity_index in PME
     "QuantumYieldSandoval.peak_quantum_yield",  # Requires aridity_index in PME
     "PModel._get_daily_gpp",
-    "PModelABC.apply_gpp_penalty",
+    "PModelABC.apply_gpp_conversion_factor",
     # Demography - mostly 1d arrays (dataframes)
     "CohortMethods.drop_cohort_data",
     "StemTraits",
