@@ -8,6 +8,8 @@ def test_phenology_gpp_calculation(
     de_gri_splash_data,
     de_gri_subdaily_data,
     de_gri_daily_outputs,
+    de_gri_fortnightly_data,
+    de_gri_fortnightly_daily_outputs,
     de_gri_constants,
 ):
     """Test the provided GPP values for phenology can be recreated."""
@@ -15,7 +17,7 @@ def test_phenology_gpp_calculation(
     from pyrealm.pmodel import PModelEnvironment
     from pyrealm.pmodel.acclimation import AcclimationModel
     from pyrealm.pmodel.functions import calc_soilmstress_mengoli
-    from pyrealm.pmodel.pmodel import SubdailyPModel
+    from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 
     # Calculate the PModel photosynthetic environment
     env = PModelEnvironment(
@@ -78,5 +80,25 @@ def test_phenology_gpp_calculation(
     assert_allclose(
         de_gri_daily_outputs["PMod_gpp_smstress"],
         daily_gpp * soilm_stress,
+        rtol=1e-6,
+    )
+
+    fortnightly_env = PModelEnvironment(
+        tc=de_gri_fortnightly_data["tc_mean"].to_numpy(),
+        vpd=de_gri_fortnightly_data["vpd_mean"].to_numpy(),
+        patm=de_gri_fortnightly_data["patm_mean"].to_numpy(),
+        co2=de_gri_fortnightly_data["co2_mean"].to_numpy(),
+        ppfd=de_gri_fortnightly_data["ppfd_mean"].to_numpy(),
+        fapar=np.ones_like(de_gri_fortnightly_data["tc_mean"]),
+    )
+    fortnightly_datetimes = de_gri_fortnightly_data["time"]
+    de_gri_pmodel = PModel(env=fortnightly_env)
+    pmodel_gpp_from_fortnightly = de_gri_pmodel._get_daily_gpp(
+        datetimes=fortnightly_datetimes
+    )
+
+    assert_allclose(
+        de_gri_daily_outputs["PMod_gpp_smstress"],
+        pmodel_gpp_from_fortnightly,
         rtol=1e-6,
     )
