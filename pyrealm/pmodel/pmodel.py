@@ -22,8 +22,8 @@ from typing import Any
 from warnings import warn
 
 import numpy as np
-import pandas as pd
 from numpy.typing import NDArray
+from scipy.interpolate import interp1d
 
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import summarize_attrs
@@ -510,26 +510,17 @@ class PModel(PModelABC):
         Args: datetimes: Array with datetimes of observations
         """
 
-        # Check spacings between datetimes are all equal
-        all_spacings = set(np.diff(datetimes))
-        if len(all_spacings) > 1:
-            raise ValueError("Datetime sequence not evenly spaced")
+        time_int = datetimes.astype(np.int_)
 
-        spacing = all_spacings.pop()
+        # The interp1d object cannot be called with datetime64 values as new_x
+        interpolator = interp1d(time_int, self.gpp)
+        daily_timestamps = np.arange(
+            datetimes[0], datetimes[-1], np.timedelta64(1, "D")
+        )
+        daily_timestamps_int = daily_timestamps.astype(np.int_)
+        daily_gpp = interpolator(daily_timestamps_int)
 
-        if spacing < 0:
-            raise ValueError("Datetime sequence must be increasing")
-
-        # Validate that we are not dealing with subdaily data.
-        if spacing < np.timedelta64(1, "D"):
-            raise ValueError("This function expects datetime intervals > 1 day.")
-
-        gpp_data = pd.DataFrame(data={"gpp": self.gpp}, index=pd.to_datetime(datetimes))
-
-        # Interpolate to daily values
-        daily_gpp = gpp_data.resample("D").interpolate(method="linear")
-
-        return np.array(daily_gpp["gpp"].values)
+        return daily_gpp
 
     def to_subdaily(
         self,
