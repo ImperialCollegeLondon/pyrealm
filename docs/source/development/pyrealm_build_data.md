@@ -21,7 +21,7 @@ language_info:
   version: 3.11.9
 ---
 
-# The {mod}`~pyrealm_build_data` module
+# The {mod}`~pyrealm_build_data` package
 
 ```{eval-rst}
 .. automodule:: pyrealm_build_data
