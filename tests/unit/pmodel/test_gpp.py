@@ -79,7 +79,8 @@ def test_pmodel_get_daily_gpp(datetimes, gpp_in, expected_gpp_out, test_pmodel):
     """Tests that the interpolation to daily gpp from PModel gpp works correctly."""
 
     test_pmodel.gpp = gpp_in
-    assert_allclose(test_pmodel._get_daily_gpp(datetimes), expected_gpp_out)
+    daily_gpp = test_pmodel._get_daily_gpp(np.array(datetimes))
+    assert_allclose(expected_gpp_out, daily_gpp)
 
 
 @pytest.mark.parametrize(
