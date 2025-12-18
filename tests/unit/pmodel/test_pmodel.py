@@ -48,8 +48,6 @@ def test_pmodel_method_combination_checking():
             62 * 24, fill_value=(var_bounds.upper + var_bounds.lower) / 2
         )
 
-    env = PModelEnvironment(**data)
-
     # Acclimation model
     acclim = AcclimationModel(
         datetimes=np.arange(
@@ -70,6 +68,25 @@ def test_pmodel_method_combination_checking():
 
     for arh_meth, chi_meth, phi0_meth, jmax_meth in method_combinations:
         with does_not_raise():
+            # Get the subset of variables required for this combination
+            this_combo_required_vars = (
+                "tc",
+                "patm",
+                "vpd",
+                "co2",
+                "fapar",
+                "ppfd",
+                *ARRHENIUS_METHOD_REGISTRY[arh_meth].required_env_variables,
+                *OPTIMAL_CHI_CLASS_REGISTRY[chi_meth].required_env_variables,
+                *QUANTUM_YIELD_CLASS_REGISTRY[phi0_meth].required_env_variables,
+            )
+
+            # Build the combo specific environment
+            env = PModelEnvironment(
+                **{v: d for v, d in data.items() if v in this_combo_required_vars}
+            )
+
+            # Check the models run
             _ = PModel(
                 env=env,
                 method_arrhenius=arh_meth,
