@@ -45,6 +45,15 @@ language_info:
     :members:
 ```
 
+## The {mod}`~pyrealm.core.datasets` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.core.datasets
+    :autosummary:
+    :members:
+    :private-members:
+```
+
 ## The {mod}`~pyrealm.core.hygro` submodule
 
 ```{eval-rst}

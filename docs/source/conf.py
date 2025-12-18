@@ -185,6 +185,7 @@ intersphinx_mapping = {
     "pandas": ("http://pandas.pydata.org/pandas-docs/dev/", None),
     "shapely": ("https://shapely.readthedocs.io/en/stable/", None),
     "marshmallow": ("https://marshmallow.readthedocs.io/en/stable/", None),
+    "pooch": ("https://www.fatiando.org/pooch/latest/", None),
 }
 
 
