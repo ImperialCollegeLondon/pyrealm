@@ -69,7 +69,7 @@ def values():
 # ------------------------------------------
 
 # ------------------------------------------
-# Testing calc_density_h20 - temp + patm
+# Testing calculate_density_h20 - temp + patm
 # ------------------------------------------
 
 
@@ -82,12 +82,12 @@ def values():
         ("tc_ar", "shape_error", pytest.raises(ValueError), None),  # shape mismatch
     ],
 )
-def test_calc_density_h2o(values, tc, patm, context_manager, expvals):
-    """Test the calc_density_h2o function."""
-    from pyrealm.core.water import calc_density_h2o
+def test_calculate_density_h2o(values, tc, patm, context_manager, expvals):
+    """Test the calculate_density_h2o function."""
+    from pyrealm.core.water import calculate_density_h2o
 
     with context_manager:
-        ret = calc_density_h2o(tc=values[tc], patm=values[patm])
+        ret = calculate_density_h2o(tc=values[tc], patm=values[patm])
         if expvals is not None:
             assert_allclose(ret, values[expvals])
 
@@ -276,13 +276,17 @@ def test_calc_soilmstress_stocker(values, soilm, meanalpha, context_manager, exp
         ("tc_ar", "shape_error", pytest.raises(ValueError), None),  # shape mismatch
     ],
 )
-def test_calc_viscosity_h2o(values, tc, patm, context_manager, expvals):
-    """Test the calc_viscosity_h2o function."""
+def test_calculate_viscosity_h2o(values, tc, patm, context_manager, expvals):
+    """Test the calculate_viscosity_h2o function."""
 
-    from pyrealm.pmodel import calc_viscosity_h2o
+    from pyrealm.constants import CoreConst
+    from pyrealm.core.water import calculate_viscosity_h2o
 
+    core_const = CoreConst()
     with context_manager:
-        ret = calc_viscosity_h2o(tc=values[tc], patm=values[patm])
+        ret = calculate_viscosity_h2o(
+            tk=values[tc] + core_const.k_CtoK, patm=values[patm]
+        )
         if expvals:
             assert_allclose(ret, values[expvals], rtol=1e-5)
 

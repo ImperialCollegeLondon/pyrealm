@@ -15,7 +15,7 @@ from pyrealm.core.hygro import (
 )
 from pyrealm.core.time_series import broadcast_time
 from pyrealm.core.utilities import check_input_shapes
-from pyrealm.core.water import calc_density_h2o
+from pyrealm.core.water import calculate_density_h2o
 from pyrealm.splash.solar import DailySolarFluxes
 
 
@@ -101,7 +101,7 @@ class DailyEvapFluxes:
         self.lv = calc_enthalpy_vaporisation(tc)
 
         # Density of water, kg/m^3
-        self.pw = calc_density_h2o(tc, pa, core_const=self.core_const)
+        self.pw = calculate_density_h2o(tc, pa, core_const=self.core_const)
 
         # Psychrometric constant, Pa/K
         self.psy = calc_psychrometric_constant(tc, pa, core_const=self.core_const)

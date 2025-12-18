@@ -582,6 +582,11 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
             )
             kwargs[param_name] = _initialise_type_default(typ, ctx)
 
+            # Adjust values where np.ones causes an issue
+            match param_name:
+                case "tk":
+                    kwargs[param_name] += 273.15
+
     return kwargs
 
 

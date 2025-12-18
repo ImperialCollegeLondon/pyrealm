@@ -131,7 +131,10 @@ addopts = """
   --ignore=pyrealm/__main__.py
   --ignore=tests/pmodel/generate_test_inputs.py
   --import-mode importlib
-"""
+  """
+markers = [
+  "broadcasting: marks tests of argument broadcasting",
+]
 python_files = 'test_*.py'
 testpaths = ['tests', 'pyrealm']
 
