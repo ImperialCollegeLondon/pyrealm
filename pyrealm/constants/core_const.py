@@ -157,7 +157,7 @@ class CoreConst(ConstantsClass):
 
     # Water constants
     water_density_method: str = "fisher"
-    """Set the method used for calculating water density ('fisher' or 'chen')."""
+    """Set the method used for calculating water density."""
 
     # Fisher Dial
     fisher_dial_lambda: NDArray[np.floating] = field(
@@ -238,9 +238,45 @@ class CoreConst(ConstantsClass):
     r"""Coefficients of the polynomial temperature dependent coefficient :math:`B` from
      :cite:t:`chen:2008a`."""
 
-    # Huber
-    simple_viscosity: bool = False
-    """Boolean setting for use of simple viscosity calculations"""
+    density_kell: tuple[tuple[float, ...], float] = (
+        (
+            999.83952,
+            16.945176,
+            -7.9870401e-3,
+            -46.170461e-6,
+            105.56302e-9,
+            -280.54253e-12,
+        ),
+        16.897850e-3,
+    )
+    """Coefficients for calculating water density from :cite:`kell:1975a`, provided as a
+    tuple of polynomial coefficients :math:`a,b,c,d,e,f` and the denominator coefficient
+    :math:`g`."""
+
+    density_jones_harris_rho: tuple[float, ...] = (
+        999.84847,
+        6.337563e-2,
+        -8.523829e-3,
+        6.943248e-5,
+        -3.821216e-7,
+    )
+    """Coefficients for calculating water density from :cite:`jones:1992a`, provided as
+    a tuple of polynomial coefficients :math:`a,b,c,d,e`.`"""
+
+    density_jones_harris_kappa: tuple[float, ...] = (
+        50.83101e-8,
+        -3.68293e-9,
+        7.263725e-11,
+        -6.597702e-13,
+        2.87767e-15,
+    )
+    """Coefficients for calculating water compressibility from :cite:`jones:1992a`,
+    provided as a tuple of polynomial coefficients :math:`a,b,c,d,e`.`"""
+
+    # Viscosity coefficients
+    water_viscosity_method: str = "huber"
+    """Set the method used for calculating water viscosity."""
+
     huber_tk_ast: float = 647.096
     """Huber reference temperature (:math:`tk_{ast}`, 647.096, Kelvin)"""
     huber_rho_ast: float = 322.0
@@ -266,6 +302,26 @@ class CoreConst(ConstantsClass):
         )
     )
     """Temperature and mass density dependent parameterisation of Hij in Huber."""
+
+    viscosity_vogel = (0.02939, 507.88, 149.3)
+    """Coefficients for calculating water viscosity using the Vogel-Fulcher-Tammann
+    equation taken from  :cite:`viswanath:1988a`."""
+
+    viscosity_viswanath_natarajan = (-4.5318, -220.57, 149.39)
+    """Coefficients for calculating water viscosity using the Viswanath and Natarajan
+    form, taken from Table 4.9 of :cite:`viswanath:2007a`."""
+
+    viscosity_girifalco = (-0.3908, -689.92, 236110)
+    """Coefficients for calculating water viscosity using the Girifalco form, taken from
+    Table 4.12 of :cite:`viswanath:2007a`."""
+
+    viscosity_reid = (-24.71, 4209.0, 4.527e-2, -3.376e-5)
+    """Coefficients for calculating water viscosity using a polynomial form, taken from
+    Table 4.18 of :cite:`viswanath:2007a`."""
+
+    viscosity_daubert_danner = (-51.964, 3670.6, 5.7331, -5.349e-29)
+    """Coefficients for calculating water viscosity using the Daubert and Danner form,
+    taken from Table 4.20 of :cite:`viswanath:2007a`."""
 
     def __post_init__(self) -> None:
         """Populate parameters from init settings.

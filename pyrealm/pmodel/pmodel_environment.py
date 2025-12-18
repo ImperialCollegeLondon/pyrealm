@@ -183,9 +183,9 @@ class PModelEnvironment:
         )
         """Michaelis Menten coefficient, Pa"""
 
-        self.ns_star = calc_ns_star(tc=tc, patm=patm, core_const=core_const)
-        """Viscosity correction factor relative to standard
-        temperature and pressure, unitless"""
+        self.ns_star = calc_ns_star(tk=self.tk, patm=patm, core_const=core_const)
+        """Viscosity correction factor relative to standard temperature and pressure,
+        unitless"""
 
         # Additional variables - check bounds and add them to the instance
         for var_name, var_values in kwargs.items():

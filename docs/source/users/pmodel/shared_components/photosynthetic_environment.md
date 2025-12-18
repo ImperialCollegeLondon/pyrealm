@@ -69,7 +69,7 @@ functions.
 from matplotlib import pyplot
 import numpy as np
 from pyrealm.constants import CoreConst
-from pyrealm.core.water import calc_viscosity_h2o
+from pyrealm.core.water import calculate_viscosity_h2o
 from pyrealm.pmodel import calc_gammastar, calc_kmm, calc_co2_to_ca
 
 %matplotlib inline
@@ -141,22 +141,34 @@ pyplot.show()
 
 ## Relative viscosity of water ($\eta^*$)
 
-Details: {func}`pyrealm.core.water.calc_density_h2o`, {func}`pyrealm.core.water.calc_viscosity_h2o`
+Details: {func}`~pyrealm.core.water.calculate_density_h2o`,
+{func}`~pyrealm.core.water.calculate_viscosity_h2o`
 
-The density ($\rho$) and viscosity ($\mu$) of water both vary with temperature
-and atmospheric pressure. Together, these functions are used to calculate the
-viscosity of water relative to its viscosity at standard temperature and
-pressure ($\eta^*$).
+The density ($\rho$) and viscosity ($\mu$) of water both vary with temperature and
+atmospheric pressure. Together, these functions are used to calculate the viscosity of
+water relative to its viscosity at standard temperature and pressure ($\eta^*$).
 
-The figure shows how $\eta^*$ varies with temperature and pressure.
+The `pyrealm` package implements several alternative approaches to calculating [water
+density and viscosity](../../water.md) and the approaches used in calculation are
+controlled by the
+{attr}`CoreConst.water_density_method<pyrealm.constants.CoreConst.water_density_method>`
+and
+{attr}`CoreConst.water_viscosity_method<pyrealm.constants.CoreConst.water_viscosity_method>`.
+The current default settings (`fisher` and `huber`) are computationally complex. You may
+prefer to use simpler approaches that yield very similar results but that are
+considerably less computationally demanding. In particular, the effects of atmospheric
+pressure are _extremely_ small and are not included in most approaches.
+
+The figure shows how $\eta^*$ varies with temperature and pressure using the `fisher`
+and `huber` default settings.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
 
 # Calculate the viscosity under the range of values and the standard
 # temperature and pressure
-viscosity = calc_viscosity_h2o(tc_2d, patm_2d.transpose())
-viscosity_std = calc_viscosity_h2o(const.k_To, const.k_Po)
+viscosity = calculate_viscosity_h2o(tk=tk_2d, patm=patm_2d.transpose())
+viscosity_std = calculate_viscosity_h2o(tk=const.k_To, patm=const.k_Po)
 
 # Calculate the relative viscosity
 ns_star = viscosity / viscosity_std
