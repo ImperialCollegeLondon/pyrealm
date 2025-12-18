@@ -23,7 +23,8 @@ language_info:
 
 # The tree crown model
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/Crown.ipynb>`.
+The worked example from this page {download}`can be downloaded as Jupyter notebook here
+</_static/Crown.ipynb>`.
 
 :::{admonition} Warning
 

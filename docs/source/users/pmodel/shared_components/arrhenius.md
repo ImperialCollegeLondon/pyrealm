@@ -23,7 +23,8 @@ language_info:
 
 # Arrhenius scaling in the P Model
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/Arrhenius.ipynb>`.
+The worked example from this page {download}`can be downloaded as Jupyter notebook here
+</_static/Arrhenius.ipynb>`.
 
 :::{warning}
 This document discusses the form of the Arrhenius scaling used for estimating

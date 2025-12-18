@@ -23,7 +23,8 @@ language_info:
 
 # Plant Functional Types and Traits
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/Flora.ipynb>`.
+The worked example from this page {download}`can be downloaded as Jupyter notebook here
+</_static/Flora.ipynb>`.
 
 :::{admonition} Warning
 
@@ -167,8 +168,8 @@ same PFT traits across any number of stems. Unlike the
 unique. It is mostly used within `pyrealm` to represent the stem traits of plant cohorts
 within {class}`~pyrealm.demography.community.Community` objects.
 
-A `StemTraits` instance can be created directly by providing arrays for each trait, but is
-more easily created from a `Flora` object by providing a list of PFT names:
+A `StemTraits` instance can be created directly by providing arrays for each trait, but
+is more easily created from a `Flora` object by providing a list of PFT names:
 
 ```{code-cell} ipython3
 # Get stem traits for a range of stems
