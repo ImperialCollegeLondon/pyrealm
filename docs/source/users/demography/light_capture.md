@@ -24,7 +24,8 @@ settings:
 
 # Light capture in the canopy
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/LightCapture.ipynb>`.
+The worked example from this page {download}`can be downloaded as Jupyter notebook here
+</_static/LightCapture.ipynb>`.
 
 :::{admonition} Warning
 

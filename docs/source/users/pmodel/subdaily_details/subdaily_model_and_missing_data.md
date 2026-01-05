@@ -23,7 +23,8 @@ language_info:
 
 # Missing data in the subdaily model
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/SubdailyMissingData.ipynb>`.
+The worked example from this page {download}`can be downloaded as Jupyter notebook here
+</_static/SubdailyMissingData.ipynb>`.
 
 The acclimation process in the subdaily model uses a weighted mean of the daily
 acclimation conditions with preceding daily conditions. When there are missing data,
