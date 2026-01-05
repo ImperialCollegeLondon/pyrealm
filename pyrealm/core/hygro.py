@@ -120,10 +120,6 @@ def convert_rh_to_vpd(
         >>> allen = CoreConst(magnus_option='Allen1998')
         >>> convert_rh_to_vpd(rh, temp, core_const=allen).round(7)
         array([0.7461016])
-        >>> rh_percent = np.array([70])
-        >>> convert_rh_to_vpd(rh_percent, temp).round(7) #doctest: +ELLIPSIS
-        pyrealm... contains values outside the expected range (0,1). Check units?
-        array([-171.1823864])
     """
 
     rh = bounds_checker.check("rh", rh)

@@ -1,7 +1,4 @@
-"""The pyrealm package.
-
-TODO: complete this documentation
-"""
+"""The pyrealm package."""
 
 import importlib.metadata
 
