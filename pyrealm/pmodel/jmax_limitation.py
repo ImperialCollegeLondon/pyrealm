@@ -5,21 +5,20 @@ provides an abstract base dataclass
 functionality for the implementation. Individual methods then are defined as subclasses
 that only need to add any additional data attributes and define the private
 :meth:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC._calculate_limitation_terms`
-method. This is automatically called by the ``__post_init__`` method of the data class and
+method. This is automatically called by the ``__init__`` method of the class and
 so the limitation terms are calculated when an instance is created.
 
 The module defines a registry
 (:data:`~pyrealm.pmodel.jmax_limitation.JMAX_LIMITATION_CLASS_REGISTRY`) to track
 defined subclasses. Subclasses are added to this dictionary, under a string set by the
-subclass ``method`` attribute, by the ``__init_subclass`` method of the base class,
+subclass ``method`` attribute, by the ``__init_subclass__`` method of the base class,
 which allows implementations to be selected by a simple string method name.
 """  # noqa D210, D415
 
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
-from dataclasses import dataclass, field
-from typing import ClassVar
+from abc import ABC, abstractmethod
+from dataclasses import field
 
 import numpy as np
 from numpy.typing import NDArray
@@ -35,8 +34,7 @@ included in this registry dictionary under their defined ``method`` name.
 """
 
 
-@dataclass
-class JmaxLimitationABC(metaclass=ABCMeta):
+class JmaxLimitationABC(ABC):
     r"""An abstract base class for JMaxLimitation implementations.
 
     This base class defines the ``__init__`` arguments, common data attributes and core
@@ -44,34 +42,33 @@ class JmaxLimitationABC(metaclass=ABCMeta):
     define any additional data attributes that should be exposed to users and define the
     private
     :meth:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC._calculate_limitation_terms`
-    method for the implementation. Subclass definitions should use
-    ``@dataclass(repr=False)`` to avoid overriding the base implementation of the
-    ``_repr__`` method, and also need to provide a method name string and a tuple of the
-    data attributes to include when the
+    method for the implementation. Subclass definitions should provide a method name
+    string and a tuple of the data attributes to include when the
     :meth:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationABC.summarize` method is called
     for the subclass.
 
     See :class:`~pyrealm.pmodel.jmax_limitation.JmaxLimitationWang17` for an example.
     """
 
-    method: ClassVar[str]
+    method: str
     """A short name for the method of Jmax limitation implemented in the subclass."""
-    data_attrs: ClassVar[tuple[tuple[str, str], ...]]
+    data_attrs: tuple[tuple[str, str], ...]
     """A tuple of names and units for the data attributes of the class to be reported 
     by summarize."""
-    optchi: OptimalChiABC
-    """The optimal chi instance used to calculate limitation terms."""
-    pmodel_const: PModelConst = field(default_factory=lambda: PModelConst())
-    """The PModel constants instance used for the calculation."""
-    _shape: tuple[int, ...] = field(init=False)
-    """Records the common numpy array shape in the data."""
-    f_j: NDArray[np.floating] = field(init=False)
-    """:math:`J_{max}` limitation factor."""
-    f_v: NDArray[np.floating] = field(init=False)
-    """:math:`V_{cmax}` limitation factor."""
 
-    def __post_init__(self) -> None:
-        self._shape = self.optchi.mj.shape
+    def __init__(
+        self, optchi: OptimalChiABC, pmodel_const: PModelConst = PModelConst()
+    ):
+        self.optchi = optchi
+        """The optimal chi instance used to calculate limitation terms."""
+        self.pmodel_const = pmodel_const
+        """The PModel constants instance used for the calculation."""
+        self._shape: tuple[int, ...] = self.optchi.mj.shape
+        """Records the common numpy array shape in the data."""
+        self.f_j: NDArray[np.floating]
+        """:math:`J_{max}` limitation factor."""
+        self.f_v: NDArray[np.floating]
+        """:math:`V_{cmax}` limitation factor."""
 
         self._calculate_limitation_terms()
 
@@ -107,7 +104,6 @@ class JmaxLimitationABC(metaclass=ABCMeta):
         JMAX_LIMITATION_CLASS_REGISTRY[cls.method] = cls
 
 
-@dataclass(repr=False)
 class JmaxLimitationWang17(
     JmaxLimitationABC,
     method="wang17",
@@ -169,7 +165,6 @@ class JmaxLimitationWang17(
         self.f_v[np.logical_not(vals_defined)] = np.nan
 
 
-@dataclass(repr=False)
 class JmaxLimitationSmith19(
     JmaxLimitationABC,
     method="smith19",
@@ -280,7 +275,6 @@ class JmaxLimitationSmith19(
         self.f_j = self.omega
 
 
-@dataclass(repr=True)
 class JmaxLimitationNone(
     JmaxLimitationABC, method="none", data_attrs=(("f_j", "-"), ("f_v", "-"))
 ):
