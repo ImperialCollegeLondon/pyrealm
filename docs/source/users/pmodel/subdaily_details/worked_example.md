@@ -23,7 +23,8 @@ language_info:
 
 # Worked example of the Subdaily P Model
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/SubdailyPModel.ipynb>`.
+The worked example from this page {download}`can be downloaded as Jupyter notebook here
+</_static/SubdailyPModel.ipynb>`.
 
 ```{code-cell} ipython3
 from importlib import resources

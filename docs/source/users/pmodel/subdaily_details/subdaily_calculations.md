@@ -23,7 +23,8 @@ language_info:
 
 # Subdaily P Model calculations
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/SubdailyCalculations.ipynb>`.
+The worked example from this page {download}`can be downloaded as Jupyter notebook here
+</_static/SubdailyCalculations.ipynb>`.
 
 The code below works through the separate calculations used to include the acclimation
 of slow responses into the predictions of the P Model. The code separates out individual

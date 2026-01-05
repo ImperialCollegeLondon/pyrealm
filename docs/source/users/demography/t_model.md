@@ -23,7 +23,8 @@ language_info:
 
 # The T Model module
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/TModel.ipynb>`.
+The worked example from this page {download}`can be downloaded as Jupyter notebook here
+</_static/TModel.ipynb>`.
 
 The T Model {cite}`Li:2014bc` provides a model of both:
 

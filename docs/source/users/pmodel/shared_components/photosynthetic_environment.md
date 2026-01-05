@@ -23,7 +23,8 @@ language_info:
 
 # Photosynthetic environment
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/PhotosyntheticEnvironment.ipynb>`.
+The worked example from this page {download}`can be downloaded as Jupyter notebook here
+</_static/PhotosyntheticEnvironment.ipynb>`.
 
 The P Model is a model of carbon capture and water use by plants. There are six core
 forcing variables that define the photosynthetic environment of the plant:

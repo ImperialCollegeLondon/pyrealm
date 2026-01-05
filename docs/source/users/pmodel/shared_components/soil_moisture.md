@@ -23,7 +23,8 @@ language_info:
 
 # Soil moisture effects
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/SoilMoisture.ipynb>`.
+The worked example from this page {download}`can be downloaded as Jupyter notebook here
+</_static/SoilMoisture.ipynb>`.
 
 Approaches to modelling the impact of soil moisture conditions on photosynthesis are a
 very open area and a number of different methods are implemented in `pyrealm`. These

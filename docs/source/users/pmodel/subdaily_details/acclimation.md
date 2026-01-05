@@ -23,7 +23,8 @@ language_info:
 
 # Estimating acclimation
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/Acclimation.ipynb>`.
+The worked example from this page {download}`can be downloaded as Jupyter notebook here
+</_static/Acclimation.ipynb>`.
 
 Rather than being able to instantaneously adopt optimal values, three key photosynthetic
 $\xi$, $J_{max25}$ and $V_{cmax25}$  acclimate slowly towards daily optimal values. The
