@@ -26,9 +26,9 @@ language_info:
 ```{admonition} Run this notebook
 :class: hint
 
-* Read the guide on setting up your computer to [run Jupyter notebooks](./getting_started.md)
+* Read the guide on setting up your computer to [run Jupyter
+  notebooks](./getting_started.md)
 * Download {nb-download}`this notebook<./constants.ipynb>` as a Jupyter notebook.
-
 ```
 
 The models presented in this package rely on a relatively large number of underlying

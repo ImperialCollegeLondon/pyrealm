@@ -67,10 +67,10 @@ class ArrheniusFactorABC(ABC):
     """A set of the names of coefficients required to calculate factor values. These
     must be present in the coefficients dictionary matching the method name."""
 
-    required_env_variables: list[str]
-    """A list of names of optional attributes of
-    :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` that must be populated
-    to use a method.
+    required_env_variables: tuple[str, ...]
+    """A tuple of names of additional variables that must be included in a 
+    :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance to use a
+    particular method.
     """
 
     def __init__(
@@ -138,7 +138,7 @@ class ArrheniusFactorABC(ABC):
         cls,
         method: str,
         required_coefficients: set[str],
-        required_env_variables: list[str],
+        required_env_variables: tuple[str, ...],
     ) -> None:
         """Initialise a subclass deriving from this ABC."""
 
@@ -153,7 +153,7 @@ class SimpleArrhenius(
     ArrheniusFactorABC,
     method="simple",
     required_coefficients={"ha"},
-    required_env_variables=[],
+    required_env_variables=tuple(),
 ):
     """Class providing simple Arrhenius scaling.
 
@@ -191,7 +191,7 @@ class KattgeKnorrArrhenius(
     ArrheniusFactorABC,
     method="kattge_knorr",
     required_coefficients={"ha", "hd", "entropy_intercept", "entropy_slope"},
-    required_env_variables=["mean_growth_temperature"],
+    required_env_variables=("mean_growth_temperature",),
 ):
     """Class providing Kattge Knorr Arrhenius scaling.
 

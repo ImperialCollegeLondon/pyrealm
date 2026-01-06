@@ -27,7 +27,8 @@ settings:
 ```{admonition} Run this notebook
 :class: hint
 
-* Read the guide on setting up your computer to [run Jupyter notebooks](../getting_started.md)
+* Read the guide on setting up your computer to [run Jupyter
+  notebooks](../getting_started.md)
 * Download {nb-download}`this notebook<./light_capture.ipynb>` as a Jupyter notebook.
 
 ```

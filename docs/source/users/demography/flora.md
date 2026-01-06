@@ -26,7 +26,8 @@ language_info:
 ```{admonition} Run this notebook
 :class: hint
 
-* Read the guide on setting up your computer to [run Jupyter notebooks](../getting_started.md)
+* Read the guide on setting up your computer to [run Jupyter
+  notebooks](../getting_started.md)
 * Download {nb-download}`this notebook<./flora.ipynb>` as a Jupyter notebook.
 
 ```
@@ -173,8 +174,8 @@ same PFT traits across any number of stems. Unlike the
 unique. It is mostly used within `pyrealm` to represent the stem traits of plant cohorts
 within {class}`~pyrealm.demography.community.Community` objects.
 
-A `StemTraits` instance can be created directly by providing arrays for each trait, but is
-more easily created from a `Flora` object by providing a list of PFT names:
+A `StemTraits` instance can be created directly by providing arrays for each trait, but
+is more easily created from a `Flora` object by providing a list of PFT names:
 
 ```{code-cell} ipython3
 # Get stem traits for a range of stems
