@@ -277,16 +277,21 @@ def setup(app):  # type: ignore
 def strip_jupytext(app, exception):  # type: ignore
     """Remove jupytext metadata from download notebooks.
 
-    The build process outputs ipynb versions of the Markdown notebooks to the
-    `build/html/_downloads` directory, which we then link in for users to download.
-    However, the files contain the original `jupytext` metadata that specifies _only_
-    the Myst markdown version should be maintained. If users open the file in a Jupyter
-    environment with `jupytext` installed, this generates an error because `.ipynb` is
-    an unexpected format.
+    The `mystb_nb` build process automatically outputs `.ipynb` versions of the Markdown
+    notebooks to the `build/html/_downloads` directory, which we then link in using the
+    `nb-download` role for users to download.
 
-    This function is hooked into the sphinx app after the build finishes and
-    systematically removes the `jupytext` metadata from all `.ipynb` notebooks in the
-    downloads folder.
+    However, we specifically exclude `.ipynb` format files from the package repo and
+    instead use the `jupytext` package with Jupyter to maintain notebooks in the repo
+    _only_ as Myst markdown format files (`md:myst`). This is controlled using notebook
+    metadata, which is copied verbatim into the `.ipynb` versions in `_downloads`. That
+    can then cause an unfriendly and obscure error if a user _also_ has `jupytext`
+    installed: when the downloaded file is opened in Jupyter, `jupytext` complains that
+    the `.ipynb` version is not one of configured formats and refuses to open it.
+
+    To prevent this, this function is hooked into the sphinx app after the build
+    finishes and systematically removes the `jupytext` metadata from all `.ipynb`
+    notebooks in the downloads folder.
     """
 
     # Handle local versus RTD build directory locations
