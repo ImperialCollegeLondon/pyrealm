@@ -23,8 +23,15 @@ language_info:
 
 # P Model predictions
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here
-</_static/PModelPredictions.ipynb>`.
+```{admonition} Run this notebook
+:class: hint
+
+* Read the guide on setting up your computer to [run Jupyter
+  notebooks](../../getting_started.md)
+* Download {nb-download}`this notebook<./envt_variation_outputs.ipynb>` as a Jupyter
+notebook.
+
+```
 
 ```{code-cell} ipython3
 :tags: [hide-input]

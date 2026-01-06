@@ -23,8 +23,14 @@ language_info:
 
 # Extreme forcing values
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here
-</_static/ExtremeForcingValues.ipynb>`.
+```{admonition} Run this notebook
+:class: hint
+
+* Read the guide on setting up your computer to [run Jupyter
+  notebooks](../../getting_started.md)
+* Download {nb-download}`this notebook<./extreme_values.ipynb>` as a Jupyter notebook.
+
+```
 
 The four photosynthetic environment variables and the effect of temperature on the
 temperature dependence of quantum yield efficiency are all calculated directly from the

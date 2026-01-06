@@ -23,8 +23,14 @@ language_info:
 
 # The T Model module
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here
-</_static/TModel.ipynb>`.
+```{admonition} Run this notebook
+:class: hint
+
+* Read the guide on setting up your computer to [run Jupyter
+  notebooks](../getting_started.md)
+* Download {nb-download}`this notebook<./t_model.ipynb>` as a Jupyter notebook.
+
+```
 
 The T Model {cite}`Li:2014bc` provides a model of both:
 
