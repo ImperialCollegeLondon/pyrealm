@@ -165,6 +165,11 @@ than the old version. It will produce a plot similar to that below in
 `prof/performance-plot.png` showing how the cumulative time per call has changed between
 the two versions.
 
+:::{note}
+Variance in the run time can be significant when looking at individual functions. This
+can limit the effectiveness of the advanced benchmarking results.
+:::
+
 ![benchmarking plot](../../../profiling/performance-plot.png)
 
 It is also possible to perform the advanced benchmarking manually using the
