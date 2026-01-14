@@ -23,7 +23,14 @@ language_info:
 
 # Extreme forcing values
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/ExtremeForcingValues.ipynb>`.
+```{admonition} Run this notebook
+:class: hint
+
+* Read the guide on setting up your computer to [run Jupyter
+  notebooks](../../getting_started.md)
+* Download {nb-download}`this notebook<./extreme_values.ipynb>` as a Jupyter notebook.
+
+```
 
 The four photosynthetic environment variables and the effect of temperature on the
 temperature dependence of quantum yield efficiency are all calculated directly from the
@@ -75,7 +82,7 @@ Note that the default values for C3 photosynthesis give **non-zero values below 
 
 from matplotlib import pyplot
 import numpy as np
-from pyrealm.core.water import calc_density_h2o
+from pyrealm.core.water import calculate_density_h2o
 from pyrealm.constants import CoreConst
 from pyrealm.pmodel import calc_gammastar, calc_kmm, PModelEnvironment
 from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
@@ -171,7 +178,9 @@ fig, ax = pyplot.subplots(1, 1)
 # Calculate rho
 for patm in [3, 7, 9, 11, 13]:
     ax.plot(
-        tc_1d, calc_density_h2o(tc_1d, patm * 1000, safe=False), label=f"{patm} kPa"
+        tc_1d,
+        calculate_density_h2o(tc_1d, patm * 1000, safe=False),
+        label=f"{patm} kPa",
     )
 
 # Create a contour plot of gamma
@@ -197,7 +206,9 @@ tc_1d = np.linspace(-40, 20, n_pts)
 # Calculate K_mm
 for patm in [3, 7, 9, 11, 13]:
     ax.plot(
-        tc_1d, calc_density_h2o(tc_1d, patm * 1000, safe=False), label=f"{patm} kPa"
+        tc_1d,
+        calculate_density_h2o(tc_1d, patm * 1000, safe=False),
+        label=f"{patm} kPa",
     )
 
 # Create a contour plot of gamma

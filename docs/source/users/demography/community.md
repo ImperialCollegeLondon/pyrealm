@@ -23,7 +23,14 @@ language_info:
 
 # Plant Communities
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/Communities.ipynb>`.
+```{admonition} Run this notebook
+:class: hint
+
+* Read the guide on setting up your computer to [run Jupyter
+  notebooks](../getting_started.md)
+* Download {nb-download}`this notebook<./community.ipynb>` as a Jupyter notebook.
+
+```
 
 :::{admonition} Warning
 

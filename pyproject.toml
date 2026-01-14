@@ -13,6 +13,7 @@ dependencies = [
   "marshmallow (>=3.22.0)",
   "marshmallow-dataclass (>=8.7.0)",
   "pandas (>=2.2.2)",
+  "pooch (>=1.8.2,<2.0.0)",
 ]
 
 requires-python = ">=3.11"
@@ -130,7 +131,11 @@ addopts = """
   --doctest-modules
   --ignore=pyrealm/__main__.py
   --ignore=tests/pmodel/generate_test_inputs.py
+  --import-mode importlib
   """
+markers = [
+  "broadcasting: marks tests of argument broadcasting",
+]
 python_files = 'test_*.py'
 testpaths = ['tests', 'pyrealm']
 
@@ -170,6 +175,7 @@ convention = "google"
 notebook_metadata_filter = "settings,mystnb,language_info,-jupytext.text_representation.jupytext_version"
 # Also stop it from stripping cell metadata, except for specific ones to lose.
 cell_metadata_filter = "all,-trusted"
+
 
 [tool.codespell]
 exclude-file = ".codespellexclude.txt"

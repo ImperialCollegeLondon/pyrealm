@@ -1,6 +1,6 @@
 ---
 jupytext:
-  formats: ipynb,md:myst
+  formats: md:myst
   text_representation:
     extension: .md
     format_name: myst
@@ -23,8 +23,14 @@ language_info:
 
 # C3 / C4 Competition
 
-The worked example from the bottom of this page
-{download}`can be downloaded as Jupyter notebook here </_static/C3C4Model.ipynb>`.
+```{admonition} Run this notebook
+:class: hint
+
+* Read the guide on setting up your computer to [run Jupyter
+  notebooks](../getting_started.md)
+* Download {nb-download}`this notebook<./c3c4model.ipynb>` as a Jupyter notebook.
+
+```
 
 Compared to C3 plants, plants using the C4 photosynthetic pathway:
 

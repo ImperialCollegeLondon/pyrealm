@@ -23,7 +23,14 @@ language_info:
 
 # Quantum yield efficiency of photosynthesis
 
-The worked example from this page {download}`can be downloaded as Jupyter notebook here </_static/QuantumYield.ipynb>`.
+```{admonition} Run this notebook
+:class: hint
+
+* Read the guide on setting up your computer to [run Jupyter
+  notebooks](../../getting_started.md)
+* Download {nb-download}`this notebook<./quantum_yield.ipynb>` as a Jupyter notebook.
+
+```
 
 ```{code-cell} ipython3
 :tags: [hide-input]

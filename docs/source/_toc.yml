@@ -51,6 +51,7 @@ subtrees:
         - file: users/phenology/fapar_limitation.md
   - file: users/constants.md
   - file: users/hygro.md
+  - file: users/water.md
   - file: users/versions.md
 - caption: API
   entries:

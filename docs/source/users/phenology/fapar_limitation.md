@@ -13,6 +13,15 @@ kernelspec:
 
 # Estimating maximum annual $f_{APAR}$
 
+```{admonition} Run this notebook
+:class: hint
+
+* Read the guide on setting up your computer to [run Jupyter
+  notebooks](../getting_started.md)
+* Download {nb-download}`this notebook<./fapar_limitation.ipynb>` as a Jupyter notebook.
+
+```
+
 ```{code-cell} ipython3
 :tags: [hide-input]
 
@@ -23,6 +32,7 @@ import pandas as pd
 import json
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from pyrealm.core.datasets import get_pyrealm_data
 from pyrealm.constants import PhenologyConst
 from pyrealm.phenology.fapar_limitation import FaparLimitation
 from pyrealm.pmodel import PModelEnvironment, PModel
@@ -98,17 +108,14 @@ including $A_0$ and $\chi$ from a P Model.
 
 ```{code-cell} ipython3
 # Load site data
-site_data_path = (
-    resources.files("pyrealm_build_data.phenology") / "DE-GRI_site_data.json"
-)
+site_data_path = get_pyrealm_data("phenology/DE-GRI_site_data.json")
+
 with open(site_data_path) as json_src:
     site_data = json.load(json_src)
 
 # Load annual estimates
-annual_data_path = (
-    resources.files("pyrealm_build_data.phenology.fortnightly_example")
-    / "annual_outputs.csv"
-)
+annual_data_path = get_pyrealm_data("phenology/fortnightly_example/annual_outputs.csv")
+
 annual_data = pd.read_csv(annual_data_path).iloc[:, 0:9]
 annual_data["time"] = annual_data["time"].to_numpy().astype("datetime64[Y]")
 ```
@@ -213,10 +220,7 @@ over 11 years.
 
 ```{code-cell} ipython3
 # Load fortnightly data
-fn_data_path = (
-    resources.files("pyrealm_build_data.phenology.fortnightly_example")
-    / "fortnightly_data.csv"
-)
+fn_data_path = get_pyrealm_data("phenology/fortnightly_example/fortnightly_data.csv")
 fn_data = pd.read_csv(fn_data_path)
 
 fn_data["time"] = pd.to_datetime(fn_data["time"])

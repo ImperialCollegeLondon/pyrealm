@@ -7,6 +7,8 @@ add these directories to sys.path here. If the directory is relative to the
 documentation root, use os.path.abspath to make it absolute, like shown here.
 """
 
+import json
+import os
 import sys
 import warnings
 from dataclasses import dataclass, field
@@ -183,6 +185,7 @@ intersphinx_mapping = {
     "pandas": ("http://pandas.pydata.org/pandas-docs/dev/", None),
     "shapely": ("https://shapely.readthedocs.io/en/stable/", None),
     "marshmallow": ("https://marshmallow.readthedocs.io/en/stable/", None),
+    "pooch": ("https://www.fatiando.org/pooch/latest/", None),
 }
 
 
@@ -254,6 +257,10 @@ html_static_path = ["_static"]
 hoverxref_roles = ["term"]
 hoverxref_role_types = {"term": "tooltip"}
 
+# Set the PYREALM_USE_LOCAL_DATA environment variable, to force get_pyrealm_data to use
+# importlib.resources on pyrealm_build_data, rather than fetching the files from GitHub.
+os.environ["PYREALM_USE_LOCAL_DATA"] = "SET"
+
 
 def setup(app):  # type: ignore
     """Use setup to remove .ipynb from sources.
@@ -263,3 +270,64 @@ def setup(app):  # type: ignore
     """
     # Ignore .ipynb files
     app.registry.source_suffix.pop(".ipynb", None)
+
+    app.connect("build-finished", strip_jupytext)
+
+
+def strip_jupytext(app, exception):  # type: ignore
+    """Remove jupytext metadata from download notebooks.
+
+    The `mystb_nb` build process automatically outputs `.ipynb` versions of the Markdown
+    notebooks to the `build/html/_downloads` directory, which we then link in using the
+    `nb-download` role for users to download.
+
+    However, we specifically exclude `.ipynb` format files from the package repo and
+    instead use the `jupytext` package with Jupyter to maintain notebooks in the repo
+    _only_ as Myst markdown format files (`md:myst`). This is controlled using notebook
+    metadata, which is copied verbatim into the `.ipynb` versions in `_downloads`. That
+    can then cause an unfriendly and obscure error if a user _also_ has `jupytext`
+    installed: when the downloaded file is opened in Jupyter, `jupytext` complains that
+    the `.ipynb` version is not one of configured formats and refuses to open it.
+
+    To prevent this, this function is hooked into the sphinx app after the build
+    finishes and systematically removes the `jupytext` metadata from all `.ipynb`
+    notebooks in the downloads folder.
+    """
+
+    # Handle local versus RTD build directory locations
+    if os.getenv("READTHEDOCS"):
+        rtd_base = os.getenv("READTHEDOCS_OUTPUT")
+        if rtd_base is not None:
+            html_path = Path(rtd_base)
+        else:
+            raise RuntimeError("Could not read RTD output directory.")
+    else:
+        html_path = Path("build")
+
+    # Get the paths of iPython notebooks within the built HTML downloads folder.
+    # If this path doesn't exist, the generator returns an empty list.
+
+    ipynb_downloads = list((html_path / "html/_downloads").rglob("*.ipynb"))
+    bold_start_text = "\033[1mJupytext stripping:\033[0m"
+    if not ipynb_downloads:
+        print(bold_start_text + " no ipynb files found.")
+        return
+
+    converted = 0
+    for ipynb_path in ipynb_downloads:
+        # Load the json data
+        with open(ipynb_path) as ipynb_file:
+            data = json.load(ipynb_file)
+
+        # Drop the jupytext metadata and write to file, unless there is no jupytext
+        # metadata in the file.
+        try:
+            del data["metadata"]["jupytext"]
+            converted += 1
+            with open(ipynb_path, "w") as ipynb_file:
+                json.dump(data, ipynb_file)
+        except KeyError:
+            pass
+
+    print(f"{bold_start_text} {converted} of {len(ipynb_downloads)} .ipynb files.")
+    return

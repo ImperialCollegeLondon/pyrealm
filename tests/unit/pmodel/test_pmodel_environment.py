@@ -169,7 +169,9 @@ def test_out_of_bound_output_ns_star(function_test_data):
     ns_star_upper_bound = 10
 
     for tc, patm in zip(tc_ar_values, patm_ar_values):
-        result = calc_ns_star(tc=tc, patm=patm, core_const=core_const)
+        result = calc_ns_star(
+            tk=tc + core_const.k_CtoK, patm=patm, core_const=core_const
+        )
 
         assert np.all(result >= ns_star_lower_bound), (
             f"Result for (tc={tc}, patm={patm}) is out of lower bound"

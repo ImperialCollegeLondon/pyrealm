@@ -810,8 +810,9 @@ class SubdailyPModel(PModelABC):
             "vpd",
             "fapar",
             "ppfd",
-            *self._optchi_class.requires,
-            *self._kphio_class.requires,
+            *self._optchi_class.required_env_variables,
+            *self._kphio_class.required_env_variables,
+            *self._arrhenius_class.required_env_variables,
         ]
 
         # Construct a dictionary of daily acclimation variables, handling optional
