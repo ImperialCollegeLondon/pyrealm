@@ -75,7 +75,7 @@ def test_phenology_gpp_calculation(
     # - PMod_sub_A0_daily_total
     # - PMod_sub_A0_daily_total_penalised
 
-    daily_gpp = de_gri_subdaily_pmodel._get_daily_gpp()
+    _, daily_gpp = de_gri_subdaily_pmodel._get_daily_gpp()
 
     assert_allclose(
         de_gri_daily_outputs["PMod_gpp_smstress"],
@@ -93,7 +93,7 @@ def test_phenology_gpp_calculation(
     )
     fortnightly_datetimes = de_gri_fortnightly_data["time"].values
     de_gri_pmodel = PModel(env=fortnightly_env)
-    pmodel_gpp_from_fortnightly = de_gri_pmodel._get_daily_gpp(
+    _, pmodel_gpp_from_fortnightly = de_gri_pmodel._get_daily_gpp(
         datetimes=fortnightly_datetimes
     )
 
