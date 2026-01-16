@@ -283,7 +283,9 @@ class PModelABC(ABC):
         pass
 
     @abstractmethod
-    def _get_daily_gpp(self, *arg: Any, **kwargs: Any) -> NDArray[Any]:
+    def _get_daily_gpp(
+        self, *arg: Any, **kwargs: Any
+    ) -> tuple[NDArray[np.datetime64], NDArray[np.floating]]:
         pass
 
     def __repr__(self) -> str:
@@ -504,7 +506,9 @@ class PModel(PModelABC):
                 np.nan,
             )
 
-    def _get_daily_gpp(self, datetimes: NDArray[np.datetime64]) -> NDArray[Any]:
+    def _get_daily_gpp(
+        self, datetimes: NDArray[np.datetime64]
+    ) -> tuple[NDArray[np.datetime64], NDArray[np.floating]]:
         """Interpolate gpp values to daily intervals.
 
         Args: datetimes: Array with datetimes of observations
@@ -520,7 +524,7 @@ class PModel(PModelABC):
         daily_timestamps_int = daily_timestamps.astype(np.int_)
         daily_gpp = interpolator(daily_timestamps_int)
 
-        return daily_gpp
+        return daily_timestamps_int.astype("datetime64[D]"), daily_gpp
 
     def to_subdaily(
         self,
@@ -986,7 +990,7 @@ class SubdailyPModel(PModelABC):
             "The Subdaily P Model does not predict light use efficiency."
         )
 
-    def _get_daily_gpp(self) -> NDArray[Any]:
+    def _get_daily_gpp(self) -> tuple[NDArray[np.datetime64], NDArray[np.floating]]:
         """Average gpp values to daily means - does not apply penalty."""
 
         # Reshape gpp array by day
@@ -1002,4 +1006,4 @@ class SubdailyPModel(PModelABC):
         # Take mean (allowing for missing values)
         daily_mean_gpp = np.nanmean(gpp_by_day, axis=1)
 
-        return daily_mean_gpp
+        return self.acclim_model.observation_dates, daily_mean_gpp

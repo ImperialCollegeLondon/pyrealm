@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from numpy.testing import assert_allclose
+from numpy.testing import assert_allclose, assert_equal
 
 from pyrealm.pmodel import PModel
 
@@ -59,50 +59,72 @@ def test_subdailypmodel(datetimes):
 
 
 @pytest.mark.parametrize(
-    argnames="datetimes, gpp_in, expected_gpp_out",
+    argnames="datetimes, gpp_in, expected_datetimes_out, expected_gpp_out",
     argvalues=[
         pytest.param(
-            [
+            np.arange(
                 np.datetime64("2022-01-01"),
-                np.datetime64("2022-01-03"),
-                np.datetime64("2022-01-05"),
-                np.datetime64("2022-01-07"),
-                np.datetime64("2022-01-09"),
-                np.datetime64("2022-01-11"),
-            ],
+                np.datetime64("2022-01-12"),
+                np.timedelta64(2, "D"),
+            ),
             [1.0, 3.0, 5.0, 7.0, 9.0, 11.0],
+            np.arange(
+                np.datetime64("2022-01-01"),
+                np.datetime64("2022-01-12"),
+                np.timedelta64(1, "D"),
+            ),
             [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0],
         )
     ],
 )
-def test_pmodel_get_daily_gpp(datetimes, gpp_in, expected_gpp_out, test_pmodel):
+def test_pmodel_get_daily_gpp(
+    test_pmodel, datetimes, gpp_in, expected_datetimes_out, expected_gpp_out
+):
     """Tests that the interpolation to daily gpp from PModel gpp works correctly."""
 
     test_pmodel.gpp = gpp_in
-    daily_gpp = test_pmodel._get_daily_gpp(np.array(datetimes))
+    days, daily_gpp = test_pmodel._get_daily_gpp(np.array(datetimes))
+    # Testing equality in time series is annoying because assert_allclose assumes floats
+    # and all of the np.datetime64 dtypes are integer under the hood. So, explicitly
+    # check that differences are zero between the two.
+    assert_equal((expected_datetimes_out - days).astype(int), 0)
     assert_allclose(expected_gpp_out, daily_gpp)
 
 
 @pytest.mark.parametrize(
-    argnames="datetimes, gpp_in, expected_gpp_out",
+    argnames="datetimes, gpp_in, expected_datetimes_out, expected_gpp_out",
     argvalues=[
         pytest.param(
-            [
-                np.arange(
-                    np.datetime64("2011-01-01"),
-                    np.datetime64("2011-01-31"),
-                    np.timedelta64(6, "h"),
-                )
-            ],
+            np.arange(
+                np.datetime64("2011-01-01"),
+                np.datetime64("2011-01-31"),
+                np.timedelta64(6, "h"),
+            ),
             np.ones(4 * 31),
+            np.arange(
+                np.datetime64("2011-01-01"),
+                np.datetime64("2011-01-31"),
+                np.timedelta64(1, "D"),
+            ),
             np.ones(31),
         )
     ],
 )
-def test_subdailypmodel_get_daily_gpp(gpp_in, expected_gpp_out, test_subdailypmodel):
+def test_subdailypmodel_get_daily_gpp(
+    test_subdailypmodel,
+    gpp_in,
+    expected_datetimes_out,
+    expected_gpp_out,
+):
     """Tests that the averaging from subdaily gpp to daily gpp works correctly."""
 
     test_subdailypmodel.gpp = gpp_in
     test_subdailypmodel.acclim_model.n_days = 31
     test_subdailypmodel.acclim_model.n_obs = 4
-    assert_allclose(test_subdailypmodel._get_daily_gpp(), expected_gpp_out)
+    days, daily_gpp = test_subdailypmodel._get_daily_gpp()
+
+    # Testing equality in time series is annoying because assert_allclose assumes floats
+    # and all of the np.datetime64 dtypes are integer under the hood. So, explicitly
+    # check that differences are zero between the two.
+    assert_equal((expected_datetimes_out - days).astype(int), 0)
+    assert_allclose(expected_gpp_out, daily_gpp)
