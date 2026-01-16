@@ -514,6 +514,13 @@ class PModel(PModelABC):
         Args: datetimes: Array with datetimes of observations
         """
 
+        # Screen for precision of datetimes - this is necessary to match the precision
+        # used in interpolating to daily values.
+        if not (datetimes.dtype == np.dtype("datetime64[D]")):
+            warn("Datetimes are not at daily precision and have been converted")
+            datetimes = datetimes.astype("datetime64[D]")
+
+        # Get the integer representation of the datetimes
         time_int = datetimes.astype(np.int_)
 
         # The interp1d object cannot be called with datetime64 values as new_x
