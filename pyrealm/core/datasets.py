@@ -80,8 +80,8 @@ DATASETS = pooch.create(
     path=pooch.os_cache("pyrealm_data"),
     base_url="https://raw.githubusercontent.com/ImperialCollegeLondon/pyrealm/refs/heads/develop/pyrealm_build_data/",
     # The registry specifies the files that can be fetched
-    registry=json.loads(
-        resources.read_text("pyrealm.core", "pyrealm_data_registry.json")
+    registry=json.load(
+        resources.files("pyrealm.core").joinpath("pyrealm_data_registry.json").open()
     ),
 )
 """A :class:`pooch.Pooch` instance used to manage the available dataset files."""

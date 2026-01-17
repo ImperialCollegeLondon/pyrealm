@@ -47,5 +47,8 @@
     "phenology/subdaily_example/annual_outputs.csv": "sha256:5d8513bde75f7e2431c455a304bae71f72d00acbcc65bb04a8b52f1fbf578c0e",
     "phenology/fortnightly_example/fortnightly_data.csv": "sha256:7abea7255b8e50405fcf1ea0a9adc63597de2fb962df9b505fa505763c570e77",
     "phenology/fortnightly_example/annual_outputs.csv": "sha256:bb32073e7a9db27c195625110367c84c99382e72cf10d8e168de6a332ad0a327",
+    "phenology/zhu_method/zhu_annual_fapar_max_from_fortnightly_data.csv": "sha256:1654edf34971719ca7438200893b7e80b0e87d7e0467bf5752110d3e773a94ed",
+    "phenology/zhu_method/zhu_daily_lai_method_scalar_values.json": "sha256:de2014c06aaa6e327cd4b2ee761888bf1e8c5f452233d0df4f30d2fc0a334715",
+    "phenology/zhu_method/zhu_daily_lai_from_fortnightly_example.csv": "sha256:649d501e1c9f9dbfa1935dc2af2a89b9f40a17729a05289ac0b2dcf345214abb",
     "phenology/reports/coverage/status.json": "sha256:cbf39793d8a16211d8fc1580e87af7a82c2acdad3e827bf87ddadff831b10df6"
 }
