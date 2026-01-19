@@ -274,12 +274,10 @@ class FaparLimitationZhu(FaparLimitationMethodABC, method="zhu"):
 class FaparLimitation:
     r"""Compute maximum annual fAPAR and LAI.
 
-    This class calculates maximum annual fAPAR and LAI ($L$), following
-    :cite:`cai:2025a`. The maximum annual fAPAR is limited by the ability of plants to
-    assimilate carbon for constructing leaves and this can be limited either by the
+    This class calculates maximum annual fAPAR, which can be limited either by the
     availability of light energy ($f_{APAR_{c}}$) or by the availability of water
-    ($f_{APAR_{w}}$). The maximum annual fAPAR is calculated as the minimum of those two
-    terms. The equations are:
+    ($f_{APAR_{w}}$). The equations for these two variables, following :cite:`cai2025a:
+    are:
 
     .. math::
         :nowrap:
@@ -289,40 +287,34 @@ class FaparLimitation:
             f_{APAR_{c}} &= 1 - \frac{z}{k A_0}\\
             f_{APAR_{w}} &= \left(\frac{ c_a \left( 1 - \chi \right)}{ 1.6 D }\right)
                             \left(\frac{ f_0 P }{ A_0 }\right) \\
-            f_{APAR_{max}} &= \min{\left(f_{APAR_{c}}, f_{APAR_{w}}\right)}
           \end{align*}
         \]
 
-    The maximum annual LAI is then calculated using Beer's law:
+    The maximum fAPAR is then calculated as a function of :math:`f_{APAR_{c}}` and
+    :math:`f_{APAR_{w}}`. In these equations:
+
+    * :math:`z` accounts for the growth and maintenance costs of leaves.
+    * :math:`f_0` accounts for water limitation on annual assimulation and is is the
+      ratio of annual total transpiration to annual total precipitation.
+
+    The other variables are the required arguments to the class defined below. 
+    
+    There are different approaches to estimating :math:`z` and :math:`f_0` and to
+    calculating the maximum fAPAR from the two inputs. For details see:
+
+    * ``method=cai``; :class:`FaparLimitationMethodCai`
+    * ``method=zhu``; :class:`FaparLimitationMethodZhu`
+    
+
+    The maximum annual LAI can then be calculated using Beer's law as:
 
     .. math::
 
         L_{max} = - ( 1 / k ) \ln {1 -f_{APAR_{max}}}
 
-    The class also calculates the parameter :math:`m`, which is the steady state annual
-    ratio of leaf area index to GPP:
-
-    .. math::
-
-        m = \frac{ \sigma G L_{max}}{A_0 f_{APAR_{max}}
-
-    The :class:`~pyrealm.constants.phenology_const.PhenologyConstNew` class provides
-    values for the following constants:
-
-    * :math:`z` accounts for the growth and maintenance costs of leaves.
-    * :math:`k` is the light extinction coefficient.
-    * :math:`f_0` is is the ratio of annual total transpiration to annual total
-      precipitation, calculated from the climatological aridity index (AI) (see
-      :class:`PhenologyConstNew.calculate_f0<pyrealm.constants.phenology_const.PhenologyConstNew.calculate_f0>`).
-    * :math:`\sigma` is a proportion that captures the departure of :math:`m` from the
-      maximum due to biological delays in deploying and dropping the canopy during the
-      growing season.
-
-    The other variables are the required arguments to the class defined below. The most
-    common source of these variables is from a P Model, and the
+    The most common source of these variables is from a P Model, and the
     :meth:`~pyrealm.phenology.fapar_limitation.FaparLimitation.from_pmodel` method can
     be used to create an instance directly from a fitted P Model.
-
 
     Args:
         annual_total_potential_gpp: The annual sum of potential GPP (:math:`A_0,
