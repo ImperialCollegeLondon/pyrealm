@@ -23,6 +23,7 @@ from warnings import warn
 
 import numpy as np
 from numpy.typing import NDArray
+from scipy.interpolate import interp1d
 
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import summarize_attrs
@@ -93,6 +94,14 @@ class PModelABC(ABC):
         self.core_const: CoreConst = env.core_const
         """The CoreConst instance used to create the model environment."""
 
+        self.gpp_conversion_factor = (
+            (
+                (24 * 60 * 60)  # seconds to day
+                * 1e-6
+            )  # micrograms to grams
+            / self.core_const.k_c_molmass
+        )
+        """Penalty to apply to gpp when moving to daily gpp"""
         # -----------------------------------------------------------------------
         # Optimal Chi method setup
         # -----------------------------------------------------------------------
@@ -117,7 +126,7 @@ class PModelABC(ABC):
         pathway."""
 
         # -----------------------------------------------------------------------
-        # Cuantum yield of photosynthesis (kphio) setup
+        # Quantum yield of photosynthesis (kphio) setup
         # -----------------------------------------------------------------------
 
         self.method_kphio: str
@@ -273,6 +282,12 @@ class PModelABC(ABC):
     def _fit_model(self, *args: Any, **kwargs: Any) -> None:
         pass
 
+    @abstractmethod
+    def _get_daily_gpp(
+        self, *arg: Any, **kwargs: Any
+    ) -> tuple[NDArray[np.datetime64], NDArray[np.floating]]:
+        pass
+
     def __repr__(self) -> str:
         """Generates a string representation of PModel instance."""
 
@@ -293,6 +308,10 @@ class PModelABC(ABC):
         """
 
         summarize_attrs(self, self._data_attributes, dp=dp)
+
+    def apply_gpp_conversion_factor(self, daily_mean_pmodel_gpp: NDArray) -> NDArray:
+        """Apply the gpp conversion factor to the input daily gpp."""
+        return daily_mean_pmodel_gpp * self.gpp_conversion_factor
 
     def _method_setter(
         self,
@@ -486,6 +505,33 @@ class PModel(PModelABC):
                 self.A_c / ca_ci_diff,
                 np.nan,
             )
+
+    def _get_daily_gpp(
+        self, datetimes: NDArray[np.datetime64]
+    ) -> tuple[NDArray[np.datetime64], NDArray[np.floating]]:
+        """Interpolate gpp values to daily intervals.
+
+        Args: datetimes: Array with datetimes of observations
+        """
+
+        # Screen for precision of datetimes - this is necessary to match the precision
+        # used in interpolating to daily values.
+        if not (datetimes.dtype == np.dtype("datetime64[D]")):
+            warn("Datetimes are not at daily precision and have been converted")
+            datetimes = datetimes.astype("datetime64[D]")
+
+        # Get the integer representation of the datetimes
+        time_int = datetimes.astype(np.int_)
+
+        # The interp1d object cannot be called with datetime64 values as new_x
+        interpolator = interp1d(time_int, self.gpp)
+        daily_timestamps = np.arange(
+            datetimes[0], datetimes[-1] + np.timedelta64(1, "D"), np.timedelta64(1, "D")
+        )
+        daily_timestamps_int = daily_timestamps.astype(np.int_)
+        daily_gpp = interpolator(daily_timestamps_int)
+
+        return daily_timestamps_int.astype("datetime64[D]"), daily_gpp
 
     def to_subdaily(
         self,
@@ -950,3 +996,21 @@ class SubdailyPModel(PModelABC):
         raise AttributeError(
             "The Subdaily P Model does not predict light use efficiency."
         )
+
+    def _get_daily_gpp(self) -> tuple[NDArray[np.datetime64], NDArray[np.floating]]:
+        """Average gpp values to daily means - does not apply penalty."""
+
+        # Reshape gpp array by day
+        gpp_by_day = self.gpp.view()
+        gpp_by_day.shape = tuple(
+            [
+                self.acclim_model.n_days,
+                self.acclim_model.n_obs,
+                *list(self.gpp.shape[1:]),
+            ]
+        )
+
+        # Take mean (allowing for missing values)
+        daily_mean_gpp = np.nanmean(gpp_by_day, axis=1)
+
+        return self.acclim_model.observation_dates, daily_mean_gpp

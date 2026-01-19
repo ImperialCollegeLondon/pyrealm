@@ -60,6 +60,42 @@ def de_gri_daily_outputs():
 
 
 @pytest.fixture
+def de_gri_fortnightly_data():
+    """Loads the fortnightly data."""
+
+    # Load the data
+    datapath = (
+        resources.files("pyrealm_build_data.phenology.fortnightly_example")
+        / "fortnightly_data.csv"
+    )
+
+    de_gri_data = pd.read_csv(datapath, na_values=[-9999])
+
+    # Calculate time as np.datetime64 and scale other vars
+    de_gri_data["time"] = pd.to_datetime(de_gri_data["time"], format="%Y-%m-%d")
+
+    return de_gri_data
+
+
+@pytest.fixture
+def de_gri_fortnightly_daily_outputs():
+    """Loads the fortnightly daily phenology data."""
+
+    # Load the data
+    datapath = (
+        resources.files("pyrealm_build_data.phenology.fortnightly_example")
+        / "daily_outputs.csv"
+    )
+
+    de_gri_data = pd.read_csv(datapath, na_values=[-9999])
+
+    # Calculate time as np.datetime64 and scale other vars
+    de_gri_data["date"] = pd.to_datetime(de_gri_data["time"], format="%Y-%m-%d")
+
+    return de_gri_data
+
+
+@pytest.fixture
 def de_gri_constants():
     """Load the site constants."""
 
