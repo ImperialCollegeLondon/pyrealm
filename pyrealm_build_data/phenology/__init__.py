@@ -55,4 +55,6 @@ The script creates outputs from fitting two P Models.
     the growing season and then annual values for maximum FAPAR, LAI and the m
     parameter. These values are then used to calculate the daily LAI predictions.
 
+  * **daily_outputs.csv**: Daily gpp interpolated from the fortnightly predictions and
+    then assimilation (GPP in moles m2 day), annual values and LAI predictions.
 """  # noqa: D205, D415
