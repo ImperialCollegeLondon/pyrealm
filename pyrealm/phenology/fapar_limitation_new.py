@@ -26,7 +26,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.constants import PhenologyConst
+from pyrealm.constants.phenology_const import PhenologyConstNew
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.time_series import AnnualValueCalculator
 from pyrealm.core.utilities import (
@@ -68,7 +68,7 @@ class FaparLimitationMethodABC(ABC):
     instance using the method."""
 
     def __init__(
-        self, fapar_limitation: FaparLimitation, phenology_const: PhenologyConst
+        self, fapar_limitation: FaparLimitation, phenology_const: PhenologyConstNew
     ):
         """Initialise the method instance.
 
@@ -129,7 +129,7 @@ class FaparLimitationCai(FaparLimitationMethodABC, method="cai"):
     requires = ("aridity",)
 
     def __init__(
-        self, fapar_limitation: FaparLimitation, phenology_const: PhenologyConst
+        self, fapar_limitation: FaparLimitation, phenology_const: PhenologyConstNew
     ):
         """Initialise a FaparLimitationMethod instance using the Cai approach."""
 
@@ -165,7 +165,7 @@ class FaparLimitationCai(FaparLimitationMethodABC, method="cai"):
                 f_0 = a \exp{\left(-b \left(\frac{AI}{c}\right)^2\right)}
 
         where :math:`a,b,c` are defined in the
-        :attr:`~pyrealm.constants.phenology_const.PhenologyConst.cai_f0_coefficients`
+        :attr:`~pyrealm.constants.phenology_const.PhenologyConstNew.cai_f0_coefficients`
         attribute.
         """
 
@@ -230,9 +230,9 @@ class FaparLimitationZhu(FaparLimitationMethodABC, method="zhu"):
         r"""Set the :math:`z` and :math:`f_0` parameters.
 
         This method has fixed values for :math:`z` (see
-        :attr:`~pyrealm.constants.phenology_const.PhenologyConst.zhu_f0`) and
+        :attr:`~pyrealm.constants.phenology_const.PhenologyConstNew.zhu_f0`) and
         :math:`f_0` (see
-        :attr:`~pyrealm.constants.phenology_const.PhenologyConst.zhu_z`)
+        :attr:`~pyrealm.constants.phenology_const.PhenologyConstNew.zhu_z`)
         """
 
         self.f0 = np.array([self.phenology_const.zhu_f0])
@@ -306,14 +306,14 @@ class FaparLimitation:
 
         m = \frac{ \sigma G L_{max}}{A_0 f_{APAR_{max}}
 
-    The :class:`~pyrealm.constants.phenology_const.PhenologyConst` class provides values
-    for the following constants:
+    The :class:`~pyrealm.constants.phenology_const.PhenologyConstNew` class provides
+    values for the following constants:
 
     * :math:`z` accounts for the growth and maintenance costs of leaves.
     * :math:`k` is the light extinction coefficient.
     * :math:`f_0` is is the ratio of annual total transpiration to annual total
       precipitation, calculated from the climatological aridity index (AI) (see
-      :class:`PhenologyConst.calculate_f0<pyrealm.constants.phenology_const.PhenologyConst.calculate_f0>`).
+      :class:`PhenologyConstNew.calculate_f0<pyrealm.constants.phenology_const.PhenologyConstNew.calculate_f0>`).
     * :math:`\sigma` is a proportion that captures the departure of :math:`m` from the
       maximum due to biological delays in deploying and dropping the canopy during the
       growing season.
@@ -341,7 +341,7 @@ class FaparLimitation:
         method: The method to be applied when calculating maximum fAPAR, defaulting to
         ``cai``. 
         phenology_const: An instance of
-            :class:`~pyrealm.constants.phenology_const.PhenologyConst`
+            :class:`~pyrealm.constants.phenology_const.PhenologyConstNew`
         **kwargs: Any additional variables required by specific method choices.
     """
 
@@ -357,7 +357,7 @@ class FaparLimitation:
         annual_growing_season_length: NDArray[np.floating],
         years: NDArray[np.datetime64],
         method: str = "cai",
-        phenology_const: PhenologyConst = PhenologyConst(),
+        phenology_const: PhenologyConstNew = PhenologyConstNew(),
         **kwargs: NDArray[np.floating],
     ) -> None:
         # Experimental class
@@ -414,7 +414,7 @@ class FaparLimitation:
         FaparLimitation instance."""
 
         # Constants used for phenology computations
-        self.phenology_const: PhenologyConst = phenology_const
+        self.phenology_const: PhenologyConstNew = phenology_const
 
         # Set up the fAPAR limitation method to be used.
         self.method: str = method
@@ -490,7 +490,7 @@ class FaparLimitation:
         datetimes: NDArray[np.datetime64] | None = None,
         gpp_penalty_factor: NDArray[np.floating] | None = None,
         method: str = "cai",
-        phenology_const: PhenologyConst = PhenologyConst(),
+        phenology_const: PhenologyConstNew = PhenologyConstNew(),
         **kwargs: NDArray[np.floating],
     ) -> FaparLimitation:
         r"""Create a FaparLimitation instance from a P Model and other inputs.
@@ -548,7 +548,7 @@ class FaparLimitation:
             method: The method to be used in calculating maximum fAPAR, defaulting to
                 `cai`.
             phenology_const: An instance of
-                :class:`~pyrealm.constants.phenology_const.PhenologyConst`
+                :class:`~pyrealm.constants.phenology_const.PhenologyConstNew`
             **kwargs: Any additional variables required by specific method choices.
         """
 
