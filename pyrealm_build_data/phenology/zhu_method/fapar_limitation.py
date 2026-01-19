@@ -9,84 +9,22 @@ notebooks.
 
 import numpy as np
 import pandas as pd
+from numpy.typing import NDArray
+from plmodel_timeseries import cal_fapar
 
 
-# ziqi's function
-def cal_fapar(fapar_carbon, fapar_water, options=None):
-    """Function to calculate maximum fapar from water and energy limited versions."""
-    # Handle options
-    if options is None:
-        options = {}
-
-    const_budyko = options.get("const_budyko", 4)
-
-    # Convert to float arrays
-    fapar_carbon = np.asarray(fapar_carbon, dtype=float)
-    fapar_water = np.asarray(fapar_water, dtype=float)
-
-    # Handle scalar broadcasting
-    if fapar_carbon.ndim == 0 and fapar_water.ndim > 0:
-        fapar_carbon = np.full_like(fapar_water, fapar_carbon)
-    elif fapar_water.ndim == 0 and fapar_carbon.ndim > 0:
-        fapar_water = np.full_like(fapar_carbon, fapar_water)
-    elif fapar_carbon.shape != fapar_water.shape:
-        try:
-            # Test if broadcasting works
-            _ = fapar_carbon + fapar_water
-        except ValueError:
-            raise ValueError(
-                "fapar_carbon and fapar_water must be scalar or equal-sized arrays"
-            )
-
-    # Store original shape
-    sza = fapar_carbon.shape
-
-    # Flatten arrays
-    flatC = fapar_carbon.ravel()
-    flatW = fapar_water.ravel()
-    n = flatC.size
-
-    # Initialize output arrays
-    flat_out = np.full(n, np.nan)
-    flat_ratio = np.full(n, np.nan)
-    flat_factor = np.full(n, np.nan)
-
-    safety_eps = np.finfo(float).eps
-
-    # Loop through each element
-    for ii in range(n):
-        fc = flatC[ii]
-        fw = flatW[ii]
-
-        # Safe denominator
-        denom_safe = fw + (fw == 0) * safety_eps
-        r_local = fc / denom_safe
-        flat_ratio[ii] = r_local
-
-        one_plus_r = 1 + r_local
-        r_clamped = max(r_local, -0.999)
-        r_pow = r_clamped**const_budyko
-        inside = 1 + r_pow
-        root_term = inside ** (1 / const_budyko)
-        fcomb = one_plus_r - root_term
-
-        flat_factor[ii] = fcomb
-        flat_out[ii] = fcomb * fw
-
-    # Reshape to original shape
-    fapar_max = flat_out.reshape(sza)
-
-    return fapar_max
-
-
-def cal_fapar_actually_in_python(fapar_carbon, fapar_water, budyko=4):
-    """Refactor using array calculations."""
+def cal_fapar_actually_in_python(
+    fapar_carbon: NDArray[np.floating], fapar_water: NDArray[np.floating], budyko=4
+) -> NDArray[np.floating]:
+    """Refactor of plmodel_timeseries.cal_fapar using array calculations."""
     cw_ratio = fapar_carbon / (np.clip(fapar_water, min=np.finfo(float).eps, max=None))
     return ((1 + cw_ratio) - (1 + cw_ratio**budyko) ** (1 / budyko)) * fapar_water
 
 
 data = pd.read_csv("../fortnightly_example/annual_outputs.csv")
+data = {k: v.to_numpy() for k, v in data.items()}
 
+# Ziqi's values for f0 and zcost.
 f0 = 0.5
 zcost = 17
 
@@ -113,6 +51,11 @@ fapar_max2 = cal_fapar_actually_in_python(
 
 assert np.allclose(fapar_max, fapar_max2)
 
-outputs = pd.DataFrame({"year": data["time"], "zhu_fapar_max": fapar_max})
+outputs = pd.DataFrame(
+    {
+        "year": data["time"].astype("datetime64[Y]").astype("str").astype("int"),
+        "zhu_fapar_max": fapar_max,
+    }
+)
 
 outputs.to_csv("zhu_annual_fapar_max_from_fortnightly_data.csv")

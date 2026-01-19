@@ -2,11 +2,93 @@
 
 It computes steady-state LAI, applies a moisture-driven
 lag, and converts the simulated canopy structure back to fAPAR.
+
+
+Notes added David Orme (2026-01-19):
+
+    This is the reference implementation for the Ziqi Zhu's phenology method - it does
+    not follow the pyrealm standards for code.
+
+    I have also added the original implementation of the function used to calculate
+    annual fapar max to keep the reference implementation in a single file. This
+    function was untyped and so has been decorated with no_type_check to suppress
+    warnings.
 """
 
 from __future__ import annotations
 
+from typing import no_type_check
+
 import numpy as np
+
+
+# ziqi's function
+@no_type_check
+def cal_fapar(fapar_carbon, fapar_water, options=None):
+    """Function to calculate maximum fapar from water and energy limited versions."""
+    # Handle options
+    if options is None:
+        options = {}
+
+    const_budyko = options.get("const_budyko", 4)
+
+    # Convert to float arrays
+    fapar_carbon = np.asarray(fapar_carbon, dtype=float)
+    fapar_water = np.asarray(fapar_water, dtype=float)
+
+    # Handle scalar broadcasting
+    if fapar_carbon.ndim == 0 and fapar_water.ndim > 0:
+        fapar_carbon = np.full_like(fapar_water, fapar_carbon)
+    elif fapar_water.ndim == 0 and fapar_carbon.ndim > 0:
+        fapar_water = np.full_like(fapar_carbon, fapar_water)
+    elif fapar_carbon.shape != fapar_water.shape:
+        try:
+            # Test if broadcasting works
+            _ = fapar_carbon + fapar_water
+        except ValueError:
+            raise ValueError(
+                "fapar_carbon and fapar_water must be scalar or equal-sized arrays"
+            )
+
+    # Store original shape
+    sza = fapar_carbon.shape
+
+    # Flatten arrays
+    flatC = fapar_carbon.ravel()
+    flatW = fapar_water.ravel()
+    n = flatC.size
+
+    # Initialize output arrays
+    flat_out = np.full(n, np.nan)
+    flat_ratio = np.full(n, np.nan)
+    flat_factor = np.full(n, np.nan)
+
+    safety_eps = np.finfo(float).eps
+
+    # Loop through each element
+    for ii in range(n):
+        fc = flatC[ii]
+        fw = flatW[ii]
+
+        # Safe denominator
+        denom_safe = fw + (fw == 0) * safety_eps
+        r_local = fc / denom_safe
+        flat_ratio[ii] = r_local
+
+        one_plus_r = 1 + r_local
+        r_clamped = max(r_local, -0.999)
+        r_pow = r_clamped**const_budyko
+        inside = 1 + r_pow
+        root_term = inside ** (1 / const_budyko)
+        fcomb = one_plus_r - root_term
+
+        flat_factor[ii] = fcomb
+        flat_out[ii] = fcomb * fw
+
+    # Reshape to original shape
+    fapar_max = flat_out.reshape(sza)
+
+    return fapar_max
 
 
 def plmodel_timeseries(
