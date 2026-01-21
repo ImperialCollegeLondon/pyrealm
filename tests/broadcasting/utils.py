@@ -323,6 +323,22 @@ def _get_package_modules(pkg: ModuleType) -> list[ModuleType]:
     return modules
 
 
+def global_namespace():
+    """Extract the global namespace for the package.
+
+    Provides the contexts of the pyrealm classes to pass to get_type_hints.
+    """
+
+    globalns = {}
+    for module in _get_package_modules(pyrealm):
+        globalns.update(vars(module))
+
+    return globalns
+
+
+GLOBALNS = global_namespace()
+
+
 def _is_instance_method(cls: type | None, method_name: str) -> bool:
     """Returns True if the method is not static or a classmethod."""
     if cls is None:
@@ -594,12 +610,9 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
         else:
             if param.annotation is param.empty:
                 raise Exception(f"Missing annotation for {ctx.name}:{param_name}")
-            # Get the contexts of the pyrealm classes to pass to get_type_hints
-            globalns = {}
-            for module in _get_package_modules(pyrealm):
-                globalns.update(vars(module))
-            # Resolve any string annotations
-            typ = get_type_hints(method, globalns=globalns).get(
+
+            # Resolve any string annotations using the global namespace
+            typ = get_type_hints(method, globalns=GLOBALNS).get(
                 param_name, param.annotation
             )
             kwargs[param_name] = _initialise_type_default(typ, ctx)
