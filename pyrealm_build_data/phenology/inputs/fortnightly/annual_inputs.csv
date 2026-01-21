@@ -1,4 +1,4 @@
-,year,N_growing_days,N_days,ann_mean_subdaily_gpp,annual_precip_molar,annual_mean_ca_in_GS,annual_mean_chi_in_GS,annual_mean_VPD_in_GS,ann_total_A0
+,year,N_growing_days,N_days,annual_mean_gpp,annual_precip_molar,annual_mean_ca_in_GS,annual_mean_chi_in_GS,annual_mean_VPD_in_GS,annual_total_A0
 0,2004,296,366,82.777,45202.019,37.039239,0.69032811,361.62412,217.93962
 1,2005,278,365,89.388885,42998.535,38.81199,0.68765115,381.04226,234.70471
 2,2006,284,365,90.840536,47938.117,38.761292,0.68580913,447.15991,238.51625

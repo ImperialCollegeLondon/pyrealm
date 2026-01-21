@@ -209,8 +209,8 @@ annual_values_hh = pd.DataFrame(
         year=pd.Series(avc_hh.years).dt.year,
         N_growing_days=avc_hh.year_n_days_subset,
         N_days=avc_hh.year_n_days,
-        ann_mean_gpp=avc_hh.get_annual_means(pmodel_outputs_hh["gpp"].to_numpy()),
-        ann_mean_gpp_smstress=avc_hh.get_annual_means(
+        annual_mean_gpp=avc_hh.get_annual_means(pmodel_outputs_hh["gpp"].to_numpy()),
+        annual_mean_gpp_smstress=avc_hh.get_annual_means(
             pmodel_outputs_hh["gpp_smstress"].to_numpy()
         ),
         annual_precip_molar=avc_hh.get_annual_totals(
@@ -231,14 +231,14 @@ annual_values_hh = pd.DataFrame(
 
 
 # Convert mean GPP from µg C m-2 s-1 to annual moles
-annual_values_hh["ann_total_A0_smstress"] = (
-    annual_values_hh["ann_mean_gpp_smstress"]
+annual_values_hh["annual_total_A0_smstress"] = (
+    annual_values_hh["annual_mean_gpp_smstress"]
     * (annual_values_hh["N_days"] * 24 * 60 * 60 * 1e-6)
     / env.core_const.k_c_molmass
 )
 
-annual_values_hh["ann_total_A0"] = (
-    annual_values_hh["ann_mean_gpp"]
+annual_values_hh["annual_total_A0"] = (
+    annual_values_hh["annual_mean_gpp"]
     * (annual_values_hh["N_days"] * 24 * 60 * 60 * 1e-6)
     / env.core_const.k_c_molmass
 )
@@ -333,9 +333,7 @@ annual_values_ft = pd.DataFrame(
         year=pd.Series(avc_ft.years).dt.year,
         N_growing_days=avc_ft.year_n_days_subset,
         N_days=avc_ft.year_n_days,
-        ann_mean_subdaily_gpp=avc_ft.get_annual_means(
-            pmodel_outputs_ft["gpp"].to_numpy()
-        ),
+        annual_mean_gpp=avc_ft.get_annual_means(pmodel_outputs_ft["gpp"].to_numpy()),
         annual_precip_molar=avc_ft.get_annual_totals(
             pmodel_inputs_ft["precip_molar"].to_numpy()
         ),
@@ -354,8 +352,8 @@ annual_values_ft = pd.DataFrame(
 
 
 # Convert mean GPP from µg C m-2 s-1 to annual moles
-annual_values_ft["ann_total_A0"] = (
-    annual_values_ft["ann_mean_subdaily_gpp"]
+annual_values_ft["annual_total_A0"] = (
+    annual_values_ft["annual_mean_gpp"]
     * (annual_values_ft["N_days"] * 24 * 60 * 60 * 1e-6)
     / env.core_const.k_c_molmass
 )
