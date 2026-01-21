@@ -12,8 +12,8 @@ from numpy.testing import assert_allclose
 @pytest.mark.parametrize(
     argnames="timescale,A0_variable",
     argvalues=(
-        pytest.param("hh", "ann_total_A0_smstress", id="subdaily"),
-        pytest.param("ft", "ann_total_A0", id="fortnightly"),
+        pytest.param("hh", "annual_total_A0_smstress", id="subdaily"),
+        pytest.param("ft", "annual_total_A0", id="fortnightly"),
     ),
 )
 def test_faparlimitation(
@@ -64,8 +64,8 @@ def test_faparlimitation(
 @pytest.mark.parametrize(
     argnames="timescale,A0_variable",
     argvalues=(
-        pytest.param("hh", "ann_total_A0_smstress", id="subdaily"),
-        pytest.param("ft", "ann_total_A0", id="fortnightly"),
+        pytest.param("hh", "annual_total_A0_smstress", id="subdaily"),
+        pytest.param("ft", "annual_total_A0", id="fortnightly"),
     ),
 )
 def test_phenology(

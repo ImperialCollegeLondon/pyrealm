@@ -151,7 +151,7 @@ def test_FaparLimitation_dimensionality(
     target_shape = tuple([n_years, *([3] * extra_dims)])
 
     array_input_vars = (
-        ("annual_total_potential_gpp", "ann_total_A0"),
+        ("annual_total_potential_gpp", "annual_total_A0"),
         ("annual_mean_ca", "annual_mean_ca_in_GS"),
         ("annual_mean_chi", "annual_mean_chi_in_GS"),
         ("annual_mean_vpd", "annual_mean_VPD_in_GS"),
