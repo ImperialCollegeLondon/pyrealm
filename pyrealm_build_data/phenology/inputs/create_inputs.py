@@ -126,7 +126,7 @@ growing_season["growing_season"] = np.repeat(gsl_values, gsl_lengths)
 
 # Merge those two daily variables on the date, which duplicates values to the half
 # hourly time scale and also reduces the SPLASH 20 year daily values run to the DE_GRI
-# hh rows This mucks around with the indexing, so reset to keep time and then reinstate
+# hh rows. This mucks around with the indexing, so reset to keep time and then reinstate
 
 pmodel_inputs_hh = pmodel_inputs_hh.reset_index()
 pmodel_inputs_hh["date"] = pd.to_datetime(pmodel_inputs_hh["time"].dt.date)
@@ -175,7 +175,7 @@ subdaily_pmodel = SubdailyPModel(
     method_kphio="temperature",
 )
 
-# Get an dataframe of PModel predictions at half hourly scale
+# Get a dataframe of PModel predictions at half hourly scale
 pmodel_outputs_hh = pd.DataFrame(
     dict(
         gpp=subdaily_pmodel.gpp,
@@ -269,7 +269,6 @@ daily_productivity_hh.to_csv("subdaily/daily_assimilation.csv", float_format="%0
 fortnight_resampler = pmodel_inputs_hh.drop(columns="date").resample("14D")
 fortnight_means = fortnight_resampler.mean()
 fortnight_sum = fortnight_resampler.sum()
-# fortnight_resampler_from_daily = subdaily_daily_values.resample(time="14D")
 
 # Extract the variables needed to run the model
 pmodel_inputs_ft = pd.DataFrame(
