@@ -67,13 +67,6 @@ SKIP_METHODS = [
     "evaluate_horner_polynomial",  # Coefficients are 1D
     # PModel
     "AcclimationModel.set_include",
-    # "OptimalChiC4RootzoneStress.estimate_chi",  # Requires rootzonestress in PME
-    "OptimalChiC4NoGammaRootzoneStress.estimate_chi",  # Requires rootzonestress in PME
-    "OptimalChiPrentice14RootzoneStress.estimate_chi",  # Requires rootzonestress in PME
-    "OptimalChiLavergne20C3.estimate_chi",  # Requires theta in PME
-    "OptimalChiLavergne20C4.estimate_chi",  # Requires theta in PME
-    "QuantumYieldSandoval",  # Requires aridity_index in PME
-    "QuantumYieldSandoval.peak_quantum_yield",  # Requires aridity_index in PME
     "PModel._get_daily_gpp",
     # Demography - mostly 1d arrays (dataframes)
     "CohortMethods.drop_cohort_data",
@@ -132,18 +125,75 @@ IGNORE_OUTPUTS = [
     "FaparLimitation:shape",
 ]
 
+# The REQUIRES dictionary provides a way of populating required keywords arguments for
+# some methods. The keys specify the object being created and the parent context in
+# which it is created and the values provide a tuple of arguments that should be added
+# to the method signature.
 
-REQUIRES = [
-    (
-        "PModelEnvironment",
-        "OptimalChiC4RootzoneStress.estimate_chi",
-        Parameter(
-            name="aridity_index",
+
+def kwarg_params(names: tuple[str, ...]) -> dict[str, Parameter]:
+    """Creates a dictionary containing inspect.Parameter instances."""
+    return {
+        name: Parameter(
+            name=name,
             kind=Parameter.POSITIONAL_OR_KEYWORD,
             annotation=NDArray[np.floating],
+        )
+        for name in names
+    }
+
+
+REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
+    (
+        "PModelEnvironment",
+        (
+            "OptimalChiC4RootzoneStress.estimate_chi",
+            "OptimalChiC4RootzoneStress",
         ),
-    )
-]
+    ): kwarg_params(("rootzonestress",)),
+    (
+        "PModelEnvironment",
+        (
+            "OptimalChiC4NoGammaRootzoneStress.estimate_chi",
+            "OptimalChiC4NoGammaRootzoneStress",
+        ),
+    ): kwarg_params(("rootzonestress",)),
+    (
+        "PModelEnvironment",
+        (
+            "OptimalChiPrentice14RootzoneStress.estimate_chi",
+            "OptimalChiPrentice14RootzoneStress",
+        ),
+    ): kwarg_params(("rootzonestress",)),
+    (
+        "PModelEnvironment",
+        (
+            "OptimalChiLavergne20C3.estimate_chi",
+            "OptimalChiLavergne20C3",
+        ),
+    ): kwarg_params(("theta",)),
+    (
+        "PModelEnvironment",
+        (
+            "OptimalChiLavergne20C4.estimate_chi",
+            "OptimalChiLavergne20C4",
+        ),
+    ): kwarg_params(("theta",)),
+    (
+        "PModelEnvironment",
+        ("QuantumYieldSandoval",),
+    ): kwarg_params(("aridity_index", "mean_growth_temperature")),
+    (
+        "PModelEnvironment",
+        (
+            "QuantumYieldSandoval.peak_quantum_yield",
+            "QuantumYieldSandoval",
+        ),
+    ): kwarg_params(("aridity_index",)),
+}
+
+
+#    QuantumYieldSandoval: requires aridity_index in PME
 
 
 # These methods require specific arguments
@@ -606,9 +656,19 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
     from typing import get_type_hints
 
     kwargs = {}
-    sig = signature(method)
+
+    # Get the method parameters and copy to get a modifiable OrderedDict from inside the
+    # Parameters mappingproxy return type
+    params = signature(method).parameters.copy()
+
+    required_args = REQUIRES.get((ctx.name, tuple(ctx.parents)))
+
+    if required_args is not None:
+        params.update(required_args)
+
     ctx.i_arg = 0
-    for param_name, param in sig.parameters.items():
+
+    for param_name, param in params.items():
         ctx.i_arg += 1
 
         # Set manually defined values
