@@ -414,6 +414,7 @@ class FaparLimitation:
         if method not in FAPAR_LIMITATION_METHOD_CLASS_REGISTRY:
             raise ValueError(f"Unknown FaparLimitation method: {method}")
 
+        # Get an instance of the method class from the registry
         self.limitation_method: FaparLimitationMethodABC = (
             FAPAR_LIMITATION_METHOD_CLASS_REGISTRY[method](
                 fapar_limitation=self, phenology_const=self.phenology_const
