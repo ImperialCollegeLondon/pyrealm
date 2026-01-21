@@ -108,22 +108,6 @@ SKIP_METHODS = [
 IGNORE_OUTPUTS = [
     "Cohorts:_cohort_id",
     "Calendar:n_dates",
-    "C3C4Competition:shape",
-    "CalcCarbonIsotopes:shape",
-    "PModelEnvironment:shape",
-    "PModel:shape",
-    "SubdailyPModel:shape",
-    "OptimalChiC4:shape",
-    "OptimalChiC4NoGamma:shape",
-    "OptimalChiPrentice14:shape",
-    "QuantumYieldTemperature:shape",
-    "QuantumYieldFixed:shape",
-    "JmaxLimitationWang17:_shape",
-    "SplashModel:shape",
-    "DailySolarFluxes:shape",
-    "DailyEvapFluxes:shape",
-    "AnnualValueCalculator:data_shape",
-    "FaparLimitation:shape",
 ]
 
 # The REQUIRES dictionary provides a way of populating required keywords arguments for
@@ -769,11 +753,17 @@ def comparison_string(val1: Any, val2: Any) -> str:
 
 
 def compare_instances(instance1: Any, instance2: Any):
-    """Raises ValueError if the two class instances do not have equal attributes."""
+    """Raises ValueError if the two class instances do not have equal attributes.
+
+    This function ignores the shape attribute of any class, which is not expected to
+    broadcast, and anything in the manually defined list IGNORE_OUTPUTS.
+    """
     dict1 = instance1.__dict__
     dict2 = instance2.__dict__
     class_name = instance1.__class__.__name__
     for key in dict1:
+        if key == "shape":
+            continue
         if f"{class_name}:{key}" in IGNORE_OUTPUTS:
             continue
         if not is_equal(dict1[key], dict2[key]):
