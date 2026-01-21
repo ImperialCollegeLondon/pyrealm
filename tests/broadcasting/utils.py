@@ -33,15 +33,23 @@ The functions that are not used in `test_broadcasting` and are only used within 
 file are marked private.
 """
 
-import dataclasses
-import inspect
 from collections.abc import Callable, Iterator
-from dataclasses import InitVar
+from dataclasses import InitVar, dataclass, field
+from inspect import (
+    Parameter,
+    getattr_static,
+    getmembers,
+    isabstract,
+    isclass,
+    isfunction,
+    ismethod,
+    signature,
+)
 from types import ModuleType, UnionType
 from typing import Any, Union, get_args, get_origin
 
 import numpy as np
-import numpy.typing as npt
+from numpy.typing import DTypeLike, NDArray
 
 import pyrealm
 from pyrealm.core.calendar import Calendar
@@ -59,7 +67,7 @@ SKIP_METHODS = [
     "evaluate_horner_polynomial",  # Coefficients are 1D
     # PModel
     "AcclimationModel.set_include",
-    "OptimalChiC4RootzoneStress.estimate_chi",  # Requires rootzonestress in PME
+    # "OptimalChiC4RootzoneStress.estimate_chi",  # Requires rootzonestress in PME
     "OptimalChiC4NoGammaRootzoneStress.estimate_chi",  # Requires rootzonestress in PME
     "OptimalChiPrentice14RootzoneStress.estimate_chi",  # Requires rootzonestress in PME
     "OptimalChiLavergne20C3.estimate_chi",  # Requires theta in PME
@@ -122,6 +130,19 @@ IGNORE_OUTPUTS = [
     "DailyEvapFluxes:shape",
     "AnnualValueCalculator:data_shape",
     "FaparLimitation:shape",
+]
+
+
+REQUIRES = [
+    (
+        "PModelEnvironment",
+        "OptimalChiC4RootzoneStress.estimate_chi",
+        Parameter(
+            name="aridity_index",
+            kind=Parameter.POSITIONAL_OR_KEYWORD,
+            annotation=NDArray[np.floating],
+        ),
+    )
 ]
 
 
@@ -339,7 +360,7 @@ def _is_instance_method(cls: type | None, method_name: str) -> bool:
     """Returns True if the method is not static or a classmethod."""
     if cls is None:
         return False
-    attr = inspect.getattr_static(cls, method_name)
+    attr = getattr_static(cls, method_name)
     if isinstance(attr, staticmethod | classmethod):
         return False
     else:
@@ -355,13 +376,13 @@ def _get_module_callables(
         An iterable including the function/method name, callable, and (if a method)
         class.
     """
-    for name, obj in inspect.getmembers(module):
+    for name, obj in getmembers(module):
         if getattr(obj, "__module__", None) != module.__name__:
             continue
-        if inspect.isfunction(obj) or inspect.ismethod(obj):
+        if isfunction(obj) or ismethod(obj):
             yield name, obj, None
-        elif inspect.isclass(obj):
-            for mname, method in inspect.getmembers(obj, predicate=inspect.isfunction):
+        elif isclass(obj):
+            for mname, method in getmembers(obj, predicate=isfunction):
                 if mname in ["__init__", "__post_init__"]:
                     full_name = name
                 else:
@@ -386,7 +407,7 @@ def get_method_list() -> list[tuple[str, Callable, type | None]]:
     for mod in _get_package_modules(pyrealm):
         for name, method, cls in _get_module_callables(mod):
             # Don't add methods of abstract classes
-            if cls is not None and inspect.isabstract(cls):
+            if cls is not None and isabstract(cls):
                 continue
 
             if _has_array_input(method) and name not in SKIP_METHODS:
@@ -447,9 +468,9 @@ def _has_array_input(method: Callable) -> bool:
     return any(_is_array_type(typ) for typ in hints.values())
 
 
-def _extract_numpy_dtype(typ: Any) -> npt.DTypeLike:
+def _extract_numpy_dtype(typ: Any) -> DTypeLike:
     """Extract a numpy dtype from NDArray annotation."""
-    dtype: npt.DTypeLike = np.float64
+    dtype: DTypeLike = np.float64
 
     args = get_args(typ)
     if not args:
@@ -475,7 +496,7 @@ def _extract_numpy_dtype(typ: Any) -> npt.DTypeLike:
 
 
 ## Functions to initialise arguments and classes
-@dataclasses.dataclass
+@dataclass
 class Context:
     """Context class to pass between functions.
 
@@ -495,7 +516,7 @@ class Context:
     name: str
     shapes: list[tuple[int, ...]]
     i_arg: int = 0
-    parents: list[str] = dataclasses.field(default_factory=list)
+    parents: list[str] = field(default_factory=list)
     """A list of the superior function / classes for the current context."""
 
     def new(self, name: str) -> "Context":
@@ -563,7 +584,7 @@ def _initialise_type_default(typ: Any, ctx: Context) -> Any:
         return Flora([PlantFunctionalType(name=name) for name in pft_names])
     elif typ is StemTraits:
         return _initialise_type_default(Flora, ctx).get_stem_traits(pft_names)
-    elif len(inspect.signature(typ).parameters) > 0:
+    elif len(signature(typ).parameters) > 0:
         return initialise_class(typ, ctx)
     else:
         return typ()
@@ -585,7 +606,7 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
     from typing import get_type_hints
 
     kwargs = {}
-    sig = inspect.signature(method)
+    sig = signature(method)
     ctx.i_arg = 0
     for param_name, param in sig.parameters.items():
         ctx.i_arg += 1
