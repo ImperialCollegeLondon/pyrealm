@@ -59,9 +59,6 @@ SKIP_METHODS = [
     "evaluate_horner_polynomial",  # Coefficients are 1D
     # PModel
     "AcclimationModel.set_include",
-    "PModelABC",  # Cannot init ABC
-    "QuantumYieldABC",  # Cannot init ABC
-    "OptimalChiABC.estimate_chi",  # Cannot init ABC
     "OptimalChiC4RootzoneStress.estimate_chi",  # Requires rootzonestress in PME
     "OptimalChiC4NoGammaRootzoneStress.estimate_chi",  # Requires rootzonestress in PME
     "OptimalChiPrentice14RootzoneStress.estimate_chi",  # Requires rootzonestress in PME
@@ -70,7 +67,6 @@ SKIP_METHODS = [
     "QuantumYieldSandoval",  # Requires aridity_index in PME
     "QuantumYieldSandoval.peak_quantum_yield",  # Requires aridity_index in PME
     "PModel._get_daily_gpp",
-    "PModelABC.apply_gpp_conversion_factor",
     # Demography - mostly 1d arrays (dataframes)
     "CohortMethods.drop_cohort_data",
     "StemTraits",
