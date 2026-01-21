@@ -16,6 +16,7 @@ functions listed below:
    fix errors.
    - `SKIP_METHODS`
    - `IGNORE_OUTPUTS`
+   - `REQUIRES`
    - `ADDITIONAL_INIT_METHODS`
    - `defined_method_args`
 2. To get the list of functions / methods in the library.
@@ -181,7 +182,7 @@ REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
     ): kwarg_params(("theta",)),
     (
         "PModelEnvironment",
-        ("QuantumYieldSandoval",),
+        ("QuantumYieldSandoval", "QuantumYieldSandoval"),
     ): kwarg_params(("aridity_index", "mean_growth_temperature")),
     (
         "PModelEnvironment",
@@ -189,7 +190,7 @@ REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
             "QuantumYieldSandoval.peak_quantum_yield",
             "QuantumYieldSandoval",
         ),
-    ): kwarg_params(("aridity_index",)),
+    ): kwarg_params(("aridity_index", "mean_growth_temperature")),
 }
 
 
