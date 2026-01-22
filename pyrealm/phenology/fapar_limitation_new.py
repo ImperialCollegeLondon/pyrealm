@@ -83,6 +83,19 @@ class FaparLimitationMethodABC(ABC):
 
         self.set_z_and_f0()
 
+    def _check_required_variables(self) -> None:
+        """Check required variables.
+
+        Checks that any required variables for the method have been passed to the
+        FaparLimitation constructor.
+        """
+        for var in self.requires:
+            if not hasattr(self.fapar_limitation, var):
+                raise ValueError(
+                    f"Values for {var} are required to use the {self.method} method "
+                    "with FaparLimitation."
+                )
+
     @abstractmethod
     def set_z_and_f0(self) -> None:
         """Sets the f0 and z values for the method."""
@@ -133,19 +146,13 @@ class FaparLimitationCai(FaparLimitationMethodABC, method="cai"):
     ):
         """Initialise a FaparLimitationMethod instance using the Cai approach."""
 
-        # Validate the additional required aridity index inputs.
-        aridity_index = getattr(fapar_limitation, "aridity_index", None)
-        if aridity_index is None:
-            raise ValueError(
-                "Values for the 'aridity_index' are required to use the 'cai' method "
-                "with FaparLimitation."
-            )
+        # Check for required variables
+        self._check_required_variables()
 
         # Make sure the aridity index is not zero
-        if np.any(aridity_index <= 0):
+        self.aridity_index = getattr(self.fapar_limitation, "aridity_index")
+        if np.any(self.aridity_index <= 0):
             raise ValueError("The aridity index has to be positive.")
-
-        self.aridity_index: NDArray[np.floating] = aridity_index
 
         # Run the superclass init method.
         super().__init__(
@@ -225,6 +232,19 @@ class FaparLimitationZhu(FaparLimitationMethodABC, method="zhu"):
     )
 
     requires = tuple()
+
+    def __init__(
+        self, fapar_limitation: FaparLimitation, phenology_const: PhenologyConstNew
+    ):
+        """Initialise a FaparLimitationMethod instance using the Zhu approach."""
+
+        # Check for required variables
+        self._check_required_variables()
+
+        # Run the superclass init method.
+        super().__init__(
+            fapar_limitation=fapar_limitation, phenology_const=phenology_const
+        )
 
     def set_z_and_f0(self) -> None:
         r"""Set the :math:`z` and :math:`f_0` parameters.
