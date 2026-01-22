@@ -57,27 +57,34 @@ def test_array_input_broadcasting(
     # Generate the arguments for the function / method
     ctx = Context(name, shapes)
     ctx_full = Context(name, SHAPE_FULL)
-    args = generate_args(method, ctx)
-    args_full = generate_args(method, ctx_full)
 
     # If a class method (initialises class and compares attributes)
     if cls is not None:
-        # First initialise class and get bound methods
+        # First initialise class and get bound methods - the initialise class function
+        # calls generate_args() internally for the __init__ method
         instance1 = initialise_class(cls, ctx)
         instance2 = initialise_class(cls, ctx_full)
-        method1 = getattr(instance1, method.__name__)
-        method2 = getattr(instance2, method.__name__)
-        # Run the method
-        result = method1(**args)
-        result_full = method2(**args_full)
+
+        if method.__name__ == "__init__":
+            result = None
+            result_full = None
+        else:
+            # Get the method attribute from the class
+            method1 = getattr(instance1, method.__name__)
+            method2 = getattr(instance2, method.__name__)
+
+            # Generate the arguments to run the method and run it
+            result = method1(**generate_args(method, ctx))
+            result_full = method2(**generate_args(method, ctx_full))
+
         # Fail if attributes not equal
         compare_instances(instance1, instance2)
 
     # If a function / static method
     else:
         # Run the method
-        result = method(**args)
-        result_full = method(**args_full)
+        result = method(**generate_args(method, ctx))
+        result_full = method(**generate_args(method, ctx_full))
 
     # Fail if function outputs not equal
     if not is_equal(result, result_full):
