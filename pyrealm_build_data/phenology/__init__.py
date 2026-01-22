@@ -1,5 +1,10 @@
-"""This submodule provides regression test data from the initial implementation of LAI
-phenology calculations, provided by Boya Zhou. The input data consists of three files:
+"""This submodule provides regression test data for LAI phenology calculations
+
+The `..._methods` directories contain the golden datasets of annual fapar max and daily
+LAI from running a particular method. These are calculated using the data provided in
+the `inputs directory`.
+
+The `inputs/source` directory contains three original data files:
 
 * **DE_GRI_hh_fluxnet_simple.csv**: This file is a subset of the original FluxNET
   dataset for the site (``FLX_DE-Gri_FLUXNET2015_FULLSET_HH_2004-2014_1-4.csv``). This
@@ -17,44 +22,27 @@ phenology calculations, provided by Boya Zhou. The input data consists of three 
 * **DE-GRI_site_data.json**: This contains required site data that is constant across
   all observations.
 
-The script file ``python_implementation.py`` contains a pure Python reimplementation of
-Boya Zhou's original workflow, put together by David Orme and Boya Zhou to bring all of
-the calculations into Python using agreed inputs to create a repeatable regression test
-dataset.
+The `create_inputs.py` file then populates two directories of inputs for use in testing:
 
-The script creates outputs from fitting two P Models.
+* `fortnightly`: this contains fortnightly summary data from the half hourly inputs for
+  use with the standard PModel.
 
-1. A subdaily P Model at 30 minute resolution including daily soil moisture penalties.
-   The outputs of this model are stored in the `subdaily_example` directory and includes
-   three output files to allow regression testing at three time scales:
+* `subdaily`: this contains outputs at the original 30 minute time scale for use with
+  the subdaily PModel.
 
-  * **half_hourly_data.csv**: The predictions from the P Model of GPP at the half hourly
-    scale, along with optimal chi and ci values. The file also includes the forcing data
-    used to fit the model and the precipitation data.
+Each of those two directories contains identically structured files:
 
-  * **daily_outputs.csv**: Daily total GPP along with soil moisture stress factors and
-    resulting penalised daily GPP, growing season definition and resulting time series
-    in LAI and lagged LAI.
+* `pmodel_inputs.csv`: processed and cleaned data in the correct units for fitting a P
+  Model along with preciptation data and an indication of which observations are in the
+  growing season.
 
-  * **annual_outputs.csv**:  Annual values used in calculations including total annual
-    assimilation, precipitation, number of growing days, mean carbon chi and VPD within
-    the growing season and then annual values for maximum FAPAR, LAI and the m
-    parameter. These values are then used to calculate the daily LAI predictions.
+* `pmodel_outputs.csv`:  GPP, ca, chi and ci values from fitting P Models using the
+  data. For the fortnightly data this is a standard P Model, for the subdaily inputs
+  this is a Subdaily model incorporating a soil moisture penalty.
 
-2. A standard P Model calculated using fortnightly averages, excepting precipitation,
-   which is calculated from the sum of half hourly FluxNET precipitation converted from
-   mm to moles. The outputs from this model are stored in the `fortnightly_example`
-   directory and includes:
+* `annual_inputs.csv`: Annual summary data of the variables needed to calculate fapar
+  max.
 
-  * **fortnightly_data.csv**: The predictions from the P Model of GPP at the fortnightly
-    scale, along with optimal chi and ci values. The file also includes the forcing data
-    used to fit the model and the precipitation data.
-
-  * **annual_outputs.csv**:  Annual values used in calculations including total annual
-    assimilation, precipitation, number of growing days, mean carbon chi and VPD within
-    the growing season and then annual values for maximum FAPAR, LAI and the m
-    parameter. These values are then used to calculate the daily LAI predictions.
-
-  * **daily_outputs.csv**: Daily gpp interpolated from the fortnightly predictions and
-    then assimilation (GPP in moles m2 day), annual values and LAI predictions.
-"""  # noqa: D205, D415
+* `daily_assimilation.csv`: GPP and then molar assimilation at the daily timescale, by
+  interpolation for fortnightly data and by aggregation for subdaily data.
+"""  # noqa: D415

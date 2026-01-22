@@ -63,7 +63,7 @@ class JmaxLimitationABC(ABC):
         """The optimal chi instance used to calculate limitation terms."""
         self.pmodel_const = pmodel_const
         """The PModel constants instance used for the calculation."""
-        self._shape: tuple[int, ...] = self.optchi.mj.shape
+        self.shape: tuple[int, ...] = self.optchi.mj.shape
         """Records the common numpy array shape in the data."""
         self.f_j: NDArray[np.floating]
         """:math:`J_{max}` limitation factor."""
@@ -74,7 +74,7 @@ class JmaxLimitationABC(ABC):
 
     def __repr__(self) -> str:
         """Generates a string representation of a JmaxLimitation instance."""
-        return f"JmaxLimitation(method={self.method}, shape={self._shape})"
+        return f"JmaxLimitation(method={self.method}, shape={self.shape})"
 
     def summarize(self, dp: int = 2) -> None:
         """Print OptimalChi summary.
@@ -288,5 +288,5 @@ class JmaxLimitationNone(
         """Set limitation terms to one."""
 
         # Set limitation terms to unity
-        self.f_v = np.ones(self._shape)
-        self.f_j = np.ones(self._shape)
+        self.f_v = np.ones(self.shape)
+        self.f_j = np.ones(self.shape)
