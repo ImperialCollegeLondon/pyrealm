@@ -9,6 +9,16 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  name: python
+  version: 3.12.3
+  mimetype: text/x-python
+  codemirror_mode:
+    name: ipython
+    version: 3
+  pygments_lexer: ipython3
+  nbconvert_exporter: python
+  file_extension: .py
 ---
 
 # Estimating maximum annual $f_{APAR}$
@@ -108,16 +118,16 @@ including $A_0$ and $\chi$ from a P Model.
 
 ```{code-cell} ipython3
 # Load site data
-site_data_path = get_pyrealm_data("phenology/DE-GRI_site_data.json")
+site_data_path = get_pyrealm_data("phenology/inputs/source/DE-GRI_site_data.json")
 
 with open(site_data_path) as json_src:
     site_data = json.load(json_src)
 
 # Load annual estimates
-annual_data_path = get_pyrealm_data("phenology/fortnightly_example/annual_outputs.csv")
+annual_data_path = get_pyrealm_data("phenology/inputs/fortnightly/annual_inputs.csv")
 
-annual_data = pd.read_csv(annual_data_path).iloc[:, 0:9]
-annual_data["time"] = annual_data["time"].to_numpy().astype("datetime64[Y]")
+annual_data = pd.read_csv(annual_data_path)
+annual_data["time"] = annual_data["year"].to_numpy().astype(str).astype("datetime64[Y]")
 ```
 
 The `site_data` provides the following constants, including aridity index estimates (AI).
@@ -140,7 +150,7 @@ plot_vars = (
     ("annual_mean_ca_in_GS", r"Mean $c_a$ in growing season (Pa)"),
     ("annual_mean_chi_in_GS", r"Mean $\chi$ in growing season"),
     ("annual_mean_VPD_in_GS", r"Mean VPD in growing season"),
-    ("ann_total_A0", "Total annual potential GPP (moles)"),
+    ("annual_total_A0", "Total annual potential GPP (moles)"),
 )
 
 for (input_var, axis_label), axis in zip(plot_vars, axes.flatten()):
@@ -159,7 +169,7 @@ $f_{APAR_{max}}, L_{max}, m$ and prints a summary of the calculated values.
 
 ```{code-cell} ipython3
 faparlim = FaparLimitation(
-    annual_total_potential_gpp=annual_data["ann_total_A0"].to_numpy(),
+    annual_total_potential_gpp=annual_data["annual_total_A0"].to_numpy(),
     annual_mean_ca=annual_data["annual_mean_ca_in_GS"].to_numpy(),
     annual_mean_chi=annual_data["annual_mean_chi_in_GS"].to_numpy(),
     annual_mean_vpd=annual_data["annual_mean_VPD_in_GS"].to_numpy(),
@@ -220,7 +230,7 @@ over 11 years.
 
 ```{code-cell} ipython3
 # Load fortnightly data
-fn_data_path = get_pyrealm_data("phenology/fortnightly_example/fortnightly_data.csv")
+fn_data_path = get_pyrealm_data("phenology/inputs/fortnightly/pmodel_inputs.csv")
 fn_data = pd.read_csv(fn_data_path)
 
 fn_data["time"] = pd.to_datetime(fn_data["time"])
@@ -232,7 +242,7 @@ The plot below shows the time series for temperature.
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-plt.plot(fn_data["time"], fn_data["tc_mean"])
+plt.plot(fn_data["time"], fn_data["tc"])
 plt.axhline(0, linewidth=0.4, color="red")
 _ = plt.ylabel("Temperature (°C)")
 ```
@@ -242,11 +252,11 @@ calculate potential GPP.
 
 ```{code-cell} ipython3
 pmodel_env = PModelEnvironment(
-    tc=fn_data["tc_mean"].to_numpy(),
-    vpd=fn_data["vpd_mean"].to_numpy(),
-    patm=fn_data["patm_mean"].to_numpy(),
-    co2=fn_data["co2_mean"].to_numpy(),
-    ppfd=fn_data["ppfd_mean"].to_numpy(),
+    tc=fn_data["tc"].to_numpy(),
+    vpd=fn_data["vpd"].to_numpy(),
+    patm=fn_data["patm"].to_numpy(),
+    co2=fn_data["co2"].to_numpy(),
+    ppfd=fn_data["ppfd"].to_numpy(),
     fapar=np.array(1),
 )
 pmodel = PModel(pmodel_env)
@@ -295,7 +305,7 @@ The code below then calculates $f_{APAR_{max}}$ for the observations.
 faparlim_pmodel = FaparLimitation.from_pmodel(
     pmodel=pmodel,
     growing_season=fn_data["growing_season"].to_numpy(),
-    precip=fn_data["precip_molar_sum"].to_numpy(),
+    precip=fn_data["precip_molar"].to_numpy(),
     aridity_index=site_data["AI"],
     datetimes=fn_data["time"].to_numpy(),
 )
@@ -324,8 +334,4 @@ for (input_var, axis_label, title), axis in zip(plot_vars, axes.flatten()):
     axis.xaxis.set_major_formatter(axis_fmt_year)
 
 plt.tight_layout()
-```
-
-```{code-cell} ipython3
-
 ```

@@ -9,10 +9,9 @@ annual predictions of fAPAR max using the method. It then uses the interpolated 
 from the fortnightly example to generate predicted values of raw LAI, lagged LAI and
 fAPAR.
 
-* The `fapar_limitation.py` script generates annual maximum fAPAR values in
-  `pyrealm_build_data/phenology/zhu_method/`zhu_annual_fapar_max_from_fortnightly_data.csv`
-
-* The `daily_lai_predictions.py` script generates daily LAI predictions in
-  `/zhu_daily_lai_from_fortnightly_example.csv` and saves scalar values from the
-  calculations in `zhu_daily_lai_method_scalar_values.json`.
+The `zhu_method.py` script generates annual maximum fAPAR values for the subdaily and
+fortnightly example datasets (`fapar_max_predictions.csv`) and then generates daily LAI
+predictions from the daily A0 values for those datasets (`daily_lai_predictions.csv`).
+It saves scalar values from the calculations in
+`zhu_daily_lai_method_scalar_values.json`.
 """
