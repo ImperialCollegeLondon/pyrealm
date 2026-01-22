@@ -442,7 +442,9 @@ def get_method_list() -> list[tuple[str, Callable, type | None]]:
         for name, method, cls in _get_module_callables(mod):
             # Don't add methods of abstract classes
             if cls is not None and isabstract(cls):
-                continue
+                attr = getattr_static(cls, mname, None)
+                if not isinstance(attr, staticmethod):
+                    continue
 
             if _has_array_input(method) and name not in SKIP_METHODS:
                 method_list.append((name, method, cls))
