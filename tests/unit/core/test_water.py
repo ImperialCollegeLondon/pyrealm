@@ -277,21 +277,40 @@ def test_convert_water_values(water_mm, tc, patm, expected_fisher, expected_chen
     )
 
 
+@pytest.mark.parametrize(
+    argnames="consts_args,exp_value",
+    argvalues=[
+        pytest.param(
+            dict(water_density_method="fisher", water_viscosity_method="huber"),
+            55.41713669719267,
+            id="high_precision",
+        ),
+        pytest.param({}, 55.41686817679644, id="defaults"),
+    ],
+)
 @pytest.mark.parametrize(argnames="shape", argvalues=[(1,), (6, 9), (4, 7, 3)])
-def test_convert_water(shape):
+def test_convert_water(shape, consts_args, exp_value):
     """Test the water conversion functions with different shapes."""
+    from pyrealm.constants import CoreConst
     from pyrealm.core.water import convert_water_mm_to_moles, convert_water_moles_to_mm
 
     water_mm = np.full(shape, fill_value=1)
     tc = np.full(shape, fill_value=20)
     patm = np.full(shape, fill_value=101325)
 
+    const = CoreConst(**consts_args)
+
     # Test mm to moles
-    moles_water = convert_water_mm_to_moles(water_mm=water_mm, tc=tc, patm=patm)
-    assert_allclose(moles_water, np.full(shape, fill_value=55.41713669719267))
+    moles_water = convert_water_mm_to_moles(
+        water_mm=water_mm, tc=tc, patm=patm, core_const=const
+    )
+    assert_allclose(moles_water, np.full(shape, fill_value=exp_value))
 
     # Test reverse direction
-    assert_allclose(convert_water_moles_to_mm(moles_water, tc=tc, patm=patm), water_mm)
+    assert_allclose(
+        convert_water_moles_to_mm(moles_water, tc=tc, patm=patm, core_const=const),
+        water_mm,
+    )
 
 
 def test_convert_water_invalid_input():
