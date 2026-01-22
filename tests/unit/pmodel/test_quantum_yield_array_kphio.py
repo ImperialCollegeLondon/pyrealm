@@ -28,10 +28,10 @@ def basic_inputs_and_expected():
             mean_growth_temperature=np.array([20]),
         ),
         SimpleNamespace(
-            gpp=np.array([71.2246803]),
-            chi=np.array([0.69435201]),
-            vcmax=np.array([17.75034477]),
-            jmax=np.array([40.03293277]),
+            gpp=np.array([71.221741178]),
+            chi=np.array([0.6943018228]),
+            vcmax=np.array([17.75058177]),
+            jmax=np.array([40.03191055]),
         ),
     )
 

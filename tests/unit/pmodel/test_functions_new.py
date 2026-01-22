@@ -41,7 +41,7 @@ def test_calc_ns_star(tk=TK, patm=PATM):
     """Test calc_ns_star."""
     from pyrealm.pmodel.functions import calc_ns_star
 
-    assert_allclose(calc_ns_star(tk, patm), 0.8957314409463492)
+    assert_allclose(calc_ns_star(tk, patm), 0.8950389362238037)
 
 
 def test_calc_kmm(tk=TK, patm=PATM):

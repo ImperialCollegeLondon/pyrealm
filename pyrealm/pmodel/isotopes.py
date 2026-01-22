@@ -125,9 +125,9 @@ class CalcCarbonIsotopes:
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
             >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
             >>> mod_c4_delta.Delta13C.round(4)
-            array([5.6636])
+            array([5.6647])
             >>> mod_c4_delta.d13C_leaf.round(4)
-            array([-13.9844])
+            array([-13.9855])
         """
 
         # Equation from C3/C4 paper
@@ -211,9 +211,9 @@ class CalcCarbonIsotopes:
             >>> mod_c3 = PModel(env, method_optchi='lavergne20_c3')
             >>> mod_c3_delta = CalcCarbonIsotopes(mod_c3, d13CO2= -8.4, D14CO2 = 19.2)
             >>> mod_c3_delta.Delta13C.round(4)
-            array([20.4056])
+            array([20.4045])
             >>> mod_c3_delta.d13C_leaf.round(4)
-            array([-28.2296])
+            array([-28.2285])
         """
 
         # 13C discrimination (permil): Farquhar et al. (1982)

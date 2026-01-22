@@ -30,14 +30,14 @@ sigma = 0.771
 
 annual_data_hh = pd.read_csv("../inputs/subdaily/annual_inputs.csv")
 
-energy_limited_fapar_hh = 1 - z / (k * annual_data_hh["ann_total_A0_smstress"])
+energy_limited_fapar_hh = 1 - z / (k * annual_data_hh["annual_total_A0_smstress"])
 water_limited_fapar_hh = (
     annual_data_hh["annual_mean_ca_in_GS"]
     * (1 - annual_data_hh["annual_mean_chi_in_GS"])
     / (1.6 * annual_data_hh["annual_mean_VPD_in_GS"])
 ) * (
     (f_0 * annual_data_hh["annual_precip_molar"])
-    / annual_data_hh["ann_total_A0_smstress"]
+    / annual_data_hh["annual_total_A0_smstress"]
 )
 
 fapar_max_hh = np.minimum(
@@ -48,7 +48,7 @@ lai_max_hh = -(1 / k) * np.log(1 - fapar_max_hh)
 
 # Calculate ratio of steady state LAI to steady state GPP
 steady_state_m_hh = (sigma * annual_data_hh["N_growing_days"] * lai_max_hh) / (
-    annual_data_hh["ann_total_A0_smstress"] * fapar_max_hh
+    annual_data_hh["annual_total_A0_smstress"] * fapar_max_hh
 )
 
 # Fortnightly predictions - calculate fapar max using fortnightly values
@@ -56,12 +56,12 @@ steady_state_m_hh = (sigma * annual_data_hh["N_growing_days"] * lai_max_hh) / (
 annual_data_ft = pd.read_csv("../inputs/fortnightly/annual_inputs.csv")
 
 
-energy_limited_fapar_ft = 1 - z / (k * annual_data_ft["ann_total_A0"])
+energy_limited_fapar_ft = 1 - z / (k * annual_data_ft["annual_total_A0"])
 water_limited_fapar_ft = (
     annual_data_ft["annual_mean_ca_in_GS"]
     * (1 - annual_data_ft["annual_mean_chi_in_GS"])
     / (1.6 * annual_data_ft["annual_mean_VPD_in_GS"])
-) * ((f_0 * annual_data_ft["annual_precip_molar"]) / annual_data_ft["ann_total_A0"])
+) * ((f_0 * annual_data_ft["annual_precip_molar"]) / annual_data_ft["annual_total_A0"])
 
 fapar_max_ft = np.minimum(
     energy_limited_fapar_ft,
@@ -71,7 +71,7 @@ lai_max_ft = -(1 / k) * np.log(1 - fapar_max_ft)
 
 # Calculate ratio of steady state LAI to steady state GPP
 steady_state_m_ft = (sigma * annual_data_ft["N_growing_days"] * lai_max_ft) / (
-    annual_data_ft["ann_total_A0"] * fapar_max_ft
+    annual_data_ft["annual_total_A0"] * fapar_max_ft
 )
 
 ## Write to file
@@ -91,7 +91,7 @@ cai_fapar_max = pd.DataFrame(
     )
 )
 
-cai_fapar_max.to_csv("fapar_max_predictions.csv", float_format="%0.8g")
+cai_fapar_max.to_csv("fapar_max_predictions.csv", float_format="%0.8g", index=False)
 
 # --------------------------------------------------------------------------------------
 # CALCULATE PHENOLOGY TIME SERIES USING BOYA ZHOU'S METHOD
@@ -185,4 +185,4 @@ lai_predictions_ft = pd.DataFrame(
 )
 
 lai_predictions = lai_predictions_hh.merge(lai_predictions_ft, how="left")
-lai_predictions.to_csv("daily_lai_predictions.csv", float_format="%0.8g")
+lai_predictions.to_csv("daily_lai_predictions.csv", float_format="%0.8g", index=False)

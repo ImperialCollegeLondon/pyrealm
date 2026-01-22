@@ -33,35 +33,6 @@ zcost = 17
 with open("../inputs/source/DE-GRI_site_data.json") as site_file:
     site_data = json.load(site_file)
 
-# --------------------------------------------------------------------------------------
-# Calculate fapar max and LAI for fortnightly inputs
-# --------------------------------------------------------------------------------------
-
-data = pd.read_csv("../inputs/fortnightly/annual_inputs.csv")
-data = {k: v.to_numpy() for k, v in data.items()}
-
-# Calculate energy-limited fapar and water-limited fapar separately (Cai et al., 2025)
-fapar_carbon_calc = 1 - (zcost / (0.5 * data["ann_total_A0"]))
-fapar_water_calc = (
-    (
-        (
-            data["annual_mean_ca_in_GS"]
-            / (1.6 * data["annual_mean_VPD_in_GS"] * data["ann_total_A0"])
-        )
-        * (1 - data["annual_mean_chi_in_GS"])
-    )
-    * f0
-    * data["annual_precip_molar"]
-)
-
-fapar_max = cal_fapar(fapar_carbon=fapar_carbon_calc, fapar_water=fapar_water_calc)
-
-fapar_max2 = cal_fapar_actually_in_python(
-    fapar_carbon=fapar_carbon_calc, fapar_water=fapar_water_calc
-)
-
-assert np.allclose(fapar_max, fapar_max2)
-
 
 # --------------------------------------------------------------------------------------
 # Calculate fapar max and LAI for annual values from fortnightly inputs
@@ -71,12 +42,12 @@ data = pd.read_csv("../inputs/fortnightly/annual_inputs.csv")
 data = {k: v.to_numpy() for k, v in data.items()}
 
 # Calculate energy-limited fapar and water-limited fapar separately (Cai et al., 2025)
-fapar_carbon_calc = 1 - (zcost / (0.5 * data["ann_total_A0"]))
+fapar_carbon_calc = 1 - (zcost / (0.5 * data["annual_total_A0"]))
 fapar_water_calc = (
     (
         (
             data["annual_mean_ca_in_GS"]
-            / (1.6 * data["annual_mean_VPD_in_GS"] * data["ann_total_A0"])
+            / (1.6 * data["annual_mean_VPD_in_GS"] * data["annual_total_A0"])
         )
         * (1 - data["annual_mean_chi_in_GS"])
     )
@@ -101,12 +72,12 @@ data = pd.read_csv("../inputs/subdaily/annual_inputs.csv")
 data = {k: v.to_numpy() for k, v in data.items()}
 
 # Calculate energy-limited fapar and water-limited fapar separately (Cai et al., 2025)
-fapar_carbon_calc = 1 - (zcost / (0.5 * data["ann_total_A0"]))
+fapar_carbon_calc = 1 - (zcost / (0.5 * data["annual_total_A0_smstress"]))
 fapar_water_calc = (
     (
         (
             data["annual_mean_ca_in_GS"]
-            / (1.6 * data["annual_mean_VPD_in_GS"] * data["ann_total_A0"])
+            / (1.6 * data["annual_mean_VPD_in_GS"] * data["annual_total_A0_smstress"])
         )
         * (1 - data["annual_mean_chi_in_GS"])
     )
@@ -133,24 +104,24 @@ outputs = pd.DataFrame(
     )
 )
 
-outputs.to_csv("fapar_max_predictions.csv")
+outputs.to_csv("fapar_max_predictions.csv", index=False)
 
 # --------------------------------------------------------------------------------------
 # Calculate daily LAI  from fortnightly inputs
 # --------------------------------------------------------------------------------------
 
-daily_data = pd.read_csv("../inputs/fortnightly/daily_assimilation.csv")
+daily_data_ft = pd.read_csv("../inputs/fortnightly/daily_assimilation.csv")
 
-daily_data["time"] = pd.to_datetime(daily_data["time"])
-daily_data["year"] = daily_data["time"].dt.year
+daily_data_ft["time"] = pd.to_datetime(daily_data_ft["time"])
+daily_data_ft["year"] = daily_data_ft["time"].dt.year
 
 # Merge in annual fapar max
-daily_data = pd.merge(daily_data, outputs[["year", "fapar_max_ft"]])
+daily_data_ft = pd.merge(daily_data_ft, outputs[["year", "fapar_max_ft"]])
 
 
 arr1_ft, _, res_dict_ft = plmodel_timeseries(
-    A0_input=daily_data["daily_A0"].to_numpy()[None, None, :],
-    fapar_max_input=daily_data["fapar_max_ft"].to_numpy()[None, None, :],
+    A0_input=daily_data_ft["daily_A0"].to_numpy()[None, None, :],
+    fapar_max_input=daily_data_ft["fapar_max_ft"].to_numpy()[None, None, :],
     alpha_aet_pet=np.array([[site_data["aet_pet_ratio"]]]),
 )
 
@@ -159,18 +130,18 @@ arr1_ft, _, res_dict_ft = plmodel_timeseries(
 # Calculate daily LAI  from subdaily inputs
 # --------------------------------------------------------------------------------------
 
-daily_data = pd.read_csv("../inputs/subdaily/daily_assimilation.csv")
+daily_data_hh = pd.read_csv("../inputs/subdaily/daily_assimilation.csv")
 
-daily_data["time"] = pd.to_datetime(daily_data["time"])
-daily_data["year"] = daily_data["time"].dt.year
+daily_data_hh["time"] = pd.to_datetime(daily_data_hh["time"])
+daily_data_hh["year"] = daily_data_hh["time"].dt.year
 
 # Merge in annual fapar max
-daily_data = pd.merge(daily_data, outputs[["year", "fapar_max_hh"]])
+daily_data_hh = pd.merge(daily_data_hh, outputs[["year", "fapar_max_hh"]])
 
 
 arr1_hh, _, res_dict_hh = plmodel_timeseries(
-    A0_input=daily_data["daily_A0"].to_numpy()[None, None, :],
-    fapar_max_input=daily_data["fapar_max_hh"].to_numpy()[None, None, :],
+    A0_input=daily_data_hh["daily_A0"].to_numpy()[None, None, :],
+    fapar_max_input=daily_data_hh["fapar_max_hh"].to_numpy()[None, None, :],
     alpha_aet_pet=np.array([[site_data["aet_pet_ratio"]]]),
 )
 
@@ -178,12 +149,22 @@ arr1_hh, _, res_dict_hh = plmodel_timeseries(
 # Export
 # --------------------------------------------------------------------------------------
 
-results = pd.DataFrame(
+# Save predicted daily time series for L
+lai_predictions_ft = pd.DataFrame(
     dict(
-        time=daily_data["time"],
+        time=daily_data_ft["time"],
         Ls_daily_ft=res_dict_ft["SLAI15DE1"].ravel(),
         Ls_daily_lagged_ft=arr1_ft.ravel(),
+    )
+)
+
+lai_predictions_hh = pd.DataFrame(
+    dict(
+        time=daily_data_hh["time"],
         Ls_daily_hh=res_dict_hh["SLAI15DE1"].ravel(),
         Ls_daily_lagged_hh=arr1_hh.ravel(),
     )
 )
+
+lai_predictions = lai_predictions_hh.merge(lai_predictions_ft, how="left")
+lai_predictions.to_csv("daily_lai_predictions.csv", float_format="%0.8g", index=False)

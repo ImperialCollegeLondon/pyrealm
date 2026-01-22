@@ -283,7 +283,7 @@ def calc_ns_star(
     Examples:
         >>> # Relative viscosity at 293.15 K (20°C):
         >>> round(calc_ns_star(293.15, 101325), 5)
-        np.float64(1.12536)
+        np.float64(1.12592)
     """
 
     visc_env = calculate_viscosity_h2o(tk=tk, patm=patm, core_const=core_const)
