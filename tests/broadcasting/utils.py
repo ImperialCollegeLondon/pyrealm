@@ -34,6 +34,8 @@ The functions that are not used in `test_broadcasting` and are only used within 
 file are marked private.
 """
 
+from __future__ import annotations
+
 from collections.abc import Callable, Iterator
 from dataclasses import InitVar, dataclass, field
 from inspect import (
@@ -178,11 +180,8 @@ REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
 }
 
 
-#    QuantumYieldSandoval: requires aridity_index in PME
-
-
 # These methods require specific arguments
-def defined_method_args(argument: str, ctx: "Context") -> Any | None:
+def defined_method_args(argument: str, ctx: Context) -> Any | None:
     """Return any manually defined arguments for the current function / method.
 
     This is done by defining an `arguments` dictionary for the function and then
@@ -554,7 +553,7 @@ class Context:
     parents: list[str] = field(default_factory=list)
     """A list of the superior function / classes for the current context."""
 
-    def new(self, name: str) -> "Context":
+    def new(self, name: str) -> Context:
         """Generate a context for a new function/class, updating the hierarchy."""
         return Context(name, self.shapes, self.i_arg, [*self.parents, self.name])
 
