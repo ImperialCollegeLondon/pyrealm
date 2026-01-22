@@ -177,6 +177,17 @@ REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
             "QuantumYieldSandoval",
         ),
     ): kwarg_params(("aridity_index", "mean_growth_temperature")),
+    (
+        "FaparLimitation",
+        (
+            "FaparLimitationCai.calculate_maximum_fapar",
+            "FaparLimitationCai",
+        ),
+    ): kwarg_params(("aridity_index",)),
+    (
+        "FaparLimitation",
+        ("FaparLimitation",),
+    ): kwarg_params(("aridity_index",)),
 }
 
 
