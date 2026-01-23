@@ -107,9 +107,9 @@ SKIP_METHODS = [
 ]
 
 
-# Ignore these outputs, they are not expected to be equal.
 # Formats: [fn name] for function results, [class]:[attr] for class attributes
 IGNORE_OUTPUTS = [
+    # Ignore these outputs, they are not expected to be equal.
     "Cohorts:_cohort_id",
     "Calendar:n_dates",
     # Causes infinite recursion, because this is an attribute of FaparLimitationNew, but
