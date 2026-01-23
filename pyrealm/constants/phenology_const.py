@@ -96,6 +96,10 @@ class PhenologyConstNew(ConstantsClass):
     for processes such as nutrient resorption and leaf sensescence. These processes
     round off that square wave and this is captured by values of :math:`\sigma < 1`."""
 
+    zhou_alpha: float = 1 / 15
+    """The alpha value used with the exponential weighted average to set the
+    magnitude of the lagging between realised LAI and the steady state values."""
+
     zhu_f0: float = 0.5
     zhu_z: float = 17
     zhu_budyko: float = 4

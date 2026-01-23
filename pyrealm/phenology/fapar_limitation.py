@@ -412,9 +412,6 @@ class Phenology:
             )
 
         # Store values
-        self.alpha = alpha
-        """The alpha value used with the exponential weighted average to set the
-        magnitude of the lagging between realised LAI and the steady state values."""
         self.phenology_const = phenology_const
         """The phenology constants used in the model."""
         self.fapar_limitation = fapar_limitation

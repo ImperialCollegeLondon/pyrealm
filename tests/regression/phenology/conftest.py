@@ -104,3 +104,47 @@ def daily_lai_predictions(phenology_method):
     )
 
     return dataframe_to_dict_of_nparrays(pd.read_csv(str(datafile)))
+
+
+@pytest.fixture()
+def data_fapar_limitation(timescale, method_predictions_dir):
+    """Load the fapar limitation input data from csv file."""
+
+    inputs = pd.read_csv(
+        str(
+            resources.files(f"pyrealm_build_data.phenology.inputs.{timescale}")
+            / "annual_inputs.csv"
+        )
+    )
+
+    predictions = pd.read_csv(
+        str(
+            resources.files(f"pyrealm_build_data.phenology.{method_predictions_dir}")
+            / "fapar_max_predictions.csv"
+        )
+    )
+
+    data = inputs.merge(predictions)
+    return dataframe_to_dict_of_nparrays(data)
+
+
+@pytest.fixture()
+def data_phenology(timescale, method_predictions_dir):
+    """Load the fapar limitation input data from csv file."""
+
+    inputs = pd.read_csv(
+        str(
+            resources.files(f"pyrealm_build_data.phenology.inputs.{timescale}")
+            / "daily_inputs.csv"
+        )
+    )
+
+    predictions = pd.read_csv(
+        str(
+            resources.files(f"pyrealm_build_data.phenology.{method_predictions_dir}")
+            / "daily_lai_predictions.csv"
+        )
+    )
+
+    data = inputs.merge(predictions)
+    return dataframe_to_dict_of_nparrays(data)
