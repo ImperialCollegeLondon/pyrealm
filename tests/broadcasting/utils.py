@@ -16,6 +16,7 @@ functions listed below:
    fix errors.
    - `SKIP_METHODS`
    - `IGNORE_OUTPUTS`
+   - `REQUIRES`
    - `ADDITIONAL_INIT_METHODS`
    - `defined_method_args`
 2. To get the list of functions / methods in the library.
@@ -33,15 +34,25 @@ The functions that are not used in `test_broadcasting` and are only used within 
 file are marked private.
 """
 
-import dataclasses
-import inspect
+from __future__ import annotations
+
 from collections.abc import Callable, Iterator
-from dataclasses import InitVar
+from dataclasses import InitVar, dataclass, field
+from inspect import (
+    Parameter,
+    getattr_static,
+    getmembers,
+    isabstract,
+    isclass,
+    isfunction,
+    ismethod,
+    signature,
+)
 from types import ModuleType, UnionType
 from typing import Any, Union, get_args, get_origin
 
 import numpy as np
-import numpy.typing as npt
+from numpy.typing import DTypeLike, NDArray
 
 import pyrealm
 from pyrealm.core.calendar import Calendar
@@ -59,18 +70,7 @@ SKIP_METHODS = [
     "evaluate_horner_polynomial",  # Coefficients are 1D
     # PModel
     "AcclimationModel.set_include",
-    "PModelABC",  # Cannot init ABC
-    "QuantumYieldABC",  # Cannot init ABC
-    "OptimalChiABC.estimate_chi",  # Cannot init ABC
-    "OptimalChiC4RootzoneStress.estimate_chi",  # Requires rootzonestress in PME
-    "OptimalChiC4NoGammaRootzoneStress.estimate_chi",  # Requires rootzonestress in PME
-    "OptimalChiPrentice14RootzoneStress.estimate_chi",  # Requires rootzonestress in PME
-    "OptimalChiLavergne20C3.estimate_chi",  # Requires theta in PME
-    "OptimalChiLavergne20C4.estimate_chi",  # Requires theta in PME
-    "QuantumYieldSandoval",  # Requires aridity_index in PME
-    "QuantumYieldSandoval.peak_quantum_yield",  # Requires aridity_index in PME
     "PModel._get_daily_gpp",
-    "PModelABC.apply_gpp_conversion_factor",
     # Demography - mostly 1d arrays (dataframes)
     "CohortMethods.drop_cohort_data",
     "StemTraits",
@@ -110,27 +110,78 @@ SKIP_METHODS = [
 IGNORE_OUTPUTS = [
     "Cohorts:_cohort_id",
     "Calendar:n_dates",
-    "C3C4Competition:shape",
-    "CalcCarbonIsotopes:shape",
-    "PModelEnvironment:shape",
-    "PModel:shape",
-    "SubdailyPModel:shape",
-    "OptimalChiC4:shape",
-    "OptimalChiC4NoGamma:shape",
-    "OptimalChiPrentice14:shape",
-    "QuantumYieldTemperature:shape",
-    "QuantumYieldFixed:shape",
-    "JmaxLimitationWang17:_shape",
-    "SplashModel:shape",
-    "DailySolarFluxes:shape",
-    "DailyEvapFluxes:shape",
-    "AnnualValueCalculator:data_shape",
-    "FaparLimitation:shape",
 ]
+
+# The REQUIRES dictionary provides a way of populating required keywords arguments for
+# some methods. The keys specify the object being created and the parent context in
+# which it is created and the values provide a tuple of arguments that should be added
+# to the method signature.
+
+
+def kwarg_params(names: tuple[str, ...]) -> dict[str, Parameter]:
+    """Creates a dictionary containing inspect.Parameter instances."""
+    return {
+        name: Parameter(
+            name=name,
+            kind=Parameter.POSITIONAL_OR_KEYWORD,
+            annotation=NDArray[np.floating],
+        )
+        for name in names
+    }
+
+
+REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
+    (
+        "PModelEnvironment",
+        (
+            "OptimalChiC4RootzoneStress.estimate_chi",
+            "OptimalChiC4RootzoneStress",
+        ),
+    ): kwarg_params(("rootzonestress",)),
+    (
+        "PModelEnvironment",
+        (
+            "OptimalChiC4NoGammaRootzoneStress.estimate_chi",
+            "OptimalChiC4NoGammaRootzoneStress",
+        ),
+    ): kwarg_params(("rootzonestress",)),
+    (
+        "PModelEnvironment",
+        (
+            "OptimalChiPrentice14RootzoneStress.estimate_chi",
+            "OptimalChiPrentice14RootzoneStress",
+        ),
+    ): kwarg_params(("rootzonestress",)),
+    (
+        "PModelEnvironment",
+        (
+            "OptimalChiLavergne20C3.estimate_chi",
+            "OptimalChiLavergne20C3",
+        ),
+    ): kwarg_params(("theta",)),
+    (
+        "PModelEnvironment",
+        (
+            "OptimalChiLavergne20C4.estimate_chi",
+            "OptimalChiLavergne20C4",
+        ),
+    ): kwarg_params(("theta",)),
+    (
+        "PModelEnvironment",
+        ("QuantumYieldSandoval", "QuantumYieldSandoval"),
+    ): kwarg_params(("aridity_index", "mean_growth_temperature")),
+    (
+        "PModelEnvironment",
+        (
+            "QuantumYieldSandoval.peak_quantum_yield",
+            "QuantumYieldSandoval",
+        ),
+    ): kwarg_params(("aridity_index", "mean_growth_temperature")),
+}
 
 
 # These methods require specific arguments
-def defined_method_args(argument: str, ctx: "Context") -> Any | None:
+def defined_method_args(argument: str, ctx: Context) -> Any | None:
     """Return any manually defined arguments for the current function / method.
 
     This is done by defining an `arguments` dictionary for the function and then
@@ -323,11 +374,27 @@ def _get_package_modules(pkg: ModuleType) -> list[ModuleType]:
     return modules
 
 
+def global_namespace():
+    """Extract the global namespace for the package.
+
+    Provides the contexts of the pyrealm classes to pass to get_type_hints.
+    """
+
+    globalns = {}
+    for module in _get_package_modules(pyrealm):
+        globalns.update(vars(module))
+
+    return globalns
+
+
+GLOBALNS = global_namespace()
+
+
 def _is_instance_method(cls: type | None, method_name: str) -> bool:
     """Returns True if the method is not static or a classmethod."""
     if cls is None:
         return False
-    attr = inspect.getattr_static(cls, method_name)
+    attr = getattr_static(cls, method_name)
     if isinstance(attr, staticmethod | classmethod):
         return False
     else:
@@ -343,13 +410,13 @@ def _get_module_callables(
         An iterable including the function/method name, callable, and (if a method)
         class.
     """
-    for name, obj in inspect.getmembers(module):
+    for name, obj in getmembers(module):
         if getattr(obj, "__module__", None) != module.__name__:
             continue
-        if inspect.isfunction(obj) or inspect.ismethod(obj):
+        if isfunction(obj) or ismethod(obj):
             yield name, obj, None
-        elif inspect.isclass(obj):
-            for mname, method in inspect.getmembers(obj, predicate=inspect.isfunction):
+        elif isclass(obj):
+            for mname, method in getmembers(obj, predicate=isfunction):
                 if mname in ["__init__", "__post_init__"]:
                     full_name = name
                 else:
@@ -373,6 +440,12 @@ def get_method_list() -> list[tuple[str, Callable, type | None]]:
     method_list = []
     for mod in _get_package_modules(pyrealm):
         for name, method, cls in _get_module_callables(mod):
+            # Don't add methods of abstract classes
+            if cls is not None and isabstract(cls):
+                attr = getattr_static(cls, name, None)
+                if not isinstance(attr, staticmethod):
+                    continue
+
             if _has_array_input(method) and name not in SKIP_METHODS:
                 method_list.append((name, method, cls))
     return method_list
@@ -431,9 +504,9 @@ def _has_array_input(method: Callable) -> bool:
     return any(_is_array_type(typ) for typ in hints.values())
 
 
-def _extract_numpy_dtype(typ: Any) -> npt.DTypeLike:
+def _extract_numpy_dtype(typ: Any) -> DTypeLike:
     """Extract a numpy dtype from NDArray annotation."""
-    dtype: npt.DTypeLike = np.float64
+    dtype: DTypeLike = np.float64
 
     args = get_args(typ)
     if not args:
@@ -459,7 +532,7 @@ def _extract_numpy_dtype(typ: Any) -> npt.DTypeLike:
 
 
 ## Functions to initialise arguments and classes
-@dataclasses.dataclass
+@dataclass
 class Context:
     """Context class to pass between functions.
 
@@ -479,10 +552,10 @@ class Context:
     name: str
     shapes: list[tuple[int, ...]]
     i_arg: int = 0
-    parents: list[str] = dataclasses.field(default_factory=list)
+    parents: list[str] = field(default_factory=list)
     """A list of the superior function / classes for the current context."""
 
-    def new(self, name: str) -> "Context":
+    def new(self, name: str) -> Context:
         """Generate a context for a new function/class, updating the hierarchy."""
         return Context(name, self.shapes, self.i_arg, [*self.parents, self.name])
 
@@ -547,7 +620,7 @@ def _initialise_type_default(typ: Any, ctx: Context) -> Any:
         return Flora([PlantFunctionalType(name=name) for name in pft_names])
     elif typ is StemTraits:
         return _initialise_type_default(Flora, ctx).get_stem_traits(pft_names)
-    elif len(inspect.signature(typ).parameters) > 0:
+    elif len(signature(typ).parameters) > 0:
         return initialise_class(typ, ctx)
     else:
         return typ()
@@ -569,9 +642,19 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
     from typing import get_type_hints
 
     kwargs = {}
-    sig = inspect.signature(method)
+
+    # Get the method parameters and copy to get a modifiable OrderedDict from inside the
+    # Parameters mappingproxy return type
+    params = signature(method).parameters.copy()
+
+    required_args = REQUIRES.get((ctx.name, tuple(ctx.parents)))
+
+    if required_args is not None:
+        params.update(required_args)
+
     ctx.i_arg = 0
-    for param_name, param in sig.parameters.items():
+
+    for param_name, param in params.items():
         ctx.i_arg += 1
 
         # Set manually defined values
@@ -594,12 +677,9 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
         else:
             if param.annotation is param.empty:
                 raise Exception(f"Missing annotation for {ctx.name}:{param_name}")
-            # Get the contexts of the pyrealm classes to pass to get_type_hints
-            globalns = {}
-            for module in _get_package_modules(pyrealm):
-                globalns.update(vars(module))
-            # Resolve any string annotations
-            typ = get_type_hints(method, globalns=globalns).get(
+
+            # Resolve any string annotations using the global namespace
+            typ = get_type_hints(method, globalns=GLOBALNS).get(
                 param_name, param.annotation
             )
             kwargs[param_name] = _initialise_type_default(typ, ctx)
@@ -674,11 +754,17 @@ def comparison_string(val1: Any, val2: Any) -> str:
 
 
 def compare_instances(instance1: Any, instance2: Any):
-    """Raises ValueError if the two class instances do not have equal attributes."""
+    """Raises ValueError if the two class instances do not have equal attributes.
+
+    This function ignores the shape attribute of any class, which is not expected to
+    broadcast, and anything in the manually defined list IGNORE_OUTPUTS.
+    """
     dict1 = instance1.__dict__
     dict2 = instance2.__dict__
     class_name = instance1.__class__.__name__
     for key in dict1:
+        if key == "shape":
+            continue
         if f"{class_name}:{key}" in IGNORE_OUTPUTS:
             continue
         if not is_equal(dict1[key], dict2[key]):

@@ -95,7 +95,7 @@ class AnnualValueCalculator:
         endpoint: np.datetime64 | None = None,
     ):
         # Attribute definitions
-        self.data_shape: tuple[int, ...]
+        self.shape: tuple[int, ...]
         """The shape of data value arrays accepted by an instance."""
         self.datetimes: NDArray[np.datetime64]
         """The start datetime of observations taking from the initial timings"""
@@ -138,11 +138,11 @@ class AnnualValueCalculator:
         ):
             raise ValueError("The data_shape argument must a tuple of integers")
 
-        self.data_shape = data_shape
+        self.shape = data_shape
 
         # Calculate a list of additional dimensions that can be used to broadcast 1D
         # arrays to the data shape
-        extra_dims = [np.newaxis] * (len(self.data_shape) - 1)
+        extra_dims = [np.newaxis] * (len(self.shape) - 1)
 
         # Sanity checks on datetimes
         if not (
@@ -202,7 +202,7 @@ class AnnualValueCalculator:
 
         # Get the number of observations and check it matches the declared data shape
         self.n_obs = self.datetimes.size
-        if self.n_obs != self.data_shape[0]:
+        if self.n_obs != self.shape[0]:
             raise ValueError(
                 "The number of observation timings does not match the first "
                 "axis of the data shape"
@@ -212,7 +212,7 @@ class AnnualValueCalculator:
         if subset_mask is None:
             # Default is an array with the same dimensions as the data shape, but with
             # singleton dimensions on all but time axis: broadcasts across shape
-            mask_shape = [1] * len(self.data_shape)
+            mask_shape = [1] * len(self.shape)
             mask_shape[0] = self.n_obs
             subset_mask = np.ones(mask_shape, dtype=np.bool_)
 
@@ -222,11 +222,11 @@ class AnnualValueCalculator:
 
         # Must be congruent with the data shape
         try:
-            np.broadcast_shapes(subset_mask.shape, self.data_shape)
+            np.broadcast_shapes(subset_mask.shape, self.shape)
         except ValueError:
             raise ValueError(
                 f"The subset mask shape {subset_mask.shape} and "
-                f"data shape {self.data_shape} are not congruent"
+                f"data shape {self.shape} are not congruent"
             )
 
         # Store the growing season data, which is now not None
@@ -401,10 +401,10 @@ class AnnualValueCalculator:
         """
 
         # Enforce shape
-        if values.shape != self.data_shape:
+        if values.shape != self.shape:
             raise ValueError(
                 f"Input values shape {values.shape} does not match "
-                f"configured data shape {self.data_shape}"
+                f"configured data shape {self.shape}"
             )
 
         values_by_year = self._split_values_by_year(values)
@@ -487,10 +487,10 @@ class AnnualValueCalculator:
         """
 
         # Enforce shape
-        if values.shape != self.data_shape:
+        if values.shape != self.shape:
             raise ValueError(
                 f"Input values shape {values.shape} does not match "
-                f"configured data shape {self.data_shape}"
+                f"configured data shape {self.shape}"
             )
 
         values_by_year = self._split_values_by_year(values)
