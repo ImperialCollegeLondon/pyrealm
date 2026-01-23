@@ -110,7 +110,7 @@ class FaparLimitationMethodABC(ABC):
         """Calculate the maximum fAPAR.
 
         Provides the method specific calculation of maximum fAPAR from the energy and
-        water limited maximum values.
+        water limited maximum values and should return the calculated maximum fAPAR.
 
         Args:
             energy_limited_fapar: The maximum fAPAR given energy limitation.
@@ -152,6 +152,13 @@ class FaparLimitationCai(FaparLimitationMethodABC, method="cai"):
         super().__init__(
             fapar_limitation=fapar_limitation, phenology_const=phenology_const
         )
+
+        # This is only set as a side effect of the calculate_maximum_fapar method being
+        # called, which is a little bit hacky, but at the moment just preserving the
+        # attribute _somewhere_. Will see how this class evolves.
+        self.energy_limited: NDArray[np.bool_]
+        """Boolean array showing if annual :math:`fAPAR_{max}` is water or energy
+        limited."""
 
         # Make sure the aridity index is not zero
         self.aridity_index = getattr(self.fapar_limitation, "aridity_index")
@@ -196,18 +203,9 @@ class FaparLimitationCai(FaparLimitationMethodABC, method="cai"):
             water_limited_fapar: The maximum fAPAR given water limitation.
         """
 
-        # Calculate fAPAR max
+        # Calculate fAPAR max and record whether the location is energy or water limited
         fapar_max = np.minimum(water_limited_fapar, energy_limited_fapar)
-
-        # TODO - how to build these back in.
-        # self.energy_limited: NDArray[np.bool_] = (
-        #     energy_limited_fapar < water_limited_fapar
-        # )
-        # """Boolean array showing if annual :math:`fAPAR_{max}` is water or energy
-        # limited."""
-
-        # self.lai_max = -(1 / self.phenology_const.k) * np.log(1.0 - self.fapar_max)
-        # """Estimated annual maximum LAI (unitless)"""
+        self.energy_limited = energy_limited_fapar < water_limited_fapar
 
         # self.lai_to_gpp_ratio_m = (
         #     self.phenology_const.cai_sigma
@@ -287,9 +285,6 @@ class FaparLimitationZhu(FaparLimitationMethodABC, method="zhu"):
             ** (1 / self.phenology_const.zhu_budyko)
         ) * water_limited_fapar
 
-        self.lai_max = -(1 / self.phenology_const.k) * np.log(1.0 - fapar_max)
-        """Estimated annual maximum LAI (unitless)"""
-
         return fapar_max
 
 
@@ -327,16 +322,16 @@ class FaparLimitation:
     * ``method=cai``; :class:`FaparLimitationMethodCai`
     * ``method=zhu``; :class:`FaparLimitationMethodZhu`
     
-
     The maximum annual LAI can then be calculated using Beer's law as:
 
     .. math::
 
         L_{max} = - ( 1 / k ) \ln {1 -f_{APAR_{max}}}
 
-    The most common source of these variables is from a P Model, and the
+    The most common source of most of the variables needed to calculate maximum fAPAR is
+    a P Model, and the
     :meth:`~pyrealm.phenology.fapar_limitation.FaparLimitation.from_pmodel` method can
-    be used to create an instance directly from a fitted P Model.
+    be used to estimate maximum fAPAR directly from a fitted P Model.
 
     Args:
         annual_total_potential_gpp: The annual sum of potential GPP (:math:`A_0,
