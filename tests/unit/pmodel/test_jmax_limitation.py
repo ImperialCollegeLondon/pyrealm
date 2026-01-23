@@ -24,9 +24,11 @@ def mock_optimal_chi():
 @pytest.mark.parametrize(
     "method, classname, expected_f_j, expected_f_v",
     [
-        ("none", "JmaxLimitationNone", 1.0, 1.0),
-        ("wang17", "JmaxLimitationWang17", 0.66722, 0.55502),
-        ("smith19", "JmaxLimitationSmith19", 1.10204, 0.75442),
+        pytest.param("none", "JmaxLimitationNone", 1.0, 1.0, id="none"),
+        pytest.param("wang17", "JmaxLimitationWang17", 0.667199, 0.555006, id="wang17"),
+        pytest.param(
+            "smith19", "JmaxLimitationSmith19", 1.10204, 0.75442, id="smith19"
+        ),
     ],
 )
 def test_jmax_limitation(

@@ -19,6 +19,9 @@ from pyrealm.pmodel import (
 )
 from pyrealm.pmodel.functions import calc_soilmstress_mengoli
 
+# Set the format used for writing floats to file
+FLOAT_FORMAT = "%0.8g"
+
 # --------------------------------------------------------------------------------------
 # Site data - calculate aridity as PET / P over 20 years.
 # --------------------------------------------------------------------------------------
@@ -140,7 +143,7 @@ pmodel_inputs_hh = pmodel_inputs_hh.set_index("time")
 # Export PModel inputs - truncating float precision using "%g" to drop trailing zeros.
 (Path(".") / "subdaily").mkdir(exist_ok=True)
 pmodel_inputs_hh.drop(columns="date").to_csv(
-    "subdaily/pmodel_inputs.csv", float_format="%0.8g"
+    "subdaily/pmodel_inputs.csv", float_format=FLOAT_FORMAT
 )
 
 # --------------------------------------------------------------------------------------
@@ -187,7 +190,7 @@ pmodel_outputs_hh = pd.DataFrame(
     index=pmodel_inputs_hh.index,
 )
 
-pmodel_outputs_hh.to_csv("subdaily/pmodel_outputs.csv", float_format="%0.8g")
+pmodel_outputs_hh.to_csv("subdaily/pmodel_outputs.csv", float_format=FLOAT_FORMAT)
 
 # --------------------------------------------------------------------------------------
 # Calculate annual values for testing FaparLimitation
@@ -243,7 +246,7 @@ annual_values_hh["annual_total_A0"] = (
     / env.core_const.k_c_molmass
 )
 
-annual_values_hh.to_csv("subdaily/annual_inputs.csv", float_format="%0.8g")
+annual_values_hh.to_csv("subdaily/annual_inputs.csv", float_format=FLOAT_FORMAT)
 
 # --------------------------------------------------------------------------------------
 # Calculate daily assimilation values for testing Phenology
@@ -259,7 +262,9 @@ daily_productivity_hh = pd.DataFrame(
     )
 )
 
-daily_productivity_hh.to_csv("subdaily/daily_assimilation.csv", float_format="%0.8g")
+daily_productivity_hh.to_csv(
+    "subdaily/daily_assimilation.csv", float_format=FLOAT_FORMAT
+)
 
 # --------------------------------------------------------------------------------------
 # FORTNIGHTLY MODEL WITH NO SOIL MOISTURE STRESS
@@ -287,7 +292,7 @@ pmodel_inputs_ft["growing_season"] = pmodel_inputs_ft["tc"] > 0
 
 # Export PModel inputs - truncating float precision using "%g" to drop trailing zeros.
 (Path(".") / "fortnightly").mkdir(exist_ok=True)
-pmodel_inputs_ft.to_csv("fortnightly/pmodel_inputs.csv", float_format="%0.8g")
+pmodel_inputs_ft.to_csv("fortnightly/pmodel_inputs.csv", float_format=FLOAT_FORMAT)
 
 # --------------------------------------------------------------------------------------
 # Get PModel predictions from fortnightly inputs
@@ -314,7 +319,7 @@ pmodel_outputs_ft = pd.DataFrame(
     index=pmodel_inputs_ft.index,
 )
 
-pmodel_outputs_ft.to_csv("fortnightly/pmodel_outputs.csv", float_format="%0.8g")
+pmodel_outputs_ft.to_csv("fortnightly/pmodel_outputs.csv", float_format=FLOAT_FORMAT)
 
 # --------------------------------------------------------------------------------------
 # Calculate annual values for testing FaparLimitation
@@ -357,7 +362,9 @@ annual_values_ft["annual_total_A0"] = (
     / env.core_const.k_c_molmass
 )
 
-annual_values_ft.to_csv("fortnightly/annual_inputs.csv", float_format="%0.8g")
+annual_values_ft.to_csv(
+    "fortnightly/annual_inputs.csv", float_format=FLOAT_FORMAT, index=False
+)
 
 # --------------------------------------------------------------------------------------
 # Calculate daily assimilation values for testing Phenology
@@ -388,5 +395,5 @@ daily_productivity_ft = pd.DataFrame(
 )
 
 daily_productivity_ft.to_csv(
-    "fortnightly/daily_assimilation.csv", float_format="%0.8g", index=False
+    "fortnightly/daily_assimilation.csv", float_format=FLOAT_FORMAT, index=False
 )

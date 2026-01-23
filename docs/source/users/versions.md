@@ -28,9 +28,9 @@ package is being extended and revised. This document is describes the main chang
 functionality between major versions and provides code migration notes for changes in
 the API of `pyrealm` code.
 
-## Migration from 1.0.0 to version 2.0.0
+## Migration from 1.0 to version 2.0
 
-The versions of `PModel` and `SubdailyPModel` in `pyrealm` version 1.0.0 were based on
+The versions of `PModel` and `SubdailyPModel` in `pyrealm` version 1.0 were based on
 the original implementation of the `rpmodel` package {cite}`Stocker:2020dh` and the R
 code supporting {cite}`mengoli:2022a`, respectively. The two implementations:
 
@@ -40,7 +40,7 @@ code supporting {cite}`mengoli:2022a`, respectively. The two implementations:
 
 In addition, several core methods used within the calculations of both models had been
 rewritten to provide a more flexible and extensible framework for new research methods.
-So, version 2.0.0 provides a complete reworking of the package, with a particular focus
+So, version 2.0 provides a complete reworking of the package, with a particular focus
 on better integrating the  {class}`~pyrealm.pmodel.pmodel.PModel` and
 {class}`~pyrealm.pmodel.pmodel.SubdailyPModel` classes. This has led to a large
 number of breaking changes in the API. As the package uses [semantic
@@ -53,7 +53,30 @@ elevation over a time series. Most functionality in `pyrealm` now requires only 
 the shapes of the inputs can be [broadcast to each other](./array_inputs.md).
 
 The main user facing changes are shown below, but do also look at the [log of
-changes](#changes-log) for more detail.
+changes](#changes-log) for more detail. Most changes were introduced in version `2.0.0`
+but we have used version `2.0.1` to add some additional changes: these are noted below.
+
+### Water viscosity and density
+
+The `rpmodel` package used complex algorithms for calculating water density and
+viscosity. These provide high precision but are computationally demanding and give
+results that only differ slightly from much simpler alternatives. From version `2.0.1`,
+`pyrealm` provides a range of options for calculating water density and viscosity and
+changes the default algorithms to [faster and simpler approaches](./water.md).
+
+These settings are controlled using the
+{class}`~pyrealm.constants.core_const.CoreConst` class, which can be passed to the
+`core_const` argument of `pyrealm` functions and classes. The default settings now use:
+
+```python
+CoreConst(water_density_method="fisher", water_viscosity_method="vogel")
+```
+
+The behaviour of version `1.0` can be reproduced using:
+
+```python
+CoreConst(water_density_method="jones_harris_eq6", water_viscosity_method="huber")
+```
 
 ### The PModelEnvironment class
 

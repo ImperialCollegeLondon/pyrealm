@@ -67,7 +67,12 @@ from numpy.testing import assert_allclose
     ],
 )
 def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
-    """Test the C3/C4 competition model."""
+    """Test the C3/C4 competition model.
+
+    The test values were calculated when PModel still used the Stocker default phi0 and
+    the high precision water viscosity and density methods.
+    """
+    from pyrealm.constants import CoreConst
     from pyrealm.pmodel import (
         C3C4Competition,
         CalcCarbonIsotopes,
@@ -83,9 +88,11 @@ def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
         theta=np.array([0.5]),
         fapar=np.array([1]),
         ppfd=np.array([800]),
+        core_const=CoreConst(
+            water_density_method="fisher", water_viscosity_method="huber"
+        ),
     )
 
-    # The test values were calculated when PModel still used the Stocker default phi0
     pmodel_c3 = PModel(env, **pmodel_c3_args, reference_kphio=0.081785)
     pmodel_c4 = PModel(env, **pmodel_c4_args, reference_kphio=0.081785)
 

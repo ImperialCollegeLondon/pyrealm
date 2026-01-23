@@ -156,7 +156,7 @@ class CoreConst(ConstantsClass):
     """
 
     # Water constants
-    water_density_method: str = "fisher"
+    water_density_method: str = "jones_harris_eq6"
     """Set the method used for calculating water density."""
 
     # Fisher Dial
@@ -274,7 +274,7 @@ class CoreConst(ConstantsClass):
     provided as a tuple of polynomial coefficients :math:`a,b,c,d,e`.`"""
 
     # Viscosity coefficients
-    water_viscosity_method: str = "huber"
+    water_viscosity_method: str = "vogel"
     """Set the method used for calculating water viscosity."""
 
     huber_tk_ast: float = 647.096
