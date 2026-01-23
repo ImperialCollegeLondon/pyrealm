@@ -235,7 +235,7 @@ def test_FaparLimitation_from_pmodel(
     pmodel = PModel(pmodel_env)
 
     ai_inputs = resize_aridity_index_arrays(
-        site_data["AI"], shape=target_shape_expected, mode=ai_mode
+        site_data["AI_from_cruts"], shape=target_shape_expected, mode=ai_mode
     )
 
     # Scalar AI value

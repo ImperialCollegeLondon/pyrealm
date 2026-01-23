@@ -27,6 +27,14 @@ RPMODEL_C4_BUG = True
 
 
 @pytest.fixture(scope="module")
+def rpmodel_core_constants():
+    """The rpmodel implementation uses very high precision water methods."""
+    from pyrealm.constants import CoreConst
+
+    return CoreConst(water_density_method="fisher", water_viscosity_method="huber")
+
+
+@pytest.fixture(scope="module")
 def values():
     """Fixture to load test inputs and expected rpmodel outputs from file."""
 
@@ -82,12 +90,16 @@ def values():
         ("tc_ar", "shape_error", pytest.raises(ValueError), None),  # shape mismatch
     ],
 )
-def test_calculate_density_h2o(values, tc, patm, context_manager, expvals):
+def test_calculate_density_h2o(
+    values, rpmodel_core_constants, tc, patm, context_manager, expvals
+):
     """Test the calculate_density_h2o function."""
     from pyrealm.core.water import calculate_density_h2o
 
     with context_manager:
-        ret = calculate_density_h2o(tc=values[tc], patm=values[patm])
+        ret = calculate_density_h2o(
+            tc=values[tc], patm=values[patm], core_const=rpmodel_core_constants
+        )
         if expvals is not None:
             assert_allclose(ret, values[expvals])
 
@@ -276,7 +288,9 @@ def test_calc_soilmstress_stocker(values, soilm, meanalpha, context_manager, exp
         ("tc_ar", "shape_error", pytest.raises(ValueError), None),  # shape mismatch
     ],
 )
-def test_calculate_viscosity_h2o(values, tc, patm, context_manager, expvals):
+def test_calculate_viscosity_h2o(
+    values, rpmodel_core_constants, tc, patm, context_manager, expvals
+):
     """Test the calculate_viscosity_h2o function."""
 
     from pyrealm.constants import CoreConst
@@ -285,7 +299,9 @@ def test_calculate_viscosity_h2o(values, tc, patm, context_manager, expvals):
     core_const = CoreConst()
     with context_manager:
         ret = calculate_viscosity_h2o(
-            tk=values[tc] + core_const.k_CtoK, patm=values[patm]
+            tk=values[tc] + core_const.k_CtoK,
+            patm=values[patm],
+            core_const=rpmodel_core_constants,
         )
         if expvals:
             assert_allclose(ret, values[expvals], rtol=1e-5)
@@ -419,7 +435,17 @@ def test_calc_co2_to_ca(values, co2, patm, context_manager, expvals):
         ),  # shape error, c3
     ],
 )
-def test_optimal_chi(values, tc, patm, co2, vpd, method, context_manager, expvalues):
+def test_optimal_chi(
+    values,
+    rpmodel_core_constants,
+    tc,
+    patm,
+    co2,
+    vpd,
+    method,
+    context_manager,
+    expvalues,
+):
     """Test the CalcOptimalChi class."""
 
     from pyrealm.pmodel import PModelEnvironment
@@ -431,6 +457,7 @@ def test_optimal_chi(values, tc, patm, co2, vpd, method, context_manager, expval
             patm=values[patm],
             vpd=values[vpd],
             co2=values[co2],
+            core_const=rpmodel_core_constants,
         )
 
         OptChiClass = OPTIMAL_CHI_CLASS_REGISTRY[method]
@@ -469,7 +496,16 @@ def test_optimal_chi(values, tc, patm, co2, vpd, method, context_manager, expval
 )
 @pytest.mark.parametrize("c4", [True, False], ids=["c4", "c3"])
 def test_jmax_limitation(
-    request, values, ftemp_kphio, jmax_method, tc, patm, co2, vpd, c4
+    request,
+    rpmodel_core_constants,
+    values,
+    ftemp_kphio,
+    jmax_method,
+    tc,
+    patm,
+    co2,
+    vpd,
+    c4,
 ):
     """Test the JMaxLimitation implementation class."""
 
@@ -498,6 +534,7 @@ def test_jmax_limitation(
         patm=values[patm],
         vpd=values[vpd],
         co2=values[co2],
+        core_const=rpmodel_core_constants,
     )
 
     if not ftemp_kphio:
@@ -565,7 +602,9 @@ def test_jmax_limitation(
     ],
     ids=["sc", "ar"],
 )
-def test_pmodelenvironment(values, tc, vpd, co2, patm, ca, kmm, gammastar, ns_star):
+def test_pmodelenvironment(
+    values, rpmodel_core_constants, tc, vpd, co2, patm, ca, kmm, gammastar, ns_star
+):
     """Test the PModelEnvironment class."""
 
     from pyrealm.pmodel import PModelEnvironment
@@ -575,6 +614,7 @@ def test_pmodelenvironment(values, tc, vpd, co2, patm, ca, kmm, gammastar, ns_st
         patm=values[patm],
         vpd=values[vpd],
         co2=values[co2],
+        core_const=rpmodel_core_constants,
     )
 
     assert_allclose(ret.gammastar, values[gammastar])
@@ -626,7 +666,7 @@ def test_pmodelenvironment_exception(inputs, context_manager):
 
 
 @pytest.fixture(scope="module")
-def pmodelenv(values):
+def pmodelenv(values, rpmodel_core_constants):
     """Fixture to create PModelEnvironments with scalar and array inputs.
 
     The mean growth temperature is also set to air temperature here to mirror the use of
@@ -643,6 +683,7 @@ def pmodelenv(values):
         fapar=values["fapar_sc"],
         ppfd=values["ppfd_sc"],
         mean_growth_temperature=values["tc_sc"],
+        core_const=rpmodel_core_constants,
     )
 
     ar = PModelEnvironment(
@@ -653,6 +694,7 @@ def pmodelenv(values):
         fapar=values["fapar_ar"],
         ppfd=values["ppfd_ar"],
         mean_growth_temperature=values["tc_ar"],
+        core_const=rpmodel_core_constants,
     )
 
     return {"sc": sc, "ar": ar}

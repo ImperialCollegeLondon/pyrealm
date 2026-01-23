@@ -93,10 +93,16 @@ from numpy.testing import assert_allclose
 )
 def test_CalcCarbonIsotopes(pmodelenv_args, pmodel_args, expected):
     """Tests the CalcCarbonIsotopes class."""
+    from pyrealm.constants import CoreConst
     from pyrealm.pmodel import CalcCarbonIsotopes, PModelEnvironment
     from pyrealm.pmodel.pmodel import PModel
 
-    env = PModelEnvironment(**pmodelenv_args)
+    env = PModelEnvironment(
+        **pmodelenv_args,
+        core_const=CoreConst(
+            water_density_method="fisher", water_viscosity_method="huber"
+        ),
+    )
     pmodel = PModel(env, **pmodel_args)
     cci = CalcCarbonIsotopes(pmodel, d13CO2=np.array([-8.4]), D14CO2=np.array([19.2]))
 

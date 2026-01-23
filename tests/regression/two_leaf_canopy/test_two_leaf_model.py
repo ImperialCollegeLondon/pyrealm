@@ -5,10 +5,6 @@ import pandas as pd
 import pytest
 from numpy.testing import assert_allclose
 
-from pyrealm.pmodel import PModel
-from pyrealm.pmodel.pmodel_environment import PModelEnvironment
-from pyrealm.pmodel.two_leaf import TwoLeafAssimilation, TwoLeafIrradiance
-
 
 @pytest.fixture
 def get_data():
@@ -29,6 +25,8 @@ def solar_elevation():
 def solar_irradiance(solar_elevation, get_data):
     """Creates an instance of TwoLeafIrradiance class."""
 
+    from pyrealm.pmodel.two_leaf import TwoLeafIrradiance
+
     data = get_data.loc[(get_data["time"] == "2014-08-01 12:30:00")]
 
     PPFD = data["ppfd"].to_numpy()
@@ -43,6 +41,11 @@ def solar_irradiance(solar_elevation, get_data):
 def assimilation_single_day(solar_irradiance, get_data):
     """Tests TwoLeafAssimilation gpp_estimator method against reference data."""
 
+    from pyrealm.constants import CoreConst
+    from pyrealm.pmodel import PModel
+    from pyrealm.pmodel.pmodel_environment import PModelEnvironment
+    from pyrealm.pmodel.two_leaf import TwoLeafAssimilation
+
     data = get_data.loc[(get_data["time"] == "2014-08-01 12:30:00")]
 
     pmod_env = PModelEnvironment(
@@ -53,6 +56,9 @@ def assimilation_single_day(solar_irradiance, get_data):
         vpd=data["vpd"].to_numpy(),
         fapar=data["fapar"].to_numpy(),
         ppfd=data["ppfd"].to_numpy(),
+        core_const=CoreConst(
+            water_density_method="fisher", water_viscosity_method="huber"
+        ),
     )
 
     # Standard P Model, simple Arrhenius scaling, phi_0 = 1/8
