@@ -78,9 +78,9 @@ def test_faparlimitation(
 ):
     """Regression test for FaparLimitation constructor with fortnightly data."""
 
-    from pyrealm.phenology.fapar_limitation_new import FaparLimitation
+    from pyrealm.phenology.fapar_limitation_new import FaparLimitationNew
 
-    faparlim = FaparLimitation(
+    faparlim = FaparLimitationNew(
         annual_total_potential_gpp=data_fapar_limitation[assim_var],
         annual_mean_ca=data_fapar_limitation["annual_mean_ca_in_GS"],
         annual_mean_chi=data_fapar_limitation["annual_mean_chi_in_GS"],
