@@ -61,7 +61,9 @@ from pyrealm.demography.flora import (
     PlantFunctionalTypeStrict,
     StemTraits,
 )
-from pyrealm.phenology.fapar_limitation import FaparLimitation, PhenologyConst
+from pyrealm.phenology.fapar_limitation import FaparLimitation
+
+# from pyrealm.phenology.fapar_limitation_new import FaparLimitationNew
 
 ## Lists / functions to manually define arguments, methods or outputs to ignore, etc.
 
@@ -105,11 +107,15 @@ SKIP_METHODS = [
 ]
 
 
-# Ignore these outputs, they are not expected to be equal.
 # Formats: [fn name] for function results, [class]:[attr] for class attributes
 IGNORE_OUTPUTS = [
+    # Ignore these outputs, they are not expected to be equal.
     "Cohorts:_cohort_id",
     "Calendar:n_dates",
+    # Causes infinite recursion, because this is an attribute of FaparLimitationNew, but
+    # contains a reference to the parent FaparLimitationNew, so
+    # is_equal/compare_instances runs away.
+    "FaparLimitationNew:limitation_method",
 ]
 
 # The REQUIRES dictionary provides a way of populating required keywords arguments for
@@ -130,7 +136,7 @@ def kwarg_params(names: tuple[str, ...]) -> dict[str, Parameter]:
     }
 
 
-REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
+REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Any]] = {
     (
         "PModelEnvironment",
         (
@@ -177,6 +183,17 @@ REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
             "QuantumYieldSandoval",
         ),
     ): kwarg_params(("aridity_index", "mean_growth_temperature")),
+    (
+        "FaparLimitationNew",
+        (
+            "FaparLimitationCai.calculate_maximum_fapar",
+            "FaparLimitationCai",
+        ),
+    ): kwarg_params(("aridity_index",)),
+    (
+        "FaparLimitationNew",
+        ("FaparLimitationNew",),
+    ): kwarg_params(("aridity_index",)),  # Default method cai requires aridity_index
 }
 
 
@@ -206,18 +223,16 @@ def defined_method_args(argument: str, ctx: Context) -> Any | None:
     n_heights = 2
     pft_names = [f"Tree{i + 1}" for i in range(n_pft)]
 
+    # Fapar Limitation for two years
     fapar_limitation = FaparLimitation(
-        annual_total_potential_gpp=np.ones(48),
-        annual_mean_ca=np.ones(48),
-        annual_mean_chi=np.ones(48),
-        annual_mean_vpd=np.ones(48),
-        annual_total_precip=np.ones(48),
-        annual_growing_season_length=np.ones(48),
-        aridity_index=np.ones(48),
-        years=np.zeros((48,), dtype="datetime64[Y]"),
-        phenology_const=PhenologyConst(
-            z=12.227, k=0.5, f0_coefficients=(0.65, 0.604169, 1.9), sigma=0.771
-        ),
+        annual_total_potential_gpp=np.ones(2),
+        annual_mean_ca=np.ones(2),
+        annual_mean_chi=np.ones(2),
+        annual_mean_vpd=np.ones(2),
+        annual_total_precip=np.ones(2),
+        annual_growing_season_length=np.ones(2),
+        aridity_index=np.ones(2),
+        years=np.array(["2000", "2001"], dtype="datetime64[Y]"),
     )
 
     method_arguments_list: dict[str, dict] = {
@@ -271,8 +286,12 @@ def defined_method_args(argument: str, ctx: Context) -> Any | None:
         ## Phenology
         "FaparLimitation": {"years": np.ones(bcast_shape[0], dtype="datetime64[Y]")},
         "Phenology": {
-            "daily_gpp": np.full((48,), 0.5),
-            "datetimes": np.arange(0, 48, dtype="datetime64[D]"),
+            "daily_gpp": np.full((31,), 0.5),
+            "datetimes": np.arange(
+                np.datetime64("2000-01-01"),
+                np.datetime64("2000-02-01"),
+                np.timedelta64(1, "D"),
+            ),
             "fapar_limitation": fapar_limitation,
         },
     }
@@ -326,6 +345,7 @@ def defined_method_args(argument: str, ctx: Context) -> Any | None:
             nTime = 366
         else:
             nTime = splashDatesLen
+
         splashShape = (1 if shape[0] == 1 else nTime, *shape[1:])
         arguments = {
             "dates": Calendar(np.arange(0, nTime, dtype="datetime64[D]")),
@@ -336,18 +356,30 @@ def defined_method_args(argument: str, ctx: Context) -> Any | None:
             "pn": np.full(splashShape, 10),
         }
 
-    if ctx.name == "PModelEnvironment":
-        if ctx.parents and ctx.parents[-1] == "SubdailyPModel":
-            # SubdailyPModel needs more than 1 day (uses 48 hourly times)
-            envShape = (1 if shape[0] == 1 else 48, *shape[1:])
-            arguments = {
-                "tc": np.full(envShape, 20),
-                "vpd": np.full(envShape, 40),
-                "co2": np.full(envShape, 1000),
-                "patm": np.full(envShape, 101325),
-                "fapar": np.full(envShape, 1),
-                "ppfd": np.full(envShape, 800),
-            }
+    if (  # SubdailyPModel needs more than 1 day (uses 48 hourly times)
+        ctx.name == "PModelEnvironment"
+        and ctx.parents
+        and ctx.parents[-1] == "SubdailyPModel"
+    ):
+        envShape = (1 if shape[0] == 1 else 48, *shape[1:])
+        arguments = {
+            "tc": np.full(envShape, 20),
+            "vpd": np.full(envShape, 40),
+            "co2": np.full(envShape, 1000),
+            "patm": np.full(envShape, 101325),
+            "fapar": np.full(envShape, 1),
+            "ppfd": np.full(envShape, 800),
+        }
+
+    # FaparLimitationNew requires years as Datetime64[Y]
+    if ctx.name == "FaparLimitationNew":
+        arguments = {
+            "years": np.ones(bcast_shape[0], dtype="datetime64[Y]"),
+        }
+
+        # Need to enforce the method selection for FaparLimitationZhu
+        if ctx.parents and ctx.parents[-1] == "FaparLimitationZhu":
+            arguments["method"] = "zhu"
 
     return arguments.get(argument)
 

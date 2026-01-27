@@ -20,7 +20,9 @@ def cal_fapar_actually_in_python(
     fapar_carbon: NDArray[np.floating], fapar_water: NDArray[np.floating], budyko=4
 ) -> NDArray[np.floating]:
     """Refactor of plmodel_timeseries.cal_fapar using array calculations."""
-    cw_ratio = fapar_carbon / (np.clip(fapar_water, min=np.finfo(float).eps, max=None))
+    cw_ratio = fapar_carbon / (
+        np.clip(fapar_water, a_min=np.finfo(float).eps, a_max=None)
+    )
     return ((1 + cw_ratio) - (1 + cw_ratio**budyko) ** (1 / budyko)) * fapar_water
 
 
