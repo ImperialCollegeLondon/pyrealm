@@ -621,4 +621,5 @@ class FaparLimitationNew:
             years=avc.years,
             method=method,
             phenology_const=phenology_const,
+            **kwargs,
         )
