@@ -103,3 +103,7 @@ class PhenologyConstNew(ConstantsClass):
     zhu_f0: float = 0.5
     zhu_z: float = 17
     zhu_budyko: float = 4
+    zhu_A0_quantile = 0.95
+    zhu_min_a0 = 1.0e-6
+    zhu_lagcoef = 64.6
+    zhu_lagmax = 365

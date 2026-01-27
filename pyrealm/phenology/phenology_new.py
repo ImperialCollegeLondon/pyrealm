@@ -149,31 +149,79 @@ class PhenologyMethodZhou(PhenologyMethodABC, method="zhou"):
         mu = self.lai_to_gpp_ratio_m[year_index] * daily_A0
 
         # Calculate the Lambert W0 value
-        daily_LAI = mu + (1 / phenology_const.k) * lambertw(
+        daily_lai = mu + (1 / phenology_const.k) * lambertw(
             -phenology_const.k * mu * np.exp(-phenology_const.k * mu), k=0
         )
 
         # Check that all imaginary parts are zero or np.nan
-        if not np.all(np.logical_or(np.imag(daily_LAI) == 0, np.isnan(daily_LAI))):
+        if not np.all(np.logical_or(np.imag(daily_lai) == 0, np.isnan(daily_lai))):
             raise ValueError("Imaginary parts of Lambert W calculation are not zero")
 
         # Clip the real parts at zero
-        daily_LAI = np.clip(np.real(daily_LAI), a_min=0, a_max=None)
+        daily_lai = np.clip(np.real(daily_lai), a_min=0, a_max=None)
 
         # Find the daily minimum of the lambert term and annual maximum LAI as the
         # steady state LAI
-        steady_state_LAI = np.minimum(
-            daily_LAI, self.fapar_limitation.lai_max[year_index]
+        steady_state_lai = np.minimum(
+            daily_lai, self.fapar_limitation.lai_max[year_index]
         )
         """The steady state leaf area index for each day."""
         # Calculate the lagged value
-        realised_LAI = exponential_moving_average(
-            steady_state_LAI, alpha=phenology_const.zhou_alpha
+        realised_lai = exponential_moving_average(
+            steady_state_lai, alpha=phenology_const.zhou_alpha
         )
         """The realised leaf area index for each day given the modelled lag in responses
             to changing assimilation."""
 
-        return steady_state_LAI, realised_LAI
+        return steady_state_lai, realised_lai
+
+
+class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
+    """Blah blah blah."""
+
+    def __init__(
+        self,
+        fapar_limitation: FaparLimitationNew,
+    ) -> None:
+        # Run the super class ___init__.
+        super().__init__(fapar_limitation=fapar_limitation)
+
+    def calculate_leaf_area_index(
+        self,
+        daily_A0: NDArray[np.floating],
+        year_index: NDArray[np.int_],
+    ) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
+        """Calculate leaf area indices following Zhou et al."""
+
+        # Calculate the steady state ratio of leaf area index to potential GPP
+        phenology_const = self.fapar_limitation.phenology_const
+
+        # Split the daily A0 up by year, calculate annual quantiles of daily
+        # assimilation and then restack into an array, which should have the same shape
+        # as the values in the fapar limitation.
+        annual_A0_arrays = np.split(daily_A0, np.where(np.diff(year_index))[0], axis=0)
+        daily_A0_quantiles = np.stack(
+            [
+                np.nanquantile(ann_data, q=phenology_const.zhu_A0_quantile, axis=0)
+                for ann_data in annual_A0_arrays
+            ]
+        )
+
+        # Calculate the ratio of LAI to the annual quantile of daily assimilation.
+        self.lai_to_gpp_ratio_m: NDArray[np.floating] = (
+            self.fapar_limitation.lai_max / daily_A0_quantiles
+        )
+        """Annual values of the steady state ratio of leaf area index to potential GPP
+        (:math:`m`)"""
+
+        # Duplicate m ratio for each day and calculate daily mu value as m * daily molar
+        # assimilation:
+        steady_state_lai = self.lai_to_gpp_ratio_m[year_index] * daily_A0
+        realised_lai = np.zeros_like(steady_state_lai)
+
+        # TBD - apply zhu aet/pet function for realised lai
+
+        return steady_state_lai, realised_lai
 
 
 class PhenologyNew:
