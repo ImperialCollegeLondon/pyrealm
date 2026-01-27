@@ -145,6 +145,12 @@ any two commits:
 ./performance_regression_checking.sh -n [NEW-COMMIT] -o [OLD-COMMIT]
 ```
 
+The `-s` flag can be used to increase the problem scaling relative to the defaults in
+order to reduce the variability of the results. For example, `-s 2` would result in
+`--splash-profile-scaleup 250` and `--pmodel-profile-scaleup 12`. Likewise, it can be
+used to reduce the scaleup, for example `-s 0.5` gives `--splash-profile-scaleup 62` and
+`--pmodel-profile-scaleup 3`.
+
 ### Advanced benchmarking
 
 When `pytest-profiling` runs, the resulting `prof/combined.prof` file contains detailed
@@ -167,7 +173,8 @@ the two versions.
 
 :::{note}
 Variance in the run time can be significant when looking at individual functions. This
-can limit the effectiveness of the advanced benchmarking results.
+can limit the effectiveness of the advanced benchmarking results. This may be reduced by
+running on exclusive cores in a cluster or by scaling up using the `-s` flag.
 :::
 
 ![benchmarking plot](../../../profiling/performance-plot.png)

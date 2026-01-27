@@ -5,12 +5,13 @@ if [[ $# -eq 0 ]] ; then
     new_commit=HEAD
     old_commit=origin/develop
 else
-    while getopts n:o:a flag
+    while getopts n:o:a:s: flag
     do
         case "${flag}" in
             n) new_commit=${OPTARG};;
             o) old_commit=${OPTARG};;
             a) advanced=true;;
+            s) scaleup=${OPTARG};;
             *) echo "Invalid input argument"; exit 1;;
         esac
     done
@@ -55,12 +56,19 @@ for version in "old" "new"; do
         poetry run pytest -m "profiling" > /dev/null
     fi
 
+    # Add scaling options
+    if [ -n "$scaleup" ]; then
+        pmodel_scaleup=$(python -c "print(int(6*$scaleup))")
+        splash_scaleup=$(python -c "print(int(125*$scaleup))")
+        scaleup_args="--pmodel-profile-scaleup $pmodel_scaleup --splash-profile-scaleup $splash_scaleup"
+    fi
+
     # Run the profiling
     echo "Run profiling tests on $version commit"
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then #Linux
-        /usr/bin/time -v poetry run pytest -m "profiling" --profile
+        /usr/bin/time -v poetry run pytest -m "profiling" --profile $scaleup_args
     elif [[ "$OSTYPE" == "darwin"* ]]; then #Mac OS
-        /usr/bin/time -l poetry run pytest -m "profiling" --profile
+        /usr/bin/time -l poetry run pytest -m "profiling" --profile $scaleup_args
     fi
     if [ "$?" != "0" ]; then
         echo "Profiling the current code went wrong."
