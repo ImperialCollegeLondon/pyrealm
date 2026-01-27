@@ -1,14 +1,15 @@
 """Test the FaparLimitation class."""
 
+import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
 
 @pytest.mark.parametrize(
-    argnames="timescale,timescale_abbr,assim_var",
+    argnames="timescale,assim_var",
     argvalues=(
-        pytest.param("fortnightly", "ft", "annual_total_A0", id="fortnightly"),
-        pytest.param("subdaily", "hh", "annual_total_A0_smstress", id="subdaily"),
+        pytest.param("ft", "annual_total_A0", id="fortnightly"),
+        pytest.param("hh", "annual_total_A0_smstress", id="subdaily"),
     ),
 )
 @pytest.mark.parametrize(
@@ -20,11 +21,11 @@ from numpy.testing import assert_allclose
 )
 def test_faparlimitation(
     site_data,
-    data_fapar_limitation,
-    timescale,  # parameterises data_fapar_limitation fixture
-    timescale_abbr,
+    annual_inputs,
+    fapar_max_predictions,
+    timescale,  # parameterises annual_inputs fixture
     assim_var,
-    method_predictions_dir,  # parameterises data_fapar_limitation fixture
+    method_predictions_dir,  # parameterises fapar_max_predictions fixture
     method,
 ):
     """Regression test for FaparLimitation constructor with fortnightly data."""
@@ -32,89 +33,132 @@ def test_faparlimitation(
     from pyrealm.phenology.fapar_limitation_new import FaparLimitationNew
 
     faparlim = FaparLimitationNew(
-        annual_total_potential_gpp=data_fapar_limitation[assim_var],
-        annual_mean_ca=data_fapar_limitation["annual_mean_ca_in_GS"],
-        annual_mean_chi=data_fapar_limitation["annual_mean_chi_in_GS"],
-        annual_mean_vpd=data_fapar_limitation["annual_mean_VPD_in_GS"],
-        annual_total_precip=data_fapar_limitation["annual_precip_molar"],
-        annual_growing_season_length=data_fapar_limitation["N_growing_days"],
-        years=data_fapar_limitation["year"].astype(str).astype("datetime64[Y]"),
+        annual_total_potential_gpp=annual_inputs[assim_var],
+        annual_mean_ca=annual_inputs["annual_mean_ca_in_GS"],
+        annual_mean_chi=annual_inputs["annual_mean_chi_in_GS"],
+        annual_mean_vpd=annual_inputs["annual_mean_VPD_in_GS"],
+        annual_total_precip=annual_inputs["annual_precip_molar"],
+        annual_growing_season_length=annual_inputs["N_growing_days"],
+        years=annual_inputs["year"].astype(str).astype("datetime64[Y]"),
         method=method,
         aridity_index=site_data["AI_from_cruts"],  # Not used by zhu method.
     )
 
     assert_allclose(
-        data_fapar_limitation[f"fapar_max_{timescale_abbr}"],
+        fapar_max_predictions[f"fapar_max_{timescale}"],
         faparlim.fapar_max,
         rtol=1e-6,
     )
     assert_allclose(
-        data_fapar_limitation[f"lai_max_{timescale_abbr}"],
+        fapar_max_predictions[f"lai_max_{timescale}"],
         faparlim.lai_max,
         rtol=1e-6,
     )
 
 
 @pytest.mark.parametrize(
-    argnames="timescale,timescale_abbr,assim_var",
+    argnames="method_predictions_dir, method",
     argvalues=(
-        pytest.param("fortnightly", "ft", "annual_total_A0", id="fortnightly"),
-        pytest.param("subdaily", "hh", "annual_total_A0_smstress", id="subdaily"),
+        pytest.param("cai_zhou_method", "cai", id="cai"),
+        pytest.param("zhu_method", "zhu", id="zhu"),
     ),
 )
 @pytest.mark.parametrize(
-    argnames="method_predictions_dir, fapar_method, pheno_method",
+    argnames="timescale",
     argvalues=(
-        pytest.param("cai_zhou_method", "cai", "zhou", id="cai_zhou"),
-        # pytest.param("zhu_method", "zhu", id="zhu"),
+        pytest.param("hh", id="subdaily"),
+        pytest.param("ft", id="fortnightly"),
     ),
 )
-def test_phenology(
+def test_fapar_limitation_frompmodel(
     site_data,
-    data_fapar_limitation,
-    data_phenology,
-    timescale,  # parameterises data_* fixtures
-    timescale_abbr,
-    assim_var,
-    method_predictions_dir,  # parameterises data_* fixtures
-    fapar_method,
-    pheno_method,
+    pmodel_inputs,
+    pmodel_outputs,
+    daily_assimilation,
+    fapar_max_predictions,
+    daily_lai_predictions,
+    method_predictions_dir,
+    method,
+    timescale,
 ):
-    """Regression test for FaparLimitation constructor with fortnightly data."""
+    """Regression test for  FaparLimitation.from_pmodel class method."""
 
     from pyrealm.phenology.fapar_limitation_new import FaparLimitationNew
-    from pyrealm.phenology.phenology_new import Phenology
+    from pyrealm.pmodel import (
+        AcclimationModel,
+        PModel,
+        PModelEnvironment,
+        SubdailyPModel,
+    )
 
-    faparlim = FaparLimitationNew(
-        annual_total_potential_gpp=data_fapar_limitation[assim_var],
-        annual_mean_ca=data_fapar_limitation["annual_mean_ca_in_GS"],
-        annual_mean_chi=data_fapar_limitation["annual_mean_chi_in_GS"],
-        annual_mean_vpd=data_fapar_limitation["annual_mean_VPD_in_GS"],
-        annual_total_precip=data_fapar_limitation["annual_precip_molar"],
-        annual_growing_season_length=data_fapar_limitation["N_growing_days"],
-        years=data_fapar_limitation["year"].astype(str).astype("datetime64[Y]"),
-        method=fapar_method,
+    env = PModelEnvironment(
+        tc=pmodel_inputs["tc"],
+        vpd=pmodel_inputs["vpd"],
+        co2=pmodel_inputs["co2"],
+        patm=pmodel_inputs["patm"],
+        fapar=pmodel_inputs["fapar"],
+        ppfd=pmodel_inputs["ppfd"],
+    )
+
+    pmodel_inputs["time"] = pmodel_inputs["time"].astype("datetime64[s]")
+
+    # The two timescales use different PModels and also need to specify the datetimes
+    # and gpp penalty factors in FaparLimitation differently
+    if timescale == "ft":
+        # Fit PModel
+        pmodel = PModel(
+            env=env,
+            reference_kphio=1 / 8,
+            method_kphio="temperature",
+        )
+        # Define datetimes of observations - no GPP penalty
+        fl_datetimes = pmodel_inputs["time"]
+        gpp_penalty_factor = None
+
+    else:
+        # Set up the datetimes of the observations and set the acclimation window
+        acclim = AcclimationModel(
+            datetimes=pmodel_inputs["time"],
+            alpha=1 / 15,
+        )
+        acclim.set_window(
+            window_center=np.timedelta64(12, "h"),
+            half_width=np.timedelta64(30, "m"),
+        )
+
+        # Fit the subdaily PModel
+        pmodel = SubdailyPModel(
+            env=env,
+            acclim_model=acclim,
+            reference_kphio=1 / 8,
+            method_kphio="temperature",
+        )
+
+        # FaparLimitation uses the datetimes from pmodel.acclim_model and uses a soil
+        # moisture stress penalty
+        fl_datetimes = None
+        gpp_penalty_factor = pmodel_inputs["soilm_stress"]
+
+    # Check the GPP predictions
+    assert_allclose(pmodel.gpp, pmodel_outputs["gpp"], rtol=1e-7)
+    assert_allclose(pmodel.optchi.ci, pmodel_outputs["ci"], rtol=1e-7)
+    assert_allclose(pmodel.optchi.chi, pmodel_outputs["chi"], rtol=1e-7)
+
+    pmodel_inputs["time"] = pmodel_inputs["time"].astype("datetime64[s]")
+
+    faparlim = FaparLimitationNew.from_pmodel(
+        pmodel=pmodel,
+        method=method,
+        growing_season=pmodel_inputs["growing_season"],
+        datetimes=fl_datetimes,
+        precip=pmodel_inputs["precip_molar"],
+        gpp_penalty_factor=gpp_penalty_factor,
         aridity_index=site_data["AI_from_cruts"],  # Not used by zhu method.
     )
 
-    pheno = Phenology(
-        daily_gpp=data_phenology["daily_A0"],
-        datetimes=data_phenology["time"].astype("datetime64[D]"),
-        fapar_limitation=faparlim,
-    )
-
-    # Fortnightly data is truncated by the last fortnight so need to truncate to match
-
-    # Check the LAI time series to tolerance of data in file.
     assert_allclose(
-        pheno.steady_state_lai,
-        data_phenology[f"Ls_daily_{timescale_abbr}"][: len(pheno.steady_state_lai)],
-        atol=1e-8,
+        fapar_max_predictions[f"fapar_max_{timescale}"], faparlim.fapar_max, rtol=1e-6
     )
     assert_allclose(
-        pheno.realised_lai,
-        data_phenology[f"Ls_daily_lagged_{timescale_abbr}"][
-            : len(pheno.steady_state_lai)
-        ],
-        atol=1e-8,
+        fapar_max_predictions[f"lai_max_{timescale}"], faparlim.lai_max, rtol=1e-6
     )

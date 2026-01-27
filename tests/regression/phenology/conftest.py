@@ -83,11 +83,11 @@ def pmodel_outputs(timescale):
 
 
 @pytest.fixture()
-def fapar_max_predictions(phenology_method):
+def fapar_max_predictions(method_predictions_dir):
     """Returns the annual fapar_max predictions for a given method."""
 
     datafile = (
-        resources.files(f"pyrealm_build_data.phenology.{phenology_method}")
+        resources.files(f"pyrealm_build_data.phenology.{method_predictions_dir}")
         / "fapar_max_predictions.csv"
     )
 
@@ -95,11 +95,11 @@ def fapar_max_predictions(phenology_method):
 
 
 @pytest.fixture()
-def daily_lai_predictions(phenology_method):
+def daily_lai_predictions(method_predictions_dir):
     """Returns the annual fapar_max predictions for a given method."""
 
     datafile = (
-        resources.files(f"pyrealm_build_data.phenology.{phenology_method}")
+        resources.files(f"pyrealm_build_data.phenology.{method_predictions_dir}")
         / "daily_lai_predictions.csv"
     )
 
