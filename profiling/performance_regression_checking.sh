@@ -18,6 +18,20 @@ fi
 
 cd $(git rev-parse --show-toplevel)
 
+# Activate the poetry environment if not already
+unset VIRTUAL_ENV
+poetry install > /dev/null
+
+SEPARATE_VENVS=true
+
+if [ "$SEPARATE_VENVS" = true ]; then
+    poetry config virtualenvs.in-project true
+else
+    $(poetry env activate)
+    echo "Warm-up run..."
+    poetry run pytest -m "profiling" > /dev/null
+fi
+
 # Remember where we start from
 current_repo=`pwd`
 
@@ -29,20 +43,24 @@ for version in "old" "new"; do
 
     # Adding the worktree
     echo "Add worktree" $repo
+    trap "git worktree remove --force $repo" EXIT
     git worktree add $repo $commit
 
-    # Go there and activate poetry environment
+    # Go there and update the poetry environment
     cd $repo
-    unset VIRTUAL_ENV
-    export POETRY_VIRTUALENVS_IN_PROJECT=1
-    poetry install
+    poetry install > /dev/null
+
+    if [ "$SEPARATE_VENVS" = true ]; then
+        echo "Warm-up run..."
+        poetry run pytest -m "profiling" > /dev/null
+    fi
 
     # Run the profiling
     echo "Run profiling tests on $version commit"
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then #Linux
-        poetry run /usr/bin/time -v pytest -m "profiling" --profile-svg
+        /usr/bin/time -v poetry run pytest -m "profiling" --profile
     elif [[ "$OSTYPE" == "darwin"* ]]; then #Mac OS
-         poetry run /usr/bin/time -l pytest -m "profiling" --profile-svg
+        /usr/bin/time -l poetry run pytest -m "profiling" --profile
     fi
     if [ "$?" != "0" ]; then
         echo "Profiling the current code went wrong."
@@ -84,6 +102,7 @@ for version in "old" "new"; do
     # Remove the worktree
     git worktree remove --force $repo
     git worktree prune
+    trap - EXIT
 done
 
 # Compare the profiling outputs
