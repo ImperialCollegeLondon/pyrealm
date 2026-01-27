@@ -1,0 +1,255 @@
+"""Class to compute the fAPAR_max and annual peak Leaf Area Index (LAI).
+
+The :class:`FaparLimitation` class and the :meth:`FaparLimitation.from_pmodel` are
+designed to work with inputs that can have multiple dimensions. The first axis is
+_always_ assumed to represent a time series of annual observations. If the inputs
+are one dimensional, then this is a time series for a single site; if they are three
+dimensional then these are observations for a grid of sites. Usually all array inputs
+will have the same shape but note the following instances where you might need to
+take care with array broadcasting.
+
+* Growing season length might well be constant across sites. If so - for example
+    with 3D data - the input would need shape `(N, 1, 1)` to broadcast N years of
+    data over the array of sites.
+* The climatological aridity index is very likely to be constant through time.
+    If so, the array should have a singleton first dimension to broadcast an
+    observation per site across observations. For example, with `(10, 3, 3)` data
+    (10 years for a 3x3 grid of sites), the aridity index could be provided as
+    `(1,3,3)` to broadcast the aridity index across each year. It could also use a
+    single scalar value to use the same aridity index for all sites.
+"""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+
+import numpy as np
+from numpy.typing import NDArray
+from scipy.special import lambertw  # type: ignore[import-untyped]
+
+from pyrealm.core.experimental import warn_experimental
+from pyrealm.core.utilities import (
+    check_input_shapes,
+    exponential_moving_average,
+)
+from pyrealm.phenology.fapar_limitation_new import FaparLimitationNew
+
+PHENOLOGY_METHOD_CLASS_REGISTRY: dict[str, type[PhenologyMethodABC]] = {}
+"""A registry for optimal chi calculation classes.
+
+Different implementations of the calculation of optimal chi must all be subclasses of
+:class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC` abstract base class.
+This dictionary is used as a registry for defined subclasses and a method name
+is used to retrieve a particular implementation from this registry. For example:
+
+.. code:: python
+
+    prentice14_opt_chi = OPTIMAL_CHI_CLASS_REGISTRY['prentice14']
+"""
+
+
+class PhenologyMethodABC(ABC):
+    r"""Abstract base class for methods computing maximum annual fAPAR and LAI."""
+
+    __experimental__ = True
+
+    method: str
+    """A short method name used to identify the class in
+    :data:`PHENOLOGY_METHOD_CLASS_REGISTRY`.
+    """
+
+    attrs: tuple[tuple[str, str], ...]
+    """A tuple of attributes to be reported in the PhenologyNew.summarize() output
+    for the method."""
+
+    requires: tuple[str, ...]
+    """A tuple of any additional variables required to create a PhenologyNew
+    instance using the method."""
+
+    def __init__(
+        self,
+        fapar_limitation: FaparLimitationNew,
+    ) -> None:
+        """Initialise the method instance.
+
+        Subclass should provide a method specific instance that calls
+        `super().__init__(...)`, carries out method specific validation .
+        """
+        self.fapar_limitation: FaparLimitationNew = fapar_limitation
+
+        # Check for required variables
+        self._check_required_variables()
+
+    def _check_required_variables(self) -> None:
+        """Check required variables.
+
+        Checks that any required variables for the method have been passed to the
+        FaparLimitation constructor.
+        """
+        pass
+
+    @abstractmethod
+    def calculate_leaf_area_index(
+        self,
+        daily_A0: NDArray[np.floating],
+        year_index: NDArray[np.int_],
+    ) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
+        """Calculate steady state and realise leaf area index.
+
+        Each subclass should use this method to provide the method specific
+        functionality to calculate steady state and realise leaf area index.
+        """
+
+    @classmethod
+    def __init_subclass__(cls, method: str) -> None:
+        """Initialise a subclass deriving from this ABC."""
+
+        cls.method = method
+        PHENOLOGY_METHOD_CLASS_REGISTRY[cls.method] = cls
+
+
+class PhenologyMethodZhou(PhenologyMethodABC, method="zhou"):
+    """Blah blah blah."""
+
+    def __init__(
+        self,
+        fapar_limitation: FaparLimitationNew,
+    ) -> None:
+        # Run the super class ___init__.
+        super().__init__(fapar_limitation=fapar_limitation)
+
+    def calculate_leaf_area_index(
+        self,
+        daily_A0: NDArray[np.floating],
+        year_index: NDArray[np.int_],
+    ) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
+        """Calculate leaf area indices following Zhou et al."""
+
+        # Calculate the steady state ratio of leaf area index to potential GPP
+        phenology_const = self.fapar_limitation.phenology_const
+
+        # TODO - I'd moved this across to Phenology with the thought of allowing the
+        # different FaparLimitation methods to be crossed, but Zhu doesn't use
+        # annual_growing_season_length, so requiring it just to allow that cross is
+        # fussy. Leaving here for the moment but it probably moves back to
+        # FaparLimitation.
+
+        self.lai_to_gpp_ratio_m: NDArray[np.floating] = (
+            phenology_const.cai_sigma
+            * self.fapar_limitation.annual_growing_season_length
+            * self.fapar_limitation.lai_max
+        ) / (
+            self.fapar_limitation.annual_total_potential_gpp
+            * self.fapar_limitation.fapar_max
+        )
+        """The steady state ratio of leaf area index to potential GPP (:math:`m`)"""
+
+        # Duplicate m ratio for each day and calculate daily mu value as m * daily molar
+        # assimilation:
+        mu = self.lai_to_gpp_ratio_m[year_index] * daily_A0
+
+        # Calculate the Lambert W0 value
+        daily_LAI = mu + (1 / phenology_const.k) * lambertw(
+            -phenology_const.k * mu * np.exp(-phenology_const.k * mu), k=0
+        )
+
+        # Check that all imaginary parts are zero or np.nan
+        if not np.all(np.logical_or(np.imag(daily_LAI) == 0, np.isnan(daily_LAI))):
+            raise ValueError("Imaginary parts of Lambert W calculation are not zero")
+
+        # Clip the real parts at zero
+        daily_LAI = np.clip(np.real(daily_LAI), a_min=0, a_max=None)
+
+        # Find the daily minimum of the lambert term and annual maximum LAI as the
+        # steady state LAI
+        steady_state_LAI = np.minimum(
+            daily_LAI, self.fapar_limitation.lai_max[year_index]
+        )
+        """The steady state leaf area index for each day."""
+        # Calculate the lagged value
+        realised_LAI = exponential_moving_average(
+            steady_state_LAI, alpha=phenology_const.zhou_alpha
+        )
+        """The realised leaf area index for each day given the modelled lag in responses
+            to changing assimilation."""
+
+        return steady_state_LAI, realised_LAI
+
+
+class PhenologyNew:
+    """Phenology calculation."""
+
+    __experimental__ = True
+
+    def __init__(
+        self,
+        daily_gpp: NDArray[np.floating],
+        datetimes: NDArray[np.datetime64],
+        fapar_limitation: FaparLimitationNew,
+        method: str = "zhou",
+    ):
+        # Experimental class
+        warn_experimental(self.__class__.__name__)
+
+        # Check the array input shapes
+        check_input_shapes(daily_gpp, datetimes)
+
+        # Check the datetimes provide ordered daily resolution observations - don't
+        # insist on daily precision but check that second level representations of the
+        # days is consistent with daily observations and strictly increases.
+        datetimes = datetimes.astype("datetime64[s]")
+        datetime_spacing = np.diff(datetimes)
+
+        if not np.all(np.equal(datetime_spacing, 86400)):
+            raise ValueError(
+                "The datetimes argument must provide timestamps of a "
+                "complete increasing daily time series"
+            )
+
+        # Get the years of observations and check they are all represented in the
+        # FaparLimitation object
+        datetimes_year = datetimes.astype("datetime64[Y]")
+        observation_years = np.unique(datetimes_year)
+
+        missing_years = set(observation_years).difference(fapar_limitation.years)
+        if missing_years:
+            raise ValueError(
+                f"The observation datetimes include years that are not included in the "
+                f"fapar_limitation data: {', '.join([str(y) for y in missing_years])}"
+            )
+
+        # Store values
+        self.fapar_limitation = fapar_limitation
+        """The annual maximum fAPAR and LAI data used in the model."""
+
+        # Set up the fAPAR limitation method to be used.
+        self.method: str = method
+
+        # Calculate the index of each observation in the FaparLimitation years.
+        # This uses a shortcut to avoid looking up using np.where or np.searchsorted:
+        # * The FaparLimitation.years are a sequence of values: N, N+1, N+2, ..., N+M
+        # * The datetime_years are now validated to lie in N, ..., N+M
+        # * If we take the first year in FaparLimitation.years as an integer then that
+        #   provides an offset from zero for the indexing of the year sequence, and we
+        #   can subtract that from the observation years to get the index of each
+        #   observation.
+        year_index = datetimes_year.astype("int") - fapar_limitation.years[0].astype(
+            "int"
+        )
+
+        if method not in PHENOLOGY_METHOD_CLASS_REGISTRY:
+            raise ValueError(f"Unknown FaparLimitation method: {method}")
+
+        # Get an instance of the method class from the registry
+        phenology_method: PhenologyMethodABC = PHENOLOGY_METHOD_CLASS_REGISTRY[method](
+            fapar_limitation=self.fapar_limitation,
+        )
+
+        self.steady_state_lai: NDArray[np.floating]
+        self.realised_lai: NDArray[np.floating]
+
+        self.steady_state_lai, self.realised_lai = (
+            phenology_method.calculate_leaf_area_index(
+                daily_A0=daily_gpp, year_index=year_index
+            )
+        )
