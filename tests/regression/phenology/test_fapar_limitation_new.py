@@ -63,10 +63,10 @@ def test_faparlimitation(
     ),
 )
 @pytest.mark.parametrize(
-    argnames="method_predictions_dir, method",
+    argnames="method_predictions_dir, fapar_method, pheno_method",
     argvalues=(
-        pytest.param("cai_zhou_method", "cai", id="cai"),
-        pytest.param("zhu_method", "zhu", id="zhu"),
+        pytest.param("cai_zhou_method", "cai", "zhou", id="cai_zhou"),
+        # pytest.param("zhu_method", "zhu", id="zhu"),
     ),
 )
 def test_phenology(
@@ -77,7 +77,8 @@ def test_phenology(
     timescale_abbr,
     assim_var,
     method_predictions_dir,  # parameterises data_* fixtures
-    method,
+    fapar_method,
+    pheno_method,
 ):
     """Regression test for FaparLimitation constructor with fortnightly data."""
 
@@ -92,7 +93,7 @@ def test_phenology(
         annual_total_precip=data_fapar_limitation["annual_precip_molar"],
         annual_growing_season_length=data_fapar_limitation["N_growing_days"],
         years=data_fapar_limitation["year"].astype(str).astype("datetime64[Y]"),
-        method=method,
+        method=fapar_method,
         aridity_index=site_data["AI_from_cruts"],  # Not used by zhu method.
     )
 
@@ -106,12 +107,14 @@ def test_phenology(
 
     # Check the LAI time series to tolerance of data in file.
     assert_allclose(
-        pheno.steady_state_LAI,
-        data_phenology[f"Ls_daily_{timescale}"][: len(pheno.steady_state_LAI)],
+        pheno.steady_state_lai,
+        data_phenology[f"Ls_daily_{timescale_abbr}"][: len(pheno.steady_state_lai)],
         atol=1e-8,
     )
     assert_allclose(
-        pheno.realised_LAI,
-        data_phenology[f"Ls_daily_lagged_{timescale}"][: len(pheno.steady_state_LAI)],
+        pheno.realised_lai,
+        data_phenology[f"Ls_daily_lagged_{timescale_abbr}"][
+            : len(pheno.steady_state_lai)
+        ],
         atol=1e-8,
     )

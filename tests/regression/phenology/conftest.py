@@ -135,7 +135,7 @@ def data_phenology(timescale, method_predictions_dir):
     inputs = pd.read_csv(
         str(
             resources.files(f"pyrealm_build_data.phenology.inputs.{timescale}")
-            / "daily_inputs.csv"
+            / "daily_assimilation.csv"
         )
     )
 
