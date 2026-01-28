@@ -33,7 +33,7 @@ def fapar_limitation_instance(
     argnames="method_predictions_dir, fapar_method, pheno_method",
     argvalues=(
         pytest.param("cai_zhou_method", "cai", "zhou", id="cai_zhou"),
-        # pytest.param("zhu_method", "zhu", "zhu", id="zhu"),
+        pytest.param("zhu_method", "zhu", "zhu", id="zhu"),
     ),
 )
 @pytest.mark.parametrize(
