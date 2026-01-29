@@ -983,7 +983,7 @@ class SubdailyPModel(PModelABC):
         with np.errstate(divide="ignore", invalid="ignore"):
             self.gs = np.where(
                 np.logical_and(self.env.vpd > 0, ca_ci_diff > 0),
-                self.A_c / ca_ci_diff,
+                assimilation / ca_ci_diff,
                 np.nan,
             )
 
