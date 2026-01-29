@@ -3,6 +3,27 @@
 This document provides a brief overview of the main changes to `pyrealm` at each of the
 released versions. More detail can be found at the GitHub release page for each version.
 
+See also the migration page for help in moving between versions.
+
+## 2.0.1
+
+As well as bugfixes, version 2.0.1 is a slight violation of semantic versioning and
+picks up some API and default changes that were overlooked in 2.0.0.
+
+### Bugfixes
+
+- Stomatal conductance in the SubdailyPModel was incorrectly calculated from $A_c$
+  rather than $A = min(A_c, A_j)$ (#603).
+- The P Model implementations were not passing required additional variables down the
+  Arrhenius scaling methods, which stopped some of those methods being usable (#582).
+
+### Changes
+
+- The `pyrealm` package now supports a wider range of functions for calculating water
+  density and viscosity. The default methods used by `pyrealm` have been swapped from
+  computationally complex high-precision methods used in `rpmodel` (think physics labs)
+  to  simpler but much faster approaches.
+
 ## 2.0.0
 
 Version 2.0.0 introduces major breaking changes in the structure of some functionality,
