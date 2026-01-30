@@ -111,6 +111,15 @@ class PhenologyMethodABC(ABC):
 class PhenologyMethodZhou(PhenologyMethodABC, method="zhou"):
     """Blah blah blah."""
 
+    __experimental__ = True
+
+    attrs = (
+        ("steady_state_lai", "-"),
+        ("realised_lai", "-"),
+    )
+
+    requires = tuple()
+
     def __init__(
         self,
         fapar_limitation: FaparLimitationNew,
@@ -179,6 +188,15 @@ class PhenologyMethodZhou(PhenologyMethodABC, method="zhou"):
 class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
     """Blah blah blah."""
 
+    __experimental__ = True
+
+    attrs = (
+        ("steady_state_lai", "-"),
+        ("realised_lai", "-"),
+    )
+
+    requires = ("aet_pet_ratio",)
+
     def __init__(
         self,
         fapar_limitation: FaparLimitationNew,
@@ -190,8 +208,20 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
         self,
         daily_A0: NDArray[np.floating],
         year_index: NDArray[np.int_],
+        **kwargs: NDArray[np.floating],
     ) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
-        """Calculate leaf area indices following Zhou et al."""
+        """Calculate leaf area indices following Zhu et al."""
+
+        # Validate aet pet ratio
+        aet_pet_ratio = kwargs.get("aet_pet_ratio", None)
+
+        if aet_pet_ratio is None:
+            raise ValueError("The zhu method requires an array 'aet_pet_ratio'.")
+
+        if aet_pet_ratio.shape != daily_A0[[0]].shape:
+            raise ValueError(
+                "The 'aet_pet_ratio' ratio must provide site specific values."
+            )
 
         # Calculate the steady state ratio of leaf area index to potential GPP
         phenology_const = self.fapar_limitation.phenology_const
@@ -217,9 +247,50 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
         # Duplicate m ratio for each day and calculate daily mu value as m * daily molar
         # assimilation:
         steady_state_lai = self.lai_to_gpp_ratio_m[year_index] * daily_A0
-        realised_lai = np.zeros_like(steady_state_lai)
 
-        # TBD - apply zhu aet/pet function for realised lai
+        # Calculate the lag length for each site based on the AET/PET ratio
+        aridity_lag_days = np.round(
+            np.clip(
+                aet_pet_ratio * phenology_const.zhu_lagcoef,
+                0.0,
+                phenology_const.zhu_lagmax,
+            )
+        ).astype(int)
+
+        # NOTE: the Zhu code in plmodel_timeseries allows for steps that are not at the
+        #       daily intervals. This is not yet implemented.
+
+        # Add the spin up at the start of the time series - the original implementation
+        # expected annual blocks of data and just tiled the data to double the length,
+        # but here we add a fixed block at the start to allow multiple years.
+        steady_state_with_spinup = np.concatenate(
+            [steady_state_lai[: phenology_const.zhu_spinup_days], steady_state_lai],
+            axis=0,
+        )
+
+        # Get cumulative sums of LAI values and cumulative counts of observations along
+        # the time axis
+        csum_values = np.cumsum(steady_state_with_spinup, axis=0)
+        csum_counts = np.cumsum(np.indices(steady_state_with_spinup.shape)[0])
+
+        # Calculate the lagged versions of those arrays. Each site has a set of zeros
+        # added at the start of the time series along axis 0, but the length of the set
+        # varies by site. Currently this iterates over sites - inefficient but I can't
+        # think of a better way to approach it.
+        csum_values_offset = np.zeros_like(csum_values)
+        csum_counts_offset = np.zeros_like(csum_counts)
+
+        # Get an index over the combinations of other axes - i.e. over sites
+        site_index = np.ndindex(csum_values[0].shape)
+
+        for idx in site_index:
+            fill_start = aridity_lag_days[*idx].item() + 1
+            csum_values_offset[fill_start:, *idx] = csum_values[:-fill_start, *idx]
+            csum_counts_offset[fill_start:, *idx] = csum_counts[:-fill_start, *idx]
+
+        realised_lai = (csum_values - csum_values_offset) / (
+            csum_counts - csum_counts_offset
+        )
 
         return steady_state_lai, realised_lai
 
@@ -235,12 +306,17 @@ class PhenologyNew:
         datetimes: NDArray[np.datetime64],
         fapar_limitation: FaparLimitationNew,
         method: str = "zhou",
+        **kwargs: NDArray[np.floating],
     ):
         # Experimental class
         warn_experimental(self.__class__.__name__)
 
         # Check the array input shapes
-        check_input_shapes(daily_gpp, datetimes)
+        check_input_shapes(
+            daily_gpp,
+            datetimes,
+            *kwargs.values(),
+        )
 
         # Check the datetimes provide ordered daily resolution observations - don't
         # insist on daily precision but check that second level representations of the
@@ -266,7 +342,7 @@ class PhenologyNew:
                 f"fapar_limitation data: {', '.join([str(y) for y in missing_years])}"
             )
 
-        # Store values
+        # Store fapar_limitation class
         self.fapar_limitation = fapar_limitation
         """The annual maximum fAPAR and LAI data used in the model."""
 
@@ -298,6 +374,6 @@ class PhenologyNew:
 
         self.steady_state_lai, self.realised_lai = (
             phenology_method.calculate_leaf_area_index(
-                daily_A0=daily_gpp, year_index=year_index
+                daily_A0=daily_gpp, year_index=year_index, **kwargs
             )
         )
