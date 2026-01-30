@@ -7,7 +7,7 @@ version = "2.0.0"
 
 dependencies = [
   "dacite (>1.6.0)",
-  "numpy (>=2.1)",
+  "numpy (==2.3.2)",
   "scipy (>=1.7.3)",
   "tabulate (>=0.8.10)",
   "marshmallow (>=3.22.0)",
@@ -31,6 +31,7 @@ authors = [
   {name = "Arne Scheire", email = "scheirearne@gmail.com"},
   {name = "Sally Matson", email = "sally.matson21@imperial.ac.uk"},
   {name = "Sam Avis", email = "sa2329@cam.ac.uk"},
+  {name = "Adeleke Bankole", email = "ab3191@cam.ac.uk"},
 ]
 
 classifiers = [
