@@ -44,7 +44,7 @@ def fapar_limitation_instance(
         pytest.param("ft", id="fortnightly"),
     ),
 )
-def test_phenology(
+def test_phenology_cai_zhou(
     daily_assimilation,
     fapar_limitation_instance,
     daily_lai_predictions,
@@ -81,10 +81,80 @@ def test_phenology(
         daily_lai_predictions[f"Ls_daily_{timescale}"][: len(pheno.steady_state_lai)],
         atol=1e-8,
     )
-    # assert_allclose(
-    #     pheno.realised_lai,
-    #     daily_lai_predictions[f"Ls_daily_lagged_{timescale}"][
-    #         : len(pheno.realised_lai)
-    #     ],
-    #     atol=1e-8,
-    # )
+    assert_allclose(
+        pheno.realised_lai,
+        daily_lai_predictions[f"Ls_daily_lagged_{timescale}"][
+            : len(pheno.realised_lai)
+        ],
+        atol=1e-8,
+    )
+
+
+@pytest.mark.parametrize(
+    argnames="method_predictions_dir, fapar_method, pheno_method",
+    argvalues=(pytest.param("zhu_method", "zhu", "zhu", id="zhu"),),
+)
+@pytest.mark.parametrize(
+    argnames="timescale",
+    argvalues=(
+        pytest.param("hh", id="subdaily"),
+        pytest.param("ft", id="fortnightly"),
+    ),
+)
+def test_phenology_zhu(
+    site_data,
+    daily_assimilation,
+    fapar_limitation_instance,
+    daily_lai_predictions,
+    method_predictions_dir,
+    fapar_method,  # Parametrizes fapar_limitation_instance fixture
+    pheno_method,
+    # Timescale argument also parametrises fapar_limitation_instance, daily_assimilation
+    # and daily_lai_predictions fixtures
+    timescale,
+):
+    """Regression test for PhenologyMethodZhu.
+
+    This is separated from the test above because the original code implementation only
+    handles a single year of values at a time, so the pyrealm implementation has to be
+    run in annual blocks to match the original test.
+    """
+
+    from pyrealm.phenology.phenology_new import PhenologyNew
+
+    steady_state_lai = []
+    realised_lai = []
+
+    year_values = daily_assimilation["time"].astype("datetime64[Y]")
+    years = np.unique(year_values)
+
+    for year in years:
+        year_indices = np.where(year_values == year)
+
+        pheno = PhenologyNew(
+            daily_gpp=daily_assimilation["daily_A0"][year_indices],
+            datetimes=daily_assimilation["time"][year_indices].astype("datetime64[D]"),
+            fapar_limitation=fapar_limitation_instance,
+            method=pheno_method,
+            aet_pet_ratio=np.array([site_data["aet_pet_ratio"]]),
+        )
+
+        steady_state_lai.append(pheno.steady_state_lai)
+        realised_lai.append(pheno.realised_lai)
+
+    # Combine the annual blocked predictions back into the single time series
+    steady_state_lai = np.concatenate(steady_state_lai)
+    realised_lai = np.concatenate(realised_lai)
+
+    # Check the LAI time series to tolerance of data in file.
+    # Fortnightly data is truncated by the last fortnight so need to truncate to match
+    assert_allclose(
+        steady_state_lai,
+        daily_lai_predictions[f"Ls_daily_{timescale}"][: len(steady_state_lai)],
+        atol=1e-8,
+    )
+    assert_allclose(
+        realised_lai,
+        daily_lai_predictions[f"Ls_daily_lagged_{timescale}"][: len(realised_lai)],
+        atol=1e-8,
+    )

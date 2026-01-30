@@ -261,8 +261,9 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
         #       daily intervals. This is not yet implemented.
 
         # Add the spin up at the start of the time series - the original implementation
-        # expected annual blocks of data and just tiled the data to double the length,
-        # but here we add a fixed block at the start to allow multiple years.
+        # expected annual blocks of data and just tiled the data to double the length
+        # and hence give a single year spin up to the year of data. Here we add a fixed
+        # block at the start to allow multiple years.
         steady_state_with_spinup = np.concatenate(
             [steady_state_lai[: phenology_const.zhu_spinup_days], steady_state_lai],
             axis=0,
@@ -291,6 +292,9 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
         realised_lai = (csum_values - csum_values_offset) / (
             csum_counts - csum_counts_offset
         )
+
+        # Remove the spin up data along the first axis
+        realised_lai = realised_lai[phenology_const.zhu_spinup_days :]
 
         return steady_state_lai, realised_lai
 
