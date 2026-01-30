@@ -112,7 +112,8 @@ with a message indicating whether the new code is faster or has similar performa
 
 ```sh
 cd profiling
-poetry run performance_regression_checking.sh
+chmod +x performance_regression_checking.sh
+poetry run ./performance_regression_checking.sh
 ```
 
 To look deeper into how much time is spent in each function, the command
