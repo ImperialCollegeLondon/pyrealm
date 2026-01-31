@@ -32,7 +32,7 @@ SHAPES_LIST = [
     [(3, 1, 1), (1, 2, 2), (3, 2, 2)],
     [(1, 1, 1)],
 ]
-METHOD_LIST = get_method_list()
+METHOD_LIST = get_method_list("numpy")
 
 
 @pytest.mark.broadcasting
@@ -78,7 +78,7 @@ def test_array_input_broadcasting(
             result_full = method2(**generate_args(method, ctx_full))
 
         # Fail if attributes not equal
-        compare_instances(instance1, instance2)
+        compare_instances(instance1, instance2, broadcast=True)
 
     # If a function / static method
     else:
@@ -87,6 +87,6 @@ def test_array_input_broadcasting(
         result_full = method(**generate_args(method, ctx_full))
 
     # Fail if function outputs not equal
-    if not is_equal(result, result_full):
+    if not is_equal(result, result_full, broadcast=True):
         result_comparison = comparison_string(result, result_full)
         raise ValueError(f"Results do not match in {name} ({result_comparison})")

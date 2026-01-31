@@ -52,6 +52,7 @@ from types import ModuleType, UnionType
 from typing import Any, Union, get_args, get_origin
 
 import numpy as np
+import xarray as xr
 from numpy.typing import DTypeLike, NDArray
 
 import pyrealm
@@ -109,7 +110,7 @@ SKIP_METHODS = [
 ]
 
 
-# Ignore these outputs, they are not expected to be equal.
+# Ignore these outputs for broadcasting tests, they are not expected to be equal.
 # Formats: [fn name] for function results, [class]:[attr] for class attributes
 IGNORE_OUTPUTS = [
     "Cohorts:_cohort_id",
@@ -434,8 +435,11 @@ def _get_module_callables(
                 yield full_name, method, class_obj
 
 
-def get_method_list() -> list[tuple[str, Callable, type | None]]:
-    """Get a list of callables that take array inputs in the Pyrelam package.
+def get_method_list(array_type: str) -> list[tuple[str, Callable, type | None]]:
+    """Get a list of callables that take array inputs in the Pyrealm package.
+
+    Args:
+        array_type: The type of array inputs to look for. "numpy" or "ArrayType".
 
     Returns:
         A list of callables, each containing the name ([function] or [class].[method]),
@@ -450,7 +454,7 @@ def get_method_list() -> list[tuple[str, Callable, type | None]]:
                 if not isinstance(attr, staticmethod):
                     continue
 
-            if _has_array_input(method) and name not in SKIP_METHODS:
+            if _has_array_input(method, array_type) and name not in SKIP_METHODS:
                 method_list.append((name, method, cls))
     return method_list
 
@@ -469,14 +473,9 @@ def _strip_wrapped_types(typ: Any) -> Any:
     return typ
 
 
-def _is_array_type(typ: Any) -> bool:
-    """Returns True if the type is a numpy array."""
-    typ = _strip_wrapped_types(typ)
-
-    # If Union[...] or X | Y then check both types
+def _is_numpy_type(typ: Any) -> bool:
+    """Returns True if the type is a numpy array. Prefer _is_array_type."""
     origin = get_origin(typ)  # Get the unannotated type, i.e. X[...] -> X
-    if origin in (Union, UnionType):
-        return any(_is_array_type(arg) for arg in get_args(typ))
 
     try:
         # Handle annotated types like NDArray[np.float32]
@@ -490,12 +489,46 @@ def _is_array_type(typ: Any) -> bool:
         return False
 
 
+def _is_array_type(typ: Any, array_type: str) -> bool:
+    """Returns True if the type is a numpy array or ArrayType."""
+    typ = _strip_wrapped_types(typ)
+    origin = get_origin(typ)  # Get the unannotated type, i.e. X[...] -> X
+
+    # If Union[...] or X | Y then convert to an array of argument types
+    if origin in (Union, UnionType):
+        args = get_args(typ)
+    else:
+        args = (typ,)
+
+    # Check for the different argument types
+    has_numpy = False
+    has_xarray = False
+    for arg in args:
+        if _is_numpy_type(arg):
+            has_numpy = True
+
+        elif arg is xr.DataArray:
+            has_xarray = True
+
+    # Determine if it has the correct argument types for the given 'array_type'
+    if array_type == "numpy":
+        if has_numpy:
+            return True
+    elif array_type == "ArrayType":
+        if has_numpy and has_xarray:
+            return True
+    else:
+        raise ValueError("Invalid array_type. Use 'numpy' or 'ArrayType'.")
+
+    return False
+
+
 # Resolve issue with get_type_hints failing for InitVars in py3.10
 # Define a stub to make InitVar callable (https://stackoverflow.com/questions/70400639)
 InitVar.__call__ = lambda *args: None  # type: ignore[method-assign]
 
 
-def _has_array_input(method: Callable) -> bool:
+def _has_array_input(method: Callable, array_type: str) -> bool:
     """Returns True if any of the method arguments are a numpy array."""
     from typing import get_type_hints
 
@@ -505,7 +538,7 @@ def _has_array_input(method: Callable) -> bool:
     except NameError:
         return False
 
-    return any(_is_array_type(typ) for typ in hints.values())
+    return any(_is_array_type(typ, array_type) for typ in hints.values())
 
 
 def _extract_numpy_dtype(typ: Any) -> DTypeLike:
@@ -540,13 +573,19 @@ def _extract_numpy_dtype(typ: Any) -> DTypeLike:
 class Context:
     """Context class to pass between functions.
 
-    Used to initialise arguments that depend on array shapes or for manual overrides
-    that rely upon the hierarchy of function/argument definitions.
+    Used to define test-specific options for generating arguments, such as shapes and
+    types of arrays. Also, provides the argument definition hierarchy for use in
+    'defined_method_args'.
 
     Attributes:
         name (str): Name of the current method/function/class.
         shapes (list[tuple[int, ...]]): Shapes to iterate over when generating array
             arguments.
+        array_type (Callable[[Any], Any], optional): The type to initialise arrays as.
+            This will default to numpy arrays.
+        array_dims_list (list[tuple[str, ...]], optional): List of dimension names to
+            iterate over when initialising arrays with compatible 'array_type', e.g.
+            xarray. Access using 'array_dims()'.
         i_arg (int): Index of the current argument, used to select a shape.
         parents (list[str]): Hierarchy of names leading to the current function/class.
             The first value will be the name of the callable being tested. If it is a
@@ -555,21 +594,53 @@ class Context:
 
     name: str
     shapes: list[tuple[int, ...]]
+    array_type: Callable[[Any], Any] | None = None
+    array_dims_list: list[tuple[str, ...]] | None = None
     i_arg: int = 0
     parents: list[str] = field(default_factory=list)
     """A list of the superior function / classes for the current context."""
 
     def new(self, name: str) -> Context:
         """Generate a context for a new function/class, updating the hierarchy."""
-        return Context(name, self.shapes, self.i_arg, [*self.parents, self.name])
+        return Context(
+            name=name,
+            shapes=self.shapes,
+            array_type=self.array_type,
+            array_dims_list=self.array_dims_list,
+            i_arg=self.i_arg,
+            parents=[*self.parents, self.name],
+        )
 
     def shape(self) -> tuple[int, ...]:
         """Return the shape for index `i_arg`."""
         return self.shapes[self.i_arg % len(self.shapes)]
 
+    @property
+    def array_dims(self) -> tuple[str, ...]:
+        """Return the array_dims_list for index `i_arg`."""
+        assert self.array_dims_list is not None
+        return self.array_dims_list[self.i_arg % len(self.array_dims_list)]
+
     def bcast_shape(self) -> tuple[int, ...]:
         """The broadcast shape of all inputs (not the full shape being tested)."""
-        return np.broadcast_shapes(*self.shapes)
+
+        if not self.array_dims_list:
+            return np.broadcast_shapes(*self.shapes)
+
+        # If using dimension names the shapes may not be directly broadcastable
+        else:
+            # Get the full list of dimension names
+            full_dims = list(self.array_dims_list[0])
+            for dims in self.array_dims_list[1:]:
+                full_dims.extend([d for d in dims if d not in full_dims])
+            # Expand/reorder all shapes to match the full dimensions
+            full_shapes = []
+            for shape, dims in zip(self.shapes, self.array_dims_list):
+                shape_map = dict(zip(dims, shape))
+                full_shape = tuple(shape_map.get(dim, 1) for dim in full_dims)
+                full_shapes.append(full_shape)
+            # Get the full broadcast shape
+            return np.broadcast_shapes(*full_shapes)
 
 
 def _initialise_type_default(typ: Any, ctx: Context) -> Any:
@@ -592,14 +663,14 @@ def _initialise_type_default(typ: Any, ctx: Context) -> Any:
     # If Union[...] or X | Y: Create an array if an option, otherwise use the first type
     if origin in (Union, UnionType):
         for arg in args:
-            if _is_array_type(arg):
+            if _is_array_type(arg, "numpy"):
                 return _initialise_type_default(arg, ctx)
         return _initialise_type_default(args[0], ctx)
 
     pft_names = ["Tree1", "Tree2", "Tree3"]
 
     # Numpy arrays
-    if _is_array_type(typ):
+    if _is_array_type(typ, "numpy"):
         dtype = _extract_numpy_dtype(typ)
         shape = ctx.shape()
         if np.issubdtype(dtype, np.datetime64):
@@ -661,17 +732,25 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
     for param_name, param in params.items():
         ctx.i_arg += 1
 
-        # Set manually defined values
-        manual_arg = defined_method_args(param_name, ctx)
-        if manual_arg is not None:
-            kwargs[param_name] = manual_arg
-
         # Skip unnecessary arguments
-        elif param_name == "self" or param.kind in (
+        if param_name == "self" or param.kind in (
             param.VAR_POSITIONAL,
             param.VAR_KEYWORD,
         ):
             continue
+
+        if param.annotation is param.empty:
+            raise Exception(f"Missing annotation for {ctx.name}:{param_name}")
+
+        # Resolve any string annotations using the global namespace
+        typ = get_type_hints(method, globalns=GLOBALNS).get(
+            param_name, param.annotation
+        )
+
+        # Set manually defined values
+        manual_arg = defined_method_args(param_name, ctx)
+        if manual_arg is not None:
+            kwargs[param_name] = manual_arg
 
         # Set default arguments
         elif param.default is not param.empty:
@@ -679,19 +758,21 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
 
         # Initialise any other arguments
         else:
-            if param.annotation is param.empty:
-                raise Exception(f"Missing annotation for {ctx.name}:{param_name}")
-
-            # Resolve any string annotations using the global namespace
-            typ = get_type_hints(method, globalns=GLOBALNS).get(
-                param_name, param.annotation
-            )
             kwargs[param_name] = _initialise_type_default(typ, ctx)
 
             # Adjust values where np.ones causes an issue
             match param_name:
                 case "tk":
                     kwargs[param_name] += 273.15
+
+        # If using a different array type, convert numpy arrays to this
+        if (
+            ctx.array_type is not None
+            and _is_array_type(typ, "ArrayType")
+            and _is_numpy_type(kwargs[param_name])
+        ):
+            array_kwargs = {"dims": ctx.array_dims}
+            kwargs[param_name] = ctx.array_type(kwargs[param_name], **array_kwargs)
 
     return kwargs
 
@@ -720,23 +801,28 @@ def initialise_class(cls: type, ctx: Context) -> Any:
 
 
 ## Functions to compare the results
-def is_equal(val1: Any, val2: Any) -> bool:
-    """Compare if two variables are equal."""
-    if isinstance(val1, np.ndarray):
+def is_equal(val1: Any, val2: Any, broadcast: bool = False) -> bool:
+    """Compare if two variables are equal. Optionally, broadcast to same shape."""
+
+    if type(val1) is not type(val2):
+        return False
+
+    if hasattr(val1, "__array__"):
+        if broadcast:
+            val1, val2 = np.broadcast_arrays(val1, val2)
+
         if np.issubdtype(val1.dtype, np.str_):
             return np.array_equal(val1, val2)
-        val1_b, val2_b = np.broadcast_arrays(val1, val2)
-        equal = val1_b == val2_b
-        both_nan = np.isnan(val1_b) & np.isnan(val2_b)
-        return bool(np.all(equal | both_nan))
+        else:
+            return np.array_equal(val1, val2, equal_nan=True)
 
     elif isinstance(val1, list | tuple) and isinstance(val2, list | tuple):
         if len(val1) != len(val2):
             return False
-        return all(is_equal(v1, v2) for v1, v2 in zip(val1, val2))
+        return all(is_equal(v1, v2, broadcast) for v1, v2 in zip(val1, val2))
 
     elif hasattr(val1, "__dict__") and hasattr(val2, "__dict__"):
-        compare_instances(val1, val2)  # Raises if not equal
+        compare_instances(val1, val2, broadcast)  # Raises if not equal
         return True
 
     else:
@@ -747,7 +833,7 @@ def comparison_string(val1: Any, val2: Any) -> str:
     """Returns a string representation of two variables that are not equal."""
 
     def value_string(val: Any) -> str:
-        if isinstance(val, np.ndarray) and val.size > 5:
+        if hasattr(val, "__array__") and val.size > 5:
             val_str = f"<array> {val.shape}"
         else:
             val_str = str(val).replace("\n", " ")
@@ -757,20 +843,24 @@ def comparison_string(val1: Any, val2: Any) -> str:
     return value_string(val1) + " != " + value_string(val2)
 
 
-def compare_instances(instance1: Any, instance2: Any):
+def compare_instances(instance1: Any, instance2: Any, broadcast: bool = False):
     """Raises ValueError if the two class instances do not have equal attributes.
 
-    This function ignores the shape attribute of any class, which is not expected to
-    broadcast, and anything in the manually defined list IGNORE_OUTPUTS.
+    Set `broadcast=True` to broadcast attributes to a common shape for comparison.
+
+    If broadcasting, this function ignores the 'shape' attribute of any class, which is
+    not expected to broadcast, and anything in the manually defined list IGNORE_OUTPUTS.
     """
     dict1 = instance1.__dict__
     dict2 = instance2.__dict__
     class_name = instance1.__class__.__name__
     for key in dict1:
-        if key == "shape":
-            continue
-        if f"{class_name}:{key}" in IGNORE_OUTPUTS:
-            continue
-        if not is_equal(dict1[key], dict2[key]):
+        if broadcast:
+            if key == "shape":
+                continue
+            if f"{class_name}:{key}" in IGNORE_OUTPUTS:
+                continue
+
+        if not is_equal(dict1[key], dict2[key], broadcast):
             attr_comparison = comparison_string(dict1[key], dict2[key])
             raise ValueError(f"{class_name}: {key} not equal ({attr_comparison})")
