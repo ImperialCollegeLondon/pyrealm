@@ -27,7 +27,7 @@ functions listed below:
    - `initialise_class`
    - `Context` - To keep track of the array shapes and when checking values in section 1
 5. To compare the function outputs / class attributes.
-   - `is_equal`
+   - `assert_is_equal`
    - `compare_instances`
 
 The functions that are not used in `test_broadcasting` and are only used within this
@@ -123,7 +123,7 @@ IGNORE_OUTPUTS = [
 # to the method signature.
 
 
-def kwarg_params(names: tuple[str, ...]) -> dict[str, Parameter]:
+def _kwarg_params(names: tuple[str, ...]) -> dict[str, Parameter]:
     """Creates a dictionary containing inspect.Parameter instances."""
     return {
         name: Parameter(
@@ -142,46 +142,46 @@ REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
             "OptimalChiC4RootzoneStress.estimate_chi",
             "OptimalChiC4RootzoneStress",
         ),
-    ): kwarg_params(("rootzonestress",)),
+    ): _kwarg_params(("rootzonestress",)),
     (
         "PModelEnvironment",
         (
             "OptimalChiC4NoGammaRootzoneStress.estimate_chi",
             "OptimalChiC4NoGammaRootzoneStress",
         ),
-    ): kwarg_params(("rootzonestress",)),
+    ): _kwarg_params(("rootzonestress",)),
     (
         "PModelEnvironment",
         (
             "OptimalChiPrentice14RootzoneStress.estimate_chi",
             "OptimalChiPrentice14RootzoneStress",
         ),
-    ): kwarg_params(("rootzonestress",)),
+    ): _kwarg_params(("rootzonestress",)),
     (
         "PModelEnvironment",
         (
             "OptimalChiLavergne20C3.estimate_chi",
             "OptimalChiLavergne20C3",
         ),
-    ): kwarg_params(("theta",)),
+    ): _kwarg_params(("theta",)),
     (
         "PModelEnvironment",
         (
             "OptimalChiLavergne20C4.estimate_chi",
             "OptimalChiLavergne20C4",
         ),
-    ): kwarg_params(("theta",)),
+    ): _kwarg_params(("theta",)),
     (
         "PModelEnvironment",
         ("QuantumYieldSandoval", "QuantumYieldSandoval"),
-    ): kwarg_params(("aridity_index", "mean_growth_temperature")),
+    ): _kwarg_params(("aridity_index", "mean_growth_temperature")),
     (
         "PModelEnvironment",
         (
             "QuantumYieldSandoval.peak_quantum_yield",
             "QuantumYieldSandoval",
         ),
-    ): kwarg_params(("aridity_index", "mean_growth_temperature")),
+    ): _kwarg_params(("aridity_index", "mean_growth_temperature")),
 }
 
 
@@ -379,7 +379,7 @@ def _get_package_modules(pkg: ModuleType) -> list[ModuleType]:
     return modules
 
 
-def global_namespace():
+def _global_namespace():
     """Extract the global namespace for the package.
 
     Provides the contexts of the pyrealm classes to pass to get_type_hints.
@@ -392,7 +392,7 @@ def global_namespace():
     return globalns
 
 
-GLOBALNS = global_namespace()
+_GLOBALNS = _global_namespace()
 
 
 def _is_instance_method(cls: type | None, method_name: str) -> bool:
@@ -743,7 +743,7 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
             raise Exception(f"Missing annotation for {ctx.name}:{param_name}")
 
         # Resolve any string annotations using the global namespace
-        typ = get_type_hints(method, globalns=GLOBALNS).get(
+        typ = get_type_hints(method, globalns=_GLOBALNS).get(
             param_name, param.annotation
         )
 
@@ -801,7 +801,7 @@ def initialise_class(cls: type, ctx: Context) -> Any:
 
 
 ## Functions to compare the results
-def is_equal(val1: Any, val2: Any, broadcast: bool = False) -> bool:
+def _is_equal(val1: Any, val2: Any, broadcast: bool = False) -> bool:
     """Compare if two variables are equal. Optionally, broadcast to same shape."""
 
     if type(val1) is not type(val2):
@@ -819,7 +819,7 @@ def is_equal(val1: Any, val2: Any, broadcast: bool = False) -> bool:
     elif isinstance(val1, list | tuple) and isinstance(val2, list | tuple):
         if len(val1) != len(val2):
             return False
-        return all(is_equal(v1, v2, broadcast) for v1, v2 in zip(val1, val2))
+        return all(_is_equal(v1, v2, broadcast) for v1, v2 in zip(val1, val2))
 
     elif hasattr(val1, "__dict__") and hasattr(val2, "__dict__"):
         compare_instances(val1, val2, broadcast)  # Raises if not equal
@@ -829,7 +829,7 @@ def is_equal(val1: Any, val2: Any, broadcast: bool = False) -> bool:
         return val1 == val2
 
 
-def comparison_string(val1: Any, val2: Any) -> str:
+def _comparison_string(val1: Any, val2: Any) -> str:
     """Returns a string representation of two variables that are not equal."""
 
     def value_string(val: Any) -> str:
@@ -841,6 +841,14 @@ def comparison_string(val1: Any, val2: Any) -> str:
         return val_str
 
     return value_string(val1) + " != " + value_string(val2)
+
+
+def assert_is_equal(val1: Any, val2: Any, raise_msg: str, broadcast: bool = False):
+    """Raise if two variables are not equal. Optionally, broadcast to same shape."""
+
+    if not _is_equal(val1, val2, broadcast):
+        attr_comparison = _comparison_string(val1, val2)
+        raise ValueError(f"{raise_msg} ({attr_comparison})")
 
 
 def compare_instances(instance1: Any, instance2: Any, broadcast: bool = False):
@@ -861,6 +869,5 @@ def compare_instances(instance1: Any, instance2: Any, broadcast: bool = False):
             if f"{class_name}:{key}" in IGNORE_OUTPUTS:
                 continue
 
-        if not is_equal(dict1[key], dict2[key], broadcast):
-            attr_comparison = comparison_string(dict1[key], dict2[key])
-            raise ValueError(f"{class_name}: {key} not equal ({attr_comparison})")
+        raise_msg = f"{class_name}: {key} not equal"
+        assert_is_equal(dict1[key], dict2[key], raise_msg, broadcast)

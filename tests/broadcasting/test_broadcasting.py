@@ -16,12 +16,11 @@ import pytest
 
 from tests.broadcasting.utils import (
     Context,
+    assert_is_equal,
     compare_instances,
-    comparison_string,
     generate_args,
     get_method_list,
     initialise_class,
-    is_equal,
 )
 
 SHAPE_FULL: list[tuple[int, ...]]
@@ -87,6 +86,5 @@ def test_array_input_broadcasting(
         result_full = method(**generate_args(method, ctx_full))
 
     # Fail if function outputs not equal
-    if not is_equal(result, result_full, broadcast=True):
-        result_comparison = comparison_string(result, result_full)
-        raise ValueError(f"Results do not match in {name} ({result_comparison})")
+    raise_msg = f"Results do not match in {name}"
+    assert_is_equal(result, result_full, raise_msg, broadcast=True)

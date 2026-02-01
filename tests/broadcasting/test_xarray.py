@@ -12,12 +12,11 @@ import xarray as xr
 
 from tests.broadcasting.utils import (
     Context,
+    assert_is_equal,
     compare_instances,
-    comparison_string,
     generate_args,
     get_method_list,
     initialise_class,
-    is_equal,
 )
 
 SHAPES_LIST: list[list[tuple[int, ...]]] = [
@@ -83,6 +82,4 @@ def test_xarray_input(
         result_np = method(**generate_args(method, ctx_np))
 
     # Fail if function outputs not equal
-    if not is_equal(result_xr, result_np):
-        result_comparison = comparison_string(result_xr, result_np)
-        raise ValueError(f"Results do not match in {name} ({result_comparison})")
+    assert_is_equal(result_xr, result_np, raise_msg=f"Results do not match in {name}")
