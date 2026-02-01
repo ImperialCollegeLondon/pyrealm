@@ -1,13 +1,13 @@
-"""Contains utility functions used in test_broadcasting.py.
+"""Contains utility functions used in the tests for array inputs.
 
-The structure of the test is:
+The structure of the tests are:
 - Iterate through the methods / functions of the library.
-- Generate input arguments according to their type hint, with the shape of array
-  arguments defined. This may be called recursively for some types.
+- Generate input arguments according to their type hint, with the shape and type of
+  array arguments defined. This may be called recursively for some types.
 - Check if the function is a class method, if so instantiate the class using the
   same approach.
-- Call the function once with broadcastable array shapes and once with the fully
-  broadcast inputs. And check the result is the same (but not necessarily the shape).
+- Call the function twice with different (but equivalent) array inputs and check the
+  result is the same (but not necessarily the shape).
 - For class methods also check the class attributes are equivalent.
 
 The functions / objects in this file are broadly split into five sections. With the main
@@ -30,8 +30,8 @@ functions listed below:
    - `assert_is_equal`
    - `compare_instances`
 
-The functions that are not used in `test_broadcasting` and are only used within this
-file are marked private.
+The functions that are only used internally in this module are marked private with a
+leading underscore.
 """
 
 from __future__ import annotations

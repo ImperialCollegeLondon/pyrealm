@@ -14,7 +14,7 @@ from collections.abc import Callable
 
 import pytest
 
-from tests.broadcasting.utils import (
+from tests.array_inputs.utils import (
     Context,
     assert_is_equal,
     compare_instances,
@@ -34,7 +34,7 @@ SHAPES_LIST = [
 METHOD_LIST = get_method_list("numpy")
 
 
-@pytest.mark.broadcasting
+@pytest.mark.array_inputs
 @pytest.mark.parametrize("shapes", SHAPES_LIST)
 @pytest.mark.parametrize("method_info", METHOD_LIST, ids=[m[0] for m in METHOD_LIST])
 @pytest.mark.filterwarnings("ignore::ExperimentalFeatureWarning")
