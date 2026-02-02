@@ -6,9 +6,7 @@ using xarray.DataArrays instead of numpy arrays.
 
 from collections.abc import Callable
 
-import numpy as np
 import pytest
-import xarray as xr
 
 from tests.array_inputs.utils import (
     Context,
@@ -20,12 +18,12 @@ from tests.array_inputs.utils import (
 )
 
 SHAPES_LIST: list[list[tuple[int, ...]]] = [
-    [(3, 2, 2), (1, 2, 2), (3, 1, 1), (1, 1, 1)],
-    [(3, 2, 2), (2, 2), (3,), (1,)],
+    [(2, 3, 4), (1, 3, 4), (2, 1, 1), (1, 1, 1)],
+    [(2, 3, 4), (4, 3), (2,), (3,)],
 ]
 DIMS_LIST = [
-    [],
-    [("a", "b", "c"), ("b", "c"), ("a"), ("b")],
+    [("a", "b", "c")],
+    [("a", "b", "c"), ("c", "b"), ("a"), ("b")],
 ]
 METHOD_LIST = get_method_list("ArrayType")
 
@@ -50,8 +48,8 @@ def test_xarray_input(
     name, method, cls = method_info
 
     # Define the Contexts with the options for creating the arrays
-    ctx_xr = Context(name, shapes, array_type=xr.DataArray, array_dims_list=dims_list)
-    ctx_np = Context(name, SHAPES_LIST[0], array_type=np.array)
+    ctx_xr = Context(name, shapes, array_type="xarray", array_dims_list=dims_list)
+    ctx_np = Context(name, SHAPES_LIST[0], array_type="numpy")
 
     # If a class method (initialises class and compares attributes)
     if cls is not None:

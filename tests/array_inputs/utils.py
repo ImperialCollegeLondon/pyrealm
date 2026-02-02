@@ -581,8 +581,8 @@ class Context:
         name (str): Name of the current method/function/class.
         shapes (list[tuple[int, ...]]): Shapes to iterate over when generating array
             arguments.
-        array_type (Callable[[Any], Any], optional): The type to initialise arrays as.
-            This will default to numpy arrays.
+        array_type (str, optional): The type to initialise arrays as. "xarray" or
+            "numpy". Defaults to "numpy".
         array_dims_list (list[tuple[str, ...]], optional): List of dimension names to
             iterate over when initialising arrays with compatible 'array_type', e.g.
             xarray. Access using 'array_dims()'.
@@ -594,7 +594,7 @@ class Context:
 
     name: str
     shapes: list[tuple[int, ...]]
-    array_type: Callable[[Any], Any] | None = None
+    array_type: str = "numpy"
     array_dims_list: list[tuple[str, ...]] | None = None
     i_arg: int = 0
     parents: list[str] = field(default_factory=list)
@@ -618,8 +618,10 @@ class Context:
     @property
     def array_dims(self) -> tuple[str, ...]:
         """Return the array_dims_list for index `i_arg`."""
-        assert self.array_dims_list is not None
-        return self.array_dims_list[self.i_arg % len(self.array_dims_list)]
+        if self.array_dims_list:
+            return self.array_dims_list[self.i_arg % len(self.array_dims_list)]
+        else:
+            return ()
 
     def bcast_shape(self) -> tuple[int, ...]:
         """The broadcast shape of all inputs (not the full shape being tested)."""
@@ -727,17 +729,17 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
     if required_args is not None:
         params.update(required_args)
 
-    ctx.i_arg = 0
+    ctx.i_arg = -1
 
     for param_name, param in params.items():
-        ctx.i_arg += 1
-
         # Skip unnecessary arguments
         if param_name == "self" or param.kind in (
             param.VAR_POSITIONAL,
             param.VAR_KEYWORD,
         ):
             continue
+
+        ctx.i_arg += 1
 
         if param.annotation is param.empty:
             raise Exception(f"Missing annotation for {ctx.name}:{param_name}")
@@ -766,13 +768,17 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
                     kwargs[param_name] += 273.15
 
         # If using a different array type, convert numpy arrays to this
-        if (
-            ctx.array_type is not None
-            and _is_array_type(typ, "ArrayType")
-            and _is_numpy_type(kwargs[param_name])
+        if _is_array_type(typ, "ArrayType") and isinstance(
+            kwargs[param_name], np.ndarray
         ):
-            array_kwargs = {"dims": ctx.array_dims}
-            kwargs[param_name] = ctx.array_type(kwargs[param_name], **array_kwargs)
+            if ctx.array_type == "numpy":
+                kwargs[param_name] = np.array(kwargs[param_name])
+            elif ctx.array_type == "xarray":
+                if kwargs[param_name].ndim == len(ctx.array_dims):
+                    array_kwargs = {"dims": ctx.array_dims}
+                else:
+                    array_kwargs = {}
+                kwargs[param_name] = xr.DataArray(kwargs[param_name], **array_kwargs)
 
     return kwargs
 
