@@ -134,7 +134,7 @@ def test_phenology_zhu(
         year_indices = np.where(year_values == year)[0]
 
         pheno = PhenologyNew(
-            daily_gpp=daily_assimilation["daily_A0"][year_indices],
+            daily_potential_assimilation=daily_assimilation["daily_A0"][year_indices],
             datetimes=daily_assimilation["time"][year_indices].astype("datetime64[D]"),
             fapar_limitation=fapar_limitation_instance,
             method=pheno_method,
@@ -160,4 +160,133 @@ def test_phenology_zhu(
         realised_lai,
         daily_lai_predictions[f"Ls_daily_lagged_{timescale}"][: len(realised_lai)],
         atol=1e-8,
+    )
+
+
+@pytest.mark.parametrize(
+    argnames="method_predictions_dir, method",
+    argvalues=(
+        pytest.param("cai_zhou_method", "cai", id="cai"),
+        # pytest.param("zhu_method", "zhu", id="zhu"),
+    ),
+)
+@pytest.mark.parametrize(
+    argnames="timescale",
+    argvalues=(
+        pytest.param("hh", id="subdaily"),
+        pytest.param("ft", id="fortnightly"),
+    ),
+)
+def test_phenology_frompmodel(
+    site_data,
+    pmodel_inputs,
+    pmodel_outputs,
+    daily_assimilation,
+    fapar_max_predictions,
+    daily_lai_predictions,
+    method_predictions_dir,
+    method,
+    timescale,
+):
+    """Regression test for  FaparLimitation.from_pmodel class method."""
+
+    from pyrealm.phenology.fapar_limitation_new import FaparLimitationNew
+    from pyrealm.phenology.phenology_new import PhenologyNew
+    from pyrealm.pmodel import (
+        AcclimationModel,
+        PModel,
+        PModelEnvironment,
+        SubdailyPModel,
+    )
+
+    env = PModelEnvironment(
+        tc=pmodel_inputs["tc"],
+        vpd=pmodel_inputs["vpd"],
+        co2=pmodel_inputs["co2"],
+        patm=pmodel_inputs["patm"],
+        fapar=pmodel_inputs["fapar"],
+        ppfd=pmodel_inputs["ppfd"],
+    )
+
+    pmodel_inputs["time"] = pmodel_inputs["time"].astype("datetime64[s]")
+
+    # The two timescales use different PModels and also need to specify the datetimes
+    # and gpp penalty factors in FaparLimitation differently
+    if timescale == "ft":
+        # Fit PModel
+        pmodel = PModel(
+            env=env,
+            reference_kphio=1 / 8,
+            method_kphio="temperature",
+        )
+        # Define datetimes of observations - no GPP penalty
+        fl_datetimes = pmodel_inputs["time"]
+        gpp_penalty_factor = None
+
+    else:
+        # Set up the datetimes of the observations and set the acclimation window
+        acclim = AcclimationModel(
+            datetimes=pmodel_inputs["time"],
+            alpha=1 / 15,
+        )
+        acclim.set_window(
+            window_center=np.timedelta64(12, "h"),
+            half_width=np.timedelta64(30, "m"),
+        )
+
+        # Fit the subdaily PModel
+        pmodel = SubdailyPModel(
+            env=env,
+            acclim_model=acclim,
+            reference_kphio=1 / 8,
+            method_kphio="temperature",
+        )
+
+        # FaparLimitation uses the datetimes from pmodel.acclim_model and uses a soil
+        # moisture stress penalty
+        fl_datetimes = None
+        gpp_penalty_factor = pmodel_inputs["soilm_stress"]
+
+    # Check the GPP predictions
+    assert_allclose(pmodel.gpp, pmodel_outputs["gpp"], rtol=1e-7)
+    assert_allclose(pmodel.optchi.ci, pmodel_outputs["ci"], rtol=1e-7)
+    assert_allclose(pmodel.optchi.chi, pmodel_outputs["chi"], rtol=1e-7)
+
+    pmodel_inputs["time"] = pmodel_inputs["time"].astype("datetime64[s]")
+
+    faparlim = FaparLimitationNew.from_pmodel(
+        pmodel=pmodel,
+        method=method,
+        growing_season=pmodel_inputs["growing_season"],
+        datetimes=fl_datetimes,
+        precip=pmodel_inputs["precip_molar"],
+        gpp_penalty_factor=gpp_penalty_factor,
+        aridity_index=site_data["AI_from_cruts"],  # Not used by zhu method.
+    )
+
+    assert_allclose(
+        fapar_max_predictions[f"fapar_max_{timescale}"], faparlim.fapar_max, rtol=1e-6
+    )
+    assert_allclose(
+        fapar_max_predictions[f"lai_max_{timescale}"], faparlim.lai_max, rtol=1e-6
+    )
+
+    pheno = PhenologyNew.from_pmodel(
+        pmodel=pmodel, datetimes=fl_datetimes, fapar_limitation=faparlim
+    )
+
+    # Fortnightly data is truncated by the last fortnight so need to truncate to match
+
+    # Check the LAI time series to tolerance of data in file.
+    assert_allclose(
+        pheno.steady_state_lai,
+        daily_lai_predictions[f"Ls_daily_{timescale}"][: len(pheno.steady_state_lai)],
+        atol=1e-6,
+    )
+    assert_allclose(
+        pheno.realised_lai,
+        daily_lai_predictions[f"Ls_daily_lagged_{timescale}"][
+            : len(pheno.realised_lai)
+        ],
+        atol=1e-6,
     )

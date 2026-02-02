@@ -427,10 +427,9 @@ class PhenologyNew:
             daily_gpp * 60 * 60 * 24 * 1e-6
         ) / pmodel.core_const.k_c_molmass
 
-        # The datetimes argument cannot now be None, so mute type error.
         return cls(
             fapar_limitation=fapar_limitation,
             datetimes=daily_timestamps,
             daily_potential_assimilation=daily_potential_assimilation,
-            kwargs=kwargs,
+            **kwargs,
         )
