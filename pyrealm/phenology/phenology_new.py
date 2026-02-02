@@ -19,6 +19,7 @@ take care with array broadcasting.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -30,6 +31,7 @@ from pyrealm.core.utilities import (
     exponential_moving_average,
 )
 from pyrealm.phenology.fapar_limitation_new import FaparLimitationNew
+from pyrealm.pmodel.pmodel import PModel, PModelABC, SubdailyPModel
 
 PHENOLOGY_METHOD_CLASS_REGISTRY: dict[str, type[PhenologyMethodABC]] = {}
 """A registry for classes implementing different methods for estimating phenology.
@@ -67,10 +69,10 @@ class PhenologyMethodABC(ABC):
     def __init__(
         self,
         fapar_limitation: FaparLimitationNew,
-        daily_gpp: NDArray[np.floating],
+        daily_potential_assimilation: NDArray[np.floating],
         datetimes: NDArray[np.datetime64],
         year_index: NDArray[np.int_],
-        **kwargs: NDArray[np.floating] | float,
+        **kwargs: Any,
     ) -> None:
         """Calculate steady state and realise leaf area index.
 
@@ -104,17 +106,17 @@ class PhenologyMethodZhou(PhenologyMethodABC, method="zhou"):
     def __init__(
         self,
         fapar_limitation: FaparLimitationNew,
-        daily_gpp: NDArray[np.floating],
+        daily_potential_assimilation: NDArray[np.floating],
         datetimes: NDArray[np.datetime64],
         year_index: NDArray[np.int_],
-        **kwargs: NDArray[np.floating] | float,
+        **kwargs: Any,
     ) -> None:
         """Calculate leaf area indices following Zhou et al."""
 
         # Run the super class ___init__.
         super().__init__(
             fapar_limitation=fapar_limitation,
-            daily_gpp=daily_gpp,
+            daily_potential_assimilation=daily_potential_assimilation,
             datetimes=datetimes,
             year_index=year_index,
             **kwargs,
@@ -132,7 +134,7 @@ class PhenologyMethodZhou(PhenologyMethodABC, method="zhou"):
 
         # Duplicate m ratio for each day and calculate daily mu value as m * daily molar
         # assimilation:
-        mu = self.lai_to_gpp_ratio_m[year_index] * daily_gpp
+        mu = self.lai_to_gpp_ratio_m[year_index] * daily_potential_assimilation
 
         # Calculate the Lambert W0 value
         daily_lai = mu + (1 / phenology_const.k) * lambertw(
@@ -177,25 +179,25 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
     def __init__(
         self,
         fapar_limitation: FaparLimitationNew,
-        daily_gpp: NDArray[np.floating],
+        daily_potential_assimilation: NDArray[np.floating],
         datetimes: NDArray[np.datetime64],
         year_index: NDArray[np.int_],
         aet_pet_ratio: NDArray[np.floating],
         spinup_length: int,
-        **kwargs: NDArray[np.floating] | float,
+        **kwargs: Any,
     ) -> None:
         """Calculate leaf area indices following Zhou et al."""
 
         # Run the super class ___init__.
         super().__init__(
             fapar_limitation=fapar_limitation,
-            daily_gpp=daily_gpp,
+            daily_potential_assimilation=daily_potential_assimilation,
             datetimes=datetimes,
             year_index=year_index,
             **kwargs,
         )
 
-        if aet_pet_ratio.shape != daily_gpp[[0]].shape:
+        if aet_pet_ratio.shape != daily_potential_assimilation[[0]].shape:
             raise ValueError(
                 "The 'aet_pet_ratio' must be an array providing one value per site."
             )
@@ -206,7 +208,9 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
         # Split the daily A0 up by year, calculate annual quantiles of daily
         # assimilation and then restack into an array, which should have the same shape
         # as the values in the fapar limitation.
-        annual_A0_arrays = np.split(daily_gpp, np.where(np.diff(year_index))[0], axis=0)
+        annual_A0_arrays = np.split(
+            daily_potential_assimilation, np.where(np.diff(year_index))[0], axis=0
+        )
         daily_A0_quantiles = np.stack(
             [
                 np.nanquantile(ann_data, q=phenology_const.zhu_A0_quantile, axis=0)
@@ -224,7 +228,9 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
 
         # Duplicate m ratio for each day and calculate daily mu value as m * daily molar
         # assimilation:
-        steady_state_lai = self.lai_to_gpp_ratio_m[year_index] * daily_gpp
+        steady_state_lai = (
+            self.lai_to_gpp_ratio_m[year_index] * daily_potential_assimilation
+        )
 
         # Calculate the lag length for each site based on the AET/PET ratio
         aridity_lag_days = np.round(
@@ -302,17 +308,17 @@ class PhenologyNew:
     def __init__(
         self,
         fapar_limitation: FaparLimitationNew,
-        daily_gpp: NDArray[np.floating],
+        daily_potential_assimilation: NDArray[np.floating],
         datetimes: NDArray[np.datetime64],
         method: str = "zhou",
-        **kwargs: NDArray[np.floating] | float,
+        **kwargs: Any,
     ):
         # Experimental class
         warn_experimental(self.__class__.__name__)
 
         # Check the array input shapes
         check_input_shapes(
-            daily_gpp,
+            daily_potential_assimilation,
             datetimes,
             *kwargs.values(),
         )
@@ -365,7 +371,7 @@ class PhenologyNew:
         # Get an instance of the method class from the registry
         phenology_method: PhenologyMethodABC = PHENOLOGY_METHOD_CLASS_REGISTRY[method](
             fapar_limitation=self.fapar_limitation,
-            daily_gpp=daily_gpp,
+            daily_potential_assimilation=daily_potential_assimilation,
             datetimes=datetimes,
             year_index=year_index,
             **kwargs,
@@ -373,3 +379,58 @@ class PhenologyNew:
 
         self.steady_state_lai: NDArray[np.floating] = phenology_method.steady_state_lai
         self.realised_lai: NDArray[np.floating] = phenology_method.realised_lai
+
+    @classmethod
+    def from_pmodel(
+        cls,
+        pmodel: PModelABC,
+        fapar_limitation: FaparLimitationNew,
+        datetimes: NDArray[np.datetime64] | None = None,
+        **kwargs: Any,
+    ) -> PhenologyNew:
+        r"""Calculate daily phenology from a P Model and other inputs.
+
+        TBD.
+
+        Args:
+            pmodel: A :class:`pyrealm.pmodel.pmodel.PModel` or
+                :class:`pyrealm.pmodel.pmodel.SubdailyPModel` instance, fitted with
+                ``fapar`` fixed at one.
+            fapar_limitation: A FaparLimitation object providing the maximum annual LAI
+                and fAPAR.
+            datetimes: An array giving the datetimes of observations.
+            **kwargs: Additional arguments.
+        """
+
+        daily_gpp: NDArray[np.floating]
+
+        # Check the datetimes - should they be taken from the AcclimationModel of the
+        # SubdailyPModel or are they required for standard PModels?
+        if isinstance(pmodel, SubdailyPModel):
+            if datetimes is not None:
+                raise ValueError(
+                    "Observation datetimes are not required with SubdailyPModel "
+                    "inputs, the acclimation model datetimes are used."
+                )
+            datetimes = pmodel.acclim_model.datetimes
+            daily_timestamps, daily_gpp = pmodel._get_daily_gpp()
+
+        elif isinstance(pmodel, PModel):
+            if datetimes is None:
+                raise ValueError(
+                    "Observation datetimes are required with PModel inputs."
+                )
+            daily_timestamps, daily_gpp = pmodel._get_daily_gpp(datetimes=datetimes)
+
+        # Scale daily GPP in µmol m2 s up to daily molar assimilation.
+        daily_potential_assimilation = (
+            daily_gpp * 60 * 60 * 24 * 1e-6
+        ) / pmodel.core_const.k_c_molmass
+
+        # The datetimes argument cannot now be None, so mute type error.
+        return cls(
+            fapar_limitation=fapar_limitation,
+            datetimes=daily_timestamps,
+            daily_potential_assimilation=daily_potential_assimilation,
+            kwargs=kwargs,
+        )
