@@ -212,6 +212,12 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
     ) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
         """Calculate leaf area indices following Zhu et al."""
 
+        # Get spinup period
+        spinup_length = kwargs.get("spinup_length", None)
+
+        if spinup_length is None:
+            raise ValueError("The zhu method requires a spinup_length.")
+
         # Validate aet pet ratio
         aet_pet_ratio = kwargs.get("aet_pet_ratio", None)
 
@@ -238,6 +244,7 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
         )
 
         # Calculate the ratio of LAI to the annual quantile of daily assimilation.
+        # TODO apply only to input years
         self.lai_to_gpp_ratio_m: NDArray[np.floating] = (
             self.fapar_limitation.lai_max / daily_A0_quantiles
         )
@@ -257,44 +264,60 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
             )
         ).astype(int)
 
-        # NOTE: the Zhu code in plmodel_timeseries allows for steps that are not at the
-        #       daily intervals. This is not yet implemented.
+        # NOTE: the Zhu code in plmodel_timeseries allows for steps in the input data
+        #       values that are not at daily intervals and then corrects the lag length
+        #       for this interval. This is not yet implemented.
 
         # Add the spin up at the start of the time series - the original implementation
         # expected annual blocks of data and just tiled the data to double the length
         # and hence give a single year spin up to the year of data. Here we add a fixed
-        # block at the start to allow multiple years.
+        # block given by the spinup length at the start to allow multiple years.
         steady_state_with_spinup = np.concatenate(
-            [steady_state_lai[: phenology_const.zhu_spinup_days], steady_state_lai],
+            [steady_state_lai[:spinup_length], steady_state_lai],
             axis=0,
         )
 
-        # Get cumulative sums of LAI values and cumulative counts of observations along
-        # the time axis
-        csum_values = np.cumsum(steady_state_with_spinup, axis=0)
-        csum_counts = np.cumsum(np.indices(steady_state_with_spinup.shape)[0])
+        # The calculation of realised LAI uses mean values over the preceding lagging
+        # period of N days:
+        # * The numerator is the sum of the previous N observations, which can be
+        #   calculated efficiently by taking the cumulative sum across all observations
+        #   and subtracting the value N steps before. The initial period when that would
+        #   run off the start of the array are handled by simply padding the cumulative
+        #   sums with zero.
+        # * The denominator is then the number of lagging days N, except for the first N
+        #   observations which should be 1:N.
+        # At the moment, because the sites are padded with site specific lags, the code
+        # iterates over sites. There may be a fancy way to use numpy to pad all in one
+        # go, but not obvious.
 
-        # Calculate the lagged versions of those arrays. Each site has a set of zeros
-        # added at the start of the time series along axis 0, but the length of the set
-        # varies by site. Currently this iterates over sites - inefficient but I can't
-        # think of a better way to approach it.
-        csum_values_offset = np.zeros_like(csum_values)
-        csum_counts_offset = np.zeros_like(csum_counts)
+        # Get cumulative sums of LAI values along the time axis
+        cumulative_lai = np.cumsum(steady_state_with_spinup, axis=0)
+
+        # Create an output array to populate
+        realised_lai = np.full_like(steady_state_with_spinup, fill_value=np.nan)
+
+        # Record the number of observations along the time axis in the spinup array
+        n_observations = steady_state_with_spinup.shape[0]
 
         # Get an index over the combinations of other axes - i.e. over sites
-        site_index = np.ndindex(csum_values[0].shape)
+        site_index = np.ndindex(cumulative_lai[0].shape)
 
         for idx in site_index:
-            fill_start = aridity_lag_days[*idx].item() + 1
-            csum_values_offset[fill_start:, *idx] = csum_values[:-fill_start, *idx]
-            csum_counts_offset[fill_start:, *idx] = csum_counts[:-fill_start, *idx]
-
-        realised_lai = (csum_values - csum_values_offset) / (
-            csum_counts - csum_counts_offset
-        )
+            # Get the site specific lag
+            lag_length = aridity_lag_days[*idx].item() + 1
+            # Get the numerator the cumulative sum minus the same values but zero padded
+            # on the left to the lag length and then truncated back to the same shape
+            numerator = (
+                cumulative_lai[idx]
+                - np.pad(cumulative_lai[idx], (lag_length, 0))[:n_observations]
+            )
+            # Get the denominator
+            denominator = np.minimum(np.arange(n_observations), lag_length)
+            # Store the result
+            realised_lai[idx] = numerator / denominator
 
         # Remove the spin up data along the first axis
-        realised_lai = realised_lai[phenology_const.zhu_spinup_days :]
+        realised_lai = realised_lai[spinup_length:]
 
         return steady_state_lai, realised_lai
 

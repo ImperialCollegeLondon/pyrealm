@@ -222,6 +222,13 @@ def _apply_lag(data_cube: np.ndarray, lag_steps_grid: np.ndarray) -> np.ndarray:
             csum_values = np.cumsum(values)
             csum_counts = np.cumsum(counts)
 
+            # DO tracking code start --------------------------
+            do_totals_track = np.zeros_like(csum_values)
+            do_counts_track = np.zeros_like(csum_values)
+            do_idx_start_track = np.zeros_like(csum_values)
+
+            # DO tracking code ends ---------------------------
+
             temp_result = np.empty(ntime, dtype=np.float64)
             for t in range(ntime):
                 idx_start = t - lag_steps
@@ -237,7 +244,32 @@ def _apply_lag(data_cube: np.ndarray, lag_steps_grid: np.ndarray) -> np.ndarray:
                     temp_result[t] = total / count
                 else:
                     temp_result[t] = np.nan
+
+                # DO tracking code start --------------------------
+                do_totals_track[t] = total
+                do_counts_track[t] = count
+                do_idx_start_track[t] = idx_start
+                # DO tracking code end ----------------------------
+
             result[row, col, :] = temp_result
+
+    # At this point, the whole calculation can be saved out to file for a single site
+    # using:
+    #
+    # import pandas as pd
+    # df = pd.DataFrame(
+    #     {
+    #         "series": series.ravel(),
+    #         "counts": counts.ravel(),
+    #         "csum_values": csum_values.ravel(),
+    #         "csum_counts": csum_counts.ravel(),
+    #         "do_totals_track": do_totals_track.ravel(),
+    #         "do_counts_track": do_counts_track.ravel(),
+    #         "do_idx_start_track": do_idx_start_track.ravel(),
+    #         "result": result.ravel(),
+    #     }
+    # )
+    # df.to_csv("zhu_tracking.csv")
 
     return result
 

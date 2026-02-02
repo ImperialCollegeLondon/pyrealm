@@ -107,4 +107,3 @@ class PhenologyConstNew(ConstantsClass):
     zhu_min_a0 = 1.0e-6
     zhu_lagcoef = 64.6
     zhu_lagmax = 365
-    zhu_spinup_days = 365

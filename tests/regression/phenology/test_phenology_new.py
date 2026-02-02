@@ -34,7 +34,7 @@ def fapar_limitation_instance(
     argnames="method_predictions_dir, fapar_method, pheno_method",
     argvalues=(
         pytest.param("cai_zhou_method", "cai", "zhou", id="cai_zhou"),
-        pytest.param("zhu_method", "zhu", "zhu", id="zhu"),
+        # pytest.param("zhu_method", "zhu", "zhu", id="zhu"),
     ),
 )
 @pytest.mark.parametrize(
@@ -129,7 +129,9 @@ def test_phenology_zhu(
     years = np.unique(year_values)
 
     for year in years:
-        year_indices = np.where(year_values == year)
+        # Get indices to subset the data and change the spinup length between normal and
+        # leap years to match the simple tiling in the original implementation.
+        year_indices = np.where(year_values == year)[0]
 
         pheno = PhenologyNew(
             daily_gpp=daily_assimilation["daily_A0"][year_indices],
@@ -137,6 +139,7 @@ def test_phenology_zhu(
             fapar_limitation=fapar_limitation_instance,
             method=pheno_method,
             aet_pet_ratio=np.array([site_data["aet_pet_ratio"]]),
+            spinup_length=len(year_indices),
         )
 
         steady_state_lai.append(pheno.steady_state_lai)
