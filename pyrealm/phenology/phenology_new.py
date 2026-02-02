@@ -1,16 +1,13 @@
-"""Class to compute the fAPAR_max and annual peak Leaf Area Index (LAI).
+"""Classes to compute phenological time series of Leaf Area Index.
 
-The :class:`FaparLimitation` class and the :meth:`FaparLimitation.from_pmodel` are
-designed to work with inputs that can have multiple dimensions. The first axis is
-_always_ assumed to represent a time series of annual observations. If the inputs
-are one dimensional, then this is a time series for a single site; if they are three
-dimensional then these are observations for a grid of sites. Usually all array inputs
-will have the same shape but note the following instances where you might need to
+The :class:`PhenologyNew` class and the :meth:`PhenologyNew.from_pmodel` are designed to
+work with inputs that can have multiple dimensions. The first axis is _always_ assumed
+to represent a time series of daily observations of potential assimilation. If all the
+arrays are one dimensional, then this is a time series for a single site; if they are
+three dimensional then these are observations for a grid of sites. Usually all array
+inputs will have the same shape but note the following instances where you might need to
 take care with array broadcasting.
 
-* Growing season length might well be constant across sites. If so - for example
-    with 3D data - the input would need shape `(N, 1, 1)` to broadcast N years of
-    data over the array of sites.
 * The climatological aridity index is very likely to be constant through time.
     If so, the array should have a singleton first dimension to broadcast an
     observation per site across observations. For example, with `(10, 3, 3)` data
@@ -35,21 +32,21 @@ from pyrealm.core.utilities import (
 from pyrealm.phenology.fapar_limitation_new import FaparLimitationNew
 
 PHENOLOGY_METHOD_CLASS_REGISTRY: dict[str, type[PhenologyMethodABC]] = {}
-"""A registry for optimal chi calculation classes.
+"""A registry for classes implementing different methods for estimating phenology.
 
-Different implementations of the calculation of optimal chi must all be subclasses of
-:class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC` abstract base class.
+Different implementations of the calculation of LAI phenology must all be subclasses of
+the :class:`~pyrealm.phenology.phenology.New` abstract base class.
 This dictionary is used as a registry for defined subclasses and a method name
 is used to retrieve a particular implementation from this registry. For example:
 
 .. code:: python
 
-    prentice14_opt_chi = OPTIMAL_CHI_CLASS_REGISTRY['prentice14']
+    zhou_phenology_class = PHENOLOGY_METHOD_CLASS_REGISTRY['zhou']
 """
 
 
 class PhenologyMethodABC(ABC):
-    r"""Abstract base class for methods computing maximum annual fAPAR and LAI."""
+    r"""Abstract base class for implementations of LAI phenology calculation."""
 
     __experimental__ = True
 
@@ -66,39 +63,23 @@ class PhenologyMethodABC(ABC):
     """A tuple of any additional variables required to create a PhenologyNew
     instance using the method."""
 
+    @abstractmethod
     def __init__(
         self,
         fapar_limitation: FaparLimitationNew,
-    ) -> None:
-        """Initialise the method instance.
-
-        Subclass should provide a method specific instance that calls
-        `super().__init__(...)`, carries out method specific validation .
-        """
-        self.fapar_limitation: FaparLimitationNew = fapar_limitation
-
-        # Check for required variables
-        self._check_required_variables()
-
-    def _check_required_variables(self) -> None:
-        """Check required variables.
-
-        Checks that any required variables for the method have been passed to the
-        FaparLimitation constructor.
-        """
-        pass
-
-    @abstractmethod
-    def calculate_leaf_area_index(
-        self,
-        daily_A0: NDArray[np.floating],
+        daily_gpp: NDArray[np.floating],
+        datetimes: NDArray[np.datetime64],
         year_index: NDArray[np.int_],
-    ) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
+        **kwargs: NDArray[np.floating] | float,
+    ) -> None:
         """Calculate steady state and realise leaf area index.
 
         Each subclass should use this method to provide the method specific
         functionality to calculate steady state and realise leaf area index.
         """
+
+        self.steady_state_lai: NDArray[np.floating]
+        self.realised_lai: NDArray[np.floating]
 
     @classmethod
     def __init_subclass__(cls, method: str) -> None:
@@ -123,39 +104,35 @@ class PhenologyMethodZhou(PhenologyMethodABC, method="zhou"):
     def __init__(
         self,
         fapar_limitation: FaparLimitationNew,
-    ) -> None:
-        # Run the super class ___init__.
-        super().__init__(fapar_limitation=fapar_limitation)
-
-    def calculate_leaf_area_index(
-        self,
-        daily_A0: NDArray[np.floating],
+        daily_gpp: NDArray[np.floating],
+        datetimes: NDArray[np.datetime64],
         year_index: NDArray[np.int_],
-    ) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
+        **kwargs: NDArray[np.floating] | float,
+    ) -> None:
         """Calculate leaf area indices following Zhou et al."""
 
-        # Calculate the steady state ratio of leaf area index to potential GPP
-        phenology_const = self.fapar_limitation.phenology_const
+        # Run the super class ___init__.
+        super().__init__(
+            fapar_limitation=fapar_limitation,
+            daily_gpp=daily_gpp,
+            datetimes=datetimes,
+            year_index=year_index,
+            **kwargs,
+        )
 
-        # TODO - I'd moved this across to Phenology with the thought of allowing the
-        # different FaparLimitation methods to be crossed, but Zhu doesn't use
-        # annual_growing_season_length, so requiring it just to allow that cross is
-        # fussy. Leaving here for the moment but it probably moves back to
-        # FaparLimitation.
+        phenology_const = fapar_limitation.phenology_const
 
+        # Calculate the LAI to GPP ratio
         self.lai_to_gpp_ratio_m: NDArray[np.floating] = (
             phenology_const.cai_sigma
-            * self.fapar_limitation.annual_growing_season_length
-            * self.fapar_limitation.lai_max
-        ) / (
-            self.fapar_limitation.annual_total_potential_gpp
-            * self.fapar_limitation.fapar_max
-        )
+            * fapar_limitation.annual_growing_season_length
+            * fapar_limitation.lai_max
+        ) / (fapar_limitation.annual_total_potential_gpp * fapar_limitation.fapar_max)
         """The steady state ratio of leaf area index to potential GPP (:math:`m`)"""
 
         # Duplicate m ratio for each day and calculate daily mu value as m * daily molar
         # assimilation:
-        mu = self.lai_to_gpp_ratio_m[year_index] * daily_A0
+        mu = self.lai_to_gpp_ratio_m[year_index] * daily_gpp
 
         # Calculate the Lambert W0 value
         daily_lai = mu + (1 / phenology_const.k) * lambertw(
@@ -171,10 +148,9 @@ class PhenologyMethodZhou(PhenologyMethodABC, method="zhou"):
 
         # Find the daily minimum of the lambert term and annual maximum LAI as the
         # steady state LAI
-        steady_state_lai = np.minimum(
-            daily_lai, self.fapar_limitation.lai_max[year_index]
-        )
+        steady_state_lai = np.minimum(daily_lai, fapar_limitation.lai_max[year_index])
         """The steady state leaf area index for each day."""
+
         # Calculate the lagged value
         realised_lai = exponential_moving_average(
             steady_state_lai, alpha=phenology_const.zhou_alpha
@@ -182,7 +158,8 @@ class PhenologyMethodZhou(PhenologyMethodABC, method="zhou"):
         """The realised leaf area index for each day given the modelled lag in responses
             to changing assimilation."""
 
-        return steady_state_lai, realised_lai
+        self.steady_state_lai = steady_state_lai
+        self.realised_lai = realised_lai
 
 
 class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
@@ -200,42 +177,36 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
     def __init__(
         self,
         fapar_limitation: FaparLimitationNew,
-    ) -> None:
-        # Run the super class ___init__.
-        super().__init__(fapar_limitation=fapar_limitation)
-
-    def calculate_leaf_area_index(
-        self,
-        daily_A0: NDArray[np.floating],
+        daily_gpp: NDArray[np.floating],
+        datetimes: NDArray[np.datetime64],
         year_index: NDArray[np.int_],
-        **kwargs: NDArray[np.floating],
-    ) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
-        """Calculate leaf area indices following Zhu et al."""
+        aet_pet_ratio: NDArray[np.floating],
+        spinup_length: int,
+        **kwargs: NDArray[np.floating] | float,
+    ) -> None:
+        """Calculate leaf area indices following Zhou et al."""
 
-        # Get spinup period
-        spinup_length = kwargs.get("spinup_length", None)
+        # Run the super class ___init__.
+        super().__init__(
+            fapar_limitation=fapar_limitation,
+            daily_gpp=daily_gpp,
+            datetimes=datetimes,
+            year_index=year_index,
+            **kwargs,
+        )
 
-        if spinup_length is None:
-            raise ValueError("The zhu method requires a spinup_length.")
-
-        # Validate aet pet ratio
-        aet_pet_ratio = kwargs.get("aet_pet_ratio", None)
-
-        if aet_pet_ratio is None:
-            raise ValueError("The zhu method requires an array 'aet_pet_ratio'.")
-
-        if aet_pet_ratio.shape != daily_A0[[0]].shape:
+        if aet_pet_ratio.shape != daily_gpp[[0]].shape:
             raise ValueError(
-                "The 'aet_pet_ratio' ratio must provide site specific values."
+                "The 'aet_pet_ratio' must be an array providing one value per site."
             )
 
         # Calculate the steady state ratio of leaf area index to potential GPP
-        phenology_const = self.fapar_limitation.phenology_const
+        phenology_const = fapar_limitation.phenology_const
 
         # Split the daily A0 up by year, calculate annual quantiles of daily
         # assimilation and then restack into an array, which should have the same shape
         # as the values in the fapar limitation.
-        annual_A0_arrays = np.split(daily_A0, np.where(np.diff(year_index))[0], axis=0)
+        annual_A0_arrays = np.split(daily_gpp, np.where(np.diff(year_index))[0], axis=0)
         daily_A0_quantiles = np.stack(
             [
                 np.nanquantile(ann_data, q=phenology_const.zhu_A0_quantile, axis=0)
@@ -246,14 +217,14 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
         # Calculate the ratio of LAI to the annual quantile of daily assimilation.
         # TODO apply only to input years
         self.lai_to_gpp_ratio_m: NDArray[np.floating] = (
-            self.fapar_limitation.lai_max / daily_A0_quantiles
+            fapar_limitation.lai_max / daily_A0_quantiles
         )
         """Annual values of the steady state ratio of leaf area index to potential GPP
         (:math:`m`)"""
 
         # Duplicate m ratio for each day and calculate daily mu value as m * daily molar
         # assimilation:
-        steady_state_lai = self.lai_to_gpp_ratio_m[year_index] * daily_A0
+        steady_state_lai = self.lai_to_gpp_ratio_m[year_index] * daily_gpp
 
         # Calculate the lag length for each site based on the AET/PET ratio
         aridity_lag_days = np.round(
@@ -319,7 +290,8 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
         # Remove the spin up data along the first axis
         realised_lai = realised_lai[spinup_length:]
 
-        return steady_state_lai, realised_lai
+        self.steady_state_lai = steady_state_lai
+        self.realised_lai = realised_lai
 
 
 class PhenologyNew:
@@ -329,11 +301,11 @@ class PhenologyNew:
 
     def __init__(
         self,
+        fapar_limitation: FaparLimitationNew,
         daily_gpp: NDArray[np.floating],
         datetimes: NDArray[np.datetime64],
-        fapar_limitation: FaparLimitationNew,
         method: str = "zhou",
-        **kwargs: NDArray[np.floating],
+        **kwargs: NDArray[np.floating] | float,
     ):
         # Experimental class
         warn_experimental(self.__class__.__name__)
@@ -357,6 +329,11 @@ class PhenologyNew:
                 "complete increasing daily time series"
             )
 
+        # Set up the fAPAR limitation method to be used.
+        self.method: str = method
+        if method not in PHENOLOGY_METHOD_CLASS_REGISTRY:
+            raise ValueError(f"Unknown FaparLimitation method: {method}")
+
         # Get the years of observations and check they are all represented in the
         # FaparLimitation object
         datetimes_year = datetimes.astype("datetime64[Y]")
@@ -373,9 +350,6 @@ class PhenologyNew:
         self.fapar_limitation = fapar_limitation
         """The annual maximum fAPAR and LAI data used in the model."""
 
-        # Set up the fAPAR limitation method to be used.
-        self.method: str = method
-
         # Calculate the index of each observation in the FaparLimitation years.
         # This uses a shortcut to avoid looking up using np.where or np.searchsorted:
         # * The FaparLimitation.years are a sequence of values: N, N+1, N+2, ..., N+M
@@ -388,19 +362,14 @@ class PhenologyNew:
             "int"
         )
 
-        if method not in PHENOLOGY_METHOD_CLASS_REGISTRY:
-            raise ValueError(f"Unknown FaparLimitation method: {method}")
-
         # Get an instance of the method class from the registry
         phenology_method: PhenologyMethodABC = PHENOLOGY_METHOD_CLASS_REGISTRY[method](
             fapar_limitation=self.fapar_limitation,
+            daily_gpp=daily_gpp,
+            datetimes=datetimes,
+            year_index=year_index,
+            **kwargs,
         )
 
-        self.steady_state_lai: NDArray[np.floating]
-        self.realised_lai: NDArray[np.floating]
-
-        self.steady_state_lai, self.realised_lai = (
-            phenology_method.calculate_leaf_area_index(
-                daily_A0=daily_gpp, year_index=year_index, **kwargs
-            )
-        )
+        self.steady_state_lai: NDArray[np.floating] = phenology_method.steady_state_lai
+        self.realised_lai: NDArray[np.floating] = phenology_method.realised_lai
