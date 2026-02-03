@@ -53,10 +53,11 @@ from typing import Any, Union, get_args, get_origin
 
 import numpy as np
 import xarray as xr
-from numpy.typing import DTypeLike, NDArray
+from numpy.typing import DTypeLike
 
 import pyrealm
 from pyrealm.core.calendar import Calendar
+from pyrealm.core.xarray import ArrayType
 from pyrealm.demography.flora import (
     PlantFunctionalType,
     PlantFunctionalTypeStrict,
@@ -129,7 +130,7 @@ def _kwarg_params(names: tuple[str, ...]) -> dict[str, Parameter]:
         name: Parameter(
             name=name,
             kind=Parameter.POSITIONAL_OR_KEYWORD,
-            annotation=NDArray[np.floating],
+            annotation=ArrayType,
         )
         for name in names
     }
@@ -344,7 +345,19 @@ def defined_method_args(argument: str, ctx: Context) -> Any | None:
     if ctx.name == "PModelEnvironment":
         if ctx.parents and ctx.parents[-1] == "SubdailyPModel":
             # SubdailyPModel needs more than 1 day (uses 48 hourly times)
-            envShape = (1 if shape[0] == 1 else 48, *shape[1:])
+
+            # Replace the time dimension (the first dimension)
+            envShape = list(shape)
+            if ctx.array_dims_list:
+                # The first argument sets the first dimension(s)
+                time_dim = ctx.array_dims_list[0][0]
+                # Determine if and where it is in this argument
+                if time_dim in ctx.array_dims:
+                    i_dim = ctx.array_dims.index(time_dim)
+                    envShape[i_dim] = 1 if shape[i_dim] == 1 else 48
+            else:
+                envShape[0] = 1 if shape[0] == 1 else 48
+
             arguments = {
                 "tc": np.full(envShape, 20),
                 "vpd": np.full(envShape, 40),
@@ -757,6 +770,7 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
         # Set default arguments
         elif param.default is not param.empty:
             kwargs[param_name] = param.default
+            continue  # Keep default array types
 
         # Initialise any other arguments
         else:
@@ -768,17 +782,14 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
                     kwargs[param_name] += 273.15
 
         # If using a different array type, convert numpy arrays to this
-        if _is_array_type(typ, "ArrayType") and isinstance(
-            kwargs[param_name], np.ndarray
+        if (
+            _is_array_type(typ, "ArrayType")
+            and isinstance(kwargs[param_name], np.ndarray)
+            and kwargs[param_name].ndim == len(ctx.shape())
         ):
-            if ctx.array_type == "numpy":
-                kwargs[param_name] = np.array(kwargs[param_name])
-            elif ctx.array_type == "xarray":
-                if kwargs[param_name].ndim == len(ctx.array_dims):
-                    array_kwargs = {"dims": ctx.array_dims}
-                else:
-                    array_kwargs = {}
-                kwargs[param_name] = xr.DataArray(kwargs[param_name], **array_kwargs)
+            if ctx.array_type == "xarray":
+                da_kwargs = {"dims": ctx.array_dims}
+                kwargs[param_name] = xr.DataArray(kwargs[param_name], **da_kwargs)
 
     return kwargs
 
