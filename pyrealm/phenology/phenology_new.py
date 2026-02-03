@@ -323,6 +323,14 @@ class PhenologyNew:
             *kwargs.values(),
         )
 
+        # Store datetimes and daily potential assimilation - this is primarily to
+        # support the from_pmodel method, where the daily values are interpolated or
+        # aggregated and need to be accessed.
+        self.datetimes: NDArray[np.datetime64] = datetimes
+        self.daily_potential_assimilation: NDArray[np.floating] = (
+            daily_potential_assimilation
+        )
+
         # Check the datetimes provide ordered daily resolution observations - don't
         # insist on daily precision but check that second level representations of the
         # days is consistent with daily observations and strictly increases.
@@ -386,6 +394,7 @@ class PhenologyNew:
         pmodel: PModelABC,
         fapar_limitation: FaparLimitationNew,
         datetimes: NDArray[np.datetime64] | None = None,
+        gpp_penalty_factor: NDArray[np.floating] | None = None,
         **kwargs: Any,
     ) -> PhenologyNew:
         r"""Calculate daily phenology from a P Model and other inputs.
@@ -399,10 +408,9 @@ class PhenologyNew:
             fapar_limitation: A FaparLimitation object providing the maximum annual LAI
                 and fAPAR.
             datetimes: An array giving the datetimes of observations.
+            gpp_penalty_factor: A GPP penalty factor.
             **kwargs: Additional arguments.
         """
-
-        daily_gpp: NDArray[np.floating]
 
         # Check the datetimes - should they be taken from the AcclimationModel of the
         # SubdailyPModel or are they required for standard PModels?
@@ -413,14 +421,18 @@ class PhenologyNew:
                     "inputs, the acclimation model datetimes are used."
                 )
             datetimes = pmodel.acclim_model.datetimes
-            daily_timestamps, daily_gpp = pmodel._get_daily_gpp()
+            daily_timestamps, daily_gpp = pmodel._get_daily_gpp(
+                gpp_penalty_factor=gpp_penalty_factor
+            )
 
         elif isinstance(pmodel, PModel):
             if datetimes is None:
                 raise ValueError(
                     "Observation datetimes are required with PModel inputs."
                 )
-            daily_timestamps, daily_gpp = pmodel._get_daily_gpp(datetimes=datetimes)
+            daily_timestamps, daily_gpp = pmodel._get_daily_gpp(
+                datetimes=datetimes, gpp_penalty_factor=gpp_penalty_factor
+            )
 
         # Scale daily GPP in µmol m2 s up to daily molar assimilation.
         daily_potential_assimilation = (

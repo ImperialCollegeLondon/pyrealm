@@ -507,7 +507,9 @@ class PModel(PModelABC):
             )
 
     def _get_daily_gpp(
-        self, datetimes: NDArray[np.datetime64]
+        self,
+        datetimes: NDArray[np.datetime64],
+        gpp_penalty_factor: NDArray[np.floating] | None = None,
     ) -> tuple[NDArray[np.datetime64], NDArray[np.floating]]:
         """Interpolate gpp values to daily intervals.
 
@@ -524,7 +526,10 @@ class PModel(PModelABC):
         time_int = datetimes.astype(np.int_)
 
         # The interp1d object cannot be called with datetime64 values as new_x
-        interpolator = interp1d(time_int, self.gpp)
+        if gpp_penalty_factor is None:
+            interpolator = interp1d(time_int, self.gpp)
+        else:
+            interpolator = interp1d(time_int, self.gpp * gpp_penalty_factor)
         daily_timestamps = np.arange(
             datetimes[0], datetimes[-1] + np.timedelta64(1, "D"), np.timedelta64(1, "D")
         )
@@ -997,7 +1002,9 @@ class SubdailyPModel(PModelABC):
             "The Subdaily P Model does not predict light use efficiency."
         )
 
-    def _get_daily_gpp(self) -> tuple[NDArray[np.datetime64], NDArray[np.floating]]:
+    def _get_daily_gpp(
+        self, gpp_penalty_factor: NDArray[np.floating] | None = None
+    ) -> tuple[NDArray[np.datetime64], NDArray[np.floating]]:
         """Average gpp values to daily means - does not apply penalty."""
 
         # Reshape gpp array by day
@@ -1009,6 +1016,17 @@ class SubdailyPModel(PModelABC):
                 *list(self.gpp.shape[1:]),
             ]
         )
+
+        if gpp_penalty_factor is not None:
+            gpp_penalty_factor.shape = tuple(
+                [
+                    self.acclim_model.n_days,
+                    self.acclim_model.n_obs,
+                    *list(self.gpp.shape[1:]),
+                ]
+            )
+
+            gpp_by_day = gpp_by_day * gpp_penalty_factor
 
         # Take mean (allowing for missing values)
         daily_mean_gpp = np.nanmean(gpp_by_day, axis=1)

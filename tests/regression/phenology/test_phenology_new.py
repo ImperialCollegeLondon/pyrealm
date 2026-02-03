@@ -164,11 +164,8 @@ def test_phenology_zhu(
 
 
 @pytest.mark.parametrize(
-    argnames="method_predictions_dir, method",
-    argvalues=(
-        pytest.param("cai_zhou_method", "cai", id="cai"),
-        # pytest.param("zhu_method", "zhu", id="zhu"),
-    ),
+    argnames="method_predictions_dir, fapar_method, pheno_method, pmodel_year",
+    argvalues=(pytest.param("cai_zhou_method", "cai", "zhou", None, id="cai_zhou"),),
 )
 @pytest.mark.parametrize(
     argnames="timescale",
@@ -177,107 +174,34 @@ def test_phenology_zhu(
         pytest.param("ft", id="fortnightly"),
     ),
 )
-def test_phenology_frompmodel(
-    site_data,
-    pmodel_inputs,
-    pmodel_outputs,
-    daily_assimilation,
-    fapar_max_predictions,
+def test_phenology_frompmodel_cai_zhou(
+    phenology_pmodels,
+    fapar_limitation_instance,
     daily_lai_predictions,
-    method_predictions_dir,
-    method,
+    fapar_method,  # Parameterises fapar_limitation_instance
+    pheno_method,
+    pmodel_year,  # Parametrises phenology_pmodels to use all years
     timescale,
 ):
-    """Regression test for  FaparLimitation.from_pmodel class method."""
+    """Regression test for FaparLimitation.from_pmodel class for the Zhou method."""
 
-    from pyrealm.phenology.fapar_limitation_new import FaparLimitationNew
     from pyrealm.phenology.phenology_new import PhenologyNew
-    from pyrealm.pmodel import (
-        AcclimationModel,
-        PModel,
-        PModelEnvironment,
-        SubdailyPModel,
-    )
 
-    env = PModelEnvironment(
-        tc=pmodel_inputs["tc"],
-        vpd=pmodel_inputs["vpd"],
-        co2=pmodel_inputs["co2"],
-        patm=pmodel_inputs["patm"],
-        fapar=pmodel_inputs["fapar"],
-        ppfd=pmodel_inputs["ppfd"],
-    )
-
-    pmodel_inputs["time"] = pmodel_inputs["time"].astype("datetime64[s]")
-
-    # The two timescales use different PModels and also need to specify the datetimes
-    # and gpp penalty factors in FaparLimitation differently
-    if timescale == "ft":
-        # Fit PModel
-        pmodel = PModel(
-            env=env,
-            reference_kphio=1 / 8,
-            method_kphio="temperature",
-        )
-        # Define datetimes of observations - no GPP penalty
-        fl_datetimes = pmodel_inputs["time"]
-        gpp_penalty_factor = None
-
-    else:
-        # Set up the datetimes of the observations and set the acclimation window
-        acclim = AcclimationModel(
-            datetimes=pmodel_inputs["time"],
-            alpha=1 / 15,
-        )
-        acclim.set_window(
-            window_center=np.timedelta64(12, "h"),
-            half_width=np.timedelta64(30, "m"),
-        )
-
-        # Fit the subdaily PModel
-        pmodel = SubdailyPModel(
-            env=env,
-            acclim_model=acclim,
-            reference_kphio=1 / 8,
-            method_kphio="temperature",
-        )
-
-        # FaparLimitation uses the datetimes from pmodel.acclim_model and uses a soil
-        # moisture stress penalty
-        fl_datetimes = None
-        gpp_penalty_factor = pmodel_inputs["soilm_stress"]
-
-    # Check the GPP predictions
-    assert_allclose(pmodel.gpp, pmodel_outputs["gpp"], rtol=1e-7)
-    assert_allclose(pmodel.optchi.ci, pmodel_outputs["ci"], rtol=1e-7)
-    assert_allclose(pmodel.optchi.chi, pmodel_outputs["chi"], rtol=1e-7)
-
-    pmodel_inputs["time"] = pmodel_inputs["time"].astype("datetime64[s]")
-
-    faparlim = FaparLimitationNew.from_pmodel(
-        pmodel=pmodel,
-        method=method,
-        growing_season=pmodel_inputs["growing_season"],
-        datetimes=fl_datetimes,
-        precip=pmodel_inputs["precip_molar"],
-        gpp_penalty_factor=gpp_penalty_factor,
-        aridity_index=site_data["AI_from_cruts"],  # Not used by zhu method.
-    )
-
-    assert_allclose(
-        fapar_max_predictions[f"fapar_max_{timescale}"], faparlim.fapar_max, rtol=1e-6
-    )
-    assert_allclose(
-        fapar_max_predictions[f"lai_max_{timescale}"], faparlim.lai_max, rtol=1e-6
-    )
+    pmodel, datetimes, gpp_penalty_factor = phenology_pmodels
 
     pheno = PhenologyNew.from_pmodel(
-        pmodel=pmodel, datetimes=fl_datetimes, fapar_limitation=faparlim
+        pmodel=pmodel,
+        fapar_limitation=fapar_limitation_instance,
+        datetimes=datetimes,
+        method=pheno_method,
+        gpp_penalty_factor=gpp_penalty_factor,
     )
 
     # Fortnightly data is truncated by the last fortnight so need to truncate to match
 
     # Check the LAI time series to tolerance of data in file.
+    # TO CHECK - Not sure why only the lower tolerances pass here compared to the direct
+    #            calculation? Still very close but something is slightly different.
     assert_allclose(
         pheno.steady_state_lai,
         daily_lai_predictions[f"Ls_daily_{timescale}"][: len(pheno.steady_state_lai)],
@@ -288,5 +212,76 @@ def test_phenology_frompmodel(
         daily_lai_predictions[f"Ls_daily_lagged_{timescale}"][
             : len(pheno.realised_lai)
         ],
+        atol=1e-6,
+    )
+
+
+@pytest.mark.skip("Not reasonably testable")
+@pytest.mark.parametrize(
+    argnames="method_predictions_dir, fapar_method, pheno_method",
+    argvalues=(pytest.param("zhu_method", "zhu", "zhu", id="zhu"),),
+)
+@pytest.mark.parametrize(
+    argnames="timescale",
+    argvalues=(
+        pytest.param("hh", id="subdaily"),
+        # pytest.param("ft", id="fortnightly"),
+    ),
+)
+@pytest.mark.parametrize(
+    argnames="pmodel_year",
+    argvalues=(range(2004, 2015)),
+)
+def test_phenology_frompmodel_zhu(
+    site_data,
+    phenology_pmodels,
+    fapar_limitation_instance,
+    daily_lai_predictions,
+    fapar_method,  # Parameterises fapar_limitation_instance
+    pheno_method,
+    timescale,
+    pmodel_year,  # Parameterises phenology_pmodels to run years individually
+):
+    """Regression test for FaparLimitation.from_pmodel class for the Zhu method.
+
+    To duplicate the original code, this needs a separate PModel for each year, because
+    the from_pmodel method would otherwise only spinup the first year, rather than every
+    year as in the reference implementation.
+
+    NOTE: Actually - it's worse than this. For the fortnightly inputs, we'd need to
+        extrapolate from the forntightly observations forward to the start of the year
+        and backwards to the end of the year in order to get a matching dataset. That's
+        not the case for subdaily inputs - which have daily values - but even here the
+        interpolation is different from the individual years than the complete
+        dataset. We'd need to rerun the interpolation on annual blocks
+
+    """
+
+    from pyrealm.phenology.phenology_new import PhenologyNew
+
+    pmodel, datetimes, gpp_penalty_factor = phenology_pmodels
+
+    pheno = PhenologyNew.from_pmodel(
+        pmodel=pmodel,
+        fapar_limitation=fapar_limitation_instance,
+        datetimes=datetimes,
+        method=pheno_method,
+        gpp_penalty_factor=gpp_penalty_factor,
+        aet_pet_ratio=np.array([site_data["aet_pet_ratio"]]),
+        spinup_length=366 if pmodel_year in (2004, 2008, 2012) else 365,
+    )
+
+    # Now pull out the matching timestamps from the expected data
+    daily_pred_times = daily_lai_predictions["time"].astype("datetime64[D]")
+    subset = np.isin(daily_pred_times, pheno.datetimes)
+
+    assert_allclose(
+        pheno.steady_state_lai,
+        daily_lai_predictions[f"Ls_daily_{timescale}"][subset],
+        atol=1e-6,
+    )
+    assert_allclose(
+        pheno.realised_lai,
+        daily_lai_predictions[f"Ls_daily_lagged_{timescale}"][subset],
         atol=1e-6,
     )

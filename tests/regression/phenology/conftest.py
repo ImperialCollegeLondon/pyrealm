@@ -3,6 +3,7 @@
 import json
 from importlib import resources
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -148,3 +149,83 @@ def data_phenology(timescale, method_predictions_dir):
 
     data = inputs.merge(predictions)
     return dataframe_to_dict_of_nparrays(data)
+
+
+@pytest.fixture
+def phenology_pmodels(
+    pmodel_inputs,
+    timescale,  # Also parameterises pmodel_inputs
+    pmodel_year,
+):
+    """Create test PModel inputs.
+
+    Returns PModels, datetimes and penalty factors for the fortnightly and subdaily
+    datasets, for use in test from_pmodel methods.
+
+    To support testing of the Zhu method via the from_pmodel method, the fixture can be
+    parameterised to return all years (pmodel_year=None) or a single year.
+    """
+    from pyrealm.pmodel import (
+        AcclimationModel,
+        PModel,
+        PModelEnvironment,
+        SubdailyPModel,
+    )
+
+    if pmodel_year is not None:
+        subset = (
+            pmodel_inputs["time"].astype("datetime64[Y]").astype(str).astype(int)
+            == pmodel_year
+        )
+    else:
+        subset = np.ones_like(pmodel_inputs["time"], dtype=np.bool_)
+
+    env = PModelEnvironment(
+        tc=pmodel_inputs["tc"][subset],
+        vpd=pmodel_inputs["vpd"][subset],
+        co2=pmodel_inputs["co2"][subset],
+        patm=pmodel_inputs["patm"][subset],
+        fapar=pmodel_inputs["fapar"][subset],
+        ppfd=pmodel_inputs["ppfd"][subset],
+    )
+
+    pmodel_inputs["time"] = pmodel_inputs["time"].astype("datetime64[s]")
+
+    # The two timescales use different PModels and also need to specify the datetimes
+    # and gpp penalty factors in FaparLimitation differently
+    if timescale == "ft":
+        # Fit PModel
+        pmodel = PModel(
+            env=env,
+            reference_kphio=1 / 8,
+            method_kphio="temperature",
+        )
+        # Define datetimes of observations - no GPP penalty
+        fl_datetimes = pmodel_inputs["time"][subset]
+        gpp_penalty_factor = None
+
+    else:
+        # Set up the datetimes of the observations and set the acclimation window
+        acclim = AcclimationModel(
+            datetimes=pmodel_inputs["time"][subset],
+            alpha=1 / 15,
+        )
+        acclim.set_window(
+            window_center=np.timedelta64(12, "h"),
+            half_width=np.timedelta64(30, "m"),
+        )
+
+        # Fit the subdaily PModel
+        pmodel = SubdailyPModel(
+            env=env,
+            acclim_model=acclim,
+            reference_kphio=1 / 8,
+            method_kphio="temperature",
+        )
+
+        # FaparLimitation uses the datetimes from pmodel.acclim_model and uses a soil
+        # moisture stress penalty
+        fl_datetimes = None
+        gpp_penalty_factor = pmodel_inputs["soilm_stress"][subset]
+
+    return pmodel, fl_datetimes, gpp_penalty_factor
