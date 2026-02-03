@@ -66,7 +66,7 @@ def test_phenology_cai_zhou(
     kwargs = {"aet_pet_ratio": np.array([6])} if pheno_method == "zhu" else {}
 
     pheno = PhenologyNew(
-        daily_gpp=daily_assimilation["daily_A0"],
+        daily_potential_assimilation=daily_assimilation["daily_A0"],
         datetimes=daily_assimilation["time"].astype("datetime64[D]"),
         fapar_limitation=fapar_limitation_instance,
         method=pheno_method,

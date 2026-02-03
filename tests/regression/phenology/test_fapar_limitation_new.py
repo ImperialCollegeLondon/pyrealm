@@ -56,16 +56,17 @@ def test_faparlimitation(
 
 
 @pytest.mark.parametrize(
-    argnames="timescale",
+    argnames="timescale, pmodel_year",
     argvalues=(
-        pytest.param("hh", id="subdaily"),
-        pytest.param("ft", id="fortnightly"),
+        pytest.param("hh", None, id="subdaily"),
+        pytest.param("ft", None, id="fortnightly"),
     ),
 )
 def test_pmodels(
     phenology_pmodels,
     pmodel_outputs,
     timescale,  # Parameterises phenology_pmodels and pmodel_outputs
+    pmodel_year,  # Parameterises phenology_pmodels to use all years
 ):
     """Test fixture PModels.
 
