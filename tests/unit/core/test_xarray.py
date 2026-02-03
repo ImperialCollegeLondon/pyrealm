@@ -36,16 +36,16 @@ def dataset() -> xr.Dataset:
     return dataset.sel(latitude=slice(-40, 40))
 
 
-def test_xarray_inputs():
-    """Test xarray_inputs correctly converts xr.DataArrays into np.arrays."""
-
-    # Single input
+def test_xarray_inputs_single():
+    """Test xarray_inputs converts a single xr.DataArray into np.array."""
     in_a = xr.DataArray(np.array([1, 2, 3]))
     out_a = xarray_inputs(in_a)
     assert isinstance(out_a, np.ndarray)
     np.testing.assert_array_equal(out_a, in_a.values)
 
-    # Multiple inputs
+
+def test_xarray_inputs_multiple():
+    """Test xarray_inputs converts multiple xr.DataArrays into np.arrays."""
     in_a = xr.DataArray(np.array([1, 2, 3]))
     in_b = xr.DataArray(np.ones((2, 3)))
     out_a, out_b = xarray_inputs(in_a, in_b)
@@ -54,11 +54,15 @@ def test_xarray_inputs():
     np.testing.assert_array_equal(out_a.ravel(), in_a.values.ravel())
     np.testing.assert_array_equal(out_b.ravel(), in_b.values.ravel())
 
-    # No inputs
+
+def test_xarray_inputs_empty():
+    """Test xarray_inputs outputs an empty tuple if there are no inputs."""
     out_none = xarray_inputs()
     assert out_none == ()
 
-    # No DataArray inputs - check inputs unchanged
+
+def test_xarray_inputs_numpy():
+    """Test xarray_inputs leaves the inputs unchanged if just np.array inputs."""
     in_a = np.ones((2, 2))
     in_b = np.ones(3)
     out_a, out_b = xarray_inputs(in_a, in_b)
@@ -66,17 +70,27 @@ def test_xarray_inputs():
     np.testing.assert_array_equal(out_b, in_b)
 
 
-def test_xarray_inputs_kw():
-    """Test xarray_inputs_kw correctly converts xr.DataArrays into np.arrays."""
+def test_xarray_inputs_mixed():
+    """Test xarray_inputs for a mix of np.arrays and xr.DataArrays inputs."""
+    in_a = xr.DataArray(np.ones((2, 3)))
+    in_b = np.ones(3)
+    out_a, out_b = xarray_inputs(in_a, in_b)
+    assert isinstance(out_a, np.ndarray)
+    np.testing.assert_array_equal(out_a, in_a.values)
+    np.testing.assert_array_equal(out_b, in_b)
 
-    # Single input
+
+def test_xarray_inputs_kw_single():
+    """Test xarray_inputs_kw converts a single xr.DataArray into np.array."""
     in_a = xr.DataArray(np.array([1, 2, 3]))
     (kwargs,) = xarray_inputs_kw(a=in_a)
     out_a = kwargs["a"]
     assert isinstance(out_a, np.ndarray)
     np.testing.assert_array_equal(out_a, in_a.values)
 
-    # Multiple inputs
+
+def test_xarray_inputs_kw_multiple():
+    """Test xarray_inputs_kw converts multiple xr.DataArrays into np.arrays."""
     in_a = xr.DataArray(np.array([1, 2, 3]))
     in_b = xr.DataArray(np.ones((2, 3)))
     in_c = xr.DataArray(np.ones(1))
@@ -94,25 +108,20 @@ def test_xarray_inputs_kw():
     np.testing.assert_array_equal(out_d.ravel(), in_d.values.ravel())
 
 
-def test_xarray_inputs_dimensions():
-    """Test xarray_inputs correctly expands missing dimensions."""
+@pytest.mark.parametrize("function", ["xarray_inputs", "xarray_inputs_kw"])
+def test_xarray_inputs_dimensions(function):
+    """Test xarray_inputs[_kw] correctly expands missing dimensions."""
 
     in_a = xr.DataArray(np.ones((2, 3)), dims=["1", "2"])
     in_b = xr.DataArray(np.ones(3), dims=["2"])
     in_c = xr.DataArray(np.ones((4, 2)), dims=["3", "1"])
 
-    # xarray_inputs
-    out_a, out_b, out_c = xarray_inputs(in_a, in_b, in_c)
-    assert isinstance(out_a, np.ndarray)
-    assert isinstance(out_b, np.ndarray)
-    assert isinstance(out_c, np.ndarray)
-    assert out_a.shape == (2, 3, 1)
-    assert out_b.shape == (1, 3, 1)
-    assert out_c.shape == (2, 1, 4)
+    if function == "xarray_inputs":
+        out_a, out_b, out_c = xarray_inputs(in_a, in_b, in_c)
+    else:
+        out_a, out_b, out_c_dict = xarray_inputs_kw(in_a, in_b, c=in_c)
+        out_c = out_c_dict["c"]
 
-    # xarray_inputs_kw
-    out_a, out_b, out_c_dict = xarray_inputs_kw(in_a, in_b, c=in_c)
-    out_c = out_c_dict["c"]
     assert isinstance(out_a, np.ndarray)
     assert isinstance(out_b, np.ndarray)
     assert isinstance(out_c, np.ndarray)
