@@ -362,8 +362,8 @@ class PModel(PModelABC):
         ``method_optchi`` implement different approaches to soil moisture effects on
         photosynthesis. See also the alternative GPP penalty factors that can be applied
         after fitting the P Model
-        (:func:`pyrealm.pmodel.functions.calc_soilmstress_stocker` and
-        :func:`pyrealm.pmodel.functions.calc_soilmstress_mengoli`).
+        (:func:`pyrealm.pmodel.functions.calculate_soilmstress_stocker` and
+        :func:`pyrealm.pmodel.functions.calculate_soilmstress_mengoli`).
 
     Args:
         env: An instance of

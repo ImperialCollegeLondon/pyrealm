@@ -77,9 +77,9 @@ raw predictions from a P Model with field observations of GPP. Two penalty funct
 are available that calculate the fraction of potential GPP that is realised given the
 effects of soil moisture stress:
 
-* The {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` function implements the
+* The {func}`~pyrealm.pmodel.functions.calculate_soilmstress_stocker` function implements the
   {cite:t}`Stocker:2020dh` GPP penalty for use with the standard P Model.
-* {func}`~pyrealm.pmodel.functions.calc_soilmstress_mengoli` function implements the
+* {func}`~pyrealm.pmodel.functions.calculate_soilmstress_mengoli` function implements the
   {cite:t}`mengoli:2023a` GPP penalty for use with the subdaily P Model.
 
 The GPP penalty functions are described in more detail below, using the artificial data
@@ -96,8 +96,8 @@ import numpy as np
 from pyrealm.pmodel import (
     PModelEnvironment,
     PModel,
-    calc_soilmstress_stocker,
-    calc_soilmstress_mengoli,
+    calculate_soilmstress_stocker,
+    calculate_soilmstress_mengoli,
     SubdailyPModel,
     AcclimationModel,
 )
@@ -125,7 +125,7 @@ env = PModelEnvironment(
 sm_gradient = np.linspace(0, 1.0, n_obs)
 ```
 
-## The {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` penalty factor
+## The {func}`~pyrealm.pmodel.functions.calculate_soilmstress_stocker` penalty factor
 
 This calculates an empirically derived penalty factor based on soil moisture ($\theta$)
 {cite:p}`Stocker:2018be,Stocker:2020dh` that captures the loss of gross primary
@@ -200,7 +200,7 @@ ax1.set_ylabel(r"Aridity sensitivity parameter, $q$")
 
 for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
 
-    soilmstress = calc_soilmstress_stocker(
+    soilmstress = calculate_soilmstress_stocker(
         soilm=sm_gradient, meanalpha=mean_alpha, coef=coef
     )
     ax2.plot(
@@ -223,10 +223,10 @@ ax2.set_ylabel(r"Empirical soil moisture factor, $\beta(\theta)$")
 plt.tight_layout()
 ```
 
-### Application of the {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` factor
+### Application of the {func}`~pyrealm.pmodel.functions.calculate_soilmstress_stocker` factor
 
 The factor can be applied to the P Model by using
-{func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker` to calculate the factor
+{func}`~pyrealm.pmodel.functions.calculate_soilmstress_stocker` to calculate the factor
 values and then multiplying calculated GPP ({attr}`~pyrealm.pmodel.pmodel.PModel.gpp`)
 by the resulting factor. The example below shows how the predicted light use
 efficiency from the P Model changes across an aridity gradient both with and without the
@@ -248,7 +248,7 @@ correction is only implemented as a post-hoc penalty to GPP.
   model tuning in {cite:t}`Stocker:2020dh` that also adjusted the value of the
   quantum yield of photosynthesis to capture canopy scale efficiency. To match this
   calibration process, the correction should be applied to outputs of a `PModel` with
-  matching settings: see {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker`
+  matching settings: see {func}`~pyrealm.pmodel.functions.calculate_soilmstress_stocker`
   for details.
 ```
 
@@ -270,7 +270,7 @@ gpp_stressed = {}
 
 for mean_alpha in [0.9, 0.5, 0.3, 0.1, 0.0]:
     # Calculate the stress for this aridity
-    sm_stress = calc_soilmstress_stocker(
+    sm_stress = calculate_soilmstress_stocker(
         soilm=sm_gradient, meanalpha=mean_alpha, coef=coef
     )
     # Apply the penalty factor
@@ -291,7 +291,7 @@ plt.legend()
 plt.show()
 ```
 
-## The {func}`~pyrealm.pmodel.functions.calc_soilmstress_mengoli` penalty factor
+## The {func}`~pyrealm.pmodel.functions.calculate_soilmstress_mengoli` penalty factor
 
 This is an empirically derived factor ($\beta(\theta) \in [0,1]$,
 {cite:p}`mengoli:2023a` that describes a penalty to gross primary productivity (GPP)
@@ -390,7 +390,9 @@ beta = {}
 ai_vals = [AI_crit_y.round(4), 1, 3, 6]
 
 for ai in ai_vals:
-    beta[ai] = calc_soilmstress_mengoli(soilm=sm_gradient, aridity_index=np.array(ai))
+    beta[ai] = calculate_soilmstress_mengoli(
+        soilm=sm_gradient, aridity_index=np.array(ai)
+    )
     plt.plot(sm_gradient, beta[ai], label=f"AI = {ai}")
 
 ax2.set_xlabel(r"Relative soil moisture ($\theta$)")
@@ -408,9 +410,9 @@ As the plots above show, plants in arid conditions have severely constrained max
 levels, but have lower critical thresholds, allowing them to maintain the maximum level
 under drier conditions.
 
-### Application of the {func}`~pyrealm.pmodel.functions.calc_soilmstress_mengoli` factor
+### Application of the {func}`~pyrealm.pmodel.functions.calculate_soilmstress_mengoli` factor
 
-As with  {func}`~pyrealm.pmodel.functions.calc_soilmstress_stocker`, the factor is first
+As with  {func}`~pyrealm.pmodel.functions.calculate_soilmstress_stocker`, the factor is first
 calculated and then applied to the GPP calculated for a model
 ({attr}`~pyrealm.pmodel.pmodel.PModel.gpp`). In the example below, the result is
 obviously just $\beta(\theta)$ from above scaled to the constant GPP.
@@ -425,7 +427,7 @@ obviously just $\beta(\theta)$ from above scaled to the constant GPP.
   predictions from a particular parameterisation of the subdaily PModel. To match
   the parameterisation settings, the correction should be applied to outputs of a
   `SubdailyPModel` with matching settings:
-  see {func}`~pyrealm.pmodel.functions.calc_soilmstress_mengoli` for details.
+  see {func}`~pyrealm.pmodel.functions.calculate_soilmstress_mengoli` for details.
 ```
 
 ```{code-cell} ipython3

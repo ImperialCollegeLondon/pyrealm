@@ -293,7 +293,7 @@ The {mod}`pyrealm.pmodel.functions` module provides a set of functions specific 
 calculations of the P Model and SubdailyPModel. Many of the functions used
 `pmodel_const` and `core_const` arguments to pass in constant values, but all are now
 unpacked so that the specific constants needed for each function are clear in the
-function signatures. In addition, the `calc_ftemp_kphio` and `calc_ftemp_inst_vcmax`
+function signatures. In addition, the `calculate_ftemp_kphio` and `calculate_ftemp_inst_vcmax`
 functions have been removed as they provided specific configurations of the more general
 `calculate_simple_arrhenius_factor` and `calculate_kattge_knorr_arrhenius_factor` that
 now replace them in the module.

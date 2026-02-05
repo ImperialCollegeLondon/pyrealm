@@ -11,7 +11,7 @@ from numpy.typing import NDArray
 from pyrealm.constants import CoreConst
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.calendar import Calendar
-from pyrealm.core.pressure import calc_patm
+from pyrealm.core.pressure import calculate_patm
 from pyrealm.core.time_series import broadcast_time
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.splash.evap import DailyEvapFluxes
@@ -107,7 +107,7 @@ class SplashModel:
         """The maximum soil water capacity for sites."""
 
         # TODO - potentially allow _actual_ climatic pressure data as an input
-        self.pa: NDArray[np.floating] = calc_patm(elv, core_const=core_const)
+        self.pa: NDArray[np.floating] = calculate_patm(elv, core_const=core_const)
         """The atmospheric pressure at sites, derived from elevation"""
 
         # Calculate the daily solar fluxes - these are invariant across the simulation

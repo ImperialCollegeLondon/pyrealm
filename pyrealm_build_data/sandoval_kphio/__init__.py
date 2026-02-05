@@ -1,4 +1,4 @@
-r"""This submodule contains benchmark outputs from the ``calc_phi0.R`` script, which is
+r"""This submodule contains benchmark outputs from the ``calculate_phi0.R`` script, which is
 an experimental approach to calculating the :math:`\phi_0` parameter for the P Model
 with modulation from climatic aridity and growing degree days and the current
 temperature. The calculation is implemented in ``pyrealm`` as
@@ -6,7 +6,7 @@ temperature. The calculation is implemented in ``pyrealm`` as
 
 The files are:
 
-* ``calc_phi0.R``: The original implementation and parameterisation.
+* ``calculate_phi0.R``: The original implementation and parameterisation.
 * ``create_test_inputs.R``: A script to run the original implementation with a range of
   inputs and save a file of test values.
 * ``sandoval_kphio.csv``: The resulting test values.

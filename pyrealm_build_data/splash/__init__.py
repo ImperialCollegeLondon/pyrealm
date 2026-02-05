@@ -15,13 +15,13 @@ combinations. The input data is created using:
 
     python splash_make_flux_benchmark_inputs.py -o data/daily_flux_benchmark_inputs.csv
 
-The ``splash_run_calc_daily_fluxes.py`` script can then be used to run the inputs
+The ``splash_run_calculate_daily_fluxes.py`` script can then be used to run the inputs
 through the original SPLASH implementation provided in the ``splash_py_version``
 directory.
 
 .. code:: sh
 
-    python splash_run_calc_daily_fluxes.py \ 
+    python splash_run_calculate_daily_fluxes.py \ 
         -i data/daily_flux_benchmark_inputs.csv \ 
         -o data/daily_flux_benchmark_outputs.csv
 

@@ -49,7 +49,7 @@ import xarray
 
 from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel import PModelEnvironment
-from pyrealm.core.pressure import calc_patm
+from pyrealm.core.pressure import calculate_patm
 ```
 
 :::{warning}
@@ -198,7 +198,7 @@ environment for the model:
 
 ```{code-cell} ipython3
 # Convert elevation to atmospheric pressure
-patm = calc_patm(elev)
+patm = calculate_patm(elev)
 
 # Mask out temperature values below -25°C
 temp[temp < -25] = np.nan

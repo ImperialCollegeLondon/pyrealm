@@ -17,7 +17,7 @@ from pyrealm.pmodel import (
     PModelEnvironment,
     SubdailyPModel,
 )
-from pyrealm.pmodel.functions import calc_soilmstress_mengoli
+from pyrealm.pmodel.functions import calculate_soilmstress_mengoli
 
 # Set the format used for writing floats to file
 FLOAT_FORMAT = "%0.8g"
@@ -104,7 +104,7 @@ pmodel_inputs_hh["precip_molar"] = convert_water_mm_to_moles(
 soilm_stress = pd.DataFrame(
     dict(
         date=pd.to_datetime(de_gri_splash["time"].to_numpy()),
-        soilm_stress=calc_soilmstress_mengoli(
+        soilm_stress=calculate_soilmstress_mengoli(
             soilm=de_gri_splash["wn"].to_numpy() / 150,
             aridity_index=aridity_index.to_numpy(),
         ),

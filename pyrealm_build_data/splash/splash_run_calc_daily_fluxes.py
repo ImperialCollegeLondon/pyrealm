@@ -11,7 +11,7 @@ import pandas  # type: ignore [import-untyped]
 from splash_py_version.splash import SPLASH  # type: ignore [import-not-found]
 
 
-def splash_run_calc_daily_fluxes(input_file: Path, output_file: Path) -> None:
+def splash_run_calculate_daily_fluxes(input_file: Path, output_file: Path) -> None:
     """Calculate the daily fluxes for a set of locations.
 
     This function takes an input file where rows give locations, date, tc, sf and sw and
@@ -105,10 +105,10 @@ def splash_run_calc_daily_fluxes(input_file: Path, output_file: Path) -> None:
 # MAIN PROGRAM
 ###############################################################################
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("splash_run_calc_daily_fluxes")
+    parser = argparse.ArgumentParser("splash_run_calculate_daily_fluxes")
     parser.add_argument("-i", "--input_file", type=Path)
     parser.add_argument("-o", "--output_file", type=Path)
 
     args = parser.parse_args()
 
-    splash_run_calc_daily_fluxes(args.input_file, args.output_file)
+    splash_run_calculate_daily_fluxes(args.input_file, args.output_file)
