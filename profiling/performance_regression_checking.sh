@@ -5,75 +5,129 @@ if [[ $# -eq 0 ]] ; then
     new_commit=HEAD
     old_commit=origin/develop
 else
-    while getopts n:o: flag
+    while getopts n:o:a:s: flag
     do
         case "${flag}" in
             n) new_commit=${OPTARG};;
             o) old_commit=${OPTARG};;
+            a) advanced=true;;
+            s) scaleup=${OPTARG};;
             *) echo "Invalid input argument"; exit 1;;
         esac
     done
 fi
 
 cd $(git rev-parse --show-toplevel)
-git checkout $new_commit
+
+# Activate the poetry environment if not already
+unset VIRTUAL_ENV
+poetry install > /dev/null
+
+SEPARATE_VENVS=true
+
+if [ "$SEPARATE_VENVS" = true ]; then
+    poetry config virtualenvs.in-project true
+else
+    $(poetry env activate)
+    echo "Warm-up run..."
+    poetry run pytest -m "profiling" > /dev/null
+fi
 
 # Remember where we start from
 current_repo=`pwd`
 
-#This is the where we want to check the other worktree out to
-cmp_repo=$current_repo/../pyrealm_performance_check
+# Perform the profiling. First on the old commit, then the new commit
+for version in "old" "new"; do
+    repo=$current_repo/../pyrealm_performance_check_$version
+    commit_var=${version}_commit
+    commit=${!commit_var}
 
-# Adding the worktree
-echo "Add worktree" $cmp_repo
-git worktree add $cmp_repo $old_commit
+    # Adding the worktree
+    echo "Add worktree" $repo
+    trap "git worktree remove --force $repo" EXIT
+    git worktree add $repo $commit
 
-# Go there and activate poetry environment
-cd $cmp_repo
-poetry install
-#source .venv/bin/activate
+    # Go there and update the poetry environment
+    cd $repo
+    poetry install > /dev/null
 
-# Run the profiling on old commit
-echo "Run profiling tests on old commit"
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then #Linux
-    poetry run /usr/bin/time -v pytest -m "profiling" --profile-svg
-elif [[ "$OSTYPE" == "darwin"* ]]; then #Mac OS
-     poetry run /usr/bin/time -l pytest -m "profiling" --profile-svg
-fi
-if [ "$?" != "0" ]; then
-    echo "Profiling the current code went wrong."
-    exit 1
-fi
+    if [ "$SEPARATE_VENVS" = true ]; then
+        echo "Warm-up run..."
+        poetry run pytest -m "profiling" > /dev/null
+    fi
 
-# Go back into the current repo and run there
-cd $current_repo
-poetry install
-echo "Run profiling tests on new commit"
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then #Linux
-    poetry run /usr/bin/time -v pytest -m "profiling" --profile-svg
-elif [[ "$OSTYPE" == "darwin"* ]]; then #Mac OS
-     poetry run /usr/bin/time -l pytest -m "profiling" --profile-svg
-fi
-if [ "$?" != "0" ]; then
-    echo "Profiling the new code went wrong."
-    exit 1
-fi
+    # Add scaling options
+    if [ -n "$scaleup" ]; then
+        pmodel_scaleup=$(python -c "print(int(6*$scaleup))")
+        splash_scaleup=$(python -c "print(int(125*$scaleup))")
+        scaleup_args="--pmodel-profile-scaleup $pmodel_scaleup --splash-profile-scaleup $splash_scaleup"
+    fi
+
+    # Run the profiling
+    echo "Run profiling tests on $version commit"
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then #Linux
+        /usr/bin/time -v poetry run pytest -m "profiling" --profile $scaleup_args
+    elif [[ "$OSTYPE" == "darwin"* ]]; then #Mac OS
+        /usr/bin/time -l poetry run pytest -m "profiling" --profile $scaleup_args
+    fi
+    if [ "$?" != "0" ]; then
+        echo "Profiling the current code went wrong."
+        exit 1
+    fi
+
+    # Perform the advanced function-by-function analysis
+    if [ "$advanced" = true ]; then
+        if [ "$version" = "old" ]; then
+            rm $current_repo/profiling/profiling-database.csv
+            rm $current_repo/prof/performance-plot.png
+            # Initialise the database
+            echo "Advanced regression test: Initialising database"
+            poetry run python $current_repo/profiling/run_benchmarking.py \
+                prof/combined.prof \
+                $current_repo/profiling/profiling-database.csv \
+                $current_repo/profiling/benchmark-fails.csv \
+                $commit \
+            ||
+            advanced_failed=true
+        else
+            # Compare the new times against the database
+            echo "Advanced regression test: Comparing new profiling results"
+            poetry run python $current_repo/profiling/run_benchmarking.py \
+                prof/combined.prof \
+                $current_repo/profiling/profiling-database.csv \
+                $current_repo/profiling/benchmark-fails.csv \
+                $commit \
+                --plot-path $current_repo/prof/performance-plot.png \
+            ||
+            advanced_failed=true
+        fi
+    fi
+
+    # Copy output and go back to the current repo
+    cp "prof/combined.prof" "$current_repo/prof/combined-$version.prof"
+    cd $current_repo
+
+    # Remove the worktree
+    git worktree remove --force $repo
+    git worktree prune
+    trap - EXIT
+done
 
 # Compare the profiling outputs
 cd profiling
-python -c "
+poetry run python -c "
 from pathlib import Path
 import simple_benchmarking
 import pandas as pd
 import sys
 
-prof_path_old = Path('$cmp_repo'+'/prof/combined.prof')
+prof_path_old = Path('$current_repo'+'/prof/combined-old.prof')
 print(prof_path_old)
 df_old = simple_benchmarking.run_simple_benchmarking(prof_path=prof_path_old)
 cumtime_old = (df_old.sum(numeric_only=True)['cumtime'])
 print('Old time:', cumtime_old)
 
-prof_path_new = Path('$current_repo'+'/prof/combined.prof')
+prof_path_new = Path('$current_repo'+'/prof/combined-new.prof')
 print(prof_path_new)
 df_new = simple_benchmarking.run_simple_benchmarking(prof_path=prof_path_new)
 cumtime_new = (df_new.sum(numeric_only=True)['cumtime'])
@@ -87,14 +141,25 @@ elif cumtime_new < 0.95*cumtime_old:
 else:
   print('Times haven\'t changed')
 "
-
 benchmarking_out="$?"
 
-cd ..
-# Remove the working tree for the comparison commit
-echo "Clean up"
-git worktree remove --force $cmp_repo
-git worktree prune
+# Report the results of the advanced regression test
+if [ "$advanced" = true ]; then
+    echo
+    if [ "$advanced_failed" = true ]; then
+        echo "Advanced regression test failed."
+    else
+        echo "Advanced regression test succeeded."
+    fi
+    if [ -f $current_repo/prof/performance-plot.png ]; then
+      echo "View the results in: prof/performance-plot.png"
+    fi
+    echo
+fi
+
+# Remove the profiling outputs
+rm "$current_repo/prof/combined-old.prof"
+rm "$current_repo/prof/combined-new.prof"
 
 if [ $benchmarking_out != "0" ]; then
     echo "The new code is more than 5% slower than the old one."
