@@ -328,7 +328,7 @@ class PModelABC(ABC):
         return daily_mean_pmodel_gpp * self.gpp_conversion_factor
 
     def apply_gpp_penalty_factor(self, penalty_factor: NDArray[np.floating]) -> None:
-        """Apply a post-hoc GPP penalty factor to GPP predictions.
+        r"""Apply a post-hoc GPP penalty factor to GPP predictions.
 
         Some productivity models apply a post-hoc penalty factor to the predicted GPP of
         the P Model to correct for other influences on productivity. Examples included
@@ -336,7 +336,7 @@ class PModelABC(ABC):
         :meth:`pyrealm.pmodel.functions.calc_soilmstress_mengoli` and
         :meth:`pyrealm.pmodel.functions.calc_soilmstress_stocker`.
 
-        This method allows such a factor (:math:`f 'in [0,1]`) to be applied to a fitted
+        This method allows such a factor (:math:`f \in [0,1]`) to be applied to a fitted
         P Model instance. The `gpp` attribute of the model will then return the product
         of the raw GPP predictions and the provided penalty factor.
 

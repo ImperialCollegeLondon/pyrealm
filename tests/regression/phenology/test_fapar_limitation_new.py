@@ -102,7 +102,8 @@ def test_fapar_limitation_frompmodel(
 
     pmodel_inputs["time"] = pmodel_inputs["time"].astype("datetime64[s]")
 
-    # The two timescales use different PModels and also need to specify the datetimes
+    # The two timescales use different PModels and datetime sequences. Also need to
+    # apply the soil moisture stress factor to the subdaily timescale.
     # and gpp penalty factors in FaparLimitation differently
     if timescale == "ft":
         # Fit PModel
@@ -113,7 +114,6 @@ def test_fapar_limitation_frompmodel(
         )
         # Define datetimes of observations - no GPP penalty
         fl_datetimes = pmodel_inputs["time"]
-        gpp_penalty_factor = None
 
     else:
         # Set up the datetimes of the observations and set the acclimation window
@@ -137,7 +137,7 @@ def test_fapar_limitation_frompmodel(
         # FaparLimitation uses the datetimes from pmodel.acclim_model and uses a soil
         # moisture stress penalty
         fl_datetimes = None
-        gpp_penalty_factor = pmodel_inputs["soilm_stress"]
+        pmodel.apply_gpp_penalty_factor(pmodel_inputs["soilm_stress"])
 
     # Check the GPP predictions
     assert_allclose(pmodel.gpp, pmodel_outputs["gpp"], rtol=1e-7)
@@ -152,7 +152,6 @@ def test_fapar_limitation_frompmodel(
         growing_season=pmodel_inputs["growing_season"],
         datetimes=fl_datetimes,
         precip=pmodel_inputs["precip_molar"],
-        gpp_penalty_factor=gpp_penalty_factor,
         aridity_index=site_data["AI_from_cruts"],  # Not used by zhu method.
     )
 

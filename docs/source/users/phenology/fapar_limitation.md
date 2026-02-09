@@ -9,16 +9,6 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  name: python
-  version: 3.12.3
-  mimetype: text/x-python
-  codemirror_mode:
-    name: ipython
-    version: 3
-  pygments_lexer: ipython3
-  nbconvert_exporter: python
-  file_extension: .py
 ---
 
 # Estimating maximum annual $f_{APAR}$
@@ -334,4 +324,8 @@ for (input_var, axis_label, title), axis in zip(plot_vars, axes.flatten()):
     axis.xaxis.set_major_formatter(axis_fmt_year)
 
 plt.tight_layout()
+```
+
+```{code-cell} ipython3
+
 ```
