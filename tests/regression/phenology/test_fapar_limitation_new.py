@@ -139,8 +139,9 @@ def test_fapar_limitation_frompmodel(
         fl_datetimes = None
         pmodel.apply_gpp_penalty_factor(pmodel_inputs["soilm_stress"])
 
-    # Check the GPP predictions
-    assert_allclose(pmodel.gpp, pmodel_outputs["gpp"], rtol=1e-7)
+    # Check the GPP predictions - using _gpp to test the raw GPP rather than with any
+    # penalty factor applied.
+    assert_allclose(pmodel._gpp, pmodel_outputs["gpp"], rtol=1e-7)
     assert_allclose(pmodel.optchi.ci, pmodel_outputs["ci"], rtol=1e-7)
     assert_allclose(pmodel.optchi.chi, pmodel_outputs["chi"], rtol=1e-7)
 
