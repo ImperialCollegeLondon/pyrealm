@@ -276,7 +276,11 @@ class PModelABC(ABC):
 
     @property
     def gpp(self) -> NDArray[np.floating]:
-        r"""Gross primary productivity (µg C m-2 s-1)."""
+        r"""Gross primary productivity (µg C m-2 s-1).
+
+        If a post-hoc GPP penalty factor has been applied to the model (see
+        :meth:`apply_gpp_penalty_factor`) then the value returned is the penalised GPP.
+        """
         if self.gpp_penalty_factor is None:
             return self._gpp
 
@@ -329,8 +333,8 @@ class PModelABC(ABC):
         Some productivity models apply a post-hoc penalty factor to the predicted GPP of
         the P Model to correct for other influences on productivity. Examples included
         the soil moisture penalty factors implemented as
-        :meth:`pyrealm.pmodel.functions.calculate_soilmstress_mengoli` and
-        :meth:`pyrealm.pmodel.functions.calculate_soilmstress_stocker`.
+        :meth:`pyrealm.pmodel.functions.calc_soilmstress_mengoli` and
+        :meth:`pyrealm.pmodel.functions.calc_soilmstress_stocker`.
 
         This method allows such a factor (:math:`f 'in [0,1]`) to be applied to a fitted
         P Model instance. The `gpp` attribute of the model will then return the product
