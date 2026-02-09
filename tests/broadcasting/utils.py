@@ -71,6 +71,10 @@ SKIP_METHODS = [
     # PModel
     "AcclimationModel.set_include",
     "PModel._get_daily_gpp",
+    # The following two take an array that needs to be congruent with the existing
+    # PModel.env shape.
+    "PModel.apply_gpp_penalty_factor",
+    "SubdailyPModel.apply_gpp_penalty_factor",
     # Demography - mostly 1d arrays (dataframes)
     "CohortMethods.drop_cohort_data",
     "StemTraits",
