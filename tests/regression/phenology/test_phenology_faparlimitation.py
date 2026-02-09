@@ -172,7 +172,6 @@ def test_fapar_limitiation_frompmodel_to_phenology(
         )
         # Define datetimes of observations - no GPP penalty
         fl_datetimes = pmodel_inputs["time"]
-        gpp_penalty_factor = None
 
     else:
         # Set up the datetimes of the observations and set the acclimation window
@@ -196,10 +195,10 @@ def test_fapar_limitiation_frompmodel_to_phenology(
         # FaparLimitation uses the datetimes from pmodel.acclim_model and uses a soil
         # moisture stress penalty
         fl_datetimes = None
-        gpp_penalty_factor = pmodel_inputs["soilm_stress"]
+        pmodel.apply_gpp_penalty_factor(pmodel_inputs["soilm_stress"])
 
-    # Check the GPP predictions
-    assert_allclose(pmodel.gpp, pmodel_outputs["gpp"], rtol=1e-7)
+    # Check the GPP predictions - use _gpp here to check the unpenalized values
+    assert_allclose(pmodel._gpp, pmodel_outputs["gpp"], rtol=1e-7)
     assert_allclose(pmodel.optchi.ci, pmodel_outputs["ci"], rtol=1e-7)
     assert_allclose(pmodel.optchi.chi, pmodel_outputs["chi"], rtol=1e-7)
 
@@ -211,7 +210,6 @@ def test_fapar_limitiation_frompmodel_to_phenology(
         datetimes=fl_datetimes,
         precip=pmodel_inputs["precip_molar"],
         aridity_index=site_data["AI_from_cruts"],
-        gpp_penalty_factor=gpp_penalty_factor,
     )
 
     assert_allclose(
