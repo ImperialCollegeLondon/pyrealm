@@ -6,7 +6,7 @@ from numpy.testing import assert_allclose
 
 
 @pytest.mark.parametrize(
-    argnames="phenology_method",
+    argnames="method_predictions_dir",
     argvalues=(pytest.param("cai_zhou_method"),),
 )
 @pytest.mark.parametrize(
@@ -20,7 +20,7 @@ def test_faparlimitation(
     site_data,
     annual_inputs,
     fapar_max_predictions,
-    phenology_method,  # Used to parameterise the fapar_max_predictions fixture
+    method_predictions_dir,  # Used to parameterise the fapar_max_predictions fixture
     timescale,  # Also used to parameterise the annual_inputs fixture
     A0_variable,
 ):
@@ -58,7 +58,7 @@ def test_faparlimitation(
 
 
 @pytest.mark.parametrize(
-    argnames="phenology_method",
+    argnames="method_predictions_dir",
     argvalues=(pytest.param("cai_zhou_method"),),
 )
 @pytest.mark.parametrize(
@@ -73,8 +73,8 @@ def test_phenology(
     annual_inputs,
     daily_assimilation,
     daily_lai_predictions,
-    phenology_method,  # Used by pytest to parameterise the annual_inputs fixture
-    timescale,
+    method_predictions_dir,  # Used to parameterise the fapar_max_predictions fixture
+    timescale,  # Also used by pytest to parameterise the annual_inputs fixture
     A0_variable,
 ):
     """Regression test of the Phenology class on subdaily data."""
@@ -115,7 +115,7 @@ def test_phenology(
 
 
 @pytest.mark.parametrize(
-    argnames="phenology_method",
+    argnames="method_predictions_dir",
     argvalues=(pytest.param("cai_zhou_method"),),
 )
 @pytest.mark.parametrize(
@@ -132,6 +132,7 @@ def test_fapar_limitiation_frompmodel_to_phenology(
     daily_assimilation,
     fapar_max_predictions,
     daily_lai_predictions,
+    method_predictions_dir,  # Used to parameterise the fapar_max_predictions fixture
     timescale,
 ):
     """Regression test for from_pmodel FaparLimitation class method and Phenology.
@@ -218,7 +219,8 @@ def test_fapar_limitiation_frompmodel_to_phenology(
         fapar_max_predictions[f"lai_max_{timescale}"], faparlim.lai_max, rtol=1e-6
     )
 
-    # The subdaily and standard pmodel._get_daily_gpp have different APIs.
+    # The subdaily and standard pmodel._get_daily_gpp have different APIs and pylance
+    # moans.
     if timescale == "ft":
         days, gpp = pmodel._get_daily_gpp(datetimes=pmodel_inputs["time"])
     else:
