@@ -555,10 +555,13 @@ class AcclimationModel:
                 alpha=self.alpha,
                 allow_holdover=self.allow_holdover,
             )
-        except ValueError:
-            raise ValueError(
-                "Missing data in input values, try setting allow_holdover=True"
-            )
+        except ValueError as e:
+            if "Missing values" in str(e):
+                raise ValueError(
+                    "Missing data in input values, try setting allow_holdover=True"
+                )
+            else:
+                raise e
 
     def fill_daily_to_subdaily(
         self,
