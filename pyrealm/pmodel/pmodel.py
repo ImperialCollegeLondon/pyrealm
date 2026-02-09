@@ -1043,7 +1043,7 @@ class SubdailyPModel(PModelABC):
         """Average gpp values to daily means - does not apply penalty."""
 
         # Reshape gpp array by day
-        gpp_by_day = self._gpp.view()
+        gpp_by_day = self.gpp.view()
         gpp_by_day.shape = tuple(
             [
                 self.acclim_model.n_days,
