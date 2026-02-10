@@ -105,9 +105,9 @@ notably the API of the `pmodel` module, as well as introducing new functionality
   - The `fill_from` argument to `fill_daily_to_subdaily` was only required for
     `SubdailyPModel_JAMES` and so this has also been deprecated.
 
-- The functions `calculate_ftemp_kphio` and `calculate_ftemp_inst_vcmax` provided narrow use cases
-  with code duplication. They have been replaced by two broader Arrhenius functions:
-  `calculate_simple_arrhenius_factor` and `calculate_kattge_knorr_arrhenius_factor` .
+- The functions `calculate_ftemp_kphio` and `calculate_ftemp_inst_vcmax` provided
+  narrow use cases with code duplication. They have been replaced by two broader
+  Arrhenius functions: `calculate_simple_arrhenius_factor` and `calculate_kattge_knorr_arrhenius_factor`.
   The functions in {mod}`pyrealm.pmodel.functions` have been updated to take specific
   arguments rather than just taking `PModelConsts` and `CoreConsts` objects.
 
@@ -173,8 +173,8 @@ notably the API of the `pmodel` module, as well as introducing new functionality
 ## 0.10.0
 
 - Implementation of the Mengoli et al 2023 soil moisture penalty factor. The existing
-  calculate_soilmstress function is now calculate_soilmstress_stocker and the new function is
-  calculate_soilmstress_mengoli.
+  calculate_soilmstress function is now calculate_soilmstress_stocker and the new
+  function is calculate_soilmstress_mengoli.
 - The soilmstress argument to PModel is removed and both the Mengoli and Stocker
   approaches are now intended to be applied as penalties to GPP after P Model fitting,
   allowing the two to be compared from the same P Model outputs.

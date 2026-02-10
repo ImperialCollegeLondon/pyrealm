@@ -77,10 +77,10 @@ raw predictions from a P Model with field observations of GPP. Two penalty funct
 are available that calculate the fraction of potential GPP that is realised given the
 effects of soil moisture stress:
 
-* The {func}`~pyrealm.pmodel.functions.calculate_soilmstress_stocker` function implements the
-  {cite:t}`Stocker:2020dh` GPP penalty for use with the standard P Model.
-* {func}`~pyrealm.pmodel.functions.calculate_soilmstress_mengoli` function implements the
-  {cite:t}`mengoli:2023a` GPP penalty for use with the subdaily P Model.
+* The {func}`~pyrealm.pmodel.functions.calculate_soilmstress_stocker` function
+implements the {cite:t}`Stocker:2020dh` GPP penalty for use with the standard P Model.
+* {func}`~pyrealm.pmodel.functions.calculate_soilmstress_mengoli` function
+implements the {cite:t}`mengoli:2023a` GPP penalty for use with the subdaily P Model.
 
 The GPP penalty functions are described in more detail below, using the artificial data
 set created below. The data set consists of 5 days of observations of a constant
@@ -412,8 +412,8 @@ under drier conditions.
 
 ### Application of the {func}`~pyrealm.pmodel.functions.calculate_soilmstress_mengoli` factor
 
-As with  {func}`~pyrealm.pmodel.functions.calculate_soilmstress_stocker`, the factor is first
-calculated and then applied to the GPP calculated for a model
+As with  {func}`~pyrealm.pmodel.functions.calculate_soilmstress_stocker`,
+the factor is first calculated and then applied to the GPP calculated for a model
 ({attr}`~pyrealm.pmodel.pmodel.PModel.gpp`). In the example below, the result is
 obviously just $\beta(\theta)$ from above scaled to the constant GPP.
 
