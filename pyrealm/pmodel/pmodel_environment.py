@@ -10,6 +10,12 @@ from numpy.typing import NDArray
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
+from pyrealm.pmodel.functions import (
+    calculate_co2_to_ca,
+    calculate_gammastar,
+    calculate_kmm,
+    calculate_ns_star,
+)
 
 
 class PModelEnvironment:

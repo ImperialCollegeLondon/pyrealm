@@ -43,8 +43,9 @@ def splash_make_flux_benchmark_inputs(output_file: str) -> None:
 
     inputs = pandas.DataFrame(inputs_dict)
 
-    # Calculate pressure - odd location of static function as class method. Note that
-    # this is equivalent to pyrealm calculate_patm but uses a different standard temperature.
+    # Calculate pressure - odd location of static function as class method.
+    # Note that this is equivalent to pyrealm calculate_patm but uses a
+    # different standard temperature.
     evap = EVAP(lat=0, elv=0)
     inputs["pa"] = evap.elv2pres(inputs["elv"])
 
