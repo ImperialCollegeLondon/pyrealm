@@ -105,14 +105,14 @@ notably the API of the `pmodel` module, as well as introducing new functionality
   - The `fill_from` argument to `fill_daily_to_subdaily` was only required for
     `SubdailyPModel_JAMES` and so this has also been deprecated.
 
-- The functions `calculate_ftemp_kphio` and `calculate_ftemp_inst_vcmax` provided
+- The functions `calc_ftemp_kphio` and `calc_ftemp_inst_vcmax` provided
   narrow use cases with code duplication. They have been replaced by two broader
-  Arrhenius functions: `calculate_simple_arrhenius_factor` and `calculate_kattge_knorr_arrhenius_factor`.
+  Arrhenius functions: `calc_simple_arrhenius_factor` and `calc_kattge_knorr_arrhenius_factor`.
   The functions in {mod}`pyrealm.pmodel.functions` have been updated to take specific
   arguments rather than just taking `PModelConsts` and `CoreConsts` objects.
 
 - The `pyrealm.core.water` module now provides `convert_water_mm_to_moles`,
-  `convert_water_moles_to_mm` and `calculate_water_molar_volume`.
+  `convert_water_moles_to_mm` and `calc_water_molar_volume`.
 
 - The first components in the experimental `demography` module, providing an integrated
   set of submodules that provide: plant functional types, size-structured cohorts, plant
@@ -173,8 +173,8 @@ notably the API of the `pmodel` module, as well as introducing new functionality
 ## 0.10.0
 
 - Implementation of the Mengoli et al 2023 soil moisture penalty factor. The existing
-  calculate_soilmstress function is now calculate_soilmstress_stocker and the new
-  function is calculate_soilmstress_mengoli.
+  calc_soilmstress function is now calc_soilmstress_stocker and the new
+  function is calc_soilmstress_mengoli.
 - The soilmstress argument to PModel is removed and both the Mengoli and Stocker
   approaches are now intended to be applied as penalties to GPP after P Model fitting,
   allowing the two to be compared from the same P Model outputs.
@@ -303,7 +303,7 @@ notably the API of the `pmodel` module, as well as introducing new functionality
   using np.nan. See notes in pyrealm/bounds_checker.py. This was revisited even before
   release to remove built in masking completely and just provide some warnings on sane
   ranges. A hard limit for temps < 25°C is imposed due to the behaviour of
-  calculate_density_h2o.
+  calc_density_h2o.
 
 ## 0.5.2
 
@@ -331,7 +331,7 @@ notably the API of the `pmodel` module, as well as introducing new functionality
   PModelEnvironment and PModel classes.
 - Implementation of ConstrainedArray class to clip inputs to biologically meaningful
   ranges and to identify that clipping has occurred. Particular issue with serious
-  numerical instability in calculate_density_h2o, but now adopted a general solution to
+  numerical instability in calc_density_h2o, but now adopted a general solution to
   clipping inputs.
 - Expansion of PModel testing to include a global array giving a wider range of inputs
   including edge cases.
@@ -357,7 +357,7 @@ notably the API of the `pmodel` module, as well as introducing new functionality
 
 ## 0.1.3
 
-- Clipping negative values in calculate_ftemp_kphio
+- Clipping negative values in calc_ftemp_kphio
 
 ## 0.1.2
 
