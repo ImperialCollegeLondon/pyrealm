@@ -246,7 +246,6 @@ class FaparLimitation:
         precip: NDArray[np.floating],
         aridity_index: NDArray[np.floating],
         datetimes: NDArray[np.datetime64] | None = None,
-        gpp_penalty_factor: NDArray[np.floating] | None = None,
         phenology_const: PhenologyConst = PhenologyConst(),
     ) -> FaparLimitation:
         r"""Create a FaparLimitation instance from a P Model and other inputs.
@@ -300,8 +299,6 @@ class FaparLimitation:
                 considered as part of the growing season.
             precip: An array of precipitation for each observation.
             aridity_index: A climatological estimate of local aridity index.
-            gpp_penalty_factor: A post-hoc penalty factor to be applied to estimated
-                GPP.
             phenology_const: An instance of
                 :class:`~pyrealm.constants.phenology_const.PhenologyConst`
         """
@@ -336,13 +333,8 @@ class FaparLimitation:
         # - TODO - handle incompleteness - when do we stop estimating annual values from
         #   partial years (or at least warn about it)
 
-        # Extract GPP and apply any observation level penalty factor
-        total_gpp = pmodel.gpp
-        if gpp_penalty_factor is not None:
-            total_gpp *= gpp_penalty_factor
-
         # Calculate annual mean potential GPP and scale up to the year
-        annual_mean_potential_gpp = avc.get_annual_means(total_gpp)
+        annual_mean_potential_gpp = avc.get_annual_means(pmodel.gpp)
         annual_total_potential_gpp = (
             annual_mean_potential_gpp * (avc.year_n_days) * 86400 * 1e-6
         ) / pmodel.core_const.k_c_molmass

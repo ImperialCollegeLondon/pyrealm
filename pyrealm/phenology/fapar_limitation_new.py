@@ -498,7 +498,6 @@ class FaparLimitationNew:
         growing_season: NDArray[np.bool],
         precip: NDArray[np.floating],
         datetimes: NDArray[np.datetime64] | None = None,
-        gpp_penalty_factor: NDArray[np.floating] | None = None,
         method: str = "cai",
         phenology_const: PhenologyConstNew = PhenologyConstNew(),
         **kwargs: NDArray[np.floating],
@@ -540,10 +539,12 @@ class FaparLimitationNew:
         mean of monthly values :math:`1, 2, \dots, 12` would not be 6.5 because the
         monthly values are weighted according to the length of the month.
 
-        Lastly, potential GPP is taken directly from the P Model instance. If you want
-        to apply a post-hoc penalty factor to GPP (e.g. a water limitation factor), then
-        you can optionally provide per-observation penalty estimates and they will be
-        applied when calculating annual total potential assimilation.
+        .. NOTE:
+
+            Potential GPP is taken directly from the P Model instance. If you want to
+            apply a post-hoc penalty factor to GPP (e.g. a water limitation factor),
+            then use the `apply_gpp_penalty_factor` method to your fitted P Model before
+            using it to calculate fAPAR limitation.
 
         Args:
             pmodel: A :class:`pyrealm.pmodel.pmodel.PModel` or
@@ -553,8 +554,6 @@ class FaparLimitationNew:
             growing_season: A boolean array indicating which observations are to be
                 considered as part of the growing season.
             precip: An array of precipitation for each observation.
-            gpp_penalty_factor: A post-hoc penalty factor to be applied to estimated
-                GPP.
             method: The method to be used in calculating maximum fAPAR, defaulting to
                 `cai`.
             phenology_const: An instance of
@@ -587,18 +586,12 @@ class FaparLimitationNew:
         )
 
         # Get the total GPP for each observation
-        # - also need to handle missing values, easier to take _mean_ annual value
-        #   and scale it up to an annual total
-        # - TODO - handle incompleteness - when do we stop estimating annual values from
-        #   partial years (or at least warn about it)
+        # TODO: handle incompleteness - when do we stop estimating annual values from
+        #         partial years (or at least warn about it)
 
-        # Extract GPP and apply any observation level penalty factor
-        total_gpp = pmodel.gpp
-        if gpp_penalty_factor is not None:
-            total_gpp *= gpp_penalty_factor
-
-        # Calculate annual mean potential GPP and scale up to the year
-        annual_mean_potential_gpp = avc.get_annual_means(total_gpp)
+        # Calculate annual mean potential GPP and scale up to the year - note that this
+        # includes any post-hoc GPP penalty applied to the model
+        annual_mean_potential_gpp = avc.get_annual_means(pmodel.gpp)
         annual_total_potential_gpp = (
             annual_mean_potential_gpp * (avc.year_n_days) * 86400 * 1e-6
         ) / pmodel.core_const.k_c_molmass

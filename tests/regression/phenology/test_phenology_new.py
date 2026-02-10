@@ -187,14 +187,13 @@ def test_phenology_frompmodel_cai_zhou(
 
     from pyrealm.phenology.phenology_new import PhenologyNew
 
-    pmodel, datetimes, gpp_penalty_factor = phenology_pmodels
+    pmodel, datetimes = phenology_pmodels
 
     pheno = PhenologyNew.from_pmodel(
         pmodel=pmodel,
         fapar_limitation=fapar_limitation_instance,
         datetimes=datetimes,
         method=pheno_method,
-        gpp_penalty_factor=gpp_penalty_factor,
     )
 
     # Fortnightly data is truncated by the last fortnight so need to truncate to match
@@ -249,24 +248,23 @@ def test_phenology_frompmodel_zhu(
     year as in the reference implementation.
 
     NOTE: Actually - it's worse than this. For the fortnightly inputs, we'd need to
-        extrapolate from the forntightly observations forward to the start of the year
-        and backwards to the end of the year in order to get a matching dataset. That's
+        extrapolate from the fortnightly observations backwards to the start of the year
+        and forwards to the end of the year in order to get a matching dataset. That's
         not the case for subdaily inputs - which have daily values - but even here the
         interpolation is different from the individual years than the complete
-        dataset. We'd need to rerun the interpolation on annual blocks
+        dataset. We'd need to rerun the interpolation on annual blocks.
 
     """
 
     from pyrealm.phenology.phenology_new import PhenologyNew
 
-    pmodel, datetimes, gpp_penalty_factor = phenology_pmodels
+    pmodel, datetimes = phenology_pmodels
 
     pheno = PhenologyNew.from_pmodel(
         pmodel=pmodel,
         fapar_limitation=fapar_limitation_instance,
         datetimes=datetimes,
         method=pheno_method,
-        gpp_penalty_factor=gpp_penalty_factor,
         aet_pet_ratio=np.array([site_data["aet_pet_ratio"]]),
         spinup_length=366 if pmodel_year in (2004, 2008, 2012) else 365,
     )

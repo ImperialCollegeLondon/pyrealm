@@ -202,7 +202,6 @@ def phenology_pmodels(
         )
         # Define datetimes of observations - no GPP penalty
         fl_datetimes = pmodel_inputs["time"][subset]
-        gpp_penalty_factor = None
 
     else:
         # Set up the datetimes of the observations and set the acclimation window
@@ -223,9 +222,10 @@ def phenology_pmodels(
             method_kphio="temperature",
         )
 
-        # FaparLimitation uses the datetimes from pmodel.acclim_model and uses a soil
-        # moisture stress penalty
+        # FaparLimitation uses the datetimes from pmodel.acclim_model
         fl_datetimes = None
-        gpp_penalty_factor = pmodel_inputs["soilm_stress"][subset]
 
-    return pmodel, fl_datetimes, gpp_penalty_factor
+        # Apply the GPP penalty
+        pmodel.apply_gpp_penalty_factor(pmodel_inputs["soilm_stress"][subset])
+
+    return pmodel, fl_datetimes

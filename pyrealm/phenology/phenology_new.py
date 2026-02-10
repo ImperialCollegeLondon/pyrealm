@@ -421,18 +421,14 @@ class PhenologyNew:
                     "inputs, the acclimation model datetimes are used."
                 )
             datetimes = pmodel.acclim_model.datetimes
-            daily_timestamps, daily_gpp = pmodel._get_daily_gpp(
-                gpp_penalty_factor=gpp_penalty_factor
-            )
+            daily_timestamps, daily_gpp = pmodel._get_daily_gpp()
 
         elif isinstance(pmodel, PModel):
             if datetimes is None:
                 raise ValueError(
                     "Observation datetimes are required with PModel inputs."
                 )
-            daily_timestamps, daily_gpp = pmodel._get_daily_gpp(
-                datetimes=datetimes, gpp_penalty_factor=gpp_penalty_factor
-            )
+            daily_timestamps, daily_gpp = pmodel._get_daily_gpp(datetimes=datetimes)
 
         # Scale daily GPP in µmol m2 s up to daily molar assimilation.
         daily_potential_assimilation = (

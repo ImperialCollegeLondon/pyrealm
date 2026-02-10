@@ -82,7 +82,7 @@ def test_pmodel_get_daily_gpp(
 ):
     """Tests that the interpolation to daily gpp from PModel gpp works correctly."""
 
-    test_pmodel.gpp = gpp_in
+    test_pmodel._gpp = gpp_in
     days, daily_gpp = test_pmodel._get_daily_gpp(np.array(datetimes))
     # Testing equality in time series is annoying because assert_allclose assumes floats
     # and all of the np.datetime64 dtypes are integer under the hood. So, explicitly
@@ -118,7 +118,7 @@ def test_subdailypmodel_get_daily_gpp(
 ):
     """Tests that the averaging from subdaily gpp to daily gpp works correctly."""
 
-    test_subdailypmodel.gpp = gpp_in
+    test_subdailypmodel._gpp = gpp_in
     test_subdailypmodel.acclim_model.n_days = 31
     test_subdailypmodel.acclim_model.n_obs = 4
     days, daily_gpp = test_subdailypmodel._get_daily_gpp()

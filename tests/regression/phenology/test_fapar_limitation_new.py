@@ -74,10 +74,10 @@ def test_pmodels(
     predictions as the saved regression data.
     """
 
-    pmodel, _, _ = phenology_pmodels
+    pmodel, _ = phenology_pmodels
 
-    # Check the GPP predictions
-    assert_allclose(pmodel.gpp, pmodel_outputs["gpp"], rtol=1e-7)
+    # Check the GPP predictions - raw GPP not penalised.
+    assert_allclose(pmodel._gpp, pmodel_outputs["gpp"], rtol=1e-7)
     assert_allclose(pmodel.optchi.ci, pmodel_outputs["ci"], rtol=1e-7)
     assert_allclose(pmodel.optchi.chi, pmodel_outputs["chi"], rtol=1e-7)
 
@@ -110,7 +110,7 @@ def test_fapar_limitation_frompmodel(
 
     from pyrealm.phenology.fapar_limitation_new import FaparLimitationNew
 
-    pmodel, datetimes, gpp_penalty_factor = phenology_pmodels
+    pmodel, datetimes = phenology_pmodels
 
     pmodel_inputs["time"] = pmodel_inputs["time"].astype("datetime64[s]")
 
@@ -120,7 +120,6 @@ def test_fapar_limitation_frompmodel(
         growing_season=pmodel_inputs["growing_season"],
         datetimes=datetimes,
         precip=pmodel_inputs["precip_molar"],
-        gpp_penalty_factor=gpp_penalty_factor,
         aridity_index=site_data["AI_from_cruts"],  # Not used by zhu method.
     )
 
