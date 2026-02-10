@@ -10,7 +10,7 @@ from numpy.typing import NDArray
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
-from pyrealm.core.xarray import ArrayType, xarray_inputs_kw
+from pyrealm.core.xarray import ArrayType, xarray_inputs
 from pyrealm.pmodel.functions import (
     calculate_co2_to_ca,
     calculate_gammastar,
@@ -118,8 +118,10 @@ class PModelEnvironment:
         **kwargs: ArrayType[np.floating],
     ):
         # Convert any xr.DataArrays to numpy arrays
-        *args, kw_arrays = xarray_inputs_kw(tc, vpd, co2, patm, fapar, ppfd, **kwargs)
-        tc, vpd, co2, patm, fapar, ppfd = args
+        arrays, kw_arrays = xarray_inputs(
+            tc, vpd, co2, patm, fapar, ppfd, kwargs=kwargs
+        )
+        tc, vpd, co2, patm, fapar, ppfd = arrays
 
         # Check shapes of inputs are congruent
         self.shape: tuple = check_input_shapes(

@@ -10,7 +10,7 @@ from numpy.typing import NDArray
 from pyrealm.constants import C3C4Const
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
-from pyrealm.core.xarray import ArrayType, xarray_inputs
+from pyrealm.core.xarray import ArrayType, get_common_dims, xarray_inputs
 
 
 def convert_gpp_advantage_to_c4_fraction(
@@ -201,9 +201,9 @@ class C3C4Competition:
         warn_experimental("C3C4Competition")
 
         # Convert any xarray inputs
-        # TODO: Combine into one call
-        gpp_c3, gpp_c4, treecover = xarray_inputs(gpp_c3, gpp_c4, treecover)
-        cropland, below_t_min = xarray_inputs(cropland, below_t_min)
+        dims = get_common_dims(gpp_c3, gpp_c4, treecover, below_t_min, cropland)
+        gpp_c3, gpp_c4, treecover = xarray_inputs(gpp_c3, gpp_c4, treecover, dims=dims)
+        cropland, below_t_min = xarray_inputs(cropland, below_t_min, dims=dims)
 
         # Check inputs are congruent
         self.shape: tuple = check_input_shapes(

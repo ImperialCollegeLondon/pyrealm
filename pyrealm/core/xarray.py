@@ -19,12 +19,29 @@ def is_arraytype(var: Any) -> TypeGuard[ArrayType]:
     return True
 
 
-def _get_dims(*args: NDArray | xr.DataArray) -> list[Hashable]:
-    """Get the full list of dimensions across all DataArray arguments."""
+def get_common_dims(*arrays: NDArray | xr.DataArray) -> list[Hashable]:
+    """Get the full list of dimensions across all DataArray arguments.
+
+    This needs to be called when there are arrays with multiple dtypes that cannot be
+    combined in a single call to `xarray_inputs`.
+
+    Args:
+        *arrays: The variables to convert into numpy arrays.
+
+    Returns:
+        A list of dimension names.
+
+    Examples:
+        >>> input_1 = xr.DataArray([], dims="a")
+        >>> input_2 = xr.DataArray([[]], dims=["b", "a"])
+        >>> get_common_dims(input_1, input_2)
+        ['a', 'b']
+    """
+
     dims = []
-    for arg in args:
-        if isinstance(arg, xr.DataArray):
-            dims.extend([d for d in arg.dims if d not in dims])
+    for array in arrays:
+        if isinstance(array, xr.DataArray):
+            dims.extend([d for d in array.dims if d not in dims])
     return dims
 
 
@@ -39,18 +56,47 @@ def _convert_arg(da: xr.DataArray, dims: list[Hashable]) -> NDArray:
     return da.to_numpy()
 
 
+# 1 array input
 @overload
-def xarray_inputs(array1: ArrayType[T], /) -> NDArray[T]: ...
+def xarray_inputs(
+    array1: ArrayType[T],
+    /,
+    *,
+    kwargs: None = ...,
+    dims: list[Hashable] | None = ...,
+) -> NDArray[T]: ...
+
+
+# Multiple array inputs
 @overload
 def xarray_inputs(
     array1: ArrayType[T],
     array2: ArrayType[T],
     /,
     *other_arrays: ArrayType[T],
+    kwargs: None = ...,
+    dims: list[Hashable] | None = ...,
 ) -> tuple[NDArray[T], ...]: ...
 
 
-def xarray_inputs(*arrays: ArrayType[T]) -> NDArray[T] | tuple[NDArray[T], ...]:
+# Kwargs input
+@overload
+def xarray_inputs(
+    *arrays: ArrayType[T],
+    kwargs: dict[str, ArrayType[T]],
+    dims: list[Hashable] | None = ...,
+) -> tuple[tuple[NDArray[T], ...], dict[str, NDArray[T]]]: ...
+
+
+def xarray_inputs(
+    *arrays: ArrayType[T],
+    kwargs: dict[str, ArrayType[T]] | None = None,
+    dims: list[Hashable] | None = None,
+) -> (
+    NDArray[T]
+    | tuple[NDArray[T], ...]
+    | tuple[tuple[NDArray[T], ...], dict[str, NDArray[T]]]
+):
     """Converts any `xarray.DataArray` inputs to numpy arrays.
 
     This allows functions that expect numpy arrays to be used directly with
@@ -65,9 +111,12 @@ def xarray_inputs(*arrays: ArrayType[T]) -> NDArray[T] | tuple[NDArray[T], ...]:
 
     Args:
         *arrays: The variables to convert into numpy arrays.
+        kwargs (dict, optional): A dictionary of variables to convert to numpy arrays.
+        dims (list, optional): A list of dimension names to expand DataArrays to.
 
     Returns:
-        The stripped array(s).
+        The stripped array(s). As a tuple if more than one is provided. As (tuple, dict)
+        if kwargs is provided, with the dict containing the converted kwargs.
 
     Examples:
         >>> input = xr.DataArray([1, 2, 3])
@@ -78,33 +127,27 @@ def xarray_inputs(*arrays: ArrayType[T]) -> NDArray[T] | tuple[NDArray[T], ...]:
         array([1, 2, 3])
     """
 
-    if len(arrays) == 1:
+    if dims is None:
+        dims = get_common_dims(*arrays, *(kwargs or {}).values())
+
+    # 1 value - return scalar
+    if len(arrays) == 1 and not kwargs:
         a = arrays[0]
-        return a.to_numpy() if isinstance(a, xr.DataArray) else a
+        return _convert_arg(a, dims) if isinstance(a, xr.DataArray) else a
 
     else:
-        dims = _get_dims(*arrays)
-        return tuple(
+        new_arrays = tuple(
             _convert_arg(a, dims) if isinstance(a, xr.DataArray) else a for a in arrays
         )
 
+        # No kwargs - return tuple of arrays
+        if kwargs is None:
+            return new_arrays
 
-def xarray_inputs_kw(
-    *arrays: ArrayType[T],
-    **kwargs: ArrayType[T],
-) -> tuple[*tuple[NDArray[T], ...], dict[str, NDArray[T]]]:
-    """Converts any `xarray.DataArray` inputs to numpy arrays.
-
-    Performs the same functionality as :func:`xarray_inputs` but can also take - and
-    return - a kwargs dictionary.
-    """
-
-    dims = _get_dims(*arrays, *kwargs.values())
-    new_arrays = tuple(
-        _convert_arg(a, dims) if isinstance(a, xr.DataArray) else a for a in arrays
-    )
-    new_kwargs = {
-        k: _convert_arg(v, dims) if isinstance(v, xr.DataArray) else v
-        for k, v in kwargs.items()
-    }
-    return (*new_arrays, new_kwargs)
+        # kwargs - return tuple including the kwargs dictionary
+        else:
+            new_kwargs = {
+                k: _convert_arg(v, dims) if isinstance(v, xr.DataArray) else v
+                for k, v in kwargs.items()
+            }
+            return (new_arrays, new_kwargs)
