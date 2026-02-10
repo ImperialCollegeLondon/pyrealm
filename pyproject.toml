@@ -31,6 +31,7 @@ authors = [
   {name = "Arne Scheire", email = "scheirearne@gmail.com"},
   {name = "Sally Matson", email = "sally.matson21@imperial.ac.uk"},
   {name = "Sam Avis", email = "sa2329@cam.ac.uk"},
+  {name = "Adeleke Bankole", email = "ab3191@cam.ac.uk"},
 ]
 
 classifiers = [

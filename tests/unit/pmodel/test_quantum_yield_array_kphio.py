@@ -77,17 +77,17 @@ def variable_kphio(basic_inputs_and_expected):
     kphio_values = np.arange(0.001, 0.126, step=0.001)
     gpp = np.empty_like(kphio_values)
 
+    env = PModelEnvironment(
+        tc=inputs.tc,
+        patm=inputs.patm,
+        co2=inputs.co2,
+        vpd=inputs.vpd,
+        fapar=inputs.fapar,
+        ppfd=inputs.ppfd,
+    )
     for idx, kph in enumerate(kphio_values):
-        env = PModelEnvironment(
-            tc=inputs.tc,
-            patm=inputs.patm,
-            co2=inputs.co2,
-            vpd=inputs.vpd,
-            fapar=inputs.fapar,
-            ppfd=inputs.ppfd,
-        )
         mod = PModel(env, method_kphio="fixed", reference_kphio=kph)
-        gpp[idx] = mod.gpp
+        gpp[idx] = mod.gpp.item()
 
     return kphio_values, gpp
 
