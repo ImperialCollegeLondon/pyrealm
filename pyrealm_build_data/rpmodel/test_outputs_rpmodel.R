@@ -46,26 +46,26 @@ values <- within(values, {
        ftemp_kphio_c4_ar <- ftemp_kphio(tc_ar, c4 = TRUE)
 
        # gammastar
-       gammastar_sc <- calculate_gammastar(tc_sc, patm_sc)
-       gammastar_mx <- calculate_gammastar(tc_ar, patm_sc)
-       gammastar_ar <- calculate_gammastar(tc_ar, patm_ar)
+       gammastar_sc <- calc_gammastar(tc_sc, patm_sc)
+       gammastar_mx <- calc_gammastar(tc_ar, patm_sc)
+       gammastar_ar <- calc_gammastar(tc_ar, patm_ar)
 
        # kmm
-       kmm_sc <- calculate_kmm(tc_sc, patm_sc)
-       kmm_mx <- calculate_kmm(tc_ar, patm_sc)
-       kmm_ar <- calculate_kmm(tc_ar, patm_ar)
+       kmm_sc <- calc_kmm(tc_sc, patm_sc)
+       kmm_mx <- calc_kmm(tc_ar, patm_sc)
+       kmm_ar <- calc_kmm(tc_ar, patm_ar)
 
        # soilmstress
        # Bug for mixed inputs in rpmodel:
        # https://github.com/computationales/rpmodel/issues/16
-       # Note that calculate_soilmstress retains the outdated default b=0.685
+       # Note that calc_soilmstress retains the outdated default b=0.685
        bpar_soilm <- 0.733
-       soilmstress_sc <- calculate_soilmstress(soilm_sc, meanalpha_sc,
-                                              bpar_soilm = bpar_soilm)
-       soilmstress_mx <- mapply(calculate_soilmstress, soilm_ar, meanalpha_sc,
+       soilmstress_sc <- calc_soilmstress(soilm_sc, meanalpha_sc,
+                                          bpar_soilm = bpar_soilm)
+       soilmstress_mx <- mapply(calc_soilmstress, soilm_ar, meanalpha_sc,
                                 bpar_soilm = bpar_soilm)
-       soilmstress_ar <- calculate_soilmstress(soilm_ar, meanalpha_ar,
-                                              bpar_soilm = bpar_soilm)
+       soilmstress_ar <- calc_soilmstress(soilm_ar, meanalpha_ar,
+                                          bpar_soilm = bpar_soilm)
 
        # viscosity_h2o
        viscosity_h2o_sc <- viscosity_h2o(tc_sc, patm_sc)
@@ -79,8 +79,8 @@ values <- within(values, {
        ns_star_ar <- viscosity_h2o_ar / visc_25
 
        # patm
-       patm_from_elev_sc <- calculate_patm(elev_sc)
-       patm_from_elev_ar <- calculate_patm(elev_ar)
+       patm_from_elev_sc <- calc_patm(elev_sc)
+       patm_from_elev_ar <- calc_patm(elev_ar)
 
        # co2_to_ca
        ca_sc <- co2_to_ca(co2_sc, patm_sc)
@@ -195,7 +195,7 @@ for (rw in seq(nrow(luevcmax))) {
     if (inputs$sm == "sm-off") {
         soilmstress <- 1.0
     } else {
-        soilmstress <- calculate_soilmstress(soilm = values$soilm_sc,
+        soilmstress <- calc_soilmstress(soilm = values$soilm_sc,
                                         meanalpha = values$meanalpha_sc)
     }
 

@@ -10,7 +10,7 @@ library(jsonlite)
 
 # Section 1) Doctests
 
-# calculate_vp_sat
+# calc_vp_sat
 Esat.slope(21)
 #   Esat     Delta
 # 1 2.480904 0.152347
@@ -21,22 +21,22 @@ Esat.slope(21, "Alduchov_1996")
 #   Esat     Delta
 # 1 2.481888 0.1524929
 
-# calculate_vp_to_vpd
+# vp_to_vpd
 e.to.VPD(1.9, 21)
 # [1] 0.5809042
 e.to.VPD(1.9, 21, "Allen_1998")
 # [1] 0.5870054
 
-# calculate_rh_to_vpd
+# rh_to_vpd
 rH.to.VPD(0.7, 21)
 # [1] 0.7442712
 rH.to.VPD(0.7, 21, "Allen_1998")
 # [1] 0.7461016
 
-# calculate_sh_to_vp
+# sh_to_vp
 q.to.e(0.006, 99.024)
 
-# calculate_sh_to_vpd
+# sh_to_vpd
 q.to.VPD(0.006, 21, 99.024)
 # [1] 1.529159
 q.to.VPD(0.006, 21, 99.024, "Allen_1998")
@@ -52,7 +52,7 @@ patm <- seq(60, 110, length = 31)
 
 output <- list()
 
-output$calculate_vp_sat <- list(
+output$calc_vp_sat <- list(
     "Allen1998" = Esat.slope(temp, formula = "Allen_1998")$Esat,
     "Alduchov1996" = Esat.slope(temp, formula = "Alduchov_1996")$Esat,
     "Sonntag1990" = Esat.slope(temp, formula = "Sonntag_1990")$Esat
