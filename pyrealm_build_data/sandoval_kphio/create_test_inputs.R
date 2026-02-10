@@ -1,4 +1,4 @@
-source("calc_phi0.R")
+source("calculate_phi0.R")
 
 # Generate  all combinations of some simple input values
 aridity_index <- c(0.2, 0.5, 0.8, 1.0, 5.0, 10.0)
@@ -14,7 +14,7 @@ data <- expand.grid(
 # Run the reference implementation, which is not parallelised so need mapply
 data$phio <- round(
   mapply(
-    calc_phi0, data$aridity_index, data$temp, data$mean_gdd_temp
+    calculate_phi0, data$aridity_index, data$temp, data$mean_gdd_temp
   ),
   digits = 8
 )

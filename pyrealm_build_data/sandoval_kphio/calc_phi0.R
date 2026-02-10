@@ -1,7 +1,7 @@
-# calc_phi0
-calc_phi0 <- function(AI, tc, mGDD0 = NA, phi_o_theo = 1 / 9) {
+# calculate_phi0
+calculate_phi0 <- function(AI, tc, mGDD0 = NA, phi_o_theo = 1 / 9) {
     # ************************************************************************
-    # Name:     calc_phi0
+    # Name:     calculate_phi0
     # Inputs:   - double - scalar (AI), climatological aridity index, defined as PET/P
     #           - double - vector (tc), air temperature, degrees C
     #           - double - scalar (mGDD0), mean temperature during growing degree days with tc>0
