@@ -1205,3 +1205,30 @@ def test_AcclimationModel_apply_acclimation(alpha, values, expected):
     res = acclim_model.apply_acclimation(values)
 
     assert_allclose(res, expected)
+
+
+@pytest.mark.parametrize(
+    argnames="values,initial_values,raises",
+    argvalues=[
+        pytest.param(
+            np.array([np.nan, 1, 2]),
+            0,
+            pytest.raises(ValueError, match="Missing data in input values"),
+            id="missing values",
+        ),
+        pytest.param(
+            np.arange(3),
+            np.zeros(2),
+            pytest.raises(ValueError, match="The shape of initial_values is incorrect"),
+            id="invalid shape",
+        ),
+    ],
+)
+def test_AcclimationModel_apply_acclimation_raises(values, initial_values, raises):
+    """Test AcclimationModel_apply_acclimation raises exceptions as expected."""
+    from pyrealm.pmodel.acclimation import AcclimationModel
+
+    acclim_model = AcclimationModel(datetimes=DATES)
+
+    with raises:
+        _ = acclim_model.apply_acclimation(values, initial_values)

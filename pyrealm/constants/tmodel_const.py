@@ -32,7 +32,7 @@ class TModelTraits(ConstantsClass):
     tau_f: float = 4.0  # tau_f, Foliage turnover time (years)
     r"""Foliage turnover time (:math:`\tau_f`, 4.0, years)"""
     tau_r: float = 1.04  # tau_r, Fine-root turnover time (years)
-    """Fine-root turnover time (:math:`\tau_r`, 1.04, years)"""
+    r"""Fine-root turnover time (:math:`\tau_r`, 1.04, years)"""
     par_ext: float = 0.5  # k, PAR extinction coefficient (-)
     """PAR extinction coefficient (:math:`k`, 0.5, -)"""
     yld: float = 0.6  # y, Yield_factor (-)

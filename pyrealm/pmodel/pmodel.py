@@ -26,7 +26,7 @@ from numpy.typing import NDArray
 from scipy.interpolate import interp1d
 
 from pyrealm.constants import CoreConst, PModelConst
-from pyrealm.core.utilities import summarize_attrs
+from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.acclimation import AcclimationModel
 from pyrealm.pmodel.arrhenius import ARRHENIUS_METHOD_REGISTRY, ArrheniusFactorABC
 from pyrealm.pmodel.jmax_limitation import (
@@ -246,15 +246,8 @@ class PModelABC(ABC):
         estimated from :math:`J_{max}` using the selected method for Arrhenius scaling.
         """
 
-        self.gpp: NDArray[np.floating]
-        r"""Gross primary productivity (µg C m-2 s-1) calculated as:
-        
-        .. math::
-
-            \text{GPP} = \text{LUE} \cdot I_{abs}
-            
-        where :math:`I_{abs}` is the absorbed photosynthetic radiation.
-        """
+        self._gpp: NDArray[np.floating]
+        """Private variable storing unpenalised GPP predictions in (µg C m-2 s-1)."""
 
         self.gs: NDArray[np.floating]
         r"""Stomatal conductance (µmol m-2 s-1), calculated as:
@@ -281,6 +274,21 @@ class PModelABC(ABC):
         self.J: NDArray[np.floating]
         """Electron transfer rate."""
 
+        self.gpp_penalty_factor: NDArray[np.floating] | None = None
+        """An optional post-hoc GPP penalty factor applied to the model."""
+
+    @property
+    def gpp(self) -> NDArray[np.floating]:
+        r"""Gross primary productivity (µg C m-2 s-1).
+
+        If a post-hoc GPP penalty factor has been applied to the model (see
+        :meth:`apply_gpp_penalty_factor`) then the value returned is the penalised GPP.
+        """
+        if self.gpp_penalty_factor is None:
+            return self._gpp
+
+        return self._gpp * self.gpp_penalty_factor
+
     @abstractmethod
     def _fit_model(self, *args: Any, **kwargs: Any) -> None:
         pass
@@ -296,6 +304,7 @@ class PModelABC(ABC):
 
         return (
             f"{self.__class__.__name__}("
+            f"{'' if self.gpp_penalty_factor is None else 'GPP penalized, '}"
             f"shape={self.shape}, "
             f"method_optchi={self.method_optchi}, "
             f"method_arrhenius={self.method_arrhenius}, "
@@ -310,11 +319,48 @@ class PModelABC(ABC):
             dp: The number of decimal places used in rounding summary stats.
         """
 
-        summarize_attrs(self, self._data_attributes, dp=dp)
+        attrs = self._data_attributes
+
+        if self.gpp_penalty_factor is not None:
+            attrs = (*attrs, ("gpp_penalty_factor", "-"))
+
+        summarize_attrs(self, attrs, dp=dp)
 
     def apply_gpp_conversion_factor(self, daily_mean_pmodel_gpp: NDArray) -> NDArray:
         """Apply the gpp conversion factor to the input daily gpp."""
         return daily_mean_pmodel_gpp * self.gpp_conversion_factor
+
+    def apply_gpp_penalty_factor(self, penalty_factor: NDArray[np.floating]) -> None:
+        """Apply a post-hoc GPP penalty factor to GPP predictions.
+
+        Some productivity models apply a post-hoc penalty factor to the predicted GPP of
+        the P Model to correct for other influences on productivity. Examples included
+        the soil moisture penalty factors implemented as
+        :meth:`pyrealm.pmodel.functions.calc_soilmstress_mengoli` and
+        :meth:`pyrealm.pmodel.functions.calc_soilmstress_stocker`.
+
+        This method allows such a factor (:math:`f 'in [0,1]`) to be applied to a fitted
+        P Model instance. The `gpp` attribute of the model will then return the product
+        of the raw GPP predictions and the provided penalty factor.
+
+        The main use of this method is to allow penalised GPP to be used with other
+        `pyrealm` methods that take a P Model as an input.
+
+        Args:
+            penalty_factor: An array of GPP penalty value.
+        """
+
+        _ = check_input_shapes(self.env.tc, penalty_factor)
+
+        self.gpp_penalty_factor = penalty_factor
+
+    def remove_gpp_penalty_factor(self) -> None:
+        """Removes a post-hoc GPP penalty factor.
+
+        This method removes a previously applied GPP penalty factor.
+        """
+
+        self.gpp_penalty_factor = None
 
     def _method_setter(
         self,
@@ -474,7 +520,7 @@ class PModel(PModelABC):
         iabs = self.env.fapar * self.env.ppfd
 
         # GPP
-        self.gpp = self.lue * iabs
+        self._gpp = self.lue * iabs
 
         # Calculate V_cmax and J_max
         self.vcmax = self.kphio.kphio * iabs * self.optchi.mjoc * self.jmaxlim.f_v
@@ -979,7 +1025,7 @@ class SubdailyPModel(PModelABC):
 
         # Calculate GPP and convert from mol to gC
         assimilation = np.minimum(self.A_j, self.A_c)
-        self.gpp = assimilation * self.env.core_const.k_c_molmass
+        self._gpp = assimilation * self.env.core_const.k_c_molmass
 
         # Stomatal conductance - do not estimate when VPD = 0 or when floating point
         # errors give rise to (ca - ci) < 0 and deliberately ignore the numpy divide by

@@ -124,6 +124,13 @@ def convert_and_filter_prof_file(
         if "ncalls" in header:
             header_found = True
 
+    # Split the lines into the 6 columns
+    rows = []
+    for line in sio:
+        row = line.split(None, 5)
+        if row:
+            rows.append(row)
+
     # Set replacement non-duplicated headers
     column_names = [
         "ncalls",
@@ -134,8 +141,12 @@ def convert_and_filter_prof_file(
         "filename:lineno(function)",
     ]
 
-    # Convert to a DataFrame using fixed width format
-    df = pd.read_fwf(sio, engine="python", names=column_names)
+    # Convert to a DataFrame
+    df = pd.DataFrame(rows, columns=column_names)
+
+    # Set the times to be floats
+    for column in ["tottime", "tottime_percall", "cumtime", "cumtime_percall"]:
+        df[column] = df[column].astype(np.float64)
 
     # Reduce to rows not matching any of the regex exclude patterns
     exclude_rows = pd.DataFrame(
