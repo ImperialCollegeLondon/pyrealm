@@ -333,8 +333,8 @@ class PModelABC(ABC):
         Some productivity models apply a post-hoc penalty factor to the predicted GPP of
         the P Model to correct for other influences on productivity. Examples included
         the soil moisture penalty factors implemented as
-        :meth:`pyrealm.pmodel.functions.calc_soilmstress_mengoli` and
-        :meth:`pyrealm.pmodel.functions.calc_soilmstress_stocker`.
+        :meth:`pyrealm.pmodel.functions.calculate_soilmstress_mengoli` and
+        :meth:`pyrealm.pmodel.functions.calculate_soilmstress_stocker`.
 
         This method allows such a factor (:math:`f 'in [0,1]`) to be applied to a fitted
         P Model instance. The `gpp` attribute of the model will then return the product

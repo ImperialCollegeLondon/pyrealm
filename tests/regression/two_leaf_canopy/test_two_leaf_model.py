@@ -73,7 +73,7 @@ def assimilation_single_day(solar_irradiance, get_data):
 
 
 def test_two_leaf_irradiance(solar_irradiance, get_data):
-    """Tests calc_absorbed_irradiance method."""
+    """Tests calculate_absorbed_irradiance method."""
 
     test_values = {
         "diffuse_irradiance": np.array([136.29450038]),

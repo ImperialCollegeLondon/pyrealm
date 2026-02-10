@@ -99,7 +99,7 @@ def test_QuantumYieldTemperature(
     )
 
     # The expected_kphio_factor values are the output of the previous implementation
-    # (calc_ftemp_kphio), which returned the temperature factors that then needed
+    # (calculate_ftemp_kphio), which returned the temperature factors that then needed
     # multiplying by the reference kphio.
     assert_allclose(qy.kphio, qy.reference_kphio * expected_kphio_factor)
 
@@ -133,16 +133,16 @@ def test_QuantumYieldSandoval(quantum_yield_env, reference_kphio, expected_kphio
     """Test the Sandoval temperature and aridity method.
 
     The test values here have been calculated using the original R implementation
-    provided in pyrealm_build_data/sandoval_kphio/calc_phi0.R. A more complete check
-    across a wider range of values is provided in the regression tests but this also
-    tests the provisision of alternative reference_kphio.
+    provided in pyrealm_build_data/sandoval_kphio/calculate_phi0.R. A more complete
+    check across a wider range of values is provided in the regression tests but
+    this also tests the provision of alternative reference_kphio.
 
-    > source('calc_phi0.R')
+    > source('calculate_phi0.R')
     > tc <- c(5, 10, 15, 20, 25, 30)
     > ai <- c(0.9, 0.9, 2, 2, 5, 5)
     > gdd0 <-  c(10, 20, 10, 20, 10, 20)
-    > round(mapply(calc_phi0, ai, tc, gdd0), 5)
-    > round(mapply(calc_phi0, ai, tc, gdd0, MoreArgs=list(phi_o_theo=1/8)), 5)
+    > round(mapply(calculate_phi0, ai, tc, gdd0), 5)
+    > round(mapply(calculate_phi0, ai, tc, gdd0, MoreArgs=list(phi_o_theo=1/8)), 5)
     """
 
     from pyrealm.pmodel.quantum_yield import (
