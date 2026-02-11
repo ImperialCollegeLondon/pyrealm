@@ -10,6 +10,8 @@ See also the migration page for help in moving between versions.
 As well as bugfixes, version 2.0.1 is a slight violation of semantic versioning and
 picks up some API and default changes that were overlooked in 2.0.0.
 
+- We have aligned function names from mixed `calc_` and `calculate_` to `calculate_`.
+
 ### Bugfixes
 
 - Stomatal conductance in the SubdailyPModel was incorrectly calculated from $A_c$
@@ -126,14 +128,14 @@ notably the API of the `pmodel` module, as well as introducing new functionality
   - The `fill_from` argument to `fill_daily_to_subdaily` was only required for
     `SubdailyPModel_JAMES` and so this has also been deprecated.
 
-- The functions `calc_ftemp_kphio` and `calc_ftemp_inst_vcmax` provided
+- The functions `calculate_ftemp_kphio` and `calculate_ftemp_inst_vcmax` provided
   narrow use cases with code duplication. They have been replaced by two broader
-  Arrhenius functions: `calc_simple_arrhenius_factor` and `calc_kattge_knorr_arrhenius_factor`.
+  Arrhenius functions: `calculate_simple_arrhenius_factor` and `calculate_kattge_knorr_arrhenius_factor`.
   The functions in {mod}`pyrealm.pmodel.functions` have been updated to take specific
   arguments rather than just taking `PModelConsts` and `CoreConsts` objects.
 
 - The `pyrealm.core.water` module now provides `convert_water_mm_to_moles`,
-  `convert_water_moles_to_mm` and `calc_water_molar_volume`.
+  `convert_water_moles_to_mm` and `calculate_water_molar_volume`.
 
 - The first components in the experimental `demography` module, providing an integrated
   set of submodules that provide: plant functional types, size-structured cohorts, plant
