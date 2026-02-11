@@ -254,8 +254,11 @@ class PModelABC(ABC):
 
         .. math::
 
-            g_s = \frac{LUE}{M_C}\frac{1}{c_a - c_i}
+            g_s = \frac{A}{c_a - c_i},
 
+        where :math:`A` is assimilation in µmol C m-2 s-1. The standard P Model uses 
+        the coordination hypothesis and hence :math:`A=A_c=A_j`.
+        
         When C4 photosynthesis is being used, the true partial pressure of CO2 in the
         substomatal cavities (:math:`c_i`) is used following the calculation of
         :math:`\chi` using
@@ -666,6 +669,8 @@ class SubdailyPModel(PModelABC):
       acclimating values of :math:`\xi` but the actual subdaily values of temperature
       and vapour pressure deficit.
     * Predictions of GPP are then made as in the standard P Model.
+    * The coordination hypothesis does not apply to the subdaily P Model and so stomatal
+      conductance (``gs``) is calculated using assimilation as :math:`A=min(A_c, A_j)`.
 
     As with the :class:`~pyrealm.pmodel.pmodel.PModel`, the values of the `kphio`
     argument _can_ be provided as an array of values, potentially varying through time
@@ -1029,7 +1034,7 @@ class SubdailyPModel(PModelABC):
         with np.errstate(divide="ignore", invalid="ignore"):
             self.gs = np.where(
                 np.logical_and(self.env.vpd > 0, ca_ci_diff > 0),
-                self.A_c / ca_ci_diff,
+                assimilation / ca_ci_diff,
                 np.nan,
             )
 
