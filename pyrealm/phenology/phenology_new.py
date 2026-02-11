@@ -1,19 +1,36 @@
-"""Classes to compute phenological time series of Leaf Area Index.
+"""Computing phenological time series of Leaf Area Index.
+
+This module provides classes to implement different approaches to calculating daily
+predictions of leaf area index (LAI) from daily time series of potential assimilation.
+The :class:`PhenologyNew` class acts as a wrapper around alternative implementations of
+the calculations, which are implemented as derived subclasses of the
+:class:`PhenologyMethodABC` abstract base class.
+
+The methods all require values of annual maximum fAPAR, calculated using
+:class:`~pyrealm.phenology.fapar_limitation.FaparLimitationNew` and then a time series
+of daily assimilation, although different methods can also require additional inputs.
+The methods then broadly work by calculating a time series of steady state LAI as a
+function of daily assimilation and then applying a lag, capturing the speed with which
+plants can put on leaf area, to generate a time series of realised LAI.
+
+Values of daily assimilation are typically going to be taken from a P Model, so the
+:meth:`PhenologyNew.from_pmodel` method is provided to calculate daily assimilation from
+a P Model input and then use this, along with a ``FaparLimitationNew`` instance, to
+generate an LAI time series.
 
 The :class:`PhenologyNew` class and the :meth:`PhenologyNew.from_pmodel` are designed to
 work with inputs that can have multiple dimensions. The first axis is _always_ assumed
 to represent a time series of daily observations of potential assimilation. If all the
 arrays are one dimensional, then this is a time series for a single site; if they are
-three dimensional then these are observations for a grid of sites. Usually all array
-inputs will have the same shape but note the following instances where you might need to
-take care with array broadcasting.
+three dimensional then these are observations for a grid of sites.
 
-* The climatological aridity index is very likely to be constant through time.
-    If so, the array should have a singleton first dimension to broadcast an
-    observation per site across observations. For example, with `(10, 3, 3)` data
-    (10 years for a 3x3 grid of sites), the aridity index could be provided as
-    `(1,3,3)` to broadcast the aridity index across each year. It could also use a
-    single scalar value to use the same aridity index for all sites.
+Usually all array inputs will have the same shape. However, where methods use a
+climatological measure of aridity, then this is very likely to be constant through time.
+If so, the array should have a singleton first dimension to broadcast an observation per
+site across observations. For example, with `(365, 3, 3)` data (one year of observations
+for a 3x3 grid of sites), the aridity index could be provided as `(1,3,3)` to broadcast
+the aridity index across all observations. It could also use a single scalar value to
+use the same aridity index for all sites.
 """
 
 from __future__ import annotations
@@ -37,7 +54,7 @@ PHENOLOGY_METHOD_CLASS_REGISTRY: dict[str, type[PhenologyMethodABC]] = {}
 """A registry for classes implementing different methods for estimating phenology.
 
 Different implementations of the calculation of LAI phenology must all be subclasses of
-the :class:`~pyrealm.phenology.phenology.New` abstract base class.
+the :class:`~pyrealm.phenology.phenology_new.PhenologyMethodABC` abstract base class.
 This dictionary is used as a registry for defined subclasses and a method name
 is used to retrieve a particular implementation from this registry. For example:
 
@@ -92,7 +109,37 @@ class PhenologyMethodABC(ABC):
 
 
 class PhenologyMethodZhou(PhenologyMethodABC, method="zhou"):
-    """Blah blah blah."""
+    r"""Calculation of phenology following :cite:`zhou:2025a`.
+
+    This phenology method class implements the calculation of daily leaf area index from
+    daily assimilation (:math:`A_0`, mol m-2 day) following the method of
+    :cite:`zhou:2025a`. The method requires annual values of fAPAR limitation calculated
+    following the method of :cite:`cai:2025a` (see
+    :class:`~pyrealm.pmodel.fapar_limitation_new.FaparLimitationCai`).
+
+    * The daily allocation of GPP to leaf area index (:math:`\mu`) is calculated simply
+      as :math:`\mu = m A_0`, where :math:`m` is the fractional allocation of GPP to LAI
+      :cite:`cai:2025a`.
+
+    * The steady state daily estimate of LAI is then calculated as:
+
+        .. math::
+
+            L_s = \min \left\{
+                \mu + \left(\frac{1}{k}\right) W_0 \left[ -k \mu \exp (-k \mu)\right],
+                \text{LAI}_{\text{max}}
+            \right\},
+
+      where :math:`k` is the light extinction coefficient, :math:`W_0` is the principal
+      branch of the Lambert W function. The value is constrained at an upper bound using
+      the estimated annual maximum LAI from the calculate of fAPAR limitation.
+
+    * The realised daily LAI is estimated using an exponential weighted average with a
+      weight :math:`alpha` reflecting the time taken for plants to produce leaf area.
+      The value of alpha is set in the phenology constants used to calculate the initial
+      annual fAPAR limitation
+      (:attr:`~pyrealm.constants.phenology_const.PhenologyConstNew.zhou_alpha`)
+    """
 
     __experimental__ = True
 
@@ -124,7 +171,7 @@ class PhenologyMethodZhou(PhenologyMethodABC, method="zhou"):
 
         phenology_const = fapar_limitation.phenology_const
 
-        # Calculate the LAI to GPP ratio
+        # Calculate the fractional allocation of GPP to LAI (m)
         self.lai_to_gpp_ratio_m: NDArray[np.floating] = (
             phenology_const.cai_sigma
             * fapar_limitation.annual_growing_season_length
@@ -165,7 +212,46 @@ class PhenologyMethodZhou(PhenologyMethodABC, method="zhou"):
 
 
 class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
-    """Blah blah blah."""
+    r"""Calculation of phenology following :cite:`zhu:2026a`.
+
+    This phenology method class implements the calculation of daily leaf area index from
+    daily assimilation (:math:`A_0`, mol m-2 day) following the method of
+    :cite:`zhu:2026a`.
+
+    * The fractional allocation of GPP to LAI (:math:`m`) is calculated as the estimated
+      maximum LAI for a year divided by a quantile value (default 0.95) from the
+      distribution of daily assimilation values for that year. The quantile is set when
+      calculating maximum fAPAR via the
+      :attr:`<PhenologyConstNew.zhu_A0_quantile>pyrealm.constants.phenology_const.PhenologyConstNew.zhu_A0_quantile`
+      attribute.
+
+    * The steady state daily estimate of LAI is then calculated simply as:
+
+        .. math::
+
+            L_s = m A_0.
+
+    * The realised daily LAI is estimated using a weighted average over the preceding N
+      days of estimates of steady state LAI. The value of N varies with the
+      climatological estimate of the AET/PET ratio for a site, which must be provided to
+      use this method.
+
+      For the first N observations, this weighted average is calculated over fewer
+      observations - for the first observation it is simply the observed value. In order
+      to avoid this, the method includes an optional spin up that can be used to
+      condition the first values of preceding observation. The conditioning data is
+      taken from the first year of the time series under the assumption that this will
+      be a good approximation for the preceding conditions.
+
+      .. TODO:
+
+        I _think_ that we will get identical results by prepending the N observations
+        from the end of the first year as we get from prepending the whole first year.
+        If so then we can simplify this method to simply saying condition or not and
+        then the length we need is simply the lag length N. We might be able to do the
+        same for the Zhou method and make this general - but the exponential weighted
+        average has a longer 'memory' than the simple inverse of alpha.
+    """
 
     __experimental__ = True
 
@@ -218,13 +304,14 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
             ]
         )
 
-        # Calculate the ratio of LAI to the annual quantile of daily assimilation.
-        # TODO apply only to input years
+        # Calculate the fractional allocation of GPP to LAI using an annual quantile of
+        # the daily assimilation values.
+        # TODO - apply only to input years
         self.lai_to_gpp_ratio_m: NDArray[np.floating] = (
             fapar_limitation.lai_max / daily_A0_quantiles
         )
-        """Annual values of the steady state ratio of leaf area index to potential GPP
-        (:math:`m`)"""
+        """Annual values for the fractional allocation of potential GPP to leaf area
+        index (:math:`m`)."""
 
         # Duplicate m ratio for each day and calculate daily mu value as m * daily molar
         # assimilation:
@@ -301,7 +388,33 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
 
 
 class PhenologyNew:
-    """Phenology calculation."""
+    r"""Estimating daily time series of leaf area index (LAI).
+
+    The maximum fAPAR and LAI for a year (see
+    :class:`~pyrealm.phenology.fapar_limitation.FaparLimitationNew`) can be combined
+    with estimates of daily potential assimilation to generate a time series of expected
+    LAI that captures the annual phenology for a site. This class provides methods to
+    calculate two time series for LAI:
+
+    * :math:`L_s` - the steady state LAI that would be achieved if plants can instantly
+      convert assimilation into leaf area.
+    * :math:`L_r` - the realised LAI, incorporating lags to capture realistic delays in
+      deploying leaf area.
+
+    The class supports different methods for estimating these time series and also
+    provides the :meth:`PhenologyNew.from_pmodel` method that calculates the required
+    daily assimilation values from a fitted P Model.
+
+    Args:
+        fapar_limitation: A
+            :class:`~pyrealm.phenology.fapar_limitation.FaparLimitationNew` instance
+            providing estimates of maximum annual fAPAR and LAI.
+        daily_potential_assimilation: A daily time series of potential assimilation
+            (:math:`A_0`, mol m-2 day-1).
+        datetimes: The datetimes of the observations of :math:`A_0`, used to match
+            observations to the appropriate annual values.
+        method: A string selecting the method to be used to estimate LAI.
+    """
 
     __experimental__ = True
 
@@ -313,6 +426,8 @@ class PhenologyNew:
         method: str = "zhou",
         **kwargs: Any,
     ):
+        """Constructor method for PhenologyNew."""
+
         # Experimental class
         warn_experimental(self.__class__.__name__)
 
