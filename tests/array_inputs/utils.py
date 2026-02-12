@@ -392,22 +392,6 @@ def _get_package_modules(pkg: ModuleType) -> list[ModuleType]:
     return modules
 
 
-def _global_namespace():
-    """Extract the global namespace for the package.
-
-    Provides the contexts of the pyrealm classes to pass to get_type_hints.
-    """
-
-    globalns = {}
-    for module in _get_package_modules(pyrealm):
-        globalns.update(vars(module))
-
-    return globalns
-
-
-_GLOBALNS = _global_namespace()
-
-
 def _is_instance_method(cls: type | None, method_name: str) -> bool:
     """Returns True if the method is not static or a classmethod."""
     if cls is None:
@@ -502,7 +486,7 @@ def _is_numpy_type(typ: Any) -> bool:
         return False
 
 
-def _is_array_type(typ: Any, array_type: str) -> bool:
+def _is_array_type(typ: type, array_type: str) -> bool:
     """Returns True if the type is a numpy array or ArrayType."""
     typ = _strip_wrapped_types(typ)
     origin = get_origin(typ)  # Get the unannotated type, i.e. X[...] -> X
@@ -534,11 +518,6 @@ def _is_array_type(typ: Any, array_type: str) -> bool:
         raise ValueError("Invalid array_type. Use 'numpy' or 'ArrayType'.")
 
     return False
-
-
-# Resolve issue with get_type_hints failing for InitVars in py3.10
-# Define a stub to make InitVar callable (https://stackoverflow.com/questions/70400639)
-InitVar.__call__ = lambda *args: None  # type: ignore[method-assign]
 
 
 def _has_array_input(method: Callable, array_type: str) -> bool:
@@ -599,7 +578,8 @@ class Context:
         array_dims_list (list[tuple[str, ...]], optional): List of dimension names to
             iterate over when initialising arrays with compatible 'array_type', e.g.
             xarray. Access using 'array_dims()'.
-        i_arg (int): Index of the current argument, used to select a shape.
+        n_array (int): Number of array arguments in the current function.
+        i_array (int): Index of the current array argument, used to select a shape.
         parents (list[str]): Hierarchy of names leading to the current function/class.
             The first value will be the name of the callable being tested. If it is a
             class method, the second value will be the name of the class.
@@ -609,7 +589,8 @@ class Context:
     shapes: list[tuple[int, ...]]
     array_type: str = "numpy"
     array_dims_list: list[tuple[str, ...]] | None = None
-    i_arg: int = 0
+    n_array: int = 0
+    i_array: int = 0
     parents: list[str] = field(default_factory=list)
     """A list of the superior function / classes for the current context."""
 
@@ -620,19 +601,20 @@ class Context:
             shapes=self.shapes,
             array_type=self.array_type,
             array_dims_list=self.array_dims_list,
-            i_arg=self.i_arg,
+            n_array=self.n_array,
+            i_array=self.i_array,
             parents=[*self.parents, self.name],
         )
 
     def shape(self) -> tuple[int, ...]:
-        """Return the shape for index `i_arg`."""
-        return self.shapes[self.i_arg % len(self.shapes)]
+        """Return the shape for index `i_array`."""
+        return self.shapes[self.i_array % len(self.shapes)]
 
     @property
     def array_dims(self) -> tuple[str, ...]:
-        """Return the array_dims_list for index `i_arg`."""
+        """Return the array_dims_list for index `i_array`."""
         if self.array_dims_list:
-            return self.array_dims_list[self.i_arg % len(self.array_dims_list)]
+            return self.array_dims_list[self.i_array % len(self.array_dims_list)]
         else:
             return ()
 
@@ -656,6 +638,47 @@ class Context:
                 full_shapes.append(full_shape)
             # Get the full broadcast shape
             return np.broadcast_shapes(*full_shapes)
+
+
+# Resolve issue with get_type_hints failing for InitVars in py3.10
+# Define a stub to make InitVar callable (https://stackoverflow.com/questions/70400639)
+InitVar.__call__ = lambda *args: None  # type: ignore[method-assign]
+
+
+def _get_parameters(
+    method: Callable, ctx: Context
+) -> dict[str, tuple[Parameter, type]]:
+    """Get a dictionary of {parameter_name: (parameter, type)}.
+
+    Gets the relevant parameters using `inspect.signature().parameters`, as well as any
+    specified by `REQUIRES`. Then uses `get_type_hints()` to ensure types are resolved.
+    """
+    from typing import get_type_hints
+
+    # Get the method parameters with unnecessary arguments removed
+    params = {
+        name: p
+        for name, p in signature(method).parameters.items()
+        if not (name == "self" or p.kind in (p.VAR_POSITIONAL, p.VAR_KEYWORD))
+    }
+
+    # Add required keyword arguments specified in REQUIRES
+    required_args = REQUIRES.get((ctx.name, tuple(ctx.parents)))
+    if required_args is not None:
+        params.update(required_args)
+
+    # Check all annotations
+    for param_name, param in params.items():
+        if param.annotation == param.empty:
+            raise Exception(f"Missing annotation for {ctx.name}:{param_name}")
+
+    # Resolve string annotations using get_type_hints
+    # Fall back to param.annotation for required keyword arguments
+    type_hints = get_type_hints(method)
+    return {
+        name: (param, type_hints.get(name, param.annotation))
+        for name, param in params.items()
+    }
 
 
 def _initialise_type_default(typ: Any, ctx: Context) -> Any:
@@ -729,38 +752,18 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
     Returns:
         dict[str, Any]: The generated arguments for the function/method.
     """
-    from typing import get_type_hints
 
     kwargs = {}
 
-    # Get the method parameters and copy to get a modifiable OrderedDict from inside the
-    # Parameters mappingproxy return type
-    params = signature(method).parameters.copy()
+    params = _get_parameters(method, ctx)
 
-    required_args = REQUIRES.get((ctx.name, tuple(ctx.parents)))
+    # Get the number of array arguments for selecting array shapes / dimensions
+    ctx.n_array = sum([_is_array_type(typ, "numpy") for _, typ in params.values()])
+    ctx.i_array = -1
 
-    if required_args is not None:
-        params.update(required_args)
-
-    ctx.i_arg = -1
-
-    for param_name, param in params.items():
-        # Skip unnecessary arguments
-        if param_name == "self" or param.kind in (
-            param.VAR_POSITIONAL,
-            param.VAR_KEYWORD,
-        ):
-            continue
-
-        ctx.i_arg += 1
-
-        if param.annotation is param.empty:
-            raise Exception(f"Missing annotation for {ctx.name}:{param_name}")
-
-        # Resolve any string annotations using the global namespace
-        typ = get_type_hints(method, globalns=_GLOBALNS).get(
-            param_name, param.annotation
-        )
+    for param_name, (param, typ) in params.items():
+        if _is_array_type(typ, "numpy"):
+            ctx.i_array += 1
 
         # Set manually defined values
         manual_arg = defined_method_args(param_name, ctx)
@@ -788,8 +791,8 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
             and kwargs[param_name].ndim == len(ctx.shape())
         ):
             if ctx.array_type == "xarray":
-                da_kwargs = {"dims": ctx.array_dims}
-                kwargs[param_name] = xr.DataArray(kwargs[param_name], **da_kwargs)
+                dims = ctx.array_dims or None
+                kwargs[param_name] = xr.DataArray(kwargs[param_name], dims=dims)
 
     return kwargs
 
