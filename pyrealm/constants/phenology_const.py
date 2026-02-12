@@ -67,8 +67,11 @@ class PhenologyConst(ConstantsClass):
 class PhenologyConstNew(ConstantsClass):
     r"""Model constants for the phenology module class.
 
-    This data class defines constants used in the phenology module. Two critical
-    values are:
+    This data class defines constants used in the phenology module. The different
+    methods for calculating maximum fAPAR and the phenology use different settings, so
+    these constants define some method specific settings.
+
+    Two critical values used in calculating maximum fAPAR are:
 
     * The value :math:`z` (mol C m^{-2} year^{-1}) accounts for the carbon costs of
       building and maintaining leaves and the total below-ground allocation required to
@@ -77,6 +80,11 @@ class PhenologyConstNew(ConstantsClass):
 
     * The value :math:`f_0` (-) accounts for water limitation on annual assimilation and
       hence sets the water-limited estimate of maximum fAPAR.
+
+    Different methods use different default values for these two parameters and they are
+    not necessarily fixed: the method of :cite:`cai:2025a` calculates :math:`f_0` as a
+    function of the aridity index for a site. These method specific differences in
+    parameterisation are explained in the descriptions of the method implementations.
     """
 
     k: float = 0.5

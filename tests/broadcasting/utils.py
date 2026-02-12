@@ -77,6 +77,13 @@ SKIP_METHODS = [
     # PModel.env shape.
     "PModel.apply_gpp_penalty_factor",
     "SubdailyPModel.apply_gpp_penalty_factor",
+    # Unfixed issues with PhenologyNew - the problem here is that PhenologyNew requires
+    # an input of a FaparLimitationNew object. There are further issues that the
+    # different methods for these classes are currently two pairs of options - Cai/Zhou
+    # and Zhu/Zhu that should not be switched.
+    "PhenologyMethodZhu",
+    "PhenologyMethodZhou",
+    "PhenologyNew",
     # Demography - mostly 1d arrays (dataframes)
     "CohortMethods.drop_cohort_data",
     "StemTraits",

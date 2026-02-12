@@ -6,13 +6,19 @@ lag, and converts the simulated canopy structure back to fAPAR.
 
 Notes added David Orme (2026-01-19):
 
-    This is the reference implementation for the Ziqi Zhu's phenology method - it does
-    not follow the pyrealm standards for code.
+* This is the reference implementation for Ziqi Zhu's phenology method - it does not
+  follow the pyrealm standards for code.
 
-    I have also added the original implementation of the function used to calculate
-    annual fapar max to keep the reference implementation in a single file. This
-    function was untyped and so has been decorated with no_type_check to suppress
-    warnings.
+* I have also added the original implementation of the function used to calculate
+  annual fapar max to keep the reference implementation in a single file. This
+  function was untyped and so has been decorated with no_type_check to suppress
+  warnings.
+
+* I have also added some extra code to the _apply_lag function that simply tracks the
+  internal variables used in the lagging process. This was used in implementing the
+  method to work out an efficient approach to vectorising the lagging calculations. The
+  function contains commented out code used to write out a CSV of the full internal
+  lag calculations.
 """
 
 from __future__ import annotations
