@@ -259,8 +259,10 @@ def _apply_lag(data_cube: np.ndarray, lag_steps_grid: np.ndarray) -> np.ndarray:
 
             result[row, col, :] = temp_result
 
-    # At this point, the whole calculation can be saved out to file for a single site
-    # using:
+    # This code was used during debugging of the regression test dataset generation to
+    # export the internal lagging calculations to file to make it easier to follow the
+    # lagging process and develop a faster vectorised computation. See the module level
+    # docstrings.
     #
     # import pandas as pd
     # df = pd.DataFrame(
