@@ -553,7 +553,8 @@ class PModel(PModelABC):
             )
 
     def _get_daily_gpp(
-        self, datetimes: NDArray[np.datetime64]
+        self,
+        datetimes: NDArray[np.datetime64],
     ) -> tuple[NDArray[np.datetime64], NDArray[np.floating]]:
         """Interpolate gpp values to daily intervals.
 
@@ -571,6 +572,7 @@ class PModel(PModelABC):
 
         # The interp1d object cannot be called with datetime64 values as new_x
         interpolator = interp1d(time_int, self.gpp)
+
         daily_timestamps = np.arange(
             datetimes[0], datetimes[-1] + np.timedelta64(1, "D"), np.timedelta64(1, "D")
         )

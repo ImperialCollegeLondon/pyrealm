@@ -1,6 +1,5 @@
 """Test the FaparLimitation class."""
 
-import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
@@ -57,10 +56,37 @@ def test_faparlimitation(
 
 
 @pytest.mark.parametrize(
-    argnames="method_predictions_dir, method",
+    argnames="timescale, pmodel_year",
     argvalues=(
-        pytest.param("cai_zhou_method", "cai", id="cai"),
-        pytest.param("zhu_method", "zhu", id="zhu"),
+        pytest.param("hh", None, id="subdaily"),
+        pytest.param("ft", None, id="fortnightly"),
+    ),
+)
+def test_pmodels(
+    phenology_pmodels,
+    pmodel_outputs,
+    timescale,  # Parameterises phenology_pmodels and pmodel_outputs
+    pmodel_year,  # Parameterises phenology_pmodels to use all years
+):
+    """Test fixture PModels.
+
+    Verifies that the PModels provided by the phenology_pmodels fixture give the same
+    predictions as the saved regression data.
+    """
+
+    pmodel, _ = phenology_pmodels
+
+    # Check the GPP predictions - raw GPP not penalised.
+    assert_allclose(pmodel._gpp, pmodel_outputs["gpp"], rtol=1e-7)
+    assert_allclose(pmodel.optchi.ci, pmodel_outputs["ci"], rtol=1e-7)
+    assert_allclose(pmodel.optchi.chi, pmodel_outputs["chi"], rtol=1e-7)
+
+
+@pytest.mark.parametrize(
+    argnames="method_predictions_dir, method, pmodel_year",
+    argvalues=(
+        pytest.param("cai_zhou_method", "cai", None, id="cai"),
+        pytest.param("zhu_method", "zhu", None, id="zhu"),
     ),
 )
 @pytest.mark.parametrize(
@@ -73,77 +99,18 @@ def test_faparlimitation(
 def test_fapar_limitation_frompmodel(
     site_data,
     pmodel_inputs,
-    pmodel_outputs,
-    daily_assimilation,
+    phenology_pmodels,
     fapar_max_predictions,
-    daily_lai_predictions,
-    method_predictions_dir,
+    method_predictions_dir,  # Parameterises fapar_max_predictions
     method,
-    timescale,
+    pmodel_year,  # Parameterises phenology_pmodels to use all years
+    timescale,  # Also parameterises phenology_pmodels, pmodel_inputs
 ):
     """Regression test for  FaparLimitation.from_pmodel class method."""
 
     from pyrealm.phenology.fapar_limitation_new import FaparLimitationNew
-    from pyrealm.pmodel import (
-        AcclimationModel,
-        PModel,
-        PModelEnvironment,
-        SubdailyPModel,
-    )
 
-    env = PModelEnvironment(
-        tc=pmodel_inputs["tc"],
-        vpd=pmodel_inputs["vpd"],
-        co2=pmodel_inputs["co2"],
-        patm=pmodel_inputs["patm"],
-        fapar=pmodel_inputs["fapar"],
-        ppfd=pmodel_inputs["ppfd"],
-    )
-
-    pmodel_inputs["time"] = pmodel_inputs["time"].astype("datetime64[s]")
-
-    # The two timescales use different PModels and datetime sequences. Also need to
-    # apply the soil moisture stress factor to the subdaily timescale.
-    # and gpp penalty factors in FaparLimitation differently
-    if timescale == "ft":
-        # Fit PModel
-        pmodel = PModel(
-            env=env,
-            reference_kphio=1 / 8,
-            method_kphio="temperature",
-        )
-        # Define datetimes of observations - no GPP penalty
-        fl_datetimes = pmodel_inputs["time"]
-
-    else:
-        # Set up the datetimes of the observations and set the acclimation window
-        acclim = AcclimationModel(
-            datetimes=pmodel_inputs["time"],
-            alpha=1 / 15,
-        )
-        acclim.set_window(
-            window_center=np.timedelta64(12, "h"),
-            half_width=np.timedelta64(30, "m"),
-        )
-
-        # Fit the subdaily PModel
-        pmodel = SubdailyPModel(
-            env=env,
-            acclim_model=acclim,
-            reference_kphio=1 / 8,
-            method_kphio="temperature",
-        )
-
-        # FaparLimitation uses the datetimes from pmodel.acclim_model and uses a soil
-        # moisture stress penalty
-        fl_datetimes = None
-        pmodel.apply_gpp_penalty_factor(pmodel_inputs["soilm_stress"])
-
-    # Check the GPP predictions - using _gpp to test the raw GPP rather than with any
-    # penalty factor applied.
-    assert_allclose(pmodel._gpp, pmodel_outputs["gpp"], rtol=1e-7)
-    assert_allclose(pmodel.optchi.ci, pmodel_outputs["ci"], rtol=1e-7)
-    assert_allclose(pmodel.optchi.chi, pmodel_outputs["chi"], rtol=1e-7)
+    pmodel, datetimes = phenology_pmodels
 
     pmodel_inputs["time"] = pmodel_inputs["time"].astype("datetime64[s]")
 
@@ -151,7 +118,7 @@ def test_fapar_limitation_frompmodel(
         pmodel=pmodel,
         method=method,
         growing_season=pmodel_inputs["growing_season"],
-        datetimes=fl_datetimes,
+        datetimes=datetimes,
         precip=pmodel_inputs["precip_molar"],
         aridity_index=site_data["AI_from_cruts"],  # Not used by zhu method.
     )
