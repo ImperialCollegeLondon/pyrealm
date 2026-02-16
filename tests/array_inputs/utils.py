@@ -571,13 +571,12 @@ class Context:
 
     Attributes:
         name (str): Name of the current method/function/class.
-        shapes (list[tuple[int, ...]]): Shapes to iterate over when generating array
-            arguments.
+        shapes (Callable[[int, int, str], dict[str, int]]):
+            Function to generate shapes for array arguments. Takes array argument index,
+            number of array arguments, and function name. Returns dictionary of
+            {dimension names: dimension sizes}.
         array_type (str, optional): The type to initialise arrays as. "xarray" or
             "numpy". Defaults to "numpy".
-        array_dims_list (list[tuple[str, ...]], optional): List of dimension names to
-            iterate over when initialising arrays with compatible 'array_type', e.g.
-            xarray. Access using 'array_dims()'.
         n_array (int): Number of array arguments in the current function.
         i_array (int): Index of the current array argument, used to select a shape.
         parents (list[str]): Hierarchy of names leading to the current function/class.
@@ -586,7 +585,7 @@ class Context:
     """
 
     name: str
-    shapes: list[tuple[int, ...]]
+    shapes: Callable[[int, int, str], dict[str, int]]
     array_type: str = "numpy"
     array_dims_list: list[tuple[str, ...]] | None = None
     n_array: int = 0
@@ -600,7 +599,6 @@ class Context:
             name=name,
             shapes=self.shapes,
             array_type=self.array_type,
-            array_dims_list=self.array_dims_list,
             n_array=self.n_array,
             i_array=self.i_array,
             parents=[*self.parents, self.name],
@@ -608,36 +606,39 @@ class Context:
 
     def shape(self) -> tuple[int, ...]:
         """Return the shape for index `i_array`."""
-        return self.shapes[self.i_array % len(self.shapes)]
+        if self.i_array == -1:
+            # Placeholder that should only be used for non-array arguments
+            return (1, 1, 1)
+        array_shape = self.shapes(self.i_array, self.n_array, self.name)
+        return tuple([size for size in array_shape.values()])
 
     @property
     def array_dims(self) -> tuple[str, ...]:
-        """Return the array_dims_list for index `i_array`."""
-        if self.array_dims_list:
-            return self.array_dims_list[self.i_array % len(self.array_dims_list)]
-        else:
-            return ()
+        """Return the dimensions for index `i_array`."""
+        array_shape = self.shapes(self.i_array, self.n_array, self.name)
+        return tuple([dim for dim in array_shape.keys()])
 
     def bcast_shape(self) -> tuple[int, ...]:
         """The broadcast shape of all inputs (not the full shape being tested)."""
+        if self.n_array == 0:
+            # Placeholder that should only be used for non-array arguments
+            return (1, 1, 1)
 
-        if not self.array_dims_list:
-            return np.broadcast_shapes(*self.shapes)
+        shapes = [self.shapes(i, self.n_array, self.name) for i in range(self.n_array)]
 
-        # If using dimension names the shapes may not be directly broadcastable
-        else:
-            # Get the full list of dimension names
-            full_dims = list(self.array_dims_list[0])
-            for dims in self.array_dims_list[1:]:
-                full_dims.extend([d for d in dims if d not in full_dims])
-            # Expand/reorder all shapes to match the full dimensions
-            full_shapes = []
-            for shape, dims in zip(self.shapes, self.array_dims_list):
-                shape_map = dict(zip(dims, shape))
-                full_shape = tuple(shape_map.get(dim, 1) for dim in full_dims)
-                full_shapes.append(full_shape)
-            # Get the full broadcast shape
-            return np.broadcast_shapes(*full_shapes)
+        # Get the full list of dimension names
+        full_dims = []
+        for shape in shapes:
+            for dim in shape:
+                if dim not in full_dims:
+                    full_dims.append(dim)
+        # Expand/reorder all shapes to match the full dimensions
+        full_shapes = []
+        for shape in shapes:
+            full_shape = tuple(shape.get(dim, 1) for dim in full_dims)
+            full_shapes.append(full_shape)
+        # Get the full broadcast shape
+        return np.broadcast_shapes(*full_shapes)
 
 
 # Resolve issue with get_type_hints failing for InitVars in py3.10
