@@ -73,10 +73,6 @@ SKIP_METHODS = [
     # PModel
     "AcclimationModel.set_include",
     "PModel._get_daily_gpp",
-    # The following two take an array that needs to be congruent with the existing
-    # PModel.env shape.
-    "PModel.apply_gpp_penalty_factor",
-    "SubdailyPModel.apply_gpp_penalty_factor",
     # Demography - mostly 1d arrays (dataframes)
     "CohortMethods.drop_cohort_data",
     "StemTraits",
@@ -184,6 +180,19 @@ REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
         ),
     ): _kwarg_params(("aridity_index", "mean_growth_temperature")),
 }
+
+
+def _get_time_dim(ctx: Context) -> int | None:
+    """Get the time dimension for the current array (first dimension of full shape)."""
+    time_dim: int | None = 0
+    if ctx.array_type == "xarray":
+        time_dim_key = "a"
+        # Determine if and where it is in this argument
+        if time_dim_key in ctx.array_dims:
+            time_dim = ctx.array_dims.index(time_dim_key)
+        else:
+            time_dim = None
+    return time_dim
 
 
 # These methods require specific arguments
@@ -347,17 +356,8 @@ def defined_method_args(argument: str, ctx: Context) -> Any | None:
             # SubdailyPModel needs more than 1 day (uses 48 hourly times)
 
             # Replace the time dimension (the first dimension)
-            time_dim: int | None = 0
-            if ctx.array_type == "xarray":
-                # The first dimension(s) are set by the first array argument
-                time_dim_key = next(iter(ctx.shapes(0, ctx.n_array, ctx.name)))
-                # Determine if and where it is in this argument
-                if time_dim_key in ctx.array_dims:
-                    time_dim = ctx.array_dims.index(time_dim_key)
-                else:
-                    time_dim = None
-
             envShape = list(shape)
+            time_dim = _get_time_dim(ctx)
             if time_dim is not None:
                 envShape[time_dim] = 1 if shape[time_dim] == 1 else 48
 
@@ -369,6 +369,14 @@ def defined_method_args(argument: str, ctx: Context) -> Any | None:
                 "fapar": np.full(envShape, 1),
                 "ppfd": np.full(envShape, 800),
             }
+
+    if ctx.name == "SubdailyPModel.apply_gpp_penalty_factor":
+        # SubdailyPModel needs more than 1 day (uses 48 hourly times)
+        _shape = list(shape)
+        time_dim = _get_time_dim(ctx)
+        if time_dim is not None:
+            _shape[time_dim] = 1 if shape[time_dim] == 1 else 48
+        arguments = {"penalty_factor": np.full(_shape, 0.5)}
 
     return arguments.get(argument)
 

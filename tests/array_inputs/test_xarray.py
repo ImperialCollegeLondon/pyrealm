@@ -24,7 +24,10 @@ METHOD_LIST = get_method_list("ArrayType")
 
 
 # List of functions that must match a previously defined shape
-DEPENDENT_LIST: list[str] = []
+DEPENDENT_LIST: list[str] = [
+    "PModel.apply_gpp_penalty_factor",
+    "SubdailyPModel.apply_gpp_penalty_factor",
+]
 
 
 def shapes_xarray(

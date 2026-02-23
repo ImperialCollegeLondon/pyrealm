@@ -333,7 +333,7 @@ class PModelABC(ABC):
         """Apply the gpp conversion factor to the input daily gpp."""
         return daily_mean_pmodel_gpp * self.gpp_conversion_factor
 
-    def apply_gpp_penalty_factor(self, penalty_factor: NDArray[np.floating]) -> None:
+    def apply_gpp_penalty_factor(self, penalty_factor: ArrayType[np.floating]) -> None:
         """Apply a post-hoc GPP penalty factor to GPP predictions.
 
         Some productivity models apply a post-hoc penalty factor to the predicted GPP of
@@ -353,7 +353,8 @@ class PModelABC(ABC):
             penalty_factor: An array of GPP penalty value.
         """
 
-        _ = check_input_shapes(self.env.tc, penalty_factor)
+        penalty_factor = xarray_inputs(penalty_factor)
+        _ = check_input_shapes(penalty_factor, shape=self.shape)
 
         self.gpp_penalty_factor = penalty_factor
 
