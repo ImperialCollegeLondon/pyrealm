@@ -202,8 +202,8 @@ def defined_method_args(argument: str, ctx: Context) -> Any | None:
         Any | None: The manually defined value for the argument, or `None` if it can be
         set by the defaults.
     """
-    shape = ctx.shape()
-    bcast_shape = ctx.bcast_shape()
+    shape = ctx.shape
+    bcast_shape = ctx.bcast_shape
 
     # PModel parameters
     splashDatesLen = 10
@@ -227,7 +227,7 @@ def defined_method_args(argument: str, ctx: Context) -> Any | None:
     )
 
     method_arguments_list: dict[str, dict] = {
-        "broadcast_time": {"shape": (3, *shape[1:])},
+        "broadcast_time": {"shape": bcast_shape},
         ## PModel
         # Subdaily data needs more than 1 day of times (uses 48 hours)
         "AcclimationModel": {"datetimes": np.arange(0, 48, dtype="datetime64[h]")},
@@ -347,16 +347,19 @@ def defined_method_args(argument: str, ctx: Context) -> Any | None:
             # SubdailyPModel needs more than 1 day (uses 48 hourly times)
 
             # Replace the time dimension (the first dimension)
-            envShape = list(shape)
-            if ctx.array_dims_list:
-                # The first argument sets the first dimension(s)
-                time_dim = ctx.array_dims_list[0][0]
+            time_dim: int | None = 0
+            if ctx.array_type == "xarray":
+                # The first dimension(s) are set by the first array argument
+                time_dim_key = next(iter(ctx.shapes(0, ctx.n_array, ctx.name)))
                 # Determine if and where it is in this argument
-                if time_dim in ctx.array_dims:
-                    i_dim = ctx.array_dims.index(time_dim)
-                    envShape[i_dim] = 1 if shape[i_dim] == 1 else 48
-            else:
-                envShape[0] = 1 if shape[0] == 1 else 48
+                if time_dim_key in ctx.array_dims:
+                    time_dim = ctx.array_dims.index(time_dim_key)
+                else:
+                    time_dim = None
+
+            envShape = list(shape)
+            if time_dim is not None:
+                envShape[time_dim] = 1 if shape[time_dim] == 1 else 48
 
             arguments = {
                 "tc": np.full(envShape, 20),
@@ -587,7 +590,6 @@ class Context:
     name: str
     shapes: Callable[[int, int, str], dict[str, int]]
     array_type: str = "numpy"
-    array_dims_list: list[tuple[str, ...]] | None = None
     n_array: int = 0
     i_array: int = 0
     parents: list[str] = field(default_factory=list)
@@ -604,25 +606,30 @@ class Context:
             parents=[*self.parents, self.name],
         )
 
+    def _get_shape(self):
+        if self.i_array == -1 or self.i_array >= self.n_array:
+            # Placeholder / Fallback
+            array_shape = self.shapes(0, 1, "")
+        else:
+            array_shape = self.shapes(self.i_array, self.n_array, self.name)
+        return array_shape
+
+    @property
     def shape(self) -> tuple[int, ...]:
         """Return the shape for index `i_array`."""
-        if self.i_array == -1:
-            # Placeholder that should only be used for non-array arguments
-            return (1, 1, 1)
-        array_shape = self.shapes(self.i_array, self.n_array, self.name)
-        return tuple([size for size in array_shape.values()])
+        return tuple(self._get_shape().values())
 
     @property
     def array_dims(self) -> tuple[str, ...]:
         """Return the dimensions for index `i_array`."""
-        array_shape = self.shapes(self.i_array, self.n_array, self.name)
-        return tuple([dim for dim in array_shape.keys()])
+        return tuple(self._get_shape().keys())
 
+    @property
     def bcast_shape(self) -> tuple[int, ...]:
         """The broadcast shape of all inputs (not the full shape being tested)."""
         if self.n_array == 0:
-            # Placeholder that should only be used for non-array arguments
-            return (1, 1, 1)
+            # Placeholder / Fallback
+            return self.shape
 
         shapes = [self.shapes(i, self.n_array, self.name) for i in range(self.n_array)]
 
@@ -711,7 +718,7 @@ def _initialise_type_default(typ: Any, ctx: Context) -> Any:
     # Numpy arrays
     if _is_array_type(typ, "numpy"):
         dtype = _extract_numpy_dtype(typ)
-        shape = ctx.shape()
+        shape = ctx.shape
         if np.issubdtype(dtype, np.datetime64):
             return np.full(shape, 1, dtype="datetime64[D]")
         else:
@@ -759,7 +766,11 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
     params = _get_parameters(method, ctx)
 
     # Get the number of array arguments for selecting array shapes / dimensions
-    ctx.n_array = sum([_is_array_type(typ, "numpy") for _, typ in params.values()])
+    n_array = 0
+    for param, typ in params.values():
+        if _is_array_type(typ, "numpy") and param.default is param.empty:
+            n_array += 1
+    ctx.n_array = n_array
     ctx.i_array = -1
 
     for param_name, (param, typ) in params.items():
@@ -789,7 +800,7 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
         if (
             _is_array_type(typ, "ArrayType")
             and isinstance(kwargs[param_name], np.ndarray)
-            and kwargs[param_name].ndim == len(ctx.shape())
+            and kwargs[param_name].ndim == len(ctx.shape)
         ):
             if ctx.array_type == "xarray":
                 dims = ctx.array_dims or None

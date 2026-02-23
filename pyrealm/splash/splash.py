@@ -337,9 +337,9 @@ class SplashModel:
             raise ValueError(msg)
 
         # Create storage for outputs
-        aet_out = np.full_like(self.tc, np.nan)
-        wn_out = np.full_like(self.tc, np.nan)
-        ro_out = np.full_like(self.tc, np.nan)
+        aet_out = np.full(self.shape, np.nan)
+        wn_out = np.full(self.shape, np.nan)
+        ro_out = np.full(self.shape, np.nan)
 
         if np.any((wn_init < 0) | (wn_init > self.kWm)):
             raise ValueError("Soil moisture must be between 0 and kWm")
