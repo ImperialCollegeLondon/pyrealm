@@ -76,9 +76,9 @@ moisture stress factor.
 `calculate_saturation_vapour_pressure_slope` calculates the slope of the
 saturation vapour pressure curve.
 `calculate_psychrometric_constant` calculates the psychrometric constant.
-`calculate_c3_discrimination` calculates c3 isotopic discrimination.
-`calculate_c4_discrimination` calculates c4 isotopic discrimination.
-`calculate_c4_discrimination_vonC` calculates c4 isotopic discrimination using the method
+`CalcCarbonIsotopes.calculate_c3_discrimination` calculates c3 isotopic discrimination.
+`CalcCarbonIsotopes.calculate_c4_discrimination` calculates c4 isotopic discrimination.
+`CalcCarbonIsotopes.calculate_c4_discrimination_vonC` calculates c4 isotopic discrimination using the method
 from (von Caemmerer et al., 2014).
 `calculate_density_h2o` calculates water density.
 `calculate_viscosity_h2o` calculates the viscosity of water.
