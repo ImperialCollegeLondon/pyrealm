@@ -25,8 +25,19 @@ METHOD_LIST = get_method_list("ArrayType")
 
 # List of functions that must match a previously defined shape
 DEPENDENT_LIST: list[str] = [
+    # pmodel
     "PModel.apply_gpp_penalty_factor",
     "SubdailyPModel.apply_gpp_penalty_factor",
+    "CalcCarbonIsotopes",
+    "C3C4Competition.estimate_isotopic_discrimination",
+    "OptimalChiPrentice14.estimate_chi",
+    "OptimalChiPrentice14RootzoneStress.estimate_chi",
+    "OptimalChiC4.estimate_chi",
+    "OptimalChiC4RootzoneStress.estimate_chi",
+    "OptimalChiLavergne20C3.estimate_chi",
+    "OptimalChiLavergne20C4.estimate_chi",
+    "OptimalChiC4NoGamma.estimate_chi",
+    "OptimalChiC4NoGammaRootzoneStress.estimate_chi",
 ]
 
 
