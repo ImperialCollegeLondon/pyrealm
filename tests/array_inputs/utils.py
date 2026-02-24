@@ -925,6 +925,7 @@ def compare_instances(instance1: Any, instance2: Any, broadcast: bool = False):
 
     If broadcasting, this function ignores the 'shape' attribute of any class, which is
     not expected to broadcast, and anything in the manually defined list IGNORE_OUTPUTS.
+    Any 'dims' attributes will also be ignored.
     """
     dict1 = instance1.__dict__
     dict2 = instance2.__dict__
@@ -935,6 +936,8 @@ def compare_instances(instance1: Any, instance2: Any, broadcast: bool = False):
                 continue
             if f"{class_name}:{key}" in IGNORE_OUTPUTS:
                 continue
+        if key == "dims":
+            continue
 
         raise_msg = f"{class_name}: {key} not equal"
         assert_is_equal(dict1[key], dict2[key], raise_msg, broadcast)

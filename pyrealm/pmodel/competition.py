@@ -201,9 +201,12 @@ class C3C4Competition:
         warn_experimental("C3C4Competition")
 
         # Convert any xarray inputs
-        dims = get_common_dims(gpp_c3, gpp_c4, treecover, below_t_min, cropland)
-        gpp_c3, gpp_c4, treecover = xarray_inputs(gpp_c3, gpp_c4, treecover, dims=dims)
-        cropland, below_t_min = xarray_inputs(cropland, below_t_min, dims=dims)
+        self.dims = get_common_dims(gpp_c3, gpp_c4, treecover, below_t_min, cropland)
+        gpp_c3 = xarray_inputs(gpp_c3, dims=self.dims)
+        gpp_c4 = xarray_inputs(gpp_c4, dims=self.dims)
+        treecover = xarray_inputs(treecover, dims=self.dims)
+        below_t_min = xarray_inputs(below_t_min, dims=self.dims)
+        cropland = xarray_inputs(cropland, dims=self.dims)
 
         # Check inputs are congruent
         self.shape: tuple = check_input_shapes(
@@ -299,11 +302,11 @@ class C3C4Competition:
         """
 
         d13CO2, Delta13C_C3_alone, Delta13C_C4_alone = xarray_inputs(
-            d13CO2, Delta13C_C3_alone, Delta13C_C4_alone
+            d13CO2, Delta13C_C3_alone, Delta13C_C4_alone, dims=self.dims
         )
 
         _ = check_input_shapes(
-            self.gpp_adv_c4, d13CO2, Delta13C_C3_alone, Delta13C_C4_alone
+            d13CO2, Delta13C_C3_alone, Delta13C_C4_alone, shape=self.shape
         )
 
         self.Delta13C_C3 = Delta13C_C3_alone * (1 - self.frac_c4)

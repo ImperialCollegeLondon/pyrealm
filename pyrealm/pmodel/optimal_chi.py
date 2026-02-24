@@ -133,7 +133,14 @@ class OptimalChiABC(ABC):
 
         # Validate that the subclass methods populate the attributes correctly.
         _ = check_input_shapes(
-            env.ca, self.beta, self.xi, self.chi, self.ci, self.mj, self.mc, self.mjoc
+            self.beta,
+            self.xi,
+            self.chi,
+            self.ci,
+            self.mj,
+            self.mc,
+            self.mjoc,
+            shape=self.env.shape,
         )
 
     @abstractmethod
@@ -254,8 +261,8 @@ class OptimalChiPrentice14(
         """Estimate ``chi`` for C3 plants."""
 
         if xi_values is not None:
-            xi_values = xarray_inputs(xi_values)
-            _ = check_input_shapes(self.env.ca, xi_values)
+            xi_values = xarray_inputs(xi_values, dims=self.env.dims)
+            _ = check_input_shapes(xi_values, shape=self.env.shape)
             self.xi = xi_values
         else:
             self.xi = np.sqrt(
@@ -323,8 +330,8 @@ class OptimalChiPrentice14RootzoneStress(
         """Estimate ``chi`` for C3 plants."""
 
         if xi_values is not None:
-            xi_values = xarray_inputs(xi_values)
-            _ = check_input_shapes(self.env.ca, xi_values)
+            xi_values = xarray_inputs(xi_values, dims=self.env.dims)
+            _ = check_input_shapes(xi_values, shape=self.env.shape)
             self.xi = xi_values
         else:
             self.xi = np.sqrt(
@@ -387,8 +394,8 @@ class OptimalChiC4(
     def estimate_chi(self, xi_values: ArrayType[np.floating] | None = None) -> None:
         """Estimate ``chi`` for C4 plants, setting ``mj`` and ``mc`` to 1."""
         if xi_values is not None:
-            xi_values = xarray_inputs(xi_values)
-            _ = check_input_shapes(self.env.ca, xi_values)
+            xi_values = xarray_inputs(xi_values, dims=self.env.dims)
+            _ = check_input_shapes(xi_values, shape=self.env.shape)
             self.xi = xi_values
         else:
             self.xi = np.sqrt(
@@ -456,8 +463,8 @@ class OptimalChiC4RootzoneStress(
     def estimate_chi(self, xi_values: ArrayType[np.floating] | None = None) -> None:
         """Estimate ``chi`` for C4 plants, setting ``mj`` and ``mc`` to 1."""
         if xi_values is not None:
-            xi_values = xarray_inputs(xi_values)
-            _ = check_input_shapes(self.env.ca, xi_values)
+            xi_values = xarray_inputs(xi_values, dims=self.env.dims)
+            _ = check_input_shapes(xi_values, shape=self.env.shape)
             self.xi = xi_values
         else:
             self.xi = np.sqrt(
@@ -544,8 +551,8 @@ class OptimalChiLavergne20C3(
         """Estimate ``chi`` for C3 plants."""
 
         if xi_values is not None:
-            xi_values = xarray_inputs(xi_values)
-            _ = check_input_shapes(self.env.ca, xi_values)
+            xi_values = xarray_inputs(xi_values, dims=self.env.dims)
+            _ = check_input_shapes(xi_values, shape=self.env.shape)
             self.xi = xi_values
         else:
             self.xi = np.sqrt(
@@ -638,8 +645,8 @@ class OptimalChiLavergne20C4(
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
         if xi_values is not None:
-            xi_values = xarray_inputs(xi_values)
-            _ = check_input_shapes(self.env.ca, xi_values)
+            xi_values = xarray_inputs(xi_values, dims=self.env.dims)
+            _ = check_input_shapes(xi_values, shape=self.env.shape)
             self.xi = xi_values
         else:
             self.xi = np.sqrt((self.beta * self.env.kmm) / (1.6 * self.env.ns_star))
@@ -713,8 +720,8 @@ class OptimalChiC4NoGamma(
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
         if xi_values is not None:
-            xi_values = xarray_inputs(xi_values)
-            _ = check_input_shapes(self.env.ca, xi_values)
+            xi_values = xarray_inputs(xi_values, dims=self.env.dims)
+            _ = check_input_shapes(xi_values, shape=self.env.shape)
             self.xi = xi_values
         else:
             self.xi = np.sqrt((self.beta * self.env.kmm) / (1.6 * self.env.ns_star))
@@ -788,8 +795,8 @@ class OptimalChiC4NoGammaRootzoneStress(
 
         # Calculate chi and xi as in Prentice 14 but removing gamma terms.
         if xi_values is not None:
-            xi_values = xarray_inputs(xi_values)
-            _ = check_input_shapes(self.env.ca, xi_values)
+            xi_values = xarray_inputs(xi_values, dims=self.env.dims)
+            _ = check_input_shapes(xi_values, shape=self.env.shape)
             self.xi = xi_values
         else:
             self.xi = np.sqrt(

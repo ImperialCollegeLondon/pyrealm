@@ -353,7 +353,7 @@ class PModelABC(ABC):
             penalty_factor: An array of GPP penalty value.
         """
 
-        penalty_factor = xarray_inputs(penalty_factor)
+        penalty_factor = xarray_inputs(penalty_factor, dims=self.env.dims)
         _ = check_input_shapes(penalty_factor, shape=self.shape)
 
         self.gpp_penalty_factor = penalty_factor
