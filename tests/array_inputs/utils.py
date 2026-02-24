@@ -179,6 +179,19 @@ REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
             "QuantumYieldSandoval",
         ),
     ): _kwarg_params(("aridity_index", "mean_growth_temperature")),
+    # Don't use default xi_values (None) in estimate_chi
+    ("OptimalChiPrentice14.estimate_chi", ()): _kwarg_params(("xi_values",)),
+    ("OptimalChiPrentice14RootzoneStress.estimate_chi", ()): _kwarg_params(
+        ("xi_values",)
+    ),
+    ("OptimalChiC4.estimate_chi", ()): _kwarg_params(("xi_values",)),
+    ("OptimalChiC4RootzoneStress.estimate_chi", ()): _kwarg_params(("xi_values",)),
+    ("OptimalChiLavergne20C3.estimate_chi", ()): _kwarg_params(("xi_values",)),
+    ("OptimalChiLavergne20C4.estimate_chi", ()): _kwarg_params(("xi_values",)),
+    ("OptimalChiC4NoGamma.estimate_chi", ()): _kwarg_params(("xi_values",)),
+    ("OptimalChiC4NoGammaRootzoneStress.estimate_chi", ()): _kwarg_params(
+        ("xi_values",)
+    ),
 }
 
 
@@ -663,11 +676,14 @@ InitVar.__call__ = lambda *args: None  # type: ignore[method-assign]
 
 def _get_parameters(
     method: Callable, ctx: Context
-) -> dict[str, tuple[Parameter, type]]:
-    """Get a dictionary of {parameter_name: (parameter, type)}.
+) -> dict[str, tuple[Parameter, type, str]]:
+    """Get a dictionary of {parameter_name: (parameter, type, approach)}.
 
     Gets the relevant parameters using `inspect.signature().parameters`, as well as any
     specified by `REQUIRES`. Then uses `get_type_hints()` to ensure types are resolved.
+
+    The 'approach' output describes how the argument will be defined. It is either
+    "manual", "default", or "automatic".
     """
     from typing import get_type_hints
 
@@ -690,11 +706,23 @@ def _get_parameters(
 
     # Resolve string annotations using get_type_hints
     # Fall back to param.annotation for required keyword arguments
-    type_hints = get_type_hints(method)
-    return {
-        name: (param, type_hints.get(name, param.annotation))
+    type_hints = {
+        name: get_type_hints(method).get(name, param.annotation)
         for name, param in params.items()
     }
+
+    approaches: dict[str, str] = {}
+    for name, param in params.items():
+        if defined_method_args(name, ctx) is not None:
+            approaches[name] = "manual"
+        elif param.default is not param.empty and not (
+            required_args and name not in required_args  # Don't use default if REQUIRES
+        ):
+            approaches[name] = "default"
+        else:
+            approaches[name] = "automatic"
+
+    return {name: (params[name], type_hints[name], approaches[name]) for name in params}
 
 
 def _initialise_type_default(typ: Any, ctx: Context) -> Any:
@@ -769,34 +797,32 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
         dict[str, Any]: The generated arguments for the function/method.
     """
 
-    kwargs = {}
+    kwargs: dict[str, Any] = {}
 
     params = _get_parameters(method, ctx)
 
     # Get the number of array arguments for selecting array shapes / dimensions
-    n_array = 0
-    for param, typ in params.values():
-        if _is_array_type(typ, "numpy") and param.default is param.empty:
-            n_array += 1
-    ctx.n_array = n_array
+    ctx.n_array = sum(
+        _is_array_type(typ, "numpy") and approach != "default"
+        for _, typ, approach in params.values()
+    )
     ctx.i_array = -1
 
-    for param_name, (param, typ) in params.items():
+    for param_name, (param, typ, approach) in params.items():
         if _is_array_type(typ, "numpy"):
             ctx.i_array += 1
 
         # Set manually defined values
-        manual_arg = defined_method_args(param_name, ctx)
-        if manual_arg is not None:
-            kwargs[param_name] = manual_arg
+        if approach == "manual":
+            kwargs[param_name] = defined_method_args(param_name, ctx)
 
         # Set default arguments
-        elif param.default is not param.empty:
+        elif approach == "default":
             kwargs[param_name] = param.default
             continue  # Keep default array types
 
         # Initialise any other arguments
-        else:
+        elif approach == "automatic":
             kwargs[param_name] = _initialise_type_default(typ, ctx)
 
             # Adjust values where np.ones causes an issue
@@ -805,14 +831,15 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
                     kwargs[param_name] += 273.15
 
         # If using a different array type, convert numpy arrays to this
+        arg = kwargs[param_name]
         if (
             _is_array_type(typ, "ArrayType")
-            and isinstance(kwargs[param_name], np.ndarray)
-            and kwargs[param_name].ndim == len(ctx.shape)
+            and isinstance(arg, np.ndarray)
+            and arg.ndim == len(ctx.shape)
         ):
             if ctx.array_type == "xarray":
                 dims = ctx.array_dims or None
-                kwargs[param_name] = xr.DataArray(kwargs[param_name], dims=dims)
+                kwargs[param_name] = xr.DataArray(arg, dims=dims)
 
     return kwargs
 
