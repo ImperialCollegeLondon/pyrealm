@@ -10,6 +10,7 @@ from numpy.typing import NDArray
 T = TypeVar("T", bound=np.generic)
 
 ArrayType: TypeAlias = NDArray[T] | xr.DataArray
+"""Type for array inputs. A union of numpy arrays and xarray DataArrays."""
 
 
 def is_arraytype(var: Any) -> TypeGuard[ArrayType]:
@@ -111,8 +112,8 @@ def xarray_inputs(
 
     Args:
         *arrays: The variables to convert into numpy arrays.
-        kwargs (dict, optional): A dictionary of variables to convert to numpy arrays.
-        dims (list, optional): A list of dimension names to expand DataArrays to.
+        kwargs: An optional dictionary of variables to convert to numpy arrays.
+        dims: An optional list of dimension names to expand DataArrays to.
 
     Returns:
         The stripped array(s). As a tuple if more than one is provided. As (tuple, dict)
