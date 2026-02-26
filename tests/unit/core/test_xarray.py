@@ -152,11 +152,11 @@ def test_xarray_inputs_dimensions(use_kwargs, dims):
 
 def test_xarray_pmodel_environment(dataset: xr.Dataset):
     """Test PModelEnvironment can be initialised using xarray inputs without issue."""
-    from pyrealm.core.pressure import calc_patm
+    from pyrealm.core.pressure import calculate_patm
     from pyrealm.pmodel import PModelEnvironment
 
     tc = dataset["temp"]
     vpd = dataset["VPD"]
     co2 = dataset["CO2"]
-    patm = calc_patm(dataset["elevation"].isel(Time=0))
+    patm = calculate_patm(dataset["elevation"].isel(Time=0))
     PModelEnvironment(tc=tc, vpd=vpd, co2=co2, patm=patm)
