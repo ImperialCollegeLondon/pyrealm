@@ -84,8 +84,8 @@ def test_calculate_ru_rv_intermediates(delta, latitude, expected):
         )
     ],
 )
-def test_calc_sunset_hour_angle(delta, latitude, expected):
-    """Tests calc_sunset_hour_angle.
+def test_calculate_sunset_hour_angle(delta, latitude, expected):
+    """Tests calculate_sunset_hour_angle.
 
     This tests aims to confirm the correct implementation of the maths.
     """
@@ -168,7 +168,7 @@ def test_calculate_transmissivity(sf, elv, expected):
     argvalues=[(np.array([0.752844]), np.array([41646763]), np.array([62.042300]))],
 )
 def test_calculate_ppfd_from_tau_rd(tau, ra_d, expected):
-    """Tests calc_ppfd_from_tau_ra_d.
+    """Tests calculate_ppfd_from_tau_rd.
 
     This test is intended to verify the implemented maths.
     """
@@ -218,7 +218,7 @@ def test_calculate_ppfd(
     argvalues=[(np.array([1.0]), np.array([23.0]), np.array([84.000000]))],
 )
 def test_calculate_net_longwave_radiation(sf, tc, expected):
-    """Tests calc_net_longwave_radiation.
+    """Tests calculate_net_longwave_radiation.
 
     This test is intended to verify the implemented maths.
     """

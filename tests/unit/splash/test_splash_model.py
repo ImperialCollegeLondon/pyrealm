@@ -148,8 +148,8 @@ def test_estimate_initial_soil_moisture(splash_model):
         )  # simply check convergence
 
 
-def test_calc_soil_moisture(splash_model):
-    """Test the calc_soil_moisture method of the SplashModel class."""
+def test_calculate_soil_moisture(splash_model):
+    """Test the calculate_soil_moisture method of the SplashModel class."""
 
     wn_init = np.random.random(splash_model.shape[1:]) * splash_model.kWm
 

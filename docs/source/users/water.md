@@ -73,7 +73,7 @@ import numpy as np
 import xarray
 
 from pyrealm.core.water import DENSITY_METHODS, VISCOSITY_METHODS
-from pyrealm.core.pressure import calc_patm
+from pyrealm.core.pressure import calculate_patm
 from pyrealm.constants import CoreConst
 from pyrealm.pmodel import PModel, PModelEnvironment
 
@@ -385,7 +385,7 @@ fapar = np.array([1.0])
 ppfd = np.array([1.0])
 
 # Convert elevation to atmospheric pressure
-patm = calc_patm(elev)
+patm = calculate_patm(elev)
 
 # Mask out temperature values below -25°C
 temp[temp < -25] = np.nan

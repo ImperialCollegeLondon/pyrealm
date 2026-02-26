@@ -11,10 +11,10 @@ from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.pmodel.functions import (
-    calc_co2_to_ca,
-    calc_gammastar,
-    calc_kmm,
-    calc_ns_star,
+    calculate_co2_to_ca,
+    calculate_gammastar,
+    calculate_kmm,
+    calculate_ns_star,
 )
 
 
@@ -26,13 +26,13 @@ class PModelEnvironment:
     calculates four photosynthetic variables for those environmental conditions:
 
     * the photorespiratory :math:`\ce{CO2}` compensation point (:math:`\Gamma^{*}`,
-      using :func:`~pyrealm.pmodel.functions.calc_gammastar`),
+      using :func:`~pyrealm.pmodel.functions.calculate_gammastar`),
     * the relative viscosity of water (:math:`\eta^*`,
-      using :func:`~pyrealm.pmodel.functions.calc_ns_star`),
+      using :func:`~pyrealm.pmodel.functions.calculate_ns_star`),
     * the ambient partial pressure of :math:`\ce{CO2}` (:math:`c_a`,
-      using :func:`~pyrealm.pmodel.functions.calc_co2_to_ca`) and
+      using :func:`~pyrealm.pmodel.functions.calculate_co2_to_ca`) and
     * the Michaelis Menten coefficient of Rubisco-limited assimilation
-      (:math:`K`, using :func:`~pyrealm.pmodel.functions.calc_kmm`).
+      (:math:`K`, using :func:`~pyrealm.pmodel.functions.calculate_kmm`).
 
     The ``PModelEnvironment`` will also accept values for the :term:`photosynthetic
     photon flux density<PPFD>` (PPFD, µmol m-2 s-1) and the  fraction of absorbed
@@ -144,11 +144,11 @@ class PModelEnvironment:
         self._bounds_checker: BoundsChecker = bounds_checker
         """The BoundsChecker applied to the environment data."""
 
-        # Guard against calc_density issues
+        # Guard against calculate_density issues
         if np.nanmin(self.tc) < np.array([-25]):
             raise ValueError(
                 "Cannot calculate P Model predictions for values below"
-                " -25°C. See calc_density_h2o."
+                " -25°C. See calculate_density_h2o."
             )
 
         # Guard against negative VPD issues
@@ -162,10 +162,12 @@ class PModelEnvironment:
         self.tk: NDArray[np.floating] = self.tc + self.core_const.k_CtoK
         """The temperature at which to estimate photosynthesis in Kelvin (K)"""
 
-        self.ca: NDArray[np.floating] = calc_co2_to_ca(co2=self.co2, patm=self.patm)
+        self.ca: NDArray[np.floating] = calculate_co2_to_ca(
+            co2=self.co2, patm=self.patm
+        )
         """Ambient CO2 partial pressure, Pa"""
 
-        self.gammastar: NDArray[np.floating] = calc_gammastar(
+        self.gammastar: NDArray[np.floating] = calculate_gammastar(
             tk=self.tk,
             patm=patm,
             tk_ref=self.pmodel_const.tk_ref,
@@ -174,7 +176,7 @@ class PModelEnvironment:
         )
         r"""Photorespiratory compensation point (:math:`\Gamma^\ast`, Pa)"""
 
-        self.kmm: NDArray[np.floating] = calc_kmm(
+        self.kmm: NDArray[np.floating] = calculate_kmm(
             tk=self.tk,
             patm=patm,
             tk_ref=self.pmodel_const.tk_ref,
@@ -183,7 +185,7 @@ class PModelEnvironment:
         )
         """Michaelis Menten coefficient, Pa"""
 
-        self.ns_star = calc_ns_star(tk=self.tk, patm=patm, core_const=core_const)
+        self.ns_star = calculate_ns_star(tk=self.tk, patm=patm, core_const=core_const)
         """Viscosity correction factor relative to standard temperature and pressure,
         unitless"""
 
