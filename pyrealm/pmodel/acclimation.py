@@ -107,7 +107,7 @@ class AcclimationModel:
 
     def __init__(
         self,
-        datetimes: NDArray[np.datetime64],
+        datetimes: ArrayType[np.datetime64],
         allow_partial_data: bool = False,
         alpha: float = 1 / 15,
         allow_holdover: bool = False,
@@ -172,6 +172,7 @@ class AcclimationModel:
         """The datetime sequence padded to complete days."""
 
         # Run the initialisation logic steps
+        datetimes = xarray_inputs(datetimes)
         self._validate_and_set_datetimes(datetimes=datetimes)
 
         # Attributes populated by the set_* methods
@@ -353,7 +354,7 @@ class AcclimationModel:
         self.set_method = f"Window ({window_center}, {half_width})"
         self._set_sampling_times()
 
-    def set_include(self, include: NDArray[np.bool_]) -> None:
+    def set_include(self, include: ArrayType[np.bool_]) -> None:
         """Set the acclimation conditions using a logical array.
 
         This method sets which daily values will be sampled directly, by providing a
@@ -363,6 +364,8 @@ class AcclimationModel:
         Args:
             include: A boolean array indicating which daily observations to include.
         """
+
+        include = xarray_inputs(include)
 
         if not (isinstance(include, np.ndarray) and include.dtype == np.bool_):
             raise ValueError("The include argument must be a boolean array")
