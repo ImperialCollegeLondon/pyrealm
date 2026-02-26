@@ -270,6 +270,40 @@ def calculate_foliage_masses(
     return _enforce_2D(crown_area * lai * (1 / sla))
 
 
+def calculate_fine_root_masses(
+    lai: NDArray[np.floating],
+    crown_area: NDArray[np.floating],
+    zeta: NDArray[np.floating],
+    validate: bool = True,
+) -> NDArray[np.floating]:
+    r"""Calculate foliage mass under the T Model.
+
+    The fine root mass (:math:`W_{r}`) is calculated from the total area of foliage -
+    the product of the crown area (:math:`A_{c}`) and leaf area index (:math:`L`) - and
+    the ratio of fine root mass to leaf area (:math:`zeta`).
+
+    .. math::
+
+        W_r = A_c L \zeta
+
+    Args:
+        crown_area: Crown area of individuals
+        lai: Leaf area index of the PFT
+        zeta: The ratio of fine root mass to foliage area of the PFT.
+        validate: Boolean flag to suppress argument validation
+    """
+    if validate:
+        size_args = {"crown_area": crown_area}
+        _validate_demography_array_arguments(
+            trait_args={"zeta": zeta, "lai": lai}, size_args=size_args
+        )
+        _enforce_positive_sizes(
+            size_args=size_args, function_name="calculate_fine_root_masses"
+        )
+
+    return _enforce_2D(crown_area * lai * zeta)
+
+
 def calculate_sapwood_masses(
     rho_s: NDArray[np.floating],
     ca_ratio: NDArray[np.floating],
@@ -562,40 +596,44 @@ def calculate_reproductive_tissue_respiration(
 
 
 def calculate_fine_root_respiration(
-    zeta: NDArray[np.floating],
-    sla: NDArray[np.floating],
+    fine_root_mass: NDArray[np.floating],
     resp_r: NDArray[np.floating],
-    foliage_mass: NDArray[np.floating],
     validate: bool = True,
 ) -> NDArray[np.floating]:
     r"""Calculate fine root respiration.
 
-    Calculates the total fine root respiration (:math:`R_{r}`) given the individual
-    foliage mass (:math:`W_f`), along with the fine root respiration rate (:math:`r_r`),
-    the ratio of fine root mass to foliage area (:math:`\zeta`) and the specific leaf
-    area (:math:`\sigma`) :cite:p:`{see Equation 13, }Li:2014bc`
+    Calculates the total fine root respiration (:math:`R_{r}`) given fine root mass
+    (:math:`W_f`) the fine root respiration rate (:math:`r_r`):
 
     .. math::
-         R_{r} = \zeta \sigma W_f r_r
+         R_{r} = W_r r_r
+
+    Equation 13 of :cite:`Li:2014bc` gives this calculation as:
+
+    .. math::
+         R_{r} = \zeta \sigma W_f r_r,
+
+    given the individual foliage mass (:math:`W_f`), the ratio of fine root mass to
+    foliage area (:math:`\zeta`) and the specific leaf area (:math:`\sigma`), which can
+    be simplified to the equation here given :math: `W_f = (A_c L) / \sigma`: and
+    :math:`W_r = \zeta A_c L` (see :func:`calculate_fine_root_masses`).
 
     Args:
-        zeta: The ratio of fine root mass to foliage area of the PFT.
-        sla: The specific leaf area of the PFT.
+        fine_root_mass: The individual fine root mass.
         resp_r: The respiration rate of fine roots of the PFT.
-        foliage_mass: The individual foliage mass.
         validate: Boolean flag to suppress argument validation
     """
     if validate:
-        size_args = {"foliage_mass": foliage_mass}
+        size_args = {"fine_root_mass": fine_root_mass}
         _validate_demography_array_arguments(
-            trait_args={"zeta": zeta, "sla": sla, "resp_r": resp_r},
+            trait_args={"resp_r": resp_r},
             size_args=size_args,
         )
         _enforce_positive_sizes(
             size_args=size_args, function_name="calculate_fine_root_respiration"
         )
 
-    return _enforce_2D(zeta * sla * foliage_mass * resp_r)
+    return _enforce_2D(fine_root_mass * resp_r)
 
 
 def calculate_net_primary_productivity(
@@ -703,41 +741,45 @@ def calculate_foliage_turnover(
 
 
 def calculate_fine_root_turnover(
-    sla: NDArray[np.floating],
-    zeta: NDArray[np.floating],
     tau_r: NDArray[np.floating],
-    foliage_mass: NDArray[np.floating],
+    fine_root_mass: NDArray[np.floating],
     validate: bool = True,
 ) -> NDArray[np.floating]:
     r"""Calculate turnover costs.
 
     This function calculates the costs associated with the turnover of fine roots. This
-    is calculated from the total foliage mass of individuals (:math:`W_f`), along with
-    the specific leaf area (:math:`\sigma`) and fine root mass to foliar area ratio
-    (:math:`\zeta`) and the turnover time of fine roots (:math:`\tau_r`) of the plant
-    functional type :cite:p:`{see Equation 15, }Li:2014bc`.
+    is calculated from the total fine root mass of individuals (:math:`W_r`) and the
+    turnover time of fine roots (:math:`\tau_r`) of the plant functional type.
 
     .. math::
 
-        T = W_f \left(\frac{ \sigma \zeta}{\tau_f} \right)
+        T = \frac{ W_r}{\tau_f}
+
+    Equation 15 of :cite:`Li:2014bc` gives this as:
+
+        T = W_f \left(\frac{ \sigma \zeta}{\tau_f} \right),
+
+    given the foliage mass of individuals (:math:`W_f`), the specific leaf area
+    (:math:`\sigma`) and fine root mass to foliar area ratio (:math:`\zeta`), which can
+    be simplified to the equation here given :math: `W_f = (A_c L) / \sigma`: and
+    :math:`W_r = \zeta A_c L` (see :func:`calculate_fine_root_masses`).
+
 
     Args:
-        sla: The specific leaf area
-        zeta: The ratio of fine root mass to foliage area.
         tau_r: The turnover time of fine roots
-        foliage_mass: The foliage mass
+        fine_root_mass: The fine root mass
         validate: Boolean flag to suppress argument validation
     """
     if validate:
-        size_args = {"foliage_mass": foliage_mass}
+        size_args = {"fine_root_mass": fine_root_mass}
         _validate_demography_array_arguments(
-            trait_args={"sla": sla, "zeta": zeta, "tau_r": tau_r}, size_args=size_args
+            trait_args={"tau_r": tau_r}, size_args=size_args
         )
         _enforce_positive_sizes(
             size_args=size_args, function_name="calculate_fine_root_turnover"
         )
 
-    return _enforce_2D(foliage_mass * (sla * zeta / tau_r))
+    return _enforce_2D(fine_root_mass / tau_r)
 
 
 def calculate_reproductive_tissue_turnover(
@@ -990,6 +1032,7 @@ class StemAllometry(PandasExporter, CohortMethods):
         "crown_fraction",
         "stem_mass",
         "foliage_mass",
+        "fine_root_mass",
         "reproductive_tissue_mass",
         "sapwood_mass",
         "crown_r0",
@@ -1021,6 +1064,8 @@ class StemAllometry(PandasExporter, CohortMethods):
     """Stem mass (kg)"""
     foliage_mass: NDArray[np.floating] = field(init=False)
     """Foliage mass (kg)"""
+    fine_root_mass: NDArray[np.floating] = field(init=False)
+    """Fine root mass (kg)"""
     reproductive_tissue_mass: NDArray[np.floating] = field(init=False)
     """Reproductive tissue mass (kg)"""
     sapwood_mass: NDArray[np.floating] = field(init=False)
@@ -1089,6 +1134,13 @@ class StemAllometry(PandasExporter, CohortMethods):
 
         self.foliage_mass = calculate_foliage_masses(
             sla=stem_traits.sla,
+            lai=stem_traits.lai,
+            crown_area=self.crown_area,
+            validate=False,
+        )
+
+        self.fine_root_mass = calculate_fine_root_masses(
+            zeta=stem_traits.zeta,
             lai=stem_traits.lai,
             crown_area=self.crown_area,
             validate=False,
@@ -1266,10 +1318,8 @@ class StemAllocation(PandasExporter):
         )
 
         self.fine_root_respiration = calculate_fine_root_respiration(
-            zeta=stem_traits.zeta,
-            sla=stem_traits.sla,
             resp_r=stem_traits.resp_r,
-            foliage_mass=stem_allometry.foliage_mass,
+            fine_root_mass=stem_allometry.fine_root_mass,
             validate=False,
         )
 
@@ -1290,10 +1340,8 @@ class StemAllocation(PandasExporter):
         )
 
         self.fine_root_turnover = calculate_fine_root_turnover(
-            sla=stem_traits.sla,
-            zeta=stem_traits.zeta,
             tau_r=stem_traits.tau_r,
-            foliage_mass=stem_allometry.foliage_mass,
+            fine_root_mass=stem_allometry.fine_root_mass,
             validate=False,
         )
 
