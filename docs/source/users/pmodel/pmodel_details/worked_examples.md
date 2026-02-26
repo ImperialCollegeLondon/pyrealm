@@ -35,10 +35,10 @@ the P Model.
 ```
 
 The first example uses a single point but the second shows how the package can be used
-with array data. The `pyrealm` package uses the `numpy` package and expects arrays of
-data to be be passed to all inputs. Input arrays can be a single scalar value, but all
-non-scalar inputs must be **arrays with the same shape**: the `pyrealm` packages does
-not attempt to resolve the broadcasting of array dimensions.
+with array data. The `pyrealm` package uses the `numpy` package and expects inputs to
+be passed either as single scalar values, or as arrays with shapes that are consistent
+under broadcasting rules. See the page on [array inputs](../../array_inputs.md) for
+details.
 
 ```{code-cell} ipython3
 from importlib import resources
@@ -170,26 +170,20 @@ to calculate a global map of gross primary productivity (GPP).
 First, we load some
 example data from a NetCDF format file using the excellent {mod}`xarray` package.
 These data are 0.5° global grids containing data for 2 months and so the loaded
-data are three dimensional arrays and shape `(2, 360, 720)` . Note that the arrays have
-to be the same size so some of the variables have repeated data across dimensions:
-
-* The CO2 data is globally constant for each month, but the values are repeated for each
-  cell.
-* Elevation is constant across months, so the data for each month is repeated.
+data are three dimensional arrays and shape `(2, 360, 720)` .
 
 ```{code-cell} ipython3
 # Load an example dataset containing the forcing variables.
 data_path = resources.files("pyrealm_build_data.rpmodel") / "pmodel_global.nc"
 ds = xarray.load_dataset(data_path)
 
-# Extract the six variables for the two months and convert from
-# xarray DataArray objects to numpy arrays
-temp = ds["temp"].to_numpy()
-co2 = ds["CO2"].to_numpy()
-elev = ds["elevation"].to_numpy()
-vpd = ds["VPD"].to_numpy()
-fapar = ds["fAPAR"].to_numpy()
-ppfd = ds["ppfd"].to_numpy()
+# Extract the six variables for the two months
+temp = ds["temp"]
+co2 = ds["CO2"]
+elev = ds["elevation"]
+vpd = ds["VPD"]
+fapar = ds["fAPAR"]
+ppfd = ds["ppfd"]
 ```
 
 The model can now be run using that data. The first step is to convert the elevation
@@ -201,7 +195,7 @@ environment for the model:
 patm = calculate_patm(elev)
 
 # Mask out temperature values below -25°C
-temp[temp < -25] = np.nan
+temp = temp.where(temp >= -25)
 
 # Clip VPD to force negative VPD to be zero
 vpd = np.clip(vpd, 0, np.inf)
