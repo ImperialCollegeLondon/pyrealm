@@ -19,7 +19,7 @@ def dataset():
 
     from importlib import resources
 
-    from pyrealm.core.pressure import calc_patm
+    from pyrealm.core.pressure import calculate_patm
     from pyrealm.pmodel import PModelEnvironment
 
     data_file_path = resources.files("pyrealm_build_data.rpmodel") / "pmodel_global.nc"
@@ -34,7 +34,7 @@ def dataset():
     ppfd = dataset["ppfd"].to_numpy()
 
     # Convert elevation to atmospheric pressure
-    patm = calc_patm(elev)
+    patm = calculate_patm(elev)
 
     # Calculate p model environment
     env = PModelEnvironment(
@@ -112,7 +112,7 @@ def test_pmodel_global_array(dataset, ctrl):
     assert_allclose(model.gpp, gpp_r, equal_nan=True)
 
     # ## Run the P model in a location where the trimming in do_ftemp_kphio matters
-    # patm = pmodel.calc_patm(1211)
+    # patm = pmodel.calculate_patm(1211)
     # model = pmodel.PModel(tc=-25.5, co2=390.2, patm=patm, vpd=91.77804,
     #                       kphio=0.05, do_ftemp_kphio=False)
     # scaled = model.unit_iabs.scale_iabs(fapar=0.3468055, ppfd=74848.94)
@@ -121,7 +121,7 @@ def test_pmodel_global_array(dataset, ctrl):
     #
     # idx = (0, 176, 653)
     #
-    # patm = pmodel.calc_patm(elev[idx])
+    # patm = pmodel.calculate_patm(elev[idx])
     # model = pmodel.PModel(tc=temp[idx], co2=co2[idx], patm=patm, vpd=vpd[idx],
     #                       kphio=0.05, do_ftemp_kphio=False)
     # scaled = model.unit_iabs.scale_iabs(fapar=fapar[idx], ppfd=ppfd[idx])

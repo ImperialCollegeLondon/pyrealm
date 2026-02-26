@@ -156,7 +156,7 @@ def calculate_kattge_knorr_arrhenius_factor(
     return fva * fvb
 
 
-def calc_ftemp_inst_rd(
+def calculate_ftemp_inst_rd(
     tc: NDArray[np.floating],
     tc_ref: float = PModelConst().tc_ref,
     coef: tuple[float, float] = PModelConst().heskel_rd,
@@ -182,10 +182,10 @@ def calc_ftemp_inst_rd(
         >>> # Relative instantaneous change in Rd going from 10 to 25 degrees
         >>> pmod_consts = PModelConst()
         >>> (
-        ...     calc_ftemp_inst_rd(
+        ...     calculate_ftemp_inst_rd(
         ...         tc=25, tc_ref=pmod_consts.tc_ref, coef=pmod_consts.heskel_rd
         ...     )
-        ...     / calc_ftemp_inst_rd(
+        ...     / calculate_ftemp_inst_rd(
         ...         tc=10, tc_ref=pmod_consts.tc_ref, coef=pmod_consts.heskel_rd
         ...     )
         ...     - 1
@@ -196,7 +196,7 @@ def calc_ftemp_inst_rd(
     return np.exp(coef[0] * (tc - tc_ref) - coef[1] * (tc**2 - tc_ref**2))
 
 
-def calc_gammastar(
+def calculate_gammastar(
     tk: NDArray[np.floating],
     patm: NDArray[np.floating],
     tk_ref: float = PModelConst().tk_ref,
@@ -236,7 +236,7 @@ def calc_gammastar(
 
     Examples:
         >>> # CO2 compensation point at 20 °C  (293.15 K) and standard pressure
-        >>> calc_gammastar(np.array([293.15]), np.array([101325])).round(5)
+        >>> calculate_gammastar(np.array([293.15]), np.array([101325])).round(5)
         array([3.33925])
     """
 
@@ -253,7 +253,7 @@ def calc_gammastar(
     )
 
 
-def calc_ns_star(
+def calculate_ns_star(
     tk: NDArray[np.floating],
     patm: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
@@ -282,7 +282,7 @@ def calc_ns_star(
 
     Examples:
         >>> # Relative viscosity at 293.15 K (20°C):
-        >>> round(calc_ns_star(293.15, 101325), 5)
+        >>> round(calculate_ns_star(293.15, 101325), 5)
         np.float64(1.12592)
     """
 
@@ -296,7 +296,7 @@ def calc_ns_star(
     return visc_env / visc_std
 
 
-def calc_kmm(
+def calculate_kmm(
     tk: NDArray[np.floating],
     patm: NDArray[np.floating],
     tk_ref: float = PModelConst().tk_ref,
@@ -345,7 +345,7 @@ def calc_kmm(
 
     Examples:
         >>> # Michaelis-Menten coefficient at 20°C (293.15K) and standard pressure (Pa)
-        >>> calc_kmm(np.array([293.15]), np.array([101325])).round(5)
+        >>> calculate_kmm(np.array([293.15]), np.array([101325])).round(5)
         array([46.09928])
     """
 
@@ -366,7 +366,7 @@ def calc_kmm(
     return kc * (1.0 + po / ko)
 
 
-def calc_soilmstress_stocker(
+def calculate_soilmstress_stocker(
     soilm: NDArray[np.floating],
     meanalpha: NDArray[np.floating] = np.array(1.0),
     coef: dict[str, float] = PModelConst().soilmstress_stocker,
@@ -454,7 +454,7 @@ def calc_soilmstress_stocker(
 
     Examples:
         >>> # Proportion of well-watered GPP available at soil moisture of 0.2
-        >>> calc_soilmstress_stocker(np.array([0.2])).round(5)
+        >>> calculate_soilmstress_stocker(np.array([0.2])).round(5)
         array([0.88133])
     """
 
@@ -478,7 +478,7 @@ def calc_soilmstress_stocker(
     return outstress
 
 
-def calc_soilmstress_mengoli(
+def calculate_soilmstress_mengoli(
     soilm: NDArray[np.floating] = np.array(1.0),
     aridity_index: NDArray[np.floating] = np.array(1.0),
     coef: dict[str, float] = PModelConst().soilmstress_mengoli,
@@ -552,7 +552,7 @@ def calc_soilmstress_mengoli(
         >>> import numpy as np
         >>> # Proportion of well-watered GPP available with soil moisture and aridity
         >>> # index values of 0.6
-        >>> calc_soilmstress_mengoli(np.array([0.6]), np.array([0.6])).round(5)
+        >>> calculate_soilmstress_mengoli(np.array([0.6]), np.array([0.6])).round(5)
         array([0.78023])
     """
 
@@ -577,7 +577,7 @@ def calc_soilmstress_mengoli(
     return np.where(soilm >= psi, y, (y / psi) * soilm)
 
 
-def calc_co2_to_ca(
+def calculate_co2_to_ca(
     co2: NDArray[np.floating], patm: NDArray[np.floating]
 ) -> NDArray[np.floating]:
     r"""Convert :math:`\ce{CO2}` ppm to Pa.
@@ -593,7 +593,7 @@ def calc_co2_to_ca(
         Ambient :math:`\ce{CO2}` in units of Pa
 
     Examples:
-        >>> np.round(calc_co2_to_ca(413.03, 101325), 6)
+        >>> np.round(calculate_co2_to_ca(413.03, 101325), 6)
         np.float64(41.850265)
     """
 

@@ -152,7 +152,7 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
     SPLASH model on a gridded dataset are consistent.
     """
     from pyrealm.core.calendar import Calendar
-    from pyrealm.core.pressure import calc_patm
+    from pyrealm.core.pressure import calculate_patm
     from pyrealm.splash.evap import DailyEvapFluxes
     from pyrealm.splash.solar import DailySolarFluxes
 
@@ -173,7 +173,7 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
         core_const=splash_core_constants,
     )
 
-    pa = calc_patm(elev, core_const=splash_core_constants)
+    pa = calculate_patm(elev, core_const=splash_core_constants)
 
     evap = DailyEvapFluxes(
         solar, pa=pa, tc=inputs["tmp"].data, core_const=splash_core_constants

@@ -133,9 +133,9 @@ def test_QuantumYieldSandoval(quantum_yield_env, reference_kphio, expected_kphio
     """Test the Sandoval temperature and aridity method.
 
     The test values here have been calculated using the original R implementation
-    provided in pyrealm_build_data/sandoval_kphio/calc_phi0.R. A more complete check
-    across a wider range of values is provided in the regression tests but this also
-    tests the provisision of alternative reference_kphio.
+    provided in pyrealm_build_data/sandoval_kphio/calc_phi0.R. A more complete
+    check across a wider range of values is provided in the regression tests but
+    this also tests the provision of alternative reference_kphio.
 
     > source('calc_phi0.R')
     > tc <- c(5, 10, 15, 20, 25, 30)

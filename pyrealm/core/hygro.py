@@ -14,7 +14,7 @@ from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.utilities import evaluate_horner_polynomial
 
 
-def calc_vp_sat(
+def calculate_vp_sat(
     ta: NDArray[np.floating], core_const: CoreConst = CoreConst()
 ) -> NDArray[np.floating]:
     r"""Calculate vapour pressure of saturated air.
@@ -41,14 +41,14 @@ def calc_vp_sat(
         >>> # Saturated vapour pressure at 21°C
         >>> import numpy as np
         >>> temp = np.array([21])
-        >>> calc_vp_sat(temp).round(6)
+        >>> calculate_vp_sat(temp).round(6)
         array([2.480904])
         >>> from pyrealm.constants import CoreConst
         >>> allen = CoreConst(magnus_option='Allen1998')
-        >>> calc_vp_sat(temp, core_const=allen).round(6)
+        >>> calculate_vp_sat(temp, core_const=allen).round(6)
         array([2.487005])
         >>> alduchov = CoreConst(magnus_option='Alduchov1996')
-        >>> calc_vp_sat(temp, core_const=alduchov).round(6)
+        >>> calculate_vp_sat(temp, core_const=alduchov).round(6)
         array([2.481888])
     """
 
@@ -86,7 +86,7 @@ def convert_vp_to_vpd(
         >>> convert_vp_to_vpd(vp, temp, core_const=allen).round(7)
         array([0.5870054])
     """
-    vp_sat = calc_vp_sat(ta, core_const=core_const)
+    vp_sat = calculate_vp_sat(ta, core_const=core_const)
 
     return vp_sat - vp
 
@@ -124,7 +124,7 @@ def convert_rh_to_vpd(
 
     rh = bounds_checker.check("rh", rh)
 
-    vp_sat = calc_vp_sat(ta, core_const=core_const)
+    vp_sat = calculate_vp_sat(ta, core_const=core_const)
 
     return vp_sat - (rh * vp_sat)
 
@@ -187,7 +187,7 @@ def convert_sh_to_vpd(
         array([1.53526])
     """
 
-    vp_sat = calc_vp_sat(ta, core_const=core_const)
+    vp_sat = calculate_vp_sat(ta, core_const=core_const)
     vp = convert_sh_to_vp(sh, patm, core_const=core_const)
 
     return vp_sat - vp
@@ -196,7 +196,7 @@ def convert_sh_to_vpd(
 # The following functions are integrated from the evap.py implementation of SPLASH v1.
 
 
-def calc_saturation_vapour_pressure_slope(
+def calculate_saturation_vapour_pressure_slope(
     tc: NDArray[np.floating],
 ) -> NDArray[np.floating]:
     """Calculate the slope of the saturation vapour pressure curve.
@@ -220,7 +220,7 @@ def calc_saturation_vapour_pressure_slope(
     )
 
 
-def calc_enthalpy_vaporisation(tc: NDArray[np.floating]) -> NDArray[np.floating]:
+def calculate_enthalpy_vaporisation(tc: NDArray[np.floating]) -> NDArray[np.floating]:
     """Calculate the enthalpy of vaporization.
 
     Calculates the latent heat of vaporization of water as a function of
@@ -237,7 +237,7 @@ def calc_enthalpy_vaporisation(tc: NDArray[np.floating]) -> NDArray[np.floating]
     return 1.91846e6 * ((tc + 273.15) / (tc + 273.15 - 33.91)) ** 2
 
 
-def calc_specific_heat(tc: NDArray[np.floating]) -> NDArray[np.floating]:
+def calculate_specific_heat(tc: NDArray[np.floating]) -> NDArray[np.floating]:
     """Calculate the specific heat of air.
 
     Calculates the specific heat of air at a constant pressure (:math:`c_{pm}`, J/kg/K)
@@ -269,7 +269,7 @@ def calc_specific_heat(tc: NDArray[np.floating]) -> NDArray[np.floating]:
     return cp
 
 
-def calc_psychrometric_constant(
+def calculate_psychrometric_constant(
     tc: NDArray[np.floating],
     p: NDArray[np.floating],
     core_const: CoreConst = CoreConst(),
@@ -291,10 +291,10 @@ def calc_psychrometric_constant(
     """
 
     # Calculate the specific heat capacity of water, J/kg/K
-    cp = calc_specific_heat(tc)
+    cp = calculate_specific_heat(tc)
 
     # Calculate latent heat of vaporization, J/kg
-    lv = calc_enthalpy_vaporisation(tc)
+    lv = calculate_enthalpy_vaporisation(tc)
 
     # Calculate psychrometric constant, Pa/K
     # Eq. 8, Allen et al. (1998)

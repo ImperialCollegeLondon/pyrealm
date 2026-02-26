@@ -82,9 +82,9 @@ class CalcCarbonIsotopes:
         # TODO: map methods for delta13C to C3 and C4.
 
         if self.c4:
-            self.calc_c4_discrimination(pmodel)
+            self.calculate_c4_discrimination(pmodel)
         else:
-            self.calc_c3_discrimination(pmodel)
+            self.calculate_c3_discrimination(pmodel)
 
         # 14C discrimination is twice the 13C discrimination (Graven et al. 2020)
         self.Delta14C = self.Delta13C * 2
@@ -100,7 +100,7 @@ class CalcCarbonIsotopes:
         """Generates a string representation of a CalcCarbonIsotopes instance."""
         return f"CalcCarbonIsotopes(shape={self.shape}, method={self.c4})"
 
-    def calc_c4_discrimination(self, pmodel: PModel) -> None:
+    def calculate_c4_discrimination(self, pmodel: PModel) -> None:
         r"""Calculate C4 isotopic discrimination.
 
         In this method, :math:`\delta\ce{^{13}C}` is calculated from optimal
@@ -137,7 +137,7 @@ class CalcCarbonIsotopes:
         )
         self.Delta13C = self.Delta13C_simple
 
-    def calc_c4_discrimination_vonC(self, pmodel: PModel) -> None:
+    def calculate_c4_discrimination_vonC(self, pmodel: PModel) -> None:
         r"""Calculate C4 isotopic discrimination.
 
         In this method, :math:`\delta\ce{^{13}C}` is calculated from optimal
@@ -191,7 +191,7 @@ class CalcCarbonIsotopes:
 
         self.Delta13C = self.Delta13C_simple
 
-    def calc_c3_discrimination(self, pmodel: PModel) -> None:
+    def calculate_c3_discrimination(self, pmodel: PModel) -> None:
         r"""Calculate C3 isotopic discrimination.
 
         This method calculates the isotopic discrimination for
