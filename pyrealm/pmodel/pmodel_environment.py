@@ -10,6 +10,7 @@ from numpy.typing import NDArray
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
+from pyrealm.core.xarray import ArrayType, get_common_dims, xarray_inputs
 from pyrealm.pmodel.functions import (
     calculate_co2_to_ca,
     calculate_gammastar,
@@ -105,20 +106,26 @@ class PModelEnvironment:
 
     def __init__(
         self,
-        tc: NDArray[np.floating],
-        vpd: NDArray[np.floating],
-        co2: NDArray[np.floating],
-        patm: NDArray[np.floating],
-        fapar: NDArray[np.floating] = np.array([1.0]),
-        ppfd: NDArray[np.floating] = np.array([1.0]),
+        tc: ArrayType[np.floating],
+        vpd: ArrayType[np.floating],
+        co2: ArrayType[np.floating],
+        patm: ArrayType[np.floating],
+        fapar: ArrayType[np.floating] = np.array([1.0]),
+        ppfd: ArrayType[np.floating] = np.array([1.0]),
         pmodel_const: PModelConst = PModelConst(),
         core_const: CoreConst = CoreConst(),
         bounds_checker: BoundsChecker = BoundsChecker(),
-        **kwargs: NDArray[np.floating],
+        **kwargs: ArrayType[np.floating],
     ):
+        # Convert any xr.DataArrays to numpy arrays
+        self.dims = get_common_dims(tc, vpd, co2, patm, fapar, ppfd, *kwargs.values())
+        (tc, vpd, co2, patm, fapar, ppfd), kw_arrays = xarray_inputs(
+            tc, vpd, co2, patm, fapar, ppfd, kwargs=kwargs, dims=self.dims
+        )
+
         # Check shapes of inputs are congruent
         self.shape: tuple = check_input_shapes(
-            tc, vpd, co2, patm, fapar, ppfd, *kwargs.values()
+            tc, vpd, co2, patm, fapar, ppfd, *kw_arrays.values()
         )
         """The shape of the environmental data arrays."""
 
@@ -190,11 +197,11 @@ class PModelEnvironment:
         unitless"""
 
         # Additional variables - check bounds and add them to the instance
-        for var_name, var_values in kwargs.items():
+        for var_name, var_values in kw_arrays.items():
             bounds_checker.check(var_name=var_name, values=var_values)
             setattr(self, var_name, var_values)
 
-        self._additional_vars: tuple[str, ...] = tuple(kwargs.keys())
+        self._additional_vars: tuple[str, ...] = tuple(kw_arrays.keys())
         """A tuple containing the attribute names of additional variables passed to the
         PModelEnivronment."""
 

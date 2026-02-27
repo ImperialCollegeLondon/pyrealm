@@ -135,7 +135,7 @@ addopts = """
   --import-mode importlib
   """
 markers = [
-  "broadcasting: marks tests of argument broadcasting",
+  "array_inputs: marks tests that check the validity of array inputs to functions",
 ]
 python_files = 'test_*.py'
 testpaths = ['tests', 'pyrealm']

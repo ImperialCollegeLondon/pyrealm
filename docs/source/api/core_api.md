@@ -101,3 +101,11 @@ language_info:
     :autosummary:
     :members:
 ```
+
+## The {mod}`~pyrealm.core.xarray` submodule
+
+```{eval-rst}
+.. automodule:: pyrealm.core.xarray
+    :autosummary:
+    :members:
+```

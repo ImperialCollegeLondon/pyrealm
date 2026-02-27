@@ -121,6 +121,7 @@ nitpick_ignore = [
     ("py:class", "numpy._typing._generic_alias.ScalarType"),
     ("py:class", "numpy.float32"),
     ("py:class", "numpy.float64"),
+    ("py:class", "numpy.floating"),
     ("py:class", "numpy.int64"),
     ("py:class", "numpy.timedelta64"),
     ("py:class", "numpy.bool_"),
@@ -175,6 +176,13 @@ nitpick_ignore = [
     ),
     ("py:class", "pandas.core.frame.DataFrame"),
 ]
+nitpick_ignore_regex = [
+    # Ignore TypeVars (anything named 'T')
+    ("py:class", "T"),
+    ("py:class", r".*\.T"),
+    # Ignore non-expanded 'np' (in ArrayType parameters)
+    ("py:class", r"np\..*"),
+]
 
 intersphinx_mapping = {
     "pytest": ("https://docs.pytest.org/en/stable/", None),
@@ -206,6 +214,11 @@ mathjax3_config = {
 # Turn off ugly rendering of class attributes
 napoleon_use_ivar = True
 napoleon_custom_sections = [("PModel Parameters", "params_style")]
+
+# Ensure type aliases aren't expanded
+autodoc_type_aliases = {
+    "ArrayType": "pyrealm.core.xarray.ArrayType",
+}
 
 # Autodoc configuration:
 # - Suppress signature expansion of arguments
@@ -273,6 +286,9 @@ def setup(app):  # type: ignore
 
     app.connect("build-finished", strip_jupytext)
 
+    # Resolve cross references for type aliases
+    app.connect("missing-reference", resolve_alias_fallback)
+
 
 def strip_jupytext(app, exception):  # type: ignore
     """Remove jupytext metadata from download notebooks.
@@ -331,3 +347,31 @@ def strip_jupytext(app, exception):  # type: ignore
 
     print(f"{bold_start_text} {converted} of {len(ipynb_downloads)} .ipynb files.")
     return
+
+
+def resolve_alias_fallback(app, env, node, contnode):  # type: ignore
+    """Resolve failing type alias cross-references by using py:data instead of py:class.
+
+    This is necessary for type aliases which autodoc creates with py:data but it looks
+    for with py:class.
+
+    This should be resolved in sphinx 9.0.
+    Relevant issue: https://github.com/sphinx-doc/sphinx/issues/10785
+    """
+
+    # If py:class
+    if node["refdomain"] == "py" and node["reftype"] == "class":
+        target = node["reftarget"]
+        # Attempt to resolve the cross reference
+        return env.domains["py"].resolve_xref(
+            env,
+            node["refdoc"],
+            app.builder,
+            "data",  # Changed from 'class'
+            target,
+            node,
+            contnode,
+        )
+
+    else:
+        return None

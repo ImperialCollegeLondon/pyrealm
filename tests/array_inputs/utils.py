@@ -1,13 +1,13 @@
-"""Contains utility functions used in test_broadcasting.py.
+"""Contains utility functions used in the tests for array inputs.
 
-The structure of the test is:
+The structure of the tests are:
 - Iterate through the methods / functions of the library.
-- Generate input arguments according to their type hint, with the shape of array
-  arguments defined. This may be called recursively for some types.
+- Generate input arguments according to their type hint, with the shape and type of
+  array arguments defined. This may be called recursively for some types.
 - Check if the function is a class method, if so instantiate the class using the
   same approach.
-- Call the function once with broadcastable array shapes and once with the fully
-  broadcast inputs. And check the result is the same (but not necessarily the shape).
+- Call the function twice with different (but equivalent) array inputs and check the
+  result is the same (but not necessarily the shape).
 - For class methods also check the class attributes are equivalent.
 
 The functions / objects in this file are broadly split into five sections. With the main
@@ -27,11 +27,11 @@ functions listed below:
    - `initialise_class`
    - `Context` - To keep track of the array shapes and when checking values in section 1
 5. To compare the function outputs / class attributes.
-   - `is_equal`
+   - `assert_is_equal`
    - `compare_instances`
 
-The functions that are not used in `test_broadcasting` and are only used within this
-file are marked private.
+The functions that are only used internally in this module are marked private with a
+leading underscore.
 """
 
 from __future__ import annotations
@@ -52,10 +52,12 @@ from types import ModuleType, UnionType
 from typing import Any, Union, get_args, get_origin
 
 import numpy as np
-from numpy.typing import DTypeLike, NDArray
+import xarray as xr
+from numpy.typing import DTypeLike
 
 import pyrealm
 from pyrealm.core.calendar import Calendar
+from pyrealm.core.xarray import ArrayType
 from pyrealm.demography.flora import (
     PlantFunctionalType,
     PlantFunctionalTypeStrict,
@@ -71,10 +73,6 @@ SKIP_METHODS = [
     # PModel
     "AcclimationModel.set_include",
     "PModel._get_daily_gpp",
-    # The following two take an array that needs to be congruent with the existing
-    # PModel.env shape.
-    "PModel.apply_gpp_penalty_factor",
-    "SubdailyPModel.apply_gpp_penalty_factor",
     # Demography - mostly 1d arrays (dataframes)
     "CohortMethods.drop_cohort_data",
     "StemTraits",
@@ -109,7 +107,7 @@ SKIP_METHODS = [
 ]
 
 
-# Ignore these outputs, they are not expected to be equal.
+# Ignore these outputs for broadcasting tests, they are not expected to be equal.
 # Formats: [fn name] for function results, [class]:[attr] for class attributes
 IGNORE_OUTPUTS = [
     "Cohorts:_cohort_id",
@@ -122,13 +120,13 @@ IGNORE_OUTPUTS = [
 # to the method signature.
 
 
-def kwarg_params(names: tuple[str, ...]) -> dict[str, Parameter]:
+def _kwarg_params(names: tuple[str, ...]) -> dict[str, Parameter]:
     """Creates a dictionary containing inspect.Parameter instances."""
     return {
         name: Parameter(
             name=name,
             kind=Parameter.POSITIONAL_OR_KEYWORD,
-            annotation=NDArray[np.floating],
+            annotation=ArrayType,
         )
         for name in names
     }
@@ -141,47 +139,73 @@ REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
             "OptimalChiC4RootzoneStress.estimate_chi",
             "OptimalChiC4RootzoneStress",
         ),
-    ): kwarg_params(("rootzonestress",)),
+    ): _kwarg_params(("rootzonestress",)),
     (
         "PModelEnvironment",
         (
             "OptimalChiC4NoGammaRootzoneStress.estimate_chi",
             "OptimalChiC4NoGammaRootzoneStress",
         ),
-    ): kwarg_params(("rootzonestress",)),
+    ): _kwarg_params(("rootzonestress",)),
     (
         "PModelEnvironment",
         (
             "OptimalChiPrentice14RootzoneStress.estimate_chi",
             "OptimalChiPrentice14RootzoneStress",
         ),
-    ): kwarg_params(("rootzonestress",)),
+    ): _kwarg_params(("rootzonestress",)),
     (
         "PModelEnvironment",
         (
             "OptimalChiLavergne20C3.estimate_chi",
             "OptimalChiLavergne20C3",
         ),
-    ): kwarg_params(("theta",)),
+    ): _kwarg_params(("theta",)),
     (
         "PModelEnvironment",
         (
             "OptimalChiLavergne20C4.estimate_chi",
             "OptimalChiLavergne20C4",
         ),
-    ): kwarg_params(("theta",)),
+    ): _kwarg_params(("theta",)),
     (
         "PModelEnvironment",
         ("QuantumYieldSandoval", "QuantumYieldSandoval"),
-    ): kwarg_params(("aridity_index", "mean_growth_temperature")),
+    ): _kwarg_params(("aridity_index", "mean_growth_temperature")),
     (
         "PModelEnvironment",
         (
             "QuantumYieldSandoval.peak_quantum_yield",
             "QuantumYieldSandoval",
         ),
-    ): kwarg_params(("aridity_index", "mean_growth_temperature")),
+    ): _kwarg_params(("aridity_index", "mean_growth_temperature")),
+    # Don't use default xi_values (None) in estimate_chi
+    ("OptimalChiPrentice14.estimate_chi", ()): _kwarg_params(("xi_values",)),
+    ("OptimalChiPrentice14RootzoneStress.estimate_chi", ()): _kwarg_params(
+        ("xi_values",)
+    ),
+    ("OptimalChiC4.estimate_chi", ()): _kwarg_params(("xi_values",)),
+    ("OptimalChiC4RootzoneStress.estimate_chi", ()): _kwarg_params(("xi_values",)),
+    ("OptimalChiLavergne20C3.estimate_chi", ()): _kwarg_params(("xi_values",)),
+    ("OptimalChiLavergne20C4.estimate_chi", ()): _kwarg_params(("xi_values",)),
+    ("OptimalChiC4NoGamma.estimate_chi", ()): _kwarg_params(("xi_values",)),
+    ("OptimalChiC4NoGammaRootzoneStress.estimate_chi", ()): _kwarg_params(
+        ("xi_values",)
+    ),
 }
+
+
+def _get_time_dim(ctx: Context) -> int | None:
+    """Get the time dimension for the current array (first dimension of full shape)."""
+    time_dim: int | None = 0
+    if ctx.array_type == "xarray":
+        time_dim_key = "a"
+        # Determine if and where it is in this argument
+        if time_dim_key in ctx.array_dims:
+            time_dim = ctx.array_dims.index(time_dim_key)
+        else:
+            time_dim = None
+    return time_dim
 
 
 # These methods require specific arguments
@@ -200,8 +224,8 @@ def defined_method_args(argument: str, ctx: Context) -> Any | None:
         Any | None: The manually defined value for the argument, or `None` if it can be
         set by the defaults.
     """
-    shape = ctx.shape()
-    bcast_shape = ctx.bcast_shape()
+    shape = ctx.shape
+    bcast_shape = ctx.bcast_shape
 
     # PModel parameters
     splashDatesLen = 10
@@ -225,7 +249,7 @@ def defined_method_args(argument: str, ctx: Context) -> Any | None:
     )
 
     method_arguments_list: dict[str, dict] = {
-        "broadcast_time": {"shape": (3, *shape[1:])},
+        "broadcast_time": {"shape": bcast_shape},
         ## PModel
         # Subdaily data needs more than 1 day of times (uses 48 hours)
         "AcclimationModel": {"datetimes": np.arange(0, 48, dtype="datetime64[h]")},
@@ -343,7 +367,13 @@ def defined_method_args(argument: str, ctx: Context) -> Any | None:
     if ctx.name == "PModelEnvironment":
         if ctx.parents and ctx.parents[-1] == "SubdailyPModel":
             # SubdailyPModel needs more than 1 day (uses 48 hourly times)
-            envShape = (1 if shape[0] == 1 else 48, *shape[1:])
+
+            # Replace the time dimension (the first dimension)
+            envShape = list(shape)
+            time_dim = _get_time_dim(ctx)
+            if time_dim is not None:
+                envShape[time_dim] = 1 if shape[time_dim] == 1 else 48
+
             arguments = {
                 "tc": np.full(envShape, 20),
                 "vpd": np.full(envShape, 40),
@@ -352,6 +382,14 @@ def defined_method_args(argument: str, ctx: Context) -> Any | None:
                 "fapar": np.full(envShape, 1),
                 "ppfd": np.full(envShape, 800),
             }
+
+    if ctx.name == "SubdailyPModel.apply_gpp_penalty_factor":
+        # SubdailyPModel needs more than 1 day (uses 48 hourly times)
+        _shape = list(shape)
+        time_dim = _get_time_dim(ctx)
+        if time_dim is not None:
+            _shape[time_dim] = 1 if shape[time_dim] == 1 else 48
+        arguments = {"penalty_factor": np.full(_shape, 0.5)}
 
     return arguments.get(argument)
 
@@ -376,22 +414,6 @@ def _get_package_modules(pkg: ModuleType) -> list[ModuleType]:
             modules.append(importlib.import_module(modname))
 
     return modules
-
-
-def global_namespace():
-    """Extract the global namespace for the package.
-
-    Provides the contexts of the pyrealm classes to pass to get_type_hints.
-    """
-
-    globalns = {}
-    for module in _get_package_modules(pyrealm):
-        globalns.update(vars(module))
-
-    return globalns
-
-
-GLOBALNS = global_namespace()
 
 
 def _is_instance_method(cls: type | None, method_name: str) -> bool:
@@ -434,8 +456,11 @@ def _get_module_callables(
                 yield full_name, method, class_obj
 
 
-def get_method_list() -> list[tuple[str, Callable, type | None]]:
-    """Get a list of callables that take array inputs in the Pyrelam package.
+def get_method_list(array_type: str) -> list[tuple[str, Callable, type | None]]:
+    """Get a list of callables that take array inputs in the Pyrealm package.
+
+    Args:
+        array_type: The type of array inputs to look for. "numpy" or "ArrayType".
 
     Returns:
         A list of callables, each containing the name ([function] or [class].[method]),
@@ -450,7 +475,7 @@ def get_method_list() -> list[tuple[str, Callable, type | None]]:
                 if not isinstance(attr, staticmethod):
                     continue
 
-            if _has_array_input(method) and name not in SKIP_METHODS:
+            if _has_array_input(method, array_type) and name not in SKIP_METHODS:
                 method_list.append((name, method, cls))
     return method_list
 
@@ -469,14 +494,9 @@ def _strip_wrapped_types(typ: Any) -> Any:
     return typ
 
 
-def _is_array_type(typ: Any) -> bool:
-    """Returns True if the type is a numpy array."""
-    typ = _strip_wrapped_types(typ)
-
-    # If Union[...] or X | Y then check both types
+def _is_numpy_type(typ: Any) -> bool:
+    """Returns True if the type is a numpy array. Prefer _is_array_type."""
     origin = get_origin(typ)  # Get the unannotated type, i.e. X[...] -> X
-    if origin in (Union, UnionType):
-        return any(_is_array_type(arg) for arg in get_args(typ))
 
     try:
         # Handle annotated types like NDArray[np.float32]
@@ -490,12 +510,41 @@ def _is_array_type(typ: Any) -> bool:
         return False
 
 
-# Resolve issue with get_type_hints failing for InitVars in py3.10
-# Define a stub to make InitVar callable (https://stackoverflow.com/questions/70400639)
-InitVar.__call__ = lambda *args: None  # type: ignore[method-assign]
+def _is_array_type(typ: type, array_type: str) -> bool:
+    """Returns True if the type is a numpy array or ArrayType."""
+    typ = _strip_wrapped_types(typ)
+    origin = get_origin(typ)  # Get the unannotated type, i.e. X[...] -> X
+
+    # If Union[...] or X | Y then convert to an array of argument types
+    if origin in (Union, UnionType):
+        args = get_args(typ)
+    else:
+        args = (typ,)
+
+    # Check for the different argument types
+    has_numpy = False
+    has_xarray = False
+    for arg in args:
+        if _is_numpy_type(arg):
+            has_numpy = True
+
+        elif arg is xr.DataArray:
+            has_xarray = True
+
+    # Determine if it has the correct argument types for the given 'array_type'
+    if array_type == "numpy":
+        if has_numpy:
+            return True
+    elif array_type == "ArrayType":
+        if has_numpy and has_xarray:
+            return True
+    else:
+        raise ValueError("Invalid array_type. Use 'numpy' or 'ArrayType'.")
+
+    return False
 
 
-def _has_array_input(method: Callable) -> bool:
+def _has_array_input(method: Callable, array_type: str) -> bool:
     """Returns True if any of the method arguments are a numpy array."""
     from typing import get_type_hints
 
@@ -505,7 +554,7 @@ def _has_array_input(method: Callable) -> bool:
     except NameError:
         return False
 
-    return any(_is_array_type(typ) for typ in hints.values())
+    return any(_is_array_type(typ, array_type) for typ in hints.values())
 
 
 def _extract_numpy_dtype(typ: Any) -> DTypeLike:
@@ -540,36 +589,140 @@ def _extract_numpy_dtype(typ: Any) -> DTypeLike:
 class Context:
     """Context class to pass between functions.
 
-    Used to initialise arguments that depend on array shapes or for manual overrides
-    that rely upon the hierarchy of function/argument definitions.
+    Used to define test-specific options for generating arguments, such as shapes and
+    types of arrays. Also, provides the argument definition hierarchy for use in
+    'defined_method_args'.
 
     Attributes:
         name (str): Name of the current method/function/class.
-        shapes (list[tuple[int, ...]]): Shapes to iterate over when generating array
-            arguments.
-        i_arg (int): Index of the current argument, used to select a shape.
+        shapes (Callable[[int, int, str], dict[str, int]]):
+            Function to generate shapes for array arguments. Takes array argument index,
+            number of array arguments, and function name. Returns dictionary of
+            {dimension names: dimension sizes}.
+        array_type (str, optional): The type to initialise arrays as. "xarray" or
+            "numpy". Defaults to "numpy".
+        n_array (int): Number of array arguments in the current function.
+        i_array (int): Index of the current array argument, used to select a shape.
         parents (list[str]): Hierarchy of names leading to the current function/class.
             The first value will be the name of the callable being tested. If it is a
             class method, the second value will be the name of the class.
     """
 
     name: str
-    shapes: list[tuple[int, ...]]
-    i_arg: int = 0
+    shapes: Callable[[int, int, str], dict[str, int]]
+    array_type: str = "numpy"
+    n_array: int = 0
+    i_array: int = 0
     parents: list[str] = field(default_factory=list)
     """A list of the superior function / classes for the current context."""
 
     def new(self, name: str) -> Context:
         """Generate a context for a new function/class, updating the hierarchy."""
-        return Context(name, self.shapes, self.i_arg, [*self.parents, self.name])
+        return Context(
+            name=name,
+            shapes=self.shapes,
+            array_type=self.array_type,
+            n_array=self.n_array,
+            i_array=self.i_array,
+            parents=[*self.parents, self.name],
+        )
 
+    def _get_shape(self):
+        if self.i_array == -1 or self.i_array >= self.n_array:
+            # Placeholder / Fallback
+            array_shape = self.shapes(0, 1, "")
+        else:
+            array_shape = self.shapes(self.i_array, self.n_array, self.name)
+        return array_shape
+
+    @property
     def shape(self) -> tuple[int, ...]:
-        """Return the shape for index `i_arg`."""
-        return self.shapes[self.i_arg % len(self.shapes)]
+        """Return the shape for index `i_array`."""
+        return tuple(self._get_shape().values())
 
+    @property
+    def array_dims(self) -> tuple[str, ...]:
+        """Return the dimensions for index `i_array`."""
+        return tuple(self._get_shape().keys())
+
+    @property
     def bcast_shape(self) -> tuple[int, ...]:
         """The broadcast shape of all inputs (not the full shape being tested)."""
-        return np.broadcast_shapes(*self.shapes)
+        if self.n_array == 0:
+            # Placeholder / Fallback
+            return self.shape
+
+        shapes = [self.shapes(i, self.n_array, self.name) for i in range(self.n_array)]
+
+        # Get the full list of dimension names
+        full_dims = []
+        for shape in shapes:
+            for dim in shape:
+                if dim not in full_dims:
+                    full_dims.append(dim)
+        # Expand/reorder all shapes to match the full dimensions
+        full_shapes = []
+        for shape in shapes:
+            full_shape = tuple(shape.get(dim, 1) for dim in full_dims)
+            full_shapes.append(full_shape)
+        # Get the full broadcast shape
+        return np.broadcast_shapes(*full_shapes)
+
+
+# Resolve issue with get_type_hints failing for InitVars in py3.10
+# Define a stub to make InitVar callable (https://stackoverflow.com/questions/70400639)
+InitVar.__call__ = lambda *args: None  # type: ignore[method-assign]
+
+
+def _get_parameters(
+    method: Callable, ctx: Context
+) -> dict[str, tuple[Parameter, type, str]]:
+    """Get a dictionary of {parameter_name: (parameter, type, approach)}.
+
+    Gets the relevant parameters using `inspect.signature().parameters`, as well as any
+    specified by `REQUIRES`. Then uses `get_type_hints()` to ensure types are resolved.
+
+    The 'approach' output describes how the argument will be defined. It is either
+    "manual", "default", or "automatic".
+    """
+    from typing import get_type_hints
+
+    # Get the method parameters with unnecessary arguments removed
+    params = {
+        name: p
+        for name, p in signature(method).parameters.items()
+        if not (name == "self" or p.kind in (p.VAR_POSITIONAL, p.VAR_KEYWORD))
+    }
+
+    # Add required keyword arguments specified in REQUIRES
+    required_args = REQUIRES.get((ctx.name, tuple(ctx.parents)))
+    if required_args is not None:
+        params.update(required_args)
+
+    # Check all annotations
+    for param_name, param in params.items():
+        if param.annotation == param.empty:
+            raise Exception(f"Missing annotation for {ctx.name}:{param_name}")
+
+    # Resolve string annotations using get_type_hints
+    # Fall back to param.annotation for required keyword arguments
+    type_hints = {
+        name: get_type_hints(method).get(name, param.annotation)
+        for name, param in params.items()
+    }
+
+    approaches: dict[str, str] = {}
+    for name, param in params.items():
+        if defined_method_args(name, ctx) is not None:
+            approaches[name] = "manual"
+        elif param.default is not param.empty and not (
+            required_args and name not in required_args  # Don't use default if REQUIRES
+        ):
+            approaches[name] = "default"
+        else:
+            approaches[name] = "automatic"
+
+    return {name: (params[name], type_hints[name], approaches[name]) for name in params}
 
 
 def _initialise_type_default(typ: Any, ctx: Context) -> Any:
@@ -592,16 +745,16 @@ def _initialise_type_default(typ: Any, ctx: Context) -> Any:
     # If Union[...] or X | Y: Create an array if an option, otherwise use the first type
     if origin in (Union, UnionType):
         for arg in args:
-            if _is_array_type(arg):
+            if _is_array_type(arg, "numpy"):
                 return _initialise_type_default(arg, ctx)
         return _initialise_type_default(args[0], ctx)
 
     pft_names = ["Tree1", "Tree2", "Tree3"]
 
     # Numpy arrays
-    if _is_array_type(typ):
+    if _is_array_type(typ, "numpy"):
         dtype = _extract_numpy_dtype(typ)
-        shape = ctx.shape()
+        shape = ctx.shape
         if np.issubdtype(dtype, np.datetime64):
             return np.full(shape, 1, dtype="datetime64[D]")
         else:
@@ -643,55 +796,50 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
     Returns:
         dict[str, Any]: The generated arguments for the function/method.
     """
-    from typing import get_type_hints
 
-    kwargs = {}
+    kwargs: dict[str, Any] = {}
 
-    # Get the method parameters and copy to get a modifiable OrderedDict from inside the
-    # Parameters mappingproxy return type
-    params = signature(method).parameters.copy()
+    params = _get_parameters(method, ctx)
 
-    required_args = REQUIRES.get((ctx.name, tuple(ctx.parents)))
+    # Get the number of array arguments for selecting array shapes / dimensions
+    ctx.n_array = sum(
+        _is_array_type(typ, "numpy") and approach != "default"
+        for _, typ, approach in params.values()
+    )
+    ctx.i_array = -1
 
-    if required_args is not None:
-        params.update(required_args)
-
-    ctx.i_arg = 0
-
-    for param_name, param in params.items():
-        ctx.i_arg += 1
+    for param_name, (param, typ, approach) in params.items():
+        if _is_array_type(typ, "numpy"):
+            ctx.i_array += 1
 
         # Set manually defined values
-        manual_arg = defined_method_args(param_name, ctx)
-        if manual_arg is not None:
-            kwargs[param_name] = manual_arg
-
-        # Skip unnecessary arguments
-        elif param_name == "self" or param.kind in (
-            param.VAR_POSITIONAL,
-            param.VAR_KEYWORD,
-        ):
-            continue
+        if approach == "manual":
+            kwargs[param_name] = defined_method_args(param_name, ctx)
 
         # Set default arguments
-        elif param.default is not param.empty:
+        elif approach == "default":
             kwargs[param_name] = param.default
+            continue  # Keep default array types
 
         # Initialise any other arguments
-        else:
-            if param.annotation is param.empty:
-                raise Exception(f"Missing annotation for {ctx.name}:{param_name}")
-
-            # Resolve any string annotations using the global namespace
-            typ = get_type_hints(method, globalns=GLOBALNS).get(
-                param_name, param.annotation
-            )
+        elif approach == "automatic":
             kwargs[param_name] = _initialise_type_default(typ, ctx)
 
             # Adjust values where np.ones causes an issue
             match param_name:
                 case "tk":
                     kwargs[param_name] += 273.15
+
+        # If using a different array type, convert numpy arrays to this
+        arg = kwargs[param_name]
+        if (
+            _is_array_type(typ, "ArrayType")
+            and isinstance(arg, np.ndarray)
+            and arg.ndim == len(ctx.shape)
+        ):
+            if ctx.array_type == "xarray":
+                dims = ctx.array_dims or None
+                kwargs[param_name] = xr.DataArray(arg, dims=dims)
 
     return kwargs
 
@@ -720,34 +868,39 @@ def initialise_class(cls: type, ctx: Context) -> Any:
 
 
 ## Functions to compare the results
-def is_equal(val1: Any, val2: Any) -> bool:
-    """Compare if two variables are equal."""
-    if isinstance(val1, np.ndarray):
+def _is_equal(val1: Any, val2: Any, broadcast: bool = False) -> bool:
+    """Compare if two variables are equal. Optionally, broadcast to same shape."""
+
+    if type(val1) is not type(val2):
+        return False
+
+    if hasattr(val1, "__array__"):
+        if broadcast:
+            val1, val2 = np.broadcast_arrays(val1, val2)
+
         if np.issubdtype(val1.dtype, np.str_):
             return np.array_equal(val1, val2)
-        val1_b, val2_b = np.broadcast_arrays(val1, val2)
-        equal = val1_b == val2_b
-        both_nan = np.isnan(val1_b) & np.isnan(val2_b)
-        return bool(np.all(equal | both_nan))
+        else:
+            return np.array_equal(val1, val2, equal_nan=True)
 
     elif isinstance(val1, list | tuple) and isinstance(val2, list | tuple):
         if len(val1) != len(val2):
             return False
-        return all(is_equal(v1, v2) for v1, v2 in zip(val1, val2))
+        return all(_is_equal(v1, v2, broadcast) for v1, v2 in zip(val1, val2))
 
     elif hasattr(val1, "__dict__") and hasattr(val2, "__dict__"):
-        compare_instances(val1, val2)  # Raises if not equal
+        compare_instances(val1, val2, broadcast)  # Raises if not equal
         return True
 
     else:
         return val1 == val2
 
 
-def comparison_string(val1: Any, val2: Any) -> str:
+def _comparison_string(val1: Any, val2: Any) -> str:
     """Returns a string representation of two variables that are not equal."""
 
     def value_string(val: Any) -> str:
-        if isinstance(val, np.ndarray) and val.size > 5:
+        if hasattr(val, "__array__") and val.size > 5:
             val_str = f"<array> {val.shape}"
         else:
             val_str = str(val).replace("\n", " ")
@@ -757,20 +910,34 @@ def comparison_string(val1: Any, val2: Any) -> str:
     return value_string(val1) + " != " + value_string(val2)
 
 
-def compare_instances(instance1: Any, instance2: Any):
+def assert_is_equal(val1: Any, val2: Any, raise_msg: str, broadcast: bool = False):
+    """Raise if two variables are not equal. Optionally, broadcast to same shape."""
+
+    if not _is_equal(val1, val2, broadcast):
+        attr_comparison = _comparison_string(val1, val2)
+        raise ValueError(f"{raise_msg} ({attr_comparison})")
+
+
+def compare_instances(instance1: Any, instance2: Any, broadcast: bool = False):
     """Raises ValueError if the two class instances do not have equal attributes.
 
-    This function ignores the shape attribute of any class, which is not expected to
-    broadcast, and anything in the manually defined list IGNORE_OUTPUTS.
+    Set `broadcast=True` to broadcast attributes to a common shape for comparison.
+
+    If broadcasting, this function ignores the 'shape' attribute of any class, which is
+    not expected to broadcast, and anything in the manually defined list IGNORE_OUTPUTS.
+    Any 'dims' attributes will also be ignored.
     """
     dict1 = instance1.__dict__
     dict2 = instance2.__dict__
     class_name = instance1.__class__.__name__
     for key in dict1:
-        if key == "shape":
+        if broadcast:
+            if key == "shape":
+                continue
+            if f"{class_name}:{key}" in IGNORE_OUTPUTS:
+                continue
+        if key == "dims":
             continue
-        if f"{class_name}:{key}" in IGNORE_OUTPUTS:
-            continue
-        if not is_equal(dict1[key], dict2[key]):
-            attr_comparison = comparison_string(dict1[key], dict2[key])
-            raise ValueError(f"{class_name}: {key} not equal ({attr_comparison})")
+
+        raise_msg = f"{class_name}: {key} not equal"
+        assert_is_equal(dict1[key], dict2[key], raise_msg, broadcast)
