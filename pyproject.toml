@@ -8,7 +8,7 @@ version = "2.0.0"
 dependencies = [
   "dacite (>1.6.0)",
   "numpy (>=2.1)",
-  "scipy (>=1.7.3)",
+  "scipy (>=1.12.0)",
   "tabulate (>=0.8.10)",
   "marshmallow (>=3.22.0)",
   "marshmallow-dataclass (>=8.7.0)",
@@ -73,7 +73,7 @@ pytest-mock = "^3.8.1"
 pytest-profiling = "^1.7.0"
 
 [tool.poetry.group.dev.dependencies]
-ipython = "^8.17"
+ipython = "^8.23.0"
 jupyterlab = "^4.2.1"
 jupyterlab-myst = "^2.4.2"
 jupytext = "^1.16.2"
