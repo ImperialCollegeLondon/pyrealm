@@ -55,9 +55,9 @@ from tests.array_inputs.context import Context
 from tests.array_inputs.overrides import (
     ADDITIONAL_INIT_METHODS,
     IGNORE_OUTPUTS,
+    MANUAL_ARGS,
     REQUIRES,
     SKIP_METHODS,
-    defined_method_args,
 )
 
 
@@ -248,9 +248,11 @@ def _extract_numpy_dtype(typ: Any) -> DTypeLike:
 ## Functions to initialise arguments and classes
 
 
-# Resolve issue with get_type_hints failing for InitVars in py3.10
-# Define a stub to make InitVar callable (https://stackoverflow.com/questions/70400639)
-InitVar.__call__ = lambda *args: None  # type: ignore[method-assign]
+def _get_manual_args(param_name: str, ctx: Context) -> Any:
+    """Simplify call to MANUAL_ARGS."""
+    if ctx.name not in MANUAL_ARGS:
+        return None
+    return MANUAL_ARGS[ctx.name](ctx).get(param_name)
 
 
 def _get_parameters(
@@ -292,7 +294,7 @@ def _get_parameters(
 
     approaches: dict[str, str] = {}
     for name, param in params.items():
-        if defined_method_args(name, ctx) is not None:
+        if _get_manual_args(name, ctx) is not None:
             approaches[name] = "manual"
         elif param.default is not param.empty and not (
             required_args and name not in required_args  # Don't use default if REQUIRES
@@ -402,7 +404,7 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
 
         # Set manually defined values
         if approach == "manual":
-            kwargs[param_name] = defined_method_args(param_name, ctx)
+            kwargs[param_name] = _get_manual_args(param_name, ctx)
 
         # Set default arguments
         elif approach == "default":

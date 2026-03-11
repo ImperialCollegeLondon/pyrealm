@@ -15,12 +15,14 @@
   keyword-argument pairs. This can also be used to avoid using default values for
   non-keyword arguments.
 
-- `defined_method_args` - a function that returns manually defined arguments for
-  functions / methods.
+- `MANUAL_ARGS` - a dictionary containing manually defined arguments for functions /
+  methods where the automatic generation doesn't work. This is used to resolve most of
+  the errors.
 """
 
+from collections.abc import Callable
 from inspect import Parameter
-from typing import Any
+from math import ceil
 
 import numpy as np
 
@@ -166,6 +168,39 @@ REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
 }
 
 
+# Everything below here populates the MANUAL_ARGS dictionary.
+# This is used to define manual arguments for functions / methods where the automatic
+# argument generation fails.
+
+# The dictionary values are functions that take the Context and return a parameter dict.
+# Use the register_args decorator to populate this.
+MANUAL_ARGS: dict[str, Callable[[Context], dict]] = {}
+
+
+def register_args(func_name: str | list[str]):
+    """Decorator for adding functions to MANUAL_ARGS.
+
+    This can take a list of function names if they require the same manual arguments.
+    This will also check to make sure the same function isn't accidentally added twice.
+    """
+
+    def check_empty(func_name: str):
+        if func_name in MANUAL_ARGS:
+            msg = f"Multiple entries for {func_name} in MANUAL_ARGS."
+            raise RuntimeError(msg)
+
+    def decorator(args_dict):
+        if isinstance(func_name, str):
+            check_empty(func_name)
+            MANUAL_ARGS[func_name] = args_dict
+        elif isinstance(func_name, list):
+            for name in func_name:
+                check_empty(name)
+                MANUAL_ARGS[name] = args_dict
+
+    return decorator
+
+
 def _get_time_dim(ctx: Context) -> int | None:
     """Get the time dimension for the current array (first dimension of full shape)."""
     time_dim: int | None = 0
@@ -179,187 +214,245 @@ def _get_time_dim(ctx: Context) -> int | None:
     return time_dim
 
 
-# These methods require specific arguments
-def defined_method_args(argument: str, ctx: Context) -> Any | None:
-    """Return any manually defined arguments for the current function / method.
+## Core module
 
-    This is done by defining an `arguments` dictionary for the function and then
-    returning the value (if any) of the specific `argument`.
+register_args("broadcast_time")(lambda ctx: {"shape": ctx.bcast_shape})
 
-    Args:
-        argument (str): The name of the input argument to define.
-        ctx (Context): The context containing the name of the function (`ctx.name`) and
-        the parent classes / class method being tested (`ctx.parents`).
 
-    Returns:
-        Any | None: The manually defined value for the argument, or `None` if it can be
-        set by the defaults.
-    """
-    shape = ctx.shape
-    bcast_shape = ctx.bcast_shape
+## PModel module
+_patm = 101325  # The automatic value (1) gives an error
+_subdaily_n_times = 48  # More than a day needed and needs to match across methods
 
-    # PModel parameters
-    splashDatesLen = 10
-    # Demography parameters
-    n_pft = 3
-    n_heights = 2
-    pft_names = [f"Tree{i + 1}" for i in range(n_pft)]
+register_args("TwoLeafIrradiance")(lambda ctx: {"patm": np.full(ctx.shape, _patm)})
 
-    fapar_limitation = FaparLimitation(
-        annual_total_potential_gpp=np.ones(48),
-        annual_mean_ca=np.ones(48),
-        annual_mean_chi=np.ones(48),
-        annual_mean_vpd=np.ones(48),
-        annual_total_precip=np.ones(48),
-        annual_growing_season_length=np.ones(48),
-        aridity_index=np.ones(48),
-        years=np.zeros((48,), dtype="datetime64[Y]"),
-        phenology_const=PhenologyConst(
-            z=12.227, k=0.5, f0_coefficients=(0.65, 0.604169, 1.9), sigma=0.771
-        ),
-    )
 
-    method_arguments_list: dict[str, dict] = {
-        "broadcast_time": {"shape": bcast_shape},
-        ## PModel
-        # Subdaily data needs more than 1 day of times (uses 48 hours)
-        "AcclimationModel": {"datetimes": np.arange(0, 48, dtype="datetime64[h]")},
-        "AcclimationModel.set_nearest": {"time": np.timedelta64(12, "h")},
-        "AcclimationModel._validate_and_set_datetimes": {
-            "datetimes": np.arange(0, 48, dtype="datetime64[h]")
-        },
-        "AcclimationModel._get_subdaily_interpolation_xy": {"values": np.ones(2)},
-        "AcclimationModel.fill_daily_to_subdaily": {"values": np.ones((2, *shape[1:]))},
-        "AcclimationModel.get_window_values": {"values": np.ones(48)},
-        "AcclimationModel.get_daily_means": {"values": np.ones(48)},
-        "calculate_kattge_knorr_arrhenius_factor": {
-            "coef": {"ha": 1, "hd": 1, "entropy_intercept": 1, "entropy_slope": 1}
-        },
-        "SplashModel.estimate_daily_water_balance": {
-            "previous_wn": np.full((splashDatesLen, *shape[1:]), 10),
-        },
-        "SplashModel.calculate_soil_moisture": {"wn_init": np.full(shape[1:], 10)},
-        "PModelEnvironment": {"patm": np.full(shape, 100000)},
-        "TwoLeafIrradiance": {"patm": np.full(shape, 100000)},
-        ## Demography uses 1D arrays (a lot of these could probably be skipped)
-        "Cohorts": {
-            "dbh_values": np.full(n_pft, 2),
-            "n_individuals": np.ones(n_pft),
-            "pft_names": np.array(pft_names, dtype=np.str_),
-        },
-        "Flora": {"pfts": [PlantFunctionalType(name=name) for name in pft_names]},
-        "Flora.get_stem_traits": {"pft_names": pft_names},
-        "Canopy": {"fit_ppa": True},
-        "CohortCanopyData": {
-            "projected_leaf_area": np.ones((n_heights, n_pft)),
-            "n_individuals": np.ones(n_pft),
-            "lai": np.ones(n_pft),
-            "par_ext": np.ones(n_pft),
-        },
-        "CommunityCanopyData": {
-            "absorption": np.full((n_heights, n_pft), 0.5),
-            "leaf_area_index": np.full((n_heights, n_pft), 0.5),
-            "cohort_leaf_area": np.full((n_heights, n_pft), 1),
-        },
-        "StemAllometry": {"at_dbh": np.full(n_pft, 0.5)},
-        "StemAllocation": {"whole_crown_gpp": np.full(n_pft, 0.5)},
-        "CrownProfile": {"z": np.linspace(5, 15, n_heights)[:, np.newaxis]},
-        "Cohorts.drop_cohort_data": {"drop_indices": [0, 1]},
-        "StemAllometry.drop_cohort_data": {"drop_indices": [0, 1]},
-        "Community.drop_cohorts": {"drop_indices": [0, 1]},
-        ## Phenology
-        "FaparLimitation": {"years": np.ones(bcast_shape[0], dtype="datetime64[Y]")},
-        "Phenology": {
-            "daily_gpp": np.full((48,), 0.5),
-            "datetimes": np.arange(0, 48, dtype="datetime64[D]"),
-            "fapar_limitation": fapar_limitation,
-        },
-    }
-    arguments: dict = method_arguments_list.get(ctx.name, {})
+def _subdaily_shape(ctx):
+    # SubdailyPModel needs more than 1 day of times (uses 48 hours)
+    # Replace the time dimension (the first if not using xarray inputs)
+    shape = list(ctx.shape)
+    time_dim = _get_time_dim(ctx)
+    if time_dim is not None:
+        shape[time_dim] = 1 if ctx.shape[time_dim] == 1 else _subdaily_n_times
+    return shape
 
-    # Arguments that use temporary variables or depend on parents
 
-    if ctx.name.split(".")[0] == "AnnualValueCalculator":
-        # The shapes of many of the inputs are required to match `data_shape`
-        nTime = 3
-        data_shape = (nTime, *bcast_shape[1:])
-        if ctx.name == "AnnualValueCalculator":
-            arguments = {
-                "data_shape": data_shape,
-                "timing": np.arange(0, nTime, dtype="datetime64[D]"),
-            }
-        elif ctx.name in [
-            "AnnualValueCalculator._split_values_by_year",
-            "AnnualValueCalculator.get_annual_means",
-            "AnnualValueCalculator.get_annual_totals",
-        ]:
-            arguments = {"values": np.ones(data_shape)}
-
-    if ctx.name.split(".")[0] in ["DailySolarFluxes", "DailyEvapFluxes"]:
-        # Needs first dimension to match the dates
-        nTime = 4
-        shape2 = (1 if shape[0] == 1 else nTime, *shape[1:])
-        if ctx.name == "DailySolarFluxes":
-            arguments = {
-                "dates": Calendar(np.arange(0, nTime, dtype="datetime64[D]")),
-                "latitude": np.full(shape2, 10),
-                "elevation": np.full(shape2, 10),
-                "sunshine_fraction": np.full(shape2, 0.5),
-                "temperature": np.full(shape2, 25),
-            }
-        elif ctx.name == "DailyEvapFluxes":
-            arguments = {
-                "pa": np.full(shape2, 10),
-                "tc": np.full(shape2, 25),
-                "kWm": np.full(shape2, 150),
-            }
-        elif ctx.name == "DailyEvapFluxes.estimate_aet":
-            arguments = {"wn": np.full(shape2, 10)}
-
-    if ctx.name == "SplashModel":
-        if (
-            ctx.parents
-            and ctx.parents[0] == "SplashModel.estimate_initial_soil_moisture"
-        ):
-            # Requires at least 1 year of data
-            nTime = 366
-        else:
-            nTime = splashDatesLen
-        splashShape = (1 if shape[0] == 1 else nTime, *shape[1:])
-        arguments = {
-            "dates": Calendar(np.arange(0, nTime, dtype="datetime64[D]")),
-            "lat": np.full(splashShape, 10),
-            "elv": np.full(splashShape, 10),
-            "sf": np.full(splashShape, 0.5),
-            "tc": np.full(splashShape, 25),
-            "pn": np.full(splashShape, 10),
+@register_args("PModelEnvironment")
+def _(ctx):
+    if ctx.parents and ctx.parents[-1] == "SubdailyPModel":
+        shape = _subdaily_shape(ctx)
+        return {
+            "tc": np.full(shape, 20),
+            "vpd": np.full(shape, 40),
+            "co2": np.full(shape, 1000),
+            "patm": np.full(shape, _patm),
+            "fapar": np.full(shape, 1),
+            "ppfd": np.full(shape, 800),
         }
 
-    if ctx.name == "PModelEnvironment":
-        if ctx.parents and ctx.parents[-1] == "SubdailyPModel":
-            # SubdailyPModel needs more than 1 day (uses 48 hourly times)
+    else:
+        return {"patm": np.full(ctx.shape, _patm)}
 
-            # Replace the time dimension (the first dimension)
-            envShape = list(shape)
-            time_dim = _get_time_dim(ctx)
-            if time_dim is not None:
-                envShape[time_dim] = 1 if shape[time_dim] == 1 else 48
 
-            arguments = {
-                "tc": np.full(envShape, 20),
-                "vpd": np.full(envShape, 40),
-                "co2": np.full(envShape, 1000),
-                "patm": np.full(envShape, 101325),
-                "fapar": np.full(envShape, 1),
-                "ppfd": np.full(envShape, 800),
-            }
+register_args("SubdailyPModel.apply_gpp_penalty_factor")(
+    lambda ctx: {"penalty_factor": np.full(_subdaily_shape(ctx), 0.5)}
+)
 
-    if ctx.name == "SubdailyPModel.apply_gpp_penalty_factor":
-        # SubdailyPModel needs more than 1 day (uses 48 hourly times)
-        _shape = list(shape)
-        time_dim = _get_time_dim(ctx)
-        if time_dim is not None:
-            _shape[time_dim] = 1 if shape[time_dim] == 1 else 48
-        arguments = {"penalty_factor": np.full(_shape, 0.5)}
+# AnnualValueCalculator
+# The shapes of many inputs are required to match the `data_shape` attribute
 
-    return arguments.get(argument)
+
+def _annual_value_calculator_shape(ctx):
+    n_time = 3
+    return (n_time, *ctx.bcast_shape[1:])
+
+
+@register_args("AnnualValueCalculator")
+def _(ctx):
+    data_shape = _annual_value_calculator_shape(ctx)
+    return {
+        "data_shape": data_shape,
+        "timing": np.arange(0, data_shape[0], dtype="datetime64[D]"),
+    }
+
+
+@register_args(
+    [
+        "AnnualValueCalculator._split_values_by_year",
+        "AnnualValueCalculator.get_annual_means",
+        "AnnualValueCalculator.get_annual_totals",
+    ]
+)
+def _(ctx):
+    data_shape = _annual_value_calculator_shape(ctx)
+    return {"values": np.ones(data_shape)}
+
+
+# This has a coefficient dictionary that needs defining
+register_args("calculate_kattge_knorr_arrhenius_factor")(
+    lambda _: {"coef": {"ha": 1, "hd": 1, "entropy_intercept": 1, "entropy_slope": 1}}
+)
+
+# AcclimationModel
+# Datetimes must be 1D
+register_args(["AcclimationModel", "AcclimationModel._validate_and_set_datetimes"])(
+    lambda _: {"datetimes": np.arange(0, _subdaily_n_times, dtype="datetime64[h]")}
+)
+# Subdaily -> daily methods must have length of first dim = number of times
+register_args(
+    [
+        "AcclimationModel.get_daily_means",
+        "AcclimationModel.get_window_values",
+    ]
+)(lambda ctx: {"values": np.ones((_subdaily_n_times, *ctx.shape[1:]))})
+# Daily -> subdaily methods must have length of first dim = number of days
+register_args(
+    [
+        "AcclimationModel.fill_daily_to_subdaily",
+        "AcclimationModel._get_subdaily_interpolation_xy",
+    ]
+)(lambda ctx: {"values": np.ones((ceil(_subdaily_n_times / 24), *ctx.shape[1:]))})
+# The automatic argument generation doesn't work for timedelta
+register_args("AcclimationModel.set_nearest")(
+    lambda _: {"time": np.timedelta64(12, "h")}
+)
+
+
+## Splash module
+# The size of the first dimension needs to match the number of dates in the Calendar
+_splash_n_dates = 10
+
+register_args("SplashModel.estimate_daily_water_balance")(
+    lambda ctx: {"previous_wn": np.full((_splash_n_dates, *ctx.shape[1:]), 10)}
+)
+# wn_init should not include the first dimension of the shape
+register_args("SplashModel.calculate_soil_moisture")(
+    lambda ctx: {"wn_init": np.full(ctx.shape[1:], 10)}
+)
+
+
+@register_args("SplashModel")
+def _(ctx):
+    if ctx.parents and ctx.parents[0] == "SplashModel.estimate_initial_soil_moisture":
+        # This requires at least 1 year of data
+        n_dates = 366
+    else:
+        n_dates = _splash_n_dates
+    shape = (1 if ctx.shape[0] == 1 else n_dates, *ctx.shape[1:])
+    return {
+        "dates": Calendar(np.arange(0, n_dates, dtype="datetime64[D]")),
+        "lat": np.full(shape, 10),
+        "elv": np.full(shape, 10),
+        "sf": np.full(shape, 0.5),
+        "tc": np.full(shape, 25),
+        "pn": np.full(shape, 10),
+    }
+
+
+# DailySolarFluxes / DailyEvapFluxes
+# The size of the first dimension needs to match the number of dates in the Calendar
+_daily_fluxes_n_dates = 4
+
+
+def _daily_fluxes_shape(ctx):
+    return (1 if ctx.shape[0] == 1 else _daily_fluxes_n_dates, *ctx.shape[1:])
+
+
+@register_args("DailySolarFluxes")
+def _(ctx):
+    shape = _daily_fluxes_shape(ctx)
+    return {
+        "dates": Calendar(np.arange(0, _daily_fluxes_n_dates, dtype="datetime64[D]")),
+        "latitude": np.full(shape, 10),
+        "elevation": np.full(shape, 10),
+        "sunshine_fraction": np.full(shape, 0.5),
+        "temperature": np.full(shape, 25),
+    }
+
+
+@register_args("DailyEvapFluxes")
+def _(ctx):
+    shape = _daily_fluxes_shape(ctx)
+    return {
+        "pa": np.full(shape, 10),
+        "tc": np.full(shape, 25),
+        "kWm": np.full(shape, 150),
+    }
+
+
+@register_args("DailyEvapFluxes.estimate_aet")
+def _(ctx):
+    shape = _daily_fluxes_shape(ctx)
+    return {"wn": np.full(shape, 10)}
+
+
+## Phenology module
+
+register_args("FaparLimitation")(
+    lambda ctx: {"years": np.ones(ctx.bcast_shape[0], dtype="datetime64[Y]")}
+)
+register_args("Phenology")(
+    lambda _: {
+        "daily_gpp": np.full((48,), 0.5),
+        "datetimes": np.arange(0, 48, dtype="datetime64[D]"),
+        "fapar_limitation": FaparLimitation(
+            annual_total_potential_gpp=np.ones(48),
+            annual_mean_ca=np.ones(48),
+            annual_mean_chi=np.ones(48),
+            annual_mean_vpd=np.ones(48),
+            annual_total_precip=np.ones(48),
+            annual_growing_season_length=np.ones(48),
+            aridity_index=np.ones(48),
+            years=np.zeros((48,), dtype="datetime64[Y]"),
+            phenology_const=PhenologyConst(
+                z=12.227, k=0.5, f0_coefficients=(0.65, 0.604169, 1.9), sigma=0.771
+            ),
+        ),
+    }
+)
+
+## Demography module
+# This uses 1D arrays. These could probably be skipped instead.
+# Inputs need the same number of PFTs / heights and PFT names.
+n_pft = 3
+n_heights = 2
+pft_names = [f"Tree{i + 1}" for i in range(n_pft)]
+
+register_args("Cohorts")(
+    lambda _: {
+        "dbh_values": np.full(n_pft, 2),
+        "n_individuals": np.ones(n_pft),
+        "pft_names": np.array(pft_names, dtype=np.str_),
+    }
+)
+register_args("Flora")(
+    lambda _: {"pfts": [PlantFunctionalType(name=name) for name in pft_names]}
+)
+register_args("Flora.get_stem_traits")(lambda _: {"pft_names": pft_names})
+register_args("Canopy")(lambda _: {"fit_ppa": True})
+register_args("CohortCanopyData")(
+    lambda _: {
+        "projected_leaf_area": np.ones((n_heights, n_pft)),
+        "n_individuals": np.ones(n_pft),
+        "lai": np.ones(n_pft),
+        "par_ext": np.ones(n_pft),
+    }
+)
+register_args("CommunityCanopyData")(
+    lambda _: {
+        "absorption": np.full((n_heights, n_pft), 0.5),
+        "leaf_area_index": np.full((n_heights, n_pft), 0.5),
+        "cohort_leaf_area": np.full((n_heights, n_pft), 1),
+    }
+)
+register_args("StemAllometry")(lambda _: {"at_dbh": np.full(n_pft, 0.5)})
+register_args("StemAllocation")(lambda _: {"whole_crown_gpp": np.full(n_pft, 0.5)})
+register_args("CrownProfile")(
+    lambda _: {"z": np.linspace(5, 15, n_heights)[:, np.newaxis]}
+)
+register_args(
+    [
+        "Cohorts.drop_cohort_data",
+        "StemAllometry.drop_cohort_data",
+        "Community.drop_cohorts",
+    ]
+)(lambda _: {"drop_indices": [0, 1]})
