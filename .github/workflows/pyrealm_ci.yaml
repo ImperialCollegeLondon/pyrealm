@@ -69,7 +69,7 @@ jobs:
       - name: Install Poetry
         uses: abatilo/actions-poetry@v2.1.6
           with: 
-          poetry-version: 2.0.1
+            poetry-version: 2.0.1
 
       - name: Install dependencies
         run: poetry install
