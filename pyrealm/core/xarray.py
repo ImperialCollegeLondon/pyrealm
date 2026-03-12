@@ -1,7 +1,7 @@
 """Utilities for handling xarray inputs to functions that expect arrays."""
 
 from collections.abc import Hashable
-from typing import Any, TypeGuard, TypeVar, overload
+from typing import Any, TypeAlias, TypeGuard, TypeVar, overload
 
 import numpy as np
 import xarray as xr
@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 
 T = TypeVar("T", bound=np.generic)
 
-type ArrayType[T: np.generic] = NDArray[T] | xr.DataArray
+ArrayType: TypeAlias = NDArray[T] | xr.DataArray  # noqa: UP040
 """Type for array inputs. A union of numpy arrays and xarray DataArrays."""
 
 
