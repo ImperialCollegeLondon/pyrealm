@@ -9,6 +9,8 @@ from numpy.typing import NDArray
 
 T = TypeVar("T", bound=np.generic)
 
+# Still using the old-style here because the sphinx cross-references otherwise fail.
+# The workaround in `resolve_alias_fallback` docs/source/conf.py requires the old-style.
 ArrayType: TypeAlias = NDArray[T] | xr.DataArray  # noqa: UP040
 """Type for array inputs. A union of numpy arrays and xarray DataArrays."""
 
