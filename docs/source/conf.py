@@ -190,7 +190,10 @@ intersphinx_mapping = {
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
-    "pandas": ("http://pandas.pydata.org/pandas-docs/dev/", None),
+    # The recent pandas 3.0 has broken something with the intersphinx for
+    # pandas.DataFrame so pinning for now to pandas 2.3
+    "pandas": ("http://pandas.pydata.org/pandas-docs/version/2.3/", None),
+    # "pandas": ("http://pandas.pydata.org/pandas-docs/dev/", None),
     "shapely": ("https://shapely.readthedocs.io/en/stable/", None),
     "marshmallow": ("https://marshmallow.readthedocs.io/en/stable/", None),
     "pooch": ("https://www.fatiando.org/pooch/latest/", None),

@@ -9,7 +9,9 @@ from numpy.typing import NDArray
 
 T = TypeVar("T", bound=np.generic)
 
-ArrayType: TypeAlias = NDArray[T] | xr.DataArray
+# Still using the old-style here because the sphinx cross-references otherwise fail.
+# The workaround in `resolve_alias_fallback` docs/source/conf.py requires the old-style.
+ArrayType: TypeAlias = NDArray[T] | xr.DataArray  # noqa: UP040
 """Type for array inputs. A union of numpy arrays and xarray DataArrays."""
 
 
@@ -59,7 +61,7 @@ def _convert_arg(da: xr.DataArray, dims: list[Hashable]) -> NDArray:
 
 # 1 array input
 @overload
-def xarray_inputs(
+def xarray_inputs[T: np.generic](
     array1: ArrayType[T],
     /,
     *,
@@ -70,7 +72,7 @@ def xarray_inputs(
 
 # Multiple array inputs
 @overload
-def xarray_inputs(
+def xarray_inputs[T: np.generic](
     array1: ArrayType[T],
     array2: ArrayType[T],
     /,
@@ -82,14 +84,14 @@ def xarray_inputs(
 
 # Kwargs input
 @overload
-def xarray_inputs(
+def xarray_inputs[T: np.generic](
     *arrays: ArrayType[T],
     kwargs: dict[str, ArrayType[T]],
     dims: list[Hashable] | None = ...,
 ) -> tuple[tuple[NDArray[T], ...], dict[str, NDArray[T]]]: ...
 
 
-def xarray_inputs(
+def xarray_inputs[T: np.generic](
     *arrays: ArrayType[T],
     kwargs: dict[str, ArrayType[T]] | None = None,
     dims: list[Hashable] | None = None,

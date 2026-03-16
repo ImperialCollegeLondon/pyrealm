@@ -729,11 +729,20 @@ def _initialise_type_default(typ: Any, ctx: Context) -> Any:
     """Define the default value for each type."""
     from collections.abc import Sequence
     from random import randint
+    from typing import TypeAliasType, get_origin
 
     from pyrealm.demography.flora import Flora
 
     # Handle basic wrapped types
     typ = _strip_wrapped_types(typ)
+
+    # Handle TypeAliasType
+    if isinstance(typ, TypeAliasType):
+        typ = typ.__value__
+
+    origin = get_origin(typ)
+    if isinstance(origin, TypeAliasType):
+        typ = origin.__value__
 
     # If Sequence[T]: create a list of 2 objects
     origin = get_origin(typ)
