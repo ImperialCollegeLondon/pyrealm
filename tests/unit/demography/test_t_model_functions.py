@@ -604,16 +604,29 @@ class TestTModel:
         out_idx,
         exp_shape,
     ):
-        """Tests calculation of fine root respiration."""
+        """Tests calculation of fine root respiration.
 
-        from pyrealm.demography.tmodel import calculate_fine_root_respiration
+        Because this uses an intermediate calculation, the failure modes are triggered
+        by that intermediate calculation rather than calculate_fine_root_respiration.
+        """
+
+        from pyrealm.demography.tmodel import (
+            calculate_fine_root_masses,
+            calculate_fine_root_respiration,
+        )
 
         with outcome as excep:
-            result = calculate_fine_root_respiration(
+            # Original implementation does not store fine root mass so calculate
+            # required intermediate variable
+            fine_root_mass = calculate_fine_root_masses(
                 zeta=rtmodel_flora.zeta[pft_idx],
-                sla=rtmodel_flora.sla[pft_idx],
+                lai=rtmodel_flora.lai[pft_idx],
+                crown_area=rtmodel_data["crown_area"][data_idx],
+            )
+
+            result = calculate_fine_root_respiration(
                 resp_r=rtmodel_flora.resp_r[pft_idx],
-                foliage_mass=rtmodel_data["foliage_mass"][data_idx],
+                fine_root_mass=fine_root_mass,
             )
 
             assert result.shape == exp_shape
@@ -673,19 +686,30 @@ class TestTModel:
         out_idx,
         exp_shape,
     ):
-        """Tests calculation of foliage and fine root turnover."""
+        """Tests calculation of foliage and fine root turnover.
+
+        Because this uses an intermediate calculation, the failure modes are triggered
+        by that intermediate calculation rather than calculate_fine_root_turnover.
+        """
 
         from pyrealm.demography.tmodel import (
+            calculate_fine_root_masses,
             calculate_fine_root_turnover,
             calculate_foliage_turnover,
         )
 
         with outcome as excep:
-            result1 = calculate_fine_root_turnover(
-                sla=rtmodel_flora.sla[pft_idx],
+            # Original implementation does not store fine root mass so calculate
+            # required intermediate variable
+
+            fine_root_mass = calculate_fine_root_masses(
                 zeta=rtmodel_flora.zeta[pft_idx],
-                tau_r=rtmodel_flora.tau_r[pft_idx],
-                foliage_mass=rtmodel_data["foliage_mass"][data_idx],
+                lai=rtmodel_flora.lai[pft_idx],
+                crown_area=rtmodel_data["crown_area"][data_idx],
+            )
+
+            result1 = calculate_fine_root_turnover(
+                tau_r=rtmodel_flora.tau_r[pft_idx], fine_root_mass=fine_root_mass
             )
 
             result2 = calculate_foliage_turnover(
@@ -769,6 +793,7 @@ class TestTModel:
         ("calculate_crown_fractions", ("dbh", "stem_height"), tuple()),
         ("calculate_stem_masses", ("dbh", "stem_height"), tuple()),
         ("calculate_foliage_masses", ("crown_area",), tuple()),
+        ("calculate_fine_root_masses", ("crown_area",), tuple()),
         (
             "calculate_sapwood_masses",
             ("stem_height", "crown_area", "crown_fraction"),
@@ -780,7 +805,7 @@ class TestTModel:
         ("calculate_sapwood_respiration", ("sapwood_mass",), tuple()),
         ("calculate_foliar_respiration", ("whole_crown_gpp",), tuple()),
         ("calculate_gpp_topslice", ("whole_crown_gpp",), tuple()),
-        ("calculate_fine_root_respiration", ("foliage_mass",), tuple()),
+        ("calculate_fine_root_respiration", ("fine_root_mass",), tuple()),
         (
             "calculate_net_primary_productivity",
             (
@@ -792,7 +817,7 @@ class TestTModel:
             ("reproductive_tissue_respiration",),
         ),
         ("calculate_foliage_turnover", ("foliage_mass",), tuple()),
-        ("calculate_fine_root_turnover", ("foliage_mass",), tuple()),
+        ("calculate_fine_root_turnover", ("fine_root_mass",), tuple()),
         (
             "calculate_growth_increments",
             (
@@ -934,7 +959,8 @@ def test_StemAllometry(rtmodel_flora, rtmodel_data):
     vars_to_check = (
         v
         for v in stem_allometry.array_attrs
-        if v not in ["crown_r0", "crown_z_max", "reproductive_tissue_mass"]
+        if v
+        not in ["crown_r0", "crown_z_max", "reproductive_tissue_mass", "fine_root_mass"]
     )
     for var in vars_to_check:
         assert_allclose(getattr(stem_allometry, var), rtmodel_data[var])

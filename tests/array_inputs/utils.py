@@ -91,6 +91,7 @@ SKIP_METHODS = [
     "calculate_fine_root_respiration",
     "calculate_fine_root_turnover",
     "calculate_foliage_masses",
+    "calculate_fine_root_masses",
     "calculate_foliage_turnover",
     "calculate_foliar_respiration",
     "calculate_gpp_topslice",
