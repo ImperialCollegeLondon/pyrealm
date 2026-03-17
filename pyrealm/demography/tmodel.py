@@ -287,8 +287,8 @@ def calculate_fine_root_masses(
         W_r = A_c L \zeta
 
     Args:
-        crown_area: Crown area of individuals
         lai: Leaf area index of the PFT
+        crown_area: Crown area of individuals
         zeta: The ratio of fine root mass to foliage area of the PFT.
         validate: Boolean flag to suppress argument validation
     """
@@ -603,7 +603,7 @@ def calculate_fine_root_respiration(
     r"""Calculate fine root respiration.
 
     Calculates the total fine root respiration (:math:`R_{r}`) given fine root mass
-    (:math:`W_f`) the fine root respiration rate (:math:`r_r`):
+    (:math:`W_r`) the fine root respiration rate (:math:`r_r`):
 
     .. math::
          R_{r} = W_r r_r
@@ -753,14 +753,14 @@ def calculate_fine_root_turnover(
 
     .. math::
 
-        T = \frac{ W_r}{\tau_f}
+        T = \frac{W_r}{\tau_r}
 
     Equation 15 of :cite:`Li:2014bc` gives this as:
 
-        T = W_f \left(\frac{ \sigma \zeta}{\tau_f} \right),
+        T = W_f \left(\frac{ \sigma \zeta}{\tau_r} \right),
 
     given the foliage mass of individuals (:math:`W_f`), the specific leaf area
-    (:math:`\sigma`) and fine root mass to foliar area ratio (:math:`\zeta`), which can
+    (:math:`\sigma`) and fine root mass to foliage area ratio (:math:`\zeta`), which can
     be simplified to the equation here given :math: `W_f = (A_c L) / \sigma`: and
     :math:`W_r = \zeta A_c L` (see :func:`calculate_fine_root_masses`).
 
