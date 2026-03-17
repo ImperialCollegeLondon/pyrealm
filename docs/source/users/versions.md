@@ -56,6 +56,33 @@ The main user facing changes are shown below, but do also look at the [log of
 changes](#changes-log) for more detail. Most changes were introduced in version `2.0.0`
 but we have used version `2.0.1` to add some additional changes: these are noted below.
 
+### Renamed functions
+
+There were some function names mixed from `calc_` and `calculate_`. For consistency,
+we aligned these mixed names to `calculate_`.
+The renamed functions are:
+`calculate_patm` calculates the atmospheric pressure from elevation.
+`calculate_kmm` calculates the Michaelis Menten coefficient.
+`calculate_gammastar` calculates the photorespiratory CO2 compensation point.
+`calculate_co2_to_ca` converts Co2 part per million to Pascals.
+`calculate_soilmstress_mengoli` calculates the Mengoli et al. empirical soil
+moisture stress factor.
+`calculate_soilmstress_stocker` calculates Stocker’s empirical soil moisture stress factor.
+`calculate_ftemp_inst_rd` calculates temperature scaling of dark respiration.
+`calculate_ns_star` calculates the relative viscosity of water.
+`calculate_enthalpy_vaporisation` calculates the enthalpy of vaporization.
+`calculate_specific_heat` calculates the specific heat of air.
+`calculate_vp_sat` calculates vapour pressure of saturated air.
+`calculate_saturation_vapour_pressure_slope` calculates the slope of the
+saturation vapour pressure curve.
+`calculate_psychrometric_constant` calculates the psychrometric constant.
+`CalcCarbonIsotopes.calculate_c3_discrimination` calculates c3 isotopic discrimination.
+`CalcCarbonIsotopes.calculate_c4_discrimination` calculates c4 isotopic discrimination.
+`CalcCarbonIsotopes.calculate_c4_discrimination_vonC` calculates c4 isotopic discrimination
+using the method from (von Caemmerer et al., 2014).
+`calculate_density_h2o` calculates water density.
+`calculate_viscosity_h2o` calculates the viscosity of water.
+
 ### Water viscosity and density
 
 The `rpmodel` package used complex algorithms for calculating water density and
@@ -293,7 +320,7 @@ The {mod}`pyrealm.pmodel.functions` module provides a set of functions specific 
 calculations of the P Model and SubdailyPModel. Many of the functions used
 `pmodel_const` and `core_const` arguments to pass in constant values, but all are now
 unpacked so that the specific constants needed for each function are clear in the
-function signatures. In addition, the `calc_ftemp_kphio` and `calc_ftemp_inst_vcmax`
+function signatures. In addition, the `calculate_ftemp_kphio` and `calculate_ftemp_inst_vcmax`
 functions have been removed as they provided specific configurations of the more general
 `calculate_simple_arrhenius_factor` and `calculate_kattge_knorr_arrhenius_factor` that
 now replace them in the module.

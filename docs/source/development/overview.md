@@ -18,7 +18,7 @@ language_info:
   name: python
   nbconvert_exporter: python
   pygments_lexer: ipython3
-  version: 3.11.9
+  version: 3.12.0
 ---
 
 # Developing `pyrealm`
@@ -121,8 +121,7 @@ the commands together into a single script, currently only for Linux.
 ### Python environment
 
 You will need to install Python to develop `pyrealm`. The package is currently tested
-against the following Python versions: 3.10 and 3.11. You should install one of these
-versions for developing `pyrealm`.
+against Python version 3.12. You should install this version for developing `pyrealm`.
 
 We highly recommend using [`pyenv`](https://github.com/pyenv/pyenv) or
 [`pyenv-win`](https://github.com/pyenv-win/pyenv-win)  to manage your Python
@@ -334,7 +333,7 @@ curl <https://pyenv.run> | bash
 # eval "$(pyenv init -)"
 
 # Install a python version
-pyenv install 3.11
+pyenv install 3.12
 
 # Install poetry
 curl -sSL https://install.python-poetry.org | python3 -
@@ -346,10 +345,10 @@ curl -sSL https://install.python-poetry.org | python3 -
 # Clone the repository
 git clone https://github.com/ImperialCollegeLondon/pyrealm.git
 
-# Configure the pyrealm repo to use python 3.11
+# Configure the pyrealm repo to use python 3.12
 cd pyrealm
-pyenv local 3.11
-poetry env use 3.11
+pyenv local 3.12
+poetry env use 3.12
 
 # Install the package with poetry
 poetry install

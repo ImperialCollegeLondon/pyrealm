@@ -79,9 +79,9 @@ This simple scaling factor is appropriate for calculating temperature scaling of
 enzyme systems:
 
 * The photorespiratory CO2 compensation point (`gammastar`, $\Gamma^\ast$,
-  {meth}`~pyrealm.pmodel.functions.calc_gammastar`).
+  {meth}`~pyrealm.pmodel.functions.calculate_gammastar`).
 * The Michaelis Menten coefficient of Rubisco-limited assimilation (`kmm`, $K_{MM}$,
-  {meth}`~pyrealm.pmodel.functions.calc_kmm`).
+  {meth}`~pyrealm.pmodel.functions.calculate_kmm`).
 
 ## Scaling of $V_{cmax}$ and $J_{max}$
 

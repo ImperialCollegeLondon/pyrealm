@@ -10,11 +10,12 @@ from numpy.typing import NDArray
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
+from pyrealm.core.xarray import ArrayType, get_common_dims, xarray_inputs
 from pyrealm.pmodel.functions import (
-    calc_co2_to_ca,
-    calc_gammastar,
-    calc_kmm,
-    calc_ns_star,
+    calculate_co2_to_ca,
+    calculate_gammastar,
+    calculate_kmm,
+    calculate_ns_star,
 )
 
 
@@ -26,13 +27,13 @@ class PModelEnvironment:
     calculates four photosynthetic variables for those environmental conditions:
 
     * the photorespiratory :math:`\ce{CO2}` compensation point (:math:`\Gamma^{*}`,
-      using :func:`~pyrealm.pmodel.functions.calc_gammastar`),
+      using :func:`~pyrealm.pmodel.functions.calculate_gammastar`),
     * the relative viscosity of water (:math:`\eta^*`,
-      using :func:`~pyrealm.pmodel.functions.calc_ns_star`),
+      using :func:`~pyrealm.pmodel.functions.calculate_ns_star`),
     * the ambient partial pressure of :math:`\ce{CO2}` (:math:`c_a`,
-      using :func:`~pyrealm.pmodel.functions.calc_co2_to_ca`) and
+      using :func:`~pyrealm.pmodel.functions.calculate_co2_to_ca`) and
     * the Michaelis Menten coefficient of Rubisco-limited assimilation
-      (:math:`K`, using :func:`~pyrealm.pmodel.functions.calc_kmm`).
+      (:math:`K`, using :func:`~pyrealm.pmodel.functions.calculate_kmm`).
 
     The ``PModelEnvironment`` will also accept values for the :term:`photosynthetic
     photon flux density<PPFD>` (PPFD, µmol m-2 s-1) and the  fraction of absorbed
@@ -105,20 +106,26 @@ class PModelEnvironment:
 
     def __init__(
         self,
-        tc: NDArray[np.floating],
-        vpd: NDArray[np.floating],
-        co2: NDArray[np.floating],
-        patm: NDArray[np.floating],
-        fapar: NDArray[np.floating] = np.array([1.0]),
-        ppfd: NDArray[np.floating] = np.array([1.0]),
+        tc: ArrayType[np.floating],
+        vpd: ArrayType[np.floating],
+        co2: ArrayType[np.floating],
+        patm: ArrayType[np.floating],
+        fapar: ArrayType[np.floating] = np.array([1.0]),
+        ppfd: ArrayType[np.floating] = np.array([1.0]),
         pmodel_const: PModelConst = PModelConst(),
         core_const: CoreConst = CoreConst(),
         bounds_checker: BoundsChecker = BoundsChecker(),
-        **kwargs: NDArray[np.floating],
+        **kwargs: ArrayType[np.floating],
     ):
+        # Convert any xr.DataArrays to numpy arrays
+        self.dims = get_common_dims(tc, vpd, co2, patm, fapar, ppfd, *kwargs.values())
+        (tc, vpd, co2, patm, fapar, ppfd), kw_arrays = xarray_inputs(
+            tc, vpd, co2, patm, fapar, ppfd, kwargs=kwargs, dims=self.dims
+        )
+
         # Check shapes of inputs are congruent
         self.shape: tuple = check_input_shapes(
-            tc, vpd, co2, patm, fapar, ppfd, *kwargs.values()
+            tc, vpd, co2, patm, fapar, ppfd, *kw_arrays.values()
         )
         """The shape of the environmental data arrays."""
 
@@ -144,11 +151,11 @@ class PModelEnvironment:
         self._bounds_checker: BoundsChecker = bounds_checker
         """The BoundsChecker applied to the environment data."""
 
-        # Guard against calc_density issues
+        # Guard against calculate_density issues
         if np.nanmin(self.tc) < np.array([-25]):
             raise ValueError(
                 "Cannot calculate P Model predictions for values below"
-                " -25°C. See calc_density_h2o."
+                " -25°C. See calculate_density_h2o."
             )
 
         # Guard against negative VPD issues
@@ -162,10 +169,12 @@ class PModelEnvironment:
         self.tk: NDArray[np.floating] = self.tc + self.core_const.k_CtoK
         """The temperature at which to estimate photosynthesis in Kelvin (K)"""
 
-        self.ca: NDArray[np.floating] = calc_co2_to_ca(co2=self.co2, patm=self.patm)
+        self.ca: NDArray[np.floating] = calculate_co2_to_ca(
+            co2=self.co2, patm=self.patm
+        )
         """Ambient CO2 partial pressure, Pa"""
 
-        self.gammastar: NDArray[np.floating] = calc_gammastar(
+        self.gammastar: NDArray[np.floating] = calculate_gammastar(
             tk=self.tk,
             patm=patm,
             tk_ref=self.pmodel_const.tk_ref,
@@ -174,7 +183,7 @@ class PModelEnvironment:
         )
         r"""Photorespiratory compensation point (:math:`\Gamma^\ast`, Pa)"""
 
-        self.kmm: NDArray[np.floating] = calc_kmm(
+        self.kmm: NDArray[np.floating] = calculate_kmm(
             tk=self.tk,
             patm=patm,
             tk_ref=self.pmodel_const.tk_ref,
@@ -183,16 +192,16 @@ class PModelEnvironment:
         )
         """Michaelis Menten coefficient, Pa"""
 
-        self.ns_star = calc_ns_star(tk=self.tk, patm=patm, core_const=core_const)
+        self.ns_star = calculate_ns_star(tk=self.tk, patm=patm, core_const=core_const)
         """Viscosity correction factor relative to standard temperature and pressure,
         unitless"""
 
         # Additional variables - check bounds and add them to the instance
-        for var_name, var_values in kwargs.items():
+        for var_name, var_values in kw_arrays.items():
             bounds_checker.check(var_name=var_name, values=var_values)
             setattr(self, var_name, var_values)
 
-        self._additional_vars: tuple[str, ...] = tuple(kwargs.keys())
+        self._additional_vars: tuple[str, ...] = tuple(kw_arrays.keys())
         """A tuple containing the attribute names of additional variables passed to the
         PModelEnivronment."""
 
