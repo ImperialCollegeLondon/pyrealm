@@ -158,5 +158,5 @@ def test_xarray_pmodel_environment(dataset: xr.Dataset):
     tc = dataset["temp"]
     vpd = dataset["VPD"]
     co2 = dataset["CO2"]
-    patm = calculate_patm(dataset["elevation"].isel(Time=0))
+    patm = calculate_patm(dataset["elevation"].isel(Time=[0]))  # Need to keep time dim
     PModelEnvironment(tc=tc, vpd=vpd, co2=co2, patm=patm)

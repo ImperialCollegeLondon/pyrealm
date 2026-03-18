@@ -31,6 +31,8 @@ from warnings import warn
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm.core.xarray import ArrayType, xarray_inputs
+
 
 @dataclass
 class Bounds:
@@ -120,7 +122,7 @@ class BoundsChecker:
         self._data[bounds.var_name] = bounds
 
     def check(
-        self, var_name: str, values: NDArray[np.floating]
+        self, var_name: str, values: ArrayType[np.floating]
     ) -> NDArray[np.floating]:
         r"""Check inputs fall within bounds.
 
@@ -144,6 +146,8 @@ class BoundsChecker:
             >>> bounds_checker.check("temp", vals)
             array([-15.,  20.,  30., 124.])
         """
+
+        values = xarray_inputs(values)
 
         var_bounds = self._data.get(var_name)
 

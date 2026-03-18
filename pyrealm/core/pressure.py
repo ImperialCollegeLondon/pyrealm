@@ -6,10 +6,11 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
+from pyrealm.core.xarray import ArrayType, xarray_inputs
 
 
 def calculate_patm(
-    elv: NDArray[np.floating], core_const: CoreConst = CoreConst()
+    elv: ArrayType[np.floating], core_const: CoreConst = CoreConst()
 ) -> NDArray[np.floating]:
     r"""Calculate atmospheric pressure from elevation.
 
@@ -34,6 +35,8 @@ def calculate_patm(
         >>> round(calculate_patm(1000), 2)
         90241.54
     """
+
+    elv = xarray_inputs(elv)
 
     # Convert elevation to pressure, Pa.
     return core_const.k_Po * (1.0 - core_const.k_L * elv / core_const.k_To) ** (
