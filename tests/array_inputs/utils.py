@@ -441,7 +441,6 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
 
     # Print the arguments if in debug mode
     if config.DEBUG:
-        np.set_printoptions(threshold=1)
         print(f"\n{ctx.name}\nParents: {ctx.parents}\nArguments:")
         for param_name, (_, _, approach) in params.items():
             print(f"\t{param_name}: ({approach})")

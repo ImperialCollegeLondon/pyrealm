@@ -14,6 +14,7 @@ from pyrealm.core.calendar import Calendar
 from pyrealm.core.pressure import calculate_patm
 from pyrealm.core.time_series import broadcast_time
 from pyrealm.core.utilities import check_input_shapes
+from pyrealm.core.xarray import ArrayType, get_common_dims, xarray_inputs
 from pyrealm.splash.evap import DailyEvapFluxes
 from pyrealm.splash.solar import DailySolarFluxes
 
@@ -59,20 +60,24 @@ class SplashModel:
 
     def __init__(
         self,
-        lat: NDArray[np.floating],
-        elv: NDArray[np.floating],
-        sf: NDArray[np.floating],
-        tc: NDArray[np.floating],
-        pn: NDArray[np.floating],
+        lat: ArrayType[np.floating],
+        elv: ArrayType[np.floating],
+        sf: ArrayType[np.floating],
+        tc: ArrayType[np.floating],
+        pn: ArrayType[np.floating],
         dates: Calendar,
-        kWm: NDArray[np.floating] = np.array([150.0]),
+        kWm: ArrayType[np.floating] = np.array([150.0]),
         core_const: CoreConst = CoreConst(),
         bounds_checker: BoundsChecker = BoundsChecker(),
     ):
+        # Convert array inputs to numpy
+        inputs = elv, lat, sf, tc, pn
+        self.dims = get_common_dims(*inputs)
+        inputs_np = xarray_inputs(*inputs, dims=self.dims)
+        elv, lat, sf, tc, pn = inputs_np
+
         # Check input sizes are congurent
-        # TODO - xarray would be good here for identifying axes and
-        #        checking congruence more widely.
-        self.shape: tuple = check_input_shapes(elv, lat, sf, tc, pn)
+        self.shape: tuple = check_input_shapes(*inputs_np)
         """The array shape of the input variables"""
 
         if self.shape[0] == 1:
@@ -128,7 +133,7 @@ class SplashModel:
 
     def estimate_initial_soil_moisture(
         self,
-        wn_init: NDArray[np.floating] | None = None,
+        wn_init: ArrayType[np.floating] | None = None,
         max_iter: int = 10,
         max_diff: float = 1.0,
         return_convergence: bool = False,
@@ -177,6 +182,7 @@ class SplashModel:
         wn_ret = []
 
         if wn_init is not None:
+            wn_init = xarray_inputs(wn_init, dims=self.dims[1:])
             # Check the shape is the same as the shape of a slice along axis 0
             if wn_init.shape != self.shape[1:]:
                 raise ValueError("Incorrect shape in wn_init")
@@ -241,7 +247,7 @@ class SplashModel:
             return wn_start
 
     def estimate_daily_water_balance(
-        self, previous_wn: NDArray[np.floating], day_idx: int | None = None
+        self, previous_wn: ArrayType[np.floating], day_idx: int | None = None
     ) -> tuple[NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]]:
         r"""Estimate the daily water balance.
 
@@ -279,11 +285,15 @@ class SplashModel:
         # Check day_idx inputs to map either the single time index given in day_idx or
         # the whole dataset.
         if day_idx is None:
+            splash_dims = self.dims
             splash_shape = self.shape
             didx: int | slice = slice(self.shape[0])
         else:
+            splash_dims = self.dims[1:]
             splash_shape = self.shape[1:]
             didx = day_idx
+
+        previous_wn = xarray_inputs(previous_wn, dims=splash_dims)
         try:
             check_input_shapes(previous_wn, shape=splash_shape)
         except ValueError:
@@ -312,7 +322,7 @@ class SplashModel:
 
     def calculate_soil_moisture(
         self,
-        wn_init: NDArray[np.floating],
+        wn_init: ArrayType[np.floating],
     ) -> tuple[NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]]:
         """Calculate the soil moisture, AET and runoff from a SplashModel.
 
@@ -330,6 +340,7 @@ class SplashModel:
             A tuple of numpy arrays containing predicted AET, soil moisture and runoff.
         """
 
+        wn_init = xarray_inputs(wn_init, dims=self.dims[1:])
         try:
             check_input_shapes(wn_init, shape=self.shape[1:])
         except ValueError:

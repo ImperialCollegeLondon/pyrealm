@@ -38,6 +38,12 @@ DEPENDENT_LIST: list[str] = [
     "OptimalChiLavergne20C4.estimate_chi",
     "OptimalChiC4NoGamma.estimate_chi",
     "OptimalChiC4NoGammaRootzoneStress.estimate_chi",
+    # splash
+    "SplashModel.estimate_initial_soil_moisture",
+    "SplashModel.estimate_daily_water_balance",
+    "SplashModel.calculate_soil_moisture",
+    "DailyEvapFluxes",
+    "DailyEvapFluxes.estimate_aet",
 ]
 
 

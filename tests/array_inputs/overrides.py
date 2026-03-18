@@ -223,6 +223,15 @@ def _set_time_len(n_time: int, ctx: Context, allow_one: bool = True) -> tuple[in
     return tuple(shape)
 
 
+def _del_time_dim(ctx: Context) -> tuple[int, ...]:
+    """Return the shape with the time dimension removed."""
+    shape = list(ctx.shape)
+    time_dim = _get_time_dim(ctx)
+    if time_dim is not None:
+        del shape[time_dim]
+    return tuple(shape)
+
+
 ## Core module
 
 register_args("broadcast_time")(lambda ctx: {"shape": ctx.bcast_shape})
@@ -314,15 +323,15 @@ register_args("AcclimationModel.set_nearest")(
 
 
 ## Splash module
-# The size of the first dimension needs to match the number of dates in the Calendar
+# The size of the time dimension needs to match the number of dates in the Calendar
 _SPLASH_N_DATES = 10
 
 register_args("SplashModel.estimate_daily_water_balance")(
-    lambda ctx: {"previous_wn": np.full((_SPLASH_N_DATES, *ctx.shape[1:]), 10)}
+    lambda ctx: {"previous_wn": np.full(_set_time_len(_SPLASH_N_DATES, ctx), 10)}
 )
-# wn_init should not include the first dimension of the shape
+# wn_init should not include the time dimension of the shape
 register_args("SplashModel.calculate_soil_moisture")(
-    lambda ctx: {"wn_init": np.full(ctx.shape[1:], 10)}
+    lambda ctx: {"wn_init": np.full(_del_time_dim(ctx), 10)}
 )
 
 

@@ -25,6 +25,7 @@ from pyrealm.core.solar import (
     calculate_transmissivity,
 )
 from pyrealm.core.utilities import check_input_shapes
+from pyrealm.core.xarray import ArrayType, get_common_dims, xarray_inputs
 
 
 @dataclass
@@ -44,11 +45,11 @@ class DailySolarFluxes:
         temperature: Daily temperature of observations (°C)
     """
 
-    latitude: InitVar[NDArray[np.floating]]
-    elevation: InitVar[NDArray[np.floating]]
+    latitude: InitVar[ArrayType[np.floating]]
+    elevation: InitVar[ArrayType[np.floating]]
     dates: Calendar
-    sunshine_fraction: InitVar[NDArray[np.floating]]
-    temperature: InitVar[NDArray[np.floating]]
+    sunshine_fraction: InitVar[ArrayType[np.floating]]
+    temperature: InitVar[ArrayType[np.floating]]
     core_const: CoreConst = field(default_factory=lambda: CoreConst())
 
     nu: NDArray[np.floating] = field(init=False)
@@ -84,17 +85,21 @@ class DailySolarFluxes:
 
     def __post_init__(
         self,
-        latitude: NDArray[np.floating],
-        elevation: NDArray[np.floating],
-        sunshine_fraction: NDArray[np.floating],
-        temperature: NDArray[np.floating],
+        latitude: ArrayType[np.floating],
+        elevation: ArrayType[np.floating],
+        sunshine_fraction: ArrayType[np.floating],
+        temperature: ArrayType[np.floating],
     ) -> None:
         """Populates key fluxes from input variables."""
 
+        # Convert inputs
+        inputs = latitude, elevation, sunshine_fraction, temperature
+        self.dims = get_common_dims(*inputs)
+        inputs_np = xarray_inputs(*inputs, dims=self.dims)
+        latitude, elevation, sunshine_fraction, temperature = inputs_np
+
         # Validate the inputs
-        self.shape: tuple = check_input_shapes(
-            latitude, elevation, sunshine_fraction, temperature
-        )
+        self.shape: tuple = check_input_shapes(*inputs_np)
         """The array shape of the input variables"""
 
         if self.shape[0] == 1:
