@@ -127,10 +127,12 @@ class FaparLimitationMethodABC(ABC):
 
 
 class FaparLimitationCai(FaparLimitationMethodABC, method="cai"):
-    r"""Compute maximum annual fAPAR and LAI using the method of :cite:`cai:2025a`.
+    r"""Compute maximum annual fAPAR and LAI following :cite:t:`cai:2025a`.
 
-    TBD - what is specific here versus general in FaparLimitation.
-
+    The method of :cite:t:`cai:2025a` uses a single global value of :math:`z` but models
+    :math:`f_0` as a function of site-specific aridity, expressed as the climatological
+    ratio PET/P, (see :meth:`set_z_and_f0`). The annual maximum fAPAR is then the simple
+    minimum of the site values for water and energy limited fAPAR.
     """
 
     __experimental__ = True
@@ -138,7 +140,6 @@ class FaparLimitationCai(FaparLimitationMethodABC, method="cai"):
     attrs = (
         ("lai_max", "-"),
         ("fapar_max", "-"),
-        ("lai_to_gpp_ratio_m", "-"),
     )
 
     requires = ("aridity_index",)
@@ -207,21 +208,16 @@ class FaparLimitationCai(FaparLimitationMethodABC, method="cai"):
         fapar_max = np.minimum(water_limited_fapar, energy_limited_fapar)
         self.energy_limited = energy_limited_fapar < water_limited_fapar
 
-        # self.lai_to_gpp_ratio_m = (
-        #     self.phenology_const.cai_sigma
-        #     * self.annual_growing_season_length
-        #     * self.lai_max
-        # ) / (self.annual_total_potential_gpp * self.fapar_max)
-        # """The steady state ratio of leaf area index to potential GPP (:math:`m`)"""
-
         return fapar_max
 
 
 class FaparLimitationZhu(FaparLimitationMethodABC, method="zhu"):
-    r"""Compute maximum annual fAPAR and LAI using the method of Zhu .
+    r"""Compute maximum annual fAPAR and LAI following :cite:t:`zhu:2026a`.
 
-    TBD.
-
+    The method of :cite:t:`zhu:2026a` uses single global values of both :math:`z` and
+    :math:`f_0`. However, the annual maximum fAPAR is then a continuous function of
+    water and energy limited fAPAR following a Budyko curve (see
+    :meth:`calculate_maximum_fapar` for details).
     """
 
     __experimental__ = True
@@ -261,12 +257,28 @@ class FaparLimitationZhu(FaparLimitationMethodABC, method="zhu"):
     def calculate_maximum_fapar(
         self, energy_limited_fapar: NDArray, water_limited_fapar: NDArray
     ) -> NDArray:
-        """Calculate the maximum fAPAR.
+        r"""Calculate the maximum fAPAR.
 
         The Zhu method calculates the maximum fAPAR as a function of the energy and
-        water limited fAPAR:
+        water limited fAPAR, following a function like the Budyko curve
+        {cite:p}`roderick:2011a`:
+    
+        .. math:
+        :nowrap:
 
-        TODO: equation.
+        \[    
+          \begin{align*}
+
+            c_w &= \frac{f_{APAR_{c}}}{f_{APAR_{w}}} \\
+            f_{APAR_{max}} = f_{APAR_{w}} \left(1 + c_w - 
+            \left( 1 + c_w ^{\bar\omega} \right)^{1/{\bar\omega}}
+
+          \end{align*}
+        \],
+
+        where :math:`\bar\omega` is defined in the
+        :attr:`~pyrealm.constants.phenology_const.PhenologyConstNew.zhu_budyko`
+        constants parameter.
 
         Args:
             energy_limited_fapar: The maximum fAPAR given energy limitation.
@@ -321,7 +333,7 @@ class FaparLimitationNew:
 
     * ``method=cai``; :class:`FaparLimitationMethodCai`
     * ``method=zhu``; :class:`FaparLimitationMethodZhu`
-    
+
     The maximum annual LAI can then be calculated using Beer's law as:
 
     .. math::
