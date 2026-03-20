@@ -135,7 +135,7 @@ def function_test_data():
 def test_out_of_bound_output(function_test_data):
     """Function to calculate kmm."""
     from pyrealm.constants import CoreConst
-    from pyrealm.pmodel.functions import calc_kmm
+    from pyrealm.pmodel.functions import calculate_kmm
 
     tc_ar_values, patm_ar_values, co2_ar_values = function_test_data
 
@@ -144,7 +144,7 @@ def test_out_of_bound_output(function_test_data):
     kmm_upper_bound = 1000
 
     for tc, patm, co2 in zip(tc_ar_values, patm_ar_values, co2_ar_values):
-        result = calc_kmm(tk=tc + core_const.k_CtoK, patm=patm)
+        result = calculate_kmm(tk=tc + core_const.k_CtoK, patm=patm)
 
         assert np.all(result >= kmm_lower_bound), (
             f"Result for (tc={tc}, patm={patm}, co2={co2}) is out of lower bound"
@@ -154,13 +154,13 @@ def test_out_of_bound_output(function_test_data):
         )
 
 
-"""Test that calc_ns_star output is within bounds"""
+"""Test that calculate_ns_star output is within bounds"""
 
 
 def test_out_of_bound_output_ns_star(function_test_data):
     """Function to calculate ns_star."""
     from pyrealm.constants import CoreConst
-    from pyrealm.pmodel.functions import calc_ns_star
+    from pyrealm.pmodel.functions import calculate_ns_star
 
     tc_ar_values, patm_ar_values, _ = function_test_data  # Ignore the third variable
 
@@ -169,7 +169,7 @@ def test_out_of_bound_output_ns_star(function_test_data):
     ns_star_upper_bound = 10
 
     for tc, patm in zip(tc_ar_values, patm_ar_values):
-        result = calc_ns_star(
+        result = calculate_ns_star(
             tk=tc + core_const.k_CtoK, patm=patm, core_const=core_const
         )
 
@@ -181,13 +181,13 @@ def test_out_of_bound_output_ns_star(function_test_data):
         )
 
 
-"""Test that calc_gammastar output is within bounds."""
+"""Test that calculate_gammastar output is within bounds."""
 
 
 def test_out_of_bound_output_gammastar(function_test_data):
-    """Function to calculate calc_gammastar."""
+    """Function to calculate calculate_gammastar."""
     from pyrealm.constants import CoreConst, PModelConst
-    from pyrealm.pmodel.functions import calc_gammastar
+    from pyrealm.pmodel.functions import calculate_gammastar
 
     tc_ar_values, patm_ar_values, _ = function_test_data
 
@@ -197,7 +197,7 @@ def test_out_of_bound_output_gammastar(function_test_data):
     gammastar_upper_bound = 30
 
     for tc, patm in zip(tc_ar_values, patm_ar_values):
-        result = calc_gammastar(
+        result = calculate_gammastar(
             tk=tc + core_const.k_CtoK,
             patm=patm,
             tk_ref=pmodel_const.tk_ref,
@@ -211,12 +211,12 @@ def test_out_of_bound_output_gammastar(function_test_data):
         )
 
 
-"""Test that calc_co2_to_ca output is within bounds"""
+"""Test that calculate_co2_to_ca output is within bounds"""
 
 
 def test_out_of_bound_output_co2_to_ca(function_test_data):
     """Function to calculate co2_to_ca."""
-    from pyrealm.pmodel.functions import calc_co2_to_ca
+    from pyrealm.pmodel.functions import calculate_co2_to_ca
 
     _, patm_ar_values, co2_ar_values = function_test_data
 
@@ -224,7 +224,7 @@ def test_out_of_bound_output_co2_to_ca(function_test_data):
     co2_to_ca_upper_bound = 100
 
     for co2, patm in zip(co2_ar_values, patm_ar_values):
-        result = calc_co2_to_ca(co2=co2, patm=patm)
+        result = calculate_co2_to_ca(co2=co2, patm=patm)
 
         assert np.all(result >= co2_to_ca_lower_bound), (
             f"Result for (co2={co2}, patm={patm}) is out of lower bound"

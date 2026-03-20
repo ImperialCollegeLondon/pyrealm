@@ -3,6 +3,29 @@
 This document provides a brief overview of the main changes to `pyrealm` at each of the
 released versions. More detail can be found at the GitHub release page for each version.
 
+See also the migration page for help in moving between versions.
+
+## 2.0.1
+
+As well as bugfixes, version 2.0.1 is a slight violation of semantic versioning and
+picks up some API and default changes that were overlooked in 2.0.0.
+
+- We have aligned function names from mixed `calc_` and `calculate_` to `calculate_`.
+
+### Bugfixes
+
+- Stomatal conductance in the SubdailyPModel was incorrectly calculated from $A_c$
+  rather than $A = min(A_c, A_j)$ (#603).
+- The P Model implementations were not passing required additional variables down the
+  Arrhenius scaling methods, which stopped some of those methods being usable (#582).
+
+### Changes
+
+- The `pyrealm` package now supports a wider range of functions for calculating water
+  density and viscosity. The default methods used by `pyrealm` have been swapped from
+  computationally complex high-precision methods used in `rpmodel` (think physics labs)
+  to  simpler but much faster approaches.
+
 ## 2.0.0
 
 Version 2.0.0 introduces major breaking changes in the structure of some functionality,
@@ -105,9 +128,9 @@ notably the API of the `pmodel` module, as well as introducing new functionality
   - The `fill_from` argument to `fill_daily_to_subdaily` was only required for
     `SubdailyPModel_JAMES` and so this has also been deprecated.
 
-- The functions `calc_ftemp_kphio` and `calc_ftemp_inst_vcmax` provided narrow use cases
-  with code duplication. They have been replaced by two broader Arrhenius functions:
-  `calculate_simple_arrhenius_factor` and `calculate_kattge_knorr_arrhenius_factor` .
+- The functions `calculate_ftemp_kphio` and `calculate_ftemp_inst_vcmax` provided
+  narrow use cases with code duplication. They have been replaced by two broader
+  Arrhenius functions: `calculate_simple_arrhenius_factor` and `calculate_kattge_knorr_arrhenius_factor`.
   The functions in {mod}`pyrealm.pmodel.functions` have been updated to take specific
   arguments rather than just taking `PModelConsts` and `CoreConsts` objects.
 
@@ -173,8 +196,8 @@ notably the API of the `pmodel` module, as well as introducing new functionality
 ## 0.10.0
 
 - Implementation of the Mengoli et al 2023 soil moisture penalty factor. The existing
-  calc_soilmstress function is now calc_soilmstress_stocker and the new function is
-  calc_soilmstress_mengoli.
+  calc_soilmstress function is now calc_soilmstress_stocker and the new
+  function is calc_soilmstress_mengoli.
 - The soilmstress argument to PModel is removed and both the Mengoli and Stocker
   approaches are now intended to be applied as penalties to GPP after P Model fitting,
   allowing the two to be compared from the same P Model outputs.

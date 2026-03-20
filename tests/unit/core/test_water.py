@@ -107,7 +107,7 @@ def test_viscosity_registration():
         pytest.param((4, 7, 3), id="3D"),
     ],
 )
-def test_calc_density_h20_methods(method, expected, shape):
+def test_calculate_density_h2o_methods(method, expected, shape):
     """Test the density methods.
 
     The test runs both directly using the function from the registry and via the core

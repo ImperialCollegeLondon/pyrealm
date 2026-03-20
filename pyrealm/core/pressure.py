@@ -8,7 +8,7 @@ from numpy.typing import NDArray
 from pyrealm.constants import CoreConst
 
 
-def calc_patm(
+def calculate_patm(
     elv: NDArray[np.floating], core_const: CoreConst = CoreConst()
 ) -> NDArray[np.floating]:
     r"""Calculate atmospheric pressure from elevation.
@@ -31,7 +31,7 @@ def calc_patm(
 
     Examples:
         >>> # Standard atmospheric pressure, in Pa, corrected for 1000 m.a.s.l.
-        >>> round(calc_patm(1000), 2)
+        >>> round(calculate_patm(1000), 2)
         90241.54
     """
 

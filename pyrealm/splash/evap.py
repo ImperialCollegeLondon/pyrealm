@@ -9,9 +9,9 @@ from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
 from pyrealm.core.hygro import (
-    calc_enthalpy_vaporisation,
-    calc_psychrometric_constant,
-    calc_saturation_vapour_pressure_slope,
+    calculate_enthalpy_vaporisation,
+    calculate_psychrometric_constant,
+    calculate_saturation_vapour_pressure_slope,
 )
 from pyrealm.core.time_series import broadcast_time
 from pyrealm.core.utilities import check_input_shapes
@@ -95,16 +95,16 @@ class DailyEvapFluxes:
         tc = broadcast_time(tc, self.shape)
 
         # Slope of saturation vap press temp curve, Pa/K
-        self.sat = calc_saturation_vapour_pressure_slope(tc)
+        self.sat = calculate_saturation_vapour_pressure_slope(tc)
 
         # Enthalpy of vaporization, J/kg
-        self.lv = calc_enthalpy_vaporisation(tc)
+        self.lv = calculate_enthalpy_vaporisation(tc)
 
         # Density of water, kg/m^3
         self.pw = calculate_density_h2o(tc, pa, core_const=self.core_const)
 
         # Psychrometric constant, Pa/K
-        self.psy = calc_psychrometric_constant(tc, pa, core_const=self.core_const)
+        self.psy = calculate_psychrometric_constant(tc, pa, core_const=self.core_const)
 
         # Calculate water-to-energy conversion (econ), m^3/J
         self.econ = self.sat / (self.lv * self.pw * (self.sat + self.psy))

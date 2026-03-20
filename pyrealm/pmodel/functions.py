@@ -9,10 +9,11 @@ from numpy.typing import NDArray
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.core.water import calculate_viscosity_h2o
+from pyrealm.core.xarray import ArrayType, xarray_inputs
 
 
 def calculate_simple_arrhenius_factor(
-    tk: NDArray[np.floating],
+    tk: ArrayType[np.floating],
     tk_ref: float,
     ha: float,
     k_R: float = CoreConst().k_R,
@@ -61,13 +62,15 @@ def calculate_simple_arrhenius_factor(
         array([88.1991])
     """
 
+    tk = xarray_inputs(tk)
+
     return np.exp(ha * (tk - tk_ref) / (tk_ref * k_R * tk))
 
 
 def calculate_kattge_knorr_arrhenius_factor(
-    tk_leaf: NDArray[np.floating],
+    tk_leaf: ArrayType[np.floating],
     tk_ref: float,
-    tc_growth: NDArray[np.floating],
+    tc_growth: ArrayType[np.floating],
     coef: dict[str, float],
     k_R: float = CoreConst().k_R,
 ) -> NDArray[np.floating]:
@@ -141,6 +144,8 @@ def calculate_kattge_knorr_arrhenius_factor(
         array([0.261])
     """
 
+    tk_leaf, tc_growth = xarray_inputs(tk_leaf, tc_growth)
+
     # Calculate entropy as a function of temperature _in °C_
     entropy = coef["entropy_intercept"] + coef["entropy_slope"] * tc_growth
 
@@ -156,8 +161,8 @@ def calculate_kattge_knorr_arrhenius_factor(
     return fva * fvb
 
 
-def calc_ftemp_inst_rd(
-    tc: NDArray[np.floating],
+def calculate_ftemp_inst_rd(
+    tc: ArrayType[np.floating],
     tc_ref: float = PModelConst().tc_ref,
     coef: tuple[float, float] = PModelConst().heskel_rd,
 ) -> NDArray[np.floating]:
@@ -182,10 +187,10 @@ def calc_ftemp_inst_rd(
         >>> # Relative instantaneous change in Rd going from 10 to 25 degrees
         >>> pmod_consts = PModelConst()
         >>> (
-        ...     calc_ftemp_inst_rd(
+        ...     calculate_ftemp_inst_rd(
         ...         tc=25, tc_ref=pmod_consts.tc_ref, coef=pmod_consts.heskel_rd
         ...     )
-        ...     / calc_ftemp_inst_rd(
+        ...     / calculate_ftemp_inst_rd(
         ...         tc=10, tc_ref=pmod_consts.tc_ref, coef=pmod_consts.heskel_rd
         ...     )
         ...     - 1
@@ -193,12 +198,14 @@ def calc_ftemp_inst_rd(
         np.float64(2.5096)
     """
 
+    tc = xarray_inputs(tc)
+
     return np.exp(coef[0] * (tc - tc_ref) - coef[1] * (tc**2 - tc_ref**2))
 
 
-def calc_gammastar(
-    tk: NDArray[np.floating],
-    patm: NDArray[np.floating],
+def calculate_gammastar(
+    tk: ArrayType[np.floating],
+    patm: ArrayType[np.floating],
     tk_ref: float = PModelConst().tk_ref,
     k_Po: float = CoreConst().k_Po,
     k_R: float = CoreConst().k_R,
@@ -236,9 +243,11 @@ def calc_gammastar(
 
     Examples:
         >>> # CO2 compensation point at 20 °C  (293.15 K) and standard pressure
-        >>> calc_gammastar(np.array([293.15]), np.array([101325])).round(5)
+        >>> calculate_gammastar(np.array([293.15]), np.array([101325])).round(5)
         array([3.33925])
     """
+
+    tk, patm = xarray_inputs(tk, patm)
 
     # check inputs, return shape not used
     _ = check_input_shapes(tk, patm)
@@ -253,9 +262,9 @@ def calc_gammastar(
     )
 
 
-def calc_ns_star(
-    tk: NDArray[np.floating],
-    patm: NDArray[np.floating],
+def calculate_ns_star(
+    tk: ArrayType[np.floating],
+    patm: ArrayType[np.floating],
     core_const: CoreConst = CoreConst(),
 ) -> NDArray[np.floating]:
     r"""Calculate the relative viscosity of water.
@@ -282,9 +291,11 @@ def calc_ns_star(
 
     Examples:
         >>> # Relative viscosity at 293.15 K (20°C):
-        >>> round(calc_ns_star(293.15, 101325), 5)
+        >>> round(calculate_ns_star(293.15, 101325), 5)
         np.float64(1.12592)
     """
+
+    tk, patm = xarray_inputs(tk, patm)
 
     visc_env = calculate_viscosity_h2o(tk=tk, patm=patm, core_const=core_const)
     visc_std = calculate_viscosity_h2o(
@@ -296,9 +307,9 @@ def calc_ns_star(
     return visc_env / visc_std
 
 
-def calc_kmm(
-    tk: NDArray[np.floating],
-    patm: NDArray[np.floating],
+def calculate_kmm(
+    tk: ArrayType[np.floating],
+    patm: ArrayType[np.floating],
     tk_ref: float = PModelConst().tk_ref,
     k_co: float = CoreConst().k_co,
     k_R: float = CoreConst().k_R,
@@ -345,9 +356,11 @@ def calc_kmm(
 
     Examples:
         >>> # Michaelis-Menten coefficient at 20°C (293.15K) and standard pressure (Pa)
-        >>> calc_kmm(np.array([293.15]), np.array([101325])).round(5)
+        >>> calculate_kmm(np.array([293.15]), np.array([101325])).round(5)
         array([46.09928])
     """
+
+    tk, patm = xarray_inputs(tk, patm)
 
     # Check inputs, return shape not used
     _ = check_input_shapes(tk, patm)
@@ -366,9 +379,9 @@ def calc_kmm(
     return kc * (1.0 + po / ko)
 
 
-def calc_soilmstress_stocker(
-    soilm: NDArray[np.floating],
-    meanalpha: NDArray[np.floating] = np.array(1.0),
+def calculate_soilmstress_stocker(
+    soilm: ArrayType[np.floating],
+    meanalpha: ArrayType[np.floating] = np.array(1.0),
     coef: dict[str, float] = PModelConst().soilmstress_stocker,
 ) -> NDArray[np.floating]:
     r"""Calculate Stocker's empirical soil moisture stress factor.
@@ -454,12 +467,14 @@ def calc_soilmstress_stocker(
 
     Examples:
         >>> # Proportion of well-watered GPP available at soil moisture of 0.2
-        >>> calc_soilmstress_stocker(np.array([0.2])).round(5)
+        >>> calculate_soilmstress_stocker(np.array([0.2])).round(5)
         array([0.88133])
     """
 
     # TODO - move soilm params into standalone param class for this function -
     #        keep the PModelConst cleaner?
+
+    soilm, meanalpha = xarray_inputs(soilm, meanalpha)
 
     # Check inputs, return shape not used
     _ = check_input_shapes(soilm, meanalpha)
@@ -478,9 +493,9 @@ def calc_soilmstress_stocker(
     return outstress
 
 
-def calc_soilmstress_mengoli(
-    soilm: NDArray[np.floating] = np.array(1.0),
-    aridity_index: NDArray[np.floating] = np.array(1.0),
+def calculate_soilmstress_mengoli(
+    soilm: ArrayType[np.floating] = np.array(1.0),
+    aridity_index: ArrayType[np.floating] = np.array(1.0),
     coef: dict[str, float] = PModelConst().soilmstress_mengoli,
 ) -> NDArray[np.floating]:
     r"""Calculate the Mengoli et al. empirical soil moisture stress factor.
@@ -552,12 +567,14 @@ def calc_soilmstress_mengoli(
         >>> import numpy as np
         >>> # Proportion of well-watered GPP available with soil moisture and aridity
         >>> # index values of 0.6
-        >>> calc_soilmstress_mengoli(np.array([0.6]), np.array([0.6])).round(5)
+        >>> calculate_soilmstress_mengoli(np.array([0.6]), np.array([0.6])).round(5)
         array([0.78023])
     """
 
     # TODO - move soilm params into standalone param class for this function -
     #        keep the PModelConst cleaner?
+
+    soilm, aridity_index = xarray_inputs(soilm, aridity_index)
 
     # Check inputs, return shape not used
     _ = check_input_shapes(soilm, aridity_index)
@@ -577,8 +594,8 @@ def calc_soilmstress_mengoli(
     return np.where(soilm >= psi, y, (y / psi) * soilm)
 
 
-def calc_co2_to_ca(
-    co2: NDArray[np.floating], patm: NDArray[np.floating]
+def calculate_co2_to_ca(
+    co2: ArrayType[np.floating], patm: ArrayType[np.floating]
 ) -> NDArray[np.floating]:
     r"""Convert :math:`\ce{CO2}` ppm to Pa.
 
@@ -593,8 +610,10 @@ def calc_co2_to_ca(
         Ambient :math:`\ce{CO2}` in units of Pa
 
     Examples:
-        >>> np.round(calc_co2_to_ca(413.03, 101325), 6)
+        >>> np.round(calculate_co2_to_ca(413.03, 101325), 6)
         np.float64(41.850265)
     """
+
+    co2, patm = xarray_inputs(co2, patm)
 
     return 1.0e-6 * co2 * patm  # Pa, atms. CO2

@@ -117,7 +117,7 @@ def test_estimate_daily_water_balance(splash_model, overflow, underflow):
     context = nullcontext()
 
     if overflow:
-        wn_init.flat[np.random.choice(wn_init.size)] = splash_model.kWm + 1e-4
+        wn_init.flat[np.random.choice(wn_init.size)] = splash_model.kWm.item() + 1e-4
         context = pytest.raises(ValueError)
     if underflow:
         wn_init.flat[np.random.choice(wn_init.size)] = -1e-4
@@ -148,8 +148,8 @@ def test_estimate_initial_soil_moisture(splash_model):
         )  # simply check convergence
 
 
-def test_calc_soil_moisture(splash_model):
-    """Test the calc_soil_moisture method of the SplashModel class."""
+def test_calculate_soil_moisture(splash_model):
+    """Test the calculate_soil_moisture method of the SplashModel class."""
 
     wn_init = np.random.random(splash_model.shape[1:]) * splash_model.kWm
 
