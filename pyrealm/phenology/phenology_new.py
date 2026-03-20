@@ -117,9 +117,22 @@ class PhenologyMethodZhou(PhenologyMethodABC, method="zhou"):
     following the method of :cite:`cai:2025a` (see
     :class:`~pyrealm.pmodel.fapar_limitation_new.FaparLimitationCai`).
 
+    * The fractional allocation of GPP to leaf area index (:math:`m`) is calculated
+      from the annual maximum LAI and fAPAR as:
+
+        .. math::
+
+            m = \frac{\sigma G L_{max}}{A_{0} f_{APAR_{max}}}
+
+      Here, $G$ and $A_0$ are the annual estimates of growing season length and annual
+      total potential GPP used to calculate the annual maximum fAPAR and LAI. The
+      coefficient :math:`\sigma` is a factor that accounts for the speed with which
+      seasonal canopy growth and senescence patterns affect allocation to LAI (see
+      :attr:`~pyrealm.constants.phenology_const.PhenologyConstNew.cai_sigma`).
+
     * The daily allocation of GPP to leaf area index (:math:`\mu`) is calculated simply
-      as :math:`\mu = m A_0`, where :math:`m` is the fractional allocation of GPP to LAI
-      :cite:`cai:2025a`.
+      as :math:`\mu = m A_{d0}`, where :math:`A_{d0}` is total daily potential
+      assimilation.
 
     * The steady state daily estimate of LAI is then calculated as:
 
