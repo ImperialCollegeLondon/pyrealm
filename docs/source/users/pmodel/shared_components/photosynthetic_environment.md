@@ -71,7 +71,7 @@ from matplotlib import pyplot
 import numpy as np
 from pyrealm.constants import CoreConst
 from pyrealm.core.water import calculate_viscosity_h2o
-from pyrealm.pmodel import calc_gammastar, calc_kmm, calc_co2_to_ca
+from pyrealm.pmodel import calculate_gammastar, calculate_kmm, calculate_co2_to_ca
 
 %matplotlib inline
 
@@ -96,7 +96,7 @@ co2_2d = np.broadcast_to(co2_1d, (n_pts, n_pts))
 
 ## Photorespiratory compensation point ($\Gamma^*$)
 
-Details: {func}`pyrealm.pmodel.functions.calc_gammastar`
+Details: {func}`pyrealm.pmodel.functions.calculate_gammastar`
 
 The photorespiratory compensation point ($\Gamma^*$) varies with as a function
 of temperature and atmospheric pressure:
@@ -105,7 +105,7 @@ of temperature and atmospheric pressure:
 :tags: [hide-input]
 
 # Calculate gammastar
-gammastar = calc_gammastar(tk=tk_2d, patm=patm_2d.transpose())
+gammastar = calculate_gammastar(tk=tk_2d, patm=patm_2d.transpose())
 
 # Create a contour plot of gamma
 fig, ax = pyplot.subplots()
@@ -119,7 +119,7 @@ pyplot.show()
 
 ## Michaelis-Menten coefficient for photosynthesis ($K_{mm}$)
 
-Details: {func}`pyrealm.pmodel.functions.calc_kmm`
+Details: {func}`pyrealm.pmodel.functions.calculate_kmm`
 
 The Michaelis-Menten coefficient for photosynthesis ($K_{mm}$) also varies with
 temperature and atmospheric pressure:
@@ -128,7 +128,7 @@ temperature and atmospheric pressure:
 :tags: [hide-input]
 
 # Calculate K_mm
-kmm = calc_kmm(tk=tk_2d, patm=patm_2d.transpose())
+kmm = calculate_kmm(tk=tk_2d, patm=patm_2d.transpose())
 
 # Contour plot of calculated values
 fig, ax = pyplot.subplots()
@@ -186,7 +186,7 @@ pyplot.show()
 
 ## Partial pressure of $\ce{CO2}$ ($c_a$)
 
-Details: {func}`pyrealm.pmodel.functions.calc_co2_to_ca`
+Details: {func}`pyrealm.pmodel.functions.calculate_co2_to_ca`
 
 The partial pressure of $\ce{CO2}$ is a function of the atmospheric concentration of
 $\ce{CO2}$ in parts per million and the atmospheric pressure:
@@ -195,7 +195,7 @@ $\ce{CO2}$ in parts per million and the atmospheric pressure:
 :tags: [hide-input]
 
 # Variation in partial pressure
-ca = calc_co2_to_ca(co2_2d, patm_2d.transpose())
+ca = calculate_co2_to_ca(co2_2d, patm_2d.transpose())
 # Plot contour plot of values
 fig, ax = pyplot.subplots()
 CS = ax.contour(co2_1d, patm_1d, ca, colors="black")

@@ -27,6 +27,7 @@ from scipy.interpolate import interp1d
 
 from pyrealm.constants import CoreConst, PModelConst
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
+from pyrealm.core.xarray import ArrayType, is_arraytype, xarray_inputs
 from pyrealm.pmodel.acclimation import AcclimationModel
 from pyrealm.pmodel.arrhenius import ARRHENIUS_METHOD_REGISTRY, ArrheniusFactorABC
 from pyrealm.pmodel.jmax_limitation import (
@@ -79,7 +80,7 @@ class PModelABC(ABC):
         method_optchi: str = "prentice14",
         method_jmaxlim: str = "wang17",
         method_arrhenius: str = "simple",
-        reference_kphio: float | NDArray[np.floating] | None = None,
+        reference_kphio: float | ArrayType[np.floating] | None = None,
         **kwargs: dict[str, Any],
     ):
         self.shape: tuple = env.shape
@@ -143,6 +144,8 @@ class PModelABC(ABC):
             method_registry=QUANTUM_YIELD_CLASS_REGISTRY,
         )
 
+        if is_arraytype(reference_kphio):
+            reference_kphio = xarray_inputs(reference_kphio)
         self.reference_kphio = reference_kphio
         """The value of the the reference kphio to be used in the model."""
 
@@ -254,8 +257,11 @@ class PModelABC(ABC):
 
         .. math::
 
-            g_s = \frac{LUE}{M_C}\frac{1}{c_a - c_i}
+            g_s = \frac{A}{c_a - c_i},
 
+        where :math:`A` is assimilation in µmol C m-2 s-1. The standard P Model uses 
+        the coordination hypothesis and hence :math:`A=A_c=A_j`.
+        
         When C4 photosynthesis is being used, the true partial pressure of CO2 in the
         substomatal cavities (:math:`c_i`) is used following the calculation of
         :math:`\chi` using
@@ -327,14 +333,14 @@ class PModelABC(ABC):
         """Apply the gpp conversion factor to the input daily gpp."""
         return daily_mean_pmodel_gpp * self.gpp_conversion_factor
 
-    def apply_gpp_penalty_factor(self, penalty_factor: NDArray[np.floating]) -> None:
+    def apply_gpp_penalty_factor(self, penalty_factor: ArrayType[np.floating]) -> None:
         r"""Apply a post-hoc GPP penalty factor to GPP predictions.
 
         Some productivity models apply a post-hoc penalty factor to the predicted GPP of
         the P Model to correct for other influences on productivity. Examples included
         the soil moisture penalty factors implemented as
-        :meth:`pyrealm.pmodel.functions.calc_soilmstress_mengoli` and
-        :meth:`pyrealm.pmodel.functions.calc_soilmstress_stocker`.
+        :meth:`pyrealm.pmodel.functions.calculate_soilmstress_mengoli` and
+        :meth:`pyrealm.pmodel.functions.calculate_soilmstress_stocker`.
 
         This method allows such a factor (:math:`f \in [0,1]`) to be applied to a fitted
         P Model instance. The `gpp` attribute of the model will then return the product
@@ -347,7 +353,8 @@ class PModelABC(ABC):
             penalty_factor: An array of GPP penalty value.
         """
 
-        _ = check_input_shapes(self.env.tc, penalty_factor)
+        penalty_factor = xarray_inputs(penalty_factor, dims=self.env.dims)
+        _ = check_input_shapes(penalty_factor, shape=self.shape)
 
         self.gpp_penalty_factor = penalty_factor
 
@@ -408,8 +415,8 @@ class PModel(PModelABC):
         ``method_optchi`` implement different approaches to soil moisture effects on
         photosynthesis. See also the alternative GPP penalty factors that can be applied
         after fitting the P Model
-        (:func:`pyrealm.pmodel.functions.calc_soilmstress_stocker` and
-        :func:`pyrealm.pmodel.functions.calc_soilmstress_mengoli`).
+        (:func:`pyrealm.pmodel.functions.calculate_soilmstress_stocker` and
+        :func:`pyrealm.pmodel.functions.calculate_soilmstress_mengoli`).
 
     Args:
         env: An instance of
@@ -449,7 +456,7 @@ class PModel(PModelABC):
         method_jmaxlim: str = "wang17",
         method_kphio: str = "temperature",
         method_arrhenius: str = "simple",
-        reference_kphio: float | NDArray[np.floating] | None = None,
+        reference_kphio: float | ArrayType[np.floating] | None = None,
     ) -> None:
         # Initialise the superclass
         super().__init__(
@@ -585,7 +592,7 @@ class PModel(PModelABC):
         self,
         acclim_model: AcclimationModel,
         previous_realised: tuple[
-            NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]
+            ArrayType[np.floating], ArrayType[np.floating], ArrayType[np.floating]
         ]
         | None = None,
     ) -> SubdailyPModel:
@@ -668,6 +675,8 @@ class SubdailyPModel(PModelABC):
       acclimating values of :math:`\xi` but the actual subdaily values of temperature
       and vapour pressure deficit.
     * Predictions of GPP are then made as in the standard P Model.
+    * The coordination hypothesis does not apply to the subdaily P Model and so stomatal
+      conductance (``gs``) is calculated using assimilation as :math:`A=min(A_c, A_j)`.
 
     As with the :class:`~pyrealm.pmodel.pmodel.PModel`, the values of the `kphio`
     argument _can_ be provided as an array of values, potentially varying through time
@@ -737,8 +746,8 @@ class SubdailyPModel(PModelABC):
         method_jmaxlim: str = "wang17",
         method_kphio: str = "temperature",
         method_arrhenius: str = "simple",
-        reference_kphio: float | NDArray[np.floating] | None = None,
-        previous_realised: dict[str, NDArray[np.floating]] | None = None,
+        reference_kphio: float | ArrayType[np.floating] | None = None,
+        previous_realised: dict[str, ArrayType[np.floating]] | None = None,
     ) -> None:
         # Initialise the superclass
         super().__init__(
@@ -792,7 +801,7 @@ class SubdailyPModel(PModelABC):
     def _fit_model(
         self,
         acclim_model: AcclimationModel,
-        previous_realised: dict[str, NDArray[np.floating]] | None,
+        previous_realised: dict[str, ArrayType[np.floating]] | None,
     ) -> None:
         """Calculation logic of the subdaily P Model."""
 
@@ -831,9 +840,7 @@ class SubdailyPModel(PModelABC):
             if not (
                 isinstance(previous_realised, dict)
                 and (set(["xi", "jmax25", "vcmax25"]) == previous_realised.keys())
-                and all(
-                    [isinstance(val, np.ndarray) for val in previous_realised.values()]
-                )
+                and all([is_arraytype(val) for val in previous_realised.values()])
             ):
                 raise ValueError(
                     "previous_realised must be a dictionary of arrays, with entries "
@@ -853,7 +860,9 @@ class SubdailyPModel(PModelABC):
                     "`previous_realised` arrays have wrong shape in SubdailyPModel"
                 )
 
-            self.previous_realised = previous_realised
+            self.previous_realised = {
+                key: xarray_inputs(val) for key, val in previous_realised.items()
+            }
 
         # 1) Generate a PModelEnvironment containing the average conditions within the
         #    daily acclimation window. This daily average environment also needs to also
@@ -1031,7 +1040,7 @@ class SubdailyPModel(PModelABC):
         with np.errstate(divide="ignore", invalid="ignore"):
             self.gs = np.where(
                 np.logical_and(self.env.vpd > 0, ca_ci_diff > 0),
-                self.A_c / ca_ci_diff,
+                assimilation / ca_ci_diff,
                 np.nan,
             )
 

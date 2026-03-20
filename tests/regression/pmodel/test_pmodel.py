@@ -111,8 +111,8 @@ def test_calculate_density_h2o(
         ("tk_ar", "ftemp_arrh_ar"),  # array
     ],
 )
-def test_calc_ftemp_arrh(values, tk, expvars):
-    """Test calc_ftemp_arrh outputs.
+def test_calculate_ftemp_arrh(values, tk, expvars):
+    """Test calculate_ftemp_arrh outputs.
 
     Test against the pyrealm calculate_simple_arrhenius_factor function.
     """
@@ -125,7 +125,7 @@ def test_calc_ftemp_arrh(values, tk, expvars):
 
 
 # ------------------------------------------
-# Testing calc_ftemp_inst_vcmax - temp only
+# Testing calculate_ftemp_inst_vcmax - temp only
 # ------------------------------------------
 
 
@@ -136,8 +136,8 @@ def test_calc_ftemp_arrh(values, tk, expvars):
         ("tc_ar", "ftemp_inst_vcmax_ar"),  # array
     ],
 )
-def test_calc_ftemp_inst_vcmax(values, tc, expvars):
-    """Test the calculation of values returned by calc_ftemp_inst_vcmax in rpmodel.
+def test_calculate_ftemp_inst_vcmax(values, tc, expvars):
+    """Test the calculation of values returned by calculate_ftemp_inst_vcmax in rpmodel.
 
     This specific function was retired in favour of a more general modified arrhenius
     function, but check the predictions match to the rpmodel outputs for this component.
@@ -161,7 +161,7 @@ def test_calc_ftemp_inst_vcmax(values, tc, expvars):
 
 
 # ------------------------------------------
-# Testing calc_ftemp_kphio - temp only
+# Testing calculate_ftemp_kphio - temp only
 # ------------------------------------------
 
 # TODO - submit pull request to rpmodel with fix for this
@@ -176,8 +176,8 @@ def test_calc_ftemp_inst_vcmax(values, tc, expvars):
         ("tc_ar", True, "ftemp_kphio_c4_ar"),  # array, C4
     ],
 )
-def test_calc_ftemp_kphio(values, tc, c4, expvars):
-    """Test the calc_ftemp_kphio values.
+def test_calculate_ftemp_kphio(values, tc, c4, expvars):
+    """Test the calculate_ftemp_kphio values.
 
     This function in rpmodel has been replaced by the wider QuantumYield ABC framework
     but make sure the outputs still align.
@@ -196,7 +196,7 @@ def test_calc_ftemp_kphio(values, tc, c4, expvars):
 
 
 # ------------------------------------------
-# Testing calc_gammastar - temp + patm
+# Testing calculate_gammastar - temp + patm
 # ------------------------------------------
 
 
@@ -209,20 +209,20 @@ def test_calc_ftemp_kphio(values, tc, c4, expvars):
         ("tc_ar", "shape_error", pytest.raises(ValueError), None),  # shape mismatch
     ],
 )
-def test_calc_gammastar(values, tc, patm, context_manager, expvals):
-    """Test the calc_gammastar function."""
+def test_calculate_gammastar(values, tc, patm, context_manager, expvals):
+    """Test the calculate_gammastar function."""
     from pyrealm.constants.core_const import CoreConst
-    from pyrealm.pmodel import calc_gammastar
+    from pyrealm.pmodel import calculate_gammastar
 
     core_const = CoreConst()
     with context_manager:
-        ret = calc_gammastar(tk=values[tc] + core_const.k_CtoK, patm=values[patm])
+        ret = calculate_gammastar(tk=values[tc] + core_const.k_CtoK, patm=values[patm])
         if expvals is not None:
             assert_allclose(ret, values[expvals])
 
 
 # ------------------------------------------
-# Testing calc_kmm - temp + patm
+# Testing calculate_kmm - temp + patm
 # ------------------------------------------
 
 
@@ -235,22 +235,22 @@ def test_calc_gammastar(values, tc, patm, context_manager, expvals):
         ("tc_ar", "shape_error", pytest.raises(ValueError), None),  # shape mismatch
     ],
 )
-def test_calc_kmm(values, tc, patm, context_manager, expvals):
-    """Test the calc_kmm function."""
+def test_calculate_kmm(values, tc, patm, context_manager, expvals):
+    """Test the calculate_kmm function."""
 
     from pyrealm.constants.core_const import CoreConst
-    from pyrealm.pmodel import calc_kmm
+    from pyrealm.pmodel import calculate_kmm
 
     core_const = CoreConst()
 
     with context_manager:
-        ret = calc_kmm(tk=values[tc] + core_const.k_CtoK, patm=values[patm])
+        ret = calculate_kmm(tk=values[tc] + core_const.k_CtoK, patm=values[patm])
         if expvals:
             assert_allclose(ret, values[expvals])
 
 
 # ------------------------------------------
-# Testing calc_soilmstress - soilm + meanalpha
+# Testing calculate_soilmstress - soilm + meanalpha
 # ------------------------------------------
 
 
@@ -263,19 +263,23 @@ def test_calc_kmm(values, tc, patm, context_manager, expvals):
         ("soilm_ar", "shape_error", pytest.raises(ValueError), None),  # shape mismatch
     ],
 )
-def test_calc_soilmstress_stocker(values, soilm, meanalpha, context_manager, expvals):
-    """Test the calc_soilmstress_stocker function."""
+def test_calculate_soilmstress_stocker(
+    values, soilm, meanalpha, context_manager, expvals
+):
+    """Test the calculate_soilmstress_stocker function."""
 
-    from pyrealm.pmodel import calc_soilmstress_stocker
+    from pyrealm.pmodel import calculate_soilmstress_stocker
 
     with context_manager:
-        ret = calc_soilmstress_stocker(soilm=values[soilm], meanalpha=values[meanalpha])
+        ret = calculate_soilmstress_stocker(
+            soilm=values[soilm], meanalpha=values[meanalpha]
+        )
         if expvals:
             assert_allclose(ret, values[expvals])
 
 
 # ------------------------------------------
-# Testing calc_viscosity_h2o - temp + patm
+# Testing calculate_viscosity_h2o - temp + patm
 # ------------------------------------------
 
 
@@ -308,7 +312,7 @@ def test_calculate_viscosity_h2o(
 
 
 # ------------------------------------------
-# Testing calc_patm - elev only
+# Testing calculate_patm - elev only
 # ------------------------------------------
 
 
@@ -319,17 +323,17 @@ def test_calculate_viscosity_h2o(
         ("elev_ar", "patm_from_elev_ar"),  # arrays
     ],
 )
-def test_calc_patm(values, elev, expvals):
-    """Test the calc_patm function."""
+def test_calculate_patm(values, elev, expvals):
+    """Test the calculate_patm function."""
 
-    from pyrealm.core.pressure import calc_patm
+    from pyrealm.core.pressure import calculate_patm
 
-    ret = calc_patm(elv=values[elev])
+    ret = calculate_patm(elv=values[elev])
     assert_allclose(ret, values[expvals])
 
 
 # ------------------------------------------
-# Testing calc_co2_to_ca - co2 + patm
+# Testing calculate_co2_to_ca - co2 + patm
 # ------------------------------------------
 
 
@@ -342,13 +346,13 @@ def test_calc_patm(values, elev, expvals):
         ("co2_ar", "shape_error", pytest.raises(ValueError), None),  # shape mismatch
     ],
 )
-def test_calc_co2_to_ca(values, co2, patm, context_manager, expvals):
-    """Test the calc_co2_to_ca function."""
+def test_calculate_co2_to_ca(values, co2, patm, context_manager, expvals):
+    """Test the calculate_co2_to_ca function."""
 
-    from pyrealm.pmodel import calc_co2_to_ca
+    from pyrealm.pmodel import calculate_co2_to_ca
 
     with context_manager:
-        ret = calc_co2_to_ca(co2=values[co2], patm=values[patm])
+        ret = calculate_co2_to_ca(co2=values[co2], patm=values[patm])
         if expvals:
             assert_allclose(ret, values[expvals])
 
@@ -718,12 +722,12 @@ def test_pmodel_class_c3(
     phi0.
     """
 
-    from pyrealm.pmodel import calc_soilmstress_stocker
+    from pyrealm.pmodel import calculate_soilmstress_stocker
     from pyrealm.pmodel.pmodel import PModel
 
     # Calculate the soil moisture factor to apply post hoc
     if soilmstress:
-        soilmstress = calc_soilmstress_stocker(
+        soilmstress = calculate_soilmstress_stocker(
             values["soilm_sc"], values["meanalpha_sc"]
         )
     else:
@@ -814,13 +818,13 @@ def test_pmodel_class_c4(
 
     from pyrealm.pmodel import (
         PModelEnvironment,
-        calc_soilmstress_stocker,
+        calculate_soilmstress_stocker,
     )
     from pyrealm.pmodel.pmodel import PModel
     from pyrealm.pmodel.quantum_yield import QuantumYieldTemperature
 
     if soilmstress:
-        soilmstress = calc_soilmstress_stocker(
+        soilmstress = calculate_soilmstress_stocker(
             values["soilm_sc"], values["meanalpha_sc"]
         )
     else:

@@ -256,14 +256,22 @@ def test_calculate_foliar_respiration(rvalues):
 def test_calculate_fine_root_respiration(rvalues):
     """Tests calculation of fine root respiration of trees."""
 
-    from pyrealm.demography.tmodel import calculate_fine_root_respiration
+    from pyrealm.demography.tmodel import (
+        calculate_fine_root_masses,
+        calculate_fine_root_respiration,
+    )
 
     for pft, _, data in rvalues:
-        actual_fine_root_respiration = calculate_fine_root_respiration(
+        # Original implementation does not store fine root mass so calculate required
+        # intermediate variable
+        fine_root_mass = calculate_fine_root_masses(
             zeta=pft["zeta"],
-            sla=pft["sla"],
-            resp_r=pft["resp_r"],
-            foliage_mass=data["mass_fol"],
+            lai=pft["lai"],
+            crown_area=data["crown_area"],
+        )
+
+        actual_fine_root_respiration = calculate_fine_root_respiration(
+            resp_r=pft["resp_r"], fine_root_mass=fine_root_mass
         )
         assert_array_almost_equal(
             actual_fine_root_respiration,
@@ -301,21 +309,30 @@ def test_calculate_foliage_and_fine_root_turnover(rvalues):
     """Tests calculation of fine root respiration of trees."""
 
     from pyrealm.demography.tmodel import (
+        calculate_fine_root_masses,
         calculate_fine_root_turnover,
         calculate_foliage_turnover,
     )
 
     for pft, _, data in rvalues:
-        fine_root_turnover = calculate_fine_root_turnover(
-            sla=pft["sla"],
+        # Original implementation does not store fine root mass so calculate required
+        # intermediate variable
+        fine_root_mass = calculate_fine_root_masses(
             zeta=pft["zeta"],
-            tau_r=pft["tau_r"],
-            foliage_mass=data["mass_fol"],
+            lai=pft["lai"],
+            crown_area=data["crown_area"],
         )
+
+        fine_root_turnover = calculate_fine_root_turnover(
+            tau_r=pft["tau_r"],
+            fine_root_mass=fine_root_mass,
+        )
+
         foliage_turnover = calculate_foliage_turnover(
             tau_f=pft["tau_f"],
             foliage_mass=data["mass_fol"],
         )
+
         actual_turnover = fine_root_turnover + foliage_turnover
         assert_array_almost_equal(
             actual_turnover,

@@ -10,11 +10,12 @@ from numpy.typing import NDArray
 from pyrealm.constants import C3C4Const
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
+from pyrealm.core.xarray import ArrayType, get_common_dims, xarray_inputs
 
 
 def convert_gpp_advantage_to_c4_fraction(
-    gpp_adv_c4: NDArray[np.floating],
-    treecover: NDArray[np.floating],
+    gpp_adv_c4: ArrayType[np.floating],
+    treecover: ArrayType[np.floating],
     c3c4_const: C3C4Const = C3C4Const(),
 ) -> NDArray[np.floating]:
     r"""Convert C4 GPP advantage to C4 fraction.
@@ -51,6 +52,8 @@ def convert_gpp_advantage_to_c4_fraction(
         tree cover.
     """
 
+    gpp_adv_c4, treecover = xarray_inputs(gpp_adv_c4, treecover)
+
     frac_c4 = 1.0 / (
         1.0
         + np.exp(
@@ -63,7 +66,7 @@ def convert_gpp_advantage_to_c4_fraction(
 
 
 def calculate_tree_proportion(
-    gppc3: NDArray[np.floating], c3c4_const: C3C4Const = C3C4Const()
+    gppc3: ArrayType[np.floating], c3c4_const: C3C4Const = C3C4Const()
 ) -> NDArray[np.floating]:
     r"""Calculate the proportion of GPP from C3 trees.
 
@@ -106,6 +109,8 @@ def calculate_tree_proportion(
     Returns:
         The estimated proportion of GPP resulting from C3 trees.
     """
+
+    gppc3 = xarray_inputs(gppc3)
 
     prop_trees = (
         c3c4_const.gpp_to_tc_a * np.power(gppc3, c3c4_const.gpp_to_tc_b)
@@ -186,14 +191,22 @@ class C3C4Competition:
 
     def __init__(
         self,
-        gpp_c3: NDArray[np.floating],
-        gpp_c4: NDArray[np.floating],
-        treecover: NDArray[np.floating],
-        below_t_min: NDArray[np.bool],
-        cropland: NDArray[np.bool],
+        gpp_c3: ArrayType[np.floating],
+        gpp_c4: ArrayType[np.floating],
+        treecover: ArrayType[np.floating],
+        below_t_min: ArrayType[np.bool],
+        cropland: ArrayType[np.bool],
         c3c4_const: C3C4Const = C3C4Const(),
     ):
         warn_experimental("C3C4Competition")
+
+        # Convert any xarray inputs
+        self.dims = get_common_dims(gpp_c3, gpp_c4, treecover, below_t_min, cropland)
+        gpp_c3 = xarray_inputs(gpp_c3, dims=self.dims)
+        gpp_c4 = xarray_inputs(gpp_c4, dims=self.dims)
+        treecover = xarray_inputs(treecover, dims=self.dims)
+        below_t_min = xarray_inputs(below_t_min, dims=self.dims)
+        cropland = xarray_inputs(cropland, dims=self.dims)
 
         # Check inputs are congruent
         self.shape: tuple = check_input_shapes(
@@ -257,9 +270,9 @@ class C3C4Competition:
 
     def estimate_isotopic_discrimination(
         self,
-        d13CO2: NDArray[np.floating],
-        Delta13C_C3_alone: NDArray[np.floating],
-        Delta13C_C4_alone: NDArray[np.floating],
+        d13CO2: ArrayType[np.floating],
+        Delta13C_C3_alone: ArrayType[np.floating],
+        Delta13C_C4_alone: ArrayType[np.floating],
     ) -> None:
         r"""Estimate CO2 isotopic discrimination values.
 
@@ -288,8 +301,12 @@ class C3C4Competition:
                 plants (permil)
         """
 
+        d13CO2, Delta13C_C3_alone, Delta13C_C4_alone = xarray_inputs(
+            d13CO2, Delta13C_C3_alone, Delta13C_C4_alone, dims=self.dims
+        )
+
         _ = check_input_shapes(
-            self.gpp_adv_c4, d13CO2, Delta13C_C3_alone, Delta13C_C4_alone
+            d13CO2, Delta13C_C3_alone, Delta13C_C4_alone, shape=self.shape
         )
 
         self.Delta13C_C3 = Delta13C_C3_alone * (1 - self.frac_c4)

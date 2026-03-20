@@ -93,7 +93,7 @@ and returns kPa, so if you are using VP to prepare input data for
 
 ```{code-cell} ipython3
 # Create a sequence of air temperatures and calculate the saturated vapour pressure
-vp_sat = hygro.calc_vp_sat(ta_1d)
+vp_sat = hygro.calculate_vp_sat(ta_1d)
 
 # Plot ta against vp_sat
 pyplot.plot(ta_1d, vp_sat)

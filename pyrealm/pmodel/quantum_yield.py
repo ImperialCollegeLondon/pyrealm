@@ -21,6 +21,7 @@ from pyrealm.core.utilities import (
     evaluate_horner_polynomial,
     summarize_attrs,
 )
+from pyrealm.core.xarray import ArrayType, xarray_inputs
 from pyrealm.pmodel.functions import calculate_kattge_knorr_arrhenius_factor
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
@@ -109,7 +110,7 @@ class QuantumYieldABC(ABC):
     def __init__(
         self,
         env: PModelEnvironment,
-        reference_kphio: float | NDArray[np.floating] | None = None,
+        reference_kphio: float | ArrayType[np.floating] | None = None,
         use_c4: bool = False,
     ):
         self.env: PModelEnvironment = env
@@ -128,6 +129,7 @@ class QuantumYieldABC(ABC):
         # Now check - if the reference_kphio value is a non-scalar array - that array
         # inputs are handled by the kphio method and that the shape matches the shape of
         # the environment.
+        reference_kphio = xarray_inputs(reference_kphio)
         if isinstance(reference_kphio, np.ndarray) and reference_kphio.size > 1:
             if self.array_reference_kphio_ok:
                 check_input_shapes(self.env.tc, reference_kphio)
@@ -283,13 +285,14 @@ class QuantumYieldSandoval(
     __experimental__: bool = True
 
     def peak_quantum_yield(
-        self, aridity_index: NDArray[np.floating]
+        self, aridity_index: ArrayType[np.floating]
     ) -> NDArray[np.floating]:
         """Calculate the peak quantum yield as a function of the aridity index.
 
         Args:
             aridity_index: An array of aridity index values.
         """
+        aridity_index = xarray_inputs(aridity_index)
 
         # Calculate peak kphio given the aridity index
         m, n = self.env.pmodel_const.sandoval_peak_phio

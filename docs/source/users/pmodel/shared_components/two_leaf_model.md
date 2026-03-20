@@ -77,7 +77,7 @@ dpath = (
 )
 ds = xarray.load_dataset(dpath)
 
-datetimes = ds["time"].to_numpy()
+datetimes = ds["time"]
 
 # Define three sites for showing time series
 sites = xarray.Dataset(
@@ -94,16 +94,16 @@ the atmospheric CO2 concentration.
 ```{code-cell} ipython3
 # Variable set up
 # Air temperature in °C from Tair in Kelvin
-tc = (ds["Tair"] - 273.15).to_numpy()
+tc = ds["Tair"] - 273.15
 # Atmospheric pressure in Pascals
-patm = ds["PSurf"].to_numpy()
+patm = ds["PSurf"]
 # Convert specific humidity to VPD and remove negative values
-vpd = convert_sh_to_vpd(sh=ds["Qair"].to_numpy(), ta=tc, patm=patm / 1000) * 1000
+vpd = convert_sh_to_vpd(sh=ds["Qair"], ta=tc, patm=patm / 1000) * 1000
 vpd = np.clip(vpd, 0, np.inf)
 # Extract fAPAR (unitless)
-fapar = ds["fAPAR"].to_numpy()
+fapar = ds["fAPAR"]
 # Convert SW downwelling radiation from W/m^2 to PPFD µmole/m2/s1
-ppfd = ds["SWdown"].to_numpy() * 2.04
+ppfd = ds["SWdown"] * 2.04
 # Define atmospheric CO2 concentration (ppm)
 co2 = np.ones_like(tc) * 400
 ```
