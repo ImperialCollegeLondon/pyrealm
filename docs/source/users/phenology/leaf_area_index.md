@@ -32,7 +32,7 @@ language_info:
 
 ```
 
-The {class}`~pyrealm.phenology.phenology_new.Phenology` class is used to generate
+The {class}`~pyrealm.phenology.phenology_new.PhenologyNew` class is used to generate
 daily predictions of leaf area index (LAI). The approach requires:
 
 * daily estimates of total potential assimilation ($A_0$), typically estimated using
