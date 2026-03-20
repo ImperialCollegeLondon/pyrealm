@@ -28,9 +28,16 @@ language_info:
     :members:
 ```
 
-## The FAPAR limitation module
+## Theold FAPAR limitation module
 
 ```{eval-rst}
 .. automodule:: pyrealm.phenology.fapar_limitation
+    :members:
+```
+
+## The FAPAR limitation module
+
+```{eval-rst}
+.. automodule:: pyrealm.phenology.fapar_limitation_new
     :members:
 ```

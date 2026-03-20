@@ -1,12 +1,12 @@
 """Class to compute the fAPAR_max and annual peak Leaf Area Index (LAI).
 
-The :class:`FaparLimitation` class and the :meth:`FaparLimitation.from_pmodel` are
+The :class:`FaparLimitationNew` class and the :meth:`FaparLimitationNew.from_pmodel` are
 designed to work with inputs that can have multiple dimensions. The first axis is
-_always_ assumed to represent a time series of annual observations. If the inputs
-are one dimensional, then this is a time series for a single site; if they are three
+_always_ assumed to represent a time series of annual observations. If the inputs are
+one dimensional, then this is a time series for a single site; if they are three
 dimensional then these are observations for a grid of sites. Usually all array inputs
-will have the same shape but note the following instances where you might need to
-take care with array broadcasting.
+will have the same shape but note the following instances where you might need to take
+care with array broadcasting.
 
 * Growing season length might well be constant across sites. If so - for example
     with 3D data - the input would need shape `(N, 1, 1)` to broadcast N years of
@@ -126,7 +126,7 @@ class FaparLimitationMethodABC(ABC):
         FAPAR_LIMITATION_METHOD_CLASS_REGISTRY[cls.method] = cls
 
 
-class FaparLimitationCai(FaparLimitationMethodABC, method="cai"):
+class FaparLimitationMethodCai(FaparLimitationMethodABC, method="cai"):
     r"""Compute maximum annual fAPAR and LAI following :cite:t:`cai:2025a`.
 
     The method of :cite:t:`cai:2025a` uses a single global value of :math:`z` but models
@@ -211,7 +211,7 @@ class FaparLimitationCai(FaparLimitationMethodABC, method="cai"):
         return fapar_max
 
 
-class FaparLimitationZhu(FaparLimitationMethodABC, method="zhu"):
+class FaparLimitationMethodZhu(FaparLimitationMethodABC, method="zhu"):
     r"""Compute maximum annual fAPAR and LAI following :cite:t:`zhu:2026a`.
 
     The method of :cite:t:`zhu:2026a` uses single global values of both :math:`z` and
@@ -264,17 +264,17 @@ class FaparLimitationZhu(FaparLimitationMethodABC, method="zhu"):
         {cite:p}`roderick:2011a`:
     
         .. math:
-        :nowrap:
+            :nowrap:
 
-        \[    
-          \begin{align*}
+            \[    
+                \begin{align*}
 
-            c_w &= \frac{f_{APAR_{c}}}{f_{APAR_{w}}} \\
-            f_{APAR_{max}} = f_{APAR_{w}} \left(1 + c_w - 
-            \left( 1 + c_w ^{\bar\omega} \right)^{1/{\bar\omega}}
+                    c_w &= \frac{f_{APAR_{c}}}{f_{APAR_{w}}} \\
+                    f_{APAR_{max}} = f_{APAR_{w}} \left(1 + c_w - 
+                    \left( 1 + c_w ^{\bar\omega} \right)^{1/{\bar\omega}}
 
-          \end{align*}
-        \],
+                \end{align*}
+            \],
 
         where :math:`\bar\omega` is defined in the
         :attr:`~pyrealm.constants.phenology_const.PhenologyConstNew.zhu_budyko`
@@ -305,7 +305,7 @@ class FaparLimitationNew:
 
     This class calculates maximum annual fAPAR, which can be limited either by the
     availability of light energy ($f_{APAR_{c}}$) or by the availability of water
-    ($f_{APAR_{w}}$). The equations for these two variables, following :cite:`cai2025a:
+    ($f_{APAR_{w}}$). The equations for these two variables, following :cite:`cai:2025a`
     are:
 
     .. math::

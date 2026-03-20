@@ -89,7 +89,7 @@ annual maximum fAPAR from the water limited and energy limited terms.
 
 * The option `method=cai` uses a fixed value for $z$ but calculates $f_0$ as a function
   of the site-specific long term aridity index expressed as PET/P (see
-  {class}`FaparLimitationCai.set_z_and_f0<pyrealm.phenology.fapar_limitation_new.FaparLimitationCai.set_z_and_f0>`
+  {class}`FaparLimitationMethodCai.set_z_and_f0<pyrealm.phenology.fapar_limitation_new.FaparLimitationMethodCai.set_z_and_f0>`
   for details). The maximum annual fAPAR for a site is then simply the minimum of the
   energy and water limited terms for that site.
 
@@ -99,7 +99,7 @@ annual maximum fAPAR from the water limited and energy limited terms.
 * The option `method=zhu` uses fixed values for both $z$ and $f_0$, but the maximum
   annual fAPAR is a function of the energy limited and water limited terms, following
   the model of the Budyko curve {cite:p}`roderick:2011a` (see
-  {class}`FaparLimitationZhu.calculate_maximum_fapar<pyrealm.phenology.fapar_limitation_new.FaparLimitationZhu.calculate_maximum_fapar>`
+  {class}`FaparLimitationMethodZhu.calculate_maximum_fapar<pyrealm.phenology.fapar_limitation_new.FaparLimitationMethodZhu.calculate_maximum_fapar>`
   for details).
 
 In both cases, best fit global values of $z$ and $f_0$ (or parameters of the function
@@ -175,7 +175,7 @@ plt.tight_layout()
 ```
 
 The code below then shows the use of the different methods available within the
-{class}`~pyrealm.phenology.fapar_limitation.FaparLimitationNew` class to calculate
+{class}`~pyrealm.phenology.fapar_limitation_new.FaparLimitationNew` class to calculate
 $f_{APAR_{max}}$ and $L_{max}$. Note that `method="cai"` requires the additional
 site-specific `aridity_index` data.
 
@@ -349,7 +349,7 @@ faparlim_pmodel_cai = FaparLimitationNew.from_pmodel(
     pmodel=pmodel,
     growing_season=fortnightly_data["growing_season"].to_numpy(),
     precip=fortnightly_data["precip_molar"].to_numpy(),
-    datetimes=fn_data["time"].to_numpy(),
+    datetimes=fortnightly_data["time"].to_numpy(),
     aridity_index=site_data["AI"],
 )
 
@@ -359,7 +359,7 @@ faparlim_pmodel_zhu = FaparLimitationNew.from_pmodel(
     pmodel=pmodel,
     growing_season=fortnightly_data["growing_season"].to_numpy(),
     precip=fortnightly_data["precip_molar"].to_numpy(),
-    datetimes=fn_data["time"].to_numpy(),
+    datetimes=fortnightly_data["time"].to_numpy(),
 )
 ```
 
