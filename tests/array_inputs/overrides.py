@@ -214,64 +214,60 @@ def _get_time_dim(ctx: Context) -> int | None:
     return time_dim
 
 
+def _set_time_len(n_time: int, ctx: Context, allow_one: bool = True) -> tuple[int, ...]:
+    """Set the time dimension (first dimension of full shape) to either n_time or 1."""
+    shape = list(ctx.shape)
+    time_dim = _get_time_dim(ctx)
+    if time_dim is not None:
+        shape[time_dim] = 1 if (ctx.shape[time_dim] == 1 and allow_one) else n_time
+    return tuple(shape)
+
+
 ## Core module
 
 register_args("broadcast_time")(lambda ctx: {"shape": ctx.bcast_shape})
 
 
 ## PModel module
-_patm = 101325  # The automatic value (1) gives an error
-_subdaily_n_times = 48  # More than a day needed and needs to match across methods
+_PATM = 101325  # The automatic value (1) gives an error
+_SUBDAILY_N_TIMES = 48  # More than a day needed and needs to match across methods
 
-register_args("TwoLeafIrradiance")(lambda ctx: {"patm": np.full(ctx.shape, _patm)})
-
-
-def _subdaily_shape(ctx):
-    # SubdailyPModel needs more than 1 day of times (uses 48 hours)
-    # Replace the time dimension (the first if not using xarray inputs)
-    shape = list(ctx.shape)
-    time_dim = _get_time_dim(ctx)
-    if time_dim is not None:
-        shape[time_dim] = 1 if ctx.shape[time_dim] == 1 else _subdaily_n_times
-    return shape
+register_args("TwoLeafIrradiance")(lambda ctx: {"patm": np.full(ctx.shape, _PATM)})
 
 
 @register_args("PModelEnvironment")
 def _(ctx):
     if ctx.parents and ctx.parents[-1] == "SubdailyPModel":
-        shape = _subdaily_shape(ctx)
+        shape = _set_time_len(_SUBDAILY_N_TIMES, ctx)
         return {
             "tc": np.full(shape, 20),
             "vpd": np.full(shape, 40),
             "co2": np.full(shape, 1000),
-            "patm": np.full(shape, _patm),
+            "patm": np.full(shape, _PATM),
             "fapar": np.full(shape, 1),
             "ppfd": np.full(shape, 800),
         }
 
     else:
-        return {"patm": np.full(ctx.shape, _patm)}
+        return {"patm": np.full(ctx.shape, _PATM)}
 
 
 register_args("SubdailyPModel.apply_gpp_penalty_factor")(
-    lambda ctx: {"penalty_factor": np.full(_subdaily_shape(ctx), 0.5)}
+    lambda ctx: {"penalty_factor": np.full(_set_time_len(_SUBDAILY_N_TIMES, ctx), 0.5)}
 )
+
 
 # AnnualValueCalculator
 # The shapes of many inputs are required to match the `data_shape` attribute
-
-
-def _annual_value_calculator_shape(ctx):
-    n_time = 3
-    return (n_time, *ctx.bcast_shape[1:])
+_AVC_N_TIMES = 3
 
 
 @register_args("AnnualValueCalculator")
 def _(ctx):
-    data_shape = _annual_value_calculator_shape(ctx)
+    data_shape = _set_time_len(_AVC_N_TIMES, ctx, allow_one=False)
     return {
         "data_shape": data_shape,
-        "timing": np.arange(0, data_shape[0], dtype="datetime64[D]"),
+        "timing": np.arange(0, _AVC_N_TIMES, dtype="datetime64[D]"),
     }
 
 
@@ -283,7 +279,7 @@ def _(ctx):
     ]
 )
 def _(ctx):
-    data_shape = _annual_value_calculator_shape(ctx)
+    data_shape = _set_time_len(_AVC_N_TIMES, ctx, allow_one=False)
     return {"values": np.ones(data_shape)}
 
 
@@ -295,7 +291,7 @@ register_args("calculate_kattge_knorr_arrhenius_factor")(
 # AcclimationModel
 # Datetimes must be 1D
 register_args(["AcclimationModel", "AcclimationModel._validate_and_set_datetimes"])(
-    lambda _: {"datetimes": np.arange(0, _subdaily_n_times, dtype="datetime64[h]")}
+    lambda _: {"datetimes": np.arange(0, _SUBDAILY_N_TIMES, dtype="datetime64[h]")}
 )
 # Subdaily -> daily methods must have length of first dim = number of times
 register_args(
@@ -303,14 +299,14 @@ register_args(
         "AcclimationModel.get_daily_means",
         "AcclimationModel.get_window_values",
     ]
-)(lambda ctx: {"values": np.ones((_subdaily_n_times, *ctx.shape[1:]))})
+)(lambda ctx: {"values": np.ones((_SUBDAILY_N_TIMES, *ctx.shape[1:]))})
 # Daily -> subdaily methods must have length of first dim = number of days
 register_args(
     [
         "AcclimationModel.fill_daily_to_subdaily",
         "AcclimationModel._get_subdaily_interpolation_xy",
     ]
-)(lambda ctx: {"values": np.ones((ceil(_subdaily_n_times / 24), *ctx.shape[1:]))})
+)(lambda ctx: {"values": np.ones((ceil(_SUBDAILY_N_TIMES / 24), *ctx.shape[1:]))})
 # The automatic argument generation doesn't work for timedelta
 register_args("AcclimationModel.set_nearest")(
     lambda _: {"time": np.timedelta64(12, "h")}
@@ -319,10 +315,10 @@ register_args("AcclimationModel.set_nearest")(
 
 ## Splash module
 # The size of the first dimension needs to match the number of dates in the Calendar
-_splash_n_dates = 10
+_SPLASH_N_DATES = 10
 
 register_args("SplashModel.estimate_daily_water_balance")(
-    lambda ctx: {"previous_wn": np.full((_splash_n_dates, *ctx.shape[1:]), 10)}
+    lambda ctx: {"previous_wn": np.full((_SPLASH_N_DATES, *ctx.shape[1:]), 10)}
 )
 # wn_init should not include the first dimension of the shape
 register_args("SplashModel.calculate_soil_moisture")(
@@ -336,8 +332,8 @@ def _(ctx):
         # This requires at least 1 year of data
         n_dates = 366
     else:
-        n_dates = _splash_n_dates
-    shape = (1 if ctx.shape[0] == 1 else n_dates, *ctx.shape[1:])
+        n_dates = _SPLASH_N_DATES
+    shape = _set_time_len(n_dates, ctx)
     return {
         "dates": Calendar(np.arange(0, n_dates, dtype="datetime64[D]")),
         "lat": np.full(shape, 10),
@@ -350,18 +346,14 @@ def _(ctx):
 
 # DailySolarFluxes / DailyEvapFluxes
 # The size of the first dimension needs to match the number of dates in the Calendar
-_daily_fluxes_n_dates = 4
-
-
-def _daily_fluxes_shape(ctx):
-    return (1 if ctx.shape[0] == 1 else _daily_fluxes_n_dates, *ctx.shape[1:])
+_DAILY_FLUXES_N_DATES = 4
 
 
 @register_args("DailySolarFluxes")
 def _(ctx):
-    shape = _daily_fluxes_shape(ctx)
+    shape = _set_time_len(_DAILY_FLUXES_N_DATES, ctx)
     return {
-        "dates": Calendar(np.arange(0, _daily_fluxes_n_dates, dtype="datetime64[D]")),
+        "dates": Calendar(np.arange(0, _DAILY_FLUXES_N_DATES, dtype="datetime64[D]")),
         "latitude": np.full(shape, 10),
         "elevation": np.full(shape, 10),
         "sunshine_fraction": np.full(shape, 0.5),
@@ -371,7 +363,7 @@ def _(ctx):
 
 @register_args("DailyEvapFluxes")
 def _(ctx):
-    shape = _daily_fluxes_shape(ctx)
+    shape = _set_time_len(_DAILY_FLUXES_N_DATES, ctx)
     return {
         "pa": np.full(shape, 10),
         "tc": np.full(shape, 25),
@@ -381,28 +373,30 @@ def _(ctx):
 
 @register_args("DailyEvapFluxes.estimate_aet")
 def _(ctx):
-    shape = _daily_fluxes_shape(ctx)
+    shape = _set_time_len(_DAILY_FLUXES_N_DATES, ctx)
     return {"wn": np.full(shape, 10)}
 
 
 ## Phenology module
+
+_PHENOLOGY_N_TIMES = 48
 
 register_args("FaparLimitation")(
     lambda ctx: {"years": np.ones(ctx.bcast_shape[0], dtype="datetime64[Y]")}
 )
 register_args("Phenology")(
     lambda _: {
-        "daily_gpp": np.full((48,), 0.5),
-        "datetimes": np.arange(0, 48, dtype="datetime64[D]"),
+        "daily_gpp": np.full((_PHENOLOGY_N_TIMES,), 0.5),
+        "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
         "fapar_limitation": FaparLimitation(
-            annual_total_potential_gpp=np.ones(48),
-            annual_mean_ca=np.ones(48),
-            annual_mean_chi=np.ones(48),
-            annual_mean_vpd=np.ones(48),
-            annual_total_precip=np.ones(48),
-            annual_growing_season_length=np.ones(48),
-            aridity_index=np.ones(48),
-            years=np.zeros((48,), dtype="datetime64[Y]"),
+            annual_total_potential_gpp=np.ones(_PHENOLOGY_N_TIMES),
+            annual_mean_ca=np.ones(_PHENOLOGY_N_TIMES),
+            annual_mean_chi=np.ones(_PHENOLOGY_N_TIMES),
+            annual_mean_vpd=np.ones(_PHENOLOGY_N_TIMES),
+            annual_total_precip=np.ones(_PHENOLOGY_N_TIMES),
+            annual_growing_season_length=np.ones(_PHENOLOGY_N_TIMES),
+            aridity_index=np.ones(_PHENOLOGY_N_TIMES),
+            years=np.zeros((_PHENOLOGY_N_TIMES,), dtype="datetime64[Y]"),
             phenology_const=PhenologyConst(
                 z=12.227, k=0.5, f0_coefficients=(0.65, 0.604169, 1.9), sigma=0.771
             ),
@@ -413,41 +407,41 @@ register_args("Phenology")(
 ## Demography module
 # This uses 1D arrays. These could probably be skipped instead.
 # Inputs need the same number of PFTs / heights and PFT names.
-n_pft = 3
-n_heights = 2
-pft_names = [f"Tree{i + 1}" for i in range(n_pft)]
+_N_PFT = 3
+_N_HEIGHTS = 2
+_PFT_NAMES = [f"Tree{i + 1}" for i in range(_N_PFT)]
 
 register_args("Cohorts")(
     lambda _: {
-        "dbh_values": np.full(n_pft, 2),
-        "n_individuals": np.ones(n_pft),
-        "pft_names": np.array(pft_names, dtype=np.str_),
+        "dbh_values": np.full(_N_PFT, 2),
+        "n_individuals": np.ones(_N_PFT),
+        "pft_names": np.array(_PFT_NAMES, dtype=np.str_),
     }
 )
 register_args("Flora")(
-    lambda _: {"pfts": [PlantFunctionalType(name=name) for name in pft_names]}
+    lambda _: {"pfts": [PlantFunctionalType(name=name) for name in _PFT_NAMES]}
 )
-register_args("Flora.get_stem_traits")(lambda _: {"pft_names": pft_names})
+register_args("Flora.get_stem_traits")(lambda _: {"pft_names": _PFT_NAMES})
 register_args("Canopy")(lambda _: {"fit_ppa": True})
 register_args("CohortCanopyData")(
     lambda _: {
-        "projected_leaf_area": np.ones((n_heights, n_pft)),
-        "n_individuals": np.ones(n_pft),
-        "lai": np.ones(n_pft),
-        "par_ext": np.ones(n_pft),
+        "projected_leaf_area": np.ones((_N_HEIGHTS, _N_PFT)),
+        "n_individuals": np.ones(_N_PFT),
+        "lai": np.ones(_N_PFT),
+        "par_ext": np.ones(_N_PFT),
     }
 )
 register_args("CommunityCanopyData")(
     lambda _: {
-        "absorption": np.full((n_heights, n_pft), 0.5),
-        "leaf_area_index": np.full((n_heights, n_pft), 0.5),
-        "cohort_leaf_area": np.full((n_heights, n_pft), 1),
+        "absorption": np.full((_N_HEIGHTS, _N_PFT), 0.5),
+        "leaf_area_index": np.full((_N_HEIGHTS, _N_PFT), 0.5),
+        "cohort_leaf_area": np.full((_N_HEIGHTS, _N_PFT), 1),
     }
 )
-register_args("StemAllometry")(lambda _: {"at_dbh": np.full(n_pft, 0.5)})
-register_args("StemAllocation")(lambda _: {"whole_crown_gpp": np.full(n_pft, 0.5)})
+register_args("StemAllometry")(lambda _: {"at_dbh": np.full(_N_PFT, 0.5)})
+register_args("StemAllocation")(lambda _: {"whole_crown_gpp": np.full(_N_PFT, 0.5)})
 register_args("CrownProfile")(
-    lambda _: {"z": np.linspace(5, 15, n_heights)[:, np.newaxis]}
+    lambda _: {"z": np.linspace(5, 15, _N_HEIGHTS)[:, np.newaxis]}
 )
 register_args(
     [
