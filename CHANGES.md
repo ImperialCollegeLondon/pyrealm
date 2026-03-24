@@ -270,13 +270,13 @@ notably the API of the `pmodel` module, as well as introducing new functionality
 - Alteration of PModel arguments. Since there are now different options for simulating
   C3/C4, the c4 argument is replaced with method_optchi, which sets C3/C4 status
   internally from the method selected.
-- Refactor and integration of Alienor's CalcCarbonIsotopes and C3C4Competition models,
+- Refactor and integration of Alienor's CarbonIsotopes and C3C4Competition models,
   from:
   [https://github.com/Alielav/pyrealm/tree/alienorlavergne](https://github.com/Alielav/pyrealm/tree/alienorlavergne)
 - Refactor of utilities TemporalInterpolator and DailyRepresentativeValues to handle
   multiple dimensions and ragged arrays of indices.
 - Extended pytest framework to include TemporalInterpolator, DailyRepresentativeValues,
-  CalcCarbonIsotopes and C3C4Competition.
+  CarbonIsotopes and C3C4Competition.
 
 ## 0.6.0
 

@@ -70,7 +70,7 @@ from matplotlib.lines import Line2D
 from pyrealm.pmodel.pmodel import PModel
 from pyrealm.pmodel import (
     PModelEnvironment,
-    CalcCarbonIsotopes,
+    CarbonIsotopes,
     C3C4Competition,
     convert_gpp_advantage_to_c4_fraction,
     calculate_tree_proportion,
@@ -175,8 +175,8 @@ prop_trees = calculate_tree_proportion(gppc3=gpp_c3_annual / 1000)
 frac_c4_step3 = frac_c4_step2 * (1 - prop_trees)
 
 # Generate isotopic predictions
-isotope_c3 = CalcCarbonIsotopes(mod_c3, d13CO2=-8.4, D14CO2=19.2)
-isotope_c4 = CalcCarbonIsotopes(mod_c4, d13CO2=-8.4, D14CO2=19.2)
+isotope_c3 = CarbonIsotopes(mod_c3, d13CO2=-8.4, D14CO2=19.2)
+isotope_c4 = CarbonIsotopes(mod_c4, d13CO2=-8.4, D14CO2=19.2)
 
 comp.estimate_isotopic_discrimination(
     d13CO2=-8.4,

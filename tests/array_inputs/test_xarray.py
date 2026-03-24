@@ -28,7 +28,7 @@ DEPENDENT_LIST: list[str] = [
     # pmodel
     "PModel.apply_gpp_penalty_factor",
     "SubdailyPModel.apply_gpp_penalty_factor",
-    "CalcCarbonIsotopes",
+    "CarbonIsotopes",
     "C3C4Competition.estimate_isotopic_discrimination",
     "OptimalChiPrentice14.estimate_chi",
     "OptimalChiPrentice14RootzoneStress.estimate_chi",
