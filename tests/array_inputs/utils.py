@@ -46,6 +46,7 @@ import xarray as xr
 from numpy.typing import DTypeLike
 
 import pyrealm
+from pyrealm.constants import ConstantsClass
 from pyrealm.demography.flora import (
     PlantFunctionalType,
     PlantFunctionalTypeStrict,
@@ -59,6 +60,13 @@ from tests.array_inputs.overrides import (
     REQUIRES,
     SKIP_METHODS,
 )
+
+
+class _Config:
+    DEBUG: bool = False
+
+
+config = _Config()
 
 
 ## Functions to get the list of callables
@@ -430,6 +438,26 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
             if ctx.array_type == "xarray":
                 dims = ctx.array_dims or None
                 kwargs[param_name] = xr.DataArray(arg, dims=dims)
+
+    # Print the arguments if in debug mode
+    if config.DEBUG:
+        np.set_printoptions(threshold=1)
+        print(f"\n{ctx.name}\nParents: {ctx.parents}\nArguments:")
+        for param_name, (_, _, approach) in params.items():
+            print(f"\t{param_name}: ({approach})")
+            arg = kwargs[param_name]
+            if isinstance(arg, np.ndarray):
+                out = f"ndarray({arg.shape}, dtype={arg.dtype})"
+            elif isinstance(arg, xr.DataArray):
+                out = f"DataArray({arg.shape}, dims={arg.dims}, dtype={arg.dtype})"
+            elif (  # Replace pyrealm objects with a multiline repr with just the name
+                getattr(arg.__class__, "__module__", "").startswith("pyrealm")
+                and "\n" in repr(arg)
+            ) or isinstance(arg, ConstantsClass):
+                out = arg.__class__.__name__
+            else:
+                out = repr(arg)
+            print("\t\t" + out.replace("\n", "\n\t\t"))
 
     return kwargs
 
