@@ -344,13 +344,27 @@ class FaparLimitation:
                     "Observation datetimes are required with PModel inputs."
                 )
 
+        else:
+            raise TypeError("Invalid PModel class")
+
+        # Ensure data_shape includes the full time dimension
+        n_time = len(datetimes) if pmodel.shape[0] == 1 else pmodel.shape[0]
+        data_shape = (n_time, *pmodel.shape[1:])
+
         # Create the annual value calculator
         # - the code above guards against datetimes being None
         avc = AnnualValueCalculator(
-            data_shape=pmodel.shape,
+            data_shape=data_shape,
             timing=datetimes,  # type: ignore [arg-type]
             subset_mask=growing_season,
         )
+
+        # Inputs to avc.get_annual_means/totals need the full shapes, so first broadcast
+        gpp = np.broadcast_to(pmodel.gpp, data_shape)
+        ca = np.broadcast_to(pmodel.env.ca, data_shape)
+        chi = np.broadcast_to(pmodel.optchi.chi, data_shape)
+        vpd = np.broadcast_to(pmodel.env.vpd, data_shape)
+        precip = np.broadcast_to(precip, data_shape)
 
         # Get the total GPP for each observation
         # - also need to handle missing values, easier to take _mean_ annual value
@@ -359,15 +373,15 @@ class FaparLimitation:
         #   partial years (or at least warn about it)
 
         # Calculate annual mean potential GPP and scale up to the year
-        annual_mean_potential_gpp = avc.get_annual_means(pmodel.gpp)
+        annual_mean_potential_gpp = avc.get_annual_means(gpp)
         annual_total_potential_gpp = (
             annual_mean_potential_gpp * (avc.year_n_days) * 86400 * 1e-6
         ) / pmodel.core_const.k_c_molmass
 
         # Calculate annual mean ca, chi and VPD within growing season
-        annual_mean_ca = avc.get_annual_means(pmodel.env.ca, within_subset=True)
-        annual_mean_chi = avc.get_annual_means(pmodel.optchi.chi, within_subset=True)
-        annual_mean_vpd = avc.get_annual_means(pmodel.env.vpd, within_subset=True)
+        annual_mean_ca = avc.get_annual_means(ca, within_subset=True)
+        annual_mean_chi = avc.get_annual_means(chi, within_subset=True)
+        annual_mean_vpd = avc.get_annual_means(vpd, within_subset=True)
 
         # Calculate total annual precipitation
         annual_total_precip = avc.get_annual_totals(precip)
