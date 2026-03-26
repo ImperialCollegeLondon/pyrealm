@@ -39,7 +39,8 @@ package modules. This includes:
   conversion of xarray inputs. See the [section
   below](#resolving-errors-in-the-array-inputs-tests) for tips on resolving errors in
   these tests.
-* Profiling and integration testing using combinations of modules.
+* [Profiling](./profiling_and_benchmarking.md) and integration testing using
+  combinations of modules.
 
 These are the main tests that ensure that the package is behaving as expected and that
 it produces stable outputs. The test suite can be run from repository using:
