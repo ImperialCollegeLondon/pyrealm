@@ -33,6 +33,7 @@ from pyrealm.core.utilities import (
     exponential_moving_average,
     summarize_attrs,
 )
+from pyrealm.core.xarray import ArrayType, xarray_inputs
 from pyrealm.pmodel.pmodel import PModel, PModelABC, SubdailyPModel
 
 
@@ -105,7 +106,7 @@ class FaparLimitation:
         aridity_index: A climatological estimate of the local aridity index, calculated
             as the long term (typically 20 years) total PET over total precipitation
             (:math:`AI`, unitless).
-        years: An array of year datetimes for the observations.
+        years: A 1D array of year datetimes for the observations.
         phenology_const: An instance of
             :class:`~pyrealm.constants.phenology_const.PhenologyConst`
     """
@@ -114,18 +115,37 @@ class FaparLimitation:
 
     def __init__(
         self,
-        annual_total_potential_gpp: NDArray[np.floating],
-        annual_mean_ca: NDArray[np.floating],
-        annual_mean_chi: NDArray[np.floating],
-        annual_mean_vpd: NDArray[np.floating],
-        annual_total_precip: NDArray[np.floating],
-        annual_growing_season_length: NDArray[np.floating],
-        aridity_index: NDArray[np.floating],
+        annual_total_potential_gpp: ArrayType[np.floating],
+        annual_mean_ca: ArrayType[np.floating],
+        annual_mean_chi: ArrayType[np.floating],
+        annual_mean_vpd: ArrayType[np.floating],
+        annual_total_precip: ArrayType[np.floating],
+        annual_growing_season_length: ArrayType[np.floating],
+        aridity_index: ArrayType[np.floating],
         years: NDArray[np.datetime64],
         phenology_const: PhenologyConst = PhenologyConst(),
     ) -> None:
         # Experimental class
         warn_experimental("FaparLimitation")
+
+        # Convert arrays to numpy
+        (
+            annual_total_potential_gpp,
+            annual_mean_ca,
+            annual_mean_chi,
+            annual_mean_vpd,
+            annual_total_precip,
+            annual_growing_season_length,
+            aridity_index,
+        ) = xarray_inputs(
+            annual_total_potential_gpp,
+            annual_mean_ca,
+            annual_mean_chi,
+            annual_mean_vpd,
+            annual_total_precip,
+            annual_growing_season_length,
+            aridity_index,
+        )
 
         # Validate the input shapes.
         self.shape: tuple[int, ...] = check_input_shapes(
@@ -242,9 +262,9 @@ class FaparLimitation:
     def from_pmodel(
         cls,
         pmodel: PModelABC,
-        growing_season: NDArray[np.bool],
-        precip: NDArray[np.floating],
-        aridity_index: NDArray[np.floating],
+        growing_season: ArrayType[np.bool],
+        precip: ArrayType[np.floating],
+        aridity_index: ArrayType[np.floating],
         datetimes: NDArray[np.datetime64] | None = None,
         phenology_const: PhenologyConst = PhenologyConst(),
     ) -> FaparLimitation:
@@ -294,7 +314,7 @@ class FaparLimitation:
             pmodel: A :class:`pyrealm.pmodel.pmodel.PModel` or
                 :class:`pyrealm.pmodel.pmodel.SubdailyPModel` instance, fitted with
                 ``fapar`` fixed at one.
-            datetimes: An array giving the datetimes of observations.
+            datetimes: A 1D array giving the datetimes of observations.
             growing_season: A boolean array indicating which observations are to be
                 considered as part of the growing season.
             precip: An array of precipitation for each observation.
@@ -302,6 +322,11 @@ class FaparLimitation:
             phenology_const: An instance of
                 :class:`~pyrealm.constants.phenology_const.PhenologyConst`
         """
+
+        # Convert array inputs to numpy
+        precip = xarray_inputs(precip, dims=pmodel.env.dims)
+        aridity_index = xarray_inputs(aridity_index, dims=pmodel.env.dims)
+        growing_season = xarray_inputs(growing_season, dims=pmodel.env.dims)
 
         # Check the datetimes - should they be taken from the AcclimationModel of the
         # SubdailyPModel or are they required for standard PModels?

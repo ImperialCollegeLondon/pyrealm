@@ -44,7 +44,13 @@ DEPENDENT_LIST: list[str] = [
     "SplashModel.calculate_soil_moisture",
     "DailyEvapFluxes",
     "DailyEvapFluxes.estimate_aet",
+    # phenology
+    "FaparLimitation.from_pmodel",
 ]
+
+# Check all dependent functions are used
+unused: set[str] = set(DEPENDENT_LIST) - {m[0] for m in METHOD_LIST}
+assert not unused, f"Dependent functions not in METHOD_LIST: {unused}"
 
 
 def shapes_xarray(
