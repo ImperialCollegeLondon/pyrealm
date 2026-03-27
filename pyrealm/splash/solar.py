@@ -37,6 +37,10 @@ class DailySolarFluxes:
     given a Calendar object providing the Julian day of the observations and the year
     and number of days in the year.
 
+    The first dimension for the array inputs should correspond to time. If xarray inputs
+    are used, ``dates`` should also be initialised using xarray inputs to
+    ensure this. Alternatively, ``latitude`` can include time as the first dimension.
+
     Args:
         latitude: The Latitude of observations (degrees)
         elevation: Elevation of observations (metres)
@@ -92,9 +96,10 @@ class DailySolarFluxes:
     ) -> None:
         """Populates key fluxes from input variables."""
 
-        # Convert inputs
+        # Convert inputs to numpy
         inputs = latitude, elevation, sunshine_fraction, temperature
-        self.dims = get_common_dims(*inputs)
+        # Ensure first dimension is time if dates is also initialised with xarray
+        self.dims = get_common_dims(*inputs, init_dims=self.dates.dims)
         inputs_np = xarray_inputs(*inputs, dims=self.dims)
         latitude, elevation, sunshine_fraction, temperature = inputs_np
 

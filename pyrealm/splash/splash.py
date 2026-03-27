@@ -29,10 +29,14 @@ class SplashModel:
     attributes as instances of :class:`~pyrealm.splash.solar.DailySolarFluxes` and
     :class:`~pyrealm.splash.evap.DailyEvapFluxes`.
 
-    The inputs to a SplashModel are expected to be numpy arrays with time varying along
-    the first dimension. Other dimensions represent observations at sites on a
-    particular date.  The ``dates`` argument is expected to be a Calendar object with
-    the same length as the first dimension.
+    The inputs to a SplashModel are expected to be arrays with time varying along the
+    first dimension. Other dimensions represent observations at sites on a particular
+    date.  The ``dates`` argument is expected to be a Calendar object with the same
+    length as the first dimension.
+
+    If xarray inputs are used, ``dates`` should also be initialised using xarray inputs
+    to ensure that the time dimension is set correctly. Alternatively, ``lat`` can
+    include time as the first dimension.
 
     The main use of the SplashModel object is then to calculate the expected actual
     evapotranspiration (AET), soil moisture and runoff across the time series:
@@ -72,7 +76,8 @@ class SplashModel:
     ):
         # Convert array inputs to numpy
         inputs = elv, lat, sf, tc, pn
-        self.dims = get_common_dims(*inputs)
+        # Ensure first dimension is time if dates is also initialised with xarray
+        self.dims = get_common_dims(*inputs, init_dims=dates.dims)
         inputs_np = xarray_inputs(*inputs, dims=self.dims)
         elv, lat, sf, tc, pn = inputs_np
 
