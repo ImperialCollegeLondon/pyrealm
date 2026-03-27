@@ -25,7 +25,7 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.special import lambertw  # type: ignore[import-untyped]
 
-from pyrealm.constants import PhenologyConst
+from pyrealm import constants
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.time_series import AnnualValueCalculator
 from pyrealm.core.utilities import (
@@ -123,7 +123,7 @@ class FaparLimitation:
         annual_growing_season_length: ArrayType[np.floating],
         aridity_index: ArrayType[np.floating],
         years: NDArray[np.datetime64],
-        phenology_const: PhenologyConst = PhenologyConst(),
+        phenology_const: constants.PhenologyConst = constants.PhenologyConst(),
     ) -> None:
         # Experimental class
         warn_experimental("FaparLimitation")
@@ -266,7 +266,7 @@ class FaparLimitation:
         precip: ArrayType[np.floating],
         aridity_index: ArrayType[np.floating],
         datetimes: NDArray[np.datetime64] | None = None,
-        phenology_const: PhenologyConst = PhenologyConst(),
+        phenology_const: constants.PhenologyConst = constants.PhenologyConst(),
     ) -> FaparLimitation:
         r"""Create a FaparLimitation instance from a P Model and other inputs.
 
@@ -410,7 +410,7 @@ class Phenology:
         datetimes: NDArray[np.datetime64],
         fapar_limitation: FaparLimitation,
         alpha: float = 1 / 15,
-        phenology_const: PhenologyConst = PhenologyConst(),
+        phenology_const: constants.PhenologyConst = constants.PhenologyConst(),
     ):
         # Experimental class
         warn_experimental(self.__class__.__name__)

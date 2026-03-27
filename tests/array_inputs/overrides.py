@@ -26,10 +26,11 @@ from math import ceil
 
 import numpy as np
 
+from pyrealm.constants import PhenologyConst
 from pyrealm.core.calendar import Calendar
 from pyrealm.core.xarray import ArrayType
 from pyrealm.demography.flora import PlantFunctionalType
-from pyrealm.phenology.fapar_limitation import FaparLimitation, PhenologyConst
+from pyrealm.phenology.fapar_limitation import FaparLimitation
 from tests.array_inputs.context import Context
 
 # These methods are not relevant or are incompatible without additional work
