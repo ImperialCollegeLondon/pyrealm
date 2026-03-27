@@ -224,6 +224,14 @@ autodoc_type_aliases = {
     "ArrayType": "pyrealm.core.xarray.ArrayType",
 }
 
+# TypeAliasForwardRef doesn't seem to support subscripting, resulting in
+# get_type_hints() failing on ArrayType[np.floating] in modules using `from __future__
+# import annotations`. This patch solves this by ignoring the type parameter, allowing
+# other arguments to resolve correctly.
+from sphinx.util.inspect import TypeAliasForwardRef  # noqa: E402
+
+TypeAliasForwardRef.__getitem__ = lambda self, item: self
+
 # Autodoc configuration:
 # - Suppress signature expansion of arguments
 autodoc_preserve_defaults = True
