@@ -349,20 +349,22 @@ def test_calculate_growth_increments(rvalues):
     )
 
     for pft, _, data in rvalues:
-        delta_dbh, delta_mass_stem, delta_mass_fine_root = calculate_growth_increments(
-            rho_s=pft["rho_s"],
-            a_hd=pft["a_hd"],
-            h_max=pft["h_max"],
-            lai=pft["lai"],
-            ca_ratio=pft["ca_ratio"],
-            sla=pft["sla"],
-            zeta=pft["zeta"],
-            npp=data["NPP"],
-            turnover=data["turnover"],
-            reproductive_tissue_turnover=np.zeros(np.shape(data["turnover"])),
-            p_foliage_for_reproductive_tissue=np.zeros(np.shape(data["turnover"])),
-            dbh=data["diameter"],
-            stem_height=data["height"],
+        delta_dbh, delta_mass_stem, delta_mass_foliage, delta_mass_fine_root = (
+            calculate_growth_increments(
+                rho_s=pft["rho_s"],
+                a_hd=pft["a_hd"],
+                h_max=pft["h_max"],
+                lai=pft["lai"],
+                ca_ratio=pft["ca_ratio"],
+                sla=pft["sla"],
+                zeta=pft["zeta"],
+                npp=data["NPP"],
+                turnover=data["turnover"],
+                reproductive_tissue_turnover=np.zeros(np.shape(data["turnover"])),
+                p_foliage_for_reproductive_tissue=np.zeros(np.shape(data["turnover"])),
+                dbh=data["diameter"],
+                stem_height=data["height"],
+            )
         )
         assert_array_almost_equal(
             delta_dbh,
@@ -375,7 +377,7 @@ def test_calculate_growth_increments(rvalues):
             decimal=8,
         )
         assert_array_almost_equal(
-            delta_mass_fine_root,
+            delta_mass_fine_root + delta_mass_foliage,
             data["delta_mass_frt"],
             decimal=8,
         )
