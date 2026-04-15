@@ -276,7 +276,7 @@ class C3C4Competition:
     ) -> None:
         r"""Estimate CO2 isotopic discrimination values.
 
-        Creating an instance of :class:`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes`
+        Creating an instance of :class:`~pyrealm.pmodel.isotopes.CarbonIsotopes`
         from a :class:`~pyrealm.pmodel.pmodel.PModel` instance provides estimated
         total annual descrimination against Carbon 13 (:math:`\Delta\ce{^13C}`) for a
         single photosynthetic pathway.

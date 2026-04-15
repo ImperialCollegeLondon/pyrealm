@@ -1,5 +1,5 @@
 """The :mod:`~pyrealm.pmodel.isotopes` submodule provides the
-:class:`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes` class, which is used to calculate
+:class:`~pyrealm.pmodel.isotopes.CarbonIsotopes` class, which is used to calculate
 isotopic discrimination within the PModel
 """  # noqa D210, D415
 
@@ -14,7 +14,7 @@ from pyrealm.core.xarray import ArrayType, xarray_inputs
 from pyrealm.pmodel.pmodel import PModel
 
 
-class CalcCarbonIsotopes:
+class CarbonIsotopes:
     r"""Calculate :math:`\ce{CO2}` isotopic discrimination.
 
     This class estimates the fractionation of atmospheric CO2 by photosynthetic
@@ -100,8 +100,8 @@ class CalcCarbonIsotopes:
         self.d13C_wood = self.d13C_leaf + self.isotopes_const.frank_postfrac
 
     def __repr__(self) -> str:
-        """Generates a string representation of a CalcCarbonIsotopes instance."""
-        return f"CalcCarbonIsotopes(shape={self.shape}, method={self.c4})"
+        """Generates a string representation of a CarbonIsotopes instance."""
+        return f"CarbonIsotopes(shape={self.shape}, method={self.c4})"
 
     def calculate_c4_discrimination(self, pmodel: PModel) -> None:
         r"""Calculate C4 isotopic discrimination.
@@ -126,7 +126,7 @@ class CalcCarbonIsotopes:
             ...     pmodel_const=pmodel_const
             ... )
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
-            >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
+            >>> mod_c4_delta = CarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
             >>> mod_c4_delta.Delta13C.round(4)
             array([5.6647])
             >>> mod_c4_delta.d13C_leaf.round(4)
@@ -167,7 +167,7 @@ class CalcCarbonIsotopes:
             ...     pmodel_const=pmodel_const
             ... )
             >>> mod_c4 = PModel(env, method_optchi='c4_no_gamma')
-            >>> mod_c4_delta = CalcCarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
+            >>> mod_c4_delta = CarbonIsotopes(mod_c4, d13CO2= -8.4, D14CO2 = 19.2)
             >>> # mod_c4_delta.Delta13C.round(4)
             >>> # array([5.2753])
             >>> # mod_c4_delta.d13C_leaf.round(4)
@@ -212,7 +212,7 @@ class CalcCarbonIsotopes:
             ...              theta=np.array([0.4])
             ... )
             >>> mod_c3 = PModel(env, method_optchi='lavergne20_c3')
-            >>> mod_c3_delta = CalcCarbonIsotopes(mod_c3, d13CO2= -8.4, D14CO2 = 19.2)
+            >>> mod_c3_delta = CarbonIsotopes(mod_c3, d13CO2= -8.4, D14CO2 = 19.2)
             >>> mod_c3_delta.Delta13C.round(4)
             array([20.4045])
             >>> mod_c3_delta.d13C_leaf.round(4)
@@ -236,10 +236,10 @@ class CalcCarbonIsotopes:
         )
 
     def summarize(self, dp: int = 2) -> None:
-        """Print summary of values estimated in CalcCarbonIsotopes.
+        """Print summary of values estimated in CarbonIsotopes.
 
         Prints a summary of the variables calculated within an instance of
-        CalcCarbonIsotopes including the mean, range and number of nan values.
+        CarbonIsotopes including the mean, range and number of nan values.
 
         Args:
             dp: The number of decimal places used in rounding summary stats.
