@@ -162,3 +162,27 @@ def test_calculate_soil_moisture(splash_model):
         equal_nan=True,
         rtol=1e-6,
     )
+
+
+def test_calculate_soil_moisture_1D(calendar):
+    """Test for correct assignment in calculate_soil_moisture method for 1D inputs."""
+
+    from pyrealm.splash.splash import SplashModel
+
+    n_days = calendar.n_dates
+
+    lat = np.zeros(n_days)
+    elv = np.zeros(n_days)
+    sf = np.zeros(n_days)
+    tc = np.zeros(n_days)
+    pn = np.zeros(n_days)
+
+    splash = SplashModel(lat=lat, elv=elv, dates=calendar, sf=sf, tc=tc, pn=pn)
+
+    # Check there is no error for (1D) scalar initial value
+    wn_init = np.array([1])
+    aet, wn, ro = splash.calculate_soil_moisture(wn_init)
+
+    assert aet.shape == (n_days,)
+    assert wn.shape == (n_days,)
+    assert ro.shape == (n_days,)
