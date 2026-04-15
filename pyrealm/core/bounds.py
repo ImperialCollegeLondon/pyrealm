@@ -6,19 +6,19 @@ real problem and to adjust input data if needed.
 
 The ``bounds`` module:
 
-* Defines a {class}`~pyrealm.core.bounds.Bounds` dataclass used to define bounds for a
+* Defines a :class:`~pyrealm.core.bounds.Bounds` dataclass used to define bounds for a
   particular variable.
-* Defines a {class}`~pyrealm.core.bounds.BoundsChecker` class with default bounds for
+* Defines a :class:`~pyrealm.core.bounds.BoundsChecker` class with default bounds for
   core variables that acts as a library for bounds checking.
 * The main use case is e.g. ``BoundsChecker().check("tc", np.array([10, 1000])``, which
   will check that the alleged temperature data in °C fall within the configured bounds.
 
 A ``BoundsChecker`` class instance is created with a predefined internal dictionary of
 default variables and appropriate bounds. However, users can use the
-{meth}`~pyrealm.core.bounds.BoundsChecker.update` method to override defaults or add new
+:meth:`~pyrealm.core.bounds.BoundsChecker.update` method to override defaults or add new
 variables by providing a new ``Bounds`` instance.
 
-The {meth}`~pyrealm.core.bounds.BoundsChecker.check` method can then be used to validate
+The :meth:`~pyrealm.core.bounds.BoundsChecker.check` method can then be used to validate
 a set of values against the configured bounds for a given variable name. The ``check``
 method returns the input variables, to allow values to be checked while being assigned
 to an attribute.
@@ -30,6 +30,8 @@ from warnings import warn
 
 import numpy as np
 from numpy.typing import NDArray
+
+from pyrealm.core.xarray import ArrayType, xarray_inputs
 
 
 @dataclass
@@ -59,9 +61,9 @@ class Bounds:
 class BoundsChecker:
     """A bounds checker for input variables.
 
-    The class provides a library of  {class}`~pyrealm.core.bounds.Bounds` instances for
+    The class provides a library of  :class:`~pyrealm.core.bounds.Bounds` instances for
     core variables, keyed by the
-    {attr}`Bounds.var_name<pyrealm.core.bounds.Bounds.var_name>` attribute. The table is
+    :attr:`Bounds.var_name<pyrealm.core.bounds.Bounds.var_name>` attribute. The table is
     populated from default values when a ``BoundsChecker`` instance is created but can
     be updated and extended by assigning new ``Bounds`` instances to existing or new
     variable name keys using the ``update`` method.
@@ -109,7 +111,7 @@ class BoundsChecker:
     def update(self, bounds: Bounds) -> None:
         """Update or add bounds data.
 
-        The {attr}`Bounds.var_name<pyrealm.core.bounds.Bounds.var_name>` attribute of
+        The :attr:`Bounds.var_name<pyrealm.core.bounds.Bounds.var_name>` attribute of
         the provided ``Bounds`` instance is used to update an existing entry for the
         name or add checking for a new name.
 
@@ -120,7 +122,7 @@ class BoundsChecker:
         self._data[bounds.var_name] = bounds
 
     def check(
-        self, var_name: str, values: NDArray[np.floating]
+        self, var_name: str, values: ArrayType[np.floating]
     ) -> NDArray[np.floating]:
         r"""Check inputs fall within bounds.
 
@@ -144,6 +146,8 @@ class BoundsChecker:
             >>> bounds_checker.check("temp", vals)
             array([-15.,  20.,  30., 124.])
         """
+
+        values = xarray_inputs(values)
 
         var_bounds = self._data.get(var_name)
 

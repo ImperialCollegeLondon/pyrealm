@@ -16,6 +16,7 @@ from pyrealm.core.hygro import (
 from pyrealm.core.time_series import broadcast_time
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.core.water import calculate_density_h2o
+from pyrealm.core.xarray import ArrayType, xarray_inputs
 from pyrealm.splash.solar import DailySolarFluxes
 
 
@@ -48,9 +49,9 @@ class DailyEvapFluxes:
     """
 
     solar: DailySolarFluxes
-    pa: InitVar[NDArray[np.floating]]
-    tc: InitVar[NDArray[np.floating]]
-    kWm: NDArray[np.floating] = field(default_factory=lambda: np.array([150.0]))
+    pa: InitVar[ArrayType[np.floating]]
+    tc: InitVar[ArrayType[np.floating]]
+    kWm: ArrayType[np.floating] = field(default_factory=lambda: np.array([150.0]))
     core_const: CoreConst = field(default_factory=lambda: CoreConst())
 
     sat: NDArray[np.floating] = field(init=False)
@@ -72,7 +73,9 @@ class DailyEvapFluxes:
     rx: NDArray[np.floating] = field(init=False)
     """Variable substitute, (mm/hr)/(W/m^2)"""
 
-    def __post_init__(self, pa: NDArray[np.floating], tc: NDArray[np.floating]) -> None:
+    def __post_init__(
+        self, pa: ArrayType[np.floating], tc: ArrayType[np.floating]
+    ) -> None:
         """Calculate invariant components of evapotranspiration.
 
         The post_init method calculates the components of the evaporative fluxes that
@@ -80,8 +83,12 @@ class DailyEvapFluxes:
         state when iterating over time.
         """
 
+        pa, tc, self.kWm = xarray_inputs(pa, tc, self.kWm, dims=self.solar.dims)
+
         try:
-            self.shape: tuple = check_input_shapes(pa, tc, shape=self.solar.shape)
+            self.shape: tuple = check_input_shapes(
+                pa, tc, self.kWm, shape=self.solar.shape
+            )
             """The array shape of the input variables"""
         except ValueError:
             msg = (
@@ -123,7 +130,7 @@ class DailyEvapFluxes:
 
     def estimate_aet(
         self,
-        wn: NDArray[np.floating],
+        wn: ArrayType[np.floating],
         day_idx: int | None = None,
         only_aet: bool = True,
     ) -> (
@@ -156,11 +163,15 @@ class DailyEvapFluxes:
         # subset the calculations to particular request days or use the entire array of
         # soil moisture. The slice here is used to programmatically select `array[:]`.
         if day_idx is None:
+            splash_dims = self.solar.dims
             splash_shape = self.shape
             didx: int | slice = slice(self.shape[0])
         else:
+            splash_dims = self.solar.dims[1:]
             splash_shape = self.shape[1:]
             didx = day_idx
+
+        wn = xarray_inputs(wn, dims=splash_dims)
         try:
             check_input_shapes(wn, shape=splash_shape)
         except ValueError:

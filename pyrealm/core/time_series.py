@@ -9,6 +9,7 @@ from itertools import pairwise
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm.core.xarray import ArrayType, xarray_inputs
 from pyrealm.pmodel import AcclimationModel
 
 
@@ -351,7 +352,7 @@ class AnnualValueCalculator:
 
     def get_annual_means(
         self,
-        values: NDArray[np.floating],
+        values: ArrayType[np.floating],
         within_subset: bool = False,
     ) -> NDArray[np.floating]:
         """Get annual means from an array of values.
@@ -400,6 +401,8 @@ class AnnualValueCalculator:
             within_subset: Should the mean only include values within the subset mask.
         """
 
+        values = xarray_inputs(values)
+
         # Enforce shape
         if values.shape != self.shape:
             raise ValueError(
@@ -432,7 +435,7 @@ class AnnualValueCalculator:
 
     def get_annual_totals(
         self,
-        values: NDArray[np.floating],
+        values: ArrayType[np.floating],
         within_subset: bool = False,
     ) -> NDArray[np.floating]:
         """Get annual totals from an array of values.
@@ -485,6 +488,8 @@ class AnnualValueCalculator:
             values: The data to summarize by year
             within_subset: Should the mean only include values within the subset mask.
         """
+
+        values = xarray_inputs(values)
 
         # Enforce shape
         if values.shape != self.shape:

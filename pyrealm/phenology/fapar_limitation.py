@@ -33,6 +33,7 @@ from pyrealm.core.utilities import (
     exponential_moving_average,
     summarize_attrs,
 )
+from pyrealm.core.xarray import ArrayType, xarray_inputs
 from pyrealm.pmodel.pmodel import PModel, PModelABC, SubdailyPModel
 
 
@@ -105,7 +106,7 @@ class FaparLimitation:
         aridity_index: A climatological estimate of the local aridity index, calculated
             as the long term (typically 20 years) total PET over total precipitation
             (:math:`AI`, unitless).
-        years: An array of year datetimes for the observations.
+        years: A 1D array of year datetimes for the observations.
         phenology_const: An instance of
             :class:`~pyrealm.constants.phenology_const.PhenologyConst`
     """
@@ -114,18 +115,37 @@ class FaparLimitation:
 
     def __init__(
         self,
-        annual_total_potential_gpp: NDArray[np.floating],
-        annual_mean_ca: NDArray[np.floating],
-        annual_mean_chi: NDArray[np.floating],
-        annual_mean_vpd: NDArray[np.floating],
-        annual_total_precip: NDArray[np.floating],
-        annual_growing_season_length: NDArray[np.floating],
-        aridity_index: NDArray[np.floating],
+        annual_total_potential_gpp: ArrayType[np.floating],
+        annual_mean_ca: ArrayType[np.floating],
+        annual_mean_chi: ArrayType[np.floating],
+        annual_mean_vpd: ArrayType[np.floating],
+        annual_total_precip: ArrayType[np.floating],
+        annual_growing_season_length: ArrayType[np.floating],
+        aridity_index: ArrayType[np.floating],
         years: NDArray[np.datetime64],
         phenology_const: PhenologyConst = PhenologyConst(),
     ) -> None:
         # Experimental class
         warn_experimental("FaparLimitation")
+
+        # Convert arrays to numpy
+        (
+            annual_total_potential_gpp,
+            annual_mean_ca,
+            annual_mean_chi,
+            annual_mean_vpd,
+            annual_total_precip,
+            annual_growing_season_length,
+            aridity_index,
+        ) = xarray_inputs(
+            annual_total_potential_gpp,
+            annual_mean_ca,
+            annual_mean_chi,
+            annual_mean_vpd,
+            annual_total_precip,
+            annual_growing_season_length,
+            aridity_index,
+        )
 
         # Validate the input shapes.
         self.shape: tuple[int, ...] = check_input_shapes(
@@ -242,9 +262,9 @@ class FaparLimitation:
     def from_pmodel(
         cls,
         pmodel: PModelABC,
-        growing_season: NDArray[np.bool],
-        precip: NDArray[np.floating],
-        aridity_index: NDArray[np.floating],
+        growing_season: ArrayType[np.bool],
+        precip: ArrayType[np.floating],
+        aridity_index: ArrayType[np.floating],
         datetimes: NDArray[np.datetime64] | None = None,
         phenology_const: PhenologyConst = PhenologyConst(),
     ) -> FaparLimitation:
@@ -294,7 +314,7 @@ class FaparLimitation:
             pmodel: A :class:`pyrealm.pmodel.pmodel.PModel` or
                 :class:`pyrealm.pmodel.pmodel.SubdailyPModel` instance, fitted with
                 ``fapar`` fixed at one.
-            datetimes: An array giving the datetimes of observations.
+            datetimes: A 1D array giving the datetimes of observations.
             growing_season: A boolean array indicating which observations are to be
                 considered as part of the growing season.
             precip: An array of precipitation for each observation.
@@ -302,6 +322,11 @@ class FaparLimitation:
             phenology_const: An instance of
                 :class:`~pyrealm.constants.phenology_const.PhenologyConst`
         """
+
+        # Convert array inputs to numpy
+        precip = xarray_inputs(precip, dims=pmodel.env.dims)
+        aridity_index = xarray_inputs(aridity_index, dims=pmodel.env.dims)
+        growing_season = xarray_inputs(growing_season, dims=pmodel.env.dims)
 
         # Check the datetimes - should they be taken from the AcclimationModel of the
         # SubdailyPModel or are they required for standard PModels?
@@ -319,13 +344,27 @@ class FaparLimitation:
                     "Observation datetimes are required with PModel inputs."
                 )
 
+        else:
+            raise TypeError("Invalid PModel class")
+
+        # Ensure data_shape includes the full time dimension
+        n_time = len(datetimes) if pmodel.shape[0] == 1 else pmodel.shape[0]
+        data_shape = (n_time, *pmodel.shape[1:])
+
         # Create the annual value calculator
         # - the code above guards against datetimes being None
         avc = AnnualValueCalculator(
-            data_shape=pmodel.shape,
+            data_shape=data_shape,
             timing=datetimes,  # type: ignore [arg-type]
             subset_mask=growing_season,
         )
+
+        # Inputs to avc.get_annual_means/totals need the full shapes, so first broadcast
+        gpp = np.broadcast_to(pmodel.gpp, data_shape)
+        ca = np.broadcast_to(pmodel.env.ca, data_shape)
+        chi = np.broadcast_to(pmodel.optchi.chi, data_shape)
+        vpd = np.broadcast_to(pmodel.env.vpd, data_shape)
+        precip = np.broadcast_to(precip, data_shape)
 
         # Get the total GPP for each observation
         # - also need to handle missing values, easier to take _mean_ annual value
@@ -334,15 +373,15 @@ class FaparLimitation:
         #   partial years (or at least warn about it)
 
         # Calculate annual mean potential GPP and scale up to the year
-        annual_mean_potential_gpp = avc.get_annual_means(pmodel.gpp)
+        annual_mean_potential_gpp = avc.get_annual_means(gpp)
         annual_total_potential_gpp = (
             annual_mean_potential_gpp * (avc.year_n_days) * 86400 * 1e-6
         ) / pmodel.core_const.k_c_molmass
 
         # Calculate annual mean ca, chi and VPD within growing season
-        annual_mean_ca = avc.get_annual_means(pmodel.env.ca, within_subset=True)
-        annual_mean_chi = avc.get_annual_means(pmodel.optchi.chi, within_subset=True)
-        annual_mean_vpd = avc.get_annual_means(pmodel.env.vpd, within_subset=True)
+        annual_mean_ca = avc.get_annual_means(ca, within_subset=True)
+        annual_mean_chi = avc.get_annual_means(chi, within_subset=True)
+        annual_mean_vpd = avc.get_annual_means(vpd, within_subset=True)
 
         # Calculate total annual precipitation
         annual_total_precip = avc.get_annual_totals(precip)

@@ -52,6 +52,7 @@ from pyrealm.demography.flora import (
     PlantFunctionalTypeStrict,
     StemTraits,
 )
+from pyrealm.pmodel import PModel
 from tests.array_inputs.context import Context
 from tests.array_inputs.overrides import (
     ADDITIONAL_INIT_METHODS,
@@ -108,10 +109,15 @@ def _get_module_callables(
     for name, obj in getmembers(module):
         if getattr(obj, "__module__", None) != module.__name__:
             continue
+
         if isfunction(obj) or ismethod(obj):
             yield name, obj, None
+
         elif isclass(obj):
-            for mname, method in getmembers(obj, predicate=isfunction):
+            # Get the class methods
+            for mname, method in getmembers(
+                obj, predicate=lambda m: isfunction(m) or ismethod(m)
+            ):
                 if mname in ["__init__", "__post_init__"]:
                     full_name = name
                 else:
@@ -369,6 +375,8 @@ def _initialise_type_default(typ: Any, ctx: Context) -> Any:
         return 1
     elif typ is Any:
         return None
+    elif typ.__name__ == "PModelABC":
+        return _initialise_type_default(PModel, ctx.new("PModel"))
     elif typ is PlantFunctionalTypeStrict:
         return PlantFunctionalType(name=f"default.{randint(1, 10000)}")
     elif typ is Flora:
@@ -441,7 +449,6 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
 
     # Print the arguments if in debug mode
     if config.DEBUG:
-        np.set_printoptions(threshold=1)
         print(f"\n{ctx.name}\nParents: {ctx.parents}\nArguments:")
         for param_name, (_, _, approach) in params.items():
             print(f"\t{param_name}: ({approach})")

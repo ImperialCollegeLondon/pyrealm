@@ -18,10 +18,12 @@ from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
 from pyrealm.core.utilities import check_input_shapes
+from pyrealm.core.xarray import ArrayType, get_common_dims, xarray_inputs
 
 
 def calculate_distance_factor(
-    nu: NDArray[np.floating], solar_eccentricity: float = CoreConst().solar_eccentricity
+    nu: ArrayType[np.floating],
+    solar_eccentricity: float = CoreConst().solar_eccentricity,
 ) -> NDArray[np.floating]:
     r"""Calculates distance factor.
 
@@ -45,6 +47,8 @@ def calculate_distance_factor(
         An array of distance factors
     """
 
+    nu = xarray_inputs(nu)
+
     return (
         1.0
         / (
@@ -55,7 +59,7 @@ def calculate_distance_factor(
 
 
 def calculate_solar_declination_angle(
-    lambda_: NDArray[np.floating],
+    lambda_: ArrayType[np.floating],
     solar_obliquity: float = CoreConst().solar_obliquity,
 ) -> NDArray[np.floating]:
     r"""Calculate the solar declination angle.
@@ -76,13 +80,15 @@ def calculate_solar_declination_angle(
         An array of solar declination angle delta
     """
 
+    lambda_ = xarray_inputs(lambda_)
+
     return np.rad2deg(
         np.arcsin(np.sin(np.deg2rad(lambda_)) * np.sin(np.deg2rad(solar_obliquity)))
     )
 
 
 def calculate_ru_rv_intermediates(
-    declination: NDArray[np.floating], latitude: NDArray[np.floating]
+    declination: ArrayType[np.floating], latitude: ArrayType[np.floating]
 ) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
     r"""Calculates intermediate values for use in solar radiation calcs.
 
@@ -107,6 +113,8 @@ def calculate_ru_rv_intermediates(
     Returns:
         A tuple of :math:`r_u` and :math:`r_v`.
     """
+
+    declination, latitude = xarray_inputs(declination, latitude)
     ru = np.sin(np.deg2rad(declination)) * np.sin(np.deg2rad(latitude))
     rv = np.cos(np.deg2rad(declination)) * np.cos(np.deg2rad(latitude))
 
@@ -114,7 +122,7 @@ def calculate_ru_rv_intermediates(
 
 
 def calculate_sunset_hour_angle(
-    declination: NDArray[np.floating], latitude: NDArray[np.floating]
+    declination: ArrayType[np.floating], latitude: ArrayType[np.floating]
 ) -> NDArray[np.floating]:
     r"""Calculate the sunset hour angle.
 
@@ -137,14 +145,15 @@ def calculate_sunset_hour_angle(
         An array of local hour angle, degrees
     """
 
+    declination, latitude = xarray_inputs(declination, latitude)
     ru, rv = calculate_ru_rv_intermediates(declination=declination, latitude=latitude)
 
     return _calculate_sunset_hour_angle(ru, rv)
 
 
 def _calculate_sunset_hour_angle(
-    ru: NDArray[np.floating],
-    rv: NDArray[np.floating],
+    ru: ArrayType[np.floating],
+    rv: ArrayType[np.floating],
 ) -> NDArray[np.floating]:
     """Calculate sunset hour angle from intermediates.
 
@@ -160,14 +169,15 @@ def _calculate_sunset_hour_angle(
         An array of local hour angle, degrees
     """
 
+    ru, rv = xarray_inputs(ru, rv)
     return np.rad2deg(np.arccos(-1.0 * np.clip(ru / rv, -1.0, 1.0)))
 
 
 def calculate_daily_solar_radiation(
-    distance_factor: NDArray[np.floating],
-    sunset_hour_angle: NDArray[np.floating],
-    declination: NDArray[np.floating],
-    latitude: NDArray[np.floating],
+    distance_factor: ArrayType[np.floating],
+    sunset_hour_angle: ArrayType[np.floating],
+    declination: ArrayType[np.floating],
+    latitude: ArrayType[np.floating],
     day_seconds: float = CoreConst().day_seconds,
     solar_constant: float = CoreConst().solar_constant,
 ) -> NDArray[np.floating]:
@@ -201,6 +211,9 @@ def calculate_daily_solar_radiation(
         An array of daily solar radiation, J/m^2
     """
 
+    distance_factor, sunset_hour_angle, declination, latitude = xarray_inputs(
+        distance_factor, sunset_hour_angle, declination, latitude
+    )
     ru, rv = calculate_ru_rv_intermediates(declination=declination, latitude=latitude)
 
     return _calculate_daily_solar_radiation(
@@ -214,10 +227,10 @@ def calculate_daily_solar_radiation(
 
 
 def _calculate_daily_solar_radiation(
-    ru: NDArray[np.floating],
-    rv: NDArray[np.floating],
-    distance_factor: NDArray[np.floating],
-    sunset_hour_angle: NDArray[np.floating],
+    ru: ArrayType[np.floating],
+    rv: ArrayType[np.floating],
+    distance_factor: ArrayType[np.floating],
+    sunset_hour_angle: ArrayType[np.floating],
     day_seconds: float = CoreConst().day_seconds,
     solar_constant: float = CoreConst().solar_constant,
 ) -> NDArray[np.floating]:
@@ -242,6 +255,9 @@ def _calculate_daily_solar_radiation(
         An array of daily solar radiation, J/m^2
     """
 
+    ru, rv, distance_factor, sunset_hour_angle = xarray_inputs(
+        ru, rv, distance_factor, sunset_hour_angle
+    )
     return (
         (day_seconds / np.pi)
         * solar_constant
@@ -254,8 +270,8 @@ def _calculate_daily_solar_radiation(
 
 
 def calculate_transmissivity(
-    sunshine_fraction: NDArray[np.floating],
-    elevation: NDArray[np.floating],
+    sunshine_fraction: ArrayType[np.floating],
+    elevation: ArrayType[np.floating],
     coef: tuple[float, ...] = CoreConst.transmissivity_coef,
 ) -> NDArray[np.floating]:
     r"""Calculate atmospheric transmissivity.
@@ -277,13 +293,14 @@ def calculate_transmissivity(
     Returns:
         An array of bulk transmissivity
     """
+    sunshine_fraction, elevation = xarray_inputs(sunshine_fraction, elevation)
     c, d, f = coef
     return (c + d * sunshine_fraction) * (1.0 + f * elevation)
 
 
 def calculate_ppfd_from_tau_rd(
-    transmissivity: NDArray[np.floating],
-    daily_solar_radiation: NDArray[np.floating],
+    transmissivity: ArrayType[np.floating],
+    daily_solar_radiation: ArrayType[np.floating],
     visible_light_albedo: float = CoreConst().visible_light_albedo,
     swdown_to_ppfd_factor: float = CoreConst().swdown_to_ppfd_factor,
 ) -> NDArray[np.floating]:
@@ -310,6 +327,10 @@ def calculate_ppfd_from_tau_rd(
         An array of photosynthetic photon flux density, µmol m-2 s-1.
     """
 
+    transmissivity, daily_solar_radiation = xarray_inputs(
+        transmissivity, daily_solar_radiation
+    )
+
     ppfd = (
         (1.0e-6)
         * swdown_to_ppfd_factor
@@ -322,11 +343,11 @@ def calculate_ppfd_from_tau_rd(
 
 
 def calculate_ppfd(
-    sunshine_fraction: NDArray[np.floating],
-    elevation: NDArray[np.floating],
-    latitude: NDArray[np.floating],
-    ordinal_date: NDArray[np.int_],
-    n_days: NDArray[np.int_],
+    sunshine_fraction: ArrayType[np.floating],
+    elevation: ArrayType[np.floating],
+    latitude: ArrayType[np.floating],
+    ordinal_date: ArrayType[np.int_],
+    n_days: ArrayType[np.int_],
     const: CoreConst = CoreConst(),
 ) -> NDArray[np.floating]:
     r"""Calculates photosynthetic photon flux density (PPFD).
@@ -361,8 +382,16 @@ def calculate_ppfd(
         array([62.04230021])
     """
 
+    # Convert any xarray inputs. Use separate calls since the dtypes differ
+    dims = get_common_dims(sunshine_fraction, elevation, latitude, ordinal_date, n_days)
+    sunshine_fraction = xarray_inputs(sunshine_fraction, dims=dims)
+    elevation = xarray_inputs(elevation, dims=dims)
+    latitude = xarray_inputs(latitude, dims=dims)
+    ordinal_date = xarray_inputs(ordinal_date, dims=dims)
+    n_days = xarray_inputs(n_days, dims=dims)
+
     # Validate the inputs
-    _ = check_input_shapes(latitude, elevation, sunshine_fraction, ordinal_date, n_days)
+    _ = check_input_shapes(sunshine_fraction, elevation, latitude, ordinal_date, n_days)
 
     # Calculate intermediate values
 
@@ -411,8 +440,8 @@ def calculate_ppfd(
 
 
 def calculate_net_longwave_radiation(
-    sunshine_fraction: NDArray[np.floating],
-    temperature: NDArray[np.floating],
+    sunshine_fraction: ArrayType[np.floating],
+    temperature: ArrayType[np.floating],
     coef: tuple[float, float] = CoreConst().net_longwave_radiation_coef,
 ) -> NDArray[np.floating]:
     r"""Calculate net longwave radiation.
@@ -433,13 +462,14 @@ def calculate_net_longwave_radiation(
     Returns:
         An array of net longwave radiation.
     """
+    sunshine_fraction, temperature = xarray_inputs(sunshine_fraction, temperature)
     b, A = coef
     return (b + (1.0 - b) * sunshine_fraction) * (A - temperature)
 
 
 def calculate_rw_intermediate(
-    transmissivity: NDArray[np.floating],
-    distance_factor: NDArray[np.floating],
+    transmissivity: ArrayType[np.floating],
+    distance_factor: ArrayType[np.floating],
     shortwave_albedo: float = CoreConst().shortwave_albedo,
     solar_constant: float = CoreConst().solar_constant,
 ) -> NDArray[np.floating]:
@@ -464,15 +494,16 @@ def calculate_rw_intermediate(
         An array of the intermediate variable :math:`r_w` in W m-2.
     """
 
+    transmissivity, distance_factor = xarray_inputs(transmissivity, distance_factor)
     return (1.0 - shortwave_albedo) * transmissivity * solar_constant * distance_factor
 
 
 def calculate_net_radiation_crossover_hour_angle(
-    net_longwave_radiation: NDArray[np.floating],
-    transmissivity: NDArray[np.floating],
-    distance_factor: NDArray[np.floating],
-    declination: NDArray[np.floating],
-    latitude: NDArray[np.floating],
+    net_longwave_radiation: ArrayType[np.floating],
+    transmissivity: ArrayType[np.floating],
+    distance_factor: ArrayType[np.floating],
+    declination: ArrayType[np.floating],
+    latitude: ArrayType[np.floating],
     shortwave_albedo: float = CoreConst().shortwave_albedo,
     solar_constant: float = CoreConst().solar_constant,
 ) -> NDArray[np.floating]:
@@ -504,6 +535,20 @@ def calculate_net_radiation_crossover_hour_angle(
         The net radiation crossover hour angle.
     """
 
+    (
+        net_longwave_radiation,
+        transmissivity,
+        distance_factor,
+        declination,
+        latitude,
+    ) = xarray_inputs(
+        net_longwave_radiation,
+        transmissivity,
+        distance_factor,
+        declination,
+        latitude,
+    )
+
     ru, rv = calculate_ru_rv_intermediates(declination=declination, latitude=latitude)
     rw = calculate_rw_intermediate(
         transmissivity=transmissivity,
@@ -521,10 +566,10 @@ def calculate_net_radiation_crossover_hour_angle(
 
 
 def _calculate_net_radiation_crossover_hour_angle(
-    net_longwave_radiation: NDArray[np.floating],
-    rw: NDArray[np.floating],
-    ru: NDArray[np.floating],
-    rv: NDArray[np.floating],
+    net_longwave_radiation: ArrayType[np.floating],
+    rw: ArrayType[np.floating],
+    ru: ArrayType[np.floating],
+    rv: ArrayType[np.floating],
 ) -> NDArray[np.floating]:
     """Calculate net radiation crossover hour angle using intermediate values.
 
@@ -542,18 +587,22 @@ def _calculate_net_radiation_crossover_hour_angle(
         An array of net radiation crossover hour angle, degrees
     """
 
+    net_longwave_radiation, rw, ru, rv = xarray_inputs(
+        net_longwave_radiation, rw, ru, rv
+    )
+
     return np.rad2deg(
         np.arccos(np.clip((net_longwave_radiation - rw * ru) / (rw * rv), -1.0, 1.0))
     )
 
 
 def calculate_daytime_net_radiation(
-    net_longwave_radiation: NDArray[np.floating],
-    crossover_hour_angle: NDArray[np.floating],
-    declination: NDArray[np.floating],
-    latitude: NDArray[np.floating],
-    transmissivity: NDArray[np.floating],
-    distance_factor: NDArray[np.floating],
+    net_longwave_radiation: ArrayType[np.floating],
+    crossover_hour_angle: ArrayType[np.floating],
+    declination: ArrayType[np.floating],
+    latitude: ArrayType[np.floating],
+    transmissivity: ArrayType[np.floating],
+    distance_factor: ArrayType[np.floating],
     shortwave_albedo: float = CoreConst().shortwave_albedo,
     solar_constant: float = CoreConst().solar_constant,
     day_seconds: float = CoreConst().day_seconds,
@@ -588,6 +637,23 @@ def calculate_daytime_net_radiation(
     Result:
         An array of daily net radiation.
     """  # codespell:ignore nd
+
+    (
+        net_longwave_radiation,
+        crossover_hour_angle,
+        declination,
+        latitude,
+        transmissivity,
+        distance_factor,
+    ) = xarray_inputs(
+        net_longwave_radiation,
+        crossover_hour_angle,
+        declination,
+        latitude,
+        transmissivity,
+        distance_factor,
+    )
+
     ru, rv = calculate_ru_rv_intermediates(declination=declination, latitude=latitude)
     rw = calculate_rw_intermediate(
         transmissivity=transmissivity,
@@ -607,11 +673,11 @@ def calculate_daytime_net_radiation(
 
 
 def _calculate_daytime_net_radiation(
-    rw: NDArray[np.floating],
-    rv: NDArray[np.floating],
-    ru: NDArray[np.floating],
-    crossover_hour_angle: NDArray[np.floating],
-    net_longwave_radiation: NDArray[np.floating],
+    rw: ArrayType[np.floating],
+    rv: ArrayType[np.floating],
+    ru: ArrayType[np.floating],
+    crossover_hour_angle: ArrayType[np.floating],
+    net_longwave_radiation: ArrayType[np.floating],
     day_seconds: float = CoreConst().day_seconds,
 ) -> NDArray[np.floating]:
     """Calculates daily net radiation using precalculated intermediates.
@@ -633,6 +699,10 @@ def _calculate_daytime_net_radiation(
         An array of daily net radiation, J m-2
     """
 
+    rw, rv, ru, crossover_hour_angle, net_longwave_radiation = xarray_inputs(
+        rw, rv, ru, crossover_hour_angle, net_longwave_radiation
+    )
+
     rn_d = (day_seconds / np.pi) * (
         np.deg2rad(crossover_hour_angle) * (rw * ru - net_longwave_radiation)
         + rw * rv * np.sin(np.deg2rad(crossover_hour_angle))
@@ -642,13 +712,13 @@ def _calculate_daytime_net_radiation(
 
 
 def calculate_nighttime_net_radiation(
-    net_longwave_radiation: NDArray[np.floating],
-    crossover_hour_angle: NDArray[np.floating],
-    sunset_hour_angle: NDArray[np.floating],
-    declination: NDArray[np.floating],
-    latitude: NDArray[np.floating],
-    transmissivity: NDArray[np.floating],
-    distance_factor: NDArray[np.floating],
+    net_longwave_radiation: ArrayType[np.floating],
+    crossover_hour_angle: ArrayType[np.floating],
+    sunset_hour_angle: ArrayType[np.floating],
+    declination: ArrayType[np.floating],
+    latitude: ArrayType[np.floating],
+    transmissivity: ArrayType[np.floating],
+    distance_factor: ArrayType[np.floating],
     shortwave_albedo: float = CoreConst().shortwave_albedo,
     solar_constant: float = CoreConst().solar_constant,
     day_seconds: float = CoreConst().day_seconds,
@@ -687,6 +757,25 @@ def calculate_nighttime_net_radiation(
     Returns:
         An array of nighttime net radiation in J m-2
     """
+
+    (
+        net_longwave_radiation,
+        crossover_hour_angle,
+        sunset_hour_angle,
+        declination,
+        latitude,
+        transmissivity,
+        distance_factor,
+    ) = xarray_inputs(
+        net_longwave_radiation,
+        crossover_hour_angle,
+        sunset_hour_angle,
+        declination,
+        latitude,
+        transmissivity,
+        distance_factor,
+    )
+
     ru, rv = calculate_ru_rv_intermediates(declination=declination, latitude=latitude)
     rw = calculate_rw_intermediate(
         transmissivity=transmissivity,
@@ -707,12 +796,12 @@ def calculate_nighttime_net_radiation(
 
 
 def _calculate_nighttime_net_radiation(
-    rw: NDArray[np.floating],
-    rv: NDArray[np.floating],
-    ru: NDArray[np.floating],
-    sunset_hour_angle: NDArray[np.floating],
-    crossover_hour_angle: NDArray[np.floating],
-    net_longwave_radiation: NDArray[np.floating],
+    rw: ArrayType[np.floating],
+    rv: ArrayType[np.floating],
+    ru: ArrayType[np.floating],
+    sunset_hour_angle: ArrayType[np.floating],
+    crossover_hour_angle: ArrayType[np.floating],
+    net_longwave_radiation: ArrayType[np.floating],
     day_seconds: float = CoreConst().day_seconds,
 ) -> NDArray[np.floating]:
     """Calculates nighttime net radiation using precalculated intermediates.
@@ -735,6 +824,22 @@ def _calculate_nighttime_net_radiation(
         An array of nighttime net radiation, :math:`J/m^2`
     """
 
+    (
+        rw,
+        rv,
+        ru,
+        sunset_hour_angle,
+        crossover_hour_angle,
+        net_longwave_radiation,
+    ) = xarray_inputs(
+        rw,
+        rv,
+        ru,
+        sunset_hour_angle,
+        crossover_hour_angle,
+        net_longwave_radiation,
+    )
+
     return (
         (
             rw
@@ -750,8 +855,8 @@ def _calculate_nighttime_net_radiation(
 
 
 def calculate_heliocentric_longitudes(
-    ordinal_date: NDArray[np.int_],
-    n_days: NDArray[np.int_],
+    ordinal_date: ArrayType[np.int_],
+    n_days: ArrayType[np.int_],
     solar_eccentricity: float = CoreConst().solar_eccentricity,
     solar_perihelion: float = CoreConst().solar_perihelion,
 ) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
@@ -773,6 +878,8 @@ def calculate_heliocentric_longitudes(
     Returns:
         A tuple of NDArrays containing ``nu`` and ``lambda_``.
     """
+
+    ordinal_date, n_days = xarray_inputs(ordinal_date, n_days)
 
     # TODO - a lot of wildly unnecessary unit changing here. Can we just work in radians
     #        from the constants up?
@@ -830,9 +937,9 @@ def calculate_heliocentric_longitudes(
 
 
 def calculate_solar_elevation(
-    latitude: NDArray[np.floating],
-    declination: NDArray[np.floating],
-    hour_angle: NDArray[np.floating],
+    latitude: ArrayType[np.floating],
+    declination: ArrayType[np.floating],
+    hour_angle: ArrayType[np.floating],
 ) -> NDArray[np.floating]:
     r"""Calculate the solar elevation angle.
 
@@ -853,6 +960,8 @@ def calculate_solar_elevation(
         Solar elevation angles in radians.
     """
 
+    latitude, declination, hour_angle = xarray_inputs(latitude, declination, hour_angle)
+
     return np.arcsin(
         np.sin(latitude) * np.sin(declination)
         + np.cos(latitude) * np.cos(declination) * np.cos(hour_angle)
@@ -860,7 +969,7 @@ def calculate_solar_elevation(
 
 
 def calculate_solar_declination(
-    ordinal_date: NDArray[np.int_],
+    ordinal_date: ArrayType[np.int_],
 ) -> NDArray[np.floating]:
     r"""Calculate solar declination angle.
 
@@ -878,11 +987,12 @@ def calculate_solar_declination(
         Solar declination angles in radians.
     """
 
+    ordinal_date = xarray_inputs(ordinal_date)
     return -23.4 * (np.pi / 180) * np.cos((2 * np.pi * (ordinal_date + 10)) / 365)
 
 
 def calculate_local_hour_angle(
-    current_time: NDArray[np.floating], solar_noon: NDArray[np.floating]
+    current_time: ArrayType[np.floating], solar_noon: ArrayType[np.floating]
 ) -> NDArray[np.floating]:
     r"""Calculate the local hour angle.
 
@@ -903,13 +1013,14 @@ def calculate_local_hour_angle(
 
     """
 
+    current_time, solar_noon = xarray_inputs(current_time, solar_noon)
     return np.pi * (current_time - solar_noon) / 12
 
 
 def calculate_solar_noon(
-    longitude: NDArray[np.floating],
-    equation_of_time: NDArray[np.floating],
-    standard_longitude: NDArray[np.floating] = np.array([0]),
+    longitude: ArrayType[np.floating],
+    equation_of_time: ArrayType[np.floating],
+    standard_longitude: ArrayType[np.floating] = np.array([0]),
 ) -> NDArray[np.floating]:
     r"""Calculate the solar noon  for a given location.
 
@@ -935,11 +1046,15 @@ def calculate_solar_noon(
 
     """
 
+    longitude, equation_of_time, standard_longitude = xarray_inputs(
+        longitude, equation_of_time, standard_longitude
+    )
+
     return 12 + (4 * -(longitude - standard_longitude) - equation_of_time) / 60
 
 
 def calculate_equation_of_time(
-    day_angle: NDArray[np.floating],
+    day_angle: ArrayType[np.floating],
     coef: tuple[float, ...] = CoreConst.equation_of_time_coef,
 ) -> NDArray[np.floating]:
     r"""Calculate the equation of time.
@@ -968,6 +1083,8 @@ def calculate_equation_of_time(
         An array of equation of time values (minutes)
     """
 
+    day_angle = xarray_inputs(day_angle)
+
     a, b, c, d, e, f = coef
 
     return (
@@ -979,7 +1096,7 @@ def calculate_equation_of_time(
     ) * f
 
 
-def calculate_day_angle(ordinal_date: NDArray[np.int_]) -> NDArray[np.floating]:
+def calculate_day_angle(ordinal_date: ArrayType[np.int_]) -> NDArray[np.floating]:
     r"""Calculate the solar day angle.
 
     Calculates the solar day angle (:math:`\Gamma`, radians) for ordinal dates
@@ -996,7 +1113,7 @@ def calculate_day_angle(ordinal_date: NDArray[np.int_]) -> NDArray[np.floating]:
         An array of solar day angles in radians.
     """
 
-    return 2 * np.pi * (ordinal_date - 1) / 365
+    return 2 * np.pi * (xarray_inputs(ordinal_date) - 1) / 365
 
 
 @dataclass

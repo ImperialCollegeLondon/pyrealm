@@ -402,7 +402,7 @@ def get_crown_xy(
     The data are returned as a list with one entry per stem. The default value for each
     entry a tuple of two arrays (height, attribute values) but the `as_xy=True` option
     will return an `(N, 2)` dimensioned XY array suitable for use with
-    {class}`~matplotlib.patches.Polygon`.
+    :class:`matplotlib.patches.Polygon`.
 
     Args:
         crown_profile: A crown profile instance
