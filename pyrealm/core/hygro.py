@@ -12,10 +12,11 @@ from numpy.typing import NDArray
 from pyrealm.constants import CoreConst
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.utilities import evaluate_horner_polynomial
+from pyrealm.core.xarray import ArrayType, xarray_inputs
 
 
 def calculate_vp_sat(
-    ta: NDArray[np.floating], core_const: CoreConst = CoreConst()
+    ta: ArrayType[np.floating], core_const: CoreConst = CoreConst()
 ) -> NDArray[np.floating]:
     r"""Calculate vapour pressure of saturated air.
 
@@ -52,6 +53,8 @@ def calculate_vp_sat(
         array([2.481888])
     """
 
+    ta = xarray_inputs(ta)
+
     # Magnus equation and conversion to kPa
     cf = core_const.magnus_coef
     vp_sat = cf[0] * np.exp((cf[1] * ta) / (cf[2] + ta)) / 1000
@@ -60,8 +63,8 @@ def calculate_vp_sat(
 
 
 def convert_vp_to_vpd(
-    vp: NDArray[np.floating],
-    ta: NDArray[np.floating],
+    vp: ArrayType[np.floating],
+    ta: ArrayType[np.floating],
     core_const: CoreConst = CoreConst(),
 ) -> NDArray[np.floating]:
     """Convert vapour pressure to vapour pressure deficit.
@@ -86,14 +89,16 @@ def convert_vp_to_vpd(
         >>> convert_vp_to_vpd(vp, temp, core_const=allen).round(7)
         array([0.5870054])
     """
+
+    vp, ta = xarray_inputs(vp, ta)
     vp_sat = calculate_vp_sat(ta, core_const=core_const)
 
     return vp_sat - vp
 
 
 def convert_rh_to_vpd(
-    rh: NDArray[np.floating],
-    ta: NDArray[np.floating],
+    rh: ArrayType[np.floating],
+    ta: ArrayType[np.floating],
     core_const: CoreConst = CoreConst(),
     bounds_checker: BoundsChecker = BoundsChecker(),
 ) -> NDArray[np.floating]:
@@ -122,6 +127,7 @@ def convert_rh_to_vpd(
         array([0.7461016])
     """
 
+    rh, ta = xarray_inputs(rh, ta)
     rh = bounds_checker.check("rh", rh)
 
     vp_sat = calculate_vp_sat(ta, core_const=core_const)
@@ -130,8 +136,8 @@ def convert_rh_to_vpd(
 
 
 def convert_sh_to_vp(
-    sh: NDArray[np.floating],
-    patm: NDArray[np.floating],
+    sh: ArrayType[np.floating],
+    patm: ArrayType[np.floating],
     core_const: CoreConst = CoreConst(),
 ) -> NDArray[np.floating]:
     """Convert specific humidity to vapour pressure.
@@ -153,13 +159,14 @@ def convert_sh_to_vp(
         array([0.9517451])
     """
 
+    sh, patm = xarray_inputs(sh, patm)
     return sh * patm / ((1.0 - core_const.mwr) * sh + core_const.mwr)
 
 
 def convert_sh_to_vpd(
-    sh: NDArray[np.floating],
-    ta: NDArray[np.floating],
-    patm: NDArray[np.floating],
+    sh: ArrayType[np.floating],
+    ta: ArrayType[np.floating],
+    patm: ArrayType[np.floating],
     core_const: CoreConst = CoreConst(),
 ) -> NDArray[np.floating]:
     """Convert specific humidity to vapour pressure deficit.
@@ -187,6 +194,7 @@ def convert_sh_to_vpd(
         array([1.53526])
     """
 
+    sh, ta, patm = xarray_inputs(sh, ta, patm)
     vp_sat = calculate_vp_sat(ta, core_const=core_const)
     vp = convert_sh_to_vp(sh, patm, core_const=core_const)
 
@@ -197,7 +205,7 @@ def convert_sh_to_vpd(
 
 
 def calculate_saturation_vapour_pressure_slope(
-    tc: NDArray[np.floating],
+    tc: ArrayType[np.floating],
 ) -> NDArray[np.floating]:
     """Calculate the slope of the saturation vapour pressure curve.
 
@@ -211,6 +219,8 @@ def calculate_saturation_vapour_pressure_slope(
         The calculated slope in kPa °C-1.
     """
 
+    tc = xarray_inputs(tc)
+
     # TODO move these coefficients into constants?
     return (
         17.269
@@ -220,7 +230,7 @@ def calculate_saturation_vapour_pressure_slope(
     )
 
 
-def calculate_enthalpy_vaporisation(tc: NDArray[np.floating]) -> NDArray[np.floating]:
+def calculate_enthalpy_vaporisation(tc: ArrayType[np.floating]) -> NDArray[np.floating]:
     """Calculate the enthalpy of vaporization.
 
     Calculates the latent heat of vaporization of water as a function of
@@ -233,11 +243,13 @@ def calculate_enthalpy_vaporisation(tc: NDArray[np.floating]) -> NDArray[np.floa
         Calculated latent heat of vaporisation (J/Kg).
     """
 
+    tc = xarray_inputs(tc)
+
     # TODO move these coefficients into constants?
     return 1.91846e6 * ((tc + 273.15) / (tc + 273.15 - 33.91)) ** 2
 
 
-def calculate_specific_heat(tc: NDArray[np.floating]) -> NDArray[np.floating]:
+def calculate_specific_heat(tc: ArrayType[np.floating]) -> NDArray[np.floating]:
     """Calculate the specific heat of air.
 
     Calculates the specific heat of air at a constant pressure (:math:`c_{pm}`, J/kg/K)
@@ -250,6 +262,8 @@ def calculate_specific_heat(tc: NDArray[np.floating]) -> NDArray[np.floating]:
     Returns:
         The specific heat of air values.
     """
+
+    tc = xarray_inputs(tc)
 
     # TODO move these coefficients into constants?
 
@@ -270,8 +284,8 @@ def calculate_specific_heat(tc: NDArray[np.floating]) -> NDArray[np.floating]:
 
 
 def calculate_psychrometric_constant(
-    tc: NDArray[np.floating],
-    p: NDArray[np.floating],
+    tc: ArrayType[np.floating],
+    p: ArrayType[np.floating],
     core_const: CoreConst = CoreConst(),
 ) -> NDArray[np.floating]:
     r"""Calculate the psychrometric constant.
@@ -289,6 +303,8 @@ def calculate_psychrometric_constant(
     Returns:
         The calculated psychrometric constant
     """
+
+    tc, p = xarray_inputs(tc, p)
 
     # Calculate the specific heat capacity of water, J/kg/K
     cp = calculate_specific_heat(tc)

@@ -1,4 +1,4 @@
-"""Testing CalcCarbonIsotopes.
+"""Testing CarbonIsotopes.
 
 This is slightly dubious as the test values are those predicted by the first
 implementation of the code. That _has_ been checked against an initial reference
@@ -91,10 +91,10 @@ from numpy.testing import assert_allclose
         ),
     ],
 )
-def test_CalcCarbonIsotopes(pmodelenv_args, pmodel_args, expected):
-    """Tests the CalcCarbonIsotopes class."""
+def test_CarbonIsotopes(pmodelenv_args, pmodel_args, expected):
+    """Tests the CarbonIsotopes class."""
     from pyrealm.constants import CoreConst
-    from pyrealm.pmodel import CalcCarbonIsotopes, PModelEnvironment
+    from pyrealm.pmodel import CarbonIsotopes, PModelEnvironment
     from pyrealm.pmodel.pmodel import PModel
 
     env = PModelEnvironment(
@@ -104,7 +104,7 @@ def test_CalcCarbonIsotopes(pmodelenv_args, pmodel_args, expected):
         ),
     )
     pmodel = PModel(env, **pmodel_args)
-    cci = CalcCarbonIsotopes(pmodel, d13CO2=np.array([-8.4]), D14CO2=np.array([19.2]))
+    cci = CarbonIsotopes(pmodel, d13CO2=np.array([-8.4]), D14CO2=np.array([19.2]))
 
     for attr in expected:
         assert_allclose(getattr(cci, attr), expected[attr], atol=0.001)
