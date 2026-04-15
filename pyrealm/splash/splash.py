@@ -353,6 +353,12 @@ class SplashModel:
                 curr_wn, day_idx=day_idx
             )
 
+            # Convert the outputs to scalars if there is only a time axis
+            if len(self.shape) == 1:
+                aet = aet.squeeze()
+                curr_wn = curr_wn.squeeze()
+                ro = ro.squeeze()
+
             # Store the outputs to return
             aet_out[day_idx] = aet
             wn_out[day_idx] = curr_wn
