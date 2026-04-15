@@ -23,6 +23,10 @@ language_info:
 
 # Using arrays in `pyrealm`
 
+```{note}
+The below information does not apply to the `demography` module.
+```
+
 Most of the functionality in `pyrealm` is designed to work with data arrays that can
 have multiple dimensions. The input data can be single scalar values - representing a
 point estimate - or multi-dimensional inputs - such as a time-series on a spatial grid.
@@ -123,10 +127,6 @@ env = PModelEnvironment(tc=temp, co2=co2, patm=patm, vpd=vpd, fapar=fapar, ppfd=
 ```
 
 ## Xarray inputs
-
-```{note}
-This is currently limited to `pmodel` module only.
-```
 
 Array inputs to functions will also accept `xarray.DataArray` inputs. These are mostly
 equivalent to `numpy` arrays but with the addition of named dimensions. `pyrealm` will

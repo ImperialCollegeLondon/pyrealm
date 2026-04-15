@@ -197,6 +197,7 @@ intersphinx_mapping = {
     "shapely": ("https://shapely.readthedocs.io/en/stable/", None),
     "marshmallow": ("https://marshmallow.readthedocs.io/en/stable/", None),
     "pooch": ("https://www.fatiando.org/pooch/latest/", None),
+    "matplotlib": ("https://matplotlib.org/stable/", None),
 }
 
 
@@ -222,6 +223,14 @@ napoleon_custom_sections = [("PModel Parameters", "params_style")]
 autodoc_type_aliases = {
     "ArrayType": "pyrealm.core.xarray.ArrayType",
 }
+
+# TypeAliasForwardRef doesn't seem to support subscripting, resulting in
+# get_type_hints() failing on ArrayType[np.floating] in modules using `from __future__
+# import annotations`. This patch solves this by ignoring the type parameter, allowing
+# other arguments to resolve correctly.
+from sphinx.util.inspect import TypeAliasForwardRef  # noqa: E402
+
+TypeAliasForwardRef.__getitem__ = lambda self, item: self
 
 # Autodoc configuration:
 # - Suppress signature expansion of arguments

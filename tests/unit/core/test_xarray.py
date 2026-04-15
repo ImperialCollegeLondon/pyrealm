@@ -36,6 +36,13 @@ def test_get_common_dims():
     assert dims == ["a", "b"]
 
 
+def test_get_common_dims_init():
+    """Test get_common_dims gives expected outputs using `init_dims`."""
+    input_1 = xr.DataArray([[]], dims=["c", "d"])
+    dims = get_common_dims(input_1, init_dims=["a", "b"])
+    assert dims == ["a", "b", "c", "d"]
+
+
 @pytest.fixture
 def dataset() -> xr.Dataset:
     """Fixture to load the pmodel_global dataset for testing inputs."""
@@ -158,5 +165,5 @@ def test_xarray_pmodel_environment(dataset: xr.Dataset):
     tc = dataset["temp"]
     vpd = dataset["VPD"]
     co2 = dataset["CO2"]
-    patm = calculate_patm(dataset["elevation"].isel(Time=0))
+    patm = calculate_patm(dataset["elevation"].isel(Time=[0]))  # Need to keep time dim
     PModelEnvironment(tc=tc, vpd=vpd, co2=co2, patm=patm)

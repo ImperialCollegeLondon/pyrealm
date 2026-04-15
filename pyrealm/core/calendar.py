@@ -11,11 +11,13 @@ xarray data structures.
 """
 
 from collections.abc import Generator, Sized
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
+
+from pyrealm.core.xarray import ArrayType, get_common_dims, xarray_inputs
 
 
 @dataclass
@@ -48,7 +50,7 @@ class CalendarDay:
         )
 
 
-@dataclass
+@dataclass(init=False)
 class Calendar(Sized):
     """The Calendar class.
 
@@ -80,15 +82,19 @@ class Calendar(Sized):
 
     dates: NDArray[np.datetime64]
     """A numpy array containing :class:`numpy.datetime64` values."""
-    year: NDArray[np.int_] = field(init=False)
+    year: NDArray[np.int_]
     """A numpy array giving the year of each datetime."""
-    julian_day: NDArray[np.int_] = field(init=False)
+    julian_day: NDArray[np.int_]
     """A numpy array giving the julian day of each datetime."""
-    days_in_year: NDArray[np.int_] = field(init=False)
+    days_in_year: NDArray[np.int_]
     """A numpy array giving the number of days in the year for each datetime."""
 
-    def __post_init__(self) -> None:
+    def __init__(self, dates: ArrayType[np.datetime64]) -> None:
         """Calculate year, julian day and days in year from dates."""
+        # If using xarray input, store the dimension name and convert to numpy
+        self.dims = get_common_dims(dates)
+        self.dates = xarray_inputs(dates, dims=self.dims)
+
         dateyear = self.dates.astype("datetime64[Y]")
         startnext = (dateyear + 1).astype("datetime64[D]")
         dateday = self.dates.astype("datetime64[D]")

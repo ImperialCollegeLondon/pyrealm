@@ -5,7 +5,7 @@ if [[ $# -eq 0 ]] ; then
     new_commit=HEAD
     old_commit=origin/develop
 else
-    while getopts n:o:a:s: flag
+    while getopts n:o:as: flag
     do
         case "${flag}" in
             n) new_commit=${OPTARG};;

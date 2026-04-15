@@ -163,29 +163,25 @@ Before calculating water balances, you need to create a
 the solar and evaporative calculations for the time series - none of these calculations
 rely on the soil moisture and so are calculated once when the `SplashModel` is created.
 
+```{code-cell} ipython3
+# Fit the model
+splash = SplashModel(
+    lat=data.lat,
+    elv=data.elev,
+    dates=Calendar(data.time),
+    sf=data.sf,
+    tc=data.tmp,
+    pn=data.pre,
+)
+```
+
 The data for the sunshine fraction (`sf`), temperature (`tc`) and precipitation (`pn`)
 are three dimensional arrays providing values along time, latitude and longitude axes.
 The latitude (`lat`) values obviously only add coordinates along the latitude axis and
-the elevation (`elv`) is constant through time. So before the model can be fitted, we
-need to make these arrays compatible (see the [array inputs](../users/array_inputs.md)
-documentation) by making them use the same dimensions.
-
-```{code-cell} ipython3
-# Convert latitude from (Y) to (1, Y, 1)
-lat = data.lat.to_numpy()[np.newaxis, :, np.newaxis]
-# Convert elevation from (Y, X) to (1, Y, X)
-elv = data.elev.to_numpy()[np.newaxis, :, :]
-
-# Fit the model
-splash = SplashModel(
-    lat=lat,
-    elv=elv,
-    dates=Calendar(data.time.to_numpy()),
-    sf=data.sf.to_numpy(),
-    tc=data.tmp.to_numpy(),
-    pn=data.pre.to_numpy(),
-)
-```
+the elevation (`elv`) is constant through time. If these were being provided as numpy
+arrays we would first need to make these arrays compatible (see the [array
+inputs](../users/array_inputs.md) documentation) by making them use the same dimensions.
+However, here we are using xarray inputs so this is not required.
 
 ### Estimating initial soil moisture
 

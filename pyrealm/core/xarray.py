@@ -22,7 +22,10 @@ def is_arraytype(var: Any) -> TypeGuard[ArrayType]:
     return True
 
 
-def get_common_dims(*arrays: NDArray | xr.DataArray) -> list[Hashable]:
+def get_common_dims(
+    *arrays: NDArray | xr.DataArray,
+    init_dims: list[Hashable] | None = None,
+) -> list[Hashable]:
     """Get the full list of dimensions across all DataArray arguments.
 
     This needs to be called when there are arrays with multiple dtypes that cannot be
@@ -30,6 +33,7 @@ def get_common_dims(*arrays: NDArray | xr.DataArray) -> list[Hashable]:
 
     Args:
         *arrays: The variables to convert into numpy arrays.
+        init_dims: An optional list of dims to start with.
 
     Returns:
         A list of dimension names.
@@ -39,9 +43,11 @@ def get_common_dims(*arrays: NDArray | xr.DataArray) -> list[Hashable]:
         >>> input_2 = xr.DataArray([[]], dims=["b", "a"])
         >>> get_common_dims(input_1, input_2)
         ['a', 'b']
+        >>> get_common_dims(input_1, input_2, init_dims=["c"])
+        ['c', 'a', 'b']
     """
 
-    dims = []
+    dims = init_dims or []
     for array in arrays:
         if isinstance(array, xr.DataArray):
             dims.extend([d for d in array.dims if d not in dims])
@@ -67,6 +73,7 @@ def xarray_inputs[T: np.generic](
     *,
     kwargs: None = ...,
     dims: list[Hashable] | None = ...,
+    dims_full: bool = ...,
 ) -> NDArray[T]: ...
 
 
@@ -79,6 +86,7 @@ def xarray_inputs[T: np.generic](
     *other_arrays: ArrayType[T],
     kwargs: None = ...,
     dims: list[Hashable] | None = ...,
+    dims_full: bool = ...,
 ) -> tuple[NDArray[T], ...]: ...
 
 
@@ -88,6 +96,7 @@ def xarray_inputs[T: np.generic](
     *arrays: ArrayType[T],
     kwargs: dict[str, ArrayType[T]],
     dims: list[Hashable] | None = ...,
+    dims_full: bool = ...,
 ) -> tuple[tuple[NDArray[T], ...], dict[str, NDArray[T]]]: ...
 
 
@@ -95,6 +104,7 @@ def xarray_inputs[T: np.generic](
     *arrays: ArrayType[T],
     kwargs: dict[str, ArrayType[T]] | None = None,
     dims: list[Hashable] | None = None,
+    dims_full: bool = True,
 ) -> (
     NDArray[T]
     | tuple[NDArray[T], ...]
@@ -116,6 +126,8 @@ def xarray_inputs[T: np.generic](
         *arrays: The variables to convert into numpy arrays.
         kwargs: An optional dictionary of variables to convert to numpy arrays.
         dims: An optional list of dimension names to expand DataArrays to.
+        dims_full: If `dims` is provided this indicates whether this is the full list of
+            dimensions (True) or can be added to by `arrays` (default: True).
 
     Returns:
         The stripped array(s). As a tuple if more than one is provided. As (tuple, dict)
@@ -132,6 +144,8 @@ def xarray_inputs[T: np.generic](
 
     if dims is None:
         dims = get_common_dims(*arrays, *(kwargs or {}).values())
+    elif not dims_full:
+        dims = get_common_dims(*arrays, *(kwargs or {}).values(), init_dims=dims)
 
     # 1 value - return scalar
     if len(arrays) == 1 and not kwargs:

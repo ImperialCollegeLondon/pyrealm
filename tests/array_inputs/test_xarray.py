@@ -28,7 +28,7 @@ DEPENDENT_LIST: list[str] = [
     # pmodel
     "PModel.apply_gpp_penalty_factor",
     "SubdailyPModel.apply_gpp_penalty_factor",
-    "CalcCarbonIsotopes",
+    "CarbonIsotopes",
     "C3C4Competition.estimate_isotopic_discrimination",
     "OptimalChiPrentice14.estimate_chi",
     "OptimalChiPrentice14RootzoneStress.estimate_chi",
@@ -38,7 +38,19 @@ DEPENDENT_LIST: list[str] = [
     "OptimalChiLavergne20C4.estimate_chi",
     "OptimalChiC4NoGamma.estimate_chi",
     "OptimalChiC4NoGammaRootzoneStress.estimate_chi",
+    # splash
+    "SplashModel.estimate_initial_soil_moisture",
+    "SplashModel.estimate_daily_water_balance",
+    "SplashModel.calculate_soil_moisture",
+    "DailyEvapFluxes",
+    "DailyEvapFluxes.estimate_aet",
+    # phenology
+    "FaparLimitation.from_pmodel",
 ]
+
+# Check all dependent functions are used
+unused: set[str] = set(DEPENDENT_LIST) - {m[0] for m in METHOD_LIST}
+assert not unused, f"Dependent functions not in METHOD_LIST: {unused}"
 
 
 def shapes_xarray(
