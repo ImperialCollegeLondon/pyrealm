@@ -45,14 +45,14 @@ from pyrealm.pmodel.functions import (
     calculate_soilmstress_mengoli,
     calculate_soilmstress_stocker,
 )
-from pyrealm.pmodel.isotopes import CalcCarbonIsotopes
+from pyrealm.pmodel.isotopes import CarbonIsotopes
 from pyrealm.pmodel.pmodel import PModel, SubdailyPModel
 from pyrealm.pmodel.pmodel_environment import PModelEnvironment
 
 __all__ = [
     "AcclimationModel",
     "C3C4Competition",
-    "CalcCarbonIsotopes",
+    "CarbonIsotopes",
     "PModel",
     "PModelEnvironment",
     "SubdailyPModel",

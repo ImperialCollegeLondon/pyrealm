@@ -40,12 +40,12 @@ The isotopic discrimination and associated isotopic composition of a plant mater
 depends on the photosynthetic pathway.
 
 The {mod}`~pyrealm.pmodel` module provides the
-{class}`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes` class, which takes the predicted
+{class}`~pyrealm.pmodel.isotopes.CarbonIsotopes` class, which takes the predicted
 optimal chi ($\chi$) and photosynthetic pathway from a fitted
 {class}`~pyrealm.pmodel.pmodel.PModel` instance and predicts various isotopic
 discrimination and composition values.
 
-The predictions from the {class}`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes` class are
+The predictions from the {class}`~pyrealm.pmodel.isotopes.CarbonIsotopes` class are
 driven by variation in $\chi$. The examples below show predictions across a range of
 values of $\chi$. The sequence of $\chi$ values used is created by using the P Model to
 estimate $\chi$ across a temperature gradient, giving the range of $\chi$ values shown
@@ -59,7 +59,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
 from pyrealm.pmodel.pmodel import PModel
-from pyrealm.pmodel import PModelEnvironment, CalcCarbonIsotopes
+from pyrealm.pmodel import PModelEnvironment, CarbonIsotopes
 
 # Use a simple temperature sequence to generate a range of optimal chi values
 n_pts = 31
@@ -82,7 +82,7 @@ plt.show()
 
 ## Calculation of values
 
-The {class}`~pyrealm.pmodel.isotopes.CalcCarbonIsotopes` class takes a
+The {class}`~pyrealm.pmodel.isotopes.CarbonIsotopes` class takes a
 {class}`~pyrealm.pmodel.pmodel.PModel` instance, along with estimates of the atmospheric
 isotopic ratios for Carbon 13 ($\delta13C$, permil) and Carbon 14 ($\Delta14C$, permil)
 and calculates the following predictions:
@@ -105,12 +105,12 @@ the `method_optchi` argument used for the {class}`~pyrealm.pmodel.pmodel.PModel`
 instance.
 
 ```{code-cell} ipython3
-carb_c3 = CalcCarbonIsotopes(mod_c3, d13CO2=-8.4, D14CO2=19.2)
+carb_c3 = CarbonIsotopes(mod_c3, d13CO2=-8.4, D14CO2=19.2)
 carb_c3.summarize()
 ```
 
 ```{code-cell} ipython3
-carb_c4 = CalcCarbonIsotopes(mod_c4, d13CO2=-8.4, D14CO2=19.2)
+carb_c4 = CarbonIsotopes(mod_c4, d13CO2=-8.4, D14CO2=19.2)
 carb_c4.summarize()
 ```
 
