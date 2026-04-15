@@ -925,7 +925,7 @@ def calculate_growth_increments(
         \end{align*}
       \]
 
-    Note that :cite:`Li:2014bc` use :math:`W_f` to denote the increment in both foliage
+    Note that :cite:`Li:2014bc` use ':math:`W_f`' to denote the increment in both foliage
     and fine root mass, as fine root mass is estimated as a function of foliage area
     through the specific leaf area (:math:`\sigma`) and  ratio of fine root mass to leaf
     area (:math:`\zeta`). Here we use :math:`W_fr` to indicate the combined increments
