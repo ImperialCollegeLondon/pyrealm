@@ -10,23 +10,15 @@ The structure of the tests are:
   result is the same (but not necessarily the shape).
 - For class methods also check the class attributes are equivalent.
 
-The functions / objects in this file are broadly split into five sections. With the main
+The functions / objects in this file are broadly split into four sections. With the main
 functions listed below:
-1. To manually define function arguments / which functions to ignore, etc in order to
-   fix errors.
-   - `SKIP_METHODS`
-   - `IGNORE_OUTPUTS`
-   - `REQUIRES`
-   - `ADDITIONAL_INIT_METHODS`
-   - `defined_method_args`
-2. To get the list of functions / methods in the library.
+1. To get the list of functions / methods in the library.
    - `get_method_list`
-3. To get the argument datatypes from the annotations. These are used in section 4.
-4. To initialise function arguments and classes.
+2. To get the argument datatypes from the annotations. These are used in section 3.
+3. To initialise function arguments and classes.
    - `generate_args`
    - `initialise_class`
-   - `Context` - To keep track of the array shapes and when checking values in section 1
-5. To compare the function outputs / class attributes.
+4. To compare the function outputs / class attributes.
    - `assert_is_equal`
    - `compare_instances`
 
@@ -34,10 +26,8 @@ The functions that are only used internally in this module are marked private wi
 leading underscore.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Iterator
-from dataclasses import InitVar, dataclass, field
+from dataclasses import InitVar
 from inspect import (
     Parameter,
     getattr_static,
@@ -56,349 +46,27 @@ import xarray as xr
 from numpy.typing import DTypeLike
 
 import pyrealm
-from pyrealm.core.calendar import Calendar
-from pyrealm.core.xarray import ArrayType
+from pyrealm.constants import ConstantsClass
 from pyrealm.demography.flora import (
     PlantFunctionalType,
     PlantFunctionalTypeStrict,
     StemTraits,
 )
-from pyrealm.phenology.fapar_limitation import FaparLimitation, PhenologyConst
-
-## Lists / functions to manually define arguments, methods or outputs to ignore, etc.
-
-# These methods are not relevant or are incompatible without additional work
-SKIP_METHODS = [
-    "evaluate_horner_polynomial",  # Coefficients are 1D
-    # PModel
-    "AcclimationModel.set_include",
-    "PModel._get_daily_gpp",
-    # Demography - mostly 1d arrays (dataframes)
-    "CohortMethods.drop_cohort_data",
-    "StemTraits",
-    "StemTraits.drop_cohort_data",
-    "_enforce_2D",
-    "calculate_stem_projected_leaf_area_at_z",
-    "get_crown_xy",
-    "calculate_relative_crown_radius_at_z",
-    "calculate_stem_projected_crown_area_at_z",
-    "solve_canopy_area_filling_height",
-    "calculate_crown_areas",
-    "calculate_crown_fractions",
-    "calculate_crown_r0",
-    "calculate_crown_z_max",
-    "calculate_dbh_from_height",
-    "calculate_fine_root_respiration",
-    "calculate_fine_root_turnover",
-    "calculate_foliage_masses",
-    "calculate_fine_root_masses",
-    "calculate_foliage_turnover",
-    "calculate_foliar_respiration",
-    "calculate_gpp_topslice",
-    "calculate_growth_increments",
-    "calculate_heights",
-    "calculate_net_primary_productivity",
-    "calculate_reproductive_tissue_mass",
-    "calculate_reproductive_tissue_respiration",
-    "calculate_reproductive_tissue_turnover",
-    "calculate_sapwood_masses",
-    "calculate_sapwood_respiration",
-    "calculate_stem_masses",
-    "calculate_whole_crown_gpp",
-]
+from tests.array_inputs.context import Context
+from tests.array_inputs.overrides import (
+    ADDITIONAL_INIT_METHODS,
+    IGNORE_OUTPUTS,
+    MANUAL_ARGS,
+    REQUIRES,
+    SKIP_METHODS,
+)
 
 
-# Ignore these outputs for broadcasting tests, they are not expected to be equal.
-# Formats: [fn name] for function results, [class]:[attr] for class attributes
-IGNORE_OUTPUTS = [
-    "Cohorts:_cohort_id",
-    "Calendar:n_dates",
-]
-
-# The REQUIRES dictionary provides a way of populating required keywords arguments for
-# some methods. The keys specify the object being created and the parent context in
-# which it is created and the values provide a tuple of arguments that should be added
-# to the method signature.
+class _Config:
+    DEBUG: bool = False
 
 
-def _kwarg_params(names: tuple[str, ...]) -> dict[str, Parameter]:
-    """Creates a dictionary containing inspect.Parameter instances."""
-    return {
-        name: Parameter(
-            name=name,
-            kind=Parameter.POSITIONAL_OR_KEYWORD,
-            annotation=ArrayType,
-        )
-        for name in names
-    }
-
-
-REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
-    (
-        "PModelEnvironment",
-        (
-            "OptimalChiC4RootzoneStress.estimate_chi",
-            "OptimalChiC4RootzoneStress",
-        ),
-    ): _kwarg_params(("rootzonestress",)),
-    (
-        "PModelEnvironment",
-        (
-            "OptimalChiC4NoGammaRootzoneStress.estimate_chi",
-            "OptimalChiC4NoGammaRootzoneStress",
-        ),
-    ): _kwarg_params(("rootzonestress",)),
-    (
-        "PModelEnvironment",
-        (
-            "OptimalChiPrentice14RootzoneStress.estimate_chi",
-            "OptimalChiPrentice14RootzoneStress",
-        ),
-    ): _kwarg_params(("rootzonestress",)),
-    (
-        "PModelEnvironment",
-        (
-            "OptimalChiLavergne20C3.estimate_chi",
-            "OptimalChiLavergne20C3",
-        ),
-    ): _kwarg_params(("theta",)),
-    (
-        "PModelEnvironment",
-        (
-            "OptimalChiLavergne20C4.estimate_chi",
-            "OptimalChiLavergne20C4",
-        ),
-    ): _kwarg_params(("theta",)),
-    (
-        "PModelEnvironment",
-        ("QuantumYieldSandoval", "QuantumYieldSandoval"),
-    ): _kwarg_params(("aridity_index", "mean_growth_temperature")),
-    (
-        "PModelEnvironment",
-        (
-            "QuantumYieldSandoval.peak_quantum_yield",
-            "QuantumYieldSandoval",
-        ),
-    ): _kwarg_params(("aridity_index", "mean_growth_temperature")),
-    # Don't use default xi_values (None) in estimate_chi
-    ("OptimalChiPrentice14.estimate_chi", ()): _kwarg_params(("xi_values",)),
-    ("OptimalChiPrentice14RootzoneStress.estimate_chi", ()): _kwarg_params(
-        ("xi_values",)
-    ),
-    ("OptimalChiC4.estimate_chi", ()): _kwarg_params(("xi_values",)),
-    ("OptimalChiC4RootzoneStress.estimate_chi", ()): _kwarg_params(("xi_values",)),
-    ("OptimalChiLavergne20C3.estimate_chi", ()): _kwarg_params(("xi_values",)),
-    ("OptimalChiLavergne20C4.estimate_chi", ()): _kwarg_params(("xi_values",)),
-    ("OptimalChiC4NoGamma.estimate_chi", ()): _kwarg_params(("xi_values",)),
-    ("OptimalChiC4NoGammaRootzoneStress.estimate_chi", ()): _kwarg_params(
-        ("xi_values",)
-    ),
-}
-
-
-def _get_time_dim(ctx: Context) -> int | None:
-    """Get the time dimension for the current array (first dimension of full shape)."""
-    time_dim: int | None = 0
-    if ctx.array_type == "xarray":
-        time_dim_key = "a"
-        # Determine if and where it is in this argument
-        if time_dim_key in ctx.array_dims:
-            time_dim = ctx.array_dims.index(time_dim_key)
-        else:
-            time_dim = None
-    return time_dim
-
-
-# These methods require specific arguments
-def defined_method_args(argument: str, ctx: Context) -> Any | None:
-    """Return any manually defined arguments for the current function / method.
-
-    This is done by defining an `arguments` dictionary for the function and then
-    returning the value (if any) of the specific `argument`.
-
-    Args:
-        argument (str): The name of the input argument to define.
-        ctx (Context): The context containing the name of the function (`ctx.name`) and
-        the parent classes / class method being tested (`ctx.parents`).
-
-    Returns:
-        Any | None: The manually defined value for the argument, or `None` if it can be
-        set by the defaults.
-    """
-    shape = ctx.shape
-    bcast_shape = ctx.bcast_shape
-
-    # PModel parameters
-    splashDatesLen = 10
-    # Demography parameters
-    n_pft = 3
-    n_heights = 2
-    pft_names = [f"Tree{i + 1}" for i in range(n_pft)]
-
-    fapar_limitation = FaparLimitation(
-        annual_total_potential_gpp=np.ones(48),
-        annual_mean_ca=np.ones(48),
-        annual_mean_chi=np.ones(48),
-        annual_mean_vpd=np.ones(48),
-        annual_total_precip=np.ones(48),
-        annual_growing_season_length=np.ones(48),
-        aridity_index=np.ones(48),
-        years=np.zeros((48,), dtype="datetime64[Y]"),
-        phenology_const=PhenologyConst(
-            z=12.227, k=0.5, f0_coefficients=(0.65, 0.604169, 1.9), sigma=0.771
-        ),
-    )
-
-    method_arguments_list: dict[str, dict] = {
-        "broadcast_time": {"shape": bcast_shape},
-        ## PModel
-        # Subdaily data needs more than 1 day of times (uses 48 hours)
-        "AcclimationModel": {"datetimes": np.arange(0, 48, dtype="datetime64[h]")},
-        "AcclimationModel.set_nearest": {"time": np.timedelta64(12, "h")},
-        "AcclimationModel._validate_and_set_datetimes": {
-            "datetimes": np.arange(0, 48, dtype="datetime64[h]")
-        },
-        "AcclimationModel._get_subdaily_interpolation_xy": {"values": np.ones(2)},
-        "AcclimationModel.fill_daily_to_subdaily": {"values": np.ones((2, *shape[1:]))},
-        "AcclimationModel.get_window_values": {"values": np.ones(48)},
-        "AcclimationModel.get_daily_means": {"values": np.ones(48)},
-        "calculate_kattge_knorr_arrhenius_factor": {
-            "coef": {"ha": 1, "hd": 1, "entropy_intercept": 1, "entropy_slope": 1}
-        },
-        "SplashModel.estimate_daily_water_balance": {
-            "previous_wn": np.full((splashDatesLen, *shape[1:]), 10),
-        },
-        "SplashModel.calculate_soil_moisture": {"wn_init": np.full(shape[1:], 10)},
-        "PModelEnvironment": {"patm": np.full(shape, 100000)},
-        "TwoLeafIrradiance": {"patm": np.full(shape, 100000)},
-        ## Demography uses 1D arrays (a lot of these could probably be skipped)
-        "Cohorts": {
-            "dbh_values": np.full(n_pft, 2),
-            "n_individuals": np.ones(n_pft),
-            "pft_names": np.array(pft_names, dtype=np.str_),
-        },
-        "Flora": {"pfts": [PlantFunctionalType(name=name) for name in pft_names]},
-        "Flora.get_stem_traits": {"pft_names": pft_names},
-        "Canopy": {"fit_ppa": True},
-        "CohortCanopyData": {
-            "projected_leaf_area": np.ones((n_heights, n_pft)),
-            "n_individuals": np.ones(n_pft),
-            "lai": np.ones(n_pft),
-            "par_ext": np.ones(n_pft),
-        },
-        "CommunityCanopyData": {
-            "absorption": np.full((n_heights, n_pft), 0.5),
-            "leaf_area_index": np.full((n_heights, n_pft), 0.5),
-            "cohort_leaf_area": np.full((n_heights, n_pft), 1),
-        },
-        "StemAllometry": {"at_dbh": np.full(n_pft, 0.5)},
-        "StemAllocation": {"whole_crown_gpp": np.full(n_pft, 0.5)},
-        "CrownProfile": {"z": np.linspace(5, 15, n_heights)[:, np.newaxis]},
-        "Cohorts.drop_cohort_data": {"drop_indices": [0, 1]},
-        "StemAllometry.drop_cohort_data": {"drop_indices": [0, 1]},
-        "Community.drop_cohorts": {"drop_indices": [0, 1]},
-        ## Phenology
-        "FaparLimitation": {"years": np.ones(bcast_shape[0], dtype="datetime64[Y]")},
-        "Phenology": {
-            "daily_gpp": np.full((48,), 0.5),
-            "datetimes": np.arange(0, 48, dtype="datetime64[D]"),
-            "fapar_limitation": fapar_limitation,
-        },
-    }
-    arguments: dict = method_arguments_list.get(ctx.name, {})
-
-    # Arguments that use temporary variables or depend on parents
-
-    if ctx.name.split(".")[0] == "AnnualValueCalculator":
-        # The shapes of many of the inputs are required to match `data_shape`
-        nTime = 3
-        data_shape = (nTime, *bcast_shape[1:])
-        if ctx.name == "AnnualValueCalculator":
-            arguments = {
-                "data_shape": data_shape,
-                "timing": np.arange(0, nTime, dtype="datetime64[D]"),
-            }
-        elif ctx.name in [
-            "AnnualValueCalculator._split_values_by_year",
-            "AnnualValueCalculator.get_annual_means",
-            "AnnualValueCalculator.get_annual_totals",
-        ]:
-            arguments = {"values": np.ones(data_shape)}
-
-    if ctx.name.split(".")[0] in ["DailySolarFluxes", "DailyEvapFluxes"]:
-        # Needs first dimension to match the dates
-        nTime = 4
-        shape2 = (1 if shape[0] == 1 else nTime, *shape[1:])
-        if ctx.name == "DailySolarFluxes":
-            arguments = {
-                "dates": Calendar(np.arange(0, nTime, dtype="datetime64[D]")),
-                "latitude": np.full(shape2, 10),
-                "elevation": np.full(shape2, 10),
-                "sunshine_fraction": np.full(shape2, 0.5),
-                "temperature": np.full(shape2, 25),
-            }
-        elif ctx.name == "DailyEvapFluxes":
-            arguments = {
-                "pa": np.full(shape2, 10),
-                "tc": np.full(shape2, 25),
-                "kWm": np.full(shape2, 150),
-            }
-        elif ctx.name == "DailyEvapFluxes.estimate_aet":
-            arguments = {"wn": np.full(shape2, 10)}
-
-    if ctx.name == "SplashModel":
-        if (
-            ctx.parents
-            and ctx.parents[0] == "SplashModel.estimate_initial_soil_moisture"
-        ):
-            # Requires at least 1 year of data
-            nTime = 366
-        else:
-            nTime = splashDatesLen
-        splashShape = (1 if shape[0] == 1 else nTime, *shape[1:])
-        arguments = {
-            "dates": Calendar(np.arange(0, nTime, dtype="datetime64[D]")),
-            "lat": np.full(splashShape, 10),
-            "elv": np.full(splashShape, 10),
-            "sf": np.full(splashShape, 0.5),
-            "tc": np.full(splashShape, 25),
-            "pn": np.full(splashShape, 10),
-        }
-
-    if ctx.name == "PModelEnvironment":
-        if ctx.parents and ctx.parents[-1] == "SubdailyPModel":
-            # SubdailyPModel needs more than 1 day (uses 48 hourly times)
-
-            # Replace the time dimension (the first dimension)
-            envShape = list(shape)
-            time_dim = _get_time_dim(ctx)
-            if time_dim is not None:
-                envShape[time_dim] = 1 if shape[time_dim] == 1 else 48
-
-            arguments = {
-                "tc": np.full(envShape, 20),
-                "vpd": np.full(envShape, 40),
-                "co2": np.full(envShape, 1000),
-                "patm": np.full(envShape, 101325),
-                "fapar": np.full(envShape, 1),
-                "ppfd": np.full(envShape, 800),
-            }
-
-    if ctx.name == "SubdailyPModel.apply_gpp_penalty_factor":
-        # SubdailyPModel needs more than 1 day (uses 48 hourly times)
-        _shape = list(shape)
-        time_dim = _get_time_dim(ctx)
-        if time_dim is not None:
-            _shape[time_dim] = 1 if shape[time_dim] == 1 else 48
-        arguments = {"penalty_factor": np.full(_shape, 0.5)}
-
-    return arguments.get(argument)
-
-
-# Call additional methods when initialising these classes
-ADDITIONAL_INIT_METHODS = {
-    "AcclimationModel": "set_nearest",
-}
+config = _Config()
 
 
 ## Functions to get the list of callables
@@ -586,93 +254,13 @@ def _extract_numpy_dtype(typ: Any) -> DTypeLike:
 
 
 ## Functions to initialise arguments and classes
-@dataclass
-class Context:
-    """Context class to pass between functions.
-
-    Used to define test-specific options for generating arguments, such as shapes and
-    types of arrays. Also, provides the argument definition hierarchy for use in
-    'defined_method_args'.
-
-    Attributes:
-        name (str): Name of the current method/function/class.
-        shapes (Callable[[int, int, str], dict[str, int]]):
-            Function to generate shapes for array arguments. Takes array argument index,
-            number of array arguments, and function name. Returns dictionary of
-            {dimension names: dimension sizes}.
-        array_type (str, optional): The type to initialise arrays as. "xarray" or
-            "numpy". Defaults to "numpy".
-        n_array (int): Number of array arguments in the current function.
-        i_array (int): Index of the current array argument, used to select a shape.
-        parents (list[str]): Hierarchy of names leading to the current function/class.
-            The first value will be the name of the callable being tested. If it is a
-            class method, the second value will be the name of the class.
-    """
-
-    name: str
-    shapes: Callable[[int, int, str], dict[str, int]]
-    array_type: str = "numpy"
-    n_array: int = 0
-    i_array: int = 0
-    parents: list[str] = field(default_factory=list)
-    """A list of the superior function / classes for the current context."""
-
-    def new(self, name: str) -> Context:
-        """Generate a context for a new function/class, updating the hierarchy."""
-        return Context(
-            name=name,
-            shapes=self.shapes,
-            array_type=self.array_type,
-            n_array=self.n_array,
-            i_array=self.i_array,
-            parents=[*self.parents, self.name],
-        )
-
-    def _get_shape(self):
-        if self.i_array == -1 or self.i_array >= self.n_array:
-            # Placeholder / Fallback
-            array_shape = self.shapes(0, 1, "")
-        else:
-            array_shape = self.shapes(self.i_array, self.n_array, self.name)
-        return array_shape
-
-    @property
-    def shape(self) -> tuple[int, ...]:
-        """Return the shape for index `i_array`."""
-        return tuple(self._get_shape().values())
-
-    @property
-    def array_dims(self) -> tuple[str, ...]:
-        """Return the dimensions for index `i_array`."""
-        return tuple(self._get_shape().keys())
-
-    @property
-    def bcast_shape(self) -> tuple[int, ...]:
-        """The broadcast shape of all inputs (not the full shape being tested)."""
-        if self.n_array == 0:
-            # Placeholder / Fallback
-            return self.shape
-
-        shapes = [self.shapes(i, self.n_array, self.name) for i in range(self.n_array)]
-
-        # Get the full list of dimension names
-        full_dims = []
-        for shape in shapes:
-            for dim in shape:
-                if dim not in full_dims:
-                    full_dims.append(dim)
-        # Expand/reorder all shapes to match the full dimensions
-        full_shapes = []
-        for shape in shapes:
-            full_shape = tuple(shape.get(dim, 1) for dim in full_dims)
-            full_shapes.append(full_shape)
-        # Get the full broadcast shape
-        return np.broadcast_shapes(*full_shapes)
 
 
-# Resolve issue with get_type_hints failing for InitVars in py3.10
-# Define a stub to make InitVar callable (https://stackoverflow.com/questions/70400639)
-InitVar.__call__ = lambda *args: None  # type: ignore[method-assign]
+def _get_manual_args(param_name: str, ctx: Context) -> Any:
+    """Simplify call to MANUAL_ARGS."""
+    if ctx.name not in MANUAL_ARGS:
+        return None
+    return MANUAL_ARGS[ctx.name](ctx).get(param_name)
 
 
 def _get_parameters(
@@ -714,7 +302,7 @@ def _get_parameters(
 
     approaches: dict[str, str] = {}
     for name, param in params.items():
-        if defined_method_args(name, ctx) is not None:
+        if _get_manual_args(name, ctx) is not None:
             approaches[name] = "manual"
         elif param.default is not param.empty and not (
             required_args and name not in required_args  # Don't use default if REQUIRES
@@ -824,7 +412,7 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
 
         # Set manually defined values
         if approach == "manual":
-            kwargs[param_name] = defined_method_args(param_name, ctx)
+            kwargs[param_name] = _get_manual_args(param_name, ctx)
 
         # Set default arguments
         elif approach == "default":
@@ -850,6 +438,26 @@ def generate_args(method: Callable, ctx: Context) -> dict[str, Any]:
             if ctx.array_type == "xarray":
                 dims = ctx.array_dims or None
                 kwargs[param_name] = xr.DataArray(arg, dims=dims)
+
+    # Print the arguments if in debug mode
+    if config.DEBUG:
+        np.set_printoptions(threshold=1)
+        print(f"\n{ctx.name}\nParents: {ctx.parents}\nArguments:")
+        for param_name, (_, _, approach) in params.items():
+            print(f"\t{param_name}: ({approach})")
+            arg = kwargs[param_name]
+            if isinstance(arg, np.ndarray):
+                out = f"ndarray({arg.shape}, dtype={arg.dtype})"
+            elif isinstance(arg, xr.DataArray):
+                out = f"DataArray({arg.shape}, dims={arg.dims}, dtype={arg.dtype})"
+            elif (  # Replace pyrealm objects with a multiline repr with just the name
+                getattr(arg.__class__, "__module__", "").startswith("pyrealm")
+                and "\n" in repr(arg)
+            ) or isinstance(arg, ConstantsClass):
+                out = arg.__class__.__name__
+            else:
+                out = repr(arg)
+            print("\t\t" + out.replace("\n", "\n\t\t"))
 
     return kwargs
 
