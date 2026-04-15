@@ -75,7 +75,7 @@ def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
     from pyrealm.constants import CoreConst
     from pyrealm.pmodel import (
         C3C4Competition,
-        CalcCarbonIsotopes,
+        CarbonIsotopes,
         PModelEnvironment,
     )
     from pyrealm.pmodel.pmodel import PModel
@@ -107,8 +107,8 @@ def test_c3c4competition(pmodel_c3_args, pmodel_c4_args, expected):
     d13CO2 = np.array([-8.4])
     D14CO2 = np.array([19.2])
 
-    pmodel_c3_iso = CalcCarbonIsotopes(pmodel_c3, d13CO2=d13CO2, D14CO2=D14CO2)
-    pmodel_c4_iso = CalcCarbonIsotopes(pmodel_c4, d13CO2=d13CO2, D14CO2=D14CO2)
+    pmodel_c3_iso = CarbonIsotopes(pmodel_c3, d13CO2=d13CO2, D14CO2=D14CO2)
+    pmodel_c4_iso = CarbonIsotopes(pmodel_c4, d13CO2=d13CO2, D14CO2=D14CO2)
 
     comp.estimate_isotopic_discrimination(
         d13CO2=np.array([-8.4]),

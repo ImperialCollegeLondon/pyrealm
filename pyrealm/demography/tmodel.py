@@ -852,7 +852,12 @@ def calculate_growth_increments(
     dbh: NDArray[np.floating],
     stem_height: NDArray[np.floating],
     validate: bool = True,
-) -> tuple[NDArray[np.floating], NDArray[np.floating], NDArray[np.floating]]:
+) -> tuple[
+    NDArray[np.floating],
+    NDArray[np.floating],
+    NDArray[np.floating],
+    NDArray[np.floating],
+]:
     r"""Calculate growth increments.
 
     Given an estimate of net primary productivity (NPP, :math:`P_{net}`), less
@@ -860,17 +865,19 @@ def calculate_growth_increments(
     to growth and hence estimate resulting increments :cite:`Li:2014bc` in:
     
     * the stem diameter (:math:`\Delta D`),
-    * the stem mass (:math:`\Delta W_s`), and 
-    * the foliar mass (:math:`\Delta W_f`). 
-        
+    * the stem mass (:math:`\Delta W_s`), 
+    * the foliar mass (:math:`\Delta W_f`), and
+    * the fine root mass (:math:`\Delta W_r`).
+    
     The stem diameter increment can be calculated using the available productivity for
-    growth and the rates of change in stem (:math:`\textrm{d}W_s / \textrm{d}t`) and
-    foliar masses (:math:`\textrm{d}W_f / \textrm{d}t`): 
+    growth and the rates of change in stem mass (:math:`\textrm{d}W_s / \textrm{d}t`)
+    and in the combined foliage and fine root masses (:math:`\textrm{d}W_fr /
+    \textrm{d}t`):  
 
     .. math::
 
         \Delta D = \frac{P_{net} - T}{ \textrm{d}W_s / \textrm{d}t  +
-             \textrm{d}W_f / \textrm{d}t}
+             \textrm{d}W_fr / \textrm{d}t}
 
     The rates of change in stem and foliar mass can be calculated as:
 
@@ -882,7 +889,7 @@ def calculate_growth_increments(
             \textrm{d}W_s / \textrm{d}t &= \frac{\pi}{8} \rho_s D
                 \left(a D \left(1 - \frac{H}{H_{m}} + 2 H \right) \right) \\
 
-            \textrm{d}W_f / \textrm{d}t &= L \frac{\pi c}{4 a} \left(a D \left( 1 -
+            \textrm{d}W_fr / \textrm{d}t &= L \frac{\pi c}{4 a} \left(a D \left( 1 -
                 \frac{H}{H_{m}} + H \right) \right) \frac{1}{\sigma + \zeta}
         \end{align*}
       \]
@@ -905,8 +912,8 @@ def calculate_growth_increments(
     conditions, this function explicitly sets :math:`\Delta D = 0`: **stems with zero
     height cannot grow**.
 
-    The resulting incremental changes in stem mass and foliar mass can then be
-    calculated as:
+    The resulting incremental changes in stem mass and foliage plus fine root masses can
+    then be calculated as:
 
     .. math::
       :nowrap:
@@ -914,7 +921,25 @@ def calculate_growth_increments(
       \[
         \begin{align*}
         \Delta W_s &=  \textrm{d}W_s / \textrm{d}t \, \Delta D\\
-        \Delta W_f &=  \textrm{d}W_f / \textrm{d}t \, \Delta D
+        \Delta W_fr &=  \textrm{d}W_fr / \textrm{d}t \, \Delta D
+        \end{align*}
+      \]
+
+    Note that :cite:`Li:2014bc` use ':math:`W_f`' to denote the increment in both
+    foliage and fine root mass, as fine root mass is estimated as a function of foliage
+    area through the specific leaf area (:math:`\sigma`) and  ratio of fine root mass to
+    leaf area (:math:`\zeta`). Here we use :math:`W_fr` to indicate the combined
+    increments and partition the final increments into foliage and fine root components
+    as:
+
+    .. math::
+      :nowrap:
+
+      \[
+        \begin{align*}
+
+        \Delta W_f &= \Delta W_fr /( 1 + \sigma \zeta)
+        \Delta W_r &= \Delta W_fr - \Delta W_f
         \end{align*}
       \]
 
@@ -924,9 +949,6 @@ def calculate_growth_increments(
         of maintaining reproductive tissue mass as a fraction of foliage mass. These
         values can be set to zero to reproduce the predictions of the original T Model
         calculations. 
-
-
-
 
     Args:
         rho_s: Wood density of the PFT
@@ -977,7 +999,7 @@ def calculate_growth_increments(
             size_args=size_args, function_name="calculate_growth_increments"
         )
 
-    # Rates of change in stem and foliar
+    # Rates of change in stem and foliage + fine root mass
     dWsdt = (
         np.pi
         / 8
@@ -986,7 +1008,10 @@ def calculate_growth_increments(
         * (a_hd * dbh * (1 - (stem_height / h_max)) + 2 * stem_height)
     )
 
-    dWfdt = (
+    # This equation includes terms for the rate of change in fine root mass, which is
+    # estimated alongside rate of change in foliage mass in the model as
+    # (1 + sigma + zeta) dWfdt (Eqn 15)
+    dWfrdt = (
         lai
         * ((np.pi * ca_ratio) / (4 * a_hd))
         * (a_hd * dbh * (1 - stem_height / h_max) + stem_height)
@@ -1000,11 +1025,17 @@ def calculate_growth_increments(
             np.where(
                 dbh == 0,
                 0,
-                (npp - turnover - reproductive_tissue_turnover) / (dWsdt + dWfdt),
+                (npp - turnover - reproductive_tissue_turnover) / (dWsdt + dWfrdt),
             )
         )
 
-    return (delta_d, dWsdt * delta_d, dWfdt * delta_d)
+    # Partition delta Wfr into delta Wf and delta Wr using (1 + sigma.zeta)
+    fine_root_foliage_factor = 1 + sla * zeta
+    delta_Wfr = dWfrdt * delta_d
+    delta_Wf = delta_Wfr / fine_root_foliage_factor
+    delta_Wr = delta_Wfr - delta_Wf
+
+    return (delta_d, dWsdt * delta_d, delta_Wf, delta_Wr)
 
 
 @dataclass
@@ -1213,6 +1244,7 @@ class StemAllocation(PandasExporter):
         "delta_dbh",
         "delta_stem_mass",
         "delta_foliage_mass",
+        "delta_fine_root_mass",
     )
 
     # Init vars
@@ -1256,6 +1288,8 @@ class StemAllocation(PandasExporter):
     """Predicted increase in stem mass from growth allocation (g C)"""
     delta_foliage_mass: NDArray[np.floating] = field(init=False)
     """Predicted increase in foliar mass from growth allocation (g C)"""
+    delta_fine_root_mass: NDArray[np.floating] = field(init=False)
+    """Predicted increase in fine root mass from growth allocation (g C)"""
 
     # Information attributes
     _n_pred: int = field(init=False)
@@ -1297,6 +1331,7 @@ class StemAllocation(PandasExporter):
         # Topslice GPP
         self.topslice_whole_crown_gpp = self.whole_crown_gpp - self.gpp_topslice
 
+        # Calculate respiration terms
         self.sapwood_respiration = calculate_sapwood_respiration(
             resp_s=stem_traits.resp_s,
             sapwood_mass=stem_allometry.sapwood_mass,
@@ -1323,6 +1358,7 @@ class StemAllocation(PandasExporter):
             validate=False,
         )
 
+        # Calculate NPP given losses to yield and respiration costs
         self.npp = calculate_net_primary_productivity(
             yld=stem_traits.yld,
             whole_crown_gpp=self.topslice_whole_crown_gpp,
@@ -1333,6 +1369,7 @@ class StemAllocation(PandasExporter):
             validate=False,
         )
 
+        # Calculate turnover costs
         self.foliage_turnover = calculate_foliage_turnover(
             tau_f=stem_traits.tau_f,
             foliage_mass=stem_allometry.foliage_mass,
@@ -1351,23 +1388,27 @@ class StemAllocation(PandasExporter):
             validate=False,
         )
 
-        (self.delta_dbh, self.delta_stem_mass, self.delta_foliage_mass) = (
-            calculate_growth_increments(
-                rho_s=stem_traits.rho_s,
-                a_hd=stem_traits.a_hd,
-                h_max=stem_traits.h_max,
-                lai=stem_traits.lai,
-                ca_ratio=stem_traits.ca_ratio,
-                sla=stem_traits.sla,
-                zeta=stem_traits.zeta,
-                npp=self.npp,
-                turnover=self.foliage_turnover + self.fine_root_turnover,
-                reproductive_tissue_turnover=self.reproductive_tissue_turnover,
-                p_foliage_for_reproductive_tissue=stem_traits.p_foliage_for_reproductive_tissue,
-                dbh=stem_allometry.dbh,
-                stem_height=stem_allometry.stem_height,
-                validate=False,
-            )
+        # Calculate resulting growth increments given NPP and turnover costs.
+        (
+            self.delta_dbh,
+            self.delta_stem_mass,
+            self.delta_foliage_mass,
+            self.delta_fine_root_mass,
+        ) = calculate_growth_increments(
+            rho_s=stem_traits.rho_s,
+            a_hd=stem_traits.a_hd,
+            h_max=stem_traits.h_max,
+            lai=stem_traits.lai,
+            ca_ratio=stem_traits.ca_ratio,
+            sla=stem_traits.sla,
+            zeta=stem_traits.zeta,
+            npp=self.npp,
+            turnover=self.foliage_turnover + self.fine_root_turnover,
+            reproductive_tissue_turnover=self.reproductive_tissue_turnover,
+            p_foliage_for_reproductive_tissue=stem_traits.p_foliage_for_reproductive_tissue,
+            dbh=stem_allometry.dbh,
+            stem_height=stem_allometry.stem_height,
+            validate=False,
         )
 
         # Set the number of observations per stem (one if dbh is 1D, otherwise size of

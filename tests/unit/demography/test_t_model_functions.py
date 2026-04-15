@@ -743,24 +743,26 @@ class TestTModel:
         )
 
         with outcome as excep:
-            delta_d, delta_mass_stm, delta_mass_frt = calculate_growth_increments(
-                rho_s=rtmodel_flora.rho_s[pft_idx],
-                a_hd=rtmodel_flora.a_hd[pft_idx],
-                h_max=rtmodel_flora.h_max[pft_idx],
-                lai=rtmodel_flora.lai[pft_idx],
-                ca_ratio=rtmodel_flora.ca_ratio[pft_idx],
-                sla=rtmodel_flora.sla[pft_idx],
-                zeta=rtmodel_flora.zeta[pft_idx],
-                npp=rtmodel_data["npp"][data_idx],
-                turnover=rtmodel_data["turnover"][data_idx],
-                reproductive_tissue_turnover=np.zeros(
-                    np.shape(rtmodel_data["turnover"][data_idx])
-                ),
-                p_foliage_for_reproductive_tissue=np.zeros(
-                    np.shape(rtmodel_data["npp"][data_idx])
-                ),
-                dbh=rtmodel_data["dbh"][data_idx],
-                stem_height=rtmodel_data["stem_height"][data_idx],
+            delta_d, delta_mass_stm, delta_mass_f, delta_mass_rt = (
+                calculate_growth_increments(
+                    rho_s=rtmodel_flora.rho_s[pft_idx],
+                    a_hd=rtmodel_flora.a_hd[pft_idx],
+                    h_max=rtmodel_flora.h_max[pft_idx],
+                    lai=rtmodel_flora.lai[pft_idx],
+                    ca_ratio=rtmodel_flora.ca_ratio[pft_idx],
+                    sla=rtmodel_flora.sla[pft_idx],
+                    zeta=rtmodel_flora.zeta[pft_idx],
+                    npp=rtmodel_data["npp"][data_idx],
+                    turnover=rtmodel_data["turnover"][data_idx],
+                    reproductive_tissue_turnover=np.zeros(
+                        np.shape(rtmodel_data["turnover"][data_idx])
+                    ),
+                    p_foliage_for_reproductive_tissue=np.zeros(
+                        np.shape(rtmodel_data["npp"][data_idx])
+                    ),
+                    dbh=rtmodel_data["dbh"][data_idx],
+                    stem_height=rtmodel_data["stem_height"][data_idx],
+                )
             )
 
             assert delta_d.shape == exp_shape
@@ -769,8 +771,12 @@ class TestTModel:
             assert delta_mass_stm.shape == exp_shape
             assert_allclose(delta_mass_stm, rtmodel_data["delta_stem_mass"][out_idx])
 
-            assert delta_mass_frt.shape == exp_shape
-            assert_allclose(delta_mass_frt, rtmodel_data["delta_foliage_mass"][out_idx])
+            assert delta_mass_f.shape == exp_shape
+            assert delta_mass_rt.shape == exp_shape
+            assert_allclose(
+                delta_mass_f + delta_mass_rt,
+                rtmodel_data["delta_foliage_mass"][out_idx],
+            )
             return
 
         assert str(excep.value).startswith(excep_msg)
@@ -1052,10 +1058,18 @@ def test_StemAllocation(rtmodel_flora, rtmodel_data):
             "fine_root_turnover",
             "reproductive_tissue_respiration",
             "reproductive_tissue_turnover",
+            "delta_foliage_mass",
+            "delta_fine_root_mass",
         ]
     )
     for var in vars_to_check:
         assert_allclose(getattr(stem_allocation, var), rtmodel_data[var])
+
+    # Separately check the partitioning into delta foliage and fine root
+    assert_allclose(
+        stem_allocation.delta_foliage_mass + stem_allocation.delta_fine_root_mass,
+        rtmodel_data["delta_foliage_mass"],
+    )
 
     # Test the inherited to_pandas method
     df = stem_allocation.to_pandas()
