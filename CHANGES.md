@@ -10,7 +10,12 @@ See also the migration page for help in moving between versions.
 As well as bugfixes, version 2.0.1 is a slight violation of semantic versioning and
 picks up some API and default changes that were overlooked in 2.0.0.
 
+We have changed the names of some functions and methods to give a more consistent naming
+convention.
+
 - We have aligned function names from mixed `calc_` and `calculate_` to `calculate_`.
+- The `CalcCarbonIsotopes` class has been renamed to `CarbonIsotopes`: none of the
+  other class names include an 'action'.
 
 ### Bugfixes
 
@@ -18,6 +23,8 @@ picks up some API and default changes that were overlooked in 2.0.0.
   rather than $A = min(A_c, A_j)$ (#603).
 - The P Model implementations were not passing required additional variables down the
   Arrhenius scaling methods, which stopped some of those methods being usable (#582).
+- Updates to the `numpy` package needed broke the calculation of the SPLASH model when
+  used on a single site (#626).
 
 ### Changes
 
@@ -25,6 +32,9 @@ picks up some API and default changes that were overlooked in 2.0.0.
   density and viscosity. The default methods used by `pyrealm` have been swapped from
   computationally complex high-precision methods used in `rpmodel` (think physics labs)
   to  simpler but much faster approaches.
+
+- We have added new experimental code supporting the calculation of phenological
+  timeseries of LAI and fAPAR.
 
 ## 2.0.0
 
@@ -270,13 +280,13 @@ notably the API of the `pmodel` module, as well as introducing new functionality
 - Alteration of PModel arguments. Since there are now different options for simulating
   C3/C4, the c4 argument is replaced with method_optchi, which sets C3/C4 status
   internally from the method selected.
-- Refactor and integration of Alienor's CarbonIsotopes and C3C4Competition models,
+- Refactor and integration of Alienor's CalcCarbonIsotopes and C3C4Competition models,
   from:
   [https://github.com/Alielav/pyrealm/tree/alienorlavergne](https://github.com/Alielav/pyrealm/tree/alienorlavergne)
 - Refactor of utilities TemporalInterpolator and DailyRepresentativeValues to handle
   multiple dimensions and ragged arrays of indices.
 - Extended pytest framework to include TemporalInterpolator, DailyRepresentativeValues,
-  CarbonIsotopes and C3C4Competition.
+  CalcCarbonIsotopes and C3C4Competition.
 
 ## 0.6.0
 
