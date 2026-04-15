@@ -261,9 +261,9 @@ class FaparLimitationMethodZhu(FaparLimitationMethodABC, method="zhu"):
 
         The Zhu method calculates the maximum fAPAR as a function of the energy and
         water limited fAPAR, following a function like the Budyko curve
-        {cite:p}`roderick:2011a`:
+        :cite:p:`roderick:2011a`:
     
-        .. math:
+        .. math::
             :nowrap:
 
             \[    
