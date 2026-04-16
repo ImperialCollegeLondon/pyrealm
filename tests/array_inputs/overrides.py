@@ -166,6 +166,29 @@ REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
     ("OptimalChiC4NoGammaRootzoneStress.estimate_chi", ()): _kwarg_params(
         ("xi_values",)
     ),
+    # Add aridity_index to FaparLimitationNew calls - only actually required for one
+    # method.
+    ("FaparLimitationNew", ("FaparLimitationNew",)): _kwarg_params(("aridity_index",)),
+    ("FaparLimitationNew", ("PhenologyNew", "PhenologyNew")): _kwarg_params(
+        ("aridity_index",)
+    ),
+    ("FaparLimitationNew", ("PhenologyNew.from_pmodel",)): _kwarg_params(
+        ("aridity_index",)
+    ),
+    ("FaparLimitationNew", ("PhenologyMethodZhu", "PhenologyMethodZhu")): _kwarg_params(
+        ("aridity_index",)
+    ),
+    (
+        "FaparLimitationNew",
+        ("PhenologyMethodZhou", "PhenologyMethodZhou"),
+    ): _kwarg_params(("aridity_index",)),
+    (
+        "FaparLimitationNew",
+        (
+            "FaparLimitationMethodCai.calculate_maximum_fapar",
+            "FaparLimitationMethodCai",
+        ),
+    ): _kwarg_params(("aridity_index",)),
 }
 
 
@@ -394,12 +417,49 @@ _PHENOLOGY_N_TIMES = 2
 register_args("FaparLimitation")(
     lambda ctx: {"years": np.ones(ctx.bcast_shape[0], dtype="datetime64[Y]")}
 )
+
+
 register_args("FaparLimitation.from_pmodel")(
     lambda ctx: {
         "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
         "aridity_index": np.ones(_set_time_len(1, ctx)),  # Time: constant or years (1)
     }
 )
+
+
+@register_args("FaparLimitationNew.from_pmodel")
+def _(ctx):
+    # Manually define
+    # * years (one-d array along time axis)
+    # * aridity_index (site specific so broadcasts onto shape[1:] dropping time axis)
+
+    return {
+        "datetimes": np.arange(0, ctx.bcast_shape[0], dtype="datetime64[D]"),
+        "aridity_index": np.ones(ctx.bcast_shape[1:]),
+        "method": "cai",
+    }
+
+
+@register_args("FaparLimitationNew")
+def _(ctx):
+    # Manually define
+    # * years (one-d array along time axis)
+    # * aridity_index (site specific so broadcasts onto shape[1:] dropping time axis)
+
+    args = {
+        "years": np.ones(ctx.bcast_shape[0], dtype="datetime64[Y]"),
+        "aridity_index": np.ones(ctx.bcast_shape[1:]),
+        "method": "cai",
+    }
+
+    # Set the required method in the call when testing FaparLimitationMethod calls
+    # and pass in additional variables as required.
+    if ctx.parents and "FaparLimitationMethodZhu" in ctx.parents[0]:
+        args["method"] = "zhu"
+
+    return args
+
+
 register_args("Phenology")(
     lambda _: {
         "daily_gpp": np.full((_PHENOLOGY_N_TIMES,), 0.5),

@@ -161,8 +161,21 @@ class FaparLimitationMethodCai(FaparLimitationMethodABC, method="cai"):
         """Boolean array showing if annual :math:`fAPAR_{max}` is water or energy
         limited."""
 
-        # Make sure the aridity index is not zero
+        # Validate the aridity index
         self.aridity_index = getattr(self.fapar_limitation, "aridity_index")
+
+        # Check aridity index is a site specific array (or constant)
+        try:
+            np.broadcast_shapes(
+                self.aridity_index[None, :].shape, self.fapar_limitation.shape
+            )
+        except ValueError:
+            raise ValueError(
+                f"The aridity index argument must contain site specific values and "
+                f"must be a constant of have shape {self.fapar_limitation.shape[1:]}"
+            )
+
+        # Make sure the aridity index is not zero
         if np.any(self.aridity_index <= 0):
             raise ValueError("The aridity index has to be positive.")
 
@@ -385,6 +398,13 @@ class FaparLimitationNew:
         warn_experimental("FaparLimitation")
 
         # Validate the input shapes.
+        # NOTE: Input shape checking only handles the main arguments and not the
+        #       contents of kwargs arrays that are passed down as required extra
+        #       arguments to FaparLimitationMethodABC subclasses. This is because those
+        #       required variables can have different expectations of the inputs shapes
+        #       (e.g. FaparLimitationMethodCai requires aridity_index for sites not
+        #       across time), and so shape of those inputs should be validated within
+        #       subclasses, not here.
         self.shape: tuple[int, ...] = check_input_shapes(
             annual_total_potential_gpp,
             annual_mean_ca,
@@ -392,7 +412,6 @@ class FaparLimitationNew:
             annual_mean_vpd,
             annual_total_precip,
             annual_growing_season_length,
-            *kwargs.values(),
         )
 
         # Check the years values - must be datetime64[Y] and be one dimensional,
