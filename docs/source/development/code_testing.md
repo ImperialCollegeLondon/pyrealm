@@ -104,9 +104,9 @@ using:
 * `SKIP_METHODS` - a list of functions / methods to skip because they are not relevant
   or have issues that are difficult to resolve.
 
-* `IGNORE_OUTPUTS` - a list of function results or class attributes to skip when
-  checking for equality as they are not expected to be equal. This is only used by the
-  broadcasting tests.
+* `IGNORE_OUTPUTS` and `IGNORE_OUTPUTS_BCAST` - a list of function results or class
+  attributes to skip when checking for equality as they are not expected to be equal.
+  The latter is only used by the broadcasting tests.
 
 * `ADDITIONAL_INIT_METHODS` - a dictionary containing any additional methods that need
   to be used when initialising objects of a certain class.

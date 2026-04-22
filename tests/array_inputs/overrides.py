@@ -3,9 +3,9 @@
 - `SKIP_METHODS` - a list of functions / methods to skip because they are not relevant
   or have issues that are difficult to resolve.
 
-- `IGNORE_OUTPUTS` - a list of function results or class attributes to skip when
-  checking for equality as they are not expected to be equal. This is only used in the
-  broadcasting tests.
+- `IGNORE_OUTPUTS` and `IGNORE_OUTPUTS_BCAST` - a list of function results or class
+  attributes to skip when checking for equality as they are not expected to be equal.
+  The latter is only used in the broadcasting tests.
 
 - `ADDITIONAL_INIT_METHODS` - a dictionary containing any additional methods that need
   to be used when initialising objects of that class.
@@ -76,9 +76,15 @@ SKIP_METHODS = [
 
 # Ignore these outputs for broadcasting tests, they are not expected to be equal.
 # Formats: [fn name] for function results, [class]:[attr] for class attributes
-IGNORE_OUTPUTS = [
+IGNORE_OUTPUTS_BCAST = [
     "Cohorts:_cohort_id",
     "Calendar:n_dates",
+]
+
+# Ignore these outputs for all tests
+IGNORE_OUTPUTS = [
+    "FaparLimitationMethodCai:fapar_limitation",  # Avoids recursive loop
+    "FaparLimitationMethodZhu:fapar_limitation",  # Avoids recursive loop
 ]
 
 
