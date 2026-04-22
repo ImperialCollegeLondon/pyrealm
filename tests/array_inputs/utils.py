@@ -310,8 +310,9 @@ def _get_parameters(
     for name, param in params.items():
         if _get_manual_args(name, ctx) is not None:
             approaches[name] = "manual"
-        elif param.default is not param.empty and not (
-            required_args and name not in required_args  # Don't use default if REQUIRES
+        elif (
+            param.default is not param.empty
+            and name not in (required_args or {})  # Don't use default if REQUIRES
         ):
             approaches[name] = "default"
         else:
