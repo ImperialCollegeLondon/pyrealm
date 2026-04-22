@@ -298,7 +298,7 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
             **kwargs,
         )
 
-        if aet_pet_ratio.shape != daily_potential_assimilation[[0]].shape:
+        if aet_pet_ratio.shape != daily_potential_assimilation[0].shape:
             raise ValueError(
                 "The 'aet_pet_ratio' must be an array providing one value per site."
             )
@@ -382,18 +382,19 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
         site_index = np.ndindex(cumulative_lai[0].shape)
 
         for idx in site_index:
+            full_idx = (slice(None), *idx)
             # Get the site specific lag
             lag_length = aridity_lag_days[*idx].item() + 1
             # Get the numerator the cumulative sum minus the same values but zero padded
             # on the left to the lag length and then truncated back to the same shape
             numerator = (
-                cumulative_lai[idx]
-                - np.pad(cumulative_lai[idx], (lag_length, 0))[:n_observations]
+                cumulative_lai[full_idx]
+                - np.pad(cumulative_lai[full_idx], (lag_length, 0))[:n_observations]
             )
             # Get the denominator
             denominator = np.minimum(np.arange(n_observations), lag_length)
             # Store the result
-            realised_lai[idx] = numerator / denominator
+            realised_lai[full_idx] = numerator / denominator
 
         # Remove the spin up data along the first axis
         realised_lai = realised_lai[spinup_length:]
