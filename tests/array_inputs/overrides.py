@@ -195,6 +195,7 @@ REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
             "FaparLimitationMethodCai",
         ),
     ): _kwarg_params(("aridity_index",)),
+    ("FaparLimitationNew.from_pmodel", ()): _kwarg_params(("aridity_index",)),
 }
 
 
@@ -440,7 +441,7 @@ def _(ctx):
     # * aridity_index (site specific so broadcasts onto shape[1:] dropping time axis)
 
     return {
-        "datetimes": np.arange(0, ctx.bcast_shape[0], dtype="datetime64[D]"),
+        "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
         "aridity_index": np.ones(ctx.bcast_shape[1:]),
         "method": "cai",
     }
@@ -452,9 +453,16 @@ def _(ctx):
     # * years (one-d array along time axis)
     # * aridity_index (site specific so broadcasts onto shape[1:] dropping time axis)
 
+    annual_data_shape = _set_time_len(_PHENOLOGY_N_TIMES, ctx, allow_one=False)
+
     args = {
-        "years": np.ones(ctx.bcast_shape[0], dtype="datetime64[Y]"),
+        "years": np.ones(_PHENOLOGY_N_TIMES, dtype="datetime64[Y]"),
         "aridity_index": np.ones(ctx.bcast_shape[1:]),
+        "annual_mean_ca": np.ones(annual_data_shape),
+        "annual_mean_chi": np.ones(annual_data_shape),
+        "annual_mean_vpd": np.ones(annual_data_shape),
+        "annual_total_precip": np.ones(annual_data_shape),
+        "annual_growing_season_length": np.ones(annual_data_shape),
         "method": "cai",
     }
 
@@ -483,6 +491,20 @@ register_args("Phenology")(
                 z=12.227, k=0.5, f0_coefficients=(0.65, 0.604169, 1.9), sigma=0.771
             ),
         ),
+    }
+)
+
+register_args("PhenologyMethodZhou")(
+    lambda _: {
+        "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
+        "year_index": np.zeros(_PHENOLOGY_N_TIMES, dtype=int),
+    }
+)
+
+register_args("PhenologyMethodZhu")(
+    lambda ctx: {
+        "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
+        "year_index": np.zeros(_PHENOLOGY_N_TIMES, dtype=int),
     }
 )
 
