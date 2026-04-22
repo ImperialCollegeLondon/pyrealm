@@ -578,7 +578,7 @@ class PModel(PModelABC):
         time_int = datetimes.astype(np.int_)
 
         # The interp1d object cannot be called with datetime64 values as new_x
-        interpolator = interp1d(time_int, self.gpp)
+        interpolator = interp1d(time_int, self.gpp, axis=0)
 
         daily_timestamps = np.arange(
             datetimes[0], datetimes[-1] + np.timedelta64(1, "D"), np.timedelta64(1, "D")
