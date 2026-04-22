@@ -39,6 +39,12 @@ SKIP_METHODS = [
     # PModel
     "AcclimationModel.set_include",
     "PModel._get_daily_gpp",
+    # Phenology
+    # For these more broadcasting is needed / the current variables have unclear
+    # restrictions on shapes
+    "PhenologyMethodZhu",
+    "PhenologyNew",
+    "PhenologyNew.from_pmodel",
     # Demography - mostly 1d arrays (dataframes)
     "CohortMethods.drop_cohort_data",
     "StemTraits",
@@ -456,7 +462,7 @@ def _(ctx):
     annual_data_shape = _set_time_len(_PHENOLOGY_N_TIMES, ctx, allow_one=False)
 
     args = {
-        "years": np.ones(_PHENOLOGY_N_TIMES, dtype="datetime64[Y]"),
+        "years": np.zeros(_PHENOLOGY_N_TIMES, dtype="datetime64[Y]"),
         "aridity_index": np.ones(ctx.bcast_shape[1:]),
         "annual_mean_ca": np.ones(annual_data_shape),
         "annual_mean_chi": np.ones(annual_data_shape),
@@ -494,6 +500,23 @@ register_args("Phenology")(
     }
 )
 
+register_args("PhenologyNew")(
+    # Unclear what the shapes of daily_potential_assimilation and datetimes should be
+    # so this is currently skipped
+    lambda _: {
+        "daily_gpp": np.full((_PHENOLOGY_N_TIMES,), 0.5),
+        "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
+    }
+)
+
+register_args("PhenologyNew.from_pmodel")(
+    # This is currently skipped because it has issues in interpolation if the length of
+    # datetimes doesn't match the time dimension of the pmodel gpp, or if it is length 1
+    lambda _: {
+        "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
+    }
+)
+
 register_args("PhenologyMethodZhou")(
     lambda _: {
         "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
@@ -502,9 +525,12 @@ register_args("PhenologyMethodZhou")(
 )
 
 register_args("PhenologyMethodZhu")(
-    lambda ctx: {
+    # It is somewhat unclear what the restriction on shapes of aet_pet_ratio and
+    # daily_potential_assimilation should be so this is currently skipped
+    lambda _: {
         "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
         "year_index": np.zeros(_PHENOLOGY_N_TIMES, dtype=int),
+        # "aet_pet_ratio": np.ones(_del_time_dim(ctx)),
     }
 )
 
