@@ -26,11 +26,9 @@ from math import ceil
 
 import numpy as np
 
-from pyrealm.constants import PhenologyConst
 from pyrealm.core.calendar import Calendar
 from pyrealm.core.xarray import ArrayType
 from pyrealm.demography.flora import PlantFunctionalType
-from pyrealm.phenology.fapar_limitation import FaparLimitation
 from tests.array_inputs.context import Context
 
 # These methods are not relevant or are incompatible without additional work
@@ -479,26 +477,6 @@ def _(ctx):
 
     return args
 
-
-register_args("Phenology")(
-    lambda _: {
-        "daily_gpp": np.full((_PHENOLOGY_N_TIMES,), 0.5),
-        "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
-        "fapar_limitation": FaparLimitation(
-            annual_total_potential_gpp=np.ones(_PHENOLOGY_N_TIMES),
-            annual_mean_ca=np.ones(_PHENOLOGY_N_TIMES),
-            annual_mean_chi=np.ones(_PHENOLOGY_N_TIMES),
-            annual_mean_vpd=np.ones(_PHENOLOGY_N_TIMES),
-            annual_total_precip=np.ones(_PHENOLOGY_N_TIMES),
-            annual_growing_season_length=np.ones(_PHENOLOGY_N_TIMES),
-            aridity_index=np.ones(_PHENOLOGY_N_TIMES),
-            years=np.zeros((_PHENOLOGY_N_TIMES,), dtype="datetime64[Y]"),
-            phenology_const=PhenologyConst(
-                z=12.227, k=0.5, f0_coefficients=(0.65, 0.604169, 1.9), sigma=0.771
-            ),
-        ),
-    }
-)
 
 register_args("PhenologyNew")(
     # Unclear what the shapes of daily_potential_assimilation and datetimes should be
