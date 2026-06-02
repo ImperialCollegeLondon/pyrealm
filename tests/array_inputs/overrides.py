@@ -41,8 +41,8 @@ SKIP_METHODS = [
     # For these more broadcasting is needed / the current variables have unclear
     # restrictions on shapes
     "PhenologyMethodZhu",
-    "PhenologyNew",
-    "PhenologyNew.from_pmodel",
+    "Phenology",
+    "Phenology.from_pmodel",
     # Demography - mostly 1d arrays (dataframes)
     "CohortMethods.drop_cohort_data",
     "StemTraits",
@@ -176,30 +176,26 @@ REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
     ("OptimalChiC4NoGammaRootzoneStress.estimate_chi", ()): _kwarg_params(
         ("xi_values",)
     ),
-    # Add aridity_index to FaparLimitationNew calls - only actually required for one
+    # Add aridity_index to FaparLimitation calls - only actually required for one
     # method.
-    ("FaparLimitationNew", ("FaparLimitationNew",)): _kwarg_params(("aridity_index",)),
-    ("FaparLimitationNew", ("PhenologyNew", "PhenologyNew")): _kwarg_params(
-        ("aridity_index",)
-    ),
-    ("FaparLimitationNew", ("PhenologyNew.from_pmodel",)): _kwarg_params(
-        ("aridity_index",)
-    ),
-    ("FaparLimitationNew", ("PhenologyMethodZhu", "PhenologyMethodZhu")): _kwarg_params(
+    ("FaparLimitation", ("FaparLimitation",)): _kwarg_params(("aridity_index",)),
+    ("FaparLimitation", ("Phenology", "Phenology")): _kwarg_params(("aridity_index",)),
+    ("FaparLimitation", ("Phenology.from_pmodel",)): _kwarg_params(("aridity_index",)),
+    ("FaparLimitation", ("PhenologyMethodZhu", "PhenologyMethodZhu")): _kwarg_params(
         ("aridity_index",)
     ),
     (
-        "FaparLimitationNew",
+        "FaparLimitation",
         ("PhenologyMethodZhou", "PhenologyMethodZhou"),
     ): _kwarg_params(("aridity_index",)),
     (
-        "FaparLimitationNew",
+        "FaparLimitation",
         (
             "FaparLimitationMethodCai.calculate_maximum_fapar",
             "FaparLimitationMethodCai",
         ),
     ): _kwarg_params(("aridity_index",)),
-    ("FaparLimitationNew.from_pmodel", ()): _kwarg_params(("aridity_index",)),
+    ("FaparLimitation.from_pmodel", ()): _kwarg_params(("aridity_index",)),
 }
 
 
@@ -438,7 +434,7 @@ register_args("FaparLimitation.from_pmodel")(
 )
 
 
-@register_args("FaparLimitationNew.from_pmodel")
+@register_args("FaparLimitation.from_pmodel")
 def _(ctx):
     # Manually define
     # * years (one-d array along time axis)
@@ -451,7 +447,7 @@ def _(ctx):
     }
 
 
-@register_args("FaparLimitationNew")
+@register_args("FaparLimitation")
 def _(ctx):
     # Manually define
     # * years (one-d array along time axis)
@@ -478,7 +474,7 @@ def _(ctx):
     return args
 
 
-register_args("PhenologyNew")(
+register_args("Phenology")(
     # Unclear what the shapes of daily_potential_assimilation and datetimes should be
     # so this is currently skipped
     lambda _: {
@@ -487,7 +483,7 @@ register_args("PhenologyNew")(
     }
 )
 
-register_args("PhenologyNew.from_pmodel")(
+register_args("Phenology.from_pmodel")(
     # This is currently skipped because it has issues in interpolation if the length of
     # datetimes doesn't match the time dimension of the pmodel gpp, or if it is length 1
     lambda _: {

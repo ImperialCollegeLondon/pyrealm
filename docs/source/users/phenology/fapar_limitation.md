@@ -44,11 +44,11 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from pyrealm.core.datasets import get_pyrealm_data
 from pyrealm.constants import PhenologyConst
-from pyrealm.phenology.fapar_limitation_new import FaparLimitationNew
+from pyrealm.phenology.fapar_limitation_new import FaparLimitation
 from pyrealm.pmodel import PModelEnvironment, PModel, SubdailyPModel, AcclimationModel
 ```
 
-The {class}`~pyrealm.phenology.fapar_limitation_new.FaparLimitationNew` class calculates
+The {class}`~pyrealm.phenology.fapar_limitation_new.FaparLimitation` class calculates
 annual maximum values for both $f_{APAR}$ and leaf area index ($L$). Two alternative
 approaches are available via the `method` argument:
 
@@ -134,7 +134,7 @@ with open(site_data_path) as json_src:
 ### Direct calculation from annual values
 
 Directly calculating annual maximum fAPAR using
-{class}`~pyrealm.phenology.fapar_limitation_new.FaparLimitationNew` requires you to
+{class}`~pyrealm.phenology.fapar_limitation_new.FaparLimitation` requires you to
 provide the calculated annual summary statistics given in the equations above. The
 example data contains estimates of these annual values calculated from the original half
 hourly FluxNET data and from a separately fitted model of assimilation.
@@ -175,7 +175,7 @@ plt.tight_layout()
 ```
 
 The code below then shows the use of the different methods available within the
-{class}`~pyrealm.phenology.fapar_limitation_new.FaparLimitationNew` class to calculate
+{class}`~pyrealm.phenology.fapar_limitation_new.FaparLimitation` class to calculate
 $f_{APAR_{max}}$ and $L_{max}$. Note that `method="cai"` requires additional
 `aridity_index` data and that these should be an array providing a single climatological
 estimate per site. For example, a dataset covering a 5x5 grid of sites over 20 years
@@ -184,7 +184,7 @@ array with shape `(5, 5)`. When there is only a single site, the site data shoul
 "scalar" array of size `(1,)` as in the example below.
 
 ```{code-cell} ipython3
-faparlim_cai = FaparLimitationNew(
+faparlim_cai = FaparLimitation(
     method="cai",
     annual_total_potential_gpp=annual_data["annual_total_A0"].to_numpy(),
     annual_mean_ca=annual_data["annual_mean_ca_in_GS"].to_numpy(),
@@ -200,7 +200,7 @@ faparlim_cai.summarize()
 ```
 
 ```{code-cell} ipython3
-faparlim_zhu = FaparLimitationNew(
+faparlim_zhu = FaparLimitation(
     method="zhu",
     annual_total_potential_gpp=annual_data["annual_total_A0"].to_numpy(),
     annual_mean_ca=annual_data["annual_mean_ca_in_GS"].to_numpy(),
@@ -257,7 +257,7 @@ values required to calculate maximum fAPAR.
   observations at subdaily frequencies.
 
 To make it easier to estimate maximum $f_{APAR}$ the
-{meth}`FaparLimitationNew.from_pmodel<pyrealm.phenology.fapar_limitation_new.FaparLimitationNew.from_pmodel>`
+{meth}`FaparLimitation.from_pmodel<pyrealm.phenology.fapar_limitation_new.FaparLimitation.from_pmodel>`
 method can be used to automatically calculate the required annual summary statistics
 using the dates and times of the observations used in the P Model (see the
 {class}`~pyrealm.core.time_series.AnnualValueCalculator` class for details). The method
@@ -349,7 +349,7 @@ should be an array of single climatological values per site, described above.
 
 ```{code-cell} ipython3
 # Method = "cai", with additional aridity data
-faparlim_pmodel_cai = FaparLimitationNew.from_pmodel(
+faparlim_pmodel_cai = FaparLimitation.from_pmodel(
     method="cai",
     pmodel=pmodel,
     growing_season=fortnightly_data["growing_season"].to_numpy(),
@@ -359,7 +359,7 @@ faparlim_pmodel_cai = FaparLimitationNew.from_pmodel(
 )
 
 # Method = "zhu"
-faparlim_pmodel_zhu = FaparLimitationNew.from_pmodel(
+faparlim_pmodel_zhu = FaparLimitation.from_pmodel(
     method="zhu",
     pmodel=pmodel,
     growing_season=fortnightly_data["growing_season"].to_numpy(),
@@ -443,7 +443,7 @@ provides datetimes for each observation, so the `datetimes` argument is not used
 
 ```{code-cell} ipython3
 # Method = "cai", with additional aridity data
-faparlim_subdaily_pmodel_cai = FaparLimitationNew.from_pmodel(
+faparlim_subdaily_pmodel_cai = FaparLimitation.from_pmodel(
     method="cai",
     pmodel=subdaily_pmodel,
     growing_season=subdaily_data["growing_season"].to_numpy(),
@@ -452,7 +452,7 @@ faparlim_subdaily_pmodel_cai = FaparLimitationNew.from_pmodel(
 )
 
 # Method = "zhu"
-faparlim_subdaily_pmodel_zhu = FaparLimitationNew.from_pmodel(
+faparlim_subdaily_pmodel_zhu = FaparLimitation.from_pmodel(
     method="zhu",
     pmodel=subdaily_pmodel,
     growing_season=subdaily_data["growing_season"].to_numpy(),

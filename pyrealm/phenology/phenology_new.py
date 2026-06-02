@@ -2,23 +2,23 @@
 
 This module provides classes to implement different approaches to calculating daily
 predictions of leaf area index (LAI) from daily time series of potential assimilation.
-The :class:`PhenologyNew` class acts as a wrapper around alternative implementations of
+The :class:`Phenology` class acts as a wrapper around alternative implementations of
 the calculations, which are implemented as derived subclasses of the
 :class:`PhenologyMethodABC` abstract base class.
 
 The methods all require values of annual maximum fAPAR, calculated using
-:class:`~pyrealm.phenology.fapar_limitation_new.FaparLimitationNew` and then a time
+:class:`~pyrealm.phenology.fapar_limitation_new.FaparLimitation` and then a time
 series of daily assimilation, although different methods can also require additional
 inputs. The methods then broadly work by calculating a time series of steady state LAI
 as a function of daily assimilation and then applying a lag, capturing the speed with
 which plants can put on leaf area, to generate a time series of realised LAI.
 
 Values of daily assimilation are typically going to be taken from a P Model, so the
-:meth:`PhenologyNew.from_pmodel` method is provided to calculate daily assimilation from
-a P Model input and then use this, along with a ``FaparLimitationNew`` instance, to
+:meth:`Phenology.from_pmodel` method is provided to calculate daily assimilation from
+a P Model input and then use this, along with a ``FaparLimitation`` instance, to
 generate an LAI time series.
 
-The :class:`PhenologyNew` class and the :meth:`PhenologyNew.from_pmodel` are designed to
+The :class:`Phenology` class and the :meth:`Phenology.from_pmodel` are designed to
 work with inputs that can have multiple dimensions. The first axis is _always_ assumed
 to represent a time series of daily observations of potential assimilation. If all the
 arrays are one dimensional, then this is a time series for a single site; if they are
@@ -47,7 +47,7 @@ from pyrealm.core.utilities import (
     check_input_shapes,
     exponential_moving_average,
 )
-from pyrealm.phenology.fapar_limitation_new import FaparLimitationNew
+from pyrealm.phenology.fapar_limitation_new import FaparLimitation
 from pyrealm.pmodel.pmodel import PModel, PModelABC, SubdailyPModel
 
 PHENOLOGY_METHOD_CLASS_REGISTRY: dict[str, type[PhenologyMethodABC]] = {}
@@ -75,17 +75,17 @@ class PhenologyMethodABC(ABC):
     """
 
     attrs: tuple[tuple[str, str], ...]
-    """A tuple of attributes to be reported in the PhenologyNew.summarize() output
+    """A tuple of attributes to be reported in the Phenology.summarize() output
     for the method."""
 
     requires: tuple[str, ...]
-    """A tuple of any additional variables required to create a PhenologyNew
+    """A tuple of any additional variables required to create a Phenology
     instance using the method."""
 
     @abstractmethod
     def __init__(
         self,
-        fapar_limitation: FaparLimitationNew,
+        fapar_limitation: FaparLimitation,
         daily_potential_assimilation: NDArray[np.floating],
         datetimes: NDArray[np.datetime64],
         year_index: NDArray[np.int_],
@@ -165,7 +165,7 @@ class PhenologyMethodZhou(PhenologyMethodABC, method="zhou"):
 
     def __init__(
         self,
-        fapar_limitation: FaparLimitationNew,
+        fapar_limitation: FaparLimitation,
         daily_potential_assimilation: NDArray[np.floating],
         datetimes: NDArray[np.datetime64],
         year_index: NDArray[np.int_],
@@ -279,7 +279,7 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
 
     def __init__(
         self,
-        fapar_limitation: FaparLimitationNew,
+        fapar_limitation: FaparLimitation,
         daily_potential_assimilation: NDArray[np.floating],
         datetimes: NDArray[np.datetime64],
         year_index: NDArray[np.int_],
@@ -403,11 +403,11 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
         self.realised_lai = realised_lai
 
 
-class PhenologyNew:
+class Phenology:
     r"""Estimating daily time series of leaf area index (LAI).
 
     The maximum fAPAR and LAI for a year (see
-    :class:`~pyrealm.phenology.fapar_limitation_new.FaparLimitationNew`) can be combined
+    :class:`~pyrealm.phenology.fapar_limitation_new.FaparLimitation`) can be combined
     with estimates of daily potential assimilation to generate a time series of expected
     LAI that captures the annual phenology for a site. This class provides methods to
     calculate two time series for LAI:
@@ -418,12 +418,12 @@ class PhenologyNew:
       deploying leaf area.
 
     The class supports different methods for estimating these time series and also
-    provides the :meth:`PhenologyNew.from_pmodel` method that calculates the required
+    provides the :meth:`Phenology.from_pmodel` method that calculates the required
     daily assimilation values from a fitted P Model.
 
     Args:
         fapar_limitation: A
-            :class:`~pyrealm.phenology.fapar_limitation_new.FaparLimitationNew` instance
+            :class:`~pyrealm.phenology.fapar_limitation_new.FaparLimitation` instance
             providing estimates of maximum annual fAPAR and LAI.
         daily_potential_assimilation: A daily time series of potential assimilation
             (:math:`A_0`, mol m-2 day-1).
@@ -436,13 +436,13 @@ class PhenologyNew:
 
     def __init__(
         self,
-        fapar_limitation: FaparLimitationNew,
+        fapar_limitation: FaparLimitation,
         daily_potential_assimilation: NDArray[np.floating],
         datetimes: NDArray[np.datetime64],
         method: str = "zhou",
         **kwargs: Any,
     ):
-        """Constructor method for PhenologyNew."""
+        """Constructor method for Phenology."""
 
         # Experimental class
         warn_experimental(self.__class__.__name__)
@@ -523,11 +523,11 @@ class PhenologyNew:
     def from_pmodel(
         cls,
         pmodel: PModelABC,
-        fapar_limitation: FaparLimitationNew,
+        fapar_limitation: FaparLimitation,
         datetimes: NDArray[np.datetime64] | None = None,
         gpp_penalty_factor: NDArray[np.floating] | None = None,
         **kwargs: Any,
-    ) -> PhenologyNew:
+    ) -> Phenology:
         r"""Calculate daily phenology from a P Model and other inputs.
 
         TBD.

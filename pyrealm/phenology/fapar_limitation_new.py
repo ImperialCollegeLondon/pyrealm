@@ -1,6 +1,6 @@
 """Class to compute the fAPAR_max and annual peak Leaf Area Index (LAI).
 
-The :class:`FaparLimitationNew` class and the :meth:`FaparLimitationNew.from_pmodel` are
+The :class:`FaparLimitation` class and the :meth:`FaparLimitation.from_pmodel` are
 designed to work with inputs that can have multiple dimensions. The first axis is
 _always_ assumed to represent a time series of annual observations. If the inputs are
 one dimensional, then this is a time series for a single site; if they are three
@@ -68,7 +68,7 @@ class FaparLimitationMethodABC(ABC):
     instance using the method."""
 
     def __init__(
-        self, fapar_limitation: FaparLimitationNew, phenology_const: PhenologyConstNew
+        self, fapar_limitation: FaparLimitation, phenology_const: PhenologyConstNew
     ):
         """Initialise the method instance.
 
@@ -145,7 +145,7 @@ class FaparLimitationMethodCai(FaparLimitationMethodABC, method="cai"):
     requires = ("aridity_index",)
 
     def __init__(
-        self, fapar_limitation: FaparLimitationNew, phenology_const: PhenologyConstNew
+        self, fapar_limitation: FaparLimitation, phenology_const: PhenologyConstNew
     ):
         """Initialise a FaparLimitationMethod instance using the Cai approach."""
 
@@ -243,7 +243,7 @@ class FaparLimitationMethodZhu(FaparLimitationMethodABC, method="zhu"):
     requires = tuple()
 
     def __init__(
-        self, fapar_limitation: FaparLimitationNew, phenology_const: PhenologyConstNew
+        self, fapar_limitation: FaparLimitation, phenology_const: PhenologyConstNew
     ):
         """Initialise a FaparLimitationMethod instance using the Zhu approach."""
 
@@ -313,7 +313,7 @@ class FaparLimitationMethodZhu(FaparLimitationMethodABC, method="zhu"):
         return fapar_max
 
 
-class FaparLimitationNew:
+class FaparLimitation:
     r"""Compute maximum annual fAPAR and LAI.
 
     This class calculates maximum annual fAPAR, which can be limited either by the
@@ -508,7 +508,7 @@ class FaparLimitationNew:
 
     def __repr__(self) -> str:
         """Simple representation of class instance."""
-        return f"FaparLimitationNew(shape={self.shape})"
+        return f"FaparLimitation(shape={self.shape})"
 
     def summarize(self, dp: int = 2) -> None:
         """Print summary of estimates of fAPAR limitation.
@@ -532,7 +532,7 @@ class FaparLimitationNew:
         method: str = "cai",
         phenology_const: PhenologyConstNew = PhenologyConstNew(),
         **kwargs: NDArray[np.floating],
-    ) -> FaparLimitationNew:
+    ) -> FaparLimitation:
         r"""Create a FaparLimitation instance from a P Model and other inputs.
 
         The annual summary values of :math:`A_0, c_a, \chi` and :math:`D` used by the
