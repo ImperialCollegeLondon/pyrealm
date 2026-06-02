@@ -152,7 +152,7 @@ faparlim = FaparLimitationNew(
     annual_total_precip=annual_data["annual_precip_molar"].to_numpy(),
     annual_growing_season_length=annual_data["N_growing_days"].to_numpy(),
     years=annual_data["time"].to_numpy().astype("datetime64[Y]"),
-    aridity_index=site_data["AI_from_cruts"],
+    aridity_index=np.array([site_data["AI_from_cruts"]]),
 )
 ```
 
@@ -270,7 +270,7 @@ annual_faparlim_fortnightly_cai = FaparLimitationNew.from_pmodel(
     datetimes=datetimes,
     growing_season=fortnightly_data["tc"].to_numpy() > 0,
     precip=fortnightly_data["precip_molar"].to_numpy(),
-    aridity_index=site_data["AI_from_cruts"],
+    aridity_index=np.array([site_data["AI_from_cruts"]]),
 )
 
 annual_faparlim_fortnightly_zhu = FaparLimitationNew.from_pmodel(
@@ -391,7 +391,7 @@ annual_faparlim_subdaily_cai = FaparLimitationNew.from_pmodel(
     pmodel=subdaily_pmodel,
     growing_season=subdaily_data["tc"].to_numpy() > 0,
     precip=subdaily_data["precip_molar"].to_numpy(),
-    aridity_index=site_data["AI_from_cruts"],
+    aridity_index=np.array([site_data["AI_from_cruts"]]),
 )
 
 annual_faparlim_subdaily_zhu = FaparLimitationNew.from_pmodel(

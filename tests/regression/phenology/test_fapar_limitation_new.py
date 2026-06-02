@@ -1,5 +1,6 @@
 """Test the FaparLimitation class."""
 
+import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
@@ -40,7 +41,7 @@ def test_faparlimitation(
         annual_growing_season_length=annual_inputs["N_growing_days"],
         years=annual_inputs["year"].astype(str).astype("datetime64[Y]"),
         method=method,
-        aridity_index=site_data["AI_from_cruts"],  # Not used by zhu method.
+        aridity_index=np.array([site_data["AI_from_cruts"]]),  # Not used by zhu method.
     )
 
     assert_allclose(
@@ -120,7 +121,7 @@ def test_fapar_limitation_frompmodel(
         growing_season=pmodel_inputs["growing_season"],
         datetimes=datetimes,
         precip=pmodel_inputs["precip_molar"],
-        aridity_index=site_data["AI_from_cruts"],  # Not used by zhu method.
+        aridity_index=np.array([site_data["AI_from_cruts"]]),  # Not used by zhu method.
     )
 
     assert_allclose(

@@ -26,7 +26,7 @@ def fapar_limitation_instance(
         annual_growing_season_length=annual_inputs["N_growing_days"],
         years=annual_inputs["year"].astype(str).astype("datetime64[Y]"),
         method=fapar_method,
-        aridity_index=site_data["AI_from_cruts"],  # Not used by zhu method.
+        aridity_index=np.array([site_data["AI_from_cruts"]]),  # Not used by zhu method.
     )
 
 

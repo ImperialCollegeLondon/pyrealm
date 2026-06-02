@@ -298,7 +298,7 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
             **kwargs,
         )
 
-        if aet_pet_ratio.shape != daily_potential_assimilation[0].shape:
+        if aet_pet_ratio.shape != daily_potential_assimilation[[0]].shape:
             raise ValueError(
                 "The 'aet_pet_ratio' must be an array providing one value per site."
             )
