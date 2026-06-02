@@ -7,11 +7,11 @@ the calculations, which are implemented as derived subclasses of the
 :class:`PhenologyMethodABC` abstract base class.
 
 The methods all require values of annual maximum fAPAR, calculated using
-:class:`~pyrealm.phenology.fapar_limitation.FaparLimitationNew` and then a time series
-of daily assimilation, although different methods can also require additional inputs.
-The methods then broadly work by calculating a time series of steady state LAI as a
-function of daily assimilation and then applying a lag, capturing the speed with which
-plants can put on leaf area, to generate a time series of realised LAI.
+:class:`~pyrealm.phenology.fapar_limitation_new.FaparLimitationNew` and then a time
+series of daily assimilation, although different methods can also require additional
+inputs. The methods then broadly work by calculating a time series of steady state LAI
+as a function of daily assimilation and then applying a lag, capturing the speed with
+which plants can put on leaf area, to generate a time series of realised LAI.
 
 Values of daily assimilation are typically going to be taken from a P Model, so the
 :meth:`PhenologyNew.from_pmodel` method is provided to calculate daily assimilation from
@@ -115,11 +115,24 @@ class PhenologyMethodZhou(PhenologyMethodABC, method="zhou"):
     daily assimilation (:math:`A_0`, mol m-2 day) following the method of
     :cite:`zhou:2025a`. The method requires annual values of fAPAR limitation calculated
     following the method of :cite:`cai:2025a` (see
-    :class:`~pyrealm.pmodel.fapar_limitation_new.FaparLimitationCai`).
+    :class:`~pyrealm.phenology.fapar_limitation_new.FaparLimitationMethodCai`).
+
+    * The fractional allocation of GPP to leaf area index (:math:`m`) is calculated
+      from the annual maximum LAI and fAPAR as:
+
+        .. math::
+
+            m = \frac{\sigma G L_{max}}{A_{0} f_{APAR_{max}}}
+
+      Here, $G$ and $A_0$ are the annual estimates of growing season length and annual
+      total potential GPP used to calculate the annual maximum fAPAR and LAI. The
+      coefficient :math:`\sigma` is a factor that accounts for the speed with which
+      seasonal canopy growth and senescence patterns affect allocation to LAI (see
+      :attr:`~pyrealm.constants.phenology_const.PhenologyConstNew.cai_sigma`).
 
     * The daily allocation of GPP to leaf area index (:math:`\mu`) is calculated simply
-      as :math:`\mu = m A_0`, where :math:`m` is the fractional allocation of GPP to LAI
-      :cite:`cai:2025a`.
+      as :math:`\mu = m A_{d0}`, where :math:`A_{d0}` is total daily potential
+      assimilation.
 
     * The steady state daily estimate of LAI is then calculated as:
 
@@ -216,13 +229,15 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
 
     This phenology method class implements the calculation of daily leaf area index from
     daily assimilation (:math:`A_0`, mol m-2 day) following the method of
-    :cite:`zhu:2026a`.
+    :cite:`zhu:2026a` The method requires annual values of fAPAR limitation calculated
+    following the method of :cite:`zhu:2026a` (see
+    :class:`~pyrealm.phenology.fapar_limitation_new.FaparLimitationMethodZhu`).
 
     * The fractional allocation of GPP to LAI (:math:`m`) is calculated as the estimated
       maximum LAI for a year divided by a quantile value (default 0.95) from the
       distribution of daily assimilation values for that year. The quantile is set when
       calculating maximum fAPAR via the
-      :attr:`<PhenologyConstNew.zhu_A0_quantile>pyrealm.constants.phenology_const.PhenologyConstNew.zhu_A0_quantile`
+      :attr:`PhenologyConstNew.zhu_A0_quantile<pyrealm.constants.phenology_const.PhenologyConstNew.zhu_A0_quantile>`
       attribute.
 
     * The steady state daily estimate of LAI is then calculated simply as:
@@ -367,18 +382,19 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
         site_index = np.ndindex(cumulative_lai[0].shape)
 
         for idx in site_index:
+            full_idx = (slice(None), *idx)
             # Get the site specific lag
             lag_length = aridity_lag_days[*idx].item() + 1
             # Get the numerator the cumulative sum minus the same values but zero padded
             # on the left to the lag length and then truncated back to the same shape
             numerator = (
-                cumulative_lai[idx]
-                - np.pad(cumulative_lai[idx], (lag_length, 0))[:n_observations]
+                cumulative_lai[full_idx]
+                - np.pad(cumulative_lai[full_idx], (lag_length, 0))[:n_observations]
             )
             # Get the denominator
             denominator = np.minimum(np.arange(n_observations), lag_length)
             # Store the result
-            realised_lai[idx] = numerator / denominator
+            realised_lai[full_idx] = numerator / denominator
 
         # Remove the spin up data along the first axis
         realised_lai = realised_lai[spinup_length:]
@@ -391,7 +407,7 @@ class PhenologyNew:
     r"""Estimating daily time series of leaf area index (LAI).
 
     The maximum fAPAR and LAI for a year (see
-    :class:`~pyrealm.phenology.fapar_limitation.FaparLimitationNew`) can be combined
+    :class:`~pyrealm.phenology.fapar_limitation_new.FaparLimitationNew`) can be combined
     with estimates of daily potential assimilation to generate a time series of expected
     LAI that captures the annual phenology for a site. This class provides methods to
     calculate two time series for LAI:
@@ -407,7 +423,7 @@ class PhenologyNew:
 
     Args:
         fapar_limitation: A
-            :class:`~pyrealm.phenology.fapar_limitation.FaparLimitationNew` instance
+            :class:`~pyrealm.phenology.fapar_limitation_new.FaparLimitationNew` instance
             providing estimates of maximum annual fAPAR and LAI.
         daily_potential_assimilation: A daily time series of potential assimilation
             (:math:`A_0`, mol m-2 day-1).

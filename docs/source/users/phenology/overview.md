@@ -23,5 +23,4 @@ series of {term}`FAPAR` and {term}`LAI`. There are two main stages in this proce
    described in the [introduction to calculating maximum FAPAR](./fapar_limitation.md).
 
 2. The maximum annual FAPAR and LAI can then be combined with daily predictions of
-   potential GPP to predict time series of realised FAPAR and LAI through the year.
-   The implementation of this functionality is currently in development.
+   potential GPP to [predict time series of realised LAI](./leaf_area_index.md).

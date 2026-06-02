@@ -146,4 +146,4 @@ class PhenologyConstNew(ConstantsClass):
 
     zhu_lagmax = 365
     r"""An upper bound on the lag length for estimating realised LAI used in
-    :cite:`zhu:2026a."""
+    :cite:`zhu:2026a`."""

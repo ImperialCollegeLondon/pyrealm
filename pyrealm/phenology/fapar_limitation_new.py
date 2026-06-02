@@ -1,12 +1,12 @@
 """Class to compute the fAPAR_max and annual peak Leaf Area Index (LAI).
 
-The :class:`FaparLimitation` class and the :meth:`FaparLimitation.from_pmodel` are
+The :class:`FaparLimitationNew` class and the :meth:`FaparLimitationNew.from_pmodel` are
 designed to work with inputs that can have multiple dimensions. The first axis is
-_always_ assumed to represent a time series of annual observations. If the inputs
-are one dimensional, then this is a time series for a single site; if they are three
+_always_ assumed to represent a time series of annual observations. If the inputs are
+one dimensional, then this is a time series for a single site; if they are three
 dimensional then these are observations for a grid of sites. Usually all array inputs
-will have the same shape but note the following instances where you might need to
-take care with array broadcasting.
+will have the same shape but note the following instances where you might need to take
+care with array broadcasting.
 
 * Growing season length might well be constant across sites. If so - for example
     with 3D data - the input would need shape `(N, 1, 1)` to broadcast N years of
@@ -126,11 +126,13 @@ class FaparLimitationMethodABC(ABC):
         FAPAR_LIMITATION_METHOD_CLASS_REGISTRY[cls.method] = cls
 
 
-class FaparLimitationCai(FaparLimitationMethodABC, method="cai"):
-    r"""Compute maximum annual fAPAR and LAI using the method of :cite:`cai:2025a`.
+class FaparLimitationMethodCai(FaparLimitationMethodABC, method="cai"):
+    r"""Compute maximum annual fAPAR and LAI following :cite:t:`cai:2025a`.
 
-    TBD - what is specific here versus general in FaparLimitation.
-
+    The method of :cite:t:`cai:2025a` uses a single global value of :math:`z` but models
+    :math:`f_0` as a function of site-specific aridity, expressed as the climatological
+    ratio PET/P, (see :meth:`set_z_and_f0`). The annual maximum fAPAR is then the simple
+    minimum of the site values for water and energy limited fAPAR.
     """
 
     __experimental__ = True
@@ -138,7 +140,6 @@ class FaparLimitationCai(FaparLimitationMethodABC, method="cai"):
     attrs = (
         ("lai_max", "-"),
         ("fapar_max", "-"),
-        ("lai_to_gpp_ratio_m", "-"),
     )
 
     requires = ("aridity_index",)
@@ -160,8 +161,21 @@ class FaparLimitationCai(FaparLimitationMethodABC, method="cai"):
         """Boolean array showing if annual :math:`fAPAR_{max}` is water or energy
         limited."""
 
-        # Make sure the aridity index is not zero
+        # Validate the aridity index
         self.aridity_index = getattr(self.fapar_limitation, "aridity_index")
+
+        # Check aridity index is a site specific array (or constant)
+        try:
+            np.broadcast_shapes(
+                self.aridity_index[None, :].shape, self.fapar_limitation.shape
+            )
+        except ValueError:
+            raise ValueError(
+                f"The aridity index argument must contain site specific values and "
+                f"must be a constant of have shape {self.fapar_limitation.shape[1:]}"
+            )
+
+        # Make sure the aridity index is not zero
         if np.any(self.aridity_index <= 0):
             raise ValueError("The aridity index has to be positive.")
 
@@ -207,21 +221,16 @@ class FaparLimitationCai(FaparLimitationMethodABC, method="cai"):
         fapar_max = np.minimum(water_limited_fapar, energy_limited_fapar)
         self.energy_limited = energy_limited_fapar < water_limited_fapar
 
-        # self.lai_to_gpp_ratio_m = (
-        #     self.phenology_const.cai_sigma
-        #     * self.annual_growing_season_length
-        #     * self.lai_max
-        # ) / (self.annual_total_potential_gpp * self.fapar_max)
-        # """The steady state ratio of leaf area index to potential GPP (:math:`m`)"""
-
         return fapar_max
 
 
-class FaparLimitationZhu(FaparLimitationMethodABC, method="zhu"):
-    r"""Compute maximum annual fAPAR and LAI using the method of Zhu .
+class FaparLimitationMethodZhu(FaparLimitationMethodABC, method="zhu"):
+    r"""Compute maximum annual fAPAR and LAI following :cite:t:`zhu:2026a`.
 
-    TBD.
-
+    The method of :cite:t:`zhu:2026a` uses single global values of both :math:`z` and
+    :math:`f_0`. However, the annual maximum fAPAR is then a continuous function of
+    water and energy limited fAPAR following a Budyko curve (see
+    :meth:`calculate_maximum_fapar` for details).
     """
 
     __experimental__ = True
@@ -261,12 +270,28 @@ class FaparLimitationZhu(FaparLimitationMethodABC, method="zhu"):
     def calculate_maximum_fapar(
         self, energy_limited_fapar: NDArray, water_limited_fapar: NDArray
     ) -> NDArray:
-        """Calculate the maximum fAPAR.
+        r"""Calculate the maximum fAPAR.
 
         The Zhu method calculates the maximum fAPAR as a function of the energy and
-        water limited fAPAR:
+        water limited fAPAR, following a function like the Budyko curve
+        :cite:p:`roderick:2011a`:
+    
+        .. math::
+            :nowrap:
 
-        TODO: equation.
+            \[    
+                \begin{align*}
+
+                    c_w &= \frac{f_{APAR_{c}}}{f_{APAR_{w}}} \\
+                    f_{APAR_{max}} = f_{APAR_{w}} \left(1 + c_w - 
+                    \left( 1 + c_w ^{\bar\omega} \right)^{1/{\bar\omega}}
+
+                \end{align*}
+            \],
+
+        where :math:`\bar\omega` is defined in the
+        :attr:`~pyrealm.constants.phenology_const.PhenologyConstNew.zhu_budyko`
+        constants parameter.
 
         Args:
             energy_limited_fapar: The maximum fAPAR given energy limitation.
@@ -293,7 +318,7 @@ class FaparLimitationNew:
 
     This class calculates maximum annual fAPAR, which can be limited either by the
     availability of light energy ($f_{APAR_{c}}$) or by the availability of water
-    ($f_{APAR_{w}}$). The equations for these two variables, following :cite:`cai2025a:
+    ($f_{APAR_{w}}$). The equations for these two variables, following :cite:`cai:2025a`
     are:
 
     .. math::
@@ -321,7 +346,7 @@ class FaparLimitationNew:
 
     * ``method=cai``; :class:`FaparLimitationMethodCai`
     * ``method=zhu``; :class:`FaparLimitationMethodZhu`
-    
+
     The maximum annual LAI can then be calculated using Beer's law as:
 
     .. math::
@@ -373,6 +398,13 @@ class FaparLimitationNew:
         warn_experimental("FaparLimitation")
 
         # Validate the input shapes.
+        # NOTE: Input shape checking only handles the main arguments and not the
+        #       contents of kwargs arrays that are passed down as required extra
+        #       arguments to FaparLimitationMethodABC subclasses. This is because those
+        #       required variables can have different expectations of the inputs shapes
+        #       (e.g. FaparLimitationMethodCai requires aridity_index for sites not
+        #       across time), and so shape of those inputs should be validated within
+        #       subclasses, not here.
         self.shape: tuple[int, ...] = check_input_shapes(
             annual_total_potential_gpp,
             annual_mean_ca,
@@ -380,7 +412,6 @@ class FaparLimitationNew:
             annual_mean_vpd,
             annual_total_precip,
             annual_growing_season_length,
-            *kwargs.values(),
         )
 
         # Check the years values - must be datetime64[Y] and be one dimensional,
@@ -577,13 +608,27 @@ class FaparLimitationNew:
                     "Observation datetimes are required with PModel inputs."
                 )
 
+        else:
+            raise TypeError("Invalid PModel class")
+
+        # Ensure data_shape includes the full time dimension
+        n_time = len(datetimes) if pmodel.shape[0] == 1 else pmodel.shape[0]
+        data_shape = (n_time, *pmodel.shape[1:])
+
         # Create the annual value calculator
         # - the code above guards against datetimes being None
         avc = AnnualValueCalculator(
-            data_shape=pmodel.shape,
+            data_shape=data_shape,
             timing=datetimes,  # type: ignore [arg-type]
             subset_mask=growing_season,
         )
+
+        # Inputs to avc.get_annual_means/totals need the full shapes, so first broadcast
+        gpp = np.broadcast_to(pmodel.gpp, data_shape)
+        ca = np.broadcast_to(pmodel.env.ca, data_shape)
+        chi = np.broadcast_to(pmodel.optchi.chi, data_shape)
+        vpd = np.broadcast_to(pmodel.env.vpd, data_shape)
+        precip = np.broadcast_to(precip, data_shape)
 
         # Get the total GPP for each observation
         # TODO: handle incompleteness - when do we stop estimating annual values from
@@ -591,15 +636,15 @@ class FaparLimitationNew:
 
         # Calculate annual mean potential GPP and scale up to the year - note that this
         # includes any post-hoc GPP penalty applied to the model
-        annual_mean_potential_gpp = avc.get_annual_means(pmodel.gpp)
+        annual_mean_potential_gpp = avc.get_annual_means(gpp)
         annual_total_potential_gpp = (
             annual_mean_potential_gpp * (avc.year_n_days) * 86400 * 1e-6
         ) / pmodel.core_const.k_c_molmass
 
         # Calculate annual mean ca, chi and VPD within growing season
-        annual_mean_ca = avc.get_annual_means(pmodel.env.ca, within_subset=True)
-        annual_mean_chi = avc.get_annual_means(pmodel.optchi.chi, within_subset=True)
-        annual_mean_vpd = avc.get_annual_means(pmodel.env.vpd, within_subset=True)
+        annual_mean_ca = avc.get_annual_means(ca, within_subset=True)
+        annual_mean_chi = avc.get_annual_means(chi, within_subset=True)
+        annual_mean_vpd = avc.get_annual_means(vpd, within_subset=True)
 
         # Calculate total annual precipitation
         annual_total_precip = avc.get_annual_totals(precip)
