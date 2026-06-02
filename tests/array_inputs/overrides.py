@@ -421,18 +421,6 @@ def _(ctx):
 
 _PHENOLOGY_N_TIMES = 2
 
-register_args("FaparLimitation")(
-    lambda ctx: {"years": np.ones(ctx.bcast_shape[0], dtype="datetime64[Y]")}
-)
-
-
-register_args("FaparLimitation.from_pmodel")(
-    lambda ctx: {
-        "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
-        "aridity_index": np.ones(_set_time_len(1, ctx)),  # Time: constant or years (1)
-    }
-)
-
 
 @register_args("FaparLimitation.from_pmodel")
 def _(ctx):
