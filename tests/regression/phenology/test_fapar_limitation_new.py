@@ -30,7 +30,7 @@ def test_faparlimitation(
 ):
     """Regression test for FaparLimitation constructor with fortnightly data."""
 
-    from pyrealm.phenology.fapar_limitation_new import FaparLimitation
+    from pyrealm.phenology.fapar_limitation import FaparLimitation
 
     faparlim = FaparLimitation(
         annual_total_potential_gpp=annual_inputs[assim_var],
@@ -109,7 +109,7 @@ def test_fapar_limitation_frompmodel(
 ):
     """Regression test for  FaparLimitation.from_pmodel class method."""
 
-    from pyrealm.phenology.fapar_limitation_new import FaparLimitation
+    from pyrealm.phenology.fapar_limitation import FaparLimitation
 
     pmodel, datetimes = phenology_pmodels
 

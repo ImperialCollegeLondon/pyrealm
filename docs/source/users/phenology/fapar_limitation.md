@@ -44,11 +44,11 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from pyrealm.core.datasets import get_pyrealm_data
 from pyrealm.constants import PhenologyConst
-from pyrealm.phenology.fapar_limitation_new import FaparLimitation
+from pyrealm.phenology.fapar_limitation import FaparLimitation
 from pyrealm.pmodel import PModelEnvironment, PModel, SubdailyPModel, AcclimationModel
 ```
 
-The {class}`~pyrealm.phenology.fapar_limitation_new.FaparLimitation` class calculates
+The {class}`~pyrealm.phenology.fapar_limitation.FaparLimitation` class calculates
 annual maximum values for both $f_{APAR}$ and leaf area index ($L$). Two alternative
 approaches are available via the `method` argument:
 
@@ -89,7 +89,7 @@ annual maximum fAPAR from the water limited and energy limited terms.
 
 * The option `method=cai` uses a fixed value for $z$ but calculates $f_0$ as a function
   of the site-specific long term aridity index expressed as PET/P (see
-  {class}`FaparLimitationMethodCai.set_z_and_f0<pyrealm.phenology.fapar_limitation_new.FaparLimitationMethodCai.set_z_and_f0>`
+  {class}`FaparLimitationMethodCai.set_z_and_f0<pyrealm.phenology.fapar_limitation.FaparLimitationMethodCai.set_z_and_f0>`
   for details). The maximum annual fAPAR for a site is then simply the minimum of the
   energy and water limited terms for that site.
 
@@ -99,7 +99,7 @@ annual maximum fAPAR from the water limited and energy limited terms.
 * The option `method=zhu` uses fixed values for both $z$ and $f_0$, but the maximum
   annual fAPAR is a function of the energy limited and water limited terms, following
   the model of the Budyko curve {cite:p}`roderick:2011a` (see
-  {class}`FaparLimitationMethodZhu.calculate_maximum_fapar<pyrealm.phenology.fapar_limitation_new.FaparLimitationMethodZhu.calculate_maximum_fapar>`
+  {class}`FaparLimitationMethodZhu.calculate_maximum_fapar<pyrealm.phenology.fapar_limitation.FaparLimitationMethodZhu.calculate_maximum_fapar>`
   for details).
 
 In both cases, best fit global values of $z$ and $f_0$ (or parameters of the function
@@ -134,7 +134,7 @@ with open(site_data_path) as json_src:
 ### Direct calculation from annual values
 
 Directly calculating annual maximum fAPAR using
-{class}`~pyrealm.phenology.fapar_limitation_new.FaparLimitation` requires you to
+{class}`~pyrealm.phenology.fapar_limitation.FaparLimitation` requires you to
 provide the calculated annual summary statistics given in the equations above. The
 example data contains estimates of these annual values calculated from the original half
 hourly FluxNET data and from a separately fitted model of assimilation.
@@ -175,7 +175,7 @@ plt.tight_layout()
 ```
 
 The code below then shows the use of the different methods available within the
-{class}`~pyrealm.phenology.fapar_limitation_new.FaparLimitation` class to calculate
+{class}`~pyrealm.phenology.fapar_limitation.FaparLimitation` class to calculate
 $f_{APAR_{max}}$ and $L_{max}$. Note that `method="cai"` requires additional
 `aridity_index` data and that these should be an array providing a single climatological
 estimate per site. For example, a dataset covering a 5x5 grid of sites over 20 years
@@ -257,7 +257,7 @@ values required to calculate maximum fAPAR.
   observations at subdaily frequencies.
 
 To make it easier to estimate maximum $f_{APAR}$ the
-{meth}`FaparLimitation.from_pmodel<pyrealm.phenology.fapar_limitation_new.FaparLimitation.from_pmodel>`
+{meth}`FaparLimitation.from_pmodel<pyrealm.phenology.fapar_limitation.FaparLimitation.from_pmodel>`
 method can be used to automatically calculate the required annual summary statistics
 using the dates and times of the observations used in the P Model (see the
 {class}`~pyrealm.core.time_series.AnnualValueCalculator` class for details). The method

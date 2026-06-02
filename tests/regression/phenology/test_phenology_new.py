@@ -13,7 +13,7 @@ def fapar_limitation_instance(
     fapar_method,
 ):
     """Provides FaparLimitation instances for testing Phenology."""
-    from pyrealm.phenology.fapar_limitation_new import FaparLimitation
+    from pyrealm.phenology.fapar_limitation import FaparLimitation
 
     assim_var = "annual_total_A0" if timescale == "ft" else "annual_total_A0_smstress"
 
@@ -61,7 +61,7 @@ def test_phenology_cai_zhou(
     predicted outputs from the reference code for each implementation.
     """
 
-    from pyrealm.phenology.phenology_new import Phenology
+    from pyrealm.phenology.phenology import Phenology
 
     kwargs = {"aet_pet_ratio": np.array([6])} if pheno_method == "zhu" else {}
 
@@ -120,7 +120,7 @@ def test_phenology_zhu(
     run in annual blocks to match the original test.
     """
 
-    from pyrealm.phenology.phenology_new import Phenology
+    from pyrealm.phenology.phenology import Phenology
 
     steady_state_lai = []
     realised_lai = []
@@ -185,7 +185,7 @@ def test_phenology_frompmodel_cai_zhou(
 ):
     """Regression test for FaparLimitation.from_pmodel class for the Zhou method."""
 
-    from pyrealm.phenology.phenology_new import Phenology
+    from pyrealm.phenology.phenology import Phenology
 
     pmodel, datetimes = phenology_pmodels
 
@@ -256,7 +256,7 @@ def test_phenology_frompmodel_zhu(
 
     """
 
-    from pyrealm.phenology.phenology_new import Phenology
+    from pyrealm.phenology.phenology import Phenology
 
     pmodel, datetimes = phenology_pmodels
 

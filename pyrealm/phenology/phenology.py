@@ -7,7 +7,7 @@ the calculations, which are implemented as derived subclasses of the
 :class:`PhenologyMethodABC` abstract base class.
 
 The methods all require values of annual maximum fAPAR, calculated using
-:class:`~pyrealm.phenology.fapar_limitation_new.FaparLimitation` and then a time
+:class:`~pyrealm.phenology.fapar_limitation.FaparLimitation` and then a time
 series of daily assimilation, although different methods can also require additional
 inputs. The methods then broadly work by calculating a time series of steady state LAI
 as a function of daily assimilation and then applying a lag, capturing the speed with
@@ -47,14 +47,14 @@ from pyrealm.core.utilities import (
     check_input_shapes,
     exponential_moving_average,
 )
-from pyrealm.phenology.fapar_limitation_new import FaparLimitation
+from pyrealm.phenology.fapar_limitation import FaparLimitation
 from pyrealm.pmodel.pmodel import PModel, PModelABC, SubdailyPModel
 
 PHENOLOGY_METHOD_CLASS_REGISTRY: dict[str, type[PhenologyMethodABC]] = {}
 """A registry for classes implementing different methods for estimating phenology.
 
 Different implementations of the calculation of LAI phenology must all be subclasses of
-the :class:`~pyrealm.phenology.phenology_new.PhenologyMethodABC` abstract base class.
+the :class:`~pyrealm.phenology.phenology.PhenologyMethodABC` abstract base class.
 This dictionary is used as a registry for defined subclasses and a method name
 is used to retrieve a particular implementation from this registry. For example:
 
@@ -115,7 +115,7 @@ class PhenologyMethodZhou(PhenologyMethodABC, method="zhou"):
     daily assimilation (:math:`A_0`, mol m-2 day) following the method of
     :cite:`zhou:2025a`. The method requires annual values of fAPAR limitation calculated
     following the method of :cite:`cai:2025a` (see
-    :class:`~pyrealm.phenology.fapar_limitation_new.FaparLimitationMethodCai`).
+    :class:`~pyrealm.phenology.fapar_limitation.FaparLimitationMethodCai`).
 
     * The fractional allocation of GPP to leaf area index (:math:`m`) is calculated
       from the annual maximum LAI and fAPAR as:
@@ -231,7 +231,7 @@ class PhenologyMethodZhu(PhenologyMethodABC, method="zhu"):
     daily assimilation (:math:`A_0`, mol m-2 day) following the method of
     :cite:`zhu:2026a` The method requires annual values of fAPAR limitation calculated
     following the method of :cite:`zhu:2026a` (see
-    :class:`~pyrealm.phenology.fapar_limitation_new.FaparLimitationMethodZhu`).
+    :class:`~pyrealm.phenology.fapar_limitation.FaparLimitationMethodZhu`).
 
     * The fractional allocation of GPP to LAI (:math:`m`) is calculated as the estimated
       maximum LAI for a year divided by a quantile value (default 0.95) from the
@@ -407,7 +407,7 @@ class Phenology:
     r"""Estimating daily time series of leaf area index (LAI).
 
     The maximum fAPAR and LAI for a year (see
-    :class:`~pyrealm.phenology.fapar_limitation_new.FaparLimitation`) can be combined
+    :class:`~pyrealm.phenology.fapar_limitation.FaparLimitation`) can be combined
     with estimates of daily potential assimilation to generate a time series of expected
     LAI that captures the annual phenology for a site. This class provides methods to
     calculate two time series for LAI:
@@ -423,7 +423,7 @@ class Phenology:
 
     Args:
         fapar_limitation: A
-            :class:`~pyrealm.phenology.fapar_limitation_new.FaparLimitation` instance
+            :class:`~pyrealm.phenology.fapar_limitation.FaparLimitation` instance
             providing estimates of maximum annual fAPAR and LAI.
         daily_potential_assimilation: A daily time series of potential assimilation
             (:math:`A_0`, mol m-2 day-1).

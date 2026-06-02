@@ -32,7 +32,7 @@ language_info:
 
 ```
 
-The {class}`~pyrealm.phenology.phenology_new.Phenology` class is used to generate
+The {class}`~pyrealm.phenology.phenology.Phenology` class is used to generate
 daily predictions of leaf area index (LAI). The approach requires:
 
 * daily estimates of total potential assimilation ($A_0$), typically estimated using
@@ -51,8 +51,8 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from pyrealm.core.datasets import get_pyrealm_data
 from pyrealm.constants import PhenologyConst
-from pyrealm.phenology.fapar_limitation_new import FaparLimitation
-from pyrealm.phenology.phenology_new import Phenology
+from pyrealm.phenology.fapar_limitation import FaparLimitation
+from pyrealm.phenology.phenology import Phenology
 
 from pyrealm.pmodel import PModelEnvironment, PModel, SubdailyPModel, AcclimationModel
 ```
@@ -73,7 +73,7 @@ argument to `Phenology`.
 
 This method follows the approach of :cite:`zhou:2025a`. The details of the calculation
 are provided in the documentation of the
-{class}`~pyrealm.phenology.phenology_new.PhenologyMethodZhou` class, but in summary:
+{class}`~pyrealm.phenology.phenology.PhenologyMethodZhou` class, but in summary:
 
 * A scaling factor $m$ is calculated that represents the fraction of daily potential
   assimilation ($A_{d0}$) allocated to leaf growth, using a parameterised function
@@ -88,7 +88,7 @@ are provided in the documentation of the
 
 This method follows the approach of :cite:`zhu:2026a`. The details of the calculation
 are provided in the documentation of the
-{class}`~pyrealm.phenology.phenology_new.PhenologyMethodZhu` class, but in summary:
+{class}`~pyrealm.phenology.phenology.PhenologyMethodZhu` class, but in summary:
 
 * The scaling factor $m$ is estimated simply as the ratio of maximum LAI to the 95%
   quantile value of $A_{d0}$. This is essentially maximum LAI over maximum daily
@@ -221,7 +221,7 @@ plt.tight_layout()
 
 As with [calculating annual maximum fAPAR](./fapar_limitation.md), in most cases
 the inputs for estimating daily LAI will come from a P Model. The
-{meth}`Phenology.from_pmodel<pyrealm.phenology.phenology_new.Phenology.from_pmodel>`
+{meth}`Phenology.from_pmodel<pyrealm.phenology.phenology.Phenology.from_pmodel>`
 method can be used to automatically estimate daily assimilation from a P Model.
 The estimation process is different for subdaily and standard P Models:
 
