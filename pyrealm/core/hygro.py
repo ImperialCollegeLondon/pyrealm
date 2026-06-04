@@ -10,13 +10,13 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
-from pyrealm.core._array_testing import ArrayTesting, _array_testing
+from pyrealm.core._array_testing import _array_testing, _ArrayTesting
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.utilities import evaluate_horner_polynomial
 from pyrealm.core.xarray import ArrayType, xarray_inputs
 
 
-@_array_testing(ArrayTesting(array_args=(("ta", 20),)))
+@_array_testing(_ArrayTesting(array_args=(("ta", 20),)))
 def calculate_vp_sat(
     ta: ArrayType[np.floating], core_const: CoreConst = CoreConst()
 ) -> NDArray[np.floating]:
@@ -64,7 +64,7 @@ def calculate_vp_sat(
     return vp_sat
 
 
-@_array_testing(ArrayTesting(array_args=(("vp", 1), ("ta", 2))))
+@_array_testing(_ArrayTesting(array_args=(("vp", 1), ("ta", 2))))
 def convert_vp_to_vpd(
     vp: ArrayType[np.floating],
     ta: ArrayType[np.floating],
@@ -99,7 +99,7 @@ def convert_vp_to_vpd(
     return vp_sat - vp
 
 
-@_array_testing(ArrayTesting(array_args=(("rh", 0.5), ("ta", 20))))
+@_array_testing(_ArrayTesting(array_args=(("rh", 0.5), ("ta", 20))))
 def convert_rh_to_vpd(
     rh: ArrayType[np.floating],
     ta: ArrayType[np.floating],
@@ -139,7 +139,7 @@ def convert_rh_to_vpd(
     return vp_sat - (rh * vp_sat)
 
 
-@_array_testing(ArrayTesting(array_args=(("sh", 0.06), ("patm", 100))))
+@_array_testing(_ArrayTesting(array_args=(("sh", 0.06), ("patm", 100))))
 def convert_sh_to_vp(
     sh: ArrayType[np.floating],
     patm: ArrayType[np.floating],
@@ -168,7 +168,7 @@ def convert_sh_to_vp(
     return sh * patm / ((1.0 - core_const.mwr) * sh + core_const.mwr)
 
 
-@_array_testing(ArrayTesting(array_args=(("sh", 0.1), ("ta", 20), ("patm", 100000))))
+@_array_testing(_ArrayTesting(array_args=(("sh", 0.1), ("ta", 20), ("patm", 100000))))
 def convert_sh_to_vpd(
     sh: ArrayType[np.floating],
     ta: ArrayType[np.floating],
@@ -210,6 +210,7 @@ def convert_sh_to_vpd(
 # The following functions are integrated from the evap.py implementation of SPLASH v1.
 
 
+@_array_testing(_ArrayTesting(array_args=(("tc", 20),)))
 def calculate_saturation_vapour_pressure_slope(
     tc: ArrayType[np.floating],
 ) -> NDArray[np.floating]:
@@ -236,6 +237,7 @@ def calculate_saturation_vapour_pressure_slope(
     )
 
 
+@_array_testing(_ArrayTesting(array_args=(("tc", 20),)))
 def calculate_enthalpy_vaporisation(tc: ArrayType[np.floating]) -> NDArray[np.floating]:
     """Calculate the enthalpy of vaporization.
 
@@ -255,6 +257,7 @@ def calculate_enthalpy_vaporisation(tc: ArrayType[np.floating]) -> NDArray[np.fl
     return 1.91846e6 * ((tc + 273.15) / (tc + 273.15 - 33.91)) ** 2
 
 
+@_array_testing(_ArrayTesting(array_args=(("tc", 20),)))
 def calculate_specific_heat(tc: ArrayType[np.floating]) -> NDArray[np.floating]:
     """Calculate the specific heat of air.
 
@@ -289,6 +292,7 @@ def calculate_specific_heat(tc: ArrayType[np.floating]) -> NDArray[np.floating]:
     return cp
 
 
+@_array_testing(_ArrayTesting(array_args=(("tc", 20), ("p", 100000))))
 def calculate_psychrometric_constant(
     tc: ArrayType[np.floating],
     p: ArrayType[np.floating],

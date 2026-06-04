@@ -17,10 +17,12 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
+from pyrealm.core._array_testing import _array_testing, _ArrayTesting
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.core.xarray import ArrayType, get_common_dims, xarray_inputs
 
 
+@_array_testing(_ArrayTesting(array_args=(("nu", 20),)))
 def calculate_distance_factor(
     nu: ArrayType[np.floating],
     solar_eccentricity: float = CoreConst().solar_eccentricity,
@@ -58,6 +60,7 @@ def calculate_distance_factor(
     ) ** 2
 
 
+@_array_testing(_ArrayTesting(array_args=(("lambda_", 20),)))
 def calculate_solar_declination_angle(
     lambda_: ArrayType[np.floating],
     solar_obliquity: float = CoreConst().solar_obliquity,
@@ -87,6 +90,7 @@ def calculate_solar_declination_angle(
     )
 
 
+@_array_testing(_ArrayTesting(array_args=(("declination", 1), ("latitude", 1))))
 def calculate_ru_rv_intermediates(
     declination: ArrayType[np.floating], latitude: ArrayType[np.floating]
 ) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
@@ -121,6 +125,7 @@ def calculate_ru_rv_intermediates(
     return ru, rv
 
 
+@_array_testing(_ArrayTesting(array_args=(("declination", 1), ("latitude", 1))))
 def calculate_sunset_hour_angle(
     declination: ArrayType[np.floating], latitude: ArrayType[np.floating]
 ) -> NDArray[np.floating]:
@@ -151,6 +156,7 @@ def calculate_sunset_hour_angle(
     return _calculate_sunset_hour_angle(ru, rv)
 
 
+@_array_testing(_ArrayTesting(array_args=(("ru", 1), ("rv", 1))))
 def _calculate_sunset_hour_angle(
     ru: ArrayType[np.floating],
     rv: ArrayType[np.floating],
@@ -173,6 +179,16 @@ def _calculate_sunset_hour_angle(
     return np.rad2deg(np.arccos(-1.0 * np.clip(ru / rv, -1.0, 1.0)))
 
 
+@_array_testing(
+    _ArrayTesting(
+        array_args=(
+            ("distance_factor", 1),
+            ("sunset_hour_angle", 1),
+            ("declination", 1),
+            ("latitude", 1),
+        )
+    )
+)
 def calculate_daily_solar_radiation(
     distance_factor: ArrayType[np.floating],
     sunset_hour_angle: ArrayType[np.floating],
@@ -226,6 +242,16 @@ def calculate_daily_solar_radiation(
     )
 
 
+@_array_testing(
+    _ArrayTesting(
+        array_args=(
+            ("ru", 1),
+            ("rv", 1),
+            ("distance_factor", 1),
+            ("sunset_hour_angle", 1),
+        )
+    )
+)
 def _calculate_daily_solar_radiation(
     ru: ArrayType[np.floating],
     rv: ArrayType[np.floating],
@@ -269,6 +295,7 @@ def _calculate_daily_solar_radiation(
     )
 
 
+@_array_testing(_ArrayTesting(array_args=(("sunshine_fraction", 1), ("elevation", 1))))
 def calculate_transmissivity(
     sunshine_fraction: ArrayType[np.floating],
     elevation: ArrayType[np.floating],
@@ -298,6 +325,9 @@ def calculate_transmissivity(
     return (c + d * sunshine_fraction) * (1.0 + f * elevation)
 
 
+@_array_testing(
+    _ArrayTesting(array_args=(("transmissivity", 1), ("daily_solar_radiation", 1)))
+)
 def calculate_ppfd_from_tau_rd(
     transmissivity: ArrayType[np.floating],
     daily_solar_radiation: ArrayType[np.floating],
@@ -342,6 +372,17 @@ def calculate_ppfd_from_tau_rd(
     return ppfd
 
 
+@_array_testing(
+    _ArrayTesting(
+        array_args=(
+            ("sunshine_fraction", 1),
+            ("elevation", 1),
+            ("latitude", 1),
+            ("ordinal_date", 1),
+            ("n_days", 1),
+        )
+    )
+)
 def calculate_ppfd(
     sunshine_fraction: ArrayType[np.floating],
     elevation: ArrayType[np.floating],
@@ -439,6 +480,9 @@ def calculate_ppfd(
     )
 
 
+@_array_testing(
+    _ArrayTesting(array_args=(("sunshine_fraction", 1), ("temperature", 20)))
+)
 def calculate_net_longwave_radiation(
     sunshine_fraction: ArrayType[np.floating],
     temperature: ArrayType[np.floating],
@@ -467,6 +511,9 @@ def calculate_net_longwave_radiation(
     return (b + (1.0 - b) * sunshine_fraction) * (A - temperature)
 
 
+@_array_testing(
+    _ArrayTesting(array_args=(("transmissivity", 1), ("distance_factor", 1)))
+)
 def calculate_rw_intermediate(
     transmissivity: ArrayType[np.floating],
     distance_factor: ArrayType[np.floating],
@@ -498,6 +545,17 @@ def calculate_rw_intermediate(
     return (1.0 - shortwave_albedo) * transmissivity * solar_constant * distance_factor
 
 
+@_array_testing(
+    _ArrayTesting(
+        array_args=(
+            ("net_longwave_radiation", 1),
+            ("transmissivity", 1),
+            ("distance_factor", 1),
+            ("declination", 1),
+            ("latitude", 1),
+        )
+    )
+)
 def calculate_net_radiation_crossover_hour_angle(
     net_longwave_radiation: ArrayType[np.floating],
     transmissivity: ArrayType[np.floating],
@@ -565,6 +623,16 @@ def calculate_net_radiation_crossover_hour_angle(
     )
 
 
+@_array_testing(
+    _ArrayTesting(
+        array_args=(
+            ("net_longwave_radiation", 1),
+            ("rw", 1),
+            ("ru", 1),
+            ("rv", 1),
+        )
+    )
+)
 def _calculate_net_radiation_crossover_hour_angle(
     net_longwave_radiation: ArrayType[np.floating],
     rw: ArrayType[np.floating],
@@ -596,6 +664,18 @@ def _calculate_net_radiation_crossover_hour_angle(
     )
 
 
+@_array_testing(
+    _ArrayTesting(
+        array_args=(
+            ("net_longwave_radiation", 1),
+            ("crossover_hour_angle", 1),
+            ("declination", 1),
+            ("latitude", 1),
+            ("transmissivity", 1),
+            ("distance_factor", 1),
+        )
+    )
+)
 def calculate_daytime_net_radiation(
     net_longwave_radiation: ArrayType[np.floating],
     crossover_hour_angle: ArrayType[np.floating],
@@ -672,6 +752,17 @@ def calculate_daytime_net_radiation(
     )
 
 
+@_array_testing(
+    _ArrayTesting(
+        array_args=(
+            ("rw", 1),
+            ("rv", 1),
+            ("ru", 1),
+            ("crossover_hour_angle", 1),
+            ("net_longwave_radiation", 1),
+        )
+    )
+)
 def _calculate_daytime_net_radiation(
     rw: ArrayType[np.floating],
     rv: ArrayType[np.floating],
@@ -711,6 +802,19 @@ def _calculate_daytime_net_radiation(
     return rn_d
 
 
+@_array_testing(
+    _ArrayTesting(
+        array_args=(
+            ("net_longwave_radiation", 1),
+            ("crossover_hour_angle", 1),
+            ("sunset_hour_angle", 1),
+            ("declination", 1),
+            ("latitude", 1),
+            ("transmissivity", 1),
+            ("distance_factor", 1),
+        )
+    )
+)
 def calculate_nighttime_net_radiation(
     net_longwave_radiation: ArrayType[np.floating],
     crossover_hour_angle: ArrayType[np.floating],
@@ -795,6 +899,18 @@ def calculate_nighttime_net_radiation(
     )
 
 
+@_array_testing(
+    _ArrayTesting(
+        array_args=(
+            ("rw", 1),
+            ("rv", 1),
+            ("ru", 1),
+            ("sunset_hour_angle", 1),
+            ("crossover_hour_angle", 1),
+            ("net_longwave_radiation", 1),
+        )
+    )
+)
 def _calculate_nighttime_net_radiation(
     rw: ArrayType[np.floating],
     rv: ArrayType[np.floating],
@@ -854,6 +970,7 @@ def _calculate_nighttime_net_radiation(
     ) * (day_seconds / np.pi)
 
 
+@_array_testing(_ArrayTesting(array_args=(("ordinal_date", 1), ("n_days", 1))))
 def calculate_heliocentric_longitudes(
     ordinal_date: ArrayType[np.int_],
     n_days: ArrayType[np.int_],
@@ -936,6 +1053,15 @@ def calculate_heliocentric_longitudes(
     return nu, lambda_
 
 
+@_array_testing(
+    _ArrayTesting(
+        array_args=(
+            ("latitude", 1),
+            ("declination", 1),
+            ("hour_angle", 1),
+        )
+    )
+)
 def calculate_solar_elevation(
     latitude: ArrayType[np.floating],
     declination: ArrayType[np.floating],
@@ -968,6 +1094,7 @@ def calculate_solar_elevation(
     )
 
 
+@_array_testing(_ArrayTesting(array_args=(("ordinal_date", 1),)))
 def calculate_solar_declination(
     ordinal_date: ArrayType[np.int_],
 ) -> NDArray[np.floating]:
@@ -991,6 +1118,7 @@ def calculate_solar_declination(
     return -23.4 * (np.pi / 180) * np.cos((2 * np.pi * (ordinal_date + 10)) / 365)
 
 
+@_array_testing(_ArrayTesting(array_args=(("current_time", 1), ("solar_noon", 1))))
 def calculate_local_hour_angle(
     current_time: ArrayType[np.floating], solar_noon: ArrayType[np.floating]
 ) -> NDArray[np.floating]:
@@ -1017,6 +1145,15 @@ def calculate_local_hour_angle(
     return np.pi * (current_time - solar_noon) / 12
 
 
+@_array_testing(
+    _ArrayTesting(
+        array_args=(
+            ("longitude", 1),
+            ("equation_of_time", 1),
+            ("standard_longitude", 1),
+        )
+    )
+)
 def calculate_solar_noon(
     longitude: ArrayType[np.floating],
     equation_of_time: ArrayType[np.floating],
@@ -1053,6 +1190,7 @@ def calculate_solar_noon(
     return 12 + (4 * -(longitude - standard_longitude) - equation_of_time) / 60
 
 
+@_array_testing(_ArrayTesting(array_args=(("day_angle", 1),)))
 def calculate_equation_of_time(
     day_angle: ArrayType[np.floating],
     coef: tuple[float, ...] = CoreConst.equation_of_time_coef,
@@ -1096,6 +1234,7 @@ def calculate_equation_of_time(
     ) * f
 
 
+@_array_testing(_ArrayTesting(array_args=(("ordinal_date", 1),)))
 def calculate_day_angle(ordinal_date: ArrayType[np.int_]) -> NDArray[np.floating]:
     r"""Calculate the solar day angle.
 
@@ -1116,6 +1255,16 @@ def calculate_day_angle(ordinal_date: ArrayType[np.int_]) -> NDArray[np.floating
     return 2 * np.pi * (xarray_inputs(ordinal_date) - 1) / 365
 
 
+@_array_testing(
+    _ArrayTesting(
+        array_args=(
+            ("latitude", 1),
+            ("longitude", 1),
+            ("datetime", np.datetime64("now")),
+        ),
+        test_attributes=("solar_elevation",),
+    )
+)
 @dataclass
 class SolarPositions:
     """Solar values for observation locations and times.

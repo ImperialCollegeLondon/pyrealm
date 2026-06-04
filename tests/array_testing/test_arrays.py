@@ -9,6 +9,8 @@ import numpy as np
 import pytest
 import xarray
 
+from pyrealm.core._array_testing import _ArrayTesting
+
 
 def populate_array_test_callables():
     """Imports all modules to populate the array testing registry."""
@@ -46,6 +48,20 @@ def powerset(items):
 
     # Return powerset values as lists for indexing numpy arrays
     return [list(v) for v in dim_powerset]
+
+
+def equality_testing(full: Any, alt: Any, call_info: _ArrayTesting):
+    """Simple equality test for comparing outputs.
+
+    Functions typically return an array or tuple of arrays and so can be directly
+    tested, but classes are hard to test so a set of defined attributes are tested
+    instead.
+    """
+    if call_info.test_attributes:
+        for attr in call_info.test_attributes:
+            assert np.allclose(getattr(full, attr), getattr(alt, attr))
+    else:
+        assert np.allclose(full, alt)
 
 
 @pytest.fixture(scope="module")
@@ -103,7 +119,7 @@ def test_array_broadcasting(to_broadcast_test, collapsed_axis_combinations):
             reduced_args[full_name] = full_args[full_name]
             reduced_result = callable_(**reduced_args)
 
-            assert np.allclose(full_result, reduced_result)
+            equality_testing(full=full_result, alt=reduced_result, call_info=call_info)
 
 
 @pytest.mark.parametrize(
@@ -111,7 +127,7 @@ def test_array_broadcasting(to_broadcast_test, collapsed_axis_combinations):
     ALL_ARRAY_TEST,
     ids=[info.test_name for _, info in ALL_ARRAY_TEST],
 )
-def test_array_conversion(to_array_test, collapsed_axis_combinations):
+def test_xarray_conversion(to_array_test):
     """Test xarray conversion.
 
     Tests that substituting xarray for numpy inputs does not change result.
@@ -129,17 +145,18 @@ def test_array_conversion(to_array_test, collapsed_axis_combinations):
     }
     full_result = callable_(**full_args)
 
-    # Now iterate over combinations of array argument
+    # Now iterate over powerset combinations of array arguments
     # TODO: this might be overkill for callables with large numbers of array inputs -
     #       maybe constrain to pairs or triplets if runtime explodes?
-    for converted_args in powerset(full_args):
+    for args_to_convert in powerset(full_args):
         # Generate the converted inputs for this combination.
-        reduced_args = full_args.copy()
+        converted_args = full_args.copy()
 
         # Convert specified arrays to xarray
-        for arg in converted_args:
-            reduced_args[arg] = xarray.DataArray(full_args[arg])
+        for arg in args_to_convert:
+            converted_args[arg] = xarray.DataArray(full_args[arg])
 
         # Run the callable and test
-        reduced_result = callable_(**reduced_args)
-        assert np.allclose(full_result, reduced_result)
+        converted_result = callable_(**converted_args)
+
+        equality_testing(full=full_result, alt=converted_result, call_info=call_info)
