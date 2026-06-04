@@ -10,11 +10,13 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst
+from pyrealm.core._array_testing import ArrayTesting, _array_testing
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.utilities import evaluate_horner_polynomial
 from pyrealm.core.xarray import ArrayType, xarray_inputs
 
 
+@_array_testing(ArrayTesting(array_args=(("ta", 20),)))
 def calculate_vp_sat(
     ta: ArrayType[np.floating], core_const: CoreConst = CoreConst()
 ) -> NDArray[np.floating]:
@@ -62,6 +64,7 @@ def calculate_vp_sat(
     return vp_sat
 
 
+@_array_testing(ArrayTesting(array_args=(("vp", 1), ("ta", 2))))
 def convert_vp_to_vpd(
     vp: ArrayType[np.floating],
     ta: ArrayType[np.floating],
@@ -96,6 +99,7 @@ def convert_vp_to_vpd(
     return vp_sat - vp
 
 
+@_array_testing(ArrayTesting(array_args=(("rh", 0.5), ("ta", 20))))
 def convert_rh_to_vpd(
     rh: ArrayType[np.floating],
     ta: ArrayType[np.floating],
@@ -135,6 +139,7 @@ def convert_rh_to_vpd(
     return vp_sat - (rh * vp_sat)
 
 
+@_array_testing(ArrayTesting(array_args=(("sh", 0.06), ("patm", 100))))
 def convert_sh_to_vp(
     sh: ArrayType[np.floating],
     patm: ArrayType[np.floating],
@@ -163,6 +168,7 @@ def convert_sh_to_vp(
     return sh * patm / ((1.0 - core_const.mwr) * sh + core_const.mwr)
 
 
+@_array_testing(ArrayTesting(array_args=(("sh", 0.1), ("ta", 20), ("patm", 100000))))
 def convert_sh_to_vpd(
     sh: ArrayType[np.floating],
     ta: ArrayType[np.floating],
