@@ -15,7 +15,7 @@ from pyrealm.core._array_testing import _ArrayTesting
 def populate_array_test_callables():
     """Imports all modules to populate the array testing registry."""
     import pyrealm
-    from pyrealm.core._array_testing import REGISTRY
+    from pyrealm.core._array_testing import ARRAY_TESTING_REGISTRY
 
     for _, modname, ispkg in pkgutil.walk_packages(
         pyrealm.__path__, prefix=pyrealm.__name__ + "."
@@ -23,7 +23,7 @@ def populate_array_test_callables():
         if not ispkg:
             importlib.import_module(modname)
 
-    return REGISTRY
+    return ARRAY_TESTING_REGISTRY
 
 
 # All callables with @_array_testing decoration
@@ -160,3 +160,13 @@ def test_xarray_conversion(to_array_test):
         converted_result = callable_(**converted_args)
 
         equality_testing(full=full_result, alt=converted_result, call_info=call_info)
+
+
+def test_xarray_reshaping():
+    """Test xarray reshaping.
+
+    TODO - test the xarray code that maps missing dims and reshapes to common
+    ordering.
+    """
+
+    pass

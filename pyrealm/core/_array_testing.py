@@ -31,7 +31,7 @@ from typing import Any
 
 import numpy as np
 
-REGISTRY: list = []
+ARRAY_TESTING_REGISTRY: list = []
 
 
 @dataclass
@@ -77,7 +77,7 @@ def _array_testing(*args: _ArrayTesting) -> Callable:
 
         # Register that the code object should be subjected to array testing
         for test_instance in args:
-            REGISTRY.append((fn, test_instance))
+            ARRAY_TESTING_REGISTRY.append((fn, test_instance))
 
         return wrapper
 
