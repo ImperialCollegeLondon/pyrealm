@@ -1286,11 +1286,11 @@ class SolarPositions:
         array([0.60252])
     """
 
-    latitude: NDArray[np.floating]
+    latitude: ArrayType[np.floating]
     """The latitude of the location in degrees."""
-    longitude: NDArray[np.floating]
+    longitude: ArrayType[np.floating]
     """The longitude of the location in degrees."""
-    datetime: NDArray[np.datetime64]
+    datetime: ArrayType[np.datetime64]
     """An array of np.datetime64 values corresponding to observations at the location
     (local time)."""
     core_const: CoreConst = field(default_factory=lambda: CoreConst())
@@ -1322,6 +1322,10 @@ class SolarPositions:
 
     def __post_init__(self) -> None:
         """Initialise calculated attributes."""
+
+        self.latitude, self.longitude, self.datetime = xarray_inputs(
+            self.latitude, self.longitude, self.datetime
+        )
 
         # Truncate all datetimes to their year to get the first day of each year and
         # then find the difference from the original value to  get the ordinal date
