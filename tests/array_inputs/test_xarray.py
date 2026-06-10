@@ -44,8 +44,6 @@ DEPENDENT_LIST: list[str] = [
     "SplashModel.calculate_soil_moisture",
     "DailyEvapFluxes",
     "DailyEvapFluxes.estimate_aet",
-    # phenology
-    "FaparLimitation.from_pmodel",
 ]
 
 # Check all dependent functions are used

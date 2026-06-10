@@ -26,11 +26,9 @@ from math import ceil
 
 import numpy as np
 
-from pyrealm.constants import PhenologyConst
 from pyrealm.core.calendar import Calendar
 from pyrealm.core.xarray import ArrayType
 from pyrealm.demography.flora import PlantFunctionalType
-from pyrealm.phenology.fapar_limitation import FaparLimitation
 from tests.array_inputs.context import Context
 
 # These methods are not relevant or are incompatible without additional work
@@ -43,8 +41,8 @@ SKIP_METHODS = [
     # For these more broadcasting is needed / the current variables have unclear
     # restrictions on shapes
     "PhenologyMethodZhu",
-    "PhenologyNew",
-    "PhenologyNew.from_pmodel",
+    "Phenology",
+    "Phenology.from_pmodel",
     # Demography - mostly 1d arrays (dataframes)
     "CohortMethods.drop_cohort_data",
     "StemTraits",
@@ -178,30 +176,26 @@ REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
     ("OptimalChiC4NoGammaRootzoneStress.estimate_chi", ()): _kwarg_params(
         ("xi_values",)
     ),
-    # Add aridity_index to FaparLimitationNew calls - only actually required for one
+    # Add aridity_index to FaparLimitation calls - only actually required for one
     # method.
-    ("FaparLimitationNew", ("FaparLimitationNew",)): _kwarg_params(("aridity_index",)),
-    ("FaparLimitationNew", ("PhenologyNew", "PhenologyNew")): _kwarg_params(
-        ("aridity_index",)
-    ),
-    ("FaparLimitationNew", ("PhenologyNew.from_pmodel",)): _kwarg_params(
-        ("aridity_index",)
-    ),
-    ("FaparLimitationNew", ("PhenologyMethodZhu", "PhenologyMethodZhu")): _kwarg_params(
+    ("FaparLimitation", ("FaparLimitation",)): _kwarg_params(("aridity_index",)),
+    ("FaparLimitation", ("Phenology", "Phenology")): _kwarg_params(("aridity_index",)),
+    ("FaparLimitation", ("Phenology.from_pmodel",)): _kwarg_params(("aridity_index",)),
+    ("FaparLimitation", ("PhenologyMethodZhu", "PhenologyMethodZhu")): _kwarg_params(
         ("aridity_index",)
     ),
     (
-        "FaparLimitationNew",
+        "FaparLimitation",
         ("PhenologyMethodZhou", "PhenologyMethodZhou"),
     ): _kwarg_params(("aridity_index",)),
     (
-        "FaparLimitationNew",
+        "FaparLimitation",
         (
             "FaparLimitationMethodCai.calculate_maximum_fapar",
             "FaparLimitationMethodCai",
         ),
     ): _kwarg_params(("aridity_index",)),
-    ("FaparLimitationNew.from_pmodel", ()): _kwarg_params(("aridity_index",)),
+    ("FaparLimitation.from_pmodel", ()): _kwarg_params(("aridity_index",)),
 }
 
 
@@ -427,20 +421,8 @@ def _(ctx):
 
 _PHENOLOGY_N_TIMES = 2
 
-register_args("FaparLimitation")(
-    lambda ctx: {"years": np.ones(ctx.bcast_shape[0], dtype="datetime64[Y]")}
-)
 
-
-register_args("FaparLimitation.from_pmodel")(
-    lambda ctx: {
-        "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
-        "aridity_index": np.ones(_set_time_len(1, ctx)),  # Time: constant or years (1)
-    }
-)
-
-
-@register_args("FaparLimitationNew.from_pmodel")
+@register_args("FaparLimitation.from_pmodel")
 def _(ctx):
     # Manually define
     # * years (one-d array along time axis)
@@ -453,7 +435,7 @@ def _(ctx):
     }
 
 
-@register_args("FaparLimitationNew")
+@register_args("FaparLimitation")
 def _(ctx):
     # Manually define
     # * years (one-d array along time axis)
@@ -481,26 +463,6 @@ def _(ctx):
 
 
 register_args("Phenology")(
-    lambda _: {
-        "daily_gpp": np.full((_PHENOLOGY_N_TIMES,), 0.5),
-        "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
-        "fapar_limitation": FaparLimitation(
-            annual_total_potential_gpp=np.ones(_PHENOLOGY_N_TIMES),
-            annual_mean_ca=np.ones(_PHENOLOGY_N_TIMES),
-            annual_mean_chi=np.ones(_PHENOLOGY_N_TIMES),
-            annual_mean_vpd=np.ones(_PHENOLOGY_N_TIMES),
-            annual_total_precip=np.ones(_PHENOLOGY_N_TIMES),
-            annual_growing_season_length=np.ones(_PHENOLOGY_N_TIMES),
-            aridity_index=np.ones(_PHENOLOGY_N_TIMES),
-            years=np.zeros((_PHENOLOGY_N_TIMES,), dtype="datetime64[Y]"),
-            phenology_const=PhenologyConst(
-                z=12.227, k=0.5, f0_coefficients=(0.65, 0.604169, 1.9), sigma=0.771
-            ),
-        ),
-    }
-)
-
-register_args("PhenologyNew")(
     # Unclear what the shapes of daily_potential_assimilation and datetimes should be
     # so this is currently skipped
     lambda _: {
@@ -509,7 +471,7 @@ register_args("PhenologyNew")(
     }
 )
 
-register_args("PhenologyNew.from_pmodel")(
+register_args("Phenology.from_pmodel")(
     # This is currently skipped because it has issues in interpolation if the length of
     # datetimes doesn't match the time dimension of the pmodel gpp, or if it is length 1
     lambda _: {

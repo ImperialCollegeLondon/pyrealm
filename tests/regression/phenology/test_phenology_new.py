@@ -1,4 +1,4 @@
-"""Test the PhenologyNew class."""
+"""Test the Phenology class."""
 
 import numpy as np
 import pytest
@@ -13,11 +13,11 @@ def fapar_limitation_instance(
     fapar_method,
 ):
     """Provides FaparLimitation instances for testing Phenology."""
-    from pyrealm.phenology.fapar_limitation_new import FaparLimitationNew
+    from pyrealm.phenology.fapar_limitation import FaparLimitation
 
     assim_var = "annual_total_A0" if timescale == "ft" else "annual_total_A0_smstress"
 
-    return FaparLimitationNew(
+    return FaparLimitation(
         annual_total_potential_gpp=annual_inputs[assim_var],
         annual_mean_ca=annual_inputs["annual_mean_ca_in_GS"],
         annual_mean_chi=annual_inputs["annual_mean_chi_in_GS"],
@@ -61,11 +61,11 @@ def test_phenology_cai_zhou(
     predicted outputs from the reference code for each implementation.
     """
 
-    from pyrealm.phenology.phenology_new import PhenologyNew
+    from pyrealm.phenology.phenology import Phenology
 
     kwargs = {"aet_pet_ratio": np.array([6])} if pheno_method == "zhu" else {}
 
-    pheno = PhenologyNew(
+    pheno = Phenology(
         daily_potential_assimilation=daily_assimilation["daily_A0"],
         datetimes=daily_assimilation["time"].astype("datetime64[D]"),
         fapar_limitation=fapar_limitation_instance,
@@ -120,7 +120,7 @@ def test_phenology_zhu(
     run in annual blocks to match the original test.
     """
 
-    from pyrealm.phenology.phenology_new import PhenologyNew
+    from pyrealm.phenology.phenology import Phenology
 
     steady_state_lai = []
     realised_lai = []
@@ -133,7 +133,7 @@ def test_phenology_zhu(
         # leap years to match the simple tiling in the original implementation.
         year_indices = np.where(year_values == year)[0]
 
-        pheno = PhenologyNew(
+        pheno = Phenology(
             daily_potential_assimilation=daily_assimilation["daily_A0"][year_indices],
             datetimes=daily_assimilation["time"][year_indices].astype("datetime64[D]"),
             fapar_limitation=fapar_limitation_instance,
@@ -185,11 +185,11 @@ def test_phenology_frompmodel_cai_zhou(
 ):
     """Regression test for FaparLimitation.from_pmodel class for the Zhou method."""
 
-    from pyrealm.phenology.phenology_new import PhenologyNew
+    from pyrealm.phenology.phenology import Phenology
 
     pmodel, datetimes = phenology_pmodels
 
-    pheno = PhenologyNew.from_pmodel(
+    pheno = Phenology.from_pmodel(
         pmodel=pmodel,
         fapar_limitation=fapar_limitation_instance,
         datetimes=datetimes,
@@ -256,11 +256,11 @@ def test_phenology_frompmodel_zhu(
 
     """
 
-    from pyrealm.phenology.phenology_new import PhenologyNew
+    from pyrealm.phenology.phenology import Phenology
 
     pmodel, datetimes = phenology_pmodels
 
-    pheno = PhenologyNew.from_pmodel(
+    pheno = Phenology.from_pmodel(
         pmodel=pmodel,
         fapar_limitation=fapar_limitation_instance,
         datetimes=datetimes,

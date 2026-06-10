@@ -32,7 +32,7 @@ language_info:
 
 ```
 
-The {class}`~pyrealm.phenology.phenology_new.PhenologyNew` class is used to generate
+The {class}`~pyrealm.phenology.phenology.Phenology` class is used to generate
 daily predictions of leaf area index (LAI). The approach requires:
 
 * daily estimates of total potential assimilation ($A_0$), typically estimated using
@@ -51,8 +51,8 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from pyrealm.core.datasets import get_pyrealm_data
 from pyrealm.constants import PhenologyConst
-from pyrealm.phenology.fapar_limitation_new import FaparLimitationNew
-from pyrealm.phenology.phenology_new import PhenologyNew
+from pyrealm.phenology.fapar_limitation import FaparLimitation
+from pyrealm.phenology.phenology import Phenology
 
 from pyrealm.pmodel import PModelEnvironment, PModel, SubdailyPModel, AcclimationModel
 ```
@@ -73,7 +73,7 @@ argument to `Phenology`.
 
 This method follows the approach of :cite:`zhou:2025a`. The details of the calculation
 are provided in the documentation of the
-{class}`~pyrealm.phenology.phenology_new.PhenologyMethodZhou` class, but in summary:
+{class}`~pyrealm.phenology.phenology.PhenologyMethodZhou` class, but in summary:
 
 * A scaling factor $m$ is calculated that represents the fraction of daily potential
   assimilation ($A_{d0}$) allocated to leaf growth, using a parameterised function
@@ -88,7 +88,7 @@ are provided in the documentation of the
 
 This method follows the approach of :cite:`zhu:2026a`. The details of the calculation
 are provided in the documentation of the
-{class}`~pyrealm.phenology.phenology_new.PhenologyMethodZhu` class, but in summary:
+{class}`~pyrealm.phenology.phenology.PhenologyMethodZhu` class, but in summary:
 
 * The scaling factor $m$ is estimated simply as the ratio of maximum LAI to the 95%
   quantile value of $A_{d0}$. This is essentially maximum LAI over maximum daily
@@ -130,11 +130,11 @@ with open(site_data_path) as json_src:
 Calculating phenology directly from a time series of daily total potential assimilation
 requires:
 
-* a `FaparLimitationNew` instance that provides maximum annual fAPAR and LAI for sites,
+* a `FaparLimitation` instance that provides maximum annual fAPAR and LAI for sites,
   and
 * the dates of the daily observations to match daily values to year.
 
-The code below creates a `FaparLimitationNew` instance for 11 years of data from the
+The code below creates a `FaparLimitation` instance for 11 years of data from the
 `DE_Gri` fluxnet site.
 
 ```{code-cell} ipython3
@@ -143,7 +143,7 @@ annual_data_path = get_pyrealm_data("phenology/inputs/subdaily/annual_inputs.csv
 annual_data = pd.read_csv(annual_data_path)
 annual_data["time"] = annual_data["year"].to_numpy().astype(str).astype("datetime64[Y]")
 
-faparlim = FaparLimitationNew(
+faparlim = FaparLimitation(
     method="cai",
     annual_total_potential_gpp=annual_data["annual_total_A0"].to_numpy(),
     annual_mean_ca=annual_data["annual_mean_ca_in_GS"].to_numpy(),
@@ -171,7 +171,7 @@ daily_assimilation = pd.read_csv(daily_assimilation_path)
 daily_assimilation["time"] = pd.to_datetime(daily_assimilation["time"])
 
 # Calculate LAI
-phenology_direct_zhou = PhenologyNew(
+phenology_direct_zhou = Phenology(
     method="zhou",
     fapar_limitation=faparlim,
     daily_potential_assimilation=daily_assimilation["daily_A0"].to_numpy(),
@@ -180,7 +180,7 @@ phenology_direct_zhou = PhenologyNew(
 
 
 # Calculate LAI
-phenology_direct_zhu = PhenologyNew(
+phenology_direct_zhu = Phenology(
     method="zhu",
     fapar_limitation=faparlim,
     daily_potential_assimilation=daily_assimilation["daily_A0"].to_numpy(),
@@ -221,7 +221,7 @@ plt.tight_layout()
 
 As with [calculating annual maximum fAPAR](./fapar_limitation.md), in most cases
 the inputs for estimating daily LAI will come from a P Model. The
-{meth}`PhenologyNew.from_pmodel<pyrealm.phenology.phenology_new.PhenologyNew.from_pmodel>`
+{meth}`Phenology.from_pmodel<pyrealm.phenology.phenology.Phenology.from_pmodel>`
 method can be used to automatically estimate daily assimilation from a P Model.
 The estimation process is different for subdaily and standard P Models:
 
@@ -264,7 +264,7 @@ Next, calculate [fAPAR and LAI limitation](./fapar_limitation.md) using each of 
 available methods:
 
 ```{code-cell} ipython3
-annual_faparlim_fortnightly_cai = FaparLimitationNew.from_pmodel(
+annual_faparlim_fortnightly_cai = FaparLimitation.from_pmodel(
     method="cai",
     pmodel=fortnightly_pmodel,
     datetimes=datetimes,
@@ -273,7 +273,7 @@ annual_faparlim_fortnightly_cai = FaparLimitationNew.from_pmodel(
     aridity_index=np.array([site_data["AI_from_cruts"]]),
 )
 
-annual_faparlim_fortnightly_zhu = FaparLimitationNew.from_pmodel(
+annual_faparlim_fortnightly_zhu = FaparLimitation.from_pmodel(
     method="zhu",
     pmodel=fortnightly_pmodel,
     datetimes=datetimes,
@@ -282,20 +282,20 @@ annual_faparlim_fortnightly_zhu = FaparLimitationNew.from_pmodel(
 )
 ```
 
-Now we can use the `PhenologyNew.from_pmodel` method to automatically estimate daily
+Now we can use the `Phenology.from_pmodel` method to automatically estimate daily
 assimilation from the P Model. Note that using the method with a standard P Model again
 requires datetimes to map the observations onto years and to interpolate GPP to daily
 values.
 
 ```{code-cell} ipython3
-phenology_fortnightly_zhou = PhenologyNew.from_pmodel(
+phenology_fortnightly_zhou = Phenology.from_pmodel(
     method="zhou",
     pmodel=fortnightly_pmodel,
     datetimes=datetimes,
     fapar_limitation=annual_faparlim_fortnightly_cai,
 )
 
-phenology_fortnightly_zhu = PhenologyNew.from_pmodel(
+phenology_fortnightly_zhu = Phenology.from_pmodel(
     method="zhu",
     pmodel=fortnightly_pmodel,
     datetimes=datetimes,
@@ -386,7 +386,7 @@ available methods. Note that we do not need to provide `datetimes` with the subd
 Model, as datetimes of the observations are required to fit the model.
 
 ```{code-cell} ipython3
-annual_faparlim_subdaily_cai = FaparLimitationNew.from_pmodel(
+annual_faparlim_subdaily_cai = FaparLimitation.from_pmodel(
     method="cai",
     pmodel=subdaily_pmodel,
     growing_season=subdaily_data["tc"].to_numpy() > 0,
@@ -394,7 +394,7 @@ annual_faparlim_subdaily_cai = FaparLimitationNew.from_pmodel(
     aridity_index=np.array([site_data["AI_from_cruts"]]),
 )
 
-annual_faparlim_subdaily_zhu = FaparLimitationNew.from_pmodel(
+annual_faparlim_subdaily_zhu = FaparLimitation.from_pmodel(
     method="zhu",
     pmodel=subdaily_pmodel,
     growing_season=subdaily_data["tc"].to_numpy() > 0,
@@ -406,11 +406,11 @@ And now we can calculate the predicted daily LAI from the PModel inputs, again w
 the need to provide `datetimes`.
 
 ```{code-cell} ipython3
-phenology_subdaily_zhou = PhenologyNew.from_pmodel(
+phenology_subdaily_zhou = Phenology.from_pmodel(
     method="zhou", pmodel=subdaily_pmodel, fapar_limitation=annual_faparlim_subdaily_cai
 )
 
-phenology_subdaily_zhu = PhenologyNew.from_pmodel(
+phenology_subdaily_zhu = Phenology.from_pmodel(
     method="zhu",
     pmodel=subdaily_pmodel,
     fapar_limitation=annual_faparlim_subdaily_zhu,

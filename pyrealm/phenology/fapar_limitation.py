@@ -2,11 +2,11 @@
 
 The :class:`FaparLimitation` class and the :meth:`FaparLimitation.from_pmodel` are
 designed to work with inputs that can have multiple dimensions. The first axis is
-_always_ assumed to represent a time series of annual observations. If the inputs
-are one dimensional, then this is a time series for a single site; if they are three
+_always_ assumed to represent a time series of annual observations. If the inputs are
+one dimensional, then this is a time series for a single site; if they are three
 dimensional then these are observations for a grid of sites. Usually all array inputs
-will have the same shape but note the following instances where you might need to
-take care with array broadcasting.
+will have the same shape but note the following instances where you might need to take
+care with array broadcasting.
 
 * Growing season length might well be constant across sites. If so - for example
     with 3D data - the input would need shape `(N, 1, 1)` to broadcast N years of
@@ -21,31 +21,305 @@ take care with array broadcasting.
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
+
 import numpy as np
 from numpy.typing import NDArray
-from scipy.special import lambertw  # type: ignore[import-untyped]
 
-from pyrealm.constants import PhenologyConst
+from pyrealm.constants.phenology_const import PhenologyConstNew
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.time_series import AnnualValueCalculator
 from pyrealm.core.utilities import (
     check_input_shapes,
-    exponential_moving_average,
     summarize_attrs,
 )
-from pyrealm.core.xarray import ArrayType, xarray_inputs
 from pyrealm.pmodel.pmodel import PModel, PModelABC, SubdailyPModel
+
+FAPAR_LIMITATION_METHOD_CLASS_REGISTRY: dict[str, type[FaparLimitationMethodABC]] = {}
+"""A registry for optimal chi calculation classes.
+
+Different implementations of the calculation of optimal chi must all be subclasses of
+:class:`~pyrealm.pmodel.optimal_chi.OptimalChiABC` abstract base class.
+This dictionary is used as a registry for defined subclasses and a method name
+is used to retrieve a particular implementation from this registry. For example:
+
+.. code:: python
+
+    prentice14_opt_chi = OPTIMAL_CHI_CLASS_REGISTRY['prentice14']
+"""
+
+
+class FaparLimitationMethodABC(ABC):
+    r"""Abstract base class for methods computing maximum annual fAPAR and LAI."""
+
+    __experimental__ = True
+
+    method: str
+    """A short method name used to identify the class in
+    :data:`FAPAR_LIMITATION_METHOD_CLASS_REGISTRY`.
+    """
+
+    attrs: tuple[tuple[str, str], ...]
+    """A tuple of attributes to be reported in the FaparLimitation.summarize() output
+    for the method."""
+
+    requires: tuple[str, ...]
+    """A tuple of any additional variables required to create a FaparLimitation
+    instance using the method."""
+
+    def __init__(
+        self, fapar_limitation: FaparLimitation, phenology_const: PhenologyConstNew
+    ):
+        """Initialise the method instance.
+
+        Subclass should provide a method specific instance that calls
+        `super().__init__(...)`, carries out method specific validation and then runs
+        ``self.set_z_and_f0``.
+        """
+        self.fapar_limitation = fapar_limitation
+        self.phenology_const = phenology_const
+
+        self.f0: NDArray[np.floating]
+        self.z: NDArray[np.floating]
+
+        # Check for required variables
+        self._check_required_variables()
+
+    def _check_required_variables(self) -> None:
+        """Check required variables.
+
+        Checks that any required variables for the method have been passed to the
+        FaparLimitation constructor.
+        """
+        for var in self.requires:
+            if not hasattr(self.fapar_limitation, var):
+                raise ValueError(
+                    f"Values for {var} are required to use the {self.method} method "
+                    "with FaparLimitation."
+                )
+
+    @abstractmethod
+    def set_z_and_f0(self) -> None:
+        """Sets the f0 and z values for the method."""
+        pass
+
+    @abstractmethod
+    def calculate_maximum_fapar(
+        self, energy_limited_fapar: NDArray, water_limited_fapar: NDArray
+    ) -> NDArray[np.floating]:
+        """Calculate the maximum fAPAR.
+
+        Provides the method specific calculation of maximum fAPAR from the energy and
+        water limited maximum values and should return the calculated maximum fAPAR.
+
+        Args:
+            energy_limited_fapar: The maximum fAPAR given energy limitation.
+            water_limited_fapar: The maximum fAPAR given water limitation.
+        """
+        pass
+
+    @classmethod
+    def __init_subclass__(cls, method: str) -> None:
+        """Initialise a subclass deriving from this ABC."""
+
+        cls.method = method
+        FAPAR_LIMITATION_METHOD_CLASS_REGISTRY[cls.method] = cls
+
+
+class FaparLimitationMethodCai(FaparLimitationMethodABC, method="cai"):
+    r"""Compute maximum annual fAPAR and LAI following :cite:t:`cai:2025a`.
+
+    The method of :cite:t:`cai:2025a` uses a single global value of :math:`z` but models
+    :math:`f_0` as a function of site-specific aridity, expressed as the climatological
+    ratio PET/P, (see :meth:`set_z_and_f0`). The annual maximum fAPAR is then the simple
+    minimum of the site values for water and energy limited fAPAR.
+    """
+
+    __experimental__ = True
+
+    attrs = (
+        ("lai_max", "-"),
+        ("fapar_max", "-"),
+    )
+
+    requires = ("aridity_index",)
+
+    def __init__(
+        self, fapar_limitation: FaparLimitation, phenology_const: PhenologyConstNew
+    ):
+        """Initialise a FaparLimitationMethod instance using the Cai approach."""
+
+        # Run the superclass init method.
+        super().__init__(
+            fapar_limitation=fapar_limitation, phenology_const=phenology_const
+        )
+
+        # This is only set as a side effect of the calculate_maximum_fapar method being
+        # called, which is a little bit hacky, but at the moment just preserving the
+        # attribute _somewhere_. Will see how this class evolves.
+        self.energy_limited: NDArray[np.bool_]
+        """Boolean array showing if annual :math:`fAPAR_{max}` is water or energy
+        limited."""
+
+        # Validate the aridity index
+        self.aridity_index = getattr(self.fapar_limitation, "aridity_index")
+
+        # Check aridity index is a site specific array (or constant)
+        try:
+            np.broadcast_shapes(
+                self.aridity_index[None, :].shape, self.fapar_limitation.shape
+            )
+        except ValueError:
+            raise ValueError(
+                f"The aridity index argument must contain site specific values and "
+                f"must be a constant of have shape {self.fapar_limitation.shape[1:]}"
+            )
+
+        # Make sure the aridity index is not zero
+        if np.any(self.aridity_index <= 0):
+            raise ValueError("The aridity index has to be positive.")
+
+        # Set z and f0
+        self.set_z_and_f0()
+
+    def set_z_and_f0(self) -> None:
+        r"""Set the :math:`z` and :math:`f_0` parameters.
+
+        The value :math:`f_0` is the ratio of annual total transpiration of annual total
+        precipitation. It is calculated from site specific estimates of the
+        climatological aridity index, calculated as the long term (typically 20 years)
+        total PET over total precipitation (:math:`AI`, unitless) as:
+
+        .. math::
+
+                f_0 = a \exp{\left(-b \left(\frac{AI}{c}\right)^2\right)}
+
+        where :math:`a,b,c` are defined in the
+        :attr:`~pyrealm.constants.phenology_const.PhenologyConstNew.cai_f0_coefficients`
+        attribute.
+        """
+
+        a, b, c = self.phenology_const.cai_f0_coefficients
+
+        self.f0 = a * np.exp(-b * np.log(self.aridity_index / c) ** 2)
+        self.z = np.array([self.phenology_const.cai_z])
+
+    def calculate_maximum_fapar(
+        self, energy_limited_fapar: NDArray, water_limited_fapar: NDArray
+    ) -> NDArray:
+        """Calculate the maximum fAPAR.
+
+        The Cai method uses the simple minimum of the water and energy limited fAPAR
+        values as the maximum possible fAPAR.
+
+        Args:
+            energy_limited_fapar: The maximum fAPAR given energy limitation.
+            water_limited_fapar: The maximum fAPAR given water limitation.
+        """
+
+        # Calculate fAPAR max and record whether the location is energy or water limited
+        fapar_max = np.minimum(water_limited_fapar, energy_limited_fapar)
+        self.energy_limited = energy_limited_fapar < water_limited_fapar
+
+        return fapar_max
+
+
+class FaparLimitationMethodZhu(FaparLimitationMethodABC, method="zhu"):
+    r"""Compute maximum annual fAPAR and LAI following :cite:t:`zhu:2026a`.
+
+    The method of :cite:t:`zhu:2026a` uses single global values of both :math:`z` and
+    :math:`f_0`. However, the annual maximum fAPAR is then a continuous function of
+    water and energy limited fAPAR following a Budyko curve (see
+    :meth:`calculate_maximum_fapar` for details).
+    """
+
+    __experimental__ = True
+
+    attrs = (
+        ("lai_max", "-"),
+        ("fapar_max", "-"),
+    )
+
+    requires = tuple()
+
+    def __init__(
+        self, fapar_limitation: FaparLimitation, phenology_const: PhenologyConstNew
+    ):
+        """Initialise a FaparLimitationMethod instance using the Zhu approach."""
+
+        # Run the superclass init method.
+        super().__init__(
+            fapar_limitation=fapar_limitation, phenology_const=phenology_const
+        )
+
+        # Set z and f0
+        self.set_z_and_f0()
+
+    def set_z_and_f0(self) -> None:
+        r"""Set the :math:`z` and :math:`f_0` parameters.
+
+        This method has fixed values for :math:`z` (see
+        :attr:`~pyrealm.constants.phenology_const.PhenologyConstNew.zhu_f0`) and
+        :math:`f_0` (see
+        :attr:`~pyrealm.constants.phenology_const.PhenologyConstNew.zhu_z`)
+        """
+
+        self.f0 = np.array([self.phenology_const.zhu_f0])
+        self.z = np.array([self.phenology_const.zhu_z])
+
+    def calculate_maximum_fapar(
+        self, energy_limited_fapar: NDArray, water_limited_fapar: NDArray
+    ) -> NDArray:
+        r"""Calculate the maximum fAPAR.
+
+        The Zhu method calculates the maximum fAPAR as a function of the energy and
+        water limited fAPAR, following a function like the Budyko curve
+        :cite:p:`roderick:2011a`:
+    
+        .. math::
+            :nowrap:
+
+            \[    
+                \begin{align*}
+
+                    c_w &= \frac{f_{APAR_{c}}}{f_{APAR_{w}}} \\
+                    f_{APAR_{max}} = f_{APAR_{w}} \left(1 + c_w - 
+                    \left( 1 + c_w ^{\bar\omega} \right)^{1/{\bar\omega}}
+
+                \end{align*}
+            \],
+
+        where :math:`\bar\omega` is defined in the
+        :attr:`~pyrealm.constants.phenology_const.PhenologyConstNew.zhu_budyko`
+        constants parameter.
+
+        Args:
+            energy_limited_fapar: The maximum fAPAR given energy limitation.
+            water_limited_fapar: The maximum fAPAR given water limitation.
+        """
+        # Calculate the ratio of energy limited to water limited fAPAR, safeguarding
+        # against divide by zero
+        cw_ratio = energy_limited_fapar / (
+            np.clip(water_limited_fapar, a_min=np.finfo(float).eps, a_max=None)
+        )
+
+        # Calculate the maximum fapar.
+        fapar_max = (
+            (1 + cw_ratio)
+            - (1 + cw_ratio**self.phenology_const.zhu_budyko)
+            ** (1 / self.phenology_const.zhu_budyko)
+        ) * water_limited_fapar
+
+        return fapar_max
 
 
 class FaparLimitation:
     r"""Compute maximum annual fAPAR and LAI.
 
-    This class calculates maximum annual fAPAR and LAI ($L$), following
-    :cite:`cai:2025a`. The maximum annual fAPAR is limited by the ability of plants to
-    assimilate carbon for constructing leaves and this can be limited either by the
+    This class calculates maximum annual fAPAR, which can be limited either by the
     availability of light energy ($f_{APAR_{c}}$) or by the availability of water
-    ($f_{APAR_{w}}$). The maximum annual fAPAR is calculated as the minimum of those two
-    terms. The equations are:
+    ($f_{APAR_{w}}$). The equations for these two variables, following :cite:`cai:2025a`
+    are:
 
     .. math::
         :nowrap:
@@ -55,40 +329,34 @@ class FaparLimitation:
             f_{APAR_{c}} &= 1 - \frac{z}{k A_0}\\
             f_{APAR_{w}} &= \left(\frac{ c_a \left( 1 - \chi \right)}{ 1.6 D }\right)
                             \left(\frac{ f_0 P }{ A_0 }\right) \\
-            f_{APAR_{max}} &= \min{\left(f_{APAR_{c}}, f_{APAR_{w}}\right)}
           \end{align*}
         \]
 
-    The maximum annual LAI is then calculated using Beer's law:
+    The maximum fAPAR is then calculated as a function of :math:`f_{APAR_{c}}` and
+    :math:`f_{APAR_{w}}`. In these equations:
+
+    * :math:`z` accounts for the growth and maintenance costs of leaves.
+    * :math:`f_0` accounts for water limitation on annual assimulation and is is the
+      ratio of annual total transpiration to annual total precipitation.
+
+    The other variables are the required arguments to the class defined below. 
+    
+    There are different approaches to estimating :math:`z` and :math:`f_0` and to
+    calculating the maximum fAPAR from the two inputs. For details see:
+
+    * ``method=cai``; :class:`FaparLimitationMethodCai`
+    * ``method=zhu``; :class:`FaparLimitationMethodZhu`
+
+    The maximum annual LAI can then be calculated using Beer's law as:
 
     .. math::
 
         L_{max} = - ( 1 / k ) \ln {1 -f_{APAR_{max}}}
 
-    The class also calculates the parameter :math:`m`, which is the steady state annual
-    ratio of leaf area index to GPP:
-
-    .. math::
-
-        m = \frac{ \sigma G L_{max}}{A_0 f_{APAR_{max}}
-
-    The :class:`~pyrealm.constants.phenology_const.PhenologyConst` class provides values
-    for the following constants:
-
-    * :math:`z` accounts for the growth and maintenance costs of leaves.
-    * :math:`k` is the light extinction coefficient.
-    * :math:`f_0` is is the ratio of annual total transpiration to annual total
-      precipitation, calculated from the climatological aridity index (AI) (see
-      :class:`PhenologyConst.calculate_f0<pyrealm.constants.phenology_const.PhenologyConst.calculate_f0>`).
-    * :math:`\sigma` is a proportion that captures the departure of :math:`m` from the
-      maximum due to biological delays in deploying and dropping the canopy during the
-      growing season.
-
-    The other variables are the required arguments to the class defined below. The most
-    common source of these variables is from a P Model, and the
+    The most common source of most of the variables needed to calculate maximum fAPAR is
+    a P Model, and the
     :meth:`~pyrealm.phenology.fapar_limitation.FaparLimitation.from_pmodel` method can
-    be used to create an instance directly from a fitted P Model.
-
+    be used to estimate maximum fAPAR directly from a fitted P Model.
 
     Args:
         annual_total_potential_gpp: The annual sum of potential GPP (:math:`A_0,
@@ -103,62 +371,50 @@ class FaparLimitation:
             \text{year}^{-1}`)
         annual_growing_season_length: The length of the growing season in days for each
             year (:math:`G`, days)
-        aridity_index: A climatological estimate of the local aridity index, calculated
-            as the long term (typically 20 years) total PET over total precipitation
-            (:math:`AI`, unitless).
-        years: A 1D array of year datetimes for the observations.
+        years: An array of year datetimes for the observations.
+        method: The method to be applied when calculating maximum fAPAR, defaulting to
+        ``cai``. 
         phenology_const: An instance of
-            :class:`~pyrealm.constants.phenology_const.PhenologyConst`
+            :class:`~pyrealm.constants.phenology_const.PhenologyConstNew`
+        **kwargs: Any additional variables required by specific method choices.
     """
 
     __experimental__ = True
 
     def __init__(
         self,
-        annual_total_potential_gpp: ArrayType[np.floating],
-        annual_mean_ca: ArrayType[np.floating],
-        annual_mean_chi: ArrayType[np.floating],
-        annual_mean_vpd: ArrayType[np.floating],
-        annual_total_precip: ArrayType[np.floating],
-        annual_growing_season_length: ArrayType[np.floating],
-        aridity_index: ArrayType[np.floating],
+        annual_total_potential_gpp: NDArray[np.floating],
+        annual_mean_ca: NDArray[np.floating],
+        annual_mean_chi: NDArray[np.floating],
+        annual_mean_vpd: NDArray[np.floating],
+        annual_total_precip: NDArray[np.floating],
+        annual_growing_season_length: NDArray[np.floating],
         years: NDArray[np.datetime64],
-        phenology_const: PhenologyConst = PhenologyConst(),
+        method: str = "cai",
+        phenology_const: PhenologyConstNew = PhenologyConstNew(),
+        **kwargs: NDArray[np.floating],
     ) -> None:
         # Experimental class
         warn_experimental("FaparLimitation")
 
-        # Convert arrays to numpy
-        (
-            annual_total_potential_gpp,
-            annual_mean_ca,
-            annual_mean_chi,
-            annual_mean_vpd,
-            annual_total_precip,
-            annual_growing_season_length,
-            aridity_index,
-        ) = xarray_inputs(
-            annual_total_potential_gpp,
-            annual_mean_ca,
-            annual_mean_chi,
-            annual_mean_vpd,
-            annual_total_precip,
-            annual_growing_season_length,
-            aridity_index,
-        )
-
         # Validate the input shapes.
+        # NOTE: Input shape checking only handles the main arguments and not the
+        #       contents of kwargs arrays that are passed down as required extra
+        #       arguments to FaparLimitationMethodABC subclasses. This is because those
+        #       required variables can have different expectations of the inputs shapes
+        #       (e.g. FaparLimitationMethodCai requires aridity_index for sites not
+        #       across time), and so shape of those inputs should be validated within
+        #       subclasses, not here.
         self.shape: tuple[int, ...] = check_input_shapes(
             annual_total_potential_gpp,
             annual_mean_ca,
             annual_mean_chi,
             annual_mean_vpd,
             annual_total_precip,
-            aridity_index,
             annual_growing_season_length,
         )
 
-        # Check the years values - must be datetime64[Y], and be one dimensional,
+        # Check the years values - must be datetime64[Y] and be one dimensional,
         # matching the first dimension of the other inputs
         # TODO - this is a bit stringent, but is more robust
         if not years.dtype == "<M8[Y]":
@@ -169,6 +425,7 @@ class FaparLimitation:
                 "The years argument must be one dimensional and match the length "
                 "of the first axis of the other arguments"
             )
+
         self.years = years
         r"""The year of each observation."""
         self.annual_total_potential_gpp = annual_total_potential_gpp
@@ -187,54 +444,67 @@ class FaparLimitation:
         (:math:`P, \text{mol m}^{-2} \text{year}^{-1}`)"""
         self.annual_growing_season_length = annual_growing_season_length
         r"""Annual growing season length (:math:`G`, days)"""
-        self.aridity_index = aridity_index
-        r"""Climatological estimate of local aridity index (AI, unitless)"""
 
-        # Make sure the aridity index is not zero
-        if np.any(aridity_index <= 0):
-            raise ValueError("The aridity index has to be positive.")
+        # Additional variables -  add them to the instance
+        for var_name, var_values in kwargs.items():
+            setattr(self, var_name, var_values)
+
+        self._additional_vars: tuple[str, ...] = tuple(kwargs.keys())
+        """A tuple containing the attribute names of additional variables passed to the
+        FaparLimitation instance."""
 
         # Constants used for phenology computations
-        self.phenology_const = phenology_const
+        self.phenology_const: PhenologyConstNew = phenology_const
 
-        #  f_0 is the ratio of annual total transpiration of annual total
-        #  precipitation, which is an empirical function of the climatic Aridity Index
-        #  (AI).
-        f_0 = self.phenology_const.calculate_f0(aridity_index=self.aridity_index)
+        # Set up the fAPAR limitation method to be used.
+        self.method: str = method
+
+        if method not in FAPAR_LIMITATION_METHOD_CLASS_REGISTRY:
+            raise ValueError(f"Unknown FaparLimitation method: {method}")
+
+        # Get an instance of the method class from the registry
+        self.limitation_method: FaparLimitationMethodABC = (
+            FAPAR_LIMITATION_METHOD_CLASS_REGISTRY[method](
+                fapar_limitation=self, phenology_const=self.phenology_const
+            )
+        )
 
         # Calculate the energy and water limited terms.
-        fapar_energylim = 1.0 - self.phenology_const.z / (
+        energy_limited_fapar = 1.0 - self.limitation_method.z / (
             self.phenology_const.k * annual_total_potential_gpp
         )
-        fapar_waterlim = (
-            f_0
+        water_limited_fapar = (
+            self.limitation_method.f0
             * annual_total_precip
             * annual_mean_ca
             * (1 - annual_mean_chi)
             / (1.6 * annual_mean_vpd * annual_total_potential_gpp)
         )
 
-        self.fapar_max: NDArray[np.floating] = np.minimum(
-            fapar_waterlim, fapar_energylim
+        # Calculate the maximum fapar using the limitation method
+        self.fapar_max: NDArray[np.floating] = (
+            self.limitation_method.calculate_maximum_fapar(
+                energy_limited_fapar=energy_limited_fapar,
+                water_limited_fapar=water_limited_fapar,
+            )
         )
-        """Estimated annual maximum fAPAR (unitless)."""
-        self.energy_limited: NDArray[np.bool_] = fapar_energylim < fapar_waterlim
-        """Boolean array showing if annual :math:`fAPAR_{max}` is water or energy
-        limited."""
-        self.annual_precip_molar: NDArray[np.floating] = annual_total_precip
-        """The annual total precipitation for each year (moles year-1)."""
+
+        # """Estimated annual maximum fAPAR (unitless)."""
+        # self.energy_limited: NDArray[np.bool_] = fapar_energylim < fapar_waterlim
+        # """Boolean array showing if annual :math:`fAPAR_{max}` is water or energy
+        # limited."""
 
         self.lai_max: NDArray[np.floating] = -(1 / self.phenology_const.k) * np.log(
             1.0 - self.fapar_max
         )
         """Estimated annual maximum LAI (unitless)"""
 
-        self.lai_to_gpp_ratio_m = (
-            self.phenology_const.sigma
-            * self.annual_growing_season_length
-            * self.lai_max
-        ) / (self.annual_total_potential_gpp * self.fapar_max)
-        """The steady state ratio of leaf area index to potential GPP (:math:`m`)"""
+        # self.lai_to_gpp_ratio_m = (
+        #     self.phenology_const.sigma
+        #     * self.annual_growing_season_length
+        #     * self.lai_max
+        # ) / (self.annual_total_potential_gpp * self.fapar_max)
+        # """The steady state ratio of leaf area index to potential GPP (:math:`m`)"""
 
     def __repr__(self) -> str:
         """Simple representation of class instance."""
@@ -250,23 +520,18 @@ class FaparLimitation:
             dp: The number of decimal places used in rounding summary stats.
         """
 
-        attrs: tuple[tuple[str, str], ...] = (
-            ("lai_max", "-"),
-            ("fapar_max", "-"),
-            ("lai_to_gpp_ratio_m", "-"),
-        )
-
-        summarize_attrs(self, attrs, dp=dp)
+        summarize_attrs(self, self.limitation_method.attrs, dp=dp)
 
     @classmethod
     def from_pmodel(
         cls,
         pmodel: PModelABC,
-        growing_season: ArrayType[np.bool],
-        precip: ArrayType[np.floating],
-        aridity_index: ArrayType[np.floating],
+        growing_season: NDArray[np.bool],
+        precip: NDArray[np.floating],
         datetimes: NDArray[np.datetime64] | None = None,
-        phenology_const: PhenologyConst = PhenologyConst(),
+        method: str = "cai",
+        phenology_const: PhenologyConstNew = PhenologyConstNew(),
+        **kwargs: NDArray[np.floating],
     ) -> FaparLimitation:
         r"""Create a FaparLimitation instance from a P Model and other inputs.
 
@@ -305,28 +570,27 @@ class FaparLimitation:
         mean of monthly values :math:`1, 2, \dots, 12` would not be 6.5 because the
         monthly values are weighted according to the length of the month.
 
-        Lastly, potential GPP is taken directly from the P Model instance. If you want
-        to apply a post-hoc penalty factor to GPP (e.g. a water limitation factor), then
-        you can optionally provide per-observation penalty estimates and they will be
-        applied when calculating annual total potential assimilation.
+        .. NOTE:
+
+            Potential GPP is taken directly from the P Model instance. If you want to
+            apply a post-hoc penalty factor to GPP (e.g. a water limitation factor),
+            then use the `apply_gpp_penalty_factor` method to your fitted P Model before
+            using it to calculate fAPAR limitation.
 
         Args:
             pmodel: A :class:`pyrealm.pmodel.pmodel.PModel` or
                 :class:`pyrealm.pmodel.pmodel.SubdailyPModel` instance, fitted with
                 ``fapar`` fixed at one.
-            datetimes: A 1D array giving the datetimes of observations.
+            datetimes: An array giving the datetimes of observations.
             growing_season: A boolean array indicating which observations are to be
                 considered as part of the growing season.
             precip: An array of precipitation for each observation.
-            aridity_index: A climatological estimate of local aridity index.
+            method: The method to be used in calculating maximum fAPAR, defaulting to
+                `cai`.
             phenology_const: An instance of
-                :class:`~pyrealm.constants.phenology_const.PhenologyConst`
+                :class:`~pyrealm.constants.phenology_const.PhenologyConstNew`
+            **kwargs: Any additional variables required by specific method choices.
         """
-
-        # Convert array inputs to numpy
-        precip = xarray_inputs(precip, dims=pmodel.env.dims)
-        aridity_index = xarray_inputs(aridity_index, dims=pmodel.env.dims)
-        growing_season = xarray_inputs(growing_season, dims=pmodel.env.dims)
 
         # Check the datetimes - should they be taken from the AcclimationModel of the
         # SubdailyPModel or are they required for standard PModels?
@@ -367,12 +631,11 @@ class FaparLimitation:
         precip = np.broadcast_to(precip, data_shape)
 
         # Get the total GPP for each observation
-        # - also need to handle missing values, easier to take _mean_ annual value
-        #   and scale it up to an annual total
-        # - TODO - handle incompleteness - when do we stop estimating annual values from
-        #   partial years (or at least warn about it)
+        # TODO: handle incompleteness - when do we stop estimating annual values from
+        #         partial years (or at least warn about it)
 
-        # Calculate annual mean potential GPP and scale up to the year
+        # Calculate annual mean potential GPP and scale up to the year - note that this
+        # includes any post-hoc GPP penalty applied to the model
         annual_mean_potential_gpp = avc.get_annual_means(gpp)
         annual_total_potential_gpp = (
             annual_mean_potential_gpp * (avc.year_n_days) * 86400 * 1e-6
@@ -394,96 +657,7 @@ class FaparLimitation:
             annual_total_precip=annual_total_precip,
             annual_growing_season_length=avc.year_n_days_subset,
             years=avc.years,
-            aridity_index=aridity_index,
+            method=method,
             phenology_const=phenology_const,
+            **kwargs,
         )
-
-
-class Phenology:
-    """Phenology calculation."""
-
-    __experimental__ = True
-
-    def __init__(
-        self,
-        daily_gpp: NDArray[np.floating],
-        datetimes: NDArray[np.datetime64],
-        fapar_limitation: FaparLimitation,
-        alpha: float = 1 / 15,
-        phenology_const: PhenologyConst = PhenologyConst(),
-    ):
-        # Experimental class
-        warn_experimental(self.__class__.__name__)
-
-        # Check the array input shapes
-        check_input_shapes(daily_gpp, datetimes)
-
-        # Check the datetimes provide ordered daily resolution observations - don't
-        # insist on daily precision but check that second level representations of the
-        # days is consistent with daily observations and strictly increases.
-        datetimes = datetimes.astype("datetime64[s]")
-        datetime_spacing = np.diff(datetimes)
-
-        if not np.all(np.equal(datetime_spacing, 86400)):
-            raise ValueError(
-                "The datetimes argument must provide timestamps of a "
-                "complete increasing daily time series"
-            )
-
-        # Get the years of observations and check they are all represented in the
-        # FaparLimitation object
-        datetimes_year = datetimes.astype("datetime64[Y]")
-        observation_years = np.unique(datetimes_year)
-
-        missing_years = set(observation_years).difference(fapar_limitation.years)
-        if missing_years:
-            raise ValueError(
-                f"The observation datetimes include years that are not included in the "
-                f"fapar_limitation data: {', '.join([str(y) for y in missing_years])}"
-            )
-
-        # Store values
-        self.phenology_const = phenology_const
-        """The phenology constants used in the model."""
-        self.fapar_limitation = fapar_limitation
-        """The annual maximum fAPAR and LAI data used in the model."""
-
-        # Calculate the index of each observation in the FaparLimitation years.
-        # This uses a shortcut to avoid looking up using np.where or np.searchsorted:
-        # * The FaparLimitation.years are a sequence of values: N, N+1, N+2, ..., N+M
-        # * The datetime_years are now validated to lie in N, ..., N+M
-        # * If we take the first year in FaparLimitation.years as an integer then that
-        #   provides an offset from zero for the indexing of the year sequence, and we
-        #   can subtract that from the observation years to get the index of each
-        #   observation.
-        year_index = datetimes_year.astype("int") - fapar_limitation.years[0].astype(
-            "int"
-        )
-
-        # Calculate daily mu value as m * daily molar assimilation:
-        mu = fapar_limitation.lai_to_gpp_ratio_m[year_index] * daily_gpp
-
-        # Calculate the Lambert W0 value
-        daily_LAI = mu + (1 / self.phenology_const.k) * lambertw(
-            -self.phenology_const.k * mu * np.exp(-self.phenology_const.k * mu), k=0
-        )
-
-        # Check that all imaginary parts are zero or np.nan
-        if not np.all(np.logical_or(np.imag(daily_LAI) == 0, np.isnan(daily_LAI))):
-            raise ValueError("Imaginary parts of Lambert W calculation are not zero")
-
-        # Clip the real parts at zero
-        daily_LAI = np.clip(np.real(daily_LAI), a_min=0, a_max=None)
-
-        # Find the daily minimum of the lambert term and annual maximum LAI as the
-        # steady state LAI
-        self.steady_state_LAI = np.minimum(
-            daily_LAI, fapar_limitation.lai_max[year_index]
-        )
-        """The steady state leaf area index for each day."""
-        # Calculate the lagged value
-        self.realised_LAI = exponential_moving_average(
-            self.steady_state_LAI, alpha=alpha
-        )
-        """The realised leaf area index for each day given the modelled lag in responses
-        to changing assimilation."""
