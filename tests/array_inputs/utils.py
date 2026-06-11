@@ -57,6 +57,7 @@ from tests.array_inputs.context import Context
 from tests.array_inputs.overrides import (
     ADDITIONAL_INIT_METHODS,
     IGNORE_OUTPUTS,
+    IGNORE_OUTPUTS_BCAST,
     MANUAL_ARGS,
     REQUIRES,
     SKIP_METHODS,
@@ -310,8 +311,9 @@ def _get_parameters(
     for name, param in params.items():
         if _get_manual_args(name, ctx) is not None:
             approaches[name] = "manual"
-        elif param.default is not param.empty and not (
-            required_args and name not in required_args  # Don't use default if REQUIRES
+        elif (
+            param.default is not param.empty
+            and name not in (required_args or {})  # Don't use default if REQUIRES
         ):
             approaches[name] = "default"
         else:
@@ -548,20 +550,18 @@ def compare_instances(instance1: Any, instance2: Any, broadcast: bool = False):
 
     Set `broadcast=True` to broadcast attributes to a common shape for comparison.
 
-    If broadcasting, this function ignores the 'shape' attribute of any class, which is
-    not expected to broadcast, and anything in the manually defined list IGNORE_OUTPUTS.
-    Any 'dims' attributes will also be ignored.
+    This will ignore any 'dims' attributes, as well as anything in the manually defined
+    list IGNORE_OUTPUTS. If broadcasting, this function ignores the 'shape' attribute of
+    any class, which is not expected to broadcast, and anything in IGNORE_OUTPUTS_BCAST.
     """
     dict1 = instance1.__dict__
     dict2 = instance2.__dict__
     class_name = instance1.__class__.__name__
     for key in dict1:
-        if broadcast:
-            if key == "shape":
-                continue
-            if f"{class_name}:{key}" in IGNORE_OUTPUTS:
-                continue
-        if key == "dims":
+        attribute_name = f"{class_name}:{key}"
+        if broadcast and (key == "shape" or attribute_name in IGNORE_OUTPUTS_BCAST):
+            continue
+        if key == "dims" or attribute_name in IGNORE_OUTPUTS:
             continue
 
         raise_msg = f"{class_name}: {key} not equal"
