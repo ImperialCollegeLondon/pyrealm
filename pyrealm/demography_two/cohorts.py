@@ -5,14 +5,41 @@ Document this.
 
 from __future__ import annotations
 
+import uuid
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Annotated, Any, Self
+from typing import Annotated, Any, Literal, Self
 
 import pandas as pd
 from pydantic import BaseModel, Field, ValidationError, ValidationInfo, model_validator
 
 from pyrealm.demography.core import CohortMethods, PandasExporter
 from pyrealm.demography_two.flora import Flora
+
+
+def cohort_id_generator(
+    mode: Literal["uuid"] | Literal["seqint"] | Literal["seqintstr"] = "uuid",
+    fmt: str = "C_{id:06}",
+) -> Iterator[str | int]:
+    """Generator function for unique cohort IDs.
+
+    Args:
+        mode: Use UUID4, sequential integer or formatted sequential integer string
+            cohort IDs.
+        fmt: A format string for sequential integer string IDs.
+    """
+
+    id = 0
+
+    while True:
+        if mode == "seqint":
+            yield id
+            id += 1
+        if mode == "seqintstr":
+            yield fmt.format(id=id)
+            id += 1
+        else:
+            yield str(uuid.uuid4())
 
 
 class CohortData(BaseModel):
@@ -103,9 +130,19 @@ class Cohorts(PandasExporter, CohortMethods):
         flora: A Flora instance providing the PFT data for the cohorts.
     """
 
-    def __init__(self, cohort_data: CohortData, flora: Flora) -> None:
+    def __init__(
+        self,
+        cohort_data: CohortData,
+        flora: Flora,
+        cid_mode: Literal["uuid"] | Literal["seqint"] | Literal["seqintstr"] = "uuid",
+        cid_fmt: str = "C_{id:06}",
+    ) -> None:
         self.flora: pd.DataFrame = flora.to_dataframe()
         """The flora used with the Cohorts instance, as a pandas dataframe."""
+        self.cohorts: pd.DataFrame
+        """A pandas dataframe containing the cohort data."""
+        self._cid_generator = cohort_id_generator(mode=cid_mode, fmt=cid_fmt)
+        """A cohort ID generator instance."""
 
         cohorts_df = cohort_data.to_dataframe()
 
@@ -115,7 +152,11 @@ class Cohorts(PandasExporter, CohortMethods):
                 f"PFTs in cohort data not present in flora: {','.join(unknown_pfts)}"
             )
 
-        self.cohorts = cohorts_df.merge(self.flora, left_on="pft_name", right_on="name")
+        cohorts = cohorts_df.merge(self.flora, left_on="pft_name", right_on="name")
+        cohorts["cohort_id"] = [
+            next(self._cid_generator) for idx in range(cohorts.shape[0])
+        ]
+        self.cohorts = cohorts
 
     @classmethod
     def from_csv(cls, path: Path, flora: Flora) -> Cohorts:
