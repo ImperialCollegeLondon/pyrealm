@@ -134,14 +134,13 @@ class Cohorts(PandasExporter, CohortMethods):
         self,
         cohort_data: CohortData,
         flora: Flora,
-        cid_mode: Literal["uuid"] | Literal["seqint"] | Literal["seqintstr"] = "uuid",
-        cid_fmt: str = "C_{id:06}",
+        cid_generator: Iterator = cohort_id_generator(),
     ) -> None:
         self.flora: pd.DataFrame = flora.to_dataframe()
         """The flora used with the Cohorts instance, as a pandas dataframe."""
         self.cohorts: pd.DataFrame
         """A pandas dataframe containing the cohort data."""
-        self._cid_generator = cohort_id_generator(mode=cid_mode, fmt=cid_fmt)
+        self._cid_generator = cid_generator
         """A cohort ID generator instance."""
 
         cohorts_df = cohort_data.to_dataframe()
