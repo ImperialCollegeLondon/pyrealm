@@ -1,5 +1,7 @@
 """test the functions in tmodel.py."""
 
+from contextlib import nullcontext as does_not_raise
+
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose
@@ -534,25 +536,42 @@ def test_calculate_dbh_from_height_edge_cases():
 
 
 @pytest.mark.parametrize(
-    argnames="dbh_idx, at_dbh, data_idx, out_idx, exp_shape",
+    argnames="dbh_idx, at_dbh, data_idx, out_idx",
     argvalues=[
-        pytest.param((0, ...), False, (0, ...), 0, (3,), id="row_0"),
-        pytest.param((1, ...), False, (1, ...), 1, (3,), id="row_1"),
-        pytest.param((2, ...), False, (2, ...), 2, (3,), id="row_2"),
-        pytest.param((3, ...), False, (3, ...), 3, (3,), id="row_3"),
-        pytest.param((4, ...), False, (4, ...), 4, (3,), id="row_4"),
-        pytest.param((5, ...), False, (5, ...), 5, (3,), id="row_5"),
-        pytest.param((0, ...), True, tuple(), tuple(), (6, 3), id="use_at_dbh"),
+        pytest.param((0, ...), False, (0, ...), 0, id="row_0"),
+        pytest.param((1, ...), False, (1, ...), 1, id="row_1"),
+        pytest.param((2, ...), False, (2, ...), 2, id="row_2"),
+        pytest.param((3, ...), False, (3, ...), 3, id="row_3"),
+        pytest.param((4, ...), False, (4, ...), 4, id="row_4"),
+        pytest.param((5, ...), False, (5, ...), 5, id="row_5"),
+        # Note that the dbh_idx below is arbitrary as it is overridden using at_dbh.
+        pytest.param((0, ...), True, tuple(), tuple(), id="use_at_dbh"),
     ],
 )
-def test_StemAllometry(
-    rtmodel_flora, rtmodel_data, dbh_idx, at_dbh, data_idx, out_idx, exp_shape
+def test_StemAllometry_and_StemAllocation(
+    rtmodel_flora, rtmodel_data, dbh_idx, at_dbh, data_idx, out_idx
 ):
-    """Test the StemAllometry class and inherited methods."""
+    """Test the StemAllometry, StemAllocation classes and inherited methods.
+
+    This test checks that the StemAllometry and StemAllocation classes generate the same
+    predictions as the original R model.
+
+    It also also checks the dimensionality of StemAllometry _only_ by producing
+    results in "standard mode" - just using the cohort DBH values - and "profile mode"
+    when using `at_dbh` to get 2D allometries.
+
+    It doesn't test the dimensionality of StemAllocation (see below) beyond checking
+    that 2D allometries generate the correct prediction.
+    """
 
     from pyrealm.demography_two.cohorts import CohortData, Cohorts
-    from pyrealm.demography_two.tmodel import StemAllometry
+    from pyrealm.demography_two.tmodel import (
+        StemAllocation,
+        StemAllometry,
+        calculate_whole_crown_gpp,
+    )
 
+    ## Generate cohort data
     cohort_data = CohortData(
         pft_name=rtmodel_flora.name,
         n_individuals=[1, 1, 1],
@@ -560,11 +579,13 @@ def test_StemAllometry(
     )
     cohorts = Cohorts(cohort_data=cohort_data, flora=rtmodel_flora)
 
+    ## Check that StemAllometry produces the correct values
+
     at_dbh_value = rtmodel_data["dbh"][:, 0] if at_dbh else None
     stem_allometry = StemAllometry(cohorts=cohorts, at_dbh=at_dbh_value)
 
     # Check the values of the variables calculated against the expectations from the
-    # rtmodel implementation
+    # rtmodel implementation - also checks shape of outputs
     vars_to_check = (
         v
         for v in stem_allometry._array_attrs
@@ -590,199 +611,109 @@ def test_StemAllometry(
 
     assert set(stem_allometry._array_attrs) == set(df.columns)
 
+    ## Check that StemAllocation produces the correct values
 
-# def test_StemAllometry_CohortMethods(rtmodel_flora, rtmodel_data):
-#     """Test the StemAllometry inherited cohort methods."""
+    # Calculate the Li et al Equation 12 GPP from the P0 values
+    whole_crown_gpp = calculate_whole_crown_gpp(
+        potential_gpp=np.array(rtmodel_data["potential_gpp"][data_idx]),
+        crown_area=stem_allometry.crown_area,
+        par_ext=np.array(rtmodel_flora.par_ext),
+        lai=np.array(rtmodel_flora.lai),
+    )
 
-#     from pyrealm.demography_two.tmodel import StemAllometry
+    stem_allocation = StemAllocation(
+        cohorts=cohorts,
+        allometry=stem_allometry,
+        whole_crown_gpp=whole_crown_gpp,
+    )
 
-#     stem_allometry = StemAllometry(
-#         stem_traits=rtmodel_flora, at_dbh=rtmodel_data["dbh"][:, [0]]
-#     )
-#     check_data = stem_allometry.crown_fraction.copy()
+    # Check the values of the variables calculated against the expectations from the
+    # rtmodel implementation
+    vars_to_check = (
+        v
+        for v in stem_allocation._array_attrs
+        if v
+        not in [
+            "cohort_ids",
+            "foliage_respiration",
+            "foliage_turnover",
+            "fine_root_turnover",
+            "reproductive_tissue_respiration",
+            "reproductive_tissue_turnover",
+            "delta_foliage_mass",
+            "delta_fine_root_mass",
+        ]
+    )
+    for var in vars_to_check:
+        assert_allclose(getattr(stem_allocation, var), rtmodel_data[var][out_idx])
 
-#     # Check the count attribute
-#     assert stem_allometry._n_stems == rtmodel_flora.n_pfts
+    # Separately check the partitioning into delta foliage and fine root
+    assert_allclose(
+        stem_allocation.delta_foliage_mass + stem_allocation.delta_fine_root_mass,
+        rtmodel_data["delta_foliage_mass"][out_idx],
+    )
 
-#     # Check failure mode
-#     with pytest.raises(ValueError) as excep:
-#         stem_allometry.add_cohort_data(new_data=dict(a=1))
+    # Test the ToDataFrameMixin.to_dataframe() method
+    df = stem_allocation.to_dataframe()
 
-#     assert (
-#         str(excep.value)
-#         == "Cannot add cohort data from an dict instance to StemAllometry"
-#     )
+    assert df.shape == (
+        np.prod(stem_allocation.sapwood_respiration.shape),
+        len(stem_allocation._array_attrs),
+    )
 
-#     # Check success of adding and dropping data
-#     n_entries = len(rtmodel_data["dbh"])
-#     # Add a copy of itself as new cohort data and check the shape
-#     stem_allometry.add_cohort_data(new_data=stem_allometry)
-#     assert stem_allometry.crown_fraction.shape == (
-#           n_entries, 2 * rtmodel_flora.n_pfts
-#     )
-#     assert stem_allometry.crown_fraction.sum() == 2 * check_data.sum()
-#     assert stem_allometry._n_stems == 2 * rtmodel_flora.n_pfts
-
-#     # Remove the rows from the first copy and what's left should be aligned with the
-#     # original data
-#     stem_allometry.drop_cohort_data(drop_indices=np.arange(rtmodel_flora.n_pfts))
-#     assert_allclose(stem_allometry.crown_fraction, check_data)
-#     assert stem_allometry._n_stems == rtmodel_flora.n_pfts
-
-
-# def test_StemAllocation(rtmodel_flora, rtmodel_data):
-#     """Test the StemAllometry class."""
-
-#     from pyrealm.demography_two.tmodel import (
-#         StemAllocation,
-#         StemAllometry,
-#         calculate_whole_crown_gpp,
-#     )
-
-#     stem_allometry = StemAllometry(
-#         stem_traits=rtmodel_flora, at_dbh=rtmodel_data["dbh"][:, [0]]
-#     )
-
-#     # Calculate the Li et al Equation 12 GPP from the P0 values
-#     whole_crown_gpp = calculate_whole_crown_gpp(
-#         potential_gpp=rtmodel_data["potential_gpp"],
-#         crown_area=stem_allometry.crown_area,
-#         par_ext=rtmodel_flora.par_ext,
-#         lai=rtmodel_flora.lai,
-#     )
-
-#     stem_allocation = StemAllocation(
-#         stem_traits=rtmodel_flora,
-#         stem_allometry=stem_allometry,
-#         whole_crown_gpp=whole_crown_gpp,
-#     )
-
-#     # Check the values of the variables calculated against the expectations from the
-#     # rtmodel implementation
-#     vars_to_check = (
-#         v
-#         for v in stem_allocation.array_attrs
-#         if v
-#         not in [
-#             "foliar_respiration",
-#             "foliage_turnover",
-#             "fine_root_turnover",
-#             "reproductive_tissue_respiration",
-#             "reproductive_tissue_turnover",
-#             "delta_foliage_mass",
-#             "delta_fine_root_mass",
-#         ]
-#     )
-#     for var in vars_to_check:
-#         assert_allclose(getattr(stem_allocation, var), rtmodel_data[var])
-
-#     # Separately check the partitioning into delta foliage and fine root
-#     assert_allclose(
-#         stem_allocation.delta_foliage_mass + stem_allocation.delta_fine_root_mass,
-#         rtmodel_data["delta_foliage_mass"],
-#     )
-
-#     # Test the inherited to_pandas method
-#     df = stem_allocation.to_pandas()
-
-#     assert df.shape == (
-#         stem_allocation._n_stems * stem_allocation._n_pred,
-#         len(stem_allocation.array_attrs),
-#     )
-
-#     assert set(stem_allocation.array_attrs) == set(df.columns)
+    assert set(stem_allocation._array_attrs) == set(df.columns)
 
 
-# @pytest.mark.parametrize(
-#     argnames="whole_crown_gpp, outcome, excep_msg",
-#     argvalues=[
-#         pytest.param(np.array(1), does_not_raise(), None, id="pass_0D"),
-#         pytest.param(np.ones(1), does_not_raise(), None, id="pass_1D_scalar"),
-#         pytest.param(np.ones(3), does_not_raise(), None, id="pass_1D_row"),
-#         pytest.param(np.ones((1, 3)), does_not_raise(), None, id="pass_2D_row"),
-#         pytest.param(np.ones((4, 1)), does_not_raise(), None, id="pass_2D_col"),
-#         pytest.param(np.ones((4, 3)), does_not_raise(), None, id="pass_2D_full"),
-#         pytest.param(
-#             np.ones(4),
-#             pytest.raises(ValueError),
-#             "The broadcast shapes of the trait and size arguments (4, 3) are not "
-#             "congruent with the shape of the at_size arguments (4,)",
-#             id="fail_1D_row_wrong",
-#         ),
-#         pytest.param(
-#             np.ones((5, 4)),
-#             pytest.raises(ValueError),
-#             "The broadcast shapes of the trait and size arguments (4, 3) are not "
-#             "congruent with the shape of the at_size arguments (5, 4)",
-#             id="fail_2D_full_wrong",
-#         ),
-#     ],
-# )
-# def test_StemAllocation_validation(
-#       rtmodel_flora, whole_crown_gpp, outcome, excep_msg
-# ):
-#     """Test the StemAllocation validation process.
+@pytest.mark.parametrize(
+    argnames="at_dbh, gpp, profile, exp_shape, df_rows",
+    argvalues=(
+        pytest.param(None, np.ones(1), False, (3,), 3, id="standard_mode_scalar"),
+        pytest.param(None, np.ones(3), False, (3,), 3, id="standard_mode"),
+        pytest.param(np.ones(4), np.ones(1), False, (4, 3), 12, id="at_dbh_gpp_scalar"),
+        pytest.param(
+            np.ones(4), np.ones(3), False, (4, 3), 12, id="at_dbh_gpp_per_cohort"
+        ),
+        pytest.param(
+            np.ones(4), np.ones((4, 3)), False, (4, 3), 12, id="atdbh_gpp_per_element"
+        ),
+        pytest.param(None, np.ones(5), True, (5, 3), 15, id="1d_allom_profile"),
+        pytest.param(
+            np.ones(4), np.ones(5), True, (5, 4, 3), 60, id="2d_allom_profile"
+        ),
+    ),
+)
+def test_StemAllocation_GPP_inputs(
+    rtmodel_flora, at_dbh, gpp, profile, exp_shape, df_rows
+):
+    """Test the dimensionality of StemAllocation outputs.
 
-#     The stem allometry inputs are kept constant - the validation of inputs to that
-#     function is checked in the tests above.
+    The parameterisation provides tests of output shapes under different operating
+    modes.
+    """
+    from pyrealm.demography_two.cohorts import CohortData, Cohorts
+    from pyrealm.demography_two.tmodel import (
+        StemAllocation,
+        StemAllometry,
+    )
 
-#     Also checks that validation only occurs once. Note that this requires the use of
-#     the
-#     wraps argument to ensure that the validation function actually _runs_ while being
-#     spied on, rather than just being replaced by the patch.
-#     """
+    ## Generate cohort data and calculate the allometry and allocation
+    cohort_data = CohortData(
+        pft_name=rtmodel_flora.name,
+        n_individuals=[1, 1, 1],
+        dbh_value=[0.5, 0.5, 0.5],
+    )
+    cohorts = Cohorts(cohort_data=cohort_data, flora=rtmodel_flora)
+    allom = StemAllometry(cohorts=cohorts, at_dbh=at_dbh)
+    alloc = StemAllocation(
+        cohorts=cohorts, allometry=allom, whole_crown_gpp=gpp, profile=profile
+    )
 
-#     from pyrealm.demography_two.core import _validate_demography_array_arguments
-#     from pyrealm.demography_two.tmodel import StemAllocation, StemAllometry
+    # Check the attribute shape
+    assert alloc.whole_crown_gpp.shape == exp_shape
+    assert alloc.cohort_ids.shape == exp_shape
+    assert alloc.foliage_respiration.shape == exp_shape
 
-#     # Calculate a constant allometry
-#     allom = StemAllometry(stem_traits=rtmodel_flora, at_dbh=np.ones((4, 3)))
-
-#     with (
-#         outcome as excep,
-#         patch(
-#             "pyrealm.demography_two.tmodel._validate_demography_array_arguments",
-#             wraps=_validate_demography_array_arguments,
-#         ) as val_func_patch,
-#     ):
-#         # Check the behaviour of the validation
-#         _ = StemAllocation(
-#             stem_traits=rtmodel_flora,
-#             stem_allometry=allom,
-#             whole_crown_gpp=whole_crown_gpp,
-#         )
-#         assert val_func_patch.call_count == 1
-#         return
-
-#     assert str(excep.value).startswith(excep_msg)
-
-
-# @pytest.mark.parametrize(
-#     argnames="dbh, outcome, msg",
-#     argvalues=(
-#         pytest.param(np.array([3, 3, 3]), does_not_raise(), None, id="positive"),
-#         pytest.param(
-#             np.array([0, 0, 3]),
-#             pytest.raises(ValueError),
-#             "Allometry values in StemAllometry not strictly positive: at_dbh",
-#             id="zero",
-#         ),
-#         pytest.param(
-#             np.array([-3, -2, 3]),
-#             pytest.raises(ValueError),
-#             "Allometry values in StemAllometry not strictly positive: at_dbh",
-#             id="negative",
-#         ),
-#     ),
-# )
-# def test_stem_allocation_strictly_positive_sizes(rtmodel_flora, dbh, outcome, msg):
-#     """Test that StemAllometry handles zero and negative DBH."""
-
-#     from pyrealm.demography_two.tmodel import StemAllometry
-
-#     with outcome as excep:
-#         # Calculate allometry for zero DBH stems of each PFT
-#         _ = StemAllometry(stem_traits=rtmodel_flora, at_dbh=dbh)
-#         return
-
-#     assert str(excep.value) == msg
+    # Check dataframe conversion works
+    with does_not_raise():
+        df = alloc.to_dataframe()
+        assert df.shape == (df_rows, len(alloc._array_attrs))
