@@ -95,23 +95,27 @@ class TestTModel:
     """Test T Model functions.
 
     A class is used here to pass a shared parameterisation of input array shapes to each
-    of the T model functions. The combination of data_idx and pft_idx slice up the
-    inputs to provide a wide range of input shape combinations
+    of the T model functions. The combination of indices slice up the inputs to test
+    a wide range of input shape combinations.
 
-    * each data row against full pft array: (3,) + (3,) -> (3,)
-    * each column against a scalar pft array for a single PFT: (6,1) + (1,) -> (6,1)
-    * each column broadcast against a row array of three PFTs: (6,1) + (3,) -> (6,3)
-    * whole array against full pft array: (6,3) + (3,) -> (6,3)
+    The PFT trait data is expected to always come in as a row array, which is what is
+    provided by the rtmodel_flora object. The other inputs then depend on the shape of
+    the initial DBH values:
 
-    The column broadcast has an added complexity, which is that the data values in the
-    columns are PFT specific predictions (apart from the initial stem diameters), so do
-    not match if a single column is broadcast across PFTs. To get around this and test
-    the broadcasting, these tests duplicate a single PFT trait to (3,) and duplicate the
-    expected outputs to repeat the single column expectations across (6, 3).
+    * If there is a single value for DBH (scalar) or a (matching!) row array, then all
+      of the data will retain the shape of the initial trait data:
+            (1,) * (3, ) and (3, ) (3,) * (3, ) -> (3, )
+    * If the DBH is a column array, then the data are broadcast to the outer product:
+            (6, 1) * (3, ) -> (6, 3)
+    * If the DBH is a 2D array that broadcasts along the second dimension, the data will
+      match the DBH dims - this is not expected to be a common use mode as the
+      StemAllometry and StemAllocation classes deliberately do not support it.
+            (6, 3) * (3, ) -> (6, 3)
 
-    The parameterization also includes three cases that check the failure modes for
-    inputs. This doesn't exhaustively test all failure modes - there is a more detailed
-    test of _validate_demography_array_arguments in tests/unit/demography/test_core.py
+    For other inputs that are generated from initial DBH, the input indices for
+    validation need to to match those expected output shapese from DBH. This is why
+    there are both dbh_idx and data_idx parameters. The out_idx is used to select the
+    expected slice from the test values.
     """
 
     def test_calculate_heights(
@@ -563,10 +567,10 @@ def test_StemAllometry(
     # rtmodel implementation
     vars_to_check = (
         v
-        for v in stem_allometry.array_attrs
+        for v in stem_allometry._array_attrs
         if v
         not in [
-            "dbh",  # TODO NEED TO ADD THIS BACK IN!
+            "cohort_ids",
             "crown_r0",
             "crown_z_max",
             "reproductive_tissue_mass",
@@ -576,15 +580,15 @@ def test_StemAllometry(
     for var in vars_to_check:
         assert_allclose(getattr(stem_allometry, var), rtmodel_data[var][out_idx])
 
-    # # Test the inherited to_pandas method
-    # df = stem_allometry.to_pandas()
+    # Test the ToDataFrameMixin.to_dataframe() method
+    df = stem_allometry.to_dataframe()
 
-    # assert df.shape == (
-    #     stem_allometry._n_stems * stem_allometry._n_pred,
-    #     len(stem_allometry.array_attrs),
-    # )
+    assert df.shape == (
+        np.prod(stem_allometry.dbh.shape),
+        len(stem_allometry._array_attrs),
+    )
 
-    # assert set(stem_allometry.array_attrs) == set(df.columns)
+    assert set(stem_allometry._array_attrs) == set(df.columns)
 
 
 # def test_StemAllometry_CohortMethods(rtmodel_flora, rtmodel_data):

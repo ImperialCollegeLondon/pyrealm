@@ -15,11 +15,8 @@ import pandas as pd
 from numpy.typing import NDArray
 
 from pyrealm.core.experimental import warn_experimental
-from pyrealm.demography.core import (
-    CohortMethods,
-    PandasExporter,
-)
 from pyrealm.demography_two.cohorts import Cohorts
+from pyrealm.demography_two.core import ToDataFrameMixin
 
 
 def calculate_heights(
@@ -763,23 +760,31 @@ def calculate_growth_increments(
     return (delta_d, dWsdt * delta_d, delta_Wf, delta_Wr)
 
 
-class StemAllometry(PandasExporter, CohortMethods):
+class StemAllometry(ToDataFrameMixin):
     """Calculate T Model allometric predictions across a set of stems.
 
     This method calculates predictions of stem allometries for stem height, crown area,
     crown fraction, stem mass, foliage mass and sapwood mass under the T Model
-    :cite:`Li:2014bc`, given diameters at breast height for a set of plant functional
-    traits.
+    :cite:`Li:2014bc`, given diameters at breast height (DBH) for a set of plant
+    cohorts.
+
+    The default is to calculate the expected allometry for the DBH values specified in
+    the cohort data and the predictions will be 1D arrays providing the prediction for
+    each cohort.
+
+    Alternatively, the ``at_dbh`` argument can be used to provide a 1D array of
+    alternative DBH values can be provided, that will calculate allometry predictions at
+    each DBH for each cohort and hence generating 2D arrays of predictions. The main use
+    case here is to generate allometry profiles for a set of plant functional types.
 
     Args:
-        stem_traits: An instance of :class:`~pyrealm.demography.flora.Flora` or
-            :class:`~pyrealm.demography.flora.StemTraits`, providing plant functional
-            trait data for a set of stems.
-        at_dbh: An array of diameter at breast height values at which to predict stem
-            allometry values.
+        cohorts: An instance of :class:`~pyrealm.demography_two.cohorts.Cohorts`.
+        at_dbh: An optional array of DBH values used to provide a profile of allometry
+            predictions.
     """
 
-    array_attrs: ClassVar[tuple[str, ...]] = (
+    _array_attrs: ClassVar[tuple[str, ...]] = (
+        "cohort_ids",
         "dbh",
         "stem_height",
         "crown_area",
@@ -792,7 +797,6 @@ class StemAllometry(PandasExporter, CohortMethods):
         "crown_r0",
         "crown_z_max",
     )
-    count_attr: ClassVar[str] = "_n_stems"
 
     __experimental__ = True
 
@@ -805,11 +809,16 @@ class StemAllometry(PandasExporter, CohortMethods):
 
         warn_experimental("StemAllometry")
 
-        self.at_dbh: NDArray[np.floating]
-        """An array of diameter at breast height values at which to predict stem
-        allometry values."""
+        self._at_dbh_set: bool
+        """An flag recording whether at_dbh was passed."""
+        self._ndims: int
+        """An integer giving the dimensionality of the predictions."""
 
         # Allometry attributes
+        self.cohort_ids: NDArray[np.generic]
+        """An array of the cohort ID for each prediction."""
+        self.dbh: NDArray[np.floating]
+        """The diameter at breast height (m)"""
         self.stem_height: NDArray[np.floating]
         """Stem height (m)"""
         self.crown_area: NDArray[np.floating]
@@ -835,37 +844,48 @@ class StemAllometry(PandasExporter, CohortMethods):
         # enforces positive DBH, so only need to check at_dbh.
         if at_dbh is None:
             # If no at_dbh is provided, use the dbh values from the cohorts.
-            self.at_dbh = cohorts.cohorts["dbh_value"].to_numpy()
+            self.dbh = cohorts.cohorts["dbh_value"].to_numpy()
+            self.cohort_ids = cohorts.cohorts["cohort_id"].to_numpy()
+            self._at_dbh_set = False
+            self._ndims = 1
         else:
-            # Validate 1D array and transpose to a column array.
+            # Validate at_dbh
             if not (isinstance(at_dbh, np.ndarray) and at_dbh.ndim == 1):
                 raise ValueError("The at_dbh value must be a 1D numpy array.")
             if np.any(at_dbh <= 0):
                 raise ValueError("Values in at_dbh must be greater than zero.")
-            self.at_dbh = at_dbh[None, :].T
+
+            # Broadcast DBH and cohort IDs to their outer product,
+            self.dbh, self.cohort_ids = np.broadcast_arrays(
+                at_dbh[:, None], cohorts.cohorts["cohort_id"].to_numpy()
+            )
+            self._at_dbh_set = True
+            self._ndims = 2
+
+        self._cohort_ids = cohorts.cohorts["cohort_id"].to_numpy()
 
         self.stem_height = calculate_heights(
             h_max=cohorts.cohorts["h_max"].to_numpy(),
             a_hd=cohorts.cohorts["a_hd"].to_numpy(),
-            dbh=self.at_dbh,
+            dbh=self.dbh,
         )
 
         self.crown_area = calculate_crown_areas(
             ca_ratio=cohorts.cohorts["ca_ratio"].to_numpy(),
             a_hd=cohorts.cohorts["a_hd"].to_numpy(),
-            dbh=self.at_dbh,
+            dbh=self.dbh,
             stem_height=self.stem_height,
         )
 
         self.crown_fraction = calculate_crown_fractions(
             a_hd=cohorts.cohorts["a_hd"].to_numpy(),
-            dbh=self.at_dbh,
+            dbh=self.dbh,
             stem_height=self.stem_height,
         )
 
         self.stem_mass = calculate_stem_masses(
             rho_s=cohorts.cohorts["rho_s"].to_numpy(),
-            dbh=self.at_dbh,
+            dbh=self.dbh,
             stem_height=self.stem_height,
         )
 
@@ -904,41 +924,16 @@ class StemAllometry(PandasExporter, CohortMethods):
             stem_height=self.stem_height,
         )
 
-    def to_dataframe(self) -> pd.DataFrame:
-        """Return the allometries as a dataframe."""
-        if self.at_dbh.ndim > 1:
-            raise ValueError(
-                "Allometries calculated for multiple DBH values, "
-                "cannot convert to data frame"
+    def __repr__(self) -> str:
+        if self._at_dbh_set:
+            return "StemAllometry: Prediction for {1} stems at {0} DBH values.".format(
+                *self.dbh.shape
             )
 
-        return pd.DataFrame(
-            {
-                "stem_height": self.stem_height,
-                "crown_area": self.crown_area,
-                "crown_fraction": self.crown_fraction,
-                "stem_mass": self.stem_mass,
-                "foliage_mass": self.foliage_mass,
-                "fine_root_mass": self.fine_root_mass,
-                "reproductive_tissue_mass": self.reproductive_tissue_mass,
-                "sapwood_mass": self.sapwood_mass,
-                "crown_r0": self.crown_r0,
-                "crown_z_max": self.crown_z_max,
-            }
-        )
-
-    #     # Set the number of observations per stem as the length of axis 1
-    #     self._n_pred = self.crown_z_max.shape[0]
-    #     self._n_stems = cohorts.cohorts["_n_stems"].to_numpy()
-
-    # def __repr__(self) -> str:
-    #     return (
-    #         f"StemAllometry: Prediction for {self._n_stems} stems "
-    #         f"at {self._n_pred} DBH values."
-    #     )
+        return "StemAllometry: Prediction for {} stems.".format(*self.stem_height.shape)
 
 
-class StemAllocation(PandasExporter):
+class StemAllocation(ToDataFrameMixin):
     """Calculate T Model GPP allocation across a set of stems.
 
     This method calculates the predicted allocation of potential gross primary
@@ -984,6 +979,13 @@ class StemAllocation(PandasExporter):
 
         warn_experimental("StemAllocation")
 
+        self.at_dbh: NDArray[np.floating]
+        """An array of DBH values at which to predict stem allometry values."""
+        self._at_dbh_set: bool
+        """An flag recording whether at_dbh was passed."""
+        self.cohort_ids: NDArray[np.generic]
+        """A numpy array of cohort IDs."""
+
         self.whole_crown_gpp: NDArray[np.floating]
         """An array of gross primary productivity values (kg C) across the whole of the
         self.crown of each stem to be allocated to respiration, turnover and growth."""
@@ -1015,6 +1017,12 @@ class StemAllocation(PandasExporter):
         """Predicted increase in foliar mass from growth allocation (g C)"""
         self.delta_fine_root_mass: NDArray[np.floating]
         """Predicted increase in fine root mass from growth allocation (g C)"""
+
+        # Add cohort ids.
+        self.cohort_ids = cohorts.cohorts["cohort_id"].to_numpy()
+
+        # TODO - add args to allow inputs from PModel in µgC m2 s-1? Would need to scale
+        #        to growth period though.
 
         self.whole_crown_gpp = whole_crown_gpp
 
@@ -1095,7 +1103,7 @@ class StemAllocation(PandasExporter):
             p_foliage_for_reproductive_tissue=cohorts.cohorts[
                 "p_foliage_for_reproductive_tissue"
             ].to_numpy(),
-            dbh=allometry.at_dbh,
+            dbh=allometry.dbh,
             stem_height=allometry.stem_height,
         )
 
