@@ -22,7 +22,7 @@ from numpy.typing import NDArray
 
 
 class ToDataFrameMixin:
-    """Mixin implementing pandas export.
+    """Mixin providing a to_dataframe method.
 
     Classes using this mixin must:
 
@@ -45,7 +45,7 @@ class ToDataFrameMixin:
             array_attrs = getattr(self, "_array_attrs")
             ndims = getattr(self, "_ndims")
         except KeyError:
-            raise RuntimeError("PandasExporterMixin used with incompatible class.")
+            raise RuntimeError("ToDataFrameMixin used with incompatible class.")
 
         # Extract the attributes into a dictionary
         data = {k: getattr(self, k) for k in array_attrs}
