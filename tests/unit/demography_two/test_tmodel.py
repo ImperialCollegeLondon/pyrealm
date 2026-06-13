@@ -713,7 +713,8 @@ def test_StemAllocation_GPP_inputs(
     assert alloc.cohort_ids.shape == exp_shape
     assert alloc.foliage_respiration.shape == exp_shape
 
-    # Check dataframe conversion works
+    # Check dataframe conversion and repr works
     with does_not_raise():
         df = alloc.to_dataframe()
         assert df.shape == (df_rows, len(alloc._array_attrs))
+        repr(alloc)

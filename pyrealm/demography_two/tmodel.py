@@ -1172,15 +1172,30 @@ class StemAllocation(ToDataFrameMixin):
             stem_height=allometry.stem_height,
         )
 
-    # def __repr__(self) -> str:
-    #     if self.profile:
-    #         return (
-    #             "StemAllometry: Prediction for {1} cohorts at {0} DBH values"
-    #             " and .".format(
-    #                 *self.dbh.shape,
-    #             )
-    #         )
+    def __repr__(self) -> str:
+        match (self.profile, self._ndims):
+            case (True, 3):
+                repr_ = (
+                    "StemAllometry: Profiles for {2} cohorts at {1} DBH values"
+                    " and {0} GPP values."
+                ).format(
+                    *self.whole_crown_gpp.shape,
+                )
+            case (True, 2):
+                repr_ = (
+                    "StemAllometry: Profiles for {1} cohorts at {0} GPP values."
+                ).format(
+                    *self.whole_crown_gpp.shape,
+                )
+            case (False, 2):
+                repr_ = (
+                    "StemAllometry: Profiles for {1} cohorts at {0} DBH values."
+                ).format(
+                    *self.whole_crown_gpp.shape,
+                )
+            case (False, 1):
+                repr_ = ("StemAllometry: Profiles for {} cohorts").format(
+                    *self.whole_crown_gpp.shape,
+                )
 
-    #     return "StemAllometry: Prediction for {} stems.".format(
-    #         *self.whole_crown_gpp.shape
-    #     )
+        return repr_
