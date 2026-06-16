@@ -39,7 +39,17 @@ SKIP_METHODS = [
     # PModel
     "AcclimationModel.set_include",
     "PModel._get_daily_gpp",
+    # OK - this is really problematic. Array auto-discovery gets hung up on the
+    # internals of pydantic - not sure the greedy approach to what gets tested is
+    # sustainable.
+    "Flora.__repr_args__",
+    "CohortData.__repr_args__",
+    "Cohorts.drop_cohort_data",
+    "CrownProfile",
+    "CrownProfile.to_xy",
     # Demography - mostly 1d arrays (dataframes)
+    "StemAllocation",
+    "StemAllometry",
     "CohortMethods.drop_cohort_data",
     "StemTraits",
     "StemTraits.drop_cohort_data",

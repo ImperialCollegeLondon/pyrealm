@@ -338,7 +338,7 @@ class CrownProfile(ToDataFrameMixin):
         """An array of the projected leaf radius of stems at z heights."""
         return np.sqrt(self.projected_leaf_area / np.pi)
 
-    def to_crown_xy(
+    def to_xy(
         self,
         attr: str,
         stem_offsets: NDArray[np.floating] | None = None,

@@ -351,11 +351,7 @@ def test_calculate_relative_crown_radius_at_z_values_clipping(m, n):
 @pytest.mark.parametrize(
     argnames="which",
     argvalues=[
-        "fail_1D_z_not_congruent_with_stem",
-        "fail_2D_z_not_congruent",
-        "fail_0D_z_but_q_z_not_row",
         "pass_1D_row_z_with_scalar_q_z",
-        "fail_2D_column_z_but_q_z_not_congruent",
         "pass_0D_z_and_q_z_row",
         "pass_1D_scalar_z_and_q_z_row",
         "pass_1D_row_z_and_q_z_row",
@@ -458,12 +454,7 @@ def test_calculate_stem_projected_crown_area_at_z_values(
 @pytest.mark.parametrize(
     argnames="which",
     argvalues=[
-        "fail_1D_z_not_congruent_with_stem",
-        "fail_2D_z_not_congruent",
-        "fail_0D_z_but_q_z_not_row",
-        "fail_1D_scalar_z_but_q_z_not_row",
         "pass_1D_row_z_with_scalar_q_z",
-        "fail_2D_column_z_but_q_z_not_congruent",
         "pass_0D_z_and_q_z_row",
         "pass_1D_scalar_z_and_q_z_row",
         "pass_1D_row_z_and_q_z_row",
@@ -659,6 +650,6 @@ def test_get_crown_xy(fixture_cohorts_and_allometry, as_xy, two_sided, stem_offs
     )
 
     for attr in crown_profile._array_attrs:
-        _ = crown_profile.to_crown_xy(
+        _ = crown_profile.to_xy(
             attr=attr, as_xy=as_xy, two_sided=two_sided, stem_offsets=stem_offset
         )

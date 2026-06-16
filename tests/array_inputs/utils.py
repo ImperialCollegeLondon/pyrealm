@@ -150,7 +150,7 @@ def get_method_list(array_type: str) -> list[tuple[str, Callable, type | None]]:
                 if not isinstance(attr, staticmethod):
                     continue
 
-            if _has_array_input(method, array_type) and name not in SKIP_METHODS:
+            if (name not in SKIP_METHODS) and _has_array_input(method, array_type):
                 method_list.append((name, method, cls))
     return method_list
 
