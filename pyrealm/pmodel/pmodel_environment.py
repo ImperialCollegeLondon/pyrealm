@@ -8,6 +8,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import CoreConst, PModelConst
+from pyrealm.core._array_testing import ArrayArg, _array_testing, _ArrayTesting
 from pyrealm.core.bounds import BoundsChecker
 from pyrealm.core.utilities import check_input_shapes, summarize_attrs
 from pyrealm.core.xarray import ArrayType, get_common_dims, xarray_inputs
@@ -19,6 +20,20 @@ from pyrealm.pmodel.functions import (
 )
 
 
+@_array_testing(
+    _ArrayTesting(
+        array_args=(
+            ArrayArg("tc", 20),
+            ArrayArg("patm", 101325),
+            ArrayArg("vpd", 1000),
+            ArrayArg("co2", 400),
+            ArrayArg("fapar", 0.8),
+            ArrayArg("ppfd", 800),
+        ),
+        shape=(730, 5, 5),
+        test_attributes=("ca", "kmm", "gammastar", "ns_star"),
+    )
+)
 class PModelEnvironment:
     r"""Create a PModelEnvironment instance.
 

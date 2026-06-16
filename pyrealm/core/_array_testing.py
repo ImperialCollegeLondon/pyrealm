@@ -35,14 +35,23 @@ ARRAY_TESTING_REGISTRY: list = []
 
 
 @dataclass
+class ArrayArg:
+    name: str
+    fill_value: float | np.generic = 1
+    shape: tuple[int,] | None = None
+
+
+@dataclass
 class _ArrayTesting:
     """Dataclass for array testing metadata."""
 
-    array_args: tuple[tuple[str, float | np.generic], ...] = tuple()
+    array_args: tuple[ArrayArg, ...] = tuple()
     """Identifies the array inputs to a callable and a fill value"""
     suffix: str = ""
     """An optional suffix to distinguish subtests for the same callable."""
     test_attributes: tuple[str, ...] = tuple()
+    """For class tests, which attributes should be tested for equality"""
+    shape: tuple[int, ...] | None = None
     """For class tests, which attributes should be tested for equality"""
 
     test_name: str = field(init=False)
