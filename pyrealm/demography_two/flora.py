@@ -33,6 +33,7 @@ from pydantic import (
     ValidationError,
     ValidationInfo,
     computed_field,
+    field_validator,
     model_validator,
 )
 
@@ -144,6 +145,7 @@ class Flora(BaseModel):
     """Reproductive tissue mass as a proportion of foliage mass (:math:`p_{rt}`, -)."""
     gpp_topslice: list[float] = [0.0]
     """Proportion of GPP to topslice before allocation."""
+    # strict: InitVar[bool] = False
 
     # This decorator order for computed fields is recommended by pydantic but mypy
     # objects, so mute the warnings.
@@ -167,6 +169,14 @@ class Flora(BaseModel):
         return calculate_crown_z_max_proportion(
             m=np.array(self.m), n=np.array(self.n)
         ).tolist()
+
+    @field_validator("name")
+    def unique_names(cls, v: list[str]) -> list[str]:
+        """Enforce unique PFT names."""
+        if len(set(v)) < len(v):
+            raise ValueError("PFT names in Flora must be unique")
+
+        return v
 
     @model_validator(mode="after")
     def model_validation(self, info: ValidationInfo) -> Self:

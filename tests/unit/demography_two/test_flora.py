@@ -137,6 +137,14 @@ def test_Flora(flora_data, mode, length, unequal, strict, outcome, msg):
     assert err_handler.match(msg)
 
 
+def test_Flora_unique_names():
+    """Check the unique name constraint fires."""
+    from pyrealm.demography_two.flora import Flora
+
+    with pytest.raises(ValidationError):
+        _ = Flora(name=["duplicated", "duplicated"])
+
+
 @pytest.mark.parametrize(
     argnames="filename,strict,outcome",
     argvalues=[
