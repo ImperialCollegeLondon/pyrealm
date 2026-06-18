@@ -401,26 +401,27 @@ below generates new profiles for a new set of PFTs that have similar crown area 
 but different shapes and gap fractions.
 
 ```{code-cell} ipython3
-no_gaps_pft = PlantFunctionalType(
-    name="no_gaps", h_max=20, m=1.5, n=1.5, f_g=0, ca_ratio=380
-)
-few_gaps_pft = PlantFunctionalType(
-    name="few_gaps", h_max=20, m=1.5, n=4, f_g=0.1, ca_ratio=400
-)
-many_gaps_pft = PlantFunctionalType(
-    name="many_gaps", h_max=20, m=4, n=1.5, f_g=0.3, ca_ratio=420
+flora = Flora(
+    name=["no_gaps", "few_gaps", "many_gaps"],
+    h_max=[20, 20, 20],
+    m=[1.5, 1.5, 4.0],
+    n=[1.5, 4.0, 1.5],
+    f_g=[0.0, 0.1, 0.3],
+    ca_ratio=[380, 400, 420],
 )
 
-# Calculate allometries for each PFT at the same stem DBH
-area_stem_dbh = np.array([0.4, 0.4, 0.4])
-area_flora = Flora([no_gaps_pft, few_gaps_pft, many_gaps_pft])
-area_allometry = StemAllometry(stem_traits=area_flora, at_dbh=area_stem_dbh)
+cohorts = Cohorts(
+    flora=flora,
+    pft_name=np.array(["no_gaps", "few_gaps", "many_gaps"]),
+    dbh_value=np.array([0.4, 0.4, 0.4]),
+    n_individuals=np.array([1, 1, 1]),
+)
+
+area_allometry = StemAllometry(cohorts=cohorts)
 
 # Calculate the crown profiles across those heights for each PFT
-area_z = np.linspace(0, area_allometry.stem_height.max(), 201)[:, None]
-area_crown_profiles = CrownProfile(
-    stem_traits=area_flora, stem_allometry=area_allometry, z=area_z
-)
+area_z = np.linspace(0, area_allometry.stem_height.max(), 201)
+area_crown_profiles = CrownProfile(cohorts=cohorts, allometry=area_allometry, z=area_z)
 ```
 
 The plot below then shows how projected crown area (solid lines) and leaf area (dashed
@@ -478,21 +479,25 @@ for f_g in np.linspace(0, 1, num=11):
 
     # Create a flora with a single PFT with current f_g and then generate a
     # stem allometry and crown profile
-    flora_f_g = Flora(
-        [PlantFunctionalType(name="example", h_max=20, m=2, n=2, f_g=f_g)]
+    flora = Flora(name=["pft"], h_max=[20], m=[2], n=[2], f_g=[f_g])
+
+    cohorts = Cohorts(
+        flora=flora,
+        pft_name=np.array(["pft"]),
+        dbh_value=np.array([0.4]),
+        n_individuals=np.array([1]),
     )
-    allometry_f_g = StemAllometry(stem_traits=flora_f_g, at_dbh=np.array([0.4]))
-    profile = CrownProfile(
-        stem_traits=flora_f_g, stem_allometry=allometry_f_g, z=area_z
-    )
+
+    allometry_f_g = StemAllometry(cohorts)
+    profile = CrownProfile(cohorts=cohorts, allometry=allometry_f_g, z=area_z)
 
     # Plot the projected leaf area with height
     ax.plot(profile.projected_leaf_area, area_z, color=colour, label=label, linewidth=1)
 
 # Add a horizontal line for z_max
 ax.plot(
-    [-1, allometry_f_g.crown_area[0][0] + 1],
-    [allometry_f_g.crown_z_max[0][0], allometry_f_g.crown_z_max[0][0]],
+    [-1, allometry_f_g.crown_area[0] + 1],
+    [allometry_f_g.crown_z_max[0], allometry_f_g.crown_z_max[0]],
     linestyle="--",
     color="black",
     label="$z_{max}$",
@@ -528,25 +533,19 @@ allow the projected variables to be visualised at the same scale as the crown ra
 stem_offsets = np.array([0, 6, 12])
 
 # Get the crown radius in XY format to plot as a polygon
-crown_radius_as_xy = get_crown_xy(
-    crown_profile=area_crown_profiles,
-    stem_allometry=area_allometry,
+crown_radius_as_xy = area_crown_profiles.to_xy(
     attr="crown_radius",
     stem_offsets=stem_offsets,
     as_xy=True,
 )
 
 # Get the projected crown and leaf radii to plot as lines
-projected_crown_radius_xy = get_crown_xy(
-    crown_profile=area_crown_profiles,
-    stem_allometry=area_allometry,
+projected_crown_radius_xy = area_crown_profiles.to_xy(
     attr="projected_crown_radius",
     stem_offsets=stem_offsets,
 )
 
-projected_leaf_radius_xy = get_crown_xy(
-    crown_profile=area_crown_profiles,
-    stem_allometry=area_allometry,
+projected_leaf_radius_xy = area_crown_profiles.to_xy(
     attr="projected_leaf_radius",
     stem_offsets=stem_offsets,
 )
@@ -575,12 +574,4 @@ _ = plt.legend(
     bbox_to_anchor=(0.5, 1.15),
     frameon=False,
 )
-```
-
-```{code-cell} ipython3
-
-```
-
-```{code-cell} ipython3
-
 ```

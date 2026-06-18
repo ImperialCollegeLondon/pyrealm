@@ -425,6 +425,6 @@ class CrownProfile(ToDataFrameMixin):
             else:
                 # Return the individual 1D arrays, dropping nans`
                 # Unclear why mypy refuses to recognise this as a two tuple of NDArrays
-                data.append((attr_stack[not_nan, cht_idx], z_stack[not_nan, cht_idx]))  # type: ignore
+                data.append((z_stack[not_nan, cht_idx], attr_stack[not_nan, cht_idx]))  # type: ignore
 
         return data
