@@ -215,17 +215,19 @@ def fixture_z_qz_test_cases(which):
 def fixture_cohorts_and_allometry():
     """A fixture providing a simple community."""
 
-    from pyrealm.demography_two.cohorts import CohortData, Cohorts
+    from pyrealm.demography_two.cohorts import Cohorts
     from pyrealm.demography_two.flora import Flora
     from pyrealm.demography_two.tmodel import StemAllometry
 
     # A simple community containing one sample stem, with an initial crown gap fraction
     # of zero.
     flora = Flora(name=["test"], f_g=[0.0])
-    cohort_data = CohortData(
-        pft_name=["test"] * 4, dbh_value=[0.2, 0.4, 0.6, 0.8], n_individuals=[1] * 4
+    cohorts = Cohorts(
+        pft_name=np.array(["test"] * 4),
+        dbh_value=np.array([0.2, 0.4, 0.6, 0.8]),
+        n_individuals=np.array([1] * 4),
+        flora=flora,
     )
-    cohorts = Cohorts(cohort_data=cohort_data, flora=flora)
     allometry = StemAllometry(cohorts=cohorts)
 
     return cohorts, allometry
