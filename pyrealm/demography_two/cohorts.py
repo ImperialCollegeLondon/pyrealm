@@ -8,10 +8,11 @@ from __future__ import annotations
 import uuid
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Annotated, Any, Literal, Self
+from typing import Literal
 
+import numpy as np
 import pandas as pd
-from pydantic import BaseModel, Field, ValidationError, ValidationInfo, model_validator
+from numpy.typing import NDArray
 
 from pyrealm.demography.core import CohortMethods, PandasExporter
 from pyrealm.demography_two.flora import Flora
@@ -42,85 +43,6 @@ def cohort_id_generator(
             yield str(uuid.uuid4())
 
 
-class CohortData(BaseModel):
-    """A pydantic validation model for CohortData.
-
-    The model enforces a set of required fields (pft_name, dbh_value and n_individuals)
-    and applies some validation (lists of value of equal length, numeric values greater
-    than zero). The optional `community_id` field
-    """
-
-    pft_name: list[str]
-    r"""The name of the plant functional type for the cohort."""
-    dbh_value: list[Annotated[float, Field(gt=0)]]
-    r"""The diameter at breast height of individuals in the cohort."""
-    n_individuals: list[Annotated[int, Field(gt=0)]]
-    r"""The number of individuals in the cohort."""
-    community_id: list[Any] | None = None
-    r"""An optional field grouping cohorts into communities."""
-
-    # TODO think about cell_id alias?
-    # = Field(validation_alias=AliasChoices('community_id', 'cell_id'))
-
-    _n_cohorts: int
-    """Private attribute recording the number of cohorts in the data."""
-
-    @model_validator(mode="after")
-    def model_validation(self, info: ValidationInfo) -> Self:
-        """Checks all fields are of equal length."""
-
-        # Check field lengths of provided data
-        field_lengths = set([len(getattr(self, nm)) for nm in self.model_fields_set])
-        if len(field_lengths) > 1:
-            raise ValueError(
-                f"Unequal field lengths: {', '.join([str(it) for it in field_lengths])}"
-            )
-        self._n_cohorts = next(iter(field_lengths))
-        return self
-
-    @classmethod
-    def _from_file_data(cls, file_data: dict, strict: bool = False) -> CohortData:
-        """Create a CohortData object from a dictionary of data.
-
-        Args:
-            file_data: The payload from a data file defining plant functional types.
-            strict: Require that all traits are specified in the input data.
-        """
-        try:
-            cohort = cls.model_validate(file_data)
-        except ValidationError as excep:
-            raise excep
-
-        return cohort
-
-    @classmethod
-    def from_csv(cls, path: Path) -> CohortData:
-        """Create a CohortData object from a CSV file.
-
-        Args:
-            path: A path to a CSV file of cohort data.
-        """
-
-        try:
-            data = pd.read_csv(path)
-        except (FileNotFoundError, pd.errors.ParserError) as excep:
-            raise excep
-
-        return cls._from_file_data(data.to_dict(orient="list"))
-
-    def to_dataframe(self) -> pd.DataFrame:
-        """Return a CohortData instance as a pandas DataFrame."""
-
-        data = self.model_dump()
-
-        # Do not broadcast community id = None to a series. If no community_id data was
-        # provided when the instance was created, then drop it.
-        if data["community_id"] is None:
-            del data["community_id"]
-
-        return pd.DataFrame(data)
-
-
 class Cohorts(PandasExporter, CohortMethods):
     """A class to hold data for a set of plant cohorts.
 
@@ -129,33 +51,76 @@ class Cohorts(PandasExporter, CohortMethods):
     a dataframe of cohort data and traits for each cohort.
 
     Args:
-        cohort_data: An instance of CohortData providing validated cohort data.
         flora: A Flora instance providing the PFT data for the cohorts.
+        pft_name: The name of the plant functional type for the cohort.
+        dbh_value: The diameter at breast height of individuals in the cohort.
+        n_individuals: The number of individuals in the cohort.
+        community_id: An optional field grouping cohorts into communities.
+        cid_generator: A generator providing unique cohort ids.
     """
 
     def __init__(
         self,
-        cohort_data: CohortData,
         flora: Flora,
+        pft_name: NDArray[np.str_],
+        dbh_value: NDArray[np.floating],
+        n_individuals: NDArray[np.integer],
+        community_id: NDArray[np.integer | np.str_] | None = None,
         cid_generator: Iterator = cohort_id_generator(),
     ) -> None:
+        """Init method for Cohorts."""
+        # Define attributes
         self.flora: pd.DataFrame = flora.to_dataframe()
         """The flora used with the Cohorts instance, as a pandas dataframe."""
-        self.cohorts: pd.DataFrame
-        """A pandas dataframe containing the cohort data."""
         self._cid_generator = cid_generator
         """A cohort ID generator instance."""
-
-        self.n_cohorts: int = cohort_data._n_cohorts
+        self.cohorts: pd.DataFrame
+        """A pandas dataframe containing the cohort data."""
+        self.n_cohorts: int
         """Number of cohorts in the instance."""
 
-        cohorts_df = cohort_data.to_dataframe()
+        # Validate the inputs - originally did this with pydantic, but support for numpy
+        # and bypassing validation when using pydantic to load just ended up tying the
+        # code in knots.
+        required = [pft_name, dbh_value, n_individuals]
+        if community_id is not None:
+            required.append(community_id)
 
-        unknown_pfts = set(cohorts_df["pft_name"]).difference(self.flora["name"])
+        # Do not use check_input_shapes here - we do not want to allow scalar arrays to
+        # mix with longer arrays
+        shapes = {arr.shape for arr in required}
+        if len(shapes) > 1:
+            raise ValueError("All arrays must be of the same size")
+
+        shape = next(iter(shapes))
+        if len(shape) > 1:
+            raise ValueError("Inputs must be 1 dimensional arrays")
+
+        unknown_pfts = set(pft_name).difference(self.flora["name"])
         if unknown_pfts:
             raise ValueError(
                 f"PFTs in cohort data not present in flora: {','.join(unknown_pfts)}"
             )
+
+        if np.any(dbh_value <= 0):
+            raise ValueError("DBH values must be strictly positive")
+
+        if (not np.issubdtype(n_individuals.dtype, np.integer)) or np.any(
+            n_individuals <= 0
+        ):
+            raise ValueError("The number of individuals must be positive integers")
+
+        columns = {
+            "pft_name": pft_name,
+            "dbh_value": dbh_value,
+            "n_individuals": n_individuals,
+        }
+        if community_id is not None:
+            columns["community_id"] = community_id
+
+        # convert to pandas
+        cohorts_df = pd.DataFrame(columns)
+        self.n_cohorts = cohorts_df.shape[0]
 
         cohorts = cohorts_df.merge(self.flora, left_on="pft_name", right_on="name")
         cohorts["cohort_id"] = [
@@ -164,7 +129,9 @@ class Cohorts(PandasExporter, CohortMethods):
         self.cohorts = cohorts
 
     @classmethod
-    def from_csv(cls, path: Path, flora: Flora) -> Cohorts:
+    def from_csv(
+        cls, path: Path, flora: Flora, cid_generator: Iterator = cohort_id_generator()
+    ) -> Cohorts:
         """Generate a Cohort instance from a CSV file.
 
         The cohort data provided is validated before being used to generate the Cohorts
@@ -173,8 +140,25 @@ class Cohorts(PandasExporter, CohortMethods):
         Args:
             path: Path to a CSV file of cohort data.
             flora: A Flora instance providing the PFT data for the cohorts.
+            cid_generator: A generator providing unique cohort ids.
         """
 
-        cohort_data = CohortData.from_csv(path)
+        try:
+            data = pd.read_csv(path)
+        except (FileNotFoundError, pd.errors.ParserError) as excep:
+            raise excep
 
-        return cls(cohort_data=cohort_data, flora=flora)
+        required_fields = {"pft_name", "dbh_value", "n_individuals"}
+        missing_fields = required_fields.difference(data.columns)
+        if missing_fields:
+            raise ValueError(f"Missing required fields: {','.join(missing_fields)}")
+
+        if "community_id" in data.columns:
+            required_fields.add("community_id")
+
+        kwargs = {var: data[var].to_numpy() for var in required_fields}
+
+        return cls(flora=flora, **kwargs, cid_generator=cid_generator)
+
+    def __repr__(self) -> str:
+        return f"Cohorts: Data for {self.n_cohorts} cohorts"
