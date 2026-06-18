@@ -62,6 +62,9 @@ class CohortData(BaseModel):
     # TODO think about cell_id alias?
     # = Field(validation_alias=AliasChoices('community_id', 'cell_id'))
 
+    _n_cohorts: int
+    """Private attribute recording the number of cohorts in the data."""
+
     @model_validator(mode="after")
     def model_validation(self, info: ValidationInfo) -> Self:
         """Checks all fields are of equal length."""
@@ -72,7 +75,7 @@ class CohortData(BaseModel):
             raise ValueError(
                 f"Unequal field lengths: {', '.join([str(it) for it in field_lengths])}"
             )
-
+        self._n_cohorts = next(iter(field_lengths))
         return self
 
     @classmethod
@@ -142,6 +145,9 @@ class Cohorts(PandasExporter, CohortMethods):
         """A pandas dataframe containing the cohort data."""
         self._cid_generator = cid_generator
         """A cohort ID generator instance."""
+
+        self.n_cohorts: int = cohort_data._n_cohorts
+        """Number of cohorts in the instance."""
 
         cohorts_df = cohort_data.to_dataframe()
 
