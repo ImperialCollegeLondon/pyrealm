@@ -136,6 +136,7 @@ def test_Cohorts_from_csv(filename, outcome, expect_community):
 
         assert ("community_id" in cohort_data.cohorts) == expect_community
         assert "tau_f" in cohort_data.cohorts
+        assert "cohort_id" in cohort_data.cohorts
 
 
 def test_Cohorts_with_Flora_extensibility():
