@@ -9,9 +9,19 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  name: python
+  version: 3.12.3
+  mimetype: text/x-python
+  codemirror_mode:
+    name: ipython
+    version: 3
+  pygments_lexer: ipython3
+  nbconvert_exporter: python
+  file_extension: .py
 ---
 
-# Plant Functional Types and Traits
+# Plant functional types and cohorts
 
 ```{admonition} Run this notebook
 :class: hint
@@ -29,15 +39,17 @@ notes and initial demonstration code.
 
 :::
 
-This page introduces the main components of the {mod}`~pyrealm.demography` module that
-describe plant functional types (PFTs) and their traits.
+This page introduces the main components of the {mod}`~pyrealm.demography` module that:
+
+* describe plant functional types (PFTs) and their traits
+* define size-structured cohorts as a number of individuals from a specific PFT with a
+  given diameter at breast height (DBH).
 
 ```{code-cell} ipython3
-from matplotlib import pyplot as plt
 import numpy as np
-import pandas as pd
 
 from pyrealm.demography_two.flora import Flora
+from pyrealm.demography_two.cohorts import Cohorts
 ```
 
 ## Plant traits
@@ -110,6 +122,7 @@ from default values.
 
 ```{code-cell} ipython3
 flora = Flora(name=["short", "medium", "tall"], h_max=[10, 20, 30])
+flora
 ```
 
 The {meth}`~pyrealm.demography_two.Flora.to_dataframe` method exports the trait data as
@@ -120,5 +133,51 @@ outside of `pyrealm`.
 flora.to_dataframe().transpose()
 ```
 
-You can also create a `Flora` instance using PFT data stored in a CSV file
-formats.
+You can also create a `Flora` instance using PFT data stored in a [CSV
+file](./pfts.csv). Note that this CSV only provides some of the PFT traits, you can use
+`Flora.from_csv("pfts.csv", strict=True)` to require that the file provides all the
+traits.
+
+```{code-cell} ipython3
+flora_from_csv = Flora.from_csv("pfts.csv")
+flora_from_csv
+```
+
+## Plant Cohorts
+
+The {class}`~pyrealm.demography_two.cohorts.Cohorts` object provides a class to describe
+size structured cohorts of plants. A cohort is simply a number of individuals of a given
+PFT with size specified as diameter at breast height. The `Cohorts` object validates the
+cohort data and pairs each cohort up with the appropriate set of traits from a provided
+`Flora`.
+
+The `Cohorts` object automatically assigns a unique cohort ID  to each cohort. The
+details of these ID values can be controlled through the `cid_generator` argument (see
+{class}`~pyrealm.demography_two.cohorts.Cohorts`)
+
+```{code-cell} ipython3
+# Create a simple community with three cohorts
+# - 15 saplings of the short PFT
+# - 5 larger stems of the short PFT
+# - 2 large stems of tall PFT
+
+cohorts = Cohorts(
+    dbh_value=np.array([0.02, 0.20, 0.5]),
+    n_individuals=np.array([15, 5, 2]),
+    pft_name=np.array(["short", "short", "tall"]),
+    flora=flora,
+)
+
+cohorts
+```
+
+The `Cohorts` object contains a dataframe of the provided cohort data, extended to
+include the functional traits associated with the cohort PFT.
+
+```{code-cell} ipython3
+cohorts.cohorts[["cohort_id", "n_individuals", "dbh_value", "pft_name", "h_max"]]
+```
+
+```{code-cell} ipython3
+
+```

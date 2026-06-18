@@ -221,6 +221,8 @@ class CrownProfile(ToDataFrameMixin):
     __experimental__ = True
 
     _array_attrs: ClassVar[tuple[str, ...]] = (
+        "cohort_ids",
+        "z",
         "relative_crown_radius",
         "crown_radius",
         "projected_crown_area",
@@ -262,6 +264,8 @@ class CrownProfile(ToDataFrameMixin):
         """A 2D logical array showing which heights are below the stem height for each
         stem."""
 
+        cohort_ids: NDArray = cohorts.cohorts["cohort_id"].to_numpy()
+
         # Handle allometry
         if allometry is None:
             allometry = StemAllometry(cohorts=cohorts)
@@ -269,9 +273,7 @@ class CrownProfile(ToDataFrameMixin):
             # Check the allometry is 1D and matches the cohorts
             if allometry._ndims > 1:
                 raise ValueError("Provided allometry calculated using `at_dbh`.")
-            if not np.all(
-                np.equal(allometry.cohort_ids, cohorts.cohorts["cohort_id"].to_numpy())
-            ):
+            if not np.all(np.equal(allometry.cohort_ids, cohort_ids)):
                 raise ValueError("Provided allometry does not match cohorts.")
 
         # Validate z and set height_is_valid
@@ -281,8 +283,13 @@ class CrownProfile(ToDataFrameMixin):
                 "greater than or equal to 0."
             )
 
-        # Rotate z into a column array
-        self.z = z[:, None]
+        # Rotate z into a column array and broadcast to prediction shape
+        prediction_shape = (len(z), cohorts.n_cohorts)
+        self.z: NDArray[np.floating] = np.broadcast_to(z[:, None], prediction_shape)
+        """Heights of crown profile predictions."""
+
+        self.cohort_ids = np.broadcast_to(cohort_ids, prediction_shape)
+        """Cohort ids."""
 
         # Store cohort x height array showing which heights are <= stem height.
         self.stem_height = allometry.stem_height
@@ -324,8 +331,8 @@ class CrownProfile(ToDataFrameMixin):
         )
 
     def __repr__(self) -> str:
-        return "CrownProfile: Prediction for {1} stems at {0} heights.".format(
-            *self.z.shape
+        return "CrownProfile: Prediction for {1} cohorts at {0} heights.".format(
+            *self.relative_crown_radius.shape
         )
 
     @property
