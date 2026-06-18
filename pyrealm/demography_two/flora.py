@@ -241,3 +241,8 @@ class Flora(BaseModel):
         allow it to be easily merged onto cohort data, which specifies the PFT name.
         """
         return pd.DataFrame(self.model_dump())
+
+    def __repr__(self) -> str:
+        # Overrides the default pydantic __repr__.
+
+        return f"Flora with {len(self.name)} PFTS: {','.join(self.name)}"

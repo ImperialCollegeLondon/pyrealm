@@ -929,11 +929,14 @@ class StemAllometry(ToDataFrameMixin):
 
     def __repr__(self) -> str:
         if self._at_dbh_set:
-            return "StemAllometry: Prediction for {1} stems at {0} DBH values.".format(
-                *self.dbh.shape
-            )
+            return (
+                "StemAllometry: Allometry predictions for {1} cohorts "
+                "at {0} DBH values."
+            ).format(*self.dbh.shape)
 
-        return "StemAllometry: Prediction for {} stems.".format(*self.stem_height.shape)
+        return "StemAllometry: Allometry predictions for {} cohorts.".format(
+            *self.stem_height.shape
+        )
 
 
 class StemAllocation(ToDataFrameMixin):
