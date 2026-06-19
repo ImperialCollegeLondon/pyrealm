@@ -394,7 +394,9 @@ class CrownProfile(ToDataFrameMixin):
             attr_stack = np.concatenate(
                 [-vals, np.zeros_like(self.stem_height)[None, :], np.flipud(vals)]
             )
-            z_stack = np.concatenate([z, self.stem_height[None, :], np.flipud(z)])
+            z_stack = np.concatenate(
+                [z, np.zeros_like(self.stem_height)[None, :], np.flipud(z)]
+            )
         else:
             attr_stack = np.concatenate(
                 [vals, np.zeros_like(self.stem_height)[None, :]]
