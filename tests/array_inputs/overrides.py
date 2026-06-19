@@ -43,10 +43,11 @@ SKIP_METHODS = [
     # internals of pydantic - not sure the greedy approach to what gets tested is
     # sustainable.
     "Flora.__repr_args__",
-    "CohortData.__repr_args__",
+    "Cohorts",
     "Cohorts.drop_cohort_data",
     "CrownProfile",
     "CrownProfile.to_xy",
+    "Canopy",
     # Demography - mostly 1d arrays (dataframes)
     "StemAllocation",
     "StemAllometry",
