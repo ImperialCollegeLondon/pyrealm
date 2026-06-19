@@ -537,6 +537,7 @@ crown_radius_as_xy = area_crown_profiles.to_xy(
     attr="crown_radius",
     stem_offsets=stem_offsets,
     as_xy=True,
+    two_sided=True,
 )
 
 # Get the projected crown and leaf radii to plot as lines
@@ -558,7 +559,7 @@ fig, ax = plt.subplots()
 for cr_xy, (ch, cpr), (lh, lpr) in zip(
     crown_radius_as_xy, projected_crown_radius_xy, projected_leaf_radius_xy
 ):
-    ax.add_patch(Polygon(cr_xy, color="lightgrey"))
+    ax.add_patch(Polygon(cr_xy, color="lightgrey", fill=True))
     ax.plot(cpr, ch, color="0.4", linewidth=2)
     ax.plot(lpr, lh, color="red", linewidth=1)
 

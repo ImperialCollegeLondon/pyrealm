@@ -392,7 +392,7 @@ class CrownProfile(ToDataFrameMixin):
         # Get the plotting coordinates
         if two_sided:
             attr_stack = np.concatenate(
-                [vals, np.zeros_like(self.stem_height)[None, :], np.flipud(vals)]
+                [-vals, np.zeros_like(self.stem_height)[None, :], np.flipud(vals)]
             )
             z_stack = np.concatenate([z, self.stem_height[None, :], np.flipud(z)])
         else:

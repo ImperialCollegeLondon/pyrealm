@@ -175,7 +175,7 @@ crown_area = np.nansum(
 profiles = crown_profiles.to_xy(
     attr="crown_radius",
     as_xy=True,
-    two_sided=False,
+    two_sided=True,
 )
 
 
@@ -388,7 +388,6 @@ gappy_flora = Flora(
     h_max=[15, 30],
     m=[2, 2],
     n=[4, 3],
-    # par_ext=[0.5,0.6],
     f_g=[0.1, 0.1],
     ca_ratio=[380, 500],
 )
