@@ -47,6 +47,7 @@ SKIP_METHODS = [
     "Cohorts.drop_cohort_data",
     "CrownProfile",
     "CrownProfile.to_xy",
+    "Canopy",
     # Demography - mostly 1d arrays (dataframes)
     "StemAllocation",
     "StemAllometry",
