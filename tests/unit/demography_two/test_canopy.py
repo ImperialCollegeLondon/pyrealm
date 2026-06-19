@@ -158,7 +158,7 @@ def test_Canopy__init__():
 
     # Simply check that the shape of the stem leaf area matrix is the right shape
     n_layers_from_crown_area = int(
-        np.floor(
+        np.ceil(
             (
                 (allometry.crown_area * cohorts.cohorts["n_individuals"]).sum()
                 * (1 + canopy_gap_fraction)
@@ -262,4 +262,7 @@ def test_fit_perfect_plasticity_approximation():
         solver_tolerance=tolerance,
     )
 
-    assert np.allclose(heights, allometry.crown_z_max, atol=tolerance)
+    # Add the final zero to represent remaining gap to ground.
+    assert np.allclose(
+        heights, np.concatenate([allometry.crown_z_max, [0]]), atol=tolerance
+    )
