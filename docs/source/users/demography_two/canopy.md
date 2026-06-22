@@ -8,18 +8,6 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  name: python
-  version: 3.12.3
-  mimetype: text/x-python
-  codemirror_mode:
-    name: ipython
-    version: 3
-  pygments_lexer: ipython3
-  nbconvert_exporter: python
-  file_extension: .py
-settings:
-  output_matplotlib_strings: remove
 ---
 
 # The canopy model
@@ -442,8 +430,8 @@ gappy_leaf_area = np.nansum(
 
 The plots below show the cumulative projected leaf and crown areas across the
 individuals in the two communities along with the PPA layer closure heights. The first
-thing to note is that the projected crown area for the communities is identical: the
-cohorts have the same crown shapes, stem heights and number of individuals. For the
+thing to note is that the **projected crown area for the communities is identical**:
+the cohorts have the same crown shapes, stem heights and number of individuals. For the
 non-gappy community, the projected leaf area and projected crown area are also
 identical. However:
 
@@ -496,4 +484,8 @@ ax2.set_xlabel("Projected community area (m2)")
 ax2.legend(framealpha=1.0)
 
 plt.tight_layout()
+```
+
+```{code-cell} ipython3
+
 ```

@@ -39,6 +39,8 @@ The T Model {cite}`Li:2014bc` provides a model of both:
 * carbon allocation, given stem allometry and potential GPP.
 
 ```{code-cell} ipython3
+import warnings
+
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
@@ -49,6 +51,11 @@ from pyrealm.demography_two.tmodel import (
     StemAllocation,
     StemAllometry,
     calculate_whole_crown_gpp,
+)
+
+warnings.filterwarnings(
+    "ignore",
+    category=ExperimentalFeatureWarning,
 )
 ```
 

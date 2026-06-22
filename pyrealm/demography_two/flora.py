@@ -100,6 +100,8 @@ class Flora(BaseModel):
     values implemented in that subclass.
     """
 
+    __experimental__ = True
+
     name: list[str] = ["default"]
     r"""The name of the plant functional type."""
     a_hd: list[float] = [116.0]

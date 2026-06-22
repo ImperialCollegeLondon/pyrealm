@@ -59,6 +59,8 @@ class Cohorts(PandasExporter, CohortMethods):
         cid_generator: A generator providing unique cohort ids.
     """
 
+    __experimental__ = True
+
     def __init__(
         self,
         flora: Flora,

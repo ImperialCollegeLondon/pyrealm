@@ -8,18 +8,6 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  name: python
-  version: 3.12.3
-  mimetype: text/x-python
-  codemirror_mode:
-    name: ipython
-    version: 3
-  pygments_lexer: ipython3
-  nbconvert_exporter: python
-  file_extension: .py
-settings:
-  output_matplotlib_strings: remove
 ---
 
 # Light capture in the canopy
@@ -314,7 +302,7 @@ multiplied by stem leaf area to give actual absorbance.
 simulated_per_stem_f_abs
 ```
 
-Lastly - as a check sum - the total capture shows how much of the incident light across
+Lastly, the total capture shows how much of the incident light across
 the whole cell (PPFD x cell area) is captured by leaves.
 
 ```{code-cell} ipython3
@@ -467,15 +455,24 @@ canopy_light_model.community_data.transmission_profile
 canopy_light_model.community_data.transmission_to_ground
 ```
 
-Similarly, the per stem light absorption matches:
+Similarly, the per stem light absorption matches the array based calculation above:
 
 ```{code-cell} ipython3
-absorption = initial_ppfd * canopy_light_model.stem_leaf_area * canopy_light_model.fapar
-absorption
+per_stem_absorption = (
+    initial_ppfd * canopy_light_model.stem_leaf_area * canopy_light_model.fapar
+)
+per_stem_absorption
+```
+
+And the total absorption across all individuals matches:
+
+```{code-cell} ipython3
+pyrealm_total_capture = (absorption * n_individuals).sum()
 ```
 
 ```{code-cell} ipython3
-absorption.sum()
+if np.allclose(simulated_total_capture, pyrealm_total_capture):
+    print("\U00002705 Total capture matches")
 ```
 
 ### Calculation of light capture for a community

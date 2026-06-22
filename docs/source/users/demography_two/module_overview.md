@@ -27,8 +27,8 @@ The functionality of the demography module is split into the following submodule
 
 * The [`flora` module](./flora.md) that defines the set of plant functional traits used
   in demographic modelling and the classes used to represent those traits.
-* The [`cohorts` module](./cohorts.md) that implements size-structured cohorts of plants
-  with traits drawn from a flora.
+* The [`cohorts` module](./flora.md#plant-cohorts) that implements size-structured
+  cohorts of plants with traits drawn from a flora.
 * The [`t_model` module](./t_model.md) module that implements the allometric and
   allocation equations of the T Model {cite}`Li:2014bc`.
 * The [`crown` module](./crown.md) that implements a three dimensional model of crown
