@@ -64,22 +64,22 @@ import pytest
         ),
     ),
 )
-def test_Cohorts(inputs, outcome, msg):
+def test_create_cohorts(inputs, outcome, msg):
     """Test the Cohorts validation."""
-    from pyrealm.demography_two.cohorts import Cohorts
+    from pyrealm.demography_two.cohorts import cohort_id_generator, create_cohorts
     from pyrealm.demography_two.flora import Flora
 
     flora = Flora(name=["name"])
-
+    cid_gen = cohort_id_generator()
     inputs = {k: np.array(v) for k, v in inputs.items()}
 
     with outcome as err_handler:
-        cohorts = Cohorts(flora=flora, **inputs)
+        cohorts = create_cohorts(flora=flora, cid_generator=cid_gen, **inputs)
 
         if "community_id" in inputs:
-            assert cohorts.cohorts.community_id.equals(pd.Series([1]))
+            assert cohorts.community_id.equals(pd.Series([1]))
         else:
-            assert "community_id" not in cohorts.cohorts
+            assert "community_id" not in cohorts
 
         return
 
@@ -98,32 +98,41 @@ def test_Cohorts(inputs, outcome, msg):
         ),
     ],
 )
-def test_Cohorts_from_csv(filename, outcome, expect_community):
-    """Test CohortData loading and conversion to DataFrame.
+def test_create_cohorts_from_csv(filename, outcome, expect_community):
+    """Test create_cohorts_from_csv.
 
     This also checks that the optional community_id field is handled correctly and that
     the resulting cohorts data frame includes the merged trait data.
     """
-    from pyrealm.demography_two.cohorts import Cohorts
+    from pyrealm.demography_two.cohorts import (
+        cohort_id_generator,
+        create_cohorts_from_csv,
+    )
     from pyrealm.demography_two.flora import Flora
 
     datapath = resources.files("pyrealm_build_data.community") / filename
-
+    cid_gen = cohort_id_generator()
     flora = Flora(name=["test1", "test2"])
 
     with outcome:
-        cohort_data = Cohorts.from_csv(datapath, flora=flora)
+        cohort_data = create_cohorts_from_csv(
+            path=datapath, cid_generator=cid_gen, flora=flora
+        )
 
-        assert ("community_id" in cohort_data.cohorts) == expect_community
-        assert "tau_f" in cohort_data.cohorts
-        assert "cohort_id" in cohort_data.cohorts
+        assert ("community_id" in cohort_data) == expect_community
+        assert "tau_f" in cohort_data
+        assert "cohort_id" in cohort_data
 
 
 def test_Cohorts_with_Flora_extensibility():
     """Test that extended Flora subclasses work with Cohorts."""
-    from pyrealm.demography_two.cohorts import Cohorts
+    from pyrealm.demography_two.cohorts import (
+        cohort_id_generator,
+        create_cohorts_from_csv,
+    )
     from pyrealm.demography_two.flora import Flora
 
+    cid_gen = cohort_id_generator()
     datapath = resources.files("pyrealm_build_data.community") / "cohorts.csv"
 
     # A new subclass with additional variables
@@ -132,11 +141,11 @@ def test_Cohorts_with_Flora_extensibility():
 
     flora = FloraExtended(name=["test1", "test2"])
 
-    cohort_data = Cohorts.from_csv(datapath, flora=flora)
-
-    assert "tau_f" in cohort_data.cohorts
-    assert "my_new_field" in cohort_data.cohorts
-
-    assert cohort_data.cohorts["my_new_field"].equals(
-        pd.Series([42] * cohort_data.cohorts.shape[0])
+    cohort_data = create_cohorts_from_csv(
+        path=datapath, cid_generator=cid_gen, flora=flora
     )
+
+    assert "tau_f" in cohort_data
+    assert "my_new_field" in cohort_data
+
+    assert cohort_data["my_new_field"].equals(pd.Series([42] * cohort_data.shape[0]))
