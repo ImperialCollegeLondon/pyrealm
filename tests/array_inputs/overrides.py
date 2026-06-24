@@ -43,7 +43,10 @@ SKIP_METHODS = [
     # internals of pydantic - not sure the greedy approach to what gets tested is
     # sustainable.
     "Flora.__repr_args__",
-    "CohortData.__repr_args__",
+    # Something about pandas methods on Cohort objects also triggers - these are
+    # explicitly blocked in utils.get_method_list rather than handling each one here.
+    "create_cohorts",
+    "Cohorts",
     "Cohorts.drop_cohort_data",
     "CrownProfile",
     "CrownProfile.to_xy",

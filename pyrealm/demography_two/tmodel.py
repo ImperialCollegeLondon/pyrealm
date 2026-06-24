@@ -847,8 +847,8 @@ class StemAllometry(ToDataFrameMixin):
         # enforces positive DBH, so only need to check at_dbh.
         if at_dbh is None:
             # If no at_dbh is provided, use the dbh values from the cohorts.
-            self.dbh = cohorts.cohorts["dbh_value"].to_numpy()
-            self.cohort_ids = cohorts.cohorts["cohort_id"].to_numpy()
+            self.dbh = cohorts.dbh_value.to_numpy()
+            self.cohort_ids = cohorts.cohort_id.to_numpy()
             self._at_dbh_set = False
             self._ndims = 1
         else:
@@ -860,80 +860,83 @@ class StemAllometry(ToDataFrameMixin):
 
             # Broadcast DBH and cohort IDs to their outer product,
             self.dbh, self.cohort_ids = np.broadcast_arrays(
-                at_dbh[:, None], cohorts.cohorts["cohort_id"].to_numpy()
+                at_dbh[:, None], cohorts.cohort_id.to_numpy()
             )
             self._at_dbh_set = True
             self._ndims = 2
 
-        self._cohort_ids = cohorts.cohorts["cohort_id"].to_numpy()
+        self._cohort_ids = cohorts.cohort_id.to_numpy()
 
         self.stem_height = calculate_heights(
-            h_max=cohorts.cohorts["h_max"].to_numpy(),
-            a_hd=cohorts.cohorts["a_hd"].to_numpy(),
+            h_max=cohorts.h_max.to_numpy(),
+            a_hd=cohorts.a_hd.to_numpy(),
             dbh=self.dbh,
         )
 
         self.crown_area = calculate_crown_areas(
-            ca_ratio=cohorts.cohorts["ca_ratio"].to_numpy(),
-            a_hd=cohorts.cohorts["a_hd"].to_numpy(),
+            ca_ratio=cohorts.ca_ratio.to_numpy(),
+            a_hd=cohorts.a_hd.to_numpy(),
             dbh=self.dbh,
             stem_height=self.stem_height,
         )
 
         self.crown_fraction = calculate_crown_fractions(
-            a_hd=cohorts.cohorts["a_hd"].to_numpy(),
+            a_hd=cohorts.a_hd.to_numpy(),
             dbh=self.dbh,
             stem_height=self.stem_height,
         )
 
         self.stem_mass = calculate_stem_masses(
-            rho_s=cohorts.cohorts["rho_s"].to_numpy(),
+            rho_s=cohorts.rho_s.to_numpy(),
             dbh=self.dbh,
             stem_height=self.stem_height,
         )
 
         self.foliage_mass = calculate_foliage_masses(
-            sla=cohorts.cohorts["sla"].to_numpy(),
-            lai=cohorts.cohorts["lai"].to_numpy(),
+            sla=cohorts.sla.to_numpy(),
+            lai=cohorts.lai.to_numpy(),
             crown_area=self.crown_area,
         )
 
         self.fine_root_mass = calculate_fine_root_masses(
-            zeta=cohorts.cohorts["zeta"].to_numpy(),
-            lai=cohorts.cohorts["lai"].to_numpy(),
+            zeta=cohorts.zeta.to_numpy(),
+            lai=cohorts.lai.to_numpy(),
             crown_area=self.crown_area,
         )
 
         self.reproductive_tissue_mass = calculate_reproductive_tissue_mass(
             self.foliage_mass,
-            cohorts.cohorts["p_foliage_for_reproductive_tissue"].to_numpy(),
+            cohorts.p_foliage_for_reproductive_tissue.to_numpy(),
         )
 
         self.sapwood_mass = calculate_sapwood_masses(
-            rho_s=cohorts.cohorts["rho_s"].to_numpy(),
-            ca_ratio=cohorts.cohorts["ca_ratio"].to_numpy(),
+            rho_s=cohorts.rho_s.to_numpy(),
+            ca_ratio=cohorts.ca_ratio.to_numpy(),
             stem_height=self.stem_height,
             crown_area=self.crown_area,
             crown_fraction=self.crown_fraction,
         )
 
         self.crown_r0 = calculate_crown_r0(
-            q_m=cohorts.cohorts["q_m"].to_numpy(),
+            q_m=cohorts.q_m.to_numpy(),
             crown_area=self.crown_area,
         )
 
         self.crown_z_max = calculate_crown_z_max(
-            z_max_prop=cohorts.cohorts["z_max_prop"].to_numpy(),
+            z_max_prop=cohorts.z_max_prop.to_numpy(),
             stem_height=self.stem_height,
         )
 
     def __repr__(self) -> str:
         if self._at_dbh_set:
-            return "StemAllometry: Prediction for {1} stems at {0} DBH values.".format(
-                *self.dbh.shape
-            )
+            return (
+                "StemAllometry: Allometry predictions for {1} cohorts "
+                "at {0} DBH values."
+            ).format(*self.dbh.shape)
 
-        return "StemAllometry: Prediction for {} stems.".format(*self.stem_height.shape)
+        return "StemAllometry: Allometry predictions for {} cohorts.".format(
+            *self.stem_height.shape
+        )
 
 
 class StemAllocation(ToDataFrameMixin):
@@ -1077,7 +1080,7 @@ class StemAllocation(ToDataFrameMixin):
             self._ndims = allometry._ndims
 
         self.gpp_topslice = calculate_gpp_topslice(
-            gpp_topslice=cohorts.cohorts["gpp_topslice"].to_numpy(),
+            gpp_topslice=cohorts.gpp_topslice.to_numpy(),
             whole_crown_gpp=self.whole_crown_gpp,
         )
 
@@ -1089,20 +1092,20 @@ class StemAllocation(ToDataFrameMixin):
 
         # Calculate respiration terms
         self.sapwood_respiration = calculate_sapwood_respiration(
-            resp_s=cohorts.cohorts["resp_s"].to_numpy(),
+            resp_s=cohorts.resp_s.to_numpy(),
             sapwood_mass=np.broadcast_to(
                 allometry.sapwood_mass, self.whole_crown_gpp.shape
             ),
         )
 
         self.foliage_respiration = calculate_foliage_respiration(
-            resp_f=cohorts.cohorts["resp_f"].to_numpy(),
+            resp_f=cohorts.resp_f.to_numpy(),
             whole_crown_gpp=self.topslice_whole_crown_gpp,
         )
 
         self.reproductive_tissue_respiration = (
             calculate_reproductive_tissue_respiration(
-                resp_rt=cohorts.cohorts["resp_rt"].to_numpy(),
+                resp_rt=cohorts.resp_rt.to_numpy(),
                 reproductive_tissue_mass=np.broadcast_to(
                     allometry.reproductive_tissue_mass, self.whole_crown_gpp.shape
                 ),
@@ -1110,7 +1113,7 @@ class StemAllocation(ToDataFrameMixin):
         )
 
         self.fine_root_respiration = calculate_fine_root_respiration(
-            resp_r=cohorts.cohorts["resp_r"].to_numpy(),
+            resp_r=cohorts.resp_r.to_numpy(),
             fine_root_mass=np.broadcast_to(
                 allometry.fine_root_mass, self.whole_crown_gpp.shape
             ),
@@ -1118,7 +1121,7 @@ class StemAllocation(ToDataFrameMixin):
 
         # Calculate NPP given losses to yield and respiration costs
         self.npp = calculate_net_primary_productivity(
-            yld=cohorts.cohorts["yld"].to_numpy(),
+            yld=cohorts.yld.to_numpy(),
             whole_crown_gpp=self.topslice_whole_crown_gpp,
             foliage_respiration=self.foliage_respiration,
             fine_root_respiration=self.fine_root_respiration,
@@ -1128,21 +1131,21 @@ class StemAllocation(ToDataFrameMixin):
 
         # Calculate turnover costs
         self.foliage_turnover = calculate_foliage_turnover(
-            tau_f=cohorts.cohorts["tau_f"].to_numpy(),
+            tau_f=cohorts.tau_f.to_numpy(),
             foliage_mass=np.broadcast_to(
                 allometry.foliage_mass, self.whole_crown_gpp.shape
             ),
         )
 
         self.fine_root_turnover = calculate_fine_root_turnover(
-            tau_r=cohorts.cohorts["tau_r"].to_numpy(),
+            tau_r=cohorts.tau_r.to_numpy(),
             fine_root_mass=np.broadcast_to(
                 allometry.fine_root_mass, self.whole_crown_gpp.shape
             ),
         )
 
         self.reproductive_tissue_turnover = calculate_reproductive_tissue_turnover(
-            tau_rt=cohorts.cohorts["tau_rt"].to_numpy(),
+            tau_rt=cohorts.tau_rt.to_numpy(),
             reproductive_tissue_mass=np.broadcast_to(
                 allometry.reproductive_tissue_mass, self.whole_crown_gpp.shape
             ),
@@ -1155,19 +1158,17 @@ class StemAllocation(ToDataFrameMixin):
             self.delta_foliage_mass,
             self.delta_fine_root_mass,
         ) = calculate_growth_increments(
-            rho_s=cohorts.cohorts["rho_s"].to_numpy(),
-            a_hd=cohorts.cohorts["a_hd"].to_numpy(),
-            h_max=cohorts.cohorts["h_max"].to_numpy(),
-            lai=cohorts.cohorts["lai"].to_numpy(),
-            ca_ratio=cohorts.cohorts["ca_ratio"].to_numpy(),
-            sla=cohorts.cohorts["sla"].to_numpy(),
-            zeta=cohorts.cohorts["zeta"].to_numpy(),
+            rho_s=cohorts.rho_s.to_numpy(),
+            a_hd=cohorts.a_hd.to_numpy(),
+            h_max=cohorts.h_max.to_numpy(),
+            lai=cohorts.lai.to_numpy(),
+            ca_ratio=cohorts.ca_ratio.to_numpy(),
+            sla=cohorts.sla.to_numpy(),
+            zeta=cohorts.zeta.to_numpy(),
             npp=self.npp,
             turnover=self.foliage_turnover + self.fine_root_turnover,
             reproductive_tissue_turnover=self.reproductive_tissue_turnover,
-            p_foliage_for_reproductive_tissue=cohorts.cohorts[
-                "p_foliage_for_reproductive_tissue"
-            ].to_numpy(),
+            p_foliage_for_reproductive_tissue=cohorts.p_foliage_for_reproductive_tissue.to_numpy(),
             dbh=allometry.dbh,
             stem_height=allometry.stem_height,
         )

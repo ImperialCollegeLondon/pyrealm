@@ -564,20 +564,22 @@ def test_StemAllometry_and_StemAllocation(
     that 2D allometries generate the correct prediction.
     """
 
-    from pyrealm.demography_two.cohorts import CohortData, Cohorts
+    from pyrealm.demography_two.cohorts import cohort_id_generator, create_cohorts
     from pyrealm.demography_two.tmodel import (
         StemAllocation,
         StemAllometry,
         calculate_whole_crown_gpp,
     )
 
-    ## Generate cohort data
-    cohort_data = CohortData(
-        pft_name=rtmodel_flora.name,
-        n_individuals=[1, 1, 1],
+    # Generate cohort
+    cid_gen = cohort_id_generator()
+    cohorts = create_cohorts(
+        pft_name=np.array(rtmodel_flora.name),
+        n_individuals=np.array([1, 1, 1]),
         dbh_value=rtmodel_data["dbh"][dbh_idx],
+        cid_generator=cid_gen,
+        flora=rtmodel_flora,
     )
-    cohorts = Cohorts(cohort_data=cohort_data, flora=rtmodel_flora)
 
     ## Check that StemAllometry produces the correct values
 
@@ -690,19 +692,21 @@ def test_StemAllocation_GPP_inputs(
     The parameterisation provides tests of output shapes under different operating
     modes.
     """
-    from pyrealm.demography_two.cohorts import CohortData, Cohorts
+    from pyrealm.demography_two.cohorts import cohort_id_generator, create_cohorts
     from pyrealm.demography_two.tmodel import (
         StemAllocation,
         StemAllometry,
     )
 
     ## Generate cohort data and calculate the allometry and allocation
-    cohort_data = CohortData(
-        pft_name=rtmodel_flora.name,
-        n_individuals=[1, 1, 1],
-        dbh_value=[0.5, 0.5, 0.5],
+    cid_gen = cohort_id_generator()
+    cohorts = create_cohorts(
+        pft_name=np.array(rtmodel_flora.name),
+        n_individuals=np.array([1, 1, 1]),
+        dbh_value=np.array([0.5, 0.5, 0.5]),
+        flora=rtmodel_flora,
+        cid_generator=cid_gen,
     )
-    cohorts = Cohorts(cohort_data=cohort_data, flora=rtmodel_flora)
     allom = StemAllometry(cohorts=cohorts, at_dbh=at_dbh)
     alloc = StemAllocation(
         cohorts=cohorts, allometry=allom, whole_crown_gpp=gpp, profile=profile
