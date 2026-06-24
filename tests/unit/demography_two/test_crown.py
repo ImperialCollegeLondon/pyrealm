@@ -215,18 +215,20 @@ def fixture_z_qz_test_cases(which):
 def fixture_cohorts_and_allometry():
     """A fixture providing a simple community."""
 
-    from pyrealm.demography_two.cohorts import Cohorts
+    from pyrealm.demography_two.cohorts import cohort_id_generator, create_cohorts
     from pyrealm.demography_two.flora import Flora
     from pyrealm.demography_two.tmodel import StemAllometry
 
     # A simple community containing one sample stem, with an initial crown gap fraction
     # of zero.
     flora = Flora(name=["test"], f_g=[0.0])
-    cohorts = Cohorts(
+    cid_gen = cohort_id_generator()
+    cohorts = create_cohorts(
         pft_name=np.array(["test"] * 4),
         dbh_value=np.array([0.2, 0.4, 0.6, 0.8]),
         n_individuals=np.array([1] * 4),
         flora=flora,
+        cid_generator=cid_gen,
     )
     allometry = StemAllometry(cohorts=cohorts)
 
@@ -285,8 +287,8 @@ def test_calculate_relative_crown_radius_at_z_values(fixture_cohorts_and_allomet
     q_z_values = calculate_relative_crown_radius_at_z(
         z=allometry.crown_z_max,
         stem_height=allometry.stem_height,
-        m=cohorts.cohorts["m"].to_numpy(),
-        n=cohorts.cohorts["n"].to_numpy(),
+        m=cohorts.m.to_numpy(),
+        n=cohorts.n.to_numpy(),
     )
 
     # Now test that the circular crown area from that radius is equivalent to
@@ -433,8 +435,8 @@ def test_calculate_stem_projected_crown_area_at_z_values(
     q_z = calculate_relative_crown_radius_at_z(
         z=heights,
         stem_height=allometry.stem_height,
-        m=cohorts.cohorts["m"].to_numpy(),
-        n=cohorts.cohorts["n"].to_numpy(),
+        m=cohorts.m.to_numpy(),
+        n=cohorts.n.to_numpy(),
     )
 
     # Calculate and test these values
@@ -443,7 +445,7 @@ def test_calculate_stem_projected_crown_area_at_z_values(
         q_z=q_z,
         stem_height=allometry.stem_height,
         crown_area=allometry.crown_area,
-        q_m=cohorts.cohorts["q_m"].to_numpy(),
+        q_m=cohorts.q_m.to_numpy(),
         z_max=allometry.crown_z_max,
     )
 
@@ -513,8 +515,8 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_cohorts_and_allo
     q_z = calculate_relative_crown_radius_at_z(
         z=z_max,
         stem_height=allometry.stem_height,
-        m=cohorts.cohorts["m"].to_numpy(),
-        n=cohorts.cohorts["n"].to_numpy(),
+        m=cohorts.m.to_numpy(),
+        n=cohorts.n.to_numpy(),
     )
 
     leaf_area_fg0 = calculate_stem_projected_leaf_area_at_z(
@@ -522,8 +524,8 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_cohorts_and_allo
         q_z=q_z,
         stem_height=allometry.stem_height,
         crown_area=allometry.crown_area,
-        f_g=cohorts.cohorts["f_g"].to_numpy(),
-        q_m=cohorts.cohorts["q_m"].to_numpy(),
+        f_g=cohorts.f_g.to_numpy(),
+        q_m=cohorts.q_m.to_numpy(),
         z_max=allometry.crown_z_max,
     )
 
@@ -547,15 +549,15 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_cohorts_and_allo
     assert_allclose(np.diag(leaf_area_fg0), allometry.crown_area)
 
     # Introduce some crown gap fraction and recalculate
-    cohorts.cohorts["f_g"] += 0.02
+    cohorts.f_g += 0.02
 
     leaf_area_fg002 = calculate_stem_projected_leaf_area_at_z(
         z=z_max,
         q_z=q_z,
         stem_height=allometry.stem_height,
         crown_area=allometry.crown_area,
-        f_g=cohorts.cohorts["f_g"].to_numpy(),
-        q_m=cohorts.cohorts["q_m"].to_numpy(),
+        f_g=cohorts.f_g.to_numpy(),
+        q_m=cohorts.q_m.to_numpy(),
         z_max=allometry.crown_z_max,
     )
 
@@ -623,7 +625,7 @@ def test_CrownProfile(fixture_cohorts_and_allometry):
     df = crown_profile.to_dataframe()
 
     assert df.shape == (
-        cohorts.n_cohorts * allometry.crown_z_max.size,
+        len(cohorts) * allometry.crown_z_max.size,
         len(crown_profile._array_attrs),
     )
 
