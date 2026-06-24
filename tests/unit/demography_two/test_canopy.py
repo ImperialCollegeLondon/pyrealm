@@ -133,17 +133,21 @@ def test_Canopy__init__():
     """
 
     from pyrealm.demography_two.canopy import Canopy
-    from pyrealm.demography_two.cohorts import Cohorts
+    from pyrealm.demography_two.cohorts import cohort_id_generator, create_cohorts
     from pyrealm.demography_two.flora import Flora
     from pyrealm.demography_two.tmodel import StemAllometry
 
     flora = Flora(name=["broadleaf", "conifer"], h_max=[30, 20])
-    cohorts = Cohorts(
-        flora=flora,
+
+    cid_gen = cohort_id_generator()
+    cohorts = create_cohorts(
         pft_name=np.array(["broadleaf", "conifer"]),
         n_individuals=np.array([6, 1]),
         dbh_value=np.array([0.2, 0.5]),
+        flora=flora,
+        cid_generator=cid_gen,
     )
+
     allometry = StemAllometry(cohorts=cohorts)
 
     canopy_gap_fraction = 0.05
@@ -160,7 +164,7 @@ def test_Canopy__init__():
     n_layers_from_crown_area = int(
         np.ceil(
             (
-                (allometry.crown_area * cohorts.cohorts["n_individuals"]).sum()
+                (allometry.crown_area * cohorts.n_individuals).sum()
                 * (1 + canopy_gap_fraction)
             )
             / cell_area
@@ -197,10 +201,10 @@ def test_solve_canopy_area_filling_height(fixture_cohorts_and_allometry):
             z=this_height,
             stem_height=allometry.stem_height,
             crown_area=allometry.crown_area,
-            n_individuals=cohorts.cohorts["n_individuals"],
-            m=cohorts.cohorts["m"],
-            n=cohorts.cohorts["n"],
-            q_m=cohorts.cohorts["q_m"],
+            n_individuals=cohorts.n_individuals,
+            m=cohorts.m,
+            n=cohorts.n,
+            q_m=cohorts.q_m,
             z_max=allometry.crown_z_max,
             target_area=this_target,
         )
@@ -221,7 +225,7 @@ def test_fit_perfect_plasticity_approximation():
     """
 
     from pyrealm.demography_two.canopy import fit_perfect_plasticity_approximation
-    from pyrealm.demography_two.cohorts import Cohorts
+    from pyrealm.demography_two.cohorts import cohort_id_generator, create_cohorts
     from pyrealm.demography_two.flora import Flora
     from pyrealm.demography_two.tmodel import StemAllometry, calculate_dbh_from_height
 
@@ -243,12 +247,16 @@ def test_fit_perfect_plasticity_approximation():
         a_hd=list(a_hd),
         ca_ratio=list(ca_ratio),
     )
-    cohorts = Cohorts(
-        flora=flora,
+
+    cid_gen = cohort_id_generator()
+    cohorts = create_cohorts(
         pft_name=np.array(["a", "b", "c"]),
         dbh_value=dbh,
         n_individuals=np.ones(3).astype(int),
+        flora=flora,
+        cid_generator=cid_gen,
     )
+
     allometry = StemAllometry(cohorts)
 
     # Fit the model

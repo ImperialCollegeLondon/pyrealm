@@ -150,7 +150,13 @@ def get_method_list(array_type: str) -> list[tuple[str, Callable, type | None]]:
                 if not isinstance(attr, staticmethod):
                     continue
 
-            if (name not in SKIP_METHODS) and _has_array_input(method, array_type):
+            if (
+                (name not in SKIP_METHODS)
+                and (
+                    not method.__qualname__.startswith("NDFrame")
+                )  # HACK for pandas internals - see PR #671
+                and _has_array_input(method, array_type)
+            ):
                 method_list.append((name, method, cls))
     return method_list
 
@@ -224,6 +230,7 @@ def _has_array_input(method: Callable, array_type: str) -> bool:
     from typing import get_type_hints
 
     try:
+        print(method)
         hints = get_type_hints(method)
         hints = {k: v for k, v in hints.items() if k != "return"}
     except NameError:

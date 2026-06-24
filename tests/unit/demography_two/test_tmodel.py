@@ -564,7 +564,7 @@ def test_StemAllometry_and_StemAllocation(
     that 2D allometries generate the correct prediction.
     """
 
-    from pyrealm.demography_two.cohorts import Cohorts
+    from pyrealm.demography_two.cohorts import cohort_id_generator, create_cohorts
     from pyrealm.demography_two.tmodel import (
         StemAllocation,
         StemAllometry,
@@ -572,10 +572,12 @@ def test_StemAllometry_and_StemAllocation(
     )
 
     # Generate cohort
-    cohorts = Cohorts(
+    cid_gen = cohort_id_generator()
+    cohorts = create_cohorts(
         pft_name=np.array(rtmodel_flora.name),
         n_individuals=np.array([1, 1, 1]),
         dbh_value=rtmodel_data["dbh"][dbh_idx],
+        cid_generator=cid_gen,
         flora=rtmodel_flora,
     )
 
@@ -690,18 +692,20 @@ def test_StemAllocation_GPP_inputs(
     The parameterisation provides tests of output shapes under different operating
     modes.
     """
-    from pyrealm.demography_two.cohorts import Cohorts
+    from pyrealm.demography_two.cohorts import cohort_id_generator, create_cohorts
     from pyrealm.demography_two.tmodel import (
         StemAllocation,
         StemAllometry,
     )
 
     ## Generate cohort data and calculate the allometry and allocation
-    cohorts = Cohorts(
+    cid_gen = cohort_id_generator()
+    cohorts = create_cohorts(
         pft_name=np.array(rtmodel_flora.name),
         n_individuals=np.array([1, 1, 1]),
         dbh_value=np.array([0.5, 0.5, 0.5]),
         flora=rtmodel_flora,
+        cid_generator=cid_gen,
     )
     allom = StemAllometry(cohorts=cohorts, at_dbh=at_dbh)
     alloc = StemAllocation(

@@ -94,18 +94,20 @@ def rtmodel_data():
 def fixture_cohorts_and_allometry():
     """A fixture providing a simple community."""
 
-    from pyrealm.demography_two.cohorts import Cohorts
+    from pyrealm.demography_two.cohorts import cohort_id_generator, create_cohorts
     from pyrealm.demography_two.flora import Flora
     from pyrealm.demography_two.tmodel import StemAllometry
 
     # A simple community containing one sample stem, with an initial crown gap fraction
     # of zero.
     flora = Flora(name=["test"], f_g=[0.0])
-    cohorts = Cohorts(
+    cid_gen = cohort_id_generator()
+    cohorts = create_cohorts(
         pft_name=np.array(["test"] * 4),
         dbh_value=np.array([0.2, 0.4, 0.6, 0.8]),
         n_individuals=np.array([1] * 4),
         flora=flora,
+        cid_generator=cid_gen,
     )
     allometry = StemAllometry(cohorts=cohorts)
 
