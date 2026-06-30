@@ -45,8 +45,9 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 
+from pyrealm.core.experimental import ExperimentalFeatureWarning
 from pyrealm.demography_two.flora import Flora
-from pyrealm.demography_two.cohorts import Cohorts
+from pyrealm.demography_two.cohorts import create_cohorts, cohort_id_generator
 from pyrealm.demography_two.tmodel import (
     StemAllocation,
     StemAllometry,
@@ -66,8 +67,13 @@ of stems with known traits from a Flora object at a known DBH.
 # Create a flora with 3 PFTs with different maximum heights
 flora = Flora(name=["short", "medium", "tall"], h_max=[10, 20, 30])
 
-cohorts = Cohorts(
+# Create an id generator.
+cid_generator = cohort_id_generator(mode="str")
+
+# Create the cohorts
+cohorts = create_cohorts(
     flora=flora,
+    cid_generator=cid_generator,
     pft_name=np.array(["short", "medium", "tall"]),
     dbh_value=np.array([0.1, 0.1, 0.1]),
     n_individuals=np.array([1, 1, 1]),
@@ -187,8 +193,8 @@ This is implemented in the function `calculate_whole_crown_gpp`:
 whole_crown_gpp = calculate_whole_crown_gpp(
     potential_gpp=np.array([55]),
     crown_area=cohort_allometry.crown_area,
-    par_ext=cohorts.cohorts.par_ext,
-    lai=cohorts.cohorts.lai,
+    par_ext=cohorts.par_ext,
+    lai=cohorts.lai,
 )
 print(whole_crown_gpp)
 ```
@@ -261,9 +267,9 @@ for ax, (var, ylab) in zip(axes, plot_details):
 fig.delaxes(axes[-1])
 ```
 
-The {meth}`~pyrealm.demography_two.StemAllocation.to_dataframe()` method can still be
-used, but the values are stacked into columns identified by pairings of cohort ID and
-DBH.
+Again, with GPP profiles, the
+{meth}`~pyrealm.demography_two.StemAllocation.to_dataframe()` method stacks predictions
+into columns identified by pairings of cohort ID and DBH.
 
 ```{code-cell} ipython3
 allocation_profile.to_dataframe().head(6)[

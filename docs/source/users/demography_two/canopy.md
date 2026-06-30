@@ -8,6 +8,16 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  name: python
+  version: 3.12.3
+  mimetype: text/x-python
+  codemirror_mode:
+    name: ipython
+    version: 3
+  pygments_lexer: ipython3
+  nbconvert_exporter: python
+  file_extension: .py
 ---
 
 # The canopy model
@@ -40,7 +50,7 @@ import numpy as np
 import pandas as pd
 
 from pyrealm.demography_two.flora import Flora
-from pyrealm.demography_two.cohorts import Cohorts
+from pyrealm.demography_two.cohorts import create_cohorts, cohort_id_generator
 from pyrealm.demography_two.crown import CrownProfile
 from pyrealm.demography_two.canopy import Canopy
 from pyrealm.demography_two.tmodel import StemAllometry
@@ -116,13 +126,19 @@ flora = Flora(
     ca_ratio=[380, 500],
 )
 
+# Create an id generator.
+cid_generator = cohort_id_generator(mode="str")
+
 # Define a simply community with three cohorts
-cohorts = Cohorts(
+cohorts = create_cohorts(
     flora=flora,
+    cid_generator=cid_generator,
     dbh_value=np.array([0.1, 0.20, 0.5]),
     n_individuals=np.array([7, 3, 2]),
     pft_name=np.array(["short", "short", "tall"]),
 )
+
+# Get the stem allometries
 allometry = StemAllometry(cohorts)
 ```
 
@@ -136,7 +152,7 @@ The total crown area across the community is then the sum of those crown areas a
 all individuals:
 
 ```{code-cell} ipython3
-total_crown_area = np.sum(allometry.crown_area * cohorts.cohorts["n_individuals"])
+total_crown_area = np.sum(allometry.crown_area * cohorts.n_individuals)
 total_crown_area
 ```
 
@@ -155,7 +171,7 @@ crown_profiles = CrownProfile(cohorts=cohorts, allometry=allometry, z=hghts)
 
 # Calculate the cumulative crown area across individuals at each height
 crown_area = np.nansum(
-    crown_profiles.projected_crown_area * cohorts.cohorts["n_individuals"].to_numpy(),
+    crown_profiles.projected_crown_area * cohorts.n_individuals.to_numpy(),
     axis=1,
 )
 
@@ -201,7 +217,7 @@ fig, (ax1, ax2) = plt.subplots(
 for idx, crown in enumerate(profiles):
 
     # Get spaced but slightly randomized stem locations
-    n_stems = cohorts.cohorts["n_individuals"][idx]
+    n_stems = cohorts.n_individuals[idx]
     stem_locations = np.linspace(0, 10, num=n_stems) + np.random.normal(size=n_stems)
 
     # Plot the crown model for each stem
@@ -296,7 +312,7 @@ fig, (ax1, ax2) = plt.subplots(
 for idx, crown in enumerate(profiles):
 
     # Get spaced but slightly randomized stem locations
-    n_stems = cohorts.cohorts["n_individuals"][idx]
+    n_stems = cohorts.n_individuals[idx]
     stem_locations = np.linspace(0, 10, num=n_stems) + np.random.normal(size=n_stems)
 
     # Plot the crown model for each stem
@@ -351,7 +367,7 @@ expected, the crown area in each layer matches the 32 m2 of available space, exc
 the last layer that is not completely filled.
 
 ```{code-cell} ipython3
-np.sum(individual_crown_in_layer * cohorts.cohorts["n_individuals"].to_numpy(), axis=1)
+np.sum(individual_crown_in_layer * cohorts.n_individuals.to_numpy(), axis=1)
 ```
 
 ### Crown and canopy gap fractions
@@ -380,9 +396,10 @@ gappy_flora = Flora(
     ca_ratio=[380, 500],
 )
 
-# Define a simple community with three cohorts
-gappy_cohorts = Cohorts(
+# Define a community with three cohorts of stems with gappy canopies
+gappy_cohorts = create_cohorts(
     flora=gappy_flora,
+    cid_generator=cid_generator,
     dbh_value=np.array([0.1, 0.20, 0.5]),
     n_individuals=np.array([7, 3, 2]),
     pft_name=np.array(["short", "short", "tall"]),
@@ -408,22 +425,20 @@ gappy_crown_profiles = CrownProfile(
 )
 
 # Calculate the cumulative crown area across individuals for the gappy community
+
 gappy_crown_area = np.nansum(
-    gappy_crown_profiles.projected_crown_area
-    * gappy_cohorts.cohorts["n_individuals"].to_numpy(),
+    gappy_crown_profiles.projected_crown_area * gappy_cohorts.n_individuals.to_numpy(),
     axis=1,
 )
 
 # Calculate leaf areas for each community
 leaf_area = np.nansum(
-    crown_profiles.projected_leaf_area
-    * gappy_cohorts.cohorts["n_individuals"].to_numpy(),
+    crown_profiles.projected_leaf_area * cohorts.n_individuals.to_numpy(),
     axis=1,
 )
 
 gappy_leaf_area = np.nansum(
-    gappy_crown_profiles.projected_leaf_area
-    * gappy_cohorts.cohorts["n_individuals"].to_numpy(),
+    gappy_crown_profiles.projected_leaf_area * gappy_cohorts.n_individuals.to_numpy(),
     axis=1,
 )
 ```

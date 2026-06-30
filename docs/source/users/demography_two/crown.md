@@ -45,14 +45,16 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Polygon, Patch
 import numpy as np
 import pandas as pd
+import warnings
 
+from pyrealm.core.experimental import ExperimentalFeatureWarning
 from pyrealm.demography_two.flora import (
     calculate_crown_q_m,
     calculate_crown_z_max_proportion,
     Flora,
 )
 
-from pyrealm.demography_two.cohorts import Cohorts
+from pyrealm.demography_two.cohorts import create_cohorts, cohort_id_generator
 
 from pyrealm.demography_two.tmodel import (
     calculate_dbh_from_height,
@@ -60,6 +62,11 @@ from pyrealm.demography_two.tmodel import (
 )
 
 from pyrealm.demography_two.crown import CrownProfile
+
+warnings.filterwarnings(
+    "ignore",
+    category=ExperimentalFeatureWarning,
+)
 ```
 
 The {mod}`pyrealm.demography` module provides a three-dimensional model of crown shape to
@@ -264,8 +271,13 @@ stem_dbh
 ```
 
 ```{code-cell} ipython3
-cohorts = Cohorts(
+# Create an id generator.
+cid_generator = cohort_id_generator(mode="str")
+
+# Create the cohorts
+cohorts = create_cohorts(
     flora=flora,
+    cid_generator=cid_generator,
     pft_name=np.array(["narrow", "medium", "wide"]),
     n_individuals=np.array([1, 1, 1]),
     dbh_value=stem_dbh,
@@ -410,8 +422,13 @@ flora = Flora(
     ca_ratio=[380, 400, 420],
 )
 
-cohorts = Cohorts(
+# Create an id generator.
+cid_generator = cohort_id_generator(mode="str")
+
+# Create the cohorts
+cohorts = create_cohorts(
     flora=flora,
+    cid_generator=cid_generator,
     pft_name=np.array(["no_gaps", "few_gaps", "many_gaps"]),
     dbh_value=np.array([0.4, 0.4, 0.4]),
     n_individuals=np.array([1, 1, 1]),
@@ -481,8 +498,10 @@ for f_g in np.linspace(0, 1, num=11):
     # stem allometry and crown profile
     flora = Flora(name=["pft"], h_max=[20], m=[2], n=[2], f_g=[f_g])
 
-    cohorts = Cohorts(
+    # Create the cohorts
+    cohorts = create_cohorts(
         flora=flora,
+        cid_generator=cid_generator,
         pft_name=np.array(["pft"]),
         dbh_value=np.array([0.4]),
         n_individuals=np.array([1]),

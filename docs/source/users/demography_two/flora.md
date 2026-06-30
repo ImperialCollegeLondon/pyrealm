@@ -49,7 +49,11 @@ This page introduces the main components of the {mod}`~pyrealm.demography` modul
 import numpy as np
 
 from pyrealm.demography_two.flora import Flora
-from pyrealm.demography_two.cohorts import Cohorts
+from pyrealm.demography_two.cohorts import (
+    create_cohorts,
+    create_cohorts_from_csv,
+    cohort_id_generator,
+)
 ```
 
 ## Plant traits
@@ -145,15 +149,21 @@ flora_from_csv
 
 ## Plant Cohorts
 
-The {class}`~pyrealm.demography_two.cohorts.Cohorts` object provides a class to describe
-size structured cohorts of plants. A cohort is simply a number of individuals of a given
-PFT with size specified as diameter at breast height. The `Cohorts` object validates the
-cohort data and pairs each cohort up with the appropriate set of traits from a provided
-`Flora`.
+The demography module works with size-structured cohorts, where each cohort is simply *a
+number of individuals of a given PFT of a given size*. In `pyrealm`, the size of cohorts
+is captured using the diameter at breast height (DBH, metres) and the [T
+model](./t_model.md) is then used to predict the wider allometry and carbon allocation
+of those individuals.
 
-The `Cohorts` object automatically assigns a unique cohort ID  to each cohort. The
-details of these ID values can be controlled through the `cid_generator` argument (see
-{class}`~pyrealm.demography_two.cohorts.Cohorts`)
+The {class}`~pyrealm.demography_two.cohorts.Cohorts` structure is therefore simply a
+dataframe. Each row describes a separate cohort, with a unique ID tag, and the columns
+provide the cohort details, including the matching trait data for the PFT. Cohorts can
+also optionally be assigned into communities, allowing data for several locations to be
+held in the same `Cohorts` instance.
+
+A `Cohorts` instance is generated using either `create_cohorts` or
+`create_cohorts_from_csv`. Both functions require a `Flora` object to match cohort PFT
+names to trait data and a cohort ID generator.
 
 ```{code-cell} ipython3
 # Create a simple community with three cohorts
@@ -161,23 +171,34 @@ details of these ID values can be controlled through the `cid_generator` argumen
 # - 5 larger stems of the short PFT
 # - 2 large stems of tall PFT
 
-cohorts = Cohorts(
+cid_generator = cohort_id_generator()
+
+cohorts = create_cohorts(
     dbh_value=np.array([0.02, 0.20, 0.5]),
     n_individuals=np.array([15, 5, 2]),
     pft_name=np.array(["short", "short", "tall"]),
     flora=flora,
+    cid_generator=cid_generator,
 )
 
-cohorts
+cohorts.transpose()
 ```
 
-The `Cohorts` object contains a dataframe of the provided cohort data, extended to
-include the functional traits associated with the cohort PFT.
+Using the `create_cohorts_from_csv` function works in much the same way and is used
+below to show a `Cohorts` instance being created from [cohort data in a CSV
+file](./cohorts.csv). This data contains a `community_id` field.
+
+A new ID generator instance is used below to show an alternative ID style but in general
+you would create one generator and use it throughout any simulation.
 
 ```{code-cell} ipython3
-cohorts.cohorts[["cohort_id", "n_individuals", "dbh_value", "pft_name", "h_max"]]
-```
+cid_generator = cohort_id_generator(mode="str")
 
-```{code-cell} ipython3
+cohorts = create_cohorts_from_csv(
+    path="./cohorts.csv",
+    flora=flora,
+    cid_generator=cid_generator,
+)
 
+cohorts.transpose()
 ```
