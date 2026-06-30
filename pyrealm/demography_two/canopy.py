@@ -119,9 +119,7 @@ def fit_perfect_plasticity_approximation(
     """
 
     # Calculate the number of layers to contain the total community crown area
-    total_community_crown_area = (
-        allometry.crown_area * cohorts.cohorts["n_individuals"]
-    ).sum()
+    total_community_crown_area = (allometry.crown_area * cohorts.n_individuals).sum()
     crown_area_per_layer = area * (1 - canopy_gap_fraction)
     n_layers = int(np.ceil(total_community_crown_area / crown_area_per_layer))
 
@@ -142,11 +140,11 @@ def fit_perfect_plasticity_approximation(
             args=(
                 allometry.stem_height,
                 allometry.crown_area,
-                cohorts.cohorts["m"],
-                cohorts.cohorts["n"],
-                cohorts.cohorts["q_m"],
+                cohorts.m,
+                cohorts.n,
+                cohorts.q_m,
                 allometry.crown_z_max,
-                cohorts.cohorts["n_individuals"],
+                cohorts.n_individuals,
                 target_area,
             ),
             bracket=(0, upper_bound),
@@ -442,7 +440,7 @@ class Canopy:
 
         # Set simple attributes
         self.max_stem_height = allometry.stem_height.max()
-        self.n_cohorts = cohorts.n_cohorts
+        self.n_cohorts = len(cohorts)
         self.filled_community_area = canopy_area * (1 - self.canopy_gap_fraction)
 
         # Populate layer heights
@@ -469,9 +467,9 @@ class Canopy:
         # projected leaf area for each stem at the layer heights
         self.cohort_data = CohortCanopyData(
             projected_leaf_area=self.crown_profile.projected_leaf_area,
-            n_individuals=cohorts.cohorts["n_individuals"].to_numpy(),
-            lai=cohorts.cohorts["lai"].to_numpy(),
-            par_ext=cohorts.cohorts["par_ext"].to_numpy(),
+            n_individuals=cohorts.n_individuals.to_numpy(),
+            lai=cohorts.lai.to_numpy(),
+            par_ext=cohorts.par_ext.to_numpy(),
             cell_area=canopy_area,
         )
 

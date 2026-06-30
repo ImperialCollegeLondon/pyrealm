@@ -264,7 +264,7 @@ class CrownProfile(ToDataFrameMixin):
         """A 2D logical array showing which heights are below the stem height for each
         stem."""
 
-        cohort_ids: NDArray = cohorts.cohorts["cohort_id"].to_numpy()
+        cohort_ids: NDArray = cohorts.cohort_id.to_numpy()
 
         # Handle allometry
         if allometry is None:
@@ -284,7 +284,7 @@ class CrownProfile(ToDataFrameMixin):
             )
 
         # Rotate z into a column array and broadcast to prediction shape
-        prediction_shape = (len(z), cohorts.n_cohorts)
+        prediction_shape = (len(z), len(cohorts))
         self.z: NDArray[np.floating] = np.broadcast_to(z[:, None], prediction_shape)
         """Heights of crown profile predictions."""
 
@@ -298,8 +298,8 @@ class CrownProfile(ToDataFrameMixin):
         # Calculate relative crown radius
         self.relative_crown_radius = calculate_relative_crown_radius_at_z(
             z=self.z,
-            m=cohorts.cohorts["m"].to_numpy(),
-            n=cohorts.cohorts["n"].to_numpy(),
+            m=cohorts.m.to_numpy(),
+            n=cohorts.n.to_numpy(),
             stem_height=allometry.stem_height,
         )
 
@@ -314,7 +314,7 @@ class CrownProfile(ToDataFrameMixin):
             z=self.z,
             q_z=self.relative_crown_radius,
             crown_area=allometry.crown_area,
-            q_m=cohorts.cohorts["q_m"].to_numpy(),
+            q_m=cohorts.q_m.to_numpy(),
             stem_height=allometry.stem_height,
             z_max=allometry.crown_z_max,
         )
@@ -323,8 +323,8 @@ class CrownProfile(ToDataFrameMixin):
         self.projected_leaf_area = calculate_stem_projected_leaf_area_at_z(
             z=self.z,
             q_z=self.relative_crown_radius,
-            f_g=cohorts.cohorts["f_g"].to_numpy(),
-            q_m=cohorts.cohorts["q_m"].to_numpy(),
+            f_g=cohorts.f_g.to_numpy(),
+            q_m=cohorts.q_m.to_numpy(),
             crown_area=allometry.crown_area,
             stem_height=allometry.stem_height,
             z_max=allometry.crown_z_max,
@@ -392,14 +392,25 @@ class CrownProfile(ToDataFrameMixin):
         # Get the plotting coordinates
         if two_sided:
             attr_stack = np.concatenate(
-                [-vals, np.zeros_like(self.stem_height)[None, :], np.flipud(vals)]
+                [
+                    -vals,
+                    np.zeros_like(self.stem_height)[None, :],
+                    np.flipud(vals),
+                ]
             )
             z_stack = np.concatenate(
-                [z, np.zeros_like(self.stem_height)[None, :], np.flipud(z)]
+                [
+                    z,
+                    np.zeros_like(self.stem_height)[None, :],
+                    np.flipud(z),
+                ]
             )
         else:
             attr_stack = np.concatenate(
-                [vals, np.zeros_like(self.stem_height)[None, :]]
+                [
+                    vals,
+                    np.zeros_like(self.stem_height)[None, :],
+                ]
             )
             z_stack = np.concatenate([z, self.stem_height[None, :]])
 
