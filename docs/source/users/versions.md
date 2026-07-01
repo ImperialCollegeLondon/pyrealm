@@ -28,6 +28,20 @@ package is being extended and revised. This document is describes the main chang
 functionality between major versions and provides code migration notes for changes in
 the API of `pyrealm` code.
 
+## Migration from 2.0 to version 3.0
+
+The experimental `demography` module has been heavily restructured - refer to the [user
+documentation for demography](./demography_two/overview.md) to see the workflow and APU
+changes.
+
+Other breaking changes are minor:
+
+* `CalcCarbonIsotopes` has become `CarbonIsotopes`,
+* function names starting with `calc_` have changed to `calculate_` to follow the
+  wider usage in the package, and
+* argument names in `pyrealm.core.water` have been standardised to `tc` and `patm` from
+  `ta` and `p`, again to match usage elsewhere in the package.
+
 ## Migration from 1.0 to version 2.0
 
 The versions of `PModel` and `SubdailyPModel` in `pyrealm` version 1.0 were based on

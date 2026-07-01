@@ -3,7 +3,9 @@
 This document provides a brief overview of the main changes to `pyrealm` at each of the
 released versions. More detail can be found at the GitHub release page for each version.
 
-See also the migration page for help in moving between versions.
+See also the [migration
+guide](https://pyrealm.readthedocs.io/en/develop/users/versions.html) page for help in
+moving between versions.
 
 ## 3.0.0
 
