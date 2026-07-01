@@ -8,7 +8,6 @@
 
 [![PyPI - Version](https://img.shields.io/pypi/v/pyrealm)](https://pypi.org/project/pyrealm/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pyrealm)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8366847.svg)](https://doi.org/10.5281/zenodo.8366847)
 [![Documentation
 Status](https://readthedocs.org/projects/pyrealm/badge/?version=latest)](https://pyrealm.readthedocs.io/en/latest/?badge=latest)
 [![codecov](https://codecov.io/gh/ImperialCollegeLondon/pyrealm/branch/develop/graph/badge.svg)](https://codecov.io/gh/ImperialCollegeLondon/pyrealm)
@@ -44,8 +43,8 @@ For more details, see the package website:
 The `pyrealm` package uses [semantic versioning](https://semver.org/) and the list below
 summarise the major changes:
 
-* Version `3.0.0`: extended phenology module, small breaking API changes to standardise
-  function names and arguments.
+* Version `3.0.0`: extended and updated phenology and demography modules, small breaking
+  changes to standardise function and class names and arguments.
 * Version `2.0.0`: wide refactor of P Model code to a new API, extension of the package
   functionality to include the SPLASH v1 model and experimental modules developing
   functionality for plant demography and phenology.
