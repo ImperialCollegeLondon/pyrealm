@@ -44,23 +44,24 @@ For more details, see the package website:
 The `pyrealm` package uses [semantic versioning](https://semver.org/) and the list below
 summarise the major changes:
 
-* Version `1.0.0`: initial implementation of the P Model and associated functionality
+* Version `3.0.0`: extended phenology module, small breaking API changes to standardise
+  function names and arguments.
 * Version `2.0.0`: wide refactor of P Model code to a new API, extension of the package
   functionality to include the SPLASH v1 model and experimental modules developing
   functionality for plant demography and phenology.
+* Version `1.0.0`: initial implementation of the P Model and associated functionality
 
-We **strongly** recommend that you update to version `2.0.0`. The documentation
+We **strongly** recommend that you use the most recent major version. The documentation
 includes a [migration
 guide](https://pyrealm.readthedocs.io/en/develop/users/versions.html) to help update
-existing code using version `1.0.0`.
+existing code.
 
 ## Using `pyrealm`
 
-The `pyrealm` package requires Python 3.11 or greater and we currently test all
-`pyrealm` code using Python 3.11, 3.12 and 3.13. We make released package versions
-available via [PyPi](https://pypi.org/project/pyrealm/) and also generate DOIs for each
-release via [Zenodo](https://doi.org/10.5281/zenodo.8366847). You can install the most
-recent release using `pip`:
+The `pyrealm` package requires Python 3.12 or greater and we currently test all
+`pyrealm` code using Python 3.12, 3.13 and 3.14. We release new package versions through
+[PyPi](https://pypi.org/project/pyrealm/) and you can install the most recent release
+using `pip`:
 
 ```sh
 pip install pyrealm
@@ -78,7 +79,7 @@ from pyrealm.pmodel import PModelEnvironment, PModel
 env = PModelEnvironment(
     tc=np.array([20]), vpd=np.array([1000]),
     co2=np.array([400]), patm=np.array([101325.0]),
-    fapar=1, ppfd=300)
+    fapar=np.array([1]), ppfd=np.array([300]))
 
 # Calculate the predictions of the P Model for a C3 plant
 pmodel_c3 = PModel(env)

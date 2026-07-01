@@ -21,7 +21,7 @@ class names and arguments) and fixes bugs.
 - We have added new experimental code supporting the calculation of phenological
   timeseries of LAI and fAPAR in the `phenology` module.
 
-## API changes
+### API changes
 
 There are wide changes to the structure of the experimental `demography` module,
 primarily to simplify the class structures being used to wrap the main calculations. The
