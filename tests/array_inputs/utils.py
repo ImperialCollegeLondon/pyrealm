@@ -39,7 +39,7 @@ from inspect import (
     signature,
 )
 from types import ModuleType, UnionType
-from typing import Any, Union, get_args, get_origin
+from typing import Any, TypeAliasType, Union, get_args, get_origin
 
 import numpy as np
 import xarray as xr
@@ -172,18 +172,24 @@ def _strip_wrapped_types(typ: Any) -> Any:
 
 def _is_numpy_type(typ: Any) -> bool:
     """Returns True if the type is a numpy array. Prefer _is_array_type."""
-    origin = get_origin(typ)  # Get the unannotated type, i.e. X[...] -> X
 
-    try:
-        # Handle annotated types like NDArray[np.float32]
-        if origin is not None:
-            return issubclass(origin, np.ndarray)
-
-        # Handle basic types
+    if isclass(typ):  # a: dict or a: np.ndarray
         return issubclass(typ, np.ndarray)
 
-    except TypeError:
-        return False
+    if isinstance(typ, TypeAliasType):  # a: NDArray
+        alias_class = getattr(typ, "__value__", None)
+        if alias_class is not None:
+            return issubclass(get_origin(alias_class), np.ndarray)
+
+    # Handle annotated types like NDArray[np.float32]
+    origin = get_origin(typ)  # Get the unannotated type, i.e. X[...] -> X
+
+    if isinstance(origin, TypeAliasType):
+        alias_class = getattr(origin, "__value__", None)
+        if alias_class is not None:
+            return issubclass(get_origin(alias_class), np.ndarray)
+
+    return False
 
 
 def _is_array_type(typ: type, array_type: str) -> bool:

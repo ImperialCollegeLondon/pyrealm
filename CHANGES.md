@@ -23,6 +23,10 @@ class names and arguments) and fixes bugs.
 - We have added new experimental code supporting the calculation of phenological
   timeseries of LAI and fAPAR in the `phenology` module.
 
+- The `pyrealm` package now supports `xarray` inputs as well as `numpy` arrays and now
+  handles broadcasting of compatible arrays internally rather than requiring users to
+  get all inputs into the same shape.
+
 ### API changes
 
 There are wide changes to the structure of the experimental `demography` module,
