@@ -3,6 +3,7 @@
 from contextlib import nullcontext as does_not_raise
 from importlib import resources
 
+import numpy as np
 import pandas as pd
 import pytest
 from pandas.errors import ParserError
@@ -26,23 +27,20 @@ def flora_data(mode: str, length: int, unequal: bool):
         resp_f=[0.1],
         resp_r=[0.913],
         resp_s=[0.044],
-        resp_rt=[0],
-        tau_rt=[0],
         rho_s=[200.0],
         sla=[14.0],
         tau_f=[4.0],
         tau_r=[1.04],
+        tau_s=[np.inf],
         yld=[0.17],
         zeta=[0.17],
         f_g=[0.02],
         m=[2],
         n=[5],
-        p_foliage_for_reproductive_tissue=[0],
-        gpp_topslice=[0],
     )
 
     if mode == "partial":
-        args = {k: v for k, v in args.items() if k not in ["tau_f", "tau_"]}
+        args = {k: v for k, v in args.items() if k not in ["tau_f", "tau_r"]}
 
     if length > 1:
         args = {k: v * length for k, v in args.items()}

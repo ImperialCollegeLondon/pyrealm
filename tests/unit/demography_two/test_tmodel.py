@@ -27,58 +27,6 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
     assert_allclose(actual_r0_values, expected_r0)
 
 
-def test_calculate_reproductive_tissue_mass():
-    """Tests calculation of reproductive tissue mass."""
-
-    from pyrealm.demography_two.tmodel import calculate_reproductive_tissue_mass
-
-    result = calculate_reproductive_tissue_mass(
-        p_foliage_for_reproductive_tissue=np.array([10]),
-        foliage_mass=np.array([0.25]),
-    )
-
-    assert result == np.array([2.5])
-
-
-def test_calculate_gpp_topslice():
-    """Tests calculation of gpp_topslice."""
-
-    from pyrealm.demography_two.tmodel import calculate_gpp_topslice
-
-    result = calculate_gpp_topslice(
-        gpp_topslice=np.array([10]),
-        whole_crown_gpp=np.array([0.25]),
-    )
-
-    assert result == np.array([2.5])
-
-
-def test_calculate_reproductive_tissue_respiration():
-    """Tests calculation of reproductive tissue respiration."""
-
-    from pyrealm.demography_two.tmodel import calculate_reproductive_tissue_respiration
-
-    result = calculate_reproductive_tissue_respiration(
-        resp_rt=np.array([10]),
-        reproductive_tissue_mass=np.array([0.25]),
-    )
-
-    assert result == np.array([2.5])
-
-
-def test_calculate_reproductive_tissue_turnover():
-    """Tests calculation of reproductive tissue turnover."""
-
-    from pyrealm.demography_two.tmodel import calculate_reproductive_tissue_turnover
-
-    result = calculate_reproductive_tissue_turnover(
-        reproductive_tissue_mass=np.array([10]),
-        tau_rt=np.array([4]),
-    )
-
-    assert result == np.array([2.5])
-
-
 @pytest.mark.parametrize(
     argnames="dbh_idx, data_idx, out_idx, exp_shape",
     argvalues=[
@@ -406,9 +354,6 @@ class TestTModel:
             foliage_respiration=np.array([0]),
             fine_root_respiration=rtmodel_data["fine_root_respiration"][data_idx],
             sapwood_respiration=rtmodel_data["sapwood_respiration"][data_idx],
-            reproductive_tissue_respiration=np.zeros(
-                np.shape(rtmodel_data["sapwood_respiration"][data_idx])
-            ),
         )
 
         assert result.shape == exp_shape
@@ -484,12 +429,6 @@ class TestTModel:
                 zeta=np.array(rtmodel_flora.zeta),
                 npp=rtmodel_data["npp"][data_idx],
                 turnover=rtmodel_data["turnover"][data_idx],
-                reproductive_tissue_turnover=np.zeros(
-                    np.shape(rtmodel_data["turnover"][data_idx])
-                ),
-                p_foliage_for_reproductive_tissue=np.zeros(
-                    np.shape(rtmodel_data["npp"][data_idx])
-                ),
                 dbh=rtmodel_data["dbh"][data_idx],
                 stem_height=rtmodel_data["stem_height"][data_idx],
             )

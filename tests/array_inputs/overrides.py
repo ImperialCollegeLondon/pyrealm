@@ -54,6 +54,7 @@ SKIP_METHODS = [
     # Demography - mostly 1d arrays (dataframes)
     "StemAllocation",
     "StemAllometry",
+    "StemMaintenance",
     "CohortMethods.drop_cohort_data",
     "StemTraits",
     "StemTraits.drop_cohort_data",
