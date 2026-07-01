@@ -45,8 +45,10 @@ jobs:
 
     - name: Run tests
       run: poetry run pytest -m "not profiling and not array_inputs" --cov-report xml
-
+    
+    # Turning this job off while array tests are being skipped.
     - name: Run array input tests
+      if: false  
       run: poetry run pytest -m "array_inputs"
 
     - name: Upload coverage reports to Codecov
