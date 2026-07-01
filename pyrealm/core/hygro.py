@@ -16,7 +16,7 @@ from pyrealm.core.xarray import ArrayType, xarray_inputs
 
 
 def calculate_vp_sat(
-    ta: ArrayType[np.floating], core_const: CoreConst = CoreConst()
+    tc: ArrayType[np.floating], core_const: CoreConst = CoreConst()
 ) -> NDArray[np.floating]:
     r"""Calculate vapour pressure of saturated air.
 
@@ -31,7 +31,7 @@ def calculate_vp_sat(
     :attr:`~pyrealm.constants.core_const.CoreConst.magnus_coef`.
 
     Args:
-        ta: The air temperature in °C.
+        tc: The air temperature in °C.
         core_const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the parameters for conversions.
 
@@ -53,25 +53,25 @@ def calculate_vp_sat(
         array([2.481888])
     """
 
-    ta = xarray_inputs(ta)
+    tc = xarray_inputs(tc)
 
     # Magnus equation and conversion to kPa
     cf = core_const.magnus_coef
-    vp_sat = cf[0] * np.exp((cf[1] * ta) / (cf[2] + ta)) / 1000
+    vp_sat = cf[0] * np.exp((cf[1] * tc) / (cf[2] + tc)) / 1000
 
     return vp_sat
 
 
 def convert_vp_to_vpd(
     vp: ArrayType[np.floating],
-    ta: ArrayType[np.floating],
+    tc: ArrayType[np.floating],
     core_const: CoreConst = CoreConst(),
 ) -> NDArray[np.floating]:
     """Convert vapour pressure to vapour pressure deficit.
 
     Args:
         vp: The vapour pressure in kPa
-        ta: The air temperature in °C
+        tc: The air temperature in °C
         core_const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the settings to be used in conversions.
 
@@ -90,15 +90,15 @@ def convert_vp_to_vpd(
         array([0.5870054])
     """
 
-    vp, ta = xarray_inputs(vp, ta)
-    vp_sat = calculate_vp_sat(ta, core_const=core_const)
+    vp, tc = xarray_inputs(vp, tc)
+    vp_sat = calculate_vp_sat(tc, core_const=core_const)
 
     return vp_sat - vp
 
 
 def convert_rh_to_vpd(
     rh: ArrayType[np.floating],
-    ta: ArrayType[np.floating],
+    tc: ArrayType[np.floating],
     core_const: CoreConst = CoreConst(),
     bounds_checker: BoundsChecker = BoundsChecker(),
 ) -> NDArray[np.floating]:
@@ -106,7 +106,7 @@ def convert_rh_to_vpd(
 
     Args:
         rh: The relative humidity (proportion in (0,1))
-        ta: The air temperature in °C
+        tc: The air temperature in °C
         core_const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the settings to be used in conversions.
         bounds_checker: A BoundsChecker instance used to validate inputs.
@@ -127,10 +127,10 @@ def convert_rh_to_vpd(
         array([0.7461016])
     """
 
-    rh, ta = xarray_inputs(rh, ta)
+    rh, tc = xarray_inputs(rh, tc)
     rh = bounds_checker.check("rh", rh)
 
-    vp_sat = calculate_vp_sat(ta, core_const=core_const)
+    vp_sat = calculate_vp_sat(tc, core_const=core_const)
 
     return vp_sat - (rh * vp_sat)
 
@@ -165,7 +165,7 @@ def convert_sh_to_vp(
 
 def convert_sh_to_vpd(
     sh: ArrayType[np.floating],
-    ta: ArrayType[np.floating],
+    tc: ArrayType[np.floating],
     patm: ArrayType[np.floating],
     core_const: CoreConst = CoreConst(),
 ) -> NDArray[np.floating]:
@@ -173,7 +173,7 @@ def convert_sh_to_vpd(
 
     Args:
         sh: The specific humidity in kg kg-1
-        ta: The air temperature in °C
+        tc: The air temperature in °C
         patm: The atmospheric pressure in kPa
         core_const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the settings to be used in conversions.
@@ -194,8 +194,8 @@ def convert_sh_to_vpd(
         array([1.53526])
     """
 
-    sh, ta, patm = xarray_inputs(sh, ta, patm)
-    vp_sat = calculate_vp_sat(ta, core_const=core_const)
+    sh, tc, patm = xarray_inputs(sh, tc, patm)
+    vp_sat = calculate_vp_sat(tc, core_const=core_const)
     vp = convert_sh_to_vp(sh, patm, core_const=core_const)
 
     return vp_sat - vp
@@ -285,7 +285,7 @@ def calculate_specific_heat(tc: ArrayType[np.floating]) -> NDArray[np.floating]:
 
 def calculate_psychrometric_constant(
     tc: ArrayType[np.floating],
-    p: ArrayType[np.floating],
+    patm: ArrayType[np.floating],
     core_const: CoreConst = CoreConst(),
 ) -> NDArray[np.floating]:
     r"""Calculate the psychrometric constant.
@@ -296,7 +296,7 @@ def calculate_psychrometric_constant(
 
     Args:
         tc: Air temperature (°C)
-        p: Atmospheric pressure (Pa)
+        patm: Atmospheric pressure (Pa)
         core_const: An instance of :class:`~pyrealm.constants.core_const.CoreConst`
             giving the settings to be used in conversions.
 
@@ -304,7 +304,7 @@ def calculate_psychrometric_constant(
         The calculated psychrometric constant
     """
 
-    tc, p = xarray_inputs(tc, p)
+    tc, patm = xarray_inputs(tc, patm)
 
     # Calculate the specific heat capacity of water, J/kg/K
     cp = calculate_specific_heat(tc)
@@ -314,4 +314,4 @@ def calculate_psychrometric_constant(
 
     # Calculate psychrometric constant, Pa/K
     # Eq. 8, Allen et al. (1998)
-    return cp * core_const.k_Ma * p / (core_const.k_Mv * lv)
+    return cp * core_const.k_Ma * patm / (core_const.k_Mv * lv)
