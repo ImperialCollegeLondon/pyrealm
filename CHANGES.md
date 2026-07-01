@@ -5,28 +5,13 @@ released versions. More detail can be found at the GitHub release page for each 
 
 See also the migration page for help in moving between versions.
 
-## 2.0.1
+## 3.0.0
 
-As well as bugfixes, version 2.0.1 is a slight violation of semantic versioning and
-picks up some API and default changes that were overlooked in 2.0.0.
+Version 3.0.0 add some new functionality, restructures the experimental `demography`
+module, makes minor API changes elsewhere (mostly consistency changes in function and
+class names and arguments) and fixes bugs.
 
-We have changed the names of some functions and methods to give a more consistent naming
-convention.
-
-- We have aligned function names from mixed `calc_` and `calculate_` to `calculate_`.
-- The `CalcCarbonIsotopes` class has been renamed to `CarbonIsotopes`: none of the
-  other class names include an 'action'.
-
-### Bugfixes
-
-- Stomatal conductance in the SubdailyPModel was incorrectly calculated from $A_c$
-  rather than $A = min(A_c, A_j)$ (#603).
-- The P Model implementations were not passing required additional variables down the
-  Arrhenius scaling methods, which stopped some of those methods being usable (#582).
-- Updates to the `numpy` package needed broke the calculation of the SPLASH model when
-  used on a single site (#626).
-
-### Changes
+### New functionality
 
 - The `pyrealm` package now supports a wider range of functions for calculating water
   density and viscosity. The default methods used by `pyrealm` have been swapped from
@@ -34,7 +19,31 @@ convention.
   to  simpler but much faster approaches.
 
 - We have added new experimental code supporting the calculation of phenological
-  timeseries of LAI and fAPAR.
+  timeseries of LAI and fAPAR in the `phenology` module.
+
+## API changes
+
+There are wide changes to the structure of the experimental `demography` module,
+primarily to simplify the class structures being used to wrap the main calculations. The
+module is still experimental and subject to further changes.
+
+We have also changed the names of some functions and methods to give a more consistent
+naming convention.
+
+- We have aligned function names from mixed `calc_` and `calculate_` to `calculate_`.
+- The `CalcCarbonIsotopes` class has been renamed to `CarbonIsotopes`: none of the
+  other class names include an 'action'.
+- Argument names in `pyrealm.core.water` have been standardised to `tc` and `patm` to
+  give consistent usage in the module and match usage elsewhere in the package.
+
+### Bugfixes
+
+- Stomatal conductance in the SubdailyPModel was incorrectly calculated from $A_c$
+  rather than $A = min(A_c, A_j)$ (#603).
+- The P Model implementations were not passing required additional variables down the
+  Arrhenius scaling methods, which stopped some of those methods being usable (#582).
+- Updates to the `numpy` package broke the calculation of the SPLASH model when used on
+  a single site (#626).
 
 ## 2.0.0
 
