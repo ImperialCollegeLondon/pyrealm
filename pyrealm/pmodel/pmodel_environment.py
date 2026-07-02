@@ -203,7 +203,7 @@ class PModelEnvironment:
 
         self._additional_vars: tuple[str, ...] = tuple(kw_arrays.keys())
         """A tuple containing the attribute names of additional variables passed to the
-        PModelEnivronment."""
+        PModelEnvironment."""
 
     def __repr__(self) -> str:
         """Generates a string representation of PModelEnvironment instance."""

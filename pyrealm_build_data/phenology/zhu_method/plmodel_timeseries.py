@@ -6,13 +6,19 @@ lag, and converts the simulated canopy structure back to fAPAR.
 
 Notes added David Orme (2026-01-19):
 
-    This is the reference implementation for the Ziqi Zhu's phenology method - it does
-    not follow the pyrealm standards for code.
+* This is the reference implementation for Ziqi Zhu's phenology method - it does not
+  follow the pyrealm standards for code.
 
-    I have also added the original implementation of the function used to calculate
-    annual fapar max to keep the reference implementation in a single file. This
-    function was untyped and so has been decorated with no_type_check to suppress
-    warnings.
+* I have also added the original implementation of the function used to calculate
+  annual fapar max to keep the reference implementation in a single file. This
+  function was untyped and so has been decorated with no_type_check to suppress
+  warnings.
+
+* I have also added some extra code to the _apply_lag function that simply tracks the
+  internal variables used in the lagging process. This was used in implementing the
+  method to work out an efficient approach to vectorising the lagging calculations. The
+  function contains commented out code used to write out a CSV of the full internal
+  lag calculations.
 """
 
 from __future__ import annotations
@@ -222,6 +228,13 @@ def _apply_lag(data_cube: np.ndarray, lag_steps_grid: np.ndarray) -> np.ndarray:
             csum_values = np.cumsum(values)
             csum_counts = np.cumsum(counts)
 
+            # DO tracking code start --------------------------
+            do_totals_track = np.zeros_like(csum_values)
+            do_counts_track = np.zeros_like(csum_values)
+            do_idx_start_track = np.zeros_like(csum_values)
+
+            # DO tracking code ends ---------------------------
+
             temp_result = np.empty(ntime, dtype=np.float64)
             for t in range(ntime):
                 idx_start = t - lag_steps
@@ -237,7 +250,34 @@ def _apply_lag(data_cube: np.ndarray, lag_steps_grid: np.ndarray) -> np.ndarray:
                     temp_result[t] = total / count
                 else:
                     temp_result[t] = np.nan
+
+                # DO tracking code start --------------------------
+                do_totals_track[t] = total
+                do_counts_track[t] = count
+                do_idx_start_track[t] = idx_start
+                # DO tracking code end ----------------------------
+
             result[row, col, :] = temp_result
+
+    # This code was used during debugging of the regression test dataset generation to
+    # export the internal lagging calculations to file to make it easier to follow the
+    # lagging process and develop a faster vectorised computation. See the module level
+    # docstrings.
+    #
+    # import pandas as pd
+    # df = pd.DataFrame(
+    #     {
+    #         "series": series.ravel(),
+    #         "counts": counts.ravel(),
+    #         "csum_values": csum_values.ravel(),
+    #         "csum_counts": csum_counts.ravel(),
+    #         "do_totals_track": do_totals_track.ravel(),
+    #         "do_counts_track": do_counts_track.ravel(),
+    #         "do_idx_start_track": do_idx_start_track.ravel(),
+    #         "result": result.ravel(),
+    #     }
+    # )
+    # df.to_csv("zhu_tracking.csv")
 
     return result
 

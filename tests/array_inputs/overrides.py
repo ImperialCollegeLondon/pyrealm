@@ -3,9 +3,9 @@
 - `SKIP_METHODS` - a list of functions / methods to skip because they are not relevant
   or have issues that are difficult to resolve.
 
-- `IGNORE_OUTPUTS` - a list of function results or class attributes to skip when
-  checking for equality as they are not expected to be equal. This is only used in the
-  broadcasting tests.
+- `IGNORE_OUTPUTS` and `IGNORE_OUTPUTS_BCAST` - a list of function results or class
+  attributes to skip when checking for equality as they are not expected to be equal.
+  The latter is only used in the broadcasting tests.
 
 - `ADDITIONAL_INIT_METHODS` - a dictionary containing any additional methods that need
   to be used when initialising objects of that class.
@@ -26,11 +26,9 @@ from math import ceil
 
 import numpy as np
 
-from pyrealm.constants import PhenologyConst
 from pyrealm.core.calendar import Calendar
 from pyrealm.core.xarray import ArrayType
 from pyrealm.demography.flora import PlantFunctionalType
-from pyrealm.phenology.fapar_limitation import FaparLimitation
 from tests.array_inputs.context import Context
 
 # These methods are not relevant or are incompatible without additional work
@@ -51,6 +49,12 @@ SKIP_METHODS = [
     "CrownProfile",
     "CrownProfile.to_xy",
     "Canopy",
+    # Phenology
+    # For these more broadcasting is needed / the current variables have unclear
+    # restrictions on shapes
+    "PhenologyMethodZhu",
+    "Phenology",
+    "Phenology.from_pmodel",
     # Demography - mostly 1d arrays (dataframes)
     "StemAllocation",
     "StemAllometry",
@@ -90,9 +94,15 @@ SKIP_METHODS = [
 
 # Ignore these outputs for broadcasting tests, they are not expected to be equal.
 # Formats: [fn name] for function results, [class]:[attr] for class attributes
-IGNORE_OUTPUTS = [
+IGNORE_OUTPUTS_BCAST = [
     "Cohorts:_cohort_id",
     "Calendar:n_dates",
+]
+
+# Ignore these outputs for all tests
+IGNORE_OUTPUTS = [
+    "FaparLimitationMethodCai:fapar_limitation",  # Avoids recursive loop
+    "FaparLimitationMethodZhu:fapar_limitation",  # Avoids recursive loop
 ]
 
 
@@ -180,6 +190,26 @@ REQUIRES: dict[tuple[str, tuple[str, ...]], dict[str, Parameter]] = {
     ("OptimalChiC4NoGammaRootzoneStress.estimate_chi", ()): _kwarg_params(
         ("xi_values",)
     ),
+    # Add aridity_index to FaparLimitation calls - only actually required for one
+    # method.
+    ("FaparLimitation", ("FaparLimitation",)): _kwarg_params(("aridity_index",)),
+    ("FaparLimitation", ("Phenology", "Phenology")): _kwarg_params(("aridity_index",)),
+    ("FaparLimitation", ("Phenology.from_pmodel",)): _kwarg_params(("aridity_index",)),
+    ("FaparLimitation", ("PhenologyMethodZhu", "PhenologyMethodZhu")): _kwarg_params(
+        ("aridity_index",)
+    ),
+    (
+        "FaparLimitation",
+        ("PhenologyMethodZhou", "PhenologyMethodZhou"),
+    ): _kwarg_params(("aridity_index",)),
+    (
+        "FaparLimitation",
+        (
+            "FaparLimitationMethodCai.calculate_maximum_fapar",
+            "FaparLimitationMethodCai",
+        ),
+    ): _kwarg_params(("aridity_index",)),
+    ("FaparLimitation.from_pmodel", ()): _kwarg_params(("aridity_index",)),
 }
 
 
@@ -405,32 +435,78 @@ def _(ctx):
 
 _PHENOLOGY_N_TIMES = 2
 
-register_args("FaparLimitation")(
-    lambda ctx: {"years": np.ones(ctx.bcast_shape[0], dtype="datetime64[Y]")}
-)
-register_args("FaparLimitation.from_pmodel")(
-    lambda ctx: {
+
+@register_args("FaparLimitation.from_pmodel")
+def _(ctx):
+    # Manually define
+    # * years (one-d array along time axis)
+    # * aridity_index (site specific so broadcasts onto shape[1:] dropping time axis)
+
+    return {
         "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
-        "aridity_index": np.ones(_set_time_len(1, ctx)),  # Time: constant or years (1)
+        "aridity_index": np.ones(ctx.bcast_shape[1:]),
+        "method": "cai",
     }
-)
+
+
+@register_args("FaparLimitation")
+def _(ctx):
+    # Manually define
+    # * years (one-d array along time axis)
+    # * aridity_index (site specific so broadcasts onto shape[1:] dropping time axis)
+
+    annual_data_shape = _set_time_len(_PHENOLOGY_N_TIMES, ctx, allow_one=False)
+
+    args = {
+        "years": np.zeros(_PHENOLOGY_N_TIMES, dtype="datetime64[Y]"),
+        "aridity_index": np.ones(ctx.bcast_shape[1:]),
+        "annual_mean_ca": np.ones(annual_data_shape),
+        "annual_mean_chi": np.ones(annual_data_shape),
+        "annual_mean_vpd": np.ones(annual_data_shape),
+        "annual_total_precip": np.ones(annual_data_shape),
+        "annual_growing_season_length": np.ones(annual_data_shape),
+        "method": "cai",
+    }
+
+    # Set the required method in the call when testing FaparLimitationMethod calls
+    # and pass in additional variables as required.
+    if ctx.parents and "FaparLimitationMethodZhu" in ctx.parents[0]:
+        args["method"] = "zhu"
+
+    return args
+
+
 register_args("Phenology")(
+    # Unclear what the shapes of daily_potential_assimilation and datetimes should be
+    # so this is currently skipped
     lambda _: {
         "daily_gpp": np.full((_PHENOLOGY_N_TIMES,), 0.5),
         "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
-        "fapar_limitation": FaparLimitation(
-            annual_total_potential_gpp=np.ones(_PHENOLOGY_N_TIMES),
-            annual_mean_ca=np.ones(_PHENOLOGY_N_TIMES),
-            annual_mean_chi=np.ones(_PHENOLOGY_N_TIMES),
-            annual_mean_vpd=np.ones(_PHENOLOGY_N_TIMES),
-            annual_total_precip=np.ones(_PHENOLOGY_N_TIMES),
-            annual_growing_season_length=np.ones(_PHENOLOGY_N_TIMES),
-            aridity_index=np.ones(_PHENOLOGY_N_TIMES),
-            years=np.zeros((_PHENOLOGY_N_TIMES,), dtype="datetime64[Y]"),
-            phenology_const=PhenologyConst(
-                z=12.227, k=0.5, f0_coefficients=(0.65, 0.604169, 1.9), sigma=0.771
-            ),
-        ),
+    }
+)
+
+register_args("Phenology.from_pmodel")(
+    # This is currently skipped because it has issues in interpolation if the length of
+    # datetimes doesn't match the time dimension of the pmodel gpp, or if it is length 1
+    lambda _: {
+        "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
+    }
+)
+
+register_args("PhenologyMethodZhou")(
+    lambda _: {
+        "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
+        "year_index": np.zeros(_PHENOLOGY_N_TIMES, dtype=int),
+    }
+)
+
+register_args("PhenologyMethodZhu")(
+    # It is somewhat unclear what the restriction on shapes of aet_pet_ratio and
+    # daily_potential_assimilation should be so this is currently skipped
+    lambda _: {
+        "datetimes": np.arange(0, _PHENOLOGY_N_TIMES, dtype="datetime64[D]"),
+        "year_index": np.zeros(_PHENOLOGY_N_TIMES, dtype=int),
+        # "aet_pet_ratio": np.ones(_del_time_dim(ctx)),
     }
 )
 

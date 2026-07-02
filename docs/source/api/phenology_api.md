@@ -34,3 +34,10 @@ language_info:
 .. automodule:: pyrealm.phenology.fapar_limitation
     :members:
 ```
+
+## The Phenology module
+
+```{eval-rst}
+.. automodule:: pyrealm.phenology.phenology
+    :members:
+```
