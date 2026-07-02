@@ -65,8 +65,8 @@ np.set_printoptions(precision=2)
 ```
 
 The `canopy` module in `pyrealm` is used to calculate a vertically structured model of
-leaf distribution for a [plant community](./community.md). The purpose of the `canopy`
-module is two-fold:
+leaf distribution for set of cohorts forming a plant community within an area. The
+purpose of the `canopy` module is two-fold:
 
 1. to calculate the vertical distribution of crown and leaf area, including the
    partitioning of canopy into discrete vertical layers, and
@@ -84,9 +84,9 @@ model how leaf area accumulates vertically through a community.
 
 ### Community definition
 
-To recap, a [plant community](./community.md) consists of a number of individual stems
-that are growing together in a location. The community structure groups individuals
-together into cohorts that are defined as:
+To recap, a plant community consists of a number of individual stems that are growing
+together in a location with a known area. The individuals are grouped together into
+cohorts that are defined as:
 
 * a number of individuals,
 * with identical {term}`diameter at breast height<DBH>` (DBH, $D$),
