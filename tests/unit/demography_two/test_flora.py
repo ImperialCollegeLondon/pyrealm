@@ -54,17 +54,22 @@ def flora_data(mode: str, length: int, unequal: bool):
 
 
 @pytest.mark.parametrize(
-    argnames="mode,length,unequal,strict,outcome,msg",
+    argnames="mode,length,unequal,pft_names,strict,outcome,msg",
     argvalues=(
-        pytest.param("empty", 1, False, False, does_not_raise(), None, id="empty_lax"),
         pytest.param(
-            "partial", 1, False, False, does_not_raise(), None, id="partial_lax"
+            "empty", 1, False, ["a"], False, does_not_raise(), None, id="empty_lax"
         ),
-        pytest.param("full", 1, False, False, does_not_raise(), None, id="full_lax"),
+        pytest.param(
+            "partial", 1, False, ["a"], False, does_not_raise(), None, id="partial_lax"
+        ),
+        pytest.param(
+            "full", 1, False, ["a"], False, does_not_raise(), None, id="full_lax"
+        ),
         pytest.param(
             "empty",
             1,
             False,
+            ["a"],
             True,
             pytest.raises(ValidationError),
             "Missing traits in strict mode",
@@ -74,22 +79,40 @@ def flora_data(mode: str, length: int, unequal: bool):
             "partial",
             1,
             False,
+            ["a"],
             True,
             pytest.raises(ValidationError),
             "Missing traits in strict mode",
             id="partial_strict",
         ),
-        pytest.param("full", 1, False, True, does_not_raise(), None, id="full_strict"),
         pytest.param(
-            "full", 2, False, True, does_not_raise(), None, id="full_strict_2"
+            "full", 1, False, ["a"], True, does_not_raise(), None, id="full_strict"
         ),
         pytest.param(
-            "partial", 2, False, False, does_not_raise(), None, id="partial_lax_2"
+            "full",
+            2,
+            False,
+            ["a", "b"],
+            True,
+            does_not_raise(),
+            None,
+            id="full_strict_2",
+        ),
+        pytest.param(
+            "partial",
+            2,
+            False,
+            ["a", "b"],
+            False,
+            does_not_raise(),
+            None,
+            id="partial_lax_2",
         ),
         pytest.param(
             "partial",
             1,
             True,
+            ["a"],
             False,
             pytest.raises(ValidationError),
             "Unequal field lengths",
@@ -99,14 +122,25 @@ def flora_data(mode: str, length: int, unequal: bool):
             "full",
             1,
             True,
+            ["a"],
             False,
             pytest.raises(ValidationError),
             "Unequal field lengths",
             id="full_unequal",
         ),
+        pytest.param(
+            "full",
+            2,
+            False,
+            ["a", "a"],
+            False,
+            pytest.raises(ValidationError),
+            "PFT names in Flora must be unique",
+            id="non-unique names",
+        ),
     ),
 )
-def test_Flora(flora_data, mode, length, unequal, strict, outcome, msg):
+def test_Flora(flora_data, mode, length, unequal, pft_names, strict, outcome, msg):
     """Test the validation for Flora.
 
     Checks the strict and lax modes work as expected with empty, partial and full inputs
@@ -121,6 +155,7 @@ def test_Flora(flora_data, mode, length, unequal, strict, outcome, msg):
     # spy = mocker.spy(Flora, "strict_validation")
 
     with outcome as err_handler:
+        flora_data["name"] = pft_names
         v = Flora.model_validate(flora_data, context={"strict": strict})
 
         # Missing fields from partial and empty modes are present and the right length
@@ -202,6 +237,7 @@ def test_Flora_extensibility(flora_data, mode, length, unequal):
         my_new_field: list[int] = [42]  # type: ignore[annotation-unchecked]  # noqa: RUF012
 
     # Strict mode still works
+    flora_data["name"] = ["a", "b"]
     with pytest.raises(ValidationError):
         flora = FloraExtended.model_validate(flora_data, context={"strict": True})
 

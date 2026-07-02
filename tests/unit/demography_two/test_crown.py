@@ -629,7 +629,9 @@ def test_get_crown_xy(fixture_cohorts_and_allometry, as_xy, two_sided, stem_offs
         allometry=allometry,
     )
 
-    for attr in crown_profile._array_attrs:
+    plottable_attrs = list(crown_profile._array_attrs)
+    plottable_attrs.remove("cohort_ids")
+    for attr in plottable_attrs:
         _ = crown_profile.to_xy(
             attr=attr, as_xy=as_xy, two_sided=two_sided, stem_offsets=stem_offset
         )
