@@ -532,7 +532,7 @@ def calculate_growth_increments(
     ca_ratio: NDArray[np.floating],
     sla: NDArray[np.floating],
     zeta: NDArray[np.floating],
-    npp: NDArray[np.floating],
+    biomass_production: NDArray[np.floating],
     turnover: NDArray[np.floating],
     dbh: NDArray[np.floating],
     stem_height: NDArray[np.floating],
@@ -544,15 +544,22 @@ def calculate_growth_increments(
 ]:
     r"""Calculate growth increments.
 
-    Given an estimate of net primary productivity (NPP, :math:`P_{net}`), less
-    associated turnover costs (:math:`T`), the remaining productivity can be allocated
-    to growth and hence estimate resulting increments :cite:`Li:2014bc` in:
+    This function calculates growth increments for stems. Under the T Model
+    :cite:`Li:2014bc`, estimated biomass production (:math:`B`) can be partitioned into
+    turnover costs (:math:`T`) and carbon available for allocation to biomass increments
+    in:
     
     * the stem diameter (:math:`\Delta D`),
     * the stem mass (:math:`\Delta W_s`), 
     * the foliar mass (:math:`\Delta W_f`), and
     * the fine root mass (:math:`\Delta W_r`).
-    
+
+    The T Model does not include the allocation of NPP to carbon costs outside of growth
+    and turnover, and so uses NPP directly as biomass production. Predicted NPP could be
+    decreased to capture allocation to other processes, such as VOC emissions,
+    non-structural carbohydrates or soil exudates, that are not currently modelled
+    within ``pyrealm``.
+
     The stem diameter increment can be calculated using the available productivity for
     growth and the rates of change in stem mass (:math:`\textrm{d}W_s / \textrm{d}t`)
     and in the combined foliage and fine root masses (:math:`\textrm{d}W_fr /
@@ -560,7 +567,7 @@ def calculate_growth_increments(
 
     .. math::
 
-        \Delta D = \frac{P_{net} - T}{ \textrm{d}W_s / \textrm{d}t  +
+        \Delta D = \frac{B - T}{ \textrm{d}W_s / \textrm{d}t  +
              \textrm{d}W_fr / \textrm{d}t}
 
     The rates of change in stem and foliar mass can be calculated as:
@@ -636,7 +643,7 @@ def calculate_growth_increments(
         ca_ratio: Crown area ratio of the PFT
         sla: Specific leaf area of the PFT
         zeta: The ratio of fine root mass to foliage area of the PFT
-        npp: Net primary productivity of individuals
+        biomass_production: The biomass production of individuals
         turnover: Fine root and foliage turnover cost of individuals
         dbh: Diameter at breast height of individuals
         stem_height: Stem height of individuals
@@ -668,7 +675,7 @@ def calculate_growth_increments(
         delta_d = np.where(
             dbh == 0,
             0,
-            (npp - turnover) / (dWsdt + dWfrdt),
+            (biomass_production - turnover) / (dWsdt + dWfrdt),
         )
 
     # Partition delta Wfr into delta Wf and delta Wr using (1 + sigma.zeta)
@@ -1052,7 +1059,7 @@ class StemAllocation(ToDataFrameMixin):
             ca_ratio=cohorts.ca_ratio.to_numpy(),
             sla=cohorts.sla.to_numpy(),
             zeta=cohorts.zeta.to_numpy(),
-            npp=self.npp,
+            biomass_production=self.npp,
             turnover=self.foliage_turnover
             + self.fine_root_turnover
             + self.stem_turnover,
@@ -1089,10 +1096,10 @@ class StemAllocation(ToDataFrameMixin):
         return repr_
 
 
-class StemMaintenance(ToDataFrameMixin):
-    """Calculate carbon costs of maintenance for stems.
+class GPPAllocation(ToDataFrameMixin):
+    """Calculate GPP allocation for stems.
 
-    This method calculates the predicted maintenance costs from potential gross primary
+    This method calculates the predicted GPP allocations of potential gross primary
     productivity (GPP) for stems under the T Model :cite:`Li:2014bc`, given a set of
     cohorts and stem allometry predictions for those cohorts.
 
@@ -1106,7 +1113,7 @@ class StemMaintenance(ToDataFrameMixin):
        could again be scalar or per cohort, but could also provide a GPP estimate for
        each combination of DBH and cohort (shape `(4,3)`).
 
-    2. When ``profile=True``, then StemMaintenance will only accept a 1D array of GPP
+    2. When ``profile=True``, then GPPAllocation will only accept a 1D array of GPP
        values but will calculate allocation values for all combinations of DBH, cohort
        and GPP.
 
@@ -1147,7 +1154,7 @@ class StemMaintenance(ToDataFrameMixin):
     ) -> None:
         """Calculate allocation of GPP for cohorts."""
 
-        warn_experimental("StemMaintenance")
+        warn_experimental("GPPAllocation")
 
         self.cohort_ids: NDArray[np.generic]
         """A numpy array of cohort IDs."""
@@ -1171,8 +1178,6 @@ class StemMaintenance(ToDataFrameMixin):
         """Allocation to fine root turnover"""
         self.npp: NDArray[np.floating]
         """Net primary productivity (g C)"""
-        self.growth_carbon: NDArray[np.floating]
-        """Remaining carbon for growth accounting for respiration and turnover (gC )."""
 
         # Validate GPP input and handle array broadcasting
         self.profile = profile
@@ -1263,34 +1268,185 @@ class StemMaintenance(ToDataFrameMixin):
             stem_mass=np.broadcast_to(allometry.stem_mass, self.whole_crown_gpp.shape),
         )
 
-        self.growth_carbon = self.npp - (
-            self.foliage_turnover + self.fine_root_turnover + self.stem_turnover
-        )
-
     def __repr__(self) -> str:
         match (self.profile, self._ndims):
             case (True, 3):
                 repr_ = (
-                    "StemAllometry: Profiles for {2} cohorts at {1} DBH values"
+                    "GPPAllocation: Profiles for {2} cohorts at {1} DBH values"
                     " and {0} GPP values."
                 ).format(
                     *self.whole_crown_gpp.shape,
                 )
             case (True, 2):
                 repr_ = (
-                    "StemAllometry: Profiles for {1} cohorts at {0} GPP values."
+                    "GPPAllocation: Profiles for {1} cohorts at {0} GPP values."
                 ).format(
                     *self.whole_crown_gpp.shape,
                 )
             case (False, 2):
                 repr_ = (
-                    "StemAllometry: Profiles for {1} cohorts at {0} DBH values."
+                    "GPPAllocation: Profiles for {1} cohorts at {0} DBH values."
                 ).format(
                     *self.whole_crown_gpp.shape,
                 )
             case (False, 1):
-                repr_ = ("StemMaintenance: Profiles for {} cohorts").format(
+                repr_ = ("GPPAllocation: Values for {} cohorts").format(
                     *self.whole_crown_gpp.shape,
+                )
+
+        return repr_
+
+
+class GrowthIncrements(ToDataFrameMixin):
+    """Calculate growth increments using the T Model.
+
+    Stem growth in the T Model is calculated by partitioning biomass production between
+    predicted biomass turnover and carbon available for growth. The T model is then used
+    to estimate an increase in stem diameter that allocates the carbon available for
+    growth across stem, fine roots and foliage according to the allometry of the plant
+    functional types.
+
+    This class calculates the stem, fine root and foliage growth increments given:
+
+    * a set of cohorts,
+    * the current stem allometry of those cohorts, and
+    * calculated allocation of whole crown GPP estimates for the cohorts into
+      respiration, NPP and turnover values.
+
+    By default, the calculation will follow the original T Model :cite:`Li:2014bc`, in
+    assuming that all of the net primary productivity is available for biomass
+    production. However, the ``biomass_production`` argument can be used to use reduce
+    NPP to allocate carbon to other pools such as VOC emissions, soil exudates and
+    non-structural carbohydrates.
+
+    Args:
+        cohorts: A set of cohorts
+        allometry: The current stem allometry for those cohorts
+        gpp_allocation: An allocation of whole crown GPP for those cohorts.
+        biomass_production: An optional array of biomass production values, used to
+            override the NPP estimate in ``gpp_allocation``.
+    """
+
+    _array_attrs: ClassVar[tuple[str, ...]] = (
+        "cohort_ids",
+        "delta_dbh",
+        "delta_stem_mass",
+        "delta_foliage_mass",
+        "delta_fine_root_mass",
+    )
+
+    __experimental__ = True
+
+    def __init__(
+        self,
+        cohorts: Cohorts,
+        allometry: StemAllometry,
+        gpp_allocation: GPPAllocation,
+        biomass_production: NDArray[np.floating] | None,
+    ):
+        self.cohort_ids: NDArray[np.generic]
+        """A numpy array of cohort IDs."""
+        self._profile: bool
+        """An boolean flag indicating if predictions are for a GPP profile."""
+        self._ndims: int
+        """An integer giving the dimensionality of the predictions."""
+
+        self.biomass_production: NDArray[np.floating]
+        """The carbon available for biomass production (g C)"""
+        self.delta_dbh: NDArray[np.floating]
+        """Predicted increase in stem diameter from growth allocation (m)"""
+        self.delta_stem_mass: NDArray[np.floating]
+        """Predicted increase in stem mass from growth allocation (g C)"""
+        self.delta_foliage_mass: NDArray[np.floating]
+        """Predicted increase in foliar mass from growth allocation (g C)"""
+        self.delta_fine_root_mass: NDArray[np.floating]
+        """Predicted increase in fine root mass from growth allocation (g C)"""
+
+        if biomass_production is None:
+            biomass_production = gpp_allocation.npp
+
+        self.biomass_production = biomass_production
+
+        # Validate GPP input and handle array broadcasting
+        self.profile = gpp_allocation.profile
+
+        if self.profile:
+            # In profiling mode, a prediction is made at each GPP for each allometry
+            # prediction, so broadcast an extra dimensions on to the front of GPP to
+            # make it work.
+            if biomass_production.ndim != 1:
+                raise ValueError("Allocation profiling requires a 1D array.")
+            # Insert new dimensions after the profiling dimension and then broadcast
+            self.whole_crown_gpp = biomass_production[
+                :, *[None] * allometry._ndims
+            ] * np.ones_like(allometry.dbh)
+
+            self.cohort_ids = np.broadcast_to(
+                allometry.cohort_ids, self.whole_crown_gpp.shape
+            )
+            self._ndims = allometry._ndims + 1
+        else:
+            try:
+                self.whole_crown_gpp = np.broadcast_to(
+                    biomass_production, allometry.dbh.shape
+                )
+            except ValueError:
+                raise ValueError(
+                    f"The GPP array shape ({biomass_production.shape})is not congruent "
+                    f"with predicted allometry shape ({allometry.dbh.shape})."
+                )
+            self.cohort_ids = allometry.cohort_ids
+            self._ndims = allometry._ndims
+
+        turnover = (
+            gpp_allocation.fine_root_turnover
+            + gpp_allocation.foliage_turnover
+            + gpp_allocation.stem_turnover
+        )
+
+        (
+            self.delta_dbh,
+            self.delta_stem_mass,
+            self.delta_foliage_mass,
+            self.delta_fine_root_mass,
+        ) = calculate_growth_increments(
+            rho_s=cohorts.rho_s.to_numpy(),
+            a_hd=cohorts.a_hd.to_numpy(),
+            h_max=cohorts.h_max.to_numpy(),
+            lai=cohorts.lai.to_numpy(),
+            ca_ratio=cohorts.ca_ratio.to_numpy(),
+            sla=cohorts.sla.to_numpy(),
+            zeta=cohorts.zeta.to_numpy(),
+            biomass_production=biomass_production,
+            turnover=turnover,
+            dbh=allometry.dbh,
+            stem_height=allometry.stem_height,
+        )
+
+    def __repr__(self) -> str:
+        match (self.profile, self._ndims):
+            case (True, 3):
+                repr_ = (
+                    "GrowthIncrements: Profiles for {2} cohorts at {1} DBH values"
+                    " and {0} GPP values."
+                ).format(
+                    *self.biomass_production.shape,
+                )
+            case (True, 2):
+                repr_ = (
+                    "GrowthIncrements: Profiles for {1} cohorts at {0} GPP values."
+                ).format(
+                    *self.biomass_production.shape,
+                )
+            case (False, 2):
+                repr_ = (
+                    "GrowthIncrements: Profiles for {1} cohorts at {0} DBH values."
+                ).format(
+                    *self.biomass_production.shape,
+                )
+            case (False, 1):
+                repr_ = ("GrowthIncrements: Values for {} cohorts").format(
+                    *self.biomass_production.shape,
                 )
 
         return repr_
