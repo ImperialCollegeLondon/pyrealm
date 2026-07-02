@@ -334,7 +334,7 @@ class PModelABC(ABC):
         return daily_mean_pmodel_gpp * self.gpp_conversion_factor
 
     def apply_gpp_penalty_factor(self, penalty_factor: ArrayType[np.floating]) -> None:
-        """Apply a post-hoc GPP penalty factor to GPP predictions.
+        r"""Apply a post-hoc GPP penalty factor to GPP predictions.
 
         Some productivity models apply a post-hoc penalty factor to the predicted GPP of
         the P Model to correct for other influences on productivity. Examples included
@@ -342,7 +342,7 @@ class PModelABC(ABC):
         :meth:`pyrealm.pmodel.functions.calculate_soilmstress_mengoli` and
         :meth:`pyrealm.pmodel.functions.calculate_soilmstress_stocker`.
 
-        This method allows such a factor (:math:`f 'in [0,1]`) to be applied to a fitted
+        This method allows such a factor (:math:`f \in [0,1]`) to be applied to a fitted
         P Model instance. The `gpp` attribute of the model will then return the product
         of the raw GPP predictions and the provided penalty factor.
 
@@ -560,7 +560,8 @@ class PModel(PModelABC):
             )
 
     def _get_daily_gpp(
-        self, datetimes: NDArray[np.datetime64]
+        self,
+        datetimes: NDArray[np.datetime64],
     ) -> tuple[NDArray[np.datetime64], NDArray[np.floating]]:
         """Interpolate gpp values to daily intervals.
 
@@ -577,7 +578,8 @@ class PModel(PModelABC):
         time_int = datetimes.astype(np.int_)
 
         # The interp1d object cannot be called with datetime64 values as new_x
-        interpolator = interp1d(time_int, self.gpp)
+        interpolator = interp1d(time_int, self.gpp, axis=0)
+
         daily_timestamps = np.arange(
             datetimes[0], datetimes[-1] + np.timedelta64(1, "D"), np.timedelta64(1, "D")
         )
