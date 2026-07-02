@@ -31,8 +31,8 @@ the API of `pyrealm` code.
 ## Migration from 2.0 to version 3.0
 
 The experimental `demography` module has been heavily restructured - refer to the [user
-documentation for demography](./demography_two/overview.md) to see the workflow and APU
-changes.
+documentation for demography](../users/demography/module_overview.md) to see the
+workflow and API changes.
 
 Other breaking changes are minor:
 

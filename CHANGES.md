@@ -9,7 +9,7 @@ moving between versions.
 
 ## 3.0.0
 
-Version 3.0.0 add some new functionality, restructures the experimental `demography`
+Version 3.0.0 adds some new functionality, restructures the experimental `demography`
 module, makes minor API changes elsewhere (mostly consistency changes in function and
 class names and arguments) and fixes bugs.
 
@@ -23,9 +23,11 @@ class names and arguments) and fixes bugs.
 - We have added new experimental code supporting the calculation of phenological
   timeseries of LAI and fAPAR in the `phenology` module.
 
-- The `pyrealm` package now supports `xarray` inputs as well as `numpy` arrays and now
-  handles broadcasting of compatible arrays internally rather than requiring users to
-  get all inputs into the same shape.
+- We have updated the handling of
+  [array_inputs](https://pyrealm.readthedocs.io/en/develop/users/array_inputs.html) to
+  support `xarray.DataArray`  as well as `numpy.ndarray` inputs, and now handle
+  broadcasting of compatible arrays internally rather than requiring users to get all
+  inputs into the same shape.
 
 ### API changes
 
