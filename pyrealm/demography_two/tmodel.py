@@ -904,7 +904,6 @@ class StemAllocation(ToDataFrameMixin):
         "fine_root_turnover",
         "branch_turnover",
         "npp",
-        "growth_carbon",
     )
 
     __experimental__ = True
@@ -1028,7 +1027,7 @@ class StemAllocation(ToDataFrameMixin):
         )
 
         self.branch_turnover = calculate_branch_turnover(
-            tau_b=cohorts.tau_s.to_numpy(),
+            tau_b=cohorts.tau_b.to_numpy(),
             stem_mass=np.broadcast_to(allometry.stem_mass, self.whole_crown_gpp.shape),
         )
 

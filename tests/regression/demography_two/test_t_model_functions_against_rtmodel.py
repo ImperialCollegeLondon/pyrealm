@@ -357,7 +357,7 @@ def test_calculate_growth_increments(rvalues):
                 ca_ratio=pft["ca_ratio"],
                 sla=pft["sla"],
                 zeta=pft["zeta"],
-                npp=data["NPP"],
+                biomass_production=data["NPP"],
                 turnover=data["turnover"],
                 dbh=data["diameter"],
                 stem_height=data["height"],

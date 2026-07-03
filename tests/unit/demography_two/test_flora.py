@@ -31,7 +31,7 @@ def flora_data(mode: str, length: int, unequal: bool):
         sla=[14.0],
         tau_f=[4.0],
         tau_r=[1.04],
-        tau_s=[np.inf],
+        tau_b=[np.inf],
         yld=[0.17],
         zeta=[0.17],
         f_g=[0.02],

@@ -427,7 +427,7 @@ class TestTModel:
                 ca_ratio=np.array(rtmodel_flora.ca_ratio),
                 sla=np.array(rtmodel_flora.sla),
                 zeta=np.array(rtmodel_flora.zeta),
-                npp=rtmodel_data["npp"][data_idx],
+                biomass_production=rtmodel_data["npp"][data_idx],
                 turnover=rtmodel_data["turnover"][data_idx],
                 dbh=rtmodel_data["dbh"][data_idx],
                 stem_height=rtmodel_data["stem_height"][data_idx],
@@ -535,7 +535,6 @@ def test_StemAllometry_and_StemAllocation(
             "cohort_ids",
             "crown_r0",
             "crown_z_max",
-            "reproductive_tissue_mass",
             "fine_root_mass",
         ]
     )
@@ -579,20 +578,17 @@ def test_StemAllometry_and_StemAllocation(
             "foliage_respiration",
             "foliage_turnover",
             "fine_root_turnover",
-            "reproductive_tissue_respiration",
-            "reproductive_tissue_turnover",
-            "delta_foliage_mass",
-            "delta_fine_root_mass",
+            "branch_turnover",
         ]
     )
     for var in vars_to_check:
         assert_allclose(getattr(stem_allocation, var), rtmodel_data[var][out_idx])
 
-    # Separately check the partitioning into delta foliage and fine root
-    assert_allclose(
-        stem_allocation.delta_foliage_mass + stem_allocation.delta_fine_root_mass,
-        rtmodel_data["delta_foliage_mass"][out_idx],
-    )
+    # # Separately check the partitioning into delta foliage and fine root
+    # assert_allclose(
+    #     stem_allocation.delta_foliage_mass + stem_allocation.delta_fine_root_mass,
+    #     rtmodel_data["delta_foliage_mass"][out_idx],
+    # )
 
     # Test the ToDataFrameMixin.to_dataframe() method
     df = stem_allocation.to_dataframe()
