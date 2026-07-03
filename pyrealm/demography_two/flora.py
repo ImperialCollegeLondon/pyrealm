@@ -94,10 +94,11 @@ class Flora(BaseModel):
       The last parameter (``f_g``) is the crown gap fraction, that defines the vertical
       distribution of leaves within the crown. This crown model parameterisation
       follows the implementation developed in the PlantFATE model :cite:`joshi:2022a`.
-    * The stem turnover rate (``tau_s``) has been added to capture branch fall and loss
-      of other woody tissue forming part of normal tree growth. This defaults to
+    * The branch turnover rate (``tau_b``) has been added to capture branch fall and
+      loss of other woody tissue forming part of normal tree growth. This defaults to
       infinity to match the expectations of the original T Model in which woody tissue
-      is never lost to turnover.
+      is never lost to turnover. There is no specific branch mass in the T model, so
+      this is the rate at which total stem biomass turns over through branch loss.
     """
 
     name: list[str] = ["default"]
@@ -118,8 +119,8 @@ class Flora(BaseModel):
     r"""Foliage turnover time (:math:`\tau_f`,years)"""
     tau_r: list[float] = [1.04]
     r"""Fine-root turnover time (:math:`\tau_r`,  years)"""
-    tau_s: list[float] = [np.inf]
-    r"""Stem turnover time (:math:`\tau_r`,  years)"""
+    tau_b: list[float] = [np.inf]
+    r"""Branch turnover time (:math:`\tau_b`,  years)"""
     par_ext: list[float] = [0.5]
     r"""Extinction coefficient of photosynthetically active radiation (PAR) (:math:`k`,
      -)"""

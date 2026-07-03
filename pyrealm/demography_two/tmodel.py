@@ -462,34 +462,34 @@ def calculate_foliage_turnover(
     return foliage_mass / tau_f
 
 
-def calculate_stem_turnover(
-    tau_s: NDArray[np.floating],
+def calculate_branch_turnover(
+    tau_b: NDArray[np.floating],
     stem_mass: NDArray[np.floating],
 ) -> NDArray[np.floating]:
     r"""Calculate stem turnover.
 
-    This function calculates the carbon mass of stem turnover, representing branch fall
-    and other woody tissue losses. This is calculated from the total stem mass of
-    individuals (:math:`W_s`), and the stem turnover term (:math:`\tau_f`) for the
-    plant functional type. Note
+    This function calculates the carbon mass of branch turnover, representing branch
+    fall and other woody tissue losses. This is calculated from the total stem mass of
+    individuals (:math:`W_s`), and the stem turnover rate (:math:`\tau_b`) for the
+    plant functional type.
 
     .. math::
 
-        T = W_s * \tau_s
+        T = W_s * \tau_b
 
     NOTE::
 
-        Th :math:`\tau_s` term is not present in :cite:t:`{see Equation 15, }Li:2014bc`
+        Th :math:`\tau_b` term is not present in :cite:t:`{see Equation 15, }Li:2014bc`
         and is added in pyrealm. It defaults to infinity to duplicate the calculations
-        of the original model, when stem turnover is always zero.
+        of the original model, which do not include branch turnover.
 
     Args:
-        tau_s: The stem turnover rate
+        tau_b: The branch turnover rate
         stem_mass: The stem mass
     """
 
-    # Handle the default infinite turnover value because X / Inf = 0 for all X.
-    return stem_mass / tau_s
+    # This handles the default infinite turnover value because X / Inf = 0 for all X.
+    return stem_mass / tau_b
 
 
 def calculate_fine_root_turnover(
@@ -943,8 +943,8 @@ class StemAllocation(ToDataFrameMixin):
         """Allocation to leaf turnover (g C)"""
         self.fine_root_turnover: NDArray[np.floating]
         """Allocation to fine root turnover"""
-        self.stem_turnover: NDArray[np.floating]
-        """Allocation to fine root turnover"""
+        self.branch_turnover: NDArray[np.floating]
+        """Allocation to branch turnover"""
         self.delta_dbh: NDArray[np.floating]
         """Predicted increase in stem diameter from growth allocation (m)"""
         self.delta_stem_mass: NDArray[np.floating]
@@ -1040,8 +1040,8 @@ class StemAllocation(ToDataFrameMixin):
             ),
         )
 
-        self.stem_turnover = calculate_stem_turnover(
-            tau_s=cohorts.tau_s.to_numpy(),
+        self.branch_turnover = calculate_branch_turnover(
+            tau_b=cohorts.tau_b.to_numpy(),
             stem_mass=np.broadcast_to(allometry.stem_mass, self.whole_crown_gpp.shape),
         )
 
@@ -1062,7 +1062,7 @@ class StemAllocation(ToDataFrameMixin):
             biomass_production=self.npp,
             turnover=self.foliage_turnover
             + self.fine_root_turnover
-            + self.stem_turnover,
+            + self.branch_turnover,
             dbh=allometry.dbh,
             stem_height=allometry.stem_height,
         )
@@ -1138,7 +1138,7 @@ class GPPAllocation(ToDataFrameMixin):
         "fine_root_respiration",
         "foliage_turnover",
         "fine_root_turnover",
-        "stem_turnover",
+        "branch_turnover",
         "npp",
         "growth_carbon",
     )
@@ -1263,8 +1263,8 @@ class GPPAllocation(ToDataFrameMixin):
             ),
         )
 
-        self.stem_turnover = calculate_stem_turnover(
-            tau_s=cohorts.tau_s.to_numpy(),
+        self.branch_turnover = calculate_branch_turnover(
+            tau_b=cohorts.tau_s.to_numpy(),
             stem_mass=np.broadcast_to(allometry.stem_mass, self.whole_crown_gpp.shape),
         )
 
@@ -1401,7 +1401,7 @@ class GrowthIncrements(ToDataFrameMixin):
         turnover = (
             gpp_allocation.fine_root_turnover
             + gpp_allocation.foliage_turnover
-            + gpp_allocation.stem_turnover
+            + gpp_allocation.branch_turnover
         )
 
         (
