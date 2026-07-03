@@ -876,7 +876,7 @@ class StemAllocation(ToDataFrameMixin):
        could again be scalar or per cohort, but could also provide a GPP estimate for
        each combination of DBH and cohort (shape `(4,3)`).
 
-    2. When ``profile=True``, then GPPAllocation will only accept a 1D array of GPP
+    2. When ``profile=True``, then StemAllocation will only accept a 1D array of GPP
        values but will calculate allocation values for all combinations of DBH, cohort
        and GPP.
 
@@ -917,7 +917,7 @@ class StemAllocation(ToDataFrameMixin):
     ) -> None:
         """Calculate allocation of GPP for cohorts."""
 
-        warn_experimental("GPPAllocation")
+        warn_experimental("StemAllocation")
 
         self.cohort_ids: NDArray[np.generic]
         """A numpy array of cohort IDs."""
@@ -1105,7 +1105,7 @@ class GrowthIncrements(ToDataFrameMixin):
         cohorts: Cohorts,
         allometry: StemAllometry,
         stem_allocation: StemAllocation,
-        biomass_production: NDArray[np.floating] | None,
+        biomass_production: NDArray[np.floating] | None = None,
     ):
         self.cohort_ids: NDArray[np.generic]
         """A numpy array of cohort IDs."""
