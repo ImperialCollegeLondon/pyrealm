@@ -860,243 +860,6 @@ class StemAllometry(ToDataFrameMixin):
 
 
 class StemAllocation(ToDataFrameMixin):
-    """Calculate T Model GPP allocation across a set of stems.
-
-    This method calculates the predicted allocation of potential gross primary
-    productivity (GPP) for stems under the T Model :cite:`Li:2014bc`, given a set of
-    cohorts and stem allometry predictions for those cohorts.
-
-    Allocation from GPP estimates are handled in two ways:
-
-    1. In the standard mode, provided GPP estimates are mapped onto the provided
-       allometry following standard array broadcasting. For example, if the allometry
-       provides data for three cohorts, then GPP values could be a scalar array (shape
-       `(1,)`) or provide and estimate for each cohort (shape `(3,)`. If the allometry
-       estimates used ``at_dbh`` to estimate allometry for four DBH sizes, then GPP
-       could again be scalar or per cohort, but could also provide a GPP estimate for
-       each combination of DBH and cohort (shape `(4,3)`).
-
-    2. When ``profile=True``, then StemAllocation will only accept a 1D array of GPP
-       values but will calculate allocation values for all combinations of DBH, cohort
-       and GPP.
-
-    Args:
-        cohorts: An instance of :class:`~pyrealm.demography_two.cohorts.Cohorts`.
-        allometry: An instance of :class:`~pyrealm.demography_two.tmodel.StemAllometry`.
-        whole_crown_gpp: An array of GPP values available to a stem at which to model
-            allocation (kg C).
-        profile: A boolean switch used to calculate profiles of allocation values for
-            cohorts at different GPP values.
-
-    TODO::
-        Add args to allow inputs from PModel in µgC m2 s-1? Would need to scale to
-        growth period though.
-    """
-
-    _array_attrs: ClassVar[tuple[str, ...]] = (
-        "cohort_ids",
-        "whole_crown_gpp",
-        "sapwood_respiration",
-        "foliage_respiration",
-        "fine_root_respiration",
-        "npp",
-        "foliage_turnover",
-        "fine_root_turnover",
-        "delta_dbh",
-        "delta_stem_mass",
-        "delta_foliage_mass",
-        "delta_fine_root_mass",
-    )
-
-    __experimental__ = True
-
-    def __init__(
-        self,
-        cohorts: Cohorts,
-        allometry: StemAllometry,
-        whole_crown_gpp: NDArray[np.floating],
-        profile: bool = False,
-    ) -> None:
-        """Calculate allocation of GPP for cohorts."""
-
-        warn_experimental("StemAllocation")
-
-        self.cohort_ids: NDArray[np.generic]
-        """A numpy array of cohort IDs."""
-        self._profile: bool
-        """An boolean flag indicating if predictions are for a GPP profile."""
-        self._ndims: int
-        """An integer giving the dimensionality of the predictions."""
-
-        self.whole_crown_gpp: NDArray[np.floating]
-        """An array of gross primary productivity values (kg C) across the whole of the
-        self.crown of each stem to be allocated to respiration, turnover and growth."""
-        self.sapwood_respiration: NDArray[np.floating]
-        """Allocation to sapwood respiration (g C)"""
-        self.foliage_respiration: NDArray[np.floating]
-        """Allocation to foliar respiration (g C)"""
-        self.fine_root_respiration: NDArray[np.floating]
-        """Allocation to fine root respiration (g C)"""
-        self.npp: NDArray[np.floating]
-        """Net primary productivity (g C)"""
-        self.foliage_turnover: NDArray[np.floating]
-        """Allocation to leaf turnover (g C)"""
-        self.fine_root_turnover: NDArray[np.floating]
-        """Allocation to fine root turnover"""
-        self.branch_turnover: NDArray[np.floating]
-        """Allocation to branch turnover"""
-        self.delta_dbh: NDArray[np.floating]
-        """Predicted increase in stem diameter from growth allocation (m)"""
-        self.delta_stem_mass: NDArray[np.floating]
-        """Predicted increase in stem mass from growth allocation (g C)"""
-        self.delta_foliage_mass: NDArray[np.floating]
-        """Predicted increase in foliar mass from growth allocation (g C)"""
-        self.delta_fine_root_mass: NDArray[np.floating]
-        """Predicted increase in fine root mass from growth allocation (g C)"""
-
-        # Validate GPP input and handle array broadcasting
-        self.profile = profile
-
-        # Check we have an array of strictly positive values
-        if not isinstance(whole_crown_gpp, np.ndarray):
-            raise ValueError("The whole_crown_gpp value must be a numpy array.")
-        if np.any(whole_crown_gpp <= 0):
-            raise ValueError("Values in whole_crown_gpp must be greater than zero.")
-
-        if self.profile:
-            # In profiling mode, a prediction is made at each GPP for each allometry
-            # prediction, so broadcast an extra dimensions on to the front of GPP to
-            # make it work.
-            if whole_crown_gpp.ndim != 1:
-                raise ValueError("Allocation profiling requires a 1D array.")
-            # Insert new dimensions after the profiling dimension and then broadcast
-            self.whole_crown_gpp = whole_crown_gpp[
-                :, *[None] * allometry._ndims
-            ] * np.ones_like(allometry.dbh)
-
-            self.cohort_ids = np.broadcast_to(
-                allometry.cohort_ids, self.whole_crown_gpp.shape
-            )
-            self._ndims = allometry._ndims + 1
-        else:
-            try:
-                self.whole_crown_gpp = np.broadcast_to(
-                    whole_crown_gpp, allometry.dbh.shape
-                )
-            except ValueError:
-                raise ValueError(
-                    f"The GPP array shape ({whole_crown_gpp.shape})is not congruent "
-                    f"with predicted allometry shape ({allometry.dbh.shape})."
-                )
-            self.cohort_ids = allometry.cohort_ids
-            self._ndims = allometry._ndims
-
-        # To handle GPP profiling, the allocation terms that do not rely on GPP -
-        # respiration and turnover - need to broadcast their inputs to match.
-
-        # Calculate respiration terms - foliage respiration is a function of GPP itself
-        # to capture increasing leaf respiration with increasing photosynthetic activity
-        self.foliage_respiration = calculate_foliage_respiration(
-            resp_f=cohorts.resp_f.to_numpy(),
-            whole_crown_gpp=self.whole_crown_gpp,
-        )
-
-        # Sapwood and fine root respiration are both functions of tissue mass
-        self.sapwood_respiration = calculate_sapwood_respiration(
-            resp_s=cohorts.resp_s.to_numpy(),
-            sapwood_mass=np.broadcast_to(
-                allometry.sapwood_mass, self.whole_crown_gpp.shape
-            ),
-        )
-
-        self.fine_root_respiration = calculate_fine_root_respiration(
-            resp_r=cohorts.resp_r.to_numpy(),
-            fine_root_mass=np.broadcast_to(
-                allometry.fine_root_mass, self.whole_crown_gpp.shape
-            ),
-        )
-
-        # Calculate NPP given losses to yield and respiration costs
-        self.npp = calculate_net_primary_productivity(
-            yld=cohorts.yld.to_numpy(),
-            whole_crown_gpp=self.whole_crown_gpp,
-            foliage_respiration=self.foliage_respiration,
-            fine_root_respiration=self.fine_root_respiration,
-            sapwood_respiration=self.sapwood_respiration,
-        )
-
-        # Calculate turnover costs
-        self.foliage_turnover = calculate_foliage_turnover(
-            tau_f=cohorts.tau_f.to_numpy(),
-            foliage_mass=np.broadcast_to(
-                allometry.foliage_mass, self.whole_crown_gpp.shape
-            ),
-        )
-
-        self.fine_root_turnover = calculate_fine_root_turnover(
-            tau_r=cohorts.tau_r.to_numpy(),
-            fine_root_mass=np.broadcast_to(
-                allometry.fine_root_mass, self.whole_crown_gpp.shape
-            ),
-        )
-
-        self.branch_turnover = calculate_branch_turnover(
-            tau_b=cohorts.tau_b.to_numpy(),
-            stem_mass=np.broadcast_to(allometry.stem_mass, self.whole_crown_gpp.shape),
-        )
-
-        # Calculate resulting growth increments given NPP and turnover costs.
-        (
-            self.delta_dbh,
-            self.delta_stem_mass,
-            self.delta_foliage_mass,
-            self.delta_fine_root_mass,
-        ) = calculate_growth_increments(
-            rho_s=cohorts.rho_s.to_numpy(),
-            a_hd=cohorts.a_hd.to_numpy(),
-            h_max=cohorts.h_max.to_numpy(),
-            lai=cohorts.lai.to_numpy(),
-            ca_ratio=cohorts.ca_ratio.to_numpy(),
-            sla=cohorts.sla.to_numpy(),
-            zeta=cohorts.zeta.to_numpy(),
-            biomass_production=self.npp,
-            turnover=self.foliage_turnover
-            + self.fine_root_turnover
-            + self.branch_turnover,
-            dbh=allometry.dbh,
-            stem_height=allometry.stem_height,
-        )
-
-    def __repr__(self) -> str:
-        match (self.profile, self._ndims):
-            case (True, 3):
-                repr_ = (
-                    "StemAllometry: Profiles for {2} cohorts at {1} DBH values"
-                    " and {0} GPP values."
-                ).format(
-                    *self.whole_crown_gpp.shape,
-                )
-            case (True, 2):
-                repr_ = (
-                    "StemAllometry: Profiles for {1} cohorts at {0} GPP values."
-                ).format(
-                    *self.whole_crown_gpp.shape,
-                )
-            case (False, 2):
-                repr_ = (
-                    "StemAllometry: Profiles for {1} cohorts at {0} DBH values."
-                ).format(
-                    *self.whole_crown_gpp.shape,
-                )
-            case (False, 1):
-                repr_ = ("StemAllometry: Profiles for {} cohorts").format(
-                    *self.whole_crown_gpp.shape,
-                )
-
-        return repr_
-
-
-class GPPAllocation(ToDataFrameMixin):
     """Calculate GPP allocation for stems.
 
     This method calculates the predicted GPP allocations of potential gross primary
@@ -1126,6 +889,7 @@ class GPPAllocation(ToDataFrameMixin):
             cohorts at different GPP values.
 
     TODO::
+
         Add args to allow inputs from PModel in µgC m2 s-1? Would need to scale to
         growth period though.
     """
@@ -1272,25 +1036,25 @@ class GPPAllocation(ToDataFrameMixin):
         match (self.profile, self._ndims):
             case (True, 3):
                 repr_ = (
-                    "GPPAllocation: Profiles for {2} cohorts at {1} DBH values"
+                    "StemAllocation: Profiles for {2} cohorts at {1} DBH values"
                     " and {0} GPP values."
                 ).format(
                     *self.whole_crown_gpp.shape,
                 )
             case (True, 2):
                 repr_ = (
-                    "GPPAllocation: Profiles for {1} cohorts at {0} GPP values."
+                    "StemAllocation: Profiles for {1} cohorts at {0} GPP values."
                 ).format(
                     *self.whole_crown_gpp.shape,
                 )
             case (False, 2):
                 repr_ = (
-                    "GPPAllocation: Profiles for {1} cohorts at {0} DBH values."
+                    "StemAllocation: Profiles for {1} cohorts at {0} DBH values."
                 ).format(
                     *self.whole_crown_gpp.shape,
                 )
             case (False, 1):
-                repr_ = ("GPPAllocation: Values for {} cohorts").format(
+                repr_ = ("StemAllocation: Values for {} cohorts").format(
                     *self.whole_crown_gpp.shape,
                 )
 
@@ -1341,7 +1105,7 @@ class GrowthIncrements(ToDataFrameMixin):
         self,
         cohorts: Cohorts,
         allometry: StemAllometry,
-        gpp_allocation: GPPAllocation,
+        stem_allocation: StemAllocation,
         biomass_production: NDArray[np.floating] | None,
     ):
         self.cohort_ids: NDArray[np.generic]
@@ -1362,46 +1126,27 @@ class GrowthIncrements(ToDataFrameMixin):
         self.delta_fine_root_mass: NDArray[np.floating]
         """Predicted increase in fine root mass from growth allocation (g C)"""
 
+        # Set the biomass production values to be used
         if biomass_production is None:
-            biomass_production = gpp_allocation.npp
+            biomass_production = stem_allocation.npp
+        else:
+            if stem_allocation.npp.shape != biomass_production.shape:
+                raise ValueError(
+                    "The biomass_production has a different shape to the "
+                    "stem_allocation predictions."
+                )
 
         self.biomass_production = biomass_production
 
-        # Validate GPP input and handle array broadcasting
-        self.profile = gpp_allocation.profile
-
-        if self.profile:
-            # In profiling mode, a prediction is made at each GPP for each allometry
-            # prediction, so broadcast an extra dimensions on to the front of GPP to
-            # make it work.
-            if biomass_production.ndim != 1:
-                raise ValueError("Allocation profiling requires a 1D array.")
-            # Insert new dimensions after the profiling dimension and then broadcast
-            self.whole_crown_gpp = biomass_production[
-                :, *[None] * allometry._ndims
-            ] * np.ones_like(allometry.dbh)
-
-            self.cohort_ids = np.broadcast_to(
-                allometry.cohort_ids, self.whole_crown_gpp.shape
-            )
-            self._ndims = allometry._ndims + 1
-        else:
-            try:
-                self.whole_crown_gpp = np.broadcast_to(
-                    biomass_production, allometry.dbh.shape
-                )
-            except ValueError:
-                raise ValueError(
-                    f"The GPP array shape ({biomass_production.shape})is not congruent "
-                    f"with predicted allometry shape ({allometry.dbh.shape})."
-                )
-            self.cohort_ids = allometry.cohort_ids
-            self._ndims = allometry._ndims
+        # Copy over attributes from stem_allocation
+        self.profile = stem_allocation.profile
+        self._ndims = stem_allocation._ndims
+        self.cohort_ids = stem_allocation.cohort_ids
 
         turnover = (
-            gpp_allocation.fine_root_turnover
-            + gpp_allocation.foliage_turnover
-            + gpp_allocation.branch_turnover
+            stem_allocation.fine_root_turnover
+            + stem_allocation.foliage_turnover
+            + stem_allocation.branch_turnover
         )
 
         (
