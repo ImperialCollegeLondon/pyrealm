@@ -9,7 +9,7 @@ repos:
       - id: debug-statements
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.15.17
+    rev: v0.15.20
     hooks:
       # Run the linter.
       - id: ruff-check
@@ -24,11 +24,11 @@ repos:
         exclude: "pyrealm_build_data/splash/splash_py_version/.*\\.py"
         # https://stackoverflow.com/a/75447331/3401916
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.48.0
+    rev: v0.49.0
     hooks:
     - id: markdownlint
   - repo: https://github.com/mwouts/jupytext
-    rev: v1.19.3
+    rev: v1.19.4
     hooks:
     - id: jupytext
       args: [--pipe, black]
