@@ -27,58 +27,6 @@ def test_calculate_crown_r_0_values(crown_areas, expected_r0):
     assert_allclose(actual_r0_values, expected_r0)
 
 
-def test_calculate_reproductive_tissue_mass():
-    """Tests calculation of reproductive tissue mass."""
-
-    from pyrealm.demography_two.tmodel import calculate_reproductive_tissue_mass
-
-    result = calculate_reproductive_tissue_mass(
-        p_foliage_for_reproductive_tissue=np.array([10]),
-        foliage_mass=np.array([0.25]),
-    )
-
-    assert result == np.array([2.5])
-
-
-def test_calculate_gpp_topslice():
-    """Tests calculation of gpp_topslice."""
-
-    from pyrealm.demography_two.tmodel import calculate_gpp_topslice
-
-    result = calculate_gpp_topslice(
-        gpp_topslice=np.array([10]),
-        whole_crown_gpp=np.array([0.25]),
-    )
-
-    assert result == np.array([2.5])
-
-
-def test_calculate_reproductive_tissue_respiration():
-    """Tests calculation of reproductive tissue respiration."""
-
-    from pyrealm.demography_two.tmodel import calculate_reproductive_tissue_respiration
-
-    result = calculate_reproductive_tissue_respiration(
-        resp_rt=np.array([10]),
-        reproductive_tissue_mass=np.array([0.25]),
-    )
-
-    assert result == np.array([2.5])
-
-
-def test_calculate_reproductive_tissue_turnover():
-    """Tests calculation of reproductive tissue turnover."""
-
-    from pyrealm.demography_two.tmodel import calculate_reproductive_tissue_turnover
-
-    result = calculate_reproductive_tissue_turnover(
-        reproductive_tissue_mass=np.array([10]),
-        tau_rt=np.array([4]),
-    )
-
-    assert result == np.array([2.5])
-
-
 @pytest.mark.parametrize(
     argnames="dbh_idx, data_idx, out_idx, exp_shape",
     argvalues=[
@@ -406,9 +354,6 @@ class TestTModel:
             foliage_respiration=np.array([0]),
             fine_root_respiration=rtmodel_data["fine_root_respiration"][data_idx],
             sapwood_respiration=rtmodel_data["sapwood_respiration"][data_idx],
-            reproductive_tissue_respiration=np.zeros(
-                np.shape(rtmodel_data["sapwood_respiration"][data_idx])
-            ),
         )
 
         assert result.shape == exp_shape
@@ -482,14 +427,8 @@ class TestTModel:
                 ca_ratio=np.array(rtmodel_flora.ca_ratio),
                 sla=np.array(rtmodel_flora.sla),
                 zeta=np.array(rtmodel_flora.zeta),
-                npp=rtmodel_data["npp"][data_idx],
+                biomass_production=rtmodel_data["npp"][data_idx],
                 turnover=rtmodel_data["turnover"][data_idx],
-                reproductive_tissue_turnover=np.zeros(
-                    np.shape(rtmodel_data["turnover"][data_idx])
-                ),
-                p_foliage_for_reproductive_tissue=np.zeros(
-                    np.shape(rtmodel_data["npp"][data_idx])
-                ),
                 dbh=rtmodel_data["dbh"][data_idx],
                 stem_height=rtmodel_data["stem_height"][data_idx],
             )
@@ -548,7 +487,7 @@ def test_calculate_dbh_from_height_edge_cases():
         pytest.param((0, ...), True, tuple(), tuple(), id="use_at_dbh"),
     ],
 )
-def test_StemAllometry_and_StemAllocation(
+def test_StemAllometry_StemAllocation_GrowthIncrements(
     rtmodel_flora, rtmodel_data, dbh_idx, at_dbh, data_idx, out_idx
 ):
     """Test the StemAllometry, StemAllocation classes and inherited methods.
@@ -566,6 +505,7 @@ def test_StemAllometry_and_StemAllocation(
 
     from pyrealm.demography_two.cohorts import cohort_id_generator, create_cohorts
     from pyrealm.demography_two.tmodel import (
+        GrowthIncrements,
         StemAllocation,
         StemAllometry,
         calculate_whole_crown_gpp,
@@ -596,7 +536,6 @@ def test_StemAllometry_and_StemAllocation(
             "cohort_ids",
             "crown_r0",
             "crown_z_max",
-            "reproductive_tissue_mass",
             "fine_root_mass",
         ]
     )
@@ -640,20 +579,11 @@ def test_StemAllometry_and_StemAllocation(
             "foliage_respiration",
             "foliage_turnover",
             "fine_root_turnover",
-            "reproductive_tissue_respiration",
-            "reproductive_tissue_turnover",
-            "delta_foliage_mass",
-            "delta_fine_root_mass",
+            "branch_turnover",
         ]
     )
     for var in vars_to_check:
         assert_allclose(getattr(stem_allocation, var), rtmodel_data[var][out_idx])
-
-    # Separately check the partitioning into delta foliage and fine root
-    assert_allclose(
-        stem_allocation.delta_foliage_mass + stem_allocation.delta_fine_root_mass,
-        rtmodel_data["delta_foliage_mass"][out_idx],
-    )
 
     # Test the ToDataFrameMixin.to_dataframe() method
     df = stem_allocation.to_dataframe()
@@ -664,6 +594,28 @@ def test_StemAllometry_and_StemAllocation(
     )
 
     assert set(stem_allocation._array_attrs) == set(df.columns)
+
+    # Test GrowthIncrements
+    growth = GrowthIncrements(
+        cohorts=cohorts, allometry=stem_allometry, stem_allocation=stem_allocation
+    )
+
+    assert_allclose(growth.delta_dbh, rtmodel_data["delta_dbh"][out_idx])
+    assert_allclose(growth.delta_stem_mass, rtmodel_data["delta_stem_mass"][out_idx])
+    assert_allclose(
+        growth.delta_foliage_mass + growth.delta_fine_root_mass,
+        rtmodel_data["delta_foliage_mass"][out_idx],
+    )
+
+    # Test the ToDataFrameMixin.to_dataframe() method
+    df = growth.to_dataframe()
+
+    assert df.shape == (
+        np.prod(growth.delta_dbh.shape),
+        len(growth._array_attrs),
+    )
+
+    assert set(growth._array_attrs) == set(df.columns)
 
 
 @pytest.mark.parametrize(
