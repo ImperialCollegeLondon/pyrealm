@@ -23,6 +23,7 @@ from pyrealm.core.solar import (
     calculate_ru_rv_intermediates,
     calculate_rw_intermediate,
     calculate_solar_declination_angle,
+    calculate_sunshine_fraction,
     calculate_transmissivity,
 )
 from pyrealm.core.utilities import check_input_shapes
@@ -75,8 +76,10 @@ class DailySolarFluxesABC(ABC):
         """Sunset hour angle (:math:`h_s`, degrees)"""
         self.daily_solar_radiation: NDArray[np.floating]
         """Daily extraterrestrial solar radiation (:math:`R_d`, J m-2)"""
+        self.sunshine_fraction: NDArray[np.floating]
+        r"""Sunshine fraction (:math:`\tau`, unitless)"""
         self.transmissivity: NDArray[np.floating]
-        r"""Transmittivity (:math:`\tau`, unitless)"""
+        r"""Transmissivity (:math:`\tau`, unitless)"""
         self.daily_ppfd: NDArray[np.floating]
         """Daily photosynthetic photon flux density (PPFD, µmol m-2 s-1)"""
         self.net_longwave_radiation: NDArray[np.floating]
@@ -143,6 +146,25 @@ class DailySolarFluxesABC(ABC):
         self.distance_factor = np.expand_dims(distance_factor, axis=expand_dims)
         self.declination = np.expand_dims(delta, axis=expand_dims)
 
+        # Calculate intermediate values ru, rv, rw
+        self.ru, self.rv = calculate_ru_rv_intermediates(
+            declination=self.declination, latitude=latitude
+        )
+
+        # Calculate the sunset hour angle (hs), Eq. 3.22, Stine & Geyer (2001)
+        self.sunset_hour_angle = _calculate_sunset_hour_angle(ru=self.ru, rv=self.rv)
+
+        # Calculate daily extraterrestrial solar radiation (R_d, J/m^2)
+        # Eq. 1.10.3, Duffy & Beckman (1993)
+        self.daily_solar_radiation = _calculate_daily_solar_radiation(
+            ru=self.ru,
+            rv=self.rv,
+            distance_factor=self.distance_factor,
+            sunset_hour_angle=self.sunset_hour_angle,
+            day_seconds=self.core_const.day_seconds,
+            solar_constant=self.core_const.solar_constant,
+        )
+
 
 class DailySolarFluxesDavis(DailySolarFluxesABC):
     """Calculate daily solar fluxes.
@@ -184,6 +206,8 @@ class DailySolarFluxesDavis(DailySolarFluxesABC):
             kwargs=sunshine_fraction,
         )
 
+        self.sunshine_fraction = sunshine_fraction
+
         # Calculate transmittivity (tau), unitless
         # Eq. 11, Linacre (1968); Eq. 2, Allen (1996)
         self.transmissivity = calculate_transmissivity(
@@ -192,29 +216,10 @@ class DailySolarFluxesDavis(DailySolarFluxesABC):
             coef=self.core_const.transmissivity_coef,
         )
 
-        # Calculate intermediate values ru, rv, rw
-        self.ru, self.rv = calculate_ru_rv_intermediates(
-            declination=self.declination, latitude=latitude
-        )
-
         self.rw = calculate_rw_intermediate(
             transmissivity=self.transmissivity,
             distance_factor=self.distance_factor,
             shortwave_albedo=self.core_const.shortwave_albedo,
-            solar_constant=self.core_const.solar_constant,
-        )
-
-        # Calculate the sunset hour angle (hs), Eq. 3.22, Stine & Geyer (2001)
-        self.sunset_hour_angle = _calculate_sunset_hour_angle(ru=self.ru, rv=self.rv)
-
-        # Calculate daily extraterrestrial solar radiation (R_d, J/m^2)
-        # Eq. 1.10.3, Duffy & Beckman (1993)
-        self.daily_solar_radiation = _calculate_daily_solar_radiation(
-            ru=self.ru,
-            rv=self.rv,
-            distance_factor=self.distance_factor,
-            sunset_hour_angle=self.sunset_hour_angle,
-            day_seconds=self.core_const.day_seconds,
             solar_constant=self.core_const.solar_constant,
         )
 
@@ -232,6 +237,124 @@ class DailySolarFluxesDavis(DailySolarFluxesABC):
             sunshine_fraction=sunshine_fraction,
             temperature=temperature,
             coef=self.core_const.net_longwave_radiation_coef,
+        )
+
+        # Calculate net radiation cross-over hour angle (hn), degrees
+        self.crossover_hour_angle = _calculate_net_radiation_crossover_hour_angle(
+            ru=self.ru,
+            rv=self.rv,
+            rw=self.rw,
+            net_longwave_radiation=self.net_longwave_radiation,
+        )
+
+        # Calculate daytime net radiation (rn_d), J/m^2
+        self.daytime_net_radiation = _calculate_daytime_net_radiation(
+            ru=self.ru,
+            rv=self.rv,
+            rw=self.rw,
+            crossover_hour_angle=self.crossover_hour_angle,
+            net_longwave_radiation=self.net_longwave_radiation,
+            day_seconds=self.core_const.day_seconds,
+        )
+
+        # Calculate nighttime net radiation (rnn_d), J/m^2
+        self.nighttime_net_radiation = _calculate_nighttime_net_radiation(
+            ru=self.ru,
+            rv=self.rv,
+            rw=self.rw,
+            net_longwave_radiation=self.net_longwave_radiation,
+            crossover_hour_angle=self.crossover_hour_angle,
+            sunset_hour_angle=self.sunset_hour_angle,
+            day_seconds=self.core_const.day_seconds,
+        )
+
+
+class DailySolarFluxesSandoval(DailySolarFluxesABC):
+    """Calculate daily solar fluxes.
+
+    This dataclass takes arrays describing the latitude, elevation, sunshine fraction
+    and mean daily temperature for observations and then calculates key radiation fluxes
+    given a Calendar object providing the Julian day of the observations and the year
+    and number of days in the year.
+
+    The first dimension for the array inputs should correspond to time. If xarray inputs
+    are used, ``dates`` should also be initialised using xarray inputs to
+    ensure this. Alternatively, ``latitude`` can include time as the first dimension.
+
+    Args:
+        latitude: The Latitude of observations (degrees)
+        elevation: Elevation of observations (metres)
+        dates: Dates of observations
+        sunshine_fraction: Daily sunshine fraction of observations (unitless)
+        temperature: Daily temperature of observations (°C)
+    """
+
+    def __init__(
+        self,
+        latitude: ArrayType[np.floating],
+        elevation: ArrayType[np.floating],
+        temperature: ArrayType[np.floating],
+        shortwave_radiation: ArrayType[np.floating],
+        dates: Calendar,
+        core_const: CoreConst = CoreConst(),
+    ) -> None:
+        """Populates key fluxes from input variables."""
+
+        super().__init__(
+            latitude=latitude,
+            elevation=elevation,
+            temperature=temperature,
+            dates=dates,
+            core_const=core_const,
+            kwargs=shortwave_radiation,
+        )
+
+        # TODO - need to retrieve kwargs from validation? Maybe just drop ABC and have
+        #        alternate variables in __init__
+
+        # Sequence of calculation below taken from:
+        # https://github.com/dsval/rsplash/blob/master/src/SOLAR.cpp
+
+        # Calculate cloud free transmisivity (tau_o), unitless
+        # Eq. 11, Linacre (1968); Eq. 2, Allen (1996)
+        tau_o = calculate_transmissivity(
+            sunshine_fraction=np.array([1.0]),
+            elevation=elevation,
+            coef=self.core_const.transmissivity_coef,
+        )
+
+        # Calculate realised transmisivity (tau) as the ratio of observed surface
+        # shortwave downwelling radiation to top of atmosphere radiation
+        # TODO - handle edge cases
+        daily_sw = shortwave_radiation * self.core_const.day_seconds
+        self.transmissivity = daily_sw / self.daily_solar_radiation
+
+        # Calculate daily PPFD (ppfd_d), mol/m^2
+        self.daily_ppfd = calculate_ppfd_from_tau_rd(
+            transmissivity=self.transmissivity,
+            daily_solar_radiation=self.daily_solar_radiation,
+            swdown_to_ppfd_factor=self.core_const.swdown_to_ppfd_factor,
+            visible_light_albedo=self.core_const.visible_light_albedo,
+        )
+
+        # Calculate the sunshine fraction
+        self.sunshine_fraction = calculate_sunshine_fraction(
+            realised_transmissivity=self.transmissivity, clear_sky_transmissivity=tau_o
+        )
+
+        # Estimate net longwave radiation (rnl), W/m^2
+        # Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
+        self.net_longwave_radiation = calculate_net_longwave_radiation(
+            sunshine_fraction=self.sunshine_fraction,
+            temperature=temperature,
+            coef=self.core_const.net_longwave_radiation_coef,
+        )
+
+        self.rw = calculate_rw_intermediate(
+            transmissivity=self.transmissivity,
+            distance_factor=self.distance_factor,
+            shortwave_albedo=self.core_const.shortwave_albedo,
+            solar_constant=self.core_const.solar_constant,
         )
 
         # Calculate net radiation cross-over hour angle (hn), degrees

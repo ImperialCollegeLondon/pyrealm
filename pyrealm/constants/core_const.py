@@ -162,7 +162,13 @@ class CoreConst(ConstantsClass):
     # Fisher Dial
     fisher_dial_lambda: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
-            [1788.316, 21.55053, -0.4695911, 0.003096363, -7.341182e-06]
+            [
+                1788.316,
+                21.55053,
+                -0.4695911,
+                0.003096363,
+                -7.341182e-06,
+            ]
         )
     )
     r"""Coefficients of the temperature dependent polynomial for :math:`\lambda`
@@ -170,7 +176,13 @@ class CoreConst(ConstantsClass):
 
     fisher_dial_Po: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
-            [5918.499, 58.05267, -1.1253317, 0.0066123869, -1.4661625e-05]
+            [
+                5918.499,
+                58.05267,
+                -1.1253317,
+                0.0066123869,
+                -1.4661625e-05,
+            ]
         )
     )
     """Coefficients of the temperature dependent polynomial for :math:`P_0` in the
@@ -216,7 +228,14 @@ class CoreConst(ConstantsClass):
 
     chen_ko: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
-            [19652.17, 148.1830, -2.29995, 0.01281, -4.91564e-5, 1.035530e-7]
+            [
+                19652.17,
+                148.1830,
+                -2.29995,
+                0.01281,
+                -4.91564e-5,
+                1.035530e-7,
+            ]
         )
     )
     r"""Polynomial relationship of bulk modulus of water with temperature at 1 atm
@@ -224,7 +243,13 @@ class CoreConst(ConstantsClass):
 
     chen_ca: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
-            [3.26138, 5.223e-4, 1.324e-4, -7.655e-7, 8.584e-10]
+            [
+                3.26138,
+                5.223e-4,
+                1.324e-4,
+                -7.655e-7,
+                8.584e-10,
+            ]
         )
     )
     r"""Coefficients of the polynomial temperature dependent coefficient :math:`A` from
@@ -232,7 +257,13 @@ class CoreConst(ConstantsClass):
 
     chen_cb: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
-            [7.2061e-5, -5.8948e-6, 8.69900e-8, -1.0100e-9, 4.3220e-12]
+            [
+                7.2061e-5,
+                -5.8948e-6,
+                8.69900e-8,
+                -1.0100e-9,
+                4.3220e-12,
+            ]
         )
     )
     r"""Coefficients of the polynomial temperature dependent coefficient :math:`B` from
@@ -322,6 +353,11 @@ class CoreConst(ConstantsClass):
     viscosity_daubert_danner = (-51.964, 3670.6, 5.7331, -5.349e-29)
     """Coefficients for calculating water viscosity using the Daubert and Danner form,
     taken from Table 4.20 of :cite:`viswanath:2007a`."""
+
+    suerhke_sf_coefficients = (0.1898, 0.7410)
+    r"""Coefficients (:math:`\beta`, :math:`\gamma`)for the calculation of sunshine 
+    fraction from clear sky and realised transmissivity, taken from the robust fit
+    estimates in Table 1 of {cite}`suehrcke:2013a`."""
 
     def __post_init__(self) -> None:
         """Populate parameters from init settings.

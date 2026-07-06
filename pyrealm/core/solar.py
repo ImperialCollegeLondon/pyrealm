@@ -1116,6 +1116,34 @@ def calculate_day_angle(ordinal_date: ArrayType[np.int_]) -> NDArray[np.floating
     return 2 * np.pi * (xarray_inputs(ordinal_date) - 1) / 365
 
 
+def calculate_sunshine_fraction(
+    realised_transmissivity: ArrayType[np.floating],
+    clear_sky_transmissivity: ArrayType[np.floating],
+    coef: tuple[float, float] = CoreConst.suerhke_sf_coefficients,
+) -> NDArray[np.floating]:
+    r"""Calculate sunshine fraction from transmissivity.
+
+    This function follows the calculation of sunshine fraction in {cite}`suehrcke:2013a`
+    as a function of clear sky transmissivity (:math:`\tau_o`) and realised
+    transmissivity (:math:`\tau_o`), typically estimated as the ratio of observed daily
+    downwelling shortwave radiation on the ground and the top of atmosphere downwelling
+    shortwave radiation.
+
+    .. math::
+
+        \left(\frac{\tau - \tau_o \beta}{\tau_o (1 - \beta)}\right)^{1/\gamma}
+
+    Args:
+        realised_transmissivity: The observed transmissivity at ground level
+        clear_sky_transmissivity: The expected clear sky transmissivity.
+        coef: A tuple of the beta and gamma coefficients.
+    """
+
+    tau, tau_o = xarray_inputs(realised_transmissivity, clear_sky_transmissivity)
+    beta, gamma = coef
+    return ((tau - tau_o * beta) / (tau_o * (1 - beta))) ** (1 / gamma)
+
+
 @dataclass
 class SolarPositions:
     """Solar values for observation locations and times.
