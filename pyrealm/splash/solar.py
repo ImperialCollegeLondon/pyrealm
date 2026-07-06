@@ -2,7 +2,8 @@
 solar radiation fluxes for observations.
 """  # noqa: D205
 
-from dataclasses import InitVar, dataclass, field
+from abc import ABC, abstractmethod
+from collections.abc import Hashable
 
 import numpy as np
 from numpy.typing import NDArray
@@ -28,8 +29,7 @@ from pyrealm.core.utilities import check_input_shapes
 from pyrealm.core.xarray import ArrayType, get_common_dims, xarray_inputs
 
 
-@dataclass
-class DailySolarFluxes:
+class DailySolarFluxesABC(ABC):
     """Calculate daily solar fluxes.
 
     This dataclass takes arrays describing the latitude, elevation, sunshine fraction
@@ -49,62 +49,64 @@ class DailySolarFluxes:
         temperature: Daily temperature of observations (°C)
     """
 
-    latitude: InitVar[ArrayType[np.floating]]
-    elevation: InitVar[ArrayType[np.floating]]
-    dates: Calendar
-    sunshine_fraction: InitVar[ArrayType[np.floating]]
-    temperature: InitVar[ArrayType[np.floating]]
-    core_const: CoreConst = field(default_factory=lambda: CoreConst())
-
-    nu: NDArray[np.floating] = field(init=False)
-    r"""True heliocentric anomaly (:math:`\nu`, degrees)"""
-    lambda_: NDArray[np.floating] = field(init=False)
-    r"""True heliocentric longitude, (:math:`\lambda`, degrees)"""
-    distance_factor: NDArray[np.floating] = field(init=False)
-    """Distance factor (:math:`d_r`, -)"""
-    declination: NDArray[np.floating] = field(init=False)
-    r"""Declination angle (:math:`\delta`, degrees)"""
-    ru: NDArray[np.floating] = field(init=False)
-    """Intermediate variable (:math:`r_u`, unitless)"""
-    rv: NDArray[np.floating] = field(init=False)
-    """Intermediate variable (:math:`r_v`, unitless)"""
-    sunset_hour_angle: NDArray[np.floating] = field(init=False)
-    """Sunset hour angle (:math:`h_s`, degrees)"""
-    daily_solar_radiation: NDArray[np.floating] = field(init=False)
-    """Daily extraterrestrial solar radiation (:math:`R_d`, J m-2)"""
-    transmissivity: NDArray[np.floating] = field(init=False)
-    r"""Transmittivity (:math:`\tau`, unitless)"""
-    daily_ppfd: NDArray[np.floating] = field(init=False)
-    """Daily photosynthetic photon flux density (PPFD, µmol m-2 s-1)"""
-    net_longwave_radiation: NDArray[np.floating] = field(init=False)
-    """Net longwave radiation (:math:`R_{nl}`, W m-2)"""
-    rw: NDArray[np.floating] = field(init=False)
-    """Intermediate variable (:math:`r_w`,  W m-2)"""
-    crossover_hour_angle: NDArray[np.floating] = field(init=False)
-    """Net radiation cross-over hour angle, (:math:`h_n`, degrees)"""
-    daytime_net_radiation: NDArray[np.floating] = field(init=False)
-    """Daytime net radiation (:math:`R_{d}`, J m-2)"""
-    nighttime_net_radiation: NDArray[np.floating] = field(init=False)
-    """Nighttime net radiation (:math:`R_{nn}`, J m-2)"""
-
-    def __post_init__(
+    @abstractmethod
+    def __init__(
         self,
         latitude: ArrayType[np.floating],
         elevation: ArrayType[np.floating],
-        sunshine_fraction: ArrayType[np.floating],
         temperature: ArrayType[np.floating],
-    ) -> None:
-        """Populates key fluxes from input variables."""
+        dates: Calendar,
+        core_const: CoreConst = CoreConst(),
+        **kwargs: ArrayType[np.floating],
+    ):
+        self.nu: NDArray[np.floating]
+        r"""True heliocentric anomaly (:math:`\nu`, degrees)"""
+        self.lambda_: NDArray[np.floating]
+        r"""True heliocentric longitude, (:math:`\lambda`, degrees)"""
+        self.distance_factor: NDArray[np.floating]
+        """Distance factor (:math:`d_r`, -)"""
+        self.declination: NDArray[np.floating]
+        r"""Declination angle (:math:`\delta`, degrees)"""
+        self.ru: NDArray[np.floating]
+        """Intermediate variable (:math:`r_u`, unitless)"""
+        self.rv: NDArray[np.floating]
+        """Intermediate variable (:math:`r_v`, unitless)"""
+        self.sunset_hour_angle: NDArray[np.floating]
+        """Sunset hour angle (:math:`h_s`, degrees)"""
+        self.daily_solar_radiation: NDArray[np.floating]
+        """Daily extraterrestrial solar radiation (:math:`R_d`, J m-2)"""
+        self.transmissivity: NDArray[np.floating]
+        r"""Transmittivity (:math:`\tau`, unitless)"""
+        self.daily_ppfd: NDArray[np.floating]
+        """Daily photosynthetic photon flux density (PPFD, µmol m-2 s-1)"""
+        self.net_longwave_radiation: NDArray[np.floating]
+        """Net longwave radiation (:math:`R_{nl}`, W m-2)"""
+        self.rw: NDArray[np.floating]
+        """Intermediate variable (:math:`r_w`,  W m-2)"""
+        self.crossover_hour_angle: NDArray[np.floating]
+        """Net radiation cross-over hour angle, (:math:`h_n`, degrees)"""
+        self.daytime_net_radiation: NDArray[np.floating]
+        """Daytime net radiation (:math:`R_{d}`, J m-2)"""
+        self.nighttime_net_radiation: NDArray[np.floating]
+        """Nighttime net radiation (:math:`R_{nn}`, J m-2)"""
+        self.dims: list[Hashable]
+        """Names of dimensions in any xarray inputs"""
+        self.shape: tuple[int, ...]
+        """Shape of array inputs"""
 
-        # Convert inputs to numpy
-        inputs = latitude, elevation, sunshine_fraction, temperature
-        # Ensure first dimension is time if dates is also initialised with xarray
-        self.dims = get_common_dims(*inputs, init_dims=self.dates.dims)
-        inputs_np = xarray_inputs(*inputs, dims=self.dims)
-        latitude, elevation, sunshine_fraction, temperature = inputs_np
+        self.dates: Calendar = dates
+        self.core_const: CoreConst = core_const
+
+        # Convert any xr.DataArrays to numpy arrays
+        self.dims = get_common_dims(latitude, elevation, temperature, *kwargs.values())
+        (latitude, elevation, temperature), kw_arrays = xarray_inputs(
+            latitude, elevation, temperature, kwargs=kwargs, dims=self.dims
+        )
 
         # Validate the inputs
-        self.shape: tuple = check_input_shapes(*inputs_np)
+        self.shape = check_input_shapes(
+            latitude, elevation, temperature, *kw_arrays.values()
+        )
         """The array shape of the input variables"""
 
         if self.shape[0] == 1:
@@ -140,6 +142,47 @@ class DailySolarFluxes:
         self.lambda_ = np.expand_dims(lambda_, axis=expand_dims)
         self.distance_factor = np.expand_dims(distance_factor, axis=expand_dims)
         self.declination = np.expand_dims(delta, axis=expand_dims)
+
+
+class DailySolarFluxesDavis(DailySolarFluxesABC):
+    """Calculate daily solar fluxes.
+
+    This dataclass takes arrays describing the latitude, elevation, sunshine fraction
+    and mean daily temperature for observations and then calculates key radiation fluxes
+    given a Calendar object providing the Julian day of the observations and the year
+    and number of days in the year.
+
+    The first dimension for the array inputs should correspond to time. If xarray inputs
+    are used, ``dates`` should also be initialised using xarray inputs to
+    ensure this. Alternatively, ``latitude`` can include time as the first dimension.
+
+    Args:
+        latitude: The Latitude of observations (degrees)
+        elevation: Elevation of observations (metres)
+        dates: Dates of observations
+        sunshine_fraction: Daily sunshine fraction of observations (unitless)
+        temperature: Daily temperature of observations (°C)
+    """
+
+    def __init__(
+        self,
+        latitude: ArrayType[np.floating],
+        elevation: ArrayType[np.floating],
+        temperature: ArrayType[np.floating],
+        sunshine_fraction: ArrayType[np.floating],
+        dates: Calendar,
+        core_const: CoreConst = CoreConst(),
+    ) -> None:
+        """Populates key fluxes from input variables."""
+
+        super().__init__(
+            latitude=latitude,
+            elevation=elevation,
+            temperature=temperature,
+            dates=dates,
+            core_const=core_const,
+            kwargs=sunshine_fraction,
+        )
 
         # Calculate transmittivity (tau), unitless
         # Eq. 11, Linacre (1968); Eq. 2, Allen (1996)

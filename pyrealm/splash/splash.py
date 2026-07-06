@@ -16,7 +16,7 @@ from pyrealm.core.time_series import broadcast_time
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.core.xarray import ArrayType, get_common_dims, xarray_inputs
 from pyrealm.splash.evap import DailyEvapFluxes
-from pyrealm.splash.solar import DailySolarFluxes
+from pyrealm.splash.solar import DailySolarFluxesDavis
 
 
 class SplashModel:
@@ -121,7 +121,7 @@ class SplashModel:
         """The atmospheric pressure at sites, derived from elevation"""
 
         # Calculate the daily solar fluxes - these are invariant across the simulation
-        self.solar: DailySolarFluxes = DailySolarFluxes(
+        self.solar: DailySolarFluxesDavis = DailySolarFluxesDavis(
             latitude=lat,
             elevation=elv,
             dates=dates,

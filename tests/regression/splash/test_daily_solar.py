@@ -31,11 +31,11 @@ def test_solar_scalars():
     Uses using inputs from the __main__ function of the original SPLASH solar.py
     """
     from pyrealm.core.calendar import Calendar
-    from pyrealm.splash.solar import DailySolarFluxes
+    from pyrealm.splash.solar import DailySolarFluxesDavis
 
     cal = Calendar(np.array(["2000-06-20"], dtype="<M8[D]"))
 
-    solar = DailySolarFluxes(
+    solar = DailySolarFluxesDavis(
         latitude=np.array([37.7]),
         elevation=np.array([142]),
         dates=cal,
@@ -71,7 +71,7 @@ def test_solar_iter(daily_flux_benchmarks, expected_attr):
     iterate over the rows to calculate values.
     """
     from pyrealm.core.calendar import Calendar
-    from pyrealm.splash.solar import DailySolarFluxes
+    from pyrealm.splash.solar import DailySolarFluxesDavis
 
     inputs, expected = daily_flux_benchmarks
 
@@ -80,7 +80,7 @@ def test_solar_iter(daily_flux_benchmarks, expected_attr):
     ):
         cal = Calendar(np.array([day]).astype("datetime64[D]"))
 
-        solar = DailySolarFluxes(
+        solar = DailySolarFluxesDavis(
             dates=cal,
             latitude=np.array([inp["lat"]]),
             elevation=np.array([inp["elv"]]),
@@ -100,12 +100,12 @@ def test_solar_array(daily_flux_benchmarks, expected_attr):
     iterated implementation.
     """
     from pyrealm.core.calendar import Calendar
-    from pyrealm.splash.solar import DailySolarFluxes
+    from pyrealm.splash.solar import DailySolarFluxesDavis
 
     inputs, expected = daily_flux_benchmarks
     cal = Calendar(inputs["dates"].to_numpy().astype("datetime64[D]"))
 
-    solar = DailySolarFluxes(
+    solar = DailySolarFluxesDavis(
         dates=cal,
         latitude=inputs["lat"].to_numpy(),
         elevation=inputs["elv"].to_numpy(),
@@ -123,7 +123,7 @@ def test_solar_array_grid(grid_benchmarks):
     This checks that a gridded dataset works with solar.py
     """
     from pyrealm.core.calendar import Calendar
-    from pyrealm.splash.solar import DailySolarFluxes
+    from pyrealm.splash.solar import DailySolarFluxesDavis
 
     inputs, expected = grid_benchmarks
 
@@ -133,7 +133,7 @@ def test_solar_array_grid(grid_benchmarks):
     lat = inputs.lat.to_numpy()[None, :, None]
     elev = inputs.elev.to_numpy()[None, :, :]
 
-    solar = DailySolarFluxes(
+    solar = DailySolarFluxesDavis(
         latitude=lat,
         elevation=elev,
         dates=cal,
