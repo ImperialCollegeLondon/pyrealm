@@ -106,9 +106,18 @@ class CoreConst(ConstantsClass):
     transmissivity (:math:`c=0.25`),  angular coefficient of transmittivity
     (:math:`d=0.5`) and elevation factor (:math:`f`=2.67e-5`)."""
 
-    net_longwave_radiation_coef: tuple[float, float] = (0.2, 107.0)
-    """Coefficients (:math:`b, A`) of net longwave radiation function, Eqn. 11 and Table
-    1 of :cite:t:`colinprentice:1993a`"""
+    # Hygro constants
+    net_longwave_radiation_coef: tuple[float, float, float, float] = (
+        107.0,
+        -1.0,
+        0.2,
+        0.2,
+    )
+    """Coefficients (:math:`b, A`) of net longwave radiation function."""
+    longwave_radiation_option: str | None = None
+    """Setting to use pre-defined parameterisations for the
+    :attr:`~pyrealm.constants.core_const.CoreConst.net_longwave_radiation_coef`
+    attribute."""
 
     shortwave_albedo: float = 0.17
     """The shortwave albedo (:math:`A_{sw}`, unitless, Federer, 1968)."""
