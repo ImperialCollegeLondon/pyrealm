@@ -21,58 +21,58 @@ language_info:
   version: 3.11.9
 ---
 
-# The {mod}`~pyrealm.demography` module
+# The {mod}`~pyrealm.demography_two` module
 
 ```{eval-rst}
-.. automodule:: pyrealm.demography
+.. automodule:: pyrealm.demography_two
     :autosummary:
     :members:
 ```
 
-## The {mod}`~pyrealm.demography.core` module
+## The {mod}`~pyrealm.demography_two.flora` module
 
 ```{eval-rst}
-.. automodule:: pyrealm.demography.core
+.. automodule:: pyrealm.demography_two.flora
     :autosummary:
     :members:
 ```
 
-## The {mod}`~pyrealm.demography.flora` module
+## The {mod}`~pyrealm.demography_two.cohorts` module
 
 ```{eval-rst}
-.. automodule:: pyrealm.demography.flora
+.. automodule:: pyrealm.demography_two.cohorts
     :autosummary:
     :members:
 ```
 
-## The {mod}`~pyrealm.demography.tmodel` module
+## The {mod}`~pyrealm.demography_two.tmodel` module
 
 ```{eval-rst}
-.. automodule:: pyrealm.demography.tmodel
+.. automodule:: pyrealm.demography_two.tmodel
     :autosummary:
     :members:
 ```
 
-## The {mod}`~pyrealm.demography.crown` module
+## The {mod}`~pyrealm.demography_two.crown` module
 
 ```{eval-rst}
-.. automodule:: pyrealm.demography.crown
+.. automodule:: pyrealm.demography_two.crown
     :autosummary:
     :members:
 ```
 
-## The {mod}`~pyrealm.demography.community` module
+## The {mod}`~pyrealm.demography_two.canopy` module
 
 ```{eval-rst}
-.. automodule:: pyrealm.demography.community
+.. automodule:: pyrealm.demography_two.canopy
     :autosummary:
     :members:
 ```
 
-## The {mod}`~pyrealm.demography.canopy` module
+## The {mod}`~pyrealm.demography_two.core` module
 
 ```{eval-rst}
-.. automodule:: pyrealm.demography.canopy
+.. automodule:: pyrealm.demography_two.core
     :autosummary:
     :members:
 ```

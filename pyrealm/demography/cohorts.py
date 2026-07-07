@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from pyrealm.demography_two.flora import Flora
+from pyrealm.demography.flora import Flora
 
 
 def cohort_id_generator(

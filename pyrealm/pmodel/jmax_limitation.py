@@ -148,21 +148,25 @@ class JmaxLimitationWang17(
 
     def _calculate_limitation_terms(self) -> None:
         """Limitation calculations for the ``wang17`` method."""
-        # Test for m > c*
+
+        # Initialise values as np.nan (default value when m <= c*)
+        self.f_j = np.full_like(self.optchi.mj, fill_value=np.nan)
+        self.f_v = np.full_like(self.optchi.mj, fill_value=np.nan)
+
+        # Calculate the f_v and f_j terms, outputting values back into the initialised
+        # arrays only where m > c*
         vals_defined = np.greater(self.optchi.mj, self.pmodel_const.wang17_c)
 
-        self.f_v = np.sqrt(
+        np.sqrt(
             1 - (self.pmodel_const.wang17_c / self.optchi.mj) ** (2.0 / 3.0),
             where=vals_defined,
+            out=self.f_v,
         )
-        self.f_j = np.sqrt(
+        np.sqrt(
             (self.optchi.mj / self.pmodel_const.wang17_c) ** (2.0 / 3.0) - 1,
             where=vals_defined,
+            out=self.f_j,
         )
-
-        # Backfill undefined values
-        self.f_j[np.logical_not(vals_defined)] = np.nan
-        self.f_v[np.logical_not(vals_defined)] = np.nan
 
 
 class JmaxLimitationSmith19(
