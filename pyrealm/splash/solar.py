@@ -22,6 +22,7 @@ from pyrealm.core.solar import (
     calculate_ppfd_from_tau_rd,
     calculate_ru_rv_intermediates,
     calculate_rw_intermediate,
+    calculate_rw_intermediate_from_sw,
     calculate_solar_declination_angle,
     calculate_sunshine_fraction,
     calculate_transmissivity,
@@ -193,7 +194,7 @@ class DailySolarFluxesDavis(DailySolarFluxesABC):
         temperature: ArrayType[np.floating],
         sunshine_fraction: ArrayType[np.floating],
         dates: Calendar,
-        core_const: CoreConst = CoreConst(),
+        core_const: CoreConst = CoreConst(longwave_radiation_option="Prentice1993"),
     ) -> None:
         """Populates key fluxes from input variables."""
 
@@ -296,7 +297,7 @@ class DailySolarFluxesSandoval(DailySolarFluxesABC):
         temperature: ArrayType[np.floating],
         shortwave_radiation: ArrayType[np.floating],
         dates: Calendar,
-        core_const: CoreConst = CoreConst(),
+        core_const: CoreConst = CoreConst(longwave_radiation_option="Sandoval2024"),
     ) -> None:
         """Populates key fluxes from input variables."""
 
@@ -330,6 +331,8 @@ class DailySolarFluxesSandoval(DailySolarFluxesABC):
         self.transmissivity = daily_sw / self.daily_solar_radiation
 
         # Calculate daily PPFD (ppfd_d), mol/m^2
+        # TODO - although this differs markedly from the straightforward prediction from
+        #        SW * swdown_to_ppfd_factor
         self.daily_ppfd = calculate_ppfd_from_tau_rd(
             transmissivity=self.transmissivity,
             daily_solar_radiation=self.daily_solar_radiation,
@@ -350,11 +353,12 @@ class DailySolarFluxesSandoval(DailySolarFluxesABC):
             coef=self.core_const.net_longwave_radiation_coef,
         )
 
-        self.rw = calculate_rw_intermediate(
-            transmissivity=self.transmissivity,
-            distance_factor=self.distance_factor,
+        self.rw = calculate_rw_intermediate_from_sw(
+            shortwave_radiation=shortwave_radiation,
+            sunset_hour_angle=self.sunset_hour_angle,
+            ru=self.ru,
+            rv=self.rv,
             shortwave_albedo=self.core_const.shortwave_albedo,
-            solar_constant=self.core_const.solar_constant,
         )
 
         # Calculate net radiation cross-over hour angle (hn), degrees

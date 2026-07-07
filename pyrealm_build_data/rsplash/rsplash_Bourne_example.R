@@ -1,12 +1,12 @@
 
 
-install.packages(
-    "https://cran.r-project.org/src/contrib/Archive/topmodel/topmodel_0.7.5.tar.gz",
-    repos = NULL, type = "source"
-)
+# install.packages(
+#     "https://cran.r-project.org/src/contrib/Archive/topmodel/topmodel_0.7.5.tar.gz",
+#     repos = NULL, type = "source"
+# )
 
-if(!require(devtools)){install.packages(devtools)}
-    devtools::install_github( "dsval/rsplash")
+# if(!require(devtools)){install.packages(devtools)}
+#     devtools::install_github( "dsval/rsplash")
 
 
 library(rsplash)

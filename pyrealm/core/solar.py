@@ -454,8 +454,8 @@ def calculate_net_longwave_radiation(
         R_{nl} = (k_4 + (1.0 - k_3) n_i) (k_1  + k_2 t_c)
 
 
-    The original formulation in :cite:t:`davis:2017a`, used a simpler implementation
-    from :cite:t:`colinprentice:1993a`:
+    The original formulation in :cite:t:`davis:2017a`, used an equivalent form but with
+    a simpler parameterisation :cite:t:`colinprentice:1993a`:
 
     .. math::
 
@@ -506,6 +506,40 @@ def calculate_rw_intermediate(
 
     transmissivity, distance_factor = xarray_inputs(transmissivity, distance_factor)
     return (1.0 - shortwave_albedo) * transmissivity * solar_constant * distance_factor
+
+
+def calculate_rw_intermediate_from_sw(
+    shortwave_radiation: ArrayType[np.floating],
+    sunset_hour_angle: ArrayType[np.floating],
+    ru: ArrayType[np.floating],
+    rv: ArrayType[np.floating],
+    shortwave_albedo: float = CoreConst().shortwave_albedo,
+) -> NDArray[np.floating]:
+    r"""Calculate the rw intermediate variable using shortwave radiation.
+
+    This function calculates the widely used variable substitute ``rw`` (:math:`r_w`, W
+    m-2) as:
+
+
+    Args:
+        shortwave_radiation: The downwelling shortwave radiation (W/m2)
+        sunset_hour_angle: sunset hour angle, (:math:`h_s`, degrees)
+        rv: dimensionless variable substitute
+        ru: dimensionless variable substitute
+        shortwave_albedo: The shortwave albedo (:math:`A_{sw}`, unitless), defaulting to
+            :attr:`CoreConst.shortwave_albedo<pyrealm.constants.CoreConst.shortwave_albedo>`.
+
+    Returns:
+        An array of the intermediate variable :math:`r_w` in W m-2.
+    """
+
+    (shortwave_radiation, sunset_hour_angle, ru, rv) = xarray_inputs(
+        shortwave_radiation, sunset_hour_angle, ru, rv
+    )
+
+    return (shortwave_radiation * np.pi * (1 - shortwave_albedo)) / (
+        (ru * sunset_hour_angle) + rv * np.sin(sunset_hour_angle)
+    )
 
 
 def calculate_net_radiation_crossover_hour_angle(
