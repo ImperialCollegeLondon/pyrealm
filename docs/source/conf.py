@@ -174,7 +174,10 @@ nitpick_ignore = [
             "numpy.ndarray[typing.Any, numpy.dtype[+ScalarType]]]"
         ),
     ),
-    ("py:class", "pandas.core.frame.DataFrame"),
+    ("py:class", "ConfigDict"),  # pydantic object not found
+    ("py:class", "pandas.core.frame.DataFrame"),  # Pandas object not found
+    ("py:class", "Axes"),  # Pandas object not found
+    ("py:class", "Dtype"),  # Pandas object not found
 ]
 nitpick_ignore_regex = [
     # Ignore TypeVars (anything named 'T')
@@ -190,12 +193,11 @@ intersphinx_mapping = {
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
-    # The recent pandas 3.0 has broken something with the intersphinx for
-    # pandas.DataFrame so pinning for now to pandas 2.3
-    "pandas": ("http://pandas.pydata.org/pandas-docs/version/2.3/", None),
-    # "pandas": ("http://pandas.pydata.org/pandas-docs/dev/", None),
+    # Some issues with pandas object inventory locations:
+    #   https://github.com/pandas-dev/pandas/issues/64633
+    "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
     "shapely": ("https://shapely.readthedocs.io/en/stable/", None),
-    "marshmallow": ("https://marshmallow.readthedocs.io/en/stable/", None),
+    "pydantic": ("https://docs.pydantic.dev/latest", None),
     "pooch": ("https://www.fatiando.org/pooch/latest/", None),
     "matplotlib": ("https://matplotlib.org/stable/", None),
 }

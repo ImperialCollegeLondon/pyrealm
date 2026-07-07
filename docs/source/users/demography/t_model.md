@@ -10,15 +10,15 @@ kernelspec:
   language: python
   name: python3
 language_info:
+  name: python
+  version: 3.14.3
+  mimetype: text/x-python
   codemirror_mode:
     name: ipython
     version: 3
-  file_extension: .py
-  mimetype: text/x-python
-  name: python
-  nbconvert_exporter: python
   pygments_lexer: ipython3
-  version: 3.11.9
+  nbconvert_exporter: python
+  file_extension: .py
 ---
 
 # The T Model module
@@ -32,268 +32,50 @@ language_info:
 
 ```
 
-The T Model {cite}`Li:2014bc` provides a model of both:
-
-* stem :term:`allometry`, given a set of [stem traits](./flora.md) for a plant
-  functional type (PFT), and
-* a carbon allocation model, given stem allometry and potential GPP.
-
 ```{code-cell} ipython3
+import warnings
+
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 
-from pyrealm.demography.flora import PlantFunctionalType, Flora
+from pyrealm.core.experimental import ExperimentalFeatureWarning
+from pyrealm.demography.flora import Flora
+from pyrealm.demography.cohorts import create_cohorts, cohort_id_generator
 from pyrealm.demography.tmodel import (
     StemAllocation,
     StemAllometry,
+    GrowthIncrements,
     calculate_whole_crown_gpp,
 )
-```
 
-To generate predictions under the T Model, we need a Flora object providing the
-[trait values](./flora.md) for each of the PFTs to be modelled:
-
-```{code-cell} ipython3
-# Three PFTS
-short_pft = PlantFunctionalType(name="short", h_max=10)
-medium_pft = PlantFunctionalType(name="medium", h_max=20)
-tall_pft = PlantFunctionalType(name="tall", h_max=30)
-
-# Combine into a Flora instance
-flora = Flora([short_pft, medium_pft, tall_pft])
-```
-
-## Stem allometry
-
-We can visualise how the stem size, canopy size and various masses of PFTs change with
-stem diameter by using the {class}`~pyrealm.demography.tmodel.StemAllometry`
-class. Creating a `StemAllometry` instance needs an existing `Flora` instance and an
-array of values for diameter at breast height (DBH, metres). The returned class contains
-the predictions of the T Model for:
-
-* Stem height (`stem_height`, m),
-* Crown area (`crown_area`, m2),
-* Crown fraction (`crown_fraction`, -),
-* Stem mass (`stem_mass`, kg),
-* Foliage mass (`foliage_mass`, kg),
-* Sapwood mass (`sapwood_mass`, kg),
-* Crown radius scaling factor (`crown_r0`, -), and
-* Height of maximum crown radius (`crown_z_max`, m).
-
-Note that {attr}`~pyrealm.demography.tmodel.StemAllometry.stem_height` denotes the total
-tree height, as used interchangeable in {cite:t}`Li:2014bc`, rather than just the height
-of the trunk below the canopy.
-
-The DBH input can be a scalar array or a one dimensional array providing a single value
-for each PFT. This then calculates a single estimate at the given size for each stem.
-
-```{code-cell} ipython3
-# Calculate a single prediction
-single_allometry = StemAllometry(stem_traits=flora, at_dbh=np.array([0.1, 0.1, 0.1]))
-```
-
-The {meth}`~pyrealm.demography.tmodel.StemAllometry` class provides the
-{meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method to export the stem
-data for data exploration.
-
-```{code-cell} ipython3
-single_allometry.to_pandas().transpose()
-```
-
-However, the DBH values can also be a column array (an `N` x 1 array). In this case, the
-predictions are made at each DBH value for each PFT and the allometry attributes with
-predictions arranged with each PFT as a column and each DBH prediction as a row. This
-makes them convenient to plot using `matplotlib`.
-
-```{code-cell} ipython3
-# Column array of DBH values from 0.01 to 1.6 metres
-dbh_col = np.arange(0.01, 1.6, 0.01)[:, None]
-# Get the predictions
-allometries = StemAllometry(stem_traits=flora, at_dbh=dbh_col)
-```
-
-The code below shows how to use the returned allometries to generate a plot of the
-scaling relationships across all of the PFTs in a `Flora` instance.
-
-```{code-cell} ipython3
-fig, axes = plt.subplots(ncols=2, nrows=4, sharex=True, figsize=(10, 10))
-
-plot_details = [
-    ("stem_height", "Stem height (m)"),
-    ("crown_area", "Crown area (m2)"),
-    ("crown_fraction", "Crown fraction (-)"),
-    ("stem_mass", "Stem mass (kg)"),
-    ("foliage_mass", "Foliage mass (kg)"),
-    ("sapwood_mass", "Sapwood mass (kg)"),
-    ("crown_r0", "Crown scaling factor (-)"),
-    ("crown_z_max", "Height of maximum\ncrown radius (m)"),
-]
-
-for ax, (var, ylab) in zip(axes.flatten(), plot_details):
-    ax.plot(dbh_col, getattr(allometries, var), label=flora.name)
-    ax.set_xlabel("Diameter at breast height (m)")
-    ax.set_ylabel(ylab)
-
-    if var == "sapwood_mass":
-        ax.legend(frameon=False)
-```
-
-The {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
-{meth}`~pyrealm.demography.tmodel.StemAllometry` class can still be used, but
-the values are stacked into columns along with a index showing the different cohorts.
-
-```{code-cell} ipython3
-allometries.to_pandas().transpose()
-```
-
-## Productivity allocation
-
-The T Model also predicts how GPP will be allocated to respiration, turnover
-and growth for stems with a given PFT and allometry using the
-{meth}`~pyrealm.demography.tmodel.StemAllometry` class.
-
-This requires an estimate of the GPP available to a stem. The original implementation of
-the T Model implemented this (Equation 12, {cite:alp}`Li:2014bc`)using an estimate of
-the potential GPP per square metre ($P_0$), scaled up to the crown area of the stem
-($A_c$) and using the Beer-Lambert equation to estimate the proportion of potential GPP
-captured by the crown as a function of the canopy light extinction coefficient ($k$) and
-the canopy {term}`leaf area index<LAI>` ($L$):
-
-$$
-\textrm{GPP} =  P_0 A_c (1 - e^{-kL})
-$$
-
-This is implemented in the function `calculate_whole_crown_gpp`:
-
-```{code-cell} ipython3
-whole_crown_gpp = calculate_whole_crown_gpp(
-    potential_gpp=np.array([55]),
-    crown_area=single_allometry.crown_area,
-    par_ext=flora.par_ext,
-    lai=flora.lai,
-)
-print(whole_crown_gpp)
-```
-
-Those realised stem GPP values can then be provided to the `StemAllocation` class:
-
-```{code-cell} ipython3
-single_allocation = StemAllocation(
-    stem_traits=flora, stem_allometry=single_allometry, whole_crown_gpp=whole_crown_gpp
-)
-single_allocation
-```
-
-The {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
-{meth}`~pyrealm.demography.tmodel.StemAllocation` class can be used to
-export data for exploration.
-
-```{code-cell} ipython3
-single_allocation.to_pandas().transpose()
-```
-
-Using a column array of potential GPP values can be used to predict multiple estimates of
-allocation per stem. In the first example, the code takes the allometric predictions
-from above and calculates the GPP allocation for stems of varying size with the same
-potential GPP:
-
-```{code-cell} ipython3
-# Calculate the stem GPP from potential GPP following the Li et al model
-potential_gpp = np.full((dbh_col.size, 1), fill_value=5)
-
-whole_crown_gpp = calculate_whole_crown_gpp(
-    potential_gpp=potential_gpp,
-    crown_area=single_allometry.crown_area,
-    par_ext=flora.par_ext,
-    lai=flora.lai,
-)
-
-# Calculate the T Model allocation of that GPP
-allocation = StemAllocation(
-    stem_traits=flora, stem_allometry=allometries, whole_crown_gpp=whole_crown_gpp
+warnings.filterwarnings(
+    "ignore",
+    category=ExperimentalFeatureWarning,
 )
 ```
 
-```{code-cell} ipython3
-fig, axes = plt.subplots(ncols=2, nrows=5, sharex=True, figsize=(10, 12))
+The T Model {cite}`Li:2014bc` defines both the allometry of trees and a carbon
+allocation model for tree growth.
 
-plot_details = [
-    ("whole_crown_gpp", "whole_crown_gpp"),
-    ("sapwood_respiration", "sapwood_respiration"),
-    ("foliar_respiration", "foliar_respiration"),
-    ("fine_root_respiration", "fine_root_respiration"),
-    ("npp", "npp"),
-    ("foliage_turnover", "foliage_turnover"),
-    ("fine_root_turnover", "fine_root_turnover"),
-    ("delta_dbh", "delta_dbh"),
-    ("delta_stem_mass", "delta_stem_mass"),
-    ("delta_foliage_mass", "delta_foliage_mass"),
-]
+The [allometry of a stem](./allometry.md) is driven by the diameter at breast height
+(DBH, metres) following a set of scaling relationships and defined [stem
+traits](./flora.md) for its plant functional type (PFT).
 
-axes = axes.flatten()
+The [carbon allocation for a stem](./carbon_allocation.md) partitions gross primary
+productivity (GPP) in respiration, turnover, growth and efficiency losses. The diagram
+below shows the allocation process:
 
-for ax, (var, ylab) in zip(axes, plot_details):
-    ax.plot(dbh_col, getattr(allocation, var), label=flora.name)
-    ax.set_xlabel("Diameter at breast height (m)")
-    ax.set_ylabel(ylab)
+* Net primary productivity (NPP) is GPP less respiration, but also subject to yield
+  losses. The T Model includes terms for foliage, stem and fine root respiration.
+* NPP is the carbon available for plant processes. The original T Model assumed all of
+  the NPP went to biomass production, but the implementation in `pyrealm` allows users
+  to modify NPP to apply other carbon costs, such as VOC emissions, root exudates or
+  storage of non-structural carbohydrates.
+* Biomass production is then the fraction of NPP used to produce plant biomass. It has
+  to account for turnover costs (branch, foliage and fine root) and then any remaining
+  biomass production can be allocated to growth. Growth is calculated as the incremental
+  increase in DBH that accounts for the required increase in stem, foliage and fine root
+  masses, given the stem allometry.
 
-    if var == "whole_crown_gpp":
-        ax.legend(frameon=False)
-
-# Delete unused panel in 5 x 2 grid
-fig.delaxes(axes[-1])
-```
-
-An alternative calculation is to make allocation predictions for varying potential GPP
-for constant allometries:
-
-```{code-cell} ipython3
-# Column array of identical DBH values
-dbh_constant = np.full((50, 1), fill_value=0.2)
-
-# Get the allometric predictions for those stems
-constant_allometries = StemAllometry(stem_traits=flora, at_dbh=dbh_constant)
-
-# Calculate the stem GPP with _varying_ potential GPP
-potential_gpp_varying = np.linspace(1, 10, num=50)[:, None]
-
-whole_crown_gpp_varying = calculate_whole_crown_gpp(
-    potential_gpp=potential_gpp_varying,
-    crown_area=constant_allometries.crown_area,
-    par_ext=flora.par_ext,
-    lai=flora.lai,
-)
-
-# Calculate the resulting changes in the allocation with varying productivity
-allocation_2 = StemAllocation(
-    stem_traits=flora,
-    stem_allometry=constant_allometries,
-    whole_crown_gpp=whole_crown_gpp_varying,
-)
-```
-
-```{code-cell} ipython3
-fig, axes = plt.subplots(ncols=2, nrows=5, sharex=True, figsize=(10, 12))
-
-axes = axes.flatten()
-
-for ax, (var, ylab) in zip(axes, plot_details):
-    ax.plot(potential_gpp_varying, getattr(allocation_2, var), label=flora.name)
-    ax.set_xlabel("Potential GPP")
-    ax.set_ylabel(ylab)
-
-    if var == "whole_crown_gpp":
-        ax.legend(frameon=False)
-
-# Delete unused panel in 5 x 2 grid
-fig.delaxes(axes[-1])
-```
-
-As before, the {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
-{meth}`~pyrealm.demography.tmodel.StemAllometry` class can be used to export
-the data for each stem:
-
-```{code-cell} ipython3
-allocation.to_pandas().transpose()
-```
+![GPP partition](./Allocation.png)

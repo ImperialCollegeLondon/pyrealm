@@ -10,18 +10,18 @@ kernelspec:
   language: python
   name: python3
 language_info:
+  name: python
+  version: 3.12.3
+  mimetype: text/x-python
   codemirror_mode:
     name: ipython
     version: 3
-  file_extension: .py
-  mimetype: text/x-python
-  name: python
-  nbconvert_exporter: python
   pygments_lexer: ipython3
-  version: 3.11.9
+  nbconvert_exporter: python
+  file_extension: .py
 ---
 
-# Plant Functional Types and Traits
+# Plant functional types and cohorts
 
 ```{admonition} Run this notebook
 :class: hint
@@ -39,15 +39,21 @@ notes and initial demonstration code.
 
 :::
 
-This page introduces the main components of the {mod}`~pyrealm.demography` module that
-describe plant functional types (PFTs) and their traits.
+This page introduces the main components of the {mod}`~pyrealm.demography` module that:
+
+* describe plant functional types (PFTs) and their traits
+* define size-structured cohorts as a number of individuals from a specific PFT with a
+  given diameter at breast height (DBH).
 
 ```{code-cell} ipython3
-from matplotlib import pyplot as plt
 import numpy as np
-import pandas as pd
 
-from pyrealm.demography.flora import PlantFunctionalType, Flora, StemTraits
+from pyrealm.demography.flora import Flora
+from pyrealm.demography.cohorts import (
+    create_cohorts,
+    create_cohorts_from_csv,
+    cohort_id_generator,
+)
 ```
 
 ## Plant traits
@@ -108,84 +114,92 @@ the PlantFATE model {cite}`joshi:2022a`.
 
 <!-- markdownlint-enable MD007 MD004 -->
 
-## Plant Functional Types
-
-The {class}`~pyrealm.demography.flora.PlantFunctionalType` class is used define a PFT
-with a given name, along with the trait values associated with the PFT. By default,
-values for each trait are taken from Table 1 of {cite:t}`Li:2014bc`, but these can be
-adjusted for different PFTs. The code below contains three examples that just differ in
-their maximum height.
-
-Note that the `q_m` and `z_max_prop` traits are calculated from the `m` and `n` traits
-and cannot be set directly.
-
-```{code-cell} ipython3
-short_pft = PlantFunctionalType(name="short", h_max=10)
-medium_pft = PlantFunctionalType(name="medium", h_max=20)
-tall_pft = PlantFunctionalType(name="tall", h_max=30)
-```
-
-The traits values set for a PFT instance can then be shown:
-
-```{code-cell} ipython3
-short_pft
-```
-
-:::{admonition} Info
-
-In addition, `pyrealm` also defines the
-{class}`~pyrealm.demography.flora.PlantFunctionalTypeStrict` class. This version of the
-class requires that all trait values be provided when creating an instance, rather than
-falling back to the default values as above. This is mostly used within the `pyrealm`
-code for loading PFT data from files.
-
-:::
++++
 
 ## The Flora class
 
-The {class}`~pyrealm.demography.flora.Flora` class is used to collect a list of PFTs
+The {class}`~pyrealm.demography.flora.Flora` class is used to create a set of PFTs
 that will be used in a demographic simulation. It can be created directly by providing
-the list of {class}`~pyrealm.demography.flora.PlantFunctionalType` instances. The only
-requirement is that each PFT instance uses a different name.
+a list of values for each trait: you must provide the same length list of values for
+each trait but if you omit some traits then they will be automatically populated
+from default values.
 
 ```{code-cell} ipython3
-flora = Flora([short_pft, medium_pft, tall_pft])
-
+flora = Flora(name=["short", "medium", "tall"], h_max=[10, 20, 30])
 flora
 ```
 
-The {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
-{meth}`~pyrealm.demography.flora.StemTraits` class exports the trait data as a
+You can use the  {meth}`~pyrealm.demography.core.ToDataFrameMixin.to_dataframe()` method
+of {class}`~pyrealm.demography.flora.Flora`  to export the trait data as a
 {class}`pandas.DataFrame`, making it easier to use for plotting or calculations outside
 of `pyrealm`.
 
 ```{code-cell} ipython3
-flora.to_pandas()
+flora.to_dataframe().transpose()
 ```
 
-You can also create `Flora` instances using PFT data stored TOML, JSON and CSV file
-formats.
-
-## The StemTraits class
-
-The {class}`~pyrealm.demography.flora.StemTraits` class is used to hold arrays of the
-same PFT traits across any number of stems. Unlike the
-{class}`~pyrealm.demography.flora.Flora` class, the `name` attribute does not need to be
-unique. It is mostly used within `pyrealm` to represent the stem traits of plant cohorts
-within {class}`~pyrealm.demography.community.Community` objects.
-
-A `StemTraits` instance can be created directly by providing arrays for each trait, but
-is more easily created from a `Flora` object by providing a list of PFT names:
+You can also create a `Flora` instance using PFT data stored in a [CSV
+file](./pfts.csv). Note that this CSV only provides some of the PFT traits, you can use
+`Flora.from_csv("pfts.csv", strict=True)` to require that the file provides all the
+traits.
 
 ```{code-cell} ipython3
-# Get stem traits for a range of stems
-stem_pfts = ["short", "short", "short", "medium", "medium", "tall"]
-stem_traits = flora.get_stem_traits(pft_names=stem_pfts)
+flora_from_csv = Flora.from_csv("pfts.csv")
+flora_from_csv
 ```
 
-Again, the {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
-{meth}`~pyrealm.demography.flora.StemTraits` class can be use to extract the data:
+## Plant Cohorts
+
+The demography module works with size-structured cohorts, where each cohort is simply *a
+number of individuals of a given PFT of a given size*. In `pyrealm`, the size of cohorts
+is captured using the diameter at breast height (DBH, metres) and the [T
+model](./t_model.md) is then used to predict the wider allometry and carbon allocation
+of those individuals.
+
+The {class}`~pyrealm.demography.cohorts.Cohorts` structure is therefore simply a
+dataframe. Each row describes a separate cohort, with a unique ID tag, and the columns
+provide the cohort details, including the matching trait data for the PFT. Cohorts can
+also optionally be assigned into communities, allowing data for several locations to be
+held in the same `Cohorts` instance.
+
+A `Cohorts` instance is generated using either `create_cohorts` or
+`create_cohorts_from_csv`. Both functions require a `Flora` object to match cohort PFT
+names to trait data and a cohort ID generator.
 
 ```{code-cell} ipython3
-stem_traits.to_pandas()
+# Create a simple community with three cohorts
+# - 15 saplings of the short PFT
+# - 5 larger stems of the short PFT
+# - 2 large stems of tall PFT
+
+cid_generator = cohort_id_generator()
+
+cohorts = create_cohorts(
+    dbh_value=np.array([0.02, 0.20, 0.5]),
+    n_individuals=np.array([15, 5, 2]),
+    pft_name=np.array(["short", "short", "tall"]),
+    flora=flora,
+    cid_generator=cid_generator,
+)
+
+cohorts.transpose()
+```
+
+Using the `create_cohorts_from_csv` function works in much the same way and is used
+below to show a `Cohorts` instance being created from [cohort data in a CSV
+file](./cohorts.csv). This data contains a `community_id` field.
+
+A new ID generator instance is used below to show an alternative ID style but in general
+you would create one generator and use it throughout any simulation.
+
+```{code-cell} ipython3
+cid_generator = cohort_id_generator(mode="str")
+
+cohorts = create_cohorts_from_csv(
+    path="./cohorts.csv",
+    flora=flora,
+    cid_generator=cid_generator,
+)
+
+cohorts.transpose()
 ```
