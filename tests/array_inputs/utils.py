@@ -199,12 +199,17 @@ def _is_array_type(typ: type, array_type: str) -> bool:
 
     # HACK - introduced in #684. Numpy 2.2 altered the internals of the NDArray alias
     #        such that the code below no longer works, leading to the METHOD_LIST in
-    #        test_xarray being empty. Using text strings is far less elegant than
-    #        explicit type matching, so this is a quick fix to allow test_xarray to load
-    #        rather than failing the assert that validates  the DEPENDENT_LIST against
-    #        the METHOD_LIST.
-    has_numpy = True if "ndarray" in str(typ) else False
-    has_xarray = True if "DataArray" in str(typ) else False
+    #        test_xarray being empty. Numpy 2.5 alters this yet again so the methods are
+    #        not stable right now.
+    #
+    #        Using text strings is far less elegant than explicit type matching, but
+    #        this is a simple fix to allow test_xarray to load rather than failing the
+    #        assert that validates  the DEPENDENT_LIST against the METHOD_LIST. The
+    #        testing itself is skipped at present, but this is setup code for the tests.
+
+    typ_repr = repr(typ)
+    has_numpy = True if (("ndarray" in typ_repr) or ("NDArray" in typ_repr)) else False
+    has_xarray = True if "DataArray" in typ_repr else False
 
     # origin = get_origin(typ)  # Get the unannotated type, i.e. X[...] -> X
 
