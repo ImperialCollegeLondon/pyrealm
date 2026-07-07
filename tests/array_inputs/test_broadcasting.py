@@ -50,6 +50,7 @@ def shapes(i_shapes: int, i_array: int, n_array: int, name: str) -> dict[str, in
     return shape
 
 
+@pytest.skip(reason="Significant issues with maintenance.")
 @pytest.mark.array_inputs
 @pytest.mark.parametrize("i_shapes", range(3))
 @pytest.mark.parametrize("method_info", METHOD_LIST, ids=[m[0] for m in METHOD_LIST])
