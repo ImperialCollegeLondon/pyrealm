@@ -8,18 +8,6 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  codemirror_mode:
-    name: ipython
-    version: 3
-  file_extension: .py
-  mimetype: text/x-python
-  name: python
-  nbconvert_exporter: python
-  pygments_lexer: ipython3
-  version: 3.11.9
-settings:
-  output_matplotlib_strings: remove
 ---
 
 # The canopy model
@@ -231,7 +219,7 @@ ax1.set_ylabel("Height (m)")
 
 ax2.plot(crown_area, hghts)
 add_hvlines(community.stem_allometry.stem_height, ax2, False)
-add_hvlines([0, total_crown_area], ax2, True)
+add_hvlines([0, total_crown_area.squeeze()], ax2, True)
 _ = ax2.set_xlabel("Community projected crown area ($C_{p}(z), m^2$)")
 
 plt.tight_layout()

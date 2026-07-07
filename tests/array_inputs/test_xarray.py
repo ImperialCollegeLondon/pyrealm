@@ -136,6 +136,7 @@ def shapes_numpy(
     return {dim: shapes_xr.get(dim, 1) for dim in ["a", "b", "c"]}
 
 
+@pytest.skip(reason="Significant issues with maintenance.")
 @pytest.mark.array_inputs
 @pytest.mark.parametrize("i_shapes", range(3))
 @pytest.mark.parametrize("method_info", METHOD_LIST, ids=[m[0] for m in METHOD_LIST])

@@ -480,8 +480,9 @@ class PModel(PModelABC):
 
         warn(
             """
-    Pyrealm 2.0.0 uses a new default for the quantum yield of photosynthesis (phi0=1/8).
-    You may need to change settings to duplicate results from pyrealm 1.0.0.
+            The default value for quantum yield of photosynthesis (phi0=1/8) has changed
+            since pyrealm 1.0.0. You may need to change settings to duplicate results 
+            from pyrealm 1.0.0.
             """,
             category=UserWarning,
         )

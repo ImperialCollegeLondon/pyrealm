@@ -6,13 +6,14 @@ name = "pyrealm"
 version = "2.0.0"
 
 dependencies = [
-  "dacite (>1.6.0)",
-  "numpy (>=2.0)",
-  "scipy (>=1.13.0)",
+  "dacite (>1.6)",
+  "numpy (>=2.1)", # SPEC_0
+  "scipy (>=1.15)", # SPEC_0
+  "xarray (>=2024.7)", # SPEC_0
   "tabulate (>=0.8.10)",
   "marshmallow (>=3.22.0)",
   "marshmallow-dataclass (>=8.7.0)",
-  "pandas (>=2.2.2)",
+  "pandas (>=2.3.0)", # SPEC_0
   "pooch (>=1.8.2,<2.0.0)",
 ]
 
@@ -73,16 +74,16 @@ pytest-mock = "^3.8.1"
 pytest-profiling = "^1.7.0"
 
 [tool.poetry.group.dev.dependencies]
-ipython = "^8.23.0"
-jupyterlab = "^4.2.1"
-jupyterlab-myst = "^2.4.2"
-jupytext = "^1.16.2"
-matplotlib = "^3.9"
-multiprocess = "^0.70.16"
-mypy = "^1.0"
-pandas = "^2.3.0"
-pre-commit = "^3.2.0"
-ruff = "^0.5"
+ipython = "^8.27.0" # SPEC_0
+jupyterlab = "^4.2.1" 
+jupyterlab-myst = "^2.4.2" 
+jupytext = "^1.16.2" 
+matplotlib = "^3.10" # SPEC_0
+multiprocess = "^0.70.16" 
+mypy = "^1.0" 
+pandas = "^2.3.0" 
+pre-commit = "^3.2.0" 
+ruff = "^0.5" 
 
 [tool.poetry.group.docs.dependencies]
 autodocsumm = "^0.2.8"
@@ -95,7 +96,6 @@ sphinx-external-toc = "^1.0.0"
 sphinx-hoverxref = "^1.4.1"
 sphinx-rtd-theme = "^3.0.0"
 sphinxcontrib-bibtex = "^2.6.1"
-xarray = "^2024.3.0"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
@@ -176,7 +176,6 @@ convention = "google"
 notebook_metadata_filter = "settings,mystnb,language_info,-jupytext.text_representation.jupytext_version"
 # Also stop it from stripping cell metadata, except for specific ones to lose.
 cell_metadata_filter = "all,-trusted"
-
 
 [tool.codespell]
 exclude-file = ".codespellexclude.txt"

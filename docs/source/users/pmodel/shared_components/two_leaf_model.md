@@ -9,16 +9,6 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  codemirror_mode:
-    name: ipython
-    version: 3
-  file_extension: .py
-  mimetype: text/x-python
-  name: python
-  nbconvert_exporter: python
-  pygments_lexer: ipython3
-  version: 3.11.9
 ---
 
 # Using the Two Leaf, Two Stream model
@@ -98,7 +88,7 @@ tc = ds["Tair"] - 273.15
 # Atmospheric pressure in Pascals
 patm = ds["PSurf"]
 # Convert specific humidity to VPD and remove negative values
-vpd = convert_sh_to_vpd(sh=ds["Qair"], ta=tc, patm=patm / 1000) * 1000
+vpd = convert_sh_to_vpd(sh=ds["Qair"], tc=tc, patm=patm / 1000) * 1000
 vpd = np.clip(vpd, 0, np.inf)
 # Extract fAPAR (unitless)
 fapar = ds["fAPAR"]
