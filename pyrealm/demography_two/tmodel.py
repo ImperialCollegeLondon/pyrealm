@@ -369,54 +369,6 @@ def calculate_foliage_respiration(
     return whole_crown_gpp * resp_f
 
 
-def calculate_gpp_topslice(
-    gpp_topslice: NDArray[np.floating],
-    whole_crown_gpp: NDArray[np.floating],
-) -> NDArray[np.floating]:
-    r"""Calculate gpp topslice.
-
-    Calculates a fixed proportion of the total GPP for the crown that is removed before
-    further GPP allocation. This is intended as a helper variable for T Model users to
-    simulate processes not included in the T Model such as root exudation or active
-    nutrient servicing for mycorriza fungi.
-
-    .. NOTE::
-
-        This is a naive calculation method that is not part of the T model. If values
-        for GPP topslice are zero it will have no impact on the T Model calculations.
-
-    Args:
-        gpp_topslice: The portion of GPP to remove before allocation.
-        whole_crown_gpp: The individual whole crown GPP.
-    """
-    return whole_crown_gpp * gpp_topslice
-
-
-def calculate_reproductive_tissue_respiration(
-    resp_rt: NDArray[np.floating],
-    reproductive_tissue_mass: NDArray[np.floating],
-) -> NDArray[np.floating]:
-    r"""Calculate reproductive tissue respiration.
-
-    Calculates the total reproductive tissue respiration (:math:`R_{rt}`) given the
-    reproductive tissue mass (:math:`M_rt`) and the reproductive tissue respiration rate
-    of the plant functional type (:math:`r_{rt}`).
-
-    NOTE: This function is not part of the original T Model, but is included here to
-    allow for the calculation of reproductive tissue respiration in the same way as
-    sapwood respiration.
-
-    .. math::
-         R_{rt} = M_rt \, r_rt
-
-    Args:
-        resp_rt: The reproductive tissue respiration rate
-        reproductive_tissue_mass: The stem reproductive tissue mass.
-    """
-
-    return reproductive_tissue_mass * resp_rt
-
-
 def calculate_fine_root_respiration(
     fine_root_mass: NDArray[np.floating],
     resp_r: NDArray[np.floating],
@@ -453,26 +405,23 @@ def calculate_net_primary_productivity(
     foliage_respiration: NDArray[np.floating],
     fine_root_respiration: NDArray[np.floating],
     sapwood_respiration: NDArray[np.floating],
-    reproductive_tissue_respiration: NDArray[np.floating],
 ) -> NDArray[np.floating]:
     r"""Calculate net primary productivity.
 
     The net primary productivity (NPP, :math:`P_{net}`) is calculated as a plant
     functional type specific yield proportion (:math:`y`) of the total GPP (:math:`P`)
     for the individual minus respiration (:math:`R_m`), as the sum of the respiration
-    costs for foliage  (:math:`R_f`), fine roots  (:math:`R_r`), sapwood
-    (:math:`R_s`), and reproductive tissue (:math:`R_{rt}`).
+    costs for foliage  (:math:`R_f`), fine roots  (:math:`R_r`) and sapwood
+    (:math:`R_s`).
 
     .. math::
-        P_{net} = y (P - R_m) = y (P - W_{\cdot s} r_s - \zeta \sigma W_f r_r - W_f r_f
-        - P r_{rt})
+        P_{net} = y (P - R_m) = y (P - W_{\cdot s} r_s - \zeta \sigma W_f r_r - W_f r_f)
 
     Note that this differs from Equation 13 of :cite:t:`Li:2014bc`, which does not
-    include a term for foliar respiration or reproductive tissue respiration.
-    :cite:t:`Li:2014bc` remove foliar respiration as a fixed proportion of potential GPP
-    as the first step in their calculations. The approach here is equivalent but allows
-    the foliar respiration to vary between plant functional types. :cite:t:`Li:2014bc`
-    do not include reproductive tissue respiration in their calculations.
+    include a term for foliar respiration. :cite:t:`Li:2014bc` remove foliar respiration
+    as a fixed proportion of potential GPP as the first step in their calculations. The
+    approach here is equivalent but allows the foliar respiration to vary between plant
+    functional types.
 
     Args:
         yld: The yield proportion.
@@ -480,7 +429,6 @@ def calculate_net_primary_productivity(
         foliage_respiration: The total foliar respiration.
         fine_root_respiration: The total fine root respiration
         sapwood_respiration: The total sapwood respiration.
-        reproductive_tissue_respiration: The total reproductive tissue respiration.
     """
 
     return yld * (
@@ -488,7 +436,6 @@ def calculate_net_primary_productivity(
         - foliage_respiration
         - fine_root_respiration
         - sapwood_respiration
-        - reproductive_tissue_respiration
     )
 
 
@@ -496,12 +443,12 @@ def calculate_foliage_turnover(
     tau_f: NDArray[np.floating],
     foliage_mass: NDArray[np.floating],
 ) -> NDArray[np.floating]:
-    r"""Calculate turnover costs for foliage.
+    r"""Calculate foliage turnover.
 
-    This function calculates the costs associated with the turnover of foliage. This is
-    calculated from the total foliage mass of individuals (:math:`W_f`), and the
-    turnover times of foliage (:math:`\tau_f`) of the plant functional type
-    :cite:p:`{see Equation 15, }Li:2014bc`.
+    This function calculates the carbon mass of foliage turnover. This is calculated
+    from the total foliage mass of individuals (:math:`W_f`), and the turnover times of
+    foliage (:math:`\tau_f`) of the plant functional type :cite:p:`{see Equation 15,
+    }Li:2014bc`.
 
     .. math::
 
@@ -512,7 +459,37 @@ def calculate_foliage_turnover(
         foliage_mass: The foliage mass
     """
 
-    return foliage_mass * (1 / tau_f)
+    return foliage_mass / tau_f
+
+
+def calculate_branch_turnover(
+    tau_b: NDArray[np.floating],
+    stem_mass: NDArray[np.floating],
+) -> NDArray[np.floating]:
+    r"""Calculate stem turnover.
+
+    This function calculates the carbon mass of branch turnover, representing branch
+    fall and other woody tissue losses. This is calculated from the total stem mass of
+    individuals (:math:`W_s`), and the stem turnover rate (:math:`\tau_b`) for the
+    plant functional type.
+
+    .. math::
+
+        T = W_s * \tau_b
+
+    NOTE::
+
+        Th :math:`\tau_b` term is not present in :cite:t:`{see Equation 15, }Li:2014bc`
+        and is added in pyrealm. It defaults to infinity to duplicate the calculations
+        of the original model, which do not include branch turnover.
+
+    Args:
+        tau_b: The branch turnover rate
+        stem_mass: The stem mass
+    """
+
+    # This handles the default infinite turnover value because X / Inf = 0 for all X.
+    return stem_mass / tau_b
 
 
 def calculate_fine_root_turnover(
@@ -547,51 +524,6 @@ def calculate_fine_root_turnover(
     return fine_root_mass / tau_r
 
 
-def calculate_reproductive_tissue_turnover(
-    reproductive_tissue_mass: NDArray[np.floating],
-    tau_rt: NDArray[np.floating],
-) -> NDArray[np.floating]:
-    r"""Calculate reproductive tissue turnover costs.
-
-    This function calculates the costs associated with the turnover of reproductive
-    tissue. This is calculated from the total reproductive tissue mass
-    (:math:`m_{rt}`), along with the turnover time of reproductive tissue
-    (:math:`\tau_{rt}`).
-
-    .. math::
-
-        T_{rt} = m_{rt} \left( \frac{1}{\tau_{rt}}\right)
-
-    Args:
-        reproductive_tissue_mass: The mass of reproductive tissue
-        tau_rt: The turnover time of reproductive tissue
-    """
-
-    return reproductive_tissue_mass * (1 / tau_rt)
-
-
-def calculate_reproductive_tissue_mass(
-    foliage_mass: NDArray[np.floating],
-    p_foliage_for_reproductive_tissue: NDArray[np.floating],
-) -> NDArray[np.floating]:
-    r"""Calculate reproductive tissue mass.
-
-    This function calculates the mass of reproductive tissue (:math:`m_{rt}`) as a fixed
-    proportion of the total foliage mass (:math:`W_f`) of individuals.
-
-    .. math::
-
-        m_{rt} = p_{f_{rt}} W_f
-
-    Args:
-        foliage_mass: The foliage mass
-        p_foliage_for_reproductive_tissue: The proportion of foliage mass that is
-            reproductive tissue
-    """
-
-    return p_foliage_for_reproductive_tissue * foliage_mass
-
-
 def calculate_growth_increments(
     rho_s: NDArray[np.floating],
     a_hd: NDArray[np.floating],
@@ -600,10 +532,8 @@ def calculate_growth_increments(
     ca_ratio: NDArray[np.floating],
     sla: NDArray[np.floating],
     zeta: NDArray[np.floating],
-    npp: NDArray[np.floating],
+    biomass_production: NDArray[np.floating],
     turnover: NDArray[np.floating],
-    reproductive_tissue_turnover: NDArray[np.floating],
-    p_foliage_for_reproductive_tissue: NDArray[np.floating],
     dbh: NDArray[np.floating],
     stem_height: NDArray[np.floating],
 ) -> tuple[
@@ -614,15 +544,22 @@ def calculate_growth_increments(
 ]:
     r"""Calculate growth increments.
 
-    Given an estimate of net primary productivity (NPP, :math:`P_{net}`), less
-    associated turnover costs (:math:`T`), the remaining productivity can be allocated
-    to growth and hence estimate resulting increments :cite:`Li:2014bc` in:
+    This function calculates growth increments for stems. Under the T Model
+    :cite:`Li:2014bc`, estimated biomass production (:math:`B`) can be partitioned into
+    turnover costs (:math:`T`) and carbon available for allocation to biomass increments
+    in:
     
     * the stem diameter (:math:`\Delta D`),
     * the stem mass (:math:`\Delta W_s`), 
     * the foliar mass (:math:`\Delta W_f`), and
     * the fine root mass (:math:`\Delta W_r`).
-    
+
+    The T Model does not include the allocation of NPP to carbon costs outside of growth
+    and turnover, and so uses NPP directly as biomass production. Predicted NPP could be
+    decreased to capture allocation to other processes, such as VOC emissions,
+    non-structural carbohydrates or soil exudates, that are not currently modelled
+    within ``pyrealm``.
+
     The stem diameter increment can be calculated using the available productivity for
     growth and the rates of change in stem mass (:math:`\textrm{d}W_s / \textrm{d}t`)
     and in the combined foliage and fine root masses (:math:`\textrm{d}W_fr /
@@ -630,7 +567,7 @@ def calculate_growth_increments(
 
     .. math::
 
-        \Delta D = \frac{P_{net} - T}{ \textrm{d}W_s / \textrm{d}t  +
+        \Delta D = \frac{B - T}{ \textrm{d}W_s / \textrm{d}t  +
              \textrm{d}W_fr / \textrm{d}t}
 
     The rates of change in stem and foliar mass can be calculated as:
@@ -697,12 +634,6 @@ def calculate_growth_increments(
         \end{align*}
       \]
 
-    .. NOTE::
-
-        The original equations have been extended to include a term to model the costs
-        of maintaining reproductive tissue mass as a fraction of foliage mass. These
-        values can be set to zero to reproduce the predictions of the original T Model
-        calculations. 
 
     Args:
         rho_s: Wood density of the PFT
@@ -712,11 +643,8 @@ def calculate_growth_increments(
         ca_ratio: Crown area ratio of the PFT
         sla: Specific leaf area of the PFT
         zeta: The ratio of fine root mass to foliage area of the PFT
-        npp: Net primary productivity of individuals
+        biomass_production: The biomass production of individuals
         turnover: Fine root and foliage turnover cost of individuals
-        p_foliage_for_reproductive_tissue: Proportion of foliage mass that is
-            reproductive tissue.
-        reproductive_tissue_turnover: Reproductive tissue turnover cost of individuals
         dbh: Diameter at breast height of individuals
         stem_height: Stem height of individuals
     """
@@ -737,7 +665,7 @@ def calculate_growth_increments(
         lai
         * ((np.pi * ca_ratio) / (4 * a_hd))
         * (a_hd * dbh * (1 - stem_height / h_max) + stem_height)
-        * ((1 + p_foliage_for_reproductive_tissue) / sla + zeta)
+        * (1 / sla + zeta)
     )
 
     # Increment of diameter at breast height, ignoring potential zero divides resulting
@@ -747,7 +675,7 @@ def calculate_growth_increments(
         delta_d = np.where(
             dbh == 0,
             0,
-            (npp - turnover - reproductive_tissue_turnover) / (dWsdt + dWfrdt),
+            (biomass_production - turnover) / (dWsdt + dWfrdt),
         )
 
     # Partition delta Wfr into delta Wf and delta Wr using (1 + sigma.zeta)
@@ -795,7 +723,6 @@ class StemAllometry(ToDataFrameMixin):
         "stem_mass",
         "foliage_mass",
         "fine_root_mass",
-        "reproductive_tissue_mass",
         "sapwood_mass",
         "crown_r0",
         "crown_z_max",
@@ -834,8 +761,6 @@ class StemAllometry(ToDataFrameMixin):
         """Foliage mass (kg)"""
         self.fine_root_mass: NDArray[np.floating]
         """Fine root mass (kg)"""
-        self.reproductive_tissue_mass: NDArray[np.floating]
-        """Reproductive tissue mass (kg)"""
         self.sapwood_mass: NDArray[np.floating]
         """Sapwood mass (kg)"""
         self.crown_r0: NDArray[np.floating]
@@ -904,11 +829,6 @@ class StemAllometry(ToDataFrameMixin):
             crown_area=self.crown_area,
         )
 
-        self.reproductive_tissue_mass = calculate_reproductive_tissue_mass(
-            self.foliage_mass,
-            cohorts.p_foliage_for_reproductive_tissue.to_numpy(),
-        )
-
         self.sapwood_mass = calculate_sapwood_masses(
             rho_s=cohorts.rho_s.to_numpy(),
             ca_ratio=cohorts.ca_ratio.to_numpy(),
@@ -940,9 +860,9 @@ class StemAllometry(ToDataFrameMixin):
 
 
 class StemAllocation(ToDataFrameMixin):
-    """Calculate T Model GPP allocation across a set of stems.
+    """Calculate GPP allocation for stems.
 
-    This method calculates the predicted allocation of potential gross primary
+    This method calculates the predicted GPP allocations of potential gross primary
     productivity (GPP) for stems under the T Model :cite:`Li:2014bc`, given a set of
     cohorts and stem allometry predictions for those cohorts.
 
@@ -969,6 +889,7 @@ class StemAllocation(ToDataFrameMixin):
             cohorts at different GPP values.
 
     TODO::
+
         Add args to allow inputs from PModel in µgC m2 s-1? Would need to scale to
         growth period though.
     """
@@ -979,15 +900,10 @@ class StemAllocation(ToDataFrameMixin):
         "sapwood_respiration",
         "foliage_respiration",
         "fine_root_respiration",
-        "reproductive_tissue_respiration",
-        "npp",
         "foliage_turnover",
         "fine_root_turnover",
-        "reproductive_tissue_turnover",
-        "delta_dbh",
-        "delta_stem_mass",
-        "delta_foliage_mass",
-        "delta_fine_root_mass",
+        "branch_turnover",
+        "npp",
     )
 
     __experimental__ = True
@@ -1012,35 +928,19 @@ class StemAllocation(ToDataFrameMixin):
 
         self.whole_crown_gpp: NDArray[np.floating]
         """An array of gross primary productivity values (kg C) across the whole of the
-        self.crown of each stem to be allocated to respiration, turnover and growth."""
-        self.topslice_whole_crown_gpp: NDArray[np.floating]
-        """The available stem GPP after any topslicing (g C)"""
+        crown of each stem to be allocated to respiration, turnover and growth."""
         self.sapwood_respiration: NDArray[np.floating]
         """Allocation to sapwood respiration (g C)"""
         self.foliage_respiration: NDArray[np.floating]
         """Allocation to foliar respiration (g C)"""
-        self.reproductive_tissue_respiration: NDArray[np.floating]
-        """Allocation to reproductive tissue respiration (g C)"""
         self.fine_root_respiration: NDArray[np.floating]
         """Allocation to fine root respiration (g C)"""
-        self.gpp_topslice: NDArray[np.floating]
-        """GPP removed before allocation for various biological functions (g C)"""
-        self.npp: NDArray[np.floating]
-        """Net primary productivity (g C)"""
         self.foliage_turnover: NDArray[np.floating]
         """Allocation to leaf turnover (g C)"""
         self.fine_root_turnover: NDArray[np.floating]
         """Allocation to fine root turnover"""
-        self.reproductive_tissue_turnover: NDArray[np.floating]
-        """Allocation to reproductive tissue turnover (g C)"""
-        self.delta_dbh: NDArray[np.floating]
-        """Predicted increase in stem diameter from growth allocation (m)"""
-        self.delta_stem_mass: NDArray[np.floating]
-        """Predicted increase in stem mass from growth allocation (g C)"""
-        self.delta_foliage_mass: NDArray[np.floating]
-        """Predicted increase in foliar mass from growth allocation (g C)"""
-        self.delta_fine_root_mass: NDArray[np.floating]
-        """Predicted increase in fine root mass from growth allocation (g C)"""
+        self.npp: NDArray[np.floating]
+        """Net primary productivity (g C)"""
 
         # Validate GPP input and handle array broadcasting
         self.profile = profile
@@ -1079,14 +979,6 @@ class StemAllocation(ToDataFrameMixin):
             self.cohort_ids = allometry.cohort_ids
             self._ndims = allometry._ndims
 
-        self.gpp_topslice = calculate_gpp_topslice(
-            gpp_topslice=cohorts.gpp_topslice.to_numpy(),
-            whole_crown_gpp=self.whole_crown_gpp,
-        )
-
-        # Topslice GPP
-        self.topslice_whole_crown_gpp = self.whole_crown_gpp - self.gpp_topslice
-
         # To handle GPP profiling, the allocation terms that do not rely on GPP -
         # respiration and turnover - need to broadcast their inputs to match.
 
@@ -1100,16 +992,7 @@ class StemAllocation(ToDataFrameMixin):
 
         self.foliage_respiration = calculate_foliage_respiration(
             resp_f=cohorts.resp_f.to_numpy(),
-            whole_crown_gpp=self.topslice_whole_crown_gpp,
-        )
-
-        self.reproductive_tissue_respiration = (
-            calculate_reproductive_tissue_respiration(
-                resp_rt=cohorts.resp_rt.to_numpy(),
-                reproductive_tissue_mass=np.broadcast_to(
-                    allometry.reproductive_tissue_mass, self.whole_crown_gpp.shape
-                ),
-            )
+            whole_crown_gpp=self.whole_crown_gpp,
         )
 
         self.fine_root_respiration = calculate_fine_root_respiration(
@@ -1119,14 +1002,13 @@ class StemAllocation(ToDataFrameMixin):
             ),
         )
 
-        # Calculate NPP given losses to yield and respiration costs
+        # Calculate NPP given losses to yield fraction and respiration
         self.npp = calculate_net_primary_productivity(
             yld=cohorts.yld.to_numpy(),
-            whole_crown_gpp=self.topslice_whole_crown_gpp,
+            whole_crown_gpp=self.whole_crown_gpp,
             foliage_respiration=self.foliage_respiration,
             fine_root_respiration=self.fine_root_respiration,
             sapwood_respiration=self.sapwood_respiration,
-            reproductive_tissue_respiration=self.reproductive_tissue_respiration,
         )
 
         # Calculate turnover costs
@@ -1144,14 +1026,128 @@ class StemAllocation(ToDataFrameMixin):
             ),
         )
 
-        self.reproductive_tissue_turnover = calculate_reproductive_tissue_turnover(
-            tau_rt=cohorts.tau_rt.to_numpy(),
-            reproductive_tissue_mass=np.broadcast_to(
-                allometry.reproductive_tissue_mass, self.whole_crown_gpp.shape
-            ),
+        self.branch_turnover = calculate_branch_turnover(
+            tau_b=cohorts.tau_b.to_numpy(),
+            stem_mass=np.broadcast_to(allometry.stem_mass, self.whole_crown_gpp.shape),
         )
 
-        # Calculate resulting growth increments given NPP and turnover costs.
+    def __repr__(self) -> str:
+        match (self.profile, self._ndims):
+            case (True, 3):
+                repr_ = (
+                    "StemAllocation: Profiles for {2} cohorts at {1} DBH values"
+                    " and {0} GPP values."
+                ).format(
+                    *self.whole_crown_gpp.shape,
+                )
+            case (True, 2):
+                repr_ = (
+                    "StemAllocation: Profiles for {1} cohorts at {0} GPP values."
+                ).format(
+                    *self.whole_crown_gpp.shape,
+                )
+            case (False, 2):
+                repr_ = (
+                    "StemAllocation: Profiles for {1} cohorts at {0} DBH values."
+                ).format(
+                    *self.whole_crown_gpp.shape,
+                )
+            case (False, 1):
+                repr_ = ("StemAllocation: Values for {} cohorts").format(
+                    *self.whole_crown_gpp.shape,
+                )
+
+        return repr_
+
+
+class GrowthIncrements(ToDataFrameMixin):
+    """Calculate growth increments using the T Model.
+
+    Stem growth in the T Model is calculated by partitioning biomass production between
+    predicted biomass turnover and carbon available for growth. The T model is then used
+    to estimate an increase in stem diameter that allocates the carbon available for
+    growth across stem, fine roots and foliage according to the allometry of the plant
+    functional types.
+
+    This class calculates the stem, fine root and foliage growth increments given:
+
+    * a set of cohorts,
+    * the current stem allometry of those cohorts, and
+    * calculated allocation of whole crown GPP estimates for the cohorts into
+      respiration, NPP and turnover values.
+
+    By default, the calculation will follow the original T Model :cite:`Li:2014bc`, in
+    assuming that all of the net primary productivity is available for biomass
+    production. However, the ``biomass_production`` argument can be used to use reduce
+    NPP to allocate carbon to other pools such as VOC emissions, soil exudates and
+    non-structural carbohydrates.
+
+    Args:
+        cohorts: A set of cohorts
+        allometry: The current stem allometry for those cohorts
+        gpp_allocation: An allocation of whole crown GPP for those cohorts.
+        biomass_production: An optional array of biomass production values, used to
+            override the NPP estimate in ``gpp_allocation``.
+    """
+
+    _array_attrs: ClassVar[tuple[str, ...]] = (
+        "cohort_ids",
+        "delta_dbh",
+        "delta_stem_mass",
+        "delta_foliage_mass",
+        "delta_fine_root_mass",
+    )
+
+    __experimental__ = True
+
+    def __init__(
+        self,
+        cohorts: Cohorts,
+        allometry: StemAllometry,
+        stem_allocation: StemAllocation,
+        biomass_production: NDArray[np.floating] | None = None,
+    ):
+        self.cohort_ids: NDArray[np.generic]
+        """A numpy array of cohort IDs."""
+        self._profile: bool
+        """An boolean flag indicating if predictions are for a GPP profile."""
+        self._ndims: int
+        """An integer giving the dimensionality of the predictions."""
+
+        self.biomass_production: NDArray[np.floating]
+        """The carbon available for biomass production (g C)"""
+        self.delta_dbh: NDArray[np.floating]
+        """Predicted increase in stem diameter from growth allocation (m)"""
+        self.delta_stem_mass: NDArray[np.floating]
+        """Predicted increase in stem mass from growth allocation (g C)"""
+        self.delta_foliage_mass: NDArray[np.floating]
+        """Predicted increase in foliar mass from growth allocation (g C)"""
+        self.delta_fine_root_mass: NDArray[np.floating]
+        """Predicted increase in fine root mass from growth allocation (g C)"""
+
+        # Set the biomass production values to be used
+        if biomass_production is None:
+            biomass_production = stem_allocation.npp
+        else:
+            if stem_allocation.npp.shape != biomass_production.shape:
+                raise ValueError(
+                    "The biomass_production has a different shape to the "
+                    "stem_allocation predictions."
+                )
+
+        self.biomass_production = biomass_production
+
+        # Copy over attributes from stem_allocation
+        self.profile = stem_allocation.profile
+        self._ndims = stem_allocation._ndims
+        self.cohort_ids = stem_allocation.cohort_ids
+
+        turnover = (
+            stem_allocation.fine_root_turnover
+            + stem_allocation.foliage_turnover
+            + stem_allocation.branch_turnover
+        )
+
         (
             self.delta_dbh,
             self.delta_stem_mass,
@@ -1165,10 +1161,8 @@ class StemAllocation(ToDataFrameMixin):
             ca_ratio=cohorts.ca_ratio.to_numpy(),
             sla=cohorts.sla.to_numpy(),
             zeta=cohorts.zeta.to_numpy(),
-            npp=self.npp,
-            turnover=self.foliage_turnover + self.fine_root_turnover,
-            reproductive_tissue_turnover=self.reproductive_tissue_turnover,
-            p_foliage_for_reproductive_tissue=cohorts.p_foliage_for_reproductive_tissue.to_numpy(),
+            biomass_production=biomass_production,
+            turnover=turnover,
             dbh=allometry.dbh,
             stem_height=allometry.stem_height,
         )
@@ -1177,26 +1171,26 @@ class StemAllocation(ToDataFrameMixin):
         match (self.profile, self._ndims):
             case (True, 3):
                 repr_ = (
-                    "StemAllometry: Profiles for {2} cohorts at {1} DBH values"
+                    "GrowthIncrements: Profiles for {2} cohorts at {1} DBH values"
                     " and {0} GPP values."
                 ).format(
-                    *self.whole_crown_gpp.shape,
+                    *self.biomass_production.shape,
                 )
             case (True, 2):
                 repr_ = (
-                    "StemAllometry: Profiles for {1} cohorts at {0} GPP values."
+                    "GrowthIncrements: Profiles for {1} cohorts at {0} GPP values."
                 ).format(
-                    *self.whole_crown_gpp.shape,
+                    *self.biomass_production.shape,
                 )
             case (False, 2):
                 repr_ = (
-                    "StemAllometry: Profiles for {1} cohorts at {0} DBH values."
+                    "GrowthIncrements: Profiles for {1} cohorts at {0} DBH values."
                 ).format(
-                    *self.whole_crown_gpp.shape,
+                    *self.biomass_production.shape,
                 )
             case (False, 1):
-                repr_ = ("StemAllometry: Profiles for {} cohorts").format(
-                    *self.whole_crown_gpp.shape,
+                repr_ = ("GrowthIncrements: Values for {} cohorts").format(
+                    *self.biomass_production.shape,
                 )
 
         return repr_

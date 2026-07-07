@@ -296,7 +296,6 @@ def test_calculate_net_primary_productivity(rvalues):
             foliage_respiration=data["crown_gpp"] / (1 - pft["resp_f"]) * pft["resp_f"],
             fine_root_respiration=data["resp_frt"],
             sapwood_respiration=data["resp_swd"],
-            reproductive_tissue_respiration=np.zeros(np.shape(data["resp_swd"])),
         )
         assert_array_almost_equal(
             actual_npp,
@@ -358,10 +357,8 @@ def test_calculate_growth_increments(rvalues):
                 ca_ratio=pft["ca_ratio"],
                 sla=pft["sla"],
                 zeta=pft["zeta"],
-                npp=data["NPP"],
+                biomass_production=data["NPP"],
                 turnover=data["turnover"],
-                reproductive_tissue_turnover=np.zeros(np.shape(data["turnover"])),
-                p_foliage_for_reproductive_tissue=np.zeros(np.shape(data["turnover"])),
                 dbh=data["diameter"],
                 stem_height=data["height"],
             )

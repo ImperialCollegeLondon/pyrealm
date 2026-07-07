@@ -78,7 +78,7 @@ def calculate_crown_z_max_proportion(
 
 
 class Flora(BaseModel):
-    """The PlantFunctionalTypeStrict dataclass.
+    """The Flora class.
 
     This dataclass implements the set of traits required to define a plant functional
     type for use in ``pyrealm``.
@@ -94,9 +94,11 @@ class Flora(BaseModel):
       The last parameter (``f_g``) is the crown gap fraction, that defines the vertical
       distribution of leaves within the crown. This crown model parameterisation
       follows the implementation developed in the PlantFATE model :cite:`joshi:2022a`.
-
-    See also :class:`~pyrealm.demography.flora.PlantFunctionalType` for the default
-    values implemented in that subclass.
+    * The branch turnover rate (``tau_b``) has been added to capture branch fall and
+      loss of other woody tissue forming part of normal tree growth. This defaults to
+      infinity to match the expectations of the original T Model in which woody tissue
+      is never lost to turnover. There is no specific branch mass in the T model, so
+      this is the rate at which total stem biomass turns over through branch loss.
     """
 
     name: list[str] = ["default"]
@@ -115,10 +117,10 @@ class Flora(BaseModel):
     r"""Specific leaf area (:math:`\sigma`,  m2 kg-1 C)"""
     tau_f: list[float] = [4.0]
     r"""Foliage turnover time (:math:`\tau_f`,years)"""
-    tau_rt: list[float] = [1.0]
-    r"""Reproductive tissue turnover time (:math:`\tau_rt`,years)"""
     tau_r: list[float] = [1.04]
     r"""Fine-root turnover time (:math:`\tau_r`,  years)"""
+    tau_b: list[float] = [np.inf]
+    r"""Branch turnover time (:math:`\tau_b`,  years)"""
     par_ext: list[float] = [0.5]
     r"""Extinction coefficient of photosynthetically active radiation (PAR) (:math:`k`,
      -)"""
@@ -128,8 +130,6 @@ class Flora(BaseModel):
     r"""Ratio of fine-root mass to foliage area (:math:`\zeta`, kg C m-2)"""
     resp_r: list[float] = [0.913]
     r"""Fine-root specific respiration rate (:math:`r_r`, year-1)"""
-    resp_rt: list[float] = [0.0]
-    r"""Reproductive tissue respiration rate (:math:`r_{rt}`, year-1)"""
     resp_s: list[float] = [0.044]
     r"""Sapwood-specific respiration rate (:math:`r_s`,  year-1)"""
     resp_f: list[float] = [0.1]
@@ -140,10 +140,6 @@ class Flora(BaseModel):
     r"""Crown shape parameter (:math:`n`, -)"""
     f_g: list[float] = [0.05]
     r"""Crown gap fraction (:math:`f_g`, -)"""
-    p_foliage_for_reproductive_tissue: list[float] = [0.0]
-    """Reproductive tissue mass as a proportion of foliage mass (:math:`p_{rt}`, -)."""
-    gpp_topslice: list[float] = [0.0]
-    """Proportion of GPP to topslice before allocation."""
 
     # This decorator order for computed fields is recommended by pydantic but mypy
     # objects, so mute the warnings.
