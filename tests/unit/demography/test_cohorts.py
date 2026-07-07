@@ -66,8 +66,8 @@ import pytest
 )
 def test_create_cohorts(inputs, outcome, msg):
     """Test the Cohorts validation."""
-    from pyrealm.demography_two.cohorts import cohort_id_generator, create_cohorts
-    from pyrealm.demography_two.flora import Flora
+    from pyrealm.demography.cohorts import cohort_id_generator, create_cohorts
+    from pyrealm.demography.flora import Flora
 
     flora = Flora(name=["name"])
     cid_gen = cohort_id_generator()
@@ -104,11 +104,11 @@ def test_create_cohorts_from_csv(filename, outcome, expect_community):
     This also checks that the optional community_id field is handled correctly and that
     the resulting cohorts data frame includes the merged trait data.
     """
-    from pyrealm.demography_two.cohorts import (
+    from pyrealm.demography.cohorts import (
         cohort_id_generator,
         create_cohorts_from_csv,
     )
-    from pyrealm.demography_two.flora import Flora
+    from pyrealm.demography.flora import Flora
 
     datapath = resources.files("pyrealm_build_data.community") / filename
     cid_gen = cohort_id_generator()
@@ -126,11 +126,11 @@ def test_create_cohorts_from_csv(filename, outcome, expect_community):
 
 def test_Cohorts_with_Flora_extensibility():
     """Test that extended Flora subclasses work with Cohorts."""
-    from pyrealm.demography_two.cohorts import (
+    from pyrealm.demography.cohorts import (
         cohort_id_generator,
         create_cohorts_from_csv,
     )
-    from pyrealm.demography_two.flora import Flora
+    from pyrealm.demography.flora import Flora
 
     cid_gen = cohort_id_generator()
     datapath = resources.files("pyrealm_build_data.community") / "cohorts.csv"

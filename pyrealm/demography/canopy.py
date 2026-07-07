@@ -10,13 +10,14 @@ from numpy.typing import NDArray
 from scipy.optimize import root_scalar  # type: ignore [import-untyped]
 
 from pyrealm.core.experimental import warn_experimental
-from pyrealm.demography.community import Community
-from pyrealm.demography.core import PandasExporter, _validate_demography_array_arguments
+from pyrealm.demography.cohorts import Cohorts
+from pyrealm.demography.core import ToDataFrameMixin
 from pyrealm.demography.crown import (
     CrownProfile,
     calculate_relative_crown_radius_at_z,
     calculate_stem_projected_crown_area_at_z,
 )
+from pyrealm.demography.tmodel import StemAllometry
 
 
 def solve_canopy_area_filling_height(
@@ -29,7 +30,6 @@ def solve_canopy_area_filling_height(
     z_max: NDArray[np.floating],
     n_individuals: NDArray[np.floating],
     target_area: float = 0,
-    validate: bool = True,
 ) -> NDArray[np.floating]:
     """Solver function for finding the height where a canopy occupies a given area.
 
@@ -60,24 +60,12 @@ def solve_canopy_area_filling_height(
         q_m: Crown shape parameter ``q_m``` for each cohort
         z_max: Crown shape parameter ``z_m``` for each cohort
         target_area: A target projected crown area.
-        validate: Boolean flag to suppress argument validation.
     """
     # Convert z to array for validation and typing
     z_arr = np.array(z)
 
-    if validate:
-        _validate_demography_array_arguments(
-            trait_args={"m": m, "n": n, "q_m": q_m, "n_individuals": n_individuals},
-            size_args={
-                "z": z_arr,
-                "crown_area": crown_area,
-                "stem_height": stem_height,
-                "z_max": z_max,
-            },
-        )
-
     q_z = calculate_relative_crown_radius_at_z(
-        z=z_arr, stem_height=stem_height, m=m, n=n, validate=False
+        z=z_arr, stem_height=stem_height, m=m, n=n
     )
     # Calculate A(p) for the stems in each cohort
     A_p = calculate_stem_projected_crown_area_at_z(
@@ -87,14 +75,15 @@ def solve_canopy_area_filling_height(
         crown_area=crown_area,
         q_m=q_m,
         z_max=z_max,
-        validate=False,
     )
 
     return (A_p * n_individuals).sum() - target_area
 
 
 def fit_perfect_plasticity_approximation(
-    community: Community,
+    cohorts: Cohorts,
+    allometry: StemAllometry,
+    area: float,
     canopy_gap_fraction: float,
     max_stem_height: float,
     solver_tolerance: float,
@@ -119,7 +108,9 @@ def fit_perfect_plasticity_approximation(
     the equation for layer :math:`l`.
 
     Args:
-        community: A community instance providing plant cohort data
+        cohorts: A set of cohorts.
+        allometry: The stem allometry for those cohorts.
+        area: The area available for canopy to fill.
         canopy_gap_fraction: The canopy gap fraction
         max_stem_height: The maximum stem height in the canopy, used as an upper bound
             on finding the closure height of the topmost layer.
@@ -128,10 +119,8 @@ def fit_perfect_plasticity_approximation(
     """
 
     # Calculate the number of layers to contain the total community crown area
-    total_community_crown_area = (
-        community.stem_allometry.crown_area * community.cohorts.n_individuals
-    ).sum()
-    crown_area_per_layer = community.cell_area * (1 - canopy_gap_fraction)
+    total_community_crown_area = (allometry.crown_area * cohorts.n_individuals).sum()
+    crown_area_per_layer = area * (1 - canopy_gap_fraction)
     n_layers = int(np.ceil(total_community_crown_area / crown_area_per_layer))
 
     # Initialise the layer heights array and then loop over the layers indices,
@@ -149,15 +138,14 @@ def fit_perfect_plasticity_approximation(
         solution = root_scalar(
             solve_canopy_area_filling_height,
             args=(
-                community.stem_allometry.stem_height,
-                community.stem_allometry.crown_area,
-                community.stem_traits.m,
-                community.stem_traits.n,
-                community.stem_traits.q_m,
-                community.stem_allometry.crown_z_max,
-                community.cohorts.n_individuals,
+                allometry.stem_height,
+                allometry.crown_area,
+                cohorts.m,
+                cohorts.n,
+                cohorts.q_m,
+                allometry.crown_z_max,
+                cohorts.n_individuals,
                 target_area,
-                False,  # validate
             ),
             bracket=(0, upper_bound),
             xtol=solver_tolerance,
@@ -171,11 +159,11 @@ def fit_perfect_plasticity_approximation(
         # Store the solution and update the upper bound for the next layer down.
         layer_heights[layer] = upper_bound = solution.root
 
-    return layer_heights[:, None]
+    return layer_heights
 
 
 @dataclass
-class CohortCanopyData(PandasExporter):
+class CohortCanopyData(ToDataFrameMixin):
     """Dataclass holding canopy data across cohorts.
 
     The cohort canopy data consists of a set of attributes represented as two
@@ -215,10 +203,12 @@ class CohortCanopyData(PandasExporter):
         cell_area: A float setting the total canopy area available to the cohorts.
     """
 
-    array_attrs: ClassVar[tuple[str, ...]] = (
+    _array_attrs: ClassVar[tuple[str, ...]] = (
         "stem_leaf_area",
         "fapar",
     )
+
+    _ndims: ClassVar[int] = 2
 
     # Init vars
     projected_leaf_area: InitVar[NDArray[np.floating]]
@@ -286,7 +276,7 @@ class CohortCanopyData(PandasExporter):
 
 
 @dataclass
-class CommunityCanopyData(PandasExporter):
+class CommunityCanopyData(ToDataFrameMixin):
     """Dataclass holding community-wide canopy data.
 
     The community canopy data consists of a set of attributes represented as one
@@ -311,12 +301,14 @@ class CommunityCanopyData(PandasExporter):
         cell_area: The area of the cell containing the community.
     """
 
-    array_attrs: ClassVar[tuple[str, ...]] = (
+    _array_attrs: ClassVar[tuple[str, ...]] = (
         "average_layer_absorption",
         "average_layer_fapar",
         "average_layer_lai",
         "transmission_profile",
     )
+
+    _ndims: ClassVar[int] = 1
 
     # Init vars
     absorption: InitVar[NDArray[np.floating]]
@@ -406,7 +398,9 @@ class Canopy:
 
     def __init__(
         self,
-        community: Community,
+        cohorts: Cohorts,
+        allometry: StemAllometry,
+        canopy_area: float,
         layer_heights: NDArray[np.floating] | None = None,
         fit_ppa: bool = False,
         canopy_gap_fraction: float = 0,
@@ -445,41 +439,27 @@ class Canopy:
             raise ValueError("Either set fit_ppa=True or provide layer heights.")
 
         # Set simple attributes
-        self.max_stem_height = community.stem_allometry.stem_height.max()
-        self.n_cohorts = community.n_cohorts
-        self.filled_community_area = community.cell_area * (
-            1 - self.canopy_gap_fraction
-        )
+        self.max_stem_height = allometry.stem_height.max()
+        self.n_cohorts = len(cohorts)
+        self.filled_community_area = canopy_area * (1 - self.canopy_gap_fraction)
 
         # Populate layer heights
         if layer_heights is not None:
             self.heights = layer_heights
         else:
             self.heights = fit_perfect_plasticity_approximation(
-                community=community,
+                cohorts=cohorts,
+                allometry=allometry,
+                area=canopy_area,
                 canopy_gap_fraction=canopy_gap_fraction,
                 max_stem_height=self.max_stem_height,
                 solver_tolerance=solver_tolerance,
             )
 
-        self._calculate_canopy(community=community)
-
-    def _calculate_canopy(self, community: Community) -> None:
-        """Calculate the canopy structure.
-
-        This private method runs the calculations needed to populate the instance
-        attributes, given the layer heights provided by the user or calculated using the
-        PPA model.
-
-        Args:
-            community: The Community object passed to the instance.
-        """
-
         # Calculate the crown profile at the layer heights
-        # TODO - reimpose validation
         self.crown_profile = CrownProfile(
-            stem_traits=community.stem_traits,
-            stem_allometry=community.stem_allometry,
+            cohorts=cohorts,
+            allometry=allometry,
             z=self.heights,
         )
 
@@ -487,10 +467,10 @@ class Canopy:
         # projected leaf area for each stem at the layer heights
         self.cohort_data = CohortCanopyData(
             projected_leaf_area=self.crown_profile.projected_leaf_area,
-            n_individuals=community.cohorts.n_individuals,
-            lai=community.stem_traits.lai,
-            par_ext=community.stem_traits.par_ext,
-            cell_area=community.cell_area,
+            n_individuals=cohorts.n_individuals.to_numpy(),
+            lai=cohorts.lai.to_numpy(),
+            par_ext=cohorts.par_ext.to_numpy(),
+            cell_area=canopy_area,
         )
 
         # Create a shorter reference to the community data
