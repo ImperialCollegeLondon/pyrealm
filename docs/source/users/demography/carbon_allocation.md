@@ -40,9 +40,9 @@ import numpy as np
 import pandas as pd
 
 from pyrealm.core.experimental import ExperimentalFeatureWarning
-from pyrealm.demography_two.flora import Flora
-from pyrealm.demography_two.cohorts import create_cohorts, cohort_id_generator
-from pyrealm.demography_two.tmodel import (
+from pyrealm.demography.flora import Flora
+from pyrealm.demography.cohorts import create_cohorts, cohort_id_generator
+from pyrealm.demography.tmodel import (
     StemAllocation,
     StemAllometry,
     GrowthIncrements,
@@ -115,7 +115,7 @@ allocation = StemAllocation(
 allocation
 ```
 
-The {meth}`~pyrealm.demography_two.tmodel.StemAllocation.to_dataframe` method can be
+The {meth}`~pyrealm.demography.tmodel.StemAllocation.to_dataframe` method can be
 used to export data for exploration.
 
 ```{code-cell} ipython3
@@ -204,7 +204,7 @@ for ax, (var, ylab) in zip(axes, plot_details):
 ```
 
 Again, with GPP profiles, the
-{meth}`~pyrealm.demography_two.StemAllocation.to_dataframe()` method stacks predictions
+{meth}`~pyrealm.demography.StemAllocation.to_dataframe()` method stacks predictions
 into columns identified by pairings of cohort ID and DBH.
 
 ```{code-cell} ipython3

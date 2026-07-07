@@ -40,8 +40,9 @@ subtrees:
       - entries:
         - file: users/demography/flora.md
         - file: users/demography/t_model.md
+        - file: users/demography/allometry.md
+        - file: users/demography/carbon_allocation.md
         - file: users/demography/crown.md
-        - file: users/demography/community.md
         - file: users/demography/canopy.md
         - file: users/demography/light_capture.md
   - file: users/splash.md

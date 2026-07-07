@@ -8,18 +8,6 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  codemirror_mode:
-    name: ipython
-    version: 3
-  file_extension: .py
-  mimetype: text/x-python
-  name: python
-  nbconvert_exporter: python
-  pygments_lexer: ipython3
-  version: 3.11.9
-settings:
-  output_matplotlib_strings: remove
 ---
 
 # Light capture in the canopy
@@ -41,15 +29,21 @@ notes and initial demonstration code.
 :::
 
 ```{code-cell} ipython3
+import warnings
 import numpy as np
 
-
-from pyrealm.demography.flora import PlantFunctionalType, Flora
-from pyrealm.demography.community import Cohorts, Community
-
+from pyrealm.core.experimental import ExperimentalFeatureWarning
+from pyrealm.demography.flora import Flora
+from pyrealm.demography.cohorts import create_cohorts, cohort_id_generator
+from pyrealm.demography.tmodel import StemAllometry
 from pyrealm.demography.canopy import Canopy, CohortCanopyData
 
 import matplotlib.pyplot as plt
+
+warnings.filterwarnings(
+    "ignore",
+    category=ExperimentalFeatureWarning,
+)
 ```
 
 ## Light capture in a simple model
@@ -315,7 +309,7 @@ multiplied by stem leaf area to give actual absorbance.
 simulated_per_stem_f_abs
 ```
 
-Lastly - as a check sum - the total capture shows how much of the incident light across
+Lastly, the total capture shows how much of the incident light across
 the whole cell (PPFD x cell area) is captured by leaves.
 
 ```{code-cell} ipython3
@@ -468,10 +462,25 @@ canopy_light_model.community_data.transmission_profile
 canopy_light_model.community_data.transmission_to_ground
 ```
 
-Similarly, the per stem light absorption matches:
+Similarly, the per stem light absorption matches the array based calculation above:
 
 ```{code-cell} ipython3
-initial_ppfd * canopy_light_model.stem_leaf_area * canopy_light_model.fapar
+per_stem_absorption = (
+    initial_ppfd * canopy_light_model.stem_leaf_area * canopy_light_model.fapar
+)
+per_stem_absorption
+```
+
+And the total absorption across all individuals matches:
+
+```{code-cell} ipython3
+pyrealm_total_capture = (per_stem_absorption * n_individuals).sum()
+pyrealm_total_capture
+```
+
+```{code-cell} ipython3
+if np.allclose(simulated_total_capture, pyrealm_total_capture):
+    print("\U00002705 Total capture matches")
 ```
 
 ### Calculation of light capture for a community
@@ -481,32 +490,36 @@ code below uses the final example community from the documentation of the [verti
 canopy model](./canopy.md) calculations.
 
 ```{code-cell} ipython3
-# Define gappy PFTs
-gappy_short_pft = PlantFunctionalType(
-    name="short",
-    h_max=15,
-    m=1.5,
-    n=1.5,
-    f_g=0.1,
-    ca_ratio=380,
-)
-gappy_tall_pft = PlantFunctionalType(
-    name="tall", h_max=30, m=3, n=1.5, par_ext=0.6, f_g=0.1, ca_ratio=500
+# Define a flora with PFTs that have crown gap fractions
+gappy_flora = Flora(
+    name=["short", "tall"],
+    h_max=[15, 30],
+    m=[1.5, 1.5],
+    n=[3, 1.5],
+    par_ext=[0.5, 0.6],
+    f_g=[0.1, 0.1],
+    ca_ratio=[380, 500],
 )
 
-# Create the flora
-gappy_flora = Flora([gappy_short_pft, gappy_tall_pft])
+cid_generator = cohort_id_generator(mode="str")
 
-# Define community with three cohorts
-gappy_community = Community(
+# Define a community with three cohorts of stems with gappy canopies
+gappy_cohorts = create_cohorts(
     flora=gappy_flora,
-    cell_area=150,
-    cell_id=1,
-    cohorts=Cohorts(
-        dbh_values=np.array([0.1, 0.20, 0.5]),
-        n_individuals=np.array([7, 3, 2]),
-        pft_names=np.array(["short", "short", "tall"]),
-    ),
+    cid_generator=cid_generator,
+    dbh_value=np.array([0.1, 0.20, 0.5]),
+    n_individuals=np.array([7, 3, 2]),
+    pft_name=np.array(["short", "short", "tall"]),
+)
+
+gappy_allometry = StemAllometry(cohorts=gappy_cohorts)
+
+# Calculate the PPA structure canopy
+gappy_canopy_ppa = Canopy(
+    cohorts=gappy_cohorts,
+    allometry=StemAllometry(gappy_cohorts),
+    canopy_area=150,
+    fit_ppa=True,
 )
 ```
 
@@ -516,11 +529,8 @@ light capture.
 ```{code-cell} ipython3
 (
     initial_ppfd
-    * gappy_community.stem_allometry.crown_area
-    * (
-        1
-        - np.exp(-gappy_community.stem_traits.par_ext * gappy_community.stem_traits.lai)
-    )
+    * gappy_allometry.crown_area
+    * (1 - np.exp(-gappy_cohorts.par_ext.to_numpy() * gappy_cohorts.lai.to_numpy()))
 ).round(2)
 ```
 
@@ -530,7 +540,9 @@ there is a single canopy layer with no shading of any of the stem canopies.
 
 ```{code-cell} ipython3
 # Calculate the canopy profile across vertical heights
-gappy_canopy_ppa = Canopy(community=gappy_community, fit_ppa=True)
+gappy_canopy_ppa = Canopy(
+    cohorts=gappy_cohorts, allometry=gappy_allometry, canopy_area=1000, fit_ppa=True
+)
 
 # Layer closure heights
 gappy_canopy_ppa.heights
@@ -553,19 +565,13 @@ the tree crowns cannot all fit into a single layer and so are arranged under the
 model into layers.
 
 ```{code-cell} ipython3
-gappy_community = Community(
-    flora=gappy_flora,
-    cell_area=32,
-    cell_id=1,
-    cohorts=Cohorts(
-        dbh_values=np.array([0.1, 0.20, 0.5]),
-        n_individuals=np.array([7, 3, 2]),
-        pft_names=np.array(["short", "short", "tall"]),
-    ),
-)
-
 # Recalculate the canopy profile across vertical heights
-gappy_canopy_ppa = Canopy(community=gappy_community, fit_ppa=True)
+gappy_canopy_ppa = Canopy(
+    cohorts=gappy_cohorts,
+    allometry=StemAllometry(gappy_cohorts),
+    canopy_area=32,
+    fit_ppa=True,
+)
 ```
 
 The PPA solution for this community finds four layers and we can show:
@@ -593,10 +599,14 @@ each stem below the big leaf prediction. This is most marked in the smallest ste
 which only have leaf area in the very lowest layer.
 
 ```{code-cell} ipython3
-i_abs = (
+gappy_i_abs = (
     initial_ppfd
     * gappy_canopy_ppa.cohort_data.fapar
     * gappy_canopy_ppa.cohort_data.stem_leaf_area
 )
+gappy_i_abs.sum(axis=0).round(2)
+```
+
+```{code-cell} ipython3
 i_abs.sum(axis=0).round(2)
 ```

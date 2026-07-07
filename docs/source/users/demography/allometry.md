@@ -40,9 +40,9 @@ import numpy as np
 import pandas as pd
 
 from pyrealm.core.experimental import ExperimentalFeatureWarning
-from pyrealm.demography_two.flora import Flora
-from pyrealm.demography_two.cohorts import create_cohorts, cohort_id_generator
-from pyrealm.demography_two.tmodel import StemAllometry
+from pyrealm.demography.flora import Flora
+from pyrealm.demography.cohorts import create_cohorts, cohort_id_generator
+from pyrealm.demography.tmodel import StemAllometry
 
 warnings.filterwarnings(
     "ignore",
@@ -100,8 +100,8 @@ cohort_allometry = StemAllometry(cohorts=cohorts)
 cohort_allometry
 ```
 
-The {meth}`~pyrealm.demography_two.tmodel.StemAllometry` class provides the
-{meth}`~pyrealm.demography_two.StemAllometry.to_dataframe()` method to export the stem
+The {meth}`~pyrealm.demography.tmodel.StemAllometry` class provides the
+{meth}`~pyrealm.demography.StemAllometry.to_dataframe()` method to export the stem
 data for data exploration. The `StemAllometry` data retains the unique cohort ids and
 DBH from the original cohort data.
 
@@ -150,7 +150,7 @@ for ax, (var, ylab) in zip(axes.flatten(), plot_details):
         ax.legend(frameon=False)
 ```
 
-The {meth}`~pyrealm.demography_two.StemAllometry.to_dataframe()` method can still be
+The {meth}`~pyrealm.demography.StemAllometry.to_dataframe()` method can still be
 used, but the values are stacked into columns identified by pairings of cohort ID and
 DBH.
 
