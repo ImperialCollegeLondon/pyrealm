@@ -242,7 +242,6 @@ def _has_array_input(method: Callable, array_type: str) -> bool:
     from typing import get_type_hints
 
     try:
-        print(method)
         hints = get_type_hints(method)
         hints = {k: v for k, v in hints.items() if k != "return"}
     except NameError:
