@@ -28,7 +28,6 @@ import numpy as np
 
 from pyrealm.core.calendar import Calendar
 from pyrealm.core.xarray import ArrayType
-from pyrealm.demography.flora import PlantFunctionalType
 from tests.array_inputs.context import Context
 
 # These methods are not relevant or are incompatible without additional work
@@ -524,9 +523,6 @@ register_args("Cohorts")(
         "n_individuals": np.ones(_N_PFT),
         "pft_names": np.array(_PFT_NAMES, dtype=np.str_),
     }
-)
-register_args("Flora")(
-    lambda _: {"pfts": [PlantFunctionalType(name=name) for name in _PFT_NAMES]}
 )
 register_args("Flora.get_stem_traits")(lambda _: {"pft_names": _PFT_NAMES})
 register_args("Canopy")(lambda _: {"fit_ppa": True})

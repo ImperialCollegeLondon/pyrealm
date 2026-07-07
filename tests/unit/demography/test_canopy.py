@@ -105,69 +105,69 @@ def test_CohortCanopyData__init__(
     assert_allclose(instance.community_data.average_layer_lai, community_lai, atol=1e-6)
 
     # Test the inherited to_pandas method of the cohort canopy data
-    df = instance.to_pandas()
+    df = instance.to_dataframe()
 
     assert df.shape == (
         np.prod(cohort_args["projected_leaf_area"].shape),
-        len(instance.array_attrs),
+        len(instance._array_attrs),
     )
 
-    assert set(instance.array_attrs) == set(df.columns)
+    assert set(instance._array_attrs) == set(df.columns)
 
     # Test the inherited to_pandas method of the community canopy data
-    df = instance.community_data.to_pandas()
+    df = instance.community_data.to_dataframe()
 
     assert df.shape == (
         len(instance.community_data.transmission_profile),
-        len(instance.community_data.array_attrs),
+        len(instance.community_data._array_attrs),
     )
 
-    assert set(instance.community_data.array_attrs) == set(df.columns)
+    assert set(instance.community_data._array_attrs) == set(df.columns)
 
 
 def test_Canopy__init__():
-    """Test happy path for initialisation.
+    """Test initialisation.
 
-    test that when a new canopy object is instantiated, it contains the expected
+    Test that when a new canopy object is instantiated, it contains the expected
     properties.
     """
 
     from pyrealm.demography.canopy import Canopy
-    from pyrealm.demography.community import Cohorts, Community
-    from pyrealm.demography.flora import Flora, PlantFunctionalType
+    from pyrealm.demography.cohorts import cohort_id_generator, create_cohorts
+    from pyrealm.demography.flora import Flora
+    from pyrealm.demography.tmodel import StemAllometry
 
-    flora = Flora(
-        [
-            PlantFunctionalType(name="broadleaf", h_max=30),
-            PlantFunctionalType(name="conifer", h_max=20),
-        ]
-    )
+    flora = Flora(name=["broadleaf", "conifer"], h_max=[30, 20])
 
-    community = Community(
-        cell_id=1,
-        cell_area=20,
-        cohorts=Cohorts(
-            pft_names=np.array(["broadleaf", "conifer"]),
-            n_individuals=np.array([6, 1]),
-            dbh_values=np.array([0.2, 0.5]),
-        ),
+    cid_gen = cohort_id_generator()
+    cohorts = create_cohorts(
+        pft_name=np.array(["broadleaf", "conifer"]),
+        n_individuals=np.array([6, 1]),
+        dbh_value=np.array([0.2, 0.5]),
         flora=flora,
+        cid_generator=cid_gen,
     )
+
+    allometry = StemAllometry(cohorts=cohorts)
 
     canopy_gap_fraction = 0.05
-    canopy = Canopy(community, canopy_gap_fraction=canopy_gap_fraction, fit_ppa=True)
+    cell_area = 20
+    canopy = Canopy(
+        cohorts=cohorts,
+        allometry=allometry,
+        canopy_area=cell_area,
+        canopy_gap_fraction=canopy_gap_fraction,
+        fit_ppa=True,
+    )
 
     # Simply check that the shape of the stem leaf area matrix is the right shape
     n_layers_from_crown_area = int(
         np.ceil(
             (
-                (
-                    community.stem_allometry.crown_area
-                    * community.cohorts.n_individuals
-                ).sum()
+                (allometry.crown_area * cohorts.n_individuals).sum()
                 * (1 + canopy_gap_fraction)
             )
-            / community.cell_area
+            / cell_area
         )
     )
     assert canopy.cohort_data.stem_leaf_area.shape == (
@@ -176,7 +176,7 @@ def test_Canopy__init__():
     )
 
 
-def test_solve_canopy_area_filling_height(fixture_community):
+def test_solve_canopy_area_filling_height(fixture_cohorts_and_allometry):
     """Test solve_community_projected_canopy_area.
 
     The logic of this test is that given the cumulative sum of the crown areas in the
@@ -186,27 +186,91 @@ def test_solve_canopy_area_filling_height(fixture_community):
     2 and so on.
     """
 
-    from pyrealm.demography.canopy import (
-        solve_canopy_area_filling_height,
-    )
+    from pyrealm.demography.canopy import solve_canopy_area_filling_height
+
+    cohorts, allometry = fixture_cohorts_and_allometry
 
     for (
         this_height,
         this_target,
     ) in zip(
-        np.flip(fixture_community.stem_allometry.crown_z_max.flatten()),
-        np.cumsum(np.flip(fixture_community.stem_allometry.crown_area)),
+        np.flip(allometry.crown_z_max.flatten()),
+        np.cumsum(np.flip(allometry.crown_area)),
     ):
         solved = solve_canopy_area_filling_height(
             z=this_height,
-            stem_height=fixture_community.stem_allometry.stem_height,
-            crown_area=fixture_community.stem_allometry.crown_area,
-            n_individuals=fixture_community.cohorts.n_individuals,
-            m=fixture_community.stem_traits.m,
-            n=fixture_community.stem_traits.n,
-            q_m=fixture_community.stem_traits.q_m,
-            z_max=fixture_community.stem_allometry.crown_z_max,
+            stem_height=allometry.stem_height,
+            crown_area=allometry.crown_area,
+            n_individuals=cohorts.n_individuals,
+            m=cohorts.m,
+            n=cohorts.n,
+            q_m=cohorts.q_m,
+            z_max=allometry.crown_z_max,
             target_area=this_target,
         )
 
     assert solved == pytest.approx(0)
+
+
+def test_fit_perfect_plasticity_approximation():
+    """Test the PPA solver.
+
+    The logic of this test is to construct a community of 3 singleton cohorts with DBH
+    at 10, 20, 30 metres, but where the PFT traits are back-calculated so that each stem
+    has the same 60 metre crown area. The PPA solver should then find that the layer
+    closure occurs at the stems heights where the crown is widest (crown_z_max).
+
+    This does rely on the canopy shape being flat topped enough that the crowns do not
+    overlap vertically.
+    """
+
+    from pyrealm.demography.canopy import fit_perfect_plasticity_approximation
+    from pyrealm.demography.cohorts import cohort_id_generator, create_cohorts
+    from pyrealm.demography.flora import Flora
+    from pyrealm.demography.tmodel import StemAllometry, calculate_dbh_from_height
+
+    # Calculate DBH from target stem heights
+    stem_height = np.array([30, 20, 10])
+    h_max = np.array([35, 35, 35])
+    a_hd = np.array([116, 116, 116])
+    dbh = calculate_dbh_from_height(h_max=h_max, a_hd=a_hd, stem_height=stem_height)
+
+    # Set the desired cell area and then back-calculate the ca_ratio trait to give each
+    # stem that crown area
+    area = 60
+    ca_ratio = (4 * a_hd * area) / (np.pi * stem_height * dbh)
+
+    # Set up the inputs.
+    flora = Flora(
+        name=["a", "b", "c"],
+        h_max=list(h_max),
+        a_hd=list(a_hd),
+        ca_ratio=list(ca_ratio),
+    )
+
+    cid_gen = cohort_id_generator()
+    cohorts = create_cohorts(
+        pft_name=np.array(["a", "b", "c"]),
+        dbh_value=dbh,
+        n_individuals=np.ones(3).astype(int),
+        flora=flora,
+        cid_generator=cid_gen,
+    )
+
+    allometry = StemAllometry(cohorts)
+
+    # Fit the model
+    tolerance = 1e-8
+    heights = fit_perfect_plasticity_approximation(
+        cohorts=cohorts,
+        allometry=allometry,
+        area=area,
+        canopy_gap_fraction=0,
+        max_stem_height=30,
+        solver_tolerance=tolerance,
+    )
+
+    # Add the final zero to represent remaining gap to ground.
+    assert np.allclose(
+        heights, np.concatenate([allometry.crown_z_max, [0]]), atol=tolerance
+    )

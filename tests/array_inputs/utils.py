@@ -47,11 +47,6 @@ from numpy.typing import DTypeLike
 
 import pyrealm
 from pyrealm.constants import ConstantsClass
-from pyrealm.demography.flora import (
-    PlantFunctionalType,
-    PlantFunctionalTypeStrict,
-    StemTraits,
-)
 from pyrealm.pmodel import PModel
 from tests.array_inputs.context import Context
 from tests.array_inputs.overrides import (
@@ -201,23 +196,33 @@ def _is_numpy_type(typ: Any) -> bool:
 def _is_array_type(typ: type, array_type: str) -> bool:
     """Returns True if the type is a numpy array or ArrayType."""
     typ = _strip_wrapped_types(typ)
-    origin = get_origin(typ)  # Get the unannotated type, i.e. X[...] -> X
 
-    # If Union[...] or X | Y then convert to an array of argument types
-    if origin in (Union, UnionType):
-        args = get_args(typ)
-    else:
-        args = (typ,)
+    # HACK - introduced in #684. Numpy 2.2 altered the internals of the NDArray alias
+    #        such that the code below no longer works, leading to the METHOD_LIST in
+    #        test_xarray being empty. Using text strings is far less elegant than
+    #        explicit type matching, so this is a quick fix to allow test_xarray to load
+    #        rather than failing the assert that validates  the DEPENDENT_LIST against
+    #        the METHOD_LIST.
+    has_numpy = True if "ndarray" in str(typ) else False
+    has_xarray = True if "DataArray" in str(typ) else False
 
-    # Check for the different argument types
-    has_numpy = False
-    has_xarray = False
-    for arg in args:
-        if _is_numpy_type(arg):
-            has_numpy = True
+    # origin = get_origin(typ)  # Get the unannotated type, i.e. X[...] -> X
 
-        elif arg is xr.DataArray:
-            has_xarray = True
+    # # If Union[...] or X | Y then convert to an array of argument types
+    # if origin in (Union, UnionType):
+    #     args = get_args(typ)
+    # else:
+    #     args = (typ,)
+
+    # # Check for the different argument types
+    # has_numpy = False
+    # has_xarray = False
+    # for arg in args:
+    #     if _is_numpy_type(arg):
+    #         has_numpy = True
+
+    #     elif arg is xr.DataArray:
+    #         has_xarray = True
 
     # Determine if it has the correct argument types for the given 'array_type'
     if array_type == "numpy":
@@ -338,10 +343,7 @@ def _get_parameters(
 def _initialise_type_default(typ: Any, ctx: Context) -> Any:
     """Define the default value for each type."""
     from collections.abc import Sequence
-    from random import randint
     from typing import TypeAliasType, get_origin
-
-    from pyrealm.demography.flora import Flora
 
     # Handle basic wrapped types
     typ = _strip_wrapped_types(typ)
@@ -368,8 +370,6 @@ def _initialise_type_default(typ: Any, ctx: Context) -> Any:
                 return _initialise_type_default(arg, ctx)
         return _initialise_type_default(args[0], ctx)
 
-    pft_names = ["Tree1", "Tree2", "Tree3"]
-
     # Numpy arrays
     if _is_array_type(typ, "numpy"):
         dtype = _extract_numpy_dtype(typ)
@@ -392,12 +392,6 @@ def _initialise_type_default(typ: Any, ctx: Context) -> Any:
         return None
     elif typ.__name__ == "PModelABC":
         return _initialise_type_default(PModel, ctx.new("PModel"))
-    elif typ is PlantFunctionalTypeStrict:
-        return PlantFunctionalType(name=f"default.{randint(1, 10000)}")
-    elif typ is Flora:
-        return Flora([PlantFunctionalType(name=name) for name in pft_names])
-    elif typ is StemTraits:
-        return _initialise_type_default(Flora, ctx).get_stem_traits(pft_names)
     elif len(signature(typ).parameters) > 0:
         return initialise_class(typ, ctx)
     else:

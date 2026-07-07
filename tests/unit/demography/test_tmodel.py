@@ -19,7 +19,7 @@ from numpy.testing import assert_allclose
 def test_calculate_crown_r_0_values(crown_areas, expected_r0):
     """Test happy path for calculating r_0."""
 
-    from pyrealm.demography_two.tmodel import calculate_crown_r0
+    from pyrealm.demography.tmodel import calculate_crown_r0
 
     q_m = np.array([2.9038988210485766, 2.3953681843215673])
     actual_r0_values = calculate_crown_r0(q_m=q_m, crown_area=crown_areas)
@@ -78,7 +78,7 @@ class TestTModel:
         exp_shape,
     ):
         """Tests calculation of heights of tree from diameter."""
-        from pyrealm.demography_two.tmodel import calculate_heights
+        from pyrealm.demography.tmodel import calculate_heights
 
         result = calculate_heights(
             h_max=np.array(rtmodel_flora.h_max),
@@ -100,7 +100,7 @@ class TestTModel:
     ):
         """Tests inverted calculation of dbh from height."""
 
-        from pyrealm.demography_two.tmodel import calculate_dbh_from_height
+        from pyrealm.demography.tmodel import calculate_dbh_from_height
 
         result = calculate_dbh_from_height(
             h_max=np.array(rtmodel_flora.h_max),
@@ -122,7 +122,7 @@ class TestTModel:
     ):
         """Tests calculation of crown areas of trees."""
 
-        from pyrealm.demography_two.tmodel import calculate_crown_areas
+        from pyrealm.demography.tmodel import calculate_crown_areas
 
         result = calculate_crown_areas(
             ca_ratio=np.array(rtmodel_flora.ca_ratio),
@@ -145,7 +145,7 @@ class TestTModel:
     ):
         """Tests calculation of crown fraction of trees."""
 
-        from pyrealm.demography_two.tmodel import calculate_crown_fractions
+        from pyrealm.demography.tmodel import calculate_crown_fractions
 
         result = calculate_crown_fractions(
             a_hd=np.array(rtmodel_flora.a_hd),
@@ -167,7 +167,7 @@ class TestTModel:
     ):
         """Tests calculation of stem masses of trees."""
 
-        from pyrealm.demography_two.tmodel import calculate_stem_masses
+        from pyrealm.demography.tmodel import calculate_stem_masses
 
         result = calculate_stem_masses(
             rho_s=np.array(rtmodel_flora.rho_s),
@@ -189,7 +189,7 @@ class TestTModel:
     ):
         """Tests calculation of stem masses of trees."""
 
-        from pyrealm.demography_two.tmodel import calculate_foliage_masses
+        from pyrealm.demography.tmodel import calculate_foliage_masses
 
         result = calculate_foliage_masses(
             lai=np.array(rtmodel_flora.lai),
@@ -211,7 +211,7 @@ class TestTModel:
     ):
         """Tests calculation of stem masses of trees."""
 
-        from pyrealm.demography_two.tmodel import calculate_sapwood_masses
+        from pyrealm.demography.tmodel import calculate_sapwood_masses
 
         result = calculate_sapwood_masses(
             rho_s=np.array(rtmodel_flora.rho_s),
@@ -235,7 +235,7 @@ class TestTModel:
     ):
         """Tests calculation of whole crown GPP."""
 
-        from pyrealm.demography_two.tmodel import calculate_whole_crown_gpp
+        from pyrealm.demography.tmodel import calculate_whole_crown_gpp
 
         result = calculate_whole_crown_gpp(
             lai=np.array(rtmodel_flora.lai),
@@ -258,7 +258,7 @@ class TestTModel:
     ):
         """Tests calculation of sapwood respiration."""
 
-        from pyrealm.demography_two.tmodel import calculate_sapwood_respiration
+        from pyrealm.demography.tmodel import calculate_sapwood_respiration
 
         result = calculate_sapwood_respiration(
             resp_s=np.array(rtmodel_flora.resp_s),
@@ -284,7 +284,7 @@ class TestTModel:
         broadcasting
         """
 
-        from pyrealm.demography_two.tmodel import calculate_foliage_respiration
+        from pyrealm.demography.tmodel import calculate_foliage_respiration
 
         result = calculate_foliage_respiration(
             resp_f=np.array(rtmodel_flora.resp_f),
@@ -312,7 +312,7 @@ class TestTModel:
         by that intermediate calculation rather than calculate_fine_root_respiration.
         """
 
-        from pyrealm.demography_two.tmodel import (
+        from pyrealm.demography.tmodel import (
             calculate_fine_root_masses,
             calculate_fine_root_respiration,
         )
@@ -344,7 +344,7 @@ class TestTModel:
     ):
         """Tests calculation of net primary productivity."""
 
-        from pyrealm.demography_two.tmodel import (
+        from pyrealm.demography.tmodel import (
             calculate_net_primary_productivity,
         )
 
@@ -374,7 +374,7 @@ class TestTModel:
         by that intermediate calculation rather than calculate_fine_root_turnover.
         """
 
-        from pyrealm.demography_two.tmodel import (
+        from pyrealm.demography.tmodel import (
             calculate_fine_root_masses,
             calculate_fine_root_turnover,
             calculate_foliage_turnover,
@@ -414,7 +414,7 @@ class TestTModel:
     ):
         """Tests calculation of growth increments."""
 
-        from pyrealm.demography_two.tmodel import (
+        from pyrealm.demography.tmodel import (
             calculate_growth_increments,
         )
 
@@ -455,7 +455,7 @@ def test_calculate_dbh_from_height_edge_cases():
     * If H = h_max, dbh is infinite.
     """
 
-    from pyrealm.demography_two.tmodel import calculate_dbh_from_height
+    from pyrealm.demography.tmodel import calculate_dbh_from_height
 
     pft_h_max_values = np.array([20, 30])
     pft_a_hd_values = np.array([116.0, 116.0])
@@ -503,8 +503,8 @@ def test_StemAllometry_StemAllocation_GrowthIncrements(
     that 2D allometries generate the correct prediction.
     """
 
-    from pyrealm.demography_two.cohorts import cohort_id_generator, create_cohorts
-    from pyrealm.demography_two.tmodel import (
+    from pyrealm.demography.cohorts import cohort_id_generator, create_cohorts
+    from pyrealm.demography.tmodel import (
         GrowthIncrements,
         StemAllocation,
         StemAllometry,
@@ -644,8 +644,8 @@ def test_StemAllocation_GPP_inputs(
     The parameterisation provides tests of output shapes under different operating
     modes.
     """
-    from pyrealm.demography_two.cohorts import cohort_id_generator, create_cohorts
-    from pyrealm.demography_two.tmodel import (
+    from pyrealm.demography.cohorts import cohort_id_generator, create_cohorts
+    from pyrealm.demography.tmodel import (
         StemAllocation,
         StemAllometry,
     )

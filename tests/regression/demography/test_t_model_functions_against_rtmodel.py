@@ -231,18 +231,18 @@ def test_calculate_sapwood_respiration(rvalues):
         )
 
 
-def test_calculate_foliar_respiration(rvalues):
-    """Tests calculation of foliar respiration of trees.
+def test_calculate_foliage_respiration(rvalues):
+    """Tests calculation of foliage respiration of trees.
 
     This is implemented as a fixed proportion of GPP - and the reported values from R
     are automatically penalised by this proportion beforehand, so this test looks
     circular but is important to validate this difference.
     """
 
-    from pyrealm.demography.tmodel import calculate_foliar_respiration
+    from pyrealm.demography.tmodel import calculate_foliage_respiration
 
     for pft, _, data in rvalues:
-        actual_foliar_respiration = calculate_foliar_respiration(
+        actual_foliar_respiration = calculate_foliage_respiration(
             whole_crown_gpp=data["crown_gpp"],
             resp_f=pft["resp_f"],
         )
@@ -293,10 +293,9 @@ def test_calculate_net_primary_productivity(rvalues):
         actual_npp = calculate_net_primary_productivity(
             yld=pft["yld"],
             whole_crown_gpp=data["crown_gpp"] / (1 - pft["resp_f"]),
-            foliar_respiration=data["crown_gpp"] / (1 - pft["resp_f"]) * pft["resp_f"],
+            foliage_respiration=data["crown_gpp"] / (1 - pft["resp_f"]) * pft["resp_f"],
             fine_root_respiration=data["resp_frt"],
             sapwood_respiration=data["resp_swd"],
-            reproductive_tissue_respiration=np.zeros(np.shape(data["resp_swd"])),
         )
         assert_array_almost_equal(
             actual_npp,
@@ -358,10 +357,8 @@ def test_calculate_growth_increments(rvalues):
                 ca_ratio=pft["ca_ratio"],
                 sla=pft["sla"],
                 zeta=pft["zeta"],
-                npp=data["NPP"],
+                biomass_production=data["NPP"],
                 turnover=data["turnover"],
-                reproductive_tissue_turnover=np.zeros(np.shape(data["turnover"])),
-                p_foliage_for_reproductive_tissue=np.zeros(np.shape(data["turnover"])),
                 dbh=data["diameter"],
                 stem_height=data["height"],
             )
