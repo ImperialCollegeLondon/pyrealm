@@ -113,7 +113,7 @@ class CoreConst(ConstantsClass):
         0.2,
         0.2,
     )
-    """Coefficients (:math:`b, A`) of net longwave radiation function."""
+    """Coefficients (:math:`k_1, k_2, k_3, k_4`) of net longwave radiation function."""
     longwave_radiation_option: str | None = None
     """Setting to use pre-defined parameterisations for the
     :attr:`~pyrealm.constants.core_const.CoreConst.net_longwave_radiation_coef`
@@ -371,27 +371,55 @@ class CoreConst(ConstantsClass):
     def __post_init__(self) -> None:
         """Populate parameters from init settings.
 
-        This checks the init inputs and populates ``magnus_coef`` from the presets
-        if no magnus_coef is specified.
+        This checks the init inputs and populates ``magnus_coef`` and
+        ``net_longwave_radiation_coef``.
 
         Returns:
             None
         """
-        alts = dict(
+        # Note that object.__setattr__ is used to bypass the dataclass being frozen
+
+        # Handle alternative Magnus parameterisation
+        magnus_alts = dict(
             Allen1998=np.array((610.8, 17.27, 237.3)),
             Alduchov1996=np.array((610.94, 17.625, 243.04)),
             Sonntag1990=np.array((611.2, 17.62, 243.12)),
         )
 
-        # Note that object is being used here to update a frozen dataclass
-
-        # Parse other options
         if self.magnus_option is not None:
-            if self.magnus_option not in alts:
-                raise (ValueError(f"magnus_option must be one of {list(alts.keys())}"))
+            if self.magnus_option not in magnus_alts:
+                raise (
+                    ValueError(
+                        f"magnus_option must be one of {list(magnus_alts.keys())}"
+                    )
+                )
 
-            object.__setattr__(self, "magnus_coef", alts[self.magnus_option])
-            return
-
-        if self.magnus_coef is not None and len(self.magnus_coef) != 3:
+            object.__setattr__(self, "magnus_coef", magnus_alts[self.magnus_option])
+        elif self.magnus_coef is not None and len(self.magnus_coef) != 3:
             raise TypeError("magnus_coef must be a tuple of 3 numbers")
+
+        # Handle alternative longwave radiation parameterisation
+        rnl_alts = dict(
+            Prentice1993=(107.0, -1.0, 0.2, 0.2),
+            Sandoval2024=(91.86328, 1.95974, 0.2012435, 0.0883289),
+        )
+
+        if self.longwave_radiation_option is not None:
+            if self.longwave_radiation_option not in rnl_alts:
+                raise (
+                    ValueError(
+                        f"longwave_radiation_option must be one of {rnl_alts.keys()}"
+                    )
+                )
+
+            object.__setattr__(
+                self,
+                "net_longwave_radiation_coef",
+                rnl_alts[self.longwave_radiation_option],
+            )
+
+        elif (
+            self.net_longwave_radiation_coef is not None
+            and len(self.net_longwave_radiation_coef) != 4
+        ):
+            raise TypeError("net_longwave_radiation_coef must be a tuple of 4 numbers")
