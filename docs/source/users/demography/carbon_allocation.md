@@ -115,7 +115,7 @@ allocation = StemAllocation(
 allocation
 ```
 
-The {meth}`~pyrealm.demography.tmodel.StemAllocation.to_dataframe` method can be
+The {meth}`~pyrealm.demography.core.ToDataFrameMixin.to_dataframe()` method can be
 used to export data for exploration.
 
 ```{code-cell} ipython3
@@ -204,8 +204,8 @@ for ax, (var, ylab) in zip(axes, plot_details):
 ```
 
 Again, with GPP profiles, the
-{meth}`~pyrealm.demography.StemAllocation.to_dataframe()` method stacks predictions
-into columns identified by pairings of cohort ID and DBH.
+{meth}`~pyrealm.demography.core.ToDataFrameMixin.to_dataframe()` method stacks
+predictions into columns identified by pairings of cohort ID and DBH.
 
 ```{code-cell} ipython3
 allocation_profile.to_dataframe().head(6)[["cohort_ids", "whole_crown_gpp", "npp"]]

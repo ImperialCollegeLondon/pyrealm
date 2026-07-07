@@ -1,15 +1,10 @@
-"""This module provides shared functionality for the :mod:`~pyrealm.demography` module,
-implementing two abstract base classes that are used to share core methods across
-demography classes:
+"""This module provides shared functionality for the :mod:`~pyrealm.demography` module.
 
-* :class:`~pyrealm.demography.core.PandasExporter` provides the utility
-  :meth:`~pyrealm.demography.core.PandasExporter.to_pandas` method for extracting data
-  from demography classes for plotting and exploring data.
-* :class:`~pyrealm.demography.core.CohortMethods` provides the utility
-  :meth:`~pyrealm.demography.core.CohortMethods.add_cohort_data` and
-  :meth:`~pyrealm.demography.core.CohortMethods.drop_cohort_data` methods that are used
-  to append new cohort data across some demography dataclasses.
-"""  # noqa: D205, D415
+* :class:`~pyrealm.demography.core.ToDataFrameMixin` is a class mixin that provides the
+  provides the utility :meth:`~pyrealm.demography.core.ToDataFrameMixin.to_dataframe`
+  method for generating a dataframe of attributes from demography classes for plotting
+  and exploring data.
+"""
 
 from __future__ import annotations
 
@@ -24,7 +19,7 @@ class ToDataFrameMixin:
 
     1. Define a class attribute ``_array_attrs`` that identifies a set of class
        attributes that are all numpy arrays of equal shape.
-    2. Have an ``_ndims`` attribute giving the dimensionalityy of the array attributes.
+    2. Have an ``_ndims`` attribute giving the dimensionality of the array attributes.
 
     The mixin provides the `to_dataframe` method that exports the array attributes as a
     dataframe.

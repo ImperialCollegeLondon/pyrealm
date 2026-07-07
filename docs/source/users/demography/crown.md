@@ -184,9 +184,9 @@ $$
 
 ## Calculating crown model traits in `pyrealm`
 
-The {class}`~pyrealm.demography.flora.PlantFunctionalType` class is typically
-used to set specific PFTs, but the functions to calculate $q_m$ and $p_{zm}$
-are used directly below to provide a demonstration of the impacts of each trait.
+The {class}`~pyrealm.demography.flora.Flora` class is typically used to set define PFTs,
+but the functions to calculate $q_m$ and $p_{zm}$ are used directly below to provide a
+demonstration of the impacts of each trait.
 
 ```{code-cell} ipython3
 # Set a range of values for m and n traits
@@ -289,7 +289,7 @@ cohorts = create_cohorts(
 allometry = StemAllometry(cohorts=cohorts)
 ```
 
-We can use `to_dataframe` to look at  of those allometric predictions:
+We can use the `to_dataframe` method to look at  of those allometric predictions:
 
 ```{code-cell} ipython3
 allometry.to_dataframe().transpose()
@@ -319,7 +319,7 @@ above calculated at each height $z$:
 crown_profiles
 ```
 
-The {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
+The {meth}`~pyrealm.demography.core.ToDataFrameMixin.to_dataframe()` method of the
 {meth}`~pyrealm.demography.crown.CrownProfile` class can be used to extract the data
 into a table, with the separate stems identified by the column index field.
 
@@ -345,10 +345,10 @@ height values within the range of the actual height of a given stem
 multiple stems when calculating canopy profiles for a community. The plot below
 includes predictions of $q(z)$ below ground level and above stem height.
 
-The {meth}`~pyrealm.demography.crown.get_crown_xy` helper function can be used to
-extract plotting structures for each stem within a `CrownProfile` that *are*
-restricted to actual valid heights for that stem and is demonstrated in the
-[code below](#plotting-tools-for-crown-shapes).
+The {meth}`CrownProfile.to_xy<pyrealm.demography.crown.CrownProfile.to_xy>` method can
+be used to extract plotting structures for each stem within a `CrownProfile` that *are*
+restricted to actual valid heights for that stem and is demonstrated in the [code
+below](#plotting-tools-for-crown-shapes).
 
 :::
 
@@ -530,13 +530,11 @@ _ = ax.legend(frameon=False)
 
 ## Plotting tools for crown shapes
 
-The {meth}`~pyrealm.demography.crown.get_crown_xy` function makes it easier to extract
-neat crown profiles from `CrownProfile` objects, for use in plotting crown data. The
-function takes a paired `CrownProfile` and `StemAllometry` and extracts a particular
-crown profile variable, and removes predictions for each stem that are outside of
-the stem range for that stem. It converts the data for each stem into coordinates that
-will plot as a complete two-sided crown outline. The returned value is a list with an
-entry for each stem in one of two formats.
+The {meth}`CrownProfile.to_xy<pyrealm.demography.crown.CrownProfile.to_xy>` method makes
+it easier to extract neat crown profiles from `CrownProfile` objects, for use in
+plotting crown data.  It converts the data for each stem in a `CrownProfile` into
+coordinates that will plot as a complete two-sided crown outline. The returned value is
+a list with an entry for each stem in one of two formats.
 
 * A pair of coordinate arrays: height and variable value.
 * An single XY array with height and variable values in the columns, as used for

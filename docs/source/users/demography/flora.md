@@ -129,9 +129,10 @@ flora = Flora(name=["short", "medium", "tall"], h_max=[10, 20, 30])
 flora
 ```
 
-The {meth}`~pyrealm.demography.Flora.to_dataframe` method exports the trait data as
-a {class}`pandas.DataFrame`, making it easier to use for plotting or calculations
-outside of `pyrealm`.
+You can use the  {meth}`~pyrealm.demography.core.ToDataFrameMixin.to_dataframe()` method
+of {class}`~pyrealm.demography.flora.Flora`  to export the trait data as a
+{class}`pandas.DataFrame`, making it easier to use for plotting or calculations outside
+of `pyrealm`.
 
 ```{code-cell} ipython3
 flora.to_dataframe().transpose()

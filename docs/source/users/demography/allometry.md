@@ -51,7 +51,7 @@ warnings.filterwarnings(
 ```
 
 To generate allometric predictions under the T Model, we need to define a set of
-[cohorts](./flora#plant-cohorts):
+[cohorts](./flora.md#plant-cohorts):
 
 ```{code-cell} ipython3
 # Create a flora with 3 PFTs with different maximum heights
@@ -101,9 +101,9 @@ cohort_allometry
 ```
 
 The {meth}`~pyrealm.demography.tmodel.StemAllometry` class provides the
-{meth}`~pyrealm.demography.StemAllometry.to_dataframe()` method to export the stem
-data for data exploration. The `StemAllometry` data retains the unique cohort ids and
-DBH from the original cohort data.
+{meth}`~pyrealm.demography.core.ToDataFrameMixin.to_dataframe()` method to export the
+stem data for data exploration. The `StemAllometry` data retains the unique cohort ids
+and DBH from the original cohort data.
 
 ```{code-cell} ipython3
 cohort_allometry.to_dataframe().transpose()
@@ -150,7 +150,7 @@ for ax, (var, ylab) in zip(axes.flatten(), plot_details):
         ax.legend(frameon=False)
 ```
 
-The {meth}`~pyrealm.demography.StemAllometry.to_dataframe()` method can still be
+The {meth}`~pyrealm.demography.core.ToDataFrameMixin.to_dataframe()` method can still be
 used, but the values are stacked into columns identified by pairings of cohort ID and
 DBH.
 
