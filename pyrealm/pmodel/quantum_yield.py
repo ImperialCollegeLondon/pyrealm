@@ -306,6 +306,17 @@ class QuantumYieldSandoval(
 
     __experimental__: bool = True
 
+    def __init__(
+        self,
+        env: PModelEnvironment,
+        reference_kphio: float | ArrayType[np.floating] | None = np.array([
+            PModelConst().sandoval_max_phio
+        ]),
+        use_c4: bool = False,
+    ):
+        # Updates the __init__ to set the default kphio value
+        super().__init__(env=env, reference_kphio=reference_kphio, use_c4=use_c4)
+
     def peak_quantum_yield(
         self, aridity_index: ArrayType[np.floating]
     ) -> NDArray[np.floating]:
@@ -326,7 +337,9 @@ class QuantumYieldSandoval(
         # Warn that this is an experimental feature.
         warn_experimental("QuantumYieldSandoval")
 
-        if self.reference_kphio != self.env.pmodel_const.sandoval_max_phi0:
+        if self.reference_kphio is None:
+            self.reference_kphio = np.array([self.env.pmodel_const.sandoval_max_phio])
+        elif self.reference_kphio != self.env.pmodel_const.sandoval_max_phio:
             raise ValueError(
                 "The 'sandoval' method for estimating quantum yield, uses a "
                 "parameterised reference_kphio value which should not be altered."
@@ -361,12 +374,14 @@ class QuantumYieldSandoval(
         # Pass the modified Hd back into the calculation of the Arrhenius factor
         coef["hd"] = Hd
 
-        # Calculate the modified Arrhenius factor using the
+        # Calculate the modified Arrhenius factor using the Kattge Knorr peaked form
+        # NOTE - this re-calculates delta_entropy as above - would be better to have a
+        # clean way to avoid this.
         f_kphio = calculate_kattge_knorr_arrhenius_factor(
+            coef=coef,
             tk_leaf=tk_leaf,
             tk_ref=Topt,
-            entropy=delta_entropy,
-            coef=coef,
+            tc_growth=mean_growth_temperature,
             k_R=self.env.core_const.k_R,
         )
 

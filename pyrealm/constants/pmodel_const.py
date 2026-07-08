@@ -24,8 +24,9 @@ class PModelConst(ConstantsClass):
     """Curvature parameters for calculation of peak phio in the Sandoval method for
     estimation of quantum yield efficiency :cite:t:`sandoval:2026a`."""
 
-    sandoval_kinetics: dict[str, float] = field(
+    sandoval_kinetics: dict[str, float | str] = field(
         default_factory=lambda: dict(
+            entropy_method="power",
             entropy_intercept=3334.209,
             entropy_slope=-0.6402007,
             ha=70991.96,
@@ -61,6 +62,7 @@ class PModelConst(ConstantsClass):
         default_factory=lambda: dict(
             simple=dict(ha=65330),
             kattge_knorr=dict(
+                entropy_method="linear",
                 entropy_intercept=668.39,
                 entropy_slope=-1.07,
                 ha=71513,
@@ -79,6 +81,7 @@ class PModelConst(ConstantsClass):
         default_factory=lambda: dict(
             simple=dict(ha=43900),
             kattge_knorr=dict(
+                entropy_method="linear",
                 entropy_intercept=659.70,
                 entropy_slope=-0.75,
                 ha=49884,

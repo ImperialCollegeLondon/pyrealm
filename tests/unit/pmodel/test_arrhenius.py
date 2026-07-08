@@ -158,6 +158,7 @@ class TestSimpleArrhenius:
                         hd=200000,
                         entropy_intercept=668.39,
                         entropy_slope=-1.07,
+                        entropy_method="linear",
                     )
                 ),
             ),
@@ -182,21 +183,6 @@ class TestKattgeKnorrArrhenius:
                 tk_leaf=tk,
                 tk_ref=tk_ref,
                 tc_growth=args["tc_growth"],
-                coef=args["coef"]["kattge_knorr"],
-            ),
-            expected,
-        )
-
-        # Check alternative calculation via direct entropy
-        entropy = (
-            args["coef"]["kattge_knorr"]["entropy_intercept"]
-            + args["coef"]["kattge_knorr"]["entropy_slope"] * args["tc_growth"]
-        )
-        assert_allclose(
-            calculate_kattge_knorr_arrhenius_factor(
-                tk_leaf=tk,
-                tk_ref=tk_ref,
-                entropy=entropy,
                 coef=args["coef"]["kattge_knorr"],
             ),
             expected,

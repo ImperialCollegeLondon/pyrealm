@@ -78,8 +78,8 @@ maximum for $\phi_0$ {cite}`long:1993a`:
 * 9 moles of photons are needed when calculations are based on ATP requirements, giving
   $\phi_0=1/9$.
 
-These theoretical maxima are not necessarily directly used in calculating light use
-efficiency:
+These theoretical maxima are typically modified when calculating light use efficiency to
+capture limitations on achieving the theoretical maximum yield:
 
 * The values of $\phi_0$ are often adjusted to include other components of light
 capture. For example, {cite:t}`Stocker:2020dh` include a factor for incomplete leaf
