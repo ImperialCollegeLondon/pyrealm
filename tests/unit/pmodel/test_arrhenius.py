@@ -187,6 +187,21 @@ class TestKattgeKnorrArrhenius:
             expected,
         )
 
+        # Check alternative calculation via direct entropy
+        entropy = (
+            args["coef"]["kattge_knorr"]["entropy_intercept"]
+            + args["coef"]["kattge_knorr"]["entropy_slope"] * args["tc_growth"]
+        )
+        assert_allclose(
+            calculate_kattge_knorr_arrhenius_factor(
+                tk_leaf=tk,
+                tk_ref=tk_ref,
+                entropy=entropy,
+                coef=args["coef"]["kattge_knorr"],
+            ),
+            expected,
+        )
+
     def test_KattgeKnorrArrhenius(self, args, expected):
         """Test test_KattgeKnorrArrhenius."""
 
