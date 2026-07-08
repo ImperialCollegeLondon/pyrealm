@@ -15,6 +15,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm.constants import PModelConst
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.utilities import (
     check_input_shapes,
@@ -287,10 +288,12 @@ class QuantumYieldSandoval(
     def __init__(
         self,
         env: PModelEnvironment,
-        reference_kphio: float | ArrayType[np.floating] | None = 0.1179906,
+        reference_kphio: float
+        | ArrayType[np.floating]
+        | None = PModelConst().sandoval_max_phio,
         use_c4: bool = False,
     ):
-        # HACK - not super happy about this - fixes the phi_0 value
+        # Updates the __init__ to set the default kphio value
         super().__init__(env=env, reference_kphio=reference_kphio, use_c4=use_c4)
 
     def peak_quantum_yield(
@@ -312,6 +315,12 @@ class QuantumYieldSandoval(
 
         # Warn that this is an experimental feature.
         warn_experimental("QuantumYieldSandoval")
+
+        if self.reference_kphio != self.env.pmodel_const.sandoval_max_phio:
+            raise ValueError(
+                "The 'sandoval' method for estimating quantum yield, uses a "
+                "parameterised reference_kphio value which should not be altered."
+            )
 
         aridity_index = getattr(self.env, "aridity_index")
         mean_growth_temperature = getattr(self.env, "mean_growth_temperature")
