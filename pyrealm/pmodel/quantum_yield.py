@@ -279,8 +279,11 @@ class QuantumYieldSandoval(
     for an observation. It then calculates the expected :math:`\phi_0` as a function of
     temperature via a modified Arrhenius relationship.
 
-    The reference kphio for this approach is the theoretical maximum quantum yield,
-    defaulting to the ratio of 1/9 in the absence of a Q cycle :cite:`long:1993a`.
+    The reference kphio for this approach is fixed: the implementation calculated robust
+    estimates of fit for a range of parameters from global FluxNET sites. Changing the
+    parameters would require a reoptimisation of all parameters for the method. The
+    fixed value estimated from data is very close to the ratio of 1/9 based on ATP
+    requirements :cite:`long:1993a`.
     """
 
     __experimental__: bool = True
