@@ -6,7 +6,7 @@ the key equations used in each function.
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.constants import CoreConst, PModelConst
+from pyrealm.constants import CoreConst, KattgeKnorrKinetics, PModelConst
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.core.water import calculate_viscosity_h2o
 from pyrealm.core.xarray import ArrayType, xarray_inputs
@@ -68,7 +68,7 @@ def calculate_simple_arrhenius_factor(
 
 
 def calculate_kattge_knorr_arrhenius_factor(
-    coef: dict[str, float | str],
+    coef: KattgeKnorrKinetics,
     tk_leaf: ArrayType[np.floating],
     tk_ref: ArrayType[np.floating],
     tc_growth: ArrayType[np.floating],
@@ -116,7 +116,7 @@ def calculate_kattge_knorr_arrhenius_factor(
 
         \Delta S = a * t_g ^ b
 
-    The coefficients dictionary must provide entries for:
+    The coefficients object provides entries for:
 
     * ha: The activation energy of the enzyme (:math:`H_a`)
     * hd: The deactivation energy of the enzyme (:math:`H_d`)
@@ -156,20 +156,22 @@ def calculate_kattge_knorr_arrhenius_factor(
         array([0.261])
     """
 
-    if coef["entropy_method"] == "linear":
-        entropy = coef["entropy_intercept"] + coef["entropy_slope"] * tc_growth
-    elif coef["entropy_method"] == "power":
-        entropy = coef["entropy_intercept"] * tc_growth ** coef["entropy_slope"]
+    tk_leaf, tk_ref, tc_growth = xarray_inputs(tk_leaf, tk_ref, tc_growth)
+
+    if coef.entropy_method == "linear":
+        entropy = coef.entropy_intercept + coef.entropy_slope * tc_growth
+    elif coef.entropy_method == "power":
+        entropy = coef.entropy_intercept * tc_growth**coef.entropy_slope
     else:
-        raise ValueError(f"Unknown entropy method: {coef["entropy_method"]}")
+        raise ValueError(f"Unknown entropy method: {coef.entropy_method}")
 
     # Calculate Arrhenius components
     fva = calculate_simple_arrhenius_factor(
-        tk=tk_leaf, ha=coef["ha"], tk_ref=tk_ref, k_R=k_R
+        tk=tk_leaf, ha=coef.ha, tk_ref=tk_ref, k_R=k_R
     )
 
-    fvb = (1 + np.exp((tk_ref * entropy - coef["hd"]) / (k_R * tk_ref))) / (
-        1 + np.exp((tk_leaf * entropy - coef["hd"]) / (k_R * tk_leaf))
+    fvb = (1 + np.exp((tk_ref * entropy - coef.hd) / (k_R * tk_ref))) / (
+        1 + np.exp((tk_leaf * entropy - coef.hd) / (k_R * tk_leaf))
     )
 
     return fva * fvb

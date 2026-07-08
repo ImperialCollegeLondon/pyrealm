@@ -15,7 +15,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.constants import PModelConst
+from pyrealm.constants import KattgeKnorrKinetics, PModelConst
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.utilities import (
     check_input_shapes,
@@ -306,17 +306,6 @@ class QuantumYieldSandoval(
 
     __experimental__: bool = True
 
-    def __init__(
-        self,
-        env: PModelEnvironment,
-        reference_kphio: float | ArrayType[np.floating] | None = np.array([
-            PModelConst().sandoval_max_phio
-        ]),
-        use_c4: bool = False,
-    ):
-        # Updates the __init__ to set the default kphio value
-        super().__init__(env=env, reference_kphio=reference_kphio, use_c4=use_c4)
-
     def peak_quantum_yield(
         self, aridity_index: ArrayType[np.floating]
     ) -> NDArray[np.floating]:
@@ -338,8 +327,8 @@ class QuantumYieldSandoval(
         warn_experimental("QuantumYieldSandoval")
 
         if self.reference_kphio is None:
-            self.reference_kphio = np.array([self.env.pmodel_const.sandoval_max_phio])
-        elif self.reference_kphio != self.env.pmodel_const.sandoval_max_phio:
+            self.reference_kphio = np.array([self.env.pmodel_const.sandoval_max_phi0])
+        elif self.reference_kphio != self.env.pmodel_const.sandoval_max_phi0:
             raise ValueError(
                 "The 'sandoval' method for estimating quantum yield, uses a "
                 "parameterised reference_kphio value which should not be altered."
@@ -350,21 +339,20 @@ class QuantumYieldSandoval(
 
         # Calculate enzyme kinetic. This needs to use a copy because the Hd value is
         # modified below.
-        coef = self.env.pmodel_const.sandoval_kinetics.copy()
+        coef = KattgeKnorrKinetics(**self.env.pmodel_const.sandoval_kinetics.__dict__)
 
         # Calculate change in activation entropy as a power function of the
         # mean growth temperature, J/mol/K
         delta_entropy = (
-            coef["entropy_intercept"] * mean_growth_temperature ** coef["entropy_slope"]
+            coef.entropy_intercept * mean_growth_temperature**coef.entropy_slope
         )
         # Calculate de-activation energy J/mol
-        Hd = coef["hd"] * delta_entropy
+        Hd = coef.hd * delta_entropy
 
         # Calculate the optimal temperature to be used as the reference temperature in
         # the modified Arrhenius calculation
         Topt = Hd / (
-            delta_entropy
-            - self.env.core_const.k_R * np.log(coef["ha"] / (Hd - coef["ha"]))
+            delta_entropy - self.env.core_const.k_R * np.log(coef.ha / (Hd - coef.ha))
         )
         tk_leaf = self.env.tk
 
@@ -372,7 +360,7 @@ class QuantumYieldSandoval(
         kphio_peak = self.peak_quantum_yield(aridity_index=aridity_index)
 
         # Pass the modified Hd back into the calculation of the Arrhenius factor
-        coef["hd"] = Hd
+        coef.hd = Hd
 
         # Calculate the modified Arrhenius factor using the Kattge Knorr peaked form
         # NOTE - this re-calculates delta_entropy as above - would be better to have a

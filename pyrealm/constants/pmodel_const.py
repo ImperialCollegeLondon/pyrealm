@@ -1,11 +1,30 @@
 """The pmodel_const module TODO."""
 
 from dataclasses import dataclass, field
+from typing import Literal
 
 import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import ConstantsClass
+
+
+@dataclass
+class KattgeKnorrKinetics:
+    """Dataclass for holding parameters for Kattge Knorr style Arrhenius scaling."""
+
+    entropy_method: Literal["power", "linear"]
+    entropy_intercept: float
+    entropy_slope: float
+    ha: float
+    hd: float
+
+
+@dataclass
+class SimpleKinetics:
+    """Dataclass for holding parameters for simple Arrhenius scaling."""
+
+    ha: float
 
 
 @dataclass(frozen=True)
@@ -24,8 +43,8 @@ class PModelConst(ConstantsClass):
     """Curvature parameters for calculation of peak phio in the Sandoval method for
     estimation of quantum yield efficiency :cite:t:`sandoval:2026a`."""
 
-    sandoval_kinetics: dict[str, float | str] = field(
-        default_factory=lambda: dict(
+    sandoval_kinetics: KattgeKnorrKinetics = field(
+        default_factory=lambda: KattgeKnorrKinetics(
             entropy_method="power",
             entropy_intercept=3334.209,
             entropy_slope=-0.6402007,
@@ -60,8 +79,8 @@ class PModelConst(ConstantsClass):
     # Arrhenius values
     arrhenius_vcmax: dict = field(
         default_factory=lambda: dict(
-            simple=dict(ha=65330),
-            kattge_knorr=dict(
+            simple=SimpleKinetics(ha=65330),
+            kattge_knorr=KattgeKnorrKinetics(
                 entropy_method="linear",
                 entropy_intercept=668.39,
                 entropy_slope=-1.07,
@@ -79,8 +98,8 @@ class PModelConst(ConstantsClass):
 
     arrhenius_jmax: dict = field(
         default_factory=lambda: dict(
-            simple=dict(ha=43900),
-            kattge_knorr=dict(
+            simple=SimpleKinetics(ha=43900),
+            kattge_knorr=KattgeKnorrKinetics(
                 entropy_method="linear",
                 entropy_intercept=659.70,
                 entropy_slope=-0.75,

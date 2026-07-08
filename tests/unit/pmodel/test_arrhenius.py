@@ -6,6 +6,8 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
+from pyrealm.constants import KattgeKnorrKinetics, SimpleKinetics
+
 
 @pytest.mark.parametrize(
     argnames="classname,coef,drop,init_raises,init_msg,call_raises,call_msg",
@@ -23,12 +25,20 @@ from numpy.testing import assert_allclose
         ),
         pytest.param(
             "SimpleArrhenius",
-            dict(simple=dict(hA=1)),
+            dict(
+                simple=KattgeKnorrKinetics(
+                    ha=1,
+                    hd=1,
+                    entropy_method="linear",
+                    entropy_intercept=1,
+                    entropy_slope=1,
+                )
+            ),
             [],
             does_not_raise(),
             None,
             pytest.raises(ValueError),
-            "The coefficients for the simple Arrhenius method do not provide: ha",
+            "Incorrect coefficients class provided.",
             id="simple_coef_no_ha",
         ),
         pytest.param(
@@ -44,18 +54,25 @@ from numpy.testing import assert_allclose
         ),
         pytest.param(
             "KattgeKnorrArrhenius",
-            dict(kattge_knorr=dict(hA=1)),
+            dict(kattge_knorr=SimpleKinetics(ha=1)),
             [],
             does_not_raise(),
             None,
             pytest.raises(ValueError),
-            "The coefficients for the kattge_knorr Arrhenius method do not provide: "
-            "entropy_intercept,entropy_slope,ha,hd",
+            "Incorrect coefficients class provided.",
             id="kattge_knorr_coef_no_ha",
         ),
         pytest.param(
             "KattgeKnorrArrhenius",
-            dict(kattge_knorr=dict(hA=1)),
+            dict(
+                kattge_knorr=KattgeKnorrKinetics(
+                    ha=1,
+                    hd=1,
+                    entropy_method="linear",
+                    entropy_intercept=1,
+                    entropy_slope=1,
+                )
+            ),
             ["mean_growth_temperature"],
             pytest.raises(ValueError),
             "KattgeKnorrArrhenius (method kattge_knorr) requires "
@@ -105,7 +122,11 @@ def test_ArrheniusFactorABC_init_and_call(
     argnames="args,expected",
     argvalues=[
         pytest.param(
-            dict(tc=np.array([26.85]), tc_ref=25, coef=dict(simple=dict(ha=40000))),
+            dict(
+                tc=np.array([26.85]),
+                tc_ref=25,
+                coef=dict(simple=SimpleKinetics(ha=40000)),
+            ),
             np.array([1.10462263]),
             id="simple",
         )
@@ -123,7 +144,7 @@ class TestSimpleArrhenius:
 
         assert_allclose(
             calculate_simple_arrhenius_factor(
-                tk=tk, tk_ref=tk_ref, ha=args["coef"]["simple"]["ha"]
+                tk=tk, tk_ref=tk_ref, ha=args["coef"]["simple"].ha
             ),
             expected,
         )
@@ -153,7 +174,7 @@ class TestSimpleArrhenius:
                 tc_ref=25,
                 tc_growth=np.array([10]),
                 coef=dict(
-                    kattge_knorr=dict(
+                    kattge_knorr=KattgeKnorrKinetics(
                         ha=71513,
                         hd=200000,
                         entropy_intercept=668.39,
