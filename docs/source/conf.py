@@ -72,7 +72,7 @@ extensions = [
     "sphinx_rtd_theme",
     "sphinx_design",
     "sphinx_external_toc",
-    # "hoverxref.extension",
+    "hoverxref.extension",
     "experimental",
 ]
 

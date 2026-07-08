@@ -17,7 +17,7 @@ dependencies = [
   "pooch (>=1.8.2,<2.0.0)",
 ]
 
-requires-python = ">=3.12, <3.15"
+requires-python = ">=3.12"
 
 authors = [
   {name = "David Orme", email = "d.orme@imperial.ac.uk"},
@@ -90,8 +90,8 @@ autodocsumm = "^0.2.8"
 myst-nb = "^1.0.0"
 netcdf4 = "^1.6.3"
 pydocstyle = "^6.1.1"
-sphinx = "^9.0.0"
-sphinx-design = "^0.7"
+sphinx = "^7.0.0"
+sphinx-design = "^0.6"
 sphinx-external-toc = "^1.0.0"
 sphinx-hoverxref = "^1.4.1"
 sphinx-rtd-theme = "^3.0.0"
