@@ -20,7 +20,7 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.constants import KattgeKnorrKinetics, SimpleKinetics
+from pyrealm.constants import KattgeKnorrArrheniusCoef, SimpleArrheniusCoef
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.pmodel.functions import (
     calculate_kattge_knorr_arrhenius_factor,
@@ -65,7 +65,7 @@ class ArrheniusFactorABC(ABC):
     :data:`~pyrealm.pmodel.arrhenius.ARRHENIUS_METHOD_REGISTRY`. This name is also used
     to select a matching dictionary of coefficients from inputs.
     """
-    coefficient_class: type[KattgeKnorrKinetics] | type[SimpleKinetics]
+    coefficient_class: type[KattgeKnorrArrheniusCoef] | type[SimpleArrheniusCoef]
     """The coefficient class that is required to calculate the factors."""
 
     required_env_variables: tuple[str, ...]
@@ -132,7 +132,7 @@ class ArrheniusFactorABC(ABC):
     def __init_subclass__(
         cls,
         method: str,
-        coefficient_class: type[KattgeKnorrKinetics] | type[SimpleKinetics],
+        coefficient_class: type[KattgeKnorrArrheniusCoef] | type[SimpleArrheniusCoef],
         required_env_variables: tuple[str, ...],
     ) -> None:
         """Initialise a subclass deriving from this ABC."""
@@ -147,7 +147,7 @@ class ArrheniusFactorABC(ABC):
 class SimpleArrhenius(
     ArrheniusFactorABC,
     method="simple",
-    coefficient_class=SimpleKinetics,
+    coefficient_class=SimpleArrheniusCoef,
     required_env_variables=tuple(),
 ):
     """Class providing simple Arrhenius scaling.
@@ -159,7 +159,7 @@ class SimpleArrhenius(
 
     Examples:
         >>> import numpy as np
-        >>> from pyrealm.constants import SimpleKinetics
+        >>> from pyrealm.constants import SimpleArrheniusCoef
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]),
         ...     patm=np.array([101325]),
@@ -169,12 +169,14 @@ class SimpleArrhenius(
         >>> arrh = SimpleArrhenius(env=env)
         >>> # Simple Arrhenius scaling factor using V_cmax coefficients
         >>> arrh.calculate_arrhenius_factor(
-        ...     coefficients={'simple': SimpleKinetics(ha =  65330)}
+        ...     coefficients={'simple': SimpleArrheniusCoef(ha =  65330)}
         ... ).round(5)
         array([0.63795])
     """
 
-    def _calculation_method(self, coefficients: SimpleKinetics) -> NDArray[np.floating]:
+    def _calculation_method(
+        self, coefficients: SimpleArrheniusCoef
+    ) -> NDArray[np.floating]:
         return calculate_simple_arrhenius_factor(
             tk=self.env.tk,
             tk_ref=self.env.pmodel_const.tk_ref,
@@ -186,7 +188,7 @@ class SimpleArrhenius(
 class KattgeKnorrArrhenius(
     ArrheniusFactorABC,
     method="kattge_knorr",
-    coefficient_class=KattgeKnorrKinetics,
+    coefficient_class=KattgeKnorrArrheniusCoef,
     required_env_variables=("mean_growth_temperature",),
 ):
     """Class providing Kattge Knorr Arrhenius scaling.
@@ -205,7 +207,7 @@ class KattgeKnorrArrhenius(
 
     Examples:
         >>> import numpy as np
-        >>> from pyrealm.constants import KattgeKnorrKinetics
+        >>> from pyrealm.constants import KattgeKnorrArrheniusCoef
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]),
         ...     patm=np.array([101325]),
@@ -217,7 +219,7 @@ class KattgeKnorrArrhenius(
         >>> # Kattge and Knorr Arrhenius scaling factor using V_cmax coefficients
         >>> arrh.calculate_arrhenius_factor(
         ...     coefficients={"kattge_knorr":
-        ...        KattgeKnorrKinetics(
+        ...        KattgeKnorrArrheniusCoef(
         ...             entropy_method = "linear",
         ...             entropy_intercept = 668.39,
         ...             entropy_slope = -1.07,
@@ -232,7 +234,7 @@ class KattgeKnorrArrhenius(
     __experimental__ = True
 
     def _calculation_method(
-        self, coefficients: KattgeKnorrKinetics
+        self, coefficients: KattgeKnorrArrheniusCoef
     ) -> NDArray[np.floating]:
         warn_experimental("KattgeKnorrArrhenius")
 

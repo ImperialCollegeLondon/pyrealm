@@ -10,7 +10,7 @@ from pyrealm.constants import ConstantsClass
 
 
 @dataclass
-class KattgeKnorrKinetics:
+class KattgeKnorrArrheniusCoef:
     """Dataclass for holding parameters for Kattge Knorr style Arrhenius scaling."""
 
     entropy_method: Literal["power", "linear"]
@@ -21,7 +21,7 @@ class KattgeKnorrKinetics:
 
 
 @dataclass
-class SimpleKinetics:
+class SimpleArrheniusCoef:
     """Dataclass for holding parameters for simple Arrhenius scaling."""
 
     ha: float
@@ -43,8 +43,8 @@ class PModelConst(ConstantsClass):
     """Curvature parameters for calculation of peak phio in the Sandoval method for
     estimation of quantum yield efficiency :cite:t:`sandoval:2026a`."""
 
-    sandoval_kinetics: KattgeKnorrKinetics = field(
-        default_factory=lambda: KattgeKnorrKinetics(
+    sandoval_kinetics: KattgeKnorrArrheniusCoef = field(
+        default_factory=lambda: KattgeKnorrArrheniusCoef(
             entropy_method="power",
             entropy_intercept=3334.209,
             entropy_slope=-0.6402007,
@@ -79,8 +79,8 @@ class PModelConst(ConstantsClass):
     # Arrhenius values
     arrhenius_vcmax: dict = field(
         default_factory=lambda: dict(
-            simple=SimpleKinetics(ha=65330),
-            kattge_knorr=KattgeKnorrKinetics(
+            simple=SimpleArrheniusCoef(ha=65330),
+            kattge_knorr=KattgeKnorrArrheniusCoef(
                 entropy_method="linear",
                 entropy_intercept=668.39,
                 entropy_slope=-1.07,
@@ -98,8 +98,8 @@ class PModelConst(ConstantsClass):
 
     arrhenius_jmax: dict = field(
         default_factory=lambda: dict(
-            simple=SimpleKinetics(ha=43900),
-            kattge_knorr=KattgeKnorrKinetics(
+            simple=SimpleArrheniusCoef(ha=43900),
+            kattge_knorr=KattgeKnorrArrheniusCoef(
                 entropy_method="linear",
                 entropy_intercept=659.70,
                 entropy_slope=-0.75,

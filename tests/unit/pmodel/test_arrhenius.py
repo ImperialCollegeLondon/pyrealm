@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
-from pyrealm.constants import KattgeKnorrKinetics, SimpleKinetics
+from pyrealm.constants import KattgeKnorrArrheniusCoef, SimpleArrheniusCoef
 
 
 @pytest.mark.parametrize(
@@ -26,7 +26,7 @@ from pyrealm.constants import KattgeKnorrKinetics, SimpleKinetics
         pytest.param(
             "SimpleArrhenius",
             dict(
-                simple=KattgeKnorrKinetics(
+                simple=KattgeKnorrArrheniusCoef(
                     ha=1,
                     hd=1,
                     entropy_method="linear",
@@ -54,7 +54,7 @@ from pyrealm.constants import KattgeKnorrKinetics, SimpleKinetics
         ),
         pytest.param(
             "KattgeKnorrArrhenius",
-            dict(kattge_knorr=SimpleKinetics(ha=1)),
+            dict(kattge_knorr=SimpleArrheniusCoef(ha=1)),
             [],
             does_not_raise(),
             None,
@@ -65,7 +65,7 @@ from pyrealm.constants import KattgeKnorrKinetics, SimpleKinetics
         pytest.param(
             "KattgeKnorrArrhenius",
             dict(
-                kattge_knorr=KattgeKnorrKinetics(
+                kattge_knorr=KattgeKnorrArrheniusCoef(
                     ha=1,
                     hd=1,
                     entropy_method="linear",
@@ -125,7 +125,7 @@ def test_ArrheniusFactorABC_init_and_call(
             dict(
                 tc=np.array([26.85]),
                 tc_ref=25,
-                coef=dict(simple=SimpleKinetics(ha=40000)),
+                coef=dict(simple=SimpleArrheniusCoef(ha=40000)),
             ),
             np.array([1.10462263]),
             id="simple",
@@ -174,7 +174,7 @@ class TestSimpleArrhenius:
                 tc_ref=25,
                 tc_growth=np.array([10]),
                 coef=dict(
-                    kattge_knorr=KattgeKnorrKinetics(
+                    kattge_knorr=KattgeKnorrArrheniusCoef(
                         ha=71513,
                         hd=200000,
                         entropy_intercept=668.39,

@@ -15,7 +15,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.constants import KattgeKnorrKinetics, PModelConst
+from pyrealm.constants import KattgeKnorrArrheniusCoef, PModelConst
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.utilities import (
     check_input_shapes,
@@ -339,7 +339,9 @@ class QuantumYieldSandoval(
 
         # Calculate enzyme kinetic. This needs to use a copy because the Hd value is
         # modified below.
-        coef = KattgeKnorrKinetics(**self.env.pmodel_const.sandoval_kinetics.__dict__)
+        coef = KattgeKnorrArrheniusCoef(
+            **self.env.pmodel_const.sandoval_kinetics.__dict__
+        )
 
         # Calculate change in activation entropy as a power function of the
         # mean growth temperature, J/mol/K

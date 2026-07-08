@@ -6,7 +6,7 @@ the key equations used in each function.
 import numpy as np
 from numpy.typing import NDArray
 
-from pyrealm.constants import CoreConst, KattgeKnorrKinetics, PModelConst
+from pyrealm.constants import CoreConst, KattgeKnorrArrheniusCoef, PModelConst
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.core.water import calculate_viscosity_h2o
 from pyrealm.core.xarray import ArrayType, xarray_inputs
@@ -68,7 +68,7 @@ def calculate_simple_arrhenius_factor(
 
 
 def calculate_kattge_knorr_arrhenius_factor(
-    coef: KattgeKnorrKinetics,
+    coef: KattgeKnorrArrheniusCoef,
     tk_leaf: ArrayType[np.floating],
     tk_ref: ArrayType[np.floating],
     tc_growth: ArrayType[np.floating],

@@ -16,9 +16,9 @@ from pyrealm.constants.core_const import CoreConst
 from pyrealm.constants.isotope_const import IsotopesConst
 from pyrealm.constants.phenology_const import PhenologyConst
 from pyrealm.constants.pmodel_const import (
-    KattgeKnorrKinetics,
+    KattgeKnorrArrheniusCoef,
     PModelConst,
-    SimpleKinetics,
+    SimpleArrheniusCoef,
 )
 from pyrealm.constants.tmodel_const import TModelTraits
 
@@ -27,9 +27,9 @@ __all__ = [
     "ConstantsClass",
     "CoreConst",
     "IsotopesConst",
-    "KattgeKnorrKinetics",
+    "KattgeKnorrArrheniusCoef",
     "PModelConst",
     "PhenologyConst",
-    "SimpleKinetics",
+    "SimpleArrheniusCoef",
     "TModelTraits",
 ]
