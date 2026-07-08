@@ -202,6 +202,8 @@ class KattgeKnorrArrhenius(
 
     * the intercept (``entropy_intercept``) and slope (``entropy_slope``) of activation
       entropy as a function of the mean growth temperature in °C (J/mol/°C),
+    * the form of the equation to be used for calculating activation entropy from mean
+      growth temperature (``entropy_method``, one of "linear" or "power"),
     * the deactivation energy constant  (``hd``, :math:`H_d`, J/mol) and
     * the activation energy constant (``ha``, :math:`H_a`, J/mol).
 
@@ -219,6 +221,7 @@ class KattgeKnorrArrhenius(
         >>> arrh.calculate_arrhenius_factor(
         ...     coefficients={"kattge_knorr":
         ...         {
+        ...             'entropy_method': "linear",
         ...             'entropy_intercept': 668.39,
         ...             'entropy_slope': -1.07,
         ...             'ha': 71513,
