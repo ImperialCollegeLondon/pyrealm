@@ -14,7 +14,7 @@ from pyrealm.core.xarray import ArrayType, xarray_inputs
 
 def calculate_simple_arrhenius_factor(
     tk: ArrayType[np.floating],
-    tk_ref: float,
+    tk_ref: ArrayType[np.floating],
     ha: float,
     k_R: float = CoreConst().k_R,
 ) -> NDArray[np.floating]:
@@ -68,10 +68,11 @@ def calculate_simple_arrhenius_factor(
 
 
 def calculate_kattge_knorr_arrhenius_factor(
-    tk_leaf: ArrayType[np.floating],
-    tk_ref: float,
-    tc_growth: ArrayType[np.floating],
     coef: dict[str, float],
+    tk_leaf: ArrayType[np.floating],
+    tk_ref: ArrayType[np.floating],
+    tc_growth: ArrayType[np.floating] | None = None,
+    entropy: ArrayType[np.floating] | None = None,
     k_R: float = CoreConst().k_R,
 ) -> NDArray[np.floating]:
     r"""Calculate an Arrhenius factor following :cite:t:`Kattge:2007db`.
@@ -113,13 +114,19 @@ def calculate_kattge_knorr_arrhenius_factor(
     * entropy_intercept: The intercept of the entropy relationship (:math:`a`)
     * entropy_slope: The slope of the entropy relationship (:math:`b`)
 
+    As an extension to the original formulation, the activation entropy can be provided
+    directly rather than calculated using the formulation for :math:`\Delta S` shown
+    above. One of `entropy` or `tc_growth` must be provided.
+
     Args:
+        coef: A dictionary providing values of the coefficients ``ha``,
+            ``hd``, ``entropy_intercept`` and ``entropy_slope``.
         tk_leaf: The instantaneous temperature in Kelvin (K) at which to calculate the
             factor (:math:`T`)
         tk_ref: The reference temperature in Kelvin for the process (:math:`T_0`)
-        tc_growth: The growth temperature of the plants in °C (:math:`t_g`)
-        coef: A dictionary providing values of the coefficients ``ha``,
-            ``hd``, ``entropy_intercept`` and ``entropy_slope``.
+        tc_growth: The growth temperature of the plants in °C (:math:`t_g`), required to
+            calculate the activation entropy.
+        entropy: An alternative direct estimate of the activation entropy.
         k_R: The universal gas constant, defaulting to the value from
             attr:`~pyrealm.constants.core_const.CoreConst.k_R`.
 
@@ -144,18 +151,25 @@ def calculate_kattge_knorr_arrhenius_factor(
         array([0.261])
     """
 
-    tk_leaf, tc_growth = xarray_inputs(tk_leaf, tc_growth)
+    # Check one and only one of entropy or t_growth provided
+    if (tc_growth is None) == (entropy is None):
+        raise ValueError("Provide one of tc_growth or entropy.")
 
-    # Calculate entropy as a function of temperature _in °C_
-    entropy = coef["entropy_intercept"] + coef["entropy_slope"] * tc_growth
+    if entropy is not None:
+        # Use provided entropy
+        tk_leaf, tk_ref, entropy_np = xarray_inputs(tk_leaf, tk_ref, entropy)
+    elif tc_growth is not None:
+        # Calculate entropy as a linear function of temperature _in °C_
+        tk_leaf, tk_ref, tc_growth = xarray_inputs(tk_leaf, tk_ref, tc_growth)
+        entropy_np = coef["entropy_intercept"] + coef["entropy_slope"] * tc_growth
 
     # Calculate Arrhenius components
     fva = calculate_simple_arrhenius_factor(
         tk=tk_leaf, ha=coef["ha"], tk_ref=tk_ref, k_R=k_R
     )
 
-    fvb = (1 + np.exp((tk_ref * entropy - coef["hd"]) / (k_R * tk_ref))) / (
-        1 + np.exp((tk_leaf * entropy - coef["hd"]) / (k_R * tk_leaf))
+    fvb = (1 + np.exp((tk_ref * entropy_np - coef["hd"]) / (k_R * tk_ref))) / (
+        1 + np.exp((tk_leaf * entropy_np - coef["hd"]) / (k_R * tk_leaf))
     )
 
     return fva * fvb

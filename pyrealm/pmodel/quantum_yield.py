@@ -271,7 +271,7 @@ class QuantumYieldSandoval(
 ):
     r"""Calculate aridity and mean growth temperature effects on quantum yield.
 
-    This experimental approach implements the method of :cite:t:`sandoval:in_prep`. This
+    This experimental approach implements the method of :cite:t:`sandoval:2026a`. This
     approach modifies the maximum possible :math:`\phi_0` as a function of the
     climatological aridity index. It then also adjusts the temperature at which the
     highest :math:`\phi_0` can be attained as a function of the mean growth temperature
@@ -283,6 +283,15 @@ class QuantumYieldSandoval(
     """
 
     __experimental__: bool = True
+
+    def __init__(
+        self,
+        env: PModelEnvironment,
+        reference_kphio: float | ArrayType[np.floating] | None = 0.1179906,
+        use_c4: bool = False,
+    ):
+        # HACK - not super happy about this - fixes the phi_0 value
+        super().__init__(env=env, reference_kphio=reference_kphio, use_c4=use_c4)
 
     def peak_quantum_yield(
         self, aridity_index: ArrayType[np.floating]
@@ -311,10 +320,10 @@ class QuantumYieldSandoval(
         # modified below.
         coef = self.env.pmodel_const.sandoval_kinetics.copy()
 
-        # Calculate change in activation entropy as a linear function of
+        # Calculate change in activation entropy as a power function of the
         # mean growth temperature, J/mol/K
         delta_entropy = (
-            coef["entropy_intercept"] + coef["entropy_slope"] * mean_growth_temperature
+            coef["entropy_intercept"] * mean_growth_temperature ** coef["entropy_slope"]
         )
         # Calculate de-activation energy J/mol
         Hd = coef["hd"] * delta_entropy
@@ -326,6 +335,7 @@ class QuantumYieldSandoval(
             - self.env.core_const.k_R * np.log(coef["ha"] / (Hd - coef["ha"]))
         )
         tk_leaf = self.env.tk
+
         # Calculate peak kphio given the aridity index
         kphio_peak = self.peak_quantum_yield(aridity_index=aridity_index)
 
@@ -336,16 +346,10 @@ class QuantumYieldSandoval(
         f_kphio = calculate_kattge_knorr_arrhenius_factor(
             tk_leaf=tk_leaf,
             tk_ref=Topt,
-            tc_growth=mean_growth_temperature,
+            entropy=delta_entropy,
             coef=coef,
             k_R=self.env.core_const.k_R,
         )
 
         # Apply the factor and store it.
-
-        # The Sandoval implementation currently includes an additional factor on kphio
-        # calculated as (tk_leaf / Topt). This might be the Murphy et al correction, so
-        # might be removed, but at present this term is needed to match the R regression
-        # test values
-
-        self.kphio = kphio_peak * f_kphio * (tk_leaf / Topt)
+        self.kphio = kphio_peak * f_kphio

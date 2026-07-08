@@ -172,8 +172,8 @@ plt.show()
 ## Temperature and aridity effects on $\phi_0$
 
 The option `method_kphio='sandoval'` implements an experimental calculation
-{cite}`sandoval:in_prep` of $\phi_0$ as a function of a local {term}`aridity index<AI>`
-(P/PET), the mean growth temperature and the air temperature {cite}`sandoval:in_prep`.
+{cite}`sandoval:2026a` of $\phi_0$ as a function of a local {term}`aridity index<AI>`
+(P/PET), the mean growth temperature and the air temperature {cite}`sandoval:2026a`.
 You will need to provide the aridity index and mean growing temperature for observations
 when creating the `PModelEnvironment`.
 
