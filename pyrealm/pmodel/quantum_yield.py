@@ -62,6 +62,7 @@ class QuantumYieldABC(ABC):
             QuantumYieldABC,
             method="method_name",
             required_env_variables=("an_environment_variable",),
+            default_maximum_phio=0.125,
             array_reference_kphio_ok=True,
         ):
 
@@ -72,6 +73,7 @@ class QuantumYieldABC(ABC):
       present in the :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` to
       use this approach. The core ``tc``, ``vpd``, ``patm`` and ``co2`` variables do not
       need to be included in this list.
+    * The ``default_maximum_phio`` value sets the default maximum phi0 value to be used.
     * The ``array_reference_kphio_ok`` argument sets whether the method can accept an
       array of :math:`\phi_0` values or whether a single global reference value should
       be used.
@@ -104,6 +106,8 @@ class QuantumYieldABC(ABC):
     :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance to use a
     particular method.
     """
+    default_maximum_kphio: float
+    """A method specific default value for the maximum quantum yield."""
     array_reference_kphio_ok: bool
     """Does the implementation handle arrays inputs to the reference_kphio __init__
     argument."""
@@ -119,11 +123,39 @@ class QuantumYieldABC(ABC):
         model."""
         self.shape: tuple[int, ...] = env.shape
         """The shape of the input environment data."""
+        self.use_c4: bool = use_c4
+        """Use a C4 parameterisation if available."""
 
+        # Declare attributes populated by methods. These are typed but not assigned a
+        # default value as they must are populated by the subclass specific
+        # calculate_kphio method, which is called below to populate the values.
+        self.kphio: NDArray[np.floating]
+        """The calculated intrinsic quantum yield of photosynthesis."""
+
+        # Run the calculation methods after checking for any required variables
+        self._set_reference_kphio(reference_kphio=reference_kphio)
+        self._check_required_env_variables()
+        self._calculate_kphio()
+
+        # Validate that the subclass methods populate the attributes correctly.
+        _ = check_input_shapes(env.ca, self.kphio)
+
+    @abstractmethod
+    def _calculate_kphio(self) -> None:
+        """Calculate the intrinsic quantum yield of photosynthesis."""
+
+    def _set_reference_kphio(
+        self, reference_kphio: float | ArrayType[np.floating] | None
+    ) -> None:
+        """Sets the reference kphio value.
+
+        Args:
+            reference_kphio: The reference kphio value passed to the class.
+        """
         # Set the reference kphio to the class default value if not provided and convert
         # the value to np.array if needed
         if reference_kphio is None:
-            reference_kphio = self.env.pmodel_const.maximum_phi0
+            reference_kphio = self.default_maximum_kphio
         if isinstance(reference_kphio, float | int):
             reference_kphio = np.array([reference_kphio])
 
@@ -142,25 +174,6 @@ class QuantumYieldABC(ABC):
 
         self.reference_kphio: NDArray[np.floating] = reference_kphio
         """The kphio reference value for the method."""
-        self.use_c4: bool = use_c4
-        """Use a C4 parameterisation if available."""
-
-        # Declare attributes populated by methods. These are typed but not assigned a
-        # default value as they must are populated by the subclass specific
-        # calculate_kphio method, which is called below to populate the values.
-        self.kphio: NDArray[np.floating]
-        """The calculated intrinsic quantum yield of photosynthesis."""
-
-        # Run the calculation methods after checking for any required variables
-        self._check_required_env_variables()
-        self._calculate_kphio()
-
-        # Validate that the subclass methods populate the attributes correctly.
-        _ = check_input_shapes(env.ca, self.kphio)
-
-    @abstractmethod
-    def _calculate_kphio(self) -> None:
-        """Calculate the intrinsic quantum yield of photosynthesis."""
 
     def _check_required_env_variables(self) -> None:
         """Check additional required variables are present."""
@@ -195,12 +208,14 @@ class QuantumYieldABC(ABC):
         cls,
         method: str,
         required_env_variables: tuple[str, ...],
+        default_maximum_kphio: float,
         array_reference_kphio_ok: bool,
     ) -> None:
         """Initialise a subclass deriving from this ABC."""
 
         cls.method = method
         cls.required_env_variables = required_env_variables
+        cls.default_maximum_kphio = default_maximum_kphio
         cls.array_reference_kphio_ok = array_reference_kphio_ok
         QUANTUM_YIELD_CLASS_REGISTRY[cls.method] = cls
 
@@ -209,6 +224,7 @@ class QuantumYieldFixed(
     QuantumYieldABC,
     method="fixed",
     required_env_variables=tuple(),
+    default_maximum_kphio=PModelConst().maximum_phi0,
     array_reference_kphio_ok=True,
 ):
     r"""Apply a fixed value for :math:`\phi_0`.
@@ -228,6 +244,7 @@ class QuantumYieldTemperature(
     QuantumYieldABC,
     method="temperature",
     required_env_variables=tuple(),
+    default_maximum_kphio=PModelConst().maximum_phi0,
     array_reference_kphio_ok=False,
 ):
     r"""Calculate temperature dependent of quantum yield efficiency.
@@ -268,6 +285,7 @@ class QuantumYieldSandoval(
     QuantumYieldABC,
     method="sandoval",
     required_env_variables=("aridity_index", "mean_growth_temperature"),
+    default_maximum_kphio=PModelConst().sandoval_max_phi0,
     array_reference_kphio_ok=False,
 ):
     r"""Calculate aridity and mean growth temperature effects on quantum yield.
@@ -287,17 +305,6 @@ class QuantumYieldSandoval(
     """
 
     __experimental__: bool = True
-
-    def __init__(
-        self,
-        env: PModelEnvironment,
-        reference_kphio: float
-        | ArrayType[np.floating]
-        | None = PModelConst().sandoval_max_phio,
-        use_c4: bool = False,
-    ):
-        # Updates the __init__ to set the default kphio value
-        super().__init__(env=env, reference_kphio=reference_kphio, use_c4=use_c4)
 
     def peak_quantum_yield(
         self, aridity_index: ArrayType[np.floating]
@@ -319,7 +326,7 @@ class QuantumYieldSandoval(
         # Warn that this is an experimental feature.
         warn_experimental("QuantumYieldSandoval")
 
-        if self.reference_kphio != self.env.pmodel_const.sandoval_max_phio:
+        if self.reference_kphio != self.env.pmodel_const.sandoval_max_phi0:
             raise ValueError(
                 "The 'sandoval' method for estimating quantum yield, uses a "
                 "parameterised reference_kphio value which should not be altered."

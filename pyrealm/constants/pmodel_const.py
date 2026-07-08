@@ -16,12 +16,13 @@ class PModelConst(ConstantsClass):
     and associated methods.
     """
 
-    sandoval_max_phio: float = 0.1179906
-    """The theoretical maximum phi0 {cite}`long:1993a`"""
+    sandoval_max_phi0: float = 0.1179906
+    """The optimised maximum phio value for use in the approach of
+    :cite:t:`sandoval:2026a` for calculating quantum yield."""
 
     sandoval_peak_phio: tuple[float, float] = (9.533923, 0.07455258)
     """Curvature parameters for calculation of peak phio in the Sandoval method for
-    estimation of quantum yield efficiency."""
+    estimation of quantum yield efficiency :cite:t:`sandoval:2026a`."""
 
     sandoval_kinetics: dict[str, float] = field(
         default_factory=lambda: dict(
