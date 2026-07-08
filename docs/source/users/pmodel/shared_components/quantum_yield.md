@@ -70,10 +70,13 @@ transfer, which is exactly four times larger than the quantum yield of photosynt
 :::
 
 The value of $\phi_0$ captures the conversion rate of moles of photosynthetically active
-photons into moles of $\ce{CO2}$. The theoretical maximum for this value is 1/8: eight
-moles of light photons are required to capture 1 mole of carbon. In some cases, this
-value may be reduced to 1/9, when a Q cycle is not operating within the plant cell
-{cite}`long:1993a`.
+photons into moles of $\ce{CO2}$. There is some disagreement about the theoretical
+maximum for $\phi_0$ {cite}`long:1993a`:
+
+* 8 moles of photons are needed when calculations are based on NADPH requirements,
+  giving $\phi_0 = 1/8$, but
+* 9 moles of photons are needed when calculations are based on ATP requirements, giving
+  $\phi_0=1/9$.
 
 These theoretical maxima are not necessarily directly used in calculating light use
 efficiency:
@@ -90,9 +93,9 @@ For these reasons, the {class}`~pyrealm.pmodel.pmodel.PModel` provides alternati
 approaches to estimating the value of $\phi_{0}$, using the `method_kphio` argument. The
 currently implemented approaches are described below.
 
-All of the approaches share the same baseline reference value of $\phi_{0}= 1/8$ as the
-theoretical maximum quantum yield of photosynthesis. The default value can be set using
-the
+Most of the approaches currently share the same baseline reference value of $\phi_{0}=
+1/8$ as the theoretical maximum quantum yield of photosynthesis. The default value can
+be set using the
 {attr}`PModelConst.maximum_phi0<pyrealm.constants.pmodel_const.PModelConst.maximum_phi0>`
 attribute, which can then be passed into a
 {class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`. However, the `PModel` and
@@ -171,11 +174,18 @@ plt.show()
 
 ## Temperature and aridity effects on $\phi_0$
 
-The option `method_kphio='sandoval'` implements an experimental calculation
-{cite}`sandoval:2026a` of $\phi_0$ as a function of a local {term}`aridity index<AI>`
-(P/PET), the mean growth temperature and the air temperature {cite}`sandoval:2026a`.
-You will need to provide the aridity index and mean growing temperature for observations
-when creating the `PModelEnvironment`.
+```{warning}
+
+This approach is parameterised from data and uses a fixed estimate of maximum $\phi_0
+\approx 1/9$. You cannot alter the maximum value using the `reference_kphio` argument.
+
+```
+
+The option `method_kphio='sandoval'` implements an approach where $\phi_0$ is calculated
+as a function of a local {term}`aridity index<AI>` (P/PET), the mean growth temperature
+and the air temperature {cite}`sandoval:2026a`. You will need to provide the aridity
+index and mean growing temperature for observations when creating the
+`PModelEnvironment`.
 
 First, the aridity index is used to adjust the reference value ($\phi_{0R}$) using a
 double exponential function to calculate a new maximum value given the climatological
