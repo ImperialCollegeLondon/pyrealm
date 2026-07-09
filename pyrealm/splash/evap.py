@@ -17,7 +17,7 @@ from pyrealm.core.time_series import broadcast_time
 from pyrealm.core.utilities import check_input_shapes
 from pyrealm.core.water import calculate_density_h2o
 from pyrealm.core.xarray import ArrayType, xarray_inputs
-from pyrealm.splash.solar import DailySolarFluxesABC
+from pyrealm.splash.solar import DailySolarFluxes
 
 
 @dataclass
@@ -48,7 +48,7 @@ class DailyEvapFluxes:
         core_const: An instance of CoreConst.
     """
 
-    solar: DailySolarFluxesABC
+    solar: DailySolarFluxes
     pa: InitVar[ArrayType[np.floating]]
     tc: InitVar[ArrayType[np.floating]]
     kWm: ArrayType[np.floating] = field(default_factory=lambda: np.array([150.0]))

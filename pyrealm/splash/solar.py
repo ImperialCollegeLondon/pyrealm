@@ -2,7 +2,6 @@
 solar radiation fluxes for observations.
 """  # noqa: D205
 
-from abc import ABC, abstractmethod
 from collections.abc import Hashable
 
 import numpy as np
@@ -31,27 +30,39 @@ from pyrealm.core.utilities import check_input_shapes
 from pyrealm.core.xarray import ArrayType, get_common_dims, xarray_inputs
 
 
-class DailySolarFluxesABC(ABC):
+class DailySolarFluxes:
     """Calculate daily solar fluxes.
 
-    This dataclass takes arrays describing the latitude, elevation, sunshine fraction
-    and mean daily temperature for observations and then calculates key radiation fluxes
-    given a Calendar object providing the Julian day of the observations and the year
-    and number of days in the year.
+    This dataclass takes arrays describing the latitude, elevation and mean daily
+    temperature for observations and then calculates key radiation fluxes given a
+    Calendar object providing the Julian day of the observations and the year and number
+    of days in the year.
 
-    The first dimension for the array inputs should correspond to time. If xarray inputs
-    are used, ``dates`` should also be initialised using xarray inputs to
-    ensure this. Alternatively, ``latitude`` can include time as the first dimension.
+    There are two options for providing radiation inputs:
+
+    * Sunshine fraction:  this was used in the original SPLASH implementation
+      :cite:p:`davis:2017a` and is provided as the radiation input variable in - for
+      example - the CRU climate datasets.
+
+    * Shortwave radiation: the updated SPLASH v2 :cite:p:`sandoval:2024a` updated the
+      calculation of solar fluxes to use data on shortwave downwelling radiation. This
+      is provided as a radiation input in many other datasets, such as FluxNET sites and
+      ERA5.
+
+    The first dimension for the array inputs must correspond to the length of the time
+    series passed in using the ``dates`` argument. If xarray inputs are used, ``dates``
+    should also be initialised using xarray inputs to ensure this.
 
     Args:
         latitude: The Latitude of observations (degrees)
         elevation: Elevation of observations (metres)
         dates: Dates of observations
         sunshine_fraction: Daily sunshine fraction of observations (unitless)
+        shortwave_radiation: Daily downwelling shortwave radiation (W m-2)
         temperature: Daily temperature of observations (°C)
+        core_const: Core constants
     """
 
-    @abstractmethod
     def __init__(
         self,
         latitude: ArrayType[np.floating],
@@ -59,7 +70,8 @@ class DailySolarFluxesABC(ABC):
         temperature: ArrayType[np.floating],
         dates: Calendar,
         core_const: CoreConst = CoreConst(),
-        **kwargs: ArrayType[np.floating],
+        sunshine_fraction: ArrayType[np.floating] | None = None,
+        shortwave_radiation: ArrayType[np.floating] | None = None,
     ):
         self.nu: NDArray[np.floating]
         r"""True heliocentric anomaly (:math:`\nu`, degrees)"""
@@ -77,8 +89,10 @@ class DailySolarFluxesABC(ABC):
         """Sunset hour angle (:math:`h_s`, degrees)"""
         self.daily_solar_radiation: NDArray[np.floating]
         """Daily extraterrestrial solar radiation (:math:`R_d`, J m-2)"""
+        self.shortwave_radiation: NDArray[np.floating]
+        r"""The downwelling shortwave radiation (SW, W m-2)"""
         self.sunshine_fraction: NDArray[np.floating]
-        r"""Sunshine fraction (:math:`\tau`, unitless)"""
+        r"""Sunshine fraction (:math:`s_f`, unitless)"""
         self.transmissivity: NDArray[np.floating]
         r"""Transmissivity (:math:`\tau`, unitless)"""
         self.daily_ppfd: NDArray[np.floating]
@@ -101,18 +115,34 @@ class DailySolarFluxesABC(ABC):
         self.dates: Calendar = dates
         self.core_const: CoreConst = core_const
 
+        if (sunshine_fraction is None) == (shortwave_radiation is None):
+            raise ValueError("Provide one of sunshine_fraction or shortwave_radiation")
+
+        # Get a single array object for validation
+        if sunshine_fraction is not None:
+            radiation_input = sunshine_fraction
+        elif shortwave_radiation is not None:
+            radiation_input = shortwave_radiation
+
         # Convert any xr.DataArrays to numpy arrays
-        self.dims = get_common_dims(latitude, elevation, temperature, *kwargs.values())
-        (latitude, elevation, temperature), kw_arrays = xarray_inputs(
-            latitude, elevation, temperature, kwargs=kwargs, dims=self.dims
+        self.dims = get_common_dims(latitude, elevation, temperature, radiation_input)
+        latitude, elevation, temperature, radiation_input = xarray_inputs(
+            latitude, elevation, temperature, radiation_input, dims=self.dims
         )
 
         # Validate the inputs
         self.shape = check_input_shapes(
-            latitude, elevation, temperature, *kw_arrays.values()
+            latitude, elevation, temperature, radiation_input
         )
         """The array shape of the input variables"""
 
+        # Assign radiation variable back to the appropriate attribute
+        if sunshine_fraction is not None:
+            self.sunshine_fraction = radiation_input
+        else:
+            self.shortwave_radiation = radiation_input
+
+        # Check the data arrays match onto the times.
         if self.shape[0] == 1:
             self.shape = (len(self.dates), *self.shape[1:])
         elif self.shape[0] != len(self.dates):
@@ -166,53 +196,33 @@ class DailySolarFluxesABC(ABC):
             solar_constant=self.core_const.solar_constant,
         )
 
+        # Now use the appropriate method for populating the remaining attributes
+        if sunshine_fraction is not None:
+            self._calculate_solar_fluxes_from_sf(
+                temperature=temperature, elevation=elevation
+            )
+        else:
+            self._calculate_solar_fluxes_from_sw(
+                temperature=temperature, elevation=elevation
+            )
 
-class DailySolarFluxesDavis(DailySolarFluxesABC):
-    """Calculate daily solar fluxes.
-
-    This dataclass takes arrays describing the latitude, elevation, sunshine fraction
-    and mean daily temperature for observations and then calculates key radiation fluxes
-    given a Calendar object providing the Julian day of the observations and the year
-    and number of days in the year.
-
-    The first dimension for the array inputs should correspond to time. If xarray inputs
-    are used, ``dates`` should also be initialised using xarray inputs to
-    ensure this. Alternatively, ``latitude`` can include time as the first dimension.
-
-    Args:
-        latitude: The Latitude of observations (degrees)
-        elevation: Elevation of observations (metres)
-        dates: Dates of observations
-        sunshine_fraction: Daily sunshine fraction of observations (unitless)
-        temperature: Daily temperature of observations (°C)
-    """
-
-    def __init__(
-        self,
-        latitude: ArrayType[np.floating],
-        elevation: ArrayType[np.floating],
-        temperature: ArrayType[np.floating],
-        sunshine_fraction: ArrayType[np.floating],
-        dates: Calendar,
-        core_const: CoreConst = CoreConst(longwave_radiation_option="Prentice1993"),
+    def _calculate_solar_fluxes_from_sf(
+        self, temperature: NDArray[np.floating], elevation: NDArray[np.floating]
     ) -> None:
-        """Populates key fluxes from input variables."""
+        """Populate flux attributes from sunshine fraction.
 
-        super().__init__(
-            latitude=latitude,
-            elevation=elevation,
-            temperature=temperature,
-            dates=dates,
-            core_const=core_const,
-            kwargs=sunshine_fraction,
-        )
+        This method populates transmissivity, rw, daily_ppfd, net_longwave_radiation,
+        crossover_hour_angle
 
-        self.sunshine_fraction = sunshine_fraction
+        Args:
+            temperature: Daily temperature of observations (°C)
+            elevation: Elevation of observations (metres)
+        """
 
         # Calculate transmittivity (tau), unitless
         # Eq. 11, Linacre (1968); Eq. 2, Allen (1996)
         self.transmissivity = calculate_transmissivity(
-            sunshine_fraction=sunshine_fraction,
+            sunshine_fraction=self.sunshine_fraction,
             elevation=elevation,
             coef=self.core_const.transmissivity_coef,
         )
@@ -235,7 +245,7 @@ class DailySolarFluxesDavis(DailySolarFluxesABC):
         # Estimate net longwave radiation (rnl), W/m^2
         # Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
         self.net_longwave_radiation = calculate_net_longwave_radiation(
-            sunshine_fraction=sunshine_fraction,
+            sunshine_fraction=self.sunshine_fraction,
             temperature=temperature,
             coef=self.core_const.net_longwave_radiation_coef,
         )
@@ -269,50 +279,10 @@ class DailySolarFluxesDavis(DailySolarFluxesABC):
             day_seconds=self.core_const.day_seconds,
         )
 
-
-class DailySolarFluxesSandoval(DailySolarFluxesABC):
-    """Calculate daily solar fluxes.
-
-    This dataclass takes arrays describing the latitude, elevation, sunshine fraction
-    and mean daily temperature for observations and then calculates key radiation fluxes
-    given a Calendar object providing the Julian day of the observations and the year
-    and number of days in the year.
-
-    The first dimension for the array inputs should correspond to time. If xarray inputs
-    are used, ``dates`` should also be initialised using xarray inputs to
-    ensure this. Alternatively, ``latitude`` can include time as the first dimension.
-
-    Args:
-        latitude: The Latitude of observations (degrees)
-        elevation: Elevation of observations (metres)
-        dates: Dates of observations
-        sunshine_fraction: Daily sunshine fraction of observations (unitless)
-        temperature: Daily temperature of observations (°C)
-    """
-
-    def __init__(
-        self,
-        latitude: ArrayType[np.floating],
-        elevation: ArrayType[np.floating],
-        temperature: ArrayType[np.floating],
-        shortwave_radiation: ArrayType[np.floating],
-        dates: Calendar,
-        core_const: CoreConst = CoreConst(longwave_radiation_option="Sandoval2024"),
+    def _calculate_solar_fluxes_from_sw(
+        self, temperature: NDArray[np.floating], elevation: NDArray[np.floating]
     ) -> None:
-        """Populates key fluxes from input variables."""
-
-        super().__init__(
-            latitude=latitude,
-            elevation=elevation,
-            temperature=temperature,
-            dates=dates,
-            core_const=core_const,
-            kwargs=shortwave_radiation,
-        )
-
-        # TODO - need to retrieve kwargs from validation? Maybe just drop ABC and have
-        #        alternate variables in __init__
-
+        """Docstring."""
         # Sequence of calculation below taken from:
         # https://github.com/dsval/rsplash/blob/master/src/SOLAR.cpp
 
@@ -327,7 +297,7 @@ class DailySolarFluxesSandoval(DailySolarFluxesABC):
         # Calculate realised transmisivity (tau) as the ratio of observed surface
         # shortwave downwelling radiation to top of atmosphere radiation
         # TODO - handle edge cases
-        daily_sw = shortwave_radiation * self.core_const.day_seconds
+        daily_sw = self.shortwave_radiation * self.core_const.day_seconds
         self.transmissivity = daily_sw / self.daily_solar_radiation
 
         # Calculate daily PPFD (ppfd_d), mol/m^2
@@ -354,7 +324,7 @@ class DailySolarFluxesSandoval(DailySolarFluxesABC):
         )
 
         self.rw = calculate_rw_intermediate_from_sw(
-            shortwave_radiation=shortwave_radiation,
+            shortwave_radiation=self.shortwave_radiation,
             sunset_hour_angle=self.sunset_hour_angle,
             ru=self.ru,
             rv=self.rv,
