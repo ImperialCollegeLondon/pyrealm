@@ -1,0 +1,37 @@
+diff --git a/src/SOLAR.cpp b/src/SOLAR.cpp
+index 3f85097..4d320ab 100644
+--- a/src/SOLAR.cpp
++++ b/src/SOLAR.cpp
+@@ -414,6 +414,7 @@ void SOLAR::display(){
+     printf("  tau_o: %0.6f\n", tau_o);
+     printf("  tau: %0.6f \n", tau);
+     printf("  PPFD: %0.6f mol/m^2\n", ppfd_d);
++    printf("  sf: %0.6f\n", sf);
+     printf("  Rnl: %0.6f W/m^2\n", rnl);
+     printf("  Ho: %0.6f MJ/m^2\n", (1.0e-6)*ra_d);
+     printf("  Hn: %0.6f MJ/m^2\n", (1.0e-6)*rn_d);
+diff --git a/src/SOLAR.h b/src/SOLAR.h
+index 71448fa..0dcda6a 100644
+--- a/src/SOLAR.h
++++ b/src/SOLAR.h
+@@ -66,6 +66,7 @@ class SOLAR {
+         double tau_o;      // surface transmittivity
+         double tau;        // elv. corrected transmittivity
+         double ppfd_d;     // daily photosynthetic photon flux density, mol/m^2
++        double sf;        // sunshine fraction
+         double rnl;        // longwave radiation flux, W/m^2
+         double rn_d;       // daily net radiation, J/m^2
+         double rnn_d;      // daily nighttime net radiation, J/m^2
+diff --git a/src/SPLASH.cpp b/src/SPLASH.cpp
+index 6c99c33..8c318cd 100644
+--- a/src/SPLASH.cpp
++++ b/src/SPLASH.cpp
+@@ -1906,6 +1906,8 @@ List SPLASH::run_all(vector<int> &doys, vector<int> &yrs, vector<double> &sw_in,
+         cond_vec[i] = dvap.cond;
+         netr_vec[i] = dvap.rn_d/1e6;
+         nds_vec[i] = dsoil.nd;       // # codespell:ignore
++
++        evap.display();
+     }
+  
+    
