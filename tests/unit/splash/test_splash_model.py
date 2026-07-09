@@ -6,6 +6,10 @@
   annual cycle to estimate a starting soil moisture.
 - calculate_soil_moisture, which iterates an initial soil moisture forward over a time
   series.
+
+
+The ``splash_model`` fixture is parameterised using the ``sf_mode`` parameter to switch
+between using sunshine fraction and shortwave radiation.
 """
 
 from contextlib import nullcontext
@@ -81,20 +85,45 @@ def test_splash_model_init(splash_core_constants, grid_benchmarks, var, flag):
 
 
 @pytest.fixture
-def splash_model(grid_benchmarks, splash_core_constants, calendar):
+def splash_model(grid_benchmarks, splash_core_constants, calendar, sf_mode):
     """Create a SplashModel object for testing."""
 
+    from pyrealm.splash.solar import DailySolarFluxes
     from pyrealm.splash.splash import SplashModel
 
     ds = grid_benchmarks[0].sel(time=calendar.dates)
 
-    splash = SplashModel(
-        lat=ds.lat.to_numpy()[None, :, None],
-        elv=ds.elev.to_numpy()[None, :, :],
+    latitude = ds.lat.to_numpy()[None, :, None]
+    elevation = ds.elev.to_numpy()[None, :, :]
+    sunshine_fraction = ds.sf.to_numpy()
+    temperature = ds.tmp.to_numpy()
+    precipitation = ds.pre.to_numpy()
+
+    fluxes = DailySolarFluxes(
+        latitude=latitude,
+        elevation=elevation,
+        sunshine_fraction=sunshine_fraction,
+        temperature=temperature,
         dates=calendar,
-        sf=ds.sf.to_numpy(),
-        tc=ds.tmp.to_numpy(),
-        pn=ds.pre.to_numpy(),
+        core_const=splash_core_constants,
+    )
+    shortwave_radiation = (
+        fluxes.daily_ppfd / splash_core_constants.swdown_to_ppfd_factor
+    )
+
+    if sf_mode:
+        shortwave_radiation = None
+    else:
+        sunshine_fraction = None
+
+    splash = SplashModel(
+        lat=latitude,
+        elv=elevation,
+        sf=sunshine_fraction,
+        shortwave_radiation=shortwave_radiation,
+        tc=temperature,
+        pn=precipitation,
+        dates=calendar,
         core_const=splash_core_constants,
     )
 
@@ -102,6 +131,7 @@ def splash_model(grid_benchmarks, splash_core_constants, calendar):
     return splash
 
 
+@pytest.mark.parametrize("sf_mode", (True, False))
 @pytest.mark.parametrize(
     argnames="overflow,underflow",
     argvalues=[
@@ -110,7 +140,7 @@ def splash_model(grid_benchmarks, splash_core_constants, calendar):
         pytest.param(1, 0, id="overflow"),
     ],
 )
-def test_estimate_daily_water_balance(splash_model, overflow, underflow):
+def test_estimate_daily_water_balance(splash_model, sf_mode, overflow, underflow):
     """Test the estimate_daily_water_balance method of the SplashModel class."""
 
     wn_init = np.random.random(splash_model.shape) * splash_model.kWm
@@ -132,8 +162,12 @@ def test_estimate_daily_water_balance(splash_model, overflow, underflow):
         )
 
 
+@pytest.mark.parametrize("sf_mode", (True,))
 def test_estimate_initial_soil_moisture(splash_model):
-    """Test the estimate_initial_soil_moisture method of the SplashModel class."""
+    """Test the estimate_initial_soil_moisture method of the SplashModel class.
+
+    Convergence currently fails with sf_mode=False (using shortwave radiation)
+    """
 
     if splash_model.shape[0] > 365:
         context = nullcontext()
@@ -148,7 +182,8 @@ def test_estimate_initial_soil_moisture(splash_model):
         )  # simply check convergence
 
 
-def test_calculate_soil_moisture(splash_model):
+@pytest.mark.parametrize("sf_mode", (True, False))
+def test_calculate_soil_moisture(splash_model, sf_mode):
     """Test the calculate_soil_moisture method of the SplashModel class."""
 
     wn_init = np.random.random(splash_model.shape[1:]) * splash_model.kWm

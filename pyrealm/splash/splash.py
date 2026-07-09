@@ -140,7 +140,9 @@ class SplashModel:
         if sf is not None:
             self.sf = bounds_checker.check("sf", radiation_input)
         else:
-            self.shortwave_radiation = bounds_checker.check("sw", radiation_input)
+            self.shortwave_radiation = bounds_checker.check(
+                "shortwave_radiation", radiation_input
+            )
 
         # TODO - potentially allow _actual_ climatic pressure data as an input
         self.pa: NDArray[np.floating] = calculate_patm(elv, core_const=core_const)
