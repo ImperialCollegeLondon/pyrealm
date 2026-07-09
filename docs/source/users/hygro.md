@@ -6,19 +6,9 @@ jupytext:
     format_name: myst
     format_version: 0.13
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  codemirror_mode:
-    name: ipython
-    version: 3
-  file_extension: .py
-  mimetype: text/x-python
-  name: python
-  nbconvert_exporter: python
-  pygments_lexer: ipython3
-  version: 3.11.9
 ---
 
 # Hygrometric functions
@@ -50,13 +40,13 @@ from pyrealm.core import hygro
 n_pts = 101
 
 # Create a range of representative values for key inputs.
-ta_1d = np.linspace(0, 60, n_pts)
+tc_1d = np.linspace(0, 60, n_pts)
 vp_1d = np.linspace(0, 20, n_pts)
 rh_1d = np.linspace(0, 1, n_pts)
 sh_1d = np.linspace(0, 0.02, n_pts)
 
 # Broadcast the range into arrays with repeated values.
-ta_2d = np.broadcast_to(ta_1d, (n_pts, n_pts))
+tc_2d = np.broadcast_to(tc_1d, (n_pts, n_pts))
 vp_2d = np.broadcast_to(vp_1d, (n_pts, n_pts))
 rh_2d = np.broadcast_to(rh_1d, (n_pts, n_pts))
 ```
@@ -93,10 +83,10 @@ and returns kPa, so if you are using VP to prepare input data for
 
 ```{code-cell} ipython3
 # Create a sequence of air temperatures and calculate the saturated vapour pressure
-vp_sat = hygro.calculate_vp_sat(ta_1d)
+vp_sat = hygro.calculate_vp_sat(tc=tc_1d)
 
 # Plot ta against vp_sat
-pyplot.plot(ta_1d, vp_sat)
+pyplot.plot(tc_1d, vp_sat)
 pyplot.xlabel("Temperature °C")
 pyplot.ylabel("Saturated vapour pressure (kPa)")
 pyplot.show()
@@ -105,11 +95,11 @@ pyplot.show()
 ## Vapour pressure to VPD
 
 ```{code-cell} ipython3
-vpd = hygro.convert_vp_to_vpd(vp_2d, ta_2d.transpose())
+vpd = hygro.convert_vp_to_vpd(vp=vp_2d, tc=tc_2d.transpose())
 
 # Plot vpd
 fig, ax = pyplot.subplots()
-CS = ax.contour(vp_1d, ta_1d, vpd, colors="black")
+CS = ax.contour(vp_1d, tc_1d, vpd, colors="black")
 ax.clabel(CS, inline=1, fontsize=10)
 ax.set_title("Converting VP to VPD")
 ax.set_xlabel("Vapour Pressure (kPa)")
@@ -120,12 +110,12 @@ pyplot.show()
 ## Relative humidity to VPD
 
 ```{code-cell} ipython3
-vpd = hygro.convert_rh_to_vpd(rh_2d, ta_2d.transpose())
+vpd = hygro.convert_rh_to_vpd(rh=rh_2d, tc=tc_2d.transpose())
 
 # Plot vpd
 fig, ax = pyplot.subplots()
 CS = ax.contour(
-    rh_1d, ta_1d, vpd, colors="black", levels=[0, 0.1, 0.5, 1, 2.5, 5, 10, 15]
+    rh_1d, tc_1d, vpd, colors="black", levels=[0, 0.1, 0.5, 1, 2.5, 5, 10, 15]
 )
 ax.clabel(CS, inline=1, fontsize=10)
 ax.set_title("Converting RH to VPD")
@@ -138,10 +128,10 @@ pyplot.show()
 
 ```{code-cell} ipython3
 # Create a sequence of air temperatures and calculate the saturated vapour pressure
-vpd1 = hygro.convert_sh_to_vpd(sh_1d, ta=20, patm=101.325)
-vpd2 = hygro.convert_sh_to_vpd(sh_1d, ta=30, patm=101.325)
-vpd3 = hygro.convert_sh_to_vpd(sh_1d, ta=20, patm=90)
-vpd4 = hygro.convert_sh_to_vpd(sh_1d, ta=30, patm=90)
+vpd1 = hygro.convert_sh_to_vpd(sh_1d, tc=20, patm=101.325)
+vpd2 = hygro.convert_sh_to_vpd(sh_1d, tc=30, patm=101.325)
+vpd3 = hygro.convert_sh_to_vpd(sh_1d, tc=20, patm=90)
+vpd4 = hygro.convert_sh_to_vpd(sh_1d, tc=30, patm=90)
 
 
 for yvals, lab in zip(

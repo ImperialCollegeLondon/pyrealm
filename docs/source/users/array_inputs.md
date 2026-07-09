@@ -128,10 +128,10 @@ env = PModelEnvironment(tc=temp, co2=co2, patm=patm, vpd=vpd, fapar=fapar, ppfd=
 
 ## Xarray inputs
 
-Array inputs to functions will also accept `xarray.DataArray` inputs. These are mostly
-equivalent to `numpy` arrays but with the addition of named dimensions. `pyrealm` will
-internally convert these into `numpy` arrays. So all outputs will also be `numpy`
-arrays.
+From `pyrealm 3.0`, array inputs to functions will also accept `xarray.DataArray`
+inputs. These are mostly equivalent to `numpy` arrays but with the addition of named
+dimensions. `pyrealm` will internally convert these into `numpy` arrays. So all outputs
+will also be `numpy` arrays.
 
 The `pyrealm` function will use the dimension names to add any missing dimensions and to
 reorder them if inputs have different orders. The final order is decided by iterating
@@ -141,6 +141,6 @@ For example, if there are three `xarray.DataArray` inputs with the following dim
 names: `("time")`, `("lat", "lon")`, `("lon", "lat")`. Then they will all be converted
 to the shape `("time", "lat", "lon")`. With missing dimensions given a size of 1.
 
-If there is a combination of `xarray` and `numpy` inputs. Then the `numpy` arrays must
+If there is a combination of `xarray` and `numpy` inputs, then the `numpy` arrays must
 match the full set of dimensions given by the `xarray` inputs with the same rules [given
 above](#array-shapes).
