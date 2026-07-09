@@ -166,8 +166,8 @@ model_var_kphio = PModel(env, method_kphio="fixed", reference_kphio=kphio_values
 
 # Create a line plot of ftemp kphio
 plt.plot(kphio_values, model_var_kphio.lue)
-plt.title("Variation in LUE with changing $\phi_0$")
-plt.xlabel("$\phi_0$")
+plt.title(r"Variation in LUE with changing $\phi_0$")
+plt.xlabel(r"$\phi_0$")
 plt.ylabel("LUE")
 plt.show()
 ```
@@ -218,17 +218,20 @@ sandoval_kphio = QuantumYieldSandoval(env)
 
 fig, ax = plt.subplots(1, 1)
 ax.plot(aridity_index, sandoval_kphio.kphio)
-ax.set_title("Change in $\phi_0$ with aridity index (P/PET).")
-ax.set_ylabel("$\phi_0$")
+ax.set_title(r"Change in $\phi_0$ with aridity index (P/PET).")
+ax.set_ylabel(r"$\phi_0$")
 ax.set_xlabel("Aridity Index")
 ax.set_xscale("log")
 plt.show()
 ```
 
-In addition to capping the peak $\phi_0$ as a function of the aridity index, this
-approach also alters the temperature at which $\phi_0$ is maximised as a function of the
-mean growth temperature ($T_g$) in a location. The plot below shows how aridity and mean
-growth temperature interact to change the location and height of the peak $\phi_0$.
+In addition to capping the peak $\phi_0$ as a function of the aridity index, the method
+also captures how plants adjust peak efficiency to their conditions. A
+[peaked Arrhenius model](./arrhenius.md#using-different-arrhenius-scaling) is used to
+calculate the realised $\phi_0$ given both the current temperature and the mean growth
+temperature ($T_g$) for observations. The plot below shows how aridity and mean
+growth temperature interact to change the location and height of the peak $\phi_0$ and
+how realised $\phi_0$ at a temperature varies given the mean growth temperature.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
@@ -267,7 +270,7 @@ for ai_idx, (ax, ai_val) in enumerate(zip(axes, aridity_values)):
             label=f"$T_{{g}}$ = {mg_val}",
         )
         ax.set_title(f"AI = {ai_val}")
-        ax.set_ylabel("$\phi_0$")
+        ax.set_ylabel(r"$\phi_0$")
         ax.set_xlabel("Observed temperature")
 
 
