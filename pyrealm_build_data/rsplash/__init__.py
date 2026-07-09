@@ -23,7 +23,10 @@ The command line is then used to run the model and capture the output from displ
 method and then parse the captured text into a data frame of the internal calculations
 (``rsplash_Bourne_internal.csv``):
 
+```sh
 R --no-save < rsplash_Bourne_example.R > capture.out
 python  parse_capture_to_csv.py
+rm capture.out
+```
 
 """  # noqa: D205
