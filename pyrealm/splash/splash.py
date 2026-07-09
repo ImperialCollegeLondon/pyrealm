@@ -32,11 +32,9 @@ class SplashModel:
     The inputs to a SplashModel are expected to be arrays with time varying along the
     first dimension. Other dimensions represent observations at sites on a particular
     date.  The ``dates`` argument is expected to be a Calendar object with the same
-    length as the first dimension.
-
-    If xarray inputs are used, ``dates`` should also be initialised using xarray inputs
-    to ensure that the time dimension is set correctly. Alternatively, ``lat`` can
-    include time as the first dimension.
+    length as the first dimension.    If xarray inputs are used, ``dates`` should also
+    be initialised using xarray inputs to ensure that the time dimension is set
+    correctly.
 
     The main use of the SplashModel object is then to calculate the expected actual
     evapotranspiration (AET), soil moisture and runoff across the time series:
@@ -66,23 +64,54 @@ class SplashModel:
         self,
         lat: ArrayType[np.floating],
         elv: ArrayType[np.floating],
-        sf: ArrayType[np.floating],
         tc: ArrayType[np.floating],
         pn: ArrayType[np.floating],
         dates: Calendar,
+        sf: ArrayType[np.floating] | None = None,
+        shortwave_radiation: ArrayType[np.floating] | None = None,
         kWm: ArrayType[np.floating] = np.array([150.0]),
         core_const: CoreConst = CoreConst(),
         bounds_checker: BoundsChecker = BoundsChecker(),
     ):
-        # Convert array inputs to numpy
-        inputs = elv, lat, sf, tc, pn
+        # Declare, type and docstring attributes
+        self.elv: NDArray[np.floating]
+        """The elevation of sites."""
+        self.lat: NDArray[np.floating]
+        """The latitude of sites."""
+        self.tc: NDArray[np.floating]
+        """The air temperature in °C of daily observations."""
+        self.pn: NDArray[np.floating]
+        """The precipitation in mm of daily observations."""
+        self.kWm: NDArray[np.floating]
+        """The maximum soil water capacity for sites (mm)."""
+        self.dates: Calendar = dates
+        """The dates of observations along the first array axis."""
+        self.sf: NDArray[np.floating] | None = None
+        """The sunshine fraction (0-1) of daily observations."""
+        self.shortwave_radiation: NDArray[np.floating] | None = None
+        """The downwelling shortwave radiation of daily observations (W m-2)."""
+
+        # Handle sunshine fraction vs shortwave radiation
+        if (sf is None) == (shortwave_radiation is None):
+            raise ValueError("Provide one of sunshine_fraction or shortwave_radiation")
+
+        # Get a single array object for validation
+        if sf is not None:
+            radiation_input = sf
+        elif shortwave_radiation is not None:
+            radiation_input = shortwave_radiation
+
         # Ensure first dimension is time if dates is also initialised with xarray
-        self.dims = get_common_dims(*inputs, init_dims=dates.dims)
-        inputs_np = xarray_inputs(*inputs, dims=self.dims)
-        elv, lat, sf, tc, pn = inputs_np
+        self.dims = get_common_dims(
+            elv, lat, tc, pn, radiation_input, init_dims=dates.dims
+        )
+        # Convert array inputs to numpy
+        elv, lat, tc, pn, radiation_input = xarray_inputs(
+            elv, lat, tc, pn, radiation_input, dims=self.dims
+        )
 
         # Check input sizes are congurent
-        self.shape: tuple = check_input_shapes(*inputs_np)
+        self.shape: tuple = check_input_shapes(elv, lat, tc, pn, radiation_input)
         """The array shape of the input variables"""
 
         if self.shape[0] == 1:
@@ -97,24 +126,21 @@ class SplashModel:
         # inputs are constant over time
         elv = broadcast_time(elv, self.shape)
         lat = broadcast_time(lat, self.shape)
-        sf = broadcast_time(sf, self.shape)
         tc = broadcast_time(tc, self.shape)
         pn = broadcast_time(pn, self.shape)
+        radiation_input = broadcast_time(radiation_input, self.shape)
 
-        self.elv: NDArray[np.floating] = elv
-        """The elevation of sites."""
-        self.lat: NDArray[np.floating] = bounds_checker.check("lat", lat)
-        """The latitude of sites."""
-        self.sf: NDArray[np.floating] = bounds_checker.check("sf", sf)
-        """The sunshine fraction (0-1) of daily observations."""
-        self.tc: NDArray[np.floating] = bounds_checker.check("tc", tc)
-        """The air temperature in °C of daily observations."""
-        self.pn: NDArray[np.floating] = bounds_checker.check("pn", pn)
-        """The precipitation in mm of daily observations."""
-        self.dates: Calendar = dates
-        """The dates of observations along the first array axis."""
-        self.kWm: NDArray[np.floating] = bounds_checker.check("kWm", kWm)
-        """The maximum soil water capacity for sites."""
+        self.elv = bounds_checker.check("elevation", elv)
+        self.lat = bounds_checker.check("lat", lat)
+        self.tc = bounds_checker.check("tc", tc)
+        self.pn = bounds_checker.check("pn", pn)
+        self.kWm = bounds_checker.check("kWm", kWm)
+
+        # Assign radiation variable back to the appropriate attribute
+        if sf is not None:
+            self.sf = bounds_checker.check("sf", radiation_input)
+        else:
+            self.shortwave_radiation = bounds_checker.check("sw", radiation_input)
 
         # TODO - potentially allow _actual_ climatic pressure data as an input
         self.pa: NDArray[np.floating] = calculate_patm(elv, core_const=core_const)
@@ -125,7 +151,8 @@ class SplashModel:
             latitude=lat,
             elevation=elv,
             dates=dates,
-            sunshine_fraction=sf,
+            sunshine_fraction=self.sf,
+            shortwave_radiation=self.shortwave_radiation,
             temperature=tc,
         )
         """Estimated solar fluxes for observations"""
