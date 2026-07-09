@@ -107,17 +107,24 @@ class CoreConst(ConstantsClass):
     (:math:`d=0.5`) and elevation factor (:math:`f`=2.67e-5`)."""
 
     # Hygro constants
-    net_longwave_radiation_coef: tuple[float, float, float, float] = (
+    net_longwave_radiation_coef_sf: tuple[float, float, float, float] = (
         107.0,
         -1.0,
         0.2,
         0.2,
     )
-    """Coefficients (:math:`k_1, k_2, k_3, k_4`) of net longwave radiation function."""
-    longwave_radiation_option: str | None = None
-    """Setting to use pre-defined parameterisations for the
-    :attr:`~pyrealm.constants.core_const.CoreConst.net_longwave_radiation_coef`
-    attribute."""
+    """Coefficients (:math:`k_1, k_2, k_3, k_4`) of net longwave radiation calculation
+    from sunshine fraction, as used by :cite:`davis:2017a` and taken from
+    :cite:`prentice:1993a`."""
+
+    net_longwave_radiation_coef_sw: tuple[float, float, float, float] = (
+        91.86328,
+        1.95974,
+        0.2012435,
+        0.0883289,
+    )
+    """Coefficients (:math:`k_1, k_2, k_3, k_4`) of net longwave radiation calculation
+    from shortwave radiation, estimated in :cite:`sandoval:2024a`."""
 
     shortwave_albedo: float = 0.17
     """The shortwave albedo (:math:`A_{sw}`, unitless, Federer, 1968)."""
@@ -397,29 +404,3 @@ class CoreConst(ConstantsClass):
             object.__setattr__(self, "magnus_coef", magnus_alts[self.magnus_option])
         elif self.magnus_coef is not None and len(self.magnus_coef) != 3:
             raise TypeError("magnus_coef must be a tuple of 3 numbers")
-
-        # Handle alternative longwave radiation parameterisation
-        rnl_alts = dict(
-            Prentice1993=(107.0, -1.0, 0.2, 0.2),
-            Sandoval2024=(91.86328, 1.95974, 0.2012435, 0.0883289),
-        )
-
-        if self.longwave_radiation_option is not None:
-            if self.longwave_radiation_option not in rnl_alts:
-                raise (
-                    ValueError(
-                        f"longwave_radiation_option must be one of {rnl_alts.keys()}"
-                    )
-                )
-
-            object.__setattr__(
-                self,
-                "net_longwave_radiation_coef",
-                rnl_alts[self.longwave_radiation_option],
-            )
-
-        elif (
-            self.net_longwave_radiation_coef is not None
-            and len(self.net_longwave_radiation_coef) != 4
-        ):
-            raise TypeError("net_longwave_radiation_coef must be a tuple of 4 numbers")

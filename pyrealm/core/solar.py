@@ -442,7 +442,9 @@ def calculate_ppfd(
 def calculate_net_longwave_radiation(
     sunshine_fraction: ArrayType[np.floating],
     temperature: ArrayType[np.floating],
-    coef: tuple[float, float, float, float] = CoreConst().net_longwave_radiation_coef,
+    coef: tuple[
+        float, float, float, float
+    ] = CoreConst().net_longwave_radiation_coef_sf,
 ) -> NDArray[np.floating]:
     r"""Calculate net longwave radiation.
 
@@ -463,11 +465,14 @@ def calculate_net_longwave_radiation(
 
     Here :math:`k_3 = k_4 = b`, :math:`k_1 = A` and `k_2 = -1`
 
+    The coefficients default to the original formulation: see
+    :attr:`~pyrealm.constants.core_const.CoreConst.net_longwave_radiation_coef_sw` and
+    :attr:`~pyrealm.constants.core_const.CoreConst.net_longwave_radiation_coef_sf`.
+
     Args:
         sunshine_fraction: Sunshine fraction of observations (:math:`n_i`, unitless)
         temperature: Temperature of observations (:math:`t_c`, °C).
-        coef: Coefficients of the equation, defaulting to
-            :attr:`CoreConst.net_longwave_radiation_coef<pyrealm.constants.CoreConst.net_longwave_radiation_coef>`.
+        coef: Coefficients of the equation.
 
     Returns:
         An array of net longwave radiation.

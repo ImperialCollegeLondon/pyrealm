@@ -49,6 +49,13 @@ class DailySolarFluxes:
       is provided as a radiation input in many other datasets, such as FluxNET sites and
       ERA5.
 
+    The parameters for the calculation of net longwave radiation differs between these
+    two options: see
+    :attr:`~pyrealm.constants.core_const.CoreConst.net_longwave_radiation_coef_sw` and
+    :attr:`~pyrealm.constants.core_const.CoreConst.net_longwave_radiation_coef_sf`.
+
+
+
     The first dimension for the array inputs must correspond to the length of the time
     series passed in using the ``dates`` argument. If xarray inputs are used, ``dates``
     should also be initialised using xarray inputs to ensure this.
@@ -196,23 +203,53 @@ class DailySolarFluxes:
             solar_constant=self.core_const.solar_constant,
         )
 
-        # Now use the appropriate method for populating the remaining attributes
+        # Now use the appropriate method for populating transmissivity, rw, daily_ppfd
+        # and net_longwave_radiation
         if sunshine_fraction is not None:
-            self._calculate_solar_fluxes_from_sf(
+            self._calculate_solar_fluxes_from_sunshine_fraction(
                 temperature=temperature, elevation=elevation
             )
         else:
-            self._calculate_solar_fluxes_from_sw(
+            self._calculate_solar_fluxes_from_shortwave_radiation(
                 temperature=temperature, elevation=elevation
             )
 
-    def _calculate_solar_fluxes_from_sf(
+        # Calculate net radiation cross-over hour angle (hn), degrees
+        self.crossover_hour_angle = _calculate_net_radiation_crossover_hour_angle(
+            ru=self.ru,
+            rv=self.rv,
+            rw=self.rw,
+            net_longwave_radiation=self.net_longwave_radiation,
+        )
+
+        # Calculate daytime net radiation (rn_d), J/m^2
+        self.daytime_net_radiation = _calculate_daytime_net_radiation(
+            ru=self.ru,
+            rv=self.rv,
+            rw=self.rw,
+            crossover_hour_angle=self.crossover_hour_angle,
+            net_longwave_radiation=self.net_longwave_radiation,
+            day_seconds=self.core_const.day_seconds,
+        )
+
+        # Calculate nighttime net radiation (rnn_d), J/m^2
+        self.nighttime_net_radiation = _calculate_nighttime_net_radiation(
+            ru=self.ru,
+            rv=self.rv,
+            rw=self.rw,
+            net_longwave_radiation=self.net_longwave_radiation,
+            crossover_hour_angle=self.crossover_hour_angle,
+            sunset_hour_angle=self.sunset_hour_angle,
+            day_seconds=self.core_const.day_seconds,
+        )
+
+    def _calculate_solar_fluxes_from_sunshine_fraction(
         self, temperature: NDArray[np.floating], elevation: NDArray[np.floating]
     ) -> None:
         """Populate flux attributes from sunshine fraction.
 
-        This method populates transmissivity, rw, daily_ppfd, net_longwave_radiation,
-        crossover_hour_angle
+        Sets transmissivity, rw, daily_ppfd, and net_longwave_radiation following
+        :cite:`davis:2017a`.
 
         Args:
             temperature: Daily temperature of observations (°C)
@@ -247,42 +284,22 @@ class DailySolarFluxes:
         self.net_longwave_radiation = calculate_net_longwave_radiation(
             sunshine_fraction=self.sunshine_fraction,
             temperature=temperature,
-            coef=self.core_const.net_longwave_radiation_coef,
+            coef=self.core_const.net_longwave_radiation_coef_sf,
         )
 
-        # Calculate net radiation cross-over hour angle (hn), degrees
-        self.crossover_hour_angle = _calculate_net_radiation_crossover_hour_angle(
-            ru=self.ru,
-            rv=self.rv,
-            rw=self.rw,
-            net_longwave_radiation=self.net_longwave_radiation,
-        )
-
-        # Calculate daytime net radiation (rn_d), J/m^2
-        self.daytime_net_radiation = _calculate_daytime_net_radiation(
-            ru=self.ru,
-            rv=self.rv,
-            rw=self.rw,
-            crossover_hour_angle=self.crossover_hour_angle,
-            net_longwave_radiation=self.net_longwave_radiation,
-            day_seconds=self.core_const.day_seconds,
-        )
-
-        # Calculate nighttime net radiation (rnn_d), J/m^2
-        self.nighttime_net_radiation = _calculate_nighttime_net_radiation(
-            ru=self.ru,
-            rv=self.rv,
-            rw=self.rw,
-            net_longwave_radiation=self.net_longwave_radiation,
-            crossover_hour_angle=self.crossover_hour_angle,
-            sunset_hour_angle=self.sunset_hour_angle,
-            day_seconds=self.core_const.day_seconds,
-        )
-
-    def _calculate_solar_fluxes_from_sw(
+    def _calculate_solar_fluxes_from_shortwave_radiation(
         self, temperature: NDArray[np.floating], elevation: NDArray[np.floating]
     ) -> None:
-        """Docstring."""
+        """Populate flux attributes from shortwave radiation.
+
+        Sets transmissivity, rw, daily_ppfd, and net_longwave_radiation following
+        :cite:`sandoval:2024a`
+
+        Args:
+            temperature: Daily temperature of observations (°C)
+            elevation: Elevation of observations (metres)
+        """
+
         # Sequence of calculation below taken from:
         # https://github.com/dsval/rsplash/blob/master/src/SOLAR.cpp
 
@@ -301,7 +318,7 @@ class DailySolarFluxes:
         self.transmissivity = daily_sw / self.daily_solar_radiation
 
         # Calculate daily PPFD (ppfd_d), mol/m^2
-        # TODO - although this differs markedly from the straightforward prediction from
+        # TODO - this differs markedly from the standard prediction from
         #        SW * swdown_to_ppfd_factor
         self.daily_ppfd = calculate_ppfd_from_tau_rd(
             transmissivity=self.transmissivity,
@@ -310,17 +327,17 @@ class DailySolarFluxes:
             visible_light_albedo=self.core_const.visible_light_albedo,
         )
 
-        # Calculate the sunshine fraction
+        # Calculate the resulting sunshine fraction
         self.sunshine_fraction = calculate_sunshine_fraction(
             realised_transmissivity=self.transmissivity, clear_sky_transmissivity=tau_o
         )
 
         # Estimate net longwave radiation (rnl), W/m^2
-        # Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
+        # Parameterisation of Sandoval et al 2024.
         self.net_longwave_radiation = calculate_net_longwave_radiation(
             sunshine_fraction=self.sunshine_fraction,
             temperature=temperature,
-            coef=self.core_const.net_longwave_radiation_coef,
+            coef=self.core_const.net_longwave_radiation_coef_sw,
         )
 
         self.rw = calculate_rw_intermediate_from_sw(
@@ -329,33 +346,4 @@ class DailySolarFluxes:
             ru=self.ru,
             rv=self.rv,
             shortwave_albedo=self.core_const.shortwave_albedo,
-        )
-
-        # Calculate net radiation cross-over hour angle (hn), degrees
-        self.crossover_hour_angle = _calculate_net_radiation_crossover_hour_angle(
-            ru=self.ru,
-            rv=self.rv,
-            rw=self.rw,
-            net_longwave_radiation=self.net_longwave_radiation,
-        )
-
-        # Calculate daytime net radiation (rn_d), J/m^2
-        self.daytime_net_radiation = _calculate_daytime_net_radiation(
-            ru=self.ru,
-            rv=self.rv,
-            rw=self.rw,
-            crossover_hour_angle=self.crossover_hour_angle,
-            net_longwave_radiation=self.net_longwave_radiation,
-            day_seconds=self.core_const.day_seconds,
-        )
-
-        # Calculate nighttime net radiation (rnn_d), J/m^2
-        self.nighttime_net_radiation = _calculate_nighttime_net_radiation(
-            ru=self.ru,
-            rv=self.rv,
-            rw=self.rw,
-            net_longwave_radiation=self.net_longwave_radiation,
-            crossover_hour_angle=self.crossover_hour_angle,
-            sunset_hour_angle=self.sunset_hour_angle,
-            day_seconds=self.core_const.day_seconds,
         )
