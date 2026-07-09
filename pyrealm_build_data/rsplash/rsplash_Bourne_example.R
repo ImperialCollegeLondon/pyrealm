@@ -20,13 +20,15 @@ forcings$lat <- Bourne$md$lat
 write.csv(forcings, "rsplash_Bourne_inputs.csv")
 
 # run splash
+# - the data is modified to try and factor out the SPLASHv2 adaptation for
+#   slope and aspect. Aspect should not matter if the slope is zero?
 run1 <- splash.point(
     sw_in = Bourne$forcing$sw_in, # shortwave radiation W/m2
     tc = Bourne$forcing$Ta, # air temperature C
     pn = Bourne$forcing$P, # precipitation mm
     lat = Bourne$md$latitude, # latitude deg
     elev = Bourne$md$elev_m, # elevation masl
-    slop = Bourne$md$slop_250m, # slope deg
+    slop = 0, # Bourne$md$slop_250m, # slope deg
     asp = Bourne$md$asp_250m, # aspect deg
     soil_data = Bourne$soil, # soil data
     Au = Bourne$md$Aups_250m, # upslope area m2

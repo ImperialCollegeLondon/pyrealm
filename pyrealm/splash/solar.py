@@ -184,7 +184,7 @@ class DailySolarFluxes:
         self.distance_factor = np.expand_dims(distance_factor, axis=expand_dims)
         self.declination = np.expand_dims(delta, axis=expand_dims)
 
-        # Calculate intermediate values ru, rv, rw
+        # Calculate intermediate values ru, rv
         self.ru, self.rv = calculate_ru_rv_intermediates(
             declination=self.declination, latitude=latitude
         )
@@ -201,6 +201,13 @@ class DailySolarFluxes:
             sunset_hour_angle=self.sunset_hour_angle,
             day_seconds=self.core_const.day_seconds,
             solar_constant=self.core_const.solar_constant,
+        )
+
+        # Calculate clear sky transmisivity (tau_o), unitless
+        self.clear_sky_transmissivity = calculate_transmissivity(
+            sunshine_fraction=np.array([1.0]),
+            elevation=elevation,
+            coef=self.core_const.transmissivity_coef,
         )
 
         # Now use the appropriate method for populating transmissivity, rw, daily_ppfd
@@ -257,7 +264,6 @@ class DailySolarFluxes:
         """
 
         # Calculate transmittivity (tau), unitless
-        # Eq. 11, Linacre (1968); Eq. 2, Allen (1996)
         self.transmissivity = calculate_transmissivity(
             sunshine_fraction=self.sunshine_fraction,
             elevation=elevation,
@@ -280,7 +286,6 @@ class DailySolarFluxes:
         )
 
         # Estimate net longwave radiation (rnl), W/m^2
-        # Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
         self.net_longwave_radiation = calculate_net_longwave_radiation(
             sunshine_fraction=self.sunshine_fraction,
             temperature=temperature,
@@ -303,19 +308,13 @@ class DailySolarFluxes:
         # Sequence of calculation below taken from:
         # https://github.com/dsval/rsplash/blob/master/src/SOLAR.cpp
 
-        # Calculate cloud free transmisivity (tau_o), unitless
-        # Eq. 11, Linacre (1968); Eq. 2, Allen (1996)
-        tau_o = calculate_transmissivity(
-            sunshine_fraction=np.array([1.0]),
-            elevation=elevation,
-            coef=self.core_const.transmissivity_coef,
-        )
-
         # Calculate realised transmisivity (tau) as the ratio of observed surface
         # shortwave downwelling radiation to top of atmosphere radiation
-        # TODO - handle edge cases
+        # TODO - check: the behaviour when SW > incoming is capped at tau_o but there
+        #        value > tau_o are perfectly possible.
         daily_sw = self.shortwave_radiation * self.core_const.day_seconds
-        self.transmissivity = daily_sw / self.daily_solar_radiation
+        ratio = daily_sw / self.daily_solar_radiation
+        self.transmissivity = np.where(ratio <= 1, ratio, self.clear_sky_transmissivity)
 
         # Calculate daily PPFD (ppfd_d), mol/m^2
         # TODO - this differs markedly from the standard prediction from
@@ -329,7 +328,8 @@ class DailySolarFluxes:
 
         # Calculate the resulting sunshine fraction
         self.sunshine_fraction = calculate_sunshine_fraction(
-            realised_transmissivity=self.transmissivity, clear_sky_transmissivity=tau_o
+            realised_transmissivity=self.transmissivity,
+            clear_sky_transmissivity=self.clear_sky_transmissivity,
         )
 
         # Estimate net longwave radiation (rnl), W/m^2
