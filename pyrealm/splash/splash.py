@@ -156,6 +156,7 @@ class SplashModel:
             sunshine_fraction=self.sf,
             shortwave_radiation=self.shortwave_radiation,
             temperature=tc,
+            core_const=core_const,
         )
         """Estimated solar fluxes for observations"""
 

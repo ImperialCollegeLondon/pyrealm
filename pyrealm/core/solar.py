@@ -542,8 +542,9 @@ def calculate_rw_intermediate_from_sw(
         shortwave_radiation, sunset_hour_angle, ru, rv
     )
 
-    return (shortwave_radiation * np.pi * (1 - shortwave_albedo)) / (
-        (ru * sunset_hour_angle) + rv * np.sin(sunset_hour_angle)
+    hs_r = np.deg2rad(sunset_hour_angle)
+    return (shortwave_radiation * (1 - shortwave_albedo)) / (
+        (1 / np.pi) * ((ru * hs_r) + rv * np.sin(hs_r))
     )
 
 
@@ -1190,7 +1191,14 @@ def calculate_sunshine_fraction(
 
     tau, tau_o = xarray_inputs(realised_transmissivity, clear_sky_transmissivity)
     beta, gamma = coef
-    return ((tau - tau_o * beta) / (tau_o * (1 - beta))) ** (1 / gamma)
+
+    # Handle negative numerators - pin to zero
+    num = tau - tau_o * beta
+    num = np.clip(num, a_min=0, a_max=1)
+    sf = (num / (tau_o * (1 - beta))) ** (1 / gamma)
+
+    # Clamp sf into (0,1)
+    return np.clip(sf, a_min=0, a_max=1)
 
 
 @dataclass
