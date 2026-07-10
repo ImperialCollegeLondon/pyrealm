@@ -9,19 +9,9 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  name: python
-  version: 3.12.3
-  mimetype: text/x-python
-  codemirror_mode:
-    name: ipython
-    version: 3
-  pygments_lexer: ipython3
-  nbconvert_exporter: python
-  file_extension: .py
 ---
 
-# The `splash` submodule
+# The SPLASH model
 
 ```{admonition} Run this notebook
 :class: hint
@@ -32,25 +22,24 @@ language_info:
 
 ```
 
-The {mod}`~pyrealm.splash` module provides the SPLASH v1.0 model for estimating **soil
-moisture, actual evapotranspiration ({term}`AET`) and surface water runoff** for sites
-{cite:p}`davis:2017a`. The module in `pyrealm` completely reimplements the original
-SPLASH code (see [the api notes](../api/splash_api.md) for details) but the outputs are
-benchmarked against outputs from the original code in the `pyrealm` code testing.
-
-The model takes an initial estimate of soil moisture and then uses time series of
-precipitation, temperature and cloud cover to estimate how the daily water balance
-changes with incoming precipitation , condensation and AET. The water balance
-equation is:
+The {mod}`~pyrealm.splash` module provides a new implementation of the SPLASH v1.0 model
+for estimating soil moisture, actual evapotranspiration ({term}`AET`) and surface water
+runoff.  The model takes an initial estimate of soil moisture and then uses time series
+of precipitation, temperature and incoming radiation to estimate how the daily water
+balance changes with precipitation , condensation and AET. The water balance equation
+is:
 
 $$
 W_{n[t]} = W_{n[t-1]} + P_{[t]} + C_{[t]} - \textrm{AET}_{[t]},
 $$
 
-where the current soil moisture (mm, $W_{n[t]}$) is calculated from the previous day's
-soil moisture (mm, $W_{n[t-1]}$),  given the expected AET (mm d-1,
-$\textrm{AET}_{[t]}$), precipitation (mm d-1, $P_{[t]}$) and condensation (mm d-1,
-$C_{[t]}$) for the current day, to calculate the current soil moisture (mm, $W_{n[t]}$).
+That is, the current soil moisture (mm, $W_{n[t]}$) is:
+
+* The soil moisture from yesterday (mm, $W_{n[t-1]}$),
+* plus the precipitation for today (mm d-1, $P_{[t]}$),
+* plus the condensation for today (mm d-1, $C_{[t]}$),
+* minus the expected evapotranspiration during the day  (mm d-1, $\textrm{AET}_{[t]}$).
+
 Calculations of AET and condensation are affected by the soil moisture, temperature and
 downwelling solar radiation at the site: this requires that the elevation and latitude
 of the site are known.
@@ -61,25 +50,52 @@ W_m$, then $W_{n[t]} = W_m, R_{[t]} = W_{n[t]} - W_m$. The maximum soil moisture
 capacity defaults to the original SPLASH value of 150 mm, but this can be set on a per
 site basis.
 
-## Example data
+## Solar radiation
+
+The original implementation of the SPLASH v1 model {cite:p}`davis:2017a` was designed to
+work with datasets that provided cloud cover data. The model calculated the solar
+radiation reaching the top of the atmosphere and then calculated how much of the
+radiation reached the ground, given the cloud cover and site elevation.
+
+The more recent SPLASH v2 model {cite:p}`sandoval:2024a` updated the solar flux
+calculations to use estimates of shortwave downwelling radiation on the ground. This is
+now commonly provided with remotely sensed climate data and is also common in site-based
+data such as FluxNET.
+
+The implementation in `pyrealm` supports both of these options - you can provide either
+sunshine fraction (1 - cloud cover) or shortwave radiation in W m-2.
+
+:::{important}
+
+The SPLASH v2 model {cite:p}`sandoval:2024a` includes a large number of other extensions
+to improve the calculation of soil moisture, including the effects of slope and aspect
+and snow on shortwave reflection (the albedo) and a much more detailed soil capacity
+model. Only the calculation of daily solar fluxes from shortwave radiation has been
+added in `pyrealm`.
+
+:::
+
+## Example 1: Gridded data using sunshine fraction
 
 The data below provides a 2 year daily time series of precipitation, temperature and
-solar fraction (1 - cloud cover) for 0.5° resolution grid cells in a 10° by 10° block
+sunshine fraction (1 - cloud cover) for 0.5° resolution grid cells in a 10° by 10° block
 of the North Western USA. It also provides the mean elevation of those cells.
 
 ```{code-cell} ipython3
 from importlib import resources
 import numpy as np
 import xarray
+import pandas as pd
 from matplotlib import pyplot as plt
 import matplotlib.dates as mdates
 
 from pyrealm.splash.splash import SplashModel
 from pyrealm.core.calendar import Calendar
+from pyrealm.core.datasets import get_pyrealm_data
 
 # Load gridded data
-dpath = resources.files("pyrealm_build_data.splash")
-data = xarray.load_dataset(dpath / "data/splash_nw_us_grid_data.nc")
+dpath = get_pyrealm_data("splash/data/splash_nw_us_grid_data.nc")
+data = xarray.load_dataset(dpath)
 
 # Define three sites for showing time series
 sites = xarray.Dataset(
@@ -154,9 +170,9 @@ ax2.legend()
 plt.tight_layout()
 ```
 
-## Running the splash model
+### Running the splash model
 
-### Initialising a SplashModel
+#### Initialising a SplashModel
 
 Before calculating water balances, you need to create a
 {class}`~pyrealm.splash.splash.SplashModel`. This takes the site data and runs all of
@@ -175,35 +191,43 @@ splash = SplashModel(
 )
 ```
 
-The data for the sunshine fraction (`sf`), temperature (`tc`) and precipitation (`pn`)
-are three dimensional arrays providing values along time, latitude and longitude axes.
-The latitude (`lat`) values obviously only add coordinates along the latitude axis and
-the elevation (`elv`) is constant through time. If these were being provided as numpy
-arrays we would first need to make these arrays compatible (see the [array
-inputs](../users/array_inputs.md) documentation) by making them use the same dimensions.
-However, here we are using xarray inputs so this is not required.
+The data for the incoming radiation (sunshine fraction `sf` in this example) ,
+temperature (`tc`) and precipitation (`pn`) are arrays providing values along through
+time. In this case the arrays are 3D, providing data on a latitude and longitude grid,
+but input data could be 1D (a single site) or 2D (a set of sites).
 
-### Estimating initial soil moisture
+Note that the latitude (`lat`) values only varies along the latitude axis and elevation
+(`elv`) is constant through time. You need to take care to ensure that array dimensions
+along the [different axes are compatible](../users/array_inputs.md). In this example,
+the data is from an `xarray` dataset, and `pyrealm` uses the extra dimension information
+in the dataset to align the data.
 
-In order to calculate water balances, you need initial values for the soil moisture.
-This data is rarely available and so the
-{meth}`~pyrealm.splash.splash.SplashModel.estimate_initial_soil_moisture` can be used
-to estimate those values.
+#### Estimating initial soil moisture
 
-This method requires that the input data provides **at least one full year** of data. It
+To calculate daily water balances, you need initial values for the soil moisture. This
+data is rarely available and so the
+{meth}`~pyrealm.splash.splash.SplashModel.estimate_initial_soil_moisture` can be used to
+estimate those values.
+
+The method requires that the input data provides **at least one full year** of data. It
 works by assuming that **soil moisture change is a stationary process** on an annual
 time scale: the initial soil moisture should be the same as the soil moisture at the end
-of the year, given the observed annual data. The method starts with an initial guess at
-the soil moisture, and then iterates the water balance calculations over the year to
-give the expected soil moisture at the end of the year. If this is sufficiently similar
-to the start values, the estimate is returned, otherwise the end of year expectations
-are used as a starting point to recalculate the annual water balances.
+of the year, given the observed annual data.
 
 ```{code-cell} ipython3
-init_soil_moisture = splash.estimate_initial_soil_moisture(verbose=False)
+init_soil_moisture = splash.estimate_initial_soil_moisture()
 ```
 
-### Calculating water balance
+This method estimates the soil moisture over a year, starting with an initial guess at
+the soil moisture at the start of the year. It then compares the predicted soil
+moisture at the start and the end of the year and uses the difference between the two to
+update the initial guess and re-run the year. This iteration _should_ converge on an
+initial value for the start of the year, that leads to a very similar prediction at the
+end of the year. This convergence can sometime fail: see the
+{meth}`~pyrealm.splash.splash.SplashModel.estimate_initial_soil_moisture` documentation
+for details on how to fine tune the convergence process.
+
+#### Calculating water balance
 
 The `SplashModel` provides the
 {meth}`~pyrealm.splash.splash.SplashModel.estimate_daily_water_balance` method. This
@@ -280,5 +304,64 @@ for ax, var_name, ax_label in zip(
 
 
 plt.legend()
+plt.tight_layout()
+```
+
+## Example 2: Site data using shortwave radiation
+
+This example uses data from the [Bourne SNOTEL
+site](https://wcc.sc.egov.usda.gov/nwcc/site?sitenum=361). The dataset provides eight
+years of data for the site and provides solar radiation as shortwave downwelling
+radiation, rather than sunshine fraction.
+
+:::{important}
+
+Note that this site is cold and snowy. Unlike the SPLASH v2 model, the SPLASH v1 model
+used here does not capture snow dynamics and the effect of snow on shortwave albedo.
+
+:::
+
+```{code-cell} ipython3
+# Load site data
+dpath = get_pyrealm_data("rsplash/rsplash_Bourne_inputs.csv")
+bourne = pd.read_csv(dpath)
+
+bourne.head()
+```
+
+```{code-cell} ipython3
+# Generate the Calendar object from the dates
+days = bourne["date"].to_numpy().astype("datetime64[D]")
+calendar = Calendar(days)
+
+# Initialise the model
+bourne_splash = SplashModel(
+    lat=bourne["lat"].to_numpy(),
+    elv=bourne["elev"].to_numpy(),
+    tc=bourne["Ta"].to_numpy(),
+    pn=bourne["P"].to_numpy(),
+    shortwave_radiation=bourne["sw_in"].to_numpy(),
+    dates=calendar,
+)
+
+# Calculate initial estimates of soil moisture
+init_soil_moisture = bourne_splash.estimate_initial_soil_moisture()
+
+# Calculate soil moisture
+aet_out, wn_out, ro_out = bourne_splash.calculate_soil_moisture(init_soil_moisture)
+```
+
+The plots below show the predicted values for the site.
+
+```{code-cell} ipython3
+fig, (ax1, ax2, ax3) = plt.subplots(nrows=3, sharex=True, figsize=(6, 8))
+
+ax1.plot(days, aet_out)
+ax1.set_ylabel("AET (mm)")
+ax2.plot(days, wn_out)
+ax2.set_ylabel("Soil moisture (mm)")
+ax3.plot(days, ro_out)
+ax3.set_ylabel("Runoff (mm)")
+
 plt.tight_layout()
 ```

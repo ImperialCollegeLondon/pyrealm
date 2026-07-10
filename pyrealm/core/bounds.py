@@ -71,6 +71,7 @@ class BoundsChecker:
 
     # TODO - think about these argument names - some unnecessarily terse.
     _defaults: tuple[tuple[str, float, float, str, str], ...] = (
+        ("elevation", -1000, 9000, "[]", "m"),
         ("tc", -25, 80, "[]", "°C"),
         ("vpd", 0, 10000, "[]", "Pa"),
         ("co2", 0, 1000, "[]", "ppm"),
