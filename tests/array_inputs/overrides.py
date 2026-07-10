@@ -28,7 +28,6 @@ import numpy as np
 
 from pyrealm.core.calendar import Calendar
 from pyrealm.core.xarray import ArrayType
-from pyrealm.demography.flora import PlantFunctionalType
 from tests.array_inputs.context import Context
 
 # These methods are not relevant or are incompatible without additional work
@@ -37,6 +36,18 @@ SKIP_METHODS = [
     # PModel
     "AcclimationModel.set_include",
     "PModel._get_daily_gpp",
+    # OK - this is really problematic. Array auto-discovery gets hung up on the
+    # internals of pydantic - not sure the greedy approach to what gets tested is
+    # sustainable.
+    "Flora.__repr_args__",
+    # Something about pandas methods on Cohort objects also triggers - these are
+    # explicitly blocked in utils.get_method_list rather than handling each one here.
+    "create_cohorts",
+    "Cohorts",
+    "Cohorts.drop_cohort_data",
+    "CrownProfile",
+    "CrownProfile.to_xy",
+    "Canopy",
     # Phenology
     # For these more broadcasting is needed / the current variables have unclear
     # restrictions on shapes
@@ -44,6 +55,9 @@ SKIP_METHODS = [
     "Phenology",
     "Phenology.from_pmodel",
     # Demography - mostly 1d arrays (dataframes)
+    "StemAllocation",
+    "StemAllometry",
+    "GrowthIncrements",
     "CohortMethods.drop_cohort_data",
     "StemTraits",
     "StemTraits.drop_cohort_data",
@@ -509,9 +523,6 @@ register_args("Cohorts")(
         "n_individuals": np.ones(_N_PFT),
         "pft_names": np.array(_PFT_NAMES, dtype=np.str_),
     }
-)
-register_args("Flora")(
-    lambda _: {"pfts": [PlantFunctionalType(name=name) for name in _PFT_NAMES]}
 )
 register_args("Flora.get_stem_traits")(lambda _: {"pft_names": _PFT_NAMES})
 register_args("Canopy")(lambda _: {"fit_ppa": True})

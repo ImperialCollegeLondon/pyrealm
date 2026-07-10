@@ -10,15 +10,15 @@ kernelspec:
   language: python
   name: python3
 language_info:
+  name: python
+  version: 3.12.3
+  mimetype: text/x-python
   codemirror_mode:
     name: ipython
     version: 3
-  file_extension: .py
-  mimetype: text/x-python
-  name: python
-  nbconvert_exporter: python
   pygments_lexer: ipython3
-  version: 3.12.3
+  nbconvert_exporter: python
+  file_extension: .py
 ---
 
 # The tree crown model
@@ -45,33 +45,38 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Polygon, Patch
 import numpy as np
 import pandas as pd
+import warnings
 
+from pyrealm.core.experimental import ExperimentalFeatureWarning
 from pyrealm.demography.flora import (
     calculate_crown_q_m,
     calculate_crown_z_max_proportion,
-    PlantFunctionalType,
     Flora,
 )
+
+from pyrealm.demography.cohorts import create_cohorts, cohort_id_generator
 
 from pyrealm.demography.tmodel import (
     calculate_dbh_from_height,
     StemAllometry,
 )
 
-from pyrealm.demography.crown import (
-    CrownProfile,
-    get_crown_xy,
+from pyrealm.demography.crown import CrownProfile
+
+warnings.filterwarnings(
+    "ignore",
+    category=ExperimentalFeatureWarning,
 )
 ```
 
-The {mod}`pyrealm.demography` module uses three-dimensional model of crown shape to
+The {mod}`pyrealm.demography` module provides a three-dimensional model of crown shape to
 define the vertical distribution of leaf area, following the implementation of crown
 shape in the Plant-FATE model {cite}`joshi:2022a`.
 
 ## Crown traits
 
 The crown model for a {term}`plant functional type<PFT>` (PFT) is driven by four traits
-within the {class}`~pyrealm.demography.flora.PlantFunctionalType` class:
+within the {class}`~pyrealm.demography.flora.Flora` class:
 
 * The `m` and `n` ($m, n$) traits set the vertical shape of the crown profile.
 * The `ca_ratio` trait sets the area of the crown ($A_c$) relative to the stem size.
@@ -179,9 +184,9 @@ $$
 
 ## Calculating crown model traits in `pyrealm`
 
-The {class}`~pyrealm.demography.flora.PlantFunctionalType` class is typically
-used to set specific PFTs, but the functions to calculate $q_m$ and $p_{zm}$
-are used directly below to provide a demonstration of the impacts of each trait.
+The {class}`~pyrealm.demography.flora.Flora` class is typically used to set define PFTs,
+but the functions to calculate $q_m$ and $p_{zm}$ are used directly below to provide a
+demonstration of the impacts of each trait.
 
 ```{code-cell} ipython3
 # Set a range of values for m and n traits
@@ -198,6 +203,7 @@ fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(10.9, 4))
 # Plot q_m as a function of m and n
 cntr_set1 = ax1.contourf(m, n, q_m, levels=10)
 fig.colorbar(cntr_set1, ax=ax1, label="q_m")
+ax1.set_title("q_m")
 ax1.set_xlabel("m")
 ax1.set_ylabel("n")
 ax1.set_aspect("equal")
@@ -205,6 +211,7 @@ ax1.set_aspect("equal")
 # Plot z_max_prop as a function of m and n
 cntr_set2 = ax2.contourf(m, n, z_max_prop, levels=10)
 fig.colorbar(cntr_set2, ax=ax2, label="z_max_prop")
+ax2.set_title("z_max_prop")
 ax2.set_xlabel("m")
 ax2.set_ylabel("n")
 ax2.set_aspect("equal")
@@ -229,22 +236,23 @@ The code below creates a set of PFTS with differing crown trait values and then 
 a `Flora` object using the PFTs.
 
 ```{code-cell} ipython3
-# A PFT with a small crown area and equal m and n values
-narrow_pft = PlantFunctionalType(name="narrow", h_max=20, m=1.5, n=1.5, ca_ratio=20)
-# A PFT with an intermediate crown area  and m < n
-medium_pft = PlantFunctionalType(name="medium", h_max=20, m=1.5, n=4, ca_ratio=500)
-# A PFT with a wide crown area and m > n
-wide_pft = PlantFunctionalType(name="wide", h_max=20, m=4, n=1.5, ca_ratio=2000)
-
 # Generate a Flora instance using those PFTs
-flora = Flora([narrow_pft, medium_pft, wide_pft])
+flora = Flora(
+    name=["narrow", "medium", "wide"],
+    h_max=[20, 20, 20],
+    m=[1.5, 1.5, 4],
+    n=[1.5, 4, 1.5],
+    ca_ratio=[20, 500, 2000],
+)
 flora
 ```
 
 The key canopy variables from the flora are:
 
 ```{code-cell} ipython3
-flora.to_pandas()[["name", "h_max", "ca_ratio", "m", "n", "f_g", "q_m", "z_max_prop"]]
+flora.to_dataframe()[
+    ["name", "h_max", "ca_ratio", "m", "n", "f_g", "q_m", "z_max_prop"]
+]
 ```
 
 The next section of code generates the `StemAllometry` to use for the profiles.
@@ -263,14 +271,28 @@ stem_dbh
 ```
 
 ```{code-cell} ipython3
-# Calculate the stem allometries
-allometry = StemAllometry(stem_traits=flora, at_dbh=stem_dbh)
+# Create an id generator.
+cid_generator = cohort_id_generator(mode="str")
+
+# Create the cohorts
+cohorts = create_cohorts(
+    flora=flora,
+    cid_generator=cid_generator,
+    pft_name=np.array(["narrow", "medium", "wide"]),
+    n_individuals=np.array([1, 1, 1]),
+    dbh_value=stem_dbh,
+)
 ```
 
-We can again use {mod}`pandas` to get a table of those allometric predictions:
+```{code-cell} ipython3
+# Calculate the stem allometries
+allometry = StemAllometry(cohorts=cohorts)
+```
+
+We can use the `to_dataframe` method to look at  of those allometric predictions:
 
 ```{code-cell} ipython3
-allometry.to_pandas().transpose()
+allometry.to_dataframe().transpose()
 ```
 
 Finally, we can define a set of vertical heights. In order to calculate the
@@ -279,10 +301,10 @@ that is with a shape `(N, 1)`. We can then calculate the crown profiles:
 
 ```{code-cell} ipython3
 # Create a set of vertical heights as a column array.
-z = np.linspace(-1, 20.0, num=211)[:, None]
+z = np.linspace(0, 20.0, num=200)
 
 # Calculate the crown profile across those heights for each PFT
-crown_profiles = CrownProfile(stem_traits=flora, stem_allometry=allometry, z=z)
+crown_profiles = CrownProfile(cohorts=cohorts, allometry=allometry, z=z)
 ```
 
 The `crown_profiles` object then provides the four crown profile attributes describe
@@ -297,12 +319,12 @@ above calculated at each height $z$:
 crown_profiles
 ```
 
-The {meth}`~pyrealm.demography.core.PandasExporter.to_pandas()` method of the
+The {meth}`~pyrealm.demography.core.ToDataFrameMixin.to_dataframe()` method of the
 {meth}`~pyrealm.demography.crown.CrownProfile` class can be used to extract the data
 into a table, with the separate stems identified by the column index field.
 
 ```{code-cell} ipython3
-crown_profiles.to_pandas()
+crown_profiles.to_dataframe().head(6)
 ```
 
 ### Visualising crown profiles
@@ -323,10 +345,10 @@ height values within the range of the actual height of a given stem
 multiple stems when calculating canopy profiles for a community. The plot below
 includes predictions of $q(z)$ below ground level and above stem height.
 
-The {meth}`~pyrealm.demography.crown.get_crown_xy` helper function can be used to
-extract plotting structures for each stem within a `CrownProfile` that *are*
-restricted to actual valid heights for that stem and is demonstrated in the
-[code below](#plotting-tools-for-crown-shapes).
+The {meth}`CrownProfile.to_xy<pyrealm.demography.crown.CrownProfile.to_xy>` method can
+be used to extract plotting structures for each stem within a `CrownProfile` that *are*
+restricted to actual valid heights for that stem and is demonstrated in the [code
+below](#plotting-tools-for-crown-shapes).
 
 :::
 
@@ -358,7 +380,7 @@ for pft_idx, offset, colour in zip((0, 1, 2), (0, 5, 12), ("r", "g", "b")):
 
     ax.plot(
         [offset - stem_rz_max, offset + stem_rz_max],
-        [allometry.crown_z_max[:, pft_idx]] * 2,
+        [allometry.crown_z_max[pft_idx]] * 2,
         color=colour,
         linewidth=1,
         linestyle=":",
@@ -377,9 +399,9 @@ crown area from the T Model allometry.
 ```{code-cell} ipython3
 # Calculate the crown profile across those heights for each PFT
 z_max = flora.z_max_prop * stem_height
-profile_at_zmax = CrownProfile(stem_traits=flora, stem_allometry=allometry, z=z_max)
+profile_at_zmax = CrownProfile(cohorts=cohorts, allometry=allometry, z=z_max)
 
-print(profile_at_zmax.crown_radius**2 * np.pi)
+print(np.diag(profile_at_zmax.crown_radius**2 * np.pi))
 print(allometry.crown_area)
 ```
 
@@ -391,26 +413,32 @@ below generates new profiles for a new set of PFTs that have similar crown area 
 but different shapes and gap fractions.
 
 ```{code-cell} ipython3
-no_gaps_pft = PlantFunctionalType(
-    name="no_gaps", h_max=20, m=1.5, n=1.5, f_g=0, ca_ratio=380
-)
-few_gaps_pft = PlantFunctionalType(
-    name="few_gaps", h_max=20, m=1.5, n=4, f_g=0.1, ca_ratio=400
-)
-many_gaps_pft = PlantFunctionalType(
-    name="many_gaps", h_max=20, m=4, n=1.5, f_g=0.3, ca_ratio=420
+flora = Flora(
+    name=["no_gaps", "few_gaps", "many_gaps"],
+    h_max=[20, 20, 20],
+    m=[1.5, 1.5, 4.0],
+    n=[1.5, 4.0, 1.5],
+    f_g=[0.0, 0.1, 0.3],
+    ca_ratio=[380, 400, 420],
 )
 
-# Calculate allometries for each PFT at the same stem DBH
-area_stem_dbh = np.array([0.4, 0.4, 0.4])
-area_flora = Flora([no_gaps_pft, few_gaps_pft, many_gaps_pft])
-area_allometry = StemAllometry(stem_traits=area_flora, at_dbh=area_stem_dbh)
+# Create an id generator.
+cid_generator = cohort_id_generator(mode="str")
+
+# Create the cohorts
+cohorts = create_cohorts(
+    flora=flora,
+    cid_generator=cid_generator,
+    pft_name=np.array(["no_gaps", "few_gaps", "many_gaps"]),
+    dbh_value=np.array([0.4, 0.4, 0.4]),
+    n_individuals=np.array([1, 1, 1]),
+)
+
+area_allometry = StemAllometry(cohorts=cohorts)
 
 # Calculate the crown profiles across those heights for each PFT
-area_z = np.linspace(0, area_allometry.stem_height.max(), 201)[:, None]
-area_crown_profiles = CrownProfile(
-    stem_traits=area_flora, stem_allometry=area_allometry, z=area_z
-)
+area_z = np.linspace(0, area_allometry.stem_height.max(), 201)
+area_crown_profiles = CrownProfile(cohorts=cohorts, allometry=area_allometry, z=area_z)
 ```
 
 The plot below then shows how projected crown area (solid lines) and leaf area (dashed
@@ -468,21 +496,27 @@ for f_g in np.linspace(0, 1, num=11):
 
     # Create a flora with a single PFT with current f_g and then generate a
     # stem allometry and crown profile
-    flora_f_g = Flora(
-        [PlantFunctionalType(name="example", h_max=20, m=2, n=2, f_g=f_g)]
+    flora = Flora(name=["pft"], h_max=[20], m=[2], n=[2], f_g=[f_g])
+
+    # Create the cohorts
+    cohorts = create_cohorts(
+        flora=flora,
+        cid_generator=cid_generator,
+        pft_name=np.array(["pft"]),
+        dbh_value=np.array([0.4]),
+        n_individuals=np.array([1]),
     )
-    allometry_f_g = StemAllometry(stem_traits=flora_f_g, at_dbh=np.array([0.4]))
-    profile = CrownProfile(
-        stem_traits=flora_f_g, stem_allometry=allometry_f_g, z=area_z
-    )
+
+    allometry_f_g = StemAllometry(cohorts)
+    profile = CrownProfile(cohorts=cohorts, allometry=allometry_f_g, z=area_z)
 
     # Plot the projected leaf area with height
     ax.plot(profile.projected_leaf_area, area_z, color=colour, label=label, linewidth=1)
 
 # Add a horizontal line for z_max
 ax.plot(
-    [-1, allometry_f_g.crown_area[0][0] + 1],
-    [allometry_f_g.crown_z_max[0][0], allometry_f_g.crown_z_max[0][0]],
+    [-1, allometry_f_g.crown_area[0] + 1],
+    [allometry_f_g.crown_z_max[0], allometry_f_g.crown_z_max[0]],
     linestyle="--",
     color="black",
     label="$z_{max}$",
@@ -496,13 +530,11 @@ _ = ax.legend(frameon=False)
 
 ## Plotting tools for crown shapes
 
-The {meth}`~pyrealm.demography.crown.get_crown_xy` function makes it easier to extract
-neat crown profiles from `CrownProfile` objects, for use in plotting crown data. The
-function takes a paired `CrownProfile` and `StemAllometry` and extracts a particular
-crown profile variable, and removes predictions for each stem that are outside of
-the stem range for that stem. It converts the data for each stem into coordinates that
-will plot as a complete two-sided crown outline. The returned value is a list with an
-entry for each stem in one of two formats.
+The {meth}`CrownProfile.to_xy<pyrealm.demography.crown.CrownProfile.to_xy>` method makes
+it easier to extract neat crown profiles from `CrownProfile` objects, for use in
+plotting crown data.  It converts the data for each stem in a `CrownProfile` into
+coordinates that will plot as a complete two-sided crown outline. The returned value is
+a list with an entry for each stem in one of two formats.
 
 * A pair of coordinate arrays: height and variable value.
 * An single XY array with height and variable values in the columns, as used for
@@ -518,25 +550,20 @@ allow the projected variables to be visualised at the same scale as the crown ra
 stem_offsets = np.array([0, 6, 12])
 
 # Get the crown radius in XY format to plot as a polygon
-crown_radius_as_xy = get_crown_xy(
-    crown_profile=area_crown_profiles,
-    stem_allometry=area_allometry,
+crown_radius_as_xy = area_crown_profiles.to_xy(
     attr="crown_radius",
     stem_offsets=stem_offsets,
     as_xy=True,
+    two_sided=True,
 )
 
 # Get the projected crown and leaf radii to plot as lines
-projected_crown_radius_xy = get_crown_xy(
-    crown_profile=area_crown_profiles,
-    stem_allometry=area_allometry,
+projected_crown_radius_xy = area_crown_profiles.to_xy(
     attr="projected_crown_radius",
     stem_offsets=stem_offsets,
 )
 
-projected_leaf_radius_xy = get_crown_xy(
-    crown_profile=area_crown_profiles,
-    stem_allometry=area_allometry,
+projected_leaf_radius_xy = area_crown_profiles.to_xy(
     attr="projected_leaf_radius",
     stem_offsets=stem_offsets,
 )
@@ -549,7 +576,7 @@ fig, ax = plt.subplots()
 for cr_xy, (ch, cpr), (lh, lpr) in zip(
     crown_radius_as_xy, projected_crown_radius_xy, projected_leaf_radius_xy
 ):
-    ax.add_patch(Polygon(cr_xy, color="lightgrey"))
+    ax.add_patch(Polygon(cr_xy, color="lightgrey", fill=True))
     ax.plot(cpr, ch, color="0.4", linewidth=2)
     ax.plot(lpr, lh, color="red", linewidth=1)
 

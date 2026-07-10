@@ -8,6 +8,16 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+language_info:
+  name: python
+  version: 3.12.3
+  mimetype: text/x-python
+  codemirror_mode:
+    name: ipython
+    version: 3
+  pygments_lexer: ipython3
+  nbconvert_exporter: python
+  file_extension: .py
 ---
 
 # The canopy model
@@ -39,9 +49,9 @@ from matplotlib.patches import Polygon
 import numpy as np
 import pandas as pd
 
-from pyrealm.demography.flora import PlantFunctionalType, Flora
-from pyrealm.demography.community import Cohorts, Community
-from pyrealm.demography.crown import CrownProfile, get_crown_xy
+from pyrealm.demography.flora import Flora
+from pyrealm.demography.cohorts import create_cohorts, cohort_id_generator
+from pyrealm.demography.crown import CrownProfile
 from pyrealm.demography.canopy import Canopy
 from pyrealm.demography.tmodel import StemAllometry
 from pyrealm.core.experimental import ExperimentalFeatureWarning
@@ -55,8 +65,8 @@ np.set_printoptions(precision=2)
 ```
 
 The `canopy` module in `pyrealm` is used to calculate a vertically structured model of
-leaf distribution for a [plant community](./community.md). The purpose of the `canopy`
-module is two-fold:
+leaf distribution for set of cohorts forming a plant community within an area. The
+purpose of the `canopy` module is two-fold:
 
 1. to calculate the vertical distribution of crown and leaf area, including the
    partitioning of canopy into discrete vertical layers, and
@@ -74,9 +84,9 @@ model how leaf area accumulates vertically through a community.
 
 ### Community definition
 
-To recap, a [plant community](./community.md) consists of a number of individual stems
-that are growing together in a location. The community structure groups individuals
-together into cohorts that are defined as:
+To recap, a plant community consists of a number of individual stems that are growing
+together in a location with a known area. The individuals are grouped together into
+cohorts that are defined as:
 
 * a number of individuals,
 * with identical {term}`diameter at breast height<DBH>` (DBH, $D$),
@@ -106,41 +116,43 @@ To demonstrate this, the code below creates a plant community that contains 12
 individual stems, grouped into 3 cohorts with different stem sizes and crown shapes.
 
 ```{code-cell} ipython3
-# Define PFTs
-short_pft = PlantFunctionalType(name="short", h_max=15, m=2, n=4, f_g=0, ca_ratio=380)
-tall_pft = PlantFunctionalType(
-    name="tall", h_max=30, m=2, n=3, par_ext=0.6, f_g=0, ca_ratio=500
+# Create a flora
+flora = Flora(
+    name=["short", "tall"],
+    h_max=[15, 30],
+    m=[2, 2],
+    n=[4, 3],
+    f_g=[0, 0],
+    ca_ratio=[380, 500],
 )
 
-# Create the flora
-flora = Flora([short_pft, tall_pft])
+# Create an id generator.
+cid_generator = cohort_id_generator(mode="str")
 
 # Define a simply community with three cohorts
-community = Community(
+cohorts = create_cohorts(
     flora=flora,
-    cell_area=32,
-    cell_id=1,
-    cohorts=Cohorts(
-        dbh_values=np.array([0.1, 0.20, 0.5]),
-        n_individuals=np.array([7, 3, 2]),
-        pft_names=np.array(["short", "short", "tall"]),
-    ),
+    cid_generator=cid_generator,
+    dbh_value=np.array([0.1, 0.20, 0.5]),
+    n_individuals=np.array([7, 3, 2]),
+    pft_name=np.array(["short", "short", "tall"]),
 )
+
+# Get the stem allometries
+allometry = StemAllometry(cohorts)
 ```
 
 The total crown area of the individuals in each of the three cohorts is shown below:
 
 ```{code-cell} ipython3
-community.stem_allometry.crown_area
+allometry.crown_area
 ```
 
 The total crown area across the community is then the sum of those crown areas across
 all individuals:
 
 ```{code-cell} ipython3
-total_crown_area = np.sum(
-    community.stem_allometry.crown_area * community.cohorts.n_individuals, keepdims=True
-)
+total_crown_area = np.sum(allometry.crown_area * cohorts.n_individuals)
 total_crown_area
 ```
 
@@ -154,21 +166,20 @@ community wide projected crown area.
 :tags: [hide-input]
 
 # Calculate the crown profiles of the individuals across vertical heights
-hghts = np.linspace(community.stem_allometry.stem_height.max(), 0, num=101)[:, None]
-crown_profiles = CrownProfile(community.stem_traits, community.stem_allometry, z=hghts)
+hghts = np.linspace(allometry.stem_height.max(), 0, num=101)
+crown_profiles = CrownProfile(cohorts=cohorts, allometry=allometry, z=hghts)
 
 # Calculate the cumulative crown area across individuals at each height
 crown_area = np.nansum(
-    crown_profiles.projected_crown_area * community.cohorts.n_individuals,
+    crown_profiles.projected_crown_area * cohorts.n_individuals.to_numpy(),
     axis=1,
 )
 
 # Extract the crown profiles as XY arrays for plotting
-profiles = get_crown_xy(
-    crown_profile=crown_profiles,
-    stem_allometry=community.stem_allometry,
+profiles = crown_profiles.to_xy(
     attr="crown_radius",
     as_xy=True,
+    two_sided=True,
 )
 
 
@@ -206,7 +217,7 @@ fig, (ax1, ax2) = plt.subplots(
 for idx, crown in enumerate(profiles):
 
     # Get spaced but slightly randomized stem locations
-    n_stems = community.cohorts.n_individuals[idx]
+    n_stems = cohorts.n_individuals[idx]
     stem_locations = np.linspace(0, 10, num=n_stems) + np.random.normal(size=n_stems)
 
     # Plot the crown model for each stem
@@ -214,12 +225,12 @@ for idx, crown in enumerate(profiles):
         ax1.add_patch(Polygon(crown + np.array([stem_loc, 0]), color="#00550055"))
 
 ax1.autoscale_view()
-add_hvlines(community.stem_allometry.stem_height, ax1, False)
+add_hvlines(allometry.stem_height, ax1, False)
 ax1.set_ylabel("Height (m)")
 
 ax2.plot(crown_area, hghts)
-add_hvlines(community.stem_allometry.stem_height, ax2, False)
-add_hvlines([0, total_crown_area.squeeze()], ax2, True)
+add_hvlines(allometry.stem_height, ax2, False)
+add_hvlines([0, total_crown_area], ax2, True)
 _ = ax2.set_xlabel("Community projected crown area ($C_{p}(z), m^2$)")
 
 plt.tight_layout()
@@ -278,7 +289,7 @@ community we get the following heights:
 
 ```{code-cell} ipython3
 # Fit the canopy model
-canopy_ppa = Canopy(community=community, fit_ppa=True)
+canopy_ppa = Canopy(cohorts=cohorts, allometry=allometry, canopy_area=32, fit_ppa=True)
 canopy_ppa.heights
 ```
 
@@ -301,7 +312,7 @@ fig, (ax1, ax2) = plt.subplots(
 for idx, crown in enumerate(profiles):
 
     # Get spaced but slightly randomized stem locations
-    n_stems = community.cohorts.n_individuals[idx]
+    n_stems = cohorts.n_individuals[idx]
     stem_locations = np.linspace(0, 10, num=n_stems) + np.random.normal(size=n_stems)
 
     # Plot the crown model for each stem
@@ -356,7 +367,7 @@ expected, the crown area in each layer matches the 32 m2 of available space, exc
 the last layer that is not completely filled.
 
 ```{code-cell} ipython3
-np.sum(individual_crown_in_layer * community.cohorts.n_individuals, axis=1)
+np.sum(individual_crown_in_layer * cohorts.n_individuals.to_numpy(), axis=1)
 ```
 
 ### Crown and canopy gap fractions
@@ -375,37 +386,33 @@ The code below alters the community and canopy model used above to include both 
 and canopy gap fractions.
 
 ```{code-cell} ipython3
-# Define gappy PFTs
-gappy_short_pft = PlantFunctionalType(
-    name="short",
-    h_max=15,
-    m=1.5,
-    n=1.5,
-    f_g=0.1,
-    ca_ratio=380,
-)
-gappy_tall_pft = PlantFunctionalType(
-    name="tall", h_max=30, m=1.5, n=2, par_ext=0.6, f_g=0.1, ca_ratio=500
+# Define a flora with PFTs that have crown gap fractions
+gappy_flora = Flora(
+    name=["short", "tall"],
+    h_max=[15, 30],
+    m=[2, 2],
+    n=[4, 3],
+    f_g=[0.1, 0.1],
+    ca_ratio=[380, 500],
 )
 
-# Create the flora
-gappy_flora = Flora([gappy_short_pft, gappy_tall_pft])
-
-# Define community with three cohorts
-gappy_community = Community(
+# Define a community with three cohorts of stems with gappy canopies
+gappy_cohorts = create_cohorts(
     flora=gappy_flora,
-    cell_area=32,
-    cell_id=1,
-    cohorts=Cohorts(
-        dbh_values=np.array([0.1, 0.20, 0.5]),
-        n_individuals=np.array([7, 3, 2]),
-        pft_names=np.array(["short", "short", "tall"]),
-    ),
+    cid_generator=cid_generator,
+    dbh_value=np.array([0.1, 0.20, 0.5]),
+    n_individuals=np.array([7, 3, 2]),
+    pft_name=np.array(["short", "short", "tall"]),
 )
+gappy_allometry = StemAllometry(gappy_cohorts)
 
-# Calculate the canopy profile across vertical heights
+
 gappy_canopy_ppa = Canopy(
-    community=gappy_community, fit_ppa=True, canopy_gap_fraction=1 / 8
+    cohorts=gappy_cohorts,
+    allometry=gappy_allometry,
+    canopy_area=32,
+    canopy_gap_fraction=1 / 8,
+    fit_ppa=True,
 )
 ```
 
@@ -414,31 +421,32 @@ gappy_canopy_ppa = Canopy(
 
 # Calculate the crown profiles for the gappy community
 gappy_crown_profiles = CrownProfile(
-    gappy_community.stem_traits, gappy_community.stem_allometry, z=hghts
+    cohorts=gappy_cohorts, allometry=gappy_allometry, z=hghts
 )
 
 # Calculate the cumulative crown area across individuals for the gappy community
+
 gappy_crown_area = np.nansum(
-    gappy_crown_profiles.projected_crown_area * gappy_community.cohorts.n_individuals,
+    gappy_crown_profiles.projected_crown_area * gappy_cohorts.n_individuals.to_numpy(),
     axis=1,
 )
 
 # Calculate leaf areas for each community
 leaf_area = np.nansum(
-    crown_profiles.projected_leaf_area * community.cohorts.n_individuals,
+    crown_profiles.projected_leaf_area * cohorts.n_individuals.to_numpy(),
     axis=1,
 )
 
 gappy_leaf_area = np.nansum(
-    gappy_crown_profiles.projected_leaf_area * gappy_community.cohorts.n_individuals,
+    gappy_crown_profiles.projected_leaf_area * gappy_cohorts.n_individuals.to_numpy(),
     axis=1,
 )
 ```
 
 The plots below show the cumulative projected leaf and crown areas across the
 individuals in the two communities along with the PPA layer closure heights. The first
-thing to note is that the projected crown area for the communities is identical: the
-cohorts have the same crown shapes, stem heights and number of individuals. For the
+thing to note is that the **projected crown area for the communities is identical**:
+the cohorts have the same crown shapes, stem heights and number of individuals. For the
 non-gappy community, the projected leaf area and projected crown area are also
 identical. However:
 
@@ -455,7 +463,7 @@ identical. However:
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-fig, (ax1, ax2) = plt.subplots(ncols=2, sharey=True, figsize=(10, 5))
+fig, (ax1, ax2) = plt.subplots(ncols=2, sharey=True, sharex=True, figsize=(10, 5))
 
 # Plot projected community crown and leaf area for non gappy community
 ax1.plot(crown_area, hghts)
@@ -464,11 +472,10 @@ ax1.plot(leaf_area, hghts, linestyle="--", color="red")
 # Add PPA closure height and area lines and axes
 add_hvlines(canopy_ppa.heights, ax1, False)
 add_hvlines(area_values, ax1, True)
-add_second_axis(canopy_ppa.heights.squeeze(), ax1, "$z^*_{idx} = ${val:0.2f}", False)
+add_second_axis(canopy_ppa.heights, ax1, "$z^*_{idx} = ${val:0.2f}", False)
 add_second_axis(area_values, ax1, "$A_{idx} = ${val}", True)
 
-text_args = dict(x=0.95, y=0.95, ha="right", va="top", backgroundcolor="white")
-ax1.text(s="Non-gappy community", transform=ax1.transAxes, **text_args)
+ax1.set_title("Non-gappy community")
 ax1.set_xlabel("Projected community area (m2)")
 ax1.set_ylabel("Height (m)")
 
@@ -486,9 +493,14 @@ add_second_axis(
 )
 add_second_axis(gappy_area_values, ax2, "$A_{idx} = ${val}", True)
 
-ax2.text(s="Gappy community", transform=ax2.transAxes, **text_args)
+ax2.set_title("Gappy community")
 ax2.set_xlabel("Projected community area (m2)")
+
 ax2.legend(framealpha=1.0)
 
 plt.tight_layout()
+```
+
+```{code-cell} ipython3
+
 ```

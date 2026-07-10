@@ -8,24 +8,10 @@ import pytest
 
 
 @pytest.fixture
-def fixture_flora():
-    """Simple flora object for use in demography tests."""
-
-    from pyrealm.demography.flora import Flora, PlantFunctionalType
-
-    return Flora(
-        [
-            PlantFunctionalType(name="broadleaf", h_max=30),
-            PlantFunctionalType(name="conifer", h_max=20),
-        ]
-    )
-
-
-@pytest.fixture
 def rtmodel_flora():
     """Generates a flora object from the rtmodel test definitions."""
 
-    from pyrealm.demography.flora import Flora, PlantFunctionalType
+    from pyrealm.demography.flora import Flora
 
     # Load the PFT definitions and rename to pyrealm attributes
     pfts_path = resources.files("pyrealm_build_data.t_model") / "pft_definitions.csv"
@@ -61,33 +47,7 @@ def rtmodel_flora():
     pft_definitions["p_foliage_for_reproductive_tissue"] = 0
     pft_definitions["gpp_topslice"] = 0
 
-    return Flora(
-        pfts=[
-            PlantFunctionalType(**args)
-            for args in pft_definitions.to_dict(orient="records")
-        ]
-    )
-
-
-@pytest.fixture
-def fixture_community():
-    """A fixture providing a simple community."""
-    from pyrealm.demography.community import Cohorts, Community
-    from pyrealm.demography.flora import Flora, PlantFunctionalType
-
-    # A simple community containing one sample stem, with an initial crown gap fraction
-    # of zero.
-    flora = Flora([PlantFunctionalType(name="test", f_g=0.0)])
-    return Community(
-        cell_id=1,
-        cell_area=100,
-        flora=flora,
-        cohorts=Cohorts(
-            n_individuals=np.repeat([1], 4),
-            pft_names=np.repeat(["test"], 4),
-            dbh_values=np.array([0.2, 0.4, 0.6, 0.8]),
-        ),
-    )
+    return Flora(**pft_definitions.to_dict(orient="list"))
 
 
 @pytest.fixture
@@ -128,3 +88,27 @@ def rtmodel_data():
     rdata_arrays = {k: np.reshape(v, (3, 6)).T for k, v in rdata.items()}
 
     return rdata_arrays
+
+
+@pytest.fixture
+def fixture_cohorts_and_allometry():
+    """A fixture providing a simple community."""
+
+    from pyrealm.demography.cohorts import cohort_id_generator, create_cohorts
+    from pyrealm.demography.flora import Flora
+    from pyrealm.demography.tmodel import StemAllometry
+
+    # A simple community containing one sample stem, with an initial crown gap fraction
+    # of zero.
+    flora = Flora(name=["test"], f_g=[0.0])
+    cid_gen = cohort_id_generator()
+    cohorts = create_cohorts(
+        pft_name=np.array(["test"] * 4),
+        dbh_value=np.array([0.2, 0.4, 0.6, 0.8]),
+        n_individuals=np.array([1] * 4),
+        flora=flora,
+        cid_generator=cid_gen,
+    )
+    allometry = StemAllometry(cohorts=cohorts)
+
+    return cohorts, allometry
