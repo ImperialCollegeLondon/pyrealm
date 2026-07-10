@@ -18,15 +18,15 @@ calc_phi0_new <- function(tc, mGDD0 = NA, AI) {
     ###############################################################################################
     # 01.define the parameters/constants
     ###############################################################################################
-    phi_o_theo <- 0.1179906 # theoretical maximum phi0 (Long, 1993;Sandoval et al., in.prep.)
-    m <- 9.533923 # curvature parameter phio max (Sandoval et al., in.prep.) IN SITU FAPAR!!!!
-    n <- 0.07455258 # curvature parameter phio max (Sandoval et al., in.prep.)IN SITU FAPAR!!!!
+    phi_o_theo <- 0.111 # theoretical maximum phi0 (Long, 1993;Sandoval et al., in.prep.)
+    m <- 4.090556 # curvature parameter phio max (Sandoval et al., in.prep.) IN SITU FAPAR!!!!
+    n <- 0.121122 # curvature parameter phio max (Sandoval et al., in.prep.)IN SITU FAPAR!!!!
     # m <- 0.4               	# curvature parameter phio max (Sandoval et al., in.prep.) OPTIMIZED FLUX DATA KIT !!!!
     # n <- 1.01           		# curvature parameter phio max (Sandoval et al., in.prep.)OPTIMIZED FLUX DATA KIT !!!!
     Rgas <- 8.3145 # ideal gas constant J/mol/K
-    dS0 <- 3334.209 # max entropy change(Sandoval et al., in.prep.)
-    dS_mgdd <- 0.6402007 # rate entropy change with temperature phio max (Sandoval et al., in.prep.)
-    Ha <- 70991.96 # activation energy J/mol (Sandoval et al., in.prep.)
+    dS0 <- 3468.185 # max entropy change(Sandoval et al., in.prep.)
+    dS_mgdd <- 0.6680158 # rate entropy change with temperature phio max (Sandoval et al., in.prep.)
+    Ha <- 70885.39 # activation energy J/mol (Sandoval et al., in.prep.)
     # Ha <- 62000     		# activation energy J/mol (Sandoval et al., in.prep.)
     # if mGDD0 is missing, calculate
     if (is.na(mGDD0)) {
