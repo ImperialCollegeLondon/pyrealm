@@ -22,7 +22,7 @@ def test_evap_scalar(splash_core_constants):
     function.
     """
     from pyrealm.core.calendar import Calendar
-    from pyrealm.splash.evap import DailyEvapFluxes
+    from pyrealm.splash.evap import DailyEvaporativeFluxes
     from pyrealm.splash.solar import DailySolarFluxes
 
     cal = Calendar(np.array(["2000-06-20"], dtype="<M8[D]"))
@@ -34,16 +34,18 @@ def test_evap_scalar(splash_core_constants):
         temperature=np.array([23.0]),
     )
 
-    evap = DailyEvapFluxes(
+    evap = DailyEvaporativeFluxes(
         solar,
-        pa=np.array([99630.833]),
-        tc=np.array([23.0]),
+        patm=np.array([99630.833]),
+        temperature=np.array([23.0]),
         core_const=splash_core_constants,
     )
 
     # The original implementation provided sw=0.9 here, but that is now calculated
     # internally from the wn value. Check that it is recreated successfully.
-    aet, hi, sw = evap.estimate_aet(wn=np.array([128.571429]), only_aet=False)
+    aet, hi, sw = evap.estimate_aet(
+        soil_moisture=np.array([128.571429]), only_aet=False
+    )
 
     # Output of __main__ code in original evap.py
     expected = {
@@ -74,7 +76,7 @@ def test_evap_iter(splash_core_constants, daily_flux_benchmarks, expected_attr):
     iterate over the rows to calculate values.
     """
     from pyrealm.core.calendar import Calendar
-    from pyrealm.splash.evap import DailyEvapFluxes
+    from pyrealm.splash.evap import DailyEvaporativeFluxes
     from pyrealm.splash.solar import DailySolarFluxes
 
     inputs, expected = daily_flux_benchmarks
@@ -91,13 +93,13 @@ def test_evap_iter(splash_core_constants, daily_flux_benchmarks, expected_attr):
             temperature=np.array([inp["tc"]]),
         )
 
-        evap = DailyEvapFluxes(
+        evap = DailyEvaporativeFluxes(
             solar=solar,
-            pa=np.array([inp["pa"]]),
-            tc=np.array([inp["tc"]]),
+            patm=np.array([inp["pa"]]),
+            temperature=np.array([inp["tc"]]),
             core_const=splash_core_constants,
         )
-        aet, hi, _sw = evap.estimate_aet(wn=inp["wn"], only_aet=False)
+        aet, hi, _ = evap.estimate_aet(soil_moisture=inp["wn"], only_aet=False)
 
         for ky in expected_attr:
             assert_allclose(getattr(evap, ky), exp[ky])
@@ -115,7 +117,7 @@ def test_evap_array(splash_core_constants, daily_flux_benchmarks, expected_attr)
     iterated implementation.
     """
     from pyrealm.core.calendar import Calendar
-    from pyrealm.splash.evap import DailyEvapFluxes
+    from pyrealm.splash.evap import DailyEvaporativeFluxes
     from pyrealm.splash.solar import DailySolarFluxes
 
     inputs, expected = daily_flux_benchmarks
@@ -129,13 +131,15 @@ def test_evap_array(splash_core_constants, daily_flux_benchmarks, expected_attr)
         temperature=inputs["tc"].to_numpy(),
     )
 
-    evap = DailyEvapFluxes(
+    evap = DailyEvaporativeFluxes(
         solar=solar,
-        pa=inputs["pa"].to_numpy(),
-        tc=inputs["tc"].to_numpy(),
+        patm=inputs["pa"].to_numpy(),
+        temperature=inputs["tc"].to_numpy(),
         core_const=splash_core_constants,
     )
-    aet, hi, _sw = evap.estimate_aet(wn=inputs["wn"].to_numpy(), only_aet=False)
+    aet, hi, _ = evap.estimate_aet(
+        soil_moisture=inputs["wn"].to_numpy(), only_aet=False
+    )
 
     for ky in expected_attr:
         assert_allclose(getattr(evap, ky), expected[ky])
@@ -153,7 +157,7 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
     """
     from pyrealm.core.calendar import Calendar
     from pyrealm.core.pressure import calculate_patm
-    from pyrealm.splash.evap import DailyEvapFluxes
+    from pyrealm.splash.evap import DailyEvaporativeFluxes
     from pyrealm.splash.solar import DailySolarFluxes
 
     inputs, expected = grid_benchmarks
@@ -175,8 +179,11 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
 
     pa = calculate_patm(elev, core_const=splash_core_constants)
 
-    evap = DailyEvapFluxes(
-        solar, pa=pa, tc=inputs["tmp"].data, core_const=splash_core_constants
+    evap = DailyEvaporativeFluxes(
+        solar,
+        patm=pa,
+        temperature=inputs["tmp"].data,
+        core_const=splash_core_constants,
     )
 
     # Test the static components of evap calculations are the same - which can be
@@ -192,5 +199,5 @@ def test_evap_array_grid(splash_core_constants, grid_benchmarks, expected_attr):
     wn_spun_up = np.expand_dims(expected["wn_spun_up"].data, axis=0)
     wn_sequence = np.vstack([wn_spun_up, expected["wn"].data[:-1, :, :]])
 
-    aet = evap.estimate_aet(wn=wn_sequence, day_idx=None)
+    aet = evap.estimate_aet(soil_moisture=wn_sequence, day_index=None)
     assert_allclose(aet, expected["aet_d"], equal_nan=True, rtol=2e-6)

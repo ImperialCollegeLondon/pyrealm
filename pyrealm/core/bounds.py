@@ -73,6 +73,7 @@ class BoundsChecker:
     _defaults: tuple[tuple[str, float, float, str, str], ...] = (
         ("elevation", -1000, 9000, "[]", "m"),
         ("tc", -25, 80, "[]", "°C"),
+        ("temperature", -25, 80, "[]", "°C"),
         ("vpd", 0, 10000, "[]", "Pa"),
         ("co2", 0, 1000, "[]", "ppm"),
         ("patm", 30000, 110000, "[]", "Pa"),
@@ -83,10 +84,10 @@ class BoundsChecker:
         ("aridity_index", 0, 50, "[]", "-"),
         ("mean_growth_temperature", 0, 50, "[]", "-"),
         ("rh", 0, 1, "[]", "-"),
-        ("lat", -90, 90, "[]", "°"),
-        ("sf", 0, 1, "[]", "-"),
-        ("pn", 0, 1000, "[]", "mm day-1"),
-        ("kWm", 0, 1e4, "[]", "mm"),
+        ("latitude", -90, 90, "[]", "°"),
+        ("sunshine_fraction", 0, 1, "[]", "-"),
+        ("precipitation", 0, 1000, "[]", "mm day-1"),
+        ("soil_capacity", 0, 1e4, "[]", "mm"),
         ("leaf_area_index", 0, 20, "[]", "-"),
         ("solar_elevation", -90, 90, "[]", "degrees"),
     )

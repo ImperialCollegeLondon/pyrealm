@@ -42,8 +42,8 @@ DEPENDENT_LIST: list[str] = [
     "SplashModel.estimate_initial_soil_moisture",
     "SplashModel.estimate_daily_water_balance",
     "SplashModel.calculate_soil_moisture",
-    "DailyEvapFluxes",
-    "DailyEvapFluxes.estimate_aet",
+    "DailyEvaporativeFluxes",
+    "DailyEvaporativeFluxes.estimate_aet",
 ]
 
 # Check all dependent functions are used

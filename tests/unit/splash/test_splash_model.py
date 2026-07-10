@@ -75,12 +75,12 @@ def test_splash_model_init(splash_core_constants, grid_benchmarks, var, flag):
 
         # Fit the model
         SplashModel(
-            lat=lat,
-            elv=elv,
+            latitude=lat,
+            elevation=elv,
             dates=Calendar(dates),
-            sf=ds.sf.to_numpy(),
-            tc=ds.tmp.to_numpy(),
-            pn=ds.pre.to_numpy(),
+            sunshine_fraction=ds.sf.to_numpy(),
+            temperature=ds.tmp.to_numpy(),
+            precipitation=ds.pre.to_numpy(),
         )
 
 
@@ -99,6 +99,7 @@ def splash_model(grid_benchmarks, splash_core_constants, calendar, sf_mode):
     temperature = ds.tmp.to_numpy()
     precipitation = ds.pre.to_numpy()
 
+    # Estimate of a comparable shortwave radiation value for use in testing.
     fluxes = DailySolarFluxes(
         latitude=latitude,
         elevation=elevation,
@@ -117,12 +118,12 @@ def splash_model(grid_benchmarks, splash_core_constants, calendar, sf_mode):
         sunshine_fraction = None
 
     splash = SplashModel(
-        lat=latitude,
-        elv=elevation,
-        sf=sunshine_fraction,
+        latitude=latitude,
+        elevation=elevation,
+        sunshine_fraction=sunshine_fraction,
         shortwave_radiation=shortwave_radiation,
-        tc=temperature,
-        pn=precipitation,
+        temperature=temperature,
+        precipitation=precipitation,
         dates=calendar,
         core_const=splash_core_constants,
     )
@@ -157,7 +158,7 @@ def test_estimate_daily_water_balance(splash_model, sf_mode, overflow, underflow
         aet, wn, ro = splash_model.estimate_daily_water_balance(wn_init)
         assert_allclose(
             aet + wn + ro,
-            wn_init + splash_model.pn + splash_model.evap.cond,
+            wn_init + splash_model.precipitation + splash_model.evap.cond,
             equal_nan=True,
         )
 
@@ -193,7 +194,7 @@ def test_calculate_soil_moisture(splash_model, sf_mode):
 
     assert_allclose(
         aet + wn + ro,
-        wn_prev + splash_model.pn + splash_model.evap.cond,
+        wn_prev + splash_model.precipitation + splash_model.evap.cond,
         equal_nan=True,
         rtol=1e-6,
     )
@@ -206,13 +207,14 @@ def test_calculate_soil_moisture_1D(calendar):
 
     n_days = calendar.n_dates
 
-    lat = np.zeros(n_days)
-    elv = np.zeros(n_days)
-    sf = np.zeros(n_days)
-    tc = np.zeros(n_days)
-    pn = np.zeros(n_days)
-
-    splash = SplashModel(lat=lat, elv=elv, dates=calendar, sf=sf, tc=tc, pn=pn)
+    splash = SplashModel(
+        latitude=np.zeros(n_days),
+        elevation=np.zeros(n_days),
+        sunshine_fraction=np.zeros(n_days),
+        temperature=np.zeros(n_days),
+        precipitation=np.zeros(n_days),
+        dates=calendar,
+    )
 
     # Check there is no error for (1D) scalar initial value
     wn_init = np.array([1])

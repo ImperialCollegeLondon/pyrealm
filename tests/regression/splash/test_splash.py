@@ -24,16 +24,16 @@ def test_estimate_daily_water_balance_scalar(splash_core_constants):
 
     cal = Calendar(np.array(["2000-06-20"], dtype="<M8[D]"))
     splash = SplashModel(
-        lat=np.array([37.7]),
-        elv=np.array([142]),
-        sf=np.array([1.0]),
-        tc=np.array([23.0]),
-        pn=np.array([5]),
+        latitude=np.array([37.7]),
+        elevation=np.array([142]),
+        sunshine_fraction=np.array([1.0]),
+        temperature=np.array([23.0]),
+        precipitation=np.array([5]),
         dates=cal,
         core_const=splash_core_constants,
     )
     aet, sm, ro = splash.estimate_daily_water_balance(
-        previous_wn=np.array(75), day_idx=0
+        previous_soil_moisture=np.array(75), day_index=0
     )
 
     # Expected values are the output of __main__ in original splash.py
@@ -68,16 +68,16 @@ def test_estimate_daily_water_balance_iter(
     for day, (_, inp), (_, exp) in zip(days, inputs.iterrows(), expected.iterrows()):
         # initialise splash and calculate the evaporative flux and soil moisture
         splash = SplashModel(
-            lat=np.array([inp["lat"]]),
-            elv=np.array([inp["elv"]]),
-            sf=np.array([inp["sf"]]),
-            tc=np.array([inp["tc"]]),
-            pn=np.array([inp["pn"]]),
+            latitude=np.array([inp["lat"]]),
+            elevation=np.array([inp["elv"]]),
+            sunshine_fraction=np.array([inp["sf"]]),
+            temperature=np.array([inp["tc"]]),
+            precipitation=np.array([inp["pn"]]),
             dates=Calendar(np.array([day])),
             core_const=splash_core_constants,
         )
         aet, sm, ro = splash.estimate_daily_water_balance(
-            previous_wn=np.array([inp["wn"]]), day_idx=0
+            previous_soil_moisture=np.array([inp["wn"]]), day_index=0
         )
         assert_allclose(aet, exp["aet_d"], rtol=1e-6)
         assert_allclose(sm, exp["wn"], rtol=1e-6)
@@ -94,17 +94,17 @@ def test_estimate_daily_water_balance_array(
     inputs, expected = daily_flux_benchmarks
 
     splash = SplashModel(
-        lat=inputs["lat"].to_numpy(),
-        elv=inputs["elv"].to_numpy(),
-        sf=inputs["sf"].to_numpy(),
-        tc=inputs["tc"].to_numpy(),
-        pn=inputs["pn"].to_numpy(),
+        latitude=inputs["lat"].to_numpy(),
+        elevation=inputs["elv"].to_numpy(),
+        sunshine_fraction=inputs["sf"].to_numpy(),
+        temperature=inputs["tc"].to_numpy(),
+        precipitation=inputs["pn"].to_numpy(),
         dates=Calendar(inputs["dates"].to_numpy()),
         core_const=splash_core_constants,
     )
 
     aet, sm, ro = splash.estimate_daily_water_balance(
-        previous_wn=inputs["wn"].to_numpy(), day_idx=None
+        previous_soil_moisture=inputs["wn"].to_numpy(), day_index=None
     )
 
     assert_allclose(aet, expected["aet_d"], rtol=1e-6)
@@ -126,12 +126,12 @@ def test_run_spin_up_oned(splash_core_constants, one_d_benchmark):
     # duplicate lat and elev to same shape as sf, tc, pc
 
     splash = SplashModel(
-        lat=inputs.lat.to_numpy()[None, :, None],
-        elv=inputs.elev.to_numpy()[None, :, :],
+        latitude=inputs.lat.to_numpy()[None, :, None],
+        elevation=inputs.elev.to_numpy()[None, :, :],
+        sunshine_fraction=inputs.sf.to_numpy(),
+        temperature=inputs.tmp.to_numpy(),
+        precipitation=inputs.pre.to_numpy(),
         dates=Calendar(inputs.time.to_numpy()),
-        sf=inputs.sf.to_numpy(),
-        tc=inputs.tmp.to_numpy(),
-        pn=inputs.pre.to_numpy(),
         core_const=splash_core_constants,
     )
 
@@ -150,12 +150,12 @@ def test_run_spin_up_gridded(splash_core_constants, grid_benchmarks):
     inputs, expected = grid_benchmarks
 
     splash = SplashModel(
-        lat=inputs.lat.to_numpy()[None, :, None],
-        elv=inputs.elev.to_numpy()[None, :, :],
+        latitude=inputs.lat.to_numpy()[None, :, None],
+        elevation=inputs.elev.to_numpy()[None, :, :],
+        sunshine_fraction=inputs.sf.to_numpy(),
+        temperature=inputs.tmp.to_numpy(),
+        precipitation=inputs.pre.to_numpy(),
         dates=Calendar(inputs.time.to_numpy()),
-        sf=inputs.sf.to_numpy(),
-        tc=inputs.tmp.to_numpy(),
-        pn=inputs.pre.to_numpy(),
         core_const=splash_core_constants,
     )
 
@@ -179,16 +179,14 @@ def test_calculate_soil_moisture_oned(splash_core_constants, one_d_benchmark):
 
     inputs, expected = one_d_benchmark
 
-    # Need to reshape the inputs so they have a time and 1 observation axis and
-    # duplicate lat and elev to same shape as sf, tc, pc (TODO - avoid this!)
-
+    # Use the xarray dimensions to handle broadcasting.
     splash = splash = SplashModel(
-        lat=inputs.lat.to_numpy()[None, :, None],
-        elv=inputs.elev.to_numpy()[None, :, :],
-        dates=Calendar(inputs.time.to_numpy()),
-        sf=inputs.sf.to_numpy(),
-        tc=inputs.tmp.to_numpy(),
-        pn=inputs.pre.to_numpy(),
+        latitude=inputs.lat,
+        elevation=inputs.elev,
+        sunshine_fraction=inputs.sf,
+        temperature=inputs.tmp,
+        precipitation=inputs.pre,
+        dates=Calendar(inputs.time),
         core_const=splash_core_constants,
     )
 
@@ -215,16 +213,14 @@ def test_calculate_soil_moisture_grid(splash_core_constants, grid_benchmarks):
 
     inputs, expected = grid_benchmarks
 
-    # Need to reshape the inputs so they have a time and 1 observation axis and
-    # duplicate lat and elev to same shape as sf, tc, pc (TODO - avoid this!)
-
+    # Use the xarray dimensions to handle broadcasting.
     splash = SplashModel(
-        lat=inputs.lat.to_numpy()[None, :, None],
-        elv=inputs.elev.to_numpy()[None, :, :],
-        dates=Calendar(inputs.time.to_numpy()),
-        sf=inputs.sf.to_numpy(),
-        tc=inputs.tmp.to_numpy(),
-        pn=inputs.pre.to_numpy(),
+        latitude=inputs.lat,
+        elevation=inputs.elev,
+        sunshine_fraction=inputs.sf,
+        temperature=inputs.tmp,
+        precipitation=inputs.pre,
+        dates=Calendar(inputs.time),
         core_const=splash_core_constants,
     )
 
