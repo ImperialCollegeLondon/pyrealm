@@ -7,8 +7,25 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
+from pyrealm.pmodel.arrhenius import ARRHENIUS_METHOD_REGISTRY
+from pyrealm.pmodel.jmax_limitation import JMAX_LIMITATION_CLASS_REGISTRY
+from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
+from pyrealm.pmodel.quantum_yield import QUANTUM_YIELD_CLASS_REGISTRY
 
-def test_pmodel_method_combination_checking():
+
+@pytest.mark.parametrize(
+    argnames="method_combination",
+    argvalues=(
+        pytest.param(combo, id="_".join(combo))
+        for combo in product(
+            ARRHENIUS_METHOD_REGISTRY,
+            OPTIMAL_CHI_CLASS_REGISTRY,
+            QUANTUM_YIELD_CLASS_REGISTRY,
+            JMAX_LIMITATION_CLASS_REGISTRY,
+        )
+    ),
+)
+def test_pmodel_method_combination_checking(method_combination):
     """Run PModels with all possible method argument combinations.
 
     This test checks that the required variables from each of the methods are passed
@@ -22,10 +39,6 @@ def test_pmodel_method_combination_checking():
         PModelEnvironment,
         SubdailyPModel,
     )
-    from pyrealm.pmodel.arrhenius import ARRHENIUS_METHOD_REGISTRY
-    from pyrealm.pmodel.jmax_limitation import JMAX_LIMITATION_CLASS_REGISTRY
-    from pyrealm.pmodel.optimal_chi import OPTIMAL_CHI_CLASS_REGISTRY
-    from pyrealm.pmodel.quantum_yield import QUANTUM_YIELD_CLASS_REGISTRY
 
     # Get all the variables possibly required across all the methods
     # NOTE: JMaxLim does not use the PModelEnv as an input - currently has no methods
@@ -60,51 +73,44 @@ def test_pmodel_method_combination_checking():
     )
     acclim.set_window(np.timedelta64(12, "h"), np.timedelta64(10, "m"))
 
-    # Iterate over model combinations
-    method_combinations = product(
-        ARRHENIUS_METHOD_REGISTRY,
-        OPTIMAL_CHI_CLASS_REGISTRY,
-        QUANTUM_YIELD_CLASS_REGISTRY,
-        JMAX_LIMITATION_CLASS_REGISTRY,
-    )
+    arh_meth, chi_meth, phi0_meth, jmax_meth = method_combination
 
-    for arh_meth, chi_meth, phi0_meth, jmax_meth in method_combinations:
-        with does_not_raise():
-            # Get the subset of variables required for this combination
-            this_combo_required_vars = (
-                "tc",
-                "patm",
-                "vpd",
-                "co2",
-                "fapar",
-                "ppfd",
-                *ARRHENIUS_METHOD_REGISTRY[arh_meth].required_env_variables,
-                *OPTIMAL_CHI_CLASS_REGISTRY[chi_meth].required_env_variables,
-                *QUANTUM_YIELD_CLASS_REGISTRY[phi0_meth].required_env_variables,
-            )
+    with does_not_raise():
+        # Get the subset of variables required for this combination
+        this_combo_required_vars = (
+            "tc",
+            "patm",
+            "vpd",
+            "co2",
+            "fapar",
+            "ppfd",
+            *ARRHENIUS_METHOD_REGISTRY[arh_meth].required_env_variables,
+            *OPTIMAL_CHI_CLASS_REGISTRY[chi_meth].required_env_variables,
+            *QUANTUM_YIELD_CLASS_REGISTRY[phi0_meth].required_env_variables,
+        )
 
-            # Build the combo specific environment
-            env = PModelEnvironment(
-                **{v: d for v, d in data.items() if v in this_combo_required_vars}
-            )
+        # Build the combo specific environment
+        env = PModelEnvironment(
+            **{v: d for v, d in data.items() if v in this_combo_required_vars}
+        )
 
-            # Check the models run
-            _ = PModel(
-                env=env,
-                method_arrhenius=arh_meth,
-                method_optchi=chi_meth,
-                method_kphio=phi0_meth,
-                method_jmaxlim=jmax_meth,
-            )
+        # Check the models run
+        _ = PModel(
+            env=env,
+            method_arrhenius=arh_meth,
+            method_optchi=chi_meth,
+            method_kphio=phi0_meth,
+            method_jmaxlim=jmax_meth,
+        )
 
-            _ = SubdailyPModel(
-                env=env,
-                acclim_model=acclim,
-                method_arrhenius=arh_meth,
-                method_optchi=chi_meth,
-                method_kphio=phi0_meth,
-                method_jmaxlim=jmax_meth,
-            )
+        _ = SubdailyPModel(
+            env=env,
+            acclim_model=acclim,
+            method_arrhenius=arh_meth,
+            method_optchi=chi_meth,
+            method_kphio=phi0_meth,
+            method_jmaxlim=jmax_meth,
+        )
 
 
 @pytest.mark.parametrize(argnames="pmodel_type", argvalues=("standard", "subdaily"))

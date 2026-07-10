@@ -14,7 +14,7 @@ data <- expand.grid(
 # Run the reference implementation, which is not parallelised so need mapply
 data$phio <- round(
   mapply(
-    calc_phi0, data$aridity_index, data$temp, data$mean_gdd_temp
+    calc_phi0_new, data$temp, data$mean_gdd_temp, data$aridity_index
   ),
   digits = 8
 )

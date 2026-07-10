@@ -15,7 +15,11 @@ from pyrealm.constants.competition_const import C3C4Const
 from pyrealm.constants.core_const import CoreConst
 from pyrealm.constants.isotope_const import IsotopesConst
 from pyrealm.constants.phenology_const import PhenologyConst
-from pyrealm.constants.pmodel_const import PModelConst
+from pyrealm.constants.pmodel_const import (
+    KattgeKnorrArrheniusCoef,
+    PModelConst,
+    SimpleArrheniusCoef,
+)
 from pyrealm.constants.tmodel_const import TModelTraits
 
 __all__ = [
@@ -23,7 +27,9 @@ __all__ = [
     "ConstantsClass",
     "CoreConst",
     "IsotopesConst",
+    "KattgeKnorrArrheniusCoef",
     "PModelConst",
     "PhenologyConst",
+    "SimpleArrheniusCoef",
     "TModelTraits",
 ]

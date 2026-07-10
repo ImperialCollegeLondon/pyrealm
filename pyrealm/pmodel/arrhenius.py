@@ -15,10 +15,12 @@ temperature relationships for enzyme rates.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm.constants import KattgeKnorrArrheniusCoef, SimpleArrheniusCoef
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.pmodel.functions import (
     calculate_kattge_knorr_arrhenius_factor,
@@ -63,9 +65,8 @@ class ArrheniusFactorABC(ABC):
     :data:`~pyrealm.pmodel.arrhenius.ARRHENIUS_METHOD_REGISTRY`. This name is also used
     to select a matching dictionary of coefficients from inputs.
     """
-    required_coefficients: set[str]
-    """A set of the names of coefficients required to calculate factor values. These
-    must be present in the coefficients dictionary matching the method name."""
+    coefficient_class: type[KattgeKnorrArrheniusCoef] | type[SimpleArrheniusCoef]
+    """The coefficient class that is required to calculate the factors."""
 
     required_env_variables: tuple[str, ...]
     """A tuple of names of additional variables that must be included in a 
@@ -85,7 +86,7 @@ class ArrheniusFactorABC(ABC):
         self._check_required_env_variables()
 
     @abstractmethod
-    def _calculation_method(self, coefficients: dict) -> NDArray[np.floating]:
+    def _calculation_method(self, coefficients: Any) -> NDArray[np.floating]:
         pass
 
     def calculate_arrhenius_factor(self, coefficients: dict) -> NDArray[np.floating]:
@@ -112,14 +113,8 @@ class ArrheniusFactorABC(ABC):
             )
 
         # Check the required coefficients are found
-        missing_coefficients = self.required_coefficients.difference(
-            coefficients[self.method]
-        )
-        if missing_coefficients:
-            raise ValueError(
-                f"The coefficients for the {self.method} Arrhenius method do not "
-                f"provide: {','.join(sorted(missing_coefficients))}"
-            )
+        if not isinstance(coefficients[self.method], self.coefficient_class):
+            raise ValueError("Incorrect coefficients class provided.")
 
         return self._calculation_method(coefficients=coefficients[self.method])
 
@@ -137,13 +132,13 @@ class ArrheniusFactorABC(ABC):
     def __init_subclass__(
         cls,
         method: str,
-        required_coefficients: set[str],
+        coefficient_class: type[KattgeKnorrArrheniusCoef] | type[SimpleArrheniusCoef],
         required_env_variables: tuple[str, ...],
     ) -> None:
         """Initialise a subclass deriving from this ABC."""
 
         cls.method = method
-        cls.required_coefficients = required_coefficients
+        cls.coefficient_class = coefficient_class
         cls.required_env_variables = required_env_variables
 
         ARRHENIUS_METHOD_REGISTRY[cls.method] = cls
@@ -152,7 +147,7 @@ class ArrheniusFactorABC(ABC):
 class SimpleArrhenius(
     ArrheniusFactorABC,
     method="simple",
-    required_coefficients={"ha"},
+    coefficient_class=SimpleArrheniusCoef,
     required_env_variables=tuple(),
 ):
     """Class providing simple Arrhenius scaling.
@@ -164,6 +159,7 @@ class SimpleArrhenius(
 
     Examples:
         >>> import numpy as np
+        >>> from pyrealm.constants import SimpleArrheniusCoef
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]),
         ...     patm=np.array([101325]),
@@ -173,16 +169,18 @@ class SimpleArrhenius(
         >>> arrh = SimpleArrhenius(env=env)
         >>> # Simple Arrhenius scaling factor using V_cmax coefficients
         >>> arrh.calculate_arrhenius_factor(
-        ...     coefficients={'simple': {'ha': 65330}}
+        ...     coefficients={'simple': SimpleArrheniusCoef(ha =  65330)}
         ... ).round(5)
         array([0.63795])
     """
 
-    def _calculation_method(self, coefficients: dict) -> NDArray[np.floating]:
+    def _calculation_method(
+        self, coefficients: SimpleArrheniusCoef
+    ) -> NDArray[np.floating]:
         return calculate_simple_arrhenius_factor(
             tk=self.env.tk,
             tk_ref=self.env.pmodel_const.tk_ref,
-            ha=coefficients["ha"],
+            ha=coefficients.ha,
             k_R=self.env.core_const.k_R,
         )
 
@@ -190,7 +188,7 @@ class SimpleArrhenius(
 class KattgeKnorrArrhenius(
     ArrheniusFactorABC,
     method="kattge_knorr",
-    required_coefficients={"ha", "hd", "entropy_intercept", "entropy_slope"},
+    coefficient_class=KattgeKnorrArrheniusCoef,
     required_env_variables=("mean_growth_temperature",),
 ):
     """Class providing Kattge Knorr Arrhenius scaling.
@@ -198,15 +196,18 @@ class KattgeKnorrArrhenius(
     This method implements the peaked Arrhenius scaling model of
     :cite:t:`Kattge:2007db`. It requires that the PModelEnvironment also provides values
     for the mean growth temperature of plants as ``mean_growth_temperature`` in °C. It
-    also requires a coefficients dictionary providing:
+    also requires a coefficients class providing:
 
     * the intercept (``entropy_intercept``) and slope (``entropy_slope``) of activation
       entropy as a function of the mean growth temperature in °C (J/mol/°C),
+    * the form of the equation to be used for calculating activation entropy from mean
+      growth temperature (``entropy_method``, one of "linear" or "power"),
     * the deactivation energy constant  (``hd``, :math:`H_d`, J/mol) and
     * the activation energy constant (``ha``, :math:`H_a`, J/mol).
 
     Examples:
         >>> import numpy as np
+        >>> from pyrealm.constants import KattgeKnorrArrheniusCoef
         >>> env = PModelEnvironment(
         ...     tc=np.array([20]),
         ...     patm=np.array([101325]),
@@ -218,12 +219,13 @@ class KattgeKnorrArrhenius(
         >>> # Kattge and Knorr Arrhenius scaling factor using V_cmax coefficients
         >>> arrh.calculate_arrhenius_factor(
         ...     coefficients={"kattge_knorr":
-        ...         {
-        ...             'entropy_intercept': 668.39,
-        ...             'entropy_slope': -1.07,
-        ...             'ha': 71513,
-        ...             'hd': 200000,
-        ...         }
+        ...        KattgeKnorrArrheniusCoef(
+        ...             entropy_method = "linear",
+        ...             entropy_intercept = 668.39,
+        ...             entropy_slope = -1.07,
+        ...             ha = 71513,
+        ...             hd = 200000,
+        ...         )
         ...     }
         ...  ).round(5)
         array([0.70109])
@@ -231,7 +233,9 @@ class KattgeKnorrArrhenius(
 
     __experimental__ = True
 
-    def _calculation_method(self, coefficients: dict) -> NDArray[np.floating]:
+    def _calculation_method(
+        self, coefficients: KattgeKnorrArrheniusCoef
+    ) -> NDArray[np.floating]:
         warn_experimental("KattgeKnorrArrhenius")
 
         return calculate_kattge_knorr_arrhenius_factor(
