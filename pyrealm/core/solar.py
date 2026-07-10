@@ -449,7 +449,7 @@ def calculate_net_longwave_radiation(
     r"""Calculate net longwave radiation.
 
     This function calculates the net longwave radiation (:math:`R_{nl}`, W m-2),
-    following Eqn. 11 and Table 1 of :cite:t:`sandoval:2024a`m:
+    following Eqn. 11 and Table 1 of :cite:t:`sandoval:2024a`:
 
     .. math::
 
@@ -457,7 +457,7 @@ def calculate_net_longwave_radiation(
 
 
     The original formulation in :cite:t:`davis:2017a`, used an equivalent form but with
-    a simpler parameterisation :cite:t:`colinprentice:1993a`:
+    a simpler parameterisation :cite:t:`prentice:1993a`:
 
     .. math::
 

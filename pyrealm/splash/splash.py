@@ -24,10 +24,21 @@ class SplashModel:
 
     The SplashModel class calculates the predictions of the SPLASH v1.0 model
     :cite:p:`davis:2017a`. The input variables of latitude, elevation, temperature,
-    precipitation and sunshine fraction of observations are initially used to calculate
-    solar and evaporative fluxes, which are stored in the ``solar`` and ``evap``
-    attributes as instances of :class:`~pyrealm.splash.solar.DailySolarFluxes` and
-    :class:`~pyrealm.splash.evap.DailyEvapFluxes`.
+    precipitation and incoming solar radiation of observations are initially used to
+    calculate solar and evaporative fluxes, which are stored in the ``solar`` and
+    ``evap`` attributes as instances of :class:`~pyrealm.splash.solar.DailySolarFluxes`
+    and :class:`~pyrealm.splash.evap.DailyEvapFluxes`.
+
+    There are two options for providing radiation inputs:
+
+    * Sunshine fraction:  this was used in the original SPLASH implementation
+      :cite:p:`davis:2017a` and is provided as the radiation input variable in - for
+      example - the CRU climate datasets.
+
+    * Shortwave radiation: the SPLASH v2 model :cite:p:`sandoval:2024a` updated the
+      calculation of solar fluxes to use data on shortwave downwelling radiation. This
+      is provided as a radiation input in many other datasets, such as FluxNET sites and
+      ERA5.
 
     The inputs to a SplashModel are expected to be arrays with time varying along the
     first dimension. Other dimensions represent observations at sites on a particular

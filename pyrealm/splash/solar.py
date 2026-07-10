@@ -44,7 +44,7 @@ class DailySolarFluxes:
       :cite:p:`davis:2017a` and is provided as the radiation input variable in - for
       example - the CRU climate datasets.
 
-    * Shortwave radiation: the updated SPLASH v2 :cite:p:`sandoval:2024a` updated the
+    * Shortwave radiation: the SPLASH v2 model :cite:p:`sandoval:2024a` updated the
       calculation of solar fluxes to use data on shortwave downwelling radiation. This
       is provided as a radiation input in many other datasets, such as FluxNET sites and
       ERA5.
@@ -53,8 +53,6 @@ class DailySolarFluxes:
     two options: see
     :attr:`~pyrealm.constants.core_const.CoreConst.net_longwave_radiation_coef_sw` and
     :attr:`~pyrealm.constants.core_const.CoreConst.net_longwave_radiation_coef_sf`.
-
-
 
     The first dimension for the array inputs must correspond to the length of the time
     series passed in using the ``dates`` argument. If xarray inputs are used, ``dates``

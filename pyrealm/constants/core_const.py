@@ -379,8 +379,7 @@ class CoreConst(ConstantsClass):
     def __post_init__(self) -> None:
         """Populate parameters from init settings.
 
-        This checks the init inputs and populates ``magnus_coef`` and
-        ``net_longwave_radiation_coef``.
+        This checks the init inputs and populates ``magnus_coef``.
 
         Returns:
             None
