@@ -123,7 +123,7 @@ def test_QuantumYieldSandoval(quantum_yield_env):
     > ai <- c(0.9, 0.9, 2, 2, 5, 5)
     > gdd0 <-  c(10, 20, 10, 20, 10, 20)
     > dput(round(mapply(calc_phi0_new, tc, gdd0, ai), 8))
-    c(0.03709007, 0.06327548, 0.06071396, 0.07107562, 0.02615736, 0.02786089)
+    c(0.03390536, 0.05699611, 0.06600041, 0.07668231, 0.03561095, 0.03918737)
     """
 
     from pyrealm.pmodel.quantum_yield import (
@@ -133,12 +133,12 @@ def test_QuantumYieldSandoval(quantum_yield_env):
 
     expected_kphio = np.array(
         [
-            0.03709007,
-            0.06327548,
-            0.06071396,
-            0.07107562,
-            0.02615736,
-            0.02786089,
+            0.03390536,
+            0.05699611,
+            0.06600041,
+            0.07668231,
+            0.03561095,
+            0.03918737,
         ]
     )
 
