@@ -9,16 +9,6 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  codemirror_mode:
-    name: ipython
-    version: 3
-  file_extension: .py
-  mimetype: text/x-python
-  name: python
-  nbconvert_exporter: python
-  pygments_lexer: ipython3
-  version: 3.11.9
 ---
 
 # Arrhenius scaling in the P Model
@@ -131,7 +121,7 @@ tk = tc + core_const.k_CtoK
 simple = calculate_simple_arrhenius_factor(
     tk=tk,
     tk_ref=pmodel_const.tk_ref,
-    ha=pmodel_const.arrhenius_vcmax["simple"]["ha"],
+    ha=pmodel_const.arrhenius_vcmax["simple"].ha,
 )
 
 # Calculate the Kattge Knorr curve under three conditions:

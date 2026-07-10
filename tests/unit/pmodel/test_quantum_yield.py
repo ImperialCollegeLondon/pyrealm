@@ -110,26 +110,7 @@ def test_QuantumYieldTemperature(
     assert_allclose(qy2.kphio, qy2.reference_kphio * expected_kphio_factor)
 
 
-@pytest.mark.parametrize(
-    argnames="reference_kphio, expected_kphio",
-    argvalues=(
-        pytest.param(
-            1 / 9,
-            np.array(
-                [0.02848466, 0.05510828, 0.06099888, 0.07537036, 0.02231382, 0.03026185]
-            ),
-            id="provided_kphio",
-        ),
-        pytest.param(
-            None,
-            np.array(
-                [0.03204524, 0.06199681, 0.06862374, 0.08479165, 0.02510305, 0.03404458]
-            ),
-            id="default_kphio",
-        ),
-    ),
-)
-def test_QuantumYieldSandoval(quantum_yield_env, reference_kphio, expected_kphio):
+def test_QuantumYieldSandoval(quantum_yield_env):
     """Test the Sandoval temperature and aridity method.
 
     The test values here have been calculated using the original R implementation
@@ -141,8 +122,8 @@ def test_QuantumYieldSandoval(quantum_yield_env, reference_kphio, expected_kphio
     > tc <- c(5, 10, 15, 20, 25, 30)
     > ai <- c(0.9, 0.9, 2, 2, 5, 5)
     > gdd0 <-  c(10, 20, 10, 20, 10, 20)
-    > round(mapply(calc_phi0, ai, tc, gdd0), 5)
-    > round(mapply(calc_phi0, ai, tc, gdd0, MoreArgs=list(phi_o_theo=1/8)), 5)
+    > dput(round(mapply(calc_phi0_new, tc, gdd0, ai), 8))
+    c(0.03390536, 0.05699611, 0.06600041, 0.07668231, 0.03561095, 0.03918737)
     """
 
     from pyrealm.pmodel.quantum_yield import (
@@ -150,16 +131,25 @@ def test_QuantumYieldSandoval(quantum_yield_env, reference_kphio, expected_kphio
         QuantumYieldSandoval,
     )
 
-    qy = QuantumYieldSandoval(
-        env=quantum_yield_env,
-        reference_kphio=reference_kphio,
+    expected_kphio = np.array(
+        [
+            0.03390536,
+            0.05699611,
+            0.06600041,
+            0.07668231,
+            0.03561095,
+            0.03918737,
+        ]
     )
+
+    qy = QuantumYieldSandoval(env=quantum_yield_env)
 
     assert_allclose(qy.kphio, expected_kphio, rtol=1e-06)
 
-    qy2 = QUANTUM_YIELD_CLASS_REGISTRY["sandoval"](
-        env=quantum_yield_env,
-        reference_kphio=reference_kphio,
-    )
+    qy2 = QUANTUM_YIELD_CLASS_REGISTRY["sandoval"](env=quantum_yield_env)
 
     assert_allclose(qy2.kphio, expected_kphio, rtol=1e-06)
+
+    # Cannot alter phi0.
+    with pytest.raises(ValueError):
+        qy = QuantumYieldSandoval(env=quantum_yield_env, reference_kphio=1 / 8)

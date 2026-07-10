@@ -15,6 +15,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from numpy.typing import NDArray
 
+from pyrealm.constants import KattgeKnorrArrheniusCoef, PModelConst
 from pyrealm.core.experimental import warn_experimental
 from pyrealm.core.utilities import (
     check_input_shapes,
@@ -61,6 +62,7 @@ class QuantumYieldABC(ABC):
             QuantumYieldABC,
             method="method_name",
             required_env_variables=("an_environment_variable",),
+            default_maximum_phio=0.125,
             array_reference_kphio_ok=True,
         ):
 
@@ -71,6 +73,7 @@ class QuantumYieldABC(ABC):
       present in the :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` to
       use this approach. The core ``tc``, ``vpd``, ``patm`` and ``co2`` variables do not
       need to be included in this list.
+    * The ``default_maximum_phio`` value sets the default maximum phi0 value to be used.
     * The ``array_reference_kphio_ok`` argument sets whether the method can accept an
       array of :math:`\phi_0` values or whether a single global reference value should
       be used.
@@ -103,6 +106,8 @@ class QuantumYieldABC(ABC):
     :class:`~pyrealm.pmodel.pmodel_environment.PModelEnvironment` instance to use a
     particular method.
     """
+    default_maximum_kphio: float
+    """A method specific default value for the maximum quantum yield."""
     array_reference_kphio_ok: bool
     """Does the implementation handle arrays inputs to the reference_kphio __init__
     argument."""
@@ -118,11 +123,39 @@ class QuantumYieldABC(ABC):
         model."""
         self.shape: tuple[int, ...] = env.shape
         """The shape of the input environment data."""
+        self.use_c4: bool = use_c4
+        """Use a C4 parameterisation if available."""
 
+        # Declare attributes populated by methods. These are typed but not assigned a
+        # default value as they must are populated by the subclass specific
+        # calculate_kphio method, which is called below to populate the values.
+        self.kphio: NDArray[np.floating]
+        """The calculated intrinsic quantum yield of photosynthesis."""
+
+        # Run the calculation methods after checking for any required variables
+        self._set_reference_kphio(reference_kphio=reference_kphio)
+        self._check_required_env_variables()
+        self._calculate_kphio()
+
+        # Validate that the subclass methods populate the attributes correctly.
+        _ = check_input_shapes(env.ca, self.kphio)
+
+    @abstractmethod
+    def _calculate_kphio(self) -> None:
+        """Calculate the intrinsic quantum yield of photosynthesis."""
+
+    def _set_reference_kphio(
+        self, reference_kphio: float | ArrayType[np.floating] | None
+    ) -> None:
+        """Sets the reference kphio value.
+
+        Args:
+            reference_kphio: The reference kphio value passed to the class.
+        """
         # Set the reference kphio to the class default value if not provided and convert
         # the value to np.array if needed
         if reference_kphio is None:
-            reference_kphio = self.env.pmodel_const.maximum_phi0
+            reference_kphio = self.default_maximum_kphio
         if isinstance(reference_kphio, float | int):
             reference_kphio = np.array([reference_kphio])
 
@@ -141,25 +174,6 @@ class QuantumYieldABC(ABC):
 
         self.reference_kphio: NDArray[np.floating] = reference_kphio
         """The kphio reference value for the method."""
-        self.use_c4: bool = use_c4
-        """Use a C4 parameterisation if available."""
-
-        # Declare attributes populated by methods. These are typed but not assigned a
-        # default value as they must are populated by the subclass specific
-        # calculate_kphio method, which is called below to populate the values.
-        self.kphio: NDArray[np.floating]
-        """The calculated intrinsic quantum yield of photosynthesis."""
-
-        # Run the calculation methods after checking for any required variables
-        self._check_required_env_variables()
-        self._calculate_kphio()
-
-        # Validate that the subclass methods populate the attributes correctly.
-        _ = check_input_shapes(env.ca, self.kphio)
-
-    @abstractmethod
-    def _calculate_kphio(self) -> None:
-        """Calculate the intrinsic quantum yield of photosynthesis."""
 
     def _check_required_env_variables(self) -> None:
         """Check additional required variables are present."""
@@ -194,12 +208,14 @@ class QuantumYieldABC(ABC):
         cls,
         method: str,
         required_env_variables: tuple[str, ...],
+        default_maximum_kphio: float,
         array_reference_kphio_ok: bool,
     ) -> None:
         """Initialise a subclass deriving from this ABC."""
 
         cls.method = method
         cls.required_env_variables = required_env_variables
+        cls.default_maximum_kphio = default_maximum_kphio
         cls.array_reference_kphio_ok = array_reference_kphio_ok
         QUANTUM_YIELD_CLASS_REGISTRY[cls.method] = cls
 
@@ -208,6 +224,7 @@ class QuantumYieldFixed(
     QuantumYieldABC,
     method="fixed",
     required_env_variables=tuple(),
+    default_maximum_kphio=PModelConst().maximum_phi0,
     array_reference_kphio_ok=True,
 ):
     r"""Apply a fixed value for :math:`\phi_0`.
@@ -227,6 +244,7 @@ class QuantumYieldTemperature(
     QuantumYieldABC,
     method="temperature",
     required_env_variables=tuple(),
+    default_maximum_kphio=PModelConst().maximum_phi0,
     array_reference_kphio_ok=False,
 ):
     r"""Calculate temperature dependent of quantum yield efficiency.
@@ -267,19 +285,29 @@ class QuantumYieldSandoval(
     QuantumYieldABC,
     method="sandoval",
     required_env_variables=("aridity_index", "mean_growth_temperature"),
+    default_maximum_kphio=PModelConst().sandoval_max_phi0,
     array_reference_kphio_ok=False,
 ):
     r"""Calculate aridity and mean growth temperature effects on quantum yield.
 
-    This experimental approach implements the method of :cite:t:`sandoval:in_prep`. This
+    This experimental approach implements the method of :cite:t:`sandoval:2026a`. This
     approach modifies the maximum possible :math:`\phi_0` as a function of the
-    climatological aridity index. It then also adjusts the temperature at which the
-    highest :math:`\phi_0` can be attained as a function of the mean growth temperature
-    for an observation. It then calculates the expected :math:`\phi_0` as a function of
-    temperature via a modified Arrhenius relationship.
+    climatological {term}`aridity index<AI>`, calculated as PET / P. It then also
+    adjusts the temperature at which the highest :math:`\phi_0` can be attained as a
+    function of the mean growth temperature for the site. It then calculates the
+    expected :math:`\phi_0` as a function of temperature via a modified Arrhenius
+    relationship.
 
-    The reference kphio for this approach is the theoretical maximum quantum yield,
-    defaulting to the ratio of 1/9 in the absence of a Q cycle :cite:`long:1993a`.
+    .. attention::
+
+        The reference kphio for this approach is fixed. :cite:t:`sandoval:2026a` used
+        robust optimisation methods from global FluxNET data to parameterise the shape
+        of the aridity curve and the enzyme kinetics for the Arrhenius model. They
+        identified an optimum value of :math:`\phi_0 \approx 1/9`, corresponding to the
+        theoretical expectation of 1/9 based on ATP requirements :cite:`long:1993a`.
+        Changing the reference value would require a reoptimisation of all parameters
+        for the method.
+
     """
 
     __experimental__: bool = True
@@ -304,48 +332,54 @@ class QuantumYieldSandoval(
         # Warn that this is an experimental feature.
         warn_experimental("QuantumYieldSandoval")
 
+        if self.reference_kphio is None:
+            self.reference_kphio = np.array([self.env.pmodel_const.sandoval_max_phi0])
+        elif self.reference_kphio != self.env.pmodel_const.sandoval_max_phi0:
+            raise ValueError(
+                "The 'sandoval' method for estimating quantum yield, uses a "
+                "parameterised reference_kphio value which should not be altered."
+            )
+
         aridity_index = getattr(self.env, "aridity_index")
         mean_growth_temperature = getattr(self.env, "mean_growth_temperature")
 
         # Calculate enzyme kinetic. This needs to use a copy because the Hd value is
         # modified below.
-        coef = self.env.pmodel_const.sandoval_kinetics.copy()
+        coef = KattgeKnorrArrheniusCoef(
+            **self.env.pmodel_const.sandoval_kinetics.__dict__
+        )
 
-        # Calculate change in activation entropy as a linear function of
+        # Calculate change in activation entropy as a power function of the
         # mean growth temperature, J/mol/K
         delta_entropy = (
-            coef["entropy_intercept"] + coef["entropy_slope"] * mean_growth_temperature
+            coef.entropy_intercept * mean_growth_temperature**coef.entropy_slope
         )
         # Calculate de-activation energy J/mol
-        Hd = coef["hd"] * delta_entropy
+        Hd = coef.hd * delta_entropy
 
         # Calculate the optimal temperature to be used as the reference temperature in
         # the modified Arrhenius calculation
         Topt = Hd / (
-            delta_entropy
-            - self.env.core_const.k_R * np.log(coef["ha"] / (Hd - coef["ha"]))
+            delta_entropy - self.env.core_const.k_R * np.log(coef.ha / (Hd - coef.ha))
         )
         tk_leaf = self.env.tk
+
         # Calculate peak kphio given the aridity index
         kphio_peak = self.peak_quantum_yield(aridity_index=aridity_index)
 
         # Pass the modified Hd back into the calculation of the Arrhenius factor
-        coef["hd"] = Hd
+        coef.hd = Hd
 
-        # Calculate the modified Arrhenius factor using the
+        # Calculate the modified Arrhenius factor using the Kattge Knorr peaked form
+        # NOTE - this re-calculates delta_entropy as above - would be better to have a
+        # clean way to avoid this.
         f_kphio = calculate_kattge_knorr_arrhenius_factor(
+            coef=coef,
             tk_leaf=tk_leaf,
             tk_ref=Topt,
             tc_growth=mean_growth_temperature,
-            coef=coef,
             k_R=self.env.core_const.k_R,
         )
 
         # Apply the factor and store it.
-
-        # The Sandoval implementation currently includes an additional factor on kphio
-        # calculated as (tk_leaf / Topt). This might be the Murphy et al correction, so
-        # might be removed, but at present this term is needed to match the R regression
-        # test values
-
-        self.kphio = kphio_peak * f_kphio * (tk_leaf / Topt)
+        self.kphio = kphio_peak * f_kphio
