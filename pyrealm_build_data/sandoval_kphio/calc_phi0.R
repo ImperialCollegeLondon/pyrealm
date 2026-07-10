@@ -18,7 +18,7 @@ calc_phi0_new <- function(tc, mGDD0 = NA, AI) {
     ###############################################################################################
     # 01.define the parameters/constants
     ###############################################################################################
-    phi_o_theo <- 0.111 # theoretical maximum phi0 (Long, 1993;Sandoval et al., in.prep.)
+    phi_o_theo <- 1 / 9 # theoretical maximum phi0 (Long, 1993;Sandoval et al., in.prep.)
     m <- 4.090556 # curvature parameter phio max (Sandoval et al., in.prep.) IN SITU FAPAR!!!!
     n <- 0.121122 # curvature parameter phio max (Sandoval et al., in.prep.)IN SITU FAPAR!!!!
     # m <- 0.4               	# curvature parameter phio max (Sandoval et al., in.prep.) OPTIMIZED FLUX DATA KIT !!!!

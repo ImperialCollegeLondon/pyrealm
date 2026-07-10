@@ -35,20 +35,20 @@ class PModelConst(ConstantsClass):
     and associated methods.
     """
 
-    sandoval_max_phi0: float = 0.1179906
+    sandoval_max_phi0: float = 1 / 9
     """The optimised maximum phio value for use in the approach of
     :cite:t:`sandoval:2026a` for calculating quantum yield."""
 
-    sandoval_peak_phio: tuple[float, float] = (9.533923, 0.07455258)
+    sandoval_peak_phio: tuple[float, float] = (4.090556, 0.121122)
     """Curvature parameters for calculation of peak phio in the Sandoval method for
     estimation of quantum yield efficiency :cite:t:`sandoval:2026a`."""
 
     sandoval_kinetics: KattgeKnorrArrheniusCoef = field(
         default_factory=lambda: KattgeKnorrArrheniusCoef(
             entropy_method="power",
-            entropy_intercept=3334.209,
-            entropy_slope=-0.6402007,
-            ha=70991.96,
+            entropy_intercept=3468.185,
+            entropy_slope=-0.6680158,
+            ha=70885.39,
             hd=295,
         )
     )
