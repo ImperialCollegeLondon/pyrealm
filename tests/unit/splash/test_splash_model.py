@@ -162,7 +162,7 @@ def test_estimate_daily_water_balance(splash_model, sf_mode, overflow, underflow
         )
 
 
-@pytest.mark.parametrize("sf_mode", (True,))
+@pytest.mark.parametrize("sf_mode", (True, False))
 def test_estimate_initial_soil_moisture(splash_model):
     """Test the estimate_initial_soil_moisture method of the SplashModel class.
 
