@@ -292,16 +292,22 @@ class QuantumYieldSandoval(
 
     This experimental approach implements the method of :cite:t:`sandoval:2026a`. This
     approach modifies the maximum possible :math:`\phi_0` as a function of the
-    climatological aridity index. It then also adjusts the temperature at which the
-    highest :math:`\phi_0` can be attained as a function of the mean growth temperature
-    for an observation. It then calculates the expected :math:`\phi_0` as a function of
-    temperature via a modified Arrhenius relationship.
+    climatological {term}`aridity index<AI>`, calculated as PET / P. It then also
+    adjusts the temperature at which the highest :math:`\phi_0` can be attained as a
+    function of the mean growth temperature for the site. It then calculates the
+    expected :math:`\phi_0` as a function of temperature via a modified Arrhenius
+    relationship.
 
-    The reference kphio for this approach is fixed: the implementation calculated robust
-    estimates of fit for a range of parameters from global FluxNET sites. Changing the
-    parameters would require a reoptimisation of all parameters for the method. The
-    fixed value estimated from data is very close to the ratio of 1/9 based on ATP
-    requirements :cite:`long:1993a`.
+    .. attention::
+
+        The reference kphio for this approach is fixed. :cite:t:`sandoval:2026a` used
+        robust optimisation methods from global FluxNET data to parameterise the shape
+        of the aridity curve and the enzyme kinetics for the Arrhenius model. They
+        identified an optimum value of :math:`\phi_0 \approx 1/9`, corresponding to the
+        theoretical expectation of 1/9 based on ATP requirements :cite:`long:1993a`.
+        Changing the reference value would require a reoptimisation of all parameters
+        for the method.
+
     """
 
     __experimental__: bool = True

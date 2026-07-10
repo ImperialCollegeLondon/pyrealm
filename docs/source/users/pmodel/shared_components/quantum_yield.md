@@ -107,8 +107,9 @@ values (see {meth}`~pyrealm.pmodel.functions.calculate_soilmstress_stocker`).
 
 ## Temperature dependent $\phi_0$
 
-The default approach (`method_kphio='temperature'`) applies a temperature dependent
-estimate of $\phi_0$, following {cite:t}`Bernacchi:2003dc` for C3 plants and
+The default approach (`method_kphio='temperature'`,
+{class}`~pyrealm.pmodel.quantum_yield.QuantumYieldTemperature`) applies a temperature
+dependent estimate of $\phi_0$, following {cite:t}`Bernacchi:2003dc` for C3 plants and
 {cite:t}`cai:2020a` for C4 plants.
 
 ```{code-cell} ipython3
@@ -126,15 +127,16 @@ plt.plot(tc_1d, fkphio_c4.kphio, label="C4")
 
 plt.title("Temperature dependence of quantum yield efficiency")
 plt.xlabel("Temperature °C")
-plt.ylabel("Quantum yield efficiency ($\phi_0$)")
+plt.ylabel(r"Quantum yield efficiency ($\phi_0$)")
 plt.legend()
 plt.show()
 ```
 
 ## Fixed $\phi_0$
 
-This approach (`method_kphio='fixed'`) applies a fixed value of $\phi_0$ in the
-calculation of light use efficiency.
+This approach (`method_kphio='fixed'`,
+{class}`~pyrealm.pmodel.quantum_yield.QuantumYieldFixed`) applies a fixed value of
+$\phi_0$ in the calculation of light use efficiency.
 
 However, the fixed method will also accept $\phi_0$ values for each observation being
 fitted in the PModel. This option is provided to allow users to experiment with
@@ -181,11 +183,12 @@ This approach is parameterised from data and uses a fixed estimate of maximum $\
 
 ```
 
-The option `method_kphio='sandoval'` implements an approach where $\phi_0$ is calculated
-as a function of a local {term}`aridity index<AI>` (P/PET), the mean growth temperature
-and the air temperature {cite}`sandoval:2026a`. You will need to provide the aridity
-index and mean growing temperature for observations when creating the
-`PModelEnvironment`.
+{cite:t}`sandoval:2026a` implemented a new method (`method_kphio='sandoval'`,
+{class}`~pyrealm.pmodel.quantum_yield.QuantumYieldSandoval`),
+where $\phi_0$ is calculated as a function of a local {term}`aridity index<AI>`
+(calculated as PET / P), the mean growth temperature and the air temperature
+{cite}`sandoval:2026a`. You will need to provide the aridity index and mean growing
+temperature for observations when creating the `PModelEnvironment`.
 
 First, the aridity index is used to adjust the reference value ($\phi_{0R}$) using a
 double exponential function to calculate a new maximum value given the climatological
