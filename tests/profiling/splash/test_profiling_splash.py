@@ -20,12 +20,12 @@ def test_profile_splash(splash_profile_data):
 
     # Create the model
     splash = SplashModel(
-        lat=lat,
-        elv=elv,
+        latitude=lat,
+        elevation=elv,
         dates=dates,
-        sf=sf,
-        tc=tc,
-        pn=pn,
+        sunshine_fraction=sf,
+        temperature=tc,
+        precipitation=pn,
         core_const=splash_core_constants,
     )
 
