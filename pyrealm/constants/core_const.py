@@ -106,9 +106,26 @@ class CoreConst(ConstantsClass):
     transmissivity (:math:`c=0.25`),  angular coefficient of transmittivity
     (:math:`d=0.5`) and elevation factor (:math:`f`=2.67e-5`)."""
 
-    net_longwave_radiation_coef: tuple[float, float] = (0.2, 107.0)
-    """Coefficients (:math:`b, A`) of net longwave radiation function, Eqn. 11 and Table
-    1 of :cite:t:`colinprentice:1993a`"""
+    # Hygro constants
+    net_longwave_radiation_coef_sf: tuple[float, float, float, float] = (
+        107.0,
+        -1.0,
+        0.2,
+        0.2,
+    )
+    """Coefficients (:math:`k_1, k_2, k_3, k_4`) of net longwave radiation calculation
+    from sunshine fraction, as used by :cite:`davis:2017a` and taken from
+    :cite:`prentice:1993a`. The original parameterisation was simpler, see:
+    :meth:`~pyrealm.core.solar.calculate_net_longwave_radiation`."""
+
+    net_longwave_radiation_coef_sw: tuple[float, float, float, float] = (
+        91.86328,
+        1.95974,
+        0.2012435,
+        0.0883289,
+    )
+    """Coefficients (:math:`k_1, k_2, k_3, k_4`) of net longwave radiation calculation
+    from shortwave radiation, estimated in :cite:`sandoval:2024a`."""
 
     shortwave_albedo: float = 0.17
     """The shortwave albedo (:math:`A_{sw}`, unitless, Federer, 1968)."""
@@ -162,7 +179,13 @@ class CoreConst(ConstantsClass):
     # Fisher Dial
     fisher_dial_lambda: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
-            [1788.316, 21.55053, -0.4695911, 0.003096363, -7.341182e-06]
+            [
+                1788.316,
+                21.55053,
+                -0.4695911,
+                0.003096363,
+                -7.341182e-06,
+            ]
         )
     )
     r"""Coefficients of the temperature dependent polynomial for :math:`\lambda`
@@ -170,7 +193,13 @@ class CoreConst(ConstantsClass):
 
     fisher_dial_Po: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
-            [5918.499, 58.05267, -1.1253317, 0.0066123869, -1.4661625e-05]
+            [
+                5918.499,
+                58.05267,
+                -1.1253317,
+                0.0066123869,
+                -1.4661625e-05,
+            ]
         )
     )
     """Coefficients of the temperature dependent polynomial for :math:`P_0` in the
@@ -216,7 +245,14 @@ class CoreConst(ConstantsClass):
 
     chen_ko: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
-            [19652.17, 148.1830, -2.29995, 0.01281, -4.91564e-5, 1.035530e-7]
+            [
+                19652.17,
+                148.1830,
+                -2.29995,
+                0.01281,
+                -4.91564e-5,
+                1.035530e-7,
+            ]
         )
     )
     r"""Polynomial relationship of bulk modulus of water with temperature at 1 atm
@@ -224,7 +260,13 @@ class CoreConst(ConstantsClass):
 
     chen_ca: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
-            [3.26138, 5.223e-4, 1.324e-4, -7.655e-7, 8.584e-10]
+            [
+                3.26138,
+                5.223e-4,
+                1.324e-4,
+                -7.655e-7,
+                8.584e-10,
+            ]
         )
     )
     r"""Coefficients of the polynomial temperature dependent coefficient :math:`A` from
@@ -232,7 +274,13 @@ class CoreConst(ConstantsClass):
 
     chen_cb: NDArray[np.floating] = field(
         default_factory=lambda: np.array(
-            [7.2061e-5, -5.8948e-6, 8.69900e-8, -1.0100e-9, 4.3220e-12]
+            [
+                7.2061e-5,
+                -5.8948e-6,
+                8.69900e-8,
+                -1.0100e-9,
+                4.3220e-12,
+            ]
         )
     )
     r"""Coefficients of the polynomial temperature dependent coefficient :math:`B` from
@@ -323,30 +371,36 @@ class CoreConst(ConstantsClass):
     """Coefficients for calculating water viscosity using the Daubert and Danner form,
     taken from Table 4.20 of :cite:`viswanath:2007a`."""
 
+    suerhke_sf_coefficients = (0.1898, 0.7410)
+    r"""Coefficients (:math:`\beta`, :math:`\gamma`)for the calculation of sunshine 
+    fraction from clear sky and realised transmissivity, taken from the robust fit
+    estimates in Table 1 of {cite}`suehrcke:2013a`."""
+
     def __post_init__(self) -> None:
         """Populate parameters from init settings.
 
-        This checks the init inputs and populates ``magnus_coef`` from the presets
-        if no magnus_coef is specified.
+        This checks the init inputs and populates ``magnus_coef``.
 
         Returns:
             None
         """
-        alts = dict(
+        # Note that object.__setattr__ is used to bypass the dataclass being frozen
+
+        # Handle alternative Magnus parameterisation
+        magnus_alts = dict(
             Allen1998=np.array((610.8, 17.27, 237.3)),
             Alduchov1996=np.array((610.94, 17.625, 243.04)),
             Sonntag1990=np.array((611.2, 17.62, 243.12)),
         )
 
-        # Note that object is being used here to update a frozen dataclass
-
-        # Parse other options
         if self.magnus_option is not None:
-            if self.magnus_option not in alts:
-                raise (ValueError(f"magnus_option must be one of {list(alts.keys())}"))
+            if self.magnus_option not in magnus_alts:
+                raise (
+                    ValueError(
+                        f"magnus_option must be one of {list(magnus_alts.keys())}"
+                    )
+                )
 
-            object.__setattr__(self, "magnus_coef", alts[self.magnus_option])
-            return
-
-        if self.magnus_coef is not None and len(self.magnus_coef) != 3:
+            object.__setattr__(self, "magnus_coef", magnus_alts[self.magnus_option])
+        elif self.magnus_coef is not None and len(self.magnus_coef) != 3:
             raise TypeError("magnus_coef must be a tuple of 3 numbers")

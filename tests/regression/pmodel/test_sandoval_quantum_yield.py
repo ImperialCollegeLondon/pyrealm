@@ -30,9 +30,9 @@ def test_QuantumYieldSandoval(values):
 
     env = PModelEnvironment(
         tc=values["temp"].to_numpy(),
-        patm=101325,
-        vpd=820,
-        co2=400,
+        patm=np.array([101325]),
+        vpd=np.array([820]),
+        co2=np.array([400]),
         mean_growth_temperature=values["mean_gdd_temp"].to_numpy(),
         aridity_index=values["aridity_index"].to_numpy(),
         pmodel_const=PModelConst(maximum_phi0=1 / 9),
@@ -45,4 +45,4 @@ def test_QuantumYieldSandoval(values):
     expected = values["phio"].to_numpy()
     expected = np.where(expected < 0, np.nan, expected)
 
-    assert_allclose(expected, qy.kphio, equal_nan=True, atol=1e-8)
+    assert_allclose(qy.kphio, expected, equal_nan=True, atol=1e-8)

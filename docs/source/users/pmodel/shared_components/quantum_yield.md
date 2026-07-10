@@ -70,13 +70,16 @@ transfer, which is exactly four times larger than the quantum yield of photosynt
 :::
 
 The value of $\phi_0$ captures the conversion rate of moles of photosynthetically active
-photons into moles of $\ce{CO2}$. The theoretical maximum for this value is 1/8: eight
-moles of light photons are required to capture 1 mole of carbon. In some cases, this
-value may be reduced to 1/9, when a Q cycle is not operating within the plant cell
-{cite}`long:1993a`.
+photons into moles of $\ce{CO2}$. There is some disagreement about the theoretical
+maximum for $\phi_0$ {cite}`long:1993a`:
 
-These theoretical maxima are not necessarily directly used in calculating light use
-efficiency:
+* 8 moles of photons are needed when calculations are based on NADPH requirements,
+  giving $\phi_0 = 1/8$, but
+* 9 moles of photons are needed when calculations are based on ATP requirements, giving
+  $\phi_0=1/9$.
+
+These theoretical maxima are typically modified when calculating light use efficiency to
+capture limitations on achieving the theoretical maximum yield:
 
 * The values of $\phi_0$ are often adjusted to include other components of light
 capture. For example, {cite:t}`Stocker:2020dh` include a factor for incomplete leaf
@@ -90,9 +93,9 @@ For these reasons, the {class}`~pyrealm.pmodel.pmodel.PModel` provides alternati
 approaches to estimating the value of $\phi_{0}$, using the `method_kphio` argument. The
 currently implemented approaches are described below.
 
-All of the approaches share the same baseline reference value of $\phi_{0}= 1/8$ as the
-theoretical maximum quantum yield of photosynthesis. The default value can be set using
-the
+Most of the approaches currently share the same baseline reference value of $\phi_{0}=
+1/8$ as the theoretical maximum quantum yield of photosynthesis. The default value can
+be set using the
 {attr}`PModelConst.maximum_phi0<pyrealm.constants.pmodel_const.PModelConst.maximum_phi0>`
 attribute, which can then be passed into a
 {class}`~pyrealm.pmodel.pmodel_environment.PModelEnvironment`. However, the `PModel` and
@@ -104,8 +107,9 @@ values (see {meth}`~pyrealm.pmodel.functions.calculate_soilmstress_stocker`).
 
 ## Temperature dependent $\phi_0$
 
-The default approach (`method_kphio='temperature'`) applies a temperature dependent
-estimate of $\phi_0$, following {cite:t}`Bernacchi:2003dc` for C3 plants and
+The default approach (`method_kphio='temperature'`,
+{class}`~pyrealm.pmodel.quantum_yield.QuantumYieldTemperature`) applies a temperature
+dependent estimate of $\phi_0$, following {cite:t}`Bernacchi:2003dc` for C3 plants and
 {cite:t}`cai:2020a` for C4 plants.
 
 ```{code-cell} ipython3
@@ -123,15 +127,16 @@ plt.plot(tc_1d, fkphio_c4.kphio, label="C4")
 
 plt.title("Temperature dependence of quantum yield efficiency")
 plt.xlabel("Temperature °C")
-plt.ylabel("Quantum yield efficiency ($\phi_0$)")
+plt.ylabel(r"Quantum yield efficiency ($\phi_0$)")
 plt.legend()
 plt.show()
 ```
 
 ## Fixed $\phi_0$
 
-This approach (`method_kphio='fixed'`) applies a fixed value of $\phi_0$ in the
-calculation of light use efficiency.
+This approach (`method_kphio='fixed'`,
+{class}`~pyrealm.pmodel.quantum_yield.QuantumYieldFixed`) applies a fixed value of
+$\phi_0$ in the calculation of light use efficiency.
 
 However, the fixed method will also accept $\phi_0$ values for each observation being
 fitted in the PModel. This option is provided to allow users to experiment with
@@ -163,19 +168,27 @@ model_var_kphio = PModel(env, method_kphio="fixed", reference_kphio=kphio_values
 
 # Create a line plot of ftemp kphio
 plt.plot(kphio_values, model_var_kphio.lue)
-plt.title("Variation in LUE with changing $\phi_0$")
-plt.xlabel("$\phi_0$")
+plt.title(r"Variation in LUE with changing $\phi_0$")
+plt.xlabel(r"$\phi_0$")
 plt.ylabel("LUE")
 plt.show()
 ```
 
 ## Temperature and aridity effects on $\phi_0$
 
-The option `method_kphio='sandoval'` implements an experimental calculation
-{cite}`sandoval:in_prep` of $\phi_0$ as a function of a local {term}`aridity index<AI>`
-(P/PET), the mean growth temperature and the air temperature {cite}`sandoval:in_prep`.
-You will need to provide the aridity index and mean growing temperature for observations
-when creating the `PModelEnvironment`.
+```{warning}
+
+This approach is parameterised from data and uses a fixed estimate of maximum $\phi_0
+\approx 1/9$. You cannot alter the maximum value using the `reference_kphio` argument.
+
+```
+
+{cite:t}`sandoval:2026a` implemented a new method (`method_kphio='sandoval'`,
+{class}`~pyrealm.pmodel.quantum_yield.QuantumYieldSandoval`),
+where $\phi_0$ is calculated as a function of a local {term}`aridity index<AI>`
+(calculated as PET / P), the mean growth temperature and the air temperature
+{cite}`sandoval:2026a`. You will need to provide the aridity index and mean growing
+temperature for observations when creating the `PModelEnvironment`.
 
 First, the aridity index is used to adjust the reference value ($\phi_{0R}$) using a
 double exponential function to calculate a new maximum value given the climatological
@@ -208,17 +221,20 @@ sandoval_kphio = QuantumYieldSandoval(env)
 
 fig, ax = plt.subplots(1, 1)
 ax.plot(aridity_index, sandoval_kphio.kphio)
-ax.set_title("Change in $\phi_0$ with aridity index (P/PET).")
-ax.set_ylabel("$\phi_0$")
+ax.set_title(r"Change in $\phi_0$ with aridity index (P/PET).")
+ax.set_ylabel(r"$\phi_0$")
 ax.set_xlabel("Aridity Index")
 ax.set_xscale("log")
 plt.show()
 ```
 
-In addition to capping the peak $\phi_0$ as a function of the aridity index, this
-approach also alters the temperature at which $\phi_0$ is maximised as a function of the
-mean growth temperature ($T_g$) in a location. The plot below shows how aridity and mean
-growth temperature interact to change the location and height of the peak $\phi_0$.
+In addition to capping the peak $\phi_0$ as a function of the aridity index, the method
+also captures how plants adjust peak efficiency to their conditions. A
+[peaked Arrhenius model](./arrhenius.md#using-different-arrhenius-scaling) is used to
+calculate the realised $\phi_0$ given both the current temperature and the mean growth
+temperature ($T_g$) for observations. The plot below shows how aridity and mean
+growth temperature interact to change the location and height of the peak $\phi_0$ and
+how realised $\phi_0$ at a temperature varies given the mean growth temperature.
 
 ```{code-cell} ipython3
 :tags: [hide-input]
@@ -257,7 +273,7 @@ for ai_idx, (ax, ai_val) in enumerate(zip(axes, aridity_values)):
             label=f"$T_{{g}}$ = {mg_val}",
         )
         ax.set_title(f"AI = {ai_val}")
-        ax.set_ylabel("$\phi_0$")
+        ax.set_ylabel(r"$\phi_0$")
         ax.set_xlabel("Observed temperature")
 
 

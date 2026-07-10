@@ -442,29 +442,44 @@ def calculate_ppfd(
 def calculate_net_longwave_radiation(
     sunshine_fraction: ArrayType[np.floating],
     temperature: ArrayType[np.floating],
-    coef: tuple[float, float] = CoreConst().net_longwave_radiation_coef,
+    coef: tuple[
+        float, float, float, float
+    ] = CoreConst().net_longwave_radiation_coef_sf,
 ) -> NDArray[np.floating]:
     r"""Calculate net longwave radiation.
 
-    This function calculates the net longwave radiation (:math:`R_{nl}`, W m-2)
-    following  Eqn. 11 and Table 1 of :cite:t:`colinprentice:1993a`:
+    This function calculates the net longwave radiation (:math:`R_{nl}`, W m-2),
+    following Eqn. 11 and Table 1 of :cite:t:`sandoval:2024a`:
+
+    .. math::
+
+        R_{nl} = (k_4 + (1.0 - k_3) n_i) (k_1  + k_2 t_c)
+
+
+    The original formulation in :cite:t:`davis:2017a`, used an equivalent form but with
+    a simpler parameterisation :cite:t:`prentice:1993a`:
 
     .. math::
 
         R_{nl} = (b + (1.0 - b) n_i) (A - t_c)
 
+    Here :math:`k_3 = k_4 = b`, :math:`k_1 = A` and `k_2 = -1`
+
+    The coefficients default to the original formulation: see
+    :attr:`~pyrealm.constants.core_const.CoreConst.net_longwave_radiation_coef_sw` and
+    :attr:`~pyrealm.constants.core_const.CoreConst.net_longwave_radiation_coef_sf`.
+
     Args:
         sunshine_fraction: Sunshine fraction of observations (:math:`n_i`, unitless)
         temperature: Temperature of observations (:math:`t_c`, °C).
-        coef: Coefficients :math:`b` and :math:`A` of the equation,, defaulting to
-            :attr:`CoreConst.net_longwave_radiation_coef<pyrealm.constants.CoreConst.net_longwave_radiation_coef>`.
+        coef: Coefficients of the equation.
 
     Returns:
         An array of net longwave radiation.
     """
     sunshine_fraction, temperature = xarray_inputs(sunshine_fraction, temperature)
-    b, A = coef
-    return (b + (1.0 - b) * sunshine_fraction) * (A - temperature)
+    k_1, k_2, k_3, k_4 = coef
+    return (k_4 + (1.0 - k_3) * sunshine_fraction) * (k_1 + k_2 * temperature)
 
 
 def calculate_rw_intermediate(
@@ -496,6 +511,41 @@ def calculate_rw_intermediate(
 
     transmissivity, distance_factor = xarray_inputs(transmissivity, distance_factor)
     return (1.0 - shortwave_albedo) * transmissivity * solar_constant * distance_factor
+
+
+def calculate_rw_intermediate_from_sw(
+    shortwave_radiation: ArrayType[np.floating],
+    sunset_hour_angle: ArrayType[np.floating],
+    ru: ArrayType[np.floating],
+    rv: ArrayType[np.floating],
+    shortwave_albedo: float = CoreConst().shortwave_albedo,
+) -> NDArray[np.floating]:
+    r"""Calculate the rw intermediate variable using shortwave radiation.
+
+    This function calculates the widely used variable substitute ``rw`` (:math:`r_w`, W
+    m-2) as:
+
+
+    Args:
+        shortwave_radiation: The downwelling shortwave radiation (W/m2)
+        sunset_hour_angle: sunset hour angle, (:math:`h_s`, degrees)
+        rv: dimensionless variable substitute
+        ru: dimensionless variable substitute
+        shortwave_albedo: The shortwave albedo (:math:`A_{sw}`, unitless), defaulting to
+            :attr:`CoreConst.shortwave_albedo<pyrealm.constants.CoreConst.shortwave_albedo>`.
+
+    Returns:
+        An array of the intermediate variable :math:`r_w` in W m-2.
+    """
+
+    (shortwave_radiation, sunset_hour_angle, ru, rv) = xarray_inputs(
+        shortwave_radiation, sunset_hour_angle, ru, rv
+    )
+
+    hs_r = np.deg2rad(sunset_hour_angle)
+    return (shortwave_radiation * (1 - shortwave_albedo)) / (
+        (1 / np.pi) * ((ru * hs_r) + rv * np.sin(hs_r))
+    )
 
 
 def calculate_net_radiation_crossover_hour_angle(
@@ -1114,6 +1164,41 @@ def calculate_day_angle(ordinal_date: ArrayType[np.int_]) -> NDArray[np.floating
     """
 
     return 2 * np.pi * (xarray_inputs(ordinal_date) - 1) / 365
+
+
+def calculate_sunshine_fraction(
+    realised_transmissivity: ArrayType[np.floating],
+    clear_sky_transmissivity: ArrayType[np.floating],
+    coef: tuple[float, float] = CoreConst.suerhke_sf_coefficients,
+) -> NDArray[np.floating]:
+    r"""Calculate sunshine fraction from transmissivity.
+
+    This function follows the calculation of sunshine fraction in {cite}`suehrcke:2013a`
+    as a function of clear sky transmissivity (:math:`\tau_o`) and realised
+    transmissivity (:math:`\tau_o`), typically estimated as the ratio of observed daily
+    downwelling shortwave radiation on the ground and the top of atmosphere downwelling
+    shortwave radiation.
+
+    .. math::
+
+        \left(\frac{\tau - \tau_o \beta}{\tau_o (1 - \beta)}\right)^{1/\gamma}
+
+    Args:
+        realised_transmissivity: The observed transmissivity at ground level
+        clear_sky_transmissivity: The expected clear sky transmissivity.
+        coef: A tuple of the beta and gamma coefficients.
+    """
+
+    tau, tau_o = xarray_inputs(realised_transmissivity, clear_sky_transmissivity)
+    beta, gamma = coef
+
+    # Handle negative numerators - pin to zero
+    num = tau - tau_o * beta
+    num = np.clip(num, a_min=0, a_max=1)
+    sf = (num / (tau_o * (1 - beta))) ** (1 / gamma)
+
+    # Clamp sf into (0,1)
+    return np.clip(sf, a_min=0, a_max=1)
 
 
 @dataclass

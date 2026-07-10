@@ -134,8 +134,8 @@ def variable_kphio(basic_inputs_and_expected):
         pytest.param(
             "sandoval",
             1 / 8,
-            does_not_raise(),
-            id="sandoval_ok_with_float",
+            pytest.raises(ValueError),
+            id="sandoval_cannot_be_changed",
         ),
     ],
 )

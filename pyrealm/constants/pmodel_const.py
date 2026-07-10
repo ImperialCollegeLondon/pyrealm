@@ -1,11 +1,30 @@
 """The pmodel_const module TODO."""
 
 from dataclasses import dataclass, field
+from typing import Literal
 
 import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.constants import ConstantsClass
+
+
+@dataclass
+class KattgeKnorrArrheniusCoef:
+    """Dataclass for holding parameters for Kattge Knorr style Arrhenius scaling."""
+
+    entropy_method: Literal["power", "linear"]
+    entropy_intercept: float
+    entropy_slope: float
+    ha: float
+    hd: float
+
+
+@dataclass
+class SimpleArrheniusCoef:
+    """Dataclass for holding parameters for simple Arrhenius scaling."""
+
+    ha: float
 
 
 @dataclass(frozen=True)
@@ -16,23 +35,28 @@ class PModelConst(ConstantsClass):
     and associated methods.
     """
 
-    sandoval_peak_phio: tuple[float, float] = (6.8681, 0.07956432)
-    """Curvature parameters for calculation of peak phio in the Sandoval method for
-    estimation of quantum yield efficiency."""
+    sandoval_max_phi0: float = 1 / 9
+    """The optimised maximum phio value for use in the approach of
+    :cite:t:`sandoval:2026a` for calculating quantum yield."""
 
-    sandoval_kinetics: dict[str, float] = field(
-        default_factory=lambda: dict(
-            entropy_intercept=1558.853,
-            entropy_slope=-50.223,
-            ha=75000.0,
-            hd=294.804,
+    sandoval_peak_phio: tuple[float, float] = (4.090556, 0.121122)
+    """Curvature parameters for calculation of peak phio in the Sandoval method for
+    estimation of quantum yield efficiency :cite:t:`sandoval:2026a`."""
+
+    sandoval_kinetics: KattgeKnorrArrheniusCoef = field(
+        default_factory=lambda: KattgeKnorrArrheniusCoef(
+            entropy_method="power",
+            entropy_intercept=3468.185,
+            entropy_slope=-0.6680158,
+            ha=70885.39,
+            hd=295,
         )
     )
     """Enzyme kinetics parameters for estimation of kphio from mean growth temperature
-    in the Sandoval method :cite:t:`sandoval:in_prep` for estimation of quantum yield
-    efficiency. Values are: the intercept and slope of activation entropy as a function
-    of the mean growth temperature (J/mol/K), the deactivation energy constant (J/mol)
-    and the activation energy (J/mol). """
+    in the Sandoval method :cite:t:`sandoval:2026a` for estimation of quantum yield
+    efficiency. Values are: the intercept and slope of activation entropy as a power law
+    function of the mean growth temperature (J/mol/K), the deactivation energy constant
+    (J/mol) and the activation energy (J/mol). """
 
     tc_ref: float = 25.0
     """Standard baseline reference temperature of photosynthetic processes in °C 
@@ -55,8 +79,9 @@ class PModelConst(ConstantsClass):
     # Arrhenius values
     arrhenius_vcmax: dict = field(
         default_factory=lambda: dict(
-            simple=dict(ha=65330),
-            kattge_knorr=dict(
+            simple=SimpleArrheniusCoef(ha=65330),
+            kattge_knorr=KattgeKnorrArrheniusCoef(
+                entropy_method="linear",
                 entropy_intercept=668.39,
                 entropy_slope=-1.07,
                 ha=71513,
@@ -73,8 +98,9 @@ class PModelConst(ConstantsClass):
 
     arrhenius_jmax: dict = field(
         default_factory=lambda: dict(
-            simple=dict(ha=43900),
-            kattge_knorr=dict(
+            simple=SimpleArrheniusCoef(ha=43900),
+            kattge_knorr=KattgeKnorrArrheniusCoef(
+                entropy_method="linear",
                 entropy_intercept=659.70,
                 entropy_slope=-0.75,
                 ha=49884,
