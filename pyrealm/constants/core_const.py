@@ -115,7 +115,8 @@ class CoreConst(ConstantsClass):
     )
     """Coefficients (:math:`k_1, k_2, k_3, k_4`) of net longwave radiation calculation
     from sunshine fraction, as used by :cite:`davis:2017a` and taken from
-    :cite:`prentice:1993a`."""
+    :cite:`prentice:1993a`. The original parameterisation was simpler, see:
+    :meth:`~pyrealm.core.solar.calculate_net_longwave_radiation`."""
 
     net_longwave_radiation_coef_sw: tuple[float, float, float, float] = (
         91.86328,
