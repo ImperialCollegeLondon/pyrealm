@@ -158,7 +158,7 @@ def test_estimate_daily_water_balance(splash_model, sf_mode, overflow, underflow
         aet, wn, ro = splash_model.estimate_daily_water_balance(wn_init)
         assert_allclose(
             aet + wn + ro,
-            wn_init + splash_model.precipitation + splash_model.evap.cond,
+            wn_init + splash_model.precipitation + splash_model.evap.condensation,
             equal_nan=True,
         )
 
@@ -194,7 +194,7 @@ def test_calculate_soil_moisture(splash_model, sf_mode):
 
     assert_allclose(
         aet + wn + ro,
-        wn_prev + splash_model.precipitation + splash_model.evap.cond,
+        wn_prev + splash_model.precipitation + splash_model.evap.condensation,
         equal_nan=True,
         rtol=1e-6,
     )

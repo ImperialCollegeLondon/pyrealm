@@ -384,7 +384,7 @@ def _(ctx):
     }
 
 
-# DailySolarFluxes / DailyEvapFluxes
+# DailySolarFluxes / DailyEvaporativeFluxes
 # The size of the first dimension needs to match the number of dates in the Calendar
 _DAILY_FLUXES_N_DATES = 4
 
@@ -401,7 +401,7 @@ def _(ctx):
     }
 
 
-@register_args("DailyEvapFluxes")
+@register_args("DailyEvaporativeFluxes")
 def _(ctx):
     shape = _set_time_len(_DAILY_FLUXES_N_DATES, ctx)
     return {
@@ -411,7 +411,7 @@ def _(ctx):
     }
 
 
-@register_args("DailyEvapFluxes.estimate_aet")
+@register_args("DailyEvaporativeFluxes.estimate_aet")
 def _(ctx):
     shape = _set_time_len(_DAILY_FLUXES_N_DATES, ctx)
     return {"wn": np.full(shape, 10)}

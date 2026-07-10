@@ -38,9 +38,9 @@ def test_estimate_daily_water_balance_scalar(splash_core_constants):
 
     # Expected values are the output of __main__ in original splash.py
     evap_expected = {
-        "cond": np.array([0.885192]),
-        "eet_d": np.array([6.405468]),
-        "pet_d": np.array([8.070889]),
+        "condensation": np.array([0.885192]),
+        "daily_eet": np.array([6.405468]),
+        "daily_pet": np.array([8.070889]),
     }
 
     for ky, val in evap_expected.items():
@@ -194,7 +194,7 @@ def test_calculate_soil_moisture_oned(splash_core_constants, one_d_benchmark):
     # this input is tested above.
     aet, wn, ro = splash.calculate_soil_moisture(expected["wn_spun_up"].data)
 
-    assert_allclose(splash.evap.pet_d, expected["pet_d"].data)
+    assert_allclose(splash.evap.daily_pet, expected["pet_d"].data)
 
     # Check against the spun up value from the original implementation
     assert_allclose(aet, expected["aet_d"].data, rtol=1e-6)

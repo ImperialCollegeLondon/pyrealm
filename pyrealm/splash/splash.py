@@ -27,7 +27,7 @@ class SplashModel:
     precipitation and incoming solar radiation of observations are initially used to
     calculate solar and evaporative fluxes, which are stored in the ``solar`` and
     ``evap`` attributes as instances of :class:`~pyrealm.splash.solar.DailySolarFluxes`
-    and :class:`~pyrealm.splash.evap.DailyEvapFluxes`.
+    and :class:`~pyrealm.splash.evap.DailyEvaporativeFluxes`.
 
     There are two options for providing radiation inputs:
 
@@ -385,7 +385,9 @@ class SplashModel:
         aet = self.evap.estimate_aet(soil_moisture=previous_wn, day_index=day_index)
 
         # Calculate current soil moisture, mm
-        current_wn = previous_wn + self.precipitation[didx] + self.evap.cond[didx] - aet
+        current_wn = (
+            previous_wn + self.precipitation[didx] + self.evap.condensation[didx] - aet
+        )
 
         # Partition current_wn into soil moisture and runoff (ro), mm
         # - allocate excess sm to runoff and clip out negative sm

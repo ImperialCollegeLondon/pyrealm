@@ -38,11 +38,11 @@ class DailyEvaporativeFluxes:
     * the evaporative supply rate (:math:`s_w`, mm/h).
 
     These quantities can be calculated using the
-    :meth:`~pyrealm.splash.evap.DailyEvapFluxes.estimate_aet` method, given an estimate
-    of soil moisture from the preceding day. This method is called during the iteration
-    over days for both the spin-up process of the SPLASH model to estimate initial
-    equilibrium soil moisture, and the daily calculation of soil moisture along a time
-    series.
+    :meth:`~pyrealm.splash.evap.DailyEvaporativeFluxes.estimate_aet` method, given an
+    estimate of soil moisture from the preceding day. This method is called during the
+    iteration over days for both the spin-up process of the SPLASH model to estimate
+    initial equilibrium soil moisture, and the daily calculation of soil moisture along
+    a time series.
 
     Args:
         solar: A :class:`~pyrealm.splash.solar.DailySolarFluxes` instance from which to
@@ -62,21 +62,21 @@ class DailyEvaporativeFluxes:
     )
     core_const: CoreConst = field(default_factory=lambda: CoreConst())
 
-    sat: NDArray[np.floating] = field(init=False)
+    saturation_slope: NDArray[np.floating] = field(init=False)
     """Slope of saturation vapour pressure temperature curve, Pa/K"""
-    lv: NDArray[np.floating] = field(init=False)
+    enthalpy_vaporisation: NDArray[np.floating] = field(init=False)
     """Enthalpy of vaporization, J/kg"""
-    pw: NDArray[np.floating] = field(init=False)
+    water_density: NDArray[np.floating] = field(init=False)
     """Density of water, kg/m^3"""
-    psy: NDArray[np.floating] = field(init=False)
+    psychrometric_constant: NDArray[np.floating] = field(init=False)
     """Psychrometric constant, Pa/K"""
-    econ: NDArray[np.floating] = field(init=False)
+    water_energy_conversion: NDArray[np.floating] = field(init=False)
     """Water-to-energy conversion factor"""
-    cond: NDArray[np.floating] = field(init=False)
+    condensation: NDArray[np.floating] = field(init=False)
     """Daily condensation, mm"""
-    eet_d: NDArray[np.floating] = field(init=False)
+    daily_eet: NDArray[np.floating] = field(init=False)
     """Daily equilibrium evapotranspiration (EET), mm"""
-    pet_d: NDArray[np.floating] = field(init=False)
+    daily_pet: NDArray[np.floating] = field(init=False)
     """Daily potential evapotranspiration (PET), mm"""
     rx: NDArray[np.floating] = field(init=False)
     """Variable substitute, (mm/hr)/(W/m^2)"""
@@ -102,8 +102,8 @@ class DailyEvaporativeFluxes:
             """The array shape of the input variables"""
         except ValueError:
             msg = (
-                "The shape of DailyEvapFluxes inputs are inconsistent with each other "
-                "or the DailySolarFluxes data"
+                "The shape of DailyEvaporativeFluxes inputs are inconsistent with each "
+                "other or the DailySolarFluxes data"
             )
             raise ValueError(msg)
 
@@ -112,35 +112,47 @@ class DailyEvaporativeFluxes:
         temperature = broadcast_time(temperature, self.shape)
 
         # Slope of saturation vap press temp curve, Pa/K
-        self.sat = calculate_saturation_vapour_pressure_slope(tc=temperature)
+        self.saturation_slope = calculate_saturation_vapour_pressure_slope(
+            tc=temperature
+        )
 
         # Enthalpy of vaporization, J/kg
-        self.lv = calculate_enthalpy_vaporisation(tc=temperature)
+        self.enthalpy_vaporisation = calculate_enthalpy_vaporisation(tc=temperature)
 
         # Density of water, kg/m^3
-        self.pw = calculate_density_h2o(
+        self.water_density = calculate_density_h2o(
             tc=temperature, patm=patm, core_const=self.core_const
         )
 
         # Psychrometric constant, Pa/K
-        self.psy = calculate_psychrometric_constant(
+        self.psychrometric_constant = calculate_psychrometric_constant(
             tc=temperature, patm=patm, core_const=self.core_const
         )
 
         # Calculate water-to-energy conversion (econ), m^3/J
-        self.econ = self.sat / (self.lv * self.pw * (self.sat + self.psy))
+        self.water_energy_conversion = self.saturation_slope / (
+            self.enthalpy_vaporisation
+            * self.water_density
+            * (self.saturation_slope + self.psychrometric_constant)
+        )
 
         # Calculate daily condensation (cn), mm
-        self.cond = (1e3) * self.econ * np.abs(self.solar.nighttime_net_radiation)
+        self.condensation = (
+            (1e3)
+            * self.water_energy_conversion
+            * np.abs(self.solar.nighttime_net_radiation)
+        )
 
         # Estimate daily equilibrium evapotranspiration (eet_d), mm
-        self.eet_d = (1e3) * self.econ * self.solar.daytime_net_radiation
+        self.daily_eet = (
+            (1e3) * self.water_energy_conversion * self.solar.daytime_net_radiation
+        )
 
         # Estimate daily potential evapotranspiration (pet_d), mm
-        self.pet_d = (1.0 + self.core_const.k_w) * self.eet_d
+        self.daily_pet = (1.0 + self.core_const.k_w) * self.daily_eet
 
         # Calculate variable substitute (rx), (mm/hr)/(W/m^2)
-        self.rx = (3.6e6) * (1.0 + self.core_const.k_w) * self.econ
+        self.rx = (3.6e6) * (1.0 + self.core_const.k_w) * self.water_energy_conversion
 
     def estimate_aet(
         self,

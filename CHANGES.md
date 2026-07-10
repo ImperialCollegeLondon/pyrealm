@@ -24,6 +24,11 @@ class names and arguments) and fixes bugs.
   quantum yield as a function of aridity and growth temperature has been updated
   to match the final published version.
 
+- The implementation of the SPLASH model has been updated to add the ability to use
+  shortwave downwelling radiation as a forcing variable following
+  {cite:t}`sandoval:2024a`. Also note there are breaking changes to the class and
+  argument names in the `pyrealm.splash` module.
+
 - We have added new experimental code supporting the calculation of phenological
   timeseries of LAI and fAPAR in the `phenology` module.
 
@@ -42,6 +47,10 @@ module is still experimental and subject to further changes.
 We have also changed the names of some functions and methods to give a more consistent
 naming convention.
 
+- The argument names in the `splash` module have been updated. In previous versions, the
+  user-facing argument names followed the internal variable names from the original
+  code and were not particularly obvious. The update uses longer but comprehensible
+  argument names.
 - We have aligned function names from mixed `calc_` and `calculate_` to `calculate_`.
 - The `CalcCarbonIsotopes` class has been renamed to `CarbonIsotopes`: none of the
   other class names include an 'action'.
