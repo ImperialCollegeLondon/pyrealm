@@ -20,6 +20,10 @@ class names and arguments) and fixes bugs.
   computationally complex high-precision methods used in `rpmodel` (think physics labs)
   to  simpler but much faster approaches.
 
+- The interim implementation of the {cite:t}`sandoval:2026a` method for calculating
+  quantum yield as a function of aridity and growth temperature has been updated
+  to match the final published version.
+
 - We have added new experimental code supporting the calculation of phenological
   timeseries of LAI and fAPAR in the `phenology` module.
 
