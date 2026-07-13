@@ -34,13 +34,38 @@ The experimental `demography` module has been heavily restructured - refer to th
 documentation for demography](../users/demography/module_overview.md) to see the
 workflow and API changes.
 
-Other breaking changes are minor:
+Other breaking changes are in the naming of objects and arguments:
 
 * `CalcCarbonIsotopes` has become `CarbonIsotopes`,
 * function names starting with `calc_` have changed to `calculate_` to follow the
   wider usage in the package, and
 * argument names in `pyrealm.core.water` have been standardised to `tc` and `patm` from
   `ta` and `p`, again to match usage elsewhere in the package.
+* argument and attribute names in the `pyrealm.splash` module have been updated to be
+  less obscure:
+
+  * `lat` to `latitude`
+  * `elv` to `elevation`
+  * `tc` to `temperature`
+  * `pa` to `patm`
+  * `pn` to `precipitation`
+  * `sf` to `sunshine_fraction`
+  * `kWn` to `soil_capacity`
+  * `wn` to `soil_moisture`
+  * `init_wn` to `initial_soil_moisture`
+  * `previous_wn` to `previous_soil_moisture`
+  * `day_idx` to `day_index`
+  * `sat` to `saturation_slope`
+  * `lv` to `enthalpy_vaporisation`
+  * `pw` to `water_density`
+  * `psy` to `psychrometric_constant`
+  * `econ` to `water_energy_conversion`
+  * `cond` to `condensation`
+  * `eet_d` to `daily_eet`
+  * `pet_d` to `daily_pet`
+
+* The `DailyEvapFluxes` class has been renamed `DailyEvaporativeFluxes`
+* The `calculate_patm` function now has the argument `elevation` not `elv`.
 
 ## Migration from 1.0 to version 2.0
 

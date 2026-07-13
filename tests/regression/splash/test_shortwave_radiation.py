@@ -43,17 +43,17 @@ def test_splash_with_swdown(bourne):
 
     # Run the model
     model = SplashModel(
-        lat=inputs["lat"].to_numpy(),
-        elv=inputs["elev"].to_numpy(),
-        tc=inputs["Ta"].to_numpy(),
-        pn=inputs["P"].to_numpy(),
+        latitude=inputs["lat"].to_numpy(),
+        elevation=inputs["elev"].to_numpy(),
+        temperature=inputs["Ta"].to_numpy(),
+        precipitation=inputs["P"].to_numpy(),
         shortwave_radiation=inputs["sw_in"].to_numpy(),
         dates=calendar,
-        kWm=np.array([250]),
+        soil_capacity=np.array([250]),
         core_const=const,
     )
 
-    model.calculate_soil_moisture(wn_init=outputs["wn"][0])
+    model.calculate_soil_moisture(initial_soil_moisture=outputs["wn"][0])
 
     assert_allclose(model.solar.nu, internals["nu"].to_numpy(), atol=1e-6)
     assert_allclose(model.solar.lambda_, internals["lambda"].to_numpy(), atol=1e-6)

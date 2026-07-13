@@ -21,7 +21,7 @@ from pyrealm.splash.solar import DailySolarFluxes
 
 
 @dataclass
-class DailyEvapFluxes:
+class DailyEvaporativeFluxes:
     """Calculate daily evaporative fluxes.
 
     This class calculates daily evaporative fluxes given temperature and atmospheric
@@ -30,51 +30,59 @@ class DailyEvapFluxes:
     only on the initial data and are not dependent on the previous model state when
     iterating over time.
 
-    Two remaining components, the intersection hour angle (hi, degrees) and the
-    estimated daily AET (aet_d, mm), depend on the soil moisture from the previous day
-    and so must be calculated on a daily basis during either the spin process of the
-    SPLASH model to estimate initial equilibrium soil moisture, or the daily calculation
-    of soil moisture along a time series. These quantities are estimated using the
-    :meth:`~pyrealm.splash.evap.DailyEvapFluxes.estimate_aet` method, given an estimate
-    of soil moisture from the preceding day.
+    Three evaporative flux variables depend on the soil moisture from the previous day
+    and so can only be calculated on a daily basis. These are:
+
+    * the daily actual evapotranspiration (AET, mm/day),
+    * the intersection hour angle (:math:`h_i`, degrees), and
+    * the evaporative supply rate (:math:`s_w`, mm/h).
+
+    These quantities can be calculated using the
+    :meth:`~pyrealm.splash.evap.DailyEvaporativeFluxes.estimate_aet` method, given an
+    estimate of soil moisture from the preceding day. This method is called during the
+    iteration over days for both the spin-up process of the SPLASH model to estimate
+    initial equilibrium soil moisture, and the daily calculation of soil moisture along
+    a time series.
 
     Args:
         solar: A :class:`~pyrealm.splash.solar.DailySolarFluxes` instance from which to
             calculate evaporative fluxes. See the class definition for the flux
             variables and units provided.
-        kWm: The maximum soil water capacity (mm).
-        tc: The air temperature of the observations (°C).
-        pa: The atmospheric pressure of the observations (Pa).
+        soil_capacity: The maximum soil water capacity (:math:`W_m`, mm).
+        temperature: The air temperature of the observations (°C).
+        patm: The atmospheric pressure of the observations (Pa).
         core_const: An instance of CoreConst.
     """
 
     solar: DailySolarFluxes
-    pa: InitVar[ArrayType[np.floating]]
-    tc: InitVar[ArrayType[np.floating]]
-    kWm: ArrayType[np.floating] = field(default_factory=lambda: np.array([150.0]))
+    patm: InitVar[ArrayType[np.floating]]
+    temperature: InitVar[ArrayType[np.floating]]
+    soil_capacity: ArrayType[np.floating] = field(
+        default_factory=lambda: np.array([150.0])
+    )
     core_const: CoreConst = field(default_factory=lambda: CoreConst())
 
-    sat: NDArray[np.floating] = field(init=False)
+    saturation_slope: NDArray[np.floating] = field(init=False)
     """Slope of saturation vapour pressure temperature curve, Pa/K"""
-    lv: NDArray[np.floating] = field(init=False)
+    enthalpy_vaporisation: NDArray[np.floating] = field(init=False)
     """Enthalpy of vaporization, J/kg"""
-    pw: NDArray[np.floating] = field(init=False)
+    water_density: NDArray[np.floating] = field(init=False)
     """Density of water, kg/m^3"""
-    psy: NDArray[np.floating] = field(init=False)
+    psychrometric_constant: NDArray[np.floating] = field(init=False)
     """Psychrometric constant, Pa/K"""
-    econ: NDArray[np.floating] = field(init=False)
+    water_energy_conversion: NDArray[np.floating] = field(init=False)
     """Water-to-energy conversion factor"""
-    cond: NDArray[np.floating] = field(init=False)
+    condensation: NDArray[np.floating] = field(init=False)
     """Daily condensation, mm"""
-    eet_d: NDArray[np.floating] = field(init=False)
+    daily_eet: NDArray[np.floating] = field(init=False)
     """Daily equilibrium evapotranspiration (EET), mm"""
-    pet_d: NDArray[np.floating] = field(init=False)
+    daily_pet: NDArray[np.floating] = field(init=False)
     """Daily potential evapotranspiration (PET), mm"""
     rx: NDArray[np.floating] = field(init=False)
     """Variable substitute, (mm/hr)/(W/m^2)"""
 
     def __post_init__(
-        self, pa: ArrayType[np.floating], tc: ArrayType[np.floating]
+        self, patm: ArrayType[np.floating], temperature: ArrayType[np.floating]
     ) -> None:
         """Calculate invariant components of evapotranspiration.
 
@@ -83,55 +91,73 @@ class DailyEvapFluxes:
         state when iterating over time.
         """
 
-        pa, tc, self.kWm = xarray_inputs(pa, tc, self.kWm, dims=self.solar.dims)
+        patm, temperature, self.soil_capacity = xarray_inputs(
+            patm, temperature, self.soil_capacity, dims=self.solar.dims
+        )
 
         try:
             self.shape: tuple = check_input_shapes(
-                pa, tc, self.kWm, shape=self.solar.shape
+                patm, temperature, self.soil_capacity, shape=self.solar.shape
             )
             """The array shape of the input variables"""
         except ValueError:
             msg = (
-                "The shape of DailyEvapFluxes inputs are inconsistent with each other "
-                "or the DailySolarFluxes data"
+                "The shape of DailyEvaporativeFluxes inputs are inconsistent with each "
+                "other or the DailySolarFluxes data"
             )
             raise ValueError(msg)
 
         # Broadcast along the time axis (necessary for the indexing in estimate_aet)
-        pa = broadcast_time(pa, self.shape)
-        tc = broadcast_time(tc, self.shape)
+        patm = broadcast_time(patm, self.shape)
+        temperature = broadcast_time(temperature, self.shape)
 
         # Slope of saturation vap press temp curve, Pa/K
-        self.sat = calculate_saturation_vapour_pressure_slope(tc)
+        self.saturation_slope = calculate_saturation_vapour_pressure_slope(
+            tc=temperature
+        )
 
         # Enthalpy of vaporization, J/kg
-        self.lv = calculate_enthalpy_vaporisation(tc)
+        self.enthalpy_vaporisation = calculate_enthalpy_vaporisation(tc=temperature)
 
         # Density of water, kg/m^3
-        self.pw = calculate_density_h2o(tc, pa, core_const=self.core_const)
+        self.water_density = calculate_density_h2o(
+            tc=temperature, patm=patm, core_const=self.core_const
+        )
 
         # Psychrometric constant, Pa/K
-        self.psy = calculate_psychrometric_constant(tc, pa, core_const=self.core_const)
+        self.psychrometric_constant = calculate_psychrometric_constant(
+            tc=temperature, patm=patm, core_const=self.core_const
+        )
 
         # Calculate water-to-energy conversion (econ), m^3/J
-        self.econ = self.sat / (self.lv * self.pw * (self.sat + self.psy))
+        self.water_energy_conversion = self.saturation_slope / (
+            self.enthalpy_vaporisation
+            * self.water_density
+            * (self.saturation_slope + self.psychrometric_constant)
+        )
 
         # Calculate daily condensation (cn), mm
-        self.cond = (1e3) * self.econ * np.abs(self.solar.nighttime_net_radiation)
+        self.condensation = (
+            (1e3)
+            * self.water_energy_conversion
+            * np.abs(self.solar.nighttime_net_radiation)
+        )
 
         # Estimate daily equilibrium evapotranspiration (eet_d), mm
-        self.eet_d = (1e3) * self.econ * self.solar.daytime_net_radiation
+        self.daily_eet = (
+            (1e3) * self.water_energy_conversion * self.solar.daytime_net_radiation
+        )
 
         # Estimate daily potential evapotranspiration (pet_d), mm
-        self.pet_d = (1.0 + self.core_const.k_w) * self.eet_d
+        self.daily_pet = (1.0 + self.core_const.k_w) * self.daily_eet
 
         # Calculate variable substitute (rx), (mm/hr)/(W/m^2)
-        self.rx = (3.6e6) * (1.0 + self.core_const.k_w) * self.econ
+        self.rx = (3.6e6) * (1.0 + self.core_const.k_w) * self.water_energy_conversion
 
     def estimate_aet(
         self,
-        wn: ArrayType[np.floating],
-        day_idx: int | None = None,
+        soil_moisture: ArrayType[np.floating],
+        day_index: int | None = None,
         only_aet: bool = True,
     ) -> (
         NDArray[np.floating]
@@ -140,38 +166,39 @@ class DailyEvapFluxes:
         """Estimate actual evapotranspiration.
 
         This method estimates the daily actual evapotranspiration (AET, mm/day), given
-        estimates of the soil moisture  (``wn``) for observations. Optionally, the
-        method can also return the the intersection hour angle (``hi``, degrees) and
-        evaporative supply rate (``sw``, mm/h).
+        estimates of the soil moisture  (:math:`w_n`, mm) for observations. Optionally,
+        the method can also return the the intersection hour angle (:math:`h_i`,
+        degrees) and evaporative supply rate (:math:`s_w`, mm/h).
 
-        By default, ``wn`` is expected to provide estimates for all observations across
-        all days in the model, but ``day_idx`` can be set to indicate that ``wn`` is
-        providing the soil moisture for one specific day across the observations.
+        By default, ``soil_moisture`` is expected to provide estimates for all
+        observations across all days in the model, but ``day_index`` can be set to
+        indicate that ``soil_moisture`` is providing the soil moisture for one specific
+        day across the observations.
 
         Args:
-            wn: The soil moisture (mm).
-            day_idx: An integer giving the index of the provided ``wn`` values along the
-                time axis.
-            only_aet: Should the function only return AET or AET, ``hi`` and ``sw``.
+            soil_moisture: The soil moisture (:math:`w_n`, mm).
+            day_index: An integer giving the index of the provided ``soil_moisture``
+                values along the time axis.
+            only_aet: Should the function return all three variables or just AET.
 
         Returns:
-            An array of AET values or a tuple of arrays containing AET, ``hi`` and
-            ``sw``.
+            An array of AET values or a tuple of arrays containing AET, :math:`h_i` and
+            :math:`s_w`.
         """
 
-        # Check day_idx inputs and create the indexing object `didx`, used to either
+        # Check day_index inputs and create the indexing object `didx`, used to either
         # subset the calculations to particular request days or use the entire array of
         # soil moisture. The slice here is used to programmatically select `array[:]`.
-        if day_idx is None:
+        if day_index is None:
             splash_dims = self.solar.dims
             splash_shape = self.shape
             didx: int | slice = slice(self.shape[0])
         else:
             splash_dims = self.solar.dims[1:]
             splash_shape = self.shape[1:]
-            didx = day_idx
+            didx = day_index
 
-        wn = xarray_inputs(wn, dims=splash_dims)
+        wn = xarray_inputs(soil_moisture, dims=splash_dims)
         try:
             check_input_shapes(wn, shape=splash_shape)
         except ValueError:
@@ -179,7 +206,7 @@ class DailyEvapFluxes:
             raise ValueError(msg)
 
         # Calculate evaporative supply rate (sw), mm/h
-        sw = self.core_const.k_Cw * wn / self.kWm
+        sw = self.core_const.k_Cw * wn / self.soil_capacity
 
         # Validate evaporative supply rate
         if np.any(sw < 0):

@@ -35,7 +35,7 @@ language_info:
     :members:
 ```
 
-## The DailyEvapFluxes submodule
+## The DailyEvaporativeFluxes submodule
 
 ```{eval-rst}
 .. automodule:: pyrealm.splash.evap

@@ -10,7 +10,7 @@ from pyrealm.core.xarray import ArrayType, xarray_inputs
 
 
 def calculate_patm(
-    elv: ArrayType[np.floating], core_const: CoreConst = CoreConst()
+    elevation: ArrayType[np.floating], core_const: CoreConst = CoreConst()
 ) -> NDArray[np.floating]:
     r"""Calculate atmospheric pressure from elevation.
 
@@ -24,7 +24,7 @@ def calculate_patm(
         p(z) = p_0 ( 1 - L z / K_0) ^{ G M / (R L) },
 
     Args:
-        elv: Elevation above sea-level (:math:`z`, metres above sea level.)
+        elevation: Elevation above sea-level (:math:`z`, metres above sea level.)
         core_const: Instance of :class:`~pyrealm.constants.core_const.CoreConst`.
 
     Returns:
@@ -36,9 +36,9 @@ def calculate_patm(
         90241.54
     """
 
-    elv = xarray_inputs(elv)
+    elevation = xarray_inputs(elevation)
 
     # Convert elevation to pressure, Pa.
-    return core_const.k_Po * (1.0 - core_const.k_L * elv / core_const.k_To) ** (
+    return core_const.k_Po * (1.0 - core_const.k_L * elevation / core_const.k_To) ** (
         core_const.k_G * core_const.k_Ma / (core_const.k_R * core_const.k_L)
     )

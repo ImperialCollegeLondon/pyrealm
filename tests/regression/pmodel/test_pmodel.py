@@ -328,7 +328,7 @@ def test_calculate_patm(values, elev, expvals):
 
     from pyrealm.core.pressure import calculate_patm
 
-    ret = calculate_patm(elv=values[elev])
+    ret = calculate_patm(elevation=values[elev])
     assert_allclose(ret, values[expvals])
 
 

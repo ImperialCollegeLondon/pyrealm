@@ -182,25 +182,25 @@ rely on the soil moisture and so are calculated once when the `SplashModel` is c
 ```{code-cell} ipython3
 # Fit the model
 splash = SplashModel(
-    lat=data.lat,
-    elv=data.elev,
+    latitude=data.lat,
+    elevation=data.elev,
     dates=Calendar(data.time),
-    sf=data.sf,
-    tc=data.tmp,
-    pn=data.pre,
+    sunshine_fraction=data.sf,
+    temperature=data.tmp,
+    precipitation=data.pre,
 )
 ```
 
-The data for the incoming radiation (sunshine fraction `sf` in this example) ,
-temperature (`tc`) and precipitation (`pn`) are arrays providing values along through
-time. In this case the arrays are 3D, providing data on a latitude and longitude grid,
-but input data could be 1D (a single site) or 2D (a set of sites).
+The data for the incoming radiation (sunshine fraction in this example), temperature
+and precipitation are arrays providing values along through time. In this case the
+arrays are 3D, providing data on a latitude and longitude grid, but input data could be
+1D (a single site) or 2D (a set of sites).
 
-Note that the latitude (`lat`) values only varies along the latitude axis and elevation
-(`elv`) is constant through time. You need to take care to ensure that array dimensions
-along the [different axes are compatible](../users/array_inputs.md). In this example,
-the data is from an `xarray` dataset, and `pyrealm` uses the extra dimension information
-in the dataset to align the data.
+Note that latitude only varies along the latitude axis and elevation is constant through
+time. You need to take care to ensure that array dimensions along the [different axes
+are compatible](../users/array_inputs.md). In this example, the data is from an `xarray`
+dataset, and `pyrealm` uses the extra dimension information in the dataset to align the
+data.
 
 #### Estimating initial soil moisture
 
@@ -250,7 +250,9 @@ moisture of 150mm near the coast and in the mountains.
 ```{code-cell} ipython3
 # Calculate the water balance equation for the first day from the initial soil
 #  moisture estimates.
-aet, wn, ro = splash.estimate_daily_water_balance(init_soil_moisture, day_idx=0)
+aet, wn, ro = splash.estimate_daily_water_balance(
+    previous_soil_moisture=init_soil_moisture, day_index=0
+)
 
 # Plot the calculated soil moisture and change from previous values.
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
@@ -271,7 +273,9 @@ moisture estimates. It returns a set of time series of soil moisture, runoff and
 all sites.
 
 ```{code-cell} ipython3
-aet_out, wn_out, ro_out = splash.calculate_soil_moisture(init_soil_moisture)
+aet_out, wn_out, ro_out = splash.calculate_soil_moisture(
+    initial_soil_moisture=init_soil_moisture
+)
 ```
 
 The plots below show the resulting soil moisture and a time series for the three
@@ -336,10 +340,10 @@ calendar = Calendar(days)
 
 # Initialise the model
 bourne_splash = SplashModel(
-    lat=bourne["lat"].to_numpy(),
-    elv=bourne["elev"].to_numpy(),
-    tc=bourne["Ta"].to_numpy(),
-    pn=bourne["P"].to_numpy(),
+    latitude=bourne["lat"].to_numpy(),
+    elevation=bourne["elev"].to_numpy(),
+    temperature=bourne["Ta"].to_numpy(),
+    precipitation=bourne["P"].to_numpy(),
     shortwave_radiation=bourne["sw_in"].to_numpy(),
     dates=calendar,
 )
@@ -356,10 +360,10 @@ The plots below show the predicted values for the site.
 ```{code-cell} ipython3
 fig, (ax1, ax2, ax3) = plt.subplots(nrows=3, sharex=True, figsize=(6, 8))
 
-ax1.plot(days, aet_out)
-ax1.set_ylabel("AET (mm)")
-ax2.plot(days, wn_out)
-ax2.set_ylabel("Soil moisture (mm)")
+ax1.plot(days, wn_out)
+ax1.set_ylabel("Soil moisture (mm)")
+ax2.plot(days, aet_out)
+ax2.set_ylabel("AET (mm)")
 ax3.plot(days, ro_out)
 ax3.set_ylabel("Runoff (mm)")
 
