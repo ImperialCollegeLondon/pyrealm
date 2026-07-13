@@ -29,18 +29,18 @@ language_info:
     :members:
 ```
 
-## The {mod}`~pyrealm.demography.core` module
-
-```{eval-rst}
-.. automodule:: pyrealm.demography.core
-    :autosummary:
-    :members:
-```
-
 ## The {mod}`~pyrealm.demography.flora` module
 
 ```{eval-rst}
 .. automodule:: pyrealm.demography.flora
+    :autosummary:
+    :members:
+```
+
+## The {mod}`~pyrealm.demography.cohorts` module
+
+```{eval-rst}
+.. automodule:: pyrealm.demography.cohorts
     :autosummary:
     :members:
 ```
@@ -61,18 +61,18 @@ language_info:
     :members:
 ```
 
-## The {mod}`~pyrealm.demography.community` module
-
-```{eval-rst}
-.. automodule:: pyrealm.demography.community
-    :autosummary:
-    :members:
-```
-
 ## The {mod}`~pyrealm.demography.canopy` module
 
 ```{eval-rst}
 .. automodule:: pyrealm.demography.canopy
+    :autosummary:
+    :members:
+```
+
+## The {mod}`~pyrealm.demography.core` module
+
+```{eval-rst}
+.. automodule:: pyrealm.demography.core
     :autosummary:
     :members:
 ```

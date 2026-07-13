@@ -2,7 +2,6 @@
 
 from collections import namedtuple
 from contextlib import nullcontext as does_not_raise
-from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -38,7 +37,7 @@ example a total of 3 stem properties:
 
 
 @pytest.fixture
-def fixture_z_qz_stem_properties(request):
+def fixture_z_qz_test_cases(which):
     """Fixture providing test combinations of trait, size (z) and q_z values.
 
     This fixture provides a menu of inputs that can be used by tests through indirect
@@ -50,27 +49,7 @@ def fixture_z_qz_stem_properties(request):
     inputs only provide non-None values for the elements required to trigger the fail.
     """
 
-    match request.param:
-        case "fail_stem_props_unequal":
-            return ZQZInput(
-                z=None,
-                stem=np.ones(5),
-                more_stem=np.ones(4),
-                q_z=None,
-                outcome=pytest.raises(ValueError),
-                excep_msg="Trait arguments are not equal shaped or scalar:",
-                output_shape=None,
-            )
-        case "fail_stem_props_not_1D":
-            return ZQZInput(
-                z=None,
-                stem=np.ones((5, 2)),
-                more_stem=np.ones((5, 2)),
-                q_z=None,
-                outcome=pytest.raises(ValueError),
-                excep_msg="Trait arguments are not 1D arrays",
-                output_shape=None,
-            )
+    match which:
         case "pass_stem_props":
             return ZQZInput(
                 z=None,
@@ -101,17 +80,6 @@ def fixture_z_qz_stem_properties(request):
                 outcome=pytest.raises(ValueError),
                 excep_msg="The array shapes of the trait (4,) and "
                 "size (5, 2) arguments are not congruent",
-                output_shape=None,
-            )
-        case "fail_z_more_than_2D":
-            return ZQZInput(
-                z=np.ones((5, 2, 6)),
-                stem=np.ones(4),
-                more_stem=np.ones(4),
-                q_z=None,
-                outcome=pytest.raises(ValueError),
-                excep_msg="The array shapes of the trait (4,) and "
-                "size (5, 2, 6) arguments are not congruent",
                 output_shape=None,
             )
         case "pass_0D_z":
@@ -244,85 +212,24 @@ def fixture_z_qz_stem_properties(request):
 
 
 @pytest.mark.parametrize(
-    argnames="fixture_z_qz_stem_properties",
+    argnames="which",
     argvalues=[
-        "fail_stem_props_unequal",
-        "fail_stem_props_not_1D",
-        "pass_stem_props",
-        "fail_1D_z_not_congruent_with_stem",
-        "fail_2D_z_not_congruent",
-        "fail_z_more_than_2D",
-        "pass_0D_z",
-        "pass_1D_scalar_z",
-        "pass_1D_row_array_z",
-        "pass_2D_column_array_z",
-        "fail_0D_z_but_q_z_not_row",
-        "fail_1D_scalar_z_but_q_z_not_row",
-        "fail_2D_column_z_but_q_z_not_congruent",
-        "pass_1D_row_z_with_scalar_q_z",
-        "pass_0D_z_and_q_z_row",
-        "pass_1D_scalar_z_and_q_z_row",
-        "pass_1D_row_z_and_q_z_row",
-        "pass_2D_column_z_and_congruent_q_z",
-    ],
-    indirect=["fixture_z_qz_stem_properties"],
-)
-def test__validate_demography_array_arguments_handling(fixture_z_qz_stem_properties):
-    """Tests the validation function for arguments to canopy functions.
-
-    This is checking the validation routine in the context of crown module functions.
-    """
-
-    from pyrealm.demography.core import _validate_demography_array_arguments
-
-    # Unpack the input arguments for the test case - not testing outputs here
-    z, stem, more_stem, q_z, outcome, excep_msg, _ = fixture_z_qz_stem_properties
-
-    # Build up the validation function input arguments.
-    # The number of trait args doesn't really matter in this test but specific function
-    # tests below need to match an actual set of arguments.
-    args = {"trait_args": {"stem_one": stem, "stem_two": more_stem}}
-
-    if z is not None:
-        args["size_args"] = {"z": z}
-
-    if q_z is not None:
-        args["at_size_args"] = {"q_z": q_z}
-
-    with outcome as excep:
-        _validate_demography_array_arguments(**args)
-        return
-
-    assert str(excep.value).startswith(excep_msg)
-
-
-@pytest.mark.parametrize(
-    argnames="fixture_z_qz_stem_properties",
-    argvalues=[
-        "fail_stem_props_unequal",
-        "fail_stem_props_not_1D",
-        "fail_1D_z_not_congruent_with_stem",
-        "fail_2D_z_not_congruent",
-        "fail_z_more_than_2D",
         "pass_0D_z",
         "pass_1D_scalar_z",
         "pass_1D_row_array_z",
         "pass_2D_column_array_z",
     ],
-    indirect=["fixture_z_qz_stem_properties"],
 )
-def test_calculate_relative_crown_radius_at_z_inputs(fixture_z_qz_stem_properties):
+def test_calculate_relative_crown_radius_at_z_inputs(fixture_z_qz_test_cases, which):
     """Test calculate_relative_crown_radius_at_z input and output shapes .
 
     This test checks the function behaviour with different inputs.
     """
 
-    from pyrealm.demography.crown import (
-        calculate_relative_crown_radius_at_z,
-    )
+    from pyrealm.demography.crown import calculate_relative_crown_radius_at_z
 
     # Build inputs
-    z, stem, more_stem, _, outcome, excep_msg, out_shape = fixture_z_qz_stem_properties
+    z, stem, more_stem, _, outcome, excep_msg, out_shape = fixture_z_qz_test_cases
 
     with outcome as excep:
         # Get the relative radius at that height
@@ -338,7 +245,7 @@ def test_calculate_relative_crown_radius_at_z_inputs(fixture_z_qz_stem_propertie
     assert str(excep.value).startswith(excep_msg)
 
 
-def test_calculate_relative_crown_radius_at_z_values(fixture_community):
+def test_calculate_relative_crown_radius_at_z_values(fixture_cohorts_and_allometry):
     """Test calculate_relative_crown_radius_at_z.
 
     This test validates the expectation that the canopy shape model correctly
@@ -350,19 +257,21 @@ def test_calculate_relative_crown_radius_at_z_values(fixture_community):
         calculate_relative_crown_radius_at_z,
     )
 
+    cohorts, allometry = fixture_cohorts_and_allometry
+
     # Get the relative radius at that heights of the crown z_max values
     q_z_values = calculate_relative_crown_radius_at_z(
-        z=fixture_community.stem_allometry.crown_z_max,
-        stem_height=fixture_community.stem_allometry.stem_height,
-        m=fixture_community.stem_traits.m,
-        n=fixture_community.stem_traits.n,
+        z=allometry.crown_z_max,
+        stem_height=allometry.stem_height,
+        m=cohorts.m.to_numpy(),
+        n=cohorts.n.to_numpy(),
     )
 
-    # Now test that the circular crown area from that radius is equivalent to the direct
-    # prediction from the T model allometric equations.
+    # Now test that the circular crown area from that radius is equivalent to
+    # the direct prediction from the T model allometric equations.
     assert_allclose(
-        fixture_community.stem_allometry.crown_area,
-        np.pi * (q_z_values * fixture_community.stem_allometry.crown_r0) ** 2,
+        allometry.crown_area,
+        np.pi * (q_z_values * allometry.crown_r0) ** 2,
     )
 
 
@@ -387,65 +296,58 @@ def test_calculate_relative_crown_radius_at_z_values_clipping(m, n):
     from pyrealm.demography.crown import (
         calculate_relative_crown_radius_at_z,
     )
-    from pyrealm.demography.flora import PlantFunctionalType
+    from pyrealm.demography.flora import Flora
 
     # Default PFT settings
-    pft = PlantFunctionalType(name="test", m=m, n=n)
-
+    flora = Flora(name=["test"], m=[m], n=[n])
     # Get the relative radius at that heights of the crown z_max values
+    z_max_prop = flora.z_max_prop[0]
     q_z_values = calculate_relative_crown_radius_at_z(
         z=np.array(
             [
                 11,  # Above the stem height
-                10 * pft.z_max_prop + 0.01,  # Just above the maximum width
-                10 * pft.z_max_prop,  # At the maximum width
-                10 * pft.z_max_prop + 0.01,  # Just below the maximum width
+                10 * z_max_prop + 0.01,  # Just above the maximum width
+                10 * z_max_prop,  # At the maximum width
+                10 * z_max_prop + 0.01,  # Just below the maximum width
                 -1,  # Below ground level
             ]
-        ),
+        )[:, None],
         stem_height=np.array([10]),
-        m=np.array([pft.m]),
-        n=np.array([pft.n]),
+        m=np.array([flora.m]),
+        n=np.array([flora.n]),
     )
 
     # Where z < 0 or z > H, q(z) should be zero
-    assert_allclose(q_z_values[[0, 4]], np.zeros(2))
+    assert_allclose(q_z_values[[0, 4]], np.zeros(2).reshape(2, 1))
 
     # Where z = H * z_max_prop, q(z) should be q_m
-    assert q_z_values[2] == pft.q_m
+    assert q_z_values[2] == flora.q_m[0]
 
     # Either side of that, values should be >= 0 and < q_m
-    assert np.all(np.less(q_z_values[[1, 3]], pft.q_m))
+    assert np.all(np.less(q_z_values[[1, 3]], flora.q_m[0]))
     assert np.all(np.greater_equal(q_z_values[[1, 3]], 0))
 
 
 @pytest.mark.parametrize(
-    argnames="fixture_z_qz_stem_properties",
+    argnames="which",
     argvalues=[
-        "fail_stem_props_not_1D",
-        "fail_1D_z_not_congruent_with_stem",
-        "fail_2D_z_not_congruent",
-        "fail_z_more_than_2D",
-        "fail_0D_z_but_q_z_not_row",
         "pass_1D_row_z_with_scalar_q_z",
-        "fail_2D_column_z_but_q_z_not_congruent",
         "pass_0D_z_and_q_z_row",
         "pass_1D_scalar_z_and_q_z_row",
         "pass_1D_row_z_and_q_z_row",
         "pass_2D_column_z_and_congruent_q_z",
     ],
-    indirect=["fixture_z_qz_stem_properties"],
 )
-def test_calculate_stem_projected_crown_area_at_z_inputs(fixture_z_qz_stem_properties):
+def test_calculate_stem_projected_crown_area_at_z_inputs(
+    fixture_z_qz_test_cases, which
+):
     """Tests the validation of inputs to calculate_stem_projected_crown_area_at_z."""
     from pyrealm.demography.crown import (
         calculate_stem_projected_crown_area_at_z,
     )
 
     # Build inputs
-    z, stem, _more_stem, q_z, outcome, excep_msg, out_shape = (
-        fixture_z_qz_stem_properties
-    )
+    z, stem, _more_stem, q_z, outcome, excep_msg, out_shape = fixture_z_qz_test_cases
 
     with outcome as excep:
         # Get the relative radius at that height
@@ -466,28 +368,28 @@ def test_calculate_stem_projected_crown_area_at_z_inputs(fixture_z_qz_stem_prope
     argvalues=[
         pytest.param(
             np.array([15.19414157, 21.27411267, 23.70702725, 24.68056368]) + 0.01,
-            np.array([[0, 0, 0, 0]]),
+            np.array([0, 0, 0, 0]),
             id="one_cm_above_stem_top",
         ),
         pytest.param(
             np.array([12.91932028, 18.08901635, 20.15768226, 20.98546374]) + 1.00,
-            np.array([[5.94793264, 19.6183899, 33.77430339, 47.31340371]]),
+            np.array([5.94793264, 19.6183899, 33.77430339, 47.31340371]),
             id="one_metre_above_z_max",
         ),
         pytest.param(
             np.array([12.91932028, 18.08901635, 20.15768226, 20.98546374]),
-            np.array([[8.03306419, 22.49502702, 37.60134866, 52.19394627]]),
+            np.array([8.03306419, 22.49502702, 37.60134866, 52.19394627]),
             id="at_z_max",
         ),
         pytest.param(
             np.array([12.91932028, 18.08901635, 20.15768226, 20.98546374]) - 1.00,
-            np.array([[8.03306419, 22.49502702, 37.60134866, 52.19394627]]),
+            np.array([8.03306419, 22.49502702, 37.60134866, 52.19394627]),
             id="one_metre_below_z_max",
         ),
     ],
 )
 def test_calculate_stem_projected_crown_area_at_z_values(
-    fixture_community, heights, expected_Ap_z
+    fixture_cohorts_and_allometry, heights, expected_Ap_z
 ):
     """Test calculate_stem_projected_canopy_area_at_z.
 
@@ -503,22 +405,24 @@ def test_calculate_stem_projected_crown_area_at_z_values(
         calculate_stem_projected_crown_area_at_z,
     )
 
+    cohorts, allometry = fixture_cohorts_and_allometry
+
     # Calculate the required q_z
     q_z = calculate_relative_crown_radius_at_z(
         z=heights,
-        stem_height=fixture_community.stem_allometry.stem_height,
-        m=fixture_community.stem_traits.m,
-        n=fixture_community.stem_traits.n,
+        stem_height=allometry.stem_height,
+        m=cohorts.m.to_numpy(),
+        n=cohorts.n.to_numpy(),
     )
 
     # Calculate and test these values
     Ap_z_values = calculate_stem_projected_crown_area_at_z(
         z=heights,
         q_z=q_z,
-        stem_height=fixture_community.stem_allometry.stem_height,
-        crown_area=fixture_community.stem_allometry.crown_area,
-        q_m=fixture_community.stem_traits.q_m,
-        z_max=fixture_community.stem_allometry.crown_z_max,
+        stem_height=allometry.stem_height,
+        crown_area=allometry.crown_area,
+        q_m=cohorts.q_m.to_numpy(),
+        z_max=allometry.crown_z_max,
     )
 
     assert_allclose(
@@ -528,34 +432,23 @@ def test_calculate_stem_projected_crown_area_at_z_values(
 
 
 @pytest.mark.parametrize(
-    argnames="fixture_z_qz_stem_properties",
+    argnames="which",
     argvalues=[
-        "fail_stem_props_unequal",
-        "fail_stem_props_not_1D",
-        "fail_1D_z_not_congruent_with_stem",
-        "fail_2D_z_not_congruent",
-        "fail_z_more_than_2D",
-        "fail_0D_z_but_q_z_not_row",
-        "fail_1D_scalar_z_but_q_z_not_row",
         "pass_1D_row_z_with_scalar_q_z",
-        "fail_2D_column_z_but_q_z_not_congruent",
         "pass_0D_z_and_q_z_row",
         "pass_1D_scalar_z_and_q_z_row",
         "pass_1D_row_z_and_q_z_row",
         "pass_2D_column_z_and_congruent_q_z",
     ],
-    indirect=["fixture_z_qz_stem_properties"],
 )
-def test_calculate_stem_projected_leaf_area_at_z_inputs(fixture_z_qz_stem_properties):
+def test_calculate_stem_projected_leaf_area_at_z_inputs(fixture_z_qz_test_cases, which):
     """Tests the validation of inputs to calculate_stem_projected_crown_area_at_z."""
     from pyrealm.demography.crown import (
         calculate_stem_projected_leaf_area_at_z,
     )
 
     # Build inputs
-    z, stem, more_stem, q_z, outcome, excep_msg, out_shape = (
-        fixture_z_qz_stem_properties
-    )
+    z, stem, more_stem, q_z, outcome, excep_msg, out_shape = fixture_z_qz_test_cases
 
     with outcome as excep:
         # Get the relative radius at that height
@@ -577,7 +470,7 @@ def test_calculate_stem_projected_leaf_area_at_z_inputs(fixture_z_qz_stem_proper
     assert str(excep.value).startswith(excep_msg)
 
 
-def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
+def test_calculate_stem_projected_leaf_area_at_z_values(fixture_cohorts_and_allometry):
     """Test calculate_stem_projected_leaf_area_at_z.
 
     This test uses hand calculated values to check predictions, but there are some more
@@ -589,25 +482,27 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
         calculate_stem_projected_leaf_area_at_z,
     )
 
+    cohorts, allometry = fixture_cohorts_and_allometry
+
     # Calculate the leaf areas at the locations of z_max for each stem from the lowest
     # to the highest
-    z_max = fixture_community.stem_allometry.crown_z_max.T
+    z_max = allometry.crown_z_max[:, None]
 
     q_z = calculate_relative_crown_radius_at_z(
         z=z_max,
-        stem_height=fixture_community.stem_allometry.stem_height,
-        m=fixture_community.stem_traits.m,
-        n=fixture_community.stem_traits.n,
+        stem_height=allometry.stem_height,
+        m=cohorts.m.to_numpy(),
+        n=cohorts.n.to_numpy(),
     )
 
     leaf_area_fg0 = calculate_stem_projected_leaf_area_at_z(
         z=z_max,
         q_z=q_z,
-        stem_height=fixture_community.stem_allometry.stem_height,
-        crown_area=fixture_community.stem_allometry.crown_area,
-        f_g=fixture_community.stem_traits.f_g,
-        q_m=fixture_community.stem_traits.q_m,
-        z_max=fixture_community.stem_allometry.crown_z_max,
+        stem_height=allometry.stem_height,
+        crown_area=allometry.crown_area,
+        f_g=cohorts.f_g.to_numpy(),
+        q_m=cohorts.q_m.to_numpy(),
+        z_max=allometry.crown_z_max,
     )
 
     # Pre-calculated values
@@ -624,24 +519,22 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
 
     # More rigorous check - with f_g = 0, the projected leaf area of each stem in the
     # lowest layer must equal the crown area (all the crown is now accounted for).
-    assert_allclose(leaf_area_fg0[[0]], fixture_community.stem_allometry.crown_area)
+    assert_allclose(leaf_area_fg0[0], allometry.crown_area)
     # Also the diagonal of the resulting matrix (4 heights for 4 cohorts) should _also_
     # match the crown areas as the leaf area is all accounted for exactly at z_max.
-    assert_allclose(
-        np.diag(leaf_area_fg0)[None, :], fixture_community.stem_allometry.crown_area
-    )
+    assert_allclose(np.diag(leaf_area_fg0), allometry.crown_area)
 
     # Introduce some crown gap fraction and recalculate
-    fixture_community.stem_traits.f_g += 0.02
+    cohorts.f_g += 0.02
 
     leaf_area_fg002 = calculate_stem_projected_leaf_area_at_z(
         z=z_max,
         q_z=q_z,
-        stem_height=fixture_community.stem_allometry.stem_height,
-        crown_area=fixture_community.stem_allometry.crown_area,
-        f_g=fixture_community.stem_traits.f_g,
-        q_m=fixture_community.stem_traits.q_m,
-        z_max=fixture_community.stem_allometry.crown_z_max,
+        stem_height=allometry.stem_height,
+        crown_area=allometry.crown_area,
+        f_g=cohorts.f_g.to_numpy(),
+        q_m=cohorts.q_m.to_numpy(),
+        z_max=allometry.crown_z_max,
     )
 
     expected_leaf_area_fg002 = np.array(
@@ -664,85 +557,79 @@ def test_calculate_stem_projected_leaf_area_at_z_values(fixture_community):
 
     # - The diagonal should be exactly (1 - f_g) times the crown area: at the z_max for
     #   the stem all but the crown gap fraction should be accounted for
-    assert_allclose(
-        np.diag(leaf_area_fg002)[None, :],
-        fixture_community.stem_allometry.crown_area * 0.98,
-    )
+    assert_allclose(np.diag(leaf_area_fg002), allometry.crown_area * 0.98)
 
 
-def test_CrownProfile(fixture_community):
+def test_CrownProfile(fixture_cohorts_and_allometry):
     """Test the CrownProfile class.
 
     This implements a subset of the tests in the more detailed function checks above to
-    validate that this wrapper class works as intended. It also tests the inherited
-    to_pandas method and checks that the validation routine is only called once.
+    validate that this wrapper class works as intended.
     """
 
-    from pyrealm.demography.core import _validate_demography_array_arguments
     from pyrealm.demography.crown import CrownProfile
 
+    cohorts, allometry = fixture_cohorts_and_allometry
+
     # Estimate the profile at the heights of the maximum crown radii for each cohort
-    with patch(
-        "pyrealm.demography.crown._validate_demography_array_arguments",
-        wraps=_validate_demography_array_arguments,
-    ) as val_func_patch:
-        crown_profile = CrownProfile(
-            stem_traits=fixture_community.stem_traits,
-            stem_allometry=fixture_community.stem_allometry,
-            z=fixture_community.stem_allometry.crown_z_max.T,
-        )
-        assert val_func_patch.call_count == 1
+
+    crown_profile = CrownProfile(
+        cohorts=cohorts,
+        z=allometry.crown_z_max,
+        allometry=allometry,
+    )
 
     # Crown radius on diagonal predicts crown area accurately - needs to made 2D again.
     assert_allclose(
-        np.diag(crown_profile.crown_radius)[None, :] ** 2 * np.pi,
-        fixture_community.stem_allometry.crown_area,
+        np.diag(crown_profile.crown_radius) ** 2 * np.pi,
+        allometry.crown_area,
     )
 
     # Same is true for projected crown area at z_max heights
     assert_allclose(
-        np.diag(crown_profile.projected_crown_area)[None, :],
-        fixture_community.stem_allometry.crown_area,
+        np.diag(crown_profile.projected_crown_area),
+        allometry.crown_area,
     )
 
     # And since f_g=0, so is projected leaf area
     assert_allclose(
-        np.diag(crown_profile.projected_leaf_area)[None, :],
-        fixture_community.stem_allometry.crown_area,
+        np.diag(crown_profile.projected_leaf_area),
+        allometry.crown_area,
     )
 
     # Test the inherited to_pandas method
-    df = crown_profile.to_pandas()
+    df = crown_profile.to_dataframe()
 
     assert df.shape == (
-        crown_profile._n_stems * crown_profile._n_pred,
-        len(crown_profile.array_attrs),
+        len(cohorts) * allometry.crown_z_max.size,
+        len(crown_profile._array_attrs),
     )
 
-    assert set(crown_profile.array_attrs) == set(df.columns)
+    assert set(crown_profile._array_attrs) == set(df.columns)
 
 
+@pytest.mark.parametrize(argnames="stem_offset", argvalues=[None, np.arange(4)])
 @pytest.mark.parametrize(argnames="as_xy", argvalues=[True, False])
 @pytest.mark.parametrize(argnames="two_sided", argvalues=[True, False])
-def test_get_crown_xy(fixture_community, as_xy, two_sided):
+def test_get_crown_xy(fixture_cohorts_and_allometry, as_xy, two_sided, stem_offset):
     """Test the get_crown_xy helper.
 
     This really just checks it runs at the moment.
     """
 
-    from pyrealm.demography.crown import CrownProfile, get_crown_xy
+    from pyrealm.demography.crown import CrownProfile
+
+    cohorts, allometry = fixture_cohorts_and_allometry
+
+    # Estimate the profile at the heights of the maximum crown radii for each cohort
 
     crown_profile = CrownProfile(
-        stem_traits=fixture_community.stem_traits,
-        stem_allometry=fixture_community.stem_allometry,
-        z=np.linspace(0, 22, num=101)[:, None],
+        cohorts=cohorts,
+        z=allometry.crown_z_max,
+        allometry=allometry,
     )
 
-    for attr in crown_profile.array_attrs:
-        _ = get_crown_xy(
-            crown_profile=crown_profile,
-            stem_allometry=fixture_community.stem_allometry,
-            attr=attr,
-            as_xy=as_xy,
-            two_sided=two_sided,
+    for attr in crown_profile._array_attrs:
+        _ = crown_profile.to_xy(
+            attr=attr, as_xy=as_xy, two_sided=two_sided, stem_offsets=stem_offset
         )

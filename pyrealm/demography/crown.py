@@ -2,18 +2,14 @@
 used in PlantFATE :cite:t:`joshi:2022a`.
 """  # noqa: D205
 
-from dataclasses import InitVar, dataclass, field
 from typing import ClassVar
 
 import numpy as np
 from numpy.typing import NDArray
 
 from pyrealm.core.experimental import warn_experimental
-from pyrealm.demography.core import (
-    PandasExporter,
-    _validate_demography_array_arguments,
-)
-from pyrealm.demography.flora import Flora, StemTraits
+from pyrealm.demography.cohorts import Cohorts
+from pyrealm.demography.core import ToDataFrameMixin
 from pyrealm.demography.tmodel import StemAllometry
 
 
@@ -22,7 +18,6 @@ def calculate_relative_crown_radius_at_z(
     stem_height: NDArray[np.floating],
     m: NDArray[np.floating],
     n: NDArray[np.floating],
-    validate: bool = True,
     clip: bool = True,
 ) -> NDArray[np.floating]:
     r"""Calculate relative crown radius at a given height.
@@ -55,18 +50,12 @@ def calculate_relative_crown_radius_at_z(
 
     Args:
         z: Height at which to calculate relative radius
-        stem_height: Total height of individual stem
-        m: Canopy shape parameter of PFT
-        n: Canopy shape parameter of PFT
-        validate: Boolean flag to suppress argument validation.
+        stem_height: Total height of individual stems
+        m: Canopy shape parameter of PFT for stems
+        n: Canopy shape parameter of PFT for stems
         clip: Boolean flag to set :math:`q(z) = 0` where the :math:`z` is below zero or
             above the stem height.
     """
-
-    if validate:
-        _validate_demography_array_arguments(
-            trait_args={"m": m, "n": n}, size_args={"stem_height": stem_height, "z": z}
-        )
 
     z_over_height = z / stem_height
     q_z = m * n * z_over_height ** (n - 1) * (1 - z_over_height**n) ** (m - 1)
@@ -81,7 +70,6 @@ def calculate_relative_crown_radius_at_z(
 def calculate_crown_radius(
     q_z: NDArray[np.floating],
     r0: NDArray[np.floating],
-    validate: bool = True,
 ) -> NDArray[np.floating]:
     r"""Calculate crown radius from relative crown radius and crown r0.
 
@@ -102,7 +90,6 @@ def calculate_crown_radius(
     Args:
         q_z: An array of relative crown radius values
         r0:  An array of crown radius scaling factor values
-        validate: Boolean flag to suppress argument validation.
     """
 
     # TODO - think about validation here. qz must be row array or 2D (N, n_pft)
@@ -117,7 +104,6 @@ def calculate_stem_projected_crown_area_at_z(
     crown_area: NDArray[np.floating],
     q_m: NDArray[np.floating],
     z_max: NDArray[np.floating],
-    validate: bool = True,
 ) -> NDArray[np.floating]:
     """Calculate stem projected crown area above a given height.
 
@@ -137,20 +123,7 @@ def calculate_stem_projected_crown_area_at_z(
         stem_height: Stem height of each stem
         q_m: Canopy shape parameter ``q_m``` for each stem
         z_max: Height of maximum crown radius for each stem
-        validate: Boolean flag to suppress argument validation.
     """
-
-    if validate:
-        _validate_demography_array_arguments(
-            trait_args={"q_m": q_m},
-            size_args={
-                "stem_height": stem_height,
-                "crown_area": crown_area,
-                "z": z,
-                "z_max": z_max,
-            },
-            at_size_args={"q_z": q_z},
-        )
 
     # Calculate A_p
     # Calculate Ap given z > zm
@@ -171,7 +144,6 @@ def calculate_stem_projected_leaf_area_at_z(
     f_g: NDArray[np.floating],
     q_m: NDArray[np.floating],
     z_max: NDArray[np.floating],
-    validate: bool = True,
 ) -> NDArray[np.floating]:
     """Calculate projected leaf area above a given height.
 
@@ -197,24 +169,11 @@ def calculate_stem_projected_leaf_area_at_z(
         f_g: Within crown gap fraction for each stem.
         q_m: Canopy shape parameter ``q_m``` for each stem
         z_max: Height of maximum crown radius for each stem
-        validate: Boolean flag to suppress argument validation.
     """
 
     # NOTE: Although the internals of this function overlap a lot with
     #       calculate_stem_projected_crown_area_at_z, we want that function to be as
     #       lean as possible, as it used within solve_community_projected_crown_area.
-
-    if validate:
-        _validate_demography_array_arguments(
-            trait_args={"q_m": q_m, "f_g": f_g},
-            size_args={
-                "stem_height": stem_height,
-                "crown_area": crown_area,
-                "z": z,
-                "z_max": z_max,
-            },
-            at_size_args={"q_z": q_z},
-        )
 
     # Calculate Ac terms
     A_c_terms = crown_area * (q_z / q_m) ** 2
@@ -231,8 +190,7 @@ def calculate_stem_projected_leaf_area_at_z(
     return A_cp
 
 
-@dataclass
-class CrownProfile(PandasExporter):
+class CrownProfile(ToDataFrameMixin):
     """Calculate vertical crown profiles for stems.
 
     This method calculates crown profile predictions, given an array of vertical
@@ -254,15 +212,15 @@ class CrownProfile(PandasExporter):
     projected area on the same linear scale as the crown radius.
 
     Args:
-        stem_traits: A Flora or StemTraits instance providing plant functional trait
-            data.
-        stem_allometry: A StemAllometry instance setting the stem allometries for the
-            crown profile.
+        cohorts: A cohorts instance.
         z: An array of vertical height values at which to calculate crown profiles.
-        validate: Boolean flag to suppress argument validation.
+        allometry: A StemAllometry instance for the provided cohorts. If this is
+            missing, then it is calculated automatically from the cohorts.
     """
 
-    array_attrs: ClassVar[tuple[str, ...]] = (
+    __experimental__ = True
+
+    _array_attrs: ClassVar[tuple[str, ...]] = (
         "relative_crown_radius",
         "crown_radius",
         "projected_crown_area",
@@ -271,100 +229,101 @@ class CrownProfile(PandasExporter):
         "projected_leaf_radius",
     )
 
-    stem_traits: InitVar[StemTraits | Flora]
-    """A Flora or StemTraits instance providing plant functional trait data."""
-    stem_allometry: InitVar[StemAllometry]
-    """A StemAllometry instance setting the stem allometries for the crown profile."""
-    z: NDArray[np.floating]
-    """An array of vertical height values at which to calculate crown profiles."""
-    validate: InitVar[bool] = True
-    """Boolean flag to suppress argument validation."""
+    # Crown profiles are _always_ 2D
+    _ndims = 2
 
-    relative_crown_radius: NDArray[np.floating] = field(init=False)
-    """An array of the relative crown radius of stems at z heights"""
-    crown_radius: NDArray[np.floating] = field(init=False)
-    """An array of the actual crown radius of stems at z heights"""
-    projected_crown_area: NDArray[np.floating] = field(init=False)
-    """An array of the projected crown area of stems at z heights"""
-    projected_leaf_area: NDArray[np.floating] = field(init=False)
-    """An array of the projected leaf area of stems at z heights"""
-
-    # Information attributes
-    _n_pred: int = field(init=False)
-    """The number of predictions per stem."""
-    _n_stems: int = field(init=False)
-    """The number of stems."""
-
-    __experimental__ = True
-
-    def __post_init__(
+    def __init__(
         self,
-        stem_traits: StemTraits | Flora,
-        stem_allometry: StemAllometry,
-        validate: bool,
-    ) -> None:
+        cohorts: Cohorts,
+        z: NDArray[np.floating],
+        allometry: StemAllometry | None = None,
+    ):
         """Populate crown profile attributes from the traits, allometry and height."""
 
         warn_experimental("CrownProfile")
 
-        # If validation is required, only need to perform validation once to check that
-        # the at_dbh values are congruent with the stem_traits inputs. If they are, then
-        # all the other allometry function inputs will be too.
-        if validate:
-            _validate_demography_array_arguments(
-                trait_args={"h_max": stem_traits.h_max}, size_args={"z": self.z}
+        # TODO: Need to do some form of validation here to check allometry and cohorts
+        #       are congruent and sensible - maybe calculate allometry internally.
+        #       This is only intended to work with the specific cohort DBH, so could
+        #       just check cohort_ids align across the two inputs.
+
+        self.relative_crown_radius: NDArray[np.floating]
+        """A 2D array of the relative crown radius of each stem at given heights"""
+        self.crown_radius: NDArray[np.floating]
+        """A 2D array of the actual crown radius of each stem at given heights"""
+        self.projected_crown_area: NDArray[np.floating]
+        """A 2D array of the projected crown area of each stem at given heights"""
+        self.projected_leaf_area: NDArray[np.floating]
+        """A 2D array of the projected leaf area of each stem at given heights"""
+        self.stem_height: NDArray[np.floating]
+        """A 1D array of the stem heights for each cohort."""
+
+        self.height_is_valid: NDArray[np.bool]
+        """A 2D logical array showing which heights are below the stem height for each
+        stem."""
+
+        # Handle allometry
+        if allometry is None:
+            allometry = StemAllometry(cohorts=cohorts)
+        else:
+            # Check the allometry is 1D and matches the cohorts
+            if allometry._ndims > 1:
+                raise ValueError("Provided allometry calculated using `at_dbh`.")
+            if not np.all(np.equal(allometry.cohort_ids, cohorts.cohort_id.to_numpy())):
+                raise ValueError("Provided allometry does not match cohorts.")
+
+        # Validate z and set height_is_valid
+        if z.ndim != 1 or np.any(z < 0) or not (np.all(np.diff(z)) > 0):
+            raise ValueError(
+                "The z value must be a one dimensional array of increasing heights "
+                "greater than or equal to 0."
             )
+
+        # Rotate z into a column array
+        self.z = z[:, None]
+
+        # Store cohort x height array showing which heights are <= stem height.
+        self.stem_height = allometry.stem_height
+        self.height_is_valid = np.less_equal(self.z, allometry.stem_height)
 
         # Calculate relative crown radius
         self.relative_crown_radius = calculate_relative_crown_radius_at_z(
             z=self.z,
-            m=stem_traits.m,
-            n=stem_traits.n,
-            stem_height=stem_allometry.stem_height,
-            validate=False,
+            m=cohorts.m.to_numpy(),
+            n=cohorts.n.to_numpy(),
+            stem_height=allometry.stem_height,
         )
 
         # Calculate actual radius
         self.crown_radius = calculate_crown_radius(
-            q_z=self.relative_crown_radius, r0=stem_allometry.crown_r0, validate=False
+            q_z=self.relative_crown_radius,
+            r0=allometry.crown_r0,
         )
 
         # Calculate projected crown area
         self.projected_crown_area = calculate_stem_projected_crown_area_at_z(
             z=self.z,
             q_z=self.relative_crown_radius,
-            crown_area=stem_allometry.crown_area,
-            q_m=stem_traits.q_m,
-            stem_height=stem_allometry.stem_height,
-            z_max=stem_allometry.crown_z_max,
-            validate=False,
+            crown_area=allometry.crown_area,
+            q_m=cohorts.q_m.to_numpy(),
+            stem_height=allometry.stem_height,
+            z_max=allometry.crown_z_max,
         )
 
         # Calculate projected leaf area
         self.projected_leaf_area = calculate_stem_projected_leaf_area_at_z(
             z=self.z,
             q_z=self.relative_crown_radius,
-            f_g=stem_traits.f_g,
-            q_m=stem_traits.q_m,
-            crown_area=stem_allometry.crown_area,
-            stem_height=stem_allometry.stem_height,
-            z_max=stem_allometry.crown_z_max,
-            validate=False,
+            f_g=cohorts.f_g.to_numpy(),
+            q_m=cohorts.q_m.to_numpy(),
+            crown_area=allometry.crown_area,
+            stem_height=allometry.stem_height,
+            z_max=allometry.crown_z_max,
         )
 
-        # Set the number of observations per stem (one if dbh is 1D, otherwise size of
-        # the first axis)
-        if self.relative_crown_radius.ndim == 1:
-            self._n_pred = 1
-        else:
-            self._n_pred = self.relative_crown_radius.shape[0]
-
-        self._n_stems = stem_traits._n_stems
-
     def __repr__(self) -> str:
-        return (
-            f"CrownProfile: Prediction for {self._n_stems} stems "
-            f"at {self._n_pred} observations."
+        return "CrownProfile: Prediction for {1} stems at {0} heights.".format(
+            *self.z.shape
         )
 
     @property
@@ -377,104 +336,93 @@ class CrownProfile(PandasExporter):
         """An array of the projected leaf radius of stems at z heights."""
         return np.sqrt(self.projected_leaf_area / np.pi)
 
+    def to_xy(
+        self,
+        attr: str,
+        stem_offsets: NDArray[np.floating] | None = None,
+        two_sided: bool = True,
+        as_xy: bool = False,
+    ) -> (
+        list[tuple[NDArray[np.floating], NDArray[np.floating]]]
+        | list[NDArray[np.floating]]
+    ):
+        """Extract plotting data from crown profiles.
 
-def get_crown_xy(
-    crown_profile: CrownProfile,
-    stem_allometry: StemAllometry,
-    attr: str,
-    stem_offsets: NDArray[np.floating] | None = None,
-    two_sided: bool = True,
-    as_xy: bool = False,
-) -> (
-    list[tuple[NDArray[np.floating], NDArray[np.floating]]] | list[NDArray[np.floating]]
-):
-    """Extract plotting data from crown profiles.
+        A CrownProfile instance contains crown radius and projected area data for a set
+        of stems at given heights, but can contain predictions of these attributes above
+        the actual heights of some or all of the stems.
 
-    A CrownProfile instance contains crown radius and projected area data for a set of
-    stems at given heights, but can contain predictions of these attributes above the
-    actual heights of some or all of the stems or indeed below ground.
+        This function extracts plotting data for a given attribute for each crown that
+        includes only the predictions within the height range of the actual stem. It can
+        also mirror the values around the vertical midline to provide a two sided canopy
+        shape.
 
-    This function extracts plotting data for a given attribute for each crown that
-    includes only the predictions within the height range of the actual stem. It can
-    also mirror the values around the vertical midline to provide a two sided canopy
-    shape.
+        The data are returned as a list with one entry per stem. The default value for
+        each entry a tuple of two arrays (height, attribute values) but the `as_xy=True`
+        option will return an `(N, 2)` dimensioned XY array suitable for use with
+        :class:`matplotlib.patches.Polygon`.
 
-    The data are returned as a list with one entry per stem. The default value for each
-    entry a tuple of two arrays (height, attribute values) but the `as_xy=True` option
-    will return an `(N, 2)` dimensioned XY array suitable for use with
-    :class:`matplotlib.patches.Polygon`.
+        Args:
+            attr: The crown profile attribute to plot (see
+                :class:`~pyrealm.demography.crown.CrownProfile`)
+            stem_offsets: An optional array of offsets to add to the midline of stems.
+            two_sided: Should the plotting data show a two sided canopy.
+            as_xy: Should the plotting data be returned as a single XY array rather than
+                tuples of X and Y coordinates.
+        """
 
-    Args:
-        crown_profile: A crown profile instance
-        stem_allometry: The stem allometry instance used to create the crown profile
-        attr: The crown profile attribute to plot (see
-            :class:`~pyrealm.demography.crown.CrownProfile`)
-        stem_offsets: An optional array of offsets to add to the midline of stems.
-        two_sided: Should the plotting data show a two sided canopy.
-        as_xy: Should the plotting data be returned as a single XY array.
+        # Input validation
+        if attr not in self._array_attrs:
+            raise ValueError(f"Unknown crown profile attribute: {attr}")
 
-    """
+        # Get the attributes, setting above height values to NaN and broadcast the
+        # heights to match
+        vals = np.where(self.height_is_valid, getattr(self, attr), np.nan)
+        z = np.where(self.height_is_valid, np.broadcast_to(self.z, vals.shape), np.nan)
 
-    # Input validation
-    if attr not in crown_profile.array_attrs:
-        raise ValueError(f"Unknown crown profile attribute: {attr}")
-
-    # Get the attribute and flatten the heights from a column array to one dimensional
-    attr_values = getattr(crown_profile, attr)
-    z = crown_profile.z.flatten()
-
-    # Orient the data so that lower heights always come first
-    if z[0] < z[-1]:
-        z = np.flip(z)
-        attr_values = np.flip(attr_values, axis=0)
-
-    # Collect the per stem data
-    crown_plotting_data: list = []
-
-    for stem_index in np.arange(attr_values.shape[1]):
-        # Find the heights and values that fall within the individual stem
-        height_is_valid = np.logical_and(
-            z <= stem_allometry.stem_height[:, stem_index], z >= 0
-        )
-        valid_attr_values: NDArray[np.floating] = attr_values[
-            height_is_valid, stem_index
-        ]
-        valid_heights: NDArray[np.floating] = z[height_is_valid]
-
+        # Get the plotting coordinates
         if two_sided:
-            # The values are extended to include the reverse profile as well as the zero
-            # value at the stem height
-            valid_heights = np.concatenate(
+            attr_stack = np.concatenate(
                 [
-                    np.flip(valid_heights),
-                    stem_allometry.stem_height[:, stem_index],
-                    valid_heights,
+                    vals,
+                    np.zeros_like(self.stem_height)[None, :],
+                    np.flipud(vals),
                 ]
             )
-            valid_attr_values = np.concatenate(
-                [-np.flip(valid_attr_values), [0], valid_attr_values]
-            )
+            z_stack = np.concatenate([z, self.stem_height[None, :], np.flipud(z)])
         else:
-            # Only the zero value is added
-            valid_heights = np.concatenate(
+            attr_stack = np.concatenate(
                 [
-                    stem_allometry.stem_height[:, stem_index],
-                    valid_heights,
+                    vals,
+                    np.zeros_like(self.stem_height)[None, :],
                 ]
             )
-            valid_attr_values = np.concatenate([[0], valid_attr_values])
+            z_stack = np.concatenate([z, self.stem_height[None, :]])
 
-        # Add offsets if provided
+        # Add stem offsets if provided
         if stem_offsets is not None:
-            valid_attr_values += stem_offsets[stem_index]
+            attr_stack += stem_offsets
 
-        if as_xy:
-            # Combine the values into an (N,2) XY array
-            crown_plotting_data.append(
-                np.hstack([valid_attr_values[:, None], valid_heights[:, None]])
-            )
-        else:
-            # Return the individual 1D arrays
-            crown_plotting_data.append((valid_heights, valid_attr_values))
+        # Strip out NaN and get per stem plotting
+        data: (
+            list[tuple[NDArray[np.floating], NDArray[np.floating]]]
+            | list[NDArray[np.floating]]
+        ) = []
 
-    return crown_plotting_data
+        for cht_idx in np.arange(self.stem_height.size):
+            # Get the indices of the non NaN values
+            not_nan = ~np.isnan(attr_stack[:, cht_idx])
+
+            if as_xy:
+                # Combine the values into an (N,2) XY array and drop nans
+                data.append(
+                    np.hstack([attr_stack[:, [cht_idx]], z_stack[:, [cht_idx]]])[
+                        not_nan
+                    ]
+                )
+            else:
+                # Return the individual 1D arrays, dropping nans`
+                # Unclear why mypy refuses to recognise this as a two tuple of NDArrays
+                data.append((attr_stack[not_nan, cht_idx], z_stack[not_nan, cht_idx]))  # type: ignore
+
+        return data

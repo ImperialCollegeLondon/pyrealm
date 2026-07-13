@@ -1,0 +1,55 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="7JveilVt7D3w9IUz3Yvz">
+    <mxGraphModel dx="865" dy="441" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="220" pageHeight="40" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="K2y7fDkAfPykrgNyk4Nm-9" edge="1" parent="1" source="K2y7fDkAfPykrgNyk4Nm-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fillColor=#dae8fc;strokeColor=#000000;" target="K2y7fDkAfPykrgNyk4Nm-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="K2y7fDkAfPykrgNyk4Nm-14" edge="1" parent="1" source="K2y7fDkAfPykrgNyk4Nm-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.328;exitY=0.99;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitPerimeter=0;fillColor=#dae8fc;strokeColor=#000000;" target="K2y7fDkAfPykrgNyk4Nm-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="K2y7fDkAfPykrgNyk4Nm-18" edge="1" parent="1" source="K2y7fDkAfPykrgNyk4Nm-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.922;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;" target="K2y7fDkAfPykrgNyk4Nm-16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="K2y7fDkAfPykrgNyk4Nm-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=16;fillColor=#dae8fc;strokeColor=#6c8ebf;points=[[0,0,0,0,0],[0,0.25,0,0,0],[0,0.5,0,0,0],[0,0.75,0,0,0],[0,1,0,0,0],[0.25,0,0,0,0],[0.25,1,0,0,0],[0.5,0,0,0,0],[0.5,1,0,0,0],[0.75,0,0,0,0],[0.75,1,0,0,0],[0.8,1,0,0,0],[1,0,0,0,0],[1,0.25,0,0,0],[1,0.5,0,0,0],[1,0.75,0,0,0],[1,1,0,0,0]];" value="Gross Primary Productivity (GPP)" vertex="1">
+          <mxGeometry height="30" width="640" x="10" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="K2y7fDkAfPykrgNyk4Nm-10" edge="1" parent="1" source="K2y7fDkAfPykrgNyk4Nm-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.881;exitY=0.951;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitPerimeter=0;fillColor=#dae8fc;strokeColor=#000000;" target="K2y7fDkAfPykrgNyk4Nm-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="K2y7fDkAfPykrgNyk4Nm-15" edge="1" parent="1" source="K2y7fDkAfPykrgNyk4Nm-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.367;exitY=1.001;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitPerimeter=0;fillColor=#dae8fc;strokeColor=#000000;" target="K2y7fDkAfPykrgNyk4Nm-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="K2y7fDkAfPykrgNyk4Nm-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=16;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Net Primary Productivity (NPP)" vertex="1">
+          <mxGeometry height="30" width="420" x="10" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="K2y7fDkAfPykrgNyk4Nm-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=16;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Respiration" vertex="1">
+          <mxGeometry height="30" width="100" x="440" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="K2y7fDkAfPykrgNyk4Nm-11" edge="1" parent="1" source="K2y7fDkAfPykrgNyk4Nm-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.847;exitY=0.951;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitPerimeter=0;fillColor=#dae8fc;strokeColor=#000000;" target="K2y7fDkAfPykrgNyk4Nm-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="K2y7fDkAfPykrgNyk4Nm-12" edge="1" parent="1" source="K2y7fDkAfPykrgNyk4Nm-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.319;exitY=0.967;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitPerimeter=0;fillColor=#dae8fc;strokeColor=#000000;" target="K2y7fDkAfPykrgNyk4Nm-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="K2y7fDkAfPykrgNyk4Nm-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=16;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Biomass Production" vertex="1">
+          <mxGeometry height="30" width="310" x="10" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="K2y7fDkAfPykrgNyk4Nm-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=16;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Turnover" vertex="1">
+          <mxGeometry height="30" width="100" x="220" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="K2y7fDkAfPykrgNyk4Nm-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=16;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Growth Increment" vertex="1">
+          <mxGeometry height="30" width="200" x="10" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="K2y7fDkAfPykrgNyk4Nm-8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=16;fillColor=#ffe6cc;strokeColor=#d79b00;" value="Other costs" vertex="1">
+          <mxGeometry height="30" width="100" x="330" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="K2y7fDkAfPykrgNyk4Nm-16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=16;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Losses" vertex="1">
+          <mxGeometry height="30" width="100" x="550" y="160" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
