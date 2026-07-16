@@ -17,26 +17,26 @@ def flora_data(mode: str, length: int, unequal: bool):
     if mode == "empty":
         return {}
 
-    args: dict[str, list] = dict(
-        name=["defaults"],
-        a_hd=[116.0],
-        ca_ratio=[390.43],
-        h_max=[15.33],
-        lai=[1.8],
-        par_ext=[0.5],
-        resp_f=[0.1],
-        resp_r=[0.913],
-        resp_s=[0.044],
-        rho_s=[200.0],
-        sla=[14.0],
-        tau_f=[4.0],
-        tau_r=[1.04],
-        tau_b=[np.inf],
-        yld=[0.17],
-        zeta=[0.17],
-        f_g=[0.02],
-        m=[2],
-        n=[5],
+    args: dict[str, tuple] = dict(
+        name=("defaults",),
+        a_hd=(116.0,),
+        ca_ratio=(390.43,),
+        h_max=(15.33,),
+        lai=(1.8,),
+        par_ext=(0.5,),
+        resp_f=(0.1,),
+        resp_r=(0.913,),
+        resp_s=(0.044,),
+        rho_s=(200.0,),
+        sla=(14.0,),
+        tau_f=(4.0,),
+        tau_r=(1.04,),
+        tau_b=(np.inf,),
+        yld=(0.17,),
+        zeta=(0.17,),
+        f_g=(0.02,),
+        m=(2,),
+        n=(5,),
     )
 
     if mode == "partial":
@@ -122,8 +122,8 @@ def test_Flora(flora_data, mode, length, unequal, strict, outcome, msg):
         v = Flora.model_validate(flora_data, context={"strict": strict})
 
         # Missing fields from partial and empty modes are present and the right length
-        assert v.tau_f == [4.0] * length
-        assert v.tau_r == [1.04] * length
+        assert v.tau_f == (4.0,) * length
+        assert v.tau_r == (1.04,) * length
 
         # Computed fields are present
         assert hasattr(v, "q_m")
@@ -163,7 +163,7 @@ def test_Flora_from_csv(filename, strict, outcome):
 
     with outcome:
         flora = Flora.from_csv(datapath, strict=strict)
-        assert flora.name == ["test1", "test2"]
+        assert flora.name == ("test1", "test2")
 
 
 def test_Flora_to_dataframe():
@@ -189,7 +189,7 @@ def test_Flora_extensibility(flora_data, mode, length, unequal):
 
     # A new subclass with additional variables
     class FloraExtended(Flora):
-        my_new_field: list[int] = [42]  # type: ignore[annotation-unchecked]  # noqa: RUF012
+        my_new_field: tuple[int, ...] = (42,)
 
     # Strict mode still works
     with pytest.raises(ValidationError):
@@ -199,15 +199,15 @@ def test_Flora_extensibility(flora_data, mode, length, unequal):
     flora = FloraExtended.model_validate(flora_data)
 
     assert hasattr(flora, "my_new_field")
-    assert getattr(flora, "my_new_field") == [42, 42]
+    assert getattr(flora, "my_new_field") == (42, 42)
 
     # Check it works when data provided
-    flora_data["my_new_field"] = [1, 1]
+    flora_data["my_new_field"] = (1, 1)
 
     flora = FloraExtended.model_validate(flora_data)
 
     assert hasattr(flora, "my_new_field")
-    assert getattr(flora, "my_new_field") == [1, 1]
+    assert getattr(flora, "my_new_field") == (1, 1)
 
     # And that the field is present in the dataframe version.
     flora_df = flora.to_dataframe()
