@@ -939,6 +939,8 @@ class StemAllocation(ToDataFrameMixin):
         """Allocation to leaf turnover (g C)"""
         self.fine_root_turnover: NDArray[np.floating]
         """Allocation to fine root turnover"""
+        self.branch_turnover: NDArray[np.floating]
+        """Allocation to branch turnover"""
         self.npp: NDArray[np.floating]
         """Net primary productivity (g C)"""
 
