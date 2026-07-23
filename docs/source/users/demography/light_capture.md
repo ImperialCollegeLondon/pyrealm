@@ -492,13 +492,13 @@ canopy model](./canopy.md) calculations.
 ```{code-cell} ipython3
 # Define a flora with PFTs that have crown gap fractions
 gappy_flora = Flora(
-    name=["short", "tall"],
-    h_max=[15, 30],
-    m=[1.5, 1.5],
-    n=[3, 1.5],
-    par_ext=[0.5, 0.6],
-    f_g=[0.1, 0.1],
-    ca_ratio=[380, 500],
+    pft_name=("short", "tall"),
+    h_max=(15, 30),
+    m=(1.5, 1.5),
+    n=(3, 1.5),
+    par_ext=(0.5, 0.6),
+    f_g=(0.1, 0.1),
+    ca_ratio=(380, 500),
 )
 
 cid_generator = cohort_id_generator(mode="str")
