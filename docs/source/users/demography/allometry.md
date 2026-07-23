@@ -156,6 +156,6 @@ DBH.
 
 ```{code-cell} ipython3
 allometry_profiles.to_dataframe().head(6)[
-    ["cohort_ids", "dbh", "stem_height", "crown_area", "crown_fraction"]
+    ["cohort_id", "dbh", "stem_height", "crown_area", "crown_fraction"]
 ]
 ```

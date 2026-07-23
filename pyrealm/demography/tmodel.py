@@ -715,7 +715,7 @@ class StemAllometry(ToDataFrameMixin):
     """
 
     _array_attrs: ClassVar[tuple[str, ...]] = (
-        "cohort_ids",
+        "cohort_id",
         "dbh",
         "stem_height",
         "crown_area",
@@ -745,7 +745,7 @@ class StemAllometry(ToDataFrameMixin):
         """An integer giving the dimensionality of the predictions."""
 
         # Allometry attributes
-        self.cohort_ids: NDArray[np.generic]
+        self.cohort_id: NDArray[np.generic]
         """An array of the cohort ID for each prediction."""
         self.dbh: NDArray[np.floating]
         """The diameter at breast height (m)"""
@@ -773,7 +773,7 @@ class StemAllometry(ToDataFrameMixin):
         if at_dbh is None:
             # If no at_dbh is provided, use the dbh values from the cohorts.
             self.dbh = cohorts.dbh_value.to_numpy()
-            self.cohort_ids = cohorts.cohort_id.to_numpy()
+            self.cohort_id = cohorts.cohort_id.to_numpy()
             self._at_dbh_set = False
             self._ndims = 1
         else:
@@ -784,13 +784,13 @@ class StemAllometry(ToDataFrameMixin):
                 raise ValueError("Values in at_dbh must be greater than zero.")
 
             # Broadcast DBH and cohort IDs to their outer product,
-            self.dbh, self.cohort_ids = np.broadcast_arrays(
+            self.dbh, self.cohort_id = np.broadcast_arrays(
                 at_dbh[:, None], cohorts.cohort_id.to_numpy()
             )
             self._at_dbh_set = True
             self._ndims = 2
 
-        self._cohort_ids = cohorts.cohort_id.to_numpy()
+        self._cohort_id = cohorts.cohort_id.to_numpy()
 
         self.stem_height = calculate_heights(
             h_max=cohorts.h_max.to_numpy(),
@@ -895,7 +895,7 @@ class StemAllocation(ToDataFrameMixin):
     """
 
     _array_attrs: ClassVar[tuple[str, ...]] = (
-        "cohort_ids",
+        "cohort_id",
         "whole_crown_gpp",
         "sapwood_respiration",
         "foliage_respiration",
@@ -919,7 +919,7 @@ class StemAllocation(ToDataFrameMixin):
 
         warn_experimental("StemAllocation")
 
-        self.cohort_ids: NDArray[np.generic]
+        self.cohort_id: NDArray[np.generic]
         """A numpy array of cohort IDs."""
         self._profile: bool
         """An boolean flag indicating if predictions are for a GPP profile."""
@@ -964,8 +964,8 @@ class StemAllocation(ToDataFrameMixin):
                 :, *[None] * allometry._ndims
             ] * np.ones_like(allometry.dbh)
 
-            self.cohort_ids = np.broadcast_to(
-                allometry.cohort_ids, self.whole_crown_gpp.shape
+            self.cohort_id = np.broadcast_to(
+                allometry.cohort_id, self.whole_crown_gpp.shape
             )
             self._ndims = allometry._ndims + 1
         else:
@@ -978,7 +978,7 @@ class StemAllocation(ToDataFrameMixin):
                     f"The GPP array shape ({whole_crown_gpp.shape})is not congruent "
                     f"with predicted allometry shape ({allometry.dbh.shape})."
                 )
-            self.cohort_ids = allometry.cohort_ids
+            self.cohort_id = allometry.cohort_id
             self._ndims = allometry._ndims
 
         # To handle GPP profiling, the allocation terms that do not rely on GPP -
@@ -1093,7 +1093,7 @@ class GrowthIncrements(ToDataFrameMixin):
     """
 
     _array_attrs: ClassVar[tuple[str, ...]] = (
-        "cohort_ids",
+        "cohort_id",
         "delta_dbh",
         "delta_stem_mass",
         "delta_foliage_mass",
@@ -1109,7 +1109,7 @@ class GrowthIncrements(ToDataFrameMixin):
         stem_allocation: StemAllocation,
         biomass_production: NDArray[np.floating] | None = None,
     ):
-        self.cohort_ids: NDArray[np.generic]
+        self.cohort_id: NDArray[np.generic]
         """A numpy array of cohort IDs."""
         self._profile: bool
         """An boolean flag indicating if predictions are for a GPP profile."""
@@ -1142,7 +1142,7 @@ class GrowthIncrements(ToDataFrameMixin):
         # Copy over attributes from stem_allocation
         self.profile = stem_allocation.profile
         self._ndims = stem_allocation._ndims
-        self.cohort_ids = stem_allocation.cohort_ids
+        self.cohort_id = stem_allocation.cohort_id
 
         turnover = (
             stem_allocation.fine_root_turnover

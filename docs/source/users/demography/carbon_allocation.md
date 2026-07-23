@@ -208,5 +208,5 @@ Again, with GPP profiles, the
 predictions into columns identified by pairings of cohort ID and DBH.
 
 ```{code-cell} ipython3
-allocation_profile.to_dataframe().head(6)[["cohort_ids", "whole_crown_gpp", "npp"]]
+allocation_profile.to_dataframe().head(6)[["cohort_id", "whole_crown_gpp", "npp"]]
 ```
