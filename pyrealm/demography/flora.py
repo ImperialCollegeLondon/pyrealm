@@ -245,4 +245,4 @@ class Flora(BaseModel):
     def __repr__(self) -> str:
         # Overrides the default pydantic __repr__.
 
-        return f"Flora with {len(self.name)} PFTS: {','.join(self.name)}"
+        return f"Flora with {len(self.pft_name)} PFTS: {', '.join(self.pft_name)}"

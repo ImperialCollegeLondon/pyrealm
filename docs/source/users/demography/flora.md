@@ -9,16 +9,6 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
-language_info:
-  name: python
-  version: 3.12.3
-  mimetype: text/x-python
-  codemirror_mode:
-    name: ipython
-    version: 3
-  pygments_lexer: ipython3
-  nbconvert_exporter: python
-  file_extension: .py
 ---
 
 # Plant functional types and cohorts
@@ -125,7 +115,7 @@ each trait but if you omit some traits then they will be automatically populated
 from default values.
 
 ```{code-cell} ipython3
-flora = Flora(name=["short", "medium", "tall"], h_max=(10, 20, 30))
+flora = Flora(pft_name=("short", "medium", "tall"), h_max=(10, 20, 30))
 flora
 ```
 
